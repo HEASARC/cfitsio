@@ -22,6 +22,11 @@ fi
 
 
 dnl Checks for programs.
+
+# Try first to find a proprietary C compiler, then gcc
+if test "x$CC" = x; then
+  AC_CHECK_PROGS(CC, cc)
+fi
 AC_PROG_CC
 
 AC_CHECK_PROGS(FC, f77 xlf cf77 gf77 g77 af77 ncf f2c , nope)
