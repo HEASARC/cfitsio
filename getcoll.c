@@ -79,7 +79,7 @@ int ffgcfl( fitsfile *fptr,   /* I - FITS file pointer                       */
 int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
             int  colnum,      /* I - number of column to read (1 = 1st col)  */
             long  firstrow,   /* I - first row to read (1 = 1st row)         */
-            long  firstelem,  /* I - first vector element to read (1 = 1st)  */
+            OFF_T  firstelem, /* I - first vector element to read (1 = 1st)  */
             long  nelem,      /* I - number of values to read                */
             int   nultyp,     /* I - null value handling code:               */
                               /*     1: set undefined pixels = nulval        */

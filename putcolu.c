@@ -93,7 +93,7 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
   images.
 */
 {
-    int tcode, maxelem, hdutype, lennull, nwrite = 0, writemode = 2;
+    int tcode, maxelem, hdutype, writemode = 2, leng;
     short i2null;
     INT32BIT i4null;
     long twidth, incre, rownum, remain, next, ntodo;
@@ -101,10 +101,11 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
     OFF_T repeat, startpos, elemnum, large_elem, wrtptr, rowlen;
     double scale, zero;
     unsigned char i1null, lognul = 0;
-    char tform[20], cstring[50];
+    char tform[20], *cstring = 0;
     char message[FLEN_ERRMSG];
     char snull[20];   /*  the FITS null value  */
     long   jbuff[2] = { -1, -1};  /* all bits set is equivalent to a NaN */
+    size_t buffsize;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
@@ -144,22 +145,25 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
         return(*status = NO_NULL);
       }
 
-      strcpy(cstring, snull);          /* copy null string to temp buffer */
-      lennull = strlen(cstring);
+      /* allocate buffer to hold the null string.  Must write the entire */
+      /* width of the column (twidth bytes) to avoid possible problems */
+      /* with uninitialized FITS blocks, in case the field spans blocks */
 
+      buffsize = maxvalue(20, twidth);
+      cstring = (char *) malloc(buffsize);
+      if (!cstring)
+         return(*status = MEMORY_ALLOCATION);
+
+      memset(cstring, ' ', buffsize);  /* initialize  with blanks */
+
+      leng = strlen(snull);
       if (hdutype == BINARY_TBL)
-      {  /* write up to and including null terminator into BINTABLE column */
-         nwrite = minvalue(twidth, lennull + 1);
-      }
-      else
-      {  /* write up to 20 chars to ASCII table column; pad with blanks */
-         nwrite = minvalue(twidth, 20);
+         leng++;        /* copy the terminator too in binary tables */
 
-         for (ii = lennull; ii < nwrite; ii++)
-            cstring[ii] = ' ';  
-      }
+      strncpy(cstring, snull, leng);  /* copy null string to temp buffer */
+
     }
-    else if ( tcode == TBYTE ||
+    else if ( tcode == TBYTE  ||
               tcode == TSHORT ||
               tcode == TLONG ) 
     {
@@ -247,7 +251,7 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
 
             case (TSTRING):  /* an ASCII table column */
                 /* repeat always = 1, so ntodo is also guaranteed to = 1 */
-                ffpbyt(fptr, nwrite, cstring, status);
+                ffpbyt(fptr, twidth, cstring, status);
                 break;
 
             default:  /*  error trap  */
@@ -268,6 +272,10 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
              "Error writing %ld thru %ld of null values (ffpclu).",
               next+1, next+ntodo);
            ffpmsg(message);
+
+           if (cstring)
+              free(cstring);
+
            return(*status);
         }
 
@@ -288,6 +296,9 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
         ntodo = remain;  /* this is the maximum number to do in next loop */
 
     }  /*  End of main while Loop  */
+
+    if (cstring)
+       free(cstring);
 
     return(*status);
 }

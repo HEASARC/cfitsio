@@ -202,9 +202,10 @@ int ffirow(fitsfile *fptr,  /* I - FITS file pointer                        */
         return(*status = BAD_ROW_NUM);
     }
 
-    datasize = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize; /* current data size */
+    /* current data size */
+    datasize = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;
     freespace = ( ( (datasize + 2879) / 2880) * 2880) - datasize;
-    nshift = (OFF_T)naxis1 * nrows;              /* no. of bytes to add to table */
+    nshift = (OFF_T)naxis1 * nrows;          /* no. of bytes to add to table */
 
     if ( (freespace - nshift) < 0)   /* not enough existing space? */
     {
@@ -294,18 +295,20 @@ int ffdrow(fitsfile *fptr,  /* I - FITS file pointer                        */
         return(*status = BAD_ROW_NUM);
     }
 
-    nshift = (OFF_T)naxis1 * nrows;           /* no. of bytes to delete from table */
-    datasize = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;    /* current size of data */
-    firstbyte = (OFF_T)naxis1 * (firstrow + nrows - 1); /* relative delete position */
+    nshift = (OFF_T)naxis1 * nrows;   /* no. of bytes to delete from table */
+    datasize = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize; /* cur size of data */
+    firstbyte = (OFF_T)naxis1 * (firstrow + nrows - 1); /* relative del pos */
     nbytes = datasize - firstbyte;    /* no. of bytes to shift up */
     firstbyte += ((fptr->Fptr)->datastart);   /* absolute delete position */
+
     ffshft(fptr, firstbyte, nbytes,  nshift * (-1), status); /* shift data */
 
     freespace = ( ( (datasize + 2879) / 2880) * 2880) - datasize;
     nblock = (nshift + freespace) / 2880;   /* number of blocks */
 
+    /* delete integral number blocks */
     if (nblock > 0) 
-        ffdblk(fptr, nblock, status);  /* delete integral number blocks */
+        ffdblk(fptr, nblock, status);
 
     /* update the heap starting address */
     (fptr->Fptr)->heapstart -= nshift;

@@ -49,10 +49,11 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.201;
+      *version = 2.202;
 
-/* 15 Mar 2001
+/*  22 May 2001
 
+      *version = 2.201;  15 Mar 2001
       *version = 2.200;  26 Jan 2001
       *version = 2.100;  26 Sep 2000
       *version = 2.037;   6 July 2000
@@ -3295,7 +3296,6 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     if ( (fptr->Fptr)->compressimg == 1) /*  Is this a compressed image */
         imcomp_get_compressed_image_par(fptr, status);
 
-
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -3798,7 +3798,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
             /* check if we are writing beyond the current end of table */
             if (endrow > (fptr->Fptr)->numrows)
             {
-               /* if there are more HDUs following the current one, or */
+                /* if there are more HDUs following the current one, or */
                 /* if there is a data heap, then we must insert space */
                 /* for the new rows.  */
                 if ( !((fptr->Fptr)->lasthdu) || (fptr->Fptr)->heapsize > 0)
@@ -3918,8 +3918,8 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
         if (colptr->tdatatype <= -TCOMPLEX)
         {
           /* divide repeat count by 2 to get no. of complex values */
-          ffpdes(fptr, colnum, firstrow, (long) *repeat / 2, (fptr->Fptr)->heapsize,
-                 status);
+          ffpdes(fptr, colnum, firstrow, (long) *repeat / 2, 
+                (fptr->Fptr)->heapsize, status);
         }
         else
         {
@@ -4695,7 +4695,18 @@ int ffdblk(fitsfile *fptr,      /* I - FITS file pointer                    */
 
     tstatus = 0;
     /* pointers to the read and write positions */
+
+    readpos = (fptr->Fptr)->datastart + 
+                   (fptr->Fptr)->heapstart + 
+                   (fptr->Fptr)->heapsize;
+    readpos = ((readpos + 2879) / 2880) * 2880; /* start of block */
+
+/*  the following formula is wrong because the current data unit
+    may have been extended without updating the headstart value
+    of the following HDU.
+    
     readpos = (fptr->Fptr)->headstart[((fptr->Fptr)->curhdu) + 1];
+*/
     writepos = readpos - ((OFF_T)nblocks * 2880);
 
     while ( !ffmbyt(fptr, readpos, REPORT_EOF, &tstatus) &&

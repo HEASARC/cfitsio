@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large March 2001\\}
+{\Large May 2001\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -304,6 +304,14 @@ directory is run and not some other system-wide configure script.  The
 configure command customizes the Makefile for the particular system,
 then the `make' command compiles the source files and builds the
 library.
+
+The CFITSIO library file, libcfitsio.a, and 2 include files, fitsio.h
+and longnam.h, should then be copied to the appropriate directory(s)
+for use when compiling application programs.  Alternatively, one could
+set 2 environment variables, FTOOLS\_LIB and FTOOLS\_INCLUDE, to
+specify the paths to the installation directories, (e.g., `setenv
+FTOOLS\_INCLUDE /usr/local/include') and then run `make install' to
+build and install the CFITSIO library.
 
 On HP/UX systems, the environment variable CFLAGS should be set
 to -Ae before running configure to enable "extended ANSI" features.
@@ -1517,11 +1525,15 @@ the full file filtering syntax.
 
 When opening an image, a rectangular subset of the physical image may be
 opened by listing the first and last pixel in each dimension (and
-optional pixel skipping factor): \verb-myimage.fits[101:200,301:400]- will
-create and open a 100x100 pixel virtual image of that section of the
-physical image, and \verb-myimage.fits[*,-*]- opens a virtual image which is
-the same size as the physical image but has been flipped in the vertical
-direction.
+optional pixel skipping factor):
+ 
+\begin{verbatim}
+myimage.fits[101:200,301:400]
+\end{verbatim}
+will create and open a 100x100 pixel virtual image of that section of
+the physical image, and \verb+myimage.fits[*,-*]+ opens a virtual image
+which is the same size as the physical image but has been flipped in
+the vertical direction.
 
 When opening a table, the filtering syntax can be used to add or delete
 columns or keywords in the virtual table:
@@ -1535,7 +1547,7 @@ number of boolean and mathematical operators can be used in the
 selection expression. One can also filter table rows using 'Good Time
 Interval' extensions, and spatial region filters as in
 \verb-myfile.fits[events][gtifilter()]- and
-\verb-myfile.fits[events][regfilter("stars.rng")]-.
+\verb-myfile.fits[events][regfilter( "stars.rng")]-.
 
 Finally, table columns may be binned or histogrammed to generate a
 virtual image. For example, \verb-myfile.fits[events][bin (X,Y)=4]- will
@@ -4487,7 +4499,7 @@ specifications.
     for the new extension.  If the CHDU is the last HDU in the file
     then the new image extension will simply be appended to the end of
     the file.   One can force a new primary array to be inserted at the
-    beginning of the FITS file by setting status = PREPEND\_PRIMAY prior
+    beginning of the FITS file by setting status = PREPEND\_PRIMARY prior
     to calling the routine.  In this case the old primary array will be
     converted to an IMAGE extension. The new extension (or primary
     array) will become the CHDU.  Refer to Chapter 9 for a list of
@@ -5171,7 +5183,7 @@ parameters used in these routines.
 \end{description}
  
 \begin{verbatim}
-  int fits_set_btblnul / fftnul
+  int fits_set_btblnull / fftnul
       (fitsfile *fptr, int colnum, long nulval, > int *status)
 \end{verbatim}
 
@@ -6969,12 +6981,20 @@ by a backslash to force the UNIX shell to ignore it.
     Radii or semimajor/minor  axes; and Axxx  are the angles of rotation
     (or bounding angles for Sector) in degrees.  For rotated shapes, the
     rotation angle  can  be left  off, indicating  no rotation.   Common
-    alternate  names for the regions  can also be  used: rotbox <-> box;
-    rotrectangle <-> rectangle;  (rot)rhombus <-> (rot)diamond;  and pie
-    <-> sector.  When a  shape's name is  preceded by a minus sign, '-',
+    alternate  names for the regions  can also be  used: rotbox = box;
+    rotrectangle = rectangle;  (rot)rhombus = (rot)diamond;  and pie
+    = sector.  When a  shape's name is  preceded by a minus sign, '-',
     the defined region  is instead the area  *outside* its boundary (ie,
-    the region is inverted).  All the shapes within a single region file
-    are OR'd together to create the region.
+    the region is inverted).  All the shapes within a single region
+    file are OR'd together to create the region, and the order is
+    significant. The overall way of looking at region files is that if
+    the first region is an excluded region then a dummy included region
+    of the whole detector is inserted in the front. Then each region
+    specification as it is processed overrides any selections inside of
+    that region specified by previous regions. Another way of thinking
+    about this is that if a previous excluded region is completely
+    inside of a subsequent included region the excluded region is
+    ignored.
 
     The positional coordinates may be given either in pixel units,
     decimal degrees or hh:mm:ss.s, dd:mm:ss.s units.  The shape sizes
@@ -8027,15 +8047,16 @@ fits\_write\_chksum   & \pageref{ffpcks} \\
 fits\_write\_col         & \pageref{ffpcl} \\
 fits\_write\_col\_bit     & \pageref{ffpclx} \\
 fits\_write\_col\_TYP     & \pageref{ffpcls} \\
+fits\_write\_col\_null      & \pageref{ffpclu} \\
 fits\_write\_colnull      & \pageref{ffpcn} \\
 fits\_write\_colnull\_TYP & \pageref{ffpcnx} \\
 fits\_write\_comment      & \pageref{ffpcom} \\
 fits\_write\_date         & \pageref{ffpdat} \\
 fits\_write\_descript  & \pageref{ffpdes} \\
 fits\_write\_errmsg   & \pageref{ffpmsg} \\
-fits\_write\_grphdr       & \pageref{ffphpr} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_write\_grphdr       & \pageref{ffphpr} \\
 fits\_write\_grppar\_TYP & \pageref{ffpgpx} \\
 fits\_write\_history      & \pageref{ffphis} \\
 fits\_write\_img        & \pageref{ffppr} \\
@@ -8222,6 +8243,7 @@ ffpcks   & \pageref{ffpcks} \\
 ffpcl         & \pageref{ffpcl} \\
 ffpcls     & \pageref{ffpcls} \\
 ffpcl\_     & \pageref{ffpclx} \\
+ffpclu      & \pageref{ffpclu} \\
 ffpcn    & \pageref{ffpcn} \\
 ffpcn\_ & \pageref{ffpcnx} \\
 ffpcom      & \pageref{ffpcom} \\
@@ -8254,9 +8276,9 @@ ffppxn & \pageref{ffppxn} \\
 ffprec       & \pageref{ffprec} \\
 ffpscl     & \pageref{ffpscl} \\
 ffpss\_  & \pageref{ffpssx} \\
-ffpsvc    & \pageref{ffpsvc} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffpsvc    & \pageref{ffpsvc} \\
 ffptbb  & \pageref{ffptbb} \\
 ffptdm         & \pageref{ffptdm} \\
 ffpthp    & \pageref{ffpthp} \\
@@ -8635,6 +8657,8 @@ improve the readability of their code.
  HDU_ALREADY_TRACKED   346
  BAD_OPTION            347
  IDENTICAL_POINTERS    348
+ BAD_GROUP_ATTACH      349
+ BAD_GROUP_DETACH      350
 
  NGP_NO_MEMORY         360     malloc failed
  NGP_READ_ERR          361     read error from file

@@ -347,6 +347,7 @@
 #define fits_write_grppar_dbl ffpgpd
 
 #define fits_write_pix        ffppx
+#define fits_write_pixnull    ffppxn
 #define fits_write_img        ffppr
 #define fits_write_img_byt    ffpprb
 #define fits_write_img_usht    ffpprui

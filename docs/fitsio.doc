@@ -119,6 +119,14 @@ library. By default this also builds the set of Fortran-callable
 wrapper routines whose calling sequences are described later in this
 document.
 
+The CFITSIO library file, libcfitsio.a, and 2 include files, fitsio.h
+and longnam.h, should then be copied to the appropriate directory(s)
+for use when compiling application programs.  Alternatively, one could
+set 2 environment variables, FTOOLS\_LIB and FTOOLS\_INCLUDE, to
+specify the paths to the installation directories, (e.g., `setenv
+FTOOLS\_INCLUDE /usr/local/include') and then run `make install' to
+build and install the CFITSIO library.
+
 On HP/UX systems, the environment variable CFLAGS should be set
 to -Ae before running configure to enable "extended ANSI" features.
 
@@ -1760,12 +1768,20 @@ by a backslash to force the UNIX shell to ignore it.
     Radii or semimajor/minor  axes; and Axxx  are the angles of rotation
     (or bounding angles for Sector) in degrees.  For rotated shapes, the
     rotation angle  can  be left  off, indicating  no rotation.   Common
-    alternate  names for the regions  can also be  used: rotbox <-> box;
-    rotrectangle <-> rectangle;  (rot)rhombus <-> (rot)diamond;  and pie
-    <-> sector.  When a  shape's name is  preceded by a minus sign, '-',
+    alternate  names for the regions  can also be  used: rotbox = box;
+    rotrectangle = rectangle;  (rot)rhombus = (rot)diamond;  and pie
+    = sector.  When a  shape's name is  preceded by a minus sign, '-',
     the defined region  is instead the area  *outside* its boundary (ie,
-    the region is inverted).  All the shapes within a single region file
-    are OR'd together to create the region.
+    the region is inverted).  All the shapes within a single region
+    file are OR'd together to create the region, and the order is
+    significant. The overall way of looking at region files is that if
+    the first region is an excluded region then a dummy included region
+    of the whole detector is inserted in the front. Then each region
+    specification as it is processed overrides any selections inside of
+    that region specified by previous regions. Another way of thinking
+    about this is that if a previous excluded region is completely
+    inside of a subsequent included region the excluded region is
+    ignored.
 
     The positional coordinates may be given either in pixel units,
     decimal degrees or hh:mm:ss.s, dd:mm:ss.s units.  The shape sizes
@@ -5746,6 +5762,8 @@ FITSIO use.
 346 HDU_ALREADY_TRACKED   
 347 BAD_OPTION            
 348 IDENTICAL_POINTERS    
+349 BAD_GROUP_ATTACH
+350 BAD_GROUP_DETACH
 
 360 NGP_NO_MEMORY              malloc failed
 361 NGP_READ_ERR               read error from file

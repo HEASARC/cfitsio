@@ -558,6 +558,9 @@ move2hdu:
 
           ffpmsg(" doesn't exist or couldn't be opened.");
         }
+
+        ffclos(*fptr, status);
+        *fptr = 0;              /* return null file pointer */
         return(*status);
       }
     }
@@ -576,6 +579,8 @@ move2hdu:
              ffpmsg(rowexpress);
              ffpmsg("Could not open the following image in a table cell:");
              ffpmsg(extspec);
+             ffclos(*fptr, status);
+             *fptr = 0;              /* return null file pointer */
              return(*status = BAD_ROW_NUM);
           }
        }
@@ -585,6 +590,8 @@ move2hdu:
           ffpmsg(rowexpress);
           ffpmsg("Could not open the following image in a table cell:");
           ffpmsg(extspec);
+          ffclos(*fptr, status);
+          *fptr = 0;              /* return null file pointer */
           return(*status);
        }
 
@@ -594,6 +601,8 @@ move2hdu:
           ffpmsg(rowexpress);
           ffpmsg("Could not open the following image in a table cell:");
           ffpmsg(extspec);
+          ffclos(*fptr, status);
+          *fptr = 0;              /* return null file pointer */
           return(*status = BAD_ROW_NUM);
        }
 
@@ -611,6 +620,8 @@ move2hdu:
        {
           ffpmsg("Failed to copy table cell to new primary array:");
           ffpmsg(extspec);
+          ffclos(*fptr, status);
+          *fptr = 0;              /* return null file pointer */
           return(*status);
        }
 
@@ -658,6 +669,8 @@ move2hdu:
            ffpmsg("editing columns in input table failed (ffopen)");
            ffpmsg(" while trying to perform the following operation:");
            ffpmsg(colspec);
+           ffclos(*fptr, status);
+           *fptr = 0;              /* return null file pointer */
            return(*status);
        }
     }
@@ -669,7 +682,6 @@ move2hdu:
  
     if (*rowfilter)
     {
-
      fits_get_hdu_type(*fptr, &hdutyp, status);  /* get type of HDU */
      if (hdutyp == IMAGE_HDU)
      {
@@ -690,6 +702,8 @@ move2hdu:
            ffpmsg("on-the-fly selection of image section failed (ffopen)");
            ffpmsg(" while trying to use the following section filter:");
            ffpmsg(rowfilter);
+           ffclos(*fptr, status);
+           *fptr = 0;              /* return null file pointer */
            return(*status);
         }
         writecopy = 1;
@@ -716,6 +730,8 @@ move2hdu:
            "failed to allocate memory for selected columns array (ffopen)");
            ffpmsg(" while trying to select rows with the following filter:");
            ffpmsg(rowfilter);
+           ffclos(*fptr, status);
+           *fptr = 0;              /* return null file pointer */
            return(*status = MEMORY_ALLOCATION);
         }
 
@@ -725,6 +741,9 @@ move2hdu:
            ffpmsg("selection of rows in input table failed (ffopen)");
            ffpmsg(" while trying to select rows with the following filter:");
            ffpmsg(rowfilter);
+           free(rowselect);
+           ffclos(*fptr, status);
+           *fptr = 0;              /* return null file pointer */
            return(*status);
         }
       }
@@ -738,7 +757,7 @@ move2hdu:
            if (*filtfilename && *outfile == '\0')
                strcpy(outfile, filtfilename); /* the original outfile name */
            else if (*outfile == '\0') /* output file name not already defined? */
-             strcpy(outfile, "mem://_2");  /* will create copy in memory */
+               strcpy(outfile, "mem://_2");  /* will create copy in memory */
         }
         else
         {
@@ -756,10 +775,16 @@ move2hdu:
           ffpmsg("on-the-fly selection of rows in input table failed (ffopen)");
            ffpmsg(" while trying to select rows with the following filter:");
            ffpmsg(rowfilter);
+           ffclos(*fptr, status);
+           *fptr = 0;              /* return null file pointer */
            return(*status);
         }
 
-      }    /* end of no binspec case */
+        /* write history records */
+        ffphis(*fptr, "CFITSIO used the following filtering expression to create this table:", status);
+        ffphis(*fptr, name, status);
+
+      }   /* end of no binspec case */
      }   /* end of table HDU case */
     }  /* end of rowfilter exists case */
 
@@ -787,16 +812,22 @@ move2hdu:
               binsizein, minname, maxname, binname,
               weight, wtcol, recip, rowselect, status);
 
+       if (rowselect)
+          free(rowselect);
+
        if (*status > 0)
        {
            ffpmsg("on-the-fly histogramming of input table failed (ffopen)");
            ffpmsg(" while trying to execute the following histogram specification:");
            ffpmsg(binspec);
+           ffclos(*fptr, status);
+           *fptr = 0;              /* return null file pointer */
            return(*status);
        }
 
-       if (rowselect)
-          free(rowselect);
+        /* write history records */
+        ffphis(*fptr, "CFITSIO used the following expression to create this histogram:", status);
+        ffphis(*fptr, name, status);
     }
 
     return(*status);

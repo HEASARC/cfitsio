@@ -1,5 +1,70 @@
                    Log of Changes Made to CFITSIO
 
+Version 2.202 -  22 May 2001   (FTOOLS V5.1)
+
+  Enhancements
+
+   - revised the logic in the routine that tests if a point is
+     within a region:  if the first region is an excluded region,
+     then it implicitly assumes a prior include region covering
+     the entire detector.  It also now supports cases where a 
+     smaller include region is within a prior exclude region.
+
+   - made enhancement to ffgclb (read bytes) so that it can
+     also read values from a logical column, returning an array
+     of 1s and 0s.  
+
+   - defined 2 new grouping error status values (349, 350) in 
+     cfitsio.h and made minor changes to group.c to use these new
+     status values.
+
+   - modified fits_open_file so that if it encounters an error while
+     trying to move to a user-specified extension (or select a subset
+     of the rows in an input table, or make a histogram of the
+     column values) it will close the input file instead of leaving
+     it open.
+
+   - when using the extended filename syntax to filter the rows in
+     an input table, or create a histogram image from the values in
+     a table column, CFITSIO now writes HISTORY keywords in the 
+     output file to document the filtering expression that was used.
+
+  Bug fixes:
+
+   - ffdblk (called by ffdrow) could overwrite the last FITS block(s) in 
+     the file in some cases where one writes data to a variable length
+     column and then calls ffdrow to delete rows in the table.  This
+     bug was similar to the ffiblk bug that was fixed in v2.033.
+
+   - modified fits_write_col_null to fix a problem which under unusual
+     circumstances would cause a End-of-File error when trying to
+     read back the value in an ASCII string column, after initializing
+     if by writing a null value to it. 
+
+   - fixed obscure bug in the calculator function that caused an
+     error when trying to modify the value of a keyword in a HDU
+     that does not have a NAXIS2 keyword (e.g., a null primary array).
+
+   - the iterator function (in putcol.c) had a bug when calculating
+     the optimum number rows to process in the case where the table
+     has very wide rows (>33120 bytes) and the calculator expression
+     involves columns from more than one FITS table.  This could
+     cause an infinite loop in calls to the ffcalc calculator function.
+
+   - fixed bug in ffmvec, which modifies the length of an 
+     existing vector column in a binary table.  If the vector
+     was reduced in length, the FITS file could sometimes be left
+     in a corrupted state, and in all cases the values in the remaining
+     vector elements of that column would be altered.
+
+   - in drvrfile.c, replaced calls to fsetpos and fgetpos with
+     fseek and ftell (or fseeko and ftello) because the fpos_t
+     filetype used in fsetpos is incompatible with the off_t
+     filetype used in fseek, at least on some platforms (Linux 7.0).
+     (This fix was inserted into the V2.201 release on April 4).
+
+   - added "#define fits_write_pixnull ffppxn" to longnam.h
+
 Version 2.201 - 15 March 2001
 
   Enhancements
@@ -76,7 +141,7 @@ Version 2.200 - 26 Jan 2001
      just the intersection of the regions.
 
    - added support for reading raw binary data arrays by converting
-     them on the fly into virtural FITS files.
+     them on the fly into virtual FITS files.
 
    - modified ffpmsg, which writes error messages to CFITSIO's internal
      error stack, so that messages > 80 characters long will be wrapped
@@ -366,7 +431,7 @@ Version 2.036 - 1 Feb 2000
      by setting CFLAGS = -Df2cFortran instead of -Dg77Fortran. Then
      regenerated configure with autoconf 2.13 instead of 2.12.     
 
-Version 2.035 - 7 Dec 1999 (internal release only)
+Version 2.035 - 7 Dec 1999 (internal release only, FTOOLS 5.0.2)
 
    - added new routine called fits_get_keyclass/ffgkcl that returns
      the general class of the keyword, e.g., required structural 
@@ -433,13 +498,13 @@ Version 2.034 - 23 Nov 1999
      reading routines to sometimes not find a matching keyword if the
      input name template used the '*' wildcard as the last character.
      (e.g., if input name = 'COMMENT*' then it would not find the
-     'COMMMENT' keywords.  (It would have found longer keywords like
+     'COMMENT' keywords.  (It would have found longer keywords like
      'COMMENTX' correctly). The fix required a minor change to ffgcrd
      in getkey.c
 
    - modified the routine (ffswap8) that does byteswapping of
      double precision numbers.  Some linux systems have reported floating
-     point exceptions because they were trying to interprete the bytes
+     point exceptions because they were trying to interpret the bytes
      as a double before the bytes had been swapped.
 
    - fixed bug in the calculation of the position of the last byte
@@ -467,12 +532,12 @@ Version 2.033 - 17 Sept 1999
 
    - New Feature: enhanced the row selection parser so that comparisons
      between values in different rows of the table are allowed, and the
-     string comparisions with <, >, <=, and >= are supported.
+     string comparisons with <, >, <=, and >= are supported.
 
    - added new routine the returns the name of the keyword in the
      input keyword record string.  The name is usually the first
      8 characters of the record, except if the HIERARCH convention
-     is being used in which case the name may be up to 67 charcters
+     is being used in which case the name may be up to 67 characters
      long.
 
    - added new routine called fits_null_check/ffnchk that checks to
@@ -518,7 +583,7 @@ Version 2.033 - 17 Sept 1999
    - fixed bug in ffiblk that could sometimes cause it to insert a
      new block in a file somewhere in the middle of the data, instead
      of at the end of the HDU.  This fortunately is a rare problem,
-     mainly only occuring in certain cases when  inserting rows in a binary 
+     mainly only occurring in certain cases when  inserting rows in a binary 
      table that contains variable length array data (i.e., has a heap).
 
    - modified fits_write_tdim so that it double checks the TFORMn
@@ -611,7 +676,7 @@ Version 2.031 - 31 Mar 1999
      odd numbered rows and columns.
 
    - modified fitscore.c to set the initial max size of the header, when
-     first reading it, to the curent size of the file, rather than to 
+     first reading it, to the current size of the file, rather than to 
      2 x 10**9 to avoid rare cases where CFITSIO ends up writing a huge 
      file to disk.
 
@@ -629,12 +694,12 @@ Version 2.030 - 24 Feb 1999
    - major new feature:  enhanced the routines that read ASCII string
      columns in tables so that they can read any table column, including
      logical and numeric valued columns.  The column values are returned
-     as a formated string.  The format is determined by the TDISPn
+     as a formatted string.  The format is determined by the TDISPn
      keyword if present, otherwise a default format based on the
      datatype of the column is used.
 
   -  new routine:  fits_get_col_display_width/ffgcdw returns the length
-     of the formated strings that will be returned by the routines that
+     of the formatted strings that will be returned by the routines that
      read table columns as strings. 
 
    - major new feature:  added support for specifying an 'image section'
@@ -871,10 +936,10 @@ Version 2.024 - 9 Nov 1998
 
 Version 2.023 - 1 Nov 1998 - first full release of CFITSIO 2.0
 
-   - slightly modified the way real keyword values are formated, to ensure
+   - slightly modified the way real keyword values are formatted, to ensure
      that it includes a decimal point.  E.g.,  '1.0E-09' instead of '1E-09'
 
-   - added new funtion to support template files when creating new FITS files.
+   - added new function to support template files when creating new FITS files.
 
    - support the TCROTn WCS keyword in tables, when reading the WCS keywords.
 
@@ -933,7 +998,7 @@ Version 2.023 - 1 Nov 1998 - first full release of CFITSIO 2.0
 
    - major modification to support opening the same FITS file more
      than once.  Now one can open the same file multiple times and
-     read and write simulataneously to different HDUs within the file.
+     read and write simultaneously to different HDUs within the file.
      fits_open_file automatically detects if the file is already opened.
 
    - added the ability to clobber/overwrite an existing file
@@ -1194,7 +1259,7 @@ Version 1.30 - 11 September 1997
 
    - major overhaul to support reading and writing FITS files
      in memory.   The new routines fits_set_mem_buff and 
-     fits_write_mem_buff have been added to intialize and
+     fits_write_mem_buff have been added to initialize and
      copy out the memory buffer, respectively.
 
    - added support for reading FITS files piped in on 'stdin'
@@ -1497,7 +1562,7 @@ Version 1.04 - 17 Sept 1996
      to support the Mac platforms.
 
    - fixed bug in ffpdfl that caused an EOF error (107) when a program
-     creats a new extention that is an exact multiple of 2880 bytes long,
+     creates a new extention that is an exact multiple of 2880 bytes long,
      AND the program does not write a value to the last element
      in the table or image.
 

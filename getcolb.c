@@ -659,6 +659,11 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
     double cbuff[DBUFFSIZE / sizeof(double)]; /* align cbuff on word boundary */
     void *buffer;
 
+    union u_tag {
+       char charval;
+       unsigned char ucharval;
+    } u;
+
     if (*status > 0 || nelem == 0)  /* inherit input status value if > 0 */
         return(*status);
 
@@ -679,6 +684,16 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
     ffgcpr( fptr, colnum, firstrow, firstelem, nelem, readcheck, &scale, &zero,
          tform, &twidth, &tcode, &maxelem, &startpos, &elemnum, &incre,
          &repeat, &rowlen, &hdutype, &tnull, snull, status);
+
+    /* special case */
+    if (tcode == TLOGICAL && elemincre == 1)
+    {
+        u.ucharval = nulval;
+        ffgcll(fptr, colnum, firstrow, firstelem, nelem, nultyp,
+               u.charval, (char *) array, nularray, anynul, status);
+
+        return(*status);
+    }
 
     if (strchr(tform,'A') != NULL) 
     {
