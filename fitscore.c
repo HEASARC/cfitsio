@@ -2182,8 +2182,21 @@ void ffcmps(char *templt,   /* I - input template (may have wildcards)      */
       }
       else if (temp[t1] == '\0')
       { 
-         /* reached end of template string so they don't match */
-         return;
+        if (wildsearch)
+        {
+            /* 
+               the previous wildcard search may have been going down
+               a blind alley.  Backtrack, and resume the wildcard
+               search with the next character in the string.
+            */
+            t1 = tsave;
+            s1 = ssave + 1;
+        }
+        else
+        {
+            /* reached end of template string so they don't match */
+            return;
+        }
       }
       else if (col[s1] == '\0')
       { 

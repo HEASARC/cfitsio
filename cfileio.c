@@ -1262,6 +1262,7 @@ int ffedit_columns(
 
             cptr2 = clause;
             slen = fits_get_token(&cptr2, " =", colname, NULL);
+
             if (slen == 0)
             {
                 ffpmsg("error: column or keyword name is blank:");
@@ -1276,7 +1277,31 @@ int ffedit_columns(
 
             if (*cptr2 != '=')
             {
-              if (ffgcno(*fptr, CASEINSEN, colname, &colnum, status) <= 0)
+
+              /* look for matching column */
+              ffgcno(*fptr, CASEINSEN, colname, &colnum, status);
+
+              while (*status == COL_NOT_UNIQUE) 
+              {
+                 /* the column name contained wild cards, and it */
+                 /* matches more than one column in the table. */
+
+                 /* keep this column in the output file */
+                 savecol = 1;
+
+                 if (!colindex)
+                    colindex = calloc(999, sizeof(int));
+
+                 colindex[colnum - 1] = 1;  /* flag this column number */
+
+                 /* look for other matching column names */
+                 ffgcno(*fptr, CASEINSEN, colname, &colnum, status);
+
+                 if (*status == COL_NOT_FOUND)
+                    *status = 999;  /* temporary status flag value */
+              }
+
+              if (*status <= 0)
               {
                  /* keep this column in the output file */
                  savecol = 1;
@@ -1285,6 +1310,11 @@ int ffedit_columns(
                     colindex = calloc(999, sizeof(int));
 
                  colindex[colnum - 1] = 1;  /* flag this column number */
+              }
+              else if (*status == 999)
+              {
+                  /* this special flag value does not represent an error */
+                  *status = 0;  
               }
               else
               {
@@ -1330,6 +1360,12 @@ int ffedit_columns(
                       if( file_expr ) free( file_expr );
                       return(*status);
                     }
+                    /* keep this column in the output file */
+                    savecol = 1;
+                    if (!colindex)
+                       colindex = calloc(999, sizeof(int));
+
+                    colindex[colnum - 1] = 1;  /* flag this column number */
                 }
                 else
                 {
@@ -1365,6 +1401,9 @@ int ffedit_columns(
                 /* calculate values for the column or keyword */ 
                 fits_calculator(*fptr, cptr2, *fptr, oldname, colformat,
        	                        status);
+
+                /* keep this column in the output file */
+                savecol = 1;
 
                 if (!colindex)
                     colindex = calloc(999, sizeof(int));

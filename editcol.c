@@ -1013,6 +1013,14 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
         ffcpky(infptr, outfptr, incol, colnum, "TLMAX", status);
         ffcpky(infptr, outfptr, incol, colnum, "TDIM", status);
 
+        /*  WCS keywords */
+        ffcpky(infptr, outfptr, incol, colnum, "TCTYP", status);
+        ffcpky(infptr, outfptr, incol, colnum, "TCUNI", status);
+        ffcpky(infptr, outfptr, incol, colnum, "TCRVL", status);
+        ffcpky(infptr, outfptr, incol, colnum, "TCRPX", status);
+        ffcpky(infptr, outfptr, incol, colnum, "TCDLT", status);
+        ffcpky(infptr, outfptr, incol, colnum, "TCROT", status);
+
         if ((infptr->Fptr)->hdutype == ASCII_TBL && (outfptr->Fptr)->hdutype == BINARY_TBL)
         {
             /* binary tables only have TNULLn keyword for integer columns */
