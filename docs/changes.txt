@@ -28,6 +28,9 @@ Version 2.440 - 8 January 2003
   - modified fits_get_keyclass so that it recognizes EXTNAME =
     COMPRESSED_IMAGE as a special tile compression keyword.
 
+  - modified Makefile.in to support the standard --prefix convention
+    for specifying the install target directory.
+
   Bug fixes:
 
   - in fits_decompress_img, needed to add a call to ffpscl to turn
