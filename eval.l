@@ -338,8 +338,6 @@ nl		\n
 {string}	{
                   int len;
                   len = strlen(yytext) - 2;
-		  while (yytext[len] == ' ')
-			len--;
 		  strncpy(yylval.str,&yytext[1],len);
 		  yylval.str[len] = '\0';
 		  return( STRING );
