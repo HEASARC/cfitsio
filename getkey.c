@@ -192,7 +192,8 @@ int ffgnxk( fitsfile *fptr,     /* I - FITS file pointer              */
             if (match)
             {
                 /* does keyword match any names in the exclusion list? */
-                for (jj = 0; jj < nexc; jj++)
+                jj = -1;
+                while ( ++jj < nexc )
                 {
                     ffcmps(exclist[jj], keyname, casesn, &match, &exact);
                     if (match)
