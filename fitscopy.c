@@ -3,7 +3,7 @@
 
 void printerror( int status);
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     fitsfile *infptr, *outfptr;
     int status = 0, hdutype, ii;
@@ -50,5 +50,5 @@ main(int argc, char *argv[])
     if (status)
         fits_report_error(stderr, status);
 
-    return;
+    return(0);
 }

@@ -1,5 +1,7 @@
                Log of Changes Made to CFITSIO
 
+   - added 2 routines to get the number of rows or columns in a table.
+
    - improved the undocumented feature that allows a '20A' column to be
      read as though it were a '20B' column by fits_read_col_byt.  
 

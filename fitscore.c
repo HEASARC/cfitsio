@@ -24,7 +24,7 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.010;   /*  beta release */
+      *version = 2.011;   /*  beta release */
 
  /*   *version = 1.40;    6 Feb 1998 */
  /*   *version = 1.33;   16 Dec 1997 (internal release only) */
@@ -1838,6 +1838,57 @@ int ffgtcl( fitsfile *fptr,  /* I - FITS file pointer                       */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffgncl( fitsfile *fptr,  /* I - FITS file pointer                       */
+            int  *ncols,     /* O - number of columns in the table          */
+            int  *status)    /* IO - error status                           */
+/*
+  Get the number of columns in the table (= TFIELDS keyword)
+*/
+{
+    if (*status > 0)
+        return(*status);
+
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               /* rescan header */
+            return(*status);
+
+    if ((fptr->Fptr)->hdutype == IMAGE_HDU)
+        return(*status = NOT_TABLE);
+
+    *ncols = (fptr->Fptr)->tfield;
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgnrw( fitsfile *fptr,  /* I - FITS file pointer                       */
+            long  *nrows,    /* O - number of rows in the table          */
+            int  *status)    /* IO - error status                           */
+/*
+  Get the number of rows in the table (= NAXIS2 keyword)
+*/
+{
+    if (*status > 0)
+        return(*status);
+
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               /* rescan header */
+            return(*status);
+
+    if ((fptr->Fptr)->hdutype == IMAGE_HDU)
+        return(*status = NOT_TABLE);
+
+    /* the NAXIS2 keyword may not be up to date, */
+    *nrows = (fptr->Fptr)->numrows;
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffgacl( fitsfile *fptr,   /* I - FITS file pointer                      */
             int  colnum,      /* I - column number                          */
             char *ttype,      /* O - TTYPEn keyword value                   */
@@ -2283,6 +2334,7 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
         (fptr->Fptr)->rowlength = 0;    /* rows have zero length */
         (fptr->Fptr)->tfield = 0;       /* table has no fields   */
         (fptr->Fptr)->tableptr = 0;     /* set a null table structure pointer */
+        (fptr->Fptr)->numrows = 0;
     }
     else
     {
@@ -2293,6 +2345,9 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
         column element. In the case of 'random grouped' format, each group
         is stored in a separate row of the table.
       */
+        /* the number of rows is equal to the number of groups */
+        (fptr->Fptr)->numrows = gcount;
+
         (fptr->Fptr)->rowlength = (pcount + npix) * bytlen; /* total size */
         (fptr->Fptr)->tfield = 2;  /* 2 fields: group params and the image */
 
@@ -2407,6 +2462,7 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
       end of the table data when checking the fill values in the last block. 
       There is no special data following an ASCII table.
     */
+    (fptr->Fptr)->numrows = nrows;
     (fptr->Fptr)->heapstart = rowlen * nrows;
     (fptr->Fptr)->heapsize = 0;
 
@@ -2575,6 +2631,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
       the table data) and the size of the heap.  This is used to find the
       end of the table data when checking the fill values in the last block. 
     */
+    (fptr->Fptr)->numrows = nrows;
     (fptr->Fptr)->heapstart = rowlen * nrows;
     (fptr->Fptr)->heapsize = pcount;
 
@@ -2980,7 +3037,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
 */
 {
     int nulpos;
-    long datastart, tbcol;
+    long datastart, tbcol, endrow;
     char message[81];
     tcolumn *colptr;
 
@@ -3115,7 +3172,26 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
             ffpmsg(message);
             return(*status = BAD_ELEM_NUM);
         }
-        else if (*repeat == 1 && nelem > 1)
+
+        /* last row number to be read or written */
+        endrow = ((firstelem + nelem - 2) / *repeat) + firstrow;
+
+        if (writemode)
+        {
+            /* update the number of rows in the table */
+            if ( endrow > (fptr->Fptr)->numrows)
+               (fptr->Fptr)->numrows = endrow;
+        }
+        else
+        {
+            if ( endrow > (fptr->Fptr)->numrows)
+            {
+                ffpmsg("Attempt to read past end of table.");
+                return(*status = BAD_ROW_NUM);
+            }
+        }
+
+        if (*repeat == 1 && nelem > 1)
         { /*
             When accessing a scalar column, fool the calling routine into
             thinking that this is a vector column with very big elements.
@@ -3133,6 +3209,10 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
 
       if (writemode)     /* return next empty heap address for writing */
       {
+        /* update the number of rows in the table */
+        if ( firstrow > (fptr->Fptr)->numrows)
+           (fptr->Fptr)->numrows = firstrow;
+
         *repeat = nelem + *elemnum; /* total no. of elements in the field */
 
         /*  calculate starting position (for writing new data) in the heap */
@@ -3157,6 +3237,12 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
       }
       else    /*  get the read start position in the heap */
       {
+        if ( firstrow > (fptr->Fptr)->numrows)
+        {
+            ffpmsg("Attempt to read past end of table");
+            return(*status = BAD_ROW_NUM);
+        }
+
         ffgdes(fptr, colnum, firstrow, repeat, startpos, status);
 
         if (colptr->tdatatype <= -TCOMPLEX)
@@ -3320,7 +3406,7 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
     - write the END keyword and pad header with blanks if necessary
     - check the data fill values, and rewrite them if not correct
 */
-    long pcount;
+    long pcount, naxis2;
     char comm[FLEN_COMMENT], message[FLEN_ERRMSG], valstring[FLEN_VALUE];
     char card[FLEN_CARD];
 
@@ -3332,6 +3418,20 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
     }
     else if ((fptr->Fptr)->writemode == 1)  /* write access to the file? */
     {
+        /* update NAXIS2 keyword if more rows were written to the table */
+        if ((fptr->Fptr)->hdutype != IMAGE_HDU)
+        {
+          ffgkyj(fptr, "NAXIS2", &naxis2, comm, status);
+          if ((fptr->Fptr)->numrows > naxis2)
+          {
+            /* would be simpler to just call ffmkyj here, but this */
+            /* would force linking in all the modkey & putkey routines */
+            sprintf(valstring, "%ld", (fptr->Fptr)->numrows);
+            ffmkky("NAXIS2", valstring, comm, card);
+            ffmkey(fptr, card, status);
+          }
+        }
+
         /* if data has been written to variable length columns in a  */
         /* binary table, then we may need to update the PCOUNT value */
         if ((fptr->Fptr)->heapsize > 0)

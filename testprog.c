@@ -1275,6 +1275,7 @@ int main()
       #  test the insert/delete row/column routines #
       ###############################################
     */
+
     if (ffirow(fptr, 2, 3, &status) > 0)
         goto errstatus;
 

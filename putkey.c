@@ -877,7 +877,12 @@ int ffdt2s(int year,          /* I - year (0 - 9999)           */
         day > 31)
        return(*status = BAD_DATE);
 
-    sprintf(datestr, "%.4d-%.2d-%.2d", year, month, day);
+    if (year >= 1900 && year <= 1998)  /* use old 'dd/mm/yy' format */
+        sprintf(datestr, "%.2d/%.2d/%.2d", day, month, year - 1900);
+
+    else  /* use the new 'YYYY-MM-DD' format */
+        sprintf(datestr, "%.4d-%.2d-%.2d", year, month, day);
+
     return(*status);
 }
 /*-----------------------------------------------------------------*/

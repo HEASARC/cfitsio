@@ -137,6 +137,7 @@ typedef struct      /* structure used to store basic FITS file information */
     long nextkey;   /* byte offset in file to beginning of next keyword */
     long datastart; /* byte offset in file to start of the current data unit */
     int tfield;     /* number of fields in the table (primary array has 2 */
+    long numrows;   /* number of rows in the table (dynamically updated) */
     long rowlength; /* total length of a table row, in bytes */
     tcolumn *tableptr; /* pointer to the table structure */
     long heapstart; /* heap start byte relative to start of data unit */
@@ -627,6 +628,8 @@ int ffgcnn(fitsfile *fptr, int casesen, char *templt, char *colname,
  
 int ffgtcl(fitsfile *fptr, int colnum, int *typecode, long *repeat,
            long *width, int *status);
+int ffgncl(fitsfile *fptr, int  *ncols, int *status);
+int ffgnrw(fitsfile *fptr, long *nrows, int *status);
 int ffgacl(fitsfile *fptr, int colnum, char *ttype, long *tbcol,
            char *tunit, char *tform, double *tscal, double *tzero,
            char *tnull, char *tdisp, int *status);

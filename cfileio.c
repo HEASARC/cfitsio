@@ -252,6 +252,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
   Open an existing FITS file with either readonly or read/write access.
 */
 {
+    fitsfile *copyfptr;
     FITSfile *oldFptr;
     int ii, driver, hdutyp, slen, writecopy;
     long filesize;
@@ -534,7 +535,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     if (ffrhdu(*fptr, &hdutyp, status) > 0)  /* determine HDU structure */
     {
         ffpmsg(
-          "ffopen could not interpret primary array header of file: (ffopen)");
+          "ffopen could not interpret primary array header of file: ");
         ffpmsg(url);
 
         if (*status == UNKNOWN_REC)
@@ -547,13 +548,41 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
 
     /* ---------------------------------------------------------- */
     /* at this point, we can assume the file has been opened.     */
-    /* If 'outfile' was specified, then the input file has been   */
-    /* copied to it, and we have write access to the copy.        */
+    /* If 'outfile' was specified, then copy file to it           */
     /* ---------------------------------------------------------- */
 
     if (*outfile)
     {
-        ((*fptr)->Fptr)->writemode = READWRITE; /* we can write to the copy */
+        if (ffinit(&copyfptr, outfile, status) > 0)
+        {
+            ffpmsg("ffopen could not create copy of file:");
+            ffpmsg(url);
+
+            ffclos(*fptr, status);
+            *fptr = 0;              /* return null file pointer */
+            return(*status);
+        }
+
+        /* attempt to move to next HDU, until we get an EOF error */
+        for (ii = 1; !(ffmahd(*fptr, ii, NULL, status) ); ii++) 
+        {
+            if ( fits_copy_hdu(*fptr, copyfptr, 0, status) )
+            {
+                ffpmsg("ffopen: error copying HDUs to tempoary file:");
+                ffpmsg(url);
+
+                ffclos(*fptr, status);
+                *fptr = 0;              /* return null file pointer */
+                return(*status);
+            }
+        }
+
+        if (*status == END_OF_FILE)   
+            *status = 0;        /* got the expected EOF error; reset = 0  */
+
+        ffclos(*fptr,  status);
+
+        *fptr = copyfptr;
         writecopy = 1;                          /* set copy existence flag */
     }
 
@@ -656,6 +685,7 @@ move2hdu:
 
        if (!writecopy)
        {
+printf("creating  memory file\n");
            strcpy(outfile, "mem://_2");  /* will create copy in memory */
        }
        else
@@ -668,6 +698,7 @@ move2hdu:
        /* not already been made, then this routine will make a copy */
        /* and then close the input file, so that the modifications will */
        /* only be made on the copy, not the original */
+printf("ffselect_table_being called: %d %s\n",fptr,outfile);
 
        if (ffselect_table(fptr, outfile, rowfilter, status) > 0)
        {
@@ -979,6 +1010,8 @@ int ffselect_table(
 
       /* set number of rows = 0 */
       fits_modify_key_lng(newptr, "NAXIS2", 0, NULL,status);
+      (newptr->Fptr)->numrows = 0;
+
       if (ffrdef(*fptr, status) > 0)  /* force the header to be scanned */
       {
         ffclos(newptr, status);

@@ -1,6 +1,7 @@
 /*   Globally defined histogram parameters */
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 #include <stdlib.h>
 #include "fitsio2.h"
 
@@ -10,7 +11,8 @@ int    *histj;
 float  *histr;
 double *histd;
 
-int hcolnum[4], haxis, haxis1, haxis2, haxis3, haxis4, himagetype, wtcolnum;
+int hcolnum[4], haxis, himagetype, wtcolnum;
+long haxis1, haxis2, haxis3, haxis4;
 int wtrecip;
 float amin1, amin2, amin3, amin4;
 float binsize1, binsize2, binsize3, binsize4, weight;
@@ -361,10 +363,16 @@ int ffbinr(char **ptr,
         else
             strcpy(colname, token);
 
+        while (**ptr == ' ')  /* skip over blanks */
+             (*ptr)++;
+
         if (**ptr != '=')
             return(*status);  /* reached the end */
 
         (*ptr)++;   /* skip over the = sign */
+
+        while (**ptr == ' ')  /* skip over blanks */
+             (*ptr)++;
 
         slen = fits_get_token(ptr, " ,:;", token, &isanumber); /* get token */
     }
@@ -759,9 +767,7 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
         }
       }
     }
-printf("haxis, haxes = %d %d %d %d %d\n", haxis, haxis1, haxis2, haxis3, haxis4);
-printf("minvalues = %f %f %f %f\n", amin1, amin2, amin3, amin4);
-printf("binsizes  = %f %f %f %f\n", binsize1, binsize2, binsize3, binsize4);
+
     /* define parameters of image for the iterator function */
     fits_iter_set_file(imagepars, histptr);        /* pointer to image */
     fits_iter_set_datatype(imagepars, imagetype);  /* image datatype   */
@@ -959,7 +965,7 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
     long ii, ipix, axisbin;
     static float *col1, *col2, *col3, *col4; /* static to preserve values */
     static float *wtcol;
-    static int incr2, incr3, incr4;
+    static long incr2, incr3, incr4;
 
     /*  Initialization procedures: execute on the first call  */
     if (firstrow == 1)
@@ -994,12 +1000,16 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
     for (ii = 1; ii <= nrows; ii++) 
     {
       if (col1[ii] == FLOATNULLVALUE)  /* test for null value */
+      {
           break;
+      }
 
       /* add 1 because the 1st pixel is the null pixel value */
       ipix = (col1[ii] - amin1) / binsize1 + 1;
       if (ipix < 1 || ipix > haxis1)   /* test if bin is within range */
+      {
           break;
+      }
 
       if (haxis > 1)
       {

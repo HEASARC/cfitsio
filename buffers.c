@@ -824,9 +824,9 @@ int ffgtbb(fitsfile *fptr,        /* I - FITS file pointer                 */
   greater than the length of a row.
 */
 {
-    long bytepos;
+    long bytepos, endrow;
 
-    if (*status > 0 || nchars < 0)
+    if (*status > 0 || nchars <= 0)
         return(*status);
 
     else if (firstrow < 1)
@@ -834,6 +834,14 @@ int ffgtbb(fitsfile *fptr,        /* I - FITS file pointer                 */
 
     else if (firstchar < 1)
         return(*status=BAD_ELEM_NUM);
+
+    /* check that we do not exceed number of rows in the table */
+    endrow = ((firstchar + nchars - 2) / (fptr->Fptr)->rowlength) + firstrow;
+    if (endrow > (fptr->Fptr)->numrows)
+    {
+        ffpmsg("attempt to read past end of table (ffgtbb)");
+        return(*status=BAD_ROW_NUM);
+    }
 
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
@@ -1097,9 +1105,9 @@ int ffptbb(fitsfile *fptr,        /* I - FITS file pointer                 */
   greater than the length of a row.
 */
 {
-    long bytepos;
+    long bytepos, endrow;
 
-    if (*status > 0 || nchars < 0)
+    if (*status > 0 || nchars <= 0)
         return(*status);
 
     else if (firstrow < 1)
@@ -1119,6 +1127,12 @@ int ffptbb(fitsfile *fptr,        /* I - FITS file pointer                 */
 
     ffmbyt(fptr, bytepos, IGNORE_EOF, status);
     ffpbyt(fptr, nchars, values, status);  /* write the bytes */
+
+    /* update number of rows in the table if necessary */
+
+    endrow = ((firstchar + nchars - 2) / (fptr->Fptr)->rowlength) + firstrow;
+    if (endrow > (fptr->Fptr)->numrows)
+        (fptr->Fptr)->numrows = endrow;
 
     return(*status);
 }

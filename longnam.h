@@ -200,6 +200,8 @@
 #define fits_get_colnum     ffgcno
 #define fits_get_colname    ffgcnn
 #define fits_get_coltype    ffgtcl
+#define fits_get_num_rows   ffgnrw
+#define fits_get_num_cols   ffgncl
 #define fits_get_acolparms  ffgacl
 #define fits_get_bcolparms  ffgbcl
 

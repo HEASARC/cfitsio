@@ -377,20 +377,19 @@ main()
 \section{Acknowledgements}
 
 The development of CFITSIO has only been possible through the help of
-dozens of people from around the world who have tested the library and
-have offered ideas for new features.  The following people in
+dozens of people from around the world.  The following people in
 particular have made especially significant contributions:
 
 Jurek Borkowski, with help from Bruce O'Neel and Don Jennings (all at
 the Integral Science Data Center, Switzerland), provided the initial
 design for the plug-in I/O drivers that were introduced in CFITSIO
-2.0.  This 'driver' concept greatly simplified  the low-level I/O,
+2.0.  This `driver' concept greatly simplified  the low-level I/O,
 which in turn made many of the other new features in CFITSIO much
 easier to implement.  Jurek Borkowski wrote the Shared Memory driver,
 and Bruce O'Neel wrote the drivers for accessing FITS files over the
 network using the FTP, HTTP, and ROOT protocols.
 
-Don Jennings designed and wrote the 'Hierarchical Grouping' routines.
+Don Jennings designed and wrote the `Hierarchical Grouping' routines.
 
 Uwe Lamers (XMM/ESA/ESTEC, The Netherlands) designed the
 high-performance lexical parsing algorithm that is used to do
@@ -602,19 +601,19 @@ application program then only sees the FITS image (in the primary
 array) instead of the original FITS table.
 \end{itemize}
 
-These latter 3 features add very powerful data processing capabilities
-directly into CFITSIO, and hence into every task that uses CFITSIO to
-read or write FITS files.  For example, these features transform a very
-simple program that just copies an input FITS file to a new output file
-(like the `fitscopy' program that is distributed with CFITSIO) into a
-multipurpose FITS file processing tool.  By appending fairly simple
-qualifiers onto the name of the input FITS file, the user can perform
-quite complex table editing operations (e.g., create new columns, or
-filter out rows in a table) or create FITS images by binning or
-histogramming the values in table columns.  In addition, these
-functions have been coded using new state-of-the art algorithms that
-are, in some cases, 10 - 100 times faster than previous widely used
-implementations.
+The latter 3 features in particular add very powerful data processing
+capabilities directly into CFITSIO, and hence into every task that uses
+CFITSIO to read or write FITS files.  For example, these features
+transform a very simple program that just copies an input FITS file to
+a new output file (like the `fitscopy' program that is distributed with
+CFITSIO) into a multipurpose FITS file processing tool.  By appending
+fairly simple qualifiers onto the name of the input FITS file, the user
+can perform quite complex table editing operations (e.g., create new
+columns, or filter out rows in a table) or create FITS images by
+binning or histogramming the values in table columns.  In addition,
+these functions have been coded using new state-of-the art algorithms
+that are, in some cases, 10 - 100 times faster than previous widely
+used implementations.
 
 Before describing the complete syntax for the extended FITS file names
 in the next section, here are a few examples of FITS file names that
@@ -687,10 +686,9 @@ The final example combines many of these feature into one complex
 expression (it is broken into several lines for clarity):
  
 \begin{verbatim}
-{\tt
   'ftp://legacy.gsfc.nasa.gov/data/sample.fits.gz[EVENTS]
    [col phacorr = pha * 1.1 - 0.3][phacorr >= 5.0 && phacorr <= 14.0]
-   [bin (X,Y)=32]' }
+   [bin (X,Y)=32]'
 \end{verbatim}
 In this case, CFITSIO (1) copies and uncompresses the FITS file from
 the ftp site on the legacy machine, (2) moves to the 'EVENTS'
@@ -750,7 +748,7 @@ The double slashes '//' are optional and may be omitted in most cases.
 \subsubsection{Notes about the root filetype}
 
 
-The original rootd server  can be obtained from:
+The original rootd server can be obtained from:
  
 \begin{verbatim}
        ftp://root.cern.ch/root/rootd.tar.gz
@@ -1440,7 +1438,7 @@ CFITSIO  will use the value of the TLMINn, TLMAXn, and TDBINn keywords,
 if they exist, for the default min, max, and binsize, respectively.  If
 they do not exist then CFITSIO will use the actual minimum and maximum
 values in the column for the histogram min and max values.  The default
-binsize will be set to 1, or (max - min) / 20., whichever is smaller,
+binsize will be set to 1, or (max - min) / 10., whichever is smaller,
 so that the histogram will have at least 20 bins along each axis.
 
 A shortcut notation is allowed if all the columns/axes have the same
@@ -3689,7 +3687,23 @@ is at position 1 not 0.
 
  
 \begin{description}
-\item[1 ] Get the table column number (and name) of the column whose name
+\item[1 ]  Get the number of rows or columns in the current FITS table.
+     The number of rows is given by the NAXIS2 keyword and the
+     number of columns is given by the TFIELDS keyword in the header
+    of the table. \label{ffgnrw}
+\end{description}
+ 
+\begin{verbatim}
+  int fits_get_num_rows / ffgnrw
+      (fitsfile *fptr, > long *nrows, int *status);
+
+  int fits_get_num_cols / ffgncl
+      (fitsfile *fptr, > int *ncols, int *status);
+\end{verbatim}
+
+ 
+\begin{description}
+\item[2 ] Get the table column number (and name) of the column whose name
 matches an input template name.   If casesen  = CASESEN then the column
 name match will be case-sensitive, whereas if casesen = CASEINSEN then
 the case will be ignored.  As a general rule, the column names should
@@ -3729,7 +3743,7 @@ the first 8 characters, and strongly recommended that the names be
 \end{verbatim}
  
 \begin{description}
-\item[2 ] Return the datatype and vector repeat value for a column in an ASCII or
+\item[3 ] Return the datatype and vector repeat value for a column in an ASCII or
     binary table.  Allowed values for the datatype in ASCII tables are:
     TSTRING, TSHORT, TLONG, TFLOAT, and TDOUBLE.  Binary tables also
     support these types: TLOGICAL, TBIT, TBYTE, TCOMPLEX and TDBLCOMPLEX.
@@ -3755,6 +3769,30 @@ the first 8 characters, and strongly recommended that the names be
   int fits_get_coltype / ffgtcl
       (fitsfile *fptr, int colnum, > int *typecode, long *repeat,
        long *width, int *status)
+\end{verbatim}
+ 
+\begin{description}
+\item[4 ] Write (append) a TDIMn keyword whose value has the form '(l,m,n...)'
+    where l, m, n... are the dimensions of a multidimension array
+   column in a binary table. \label{ffptdm}
+\end{description}
+ 
+\begin{verbatim}
+  int fits_write_tdim / ffptdm
+      (fitsfile *fptr, int colnum, int naxis, long *naxes, > int *status)
+\end{verbatim}
+ 
+\begin{description}
+\item[5 ] Return the number of and size of the dimensions of a table column.
+    Normally this information is given by the TDIMn keyword, but if
+    this keyword is not present then this routine returns naxis = 1
+   and naxes[0] equal to the repeat count in the TFORM keyword. \label{ffgtdm}
+\end{description}
+ 
+\begin{verbatim}
+  int fits_read_tdim / ffgtdm
+      (fitsfile *fptr, int colnum, int maxdim, > int *naxis,
+       long *naxes, int *status)
 \end{verbatim}
 
  
@@ -4549,8 +4587,10 @@ int fits_get_system_time/ffgstm
 
  
 \begin{description}
-\item[4 ] Construct a new-format date string ('YYYY-MM-DD') from the
- input date values.
+\item[4 ] Construct a date string from the input date values.  If the year
+is between 1900 and 1998, inclusive, then the returned date string will
+have the old FITS format ('dd/mm/yy'), otherwise the date string will
+ have the new FITS format ('YYYY-MM-DD')
 \end{description}
  
 \begin{verbatim}
@@ -4954,9 +4994,9 @@ the number of reallocation calls and make the application program run
 \begin{description}
 \item[2 ] Create (append) a new empty HDU at the end of the FITS file.
     This is now  the CHDU but it is completely empty and has
-   no header keywords.  It is recommended that fits\_create\_img or
+    no header keywords.  It is recommended that fits\_create\_img or
+ fits\_create\_tbl be used instead of this routine. \label{ffcrhd}
 \end{description}
-fits\_create\_tbl be used instead of this routine. \label{ffcrhd}
  
 \begin{verbatim}
   int fits_create_hdu / ffcrhd
@@ -5999,31 +6039,7 @@ int fits_get_acolparms / ffgacl
 \end{verbatim}
  
 \begin{description}
-\item[3 ] Write (append) a TDIMn keyword whose value has the form '(l,m,n...)'
-    where l, m, n... are the dimensions of a multidimension array
-   column in a binary table. \label{ffptdm}
-\end{description}
- 
-\begin{verbatim}
-  int fits_write_tdim / ffptdm
-      (fitsfile *fptr, int colnum, int naxis, long *naxes, > int *status)
-\end{verbatim}
- 
-\begin{description}
-\item[4 ] Return the number of and size of the dimensions of a table column.
-    Normally this information is given by the TDIMn keyword, but if
-    this keyword is not present then this routine returns naxis = 1
-   and naxes[0] equal to the repeat count in the TFORM keyword. \label{ffgtdm}
-\end{description}
- 
-\begin{verbatim}
-  int fits_read_tdim / ffgtdm
-      (fitsfile *fptr, int colnum, int maxdim, > int *naxis,
-       long *naxes, int *status)
-\end{verbatim}
- 
-\begin{description}
-\item[5 ] Return optimal number of rows to read or write at one time for
+\item[3 ] Return optimal number of rows to read or write at one time for
     maximum I/O efficiency.  Refer to the
     ``Optimizing Code'' section in Chapter 5 for more discussion on how
    to use this routine. \label{ffgrsz}
@@ -6035,7 +6051,7 @@ int fits_get_acolparms / ffgacl
 \end{verbatim}
  
 \begin{description}
-\item[6 ] Define the zero indexed byte offset of the 'heap' measured from
+\item[4 ] Define the zero indexed byte offset of the 'heap' measured from
     the start of the binary table data.  By default the heap is assumed
     to start immediately following the regular table data, i.e., at
     location NAXIS1 x NAXIS2.  This routine is only relevant for
@@ -6358,9 +6374,11 @@ fits\_get\_hdu\_num    & \pageref{ffghdn} \\
 fits\_get\_hdu\_type   & \pageref{ffghdt} \\
 fits\_get\_hduaddr    & \pageref{ffghad} \\
 fits\_get\_keytype    & \pageref{ffdtyp} \\
+fits\_get\_num\_cols     & \pageref{ffgnrw} \\
 fits\_get\_num\_groups  & \pageref{ffgmng} \\
 fits\_get\_num\_hdus   & \pageref{ffthdu} \\
 fits\_get\_num\_members  & \pageref{ffgtnm} \\
+fits\_get\_num\_rows     & \pageref{ffgnrw} \\
 fits\_get\_rowsize    & \pageref{ffgrsz} \\
 fits\_get\_system\_time  & \pageref{ffdt2s} \\
 fits\_get\_tbcol      & \pageref{ffgabc} \\
@@ -6369,10 +6387,10 @@ fits\_insert\_atbl    & \pageref{ffitab} \\
 fits\_insert\_btbl    & \pageref{ffibin} \\
 fits\_insert\_col   & \pageref{fficol} \\
 fits\_insert\_cols  & \pageref{fficls} \\
-fits\_insert\_group  & \pageref{ffgtis} \\
-fits\_insert\_img     & \pageref{ffiimg} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_insert\_group  & \pageref{ffgtis} \\
+fits\_insert\_img     & \pageref{ffiimg} \\
 fits\_insert\_key\_null   & \pageref{ffikyu} \\
 fits\_insert\_key\_TYP    & \pageref{ffikyx} \\
 fits\_insert\_record     & \pageref{ffirec} \\
@@ -6403,11 +6421,11 @@ fits\_parse\_value    & \pageref{ffpsvc} \\
 fits\_pix\_to\_world & \pageref{ffwldp} \\
 fits\_read\_2d\_TYP      & \pageref{ffg2dx} \\
 fits\_read\_3d\_TYP      & \pageref{ffg3dx} \\
-fits\_read\_atblhdr      & \pageref{ffghtb} \\
-fits\_read\_btblhdr      & \pageref{ffghbn} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_read\_atblhdr      & \pageref{ffghtb} \\
+fits\_read\_btblhdr      & \pageref{ffghbn} \\
 fits\_read\_card         & \pageref{ffgcrd} \\
 fits\_read\_col        & \pageref{ffgcv} \\
 fits\_read\_col\_TYP    & \pageref{ffgcvx} \\
@@ -6452,11 +6470,11 @@ fits\_str2date        & \pageref{ffdt2s} \\
 fits\_str2time        & \pageref{ffdt2s} \\
 fits\_test\_expr    & \pageref{fftexp} \\
 fits\_test\_keyword   & \pageref{fftkey} \\
+\end{tabular}
+\begin{tabular}{lr}
 fits\_test\_record    & \pageref{fftrec} \\
 fits\_time2str  & \pageref{ffdt2s} \\
 fits\_transfer\_member  & \pageref{ffgmtf} \\
-\end{tabular}
-\begin{tabular}{lr}
 fits\_update\_card       & \pageref{ffucrd} \\
 fits\_update\_chksum  & \pageref{ffupck} \\
 fits\_update\_key        & \pageref{ffuky} \\
@@ -6500,6 +6518,8 @@ fits\_write\_keys\_TYP     & \pageref{ffpknx} \\
 fits\_write\_null\_img & \pageref{ffpprn} \\
 fits\_write\_record       & \pageref{ffprec} \\
 fits\_write\_subset\_TYP  & \pageref{ffpssx} \\
+\end{tabular}
+\begin{tabular}{lr}
 fits\_write\_tblbytes  & \pageref{ffptbb} \\
 fits\_write\_tdim         & \pageref{ffptdm} \\
 fits\_write\_theap    & \pageref{ffpthp} \\

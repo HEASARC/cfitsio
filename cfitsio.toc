@@ -55,31 +55,31 @@
 \contentsline {section}{\numberline {7.7}ASCII and Binary Table Routines}{63}
 \contentsline {subsection}{\numberline {7.7.1}Column Information Routines }{63}
 \contentsline {subsection}{\numberline {7.7.2}Routines to Edit Rows or Columns }{64}
-\contentsline {subsection}{\numberline {7.7.3}Read and Write Column Data Routines }{65}
+\contentsline {subsection}{\numberline {7.7.3}Read and Write Column Data Routines }{66}
 \contentsline {section}{\numberline {7.8}Celestial Coordinate System Routines }{67}
 \contentsline {section}{\numberline {7.9}Hierarchical Grouping Convention Support Routines}{68}
 \contentsline {section}{\numberline {7.10}Row Selection and Calculator Routines}{73}
 \contentsline {section}{\numberline {7.11}File Checksum Routines }{74}
-\contentsline {section}{\numberline {7.12} Date and Time Utility Routines}{75}
-\contentsline {section}{\numberline {7.13} General Utility Routines}{76}
-\contentsline {chapter}{\numberline {8} Specialized CFITSIO Interface Routines }{81}
-\contentsline {section}{\numberline {8.1}Specialized FITS File Access Routines}{81}
-\contentsline {section}{\numberline {8.2}Specialized HDU Access Routines}{82}
-\contentsline {section}{\numberline {8.3}Specialized Header Keyword Routines}{84}
-\contentsline {subsection}{\numberline {8.3.1}Header Information Routines}{84}
-\contentsline {subsection}{\numberline {8.3.2}Read and Write the Required Keywords}{84}
-\contentsline {subsection}{\numberline {8.3.3}Specialized Write Keyword Routines}{86}
-\contentsline {subsection}{\numberline {8.3.4} Insert Keyword Routines}{88}
-\contentsline {subsection}{\numberline {8.3.5} Specialized Read Keyword Routines}{89}
-\contentsline {subsection}{\numberline {8.3.6} Modify Keyword Routines}{91}
-\contentsline {subsection}{\numberline {8.3.7} Specialized Update Keyword Routines }{92}
-\contentsline {section}{\numberline {8.4}Define Data Scaling and Undefined Pixel Parameters}{92}
-\contentsline {section}{\numberline {8.5}Specialized FITS Primary Array or IMAGE Extension I/O Routines}{93}
-\contentsline {section}{\numberline {8.6}Specialized FITS ASCII and Binary Table Routines}{97}
-\contentsline {subsection}{\numberline {8.6.1}Column Information Routines}{97}
-\contentsline {subsection}{\numberline {8.6.2}Low-Level Table Access Routines }{98}
-\contentsline {subsection}{\numberline {8.6.3}Specialized Write Column Data Routines}{99}
-\contentsline {subsection}{\numberline {8.6.4}Specialized Read Column Data Routines}{100}
-\contentsline {chapter}{\numberline {A}Index of Routines }{103}
-\contentsline {chapter}{\numberline {B}Parameter Definitions }{107}
-\contentsline {chapter}{\numberline {C}CFITSIO Error Status Codes }{113}
+\contentsline {section}{\numberline {7.12} Date and Time Utility Routines}{76}
+\contentsline {section}{\numberline {7.13} General Utility Routines}{77}
+\contentsline {chapter}{\numberline {8} Specialized CFITSIO Interface Routines }{83}
+\contentsline {section}{\numberline {8.1}Specialized FITS File Access Routines}{83}
+\contentsline {section}{\numberline {8.2}Specialized HDU Access Routines}{84}
+\contentsline {section}{\numberline {8.3}Specialized Header Keyword Routines}{86}
+\contentsline {subsection}{\numberline {8.3.1}Header Information Routines}{86}
+\contentsline {subsection}{\numberline {8.3.2}Read and Write the Required Keywords}{86}
+\contentsline {subsection}{\numberline {8.3.3}Specialized Write Keyword Routines}{88}
+\contentsline {subsection}{\numberline {8.3.4} Insert Keyword Routines}{90}
+\contentsline {subsection}{\numberline {8.3.5} Specialized Read Keyword Routines}{91}
+\contentsline {subsection}{\numberline {8.3.6} Modify Keyword Routines}{93}
+\contentsline {subsection}{\numberline {8.3.7} Specialized Update Keyword Routines }{94}
+\contentsline {section}{\numberline {8.4}Define Data Scaling and Undefined Pixel Parameters}{94}
+\contentsline {section}{\numberline {8.5}Specialized FITS Primary Array or IMAGE Extension I/O Routines}{95}
+\contentsline {section}{\numberline {8.6}Specialized FITS ASCII and Binary Table Routines}{99}
+\contentsline {subsection}{\numberline {8.6.1}Column Information Routines}{99}
+\contentsline {subsection}{\numberline {8.6.2}Low-Level Table Access Routines }{100}
+\contentsline {subsection}{\numberline {8.6.3}Specialized Write Column Data Routines}{101}
+\contentsline {subsection}{\numberline {8.6.4}Specialized Read Column Data Routines}{102}
+\contentsline {chapter}{\numberline {A}Index of Routines }{105}
+\contentsline {chapter}{\numberline {B}Parameter Definitions }{109}
+\contentsline {chapter}{\numberline {C}CFITSIO Error Status Codes }{115}
