@@ -24,7 +24,7 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.020;   /*  beta release */
+      *version = 2.021;   /*  beta release */
 
  /*   *version = 1.42;   30 Apr 1998 */
  /*   *version = 1.40;    6 Feb 1998 */
@@ -616,10 +616,11 @@ int fftrec(char *card,       /* I -  keyword card to test */
 
     for (ii = 8; ii < maxchr; ii++)
     {
-        if (!isprint(card[ii]))
+        if (card[ii] < 32 || card[ii] > 126)
         {
-            sprintf(msg, "Character %d in this keyword record is illegal:",
-              (int) (ii+1) );
+            sprintf(msg, 
+           "Character %d in this keyword is illegal. Hex Value = %X",
+              (int) (ii+1), card[ii] );
             ffpmsg(msg);
 
             strncpy(msg, card, 80);

@@ -11,6 +11,7 @@
 14-Oct-98: initial release
 16-Oct-98: reference to fitsio.h removed, also removed strings after #endif
 		directives to make gcc -Wall not to complain
+20-Oct-98: added declarations NGP_XTENSION_SIMPLE and NGP_XTENSION_FIRST
 */
 
 #ifndef	GRPARSER_H_INCLUDED
@@ -20,8 +21,7 @@
 extern "C" {
 #endif
 
-	/* error codes  (now defined in fitsio.h) */
-
+	/* error codes  - now defined in fitsio.h */
 
 	/* common constants definitions */
 
@@ -61,6 +61,9 @@ extern "C" {
 
 #define	NGP_NON_SYSTEM_ONLY	(0)			/* save all keywords except NAXIS,BITPIX,etc.. */
 #define	NGP_REALLY_ALL		(1)			/* save really all keywords */
+
+#define	NGP_XTENSION_SIMPLE	(1)			/* HDU defined with SIMPLE T */
+#define	NGP_XTENSION_FIRST	(2)			/* this is first extension in template */
 
 #define	NGP_LINE_REREAD		(1)			/* reread line */
 
@@ -152,8 +155,7 @@ int	ngp_append_columns(fitsfile *ff, NGP_HDU *ngph, int aftercol);
 int	ngp_read_xtension(fitsfile *ff, int parent_hn, int simple_mode);
 int	ngp_read_group(fitsfile *ff, char *grpname, int parent_hn);
 
-		/* top level API function (now defined in fitsio.h) */
-
+		/* top level API function - now defined in fitsio.h */
 
 #ifdef __cplusplus
 }

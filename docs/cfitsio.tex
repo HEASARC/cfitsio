@@ -30,7 +30,7 @@
 \medskip
 \medskip
 \begin{center}
-{\Large Version 2.0 beta\\}
+{\Large Version 2.0 \\}
 \end{center}
 \bigskip
 \vskip 2.5cm
@@ -1189,327 +1189,390 @@ Examples:
  
 \subsection{Row Filtering Specification}
 
-The optional row filter is a boolean expression enclosed in square
-brackets for filtering or selecting rows from the input FITS table.  A
-temporary new FITS file is then created which contains only those rows
-for which the boolean expression evaluates to true.  (The primary array
-and any other extensions in the input file are also copied to the
-temporary file).  The original FITS file is closed and the new
-temporary file is opened and passed to the application program.
+    The  optional row filter is a  boolean expression enclosed in square
+    brackets for filtering or selecting rows from  the input FITS table.
+    A temporary new FITS file is then created  which contains only those
+    rows for  which  the boolean   expression evaluates  to true.   (The
+    primary array and any  other extensions in the  input file  are also
+    copied to the temporary file).  The original FITS file is closed and
+    the new  temporary file  is opened  and  passed to  the  application
+    program.
 
-Boolean operators can be used in the expression in either  their
-Fortran  or  C forms.   The  following  boolean operators can be
-used in the expression:
+    The expression can  be an arbitrarily  complex  series of operations
+    performed on constants, keyword values,  and column data taken  from
+    the specified FITS TABLE extension.  For  the case of row filtering,
+    the expression must evaluate to a single boolean  value for each row
+    of the table.
 
+    Keyword and   column data  are referenced by   name.  Any  string of
+    characters not surrounded by    quotes (ie, a constant  string)   or
+    followed by   an open parentheses (ie,   a  function name)   will be
+    initially interpretted   as a column  name and  its contents for the
+    current row inserted into the expression.  If no such column exists,
+    a keyword of that  name will be searched for  and its value used, if
+    found.  To force the  name to be  interpretted as a keyword (in case
+    there is both a column and keyword with the  same name), precede the
+    keyword name with a single pound sign, '\#', as in '\#NAXIS2'.  Due to
+    the generalities of FITS column and  keyword names, if the column or
+    keyword name  contains a space or a  character which might appear as
+    an arithmetic  term then inclose  the  name in '\$'  characters as in
+    \$MAX PHA\$ or \#\$MAX-PHA\$.  Names are case insensitive.
+
+    Boolean   operators can be  used in  the expression  in either their
+    Fortran or C forms.  The following boolean operators are available:
+ 
+\begin{verbatim}
+    "equal"         .eq. .EQ. ==  "not equal"          .ne.  .NE.  !=
+    "less than"     .lt. .LT. <   "less than/equal"    .le.  .LE.  <= =<
+    "greater than"  .gt. .GT. >   "greater than/equal" .ge.  .GE.  >= =>
+    "or"            .or. .OR. ||  "and"                .and. .AND. &&
+    "negation"     .not. .NOT. !  "approx. equal(1e-7)"  ~
+\end{verbatim}
+
+    The expression may  also include arithmetic operators and functions.
+    Trigonometric  functions use  radians,  not degrees.  The  following
+    arithmetic  operators and  functions  can be  used in the expression
+    (function names are case insensitive):
 
  
 \begin{verbatim}
-"equal"         .eq. .EQ. ==  "not equal"          .ne.  .NE.  !=
-"less than"     .lt. .LT. <   "less than/equal"    .le.  .LE.  <= =<
-"greater than"  .gt. .GT. >   "greater than/equal" .ge.  .GE.  >= =>
-"or"            .or. .OR. ||  "and"                .and. .AND. &&
-"negation"     .not. .NOT. !  "approx. equal(1e-7)"  ~
+    "addition"           +          "subtraction"          -
+    "multiplication"     *          "division"             /
+    "negation"           -          "exponentiation"       **   ^
+    "absolute value"     abs(x)     "cosine"               cos(x)
+    "sine"               sin(x)     "tangent"              tan(x)
+    "arc cosine"         arccos(x)  "arc sine"             arcsin(x)
+    "arc tangent"        arctan(x)  "arc tangent"          arctan2(x,y)
+    "exponential"        exp(x)     "square root"          sqrt(x)
+    "natural log"        log(x)     "common log"           log10(x)
+    "modulus"            i % j      "random # [0.0,1.0)"   random()
 \end{verbatim}
 
-The expression may also include arithmetic operators and  functions.
-Trigonometric  functions  use  degrees,  not radians.  The following
-arithmetic operators and functions can be used in the expression:
+    Conditional arithmetic can be performed by multiplying, '*', boolean
+    and  arithmetic  expressions together.  If the boolean subexpression
+    evaluates to TRUE, the  larger  expression  has  the  value  of  the
+    arithmetic  subexpression.   If the boolean is FALSE, the expression
+    evaluates to zero.  For example, $7*(5>3)$ equals  7  whereas  $7*(5<3)$
+    equals 0.
+
+    There are three functions that are primarily for use with SAO region
+    files and the  FSAOI  task, but they  can  be  used  directly.  They
+    return  a  boolean true   or  false  depending   on  whether a   two
+    dimensional point is in the region or not:
+ 
+\begin{verbatim}
+    "point in a circular region"
+          circle(xcntr,ycntr,radius,Xcolumn,Ycolumn)
+
+    "point in an elliptical region"
+         ellipse(xcntr,ycntr,xhlf_wdth,yhlf_wdth,rotation,Xcolumn,Ycolumn)
+
+    "point in a rectangular region"
+             box(xcntr,ycntr,xfll_wdth,yfll_wdth,rotation,Xcolumn,Ycolumn)
+
+    where
+       (xcntr,ycntr) are the (x,y) position of the center of the region
+       (xhlf_wdth,yhlf_wdth) are the (x,y) half widths of the region
+       (xfll_wdth,yfll_wdth) are the (x,y) full widths of the region
+       (radius) is half the diameter of the circle
+       (rotation) is the angle(degrees) that the region is rotated with
+             respect to (xcntr,ycntr)
+       (Xcoord,Ycoord) are the (x,y) coordinates to test, usually column
+             names
+       NOTE: each parameter can itself be an expression, not merely a
+             column name or constant.
+\end{verbatim}
+
+    There is also a function for testing if  two  values  are  close  to
+    each  other,  i.e.,  if  they are "near" each other to within a user
+    specified tolerance. The  arguments,  value\_1  and  value\_2  can  be
+    integer  or  real  and  represent  the two values who's proximity is
+    being tested to be within the specified tolerance, also  an  integer
+    or real:
+ 
+\begin{verbatim}
+                    near(value_1, value_2, tolerance)
+\end{verbatim}
+    When  a  NULL, or undefined, value is encountered in the FITS table,
+    the expression will evaluate to NULL unless the undefined  value  is
+    not   actually   required  for  evaluation,  eg.  "TRUE  .or.  NULL"
+    evaluates to TRUE. The  following  two  functions  allow  some  NULL
+    detection  and  handling:  ISNULL(x)  and  DEFNULL(x,y).  The former
+    returns a boolean value of TRUE if the  argument  x  is  NULL.   The
+    later  "defines"  a  value  to  be  substituted  for NULL values; it
+    returns the value of x if x is not NULL, otherwise  it  returns  the
+    value of y.
+
+    The  following  type  casting  operators  are  available,  where the
+    inclosing parentheses are required and taken  from  the  C  language
+    usage. Also, the integer to real casts values to double precision:
+ 
+\begin{verbatim}
+                "real to integer"    (int) x     (INT) x
+                "integer to real"    (float) i   (FLOAT) i
+\end{verbatim}
+
+    Bit  masks can be used to select out rows from bit columns (TFORMn =
+    \#X) in FITS files. To represent the mask,  binary,  octal,  and  hex
+    formats are allowed:
 
  
 \begin{verbatim}
-"addition"            +         "subtraction"         -
-"multiplication"      *         "division"            /
-"negation"            -         "exponentiation"      **   ^
-"absolute value"      abs(x)    "cosine"              cos(x)
-"sine"                sin(x)    "tangent"             tan(x)
-"arc cosine"          arccos(x) "arc sine"            arcsin(x)
-"arc tangent"         arctan(x) "arc tangent"         arctan2(x,y)
-"exponential"         exp(x)    "square root"         sqrt(x)
-"natural log"         log(x)    "common log"          log10(x)
-"modulus"             i % j     "random # [0.0,1.0)"  random()
+                 binary:   b0110xx1010000101xxxx0001
+                 octal:    o720x1 -> (b111010000xxx001)
+                 hex:      h0FxD  -> (b00001111xxxx1101)
 \end{verbatim}
 
+    In  all  the  representations, an x or X is allowed in the mask as a
+    wild card. Note that the x represents a  different  number  of  wild
+    card  bits  in  each  representation.  All  representations are case
+    insensitive.
 
-Conditional arithmetic can be performed by multiplying, '*', boolean
-and arithmetic expressions together.  If the boolean subexpression
-evaluates to TRUE, the larger expression has the value of the
-arithmetic subexpression.  If the boolean is FALSE, the expression
-evaluates to zero.  For example, $7*(5>3)$ equals 7 whereas $7*(5<3)$ equals
-0.
-
-There are two functions that are primarily for use with SAO region files
-and the FSAOI task, but they can be used directly. They return a boolean
-true or false depending on whether a two dimensional point is in the region
-or not:
+    To construct the boolean expression using the mask  as  the  boolean
+    equal  operator  discribed above on a bit table column. For example,
+    if you had a 7 bit column named flags in a  FITS  table  and  wanted
+    all  rows  having  the bit pattern 0010011, the selection expression
+    would be:
 
  
 \begin{verbatim}
-"point in a circular region"
-      CIRCLE(xcntr,ycntr,radius,Xcolumn,Ycolumn)
-      circle(xcntr,ycntr,radius,Xcolumn,Ycolumn)
-
-"point in an elliptical region"
-     ELLIPSE(xcntr,ycntr,xhlf_wdth,yhlf_wdth,rotation,Xcolumn,Ycolumn)
-     ellipse(xcntr,ycntr,xhlf_wdth,yhlf_wdth,rotation,Xcolumn,Ycolumn)
-
-"point in a rectangular region"
-         BOX(xcntr,ycntr,xfll_wdth,yfll_wdth,rotation,Xcolumn,Ycolumn)
-         box(xcntr,ycntr,xfll_wdth,yfll_wdth,rotation,Xcolumn,Ycolumn)
-
-where
-   (xcntr,ycntr) are the (x,y) position of the center of the region
-   (xhlf_wdth,yhlf_wdth) are the (x,y) half widths of the region
-   (xfll_wdth,yfll_wdth) are the (x,y) full widths of the region
-   (radius) is half the diameter of the circle
-   (rotation) is the angle(degrees) that the region is rotated wrt (x,y)
-   (Xcoord,Ycoord) are the (x,y) coordinates to test, usually column names
-   NOTE: each parameter can itself be an expression, not merely a column
-         name or constant.
+                            flags == b0010011
+    or
+                            flags .eq. b10011
 \end{verbatim}
 
-There is also a function for testing if two values are close to each
-other, i.e., if they are "near" each other to within a user specified
-tolerance. The arguments, value\_1 and value\_2 can be integer or real
-and represent the two values who's proximity is being tested to be
-within the specified tolerance, also an integer or real:
+    It is also possible to test if a range of bits is  less  than,  less
+    than  equal,  greater  than  and  greater than equal to a particular
+    boolean value:
 
  
 \begin{verbatim}
-                near(value_1, value_2, tolerance)
-                NEAR(value_1, value_2, tolerance)
+                            flags <= bxxx010xx
+                            flags .gt. bxxx100xx
+                            flags .le. b1xxxxxxx
 \end{verbatim}
 
-When a NULL, or undefined, value is encountered in the FITS table, the
-expression will evaluate to NULL unless the undefined value is not
-actually required for evaluation, eg. "TRUE .or. NULL" evaluates to
-TRUE. The following two functions allow some NULL detection and
-handling: ISNULL(x) and DEFNULL(x,y).  The former returns a boolean
-value of TRUE if the argument x is NULL.  The later "defines" a value
-to be substituted for NULL values; it returns the value of x if x is
-not NULL, otherwise it returns the value of y.
+    Notice the use of the x bit value to limit the range of  bits  being
+    compared.
 
-The following type casting operators are available, where the inclosing
-parentheses are required and taken from the C language usage. Also, the
-integer to real casts values to double precision:
+    It  is  not necessary to specify the leading (most significant) zero
+    (0) bits in the mask, as shown in the second expression above.
+
+    Bit wise AND, OR and NOT operations are  also  possible  on  two  or
+    more  bit  fields  using  the  '\&'(AND),  '$|$'(OR),  and the '!'(NOT)
+    operators. All of these operators result in a bit  field  which  can
+    then be used with the equal operator. For example:
 
  
 \begin{verbatim}
-            "real to integer"    (int) x     (INT) x
-            "integer to real"    (float) i   (FLOAT) i
+                          (!flags) == b1101100
+                          (flags & b1000001) == bx000001
 \end{verbatim}
 
-Bit masks can be used to select out rows from bit columns (TFORMn = \#X)
-in FITS files. To represent the mask, binary, octal, and hex formats are
-allowed:
+    Bit  fields can be appended as well using the '+' operator.  Strings
+    can be concatenated this way, too.
+
+    In addition, several constants are built in  for  use  in  numerical
+    expressions:
 
  
 \begin{verbatim}
-             binary:   b0110xx1010000101xxxx0001
-             octal:    o720x1 -> (b111010000xxx001)
-             hex:      h0FxD  -> (b00001111xxxx1101)
+        #pi              3.1415...      #e             2.7182...
+        #deg             #pi/180        #row           current row number
 \end{verbatim}
 
-In all the representations, an x or X is allowed in the mask as a wild
-card. Note that the x represents a different number of wild card bits in
-each representation. All representations are case insensitive.
+    A string constant must be enclosed in quotes as in 'Crab'.
 
-To construct the boolean expression using the mask as the boolean equal
-operator discribed above on a bit table column. For example, if you had
-a 7 bit column named flags in a FITS table and wanted all rows having the
-bit pattern 0010011, the selection expression would be:
+  Vector Columns
+
+    Vector columns can also be used  in  building  the  expression.   No
+    special  syntax  is required if one wants to operate on all elements
+    of the vector.  Simply use the column name as for a  scalar  column.
+    Vector  columns  can  be  freely  intermixed  with scalar columns or
+    constants in virtually all expressions.  The result will be  of  the
+    same dimension as the vector.  Two vectors in an expression, though,
+    need to  have  the  same  number  of  elements  and  have  the  same
+    dimensions.   The  only  places  a vector column cannot be used (for
+    now, anyway) are the SAO  region  functions  and  the  NEAR  boolean
+    function.
+
+    Arithmetic and logical operations are all performed on an element by
+    element basis.  Comparing two vector columns,  eg  "COL1  ==  COL2",
+    thus  results  in  another vector of boolean values indicating which
+    elements of the two vectors are equal.  Two functions are  available
+    which   operate   on  vectors:  SUM(x)  and  NELEM(x).   The  former
+    literally sums all the elements in x, returning a scalar value.   If
+    x  is  a  boolean  vector,  SUM returns the number of TRUE elements.
+    The latter, NELEM, returns the  number  of  elements  in  vector  x.
+    (NELEM  also  operates  on  bit  and string columns, returning their
+    column widths.)  As an example, to test whether all elements of  two
+    vectors  satisfy  a  given  logical  comparison,  one  can  use  the
+    expression
 
  
 \begin{verbatim}
-                        flags == b0010011
-or
-                        flags .eq. b10011
+              SUM( COL1 > COL2 ) == NELEM( COL1 )
 \end{verbatim}
 
-It is also possible to test if a range of bits is less than, less than
-equal, greater than and greater than equal to a particular boolean value:
+    which will return TRUE if all elements  of  COL1  are  greater  than
+    their corresponding elements in COL2.
+
+    To  specify  a  single  element  of  a  vector, give the column name
+    followed by  a  comma-separated  list  of  coordinates  enclosed  in
+    square  brackets.  For example, if a vector column named PHAS exists
+    in the table as a one dimensional, 256  component  list  of  numbers
+    from  which  you  wanted to select the 57th component for use in the
+    expression, then PHAS[57] would do the  trick.   Higher  dimensional
+    arrays  of  data  may appear in a column.  But in order to interpret
+    them, the TDIMn keyword must appear in the header.  Assuming that  a
+    (4,4,4,4)  array  is packed into each row of a column named ARRAY4D,
+    the  (1,2,3,4)  component  element  of  each  row  is  accessed   by
+    ARRAY4D[1,2,3,4].    Arrays   up   to   dimension  5  are  currently
+    supported.  Each vector index can itself be an expression,  although
+    it  must  evaluate  to  an  integer  value  within the bounds of the
+    vector.  Vector columns which contain spaces or arithmetic operators
+    must   have   their   names  enclosed  in  "\$"  characters  as  with
+    \$ARRAY-4D\$[1,2,3,4].
+
+    A  more  C-like  syntax  for  specifying  vector  indices  is   also
+    available.   The element used in the preceding example alternatively
+    could be specified with the syntax  ARRAY4D[4][3][2][1].   Note  the
+    reverse  order  of  indices  (as in C), as well as the fact that the
+    values are still ones-based (as  in  Fortran  --  adopted  to  avoid
+    ambiguity  for  1D vectors).  With this syntax, one does not need to
+    specify all of the indices.  To  extract  a  3D  slice  of  this  4D
+    array, use ARRAY4D[4].
+
+    Variable-length vector columns are not supported.
+
+    A common filtering method  applied to  FITS  files is a time  filter
+    using a Good Time Interval (GTI)  extension.  A high-level function,
+    gtifilter(a,b,c,d),  is  available   which  performs this    special
+    evaluation, returning a boolean result for each time element tested.
+    Its syntax is
 
  
 \begin{verbatim}
-                        flags <= bxxx010xx
-                        flags .gt. bxxx100xx
-                        flags .le. b1xxxxxxx
+       gtifilter( [ "filename" [, expr [, "STARTCOL", "STOPCOL" ] ] ] )
 \end{verbatim}
 
-Notice the use of the x bit value to limit the range of bits being compared.
+    where  each  "[]" demarks   optional parameters.   The  filename, if
+    specified,  can be  blank  ("") which will    mean to use  the first
+    extension  with   the name "*GTI*"  in   the current  file,  a plain
+    extension  specifier (eg, "+2",  "[2]", or "[STDGTI]") which will be
+    used  to  select  an extension  in  the current  file, or  a regular
+    filename with or without an extension  specifier which in the latter
+    case  will mean to  use the first  extension  with an extension name
+    "*GTI*".  Expr can be   any arithmetic expression, including  simply
+    the time  column  name.  A  vector  time expression  will  produce a
+    vector boolean  result.  STARTCOL and  STOPCOL are the  names of the
+    START/STOP   columns in the    GTI extension.  If   one  of them  is
+    specified, they both  must be. Note that  the quotes surrounding the
+    filename and START/STOP column names are required.
 
-It is not necessary to specify the leading (most significant) zero (0) bits
-in the mask, as shown in the second expression above.
-
-Bit wise AND, OR and NOT operations are also possible on two or more bit
-fields using the '\&'(AND), '$|$'(OR), and the '!'(NOT) operators. All of
-these operators result in a bit field which can then be used with the equal
-operator. For example:
+    In  its  simplest form, no parameters need to be provided -- default
+    values will be used.  The expression "gtifilter()" is equivalent to
 
  
 \begin{verbatim}
-                      (!flags) == b1101100
-                      (flags & b1000001) == bx000001
+       gtifilter( "", TIME, "*START*", "*STOP*" )
 \end{verbatim}
 
-Bit fields can be appended as well using the '+' operator.  Strings
-can be concatenated this way, too.
+    This will search the current file for a GTI  extension,  filter  the
+    TIME  column in the current table, using START/STOP times taken from
+    columns in the GTI  extension  with  names  containing  the  strings
+    "START"  and "STOP".  The wildcards ('*') allow slight variations in
+    naming conventions  such  as  "TSTART"  or  "STARTTIME".   The  same
+    default  values  apply for unspecified parameters when the first one
+    or  two  parameters  are  specified.   The  function   automatically
+    searches   for   TIMEZERO/I/F   keywords  in  the  current  and  GTI
+    extensions, applying a relative time offset, if necessary.
 
-In addition, several constants are built in for use in numerical expressions:
+    Another common  filtering method is  a  spatial filter using  a SAO-
+    style region file.  The syntax for this high-level filter is
 
  
 \begin{verbatim}
-
-    #pi              3.1415...      #e             2.7182...
-    #deg             #pi/180        #row           current row number
+       regfilter( "regfilename" [ , Xexpr, Yexpr [ , "wcs cols" ] ] )
 \end{verbatim}
 
-A string constant must be enclosed in quotes as in 'Crab'. Due to the
-generalities of FITS column names, a column name which resembles an
-arithmetic or boolean expression must be enclosed in "\&" characters as
-in \&column-name\& to force its interpretation as a column and not as column
-minus name.
+    The region file name is required, but the rest is optional.  Without
+    any explicit expression for the X and Y coordinates (in pixels), the
+    filter will search for  and operate on columns "X"  and "Y".  If the
+    region file is   in "degrees" format  instead  of "pixels" ("hhmmss"
+    format is not supported, yet), the  filter will need WCS information
+    to convert the region coordinates to pixels.  If supplied, the final
+    parameter string contains the names of the 2 columns (space or comma
+    separated) which contain   the   desired WCS information.    If  not
+    supplied, the filter  will scan the X  and Y expressions for  column
+    names.  If only one is found in each  expression, those columns will
+    be used.  Otherwise, an error will be returned.
 
-Numerical keyword values found in the current TABLE extension's header
-may be used as part of the expression. Keywords should be preceded by
-a single "\#" as in \#MAXPHA, although this is optional--when a variable
-in the expression does not match the name of any of the columns in the
-table, the parser will look for a keyword with that same name.  If the
-keyword contains a minus sign, which could be confused with an
-arithmetic operation then inclose it in "\&" characters as in
-\#\&MAX-PHA\&.
-
-Vector columns can also be used in building the expression.  No
-special syntax is required if one wants to operate on all elements of
-the vector.  Simply use the column name as for a scalar column.
-Vector columns can be freely intermixed with scalar columns or
-constants in virtually all expressions.  The result will be of the
-same dimension as the vector.  Two vectors in an expression, though,
-need to have the same number of elements and have the same dimensions.
-The only places a vector column cannot be used (for now, anyway) are
-the SAO region functions and the NEAR boolean function.
-
-Arithmetic and logical operations are all performed on an element by
-element basis.  Comparing two vector columns, eg "COL1 == COL2", thus
-results in another vector of boolean values indicating which elements
-of the two vectors are equal.  Two functions are available which
-operate on vectors: SUM(x) and NELEM(x).  The former literally sums
-all the elements in x, returning a scalar value.  If x is a boolean
-vector, SUM returns the number of TRUE elements.  The latter, NELEM,
-returns the number of elements in vector x.  (NELEM also operates on
-bit and string columns, returning their column widths.)  As an
-example, to test whether all elements of two vectors satisfy a given
-logical comparison, one can use the expression
-
+    The region shapes supported are (names are case insensitive):
  
 \begin{verbatim}
-          SUM( COL1 > COL2 ) == NELEM( COL1 )
+       Point         ( X1, Y1 )               <- One pixel square region
+       Line          ( X1, Y1, X2, Y2 )       <- One pixel wide region
+       Polygon       ( X1, Y1, X2, Y2, ... )  <- Rest are interiors with
+       Rectangle     ( X1, Y1, X2, Y2, A )       | boundaries considered
+       Box           ( Xc, Yc, Wdth, Hght, A )   V within the region
+       Diamond       ( Xc, Yc, Wdth, Hght, A )
+       Circle        ( Xc, Yc, R )
+       Annulus       ( Xc, Yc, Rin, Rout )
+       Ellipse       ( Xc, Yc, Rx, Ry, A )
+       Elliptannulus ( Xc, Yc, Rinx, Riny, Routx, Routy, Ain, Aout )
+       Sector        ( Xc, Yc, Amin, Amax )
 \end{verbatim}
 
-which will return TRUE if all elements of COL1 are greater than their
-corresponding elements in COL2.
+    where (Xc,Yc) is  the coordinate of  the shape's center; (X\#,Y\#) are
+    the coordinates  of the shape's edges;  Rxxx are the shapes' various
+    Radii or semimajor/minor  axes; and Axxx  are the angles of rotation
+    (or bounding angles for Sector) in degrees.  For rotated shapes, the
+    rotation angle  can  be left  off, indicating  no rotation.   Common
+    alternate  names for the regions  can also be  used: rotbox == box;
+    rotrectangle == rectangle;  (rot)rhombus == (rot)diamond;  and pie
+    == sector.  When a  shape's name is  preceded by a minus sign, '-',
+    the defined region  is instead the area  *outside* its boundary (ie,
+    the region is inverted).  All the shapes within a single region file
+    are AND'd together to create the region.
 
-To specify a single element of a vector, give the column name followed
-by a comma-separated list of coordinates enclosed in square brackets.
-For example, if a vector column named PHAS exists in the table as a
-one dimensional, 256 component list of numbers from which you wanted
-to select the 57th component for use in the expression, then PHAS[57]
-would do the trick.  Higher dimensional arrays of data may appear in a
-column.  But in order to interpret them, the TDIMn keyword must appear
-in the header.  Assuming that a (4,4,4,4) array is packed into each
-row of a column named ARRAY4D, the (1,2,3,4) component element of each
-row is accessed by ARRAY4D[1,2,3,4].  Arrays up to dimension 5 are
-currently supported.  Each vector index can itself be an expression,
-although it must evaluate to an integer value within the bounds of the
-vector.  Vector columns which contain spaces or arithmetic operators
-must have their names enclosed in "\$" characters as with
-\$ARRAY-4D\$[1,2,3,4].
+    For  complex  or commonly  used filters,  one   can also  place  the
+    expression into a text file and import it  into the row filter using
+    the syntax  '[@filename.txt]'.  The   expression can be  arbitrarily
+    complex and extend over multiple lines of the file.
 
-A more C-like syntax for specifying vector indices is also available.
-The element used in the preceding example alternatively could be
-specified with the syntax ARRAY4D[4][3][2][1].  Note the reverse order
-of indices (as in C), as well as the fact that the values are still
-ones-based (as in Fortran -- adopted to avoid ambiguity for 1D vectors).
-With this syntax, one does not need to specify all of the indices.  To
-extract a 3D slice of this 4D array, use ARRAY4D[4].
 
-Variable-length vector columns are not supported.
-
-A common filtering method applied to FITS files is a time filter using
-a Good Time Interval (GTI) extension.  A high-level function,
-gtifilter(a,b,c,d), is available which performs this special
-evaluation.  Its syntax is
-
+EXAMPLES:
  
 \begin{verbatim}
-   gtifilter( [ "filename" [, expr [, "STARTCOL", "STOPCOL" ] ] ] )
+    [ binary && mag <= 5.0]        - Extract all binary stars brighter
+                                     than  fifth magnitude (note that
+                                     the initial space is necessary to
+                                     prevent it from being treated as a
+                                     binning specification)
+
+    [#row >= 125 && #row <= 175]   - Extract row numbers 125 through 175
+
+    [IMAGE[4,5] .gt. 100]          - Extract all rows that have the
+                                     (4,5) component of the IMAGE column
+                                     greater than 100
+
+    [abs(sin(theta * #deg)) < 0.5] - Extract all rows having the
+                                     absolute value of the sine of theta
+                                     less  than a half where the angles
+                                     are tabulated in degrees
+
+    [SUM( SPEC > 3*BACKGRND )>=1]  - Extract all rows containing a
+                                     spectrum, held in vector column
+                                     SPEC, with at least one value 3
+                                     times greater than the background
+                                     level held in a keyword, BACKGRND
+
+    [@rowFilter.txt]               - Extract rows using the expression
+                                     contained within the text file
+                                     rowFilter.txt
 \end{verbatim}
 
-where each "[]" demarks optional parameters.  The filename, if
-specified, can be blank ("") which will mean to use the first
-extension with the name "*GTI*" in the current file , a plain
-extension specifier (eg, "+2", "[2]", or "[STDGTI]") which will be
-used to select an extension in the current file, or a regular filename
-with or without an extension specifier which in the latter case will
-mean to use the first extension with an extension name "*GTI*".  Expr
-can be any arithmetic expression, including simply the time column name.
-STARTCOL and STOPCOL are the names of the START/STOP columns in the
-GTI extension.  If one of them is specified, they both must be. Note
-that the quotes surrounding the filename and START/STOP column names
-are required.
-
-In its simplest form, no parameters need to be provided -- default
-values will be used.  The expression "gtifilter()" is equivalent to
-
- 
-\begin{verbatim}
-   gtifilter( "", TIME, "*START*", "*STOP*" )
-\end{verbatim}
-
-This will search the current file for a GTI extension, filter the TIME
-column in the current table, using START/STOP times taken from columns
-in the GTI extension with names containing the strings "START" and
-"STOP".  The wildcards ('*') allow slight variations in naming
-conventions such as "TSTART" or "STARTTIME".  The same default values
-apply for unspecified parameters when the first one or two parameters
-are specified.  The function automatically searches for TIMEZERO/I/F
-keywords in the current and GTI extensions, applying a relative time
-offset, if necessary.
-
-For  complex  or commonly  used filters,  one   can also  place  the
-expression into a text file and import it  into the row filter using
-the syntax  '[@filename.txt]'.  The   expression can be  arbitrarily
-complex and extend over multiple lines of the file.
-
-Here are some examples of valid row filters:
- 
-\begin{verbatim}
-1.    Extract  all  binary  stars brighter than fifth magnitude from a
-      FITS file named stars.fits:
-
-            stars.fits[1][binary && mag <= 5.0]
-
-2.    Extract  all  rows between 125 and 175 from a FITS file named
-      manyrows.fits:
-
-            manyrows.fits[1][#row >= 125 && #row <= 175]
-
-3.    Extract  all  rows that have the (4,5) component of the IMAGE
-      column greater than 100 in a FITS file named vectors.fits:
-
-            vector.fits[1][IMAGE[4,5] .gt. 100]
-
-4.    Extract  all  rows having the absolute value of the sine of theta
-      less than a half from a FITS file named angles.fits where the
-      angles are tabulated in degrees:
-
-            angles.fits[1][abs(sin(theta * #deg)) < 0.5]
-
-5.    Extract all rows containing a spectrum, held in vector column SPEC,
-      with at least one value 3 times  greater than the background level
-      held in a keyword, BACKGRND:
-
-            spec.fits[1][SUM( SPEC > 3*BACKGRND )>=1]
-\end{verbatim}
  
 \subsection{Binning or Histogramming Specification}
 

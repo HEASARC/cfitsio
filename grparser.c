@@ -13,6 +13,15 @@
 		warnings during compilation. Bugfix: now one can specify additional
 		columns in group HDU. Autoindexing also works in this situation
 		(colunms are number from 7 however).
+17-Oct-98: bugfix: complex keywords were incorrectly written (was TCOMPLEX should
+		be TDBLCOMPLEX).
+20-Oct-98: bugfix: parser was writing EXTNAME twice, when first HDU in template is
+		defined with XTENSION IMAGE then parser creates now dummy PHDU,
+		SIMPLE T is now allowed only at most once and in first HDU only.
+		WARNING: one should not define EXTNAME keyword for GROUP HDUs, as
+		they have them already defined by parser (EXTNAME = GROUPING).
+		Parser accepts EXTNAME oin GROUP HDU definition, but in this
+		case multiple EXTNAME keywords will present in HDU header.
 */
 
 
@@ -553,7 +562,7 @@ int     ngp_keyword_all_write(NGP_HDU *ngph, fitsfile *ffp, int mode)
 			fits_write_key(ffp, TDOUBLE, ngph->tok[i].name, &(ngph->tok[i].value.d), ngph->tok[i].comment, &r);
 			break;
              case NGP_TTYPE_COMPLEX:
-			fits_write_key(ffp, TCOMPLEX, ngph->tok[i].name, &(ngph->tok[i].value.c), ngph->tok[i].comment, &r);
+			fits_write_key(ffp, TDBLCOMPLEX, ngph->tok[i].name, &(ngph->tok[i].value.c), ngph->tok[i].comment, &r);
 			break;
              case NGP_TTYPE_NULL:
 			fits_write_key_null(ffp, ngph->tok[i].name, ngph->tok[i].comment, &r);
@@ -702,7 +711,7 @@ int	ngp_read_xtension(fitsfile *ff, int parent_hn, int simple_mode)
    if (NGP_OK != (r = ngp_hdu_init(&ngph))) return(r);
 
    if (NGP_OK != (r = ngp_read_line())) return(r);	/* EOF always means error here */
-   switch (simple_mode)
+   switch (NGP_XTENSION_SIMPLE & simple_mode)
      {
        case 0:  if (NGP_TOKEN_XTENSION != ngp_keyidx) return(NGP_TOKEN_NOT_EXPECT);
 		break;
@@ -749,7 +758,9 @@ int	ngp_read_xtension(fitsfile *ff, int parent_hn, int simple_mode)
     }
 
    if (NGP_OK == r)
-     { 
+     { 				/* we should scan keywords, and calculate HDU's */
+				/* structure ourselves .... */
+
        ngph_node_type = NGP_NODE_INVALID;	/* init variables */
        ngph_bitpix = 0;
        ngph_extname = NULL;
@@ -788,23 +799,36 @@ int	ngp_read_xtension(fitsfile *ff, int parent_hn, int simple_mode)
 
        switch (ngph_node_type)
         { case NGP_NODE_IMAGE:
+			if (NGP_XTENSION_FIRST == ((NGP_XTENSION_FIRST | NGP_XTENSION_SIMPLE) & simple_mode))
+			  { 		/* if caller signals that this is 1st HDU in file */
+					/* and it is IMAGE defined with XTENSION, then we */
+					/* need create dummy Primary HDU */			  
+			    fits_create_img(ff, 16, 0, NULL, &r);
+			  }
+					/* create image */
 			fits_create_img(ff, ngph_bitpix, ngph_dim, ngph_size, &r);
+
+					/* update keywords */
 			if (NGP_OK == r)  r = ngp_keyword_all_write(&ngph, ff, NGP_NON_SYSTEM_ONLY);
 			break;
 
           case NGP_NODE_ATABLE:
           case NGP_NODE_BTABLE:
+					/* create table, 0 rows and 0 columns for the moment */
 			fits_create_tbl(ff, ((NGP_NODE_ATABLE == ngph_node_type)
 					     ? ASCII_TBL : BINARY_TBL),
-					0, 0, NULL, NULL, NULL, ngph_extname, &r);
+					0, 0, NULL, NULL, NULL, NULL, &r);
 			if (NGP_OK != r) break;
 
+					/* add columns ... */
 			r = ngp_append_columns(ff, &ngph, 0);
 			if (NGP_OK != r) break;
 
+					/* add remaining keywords */
 			r = ngp_keyword_all_write(&ngph, ff, NGP_NON_SYSTEM_ONLY);
 			if (NGP_OK != r) break;
 
+					/* if requested add rows */
 			if (ngph_size[1] > 0) fits_insert_rows(ff, 0, ngph_size[1], &r);
 			break;
 
@@ -929,7 +953,7 @@ int	ngp_read_group(fitsfile *ff, char *grpname, int parent_hn)
 /* read whole template. ff should point to the opened empty fits file. */
 
 int	fits_execute_template(fitsfile *ff, char *ngp_template, int *status)
- { int r, simple_found, exit_flg;
+ { int r, exit_flg, first_extension;
    char grnm[NGP_MAX_STRING];
 
    if (NULL == ff) return(NGP_NUL_PTR);
@@ -937,11 +961,11 @@ int	fits_execute_template(fitsfile *ff, char *ngp_template, int *status)
    if (NULL == status) return(NGP_NUL_PTR);
    if (*status) return(*status);
 
-   ngp_inclevel = 0;				/* initialize things, but all should be zero */
+   ngp_inclevel = 0;				/* initialize things, not all should be zero */
    ngp_grplevel = 0;
    master_grp_idx = 1;
-   simple_found = 0;
    exit_flg = 0;
+   first_extension = 1;
    
    if (NGP_OK != (r = ngp_include_file(ngp_template))) 
      { *status = r;
@@ -953,18 +977,19 @@ int	fits_execute_template(fitsfile *ff, char *ngp_template, int *status)
       switch (ngp_keyidx)
        {
          case NGP_TOKEN_SIMPLE:
-			if (simple_found)
+			if (0 == first_extension)	/* simple only allowed in first HDU */
 			  { r = NGP_TOKEN_NOT_EXPECT;
 			    break;
 			  }
-			simple_found = 1;
 			if (NGP_OK != (r = ngp_unread_line())) break;
-			r = ngp_read_xtension(ff, 0, 1);
+			r = ngp_read_xtension(ff, 0, NGP_XTENSION_SIMPLE | NGP_XTENSION_FIRST);
+			first_extension = 0;
 			break;
 
          case NGP_TOKEN_XTENSION:
 			if (NGP_OK != (r = ngp_unread_line())) break;
-			r = ngp_read_xtension(ff, 0, 0);
+			r = ngp_read_xtension(ff, 0, (first_extension ? NGP_XTENSION_FIRST : 0));
+			first_extension = 0;
 			break;
 
          case NGP_TOKEN_GROUP:
@@ -974,6 +999,7 @@ int	fits_execute_template(fitsfile *ff, char *ngp_template, int *status)
 			  { sprintf(grnm, "DEFAULT_GROUP_%d", master_grp_idx++); }
 			grnm[NGP_MAX_STRING - 1] = 0;
 			r = ngp_read_group(ff, grnm, 0);
+			first_extension = 0;
 			break;
 
 	 case NGP_TOKEN_EOF:

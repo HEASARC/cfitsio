@@ -925,6 +925,10 @@ case $system in
 	ARCH="linux"
 	CFLAGS="$CFLAGS -Dg77Fortran"
 	;;
+    FREEBSD*)
+	ARCH="linux"
+	CFLAGS="$CFLAGS -Dg77Fortran"
+	;;
     CYGWIN*)
 	ARCH="cygwin"
 	CFLAGS="$CFLAGS -Dg77Fortran -DHAVE_POSIX_SIGNALS"

@@ -479,7 +479,7 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
     int colnum, datacode, decims, tfields, tstatus, ii;
     long width, delbyte, repeat, naxis1, naxis2, datasize, freespace, nadd;
     long nblock, firstbyte, nbytes, tbcol;
-    char tfm[FLEN_VALUE], keyname[FLEN_KEYWORD], comm[FLEN_COMMENT];
+    char tfm[FLEN_VALUE], keyname[FLEN_KEYWORD], comm[FLEN_COMMENT], *cptr;
     tcolumn *colptr;
 
     if (*status > 0)
@@ -620,7 +620,51 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
         strcpy(tfm, tform[ii]);
         ffupch(tfm);         /* make sure format is in upper case */
         ffkeyn("TFORM", colnum, keyname, status);
-        ffpkys(fptr, keyname, tfm, comm, status);
+
+        if (datacode == TUSHORT) 
+        {
+           /* Replace the 'U' with an 'I' in the TFORMn code */
+           cptr = tfm;
+           while (*cptr != 'U') 
+              cptr++;
+
+           *cptr = 'I';
+           ffpkys(fptr, keyname, tfm, comm, status);
+
+           /* write the TZEROn and TSCALn keywords */
+           ffkeyn("TZERO", ii + 1, keyname, status);
+           strcpy(comm, "offset for unsigned integers");
+
+           ffpkyg(fptr, keyname, 32768., 0, comm, status);
+
+           ffkeyn("TSCAL", ii + 1, keyname, status);
+           strcpy(comm, "data are not scaled");
+           ffpkyg(fptr, keyname, 1., 0, comm, status);
+        }
+        else if (datacode == TULONG) 
+        {
+           /* Replace the 'V' with an 'J' in the TFORMn code */
+           cptr = tfm;
+           while (*cptr != 'V') 
+              cptr++;
+
+           *cptr = 'J';
+           ffpkys(fptr, keyname, tfm, comm, status);
+
+           /* write the TZEROn and TSCALn keywords */
+           ffkeyn("TZERO", ii + 1, keyname, status);
+           strcpy(comm, "offset for unsigned integers");
+
+           ffpkyg(fptr, keyname, 2147483648., 0, comm, status);
+
+           ffkeyn("TSCAL", ii + 1, keyname, status);
+           strcpy(comm, "data are not scaled");
+           ffpkyg(fptr, keyname, 1., 0, comm, status);
+        }
+        else
+        {
+           ffpkys(fptr, keyname, tfm, comm, status);
+        }
 
         if ((fptr->Fptr)->hdutype == ASCII_TBL)   /* write the TBCOL keyword */
         {
