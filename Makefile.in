@@ -15,15 +15,20 @@ CFLAGS=@CFLAGS@
 
 SOURCES = 	buffers.c cfileio.c checksum.c fitscore.c getcol*.c \
 		editcol.c edithdu.c getkey.c modkey.c putcol*.c putkey.c \
-		scalnull.c swapproc.c wcsutil.c compress.c \
-		f77_wrap1.c f77_wrap2.c
+		scalnull.c swapproc.c wcsutil.c compress.c ${FITSIO_SRC}
 
 OBJECTS = 	buffers.o cfileio.o checksum.o fitscore.o getcol*.o \
 		editcol.o edithdu.o getkey.o modkey.o putcol*.o putkey.o \
-		scalnull.o swapproc.o wcsutil.o compress.o \
-		f77_wrap1.o f77_wrap2.o
+		scalnull.o swapproc.o wcsutil.o compress.o ${FITSIO_OBJ}
+
+FITSIO_SRC =	f77_wrap1.c f77_wrap2.c
+
+FITSIO_OBJ =	f77_wrap1.o f77_wrap2.o
 
 all:		stand_alone clean
+
+all-nofitsio:
+		${MAKE} all "FITSIO_SRC=" "FITSIO_OBJ="
 
 stand_alone:	libcfitsio.a
 
