@@ -194,7 +194,9 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),PVOID,INT,STRING,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0
    Cstrlen = p[1]-p[0];
 
    memcpy(p[elemNum-1],str,Cstrlen);
-   p[elemNum-1][Cstrlen]='0';  /* Put 0 in in case str is longer than Cstrlen */
+
+                    /* Put 0 in in case str is longer than Cstrlen */
+   p[elemNum-1][Cstrlen-1]='\0';
 
    RCF(PVOID,1)
    RCF(INT,2)

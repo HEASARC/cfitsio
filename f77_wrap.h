@@ -132,6 +132,43 @@ static char *f2cstrv2(char *fstr, char* cstr, int felem_len, int celem_len,
 }
 
 /************************************************************************
+   The following definitions redefine the BYTE data type to be
+   interpretted as a character*1 string instead of an integer*1 which
+   is not supported by all compilers.
+*************************************************************************/
+
+#undef   BYTE_cfT
+#undef   BYTEV_cfT
+#undef   BYTE_cfSTR
+#undef   BYTEV_cfSTR
+#undef   BYTEVVVVVVV_cfTYPE
+
+#define   BYTE_cfQ(B)
+#define   BYTE_cfR(A,B,D)
+#define   BYTE_cfSTR(N,T,A,B,C,D,E)    _(CFARGS,N)(T,BYTE,A,B,C,D,E)
+#define   BYTEV_cfQ(B)
+#define   BYTEV_cfR(A,B,D)
+#define   BYTEV_cfSTR(N,T,A,B,C,D,E)   _(CFARGS,N)(T,BYTEV,A,B,C,D,E)
+
+#ifdef vmsFortran
+#define   BYTEVVVVVVV_cfTYPE      fstring
+#define   BYTE_cfT(M,I,A,B,D)     (INTEGER_BYTE)((A->dsc$a_pointer)[0])
+#define   BYTEV_cfT(M,I,A,B,D)    (INTEGER_BYTE*)A->dsc$a_pointer
+#else
+#ifdef CRAYFortran
+#define   BYTEVVVVVVV_cfTYPE      _fcd
+#define   BYTE_cfT(M,I,A,B,D)     (INTEGER_BYTE)((_fcdtocp(A))[0])
+#define   BYTEV_cfT(M,I,A,B,D)    (INTEGER_BYTE*)_fcdtocp(A)
+#else
+#define   BYTEVVVVVVV_cfTYPE      INTEGER_BYTE
+#define   BYTE_cfT(M,I,A,B,D)     A[0]
+#define   BYTE_cfH(S,U,B)         STRING_cfH(S,U,B)
+#define   BYTEV_cfT(M,I,A,B,D)    A
+#define   BYTEV_cfH(S,U,B)        STRING_cfH(S,U,B)
+#endif
+#endif
+
+/************************************************************************
    The following definitions and functions handle conversions between
    C and Fortran arrays of LOGICALS.  Individually, LOGICALS are
    treated as int's but as char's when in an array.  cfortran defines
