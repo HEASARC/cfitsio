@@ -3446,8 +3446,17 @@ int ffexts(char *extspec,
            /* not a number, so EXTNAME must be specified, followed by */
            /* optional EXTVERS and XTENSION  values */
 
-           slen = strcspn(ptr1, " ,:;");   /* length of EXTNAME */
+           /* don't use space char as end indicator, because there */
+           /* may be imbedded spaces in the EXTNAME value */
+           slen = strcspn(ptr1, ",:;");   /* length of EXTNAME */
            strncat(extname, ptr1, slen);  /* EXTNAME value */
+
+           /* now remove any trailing blanks */
+           while (slen > 0 && *(extname + slen -1) == ' ')
+           {
+               *(extname + slen -1) = '\0';
+               slen--;
+           }
 
            ptr1 += slen;
            slen = strspn(ptr1, " ,:");  /* skip delimiter characters */
