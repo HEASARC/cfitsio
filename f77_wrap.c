@@ -1437,6 +1437,44 @@ FCALLSCSUB4(ffpbyt,FTPCBF,ftpcbf,FITSUNIT,LONG,PVOID,PINT)
 FCALLSCSUB4(ffpbyt,FTPBYT,ftpbyt,FITSUNIT,LONG,PVOID,PINT)
 
 
+/*------------------ Test floats for NAN values -----------------*/
+/*                     (defined in fitsio2.h)                    */
+/*---------------------------------------------------------------*/
+
+int Cfnan( short *sptr )
+{
+   int code;
+
+#if BYTESWAPPED
+   code = fnan(*(sptr+1));
+#else
+   code = fnan(*sptr);
+#endif
+
+   if (code==2) {
+      sptr[0]=sptr[1]=0;
+   }
+   return( code!=0 );
+}
+FCALLSCFUN1(LOGICAL,Cfnan,FTTRNN,fttrnn,PSHORT)
+
+int Cdnan( short *sptr )
+{
+   int code;
+
+#if BYTESWAPPED
+   code = dnan(*(sptr+3));
+#else
+   code = dnan(*sptr);
+#endif
+
+   if (code==2) {
+      sptr[0]=sptr[1]=sptr[2]=sptr[3]=0;
+   }
+   return( code!=0 );
+}
+FCALLSCFUN1(LOGICAL,Cdnan,FTTDNN,fttdnn,PSHORT)
+
 /*-------------- Additional missing FITSIO routines -------------*/
 /*                   (abandoned in CFITSIO)                      */
 /*---------------------------------------------------------------*/
