@@ -23,7 +23,7 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
        and the DEC type coordinate running along the 2nd axis.
 */
 {
-    int tstat;
+    int tstat = 0;
     char comm[FLEN_COMMENT],ctype[FLEN_VALUE];
 
     if (*status > 0)
@@ -51,14 +51,9 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
     strncpy(type, &ctype[4], 4);
     type[4] = '\0';
 
-    tstat = *status;
-    ffgkyd(fptr, "CROTA2", rot, comm, status);
-    if (*status > 0)
-    {
-         /* CROTA2 is assumed to = 0 if keyword is not present */
-         *status=tstat;
-         *rot=0.;
-    }
+    *rot=0.;
+    ffgkyd(fptr, "CROTA2", rot, comm, &tstat); /* keyword may not exist */
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -83,6 +78,7 @@ int ffgtcs(fitsfile *fptr,    /* I - FITS file pointer           */
 */
 {
     char comm[FLEN_COMMENT],ctype[FLEN_VALUE],keynam[FLEN_KEYWORD];
+    int tstatus = 0;
 
     if (*status > 0)
        return(*status);
@@ -119,7 +115,10 @@ int ffgtcs(fitsfile *fptr,    /* I - FITS file pointer           */
     strncpy(type, &ctype[4], 4);
     type[4] = '\0';
 
-    *rot=0.;   /* rotation is always 0 in this system */
+    *rot=0.;   /* default rotation is 0  */
+    ffkeyn("TCROT",ycol,keynam,status);
+    ffgkyd(fptr,keynam,rot,comm,&tstatus);  /* keyword may not exist */
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

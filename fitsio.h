@@ -304,6 +304,20 @@ typedef struct  /* structure for the iterator function column information */
 #define BAD_WCS_PROJ      504  /* unsupported type of celestial projection */
 #define NO_WCS_KEY        505  /* celestial coordinate keywords not found */
 
+/*------- following error codes are used in the grparser.c file -----------*/
+#define	NGP_ERRBASE		(360)			/* base chosen so not to interfere with CFITSIO */
+#define	NGP_OK			(0)
+#define	NGP_NO_MEMORY		(NGP_ERRBASE + 0)	/* malloc failed */
+#define	NGP_READ_ERR		(NGP_ERRBASE + 1)	/* read error from file */
+#define	NGP_NUL_PTR		(NGP_ERRBASE + 2)	/* null pointer passed as argument */
+#define	NGP_EMPTY_CURLINE	(NGP_ERRBASE + 3)	/* line read seems to be empty */
+#define	NGP_UNREAD_QUEUE_FULL	(NGP_ERRBASE + 4)	/* cannot unread more then 1 line (or single line twice) */
+#define	NGP_INC_NESTING		(NGP_ERRBASE + 5)	/* too deep include file nesting (inf. loop ?) */
+#define	NGP_ERR_FOPEN		(NGP_ERRBASE + 6)	/* fopen() failed, cannot open file */
+#define	NGP_EOF			(NGP_ERRBASE + 7)	/* end of file encountered */
+#define	NGP_BAD_ARG		(NGP_ERRBASE + 8)	/* bad arguments passed */
+#define	NGP_TOKEN_NOT_EXPECT	(NGP_ERRBASE + 9)	/* token not expected here */
+
 /*  the following 3 lines are needed to support C++ compilers */
 #ifdef __cplusplus
 extern "C" {
@@ -315,7 +329,8 @@ int ffiurl(char *url,  char *urltype, char *infile,
                     char *outfile, char *extspec, char *rowfilter,
                     char *binspec, char *colspec, int *status);
 int ffrtnm(char *url, char *rootname, int *status);
-int ffourl(char *url, char *urltype, char *outfile, int *status);
+int ffourl(char *url, char *urltype, char *outfile, char *tmplfile,
+            int *status);
 int ffexts(char *extspec, int *extnum,  char *extname,
                        int *extvers, int *hdutype, int *status);
 int ffextn(char *url, int *extension_num, int *status);
@@ -1181,6 +1196,10 @@ int ffgmcp(fitsfile *gfptr, fitsfile *mfptr, long member, int cpopt,
 int ffgmtf(fitsfile *infptr, fitsfile *outfptr,	long member, int tfopt,	       
 	   int *status);
 int ffgmrm(fitsfile *fptr, long member, int rmopt, int *status);
+
+/*--------------------- group template parser routines ------------------*/
+
+int	fits_execute_template(fitsfile *ff, char *ngp_template, int *status);
 
 #ifdef __cplusplus
 }

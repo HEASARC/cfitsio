@@ -240,6 +240,7 @@ int ffbfeof(fitsfile *fptr, int *status);
 int ffbfwt(int nbuff, int *status);
 int fits_get_num_files(void);
 
+int ffoptplt(fitsfile *fptr, const char *tempname, int *status);
 int fits_is_this_a_copy(char *urltype);
 int fits_already_open(fitsfile **fptr, char *url, 
     char *urltype, char *infile, char *extspec, char *rowfilter,

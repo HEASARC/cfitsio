@@ -23,6 +23,8 @@ bcc32 -c getcols.c
 bcc32 -c editcol.c
 bcc32 -c edithdu.c
 bcc32 -c getkey.c
+bcc32 -c group.c
+bcc32 -c grparser.c
 bcc32 -c histo.c
 bcc32 -c modkey.c
 bcc32 -c putcol.c
@@ -46,6 +48,7 @@ del cfitsio.lib
 tlib cfitsio +buffers +cfileio +checksum +compress +drvrfile +drvrmem +fitscore
 tlib cfitsio +getcol  +getcolb +getcoli +getcolj +getcolk +getcoluk 
 tlib cfitsio +getcolui +getcoluj +getcole +getcold +getcoll +getcols
+tlib cfitsio +group +grparser
 tlib cfitsio +editcol +edithdu +getkey +histo +modkey +putkey 
 tlib cfitsio +putcol  +putcolb +putcoli +putcolj +putcolk +putcole +putcold
 tlib cfitsio +putcoll +putcols +putcolu +putcolui +putcoluj +putcoluk

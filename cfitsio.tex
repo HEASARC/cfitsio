@@ -155,6 +155,9 @@ configure command customizes the Makefile for the particular system,
 then the `make' command compiles the source files and builds the
 library.
 
+On HP/UX systems, the environment variable CFLAGS should be set
+to -Ae before running configure to enable "extended ANSI" features.
+
 By default, a set of Fortran-callable wrapper routines are
 also built and included in the CFITSIO library.  If these wrapper
 routines are not needed (i.e., the CFITSIO library will not
@@ -162,6 +165,11 @@ be linked to any Fortran applications which call FITSIO subroutines)
 then they may be omitted from the build by typing 'make all-nofitsio'
 instead of simply typing 'make'.  This will reduce the size
 of the CFITSIO library slightly.
+
+Note that starting with V2.0 of CFITSIO, it may no longer be possible
+to build staticly linked executables on some system.  On SUN Solaris,
+for example the required nsl library is apparently only available as
+a shared library.
 
 An alternate makefile called Makefile.shared is included in the
 distribution that will build CFITSIO as a shared library.  It has only
@@ -282,6 +290,8 @@ program on Unix systems with:
     % f77 -o testf77 testf77.f -L. -lcfitsio
   or
     % f77 -f -o testf77 testf77.f -L. -lcfitsio    (under SUN O/S)
+  or
+    % f77 -o testf77 testf77.f -Wl,-L. -lcfitsio -lm  (HP/UX)
 
     % testf77 > testf77.lis
     % diff testf77.lis testf77.out
@@ -294,9 +304,24 @@ similar compiler option may be required on other platforms.  Failing to
 use this option may cause the program to crash on FITSIO routines that
 read or write double precision variables.
 
-The program speed.c that is included with CFITSIO may be used to
-estimate the maximum possible throughput (in MB per second) for writing
-and reading FITS files with CFITSIO on a particular computer system.
+Also note that on some systems, the output listing of the testf77
+program may differ slightly from the testf77.std template, if leading
+zeros are not printed by default before the decimal point when using F
+format.
+
+A few other utility programs are included with CFITSIO:
+ 
+\begin{verbatim}
+    speed - measures the maximum throughput (in MB per second)
+              for writing and reading FITS files with CFITSIO
+
+    listhead - lists all the header keywords in any FITS file
+
+    fitscopy - copies any FITS file (especially useful in conjunction
+                 with the CFITSIO's extended input filename syntax)
+
+    iter_a, iter_b, iter_c - tests of the CFITSIO iterator routine
+\end{verbatim}
 
  
 \section{Getting Started with CFITSIO}

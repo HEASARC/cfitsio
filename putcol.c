@@ -546,7 +546,7 @@ int ffiter(int n_cols,
         int      nullsize;    /* length of the null value, in bytes */
         union {   /*  default null value for the column */
             char   *stringnull;
-            char   charnull;
+            unsigned char   charnull;
             int    intnull;
             short  shortnull;
             long   longnull;
@@ -566,7 +566,7 @@ int ffiter(int n_cols,
     long rept, width, tnull;
     double zeros = 0.;
     char message[FLEN_ERRMSG], keyname[FLEN_KEYWORD], nullstr[FLEN_VALUE];
-    char **stringptr;
+    char **stringptr, *cptr;
 
     if (*status > 0)
         return(*status);
@@ -812,15 +812,28 @@ int ffiter(int n_cols,
                 if (hdutype == ASCII_TBL) /* TNULLn value is a string */
                 {
                     ffkeyn("TNULL", cols[jj].colnum, keyname, &tstatus);
-                    ffgkys(cols[jj].fptr, keyname, message, 0, &tstatus);
+                    ffgkys(cols[jj].fptr, keyname, nullstr, 0, &tstatus);
                     if (tstatus)
                     {
                         tnull = 0L; /* keyword doesn't exist; no null values */
                     }
                     else
                     {
-                        tnull = LONG_MIN;  /* choose smallest possible */
-                    }                      /* value to represent nulls */
+                        cptr = nullstr;
+                        while (*cptr == ' ')  /* skip over leading blanks */
+                           cptr++;
+
+                        if (*cptr == '\0')  /* TNULLn is all blanks? */
+                            tnull = LONG_MIN;
+                        else
+                        {                                                
+                            /* attempt to read TNULLn string as an integer */
+                            ffc2ii(nullstr, &tnull, &tstatus);
+
+                            if (tstatus)
+                                tnull = LONG_MIN;  /* choose smallest value */
+                        }                          /* to represent nulls */
+                    }
                 }
                 else  /* Binary table; TNULLn value is an integer */
                 {
@@ -857,11 +870,11 @@ int ffiter(int n_cols,
           {
               tnull = minvalue(tnull, 255);
               tnull = maxvalue(tnull, 0);
-              col[jj].null.charnull = (char) tnull;
+              col[jj].null.charnull = (unsigned char) tnull;
           }
           else
           {
-              col[jj].null.charnull = (char) 255; /* use 255 as null value */
+              col[jj].null.charnull = (unsigned char) 255; /* use 255 as null */
           }
           break;
 

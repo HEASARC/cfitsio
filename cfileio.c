@@ -1111,6 +1111,7 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
     int driver, slen, clobber;
     char *url;
     char urltype[MAX_PREFIX_LEN], outfile[FLEN_FILENAME];
+    char tmplfile[FLEN_FILENAME];
     int handle;
 
     if (*status > 0)
@@ -1144,7 +1145,7 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
         clobber = FALSE;
 
         /* parse the output file specification */
-    ffourl(url, urltype, outfile, status);
+    ffourl(url, urltype, outfile, tmplfile, status);
 
     if (*status > 0)
     {
@@ -1240,6 +1241,10 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
     ((*fptr)->Fptr)->validcode = VALIDSTRUC; /* flag denoting valid structure */
 
     ffldrc(*fptr, 0, IGNORE_EOF, status);     /* initialize first record */
+
+    /* if template file was given, use it to define structure of new file */
+    if (tmplfile[0])
+        ffoptplt(*fptr, tmplfile, status);
 
     return(*status);                       /* successful return */
 }
@@ -2359,9 +2364,10 @@ int ffrtnm(char *url,
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffourl(char *url, 
-           char *urltype,
-           char *outfile,
+int ffourl(char *url,             /* I - full input URL   */
+           char *urltype,          /* O - url type         */
+           char *outfile,          /* O - base file name   */
+           char *tpltfile,         /* O - template file name, if any */
            int *status)
 /*
    parse the output URL into its basic components.
@@ -2374,12 +2380,17 @@ int ffourl(char *url,
         return(*status);
 
     ptr1 = url;
-    *urltype = '\0';
-    *outfile = '\0';
+    if (urltype)
+      *urltype = '\0';
+    if (outfile)
+      *outfile = '\0';
+    if (tpltfile)
+      *tpltfile = '\0';
 
-        /*  get urltype (e.g., file://, ftp://, http://, etc.)  */
+    /*  get urltype (e.g., file://, ftp://, http://, etc.)  */
     if (*ptr1 == '-')        /* "-" means write file to stdout */
     {
+      if (urltype)
         strcpy(urltype, "stdout://");
     }
     else
@@ -2387,15 +2398,42 @@ int ffourl(char *url,
         ptr2 = strstr(ptr1, "://");
         if (ptr2)                  /* copy the explicit urltype string */ 
         {
+          if (urltype)
             strncat(urltype, ptr1, ptr2 - ptr1 + 3);
+
             ptr1 = ptr2 + 3;
         }
         else                       /* assume file driver    */
         {
+          if (urltype)
              strcat(urltype, "file://");
         }
-       /*  get the output file name  */
-        strcpy(outfile, ptr1);
+
+        /* look for template file name, enclosed in parenthesis */
+        ptr2 = strchr(ptr1, '('); 
+
+        if (ptr2)   /* template file was specified  */
+        {
+            if (outfile)
+                strncat(outfile, ptr1, ptr2 - ptr1);
+
+            ptr2++;
+
+            ptr1 = strchr(ptr2, ')' );   /* search for closing ) */
+
+            if (!ptr1)
+            {
+                return(*status = URL_PARSE_ERROR);  /* error, no closing ) */
+            }
+
+            if (tpltfile)
+                strncat(tpltfile, ptr2, ptr1 - ptr2);
+        }
+        else  /* no template file */
+        {
+            if (outfile)
+                strcpy(outfile, ptr1);
+        }
     }
     return(*status);
 }
@@ -2916,15 +2954,29 @@ int fftplt(fitsfile **fptr,      /* O - FITS file pointer                   */
   Uses C fopen and fgets functions.
 */
 {
-    FILE *diskfile;
-    fitsfile *tptr;
-    int tstatus = 0, nkeys, nadd, ii, newhdu, slen, keytype;
-    char card[FLEN_CARD], template[161];
-
     if (*status > 0)
         return(*status);
 
-    if ( ffinit(fptr, filename, status) )
+    if ( ffinit(fptr, filename, status) )  /* create empty file */
+        return(*status);
+
+    ffoptplt(*fptr, tempname, status);  /* open and use template */
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffoptplt(fitsfile *fptr,      /* O - FITS file pointer                   */
+            const char *tempname, /* I - name of template file               */
+            int *status)          /* IO - error status                       */
+/*
+  open template file and use it to create new file
+*/
+{
+    fitsfile *tptr;
+    int tstatus = 0, nkeys, nadd, ii;
+    char card[FLEN_CARD];
+
+    if (*status > 0)
         return(*status);
 
     if (tempname == NULL || *tempname == '\0')     /* no template file? */
@@ -2937,68 +2989,36 @@ int fftplt(fitsfile **fptr,      /* O - FITS file pointer                   */
     {
         ffxmsg(-2, card);  /* clear the  error message */
 
-        diskfile = fopen(tempname,"r"); 
-        if (!diskfile)          /* couldn't open file */
-        {
-            ffpmsg("Could not open template file (fftplt)");
-            return(*status = FILE_NOT_OPENED); 
-        }
+        fits_execute_template(fptr, (char *) tempname, status);
 
-        newhdu = 0;
-        while (fgets(template, 160, diskfile) )  /* get next template line */
-        {
-          template[160] = '\0';      /* make sure string is terminated */
-          slen = strlen(template);   /* get string length */
-          template[slen - 1] = '\0';  /* over write the 'newline' char */
-
-          if (ffgthd(template, card, &keytype, status) > 0) /* parse template */
-             break;
-
-          if (keytype == 2)       /* END card; start new HDU */
-          {
-             newhdu = 1;
-          }
-          else
-          {
-             if (newhdu)
-             {
-                ffcrhd(*fptr, status);      /* create empty new HDU */
-                newhdu = 0;
-             }
-             ffprec(*fptr, card, status);  /* write the card */
-          }
-        }
-
-        fclose(diskfile);   /* close the template file */
-        ffmahd(*fptr, 1, 0, status);   /* move back to the primary array */
+        ffmahd(fptr, 1, 0, status);   /* move back to the primary array */
         return(*status);
     }
     else  /* template is a valid FITS file */
     {
-        ffghsp(*fptr, &nkeys, &nadd, status); /* get no. of keywords */
-
         while (*status <= 0)
         {
+           ffghsp(tptr, &nkeys, &nadd, status); /* get no. of keywords */
+
            for (ii = 1; ii <= nkeys; ii++)   /* copy keywords */
            {
-              ffgrec(*fptr,  ii, card, status);
-              ffprec(tptr, card, status);
+              ffgrec(tptr,  ii, card, status);
+              ffprec(fptr, card, status);
            }
 
            ffmrhd(tptr, 1, 0, status); /* move to next HDU until error */
-           ffcrhd(*fptr, status);      /* create empty new HDU in output file */
+           ffcrhd(fptr, status);  /* create empty new HDU in output file */
+        }
+
+        if (*status == END_OF_FILE)
+        {
+           ffxmsg(-2, card);  /* clear the end of file error message */
+           *status = 0;              /* expected error condition */
         }
         ffclos(tptr, status);       /* close the template file */
     }
 
-    if (*status == END_OF_FILE)
-    {
-       ffxmsg(-2, card);  /* clear the end of file error message */
-       *status = 0;              /* expected error condition */
-    }
-
-    ffmahd(*fptr, 1, 0, status);   /* move to the primary array */
-
+    ffmahd(fptr, 1, 0, status);   /* move to the primary array */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

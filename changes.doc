@@ -1,5 +1,9 @@
                Log of Changes Made to CFITSIO
 
+   - added new funtion to support template files when creating new FITS files.
+
+   - support the TCROTn WCS keyword in tables, when reading the WCS keywords.
+
    - modified the iterator to support null values in logical columns in
      binary tables.
 

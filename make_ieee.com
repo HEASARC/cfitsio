@@ -30,6 +30,7 @@ $ cc/float=ieee_float getcoll.c
 $ cc/float=ieee_float getcols.c
 $ cc/float=ieee_float getkey.c
 $ cc/float=ieee_float group.c
+$ cc/float=ieee_float grparser.c
 $ cc/float=ieee_float histo.c
 $ cc/float=ieee_float iraffits.c
 $ cc/float=ieee_float modkey.c
@@ -55,7 +56,7 @@ $ lib/create cfitsio buffers,cfileio,checksum,compress,drvrfile,drvrmem
 $ lib/insert cfitsio editcol,edithdu,eval_f,eval_l,eval_y,f77_wrap1,f77_wrap2
 $ lib/insert cfitsio fitscore,getcol,getcolb,getcoli,getcolj,getcolk,getcole
 $ lib/insert cfitsio getcold,getcoll,getcols,getcolui,getcoluj,getcoluk
-$ lib/insert cfitsio getkey,group,histo,iraffits,modkey,putcol,putcolb
+$ lib/insert cfitsio getkey,group,grparser,histo,iraffits,modkey,putcol,putcolb
 $ lib/insert cfitsio putcoli,putcolj,putcolk,putcole,putcold,putcolui
 $ lib/insert cfitsio putcoluj,putcoluk,putcols,putcoll,putcolu,putkey,region
 $ lib/insert cfitsio scalnull,swapproc,wcsutil
