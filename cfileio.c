@@ -835,7 +835,7 @@ int ffedit_columns(
 {
     fitsfile *newptr;
     int ii, hdunum, slen, colnum;
-    char *cptr, *cptr2, clause[FLEN_FILENAME], keyname[FLEN_KEYWORD];
+    char *cptr, *cptr2, *cptr3, clause[FLEN_FILENAME], keyname[FLEN_KEYWORD];
     char colname[FLEN_VALUE], oldname[FLEN_VALUE], colformat[FLEN_VALUE];
 
     if (*outfile)
@@ -895,6 +895,7 @@ int ffedit_columns(
 
     while ((slen = fits_get_token(&cptr, ";", clause, NULL)) > 0 )
     {
+       if( *cptr==';' ) cptr++;
         clause[slen] = '\0';
 
         if (clause[0] == '!')
@@ -1001,18 +1002,19 @@ int ffedit_columns(
 
                 /* parse the name and TFORM values, if present */
                 colformat[0] = '\0';
-                cptr = colname;
+                cptr3 = colname;
 
-                fits_get_token(&cptr, "(", colname, NULL);
+                fits_get_token(&cptr3, "(", oldname, NULL);
 
-                if (cptr[0] == '(' )
+                if (cptr3[0] == '(' )
                 {
-                   cptr++;  /* skip the '(' */
-                   fits_get_token(&cptr, ")", colformat, NULL);
+                   cptr3++;  /* skip the '(' */
+                   fits_get_token(&cptr3, ")", colformat, NULL);
                 }
 
                 /* calculate values for the column or keyword */ 
-                fits_calc_col(*fptr, cptr2, *fptr, colname, status);
+                fits_calculator(*fptr, cptr2, *fptr, oldname, colformat,
+				status);
             }
         }
     }

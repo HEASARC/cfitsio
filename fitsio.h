@@ -1130,28 +1130,27 @@ int ffxypx(double xpos, double ypos, double xref, double yref,
 
 
 /*--------------------- lexical parsing routines ------------------*/
-int fits_test_expr(   fitsfile *fptr, char *expr, int maxdim,
-		      int *datatype, long *nelem, int *naxis,
-		      long *naxes, int *status );
+int fftexp( fitsfile *fptr, char *expr, int maxdim,
+	    int *datatype, long *nelem, int *naxis,
+	    long *naxes, int *status );
 
-int fits_find_rows(   fitsfile *infptr, char *expr,
-		      long firstrow, long nrows,
-                      long *n_good_rows, char *row_status, int *status);
+int fffrow( fitsfile *infptr, char *expr,
+	    long firstrow, long nrows,
+            long *n_good_rows, char *row_status, int *status);
 
-int fits_find_rows_cmp( fitsfile *fptr, char *expr, char *timeCol,    
-                        char *parCol, char *valCol, long ntimes,      
-                        double *times, char *time_status, int  *status );
+int fffrwc( fitsfile *fptr, char *expr, char *timeCol,    
+            char *parCol, char *valCol, long ntimes,      
+            double *times, char *time_status, int  *status );
 
-int fits_select_rows( fitsfile *infptr, fitsfile *outfptr, char *expr, 
-                      int *status);
+int ffsrow( fitsfile *infptr, fitsfile *outfptr, char *expr, 
+            int *status);
 
-int fits_calc_rows(   fitsfile *fptr, int datatype, char *expr,
-		      long firstrow, long nelements, void *nulval,
-		      void *array, int *anynul, int *status );
+int ffcrow( fitsfile *fptr, int datatype, char *expr,
+	    long firstrow, long nelements, void *nulval,
+	    void *array, int *anynul, int *status );
 
-int fits_calc_col(    fitsfile *infptr, char *expr,
-		      fitsfile *outfptr, char *colname,
-		      int *status );
+int ffcalc( fitsfile *infptr, char *expr, fitsfile *outfptr,
+            char *parName, char *parInfo, int *status );
 
 /*--------------------- grouping routines ------------------*/
 

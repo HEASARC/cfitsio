@@ -46,6 +46,7 @@
 /************************************************************************/
 
 #include <limits.h>
+#include <ctype.h>
 #include "eval_defs.h"
 #include "eval_tab.h"
 
@@ -359,17 +360,26 @@ int ffcrow( fitsfile *fptr,      /* I - Input FITS file                      */
 }
 
 /*--------------------------------------------------------------------------*/
-int ffccol( fitsfile *infptr,   /* I - Input FITS file                      */
+int ffcalc( fitsfile *infptr,   /* I - Input FITS file                      */
             char     *expr,     /* I - Arithmetic expression                */
             fitsfile *outfptr,  /* I - Output fits file                     */
-            char     *colname,  /* I - Name of output column                */
+            char     *parName,  /* I - Name of output parameter             */
+            char     *parInfo,  /* I - Extra information on parameter       */
             int      *status )  /* O - Error status                         */
 /*                                                                          */
-/* Evaluate an expression for each row in the input FITS file and place     */
-/* the results into the named column of the output fits file.  It is the    */
-/* caller's responsibility to make sure the column exists and is of the     */
-/* proper type to hold the results, although type conversions are handled   */
-/* by CFITSIO.                                                              */
+/* Evaluate an expression using the data in the input FITS file and place   */
+/* the results into either a column or keyword in the output fits file,     */
+/* depending on the value of parName (keywords normally prefixed with '#')  */
+/* and whether the expression evaluates to a constant or a table column.    */
+/* The logic is as follows:                                                 */
+/*    (1) If a column exists with name, parName, put results there.         */
+/*    (2) If parName starts with '#', as in #NAXIS, put result there,       */
+/*        with parInfo used as the comment. If expression does not evaluate */
+/*        to a constant, flag an error.                                     */
+/*    (3) If a keyword exists with name, parName, and expression is a       */
+/*        constant, put result there, using parInfo as the new comment.     */
+/*    (4) Else, create a new column with name parName and TFORM parInfo.    */
+/*        If parInfo is NULL, use a default data type for the column.       */
 /*--------------------------------------------------------------------------*/
 {
    parseInfo Info;
@@ -377,6 +387,8 @@ int ffccol( fitsfile *infptr,   /* I - Input FITS file                      */
    long nelem, naxes[MAXDIMS];
    int col_cnt, colNo;
    Node *result;
+   char card[81];
+   int hdutype;
 
    if( *status ) return( *status );
    
@@ -391,35 +403,90 @@ int ffccol( fitsfile *infptr,   /* I - Input FITS file                      */
    } else
       constant = 0;
 
-   if( ffgcno( outfptr, CASEINSEN, colname, &colNo, status )==COL_NOT_FOUND ) {
+   /*  Case (1): If column exists put it there  */
 
-      /*  Output column doesn't exist.  If a constant, put into keyword,
-	  otherwise, abort with error. */
+   colNo = 0;
+   if( ffgcno( outfptr, CASEINSEN, parName, &colNo, status )==COL_NOT_FOUND ) {
 
-      if( constant ) {
-	 *status = 0;
-	 result  = gParse.Nodes + gParse.nNodes-1;
-	 switch( Info.datatype ) {
-	 case TDOUBLE:
-	    ffukyd( outfptr, colname, result->value.data.dbl, 15,
-		    NULL, status );
-	    break;
-	 case TLONG:
-	    ffukyj( outfptr, colname, result->value.data.lng, NULL, status );
-	    break;
-	 case TLOGICAL:
-	    ffukyl( outfptr, colname, result->value.data.log, NULL, status );
-	    break;
-	 case TBIT:
-	 case TSTRING:
-	    ffukys( outfptr, colname, result->value.data.str, NULL, status );
-	    break;
+      /*  Output column doesn't exist.  Test for keyword. */
+
+      /* Case (2): Does parName indicate result should be put into keyword */
+
+      *status = 0;
+      if( parName[0]=='#' ) {
+	 if( ! constant ) {
+	    ffcprs();
+	    ffpmsg( "Cannot put tabular result into keyword (ffcalc)" );
+	    return( *status = PARSE_BAD_TYPE );
 	 }
+	 parName++;
+
+      } else if( constant ) {
+
+	 /* Case (3): Does a keyword named parName already exist */
+
+	 if( ffgcrd( outfptr, parName, card, status )==KEY_NO_EXIST ) {
+	    colNo = -1;
+	 } else if( *status ) {
+	    ffcprs();
+	    return( *status );
+	 }
+
+      } else
+	 colNo = -1;
+
+      if( colNo<0 ) {
+
+	 /* Case (4): Create new column */
+
+	 *status = 0;
+	 ffgncl( outfptr, &colNo, status );
+	 colNo++;
+	 ffghdt( outfptr, &hdutype, status );
+	 if( parInfo==NULL || *parInfo=='\0' ) {
+	    /*  Figure out best default column type  */
+	    if( hdutype==BINARY_TBL ) {
+	       sprintf(card,"%ld",nelem);
+	       switch( Info.datatype ) {
+	       case TLOGICAL:  strcat(card,"L");  break;
+	       case TLONG:     strcat(card,"J");  break;
+	       case TDOUBLE:   strcat(card,"D");  break;
+	       case TSTRING:   strcat(card,"A");  break;
+	       case TBIT:      strcat(card,"X");  break;
+	       }
+	    } else {
+	       switch( Info.datatype ) {
+	       case TLOGICAL:
+		  ffcprs();
+		  ffpmsg("Cannot create LOGICAL column in ASCII table");
+		  return( *status = NOT_BTABLE );
+		  break;
+	       case TLONG:     strcpy(card,"I11");     break;
+	       case TDOUBLE:   strcpy(card,"D23.15");  break;
+	       case TSTRING:   
+	       case TBIT:      sprintf(card,"A%ld",nelem);  break;
+	       }
+	    }
+	    parInfo = card;
+	 } else if( !(isdigit(*parInfo)) && hdutype==BINARY_TBL ) {
+	    if( Info.datatype==TBIT && *parInfo=='B' )
+	       nelem = (nelem+7)/8;
+	    sprintf(card,"%ld%s",nelem,parInfo);
+	    parInfo = card;
+	 }
+	 fficol( outfptr, colNo, parName, parInfo, status );
+	 if( naxis>1 )
+	    ffptdm( outfptr, colNo, naxis, naxes, status );
       }
 
-   } else if( ! *status ) {
+   } else if( *status ) {
+      ffcprs();
+      return( *status );
+   }
 
-      /*  Output column exists... put results into it  */
+   if( colNo>0 ) {
+
+      /*  Output column exists (now)... put results into it  */
 
       /*************************************/
       /* Create new iterator Output Column */
@@ -440,6 +507,27 @@ int ffccol( fitsfile *infptr,   /* I - Input FITS file                      */
 
       ffiter( gParse.nCols, gParse.colData, 0, 0,
 	      parse_data, (void*)&Info, status );
+   } else {
+
+      /* Put constant result into keyword */
+
+      result  = gParse.Nodes + gParse.nNodes-1;
+      switch( Info.datatype ) {
+      case TDOUBLE:
+	 ffukyd( outfptr, parName, result->value.data.dbl, 15,
+		 parInfo, status );
+	 break;
+      case TLONG:
+	 ffukyj( outfptr, parName, result->value.data.lng, parInfo, status );
+	 break;
+      case TLOGICAL:
+	 ffukyl( outfptr, parName, result->value.data.log, parInfo, status );
+	 break;
+      case TBIT:
+      case TSTRING:
+	 ffukys( outfptr, parName, result->value.data.str, parInfo, status );
+	 break;
+      }
    }
 
    ffcprs();
@@ -774,11 +862,11 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
        case BITSTR:
           switch( userInfo->datatype ) {
           case TBYTE:
-             for( kk=0; kk<ntodo; kk++ )
+	     idx = -1;
+             for( kk=0; kk<ntodo; kk++ ) {
                 for( jj=0; jj<result->value.nelem; jj++ ) {
-                   idx = ( jj + kk * result->value.nelem ) / 8;
                    if( jj%8 == 0 )
-                      ((char*)Data)[idx] = 0;
+                      ((char*)Data)[++idx] = 0;
 		   if( constant ) {
 		      if( result->value.data.str[jj]=='1' )
 			 ((char*)Data)[idx] |= 128>>(jj%8);
@@ -787,6 +875,7 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 			 ((char*)Data)[idx] |= 128>>(jj%8);
 		   }
                 }
+	     }
              break;
           case TBIT:
           case TLOGICAL:
@@ -804,6 +893,17 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 		   }
 	     }
              break; 
+	  case TSTRING:
+	     if( constant ) {
+		for( jj=0; jj<ntodo; jj++ ) {
+		   strcpy( ((char**)Data)[jj], result->value.data.str );
+		}
+	     } else {
+		for( jj=0; jj<ntodo; jj++ ) {
+		   strcpy( ((char**)Data)[jj], result->value.data.strptr[jj] );
+		}
+	     }
+	     break;
           default:
              ffpmsg("Cannot convert bit expression to desired type.");
              gParse.status = PARSE_BAD_TYPE;

@@ -767,6 +767,13 @@ int ffiter(int n_cols,
         if (typecode == TLONG && sizeof(long) == 8 && sizeof(int) == 4)
             typecode = TINT;
 
+        /* Special case: interprete 'X' column as 'B' */
+        if (abs(typecode) == TBIT)
+        {
+            typecode  = typecode / TBIT * TBYTE;
+            rept = (rept + 7) / 8;
+        }
+
         if (cols[jj].datatype == 0)    /* output datatype not specified? */
         {
             /* special case if sizeof(long) = 8: use TINT instead of TLONG */
@@ -957,6 +964,7 @@ int ffiter(int n_cols,
 
          case TSTRING:
           /* allocate array of pointers to all the strings  */
+	  if( hdutype==ASCII_TBL ) rept = width;
           stringptr = calloc((ntodo + 1) , sizeof(stringptr));
           cols[jj].array = stringptr;
           col[jj].nullsize  = rept + 1;  /* number of bytes per value */
