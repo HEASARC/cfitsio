@@ -16,7 +16,6 @@
                 (Conflicted with a common variable name in FTOOLS)
       Nov 1997: If g77Fortran defined, also define f2cFortran (PDW/HSTX)
       Nov 1997: Define MIN(A,B) as _cfMIN(A,B)
-      Dec 1997: Change definition of fstringvector if running Alpha VMS
       Feb 1998: Let VMS see the NUM_ELEMS code. Lets programs treat
                 single strings as vectors with single elements
  *******/
@@ -484,27 +483,6 @@ return cstr; }
 
 #ifdef vmsFortran
 typedef struct dsc$descriptor_s fstring;
-#if      defined(__alpha)   /*  Dec 1997: PDW  */
-
-#define DSC$DESCRIPTOR_A(DIMCT)  		                               \
-struct {                                                                       \
-  unsigned short dsc$w_length;	        unsigned char	 dsc$b_dtype;	       \
-  unsigned char	 dsc$b_class;	                 char	*dsc$a_pointer;	       \
-           char	 dsc$b_scale;	        unsigned char	 dsc$b_digits;         \
-  struct {                                                                     \
-    unsigned		       : 3;	  unsigned dsc$v_fl_binscale : 1;      \
-    unsigned dsc$v_fl_redim    : 1;       unsigned dsc$v_fl_column   : 1;      \
-    unsigned dsc$v_fl_coeff    : 1;       unsigned dsc$v_fl_bounds   : 1;      \
-  } dsc$b_aflags;	                                                       \
-  unsigned char	 dsc$b_dimct;	        unsigned int	 dsc$l_arsize;	       \
-           char	*dsc$a_a0;	                 int	 dsc$l_m [DIMCT];      \
-  struct {                                                                     \
-    int  dsc$l_l;                         int  dsc$l_u;                        \
-  } dsc$bounds [DIMCT];                                                        \
-}
-
-#else
-
 #define DSC$DESCRIPTOR_A(DIMCT)  		                               \
 struct {                                                                       \
   unsigned short dsc$w_length;	        unsigned char	 dsc$b_dtype;	       \
@@ -521,8 +499,6 @@ struct {                                                                       \
     long dsc$l_l;                         long dsc$l_u;                        \
   } dsc$bounds [DIMCT];                                                        \
 }
-
-#endif
 
 typedef DSC$DESCRIPTOR_A(1) fstringvector;
 /*typedef DSC$DESCRIPTOR_A(2) fstringarrarr;
