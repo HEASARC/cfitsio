@@ -168,7 +168,7 @@ static char  ellipse(double xcen, double ycen, double xrad, double yrad,
 		     double rot, double xcol, double ycol);
 static char  circle (double xcen, double ycen, double rad,
 		     double xcol, double ycol);
-static char  near   (double x, double y, double tolerance);
+static char  bnear  (double x, double y, double tolerance);
 static char  bitcmp (char *bitstrm1, char *bitstrm2);
 static char  bitlgte(char *bits1, int oper, char *bits2);
 
@@ -3731,8 +3731,8 @@ static void Do_Func( Node *this )
 	    /* Boolean SAO region Functions... all arguments scalar dbls */
 
 	 case near_fct:
-	    this->value.data.log = near( pVals[0].data.dbl, pVals[1].data.dbl,
-					 pVals[2].data.dbl );
+	    this->value.data.log = bnear( pVals[0].data.dbl, pVals[1].data.dbl,
+					  pVals[2].data.dbl );
 	    break;
 	 case circle_fct:
 	    this->value.data.log = circle( pVals[0].data.dbl, pVals[1].data.dbl,
@@ -4083,8 +4083,8 @@ static void Do_Func( Node *this )
 		  }
 	       if( !(this->value.undef[row]) )
 		  this->value.data.logptr[row] =
-		     near( pVals[0].data.dbl, pVals[1].data.dbl,
-			   pVals[2].data.dbl );
+		     bnear( pVals[0].data.dbl, pVals[1].data.dbl,
+			    pVals[2].data.dbl );
 	    }
 	    break;
 	 case circle_fct:
@@ -4694,7 +4694,7 @@ static char bitcmp(char *bitstrm1, char *bitstrm2)
  return( 1 );
 }
 
-static char near(double x, double y, double tolerance)
+static char bnear(double x, double y, double tolerance)
 {
  if (fabs(x - y) < tolerance)
    return ( 1 );
