@@ -785,9 +785,15 @@ int ffgcluk( fitsfile *fptr,   /* I - FITS file pointer                       */
         /*-------------------------*/
         if (*status > 0)  /* test for error during previous read operation */
         {
-          sprintf(message,
-          "Error reading elements %ld thru %ld of input data array (ffgcluk).",
-            next+1, next+ntodo);
+          if (hdutype > 0)
+            sprintf(message,
+            "Error reading elements %ld thru %ld from column %d (ffgcluk).",
+              next+1, next+ntodo, colnum);
+          else
+            sprintf(message,
+            "Error reading elements %ld thru %ld from image (ffgcluk).",
+              next+1, next+ntodo);
+
           ffpmsg(message);
           return(*status);
         }
@@ -1553,7 +1559,7 @@ int fffstruint(char *input,        /* I - array of values to be converted     */
     int nullen;
     long ii;
     double dvalue;
-    char cstring[50], message[81];
+    char *cstring, message[81];
     char *cptr, *tpos;
     char tempstore, chrzero = '0';
     double val, power;
@@ -1563,6 +1569,7 @@ int fffstruint(char *input,        /* I - array of values to be converted     */
     cptr = input;  /* pointer to start of input string */
     for (ii = 0; ii < ntodo; ii++)
     {
+      cstring = cptr;
       /* temporarily insert a null terminator at end of the string */
       tpos = cptr + twidth;
       tempstore = *tpos;
@@ -1669,6 +1676,8 @@ int fffstruint(char *input,        /* I - array of values to be converted     */
           ffpmsg(message);
           sprintf(message, "Column field = %s.", cstring);
           ffpmsg(message);
+          /* restore the char that was overwritten by the null */
+          *tpos = tempstore;
           return(*status = BAD_C2D);
         }
 

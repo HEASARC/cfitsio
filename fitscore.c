@@ -24,7 +24,7 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.0311; /* 31 Mar 1999 */
+      *version = 2.0312; /* 31 Mar 1999 */
  
  /*   *version = 2.030;  24 Feb 1999 */
  /*   *version = 2.029;  11 Feb 1999 */
@@ -1572,7 +1572,7 @@ int ffasfm(char *tform,    /* I - format code from the TFORMn keyword */
           {
             width = (long) fwidth;  /* convert from float to long */
 
-            if (width > 7 && *(form-1) == 'F')
+            if (width > 7 && *temp == 'F')
                 datacode = TDOUBLE;  /* type double if >7 digits */
 
             if (width < 10)
@@ -1591,8 +1591,12 @@ int ffasfm(char *tform,    /* I - format code from the TFORMn keyword */
 
                     if (longval >= width)  /* width < no. of decimals */
                         *status = BAD_TFORM; 
+
+                    if (longval > 6 && *temp == 'E')
+                        datacode = TDOUBLE;  /* type double if >6 digits */
                 }
             }
+
           }
         }
     }

@@ -39,7 +39,7 @@ void Cffgiou( int *unit, int *status )
       if( gFitsFiles[i]==NULL ) break;
    if( i==MAXFITSFILES ) {
       *unit = 0;
-      *status = 114;
+      *status = TOO_MANY_FILES;
       ffpmsg("Cffgiou has no more available unit numbers.");
    } else {
       *unit=i;
@@ -56,7 +56,7 @@ void Cfffiou( int unit, int *status )
    if( unit == -1 ) {
       int i; for( i=50; i<MAXFITSFILES; ) gFitsFiles[i++]=NULL;
    } else if( unit<1 || unit>=MAXFITSFILES ) {
-      *status=1;
+      *status = BAD_FILEPTR;
       ffpmsg("Cfffiou was sent an unacceptable unit number.");
    } else gFitsFiles[unit]=NULL;
 }

@@ -1,5 +1,27 @@
                Log of Changes Made to CFITSIO
 
+   - modified ffasfm to return datatype = TDOUBLE instead of TFLOAT
+     if the ASCII table column has TFORMn = 'Ew.d' with d > 6.
+
+   - modified the column reading routines to a) print out the offending
+     entry if an error occurs when trying to read a numeric ASCII table
+     column, and b) print out the column number that had the error
+     (the messages are written to CFITSIOs error stack)
+
+   - major updates to the Fortran FITSIO User's Guide to include many
+     new functions that have been added to CFITSIO in the past year.
+
+   - modified fitsio2.h so that the test for __D_FLOAT etc. is only
+     made on Alpha VMS machines, to avoid syntax errors on some other
+     platforms.
+
+   - modified ffgthd so that it recognizes a floating point value
+     that uses the 'd' or 'D' exponent character.
+
+   - removed the range check in fftm2s that returned an error if
+     'decimals' was less than zero.  A negative value is OK and is
+     used to return only the date and not the time in the string.
+
 Version 2.031 - 31 Mar 1999
 
    - moved the code that updates the NAXIS2 and PCOUNT keywords from
