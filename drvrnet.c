@@ -778,7 +778,7 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
   /* Send the GET request to the remote server */
   strcpy(tmpstr,"GET ");
   strcat(tmpstr,fn);
-  strcat(tmpstr," http/1.0\n");
+  strcat(tmpstr," HTTP/1.0\n");
   sprintf(tmpstr1,"User-Agent: HEASARC/CFITSIO/%-8.3f\n\n",ffvers(&version));
   strcat(tmpstr,tmpstr1);
   status = NET_SendRaw(sock,tmpstr,strlen(tmpstr),NET_DEFAULT);

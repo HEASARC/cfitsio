@@ -1,5 +1,90 @@
+
                    Log of Changes Made to CFITSIO
 
+Version 2.430 - 4 November 2002
+
+  Enhancements:
+
+  - modified fits_create_hdu/ffcrhd so that it returns without doing
+    anything and does not generate an error if the current HDU is 
+    already an empty HDU.  There is no need in this case to append
+    a new empty HDU to the file.
+
+  - new version of group.c (supplied by B. O'Neel at the ISDC) fixes 2
+    limitations:  1 - Groups now have 256 characters rather than 160
+    for the path lengths in the group tables. - ISDC SPR 1720.  2 -
+    Groups now can have backpointers longer than 68 chars using the long
+    string convention. - ISDC SPR 1738.
+
+  - small change to f77_wrap.h and f77_wrap3.c to support the fortran
+    wrappers on SUN solaris 64-bit sparc systems (see also change to v2.033)
+
+  - small change to find_column in  eval_f.c to support unsigned long
+    columns in binary tables (with TZEROn = 2147483648.0)
+
+  - small modification to cfortran.h to support Mac OS-X, (Darwin)
+
+  Bug fixes:
+
+  - When reading tile-compress images, the BSCALE and BZERO scaling
+    keywords were not being applied, if present.
+
+  - Previous changes to the error message stack code caused the
+    tile compressed image routines to not clean up spurious error
+    messages properly.
+
+  - fits_open_image was not skipping over null primary arrays.
+
+Version 2.420 - 19 July 2002
+
+  Enhancements:
+
+  - modified the virtual filename parser to support exponential notation
+    when specifing the min, max or binsize in a binning specifier, as in:
+    myfile.fits[binr X=1:10:1.0E-01, Y=1:10:1.0E-01]
+
+  - removed the limitation on the maximum number of HDUs in a FITS file 
+    (limit used to be 1000 HDUs per file).  Now any number of HDUs
+    can be written/read in a FITS file. (BUT files that have huge numbers
+    of HDUs can be difficult to manage and are not recommended);
+
+  - modified grparser.c to support HIERARCH keywords, based on 
+    code supplied by Richard Mathar (Max-Planck)
+
+  - moved the ffflsh (fits_flush_buffer) from the private to the
+    public interface, since this routine may be useful for some  
+    applications.  It is much faster than ffflus.
+
+  - small change to the definition of OFF_T in fitsio.h to support
+    large files on IBM AIX operating systems.
+
+  Bug fixes:
+
+  - fixed potential problem reading beyond array bounds in ffpkls.  This
+    would not have affected the content of any previously generated FITS
+    files.
+
+  - in the net driver code in drvrnet.c, the requested protocol string
+    was changed from "http/1.0" to "HTTP/1.0" to support apache 1.3.26.
+
+  - When using the virtual file syntax to open a vector cell in a binary
+    table as if it were a primary array image, there was a bug
+    in fits_copy_image_cell which garbled the data if the vector
+    was more than 30000 bytes long.
+
+  - fixed problem that caused fits_report_error to crash under Visual
+    C++ on Windows systems.  The fix is to use the '/MD' switch
+    on the cl command line, or, in Visual Studio, under project
+    settings / C++ select use runtime library multithreaded DLL
+
+  - modified ffpscl so it does not attempt to reset the scaling values
+    in the internal structure if the image is tile-compressed.
+
+  - fixed multiple bugs in mem_rawfile_open which affected the case
+    where a raw binary file is read and converted on the fly into
+    a FITS file.
+
+  - several small changes to group.c to suppress compiler warnings.
 
 Version 2.410 - 22 April 2002
 

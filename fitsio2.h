@@ -5,8 +5,9 @@
 
 /* Setting SUPPORT_64_BIT_INTEGERS to 1 will enable CFITSIO to read */
 /* and write images with BITPIX = 64 and binary table columns with  */
-/* TFORMn = 'K'.  Otherwise, CFITSIO will not recognize these       */
-/* non-standard 64-bit FITS datatypes.                              */
+/* TFORMn = 'K'.  Otherwise, setting SUPPORT_64_BIT_INTEGERS to 0   */
+/* will cause CFITSIO to not recognize these  non-standard 64-bit   */
+/* FITS datatypes.                                                  */
 
 #define SUPPORT_64BIT_INTEGERS 1
 
@@ -295,7 +296,6 @@ int ffpbytoff(fitsfile *fptr, long gsize, long ngroups, long offset,
 int ffldrc(fitsfile *fptr, long record, int err_mode, int *status);
 int ffwhbf(fitsfile *fptr, int *nbuff);
 int ffcurbuf(int nbuff, FITSfile **Fptr);
-int ffflsh(fitsfile *fptr, int clearbuf, int *status);
 int ffbfeof(fitsfile *fptr, int *status);
 int ffbfwt(int nbuff, int *status);
 int fits_get_num_files(void);
@@ -319,8 +319,6 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
 int fits_copy_image_cell(fitsfile **fptr, char *outfile, char *colname,
            long rownum, int *status);
 int fits_copy_image_keywords(fitsfile *infptr, fitsfile *outfptr, int *status);
-int fits_get_section_range(char **ptr,long *secmin,long *secmax,long *incre,
-              int *status);
 int ffrhdu(fitsfile *fptr, int *hdutype, int *status);
 int ffpinit(fitsfile *fptr, int *status);
 int ffainit(fitsfile *fptr, int *status);

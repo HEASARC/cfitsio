@@ -59,20 +59,20 @@
 \contentsline {section}{\numberline {8.2}Group Member Routines}{76}
 \contentsline {chapter}{\numberline {9} Specialized CFITSIO Interface Routines }{79}
 \contentsline {section}{\numberline {9.1}FITS File Access Routines}{79}
-\contentsline {section}{\numberline {9.2}HDU Access Routines}{81}
-\contentsline {section}{\numberline {9.3}Specialized Header Keyword Routines}{83}
-\contentsline {subsection}{\numberline {9.3.1}Header Information Routines}{83}
+\contentsline {section}{\numberline {9.2}HDU Access Routines}{82}
+\contentsline {section}{\numberline {9.3}Specialized Header Keyword Routines}{84}
+\contentsline {subsection}{\numberline {9.3.1}Header Information Routines}{84}
 \contentsline {subsection}{\numberline {9.3.2}Read and Write the Required Keywords}{84}
-\contentsline {subsection}{\numberline {9.3.3}Write Keyword Routines}{85}
-\contentsline {subsection}{\numberline {9.3.4}Insert Keyword Routines}{87}
-\contentsline {subsection}{\numberline {9.3.5}Read Keyword Routines}{88}
-\contentsline {subsection}{\numberline {9.3.6}Modify Keyword Routines}{89}
+\contentsline {subsection}{\numberline {9.3.3}Write Keyword Routines}{86}
+\contentsline {subsection}{\numberline {9.3.4}Insert Keyword Routines}{88}
+\contentsline {subsection}{\numberline {9.3.5}Read Keyword Routines}{89}
+\contentsline {subsection}{\numberline {9.3.6}Modify Keyword Routines}{90}
 \contentsline {subsection}{\numberline {9.3.7}Update Keyword Routines}{91}
-\contentsline {section}{\numberline {9.4}Define Data Scaling and Undefined Pixel Parameters}{91}
-\contentsline {section}{\numberline {9.5}Specialized FITS Primary Array or IMAGE Extension I/O Routines}{92}
+\contentsline {section}{\numberline {9.4}Define Data Scaling and Undefined Pixel Parameters}{92}
+\contentsline {section}{\numberline {9.5}Specialized FITS Primary Array or IMAGE Extension I/O Routines}{93}
 \contentsline {section}{\numberline {9.6}Specialized FITS ASCII and Binary Table Routines}{96}
 \contentsline {subsection}{\numberline {9.6.1}General Column Routines}{96}
-\contentsline {subsection}{\numberline {9.6.2}Low-Level Table Access Routines}{97}
+\contentsline {subsection}{\numberline {9.6.2}Low-Level Table Access Routines}{98}
 \contentsline {subsection}{\numberline {9.6.3}Write Column Data Routines}{98}
 \contentsline {subsection}{\numberline {9.6.4}Read Column Data Routines}{99}
 \contentsline {chapter}{\numberline {10} Extended File Name Syntax }{103}

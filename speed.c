@@ -49,8 +49,9 @@ int readbtable(fitsfile *fptr, int *status);
 void printerror( int status);
 int marktime(int *status);
 int gettime(double *elapse, float *elapscpu, int *status);
+int main(void);
 
-main()
+int main()
 {
 /*************************************************************************
     This program tests the speed of writing/reading FITS files with cfitsio
@@ -188,7 +189,7 @@ int writebintable (fitsfile *fptr, int *status)
     /* Create a binary table extension containing 3 columns  */
     /*********************************************************/
 {
-    int hdutype, tfields = 2;
+    int tfields = 2;
     long nremain, ntodo, firstrow = 1, firstelem = 1, nrows;
     float rate, size, elapcpu, cpufrac;
     double elapse;
@@ -211,7 +212,7 @@ int writebintable (fitsfile *fptr, int *status)
     nrows = minvalue(nrows, SHTSIZE);
     nremain = BROWS;
 
-    printf("Write %7drow x %dcol bintable %4d rows/loop:", BROWS, tfields,
+    printf("Write %7drow x %dcol bintable %4ld rows/loop:", BROWS, tfields,
        nrows);
     marktime(status);
 
@@ -242,7 +243,7 @@ int writeasctable (fitsfile *fptr, int *status)
     /* Create an ASCII table extension containing 2 columns  */
     /*********************************************************/
 {
-    int hdutype, tfields = 2;
+    int tfields = 2;
     long nremain, ntodo, firstrow = 1, firstelem = 1;
     long nrows;
     float rate, size, elapcpu, cpufrac;
@@ -265,7 +266,7 @@ int writeasctable (fitsfile *fptr, int *status)
     nrows = minvalue(nrows, SHTSIZE);
     nremain = AROWS;
 
-    printf("Write %7drow x %dcol asctable %4d rows/loop:", AROWS, tfields,
+    printf("Write %7drow x %dcol asctable %4ld rows/loop:", AROWS, tfields,
            nrows);
     marktime(status);
 
@@ -472,9 +473,6 @@ int marktime( int *status)
 /*--------------------------------------------------------------------------*/
 int gettime(double *elapse, float *elapscpu, int *status)
 {
-    clock_t ecpu;
-    time_t  finish;
-
     ecpu = clock();
     finish = time(0);
 

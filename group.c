@@ -995,6 +995,7 @@ int ffgtop(fitsfile *mfptr,  /* FITS file pointer to the member HDU          */
 
   char keyword[FLEN_KEYWORD];
   char keyvalue[FLEN_FILENAME];
+  char *tkeyvalue;
   char location[FLEN_FILENAME];
   char location1[FLEN_FILENAME];
   char location2[FLEN_FILENAME];
@@ -1089,9 +1090,15 @@ int ffgtop(fitsfile *mfptr,  /* FITS file pointer to the member HDU          */
 	  /* read the GRPLCn keyword value */
 
 	  sprintf(keyword,"GRPLC%d",grpid);
-	  *status = fits_read_key_str(mfptr,keyword,keyvalue,comment,
+	  /* SPR 1738 */
+	  *status = fits_read_key_longstr(mfptr,keyword,&tkeyvalue,comment,
 				      status);
+	  if (0 == *status) {
+	    strcpy(keyvalue,tkeyvalue);
+	    free(tkeyvalue);
+	  }
 	  
+
 	  /* if the GRPLCn keyword was not found then there is a problem */
 
 	  if(*status == KEY_NO_EXIST)
@@ -1312,6 +1319,7 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
   char memberFileName[FLEN_FILENAME];
   char memberLocation[FLEN_FILENAME];
   char grplc[FLEN_FILENAME];
+  char *tgrplc;
   char memberHDUtype[FLEN_VALUE];
   char memberExtname[FLEN_VALUE];
   char memberURI[] = "URL";
@@ -1716,8 +1724,14 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
 		  /* have to make sure the GRPLCn keyword matches too */
 
 		  sprintf(keyword,"GRPLC%d",(int)ngroups);
-		  *status = fits_read_key_str(tmpfptr,keyword,grplc,card,
-					      status);
+		  /* SPR 1738 */
+		  *status = fits_read_key_longstr(mfptr,keyword,&tgrplc,card,
+						  status);
+		  if (0 == *status) {
+		    strcpy(grplc,tgrplc);
+		    free(tgrplc);
+		  }
+		  
 		  /*
 		     always compare files using absolute paths
                      the presence of a non-empty cwd indicates
@@ -1854,8 +1868,11 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
 			      "EXTVER of Group containing this HDU",status);
 
 	  sprintf(keyword,"GRPLC%d",(int)ngroups);
-	  fits_insert_key_str(tmpfptr,keyword,groupFileName,
+	  /* SPR 1738 */
+	  fits_insert_key_longstr(tmpfptr,keyword,groupFileName,
 			      "URL of file containing Group",status);
+	  fits_write_key_longwarn(tmpfptr,status);
+
 	}
 
     }while(0);
@@ -1937,6 +1954,8 @@ int ffgmng(fitsfile *mfptr,   /* FITS file pointer to member HDU            */
   char keyword[FLEN_KEYWORD];
   char newKeyword[FLEN_KEYWORD];
   char card[FLEN_CARD];
+  char comment[FLEN_COMMENT];
+  char *tkeyvalue;
 
   if(*status != 0) return(*status);
 
@@ -2007,7 +2026,16 @@ int ffgmng(fitsfile *mfptr,   /* FITS file pointer to member HDU            */
 
 	      sprintf(keyword,"GRPLC%d",index);
 	      sprintf(newKeyword,"GRPLC%d",newIndex);
-	      fits_modify_name(mfptr,keyword,newKeyword,status);
+	      /* SPR 1738 */
+	      *status = fits_read_key_longstr(mfptr,keyword,&tkeyvalue,comment,
+					      status);
+	      if (0 == *status) {
+		fits_delete_key(mfptr,keyword,status);
+		fits_insert_key_longstr(mfptr,newKeyword,tkeyvalue,comment,status);
+		fits_write_key_longwarn(mfptr,status);
+		free(tkeyvalue);
+	      }
+	      
 
 	      if(*status == KEY_NO_EXIST) *status = 0;
 	    }
@@ -2609,6 +2637,8 @@ int ffgmcp(fitsfile *gfptr,  /* FITS file pointer to group                   */
   char  extname[FLEN_VALUE];
   char  card[FLEN_CARD];
   char  comment[FLEN_COMMENT];
+  char  keyname[FLEN_CARD];
+  char  value[FLEN_CARD];
 
   fitsfile *tmpfptr = NULL;
 
@@ -2665,7 +2695,11 @@ int ffgmcp(fitsfile *gfptr,  /* FITS file pointer to group                   */
 	    {
 	      *status = fits_find_nextkey(mfptr,incList,2,NULL,0,card,status);
 	      *status = fits_get_hdrpos(mfptr,&numkeys,&keypos,status);  
-	      *status = fits_delete_record(mfptr,keypos-1,status);
+	      /* SPR 1738 */
+	      *status = fits_read_keyn(mfptr,keypos-1,keyname,value,
+				       comment,status);
+	      *status = fits_read_record(mfptr,keypos-1,card,status);
+	      *status = fits_delete_key(mfptr,keyname,status);
 	    }
 
 	  if(*status == KEY_NO_EXIST) *status = 0;
@@ -2879,7 +2913,9 @@ int ffgmrm(fitsfile *gfptr,  /* FITS file pointer to group table             */
   char grpLocation3[FLEN_FILENAME];
   char cwd[FLEN_FILENAME];
   char keyword[FLEN_KEYWORD];
-  char grplc[FLEN_VALUE];
+  /* SPR 1738 This can now be longer */
+  char grplc[FLEN_FILENAME];
+  char *tgrplc;
   char keyvalue[FLEN_VALUE];
   char card[FLEN_CARD];
   char *editLocation;
@@ -3090,9 +3126,14 @@ int ffgmrm(fitsfile *gfptr,  /* FITS file pointer to group table             */
 		      
 		      sprintf(keyword,"GRPLC%d",index);
 		      
-		      *status = fits_read_key_str(mfptr,keyword,grplc,card,
-						  status);
-		      
+		      /* SPR 1738 */
+		      *status = fits_read_key_longstr(mfptr,keyword,&tgrplc,
+						      card, status);
+		      if (0 == *status) {
+			strcpy(grplc,tgrplc);
+			free(tgrplc);
+		      }
+		      		      
 		      if(*status == KEY_NO_EXIST)
 			{
 			  /* 
@@ -3422,7 +3463,8 @@ int ffgtdc(int   grouptype,     /* code specifying the type of
   char  URITform[]  = "3A";
 
   char  location[]  = "MEMBER_LOCATION";
-  char  locTform[]  = "160A";
+  /* SPR 01720, move from 160A to 256A */
+  char  locTform[]  = "256A";
 
 
   if(*status != 0) return(*status);
@@ -4268,6 +4310,8 @@ int ffgtcpr(fitsfile   *infptr,  /* input FITS file pointer                 */
   char keyword[FLEN_KEYWORD];
   char keyvalue[FLEN_VALUE];
   char card[FLEN_CARD];
+  char comment[FLEN_CARD];
+  char *tkeyvalue;
 
   char *includeList[] = {"*"};
   char *excludeList[] = {"EXTNAME","EXTVER","GRPNAME","GRPID#","GRPLC#",
@@ -4453,12 +4497,27 @@ int ffgtcpr(fitsfile   *infptr,  /* input FITS file pointer                 */
 	  *status = fits_get_hdrpos(infptr,&numkeys,&startSearch,status);
 
 	  --startSearch;
-
-	  *status = fits_insert_record(outfptr,keypos,card,status);
-
+	  /* SPR 1738 */
+	  if (strncmp(card,"GRPLC",5)) {
+	    /* Not going to be a long string so we're ok */
+	    *status = fits_insert_record(outfptr,keypos,card,status);
+	  } else {
+	    /* We could have a long string */
+	    *status = fits_read_record(infptr,startSearch,card,status);
+	    card[9] = '\0';
+	    *status = fits_read_key_longstr(infptr,card,&tkeyvalue,comment,
+					    status);
+	    if (0 == *status) {
+	      fits_insert_key_longstr(outfptr,card,tkeyvalue,comment,status);
+	      fits_write_key_longwarn(outfptr,status);
+	      free(tkeyvalue);
+	    }
+	  }
+	  
 	  ++keypos;
 	}
-
+      
+	  
       if(*status == KEY_NO_EXIST) 
 	*status = 0;
       else if(*status != 0) continue;

@@ -429,18 +429,21 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
         remain -= nchar;
         next  += nchar;
 
-        /* count the number of single quote characters in next section */
-        tstring[0] = '\0';
-        strncat(tstring, &value[next], 68); /* copy next part of string */
-        nquote = 0;
-        cptr = strchr(tstring, '\'');   /* search for quote character */
-        while (cptr)  /* search for quote character */
+        if (remain > 0) 
         {
-            nquote++;            /*  increment no. of quote characters  */
-            cptr++;              /*  increment pointer to next character */
-            cptr = strchr(cptr, '\'');  /* search for another quote char */
+           /* count the number of single quote characters in next section */
+           tstring[0] = '\0';
+           strncat(tstring, &value[next], 68); /* copy next part of string */
+           nquote = 0;
+           cptr = strchr(tstring, '\'');   /* search for quote character */
+           while (cptr)  /* search for quote character */
+           {
+               nquote++;            /*  increment no. of quote characters  */
+               cptr++;              /*  increment pointer to next character */
+               cptr = strchr(cptr, '\'');  /* search for another quote char */
+           }
+           nchar = 68 - nquote;  /* max number of chars to write this time */
         }
-        nchar = 68 - nquote;  /* max number of chars to write this time */
     }
     return(*status);
 }

@@ -163,14 +163,14 @@ Blackburn, G Bodammer, Romke Bontekoe, Lucio Chiappetti, Keith Costorf,
 Robin Corbet, John Davis,  Richard Fink, Ning Gan, Emily Greene,
 Gretchen Green, Joe Harrington, Cheng Ho, Phil Hodge, Jim Ingham,
 Yoshitaka Ishisaki, Diab Jerius, Mark Levine, Todd Karakaskian, Edward
-King, Scott Koch,  Claire Larkin, Rob Managan, Eric Mandel, John
-Mattox, Carsten Meyer, Emi Miyata, Stefan Mochnacki, Mike Noble, Oliver
-Oberdorf, Clive Page, Arvind Parmar, Jeff Pedelty, Tim Pearson, Maren
-Purves, Scott Randall, Chris Rogers, Arnold Rots, Barry Schlesinger,
-Robin Stebbins, Andrew Szymkowiak, Allyn Tennant, Peter Teuben, James
-Theiler, Doug Tody, Shiro Ueno, Steve Walton, Archie Warnock, Alan
-Watson, Dan Whipple, Wim Wimmers, Peter Young, Jianjun Xu, and Nelson
-Zarate.
+King, Scott Koch,  Claire Larkin, Rob Managan, Eric Mandel, Richard
+Mathar, John Mattox, Carsten Meyer, Emi Miyata, Stefan Mochnacki, Mike
+Noble, Oliver Oberdorf, Clive Page, Arvind Parmar, Jeff Pedelty, Tim
+Pearson, Maren Purves, Scott Randall, Chris Rogers, Arnold Rots, Barry
+Schlesinger, Robin Stebbins, Andrew Szymkowiak, Allyn Tennant, Peter
+Teuben, James Theiler, Doug Tody, Shiro Ueno, Steve Walton, Archie
+Warnock, Alan Watson, Dan Whipple, Wim Wimmers, Peter Young, Jianjun
+Xu, and Nelson Zarate.
 
 **D.  Legal Stuff
 
@@ -1307,13 +1307,7 @@ ever is smaller.  The C symbolic constant FOPEN\_MAX usually defines
 the total number of files that may open at once (this includes any
 other text or binary files which may be open, not just FITS files).
 
-2.  The maximum number of extensions (HDUs) that can be read or written
-in a single FITS file is currently set to 1000 as defined by MAXHDU in
-the fitsio.h file.  This value may be increased if necessary, but the
-access times to the later extensions in such files may become excessively
-long.
-
-3.  By default, CFITSIO can handle FITS files up to 2.1 GB in size
+2.  By default, CFITSIO can handle FITS files up to 2.1 GB in size
 (2**31 bytes).  This file size limit is often imposed by 32-bit
 operating systems.  More recently, as 64-bit operating systems become
 more common, an industry-wide standard (at least on Unix systems) has
@@ -4111,14 +4105,40 @@ specifications.
    int fits_parse_rootname / ffrtnm
        (char *filename, > char *rootname, int *status);
 -
->8 Flush any internal buffers of data to the output FITS file. This 
-   routine rarely needs to be called, but can be useful when writing to
-   the FITS files in memory.  It also ensures
-   that if the program subsequently aborts then the FITS file will
->  have been closed properly. \label{ffflus}
+>8 Flush any internal buffers of data to the output FITS file. These 
+   routines rarely need to be called, but can be useful in cases where
+   other processes need to access the same FITS file in real time,
+   either on disk or in memory.  These routines also help to ensure
+   that if the application program subsequently aborts then the FITS
+   file will have been closed properly.  The first routine,
+   fits\_flush\_file is more rigorous and completely closes, then
+   reopens, the current HDU, before flushing the internal buffers, thus
+   ensuring that the output FITS file is identical to what would be
+   produced if the FITS was closed at that point (i.e., with a call to
+   fits\_close\_file).  The second routine, fits\_flush\_buffer simply
+   flushes the internal CFITSIO buffers of data to the output FITS
+   file, without updating and closing the current HDU.  This is much
+   faster, but there may be circumstances where the flushed file does
+   not completely reflect the final state of the file as it will exist
+   when the file is actually closed.
+
+   A typical use of these routines would be to flush the state of a
+   FITS table to disk after each row of the table is written.  It is
+   recommend that fits\_flush\_file be called after the first row is
+   written, then fits\_flush\_buffer may be called after each
+   subsequent row is written.  Note that this latter routine will not
+   automatically update the NAXIS2 keyword which records the number of
+   rows of data in the table, so this keyword must be explicitly
+   updated by the application program after each row is written.
+>  \label{ffflus}
 -
   int fits_flush_file / ffflus
       (fitsfile *fptr, > int *status)
+
+  int fits_flush_buffer / ffflsh
+      (fitsfile *fptr, 0, > int *status)
+
+      (Note:  The second argument must be 0).
 -
 
 **B.  HDU Access Routines
@@ -6318,7 +6338,8 @@ by a backslash to force the UNIX shell to ignore it.
       gtifilter( [ "gtifile" [, expr [, "STARTCOL", "STOPCOL" ] ] ] )
 -
     where  each "[]" demarks optional parameters.  Note that  the quotes
-    around the gtifile and START/STOP column are required.  The gtifile,
+    around the gtifile and START/STOP column are required.  Either single
+    or double quotes may be used. The gtifile,
     if specified,  can be blank  ("") which will  mean to use  the first
     extension  with   the name "*GTI*"  in   the current  file,  a plain
     extension  specifier (eg, "+2",  "[2]", or "[STDGTI]") which will be
@@ -7377,6 +7398,7 @@ fits\_file\_name      & \pageref{ffflnm} \\
 fits\_find\_first\_row    & \pageref{ffffrw} \\
 fits\_find\_nextkey      & \pageref{ffgnxk} \\
 fits\_find\_rows    & \pageref{fffrow} \\
+fits\_flush\_buffer     & \pageref{ffflus} \\
 fits\_flush\_file     & \pageref{ffflus} \\
 fits\_get\_acolparms  & \pageref{ffgacl} \\
 fits\_get\_bcolparms  & \pageref{ffgbcl} \\
@@ -7395,9 +7417,9 @@ fits\_get\_hduaddr    & \pageref{ffghad} \\
 fits\_get\_hduoff    & \pageref{ffghad} \\
 fits\_get\_img\_dim & \pageref{ffgidm} \\
 fits\_get\_img\_param & \pageref{ffgipr} \\
-fits\_get\_img\_size & \pageref{ffgisz} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_get\_img\_size & \pageref{ffgisz} \\
 fits\_get\_img\_type & \pageref{ffgidt} \\
 fits\_get\_keyclass    & \pageref{ffgkcl} \\
 fits\_get\_keyname    & \pageref{ffgknm} \\
@@ -7429,10 +7451,10 @@ fits\_make\_nkey      & \pageref{ffnkey} \\
 fits\_merge\_groups  & \pageref{ffgtmg} \\
 fits\_modify\_card       & \pageref{ffmcrd} \\
 fits\_modify\_comment    & \pageref{ffmcom} \\
-fits\_modify\_key\_null   & \pageref{ffmkyu} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_modify\_key\_null   & \pageref{ffmkyu} \\
 fits\_modify\_key\_TYP    & \pageref{ffmkyx} \\
 fits\_modify\_name       & \pageref{ffmnam} \\
 fits\_modify\_record     & \pageref{ffmrec} \\
@@ -7478,9 +7500,9 @@ fits\_read\_imgnull\_TYP & \pageref{ffgpfx} \\
 fits\_read\_key          & \pageref{ffgky} \\
 fits\_read\_key\_longstr  & \pageref{ffgkls} \\
 fits\_read\_key\_triple   & \pageref{ffgkyt} \\
-fits\_read\_key\_unit     & \pageref{ffgunt} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_read\_key\_unit     & \pageref{ffgunt} \\
 fits\_read\_key\_TYP      & \pageref{ffgkyx} \\
 fits\_read\_keyn         & \pageref{ffgkyn} \\
 fits\_read\_keys\_TYP     & \pageref{ffgknx} \\
@@ -7526,9 +7548,9 @@ fits\_uppercase      & \pageref{ffupch} \\
 fits\_url\_type      & \pageref{ffurlt} \\
 fits\_verify\_chksum  & \pageref{ffvcks} \\
 fits\_verify\_group  & \pageref{ffgtvf} \\
-fits\_world\_to\_pix & \pageref{ffxypx} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_world\_to\_pix & \pageref{ffxypx} \\
 fits\_write\_2d\_TYP   & \pageref{ffp2dx} \\
 fits\_write\_3d\_TYP   & \pageref{ffp3dx} \\
 fits\_write\_atblhdr      & \pageref{ffphtb} \\
@@ -7613,6 +7635,7 @@ ffextn   & \pageref{ffextn} \\
 ffffrw    & \pageref{ffffrw} \\
 ffflmd      & \pageref{ffflmd} \\
 ffflnm      & \pageref{ffflnm} \\
+ffflsh     & \pageref{ffflus} \\
 ffflus     & \pageref{ffflus} \\
 fffrow    & \pageref{fffrow} \\
 ffg2d\_      & \pageref{ffg2dx} \\
@@ -7621,9 +7644,9 @@ ffgabc      & \pageref{ffgabc} \\
 ffgacl  & \pageref{ffgacl} \\
 ffgbcl  & \pageref{ffgbcl} \\
 ffgcdw  & \pageref{ffgcdw} \\
-ffgcf    & \pageref{ffgcf} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffgcf    & \pageref{ffgcf} \\
 ffgcf\_    & \pageref{ffgcfx} \\
 ffgcks     & \pageref{ffgcks} \\
 ffgcnn    & \pageref{ffgcnn} \\
@@ -7669,9 +7692,9 @@ ffgncl     & \pageref{ffgnrw} \\
 ffgnrw     & \pageref{ffgnrw} \\
 ffgnxk      & \pageref{ffgnxk} \\
 ffgpf & \pageref{ffgpf} \\
-ffgpf\_ & \pageref{ffgpfx} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffgpf\_ & \pageref{ffgpfx} \\
 ffgpv         & \pageref{ffgpv} \\
 ffgpv\_     & \pageref{ffgpvx} \\
 ffgpxv   & \pageref{ffgpxv} \\
@@ -7717,9 +7740,9 @@ ffiter   & \pageref{ffiter} \\
 ffiurl & \pageref{ffiurl} \\
 ffkeyn      & \pageref{ffkeyn} \\
 ffmahd     & \pageref{ffmahd} \\
-ffmcom    & \pageref{ffmcom} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffmcom    & \pageref{ffmcom} \\
 ffmcrd       & \pageref{ffmcrd} \\
 ffmkls    & \pageref{ffmkyx} \\
 ffmkyu   & \pageref{ffmkyu} \\
@@ -7765,9 +7788,9 @@ ffpnul    & \pageref{ffpnul} \\
 ffppn     & \pageref{ffppn} \\
 ffppn\_ & \pageref{ffppnx} \\
 ffppr        & \pageref{ffppr} \\
-ffpprn & \pageref{ffpprn} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffpprn & \pageref{ffpprn} \\
 ffppru & \pageref{ffppru} \\
 ffppr\_    & \pageref{ffpprx} \\
 ffppx & \pageref{ffppx} \\
@@ -8151,7 +8174,7 @@ improve the readability of their code.
  BAD_TDIM          263    illegal TDIMn keyword value
  BAD_HEAP_PTR      264    invalid BINTABLE heap pointer is out of range
 
- BAD_HDU_NUM       301    HDU number < 1 or > MAXHDU
+ BAD_HDU_NUM       301    HDU number < 1
  BAD_COL_NUM       302    column number < 1 or > tfields
  NEG_FILE_POS      304    tried to move to negative byte location in file
  NEG_BYTES         306    tried to read or write negative number of bytes

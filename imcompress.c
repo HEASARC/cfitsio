@@ -1299,7 +1299,7 @@ int fits_decompress_img (fitsfile *infptr, /* image (bintable) to uncompress */
 
     if (!fits_is_compressed_image(infptr, status) )
     {
-        ffpmsg("CHDU is not a compressed image (fits_decomp_img)");
+        ffpmsg("CHDU is not a compressed image (fits_decompress_img)");
         return(*status = DATA_DECOMPRESSION_ERR);
     }
 
@@ -1435,7 +1435,7 @@ int fits_read_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
 
     if (!fits_is_compressed_image(fptr, status) )
     {
-        ffpmsg("CHDU is not a compressed image (fits_decomp_img)");
+        ffpmsg("CHDU is not a compressed image (fits_decompress_img)");
         return(*status = DATA_DECOMPRESSION_ERR);
     }
 
@@ -1639,8 +1639,8 @@ int fits_read_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
 }
 /*--------------------------------------------------------------------------*/
 int fits_read_compressed_pixels(fitsfile *fptr, /* I - FITS file pointer    */
-            int  datatype,  /* I - datatype of the array to be returned      */
-            OFF_T   fpixel,  /* I - 'first pixel to read          */
+            int  datatype,  /* I - datatype of the array to be returned     */
+            OFF_T   fpixel, /* I - 'first pixel to read          */
             long   npixel,  /* I - number of pixels to read      */
             int  nullcheck,  /* I - 0 for no null checking                   */
                               /*     1: set undefined pixels = nullval       */
@@ -2071,23 +2071,20 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
     if (ffgcno(infptr, CASEINSEN, "COMPRESSED_DATA",
          &(infptr->Fptr)->cn_compressed, status) > 0)
     {
-        ffpmsg("couldn't find COMPRESSED_DATA column (fits_decomp_img)");
+        ffpmsg("couldn't find COMPRESSED_DATA column (fits_decompress_img)");
         return(*status = DATA_DECOMPRESSION_ERR);
     }
 
+    ffpmrk(); /* put mark on message stack; erase any messages after this */
+
     tstatus = 0;
-    if (ffgcno(infptr,CASEINSEN, "UNCOMPRESSED_DATA",
-          &(infptr->Fptr)->cn_uncompressed, &tstatus) > 0)
-    {
-         ffxmsg(-2, value);  /* clear spurious error message from stack */
-    }
+    ffgcno(infptr,CASEINSEN, "UNCOMPRESSED_DATA",
+          &(infptr->Fptr)->cn_uncompressed, &tstatus);
 
     tstatus = 0;
     if (ffgcno(infptr, CASEINSEN, "ZSCALE", &(infptr->Fptr)->cn_zscale,
               &tstatus) > 0)
     {
-         ffxmsg(-2, value);  /* clear spurious error message from stack */
-
         /* CMPSCALE column doesn't exist; see if there is a keyword */
         tstatus = 0;
         if (ffgky(infptr, TDOUBLE, "ZSCALE", &(infptr->Fptr)->zscale, NULL, 
@@ -2099,8 +2096,6 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
     if (ffgcno(infptr, CASEINSEN, "ZZERO", &(infptr->Fptr)->cn_zzero,
                &tstatus) > 0)
     {
-         ffxmsg(-2, value);  /* clear spurious error message from stack */
-
         /* CMPZERO column doesn't exist; see if there is a keyword */
         tstatus = 0;
         if (ffgky(infptr, TDOUBLE, "ZZERO", &(infptr->Fptr)->zzero, NULL, 
@@ -2112,8 +2107,6 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
     if (ffgcno(infptr, CASEINSEN, "ZBLANK", &(infptr->Fptr)->cn_zblank,
                &tstatus) > 0)
     {
-         ffxmsg(-2, value);  /* clear spurious error message from stack */
-
         /* CMPZERO column doesn't exist; see if there is a keyword */
         tstatus = 0;
         if (ffgky(infptr, TINT, "ZBLANK", &(infptr->Fptr)->zblank, NULL,
@@ -2121,6 +2114,22 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
             (infptr->Fptr)->cn_zblank = -1;  /* flag for a constant ZBLANK */
     }
 
+    /* read the conventional BSCALE and BZERO scaling keywords, if present */
+    tstatus = 0;
+    if (ffgky (infptr, TDOUBLE, "BSCALE", &(infptr->Fptr)->cn_bscale, 
+        NULL, &tstatus) > 0)
+    {
+        (infptr->Fptr)->cn_bscale = 1.0;
+    }
+
+    tstatus = 0;
+    if (ffgky (infptr, TDOUBLE, "BZERO", &(infptr->Fptr)->cn_bzero, 
+        NULL, &tstatus) > 0)
+    {
+        (infptr->Fptr)->cn_bzero = 0.0;
+    }
+
+    ffcmrk();  /* clear any spurious error messages, back to the mark */
     return (*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -2258,7 +2267,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
     else if ((infptr->Fptr)->cn_zscale == -1)
     {
         bscale = (infptr->Fptr)->zscale;
-        bzero = (infptr->Fptr)->zzero;
+        bzero  = (infptr->Fptr)->zzero;
     }
     else
     {
@@ -2274,6 +2283,15 @@ int imcomp_decompress_tile (fitsfile *infptr,
           free (cbuf);
           return (*status);
         }
+    }
+
+    if (bscale == 1.0 && bzero == 0.0 ) 
+    {
+      /* if no other scaling has been specified, try using the values
+         given by the BSCALE and BZERO keywords, if any */
+
+        bscale = (infptr->Fptr)->cn_bscale;
+        bzero  = (infptr->Fptr)->cn_bzero;
     }
 
     /* ************************************************************* */
@@ -2369,7 +2387,6 @@ int imcomp_decompress_tile (fitsfile *infptr,
         }
 
         pl_l2pi (sbuf, 1, idata, tilelen);  /* uncompress the data */
-
         free(sbuf);
     }
 

@@ -849,7 +849,7 @@ int mem_rawfile_open(char *filename, int rwmode, int *hdl)
     /* write the required header keywords */
     ffcrim(fptr, datatype, naxis, dim, &status);
 
-    /* close the file, but keep the memory allocated */
+    /* close the FITS file, but keep the memory allocated */
     ffclos(fptr, &status);
 
     if (status > 0)
@@ -863,14 +863,13 @@ int mem_rawfile_open(char *filename, int rwmode, int *hdl)
     if (offset > 0)
        fseek(diskfile, offset, 0);   /* offset to start of the data */
 
-    /* copy the data into memory */
-    cptr = *memTable[*hdl].memaddrptr + 2880;
+    /* read the raw data into memory */
+    ptr = *memTable[*hdl].memaddrptr + 2880;
 
-    /* read bytes */
-    if (fread(cptr, 1, datasize, diskfile) != datasize)
+    if (fread((char *) ptr, 1, datasize, diskfile) != datasize)
       status = READ_ERROR;
 
-    fclose(diskfile);
+    fclose(diskfile);  /* close the raw binary disk file */
 
     if (status)
     {
@@ -884,7 +883,7 @@ int mem_rawfile_open(char *filename, int rwmode, int *hdl)
                                  /* efficient way to do this is to just flip  */
                                  /* the most significant bit.                 */
 
-      sptr = (short *) memTable[*hdl].memaddrptr + 2880;
+      sptr = (short *) ptr;
 
       if (endian == BYTESWAPPED)  /* working with native format */
       {
@@ -904,8 +903,6 @@ int mem_rawfile_open(char *filename, int rwmode, int *hdl)
 
     if (endian)  /* swap the bytes if array is in little endian byte order */
     {
-      ptr = *memTable[*hdl].memaddrptr + 2880;
-
       if (datatype == SHORT_IMG || datatype == USHORT_IMG)
       {
         ffswap2( (short *) ptr, nvals);
@@ -954,7 +951,6 @@ int mem_size(int handle, OFF_T *filesize)
 */
 {
     *filesize = memTable[handle].fitsfilesize;
-
     return(0);
 }
 /*--------------------------------------------------------------------------*/

@@ -2267,7 +2267,7 @@ the total number of files that may open at once (this includes any
 other text or binary files which may be open, not just FITS files).
 
 2.  The maximum number of extensions (HDUs) that can be read or written
-in a single FITS file is currently set to 1000 as defined by MAXHDU in
+in a single FITS file is currently set to 10000 as defined by MAXHDU in
 the fitsio.h file.  This value may be increased if necessary, but the
 access times to the later extensions in such files may become excessively
 long.

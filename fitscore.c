@@ -60,10 +60,13 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.410;
+      *version = 2.430;
 
-/*    22 April 2002  used in ftools v5.2
+/*     4 Nov 2002
 
+   Previous releases:
+      *version = 2.420;  19 Jul 2002
+      *version = 2.410;  22 Apr 2002 used in ftools v5.2
       *version = 2.401;  28 Jan 2002
       *version = 2.400;  18 Jan 2002
       *version = 2.301;   7 Dec 2001
@@ -5096,16 +5099,33 @@ int ffcrhd(fitsfile *fptr,      /* I - FITS file pointer */
 */
 {
     int  tstatus = 0;
-    OFF_T bytepos;
+    OFF_T bytepos, *ptr;
 
     if (*status > 0)
         return(*status);
-    else if ((fptr->Fptr)->maxhdu == MAXHDU)
-    {
-        *status = BAD_HDU_NUM;       /* too many HDUs in file */
+
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+    /* If the current header is empty, we don't have to do anything */
+    if ((fptr->Fptr)->headend == (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] )
         return(*status);
-    }
+
     while (ffmrhd(fptr, 1, 0, &tstatus) == 0);  /* move to end of file */
+
+    if ((fptr->Fptr)->maxhdu == (fptr->Fptr)->MAXHDU)
+    {
+        /* allocate more space for the headstart array */
+        ptr = (OFF_T*) realloc( (fptr->Fptr)->headstart,
+                        ((fptr->Fptr)->MAXHDU + 1001) * sizeof(OFF_T) );
+
+        if (ptr == NULL)
+           return (*status = MEMORY_ALLOCATION);
+        else {
+          (fptr->Fptr)->MAXHDU = (fptr->Fptr)->MAXHDU + 1000;
+          (fptr->Fptr)->headstart = ptr;
+        }
+    }
 
     if (ffchdu(fptr, status) <= 0)  /* close the current HDU */
     {
@@ -5423,11 +5443,25 @@ int ffmahd(fitsfile *fptr,      /* I - FITS file pointer             */
 {
     int moveto, tstatus;
     char message[FLEN_ERRMSG];
+    OFF_T *ptr;
 
     if (*status > 0)
         return(*status);
-    else if (hdunum < 1 || hdunum >= MAXHDU )
+    else if (hdunum < 1 )
         return(*status = BAD_HDU_NUM);
+    else if (hdunum >= (fptr->Fptr)->MAXHDU )
+    {
+        /* allocate more space for the headstart array */
+        ptr = (OFF_T*) realloc( (fptr->Fptr)->headstart,
+                        (hdunum + 1001) * sizeof(OFF_T) ); 
+
+        if (ptr == NULL)
+           return (*status = MEMORY_ALLOCATION);
+        else {
+          (fptr->Fptr)->MAXHDU = hdunum + 1000; 
+          (fptr->Fptr)->headstart = ptr;
+        }
+    }
 
     /* set logical HDU position to the actual position, in case they differ */
     fptr->HDUposition = (fptr->Fptr)->curhdu;

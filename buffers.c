@@ -298,6 +298,7 @@ int ffgbyt(fitsfile *fptr,    /* I - FITS file pointer             */
 /*  note that in this case, ffmbyt has not been called, and so        */
 /*  bufrecnum[(fptr->Fptr)->curbuf] does not point to the intended */
 /*  output buffer */
+
       recstart = filepos / IOBUFLEN;               /* starting record */
       recend = (filepos + nbytes - 1) / IOBUFLEN;  /* ending record   */
 

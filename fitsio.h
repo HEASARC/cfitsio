@@ -1,4 +1,4 @@
-/*  Version Info: This file is distributed with version 2.401 of CFITSIO   */
+/*  Version Info: This file is distributed with version 2.430 of CFITSIO   */
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
@@ -54,7 +54,7 @@ SERVICES PROVIDED HEREUNDER."
 
 /*  Debian systems require the 2nd test, below,         */
 /*  i.e, "(defined(linux) && defined(__off_t_defined))" */
-#if defined(_OFF_T) || (defined(linux) && defined(__off_t_defined)) || defined(_MIPS_SZLONG) || defined(__APPLE__)
+#if defined(_OFF_T) || (defined(linux) && defined(__off_t_defined)) || defined(_MIPS_SZLONG) || defined(__APPLE__) || defined(_AIX)
 #    define OFF_T off_t
 #else
 #    define OFF_T long
@@ -67,7 +67,7 @@ SERVICES PROVIDED HEREUNDER."
 #   ifndef HAVE_LONGLONG
 #      define HAVE_LONGLONG 1
 #   endif
-#elif defined(_MSC_VER) || defined(__BORLANDC__)  /* Windows PCs */
+#elif defined(_MSC_VER)   /* Windows PCs; Visual C++, but not Borland C++ */
     typedef __int64 LONGLONG;
 #   ifndef HAVE_LONGLONG
 #      define HAVE_LONGLONG 1
@@ -175,8 +175,6 @@ SERVICES PROVIDED HEREUNDER."
 #define CASESEN   1   /* do case-sensitive string match */
 #define CASEINSEN 0   /* do case-insensitive string match */
  
-#define MAXHDU 1000    /* maximum number of extensions allowed in a FITS file */
-
 #define GT_ID_ALL_URI  0   /* hierarchical grouping parameters */
 #define GT_ID_REF      1
 #define GT_ID_POS      2
@@ -237,7 +235,8 @@ typedef struct      /* structure used to store basic FITS file information */
     int hdutype;    /* 0 = primary array, 1 = ASCII table, 2 = binary table */
     int writemode;  /* 0 = readonly, 1 = readwrite */
     int maxhdu;     /* highest numbered HDU known to exist in the file */
-    OFF_T headstart[MAXHDU + 1]; /* byte offset in file to start of each HDU */
+    int MAXHDU;     /* dynamically allocated dimension of headstart array */
+    OFF_T *headstart; /* byte offset in file to start of each HDU */
     OFF_T headend;  /* byte offest in file to end of the current HDU header */
     OFF_T nextkey;  /* byte offset in file to beginning of next keyword */
     OFF_T datastart;/* byte offset in file to start of the current data unit */
@@ -272,6 +271,8 @@ typedef struct      /* structure used to store basic FITS file information */
 
     double zscale;          /* scaling value, if same for all tiles */
     double zzero;           /* zero pt, if same for all tiles */
+    double cn_bscale;       /* value of the BSCALE keyword in header */
+    double cn_bzero;        /* value of the BZERO keyword in header */
     int zblank;             /* value for null pixels, if not a column */
 
     int rice_blocksize;     /* first compression parameter */
@@ -525,6 +526,7 @@ int ffimem(fitsfile **fptr,  void **buffptr,
 int fftplt(fitsfile **fptr, const char *filename, const char *tempname,
            int *status);
 int ffflus(fitsfile *fptr, int *status);
+int ffflsh(fitsfile *fptr, int clearbuf, int *status);
 int ffclos(fitsfile *fptr, int *status);
 int ffdelt(fitsfile *fptr, int *status);
 int ffflnm(fitsfile *fptr, char *filename, int *status);
@@ -556,6 +558,8 @@ int ffasfm(char *tform, int *datacode, long *width, int *decim, int *status);
 int ffbnfm(char *tform, int *datacode, long *repeat, long *width, int *status);
 int ffgabc(int tfields, char **tform, int space, long *rowlen, long *tbcol,
            int *status);
+int fits_get_section_range(char **ptr,long *secmin,long *secmax,long *incre,
+              int *status);
  
 /*----------------- write single keywords --------------*/
 int ffpky(fitsfile *fptr, int datatype, char *keyname, void *value,

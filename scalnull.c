@@ -62,6 +62,14 @@ int ffpscl(fitsfile *fptr,      /* I - FITS file pointer               */
     if (hdutype != IMAGE_HDU)
         return(*status = NOT_IMAGE);         /* not proper HDU type */
 
+    if (fits_is_compressed_image(fptr, status)) /* compressed images */
+    {
+        (fptr->Fptr)->cn_bscale = scale;
+        (fptr->Fptr)->cn_bzero  = zero;
+
+        return(*status);
+    }
+
     /* set pointer to the first 'column' (contains group parameters if any) */
     colptr = (fptr->Fptr)->tableptr; 
 
@@ -98,6 +106,9 @@ int ffpnul(fitsfile *fptr,      /* I - FITS file pointer                */
 
     if (hdutype != IMAGE_HDU)
         return(*status = NOT_IMAGE);         /* not proper HDU type */
+
+    if (fits_is_compressed_image(fptr, status)) /* ignore compressed images */
+        return(*status);
 
     /* set pointer to the first 'column' (contains group parameters if any) */
     colptr = (fptr->Fptr)->tableptr; 

@@ -19,6 +19,7 @@
 #define fits_create_memfile ffimem
 #define fits_create_template fftplt
 #define fits_flush_file     ffflus
+#define fits_flush_buffer   ffflsh
 #define fits_close_file     ffclos
 #define fits_delete_file    ffdelt
 #define fits_file_name      ffflnm

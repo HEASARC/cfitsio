@@ -53,6 +53,10 @@
 		existing HDUs to built a list of already used EXTNAME/EXTVERs
 22-Jan-99: Bruce O'Neel, bugfix : TLONG should always reference long type
 		variable on OSF/Alpha and on 64-bit archs in general
+20-Jun-2002 Wm Pence, added support for the HIERARCH keyword convention in
+                which keyword names can effectively be longer than 8 characters.
+                Example:
+                HIERARCH  LongKeywordName = 'value' / comment
 */
 
 
@@ -394,6 +398,21 @@ int	ngp_extract_tokens(NGP_RAW_LINE *cl)
           break;
         }
 
+      /*
+        from Richard Mathar, 2002-05-03, add 10 lines:
+        if upper/lowercase HIERARCH followed also by an equal sign...
+      */
+      if( strncasecmp("HIERARCH",p,strlen("HIERARCH")) == 0 )
+      {
+           char * const eqsi=strchr(p,'=') ;
+           if( eqsi )
+           {
+              cl_flags |= NGP_FOUND_EQUAL_SIGN ;
+              p=eqsi ;
+              break ;
+           }
+      }
+
       if ((' ' == *p) || ('\t' == *p)) break;
       if ('=' == *p)
         { cl_flags |= NGP_FOUND_EQUAL_SIGN;
@@ -623,8 +642,10 @@ int	ngp_read_line(int ignore_blank_lines)
       if (NULL == ngp_curline.name)  continue;	/* skip lines consisting only of whitespaces */
 
       for (k = 0; k < strlen(ngp_curline.name); k++)
-        if ((ngp_curline.name[k] >= 'a') && (ngp_curline.name[k] <= 'z')) 
-          ngp_curline.name[k] += 'A' - 'a';	/* force keyword to be upper case */
+       { if ((ngp_curline.name[k] >= 'a') && (ngp_curline.name[k] <= 'z')) 
+           ngp_curline.name[k] += 'A' - 'a';	/* force keyword to be upper case */
+         if (k == 7) break;  /* only first 8 chars are required to be upper case */
+       }
 
       for (k=0;; k++)				/* find index of keyword in keyword table */
        { if (NGP_TOKEN_UNKNOWN == ngp_tkdef[k].code) break;
@@ -696,7 +717,7 @@ int	ngp_read_line(int ignore_blank_lines)
       strncpy(ngp_linkey.name, ngp_curline.name, NGP_MAX_NAME); /* and keyword's name */
       ngp_linkey.name[NGP_MAX_NAME - 1] = 0;
 
-      if (strlen(ngp_linkey.name) > 8)
+      if (strlen(ngp_linkey.name) > FLEN_KEYWORD)  /* WDP: 20-Jun-2002:  mod to support HIERARCH */
         { return(NGP_BAD_ARG);		/* cfitsio does not allow names > 8 chars */
         }
       

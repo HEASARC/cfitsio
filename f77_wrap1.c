@@ -231,6 +231,7 @@ void Cfftplt( fitsfile **fptr, const char *filename, const char *tempname,
 FCALLSCSUB4(Cfftplt,FTTPLT,fttplt,PFITSUNIT,STRING,STRING,PINT)
 
 FCALLSCSUB2(ffflus,FTFLUS,ftflus,FITSUNIT,PINT)
+FCALLSCSUB3(ffflsh,FTFLSH,ftflsh,FITSUNIT, INT, PINT)
 
 void Cffclos( int unit, int *status );
 void Cffclos( int unit, int *status )

@@ -6,7 +6,7 @@ int main(int argc, char *argv[])
 {
     fitsfile *infptr, *outfptr;   /* FITS file pointers defined in fitsio.h */
     int status = 0, ii = 1, iteration = 0;
-    int hdutype, bitpix, bytepix, naxis, nkeys, keytype, datatype, anynul;
+    int hdutype, bitpix, bytepix, naxis, nkeys, datatype, anynul;
     long naxes[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
     long first= 1, totpix, npix;
     double *array, bscale = 1.0, bzero = 0.0, nulval = 0.;

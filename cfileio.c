@@ -154,7 +154,24 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
         return(*status = MEMORY_ALLOCATION);
     }
 
+
+    /* mem for headstart array */
+    ((*fptr)->Fptr)->headstart = (OFF_T *) calloc(1001, sizeof(OFF_T)); 
+
+    if ( !(((*fptr)->Fptr)->headstart) )
+    {
+        (*driverTable[driver].close)(handle);  /* close the file */
+        ffpmsg("failed to allocate memory for headstart array: (ffomem)");
+        ffpmsg(url);
+        free( ((*fptr)->Fptr)->filename);
+        free((*fptr)->Fptr);
+        free(*fptr);
+        *fptr = 0;              /* return null file pointer */
+        return(*status = MEMORY_ALLOCATION);
+    }
+
         /* store the parameters describing the file */
+    ((*fptr)->Fptr)->MAXHDU = 1000;              /* initial size of headstart */
     ((*fptr)->Fptr)->filehandle = handle;        /* file handle */
     ((*fptr)->Fptr)->driver = driver;            /* driver number */
     strcpy(((*fptr)->Fptr)->filename, url);      /* full input filename */
@@ -571,7 +588,22 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
         return(*status = MEMORY_ALLOCATION);
     }
 
+    /* mem for headstart array */
+    ((*fptr)->Fptr)->headstart = (OFF_T *) calloc(1001, sizeof(OFF_T));
+
+    if ( !(((*fptr)->Fptr)->headstart) )
+    {
+        (*driverTable[driver].close)(handle);  /* close the file */
+        ffpmsg("failed to allocate memory for headstart array: (ffopen)");
+        ffpmsg(url);
+        free( ((*fptr)->Fptr)->filename);
+        free((*fptr)->Fptr);
+        free(*fptr);
+        *fptr = 0;              /* return null file pointer */
+        return(*status = MEMORY_ALLOCATION);
+    }
         /* store the parameters describing the file */
+    ((*fptr)->Fptr)->MAXHDU = 1000;              /* initial size of headstart */
     ((*fptr)->Fptr)->filehandle = handle;        /* file handle */
     ((*fptr)->Fptr)->driver = driver;            /* driver number */
     strcpy(((*fptr)->Fptr)->filename, url);      /* full input filename */
@@ -662,7 +694,7 @@ move2hdu:
         return(*status);
       }
     }
-    else if (skip_null || skip_image || skip_image ||
+    else if (skip_null || skip_image || skip_table ||
             (*imagecolname || *colspec || *rowfilter || *binspec))
     {
       /* ------------------------------------------------------------------
@@ -713,7 +745,7 @@ move2hdu:
 
             } else if (hdutyp != IMAGE_HDU && skip_table) {
 
-                continue;   /* skip tabless */
+                continue;   /* skip tables */
 
             } else if (hdutyp == IMAGE_HDU) {
 
@@ -1479,7 +1511,6 @@ int ffedit_columns(
                    cptr3++;  /* skip the '(' */
                    fits_get_token(&cptr3, ")", colformat, NULL);
                 }
-
                 /* calculate values for the column or keyword */ 
                 fits_calculator(*fptr, cptr2, *fptr, oldname, colformat,
        	                        status);
@@ -1743,11 +1774,21 @@ int fits_copy_image_cell(
     /* finally, copy the data, one buffer size at a time */
     ffmbyt(*fptr, startpos, TRUE, status);
     firstbyte = 1; 
+
+    /* the upper limit on the number of bytes must match the declaration */
+    /* read up to the first 30000 bytes in the normal way with ffgbyt */
+    ntodo = minvalue(30000L, nbytes);
+    ffgbyt(*fptr, ntodo, buffer, status);
+    ffptbb(newptr, 1, firstbyte, ntodo, buffer, status);
+
+    nbytes    -= ntodo;
+    firstbyte += ntodo;
+
+    /* read any additional bytes with low-level ffread routine, for speed */
     while (nbytes && (*status <= 0) )
     {
-     /* the upper limit on the number of bytes must match the declaration */
         ntodo = minvalue(30000L, nbytes);
-        ffgbyt(*fptr, ntodo, buffer, status);
+        ffread((*fptr)->Fptr, ntodo, buffer, status);
         ffptbb(newptr, 1, firstbyte, ntodo, buffer, status);
         nbytes    -= ntodo;
         firstbyte += ntodo;
@@ -2599,7 +2640,23 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
         return(*status = FILE_NOT_CREATED);
     }
 
+    /* mem for headstart array */
+    ((*fptr)->Fptr)->headstart = (OFF_T *) calloc(1001, sizeof(OFF_T)); 
+
+    if ( !(((*fptr)->Fptr)->headstart) )
+    {
+        (*driverTable[driver].close)(handle);  /* close the file */
+        ffpmsg("failed to allocate memory for headstart array: (ffinit)");
+        ffpmsg(url);
+        free( ((*fptr)->Fptr)->filename);
+        free((*fptr)->Fptr);
+        free(*fptr);
+        *fptr = 0;              /* return null file pointer */
+        return(*status = MEMORY_ALLOCATION);
+    }
+
         /* store the parameters describing the file */
+    ((*fptr)->Fptr)->MAXHDU = 1000;              /* initial size of headstart */
     ((*fptr)->Fptr)->filehandle = handle;        /* store the file pointer */
     ((*fptr)->Fptr)->driver = driver;            /*  driver number         */
     strcpy(((*fptr)->Fptr)->filename, url);      /* full input filename    */
@@ -2707,7 +2764,22 @@ int ffimem(fitsfile **fptr,      /* O - FITS file pointer                   */
         return(*status = MEMORY_ALLOCATION);
     }
 
+    /* mem for headstart array */
+    ((*fptr)->Fptr)->headstart = (OFF_T *) calloc(1001, sizeof(OFF_T)); 
+
+    if ( !(((*fptr)->Fptr)->headstart) )
+    {
+        (*driverTable[driver].close)(handle);  /* close the file */
+        ffpmsg("failed to allocate memory for headstart array: (ffinit)");
+        free( ((*fptr)->Fptr)->filename);
+        free((*fptr)->Fptr);
+        free(*fptr);
+        *fptr = 0;              /* return null file pointer */
+        return(*status = MEMORY_ALLOCATION);
+    }
+
         /* store the parameters describing the file */
+    ((*fptr)->Fptr)->MAXHDU = 1000;              /* initial size of headstart */
     ((*fptr)->Fptr)->filehandle = handle;        /* file handle */
     ((*fptr)->Fptr)->driver = driver;            /* driver number */
     strcpy(((*fptr)->Fptr)->filename, "memfile"); /* dummy filename */
@@ -3680,7 +3752,7 @@ int ffiurl(char *url,               /* input filename */
             break;
     }
 
-    if (ii > 0 && (jj - ii) < 5)  /* limit extension numbers to 4 digits */
+    if (ii > 0 && (jj - ii) < 6)  /* limit extension numbers to 4 digits */
     {
         infilelen = ii;
         ii++;
@@ -4843,7 +4915,8 @@ int fits_get_token(char **ptr,
             for (ii = 0; ii < slen; ii++)
             {
                 if ( !isdigit((int) token[ii]) && token[ii] != '.' && 
-                     token[ii] != '-')
+                     token[ii] != '-' && token[ii] != '+' &&
+                     token[ii] != 'E' && token[ii] != 'e')
                 {
                     *isanumber = 0;
                     break;
@@ -4918,6 +4991,7 @@ int ffclos(fitsfile *fptr,      /* I - FITS file pointer */
             }
         }
 
+        free((fptr->Fptr)->headstart);    /* free memory for headstart array */
         free((fptr->Fptr)->filename);     /* free memory for the filename */
         (fptr->Fptr)->filename = 0;
         (fptr->Fptr)->validcode = 0; /* magic value to indicate invalid fptr */
@@ -4984,6 +5058,7 @@ int ffdelt(fitsfile *fptr,      /* I - FITS file pointer */
         free(basename);
     }
 
+    free((fptr->Fptr)->headstart);    /* free memory for headstart array */
     free((fptr->Fptr)->filename);     /* free memory for the filename */
     (fptr->Fptr)->filename = 0;
     (fptr->Fptr)->validcode = 0;      /* magic value to indicate invalid fptr */

@@ -2075,10 +2075,12 @@ static int find_column( char *colName, void *itslval )
       if(fits_read_key(fptr,TDOUBLE,temp,&tscale,NULL,&istatus)) {
           tscale = 1.0;
       } 
-      if (tscale == 1.0 && (tzero == 0.0 || tzero == 32768.0 || 
-                            tzero == 2147483648.0 )) {
+      if (tscale == 1.0 && (tzero == 0.0 || tzero == 32768.0 )) {
           gParse.varData[col_cnt].type     = LONG;
           gParse.colData[col_cnt].datatype = TLONG;
+      } else if (tscale == 1.0 &&  tzero == 2147483648.0 ) {
+          gParse.varData[col_cnt].type     = LONG;
+          gParse.colData[col_cnt].datatype = TULONG;
       } else {
           gParse.varData[col_cnt].type     = DOUBLE;
           gParse.colData[col_cnt].datatype = TDOUBLE;
