@@ -251,10 +251,10 @@ supported.
 
 The CFITSIO library should be tested by building and running
 the testprog.c program that is included with the release.
-On Unix systems (assuming the gcc compiler is being used), type:
+On Unix systems, type:
  
 \begin{verbatim}
-    % gcc -o testprog testprog.c -L. -lcfitsio -lm
+    % make testprog
     % testprog > testprog.lis
     % diff testprog.lis testprog.out
     % cmp testprog.fit testprog.std
@@ -376,7 +376,7 @@ main()
  
 \section{Acknowledgements}
 
-The development of CFITSIO has only been possible through the help of
+The development of CFITSIO was made possible through the help of
 dozens of people from around the world.  The following people in
 particular have made especially significant contributions:
 
@@ -435,8 +435,8 @@ Szymkowiak, Allyn Tennant, Peter Teuben, James Theiler, Doug Tody,
 Shiro Ueno, Steve Walton, Archie Warnock, Alan Watson, Dan Whipple, Wim
 Wimmers, Peter Young, Jianjun Xu, and Nelson Zarate.
 
-Finally, special thanks go out to the members of the U.S. Congress in
-January 1996 who shut down the U.S. government offices, including NASA,
+Finally, special thanks go out to the members of the U.S. Congress who in
+January 1996 shut down the U.S. government offices, including NASA,
 by failing to pass funding legislation, thus giving the author
 sufficient free time to write the initial version of CFITSIO.
 
@@ -2707,14 +2707,16 @@ input parameters (the function can be given any desired name):
 
 \item
   offset     -- the offset applied to the first table row or image
-                pixel to be passed to the work function.  If
-                offset = 0, then the entire table or image will be
-                passed to the work function.
+                pixel to be passed to the work function.  In other
+                words, this is the number of rows or pixels that
+                are skipped over before starting the iterations. If
+                offset = 0, then all the table rows or image pixels
+                will be passed to the work function.
 
 \item
-  firstn     -- the first table row or image pixel that
-                is being passed in this particular call to the
-                work function.
+  firstn     -- the number of the first table row or image pixel
+                (starting with 1)  that is being passed in this
+                particular call to the work function.
 
 \item
   nvalues    -- the number of table rows or image pixels that are
@@ -2722,7 +2724,7 @@ input parameters (the function can be given any desired name):
                 function.  nvalues will always be less than or
                 equal to totaln and will have the same value on
                 each iteration, except possibly on the last
-                call which may have a smaller number.
+                call which may have a smaller value.
 
 \item
   narrays     -- the number of arrays of data that are being passed
@@ -2755,63 +2757,74 @@ guaranteed to have the same value on each iteration.  Only firstn,
 nvalues, and the arrays of data pointed to by the data structures may
 change on each iterative call to the work function.
 
+Note that the iterator treats an image as a long 1-D array of pixels
+regardless of it's intrinsic dimensionality.  The total number of
+pixels is just the product of the size of each dimension, and the order
+of the pixels is the same as the order that they are stored in the FITS
+file. If the work function needs to know the number and size of the
+image dimensions then these parameters can be passed via the
+userPointer structure.
 
 The iteratorCol structure is currently defined as follows:
  
 \begin{verbatim}
 typedef struct  /* structure for the iterator function column information */
 {
-   /* elements required as input to fits_iterate_data: */
+   /* structure elements required as input to fits_iterate_data: */
 
-  fitsfile *fptr;       /* pointer to the HDU containing the column */
-  int      colnum;      /* column number in the table               */
-  char     colname[70]; /* name (= TTYPEn value) of the column      */
+  fitsfile *fptr;       /* pointer to the HDU containing the column or image */
+  int      colnum;      /* column number in the table; ignored for images    */
+  char     colname[70]; /* name (TTYPEn) of the column; null for images      */
   int      datatype;    /* output datatype (converted if necessary) */
-  int      iotype;      /* = InputCol, InputOutputCol, or OutputCol */
+  int      iotype;      /* type: InputCol, InputOutputCol, or OutputCol */
 
-  /* output elements that may be useful for the work function: */
+  /* output structure elements that may be useful for the work function: */
 
   void     *array;    /* pointer to the array (and the null value) */
-  long     repeat;    /* binary table vector repeat value          */
-  long     tlmin;     /* legal minimum data value                  */
-  long     tlmax;     /* legal maximum data value                  */
-  char     tunit[70]; /* physical unit string                      */
-  char     tdisp[70]; /* suggested display format                  */
+  long     repeat;    /* binary table vector repeat value; set     */
+                      /*     equal to 1 for images                 */
+  long     tlmin;     /* legal minimum data value, if any          */
+  long     tlmax;     /* legal maximum data value, if any          */
+  char     unit[70];  /* physical unit string (BUNIT or TUNITn)    */
+  char     tdisp[70]; /* suggested display format; null if none    */
 
 } iteratorCol;
 \end{verbatim}
 
-Instead of directly reading the elements in this structure, it is
-recommended that programmers use the access functions that are provided
-for this purpose.
+Instead of directly reading or writing the elements in this structure,
+it is recommended that programmers use the access functions that are
+provided for this purpose.
 
-The first five elements in this structure will have initially been
-defined by the driver routine.  The CFITSIO iterator routine uses this
-information to determine what column or array to pass to the work
-function, and whether the array is to be input to the work function,
-output from the work function, or both.  The CFITSIO iterator function
-fills in the values of the remaining structure elements before passing
-it to the work function.
+The first five elements in this structure must be initially defined by
+the driver routine before calling the iterator routine.  The CFITSIO
+iterator routine uses this information to determine what column or
+array to pass to the work function, and whether the array is to be
+input to the work function, output from the work function, or both.
+The CFITSIO iterator function fills in the values of the remaining
+structure elements before passing it to the work function.
 
 The array structure element is a pointer to the actual data array and
-it must be cast to the correct data type before it can be used.  The
-repeat structure element give the number of data values in each row of
-the table, so that the total number of data values in the array is
+it must be cast to the correct data type before it is used.  The
+`repeat' structure element give the number of data values in each row
+of the table, so that the total number of data values in the array is
 given by repeat * nvalues.  In the case of image arrays and ASCII
-tables repeat will always be equal to 1.  When the datatype is a
-character string, the array pointer is actually a pointer to an array of
-string pointers (i.e., **array).  The remaining structure elements are
-provided for convenience in case that information is needed within the
-work function.
+tables, repeat will always be equal to 1.  When the datatype is a
+character string, the array pointer is actually a pointer to an array
+of string pointers (i.e., char **array).  The other output structure
+elements are provided for convenience in case that information is
+needed within the work function.  Any other information may be passed
+from the driver routine to the work function via the userPointer
+parameter.
 
-Upon completion the work routine must return an integer status value
+Upon completion, the work routine must return an integer status value,
 with 0 indicating success and any other value indicating an error which
-will cause the iterator function to exit at that point.  Return status
+will cause the iterator function to immediately exit at that point.  Return status
 values in the range 1 -- 1000 should be avoided since these are
 reserved for use by CFITSIO.  A return status value of -1 may be used to
-force the CFITSIO iterator function to stop at this point and return
+force the CFITSIO iterator function to stop at that point and return
 control to the driver routine after writing any output arrays to the
-FITS file.
+FITS file.  CFITSIO does not considered this to be an error condition,
+so any further processing by the application program will continue normally.
 
  
 \section{The Iterator Driver Function}
@@ -2834,7 +2847,7 @@ colnum -- the number of the column in the table.  This value is ignored
 
 \item
 colname -- the name (TTYPEn keyword) of the column.  This is
-           only required if colnum = 0.
+           only required if colnum = 0 and is ignored for images.
 \item
 datatype -- The desired datatype of the array to be passed to the
             work function.  For numerical data the datatype does
@@ -2850,11 +2863,11 @@ datatype -- The desired datatype of the array to be passed to the
 iotype -- defines whether the data array is to be input to the
           work function (i.e, read from the FITS file), or output
           from the work function (i.e., written to the FITS file) or
-          both.  Allowed values are InputCol, InputOutputCol, or OutputCol.
+          both.  Allowed values are InputCol, OutputCol, or InputOutputCol.
 \end{itemize}
 
-The driver routine then calls the CFITSIO iterator function with
-the following parameters:
+After the driver routine has initialized all these parameters, it
+can then call the CFITSIO iterator function:
 
  
 \begin{verbatim}
@@ -2869,7 +2882,7 @@ the following parameters:
                  to the work function.
 \item
    *data --     pointer to array of structures containing information
-                about each column.
+                about each column or image.
 
 \item
    offset      -- if positive, this number of rows at the
@@ -2889,7 +2902,7 @@ the following parameters:
 
 \item
    *workFn     - the name (actually the address) of the work function
-                      that is to be called by fits\_iterate\_data.
+                 that is to be called by fits\_iterate\_data.
 
 \item
    *userPointer - this is a user supplied pointer that can be used
@@ -2904,15 +2917,16 @@ the following parameters:
 \end{itemize}
 
 When fits\_iterate\_data is called it first allocates memory to hold
-all the requested columns of data.  It then reads the input data from
-the FITS tables or images into the arrays then passes the structure
-with pointers to these data arrays to the work function.  After the
-work function returns, the iterator function writes any output columns
-of data back to the FITS files.  It then repeats this process for any
-remaining sets of rows or pixels until it has processed the entire
-table or image or until the work function returns a non-zero status
-value.  The iterator then frees the memory that it initially allocated
-and returns control to the driver routine that called it.
+all the requested columns of data or image pixel arrays.  It then reads
+the input data from the FITS tables or images into the arrays then
+passes the structure with pointers to these data arrays to the work
+function.  After the work function returns, the iterator function
+writes any output columns of data or images back to the FITS files.  It
+then repeats this process for any remaining sets of rows or image
+pixels until it has processed the entire table or image or until the
+work function returns a non-zero status value.  The iterator then frees
+the memory that it initially allocated and returns control to the
+driver routine that called it.
 
  
 \section{Guidelines for Using the Iterator Function}
@@ -3933,9 +3947,9 @@ the first 8 characters, and strongly recommended that the names be
 \end{verbatim}
  
 \begin{description}
-\item[5 ] Return the number of and size of the dimensions of a table column.
-    Normally this information is given by the TDIMn keyword, but if
-    this keyword is not present then this routine returns naxis = 1
+\item[5 ] Return the number of and size of the dimensions of a table column in
+    a binary table. Normally this information is given by the TDIMn keyword,
+    but if this keyword is not present then this routine returns naxis = 1
    and naxes[0] equal to the repeat count in the TFORM keyword. \label{ffgtdm}
 \end{description}
  
@@ -3944,16 +3958,30 @@ the first 8 characters, and strongly recommended that the names be
       (fitsfile *fptr, int colnum, int maxdim, > int *naxis,
        long *naxes, int *status)
 \end{verbatim}
+ 
+\begin{description}
+\item[6 ] Decode the input TDIMn keyword string (e.g. '(100,200)') and return the
+    number of and size of the dimensions of a binary table column. If the input
+    tdimstr character string is null, then this routine returns naxis = 1
+    and naxes[0] equal to the repeat count in the TFORM keyword. This routine
+   is called by fits\_read\_tdim.  \label{ffdtdm}
+\end{description}
+ 
+\begin{verbatim}
+  int fits_decode_tdim / ffdtdm
+      (fitsfile *fptr, char *tdimstr, int colnum, int maxdim, > int *naxis,
+       long *naxes, int *status)
+\end{verbatim}
 
  
 \subsection{Routines to Edit Rows or Columns \label{FFIROW}}
 
  
 \begin{description}
-\item[1 ] Insert blank rows into an ASCII or binary table.
-    All the rows following row FROW are shifted down by NROWS rows.  If
-    FROW = 0 then the blank rows are inserted at the beginning of the
-    table.  This routine updates the NAXIS2 keyword to reflect the new
+\item[1 ] Insert blank rows into an ASCII or binary table. All the rows following
+    row FROW are shifted down by NROWS rows.  If FROW = 0 then the blank rows
+    are inserted at the beginning of the table.  This routine updates the
+    NAXIS2 keyword to reflect the new
    number of rows in the table. \label{ffirow}
 \end{description}
  
@@ -6505,15 +6533,16 @@ fits\_create\_tbl     & \pageref{ffcrtb} \\
 fits\_create\_template & \pageref{fftplt} \\
 fits\_date2str  & \pageref{ffdt2s} \\
 fits\_decode\_chksum  & \pageref{ffdsum} \\
+fits\_decode\_tdim    & \pageref{ffdtdm} \\
 fits\_delete\_col   & \pageref{ffdcol} \\
 fits\_delete\_file    & \pageref{ffdelt} \\
 fits\_delete\_hdu     & \pageref{ffdhdu} \\
 fits\_delete\_key     & \pageref{ffdkey} \\
 fits\_delete\_record  & \pageref{ffdrec} \\
 fits\_delete\_rowlist & \pageref{ffdrws} \\
-fits\_delete\_rows  & \pageref{ffdrow} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_delete\_rows  & \pageref{ffdrow} \\
 fits\_encode\_chksum  & \pageref{ffesum} \\
 fits\_file\_mode      & \pageref{ffflmd} \\
 fits\_file\_name      & \pageref{ffflnm} \\
@@ -6545,9 +6574,9 @@ fits\_get\_version    & \pageref{ffvers} \\
 fits\_insert\_atbl    & \pageref{ffitab} \\
 fits\_insert\_btbl    & \pageref{ffibin} \\
 fits\_insert\_col   & \pageref{fficol} \\
-fits\_insert\_cols  & \pageref{fficls} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_insert\_cols  & \pageref{fficls} \\
 fits\_insert\_group  & \pageref{ffgtis} \\
 fits\_insert\_img     & \pageref{ffiimg} \\
 fits\_insert\_key\_null   & \pageref{ffikyu} \\
@@ -6579,10 +6608,10 @@ fits\_parse\_template & \pageref{ffgthd} \\
 fits\_parse\_value    & \pageref{ffpsvc} \\
 fits\_pix\_to\_world & \pageref{ffwldp} \\
 fits\_read\_2d\_TYP      & \pageref{ffg2dx} \\
-fits\_read\_3d\_TYP      & \pageref{ffg3dx} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_read\_3d\_TYP      & \pageref{ffg3dx} \\
 fits\_read\_atblhdr      & \pageref{ffghtb} \\
 fits\_read\_btblhdr      & \pageref{ffghbn} \\
 fits\_read\_card         & \pageref{ffgcrd} \\
@@ -6628,9 +6657,9 @@ fits\_set\_tscale     & \pageref{fftscl} \\
 fits\_str2date        & \pageref{ffdt2s} \\
 fits\_str2time        & \pageref{ffdt2s} \\
 fits\_test\_expr    & \pageref{fftexp} \\
-fits\_test\_keyword   & \pageref{fftkey} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_test\_keyword   & \pageref{fftkey} \\
 fits\_test\_record    & \pageref{fftrec} \\
 fits\_time2str  & \pageref{ffdt2s} \\
 fits\_transfer\_member  & \pageref{ffgmtf} \\
@@ -6676,9 +6705,9 @@ fits\_write\_key\_TYP      & \pageref{ffpkyx} \\
 fits\_write\_keys\_TYP     & \pageref{ffpknx} \\
 fits\_write\_null\_img & \pageref{ffpprn} \\
 fits\_write\_record       & \pageref{ffprec} \\
-fits\_write\_subset\_TYP  & \pageref{ffpssx} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_write\_subset\_TYP  & \pageref{ffpssx} \\
 fits\_write\_tblbytes  & \pageref{ffptbb} \\
 fits\_write\_tdim         & \pageref{ffptdm} \\
 fits\_write\_theap    & \pageref{ffpthp} \\
@@ -6710,6 +6739,7 @@ ffdrow  & \pageref{ffdrow} \\
 ffdrws & \pageref{ffdrws} \\
 ffdsum  & \pageref{ffdsum} \\
 ffdt2s  & \pageref{ffdt2s} \\
+ffdtdm   & \pageref{ffdtdm} \\
 ffdtyp    & \pageref{ffdtyp} \\
 ffesum  & \pageref{ffesum} \\
 ffextn   & \pageref{ffextn} \\
@@ -6731,9 +6761,9 @@ ffgcv        & \pageref{ffgcv} \\
 ffgcvx    & \pageref{ffgcvx} \\
 ffgdes & \pageref{ffgdes} \\
 ffgdess & \pageref{ffgdes} \\
-ffgerr  & \pageref{ffgerr} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffgerr  & \pageref{ffgerr} \\
 ffggpx  & \pageref{ffggpx} \\
 ffghad    & \pageref{ffghad} \\
 ffghbn      & \pageref{ffghbn} \\
@@ -6779,9 +6809,9 @@ ffgtcr  & \pageref{ffgtcr} \\
 ffgtcs & \pageref{ffgtcs} \\
 ffgtdm         & \pageref{ffgtdm} \\
 ffgthd & \pageref{ffgthd} \\
-ffgtis  & \pageref{ffgtis} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffgtis  & \pageref{ffgtis} \\
 ffgtmg  & \pageref{ffgtmg} \\
 ffgtnm  & \pageref{ffgtnm} \\
 ffgtop    & \pageref{ffgtop} \\
@@ -6827,9 +6857,9 @@ ffpdat         & \pageref{ffpdat} \\
 ffpdes  & \pageref{ffpdes} \\
 ffpgpx & \pageref{ffpgpx} \\
 ffphbn      & \pageref{ffphbn} \\
-ffphis      & \pageref{ffphis} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffphis      & \pageref{ffphis} \\
 ffphpr       & \pageref{ffphpr} \\
 ffphps       & \pageref{ffphps} \\
 ffphtb      & \pageref{ffphtb} \\
@@ -6875,9 +6905,9 @@ fftplt & \pageref{fftplt} \\
 fftrec    & \pageref{fftrec} \\
 fftscl     & \pageref{fftscl} \\
 ffucrd       & \pageref{ffucrd} \\
-ffuky        & \pageref{ffuky} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffuky        & \pageref{ffuky} \\
 ffukyu   & \pageref{ffukyu} \\
 ffukyx    & \pageref{ffukyx} \\
 ffupch      & \pageref{ffupch} \\
@@ -7056,6 +7086,7 @@ status   - returned error status code (0 = OK)
 sum      - 32 bit unsigned checksum value
 tbcol    - byte position in row to start of column (1st col has tbcol = 1)
 tdisp    - Fortran style display format for the table column
+tdimstr  - the value of the TDIMn keyword
 templt   - template string used in comparison (null-terminated)
 tfields  - number of fields (columns) in the table
 tfopt    - grouping table member transfer option parameter. Allowed values are:

@@ -58,10 +58,10 @@
 \contentsline {subsection}{\numberline {7.7.3}Read and Write Column Data Routines }{68}
 \contentsline {section}{\numberline {7.8}Celestial Coordinate System Routines }{70}
 \contentsline {section}{\numberline {7.9}Hierarchical Grouping Convention Support Routines}{71}
-\contentsline {section}{\numberline {7.10}Row Selection and Calculator Routines}{75}
+\contentsline {section}{\numberline {7.10}Row Selection and Calculator Routines}{76}
 \contentsline {section}{\numberline {7.11}File Checksum Routines }{77}
 \contentsline {section}{\numberline {7.12} Date and Time Utility Routines}{78}
-\contentsline {section}{\numberline {7.13} General Utility Routines}{79}
+\contentsline {section}{\numberline {7.13} General Utility Routines}{80}
 \contentsline {chapter}{\numberline {8} Specialized CFITSIO Interface Routines }{85}
 \contentsline {section}{\numberline {8.1}Specialized FITS File Access Routines}{85}
 \contentsline {section}{\numberline {8.2}Specialized HDU Access Routines}{86}

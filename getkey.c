@@ -1272,13 +1272,38 @@ int ffgtdm(fitsfile *fptr,  /* I - FITS file pointer                        */
            long naxes[],    /* O - length of each data axis                 */
            int *status)     /* IO - error status                            */
 /*
-  parse the TDIMnnn keyword to get the dimensionality of a column
+  read and parse the TDIMnnn keyword to get the dimensionality of a column
 */
 {
-    int tstatus;
-    long dimsize;
-    char keyname[FLEN_KEYWORD], tdimstr[FLEN_VALUE], comm[FLEN_COMMENT];
-    char *loc, *lastloc;
+    int tstatus = 0;
+    char keyname[FLEN_KEYWORD], tdimstr[FLEN_VALUE];
+
+    if (*status > 0)
+        return(*status);
+
+    ffkeyn("TDIM", colnum, keyname, status);      /* construct keyword name */
+
+    ffgkys(fptr, keyname, tdimstr, NULL, &tstatus); /* try reading keyword */
+
+    ffdtdm(fptr, tdimstr, colnum, maxdim,naxis, naxes, status); /* decode it */
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffdtdm(fitsfile *fptr,  /* I - FITS file pointer                        */
+           char *tdimstr,   /* I - TDIMn keyword value string. e.g. (10,10) */
+           int colnum,      /* I - number of the column             */
+           int maxdim,      /* I - maximum no. of dimensions to read;       */
+           int *naxis,      /* O - number of axes in the data array         */
+           long naxes[],    /* O - length of each data axis                 */
+           int *status)     /* IO - error status                            */
+/*
+  decode the TDIMnnn keyword to get the dimensionality of a column.
+  Check that the value is legal and consistent with the TFORM value.
+*/
+{
+    long dimsize, totalpix = 1;
+    char *loc, *lastloc, message[81];
     tcolumn *colptr;
 
     if (*status > 0)
@@ -1293,14 +1318,11 @@ int ffgtdm(fitsfile *fptr,  /* I - FITS file pointer                        */
     colptr = (fptr->Fptr)->tableptr;   /* set pointer to the first column */
     colptr += (colnum - 1);    /* increment to the correct column */
 
-    ffkeyn("TDIM", colnum, keyname, status);      /* construct keyword name */
-    tstatus = 0;
-    ffgkys(fptr, keyname, tdimstr, comm, &tstatus); /* try reading keyword */
-
-    if (tstatus)   /* TDIMnnn keyword doesn't exist? */
+    if (!tdimstr[0])   /* TDIMn keyword doesn't exist? */
     {
         *naxis = 1;                   /* default = 1 dimensional */
-        naxes[0] = colptr->trepeat;  /* default length = repeat count */
+        if (maxdim > 0)
+            naxes[0] = colptr->trepeat;  /* default length = repeat count */
     }
     else
     {
@@ -1308,7 +1330,10 @@ int ffgtdm(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         loc = strchr(tdimstr, '(' );  /* find the opening quote */
         if (!loc)
+        {
+            sprintf(message, "Illegal TDIM keyword value: %s", tdimstr);
             return(*status = BAD_TDIM);
+        }
 
         while (loc)
         {
@@ -1317,17 +1342,39 @@ int ffgtdm(fitsfile *fptr,  /* I - FITS file pointer                        */
             if (*naxis < maxdim)
                 naxes[*naxis] = dimsize;
 
+            if (dimsize < 0)
+            {
+                ffpmsg("one or more TDIM values are less than 0 (ffdtdm)");
+                ffpmsg(tdimstr);
+                return(*status = BAD_TDIM);
+            }
+
+            totalpix *= dimsize;
             (*naxis)++;
             lastloc = loc;
-            loc = strchr(loc, ',');  /* look for comma separating next dimension */
+            loc = strchr(loc, ',');  /* look for comma before next dimension */
         }
 
         loc = strchr(lastloc, ')' );  /* check for the closing quote */
         if (!loc)
+        {
+            sprintf(message, "Illegal TDIM keyword value: %s", tdimstr);
             return(*status = BAD_TDIM);
+        }
+
+        if (colptr->trepeat != totalpix)
+        {
+          sprintf(message,
+          "column vector length, %d, does not equal TDIMn array size, %ld",
+          colptr->trepeat, totalpix);
+          ffpmsg(message);
+          ffpmsg(tdimstr);
+          return(*status = BAD_TDIM);
+        }
     }
     return(*status);
 }
+
 /*--------------------------------------------------------------------------*/
 int ffghpr(fitsfile *fptr,  /* I - FITS file pointer                        */
            int maxdim,      /* I - maximum no. of dimensions to read;       */

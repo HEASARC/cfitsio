@@ -3,6 +3,12 @@
 #include <stdlib.h>
 #include "fitsio.h"
 
+/*
+  This program illustrates how to use the CFITSIO iterator function.
+  It simply prints out the values in a character string and a logical
+  type column in a table, and toggles the value in the logical column
+  so that T -> F and F -> T.
+*/
 main()
 {
     extern str_iter(); /* external work function is passed to the iterator */

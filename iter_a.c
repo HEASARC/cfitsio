@@ -3,6 +3,12 @@
 #include <stdlib.h>
 #include "fitsio.h"
 
+/*
+  This program illustrates how to use the CFITSIO iterator function.
+  It reads and modifies the input 'iter_a.fit' file by computing a
+  value for the 'rate' column as a function of the values in the other
+  'counts' and 'time' columns.
+*/
 main()
 {
     extern flux_rate(); /* external work function is passed to the iterator */

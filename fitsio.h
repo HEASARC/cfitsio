@@ -105,7 +105,7 @@ typedef struct        /* structure used to store table column information */
     char ttype[70];   /* column name = FITS TTYPEn keyword; */
     long tbcol;       /* offset in row to first byte of each column */
     int  tdatatype;   /* datatype code of each column */
-    int  trepeat;     /* repeat count of column; number of elements */
+    long  trepeat;     /* repeat count of column; number of elements */
     double tscale;    /* FITS TSCALn linear scaling factor */
     double tzero;     /* FITS TZEROn linear scaling zero point */
     long tnull;       /* FITS null value for int image or binary table cols */
@@ -472,7 +472,9 @@ int ffgkyt(fitsfile *fptr, char *keyname, long *ivalue, double *dvalue,
            char *comm, int *status);
 int ffgtdm(fitsfile *fptr, int colnum, int maxdim, int *naxis, long naxes[],
            int *status);
- 
+int ffdtdm(fitsfile *fptr, char *tdimstr, int colnum, int maxdim,
+           int *naxis, long naxes[], int *status);
+
 /*------------------ read array of keywords -----------------*/
 int ffgkns(fitsfile *fptr, char *keyname, int nstart, int nmax, char *value[],
            int *nfound,  int *status);

@@ -102,6 +102,7 @@
 #define fits_read_key_triple   ffgkyt
 #define fits_read_key_longstr  ffgkls
 #define fits_read_tdim         ffgtdm
+#define fits_decode_tdim       ffdtdm
 #define fits_read_keys_str     ffgkns
 #define fits_read_keys_log     ffgknl
 #define fits_read_keys_lng     ffgknj

@@ -1737,8 +1737,10 @@ int ffptdm( fitsfile *fptr, /* I - FITS file pointer                        */
 */
 {
     char keyname[FLEN_KEYWORD], tdimstr[FLEN_VALUE], comm[FLEN_COMMENT];
-    char value[80];
+    char value[80], message[81];
     int ii;
+    long totalpix = 1;
+    tcolumn *colptr;
 
     if (*status > 0)
         return(*status);
@@ -1755,6 +1757,20 @@ int ffptdm( fitsfile *fptr, /* I - FITS file pointer                        */
         return(*status = BAD_DIMEN);
     }
 
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               /* rescan header */
+            return(*status);
+
+    if ( (fptr->Fptr)->hdutype != BINARY_TBL)
+    {
+       ffpmsg(
+    "Error: The TDIMn keyword is only allowed in BINTABLE extensions (ffptdm)");
+       return(*status = NOT_BTABLE);
+    }
+
     ffkeyn("TDIM", colnum, keyname, status);      /* construct TDIMn name */
 
     strcpy(tdimstr, "(");            /* start constructing the TDIM value */   
@@ -1766,15 +1782,29 @@ int ffptdm( fitsfile *fptr, /* I - FITS file pointer                        */
 
         if (naxes[ii] < 0)
         {
-            ffpmsg("one or more naxes values are less than 0 (ffptdm)");
-            return(*status = BAD_NAXES);
+            ffpmsg("one or more TDIM values are less than 0 (ffptdm)");
+            return(*status = BAD_TDIM);
         }
 
         sprintf(value, "%ld", naxes[ii]);
         strcat(tdimstr, value);     /* append the axis size */
+
+        totalpix *= naxes[ii];
     }
 
-    strcat(tdimstr, ")" );          /* append the closing parenthesis */
+    colptr = (fptr->Fptr)->tableptr;  /* point to first column structure */
+    colptr += (colnum - 1);      /* point to the specified column number */
+
+    if (colptr->trepeat != totalpix)
+    {
+      sprintf(message,
+      "column vector length, %d, does not equal TDIMn array size, %ld",
+      colptr->trepeat, totalpix);
+      ffpmsg(message);
+      return(*status = BAD_TDIM);
+    }
+
+    strcat(tdimstr, ")" );            /* append the closing parenthesis */
 
     strcpy(comm, "size of the multidimensional array");
     ffpkys(fptr, keyname, tdimstr, comm, status);  /* write the keyword */

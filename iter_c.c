@@ -3,15 +3,6 @@
 #include <stdlib.h>
 #include "fitsio.h"
 
-/*   Globally defined parameters */
-
-long xsize = 480; /* size of the histogram image */
-long ysize = 480;
-long xbinsize = 32;
-long ybinsize = 32;
-
-main()
-{
 /*
     This example program illustrates how to use the CFITSIO iterator function.
 
@@ -23,6 +14,16 @@ main()
     It then calls a second work function, calchisto, (by recursively calling
     the CFITSIO iterator function) which actually computes the 2D histogram.
 */
+
+/*   Globally defined parameters */
+
+long xsize = 480; /* size of the histogram image */
+long ysize = 480;
+long xbinsize = 32;
+long ybinsize = 32;
+
+main()
+{
     extern writehisto();  /* external work function passed to the iterator */
     extern long xsize, ysize;  /* size of image */
 
@@ -68,6 +69,8 @@ int writehisto(long totaln, long offset, long firstn, long nvalues,
 /*
    Iterator work function that writes out the 2D histogram.
    The histogram values are calculated by another work function, calchisto.
+
+   This routine is executed only once since nvalues was forced to = totaln.
 */
 {
     extern calchisto();  /* external function called by the iterator */
