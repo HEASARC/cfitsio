@@ -36,7 +36,7 @@ BISON =		bison
 SOURCES_SHMEM =	drvrsmem.c
 MY_SHMEM =	@my_shmem@
 
-SOURCES = 	buffers.c cfileio.c checksum.c compress.c drvrfile.c drvrmem.c \
+CORE_SOURCES = 	buffers.c cfileio.c checksum.c compress.c drvrfile.c drvrmem.c \
 		drvrnet.c  editcol.c edithdu.c eval_l.c eval_y.c eval_f.c \
 		fitscore.c getcol.c getcolb.c getcold.c getcole.c \
 		getcoli.c getcolj.c getcolk.c getcoll.c getcols.c getcoluk.c \
@@ -45,9 +45,15 @@ SOURCES = 	buffers.c cfileio.c checksum.c compress.c drvrfile.c drvrmem.c \
 		modkey.c putcol.c putcolb.c putcold.c putcole.c putcoli.c \
 		putcolj.c putcolk.c putcoluk.c putcoll.c putcols.c putcolu.c \
 		putcolui.c putcoluj.c putkey.c region.c scalnull.c swapproc.c \
-		wcsutil.c wcssub.c ${FITSIO_SRC} ${MY_SHMEM}
+		wcsutil.c ${MY_SHMEM}
+
+SOURCES = ${CORE_SOURCES} wcssub.c ${FITSIO_SRC}
+
 
 OBJECTS = 	${SOURCES:.c=.o}
+
+CORE_OBJECTS = 	${CORE_SOURCES:.c=.o}
+
 
 FITSIO_SRC =	f77_wrap1.c f77_wrap2.c
 
@@ -101,3 +107,14 @@ clean:
 
 distclean:	clean
 	-	/bin/rm -f Makefile config.*
+
+# Make target which outputs the list of the .o contained in the cfitsio lib
+# usefull to build a single big shared library containing Tcl/Tk and other
+# extensions.  used for the Tcl Plugin. 
+
+cfitsioLibObjs:
+	@echo ${CORE_OBJECTS}
+
+# This target actually builds the objects needed for the lib in the above
+# case
+objs: ${CORE_OBJECTS}
