@@ -27,6 +27,8 @@
 unsigned long gMinStrLen=80L;
 fitsfile *gFitsFiles[MAXFITSFILES]={0};
 
+/*----------------  Fortran Unit Number Allocation -------------*/
+
 void Cffgiou( int *unit, int *status );
 void Cffgiou( int *unit, int *status )
 {
@@ -64,6 +66,12 @@ FCALLSCSUB2(Cfffiou,FTFIOU,ftfiou,INT,PINT)
      /**************************************************/
      /*   Start of wrappers for routines in fitsio.h   */
      /**************************************************/
+
+/*----------------  FITS file URL parsing routines -------------*/
+
+FCALLSCSUB9(ffiurl,FTIURL,ftiurl,STRING,PSTRING,PSTRING,PSTRING,PSTRING,PSTRING,PSTRING,PSTRING,PINT)
+FCALLSCSUB3(ffrtnm,FTRTNM,ftrtnm,STRING,PSTRING,PINT)
+FCALLSCSUB3(ffextn,FTEXTN,ftextn,STRING,PINT,PINT)
 
 /*---------------- FITS file I/O routines ---------------*/
 
@@ -118,6 +126,20 @@ void Cffinit( fitsfile **fptr, const char *filename, int blocksize, int *status 
    }
 }
 FCALLSCSUB4(Cffinit,FTINIT,ftinit,PFITSUNIT,STRING,INT,PINT)
+
+void Cfftplt( fitsfile **fptr, const char *filename, const char *tempname,
+	      int *status );
+void Cfftplt( fitsfile **fptr, const char *filename, const char *tempname, 
+	      int *status )
+{
+   if( *fptr==NULL || *fptr==(fitsfile*)1 ) {
+      fftplt( fptr, filename, tempname, status );
+   } else {
+      *status = FILE_NOT_CREATED;
+      ffpmsg("Cfftplt tried to use an already opened unit.");
+   }
+}
+FCALLSCSUB4(Cfftplt,FTTPLT,fttplt,PFITSUNIT,STRING,STRING,PINT)
 
 FCALLSCSUB2(ffflus,FTFLUS,ftflus,FITSUNIT,PINT)
 
