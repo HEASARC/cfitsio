@@ -1,5 +1,8 @@
                Log of Changes Made to CFITSIO
 
+   - slightly modified the way real keyword values are formated, to ensure
+     that it includes a decimal point.  E.g.,  '1.0E-09' instead of '1E-09'
+
    - added new funtion to support template files when creating new FITS files.
 
    - support the TCROTn WCS keyword in tables, when reading the WCS keywords.

@@ -632,12 +632,12 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
            ffpkys(fptr, keyname, tfm, comm, status);
 
            /* write the TZEROn and TSCALn keywords */
-           ffkeyn("TZERO", ii + 1, keyname, status);
+           ffkeyn("TZERO", colnum, keyname, status);
            strcpy(comm, "offset for unsigned integers");
 
            ffpkyg(fptr, keyname, 32768., 0, comm, status);
 
-           ffkeyn("TSCAL", ii + 1, keyname, status);
+           ffkeyn("TSCAL", colnum, keyname, status);
            strcpy(comm, "data are not scaled");
            ffpkyg(fptr, keyname, 1., 0, comm, status);
         }
@@ -652,12 +652,12 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
            ffpkys(fptr, keyname, tfm, comm, status);
 
            /* write the TZEROn and TSCALn keywords */
-           ffkeyn("TZERO", ii + 1, keyname, status);
+           ffkeyn("TZERO", colnum, keyname, status);
            strcpy(comm, "offset for unsigned integers");
 
            ffpkyg(fptr, keyname, 2147483648., 0, comm, status);
 
-           ffkeyn("TSCAL", ii + 1, keyname, status);
+           ffkeyn("TSCAL", colnum, keyname, status);
            strcpy(comm, "data are not scaled");
            ffpkyg(fptr, keyname, 1., 0, comm, status);
         }

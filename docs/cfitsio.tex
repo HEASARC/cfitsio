@@ -415,6 +415,8 @@ easier to implement.  Jurek Borkowski wrote the Shared Memory driver,
 and Bruce O'Neel wrote the drivers for accessing FITS files over the
 network using the FTP, HTTP, and ROOT protocols.
 
+Jurek Borkowski also wrote the template parsing routines.
+
 Don Jennings designed and wrote the `Hierarchical Grouping' routines.
 
 Uwe Lamers (XMM/ESA/ESTEC, The Netherlands) designed the
@@ -989,29 +991,22 @@ overwritten, by the newly created file.  Otherwise, CFITSIO will return
 an error if the file to be created already exists.
 
  
-\subsection{Output or Template File Name}
+\subsection{Output File Name when Opening an Existing File}
 
-This optional qualifier, which when present is enclosed in parenthesis
-immediately following the base file name, serves 2 different purposes
-depending on whether the base file is an existing file that is being
-opened, or whether is is a new file that is being created:
-
- 
-\subsubsection{When Opening an Existing File}
-
-In a number of instances CFITSIO will create a temporary copy in memory
-of the input FITS file before it is opened and passed to the
-application program.  This happens by default when opening a network
-FTP or HTTP-type file, when reading a compressed FITS file on a local
-disk, when reading from the stdin stream, or when a column filter, row
-filter, or binning specifier is included as part of the input file
-specification.  The local machine must then be able to hold a copy of
-the whole FITS file in memory, otherwise CFITSIO will exit with an
-error.  If this is a problem (e.g., on machines with a small amount of
-memory, or when reading very large files) then the output file
-specifier may be used to give the name of a local disk file that
-CFITSIO will create and use instead of trying to create a copy of the
-file in memory.
+An optional output filename may be specified in parentheses immediately
+following base file name to be opened.  In a number of instances
+CFITSIO will create a temporary copy in memory of the input FITS file
+before it is opened and passed to the application program.  This
+happens by default when opening a network FTP or HTTP-type file, when
+reading a compressed FITS file on a local disk, when reading from the
+stdin stream, or when a column filter, row filter, or binning specifier
+is included as part of the input file specification.  The local machine
+must then be able to hold a copy of the whole FITS file in memory,
+otherwise CFITSIO will exit with an error.  If this is a problem (e.g.,
+on machines with a small amount of memory, or when reading very large
+files) then the output file specifier may be used to give the name of a
+local disk file that CFITSIO will create and use instead of trying to
+create a copy of the file in memory.
 
 Thus, if the input filename to CFITSIO is:
  
@@ -1059,11 +1054,248 @@ using the output file specifier with FTP or HTTP file types, to make
 sure they get the behavior that they expect.
 
  
-\subsubsection{When Creating a New File}
+\subsection{Template File Name when Creating a New File}
 
-When a new FITS file is being created with a call to fits\_create\_file,
-this qualifier can be used to supply the name of a template file
-that should be used to define the structure of the new file.
+When a new FITS file is created with a call to fits\_create\_file, the
+name of a template file may be supplied in parentheses immediately
+following the name of the new file to be created.  This template is
+used to define the structure of one or more HDUs in the new file.  The
+template file may be another FITS file, in which case the newly created
+file will have exactly the same keywords in each HDU as in the template
+FITS file, but all the data units will be filled with zeros.  The
+template file may also be an ASCII text file, where each line (in
+general) describes one FITS keyword record.  The format of the ASCII
+template file is described below.
+
+
+ 
+\subsubsection{Detailed Template Line Format}
+
+Each line of the template generally translates into one FITS keyword
+record.   In addition, there are several template directives, each
+preceded by a backslash character, which are used to indicate the start
+and end of HDU definitions.   Also, any template line that begins with
+the pound '\#' character is ignored by the template parser and may be
+use to insert comments into the template file itself.
+
+The format of each template line follows very closely
+the format of the FITS keyword record:
+ 
+\begin{verbatim}
+            KEYWORD = KEYVALUE / COMMENT
+\end{verbatim}
+All the fields are optional, and only one field of each type per record
+is allowed. The fields must appear in order. The result of parsing is
+one (or possibly more, in the case of a long keyvalue field) 80
+character FITS header record(s). For the purpose of parsing, space and
+TAB characters (blanks) are equivalent and treated as separators.
+
+The start of each record field is order dependent but position
+independent, except if the first 8 characters of a record are blanks
+then the entire line (without the first 8 spaces) is treated as a
+comment and copied verbatim into the FITS header. Thus lines can be
+indented, but indentation is limited to a maximum of 7 spaces.
+
+The KEYWORD field is limited to 8 characters in length and only the
+letters A-Z, digits 0-9, and the hyphen and underscore character may be
+used, without any embedded spaces. Lowercase letters in the template
+keyword name are converted to uppercase. The only exception to this is
+when auto-indexing is used (see below).
+
+The KEYWORD and KEYVALUE may optionally be separated by the "="
+character with optional spaces allowed on either side of the "=".
+
+KEYVALUE fields are parsed for data type using standard FITS rules.
+Allowed data types are:
+ 
+\begin{verbatim}
+  - logical         : T or F character
+  - integer         : -12345
+  - real            : -1.234E+68
+  - complex integer : (integer,integer)
+  - complex real    : (real,real)
+  - string          : any other format
+\end{verbatim}
+
+The value may be forced to be interpreted as a character string by
+enclosing it in single quotes. An undefined (null) value is specified
+if the template record only contains blanks following the "=" or
+between the "=" and the "/" comment field delimiter.
+
+Keyword values longer than 68 characters (for string data type) are
+permitted using the cfitsio long string convention. They can either be
+specified as a single "long" line, or by using multiple lines where the
+continuing lines contain the 'CONTINUE' keyword. Example:
+ 
+\begin{verbatim}
+  LONGKEY = 'This is a long string value that is contin&'
+  CONTINUE  'ued over 2 records' / comment field here
+\end{verbatim}
+The format of template lines with CONTINUE keyword is very strict:  3
+spaces must follow CONTINUE and the rest of the line is copied verbatim
+to the FITS file.
+
+Note: contrary to the FITS standard, the template cannot have any
+blanks between real and imaginary parts of a complex number (complex
+integer and complex real data types).
+
+The start of a COMMENT field must be preceeded by "/", which is used to
+separate it from the keyword value field. Exceptions are if the KEYWORD
+field contains COMMENT, HISTORY, CONTINUE, or if the first 8 chars of
+the record are blanks.
+
+ 
+\subsubsection{Template Parser Directives}
+
+The template parser recognizes 3 special keywords (directives):
+
+\begin{itemize}
+\item
+ $\backslash${\tt include} - must be followed by a filename. Forces parser to temporarily
+	stop reading current file and begin reading the include file. Once the
+	parser reaches the end of the include file it continues with the
+	current one.  Include files can be nested. HDU definitions can
+	span multiple files.
+\item
+ $\backslash${\tt group} - marks beginning of GROUP definition
+\item
+ $\backslash${\tt end} - marks end of GROUP definition
+\end{itemize}
+
+ 
+\subsubsection{Formal Template Syntax}
+ 
+\begin{verbatim}
+    TEMPLATE = BLOCK [ BLOCK ... ]
+
+       BLOCK = { HDU | GROUP }
+
+       GROUP = \GROUP [ BLOCK ... ] \END
+
+         HDU = XTENSION [ LINE ... ] { XTENSION | \GROUP | \END | EOF }
+
+        LINE = [ KEYWORD [ = ] ] [ VALUE ] [ / COMMENT ]
+
+    X ...     - X can be present 1 or more times
+    { X | Y } - X or Y
+    [ X ]     - X is optional
+\end{verbatim}
+
+At the topmost level, the template defines 1 or more template blocks. Blocks
+can be either HDU (Header Data Unit) or a GROUP. For each block the parser
+creates 1 (or more for GROUPs) FITS file HDUs.
+
+The start of an HDU definition is denoted with a template line containing
+either of the following keywords:
+
+'SIMPLE' : begins a Primary array (PHDU) definition. One per template
+        is allowed and only as a first keyword in the template file. If
+        not present then an empty PHDU is created (of size 2880 bytes) and
+        the first HDU defined in template files is saved as a 2nd HDU
+        (first after dummy one).
+
+'XTENSION' : begins any xtension HDU definition.
+
+The end of an HDU definition is given by the next occurance of an
+'XTENSION' keyword, a group or end directive, or the end of the
+template file.
+
+The start of a GROUP definition is denoted with the group directive,
+and the end of a GROUP definition is denoted with the end directive.
+GROUP contains 0 or more member blocks (HDUs or GROUPs). Member blocks
+of type GROUP can contain their own member blocks. The GROUP definition
+itself occupies one FITS file HDU of special type (GROUP HDU), so if a
+template specifies 1 group with 1 member HDU like:
+ 
+\begin{verbatim}
+\group
+grpdescr = 'demo'
+xtension bintable
+# this bintable has 0 cols, 0 rows
+\end
+\end{verbatim}
+then the parser creates a FITS file with 3 HDUs :
+ 
+\begin{verbatim}
+1) dummy PHDU
+2) GROUP HDU (has 1 member, which is bintable in HDU number 3)
+3) bintable (member of GROUP in HDU number 2)
+\end{verbatim}
+Technically speaking, the GROUP HDU is a BINTABLE with 6 columns. Applications
+can define additional columns in a GROUP HDU using TFORMn and TTYPEn
+(where n is 7, 8, ....) keywords or their auto-indexing equivalents.
+
+For a more complicated example of a template file using the group directives,
+look at the sample.tpl file that is included in the CFITSIO distribution.
+
+ 
+\subsubsection{Auto-indexing of Kewyords}
+
+If a template keyword name ends with a "\#" character, it is
+auto-indexed. The parser replaces the '\#' with the current integer
+keyword index value in the
+FITS header. The first keyword field encountered in a given HDU
+definition ending with '\#' is used as the index value incrementor.
+Each time this keyword field (also ending with '\#') is encountered in
+the header definition the index value is incremented by 1.
+
+All keyword fields ending with '\#' encountered between index value
+incrementor keyword fields are assigned the current index value. The
+resulting FITS keyword (i.e., after the '\#' is replaced with the index
+value) must be 8 characters or less in length. The following example
+demonstrates the auto-indexing feature:
+
+ 
+\begin{verbatim}
+Template Record          Resulting keyword (in GROUP HDU add 6)
+DUMMY                     DUMMY
+PARAM#                    PARAM1
+DUMMY#                    DUMMY1
+PARAM                     PARAM
+PARAM#                    PARAM2
+TEST#                     TEST2
+PARAM#                    PARAM3
+TEST#                     TEST3
+\end{verbatim}
+
+The index value and index value incrementor keyword field are reset to 1
+for each HDU or to 7 for each GROUP defined in the template.
+
+
+ 
+\subsubsection{Errors}
+
+Here is a list of errors generated by template parser. Some of them
+are used only internally by parser and are not returned by the
+fits\_execute\_template() function.
+ 
+\begin{verbatim}
+ Name                    Value   Description
+ -------------------------------------------------------------------------
+ NGP_NO_MEMORY           360     malloc failed
+ NGP_READ_ERR            361     read error from file
+ NGP_NUL_PTR             362     null pointer passed as an argument.
+                                 Passing null pointer as a name of
+                                 template file raises this error
+ NGP_EMPTY_CURLINE       363     line read seems to be empty (used
+                                 internally)
+ NGP_UNREAD_QUEUE_FULL   364     cannot unread more then 1 line (or single
+                                 line twice)
+ NGP_INC_NESTING         365     too deep include file nesting (infinite
+                                 loop, template includes itself ?)
+ NGP_ERR_FOPEN           366     fopen() failed, cannot open template file
+ NGP_EOF                 367     end of file encountered and not expected
+ NGP_BAD_ARG             368     bad arguments passed. Usually means
+                                 internal parser error. Should not happen
+ NGP_TOKEN_NOT_EXPECT    369     token not expected here
+ -------------------------------------------------------------------------
+\end{verbatim}
+In general fits\_execute\_template() function tries to be as atomic as
+possible, so either everything is done or nothing is done. If an error
+occurs during parsing of the template, fits\_execute\_template() will (try to)
+delete the top level BLOCK (with all its children if any) in which the error
+occured, then it will stop reading the template file and it will return with
+an error.
 
  
 \subsection{HDU Location Specification}
@@ -3476,8 +3708,8 @@ a whole.
    be written.  The tunit and extname parameters
    are optional and a null pointer may be given if they are not defined.
    The FITS Standard recommends that only letters, digits, and the
-   underscore character be used in column names (with no embedded
-   spaces).  Trailing blank characters are not significant.  It is
+   underscore character be used in column names (the ttype parameter) with no
+   embedded spaces).  Trailing blank characters are not significant.  It is
    recommended that all the column names in a given table be unique within
    the first 8 characters, and strongly recommended that the names be
   unique within the first 16 characters. \label{ffcrtb}
@@ -7200,8 +7432,11 @@ tform    - format of the column (null-terminated); allowed values are:
            ASCII tables:  Iw, Aw, Fww.dd, Eww.dd, or Dww.dd
            Binary tables: rL, rX, rB, rI, rJ, rA, rAw, rE, rD, rC, rM
            where 'w'=width of the field, 'd'=no. of decimals, 'r'=repeat count.
-           When creating a binary table, 2 addition tform values are allowed:
-           rU and rV for unsigned 16-bit and unsigned 32-bit integer, respectively.
+           Variable length array columns are denoted by a '1P' before the datatype
+           character (e.g., '1PJ').  When creating a binary table, 2 addition tform
+           datatype codes are recognized by CFITSIO: 'rU' and 'rV' for unsigned
+           16-bit and unsigned 32-bit integer, respectively.
+
 theap    - zero indexed byte offset of starting address of the heap
            relative to the beginning of the binary table data
 ttype    - label or name for table column (null-terminated)
@@ -7344,6 +7579,23 @@ improve the readability of their code.
  HDU_ALREADY_TRACKED   346
  BAD_OPTION            347
  IDENTICAL_POINTERS    348
+
+ NGP_NO_MEMORY         360     malloc failed
+ NGP_READ_ERR          361     read error from file
+ NGP_NUL_PTR           362     null pointer passed as an argument.
+                                 Passing null pointer as a name of
+                                 template file raises this error
+ NGP_EMPTY_CURLINE     363     line read seems to be empty (used
+                                 internally)
+ NGP_UNREAD_QUEUE_FULL 364     cannot unread more then 1 line (or single
+                                 line twice)
+ NGP_INC_NESTING       365     too deep include file nesting (infinite
+                                 loop, template includes itself ?)
+ NGP_ERR_FOPEN         366     fopen() failed, cannot open template file
+ NGP_EOF               367     end of file encountered and not expected
+ NGP_BAD_ARG           368     bad arguments passed. Usually means
+                                 internal parser error. Should not happen
+ NGP_TOKEN_NOT_EXPECT  369     token not expected here
 
  BAD_I2C           401    bad int to formatted string conversion
  BAD_F2C           402    bad float to formatted string conversion

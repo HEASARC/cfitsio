@@ -2455,6 +2455,21 @@ int ffr2e(float fval,  /* I - value to be converted to a string */
             ffpmsg("Error in ffr2e converting float to string");
             *status = BAD_F2C;
         }
+        else
+        {
+            /* test if E format was used, and there is no displayed decimal */
+            if ( !strchr(cval, '.') && strchr(cval,'E') )
+            {
+                /* reformat value with a decimal point and single zero */
+                if ( sprintf(cval, "%.*1E", fval) < 0)
+                {
+                    ffpmsg("Error in ffr2e converting float to string");
+                    *status = BAD_F2C;
+                }
+
+                return(*status);  
+            }
+        }
     }
     else
     {
@@ -2465,16 +2480,20 @@ int ffr2e(float fval,  /* I - value to be converted to a string */
         }
     }
 
-    /* test if output string is 'NaN', 'INDEF', or 'INF' */
-    if (strchr(cval, 'N'))
+    if (*status <= 0)
     {
-        ffpmsg("Error in ffr2e: float value is a NaN or INDEF");
-        *status = BAD_F2C;
+        /* test if output string is 'NaN', 'INDEF', or 'INF' */
+        if (strchr(cval, 'N'))
+        {
+            ffpmsg("Error in ffr2e: float value is a NaN or INDEF");
+            *status = BAD_F2C;
+        }
+        else if ( !strchr(cval, '.') && !strchr(cval,'E') )
+        {
+            /* add decimal point if necessary to distinquish from integer */
+            strcat(cval, ".");
+        }
     }
-
-    /* add decimal point if necessary to distinquish from integer */
-    if ( !strchr(cval, '.') && !strchr(cval,'E') )
-        strcat(cval, ".");
 
     return(*status);
 }
@@ -2534,6 +2553,21 @@ int ffd2e(double dval,  /* I - value to be converted to a string */
             ffpmsg("Error in ffd2e converting float to string");
             *status = BAD_F2C;
         }
+        else
+        {
+            /* test if E format was used, and there is no displayed decimal */
+            if ( !strchr(cval, '.') && strchr(cval,'E') )
+            {
+                /* reformat value with a decimal point and single zero */
+                if ( sprintf(cval, "%.*1E", dval) < 0)
+                {
+                    ffpmsg("Error in ffd2e converting float to string");
+                    *status = BAD_F2C;
+                }
+
+                return(*status);  
+            }
+        }
     }
     else
     {
@@ -2544,16 +2578,20 @@ int ffd2e(double dval,  /* I - value to be converted to a string */
         }
     }
 
-    /* test if output string is 'NaN', 'INDEF', or 'INF' */
-    if (strchr(cval, 'N'))
+    if (*status <= 0)
     {
-        ffpmsg("Error in ffd2e: double value is a NaN or INDEF");
-        *status = BAD_F2C;
+        /* test if output string is 'NaN', 'INDEF', or 'INF' */
+        if (strchr(cval, 'N'))
+        {
+            ffpmsg("Error in ffd2e: double value is a NaN or INDEF");
+            *status = BAD_F2C;
+        }
+        else if ( !strchr(cval, '.') && !strchr(cval,'E') )
+        {
+            /* add decimal point if necessary to distinquish from integer */
+            strcat(cval, ".");
+        }
     }
-
-    /* add decimal point if necessary to distinquish from integer */
-    if ( !strchr(cval, '.') && !strchr(cval,'E') )
-        strcat(cval, ".");
 
     return(*status);
 }
