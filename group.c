@@ -19,8 +19,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define INVALID_GROUP_UPDATE 10000
-
 #define HEX_ESCAPE '%'
 
 /*---------------------------------------------------------------------------
@@ -1348,7 +1346,7 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
       if(iomode != READWRITE)
 	{
 	  ffpmsg("cannot modify grouping table (ffgtam)");
-	  *status = INVALID_GROUP_UPDATE;
+	  *status = BAD_GROUP_ATTACH;
 	  continue;
 	}
 
@@ -1483,7 +1481,7 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
 	  if(groupIOstate == 0)
 	    {
 	      ffpmsg("cannot modify grouping table (ffgtam)");
-	      *status = INVALID_GROUP_UPDATE;
+	      *status = BAD_GROUP_ATTACH;
 	      continue;
 	    }
 
@@ -2867,7 +2865,7 @@ int ffgmrm(fitsfile *gfptr,  /* FITS file pointer to group table             */
       if(iomode != READWRITE)
 	{
 	  ffpmsg("cannot modify grouping table (ffgtam)");
-	  *status = INVALID_GROUP_UPDATE;
+	  *status = BAD_GROUP_DETACH;
 	  continue;
 	}
 
@@ -5443,7 +5441,7 @@ int  fits_get_url(fitsfile *fptr,       /* I ptr to FITS file to evaluate    */
 	    {
 	      /* file is a temp mem file only */
 	      ffpmsg("cannot make URL from temp MEM:// file (fits_get_url)");
-	      *status = INVALID_GROUP_UPDATE;
+	      *status = URL_PARSE_ERROR;
 	    }
 	  else
 	    {
@@ -5598,21 +5596,21 @@ int  fits_get_url(fitsfile *fptr,       /* I ptr to FITS file to evaluate    */
 
       else if(strcasecmp(tmpStr3,"stdin://")        == 0)        
 	{
-	  *status = INVALID_GROUP_UPDATE;
+	  *status = URL_PARSE_ERROR;
 	  ffpmsg("cannot make vaild URL from stdin:// (fits_get_url)");
 	  *tmpStr1 = *tmpStr2 = 0;
 	}
 
       else if(strcasecmp(tmpStr3,"stdout://")       == 0)       
 	{
-	  *status = INVALID_GROUP_UPDATE;
+	  *status = URL_PARSE_ERROR;
 	  ffpmsg("cannot make vaild URL from stdout:// (fits_get_url)");
 	  *tmpStr1 = *tmpStr2 = 0;
 	}
 
       else if(strcasecmp(tmpStr3,"irafmem://")      == 0)      
 	{
-	  *status = INVALID_GROUP_UPDATE;
+	  *status = URL_PARSE_ERROR;
 	  ffpmsg("cannot make vaild URL from irafmem:// (fits_get_url)");
 	  *tmpStr1 = *tmpStr2 = 0;
 	}

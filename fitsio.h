@@ -385,6 +385,8 @@ typedef struct  /* structure for the iterator function column information */
 #define HDU_ALREADY_TRACKED     346
 #define BAD_OPTION              347
 #define IDENTICAL_POINTERS      348
+#define BAD_GROUP_ATTACH        349
+#define BAD_GROUP_DETACH        350
 
 #define BAD_I2C           401  /* bad int to formatted string conversion */
 #define BAD_F2C           402  /* bad float to formatted string conversion */
