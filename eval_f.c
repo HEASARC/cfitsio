@@ -456,7 +456,7 @@ int ffcalc( fitsfile *infptr,   /* I - Input FITS file                      */
    parseInfo Info;
    int naxis, constant, typecode, newNullKwd=0;
    long nelem, naxes[MAXDIMS], repeat, width;
-   int col_cnt, colNo, dec;
+   int col_cnt, colNo;
    Node *result;
    char card[81], tform[16], nullKwd[9];
    int hdutype;
