@@ -695,7 +695,7 @@ int ffkeyn(char *keyroot,   /* I - root string for keyword name */
     keyname[0] = '\0';            /* initialize output name to null */
     rootlen = strlen(keyroot);
 
-    if (rootlen == 0 || rootlen > 7 || value < 1 || value > 999)
+    if (rootlen == 0 || rootlen > 7 || value < 1 )
        return(*status = 206);
 
     sprintf(suffix, "%d", value); /* construct keyword suffix */
