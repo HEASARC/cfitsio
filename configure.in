@@ -32,7 +32,8 @@ if test $FC = 'nope' ; then
 else
   CFORTRANFLAGS=
   echo $ac_n "checking whether we are using GNU Fortran""... $ac_c" 1>&6
-  if test `$FC --version -c < /dev/null 2> /dev/null | grep -c GNU` -gt 0
+  if test `$FC --version -c < /dev/null 2> /dev/null | grep -c GNU` -gt 0 -o \
+          `$FC --version -c < /dev/null 2> /dev/null | grep -ic egcs` -gt 0
   then
     echo "$ac_t""yes" 1>&6
     echo $ac_n "cfitsio: == Adding wrapper support for GNU Fortran""... $ac_c" 1>&6
