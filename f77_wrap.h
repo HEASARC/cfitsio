@@ -1,5 +1,5 @@
 #define UNSIGNED_BYTE
-#include "cfortran44.h"
+#include "cfortran.h"
 
 /************************************************************************
    DEC C creates longs as 8-byte integers.  On most other machines, ints
