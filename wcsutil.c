@@ -74,6 +74,8 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
             /* there is a possible 180 degree ambiguity in the angles */
             /* so add 180 degress to the smaller value if the values  */
             /* differ by more than 90 degrees = pi/2 radians.         */
+            /* (Later, we may decide to take the other solution by    */
+            /* subtracting 180 degrees from the larger value).        */
 
             if ((phib - phia) > (pi / 2.))
                phia += pi;
@@ -85,10 +87,21 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
                return(*status = NO_WCS_KEY);
             }
       
-            phia = (phia + phib) /2.;
+            phia = (phia + phib) /2.;  /* use the average of the 2 values */
             *xinc = cd11 / cos(phia);
             *yinc = cd22 / cos(phia);
             *rot = phia * 180. / pi;
+
+            /* common usage is to have a positive yinc value.  If it is */
+            /* negative, then subtract 180 degrees from rot and negate  */
+            /* both xinc and yinc.  */
+
+            if (*yinc < 0)
+            {
+                *xinc = -(*xinc);
+                *yinc = -(*yinc);
+                *rot = *rot - 180.;
+            }
         }
         else   /* no CD matrix keywords either */
         {
@@ -113,6 +126,7 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
             *rot=0.;
     }
 
+    /* get the type of projection, if any */
     tstat = 0;
     if (ffgkys(fptr, "CTYPE1", ctype, NULL, &tstat))
          type[0] = '\0';
@@ -126,14 +140,15 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
         if (!strncmp(ctype, "DEC-", 4) || !strncmp(ctype+1, "LAT", 3))
         {
             /* the latitudinal axis is given first, so swap them */
-            if ((*xinc / *yinc) < 0. )  /* negative == mirror image on sky */
+
+            if ((*xinc / *yinc) < 0. )  
                 *rot = -90. - (*rot);
             else
                 *rot = 90. - (*rot);
 
-            temp = *xinc;
-            *xinc = *yinc;
-            *yinc = -temp;
+            /* Empirical tests with ds9 show the y-axis sign must be negated */
+            /* and the xinc and yinc values must NOT be swapped. */
+            *yinc = -(*yinc);
 
             temp = *xrval;
             *xrval = *yrval;
