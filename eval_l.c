@@ -2134,6 +2134,7 @@ int ffGetVariable( char *varName, FFSTYPE *thelval )
 	 type = (*gParse.getData)( varName, thelval );
       } else {
 	 type = pERROR;
+	 gParse.status = PARSE_SYNTAX_ERR;
 	 strcpy (errMsg,"Unable to find data: ");
 	 strncat(errMsg, varName, MAXVARNAME);
 	 ffpmsg (errMsg);
@@ -2146,7 +2147,13 @@ int ffGetVariable( char *varName, FFSTYPE *thelval )
       case BOOLEAN:  type = BCOLUMN;  break;
       case STRING:   type = SCOLUMN;  break;
       case BITSTR:   type =  BITCOL;  break;
-      default:       type =  pERROR;  break;
+      default:
+	 type = pERROR;
+	 gParse.status = PARSE_SYNTAX_ERR;
+	 strcpy (errMsg,"Bad datatype for data: ");
+	 strncat(errMsg, varName, MAXVARNAME);
+	 ffpmsg (errMsg);
+	 break;
       }
       thelval->lng = varNum;
    }

@@ -2378,6 +2378,8 @@ static int New_Deref( int Var,  int nDim,
    return(n);
 }
 
+extern int ffGetVariable( char *varName, FFSTYPE *varVal );
+
 static int New_GTI( char *fname, int Node1, char *start, char *stop )
 {
    fitsfile *fptr;
@@ -2389,8 +2391,6 @@ static int New_GTI( char *fname, int Node1, char *start, char *stop )
    double timeZeroI[2], timeZeroF[2], dt, timeSpan;
    char xcol[20], xexpr[20];
    FFSTYPE colVal;
-
-   extern int ffGetVariable( char *varName, FFSTYPE *varVal );
 
    if( Node1==-99 ) {
       type = ffGetVariable( "TIME", &colVal );
@@ -2600,8 +2600,6 @@ static int New_REG( char *fname, int NodeX, int NodeY, char *colNames )
    SAORegion *Rgn;
    char *cX, *cY;
    FFSTYPE colVal;
-
-   extern int ffGetVariable( char *varName, FFSTYPE *varVal );
 
    if( NodeX==-99 ) {
       type = ffGetVariable( "X", &colVal );

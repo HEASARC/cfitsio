@@ -782,10 +782,10 @@ void ffcprs( void )  /*  No parameters                                      */
       for( col=0; col<gParse.nCols; col++ ) {
 	 if( gParse.varData[col].undef == NULL ) continue;
 	 if( gParse.varData[col].type  == BITSTR )
-	    free( ((char**)gParse.varData[col].undef)[0] );
+	   free( ((char**)gParse.varData[col].data)[0] );
 	 free( gParse.varData[col].undef );
       }
-      free( gParse.varData  );
+      free( gParse.varData );
       gParse.nCols = 0;
    }
 
@@ -1153,23 +1153,24 @@ static void Setup_DataArrays( int nCols, iteratorCol *cols, long nRows )
       case BITSTR:
       /* No need for UNDEF array, but must make string DATA array */
 	 len = (nelem+1)*nRows;   /* Count '\0' */
-	 bitStrs = (char**)gParse.varData[i].undef;
+	 bitStrs = (char**)gParse.varData[i].data;
 	 if( bitStrs ) free( bitStrs[0] );
 	 free( bitStrs );
 	 bitStrs = (char**)malloc( nRows*sizeof(char*) );
 	 if( bitStrs==NULL ) {
+	    gParse.varData[i].data = gParse.varData[i].undef = NULL;
 	    gParse.status = MEMORY_ALLOCATION;
 	    break;
 	 }
 	 bitStrs[0] = (char*)malloc( len*sizeof(char) );
 	 if( bitStrs[0]==NULL ) {
 	    free( bitStrs );
-	    gParse.varData[i].undef = NULL;
+	    gParse.varData[i].data = gParse.varData[i].undef = NULL;
 	    gParse.status = MEMORY_ALLOCATION;
 	    break;
 	 }
 
-	 for( row=0; row<gParse.nRows; row++ ) {
+	 for( row=0; row<nRows; row++ ) {
 	    bitStrs[row] = bitStrs[0] + row*(nelem+1);
 	    idx = (row)*( (nelem+7)/8 ) + 1;
 	    for(len=0; len<nelem; len++) {
@@ -1249,7 +1250,7 @@ static void Setup_DataArrays( int nCols, iteratorCol *cols, long nRows )
       if( gParse.status ) {  /*  Deallocate NULL arrays of previous columns */
 	 while( i-- ) {
 	    if( gParse.varData[i].type==BITSTR )
-	       free( ((char**)gParse.varData[i].undef)[0] );
+	       free( ((char**)gParse.varData[i].data)[0] );
 	    free( gParse.varData[i].undef );
 	    gParse.varData[i].undef = NULL;
 	 }
@@ -2081,6 +2082,8 @@ static int allocateCol( int nCol, int *status )
           || gParse.varData  == NULL    ) {
 	 if( gParse.colData  ) free(gParse.colData);
 	 if( gParse.varData  ) free(gParse.varData);
+	 gParse.colData = NULL;
+	 gParse.varData = NULL;
 	 return( *status = MEMORY_ALLOCATION );
       }
    }

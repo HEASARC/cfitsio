@@ -1072,6 +1072,8 @@ static int New_Deref( int Var,  int nDim,
    return(n);
 }
 
+extern int yyGetVariable( char *varName, YYSTYPE *varVal );
+
 static int New_GTI( char *fname, int Node1, char *start, char *stop )
 {
    fitsfile *fptr;
@@ -1083,8 +1085,6 @@ static int New_GTI( char *fname, int Node1, char *start, char *stop )
    double timeZeroI[2], timeZeroF[2], dt, timeSpan;
    char xcol[20], xexpr[20];
    YYSTYPE colVal;
-
-   extern int yyGetVariable( char *varName, YYSTYPE *varVal );
 
    if( Node1==-99 ) {
       type = yyGetVariable( "TIME", &colVal );
@@ -1294,8 +1294,6 @@ static int New_REG( char *fname, int NodeX, int NodeY, char *colNames )
    SAORegion *Rgn;
    char *cX, *cY;
    YYSTYPE colVal;
-
-   extern int yyGetVariable( char *varName, YYSTYPE *varVal );
 
    if( NodeX==-99 ) {
       type = yyGetVariable( "X", &colVal );
