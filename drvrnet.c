@@ -126,6 +126,13 @@
 $Id$
 
 $Log$
+Revision 1.56  2000/01/04 11:58:31  oneel
+Updates so that compressed network files are dealt with regardless of
+their file names and/or mime types.
+
+Revision 1.55  2000/01/04 10:52:40  oneel
+cfitsio 2.034
+
 Revision 1.51  1999/08/10 12:13:40  oneel
 Make the http code a bit less picky about the types of files it
 uncompresses.  Now it also uncompresses files which end in .Z or .gz.
@@ -257,6 +264,8 @@ int http_open(char *filename, int rwmode, int *handle)
   long len;
   int contentlength;
   int status;
+  char firstchar;
+
   closehttpfile = 0;
   closememfile = 0;
 
@@ -328,10 +337,14 @@ int http_open(char *filename, int rwmode, int *handle)
   closememfile++;
 
   /* Now, what do we do with the file */
+  /* Check to see what the first character is */
+  firstchar = fgetc(httpfile);
+  ungetc(firstchar,httpfile);
   if (!strcmp(contentencoding,"x-gzip") || 
       !strcmp(contentencoding,"x-compress") ||
       strstr(filename,".gz") || 
-      strstr(filename,".Z")) {
+      strstr(filename,".Z") ||
+      ('\037' == firstchar)) {
     /* do the compress dance, which is the same as the gzip dance */
     /* Using the cfitsio routine */
 
@@ -402,6 +415,7 @@ int http_compress_open(char *url, int rwmode, int *handle)
   long len;
   int contentlength;
   int status;
+  char firstchar;
 
   closehttpfile = 0;
   closediskfile = 0;
@@ -445,8 +459,12 @@ int http_compress_open(char *url, int rwmode, int *handle)
   closehttpfile++;
 
   /* Better be compressed */
+
+  firstchar = fgetc(httpfile);
+  ungetc(firstchar,httpfile);
   if (!strcmp(contentencoding,"x-gzip") || 
-      !strcmp(contentencoding,"x-compress")) {
+      !strcmp(contentencoding,"x-compress") ||
+      ('\037' == firstchar)) {
 
 
     /* Create the new file */
@@ -542,6 +560,7 @@ int http_file_open(char *url, int rwmode, int *handle)
   long len;
   int contentlength;
   int status;
+  char firstchar;
 
   closehttpfile = 0;
   closefile = 0;
@@ -576,8 +595,11 @@ int http_file_open(char *url, int rwmode, int *handle)
 
   closehttpfile++;
 
+  firstchar = fgetc(httpfile);
+  ungetc(firstchar,httpfile);
   if (!strcmp(contentencoding,"x-gzip") || 
-      !strcmp(contentencoding,"x-compress")) {
+      !strcmp(contentencoding,"x-compress") ||
+      ('\037' == firstchar)) {
 
     /* to make this more cfitsioish we use the file driver calls to create
        the file */
@@ -821,6 +843,7 @@ int ftp_open(char *filename, int rwmode, int *handle)
   char errorstr[MAXLEN];
   long len;
   int status;
+  char firstchar;
 
   closememfile = 0;
   closecommandfile = 0;
@@ -896,7 +919,12 @@ int ftp_open(char *filename, int rwmode, int *handle)
      for instance */
 
   /* Decide if the file is compressed */
-  if (strstr(newfilename,".gz") || strstr(newfilename,".Z")) {
+  firstchar = fgetc(ftpfile);
+  ungetc(firstchar,ftpfile);
+
+  if (strstr(newfilename,".gz") || 
+      strstr(newfilename,".Z") ||
+      ('\037' == firstchar)) {
     
     status = 0;
     /* A bit arbritary really, the user will probably hit ^C */
@@ -964,6 +992,7 @@ int ftp_file_open(char *url, int rwmode, int *handle)
   long len;
   int sock;
   int status;
+  char firstchar;
 
   closeftpfile = 0;
   closecommandfile = 0;
@@ -1003,7 +1032,13 @@ int ftp_file_open(char *url, int rwmode, int *handle)
   closecommandfile++;
 
   /* Now, what do we do with the file */
-  if (strstr(url,".gz") || strstr(url,".Z")) {
+  firstchar = fgetc(ftpfile);
+  ungetc(firstchar,ftpfile);
+
+  if (strstr(url,".gz") || 
+      strstr(url,".Z") ||
+      ('\037' == firstchar)) {
+
     /* to make this more cfitsioish we use the file driver calls to create
        the file */
     /* Create the output file */
@@ -1102,6 +1137,7 @@ int ftp_compress_open(char *url, int rwmode, int *handle)
   long len;
   int status;
   int sock;
+  char firstchar;
 
   closeftpfile = 0;
   closecommandfile = 0;
@@ -1145,8 +1181,13 @@ int ftp_compress_open(char *url, int rwmode, int *handle)
   closecommandfile++;
 
   /* Now, what do we do with the file */
-  if (strstr(url,".gz") || strstr(url,".Z")) {
+  firstchar = fgetc(ftpfile);
+  ungetc(firstchar,ftpfile);
 
+  if (strstr(url,".gz") || 
+      strstr(url,".Z") ||
+      ('\037' == firstchar)) {
+    
     /* Create the output file */
     if ((status =  file_create(netoutfile,handle))) {
       ffpmsg("Unable to create output file (ftp_compress_open)");
