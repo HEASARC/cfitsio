@@ -40,14 +40,21 @@ int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
-    if (fptr->datastart == DATA_UNDEFINED)
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+    {
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    }
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+    {
         if ( ffrdef(fptr, status) > 0)               /* rescan header */
             return(*status);
+    }
 
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
     /*---------------------------------------------------*/
-    if (colnum < 1 || colnum > fptr->tfield)
+    if (colnum < 1 || colnum > (fptr->Fptr)->tfield)
     {
         sprintf(message, "Specified column number is out of range: %d",
                 colnum);
@@ -55,7 +62,7 @@ int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
         return(*status = BAD_COL_NUM);
     }
 
-    colptr  = fptr->tableptr;   /* point to first column */
+    colptr  = (fptr->Fptr)->tableptr;   /* point to first column */
     colptr += (colnum - 1);     /* offset to correct column structure */
     tcode = colptr->tdatatype;
 
@@ -202,14 +209,21 @@ int ffpcns( fitsfile *fptr,  /* I - FITS file pointer                       */
     if (*status > 0)
         return(*status);
 
-    if (fptr->datastart == DATA_UNDEFINED)
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+    {
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    }
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+    {
         if ( ffrdef(fptr, status) > 0)               /* rescan header */
             return(*status);
+    }
 
     /* get the vector repeat length of the column */
     ffgtcl(fptr, colnum, NULL, &repeat, &width, status);
 
-    if (fptr->hdutype == BINARY_TBL)
+    if ((fptr->Fptr)->hdutype == BINARY_TBL)
         repeat = repeat / width;    /* convert from chars to unit strings */
 
     /* absolute element number in the column */

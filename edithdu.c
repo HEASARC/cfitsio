@@ -58,14 +58,20 @@ int ffcphd(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     if (infptr == outfptr)
         return(*status = SAME_FILE);
 
+    if (infptr->HDUposition != (infptr->Fptr)->curhdu)
+        ffmahd(infptr, (infptr->HDUposition) + 1, NULL, status);
+
+    if (outfptr->HDUposition != (outfptr->Fptr)->curhdu)
+        ffmahd(outfptr, (outfptr->HDUposition) + 1, NULL, status);
+
     /* check whether the output header is empty */
-    if (outfptr->headend != outfptr->headstart[outfptr->curhdu] )
+    if ((outfptr->Fptr)->headend != (outfptr->Fptr)->headstart[(outfptr->Fptr)->curhdu] )
         ffcrhd(outfptr, status);  /* create new empty HDU */
 
     ffghsp(infptr, &nkeys, &nadd, status); /* get no. of keywords in header */
 
-    if ( ( infptr->curhdu == 0 && outfptr->curhdu != 0 )  ||
-         ( infptr->curhdu != 0 && outfptr->curhdu == 0 ) )
+    if ( ( (infptr->Fptr)->curhdu == 0 && (outfptr->Fptr)->curhdu != 0 )  ||
+         ( (infptr->Fptr)->curhdu != 0 && (outfptr->Fptr)->curhdu == 0 ) )
     {
         /* copying between primary array and image extension */
 
@@ -114,7 +120,7 @@ int ffcpdt(fitsfile *infptr,    /* I - FITS file pointer to input file  */
   copy the data unit from the CHDU of infptr to the CHDU of outfptr. 
   This will overwrite any data already in the outfptr CHDU.
 */
-    long nb, ii;
+    long nb, ii, indatastart, indataend, outdatastart;
     char buffer[2880];
 
     if (*status > 0)
@@ -123,20 +129,17 @@ int ffcpdt(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     if (infptr == outfptr)
         return(*status = SAME_FILE);
 
-    if (infptr->datastart == DATA_UNDEFINED)
-        ffrdef(infptr, status);                /* rescan header */
-
-    if (outfptr->datastart == DATA_UNDEFINED)
-        ffrdef(outfptr, status);               /* rescan header */
+    ffghad(infptr,  NULL, &indatastart, &indataend, status);
+    ffghad(outfptr, NULL, &outdatastart, NULL, status);
 
     /* Calculate the number of bytes to be copied  */
-    nb = (infptr->headstart[(infptr->curhdu) + 1] - infptr->datastart) / 2880;
+    nb = (indataend - indatastart) / 2880;
 
     if (nb > 0)
     {
         /* move the initial copy position in each of the files */
-        ffmbyt(infptr,  infptr->datastart,  REPORT_EOF, status);
-        ffmbyt(outfptr, outfptr->datastart, IGNORE_EOF, status);
+        ffmbyt(infptr,  indatastart,  REPORT_EOF, status);
+        ffmbyt(outfptr, outdatastart, IGNORE_EOF, status);
 
         for (ii = 0; ii < nb; ii++)
         {
@@ -162,8 +165,11 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
     if (*status > 0)
         return(*status);
 
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     /* if at the end of file, simply append new image extension */
-    if ( (fptr->curhdu) == (fptr->maxhdu) )
+    if ( ((fptr->Fptr)->curhdu) == ((fptr->Fptr)->maxhdu) )
     {
         ffcrim(fptr, bitpix, naxis, naxes, status);
         return(*status);
@@ -197,7 +203,7 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
     datasize = npixels * bytlen;          /* size of image in bytes */
     nblocks = ((datasize + 2879) / 2880) + 1;  /* +1 for the header */
 
-    if (fptr->writemode == READWRITE) /* must have write access */
+    if ((fptr->Fptr)->writemode == READWRITE) /* must have write access */
     {   /* close the CHDU */
         ffrdef(fptr, status);  /* scan header to redefine structure */
         ffpdfl(fptr, status);  /* insure correct data file values */
@@ -205,25 +211,26 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
     else
         return(*status = READONLY_FILE);
 
-    nexthdu = (fptr->curhdu) + 1; /* number of the next (new) hdu */
-    newstart = fptr->headstart[nexthdu]; /* save starting addr of HDU */
+    nexthdu = ((fptr->Fptr)->curhdu) + 1; /* number of the next (new) hdu */
+    newstart = (fptr->Fptr)->headstart[nexthdu]; /* save starting addr of HDU */
 
-    fptr->hdutype = IMAGE_HDU;  /* so that correct fill value is used */
+    (fptr->Fptr)->hdutype = IMAGE_HDU;  /* so that correct fill value is used */
     /* ffiblk also increments headstart for all following HDUs */
     if (ffiblk(fptr, nblocks, 1, status) > 0)  /* insert the blocks */
         return(*status);
 
-    (fptr->maxhdu)++;      /* increment known number of HDUs in the file */
-    for (ii = fptr->maxhdu; ii > fptr->curhdu; ii--)
-        fptr->headstart[ii + 1] = fptr->headstart[ii];  /* incre start addr */
+    ((fptr->Fptr)->maxhdu)++;      /* increment known number of HDUs in the file */
+    for (ii = (fptr->Fptr)->maxhdu; ii > (fptr->Fptr)->curhdu; ii--)
+        (fptr->Fptr)->headstart[ii + 1] = (fptr->Fptr)->headstart[ii];  /* incre start addr */
 
-    fptr->headstart[nexthdu] = newstart; /* set starting addr of HDU */
+    (fptr->Fptr)->headstart[nexthdu] = newstart; /* set starting addr of HDU */
 
     /* set default parameters for this new empty HDU */
-    fptr->curhdu = nexthdu;   /* we are now located at the next HDU */
-    fptr->nextkey = fptr->headstart[nexthdu];  
-    fptr->headend = fptr->headstart[nexthdu];
-    fptr->datastart = (fptr->headstart[nexthdu]) + 2880;
+    (fptr->Fptr)->curhdu = nexthdu;   /* we are now located at the next HDU */
+    fptr->HDUposition = nexthdu;      /* we are now located at the next HDU */
+    (fptr->Fptr)->nextkey = (fptr->Fptr)->headstart[nexthdu];  
+    (fptr->Fptr)->headend = (fptr->Fptr)->headstart[nexthdu];
+    (fptr->Fptr)->datastart = ((fptr->Fptr)->headstart[nexthdu]) + 2880;
 
     /* write the required header keywords */
     ffphpr(fptr, TRUE, bitpix, naxis, naxes, 0, 1, TRUE, status);
@@ -254,8 +261,11 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     /* if at the end of file, simply append new table extension */
-    if ( (fptr->curhdu) == (fptr->maxhdu) )
+    if ( ((fptr->Fptr)->curhdu) == ((fptr->Fptr)->maxhdu) )
     {
         ffcrtb(fptr, ASCII_TBL, naxis2, tfields, ttype, tform, tunit,
                extnm, status);
@@ -304,7 +314,7 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
     datasize = rowlen * naxis2;          /* size of table in bytes */
     nblocks = ((datasize + 2879) / 2880) + nhead;  /* size of HDU */
 
-    if (fptr->writemode == READWRITE) /* must have write access */
+    if ((fptr->Fptr)->writemode == READWRITE) /* must have write access */
     {   /* close the CHDU */
         ffrdef(fptr, status);  /* scan header to redefine structure */
         ffpdfl(fptr, status);  /* insure correct data file values */
@@ -312,10 +322,10 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
     else
         return(*status = READONLY_FILE);
 
-    nexthdu = (fptr->curhdu) + 1; /* number of the next (new) hdu */
-    newstart = fptr->headstart[nexthdu]; /* save starting addr of HDU */
+    nexthdu = ((fptr->Fptr)->curhdu) + 1; /* number of the next (new) hdu */
+    newstart = (fptr->Fptr)->headstart[nexthdu]; /* save starting addr of HDU */
 
-    fptr->hdutype = ASCII_TBL;  /* so that correct fill value is used */
+    (fptr->Fptr)->hdutype = ASCII_TBL;  /* so that correct fill value is used */
     /* ffiblk also increments headstart for all following HDUs */
     if (ffiblk(fptr, nblocks, 1, status) > 0)  /* insert the blocks */
     {
@@ -324,17 +334,18 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
         return(*status);
     }
 
-    (fptr->maxhdu)++;      /* increment known number of HDUs in the file */
-    for (ii = fptr->maxhdu; ii > fptr->curhdu; ii--)
-        fptr->headstart[ii + 1] = fptr->headstart[ii];  /* incre start addr */
+    ((fptr->Fptr)->maxhdu)++;      /* increment known number of HDUs in the file */
+    for (ii = (fptr->Fptr)->maxhdu; ii > (fptr->Fptr)->curhdu; ii--)
+        (fptr->Fptr)->headstart[ii + 1] = (fptr->Fptr)->headstart[ii];  /* incre start addr */
 
-    fptr->headstart[nexthdu] = newstart; /* set starting addr of HDU */
+    (fptr->Fptr)->headstart[nexthdu] = newstart; /* set starting addr of HDU */
 
     /* set default parameters for this new empty HDU */
-    fptr->curhdu = nexthdu;   /* we are now located at the next HDU */
-    fptr->nextkey = fptr->headstart[nexthdu];  
-    fptr->headend = fptr->headstart[nexthdu];
-    fptr->datastart = (fptr->headstart[nexthdu]) + (nhead * 2880);
+    (fptr->Fptr)->curhdu = nexthdu;   /* we are now located at the next HDU */
+    fptr->HDUposition = nexthdu;      /* we are now located at the next HDU */
+    (fptr->Fptr)->nextkey = (fptr->Fptr)->headstart[nexthdu];  
+    (fptr->Fptr)->headend = (fptr->Fptr)->headstart[nexthdu];
+    (fptr->Fptr)->datastart = ((fptr->Fptr)->headstart[nexthdu]) + (nhead * 2880);
 
     /* write the required header keywords */
 
@@ -369,8 +380,12 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
+
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     /* if at the end of file, simply append new table extension */
-    if ( (fptr->curhdu) == (fptr->maxhdu) )
+    if ( ((fptr->Fptr)->curhdu) == ((fptr->Fptr)->maxhdu) )
     {
         ffcrtb(fptr, BINARY_TBL, naxis2, tfields, ttype, tform, tunit,
                extnm, status);
@@ -412,7 +427,7 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
     datasize = (naxis1 * naxis2) + pcount;         /* size of table in bytes */
     nblocks = ((datasize + 2879) / 2880) + nhead;  /* size of HDU */
 
-    if (fptr->writemode == READWRITE) /* must have write access */
+    if ((fptr->Fptr)->writemode == READWRITE) /* must have write access */
     {   /* close the CHDU */
         ffrdef(fptr, status);  /* scan header to redefine structure */
         ffpdfl(fptr, status);  /* insure correct data file values */
@@ -420,25 +435,26 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
     else
         return(*status = READONLY_FILE);
 
-    nexthdu = (fptr->curhdu) + 1; /* number of the next (new) hdu */
-    newstart = fptr->headstart[nexthdu]; /* save starting addr of HDU */
+    nexthdu = ((fptr->Fptr)->curhdu) + 1; /* number of the next (new) hdu */
+    newstart = (fptr->Fptr)->headstart[nexthdu]; /* save starting addr of HDU */
 
-    fptr->hdutype = BINARY_TBL;  /* so that correct fill value is used */
+    (fptr->Fptr)->hdutype = BINARY_TBL;  /* so that correct fill value is used */
     /* ffiblk also increments headstart for all following HDUs */
     if (ffiblk(fptr, nblocks, 1, status) > 0)  /* insert the blocks */
         return(*status);
 
-    (fptr->maxhdu)++;      /* increment known number of HDUs in the file */
-    for (ii = fptr->maxhdu; ii > fptr->curhdu; ii--)
-        fptr->headstart[ii + 1] = fptr->headstart[ii];  /* incre start addr */
+    ((fptr->Fptr)->maxhdu)++;      /* increment known number of HDUs in the file */
+    for (ii = (fptr->Fptr)->maxhdu; ii > (fptr->Fptr)->curhdu; ii--)
+        (fptr->Fptr)->headstart[ii + 1] = (fptr->Fptr)->headstart[ii];  /* incre start addr */
 
-    fptr->headstart[nexthdu] = newstart; /* set starting addr of HDU */
+    (fptr->Fptr)->headstart[nexthdu] = newstart; /* set starting addr of HDU */
 
     /* set default parameters for this new empty HDU */
-    fptr->curhdu = nexthdu;   /* we are now located at the next HDU */
-    fptr->nextkey = fptr->headstart[nexthdu];  
-    fptr->headend = fptr->headstart[nexthdu];
-    fptr->datastart = (fptr->headstart[nexthdu]) + (nhead * 2880);
+    (fptr->Fptr)->curhdu = nexthdu;   /* we are now located at the next HDU */
+    fptr->HDUposition = nexthdu;      /* we are now located at the next HDU */
+    (fptr->Fptr)->nextkey = (fptr->Fptr)->headstart[nexthdu];  
+    (fptr->Fptr)->headend = (fptr->Fptr)->headstart[nexthdu];
+    (fptr->Fptr)->datastart = ((fptr->Fptr)->headstart[nexthdu]) + (nhead * 2880);
 
     /* write the required header keywords. This will write PCOUNT = 0 */
     /* so that the variable length data will be written at the right place */
@@ -465,32 +481,35 @@ int ffdhdu(fitsfile *fptr,      /* I - FITS file pointer                   */
     if (*status > 0)
         return(*status);
 
-    if (fptr->curhdu == 0)
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+    if ((fptr->Fptr)->curhdu == 0)
         return(*status = BAD_HDU_NUM);  /* cannot delete the primary array */
 
     ffchdu(fptr, status);  /* close the CHDU to free memeory */
 
     /* calc number of blocks to delete */
-    nblocks = ( fptr->headstart[fptr->curhdu + 1] - 
-                fptr->headstart[fptr->curhdu] ) / 2880;
+    nblocks = ( (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu + 1] - 
+                (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] ) / 2880;
 
     /* ffdblk also updates the starting address of all following HDUs */
     if (ffdblk(fptr, nblocks, status) > 0) /* delete the HDU */
         return(*status);
 
     /* delete the CHDU from the list of HDUs */
-    for (ii = fptr->curhdu + 1; ii <= fptr->maxhdu; ii++)
-        fptr->headstart[ii] = fptr->headstart[ii + 1];
+    for (ii = (fptr->Fptr)->curhdu + 1; ii <= (fptr->Fptr)->maxhdu; ii++)
+        (fptr->Fptr)->headstart[ii] = (fptr->Fptr)->headstart[ii + 1];
 
-    fptr->headstart[fptr->maxhdu + 1] = 0;
-    (fptr->maxhdu)--; /* decrement the known number of HDUs */
+    (fptr->Fptr)->headstart[(fptr->Fptr)->maxhdu + 1] = 0;
+    ((fptr->Fptr)->maxhdu)--; /* decrement the known number of HDUs */
 
     if (ffrhdu(fptr, &tmptype, status) > 0)  /* initialize next HDU as CHDU */
     {
         /* failed (end of file?), so move back one HDU */
         *status = 0;
         ffcmsg();       /* clear extraneous error messages */
-        ffgext(fptr, (fptr->curhdu) - 1, &tmptype, status);
+        ffgext(fptr, ((fptr->Fptr)->curhdu) - 1, &tmptype, status);
     }
 
     if (hdutype)

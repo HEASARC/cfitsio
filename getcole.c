@@ -217,7 +217,7 @@ int ffgsve(fitsfile *fptr, /* I - FITS file pointer                         */
     long ii,i0, i1,i2,i3,i4,i5,i6,i7,i8,row,rstr,rstp,rinc;
     long str[9],stp[9],incr[9],dsize[10];
     long felem, nelem, nultyp, ninc, numcol;
-    int anyf;
+    int hdutype, anyf;
     char ldummy, msg[FLEN_ERRMSG];
 
     if (naxis < 1 || naxis > 9)
@@ -232,7 +232,10 @@ int ffgsve(fitsfile *fptr, /* I - FITS file pointer                         */
     be interpreted as the row number, and we will alway read the image
     data from column 2 (any group parameters are in column 1).
 */
-    if (fptr->hdutype == 0)
+    if (ffghdt(fptr, &hdutype, status) > 0)
+        return(*status);
+
+    if (hdutype == IMAGE_HDU)
     {
         /* this is a primary array, or image extension */
         if (colnum == 0)
@@ -361,7 +364,7 @@ int ffgsfe(fitsfile *fptr, /* I - FITS file pointer                         */
     long ii,i0, i1,i2,i3,i4,i5,i6,i7,i8,row,rstr,rstp,rinc;
     long str[9],stp[9],incr[9],dsize[10];
     long felem, nelem, nultyp, ninc, numcol;
-    int anyf;
+    int hdutype, anyf;
     float nulval = 0;
     char msg[FLEN_ERRMSG];
 
@@ -377,7 +380,10 @@ int ffgsfe(fitsfile *fptr, /* I - FITS file pointer                         */
     be interpreted as the row number, and we will alway read the image
     data from column 2 (any group parameters are in column 1).
 */
-    if (fptr->hdutype == 0)
+    if (ffghdt(fptr, &hdutype, status) > 0)
+        return(*status);
+
+    if (hdutype == IMAGE_HDU)
     {
         /* this is a primary array, or image extension */
         if (colnum == 0)

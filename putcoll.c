@@ -114,11 +114,18 @@ int ffpcnl( fitsfile *fptr,  /* I - FITS file pointer                       */
     if (*status > 0)
         return(*status);
 
-    if (fptr->datastart == DATA_UNDEFINED)
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+    {
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    }
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+    {
         if ( ffrdef(fptr, status) > 0)               /* rescan header */
             return(*status);
+    }
 
-    colptr  = fptr->tableptr;   /* point to first column */
+    colptr  = (fptr->Fptr)->tableptr;   /* point to first column */
     colptr += (colnum - 1);     /* offset to correct column structure */
 
     repeat = colptr->trepeat;  /* repeat count for this column */
@@ -218,13 +225,17 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
     else if (fbit < 1)
         return(*status = BAD_ELEM_NUM);
 
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     fbyte = (fbit + 7) / 8;
     bitloc = fbit - 1 - ((fbit - 1) / 8 * 8);
     ndone = 0;
     rstart = frow - 1;
     estart = fbyte - 1;
 
-    colptr  = fptr->tableptr;   /* point to first column */
+    colptr  = (fptr->Fptr)->tableptr;   /* point to first column */
     colptr += (colnum - 1);     /* offset to correct column structure */
 
     tcode = colptr->tdatatype;
@@ -244,7 +255,7 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
             return(*status = BAD_ELEM_NUM);
 
         /* calc the i/o pointer location to start of sequence of pixels */
-        bstart = fptr->datastart + (rstart * fptr->rowlength) +
+        bstart = (fptr->Fptr)->datastart + (rstart * (fptr->Fptr)->rowlength) +
                colptr->tbcol + estart;
     }
     else
@@ -254,14 +265,14 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
         /* length arrays.  REPEAT is the number of BITS in the array. */
 
         repeat = fbit + nbit -1;
-        offset = fptr->heapsize;
+        offset = (fptr->Fptr)->heapsize;
         /* write the number of elements and the starting offset */
         ffpdes(fptr, colnum, frow, repeat, offset, status);
         /* calc the i/o pointer location to start of sequence of pixels */
-        bstart = fptr->datastart + offset + fptr->heapstart + estart;
+        bstart = (fptr->Fptr)->datastart + offset + (fptr->Fptr)->heapstart + estart;
         /* increment the empty heap starting address (in bytes) */
         repeat = (repeat + 7) / 8;  /* convert from bits to bytes */
-        fptr->heapsize += repeat;
+        (fptr->Fptr)->heapsize += repeat;
     }
 
     /* move the i/o pointer to the start of the pixel sequence */
@@ -303,7 +314,7 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
           /* move the i/o pointer to the next row of pixels */
           estart = 0;
           rstart = rstart + 1;
-          bstart = fptr->datastart + (rstart * fptr->rowlength) +
+          bstart = (fptr->Fptr)->datastart + (rstart * (fptr->Fptr)->rowlength) +
                colptr->tbcol;
 
           ffmbyt(fptr, bstart, IGNORE_EOF, status);

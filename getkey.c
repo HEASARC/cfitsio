@@ -28,13 +28,16 @@ int ffghsp(fitsfile *fptr,  /* I - FITS file pointer                     */
   without having to insert more FITS blocks.
 */
 {
-    *nexist = ( (fptr->headend) - (fptr->headstart[fptr->curhdu]) ) / 80;
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
-    if (fptr->datastart == DATA_UNDEFINED)
+    *nexist = ( ((fptr->Fptr)->headend) - ((fptr->Fptr)->headstart[(fptr->Fptr)->curhdu]) ) / 80;
+
+    if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
         *nmore = -1;   /* data not written yet, so room for any keywords */
     else
         /* calculate space available between the data and the END card */
-        *nmore = (fptr->datastart - fptr->headend) / 80 - 1;
+        *nmore = ((fptr->Fptr)->datastart - (fptr->Fptr)->headend) / 80 - 1;
 
     return(*status);
 }
@@ -48,8 +51,11 @@ int ffghps(fitsfile *fptr, /* I - FITS file pointer                     */
   keyword that will be read.
 */
 {
-  *nexist = ( (fptr->headend) - (fptr->headstart[fptr->curhdu]) ) / 80;
-  *position = ( (fptr->nextkey) - (fptr->headstart[fptr->curhdu]) ) / 80 + 1;
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+  *nexist = ( ((fptr->Fptr)->headend) - ((fptr->Fptr)->headstart[(fptr->Fptr)->curhdu]) ) / 80;
+  *position = ( ((fptr->Fptr)->nextkey) - ((fptr->Fptr)->headstart[(fptr->Fptr)->curhdu]) ) / 80 + 1;
   return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -61,8 +67,10 @@ int ffmaky(fitsfile *fptr,    /* I - FITS file pointer                    */
   move pointer to the specified absolute keyword position.  E.g. this keyword 
   will then be read by the next call to ffgnky.
 */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
-    fptr->nextkey = fptr->headstart[fptr->curhdu] + ( (nrec - 1) * 80);
+    (fptr->Fptr)->nextkey = (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] + ( (nrec - 1) * 80);
 
     return(*status);
 }
@@ -75,10 +83,12 @@ int ffmrky(fitsfile *fptr,    /* I - FITS file pointer                   */
   move pointer to the specified keyword position relative to the current
   position.  E.g. this keyword  will then be read by the next call to ffgnky.
 */
-
     int absrec;
 
-    absrec = ( (fptr->nextkey) - (fptr->headstart[fptr->curhdu]) ) / 80
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+    absrec = ( ((fptr->Fptr)->nextkey) - ((fptr->Fptr)->headstart[(fptr->Fptr)->curhdu]) ) / 80
               + 1 + nmove;
 
     ffmaky(fptr, absrec, status);
@@ -100,6 +110,9 @@ int ffgnky(fitsfile *fptr,  /* I - FITS file pointer     */
     if (*status > 0)
         return(*status);
 
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     card[0] = '\0';  /* make sure card is terminated, even affer read error */
 
 /*
@@ -111,13 +124,13 @@ int ffgnky(fitsfile *fptr,  /* I - FITS file pointer     */
   which is just 2880 bytes prior to the start of the data unit.
 */
 
-    bytepos = fptr->nextkey;
-    endhead = maxvalue( (fptr->headend), (fptr->datastart - 2880) );
+    bytepos = (fptr->Fptr)->nextkey;
+    endhead = maxvalue( ((fptr->Fptr)->headend), ((fptr->Fptr)->datastart - 2880) );
 
     if (bytepos > endhead ||            /* nextkey must be < endhead and */
-        bytepos < fptr->headstart[fptr->curhdu] )    /* > than headstart */
+        bytepos < (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] )    /* > than headstart */
     {
-        nrec = (bytepos - fptr->headstart[fptr->curhdu]) / 80 + 1;
+        nrec = (bytepos - (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu]) / 80 + 1;
         sprintf(message, "Cannot get keyword number %d.  It does not exist.",
                 nrec);
         ffpmsg(message);
@@ -1220,10 +1233,13 @@ int ffgtdm(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
-    if (colnum < 1 || colnum > fptr->tfield)
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+    if (colnum < 1 || colnum > (fptr->Fptr)->tfield)
         return(*status = BAD_COL_NUM);
 
-    colptr = fptr->tableptr;   /* set pointer to the first column */
+    colptr = (fptr->Fptr)->tableptr;   /* set pointer to the first column */
     colptr += (colnum - 1);    /* increment to the correct column */
 
     ffkeyn("TDIM", colnum, keyname, status);      /* construct keyword name */
@@ -1492,6 +1508,9 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     if (simple)
        *simple = 1;
 
@@ -1502,7 +1521,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
     /*--------------------------------------------------------------------*/
     ffgkyn(fptr, 1, name, value, comm, status);
 
-    if (fptr->curhdu == 0)  /* Is this the beginning of the FITS file? */
+    if ((fptr->Fptr)->curhdu == 0)  /* Is this the beginning of the FITS file? */
     {
         if (!strcmp(name, "SIMPLE"))
         {
@@ -1734,7 +1753,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
 
       if (*status > 0)  /* exit on error after writing error message */
       {
-        if (fptr->curhdu == 0)
+        if ((fptr->Fptr)->curhdu == 0)
             ffpmsg(
             "Failed to read the required primary array header keywords.");
         else

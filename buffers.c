@@ -15,7 +15,7 @@
 #include "fitsio2.h"
 
 char iobuffer[NIOBUF][IOBUFLEN];      /* initialize to zero by default  */
-fitsfile *bufptr[NIOBUF];             /* initialize to zero by default  */
+FITSfile *bufptr[NIOBUF];             /* initialize to zero by default  */
 long bufrecnum[NIOBUF];               /* initialize to zero by default  */
 int dirty[NIOBUF], ageindex[NIOBUF];  /* ages get initialized in ffwhbf */
 
@@ -40,14 +40,17 @@ int ffmbyt(fitsfile *fptr,    /* I - FITS file pointer                */
     if (bytepos < 0)
         return(*status = NEG_FILE_POS);
 
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     record = bytepos / IOBUFLEN;  /* zero-indexed record number */
 
     /* if this is not the current record, then load it */
-    if (record != bufrecnum[fptr->curbuf]) 
+    if (record != bufrecnum[(fptr->Fptr)->curbuf]) 
         ffldrc(fptr, record, err_mode, status);
 
     if (*status <= 0)
-        fptr->bytepos = bytepos;  /* save new file position */
+        (fptr->Fptr)->bytepos = bytepos;  /* save new file position */
 
     return(*status);
 }
@@ -66,14 +69,12 @@ int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
     long filepos, recstart, recend;
     long ntodo, bufpos, nspace, nwrite;
     char *cptr;
-/*
-    extern fitsfile *bufptr[NIOBUF];
-    extern char iobuffer[NIOBUF][IOBUFLEN];
-    extern long bufrecnum[NIOBUF]; 
-    extern int dirty[NIOBUF];
-*/
+
     if (*status > 0)
        return(*status);
+
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
     cptr = (char *)buffer;
     ntodo =  nbytes;
@@ -83,8 +84,8 @@ int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
       /* write large blocks of data directly to disk instead of via buffers */
       /* first, fill up the current IO buffer before flushing it to disk */
 
-      nbuff = fptr->curbuf;          /* current IO buffer number */
-      filepos = fptr->bytepos;       /* save the write starting position */
+      nbuff = (fptr->Fptr)->curbuf;      /* current IO buffer number */
+      filepos = (fptr->Fptr)->bytepos;   /* save the write starting position */
       recstart = bufrecnum[nbuff];                 /* starting record */
       recend = (filepos + nbytes - 1) / IOBUFLEN;  /* ending record   */
 
@@ -103,7 +104,7 @@ int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
 
       for (ii = 0; ii < NIOBUF; ii++) /* flush any affected buffers to disk */
       {
-        if (bufptr[ii] == fptr && bufrecnum[ii] >= recstart
+        if (bufptr[ii] == fptr->Fptr && bufrecnum[ii] >= recstart
             && bufrecnum[ii] <= recend )
         {
           if (dirty[ii])        /* flush modified buffer to disk */
@@ -114,22 +115,22 @@ int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
       }
 
       /* move to the correct write position */
-      if (fptr->io_pos != filepos)
-         ffseek(fptr, filepos);
+      if ((fptr->Fptr)->io_pos != filepos)
+         ffseek(fptr->Fptr, filepos);
 
       nwrite = ((ntodo - 1) / IOBUFLEN) * IOBUFLEN; /* don't write last buff */
 
-      ffwrite(fptr, nwrite, cptr, status); /* write the data */
+      ffwrite(fptr->Fptr, nwrite, cptr, status); /* write the data */
       ntodo -= nwrite;                /* decrement remaining number of bytes */
       cptr += nwrite;                  /* increment user buffer pointer */
-      fptr->io_pos = filepos + nwrite; /* update the file position */
+      (fptr->Fptr)->io_pos = filepos + nwrite; /* update the file position */
 
-      if (fptr->io_pos >= fptr->filesize) /* at the EOF? */
+      if ((fptr->Fptr)->io_pos >= (fptr->Fptr)->filesize) /* at the EOF? */
       {
-        fptr->filesize = fptr->io_pos;   /* increment the file size */
+        (fptr->Fptr)->filesize = (fptr->Fptr)->io_pos; /* increment file size */
 
         /* initialize the current buffer with the correct fill value */
-        if (fptr->hdutype == ASCII_TBL)
+        if ((fptr->Fptr)->hdutype == ASCII_TBL)
           memset(iobuffer[nbuff], 32, IOBUFLEN);  /* blank fill */
         else
           memset(iobuffer[nbuff],  0, IOBUFLEN);  /* zero fill */
@@ -137,23 +138,25 @@ int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
       else
       {
         /* read next record */
-        ffread(fptr, IOBUFLEN, iobuffer[nbuff], status);
-        fptr->io_pos += IOBUFLEN; 
+        ffread(fptr->Fptr, IOBUFLEN, iobuffer[nbuff], status);
+        (fptr->Fptr)->io_pos += IOBUFLEN; 
       }
 
       /* copy remaining bytes from user buffer into current IO buffer */
       memcpy(iobuffer[nbuff], cptr, ntodo);
       dirty[nbuff] = TRUE;       /* mark record as having been modified */
       bufrecnum[nbuff] = recend; /* record number */
-      bufptr[nbuff] = fptr;      /* file pointer associated with IO buffer */
+      bufptr[nbuff] = fptr->Fptr;  /* file pointer associated with IO buffer */
 
-      fptr->logfilesize = maxvalue(fptr->logfilesize, (recend + 1) * IOBUFLEN);
-      fptr->bytepos = filepos + nwrite + ntodo;
+      (fptr->Fptr)->logfilesize = maxvalue((fptr->Fptr)->logfilesize, 
+                                            (recend + 1) * IOBUFLEN);
+      (fptr->Fptr)->bytepos = filepos + nwrite + ntodo;
     }
     else
     {
       /* bufpos is the starting position in IO buffer */
-      bufpos = fptr->bytepos - (bufrecnum[fptr->curbuf] * IOBUFLEN);
+      bufpos = (fptr->Fptr)->bytepos - (bufrecnum[(fptr->Fptr)->curbuf] *
+               IOBUFLEN);
       nspace = IOBUFLEN - bufpos;   /* amount of space left in the buffer */
 
       while (ntodo)
@@ -161,15 +164,15 @@ int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
         nwrite = minvalue(ntodo, nspace);
 
         /* copy bytes from user's buffer to the IO buffer */
-        memcpy(iobuffer[fptr->curbuf] + bufpos, cptr, nwrite);
+        memcpy(iobuffer[(fptr->Fptr)->curbuf] + bufpos, cptr, nwrite);
         ntodo -= nwrite;            /* decrement remaining number of bytes */
         cptr += nwrite;
-        fptr->bytepos += nwrite;    /* increment file position pointer */
-        dirty[fptr->curbuf] = TRUE; /* mark record as having been modified */
+        (fptr->Fptr)->bytepos += nwrite;  /* increment file position pointer */
+        dirty[(fptr->Fptr)->curbuf] = TRUE; /* mark record as modified */
 
         if (ntodo)                  /* load next record into a buffer */
         {
-          ffldrc(fptr, fptr->bytepos / IOBUFLEN, IGNORE_EOF, status);
+          ffldrc(fptr, (fptr->Fptr)->bytepos / IOBUFLEN, IGNORE_EOF, status);
           bufpos = 0;
           nspace = IOBUFLEN;
         }
@@ -193,18 +196,17 @@ int ffpbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
     int bcurrent;
     long ii, bufpos, nspace, nwrite, record;
     char *cptr, *ioptr;
-/*
-    extern char iobuffer[NIOBUF][IOBUFLEN];
-    extern long bufrecnum[NIOBUF]; 
-    extern int dirty[NIOBUF];
-*/
+
     if (*status > 0)
        return(*status);
 
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     cptr = (char *)buffer;
-    bcurrent = fptr->curbuf;     /* number of the current IO buffer */
+    bcurrent = (fptr->Fptr)->curbuf;     /* number of the current IO buffer */
     record = bufrecnum[bcurrent];  /* zero-indexed record number */
-    bufpos = fptr->bytepos - (record * IOBUFLEN); /* starting buffer pos. */
+    bufpos = (fptr->Fptr)->bytepos - (record * IOBUFLEN); /* starting pos. */
     nspace = IOBUFLEN - bufpos;  /* amount of space left in buffer */
     ioptr = iobuffer[bcurrent] + bufpos;  
 
@@ -220,7 +222,7 @@ int ffpbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
         dirty[bcurrent] = TRUE;  /* mark record as having been modified */
         record++;
         ffldrc(fptr, record, IGNORE_EOF, status);  /* load next record */
-        bcurrent = fptr->curbuf;
+        bcurrent = (fptr->Fptr)->curbuf;
         ioptr   = iobuffer[bcurrent];
 
         nwrite  = gsize - nwrite;
@@ -240,7 +242,7 @@ int ffpbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
         dirty[bcurrent] = TRUE;
         record += ((IOBUFLEN - nspace) / IOBUFLEN); /* new record number */
         ffldrc(fptr, record, IGNORE_EOF, status);
-        bcurrent = fptr->curbuf;
+        bcurrent = (fptr->Fptr)->curbuf;
 
         bufpos = (-nspace) % IOBUFLEN; /* starting buffer pos */
         nspace = IOBUFLEN - bufpos;
@@ -258,7 +260,7 @@ int ffpbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
       dirty[bcurrent] = TRUE;  /* mark record as having been modified */
       record++;
       ffldrc(fptr, record, IGNORE_EOF, status);  /* load next record */
-      bcurrent = fptr->curbuf;
+      bcurrent = (fptr->Fptr)->curbuf;
       ioptr   = iobuffer[bcurrent];
 
       nwrite  = gsize - nwrite;
@@ -266,7 +268,7 @@ int ffpbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
     }
 
     dirty[bcurrent] = TRUE;    /* mark record as having been modified */
-    fptr->bytepos = fptr->bytepos + (ngroups * gsize)
+    (fptr->Fptr)->bytepos = (fptr->Fptr)->bytepos + (ngroups * gsize)
                                   + (ngroups - 1) * offset;
     return(*status);
 }
@@ -285,28 +287,24 @@ int ffgbyt(fitsfile *fptr,    /* I - FITS file pointer             */
     long filepos, recstart, recend, ntodo, bufpos, nspace, nread;
     char *cptr;
 
-/*
-    extern fitsfile *bufptr[NIOBUF];
-    extern char iobuffer[NIOBUF][IOBUFLEN];
-    extern long bufrecnum[NIOBUF]; 
-    extern int dirty[NIOBUF];
-*/
     if (*status > 0)
        return(*status);
 
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
     cptr = (char *)buffer;
 
     if (nbytes >= MINDIRECT)
     {
       /* read large blocks of data directly from disk instead of via buffers */
-      filepos = fptr->bytepos;       /* save the read starting position */
+      filepos = (fptr->Fptr)->bytepos; /* save the read starting position */
 
-      recstart = bufrecnum[fptr->curbuf];          /* starting record */
+      recstart = bufrecnum[(fptr->Fptr)->curbuf];          /* starting record */
       recend = (filepos + nbytes - 1) / IOBUFLEN;  /* ending record   */
 
       for (ii = 0; ii < NIOBUF; ii++) /* flush any affected buffers to disk */
       {
-        if (dirty[ii] && bufptr[ii] == fptr && 
+        if (dirty[ii] && bufptr[ii] == fptr->Fptr && 
             bufrecnum[ii] >= recstart && bufrecnum[ii] <= recend)
             {
               ffbfwt(ii, status);    /* flush modified buffer to disk */
@@ -314,18 +312,19 @@ int ffgbyt(fitsfile *fptr,    /* I - FITS file pointer             */
       }
 
        /* move to the correct read position */
-      if (fptr->io_pos != filepos)
-         ffseek(fptr, filepos);
+      if ((fptr->Fptr)->io_pos != filepos)
+         ffseek(fptr->Fptr, filepos);
 
-      ffread(fptr, nbytes, cptr, status); /* read the data */
-      fptr->io_pos = filepos + nbytes; /* update the file position */
+      ffread(fptr->Fptr, nbytes, cptr, status); /* read the data */
+      (fptr->Fptr)->io_pos = filepos + nbytes; /* update the file position */
     }
     else
     {
       /* read small chucks of data using the IO buffers for efficiency */
 
       /* bufpos is the starting position in IO buffer */
-      bufpos = fptr->bytepos - (bufrecnum[fptr->curbuf] * IOBUFLEN);
+      bufpos = (fptr->Fptr)->bytepos - (bufrecnum[(fptr->Fptr)->curbuf] *
+                IOBUFLEN);
       nspace = IOBUFLEN - bufpos;   /* amount of space left in the buffer */
 
       ntodo =  nbytes;
@@ -334,14 +333,14 @@ int ffgbyt(fitsfile *fptr,    /* I - FITS file pointer             */
         nread  = minvalue(ntodo, nspace);
 
         /* copy bytes from IO buffer to user's buffer */
-        memcpy(cptr, iobuffer[fptr->curbuf] + bufpos, nread);
+        memcpy(cptr, iobuffer[(fptr->Fptr)->curbuf] + bufpos, nread);
         ntodo -= nread;            /* decrement remaining number of bytes */
         cptr  += nread;
-        fptr->bytepos += nread;    /* increment file position pointer */
+        (fptr->Fptr)->bytepos += nread;    /* increment file position pointer */
 
         if (ntodo)                  /* load next record into a buffer */
         {
-          ffldrc(fptr, fptr->bytepos / IOBUFLEN, REPORT_EOF, status);
+          ffldrc(fptr, (fptr->Fptr)->bytepos / IOBUFLEN, REPORT_EOF, status);
           bufpos = 0;
           nspace = IOBUFLEN;
         }
@@ -366,17 +365,17 @@ int ffgbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
     int bcurrent;
     long ii, bufpos, nspace, nread, record;
     char *cptr, *ioptr;
-/*
-    extern char iobuffer[NIOBUF][IOBUFLEN];
-    extern long bufrecnum[NIOBUF]; 
-*/
+
     if (*status > 0)
        return(*status);
 
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     cptr = (char *)buffer;
-    bcurrent = fptr->curbuf;     /* number of the current IO buffer */
+    bcurrent = (fptr->Fptr)->curbuf;     /* number of the current IO buffer */
     record = bufrecnum[bcurrent];  /* zero-indexed record number */
-    bufpos = fptr->bytepos - (record * IOBUFLEN); /* starting buffer pos. */
+    bufpos = (fptr->Fptr)->bytepos - (record * IOBUFLEN); /* starting  pos. */
     nspace = IOBUFLEN - bufpos;  /* amount of space left in buffer */
     ioptr = iobuffer[bcurrent] + bufpos;  
 
@@ -391,7 +390,7 @@ int ffgbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
       {
         record++;
         ffldrc(fptr, record, REPORT_EOF, status);  /* load next record */
-        bcurrent = fptr->curbuf;
+        bcurrent = (fptr->Fptr)->curbuf;
         ioptr   = iobuffer[bcurrent];
 
         nread  = gsize - nread;
@@ -410,7 +409,7 @@ int ffgbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
       {
         record += ((IOBUFLEN - nspace) / IOBUFLEN); /* new record number */
         ffldrc(fptr, record, REPORT_EOF, status);
-        bcurrent = fptr->curbuf;
+        bcurrent = (fptr->Fptr)->curbuf;
 
         bufpos = (-nspace) % IOBUFLEN; /* starting buffer pos */
         nspace = IOBUFLEN - bufpos;
@@ -427,14 +426,14 @@ int ffgbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
     {
       record++;
       ffldrc(fptr, record, REPORT_EOF, status);  /* load next record */
-      bcurrent = fptr->curbuf;
+      bcurrent = (fptr->Fptr)->curbuf;
       ioptr   = iobuffer[bcurrent];
 
       nread  = gsize - nread;
       memcpy(cptr, ioptr, nread);
     }
 
-    fptr->bytepos = fptr->bytepos + (ngroups * gsize)
+    (fptr->Fptr)->bytepos = (fptr->Fptr)->bytepos + (ngroups * gsize)
                                   + (ngroups - 1) * offset;
     return(*status);
 }
@@ -452,26 +451,24 @@ int ffldrc(fitsfile *fptr,        /* I - FITS file pointer             */
 */
     int ibuff, nbuff;
     long rstart;
-/*
-    extern char iobuffer[NIOBUF][IOBUFLEN];
-    extern fitsfile *bufptr[NIOBUF];
-    extern long bufrecnum[NIOBUF]; 
-    extern int dirty[NIOBUF], ageindex[NIOBUF];
-*/
+
     /* check if record is already loaded in one of the buffers */
     /* search from youngest to oldest buffer for efficiency */
+
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
     for (ibuff = NIOBUF - 1; ibuff >= 0; ibuff--)
     {
       nbuff = ageindex[ibuff];
-      if (bufptr[nbuff] == fptr && record == bufrecnum[nbuff])
+      if (bufptr[nbuff] == fptr->Fptr && record == bufrecnum[nbuff])
          goto updatebuf;  /* use 'goto' for efficiency */
     }
 
     /* record is not already loaded */
     rstart = record * IOBUFLEN;
 
-    if ( !err_mode && (rstart >= fptr->logfilesize) )  /* EOF? */
+    if ( !err_mode && (rstart >= (fptr->Fptr)->logfilesize) )  /* EOF? */
          return(*status = END_OF_FILE);
 
     if (ffwhbf(fptr, &nbuff) < 0)  /* which buffer should we reuse? */
@@ -480,32 +477,33 @@ int ffldrc(fitsfile *fptr,        /* I - FITS file pointer             */
     if (dirty[nbuff])
        ffbfwt(nbuff, status); /* write dirty buffer to disk */
 
-    if (rstart >= fptr->filesize)  /* EOF? */
+    if (rstart >= (fptr->Fptr)->filesize)  /* EOF? */
     {
       /* initialize an empty buffer with the correct fill value */
-      if (fptr->hdutype == ASCII_TBL)
+      if ((fptr->Fptr)->hdutype == ASCII_TBL)
          memset(iobuffer[nbuff], 32, IOBUFLEN); /* blank fill */
       else
          memset(iobuffer[nbuff],  0, IOBUFLEN);  /* zero fill */
 
-      fptr->logfilesize = maxvalue(fptr->logfilesize, rstart + IOBUFLEN);
+      (fptr->Fptr)->logfilesize = maxvalue((fptr->Fptr)->logfilesize, 
+              rstart + IOBUFLEN);
       dirty[nbuff] = TRUE;  /* mark record as having been modified */
     }
     else  /* not EOF, so read record from disk */
     {
-      if (fptr->io_pos != rstart)
-           ffseek(fptr, rstart);
+      if ((fptr->Fptr)->io_pos != rstart)
+           ffseek(fptr->Fptr, rstart);
 
-      ffread(fptr, IOBUFLEN, iobuffer[nbuff], status);
-      fptr->io_pos = rstart + IOBUFLEN;  /* set new IO position */
+      ffread(fptr->Fptr, IOBUFLEN, iobuffer[nbuff], status);
+      (fptr->Fptr)->io_pos = rstart + IOBUFLEN;  /* set new IO position */
     }
 
-    bufptr[nbuff] = fptr;   /* file pointer for this buffer */
+    bufptr[nbuff] = fptr->Fptr;   /* file pointer for this buffer */
     bufrecnum[nbuff] = record;   /* record number contained in buffer */
 
 updatebuf:
 
-    fptr->curbuf = nbuff; /* this is the current buffer for this file */
+    (fptr->Fptr)->curbuf = nbuff; /* this is the current buffer for this file */
 
     if (ibuff < 0)
     { 
@@ -531,10 +529,7 @@ int ffwhbf(fitsfile *fptr,        /* I - FITS file pointer             */
 */
     int ii, ibuff;
     static int ageinit = 0;
-/*
-    extern fitsfile *bufptr[NIOBUF];
-    extern int ageindex[NIOBUF];
-*/
+
     if (!ageinit)  /* first time thru, initialize default age of buffers */
     {
        for (ii = 0; ii < NIOBUF; ii++)
@@ -553,7 +548,7 @@ int ffwhbf(fitsfile *fptr,        /* I - FITS file pointer             */
 
     /* all the buffers are locked, so we have to reuse the current one */
     /* Returns -1 if there is no current buffer (i.e. too many open files) */
-    return(*nbuff = fptr->curbuf);
+    return(*nbuff = (fptr->Fptr)->curbuf);
 }
 /*--------------------------------------------------------------------------*/
 int ffflus(fitsfile *fptr,   /* I - FITS file pointer                       */
@@ -589,14 +584,13 @@ int ffflsh(fitsfile *fptr,        /* I - FITS file pointer           */
   flush all dirty IO buffers associated with the file to disk
 */
     int ii;
-/*
-    extern fitsfile *bufptr[NIOBUF];
-    extern long bufrecnum[NIOBUF]; 
-    extern int dirty[NIOBUF];
-*/
+
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     for (ii = 0; ii < NIOBUF; ii++)
     {
-      if (bufptr[ii] == fptr)
+      if (bufptr[ii] == fptr->Fptr)
       {
         if (dirty[ii])        /* flush modified buffer to disk */
            ffbfwt(ii, status);
@@ -606,7 +600,7 @@ int ffflsh(fitsfile *fptr,        /* I - FITS file pointer           */
       }
     }
 
-    ffflushx(fptr);  /* flush system buffers to disk */
+    ffflushx(fptr->Fptr);  /* flush system buffers to disk */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -619,33 +613,28 @@ int ffbfwt(int nbuff,             /* I - which buffer to write          */
   with fill values, and/or with the contents of some of the other
   i/o buffers.
 */
-    fitsfile *fptr;
+    FITSfile *Fptr;
     int  ii,ibuff;
     long jj, irec, minrec, nloop, filepos;
 
     static char zeros[IOBUFLEN];  /*  initialized to zero by default */
-/*
-    extern char iobuffer[NIOBUF][IOBUFLEN];
-    extern fitsfile *bufptr[NIOBUF];
-    extern long bufrecnum[NIOBUF]; 
-    extern int dirty[NIOBUF];
-*/
-    fptr = bufptr[nbuff];
+
+    Fptr = bufptr[nbuff];
     filepos = bufrecnum[nbuff] * IOBUFLEN;
 
-    if (filepos <= fptr->filesize)
+    if (filepos <= Fptr->filesize)
     {
       /* record is located within current file, so just write it */
 
       /* move to the correct write position */
-      if (fptr->io_pos != filepos)
-         ffseek(fptr, filepos);
+      if (Fptr->io_pos != filepos)
+         ffseek(Fptr, filepos);
 
-      ffwrite(fptr, IOBUFLEN, iobuffer[nbuff], status);
-      fptr->io_pos = filepos + IOBUFLEN;
+      ffwrite(Fptr, IOBUFLEN, iobuffer[nbuff], status);
+      Fptr->io_pos = filepos + IOBUFLEN;
 
-      if (filepos == fptr->filesize)   /* appended new record? */
-         fptr->filesize += IOBUFLEN;   /* increment the file size */
+      if (filepos == Fptr->filesize)   /* appended new record? */
+         Fptr->filesize += IOBUFLEN;   /* increment the file size */
 
       dirty[nbuff] = FALSE;
     }
@@ -654,13 +643,13 @@ int ffbfwt(int nbuff,             /* I - which buffer to write          */
           /* and/or insert fill values if necessary */
     {
       /* move to EOF */
-      if (fptr->io_pos != fptr->filesize)
-         ffseek(fptr, fptr->filesize);
+      if (Fptr->io_pos != Fptr->filesize)
+         ffseek(Fptr, Fptr->filesize);
 
       ibuff = NIOBUF;  /* initialize to impossible value */
       while(ibuff != nbuff) /* repeat until requested buffer is written */
       {
-        minrec = fptr->filesize / IOBUFLEN;
+        minrec = Fptr->filesize / IOBUFLEN;
 
         /* write lowest record beyond the EOF first */
 
@@ -669,7 +658,7 @@ int ffbfwt(int nbuff,             /* I - which buffer to write          */
 
         for (ii = 0; ii < NIOBUF; ii++)
         {
-          if (bufptr[ii] == fptr && bufrecnum[ii] >= minrec &&
+          if (bufptr[ii] == Fptr && bufrecnum[ii] >= minrec &&
             bufrecnum[ii] < irec)
           {
             irec = bufrecnum[ii];  /* found a lower record */
@@ -680,24 +669,24 @@ int ffbfwt(int nbuff,             /* I - which buffer to write          */
         filepos = irec * IOBUFLEN;    /* byte offset of record in file */
 
         /* append 1 or more fill records if necessary */
-        if (filepos > fptr->filesize)
+        if (filepos > Fptr->filesize)
         {                    
-          nloop = (filepos - (fptr->filesize)) / IOBUFLEN; 
+          nloop = (filepos - (Fptr->filesize)) / IOBUFLEN; 
 
           for (jj = 0; jj < nloop; jj++)
-            ffwrite(fptr, IOBUFLEN, zeros, status);
+            ffwrite(Fptr, IOBUFLEN, zeros, status);
 
-          fptr->filesize = filepos;   /* increment the file size */
+          Fptr->filesize = filepos;   /* increment the file size */
         } 
 
         /* write the buffer itself */
-        ffwrite(fptr, IOBUFLEN, iobuffer[ibuff], status);
+        ffwrite(Fptr, IOBUFLEN, iobuffer[ibuff], status);
         dirty[ibuff] = FALSE;
 
-        fptr->filesize += IOBUFLEN;     /* increment the file size */
+        Fptr->filesize += IOBUFLEN;     /* increment the file size */
       } /* loop back if more buffers need to be written */
 
-      fptr->io_pos = fptr->filesize;  /* currently positioned at EOF */
+      Fptr->io_pos = Fptr->filesize;  /* currently positioned at EOF */
     }
     return(*status);       
 }
@@ -717,7 +706,9 @@ int ffgrsz( fitsfile *fptr, /* I - FITS file pionter                        */
 
     /* There are NIOBUF internal buffers available each IOBUFLEN bytes long. */
 
-    if (fptr->datastart == DATA_UNDEFINED)
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
       if ( ffrdef(fptr, status) > 0)   /* rescan header to get hdu struct */
            return(*status);
 
@@ -726,7 +717,7 @@ int ffgrsz( fitsfile *fptr, /* I - FITS file pionter                        */
 
     /* one buffer (at least) is always allocated to each open file */
 
-    if (fptr->hdutype == IMAGE_HDU ) /* calc pixels per buffer size */
+    if ((fptr->Fptr)->hdutype == IMAGE_HDU ) /* calc pixels per buffer size */
     {
       /* image pixels are in column 2 of the 'table' */
       ffgtcl(fptr, 2, &typecode, &repeat, &width, status);
@@ -735,7 +726,8 @@ int ffgrsz( fitsfile *fptr, /* I - FITS file pionter                        */
     }
     else   /* calc number of rows that fit in buffers */
     {
-      *ndata = ((NIOBUF - nfiles) * IOBUFLEN) / maxvalue(1, fptr->rowlength);
+      *ndata = ((NIOBUF - nfiles) * IOBUFLEN) / maxvalue(1,
+               (fptr->Fptr)->rowlength);
       *ndata = maxvalue(1, *ndata); 
     }
 
@@ -796,9 +788,12 @@ int ffgtbb(fitsfile *fptr,        /* I - FITS file pointer                 */
     else if (firstchar < 1)
         return(*status=BAD_ELEM_NUM);
 
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     /* move the i/o pointer to the start of the sequence of characters */
-    bytepos = fptr->datastart + ( (firstrow - 1) * fptr->rowlength )
-            + firstchar - 1;
+    bytepos = (fptr->Fptr)->datastart + ( (firstrow - 1) *
+              (fptr->Fptr)->rowlength ) + firstchar - 1;
 
     ffmbyt(fptr, bytepos, REPORT_EOF, status);
     ffgbyt(fptr, nchars, values, status);  /* read the bytes */
@@ -828,10 +823,10 @@ int ffgi1b(fitsfile *fptr, /* I - FITS file pointer                         */
         }
         else            /* read directly from disk, bypassing IO buffers */
         {
-           postemp = fptr->bytepos;       /* store current file position */
-           fptr->bytepos = byteloc;       /* set to the desired position */
+           postemp = (fptr->Fptr)->bytepos;   /* store current file position */
+           (fptr->Fptr)->bytepos = byteloc;   /* set to the desired position */
            ffgbyt(fptr, nvals, values, status);
-           fptr->bytepos = postemp;       /* reset to original position */
+           (fptr->Fptr)->bytepos = postemp;   /* reset to original position */
         }
     }
     else         /* have to read each value individually (not contiguous ) */
@@ -864,10 +859,10 @@ int ffgi2b(fitsfile *fptr,  /* I - FITS file pointer                        */
         }
         else            /* read directly from disk, bypassing IO buffers */
         {
-           postemp = fptr->bytepos;       /* store current file position */
-           fptr->bytepos = byteloc;       /* set to the desired position */
+           postemp = (fptr->Fptr)->bytepos;   /* store current file position */
+           (fptr->Fptr)->bytepos = byteloc;   /* set to the desired position */
            ffgbyt(fptr, nvals * 2, values, status);
-           fptr->bytepos = postemp;       /* reset to original position */
+           (fptr->Fptr)->bytepos = postemp;   /* reset to original position */
         }
     }
     else         /* have to read each value individually (not contiguous ) */
@@ -905,10 +900,10 @@ int ffgi4b(fitsfile *fptr,  /* I - FITS file pointer                        */
         }
         else            /* read directly from disk, bypassing IO buffers */
         {
-           postemp = fptr->bytepos;       /* store current file position */
-           fptr->bytepos = byteloc;       /* set to the desired position */
+           postemp = (fptr->Fptr)->bytepos;   /* store current file position */
+           (fptr->Fptr)->bytepos = byteloc;   /* set to the desired position */
            ffgbyt(fptr, nvals * 4, values, status);
-           fptr->bytepos = postemp;       /* reset to original position */
+           (fptr->Fptr)->bytepos = postemp;   /* reset to original position */
         }
     }
     else         /* have to read each value individually (not contiguous ) */
@@ -946,10 +941,10 @@ int ffgr4b(fitsfile *fptr,  /* I - FITS file pointer                        */
         }
         else            /* read directly from disk, bypassing IO buffers */
         {
-           postemp = fptr->bytepos;       /* store current file position */
-           fptr->bytepos = byteloc;       /* set to the desired position */
+           postemp = (fptr->Fptr)->bytepos;       /* store current file position */
+           (fptr->Fptr)->bytepos = byteloc;       /* set to the desired position */
            ffgbyt(fptr, nvals * 4, values, status);
-           fptr->bytepos = postemp;       /* reset to original position */
+           (fptr->Fptr)->bytepos = postemp;       /* reset to original position */
         }
     }
     else         /* have to read each value individually (not contiguous ) */
@@ -1007,10 +1002,10 @@ int ffgr8b(fitsfile *fptr,  /* I - FITS file pointer                        */
         }
         else            /* read directly from disk, bypassing IO buffers */
         {
-           postemp = fptr->bytepos;       /* store current file position */
-           fptr->bytepos = byteloc;       /* set to the desired position */
+           postemp = (fptr->Fptr)->bytepos;   /* store current file position */
+           (fptr->Fptr)->bytepos = byteloc;   /* set to the desired position */
            ffgbyt(fptr, nvals * 8, values, status);
-           fptr->bytepos = postemp;       /* reset to original position */
+           (fptr->Fptr)->bytepos = postemp;   /* reset to original position */
         }
     }
     else         /* have to read each value individually (not contiguous ) */
@@ -1066,12 +1061,14 @@ int ffptbb(fitsfile *fptr,        /* I - FITS file pointer                 */
     else if (firstchar < 1)
         return(*status=BAD_ELEM_NUM);
 
-    if (fptr->datastart < 0)    /* rescan header if data pointer undefined */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart < 0) /* rescan header if data undefined */
         ffrdef(fptr, status);
 
     /* move the i/o pointer to the start of the sequence of characters */
-    bytepos = fptr->datastart + ( (firstrow - 1) * fptr->rowlength )
-            + firstchar - 1;
+    bytepos = (fptr->Fptr)->datastart + ( (firstrow - 1) * 
+              (fptr->Fptr)->rowlength ) + firstchar - 1;
 
     ffmbyt(fptr, bytepos, IGNORE_EOF, status);
     ffpbyt(fptr, nchars, values, status);  /* write the bytes */

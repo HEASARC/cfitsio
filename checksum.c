@@ -12,7 +12,6 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <time.h>
 #include "fitsio2.h"
 /*------------------------------------------------------------------------*/
 int ffcsum(fitsfile *fptr,      /* I - FITS file pointer                  */
@@ -119,7 +118,8 @@ void ffesum(unsigned long sum,  /* I - accumulated checksum                */
         for (check = 1; check;)   /* avoid ASCII  punctuation */
             for (check = 0, kk = 0; kk < 13; kk++)
                 for (jj = 0; jj < 4; jj += 2)
-                    if (ch[jj] == exclude[kk] || ch[jj+1] == exclude[kk])
+                    if ((unsigned char) ch[jj] == exclude[kk] ||
+                        (unsigned char) ch[jj+1] == exclude[kk])
                     {
                         ch[jj]++;
                         ch[jj+1]--;
@@ -190,12 +190,10 @@ int ffpcks(fitsfile *fptr,      /* I - FITS file pointer                  */
    coded 1's complement checksum algorithm developed by Rob Seaman at NOAO.
 */
 {
-    char datestr[9], checksum[FLEN_VALUE], datasum[FLEN_VALUE];
+    char datestr[20], checksum[FLEN_VALUE], datasum[FLEN_VALUE];
     char  comm[FLEN_COMMENT], chkcomm[FLEN_COMMENT], datacomm[FLEN_COMMENT];
-    time_t tp;
-    struct tm *ptr;
     int tstatus, chutype;
-    long nrec;
+    long nrec, headstart, datastart, dataend;
     unsigned long dsum, olddsum, sum;
     double tdouble;
 
@@ -203,12 +201,10 @@ int ffpcks(fitsfile *fptr,      /* I - FITS file pointer                  */
         return(*status);
 
     /* generate current date string and construct the keyword comments */
-    time(&tp);
-    ptr = localtime(&tp);
-    strftime(datestr, 9, "%d/%m/%y", ptr);
-    strcpy(chkcomm, "encoded HDU checksum updated on ");
+    ffgstm(datestr, NULL, status);
+    strcpy(chkcomm, "HDU checksum updated ");
     strcat(chkcomm, datestr);
-    strcpy(datacomm, "data unit checksum updated on ");
+    strcpy(datacomm, "data unit checksum updated ");
     strcat(datacomm, datestr);
 
     /* write the CHECKSUM keyword if it does not exist */
@@ -258,13 +254,16 @@ int ffpcks(fitsfile *fptr,      /* I - FITS file pointer                  */
         return(*status);
 
     /* calc size of data unit, in FITS 2880-byte blocks */
-    nrec = (fptr->headstart[fptr->curhdu + 1] - fptr->datastart) / 2880;
+    if (ffghad(fptr, &headstart, &datastart, &dataend, status) > 0)
+        return(*status);
+
+    nrec = (dataend - datastart) / 2880;
     dsum = 0;
 
     if (nrec > 0)
     {
         /* accumulate the 32-bit 1's complement checksum */
-        ffmbyt(fptr, fptr->datastart, REPORT_EOF, status);
+        ffmbyt(fptr, datastart, REPORT_EOF, status);
         if (ffcsum(fptr, nrec, &dsum, status) > 0)
             return(*status);
     }
@@ -286,10 +285,10 @@ int ffpcks(fitsfile *fptr,      /* I - FITS file pointer                  */
     if (strcmp(checksum, "0000000000000000") )
     {
         /* check if CHECKSUM is still OK; move to the start of the header */
-        ffmbyt(fptr, fptr->headstart[fptr->curhdu], REPORT_EOF, status);
+        ffmbyt(fptr, headstart, REPORT_EOF, status);
 
         /* accumulate the header checksum into the previous data checksum */
-        nrec = (fptr->datastart - fptr->headstart[fptr->curhdu]) / 2880;
+        nrec = (datastart - headstart) / 2880;
         sum = dsum;
         if (ffcsum(fptr, nrec, &sum, status) > 0)
             return(*status);
@@ -302,10 +301,10 @@ int ffpcks(fitsfile *fptr,      /* I - FITS file pointer                  */
     }
 
     /* move to the start of the header */
-    ffmbyt(fptr, fptr->headstart[fptr->curhdu], REPORT_EOF, status);
+    ffmbyt(fptr, headstart, REPORT_EOF, status);
 
     /* accumulate the header checksum into the previous data checksum */
-    nrec = (fptr->datastart - fptr->headstart[fptr->curhdu]) / 2880;
+    nrec = (datastart - headstart) / 2880;
     sum = dsum;
     if (ffcsum(fptr, nrec, &sum, status) > 0)
            return(*status);
@@ -326,12 +325,10 @@ int ffupck(fitsfile *fptr,      /* I - FITS file pointer                  */
    keyword exists and has the correct value.
 */
 {
-    char datestr[9], chkcomm[FLEN_COMMENT], comm[FLEN_COMMENT];
+    char datestr[20], chkcomm[FLEN_COMMENT], comm[FLEN_COMMENT];
     char checksum[FLEN_VALUE], datasum[FLEN_VALUE];
-    time_t tp;
-    struct tm *ptr;
     int tstatus;
-    long nrec;
+    long nrec, headstart, datastart, dataend;
     unsigned long sum, dsum;
     double tdouble;
 
@@ -339,10 +336,8 @@ int ffupck(fitsfile *fptr,      /* I - FITS file pointer                  */
         return(*status);
 
     /* generate current date string and construct the keyword comments */
-    time(&tp);
-    ptr = localtime(&tp);
-    strftime(datestr, 9, "%d/%m/%y", ptr);
-    strcpy(chkcomm, "encoded HDU checksum updated on ");
+    ffgstm(datestr, NULL, status);
+    strcpy(chkcomm, "HDU checksum updated ");
     strcat(chkcomm, datestr);
 
     /* get the DATASUM keyword and convert it to a unsigned long */
@@ -354,6 +349,10 @@ int ffupck(fitsfile *fptr,      /* I - FITS file pointer                  */
 
     tdouble = atof(datasum); /* read as a double as a workaround */
     dsum = tdouble;
+
+    /* get size of the HDU */
+    if (ffghad(fptr, &headstart, &datastart, &dataend, status) > 0)
+        return(*status);
 
     /* get the checksum keyword, if it exists */
     tstatus = *status;
@@ -371,10 +370,10 @@ int ffupck(fitsfile *fptr,      /* I - FITS file pointer                  */
             return(*status);
 
         /* move to the start of the header */
-        ffmbyt(fptr, fptr->headstart[fptr->curhdu], REPORT_EOF, status);
+        ffmbyt(fptr, headstart, REPORT_EOF, status);
 
         /* accumulate the header checksum into the previous data checksum */
-        nrec = (fptr->datastart - fptr->headstart[fptr->curhdu]) / 2880;
+        nrec = (datastart - headstart) / 2880;
         sum = dsum;
         if (ffcsum(fptr, nrec, &sum, status) > 0)
            return(*status);
@@ -387,10 +386,10 @@ int ffupck(fitsfile *fptr,      /* I - FITS file pointer                  */
     }
 
     /* move to the start of the header */
-    ffmbyt(fptr, fptr->headstart[fptr->curhdu], REPORT_EOF, status);
+    ffmbyt(fptr, headstart, REPORT_EOF, status);
 
     /* accumulate the header checksum into the previous data checksum */
-    nrec = (fptr->datastart - fptr->headstart[fptr->curhdu]) / 2880;
+    nrec = (datastart - headstart) / 2880;
     sum = dsum;
     if (ffcsum(fptr, nrec, &sum, status) > 0)
            return(*status);
@@ -473,25 +472,30 @@ int ffgcks(fitsfile *fptr,           /* I - FITS file pointer             */
 
     /* calculate the checksums of the data unit and the total HDU */
 {
-    long nrec;
+    long nrec, headstart, datastart, dataend;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
-    nrec = (fptr->headstart[fptr->curhdu + 1] - fptr->datastart) / 2880;
+    /* get size of the HDU */
+    if (ffghad(fptr, &headstart, &datastart, &dataend, status) > 0)
+        return(*status);
+
+    nrec = (dataend - datastart) / 2880;
+
     *datasum = 0;
 
     if (nrec > 0)
     {
         /* accumulate the 32-bit 1's complement checksum */
-        ffmbyt(fptr, fptr->datastart, REPORT_EOF, status);
+        ffmbyt(fptr, datastart, REPORT_EOF, status);
         if (ffcsum(fptr, nrec, datasum, status) > 0)
             return(*status);
     }
 
     /* move to the start of the header and calc. size of header */
-    ffmbyt(fptr, fptr->headstart[fptr->curhdu], REPORT_EOF, status);
-    nrec = (fptr->datastart - fptr->headstart[fptr->curhdu]) / 2880;
+    ffmbyt(fptr, headstart, REPORT_EOF, status);
+    nrec = (datastart - headstart) / 2880;
 
     /* accumulate the header checksum into the previous data checksum */
     *hdusum = *datasum;

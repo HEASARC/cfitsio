@@ -1721,28 +1721,7 @@ CFITSIO.  For instance, when reading a FITS image with BITPIX = -32
 floating point data array in the program.  Forcing CFITSIO to convert
 the data to a different datatype can slow the program.
 
-7. Design FITS binary tables so that every column is aligned on a
-computer word boundary and each row is a multiple number of computer
-words in length.  In principle, accessing non-aligned words can degrade
-performance.   This is usually not a problem when using CFITSIO to read
-or write the FITS files, but other FITS readers and writers could be
-affected. In an optimally designed table,  double precision columns
-should start at a multiple of 8 bytes within the row, single precision
-floating point columns and long integer columns should start at a
-multiple of 4 bytes, and short integer columns should start at a
-multiple of 2 bytes.  If necessary, the row length should be padded out
-by adding a dummy column of the appropriate width or by adjusting the
-width of an existing column so that the row length is also a multiple
-number of 8 bytes in length.  For example, if a binary table contains a
-'1B', a '1E', and a '1D' column, then the optimum design would place
-the '1D' column first in the table followed by the '1E' and then the
-'1B' column.  Since the row length is then 8 + 4 + 1 = 13 bytes, one
-should add another dummy column, with a 3A datatype to make the length
-a multiple of the double precision word length.  Alternatively, one
-could change the last column from '1B' to '4B'. This will insure that
-all the data values are optimally aligned.
-
-8. Where feasible, design FITS binary tables using vector column
+7. Where feasible, design FITS binary tables using vector column
 elements so that the data are written as a contiguous set of bytes,
 rather than as single elements in multiple rows.  For example, it is
 much faster to access the data in a table that contains a single row
@@ -1756,12 +1735,12 @@ in the first column is interleaved with the integer value in the second
 column of the same row so CFITSIO has to explicitly move to the
 position of each element to be read or written.
 
-9. Avoid the use of variable length vector columns in binary tables,
+8. Avoid the use of variable length vector columns in binary tables,
 since any reading or writing of these data requires that CFITSIO first
 look up or compute the starting address of each row of data in the
 heap.
 
-10. When copying data from one FITS table to another, it is faster to
+9. When copying data from one FITS table to another, it is faster to
 transfer the raw bytes instead of reading then writing each column of
 the table.  The CFITSIO routines fits\_read\_tblbytes and
 fits\_write\_tblbytes will perform low-level reads or writes of any
@@ -1809,7 +1788,7 @@ next chapter only be used in special circumstances when necessary.
 The following conventions are used in this chapter in the description
 of each function:
 
-1. Each function has 2 names: a long descriptive name and a short
+1. Most functions have 2 names: a long descriptive name and a short
 concise name.  Both names are listed on the first line of the following
 descriptions, separated by a slash (/) character.  Programmers may use
 either name in their programs but the long names are recommended to
@@ -1875,6 +1854,11 @@ gzip, Unix compress, or pkzip algorithms (with READONLY mode only).
 Additionally, if the filename is specified as ``-'' (a minus sign) then
 the file will be read from the ``stdin'' file stream when opening a
 file, or written to the ``stdout'' stream when creating a new file.
+CFITSIO now supports an extended input filename syntax of the form
+-
+   filetype://filename.ext[extension][rowfilter][binning][columns]
+-
+See the file README.filenames for further information.
 
 >1  Open an existing FITS file with a specified access mode.
     The iomode parameter may have a value of READONLY or READWRITE.
@@ -1883,12 +1867,23 @@ file, or written to the ``stdout'' stream when creating a new file.
   int fits_open_file / ffopen
       (fitsfile **fptr, char *filename, int iomode, > int *status)
 -
->>2   Create a new empty FITS file. \label{ffinit}
+>2  Reopen a FITS file that was previously opened with 
+    fits\_open\_file or fits\_create\_file.  The new fitsfile
+    pointer may then be treated as a separate file, and one may
+    simultaneously read or write to 2 different extensions in
+    the same file.
+
+>\label{ffreopen}
+-
+  int fits_reopen_file / ffreopen
+      (fitsfile *openfptr, fitsfile **newfptr, > int *status)
+-
+>>3   Create a new empty FITS file. \label{ffinit}
 -
   int fits_create_file / ffinit
       (fitsfile **fptr, char *filename, > int *status)
 -
->3   Create a new FITS file, using a template file to define its
+>4   Create a new FITS file, using a template file to define its
   initial size and structure.  The template may be another FITS file
   or an ASCII template file.  If the input template file name pointer
   is null, then this routine behaves the same as fits\_create\_file.
@@ -1897,20 +1892,26 @@ file, or written to the ``stdout'' stream when creating a new file.
   int fits_create_template / fftplt
       (fitsfile **fptr, char *filename, char *tpltfile > int *status)
 -
->>4  Close a previously opened FITS file. \label{ffclos}
+>>5  Close a previously opened FITS file. \label{ffclos}
 -
   int fits_close_file / ffclos (fitsfile *fptr, > int *status)
 -
->>5 Return the name of the opened FITS file. \label{ffflnm}
+>>6 Return the name of the opened FITS file. \label{ffflnm}
 -
   int fits_file_name / ffflnm
       (fitsfile *fptr, > char *filename, int *status)
 -
->6 Return the I/O mode of the open FITS file (READONLY or READWRITE).
+>7 Return the I/O mode of the open FITS file (READONLY or READWRITE).
 >\label{ffflmd}
 -
   int fits_file_mode / ffflmd
       (fitsfile *fptr, > int *iomode, int *status)
+-
+>8 Parse the input filename and return the extension number that
+would be moved to if the file were opened with fits\_open\_file.
+> \label{ffextn}
+-
+   int fits_parse_extnum / ffextn (char *filename, > int *hdunum)
 -
 
 **C.  HDU Access Routines\label{FFMAHD}
@@ -2096,11 +2097,10 @@ header.
       (fitsfile *fptr, char *history, > int *status)
 -
 >7  Write the DATE keyword to the CHU. The keyword value will contain
-    the current system date as a character string in 'dd/mm/yy' format. If
-    a DATE keyword already exists in the header, then this routine will
-    simply update the keyword value with the current date.  A new 
-    4-digit year date format has been approved to solve the Year-2000
->   problem and will be implemented in CFITSIO in late 1998. \label{ffpdat}
+    the current system date as a character string in 'yyyy-mm-ddThh:mm:ss' 
+    format. If a DATE keyword already exists in the header, then this
+    routine will simply update the keyword value with the current date.
+>   \label{ffpdat}
 -
   int fits_write_date / ffpdat
       (fitsfile *fptr, > int *status)
@@ -2605,13 +2605,15 @@ the number of reallocation calls and make the application program run
 
 **B.  Advanced HDU Access Routines
 
->1  Get the byte offsets in the FITS file to the start and end of the CHDU.
-    The difference between these 2 values gives the size of the CHDU.
-    If the CHDU is the last HDU in the file, then the ending offset
+>1  Get the byte offsets in the FITS file to the start of the header 
+    and the start and end of the data in the CHDU. The difference
+    between headstart and dataend is the size of the CHDU.
+    If the CHDU is the last HDU in the file, then dataend
 >   is also equal to the size of the entire FITS file. \label{ffghad}
 -
   int fits_get_hduaddr / ffghad
-       (fitsfile *fptr, > long *chduaddr, long *nextaddr)
+       (fitsfile *fptr, > long *headstart, long *datastart, long *dataend,
+        int *status)
 -
 >2  Create (append) a new empty HDU at the end of the FITS file.
     This is now  the CHDU but it is completely empty and has
@@ -4000,27 +4002,50 @@ the year 2000, the FITS DATE keyword values (and the values of other
 'YYYY-MM-DDThh:mm:ss.dddd' (date and time) where the number of decimal
 places in the seconds value is optional.  These times are in UTC.  The
 older 'dd/mm/yy' date format may not be used for dates after 01 January
-2000.
+2000.  The following routines help to construct or parse these FITS
+> date/time strings. \label{ffdt2s} 
 
-The following routines help to construct or parse these FITS date/time
-strings.  The first routine constructs a new-format date string, while
-the second routine constructs a new-format date+time string.  The 3rd
-and 4th routines return the date and time as read from the input
-string, where the string may be in either the old or new format.
-The time is set to zero if it is not included in the string.
->   \label{ffdt2s}
+Get the current system date and time string ('YYYY-MM-DDThh:mm:ss').
+This will be in UTC/GMT if available (indicated by timeref = 0) otherwise
+it will be in local time.
 -
-int fits_date2str/ffdt2s   (construct 'YYYY-MM-DD' string)
-    (int year, int month, int day, > char *datestr, int *status)
+int fits_get_system_time/ffgstm
+    (> char *timestr, int  *timeref, int *status)
+-
 
-int fits_time2str/fftm2s   (construct 'YYYY-MM-DDThh:mm:ss.dddd' string)
+Construct a new-format date string ('YYYY-MM-DD') from the 
+input date values.
+-
+int fits_date2str/ffdt2s   
+    (int year, int month, int day, > char *datestr, int *status)
+-
+
+Construct a new-format date+time string ('YYYY-MM-DDThh:mm:ss.dddd').
+If the year, month, and day values all = 0 then only the time is returned
+with format 'hh:mm:ss.dddd');
+-
+int fits_time2str/fftm2s   
     (int year, int month, int day, int hour, int minute, double second,
      int decimals, > char *datestr, int *status)
+-
 
-int fits_str2date/ffs2dt  (read the date from the string)
+Return the date as read from the input string, where the string may be
+in either the old or new FITS format.  Null pointers may be supplied
+for any unwanted return date parameters.
+-
+int fits_str2date/ffs2dt 
     (char *datestr, > int *year, int *month, int *day, int *status)
+-
 
-int fits_str2time/ffs2tm  (read date and time from the string)
+Return the date and time as read from the input string, where the
+string may be in either the old or new format.  The returned hours,
+minutes, and seconds values will be set to zero if the input string
+does not include the time.  Similarly, the returned year, month, and
+date values will be set to zero if the date is not included in the input
+string.  Null pointers may be supplied for any unwanted return date and
+time parameters.
+-
+int fits_str2time/ffs2tm 
     (char *datestr, > int *year, int *month, int *day, int *hour,
      int *minute, double *second, int *status)
 -
@@ -4075,6 +4100,7 @@ fits\_get\_hduaddr    & \pageref{ffghad} \\
 fits\_get\_keytype    & \pageref{ffdtyp} \\
 fits\_get\_num\_hdus   & \pageref{ffthdu} \\
 fits\_get\_rowsize    & \pageref{ffgrsz} \\
+fits\_get\_system\_time  & \pageref{ffdt2s} \\
 fits\_get\_tbcol      & \pageref{ffgabc} \\
 fits\_get\_version    & \pageref{ffvers} \\
 fits\_insert\_atbl    & \pageref{ffitab} \\
@@ -4103,6 +4129,7 @@ fits\_movrel\_hdu     & \pageref{ffmrhd} \\
 \begin{tabular}{lr}
 fits\_open\_file      & \pageref{ffopen} \\
 fits\_open\_memfile   & \pageref{ffomem} \\
+fits\_parse\_extnum   & \label{ffextn} \\
 fits\_parse\_template & \pageref{ffgthd} \\
 fits\_parse\_value    & \pageref{ffpsvc} \\
 fits\_pix\_to\_world & \pageref{ffwldp} \\
@@ -4139,6 +4166,7 @@ fits\_read\_tblbytes    & \pageref{ffgtbb} \\
 \newpage
 \begin{tabular}{lr}
 fits\_read\_tdim         & \pageref{ffgtdm} \\
+fits\_reopen\_file      & \pageref{ffreopen} \\
 fits\_report\_error   & \pageref{ffrprt} \\
 fits\_resize\_img     & \pageref{ffrsim} \\
 fits\_set\_atblnull   & \pageref{ffsnul} \\
@@ -4221,7 +4249,6 @@ bitpix   - bits per pixel. The following symbolic mnemonics are predefined:
            FITS uses to store unsigned integers.
 card     - header record to be read or written (80 char max, null-terminated)
 casesen  - CASESEN (=1) for case-sensitive string matching, else CASEINSEN (=0)
-chduaddr - starting address (in bytes) of the CHDU
 colname  - name of the column (null-terminated)
 colnum   - column number (first column = 1)
 comment  - the keyword comment field (72 char max, null-terminated)
@@ -4233,6 +4260,8 @@ create_col- If TRUE, then insert a new column in the table, otherwise
 dataok   - was the data unit verification successful (=1) or
            not (= -1).  Equals zero if the DATASUM keyword is not present.
 datasum  - 32-bit 1's complement checksum for the data unit
+dataend  - address (in bytes) of the end of the HDU
+datastart- address (in bytes) of the start of the data unit
 datatype - specifies the datatype of the value.  Allowed value are:
            TSTRING, TLOGICAL, TBYTE, TSHORT, TUSHORT, TINT, TUINT, TLONG, TULONG,
            TFLOAT, TDOUBLE, TCOMPLEX, and TDBLCOMPLEX
@@ -4270,6 +4299,7 @@ hduok    - was the HDU verification successful (=1) or
            not (= -1).  Equals zero if the CHECKSUM keyword is not present.
 hdusum   - 32 bit 1's complement checksum for the entire CHDU
 hdutype  - type of HDU: IMAGE_HDU (=0), ASCII_TBL (=1), or BINARY_TBL (=2)
+headstart- starting address (in bytes) of the CHDU
 history  - the HISTORY keyword comment string (70 char max, null-terminated)
 hour     - hour within day (UTC) (0 - 23)
 inc      - sampling interval for pixels in each FITS dimension
@@ -4301,9 +4331,9 @@ naxis2   - length of the Y/second axis of the FITS array
 naxis3   - length of the Z/third axis of the FITS array
 nchars   - number of characters to read or write
 nelements- number of data elements to read or write
+newfptr  - returned pointer to the reopened file
 newveclen- new value for the column vector repeat parameter
 nexc     - number of names in the exclusion list (may = 0)
-nextaddr - starting address (in bytes) of the HDU following the CHDU
 nfound   - number of keywords found (highest keyword number)
 nkeys    - number of keywords in the sequence
 ninc     - number of names in the inclusion list
@@ -4315,6 +4345,7 @@ nulval   - numerical value to represent undefined pixels
 nulstr   - character string used to represent undefined values in ASCII table
 numval   - numerical data value, of the appropriate datatype
 offset   -  byte offset in the heap to the first element of the vector
+openfptr - pointer to a currently open FITS file
 outcolnum- output column number; range = 1 to TFIELDS + 1
 outfptr  - pointer to a 'fitsfile' structure describing the output FITS file.
 pcount   - value of the PCOUNT keyword = size of binary table heap

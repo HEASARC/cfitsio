@@ -1,5 +1,16 @@
                Log of Changes Made to CFITSIO
 
+   - added new URL parsing routines.
+
+   - changed the calling sequence to ffghad (get HDU address) from
+     ffghad(fitsfile *fptr, > long *headstart, long *dataend) to
+     ffghad(fitsfile *fptr, > long *headstart, long datastart, 
+            long *dataend, int *status) 
+
+   - major modification to support opening the same FITS file more
+     than once.  Now one can open the same file multiple times and
+     read and write simulataneously to different HDUs within the file.
+
    - added the ability to clobber/overwrite an existing file
      with the same name when creating a new output file.  Just
      preceed the output file name with '!' (an exclamation mark)
@@ -7,7 +18,7 @@
    - changed the ffpdat routine which writes the DATE keyword
      to use the new 'YYYY-MM-DDThh:mm:ss' format.
 
-   - added 4 new routines to create or parse the new date/time
+   - added several new routines to create or parse the new date/time
      format string.
 
    - changed ifdef for DECFortran in f77_wrap.h and f77_wrap1.c:

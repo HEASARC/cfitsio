@@ -654,7 +654,7 @@ int ffiter(int n_cols,
             }
 
             if (cols[jj].colnum < 1 || 
-                cols[jj].colnum > (cols[jj].fptr)->tfield)
+                cols[jj].colnum > ((cols[jj].fptr)->Fptr)->tfield)
             {
                 sprintf(message,
                   "Column %d has illegal table position number: %d  (ffiter)",
@@ -886,7 +886,7 @@ int ffiter(int n_cols,
 
           if (typecode == TBYTE || typecode == TSHORT || typecode == TLONG)
           {
-              tnull = minvalue(tnull, UINT_MAX);
+              tnull = minvalue(tnull, INT32_MAX);
               tnull = maxvalue(tnull, 0);
               col[jj].null.uintnull = (unsigned int) tnull;
           }

@@ -516,11 +516,18 @@ int ffpcnuj( fitsfile *fptr,  /* I - FITS file pointer                       */
     if (*status > 0)
         return(*status);
 
-    if (fptr->datastart == DATA_UNDEFINED)
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+    {
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    }
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+    {
         if ( ffrdef(fptr, status) > 0)               /* rescan header */
             return(*status);
+    }
 
-    colptr  = fptr->tableptr;   /* point to first column */
+    colptr  = (fptr->Fptr)->tableptr;   /* point to first column */
     colptr += (colnum - 1);     /* offset to correct column structure */
 
     repeat = colptr->trepeat;  /* repeat count for this column */

@@ -1,4 +1,4 @@
-CFITSIO TESTPROG, v2.000
+CFITSIO TESTPROG, v2.002
 
 Try opening then closing a nonexistent file:
   ffopen fptr, status  = 0 104 (expect an error)
@@ -144,7 +144,7 @@ NEWIKYS = 'updated_string'     / ikys comment
 Copied keyword: ffgkne:  14.141410, 15.151520, 13.131310
 Updated header using template file (ffpktp)
 
-ffcrtb status = 0
+ffibin status = 0
 HDU number = 2
 header contains 33 keywords; located at keyword 1 
 header contains 33 keywords with room for 74 more
@@ -293,8 +293,6 @@ copy column, ffcpcl status = 0
 copy column, ffcpcl status = 0
 Delete the tmp file: ffdelt status = 0
 HDU number = 3
-
-Moved to BINTABLE; headend, datastart = 20320 25920
 header contains 38 keywords with room for 69 more
 
 Binary table: nrows, tfields, extname, pcount: 21 10 Test-BINTABLE 0

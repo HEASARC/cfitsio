@@ -1,5 +1,5 @@
 /*  This file, modkey.c, contains routines that modify, insert, or update  */
-/*  keywords in a FITS header.                                           */
+/*  keywords in a FITS header.                                             */
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
@@ -560,7 +560,7 @@ int ffmkys(fitsfile *fptr,    /* I - FITS file pointer  */
 
     ffmkey(fptr, card, status); /* overwrite the previous keyword */
 
-    keypos = (((fptr->nextkey) - (fptr->headstart[fptr->curhdu])) / 80) + 1;
+    keypos = ((((fptr->Fptr)->nextkey) - ((fptr->Fptr)->headstart[(fptr->Fptr)->curhdu])) / 80) + 1;
 
     /* check if old string value was continued over multiple keywords */
     ffc2s(oldval, valstring, status); /* remove quotes and trailing spaces */
@@ -1179,7 +1179,7 @@ int ffikey(fitsfile *fptr,    /* I - FITS file pointer  */
            char *card,        /* I - card string value  */
            int *status)       /* IO - error status      */
 /*
-  insert a keyword at the position of fptr->nextkey
+  insert a keyword at the position of (fptr->Fptr)->nextkey
 */
 {
     int ii, len, nshift;
@@ -1189,14 +1189,18 @@ int ffikey(fitsfile *fptr,    /* I - FITS file pointer  */
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
-    if ( (fptr->datastart - fptr->headend) == 80) /* only room for END card */
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+    if ( ((fptr->Fptr)->datastart - (fptr->Fptr)->headend) == 80) /* only room for END card */
     {
         nblocks = 1;
         if (ffiblk(fptr, nblocks, 0, status) > 0) /* add new 2880-byte block*/
             return(*status);  
     }
 
-    nshift=( fptr->headend - fptr->nextkey ) / 80; /* no. keywords to shift */
+    nshift=( (fptr->Fptr)->headend - (fptr->Fptr)->nextkey ) / 80; /* no. keywords to shift */
 
     strncpy(buff2, card, 80);     /* copy card to output buffer */
 
@@ -1207,7 +1211,7 @@ int ffikey(fitsfile *fptr,    /* I - FITS file pointer  */
     inbuff = buff1;
     outbuff = buff2;
 
-    bytepos = fptr->nextkey;           /* pointer to next keyword in header */
+    bytepos = (fptr->Fptr)->nextkey;           /* pointer to next keyword in header */
     ffmbyt(fptr, bytepos, REPORT_EOF, status);
 
     for (ii = 0; ii < nshift; ii++) /* shift each keyword down one position */
@@ -1226,8 +1230,8 @@ int ffikey(fitsfile *fptr,    /* I - FITS file pointer  */
 
     ffpbyt(fptr, 80, outbuff, status);  /* write the final keyword */
 
-    fptr->headend += 80; /* increment the position of the END keyword */
-    fptr->nextkey += 80; /* increment the pointer to next keyword */
+    (fptr->Fptr)->headend += 80; /* increment the position of the END keyword */
+    (fptr->Fptr)->nextkey += 80; /* increment the pointer to next keyword */
 
     return(*status);
 }
@@ -1255,7 +1259,7 @@ int ffdkey(fitsfile *fptr,    /* I - FITS file pointer  */
     }
 
     /* calc position of keyword in header */
-    keypos = ((fptr->nextkey) - (fptr->headstart[fptr->curhdu])) / 80;
+    keypos = (((fptr->Fptr)->nextkey) - ((fptr->Fptr)->headstart[(fptr->Fptr)->curhdu])) / 80;
 
     ffdrec(fptr, keypos, status);  /* delete the keyword */
 
@@ -1292,15 +1296,19 @@ int ffdrec(fitsfile *fptr,   /* I - FITS file pointer  */
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     if (keypos < 1 ||
-        keypos > fptr->headend - fptr->headstart[fptr->curhdu] / 80 )
+        keypos > (fptr->Fptr)->headend - (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] / 80 )
         return(*status = KEY_OUT_BOUNDS);
 
-    fptr->nextkey = fptr->headstart[fptr->curhdu] + (keypos - 1) * 80;
+    (fptr->Fptr)->nextkey = (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] + (keypos - 1) * 80;
 
-    nshift=( fptr->headend - fptr->nextkey ) / 80; /* no. keywords to shift */
+    nshift=( (fptr->Fptr)->headend - (fptr->Fptr)->nextkey ) / 80; /* no. keywords to shift */
 
-    bytepos = fptr->headend - 80;  /* last keyword in header */  
+    bytepos = (fptr->Fptr)->headend - 80;  /* last keyword in header */  
 
     /* construct a blank keyword */
     strcpy(buff2, "                                        ");
@@ -1324,7 +1332,7 @@ int ffdrec(fitsfile *fptr,   /* I - FITS file pointer  */
         bytepos -= 80;
     }
 
-    fptr->headend -= 80; /* decrement the position of the END keyword */
+    (fptr->Fptr)->headend -= 80; /* decrement the position of the END keyword */
     return(*status);
 }
 

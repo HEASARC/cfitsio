@@ -33,8 +33,11 @@ int ffcrim(fitsfile *fptr,      /* I - FITS file pointer           */
     if (*status > 0)
         return(*status);
 
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     /* create new extension if current header is not empty */
-    if (fptr->headend != fptr->headstart[fptr->curhdu] )
+    if ((fptr->Fptr)->headend != (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] )
         ffcrhd(fptr, status);
 
     /* write the required header keywords */
@@ -61,11 +64,14 @@ int ffcrtb(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     /* create new extension if current header is not empty */
-    if (fptr->headend != fptr->headstart[fptr->curhdu] )
+    if ((fptr->Fptr)->headend != (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] )
         ffcrhd(fptr, status);
 
-    if (fptr->curhdu == 0)  /* have to create dummy primary array */
+    if ((fptr->Fptr)->curhdu == 0)  /* have to create dummy primary array */
     {
        ffcrim(fptr, 16, 0, tbcol, status);
        ffcrhd(fptr, status);
@@ -240,7 +246,10 @@ int ffprec(fitsfile *fptr,     /* I - FITS file pointer        */
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
-    if ( (fptr->datastart - fptr->headend) == 80) /* only room for END card */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+    if ( ((fptr->Fptr)->datastart - (fptr->Fptr)->headend) == 80) /* only room for END card */
     {
         nblocks = 1;
         if (ffiblk(fptr, nblocks, 0, status) > 0) /* insert 2880-byte block */
@@ -261,12 +270,12 @@ int ffprec(fitsfile *fptr,     /* I - FITS file pointer        */
 
     fftrec(tcard, status);          /* test rest of keyword for legal chars */
 
-    ffmbyt(fptr, fptr->headend, IGNORE_EOF, status); /* move to end header */
+    ffmbyt(fptr, (fptr->Fptr)->headend, IGNORE_EOF, status); /* move to end header */
 
     ffpbyt(fptr, 80, tcard, status);   /* write the 80 byte card */
 
     if (*status <= 0)
-       fptr->headend += 80;           /* update end-of-header position */
+       (fptr->Fptr)->headend += 80;           /* update end-of-header position */
 
     return(*status);
 }
@@ -796,7 +805,37 @@ int ffpdat( fitsfile *fptr,      /* I - FITS file pointer  */
   exists then the date will simply be updated in the existing keyword.
 */
 {
+    int timeref;
     char date[30], tmzone[10], card[FLEN_CARD];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    ffgstm(date, &timeref, status);
+
+    if (timeref)           /* GMT not available on this machine */
+        tmzone[0] = '\0';
+    else
+        strcpy(tmzone, " UTC");    
+
+    strcpy(card, "DATE    = '");
+    strcat(card, date);
+    strcat(card, "' / file creation date (YYYY-MM-DDThh:mm:ss");
+    strcat(card, tmzone);
+    strcat(card, ")");
+
+    ffucrd(fptr, "DATE", card, status);
+
+    return(*status);
+}
+/*-----------------------------------------------------------------*/
+int ffgstm( char *timestr,   /* O  - returned system date and time string  */
+            int  *timeref,   /* O - GMT = 0, Local time = 1  */
+            int   *status)   /* IO - error status      */
+/*
+  Returns the current date and time in format 'yyyy-mm-ddThh:mm:ss'.
+*/
+{
     time_t tp;
     struct tm *ptr;
 
@@ -806,23 +845,18 @@ int ffpdat( fitsfile *fptr,      /* I - FITS file pointer  */
     time(&tp);
     ptr = gmtime(&tp);         /* get GMT (= UTC) time */
 
-    if (!ptr)                  /* GMT not available on this machine */
+    if (timeref)
     {
-        ptr = localtime(&tp); 
-        tmzone[0] = '\0';
+        if (ptr)
+            *timeref = 0;   /* returning GMT */
+        else
+            *timeref = 1;   /* returning local time */
     }
-    else
-        strcpy(tmzone, " UTC");    
 
-    strftime(date, 25, "%Y-%m-%dT%H:%M:%S", ptr);
+    if (!ptr)                  /* GMT not available on this machine */
+        ptr = localtime(&tp); 
 
-    strcpy(card, "DATE    = '");
-    strcat(card, date);
-    strcat(card, "' / file creation date (YYYY-MM-DDThh:mm:ss");
-    strcat(card, tmzone);
-    strcat(card, ")");
-
-    ffucrd(fptr, "DATE", card, status);
+    strftime(timestr, 25, "%Y-%m-%dT%H:%M:%S", ptr);
 
     return(*status);
 }
@@ -869,9 +903,13 @@ int ffs2dt(char *datestr,   /* I - date string: "YYYY-MM-DD" or "dd/mm/yy" */
          && isdigit(datestr[4]) && isdigit(datestr[6]) && isdigit(datestr[7]) )
         {
             /* this is an old format string: "dd/mm/yy" */
-            *year = atoi(&datestr[6]) + 1900;
-            *month = atoi(&datestr[3]);
-            *day   = atoi(datestr);
+            if (year)
+               *year = atoi(&datestr[6]) + 1900;
+
+            if (month)
+                *month = atoi(&datestr[3]);
+            if (day)
+                *day   = atoi(datestr);
         }
         else
             return(*status = BAD_DATE);
@@ -886,9 +924,14 @@ int ffs2dt(char *datestr,   /* I - date string: "YYYY-MM-DD" or "dd/mm/yy" */
                 return(*status = BAD_DATE);
 
             /* this is a new format string: "yyyy-mm-dd" */
-            *year = atoi(datestr);
-            *month = atoi(&datestr[5]);
-            *day   = atoi(&datestr[8]);
+            if (year)
+               *year = atoi(datestr);
+
+            if (month)
+               *month = atoi(&datestr[5]);
+
+            if (day)
+               *day   = atoi(&datestr[8]);
         }
         else
             return(*status = BAD_DATE);
@@ -896,9 +939,18 @@ int ffs2dt(char *datestr,   /* I - date string: "YYYY-MM-DD" or "dd/mm/yy" */
     else
         return(*status = BAD_DATE);
 
-    if (*year < 0 || *year > 9999 || *month < 1 || *month > 12 || *day < 1 ||
-        *day > 31)
-       return(*status = BAD_DATE);
+
+    if (year)
+       if (*year < 0 || *year > 9999)
+          return(*status = BAD_DATE);
+
+    if (month)
+       if (*month < 1 || *month > 12)
+          return(*status = BAD_DATE);
+
+    if (day)
+       if (*day < 1 || *day > 31)
+          return(*status = BAD_DATE);
 
     return(*status);
 }
@@ -911,6 +963,7 @@ int fftm2s(int year,          /* I - year (0 - 9999)           */
            double second,     /* I - second (0. - 60.9999999)  */
            int decimals,       /* I - number of decimal points to write      */
            char *datestr,     /* O - date string: "YYYY-MM-DDThh:mm:ss.ddd" */
+                              /*   or "hh:mm:ss.ddd" if year, month day = 0 */
            int   *status)     /* IO - error status             */
 /*
   Construct a date and time character string
@@ -924,9 +977,16 @@ int fftm2s(int year,          /* I - year (0 - 9999)           */
         second < 0. || second >= 61. || decimals < 0 || decimals > 25)
        return(*status = BAD_DATE);
 
-    sprintf(datestr, "%.4d-%.2d-%.2dT%.2d:%.2d:%02.*f",
+    if (year == 0 && month == 0 && day == 0)
+    {
+        sprintf(datestr, "%.2d:%.2d:%02.*f",
+            hour, minute, decimals, second);
+    }
+    else
+    {
+        sprintf(datestr, "%.4d-%.2d-%.2dT%.2d:%.2d:%02.*f",
             year, month, day, hour, minute, decimals, second);
-
+    }
     return(*status);
 }
 /*-----------------------------------------------------------------*/
@@ -941,7 +1001,7 @@ int ffs2tm(char *datestr,     /* I - date string: "YYYY-MM-DD"    */
            double *second,     /* I - second (0. - 60.9999999)     */
            int   *status)     /* IO - error status                */
 /*
-  Parse a date character string into year, month, and date values
+  Parse a date character string into date and time values
 */
 {
     int slen;
@@ -949,44 +1009,129 @@ int ffs2tm(char *datestr,     /* I - date string: "YYYY-MM-DD"    */
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
-    /*  Parse the year, month, and date */
-    if (ffs2dt(datestr, year, month, day, status) > 0)
-        return(*status);
+    if (hour)
+       *hour   = 0;
 
-    *hour   = 0;
-    *minute = 0;
-    *second = 0.;
+    if (minute)
+       *minute = 0;
 
-    slen = strlen(datestr);
-    if (slen == 8 || slen == 10)
-        return(*status);               /* OK, no time fields */
-    else if (slen < 19) 
-       return(*status = BAD_DATE);     /* invalid string length */
+    if (second)
+       *second = 0.;
 
-    else if (datestr[10] == 'T' && datestr[13] == ':' && datestr[16] == ':')
+    if (datestr[2] == '/' || datestr[4] == '-')
     {
-      if (isdigit(datestr[11]) && isdigit(datestr[12]) && isdigit(datestr[14]) 
-       && isdigit(datestr[15]) && isdigit(datestr[17]) && isdigit(datestr[18]) )
-        {
-            if (slen > 19 && datestr[19] != '.')
-                return(*status = BAD_DATE);
+        /*  Parse the year, month, and date */
+        if (ffs2dt(datestr, year, month, day, status) > 0)
+            return(*status);
 
-            /* this is a new format string: "yyyy-mm-ddThh:mm:ss.dddd" */
-            *hour   = atoi(&datestr[11]);
-            *minute = atoi(&datestr[14]);
-            *second = atof(&datestr[17]);
+        slen = strlen(datestr);
+        if (slen == 8 || slen == 10)
+            return(*status);               /* OK, no time fields */
+        else if (slen < 19) 
+            return(*status = BAD_DATE);     /* invalid string length */
+
+        else if (datestr[10] == 'T' && datestr[13] == ':' && datestr[16] == ':')
+        {
+          if (isdigit(datestr[11]) && isdigit(datestr[12]) && isdigit(datestr[14]) 
+           && isdigit(datestr[15]) && isdigit(datestr[17]) && isdigit(datestr[18]) )
+            {
+                if (slen > 19 && datestr[19] != '.')
+                    return(*status = BAD_DATE);
+
+                /* this is a new format string: "yyyy-mm-ddThh:mm:ss.dddd" */
+                if (hour)
+                    *hour   = atoi(&datestr[11]);
+
+                if (minute)
+                    *minute = atoi(&datestr[14]);
+
+                if (second)
+                    *second = atof(&datestr[17]);
+            }
+            else
+                return(*status = BAD_DATE);
+        }
+    }
+    else   /* no date fields */
+    {
+        if (year)
+           *year = 0;
+
+        if (month)
+           *month = 0;
+
+        if (day)
+           *day = 0;
+
+        if (datestr[2] == ':' && datestr[5] == ':')   /* time string */
+        {
+            if (isdigit(datestr[0]) && isdigit(datestr[1]) && isdigit(datestr[3]) 
+            && isdigit(datestr[4]) && isdigit(datestr[6]) && isdigit(datestr[7]) )
+            {
+                 /* this is a time string: "hh:mm:ss.dddd" */
+                 if (hour)
+                    *hour   = atoi(&datestr[0]);
+
+                 if (minute)
+                    *minute = atoi(&datestr[3]);
+
+                if (second)
+                    *second = atof(&datestr[6]);
+            }
+            else
+                return(*status = BAD_DATE);
         }
         else
             return(*status = BAD_DATE);
     }
-    else
-        return(*status = BAD_DATE);
 
-    if (*hour < 0 || *hour > 23 || *minute < 0 || *minute > 59 ||
-        *second < 0 || *second >= 61.)
-       return(*status = BAD_DATE);
+    if (hour)
+       if (*hour < 0 || *hour > 23)
+           return(*status = BAD_DATE);
+
+    if (minute)
+       if (*minute < 0 || *minute > 59)
+           return(*status = BAD_DATE);
+
+    if (second)
+       if (*second < 0 || *second >= 61.)
+           return(*status = BAD_DATE);
 
     return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgsdt( int *day, int *month, int *year, int *status )
+{  
+/*
+      This routine is included for backward compatibility
+            with the Fortran FITSIO library.
+
+   ffgsdt : Get current System DaTe (GMT if available)
+
+      Return integer values of the day, month, and year
+
+         Function parameters:
+            day      Day of the month
+            month    Numerical month (1=Jan, etc.)
+            year2    Year (1999, 2000, etc.)
+            status   output error status
+
+*/
+   time_t now;
+   struct tm *date;
+
+   now = time( NULL );
+   date = gmtime(&now);         /* get GMT (= UTC) time */
+
+   if (!date)                  /* GMT not available on this machine */
+   {
+       date = localtime(&now); 
+   }
+
+   *day = date->tm_mday;
+   *month = date->tm_mon + 1;
+   *year = date->tm_year + 1900;  /* tm_year is defined as years since 1900 */
+   return( *status );
 }
 /*--------------------------------------------------------------------------*/
 int ffpkns( fitsfile *fptr,     /* I - FITS file pointer                    */
@@ -1487,10 +1632,13 @@ int ffphpr( fitsfile *fptr, /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
-    if (fptr->headend != fptr->headstart[fptr->curhdu] )
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+    if ((fptr->Fptr)->headend != (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] )
         return(*status = HEADER_NOT_EMPTY);
 
-    if (fptr->curhdu == 0)
+    if ((fptr->Fptr)->curhdu == 0)
     {                /* write primary array header */
         if (simple)
             strcpy(comm, "file does conform to FITS standard");
@@ -1554,7 +1702,7 @@ int ffphpr( fitsfile *fptr, /* I - FITS file pointer                        */
         ffpkyj(fptr, name, naxes[ii], comm, status);
     }
 
-    if (fptr->curhdu == 0)  /* the primary array */
+    if ((fptr->Fptr)->curhdu == 0)  /* the primary array */
     {
         if (extend)
         {
@@ -1655,9 +1803,12 @@ int ffphtb(fitsfile *fptr,  /* I - FITS file pointer                        */
     long rowlen;
     char tfmt[30], name[FLEN_KEYWORD], comm[FLEN_COMMENT];
 
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     if (*status > 0)
         return(*status);
-    else if (fptr->headend != fptr->headstart[fptr->curhdu] )
+    else if ((fptr->Fptr)->headend != (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] )
         return(*status = HEADER_NOT_EMPTY);
     else if (naxis1 < 0)
         return(*status = NEG_WIDTH);
@@ -1765,7 +1916,11 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     if (*status > 0)
         return(*status);
-    else if (fptr->headend != fptr->headstart[fptr->curhdu] )
+
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+    if ((fptr->Fptr)->headend != (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] )
         return(*status = HEADER_NOT_EMPTY);
     else if (naxis2 < 0)
         return(*status = NEG_ROWS);

@@ -38,11 +38,11 @@
 \contentsline {section}{\numberline {5.2}FITS File Access Routines}{38}
 \contentsline {section}{\numberline {5.3}HDU Access Routines}{39}
 \contentsline {section}{\numberline {5.4}Header Keyword Read/Write Routines}{41}
-\contentsline {section}{\numberline {5.5}Iterator Routines}{44}
+\contentsline {section}{\numberline {5.5}Iterator Routines}{45}
 \contentsline {section}{\numberline {5.6}FITS Primary Array or IMAGE Extension I/O Routines}{46}
 \contentsline {section}{\numberline {5.7}FITS ASCII and Binary Table Routines}{47}
 \contentsline {subsection}{\numberline {5.7.1}Column Information Routines }{47}
-\contentsline {subsection}{\numberline {5.7.2}Routines to Edit Rows or Columns }{48}
+\contentsline {subsection}{\numberline {5.7.2}Routines to Edit Rows or Columns }{49}
 \contentsline {subsection}{\numberline {5.7.3}Read and Write Column Data Routines }{50}
 \contentsline {chapter}{\numberline {6} Advanced CFITSIO Interface Routines }{53}
 \contentsline {section}{\numberline {6.1}Advanced FITS File Access Routines}{53}
@@ -56,10 +56,10 @@
 \contentsline {subsection}{\numberline {6.3.6} Modify Keyword Routines}{63}
 \contentsline {subsection}{\numberline {6.3.7} Advanced Update Keyword Routines }{64}
 \contentsline {section}{\numberline {6.4}Define Data Scaling and Undefined Pixel Parameters}{64}
-\contentsline {section}{\numberline {6.5}Advanced FITS Primary Array or IMAGE Extension I/O Routines}{65}
+\contentsline {section}{\numberline {6.5}Advanced FITS Primary Array or IMAGE Extension I/O Routines}{66}
 \contentsline {section}{\numberline {6.6}Advanced FITS ASCII and Binary Table Routines}{69}
 \contentsline {subsection}{\numberline {6.6.1}Column Information Routines}{69}
-\contentsline {subsection}{\numberline {6.6.2}Low-Level Table Access Routines }{70}
+\contentsline {subsection}{\numberline {6.6.2}Low-Level Table Access Routines }{71}
 \contentsline {subsection}{\numberline {6.6.3}Advanced Write Column Data Routines}{71}
 \contentsline {subsection}{\numberline {6.6.4}Advanced Read Column Data Routines}{72}
 \contentsline {section}{\numberline {6.7}Celestial Coordinate System Routines }{74}

@@ -104,11 +104,8 @@ int main()
 
     comms[0] = comm;
 
-    strcpy(filename, "testprog.fit");
-
-    /* delete previous version of the file, if it exists */
-
-    remove(filename);
+    /* delete previous version of the file, if it exists (with ! prefix) */
+    strcpy(filename, "!testprog.fit");
 
     status = 0;
 
@@ -927,7 +924,7 @@ int main()
     ffibin(fptr, nrows, tfields, ttype, tform, tunit, binname, 0L,
             &status);
 
-    printf("\nffcrtb status = %d\n", status);
+    printf("\nffibin status = %d\n", status);
     printf("HDU number = %d\n", ffghdn(fptr, &hdunum));
 
     /* get size and position in header, and reserve space for more keywords */
@@ -1356,8 +1353,7 @@ int main()
     bitpix = 16;
     naxis = 0;
 
-    strcpy(filename, "t1q2s3v6.tmp");
-    remove(filename);  /* make sure previous version of file doesn't exist */
+    strcpy(filename, "!t1q2s3v6.tmp");
     ffinit(&tmpfptr, filename, &status);
     printf("Create temporary file: ffinit status = %d\n", status);
 
@@ -1424,9 +1420,6 @@ int main()
 
     printf("HDU number = %d\n", ffghdn(fptr, &hdunum));
 
-    printf("\nMoved to BINTABLE; headend, datastart = %ld %ld\n",
-        fptr->headend, fptr->datastart);
- 
     ffghsp(fptr, &existkeys, &morekeys, &status);
     printf("header contains %d keywords with room for %d more\n",existkeys,
             morekeys);
@@ -1637,8 +1630,7 @@ int main()
     bitpix = 16;
     naxis = 0;
 
-    strcpy(filename, "t1q2s3v5.tmp");
-    remove(filename);  /* make sure previous version of file doesn't exist */
+    strcpy(filename, "!t1q2s3v5.tmp");
     ffinit(&tmpfptr, filename, &status);
     printf("Create temporary file: ffinit status = %d\n", status);
 
@@ -2503,6 +2495,7 @@ int main()
       delete the checksum keywords, so that the FITS file is always
       the same, regardless of the date of when testprog is run.
     */
+
     ffdkey(fptr, "CHECKSUM", &status);
     ffdkey(fptr, "DATASUM",  &status);
 

@@ -1,8 +1,10 @@
 #ifndef _LONGNAME_H
 #define _LONGNAME_H
 
+#define fits_parse_extnum   ffextn
 #define fits_open_memfile   ffomem
 #define fits_open_file      ffopen
+#define fits_reopen_file    ffreopen
 #define fits_create_file    ffinit
 #define fits_create_template fftplt
 #define fits_flush_file     ffflus
@@ -37,6 +39,7 @@
 #define fits_write_comment      ffpcom
 #define fits_write_history      ffphis 
 #define fits_write_date         ffpdat
+#define fits_get_system_time    ffgstm
 #define fits_date2str           ffdt2s
 #define fits_time2str           fftm2s
 #define fits_str2date           ffs2dt

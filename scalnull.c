@@ -27,7 +27,11 @@ int ffpthp(fitsfile *fptr,      /* I - FITS file pointer */
     if (*status > 0 || theap < 1)
         return(*status);
 
-    fptr->heapstart = theap;
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+    (fptr->Fptr)->heapstart = theap;
 
     ffukyj(fptr, "THEAP", theap, "byte offset to heap area", status);
 
@@ -49,6 +53,7 @@ int ffpscl(fitsfile *fptr,      /* I - FITS file pointer               */
 */
 {
     tcolumn *colptr;
+    int hdutype;
 
     if (*status > 0)
         return(*status);
@@ -56,15 +61,14 @@ int ffpscl(fitsfile *fptr,      /* I - FITS file pointer               */
     if (scale == 0)
         return(*status = ZERO_SCALE);  /* zero scale value is illegal */
 
-    if (fptr->datastart == DATA_UNDEFINED)
-        if ( ffrdef(fptr, status) > 0)               /* rescan header */
-            return(*status);
+    if (ffghdt(fptr, &hdutype, status) > 0)  /* get HDU type */
+        return(*status);
 
-    if (fptr->hdutype != IMAGE_HDU)
+    if (hdutype != IMAGE_HDU)
         return(*status = NOT_IMAGE);         /* not proper HDU type */
 
     /* set pointer to the first 'column' (contains group parameters if any) */
-    colptr = fptr->tableptr; 
+    colptr = (fptr->Fptr)->tableptr; 
 
     colptr++;   /* increment to the 2nd 'column' pointer  (the image itself) */
 
@@ -89,19 +93,19 @@ int ffpnul(fitsfile *fptr,      /* I - FITS file pointer                */
 */
 {
     tcolumn *colptr;
+    int hdutype;
 
     if (*status > 0)
         return(*status);
 
-    if (fptr->datastart == DATA_UNDEFINED)
-        if ( ffrdef(fptr, status) > 0)               /* rescan header */
-            return(*status);
+    if (ffghdt(fptr, &hdutype, status) > 0)  /* get HDU type */
+        return(*status);
 
-    if (fptr->hdutype != IMAGE_HDU)
+    if (hdutype != IMAGE_HDU)
         return(*status = NOT_IMAGE);         /* not proper HDU type */
 
     /* set pointer to the first 'column' (contains group parameters if any) */
-    colptr = fptr->tableptr; 
+    colptr = (fptr->Fptr)->tableptr; 
 
     colptr++;   /* increment to the 2nd 'column' pointer  (the image itself) */
 
@@ -126,6 +130,7 @@ int fftscl(fitsfile *fptr,      /* I - FITS file pointer */
 */
 {
     tcolumn *colptr;
+    int hdutype;
 
     if (*status > 0)
         return(*status);
@@ -133,14 +138,13 @@ int fftscl(fitsfile *fptr,      /* I - FITS file pointer */
     if (scale == 0)
         return(*status = ZERO_SCALE);  /* zero scale value is illegal */
 
-    if (fptr->datastart == DATA_UNDEFINED)
-        if ( ffrdef(fptr, status) > 0)               /* rescan header */
-            return(*status);
+    if (ffghdt(fptr, &hdutype, status) > 0)  /* get HDU type */
+        return(*status);
 
-    if (fptr->hdutype == IMAGE_HDU)
+    if (hdutype == IMAGE_HDU)
         return(*status = NOT_TABLE);         /* not proper HDU type */
 
-    colptr = fptr->tableptr;   /* set pointer to the first column */
+    colptr = (fptr->Fptr)->tableptr;   /* set pointer to the first column */
     colptr += (colnum - 1);     /* increment to the correct column */
 
     colptr->tscale = scale;
@@ -165,19 +169,18 @@ int fftnul(fitsfile *fptr,      /* I - FITS file pointer                  */
 */
 {
     tcolumn *colptr;
+    int hdutype;
 
     if (*status > 0)
         return(*status);
 
-    if (fptr->datastart == DATA_UNDEFINED)
-        if ( ffrdef(fptr, status) > 0)               /* rescan header */
-            return(*status);
+    if (ffghdt(fptr, &hdutype, status) > 0)  /* get HDU type */
+        return(*status);
 
-    if (fptr->hdutype != BINARY_TBL)
-        return(*status = NOT_BTABLE);         /* not proper HDU type */
-
+    if (hdutype != BINARY_TBL)
+        return(*status = NOT_BTABLE);        /* not proper HDU type */
  
-    colptr = fptr->tableptr;   /* set pointer to the first column */
+    colptr = (fptr->Fptr)->tableptr;   /* set pointer to the first column */
     colptr += (colnum - 1);    /* increment to the correct column */
 
     colptr->tnull = nulvalue;
@@ -200,19 +203,18 @@ int ffsnul(fitsfile *fptr,      /* I - FITS file pointer                  */
 */
 {
     tcolumn *colptr;
+    int hdutype;
 
     if (*status > 0)
         return(*status);
 
-    if (fptr->datastart == DATA_UNDEFINED)
-        if ( ffrdef(fptr, status) > 0)               /* rescan header */
-            return(*status);
+    if (ffghdt(fptr, &hdutype, status) > 0)  /* get HDU type */
+        return(*status);
 
-    if (fptr->hdutype != ASCII_TBL)
-        return(*status = NOT_ATABLE);         /* not proper HDU type */
-
+    if (hdutype != ASCII_TBL)
+        return(*status = NOT_ATABLE);        /* not proper HDU type */
  
-    colptr = fptr->tableptr;   /* set pointer to the first column */
+    colptr = (fptr->Fptr)->tableptr;   /* set pointer to the first column */
     colptr += (colnum - 1);    /* increment to the correct column */
 
     colptr->strnull[0] = '\0';

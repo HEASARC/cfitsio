@@ -94,6 +94,9 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
     if (*status > 0 || nelem == 0)  /* inherit input status value if > 0 */
         return(*status);
 
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     if (anynul)
         *anynul = 0;
 
@@ -103,7 +106,7 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
     /*---------------------------------------------------*/
-    if (colnum < 1 || colnum > fptr->tfield)
+    if (colnum < 1 || colnum > (fptr->Fptr)->tfield)
     {
         sprintf(message, "Specified column number is out of range: %d",
                 colnum);
@@ -111,7 +114,7 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
         return(*status = BAD_COL_NUM);
     }
 
-    colptr  = fptr->tableptr;   /* point to first column */
+    colptr  = (fptr->Fptr)->tableptr;   /* point to first column */
     colptr += (colnum - 1);     /* offset to correct column structure */
     tcode = colptr->tdatatype;
 

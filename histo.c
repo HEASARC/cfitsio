@@ -43,6 +43,10 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
         return(*status = BAD_DIMEN);
     }
 
+    /* reset position to the correct HDU if necessary */
+    if ((*fptr)->HDUposition != ((*fptr)->Fptr)->curhdu)
+        ffmahd(*fptr, ((*fptr)->HDUposition) + 1, NULL, status);
+
     tblptr = *fptr;
     himagetype = imagetype;
     haxis = naxis;
@@ -91,7 +95,7 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
         return(*status);
       }
 
-      colptr = (*fptr)->tableptr;
+      colptr = ((*fptr)->Fptr)->tableptr;
       colptr += (hcolnum[ii] - 1);
 
       repeat = colptr->trepeat;  /* vector repeat factor of the column */

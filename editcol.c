@@ -168,12 +168,17 @@ int ffirow(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
-    /* rescan header if data structure is undefined */
-    if (fptr->datastart == DATA_UNDEFINED)
+        /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+    {
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    }
+         /* rescan header if data structure is undefined */
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
         if ( ffrdef(fptr, status) > 0)               
             return(*status);
 
-    if (fptr->hdutype == IMAGE_HDU)
+    if ((fptr->Fptr)->hdutype == IMAGE_HDU)
     {
         ffpmsg("Can only add rows to TABLE or BINTABLE extension (ffirow)");
         return(*status = NOT_TABLE);
@@ -199,7 +204,7 @@ int ffirow(fitsfile *fptr,  /* I - FITS file pointer                        */
         return(*status = BAD_ROW_NUM);
     }
 
-    datasize = fptr->heapstart + fptr->heapsize;    /* current size of data */
+    datasize = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;    /* current size of data */
     freespace = ( ( (datasize + 2879) / 2880) * 2880) - datasize;
     nshift = naxis1 * nrows;              /* no. of bytes to add to table */
 
@@ -211,16 +216,16 @@ int ffirow(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     firstbyte = naxis1 * firstrow;    /* relative insert position */
     nbytes = datasize - firstbyte;    /* no. of bytes to shift down */
-    firstbyte += (fptr->datastart);   /* absolute insert position */
+    firstbyte += ((fptr->Fptr)->datastart);   /* absolute insert position */
 
     ffshft(fptr, firstbyte, nbytes, nshift, status); /* shift rows and heap */
 
     /* update the heap starting address */
-    fptr->heapstart += nshift;
+    (fptr->Fptr)->heapstart += nshift;
 
     /* update the THEAP keyword if it exists */
     tstatus = 0;
-    ffmkyj(fptr, "THEAP", fptr->heapstart, "&", &tstatus);
+    ffmkyj(fptr, "THEAP", (fptr->Fptr)->heapstart, "&", &tstatus);
 
     /* update the NAXIS2 keyword */
     ffmkyj(fptr, "NAXIS2", naxis2 + nrows, "&", status);
@@ -244,12 +249,16 @@ int ffdrow(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
-    /* rescan header if data structure is undefined */
-    if (fptr->datastart == DATA_UNDEFINED)
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+    {
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    }
+        /* rescan header if data structure is undefined */
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
         if ( ffrdef(fptr, status) > 0)               
             return(*status);
 
-    if (fptr->hdutype == IMAGE_HDU)
+    if ((fptr->Fptr)->hdutype == IMAGE_HDU)
     {
         ffpmsg("Can only delete rows in TABLE or BINTABLE extension (ffdrow)");
         return(*status = NOT_TABLE);
@@ -281,10 +290,10 @@ int ffdrow(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
 
     nshift = naxis1 * nrows;           /* no. of bytes to delete from table */
-    datasize = fptr->heapstart + fptr->heapsize;    /* current size of data */
+    datasize = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;    /* current size of data */
     firstbyte = naxis1 * (firstrow + nrows - 1); /* relative delete position */
     nbytes = datasize - firstbyte;    /* no. of bytes to shift up */
-    firstbyte += (fptr->datastart);   /* absolute delete position */
+    firstbyte += ((fptr->Fptr)->datastart);   /* absolute delete position */
     ffshft(fptr, firstbyte, nbytes, (-1) * nshift, status); /* shift data */
 
     freespace = ( ( (datasize + 2879) / 2880) * 2880) - datasize;
@@ -294,11 +303,11 @@ int ffdrow(fitsfile *fptr,  /* I - FITS file pointer                        */
         ffdblk(fptr, nblock, status);  /* delete integral number blocks */
 
     /* update the heap starting address */
-    fptr->heapstart -= nshift;
+    (fptr->Fptr)->heapstart -= nshift;
 
     /* update the THEAP keyword if it exists */
     tstatus = 0;
-    ffmkyj(fptr, "THEAP", fptr->heapstart, "&", &tstatus);
+    ffmkyj(fptr, "THEAP", (fptr->Fptr)->heapstart, "&", &tstatus);
 
     /* update the NAXIS2 keyword */
     ffmkyj(fptr, "NAXIS2", naxis2 - nrows, "&", status);
@@ -321,12 +330,15 @@ int ffdrws(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     /* rescan header if data structure is undefined */
-    if (fptr->datastart == DATA_UNDEFINED)
+    if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
         if ( ffrdef(fptr, status) > 0)               
             return(*status);
 
-    if (fptr->hdutype == IMAGE_HDU)
+    if ((fptr->Fptr)->hdutype == IMAGE_HDU)
     {
         ffpmsg("Can only delete rows in TABLE or BINTABLE extension (ffdrws)");
         return(*status = NOT_TABLE);
@@ -370,7 +382,7 @@ int ffdrws(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
 
     /* byte location to start of first row to delete, and the next row */
-    insertpos = fptr->datastart + ((rownum[0] - 1) * naxis1);
+    insertpos = (fptr->Fptr)->datastart + ((rownum[0] - 1) * naxis1);
     nextrowpos = insertpos + naxis1;
     nextrow = rownum[0] + 1;
 
@@ -468,19 +480,23 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
-    /* rescan header if data structure is undefined */
-    if (fptr->datastart == DATA_UNDEFINED)
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+    {
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    }
+        /* rescan header if data structure is undefined */
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
         if ( ffrdef(fptr, status) > 0)               
             return(*status);
 
-    if (fptr->hdutype == IMAGE_HDU)
+    if ((fptr->Fptr)->hdutype == IMAGE_HDU)
     {
        ffpmsg("Can only add columns to TABLE or BINTABLE extension (fficol)");
        return(*status = NOT_TABLE);
     }
 
     /*  is the column number valid?  */
-    tfields = fptr->tfield;
+    tfields = (fptr->Fptr)->tfield;
     if (fstcol < 1 )
         return(*status = BAD_COL_NUM);
     else if (fstcol > tfields)
@@ -495,7 +511,7 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
         strcpy(tfm, tform[ii]);
         ffupch(tfm);         /* make sure format is in upper case */
 
-        if (fptr->hdutype == ASCII_TBL)
+        if ((fptr->Fptr)->hdutype == ASCII_TBL)
         {
             ffasfm(tfm, &datacode, &width, &decims, status);
             delbyte += width + 1;  /*  add one space between the columns */
@@ -517,10 +533,10 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0 || delbyte <= 0) /* also aborts on variable-length cols */
         return(*status);
 
-    naxis1 = fptr->rowlength;          /* current width of the table */
+    naxis1 = (fptr->Fptr)->rowlength;          /* current width of the table */
     ffgkyj(fptr, "NAXIS2", &naxis2, comm, status); /* number of rows */
 
-    datasize = fptr->heapstart + fptr->heapsize;    /* current size of data */
+    datasize = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;    /* current size of data */
     freespace = ( ( (datasize + 2879) / 2880) * 2880) - datasize;
     nadd = delbyte * naxis2;                /* no. of bytes to add to table */
 
@@ -532,20 +548,20 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
 
     /* shift heap down (if it exists) */
-    if (fptr->heapsize > 0)
+    if ((fptr->Fptr)->heapsize > 0)
     {
-        nbytes = fptr->heapsize;    /* no. of bytes to shift down */
-        firstbyte = fptr->datastart + fptr->heapstart; /* absolute heap pos */
+        nbytes = (fptr->Fptr)->heapsize;    /* no. of bytes to shift down */
+        firstbyte = (fptr->Fptr)->datastart + (fptr->Fptr)->heapstart; /* absolute heap pos */
 
         if (ffshft(fptr, firstbyte, nbytes, nadd, status) > 0) /* move heap */
             return(*status);
 
         /* update the heap starting address */
-        fptr->heapstart += nadd;
+        (fptr->Fptr)->heapstart += nadd;
 
         /* update the THEAP keyword if it exists */
         tstatus = 0;
-        ffmkyj(fptr, "THEAP", fptr->heapstart, "&", &tstatus);
+        ffmkyj(fptr, "THEAP", (fptr->Fptr)->heapstart, "&", &tstatus);
     }
 
     /* calculate byte position in the row where to insert the new column */
@@ -553,7 +569,7 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
         firstbyte = naxis1;
     else
     {
-        colptr = fptr->tableptr;
+        colptr = (fptr->Fptr)->tableptr;
         colptr += (colnum - 1);
         firstbyte = colptr->tbcol;
     }
@@ -561,7 +577,7 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
     /* insert delbyte bytes in every row, at byte position firstbyte */
     ffcins(fptr, naxis1, naxis2, delbyte, firstbyte, status);
 
-    if (fptr->hdutype == ASCII_TBL)
+    if ((fptr->Fptr)->hdutype == ASCII_TBL)
     {
         /* adjust the TBCOL values of the existing columns */
         for(ii = 0; ii < tfields; ii++)
@@ -596,7 +612,7 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
         ffkeyn("TFORM", colnum, keyname, status);
         ffpkys(fptr, keyname, tfm, comm, status);
 
-        if (fptr->hdutype == ASCII_TBL)   /* write the TBCOL keyword */
+        if ((fptr->Fptr)->hdutype == ASCII_TBL)   /* write the TBCOL keyword */
         {
             if (colnum == tfields + 1)
                 tbcol = firstbyte + 2;  /* allow space between preceding column */
@@ -635,12 +651,16 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
-    /* rescan header if data structure is undefined */
-    if (fptr->datastart == DATA_UNDEFINED)
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+    {
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    }
+        /* rescan header if data structure is undefined */
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
         if ( ffrdef(fptr, status) > 0)               
             return(*status);
 
-    if (fptr->hdutype != BINARY_TBL)
+    if ((fptr->Fptr)->hdutype != BINARY_TBL)
     {
        ffpmsg(
   "Can only change vector length of a column in BINTABLE extension (ffmvec)");
@@ -648,13 +668,13 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
 
     /*  is the column number valid?  */
-    tfields = fptr->tfield;
+    tfields = (fptr->Fptr)->tfield;
     if (colnum < 1 || colnum > tfields)
         return(*status = BAD_COL_NUM);
 
     /* look up the current vector length and element width */
 
-    colptr = fptr->tableptr;
+    colptr = (fptr->Fptr)->tableptr;
     colptr += (colnum - 1);
 
     datacode = colptr->tdatatype; /* datatype of the column */
@@ -674,7 +694,7 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (datacode == TSTRING)
         width = 1;      /* width was equal to width of unit string */
 
-    naxis1 = fptr->rowlength;          /* current width of the table */
+    naxis1 = (fptr->Fptr)->rowlength;          /* current width of the table */
     ffgkyj(fptr, "NAXIS2", &naxis2, NULL, status); /* number of rows */
 
     delbyte = (newveclen - repeat) * width;    /* no. of bytes to insert */
@@ -683,7 +703,7 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     if (delbyte > 0)  /* insert space for more elements */
     {
-      datasize = fptr->heapstart + fptr->heapsize;  /* current size of data */
+      datasize = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;  /* current size of data */
       freespace = ( ( (datasize + 2879) / 2880) * 2880) - datasize;
 
       nadd = delbyte * naxis2;             /* no. of bytes to add to table */
@@ -696,20 +716,20 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
       }
 
       /* shift heap down (if it exists) */
-      if (fptr->heapsize > 0)
+      if ((fptr->Fptr)->heapsize > 0)
       {
-        nbytes = fptr->heapsize;    /* no. of bytes to shift down */
-        firstbyte = fptr->datastart + fptr->heapstart; /* absolute heap pos */
+        nbytes = (fptr->Fptr)->heapsize;    /* no. of bytes to shift down */
+        firstbyte = (fptr->Fptr)->datastart + (fptr->Fptr)->heapstart; /* absolute heap pos */
 
         if (ffshft(fptr, firstbyte, nbytes, nadd, status) > 0) /* move heap */
             return(*status);
 
         /* update the heap starting address */
-        fptr->heapstart += nadd;
+        (fptr->Fptr)->heapstart += nadd;
 
         /* update the THEAP keyword if it exists */
         tstatus = 0;
-        ffmkyj(fptr, "THEAP", fptr->heapstart, "&", &tstatus);
+        ffmkyj(fptr, "THEAP", (fptr->Fptr)->heapstart, "&", &tstatus);
       }
 
       firstbyte = colptr->tbcol + (repeat * width);  /* insert position */
@@ -719,7 +739,7 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
     else if (delbyte < 0)
     {
-      size = fptr->heapstart + fptr->heapsize;  /* current size of table */
+      size = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;  /* current size of table */
       freespace = ((size + 2879) / 2880) * 2880 - size - (delbyte * naxis2);
       nblock = freespace / 2880;   /* number of empty blocks to delete */
       firstbyte = colptr->tbcol + (repeat * width);  /* delete position */
@@ -728,21 +748,21 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
       ffcdel(fptr, naxis1, naxis2, -delbyte, firstbyte, status);
  
       /* shift heap up (if it exists) */
-      if (fptr->heapsize > 0)
+      if ((fptr->Fptr)->heapsize > 0)
       {
-        nbytes = fptr->heapsize;    /* no. of bytes to shift up */
-        firstbyte = fptr->datastart + fptr->heapstart; /* abs heap pos */
+        nbytes = (fptr->Fptr)->heapsize;    /* no. of bytes to shift up */
+        firstbyte = (fptr->Fptr)->datastart + (fptr->Fptr)->heapstart; /* abs heap pos */
         ndelete = delbyte * naxis2; /* size of shift (negative) */
 
         if (ffshft(fptr, firstbyte, nbytes, ndelete, status) > 0)
           return(*status);
 
         /* update the heap starting address */
-        fptr->heapstart += ndelete;  /* ndelete is negative */
+        (fptr->Fptr)->heapstart += ndelete;  /* ndelete is negative */
 
         /* update the THEAP keyword if it exists */
         tstatus = 0;
-        ffmkyj(fptr, "THEAP", fptr->heapstart, "&", &tstatus);
+        ffmkyj(fptr, "THEAP", (fptr->Fptr)->heapstart, "&", &tstatus);
       }
 
       /* delete the empty  blocks at the end of the HDU */
@@ -805,23 +825,31 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     if (*status > 0)
         return(*status);
 
-    if (infptr->datastart == DATA_UNDEFINED)
+    if (infptr->HDUposition != (infptr->Fptr)->curhdu)
+    {
+        ffmahd(infptr, (infptr->HDUposition) + 1, NULL, status);
+    }
+    else if ((infptr->Fptr)->datastart == DATA_UNDEFINED)
         ffrdef(infptr, status);                /* rescan header */
 
-    if (outfptr->datastart == DATA_UNDEFINED)
+    if (outfptr->HDUposition != (outfptr->Fptr)->curhdu)
+    {
+        ffmahd(outfptr, (outfptr->HDUposition) + 1, NULL, status);
+    }
+    else if ((outfptr->Fptr)->datastart == DATA_UNDEFINED)
         ffrdef(outfptr, status);               /* rescan header */
 
     if (*status > 0)
         return(*status);
 
-    if (infptr->hdutype == IMAGE_HDU || outfptr->hdutype == IMAGE_HDU)
+    if ((infptr->Fptr)->hdutype == IMAGE_HDU || (outfptr->Fptr)->hdutype == IMAGE_HDU)
     {
        ffpmsg
        ("Can only copy columns between ASCII or Binary tables (ffcpcl)");
        return(*status = NOT_TABLE);
     }
 
-    if ( infptr->hdutype == BINARY_TBL &&  outfptr->hdutype == ASCII_TBL)
+    if ( (infptr->Fptr)->hdutype == BINARY_TBL &&  (outfptr->Fptr)->hdutype == ASCII_TBL)
     {
        ffpmsg
        ("Copying from Binary table to ASCII table is not supported (ffcpcl)");
@@ -851,7 +879,7 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
           return(*status = NO_TFORM);
         }
 
-        if (infptr->hdutype == ASCII_TBL && outfptr->hdutype == BINARY_TBL)
+        if ((infptr->Fptr)->hdutype == ASCII_TBL && (outfptr->Fptr)->hdutype == BINARY_TBL)
         {
             /* convert from ASCII table to BINARY table format string */
             if (typecode == TSTRING)
@@ -897,7 +925,7 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
         ffcpky(infptr, outfptr, incol, colnum, "TLMAX", status);
         ffcpky(infptr, outfptr, incol, colnum, "TDIM", status);
 
-        if (infptr->hdutype == ASCII_TBL && outfptr->hdutype == BINARY_TBL)
+        if ((infptr->Fptr)->hdutype == ASCII_TBL && (outfptr->Fptr)->hdutype == BINARY_TBL)
         {
             /* binary tables only have TNULLn keyword for integer columns */
             if (typecode == TLONG || typecode == TSHORT)
@@ -934,7 +962,7 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
 
     if (typecode == TBIT)
         repeat = (repeat - 1) / 8 + 1;  /* convert from bits to bytes */
-    else if (typecode == TSTRING && infptr->hdutype == BINARY_TBL)
+    else if (typecode == TSTRING && (infptr->Fptr)->hdutype == BINARY_TBL)
         repeat = repeat / width;  /* convert from chars to unit strings */
 
     /* get optimum number of rows to copy at one time */
@@ -1147,31 +1175,35 @@ int ffdcol(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+    {
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    }
     /* rescan header if data structure is undefined */
-    if (fptr->datastart == DATA_UNDEFINED)
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
         if ( ffrdef(fptr, status) > 0)               
             return(*status);
 
-    if (fptr->hdutype == IMAGE_HDU)
+    if ((fptr->Fptr)->hdutype == IMAGE_HDU)
     {
        ffpmsg
        ("Can only delete column from TABLE or BINTABLE extension (ffdcol)");
        return(*status = NOT_TABLE);
     }
 
-    if (colnum < 1 || colnum > fptr->tfield )
+    if (colnum < 1 || colnum > (fptr->Fptr)->tfield )
         return(*status = BAD_COL_NUM);
 
-    colptr = fptr->tableptr;
+    colptr = (fptr->Fptr)->tableptr;
     colptr += (colnum - 1);
     firstbyte = colptr->tbcol;  /* starting byte position of the column */
 
     /* use column width to determine how many bytes to delete in each row */
-    if (fptr->hdutype == ASCII_TBL)
+    if ((fptr->Fptr)->hdutype == ASCII_TBL)
     {
       delbyte = colptr->twidth;  /* width of ASCII column */
 
-      if (colnum < fptr->tfield) /* check for space between next column */
+      if (colnum < (fptr->Fptr)->tfield) /* check for space between next column */
       {
         nextcol = colptr + 1;
         nspace = (nextcol->tbcol) - (colptr->tbcol) - delbyte;
@@ -1191,52 +1223,52 @@ int ffdcol(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
     else   /* a binary table */
     {
-      if (colnum < fptr->tfield)
+      if (colnum < (fptr->Fptr)->tfield)
       {
          nextcol = colptr + 1;
          delbyte = (nextcol->tbcol) - (colptr->tbcol);
       }
       else
       {
-         delbyte = (fptr->rowlength) - (colptr->tbcol);
+         delbyte = ((fptr->Fptr)->rowlength) - (colptr->tbcol);
       }
     }
 
-    naxis1 = fptr->rowlength;          /* current width of the table */
+    naxis1 = (fptr->Fptr)->rowlength;          /* current width of the table */
     ffgkyj(fptr, "NAXIS2", &naxis2, comm, status); /* number of rows */
 
-    size = fptr->heapstart + fptr->heapsize;  /* current size of table */
+    size = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;  /* current size of table */
     freespace = (delbyte * naxis2) + ((size + 2879) / 2880) * 2880 - size;
     nblock = freespace / 2880;   /* number of empty blocks to delete */
 
     ffcdel(fptr, naxis1, naxis2, delbyte, firstbyte, status); /* delete col */
 
     /* shift heap up (if it exists) */
-    if (fptr->heapsize > 0)
+    if ((fptr->Fptr)->heapsize > 0)
     {
-      nbytes = fptr->heapsize;    /* no. of bytes to shift up */
-      firstbyte = fptr->datastart + fptr->heapstart; /* absolute heap pos */
+      nbytes = (fptr->Fptr)->heapsize;    /* no. of bytes to shift up */
+      firstbyte = (fptr->Fptr)->datastart + (fptr->Fptr)->heapstart; /* absolute heap pos */
       ndelete = delbyte * naxis2; /* size of shift */
 
       if (ffshft(fptr, firstbyte, nbytes, -ndelete, status) > 0) /* mv heap */
           return(*status);
 
       /* update the heap starting address */
-      fptr->heapstart -= ndelete;
+      (fptr->Fptr)->heapstart -= ndelete;
 
       /* update the THEAP keyword if it exists */
       tstatus = 0;
-      ffmkyj(fptr, "THEAP", fptr->heapstart, "&", &tstatus);
+      ffmkyj(fptr, "THEAP", (fptr->Fptr)->heapstart, "&", &tstatus);
     }
 
     /* delete the empty  blocks at the end of the HDU */
     if (nblock > 0)
         ffdblk(fptr, nblock, status);
 
-    if (fptr->hdutype == ASCII_TBL)
+    if ((fptr->Fptr)->hdutype == ASCII_TBL)
     {
       /* adjust the TBCOL values of the remaining columns */
-      for (ii = 1; ii <= fptr->tfield; ii++)
+      for (ii = 1; ii <= (fptr->Fptr)->tfield; ii++)
       {
         ffkeyn("TBCOL", ii, keyname, status);
         ffgkyj(fptr, keyname, &tbcol, comm, status);
@@ -1249,14 +1281,14 @@ int ffdcol(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
 
     /* update the mandatory keywords */
-    ffmkyj(fptr, "TFIELDS", (fptr->tfield) - 1, "&", status);        
+    ffmkyj(fptr, "TFIELDS", ((fptr->Fptr)->tfield) - 1, "&", status);        
     ffmkyj(fptr,  "NAXIS1",   naxis1 - delbyte, "&", status);
 
     /*
       delete the index keywords starting with 'T' associated with the 
       deleted column and subtract 1 from index of all higher keywords
     */
-    ffkshf(fptr, colnum, fptr->tfield, -1, status);
+    ffkshf(fptr, colnum, (fptr->Fptr)->tfield, -1, status);
 
     ffrdef(fptr, status);  /* initialize the new table structure */
     return(*status);
@@ -1282,7 +1314,7 @@ int ffcins(fitsfile *fptr,  /* I - FITS file pointer                        */
         return(*status);  /* just return if there are 0 rows in the table */
 
     /* select appropriate fill value */
-    if (fptr->hdutype == ASCII_TBL)
+    if ((fptr->Fptr)->hdutype == ASCII_TBL)
         cfill = 32;                     /* ASCII tables use blank fill */
     else
         cfill = 0;    /* primary array and binary tables use zero fill */
@@ -1302,23 +1334,23 @@ int ffcins(fitsfile *fptr,  /* I - FITS file pointer                        */
         fbyte = bytepos + 1;
         nbytes = naxis1 - bytepos;
         ffgtbb(fptr, naxis2, fbyte, nbytes, &buffer[ninsert], status);
-        fptr->rowlength = newlen;  /* set row length to its new value */
+        (fptr->Fptr)->rowlength = newlen;  /* set row length to its new value */
 
         /* write the row (with leading fill bytes) in the new place */
         nbytes += ninsert;
         ffptbb(fptr, naxis2, fbyte, nbytes, buffer, status);
-        fptr->rowlength = naxis1;  /* reset row length to original value */
+        (fptr->Fptr)->rowlength = naxis1;  /* reset row length to original value */
 
         /*  now move the rest of the rows */
         for (irow = naxis2 - 1; irow > 0; irow--)
         {
             /* read the row to be shifted (work backwards thru the table) */
             ffgtbb(fptr, irow, fbyte, naxis1, &buffer[ninsert], status);
-            fptr->rowlength = newlen;  /* set row length to its new value */
+            (fptr->Fptr)->rowlength = newlen;  /* set row length to its new value */
 
             /* write the row (with the leading fill bytes) in the new place */
             ffptbb(fptr, irow, fbyte, newlen, buffer, status);
-            fptr->rowlength = naxis1; /* reset row length to original value */
+            (fptr->Fptr)->rowlength = naxis1; /* reset row length to original value */
         }
     }
     else
@@ -1337,10 +1369,10 @@ int ffcins(fitsfile *fptr,  /* I - FITS file pointer                        */
         for (ii = 0; ii < nseg; ii++)
         {
             ffgtbb(fptr, naxis2, fbyte, nbytes, buffer, status);
-            fptr->rowlength = newlen;  /* set row length to its new value */
+            (fptr->Fptr)->rowlength = newlen;  /* set row length to its new value */
 
             ffptbb(fptr, naxis2, fbyte + ninsert, nbytes, buffer, status);
-            fptr->rowlength = naxis1; /* reset row length to original value */
+            (fptr->Fptr)->rowlength = naxis1; /* reset row length to original value */
 
             fbyte -= 10000;
             nbytes = 10000;
@@ -1356,11 +1388,11 @@ int ffcins(fitsfile *fptr,  /* I - FITS file pointer                        */
           { 
             /* read the row to be shifted (work backwards thru the table) */
             ffgtbb(fptr, irow, fbyte, nbytes, buffer, status);
-            fptr->rowlength = newlen;  /* set row length to its new value */
+            (fptr->Fptr)->rowlength = newlen;  /* set row length to its new value */
 
             /* write the row in the new place */
             ffptbb(fptr, irow, fbyte + ninsert, nbytes, buffer, status);
-            fptr->rowlength = naxis1; /* reset row length to original value */
+            (fptr->Fptr)->rowlength = naxis1; /* reset row length to original value */
 
             fbyte -= 10000;
             nbytes = 10000;
@@ -1372,7 +1404,7 @@ int ffcins(fitsfile *fptr,  /* I - FITS file pointer                        */
         memset(buffer, cfill, nbytes); /* initialize with fill value */
 
         nseg = (ninsert + 9999) / 10000;
-        fptr->rowlength = newlen;  /* set row length to its new value */
+        (fptr->Fptr)->rowlength = newlen;  /* set row length to its new value */
 
         for (irow = 1; irow <= naxis2; irow++)
         {
@@ -1385,7 +1417,7 @@ int ffcins(fitsfile *fptr,  /* I - FITS file pointer                        */
             nbytes = 10000;
           }
         }
-        fptr->rowlength = naxis1;  /* reset row length to original value */
+        (fptr->Fptr)->rowlength = naxis1;  /* reset row length to original value */
     }
     return(*status);
 }
@@ -1421,10 +1453,10 @@ int ffcdel(fitsfile *fptr,  /* I - FITS file pointer                        */
       for (irow = 1; irow < naxis2; irow++)
       {
         ffgtbb(fptr, irow, i2, newlen, buffer, status); /* read row */
-        fptr->rowlength = newlen;  /* set row length to its new value */
+        (fptr->Fptr)->rowlength = newlen;  /* set row length to its new value */
 
         ffptbb(fptr, irow, i1, newlen, buffer, status); /* write row */
-        fptr->rowlength = naxis1;  /* reset row length to original value */
+        (fptr->Fptr)->rowlength = naxis1;  /* reset row length to original value */
       }
 
       /* now do the last row */
@@ -1433,10 +1465,10 @@ int ffcdel(fitsfile *fptr,  /* I - FITS file pointer                        */
       if (remain > 0)
       {
         ffgtbb(fptr, naxis2, i2, remain, buffer, status); /* read row */
-        fptr->rowlength = newlen;  /* set row length to its new value */
+        (fptr->Fptr)->rowlength = newlen;  /* set row length to its new value */
 
         ffptbb(fptr, naxis2, i1, remain, buffer, status); /* write row */
-        fptr->rowlength = naxis1;  /* reset row length to original value */
+        (fptr->Fptr)->rowlength = naxis1;  /* reset row length to original value */
       }
     }
     else
@@ -1455,10 +1487,10 @@ int ffcdel(fitsfile *fptr,  /* I - FITS file pointer                        */
           for (ii = 0; ii < nseg; ii++)
           { 
             ffgtbb(fptr, irow, i2, nbytes, buffer, status); /* read bytes */
-            fptr->rowlength = newlen;  /* set row length to its new value */
+            (fptr->Fptr)->rowlength = newlen;  /* set row length to its new value */
 
             ffptbb(fptr, irow, i1, nbytes, buffer, status); /* rewrite bytes */
-            fptr->rowlength = naxis1; /* reset row length to original value */
+            (fptr->Fptr)->rowlength = naxis1; /* reset row length to original value */
 
             i1 += nbytes;
             i2 += nbytes;
@@ -1478,10 +1510,10 @@ int ffcdel(fitsfile *fptr,  /* I - FITS file pointer                        */
           for (ii = 0; ii < nseg; ii++)
           { 
             ffgtbb(fptr, naxis2, i2, nbytes, buffer, status);
-            fptr->rowlength = newlen;  /* set row length to its new value */
+            (fptr->Fptr)->rowlength = newlen;  /* set row length to its new value */
 
             ffptbb(fptr, naxis2, i1, nbytes, buffer, status); /* write row */
-            fptr->rowlength = naxis1;  /* reset row length to original value */
+            (fptr->Fptr)->rowlength = naxis1;  /* reset row length to original value */
 
             i1 += nbytes;
             i2 += nbytes;
@@ -1625,7 +1657,7 @@ int ffshft(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
 
     /* now overwrite the old data with fill */
-    if (fptr->hdutype == ASCII_TBL)
+    if ((fptr->Fptr)->hdutype == ASCII_TBL)
        memset(buffer, 32, 10000); /* fill ASCII tables with spaces */
     else
        memset(buffer,  0, 10000); /* fill other HDUs with zeros */

@@ -232,17 +232,6 @@ int ffwritehisto(long totaln, long offset, long firstn, long nvalues,
 int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
              int ncols, iteratorCol *colpars, void *userPointer);
 
-int parse_input_url(char *url,  char *urltype, char *infile,
-                    char *outfile, char *extspec, char *rowfilter,
-                    char *binspec, char *colspec);
-int parse_output_url(char *url, char *urltype, char *outfile);
-int fits_parse_extspec(char *extspec, int *extnum,  char *extname,
-                       int *extvers, int *hdutype);
-int fits_parse_binspec(char *binspec, int *imagetype, int *haxis, 
-                       char colname[4][FLEN_VALUE], float *minin,float *maxin,
-                       float *binsizein);
-int fits_parse_binrange(char **binspec, char *colname, float *minin, 
-                        float *maxin, float *binsizein);
 int ffrhdu(fitsfile *fptr, int *hdutype, int *status);
 int ffpinit(fitsfile *fptr, int *status);
 int ffainit(fitsfile *fptr, int *status);
@@ -266,11 +255,11 @@ int ffgcpr(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long *elemnum, long *incre, long *repeat,long *rowlen,
            int *hdutype, long *tnull, char *snull, int *status);
  
-int ffflushx(fitsfile *fptr);
-int ffseek(fitsfile *fptr, long position);
-int ffread(fitsfile *fptr, long nbytes, void *buffer,
+int ffflushx(FITSfile *fptr);
+int ffseek(FITSfile *fptr, long position);
+int ffread(FITSfile *fptr, long nbytes, void *buffer,
             int *status);
-int ffwrite(fitsfile *fptr, long nbytes, void *buffer,
+int ffwrite(FITSfile *fptr, long nbytes, void *buffer,
             int *status);
 int fftrun(fitsfile *fptr, long filesize, int *status);
 

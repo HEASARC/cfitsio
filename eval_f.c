@@ -134,11 +134,11 @@ int fits_select_rows( fitsfile *infptr,  /* I - Input FITS file             */
       row = 0;
       if( infptr==outfptr )
          while( ((char*)Info.dataPtr)[row] ) row++;
-      inloc  =  infptr->datastart + row*rdlen;
+      inloc  =  (infptr->Fptr)->datastart + row*rdlen;
 
-      if( outfptr->datastart<0 )  /* rescan header if data pointer undefined */
+      if( (outfptr->Fptr)->datastart<0 )  /* rescan header if data pointer undefined */
          ffrdef(outfptr, status);
-      outloc = outfptr->datastart + row*rdlen;
+      outloc = (outfptr->Fptr)->datastart + row*rdlen;
 
       do {
          if( ((char*)Info.dataPtr)[row] ) {
@@ -162,12 +162,12 @@ int fits_select_rows( fitsfile *infptr,  /* I - Input FITS file             */
          outloc += nbuff*rdlen;
       }
 
-      row = (outloc - outfptr->datastart)/rdlen;
+      row = (outloc - (outfptr->Fptr)->datastart)/rdlen;
       if( infptr==outfptr ) {
          if( row<nrows ) ffdrow( infptr, row+1, nrows-row, status );
-      } else if( infptr->heapsize ) { /* Copy heap, if it exists */
-         inloc = infptr->datastart + infptr->heapstart;
-         ntodo = infptr->heapsize;
+      } else if( (infptr->Fptr)->heapsize ) { /* Copy heap, if it exists */
+         inloc = (infptr->Fptr)->datastart + (infptr->Fptr)->heapstart;
+         ntodo = (infptr->Fptr)->heapsize;
 
          while ( ntodo ) {
             rdlen = (ntodo<50000 ? ntodo : 50000);

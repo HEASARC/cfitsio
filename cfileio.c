@@ -84,7 +84,7 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
         url++;
 
         /* parse the input file specification */
-    *status = parse_input_url(url, urltype, infile, outfile, extspec,
+    *status = fits_parse_input_url(url, urltype, infile, outfile, extspec,
               rowfilter, binspec, colspec);
 
     strcpy(urltype, "memkeep://");   /* URL type for pre-existing memory file */
@@ -117,41 +117,56 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
         return(*status);
     }
 
-        /* allocate FITSfile structure and initialize = 0 */
+        /* allocate fitsfile structure and initialize = 0 */
     *fptr = (fitsfile *) calloc(1, sizeof(fitsfile));
 
     if (!(*fptr))
     {
         (*driverTable[driver].close)(handle);  /* close the file */
-        ffpmsg("failed to allocate structure for following file: (ffomem)");
+        ffpmsg("failed to allocate structure for following file: (ffopen)");
         ffpmsg(url);
+        return(*status = MEMORY_ALLOCATION);
+    }
+
+        /* allocate FITSfile structure and initialize = 0 */
+    (*fptr)->Fptr = (FITSfile *) calloc(1, sizeof(FITSfile));
+
+    if (!((*fptr)->Fptr))
+    {
+        (*driverTable[driver].close)(handle);  /* close the file */
+        ffpmsg("failed to allocate structure for following file: (ffopen)");
+        ffpmsg(url);
+        free(*fptr);
+        *fptr = 0;       
         return(*status = MEMORY_ALLOCATION);
     }
 
     slen = strlen(url) + 1;
     slen = maxvalue(slen, 32); /* reserve at least 32 chars */ 
-    (*fptr)->filename = (char *) malloc(slen); /* mem for file name */
+    ((*fptr)->Fptr)->filename = (char *) malloc(slen); /* mem for file name */
 
-    if ( !((*fptr)->filename) )
+    if ( !(((*fptr)->Fptr)->filename) )
     {
         (*driverTable[driver].close)(handle);  /* close the file */
         ffpmsg("failed to allocate memory for filename: (ffopen)");
         ffpmsg(url);
+        free((*fptr)->Fptr);
         free(*fptr);
         *fptr = 0;              /* return null file pointer */
         return(*status = MEMORY_ALLOCATION);
     }
 
         /* store the parameters describing the file */
-    (*fptr)->filehandle = handle;        /* file handle */
-    (*fptr)->driver = driver;            /* driver number */
-    strcpy((*fptr)->filename, url);      /* full input filename */
-    (*fptr)->filesize = filesize;        /* physical file size */
-    (*fptr)->logfilesize = filesize;     /* logical file size */
-    (*fptr)->writemode = mode;      /* read-write mode    */
-    (*fptr)->datastart = DATA_UNDEFINED; /* unknown start of data */
-    (*fptr)->curbuf = -1;                /* undefined current IO buffer */
-    (*fptr)->validcode = VALIDSTRUC;     /* flag denoting structure is valid */
+    ((*fptr)->Fptr)->filehandle = handle;        /* file handle */
+    ((*fptr)->Fptr)->driver = driver;            /* driver number */
+    strcpy(((*fptr)->Fptr)->filename, url);      /* full input filename */
+    ((*fptr)->Fptr)->filesize = filesize;        /* physical file size */
+    ((*fptr)->Fptr)->logfilesize = filesize;     /* logical file size */
+    ((*fptr)->Fptr)->writemode = mode;      /* read-write mode    */
+    ((*fptr)->Fptr)->datastart = DATA_UNDEFINED; /* unknown start of data */
+    ((*fptr)->Fptr)->curbuf = -1;             /* undefined current IO buffer */
+    ((*fptr)->Fptr)->open_count = 1;     /* structure is currently used once */
+    ((*fptr)->Fptr)->validcode = VALIDSTRUC; /* flag denoting valid structure */
 
     ffldrc(*fptr, 0, REPORT_EOF, status);     /* load first record */
 
@@ -272,7 +287,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     }
 
         /* parse the input file specification */
-    *status = parse_input_url(url, urltype, infile, outfile, extspec,
+    *status = fits_parse_input_url(url, urltype, infile, outfile, extspec,
               rowfilter, binspec, colspec);
 
     if (*status)
@@ -348,7 +363,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
         return(*status);
     }
 
-        /* allocate FITSfile structure and initialize = 0 */
+        /* allocate fitsfile structure and initialize = 0 */
     *fptr = (fitsfile *) calloc(1, sizeof(fitsfile));
 
     if (!(*fptr))
@@ -359,30 +374,45 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
         return(*status = MEMORY_ALLOCATION);
     }
 
+        /* allocate FITSfile structure and initialize = 0 */
+    (*fptr)->Fptr = (FITSfile *) calloc(1, sizeof(FITSfile));
+
+    if (!((*fptr)->Fptr))
+    {
+        (*driverTable[driver].close)(handle);  /* close the file */
+        ffpmsg("failed to allocate structure for following file: (ffopen)");
+        ffpmsg(url);
+        free(*fptr);
+        *fptr = 0;       
+        return(*status = MEMORY_ALLOCATION);
+    }
+
     slen = strlen(url) + 1;
     slen = maxvalue(slen, 32); /* reserve at least 32 chars */ 
-    (*fptr)->filename = (char *) malloc(slen); /* mem for file name */
+    ((*fptr)->Fptr)->filename = (char *) malloc(slen); /* mem for file name */
 
-    if ( !((*fptr)->filename) )
+    if ( !(((*fptr)->Fptr)->filename) )
     {
         (*driverTable[driver].close)(handle);  /* close the file */
         ffpmsg("failed to allocate memory for filename: (ffopen)");
         ffpmsg(url);
+        free((*fptr)->Fptr);
         free(*fptr);
         *fptr = 0;              /* return null file pointer */
         return(*status = MEMORY_ALLOCATION);
     }
 
         /* store the parameters describing the file */
-    (*fptr)->filehandle = handle;        /* file handle */
-    (*fptr)->driver = driver;            /* driver number */
-    strcpy((*fptr)->filename, url);      /* full input filename */
-    (*fptr)->filesize = filesize;        /* physical file size */
-    (*fptr)->logfilesize = filesize;     /* logical file size */
-    (*fptr)->writemode = mode;           /* read-write mode    */
-    (*fptr)->datastart = DATA_UNDEFINED; /* unknown start of data */
-    (*fptr)->curbuf = -1;                /* undefined current IO buffer */
-    (*fptr)->validcode = VALIDSTRUC;     /* flag denoting structure is valid */
+    ((*fptr)->Fptr)->filehandle = handle;        /* file handle */
+    ((*fptr)->Fptr)->driver = driver;            /* driver number */
+    strcpy(((*fptr)->Fptr)->filename, url);      /* full input filename */
+    ((*fptr)->Fptr)->filesize = filesize;        /* physical file size */
+    ((*fptr)->Fptr)->logfilesize = filesize;     /* logical file size */
+    ((*fptr)->Fptr)->writemode = mode;           /* read-write mode    */
+    ((*fptr)->Fptr)->datastart = DATA_UNDEFINED; /* unknown start of data */
+    ((*fptr)->Fptr)->curbuf = -1;            /* undefined current IO buffer */
+    ((*fptr)->Fptr)->open_count = 1;      /* structure is currently used once */
+    ((*fptr)->Fptr)->validcode = VALIDSTRUC; /* flag denoting valid structure */
 
     ffldrc(*fptr, 0, REPORT_EOF, status);     /* load first record */
 
@@ -491,8 +521,36 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffreopen(fitsfile *openfptr, /* I - FITS file pointer to open file  */ 
+             fitsfile **newfptr,  /* O - pointer to new re opened file   */
+             int *status)        /* IO - error status                   */
+/*
+  Reopen an existing FITS file with either readonly or read/write access.
+  The reopened file shares the same FITSfile structure but may point to a
+  different HDU within the file.
+*/
+{
+    if (*status > 0)
+        return(*status);
+
+    /* check that the open file pointer is valid */
+    if (!openfptr)
+        return(*status = NULL_INPUT_PTR);
+    else if ((openfptr->Fptr)->validcode != VALIDSTRUC) /* check for magic value */
+        return(*status = BAD_FILEPTR); 
+
+        /* allocate fitsfile structure and initialize = 0 */
+    *newfptr = (fitsfile *) calloc(1, sizeof(fitsfile));
+
+    (*newfptr)->Fptr = openfptr->Fptr; /* both files point to the same structure */
+    (*newfptr)->HDUposition = 0;     /* set initial position to the primary array */
+    (((*newfptr)->Fptr)->open_count)++;   /* increment the file usage counter */
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffselect_table(
-           fitsfile **fptr,  /* IO - pointer to input table; on output it   */
+           fitsfile **fptr,  /* IO - pointer to input table; on output it  */
                              /*      points to the new selected rows table */
            char *expr,       /* I - Boolean expression    */
            int *status)
@@ -622,7 +680,7 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
         clobber = FALSE;
 
         /* parse the output file specification */
-    *status = parse_output_url(url, urltype, outfile);
+    *status = fits_parse_output_url(url, urltype, outfile);
 
     if (*status)
     {
@@ -667,41 +725,55 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
         return(*status = FILE_NOT_CREATED);
     }
 
-        /* allocate FITSfile structure and init = 0 */
+        /* allocate fitsfile structure and initialize = 0 */
     *fptr = (fitsfile *) calloc(1, sizeof(fitsfile));
 
     if (!(*fptr))
     {
         (*driverTable[driver].close)(handle);  /* close the file */
-        ffpmsg("failed to allocate structure for following file: (ffinit)");
+        ffpmsg("failed to allocate structure for following file: (ffopen)");
         ffpmsg(url);
-        return(*status = FILE_NOT_CREATED);
+        return(*status = MEMORY_ALLOCATION);
+    }
+
+        /* allocate FITSfile structure and initialize = 0 */
+    (*fptr)->Fptr = (FITSfile *) calloc(1, sizeof(FITSfile));
+
+    if (!((*fptr)->Fptr))
+    {
+        (*driverTable[driver].close)(handle);  /* close the file */
+        ffpmsg("failed to allocate structure for following file: (ffopen)");
+        ffpmsg(url);
+        free(*fptr);
+        *fptr = 0;       
+        return(*status = MEMORY_ALLOCATION);
     }
 
     slen = strlen(url) + 1;
     slen = maxvalue(slen, 32); /* reserve at least 32 chars */ 
-    (*fptr)->filename = (char *) malloc(slen); /* mem for file name */
+    ((*fptr)->Fptr)->filename = (char *) malloc(slen); /* mem for file name */
 
-    if ( !((*fptr)->filename) )
+    if ( !(((*fptr)->Fptr)->filename) )
     {
         (*driverTable[driver].close)(handle);  /* close the file */
         ffpmsg("failed to allocate memory for filename: (ffinit)");
         ffpmsg(url);
+        free((*fptr)->Fptr);
         free(*fptr);
         *fptr = 0;              /* return null file pointer */
         return(*status = FILE_NOT_CREATED);
     }
 
         /* store the parameters describing the file */
-    (*fptr)->filehandle = handle;        /* store the file pointer */
-    (*fptr)->driver = driver;            /*  driver number         */
-    strcpy((*fptr)->filename, url);      /* full input filename    */
-    (*fptr)->filesize = 0;               /* physical file size     */
-    (*fptr)->logfilesize = 0;            /* logical file size      */
-    (*fptr)->writemode = 1;              /* read-write mode        */
-    (*fptr)->datastart = DATA_UNDEFINED; /* unknown start of data  */
-    (*fptr)->curbuf = -1;                /* undefined current IO buffer      */
-    (*fptr)->validcode = VALIDSTRUC;     /* flag denoting structure is valid */
+    ((*fptr)->Fptr)->filehandle = handle;        /* store the file pointer */
+    ((*fptr)->Fptr)->driver = driver;            /*  driver number         */
+    strcpy(((*fptr)->Fptr)->filename, url);      /* full input filename    */
+    ((*fptr)->Fptr)->filesize = 0;               /* physical file size     */
+    ((*fptr)->Fptr)->logfilesize = 0;            /* logical file size      */
+    ((*fptr)->Fptr)->writemode = 1;              /* read-write mode        */
+    ((*fptr)->Fptr)->datastart = DATA_UNDEFINED; /* unknown start of data  */
+    ((*fptr)->Fptr)->curbuf = -1;         /* undefined current IO buffer   */
+    ((*fptr)->Fptr)->validcode = VALIDSTRUC; /* flag denoting valid structure */
 
     ffldrc(*fptr, 0, IGNORE_EOF, status);     /* initialize first record */
 
@@ -1188,7 +1260,7 @@ int fits_register_driver(char *prefix,
     return(0);
  }
 /*--------------------------------------------------------------------------*/
-int parse_input_url(char *url, 
+int fits_parse_input_url(char *url, 
                     char *urltype,
                     char *infile,
                     char *outfile, 
@@ -1487,7 +1559,7 @@ int parse_input_url(char *url,
     return(0);
 }
 /*--------------------------------------------------------------------------*/
-int parse_output_url(char *url, 
+int fits_parse_output_url(char *url, 
                     char *urltype,
                     char *outfile)
 /*
@@ -1605,8 +1677,111 @@ int fits_parse_extspec(char *extspec,
                }
            }
     }
-
     return(0);
+}
+/*--------------------------------------------------------------------------*/
+int ffextn(char *url,           /* I - input filename/URL  */
+           int *extension_num)  /* O - returned extension number */
+{
+/*
+   Parse the input url string and return the number of the extension that
+   CFITSIO would automatically move to if CFITSIO were to open this input URL.
+   The extension numbers are zero based, so 0 = the primary array, 1 = the
+   first extension, etc.
+
+   The extension number that gets returned is determined by the following 
+   algorithm:
+
+   1. If the input URL includes a binning specification (e.g.
+   'myfile.fits[3][bin X,Y]') then the returned extension number
+   will always = 0, since CFITSIO would create a temporary primary
+   image on the fly in this case.
+
+   2.  Else if the input URL specifies an extension number (e.g.,
+   'myfile.fits[3]' or 'myfile.fits+3') then the specified extension
+   number is returned.  
+
+   3.  Else if the extension name is specified in brackets
+   (e.g., this 'myfile.fits[EVENTS]') then the file will be opened and searched
+   for the extension number.  If the input URL is '-'  (reading from the stdin
+   file stream) this is not possible and an error will be returned.
+
+   4.  Else if the URL does not specify an extension (e.g. 'myfile.fits') then
+   a special extension number = -99 will be returned to signal that no
+   extension was specified.  This feature is mainly for compatibility with
+   existing FTOOLS software.
+*/
+    fitsfile *fptr;
+    char urltype[20];
+    char infile[FLEN_FILENAME];
+    char outfile[FLEN_FILENAME]; 
+    char extspec[FLEN_FILENAME];
+    char extname[FLEN_FILENAME];
+    char rowfilter[FLEN_FILENAME];
+    char binspec[FLEN_FILENAME];
+    char colspec[FLEN_FILENAME];
+    char *cptr;
+    int extnum, extvers, hdutype, status;
+
+    /*  parse the input URL into its basic components  */
+    status = fits_parse_input_url(url, urltype, infile, outfile,
+             extspec, rowfilter,binspec, colspec);
+    if (status)
+        return(status);
+
+    if (*binspec)   /* is there a binning specification? */
+    {
+       *extension_num = 0; /* a temporary primary array image is created */
+       return(0);
+    }
+
+    if (*extspec)   /* is an extension specified? */
+    {
+      status = fits_parse_extspec(extspec, &extnum, extname, &extvers,
+                                  &hdutype);
+      if (status)
+        return(status);
+
+      if (*extname)
+      {
+         /* have to open the file to search for the extension name (curses!) */
+
+         if (!strcmp(urltype, "stdin://"))
+            return(URL_PARSE_ERROR); /* opening stdin would destroying it! */
+
+         /* First, strip off any filtering specification */
+         strcpy(infile, url);
+         cptr = strchr(infile, ']');  /* locate the closing bracket */
+         if (!cptr)
+         {
+             return(URL_PARSE_ERROR);
+         }
+         else
+         {
+             cptr++;
+             *cptr = '\0'; /* terminate URl after the extension spec */
+         }
+
+         if (ffopen(&fptr, infile, READONLY, &status) > 0) /* open the file */
+            return(status);
+
+         ffghdn(fptr, &extnum);
+         *extension_num = extnum - 1;  /* so primary array = 0, not 1 */
+         ffclos(fptr, &status);
+
+         return(0);
+      }
+      else
+      {
+         *extension_num = extnum;  /* simply return the specified number */
+         return(0);
+      }
+    }
+    else
+    {
+         *extension_num = -99;  /* no extension was specified */
+         return(0);
+    }
 }
 /*--------------------------------------------------------------------------*/
 int fits_parse_binspec(char *binspec,   /* I - binning specification */
@@ -2002,28 +2177,35 @@ int ffclos(fitsfile *fptr,      /* I - FITS file pointer */
 {
     if (!fptr)
         return(*status = NULL_INPUT_PTR);
-    else if (fptr->validcode != VALIDSTRUC)   /* check for magic value */
+    else if ((fptr->Fptr)->validcode != VALIDSTRUC) /* check for magic value */
         return(*status = BAD_FILEPTR); 
 
-    ffchdu(fptr, status);           /* close and flush the current HDU */
-    ffflsh(fptr, TRUE, status);     /* flush and disassociate IO buffers */
+    ((fptr->Fptr)->open_count)--;           /* decrement usage counter */
 
-        /* call driver function to actually close the file */
-    if ( (*driverTable[fptr->driver].close)(fptr->filehandle) )
+    ffchdu(fptr, status);         /* close and flush the current HDU   */
+    ffflsh(fptr, TRUE, status);   /* flush and disassociate IO buffers */
+
+    if ((fptr->Fptr)->open_count == 0)  /* if no other files use structure */
     {
-        if (*status <= 0)
+        /* call driver function to actually close the file */
+        if (
+   (*driverTable[(fptr->Fptr)->driver].close)((fptr->Fptr)->filehandle) )
         {
-            *status = FILE_NOT_CLOSED;  /* report error if no previous error */
+            if (*status <= 0)
+            {
+              *status = FILE_NOT_CLOSED;  /* report if no previous error */
 
-            ffpmsg("failed to close the following file: (ffclos)");
-            ffpmsg(fptr->filename);
+              ffpmsg("failed to close the following file: (ffclos)");
+              ffpmsg((fptr->Fptr)->filename);
+            }
         }
-    }
 
-    free(fptr->filename);       /* free memory for the filename */
-    fptr->filename = 0;
-    fptr->validcode = 0;        /* magic value to indicate invalid fptr */
-    free(fptr);                 /* free memory for the FITS file structure */
+        free((fptr->Fptr)->filename);     /* free memory for the filename */
+        (fptr->Fptr)->filename = 0;
+        (fptr->Fptr)->validcode = 0; /* magic value to indicate invalid fptr */
+        free(fptr->Fptr);         /* free memory for the FITS file structure */
+        free(fptr);               /* free memory for the FITS file structure */
+    }
 
     return(*status);
 }
@@ -2031,45 +2213,46 @@ int ffclos(fitsfile *fptr,      /* I - FITS file pointer */
 int ffdelt(fitsfile *fptr,      /* I - FITS file pointer */
            int *status)         /* IO - error status     */
 /*
-  close and DELETE the FITS file 
+  close and DELETE the FITS file. 
 */
 {
     if (!fptr)
         return(*status = NULL_INPUT_PTR);
-    else if (fptr->validcode != VALIDSTRUC)   /* check for magic value */
+    else if ((fptr->Fptr)->validcode != VALIDSTRUC) /* check for magic value */
         return(*status = BAD_FILEPTR); 
 
     ffchdu(fptr, status);    /* close the current HDU, ignore any errors */
     ffflsh(fptr, TRUE, status);     /* flush and disassociate IO buffers */
 
         /* call driver function to actually close the file */
-    if ( (*driverTable[fptr->driver].close)(fptr->filehandle) )
+    if ( (*driverTable[(fptr->Fptr)->driver].close)((fptr->Fptr)->filehandle) )
     {
         if (*status <= 0)
         {
             *status = FILE_NOT_CLOSED;  /* report error if no previous error */
 
             ffpmsg("failed to close the following file: (ffdelt)");
-            ffpmsg(fptr->filename);
+            ffpmsg((fptr->Fptr)->filename);
         }
     }
 
         /* call driver function to actually delete the file */
-    if ( (driverTable[fptr->driver].remove) )
+    if ( (driverTable[(fptr->Fptr)->driver].remove) )
     {
-        if ( (*driverTable[fptr->driver].remove)(fptr->filename) )
+       if ((*driverTable[(fptr->Fptr)->driver].remove)((fptr->Fptr)->filename))
         {
             ffpmsg("failed to delete the following file: (ffdelt)");
-            ffpmsg(fptr->filename);
+            ffpmsg((fptr->Fptr)->filename);
             if (!(*status))
                 *status = FILE_NOT_CLOSED;
         }
     }
 
-    free(fptr->filename);     /* free memory for the filename */
-    fptr->filename = 0;
-    fptr->validcode = 0;      /* magic value to indicate invalid fptr */
-    free(fptr);               /* free memory for the FITS file structure */
+    free((fptr->Fptr)->filename);     /* free memory for the filename */
+    (fptr->Fptr)->filename = 0;
+    (fptr->Fptr)->validcode = 0;      /* magic value to indicate invalid fptr */
+    free(fptr->Fptr);              /* free memory for the FITS file structure */
+    free(fptr);                    /* free memory for the FITS file structure */
 
     return(*status);
 }
@@ -2081,21 +2264,23 @@ int fftrun( fitsfile *fptr,    /* I - FITS file pointer           */
   low level routine to truncate a file to a new smaller size.
 */
 {
-  if (driverTable[fptr->driver].truncate)
+  if (driverTable[(fptr->Fptr)->driver].truncate)
   {
     ffflsh(fptr, FALSE, status);  /* flush all the buffers first */
-    fptr->filesize = filesize;
-    fptr->logfilesize = filesize;
-    fptr->io_pos = filesize;
-    fptr->bytepos = filesize;
+    (fptr->Fptr)->filesize = filesize;
+    (fptr->Fptr)->logfilesize = filesize;
+    (fptr->Fptr)->io_pos = filesize;
+    (fptr->Fptr)->bytepos = filesize;
 
-    return ((*driverTable[fptr->driver].truncate)(fptr->filehandle, filesize) );
+    return (
+     (*driverTable[(fptr->Fptr)->driver].truncate)((fptr->Fptr)->filehandle,
+     filesize) );
   }
   else
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffflushx( fitsfile *fptr)     /* I - FITS file pointer                  */
+int ffflushx( FITSfile *fptr)     /* I - FITS file pointer                  */
 /*
   low level routine to flush internal file buffers to the file.
 */
@@ -2106,7 +2291,7 @@ int ffflushx( fitsfile *fptr)     /* I - FITS file pointer                  */
         return(0);    /* no flush function defined for this driver */
 }
 /*--------------------------------------------------------------------------*/
-int ffseek( fitsfile *fptr,   /* I - FITS file pointer              */
+int ffseek( FITSfile *fptr,   /* I - FITS file pointer              */
             long position)    /* I - byte position to seek to       */
 /*
   low level routine to seek to a position in a file.
@@ -2115,7 +2300,7 @@ int ffseek( fitsfile *fptr,   /* I - FITS file pointer              */
     return( (*driverTable[fptr->driver].seek)(fptr->filehandle, position) );
 }
 /*--------------------------------------------------------------------------*/
-int ffwrite( fitsfile *fptr,   /* I - FITS file pointer              */
+int ffwrite( FITSfile *fptr,   /* I - FITS file pointer              */
              long nbytes,      /* I - number of bytes to write       */
              void *buffer,     /* I - buffer to write                */
              int *status)      /* O - error status                   */
@@ -2129,7 +2314,7 @@ int ffwrite( fitsfile *fptr,   /* I - FITS file pointer              */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffread( fitsfile *fptr,   /* I - FITS file pointer              */
+int ffread( FITSfile *fptr,   /* I - FITS file pointer              */
             long nbytes,      /* I - number of bytes to read        */
             void *buffer,     /* O - buffer to read into            */
             int *status)      /* O - error status                   */

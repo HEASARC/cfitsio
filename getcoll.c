@@ -238,13 +238,17 @@ int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
     else if (fbit < 1)
         return(*status = BAD_ELEM_NUM);
 
+    /* position to the correct HDU */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     fbyte = (fbit + 7) / 8;
     bitloc = fbit - 1 - ((fbit - 1) / 8 * 8);
     ndone = 0;
     rstart = frow - 1;
     estart = fbyte - 1;
 
-    colptr  = fptr->tableptr;   /* point to first column */
+    colptr  = (fptr->Fptr)->tableptr;   /* point to first column */
     colptr += (colnum - 1);     /* offset to correct column structure */
 
     tcode = colptr->tdatatype;
@@ -265,7 +269,7 @@ int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
             return(*status = BAD_ELEM_NUM);
 
         /* calc the i/o pointer location to start of sequence of pixels */
-        bstart = fptr->datastart + (rstart * fptr->rowlength) +
+        bstart = (fptr->Fptr)->datastart + (rstart * (fptr->Fptr)->rowlength) +
                colptr->tbcol + estart;
     }
     else
@@ -281,7 +285,7 @@ int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
             return(*status = BAD_ELEM_NUM);
 
         /* calc the i/o pointer location to start of sequence of pixels */
-        bstart = fptr->datastart + offset + fptr->heapstart + estart;
+        bstart = (fptr->Fptr)->datastart + offset + (fptr->Fptr)->heapstart + estart;
     }
 
     /* move the i/o pointer to the start of the pixel sequence */
@@ -314,7 +318,7 @@ int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
           /* move the i/o pointer to the next row of pixels */
           estart = 0;
           rstart = rstart + 1;
-          bstart = fptr->datastart + (rstart * fptr->rowlength) +
+          bstart = (fptr->Fptr)->datastart + (rstart * (fptr->Fptr)->rowlength) +
                colptr->tbcol;
 
           ffmbyt(fptr, bstart, REPORT_EOF, status);

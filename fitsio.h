@@ -84,15 +84,16 @@ typedef struct        /* structure used to store table column information */
     long tnull;       /* FITS null value for int image or binary table cols */
     char strnull[20]; /* FITS null value string for ASCII table columns */
     char tform[10];   /* FITS tform keyword value  */
-    long  twidth;      /* width of each ASCII table column */
+    long  twidth;     /* width of each ASCII table column */
 }tcolumn;
 
 #define VALIDSTRUC 555  /* magic value used to identify if structure is valid */
 
-typedef struct      /* structure used to store basic HDU information */
+typedef struct      /* structure used to store basic FITS file information */
 {
-    int filehandle;  /* handle returned by the file open function */
-    int driver;      /* defines which set of I/O drivers should be used */
+    int filehandle; /* handle returned by the file open function */
+    int driver;     /* defines which set of I/O drivers should be used */
+    int open_count; /* number of opened 'fitsfiles' using this structure */
     char *filename; /* file name */
     int validcode;  /* magic value used to verify that structure is valid */
     long filesize;  /* current size of the physical disk file in bytes */
@@ -109,11 +110,17 @@ typedef struct      /* structure used to store basic HDU information */
     long nextkey;   /* byte offset in file to beginning of next keyword */
     long datastart; /* byte offset in file to start of the current data unit */
     int tfield;     /* number of fields in the table (primary array has 2 */
-    long rowlength;  /* total length of a table row, in bytes */
+    long rowlength; /* total length of a table row, in bytes */
     tcolumn *tableptr; /* pointer to the table structure */
-    long heapstart;   /* heap start byte relative to start of data unit */
-    long heapsize;    /* size of the heap, in bytes */
-} fitsfile;
+    long heapstart; /* heap start byte relative to start of data unit */
+    long heapsize;  /* size of the heap, in bytes */
+} FITSfile;
+
+typedef struct      /* structure used to store basic HDU information */
+{
+    int HDUposition;  /* HDU position in file; 0 = first HDU */
+    FITSfile *Fptr;   /* pointer to FITS file structure */
+}fitsfile;
 
 typedef struct  /* structure for the iterator function column information */
 {  
@@ -259,12 +266,27 @@ typedef struct  /* structure for the iterator function column information */
 extern "C" {
 #endif
 
+/*----------------  FITS file URL parsing routines -------------*/
+int fits_parse_input_url(char *url,  char *urltype, char *infile,
+                    char *outfile, char *extspec, char *rowfilter,
+                    char *binspec, char *colspec);
+int fits_parse_output_url(char *url, char *urltype, char *outfile);
+int fits_parse_extspec(char *extspec, int *extnum,  char *extname,
+                       int *extvers, int *hdutype);
+int ffextn(char *url, int *extension_num);
+int fits_parse_binspec(char *binspec, int *imagetype, int *haxis, 
+                       char colname[4][FLEN_VALUE], float *minin,float *maxin,
+                       float *binsizein);
+int fits_parse_binrange(char **binspec, char *colname, float *minin, 
+                        float *maxin, float *binsizein);
+
 /*----------------  FITS file I/O routines -------------*/
 int ffomem(fitsfile **fptr, const char *name, int mode, void **buffptr,
            size_t *buffsize, size_t deltasize,
            void *(*mem_realloc)(void *p, size_t newsize),
            int *status);
 int ffopen(fitsfile **fptr, const char *filename, int iomode, int *status);
+int ffreopen(fitsfile *openfptr, fitsfile **newfptr, int *status); 
 int ffinit(fitsfile **fptr, const char *filename, int *status);
 int fftplt(fitsfile **fptr, const char *filename, const char *tempname,
            int *status);
@@ -276,7 +298,6 @@ int ffflmd(fitsfile *fptr, int *filemode, int *status);
 
 /*---------------- utility routines -------------*/
 float ffvers(float *version);
-int ffgsdt(int *day, int *month, int *year2, int *status);
 void ffupch(char *string);
 void ffgerr(int status, char *errtext);
 void ffpmsg(const char *err_message);
@@ -305,6 +326,8 @@ int ffpcom(fitsfile *fptr, const char *comm, int *status);
 int ffpunt(fitsfile *fptr, char *keyname, char *unit, int *status);
 int ffphis(fitsfile *fptr, const char *history, int *status);
 int ffpdat(fitsfile *fptr, int *status);
+int ffgstm(char *timestr, int *timeref, int *status);
+int ffgsdt(int *day, int *month, int *year2, int *status);
 int ffdt2s(int year, int month, int day, char *datestr, int *status);
 int fftm2s(int year, int month, int day, int hour, int minute, double second,
           int decimals, char *datestr, int *status);
@@ -507,7 +530,8 @@ int ffdrec(fitsfile *fptr, int keypos, int *status);
 /*--------------------- get HDU information -------------*/
 int ffghdn(fitsfile *fptr, int *chdunum);
 int ffghdt(fitsfile *fptr, int *exttype, int *status);
-int ffghad(fitsfile *fptr, long *chduaddr, long *nextaddr);
+int ffghad(fitsfile *fptr, long *headstart, long *datastart, long *dataend,
+           int *status);
  
 /*--------------------- HDU operations -------------*/
 int ffmahd(fitsfile *fptr, int hdunum, int *exttype, int *status);

@@ -9,7 +9,6 @@
 /*  Government purposes to publish, distribute, translate, copy, exhibit,  */
 /*  and perform such material.                                             */
 
-#include <time.h>   /* required only for ffgsdt at end */
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
@@ -23,7 +22,7 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.000;   /*  beta I/O driver release */
+      *version = 2.002;   /*  beta I/O driver release */
 
  /*   *version = 1.40;    6 Feb 1998 */
  /*   *version = 1.33;   16 Dec 1997 (internal release only) */
@@ -55,7 +54,7 @@ int ffflnm(fitsfile *fptr,    /* I - FITS file pointer  */
   return the name of the FITS file
 */
 {
-    strcpy(filename,fptr->filename);
+    strcpy(filename,(fptr->Fptr)->filename);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -66,7 +65,7 @@ int ffflmd(fitsfile *fptr,    /* I - FITS file pointer  */
   return the access mode of the FITS file
 */
 {
-    *filemode = fptr->writemode;
+    *filemode = (fptr->Fptr)->writemode;
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -711,11 +710,15 @@ int ffmkey(fitsfile *fptr,    /* I - FITS file pointer  */
            int *status)       /* IO - error status      */
 /*
   replace the previously read card (i.e. starting 80 bytes before the
-  fptr->nextkey position) with the contents of the input card.
+  (fptr->Fptr)->nextkey position) with the contents of the input card.
 */
 {
     char tcard[81];
     size_t len, ii;
+
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
     strncpy(tcard,card,80);
     tcard[80] = '\0';
@@ -731,7 +734,7 @@ int ffmkey(fitsfile *fptr,    /* I - FITS file pointer  */
     fftrec(tcard, status);        /* test rest of keyword for legal chars   */
 
     /* move position of keyword to be over written */
-    ffmbyt(fptr, (fptr->nextkey) - 80, REPORT_EOF, status); 
+    ffmbyt(fptr, ((fptr->Fptr)->nextkey) - 80, REPORT_EOF, status); 
     ffpbyt(fptr, 80, tcard, status);   /* write the 80 byte card */
 
     return(*status);
@@ -1547,18 +1550,21 @@ int ffgcnn( fitsfile *fptr,  /* I - FITS file pointer                       */
     colname[0] = 0;    /* initialize null return */
     *colnum = 0;
 
-    if (fptr->datastart == DATA_UNDEFINED)
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
         if ( ffrdef(fptr, status) > 0)   /* rescan header to get col struct */
             return(*status);
 
-    colptr = fptr->tableptr;   /* pointer to first column */
+    colptr = (fptr->Fptr)->tableptr;   /* pointer to first column */
     colptr += (startcol);      /* offset to starting column */
 
     founde = FALSE;   /* initialize 'found exact match' flag */
     foundw = FALSE;   /* initialize 'found wildcard match' flag */
     unique = FALSE;
 
-    for (ii = startcol; ii < fptr->tfield; ii++, colptr++)
+    for (ii = startcol; ii < (fptr->Fptr)->tfield; ii++, colptr++)
     {
         ffcmps(templt, colptr->ttype, casesen, &match, &exact);
         if (match)
@@ -1615,11 +1621,11 @@ int ffgcnn( fitsfile *fptr,  /* I - FITS file pointer                       */
     {
         /* didn't find a match; check if template is a positive integer */
         ffc2ii(templt, &ivalue, &tstatus);
-        if (tstatus ==  0 && ivalue <= fptr->tfield && ivalue > 0)
+        if (tstatus ==  0 && ivalue <= (fptr->Fptr)->tfield && ivalue > 0)
         {
             *colnum = ivalue;
 
-            colptr = fptr->tableptr;   /* pointer to first column */
+            colptr = (fptr->Fptr)->tableptr;   /* pointer to first column */
             colptr += (ivalue - 1);    /* offset to correct column */
             strcpy(colname, colptr->ttype);
         }
@@ -1787,22 +1793,28 @@ int ffgtcl( fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     tcolumn *colptr;
-    int decims;
+    int hdutype, decims;
 
     if (*status > 0)
         return(*status);
 
-    if (fptr->datastart == DATA_UNDEFINED)
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
         if ( ffrdef(fptr, status) > 0)               /* rescan header */
             return(*status);
 
-    if (colnum < 1 || colnum > fptr->tfield)
+    if (colnum < 1 || colnum > (fptr->Fptr)->tfield)
         return(*status = BAD_COL_NUM);
 
-    colptr = fptr->tableptr;   /* pointer to first column */
+    colptr = (fptr->Fptr)->tableptr;   /* pointer to first column */
     colptr += (colnum - 1);    /* offset to correct column */
 
-    if (fptr->hdutype == ASCII_TBL)
+    if (ffghdt(fptr, &hdutype, status) > 0)
+        return(*status);
+
+    if (hdutype == ASCII_TBL)
     {
        ffasfm(colptr->tform, typecode, width, &decims, status);
 
@@ -1846,16 +1858,19 @@ int ffgacl( fitsfile *fptr,   /* I - FITS file pointer                      */
     if (*status > 0)
         return(*status);
 
-    if (fptr->datastart == DATA_UNDEFINED)
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
         if ( ffrdef(fptr, status) > 0)               /* rescan header */
             return(*status);
 
-    if (colnum < 1 || colnum > fptr->tfield)
+    if (colnum < 1 || colnum > (fptr->Fptr)->tfield)
         return(*status = BAD_COL_NUM);
 
     /* get what we can from the column structure */
 
-    colptr = fptr->tableptr;   /* pointer to first column */
+    colptr = (fptr->Fptr)->tableptr;   /* pointer to first column */
     colptr += (colnum -1);     /* offset to correct column */
 
     if (ttype)
@@ -1919,16 +1934,19 @@ int ffgbcl( fitsfile *fptr,   /* I - FITS file pointer                      */
     if (*status > 0)
         return(*status);
 
-    if (fptr->datastart == DATA_UNDEFINED)
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
         if ( ffrdef(fptr, status) > 0)               /* rescan header */
             return(*status);
 
-    if (colnum < 1 || colnum > fptr->tfield)
+    if (colnum < 1 || colnum > (fptr->Fptr)->tfield)
         return(*status = BAD_COL_NUM);
 
     /* get what we can from the column structure */
 
-    colptr = fptr->tableptr;   /* pointer to first column */
+    colptr = (fptr->Fptr)->tableptr;   /* pointer to first column */
     colptr += (colnum -1);     /* offset to correct column */
 
     if (ttype)
@@ -1962,7 +1980,6 @@ int ffgbcl( fitsfile *fptr,   /* I - FITS file pointer                      */
         else if (abs(colptr->tdatatype) == TDBLCOMPLEX)
             strcat(dtype, "M");
     }
-
 
     if (repeat)
         *repeat = colptr->trepeat;
@@ -2005,27 +2022,45 @@ int ffghdn(fitsfile *fptr,   /* I - FITS file pointer                      */
   does not return the error status value as the value of the function.
 */
 {
-    *chdunum = (fptr->curhdu) + 1;       
-
+    *chdunum = (fptr->HDUposition) + 1;       
     return(*chdunum);
 }
 /*--------------------------------------------------------------------------*/
-int ffghad(fitsfile *fptr,   /* I - FITS file pointer                     */
-            long *chduaddr,   /* O - byte offset to beginning of CHDU      */
-            long *nextaddr)   /* O - byte offset to beginning of next HDU  */
+int ffghad(fitsfile *fptr,     /* I - FITS file pointer                     */
+            long *headstart,   /* O - byte offset to beginning of CHDU      */
+            long *datastart,   /* O - byte offset to beginning of next HDU  */
+            long *dataend,     /* O - byte offset to beginning of next HDU  */
+            int *status)       /* IO - error status     */
 /*
   Return the address (= byte offset) in the FITS file to the beginning of
-  the current HDU and the offset to the beginning of the next HDU following
-  the CHDU.
+  the current HDU, the beginning of the data unit, and the end of the data unit.
 */
 {
-    int status = 0;
+    if (*status > 0)
+        return(*status);
 
-    ffrdef(fptr, &status);    /* update internal file structure */
-    *chduaddr = fptr->headstart[fptr->curhdu];       
-    *nextaddr = fptr->headstart[(fptr->curhdu) + 1];       
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+    {
+        if (ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status) > 0)
+            return(*status);
+    }
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+    {
+        if (ffrdef(fptr, status) > 0)           /* rescan header */
+            return(*status);
+    }
 
-    return(status);
+    if (headstart)
+        *headstart = (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu];       
+
+    if (datastart)
+        *datastart = (fptr->Fptr)->datastart;
+
+    if (dataend)
+        *dataend = (fptr->Fptr)->headstart[((fptr->Fptr)->curhdu) + 1];       
+
+    return(*status);
 }
 /*--------------------------------------------------------------------------*/
 int ffrhdu(fitsfile *fptr,    /* I - FITS file pointer */
@@ -2150,8 +2185,12 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
     if (*status > 0)
         return(*status);
 
-    fptr->hdutype = IMAGE_HDU; /* primary array or IMAGE extension  */
-    fptr->headend = 2000000000;  /* temporarily set huge header size  */
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+    (fptr->Fptr)->hdutype = IMAGE_HDU; /* primary array or IMAGE extension  */
+    (fptr->Fptr)->headend = 2000000000;  /* temporarily set huge header size  */
 
     groups = 0;
     tstatus = *status;
@@ -2169,10 +2208,10 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
        the logical end of the header is 80 bytes before the current position, 
        minus any trailing blank keywords just before the END keyword.
     */
-    fptr->headend = fptr->nextkey - (80 * (nspace + 1));
+    (fptr->Fptr)->headend = (fptr->Fptr)->nextkey - (80 * (nspace + 1));
 
     /* the data unit begins at the beginning of the next logical block */
-    fptr->datastart = ( (fptr->nextkey - 80) / 2880 + 1) * 2880;
+    (fptr->Fptr)->datastart = ( ((fptr->Fptr)->nextkey - 80) / 2880 + 1) * 2880;
 
     if (naxis > 0 && naxes[0] == 0)  /* test for 'random groups' */
     {
@@ -2225,8 +2264,8 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
        now we know everything about the array; just fill in the parameters:
        the next HDU begins in the next logical block after the data
     */
-    fptr->headstart[ fptr->curhdu + 1] =
-         fptr->datastart + 
+    (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] =
+         (fptr->Fptr)->datastart + 
          ( (pcount + npix) * bytlen * gcount + 2879) / 2880 * 2880;
 
     /*
@@ -2234,14 +2273,14 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
       the array data) and a zero length heap.  This is used to find the
       end of the data when checking the fill values in the last block. 
     */
-    fptr->heapstart = (pcount + npix) * bytlen * gcount;
-    fptr->heapsize = 0;
+    (fptr->Fptr)->heapstart = (pcount + npix) * bytlen * gcount;
+    (fptr->Fptr)->heapsize = 0;
 
     if (naxis == 0)
     {
-        fptr->rowlength = 0;    /* rows have zero length */
-        fptr->tfield = 0;       /* table has no fields   */
-        fptr->tableptr = 0;     /* set a null table structure pointer */
+        (fptr->Fptr)->rowlength = 0;    /* rows have zero length */
+        (fptr->Fptr)->tfield = 0;       /* table has no fields   */
+        (fptr->Fptr)->tableptr = 0;     /* set a null table structure pointer */
     }
     else
     {
@@ -2252,11 +2291,11 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
         column element. In the case of 'random grouped' format, each group
         is stored in a separate row of the table.
       */
-        fptr->rowlength = (pcount + npix) * bytlen; /* total size of image */
-        fptr->tfield = 2;  /* 2 fields: group parameters and the image */
+        (fptr->Fptr)->rowlength = (pcount + npix) * bytlen; /* total size */
+        (fptr->Fptr)->tfield = 2;  /* 2 fields: group params and the image */
 
-        if (fptr->tableptr)
-           free(fptr->tableptr); /* free memory for the old CHDU structure */
+        if ((fptr->Fptr)->tableptr)
+           free((fptr->Fptr)->tableptr); /* free memory for the old CHDU */
 
         colptr = (tcolumn *) calloc(2, sizeof(tcolumn) ) ;
 
@@ -2264,12 +2303,12 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
         {
           ffpmsg
           ("malloc failed to get memory for FITS array descriptors (ffpinit)");
-          fptr->tableptr = 0;  /* set a null table structure pointer */
+          (fptr->Fptr)->tableptr = 0;  /* set a null table structure pointer */
           return(*status = ARRAY_TOO_BIG);
         }
 
         /* copy the table structure address to the fitsfile structure */
-        fptr->tableptr = colptr; 
+        (fptr->Fptr)->tableptr = colptr; 
 
         /* the first column represents the group parameters, if any */
         colptr->tbcol = 0;
@@ -2293,7 +2332,7 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
     }
 
     /* reset next keyword pointer to the start of the header */
-    fptr->nextkey = fptr->headstart[ fptr->curhdu ];
+    (fptr->Fptr)->nextkey = (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu ];
 
     return(*status);
 }
@@ -2313,8 +2352,12 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
     if (*status > 0)
         return(*status);
 
-    fptr->hdutype = ASCII_TBL;  /* set that this is an ASCII table */
-    fptr->headend = 2000000000;       /* temporarily set huge header size  */
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+    (fptr->Fptr)->hdutype = ASCII_TBL;  /* set that this is an ASCII table */
+    (fptr->Fptr)->headend = 2000000000; /* temporarily set huge header size */
 
     /* get table parameters and test that the header is a valid: */
     if (ffgttb(fptr, &rowlen, &nrows, &pcount, &tfield, status) > 0)  
@@ -2326,11 +2369,11 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
        return(*status = BAD_PCOUNT);
     }
 
-    fptr->rowlength = rowlen; /* store length of a row */
-    fptr->tfield = tfield;    /* store number of table fields in each row */
+    (fptr->Fptr)->rowlength = rowlen; /* store length of a row */
+    (fptr->Fptr)->tfield = tfield; /* store number of table fields in row */
 
-    if (fptr->tableptr)
-       free(fptr->tableptr); /* free memory for the old CHDU structure */
+    if ((fptr->Fptr)->tableptr)
+       free((fptr->Fptr)->tableptr); /* free memory for the old CHDU */
 
     /* mem for column structures ; space is initialized = 0  */
     colptr = (tcolumn *) calloc(tfield, sizeof(tcolumn) );
@@ -2338,12 +2381,12 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
     {
         ffpmsg
         ("malloc failed to get memory for FITS table descriptors (ffainit)");
-        fptr->tableptr = 0;  /* set a null table structure pointer */
+        (fptr->Fptr)->tableptr = 0;  /* set a null table structure pointer */
         return(*status = ARRAY_TOO_BIG);
     }
 
     /* copy the table structure address to the fitsfile structure */
-    fptr->tableptr = colptr; 
+    (fptr->Fptr)->tableptr = colptr; 
 
     /*  initialize the table field parameters */
     for (ii = 0; ii < tfield; ii++, colptr++)
@@ -2362,8 +2405,8 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
       end of the table data when checking the fill values in the last block. 
       There is no special data following an ASCII table.
     */
-    fptr->heapstart = rowlen * nrows;
-    fptr->heapsize = 0;
+    (fptr->Fptr)->heapstart = rowlen * nrows;
+    (fptr->Fptr)->heapsize = 0;
 
     /* now search for the table column keywords and the END keyword */
 
@@ -2404,7 +2447,7 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
     }
 
     /* test that all required keywords were found and have legal values */
-    colptr = fptr->tableptr;
+    colptr = (fptr->Fptr)->tableptr;
     for (ii = 0; ii < tfield; ii++, colptr++)
     {
         tbcoln = colptr->tbcol;  /* the starting column number (zero based) */
@@ -2425,8 +2468,8 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
             return(*status = NO_TBCOL);
         }
 
-        else if (fptr->rowlength != 0 && 
-                (tbcoln < 0 || tbcoln >= fptr->rowlength ) )
+        else if ((fptr->Fptr)->rowlength != 0 && 
+                (tbcoln < 0 || tbcoln >= (fptr->Fptr)->rowlength ) )
         {
             ffkeyn("TBCOL", ii+1, name, status);  /* construct keyword name */
             sprintf(message,"Value of %s keyword out of range: %d (ffainit).",
@@ -2435,14 +2478,14 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
             return(*status = BAD_TBCOL);
         }
 
-        else if (fptr->rowlength != 0 && 
-                 tbcoln + colptr->twidth > fptr->rowlength )
+        else if ((fptr->Fptr)->rowlength != 0 && 
+                 tbcoln + colptr->twidth > (fptr->Fptr)->rowlength )
         {
             sprintf(message,"Column %d is too wide to fit in table (ffainit)",
             ii+1);
             ffpmsg(message);
             sprintf(message, " TFORM = %s and NAXIS1 = %ld",
-                    colptr->tform, fptr->rowlength);
+                    colptr->tform, (fptr->Fptr)->rowlength);
             ffpmsg(message);
             return(*status = COL_TOO_WIDE);
         }
@@ -2453,17 +2496,17 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
       the 'END' record is 80 bytes before the current position, minus
       any trailing blank keywords just before the END keyword.
     */
-    fptr->headend = fptr->nextkey - (80 * (nspace + 1));
+    (fptr->Fptr)->headend = (fptr->Fptr)->nextkey - (80 * (nspace + 1));
  
     /* the data unit begins at the beginning of the next logical block */
-    fptr->datastart = ( (fptr->nextkey - 80) / 2880 + 1) * 2880;
+    (fptr->Fptr)->datastart = ( ((fptr->Fptr)->nextkey - 80) / 2880 + 1) * 2880;
 
     /* the next HDU begins in the next logical block after the data  */
-    fptr->headstart[ fptr->curhdu + 1] = fptr->datastart +
+    (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] = (fptr->Fptr)->datastart +
          ( (rowlen * nrows + 2879) / 2880 * 2880 );
 
     /* reset next keyword pointer to the start of the header */
-    fptr->nextkey = fptr->headstart[ fptr->curhdu ];
+    (fptr->Fptr)->nextkey = (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu ];
 
     return(*status);
 }
@@ -2483,18 +2526,22 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     if (*status > 0)
         return(*status);
 
-    fptr->hdutype = BINARY_TBL;  /* set that this is a binary table */
-    fptr->headend = 2000000000;       /* temporarily set huge header size  */
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+    (fptr->Fptr)->hdutype = BINARY_TBL;  /* set that this is a binary table */
+    (fptr->Fptr)->headend = 2000000000;  /* temporarily set huge header size  */
 
     /* get table parameters and test that the header is valid: */
     if (ffgttb(fptr, &rowlen, &nrows, &pcount, &tfield, status) > 0)
        return(*status);
 
-    fptr->rowlength = rowlen; /* store length of a row */
-    fptr->tfield = tfield;   /* store number of table fields in each row */
+    (fptr->Fptr)->rowlength = rowlen; /* store length of a row */
+    (fptr->Fptr)->tfield = tfield; /* store number of table fields in row */
 
-    if (fptr->tableptr)
-       free(fptr->tableptr); /* free memory for the old CHDU structure */
+    if ((fptr->Fptr)->tableptr)
+       free((fptr->Fptr)->tableptr); /* free memory for the old CHDU */
 
     /* mem for column structures ; space is initialized = 0  */
     colptr = (tcolumn *) calloc(tfield, sizeof(tcolumn) );
@@ -2502,12 +2549,12 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     {
         ffpmsg
         ("malloc failed to get memory for FITS table descriptors (ffbinit)");
-        fptr->tableptr = 0;  /* set a null table structure pointer */
+        (fptr->Fptr)->tableptr = 0;  /* set a null table structure pointer */
         return(*status = ARRAY_TOO_BIG);
     }
 
     /* copy the table structure address to the fitsfile structure */
-    fptr->tableptr = colptr; 
+    (fptr->Fptr)->tableptr = colptr; 
 
     /* initialize the table field parameters */
     for (ii = 0; ii < tfield; ii++, colptr++)
@@ -2526,8 +2573,8 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
       the table data) and the size of the heap.  This is used to find the
       end of the table data when checking the fill values in the last block. 
     */
-    fptr->heapstart = rowlen * nrows;
-    fptr->heapsize = pcount;
+    (fptr->Fptr)->heapstart = rowlen * nrows;
+    (fptr->Fptr)->heapsize = pcount;
 
     /* now search for the table column keywords and the END keyword */
 
@@ -2569,7 +2616,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     }
 
     /* test that all the required keywords were found and have legal values */
-    colptr = fptr->tableptr;  /* set pointer to first column */
+    colptr = (fptr->Fptr)->tableptr;  /* set pointer to first column */
 
     for (ii = 0; ii < tfield; ii++, colptr++)
     {
@@ -2587,13 +2634,13 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
       the 'END' record is 80 bytes before the current position, minus
       any trailing blank keywords just before the END keyword.
     */
-    fptr->headend = fptr->nextkey - (80 * (nspace + 1));
+    (fptr->Fptr)->headend = (fptr->Fptr)->nextkey - (80 * (nspace + 1));
  
     /* the data unit begins at the beginning of the next logical block */
-    fptr->datastart = ( (fptr->nextkey - 80) / 2880 + 1) * 2880;
+    (fptr->Fptr)->datastart = ( ((fptr->Fptr)->nextkey - 80) / 2880 + 1) * 2880;
 
     /* the next HDU begins in the next logical block after the data  */
-    fptr->headstart[ fptr->curhdu + 1] = fptr->datastart +
+    (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] = (fptr->Fptr)->datastart +
          ( (rowlen * nrows + pcount + 2879) / 2880 * 2880 );
 
     /* determine the byte offset to the beginning of each column */
@@ -2609,7 +2656,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     }
 
     /* reset next keyword pointer to the start of the header */
-    fptr->nextkey = fptr->headstart[ fptr->curhdu ];
+    (fptr->Fptr)->nextkey = (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu ];
 
     return(*status);
 }
@@ -2669,12 +2716,15 @@ int ffgtbc(fitsfile *fptr,    /* I - FITS file pointer          */
     if (*status > 0)
         return(*status);
 
-    if (fptr->datastart == DATA_UNDEFINED)
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
         if ( ffrdef(fptr, status) > 0)               /* rescan header */
             return(*status);
 
-    tfields = fptr->tfield;
-    colptr = fptr->tableptr;  /* point to first column structure */
+    tfields = (fptr->Fptr)->tfield;
+    colptr = (fptr->Fptr)->tableptr;  /* point to first column structure */
 
     *totalwidth = 0;
 
@@ -2725,16 +2775,20 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
 
     tstatus = 0;
 
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     if(!FSTRNCMP(name + 1, "TYPE", 4) )
     {
         /* get the index number */
         if( ffc2ii(name + 5, &nfield, &tstatus) > 0) /* read index no. */
             return(*status);    /* must not be an indexed keyword */
 
-        if (nfield < 1 || nfield > fptr->tfield )  /* index out of range */
+        if (nfield < 1 || nfield > (fptr->Fptr)->tfield ) /* out of range */
             return(*status);
 
-        colptr = fptr->tableptr;        /* get pointer to columns */
+        colptr = (fptr->Fptr)->tableptr;        /* get pointer to columns */
         colptr = colptr + nfield - 1;   /* point to the correct column */
 
         if (ffc2s(value, tvalue, &tstatus) > 0)  /* remove quotes */
@@ -2748,10 +2802,10 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
         if( ffc2ii(name + 5, &nfield, &tstatus) > 0) /* read index no. */
             return(*status);    /* must not be an indexed keyword */
 
-        if (nfield < 1 || nfield > fptr->tfield )  /* index out of range */
+        if (nfield < 1 || nfield > (fptr->Fptr)->tfield )  /* out of range */
             return(*status);
 
-        colptr = fptr->tableptr;        /* get pointer to columns */
+        colptr = (fptr->Fptr)->tableptr;        /* get pointer to columns */
         colptr = colptr + nfield - 1;   /* point to the correct column */
 
         if (ffc2s(value, tvalue, &tstatus) > 0)  /* remove quotes */
@@ -2760,7 +2814,7 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
         strncpy(colptr->tform, tvalue, 9);  /* copy TFORM to structure */
         colptr->tform[9] = '\0';            /* make sure it is terminated */
 
-        if (fptr->hdutype == ASCII_TBL)  /* ASCII table */
+        if ((fptr->Fptr)->hdutype == ASCII_TBL)  /* ASCII table */
         {
           if (ffasfm(tvalue, &datacode, &width, &decimals, status) > 0)
               return(*status);  /* bad format code */
@@ -2785,13 +2839,13 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
         if( ffc2ii(name + 5, &nfield, &tstatus) > 0) /* read index no. */
             return(*status);    /* must not be an indexed keyword */
 
-        if (nfield < 1 || nfield > fptr->tfield )  /* index out of range */
+        if (nfield < 1 || nfield > (fptr->Fptr)->tfield )  /* out of range */
             return(*status);
 
-        colptr = fptr->tableptr;        /* get pointer to columns */
+        colptr = (fptr->Fptr)->tableptr;        /* get pointer to columns */
         colptr = colptr + nfield - 1;   /* point to the correct column */
 
-        if (fptr->hdutype == BINARY_TBL)
+        if ((fptr->Fptr)->hdutype == BINARY_TBL)
             return(*status);  /* binary tables don't have TBCOL keywords */
 
         if (ffc2ii(value, &ivalue, status) > 0)
@@ -2809,10 +2863,10 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
         if( ffc2ii(name + 5, &nfield, &tstatus) > 0) /* read index no. */
             return(*status);    /* must not be an indexed keyword */
 
-        if (nfield < 1 || nfield > fptr->tfield )  /* index out of range */
+        if (nfield < 1 || nfield > (fptr->Fptr)->tfield )  /* out of range */
             return(*status);
 
-        colptr = fptr->tableptr;        /* get pointer to columns */
+        colptr = (fptr->Fptr)->tableptr;        /* get pointer to columns */
         colptr = colptr + nfield - 1;   /* point to the correct column */
 
         if (ffc2dd(value, &dvalue, status) > 0)
@@ -2830,10 +2884,10 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
         if( ffc2ii(name + 5, &nfield, &tstatus) > 0) /* read index no. */
             return(*status);    /* must not be an indexed keyword */
 
-        if (nfield < 1 || nfield > fptr->tfield )  /* index out of range */
+        if (nfield < 1 || nfield > (fptr->Fptr)->tfield )  /* out of range */
             return(*status);
 
-        colptr = fptr->tableptr;        /* get pointer to columns */
+        colptr = (fptr->Fptr)->tableptr;        /* get pointer to columns */
         colptr = colptr + nfield - 1;   /* point to the correct column */
 
         if (ffc2dd(value, &dvalue, status) > 0)
@@ -2851,13 +2905,13 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
         if( ffc2ii(name + 5, &nfield, &tstatus) > 0) /* read index no. */
             return(*status);    /* must not be an indexed keyword */
 
-        if (nfield < 1 || nfield > fptr->tfield )  /* index out of range */
+        if (nfield < 1 || nfield > (fptr->Fptr)->tfield )  /* out of range */
             return(*status);
 
-        colptr = fptr->tableptr;        /* get pointer to columns */
+        colptr = (fptr->Fptr)->tableptr;        /* get pointer to columns */
         colptr = colptr + nfield - 1;   /* point to the correct column */
 
-        if (fptr->hdutype == ASCII_TBL)  /* ASCII table */
+        if ((fptr->Fptr)->hdutype == ASCII_TBL)  /* ASCII table */
         {
             if (ffc2s(value, tvalue, &tstatus) > 0)  /* remove quotes */
                 return(*status);
@@ -2880,7 +2934,7 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
     }
     else if (!FSTRNCMP(name + 1, "HEAP", 4) )
     {
-        if (fptr->hdutype == ASCII_TBL)  /* ASCII table */
+        if ((fptr->Fptr)->hdutype == ASCII_TBL)  /* ASCII table */
             return(*status);  /* ASCII tables don't have a heap */ 
 
         if (ffc2ii(value, &ivalue, status) > 0) 
@@ -2890,7 +2944,7 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
             ffpmsg(message);
             return(*status);
         }
-        fptr->heapstart = ivalue; /* the starting byte of the heap */
+        (fptr->Fptr)->heapstart = ivalue; /* the starting byte of the heap */
         return(*status);
     }
 
@@ -2928,8 +2982,12 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     char message[81];
     tcolumn *colptr;
 
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     /* rescan header if data structure is undefined */
-    if (fptr->datastart == DATA_UNDEFINED)
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
         if ( ffrdef(fptr, status) > 0)               
             return(*status);
 
@@ -2941,7 +2999,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
         ffpmsg(message);
         return(*status = BAD_ROW_NUM);
     }
-    else if (fptr->hdutype != ASCII_TBL && firstelem < 1)
+    else if ((fptr->Fptr)->hdutype != ASCII_TBL && firstelem < 1)
     {
         sprintf(message, "Starting element number is out of range: %ld",
                 firstelem);
@@ -2955,7 +3013,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
         ffpmsg(message);
         return(*status = NEG_BYTES);
     }
-    else if (colnum < 1 || colnum > fptr->tfield)
+    else if (colnum < 1 || colnum > (fptr->Fptr)->tfield)
     {
         sprintf(message, "Specified column number is out of range: %d",
                 colnum);
@@ -2965,11 +3023,11 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
 
     /*  copy relevant parameters from the structure */
 
-    *hdutype = fptr->hdutype;      /* image, ASCII table, or BINTABLE  */
-    *rowlen   = fptr->rowlength;   /* width of the table, in bytes     */
-    datastart = fptr->datastart;   /* offset in file to start of table */
+    *hdutype = (fptr->Fptr)->hdutype;    /* image, ASCII table, or BINTABLE  */
+    *rowlen   = (fptr->Fptr)->rowlength; /* width of the table, in bytes     */
+    datastart = (fptr->Fptr)->datastart; /* offset in file to start of table */
 
-    colptr  = fptr->tableptr;    /* point to first column */
+    colptr  = (fptr->Fptr)->tableptr;    /* point to first column */
     colptr += (colnum - 1);      /* offset to correct column structure */
 
     *scale    = colptr->tscale;  /* value scaling factor;    default = 1.0 */
@@ -3076,21 +3134,24 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
         *repeat = nelem + *elemnum; /* total no. of elements in the field */
 
         /*  calculate starting position (for writing new data) in the heap */
-        *startpos = datastart + fptr->heapstart + fptr->heapsize;
+        *startpos = datastart + (fptr->Fptr)->heapstart + 
+                    (fptr->Fptr)->heapsize;
 
         /*  write the descriptor into the fixed length part of table */
         if (colptr->tdatatype <= -TCOMPLEX)
         {
           /* divide repeat count by 2 to get no. of complex values */
-          ffpdes(fptr, colnum, firstrow, *repeat / 2, fptr->heapsize, status);
+          ffpdes(fptr, colnum, firstrow, *repeat / 2, (fptr->Fptr)->heapsize,
+                 status);
         }
         else
         {
-          ffpdes(fptr, colnum, firstrow, *repeat,     fptr->heapsize, status);
+          ffpdes(fptr, colnum, firstrow, *repeat,     (fptr->Fptr)->heapsize,
+                 status);
         }
 
         /* increment the address to the next empty heap position */
-        fptr->heapsize += (*repeat * (*incre)); 
+        (fptr->Fptr)->heapsize += (*repeat * (*incre)); 
       }
       else    /*  get the read start position in the heap */
       {
@@ -3109,7 +3170,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
             return(*status = BAD_ELEM_NUM);
         }
 
-        *startpos = *startpos + datastart + fptr->heapstart;
+        *startpos = *startpos + datastart + (fptr->Fptr)->heapstart;
       }
     }
     return(*status);
@@ -3129,11 +3190,14 @@ int ffgdes(fitsfile *fptr, /* I - FITS file pointer                         */
     INT32BIT descript[2];
     tcolumn *colptr;
 
-    if (fptr->datastart == DATA_UNDEFINED)
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
         if ( ffrdef(fptr, status) > 0)               /* rescan header */
             return(*status);
 
-    colptr = fptr->tableptr;  /* point to first column structure */
+    colptr = (fptr->Fptr)->tableptr;  /* point to first column structure */
     colptr += (colnum - 1);   /* offset to the correct column */
 
     if (colptr->tdatatype >= 0)
@@ -3141,8 +3205,8 @@ int ffgdes(fitsfile *fptr, /* I - FITS file pointer                         */
 
     else
     {
-        bytepos = fptr->datastart + (rownum - 1) * fptr->rowlength +
-                  colptr->tbcol;
+        bytepos = (fptr->Fptr)->datastart + (rownum - 1) *
+                  (fptr->Fptr)->rowlength + colptr->tbcol;
 
         ffgi4b(fptr, bytepos, 2, 4, descript, status); /* read descriptor */
 
@@ -3169,11 +3233,14 @@ int ffpdes(fitsfile *fptr, /* I - FITS file pointer                         */
     if (*status > 0)
         return(*status);
 
-    if (fptr->datastart == DATA_UNDEFINED)
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
         if ( ffrdef(fptr, status) > 0)               /* rescan header */
             return(*status);
 
-    colptr = fptr->tableptr;  /* point to first column structure */
+    colptr = (fptr->Fptr)->tableptr;  /* point to first column structure */
     colptr += (colnum - 1);   /* offset to the correct column */
 
     if (colptr->tdatatype >= 0)
@@ -3181,8 +3248,8 @@ int ffpdes(fitsfile *fptr, /* I - FITS file pointer                         */
 
     else
     {
-        bytepos = fptr->datastart + (rownum - 1) * fptr->rowlength +
-                  colptr->tbcol;
+        bytepos = (fptr->Fptr)->datastart + (rownum - 1) * 
+                  (fptr->Fptr)->rowlength + colptr->tbcol;
 
         ffmbyt(fptr, bytepos, IGNORE_EOF, status); /* move to element */
 
@@ -3206,18 +3273,24 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
     char comm[FLEN_COMMENT], message[FLEN_ERRMSG], valstring[FLEN_VALUE];
     char card[FLEN_CARD];
 
-    if (fptr->writemode == 1)  /* write access to the file? */
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+    {
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+        /* no need to do any further updating of the HDU */
+    }
+    else if ((fptr->Fptr)->writemode == 1)  /* write access to the file? */
     {
         /* if data has been written to variable length columns in a  */
         /* binary table, then we may need to update the PCOUNT value */
-        if (fptr->heapsize > 0)
+        if ((fptr->Fptr)->heapsize > 0)
         {
           ffgkyj(fptr, "PCOUNT", &pcount, comm, status);
-          if (fptr->heapsize > pcount)
+          if ((fptr->Fptr)->heapsize > pcount)
           {
             /* would be simpler to just call ffmkyj here, but this */
             /* would force linking in all the modkey & putkey routines */
-            sprintf(valstring, "%ld", fptr->heapsize);
+            sprintf(valstring, "%ld", (fptr->Fptr)->heapsize);
             ffmkky("PCOUNT", valstring, comm, card);
             ffmkey(fptr, card, status);
           }
@@ -3229,16 +3302,15 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
         ffpdfl(fptr, status);  /* insure correct data file values */
     }
 
-    free(fptr->tableptr);      /* free memory for the CHDU structure */
-    fptr->tableptr = 0;
+    free((fptr->Fptr)->tableptr);      /* free memory for the CHDU structure */
+    (fptr->Fptr)->tableptr = 0;
 
     if (*status > 0)
     {
         sprintf(message,
-        "Error while closing HDU number %d (ffchdu).", fptr->curhdu);
+        "Error while closing HDU number %d (ffchdu).", (fptr->Fptr)->curhdu);
         ffpmsg(message);
     }
-
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -3313,7 +3385,15 @@ int ffrdef(fitsfile *fptr,      /* I - FITS file pointer */
 {
     int dummy;
 
-    if (*status <= 0 && fptr->writemode == 1) /* write access to the file? */
+    if (*status > 0)
+        return(*status);
+
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+    {
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    }
+    else if ((fptr->Fptr)->writemode == 1) /* write access to the file? */
     {
         if (ffwend(fptr, status) <= 0)     /* rewrite END keyword and fill */
         {
@@ -3342,10 +3422,16 @@ int ffhdef(fitsfile *fptr,      /* I - FITS file pointer                    */
     if (*status > 0 || morekeys < 1)
         return(*status);
 
-    if (fptr->datastart == DATA_UNDEFINED)
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+    {
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    }
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
     {
       ffrdef(fptr, status);
-      fptr->datastart = ((fptr->headend + (morekeys * 80)) / 2880 + 1) * 2880;
+      (fptr->Fptr)->datastart = (((fptr->Fptr)->headend + (morekeys * 80)) /
+                                2880 + 1) * 2880;
     }
     return(*status);
 }
@@ -3363,14 +3449,16 @@ int ffwend(fitsfile *fptr,       /* I - FITS file pointer */
     if (*status > 0)
         return(*status);
 
-    endpos = fptr->headend;
+    endpos = (fptr->Fptr)->headend;
+
+    /* we assume that the HDUposition == curhdu in all cases */
 
     /*  calc the data starting position if not currently defined */
-    if (fptr->datastart == DATA_UNDEFINED)
-        fptr->datastart = ( endpos / 2880 + 1 ) * 2880;
+    if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        (fptr->Fptr)->datastart = ( endpos / 2880 + 1 ) * 2880;
 
     /* calculate the number of blank keyword slots in the header */
-    nspace = ( fptr->datastart - endpos ) / 80;
+    nspace = ( (fptr->Fptr)->datastart - endpos ) / 80;
     /* construct a blank and END keyword (80 spaces )  */
     strcpy(blankkey, "                                        ");
     strcat(blankkey, "                                        ");
@@ -3390,7 +3478,7 @@ int ffwend(fitsfile *fptr,       /* I - FITS file pointer */
     if (ii == nspace && !tstatus)
     {
         /* check if the END keyword exists at the correct position */
-        endpos=maxvalue( endpos, ( fptr->datastart - 2880 ) );
+        endpos=maxvalue( endpos, ( (fptr->Fptr)->datastart - 2880 ) );
         ffmbyt(fptr, endpos, REPORT_EOF, &tstatus);  /* move to END position */
         ffgbyt(fptr, 80, keyrec, &tstatus); /* read the END keyword */
         if ( !strncmp(keyrec, endkey, 80) && !tstatus)
@@ -3398,7 +3486,7 @@ int ffwend(fitsfile *fptr,       /* I - FITS file pointer */
     }
 
     /* header was not correctly terminated, so write the END and blank fill */
-    endpos = fptr->headend;
+    endpos = (fptr->Fptr)->headend;
     ffmbyt(fptr, endpos, IGNORE_EOF, status); /* move to header end */
     for (ii=0; ii < nspace; ii++)
         ffpbyt(fptr, 80, blankkey, status);  /* write the blank keywords */
@@ -3412,7 +3500,7 @@ int ffwend(fitsfile *fptr,       /* I - FITS file pointer */
     which have not yet been written.
     */
 
-    endpos=maxvalue( endpos, ( fptr->datastart - 2880 ) );
+    endpos=maxvalue( endpos, ( (fptr->Fptr)->datastart - 2880 ) );
     ffmbyt(fptr, endpos, REPORT_EOF, status);  /* move to END position */
 
     ffpbyt(fptr, 80, endkey, status); /*  write the END keyword to header */
@@ -3439,14 +3527,18 @@ int ffpdfl(fitsfile *fptr,      /* I - FITS file pointer */
     if (*status > 0)
         return(*status);
 
-    if (fptr->heapstart == 0)
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        return(*status);      /* fill has already been correctly written */
+
+    if ((fptr->Fptr)->heapstart == 0)
         return(*status);      /* null data unit, so there is no fill */
 
-    fillstart = fptr->datastart + fptr->heapstart + fptr->heapsize;
+    fillstart = (fptr->Fptr)->datastart + (fptr->Fptr)->heapstart +
+                (fptr->Fptr)->heapsize;
 
     nfill = (fillstart + 2879) / 2880 * 2880 - fillstart;
 
-    if (fptr->hdutype == ASCII_TBL)
+    if ((fptr->Fptr)->hdutype == ASCII_TBL)
         chfill = 32;         /* ASCII tables are filled with spaces */
     else
         chfill = 0;          /* all other extensions are filled with zeros */
@@ -3512,12 +3604,16 @@ int ffchfl( fitsfile *fptr, int *status)
    char rec[FLEN_CARD];
    char *blanks="                                                                                ";  /*  80 spaces  */
 
-   if( *status>0 ) return (*status);
+   if( *status > 0 ) return (*status);
+
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
    /*   calculate the number of blank keyword slots in the header  */
 
-   endpos=fptr->headend;
-   nblank=(fptr->datastart-endpos)/80;
+   endpos=(fptr->Fptr)->headend;
+   nblank=((fptr->Fptr)->datastart-endpos)/80;
 
    /*   move the i/o pointer to the end of the header keywords   */
 
@@ -3538,13 +3634,15 @@ int ffchfl( fitsfile *fptr, int *status)
          if( strncmp( rec+8, blanks+8, 72) ) {
             /*   END keyword has extra characters   */
             *status=END_JUNK;
-            ffpmsg("Warning: END keyword contains extraneous non-blank characters:");
+            ffpmsg(
+            "Warning: END keyword contains extraneous non-blank characters:");
          }
       } else if( gotend ) {
          if( strncmp( rec, blanks, 80 ) ) {
             /*   The fill area contains extraneous characters   */
             *status=BAD_HEADER_FILL;
-            ffpmsg("Warning: Header fill area contains extraneous non-blank characters:");
+            ffpmsg(
+         "Warning: Header fill area contains extraneous non-blank characters:");
          }
       }
 
@@ -3578,13 +3676,17 @@ int ffcdfl( fitsfile *fptr, int *status)
 
    if( *status > 0 ) return( *status );
 
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
    /*   check if the data unit is null   */
-   if( fptr->heapstart==0 ) return( *status );
+   if( (fptr->Fptr)->heapstart==0 ) return( *status );
 
    /* calculate starting position of the fill bytes, if any */
-   filpos = fptr->datastart 
-          + fptr->heapstart 
-          + fptr->heapsize;
+   filpos = (fptr->Fptr)->datastart 
+          + (fptr->Fptr)->heapstart 
+          + (fptr->Fptr)->heapsize;
 
    /*   calculate the number of fill bytes   */
    nfill = (filpos + 2879) / 2880 * 2880 - filpos;
@@ -3599,7 +3701,7 @@ int ffcdfl( fitsfile *fptr, int *status)
       return( *status );
    }
 
-   if( fptr->hdutype==ASCII_TBL )
+   if( (fptr->Fptr)->hdutype==ASCII_TBL )
       chfill = 32;         /* ASCII tables are filled with spaces */
    else
       chfill = 0;          /* all other extensions are filled with zeros */
@@ -3609,7 +3711,7 @@ int ffcdfl( fitsfile *fptr, int *status)
    for(i=0;i<nfill;i++) {
       if( chbuff[i] != chfill ) {
          *status=BAD_DATA_FILL;
-         if( fptr->hdutype==ASCII_TBL )
+         if( (fptr->Fptr)->hdutype==ASCII_TBL )
             ffpmsg("Warning: remaining bytes following ASCII table data are not filled with blanks.");
          else
             ffpmsg("Warning: remaining bytes following data are not filled with zeros.");
@@ -3631,7 +3733,7 @@ int ffcrhd(fitsfile *fptr,      /* I - FITS file pointer */
 
     if (*status > 0)
         return(*status);
-    else if (fptr->maxhdu == MAXHDU)
+    else if ((fptr->Fptr)->maxhdu == MAXHDU)
     {
         *status = BAD_HDU_NUM;       /* too many HDUs in file */
         return(*status);
@@ -3643,13 +3745,14 @@ int ffcrhd(fitsfile *fptr,      /* I - FITS file pointer */
 
     if (ffchdu(fptr, status) <= 0)  /* close the current HDU */
     {
-      bytepos = fptr->headstart[ fptr->maxhdu + 1 ];  /* last known HDU */
+      bytepos = (fptr->Fptr)->headstart[(fptr->Fptr)->maxhdu + 1]; /* last */
       ffmbyt(fptr, bytepos, IGNORE_EOF, status);  /* move file ptr to it */
-      fptr->maxhdu++;       /* increment the known number of HDUs */
-      fptr->curhdu = fptr->maxhdu;      /* set current HDU location */
-      fptr->nextkey = bytepos;          /* next keyword = start of header */
-      fptr->headend = bytepos;          /* end of header */
-      fptr->datastart = DATA_UNDEFINED; /* start of data unit undefined */
+      (fptr->Fptr)->maxhdu++;       /* increment the known number of HDUs */
+      (fptr->Fptr)->curhdu = (fptr->Fptr)->maxhdu; /* set current HDU loc */
+      fptr->HDUposition    = (fptr->Fptr)->maxhdu; /* set current HDU loc */
+      (fptr->Fptr)->nextkey = bytepos;    /* next keyword = start of header */
+      (fptr->Fptr)->headend = bytepos;          /* end of header */
+      (fptr->Fptr)->datastart = DATA_UNDEFINED; /* start data unit undefined */
     }
     return(*status);
 }
@@ -3673,7 +3776,7 @@ int ffdblk(fitsfile *fptr,      /* I - FITS file pointer                    */
     tstatus = 0;
 
     /* pointers to the read and write positions */
-    readpos = fptr->headstart[(fptr->curhdu) + 1];
+    readpos = (fptr->Fptr)->headstart[((fptr->Fptr)->curhdu) + 1];
     writepos = readpos - (nblocks * 2880);
 
     while ( !ffmbyt(fptr, readpos, REPORT_EOF, &tstatus) &&
@@ -3703,8 +3806,8 @@ int ffdblk(fitsfile *fptr,      /* I - FITS file pointer                    */
     fftrun(fptr, writepos, status);
 
     /* recalculate the starting location of all subsequent HDUs */
-    for (ii = fptr->curhdu; ii <= fptr->maxhdu; ii++)
-         fptr->headstart[ii + 1] -= (2880 * nblocks);
+    for (ii = (fptr->Fptr)->curhdu; ii <= (fptr->Fptr)->maxhdu; ii++)
+         (fptr->Fptr)->headstart[ii + 1] -= (2880 * nblocks);
 
     return(*status);
 }
@@ -3716,16 +3819,20 @@ int ffghdt(fitsfile *fptr,      /* I - FITS file pointer             */
   Return the type of the CHDU.
 */
 {
-
     if (*status > 0)
         return(*status);
 
-    /* rescan header if data structure is undefined */
-    if (fptr->datastart == DATA_UNDEFINED)
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+    {
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    }
+        /* rescan header if data structure is undefined */
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
         if ( ffrdef(fptr, status) > 0)               
             return(*status);
 
-    *exttype = fptr->hdutype; /* return the type of HDU */
+    *exttype = (fptr->Fptr)->hdutype; /* return the type of HDU */
 
     return(*status);
 }
@@ -3748,14 +3855,18 @@ int ffmahd(fitsfile *fptr,      /* I - FITS file pointer             */
     else if (hdunum < 1 || hdunum >= MAXHDU )
         return(*status = BAD_HDU_NUM);
 
-    while( (fptr->curhdu) + 1 != hdunum) /* at the correct HDU? */
+    /* set logical HDU position to the actual position, incase they differ */
+    fptr->HDUposition = (fptr->Fptr)->curhdu;
+
+    while( ((fptr->Fptr)->curhdu) + 1 != hdunum) /* at the correct HDU? */
     {
         /* move directly to the extension if we know that it exists,
            otherwise move to the highest known extension.  */
         
-        moveto = minvalue(hdunum - 1, (fptr->maxhdu) + 1);
+        moveto = minvalue(hdunum - 1, ((fptr->Fptr)->maxhdu) + 1);
 
-        if (fptr->headstart[moveto] < fptr->logfilesize )  /* test if HDU exists */
+        /* test if HDU exists */
+        if ((fptr->Fptr)->headstart[moveto] < (fptr->Fptr)->logfilesize )
         {
             if (ffchdu(fptr, status) <= 0)  /* close out the current HDU */
             {
@@ -3779,7 +3890,7 @@ int ffmahd(fitsfile *fptr,      /* I - FITS file pointer             */
     }
 
     if (exttype != NULL)
-        *exttype = fptr->hdutype; /* return the type of HDU */
+        *exttype = (fptr->Fptr)->hdutype; /* return the type of HDU */
 
     return(*status);
 }
@@ -3798,7 +3909,7 @@ int ffmrhd(fitsfile *fptr,      /* I - FITS file pointer                    */
     if (*status > 0)
         return(*status);
 
-    extnum = fptr->curhdu + 1 + hdumov;  /* the absolute HDU number */
+    extnum = fptr->HDUposition + 1 + hdumov;  /* the absolute HDU number */
     ffmahd(fptr, extnum, exttype, status);  /* move to the HDU */
 
     return(*status);
@@ -3823,7 +3934,7 @@ int ffmnhd(fitsfile *fptr,      /* I - FITS file pointer                    */
     if (*status > 0)
         return(*status);
 
-    extnum = fptr->curhdu + 1;  /* save the current HDU number */
+    extnum = fptr->HDUposition + 1;  /* save the current HDU number */
 
     for (ii=1; 1; ii++)    /* loop until EOF */
     {
@@ -3847,11 +3958,15 @@ int ffmnhd(fitsfile *fptr,      /* I - FITS file pointer                    */
                 if (ffgkyj(fptr, "EXTVER", &extver, 0, &tstatus) > 0)
                     extver = 1;  /* assume default EXTVER value */
 
-                if ( (int) extver == hduver)  
+                if ( (int) extver == hduver)
+                {
                     return(*status);    /* found matching name and vers */
+                }
               }
               else
-                return(*status); /* found matching name */
+              {
+                  return(*status);    /* found matching name */
+              }
             }
           }
         }
@@ -3871,10 +3986,11 @@ int ffthdu(fitsfile *fptr,      /* I - FITS file pointer                    */
     if (*status > 0)
         return(*status);
 
-    extnum = fptr->curhdu + 1;  /* save the current HDU number */
+    extnum = fptr->HDUposition + 1;  /* save the current HDU number */
     tstatus = 0;
 
-    for (ii=extnum; ffmahd(fptr, ii, 0, &tstatus) <= 0; ii++) /* loop until EOF */
+    /* loop until EOF */
+    for (ii=extnum; ffmahd(fptr, ii, 0, &tstatus) <= 0; ii++)
     {
         *nhdu = ii;
     }
@@ -3899,23 +4015,25 @@ int ffgext(fitsfile *fptr,      /* I - FITS file pointer                */
     if (*status > 0)
         return(*status);
 
-    if (ffmbyt(fptr, fptr->headstart[hdunum], REPORT_EOF, status) <= 0)
+    if (ffmbyt(fptr, (fptr->Fptr)->headstart[hdunum], REPORT_EOF, status) <= 0)
     {
         /* temporarily save current values, in case of error */
-        xcurhdu = fptr->curhdu;
-        xmaxhdu = fptr->maxhdu;
-        xheadend = fptr->headend;
+        xcurhdu = (fptr->Fptr)->curhdu;
+        xmaxhdu = (fptr->Fptr)->maxhdu;
+        xheadend = (fptr->Fptr)->headend;
 
         /* set new parameter values */
-        fptr->curhdu = hdunum;
-        fptr->maxhdu = maxvalue(fptr->maxhdu, hdunum);
-        fptr->headend = 2000000000; /* set header end to huge value for now */
+        (fptr->Fptr)->curhdu = hdunum;
+        fptr->HDUposition    = hdunum;
+        (fptr->Fptr)->maxhdu = maxvalue((fptr->Fptr)->maxhdu, hdunum);
+        (fptr->Fptr)->headend = 2000000000; /* set end to huge value for now */
 
         if (ffrhdu(fptr, exttype, status) > 0)
         {   /* failed to get the new HDU, so restore previous values */
-            fptr->curhdu = xcurhdu;
-            fptr->maxhdu = xmaxhdu;
-            fptr->headend = xheadend;
+            (fptr->Fptr)->curhdu = xcurhdu;
+            fptr->HDUposition    = xcurhdu;
+            (fptr->Fptr)->maxhdu = xmaxhdu;
+            (fptr->Fptr)->headend = xheadend;
         }
     }
     return(*status);
@@ -3941,16 +4059,16 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
         
     tstatus = *status;
 
-    if (headdata == 0 || fptr->hdutype == ASCII_TBL)
+    if (headdata == 0 || (fptr->Fptr)->hdutype == ASCII_TBL)
         charfill = 32;  /* headers and ASCII tables have space (32) fill */
     else
         charfill = 0;   /* images and binary tables have zero fill */
 
 
     if (headdata == 0)  
-        insertpt = fptr->datastart;  /* insert just before data, or */
-    else
-        insertpt = fptr->headstart[fptr->curhdu + 1]; /* before next HDU */
+        insertpt = (fptr->Fptr)->datastart;  /* insert just before data, or */
+    else         /* before next HDU */
+        insertpt = (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu + 1]; 
 
     inbuff = buff1;   /* set pointers to input and output buffers */
     outbuff = buff2;
@@ -3987,7 +4105,7 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
     else   /*  inserting more than 1 block */
 
     {
-        savehdu = fptr->curhdu;  /* save the current HDU number */
+        savehdu = (fptr->Fptr)->curhdu;  /* save the current HDU number */
         tstatus = *status;
         while(*status <= 0)  /* find the last HDU in file */
               ffmrhd(fptr, 1, &typhdu, status);
@@ -4001,9 +4119,10 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
         ffmahd(fptr, savehdu + 1, &typhdu, status);  /* move back to CHDU */
 
         /* number of 2880-byte blocks that have to be shifted down */
-        nshift = (fptr->headstart[fptr->maxhdu + 1] - insertpt) / 2880;
+        nshift = ((fptr->Fptr)->headstart[(fptr->Fptr)->maxhdu + 1] - insertpt)
+                 / 2880;
         /* position of last block in file to be shifted */
-        jpoint =  fptr->headstart[fptr->maxhdu + 1] - 2880;
+        jpoint =  (fptr->Fptr)->headstart[(fptr->Fptr)->maxhdu + 1] - 2880;
 
         /* move all the blocks starting at end of file working backwards */
         for (ii = 0; ii < nshift; ii++)
@@ -4030,40 +4149,14 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
     }
 
     if (headdata == 0)         /* update data start address */
-      fptr->datastart += (nblock * 2880);
+      (fptr->Fptr)->datastart += (nblock * 2880);
 
     /* update following HDU addresses */
-    for (ii = fptr->curhdu; ii <= fptr->maxhdu; ii++)
-         fptr->headstart[ii + 1] += (2880 * nblock);
+    for (ii = (fptr->Fptr)->curhdu; ii <= (fptr->Fptr)->maxhdu; ii++)
+         (fptr->Fptr)->headstart[ii + 1] += (2880 * nblock);
 
     return(*status);
 }
-/*--------------------------------------------------------------------------*/
-int ffgsdt( int *day, int *month, int *year2, int *status )
-{  
-/**********************************************************************
-   ffgsdt : Get current System DaTe
-
-      Return integer values of the day, month, and year
-
-         Function parameters:
-            day      Day of the month
-            month    Numerical month (1=Jan, etc.)
-            year2    Last 2 digits of year (Yr2000 problems?)
-            status   output error status
-
-**********************************************************************/
-   time_t now;
-   struct tm *date;
-
-   now = time( NULL );
-   date = localtime( &now );
-   *day = date->tm_mday;
-   *month = date->tm_mon + 1;
-   *year2 = date->tm_year%100;  /* tm_year is defined as years since 1900 */
-   return( *status );
-}
-
 /*--------------------------------------------------------------------------*/
 int ffdtyp(char *cval,  /* I - formatted string representation of the value */
            char *dtype, /* O - datatype code: C, L, F or I */

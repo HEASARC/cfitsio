@@ -717,7 +717,7 @@ FCALLSCSUB3(ffdrec,FTDREC,ftdrec,FITSUNIT,INT,PINT)
 /*--------------------- get HDU information -------------*/
 FCALLSCSUB2(ffghdn,FTGHDN,ftghdn,FITSUNIT,PINT)
 FCALLSCSUB3(ffghdt,FTGHDT,ftghdt,FITSUNIT,PINT,PINT)
-FCALLSCSUB3(ffghad,FTGHAD,ftghad,FITSUNIT,PLONG,PLONG)
+FCALLSCSUB5(ffghad,FTGHAD,ftghad,FITSUNIT,PLONG,PLONG,PLONG,PINT)
 
 /*--------------------- HDU operations -------------*/
 FCALLSCSUB4(ffmahd,FTMAHD,ftmahd,FITSUNIT,INT,PINT,PINT)

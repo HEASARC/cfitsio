@@ -84,11 +84,13 @@ The general form of the binning specification is:
     [bin  Xcol=min:max:binsize, Ycol= ..., Zcol=..., Tcol=...]
 
 in which up to 4 columns, each corresponding to an axis of the image,
-may be specified.  The column names are case insensitive and the min,
-max, and bin size values may be integer or floating point numbers.  Spaces
-are allowed before and after the equals sign but not within the
-'min:max:binsize string'.  Each column specification is separated by
-a comma and/or spaces.
+may be specified.  Instead of specifying the column name, one may also
+specify the number of the column to bin, as in [bin #4=1:512].  The
+column names are case insensitive and the min, max, and bin size values
+may be integer or floating point numbers.  Spaces are allowed before
+and after the equals sign but not within the 'min:max:binsize string'.
+Each column specification is separated by a comma and/or spaces
+.
 
 Default values for any of the quantities will be substituted if not
 explicitly given in the binning expression.  If no column names are
