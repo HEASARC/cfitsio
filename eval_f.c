@@ -2011,7 +2011,7 @@ static int find_column( char *colName, void *itslval )
 {
    FFSTYPE *thelval = (FFSTYPE*)itslval;
    int col_cnt, status;
-   int colnum, typecode, type;
+   int colnum, typecode, type, hdutype;
    long repeat, width;
    fitsfile *fptr;
 
@@ -2075,6 +2075,8 @@ static int find_column( char *colName, void *itslval )
       gParse.varData[col_cnt].type     = STRING;
       gParse.colData[col_cnt].datatype = TSTRING;
       type = SCOLUMN;
+      fits_get_hdu_type( fptr, &hdutype, &status );
+      if( hdutype == ASCII_TBL ) repeat = width;
       break;
    default:
       gParse.status = PARSE_BAD_TYPE;
