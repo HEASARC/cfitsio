@@ -1,8 +1,36 @@
                    Log of Changes Made to CFITSIO
 
-Version 2.202 -  22 May 2001   (FTOOLS V5.1)
+Version 2.203 -  19 July 2001 (version in FTOOLS v5.1)
 
-  Enhancements
+  Enhancements:
+
+   - When a row selection or calculator expression is written in
+     an external file (and read by CFITSIO with the '@filename' syntax)
+     the file can now contain comment lines.  The comment line must
+     begin with 2 slash characters as the first 2 characters on the
+     line.  CFITSIO will ignore the entire line when reading the
+     expression.
+
+  Bug fixes:
+
+   - With previous versions of CFITSIO, the pixel values in a FITS
+     image could be read incorrectly in the following case: when
+     opening a subset of a FITS image (using the
+     'filename.fits[Xmin:Xmax,Ymin:Ymax]' notation) on a PC linux, PC
+     Windows, or DEC OSF machine (but not on a SUN or Mac).  This
+     problem only occurs when reading more than 8640 bytes of data
+     (2160 4-byte integers) at a time, and usually only occurs if the
+     reading program reads the pixel data immediately after opening the
+     file, without first reading any header keywords.  This error would
+     cause strips of zero valued pixels to appear at semi-random
+     positions in the image, where each strip usually would be 2880
+     bytes long.  This problem does not affect cases where the input
+     subsetted image is simply copied to a new output FITS file.
+
+
+Version 2.202 -  22 May 2001
+
+  Enhancements:
 
    - revised the logic in the routine that tests if a point is
      within a region:  if the first region is an excluded region,
