@@ -1798,7 +1798,7 @@ int ffptdm( fitsfile *fptr, /* I - FITS file pointer                        */
     if (colptr->trepeat != totalpix)
     {
       sprintf(message,
-      "column vector length, %d, does not equal TDIMn array size, %ld",
+      "column vector length, %ld, does not equal TDIMn array size, %ld",
       colptr->trepeat, totalpix);
       ffpmsg(message);
       return(*status = BAD_TDIM);
@@ -2367,6 +2367,9 @@ int ffs2c(char *instr,   /* I - null terminated input string  */
         return(*status);
 
     outstr[0] = '\'';      /* start output string with a quote */
+
+    if (!instr)            /* a null input pointer?? */
+       return(*status);
 
     len = strlen(instr);
     if (len > 68)

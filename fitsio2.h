@@ -724,8 +724,10 @@ int mem_createmem(size_t memsize, int *handle);
 int stdin_checkfile(char *urltype, char *infile, char *outfile);
 int stdin_open(char *filename, int rwmode, int *handle);
 int stdin2mem(int hd);
+int stdin2file(int hd);
 int stdout_close(int handle);
 int mem_compress_open(char *filename, int rwmode, int *hdl);
+int mem_iraf_open(char *filename, int rwmode, int *hdl);
 int mem_size(int handle, long *filesize);
 int mem_truncate(int handle, long filesize);
 int mem_close_free(int handle);
@@ -735,8 +737,10 @@ int mem_read(int hdl, void *buffer, long nbytes);
 int mem_write(int hdl, void *buffer, long nbytes);
 int mem_uncompress2mem(char *filename, FILE *diskfile, int hdl);
 
+int iraf2mem(char *filename, char **buffptr, size_t *buffsize, 
+      size_t *filesize, int *status);
+
 /* root driver I/O routines */
-/* file driver I/O routines */
 
 int root_init(void);
 int root_setoptions(int options);

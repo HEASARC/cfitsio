@@ -163,7 +163,6 @@ int ffirow(fitsfile *fptr,  /* I - FITS file pointer                        */
     int tstatus;
     long naxis1, naxis2;
     long datasize, freespace, firstbyte, nshift, nblock, nbytes;
-    char comm[FLEN_COMMENT];
 
     if (*status > 0)
         return(*status);
@@ -190,10 +189,6 @@ int ffirow(fitsfile *fptr,  /* I - FITS file pointer                        */
         return(*status);   /* no op, so just return */
 
     /* get the current size of the table */
-/*
-    ffgkyj(fptr, "NAXIS1", &naxis1, comm, status);
-    ffgkyj(fptr, "NAXIS2", &naxis2, comm, status); 
-*/
     /* use internal structure since NAXIS2 keyword may not be up to date */
     naxis1 = (fptr->Fptr)->rowlength;
     naxis2 = (fptr->Fptr)->numrows;

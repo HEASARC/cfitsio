@@ -12,16 +12,17 @@ this document.]
  
 CFITSIO is a machine-independent library of routines for reading and
 writing data files in the FITS (Flexible Image Transport System) data
-format.  This library is written in ANSI C and provides a powerful yet
-simple interface for accessing FITS files which will run on most
-commonly used computers and workstations. CFITSIO supports all the
-features described in the official NOST definition of the FITS format
-and can read and write all the currently defined types of extensions,
-including ASCII tables (TABLE), Binary tables (BINTABLE) and IMAGE
-extensions.  The CFITSIO routines insulate the programmer from having
-to deal with the complicated formatting details in the FITS file,
-however, it is assumed that users have a general knowledge about the
-structure and usage of FITS files.
+format.  It can also read IRAF format image files by converting them on
+the fly into a temporary FITS format file.  This library is written in
+ANSI C and provides a powerful yet simple interface for accessing FITS
+files which will run on most commonly used computers and workstations.
+CFITSIO supports all the features described in the official NOST
+definition of the FITS format and can read and write all the currently
+defined types of extensions, including ASCII tables (TABLE), Binary
+tables (BINTABLE) and IMAGE extensions.  The CFITSIO routines insulate
+the programmer from having to deal with the complicated formatting
+details in the FITS file, however, it is assumed that users have a
+general knowledge about the structure and usage of FITS files.
 
 CFITSIO also contains a set of Fortran callable wrapper routines which
 allow Fortran programs to call the CFITSIO routines.  See the companion
@@ -347,6 +348,9 @@ further description of the AXAF Data Model.
 The file decompression code were taken directly from the gzip (GNU zip)
 program developed by Jean-loup Gailly and others.
 
+Doug Mink, SAO, provided the routines for converting IRAF format 
+images into FITS format.
+
 In addition, many other people have made valuable contributions to the
 development of CFITSIO.  These include (with apologies to others I may
 have inadvertently omitted):
@@ -487,12 +491,20 @@ required keywords and their allowed values.
 
 **A.  Overview
 
-CFITSIO supports an extended syntax when specifying FITS file names
-that includes the following features:
+CFITSIO supports an extended syntax when specifying the name of the
+data file to be opened or created  that includes the following
+features:
 
 \begin{itemize}
 \item
+CFITSIO can read IRAF format images which have header file names that
+end with the '.imh' extension, as well as reading and writing FITS
+files,   This feature is implemented in CFITSIO by first converting the
+IRAF image into a temporary FITS format file in memory, then opening
+the FITS file.  Any of the usual CFITSIO routines then may be used to
+read the image header or data.
 
+\item
 FITS files on the internet can be read (and sometimes written) using the FTP,
 HTTP, or ROOT protocols.
 
@@ -547,6 +559,11 @@ give a quick overview of the allowed syntax:
 \item
 {\tt 'myfile.fits'}: the simplest case of a FITS file on disk in the current
 directory.
+
+\item
+{\tt 'myfile.imh'}: opens an IRAF format image file and converts it on the
+fly into a temporary FITS format image in memory which can then be read with
+any other CFITSIO routine.
 
 \item
 {\tt 'myfile.fits.gz[events, 2]'}:  opens and uncompresses the file

@@ -1366,7 +1366,7 @@ int ffdtdm(fitsfile *fptr,  /* I - FITS file pointer                        */
         if (colptr->trepeat != totalpix)
         {
           sprintf(message,
-          "column vector length, %d, does not equal TDIMn array size, %ld",
+          "column vector length, %ld, does not equal TDIMn array size, %ld",
           colptr->trepeat, totalpix);
           ffpmsg(message);
           ffpmsg(tdimstr);

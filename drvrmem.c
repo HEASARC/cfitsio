@@ -148,11 +148,14 @@ int mem_createmem(size_t msize, int *handle)
     memTable[ii].memsizeptr = &memTable[ii].memsize;
 
     /* allocate initial block of memory for the file */
-    memTable[ii].memaddr = malloc(msize); 
-    if ( !(memTable[ii].memaddr) )
+    if (msize > 0)
     {
-        ffpmsg("malloc of initial memory failed (mem_createmem)");
-        return(FILE_NOT_OPENED);
+        memTable[ii].memaddr = malloc(msize); 
+        if ( !(memTable[ii].memaddr) )
+        {
+            ffpmsg("malloc of initial memory failed (mem_createmem)");
+            return(FILE_NOT_OPENED);
+        }
     }
 
     /* set initial state of the file */
@@ -546,6 +549,43 @@ int mem_compress_open(char *filename, int rwmode, int *hdl)
         *(memTable[*hdl].memaddrptr) = ptr;
         *(memTable[*hdl].memsizeptr) = memTable[*hdl].fitsfilesize;
     }
+
+    return(0);
+}
+/*--------------------------------------------------------------------------*/
+int mem_iraf_open(char *filename, int rwmode, int *hdl)
+/*
+  This routine creates an empty memory buffer, then calls iraf2mem to
+  open the IRAF disk file and convert it to a FITS file in memeory.
+*/
+{
+    FILE *diskfile;
+    int status;
+    size_t filesize = 0;
+    char *ptr;
+
+    /* create a memory file with size = 0 for the FITS converted IRAF file */
+    status = mem_createmem(filesize, hdl);
+    if (status)
+    {
+        fclose(diskfile);
+        ffpmsg("failed to create empty memory file (mem_iraf_open)");
+        return(status);
+    }
+
+    /* convert the iraf file into a FITS file in memory */
+    status = iraf2mem(filename, memTable[*hdl].memaddrptr,
+                      memTable[*hdl].memsizeptr, &filesize, &status);
+
+    if (status)
+    {
+        mem_close_free(*hdl);   /* free up the memory */
+        ffpmsg("failed to convert IRAF file into memory (mem_iraf_open)");
+        return(status);
+    }
+
+    memTable[*hdl].currentpos = 0;           /* save starting position */
+    memTable[*hdl].fitsfilesize=filesize;   /* and initial file size  */
 
     return(0);
 }

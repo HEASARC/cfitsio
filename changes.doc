@@ -1,5 +1,7 @@
                Log of Changes Made to CFITSIO
 
+   - added support for reading IRAF format image (.imh files)
+
    - added more error checking to return an error if the size of the FITS
      file exceeds the largest value of a long integer (2.1 GB on 32-bit
      platforms).

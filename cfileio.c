@@ -252,8 +252,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
   Open an existing FITS file with either readonly or read/write access.
 */
 {
-    fitsfile *copyfptr;
-    int ii, driver, hdutyp, slen, writecopy, isopen;
+    int  driver, hdutyp, slen, writecopy, isopen;
     long filesize;
     int extnum, extvers, handle, movetotype;
     char urltype[MAX_PREFIX_LEN], infile[FLEN_FILENAME], outfile[FLEN_FILENAME];
@@ -338,6 +337,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     if (*status > 0)
     {
         ffpmsg("could not find driver for this file: (ffopen)");
+        ffpmsg(urltype);
         ffpmsg(url);
         return(*status);
     }
@@ -969,7 +969,7 @@ int ffedit_columns(
                     *status = 0;
                     if (ffmnam(*fptr, oldname, colname, status) > 0)
                     {
-                        ffpmsg("column or keyword to be renamed does not exist:");
+                      ffpmsg("column or keyword to be renamed does not exist:");
                         ffpmsg(clause);
                         if( file_expr ) free( file_expr );
                         return(*status);
@@ -978,7 +978,7 @@ int ffedit_columns(
             }  
             else
             {
-                /* this must be a general column/keyword calculation expression */
+                /* this must be a general column/keyword calc expression */
                 /* "name = expression" or "colname(TFORM) = expression" */
 
                 /* parse the name and TFORM values, if present */
@@ -1437,6 +1437,31 @@ int fits_init_cfitsio(void)
     if (status)
     {
         ffpmsg("failed to register the stdout:// driver (init_cfitsio)");
+        return(status);
+    }
+
+    /*------------------iraf disk file to memory driver -----------*/
+    status = fits_register_driver("irafmem://",
+            mem_init,
+            mem_shutdown,
+            mem_setoptions,
+            mem_getoptions, 
+            mem_getversion,
+            NULL,            /* checkfile not needed */ 
+            mem_iraf_open,
+            NULL,            /* create function not required */
+            mem_truncate,
+            mem_close_free,
+            NULL,            /* remove function not required */
+            mem_size,
+            NULL,            /* flush function not required */
+            mem_seek,
+            mem_read,
+            mem_write);
+
+    if (status)
+    {
+        ffpmsg("failed to register the irafmem:// driver (init_cfitsio)");
         return(status);
     }
 
@@ -1962,6 +1987,17 @@ int ffiurl(char *url,
             else
                 break;
         }
+    }
+
+
+    /* --------------------------------------------- */
+    /* check if this is an IRAF file (.imh extension */
+    /* --------------------------------------------- */
+
+    if (strstr(infile, ".imh"))
+    {
+        if (urltype)
+            strcpy(urltype, "irafmem://");
     }
 
     /* --------------------------------------------- */

@@ -5,46 +5,61 @@ $ cc buffers.c
 $ cc cfileio.c
 $ cc checksum.c
 $ cc compress.c
+$ cc drvrfile.c
+$ cc drvrmem.c
+$ ! cc drvrnet.c   not currently supported on VMS
+$ ! cc drvsmem.c   not currently supported on VMS
+$ cc editcol.c
+$ cc edithdu.c
+$ cc eval_f.c
+$ cc eval_l.c
+$ cc eval_y.c
+$ cc fitscore.c
 $ cc f77_wrap1.c
 $ cc f77_wrap2.c
-$ cc fitscore.c
 $ cc getcol.c
 $ cc getcolb.c
 $ cc getcoli.c
 $ cc getcolj.c
 $ cc getcolui.c
 $ cc getcoluj.c
+$ cc getcoluk.c
 $ cc getcolk.c
 $ cc getcole.c
 $ cc getcold.c
 $ cc getcoll.c
 $ cc getcols.c
-$ cc editcol.c
-$ cc edithdu.c
 $ cc getkey.c
+$ cc group.c
+$ cc histo.c
+$ cc iraffits.c
 $ cc modkey.c
 $ cc putcol.c
 $ cc putcolb.c
 $ cc putcoli.c
 $ cc putcolj.c
+$ cc putcolk.c
 $ cc putcolui.c
 $ cc putcoluj.c
-$ cc putcolk.c
+$ cc putcoluk.c
 $ cc putcole.c
 $ cc putcold.c
 $ cc putcols.c
 $ cc putcoll.c
 $ cc putcolu.c
 $ cc putkey.c
+$ cc region.c
 $ cc scalnull.c
 $ cc swapproc.c
 $ cc wcsutil.c
-$ lib/create cfitsio buffers,cfileio,checksum,compress,f77_wrap1,f77_wrap2,fitscore
-$ lib/insert cfitsio getcol,getcolb,getcoli,getcolj,getcolk,getcole,getcold
-$ lib/insert cfitsio getcoll,getcols,editcol,edithdu,getkey,modkey,putcol
-$ lib/insert cfitsio putcolb,putcoli,putcolj,putcolk,putcole,putcold
-$ lib/insert cfitsio getcolui,getcoluj,putcolui,putcoluj
-$ lib/insert cfitsio putcols,putcoll,putcolu,putkey,scalnull,swapproc,wcsutil
+$ lib/create cfitsio buffers,cfileio,checksum,compress,drvrfile,drvrmem
+$ lib/insert cfitsio editcol,edithdu,eval_f,eval_l,eval_y,f77_wrap1,f77_wrap2
+$ lib/insert cfitsio fitscore,getcol,getcolb,getcoli,getcolj,getcolk,getcole
+$ lib/insert cfitsio getcold,getcoll,getcols,getcolui,getcoluj,getcoluk
+$ lib/insert cfitsio getkey,group,histo,iraffits,modkey,putcol,putcolb
+$ lib/insert cfitsio putcoli,putcolj,putcolk,putcole,putcold,putcolui
+$ lib/insert cfitsio putcoluj,putcoluk,putcols,putcoll,putcolu,putkey,region
+$ lib/insert cfitsio scalnull,swapproc,wcsutil
 $ ! 
 $ if (F$GETSYI("ARCH_NAME") .eqs. "VAX") then goto VAX
 $   set noverify
