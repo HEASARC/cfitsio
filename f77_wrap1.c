@@ -70,8 +70,11 @@ FCALLSCSUB2(Cfffiou,FTFIOU,ftfiou,INT,PINT)
 void Cffopen( fitsfile **fptr, const char *filename, int iomode, int *blocksize, int *status );
 void Cffopen( fitsfile **fptr, const char *filename, int iomode, int *blocksize, int *status )
 {
+   int hdutype;
+
    if( *fptr==NULL || *fptr==(fitsfile*)1 ) {
       ffopen( fptr, filename, iomode, status );
+      ffmahd( *fptr, 1, &hdutype, status );
       *blocksize = 1;
    } else {
       *status = FILE_NOT_OPENED;
