@@ -4131,7 +4131,10 @@ int ffrdef(fitsfile *fptr,      /* I - FITS file pointer */
           /* and if the user has not explicitly reset the NAXIS2 value */
           if ((fptr->Fptr)->hdutype != IMAGE_HDU)
           {
-            ffgkyj(fptr, "NAXIS2", &naxis2, comm, status);
+            if (ffgkyj(fptr, "NAXIS2", &naxis2, comm, status) > 0)
+            {
+                return(*status = 0);
+            }
 
             if ((fptr->Fptr)->numrows > naxis2
               && (fptr->Fptr)->origrows == naxis2)
