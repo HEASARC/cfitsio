@@ -113,6 +113,8 @@ static int  New_Deref ( int Var,  int nDim,
 			int Dim1, int Dim2, int Dim3, int Dim4, int Dim5 );
 static int  New_GTI   ( char *fname, int Node1, char *start, char *stop );
 static int  New_REG   ( char *fname, int NodeX, int NodeY, char *colNames );
+static int  New_Vector( int Node );
+static int  Close_Vec ( int Node );
 static int  Locate_Col( Node *this );
 static int  Test_Dims ( int Node1, int Node2 );
 
@@ -127,6 +129,7 @@ static void Do_Func      ( Node *this );
 static void Do_Deref     ( Node *this );
 static void Do_GTI       ( Node *this );
 static void Do_REG       ( Node *this );
+static void Do_Vector    ( Node *this );
 
 static long Search_GTI   ( double evtTime, long nGTI, double *start,
 			   double *stop, int ordered );
@@ -180,8 +183,10 @@ static void  yyerror(char *msg);
 %type <Node>  bexpr
 %type <Node>  sexpr
 %type <Node>  bits
+%type <Node>  vector
+%type <Node>  bvector
 
-%left     ',' '=' ':'
+%left     ',' '=' ':' '{' '}'
 %left     OR
 %left     AND
 %left     EQ NE '~'
@@ -206,23 +211,90 @@ line:           '\n' {}
                 { if( $1<0 ) {
 		     yyerror("Couldn't build node structure: out of memory?");
 		     YYERROR;  }
+                  gParse.resultNode = $1;
 		}
        | bexpr  '\n'
                 { if( $1<0 ) {
 		     yyerror("Couldn't build node structure: out of memory?");
 		     YYERROR;  }
+                  gParse.resultNode = $1;
 		}
        | sexpr  '\n'
                 { if( $1<0 ) {
 		     yyerror("Couldn't build node structure: out of memory?");
 		     YYERROR;  } 
+                  gParse.resultNode = $1;
 		}
        | bits   '\n'
                 { if( $1<0 ) {
 		     yyerror("Couldn't build node structure: out of memory?");
 		     YYERROR;  }
+                  gParse.resultNode = $1;
 		}
        | error  '\n' {  yyerrok;  }
+       ;
+
+bvector: '{' bexpr
+                { $$ = New_Vector( $2 ); TEST($$); }
+       | bvector ',' bexpr
+                {
+                  if( gParse.Nodes[$1].nSubNodes >= MAXSUBS ) {
+		     $1 = Close_Vec( $1 ); TEST($1);
+		     $$ = New_Vector( $1 ); TEST($$);
+                  } else {
+                     $$ = $1;
+                  }
+		  gParse.Nodes[$$].SubNodes[ gParse.Nodes[$$].nSubNodes++ ]
+		     = $3;
+                }
+       ;
+
+vector:  '{' expr
+                { $$ = New_Vector( $2 ); TEST($$); }
+       | vector ',' expr
+                {
+                  if( TYPE($1) < TYPE($3) )
+                     TYPE($1) = TYPE($3);
+                  if( gParse.Nodes[$1].nSubNodes >= MAXSUBS ) {
+		     $1 = Close_Vec( $1 ); TEST($1);
+		     $$ = New_Vector( $1 ); TEST($$);
+                  } else {
+                     $$ = $1;
+                  }
+		  gParse.Nodes[$$].SubNodes[ gParse.Nodes[$$].nSubNodes++ ]
+		     = $3;
+                }
+       | vector ',' bexpr
+                {
+                  if( gParse.Nodes[$1].nSubNodes >= MAXSUBS ) {
+		     $1 = Close_Vec( $1 ); TEST($1);
+		     $$ = New_Vector( $1 ); TEST($$);
+                  } else {
+                     $$ = $1;
+                  }
+		  gParse.Nodes[$$].SubNodes[ gParse.Nodes[$$].nSubNodes++ ]
+		     = $3;
+                }
+       | bvector ',' expr
+                {
+                  TYPE($1) = TYPE($3);
+                  if( gParse.Nodes[$1].nSubNodes >= MAXSUBS ) {
+		     $1 = Close_Vec( $1 ); TEST($1);
+		     $$ = New_Vector( $1 ); TEST($$);
+                  } else {
+                     $$ = $1;
+                  }
+		  gParse.Nodes[$$].SubNodes[ gParse.Nodes[$$].nSubNodes++ ]
+		     = $3;
+                }
+       ;
+
+expr:    vector '}'
+                { $$ = Close_Vec( $1 ); TEST($$); }
+       ;
+
+bexpr:   bvector '}'
+                { $$ = Close_Vec( $1 ); TEST($$); }
        ;
 
 bits:	 BITSTR
@@ -1290,6 +1362,45 @@ static int New_REG( char *fname, int NodeX, int NodeY, char *colNames )
    }
 
    return( n );
+}
+
+static int New_Vector( int subNode )
+{
+   Node *this, *that;
+   int n;
+
+   n = Alloc_Node();
+   if( n >= 0 ) {
+      this              = gParse.Nodes + n;
+      that              = gParse.Nodes + subNode;
+      this->type        = that->type;
+      this->nSubNodes   = 1;
+      this->SubNodes[0] = subNode;
+      this->operation   = '{';
+      this->DoOp        = Do_Vector;
+   }
+
+   return( n );
+}
+
+static int Close_Vec( int vecNode )
+{
+   Node *this;
+   int n, nelem=0;
+
+   this = gParse.Nodes + vecNode;
+   for( n=0; n < this->nSubNodes; n++ ) {
+      if( TYPE( this->SubNodes[n] ) != this->type ) {
+	 this->SubNodes[n] = New_Unary( this->type, 0, this->SubNodes[n] );
+	 if( this->SubNodes[n]<0 ) return(-1);
+      }
+      nelem += SIZE(this->SubNodes[n]);
+   }
+   this->value.naxis    = 1;
+   this->value.nelem    = nelem;
+   this->value.naxes[0] = nelem;
+
+   return( vecNode );
 }
 
 static int Locate_Col( Node *this )
@@ -3273,6 +3384,78 @@ static void Do_REG( Node *this )
       free( theX->value.data.ptr );
    if( theY->operation>0 )
       free( theY->value.data.ptr );
+}
+
+static void Do_Vector( Node *this )
+{
+   Node *that;
+   long row, elem, idx, jdx, offset=0;
+   int node;
+
+   Allocate_Ptrs( this );
+
+   if( !gParse.status ) {
+
+      for( node=0; node<this->nSubNodes; node++ ) {
+
+	 that = gParse.Nodes + this->SubNodes[node];
+
+	 if( that->operation == CONST_OP ) {
+
+	    idx = gParse.nRows*this->value.nelem + offset;
+	    while( (idx-=this->value.nelem)>=0 ) {
+	       
+	       this->value.undef[idx] = 0;
+
+	       switch( this->type ) {
+	       case BOOLEAN:
+		  this->value.data.logptr[idx] = that->value.data.log;
+		  break;
+	       case LONG:
+		  this->value.data.lngptr[idx] = that->value.data.lng;
+		  break;
+	       case DOUBLE:
+		  this->value.data.dblptr[idx] = that->value.data.dbl;
+		  break;
+	       }
+	    }
+	    
+	 } else {
+	       
+	    row  = gParse.nRows;
+	    idx  = row * that->value.nelem;
+	    while( row-- ) {
+	       elem = that->value.nelem;
+	       jdx = row*this->value.nelem + offset;
+	       while( elem-- ) {
+		  this->value.undef[jdx+elem] =
+		     that->value.undef[--idx];
+
+		  switch( this->type ) {
+		  case BOOLEAN:
+		     this->value.data.logptr[jdx+elem] =
+			that->value.data.logptr[idx];
+		     break;
+		  case LONG:
+		     this->value.data.lngptr[jdx+elem] =
+			that->value.data.lngptr[idx];
+		     break;
+		  case DOUBLE:
+		     this->value.data.dblptr[jdx+elem] =
+			that->value.data.dblptr[idx];
+		     break;
+		  }
+	       }
+	    }
+	 }
+	 offset += that->value.nelem;
+      }
+
+   }
+
+   for( node=0; node < this->nSubNodes; node++ )
+      if( gParse.Nodes[this->SubNodes[node]].operation>0 )
+	 free( gParse.Nodes[this->SubNodes[node]].value.data.ptr );
 }
 
 /*****************************************************************************/

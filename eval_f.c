@@ -100,7 +100,7 @@ int fffrow( fitsfile *fptr,         /* I - Input FITS file                   */
    }
 
    if( constant ) { /* No need to call parser... have result from ffiprs */
-      result = gParse.Nodes[gParse.nNodes-1].value.data.log;
+      result = gParse.Nodes[gParse.resultNode].value.data.log;
       *n_good_rows = nrows;
       for( elem=0; elem<nrows; elem++ )
 	 row_status[elem] = result;
@@ -232,7 +232,7 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
    
    if( constant ) { /*  Set all rows to the same value from constant result  */
 
-      result = gParse.Nodes[gParse.nNodes-1].value.data.log;
+      result = gParse.Nodes[gParse.resultNode].value.data.log;
       for( ntodo = 0; ntodo<inExt.numRows; ntodo++ )
 	 ((char*)Info.dataPtr)[ntodo] = result;
       nGood = (result ? inExt.numRows : 0);
@@ -616,7 +616,7 @@ int ffcalc( fitsfile *infptr,   /* I - Input FITS file                      */
 
       /* Put constant result into keyword */
 
-      result  = gParse.Nodes + gParse.nNodes-1;
+      result  = gParse.Nodes + gParse.resultNode;
       switch( Info.datatype ) {
       case TDOUBLE:
 	 ffukyd( outfptr, parName, result->value.data.dbl, 15,
@@ -726,7 +726,7 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
       gParse.colData = &dmyCol;   /* fptr when no columns are referenced   */
    }
 
-   result = gParse.Nodes + gParse.nNodes-1;
+   result = gParse.Nodes + gParse.resultNode;
 
    *naxis = result->value.naxis;
    *nelem = result->value.nelem;
@@ -872,7 +872,7 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 
           Data = userInfo->dataPtr;
           Null = (userInfo->nullPtr ? userInfo->nullPtr : zeros);
-	  repeat = gParse.Nodes[gParse.nNodes-1].value.nelem;
+	  repeat = gParse.Nodes[gParse.resultNode].value.nelem;
 
        }
 
@@ -893,7 +893,7 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
        /* Determine the size of each element of the calculated result */
        /*   (only matters for numeric/logical data)                   */
 
-       switch( gParse.Nodes[gParse.nNodes-1].type ) {
+       switch( gParse.Nodes[gParse.resultNode].type ) {
        case BOOLEAN:   resDataSize = sizeof(char);    break;
        case LONG:      resDataSize = sizeof(long);    break;
        case DOUBLE:    resDataSize = sizeof(double);  break;
@@ -940,7 +940,7 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 
        ntodo = minvalue(remain,2500);
        Reset_Parser ( firstrow, rowOffset, ntodo );
-       Evaluate_Node( gParse.nNodes-1 );
+       Evaluate_Node( gParse.resultNode );
        if( gParse.status ) break;
 
        rowOffset += ntodo;
@@ -948,7 +948,7 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 
        /*  Copy results into data array  */
 
-       result = gParse.Nodes + gParse.nNodes-1;
+       result = gParse.Nodes + gParse.resultNode;
        if( result->operation==CONST_OP ) constant = 1;
 
        switch( result->type ) {
@@ -1538,7 +1538,7 @@ int fffrwc( fitsfile *fptr,        /* I - Input FITS file                    */
    
    if( !uncompress_hkdata( fptr, ntimes, times, status ) ) {
       if( constant ) {
-	 result = gParse.Nodes[gParse.nNodes-1].value.data.log;
+	 result = gParse.Nodes[gParse.resultNode].value.data.log;
 	 elem = ntimes;
 	 while( elem-- ) time_status[elem] = result;
       } else {
@@ -1703,7 +1703,7 @@ int ffffrw( fitsfile *fptr,         /* I - Input FITS file                   */
 
    *rownum = 0;
    if( constant ) { /* No need to call parser... have result from ffiprs */
-      result = gParse.Nodes[gParse.nNodes-1].value.data.log;
+      result = gParse.Nodes[gParse.resultNode].value.data.log;
       if( result ) {
 	 /*  Make sure there is at least 1 row in table  */
 	 ffgnrw( fptr, &nelem, status );
@@ -1737,11 +1737,11 @@ int ffffrw_work(long        totalrows, /* I - Total rows to be processed     */
     Node *result;
 
     Reset_Parser ( firstrow, 0, nrows );
-    Evaluate_Node( gParse.nNodes-1 );
+    Evaluate_Node( gParse.resultNode );
 
     if( !gParse.status ) {
 
-       result = gParse.Nodes + gParse.nNodes-1;
+       result = gParse.Nodes + gParse.resultNode;
        if( result->operation==CONST_OP ) {
 
 	  if( result->value.data.log ) {
