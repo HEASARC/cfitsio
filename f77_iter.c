@@ -7,6 +7,13 @@ typedef struct {
    void (*Fwork_fn)(PLONG_cfTYPE *total_n, ...);
 } FtnUserData;
 
+/*        Declare protoypes to make C++ happy       */
+int Cwork_fn(long, long, long, long, int, iteratorCol *, void *);
+void Cffiter( int n_cols, int *units, int *colnum, char *colname[], 
+	      int *datatype, int *iotype,
+              long offset, long n_per_loop, void *Fwork_fn,
+	      void *userData, int *status);
+
 /******************************************************************/
 /*  Cffiter is the wrapper for CFITSIO's ffiter which takes most  */
 /*  of its arguments via a structure, iteratorCol.  This routine  */
@@ -27,12 +34,11 @@ void Cffiter( int n_cols, int *units, int *colnum, char *colname[],
    iteratorCol *cols;
    int i;
    FtnUserData FuserData;
-   extern Cwork_fn();
 
    FuserData.Fwork_fn = (void(*)(PLONG_cfTYPE *,...))Fwork_fn;
    FuserData.userData = userData;
 
-   cols = malloc( n_cols*sizeof(iteratorCol) );
+   cols = (iteratorCol *)malloc( n_cols*sizeof(iteratorCol) );
    if( cols==NULL ) {
       *status = 1;
       return;
@@ -66,7 +72,7 @@ int Cwork_fn( long total_n, long offset,       long first_n,    long n_values,
 {
    int  *units, *colnum, *datatype, *iotype, *repeat;
    char **ptrs,**sptr;
-   int  i,j,k,len,nstr,status=0;
+   int  i,j,k,nstr,status=0;
    long *slen;
 
 #ifdef vmsFortran
@@ -101,7 +107,7 @@ int Cwork_fn( long total_n, long offset,       long first_n,    long n_values,
 
       if( datatype[i]==TLOGICAL ) {
 	 /*  Don't forget first element is null value  */
-	 ptrs[i] = malloc( (n_values*repeat[i]+1)*4 );
+	 ptrs[i] = (char *)malloc( (n_values*repeat[i]+1)*4 );
 	 for( j=0;j<=n_values*repeat[i]; j++ )
 	    ((int*)ptrs[i])[j] = C2FLOGICAL( ((char*)cols[i].array)[j]);
       } else if ( datatype[i]==TSTRING ) {
@@ -123,7 +129,7 @@ int Cwork_fn( long total_n, long offset,       long first_n,    long n_values,
 #endif
 	 nstr++;
       } else
-	 ptrs[i] = cols[i].array;
+	 ptrs[i] = (char *)cols[i].array;
    }
 
    if(!status) {
@@ -138,7 +144,7 @@ int Cwork_fn( long total_n, long offset,       long first_n,    long n_values,
       a2 = offset;
       a3 = first_n;
       a4 = n_values;
-      f  = FuserData;
+      f  = (FtnUserData *)FuserData;
 
       f->Fwork_fn(&a1,&a2,&a3,&a4,&n_cols,units,colnum,datatype,
 		  iotype,repeat,&status,f->userData,

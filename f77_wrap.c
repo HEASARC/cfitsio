@@ -21,9 +21,10 @@
 #include "fitsio2.h"
 #include "f77_wrap.h"
 
-long gMinStrLen=80L;
+unsigned long gMinStrLen=80L;
 fitsfile *gFitsFiles[MAXFITSFILES]={0};
 
+void Cffgiou( int *unit, int *status );
 void Cffgiou( int *unit, int *status )
 {
    int i;
@@ -37,12 +38,13 @@ void Cffgiou( int *unit, int *status )
       ffpmsg("Cffgiou has no more available unit numbers.");
    } else {
       *unit=i;
-      gFitsFiles[i] = (void *)1;  /*  Flag it as taken until ftopen/init  */
-                                  /*  can be called and set a real value  */
+      gFitsFiles[i] = (fitsfile *)1; /*  Flag it as taken until ftopen/init  */
+                                     /*  can be called and set a real value  */
    }
 }
 FCALLSCSUB2(Cffgiou,FTGIOU,ftgiou,PINT,PINT)
 
+void Cfffiou( int unit, int *status );
 void Cfffiou( int unit, int *status )
 {
    if( *status>0 ) return;
@@ -61,12 +63,15 @@ FCALLSCSUB2(Cfffiou,FTFIOU,ftfiou,INT,PINT)
      /**************************************************/
 
 /*---------------- FITS file I/O routines ---------------*/
-void Cffsbuf( fitsfile **fptr, void **buffptr, long *buffsize,
+void Cffsbuf( fitsfile **fptr, void *buffptr, long *buffsize,
+             size_t deltasize,
+             int *status);
+void Cffsbuf( fitsfile **fptr, void *buffptr, long *buffsize,
              size_t deltasize,
              int *status)
 {
-   if( *fptr==NULL || *fptr==(void*)1 ) {
-      ffsbuf( fptr, buffptr, (size_t *)buffsize, deltasize,
+   if( *fptr==NULL || *fptr==(fitsfile*)1 ) {
+      ffsbuf( fptr, (void**)buffptr, (size_t *)buffsize, deltasize,
 	      NULL, status );
    } else {
       *status = FILE_NOT_OPENED;
@@ -77,9 +82,10 @@ FCALLSCSUB5(Cffsbuf,FTSBUF,ftsbuf,PFITSUNIT,PVOID,PLONG,LONG,PINT)
 
 FCALLSCSUB4(ffwbuf,FTWBUF,ftwbuf,PVOID,LONG,STRING,PINT)
 
+void Cffopen( fitsfile **fptr, const char *filename, int iomode, int *blocksize, int *status );
 void Cffopen( fitsfile **fptr, const char *filename, int iomode, int *blocksize, int *status )
 {
-   if( *fptr==NULL || *fptr==(void*)1 ) {
+   if( *fptr==NULL || *fptr==(fitsfile*)1 ) {
       ffopen( fptr, filename, iomode, status );
       *blocksize = 1;
    } else {
@@ -89,9 +95,10 @@ void Cffopen( fitsfile **fptr, const char *filename, int iomode, int *blocksize,
 }
 FCALLSCSUB5(Cffopen,FTOPEN,ftopen,PFITSUNIT,STRING,INT,PINT,PINT)
 
+void Cffinit( fitsfile **fptr, const char *filename, int blocksize, int *status );
 void Cffinit( fitsfile **fptr, const char *filename, int blocksize, int *status )
 {
-   if( *fptr==NULL || *fptr==(void*)1 ) {
+   if( *fptr==NULL || *fptr==(fitsfile*)1 ) {
       ffinit( fptr, filename, status );
    } else {
       *status = FILE_NOT_CREATED;
@@ -102,11 +109,12 @@ FCALLSCSUB4(Cffinit,FTINIT,ftinit,PFITSUNIT,STRING,INT,PINT)
 
 FCALLSCSUB2(ffflus,FTFLUS,ftflus,FITSUNIT,PINT)
 
+void Cffclos( int unit, int *status );
 void Cffclos( int unit, int *status )
 {
    if( gFitsFiles[unit]!=NULL && gFitsFiles[unit]!=(void*)1 ) {
       ffclos( gFitsFiles[unit], status );  /* Flag unit number as unavailable */
-      gFitsFiles[unit]=(void*)1;           /* in case want to reuse it        */
+      gFitsFiles[unit]=(fitsfile*)1;       /* in case want to reuse it        */
    }
 }
 FCALLSCSUB2(Cffclos,FTCLOS,ftclos,INT,PINT)
@@ -124,6 +132,7 @@ FCALLSCSUB1(ffpmsg,FTPMSG,ftpmsg,STRING)
 FCALLSCSUB1(ffgmsg,FTGMSG,ftgmsg,PSTRING)
 FCALLSCSUB0(ffcmsg,FTCMSG,ftcmsg)
 
+void Cffrprt( char *fname, int status );
 void Cffrprt( char *fname, int status )
 {
    if( !strcmp(fname,"STDOUT") || !strcmp(fname,"stdout") )
@@ -191,6 +200,8 @@ FCALLSCSUB7(ffpkns,FTPKNS,ftpkns,FITSUNIT,STRING,INT,INT,STRINGV,STRINGV,PINT)
 
 /*   Must handle LOGICALV conversion manually... ffpknl uses ints   */
 void Cffpknl( fitsfile *fptr, char *keyroot, int nstart, int nkeys,
+              int *numval, char **comment, int *status );
+void Cffpknl( fitsfile *fptr, char *keyroot, int nstart, int nkeys,
               int *numval, char **comment, int *status )
 {
    int i;
@@ -226,6 +237,7 @@ FCALLSCSUB6(ffcpky,FTCPKY,ftcpky,FITSUNIT,FITSUNIT,INT,INT,STRING,PINT)
 #define ftphps_LONGV_A4 A3
 FCALLSCSUB5(ffphps,FTPHPS,ftphps,FITSUNIT,INT,INT,LONGV,PINT)
 
+void Cffphpr( fitsfile *fptr, int simple, int bitpix, int naxis, long naxes[], long pcount, long gcount, int extend, int *status );
 void Cffphpr( fitsfile *fptr, int simple, int bitpix, int naxis, long naxes[], long pcount, long gcount, int extend, int *status )
 {
    if( gcount==0 ) gcount=1;
@@ -289,6 +301,8 @@ FCALLSCSUB5(ffgkey,FTGKEY,ftgkey,FITSUNIT,STRING,PSTRING,PSTRING,PINT)
      manually expand the FCALLSC macro and modify function call.       */
 
 CFextern VOID_cfF(FTGKYS,ftgkys)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,STRING,PSTRING,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0));
+CFextern VOID_cfF(FTGKYS,ftgkys)
 CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,STRING,PSTRING,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0))
 {
    QCF(FITSUNIT,1)
@@ -331,6 +345,8 @@ FCALLSCSUB6(ffgtdm,FTGTDM,ftgtdm,FITSUNIT,INT,INT,PINT,LONGV,PINT)
 
 #define ftgkns_STRV_A5 NUM_ELEM_ARG(4)
 CFextern VOID_cfF(FTGKNS,ftgkns)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,STRING,INT,INT,PSTRINGV,PINT,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0));
+CFextern VOID_cfF(FTGKNS,ftgkns)
 CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,STRING,INT,INT,PSTRINGV,PINT,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0))
 {
    QCF(FITSUNIT,1)
@@ -363,6 +379,8 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,STRING,INT,INT,PSTRINGV,PINT,PINT,CF_
 }
 
 /*   Must handle LOGICALV conversion manually... ffgknl uses ints   */
+void Cffgknl( fitsfile *fptr, char *keyroot, int nstart, int nkeys,
+              int *numval, int *nfound, int *status );
 void Cffgknl( fitsfile *fptr, char *keyroot, int nstart, int nkeys,
               int *numval, int *nfound, int *status )
 {
@@ -399,6 +417,8 @@ FCALLSCSUB10(ffghpr,FTGHPR,ftghpr,FITSUNIT,INT,PLOGICAL,PINT,PINT,LONGV,PLONG,PL
 #define ftghtb_STRV_A8 NUM_ELEMS(maxdim)
 #define ftghtb_STRV_A9 NUM_ELEMS(maxdim)
 #define ftghtb_LONGV_A7 A2
+CFextern VOID_cfF(FTGHTB,ftghtb)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONG,PLONG,PINT,PSTRINGV,LONGV,PSTRINGV,PSTRINGV,PSTRING,PINT,CF_0,CF_0,CF_0));
 CFextern VOID_cfF(FTGHTB,ftghtb)
 CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONG,PLONG,PINT,PSTRINGV,LONGV,PSTRINGV,PSTRINGV,PSTRING,PINT,CF_0,CF_0,CF_0))
 {
@@ -451,6 +471,8 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONG,PLONG,PINT,PSTRINGV,LONGV,P
 #define ftghbn_STRV_A5 NUM_ELEMS(maxdim)
 #define ftghbn_STRV_A6 NUM_ELEMS(maxdim)
 #define ftghbn_STRV_A7 NUM_ELEMS(maxdim)
+CFextern VOID_cfF(FTGHBN,ftghbn)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONG,PINT,PSTRINGV,PSTRINGV,PSTRINGV,PSTRING,PLONG,PINT,CF_0,CF_0,CF_0,CF_0));
 CFextern VOID_cfF(FTGHBN,ftghbn)
 CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONG,PINT,PSTRINGV,PSTRINGV,PSTRINGV,PSTRING,PLONG,PINT,CF_0,CF_0,CF_0,CF_0))
 {
@@ -510,6 +532,8 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONG,PINT,PSTRINGV,PSTRINGV,PSTR
     /*   of the long naxes array.  So read NAXIS manually. :(                */
 
 void Cffgprh( fitsfile *fptr, int *simple, int *bitpix, int *naxis, int naxes[],
+             long *pcount, long *gcount, int *extend, int *status );
+void Cffgprh( fitsfile *fptr, int *simple, int *bitpix, int *naxis, int naxes[],
              long *pcount, long *gcount, int *extend, int *status )
 {
    long *LONGnaxes, size;
@@ -525,6 +549,8 @@ FCALLSCSUB9(Cffgprh,FTGPRH,ftgprh,FITSUNIT,PLOGICAL,PINT,PINT,INTV,PLONG,PLONG,P
 #else
 
 void Cffgprh( fitsfile *fptr, int *simple, int *bitpix, int *naxis, long naxes[],
+             long *pcount, long *gcount, int *extend, int *status );
+void Cffgprh( fitsfile *fptr, int *simple, int *bitpix, int *naxis, long naxes[],
              long *pcount, long *gcount, int *extend, int *status )
 {
    ffghpr( fptr, -1, simple, bitpix, naxis, naxes,
@@ -538,6 +564,8 @@ FCALLSCSUB9(Cffgprh,FTGPRH,ftgprh,FITSUNIT,PLOGICAL,PINT,PINT,LONGV,PLONG,PLONG,
 #define ftgtbh_STRV_A5 NUM_ELEMS(tfields)
 #define ftgtbh_STRV_A7 NUM_ELEMS(tfields)
 #define ftgtbh_STRV_A8 NUM_ELEMS(tfields)
+CFextern VOID_cfF(FTGTBH,ftgtbh)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,PLONG,PLONG,PINT,PSTRINGV,PLONG,PSTRINGV,PSTRINGV,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0));
 CFextern VOID_cfF(FTGTBH,ftgtbh)
 CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,PLONG,PLONG,PINT,PSTRINGV,PLONG,PSTRINGV,PSTRINGV,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0))
 {
@@ -586,6 +614,8 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,PLONG,PLONG,PINT,PSTRINGV,PLONG,PSTRI
 #define ftgbnh_STRV_A4 NUM_ELEMS(tfields)
 #define ftgbnh_STRV_A5 NUM_ELEMS(tfields)
 #define ftgbnh_STRV_A6 NUM_ELEMS(tfields)
+CFextern VOID_cfF(FTGBNH,ftgbnh)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,PLONG,PINT,PSTRINGV,PSTRINGV,PSTRINGV,PSTRING,PLONG,PINT,CF_0,CF_0,CF_0,CF_0,CF_0));
 CFextern VOID_cfF(FTGBNH,ftgbnh)
 CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,PLONG,PINT,PSTRINGV,PSTRINGV,PSTRINGV,PSTRING,PLONG,PINT,CF_0,CF_0,CF_0,CF_0,CF_0))
 {
@@ -730,6 +760,7 @@ FCALLSCSUB4(ffvcks,FTVCKS,ftvcks,FITSUNIT,PINT,PINT,PINT)
 
      /*  Checksum changed from double to long  */
 
+void Cffgcks( fitsfile *fptr, double *datasum, double *hdusum, int *status );
 void Cffgcks( fitsfile *fptr, double *datasum, double *hdusum, int *status )
 {
    unsigned long data, hdu;
@@ -740,6 +771,7 @@ void Cffgcks( fitsfile *fptr, double *datasum, double *hdusum, int *status )
 }
 FCALLSCSUB4(Cffgcks,FTGCKS,ftgcks,FITSUNIT,PDOUBLE,PDOUBLE,PINT)
 
+void Cffcsum( fitsfile *fptr, long nrec, double *dsum, int *status );
 void Cffcsum( fitsfile *fptr, long nrec, double *dsum, int *status )
 {
    unsigned long sum;
@@ -749,14 +781,16 @@ void Cffcsum( fitsfile *fptr, long nrec, double *dsum, int *status )
 }
 FCALLSCSUB4(Cffcsum,FTCSUM,ftcsum,FITSUNIT,LONG,PDOUBLE,PINT)
 
+void Cffesum( double dsum, int complm, char *ascii );
 void Cffesum( double dsum, int complm, char *ascii )
 {
-   unsigned long sum=dsum;
+   unsigned long sum=(unsigned long)dsum;
 
    ffesum( sum, complm, ascii );
 }
 FCALLSCSUB3(Cffesum,FTESUM,ftesum,DOUBLE,LOGICAL,PSTRING)
 
+void Cffdsum( char *ascii, int complm, double *dsum );
 void Cffdsum( char *ascii, int complm, double *dsum )
 {
    unsigned long sum;
@@ -868,6 +902,7 @@ FCALLSCSUB11(ffgsvd,FTGSVD,ftgsvd,FITSUNIT,INT,INT,LONGV,LONGV,LONGV,LONGV,DOUBL
 
 
 /*   Must handle LOGICALV conversion manually   */
+void Cffgsfb( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, long *trc, long *inc, unsigned char *array, int *flagval, int *anynul, int *status );
 void Cffgsfb( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, long *trc, long *inc, unsigned char *array, int *flagval, int *anynul, int *status )
 {
    char *Cflagval;
@@ -887,6 +922,7 @@ void Cffgsfb( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, lon
 FCALLSCSUB11(Cffgsfb,FTGSFB,ftgsfb,FITSUNIT,INT,INT,LONGV,LONGV,LONGV,LONGV,BYTEV,INTV,PLOGICAL,PINT)
 
 /*   Must handle LOGICALV conversion manually   */
+void Cffgsfi( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, long *trc, long *inc, short *array, int *flagval, int *anynul, int *status );
 void Cffgsfi( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, long *trc, long *inc, short *array, int *flagval, int *anynul, int *status )
 {
    char *Cflagval;
@@ -906,6 +942,7 @@ void Cffgsfi( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, lon
 FCALLSCSUB11(Cffgsfi,FTGSFI,ftgsfi,FITSUNIT,INT,INT,LONGV,LONGV,LONGV,LONGV,SHORTV,INTV,PLOGICAL,PINT)
 
 /*   Must handle LOGICALV conversion manually   */
+void Cffgsfk( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, long *trc, long *inc, int *array, int *flagval, int *anynul, int *status );
 void Cffgsfk( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, long *trc, long *inc, int *array, int *flagval, int *anynul, int *status )
 {
    char *Cflagval;
@@ -931,6 +968,7 @@ FCALLSCSUB11(Cffgsfk,FTGSFK,ftgsfk,FITSUNIT,INT,INT,LONGV,LONGV,LONGV,LONGV,INTV
 FCALLSCSUB11(Cffgsfk,FTGSFJ,ftgsfj,FITSUNIT,INT,INT,LONGV,LONGV,LONGV,LONGV,INTV,INTV,PLOGICAL,PINT)
 
 /*   Must handle LOGICALV conversion manually   */
+void Cffgsfe( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, long *trc, long *inc, float *array, int *flagval, int *anynul, int *status );
 void Cffgsfe( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, long *trc, long *inc, float *array, int *flagval, int *anynul, int *status )
 {
    char *Cflagval;
@@ -950,6 +988,7 @@ void Cffgsfe( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, lon
 FCALLSCSUB11(Cffgsfe,FTGSFE,ftgsfe,FITSUNIT,INT,INT,LONGV,LONGV,LONGV,LONGV,FLOATV,INTV,PLOGICAL,PINT)
 
 /*   Must handle LOGICALV conversion manually   */
+void Cffgsfd( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, long *trc, long *inc, double *array, int *flagval, int *anynul, int *status );
 void Cffgsfd( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, long *trc, long *inc, double *array, int *flagval, int *anynul, int *status )
 {
    char *Cflagval;
@@ -985,6 +1024,8 @@ FCALLSCSUB6(ffggpd,FTGGPD,ftggpd,FITSUNIT,LONG,LONG,LONG,DOUBLEV,PINT)
 
 #define ftgcvs_STRV_A7 NUM_ELEMS(velem)
 CFextern VOID_cfF(FTGCVS,ftgcvs)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,LONG,LONG,LONG,STRING,PSTRINGV,PLOGICAL,PINT,CF_0,CF_0,CF_0,CF_0,CF_0));
+CFextern VOID_cfF(FTGCVS,ftgcvs)
 CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,LONG,LONG,LONG,STRING,PSTRINGV,PLOGICAL,PINT,CF_0,CF_0,CF_0,CF_0,CF_0))
 {
    QCF(FITSUNIT,1)
@@ -1000,7 +1041,8 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,LONG,LONG,LONG,STRING,PSTRINGV,PL
    fitsfile *fptr;
    int colnum, *anynul, *status, velem, type;
    long firstrow, firstelem, nelem;
-   long repeat, gMinStrLen=80;  /* gMin = width */
+   long repeat;
+   unsigned long gMinStrLen=80L;  /* gMin = width */
    char *nulval, **array;
 
    fptr =      TCF(ftgcvs,FITSUNIT,1,0);
@@ -1013,7 +1055,7 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,LONG,LONG,LONG,STRING,PSTRINGV,PL
    anynul =    TCF(ftgcvs,PLOGICAL,8,0);
    status =    TCF(ftgcvs,PINT,9,0);
    
-   ffgtcl( fptr, colnum, &type, &repeat, &gMinStrLen, status );
+   ffgtcl( fptr, colnum, &type, &repeat, (long *)&gMinStrLen, status );
    if( type<0 ) velem = 1;   /*  Variable length column  */
    else velem = nelem;
 
@@ -1062,6 +1104,8 @@ FCALLSCSUB7(ffgcx,FTGCX,ftgcx,FITSUNIT,INT,LONG,LONG,LONG,LOGICALV,PINT)
 #define ftgcfs_STRV_A6 NUM_ELEMS(velem)
 #define ftgcfs_LOGV_A7 A5
 CFextern VOID_cfF(FTGCFS,ftgcfs)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,LONG,LONG,LONG,PSTRINGV,LOGICALV,PLOGICAL,PINT,CF_0,CF_0,CF_0,CF_0,CF_0));
+CFextern VOID_cfF(FTGCFS,ftgcfs)
 CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,LONG,LONG,LONG,PSTRINGV,LOGICALV,PLOGICAL,PINT,CF_0,CF_0,CF_0,CF_0,CF_0))
 {
    QCF(FITSUNIT,1)
@@ -1077,7 +1121,8 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,LONG,LONG,LONG,PSTRINGV,LOGICALV,
    fitsfile *fptr;
    int colnum, *anynul, *status, velem, type;
    long firstrow, firstelem, nelem;
-   long repeat, gMinStrLen=80;  /* gMin = width */
+   long repeat;
+   unsigned long gMinStrLen=80L;  /* gMin = width */
    char **array, *nularray;
  
    fptr =      TCF(ftgcfs,FITSUNIT,1,0);
@@ -1090,7 +1135,7 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,LONG,LONG,LONG,PSTRINGV,LOGICALV,
    anynul =    TCF(ftgcfs,PLOGICAL,8,0);
    status =    TCF(ftgcfs,PINT,9,0);
    
-   ffgtcl( fptr, colnum, &type, &repeat, &gMinStrLen, status );
+   ffgtcl( fptr, colnum, &type, &repeat, (long*)&gMinStrLen, status );
    if( type<0 ) velem = 1;   /*  Variable length column  */
    else velem = nelem;
 
@@ -1135,6 +1180,7 @@ FCALLSCSUB9(ffgcfe,FTGCFE,ftgcfe,FITSUNIT,INT,LONG,LONG,LONG,FLOATV,LOGICALV,PLO
 FCALLSCSUB9(ffgcfd,FTGCFD,ftgcfd,FITSUNIT,INT,LONG,LONG,LONG,DOUBLEV,LOGICALV,PLOGICAL,PINT)
 
 /*   Must handle LOGICALV conversion manually   */
+void Cffgcfc( fitsfile *fptr, int colnum, long firstrow, long firstelem, long nelem, float *array, int *nularray, int *anynul, int *status );
 void Cffgcfc( fitsfile *fptr, int colnum, long firstrow, long firstelem, long nelem, float *array, int *nularray, int *anynul, int *status )
 {
    char *Cnularray;
@@ -1146,6 +1192,7 @@ void Cffgcfc( fitsfile *fptr, int colnum, long firstrow, long firstelem, long ne
 FCALLSCSUB9(Cffgcfc,FTGCFC,ftgcfc,FITSUNIT,INT,LONG,LONG,LONG,FLOATV,INTV,PLOGICAL,PINT)
 
 /*   Must handle LOGICALV conversion manually   */
+void Cffgcfm( fitsfile *fptr, int colnum, long firstrow, long firstelem, long nelem, double *array, int *nularray, int *anynul, int *status );
 void Cffgcfm( fitsfile *fptr, int colnum, long firstrow, long firstelem, long nelem, double *array, int *nularray, int *anynul, int *status )
 {
    char *Cnularray;
@@ -1285,6 +1332,7 @@ FCALLSCSUB13(ffxypx,FTXYPX,ftxypx,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUB
 /*                Included only to support older code                     */
 /*------------------------------------------------------------------------*/
 
+void Cffempty(void);
 void Cffempty(void)
 { return; }
 FCALLSCSUB0(Cffempty,FTPDEF,ftpdef)
@@ -1297,6 +1345,8 @@ FCALLSCSUB0(Cffempty,FTDDEF,ftddef)
 /*                 (prototyped in fitsio2.h)                */
 /*----------------------------------------------------------*/
 
+CFextern VOID_cfF(FTI2C,fti2c)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),LONG,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0));
 CFextern VOID_cfF(FTI2C,fti2c)
 CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),LONG,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0))
 {
@@ -1317,6 +1367,8 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),LONG,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_
    RCF(PINT,3)
 }
 
+CFextern VOID_cfF(FTL2C,ftl2c)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),LOGICAL,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0));
 CFextern VOID_cfF(FTL2C,ftl2c)
 CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),LOGICAL,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0))
 {
@@ -1339,6 +1391,8 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),LOGICAL,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,
 
 FCALLSCSUB3(ffs2c,FTS2C,fts2c,STRING,PSTRING,PINT)
 
+CFextern VOID_cfF(FTR2F,ftr2f)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FLOAT,INT,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0));
 CFextern VOID_cfF(FTR2F,ftr2f)
 CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FLOAT,INT,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0))
 {
@@ -1363,6 +1417,8 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FLOAT,INT,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_
 }
 
 CFextern VOID_cfF(FTR2E,ftr2e)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FLOAT,INT,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0));
+CFextern VOID_cfF(FTR2E,ftr2e)
 CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FLOAT,INT,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0))
 {
    QCF(FLOAT,1)
@@ -1386,6 +1442,8 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FLOAT,INT,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_
 }
 
 CFextern VOID_cfF(FTD2F,ftd2f)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),DOUBLE,INT,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0));
+CFextern VOID_cfF(FTD2F,ftd2f)
 CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),DOUBLE,INT,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0))
 {
    QCF(DOUBLE,1)
@@ -1408,6 +1466,8 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),DOUBLE,INT,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF
    RCF(PINT,4)
 }
 
+CFextern VOID_cfF(FTD2E,ftd2e)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),DOUBLE,INT,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0));
 CFextern VOID_cfF(FTD2E,ftd2e)
 CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),DOUBLE,INT,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0))
 {
@@ -1460,6 +1520,7 @@ FCALLSCSUB4(ffpbyt,FTPBYT,ftpbyt,FITSUNIT,LONG,PVOID,PINT)
 /*                     (defined in fitsio2.h)                    */
 /*---------------------------------------------------------------*/
 
+int Cfnan( float *val );
 int Cfnan( float *val )
 {
    int code;
@@ -1477,6 +1538,7 @@ int Cfnan( float *val )
 }
 FCALLSCFUN1(LOGICAL,Cfnan,FTTRNN,fttrnn,PFLOAT)
 
+int Cdnan( double *val );
 int Cdnan( double *val )
 {
    int code;
@@ -1498,6 +1560,7 @@ FCALLSCFUN1(LOGICAL,Cdnan,FTTDNN,fttdnn,PDOUBLE)
 /*                   (abandoned in CFITSIO)                      */
 /*---------------------------------------------------------------*/
 
+void Cffcrep( char *comm, char *comm1, int *repeat );
 void Cffcrep( char *comm, char *comm1, int *repeat )
 {
 /*

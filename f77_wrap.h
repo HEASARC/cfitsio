@@ -60,7 +60,7 @@ static void C2Flongv(long size, int *A, long *B)
    overflow.
 *************************************************************************/
 
-extern long gMinStrLen;
+extern unsigned long gMinStrLen;
 
 #undef  STRINGV_cfQ
 #undef  STRINGV_cfR
@@ -102,7 +102,7 @@ extern long gMinStrLen;
             _(B,M)=_cfMAX(D,gMinStrLen)+1, \
             B=(char**)malloc(_(B,N)*sizeof(char*)), \
             B[0]=(char*)malloc(_(B,N)*_(B,M)), \
-            (void *)vindex(B,_(B,M),_(B,N),f2cstrv2(A,B[0],D,_(B,M),_(B,N))) \
+            vindex(B,_(B,M),_(B,N),f2cstrv2(A,B[0],D,_(B,M),_(B,N))) \
             )
 #define  RRRRPSTRV(A,B,D)    \
             c2fstrv2(B[0],A,_(B,M),D,_(B,N)), \
@@ -240,4 +240,35 @@ extern fitsfile *gFitsFiles[];       /*    by Fortran unit numbers       */
 #define PFITSUNIT_cfSTR(N,T,A,B,C,D,E) PINT_cfSTR(N,T,A,B,C,D,E)
 #define PFITSUNIT_cfT(M,I,A,B,D)       (gFitsFiles + *A)
 #define PFITSUNIT_cfTYPE               int
+
+
+/*---------------------- Make C++ Happy -----------------------------*/
+/* Redefine FCALLSCFUNn so that they create prototypes of themselves */
+/*   and change TTTTSTR to use (char *)0 instead of NULL             */
+/*-------------------------------------------------------------------*/
+
+#undef FCALLSCFUN0
+#undef FCALLSCFUN14
+#undef TTTTSTR
+
+#define TTTTSTR(A,B,D)   ( !(D<4||A[0]||A[1]||A[2]||A[3]) ) ? ((char*)0) :     \
+                             memchr(A,'\0',D) ? A : TTSTR(A,B,D)
+
+#define FCALLSCFUN0(T0,CN,UN,LN) \
+  CFextern _(T0,_cfFZ)(UN,LN) void ABSOFT_cf2(T0)); \
+  CFextern _(T0,_cfFZ)(UN,LN) void ABSOFT_cf2(T0))  \
+  {_Icf(2,UU,T0,A0,0); _Icf(0,L,T0,0,0) CN(); _Icf(0,K,T0,0,0) _(T0,_cfI)}
+
+#define FCALLSCFUN14(T0,CN,UN,LN,T1,T2,T3,T4,T5,T6,T7,T8,T9,TA,TB,TC,TD,TE)    \
+  CFextern _(T0,_cfF)(UN,LN)                                                   \
+  CFARGT14(NCF,DCF,ABSOFT_cf2(T0),T1,T2,T3,T4,T5,T6,T7,T8,T9,TA,TB,TC,TD,TE)); \
+  CFextern _(T0,_cfF)(UN,LN)                                                   \
+  CFARGT14(NCF,DCF,ABSOFT_cf2(T0),T1,T2,T3,T4,T5,T6,T7,T8,T9,TA,TB,TC,TD,TE))  \
+  {                 CFARGT14S(QCF,T1,T2,T3,T4,T5,T6,T7,T8,T9,TA,TB,TC,TD,TE)   \
+  _Icf(2,UU,T0,A0,0); _Icf(0,L,T0,0,0)      CN(  TCF(LN,T1,1,0) TCF(LN,T2,2,1) \
+    TCF(LN,T3,3,1) TCF(LN,T4,4,1) TCF(LN,T5,5,1) TCF(LN,T6,6,1) TCF(LN,T7,7,1) \
+    TCF(LN,T8,8,1) TCF(LN,T9,9,1) TCF(LN,TA,A,1) TCF(LN,TB,B,1) TCF(LN,TC,C,1) \
+    TCF(LN,TD,D,1) TCF(LN,TE,E,1) );                          _Icf(0,K,T0,0,0) \
+    CFARGT14S(RCF,T1,T2,T3,T4,T5,T6,T7,T8,T9,TA,TB,TC,TD,TE)        _(T0,_cfI) \
+  }
 
