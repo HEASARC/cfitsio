@@ -535,6 +535,9 @@ int ffgcdw( fitsfile *fptr,   /* I - FITS file pointer                       */
                          cptr++;
 
                      *width = atoi(cptr);
+
+                     if (*width < 1)
+                         *width = 1;  /* default is at least 1 column */
                   }
             }
         }
