@@ -273,7 +273,7 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
          ffcprs();
          return( *status=MEMORY_ALLOCATION );
       }
-      maxrows = 500000L/rdlen;
+      maxrows = maxvalue( (500000L/rdlen), 1);
       nbuff = 0;
       inloc = 1;
       if( infptr==outfptr ) { /* Skip initial good rows if input==output file */
