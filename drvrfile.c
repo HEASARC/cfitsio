@@ -297,6 +297,18 @@ int file_flush(int handle)
     if (fflush(handleTable[handle].fileptr) )
         return(WRITE_ERROR);
 
+    /* The flush operation is not supposed to move the internal */
+    /* file pointer, but it does on some Windows-95 compilers and */
+    /* perhaps others, so seek to original position to be sure. */
+    /* This seek will do no harm on other systems.   */
+
+#if MACHINE == IBMPC
+
+    if (fseek(handleTable[handle].fileptr,
+        handleTable[handle].currentpos, 0 ) )
+        return(SEEK_ERROR);
+#endif
+
     return(0);
 }
 /*--------------------------------------------------------------------------*/
