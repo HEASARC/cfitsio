@@ -122,7 +122,16 @@ void Cffclos( int unit, int *status )
 }
 FCALLSCSUB2(Cffclos,FTCLOS,ftclos,INT,PINT)
 
-FCALLSCSUB2(ffdelt,FTDELT,ftdelt,FITSUNIT,PINT)
+void Cffdelt( int unit, int *status );
+void Cffdelt( int unit, int *status )
+{
+   if( gFitsFiles[unit]!=NULL && gFitsFiles[unit]!=(void*)1 ) {
+      ffdelt( gFitsFiles[unit], status );  /* Flag unit number as unavailable */
+      gFitsFiles[unit]=(fitsfile*)1;       /* in case want to reuse it        */
+   }
+}
+FCALLSCSUB2(Cffdelt,FTDELT,ftdelt,INT,PINT)
+
 FCALLSCSUB3(ffflnm,FTFLNM,ftflnm,FITSUNIT,PSTRING,PINT)
 FCALLSCSUB3(ffflmd,FTFLMD,ftflmd,FITSUNIT,PINT,PINT)
 
