@@ -302,12 +302,13 @@ int file_size(int handle, OFF_T *filesize)
   return the size of the file in bytes
 */
 {
-    OFF_T position;
+    /* NOTE:  fpos_t and off_t do not necessarily have the same size */
+    fpos_t position1, position2;
     FILE *diskfile;
 
     diskfile = handleTable[handle].fileptr;
 
-    if (fgetpos(diskfile, &position) != 0)      /* save current postion */
+    if (fgetpos(diskfile, &position1) != 0)      /* save current postion */
         return(SEEK_ERROR);
 
 /* move to end of the existing file */
@@ -323,10 +324,12 @@ int file_size(int handle, OFF_T *filesize)
         return(SEEK_ERROR);
 #endif
 
-    if (fgetpos(diskfile, filesize) != 0)      /* position = size of file */
+    if (fgetpos(diskfile, &position2) != 0)      /* position = size of file */
         return(SEEK_ERROR);
 
-    if (fsetpos(diskfile, &position) != 0) /* move back to orig. position */
+    *filesize = position2;
+
+    if (fsetpos(diskfile, &position1) != 0) /* move back to orig. position */
         return(SEEK_ERROR);
 
     return(0);
@@ -359,6 +362,10 @@ int file_flush(int handle)
   flush the file
 */
 {
+#if MACHINE == IBMPC
+    fpos_t position;
+#endif
+
     if (fflush(handleTable[handle].fileptr) )
         return(WRITE_ERROR);
 
@@ -369,8 +376,9 @@ int file_flush(int handle)
 
 #if MACHINE == IBMPC
 
-    if (fsetpos(handleTable[handle].fileptr,
-        &(handleTable[handle].currentpos)) )
+    position = (fpos_t) (handleTable[handle].currentpos);
+
+    if (fsetpos(handleTable[handle].fileptr, &position) )
         return(SEEK_ERROR);
 #endif
 
@@ -382,9 +390,9 @@ int file_seek(int handle, OFF_T offset)
   seek to position relative to start of the file
 */
 {
-    OFF_T toff;
+    fpos_t toff;
 
-    toff = offset;
+    toff = (fpos_t) offset;
     if (fsetpos(handleTable[handle].fileptr, &toff) )
         return(SEEK_ERROR);
 
@@ -399,10 +407,13 @@ int file_read(int hdl, void *buffer, long nbytes)
 {
     long nread;
     char *cptr;
+    fpos_t position;
 
     if (handleTable[hdl].last_io_op == IO_WRITE)
     {
-      if (fsetpos(handleTable[hdl].fileptr, &(handleTable[hdl].currentpos) ))
+      position = (fpos_t) (handleTable[hdl].currentpos);
+
+      if (fsetpos(handleTable[hdl].fileptr, &position ))
         return(READ_ERROR);
     }
   
@@ -434,12 +445,14 @@ int file_write(int hdl, void *buffer, long nbytes)
   write bytes at the current position in the file
 */
 {
+    fpos_t position;
+
     if (handleTable[hdl].last_io_op == IO_READ) 
     {
-      if (fsetpos(handleTable[hdl].fileptr, &(handleTable[hdl].currentpos) ))
+      position = (fpos_t) (handleTable[hdl].currentpos);
+      if (fsetpos(handleTable[hdl].fileptr, &position ))
          return(WRITE_ERROR);
     }
-  
     if((long) fwrite(buffer, 1, nbytes, handleTable[hdl].fileptr) != nbytes)
         return(WRITE_ERROR);
 
