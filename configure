@@ -913,17 +913,8 @@ case $system in
 	;;
     OSF1*)
 	ARCH="alpha"
-	case $CC in
-	  gcc) 
-		echo "==  **** Using CC=cc for compiler. GCC not solid for OSF. ****"
-		CC=cc
-	  ;;
-	  *)
-		echo "cfitsio: == Keeping $CC for C compiler."
-	  ;;
-	esac
 	;;
-    IRIX-5.*)
+    IRIX*)
 	ARCH="sgi"
 	CFLAGS="$CFLAGS -DHAVE_POSIX_SIGNALS"
 	;;
