@@ -494,7 +494,7 @@ int ffcalc_rng( fitsfile *infptr,   /* I - Input FITS file                  */
    long nelem, naxes[MAXDIMS], repeat, width;
    int col_cnt, colNo;
    Node *result;
-   char card[81], tform[16], nullKwd[9];
+   char card[81], tform[16], nullKwd[9], tdimKwd[9];
    int hdutype;
 
    if( *status ) return( *status );
@@ -618,6 +618,32 @@ int ffcalc_rng( fitsfile *infptr,   /* I - Input FITS file                  */
    } else if( *status ) {
       ffcprs();
       return( *status );
+   } else {
+
+      /********************************************************/
+      /*  Check if a TDIM keyword should be written/updated.  */
+      /********************************************************/
+
+      ffkeyn("TDIM", colNo, tdimKwd, status);
+      ffgcrd( outfptr, tdimKwd, card, status );
+      if( *status==0 ) {
+         /*  TDIM exists, so update it with result's dimension  */
+         ffptdm( outfptr, colNo, naxis, naxes, status );
+      } else if( *status==KEY_NO_EXIST ) {
+         /*  TDIM does not exist, so clear error stack and     */
+         /*  write a TDIM only if result is multi-dimensional  */
+         *status = 0;
+         ffcmsg();
+         if( naxis>1 )
+            ffptdm( outfptr, colNo, naxis, naxes, status );
+      }
+      if( *status ) {
+         /*  Either some other error happened in ffgcrd   */
+         /*  or one happened in ffptdm                    */
+         ffcprs();
+         return( *status );
+      }
+
    }
 
    if( colNo>0 ) {
