@@ -1,0 +1,37 @@
+#
+# Makefile for cfitsio library:
+#       libcfits.a
+#
+#       JDD
+#       NASA GSFC
+#       March, 1996
+#
+
+SHELL = /bin/sh
+RANLIB=@RANLIB@
+CC=@CC@
+
+
+all:	
+ 
+
+stand_alone:	libcfitsio.a
+
+libcfitsio.a:   libcfitsio.o
+		ar rv libcfitsio.a cfileio.o convert.o fitscore.o getcol.o \
+		getkey.o modkey.o putcol.o putkey.o utilproc.o
+		${RANLIB} libcfitsio.a
+
+libcfitsio.o:   
+		${CC} -c ${CFLAGS} cfileio.c convert.c fitscore.c getcol.c \
+		getkey.c modkey.c putcol.c putkey.c utilproc.c 
+
+install:        libcfitsio.a
+		mv libcfitsio.a ../host/.
+        
+clean:          
+		rm -f cfileio.o fitscore.o convert.o getcol.o getkey.o \
+		modkey.o putcol.o putkey.o utilproc.o
+
+.c.o :
+	${CC} ${CFLAGS} -c $<
