@@ -142,7 +142,6 @@ C     End of f77.inc -------------------------------------
       integer ii
       character*20 string
 
-      print *,firstrow
       if (status .ne. 0) return
 
 C    --------------------------------------------------------
