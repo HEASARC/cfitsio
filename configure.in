@@ -69,6 +69,7 @@ case $system in
     IRIX*)
 	ARCH="sgi"
 	CFLAGS="$CFLAGS -DHAVE_POSIX_SIGNALS"
+	RANLIB="touch"
 	;;
     ULTRIX*)
 	ARCH="dec"
