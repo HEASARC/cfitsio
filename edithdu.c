@@ -162,6 +162,7 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
 {
     int bytlen, nexthdu, maxhdu, ii;
     long npixels, datasize, newstart, nblocks;
+    char errmsg[81];
 
     if (*status > 0)
         return(*status);
@@ -191,18 +192,36 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
     else if (bitpix == -64)
         bytlen = 8;
     else
+    {
+        sprintf(errmsg,
+        "Illegal value for BITPIX keyword: %d", bitpix);
+        ffpmsg(errmsg);
         return(*status = BAD_BITPIX);  /* illegal bitpix value */
-
+    }
     if (naxis < 0 || naxis > 999)
+    {
+        sprintf(errmsg,
+        "Illegal value for NAXIS keyword: %d", naxis);
+        ffpmsg(errmsg);
         return(*status = BAD_NAXIS);
+    }
+
+    for (ii = 0; ii < naxis; ii++)
+    {
+        if (naxes[ii] < 0)
+        {
+            sprintf(errmsg,
+            "Illegal value for NAXIS%d keyword: %ld", ii + 1,  naxes[ii]);
+            ffpmsg(errmsg);
+            return(*status = BAD_NAXES);
+        }
+    }
 
     /* calculate number of pixels in the image */
     if (naxis == 0)
         npixels = 0;
-    else if (naxes[0] > 0)
+    else 
         npixels = naxes[0];
-    else
-        return(*status = BAD_NAXES);
 
     for (ii = 1; ii < naxis; ii++)
         npixels = npixels * naxes[ii];
@@ -264,6 +283,7 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
 {
     int nexthdu, maxhdu, ii, nunit, nhead, ncols, gotmem = 0;
     long datasize, newstart, nblocks, rowlen;
+    char errmsg[81];
 
     if (*status > 0)
         return(*status);
@@ -289,7 +309,12 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
     else if (naxis2 < 0)
         return(*status = NEG_ROWS);
     else if (tfields < 0 || tfields > 999)
+    {
+        sprintf(errmsg,
+        "Illegal value for TFIELDS keyword: %d", tfields);
+        ffpmsg(errmsg);
         return(*status = BAD_TFIELDS);
+    }
 
     /* count number of optional TUNIT keywords to be written */
     nunit = 0;
@@ -388,6 +413,7 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
 {
     int nexthdu, maxhdu, ii, nunit, nhead, datacode;
     long naxis1, datasize, newstart, nblocks, repeat, width;
+    char errmsg[81];
 
     if (*status > 0)
         return(*status);
@@ -412,7 +438,12 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (naxis2 < 0)
         return(*status = NEG_ROWS);
     else if (tfields < 0 || tfields > 999)
+    {
+        sprintf(errmsg,
+        "Illegal value for TFIELDS keyword: %d", tfields);
+        ffpmsg(errmsg);
         return(*status = BAD_TFIELDS);
+    }
 
     /* count number of optional TUNIT keywords to be written */
     nunit = 0;
@@ -502,7 +533,10 @@ int ffdhdu(fitsfile *fptr,      /* I - FITS file pointer                   */
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
     if ((fptr->Fptr)->curhdu == 0)
+    {
+        ffpmsg("Cannot delete the primary array (ffdhdu)");
         return(*status = BAD_HDU_NUM);  /* cannot delete the primary array */
+    }
 
     ffchdu(fptr, status);  /* close the CHDU to free memeory */
 

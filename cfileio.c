@@ -17,7 +17,7 @@
 #include "fitsio2.h"
 
 #define MAX_PREFIX_LEN 20  /* max length of file type prefix (e.g. 'http://') */
-#define MAX_DRIVERS 15     /* max number of file I/O drivers */
+#define MAX_DRIVERS 20     /* max number of file I/O drivers */
 
 typedef struct    /* structure containing pointers to I/O driver functions */ 
 {   char prefix[MAX_PREFIX_LEN];
@@ -396,7 +396,6 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
 
         /* get initial file size */
     *status = (*driverTable[driver].size)(handle, &filesize);
-
     if (*status > 0)
     {
         (*driverTable[driver].close)(handle);  /* close the file */
@@ -472,50 +471,14 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
         return(*status);
     }
 
-    /* ---------------------------------------------------------- */
-    /* at this point, we can assume the file has been opened.     */
-    /* If 'outfile' was specified, then copy file to it           */
-    /*  (this is a temporary fix until the open routines are      */
-    /*  modified to create the outfile copy directly)             */
-    /* ---------------------------------------------------------- */
+    /* ------------------------------------------------------------- */
+    /* At this point, the input file has been opened. If outfile was */
+    /* specified, then we have opened a copy of the file, not the    */
+    /* original file so it is safe to modify it if necessary         */
+    /* ------------------------------------------------------------- */
 
     if (*outfile)
-    {
-        if (ffinit(&copyfptr, outfile, status) > 0)
-        {
-            ffpmsg("ffopen could not create copy of file:");
-            ffpmsg(url);
-
-            ffclos(*fptr, status);
-            *fptr = 0;              /* return null file pointer */
-            return(*status);
-        }
-
-        /* attempt to move to next HDU, until we get an EOF error */
-        for (ii = 1; !(ffmahd(*fptr, ii, NULL, status) ); ii++) 
-        {
-            if ( fits_copy_hdu(*fptr, copyfptr, 0, status) )
-            {
-                ffpmsg("ffopen: error copying HDUs to tempoary file:");
-                ffpmsg(url);
-
-                ffclos(*fptr, status);
-                *fptr = 0;              /* return null file pointer */
-                return(*status);
-            }
-        }
-
-        if (*status == END_OF_FILE)
-        {   
-            *status = 0;        /* got the expected EOF error; reset = 0  */
-            ffxmsg(-2, NULL);   /* clear error message stack */
-        }
-
-        ffclos(*fptr,  status);
-
-        *fptr = copyfptr;
-        writecopy = 1;                          /* set copy existence flag */
-    }
+        writecopy = 1;  
 
 move2hdu:
 
@@ -1392,13 +1355,15 @@ int fits_init_cfitsio(void)
     }
 
    /*-------------------stdin stream driver----------------------*/
+   /*  the stdin stream is copied to memory then opened in memory */
+
     status = fits_register_driver("stdin://", 
             mem_init,
             mem_shutdown,
             mem_setoptions,
             mem_getoptions, 
             mem_getversion,
-            NULL,            /* checkfile not needed */ 
+            stdin_checkfile, 
             stdin_open,
             NULL,            /* create function not allowed */
             mem_truncate,
@@ -1415,6 +1380,38 @@ int fits_init_cfitsio(void)
         ffpmsg("failed to register the stdin:// driver (init_cfitsio)");
         return(status);
     }
+
+   /*-------------------stdin file stream driver----------------------*/
+   /*  the stdin stream is copied to a disk file, then the disk file is opened */
+
+    status = fits_register_driver("stdinfile://", 
+            mem_init,
+            mem_shutdown,
+            mem_setoptions,
+            mem_getoptions, 
+            mem_getversion,
+            NULL,            /* checkfile not needed */ 
+            stdin_open,
+            NULL,            /* create function not allowed */
+#ifdef HAVE_FTRUNCATE
+            file_truncate,
+#else
+            NULL,   /* no file truncate function */
+#endif
+            file_close,
+            file_remove,
+            file_size,
+            file_flush,
+            file_seek,
+            file_read,
+            file_write);
+
+    if (status)
+    {
+        ffpmsg("failed to register the stdin:// driver (init_cfitsio)");
+        return(status);
+    }
+
 
     /*-----------------------stdout stream driver------------------*/
     status = fits_register_driver("stdout://",

@@ -8,7 +8,7 @@
  
 /* global variables */
  
-#define FLEN_FILENAME 161  /* max length of a filename                  */
+#define FLEN_FILENAME 257  /* max length of a filename  */
 #define FLEN_KEYWORD    9  /* max length of a keyword */
 #define FLEN_CARD      81  /* length of a FITS header card */
 #define FLEN_VALUE     71  /* max length of a keyword value string */
@@ -125,6 +125,7 @@ typedef struct      /* structure used to store basic FITS file information */
     int validcode;  /* magic value used to verify that structure is valid */
     long filesize;  /* current size of the physical disk file in bytes */
     long logfilesize; /* logical size of file, including unflushed buffers */
+    int lasthdu;    /* is this the last HDU in the file? 0 = no, else yes */
     long bytepos;   /* current logical I/O pointer position in file */
     long io_pos;    /* current I/O pointer position in the physical file */
     int curbuf;     /* number of I/O buffer currently in use */ 

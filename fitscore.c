@@ -24,7 +24,7 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.014;   /*  beta release */
+      *version = 2.015;   /*  beta release */
 
  /*   *version = 1.40;    6 Feb 1998 */
  /*   *version = 1.33;   16 Dec 1997 (internal release only) */
@@ -2218,7 +2218,21 @@ int ffrhdu(fitsfile *fptr,    /* I - FITS file pointer */
           *status = UNKNOWN_REC;  /* found unknown type of record */
           ffpmsg
         ("Extension doesn't start with SIMPLE or XTENSION keyword. (ffrhdu)");
+        ffpmsg(card);
         }
+    }
+
+    /*  compare the starting position of the next HDU (if any) with the size */
+    /*  of the whole file to see if this is the last HDU in the file */
+
+    if ((fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] < 
+        (fptr->Fptr)->logfilesize )
+    {
+        (fptr->Fptr)->lasthdu = 0;  /* no, not the last HDU */
+    }
+    else
+    {
+        (fptr->Fptr)->lasthdu = 1;  /* yes, this is the last HDU */
     }
 
     return(*status);
@@ -2409,7 +2423,7 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
     long nrows, rowlen, pcount, tfield;
     tcolumn *colptr;
     char name[FLEN_KEYWORD], value[FLEN_VALUE], comm[FLEN_COMMENT];
-    char message[FLEN_ERRMSG];
+    char message[FLEN_ERRMSG], errmsg[81];
 
     if (*status > 0)
         return(*status);
@@ -2428,6 +2442,8 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
     if (pcount != 0)
     {
        ffpmsg("PCOUNT keyword not equal to 0 in ASCII table (ffainit).");
+       sprintf(errmsg, "  PCOUNT = %ld", pcount);
+       ffpmsg(errmsg);
        return(*status = BAD_PCOUNT);
     }
 
@@ -3044,7 +3060,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
 */
 {
     int nulpos;
-    long datastart, tbcol, endrow;
+    long datastart, tbcol, endrow, nrows, endpos, nblock;
     char message[81];
     tcolumn *colptr;
 
@@ -3060,21 +3076,21 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     /* Do sanity check of input parameters */
     if (firstrow < 1)
     {
-        sprintf(message, "Starting row number is out of range: %ld",
+        sprintf(message, "Starting row number is less than 1: %ld",
                 firstrow);
         ffpmsg(message);
         return(*status = BAD_ROW_NUM);
     }
     else if ((fptr->Fptr)->hdutype != ASCII_TBL && firstelem < 1)
     {
-        sprintf(message, "Starting element number is out of range: %ld",
+        sprintf(message, "Starting element number less than 1: %ld",
                 firstelem);
         ffpmsg(message);
         return(*status = BAD_ELEM_NUM);
     }
     else if (nelem < 0)
     {
-        sprintf(message, "Negative no. of elements to read or write: %ld",
+        sprintf(message, "Tried to read or write less than 0 elements: %ld",
                 nelem);
         ffpmsg(message);
         return(*status = NEG_BYTES);
@@ -3084,6 +3100,10 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
         sprintf(message, "Specified column number is out of range: %d",
                 colnum);
         ffpmsg(message);
+        sprintf(message, "  There are %d columns in this table.",
+                (fptr->Fptr)->tfield );
+        ffpmsg(message);
+
         return(*status = BAD_COL_NUM);
     }
 
@@ -3113,7 +3133,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
      /* In ASCII tables, a null value is equivalent to all spaces */
 
        strcpy(snull, "                 ");   /* maximum of 17 spaces */
-       nulpos = minvalue(17, *twidth);         /* truncate to width of column */
+       nulpos = minvalue(17, *twidth);      /* truncate to width of column */
        snull[nulpos] = '\0';
     }
 
@@ -3174,8 +3194,9 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     {
         if (*elemnum >= *repeat)
         {
-            sprintf(message, "Starting element number is out of range: %ld",
-                    firstelem);
+            sprintf(message,
+        "First element to write is too large: %ld; max allowed value is %ld",
+                    firstelem, *repeat);
             ffpmsg(message);
             return(*status = BAD_ELEM_NUM);
         }
@@ -3185,16 +3206,46 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
 
         if (writemode)
         {
-            /* update the number of rows in the table */
-            if ( endrow > (fptr->Fptr)->numrows)
-               (fptr->Fptr)->numrows = endrow;
+            /* check if we are writing beyond the current end of table */
+            if (endrow > (fptr->Fptr)->numrows)
+            {
+                /* if there are more HDUs following the current one, or */
+                /* if there is a data heap, then we must insert space */
+                /* for the new rows.  */
+                if ( !((fptr->Fptr)->lasthdu) || (fptr->Fptr)->heapsize > 0)
+                {
+                    nrows = endrow - ((fptr->Fptr)->numrows);
+                    if (ffirow(fptr, (fptr->Fptr)->numrows, nrows, status) > 0)
+                    {
+                       sprintf(message,
+                       "Failed to add space for %ld new rows in table.",
+                       nrows);
+                       ffpmsg(message);
+                       return(*status);
+                    }
+                }
+                else
+                {
+                   (fptr->Fptr)->numrows = endrow; /* update number of rows */
+                }
+            }
         }
         else
         {
             if ( endrow > (fptr->Fptr)->numrows)
             {
-                ffpmsg("Attempt to read past end of table.");
-                return(*status = BAD_ROW_NUM);
+              ffpmsg("Attempt to read past end of table:");
+              sprintf(message, 
+                "  Table has %ld rows with %ld elements per row;",
+                    (fptr->Fptr)->numrows, *repeat);
+              ffpmsg(message);
+
+              sprintf(message, 
+              "  Tried to read %ld elements starting at row %ld, element %ld.",
+              nelem, firstrow, firstelem);
+              ffpmsg(message);
+
+              return(*status = BAD_ROW_NUM);
             }
         }
 
@@ -3216,9 +3267,20 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
 
       if (writemode)     /* return next empty heap address for writing */
       {
-        /* update the number of rows in the table */
+        /* Add more rows to the table, if writing beyond the end. */
+        /* It is necessary to shift the heap down in this case */
         if ( firstrow > (fptr->Fptr)->numrows)
-           (fptr->Fptr)->numrows = firstrow;
+        {
+            nrows = firstrow - ((fptr->Fptr)->numrows);
+            if (ffirow(fptr, (fptr->Fptr)->numrows, nrows, status) > 0)
+            {
+                sprintf(message,
+                "Failed to add space for %ld new rows in table.",
+                       nrows);
+                ffpmsg(message);
+                return(*status);
+            }
+        }
 
         *repeat = nelem + *elemnum; /* total no. of elements in the field */
 
@@ -3241,12 +3303,42 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
 
         /* increment the address to the next empty heap position */
         (fptr->Fptr)->heapsize += (*repeat * (*incre)); 
+
+        /* If this is not the last HDU in the file, then check if */
+        /* extending the heap would overwrite the following header. */
+        /* If so, then have to insert more blocks. */
+        if ( !((fptr->Fptr)->lasthdu) )
+        {
+            endpos = datastart + (fptr->Fptr)->heapstart + 
+                     (fptr->Fptr)->heapsize;
+
+            if (endpos > (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1])
+            {
+                /* calc the number block that need to be added */
+                nblock = ((endpos - 1 - 
+                         (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] ) 
+                         / 2880) + 1;
+
+                if (ffiblk(fptr, nblock, 1, status) > 0) /* insert blocks */
+                {
+                  sprintf(message,
+       "Failed to extend the size of the variable length heap by %ld blocks.",
+                   nblock);
+                   ffpmsg(message);
+                   return(*status);
+                }
+            }
+         }
       }
       else    /*  get the read start position in the heap */
       {
         if ( firstrow > (fptr->Fptr)->numrows)
         {
             ffpmsg("Attempt to read past end of table");
+            sprintf(message, 
+                "  Table has %ld rows and tried to read row %ld.",
+                (fptr->Fptr)->numrows, firstrow);
+            ffpmsg(message);
             return(*status = BAD_ROW_NUM);
         }
 
@@ -3259,8 +3351,13 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
 
         if (*elemnum >= *repeat)
         {
-            sprintf(message, "Starting element number is out of range: %ld",
+            sprintf(message, 
+         "Starting element to read in variable length column is too large: %ld",
                     firstelem);
+            ffpmsg(message);
+            sprintf(message, 
+         "  This row only contains %ld elements",
+                    *repeat);
             ffpmsg(message);
             return(*status = BAD_ELEM_NUM);
         }
@@ -4248,13 +4345,12 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
     else
         charfill = 0;   /* images and binary tables have zero fill */
 
-
     if (headdata == 0)  
         insertpt = (fptr->Fptr)->datastart;  /* insert just before data, or */
-    else         /* before next HDU */
-        insertpt = (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu + 1]; 
+    else                                     /* at end of data, */
+        insertpt = (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu + 1];
 
-    inbuff = buff1;   /* set pointers to input and output buffers */
+    inbuff  = buff1;   /* set pointers to input and output buffers */
     outbuff = buff2;
 
     memset(outbuff, charfill, 2880); /* initialize buffer with fill */

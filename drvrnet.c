@@ -242,29 +242,44 @@ int http_open(char *filename, int rwmode, int *handle)
   
 
   /* Open the network connection */
-  alarm(NETTIMEOUT);
-  if (http_open_network(filename,&httpfile,contentencoding,
+
+  /* Does the file have a .Z or .gz in it */
+  if (strstr(filename,".Z") || strstr(filename,".gz")) {
+    alarm(NETTIMEOUT);
+    if (http_open_network(filename,&httpfile,contentencoding,
 			       &contentlength)) {
-    alarm(0);
+      alarm(0);
+      sprintf(errorstr,"Unable to open http file %s (http_opens)",filename);
+      ffpmsg(errorstr);
+      goto error;
+    } 
+  } else {
+    alarm(NETTIMEOUT);
     /* Try the .gz one */
     strcpy(newfilename,filename);
     strcat(newfilename,".gz");
-    alarm(NETTIMEOUT);
+    
     if (http_open_network(newfilename,&httpfile,contentencoding,
 			  &contentlength)) {
-      /* Now the .Z one */
       alarm(0);
+      /* Now the .Z one */
       strcpy(newfilename,filename);
       strcat(newfilename,".Z");
       alarm(NETTIMEOUT);
       if (http_open_network(newfilename,&httpfile,contentencoding,
-			    &contentlength)) { 
+			    &contentlength)) {
 	alarm(0);
-	ffpmsg("Unable to open http file (http_open)");
-	goto error;
+	alarm(NETTIMEOUT);
+	if (http_open_network(filename,&httpfile,contentencoding,
+			      &contentlength)) { 
+	  alarm(0);
+	  ffpmsg("Unable to open http file (http_open)");
+	  goto error;
+	}
       }
     }
   }
+
 
   closehttpfile++;
 
@@ -730,6 +745,7 @@ int ftp_open(char *filename, int rwmode, int *handle)
   int sock;
   char newfilename[MAXLEN];
   char recbuf[MAXLEN];
+  char errorstr[MAXLEN];
   long len;
   int status;
   int closememfile;
@@ -761,30 +777,38 @@ int ftp_open(char *filename, int rwmode, int *handle)
 
   alarm(NETTIMEOUT);
   strcpy(newfilename,filename);
-  if (ftp_open_network(filename,&ftpfile,&command,&sock)) {
+  /* Does the file have a .Z or .gz in it */
+  if (strstr(newfilename,".Z") || strstr(newfilename,".gz")) {
+    alarm(NETTIMEOUT);
+    if (ftp_open_network(filename,&ftpfile,&command,&sock)) {
 
-    ffpmsg("Unable to open filename as given (ftp_open)");
-    alarm(0);
+      alarm(0);
+      sprintf(errorstr,"Unable to open ftp file %s (http_opens)",filename);
+      ffpmsg(errorstr);
+      goto error;
+    } 
+  } else {
     /* Try the .gz one */
     strcpy(newfilename,filename);
     strcat(newfilename,".gz");
     alarm(NETTIMEOUT);
-    ffpmsg("Trying filename + .gz (ftp_open)");
     if (ftp_open_network(newfilename,&ftpfile,&command,&sock)) {
-
-      ffpmsg("Unable to open filename + .gz (ftp_open)");
-    
-      /* Now the .Z one */
+      
       alarm(0);
       strcpy(newfilename,filename);
       strcat(newfilename,".Z");
       alarm(NETTIMEOUT);
-      ffpmsg("Trying filename + .Z (ftp_open)");
       if (ftp_open_network(newfilename,&ftpfile,&command,&sock)) {
+	
+	/* Now as given */
 	alarm(0);
-	ffpmsg("Unable to open filename + .Z (ftp_open)");
-	ffpmsg("Unable to open ftp file (ftp_open)");
-	goto error;
+	strcpy(newfilename,filename);
+	alarm(NETTIMEOUT);
+	if (ftp_open_network(newfilename,&ftpfile,&command,&sock)) {
+	  alarm(0);
+	  ffpmsg("Unable to open ftp file (ftp_open)");
+	  goto error;
+	}
       }
     }
   }
@@ -1656,6 +1680,16 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile)
 
 {
   
+    
+
+  char newinfile[MAXLEN];
+  FILE *ftpfile;
+  FILE *command;
+  int sock;
+
+  char contentencoding[MAXLEN];
+  int contentlength;
+  
   /* default to ftp://
    */
     
@@ -1664,12 +1698,49 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile)
   if (strlen(outfile)) {
     /* there is an output file */
     strcpy(netoutfile,outfile);
-    if (strstr(infile,".gz") || (strstr(infile,".Z"))) {
-      /* It's compressed */
-      strcpy(urltype,"ftpcompress://");
-    } else {
-      strcpy(urltype,"ftpfile://");
+
+    if (!ftp_open_network(infile,&ftpfile,&command,&sock)) {
+      fclose(ftpfile);
+      fclose(command);
+      /* It's there, we're happy */
+      if (strstr(infile,".gz") || (strstr(infile,".Z"))) {
+	/* It's compressed */
+	strcpy(urltype,"ftpcompress://");
+      } else {
+	strcpy(urltype,"ftpfile://");
+      }
+      return 0;
     }
+
+    /* Ok, let's try the .gz one */
+    strcpy(newinfile,infile);
+    strcat(newinfile,".gz");
+    if (!ftp_open_network(infile,&ftpfile,&command,&sock)) {
+      fclose(ftpfile);
+      fclose(command);
+      strcpy(infile,newinfile);
+      strcat(outfile,".gz");
+      strcat(netoutfile,".gz");
+      /* It's there, we're happy, and, it's compressed  */
+      strcpy(urltype,"ftpcompress://");
+      return 0;
+    }
+    
+    /* Ok, let's try the .Z one */
+    strcpy(newinfile,infile);
+    strcat(newinfile,".Z");
+    if (!ftp_open_network(infile,&ftpfile,&command,&sock)) {
+      fclose(ftpfile);
+      fclose(command);
+      strcpy(infile,newinfile);
+      strcat(outfile,".Z");
+      strcat(netoutfile,".Z");
+      /* It's there, we're happy, and, it's compressed  */
+      strcpy(urltype,"ftpcompress://");
+      return 0;
+    }
+    
+
   } 
   return 0;
 }

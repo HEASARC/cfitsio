@@ -14,8 +14,10 @@
 #include <stddef.h>  /* apparently needed to define size_t */
 #include "fitsio2.h"
 
+#define RECBUFLEN 1000
+static char stdin_outfile[FLEN_FILENAME];
 
-typedef struct    /* structure containing disk file structure */ 
+typedef struct    /* structure containing mem file structure */ 
 {
     char **memaddrptr;   /* Pointer to memory address pointer; */
                          /* This may or may not point to memaddr. */
@@ -189,39 +191,87 @@ int mem_truncate(int handle, long filesize)
     return(0);
 }
 /*--------------------------------------------------------------------------*/
+int stdin_checkfile(char *urltype, char *infile, char *outfile)
+/*
+   do any special case checking when opening a file on the stdin stream
+*/
+{
+    if (strlen(outfile))
+    {
+        strcpy(stdin_outfile,outfile); /* an output file is specified */
+	strcpy(urltype,"stdinfile://");
+    }
+    else
+        *stdin_outfile = '\0';  /* no output file was specified */
+
+    return(0);
+}
+/*--------------------------------------------------------------------------*/
 int stdin_open(char *filename, int rwmode, int *handle)
 /*
   open a FITS file from the stdin file stream by copying it into memory
   The file name is ignored in this case.
 */
 {
-    int status;
+    int status = 0;
 
-    if (rwmode != READONLY)
+    if (*stdin_outfile)
     {
+      /* copy the stdin stream to the specified disk file then open the file */
+
+      /* Create the output file */
+      status =  file_create(stdin_outfile,handle);
+
+      if (status)
+      {
+        ffpmsg("Unable to create output file to copy stdin (stdin_open):");
+        ffpmsg(stdin_outfile);
+        return(status);
+      }
+ 
+      /* copy the whole stdin stream to the file */
+      status = stdin2file(*handle);
+      file_close(*handle);
+
+      if (status)
+      {
+        ffpmsg("failed to copy stdin to file (stdin_open)");
+        ffpmsg(stdin_outfile);
+        return(status);
+      }
+
+      /* reopen file with proper rwmode attribute */
+      status = file_open(stdin_outfile, rwmode, handle);
+    }
+    else
+    {
+      /* copy the stdin stream into memory then open file in memory */
+
+      if (rwmode != READONLY)
+      {
         ffpmsg("cannot open stdin with WRITE access");
         return(FILE_NOT_OPENED);
-    }
+      }
 
-    status = mem_createmem(2880L, handle);
+      status = mem_createmem(2880L, handle);
 
-    if (status)
-    {
+      if (status)
+      {
         ffpmsg("failed to create empty memory file (stdin_open)");
         return(status);
-    }
+      }
+ 
+      /* copy the whole stdin stream into memory */
+      status = stdin2mem(*handle);
 
-    /* copy the whole stdin stream into memory */
-    status = stdin2mem(*handle);
-
-    if (status)
-    {
+      if (status)
+      {
         ffpmsg("failed to copy stdin into memory (stdin_open)");
         free(memTable[*handle].memaddr);
-        return(status);
+      }
     }
 
-    return(0);
+    return(status);
 }
 /*--------------------------------------------------------------------------*/
 int stdin2mem(int hd)  /* handle number */
@@ -265,7 +315,7 @@ int stdin2mem(int hd)  /* handle number */
    if (filesize == 0)
    {
        ffpmsg("Couldn't find the string 'SIMPLE' in the stdin stream");
-       return(0);
+       return(FILE_NOT_OPENED);
    }
 
     /* fill up the remainder of the initial memory allocation */
@@ -306,6 +356,61 @@ int stdin2mem(int hd)  /* handle number */
     *memTable[hd].memsizeptr = memsize;
 
     return(0);
+}
+/*--------------------------------------------------------------------------*/
+int stdin2file(int handle)  /* handle number */
+/*
+  Copy the stdin stream to a file.  .
+*/
+{
+    size_t nread = 0;
+    char simple[] = "SIMPLE";
+    int c, ii, jj, status = 0;
+    char recbuf[RECBUFLEN];
+
+    ii = 0;
+    for(jj = 0; (c = fgetc(stdin)) != EOF && jj < 2000; jj++)
+    {
+       /* Skip over any garbage at the beginning of the stdin stream by */
+       /* reading 1 char at a time, looking for 'S', 'I', 'M', 'P', 'L', 'E' */
+       /* Give up if not found in the first 2000 characters */
+
+       if (c == simple[ii])
+       {
+           ii++;
+           if (ii == 6)   /* found the complete string? */
+           {
+              memcpy(recbuf, simple, 6);  /* copy "SIMPLE" to buffer */
+              break;
+           }
+       }
+       else
+          ii = 0;  /* reset search to beginning of the string */
+    }
+
+   if (ii != 6)
+   {
+       ffpmsg("Couldn't find the string 'SIMPLE' in the stdin stream");
+       return(FILE_NOT_OPENED);
+   }
+
+    /* fill up the remainder of the buffer */
+    nread = fread(recbuf + 6, 1, RECBUFLEN - 6, stdin);
+    nread += 6;  /* add in the 6 characters in 'SIMPLE' */
+
+    status = file_write(handle, recbuf, nread);
+    if (status)
+       return(status);
+
+    /* copy the rest of stdin stream */
+    while(0 != (nread = fread(recbuf,1,RECBUFLEN, stdin)))
+    {
+        status = file_write(handle, recbuf, nread);
+        if (status)
+           return(status);
+    }
+
+    return(status);
 }
 /*--------------------------------------------------------------------------*/
 int stdout_close(int handle)

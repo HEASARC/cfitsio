@@ -170,6 +170,8 @@ int ffpky( fitsfile *fptr,     /* I - FITS file pointer        */
   Writes a keyword value with the datatype specified by the 2nd argument.
 */
 {
+    char errmsg[81];
+
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
@@ -227,7 +229,11 @@ int ffpky( fitsfile *fptr,     /* I - FITS file pointer        */
         ffpkym(fptr, keyname, (double *) value, -15, comm, status);
     }
     else
+    {
+        sprintf(errmsg, "Bad keyword datatype code: %d (ffpky)", datatype);
+        ffpmsg(errmsg);
         *status = BAD_DATATYPE;
+    }
 
     return(*status);
 } 
@@ -726,7 +732,10 @@ int ffpkyt( fitsfile *fptr,      /* I - FITS file pointer        */
         return(*status);
 
     if (fraction > 1. || fraction < 0.)
+    {
+        ffpmsg("fraction must be between 0. and 1. (ffpkyt)");
         return(*status = BAD_F2C);
+    }
 
     ffi2c(intval, valstring, status);  /* convert integer to string */
     ffd2f(fraction, 16, fstring, status);  /* convert to 16 decimal string */
@@ -870,12 +879,32 @@ int ffdt2s(int year,          /* I - year (0 - 9999)           */
   Construct a date character string
 */
 {
+    char errmsg[81];
+
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
-    if (year < 0 || year > 9999 || month < 1 || month > 12 || day < 1 ||
-        day > 31)
+    if (year < 0 || year > 9999)
+    {
+       sprintf(errmsg, 
+       "input year value is out of range 0 - 9999: %d (ffdt2s)", year);
+       ffpmsg(errmsg);
        return(*status = BAD_DATE);
+    }
+    else if (month < 1 || month > 12)
+    {
+       sprintf(errmsg, 
+       "input month value is out of range 1 - 12: %d (ffdt2s)", month);
+       ffpmsg(errmsg);
+       return(*status = BAD_DATE);
+    }
+    else if (day < 1 || day > 31)
+    {
+       sprintf(errmsg, 
+       "input day value is out of range 1 - 31: %d (ffdt2s)", day);
+       ffpmsg(errmsg);
+       return(*status = BAD_DATE);
+    }
 
     if (year >= 1900 && year <= 1998)  /* use old 'dd/mm/yy' format */
         sprintf(datestr, "%.2d/%.2d/%.2d", day, month, year - 1900);
@@ -896,12 +925,16 @@ int ffs2dt(char *datestr,   /* I - date string: "YYYY-MM-DD" or "dd/mm/yy" */
 */
 {
     int slen;
+    char errmsg[81];
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
     if (!datestr)
+    {
+        ffpmsg("error: null input date string (ffs2dt)");
         return(*status = BAD_DATE);   /* Null datestr pointer ??? */
+    }
 
     slen = strlen(datestr);
 
@@ -920,7 +953,11 @@ int ffs2dt(char *datestr,   /* I - date string: "YYYY-MM-DD" or "dd/mm/yy" */
                 *day   = atoi(datestr);
         }
         else
+        {
+            ffpmsg("input date string has illegal format:");
+            ffpmsg(datestr);
             return(*status = BAD_DATE);
+        }
     }
     else if (slen >= 10 && datestr[4] == '-' && datestr[7] == '-')
         {
@@ -929,7 +966,11 @@ int ffs2dt(char *datestr,   /* I - date string: "YYYY-MM-DD" or "dd/mm/yy" */
          && isdigit(datestr[8]) && isdigit(datestr[9]) )
         {
             if (slen > 10 && datestr[10] != 'T')
+            {
+                ffpmsg("input date string has illegal format:");
+                ffpmsg(datestr);
                 return(*status = BAD_DATE);
+            }
 
             /* this is a new format string: "yyyy-mm-dd" */
             if (year)
@@ -942,23 +983,47 @@ int ffs2dt(char *datestr,   /* I - date string: "YYYY-MM-DD" or "dd/mm/yy" */
                *day   = atoi(&datestr[8]);
         }
         else
-            return(*status = BAD_DATE);
+        {
+                ffpmsg("input date string has illegal format:");
+                ffpmsg(datestr);
+                return(*status = BAD_DATE);
+        }
     }
     else
-        return(*status = BAD_DATE);
+    {
+                ffpmsg("input date string has illegal format:");
+                ffpmsg(datestr);
+                return(*status = BAD_DATE);
+    }
 
 
     if (year)
        if (*year < 0 || *year > 9999)
+       {
+          sprintf(errmsg, 
+          "year value is out of range 0 - 9999: %d (ffs2dt)", *year);
+          ffpmsg(errmsg);
           return(*status = BAD_DATE);
+       }
 
     if (month)
        if (*month < 1 || *month > 12)
+       {
+          sprintf(errmsg, 
+          "month value is out of range 1 - 12: %d (ffs2dt)", *month);
+          ffpmsg(errmsg);
           return(*status = BAD_DATE);
+       }
+
 
     if (day)
        if (*day < 1 || *day > 31)
+       {
+          sprintf(errmsg, 
+          "day value is out of range 1 - 31: %d (ffs2dt)", *day);
+          ffpmsg(errmsg);
           return(*status = BAD_DATE);
+       }
 
     return(*status);
 }
@@ -978,27 +1043,80 @@ int fftm2s(int year,          /* I - year (0 - 9999)           */
 */
 {
     int width;
+    char errmsg[81];
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
-    if (year < 0 || year > 9999 || month < 0 || month > 12 || day < 0 ||
-        day > 31 || hour < 0 || hour > 23 || minute < 0 || minute > 59 ||
-        second < 0. || second >= 61. || decimals < 0 || decimals > 25)
+    if (year < 0 || year > 9999)
+    {
+       sprintf(errmsg, 
+       "input year value is out of range 0 - 9999: %d (fftm2s)", year);
+       ffpmsg(errmsg);
        return(*status = BAD_DATE);
+    }
+    else if (month < 0 || month > 12)
+    {
+       sprintf(errmsg, 
+       "input month value is out of range 0 - 12: %d (fftm2s)", month);
+       ffpmsg(errmsg);
+       return(*status = BAD_DATE);
+    }
+    else if (day < 0 || day > 31)
+    {
+       sprintf(errmsg, 
+       "input day value is out of range 0 - 31: %d (fftm2s)", day);
+       ffpmsg(errmsg);
+       return(*status = BAD_DATE);
+    }
+    else if (hour < 0 || hour > 23)
+    {
+       sprintf(errmsg, 
+       "input hour value is out of range 0 - 23: %d (fftm2s)", hour);
+       ffpmsg(errmsg);
+       return(*status = BAD_DATE);
+    }
+    else if (minute < 0 || minute > 59)
+    {
+       sprintf(errmsg, 
+       "input minute value is out of range 0 - 59: %d (fftm2s)", minute);
+       ffpmsg(errmsg);
+       return(*status = BAD_DATE);
+    }
+    else if (second < 0. || second >= 61)
+    {
+       sprintf(errmsg, 
+       "input second value is out of range 0 - 60.999: %f (fftm2s)", second);
+       ffpmsg(errmsg);
+       return(*status = BAD_DATE);
+    }
+    else if (decimals < 0 || decimals > 25)
+    {
+       sprintf(errmsg, 
+       "input decimals value is out of range 0 - 25: %d (fftm2s)", decimals);
+       ffpmsg(errmsg);
+       return(*status = BAD_DATE);
+    }
 
     if (decimals == 0)
        width = 2;
     else
        width = decimals + 3;
 
-    if (year == 0 && month == 0 && day == 0)
+    if (decimals < 0)
     {
+        /* a negative decimals value means return only the date, not time */
+        sprintf(datestr, "%.4d-%.2d-%.2d", year, month, day);
+    }
+    else if (year == 0 && month == 0 && day == 0)
+    {
+        /* return only the time, not the date */
         sprintf(datestr, "%.2d:%.2d:%0*.*f",
             hour, minute, width, decimals, second);
     }
     else
     {
+        /* return both the time and date */
         sprintf(datestr, "%.4d-%.2d-%.2dT%.2d:%.2d:%0*.*f",
             year, month, day, hour, minute, width, decimals, second);
     }
@@ -1020,12 +1138,16 @@ int ffs2tm(char *datestr,     /* I - date string: "YYYY-MM-DD"    */
 */
 {
     int slen;
+    char errmsg[81];
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
     if (!datestr)
+    {
+        ffpmsg("error: null input date string (ffs2tm)");
         return(*status = BAD_DATE);   /* Null datestr pointer ??? */
+    }
 
     if (hour)
        *hour   = 0;
@@ -1046,7 +1168,11 @@ int ffs2tm(char *datestr,     /* I - date string: "YYYY-MM-DD"    */
         if (slen == 8 || slen == 10)
             return(*status);               /* OK, no time fields */
         else if (slen < 19) 
-            return(*status = BAD_DATE);     /* invalid string length */
+        {
+            ffpmsg("input date string has illegal format:");
+            ffpmsg(datestr);
+            return(*status = BAD_DATE);
+        }
 
         else if (datestr[10] == 'T' && datestr[13] == ':' && datestr[16] == ':')
         {
@@ -1054,7 +1180,11 @@ int ffs2tm(char *datestr,     /* I - date string: "YYYY-MM-DD"    */
            && isdigit(datestr[15]) && isdigit(datestr[17]) && isdigit(datestr[18]) )
             {
                 if (slen > 19 && datestr[19] != '.')
-                    return(*status = BAD_DATE);
+                {
+                  ffpmsg("input date string has illegal format:");
+                  ffpmsg(datestr);
+                  return(*status = BAD_DATE);
+                }
 
                 /* this is a new format string: "yyyy-mm-ddThh:mm:ss.dddd" */
                 if (hour)
@@ -1067,7 +1197,12 @@ int ffs2tm(char *datestr,     /* I - date string: "YYYY-MM-DD"    */
                     *second = atof(&datestr[17]);
             }
             else
-                return(*status = BAD_DATE);
+            {
+                  ffpmsg("input date string has illegal format:");
+                  ffpmsg(datestr);
+                  return(*status = BAD_DATE);
+            }
+
         }
     }
     else   /* no date fields */
@@ -1097,23 +1232,48 @@ int ffs2tm(char *datestr,     /* I - date string: "YYYY-MM-DD"    */
                     *second = atof(&datestr[6]);
             }
             else
-                return(*status = BAD_DATE);
+            {
+                  ffpmsg("input date string has illegal format:");
+                  ffpmsg(datestr);
+                  return(*status = BAD_DATE);
+            }
+
         }
         else
-            return(*status = BAD_DATE);
+        {
+                  ffpmsg("input date string has illegal format:");
+                  ffpmsg(datestr);
+                  return(*status = BAD_DATE);
+        }
+
     }
 
     if (hour)
        if (*hour < 0 || *hour > 23)
-           return(*status = BAD_DATE);
+       {
+          sprintf(errmsg, 
+          "hour value is out of range 0 - 23: %d (ffs2tm)", *hour);
+          ffpmsg(errmsg);
+          return(*status = BAD_DATE);
+       }
 
     if (minute)
        if (*minute < 0 || *minute > 59)
-           return(*status = BAD_DATE);
+       {
+          sprintf(errmsg, 
+          "minute value is out of range 0 - 59: %d (ffs2tm)", *minute);
+          ffpmsg(errmsg);
+          return(*status = BAD_DATE);
+       }
 
     if (second)
        if (*second < 0 || *second >= 61.)
-           return(*status = BAD_DATE);
+       {
+          sprintf(errmsg, 
+          "second value is out of range 0 - 60.9999: %f (ffs2tm)", *second);
+          ffpmsg(errmsg);
+          return(*status = BAD_DATE);
+       }
 
     return(*status);
 }
@@ -1584,10 +1744,16 @@ int ffptdm( fitsfile *fptr, /* I - FITS file pointer                        */
         return(*status);
 
     if (colnum < 1 || colnum > 999)
+    {
+        ffpmsg("column number is out of range 1 - 999 (ffptdm)");
         return(*status = BAD_COL_NUM);
+    }
 
     if (naxis < 1)
+    {
+        ffpmsg("naxis is less than 1 (ffptdm)");
         return(*status = BAD_DIMEN);
+    }
 
     ffkeyn("TDIM", colnum, keyname, status);      /* construct TDIMn name */
 
@@ -1599,7 +1765,10 @@ int ffptdm( fitsfile *fptr, /* I - FITS file pointer                        */
             strcat(tdimstr, ",");   /* append the comma separator */
 
         if (naxes[ii] < 0)
+        {
+            ffpmsg("one or more naxes values are less than 0 (ffptdm)");
             return(*status = BAD_NAXES);
+        }
 
         sprintf(value, "%ld", naxes[ii]);
         strcat(tdimstr, value);     /* append the axis size */
@@ -1730,10 +1899,16 @@ int ffphpr( fitsfile *fptr, /* I - FITS file pointer                        */
         }
 
         if (pcount < 0)
+        {
+            ffpmsg("pcount value is less than 0");
             return(*status = BAD_PCOUNT);
+        }
 
         else if (gcount < 1)
+        {
+            ffpmsg("gcount value is less than 1");
             return(*status = BAD_GCOUNT);
+        }
 
         else if (pcount > 0 || gcount > 1)
         {
@@ -1769,10 +1944,16 @@ int ffphpr( fitsfile *fptr, /* I - FITS file pointer                        */
 
     {   /* image extension; cannot have random groups */
         if (pcount != 0)
+        {
+            ffpmsg("image extensions must have pcount = 0");
             *status = BAD_PCOUNT;
+        }
 
         else if (gcount != 1)
+        {
+            ffpmsg("image extensions must have gcount = 1");
             *status = BAD_GCOUNT;
+        }
 
         else
         {

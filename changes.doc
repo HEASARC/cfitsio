@@ -1,5 +1,12 @@
                Log of Changes Made to CFITSIO
 
+   - CFITSIO now will automatically insert space for additional table rows
+     or add space to the data heap, if one writes beyond the current end
+     of the table or heap.  This prevents any HDUs which might follow
+     the current HDU from being overwritten.  It is thus no longer necessary
+     to explicitly call fits_insert_rows before writing new rows of data
+     to the FITS file.
+
    - CFITSIO now automatically keeps track of the number of rows that have
      been written to a FITS table, and updates the NAXIS2 keyword accordingly
      when the table is closed.  It is no longer necessary for the application

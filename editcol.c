@@ -189,8 +189,14 @@ int ffirow(fitsfile *fptr,  /* I - FITS file pointer                        */
     else if (nrows == 0)
         return(*status);   /* no op, so just return */
 
-    ffgkyj(fptr, "NAXIS1", &naxis1, comm, status); /* get the current   */
-    ffgkyj(fptr, "NAXIS2", &naxis2, comm, status); /* size of the table */
+    /* get the current size of the table */
+/*
+    ffgkyj(fptr, "NAXIS1", &naxis1, comm, status);
+    ffgkyj(fptr, "NAXIS2", &naxis2, comm, status); 
+*/
+    /* use internal structure since NAXIS2 keyword may not be up to date */
+    naxis1 = (fptr->Fptr)->rowlength;
+    naxis2 = (fptr->Fptr)->numrows;
 
     if (firstrow > naxis2)
     {
@@ -204,7 +210,7 @@ int ffirow(fitsfile *fptr,  /* I - FITS file pointer                        */
         return(*status = BAD_ROW_NUM);
     }
 
-    datasize = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;    /* current size of data */
+    datasize = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize; /* current data size */
     freespace = ( ( (datasize + 2879) / 2880) * 2880) - datasize;
     nshift = naxis1 * nrows;              /* no. of bytes to add to table */
 

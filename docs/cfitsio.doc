@@ -836,6 +836,12 @@ be piped between the 2 tasks by specifying
 where the vertical bar is the Unix piping symbol.  This assumes that the 2
 tasks read the name of the FITS file off of the command line.
 
+When specifying the name of the new FITS file to be created by
+fits\_create\_file, if the name is preceded with an exclamation mark
+(!), then any existing file with the  same name will be clobbered, or
+overwritten, by the newly created file.  Otherwise, CFITSIO will return
+an error if the file to be created already exists.
+
 ***3.  Output or Template File Name
 
 This qualifier, which is enclosed in parenthesis immediately following
@@ -900,64 +906,85 @@ will be opened.  Examples:
    myfile.fits[events,2,b] - same, but also requires XTENSION = 'BINTABLE'
 -
 
-***5.  Column Filtering Specification
+***5.  Column and Keyword Filtering Specification
 
-The optional column filtering specifier is used to modify the column
-structure of the binary or ASCII table HDU that was selected with the
-previous HDU location specifier. The column filtering specifier must be
-enclosed in square brackets and can be distinguished from a general row
-filter specifier (described below) by the fact that it begins with the
-string 'col ' and is not immediately followed by an equals sign.  The
-original file is not changed by this operation, and instead the
-modifications are made on a copy of the input FITS file
-(usually in memory), which also contains a copy of all the other HDUs
-in the file.  This temporary file is passed to the application program
-and will persist only until the file is closed or until the program
-exits, unless the outfile specifier (see above) is also supplied.
+The optional column/keyword filtering specifier is used to modify the
+column structure and/or the header keywords in the HDU that was
+selected with the previous HDU location specifier. This filtering
+specifier must be enclosed in square brackets and can be distinguished
+from a general row filter specifier (described below) by the fact that
+it begins with the string 'col ' and is not immediately followed by an
+equals sign.  The original file is not changed by this filtering
+operation, and instead the modifications are made on a copy of the
+input FITS file (usually in memory), which also contains a copy of all
+the other HDUs in the file.  This temporary file is passed to the
+application program and will persist only until the file is closed or
+until the program exits, unless the outfile specifier (see above) is
+also supplied.
 
-The column filter can be used to perform the following operations.
-More than one column operation may be specified by separating them with
-semi-colons.
+The column/keyword filter can be used to perform the following
+operations.  More than one operation may be specified by separating
+them with semi-colons.
 
 \begin{itemize}
 \item
-Delete a column by listing the name of the column preceeded by an
-exclamation mark (!), e.g., '!TIME' will delete the TIME column.
+Delete a column or keyword by listing the name preceeded by an
+exclamation mark (!), e.g., '!TIME' will delete the TIME column if it
+exists, otherwise the TIME keyword.  An error is returned if neither a
+column nor keyword with this name exists.
 
 \item
-Rename an existing column with the syntax 'NewName == OldName'.
+Rename an existing column or keyword with the syntax 'NewName ==
+OldName'.  An error is returned if neither a column nor keyword with
+this name exists.
 
 \item
-Append a new column to the table by giving the name of the new column,
-optionally followed by the datatype in parentheses,  followed by a
-single equals sign and an  expression to be used to compute
-the value in each row (e.g., 'newcol(1J) = 0' will create a new 32-bit
+Append a new column or keyword to the table.  To create a column,
+give the new name, optionally followed by the datatype in parentheses,
+followed by a single equals sign and an  expression to be used to
+compute the value (e.g., 'newcol(1J) = 0' will create a new 32-bit
 integer column called 'newcol' filled with zeros).  The datatype is
 specified using the same syntax that is allowed for the value of the
-FITS TFORMn keyword (e.g.,  'I', 'J', 'E', 'D', etc. for binary tables,
+FITS TFORMn keyword (e.g., 'I', 'J', 'E', 'D', etc. for binary tables,
 and 'I8', F12.3', 'E20.12', etc. for ASCII tables).  If the datatype is
-not specified than an appropriate datatype will be chosen depending on
-the form of the expression (may be a character string, bit, long integer,
-or double column).
+not specified then an appropriate datatype will be chosen depending on
+the form of the expression (may be a character string, logical, bit, long
+integer, or double column). An appropriate vector count (in the case
+of binary tables) will also be added if not explicitly specified.
+
+When creating a new keyword, the keyword name must be preceeded by a 
+pound sign '\#', and the expression must evaluate to a scalar
+(i.e., cannot have a column name in the expression).  The comment
+string for the keyword may be specified in parentheses immediately
+following the keyword name (instead of supplying a datatype as in
+the case of creating a new column).
 
 \item
-Recompute (overwrite) the values in an existing columns by giving the
-name of the column followed by an equals sign and an arithmetic
+Recompute (overwrite) the values in an existing column or keyword by
+giving the name followed by an equals sign and an arithmetic
 expression.
 \end{itemize}
 
-The expression that is used when appending or recomuting columns can be
-arbitrarily complex and may be a function of the value of other columns
-(in the same row) and of header keyword values.  The full syntax and
-available functions for the  expression are described below in the row
-filter specification section.  Examples:
+The expression that is used when appending or recomuting columns or
+keywords can be arbitrarily complex and may be a function of other
+header keyword values and other columns (in the same row).  The full
+syntax and available functions for the expression are described below
+in the row filter specification section.
+
+For  complex  or commonly used operations,  one  can also  place the
+operations into a text  file and  import it  into the  column filter
+using  the syntax '[col @filename.txt]'.   The operations can extend
+over multiple lines of the  file, but multiple operations must still
+be separated by semicolons.
+
+Examples:
 -
    [col !TIME, Good == STATUS]   - deletes the TIME column and
                                    renames the status column to 'Good'
 
    [col PI=PHA * 1.1 + 0.2]      - creates new PI column from PHA values
 
-   [col rate = rate/#exposure]   - recomputes the rate column by dividing
+   [col rate = rate/exposure]   - recomputes the rate column by dividing
                                    it by the EXPOSURE keyword value.
 -
 
@@ -974,6 +1001,7 @@ temporary file is opened and passed to the application program.
 Boolean operators can be used in the expression in either  their  
 Fortran  or  C forms.   The  following  boolean operators can be 
 used in the expression:
+
 
 -
 "equal"         .eq. .EQ. ==  "not equal"          .ne.  .NE.  !=
@@ -997,8 +1025,16 @@ arithmetic operators and functions can be used in the expression:
 "arc tangent"         arctan(x) "arc tangent"         arctan2(x,y)
 "exponential"         exp(x)    "square root"         sqrt(x)
 "natural log"         log(x)    "common log"          log10(x)
-"modulus"             i % j
+"modulus"             i % j     "random # [0.0,1.0)"  random()
 -
+
+
+Conditional arithmetic can be performed by multiplying, '*', boolean
+and arithmetic expressions together.  If the boolean subexpression
+evaluates to TRUE, the larger expression has the value of the
+arithmetic subexpression.  If the boolean is FALSE, the expression
+evaluates to zero.  For example, $7*(5>3)$ equals 7 whereas $7*(5<3)$ equals
+0.
 
 There are two functions that are primarily for use with SAO region files
 and the FSAOI task, but they can be used directly. They return a boolean 
@@ -1054,8 +1090,8 @@ parentheses are required and taken from the C language usage. Also, the
 integer to real casts values to double precision:
 
 -
-"real to integer"    (int) x     (INT) x
-"integer to real"    (float) i   (FLOAT) i
+            "real to integer"    (int) x     (INT) x
+            "integer to real"    (float) i   (FLOAT) i
 -
 
 Bit masks can be used to select out rows from bit columns (TFORMn = \#X) 
@@ -1079,7 +1115,7 @@ bit pattern 0010011, the selection expression would be:
 
 -
                         flags == b0010011
-                    or
+or
                         flags .eq. b10011
 -
 
@@ -1113,21 +1149,25 @@ can be concatenated this way, too.
 In addition, several constants are built in for use in numerical expressions:
     
 -
-#pi                   3.1415... #e                   2.7182...
-#deg                  #pi/180   #row                 current row number
+
+    #pi              3.1415...      #e             2.7182...
+    #deg             #pi/180        #row           current row number
 -
 
 A string constant must be enclosed in quotes as in 'Crab'. Due to the
 generalities of FITS column names, a column name which resembles an 
-arithmetic or boolean expression must be enclosed in "\$" characters as 
-in \$column-name\$ to force its interpretation as a column and not as column 
+arithmetic or boolean expression must be enclosed in "\&" characters as 
+in \&column-name\& to force its interpretation as a column and not as column 
 minus name.
 
 Numerical keyword values found in the current TABLE extension's header
 may be used as part of the expression. Keywords should be preceded by
-a single "\#" as in \#MAXPHA. If the keyword contains a space or a
-character which might appear as an arithmetic term then inclose it in
-"\$" characters as in \#\$MAX PHA\$ or \#\$MAX-PHA\$.
+a single "\#" as in \#MAXPHA, although this is optional--when a variable
+in the expression does not match the name of any of the columns in the
+table, the parser will look for a keyword with that same name.  If the
+keyword contains a minus sign, which could be confused with an 
+arithmetic operation then inclose it in "\&" characters as in 
+\#\&MAX-PHA\&.
 
 Vector columns can also be used in building the expression.  No
 special syntax is required if one wants to operate on all elements of
@@ -1221,39 +1261,41 @@ conventions such as "TSTART" or "STARTTIME".  The same default values
 apply for unspecified parameters when the first one or two parameters
 are specified.  The function automatically searches for TIMEZERO/I/F
 keywords in the current and GTI extensions, applying a relative time
-offset, if necessary.
+offset, if necessary.  
+
+For  complex  or commonly  used filters,  one   can also  place  the
+expression into a text file and import it  into the row filter using
+the syntax  '[@filename.txt]'.  The   expression can be  arbitrarily
+complex and extend over multiple lines of the file.
+
+Here are some examples of valid row filters:
 -
 1.    Extract  all  binary  stars brighter than fifth magnitude from a
-      FITS file named stars.fits and write the result to a FITS file 
-      named bbright.fits (if your value has a '.' it must have
-      a value that follows):
+      FITS file named stars.fits:
 
-      ft> fselect stars.fits bbright.fits "binary && mag <= 5.0"
+            stars.fits[1][binary && mag <= 5.0]
 
 2.    Extract  all  rows between 125 and 175 from a FITS file named
-      manyrows.fits and write the result to a FITS file named 
-      somerows.fits (spaces must be around the relational signs):
+      manyrows.fits:
 
-      ft> fselect manyrows.fits somerows.fits "#row >= 125 && #row <= 175"
+            manyrows.fits[1][#row >= 125 && #row <= 175]
 
 3.    Extract  all  rows that have the (4,5) component of the IMAGE 
-      column greater than 100 in a FITS file named vectors.fits and 
-      write the result to a FITS file named vec.fits:
+      column greater than 100 in a FITS file named vectors.fits:
 
-      ft> fselect vector.fits vec.fits "IMAGE[4;5] .gt. 100"
+            vector.fits[1][IMAGE[4,5] .gt. 100]
 
 4.    Extract  all  rows having the absolute value of the sine of theta 
-      less than a half from a FITS file named angles.fits and write the 
-      result to a FITS file named result.fits where the angles are  tab
-      ulated in degrees:
+      less than a half from a FITS file named angles.fits where the
+      angles are tabulated in degrees:
 
-      ft> fselect angles.fits result.fits "abs(sin(theta * #deg)) < 0.5"
+            angles.fits[1][abs(sin(theta * #deg)) < 0.5]
 
 5.    Extract all rows containing a spectrum, held in vector column SPEC,
-      with at  least one  value above  the detection  threshhold for the
-      observation held in a scalar column, DETECT:
+      with at least one value 3 times  greater than the background level
+      held in a keyword, BACKGRND:
 
-      ft> fcalc spec.fits out.fits "SUM( SPEC[*]>DETECT )>=1"
+            spec.fits[1][SUM( SPEC > 3*BACKGRND )>=1]
 -
 ***7.  Binning or Histogramming Specification
 
@@ -1322,7 +1364,7 @@ if they exist, for the default min, max, and binsize, respectively.  If
 they do not exist then CFITSIO will use the actual minimum and maximum
 values in the column for the histogram min and max values.  The default
 binsize will be set to 1, or (max - min) / 10., whichever is smaller,
-so that the histogram will have at least 20 bins along each axis.
+so that the histogram will have at least 10 bins along each axis.
 
 A shortcut notation is allowed if all the columns/axes have the same
 binning specification.  In this case all the column names may be listed
@@ -1346,7 +1388,16 @@ the value in that column, on a row by row basis, will be used.
 In some cases, the column or keyword may give the reciprocal of the
 actual weight value that is needed.  In this case, precede the weight
 keyword or column name by a slash '/' to tell CFITSIO to use the
-reciprocal of the value when constructing the histogram.  Examples:
+reciprocal of the value when constructing the histogram. 
+
+For  complex or commonly  used  histograms, one  can also  place its
+description  into  a  text  file and  import   it  into  the binning
+specification  using the  syntax '[bin{bijrd}  @filename.txt]'.  The
+file's contents  can extend over   multiple lines, although  it must
+still conform to the  no-spaces rule  for the min:max:binsize syntax
+and each axis specification must still be comma-separated.
+
+ Examples:
 
 -
     [bini detx, dety]                - 2-D, 16-bit integer histogram
@@ -1435,7 +1486,8 @@ datatype of variables when reading or writing keywords or data:
                               DATATYPE               TFORM CODE
   #define TBIT          1  /*                            'X' */
   #define TBYTE        11  /* 8-bit unsigned byte,       'B' */
-  #define TLOGICAL     14  /* logicals (int)             'L' */
+  #define TLOGICAL     14  /* logicals (int for keywords     */
+                           /*  and char for table cols   'L' */
   #define TSTRING      16  /* ASCII string,              'A' */
   #define TSHORT       21  /* signed short,              'I' */
   #define TLONG        41  /* signed long,               'J' */
@@ -1576,6 +1628,16 @@ as shown in the following table:
     _log        l    logical (int)
     _str        s    character string
 -
+
+The logical datatype corresponds to `int' for logical keyword values,
+and `byte' for logical binary table columns.  In otherwords, the value
+when writing a logical keyword must be stored in an `int' variable, and
+must be stored in a `char' array when reading or writing to `L' columns
+in a binary table.  Inplicit data type conversion is not supported for
+logical table columns, but is for keywords, so a logical keyword may be
+read and cast to any numerical data type; a returned value = 0
+indicates false, and any other value = true.
+
 The `int' datatype may be 2 bytes long on some IBM PC compatible
 systems and is usually 4 bytes long on most other systems.  Some 64-bit
 machines, however, like the Dec Alpha/OSF, define the `short', `int',
@@ -1764,7 +1826,7 @@ data type of the value in the FITS file.  Data type conversion is
 supported for numerical data types when reading a FITS header keyword
 value and when reading or writing values in the primary array or a
 table column.  CFITSIO returns status = NUM\_OVERFLOW  if the converted
-data value exceeds the range of the output data type.  Data type
+data value exceeds the range of the output data type.  Implicit data type
 conversion is not supported for string, logical, complex, or double
 complex data types.
 
@@ -1876,26 +1938,19 @@ size of the heap, in bytes, is specified by the PCOUNT keyword in the
 FITS header. When creating a new binary table, the initial value of
 PCOUNT should usually be set to zero. CFITSIO will recompute the size
 of the heap as the data is written and will automatically update the
-PCOUNT keyword value when the table is closed. Thus, application
-programs usually do not need to worry about the heap size, except when
-inserting a new binary table HDU in front of other existing HDUs in the
-FITS file with fits\_insert\_btbl. In this specific case the correct
-final value of PCOUNT must be specified when the HDU is initially
-created so that the correct amount of space will be inserted into the
-FITS file.
+PCOUNT keyword value when the table is closed.  When writing variable
+length data to a table, CFITSIO will automatically extend the size
+of the heap area if necessary, so that any following HDUs do not
+get overwritten.
 
 By default the heap data area starts immediately after the last row of
-the fixed-length table.  (This default starting location may be
-overridden by the THEAP keyword, but this is not recommended).  Thus
-when writing variable length arrays the number of rows in the table
-should be correctly specified (with the NAXIS2 keyword) at the time the
-table is first created.  This differs from the simpler case of tables
-that only contain fixed-length columns where the number of rows in the
-table does not have to be explicitly defined until just before the
-table is closed.  It is still possible to insert additional rows into a
-binary table containing variable-length columns with the
-fits\_insert\_rows routine, however, the performance may be rather slow
-due to all the internal shuffling of the data that must be performed.
+the fixed-length table.  This default starting location may be
+overridden by the THEAP keyword, but this is not recommended.  
+If addtional rows of data are added to the table, CFITSIO will
+automatically shift the the heap down to make room for the new
+rows, but it is obviously be more efficient to initially
+create the table with the necessary number of blank rows, so that
+the heap does not needed to be constantly moved.
 
 When writing to a variable length field the entire array of values for
 a given row of the table must be written with a single call to
@@ -1955,7 +2010,7 @@ VAX/VMS machines, however, where there is no easy way to bypass the
 default interpretation of the IEEE special values.
 
 **L.  When the Final Size of the FITS HDU is Unknown
- 
+
 It is not required to know the total size of a FITS data array or table
 before beginning to write the data to the FITS file.  In the case of
 the primary array or an image extension, one should initially create
@@ -1965,21 +2020,33 @@ been written and the true dimensions are known, then the NAXISn value
 should be updated using the fits\_update\_key routine before moving to
 another extension or closing the FITS file.
 
-When creating FITS tables, CFITSIO will automatically keep track of the
-maximum number of rows that are written and will update the number of
-rows in the table (given by the NAXIS2 keyword) accordingly when the
-table is closed.  In general, when creating a new table it is best to
-specify the initial number of rows = 0, and then let CFITSIO keep track
-of the actual size of the table as the new rows are written.  If the
-table is initially created with more than zero rows, then this will be
+When writing to FITS tables, CFITSIO automatically keeps track of the
+highest row number that is written to, and will increase the size of
+the table if necessary.  CFITSIO will also automatically insert space
+in the FITS file if necessary, to ensure that the data 'heap', if it
+exists, and/or any additional HDUs that follow the table do not get
+overwritten as new rows are written to the table.
+
+As a general rule it is best to specify the initial number of rows = 0
+when the table is created, then let CFITSIO keep track of the number of
+rows that are actually written.  The application program should not
+manually update the number of rows in the table (as given by the NAXIS2
+keyword) since CFITSIO does this automatically.  If a table is
+initially created with more than zero rows, then this will ususally be
 considered as the minimum size of the table, even if fewer rows are
-actually written to the table.  If more rows are appended to an
-existing table,  CFITSIO will also automatically update the NAXIS2
-keyword value.  Note, however, that if there are additional HDUs in the
-FITS file following the table, or if the table contains variable length
-columns, then it is required to call the fits\_insert\_rows routine
-prior to writing the new rows, otherwise the header of the following
-HDU, or the variable length column data heap, may get overwritten.
+actually written to the table.  Thus, if a table is initially created
+with NAXIS2 = 20, and CFITSIO only writes 10 rows of data before
+closing the table, then NAXIS2 will remain equal to 20.  If however, 30
+rows of data are written to this table, then NAXIS2 will be increased
+from 20 to 30.  The one exception to this automatic updating of the
+NAXIS2 keyword is if the application program directly modifies the
+value of NAXIS2 (up or down) itself just before closing the table.  In this
+case, CFITSIO does not update NAXIS2 again, since it assumes that the
+application program must have had a good reason for changing the value
+directly.  This is not recommended, however, and is only provided for
+backward compatibility with software that initially creates a table
+with a large number of rows, than decreases the NAXIS2 value to the
+actual smaller value just before closing the table.
 
 **K.  Local FITS Conventions supported by CFITSIO
 
@@ -2960,10 +3027,12 @@ a whole.
    created before appending the table extension to it. 
    The tbltype parameter defines the type of table and can have 
    values of ASCII\_TBL or BINARY\_TBL.  The naxis2 parameter gives the
-   initial number of rows to be created in the table, and may be 
-   set = 0.  CFITSIO 
-   will automatically increase the number of rows in the table as 
-   additional rows are written. The tunit and extname parameters
+   initial number of rows to be created in the table, and should normally 
+   be set = 0.  CFITSIO 
+   will automatically increase the size of the table as 
+   additional rows are written.  A non-zero number of rows may be specified
+   to reserve space for that many rows, even if a few number of rows will
+   be written.  The tunit and extname parameters
    are optional and a null pointer may be given if they are not defined.
    The FITS Standard recommends that only letters, digits, and the
    underscore character be used in column names (with no embedded
@@ -3033,7 +3102,7 @@ header.
 >2  Write (append) a new keyword of the appropriate datatype into the
     CHU.  Note that the address to the value, and not the value itself, must
     be entered.    The datatype parameter specifies the datatype of the
-    keyword value with one of the following values:  TSTRING, TLOGICAL,
+    keyword value with one of the following values:  TSTRING, TLOGICAL (== int),
     TBYTE, TSHORT, TUSHORT, TINT, TUINT, TLONG, TULONG, TFLOAT, TDOUBLE. A null
     pointer may be entered for the comment parameter which will cause the
 >   comment field to be left blank.  \label{ffpky}
@@ -3048,9 +3117,10 @@ header.
     the end of the header. Note that the address to the value, and not the
     value itself, must be entered. The datatype parameter specifies the datatype
     of the keyword value and can have one of the following values:  TSTRING,
-    TLOGICAL, TBYTE, TSHORT, TUSHORT, TINT, TUINT, TLONG, TULONG, TFLOAT,
+    TLOGICAL (== int), TBYTE, TSHORT, TUSHORT, TINT, TUINT, TLONG, TULONG,
+    TFLOAT,
     TDOUBLE, TCOMPLEX, and TDBLCOMPLEX. A null pointer may be entered for the
-    comment parameter which will leave the comment field blank (or unmodified).  
+    comment parameter which will leave the comment field blank (or unmodified).
 > \label{ffuky}
 -
   int fits_update_key / ffuky
@@ -3147,8 +3217,8 @@ header.
 >15 Read a specified keyword value and comment.
     The datatype parameter specifies the returned datatype of the 
     keyword value and can have one of the following symbolic constant
-    values:  TSTRING, TLOGICAL, TBYTE, TSHORT, TUSHORT, TINT, TUINT, TLONG,
-    TULONG, TFLOAT, TDOUBLE, TCOMPLEX, and TDBLCOMPLEX.
+    values:  TSTRING, TLOGICAL (== int), TBYTE, TSHORT, TUSHORT, TINT, TUINT,
+    TLONG, TULONG, TFLOAT, TDOUBLE, TCOMPLEX, and TDBLCOMPLEX.
     Data type conversion will be performed for numeric values if
     the keyword value does not have the same datatype.  If the value 
     of the keyword is undefined (i.e., the value
@@ -3382,7 +3452,8 @@ the first 8 characters, and strongly recommended that the names be
 >3  Return the datatype and vector repeat value for a column in an ASCII or 
     binary table.  Allowed values for the datatype in ASCII tables are:
     TSTRING, TSHORT, TLONG, TFLOAT, and TDOUBLE.  Binary tables also
-    support these types: TLOGICAL, TBIT, TBYTE, TCOMPLEX and TDBLCOMPLEX.
+    support these types: TLOGICAL, TBIT, TBYTE, TCOMPLEX and
+    TDBLCOMPLEX.
     Note that if the column is a 32-bit integer, then this routine will
     return datatype = TLONG regardless of the length of a long integers on
     that machine (i.e., even on DEC Alpha OSF machines in which long integers
@@ -3509,12 +3580,13 @@ automatically be increased and the NAXIS2 keyword value will be
 updated.  Attempts to read beyond the end of the table will result in
 an error.
 
-Automatic data type conversion is performed
-for numerical data types if the data type of the column (defined by the
-TFORMn keyword) differs from the data type of the calling routine.
-ASCII tables support the following datatype values:  TSTRING, TBYTE,
-TSHORT, TUSHORT, TINT, TUINT, TLONG, TULONG, TFLOAT, or TDOUBLE.  Binary
-tables also support TLOGICAL, TCOMPLEX, and TDBLCOMPLEX.
+Automatic data type conversion is performed for numerical data types
+(only) if the data type of the column (defined by the TFORMn keyword)
+differs from the data type of the calling routine.  ASCII tables
+support the following datatype values:  TSTRING, TBYTE, TSHORT,
+TUSHORT, TINT, TUINT, TLONG, TULONG, TFLOAT, or TDOUBLE.  Binary tables
+also support TLOGICAL (internally mapped to the `char' datatype),
+TCOMPLEX, and TDBLCOMPLEX.
 
 Numerical data values are automatically scaled by the TSCALn and TZEROn
 keyword values (if they exist).
@@ -4032,16 +4104,18 @@ int fits_get_system_time/ffgstm
 >3  Construct a date string from the input date values.  If the year
 is between 1900 and 1998, inclusive, then the returned date string will
 have the old FITS format ('dd/mm/yy'), otherwise the date string will
-> have the new FITS format ('YYYY-MM-DD') \label{ffdt2s}
+have the new FITS format ('YYYY-MM-DD').  Use fits\_time2str instead
+> to always return a date string using the new FITS format. \label{ffdt2s}
 -
 int fits_date2str/ffdt2s   
     (int year, int month, int day, > char *datestr, int *status)
 -
 
->4  Construct a new-format date + time string ('YYYY-MM-DDThh:mm:ss.dddd').
+>4  Construct a new-format date + time string ('YYYY-MM-DDThh:mm:ss.ddd...').
   If the year, month, and day values all = 0 then only the time is encoded
-  with format 'hh:mm:ss.ddd...'.  The decimals paramter specifies how many
-> decimal places of fractional seconds to include in the string.
+  with format 'hh:mm:ss.ddd...'.  The decimals parameter specifies how many
+  decimal places of fractional seconds to include in the string.  If `decimals'
+> is negative, then only the date will be return ('YYYY-MM-DD').
 -
 int fits_time2str/fftm2s   
     (int year, int month, int day, int hour, int minute, double second,
@@ -5564,6 +5638,211 @@ fits\_write\_tblbytes  & \pageref{ffptbb} \\
 fits\_write\_tdim         & \pageref{ffptdm} \\
 fits\_write\_theap    & \pageref{ffpthp} \\
 \end{tabular}
+\newpage
+
+\begin{tabular}{lr}
+ffasfm    & \pageref{ffasfm} \\
+ffbnfm   & \pageref{ffbnfm} \\
+ffccol     & \pageref{ffccol} \\
+ffclos     & \pageref{ffclos} \\
+ffcmps    & \pageref{ffcmps} \\
+ffcmsg  & \pageref{ffcmsg} \\
+ffcopy     & \pageref{ffcopy} \\
+ffcpcl     & \pageref{ffcpcl} \\
+ffcpdt      & \pageref{ffcpdt} \\
+ffcphd   & \pageref{ffcphd} \\
+ffcpky       & \pageref{ffcpky} \\
+ffcrhd     & \pageref{ffcrhd} \\
+ffcrim     & \pageref{ffcrim} \\
+ffcrow    & \pageref{ffcrow} \\
+ffcrtb     & \pageref{ffcrtb} \\
+ffdcol   & \pageref{ffdcol} \\
+ffdelt    & \pageref{ffdelt} \\
+ffdhdu     & \pageref{ffdhdu} \\
+ffdkey     & \pageref{ffdkey} \\
+ffdrec  & \pageref{ffdrec} \\
+ffdrow  & \pageref{ffdrow} \\
+ffdrws & \pageref{ffdrws} \\
+ffdsum  & \pageref{ffdsum} \\
+ffdt2s  & \pageref{ffdt2s} \\
+ffdtyp    & \pageref{ffdtyp} \\
+ffesum  & \pageref{ffesum} \\
+ffextn   & \pageref{ffextn} \\
+ffflmd      & \pageref{ffflmd} \\
+ffflnm      & \pageref{ffflnm} \\
+ffflus     & \pageref{ffflus} \\
+fffrow    & \pageref{fffrow} \\
+ffg2dx      & \pageref{ffg2dx} \\
+ffg3dx      & \pageref{ffg3dx} \\
+ffgabc      & \pageref{ffgabc} \\
+ffgacl  & \pageref{ffgacl} \\
+ffgbcl  & \pageref{ffgbcl} \\
+ffgcfx    & \pageref{ffgcfx} \\
+ffgcks     & \pageref{ffgcks} \\
+ffgcnn    & \pageref{ffgcnn} \\
+ffgcno     & \pageref{ffgcno} \\
+ffgcrd         & \pageref{ffgcrd} \\
+ffgcv        & \pageref{ffgcv} \\
+ffgcvx    & \pageref{ffgcvx} \\
+ffgdes & \pageref{ffgdes} \\
+ffgdess & \pageref{ffgdes} \\
+ffgerr  & \pageref{ffgerr} \\
+\end{tabular}
+\begin{tabular}{lr}
+ffggpx  & \pageref{ffggpx} \\
+ffghad    & \pageref{ffghad} \\
+ffghbn      & \pageref{ffghbn} \\
+ffghdn    & \pageref{ffghdn} \\
+ffghdt   & \pageref{ffghdt} \\
+ffghpr       & \pageref{ffghpr} \\
+ffghps        & \pageref{ffghps} \\
+ffghsp      & \pageref{ffghsp} \\
+ffghtb      & \pageref{ffghtb} \\
+ffgics & \pageref{ffgics} \\
+ffgkey      & \pageref{ffgkey} \\
+ffgkls  & \pageref{ffgkls} \\
+ffgknx     & \pageref{ffgknx} \\
+ffgky          & \pageref{ffgky} \\
+ffgkyn         & \pageref{ffgkyn} \\
+ffgkyt   & \pageref{ffgkyt} \\
+ffgkyx      & \pageref{ffgkyx} \\
+ffgmcp   & \pageref{ffgmcp} \\
+ffgmng  & \pageref{ffgmng} \\
+ffgmop    & \pageref{ffgmop} \\
+ffgmrm   & \pageref{ffgmrm} \\
+ffgmsg    & \pageref{ffgmsg} \\
+ffgmtf  & \pageref{ffgmtf} \\
+ffgncl     & \pageref{ffgnrw} \\
+ffgnrw     & \pageref{ffgnrw} \\
+ffgnxk      & \pageref{ffgnxk} \\
+ffgpfx & \pageref{ffgpfx} \\
+ffgpv         & \pageref{ffgpv} \\
+ffgpvx     & \pageref{ffgpvx} \\
+ffgrec       & \pageref{ffgrec} \\
+ffgrsz    & \pageref{ffgrsz} \\
+ffgsdt        & \pageref{ffdt2s} \\
+ffgsfx & \pageref{ffgsfx} \pageref{ffgsfx2} \\
+ffgstm        & \pageref{ffdt2s} \\
+ffgsvx  & \pageref{ffgsvx} \pageref{ffgsvx2}\\
+ffgtam & \pageref{ffgtam} \\
+ffgtbb    & \pageref{ffgtbb} \\
+ffgtch  & \pageref{ffgtch} \\
+ffgtcl    & \pageref{ffgtcl} \\
+ffgtcm & \pageref{ffgtcm} \\
+ffgtcp  & \pageref{ffgtcp} \\
+ffgtcr  & \pageref{ffgtcr} \\
+ffgtcs & \pageref{ffgtcs} \\
+ffgtdm         & \pageref{ffgtdm} \\
+ffgthd & \pageref{ffgthd} \\
+ffgtis  & \pageref{ffgtis} \\
+\end{tabular}
+\begin{tabular}{lr}
+ffgtmg  & \pageref{ffgtmg} \\
+ffgtnm  & \pageref{ffgtnm} \\
+ffgtop    & \pageref{ffgtop} \\
+ffgtrm  & \pageref{ffgtrm} \\
+ffgtvf  & \pageref{ffgtvf} \\
+ffgunt     & \pageref{ffgunt} \\
+ffhdef    & \pageref{ffhdef} \\
+ffibin    & \pageref{ffibin} \\
+fficls  & \pageref{fficls} \\
+fficol   & \pageref{fficol} \\
+ffiimg     & \pageref{ffiimg} \\
+ffikyu   & \pageref{ffikyu} \\
+ffikyx    & \pageref{ffikyx} \\
+ffinit  & \pageref{ffinit} \\
+ffirec     & \pageref{ffirec} \\
+ffirow  & \pageref{ffirow} \\
+ffitab    & \pageref{ffitab} \\
+ffiter   & \pageref{ffiter} \\
+ffiurl & \pageref{ffiurl} \\
+ffkeyn      & \pageref{ffkeyn} \\
+ffmahd     & \pageref{ffmahd} \\
+ffmcom    & \pageref{ffmcom} \\
+ffmcrd       & \pageref{ffmcrd} \\
+ffmkyu   & \pageref{ffmkyu} \\
+ffmkyx    & \pageref{ffmkyx} \\
+ffmnam       & \pageref{ffmnam} \\
+ffmnhd     & \pageref{ffmnhd} \\
+ffmrec     & \pageref{ffmrec} \\
+ffmrhd     & \pageref{ffmrhd} \\
+ffmvec  & \pageref{ffmvec} \\
+ffnkey      & \pageref{ffnkey} \\
+ffomem   & \pageref{ffomem} \\
+ffopen      & \pageref{ffopen} \\
+ffp2dx   & \pageref{ffp2dx} \\
+ffp3dx   & \pageref{ffp3dx} \\
+ffpcks   & \pageref{ffpcks} \\
+ffpcl         & \pageref{ffpcl} \\
+ffpcls     & \pageref{ffpcls} \\
+ffpclx     & \pageref{ffpclx} \\
+ffpcnx & \pageref{ffpcnx} \\
+ffpcom      & \pageref{ffpcom} \\
+ffpdat         & \pageref{ffpdat} \\
+ffpdes  & \pageref{ffpdes} \\
+ffpgpx & \pageref{ffpgpx} \\
+ffphbn      & \pageref{ffphbn} \\
+ffphis      & \pageref{ffphis} \\
+\end{tabular}
+\begin{tabular}{lr}
+ffphpr       & \pageref{ffphpr} \\
+ffphps       & \pageref{ffphps} \\
+ffphtb      & \pageref{ffphtb} \\
+ffpkls  & \pageref{ffpkls} \\
+ffpknx     & \pageref{ffpknx} \\
+ffpktp & \pageref{ffpktp} \\
+ffpky          & \pageref{ffpky} \\
+ffpkyt   & \pageref{ffpkyt} \\
+ffpkyu     & \pageref{ffpkyu} \\
+ffpkyx      & \pageref{ffpkyx} \\
+ffplsw & \pageref{ffplsw} \\
+ffpmsg   & \pageref{ffpmsg} \\
+ffpnul    & \pageref{ffpnul} \\
+ffppn     & \pageref{ffppn} \\
+ffppnx & \pageref{ffppnx} \\
+ffppr        & \pageref{ffppr} \\
+ffpprn & \pageref{ffpprn} \\
+ffppru & \pageref{ffppru} \\
+ffpprx    & \pageref{ffpprx} \\
+ffprec       & \pageref{ffprec} \\
+ffpscl     & \pageref{ffpscl} \\
+ffpssx  & \pageref{ffpssx} \\
+ffpsvc    & \pageref{ffpsvc} \\
+ffptbb  & \pageref{ffptbb} \\
+ffptdm         & \pageref{ffptdm} \\
+ffpthp    & \pageref{ffpthp} \\
+ffpunt     & \pageref{ffpunt} \\
+ffrdef   & \pageref{ffrdef} \\
+ffreopen      & \pageref{ffreopen} \\
+ffrprt   & \pageref{ffrprt} \\
+ffrsim     & \pageref{ffrsim} \\
+ffrtnm & \pageref{ffrtnm} \\
+ffs2dt  & \pageref{ffdt2s} \\
+ffs2tm  & \pageref{ffdt2s} \\
+ffsnul   & \pageref{ffsnul} \\
+ffsrow  & \pageref{ffsrow} \\
+fftexp    & \pageref{fftexp} \\
+ffthdu   & \pageref{ffthdu} \\
+fftkey   & \pageref{fftkey} \\
+fftm2s  & \pageref{ffdt2s} \\
+fftnul   & \pageref{fftnul} \\
+fftplt & \pageref{fftplt} \\
+fftrec    & \pageref{fftrec} \\
+fftscl     & \pageref{fftscl} \\
+ffucrd       & \pageref{ffucrd} \\
+ffuky        & \pageref{ffuky} \\
+\end{tabular}
+\begin{tabular}{lr}
+ffukyu   & \pageref{ffukyu} \\
+ffukyx    & \pageref{ffukyx} \\
+ffupch      & \pageref{ffupch} \\
+ffupck  & \pageref{ffupck} \\
+ffvcks  & \pageref{ffvcks} \\
+ffvers    & \pageref{ffvers} \\
+ffwldp & \pageref{ffwldp} \\
+ffxypx & \pageref{ffxypx} \\
+\end{tabular}
+
 
 
 *2   Parameter Definitions

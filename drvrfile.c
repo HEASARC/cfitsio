@@ -20,6 +20,8 @@
 #define IO_READ 1        /* last file I/O operation was a read */
 #define IO_WRITE 2       /* last file I/O operation was a write */
 
+static char file_outfile[FLEN_FILENAME];
+
 typedef struct    /* structure containing disk file structure */ 
 {
     FILE *fileptr;
@@ -68,31 +70,75 @@ int file_shutdown(void)
 int file_open(char *filename, int rwmode, int *handle)
 {
     FILE *diskfile;
-    int ii, status;
+    int copyhandle, ii, status;
+    char recbuf[2880];
+    size_t nread;
 
-    *handle = -1;
-    for (ii = 0; ii < NIOBUF; ii++)  /* find empty slot in table */
+    /*
+       if an output filename has been specified as part of the input
+       file, as in "inputfile.fits(outputfile.fit)" then we have to
+       create the output file, copy the input to it, then reopen the
+       the new copy.
+    */
+
+    if (*file_outfile)
     {
+      /* open the original file, with readonly access */
+      status = file_openfile(filename, READONLY, &diskfile);
+      if (status)
+        return(status);
+ 
+      /* create the output file */
+      status =  file_create(file_outfile,handle);
+      if (status)
+      {
+        ffpmsg("Unable to create output file for copy of input file:");
+        ffpmsg(file_outfile);
+        return(status);
+      }
+
+      /* copy the file from input to output */
+      while(0 != (nread = fread(recbuf,1,2880, diskfile)))
+      {
+        status = file_write(*handle, recbuf, nread);
+        if (status)
+           return(status);
+      }
+
+      /* close both files */
+      fclose(diskfile);
+      copyhandle = *handle;
+      file_close(*handle);
+      *handle = copyhandle;  /* reuse the old file handle */
+
+      /* reopen the new copy, with correct rwmode */
+      status = file_openfile(file_outfile, rwmode, &diskfile);
+
+    }
+    else
+    {
+      *handle = -1;
+      for (ii = 0; ii < NIOBUF; ii++)  /* find empty slot in table */
+      {
         if (handleTable[ii].fileptr == 0)
         {
             *handle = ii;
             break;
         }
-    }
+      }
 
-    if (*handle == -1)
+      if (*handle == -1)
        return(TOO_MANY_FILES);    /* too many files opened */
 
-    /*open the file */
-    status = file_openfile(filename, rwmode, &diskfile);
-    if (status)
-        return(status);
+      /*open the file */
+      status = file_openfile(filename, rwmode, &diskfile);
+    }
 
-    handleTable[ii].fileptr = diskfile;
-    handleTable[ii].currentpos = 0;
-    handleTable[ii].last_io_op = IO_SEEK;
+    handleTable[*handle].fileptr = diskfile;
+    handleTable[*handle].currentpos = 0;
+    handleTable[*handle].last_io_op = IO_SEEK;
 
-    return(0);
+    return(status);
 }
 /*--------------------------------------------------------------------------*/
 int file_openfile(char *filename, int rwmode, FILE **diskfile)
@@ -375,12 +421,19 @@ int file_is_compressed(char *filename) /* I - FITS file name          */
 /*--------------------------------------------------------------------------*/
 int file_checkfile (char *urltype, char *infile, char *outfile) 
 {
-  /* special case: if file:// driver, check if the file is compressed */
-  if ( file_is_compressed(infile) )
+    /* special case: if file:// driver, check if the file is compressed */
+    if ( file_is_compressed(infile) )
     {
       strcpy(urltype, "compress://");  /* use special driver */
     }
-  return 0;
+
+    /* if output file has been specified, save the name for future use */
+    if (strlen(outfile))
+        strcpy(file_outfile, outfile); /* an output file is specified */
+    else
+        *file_outfile = '\0';  /* no output file was specified */
+
+    return 0;
 }
 
 

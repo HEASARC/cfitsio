@@ -714,6 +714,7 @@ int mem_create(char *filename, int *handle);
 int mem_openmem(void **buffptr, size_t *buffsize, size_t deltasize,
                 void *(*memrealloc)(void *p, size_t newsize), int *handle);
 int mem_createmem(size_t memsize, int *handle);
+int stdin_checkfile(char *urltype, char *infile, char *outfile);
 int stdin_open(char *filename, int rwmode, int *handle);
 int stdin2mem(int hd);
 int stdout_close(int handle);
