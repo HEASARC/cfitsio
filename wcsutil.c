@@ -316,7 +316,7 @@ int ffwldp(double xpix, double ypix, double xref, double yref,
 /* 1 = angle too large for projection;                                   */
 /* (WDP 1/97: changed the return value to 501 instead of 1)              */
 /* does: -SIN, -TAN, -ARC, -NCP, -GLS, -MER, -AIT projections            */
-/* anything else is linear                                               */
+/* anything else is linear (== -CAR)                                     */
 /* Input:                                                                */
 /*   f   xpix    x pixel number  (RA or long without rotation)           */
 /*   f   ypiy    y pixel number  (dec or lat without rotation)           */
@@ -339,8 +339,8 @@ int ffwldp(double xpix, double ypix, double xref, double yref,
   double cond2r=1.745329252e-2;
   double twopi = 6.28318530717959, deps = 1.0e-5;
   int   i, itype;
-  char ctypes[8][5] ={"-SIN","-TAN","-ARC","-NCP", "-GLS", "-MER", "-AIT",
-     "-STG"};
+  char ctypes[9][5] ={"-CAR","-SIN","-TAN","-ARC","-NCP", "-GLS", "-MER",
+     "-AIT", "-STG"};
 
   if (*status > 0)
      return(*status);
@@ -359,7 +359,7 @@ int ffwldp(double xpix, double ypix, double xref, double yref,
 /* WDP 1/97: removed support for default type for better error checking */
 /*  itype = 0;   default type is linear */
   itype = -1;  /* no default type */
-  for (i=0;i<8;i++) if (!strncmp(type, ctypes[i], 4)) itype = i+1;
+  for (i=0;i<9;i++) if (!strncmp(type, ctypes[i], 4)) itype = i;
 /* default, linear result for error return  */
   *xpos = xref + dx;
   *ypos = yref + dy;
@@ -373,7 +373,7 @@ int ffwldp(double xpix, double ypix, double xref, double yref,
   sin0 = sin(dec0);
 /* process by case  */
   switch (itype) {
-    case 0:   /* linear */
+    case 0:   /* linear -CAR */
       rat =  ra0 + l;
       dect = dec0 + m;
       break;
@@ -545,8 +545,8 @@ int ffxypx(double xpos, double ypos, double xref, double yref,
   double l, m, geo1, geo2, geo3, sinr, cosr;
   double cond2r=1.745329252e-2, deps=1.0e-5, twopi=6.28318530717959;
   int   i, itype;
-  char ctypes[8][5] ={"-SIN","-TAN","-ARC","-NCP", "-GLS", "-MER", "-AIT",
-     "-STG"};
+  char ctypes[9][5] ={"-CAR","-SIN","-TAN","-ARC","-NCP", "-GLS", "-MER",
+     "-AIT", "-STG"};
 
   /* 0h wrap-around tests added by D.Wells 10/12/94: */
   dt = (xpos - xref);
@@ -575,7 +575,7 @@ int ffxypx(double xpos, double ypos, double xref, double yref,
 /* WDP 1/97: removed support for default type for better error checking */
 /*  itype = 0;   default type is linear */
   itype = -1;  /* no default type */
-  for (i=0;i<8;i++) if (!strncmp(type, ctypes[i], 4)) itype = i+1;
+  for (i=0;i<9;i++) if (!strncmp(type, ctypes[i], 4)) itype = i;
   if (itype==0) return(*status);  /* done if linear */
 
 /* Non linear position */
