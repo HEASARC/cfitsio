@@ -24,6 +24,20 @@ fi
 dnl Checks for programs.
 AC_PROG_CC
 
+AC_CHECK_PROGS(FC, f77 xlf cf77 gf77 g77 af77 ncf, nope)
+if test $FC = 'nope'; then
+   AC_MSG_WARN(no acceptable f77 found in \$PATH -- not adding fortran-compatible flags)
+else
+  echo $ac_n "checking whether we are using GNU Fortran""... $ac_c" 1>&6
+  if test `$FC --version -c < /dev/null 2> /dev/null | grep -c GNU` -gt 0
+  then
+    echo "$ac_t""yes" 1>&6
+    CFLAGS="$CFLAGS -Dg77Fortran"
+  else
+    echo "$ac_t""no" 1>&6
+  fi
+fi
+
 AC_PROG_RANLIB
 
 dnl Checks for ANSI stdlib.h.
@@ -76,7 +90,6 @@ case $system in
 	;;
     Linux*)
 	ARCH="linux"
-	CFLAGS="$CFLAGS -Dg77Fortran"
 	if test `$CC -v 2>&1 | grep gcc | grep -c '2\.8'` != "0" ; then
 		AC_WARN(Removing optimization for gcc 2.8.x on Linux)
 		changequote(,)dnl JP 9Dec98
@@ -90,7 +103,7 @@ case $system in
 	;;
     CYGWIN*)
 	ARCH="cygwin"
-	CFLAGS="$CFLAGS -Dg77Fortran -DHAVE_POSIX_SIGNALS"
+	CFLAGS="$CFLAGS -DHAVE_POSIX_SIGNALS"
 	;;
     *)
 		echo "cfitsio: == Don't know what do do with $system"
