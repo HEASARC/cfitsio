@@ -178,8 +178,6 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
   Open an existing FITS file with either readonly or read/write access.
 */
 {
-    void **buffptr;
-    size_t *buffsize;
     int ii, hdutype, slen, tstatus;
     size_t filesize, finalsize;
     FILE *diskfile;
@@ -268,9 +266,10 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
             /* error copying stdin; free previously allocated memeory */
             if ((*fptr)->bufftype == TMPMEMBUFF)
             {
-                free(*buffptr);
-                free(buffptr);
-                free(buffsize);
+                /* CFITSIO created the temporary buffers, so now free them */
+                free(*((*fptr)->memptr));
+                free((*fptr)->memptr);
+                free((*fptr)->memsize);
             }
 
             free((*fptr)->filename);
@@ -324,9 +323,10 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
             /* error uncompressing file; free previously allocated memeory */
             if ((*fptr)->bufftype == TMPMEMBUFF)
             {
-                free(*buffptr);
-                free(buffptr);
-                free(buffsize);
+                /* CFITSIO created the temporary buffers, so now free them */
+                free(*((*fptr)->memptr));
+                free((*fptr)->memptr);
+                free((*fptr)->memsize);
             }
 
             free((*fptr)->filename);
@@ -396,10 +396,12 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
         /* free previously allocated memeory */
         if ((*fptr)->bufftype == TMPMEMBUFF)
         {
-            free(*buffptr);
-            free(buffptr);
-            free(buffsize);
+            /* CFITSIO created the temporary buffers, so now free them */
+            free(*((*fptr)->memptr));
+            free((*fptr)->memptr);
+            free((*fptr)->memsize);
         }
+
         free((*fptr)->filename);
         free(*fptr);
         *fptr = 0;              /* return null file pointer */
@@ -414,8 +416,6 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
   Create and initialize a new FITS file.
 */
 {
-    void **buffptr;
-    size_t *buffsize;
     int ii, slen, tstatus;
     size_t filesize;
     FILE *diskfile;

@@ -1,5 +1,15 @@
              Log of Changes Made to CFITSIO
 
+Version 1.32 - 21 November 1997
+
+   - fixed serious bug in the memory deallocation (free) statements
+     in the ffopen routine in the cfileio.c file.
+
+   - modified ffgphd to tolerate minor violations of the FITS 
+     standard in the format of the XTENSION = 'IMAGE   '
+     keyword when reading FITS files.  Extra trailing spaces
+     are now allowed in the keyword value.
+
 Version 1.31 - 4 November 1997
 
   Enhancements:

@@ -1332,6 +1332,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
     long longbitpix, longnaxis, axislen;
     char message[FLEN_ERRMSG], keyword[FLEN_KEYWORD];
     char name[FLEN_KEYWORD], value[FLEN_VALUE], comm[FLEN_COMMENT];
+    char xtension[FLEN_VALUE];
 
     if (*status > 0)
         return(*status);
@@ -1367,8 +1368,18 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
     {
         if (!strcmp(name, "XTENSION"))
         {
-            if (strcmp(value, "\'IMAGE   \'" ) &&
-                strcmp(value, "\'IUEIMAGE\'") )
+            if (ffc2s(value, xtension, status) > 0)  /* get the value string */
+            {
+                ffpmsg("Bad value string for XTENSION keyword:");
+                ffpmsg(value);
+                return(*status);
+            }
+
+            /* allow the quoted string value to begin in any column and */
+            /* allow any number of trailing blanks before the closing quote */
+            if ( (value[0] != '\'')   ||  /* first char must be a quote */
+                  ( strcmp(xtension, "IMAGE")  &&
+                    strcmp(xtension, "IUEIMAGE") ) )
             {
                 unknown = 1;  /* unknown type of extension; press on anyway */
                 sprintf(message,
