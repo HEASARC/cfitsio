@@ -2,13 +2,11 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef __sgi
+#if defined(__sgi) || defined(__hpux)
 #include <alloca.h>
 #endif
 #ifdef sparc
 #include <malloc.h>
-#else
-#include <stdlib.h>
 #endif
 #include "fitsio2.h"
 
