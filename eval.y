@@ -48,6 +48,7 @@
 
 #define  APPROX 1.0e-7
 #include "eval_defs.h"
+#include <time.h>
 
 /***************************************************************/
 /*  Replace Bison's BACKUP macro with one that fixes a bug --  */
@@ -112,6 +113,9 @@ static void Do_BinOp_dbl ( Node *this );
 static void Do_Func      ( Node *this );
 static void Do_Deref     ( Node *this );
 static void Do_GTI       ( Node *this );
+
+static long Search_GTI   ( double time, long nGTI, double *start, double *stop,
+			   int ordered );
 
 static char  saobox (double xcen, double ycen, double xwid, double ywid,
 		     double rot,  double xcol, double ycol);
@@ -267,13 +271,13 @@ expr:    LONG
                   $$ = New_BinOp( TYPE($3), $1, '*', $3 );
                   TEST($$);                                }
        | FUNCTION ')'
-                { if (FSTRCMP($1,"RANDOM(") == 0)
-                    $$ = New_Func( DOUBLE, rnd_fct, 0, 0, 0, 0, 0, 0, 0, 0 );
-                  else
-		    {
+                { if (FSTRCMP($1,"RANDOM(") == 0) {
+                     srand( (unsigned int) time(NULL) );
+                     $$ = New_Func( DOUBLE, rnd_fct, 0, 0, 0, 0, 0, 0, 0, 0 );
+                  } else {
                      yyerror("Function() not supported");
 		     YYERROR;
-		    }
+		  }
                   TEST($$); 
                 }
        | FUNCTION bexpr ')'
@@ -609,10 +613,6 @@ bexpr:   BOOLEAN
                          yyerror("Cannot filter on a vector column");
                          YYERROR;
                       }
-		      if( gParse.Nodes[$4].operation==-1000 ) {
-                         yyerror("Cannot filter on a constant");
-                         YYERROR;
-                      }
                       $$ = New_GTI( $2, $4, "*START*", "*STOP*" );
                    } else {
                       yyerror("Filter Function not supported");
@@ -625,10 +625,6 @@ bexpr:   BOOLEAN
                    if (FSTRCMP($1,"GTIFILTER(") == 0) {
                       if( SIZE($4)>1 ) {
                          yyerror("Cannot filter on a vector column");
-                         YYERROR;
-                      }
-		      if( gParse.Nodes[$4].operation==-1000 ) {
-                         yyerror("Cannot filter on a constant");
                          YYERROR;
                       }
                       $$ = New_GTI( $2, $4, $6, $8 );
@@ -721,7 +717,7 @@ static int New_Const( int returnType, void *value, long len )
    n = Alloc_Node();
    if( n>=0 ) {
       this             = gParse.Nodes + n;
-      this->operation  = -1000;             /* Flag a constant */
+      this->operation  = CONST_OP;             /* Flag a constant */
       this->DoOp       = NULL;
       this->nSubNodes  = 0;
       this->type       = returnType;
@@ -767,51 +763,6 @@ static int New_Unary( int returnType, int Op, int Node1 )
    if( (Op==DOUBLE || Op==FLTCAST) && that->type==DOUBLE  ) return( Node1 );
    if( (Op==LONG   || Op==INTCAST) && that->type==LONG    ) return( Node1 );
    if( (Op==BOOLEAN              ) && that->type==BOOLEAN ) return( Node1 );
-
-   if( that->operation==-1000 ) {  /* Operating on a constant! */
-      switch( Op ) {
-      case DOUBLE:
-      case FLTCAST:
-	 if( that->type==LONG )
-	    that->value.data.dbl = (double)that->value.data.lng;
-	 else if( that->type==BOOLEAN )
-	    that->value.data.dbl = ( that->value.data.log ? 1.0 : 0.0 );
-	 that->type=DOUBLE;
-	 return(Node1);
-	 break;
-      case LONG:
-      case INTCAST:
-	 if( that->type==DOUBLE )
-	    that->value.data.lng = (long)that->value.data.dbl;
-	 else if( that->type==BOOLEAN )
-	    that->value.data.lng = ( that->value.data.log ? 1L : 0L );
-	 that->type=LONG;
-	 return(Node1);
-	 break;
-      case BOOLEAN:
-	 if( that->type==DOUBLE )
-	    that->value.data.log = ( that->value.data.dbl != 0.0 );
-	 else if( that->type==LONG )
-	    that->value.data.log = ( that->value.data.lng != 0L );
-	 that->type=BOOLEAN;
-	 return(Node1);
-	 break;
-      case UMINUS:
-	 if( that->type==DOUBLE )
-	    that->value.data.dbl = - that->value.data.dbl;
-	 else if( that->type==LONG )
-	    that->value.data.lng = - that->value.data.lng;
-	 return(Node1);
-	 break;
-      case NOT:
-	 if( that->type==BOOLEAN )
-	    that->value.data.log = ( ! that->value.data.log );
-	 else if( that->type==BITSTR )
-	    bitnot( that->value.data.str, that->value.data.str );
-	 return(Node1);
-	 break;
-      }
-   }
    
    n = Alloc_Node();
    if( n>=0 ) {
@@ -827,6 +778,8 @@ static int New_Unary( int returnType, int Op, int Node1 )
       this->value.naxis = that->value.naxis;
       for( i=0; i<that->value.naxis; i++ )
 	 this->value.naxes[i] = that->value.naxes[i];
+
+      if( that->operation==CONST_OP ) this->DoOp( this );
    }
    return( n );
 }
@@ -834,7 +787,7 @@ static int New_Unary( int returnType, int Op, int Node1 )
 static int New_BinOp( int returnType, int Node1, int Op, int Node2 )
 {
    Node *this,*that1,*that2;
-   int  n,i;
+   int  n,i,constant;
 
    if( Node1<0 || Node2<0 ) return(-1);
 
@@ -849,6 +802,8 @@ static int New_BinOp( int returnType, int Node1, int Op, int Node2 )
 
       that1            = gParse.Nodes + Node1;
       that2            = gParse.Nodes + Node2;
+      constant         = (that1->operation==CONST_OP
+                          && that2->operation==CONST_OP);
       if( that1->type!=STRING && that1->type!=BITSTR )
 	 if( !Test_Dims( Node1, Node2 ) ) {
 	    Free_Last_Node();
@@ -870,6 +825,7 @@ static int New_BinOp( int returnType, int Node1, int Op, int Node2 )
       case LONG:    this->DoOp = Do_BinOp_lng;  break;
       case DOUBLE:  this->DoOp = Do_BinOp_dbl;  break;
       }
+      if( constant ) this->DoOp( this );
    }
    return( n );
 }
@@ -881,7 +837,7 @@ static int New_Func( int returnType, funcOp Op, int nNodes,
 /* else return a single value of type returnType                       */
 {
    Node *this, *that;
-   int  i,n;
+   int  i,n,constant;
 
    if( Node1<0 || Node2<0 || Node3<0 || Node4<0 || 
        Node5<0 || Node6<0 || Node7<0 ) return(-1);
@@ -899,6 +855,10 @@ static int New_Func( int returnType, funcOp Op, int nNodes,
       this->SubNodes[4] = Node5;
       this->SubNodes[5] = Node6;
       this->SubNodes[6] = Node7;
+      i = constant = nNodes;    /* Functions with zero params are not const */
+      while( i-- )
+         constant = ( constant &&
+		      gParse.Nodes[ this->SubNodes[i] ].operation==CONST_OP );
       
       if( returnType ) {
 	 this->type           = returnType;
@@ -913,6 +873,7 @@ static int New_Func( int returnType, funcOp Op, int nNodes,
 	 for( i=0; i<that->value.naxis; i++ )
 	    this->value.naxes[i] = that->value.naxes[i];
       }
+      if( constant ) this->DoOp( this );
    }
    return( n );
 }
@@ -920,14 +881,14 @@ static int New_Func( int returnType, funcOp Op, int nNodes,
 static int New_Deref( int Var,  int nDim,
 		      int Dim1, int Dim2, int Dim3, int Dim4, int Dim5 )
 {
-   int n, idx;
+   int n, idx, constant;
    long elem=0;
    Node *this, *theVar, *theDim[MAXDIMS];
 
    if( Var<0 || Dim1<0 || Dim2<0 || Dim3<0 || Dim4<0 || Dim5<0 ) return(-1);
 
    theVar = gParse.Nodes + Var;
-   if( theVar->operation==-1000 || theVar->value.nelem==1 ) {
+   if( theVar->operation==CONST_OP || theVar->value.nelem==1 ) {
       ffpmsg("Cannot index a scalar value");
       gParse.status = PARSE_SYNTAX_ERR;
       return(-1);
@@ -943,6 +904,9 @@ static int New_Deref( int Var,  int nDim,
       theDim[2]         = gParse.Nodes + (this->SubNodes[3]=Dim3);
       theDim[3]         = gParse.Nodes + (this->SubNodes[4]=Dim4);
       theDim[4]         = gParse.Nodes + (this->SubNodes[5]=Dim5);
+      constant          = theVar->operation==CONST_OP;
+      for( idx=0; idx<nDim; idx++ )
+	 constant = (constant && theDim[idx]->operation==CONST_OP);
 
       for( idx=0; idx<nDim; idx++ )
 	 if( theDim[idx]->value.nelem>1 ) {
@@ -976,6 +940,7 @@ static int New_Deref( int Var,  int nDim,
 	 yyerror("Must specify just one or all indices for vector");
 	 return(-1);
       }
+      if( constant ) this->DoOp( this );
    }
    return(n);
 }
@@ -1125,7 +1090,7 @@ static int New_GTI( char *fname, int Node1, char *start, char *stop )
 
       this->SubNodes[0]    = Node0;
       that0                = gParse.Nodes + Node0;
-      that0->operation     = -1000;
+      that0->operation     = CONST_OP;
       that0->DoOp          = NULL;
       that0->value.data.ptr= NULL;
 
@@ -1150,6 +1115,19 @@ static int New_GTI( char *fname, int Node1, char *start, char *stop )
 	    free( that0->value.data.dblptr );
 	    return(-1);
 	 }
+
+	 /*  Test for fully time-ordered GTI... both START && STOP  */
+
+	 that0->type = 1; /*  Assume yes  */
+	 i = nrows;
+	 while( --i )
+	    if(    that0->value.data.dblptr[i-1]
+                   >= that0->value.data.dblptr[i]
+		|| that0->value.data.dblptr[i-1+nrows]
+		   >= that0->value.data.dblptr[i+nrows] ) {
+	       that0->type = 0;
+	       break;
+	    }
 	 
 	 /*  Handle TIMEZERO offset, if any  */
 	 
@@ -1162,12 +1140,15 @@ static int New_GTI( char *fname, int Node1, char *start, char *stop )
 	       that0->value.data.dblptr[i] += dt;
 	 }
       }
+      if( gParse.Nodes[Node1].operation==CONST_OP )
+	 this->DoOp( this );
    }
 
    if( samefile )
       ffmahd( fptr, evthdu, &hdutype, &gParse.status );
    else
       ffclos( fptr, &gParse.status );
+
    return( n );
 }
 
@@ -1358,7 +1339,7 @@ void Reset_Parser( long firstRow, long rowOffset, long nRows )
 
    for( i=0; i<gParse.nNodes; i++ ) {
       if(    gParse.Nodes[i].operation >  0
-	  || gParse.Nodes[i].operation == -1000 ) continue;
+	  || gParse.Nodes[i].operation == CONST_OP ) continue;
 
       column = -gParse.Nodes[i].operation;
       offset = gParse.colInfo[column].nelem * rowOffset + 1;
@@ -1447,86 +1428,123 @@ static void Do_Unary( Node *this )
    Node *that;
    long elem;
 
-   /*  New_Unary pre-evaluates operations on constants,  */
-   /*  so no need to worry about that case               */
-
    that = gParse.Nodes + this->SubNodes[0];
 
-   Allocate_Ptrs( this );
-
-   if( !gParse.status ) {
-
-      if( this->type!=BITSTR ) {
-	 elem = gParse.nRows;
-	 if( this->type!=STRING )
-	    elem *= this->value.nelem;
-	 while( elem-- )
-	    this->value.undef[elem] = that->value.undef[elem];
-      }
-
-      elem = gParse.nRows * this->value.nelem;
-
+   if( that->operation==CONST_OP ) {  /* Operating on a constant! */
       switch( this->operation ) {
-
-      case BOOLEAN:
-	 if( that->type==DOUBLE )
-	    while( elem-- )
-	       this->value.data.logptr[elem] =
-		  ( that->value.data.dblptr[elem] != 0.0 );
-	 else if( that->type==LONG )
-	    while( elem-- )
-	       this->value.data.logptr[elem] =
-		  ( that->value.data.lngptr[elem] != 0L );
-	 break;
-
       case DOUBLE:
       case FLTCAST:
 	 if( that->type==LONG )
-	    while( elem-- )
-	       this->value.data.dblptr[elem] =
-		  (double)that->value.data.lngptr[elem];
+	    this->value.data.dbl = (double)that->value.data.lng;
 	 else if( that->type==BOOLEAN )
-	    while( elem-- )
-	       this->value.data.dblptr[elem] =
-		  ( that->value.data.logptr[elem] ? 1.0 : 0.0 );
+	    this->value.data.dbl = ( that->value.data.log ? 1.0 : 0.0 );
 	 break;
-
       case LONG:
       case INTCAST:
 	 if( that->type==DOUBLE )
-	    while( elem-- )
-	       this->value.data.lngptr[elem] =
-		  (long)that->value.data.dblptr[elem];
+	    this->value.data.lng = (long)that->value.data.dbl;
 	 else if( that->type==BOOLEAN )
-	    while( elem-- )
-	       this->value.data.lngptr[elem] =
-		  ( that->value.data.logptr[elem] ? 1L : 0L );
+	    this->value.data.lng = ( that->value.data.log ? 1L : 0L );
 	 break;
-
+      case BOOLEAN:
+	 if( that->type==DOUBLE )
+	    this->value.data.log = ( that->value.data.dbl != 0.0 );
+	 else if( that->type==LONG )
+	    this->value.data.log = ( that->value.data.lng != 0L );
+	 break;
       case UMINUS:
-	 if( that->type==DOUBLE ) {
-	    while( elem-- )
-	       this->value.data.dblptr[elem] =
-		  - that->value.data.dblptr[elem];
-	 } else if( that->type==LONG ) {
-	    while( elem-- )
-	       this->value.data.lngptr[elem] =
-		  - that->value.data.lngptr[elem];
-	 }
+	 if( that->type==DOUBLE )
+	    this->value.data.dbl = - that->value.data.dbl;
+	 else if( that->type==LONG )
+	    this->value.data.lng = - that->value.data.lng;
 	 break;
-
       case NOT:
-	 if( that->type==BOOLEAN ) {
-	    while( elem-- )
-	       this->value.data.logptr[elem] =
-		  ( ! that->value.data.logptr[elem] );
-	 } else if( that->type==BITSTR ) {
-	    elem = gParse.nRows;
-	    while( elem-- )
-	       bitnot( this->value.data.strptr[elem],
-		       that->value.data.strptr[elem] );
-	 }
+	 if( that->type==BOOLEAN )
+	    this->value.data.log = ( ! that->value.data.log );
+	 else if( that->type==BITSTR )
+	    bitnot( this->value.data.str, that->value.data.str );
 	 break;
+      }
+      this->operation = CONST_OP;
+
+   } else {
+
+      Allocate_Ptrs( this );
+
+      if( !gParse.status ) {
+
+	 if( this->type!=BITSTR ) {
+	    elem = gParse.nRows;
+	    if( this->type!=STRING )
+	       elem *= this->value.nelem;
+	    while( elem-- )
+	       this->value.undef[elem] = that->value.undef[elem];
+	 }
+
+	 elem = gParse.nRows * this->value.nelem;
+
+	 switch( this->operation ) {
+
+	 case BOOLEAN:
+	    if( that->type==DOUBLE )
+	       while( elem-- )
+		  this->value.data.logptr[elem] =
+		     ( that->value.data.dblptr[elem] != 0.0 );
+	    else if( that->type==LONG )
+	       while( elem-- )
+		  this->value.data.logptr[elem] =
+		     ( that->value.data.lngptr[elem] != 0L );
+	    break;
+
+	 case DOUBLE:
+	 case FLTCAST:
+	    if( that->type==LONG )
+	       while( elem-- )
+		  this->value.data.dblptr[elem] =
+		     (double)that->value.data.lngptr[elem];
+	    else if( that->type==BOOLEAN )
+	       while( elem-- )
+		  this->value.data.dblptr[elem] =
+		     ( that->value.data.logptr[elem] ? 1.0 : 0.0 );
+	    break;
+
+	 case LONG:
+	 case INTCAST:
+	    if( that->type==DOUBLE )
+	       while( elem-- )
+		  this->value.data.lngptr[elem] =
+		     (long)that->value.data.dblptr[elem];
+	    else if( that->type==BOOLEAN )
+	       while( elem-- )
+		  this->value.data.lngptr[elem] =
+		     ( that->value.data.logptr[elem] ? 1L : 0L );
+	    break;
+
+	 case UMINUS:
+	    if( that->type==DOUBLE ) {
+	       while( elem-- )
+		  this->value.data.dblptr[elem] =
+		     - that->value.data.dblptr[elem];
+	    } else if( that->type==LONG ) {
+	       while( elem-- )
+		  this->value.data.lngptr[elem] =
+		     - that->value.data.lngptr[elem];
+	    }
+	    break;
+
+	 case NOT:
+	    if( that->type==BOOLEAN ) {
+	       while( elem-- )
+		  this->value.data.logptr[elem] =
+		     ( ! that->value.data.logptr[elem] );
+	    } else if( that->type==BITSTR ) {
+	       elem = gParse.nRows;
+	       while( elem-- )
+		  bitnot( this->value.data.strptr[elem],
+			  that->value.data.strptr[elem] );
+	    }
+	    break;
+	 }
       }
    }
 
@@ -1545,8 +1563,8 @@ static void Do_BinOp_bit( Node *this )
    that1 = gParse.Nodes + this->SubNodes[0];
    that2 = gParse.Nodes + this->SubNodes[1];
 
-   const1 = ( that1->operation==-1000 );
-   const2 = ( that2->operation==-1000 );
+   const1 = ( that1->operation==CONST_OP );
+   const2 = ( that2->operation==CONST_OP );
    sptr1  = ( const1 ? that1->value.data.str : NULL );
    sptr2  = ( const2 ? that2->value.data.str : NULL );
 
@@ -1575,7 +1593,7 @@ static void Do_BinOp_bit( Node *this )
 	 strcat( this->value.data.str, sptr2 );
 	 break;
       }
-      this->operation = -1000;
+      this->operation = CONST_OP;
 
    } else {
 
@@ -1660,8 +1678,8 @@ static void Do_BinOp_str( Node *this )
    that1 = gParse.Nodes + this->SubNodes[0];
    that2 = gParse.Nodes + this->SubNodes[1];
 
-   const1 = ( that1->operation==-1000 );
-   const2 = ( that2->operation==-1000 );
+   const1 = ( that1->operation==CONST_OP );
+   const2 = ( that2->operation==CONST_OP );
    sptr1  = ( const1 ? that1->value.data.str : NULL );
    sptr2  = ( const2 ? that2->value.data.str : NULL );
 
@@ -1683,7 +1701,7 @@ static void Do_BinOp_str( Node *this )
 	 strcat( this->value.data.str, sptr2 );
 	 break;
       }
-      this->operation = -1000;
+      this->operation = CONST_OP;
 
    } else {  /*  Not a constant  */
 
@@ -1751,14 +1769,14 @@ static void Do_BinOp_log( Node *this )
    that1 = gParse.Nodes + this->SubNodes[0];
    that2 = gParse.Nodes + this->SubNodes[1];
 
-   vector1 = ( that1->operation!=-1000 );
+   vector1 = ( that1->operation!=CONST_OP );
    if( vector1 )
       vector1 = that1->value.nelem;
    else {
       val1  = that1->value.data.log;
    }
 
-   vector2 = ( that2->operation!=-1000 );
+   vector2 = ( that2->operation!=CONST_OP );
    if( vector2 )
       vector2 = that2->value.nelem;
    else {
@@ -1780,7 +1798,7 @@ static void Do_BinOp_log( Node *this )
 	 this->value.data.log = ( (val1 && !val2) || (!val1 && val2) );
 	 break;
       }
-      this->operation=-1000;
+      this->operation=CONST_OP;
    } else {
       rows  = gParse.nRows;
       nelem = this->value.nelem;
@@ -1873,14 +1891,14 @@ static void Do_BinOp_lng( Node *this )
    that1 = gParse.Nodes + this->SubNodes[0];
    that2 = gParse.Nodes + this->SubNodes[1];
 
-   vector1 = ( that1->operation!=-1000 );
+   vector1 = ( that1->operation!=CONST_OP );
    if( vector1 )
       vector1 = that1->value.nelem;
    else {
       val1  = that1->value.data.lng;
    }
 
-   vector2 = ( that2->operation!=-1000 );
+   vector2 = ( that2->operation!=CONST_OP );
    if( vector2 )
       vector2 = that2->value.nelem;
    else {
@@ -1914,7 +1932,7 @@ static void Do_BinOp_lng( Node *this )
 	 this->value.data.lng = (long)pow((double)val1,(double)val2);
 	 break;
       }
-      this->operation=-1000;
+      this->operation=CONST_OP;
 
    } else {
 
@@ -2000,14 +2018,14 @@ static void Do_BinOp_dbl( Node *this )
    that1 = gParse.Nodes + this->SubNodes[0];
    that2 = gParse.Nodes + this->SubNodes[1];
 
-   vector1 = ( that1->operation!=-1000 );
+   vector1 = ( that1->operation!=CONST_OP );
    if( vector1 )
       vector1 = that1->value.nelem;
    else {
       val1  = that1->value.data.dbl;
    }
 
-   vector2 = ( that2->operation!=-1000 );
+   vector2 = ( that2->operation!=CONST_OP );
    if( vector2 )
       vector2 = that2->value.nelem;
    else {
@@ -2041,7 +2059,7 @@ static void Do_BinOp_dbl( Node *this )
 	 this->value.data.dbl = (double)pow(val1,val2);
 	 break;
       }
-      this->operation=-1000;
+      this->operation=CONST_OP;
 
    } else {
 
@@ -2133,7 +2151,7 @@ static void Do_Func( Node *this )
    allConst = 1;
    while( i-- ) {
       theParams[i] = gParse.Nodes + this->SubNodes[i];
-      vector[i]   = ( theParams[i]->operation!=-1000 );
+      vector[i]   = ( theParams[i]->operation!=CONST_OP );
       if( vector[i] ) {
 	 allConst = 0;
 	 vector[i] = theParams[i]->value.nelem;
@@ -2279,7 +2297,7 @@ static void Do_Func( Node *this )
 					pVals[6].data.dbl );
 	    break;
       }
-      this->operation = -1000;
+      this->operation = CONST_OP;
 
    } else {
 
@@ -2301,7 +2319,7 @@ static void Do_Func( Node *this )
 	    break;
 	 case rnd_fct:
 	    while( row-- ) {
-	       this->value.data.dblptr[row] = (double)rand() / 2147483647; 
+	       this->value.data.dblptr[row] = (double)rand() / RAND_MAX; 
 	       this->value.undef[row] = 0;
 	    }
 	    break;
@@ -2683,7 +2701,7 @@ static void Do_Deref( Node *this )
    allConst = 1;
    while( i-- ) {
       theDims[i] = gParse.Nodes + this->SubNodes[i+1];
-      isConst[i] = ( theDims[i]->operation==-1000 );
+      isConst[i] = ( theDims[i]->operation==CONST_OP );
       if( isConst[i] )
 	 dimVals[i] = theDims[i]->value.data.lng;
       else
@@ -2843,46 +2861,95 @@ static void Do_GTI( Node *this )
 {
    Node *theExpr, *theTimes;
    double *start, *stop, *times;
-   long row, nGTI, i;
+   long row, nGTI, gti;
+   int ordered;
 
    theTimes = gParse.Nodes + this->SubNodes[0];
    theExpr  = gParse.Nodes + this->SubNodes[1];
 
-   nGTI  = theTimes->value.nelem;
-   start = theTimes->value.data.dblptr;
-   stop  = theTimes->value.data.dblptr + nGTI;
+   nGTI    = theTimes->value.nelem;
+   start   = theTimes->value.data.dblptr;
+   stop    = theTimes->value.data.dblptr + nGTI;
+   ordered = theTimes->type;
 
-   times = theExpr->value.data.dblptr;
+   if( theExpr->operation==CONST_OP ) {
 
-   Allocate_Ptrs( this );
+      this->value.data.log = 
+	 (Search_GTI( theExpr->value.data.dbl, nGTI, start, stop, ordered )>=0);
+      this->operation      = CONST_OP;
 
-   if( !gParse.status ) {
+   } else {
 
-      i = 0;
-      row = gParse.nRows;
-      if( nGTI )
-	 while( row-- ) {
-	    this->value.undef[row] = theExpr->value.undef[row];
+      Allocate_Ptrs( this );
 
-	    /*  Before searching entire GTI, check the GTI found last time  */
-	    if( i<0 || times[row]<start[i] || times[row]>stop[i] ) {
-	       i = nGTI;
-	       while( i-- )
-		  if( times[row]>=start[i] && times[row]<=stop[i] )
-		     break;
+      times = theExpr->value.data.dblptr;
+      if( !gParse.status ) {
+
+	 row = gParse.nRows;
+	 if( nGTI ) {
+	    gti = -1;
+	    while( row-- ) {
+	       if( (this->value.undef[row] = theExpr->value.undef[row]) )
+		  continue;
+
+            /*  Before searching entire GTI, check the GTI found last time  */
+	       if( gti<0 || times[row]<start[gti] || times[row]>stop[gti] ) {
+		  gti = Search_GTI( times[row], nGTI, start, stop, ordered );
+	       }
+	       this->value.data.logptr[row] = ( gti>=0 );
 	    }
-	    this->value.data.logptr[row] = ( i>=0 );
-	 }
-      else
-	 while( row-- ) {
-	    this->value.data.logptr[row] = 0;
-	    this->value.undef[row]       = 0;
-	 }
-
+	 } else
+	    while( row-- ) {
+	       this->value.data.logptr[row] = 0;
+	       this->value.undef[row]       = 0;
+	    }
+      }
    }
 
    if( theExpr->operation>0 )
       free( theExpr->value.data.ptr );
+}
+
+static long Search_GTI( double time, long nGTI, double *start, double *stop,
+			int ordered )
+{
+   long gti, step;
+                             
+   if( ordered && nGTI>15 ) { /*  If time-ordered and lots of GTIs,   */
+                              /*  use "FAST" Binary search algorithm  */
+      if( time>=start[0] && time<=stop[nGTI-1] ) {
+	 gti = step = (nGTI >> 1);
+	 while(1) {
+	    if( step>1L ) step >>= 1;
+	    
+	    if( time>stop[gti] ) {
+	       if( time>=start[gti+1] )
+		  gti += step;
+	       else {
+		  gti = -1L;
+		  break;
+	       }
+	    } else if( time<start[gti] ) {
+	       if( time<=stop[gti-1] )
+		  gti -= step;
+	       else {
+		  gti = -1L;
+		  break;
+	       }
+	    } else {
+	       break;
+	    }
+	 }
+      } else
+	 gti = -1L;
+      
+   } else { /*  Use "SLOW" linear search  */
+      gti = nGTI;
+      while( gti-- )
+	 if( time>=start[gti] && time<=stop[gti] )
+	    break;
+   }
+   return( gti );
 }
 
 /*****************************************************************************/

@@ -1127,14 +1127,18 @@ FF_RULE_SETUP
 		    case BOOLEAN:  type = BCOLUMN;  break;
 		    case STRING:   type = SCOLUMN;  break;
 		    case BITSTR:   type =  BITCOL;  break;
-                    default:       type =   ERROR;  break;
+                    default:
+                         type = find_keywd(fftext, &fflval);
+                         if( type!=ERROR )
+                            gParse.status = 0;
+                         break;
 		 }
                  return( type );
 		}
 	FF_BREAK
 case 12:
 FF_RULE_SETUP
-#line 367 "eval.l"
+#line 371 "eval.l"
 {
                   char *fname;
 		  int len=0;
@@ -1158,77 +1162,77 @@ FF_RULE_SETUP
 	FF_BREAK
 case 13:
 FF_RULE_SETUP
-#line 387 "eval.l"
+#line 391 "eval.l"
 { return( INTCAST ); }
 	FF_BREAK
 case 14:
 FF_RULE_SETUP
-#line 388 "eval.l"
+#line 392 "eval.l"
 { return( FLTCAST ); }
 	FF_BREAK
 case 15:
 FF_RULE_SETUP
-#line 389 "eval.l"
+#line 393 "eval.l"
 { return( POWER   ); }
 	FF_BREAK
 case 16:
 FF_RULE_SETUP
-#line 390 "eval.l"
+#line 394 "eval.l"
 { return( NOT     ); }
 	FF_BREAK
 case 17:
 FF_RULE_SETUP
-#line 391 "eval.l"
+#line 395 "eval.l"
 { return( OR      ); }
 	FF_BREAK
 case 18:
 FF_RULE_SETUP
-#line 392 "eval.l"
+#line 396 "eval.l"
 { return( AND     ); }
 	FF_BREAK
 case 19:
 FF_RULE_SETUP
-#line 393 "eval.l"
+#line 397 "eval.l"
 { return( EQ      ); }
 	FF_BREAK
 case 20:
 FF_RULE_SETUP
-#line 394 "eval.l"
+#line 398 "eval.l"
 { return( NE      ); }
 	FF_BREAK
 case 21:
 FF_RULE_SETUP
-#line 395 "eval.l"
+#line 399 "eval.l"
 { return( GT      ); }
 	FF_BREAK
 case 22:
 FF_RULE_SETUP
-#line 396 "eval.l"
+#line 400 "eval.l"
 { return( LT      ); }
 	FF_BREAK
 case 23:
 FF_RULE_SETUP
-#line 397 "eval.l"
+#line 401 "eval.l"
 { return( GTE     ); }
 	FF_BREAK
 case 24:
 FF_RULE_SETUP
-#line 398 "eval.l"
+#line 402 "eval.l"
 { return( LTE     ); }
 	FF_BREAK
 case 25:
 FF_RULE_SETUP
-#line 399 "eval.l"
+#line 403 "eval.l"
 { return( '\n'    ); }
 	FF_BREAK
 case 26:
 FF_RULE_SETUP
-#line 400 "eval.l"
+#line 404 "eval.l"
 { return( fftext[0] ); }
 	FF_BREAK
 case 27:
 FF_RULE_SETUP
-#line 401 "eval.l"
+#line 405 "eval.l"
 ECHO;
 	FF_BREAK
 case FF_STATE_EOF(INITIAL):
@@ -2116,7 +2120,7 @@ int main()
 	return 0;
 	}
 #endif
-#line 401 "eval.l"
+#line 405 "eval.l"
 
 
 int ffwrap()

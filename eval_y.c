@@ -83,6 +83,7 @@
 
 #define  APPROX 1.0e-7
 #include "eval_defs.h"
+#include <time.h>
 
 /***************************************************************/
 /*  Replace Bison's BACKUP macro with one that fixes a bug --  */
@@ -148,6 +149,9 @@ static void Do_Func      ( Node *this );
 static void Do_Deref     ( Node *this );
 static void Do_GTI       ( Node *this );
 
+static long Search_GTI   ( double time, long nGTI, double *start, double *stop,
+			   int ordered );
+
 static char  saobox (double xcen, double ycen, double xwid, double ywid,
 		     double rot,  double xcol, double ycol);
 static char  ellipse(double xcen, double ycen, double xrad, double yrad,
@@ -169,7 +173,7 @@ static void  fferror(char *msg);
 #endif
 
 
-#line 138 "eval.y"
+#line 142 "eval.y"
 typedef union {
     int    Node;        /* Index of Node */
     double dbl;         /* real value    */
@@ -286,15 +290,15 @@ static const short ffrhs[] = {    -1,
 
 #if FFDEBUG != 0
 static const short ffrline[] = { 0,
-   181,   182,   185,   186,   191,   196,   201,   206,   209,   214,
-   216,   219,   222,   225,   227,   231,   233,   235,   237,   239,
-   242,   245,   248,   251,   254,   257,   259,   261,   265,   269,
-   279,   290,   299,   308,   345,   382,   384,   386,   388,   390,
-   392,   394,   396,   398,   402,   404,   406,   409,   412,   415,
-   418,   421,   424,   427,   430,   433,   436,   439,   442,   445,
-   448,   451,   453,   455,   457,   460,   467,   480,   493,   504,
-   520,   538,   559,   585,   595,   605,   623,   641,   643,   645,
-   647,   649,   651,   653,   657,   660,   662,   664,   667
+   185,   186,   189,   190,   195,   200,   205,   210,   213,   218,
+   220,   223,   226,   229,   231,   235,   237,   239,   241,   243,
+   246,   249,   252,   255,   258,   261,   263,   265,   269,   273,
+   283,   294,   303,   312,   349,   386,   388,   390,   392,   394,
+   396,   398,   400,   402,   406,   408,   410,   413,   416,   419,
+   422,   425,   428,   431,   434,   437,   440,   443,   446,   449,
+   452,   455,   457,   459,   461,   464,   471,   484,   497,   508,
+   524,   542,   563,   589,   599,   609,   623,   637,   639,   641,
+   643,   645,   647,   649,   653,   656,   658,   660,   663
 };
 #endif
 
@@ -1098,155 +1102,155 @@ ffreduce:
   switch (ffn) {
 
 case 3:
-#line 185 "eval.y"
+#line 189 "eval.y"
 {;
     break;}
 case 4:
-#line 187 "eval.y"
+#line 191 "eval.y"
 { if( ffvsp[-1].Node<0 ) {
 		     fferror("Couldn't build node structure: out of memory?");
 		     FFERROR;  }
 		;
     break;}
 case 5:
-#line 192 "eval.y"
+#line 196 "eval.y"
 { if( ffvsp[-1].Node<0 ) {
 		     fferror("Couldn't build node structure: out of memory?");
 		     FFERROR;  }
 		;
     break;}
 case 6:
-#line 197 "eval.y"
+#line 201 "eval.y"
 { if( ffvsp[-1].Node<0 ) {
 		     fferror("Couldn't build node structure: out of memory?");
 		     FFERROR;  } 
 		;
     break;}
 case 7:
-#line 202 "eval.y"
+#line 206 "eval.y"
 { if( ffvsp[-1].Node<0 ) {
 		     fferror("Couldn't build node structure: out of memory?");
 		     FFERROR;  }
 		;
     break;}
 case 8:
-#line 206 "eval.y"
+#line 210 "eval.y"
 {  fferrok;  ;
     break;}
 case 9:
-#line 210 "eval.y"
+#line 214 "eval.y"
 {
                   ffval.Node = New_Const( BITSTR, ffvsp[0].str, strlen(ffvsp[0].str)+1 ); TEST(ffval.Node);
 		  SIZE(ffval.Node) = strlen(ffvsp[0].str);
 		;
     break;}
 case 10:
-#line 215 "eval.y"
+#line 219 "eval.y"
 { ffval.Node = New_Column( ffvsp[0].lng ); TEST(ffval.Node); ;
     break;}
 case 11:
-#line 217 "eval.y"
+#line 221 "eval.y"
 { ffval.Node = New_BinOp( BITSTR, ffvsp[-2].Node, '&', ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = ( SIZE(ffvsp[-2].Node)>SIZE(ffvsp[0].Node) ? SIZE(ffvsp[-2].Node) : SIZE(ffvsp[0].Node) );  ;
     break;}
 case 12:
-#line 220 "eval.y"
+#line 224 "eval.y"
 { ffval.Node = New_BinOp( BITSTR, ffvsp[-2].Node, '|', ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = ( SIZE(ffvsp[-2].Node)>SIZE(ffvsp[0].Node) ? SIZE(ffvsp[-2].Node) : SIZE(ffvsp[0].Node) );  ;
     break;}
 case 13:
-#line 223 "eval.y"
+#line 227 "eval.y"
 { ffval.Node = New_BinOp( BITSTR, ffvsp[-2].Node, '+', ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = SIZE(ffvsp[-2].Node) + SIZE(ffvsp[0].Node);                          ;
     break;}
 case 14:
-#line 226 "eval.y"
+#line 230 "eval.y"
 { ffval.Node = New_Unary( BITSTR, NOT, ffvsp[0].Node ); TEST(ffval.Node);     ;
     break;}
 case 15:
-#line 228 "eval.y"
+#line 232 "eval.y"
 { ffval.Node = ffvsp[-1].Node; ;
     break;}
 case 16:
-#line 232 "eval.y"
+#line 236 "eval.y"
 { ffval.Node = New_Const( LONG,   &(ffvsp[0].lng), sizeof(long)   ); TEST(ffval.Node); ;
     break;}
 case 17:
-#line 234 "eval.y"
+#line 238 "eval.y"
 { ffval.Node = New_Const( DOUBLE, &(ffvsp[0].dbl), sizeof(double) ); TEST(ffval.Node); ;
     break;}
 case 18:
-#line 236 "eval.y"
+#line 240 "eval.y"
 { ffval.Node = New_Column( ffvsp[0].lng ); TEST(ffval.Node); ;
     break;}
 case 19:
-#line 238 "eval.y"
+#line 242 "eval.y"
 { ffval.Node = New_Func( LONG, row_fct, 0, 0, 0, 0, 0, 0, 0, 0 ); ;
     break;}
 case 20:
-#line 240 "eval.y"
+#line 244 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '%', ffvsp[0].Node );
 		  TEST(ffval.Node);                                                ;
     break;}
 case 21:
-#line 243 "eval.y"
+#line 247 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '+', ffvsp[0].Node );
 		  TEST(ffval.Node);                                                ;
     break;}
 case 22:
-#line 246 "eval.y"
+#line 250 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '-', ffvsp[0].Node ); 
 		  TEST(ffval.Node);                                                ;
     break;}
 case 23:
-#line 249 "eval.y"
+#line 253 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '*', ffvsp[0].Node ); 
 		  TEST(ffval.Node);                                                ;
     break;}
 case 24:
-#line 252 "eval.y"
+#line 256 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '/', ffvsp[0].Node ); 
 		  TEST(ffval.Node);                                                ;
     break;}
 case 25:
-#line 255 "eval.y"
+#line 259 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, POWER, ffvsp[0].Node );
 		  TEST(ffval.Node);                                                ;
     break;}
 case 26:
-#line 258 "eval.y"
+#line 262 "eval.y"
 { ffval.Node = New_Unary( TYPE(ffvsp[0].Node), UMINUS, ffvsp[0].Node ); TEST(ffval.Node); ;
     break;}
 case 27:
-#line 260 "eval.y"
+#line 264 "eval.y"
 { ffval.Node = ffvsp[-1].Node; ;
     break;}
 case 28:
-#line 262 "eval.y"
+#line 266 "eval.y"
 { ffvsp[0].Node = New_Unary( TYPE(ffvsp[-2].Node), 0, ffvsp[0].Node );
                   ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '*', ffvsp[0].Node ); 
 		  TEST(ffval.Node);                                ;
     break;}
 case 29:
-#line 266 "eval.y"
+#line 270 "eval.y"
 { ffvsp[-2].Node = New_Unary( TYPE(ffvsp[0].Node), 0, ffvsp[-2].Node );
                   ffval.Node = New_BinOp( TYPE(ffvsp[0].Node), ffvsp[-2].Node, '*', ffvsp[0].Node );
                   TEST(ffval.Node);                                ;
     break;}
 case 30:
-#line 270 "eval.y"
-{ if (FSTRCMP(ffvsp[-1].str,"RANDOM(") == 0)
-                    ffval.Node = New_Func( DOUBLE, rnd_fct, 0, 0, 0, 0, 0, 0, 0, 0 );
-                  else
-		    {
+#line 274 "eval.y"
+{ if (FSTRCMP(ffvsp[-1].str,"RANDOM(") == 0) {
+                     srand( (unsigned int) time(NULL) );
+                     ffval.Node = New_Func( DOUBLE, rnd_fct, 0, 0, 0, 0, 0, 0, 0, 0 );
+                  } else {
                      fferror("Function() not supported");
 		     FFERROR;
-		    }
+		  }
                   TEST(ffval.Node); 
                 ;
     break;}
 case 31:
-#line 280 "eval.y"
+#line 284 "eval.y"
 { if (FSTRCMP(ffvsp[-2].str,"SUM(") == 0) {
 		     ffval.Node = New_Func( LONG, sum_fct, 1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
                   } else if (FSTRCMP(ffvsp[-2].str,"NELEM(") == 0) {
@@ -1259,7 +1263,7 @@ case 31:
 		;
     break;}
 case 32:
-#line 291 "eval.y"
+#line 295 "eval.y"
 { if (FSTRCMP(ffvsp[-2].str,"NELEM(") == 0) {
                      ffval.Node = New_Const( LONG, &( SIZE(ffvsp[-1].Node) ), sizeof(long) );
 		  } else {
@@ -1270,7 +1274,7 @@ case 32:
 		;
     break;}
 case 33:
-#line 300 "eval.y"
+#line 304 "eval.y"
 { if (FSTRCMP(ffvsp[-2].str,"NELEM(") == 0) {
                      ffval.Node = New_Const( LONG, &( SIZE(ffvsp[-1].Node) ), sizeof(long) );
 		  } else {
@@ -1281,7 +1285,7 @@ case 33:
 		;
     break;}
 case 34:
-#line 309 "eval.y"
+#line 313 "eval.y"
 { if (FSTRCMP(ffvsp[-2].str,"SUM(") == 0)
 		     ffval.Node = New_Func( TYPE(ffvsp[-1].Node), sum_fct, 1, ffvsp[-1].Node,
 				    0, 0, 0, 0, 0, 0 );
@@ -1320,7 +1324,7 @@ case 34:
                 ;
     break;}
 case 35:
-#line 346 "eval.y"
+#line 350 "eval.y"
 { 
 		   if (FSTRCMP(ffvsp[-4].str,"DEFNULL(") == 0) {
 		      if( SIZE(ffvsp[-3].Node)>=SIZE(ffvsp[-1].Node) && Test_Dims( ffvsp[-3].Node, ffvsp[-1].Node ) ) {
@@ -1359,142 +1363,142 @@ case 35:
                 ;
     break;}
 case 36:
-#line 383 "eval.y"
+#line 387 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-3].Node, 1, ffvsp[-1].Node,  0,  0,  0,   0 ); TEST(ffval.Node); ;
     break;}
 case 37:
-#line 385 "eval.y"
+#line 389 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-5].Node, 2, ffvsp[-3].Node, ffvsp[-1].Node,  0,  0,   0 ); TEST(ffval.Node); ;
     break;}
 case 38:
-#line 387 "eval.y"
+#line 391 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-7].Node, 3, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,  0,   0 ); TEST(ffval.Node); ;
     break;}
 case 39:
-#line 389 "eval.y"
+#line 393 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-9].Node, 4, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,   0 ); TEST(ffval.Node); ;
     break;}
 case 40:
-#line 391 "eval.y"
+#line 395 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-11].Node, 5, ffvsp[-9].Node, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node ); TEST(ffval.Node); ;
     break;}
 case 41:
-#line 393 "eval.y"
+#line 397 "eval.y"
 { ffval.Node = New_Unary( LONG,   INTCAST, ffvsp[0].Node );  TEST(ffval.Node);  ;
     break;}
 case 42:
-#line 395 "eval.y"
+#line 399 "eval.y"
 { ffval.Node = New_Unary( LONG,   INTCAST, ffvsp[0].Node );  TEST(ffval.Node);  ;
     break;}
 case 43:
-#line 397 "eval.y"
+#line 401 "eval.y"
 { ffval.Node = New_Unary( DOUBLE, FLTCAST, ffvsp[0].Node );  TEST(ffval.Node);  ;
     break;}
 case 44:
-#line 399 "eval.y"
+#line 403 "eval.y"
 { ffval.Node = New_Unary( DOUBLE, FLTCAST, ffvsp[0].Node );  TEST(ffval.Node);  ;
     break;}
 case 45:
-#line 403 "eval.y"
+#line 407 "eval.y"
 { ffval.Node = New_Const( BOOLEAN, &(ffvsp[0].log), sizeof(char) ); TEST(ffval.Node); ;
     break;}
 case 46:
-#line 405 "eval.y"
+#line 409 "eval.y"
 { ffval.Node = New_Column( ffvsp[0].lng ); TEST(ffval.Node); ;
     break;}
 case 47:
-#line 407 "eval.y"
+#line 411 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node ); TEST(ffval.Node);
 		  SIZE(ffval.Node) = 1;                                     ;
     break;}
 case 48:
-#line 410 "eval.y"
+#line 414 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     ;
     break;}
 case 49:
-#line 413 "eval.y"
+#line 417 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LT,  ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     ;
     break;}
 case 50:
-#line 416 "eval.y"
+#line 420 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LTE, ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     ;
     break;}
 case 51:
-#line 419 "eval.y"
+#line 423 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GT,  ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     ;
     break;}
 case 52:
-#line 422 "eval.y"
+#line 426 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GTE, ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     ;
     break;}
 case 53:
-#line 425 "eval.y"
+#line 429 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GT,  ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 54:
-#line 428 "eval.y"
+#line 432 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LT,  ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 55:
-#line 431 "eval.y"
+#line 435 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GTE, ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 56:
-#line 434 "eval.y"
+#line 438 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LTE, ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 57:
-#line 437 "eval.y"
+#line 441 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, '~', ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 58:
-#line 440 "eval.y"
+#line 444 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 59:
-#line 443 "eval.y"
+#line 447 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 60:
-#line 446 "eval.y"
+#line 450 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = 1; ;
     break;}
 case 61:
-#line 449 "eval.y"
+#line 453 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = 1; ;
     break;}
 case 62:
-#line 452 "eval.y"
+#line 456 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, AND, ffvsp[0].Node ); TEST(ffval.Node); ;
     break;}
 case 63:
-#line 454 "eval.y"
+#line 458 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, OR,  ffvsp[0].Node ); TEST(ffval.Node); ;
     break;}
 case 64:
-#line 456 "eval.y"
+#line 460 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node ); TEST(ffval.Node); ;
     break;}
 case 65:
-#line 458 "eval.y"
+#line 462 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node ); TEST(ffval.Node); ;
     break;}
 case 66:
-#line 461 "eval.y"
+#line 465 "eval.y"
 { PROMOTE(ffvsp[-4].Node,ffvsp[-2].Node); PROMOTE(ffvsp[-4].Node,ffvsp[0].Node); PROMOTE(ffvsp[-2].Node,ffvsp[0].Node);
 		  ffvsp[-2].Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LTE, ffvsp[-4].Node );
                   ffvsp[0].Node = New_BinOp( BOOLEAN, ffvsp[-4].Node, LTE, ffvsp[0].Node );
@@ -1502,7 +1506,7 @@ case 66:
                   TEST(ffval.Node);                                         ;
     break;}
 case 67:
-#line 468 "eval.y"
+#line 472 "eval.y"
 {
 		   if (FSTRCMP(ffvsp[-2].str,"ISNULL(") == 0) {
 		      ffval.Node = New_Func( 0, isnull_fct, 1, ffvsp[-1].Node, 0, 0,
@@ -1517,7 +1521,7 @@ case 67:
 		;
     break;}
 case 68:
-#line 481 "eval.y"
+#line 485 "eval.y"
 {
 		   if (FSTRCMP(ffvsp[-2].str,"ISNULL(") == 0) {
 		      ffval.Node = New_Func( 0, isnull_fct, 1, ffvsp[-1].Node, 0, 0,
@@ -1532,7 +1536,7 @@ case 68:
 		;
     break;}
 case 69:
-#line 494 "eval.y"
+#line 498 "eval.y"
 {
 		   if (FSTRCMP(ffvsp[-2].str,"ISNULL(") == 0) {
 		      ffval.Node = New_Func( BOOLEAN, isnull_fct, 1, ffvsp[-1].Node, 0, 0,
@@ -1545,7 +1549,7 @@ case 69:
 		;
     break;}
 case 70:
-#line 505 "eval.y"
+#line 509 "eval.y"
 {
 		   if (FSTRCMP(ffvsp[-4].str,"DEFNULL(") == 0) {
 		      if( SIZE(ffvsp[-3].Node)>=SIZE(ffvsp[-1].Node) && Test_Dims( ffvsp[-3].Node, ffvsp[-1].Node ) ) {
@@ -1563,7 +1567,7 @@ case 70:
 		;
     break;}
 case 71:
-#line 521 "eval.y"
+#line 525 "eval.y"
 {
 		   if( SIZE(ffvsp[-5].Node)>1 || SIZE(ffvsp[-3].Node)>1 || SIZE(ffvsp[-1].Node)>1 ) {
 		      fferror("Cannot use array as function argument");
@@ -1583,7 +1587,7 @@ case 71:
 		;
     break;}
 case 72:
-#line 539 "eval.y"
+#line 543 "eval.y"
 {
 		   if( SIZE(ffvsp[-9].Node)>1 || SIZE(ffvsp[-7].Node)>1 || SIZE(ffvsp[-5].Node)>1 || SIZE(ffvsp[-3].Node)>1
 		       || SIZE(ffvsp[-1].Node)>1 ) {
@@ -1606,7 +1610,7 @@ case 72:
 		;
     break;}
 case 73:
-#line 560 "eval.y"
+#line 564 "eval.y"
 {
 		   if( SIZE(ffvsp[-13].Node)>1 || SIZE(ffvsp[-11].Node)>1 || SIZE(ffvsp[-9].Node)>1 || SIZE(ffvsp[-7].Node)>1
 		       || SIZE(ffvsp[-5].Node)>1 || SIZE(ffvsp[-3].Node)>1 || SIZE(ffvsp[-1].Node)>1 ) {
@@ -1634,7 +1638,7 @@ case 73:
 		;
     break;}
 case 74:
-#line 586 "eval.y"
+#line 590 "eval.y"
 { /* Use defaults for all except filename */
                    if (FSTRCMP(ffvsp[-1].str,"GTIFILTER(") == 0) {
                       ffval.Node = New_GTI( "", -99, "*START*", "*STOP*" );
@@ -1646,7 +1650,7 @@ case 74:
                 ;
     break;}
 case 75:
-#line 596 "eval.y"
+#line 600 "eval.y"
 { /* Use defaults for all except filename */
                    if (FSTRCMP(ffvsp[-2].str,"GTIFILTER(") == 0) {
                       ffval.Node = New_GTI( ffvsp[-1].str, -99, "*START*", "*STOP*" );
@@ -1658,15 +1662,11 @@ case 75:
                 ;
     break;}
 case 76:
-#line 606 "eval.y"
+#line 610 "eval.y"
 {
                    if (FSTRCMP(ffvsp[-4].str,"GTIFILTER(") == 0) {
                       if( SIZE(ffvsp[-1].Node)>1 ) {
                          fferror("Cannot filter on a vector column");
-                         FFERROR;
-                      }
-		      if( gParse.Nodes[ffvsp[-1].Node].operation==-1000 ) {
-                         fferror("Cannot filter on a constant");
                          FFERROR;
                       }
                       ffval.Node = New_GTI( ffvsp[-3].str, ffvsp[-1].Node, "*START*", "*STOP*" );
@@ -1685,10 +1685,6 @@ case 77:
                          fferror("Cannot filter on a vector column");
                          FFERROR;
                       }
-		      if( gParse.Nodes[ffvsp[-5].Node].operation==-1000 ) {
-                         fferror("Cannot filter on a constant");
-                         FFERROR;
-                      }
                       ffval.Node = New_GTI( ffvsp[-7].str, ffvsp[-5].Node, ffvsp[-3].str, ffvsp[-1].str );
                    } else {
                       fferror("Filter Function not supported");
@@ -1698,53 +1694,53 @@ case 77:
                 ;
     break;}
 case 78:
-#line 642 "eval.y"
+#line 638 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-3].Node, 1, ffvsp[-1].Node,  0,  0,  0,   0 ); TEST(ffval.Node); ;
     break;}
 case 79:
-#line 644 "eval.y"
+#line 640 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-5].Node, 2, ffvsp[-3].Node, ffvsp[-1].Node,  0,  0,   0 ); TEST(ffval.Node); ;
     break;}
 case 80:
-#line 646 "eval.y"
+#line 642 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-7].Node, 3, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,  0,   0 ); TEST(ffval.Node); ;
     break;}
 case 81:
-#line 648 "eval.y"
+#line 644 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-9].Node, 4, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,   0 ); TEST(ffval.Node); ;
     break;}
 case 82:
-#line 650 "eval.y"
+#line 646 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-11].Node, 5, ffvsp[-9].Node, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node ); TEST(ffval.Node); ;
     break;}
 case 83:
-#line 652 "eval.y"
+#line 648 "eval.y"
 { ffval.Node = New_Unary( BOOLEAN, NOT, ffvsp[0].Node ); TEST(ffval.Node); ;
     break;}
 case 84:
-#line 654 "eval.y"
+#line 650 "eval.y"
 { ffval.Node = ffvsp[-1].Node; ;
     break;}
 case 85:
-#line 658 "eval.y"
+#line 654 "eval.y"
 { ffval.Node = New_Const( STRING, ffvsp[0].str, strlen(ffvsp[0].str)+1 ); TEST(ffval.Node);
                   SIZE(ffval.Node) = strlen(ffvsp[0].str);                            ;
     break;}
 case 86:
-#line 661 "eval.y"
+#line 657 "eval.y"
 { ffval.Node = New_Column( ffvsp[0].lng ); TEST(ffval.Node); ;
     break;}
 case 87:
-#line 663 "eval.y"
+#line 659 "eval.y"
 { ffval.Node = ffvsp[-1].Node; ;
     break;}
 case 88:
-#line 665 "eval.y"
+#line 661 "eval.y"
 { ffval.Node = New_BinOp( STRING, ffvsp[-2].Node, '+', ffvsp[0].Node );  TEST(ffval.Node);
 		  SIZE(ffval.Node) = SIZE(ffvsp[-2].Node) + SIZE(ffvsp[0].Node);                   ;
     break;}
 case 89:
-#line 668 "eval.y"
+#line 664 "eval.y"
 { 
 		  if (FSTRCMP(ffvsp[-4].str,"DEFNULL(") == 0) {
 		     ffval.Node = New_Func( 0, defnull_fct, 2, ffvsp[-3].Node, ffvsp[-1].Node, 0,
@@ -1952,7 +1948,7 @@ fferrhandle:
   ffstate = ffn;
   goto ffnewstate;
 }
-#line 678 "eval.y"
+#line 674 "eval.y"
 
 
 /*************************************************************************/
@@ -1999,7 +1995,7 @@ static int New_Const( int returnType, void *value, long len )
    n = Alloc_Node();
    if( n>=0 ) {
       this             = gParse.Nodes + n;
-      this->operation  = -1000;             /* Flag a constant */
+      this->operation  = CONST_OP;             /* Flag a constant */
       this->DoOp       = NULL;
       this->nSubNodes  = 0;
       this->type       = returnType;
@@ -2045,51 +2041,6 @@ static int New_Unary( int returnType, int Op, int Node1 )
    if( (Op==DOUBLE || Op==FLTCAST) && that->type==DOUBLE  ) return( Node1 );
    if( (Op==LONG   || Op==INTCAST) && that->type==LONG    ) return( Node1 );
    if( (Op==BOOLEAN              ) && that->type==BOOLEAN ) return( Node1 );
-
-   if( that->operation==-1000 ) {  /* Operating on a constant! */
-      switch( Op ) {
-      case DOUBLE:
-      case FLTCAST:
-	 if( that->type==LONG )
-	    that->value.data.dbl = (double)that->value.data.lng;
-	 else if( that->type==BOOLEAN )
-	    that->value.data.dbl = ( that->value.data.log ? 1.0 : 0.0 );
-	 that->type=DOUBLE;
-	 return(Node1);
-	 break;
-      case LONG:
-      case INTCAST:
-	 if( that->type==DOUBLE )
-	    that->value.data.lng = (long)that->value.data.dbl;
-	 else if( that->type==BOOLEAN )
-	    that->value.data.lng = ( that->value.data.log ? 1L : 0L );
-	 that->type=LONG;
-	 return(Node1);
-	 break;
-      case BOOLEAN:
-	 if( that->type==DOUBLE )
-	    that->value.data.log = ( that->value.data.dbl != 0.0 );
-	 else if( that->type==LONG )
-	    that->value.data.log = ( that->value.data.lng != 0L );
-	 that->type=BOOLEAN;
-	 return(Node1);
-	 break;
-      case UMINUS:
-	 if( that->type==DOUBLE )
-	    that->value.data.dbl = - that->value.data.dbl;
-	 else if( that->type==LONG )
-	    that->value.data.lng = - that->value.data.lng;
-	 return(Node1);
-	 break;
-      case NOT:
-	 if( that->type==BOOLEAN )
-	    that->value.data.log = ( ! that->value.data.log );
-	 else if( that->type==BITSTR )
-	    bitnot( that->value.data.str, that->value.data.str );
-	 return(Node1);
-	 break;
-      }
-   }
    
    n = Alloc_Node();
    if( n>=0 ) {
@@ -2105,6 +2056,8 @@ static int New_Unary( int returnType, int Op, int Node1 )
       this->value.naxis = that->value.naxis;
       for( i=0; i<that->value.naxis; i++ )
 	 this->value.naxes[i] = that->value.naxes[i];
+
+      if( that->operation==CONST_OP ) this->DoOp( this );
    }
    return( n );
 }
@@ -2112,7 +2065,7 @@ static int New_Unary( int returnType, int Op, int Node1 )
 static int New_BinOp( int returnType, int Node1, int Op, int Node2 )
 {
    Node *this,*that1,*that2;
-   int  n,i;
+   int  n,i,constant;
 
    if( Node1<0 || Node2<0 ) return(-1);
 
@@ -2127,6 +2080,8 @@ static int New_BinOp( int returnType, int Node1, int Op, int Node2 )
 
       that1            = gParse.Nodes + Node1;
       that2            = gParse.Nodes + Node2;
+      constant         = (that1->operation==CONST_OP
+                          && that2->operation==CONST_OP);
       if( that1->type!=STRING && that1->type!=BITSTR )
 	 if( !Test_Dims( Node1, Node2 ) ) {
 	    Free_Last_Node();
@@ -2148,6 +2103,7 @@ static int New_BinOp( int returnType, int Node1, int Op, int Node2 )
       case LONG:    this->DoOp = Do_BinOp_lng;  break;
       case DOUBLE:  this->DoOp = Do_BinOp_dbl;  break;
       }
+      if( constant ) this->DoOp( this );
    }
    return( n );
 }
@@ -2159,7 +2115,7 @@ static int New_Func( int returnType, funcOp Op, int nNodes,
 /* else return a single value of type returnType                       */
 {
    Node *this, *that;
-   int  i,n;
+   int  i,n,constant;
 
    if( Node1<0 || Node2<0 || Node3<0 || Node4<0 || 
        Node5<0 || Node6<0 || Node7<0 ) return(-1);
@@ -2177,6 +2133,10 @@ static int New_Func( int returnType, funcOp Op, int nNodes,
       this->SubNodes[4] = Node5;
       this->SubNodes[5] = Node6;
       this->SubNodes[6] = Node7;
+      i = constant = nNodes;    /* Functions with zero params are not const */
+      while( i-- )
+         constant = ( constant &&
+		      gParse.Nodes[ this->SubNodes[i] ].operation==CONST_OP );
       
       if( returnType ) {
 	 this->type           = returnType;
@@ -2191,6 +2151,7 @@ static int New_Func( int returnType, funcOp Op, int nNodes,
 	 for( i=0; i<that->value.naxis; i++ )
 	    this->value.naxes[i] = that->value.naxes[i];
       }
+      if( constant ) this->DoOp( this );
    }
    return( n );
 }
@@ -2198,14 +2159,14 @@ static int New_Func( int returnType, funcOp Op, int nNodes,
 static int New_Deref( int Var,  int nDim,
 		      int Dim1, int Dim2, int Dim3, int Dim4, int Dim5 )
 {
-   int n, idx;
+   int n, idx, constant;
    long elem=0;
    Node *this, *theVar, *theDim[MAXDIMS];
 
    if( Var<0 || Dim1<0 || Dim2<0 || Dim3<0 || Dim4<0 || Dim5<0 ) return(-1);
 
    theVar = gParse.Nodes + Var;
-   if( theVar->operation==-1000 || theVar->value.nelem==1 ) {
+   if( theVar->operation==CONST_OP || theVar->value.nelem==1 ) {
       ffpmsg("Cannot index a scalar value");
       gParse.status = PARSE_SYNTAX_ERR;
       return(-1);
@@ -2221,6 +2182,9 @@ static int New_Deref( int Var,  int nDim,
       theDim[2]         = gParse.Nodes + (this->SubNodes[3]=Dim3);
       theDim[3]         = gParse.Nodes + (this->SubNodes[4]=Dim4);
       theDim[4]         = gParse.Nodes + (this->SubNodes[5]=Dim5);
+      constant          = theVar->operation==CONST_OP;
+      for( idx=0; idx<nDim; idx++ )
+	 constant = (constant && theDim[idx]->operation==CONST_OP);
 
       for( idx=0; idx<nDim; idx++ )
 	 if( theDim[idx]->value.nelem>1 ) {
@@ -2254,6 +2218,7 @@ static int New_Deref( int Var,  int nDim,
 	 fferror("Must specify just one or all indices for vector");
 	 return(-1);
       }
+      if( constant ) this->DoOp( this );
    }
    return(n);
 }
@@ -2403,7 +2368,7 @@ static int New_GTI( char *fname, int Node1, char *start, char *stop )
 
       this->SubNodes[0]    = Node0;
       that0                = gParse.Nodes + Node0;
-      that0->operation     = -1000;
+      that0->operation     = CONST_OP;
       that0->DoOp          = NULL;
       that0->value.data.ptr= NULL;
 
@@ -2428,6 +2393,19 @@ static int New_GTI( char *fname, int Node1, char *start, char *stop )
 	    free( that0->value.data.dblptr );
 	    return(-1);
 	 }
+
+	 /*  Test for fully time-ordered GTI... both START && STOP  */
+
+	 that0->type = 1; /*  Assume yes  */
+	 i = nrows;
+	 while( --i )
+	    if(    that0->value.data.dblptr[i-1]
+                   >= that0->value.data.dblptr[i]
+		|| that0->value.data.dblptr[i-1+nrows]
+		   >= that0->value.data.dblptr[i+nrows] ) {
+	       that0->type = 0;
+	       break;
+	    }
 	 
 	 /*  Handle TIMEZERO offset, if any  */
 	 
@@ -2440,12 +2418,15 @@ static int New_GTI( char *fname, int Node1, char *start, char *stop )
 	       that0->value.data.dblptr[i] += dt;
 	 }
       }
+      if( gParse.Nodes[Node1].operation==CONST_OP )
+	 this->DoOp( this );
    }
 
    if( samefile )
       ffmahd( fptr, evthdu, &hdutype, &gParse.status );
    else
       ffclos( fptr, &gParse.status );
+
    return( n );
 }
 
@@ -2636,7 +2617,7 @@ void Reset_Parser( long firstRow, long rowOffset, long nRows )
 
    for( i=0; i<gParse.nNodes; i++ ) {
       if(    gParse.Nodes[i].operation >  0
-	  || gParse.Nodes[i].operation == -1000 ) continue;
+	  || gParse.Nodes[i].operation == CONST_OP ) continue;
 
       column = -gParse.Nodes[i].operation;
       offset = gParse.colInfo[column].nelem * rowOffset + 1;
@@ -2725,86 +2706,123 @@ static void Do_Unary( Node *this )
    Node *that;
    long elem;
 
-   /*  New_Unary pre-evaluates operations on constants,  */
-   /*  so no need to worry about that case               */
-
    that = gParse.Nodes + this->SubNodes[0];
 
-   Allocate_Ptrs( this );
-
-   if( !gParse.status ) {
-
-      if( this->type!=BITSTR ) {
-	 elem = gParse.nRows;
-	 if( this->type!=STRING )
-	    elem *= this->value.nelem;
-	 while( elem-- )
-	    this->value.undef[elem] = that->value.undef[elem];
-      }
-
-      elem = gParse.nRows * this->value.nelem;
-
+   if( that->operation==CONST_OP ) {  /* Operating on a constant! */
       switch( this->operation ) {
-
-      case BOOLEAN:
-	 if( that->type==DOUBLE )
-	    while( elem-- )
-	       this->value.data.logptr[elem] =
-		  ( that->value.data.dblptr[elem] != 0.0 );
-	 else if( that->type==LONG )
-	    while( elem-- )
-	       this->value.data.logptr[elem] =
-		  ( that->value.data.lngptr[elem] != 0L );
-	 break;
-
       case DOUBLE:
       case FLTCAST:
 	 if( that->type==LONG )
-	    while( elem-- )
-	       this->value.data.dblptr[elem] =
-		  (double)that->value.data.lngptr[elem];
+	    this->value.data.dbl = (double)that->value.data.lng;
 	 else if( that->type==BOOLEAN )
-	    while( elem-- )
-	       this->value.data.dblptr[elem] =
-		  ( that->value.data.logptr[elem] ? 1.0 : 0.0 );
+	    this->value.data.dbl = ( that->value.data.log ? 1.0 : 0.0 );
 	 break;
-
       case LONG:
       case INTCAST:
 	 if( that->type==DOUBLE )
-	    while( elem-- )
-	       this->value.data.lngptr[elem] =
-		  (long)that->value.data.dblptr[elem];
+	    this->value.data.lng = (long)that->value.data.dbl;
 	 else if( that->type==BOOLEAN )
-	    while( elem-- )
-	       this->value.data.lngptr[elem] =
-		  ( that->value.data.logptr[elem] ? 1L : 0L );
+	    this->value.data.lng = ( that->value.data.log ? 1L : 0L );
 	 break;
-
+      case BOOLEAN:
+	 if( that->type==DOUBLE )
+	    this->value.data.log = ( that->value.data.dbl != 0.0 );
+	 else if( that->type==LONG )
+	    this->value.data.log = ( that->value.data.lng != 0L );
+	 break;
       case UMINUS:
-	 if( that->type==DOUBLE ) {
-	    while( elem-- )
-	       this->value.data.dblptr[elem] =
-		  - that->value.data.dblptr[elem];
-	 } else if( that->type==LONG ) {
-	    while( elem-- )
-	       this->value.data.lngptr[elem] =
-		  - that->value.data.lngptr[elem];
-	 }
+	 if( that->type==DOUBLE )
+	    this->value.data.dbl = - that->value.data.dbl;
+	 else if( that->type==LONG )
+	    this->value.data.lng = - that->value.data.lng;
 	 break;
-
       case NOT:
-	 if( that->type==BOOLEAN ) {
-	    while( elem-- )
-	       this->value.data.logptr[elem] =
-		  ( ! that->value.data.logptr[elem] );
-	 } else if( that->type==BITSTR ) {
-	    elem = gParse.nRows;
-	    while( elem-- )
-	       bitnot( this->value.data.strptr[elem],
-		       that->value.data.strptr[elem] );
-	 }
+	 if( that->type==BOOLEAN )
+	    this->value.data.log = ( ! that->value.data.log );
+	 else if( that->type==BITSTR )
+	    bitnot( this->value.data.str, that->value.data.str );
 	 break;
+      }
+      this->operation = CONST_OP;
+
+   } else {
+
+      Allocate_Ptrs( this );
+
+      if( !gParse.status ) {
+
+	 if( this->type!=BITSTR ) {
+	    elem = gParse.nRows;
+	    if( this->type!=STRING )
+	       elem *= this->value.nelem;
+	    while( elem-- )
+	       this->value.undef[elem] = that->value.undef[elem];
+	 }
+
+	 elem = gParse.nRows * this->value.nelem;
+
+	 switch( this->operation ) {
+
+	 case BOOLEAN:
+	    if( that->type==DOUBLE )
+	       while( elem-- )
+		  this->value.data.logptr[elem] =
+		     ( that->value.data.dblptr[elem] != 0.0 );
+	    else if( that->type==LONG )
+	       while( elem-- )
+		  this->value.data.logptr[elem] =
+		     ( that->value.data.lngptr[elem] != 0L );
+	    break;
+
+	 case DOUBLE:
+	 case FLTCAST:
+	    if( that->type==LONG )
+	       while( elem-- )
+		  this->value.data.dblptr[elem] =
+		     (double)that->value.data.lngptr[elem];
+	    else if( that->type==BOOLEAN )
+	       while( elem-- )
+		  this->value.data.dblptr[elem] =
+		     ( that->value.data.logptr[elem] ? 1.0 : 0.0 );
+	    break;
+
+	 case LONG:
+	 case INTCAST:
+	    if( that->type==DOUBLE )
+	       while( elem-- )
+		  this->value.data.lngptr[elem] =
+		     (long)that->value.data.dblptr[elem];
+	    else if( that->type==BOOLEAN )
+	       while( elem-- )
+		  this->value.data.lngptr[elem] =
+		     ( that->value.data.logptr[elem] ? 1L : 0L );
+	    break;
+
+	 case UMINUS:
+	    if( that->type==DOUBLE ) {
+	       while( elem-- )
+		  this->value.data.dblptr[elem] =
+		     - that->value.data.dblptr[elem];
+	    } else if( that->type==LONG ) {
+	       while( elem-- )
+		  this->value.data.lngptr[elem] =
+		     - that->value.data.lngptr[elem];
+	    }
+	    break;
+
+	 case NOT:
+	    if( that->type==BOOLEAN ) {
+	       while( elem-- )
+		  this->value.data.logptr[elem] =
+		     ( ! that->value.data.logptr[elem] );
+	    } else if( that->type==BITSTR ) {
+	       elem = gParse.nRows;
+	       while( elem-- )
+		  bitnot( this->value.data.strptr[elem],
+			  that->value.data.strptr[elem] );
+	    }
+	    break;
+	 }
       }
    }
 
@@ -2823,8 +2841,8 @@ static void Do_BinOp_bit( Node *this )
    that1 = gParse.Nodes + this->SubNodes[0];
    that2 = gParse.Nodes + this->SubNodes[1];
 
-   const1 = ( that1->operation==-1000 );
-   const2 = ( that2->operation==-1000 );
+   const1 = ( that1->operation==CONST_OP );
+   const2 = ( that2->operation==CONST_OP );
    sptr1  = ( const1 ? that1->value.data.str : NULL );
    sptr2  = ( const2 ? that2->value.data.str : NULL );
 
@@ -2853,7 +2871,7 @@ static void Do_BinOp_bit( Node *this )
 	 strcat( this->value.data.str, sptr2 );
 	 break;
       }
-      this->operation = -1000;
+      this->operation = CONST_OP;
 
    } else {
 
@@ -2938,8 +2956,8 @@ static void Do_BinOp_str( Node *this )
    that1 = gParse.Nodes + this->SubNodes[0];
    that2 = gParse.Nodes + this->SubNodes[1];
 
-   const1 = ( that1->operation==-1000 );
-   const2 = ( that2->operation==-1000 );
+   const1 = ( that1->operation==CONST_OP );
+   const2 = ( that2->operation==CONST_OP );
    sptr1  = ( const1 ? that1->value.data.str : NULL );
    sptr2  = ( const2 ? that2->value.data.str : NULL );
 
@@ -2961,7 +2979,7 @@ static void Do_BinOp_str( Node *this )
 	 strcat( this->value.data.str, sptr2 );
 	 break;
       }
-      this->operation = -1000;
+      this->operation = CONST_OP;
 
    } else {  /*  Not a constant  */
 
@@ -3029,14 +3047,14 @@ static void Do_BinOp_log( Node *this )
    that1 = gParse.Nodes + this->SubNodes[0];
    that2 = gParse.Nodes + this->SubNodes[1];
 
-   vector1 = ( that1->operation!=-1000 );
+   vector1 = ( that1->operation!=CONST_OP );
    if( vector1 )
       vector1 = that1->value.nelem;
    else {
       val1  = that1->value.data.log;
    }
 
-   vector2 = ( that2->operation!=-1000 );
+   vector2 = ( that2->operation!=CONST_OP );
    if( vector2 )
       vector2 = that2->value.nelem;
    else {
@@ -3058,7 +3076,7 @@ static void Do_BinOp_log( Node *this )
 	 this->value.data.log = ( (val1 && !val2) || (!val1 && val2) );
 	 break;
       }
-      this->operation=-1000;
+      this->operation=CONST_OP;
    } else {
       rows  = gParse.nRows;
       nelem = this->value.nelem;
@@ -3151,14 +3169,14 @@ static void Do_BinOp_lng( Node *this )
    that1 = gParse.Nodes + this->SubNodes[0];
    that2 = gParse.Nodes + this->SubNodes[1];
 
-   vector1 = ( that1->operation!=-1000 );
+   vector1 = ( that1->operation!=CONST_OP );
    if( vector1 )
       vector1 = that1->value.nelem;
    else {
       val1  = that1->value.data.lng;
    }
 
-   vector2 = ( that2->operation!=-1000 );
+   vector2 = ( that2->operation!=CONST_OP );
    if( vector2 )
       vector2 = that2->value.nelem;
    else {
@@ -3192,7 +3210,7 @@ static void Do_BinOp_lng( Node *this )
 	 this->value.data.lng = (long)pow((double)val1,(double)val2);
 	 break;
       }
-      this->operation=-1000;
+      this->operation=CONST_OP;
 
    } else {
 
@@ -3278,14 +3296,14 @@ static void Do_BinOp_dbl( Node *this )
    that1 = gParse.Nodes + this->SubNodes[0];
    that2 = gParse.Nodes + this->SubNodes[1];
 
-   vector1 = ( that1->operation!=-1000 );
+   vector1 = ( that1->operation!=CONST_OP );
    if( vector1 )
       vector1 = that1->value.nelem;
    else {
       val1  = that1->value.data.dbl;
    }
 
-   vector2 = ( that2->operation!=-1000 );
+   vector2 = ( that2->operation!=CONST_OP );
    if( vector2 )
       vector2 = that2->value.nelem;
    else {
@@ -3319,7 +3337,7 @@ static void Do_BinOp_dbl( Node *this )
 	 this->value.data.dbl = (double)pow(val1,val2);
 	 break;
       }
-      this->operation=-1000;
+      this->operation=CONST_OP;
 
    } else {
 
@@ -3411,7 +3429,7 @@ static void Do_Func( Node *this )
    allConst = 1;
    while( i-- ) {
       theParams[i] = gParse.Nodes + this->SubNodes[i];
-      vector[i]   = ( theParams[i]->operation!=-1000 );
+      vector[i]   = ( theParams[i]->operation!=CONST_OP );
       if( vector[i] ) {
 	 allConst = 0;
 	 vector[i] = theParams[i]->value.nelem;
@@ -3557,7 +3575,7 @@ static void Do_Func( Node *this )
 					pVals[6].data.dbl );
 	    break;
       }
-      this->operation = -1000;
+      this->operation = CONST_OP;
 
    } else {
 
@@ -3579,7 +3597,7 @@ static void Do_Func( Node *this )
 	    break;
 	 case rnd_fct:
 	    while( row-- ) {
-	       this->value.data.dblptr[row] = (double)rand() / 2147483647; 
+	       this->value.data.dblptr[row] = (double)rand() / RAND_MAX; 
 	       this->value.undef[row] = 0;
 	    }
 	    break;
@@ -3961,7 +3979,7 @@ static void Do_Deref( Node *this )
    allConst = 1;
    while( i-- ) {
       theDims[i] = gParse.Nodes + this->SubNodes[i+1];
-      isConst[i] = ( theDims[i]->operation==-1000 );
+      isConst[i] = ( theDims[i]->operation==CONST_OP );
       if( isConst[i] )
 	 dimVals[i] = theDims[i]->value.data.lng;
       else
@@ -4121,46 +4139,95 @@ static void Do_GTI( Node *this )
 {
    Node *theExpr, *theTimes;
    double *start, *stop, *times;
-   long row, nGTI, i;
+   long row, nGTI, gti;
+   int ordered;
 
    theTimes = gParse.Nodes + this->SubNodes[0];
    theExpr  = gParse.Nodes + this->SubNodes[1];
 
-   nGTI  = theTimes->value.nelem;
-   start = theTimes->value.data.dblptr;
-   stop  = theTimes->value.data.dblptr + nGTI;
+   nGTI    = theTimes->value.nelem;
+   start   = theTimes->value.data.dblptr;
+   stop    = theTimes->value.data.dblptr + nGTI;
+   ordered = theTimes->type;
 
-   times = theExpr->value.data.dblptr;
+   if( theExpr->operation==CONST_OP ) {
 
-   Allocate_Ptrs( this );
+      this->value.data.log = 
+	 (Search_GTI( theExpr->value.data.dbl, nGTI, start, stop, ordered )>=0);
+      this->operation      = CONST_OP;
 
-   if( !gParse.status ) {
+   } else {
 
-      i = 0;
-      row = gParse.nRows;
-      if( nGTI )
-	 while( row-- ) {
-	    this->value.undef[row] = theExpr->value.undef[row];
+      Allocate_Ptrs( this );
 
-	    /*  Before searching entire GTI, check the GTI found last time  */
-	    if( i<0 || times[row]<start[i] || times[row]>stop[i] ) {
-	       i = nGTI;
-	       while( i-- )
-		  if( times[row]>=start[i] && times[row]<=stop[i] )
-		     break;
+      times = theExpr->value.data.dblptr;
+      if( !gParse.status ) {
+
+	 row = gParse.nRows;
+	 if( nGTI ) {
+	    gti = -1;
+	    while( row-- ) {
+	       if( (this->value.undef[row] = theExpr->value.undef[row]) )
+		  continue;
+
+            /*  Before searching entire GTI, check the GTI found last time  */
+	       if( gti<0 || times[row]<start[gti] || times[row]>stop[gti] ) {
+		  gti = Search_GTI( times[row], nGTI, start, stop, ordered );
+	       }
+	       this->value.data.logptr[row] = ( gti>=0 );
 	    }
-	    this->value.data.logptr[row] = ( i>=0 );
-	 }
-      else
-	 while( row-- ) {
-	    this->value.data.logptr[row] = 0;
-	    this->value.undef[row]       = 0;
-	 }
-
+	 } else
+	    while( row-- ) {
+	       this->value.data.logptr[row] = 0;
+	       this->value.undef[row]       = 0;
+	    }
+      }
    }
 
    if( theExpr->operation>0 )
       free( theExpr->value.data.ptr );
+}
+
+static long Search_GTI( double time, long nGTI, double *start, double *stop,
+			int ordered )
+{
+   long gti, step;
+                             
+   if( ordered && nGTI>15 ) { /*  If time-ordered and lots of GTIs,   */
+                              /*  use "FAST" Binary search algorithm  */
+      if( time>=start[0] && time<=stop[nGTI-1] ) {
+	 gti = step = (nGTI >> 1);
+	 while(1) {
+	    if( step>1L ) step >>= 1;
+	    
+	    if( time>stop[gti] ) {
+	       if( time>=start[gti+1] )
+		  gti += step;
+	       else {
+		  gti = -1L;
+		  break;
+	       }
+	    } else if( time<start[gti] ) {
+	       if( time<=stop[gti-1] )
+		  gti -= step;
+	       else {
+		  gti = -1L;
+		  break;
+	       }
+	    } else {
+	       break;
+	    }
+	 }
+      } else
+	 gti = -1L;
+      
+   } else { /*  Use "SLOW" linear search  */
+      gti = nGTI;
+      while( gti-- )
+	 if( time>=start[gti] && time<=stop[gti] )
+	    break;
+   }
+   return( gti );
 }
 
 /*****************************************************************************/

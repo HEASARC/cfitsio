@@ -12,8 +12,9 @@
 #endif
 #include "fitsio2.h"
 
-#define MAXDIMS 5
-#define MAXSUBS 10
+#define MAXDIMS      5
+#define MAXSUBS     10
+#define CONST_OP -1000
 
 typedef struct {
                   int  type;

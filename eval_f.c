@@ -60,21 +60,22 @@ typedef struct {
 ParseData gParse;     /* Global structure holding all parser information     */
 
 /*---------------------------------------------------------------------------*/
-int fits_find_rows( fitsfile *fptr,        /* I - Input FITS file            */
-                    char     *expr,        /* I - Boolean expression         */
-                    long     firstrow,     /* I - First row of table to eval */
-                    long     nrows,        /* I - Number of rows to evaluate */
-                    long     *n_good_rows, /* O - Number of rows eval to True*/
-                    char     *row_status,  /* O - Array of boolean results   */
-                    int      *status )     /* O - Error status               */
+int fffrow( fitsfile *fptr,         /* I - Input FITS file                   */
+            char     *expr,         /* I - Boolean expression                */
+            long     firstrow,      /* I - First row of table to eval        */
+            long     nrows,         /* I - Number of rows to evaluate        */
+            long     *n_good_rows,  /* O - Number of rows eval to True       */
+            char     *row_status,   /* O - Array of boolean results          */
+            int      *status )      /* O - Error status                      */
 /*                                                                           */
 /* Evaluate a boolean expression using the indicated rows, returning an      */
 /* array of flags indicating which rows evaluated to TRUE/FALSE              */
 /*---------------------------------------------------------------------------*/
 {
    parseInfo Info;
-   int naxis;
+   int naxis, constant;
    long nelem, naxes[MAXDIMS], elem;
+   char result;
 
    if( *status ) return( *status );
 
@@ -83,6 +84,11 @@ int fits_find_rows( fitsfile *fptr,        /* I - Input FITS file            */
       ffcprs();
       return( *status );
    }
+   if( Info.datatype<0 ) {
+      constant = 1;
+      Info.datatype = -Info.datatype;
+   } else
+      constant = 0;
 
    if( Info.datatype!=TLOGICAL || nelem!=1 ) {
       ffcprs();
@@ -90,42 +96,49 @@ int fits_find_rows( fitsfile *fptr,        /* I - Input FITS file            */
       return( *status = PARSE_BAD_TYPE );
    }
 
-   firstrow     = (firstrow>1 ? firstrow : 1);
-   Info.dataPtr = row_status;
-   Info.nullPtr = NULL;
-   Info.maxRows = nrows;
-   
-   /*  Check whether there is at least 1 column referenced in   */
-   /*  expression.  If not, setup the first column as a dummy.  */
-
-   if( !gParse.nCols ) {
-      if( ffallocatecol( 0, status ) ) {
-	 ffcprs();
-	 return( *status );
-      }
-      fits_iter_set_by_num( gParse.colData, fptr, 1, 0, InputCol );
-      gParse.nCols++;
-   }
-
-   if( ffiter( gParse.nCols, gParse.colData, firstrow-1, 0,
-               parse_data, (void*)&Info, status ) == -1 )
-      *status = 0;  /* -1 indicates exitted without error before end... OK */
-
-   if( *status ) {
-
-      /***********************/
-      /* Error... Do nothing */
-      /***********************/
-
+   if( constant ) { /* No need to call parser... have result from ffiprs */
+      result = gParse.Nodes[gParse.nNodes-1].value.data.log;
+      *n_good_rows = nrows;
+      for( elem=0; elem<nrows; elem++ )
+	 row_status[elem] = result;
    } else {
+      firstrow     = (firstrow>1 ? firstrow : 1);
+      Info.dataPtr = row_status;
+      Info.nullPtr = NULL;
+      Info.maxRows = nrows;
+   
+      /*  Check whether there is at least 1 column referenced in   */
+      /*  expression.  If not, setup the first column as a dummy.  */
 
-      /***********************************/
-      /* Count number of good rows found */
-      /***********************************/
+      if( !gParse.nCols ) {
+	 if( ffallocatecol( 0, status ) ) {
+	    ffcprs();
+	    return( *status );
+	 }
+	 fits_iter_set_by_num( gParse.colData, fptr, 1, 0, InputCol );
+	 gParse.nCols++;
+      }
 
-      *n_good_rows = 0L;
-      for( elem=0; elem<Info.maxRows; elem++ ) {
-         if( row_status[elem]==1 ) ++*n_good_rows;
+      if( ffiter( gParse.nCols, gParse.colData, firstrow-1, 0,
+		  parse_data, (void*)&Info, status ) == -1 )
+	 *status = 0;  /* -1 indicates exitted without error before end... OK */
+
+      if( *status ) {
+
+	 /***********************/
+	 /* Error... Do nothing */
+	 /***********************/
+
+      } else {
+
+	 /***********************************/
+	 /* Count number of good rows found */
+	 /***********************************/
+
+	 *n_good_rows = 0L;
+	 for( elem=0; elem<Info.maxRows; elem++ ) {
+	    if( row_status[elem]==1 ) ++*n_good_rows;
+	 }
       }
    }
 
@@ -134,10 +147,10 @@ int fits_find_rows( fitsfile *fptr,        /* I - Input FITS file            */
 }
 
 /*--------------------------------------------------------------------------*/
-int fits_select_rows( fitsfile *infptr,  /* I - Input FITS file             */
-                      fitsfile *outfptr, /* I - Output FITS file            */
-                      char     *expr,    /* I - Boolean expression          */
-                      int      *status ) /* O - Error status                */
+int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
+            fitsfile *outfptr,  /* I - Output FITS file                     */
+            char     *expr,     /* I - Boolean expression                   */
+            int      *status )  /* O - Error status                         */
 /*                                                                          */
 /* Evaluate an expression on all rows of a table.  If the input and output  */
 /* files are not the same, copy the TRUE rows to the output file.  If the   */
@@ -145,10 +158,10 @@ int fits_select_rows( fitsfile *infptr,  /* I - Input FITS file             */
 /*--------------------------------------------------------------------------*/
 {
    parseInfo Info;
-   int naxis;
+   int naxis, constant;
    long nelem, naxes[MAXDIMS], nrows, rdlen, row, maxrows, nbuff;
    long inloc, outloc, ntodo;
-   char *buffer;
+   char *buffer, result;
 
    if( *status ) return( *status );
 
@@ -157,6 +170,11 @@ int fits_select_rows( fitsfile *infptr,  /* I - Input FITS file             */
       ffcprs();
       return( *status );
    }
+   if( Info.datatype<0 ) {
+      constant = 1;
+      Info.datatype = -Info.datatype;
+   } else
+      constant = 0;
 
    /**********************************************************************/
    /* Make sure expression evaluates to the right type... logical scalar */
@@ -179,20 +197,30 @@ int fits_select_rows( fitsfile *infptr,  /* I - Input FITS file             */
    Info.nullPtr = NULL;
    Info.maxRows = nrows;
    
-   /*  Check whether there is at least 1 column referenced in   */
-   /*  expression.  If not, setup the first column as a dummy.  */
+   if( constant ) { /*  Set all rows to the same value from constant result  */
 
-   if( !gParse.nCols ) {
-      if( ffallocatecol( 0, status ) ) {
-	 ffcprs();
-	 return( *status );
+      result = gParse.Nodes[gParse.nNodes-1].value.data.log;
+      for( ntodo = 0; ntodo<nrows; ntodo++ )
+	 ((char*)Info.dataPtr)[ntodo] = result;
+
+   } else {
+
+      /*  Check whether there is at least 1 column referenced in   */
+      /*  expression.  If not, setup the first column as a dummy.  */
+
+      if( !gParse.nCols ) {
+	 if( ffallocatecol( 0, status ) ) {
+	    ffcprs();
+	    return( *status );
+	 }
+	 fits_iter_set_by_num( gParse.colData, infptr, 1, 0, InputCol );
+	 gParse.nCols++;
       }
-      fits_iter_set_by_num( gParse.colData, infptr, 1, 0, InputCol );
-      gParse.nCols++;
+      ffiter( gParse.nCols, gParse.colData, 0L, 0L,
+	      parse_data, (void*)&Info, status );
    }
 
-   if( ffiter( gParse.nCols, gParse.colData, 0L, 0L,
-               parse_data, (void*)&Info, status )  ) {
+   if( *status ) {
       /* Error... Do nothing */
    } else {
       buffer  = (char *)malloc( 100000*sizeof(char) );
@@ -264,22 +292,22 @@ int fits_select_rows( fitsfile *infptr,  /* I - Input FITS file             */
 }
 
 /*---------------------------------------------------------------------------*/
-int fits_calc_rows( fitsfile *fptr,     /* I - Input FITS file               */
-                    int      datatype,  /* I - Datatype to return results as */
-                    char     *expr,     /* I - Arithmetic expression         */
-                    long     firstrow,  /* I - First row to evaluate         */
-                    long     nelements, /* I - Number of elements to return  */
-                    void     *nulval,   /* I - Ptr to value to use as UNDEF  */
-                    void     *array,    /* O - Array of results              */
-                    int      *anynul,   /* O - Were any UNDEFs encountered?  */
-                    int      *status )  /* O - Error status                  */
+int ffcrow( fitsfile *fptr,      /* I - Input FITS file                      */
+            int      datatype,   /* I - Datatype to return results as        */
+            char     *expr,      /* I - Arithmetic expression                */
+            long     firstrow,   /* I - First row to evaluate                */
+            long     nelements,  /* I - Number of elements to return         */
+            void     *nulval,    /* I - Ptr to value to use as UNDEF         */
+            void     *array,     /* O - Array of results                     */
+            int      *anynul,    /* O - Were any UNDEFs encountered?         */
+            int      *status )   /* O - Error status                         */
 /*                                                                           */
 /* Calculate an expression for the indicated rows of a table, returning      */
 /* the results, cast as datatype (TSHORT, TDOUBLE, etc), in array.  If       */
 /* nulval==NULL, UNDEFs will be zeroed out.  For vector results, the number  */
 /* of elements returned may be less than nelements if nelements is not an    */
-/* even multiple of the result dimension.  Call fits_test_expr to obtain     */
-/* the dimensions of the results.                                            */
+/* even multiple of the result dimension.  Call fftexp to obtain the         */
+/* dimensions of the results.                                                */
 /*---------------------------------------------------------------------------*/
 {
    parseInfo Info;
@@ -293,6 +321,7 @@ int fits_calc_rows( fitsfile *fptr,     /* I - Input FITS file               */
       ffcprs();
       return( *status );
    }
+   if( Info.datatype<0 ) Info.datatype = - Info.datatype;
 
    if( nelements<nelem1 ) {
       ffcprs();
@@ -330,11 +359,11 @@ int fits_calc_rows( fitsfile *fptr,     /* I - Input FITS file               */
 }
 
 /*--------------------------------------------------------------------------*/
-int fits_calc_col( fitsfile *infptr,  /* I - Input FITS file                */
-                   char     *expr,    /* I - Arithmetic expression          */
-                   fitsfile *outfptr, /* I - Output fits file               */
-                   char     *colname, /* I - Name of output column          */
-                   int      *status ) /* O - Error status                   */
+int ffccol( fitsfile *infptr,   /* I - Input FITS file                      */
+            char     *expr,     /* I - Arithmetic expression                */
+            fitsfile *outfptr,  /* I - Output fits file                     */
+            char     *colname,  /* I - Name of output column                */
+            int      *status )  /* O - Error status                         */
 /*                                                                          */
 /* Evaluate an expression for each row in the input FITS file and place     */
 /* the results into the named column of the output fits file.  It is the    */
@@ -344,9 +373,10 @@ int fits_calc_col( fitsfile *infptr,  /* I - Input FITS file                */
 /*--------------------------------------------------------------------------*/
 {
    parseInfo Info;
-   int naxis;
+   int naxis, constant;
    long nelem, naxes[MAXDIMS];
-   int col_cnt;
+   int col_cnt, colNo;
+   Node *result;
 
    if( *status ) return( *status );
    
@@ -355,39 +385,76 @@ int fits_calc_col( fitsfile *infptr,  /* I - Input FITS file                */
       ffcprs();
       return( *status );
    }
+   if( Info.datatype<0 ) {
+      constant = 1;
+      Info.datatype = -Info.datatype;
+   } else
+      constant = 0;
 
-   /*************************************/
-   /* Create new iterator Output Column */
-   /*************************************/
+   if( ffgcno( outfptr, CASEINSEN, colname, &colNo, status )==COL_NOT_FOUND ) {
 
-   col_cnt = gParse.nCols;
-   if( ffallocatecol( col_cnt, status ) ) {
-      ffcprs();
-      return( *status );
+      /*  Output column doesn't exist.  If a constant, put into keyword,
+	  otherwise, abort with error. */
+
+      if( constant ) {
+	 *status = 0;
+	 result  = gParse.Nodes + gParse.nNodes-1;
+	 switch( Info.datatype ) {
+	 case TDOUBLE:
+	    ffukyd( outfptr, colname, result->value.data.dbl, 15,
+		    NULL, status );
+	    break;
+	 case TLONG:
+	    ffukyj( outfptr, colname, result->value.data.lng, NULL, status );
+	    break;
+	 case TLOGICAL:
+	    ffukyl( outfptr, colname, result->value.data.log, NULL, status );
+	    break;
+	 case TBIT:
+	 case TSTRING:
+	    ffukys( outfptr, colname, result->value.data.str, NULL, status );
+	    break;
+	 }
+      }
+
+   } else if( ! *status ) {
+
+      /*  Output column exists... put results into it  */
+
+      /*************************************/
+      /* Create new iterator Output Column */
+      /*************************************/
+
+      col_cnt = gParse.nCols;
+      if( ffallocatecol( col_cnt, status ) ) {
+	 ffcprs();
+	 return( *status );
+      }
+
+      fits_iter_set_by_num( gParse.colData+col_cnt, outfptr,
+			    colNo, 0, OutputCol );
+      gParse.nCols++;
+
+      Info.dataPtr = NULL;
+      Info.maxRows = -1;    /*  Process all of the rows  */
+
+      ffiter( gParse.nCols, gParse.colData, 0, 0,
+	      parse_data, (void*)&Info, status );
    }
-   fits_iter_set_by_name( gParse.colData+col_cnt, outfptr,
-			  colname, 0, OutputCol );
-   gParse.nCols++;
-
-   Info.dataPtr = NULL;
-   Info.maxRows = -1;    /*  Process all of the rows  */
-
-   ffiter( gParse.nCols, gParse.colData, 0, 0,
-           parse_data, (void*)&Info, status );
 
    ffcprs();
    return( *status );
 }
 
 /*--------------------------------------------------------------------------*/
-int fits_test_expr( fitsfile *fptr,     /* I - Input FITS file              */
-                    char     *expr,     /* I - Arithmetic expression        */
-                    int      maxdim,    /* I - Max Dimension of naxes       */
-                    int      *datatype, /* O - Data type of result          */
-                    long     *nelem,    /* O - Vector length of result      */
-                    int      *naxis,    /* O - # of dimensions of result    */
-                    long     *naxes,    /* O - Size of each dimension       */
-                    int      *status )  /* O - Error status                 */
+int fftexp( fitsfile *fptr,      /* I - Input FITS file                     */
+            char     *expr,      /* I - Arithmetic expression               */
+            int      maxdim,     /* I - Max Dimension of naxes              */
+            int      *datatype,  /* O - Data type of result                 */
+            long     *nelem,     /* O - Vector length of result             */
+            int      *naxis,     /* O - # of dimensions of result           */
+            long     *naxes,     /* O - Size of each dimension              */
+            int      *status )   /* O - Error status                        */
 /*                                                                          */
 /* Evaluate the given expression and return information on the result.      */
 /*--------------------------------------------------------------------------*/
@@ -505,10 +572,10 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
       *status = gParse.status = PARSE_BAD_TYPE;
       break;
    }
-
    gParse.datatype = *datatype;
    free(gParse.expr);
 
+   if( result->operation==CONST_OP ) *datatype = - *datatype;
    return(*status);
 }
 
@@ -533,11 +600,16 @@ void ffcprs( void )  /*  No parameters                                      */
       gParse.nCols = 0;
    }
 
-   for( node=0; node<gParse.nNodes; node++ ) {
-      if( gParse.Nodes[node].operation==gtifilt_fct )
-	 free( gParse.Nodes[ gParse.Nodes[node].SubNodes[0] ].value.data.ptr );
+   if( gParse.nNodes > 0 ) {
+      node = gParse.nNodes;
+      while( node-- ) {
+	 if( gParse.Nodes[node].operation==gtifilt_fct )
+	    free( gParse.Nodes[ gParse.Nodes[node].SubNodes[0] ].value.data.ptr );
+      }
+      gParse.nNodes = 0;
    }
-   free( gParse.Nodes );
+   if( gParse.Nodes ) free( gParse.Nodes );
+   gParse.Nodes = NULL;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -554,7 +626,7 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 /* structure.                                                                */
 /*---------------------------------------------------------------------------*/
 {
-    int status;
+    int status, constant=0;
     long jj, kk, idx, remain, rowOffset, ntodo;
     Node *result;
 
@@ -670,20 +742,33 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
        /*  Copy results into data array  */
 
        result = gParse.Nodes + gParse.nNodes-1;
+       if( result->operation==CONST_OP ) constant = 1;
+
        switch( result->type ) {
 
        case BOOLEAN:
        case LONG:
        case DOUBLE:
-          ffcvtn( gParse.datatype,
-                  result->value.data.ptr,
-                  result->value.undef,
-                  result->value.nelem*ntodo,
-                  userInfo->datatype, Null, Data,
-                  &userInfo->anyNull, &gParse.status );
-          if( result->operation>0 ) {
-             free( result->value.data.ptr );
-          }
+	  if( constant ) {
+	     char undef=0;
+	     for( kk=0; kk<ntodo; kk++ )
+		ffcvtn( gParse.datatype,
+			&(result->value.data),
+			&undef, result->value.nelem,
+			userInfo->datatype, Null,
+			(char*)Data+kk*datasize*result->value.nelem,
+			&userInfo->anyNull, &gParse.status );
+	  } else {
+	     ffcvtn( gParse.datatype,
+		     result->value.data.ptr,
+		     result->value.undef,
+		     result->value.nelem*ntodo,
+		     userInfo->datatype, Null, Data,
+		     &userInfo->anyNull, &gParse.status );
+	     if( result->operation>0 ) {
+		free( result->value.data.ptr );
+	     }
+	  }
           break;
 
        case BITSTR:
@@ -694,17 +779,30 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
                    idx = ( jj + kk * result->value.nelem ) / 8;
                    if( jj%8 == 0 )
                       ((char*)Data)[idx] = 0;
-                   if( result->value.data.strptr[kk][jj]=='1' )
-                      ((char*)Data)[idx] |= 128>>(jj%8);
+		   if( constant ) {
+		      if( result->value.data.str[jj]=='1' )
+			 ((char*)Data)[idx] |= 128>>(jj%8);
+		   } else {
+		      if( result->value.data.strptr[kk][jj]=='1' )
+			 ((char*)Data)[idx] |= 128>>(jj%8);
+		   }
                 }
              break;
           case TBIT:
           case TLOGICAL:
-             for( kk=0; kk<ntodo; kk++ )
-                for( jj=0; jj<result->value.nelem; jj++ ) {
-                   ((char*)Data)[ jj+kk*result->value.nelem ] =
-                      ( result->value.data.strptr[kk][jj]=='1' );
-                }
+	     if( constant ) {
+		for( kk=0; kk<ntodo; kk++ )
+		   for( jj=0; jj<result->value.nelem; jj++ ) {
+		      ((char*)Data)[ jj+kk*result->value.nelem ] =
+			 ( result->value.data.str[jj]=='1' );
+		   }
+	     } else {
+		for( kk=0; kk<ntodo; kk++ )
+		   for( jj=0; jj<result->value.nelem; jj++ ) {
+		      ((char*)Data)[ jj+kk*result->value.nelem ] =
+			 ( result->value.data.strptr[kk][jj]=='1' );
+		   }
+	     }
              break; 
           default:
              ffpmsg("Cannot convert bit expression to desired type.");
@@ -719,8 +817,13 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 
        case STRING:
           if( userInfo->datatype==TSTRING ) {
-             for( jj=0; jj<ntodo; jj++ )
-                strcpy( ((char**)Data)[jj], result->value.data.strptr[jj] );
+	     if( constant ) {
+		for( jj=0; jj<ntodo; jj++ )
+		   strcpy( ((char**)Data)[jj], result->value.data.str );
+	     } else {
+		for( jj=0; jj<ntodo; jj++ )
+		   strcpy( ((char**)Data)[jj], result->value.data.strptr[jj] );
+	     }
           } else {
              ffpmsg("Cannot convert string expression to desired type.");
              gParse.status = PARSE_BAD_TYPE;
@@ -1064,16 +1167,15 @@ int ffcvtn( int   inputType,  /* I - Data type of input array               */
 }
 
 /*---------------------------------------------------------------------------*/
-int fits_find_rows_cmp(           /*                                         */
-           fitsfile *fptr,        /* I - Input FITS file                     */
-           char     *expr,        /* I - Boolean expression                  */
-           char     *timeCol,     /* I - Name to time column                 */
-           char     *parCol,      /* I - Name to parameter column            */
-           char     *valCol,      /* I - Name to value column                */
-           long     ntimes,       /* I - Number of distinct times in file    */
-           double   *times,       /* O - Array of times in file              */
-           char     *time_status, /* O - Array of boolean results            */
-           int      *status )     /* O - Error status                        */
+int fffrwc( fitsfile *fptr,        /* I - Input FITS file                    */
+            char     *expr,        /* I - Boolean expression                 */
+            char     *timeCol,     /* I - Name of time column                */
+            char     *parCol,      /* I - Name of parameter column           */
+            char     *valCol,      /* I - Name of value column               */
+            long     ntimes,       /* I - Number of distinct times in file   */
+            double   *times,       /* O - Array of times in file             */
+            char     *time_status, /* O - Array of boolean results           */
+            int      *status )     /* O - Error status                       */
 /*                                                                           */
 /* Evaluate a boolean expression for each time in a compressed file,         */
 /* returning an array of flags indicating which times evaluated to TRUE/FALSE*/
@@ -1082,8 +1184,9 @@ int fits_find_rows_cmp(           /*                                         */
    parseInfo Info;
    long alen, width;
    int parNo, typecode;
-   int naxis;
+   int naxis, constant, nCol=0;
    long nelem, naxes[MAXDIMS], elem;
+   char result;
 
    if( *status ) return( *status );
 
@@ -1097,6 +1200,13 @@ int fits_find_rows_cmp(           /*                                         */
       ffcprs();
       return( *status );
    }
+   if( Info.datatype<0 ) {
+      constant = 1;
+      Info.datatype = -Info.datatype;
+      nCol = gParse.nCols;
+      gParse.nCols = 0;    /*  Ignore all column references  */
+   } else
+      constant = 0;
 
    if( Info.datatype!=TLOGICAL || nelem!=1 ) {
       ffcprs();
@@ -1108,51 +1218,52 @@ int fits_find_rows_cmp(           /*                                         */
    /* Allocate data arrays for each parameter */
    /*******************************************/
    
-   for( parNo=0; parNo<gParse.nCols; parNo++ ) {
+   parNo = gParse.nCols;
+   while( parNo-- ) {
       switch( gParse.colData[parNo].datatype ) {
       case TLONG:
-         if( (gParse.colData[parNo].array =
-             (long *)malloc( (ntimes+1)*sizeof(long) )) )
-            ((long*)gParse.colData[parNo].array)[0] = 1234554321;
-         else
-            *status = MEMORY_ALLOCATION;
-         break;
+	 if( (gParse.colData[parNo].array =
+	      (long *)malloc( (ntimes+1)*sizeof(long) )) )
+	    ((long*)gParse.colData[parNo].array)[0] = 1234554321;
+	 else
+	    *status = MEMORY_ALLOCATION;
+	 break;
       case TDOUBLE:
-         if( (gParse.colData[parNo].array =
-             (double *)malloc( (ntimes+1)*sizeof(double) )) )
-            ((double*)gParse.colData[parNo].array)[0] = DOUBLENULLVALUE;
-         else
-            *status = MEMORY_ALLOCATION;
-         break;
+	 if( (gParse.colData[parNo].array =
+	      (double *)malloc( (ntimes+1)*sizeof(double) )) )
+	    ((double*)gParse.colData[parNo].array)[0] = DOUBLENULLVALUE;
+	 else
+	    *status = MEMORY_ALLOCATION;
+	 break;
       case TSTRING:
-         if( !fits_get_coltype( fptr, gParse.valCol, &typecode,
-                                &alen, &width, status ) ) {
-            alen++;
-            if( (gParse.colData[parNo].array =
-                (char **)malloc( (ntimes+1)*sizeof(char*) )) ) {
-               if( (((char **)gParse.colData[parNo].array)[0] =
-                   (char *)malloc( (ntimes+1)*sizeof(char)*alen )) ) {
-                  for( elem=1; elem<=ntimes; elem++ )
-                     ((char **)gParse.colData[parNo].array)[elem] =
-                        ((char **)gParse.colData[parNo].array)[elem-1]+alen;
-                  ((char **)gParse.colData[parNo].array)[0][0] = '\0';
-               } else {
-                  free( gParse.colData[parNo].array );
-                  *status = MEMORY_ALLOCATION;
-               }
-            } else {
-               *status = MEMORY_ALLOCATION;
-            }
-         }
-         break;
+	 if( !fits_get_coltype( fptr, gParse.valCol, &typecode,
+				&alen, &width, status ) ) {
+	    alen++;
+	    if( (gParse.colData[parNo].array =
+		 (char **)malloc( (ntimes+1)*sizeof(char*) )) ) {
+	       if( (((char **)gParse.colData[parNo].array)[0] =
+		    (char *)malloc( (ntimes+1)*sizeof(char)*alen )) ) {
+		  for( elem=1; elem<=ntimes; elem++ )
+		     ((char **)gParse.colData[parNo].array)[elem] =
+			((char **)gParse.colData[parNo].array)[elem-1]+alen;
+		  ((char **)gParse.colData[parNo].array)[0][0] = '\0';
+	       } else {
+		  free( gParse.colData[parNo].array );
+		  *status = MEMORY_ALLOCATION;
+	       }
+	    } else {
+	       *status = MEMORY_ALLOCATION;
+	    }
+	 }
+	 break;
       }
       if( *status ) {
-         while( parNo-- ) {
-            if( gParse.colData[parNo].datatype==TSTRING )
-               free( ((char **)gParse.colData[parNo].array)[0] );
-            free( gParse.colData[parNo].array );
-         }
-         return( *status );
+	 while( parNo-- ) {
+	    if( gParse.colData[parNo].datatype==TSTRING )
+	       free( ((char **)gParse.colData[parNo].array)[0] );
+	    free( gParse.colData[parNo].array );
+	 }
+	 return( *status );
       }
    }
    
@@ -1161,23 +1272,32 @@ int fits_find_rows_cmp(           /*                                         */
    /**********************************************************************/
    
    if( !uncompress_hkdata( fptr, ntimes, times, status ) ) {
-      Info.dataPtr  = time_status;
-      Info.nullPtr  = NULL;
-      Info.maxRows  = ntimes;
-      *status       = parse_data( ntimes, 0, 1, ntimes, gParse.nCols,
-                                  gParse.colData, (void*)&Info );
+      if( constant ) {
+	 result = gParse.Nodes[gParse.nNodes-1].value.data.log;
+	 elem = ntimes;
+	 while( elem-- ) time_status[elem] = result;
+      } else {
+	 Info.dataPtr  = time_status;
+	 Info.nullPtr  = NULL;
+	 Info.maxRows  = ntimes;
+	 *status       = parse_data( ntimes, 0, 1, ntimes, gParse.nCols,
+				     gParse.colData, (void*)&Info );
+      }
    }
    
    /************/
    /* Clean up */
    /************/
    
-   for( parNo=0; parNo<gParse.nCols; parNo++ ) {
+   parNo = gParse.nCols;
+   while ( parNo-- ) {
       if( gParse.colData[parNo].datatype==TSTRING )
-         free( ((char **)gParse.colData[parNo].array)[0] );
+	 free( ((char **)gParse.colData[parNo].array)[0] );
       free( gParse.colData[parNo].array );
    }
    
+   if( constant ) gParse.nCols = nCol;
+
    ffcprs();
    return(*status);
 }
@@ -1191,7 +1311,7 @@ int uncompress_hkdata( fitsfile *fptr,
 /* description                                                               */
 /*---------------------------------------------------------------------------*/
 {
-   char parName[256], *sPtr[1];
+   char parName[256], *sPtr[1], found[1000];
    int parNo, anynul;
    long naxis2, row, currelem;
    double currtime, newtime;
@@ -1199,6 +1319,9 @@ int uncompress_hkdata( fitsfile *fptr,
    sPtr[0] = parName;
    currelem = 0;
    currtime = -1e38;
+
+   parNo=gParse.nCols;
+   while( parNo-- ) found[parNo] = 0;
 
    if( ffgkyj( fptr, "NAXIS2", &naxis2, NULL, status ) ) return( *status );
 
@@ -1216,7 +1339,8 @@ int uncompress_hkdata( fitsfile *fptr,
             return( *status = PARSE_BAD_COL );
          }
          times[currelem++] = currtime = newtime;
-         for( parNo=0; parNo<gParse.nCols; parNo++ ) {
+	 parNo = gParse.nCols;
+         while( parNo-- ) {
             switch( gParse.colData[parNo].datatype ) {
             case TLONG:
                ((long*)gParse.colData[parNo].array)[currelem] =
@@ -1236,11 +1360,12 @@ int uncompress_hkdata( fitsfile *fptr,
 
       if( ffgcvs( fptr, gParse.parCol, row, 1L, 1L, "",
                   sPtr, &anynul, status ) ) return( *status );
-      parNo = 0;
-      while( parNo<gParse.nCols
-             && strcasecmp( parName, gParse.colData[parNo].colname ) ) parNo++;
+      parNo = gParse.nCols;
+      while( parNo-- )
+	 if( !strcasecmp( parName, gParse.colData[parNo].colname ) ) break;
 
-      if( parNo<gParse.nCols ) {
+      if( parNo>=0 ) {
+	 found[parNo] = 1; /* Flag this parameter as found */
          switch( gParse.colData[parNo].datatype ) {
          case TLONG:
             ffgcvj( fptr, gParse.valCol, row, 1L, 1L,
@@ -1269,5 +1394,15 @@ int uncompress_hkdata( fitsfile *fptr,
       ffpmsg("Found fewer unique time stamps than caller indicated");
       return( *status = PARSE_BAD_COL );
    }
+
+   /*  Check for any parameters which were not located in the table  */
+   parNo = gParse.nCols;
+   while( parNo-- )
+      if( !found[parNo] ) {
+	 sprintf( parName, "Parameter not found: %-30s", 
+		  gParse.colData[parNo].colname );
+	 ffpmsg( parName );
+	 *status = PARSE_SYNTAX_ERR;
+      }
    return( *status );
 }

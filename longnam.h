@@ -421,6 +421,13 @@
 #define fits_pix_to_world ffwldp
 #define fits_world_to_pix ffxypx
 
+#define fits_find_rows          fffrow
+#define fits_find_rows_cmp      fffrwc
+#define fits_select_rows        ffsrow
+#define fits_calc_rows          ffcrow
+#define fits_calc_col           ffccol
+#define fits_test_expr          fftexp
+
 #define fits_create_group       ffgtcr 
 #define fits_insert_group       ffgtis 
 #define fits_change_group       ffgtch 

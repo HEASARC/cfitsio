@@ -360,7 +360,11 @@ nl		\n
 		    case BOOLEAN:  type = BCOLUMN;  break;
 		    case STRING:   type = SCOLUMN;  break;
 		    case BITSTR:   type =  BITCOL;  break;
-                    default:       type =   ERROR;  break;
+                    default:
+                         type = find_keywd(yytext, &yylval);
+                         if( type!=ERROR )
+                            gParse.status = 0;
+                         break;
 		 }
                  return( type );
 		}
