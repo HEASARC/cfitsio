@@ -258,7 +258,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
 */
 {
     int  driver, hdutyp, slen, writecopy, isopen;
-    long filesize, rownum;
+    long filesize, rownum, nrows, goodrows;
     int extnum, extvers, handle, movetotype;
     char urltype[MAX_PREFIX_LEN], infile[FLEN_FILENAME], outfile[FLEN_FILENAME];
     char origurltype[MAX_PREFIX_LEN], extspec[FLEN_FILENAME];
@@ -278,6 +278,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     char colname[4][FLEN_VALUE];
     char errmsg[FLEN_ERRMSG];
     char *hdtype[3] = {"IMAGE", "TABLE", "BINTABLE"};
+    char *rowselect = 0;
 
     if (*status > 0)
         return(*status);
@@ -655,6 +656,8 @@ move2hdu:
        if (ffedit_columns(fptr, outfile, colspec, status) > 0)
        {
            ffpmsg("editing columns in input table failed (ffopen)");
+           ffpmsg(" while trying to perform the following operation:");
+           ffpmsg(colspec);
            return(*status);
        }
     }
@@ -665,32 +668,67 @@ move2hdu:
  
     if (*rowfilter)
     {
-       if (!writecopy)  /* Is the current file already a copy? */
+      if (*binspec)
+      {
+        /*  since we are going to make a histogram of the selected rows,   */
+        /*  it would be a waste of time and memory to make a whole copy of */
+        /*  the selected rows.  Instead, just construct an array of TRUE   */
+        /*  or FALSE values that indicate which rows are to be included    */
+        /*  in the histogram and pass that to the histogram generating     */
+        /*  routine                                                        */
+
+        fits_get_num_rows(*fptr, &nrows, status);  /* get no. of rows */
+
+        rowselect = (char *) calloc(nrows, 1);
+        if (!rowselect)
+        {
+           ffpmsg(
+           "failed to allocate memory for selected columns array (ffopen)");
+           ffpmsg(" while trying to select rows with the following filter:");
+           ffpmsg(rowfilter);
+           return(*status = MEMORY_ALLOCATION);
+        }
+
+        if (fits_find_rows(*fptr, rowfilter, 1L, nrows, &goodrows,
+            rowselect, status) > 0)
+        {
+           ffpmsg("selection of rows in input table failed (ffopen)");
+           ffpmsg(" while trying to select rows with the following filter:");
+           ffpmsg(rowfilter);
+           return(*status);
+        }
+      }
+      else
+      {
+        if (!writecopy)  /* Is the current file already a copy? */
            writecopy = fits_is_this_a_copy(urltype);
 
-       if (!writecopy)
-       {
+        if (!writecopy)
+        {
            if (*filtfilename && *outfile == '\0')
                strcpy(outfile, filtfilename); /* the original outfile name */
-           else if (*outfile == '\0')  /* output file name not already defined? */
+           else if (*outfile == '\0') /* output file name not already defined? */
              strcpy(outfile, "mem://_2");  /* will create copy in memory */
-       }
-       else
-       {
+        }
+        else
+        {
            ((*fptr)->Fptr)->writemode = READWRITE; /* we have write access */
            outfile[0] = '\0';
-       }
+        }
 
-       /* select rows in the table.  If a copy of the input file has */
-       /* not already been made, then this routine will make a copy */
-       /* and then close the input file, so that the modifications will */
-       /* only be made on the copy, not the original */
+        /* select rows in the table.  If a copy of the input file has */
+        /* not already been made, then this routine will make a copy */
+        /* and then close the input file, so that the modifications will */
+        /* only be made on the copy, not the original */
 
-       if (ffselect_table(fptr, outfile, rowfilter, status) > 0)
-       {
+        if (ffselect_table(fptr, outfile, rowfilter, status) > 0)
+        {
            ffpmsg("on-the-fly selection of rows in input table failed (ffopen)");
+           ffpmsg(" while trying to select rows with the following filter:");
+           ffpmsg(rowfilter);
            return(*status);
-       }
+        }
+      }
     }
 
     /* ------------------------------------------------------------------- */
@@ -715,7 +753,18 @@ move2hdu:
        /* This will close the table that was used to create the histogram. */
        ffhist(fptr, outfile, imagetype, haxis, colname, minin, maxin,
               binsizein, minname, maxname, binname,
-              weight, wtcol, recip, status);
+              weight, wtcol, recip, rowselect, status);
+
+       if (*status > 0)
+       {
+           ffpmsg("on-the-fly histogramming of input table failed (ffopen)");
+           ffpmsg(" while trying to execute the following histogram specification:");
+           ffpmsg(binspec);
+           return(*status);
+       }
+
+       if (rowselect)
+          free(rowselect);
     }
 
     return(*status);
@@ -944,7 +993,6 @@ int ffedit_columns(
 
     /* remove the "col " from the beginning of the column edit expression */
     cptr = expr + 4;
-    ii = strlen(cptr);
 
     while (*cptr == ' ')
          cptr++;         /* skip leading white space */
@@ -1105,7 +1153,7 @@ int fits_copy_image_cell(
            int *status)
 {
     fitsfile *newptr;
-    unsigned char buffer[50000];
+    unsigned char buffer[30000];
     int ii, hdutype, colnum, typecode, bitpix, naxis, maxelem, tstatus;
     long repeat, naxes[9], nbytes, firstbyte, twidth;
     long startpos, elemnum, incre, rowlen, tnull, ntodo;
@@ -1320,7 +1368,8 @@ int fits_copy_image_cell(
     firstbyte = 1; 
     while (nbytes && (*status <= 0) )
     {
-        ntodo = minvalue(50000L, nbytes);
+     /* the upper limit on the number of bytes must match the declaration */
+        ntodo = minvalue(30000L, nbytes);
         ffgbyt(*fptr, ntodo, buffer, status);
         ffptbb(newptr, 1, firstbyte, ntodo, buffer, status);
         nbytes    -= ntodo;

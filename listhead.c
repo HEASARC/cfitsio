@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
         printf("END\n\n");  /* terminate listing with END */
     }
 
-    if (status == END_OF_FILE)   /* status values are defined in fitsioc.h */
+    if (status == END_OF_FILE)   /* status values are defined in fitsio.h */
         status = 0;              /* got the expected EOF error; reset = 0  */
     else
        printerror( status );     /* got an unexpected error                */

@@ -1767,9 +1767,10 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
   the FITS standard and return the parameters which determine the size and
   structure of the primary array or IMAGE extension.
 */
-    int unknown, found_end, tstatus, ii, nextkey;
+    int unknown, found_end, tstatus, ii, nextkey, namelen;
     long longbitpix, longnaxis, axislen;
     char message[FLEN_ERRMSG], keyword[FLEN_KEYWORD];
+    char card[FLEN_CARD];
     char name[FLEN_KEYWORD], value[FLEN_VALUE], comm[FLEN_COMMENT];
     char xtension[FLEN_VALUE];
 
@@ -1938,7 +1939,11 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
     for (; !found_end; nextkey++)  
     {
       /* get next keyword */
-      if (ffgkyn(fptr, nextkey, name, value, comm, status) > 0)
+      /* don't use ffgkyn here because it trys to parse the card to read */
+      /* the value string, thus failing to read the file just because of */
+      /* minor syntax errors in optional keywords.                       */
+
+      if (ffgrec(fptr, nextkey, card, status) > 0 )  /* get the 80-byte card */
       {
         if (*status == KEY_OUT_BOUNDS)
         {
@@ -1950,11 +1955,25 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
           ffpmsg("Failed to find the END keyword in header (ffgphd).");
         }
       }
-
-      else   /* got the next keyword without error */
+      else /* got the next keyword without error */
       {
+        ffgknm(card, name, &namelen, status); /* get the keyword name */
+
+        if (fftrec(name, status) > 0)  /* test keyword name; catches no END */
+        {
+          sprintf(message,
+              "Name of keyword no. %d contains illegal character(s): %s",
+              nextkey, name);
+          ffpmsg(message);
+
+          if (nextkey % 36 == 0) /* test if at beginning of 36-card record */
+            ffpmsg("  (This may indicate a missing END keyword).");
+        }
+
         if (!strcmp(name, "BSCALE") && bscale)
         {
+            ffpsvc(card, value, comm, status); /* parse value and comment */
+
             if (ffc2dd(value, bscale, status) > 0) /* convert to double */
             {
                 /* reset error status and continue, but still issue warning */
@@ -1969,6 +1988,8 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         else if (!strcmp(name, "BZERO") && bzero)
         {
+            ffpsvc(card, value, comm, status); /* parse value and comment */
+
             if (ffc2dd(value, bzero, status) > 0) /* convert to double */
             {
                 /* reset error status and continue, but still issue warning */
@@ -1983,6 +2004,8 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         else if (!strcmp(name, "BLANK") && blank)
         {
+            ffpsvc(card, value, comm, status); /* parse value and comment */
+
             if (ffc2ii(value, blank, status) > 0) /* convert to long */
             {
                 /* reset error status and continue, but still issue warning */
@@ -1997,6 +2020,8 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         else if (!strcmp(name, "PCOUNT") && pcount)
         {
+            ffpsvc(card, value, comm, status); /* parse value and comment */
+
             if (ffc2ii(value, pcount, status) > 0) /* convert to long */
             {
                 sprintf(message,
@@ -2007,6 +2032,8 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         else if (!strcmp(name, "GCOUNT") && gcount)
         {
+            ffpsvc(card, value, comm, status); /* parse value and comment */
+
             if (ffc2ii(value, gcount, status) > 0) /* convert to long */
             {
                 sprintf(message,
@@ -2017,6 +2044,8 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         else if (!strcmp(name, "EXTEND") && extend)
         {
+            ffpsvc(card, value, comm, status); /* parse value and comment */
+
             if (ffc2ll(value, extend, status) > 0) /* convert to logical */
             {
                 /* reset error status and continue, but still issue warning */
@@ -2032,7 +2061,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
         else if (!strcmp(name, "END"))
             found_end = 1;
 
-        else if (!name[0] && !value[0] && !comm[0])
+        else if (!card[0] )
             *nspace = *nspace + 1;  /* this is a blank card in the header */
 
         else

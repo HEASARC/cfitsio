@@ -1169,8 +1169,9 @@ int ffxypx(double xpos, double ypos, double xref, double yref,
            double xrefpix, double yrefpix, double xinc, double yinc,
            double rot, char *type, double *xpix, double *ypix, int *status);
 
-/*  temporarily remove ffiwcs until full WCS support is added */
-/*  int ffiwcs(fitsfile *fptr,  void **wcs, int *status);     */
+/*   WCS support routines (provide interface to Doug Mink's WCS library */
+int ffgiwcs(fitsfile *fptr,  char **header, int *status); 
+int ffgtwcs(fitsfile *fptr, int xcol, int ycol, char **header, int *status);
 
 /*--------------------- lexical parsing routines ------------------*/
 int fftexp( fitsfile *fptr, char *expr, int maxdim,
@@ -1196,6 +1197,17 @@ int ffcrow( fitsfile *fptr, int datatype, char *expr,
 
 int ffcalc( fitsfile *infptr, char *expr, fitsfile *outfptr,
             char *parName, char *parInfo, int *status );
+
+  /* ffhist is not really intended as a user-callable routine */
+  /* but it may be useful for some specialized applications   */
+
+int ffhist(fitsfile **fptr, char *outfile, int imagetype, int naxis,
+           char colname[4][FLEN_VALUE],
+           double *minin, double *maxin, double *binsizein,
+           char minname[4][FLEN_VALUE], char maxname[4][FLEN_VALUE],
+           char binname[4][FLEN_VALUE], 
+           double weightin, char wtcol[FLEN_VALUE],
+           int recip, char *rowselect, int *status);
 
 /*--------------------- grouping routines ------------------*/
 

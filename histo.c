@@ -23,6 +23,7 @@ typedef struct {  /*  Structure holding all the histogramming information   */
    float binsize1, binsize2, binsize3, binsize4;
    int   wtrecip, wtcolnum;
    float weight;
+   char  *rowselector;
 
 } histType;
 
@@ -472,6 +473,12 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
            double weightin,        /* I - binning weighting factor          */
            char wtcol[FLEN_VALUE], /* I - optional keyword or col for weight*/
            int recip,              /* I - use reciprocal of the weight?     */
+           char *selectrow,        /* I - optional array (length = no. of   */
+                             /* rows in the table).  If the element is true */
+                             /* then the corresponding row of the table will*/
+                             /* be included in the histogram, otherwise the */
+                             /* row will be skipped.  Ingnored if *selectrow*/
+                             /* is equal to NULL.                           */
            int *status)
 {
     int ii, datatype, repeat, imin, imax, ibin, bitpix, tstatus, use_datamax = 0;
@@ -506,6 +513,8 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
     histData.tblptr     = *fptr;
     histData.himagetype = imagetype;
     histData.haxis      = naxis;
+    histData.rowselector = selectrow;
+
     if (imagetype == TBYTE)
         bitpix = BYTE_IMG;
     else if (imagetype == TSHORT)
@@ -1052,15 +1061,17 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
     static float *wtcol;
     static long incr2, incr3, incr4;
     static histType histData;
+    static char *rowselect;
 
     /*  Initialization procedures: execute on the first call  */
     if (firstrow == 1)
     {
 
       /*  Copy input histogram data to static local variable so we */
-      /*  don't have to dereference it constantly.                 */
+      /*  don't have to constantly dereference it.                 */
 
       histData = *(histType*)userPointer;
+      rowselect = histData.rowselector;
 
       /* assign the input array pointers to local pointers */
       col1 = (float *) fits_iter_get_array(&colpars[0]);
@@ -1091,6 +1102,19 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
     /*  Main loop: increment the histogram at position of each event */
     for (ii = 1; ii <= nrows; ii++) 
     {
+        if (rowselect)     /* if a row selector array is supplied... */
+        {
+           if (*rowselect)
+           {
+               rowselect++;   /* this row is included in the histogram */
+           }
+           else
+           {
+               rowselect++;   /* this row is excluded from the histogram */
+               continue;
+           }
+        }
+
         if (col1[ii] == FLOATNULLVALUE)  /* test for null value */
             continue;
 

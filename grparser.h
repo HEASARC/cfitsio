@@ -13,6 +13,7 @@
 		directives to make gcc -Wall not to complain
 20-Oct-98: added declarations NGP_XTENSION_SIMPLE and NGP_XTENSION_FIRST
 24-Oct-98: prototype of ngp_read_line() function updated.
+22-Jan-99: prototype for ngp_set_extver() function added.
 */
 
 #ifndef	GRPARSER_H_INCLUDED
@@ -151,6 +152,7 @@ extern	NGP_EXTVER_TAB	*ngp_extver_tab;
 	/* globally visible functions declarations */
 
 int	ngp_get_extver(char *extname, int *version);
+int	ngp_set_extver(char *extname, int version);
 int	ngp_delete_extver_tab(void);
 int	ngp_strcasecmp(char *p1, char *p2);
 int	ngp_line_from_file(FILE *fp, char **p);

@@ -45,7 +45,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large November 1998\\}
+{\Large January 1999\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -265,6 +265,7 @@ CFITSIO has currently been tested on the following platforms:
    HP-UX                      gcc
    IBM AIX                    gcc
    Linux running on IBM PC    gcc
+   MkLinux                    DR3
    IBM PC w/ Windows 95       Borland C++ V4.5
    IBM PC w/ OS/2             gcc + EMX
    MacOS 7.1 or greater       Metrowerks 10.+
@@ -3664,7 +3665,8 @@ fits\_parse\_input\_url then calling fits\_open\_file.
 \end{description}
  
 \begin{verbatim}
-   int fits_parse_extnum / ffextn (char *filename, > int *hdunum)
+   int fits_parse_extnum / ffextn
+       (char *filename, > int *hdunum, int *status)
 \end{verbatim}
  
 \begin{description}
@@ -4593,13 +4595,44 @@ number of table cells.
  
 \section{Celestial Coordinate System Routines \label{FFGICS}}
 
-The following routines are provided to help calculate the
-transformation between pixel location in an image and the corresponding
-celestial coordinates on the sky.  These support the following standard
-map projections:  -SIN, -TAN, -ARC, -NCP, -GLS, -MER, and -AIT (these
-are the legal values for the coordtype parameter).  These routines are
-based on similar functions in Classic AIPS.  All the angular quantities
-are given in units of degrees.
+Two complimentary sets of routines are provided for calculating the
+transformation between pixel location in an image and the the
+corresponding celestial coordinates on the sky.  These routines rely on
+a set of standard World Coordinate System (WCS) keywords in the header
+of the HDU which define the parameters to be used when calculating the
+coordinate transformation.
+
+Both sets of routines require that a 2 step procedure be followed:
+first an initialization routine must be called to read the relevent WCS
+keywords in the header.  These parameters are then passed to a pair of
+routines that convert from pixel to sky coordinates, or from sky to
+pixel coordinates.
+
+The first set of routines described below have the advantage that they
+are completely self-contained within the CFITSIO library and thus are
+guaranteed to be available on the system.  These routines  only support
+the most common types of map projections and WCS keyword conventions
+however.
+
+The second set of routines are available in a WCS library written by
+Doug Mink at SAO.  These routines are more powerful than the ones
+contained in CFITSIO itself because they support all the defined WCS
+map projections and they  support a number of non-standard keyword
+conventions that have been adopted over the years by various different
+observatories.  To use these routines, however, requires that a
+separate WCS library be built and installed on the system in addition
+to CFITSIO.
+
+ 
+\subsection{ Self-contained WCS Routines}
+
+The following routines are included in the CFITSIO library to help
+calculate the transformation between pixel location in an image and the
+corresponding celestial coordinates on the sky.  These support the
+following standard map projections:  -SIN, -TAN, -ARC, -NCP, -GLS,
+  -MER, and -AIT (these are the legal values for the coordtype
+parameter).  These routines are based on similar functions in Classic
+AIPS.  All the angular quantities are given in units of degrees.
 
  
 \begin{description}
@@ -4655,6 +4688,149 @@ are given in units of degrees.
        double xrefpix, double yrefpix, double xinc, double yinc,
        double rot, char *coordtype, double *xpix, double *ypix,
        int *status)
+\end{verbatim}
+
+ 
+\subsection{WCS Routines that require the WCS library}
+
+The routines described in this section use the WCS library written
+by Doug Mink at SAO.  This library is available at
+
+ 
+\begin{verbatim}
+http://tdc-www.harvard.edu/software/wcstools/
+\end{verbatim}
+
+You do not need the entire WCSTools package to use the routines
+described here.  Instead, you only need to install the World Coordinate
+System Subroutine library, called 'wcssubs'.  It is available from the
+ftp site as a gzipped .tar file (e.g., wcssubs-2.5.tar.gz) or as a
+zipped file (e.g., wcssub25.zip).  Any questions about using this
+library should be sent to the author at dmink@cfa.harvard.edu.
+
+The advantage of using the WCS library instead of the self-contained WCS
+routines decribed in the previous section is that they provide support
+for all currently defined projection geometries, and they also support
+most standard as well as many non-standard WCS keyword conventions that
+have been used by different observatories in the past.  This library is
+also actively maintained so it is likely that it will support
+any new FITS WCS keyword conventions that may be adopted in the
+future.  Thus, software that use these routines is more likely to
+remain compatible with the new WCS keyword conventions that are now in
+development.
+
+The following 3 routines create a character string array containing
+all the WCS keywords that are needed as input to the wcsinit routine.
+They provide a convenient interface to the WCS library routines, but
+do not actually call any routines in the WCS library themselves.
+
+ 
+\begin{description}
+\item[1 ]  Copy all the WCS-related keywords from the header of the primary
+array or an image extension into a single long character string array.  The
+80-char header keywords are simply concatinated one after the other in
+the returned string.  The character array is dynamically allocated and must be
+freed by the calling program when it is no longer needed.  In the current
+implementation, all the header keywords are copied into the array.
+\end{description}
+
+ 
+\begin{verbatim}
+  int fits_get_image_wcs_keys / ffgiwcs
+      (fitsfile *fptr, char **header, int *status)
+\end{verbatim}
+
+ 
+\begin{description}
+\item[2 ]   Copy all the WCS-related keywords for a given pair of columns in
+a table extension into a single long character string array. The pair
+of columns must contain a list of the X and Y coordinates of each event
+in the image (i.e., this is an image in pixel-list or event-list
+format).  The names of the WCS keywords in the table header are
+translated into the keywords that would correspond to an image HDU
+(e.g., TCRPXn for the X column becomes the CRPIX1 keyword).  The
+80-char header keywords are simply concatinated one after the other in
+the string. The character array is dynamically allocated and must be
+ freed by the calling program when it is no longer needed.
+\end{description}
+
+ 
+\begin{verbatim}
+  int fits_get_table_wcs_keys / ffgtwcs
+      (fitsfile *fptr, int xcol, int ycol, char **header, int *status)
+\end{verbatim}
+
+ 
+\begin{description}
+\item[3 ]   Copy all the WCS-related keywords for an image that is contained
+in a single vector cell of a binary table extension into a single long
+character string array. In this type of image format, the table column
+is a 2-dimensional vector and each row of the table contains a
+different image. The names of the WCS keywords are translated into the
+keywords corresponding to an image (e.g., 1CRPn becomes the CRPIX1
+keyword).  The 80-char header keywords are simply concatinated one
+after the other in the string. The character array is dynamically
+allocated and must be freed by the calling program when it is no longer
+ needed.
+\end{description}
+
+ 
+\begin{verbatim}
+  int fits_get_imagecell_wcs_keys / ffgicwcs
+      (fitsfile *fptr, int column, long row, char **header, int *status)
+\end{verbatim}
+
+ 
+\begin{description}
+\item[4 ]  This WCS library routine allocates and initializes a structure
+containing the values of all the WCS parameters, based on the input
+array of header keywords that was generated by any of the three
+previous routines. The WorldCoor structure is then used as input to the
+following 2 WCS library routines that convert between sky coordinates
+ and pixel coordinates.
+\end{description}
+
+ 
+\begin{verbatim}
+  struct WorldCoor *wcsinit (char *header)
+\end{verbatim}
+
+ 
+\begin{description}
+\item[5 ]  Calculate the sky coordinate corresponding to the input pixel
+coordinate using the conversion parameters defined in the wcs
+structure.  This is a WCS library routine.
+\end{description}
+
+ 
+\begin{verbatim}
+  void pix2wcs
+       (struct WorldCoor *wcs, double xpix, double ypix,
+        > double *xpos, double *ypos)
+\end{verbatim}
+
+ 
+\begin{description}
+\item[6 ] Calculate the pixel coordinate corresponding to the input sky coordinate
+using the conversion parameters defined in the wcs structure.  The returned
+offscale parameter equals 0 if the coordinate is within bounds of the image.
+ This is a WCS library routine.
+\end{description}
+
+ 
+\begin{verbatim}
+  void wcs2pix (struct WorldCoor *wcs, double xpos, double ypos,
+       > double *xpix, double *ypix, int *offscale)
+\end{verbatim}
+
+ 
+\begin{description}
+\item[7 ]  Free the WCS structure that was created by wcsinit.  This is a WCS
+    library routine.
+\end{description}
+ 
+\begin{verbatim}
+  void wcsfree(struct WorldCoor *wcs)
 \end{verbatim}
 
  

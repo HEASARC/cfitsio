@@ -52,6 +52,7 @@ $ cc/float=d_float region.c
 $ cc/float=d_float scalnull.c
 $ cc/float=d_float swapproc.c
 $ cc/float=d_float wcsutil.c
+$ cc/float=d_float wcssub.c
 $ lib/create cfitsio buffers,cfileio,checksum,compress,drvrfile,drvrmem
 $ lib/insert cfitsio editcol,edithdu,eval_f,eval_l,eval_y,f77_wrap1,f77_wrap2
 $ lib/insert cfitsio fitscore,getcol,getcolb,getcoli,getcolj,getcolk,getcole
@@ -59,7 +60,7 @@ $ lib/insert cfitsio getcold,getcoll,getcols,getcolui,getcoluj,getcoluk
 $ lib/insert cfitsio getkey,group,grparser,histo,iraffits,modkey,putcol,putcolb
 $ lib/insert cfitsio putcoli,putcolj,putcolk,putcole,putcold,putcolui
 $ lib/insert cfitsio putcoluj,putcoluk,putcols,putcoll,putcolu,putkey,region
-$ lib/insert cfitsio scalnull,swapproc,wcsutil
+$ lib/insert cfitsio scalnull,swapproc,wcsutil,wcssub
 $ ! 
 $ if (F$GETSYI("ARCH_NAME") .eqs. "VAX") then goto VAX
 $ ! add C routine needed on Alpha to do D_FLOAT conversions

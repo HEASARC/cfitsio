@@ -250,7 +250,7 @@ int ffgtch(fitsfile *gfptr,     /* FITS pointer to group                     */
   char *tform[6];
   char *ttype[6];
 
-  unsigned char  charNull[1] = {"\0"};
+  unsigned char  charNull[1] = {'\0'};
 
   char ttypeBuff[102];  
   char tformBuff[54];  
@@ -1099,7 +1099,7 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
   char keyword[FLEN_KEYWORD];
   char card[FLEN_CARD];
 
-  unsigned char charNull[]  = {"\0"};
+  unsigned char charNull[]  = {'\0'};
 
   fitsfile *tmpfptr = NULL;
 
@@ -1531,7 +1531,7 @@ int ffgmop(fitsfile *gfptr,  /* FITS file pointer to grouping table          */
   char  uri[FLEN_VALUE];
   char  grpLocation[FLEN_FILENAME];
   char  card[FLEN_CARD];
-  char  nstr[] = {"\0"};
+  char  nstr[] = {'\0'};
   char *tmpPtr[1];
 
   if(*status != 0) return(*status);
@@ -2921,7 +2921,7 @@ int ffgmf(fitsfile *gfptr, /* pointer to grouping table HDU to search       */
   long mextver  = 0;
 
   char  charBuff[FLEN_FILENAME];
-  char  nstr[] = {"\0"};
+  char  nstr[] = {'\0'};
   char *tmpPtr[1];
 
   if(*status != 0) return(*status);

@@ -652,6 +652,12 @@ int ffgclui( fitsfile *fptr,   /* I - FITS file pointer                       */
             tnull == NULL_UNDEFINED) /* if a null value is not defined,    */
             nulcheck = 0;            /* then do not check for null values. */
 
+    else if (tcode == TSHORT && (tnull > SHRT_MAX || tnull < SHRT_MIN) )
+            nulcheck = 0;            /* Impossible null value */
+
+    else if (tcode == TBYTE && (tnull > 255 || tnull < 0) )
+            nulcheck = 0;            /* Impossible null value */
+
     else if (tcode == TSTRING && snull[0] == ASCII_NULL_UNDEFINED)
          nulcheck = 0;
 

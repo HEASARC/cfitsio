@@ -24,8 +24,9 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.027; /* 12 jan 1999 */
+      *version = 2.028; /* 26 jan 1999 */
 
+ /*   *version = 2.027;  12 Jan 1999 */
  /*   *version = 2.026;  23 Dec 1998 */
  /*   *version = 2.025;   1 Dec 1998 */
  /*   *version = 2.024;   9 Nov 1998 */
@@ -2324,7 +2325,7 @@ int ffghdn(fitsfile *fptr,   /* I - FITS file pointer                      */
   does not return the error status value as the value of the function.
 */
 {
-    *chdunum = (fptr->HDUposition) + 1;       
+    *chdunum = (fptr->HDUposition) + 1;
     return(*chdunum);
 }
 /*--------------------------------------------------------------------------*/

@@ -1,5 +1,40 @@
                Log of Changes Made to CFITSIO
 
+Version 2.028 - 27 Jan 1999
+
+   - if the TNULLn keyword value was outside the range of a 'I' or 'B'
+     column, an overflow would occur when setting the short or char 
+     to the TNULLn value, leading to incorrect values being flagged as
+     being undefined.  This has been fixed so that CFITSIO will ignore
+     TNULLn values that are beyond the range of the column data type.
+
+   - changed a few instances of the string {"\0"} to {'\0'} in the
+     file groups.c
+
+   - installed new version of the grparser.c file from the ISDC
+
+   - added new WCS support routines (in wcssub.c) which make it easier
+     to call Doug Mink's WCSlib routines for converting between plate
+     and sky coordinates.   The CFITSIO routines themselves never
+     call a WCSlib routine, so CFITSIO is not dependent on WCSlib.
+
+   - modified  ffopen so that if you use the extended filename
+     syntax to both select rows in a table and then bin columns into
+     a histogram, then CFITSIO will simply construct an array listing
+     the good row numbers to be used when making the histogram,
+     instead of making a whole new temporary FITS file containing
+     the selected rows.
+
+   - modified ffgphd which parses the primary array header keywords
+     when opening a file, to not choke on minor format errors in 
+     optional keywords.  Otherwise, this prevents CFITSIO from
+     even opening the file.
+
+   - changed a few more variable declarations in compress.c from global
+     to static.
+
+Version 2.027 - 12 Jan 1999
+
    - modified the usage of the output filename specifier so that it,
        a) gives the name of the binned image, if specified, else,
        b) gives the name of column filtered and/or row filtered table, if 
@@ -18,7 +53,9 @@
 
    - added support for the HIERARCH keyword convention for reading 
      and writing keywords longer than 8 characters or that contain
-     ASCII characters not allowed in normal FITS keywords.
+     ASCII characters not allowed in normal FITS keywords. (not 
+     documented in the User's Guide yet, until more testing is
+     completed).
 
    - modified the extended filename syntax to support opening images
      that are contained in a single cell of a binary table with syntax:

@@ -1820,10 +1820,10 @@ static ush cpdext[] = {         /* Extra bits for distance codes */
    the stream.
  */
 
-ulg bb;                         /* bit buffer */
-unsigned bk;                    /* bits in bit buffer */
+static ulg bb;                         /* bit buffer */
+static unsigned bk;                    /* bits in bit buffer */
 
-ush mask_bits[] = {
+static ush mask_bits[] = {
     0x0000,
     0x0001, 0x0003, 0x0007, 0x000f, 0x001f, 0x003f, 0x007f, 0x00ff,
     0x01ff, 0x03ff, 0x07ff, 0x0fff, 0x1fff, 0x3fff, 0x7fff, 0xffff
@@ -1871,15 +1871,15 @@ ush mask_bits[] = {
    possibly even between compilers.  Your mileage may vary.
  */
 
-int lbits = 9;          /* bits in base literal/length lookup table */
-int dbits = 6;          /* bits in base distance lookup table */
+static int lbits = 9;          /* bits in base literal/length lookup table */
+static int dbits = 6;          /* bits in base distance lookup table */
 
 
 /* If BMAX needs to be larger than 16, then h and x[] should be ulg. */
 #define BMAX 16         /* maximum bit length of any code (16 for explode) */
 #define N_MAX 288       /* maximum number of codes in any set */
 
-unsigned hufts;         /* track memory usage */
+static unsigned hufts;         /* track memory usage */
 
 local int huft_build(b, n, s, d, e, t, m)
 unsigned *b;            /* code lengths in bits (all assumed <= BMAX) */

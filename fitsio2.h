@@ -246,13 +246,6 @@ int fits_already_open(fitsfile **fptr, char *url,
     char *urltype, char *infile, char *extspec, char *rowfilter,
     char *binspec, char *colspec, int  mode,int  *isopen, int  *status);
 int ffedit_columns(fitsfile **fptr, char *outfile, char *expr, int *status);
-int ffhist(fitsfile **fptr, char *outfile, int imagetype, int naxis,
-           char colname[4][FLEN_VALUE],
-           double *minin, double *maxin, double *binsizein,
-           char minname[4][FLEN_VALUE], char maxname[4][FLEN_VALUE],
-           char binname[4][FLEN_VALUE], 
-           double weightin, char wtcol[FLEN_VALUE],
-           int recip, int *status);
 int fits_get_col_minmax(fitsfile *fptr, int colnum, float *datamin, 
                      float *datamax, int *status);
 int ffwritehisto(long totaln, long offset, long firstn, long nvalues,

@@ -1124,24 +1124,37 @@ used by these interface routines.
 
 **A.  File I/O Routines
 
->>1 Open an existing FITS file with readonly or readwrite access
+>1 Open an existing FITS file with readonly or readwrite access.
+   This routine always opens the primary array (the first HDU) of 
+   the file, and does not move to a following extension, if one was
+   specified as part of the filename.   Use the FTNOPN routine to
+>  automatically move to the extension.
 -
         FTOPEN(unit,filename,rwmode, > blocksize,status)
 -
->>2 Open and initialize a new empty FITS file
+>2 Open an existing FITS file with readonly or readwrite access
+   and move to a following extension, if one was specified as
+   part of the filename.  (e.g.,  'filename.fits+2' or
+   'filename.fits[2]' will move to the 3rd HDU in the file).
+   Note that this routine differs from FTOPEN in that it does not
+>  have the redundant blocksize argument.
+-
+        FTNOPN(unit,filename,rwmode, > status)
+-
+>>3 Open and initialize a new empty FITS file
 -
         FTINIT(unit,filename,blocksize, > status)
 -
->>3 Close a FITS file previously opened with ftopen or ftinit
+>>4 Close a FITS file previously opened with ftopen or ftinit
 -
         FTCLOS(unit, > status)
 -
->4  Move to a specified (absolute) HDU in the FITS file (nhdu = 1 for the
+>5  Move to a specified (absolute) HDU in the FITS file (nhdu = 1 for the
 >   FITS primary array)
 -
         FTMAHD(unit,nhdu, > hdutype,status)
 -
->5  Create a primary array (if none already exists), or insert a 
+>6  Create a primary array (if none already exists), or insert a 
     new IMAGE extension immediately following the CHDU.
     Any following extensions will be shifted down to make room for
     the new extension.  If there are no other following extensions
@@ -1150,7 +1163,7 @@ used by these interface routines.
 -
         FTIIMG(unit,bitpix,naxis,naxes, > status) 
 -
->6  Insert a new ASCII TABLE extension immediately following the CHDU.
+>7  Insert a new ASCII TABLE extension immediately following the CHDU.
     Any following extensions will be shifted down to make room for
     the new extension.  If there are no other following extensions
     then the new table extension will simply be appended to the
@@ -1159,7 +1172,7 @@ used by these interface routines.
         FTITAB(unit,rowlen,nrows,tfields,ttype,tbcol,tform,tunit,extname, >
                status)
 -
->7  Insert a new binary table extension immediately following the CHDU.
+>8  Insert a new binary table extension immediately following the CHDU.
     Any following extensions will be shifted down to make room for
     the new extension.  If there are no other following extensions
     then the new bintable extension will simply be appended to the
@@ -1257,11 +1270,20 @@ rather than 'ft'.
 -
         FTOPEN(unit,filename,rwmode, > blocksize,status)
 -
->>2 Open and initialize a new empty FITS file
+>2 Open an existing FITS file with readonly or readwrite access
+   and move to a following extension, if one was specified as
+   part of the filename.  (e.g.,  'filename.fits+2' or
+   'filename.fits[2]' will move to the 3rd HDU in the file).
+   Note that this routine differs from FTOPEN in that it does not
+>  have the redundant blocksize argument.
+-
+        FTNOPN(unit,filename,rwmode, > status)
+-
+>>3 Open and initialize a new empty FITS file
 -
         FTINIT(unit,filename,blocksize, > status)
 -
->3 Flush internal buffers of data to the output FITS file 
+>4 Flush internal buffers of data to the output FITS file 
    previously opened with ftopen or ftinit.  The routine usually
    never needs to be called, but doing so will ensure that
    if the program subsequently aborts, then the FITS file will
@@ -1269,17 +1291,17 @@ rather than 'ft'.
 -
         FTFLUS(unit, > status)
 -
->>4 Close a FITS file previously opened with ftopen or ftinit
+>>5 Close a FITS file previously opened with ftopen or ftinit
 -
         FTCLOS(unit, > status)
 -
->5  Close and DELETE a FITS file previously opened with ftopen or ftinit.
+>6  Close and DELETE a FITS file previously opened with ftopen or ftinit.
     This routine may be  useful in cases where a FITS file is created, but
 >   an error occurs which prevents the complete file from being written.
 -
         FTDELT(unit, > status)
 -
->6  Get the value of an unused I/O unit number which may then be used
+>7  Get the value of an unused I/O unit number which may then be used
     as input to FTOPEN or FTINIT.  This routine searches for the first
     unused unit number in the range from with 99 down to 50.   This
     routine just keeps an internal list of the allocated unit numbers
@@ -1292,11 +1314,16 @@ rather than 'ft'.
 -
         FTGIOU( > iounit, status)
 -
->7  Free (deallocate) an I/O unit number which was previously allocated
+>8  Free (deallocate) an I/O unit number which was previously allocated
     with FTGIOU.   All previously allocated unit numbers may be
 >   deallocated at once by calling FTFIOU with iounit = -1.
 -
         FTFIOU(iounit, > status)
+-
+>9  Parse the input fiename and return the HDU number that would be
+>   moved to if opened with FTNOPN.
+-
+        FTEXTN(filename, nhdu, status)
 -
 
 **B.  HDU-Level Operations \label{FTMAHD}

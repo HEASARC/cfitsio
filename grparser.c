@@ -49,13 +49,17 @@
 		to nonempty FITS. file. fitsfile *ff no longer needs to point
 		to an empty FITS file with 0 HDUs in it. All data written by
 		parser will simple be appended at the end of file.
+22-Jan-99: changes to parser: when in append mode parser initially scans all
+		existing HDUs to built a list of already used EXTNAME/EXTVERs
+22-Jan-99: Bruce O'Neel, bugfix : TLONG should always reference long type
+		variable on OSF/Alpha and on 64-bit archs in general
 */
 
 
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifndef macintosh
+#if ! defined (macintosh) && ! defined(__VMS)
 #include <malloc.h>
 #include <memory.h>
 #endif
@@ -133,6 +137,45 @@ int	ngp_get_extver(char *extname, int *version)
    return(NGP_OK);
  }
 
+int	ngp_set_extver(char *extname, int version)
+ { NGP_EXTVER_TAB *p;
+   char 	*p2;
+   int		i;
+
+   if (NULL == extname) return(NGP_BAD_ARG);
+   if ((NULL == ngp_extver_tab) && (ngp_extver_tab_size > 0)) return(NGP_BAD_ARG);
+   if ((NULL != ngp_extver_tab) && (ngp_extver_tab_size <= 0)) return(NGP_BAD_ARG);
+
+   for (i=0; i<ngp_extver_tab_size; i++)
+    { if (0 == strcmp(extname, ngp_extver_tab[i].extname))
+        { if (version > ngp_extver_tab[i].version)  ngp_extver_tab[i].version = version;
+          return(NGP_OK);
+        }
+    }
+
+   if (NULL == ngp_extver_tab)
+     { p = (NGP_EXTVER_TAB *)ngp_alloc(sizeof(NGP_EXTVER_TAB)); }
+   else
+     { p = (NGP_EXTVER_TAB *)ngp_realloc(ngp_extver_tab, (ngp_extver_tab_size + 1) * sizeof(NGP_EXTVER_TAB)); }
+
+   if (NULL == p) return(NGP_NO_MEMORY);
+
+   p2 = ngp_alloc(strlen(extname) + 1);
+   if (NULL == p2)
+     { ngp_free(p);
+       return(NGP_NO_MEMORY);
+     }
+
+   strcpy(p2, extname);
+   ngp_extver_tab = p;
+   ngp_extver_tab[ngp_extver_tab_size].extname = p2;
+   ngp_extver_tab[ngp_extver_tab_size].version = version;
+
+   ngp_extver_tab_size++;
+
+   return(NGP_OK);
+ }
+
 
 int	ngp_delete_extver_tab(void)
  { int i;
@@ -188,7 +231,7 @@ int	ngp_line_from_file(FILE *fp, char **p)
    llen = 0;					/* 0 characters read so far */
    *p = (char *)ngp_alloc(1);			/* preallocate 1 byte */
    allocsize = 1;				/* signal that we have allocated 1 byte */
-   if (NULL == *p) return(NGP_NO_MEMORY);	/* if this failed, system is dire straits */
+   if (NULL == *p) return(NGP_NO_MEMORY);	/* if this failed, system is in dire straits */
 
    for (;;)
     { c = getc(fp);				/* get next character */
@@ -710,8 +753,9 @@ int	ngp_keyword_is_write(NGP_TOKEN *ngp_tok)
 	/* write (almost) all keywords from given HDU to disk */
 
 int     ngp_keyword_all_write(NGP_HDU *ngph, fitsfile *ffp, int mode)
- { int i, r, ib;
-   char buf[200];
+ { int		i, r, ib;
+   char		buf[200];
+   long		l;
 
 
    if (NULL == ngph) return(NGP_NUL_PTR);
@@ -729,7 +773,8 @@ int     ngp_keyword_all_write(NGP_HDU *ngph, fitsfile *ffp, int mode)
 			fits_write_key_longstr(ffp, ngph->tok[i].name, ngph->tok[i].value.s, ngph->tok[i].comment, &r);
 			break;
              case NGP_TTYPE_INT:
-			fits_write_key(ffp, TLONG, ngph->tok[i].name, &(ngph->tok[i].value.i), ngph->tok[i].comment, &r);
+			l = ngph->tok[i].value.i;	/* bugfix - 22-Jan-99, BO - nonalignment of OSF/Alpha */
+			fits_write_key(ffp, TLONG, ngph->tok[i].name, &l, ngph->tok[i].comment, &r);
 			break;
              case NGP_TTYPE_REAL:
 			fits_write_key(ffp, TDOUBLE, ngph->tok[i].name, &(ngph->tok[i].value.d), ngph->tok[i].comment, &r);
@@ -877,6 +922,7 @@ int	ngp_read_xtension(fitsfile *ff, int parent_hn, int simple_mode)
    char 	*ngph_extname = 0;
    long		ngph_size[NGP_MAX_ARRAY_DIM];
    NGP_HDU	ngph;
+   long		lv;
 
    incrementor_name[0] = 0;			/* signal no keyword+'#' found yet */
    incrementor_index = 0;
@@ -1013,7 +1059,8 @@ int	ngp_read_xtension(fitsfile *ff, int parent_hn, int simple_mode)
 
    if ((NGP_OK == r) && (NULL != ngph_extname))
      { r = ngp_get_extver(ngph_extname, &my_version);	/* write correct ext version number */
-       fits_write_key(ff, TLONG, "EXTVER", &my_version, "auto assigned by template parser", &r); 
+       lv = my_version;		/* bugfix - 22-Jan-99, BO - nonalignment of OSF/Alpha */
+       fits_write_key(ff, TLONG, "EXTVER", &lv, "auto assigned by template parser", &r); 
      }
 
    if (NGP_OK == r)
@@ -1131,13 +1178,14 @@ int	ngp_read_group(fitsfile *ff, char *grpname, int parent_hn)
 /* read whole template. ff should point to the opened empty fits file. */
 
 int	fits_execute_template(fitsfile *ff, char *ngp_template, int *status)
- { int r, exit_flg, first_extension, i, my_hn, tmp0, keys_exist, more_keys;
-   char grnm[NGP_MAX_STRING];
+ { int		r, exit_flg, first_extension, i, my_hn, tmp0, keys_exist, more_keys, used_ver;
+   char		grnm[NGP_MAX_STRING], used_name[NGP_MAX_STRING];
+   long		luv;
 
    if (NULL == ff) return(NGP_NUL_PTR);
    if (NULL == ngp_template) return(NGP_NUL_PTR);
    if (NULL == status) return(NGP_NUL_PTR);
-   if (*status) return(*status);
+   if (NGP_OK != *status) return(*status);
 
    ngp_inclevel = 0;				/* initialize things, not all should be zero */
    ngp_grplevel = 0;
@@ -1145,6 +1193,11 @@ int	fits_execute_template(fitsfile *ff, char *ngp_template, int *status)
    exit_flg = 0;
    ngp_master_dir[0] = 0;			/* this should be before 1st call to ngp_include_file */
    first_extension = 1;				/* we need to create PHDU */
+
+   if (NGP_OK != (r = ngp_delete_extver_tab()))
+     { *status = r;
+       return(r);
+     }
 
    fits_get_hdu_num(ff, &my_hn);		/* our HDU position */
    if (my_hn <= 1)				/* check whether we really need to create PHDU */
@@ -1156,18 +1209,30 @@ int	fits_execute_template(fitsfile *ff, char *ngp_template, int *status)
      }
    else
      { first_extension = 0;			/* PHDU (followed by 1+ extensions) exist */
-     }
-                                                                          
 
-   if (NGP_OK != (r = ngp_delete_extver_tab()))
-     { *status = r;
-       return(r);
+       for (i = 2; i<= my_hn; i++)
+        { *status = NGP_OK;
+          fits_movabs_hdu(ff, 1, &tmp0, status);
+          if (NGP_OK != *status) break;
+
+          fits_read_key(ff, TSTRING, "EXTNAME", used_name, NULL, status);
+          if (NGP_OK != *status)  continue;
+
+          fits_read_key(ff, TLONG, "EXTVER", &luv, NULL, status);
+          used_ver = luv;			/* bugfix - 22-Jan-99, BO - nonalignment of OSF/Alpha */
+          if (VALUE_UNDEFINED == *status)
+            { used_ver = 1;
+              *status = NGP_OK;
+            }
+
+          if (NGP_OK == *status) *status = ngp_set_extver(used_name, used_ver);
+        }
+
+       fits_movabs_hdu(ff, my_hn, &tmp0, status);
      }
-   
-   if (NGP_OK != (r = ngp_include_file(ngp_template))) 
-     { *status = r;
-       return(r);
-     }
+   if (NGP_OK != *status) return(*status);
+                                                                          
+   if (NGP_OK != (*status = ngp_include_file(ngp_template))) return(*status);
 
    for (i = strlen(ngp_template) - 1; i >= 0; i--) /* strlen is > 0, otherwise fopen failed */
     { 
