@@ -1,5 +1,32 @@
                    Log of Changes Made to CFITSIO
 
+Version 2.035 - 7 Dec 1999
+
+   - added new routine called fits_get_keyclass/ffgkcl that returns
+     the general class of the keyword, e.g., required structural 
+     keyword, WCS keyword, Comment keyword, etc.  15 classes of
+     keywords have been defined in fitsio.h
+
+   - added new routine called fits_get_img_parm/ffgipr that is similar
+     to ffgphd but it only return the bitpix, naxis, and naxisn values.
+
+   - added 3 new routines that support the long string keyword
+     convention: fits_insert_key_longstr, fits_modify_key_longstr
+     fits_update_key_longstr.
+
+   - modified ffgphd which reads image header keywords to support
+     the new experimental compressed image format.
+
+   - when opening a .Z compressed file, CFITSIO tries to allocate
+     memory equal to 3 times the file size, which may be excessive
+     in some cases.  This was changed so that if the allocation fails,
+     then CFITSIO will try again to allocate only enough memory
+     equal to 1 times the file size.  More memory will be allocated
+     later if this turns out to be too small.
+
+   - improved the error checking in the fits_insert_key routine
+     to check for illegal characters in the keyword.
+
 Version 2.034 - 23 Nov 1999
 
    - enhanced support for the new 'CD' matrix world coordinate system

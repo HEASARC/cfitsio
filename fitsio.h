@@ -35,6 +35,22 @@
 #define TCOMPLEX     83
 #define TDBLCOMPLEX 163
 
+#define TYP_STRUC_KEY 10
+#define TYP_CMPRS_KEY 20
+#define TYP_SCAL_KEY  30
+#define TYP_NULL_KEY  40
+#define TYP_DIM_KEY   50
+#define TYP_RANG_KEY  60
+#define TYP_UNIT_KEY  70
+#define TYP_DISP_KEY  80
+#define TYP_HDUID_KEY 90
+#define TYP_CKSUM_KEY 100
+#define TYP_WCS_KEY   110
+#define TYP_REFSYS_KEY 120
+#define TYP_COMM_KEY  130
+#define TYP_CONT_KEY  140
+#define TYP_USER_KEY  150
+
 #define INT32BIT int  /* 32-bit integer datatype.  Currently this       */
                       /* datatype is an 'int' on all useful platforms   */
                       /* however, it is possible that that are cases    */
@@ -430,6 +446,7 @@ int fftrec(char *card, int *status);
 int ffnchk(fitsfile *fptr, int *status);
 int ffkeyn(char *keyroot, int value, char *keyname, int *status);
 int ffnkey(int value, char *keyroot, char *keyname, int *status);
+int ffgkcl(char *card);
 int ffdtyp(char *cval, char *dtype, int *status);
 int ffpsvc(char *card, char *value, char *comm, int *status);
 int ffgknm(char *card, char *name, int *length, int *status);
@@ -659,6 +676,8 @@ int ffghdn(fitsfile *fptr, int *chdunum);
 int ffghdt(fitsfile *fptr, int *exttype, int *status);
 int ffghad(fitsfile *fptr, long *headstart, long *datastart, long *dataend,
            int *status);
+int ffgipr(fitsfile *fptr, int maxaxis, int *imgtype, int *naxis,
+           long *naxes, int *status);
 int ffgidt(fitsfile *fptr, int *imgtype, int *status);
 int ffgidm(fitsfile *fptr, int *naxis,  int *status);
 int ffgisz(fitsfile *fptr, int nlen, long *naxes, int *status);

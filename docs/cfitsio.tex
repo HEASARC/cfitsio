@@ -45,7 +45,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large November 1999\\}
+{\Large December 1999\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -248,7 +248,10 @@ On VAX/VMS and ALPHA/VMS systems the make.com command file may be used
 to build the cfitsio.olb object library using the default G-floating
 point option for double variables.  The make\_dfloat.com and make\_ieee.com
 files may be used instead to build the library with the other floating
-point options.
+point options. Note that the getcwd function that is used in the group.c
+module may require that programs using CFITSIO be linked with the
+ALPHA\$LIBRARY:VAXCRTL.OLB library.  See the example link line in the
+next section of this document.
 
  
 \subsection{Windows PCs}
@@ -311,7 +314,7 @@ On Unix systems, type:
  
 \begin{verbatim}
     $ cc testprog.c
-    $ link testprog, cfitsio/lib
+    $ link testprog, cfitsio/lib, alpha$library:vaxcrtl/lib
     $ run testprog
 \end{verbatim}
 The testprog program should produce a FITS file called `testprog.fit'
@@ -2826,9 +2829,12 @@ This long string convention is supported by the following CFITSIO
 routines:
  
 \begin{verbatim}
-    fits_write_key_longstr - write a long string keyword value
-    fits_read_key_longstr  - read  a long string keyword value
-    fits_delete_key        - delete a keyword
+    fits_write_key_longstr  - write a long string keyword value
+    fits_insert_key_longstr - insert a long string keyword value
+    fits_modify_key_longstr - modify a long string keyword value
+    fits_update_key_longstr - modify a long string keyword value
+    fits_read_key_longstr   - read  a long string keyword value
+    fits_delete_key         - delete a keyword
 \end{verbatim}
 The fits\_read\_key\_longstr routine is unique among all the CFITSIO
 routines in that it internally allocates memory for the long string
@@ -4392,7 +4398,7 @@ the FITS array.
  
 \begin{verbatim}
   int fits_get_img_type / ffgidt
-      (fitsfile *fptr, int *bitpix, int *status)
+      (fitsfile *fptr, > int *bitpix, int *status)
 \end{verbatim}
  
 \begin{description}
@@ -4401,7 +4407,7 @@ the FITS array.
  
 \begin{verbatim}
   int fits_get_img_dim / ffgidm
-      (fitsfile *fptr, int *naxis, int *status)
+      (fitsfile *fptr, > int *naxis, int *status)
 \end{verbatim}
  
 \begin{description}
@@ -4410,11 +4416,22 @@ the FITS array.
  
 \begin{verbatim}
   int fits_get_img_size / ffgisz
-      (fitsfile *fptr, int maxdim, long *naxes, int *status)
+      (fitsfile *fptr, int maxdim, > long *naxes, int *status)
 \end{verbatim}
  
 \begin{description}
-\item[4 ] Write elements into the FITS data array.  \label{ffppr}
+\item[4 ]  Get the parameters that define the type and size of the image.  This
+    routine simply combines calls to the above 3 routines. \label{ffgipr}
+\end{description}
+ 
+\begin{verbatim}
+  int fits_get_img_param / ffgipr
+      (fitsfile *fptr, int maxdim, > int *bitpix, int *naxis, long *naxes,
+       int *status)
+\end{verbatim}
+ 
+\begin{description}
+\item[5 ] Write elements into the FITS data array.  \label{ffppr}
 \end{description}
  
 \begin{verbatim}
@@ -4424,7 +4441,7 @@ the FITS array.
 \end{verbatim}
  
 \begin{description}
-\item[5 ]Write elements into the FITS data array, substituting the appropriate
+\item[6 ]Write elements into the FITS data array, substituting the appropriate
    FITS null value for all elements which are equal to the input value of
    nulval (note that this parameter gives the address of the null value,
    not the null value itself).  For
@@ -4443,7 +4460,7 @@ the FITS array.
 \end{verbatim}
  
 \begin{description}
-\item[6 ]Set FITS data array elements equal to the appropriate null
+\item[7 ]Set FITS data array elements equal to the appropriate null
    pixel value. For integer FITS arrays, the FITS null value is defined by
    the BLANK keyword  (an error is returned if the BLANK keyword
    doesn't exist). For floating point FITS arrays the special IEEE NaN
@@ -4456,7 +4473,7 @@ the FITS array.
 \end{verbatim}
  
 \begin{description}
-\item[7 ] Read elements from the FITS data array.   Undefined FITS array
+\item[8 ] Read elements from the FITS data array.   Undefined FITS array
     elements will be returned with a value = *nullval, (note that this
     parameter gives the address of the null value, not the null value
     itself) unless nulval = 0 or *nulval = 0, in which case no checks for
@@ -5839,7 +5856,47 @@ The following utility routines may be useful for certain applications:
 \end{verbatim}
  
 \begin{description}
-\item[11] Parse the 'TFORM' binary table column format string.
+\item[11] Return the class of input header record.  The record is classified
+    into one of the following catagories (the class values are
+    defined in fitsio.h).  Note that this is one of the few CFITSIO
+   routines that does not return a status value. \label{ffgkcl}
+\end{description}
+ 
+\begin{verbatim}
+       Class  Value             Keywords
+  TYP_STRUC_KEY  10  SIMPLE, BITPIX, NAXIS, NAXISn, EXTEND, BLOCKED,
+                     GROUPS, PCOUNT, GCOUNT, END
+                     XTENSION, TFIELDS, TTYPEn, TBCOLn, TFORMn, THEAP,
+                     and the first 4 COMMENT keywords in the primary array
+                     that define the FITS format.
+  TYP_CMPRS_KEY  20  The experimental keywords used in the compressed
+                     image format ZIMAGE, ZCMPTYPE, ZNAMEn, ZVALn,
+                     ZTILEn, ZBITPIX, ZNAXISn, ZSCALE, ZZERO, ZBLANK
+  TYP_SCAL_KEY   30  BSCALE, BZERO, TSCALn, TZEROn
+  TYP_NULL_KEY   40  BLANK, TNULLn
+  TYP_DIM_KEY    50  TDIMn
+  TYP_RANG_KEY   60  TLMINn, TLMAXn, TDMINn, TDMAXn, DATAMIN, DATAMAX
+  TYP_UNIT_KEY   70  BUNIT, TUNITn
+  TYP_DISP_KEY   80  TDISPn
+  TYP_HDUID_KEY  90  EXTNAME, EXTVER, EXTLEVEL, HDUNAME, HDUVER, HDULEVEL
+  TYP_CKSUM_KEY 100  CHECKSUM, DATASUM
+  TYP_WCS_KEY   110  CTYPEn, CUNITn, CRVALn, CRPIXn, CROTAn, CDELTn
+                     CDj_is, PVj_ms, LONPOLEs, LATPOLEs
+                     TCTYPn, TCTYns, TCUNIn, TCUNns, TCRVLn, TCRVns, TCRPXn,
+                     TCRPks, TCDn_k, TCn_ks, TPVn_m, TPn_ms, TCDLTn, TCROTn
+                     jCTYPn, jCTYns, jCUNIn, jCUNns, jCRVLn, jCRVns, iCRPXn,
+                     iCRPns, jiCDn,  jiCDns, jPVn_m, jPn_ms, jCDLTn, jCROTn
+                     (i,j,m,n are integers, s is any letter)
+  TYP_REFSYS_KEY 120 EQUINOXs, EPOCH, MJD-OBSs, RADECSYS, RADESYSs
+  TYP_COMM_KEY   130 COMMENT, HISTORY, (blank keyword)
+  TYP_CONT_KEY   140 CONTINUE
+  TYP_USER_KEY   150 all other keywords
+
+  int fits_get_keyclass / ffgkcl (char *card)
+\end{verbatim}
+ 
+\begin{description}
+\item[12] Parse the 'TFORM' binary table column format string.
     This routine parses the input TFORM character string and returns the
     integer datatype code, the repeat count of the field, and, in the case
     of character string fields, the length of the unit string.  See Chapter
@@ -5854,7 +5911,7 @@ The following utility routines may be useful for certain applications:
 \end{verbatim}
  
 \begin{description}
-\item[12] Parse the 'TFORM' keyword value that defines the column format in
+\item[13] Parse the 'TFORM' keyword value that defines the column format in
     an ASCII table.  This routine parses the input TFORM character
     string and returns the datatype code, the width of the column,
     and (if it is a floating point column) the number of decimal places
@@ -5878,7 +5935,7 @@ The following utility routines may be useful for certain applications:
 \end{verbatim}
  
 \begin{description}
-\item[13] Calculate the starting column positions and total ASCII table width
+\item[14] Calculate the starting column positions and total ASCII table width
     based on the input array of ASCII table TFORM values.  The SPACE input
     parameter defines how many blank spaces to leave between each column
     (it is recommended to have one space between columns for better human
@@ -5892,7 +5949,7 @@ The following utility routines may be useful for certain applications:
 \end{verbatim}
  
 \begin{description}
-\item[14] Parse a template header record and return a formatted 80-character string
+\item[15] Parse a template header record and return a formatted 80-character string
     suitable for appending to (or deleting from) a FITS header file.
     This routine is useful for parsing lines from an ASCII template file
     and reformatting them into legal FITS header records.  The formatted
@@ -5998,7 +6055,7 @@ The following utility routines may be useful for certain applications:
 \end{verbatim}
  
 \begin{description}
-\item[15]  Check that the Header fill bytes (if any) are all blank.  These are the bytes
+\item[16]  Check that the Header fill bytes (if any) are all blank.  These are the bytes
      that may follow END keyword and before the beginning of data unit, or the end of
      the HDU if there is no data unit.
    \label{ffchfl}
@@ -6009,7 +6066,7 @@ The following utility routines may be useful for certain applications:
 \end{verbatim}
  
 \begin{description}
-\item[16]  Check that the Data fill bytes (if any) are all zero (for IMAGE or BINARY Table HDU)
+\item[17]  Check that the Data fill bytes (if any) are all zero (for IMAGE or BINARY Table HDU)
     or all blanks (for ASCII table HDU).  These file bytes may be
    located after the last valid data byte in the HDU and before the physcal end of the HDU.
      \label{ffcdfl}
@@ -6523,12 +6580,15 @@ must be shifted down to make room for the inserted keyword.
 \begin{description}
 \item[2 ] Insert a new keyword into the CHU.  The new keyword is inserted
     immediately following the last keyword that has been read from the header.
+    The `longstr' version has the same functionality as the `str' version
+    except that it also supports the local long string keyword convention
+    for strings longer than 68 characters.
     A null pointer may be entered for the comment parameter which will cause
    the comment field to be left blank. \label{ffikyx}
 \end{description}
  
 \begin{verbatim}
-  int fits_insert_key_str / ffikys
+  int fits_insert_key_[str, longstr] / ffi[kys, kls]
       (fitsfile *fptr, char *keyname, char *value, char *comment,
        > int *status)
 
@@ -6698,13 +6758,17 @@ may be used when specifying the name of the keyword to be modified.
  
 \begin{description}
 \item[5 ] Modify the value and comment fields of an existing keyword in the CHU.
+    The `longstr' version has the same functionality as the `str' version
+    except that it also supports the local long string keyword convention
+    for strings longer than 68 characters.
     Optionally, one may modify only the value field and leave the comment
     field unchanged by setting the input COMMENT parameter equal to
-   the ampersand character (\&) or by entering a null pointer.  \label{ffmkyx}
+    the ampersand character (\&) or by entering a null pointer for the
+   comment parameter.  \label{ffmkyx}
 \end{description}
  
 \begin{verbatim}
-  int fits_modify_key_str / ffmkys
+  int fits_modify_key_[str, longstr] / ffm[kys, kls]
       (fitsfile *fptr, char *keyname, char *value, char *comment,
        > int *status);
 
@@ -6742,12 +6806,15 @@ may be used when specifying the name of the keyword to be modified.
     of the keyword if it already exists,
     otherwise the new keyword is appended to the header.
     A separate routine is provided for each keyword datatype.
+    The `longstr' version has the same functionality as the `str' version
+    except that it also supports the local long string keyword convention
+    for strings longer than 68 characters.
     A null pointer may be entered for the comment parameter
    which will leave the comment field unchanged or blank. \label{ffukyx}
 \end{description}
  
 \begin{verbatim}
-  int fits_update_key_str / ffukys
+  int fits_update_key_[str, longstr] / ffu[kys, kls]
       (fitsfile *fptr, char *keyname, char *value, char *comment,
        > int *status)
 
@@ -7521,17 +7588,19 @@ fits\_get\_hdu\_num    & \pageref{ffghdn} \\
 fits\_get\_hdu\_type   & \pageref{ffghdt} \\
 fits\_get\_hduaddr    & \pageref{ffghad} \\
 fits\_get\_img\_dim & \pageref{ffgidm} \\
-fits\_get\_img\_type & \pageref{ffgidt} \\
+fits\_get\_img\_param & \pageref{ffgipr} \\
 fits\_get\_img\_size & \pageref{ffgisz} \\
+fits\_get\_img\_type & \pageref{ffgidt} \\
+fits\_get\_keyclass    & \pageref{ffgkcl} \\
 fits\_get\_keyname    & \pageref{ffgknm} \\
 fits\_get\_keytype    & \pageref{ffdtyp} \\
 fits\_get\_num\_cols     & \pageref{ffgnrw} \\
 fits\_get\_num\_groups  & \pageref{ffgmng} \\
 fits\_get\_num\_hdus   & \pageref{ffthdu} \\
-fits\_get\_num\_members  & \pageref{ffgtnm} \\
-fits\_get\_num\_rows     & \pageref{ffgnrw} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_get\_num\_members  & \pageref{ffgtnm} \\
+fits\_get\_num\_rows     & \pageref{ffgnrw} \\
 fits\_get\_rowsize    & \pageref{ffgrsz} \\
 fits\_get\_system\_time  & \pageref{ffdt2s} \\
 fits\_get\_tbcol      & \pageref{ffgabc} \\
@@ -7562,11 +7631,11 @@ fits\_movnam\_hdu     & \pageref{ffmnhd} \\
 fits\_movrel\_hdu     & \pageref{ffmrhd} \\
 fits\_null\_check     & \pageref{ffnchk} \\
 fits\_open\_file      & \pageref{ffopen} \\
-fits\_open\_group    & \pageref{ffgtop} \\
-fits\_open\_member    & \pageref{ffgmop} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_open\_group    & \pageref{ffgtop} \\
+fits\_open\_member    & \pageref{ffgmop} \\
 fits\_open\_memfile   & \pageref{ffomem} \\
 fits\_parse\_extnum   & \pageref{ffextn} \\
 fits\_parse\_input\_url & \pageref{ffiurl} \\
@@ -7611,10 +7680,10 @@ fits\_remove\_member   & \pageref{ffgmrm} \\
 fits\_reopen\_file      & \pageref{ffreopen} \\
 fits\_report\_error   & \pageref{ffrprt} \\
 fits\_resize\_img     & \pageref{ffrsim} \\
-fits\_select\_rows  & \pageref{ffsrow} \\
-fits\_set\_atblnull   & \pageref{ffsnul} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_select\_rows  & \pageref{ffsrow} \\
+fits\_set\_atblnull   & \pageref{ffsnul} \\
 fits\_set\_bscale     & \pageref{ffpscl} \\
 fits\_set\_btblnull   & \pageref{fftnul} \\
 fits\_set\_hdrsize    & \pageref{ffhdef} \\
@@ -7659,10 +7728,10 @@ fits\_write\_img        & \pageref{ffppr} \\
 fits\_write\_img\_null & \pageref{ffppru} \\
 fits\_write\_img\_TYP    & \pageref{ffpprx} \\
 fits\_write\_imghdr       & \pageref{ffphps} \\
-fits\_write\_imgnull     & \pageref{ffppn} \\
-fits\_write\_imgnull\_TYP & \pageref{ffppnx} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_write\_imgnull     & \pageref{ffppn} \\
+fits\_write\_imgnull\_TYP & \pageref{ffppnx} \\
 fits\_write\_key          & \pageref{ffpky} \\
 fits\_write\_key\_longstr  & \pageref{ffpkls} \\
 fits\_write\_key\_longwarn & \pageref{ffplsw} \\
@@ -7747,7 +7816,9 @@ ffghtb      & \pageref{ffghtb} \\
 ffgics & \pageref{ffgics} \\
 ffgidm & \pageref{ffgidm} \\
 ffgidt & \pageref{ffgidt} \\
+ffgipr & \pageref{ffgipr} \\
 ffgisz & \pageref{ffgisz} \\
+ffgkcl      & \pageref{ffgkcl} \\
 ffgkey      & \pageref{ffgkey} \\
 ffgkls  & \pageref{ffgkls} \\
 ffgkn\_     & \pageref{ffgknx} \\
@@ -7774,10 +7845,10 @@ ffgsdt        & \pageref{ffdt2s} \\
 ffgsf\_ & \pageref{ffgsfx} \pageref{ffgsfx2} \\
 ffgstm        & \pageref{ffdt2s} \\
 ffgsv\_  & \pageref{ffgsvx} \pageref{ffgsvx2}\\
-ffgtam & \pageref{ffgtam} \\
-ffgtbb    & \pageref{ffgtbb} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffgtam & \pageref{ffgtam} \\
+ffgtbb    & \pageref{ffgtbb} \\
 ffgtch  & \pageref{ffgtch} \\
 ffgtcl    & \pageref{ffgtcl} \\
 ffgtcm & \pageref{ffgtcm} \\
@@ -7798,6 +7869,7 @@ ffibin    & \pageref{ffibin} \\
 fficls  & \pageref{fficls} \\
 fficol   & \pageref{fficol} \\
 ffiimg     & \pageref{ffiimg} \\
+ffikls    & \pageref{ffikyx} \\
 ffikyu   & \pageref{ffikyu} \\
 ffiky\_    & \pageref{ffikyx} \\
 ffinit  & \pageref{ffinit} \\
@@ -7810,6 +7882,7 @@ ffkeyn      & \pageref{ffkeyn} \\
 ffmahd     & \pageref{ffmahd} \\
 ffmcom    & \pageref{ffmcom} \\
 ffmcrd       & \pageref{ffmcrd} \\
+ffmkls    & \pageref{ffmkyx} \\
 ffmkyu   & \pageref{ffmkyu} \\
 ffmky\_    & \pageref{ffmkyx} \\
 ffmnam       & \pageref{ffmnam} \\
@@ -7820,12 +7893,12 @@ ffmvec  & \pageref{ffmvec} \\
 ffnchk  & \pageref{ffnchk} \\
 ffnkey      & \pageref{ffnkey} \\
 ffomem   & \pageref{ffomem} \\
+\end{tabular}
+\begin{tabular}{lr}
 ffopen      & \pageref{ffopen} \\
 ffp2d\_   & \pageref{ffp2dx} \\
 ffp3d\_   & \pageref{ffp3dx} \\
 ffpcks   & \pageref{ffpcks} \\
-\end{tabular}
-\begin{tabular}{lr}
 ffpcl         & \pageref{ffpcl} \\
 ffpcls     & \pageref{ffpcls} \\
 ffpcl\_     & \pageref{ffpclx} \\
@@ -7868,12 +7941,12 @@ ffrdef   & \pageref{ffrdef} \\
 ffreopen      & \pageref{ffreopen} \\
 ffrprt   & \pageref{ffrprt} \\
 ffrsim     & \pageref{ffrsim} \\
+\end{tabular}
+\begin{tabular}{lr}
 ffrtnm & \pageref{ffrtnm} \\
 ffs2dt  & \pageref{ffdt2s} \\
 ffs2tm  & \pageref{ffdt2s} \\
 ffsnul   & \pageref{ffsnul} \\
-\end{tabular}
-\begin{tabular}{lr}
 ffsrow  & \pageref{ffsrow} \\
 fftexp    & \pageref{fftexp} \\
 ffthdu   & \pageref{ffthdu} \\
@@ -7884,6 +7957,7 @@ fftplt & \pageref{fftplt} \\
 fftrec    & \pageref{fftrec} \\
 fftscl     & \pageref{fftscl} \\
 ffucrd       & \pageref{ffucrd} \\
+ffukls    & \pageref{ffukyx} \\
 ffuky        & \pageref{ffuky} \\
 ffukyu   & \pageref{ffukyu} \\
 ffuky\_    & \pageref{ffukyx} \\

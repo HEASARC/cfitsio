@@ -24,8 +24,9 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.034; /* 23 Nov 1999 */
+      *version = 2.035; /* 7 Dec 1999 */
 
+ /*   *version = 2.034;  23 Nov 1999 */
  /*   *version = 2.033;  17 Sep 1999 */
  /*   *version = 2.032;  25 May 1999 */
  /*   *version = 2.031;  31 Mar 1999 */
@@ -4704,6 +4705,35 @@ int fits_is_compressed_image(fitsfile *fptr,  /* I - FITS file pointer  */
     return(0);
 }
 /*--------------------------------------------------------------------------*/
+int ffgipr(fitsfile *infptr,   /* I - FITS file pointer             */
+        int maxaxis,           /* I - max number of axes to return          */
+        int *bitpix,           /* O - image data type                       */
+        int *naxis,            /* O - image dimension (NAXIS value)         */
+        long *naxes,           /* O - size of image dimensions              */
+        int *status)           /* IO - error status      */
+
+/*
+    get the datatype and size of the input image
+*/
+{
+
+    if (*status > 0)
+        return(*status);
+
+    /* don't return the parameter if a null pointer was given */
+
+    if (bitpix)
+      fits_get_img_type(infptr, bitpix, status);  /* get BITPIX value */
+
+    if (naxis)
+      fits_get_img_dim(infptr, naxis, status);    /* get NAXIS value */
+
+    if (naxes)
+      fits_get_img_size(infptr, maxaxis, naxes, status); /* get NAXISn values */
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffgidt( fitsfile *fptr,  /* I - FITS file pointer                       */
             int  *imgtype,   /* O - image data type                         */
             int  *status)    /* IO - error status                           */
@@ -5171,6 +5201,405 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
          (fptr->Fptr)->headstart[ii + 1] += (2880 * nblock);
 
     return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgkcl(char *card)
+
+/*
+   Return the type classification of the input header record
+
+   TYP_STRUC_KEY: SIMPLE, BITPIX, NAXIS, NAXISn, EXTEND, BLOCKED,
+                  GROUPS, PCOUNT, GCOUNT, END
+                  XTENSION, TFIELDS, TTYPEn, TBCOLn, TFORMn, THEAP,
+                   and the first 4 COMMENT keywords in the primary array
+                   that define the FITS format.
+
+   TYP_CMPRS_KEY:
+            The experimental keywords used in the compressed image format
+                  ZIMAGE, ZCMPTYPE, ZNAMEn, ZVALn, ZTILEn, 
+                  ZBITPIX, ZNAXISn, ZSCALE, ZZERO, ZBLANK
+
+   TYP_SCAL_KEY:  BSCALE, BZERO, TSCALn, TZEROn
+
+   TYP_NULL_KEY:  BLANK, TNULLn
+
+   TYP_DIM_KEY:   TDIMn
+
+   TYP_RANG_KEY:  TLMINn, TLMAXn, TDMINn, TDMAXn, DATAMIN, DATAMAX
+
+   TYP_UNIT_KEY:  BUNIT, TUNITn
+
+   TYP_DISP_KEY:  TDISPn
+
+   TYP_HDUID_KEY: EXTNAME, EXTVER, EXTLEVEL, HDUNAME, HDUVER, HDULEVEL
+
+   TYP_CKSUM_KEY  CHECKSUM, DATASUM
+
+   TYP_WCS_KEY:
+           Primary array:
+                  CTYPEn, CUNITn, CRVALn, CRPIXn, CROTAn, CDELTn
+                  CDj_is, PVj_ms, LONPOLEs, LATPOLEs
+  
+           Pixel list:
+                  TCTYPn, TCTYns, TCUNIn, TCUNns, TCRVLn, TCRVns, TCRPXn, TCRPks,
+                  TCDn_k, TCn_ks, TPVn_m, TPn_ms, TCDLTn, TCROTn
+
+           Bintable vector:
+                  jCTYPn, jCTYns, jCUNIn, jCUNns, jCRVLn, jCRVns, iCRPXn, iCRPns,
+                  jiCDn, jiCDns, jPVn_m, jPn_ms, jCDLTn, jCROTn
+                
+   TYP_REFSYS_KEY:
+                   EQUINOXs, EPOCH, MJD-OBSs, RADECSYS, RADESYSs
+
+   TYP_COMM_KEY:  COMMENT, HISTORY, (blank keyword)
+
+   TYP_CONT_KEY:  CONTINUE
+
+   TYP_USER_KEY:  all other keywords
+
+*/ 
+{
+    char *card1, *card5;
+
+    card1 = card + 1;  /* pointer to 2nd character */
+    card5 = card + 5;  /* pointer to 6th character */
+
+    /* the strncmp function is slow, so try to be more efficient */
+    if (*card == 'Z')
+    {
+	if (FSTRNCMP (card1, "IMAGE  ", 7) == 0)
+	    return (TYP_CMPRS_KEY);
+	else if (FSTRNCMP (card1, "CMPTYPE", 7) == 0)
+	    return (TYP_CMPRS_KEY);
+	else if (FSTRNCMP (card1, "NAME", 4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_CMPRS_KEY);
+        }
+	else if (FSTRNCMP (card1, "VAL", 3) == 0)
+        {
+            if (*(card + 4) >= '0' && *(card + 4) <= '9')
+	        return (TYP_CMPRS_KEY);
+        }
+	else if (FSTRNCMP (card1, "TILE", 4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_CMPRS_KEY);
+        }
+	else if (FSTRNCMP (card1, "BITPIX ", 7) == 0)
+	    return (TYP_CMPRS_KEY);
+	else if (FSTRNCMP (card1, "NAXIS", 5) == 0)
+        {
+            if ( ( *(card + 6) >= '0' && *(card + 6) <= '9' )
+             || (*(card + 6) == ' ') )
+	        return (TYP_CMPRS_KEY);
+        }
+	else if (FSTRNCMP (card1, "SCALE  ", 7) == 0)
+	    return (TYP_CMPRS_KEY);
+	else if (FSTRNCMP (card1, "ZERO   ", 7) == 0)
+	    return (TYP_CMPRS_KEY);
+	else if (FSTRNCMP (card1, "BLANK  ", 7) == 0)
+	    return (TYP_CMPRS_KEY);
+    }
+    else if (*card == ' ')
+    {
+	return (TYP_COMM_KEY);
+    }
+    else if (*card == '\0')
+    {
+	return (TYP_COMM_KEY);
+    }
+    else if (*card == 'B')
+    {
+	if (FSTRNCMP (card1, "ITPIX  ", 7) == 0)
+	    return (TYP_STRUC_KEY);
+	if (FSTRNCMP (card1, "LOCKED ", 7) == 0)
+	    return (TYP_STRUC_KEY);
+
+	if (FSTRNCMP (card1, "LANK   ", 7) == 0)
+	    return (TYP_NULL_KEY);
+
+	if (FSTRNCMP (card1, "SCALE  ", 7) == 0)
+	    return (TYP_SCAL_KEY);
+	if (FSTRNCMP (card1, "ZERO   ", 7) == 0)
+	    return (TYP_SCAL_KEY);
+
+	if (FSTRNCMP (card1, "UNIT   ", 7) == 0)
+	    return (TYP_UNIT_KEY);
+    }
+    else if (*card == 'C')
+    {
+	if (FSTRNCMP (card1, "OMMENT",6) == 0)
+	{
+	    if (FSTRNCMP (card1, "OMMENT   FITS (Flexible Image Transport System",
+              46) == 0)
+	        return (TYP_STRUC_KEY);
+	    if (FSTRNCMP (card1, "OMMENT   Astrophysics Supplement Series v44/p3",
+              46) == 0)
+	        return (TYP_STRUC_KEY);
+	    if (FSTRNCMP (card1, "OMMENT   Contact the NASA Science Office of St",
+              46) == 0)
+	        return (TYP_STRUC_KEY);
+	    if (FSTRNCMP (card1, "OMMENT   FITS Definition document #100 and oth",
+              46) == 0)
+	        return (TYP_STRUC_KEY);
+
+            if (*(card + 7) == ' ' || *(card + 7) == '\0')
+	        return (TYP_COMM_KEY);
+            else
+                return (TYP_USER_KEY);
+	}
+
+	if (FSTRNCMP (card1, "HECKSUM", 7) == 0)
+	    return (TYP_CKSUM_KEY);
+
+	if (FSTRNCMP (card1, "ONTINUE", 7) == 0)
+	    return (TYP_CONT_KEY);
+
+	if (FSTRNCMP (card1, "TYPE",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "UNIT",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "RVAL",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "RPIX",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "ROTA",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "DELT",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (*card1 == 'D')
+        {
+            if (*(card + 2) >= '0' && *(card + 2) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+    }
+    else if (*card == 'D')
+    {
+	if (FSTRNCMP (card1, "ATASUM ", 7) == 0)
+	    return (TYP_CKSUM_KEY);
+	if (FSTRNCMP (card1, "ATAMIN ", 7) == 0)
+	    return (TYP_RANG_KEY);
+	if (FSTRNCMP (card1, "ATAMAX ", 7) == 0)
+	    return (TYP_RANG_KEY);
+    }
+    else if (*card == 'E')
+    {
+	if (FSTRNCMP (card1, "XTEND  ", 7) == 0)
+	    return (TYP_STRUC_KEY);
+	if (FSTRNCMP (card1, "XTNAME ", 7) == 0)
+	    return (TYP_HDUID_KEY);
+	if (FSTRNCMP (card1, "XTVER  ", 7) == 0)
+	    return (TYP_HDUID_KEY);
+	if (FSTRNCMP (card1, "XTLEVEL", 7) == 0)
+	    return (TYP_HDUID_KEY);
+
+	if (FSTRNCMP (card1, "QUINOX", 6) == 0)
+	    return (TYP_REFSYS_KEY);
+	if (FSTRNCMP (card1, "POCH   ", 7) == 0)
+	    return (TYP_REFSYS_KEY);
+    }
+    else if (*card == 'G')
+    {
+	if (FSTRNCMP (card1, "COUNT  ", 7) == 0)
+	    return (TYP_STRUC_KEY);
+	if (FSTRNCMP (card1, "ROUPS  ", 7) == 0)
+	    return (TYP_STRUC_KEY);
+    }
+    else if (*card == 'H')
+    {
+	if (FSTRNCMP (card1, "DUNAME ", 7) == 0)
+	    return (TYP_HDUID_KEY);
+	if (FSTRNCMP (card1, "DUVER  ", 7) == 0)
+	    return (TYP_HDUID_KEY);
+	if (FSTRNCMP (card1, "DULEVEL", 7) == 0)
+	    return (TYP_HDUID_KEY);
+
+	if (FSTRNCMP (card1, "ISTORY",6) == 0)
+        {
+            if (*(card + 7) == ' ' || *(card + 7) == '\0')
+	        return (TYP_COMM_KEY);
+            else
+                return (TYP_USER_KEY);
+        }
+    }
+    else if (*card == 'L')
+    {
+	if (FSTRNCMP (card1, "ONPOLE",6) == 0)
+	    return (TYP_WCS_KEY);
+	if (FSTRNCMP (card1, "ATPOLE",6) == 0)
+	    return (TYP_WCS_KEY);
+    }
+    else if (*card == 'M')
+    {
+	if (FSTRNCMP (card1, "JD_OBS ", 7) == 0)
+	    return (TYP_REFSYS_KEY);
+    }
+    else if (*card == 'N')
+    {
+	if (FSTRNCMP (card1, "AXIS", 4) == 0)
+        {
+            if ((*card5 >= '0' && *card5 <= '9')
+             || (*card5 == ' '))
+	        return (TYP_STRUC_KEY);
+        }
+    }
+    else if (*card == 'P')
+    {
+	if (FSTRNCMP (card1, "COUNT  ", 7) == 0)
+	    return (TYP_STRUC_KEY);
+    }
+    else if (*card == 'R')
+    {
+	if (FSTRNCMP (card1, "ADECSYS", 7) == 0)
+	    return (TYP_REFSYS_KEY);
+	if (FSTRNCMP (card1, "ADESYS", 6) == 0)
+	    return (TYP_REFSYS_KEY);
+    }
+    else if (*card == 'S')
+    {
+	if (FSTRNCMP (card1, "IMPLE  ", 7) == 0)
+	    return (TYP_STRUC_KEY);
+    }
+    else if (*card == 'T')
+    {
+	if (FSTRNCMP (card1, "TYPE", 4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_STRUC_KEY);
+        }
+	else if (FSTRNCMP (card1, "FORM", 4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_STRUC_KEY);
+        }
+	else if (FSTRNCMP (card1, "BCOL", 4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_STRUC_KEY);
+        }
+	else if (FSTRNCMP (card1, "FIELDS ", 7) == 0)
+	    return (TYP_STRUC_KEY);
+	else if (FSTRNCMP (card1, "HEAP   ", 7) == 0)
+	    return (TYP_STRUC_KEY);
+
+	else if (FSTRNCMP (card1, "NULL", 4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_NULL_KEY);
+        }
+
+	else if (FSTRNCMP (card1, "DIM", 3) == 0)
+        {
+            if (*(card + 4) >= '0' && *(card + 4) <= '9')
+ 	        return (TYP_DIM_KEY);
+        }
+
+	else if (FSTRNCMP (card1, "UNIT", 4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_UNIT_KEY);
+        }
+
+	else if (FSTRNCMP (card1, "DISP", 4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_DISP_KEY);
+        }
+
+	else if (FSTRNCMP (card1, "SCAL", 4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_SCAL_KEY);
+        }
+	else if (FSTRNCMP (card1, "ZERO", 4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_SCAL_KEY);
+        }
+
+	else if (FSTRNCMP (card1, "LMIN", 4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_RANG_KEY);
+        }
+	else if (FSTRNCMP (card1, "LMAX", 4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_RANG_KEY);
+        }
+	else if (FSTRNCMP (card1, "DMIN", 4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_RANG_KEY);
+        }
+	else if (FSTRNCMP (card1, "DMAX", 4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_RANG_KEY);
+        }
+
+	else if (FSTRNCMP (card1, "CTYP",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CUNI",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CRVL",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CRPX",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CROT",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CDLT",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CD",2) == 0)
+        {
+            if (*(card + 3) >= '0' && *(card + 3) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+    }
+    else if (*card == 'X')
+    {
+	if (FSTRNCMP (card1, "TENSION", 7) == 0)
+	    return (TYP_STRUC_KEY);
+    }
+
+    return (TYP_USER_KEY);  /* by default all others are user keywords */
 }
 /*--------------------------------------------------------------------------*/
 int ffdtyp(char *cval,  /* I - formatted string representation of the value */

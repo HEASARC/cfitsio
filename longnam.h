@@ -33,6 +33,7 @@
 #define fits_null_check     ffnchk
 #define fits_make_keyn      ffkeyn
 #define fits_make_nkey      ffnkey
+#define fits_get_keyclass   ffgkcl
 #define fits_get_keytype    ffdtyp
 #define fits_parse_value    ffpsvc
 #define fits_get_keyname    ffgknm
@@ -169,10 +170,11 @@
 
 #define fits_delete_key     ffdkey
 #define fits_delete_record  ffdrec
-
 #define fits_get_hdu_num    ffghdn
 #define fits_get_hdu_type   ffghdt
 #define fits_get_hduaddr    ffghad
+
+#define fits_get_img_param  ffgipr
 #define fits_get_img_type   ffgidt
 #define fits_get_img_dim    ffgidm
 #define fits_get_img_size   ffgisz

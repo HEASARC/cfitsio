@@ -684,18 +684,15 @@ int  ffffrw_work( long totalrows, long offset, long firstrow,
 
 
 /*  image compression routines */
- int imcomp_get_image_params(fitsfile *infptr, int *bitpix,
-        int *naxis, long *naxes, int *status);
- int imcomp_init_table(fitsfile *outfptr, int compress_type,
+int imcomp_init_table(fitsfile *outfptr, int compress_type,
         int bitpix, int naxis,long *naxes,long *tilesize, 
         int rice_blocksize,int rice_nbits,int *status);
- int imcomp_calc_max_elem (int comptype, int nx, int blocksize);
- int imcomp_copy_imheader(fitsfile *infptr, fitsfile *outfptr,
+int imcomp_calc_max_elem (int comptype, int nx, int blocksize);
+int imcomp_copy_imheader(fitsfile *infptr, fitsfile *outfptr,
                 int *status);
- int imcomp_img_to_tbl_special (char *card);
- int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr,
+int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr,
                  int *status);
- int imcomp_compress_tile (fitsfile *outfptr, long row, 
+int imcomp_compress_tile (fitsfile *outfptr, long row, 
     int datatype,  void *tiledata, long tilelen, int *status);
 
 /*  image decompression routines */
@@ -704,14 +701,11 @@ int fits_read_compressed_img_plane(fitsfile *fptr, int  datatype,
       long *inc,  long *naxes,  int  nullcheck,  void *nullval, 
       void *array, char *nullarray, int  *anynul, int  *status);
 int imcomp_get_compressed_image_parms(fitsfile *infptr, int *status);
- int imcomp_copy_tblheader(fitsfile *infptr, fitsfile *outfptr,   
-           int *status);
- int imcomp_tbl_to_img_special (char *keyname);
- int imcomp_decompress_tile (fitsfile *infptr,
+int imcomp_decompress_tile (fitsfile *infptr,
           int nrow, int tilesize, int datatype, int nullcheck,
           void *nulval, void *buffer, char *bnullarray, int *anynul,
           int *status);
- int imcomp_copy_overlap (char *tile, int datatype, int ndim,
+int imcomp_copy_overlap (char *tile, int datatype, int ndim,
          long *tfpixel, long *tlpixel, char *bnullarray, char *image,
          long *fpixel, long *lpixel, int nullcheck, char *nullarray,
          int *status);

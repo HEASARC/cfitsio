@@ -120,8 +120,10 @@ int ffgpv(  fitsfile *fptr,   /* I - FITS file pointer                       */
         ffgpvd(fptr, 1, firstelem, nelem, 0,
                (double *) array, anynul, status);
       else
+      {
         ffgpvd(fptr, 1, firstelem, nelem, *(double *) nulval,
                (double *) array, anynul, status);
+      }
     }
     else
       *status = BAD_DATATYPE;

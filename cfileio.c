@@ -757,7 +757,7 @@ move2hdu:
 
         if (ffselect_table(fptr, outfile, rowfilter, status) > 0)
         {
-           ffpmsg("on-the-fly selection of rows in input table failed (ffopen)");
+          ffpmsg("on-the-fly selection of rows in input table failed (ffopen)");
            ffpmsg(" while trying to select rows with the following filter:");
            ffpmsg(rowfilter);
            return(*status);
@@ -1556,10 +1556,10 @@ int fits_select_image_section(
   */
 
     fitsfile *newptr;
-    int ii, hdunum, naxis, bitpix, nfound, tstatus, anynull;
+    int ii, hdunum, naxis, bitpix, tstatus, anynull, nkey, numkeys;
     long naxes[9], smin, smax, sinc, fpixels[9], lpixels[9], incs[9];
     long outnaxes[9], outsize, buffsize;
-    char *cptr, keyname[FLEN_KEYWORD];
+    char *cptr, keyname[FLEN_KEYWORD], card[FLEN_CARD];
     double *buffer = 0, crpix, cdelt;
 
     /* create new empty file to hold the image section */
@@ -1584,20 +1584,13 @@ int fits_select_image_section(
         }
     }
 
-    /* copy all the header keywords from the input to output file */
+    /* move back to the original HDU position */
     fits_movabs_hdu(*fptr, hdunum, NULL, status);
-    if (fits_copy_header(*fptr, newptr, status) > 0)
-    {
-        ffclos(newptr, status);
-        return(*status);
-    }
 
     /* get the size of the input image */
-
-    fits_read_key(*fptr, TINT, "BITPIX", &bitpix, NULL, status);
-    fits_read_key(*fptr, TINT, "NAXIS", &naxis, NULL, status);
-    if (fits_read_keys_lng(*fptr, "NAXIS", 1, naxis,
-        naxes, &nfound, status) > 0)
+    fits_get_img_type(*fptr, &bitpix, status);
+    fits_get_img_dim(*fptr, &naxis, status);
+    if (fits_get_img_size(*fptr, naxis, naxes, status) > 0)
     {
         ffclos(newptr, status);
         return(*status);
@@ -1610,11 +1603,29 @@ int fits_select_image_section(
         ffclos(newptr, status);
         return(*status = BAD_NAXIS);
     }
-    else if (nfound < naxis)
+
+    /* create output image with same size and type as the input image */
+    /*  Will update the size later */
+    fits_create_img(newptr, bitpix, naxis, naxes, status);
+
+    /* copy all other non-structural keywords from the input to output file */
+    fits_get_hdrspace(*fptr, &numkeys, NULL, status);
+
+    for (nkey = 4; nkey <= numkeys; nkey++) /* skip the first few keywords */
     {
-        ffpmsg("could not read all the NAXISn keywords in the input image");
-        ffclos(newptr, status);
-        return(*status = BAD_NAXES);
+        fits_read_record(*fptr, nkey, card, status);
+
+        if (fits_get_keyclass(card) > TYP_CMPRS_KEY)
+        {
+            /* write the record to the output file */
+            fits_write_record(newptr, card, status);
+        }
+    }
+
+    if (*status > 0)
+    {
+         ffpmsg("error copying header from input image to output image");
+         return(*status);
     }
 
     /* parse the section specifier to get min, max, and inc for each axis */

@@ -48,7 +48,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large November 1999\\}
+{\Large December 1999\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -2506,9 +2506,9 @@ subroutines that deal with string-valued keywords:
 \begin{verbatim}
       ftgkys - read a string keyword
       ftpkls - write (append) a string keyword
-      ftikys - insert a string keyword
-      ftmkys - modify the value of an existing string keyword
-      ftukys - update an existing keyword, or write a new keyword
+      ftikls - insert a string keyword
+      ftmkls - modify the value of an existing string keyword
+      ftukls - update an existing keyword, or write a new keyword
       ftdkey - delete a keyword
 \end{verbatim}
 These routines will transparently read, write, or delete a long string
@@ -2521,11 +2521,10 @@ string, otherwise the returned string value will be truncated.
 
 Note that the more commonly used FITSIO subroutine to write string
 valued keywords (FTPKYS) does NOT support this long string convention
-and only supports strings up to 68 characters in length.  This has
-been done deliberately
-to prevent programs from inadvertently writing keywords using
-this non-standard convention without the explicit intent of
-the programmer or user.   The FTPKLS subroutine must be called
+and only supports strings up to 68 characters in length.  This has been
+done deliberately to prevent programs from inadvertently writing
+keywords using this non-standard convention without the explicit intent
+of the programmer or user.   The FTPKLS subroutine must be called
 instead to write long strings.  This routine can also be used to write
 ordinary string values less than 68 characters in length.
 
@@ -3424,7 +3423,7 @@ rather than 'ft'.
 \end{description}
 
 \begin{verbatim}
-        FFURLT(unit, > urltype, status)
+        FTURLT(unit, > urltype, status)
 \end{verbatim}
 
 \begin{description}
@@ -4057,6 +4056,8 @@ values are not blank.
 \begin{description}
 \item[2 ] Insert a new keyword into the CHU.  The new keyword is inserted
     immediately following the last keyword that has been read from the header.
+    The FTIKLS subroutine works the same as the FTIKYS subroutine, except
+    it also supports long string values greater than 68 characters in length.
     These 'insert keyword' subroutines are somewhat less efficient then
     the 'append keyword' subroutines described above because the remaining
    keywords in the header have to be shifted down one slot.
@@ -4064,6 +4065,7 @@ values are not blank.
 
 \begin{verbatim}
         FTIKY[JLS](unit,keyword,keyval,comment, > status)
+        FTIKLS(unit,keyword,keyval,comment, > status)
         FTIKY[EDFG](unit,keyword,keyval,decimals,comment, > status)
 \end{verbatim}
 
@@ -4243,6 +4245,8 @@ may be used when specifying the name of the keyword to be modified.
 
 \begin{description}
 \item[5 ] Modify the value and comment fields of an existing keyword in the CHU.
+    The FTMKLS subroutine works the same as the FTMKYS subroutine, except
+    it also supports long string values greater than 68 characters in length.
     Optionally, one may modify only the value field and leave the comment
     field unchanged by setting the input COMMENT parameter equal to
    the ampersand character (\&).
@@ -4250,6 +4254,7 @@ may be used when specifying the name of the keyword to be modified.
 
 \begin{verbatim}
         FTMKY[JLS](unit,keyword,keyval,comment, > status)
+        FTMKLS(unit,keyword,keyval,comment, > status)
         FTMKY[EDFG](unit,keyword,keyval,decimals,comment, > status)
 \end{verbatim}
 
@@ -4271,7 +4276,9 @@ may be used when specifying the name of the keyword to be modified.
 \item[1 ] Update an 80-character record in the CHU.  If the specified keyword
     already exists then that header record will be replaced with
     the input CARD string.  If it does not exist then the new record will
-   be added to the header.
+    be added to the header.
+    The FTUKLS subroutine works the same as the FTUKYS subroutine, except
+   it also supports long string values greater than 68 characters in length.
 \end{description}
 
 \begin{verbatim}
@@ -4286,6 +4293,7 @@ may be used when specifying the name of the keyword to be modified.
 
 \begin{verbatim}
         FTUKY[JLS](unit,keyword,keyval,comment, > status)
+        FTUKLS(unit,keyword,keyval,comment, > status)
         FTUKY[EDFG](unit,keyword,keyval,decimals,comment, > status)
 \end{verbatim}
 
@@ -4296,7 +4304,7 @@ may be used when specifying the name of the keyword to be modified.
 \end{description}
 
 \begin{verbatim}
-        FTIKYU(unit,keyword,comment, > status)
+        FTUKYU(unit,keyword,comment, > status)
 \end{verbatim}
 
 \subsection{Delete Keyword Subroutines \label{FTDREC}}
@@ -4456,7 +4464,16 @@ contiguous rectangular subset of pixels within the n-dimensional array.
 \end{verbatim}
 
 \begin{description}
-\item[4 ]Put elements into the data array
+\item[4 ]  Get the parameters that define the type and size of the image.  This
+    routine simply combines calls to the above 3 routines.
+\end{description}
+
+\begin{verbatim}
+        FTGIPR(unit, maxdim, > bitpix, naxis, naxes, int *status)
+\end{verbatim}
+
+\begin{description}
+\item[5 ]Put elements into the data array
 \end{description}
 
 \begin{verbatim}
@@ -4464,7 +4481,7 @@ contiguous rectangular subset of pixels within the n-dimensional array.
 \end{verbatim}
 
 \begin{description}
-\item[5 ]Put elements into the data array, substituting the appropriate FITS null
+\item[6 ]Put elements into the data array, substituting the appropriate FITS null
    value for all elements which are equal to the value of NULLVAL.  For
    integer FITS arrays, the null value defined by the previous call to FTPNUL
    will be substituted;  for floating point FITS arrays (BITPIX = -32
@@ -4477,7 +4494,7 @@ contiguous rectangular subset of pixels within the n-dimensional array.
 \end{verbatim}
 
 \begin{description}
-\item[6 ]Set data array elements as undefined
+\item[7 ]Set data array elements as undefined
 \end{description}
 
 \begin{verbatim}
@@ -4485,7 +4502,7 @@ contiguous rectangular subset of pixels within the n-dimensional array.
 \end{verbatim}
 
 \begin{description}
-\item[7 ] Get elements from the data array.  Undefined array elements will be
+\item[8 ] Get elements from the data array.  Undefined array elements will be
     returned with a value = nullval, unless nullval = 0 in which case no
    checks for undefined pixels will be performed.
 \end{description}
@@ -4495,7 +4512,7 @@ contiguous rectangular subset of pixels within the n-dimensional array.
 \end{verbatim}
 
 \begin{description}
-\item[8 ] Get elements and nullflags from data array.
+\item[9 ] Get elements and nullflags from data array.
     Any undefined array elements will have the corresponding flagvals element
    set equal to .TRUE.
 \end{description}
@@ -4505,7 +4522,7 @@ contiguous rectangular subset of pixels within the n-dimensional array.
 \end{verbatim}
 
 \begin{description}
-\item[9 ] Put values into group parameters
+\item[10]  Put values into group parameters
 \end{description}
 
 \begin{verbatim}
@@ -4513,7 +4530,7 @@ contiguous rectangular subset of pixels within the n-dimensional array.
 \end{verbatim}
 
 \begin{description}
-\item[10]  Get values from group parameters
+\item[11]  Get values from group parameters
 \end{description}
 
 \begin{verbatim}
@@ -5657,6 +5674,46 @@ The following utility subroutines may be useful for certain applications:
 \end{verbatim}
 
 \begin{description}
+\item[11] Return the class of input header record.  The record is classified
+    into one of the following catagories (the class values are
+    defined in fitsio.h).  Note that this is one of the few FITSIO
+   routines that does not return a status value.
+\end{description}
+
+\begin{verbatim}
+       Class  Value             Keywords
+  TYP_STRUC_KEY  10  SIMPLE, BITPIX, NAXIS, NAXISn, EXTEND, BLOCKED,
+                     GROUPS, PCOUNT, GCOUNT, END
+                     XTENSION, TFIELDS, TTYPEn, TBCOLn, TFORMn, THEAP,
+                     and the first 4 COMMENT keywords in the primary array
+                     that define the FITS format.
+  TYP_CMPRS_KEY  20  The experimental keywords used in the compressed
+                     image format ZIMAGE, ZCMPTYPE, ZNAMEn, ZVALn,
+                     ZTILEn, ZBITPIX, ZNAXISn, ZSCALE, ZZERO, ZBLANK
+  TYP_SCAL_KEY   30  BSCALE, BZERO, TSCALn, TZEROn
+  TYP_NULL_KEY   40  BLANK, TNULLn
+  TYP_DIM_KEY    50  TDIMn
+  TYP_RANG_KEY   60  TLMINn, TLMAXn, TDMINn, TDMAXn, DATAMIN, DATAMAX
+  TYP_UNIT_KEY   70  BUNIT, TUNITn
+  TYP_DISP_KEY   80  TDISPn
+  TYP_HDUID_KEY  90  EXTNAME, EXTVER, EXTLEVEL, HDUNAME, HDUVER, HDULEVEL
+  TYP_CKSUM_KEY 100  CHECKSUM, DATASUM
+  TYP_WCS_KEY   110  CTYPEn, CUNITn, CRVALn, CRPIXn, CROTAn, CDELTn
+                     CDj_is, PVj_ms, LONPOLEs, LATPOLEs
+                     TCTYPn, TCTYns, TCUNIn, TCUNns, TCRVLn, TCRVns, TCRPXn,
+                     TCRPks, TCDn_k, TCn_ks, TPVn_m, TPn_ms, TCDLTn, TCROTn
+                     jCTYPn, jCTYns, jCUNIn, jCUNns, jCRVLn, jCRVns, iCRPXn,
+                     iCRPns, jiCDn,  jiCDns, jPVn_m, jPn_ms, jCDLTn, jCROTn
+                     (i,j,m,n are integers, s is any letter)
+  TYP_REFSYS_KEY 120 EQUINOXs, EPOCH, MJD-OBSs, RADECSYS, RADESYSs
+  TYP_COMM_KEY   130 COMMENT, HISTORY, (blank keyword)
+  TYP_CONT_KEY   140 CONTINUE
+  TYP_USER_KEY   150 all other keywords
+
+         class = FTGKCL (char *card)
+\end{verbatim}
+
+\begin{description}
 \item[12] Parse the 'TFORM' binary table column format string.
     This subroutine parses the input TFORM character string and returns the
     integer datatype code, the repeat count of the field, and, in the case
@@ -5935,6 +5992,7 @@ The following utility subroutines may be useful for certain applications:
 \begin{verbatim}
         FTIREC(unit,key_no,card, > status)
         FTIKY[JLS](unit,keyword,keyval,comment, > status)
+        FTIKLS(unit,keyword,keyval,comment, > status)
         FTIKY[EDFG](unit,keyword,keyval,decimals,comment, > status)
         FTIKYU(unit,keyword,comment, > status)
 \end{verbatim}
@@ -5959,6 +6017,7 @@ The following utility subroutines may be useful for certain applications:
         FTMNAM(unit,oldkey,keyword, > status)
         FTMCOM(unit,keyword,comment, > status)
         FTMKY[JLS](unit,keyword,keyval,comment, > status)
+        FTMKLS(unit,keyword,keyval,comment, > status)
         FTMKY[EDFG](unit,keyword,keyval,decimals,comment, > status)
         FTMKYU(unit,keyword,comment, > status)
 \end{verbatim}
@@ -5967,6 +6026,7 @@ The following utility subroutines may be useful for certain applications:
 \begin{verbatim}
         FTUCRD(unit,keyword,card, > status)
         FTUKY[JLS](unit,keyword,keyval,comment, > status)
+        FTUKLS(unit,keyword,keyval,comment, > status)
         FTUKY[EDFG](unit,keyword,keyval,decimals,comment, > status)
         FTUKYU(unit,keyword,comment, > status)
 \end{verbatim}
@@ -5991,6 +6051,7 @@ The following utility subroutines may be useful for certain applications:
         FTGIDT(unit, > bitpix,status)
         FTGIDM(unit, > naxis,status)
         FTGISZ(unit, maxdim, > naxes,status)
+        FTGIPR(unit, maxdim, > bitpix,naxis,naxes,status)
         FTPPR[BIJED](unit,group,fpixel,nelements,values, > status)
         FTPPN[BIJED](unit,group,fpixel,nelements,values,nullval > status)
         FTPPRU(unit,group,fpixel,nelements, > status)
@@ -6128,6 +6189,7 @@ The following utility subroutines may be useful for certain applications:
         FTKEYN(keyroot,seq_no, > keyword,status)
         FTNKEY(seq_no,keyroot, > keyword,status)
         FTDTYP(value, > dtype,status)
+        class = FTGKCL(card)
         FTASFM(tform, > datacode,width,decimals,status)
         FTBNFM(tform, > datacode,repeat,width,status)
         FTGABC(tfields,tform,space, > rowlen,tbcol,status)

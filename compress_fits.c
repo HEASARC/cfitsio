@@ -115,8 +115,6 @@ int main(int argc, char *argv[])
          blocksize, nbits, &status) ) 
          printerror( status );
 
-    ffrdef(outfptr, &status);
-
     ffgkyj(outfptr, "PCOUNT", &outsize, NULL, &status);
 
     printf("  insize = %ld\n outsize = %ld\n",
