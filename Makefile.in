@@ -23,6 +23,7 @@ SHELL =		/bin/sh
 RANLIB =	@RANLIB@
 CC =		@CC@
 CFLAGS =	@CFLAGS@
+FC =		@FC@
 LDFLAGS =	$(CFLAGS)
 DEFS =		@DEFS@
 LIBS =		@LIBS@
@@ -61,10 +62,15 @@ FITSIO_SRC =	f77_wrap1.c f77_wrap2.c
 # ============ description of all targets =============
 #       -  <<-- ignore error code
 
-all:		stand_alone
+all:
+		@if [ "x${FC}" = x ]; then \
+			${MAKE} all-nofitsio; \
+		else \
+			${MAKE} stand_alone; \
+		fi
 
 all-nofitsio:
-		${MAKE} all "FITSIO_SRC="
+		${MAKE} stand_alone "FITSIO_SRC="
 
 stand_alone:	libcfitsio.a
 
