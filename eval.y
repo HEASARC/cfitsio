@@ -2318,8 +2318,12 @@ static void Do_Func( Node *this )
 	    }
 	    break;
 	 case rnd_fct:
+	    if( rand()<32768 && rand()<32768 )
+	       dval =      32768.0;
+	    else
+	       dval = 2147483648.0;
 	    while( row-- ) {
-	       this->value.data.dblptr[row] = (double)rand() / RAND_MAX; 
+	       this->value.data.dblptr[row] = (double)rand() / dval;
 	       this->value.undef[row] = 0;
 	    }
 	    break;
