@@ -1087,6 +1087,10 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 		free( result->value.data.ptr );
 	     }
 	  }
+          if( gParse.status==OVERFLOW_ERR ) {
+             gParse.status = NUM_OVERFLOW;
+             ffpmsg("Numerical overflow while converting expression to necessary datatype");
+          }
           break;
 
        case BITSTR:
@@ -1442,10 +1446,6 @@ int ffcvtn( int   inputType,  /* I - Data type of input array               */
 		     (unsigned char) ((long*)input)[i];
 	    }
          }
-         if( *status==OVERFLOW_ERR ) {
-            *status = NUM_OVERFLOW;
-            ffpmsg("Numerical overflow while converting LONG expression to BYTE datatype");
-         }
 	 return( *status );
          break;
       case TFLOAT:
@@ -1494,10 +1494,6 @@ int ffcvtn( int   inputType,  /* I - Data type of input array               */
 	       } else
 		  ((short*)output)[i] = (short) ((long*)input)[i];
 	    }
-         }
-         if( *status==OVERFLOW_ERR ) {
-            *status = NUM_OVERFLOW;
-            ffpmsg("Numerical overflow while converting LONG expression to SHORT datatype");
          }
 	 return( *status );
          break;
