@@ -507,8 +507,8 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer         */
     }
     else
     {
-      /* allocate space, minus the 2 quote chars, plus 1 for null */
-      *value = (char *) malloc(strlen(valstring)-1);
+      /* allocate space, plus 1 for null */
+      *value = (char *) malloc(strlen(valstring)+1);
 
       ffc2s(valstring, *value, status);   /* convert string to value */
       len = strlen(*value);
