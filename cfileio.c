@@ -265,6 +265,25 @@ int ffdopn(fitsfile **fptr,      /* O - FITS file pointer                   */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int fftopn(fitsfile **fptr,      /* O - FITS file pointer                   */ 
+           const char *name,     /* I - full name of file to open           */
+           int mode,             /* I - 0 = open readonly; 1 = read/write   */
+           int *status)          /* IO - error status                       */
+/*
+  Open an existing FITS file with either readonly or read/write access. ane
+  move to the first HDU that contains 'interesting' table (not an image). 
+*/
+{
+    if (*status > 0)
+        return(*status);
+
+    *status = SKIP_IMAGE;
+
+    ffopen(fptr, name, mode, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */ 
            const char *name,     /* I - full name of file to open           */
            int mode,             /* I - 0 = open readonly; 1 = read/write   */
@@ -291,7 +310,8 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
 
     char *url;
     double minin[4], maxin[4], binsizein[4], weight;
-    int imagetype, naxis = 1, haxis, recip, skip_null = 0;
+    int imagetype, naxis = 1, haxis, recip;
+    int skip_null = 0, skip_image = 0;
     char colname[4][FLEN_VALUE];
     char errmsg[FLEN_ERRMSG];
     char *hdtype[3] = {"IMAGE", "TABLE", "BINTABLE"};
@@ -306,6 +326,14 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
       /* ffopen to skip over a null primary array when opening the file. */
 
        skip_null = 1;
+       *status = 0;
+    }
+    else if (*status == SKIP_IMAGE)
+    {
+      /* this special status value is used as a flag by fftopn to tell */
+      /* ffopen to move to 1st significant table when opening the file. */
+
+       skip_image = 1;
        *status = 0;
     }
 
@@ -593,15 +621,17 @@ move2hdu:
         return(*status);
       }
     }
-    else if (skip_null || (*imagecolname || *colspec || *rowfilter || *binspec))
+    else if (skip_null || skip_image ||
+            (*imagecolname || *colspec || *rowfilter || *binspec))
     {
       /* ------------------------------------------------------------------
 
       If no explicit extension specifier is given as part of the file name,
       and, if a) skip_null is true (set if ffopen is called by ffdopn) or 
-      b) other file filters are specified, then CFITSIO will attempt to
+      b) skip_image is true (set if ffopen is called by fftopn) or
+      c) other file filters are specified, then CFITSIO will attempt to
       move to the first 'interesting' HDU after opening an existing FITS
-      file.
+      file (or to first interesting table HDU if skip_image is true);
 
       An 'interesting' HDU is defined to be either an image with NAXIS
       > 0 (i.e., not a null array) or a table which has an EXTNAME
@@ -616,13 +646,14 @@ move2hdu:
       ------------------------------------------------------------------ */
 
       fits_get_hdu_num(*fptr, &hdunum);
-      if (hdunum == 1)
+      if (hdunum == 1) {
+
         fits_get_img_dim(*fptr, &naxis, status);
 
-      if (hdunum == 1 && naxis == 0) /* we are at a null primary array */
-      {
-         while(1) 
-         {
+        if (naxis == 0 || skip_image) /* skip primary array */
+        {
+          while(1) 
+          {
             /* see if the next HDU is 'interesting' */
             if (fits_movrel_hdu(*fptr, 1, &hdutyp, status))
             {
@@ -634,24 +665,29 @@ move2hdu:
                break;
             }
 
-            if (hdutyp == IMAGE_HDU)
-            {
+            if (hdutyp == IMAGE_HDU && skip_image) {
+
+                continue;   /* skip images */
+
+            } else if (hdutyp == IMAGE_HDU) {
+
                fits_get_img_dim(*fptr, &naxis, status);
                if (naxis > 0)
                   break;  /* found a non-null image */
-            }
-            else 
-            {
+
+            } else {
+
                tstatus = 0;
                tblname[0] = '\0';
                fits_read_key(*fptr, TSTRING, "EXTNAME", tblname, NULL,&tstatus);
 
                if ( (!strstr(tblname, "GTI") && !strstr(tblname, "gti")) &&
                     strncasecmp(tblname, "OBSTABLE", 8) )
-                  break;
+                  break;  /* found an interesting table */
             }
-         }
-      }
+          }  /* end while */
+        }
+      } /* end if (hdunum==1) */
     }
 
     if (*imagecolname)
