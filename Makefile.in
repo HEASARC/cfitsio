@@ -34,9 +34,12 @@ install:        libcfitsio.a
 		mv libcfitsio.a ../host/
         
 clean:          
+		rm -f psplit ; \
 		rm -f *.o ; \
 		rm -rf split.*
 
+dist_clean:
+		rm -f Makefile config.*
 
 psplit :
 		${CC} ${CFLAGS} -o psplit psplit.c
