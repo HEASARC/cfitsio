@@ -485,10 +485,10 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
     int ii, datatype, repeat, imin, imax, ibin, bitpix, tstatus, use_datamax = 0;
     long haxes[4];
     fitsfile *histptr;
-    char errmsg[FLEN_ERRMSG], keyname[FLEN_KEYWORD];
+    char errmsg[FLEN_ERRMSG], keyname[FLEN_KEYWORD], card[FLEN_CARD];
     tcolumn *colptr;
     iteratorCol imagepars[1];
-    int n_cols = 1;
+    int n_cols = 1, nkeys;
     long  offset = 0;
     long n_per_loop = -1;  /* force whole array to be passed at one time */
     histType histData;    /* Structure holding histogram info for iterator */
@@ -863,6 +863,15 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
         ffclos(histptr, status);
         return(*status);
     }
+
+    /* copy all non-structural keywords from the table to the image */
+    fits_get_hdrspace(*fptr, &nkeys, NULL, status);
+    for (ii = 1; ii <= nkeys; ii++)
+    {
+       fits_read_record(*fptr, ii, card, status);
+       if (fits_get_keyclass(card) >= 120)
+           fits_write_record(histptr, card, status);
+    }           
 
     /* Set global variables with histogram parameter values.    */
     /* Use separate scalar variables rather than arrays because */
