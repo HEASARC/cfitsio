@@ -1263,7 +1263,7 @@ FCALLSCSUB13(ffxypx,FTXYPX,ftxypx,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUB
 /*                Included only to support older code                     */
 /*------------------------------------------------------------------------*/
 
-void Cffempty()
+void Cffempty(void)
 { return; }
 FCALLSCSUB0(Cffempty,FTPDEF,ftpdef)
 FCALLSCSUB0(Cffempty,FTBDEF,ftbdef)
