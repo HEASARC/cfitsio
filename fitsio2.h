@@ -118,13 +118,10 @@
 #define FSTRCMP(a,b)     ((a)[0]<(b)[0]? -1:(a)[0]>(b)[0]?1:strcmp((a),(b)))
 #define FSTRNCMP(a,b,n)  ((a)[0]<(b)[0]?-1:(a)[0]>(b)[0]?1:strncmp((a),(b),(n)))
 
-#if MACHINE == ALPHAVMS
+#if defined(__VMS) || defined(VMS)
  
-#define FNANMASK   0x7F00 /* mask bits 1 - 7; all set on NaNs */
-                                     /* all 0 on underflow  or 0. */
- 
-#define DNANMASK   0x7FE0 /* mask bits 1 - 10; all set on NaNs */
-                                     /* all 0 on underflow  or 0. */
+#define FNANMASK   0xFFFF /* mask all bits  */
+#define DNANMASK   0xFFFF /* mask all bits  */
  
 #else
  
@@ -641,9 +638,11 @@ int ffr4fstr(float *input, long ntodo, double scale, double zero,
 int ffr8fstr(double *input, long ntodo, double scale, double zero,
             char *cform, long twidth, char *output, int *status);
 
-/*  the following 2 routines are VMS macros used on the VAX */
+/*  the following 4 routines are VMS macros used on VAX or Alpha VMS */
 void ieevpd(double *inarray, double *outarray, long *nvals);
 void ieevud(double *inarray, double *outarray, long *nvals);
+void ieevpr(float *inarray, float *outarray, long *nvals);
+void ieevur(float *inarray, float *outarray, long *nvals);
 
 /*  routines related to the lexical parser  */
 int  ffselect_table(fitsfile **fptr, char *outfile, char *expr,  int *status);

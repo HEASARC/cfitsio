@@ -1,5 +1,45 @@
                Log of Changes Made to CFITSIO
 
+Version 2.029 - 11 Feb 1999
+
+   - fixed bug in the way NANs and underflows were being detected on
+     VAX and Alpha VMS machines.
+
+   - enhanced the filename parser to distinguish between a VMS-style
+     directory name (e.g.  disk:[directory]myfile.fits) and a CFITSIO
+     filter specifier at the end of the name.
+
+   - modified ffgthd to support the HIERARCH convention for keyword
+     names that are longer than 8 characters or contain characters
+     that would be illegal in standard FITS keyword names.
+
+   - modified the include statements in grparser.c so that malloc.h 
+     and memory.h are only included on the few platforms that really
+     need them.
+
+   - modified the file_read routine in drvrfile.c to ignore the last
+     record in the FITS file it it only contains a single character that
+     is equal to 0, 10 or 32.  Text editors sometimes append a character
+     like this to the end of the file, so CFITSIO will ignore it and
+     treat it as if it had reached the end of file.
+
+   - minor modifications to fitsio.h to help support the ROOT environment.
+
+   - installed new version of group.c and group.h; the main change
+     is to support relative paths (e.g.  "../filename") in the URLs
+
+   - modified the histogramming routines so that it looks for the
+     default preferred column axes in a keyword of the form
+     CPREF = 'Xcol, Ycol'
+     instead of separate keywords of the form
+     CPREF1 = 'Xcol'
+     CPREF2 = 'Ycol'
+
+   - fixed bug so that if the binning spec is just a single integer,
+     as in  [bin 4] then this will be interpreted as meaning to make
+     a 2D histogram using the preferred or default axes, with the
+     integer taken as the binning factor in both axes.
+
 Version 2.028 - 27 Jan 1999
 
    - if the TNULLn keyword value was outside the range of a 'I' or 'B'

@@ -19,10 +19,11 @@
 /*  by Jennings, Pence, Folk and Schlesinger. The development of the       */
 /*  grouping structure was partially funded under the NASA AISRP Program.  */ 
     
-#include "fitsio.h"
+#include "fitsio2.h"
 #include "group.h"
 #include <string.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 /*---------------------------------------------------------------------------
  Change record:
@@ -34,6 +35,20 @@ D. Jennings, 17/11/98, fixed bug in ffgtcpr(). Now use fits_find_nextkey()
                        correctly and insert auxiliary keyword records 
 		       directly before the TTYPE1 keyword in the copied
 		       group table.
+
+D. Jennings, 22/01/99, ffgmop() now looks for relative file paths when 
+                       the MEMBER_LOCATION information is given in a 
+		       grouping table.
+
+D. Jennings, 01/02/99, ffgtop() now looks for relatve file paths when 
+                       the GRPLCn keyword value is supplied in the member
+		       HDU header.
+
+D. Jennings, 01/02/99, ffgtam() now trys to construct relative file paths
+                       from the member's file to the group table's file
+		       (and visa versa) when both the member's file and
+		       group table file are of access type FILE://.
+
 -----------------------------------------------------------------------------*/
 
 /*---------------------------------------------------------------------------*/
@@ -935,14 +950,17 @@ int ffgtop(fitsfile *mfptr,  /* FITS file pointer to the member HDU          */
   then the group specified by GRPID5 would be opened.
 */
 {
+  int i;
 
   long ngroups   = 0;
   long grpExtver = 0;
 
   char keyword[FLEN_KEYWORD];
-  char keyvalue[FLEN_VALUE];
+  char keyvalue[FLEN_FILENAME];
+  char location[FLEN_FILENAME];
   char comment[FLEN_COMMENT];
 
+  char *tmpLocPtr = NULL;
 
   if(*status != 0) return(*status);
 
@@ -1013,14 +1031,91 @@ int ffgtop(fitsfile *mfptr,  /* FITS file pointer to the member HDU          */
 
 	  /* open the FITS file containing the grouping table READWRITE */
 
+	  ffpmsg("Try to open group table file as absolute URL (ffgtop)");
+
 	  *status = fits_open_file(gfptr,keyvalue,READWRITE,status);
 
 	  /* if READWRITE failed then try opening it READONLY */
 
 	  if(*status != 0)
 	    {
+	      ffpmsg("OK, try to open group table file as READONLY (ffgtop)");
 	      *status = 0;
 	      *status = fits_open_file(gfptr,keyvalue,READONLY,status);
+	    }
+
+	  /* 
+	     If we got this far then the GRPLCn value does not specify an
+	     absoulte file path or one relative to the CWD. Since 
+	     the path to the member's file is (obviously) valid 
+	     for the CWD and the group table's file (we assume) path is 
+	     relative to the member's file path, we create a new 
+	     path of the form X/Y, where X is the path to the member's 
+	     file and Y is the (relative) path from the member's file 
+	     to the group table's file.
+	  */
+
+	  if(*status != 0)
+	    {
+	      /*
+		group table's URL must be of type FILE:/ to continue
+	      */
+
+	      if(strncasecmp(keyvalue,"http:/",6)  == 0 ||
+		 strncasecmp(keyvalue,"ftp:/",5)   == 0 ||
+		 strncasecmp(keyvalue,"root:/",6)  == 0 ||
+		 strncasecmp(keyvalue,"mem:/",5)   == 0 ||
+		 strncasecmp(keyvalue,"shmem:/",7) == 0   )
+		{
+		  ffpmsg("Cannot open group table's file(ffgtop)");
+		  continue;
+		}
+
+	      *status = 0;
+	      i       = 0;
+
+	      /* 
+		 strip off the FILE access specifier if present from
+		 the KEYVALUE string
+	       */
+	      
+	      if(strncasecmp(keyvalue,"file:/",6) == 0) i += 6;
+	      while(keyvalue[i] == '/') ++i;
+	      
+	      /*
+		read the member file's location string and then 
+		strip the filename from the member file location
+		and construct the new relative file path string to the 
+		group table file
+	      */
+	      
+	      *status = fits_file_name(mfptr,location,status);
+
+	      tmpLocPtr = strrchr(location,'/');
+
+	      if(tmpLocPtr != NULL) 
+		{
+		  *tmpLocPtr = 0;
+		  strcat(location,"/");
+		}
+	      else strcpy(location,"./");
+
+	      strcat(location,keyvalue+i);
+	      
+	      ffpmsg("Try to open group table file as relative URL (ffgtop)");
+	      
+	      *status = fits_open_file(gfptr,location,READWRITE,status);
+	      
+	      if(*status != 0)
+		{
+		  *status = 0;
+	      
+		  /* now try to open in readonly mode */ 
+	      
+		  ffpmsg("OK, try to open file as READONLY (ffgtop)");
+	      
+		  *status = fits_open_file(gfptr,location,READONLY,status);
+		}  
 	    }
 
 	  /* set the grpExtver value positive */
@@ -1079,7 +1174,14 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
   int hdutype        = 0;
   int useLocation    = 0;
   int nkeys          = 6;
-  int i;
+  int mcount         = 0;
+  int gcount         = 0;
+  int msize          = 0;
+  int gsize          = 0;
+  int i,j;
+
+  int done;
+  int absPath;
 
   long memberExtver = 0;
   long groupExtver  = 0;
@@ -1089,9 +1191,14 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
 
   char memberFileName[FLEN_FILENAME];
   char groupFileName[FLEN_FILENAME];
+  char memberLocation[FLEN_FILENAME];
+  char groupLocation[FLEN_FILENAME];
+  char cwd[FLEN_FILENAME];
   char memberHDUtype[FLEN_VALUE];
   char memberExtname[FLEN_VALUE];
   char memberURI[] = "URL";
+
+  char *tmpStr = NULL;
 
   char *keys[] = {"GRPNAME","EXTVER","EXTNAME","TFIELDS","GCOUNT","EXTEND"};
   char *tmpPtr[1];
@@ -1100,6 +1207,8 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
   char card[FLEN_CARD];
 
   unsigned char charNull[]  = {'\0'};
+
+  struct stat tmpStat;
 
   fitsfile *tmpfptr = NULL;
 
@@ -1159,6 +1268,34 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
 
       fits_get_hdu_num(tmpfptr,&memberPosition);
 
+      /*
+	 determine the file path and name of the member's file with respect
+	 to the group table's file; note that the following logic is rather
+	 complicated in certain cases.
+
+	 If the member and group table's file name (as reported by
+	 fits_file_name() match then we assume that they reside in the
+	 same file.
+
+	 If not, then we see if the member file has an access type other
+	 than FILE:/; if so then we assume that the member's file is 
+	 accessible with the given path/name regardless of its true location.
+
+	 If the member's file access type is FILE:/ then we must look at
+	 the access type of the group table's file. If it is MEM:/ then
+	 the member's file path/name is not important (as the group table is
+	 temporary).
+
+	 If the grouping table's file is not FILE:/ or the member's file
+	 path/name was specified as abolute then we just add the member's
+	 file path/name as it stands. 
+
+	 If the group table's file access type is FILE:/ and the member's
+	 file path/name was not originally specified as absolute then
+	 construct a relative file path from the group table's file location
+	 to the member's file location.
+       */
+
       /* retrieve and construct the member HDU's file name */
 
       *status = fits_file_name(tmpfptr,memberFileName,status);
@@ -1179,10 +1316,278 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
 	 the grouping table
       */
 
-      if(strcmp(groupFileName,memberFileName) == 0)
-	useLocation = 0;
-      else
-	useLocation = 1;
+      do
+	{
+	  /*
+	     if the group file name and member file name strings match then
+	     they both reside in the same file and there is no need to
+	     continue evaluate the member file path
+	  */
+
+	  if(strcmp(groupFileName,memberFileName) == 0)
+	    {
+	      useLocation = 0;
+	      continue;
+	    }
+
+	  /*
+	     since the group table and member HDU reside in different files
+	     we must now make sure the member file path is valid with respect
+	     to the group table file's directory location
+	  */
+
+	  useLocation = 1;
+
+	  mcount = gcount = 0;
+
+	  if(strncasecmp(memberFileName,"http:/",6)  == 0 ||
+	     strncasecmp(memberFileName,"ftp:/",5)   == 0 ||
+	     strncasecmp(memberFileName,"root:/",6)  == 0 ||
+	     strncasecmp(memberFileName,"mem:/",5)   == 0 ||
+	     strncasecmp(memberFileName,"shmem:/",7) == 0   )
+	    {
+	      /*
+		 assume that the member file location is absolute
+		 and just add it to the grouping table as is
+	       */
+
+	      continue;
+	    }
+
+	  /*
+	     member file location must be of type FILE:/
+	  */
+
+	  if(strncasecmp(groupFileName,"mem:/",5)  == 0)
+	    {
+	      /*
+		 if group table is in a memory resident file then the
+		 member path type does not matter
+	      */
+
+	      continue;
+	    }
+
+	  /*
+	     compute the absolute file path of the member's file if its not
+	     already absolute
+	  */
+
+	  if(strncasecmp(memberFileName,"file:/",6) == 0) mcount +=6;
+
+	  /*
+	     see if the member file path is absolute ==> everything is
+	     OK as it is and no need to continue the evaluation logic
+	  */
+
+#if defined(__unix__) || defined (unix)
+
+	  if(stat(memberFileName+mcount,&tmpStat) == 0)
+	    absPath = 1;
+	  else
+	    {
+	      /*
+		member's file name/path is relative to the CWD, so construct
+		its absolute file path
+ 	      */
+
+	      absPath = 0;
+	      
+	      /* strip off any remaining "/" at the start of the path strs */
+	      
+	      if(memberFileName[mcount] == '/') ++mcount;
+	      
+	      /* get the CWD of the current process */
+	      
+	      getcwd(cwd,FLEN_FILENAME);
+	      
+	      strcpy(memberLocation,cwd);
+	      strcat(memberLocation,"/");
+	      strcat(memberLocation,memberFileName+mcount);
+	      
+	      tmpStr = strtok(memberLocation,"/");
+	      
+	      /* 
+		 we build the absolute path in the memberFileName string (note
+		 that the following strcpy() call reinitializes the string)
+
+		 build the aboslute path to the member's file eliminating any
+		 ".." or "." specifiers in the process.
+
+		 First, make sure first char in the absolute path is "/"
+	      */
+
+ 	      strcpy(memberFileName,"/");
+	      strcat(memberFileName,tmpStr);
+	      
+	      /* loop on the member file name until all tokens are processed */
+
+	      while((tmpStr = strtok(NULL,"/")) != NULL)
+		{
+		  mcount = strlen(memberFileName) - 1;
+		  
+		  if(strcmp(tmpStr,"..") == 0)
+		    {
+		      /* remove the last dir token from the abs path string */
+
+		      for(;memberFileName[mcount] != '/'; --mcount)
+			memberFileName[mcount] = 0;		    
+
+		      memberFileName[mcount] = 0;		  
+		    }
+		  else if(strcmp(tmpStr,".") == 0)
+		    {
+		      /* in this case do nothing */
+		    }
+		  else
+		    {
+		      /* just append the token to the abs path string */
+		      
+		      if(memberFileName[mcount] != '/')
+			strcat(memberFileName,"/");		      
+		      strcat(memberFileName,tmpStr);	       	  
+		    }
+		}  
+	    }
+#else
+    absPath = 1;
+#endif  /* end of the Unix specific special case */
+
+	  /*
+	     if the member file path was originally specified as absolute
+	     or if the group table file access type is not FILE:// then
+	     we just use the member's file path as it currently exists
+	  */
+
+	  if(absPath                                     ||
+	     strncasecmp(groupFileName,"http:/",6)  == 0 ||
+	     strncasecmp(groupFileName,"ftp:/",5)   == 0 ||
+	     strncasecmp(groupFileName,"root:/",6)  == 0 ||
+	     strncasecmp(groupFileName,"shmem:/",7) == 0   )
+	    {
+	      /*
+		 use the absolute file path for the member's file
+	       */
+
+	      continue;
+	    }
+
+	  /*
+	     the member's file is of type FILE:/ access and a relative
+	     path was specified when it was opened; have to construct a 
+	     relative file path from the group table's file to the
+	     member HDU's file
+	     
+	     The member's file path was already made absolute in the
+	     previous steps
+	  */
+   
+	  gcount = 0;
+	  if(strncasecmp(groupFileName,"file:/",6) == 0) gcount +=6;
+	  if(groupFileName[gcount] == '/') ++gcount;
+
+	  strcpy(groupLocation,cwd);
+	  strcat(groupLocation,"/");
+	  strcat(groupLocation,groupFileName+gcount);
+	      
+	  /*
+	     now we need to remove any "." and ".." from the resulting
+	     absolute path to the group table file
+	     
+	     read the absolute group path one token at a time (tokens
+	     separted by "/") and remove any "." or ".." from the 
+	     paths; the new clean abs paths are stored in
+	     memberFileName and groupFileName
+	  */
+
+	  tmpStr = strtok(groupLocation,"/");
+	  
+	  /* 
+	     The absolute path is built in the groupFileName string (note
+	     that the next call to strcpy() reinitializes the string)
+
+	     make sure first char in the absolute path is "/" 
+	  */
+
+	  strcpy(groupFileName,"/");
+	  strcat(groupFileName,tmpStr);
+	  
+	  /* loop on the group file name until all tokens are processed */
+	  
+	  while((tmpStr = strtok(NULL,"/")) != NULL)
+	    {
+	      gcount = strlen(groupFileName) - 1;
+	      
+	      if(strcmp(tmpStr,"..") == 0)
+		{
+		  /* remove the last dir token from the abs path string */
+		  
+		  for(;groupFileName[gcount] != '/'; --gcount)
+		    groupFileName[gcount] = 0;		    
+
+		  groupFileName[gcount] = 0;		  
+		}
+	      else if(strcmp(tmpStr,".") == 0)
+		{
+		  /* in this case do nothing */
+		}
+	      else
+		{
+		  /* just append the token to the abs path string */
+		  
+		  if(groupFileName[gcount] != '/')
+		    strcat(groupFileName,"/");		      
+		  strcat(groupFileName,tmpStr);	       	  
+		}
+	    }
+	  
+	  /*
+	     now create a relative path for the member's file with respect
+	     to the group table's file and the group table's file with
+	     respect to the member's file
+	  */
+
+	  msize = strlen(memberFileName);
+	  gsize = strlen(groupFileName);
+	  
+	  for(done = 0, mcount = 1, gcount = 1;
+	      !done && mcount < msize && gcount < gsize; 
+	      ++mcount, ++gcount)
+	    {
+
+	      for(i = mcount; 
+		  memberFileName[i] != '/' && mcount < msize; ++i);
+
+	      for(j = gcount; 
+		  groupFileName[j] != '/' && gcount < gsize; ++j);
+	      
+	      if(i == j && strncmp(memberFileName+mcount,
+				   groupFileName+gcount,i-mcount) == 0)
+		{
+		  mcount = i; gcount = j;
+		  continue;
+		}
+	      
+	      memberLocation[0] = 0;
+	      groupLocation[0]  = 0;
+	      
+	      for(j = gcount; j < gsize; ++j)
+		if(groupFileName[j] == '/') strcat(memberLocation,"../");
+
+	      for(j = mcount; j < msize; ++j)
+		if(memberFileName[j] == '/') strcat(groupLocation,"../");
+	      
+	      strcat(memberLocation,memberFileName+mcount);
+	      strcat(groupLocation,groupFileName+gcount);
+	      	      
+	      done = 1;
+	    }
+
+	  strcpy(memberFileName,memberLocation);
+	  strcpy(groupFileName,groupLocation);
+
+	}while(0); /* end of member file name determination loop */
+
 
       /* retrieve the grouping table's EXTVER value */
 
@@ -1512,16 +1917,21 @@ int ffgmop(fitsfile *gfptr,  /* FITS file pointer to grouping table          */
   the FITS file pointed to by gfptr. The member to open is identified by its
   row number within the grouping table (first row/member == 1).
 
-  Note that if the member resides in a FITS file different from the grouping
+  If the member resides in a FITS file different from the grouping
   table the member file is first opened readwrite and if this fails then
-  it is opened readonly.
-
+  it is opened readonly. For access type of FILE:// the member file is
+  searched for assuming (1) an absolute path is given, (2) a path relative
+  to the CWD is given, and (3) a path relative to the grouping table file
+  but not relative to the CWD is given. If all of these fail then the
+  error FILE_NOT_FOUND is returned.
 */
+
 {
   int xtensionCol,extnameCol,extverCol,positionCol,locationCol,uriCol;
   int grptype,hdutype;
   int dummy;
-  
+  int i;  
+
   long hdupos = 0;
   long extver = 0;
 
@@ -1530,9 +1940,12 @@ int ffgmop(fitsfile *gfptr,  /* FITS file pointer to grouping table          */
   char  location[FLEN_FILENAME];
   char  uri[FLEN_VALUE];
   char  grpLocation[FLEN_FILENAME];
+  char  tmpLocation[FLEN_FILENAME];
   char  card[FLEN_CARD];
   char  nstr[] = {'\0'};
+  char *tmpLocPtr;
   char *tmpPtr[1];
+
 
   if(*status != 0) return(*status);
 
@@ -1596,7 +2009,12 @@ int ffgmop(fitsfile *gfptr,  /* FITS file pointer to grouping table          */
 
       if(*status != 0) continue;
 
-      /* decide what FITS file the member HDU resides in */
+      /* 
+	 decide what FITS file the member HDU resides in and open the file
+	 using the fitsfile* pointer mfptr; note that this logic is rather
+	 complicated and is based primiarly upon if a URL specifier is given
+	 for the member file in the grouping table
+      */
 
       switch(grptype)
 	{
@@ -1607,14 +2025,14 @@ int ffgmop(fitsfile *gfptr,  /* FITS file pointer to grouping table          */
 
 	  /*
 	     no location information is given so we must assume that the
-	     member HDU resides in the same FITS file as the grouping table
+	     member HDU resides in the same FITS file as the grouping table;
+	     if the grouping table was incorrectly constructed then this
+	     assumption will be false, but there is nothing to be done about
+	     it at this point
 	  */
 
 	  *status = fits_reopen_file(gfptr,mfptr,status);
 	  
-	  break;
-
-	default:
 	  break;
 
 	case GT_ID_REF_URI:
@@ -1622,14 +2040,23 @@ int ffgmop(fitsfile *gfptr,  /* FITS file pointer to grouping table          */
 	case GT_ID_ALL_URI:
 
 	  /*
-	    The member location column exists; determine if the member 
-	    resides in a separate file from the grouping table; if so, 
-	    attempt to open it
+	    The member location column exists. Determine if the member 
+	    resides in the same file as the grouping table or in a
+	    separate file; open the member file in either case
 	  */
 
-	  if(strlen(location) != 0)
+	  if(strlen(location) == 0)
 	    {
+	      /*
+		 since no location information was given we must assume
+		 that the member is in the same FITS file as the grouping
+		 table
+	      */
 
+	      *status = fits_reopen_file(gfptr,mfptr,status);
+	    }
+	  else
+	    {
 	      /*
 		make sure the location specifiation is "URL"; we cannot
 		decode any other URI types at this time
@@ -1648,77 +2075,230 @@ int ffgmop(fitsfile *gfptr,  /* FITS file pointer to grouping table          */
 
 	      /*
 		The location string for the member is not NULL, so it 
-		does not necessecially reside in the same FITS file as the
-		grouping table. Compare the location string to the 
-		file name that contains the grouping table to see if
-		they are the same ==> member and grouping table reside
-		in the same file.
+		does not necessially reside in the same FITS file as the
+		grouping table. 
 
-		The comparision between member HDU location and grouping
-		table location is made by constructing the URL for each
-		location, e.g., http://xxx.yyy.zzz/filepath/filename, and
-		checking if they are the same string. Note that this 
-		comparision is not unambiguous. For example, a file with
-		name 'filename' containing the grouping table and the
-		file containing the member with full URL 
-                'http://xxx.yyy.zzz/AAA/filename' could actually be the
-		same FITS file and yet this comparision would not
-		reconize it
-	      */
+		Four cases are attempted for opening the member's file
+		in the following order:
 
-	      /* retrieve full input URL of grouping table file and parse */
+		1. The grouping table file URL as reported by 
+		fits_get_filename() matches the URL of the member file
+		as given in the grouping table itself ==> grouping table
+		and member reside in the same file.
 
-	      *status = fits_file_name(gfptr,grpLocation,status);
+		2. The URL given for the member's file is absolute and not
+		of access type FILE://
 
-	      ffgtcn(grpLocation);
+		3. The URL given for the member's file is absolute and
+		of access type FILE://
 
-	      /* parse the member location string and build URL */
+		4. The URL given for the member's file is of access type
+		FILE:// (either implied or explict) and is given as a relative
+		path to the location of the grouping table's file.
+		
+		If all four cases fail then an error is returned. In each
+		case the file is first opened in read/write mode and failing
+		that readonly mode.
+		
+		The following DO loop is only used as a mechanism to break
+		(continue) when the proper file opening method is found
+	       */
 
-	      ffgtcn(location);
-
-	      /* string compare the group and member location URLs */
-	      if(strcmp(grpLocation,location) == 0)
+	      do
 		{
+
 		  /* 
-		     The member HDU and grouping table reside in the 
-		     same FITS file, so just reopen the current FITS
-		     file
-		  */
-		  *status = fits_reopen_file(gfptr,mfptr,status);
-		}
-	      else
-		{
+		     First, retrieve full input URL of group table file and 
+		     parse it
+		   */
+
+		  *status = fits_file_name(gfptr,grpLocation,status);
+
+		  ffgtcn(grpLocation);
+
 		  /* 
-		     The member HDU and grouping table reside in separate
-		     FITS files. first try to open the member HDU's FITS 
-		     file read/write mode; if that fails then try to
-		     open it in readonly mode
+		     Next, parse the member location string and build its URL 
 		  */
+
+		  ffgtcn(location);
+
+		  /*
+		     CASE 1:
+ 
+		     Compare the member HDU location and grouping
+		     table location to see if they are the same ==> that
+		     they reside in the same FITS file. Note that this 
+		     comparision is not unambiguous. For example, a file with
+		     name 'filename' containing the grouping table and the
+		     file containing the member with full URL 
+		     'http://xxx.yyy.zzz/AAA/filename' could actually be the
+		     same FITS file and yet this comparision would not
+		     reconize it
+		  */
+
+		  if(strcmp(grpLocation,location) == 0)
+		    {
+
+		      /* 
+			 The member HDU and grouping table are
+			 assumed to reside in the same FITS file, so just 
+			 reopen the current FITS file
+		       */
+
+		      ffpmsg("member resides in same file as group (ffgmop)");
+
+		      *status = fits_reopen_file(gfptr,mfptr,status);
+
+		      continue;
+		    }
+
+		  /*
+		     CASE 2:
+
+		     the group table file URL and member URL do not match;
+		     See if the member URL is absolute (i.e., includes a
+		     access directive) and if so open the file
+		   */
+
+		  if(strncasecmp(location,"HTTP:/",6)  == 0 ||
+		     strncasecmp(location,"FTP:/",5)   == 0 ||
+		     strncasecmp(location,"SHMEM:/",7) == 0 ||
+		     strncasecmp(location,"ROOT:/",6)  == 0 ||
+		     strncasecmp(location,"MEM:/",5)   == 0   )
+		    {
+		      /* 
+			 try to open file using full URL specs
+		      */
+		      
+		      ffpmsg("member URL has non FILE:// access (ffgmop)");
+		      ffpmsg("member URL is absolute, try open R/W (ffgmop)");
+
+		      *status = fits_open_file(mfptr,location,READWRITE,
+					       status);
+
+		      if(*status == 0) continue;
+
+		      *status = 0;
+
+		      /* 
+			 now try to open file using full URL specs in 
+			 readonly mode 
+		      */ 
+
+		      ffpmsg("OK, now try to open read-only (ffgmop)");
+
+		      *status = fits_open_file(mfptr,location,READONLY,status);
+
+		      /* break from DO loop regardless of status */
+
+		      continue;
+		    }
+
+		  /*
+		     CASE 3:
+
+		     If we got this far then the member URL location either 
+		     has access type FILE:// or no access type ==> FILE://
+		     Try to open the member file using the URL as is, i.e.,
+		     assume that it is given as absolute.
+		   */
+
+		  ffpmsg("Member URL is of type FILE (ffgmop)");
+
+		  /* 
+		     first try to open file assumning that the member file
+		     URL is absolute and/or requires no modification
+		   */
+
+		  ffpmsg("Try to open member URL in R/W mode (ffgmop)");
+
 		  *status = fits_open_file(mfptr,location,READWRITE,status);
 
-		  if(*status != 0)
-		    {
-		      /* now try to open in readonly mode */ 
-		      *status = 0;
-		      *status = fits_open_file(mfptr,location,READONLY,status);
-		    }
-		}
-	    }
-	  else
-	    {
-	      /*
-		 since no location information was given we must assume
-		 that the member is in the same FITS file as the grouping
-		 table
-	      */
+		  if(*status == 0) continue;
 
-	      *status = fits_reopen_file(gfptr,mfptr,status);
+		  *status = 0;
+
+		  /* 
+		     now try to open file using the URL as an absolute path 
+		     in readonly mode 
+		   */
+ 
+		  ffpmsg("OK, now try to open read-only (ffgmop)");
+
+		  *status = fits_open_file(mfptr,location,READONLY,status);
+
+		  if(*status == 0) continue;
+		  
+		  *status = 0;
+
+		  /* 
+		     CASE 4:
+
+		     If we got this far then the URL does not specify an
+		     absoulte file path or one relative to the CWD. Since 
+		     the path to the group table's file is (obviously) valid 
+		     for the CWD and the member's file (we assume) path is 
+		     relative to the group table's file path, we create a new 
+		     path of the form X/Y, where X is the path to the group 
+		     table file and Y is the (relative) path from the group 
+		     table file to the member table file.
+		  */
+
+		  i = 0;
+
+		  /* 
+		     strip off the FILE access specifier if present from
+		     the LOCATION string
+		  */
+
+		  if(strncasecmp(location,"file:/",6) == 0) i += 6;
+		  while(location[i] == '/') ++i;
+		  
+		  /*
+		     strip the filename from the group table file location
+		     string GRPLOCATION and construct the new relative 
+		     file path string to the member file
+		  */
+
+		  tmpLocPtr = strrchr(grpLocation,'/');
+
+		  if(tmpLocPtr != NULL) 
+		    {
+		      *tmpLocPtr = 0;
+		      strcpy(tmpLocation,grpLocation);
+		      strcat(tmpLocation,"/");
+		    }
+		  else
+		    strcpy(tmpLocation,"./");
+
+		  strcat(tmpLocation,location+i);
+
+		  ffpmsg("Try to open member file as relative URL (ffgmop)");
+
+		  *status = fits_open_file(mfptr,tmpLocation,READWRITE,status);
+
+		  if(*status == 0) continue;
+
+		  *status = 0;
+		  
+		  /* now try to open in readonly mode */ 
+
+		  ffpmsg("OK, try to open file in read-only mode (ffgmop)");
+
+		  *status = fits_open_file(mfptr,tmpLocation,READONLY,status);
+		  
+		}while(0);
 	    }
 
 	  break;
 
-	}
+	default:
 
+	  /* no default action */
+	  
+	  break;
+	}
+	  
       if(*status != 0) continue;
 
       /*
@@ -1805,8 +2385,10 @@ int ffgmop(fitsfile *gfptr,  /* FITS file pointer to grouping table          */
 	  break;
 
 	default:
-	  break;
 
+	  /* no default action */
+
+	  break;
 	}
       
     }while(0);
@@ -3557,6 +4139,7 @@ void ffgtcn(char *filename) /* FITS file name                                */
 
 {
   int status = 0;
+  int i      = 0;
 
   char urltype[FLEN_VALUE]; 
   char infile[FLEN_FILENAME];
@@ -3575,9 +4158,19 @@ void ffgtcn(char *filename) /* FITS file name                                */
 
   strcpy(filename,urltype);
 
-  /* copy the machine ID, file path and file name to the filename string */
+  /* 
+     copy the machine ID, file path and file name to the filename string;
+     if the input file name begins with '/' then strip it off first
 
-  strcat(filename,infile);
+     NOTE: FOR NOW WE DO NOT STRIP OFF THE EXTRA LEADING '/' AS TO KEEP
+     CONSISTENT WITH CFITSIO FILE DRIVERS; the resulting URL is technically
+     correct altough not ideal.
+
+  */
+
+/*  if(infile[0] == '/') ++i; */
+
+  strcat(filename,infile+i);
 }
 
 /*---------------------------------------------------------------------------*/

@@ -294,8 +294,9 @@ int ffbins(char *binspec,   /* I - binning specification */
 
     /* special case: if a single number was entered it should be      */
     /* interpreted as the binning factor for the default X and Y axes */
+
     if (*histaxis == 1 && *colname[0] == '\0' && 
-         minin[0] == FLOATNULLVALUE && maxin[0] == FLOATNULLVALUE)
+         minin[0] == DOUBLENULLVALUE && maxin[0] == DOUBLENULLVALUE)
     {
         *histaxis = 2;
         binsizein[1] = binsizein[0];
@@ -496,6 +497,8 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
     float datamin = FLOATNULLVALUE, datamax = FLOATNULLVALUE;
     char svalue[FLEN_VALUE];
     double dvalue;
+    char cpref[4][FLEN_VALUE];
+    char *cptr;
 
     if (*status > 0)
         return(*status);
@@ -527,6 +530,63 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
         bitpix = DOUBLE_IMG;
     else
         return(*status = BAD_DATATYPE);
+
+    /* The CPREF keyword, if it exists, gives the preferred columns. */
+    /* Otherwise, assume "X", "Y", "Z", and "T"  */
+
+    tstatus = 0;
+    ffgky(*fptr, TSTRING, "CPREF", cpref[0], NULL, &tstatus);
+
+    if (!tstatus)
+    {
+        /* Preferred column names are given;  separate them */
+        cptr = cpref[0];
+
+        /* the first preferred axis... */
+        while (*cptr != ',' && *cptr != '\0')
+           cptr++;
+
+        if (*cptr != '\0')
+        {
+           *cptr = '\0';
+           cptr++;
+           while (*cptr == ' ')
+               cptr++;
+
+           strcpy(cpref[1], cptr);
+           cptr = cpref[1];
+
+          /* the second preferred axis... */
+          while (*cptr != ',' && *cptr != '\0')
+             cptr++;
+
+          if (*cptr != '\0')
+          {
+             *cptr = '\0';
+             cptr++;
+             while (*cptr == ' ')
+                 cptr++;
+
+             strcpy(cpref[2], cptr);
+             cptr = cpref[2];
+
+            /* the third preferred axis... */
+            while (*cptr != ',' && *cptr != '\0')
+               cptr++;
+
+            if (*cptr != '\0')
+            {
+               *cptr = '\0';
+               cptr++;
+               while (*cptr == ' ')
+                   cptr++;
+
+               strcpy(cpref[3], cptr);
+
+            }
+          }
+        }
+    }
 
     for (ii = 0; ii < naxis; ii++)
     {
@@ -569,17 +629,10 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
         return(*status = ZERO_SCALE);
       }
 
-      /* Get the default column name if not already specified. The */
-      /* CPREFn keyword, if it exists, gives the preferred  column  */
-      /* for that axis.  Otherwise, assume "X", "Y", "Z", and "T"  */
-
       if (*colname[ii] == '\0')
       {
-         tstatus = 0;
-         ffkeyn("CPREF", ii + 1, keyname, &tstatus);
-         ffgky(*fptr, TSTRING, keyname, colname[ii], NULL, &tstatus);
-
-         if (tstatus || *colname[ii] == '\0')
+         strcpy(colname[ii], cpref[ii]); /* try using the preferred column */
+         if (*colname[ii] == '\0')
          {
            if (ii == 0)
               strcpy(colname[ii], "X");

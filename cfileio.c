@@ -2291,7 +2291,7 @@ int ffiurl(char *url,
 
 { 
     int ii, jj, slen, infilelen, plus_ext = 0, collen;
-    char *ptr1, *ptr2, *ptr3;
+    char *ptr1, *ptr2, *ptr3, *tmptr;
 
     /* must have temporary variable for these, in case inputs are NULL */
     char *infile;
@@ -2388,10 +2388,37 @@ int ffiurl(char *url,
                 strcat(urltype, "file://");
         }
     }
- 
-       /*  get the input file name  */
-    ptr2 = strchr(ptr1, '(');   /* search for opening parenthesis ( */
-    ptr3 = strchr(ptr1, '[');   /* search for opening bracket [ */
+
+
+    /*
+       Look for VMS style filenames like: 
+            disk:[directory.subdirectory]filename.ext, or
+                 [directory.subdirectory]filename.ext
+
+       Check if the first character is a '[' and urltype != stdin
+       or if there is a ':[' string in the remaining url string. If
+       so, then need to move past this bracket character before
+       search for the opening bracket of a filter specification.
+    */
+
+    tmptr = ptr1;
+    if (*ptr1 == '[')
+    {
+      if (*url != '-') 
+        tmptr = ptr1 + 1; /* this bracket encloses a VMS directory name */
+    }
+    else
+    {
+       tmptr = strstr(ptr1, ":[");
+       if (tmptr) /* these 2 chars are part of the VMS disk and directory */
+          tmptr += 2; 
+       else
+          tmptr = ptr1;
+    }
+
+    /*  get the input file name */
+    ptr2 = strchr(tmptr, '(');   /* search for opening parenthesis ( */
+    ptr3 = strchr(tmptr, '[');   /* search for opening bracket [ */
 
     if (ptr2 == ptr3)  /* simple case: no [ or ( in the file name */
     {
@@ -3485,7 +3512,14 @@ int ffread( FITSfile *fptr,   /* I - FITS file pointer              */
   low level routine to read bytes from a file.
 */
 {
-    if ( (*driverTable[fptr->driver].read)(fptr->filehandle, buffer, nbytes) )
+    int readstatus;
+
+    readstatus = (*driverTable[fptr->driver].read)(fptr->filehandle, 
+        buffer, nbytes);
+
+    if (readstatus == END_OF_FILE)
+        *status = END_OF_FILE;
+    else if (readstatus > 0)
         *status = READ_ERROR;
 
     return(*status);

@@ -234,7 +234,9 @@ that is identical to the `testprog.std' FITS file included with this
 release.  The diagnostic messages (which were piped to the file
 testprog.lis in the Unix example) should be identical to the listing
 contained in the file testprog.out.  The 'diff' and 'cmp' commands
-shown above should not report any differences in the files.
+shown above should not report any differences in the files.  (There
+may be some minor formating differences, such as the presence or
+absence of leading zeros, which can be ignored).
 
 The Fortran wrappers in CFITSIO may be tested with the testf77
 program on Unix systems with:
@@ -702,7 +704,8 @@ binSpec specifier.
 
 ***1.  Filetype
 
-The type of file determines which internal device driver is used by
+The type of file determines the medium on which the file is located
+(e.g., disk or network) and, hence, which internal device driver is used by
 CFITSIO to read and/or write the file.  Currently supported types are
 -
         file://  - file on local magnetic disk (default)
@@ -861,6 +864,7 @@ director/subdirectory path, and in the case of `ftp', `http', and `root'
 filetypes, the machine identifier.  Examples:
 -
     myfile.fits
+    !data.fits
     /data/myfile.fits
     fits.gsfc.nasa.gov/ftp/sampledata/myfile.fits.gz
 -
@@ -870,7 +874,10 @@ the base filename begins with an exclamation point (!) then any
 existing file with that same basename will be deleted prior to creating
 the new FITS file.  Otherwise if the file to be created already exists,
 then CFITSIO will return an error and will not overwrite the existing
-file.
+file.  Note  that the exclamation point,  '!', is a special UNIX character,
+so if it is used  on the command line rather than entered at a task
+prompt, it must be  preceded by a backslash to force the UNIX
+shell to ignore it.
 
 The input file may be compressed with the gzip or Unix compress
 algorithms, in which case CFITSIO will uncompress the file on the fly
@@ -923,13 +930,12 @@ before it is opened and passed to the application program.  This
 happens by default when opening a network FTP or HTTP-type file, when
 reading a compressed FITS file on a local disk, when reading from the
 stdin stream, or when a column filter, row filter, or binning specifier
-is included as part of the input file specification.  If there is
-not enough memory to create the file copy, then CFITSIO will exit
-with an error.   If this is a problem (e.g.,
-on machines with a small amount of memory, or when reading very large
-files) then the output file specifier may be used to give the name of a
-local disk file that CFITSIO will create and use instead of trying to
-create a copy of the file in memory.
+is included as part of the input file specification.  If there is not
+enough memory to create the file copy, then CFITSIO will exit with an
+error.   In these cases one can force a permanent file to be created on
+disk, instead of a temporary file in memory, by supplying the name in
+parentheses immediately following the base file name.  The output
+filename can include the '!' clobber flag.
 
 Thus, if the input filename to CFITSIO is:
 -
@@ -948,7 +954,7 @@ copied to a temporary local file, then a second temporary file will be
 created containing the filtered rows of the table, and finally a third
 temporary file containing the binned image will be created.  In cases
 like this where multiple files are created, the outfile specifier will
-be interpreted the name of the final file as follows, in descending
+be interpreted the name of the final file as described below, in descending
 priority:
 
 \begin{itemize}
@@ -1095,15 +1101,15 @@ The template parser recognizes 3 special keywords (directives):
 
 \begin{itemize}
 \item
- $\backslash${\tt include} - must be followed by a filename. Forces parser to temporarily
+ \verb+ \include+ - must be followed by a filename. Forces parser to temporarily
 	stop reading current file and begin reading the include file. Once the
 	parser reaches the end of the include file it continues with the
 	current one.  Include files can be nested. HDU definitions can
 	span multiple files.
 \item
- $\backslash${\tt group} - marks beginning of GROUP definition
+ \verb+ \group+ - marks beginning of GROUP definition
 \item
- $\backslash${\tt end} - marks end of GROUP definition
+ \verb+ \end+ - marks end of GROUP definition
 \end{itemize}
 
 ****3   Formal Template Syntax
@@ -1264,19 +1270,22 @@ array, A or T = ASCII table extension, and B = binary table BINTABLE
 extension).   If the HDU location specifier is equal to `[PRIMARY]' or
 `[P]', then the primary array (the first HDU) will be opened.
 
-Because an entire N-dimensional image can be stored in a single cell of
-a binary table (i.e. each row of the column contains a different
-image), the column name and the row number of the image to be opened
-may be given following the HDU specifier, separated by a semi-colon as
-shown in the following examples. In this case, the image is copied from
+FITS images are most commonly stored in the primary array or an image
+extension, but images can also be stored as a vector in a single cell
+of a binary table (i.e. each row of the vector column contains a
+different image).  Such an image can be opened with CFITSIO by
+specifying the desired column  name and the row number after the binary
+table HDU specifier as shown in the following examples. The column name
+is separated from the HDU specifier by a semicolon and the row number
+is enclosed in parentheses.  In this case CFITSIO copies the image from
 the table cell into a temporary primary array before it is opened.  The
-application program then just sees the primary array, without any
-extensions.  The particular row to be opened may be specified either by
-giving an explicit  integer row number (starting with 1), or by
-specifying a boolean expression which evaluates to TRUE for the desired
-row.  The first row that satisfies the expression will be used.  The
-row selection expression has the same syntax as the Row Filter
-Specifier, described in section 4.2.7.
+application program then just sees the image in the primary array,
+without any extensions.  The particular row to be opened may be
+specified either by giving an absolute integer row number (starting
+with 1 for the first row), or by specifying a boolean expression that
+evaluates to TRUE for the desired row.  The first row that satisfies
+the expression will be used.  The row selection expression has the same
+syntax as described in the Row Filter Specifier section, below.
 
  Examples:
 -
@@ -1317,7 +1326,10 @@ them with semi-colons.
 Delete a column or keyword by listing the name preceeded by an
 exclamation mark (!), e.g., '!TIME' will delete the TIME column if it
 exists, otherwise the TIME keyword.  An error is returned if neither a
-column nor keyword with this name exists.
+column nor keyword with this name exists.  Note  that the exclamation
+point,  '!', is a special UNIX character, so if it is used  on the
+command line rather than entered at a task prompt, it must be  preceded
+by a backslash to force the UNIX shell to ignore it.
 
 \item
 Rename an existing column or keyword with the syntax 'NewName ==
@@ -1365,7 +1377,7 @@ be separated by semicolons.
 
 Examples:
 -
-   [col !TIME, Good == STATUS]   - deletes the TIME column and
+   [col !TIME; Good == STATUS]   - deletes the TIME column and
                                    renames the status column to 'Good'
 
    [col PI=PHA * 1.1 + 0.2]      - creates new PI column from PHA values
@@ -1378,12 +1390,14 @@ Examples:
 
     The  optional row filter is a  boolean expression enclosed in square
     brackets for filtering or selecting rows from  the input FITS table.
-    A temporary new FITS file is then created  which contains only those
+    A new FITS file is then created  which contains only those
     rows for  which  the boolean   expression evaluates  to true.   (The
     primary array and any  other extensions in the  input file  are also
-    copied to the temporary file).  The original FITS file is closed and
-    the new  temporary file  is opened  and  passed to  the  application
-    program.
+    copied to the new file).  The original FITS file is closed and
+    the new  file  is opened  and  passed to  the  application
+    program.  The new file will persist only until the file is closed
+    or until the program exits, unless the output file specifier (see 
+    above) is also supplied.
 
     The expression can  be an arbitrarily  complex  series of operations
     performed on constants, keyword values,  and column data taken  from
@@ -1414,6 +1428,11 @@ Examples:
     "or"            .or. .OR. ||  "and"                .and. .AND. &&
     "negation"     .not. .NOT. !  "approx. equal(1e-7)"  ~
 -
+
+Note  that the exclamation
+point,  '!', is a special UNIX character, so if it is used  on the
+command line rather than entered at a task prompt, it must be  preceded
+by a backslash to force the UNIX shell to ignore it.
 
     The expression may  also include arithmetic operators and functions.
     Trigonometric  functions use  radians,  not degrees.  The  following
@@ -1621,6 +1640,15 @@ Examples:
     
     Variable-length vector columns are not supported.
     
+    Vectors can  be manually constructed  within the expression  using a
+    comma-separated list of  elements surrounded by curly braces ('{}').
+    For example, '{1,3,6,1}' is a 4-element vector containing the values
+    1, 3, 6, and 1.  The  vector can contain  only boolean, integer, and
+    real values (or expressions).  The elements will  be promoted to the
+    highest  datatype   present.  Any   elements   which  are themselves
+    vectors, will be expanded out with  each of its elements becoming an
+    element in the constructed vector.
+
     A common filtering method  applied to  FITS  files is a time  filter
     using a Good Time Interval (GTI)  extension.  A high-level function,
     gtifilter(a,b,c,d),  is  available   which  performs this    special
@@ -1739,6 +1767,10 @@ EXAMPLES:
                                      times greater than the background
                                      level held in a keyword, BACKGRND
 
+    [VCOL=={1,4,2}]                - Extract all rows whose vector column
+                                     VCOL contains the 3-elements 1, 4, and
+                                     2.
+
     [@rowFilter.txt]               - Extract rows using the expression
                                      contained within the text file
                                      rowFilter.txt
@@ -1780,9 +1812,9 @@ are listed. The column names are case insensitive, and the column
 number may be given instead of the name, preceded by a pound sign
 (e.g., [bin \#4=1:512]).  If the column name is not specified, then
 CFITSIO will first try to use the 'preferred column' as specified by
-the CPREF1, CPREF2, CPREF3, and CPREF4 keywords if they exist (CPREFn
-is an AXAF Common Data Model keyword), otherwise column names 'X', 'Y',
-'Z', and 'T' will be assumed for each of the 4 axes, respectively.
+the CPREF keyword if it exists (e.g., 'CPREF = 'DETX,DETY'), otherwise
+column names 'X', 'Y', 'Z', and 'T' will be assumed for each of the 4
+axes, respectively.
 
 Each column name may be followed by an equals sign and then the lower
 and upper range of the histogram, and the size of the histogram bins,
@@ -1867,6 +1899,10 @@ and each axis specification must still be comma-separated.
                                        and 1000 bins in the range 
                                        8000. to 8100. for the Y axis.
     
+    [bin @binFilter.txt]             - Use the contents of the text file
+                                       binFilter.txt for the binning
+                                       specifications.
+
 -
 
 
@@ -2437,7 +2473,7 @@ more than this will cause an error status to be returned.  One can
 determine the number of elements in each row of a variable column with
 the fits\_read\_descript routine.
 
-**J.  Support for IEEE Special Values
+**K.  Support for IEEE Special Values
  
 The ANSI/IEEE-754 floating-point number standard defines certain
 special values that are used to represent such quantities as
@@ -2495,7 +2531,7 @@ backward compatibility with software that initially creates a table
 with a large number of rows, than decreases the NAXIS2 value to the
 actual smaller value just before closing the table.
 
-**K.  Local FITS Conventions supported by CFITSIO
+**M.  Local FITS Conventions supported by CFITSIO
 
 In a few cases CFITSIO supports local FITS conventions which are not
 defined in the official NOST FITS standard and which are not
@@ -3338,7 +3374,10 @@ write data to the 2 extensions in any order.
 >3   Create a new empty FITS file.  An error will be returned if
    the specified file already exists unless the filename is
    prefixed with an exclamation point (!).  In that case CFITSIO
->  will overwrite the existing file. \label{ffinit}
+   will overwrite the existing file. Note  that the exclamation point,
+   '!', is a special UNIX character, so if it is used  on the command
+   line rather than entered at a task prompt, it must be  preceded by a
+>  backslash to force the UNIX shell to ignore it. \label{ffinit}
 -
   int fits_create_file / ffinit
       (fitsfile **fptr, char *filename, > int *status)
@@ -4215,12 +4254,13 @@ The routines described in this section use the WCS library written
 by Doug Mink at SAO.  This library is available at
 
 -
-http://tdc-www.harvard.edu/software/wcstools/
+http://tdc-www.harvard.edu/software/wcstools/    and
+http://tdc-www.harvard.edu/software/wcstools/wcs.html
 -
 
 You do not need the entire WCSTools package to use the routines
 described here.  Instead, you only need to install the World Coordinate
-System Subroutine library, called 'wcssubs'.  It is available from the
+System Subroutine library.  It is available from the
 ftp site as a gzipped .tar file (e.g., wcssubs-2.5.tar.gz) or as a
 zipped file (e.g., wcssub25.zip).  Any questions about using this
 library should be sent to the author at dmink@cfa.harvard.edu.
@@ -4231,15 +4271,15 @@ for all currently defined projection geometries, and they also support
 most standard as well as many non-standard WCS keyword conventions that
 have been used by different observatories in the past.  This library is
 also actively maintained so it is likely that it will support
-any new FITS WCS keyword conventions that may be adopted in the
-future.  Thus, software that use these routines is more likely to
-remain compatible with the new WCS keyword conventions that are now in
-development.
+any new FITS WCS keyword conventions that are adopted in the
+future. 
 
-The following 3 routines create a character string array containing
-all the WCS keywords that are needed as input to the wcsinit routine.
-They provide a convenient interface to the WCS library routines, but
-do not actually call any routines in the WCS library themselves.
+The first 3 routines described below are CFITSIO routines that create a
+character string array containing all the WCS keywords that are needed
+as input to the WCS library 'wcsinit' routine.  These 3 routines
+provide a convenient interface for calling the WCS library routines
+from CFITSIO, but do not actually call any routines in the WCS library
+themselves.
 
 >1   Copy all the WCS-related keywords from the header of the primary
 array or an image extension into a single long character string array.  The
@@ -4272,9 +4312,9 @@ the string. The character array is dynamically allocated and must be
 >3    Copy all the WCS-related keywords for an image that is contained
 in a single vector cell of a binary table extension into a single long
 character string array. In this type of image format, the table column
-is a 2-dimensional vector and each row of the table contains a
-different image. The names of the WCS keywords are translated into the
-keywords corresponding to an image (e.g., 1CRPn becomes the CRPIX1
+is a 2-dimensional vector and each row of the table contains an image.
+The names of the WCS keywords in the table header are translated into
+the keywords corresponding to an image (e.g., 1CRPn becomes the CRPIX1
 keyword).  The 80-char header keywords are simply concatinated one
 after the other in the string. The character array is dynamically
 allocated and must be freed by the calling program when it is no longer
@@ -4285,12 +4325,14 @@ allocated and must be freed by the calling program when it is no longer
       (fitsfile *fptr, int column, long row, char **header, int *status)
 -
 
->4   This WCS library routine allocates and initializes a structure
-containing the values of all the WCS parameters, based on the input
-array of header keywords that was generated by any of the three
-previous routines. The WorldCoor structure is then used as input to the
-following 2 WCS library routines that convert between sky coordinates
-> and pixel coordinates.
+>4   This WCS library routine returns a pointer to a structure that
+contains all the WCS parameters extracted from the input header
+keywords.  The input  header keyword string can be produced by any of
+the 3 previous routines.  The returned WorldCoor structure is used as
+input to the next 2 WCS library routines that convert between sky
+coordinates and pixel coordinates.  This routine dynamically allocates
+the WorldCoor structure, so it must be freed by calling the wcsfree
+> routine when it is no longer needed.
 
 -
   struct WorldCoor *wcsinit (char *header)
@@ -4301,8 +4343,7 @@ coordinate using the conversion parameters defined in the wcs
 >structure.  This is a WCS library routine.
 
 -
-  void pix2wcs 
-       (struct WorldCoor *wcs, double xpix, double ypix, 
+  void pix2wcs (struct WorldCoor *wcs, double xpix, double ypix, 
         > double *xpos, double *ypos)
 -
 

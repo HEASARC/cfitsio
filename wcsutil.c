@@ -1,6 +1,5 @@
 #include <math.h>
 #include <string.h>
-#include <stdio.h>
 #include "fitsio2.h"
 /*--------------------------------------------------------------------------*/
 int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */

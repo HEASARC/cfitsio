@@ -1168,7 +1168,7 @@ int fffr4r8(float *input,         /* I - array of values to be converted     */
     {
         sptr = (short *) input;
 
-#if BYTESWAPPED
+#if BYTESWAPPED && MACHINE != VAXVMS && MACHINE != ALPHAVMS
         sptr++;       /* point to MSBs */
 #endif
         if (scale == 1. && zero == 0.)  /* no scaling */
@@ -1264,7 +1264,7 @@ int fffr8r8(double *input,        /* I - array of values to be converted     */
     {
         sptr = (short *) input;
 
-#if BYTESWAPPED
+#if BYTESWAPPED && MACHINE != VAXVMS && MACHINE != ALPHAVMS
         sptr += 3;       /* point to MSBs */
 #endif
 

@@ -317,14 +317,32 @@ int file_read(int hdl, void *buffer, long nbytes)
   read bytes from the current position in the file
 */
 {
+    long nread;
+    char *cptr;
+
     if (handleTable[hdl].last_io_op == IO_WRITE)
     {
       if (fseek(handleTable[hdl].fileptr, handleTable[hdl].currentpos, 0 ))
         return(READ_ERROR);
     }
   
-    if( (long) fread(buffer, 1, nbytes, handleTable[hdl].fileptr) != nbytes)
+    nread = (long) fread(buffer, 1, nbytes, handleTable[hdl].fileptr);
+
+    if (nread == 1)
+    {
+         cptr = (char *) buffer;
+
+         /* some editors will add a single end-of-file character to a file */
+         /* Ignore it if the character is a zero, 10, or 32 */
+         if (*cptr == 0 || *cptr == 10 || *cptr == 32)
+             return(END_OF_FILE);
+         else
+             return(READ_ERROR);
+    }
+    else if (nread != nbytes)
+    {
         return(READ_ERROR);
+    }
 
     handleTable[hdl].currentpos += nbytes;
     handleTable[hdl].last_io_op = IO_READ;

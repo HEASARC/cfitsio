@@ -4,7 +4,11 @@
 #include <stdio.h>
 /* stddef.h is apparently needed to define size_t */
 #include <stddef.h>
+
+/*  The following exclusion if __CINT__ is defined is needed for ROOT */
+#ifndef __CINT__
 #include "longnam.h"
+#endif
  
 /* global variables */
  
@@ -329,9 +333,12 @@ typedef struct  /* structure for the iterator function column information */
 #define	NGP_BAD_ARG		(NGP_ERRBASE + 8)	/* bad arguments passed */
 #define	NGP_TOKEN_NOT_EXPECT	(NGP_ERRBASE + 9)	/* token not expected here */
 
+/*  The following exclusion if __CINT__ is defined is needed for ROOT */
+#ifndef __CINT__
 /*  the following 3 lines are needed to support C++ compilers */
 #ifdef __cplusplus
 extern "C" {
+#endif
 #endif
 
 /*----------------  FITS file URL parsing routines -------------*/
@@ -1234,8 +1241,11 @@ int ffgmrm(fitsfile *fptr, long member, int rmopt, int *status);
 
 int	fits_execute_template(fitsfile *ff, char *ngp_template, int *status);
 
+/*  The following exclusion if __CINT__ is defined is needed for ROOT */
+#ifndef __CINT__
 #ifdef __cplusplus
 }
+#endif
 #endif
 
 #endif

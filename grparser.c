@@ -59,17 +59,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#if ! defined (macintosh) && ! defined(__VMS)
+#ifdef sparc
 #include <malloc.h>
 #include <memory.h>
 #endif
 
 #include <string.h>
-
 #include "fitsio.h"
-
 #include "grparser.h"
-
 
 NGP_RAW_LINE	ngp_curline = { NULL, NULL, NULL, NGP_TTYPE_UNKNOWN, NULL, NGP_FORMAT_OK };
 NGP_RAW_LINE	ngp_prevline = { NULL, NULL, NULL, NGP_TTYPE_UNKNOWN, NULL, NGP_FORMAT_OK };
