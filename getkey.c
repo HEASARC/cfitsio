@@ -1893,7 +1893,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
     /*--------------------------------------------------------------------*/
     ffgkyn(fptr, 1, name, value, comm, status);
 
-    if ((fptr->Fptr)->curhdu == 0)  /* Is this the beginning of the FITS file? */
+    if ((fptr->Fptr)->curhdu == 0) /* Is this the beginning of the FITS file? */
     {
         if (!strcmp(name, "SIMPLE"))
         {
@@ -1916,7 +1916,8 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
 
     else    /* not beginning of the file, so presumably an IMAGE extension */
-    {
+    {       /* or it could be a compressed image in a binary table */
+
         if (!strcmp(name, "XTENSION"))
         {
             if (ffc2s(value, xtension, status) > 0)  /* get the value string */
@@ -1948,72 +1949,115 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
         }
     }
 
-    /*----------------------------------------------------------------*/
-    /*  Get 2nd keyword;  test whether it is BITPIX with legal value  */
-    /*----------------------------------------------------------------*/
-    ffgkyn(fptr, 2, name, value, comm, status);  /* BITPIX = 2nd keyword */
-
-    if (strcmp(name, "BITPIX"))
+    if (unknown && (fptr->Fptr)->compressimg)
     {
-        sprintf(message,
-        "Second keyword of the extension is not BITPIX: %s", name);
-        ffpmsg(message);
-        return(*status = NO_BITPIX);
-    }
+        /* this is a compressed image, so read ZBITPIX, ZNAXIS keywords */
+        unknown = 0;  /* reset flag */
+        ffxmsg(-2, message); /* clear previous spurious error message */
 
-    if (ffc2ii(value,  &longbitpix, status) > 0)
-    {
-        sprintf(message,
-        "Value of BITPIX keyword is not an integer: %s", value);
-        ffpmsg(message);
-        return(*status = BAD_BITPIX);
-    }
-    else if (longbitpix != BYTE_IMG && longbitpix != SHORT_IMG &&
-             longbitpix != LONG_IMG &&
-             longbitpix != FLOAT_IMG && longbitpix != DOUBLE_IMG)
-    {
-        sprintf(message,
-        "Illegal value for BITPIX keyword: %s", value);
-        ffpmsg(message);
-        return(*status = BAD_BITPIX);
-    }
-    if (bitpix)
-        *bitpix = longbitpix;  /* do explicit type conversion */
+        if (bitpix)
+        {
+            ffgidt(fptr, bitpix, status); /* get bitpix value */
 
+            if (*status > 0)
+            {
+                ffpmsg("Error reading BITPIX value of compressed image");
+                return(*status);
+            }
+        }
 
-    /*---------------------------------------------------------------*/
-    /*  Get 3rd keyword;  test whether it is NAXIS with legal value  */
-    /*---------------------------------------------------------------*/
-    ffgtkn(fptr, 3, "NAXIS",  &longnaxis, status);
+        if (naxis)
+        {
+            ffgidm(fptr, naxis, status); /* get NAXIS value */
 
-    if (*status == BAD_ORDER)
-        return(*status = NO_NAXIS);
-    else if (*status == NOT_POS_INT || longnaxis > 999)
-    {
-        sprintf(message,"NAXIS = %ld is illegal", longnaxis);
-        ffpmsg(message);
-        return(*status = BAD_NAXIS);
+            if (*status > 0)
+            {
+                ffpmsg("Error reading NAXIS value of compressed image");
+                return(*status);
+            }
+        }
+
+        if (naxes)
+        {
+            ffgisz(fptr, maxdim, naxes, status);  /* get NAXISn value */
+
+            if (*status > 0)
+            {
+                ffpmsg("Error reading NAXISn values of compressed image");
+                return(*status);
+            }
+        }
+
+        nextkey = 9; /* skip required table keywords in the following search */
     }
     else
-        if (naxis)
-             *naxis = longnaxis;  /* do explicit type conversion */
-
-
-    /*---------------------------------------------------------*/
-    /*  Get the next NAXISn keywords and test for legal values */
-    /*---------------------------------------------------------*/
-    for (ii=0, nextkey=4; ii < longnaxis; ii++, nextkey++)
     {
-        ffkeyn("NAXIS", ii+1, keyword, status);
-        ffgtkn(fptr, 4+ii, keyword, &axislen, status);
+
+        /*----------------------------------------------------------------*/
+        /*  Get 2nd keyword;  test whether it is BITPIX with legal value  */
+        /*----------------------------------------------------------------*/
+        ffgkyn(fptr, 2, name, value, comm, status);  /* BITPIX = 2nd keyword */
+
+        if (strcmp(name, "BITPIX"))
+        {
+            sprintf(message,
+            "Second keyword of the extension is not BITPIX: %s", name);
+            ffpmsg(message);
+            return(*status = NO_BITPIX);
+        }
+
+        if (ffc2ii(value,  &longbitpix, status) > 0)
+        {
+            sprintf(message,
+            "Value of BITPIX keyword is not an integer: %s", value);
+            ffpmsg(message);
+            return(*status = BAD_BITPIX);
+        }
+        else if (longbitpix != BYTE_IMG && longbitpix != SHORT_IMG &&
+             longbitpix != LONG_IMG &&
+             longbitpix != FLOAT_IMG && longbitpix != DOUBLE_IMG)
+        {
+            sprintf(message,
+            "Illegal value for BITPIX keyword: %s", value);
+            ffpmsg(message);
+            return(*status = BAD_BITPIX);
+        }
+        if (bitpix)
+            *bitpix = longbitpix;  /* do explicit type conversion */
+
+        /*---------------------------------------------------------------*/
+        /*  Get 3rd keyword;  test whether it is NAXIS with legal value  */
+        /*---------------------------------------------------------------*/
+        ffgtkn(fptr, 3, "NAXIS",  &longnaxis, status);
 
         if (*status == BAD_ORDER)
-            return(*status = NO_NAXES);
-        else if (*status == NOT_POS_INT)
-            return(*status = BAD_NAXES);
-        else if (ii < maxdim)
-            if (naxes)
-                naxes[ii] = axislen;
+            return(*status = NO_NAXIS);
+        else if (*status == NOT_POS_INT || longnaxis > 999)
+        {
+            sprintf(message,"NAXIS = %ld is illegal", longnaxis);
+            ffpmsg(message);
+            return(*status = BAD_NAXIS);
+        }
+        else
+            if (naxis)
+                 *naxis = longnaxis;  /* do explicit type conversion */
+
+        /*---------------------------------------------------------*/
+        /*  Get the next NAXISn keywords and test for legal values */
+        /*---------------------------------------------------------*/
+        for (ii=0, nextkey=4; ii < longnaxis; ii++, nextkey++)
+        {
+            ffkeyn("NAXIS", ii+1, keyword, status);
+            ffgtkn(fptr, 4+ii, keyword, &axislen, status);
+
+            if (*status == BAD_ORDER)
+                return(*status = NO_NAXES);
+            else if (*status == NOT_POS_INT)
+                return(*status = BAD_NAXES);
+            else if (ii < maxdim)
+                if (naxes)
+                    naxes[ii] = axislen;
+        }
     }
 
     /*---------------------------------------------------------*/
