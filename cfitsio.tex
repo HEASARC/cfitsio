@@ -415,15 +415,12 @@ Jonathan McDowell, Antonella Fruscione, Aneta Siemiginowska and Bill
 Joye. See http://heasarc.gsfc.nasa.gov/docs/journal/axaf7.html for
 further description of the AXAF Data Model.
 
-Doug Mink (CfA) wrote the WCSTools routines that are used by CFITSIO to
-calculate celestial coordinates (to be implemented).
-
 The file decompression code were taken directly from the gzip (GNU zip)
 program developed by Jean-loup Gailly and others.
 
 In addition, many other people have made valuable contributions to the
 development of CFITSIO.  These include (with apologies to others I may
-have forgotten):
+have inadvertently omitted):
 
 Steve Allen, Carl Akerlof, Keith Arnaud, Morten Krabbe Barfoed, Kent
 Blackburn, G Bodammer, Romke Bontekoe, Lucio Chiappetti, Keith Costorf,
@@ -438,10 +435,10 @@ Szymkowiak, Allyn Tennant, Peter Teuben, James Theiler, Doug Tody,
 Shiro Ueno, Steve Walton, Archie Warnock, Alan Watson, Dan Whipple, Wim
 Wimmers, Peter Young, Jianjun Xu, and Nelson Zarate.
 
-Finally, special thanks go out to the members of the U.S. Congress who
-shut down the government offices, including NASA, in January 1996 by
-failing to pass funding legislation, thus giving the author sufficient
-free time to write the initial version of CFITSIO.
+Finally, special thanks go out to the members of the U.S. Congress in
+January 1996 who shut down the U.S. government offices, including NASA,
+by failing to pass funding legislation, thus giving the author
+sufficient free time to write the initial version of CFITSIO.
 
 
 \chapter{  A FITS Primer }
@@ -708,7 +705,7 @@ This section describes the full syntax for the CFITSIO FITS file names,
 which can contain the following components:
  
 \begin{verbatim}
- filetype://BaseFilename(outName)[HDUlocation][colFilter][rowFilter][binSpec]
+filetype://BaseFilename(outName)[HDUlocation][colFilter][rowFilter][binSpec]
 \end{verbatim}
 where each of these components is described below.  The filetype,
 BaseFilename, outName, and HDUlocation components, if present, must be
@@ -898,6 +895,14 @@ filetypes, the machine identifier.  Examples:
     /data/myfile.fits
     fits.gsfc.nasa.gov/ftp/sampledata/myfile.fits.gz
 \end{verbatim}
+
+When creating a new output file on magnetic disk (of type file://) if
+the base filename begins with an exclamation point (!) then any
+existing file with that same basename will be deleted prior to creating
+the new FITS file.  Otherwise if the file to be created already exists,
+then CFITSIO will return an error and will not overwrite the existing
+file.
+
 The input file may be compressed with the gzip or Unix compress
 algorithms, in which case CFITSIO will uncompress the file on the fly
 into a temporary file (in memory or on disk).  Compressed files may
@@ -905,9 +910,15 @@ only be opened with read-only permission.  When specifying the name of
 a compressed FITS file it is not necessary to append the file suffix
 (e.g., '.gz' or '.Z').  If CFITSIO cannot find the input file name
 without the suffix, then it will automatically search for a compressed
-file with the same root name.  In the case of ftp and http type files,
-CFITSIO always looks for a compressed version of the file first, before
-trying to open the uncompressed file
+file with the same root name.  In the case of reading ftp and http type
+files, CFITSIO generally looks for a compressed version of the file
+first, before trying to open the uncompressed file.  By default,
+CFITSIO copies (and uncompressed if necessary) the ftp or http FITS
+file into memory on the local machine before opening it.  This will
+fail if the local machine does not have enough memory to hold the whole
+FITS file, so in this case, the output filename specifier (see the next
+section) can be used to further control how CFITSIO reads ftp and http
+files.
 
 One special case is where the filename = '-' (a dash or minus sign),
 which signifies that the input file is to be read from the stdin
@@ -938,26 +949,72 @@ an error if the file to be created already exists.
  
 \subsection{Output or Template File Name}
 
-This qualifier, which is enclosed in parenthesis immediately following
-the base file name, serves 2 different purposes depending on whether
-the base file is an existing file that is being opened, or
-whether is is a new file that is being created:
+This optional qualifier, which when present is enclosed in parenthesis
+immediately following the base file name, serves 2 different purposes
+depending on whether the base file is an existing file that is being
+opened, or whether is is a new file that is being created:
 
  
 \subsubsection{When Opening an Existing File}
 
-In a number of cases CFITSIO will create a temporary copy of the input
-FITS file, which may be modified in some way, before it is opened and
-passed to the application program.  This temporary file is normally
-deleted when the file is closed or when the program exits.  This
-happens, for example, when opening a network file with FTP or HTTP, when
-reading a compressed FITS file, or when a column filter, row filter, or binning
-specifier is included as part of the input file specification.   In these cases one can force
-a permanent file to be created, instead of a temporary
-file, by suppling the name of the file in parentheses immediately
-following the base file name.  This option is also useful in cases
-where a particular machine has inadequate memory or swap space for
-CFITSIO to create a temporary file in memory.
+In a number of instances CFITSIO will create a temporary copy in memory
+of the input FITS file before it is opened and passed to the
+application program.  This happens by default when opening a network
+FTP or HTTP-type file, when reading a compressed FITS file on a local
+disk, when reading from the stdin stream, or when a column filter, row
+filter, or binning specifier is included as part of the input file
+specification.  The local machine must then be able to hold a copy of
+the whole FITS file in memory, otherwise CFITSIO will exit with an
+error.  If this is a problem (e.g., on machines with a small amount of
+memory, or when reading very large files) then the output file
+specifier may be used to give the name of a local disk file that
+CFITSIO will create and use instead of trying to create a copy of the
+file in memory.
+
+Thus, if the input filename to CFITSIO is:
+ 
+\begin{verbatim}
+    file1.fits.gz(file2.fits)
+\end{verbatim}
+then CFITSIO will uncompress `file1.fits.gz' into the local disk file
+`file2.fits' before opening it.  CFITSIO does not automatically delete
+the output file, so it will still exist after the application program
+exits.
+
+The output file specifier is also useful when reading FTP or HTTP-type
+FITS files since it can be used to create a local disk copy of the file
+that can be reused in the future.  If the output file name = `*' then a
+local file with the same name as the network file will be created.
+Note that CFITSIO will behave differently depending on whether the
+remote file is compressed or not as shown by the following examples:
+\begin{itemize}
+\item
+`ftp://remote.machine/tmp/myfile.fits.gz(*)' - the remote compressed
+file is copied to the local compressed file `myfile.fits.gz', which
+is then uncompressed in local memory before being opened and passed
+to the application program.
+
+\item
+`ftp://remote.machine/tmp/myfile.fits.gz(myfile.fits)' - the remote
+compressed file is copied and uncompressed into the local file
+`myfile.fits'.  This example requires less local memory than the
+previous example since the file is uncompressed on disk instead of
+in memory.
+
+\item
+`ftp://remote.machine/tmp/myfile.fits(myfile.fits.gz)' - this will
+usually produce an error since CFITSIO itself cannot compress files.
+\end{itemize}
+
+The exact behavior of CFITSIO in the latter case depends on the type of
+ftp server running on the remote machine and how it is configured.  In
+some cases, if the file `myfile.fits.gz' exists on the remote machine,
+then the server will copy it to the local machine.  In other cases the
+ftp server will automatically create and transmit a compressed version
+of the file if only the uncompressed version exists.  This can get
+rather confusing, so users should use a certain amount of caution when
+using the output file specifier with FTP or HTTP file types, to make
+sure they get the behavior that they expect.
 
  
 \subsubsection{When Creating a New File}
@@ -965,7 +1022,6 @@ CFITSIO to create a temporary file in memory.
 When a new FITS file is being created with a call to fits\_create\_file,
 this qualifier can be used to supply the name of a template file
 that should be used to define the structure of the new file.
-The format of the template file is described later in Section n.m.
 
  
 \subsection{HDU Location Specification}

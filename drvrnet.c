@@ -492,11 +492,13 @@ int http_compress_open(char *url, int rwmode, int *handle)
 
 /*--------------------------------------------------------------------------*/
 /* This creates a file handle with a copy of the URL in filename.  The
-   file must not be compressed and is copied to disk first. */
+   file may be compressed and is copied to disk first.  If it's compressed 
+   then it is uncompressed when copying to the disk */
 
 int http_file_open(char *url, int rwmode, int *handle)
 {
   FILE *httpfile;
+  FILE *outfile;
   char contentencoding[SHORTLEN];
   char errorstr[MAXLEN];
   char recbuf[MAXLEN];
@@ -505,6 +507,7 @@ int http_file_open(char *url, int rwmode, int *handle)
   int status;
   int closehttpfile = 0;
   int closefile = 0;
+  int closeoutfile = 0;
 
 
   /* cfileio made a mistake, we need to know where to write the file */
@@ -537,50 +540,75 @@ int http_file_open(char *url, int rwmode, int *handle)
 
   if (!strcmp(contentencoding,"x-gzip") || 
       !strcmp(contentencoding,"x-compress")) {
-    /* Opps, this should not have happened */
 
-    ffpmsg("Can't do compressed files here (http_file_open)");
-    
-    goto error;
-  }
-    
-  /* Create the output file */
-  if ((status =  file_create(netoutfile,handle))) {
-    ffpmsg("Unable to create output file (http_file_open)");
-    goto error;
-
-  }
-
-  /* Give a warning message.  This could just be bad padding at the end
-     so don't treat it like an error. */
-  closefile++;
-
-  if (contentlength % 2880) {
-    sprintf(errorstr,
-	    "Content-Length not a multiple of 2880 (http_file_open) %d",
-	    contentlength);
-    ffpmsg(errorstr);
-  }
-
-  /* write a file */
-  alarm(NETTIMEOUT);
-  while(0 != (len = fread(recbuf,1,MAXLEN,httpfile))) {
-    alarm(0);
-    status = file_write(*handle,recbuf,len);
-    if (status) {
-      ffpmsg("Error writing file (http_file_open)");
+    /* to make this more cfitsioish we use the file driver calls to create
+       the file */
+    /* Create the output file */
+    if ((status =  file_create(netoutfile,handle))) {
+      ffpmsg("Unable to create output file (http_file_open)");
+      goto error;
+      
+    }
+    file_close(*handle);
+    if (NULL == (outfile = fopen(netoutfile,"w"))) {
+      ffpmsg("Unable to reopen the output file (http_file_open)");
       goto error;
     }
-  }
+    closeoutfile++;
+    status = 0;
 
+    /* Ok, this is a tough case, let's be arbritary and say 10*NETTIMEOUT,
+       Given the choices for nettimeout above they'll probaby ^C before, but
+       it's always worth a shot*/
+
+    alarm(NETTIMEOUT*10);
+    status = uncompress2file(url,httpfile,outfile,&status);
+    alarm(0);
+    if (status) {
+      ffpmsg("Unable to uncompress the output file (http_file_open)");
+      goto error;
+    }
+    fclose(outfile);
+    closeoutfile--;
+  } else {
+    
+    /* Create the output file */
+    if ((status =  file_create(netoutfile,handle))) {
+      ffpmsg("Unable to create output file (http_file_open)");
+      goto error;
+      
+    }
+    
+    /* Give a warning message.  This could just be bad padding at the end
+       so don't treat it like an error. */
+    closefile++;
+    
+    if (contentlength % 2880) {
+      sprintf(errorstr,
+	      "Content-Length not a multiple of 2880 (http_file_open) %d",
+	      contentlength);
+      ffpmsg(errorstr);
+    }
+    
+    /* write a file */
+    alarm(NETTIMEOUT);
+    while(0 != (len = fread(recbuf,1,MAXLEN,httpfile))) {
+      alarm(0);
+      status = file_write(*handle,recbuf,len);
+      if (status) {
+	ffpmsg("Error writing file (http_file_open)");
+	goto error;
+      }
+    }
+    file_close(*handle);
+    closefile--;
+  }
   
   fclose(httpfile);
   closehttpfile--;
 
   signal(SIGALRM, SIG_DFL);
   alarm(0);
-
-  file_close(*handle);
 
   return file_open(netoutfile,rwmode,handle); 
 
@@ -589,6 +617,9 @@ int http_file_open(char *url, int rwmode, int *handle)
   alarm(0); /* clear it */
   if (closehttpfile) {
     fclose(httpfile);
+  }
+  if (closeoutfile) {
+    fclose(outfile);
   }
   if (closefile) {
     file_close(*handle);
@@ -890,6 +921,7 @@ int ftp_file_open(char *url, int rwmode, int *handle)
 {
   FILE *ftpfile;
   FILE *command;
+  FILE *outfile;
   char recbuf[MAXLEN];
   long len;
   int sock;
@@ -897,6 +929,7 @@ int ftp_file_open(char *url, int rwmode, int *handle)
   int closeftpfile = 0;
   int closecommandfile = 0;
   int closefile = 0;
+  int closeoutfile = 0;
   
 
   /* cfileio made a mistake, need to know where to write the output file */
@@ -932,34 +965,60 @@ int ftp_file_open(char *url, int rwmode, int *handle)
 
   /* Now, what do we do with the file */
   if (strstr(url,".gz") || strstr(url,".Z")) {
-    /* Opps, this should not have happened */
-
-    ffpmsg("Can't do compressed files here (ftp_file_open)");
-    goto error;
-  }
-    
-
-  /* Create the output file */
-  if ((status =  file_create(netoutfile,handle))) {
-    ffpmsg("Unable to create output file (ftp_file_open)");
-    goto error;
-  }
-  closefile++;
-
-
-  /* write a file */
-  alarm(NETTIMEOUT);
-  while(0 != (len = fread(recbuf,1,MAXLEN,ftpfile))) {
-    alarm(0);
-    status = file_write(*handle,recbuf,len);
-    if (status) {
-      ffpmsg("Error writing file (ftp_file_open)");
+    /* to make this more cfitsioish we use the file driver calls to create
+       the file */
+    /* Create the output file */
+    if ((status =  file_create(netoutfile,handle))) {
+      ffpmsg("Unable to create output file (ftp_file_open)");
+      goto error;
+      
+    }
+    file_close(*handle);
+    if (NULL == (outfile = fopen(netoutfile,"w"))) {
+      ffpmsg("Unable to reopen the output file (ftp_file_open)");
       goto error;
     }
-    alarm(NETTIMEOUT);
-  }
+    closeoutfile++;
+    status = 0;
 
-  
+    /* Ok, this is a tough case, let's be arbritary and say 10*NETTIMEOUT,
+       Given the choices for nettimeout above they'll probaby ^C before, but
+       it's always worth a shot*/
+
+    alarm(NETTIMEOUT*10);
+    status = uncompress2file(url,ftpfile,outfile,&status);
+    alarm(0);
+    if (status) {
+      ffpmsg("Unable to uncompress the output file (ftp_file_open)");
+      goto error;
+    }
+    fclose(outfile);
+    closeoutfile--;
+
+  } else {
+    
+
+    /* Create the output file */
+    if ((status =  file_create(netoutfile,handle))) {
+      ffpmsg("Unable to create output file (ftp_file_open)");
+      goto error;
+    }
+    closefile++;
+    
+    
+    /* write a file */
+    alarm(NETTIMEOUT);
+    while(0 != (len = fread(recbuf,1,MAXLEN,ftpfile))) {
+      alarm(0);
+      status = file_write(*handle,recbuf,len);
+      if (status) {
+	ffpmsg("Error writing file (ftp_file_open)");
+	goto error;
+      }
+      alarm(NETTIMEOUT);
+    }
+    file_close(*handle);
+  }
   fclose(ftpfile);
   closeftpfile--;
   
@@ -970,8 +1029,6 @@ int ftp_file_open(char *url, int rwmode, int *handle)
   signal(SIGALRM, SIG_DFL);
   alarm(0);
 
-  file_close(*handle);
-  
   return file_open(netoutfile,rwmode,handle);
 
  error:
@@ -981,6 +1038,9 @@ int ftp_file_open(char *url, int rwmode, int *handle)
   }
   if (closecommandfile) {
     fclose(command);
+  }
+  if (closeoutfile) {
+    fclose(outfile);
   }
   if (closefile) {
     file_close(*handle);
@@ -1636,7 +1696,11 @@ int http_checkfile (char *urltype, char *infile, char *outfile)
       /* It's there, we're happy */
       if (strstr(infile,".gz") || (strstr(infile,".Z"))) {
 	/* It's compressed */
-	strcpy(urltype,"httpcompress://");
+	if (strstr(outfile,".gz") || (strstr(outfile,".Z"))) {
+	  strcpy(urltype,"httpcompress://");
+	} else {
+	  strcpy(urltype,"httpfile://");
+	}
       } else {
 	strcpy(urltype,"httpfile://");
       }
@@ -1650,10 +1714,13 @@ int http_checkfile (char *urltype, char *infile, char *outfile)
 			   &contentlength)) {
       fclose(httpfile);
       strcpy(infile,newinfile);
-      strcat(outfile,".gz");
-      strcat(netoutfile,".gz");
       /* It's there, we're happy, and, it's compressed  */
-      strcpy(urltype,"httpcompress://");
+      /* It's compressed */
+      if (strstr(outfile,".gz") || (strstr(outfile,".Z"))) {
+	strcpy(urltype,"httpcompress://");
+      } else {
+	strcpy(urltype,"httpfile://");
+      }
       return 0;
     }
     
@@ -1664,10 +1731,12 @@ int http_checkfile (char *urltype, char *infile, char *outfile)
 			   &contentlength)) {
       fclose(httpfile);
       strcpy(infile,newinfile);
-      strcat(outfile,".Z");
-      strcat(netoutfile,".Z");
       /* It's there, we're happy, and, it's compressed  */
-      strcpy(urltype,"httpcompress://");
+      if (strstr(outfile,".gz") || (strstr(outfile,".Z"))) {
+	strcpy(urltype,"httpcompress://");
+      } else {
+	strcpy(urltype,"httpfile://");
+      }
       return 0;
     }
     
@@ -1680,8 +1749,6 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile)
 
 {
   
-    
-
   char newinfile[MAXLEN];
   FILE *ftpfile;
   FILE *command;
@@ -1705,7 +1772,11 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile)
       /* It's there, we're happy */
       if (strstr(infile,".gz") || (strstr(infile,".Z"))) {
 	/* It's compressed */
-	strcpy(urltype,"ftpcompress://");
+	if (strstr(outfile,".gz") || (strstr(outfile,".Z"))) {
+	  strcpy(urltype,"ftpcompress://");
+	} else {
+	  strcpy(urltype,"ftpfile://");
+	}
       } else {
 	strcpy(urltype,"ftpfile://");
       }
@@ -1715,28 +1786,31 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile)
     /* Ok, let's try the .gz one */
     strcpy(newinfile,infile);
     strcat(newinfile,".gz");
-    if (!ftp_open_network(infile,&ftpfile,&command,&sock)) {
+    if (!ftp_open_network(newinfile,&ftpfile,&command,&sock)) {
       fclose(ftpfile);
       fclose(command);
       strcpy(infile,newinfile);
-      strcat(outfile,".gz");
-      strcat(netoutfile,".gz");
       /* It's there, we're happy, and, it's compressed  */
-      strcpy(urltype,"ftpcompress://");
+      if (strstr(outfile,".gz") || (strstr(outfile,".Z"))) {
+	strcpy(urltype,"ftpcompress://");
+      } else {
+	strcpy(urltype,"ftpfile://");
+      }
       return 0;
     }
     
     /* Ok, let's try the .Z one */
     strcpy(newinfile,infile);
     strcat(newinfile,".Z");
-    if (!ftp_open_network(infile,&ftpfile,&command,&sock)) {
+    if (!ftp_open_network(newinfile,&ftpfile,&command,&sock)) {
       fclose(ftpfile);
       fclose(command);
       strcpy(infile,newinfile);
-      strcat(outfile,".Z");
-      strcat(netoutfile,".Z");
-      /* It's there, we're happy, and, it's compressed  */
-      strcpy(urltype,"ftpcompress://");
+      if (strstr(outfile,".gz") || (strstr(outfile,".Z"))) {
+	strcpy(urltype,"ftpcompress://");
+      } else {
+	strcpy(urltype,"ftpfile://");
+      }
       return 0;
     }
     
