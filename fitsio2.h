@@ -258,6 +258,11 @@
 #define LONGLONG_MAX INT64_MAX
 #define LONGLONG_MIN INT64_MIN
 
+#elif defined(_I64_MAX)
+/* windows definition */
+#define LONGLONG_MAX _I64_MAX
+#define LONGLONG_MIN _I64_MIN
+
 #elif defined(HAVE_LONGLONG)
 /* compiler has a 'long long' or equivalent type */
 #define LONGLONG_MAX  9223372036854775807LL /* max 64-bit integer */
