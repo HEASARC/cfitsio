@@ -1333,6 +1333,7 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
 
   fitsfile *tmpfptr = NULL;
 
+  int parentStatus = 0;
 
   if(*status != 0) return(*status);
 
@@ -1494,6 +1495,7 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
 	  if(strcasecmp(groupAccess1,"file://")  &&
 	                                   strcasecmp(memberAccess1,"file://"))
 	    {
+              *cwd = 0;
 	      /* 
 		 nothing to do in this case; both the member and group files
 		 must be of an access type that already gives valid URLs;
@@ -1594,6 +1596,8 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
 
       *status = fits_get_num_members(gfptr,&nmembers,status);
 	      
+    do {
+
       /*
 	 make sure the member HDU is not already an entry in the
 	 grouping table before adding it
@@ -1605,7 +1609,7 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
       if(*status == MEMBER_NOT_FOUND) *status = 0;
       else if(*status == 0)
 	{  
-	  *status = HDU_ALREADY_MEMBER;
+	  parentStatus = HDU_ALREADY_MEMBER;
     ffpmsg("Specified HDU is already a member of the Grouping table (ffgtam)");
 	  continue;
 	}
@@ -1673,7 +1677,9 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
 	    /* WILL THIS WORK FOR VAR LENTH CHAR COLS??????*/
 	    fits_write_col_byt(gfptr,uriCol,nmembers,1,1,charNull,status);
 	}
+    } while(0);
 
+      if(0 != *status) continue;
       /*
 	 add GRPIDn/GRPLCn keywords to the member HDU header to link
 	 it to the grouing table if the they do not already exist and
@@ -1706,36 +1712,62 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
 	    {
 	      if(grpid < 0)
 		{
+
 		  /* have to make sure the GRPLCn keyword matches too */
 
 		  sprintf(keyword,"GRPLC%d",(int)ngroups);
 		  *status = fits_read_key_str(tmpfptr,keyword,grplc,card,
 					      status);
 		  /*
-		    if neither the grplc value or the groupFileName are
-		     absolute URLs then make sure the file path 
-		     comparision is done with absolute paths
-		  */
+		     always compare files using absolute paths
+                     the presence of a non-empty cwd indicates
+                     that the file names may require conversion
+                     to absolute paths
+                  */
 
-		  if(! fits_is_url_absolute(grplc)        &&
-		     ! fits_is_url_absolute(groupFileName)   )
-		    {
+                  if(0 < strlen(cwd)) {
+                    /* temp buffer for use in assembling abs. path(s) */
+                    char tmp[FLEN_FILENAME];
+
+                    /* make grplc absolute if necessary */
+                    if(!fits_is_url_absolute(grplc)) {
 		      fits_path2url(grplc,groupLocation,status);
 
 		      if(groupLocation[0] != '/')
 			{
-			  fits_get_cwd(cwd,status);
-			  strcat(cwd,"/");
-			  strcat(cwd,groupLocation);
-			  fits_clean_url(cwd,grplc,status);
+			  strcpy(tmp, cwd);
+			  strcat(tmp,"/");
+			  strcat(tmp,groupLocation);
+			  fits_clean_url(tmp,grplc,status);
 			}
-		    }
+                    }
 
+                    /* make groupFileName absolute if necessary */
+                    if(!fits_is_url_absolute(groupFileName)) {
+		      fits_path2url(groupFileName,groupLocation,status);
+
+		      if(groupLocation[0] != '/')
+			{
+			  strcpy(tmp, cwd);
+			  strcat(tmp,"/");
+			  strcat(tmp,groupLocation);
+                          /*
+                             note: use groupLocation (which is not used
+                             below this block), to store the absolute
+                             file name instead of using groupFileName.
+                             The latter may be needed unaltered if the
+                             GRPLC is written below
+                          */
+
+			  fits_clean_url(tmp,groupLocation,status);
+			}
+                    }
+                  }
 		  /*
 		    see if the grplc value and the group file name match
 		  */
 
-		  if(strcmp(grplc,groupFileName) == 0) found = 1;
+		  if(strcmp(grplc,groupLocation) == 0) found = 1;
 		}
 	      else
 		{
@@ -1834,6 +1866,8 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
     {
       *status = fits_close_file(tmpfptr,status);
     }
+
+  *status = 0 == *status ? parentStatus : *status;
 
   return(*status);
 }
