@@ -5,33 +5,35 @@ typedef union {
     char   log;         /* logical value */
     char   str[256];    /* string value  */
 } FFSTYPE;
-#define	BOOLEAN	258
-#define	LONG	259
-#define	DOUBLE	260
-#define	STRING	261
-#define	BITSTR	262
-#define	FUNCTION	263
-#define	BFUNCTION	264
-#define	GTIFILTER	265
-#define	REGFILTER	266
-#define	COLUMN	267
-#define	BCOLUMN	268
-#define	SCOLUMN	269
-#define	BITCOL	270
-#define	ROWREF	271
-#define	OR	272
-#define	AND	273
-#define	EQ	274
-#define	NE	275
-#define	GT	276
-#define	LT	277
-#define	LTE	278
-#define	GTE	279
-#define	POWER	280
-#define	NOT	281
-#define	INTCAST	282
-#define	FLTCAST	283
-#define	UMINUS	284
+#define	BOOLEAN	257
+#define	LONG	258
+#define	DOUBLE	259
+#define	STRING	260
+#define	BITSTR	261
+#define	FUNCTION	262
+#define	BFUNCTION	263
+#define	GTIFILTER	264
+#define	REGFILTER	265
+#define	COLUMN	266
+#define	BCOLUMN	267
+#define	SCOLUMN	268
+#define	BITCOL	269
+#define	ROWREF	270
+#define	NULLREF	271
+#define	SNULLREF	272
+#define	OR	273
+#define	AND	274
+#define	EQ	275
+#define	NE	276
+#define	GT	277
+#define	LT	278
+#define	LTE	279
+#define	GTE	280
+#define	POWER	281
+#define	NOT	282
+#define	INTCAST	283
+#define	FLTCAST	284
+#define	UMINUS	285
 
 
 extern FFSTYPE fflval;

@@ -127,7 +127,9 @@ typedef enum {
                   defnull_fct,
                   gtifilt_fct,
                   regfilt_fct,
-                  row_fct
+                  ifthenelse_fct,
+                  row_fct,
+                  null_fct
                                 } funcOp;
 
 extern ParseData gParse;

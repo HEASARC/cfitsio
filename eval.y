@@ -119,6 +119,7 @@ static int  New_Vector( int subNode );
 static int  Close_Vec ( int vecNode );
 static int  Locate_Col( Node *this );
 static int  Test_Dims ( int Node1, int Node2 );
+static void Copy_Dims ( int Node1, int Node2 );
 
 static void Allocate_Ptrs( Node *this );
 static void Do_Unary     ( Node *this );
@@ -181,6 +182,8 @@ static void  yyerror(char *msg);
 %token <lng>   SCOLUMN
 %token <lng>   BITCOL
 %token <lng>   ROWREF
+%token <lng>   NULLREF
+%token <lng>   SNULLREF
 
 %type <Node>  expr
 %type <Node>  bexpr
@@ -190,6 +193,7 @@ static void  yyerror(char *msg);
 %type <Node>  bvector
 
 %left     ',' '=' ':' '{' '}'
+%right    '?'
 %left     OR
 %left     AND
 %left     EQ NE '~'
@@ -327,6 +331,7 @@ bits:	 BITSTR
                   SIZE($$) = SIZE($1) + SIZE($3);                          }
        | NOT bits
                 { $$ = New_Unary( BITSTR, NOT, $2 ); TEST($$);     }
+
        | '(' bits ')'
                 { $$ = $2; }
        ;
@@ -347,7 +352,9 @@ expr:    LONG
                   $$ = New_Offset( $1, $3 ); TEST($$);
                 }
        | ROWREF
-                { $$ = New_Func( LONG, row_fct, 0, 0, 0, 0, 0, 0, 0, 0 ); }
+                { $$ = New_Func( LONG, row_fct,  0, 0, 0, 0, 0, 0, 0, 0 ); }
+       | NULLREF
+                { $$ = New_Func( LONG, null_fct, 0, 0, 0, 0, 0, 0, 0, 0 ); }
        | expr '%' expr
                 { PROMOTE($1,$3); $$ = New_BinOp( TYPE($1), $1, '%', $3 );
 		  TEST($$);                                                }
@@ -378,6 +385,63 @@ expr:    LONG
                 { $1 = New_Unary( TYPE($3), 0, $1 );
                   $$ = New_BinOp( TYPE($3), $1, '*', $3 );
                   TEST($$);                                }
+       | bexpr '?' expr ':' expr
+                {
+                  PROMOTE($3,$5);
+                  if( ! Test_Dims($3,$5) ) {
+                     yyerror("Incompatible dimensions in '?:' arguments");
+		     YYERROR;
+                  }
+                  $$ = New_Func( 0, ifthenelse_fct, 3, $3, $5, $1,
+                                 0, 0, 0, 0 );
+                  TEST($$);
+                  if( SIZE($3)<SIZE($5) )  Copy_Dims($$, $5);
+                  TYPE($1) = TYPE($3);
+                  if( ! Test_Dims($1,$$) ) {
+                     yyerror("Incompatible dimensions in '?:' condition");
+		     YYERROR;
+                  }
+                  TYPE($1) = BOOLEAN;
+                  if( SIZE($$)<SIZE($1) )  Copy_Dims($$, $1);
+                }
+       | bexpr '?' bexpr ':' expr
+                {
+                  PROMOTE($3,$5);
+                  if( ! Test_Dims($3,$5) ) {
+                     yyerror("Incompatible dimensions in '?:' arguments");
+		     YYERROR;
+                  }
+                  $$ = New_Func( 0, ifthenelse_fct, 3, $3, $5, $1,
+                                 0, 0, 0, 0 );
+                  TEST($$);
+                  if( SIZE($3)<SIZE($5) )  Copy_Dims($$, $5);
+                  TYPE($1) = TYPE($3);
+                  if( ! Test_Dims($1,$$) ) {
+                     yyerror("Incompatible dimensions in '?:' condition");
+		     YYERROR;
+                  }
+                  TYPE($1) = BOOLEAN;
+                  if( SIZE($$)<SIZE($1) )  Copy_Dims($$, $1);
+                }
+       | bexpr '?' expr ':' bexpr
+                {
+                  PROMOTE($3,$5);
+                  if( ! Test_Dims($3,$5) ) {
+                     yyerror("Incompatible dimensions in '?:' arguments");
+		     YYERROR;
+                  }
+                  $$ = New_Func( 0, ifthenelse_fct, 3, $3, $5, $1,
+                                 0, 0, 0, 0 );
+                  TEST($$);
+                  if( SIZE($3)<SIZE($5) )  Copy_Dims($$, $5);
+                  TYPE($1) = TYPE($3);
+                  if( ! Test_Dims($1,$$) ) {
+                     yyerror("Incompatible dimensions in '?:' condition");
+		     YYERROR;
+                  }
+                  TYPE($1) = BOOLEAN;
+                  if( SIZE($$)<SIZE($1) )  Copy_Dims($$, $1);
+                }
        | FUNCTION ')'
                 { if (FSTRCMP($1,"RANDOM(") == 0) {
                      srand( (unsigned int) time(NULL) );
@@ -492,16 +556,7 @@ expr:    LONG
 		     if( Test_Dims( $2, $4 ) ) {
 			$$ = New_Func( 0, atan2_fct, 2, $2, $4, 0, 0, 0, 0, 0 );
 			TEST($$); 
-			if( SIZE($2)<SIZE($4) ) {
-			   int i;
-			   gParse.Nodes[$$].value.nelem =
-			      gParse.Nodes[$4].value.nelem;
-			   gParse.Nodes[$$].value.naxis =
-			      gParse.Nodes[$4].value.naxis;
-			   for( i=0; i<gParse.Nodes[$4].value.naxis; i++ )
-			      gParse.Nodes[$$].value.naxes[i] =
-				 gParse.Nodes[$4].value.naxes[i];
-			}
+			if( SIZE($2)<SIZE($4) ) Copy_Dims($$, $4);
 		     } else {
 			yyerror("Dimensions of arctan2 arguments "
 				"are not compatible");
@@ -512,16 +567,7 @@ expr:    LONG
 		      if( Test_Dims( $2, $4 ) ) {
 			$$ = New_Func( 0, min2_fct, 2, $2, $4, 0, 0, 0, 0, 0 );
 			TEST($$);
-			if( SIZE($2)<SIZE($4) ) {
-			   int i;
-			   gParse.Nodes[$$].value.nelem =
-			      gParse.Nodes[$4].value.nelem;
-			   gParse.Nodes[$$].value.naxis =
-			      gParse.Nodes[$4].value.naxis;
-			   for( i=0; i<gParse.Nodes[$4].value.naxis; i++ )
-			      gParse.Nodes[$$].value.naxes[i] =
-				 gParse.Nodes[$4].value.naxes[i];
-			}
+			if( SIZE($2)<SIZE($4) ) Copy_Dims($$, $4);
 		      } else {
 			yyerror("Dimensions of min(a,b) arguments "
 				"are not compatible");
@@ -532,16 +578,7 @@ expr:    LONG
 		      if( Test_Dims( $2, $4 ) ) {
 			$$ = New_Func( 0, max2_fct, 2, $2, $4, 0, 0, 0, 0, 0 );
 			TEST($$);
-			if( SIZE($2)<SIZE($4) ) {
-			   int i;
-			   gParse.Nodes[$$].value.nelem =
-			      gParse.Nodes[$4].value.nelem;
-			   gParse.Nodes[$$].value.naxis =
-			      gParse.Nodes[$4].value.naxis;
-			   for( i=0; i<gParse.Nodes[$4].value.naxis; i++ )
-			      gParse.Nodes[$$].value.naxes[i] =
-				 gParse.Nodes[$4].value.naxes[i];
-			}
+			if( SIZE($2)<SIZE($4) ) Copy_Dims($$, $4);
 		      } else {
 			yyerror("Dimensions of max(a,b) arguments "
 				"are not compatible");
@@ -657,6 +694,23 @@ bexpr:   BOOLEAN
                   $5 = New_BinOp( BOOLEAN, $1, LTE, $5 );
                   $$ = New_BinOp( BOOLEAN, $3, AND, $5 );
                   TEST($$);                                         }
+
+       | bexpr '?' bexpr ':' bexpr
+                {
+                  if( ! Test_Dims($3,$5) ) {
+                     yyerror("Incompatible dimensions in '?:' arguments");
+		     YYERROR;
+                  }
+                  $$ = New_Func( 0, ifthenelse_fct, 3, $3, $5, $1,
+                                 0, 0, 0, 0 );
+                  TEST($$);
+                  if( SIZE($3)<SIZE($5) )  Copy_Dims($$, $5);
+                  if( ! Test_Dims($1,$$) ) {
+                     yyerror("Incompatible dimensions in '?:' condition");
+		     YYERROR;
+                  }
+                  if( SIZE($$)<SIZE($1) )  Copy_Dims($$, $1);
+                }
 
        | BFUNCTION expr ')'
                 {
@@ -833,11 +887,25 @@ sexpr:   STRING
 		  }
                   $$ = New_Offset( $1, $3 ); TEST($$);
                 }
+       | SNULLREF
+                { $$ = New_Func( STRING, null_fct, 0, 0, 0, 0, 0, 0, 0, 0 ); }
        | '(' sexpr ')'
                 { $$ = $2; }
        | sexpr '+' sexpr
                 { $$ = New_BinOp( STRING, $1, '+', $3 );  TEST($$);
 		  SIZE($$) = SIZE($1) + SIZE($3);                   }
+       | bexpr '?' sexpr ':' sexpr
+                {
+                  if( SIZE($1)!=1 ) {
+                     yyerror("Cannot have a vector string column");
+		     YYERROR;
+                  }
+                  $$ = New_Func( 0, ifthenelse_fct, 3, $3, $5, $1,
+                                 0, 0, 0, 0 );
+                  TEST($$);
+                  if( SIZE($3)<SIZE($5) )  Copy_Dims($$, $5);
+                }
+
        | FUNCTION sexpr ',' sexpr ')'
                 { 
 		  if (FSTRCMP($1,"DEFNULL(") == 0) {
@@ -1589,6 +1657,22 @@ static int Test_Dims( int Node1, int Node2 )
       valid = 0;
    return( valid );
 }   
+
+static void Copy_Dims( int Node1, int Node2 )
+{
+   Node *that1, *that2;
+   int i;
+
+   if( Node1<0 || Node2<0 ) return;
+
+   that1 = gParse.Nodes + Node1;
+   that2 = gParse.Nodes + Node2;
+
+   that1->value.nelem = that2->value.nelem;
+   that1->value.naxis = that2->value.naxis;
+   for( i=0; i<that2->value.naxis; i++ )
+      that1->value.naxes[i] = that2->value.naxes[i];
+}
 
 /********************************************************************/
 /*    Routines for actually evaluating the expression start here    */
@@ -2842,6 +2926,31 @@ static void Do_Func( Node *this )
 					pVals[4].data.dbl, pVals[5].data.dbl,
 					pVals[6].data.dbl );
 	    break;
+
+            /* C Conditional expression:  bool ? expr : expr */
+
+         case ifthenelse_fct:
+            switch( this->type ) {
+            case BOOLEAN:
+               this->value.data.log = ( pVals[2].data.log ?
+                                        pVals[0].data.log : pVals[1].data.log );
+               break;
+            case LONG:
+               this->value.data.lng = ( pVals[2].data.log ?
+                                        pVals[0].data.lng : pVals[1].data.lng );
+               break;
+            case DOUBLE:
+               this->value.data.dbl = ( pVals[2].data.log ?
+                                        pVals[0].data.dbl : pVals[1].data.dbl );
+               break;
+            case STRING:
+	       strcpy(this->value.data.str, ( pVals[2].data.log ?
+                                              pVals[0].data.str :
+                                              pVals[1].data.str ) );
+               break;
+            }
+            break;
+
       }
       this->operation = CONST_OP;
 
@@ -2862,6 +2971,19 @@ static void Do_Func( Node *this )
 	       this->value.data.lngptr[row] = gParse.firstRow + row;
 	       this->value.undef[row] = 0;
 	    }
+	    break;
+	 case null_fct:
+            if( this->type==LONG ) {
+               while( row-- ) {
+                  this->value.data.lngptr[row] = 0;
+                  this->value.undef[row] = 1;
+               }
+            } else if( this->type==STRING ) {
+               while( row-- ) {
+                  this->value.data.strptr[row][0] = '\0';
+                  this->value.undef[row] = 1;
+               }
+            }
 	    break;
 	 case rnd_fct:
 	    if( rand()<32768 && rand()<32768 )
@@ -3029,11 +3151,11 @@ static void Do_Func( Node *this )
 			       theParams[i]->value.data.strptr[row]);
 		     }
 		  if( pNull[0] ) {
-		     this->value.undef[elem] = pNull[1];
-		     strcpy(this->value.data.strptr[elem],pVals[1].data.str);
+		     this->value.undef[row] = pNull[1];
+		     strcpy(this->value.data.strptr[row],pVals[1].data.str);
 		  } else {
 		     this->value.undef[elem] = 0;
-		     strcpy(this->value.data.strptr[elem],pVals[0].data.str);
+		     strcpy(this->value.data.strptr[row],pVals[0].data.str);
 		  }
 	       }
 	    }
@@ -3444,6 +3566,150 @@ static void Do_Func( Node *this )
 			      pVals[6].data.dbl );
 	    }
 	    break;
+
+            /* C Conditional expression:  bool ? expr : expr */
+
+         case ifthenelse_fct:
+            switch( this->type ) {
+            case BOOLEAN:
+	       while( row-- ) {
+		  nelem = this->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+                     if( vector[2]>1 ) {
+                        pVals[2].data.log =
+                           theParams[2]->value.data.logptr[elem];
+                        pNull[2] = theParams[2]->value.undef[elem];
+                     } else if( vector[2] ) {
+                        pVals[2].data.log =
+                           theParams[2]->value.data.logptr[row];
+                        pNull[2] = theParams[2]->value.undef[row];
+                     }
+		     i=2; while( i-- )
+			if( vector[i]>1 ) {
+			   pVals[i].data.log =
+			      theParams[i]->value.data.logptr[elem];
+			   pNull[i] = theParams[i]->value.undef[elem];
+			} else if( vector[i] ) {
+			   pVals[i].data.log =
+			      theParams[i]->value.data.logptr[row];
+			   pNull[i] = theParams[i]->value.undef[row];
+			}
+		     if( !(this->value.undef[elem] = pNull[2]) ) {
+                        if( pVals[2].data.log ) {
+                           this->value.data.logptr[elem] = pVals[0].data.log;
+                           this->value.undef[elem]       = pNull[0];
+                        } else {
+                           this->value.data.logptr[elem] = pVals[1].data.log;
+                           this->value.undef[elem]       = pNull[1];
+                        }
+                     }
+		  }
+	       }
+               break;
+            case LONG:
+	       while( row-- ) {
+		  nelem = this->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+                     if( vector[2]>1 ) {
+                        pVals[2].data.log =
+                           theParams[2]->value.data.logptr[elem];
+                        pNull[2] = theParams[2]->value.undef[elem];
+                     } else if( vector[2] ) {
+                        pVals[2].data.log =
+                           theParams[2]->value.data.logptr[row];
+                        pNull[2] = theParams[2]->value.undef[row];
+                     }
+		     i=2; while( i-- )
+			if( vector[i]>1 ) {
+			   pVals[i].data.lng =
+			      theParams[i]->value.data.lngptr[elem];
+			   pNull[i] = theParams[i]->value.undef[elem];
+			} else if( vector[i] ) {
+			   pVals[i].data.lng =
+			      theParams[i]->value.data.lngptr[row];
+			   pNull[i] = theParams[i]->value.undef[row];
+			}
+		     if( !(this->value.undef[elem] = pNull[2]) ) {
+                        if( pVals[2].data.log ) {
+                           this->value.data.lngptr[elem] = pVals[0].data.lng;
+                           this->value.undef[elem]       = pNull[0];
+                        } else {
+                           this->value.data.lngptr[elem] = pVals[1].data.lng;
+                           this->value.undef[elem]       = pNull[1];
+                        }
+                     }
+		  }
+	       }
+               break;
+            case DOUBLE:
+	       while( row-- ) {
+		  nelem = this->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+                     if( vector[2]>1 ) {
+                        pVals[2].data.log =
+                           theParams[2]->value.data.logptr[elem];
+                        pNull[2] = theParams[2]->value.undef[elem];
+                     } else if( vector[2] ) {
+                        pVals[2].data.log =
+                           theParams[2]->value.data.logptr[row];
+                        pNull[2] = theParams[2]->value.undef[row];
+                     }
+		     i=2; while( i-- )
+			if( vector[i]>1 ) {
+			   pVals[i].data.dbl =
+			      theParams[i]->value.data.dblptr[elem];
+			   pNull[i] = theParams[i]->value.undef[elem];
+			} else if( vector[i] ) {
+			   pVals[i].data.dbl =
+			      theParams[i]->value.data.dblptr[row];
+			   pNull[i] = theParams[i]->value.undef[row];
+			}
+		     if( !(this->value.undef[elem] = pNull[2]) ) {
+                        if( pVals[2].data.log ) {
+                           this->value.data.dblptr[elem] = pVals[0].data.dbl;
+                           this->value.undef[elem]       = pNull[0];
+                        } else {
+                           this->value.data.dblptr[elem] = pVals[1].data.dbl;
+                           this->value.undef[elem]       = pNull[1];
+                        }
+                     }
+		  }
+	       }
+               break;
+            case STRING:
+	       while( row-- ) {
+                  if( vector[2] ) {
+                     pVals[2].data.log = theParams[2]->value.data.logptr[row];
+                     pNull[2] = theParams[2]->value.undef[row];
+                  }
+                  i=2; while( i-- )
+                     if( vector[i] ) {
+                        strcpy( pVals[i].data.str,
+                                theParams[i]->value.data.strptr[row] );
+                        pNull[i] = theParams[i]->value.undef[row];
+                     }
+                  if( !(this->value.undef[row] = pNull[2]) ) {
+                     if( pVals[2].data.log ) {
+                        strcpy( this->value.data.strptr[row],
+                                pVals[0].data.str );
+                        this->value.undef[row]       = pNull[0];
+                     } else {
+                        strcpy( this->value.data.strptr[row],
+                                pVals[1].data.str );
+                        this->value.undef[row]       = pNull[1];
+                     }
+                  } else {
+                     this->value.data.strptr[row][0] = '\0';
+                  }
+	       }
+               break;
+
+            }
+            break;
+
 	 }
       }
    }

@@ -310,6 +310,10 @@ nl		\n
 		     return( DOUBLE );
 		  } else if( !strcasecmp(yytext,"#ROW") ) {
 		     return( ROWREF );
+		  } else if( !strcasecmp(yytext,"#NULL") ) {
+		     return( NULLREF );
+		  } else if( !strcasecmp(yytext,"#SNULL") ) {
+		     return( SNULLREF );
 		  } else {
                      int len; 
                      if (yytext[1] == '$') {
