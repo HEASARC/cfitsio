@@ -13,11 +13,13 @@ main()
     library routines.
 */
 
+    char asciisum[17];
+    unsigned long checksum;
     int status, simple, bitpix, naxis, extend, hdutype, hdunum, tfields;
     long ii, jj;
     int nkeys, nfound, colnum, typecode;
     char cval;
-    long repeat, width, jnulval;
+    long repeat, offset, width, jnulval;
     int anynull;
     float vers;
     unsigned char xinarray[21], binarray[21], boutarray[21];
@@ -73,7 +75,7 @@ main()
     status = 0;
 
     for (ii = 0; ii < 21; ii++)  /* allocate space for string column value */
-        inskey[ii] = (char *) malloc(20);   
+        inskey[ii] = (char *) malloc(21);   
 
     comms[0] = comm;
 
@@ -1114,6 +1116,13 @@ main()
     if (ffmrhd(fptr, 1, &hdutype, &status) > 0)
         goto errstatus;
 
+    printf("\nMoved to BINTABLE; headend, datastart = %d %d\n",
+        fptr->headend, fptr->datastart);
+
+    ffghsp(fptr, &existkeys, &morekeys, &status);
+    printf("header contains %d keywords with room for %d more\n",existkeys,
+            morekeys);
+
     ffghbn(fptr, 99, &nrows, &tfields, ttype, 
            tform, tunit, binname, &pcount, &status);
 
@@ -1202,6 +1211,8 @@ main()
         inskey[ii], larray[ii], xinarray[ii], binarray[ii], iinarray[ii], 
         jinarray[ii]);
     }
+    ffprec(fptr, 
+    "key_prec= 'This keyword was written by ffprec' / comment here", &status);
 
     /*
       ###############################################
@@ -1333,13 +1344,26 @@ main()
             &status);
     printf("ffibin status = %d\n", status);
 
-    fftnul(fptr, 4, 99, &status);   /* define null value for int cols */
-    fftnul(fptr, 5, 99, &status);
-    fftnul(fptr, 6, 99, &status);
 
-    ffpkyj(fptr, "TNULL4", 99, "value for undefined pixels", &status);
-    ffpkyj(fptr, "TNULL5", 99, "value for undefined pixels", &status);
-    ffpkyj(fptr, "TNULL6", 99, "value for undefined pixels", &status);
+    ffpkyj(fptr, "TNULL4", 77, "value for undefined pixels", &status);
+    ffpkyj(fptr, "TNULL5", 77, "value for undefined pixels", &status);
+    ffpkyj(fptr, "TNULL6", 77, "value for undefined pixels", &status);
+
+    ffpkyj(fptr, "TSCAL4", 1000, "scaling factor", &status);
+    ffpkyj(fptr, "TSCAL5", 1, "scaling factor", &status);
+    ffpkyj(fptr, "TSCAL6", 100, "scaling factor", &status);
+
+    ffpkyj(fptr, "TZERO4", 0, "scaling offset", &status);
+    ffpkyj(fptr, "TZERO5", 32768, "scaling offset", &status);
+    ffpkyj(fptr, "TZERO6", 100, "scaling offset", &status);
+
+    fftnul(fptr, 4, 77, &status);   /* define null value for int cols */
+    fftnul(fptr, 5, 77, &status);
+    fftnul(fptr, 6, 77, &status);
+    /* set scaling */
+    fftscl(fptr, 4, 1000., 0., &status);   
+    fftscl(fptr, 5, 1., 32768., &status);
+    fftscl(fptr, 6, 100., 100., &status);
 
     /*
       ############################
@@ -1348,78 +1372,51 @@ main()
     */
 
     /* initialize arrays of values to write to table */
-    for (ii = 0; ii < 20; ii++)
+ 
+    joutarray[0] = 0;
+    joutarray[1] = 1000;
+    joutarray[2] = 10000;
+    joutarray[3] = 32768;
+    joutarray[4] = 65535;
+
+
+    for (ii = 4; ii < 7; ii++)
     {
-        boutarray[ii] = ii + 1;
-        ioutarray[ii] = ii + 1;
-        joutarray[ii] = ii + 1;
-        eoutarray[ii] = ii + 1;
-        doutarray[ii] = ii + 1;
+        ffpclj(fptr, ii, 1, 1, 5, joutarray, &status); 
+        if (status == NUM_OVERFLOW)
+        {
+            printf("Overflow writing to column %d\n", ii);
+        }
+
+        ffpclu(fptr, ii, 6, 1, 1, &status);  /* write null value */
     }
 
-    ffpcls(fptr, 1, 1, 1, 3, onskey, &status);  /* write string values */
-    ffpclu(fptr, 1, 4, 1, 1, &status);  /* write null value */
-
-    larray[0] = 0;
-    larray[1] = 1;
-    larray[2] = 0;
-    larray[3] = 0;
-    larray[4] = 1;
-    larray[5] = 1;
-    larray[6] = 0;
-    larray[7] = 0;
-    larray[8] = 0;
-    larray[9] = 1;
-    larray[10] = 1;
-    larray[11] = 1;
-    larray[12] = 0;
-    larray[13] = 0;
-    larray[14] = 0;
-    larray[15] = 0;
-    larray[16] = 1;
-    larray[17] = 1;
-    larray[18] = 1;
-    larray[19] = 1;
-    larray[20] = 0;
-    larray[21] = 0;
-    larray[22] = 0;
-    larray[23] = 0;
-    larray[24] = 0;
-    larray[25] = 1;
-    larray[26] = 1;
-    larray[27] = 1;
-    larray[28] = 1;
-    larray[29] = 1;
-    larray[30] = 0;
-    larray[31] = 0;
-    larray[32] = 0;
-    larray[33] = 0;
-    larray[34] = 0;
-    larray[35] = 0;
-
-    ffpclx(fptr, 3, 1, 1, 36, larray, &status);
-
-    for (ii = 4; ii < 9; ii++)   /* loop over cols 4 - 8 */
+    for (jj = 4; jj < 7; jj++)
     {
-        ffpclb(fptr, ii, 1, 1, 2, boutarray, &status);
-        if (status == NUM_OVERFLOW)
-            status = 0;
-        ffpcli(fptr, ii, 3, 1, 2, &ioutarray[2], &status); 
-        if (status == NUM_OVERFLOW)
-            status = 0;
-        ffpclj(fptr, ii, 5, 1, 2, &joutarray[4], &status); 
-        if (status == NUM_OVERFLOW)
-            status = 0;
-        ffpcle(fptr, ii, 7, 1, 2, &eoutarray[6], &status);
-        if (status == NUM_OVERFLOW)
-            status = 0;
-        ffpcld(fptr, ii, 9, 1, 2, &doutarray[8], &status);
-        if (status == NUM_OVERFLOW)
-            status = 0;
-
-        ffpclu(fptr, ii, 11, 1, 1, &status);  /* write null value */
+      ffgcvj(fptr, jj, 1, 1, 6, -999, jinarray, &anynull, &status);
+      for (ii = 0; ii < 6; ii++)
+      {
+        printf(" %6d", jinarray[ii]);
+      }
+      printf(" status = %d\n", status);
     }
-    printf("ffpclx status = %d\n", status);
+
+    printf("\n");
+    /* turn off scaling, and read the unscaled values */
+    fftscl(fptr, 4, 1., 0., &status);   
+    fftscl(fptr, 5, 1., 0., &status);
+    fftscl(fptr, 6, 1., 0., &status);
+
+    for (jj = 4; jj < 7; jj++)
+    {
+      ffgcvj(fptr, jj, 1, 1, 6, -999, jinarray, &anynull, &status);
+      for (ii = 0; ii < 6; ii++)
+      {
+        printf(" %6d", jinarray[ii]);
+      }
+      printf(" status = %d\n", status);
+      status = 0;
+    }
 
     /*
       ######################################################
@@ -1571,21 +1568,218 @@ main()
              hdutype, status);
 
     /*
-      ######################################################
-      #  append image extension (don't write any data) #
-      ######################################################
+      ###########################################################
+      #  append bintable extension with variable length columns #
+      ###########################################################
     */
 
     ffcrhd(fptr, &status);
+    printf("ffcrhd status = %d\n", status);
 
-    bitpix = -32;
-    naxis = 2;
-    naxes[0] = 15;
-    naxes[1] = 25;
-    ffphps(fptr, bitpix, naxis, naxes, &status);
+    for (ii = 0; ii < 10; ii++)
+    {
+      ttype[ii] = (char *) malloc(20);
+      tform[ii] = (char *) malloc(20);
+      tunit[ii] = (char *) malloc(20);
+    }
 
-    printf("\nAppend image extension: ffiimg status = %d\n", status);
-    printf(" HDU number = %d\n", ffghdn(fptr, &hdunum));
+    strcpy(tform[0], "1PA");
+    strcpy(tform[1], "1PL");
+    strcpy(tform[2], "1PX");
+    strcpy(tform[3], "1PB");
+    strcpy(tform[4], "1PI");
+    strcpy(tform[5], "1PJ");
+    strcpy(tform[6], "1PE");
+    strcpy(tform[7], "1PD");
+    strcpy(tform[8], "1PC");
+    strcpy(tform[9], "1PM");
+
+    strcpy(ttype[0], "Avalue");
+    strcpy(ttype[1], "Lvalue");
+    strcpy(ttype[2], "Xvalue");
+    strcpy(ttype[3], "Bvalue");
+    strcpy(ttype[4], "Ivalue");
+    strcpy(ttype[5], "Jvalue");
+    strcpy(ttype[6], "Evalue");
+    strcpy(ttype[7], "Dvalue");
+    strcpy(ttype[8], "Cvalue");
+    strcpy(ttype[9], "Mvalue");
+
+    strcpy(tunit[0], "");
+    strcpy(tunit[1], "m**2");
+    strcpy(tunit[2], "cm");
+    strcpy(tunit[3], "erg/s");
+    strcpy(tunit[4], "km/s");
+    strcpy(tunit[5], "");
+    strcpy(tunit[6], "");
+    strcpy(tunit[7], "");
+    strcpy(tunit[8], "");
+    strcpy(tunit[9], "");
+
+    nrows = 20;
+    tfields = 10;
+    pcount = 0;
+
+    ffphbn(fptr, nrows, tfields, ttype, tform, tunit, binname, pcount,
+            &status);
+    printf("Variable length arrays: ffphbn status = %d\n", status);
+    ffpkyj(fptr, "TNULL4", 88, "value for undefined pixels", &status);
+    ffpkyj(fptr, "TNULL5", 88, "value for undefined pixels", &status);
+    ffpkyj(fptr, "TNULL6", 88, "value for undefined pixels", &status);
+
+    /*
+      ############################
+      #  write data to columns   #
+      ############################
+    */
+
+    /* initialize arrays of values to write to table */
+    strcpy(iskey,"abcdefghijklmnopqrst");
+
+    for (ii = 0; ii < 20; ii++)
+    {
+        boutarray[ii] = ii + 1;
+        ioutarray[ii] = ii + 1;
+        joutarray[ii] = ii + 1;
+        eoutarray[ii] = ii + 1;
+        doutarray[ii] = ii + 1;
+    }
+
+    larray[0] = 0;
+    larray[1] = 1;
+    larray[2] = 0;
+    larray[3] = 0;
+    larray[4] = 1;
+    larray[5] = 1;
+    larray[6] = 0;
+    larray[7] = 0;
+    larray[8] = 0;
+    larray[9] = 1;
+    larray[10] = 1;
+    larray[11] = 1;
+    larray[12] = 0;
+    larray[13] = 0;
+    larray[14] = 0;
+    larray[15] = 0;
+    larray[16] = 1;
+    larray[17] = 1;
+    larray[18] = 1;
+    larray[19] = 1;
+
+      strncpy(inskey[0], iskey, 1);
+      inskey[0][1] = '\0';
+      ffpcls(fptr, 1, 1, 1, 1, inskey, &status);  /* write string values */
+      ffpcll(fptr, 2, 1, 1, 1, larray, &status);  /* write logicals */
+      ffpclx(fptr, 3, 1, 1, 1, larray, &status);  /* write bits */
+      ffpclb(fptr, 4, 1, 1, 1, boutarray, &status);
+      ffpcli(fptr, 5, 1, 1, 1, ioutarray, &status); 
+      ffpclj(fptr, 6, 1, 1, 1, joutarray, &status); 
+      ffpcle(fptr, 7, 1, 1, 1, eoutarray, &status);
+      ffpcld(fptr, 8, 1, 1, 1, doutarray, &status);
+    for (ii = 2; ii <= 20; ii++)   /* loop over rows 1 - 20 */
+    {
+      strncpy(inskey[0], iskey, ii);
+      inskey[0][ii] = '\0';
+      ffpcls(fptr, 1, ii, 1, 1, inskey, &status);  /* write string values */
+
+      ffpcll(fptr, 2, ii, 1, ii, larray, &status);  /* write logicals */
+      ffpclu(fptr, 2, ii, ii-1, 1, &status);
+
+      ffpclx(fptr, 3, ii, 1, ii, larray, &status);  /* write bits */
+
+      ffpclb(fptr, 4, ii, 1, ii, boutarray, &status);
+      ffpclu(fptr, 4, ii, ii-1, 1, &status);
+
+      ffpcli(fptr, 5, ii, 1, ii, ioutarray, &status); 
+      ffpclu(fptr, 5, ii, ii-1, 1, &status);
+
+      ffpclj(fptr, 6, ii, 1, ii, joutarray, &status); 
+      ffpclu(fptr, 6, ii, ii-1, 1, &status);
+
+      ffpcle(fptr, 7, ii, 1, ii, eoutarray, &status);
+      ffpclu(fptr, 7, ii, ii-1, 1, &status);
+
+      ffpcld(fptr, 8, ii, 1, ii, doutarray, &status);
+      ffpclu(fptr, 8, ii, ii-1, 1, &status);
+    }
+    printf("ffpcl_ status = %d\n", status);
+    /*
+      #################################
+      #  close then reopen this HDU   #
+      #################################
+    */
+
+     ffmrhd(fptr, -1, &hdutype, &status);
+     ffmrhd(fptr,  1, &hdutype, &status);
+
+    /*
+      #############################
+      #  read data from columns   #
+      #############################
+    */
+
+    ffgkyj(fptr, "PCOUNT", &pcount, comm, &status);
+    printf("PCOUNT = %d\n", pcount);
+
+    /* initialize the variables to be read */
+    strcpy(inskey[0]," ");
+    strcpy(iskey," ");
+
+    for (ii = 0; ii < 20; ii++)
+    {
+        larray[ii] = 0;
+        boutarray[ii] = 0;
+        ioutarray[ii] = 0;
+        joutarray[ii] = 0;
+        eoutarray[ii] = 0;
+        doutarray[ii] = 0;
+    }
+
+    printf("HDU number = %d\n", ffghdn(fptr, &hdunum));
+    for (ii = 1; ii <= 20; ii++)   /* loop over rows 1 - 20 */
+    {
+      ffgcvs(fptr, 1, ii, 1, 1, iskey, inskey, &anynull, &status);  
+      printf("A %s %d\nL", inskey[0], status);
+
+      ffgcl( fptr, 2, ii, 1, ii, larray, &status); 
+      for (jj = 0; jj < ii; jj++)
+        printf(" %2d", larray[jj]);
+      printf(" %d\nX", status);
+
+      ffgcx(fptr, 3, ii, 1, ii, larray, &status);
+      for (jj = 0; jj < ii; jj++)
+        printf(" %2d", larray[jj]);
+      printf(" %d\nB", status);
+
+      ffgcvb(fptr, 4, ii, 1, ii, 99, boutarray, &anynull, &status);
+      for (jj = 0; jj < ii; jj++)
+        printf(" %2d", boutarray[jj]);
+      printf(" %d\nI", status);
+
+      ffgcvi(fptr, 5, ii, 1, ii, 99, ioutarray, &anynull, &status); 
+      for (jj = 0; jj < ii; jj++)
+        printf(" %2d", ioutarray[jj]);
+      printf(" %d\nJ", status);
+
+      ffgcvj(fptr, 6, ii, 1, ii, 99, joutarray, &anynull, &status); 
+      for (jj = 0; jj < ii; jj++)
+        printf(" %2d", joutarray[jj]);
+      printf(" %d\nE", status);
+
+      ffgcve(fptr, 7, ii, 1, ii, 99., eoutarray, &anynull, &status);
+      for (jj = 0; jj < ii; jj++)
+        printf(" %2.0f", eoutarray[jj]);
+      printf(" %d\nD", status);
+
+      ffgcvd(fptr, 8, ii, 1, ii, 99., doutarray, &anynull, &status);
+      for (jj = 0; jj < ii; jj++)
+        printf(" %2.0f", doutarray[jj]);
+      printf(" %d\n", status);
+
+      ffgdes(fptr, 8, ii, &repeat, &offset, &status);
+      printf("Column 8 repeat and offset = %d %d\n", repeat, offset);
+    }
+
     /*
       ###########################################################
       #  perform stress test by cycling thru all the extensions #
@@ -1608,6 +1802,13 @@ main()
          break;
     }
     printf("\n");
+
+    checksum = 1426738146;
+    ffesum(checksum, 0, asciisum);
+    printf("\nEncode checksum: %u -> %s\n", checksum, asciisum);
+    checksum = 0;
+    ffdsum(asciisum, 0, &checksum);
+    printf("Decode checksum: %s -> %u\n", asciisum, checksum);
 
     /*
       ############################

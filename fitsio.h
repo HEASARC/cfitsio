@@ -69,7 +69,6 @@ typedef struct      /* structure used to store basic HDU information */
     tcolumn *tableptr; /* pointer to the table structure */
     long heapstart;   /* heap start byte relative to start of data unit */
     long heapsize;    /* size of the heap, in bytes */
-    long nextheap;    /* next empty heap byte relative to heap start */
 } fitsfile;
 
 /* error status codes */
@@ -352,6 +351,10 @@ int ffcpdt(fitsfile *infptr, fitsfile *outfptr, int *status);
 int ffrdef(fitsfile *fptr, int *status);
 int ffhdef(fitsfile *fptr, int morekeys, int *status);
 int ffpthp(fitsfile *fptr, long theap, int *status);
+
+int ffcsum(fitsfile *fptr, long nrec, unsigned long *sum, int *status);
+int ffesum(unsigned long sum, int complm, char *ascii);
+unsigned long ffdsum(char *ascii, int complm, unsigned long *sum);
 
 /*--------------------- define scaling or null values -------------*/
 int ffpscl(fitsfile *fptr, double scale, double zero, int *status);

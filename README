@@ -1,5 +1,5 @@
                      CFITSIO - Beta Release
-                         April 12, 1996
+                         April 19, 1996
 
   Beta Software Disclaimer:  While this software has been extensively
   tested on many different machines, every single routine in the CFITSIO
@@ -12,13 +12,9 @@
 CFITSIO is a library of ANSI C routines for reading and writing FITS
 format files.  These C routines have nearly the same calling sequences
 as the Fortran subroutines provided in the original fitsio library.
-The main difference is that the C routines all have names beginning
-with 'ff' rather than 'ft' in the Fortran subroutines.  Due to this
-close similarity, users of CFITSIO may refer to the FITSIO User's Guide
-(which is included with this release in the files fitsio.doc and
-fitsio.ps; the postscript file is 65 pages long) to help understand
-what each routine does.  Users should also refer to the prototypes of
-all the user-callable routines that are included in the fitsio.h file.
+The CFITSIO User's Guide, in the file cfitsio.ps (postscript format)
+or cfitsio.doc (plain ASCII text) contains full instructions on
+building and using this library.
 
 This new CFITSIO library, written entirely in ANSI C, should
 not be confused with the previously available set of C macros which
@@ -92,8 +88,7 @@ CFITSIO.  Users are free to copy or modify these routines for their own
 purposes.
 
 The cookbook program produces 2 FITS files, atestfil.fit and
-btestfil.fit, which should be identical to the atestfil.std and
-btestfil.std FITS files provided with this release.
+btestfil.fit.
 
 SUPPORTED PLATFORMS
 -------------------

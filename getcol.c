@@ -3388,6 +3388,7 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
     char tform[20];
     char message[FLEN_ERRMSG];
     char snull[20];   /*  the FITS null value  */
+    tcolumn *colptr;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
@@ -3402,21 +3403,46 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
     /*---------------------------------------------------*/
-    if (ffgcpr( fptr, colnum, firstrow, firstelem, nelem, 0, &scale, &zero,
+    if (colnum < 1 || colnum > fptr->tfield)
+    {
+        sprintf(message, "Specified column number is out of range: %d",
+                colnum);
+        ffpmsg(message);
+        return(*status = BAD_COL_NUM);
+    }
+
+    colptr  = fptr->tableptr;   /* point to first column */
+    colptr += (colnum - 1);     /* offset to correct column structure */
+    tcode = colptr->tdatatype;
+
+    if (tcode == -FTYPE_ASCII) /* variable length column in a binary table? */
+    {
+      /* only write a single string; ignore value of firstelem */
+
+      if (ffgcpr( fptr, colnum, firstrow, 1, 1, 0, &scale, &zero,
         tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
 
-    if (abs(tcode) != FTYPE_ASCII)   
+      remain = 1;
+      twidth = repeat;  
+    }
+    else if (tcode == FTYPE_ASCII)
+    {
+      if (ffgcpr( fptr, colnum, firstrow, firstelem, nelem, 0, &scale, &zero,
+        tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
+        &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
+        return(*status);
+
+      remain = nelem;
+    }
+    else
         return(*status = NOT_ASCII_COL);
 
     nullen = strlen(snull);   /* length of the undefined pixel string */
     if (nullen == 0)
         nullen = 1;
  
-    if (tcode < 0)
-        repeat = 1;  /* read one string per row */
-
     /*------------------------------------------------------------------*/
     /*  Decide whether to check for null values in the input FITS file: */
     /*------------------------------------------------------------------*/
@@ -3431,24 +3457,13 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
     /*---------------------------------------------------------------------*/
     /*  Now read the strings one at a time from the FITS column.            */
     /*---------------------------------------------------------------------*/
-    remain = nelem;           /* remaining number of values to write  */
-    next = 0;                 /* next element in array to be written  */
+    next = 0;                 /* next element in array to be read  */
     rownum = 0;               /* row number, relative to firstrow     */
 
     while (remain)
     {
-      if (tcode > 0)
-      {
-        readptr = startpos + (rownum * rowlen) + (elemnum * incre);
-      }
-      else
-      {
-        /*  read the descriptor from the fixed length part of table */
-        ffgdes(fptr, colnum, firstrow + rownum, &twidth, &offset, status);
-
-        readptr = fptr->datastart + fptr->heapstart + offset;
-      }
-
+      readptr = startpos + (rownum * rowlen) + (elemnum * incre);
+ 
       ffmbyt(fptr, readptr, REPORT_EOF, status);  /* move to read position */
       ffgbyt(fptr, twidth, array[next], status);
 
@@ -3546,7 +3561,7 @@ int ffgcfl( fitsfile *fptr,   /* I - FITS file pointer                       */
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
 
-    if (abs(tcode) != FTYPE_LOGICAL)   
+    if (tcode != FTYPE_LOGICAL)   
         return(*status = NOT_LOGICAL_COL);
  
     /*---------------------------------------------------------------------*/
@@ -3567,17 +3582,7 @@ int ffgcfl( fitsfile *fptr,   /* I - FITS file pointer                       */
       ntodo = minvalue(ntodo, maxelem);      
       ntodo = minvalue(ntodo, (repeat - elemnum));
 
-      if (tcode > 0)
-      {
-        readptr = startpos + (rownum * rowlen) + (elemnum * incre);
-      }
-      else
-      {
-        /*  read the descriptor from the fixed length part of table */
-        ffgdes(fptr, colnum, firstrow + rownum, &twidth, &offset, status);
-
-        readptr = fptr->datastart + fptr->heapstart + offset;
-      }
+      readptr = startpos + (rownum * rowlen) + (elemnum * incre);
 
       ffmbyt(fptr, readptr, REPORT_EOF, status);  /* move to read position */
 
@@ -5106,7 +5111,7 @@ int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
     }
 
     /* move the i/o pointer to the start of the pixel sequence */
-    if (ffmbyt(fptr, bstart, FALSE, status) > 0)
+    if (ffmbyt(fptr, bstart, REPORT_EOF, status) > 0)
         return(*status);
 
     /* read the next byte */
@@ -5138,7 +5143,7 @@ int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
           bstart = fptr->datastart + (rstart * fptr->rowlength) +
                colptr->tbcol;
 
-          ffmbyt(fptr, bstart, FALSE, status);
+          ffmbyt(fptr, bstart, REPORT_EOF, status);
         }
       }
       bitloc = 0;

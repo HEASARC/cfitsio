@@ -25,7 +25,7 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-    *version = 0.95;  /* beta development version */
+    *version = 0.98;  /* beta development version */
 
     return(*version);
 }
@@ -1215,7 +1215,8 @@ void ffunswaplong(long *lvalues, /* IO - pointer to longs to be swapped     */
 
         /* if the 4-byte long is stored in an 8 byte word, */
         /* we must initialize the word with the sign bit   */
-        if (*cvalues >  127)
+
+        if (*(cvalues-3) >  127)
             lval = -1; 
         else
             lval = 0;

@@ -1559,62 +1559,71 @@ int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
     char tform[20], *blanks;
     char message[FLEN_ERRMSG];
     char snull[20];   /*  the FITS null value  */
+    tcolumn *colptr;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
+    if (fptr->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               /* rescan header */
+            return(*status);
+
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
     /*---------------------------------------------------*/
-    if (ffgcpr( fptr, colnum, firstrow, firstelem, nelem, 1, &scale, &zero,
+    if (colnum < 1 || colnum > fptr->tfield)
+    {
+        sprintf(message, "Specified column number is out of range: %d",
+                colnum);
+        ffpmsg(message);
+        return(*status = BAD_COL_NUM);
+    }
+
+    colptr  = fptr->tableptr;   /* point to first column */
+    colptr += (colnum - 1);     /* offset to correct column structure */
+    tcode = colptr->tdatatype;
+
+    if (tcode == -FTYPE_ASCII) /* variable length column in a binary table? */
+    {
+      /* only write a single string; ignore value of firstelem */
+      nchar = strlen(array[0]); 
+
+      if (ffgcpr( fptr, colnum, firstrow, 1, nchar, 1, &scale, &zero,
         tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
 
-    if (abs(tcode) != FTYPE_ASCII)   
-        return(*status = NOT_ASCII_COL);
-
-    if (tcode > 0)   /* this is a fixed length string */
+      remain = 1;
+      twidth = nchar;  
+    }
+    else if (tcode == FTYPE_ASCII)
     {
+      if (ffgcpr( fptr, colnum, firstrow, firstelem, nelem, 1, &scale, &zero,
+        tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
+        &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
+        return(*status);
+
       blanks = (char *) malloc(twidth); /* string for blank fill values */
       for (ii = 0; ii < twidth; ii++)
           blanks[ii] = ' ';          /* fill string with blanks */
-    }
-    else
-    {
-      repeat = 1;    /* write 1 element per row */
-      elemnum = 0;   /* ignore the input value of firstelem */
-    }
 
+      remain = nelem;           /* remaining number of values to write  */
+    }
+    else 
+      return(*status = NOT_ASCII_COL);
  
     /*---------------------------------------------------------------------*/
     /*  Now write the strings one at a time to the FITS column.            */
     /*---------------------------------------------------------------------*/
-    remain = nelem;           /* remaining number of values to write  */
+
     next = 0;                 /* next element in array to be written  */
     rownum = 0;               /* row number, relative to firstrow     */
 
     while (remain)
     {
+      wrtptr = startpos + (rownum * rowlen) + (elemnum * incre);
       nchar = strlen(array[next]); 
-
-      if (tcode > 0)
-      {
-        nchar = minvalue(nchar, twidth);  /* only write what fits in field */
-
-        wrtptr = startpos + (rownum * rowlen) + (elemnum * incre);
-      }
-      else
-      {
-       twidth = nchar;  /* set field width to match string */
-
-       /*  write the descriptor into the fixed length part of table */
-       ffpdes(fptr, colnum, firstrow + rownum, nchar, fptr->nextheap, status);
-
-       fptr->nextheap += nchar;  /* increment the next empty heap address */
-
-       wrtptr = fptr->datastart + fptr->heapstart + fptr->nextheap;
-      }
+      nchar = minvalue(nchar, twidth);  /* only write what fits in field */
 
       ffmbyt(fptr, wrtptr, IGNORE_EOF, status);  /* move to write position */
 
@@ -1681,18 +1690,9 @@ int ffpcll( fitsfile *fptr,  /* I - FITS file pointer                       */
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
 
-    if (abs(tcode) != FTYPE_LOGICAL)   
+    if (tcode != FTYPE_LOGICAL)   
         return(*status = NOT_LOGICAL_COL);
 
-    if (tcode < 0)    /* a variable length column */
-    {
-        /*  write the descriptor into the fixed length part of table */
-        ffpdes(fptr, colnum, firstrow, repeat, fptr->nextheap, status);
-
-        /* increment the address to the next empty heap position */
-        fptr->nextheap += repeat; 
-    }
- 
     /*---------------------------------------------------------------------*/
     /*  Now write the logical values one at a time to the FITS column.     */
     /*---------------------------------------------------------------------*/
@@ -1702,14 +1702,7 @@ int ffpcll( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     while (remain)
     {
-      if (tcode > 0)
-      {
-        wrtptr = startpos + (rownum * rowlen) + (elemnum * incre);
-      }
-      else
-      {
-        wrtptr = fptr->datastart + fptr->heapstart + fptr->nextheap;
-      }
+      wrtptr = startpos + (rownum * rowlen) + (elemnum * incre);
 
       ffmbyt(fptr, wrtptr, IGNORE_EOF, status);  /* move to write position */
 
@@ -1811,18 +1804,6 @@ int ffpclb( fitsfile *fptr,  /* I - FITS file pointer                       */
     }
     else
         writeraw = 0;
-
-    if (tcode < 0)    /* a variable length column */
-    {
-        tcode *= (-1);  
-
-        /*  write the descriptor into the fixed length part of table */
-        ffpdes(fptr, colnum, firstrow, repeat, fptr->nextheap, status);
-
-        /* increment the address to the next empty heap position */
-        fptr->nextheap += (repeat * incre); 
-
-    }
 
     /*---------------------------------------------------------------------*/
     /*  Now write the pixels to the FITS column.                           */
@@ -2024,17 +2005,6 @@ int ffpcli( fitsfile *fptr,  /* I - FITS file pointer                       */
     }
     else
         writeraw = 0;
-
-    if (tcode < 0)    /* a variable length column */
-    {
-        tcode *= (-1);  
-
-        /*  write the descriptor into the fixed length part of table */
-        ffpdes(fptr, colnum, firstrow, repeat, fptr->nextheap, status);
-
-        /* increment the address to the next empty heap position */
-        fptr->nextheap += (repeat * incre); 
-    }
 
     /*---------------------------------------------------------------------*/
     /*  Now write the pixels to the FITS column.                           */
@@ -2238,17 +2208,6 @@ int ffpclj( fitsfile *fptr,  /* I - FITS file pointer                       */
     else
         writeraw = 0;
 
-    if (tcode < 0)    /* a variable length column */
-    {
-        tcode *= (-1);  
-
-        /*  write the descriptor into the fixed length part of table */
-        ffpdes(fptr, colnum, firstrow, repeat, fptr->nextheap, status);
-
-        /* increment the address to the next empty heap position */
-        fptr->nextheap += (repeat * incre); 
-    }
-
     /*---------------------------------------------------------------------*/
     /*  Now write the pixels to the FITS column.                           */
     /*  First call the ffXXfYY routine to  (1) convert the datatype        */
@@ -2451,17 +2410,6 @@ int ffpcle( fitsfile *fptr,  /* I - FITS file pointer                       */
     else
         writeraw = 0;
 
-    if (tcode < 0)    /* a variable length column */
-    {
-        tcode *= (-1);  
-
-        /*  write the descriptor into the fixed length part of table */
-        ffpdes(fptr, colnum, firstrow, repeat, fptr->nextheap, status);
-
-        /* increment the address to the next empty heap position */
-        fptr->nextheap += (repeat * incre); 
-    }
-
     /*---------------------------------------------------------------------*/
     /*  Now write the pixels to the FITS column.                           */
     /*  First call the ffXXfYY routine to  (1) convert the datatype        */
@@ -2663,17 +2611,6 @@ int ffpcld( fitsfile *fptr,  /* I - FITS file pointer                       */
     else
         writeraw = 0;
 
-    if (tcode < 0)    /* a variable length column */
-    {
-        tcode *= (-1);  
-
-        /*  write the descriptor into the fixed length part of table */
-        ffpdes(fptr, colnum, firstrow, repeat, fptr->nextheap, status);
-
-        /* increment the address to the next empty heap position */
-        fptr->nextheap += (repeat * incre); 
-    }
-
     /*---------------------------------------------------------------------*/
     /*  Now write the pixels to the FITS column.                           */
     /*  First call the ffXXfYY routine to  (1) convert the datatype        */
@@ -2853,9 +2790,6 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
         tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
-
-    tcode = abs(tcode); /* don't have to do anything special for variable */
-                        /* length array columns */
 
     if (tcode == FTYPE_ASCII)
     {
@@ -3070,23 +3004,23 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
         /* length arrays.  REPEAT is the number of BITS in the array. */
 
         repeat = fbit + nbit -1;
-        offset = fptr->nextheap;
+        offset = fptr->heapsize;
         /* write the number of elements and the starting offset */
         ffpdes(fptr, colnum, frow, repeat, offset, status);
         /* calc the i/o pointer location to start of sequence of pixels */
         bstart = fptr->datastart + offset + fptr->heapstart + estart;
         /* increment the empty heap starting address (in bytes) */
         repeat = (repeat + 7) / 8;  /* convert from bits to bytes */
-        fptr->nextheap += repeat;
+        fptr->heapsize += repeat;
     }
 
     /* move the i/o pointer to the start of the pixel sequence */
-    ffmbyt(fptr, bstart, TRUE, status);
+    ffmbyt(fptr, bstart, IGNORE_EOF, status);
 
     /* read the next byte (we may only be modifying some of the bits) */
     while (1)
     {
-      if (ffgbyt(fptr, 1, &cbuff, status) == END_OF_FILE)
+      if (ffgbyt(fptr, 1, &cbuff, status) == READ_ERROR)
       {
         /* hit end of file trying to read the byte, so just set byte = 0 */
         *status = 0;
@@ -3094,7 +3028,7 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
       }
 
       /* move back, to be able to overwrite the byte */
-      ffmbyt(fptr, bstart, TRUE, status);
+      ffmbyt(fptr, bstart, REPORT_EOF, status);
  
       for (ii = bitloc; (ii < 8) && (ndone < nbit); ii++, ndone++)
       {
@@ -3122,7 +3056,7 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
           bstart = fptr->datastart + (rstart * fptr->rowlength) +
                colptr->tbcol;
 
-          ffmbyt(fptr, bstart, TRUE, status);
+          ffmbyt(fptr, bstart, IGNORE_EOF, status);
         }
       }
       bitloc = 0;

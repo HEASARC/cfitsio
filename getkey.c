@@ -1293,7 +1293,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
         else if (!strcmp(name, "END"))
             found_end = 1;
 
-        else if (!name && !value && !comm)
+        else if (!name[0] && !value[0] && !comm[0])
             *nspace = *nspace + 1;  /* this is a blank card in the header */
 
         else

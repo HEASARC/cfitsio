@@ -574,7 +574,6 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
     */
     fptr->heapstart = (pcount + npix) * bytlen * gcount;
     fptr->heapsize = 0;
-    fptr->nextheap = 0;
 
     if (naxis == 0)
     {
@@ -701,7 +700,6 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
     */
     fptr->heapstart = rowlen * nrows;
     fptr->heapsize = 0;
-    fptr->nextheap = 0;
 
     /* now search for the table column keywords and the END keyword */
 
@@ -723,7 +721,7 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
         else if (!strcmp(name, "END"))  /* is this the END keyword? */
             break;
 
-        else if (!name && !value && !comm)  /* a blank keyword? */
+        if (!name[0] && !value[0] && !comm[0])  /* a blank keyword? */
             nspace++;
 
         else
@@ -855,7 +853,6 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     */
     fptr->heapstart = rowlen * nrows;
     fptr->heapsize = pcount;
-    fptr->nextheap = pcount; /* no empty space; set to end of heap */
 
     /* now search for the table column keywords and the END keyword */
 
@@ -878,7 +875,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
             break;
 
 
-        if (!name && !value && !comm)  /* a blank keyword? */
+        if (!name[0] && !value[0] && !comm[0])  /* a blank keyword? */
             nspace++;
 
         else
@@ -1259,6 +1256,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     *zero     = colptr->tzero;
     *repeat   = colptr->trepeat;
     *tcode    = colptr->tdatatype;
+
     if (abs(*tcode) == FTYPE_BIT)
     {
         /* interprete 'X' column as 'B' */
@@ -1368,14 +1366,21 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
 
     else    /*  Variable length Binary Table column */
     {
+      *tcode *= (-1);  
+
       if (writemode)     /* return next empty heap address for writing */
       {
         *repeat = nelem + *elemnum; /* total no. of elements in the field */
 
         /*  calculate starting position (for writing new data) in the heap */
-        *startpos = datastart + fptr->heapstart + fptr->nextheap;
-      }
+        *startpos = datastart + fptr->heapstart + fptr->heapsize;
 
+        /*  write the descriptor into the fixed length part of table */
+        ffpdes(fptr, colnum, firstrow, *repeat, fptr->heapsize, status);
+
+        /* increment the address to the next empty heap position */
+        fptr->heapsize += (*repeat * (*incre)); 
+      }
       else    /*  get the read start position in the heap */
       {
         ffgdes(fptr, colnum, firstrow, repeat, startpos, status);
@@ -1515,10 +1520,19 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
     - write the END keyword and pad header with blanks if necessary
     - check the data fill values, and rewrite them if not correct
 */
-    char message[FLEN_ERRMSG];
+    long pcount;
+    char comm[FLEN_COMMENT], message[FLEN_ERRMSG];
 
     if (fptr->writemode == 1)  /* write access to the file? */
     {
+        /* if data has been written to variable length columns in a  */
+        /* binary table, then we may need to update the PCOUNT value */
+        if (fptr->heapsize > 0)
+        {
+          ffgkyj(fptr, "PCOUNT", &pcount, comm, status);
+          if (fptr->heapsize > pcount)
+             ffmkyj(fptr, "PCOUNT", fptr->heapsize, "&", status);
+        }
         ffrdef(fptr, status);  /* scan header to redefine structure */
         ffpdfl(fptr, status);  /* insure correct data file values */
     }
@@ -1859,7 +1873,7 @@ int ffpdfl(fitsfile *fptr,      /* I - FITS file pointer */
     if (fptr->heapstart == 0)
         return(*status);      /* null data unit, so there is no fill */
 
-    fillstart = fptr->datastart + fptr->heapstart + fptr-> heapsize;
+    fillstart = fptr->datastart + fptr->heapstart + fptr->heapsize;
 
     nfill = (fillstart + 2879) / 2880 * 2880 - fillstart;
 
@@ -2171,12 +2185,14 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
     fptr->headend = fptr->headstart[nexthdu];
     fptr->datastart = (fptr->headstart[nexthdu]) + (nhead * 2880);
 
-    /* write the required header keywords */
+    /* write the required header keywords. This will write PCOUNT = 0 */
+    /* so that the variable length data will be written at the right place */
     ffphbn(fptr, naxis2, tfields, ttype, tform, tunit, extname, pcount,
            status);
 
-    /* redefine internal structure for this HDU */
+    /* redefine internal structure for this HDU (with PCOUNT = 0) */
     ffrdef(fptr, status);
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -3274,5 +3290,168 @@ int ffshft(fitsfile *fptr,  /* I - FITS file pointer                        */
         ntodo -= ntomov;
     }
     return(*status);
+}
+/*------------------------------------------------------------------------*/
+int ffcsum(fitsfile *fptr,      /* I - FITS file pointer                  */
+           long nrec,           /* I - number of 2880-byte blocks to sum  */
+           unsigned long *sum,  /* IO - accumulated checksum              */
+           int *status)         /* IO - error status                      */
+/*
+    Calculate a 32-bit 1's complement checksum of the FITS 2880-byte blocks.
+    This routine is based on the C algorithm developed by Rob
+    Seaman at NOAO that was presented at the 1994 ADASS conference,  
+    published in the Astronomical Society of the Pacific Conference Series.
+    This uses a 32-bit 1's complement checksum in which the overflow bits
+    are permuted back into the sum and therefore all bit positions are
+    sampled evenly. 
+*/
+{
+    long buf[720];
+    long ii, jj;
+    unsigned short *sbuf;
+    unsigned long hi, lo, hicarry, locarry;
+
+    if (*status > 0)
+        return(*status);
+  /*
+    Sum the specified number of FITS 2880-byte records.  This assumes that
+    the FITSIO file pointer points to the start of the records to be summed.
+    Read each FITS block as 720 long int values (do byte swapping if needed).
+  */
+    for (jj = 0; jj < nrec; jj++)
+    {
+      ffgi4b(fptr, 720, 4, buf, status);
+
+      sbuf = (unsigned short *) buf;
+      hi = (*sum >> 16);
+      lo = (*sum << 16) >> 16;
+
+      for (ii = 0; ii < 1440; ii += 2)
+      {
+        hi += sbuf[ii];
+        lo += sbuf[ii+1];
+      }
+
+      hicarry = hi >> 16;    /* fold carry bits in */
+      locarry = lo >> 16;
+
+      while (hicarry | locarry)
+      {
+        hi = (hi & 0xFFFF) + locarry;
+        lo = (lo & 0xFFFF) + hicarry;
+        hicarry = hi >> 16;
+        locarry = lo >> 16;
+      }
+
+      *sum = (hi << 16) + lo;
+    }
+    return(*status);
+}
+/*-------------------------------------------------------------------------*/
+int ffesum(unsigned long sum,   /* I - accumulated checksum                */
+           int complm,          /* I - = 1 to encode complement of the sum */
+           char *ascii)         /* O - 16-char ASCII encoded checksum      */
+/*
+    encode the 32 bit checksum by converting every 
+    2 bits of each byte into an ASCII character (32 bit word encoded 
+    as 16 character string).   Only ASCII letters and digits are used
+    to encode the values (no ASCII punctuation characters).
+
+    If complm=TRUE, then the complement of the sum will be encoded.
+
+    This routine is based on the C algorithm developed by Rob
+    Seaman at NOAO that was presented at the 1994 ADASS conference,
+    published in the Astronomical Society of the Pacific Conference Series.
+*/
+{
+    unsigned exclude[13] = { 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f, 0x40,
+                             0x5b, 0x5c, 0x5d, 0x5e, 0x5f, 0x60 };
+
+    int offset = 0x30;     /* ASCII 0 (zero) */
+
+    unsigned long value;
+    int byte, quotient, remainder, ch[4], check, ii, jj, kk;
+    char asc[32];
+
+    if (complm)
+        value = 0xFFFFFFFF - sum;   /* complement each bit of the value */
+    else
+        value = sum;
+
+    for (ii = 0; ii < 4; ii++)
+    {
+        byte = (value << (8 * ii)) >> 24;
+        quotient = byte / 4 + offset;
+        remainder = byte % 4;
+        for (jj = 0; jj < 4; jj++)
+            ch[jj] = quotient;
+
+        ch[0] += remainder;
+
+        for (check = 1; check;)   /* avoid ASCII  punctuation */
+            for (check = 0, kk = 0; kk < 13; kk++)
+                for (jj = 0; jj < 4; jj += 2)
+                    if (ch[jj] == exclude[kk] || ch[jj+1] == exclude[kk])
+                    {
+                        ch[jj]++;
+                        ch[jj+1]--;
+                        check++;
+                    }
+
+        for (jj = 0; jj < 4; jj++)        /* assign the bytes */
+            asc[4*jj+ii] = ch[jj];
+    }
+
+    for (ii = 0; ii < 16; ii++)       /* shift the bytes 1 to the right */
+        ascii[ii] = asc[(ii+15)%16];
+
+    ascii[16] = '\0';
+    return(0);
+}
+/*-------------------------------------------------------------------------*/
+unsigned long ffdsum(char *ascii,  /* I - 16-char ASCII encoded checksum   */
+                     int complm,   /* I - =1 to decode complement of the   */
+                     unsigned long *sum)  /* O - 32-bit checksum           */
+/*
+    decode the 16-char ASCII encoded checksum into an unsigned 32-bit long.
+    If complm=TRUE, then the complement of the sum will be decoded.
+
+    This routine is based on the C algorithm developed by Rob
+    Seaman at NOAO that was presented at the 1994 ADASS conference,
+    published in the Astronomical Society of the Pacific Conference Series.
+*/
+{
+    char cbuf[16];
+    unsigned long hi = 0, lo = 0, hicarry, locarry;
+    int ii;
+
+    /* remove the permuted FITS byte alignment and the ASCII 0 offset */
+    for (ii = 0; ii < 16; ii++)
+    {
+        cbuf[ii] = ascii[(ii+1)%16];
+        cbuf[ii] -= 0x30;
+    }
+
+    for (ii = 0; ii < 16; ii += 4)
+    {
+        hi += cbuf[ii]*256 + cbuf[ii+1];
+        lo += cbuf[ii+2]*256 + cbuf[ii+3];
+    }
+
+    hicarry = hi >> 16;
+    locarry = lo >> 16;
+    while (hicarry || locarry)
+    {
+        hi = (hi & 0xFFFF) + locarry;
+        lo = (lo & 0xFFFF) + hicarry;
+        hicarry = hi >> 16;
+        locarry = lo >> 16;
+    }
+
+    *sum = (hi << 16) + lo;
+    if (complm)
+        *sum = 0xFFFFFFFF - *sum;   /* complement each bit of the value */
+
+    return(*sum);
 }
 

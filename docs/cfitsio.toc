@@ -10,12 +10,12 @@
 \contentsline {section}{\numberline {3.5}Character Strings}{6}
 \contentsline {section}{\numberline {3.6}Implicit Data Type Conversion}{7}
 \contentsline {section}{\numberline {3.7}Data Scaling}{7}
-\contentsline {section}{\numberline {3.8}Error Status Values and the Error Message Stack}{7}
-\contentsline {section}{\numberline {3.9}Variable-Length Array Facility in Binary Tables}{8}
+\contentsline {section}{\numberline {3.8}Error Status Values and the Error Message Stack}{8}
+\contentsline {section}{\numberline {3.9}Variable-Length Arrays in Binary Tables}{8}
 \contentsline {section}{\numberline {3.10}Support for IEEE Special Values}{9}
-\contentsline {section}{\numberline {3.11}Local FITS Conventions supported by CFITSIO}{9}
+\contentsline {section}{\numberline {3.11}Local FITS Conventions supported by CFITSIO}{10}
 \contentsline {subsection}{\numberline {3.11.1}Support for Long String Keyword Values.}{10}
-\contentsline {subsection}{\numberline {3.11.2}Arrays of Strings in Binary Table Extensions}{10}
+\contentsline {subsection}{\numberline {3.11.2}Arrays of Strings in Binary Table Extensions}{11}
 \contentsline {chapter}{\numberline {4} Programming Guidelines }{13}
 \contentsline {section}{\numberline {4.1}Reading an existing FITS file}{13}
 \contentsline {section}{\numberline {4.2}Creating a new FITS file}{13}
@@ -23,13 +23,13 @@
 \contentsline {section}{\numberline {4.4}Optimizing Code for Maximum Processing Speed}{14}
 \contentsline {section}{\numberline {4.5}CFITSIO Size Limitations}{16}
 \contentsline {chapter}{\numberline {5}Calling Sequence Definitions }{17}
-\contentsline {section}{\numberline {5.1}FITS File Open and Close Routines: }{17}
+\contentsline {section}{\numberline {5.1}FITS File Open and Close Routines }{18}
 \contentsline {section}{\numberline {5.2}HDU-Level Operations}{18}
 \contentsline {section}{\numberline {5.3}FITS Header I/O Routines}{20}
 \contentsline {subsection}{\numberline {5.3.1} Header Space and Position Routines }{20}
 \contentsline {subsection}{\numberline {5.3.2} Write Keyword Routines }{21}
 \contentsline {subsection}{\numberline {5.3.3} Insert Keyword Routines }{22}
-\contentsline {subsection}{\numberline {5.3.4} Read Keyword Routines }{22}
+\contentsline {subsection}{\numberline {5.3.4} Read Keyword Routines }{23}
 \contentsline {subsection}{\numberline {5.3.5} Modify Keyword Routines }{24}
 \contentsline {subsection}{\numberline {5.3.6} Update Keyword Routines }{24}
 \contentsline {subsection}{\numberline {5.3.7} Delete Keyword Routines }{25}
@@ -48,5 +48,5 @@
 \contentsline {section}{\numberline {5.8}File Checksum Routines }{36}
 \contentsline {section}{\numberline {5.9}General Utility Routines }{37}
 \contentsline {chapter}{\numberline {6} Summary of all CFITSIO User-Interface Routines }{43}
-\contentsline {chapter}{\numberline {7} Parameter Definitions }{49}
-\contentsline {chapter}{\numberline {8} CFITSIO Error Status Codes }{53}
+\contentsline {chapter}{\numberline {7} Parameter Definitions }{51}
+\contentsline {chapter}{\numberline {8} CFITSIO Error Status Codes }{55}

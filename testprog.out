@@ -1,4 +1,4 @@
-CFITSIO TESTPROG, v0.950
+CFITSIO TESTPROG, v0.980
 ffflus status = 0
 
 Values read back from primary array (99 = null pixel)
@@ -45,7 +45,7 @@ ffgknd:  15.151515, 16.161616, 17.171717
 Before deleting the HISTORY and DATE keywords...
 COMMENT   This keyword was written by fxpcom.
 HISTORY     This keyword written by fxphis (w/ 2 leading spaces).
-DATE    =           '12/04/96' / FITS file creation date (dd/mm/yy)
+DATE    =           '19/04/96' / FITS file creation date (dd/mm/yy)
 KY_PKNS1= 'first string'       / fxpkns comment
 
 After deleting the keywords...
@@ -212,6 +212,9 @@ Data values after inserting column 5:
                 10 10 10.0 10.0 0
                 99 99 99.0 99.0 0
 
+Moved to BINTABLE; headend, datastart = 17360 23040
+header contains 37 keywords with room for 70 more
+
 Binary table: nrows, tfields, extname, pcount: 21 10 Test-BINTABLE 0
   Avalue      15A          
   Lvalue       1L     m**2 
@@ -334,7 +337,13 @@ Data values after inserting column 8:
     NOT DEFINED 10 10 10.0 10.0 0
     NOT DEFINED 98 98 98.0 98.0 0
 ffibin status = 0
-ffpclx status = 0
+      0   1000  10000  32000  65000   -999 status = 0
+      0   1000  10000  32768  65535   -999 status = 0
+      0   1000  10000  32700  65500   -999 status = 0
+
+      0      1     10     32     65   -999 status = 0
+ -32768 -31768 -22768      0  32767   -999 status = 0
+     -1      9     99    326    654   -999 status = 0
 
 Create image extension: ffiimg status = 0
 
@@ -420,12 +429,197 @@ NAXIS2  =                   25 / length of data axis 2
 EXTEND  =                    T / FITS dataset may contain extensions
 Delete the tmp file: ffdelt status = 0
 Delete the image extension; hdutype, status = 1 0
-
-Append image extension: ffiimg status = 0
- HDU number = 6
+ffcrhd status = 0
+Variable length arrays: ffphbn status = 0
+ffpcl_ status = 0
+PCOUNT = 4446
+HDU number = 6
+A a 0
+L  0 0
+X  0 0
+B  1 0
+I  1 0
+J  1 0
+E  1 0
+D  1 0
+Column 8 repeat and offset = 1 14
+A ab 0
+L  0  1 0
+X  0  1 0
+B 99  2 0
+I 99  2 0
+J 99  2 0
+E 99  2 0
+D 99  2 0
+Column 8 repeat and offset = 2 49
+A abc 0
+L  0  0  0 0
+X  0  1  0 0
+B  1 99  3 0
+I  1 99  3 0
+J  1 99  3 0
+E  1 99  3 0
+D  1 99  3 0
+Column 8 repeat and offset = 3 105
+A abcd 0
+L  0  1  0  0 0
+X  0  1  0  0 0
+B  1  2 99  4 0
+I  1  2 99  4 0
+J  1  2 99  4 0
+E  1  2 99  4 0
+D  1  2 99  4 0
+Column 8 repeat and offset = 4 182
+A abcde 0
+L  0  1  0  0  1 0
+X  0  1  0  0  1 0
+B  1  2  3 99  5 0
+I  1  2  3 99  5 0
+J  1  2  3 99  5 0
+E  1  2  3 99  5 0
+D  1  2  3 99  5 0
+Column 8 repeat and offset = 5 280
+A abcdef 0
+L  0  1  0  0  0  1 0
+X  0  1  0  0  1  1 0
+B  1  2  3  4 99  6 0
+I  1  2  3  4 99  6 0
+J  1  2  3  4 99  6 0
+E  1  2  3  4 99  6 0
+D  1  2  3  4 99  6 0
+Column 8 repeat and offset = 6 399
+A abcdefg 0
+L  0  1  0  0  1  0  0 0
+X  0  1  0  0  1  1  0 0
+B  1  2  3  4  5 99  7 0
+I  1  2  3  4  5 99  7 0
+J  1  2  3  4  5 99  7 0
+E  1  2  3  4  5 99  7 0
+D  1  2  3  4  5 99  7 0
+Column 8 repeat and offset = 7 539
+A abcdefgh 0
+L  0  1  0  0  1  1  0  0 0
+X  0  1  0  0  1  1  0  0 0
+B  1  2  3  4  5  6 99  8 0
+I  1  2  3  4  5  6 99  8 0
+J  1  2  3  4  5  6 99  8 0
+E  1  2  3  4  5  6 99  8 0
+D  1  2  3  4  5  6 99  8 0
+Column 8 repeat and offset = 8 700
+A abcdefghi 0
+L  0  1  0  0  1  1  0  0  0 0
+X  0  1  0  0  1  1  0  0  0 0
+B  1  2  3  4  5  6  7 99  9 0
+I  1  2  3  4  5  6  7 99  9 0
+J  1  2  3  4  5  6  7 99  9 0
+E  1  2  3  4  5  6  7 99  9 0
+D  1  2  3  4  5  6  7 99  9 0
+Column 8 repeat and offset = 9 883
+A abcdefghij 0
+L  0  1  0  0  1  1  0  0  0  1 0
+X  0  1  0  0  1  1  0  0  0  1 0
+B  1  2  3  4  5  6  7  8 99 10 0
+I  1  2  3  4  5  6  7  8 99 10 0
+J  1  2  3  4  5  6  7  8 99 10 0
+E  1  2  3  4  5  6  7  8 99 10 0
+D  1  2  3  4  5  6  7  8 99 10 0
+Column 8 repeat and offset = 10 1087
+A abcdefghijk 0
+L  0  1  0  0  1  1  0  0  0  0  1 0
+X  0  1  0  0  1  1  0  0  0  1  1 0
+B  1  2  3  4  5  6  7  8  9 99 11 0
+I  1  2  3  4  5  6  7  8  9 99 11 0
+J  1  2  3  4  5  6  7  8  9 99 11 0
+E  1  2  3  4  5  6  7  8  9 99 11 0
+D  1  2  3  4  5  6  7  8  9 99 11 0
+Column 8 repeat and offset = 11 1312
+A abcdefghijkl 0
+L  0  1  0  0  1  1  0  0  0  1  0  1 0
+X  0  1  0  0  1  1  0  0  0  1  1  1 0
+B  1  2  3  4  5  6  7  8  9 10 99 12 0
+I  1  2  3  4  5  6  7  8  9 10 99 12 0
+J  1  2  3  4  5  6  7  8  9 10 99 12 0
+E  1  2  3  4  5  6  7  8  9 10 99 12 0
+D  1  2  3  4  5  6  7  8  9 10 99 12 0
+Column 8 repeat and offset = 12 1558
+A abcdefghijklm 0
+L  0  1  0  0  1  1  0  0  0  1  1  0  0 0
+X  0  1  0  0  1  1  0  0  0  1  1  1  0 0
+B  1  2  3  4  5  6  7  8  9 10 11 99 13 0
+I  1  2  3  4  5  6  7  8  9 10 11 99 13 0
+J  1  2  3  4  5  6  7  8  9 10 11 99 13 0
+E  1  2  3  4  5  6  7  8  9 10 11 99 13 0
+D  1  2  3  4  5  6  7  8  9 10 11 99 13 0
+Column 8 repeat and offset = 13 1825
+A abcdefghijklmn 0
+L  0  1  0  0  1  1  0  0  0  1  1  1  0  0 0
+X  0  1  0  0  1  1  0  0  0  1  1  1  0  0 0
+B  1  2  3  4  5  6  7  8  9 10 11 12 99 14 0
+I  1  2  3  4  5  6  7  8  9 10 11 12 99 14 0
+J  1  2  3  4  5  6  7  8  9 10 11 12 99 14 0
+E  1  2  3  4  5  6  7  8  9 10 11 12 99 14 0
+D  1  2  3  4  5  6  7  8  9 10 11 12 99 14 0
+Column 8 repeat and offset = 14 2113
+A abcdefghijklmno 0
+L  0  1  0  0  1  1  0  0  0  1  1  1  0  0  0 0
+X  0  1  0  0  1  1  0  0  0  1  1  1  0  0  0 0
+B  1  2  3  4  5  6  7  8  9 10 11 12 13 99 15 0
+I  1  2  3  4  5  6  7  8  9 10 11 12 13 99 15 0
+J  1  2  3  4  5  6  7  8  9 10 11 12 13 99 15 0
+E  1  2  3  4  5  6  7  8  9 10 11 12 13 99 15 0
+D  1  2  3  4  5  6  7  8  9 10 11 12 13 99 15 0
+Column 8 repeat and offset = 15 2422
+A abcdefghijklmnop 0
+L  0  1  0  0  1  1  0  0  0  1  1  1  0  0  0  0 0
+X  0  1  0  0  1  1  0  0  0  1  1  1  0  0  0  0 0
+B  1  2  3  4  5  6  7  8  9 10 11 12 13 14 99 16 0
+I  1  2  3  4  5  6  7  8  9 10 11 12 13 14 99 16 0
+J  1  2  3  4  5  6  7  8  9 10 11 12 13 14 99 16 0
+E  1  2  3  4  5  6  7  8  9 10 11 12 13 14 99 16 0
+D  1  2  3  4  5  6  7  8  9 10 11 12 13 14 99 16 0
+Column 8 repeat and offset = 16 2752
+A abcdefghijklmnopq 0
+L  0  1  0  0  1  1  0  0  0  1  1  1  0  0  0  0  1 0
+X  0  1  0  0  1  1  0  0  0  1  1  1  0  0  0  0  1 0
+B  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 99 17 0
+I  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 99 17 0
+J  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 99 17 0
+E  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 99 17 0
+D  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 99 17 0
+Column 8 repeat and offset = 17 3104
+A abcdefghijklmnopqr 0
+L  0  1  0  0  1  1  0  0  0  1  1  1  0  0  0  0  0  1 0
+X  0  1  0  0  1  1  0  0  0  1  1  1  0  0  0  0  1  1 0
+B  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 99 18 0
+I  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 99 18 0
+J  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 99 18 0
+E  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 99 18 0
+D  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 99 18 0
+Column 8 repeat and offset = 18 3477
+A abcdefghijklmnopqrs 0
+L  0  1  0  0  1  1  0  0  0  1  1  1  0  0  0  0  1  0  1 0
+X  0  1  0  0  1  1  0  0  0  1  1  1  0  0  0  0  1  1  1 0
+B  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 99 19 0
+I  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 99 19 0
+J  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 99 19 0
+E  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 99 19 0
+D  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 99 19 0
+Column 8 repeat and offset = 19 3871
+A abcdefghijklmnopqrst 0
+L  0  1  0  0  1  1  0  0  0  1  1  1  0  0  0  0  1  1  0  1 0
+X  0  1  0  0  1  1  0  0  0  1  1  1  0  0  0  0  1  1  1  1 0
+B  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 99 20 0
+I  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 99 20 0
+J  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 99 20 0
+E  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 99 20 0
+D  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 99 20 0
+Column 8 repeat and offset = 20 4286
 
 Repeatedly move to the 1st 4 HDUs of the file:
 12343123431234312343123431234312343123431234312343
+
+Encode checksum: 1426738146 -> hF4EjE2BhE2BhE2B
+Decode checksum: hF4EjE2BhE2BhE2B -> 1426738146
 ffclos status = 0
 
 Status = 0: OK - no error

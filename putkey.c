@@ -1157,7 +1157,13 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     ffpkyj(fptr, "NAXIS1", naxis1, "width of table in characters", status);
     ffpkyj(fptr, "NAXIS2", naxis2, "number of rows in table", status);
-    ffpkyj(fptr, "PCOUNT", pcount, "size of special data area", status);
+
+    /*
+      the initial value of PCOUNT (= size of the variable length array heap)
+      should always be zero.  If any variable length data is written, then
+      the value of PCOUNT will be updated when the HDU is closed
+    */
+    ffpkyj(fptr, "PCOUNT", 0, "size of special data area", status);
     ffpkyj(fptr, "GCOUNT", 1, "one data group (required keyword)", status);
     ffpkyj(fptr, "TFIELDS", tfields, "number of fields in each row", status);
 

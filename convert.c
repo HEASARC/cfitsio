@@ -2726,7 +2726,7 @@ int fffi4i4(long *input,          /* I - array of values to be converted     */
                 }
                 else
                 {
-                    dvalue = input[ii] * scale + zero;
+                    dvalue =  (((double) input[ii]) * scale) + zero;
 
                     if (dvalue < DLONG_MIN)
                     {
