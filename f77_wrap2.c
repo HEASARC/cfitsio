@@ -569,7 +569,7 @@ void Cffiter( int n_cols, int *units, int *colnum, char *colname[],
 
    cols = (iteratorCol *)malloc( n_cols*sizeof(iteratorCol) );
    if( cols==NULL ) {
-      *status = 1;
+      *status = MEMORY_ALLOCATION;
       return;
    }
    for(i=0;i<n_cols;i++) {
@@ -614,7 +614,13 @@ int Cwork_fn( long total_n, long offset,       long first_n,    long n_values,
    /*  at once and divide up among parameters                   */
 
    ptrs  = (void**)malloc(2*n_cols*sizeof(void*));
+   if( ptrs==NULL )
+      return( MEMORY_ALLOCATION );
    units = (int*)malloc(5*n_cols*sizeof(int));
+   if( units==NULL ) {
+      free(ptrs);
+      return( MEMORY_ALLOCATION );
+   }
    colnum   = units + 1 * n_cols;
    datatype = units + 2 * n_cols;
    iotype   = units + 3 * n_cols;
@@ -624,6 +630,11 @@ int Cwork_fn( long total_n, long offset,       long first_n,    long n_values,
    slen = (long*)(ptrs+n_cols);
 #ifdef vmsFortran
    vmsStrs = (fstringvector *)calloc(sizeof(fstringvector),n_cols);
+   if( vmsStrs==NULL ) {
+      free(ptrs);
+      free(units);
+      return( MEMORY_ALLOCATION );
+   }
 #endif
 
    for(i=0;i<n_cols;i++) {
@@ -638,6 +649,11 @@ int Cwork_fn( long total_n, long offset,       long first_n,    long n_values,
       if( datatype[i]==TLOGICAL ) {
 	 /*  Don't forget first element is null value  */
 	 ptrs[i] = (void *)malloc( (n_values*repeat[i]+1)*4 );
+	 if( ptrs[i]==NULL ) {
+	    free(ptrs);
+	    free(units);
+	    return( MEMORY_ALLOCATION );
+	 }
 	 for( j=0;j<=n_values*repeat[i]; j++ )
 	    ((int*)ptrs[i])[j] = C2FLOGICAL( ((char*)cols[i].array)[j]);
       } else if ( datatype[i]==TSTRING ) {
