@@ -89,7 +89,7 @@
 #include <time.h>
 
    /*  Bison uses alloca for allocations, but VMS lacks it  */
-#if defined(vms) || defined(__vms) || defined(macintosh) || defined(__WIN32__)
+#if defined(vms) || defined(__vms) || defined(macintosh) || defined(__WIN32__) || defined(WIN32)
 #define alloca malloc
 #endif
 
@@ -5034,4 +5034,3 @@ static void fferror(char *s)
     msg[79] = '\0';
     ffpmsg(msg);
 }
-
