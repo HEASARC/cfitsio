@@ -186,6 +186,13 @@ case $CC in
 		CFLAGS=`echo $CFLAGS | sed -e "s/-g/-O/"`
 		case $system in
 		    SunOS-5*)
+			changequote(,)
+			if test `echo $CFLAGS | grep -c fast` -gt 0
+			then
+			   echo "cfitsio: Replacing -fast with -O3"
+			   CFLAGS=`echo $CFLAGS | sed 's:-fast:-O3:'`
+			fi
+			changequote([,])
          		CFLAGS="$CFLAGS -DHAVE_ALLOCA_H -DHAVE_POSIX_SIGNALS"
 			;;
 		    *)
