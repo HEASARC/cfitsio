@@ -103,9 +103,11 @@ extern "C" {
 
 static int  Alloc_Node    ( void );
 static void Free_Last_Node( void );
+static void Evaluate_Node ( int thisNode );
 
 static int  New_Const ( int returnType, void *value, long len );
 static int  New_Column( int ColNum );
+static int  New_Offset( int ColNum, int offset );
 static int  New_Unary ( int returnType, int Op, int Node1 );
 static int  New_BinOp ( int returnType, int Node1, int Op, int Node2 );
 static int  New_Func  ( int returnType, funcOp Op, int nNodes,
@@ -122,6 +124,7 @@ static int  Test_Dims ( int Node1, int Node2 );
 
 static void Allocate_Ptrs( Node *this );
 static void Do_Unary     ( Node *this );
+static void Do_Offset    ( Node *this );
 static void Do_BinOp_bit ( Node *this );
 static void Do_BinOp_str ( Node *this );
 static void Do_BinOp_log ( Node *this );
@@ -306,6 +309,15 @@ bits:	 BITSTR
 		}
        | BITCOL
                 { $$ = New_Column( $1 ); TEST($$); }
+       | BITCOL '{' expr '}'
+                {
+                  if( TYPE($3) != LONG
+		      || gParse.Nodes[$3].operation != CONST_OP ) {
+		     yyerror("Offset argument must be a constant integer");
+		     YYERROR;
+		  }
+                  $$ = New_Offset( $1, $3 ); TEST($$);
+                }
        | bits '&' bits
                 { $$ = New_BinOp( BITSTR, $1, '&', $3 ); TEST($$);
                   SIZE($$) = ( SIZE($1)>SIZE($3) ? SIZE($1) : SIZE($3) );  }
@@ -327,6 +339,15 @@ expr:    LONG
                 { $$ = New_Const( DOUBLE, &($1), sizeof(double) ); TEST($$); }
        | COLUMN
                 { $$ = New_Column( $1 ); TEST($$); }
+       | COLUMN '{' expr '}'
+                {
+                  if( TYPE($3) != LONG
+		      || gParse.Nodes[$3].operation != CONST_OP ) {
+		     yyerror("Offset argument must be a constant integer");
+		     YYERROR;
+		  }
+                  $$ = New_Offset( $1, $3 ); TEST($$);
+                }
        | ROWREF
                 { $$ = New_Func( LONG, row_fct, 0, 0, 0, 0, 0, 0, 0, 0 ); }
        | expr '%' expr
@@ -557,6 +578,15 @@ bexpr:   BOOLEAN
                 { $$ = New_Const( BOOLEAN, &($1), sizeof(char) ); TEST($$); }
        | BCOLUMN
                 { $$ = New_Column( $1 ); TEST($$); }
+       | BCOLUMN '{' expr '}'
+                {
+                  if( TYPE($3) != LONG
+		      || gParse.Nodes[$3].operation != CONST_OP ) {
+		     yyerror("Offset argument must be a constant integer");
+		     YYERROR;
+		  }
+                  $$ = New_Offset( $1, $3 ); TEST($$);
+                }
        | bits EQ bits
                 { $$ = New_BinOp( BOOLEAN, $1, EQ,  $3 ); TEST($$);
 		  SIZE($$) = 1;                                     }
@@ -784,6 +814,15 @@ sexpr:   STRING
                   SIZE($$) = strlen($1);                            }
        | SCOLUMN
                 { $$ = New_Column( $1 ); TEST($$); }
+       | SCOLUMN '{' expr '}'
+                {
+                  if( TYPE($3) != LONG
+		      || gParse.Nodes[$3].operation != CONST_OP ) {
+		     yyerror("Offset argument must be a constant integer");
+		     YYERROR;
+		  }
+                  $$ = New_Offset( $1, $3 ); TEST($$);
+                }
        | '(' sexpr ')'
                 { $$ = $2; }
        | sexpr '+' sexpr
@@ -870,6 +909,31 @@ static int New_Column( int ColNum )
       this->operation   = -ColNum;
       this->DoOp        = NULL;
       this->nSubNodes   = 0;
+      this->type        = gParse.varData[ColNum].type;
+      this->value.nelem = gParse.varData[ColNum].nelem;
+      this->value.naxis = gParse.varData[ColNum].naxis;
+      for( i=0; i<gParse.varData[ColNum].naxis; i++ )
+	 this->value.naxes[i] = gParse.varData[ColNum].naxes[i];
+   }
+   return(n);
+}
+
+static int New_Offset( int ColNum, int offsetNode )
+{
+   Node *this;
+   int  n, i, colNode;
+
+   colNode = New_Column( ColNum );
+   if( colNode<0 ) return(-1);
+
+   n = Alloc_Node();
+   if( n>=0 ) {
+      this              = gParse.Nodes + n;
+      this->operation   = '{';
+      this->DoOp        = Do_Offset;
+      this->nSubNodes   = 2;
+      this->SubNodes[0] = colNode;
+      this->SubNodes[1] = offsetNode;
       this->type        = gParse.varData[ColNum].type;
       this->value.nelem = gParse.varData[ColNum].nelem;
       this->value.naxis = gParse.varData[ColNum].naxis;
@@ -1520,7 +1584,64 @@ static int Test_Dims( int Node1, int Node2 )
 /*    Routines for actually evaluating the expression start here    */
 /********************************************************************/
 
-void Evaluate_Node( int thisNode )
+void Evaluate_Parser( long firstRow, long nRows )
+    /***********************************************************************/
+    /*  Reset the parser for processing another batch of data...           */
+    /*    firstRow:  Row number of the first element to evaluate           */
+    /*    nRows:     Number of rows to be processed                        */
+    /*  Initialize each COLUMN node so that its UNDEF and DATA pointers    */
+    /*  point to the appropriate column arrays.                            */
+    /*  Finally, call Evaluate_Node for final node.                        */
+    /***********************************************************************/
+{
+   int     i, column;
+   long    offset, rowOffset;
+
+   gParse.firstRow = firstRow;
+   gParse.nRows    = nRows;
+
+   /*  Reset Column Nodes' pointers to point to right data and UNDEF arrays  */
+
+   rowOffset = firstRow - gParse.firstDataRow;
+   for( i=0; i<gParse.nNodes; i++ ) {
+      if(    gParse.Nodes[i].operation >  0
+	  || gParse.Nodes[i].operation == CONST_OP ) continue;
+
+      column = -gParse.Nodes[i].operation;
+      offset = gParse.varData[column].nelem * rowOffset;
+
+      gParse.Nodes[i].value.undef = gParse.varData[column].undef + offset;
+
+      switch( gParse.Nodes[i].type ) {
+      case BITSTR:
+	 gParse.Nodes[i].value.data.strptr =
+	    (char**)gParse.varData[column].data + rowOffset;
+	 gParse.Nodes[i].value.undef       = NULL;
+	 break;
+      case STRING:
+	 gParse.Nodes[i].value.data.strptr = 
+	    (char**)gParse.varData[column].data + rowOffset;
+	 gParse.Nodes[i].value.undef = gParse.varData[column].undef + rowOffset;
+	 break;
+      case BOOLEAN:
+	 gParse.Nodes[i].value.data.logptr = 
+	    (char*)gParse.varData[column].data + offset;
+	 break;
+      case LONG:
+	 gParse.Nodes[i].value.data.lngptr = 
+	    (long*)gParse.varData[column].data + offset;
+	 break;
+      case DOUBLE:
+	 gParse.Nodes[i].value.data.dblptr = 
+	    (double*)gParse.varData[column].data + offset;
+	 break;
+      }
+   }
+
+   Evaluate_Node( gParse.resultNode );
+}
+
+static void Evaluate_Node( int thisNode )
     /**********************************************************************/
     /*  Recursively evaluate thisNode's subNodes, then call one of the    */
     /*  Do_<Action> functions pointed to by thisNode's DoOp element.      */
@@ -1539,61 +1660,6 @@ void Evaluate_Node( int thisNode )
 	 if( gParse.status ) return;
       }
       this->DoOp( this );
-   }
-}
-
-void Reset_Parser( long firstRow, long rowOffset, long nRows )
-    /***********************************************************************/
-    /*  Reset the parser for processing another batch of data...           */
-    /*    firstRow:  Row number of the first element of the varData.data   */
-    /*    rowOffset: How many rows of varData.data should be skipped       */
-    /*    nRows:     Number of rows to be processed                        */
-    /*  Then, allocate and initialize the necessary UNDEF arrays for each  */
-    /*  column used by the parser.  Finally, initialize each COLUMN node   */
-    /*  so that its UNDEF and DATA pointers point to the appropriate       */
-    /*  column arrays.                                                     */
-    /***********************************************************************/
-{
-   int     i, column;
-   long    offset;
-
-   gParse.nRows    = nRows;
-   gParse.firstRow = firstRow + rowOffset;
-
-   /*  Reset Column Nodes' pointers to point to right data and UNDEF arrays  */
-
-   for( i=0; i<gParse.nNodes; i++ ) {
-      if(    gParse.Nodes[i].operation >  0
-	  || gParse.Nodes[i].operation == CONST_OP ) continue;
-
-      column = -gParse.Nodes[i].operation;
-      offset = gParse.varData[column].nelem * rowOffset;
-
-      gParse.Nodes[i].value.undef = gParse.varData[column].undef;
-
-      switch( gParse.Nodes[i].type ) {
-      case BITSTR:
-	 gParse.Nodes[i].value.data.strptr =
-	    (char**)gParse.varData[column].data + rowOffset;
-	 gParse.Nodes[i].value.undef       = NULL;
-	 break;
-      case STRING:
-	 gParse.Nodes[i].value.data.strptr = 
-	    (char**)gParse.varData[column].data + rowOffset;
-	 break;
-      case BOOLEAN:
-	 gParse.Nodes[i].value.data.logptr = 
-	    (char*)gParse.varData[column].data + offset;
-	 break;
-      case LONG:
-	 gParse.Nodes[i].value.data.lngptr = 
-	    (long*)gParse.varData[column].data + offset;
-	 break;
-      case DOUBLE:
-	 gParse.Nodes[i].value.data.dblptr = 
-	    (double*)gParse.varData[column].data + offset;
-	 break;
-      }
    }
 }
 
@@ -1776,6 +1842,157 @@ static void Do_Unary( Node *this )
 
    if( that->operation>0 ) {
       free( that->value.data.ptr );
+   }
+}
+
+static void Do_Offset( Node *this )
+{
+   Node *col;
+   long fRow, nRowOverlap, nRowReload, rowOffset;
+   long nelem, elem, offset, nRealElem;
+   int status;
+
+   col       = gParse.Nodes + this->SubNodes[0];
+   rowOffset = gParse.Nodes[  this->SubNodes[1] ].value.data.lng;
+
+   Allocate_Ptrs( this );
+
+   fRow   = gParse.firstRow + rowOffset;
+   if( this->type==STRING || this->type==BITSTR )
+      nRealElem = 1;
+   else
+      nRealElem = this->value.nelem;
+
+   nelem = nRealElem;
+
+   if( fRow < gParse.firstDataRow ) {
+
+      /* Must fill in data at start of array */
+
+      nRowReload = gParse.firstDataRow - fRow;
+      if( nRowReload > gParse.nRows ) nRowReload = gParse.nRows;
+      nRowOverlap = gParse.nRows - nRowReload;
+
+      offset = 0;
+
+      /*  NULLify any values falling out of bounds  */
+
+      while( fRow<1 && nRowReload>0 ) {
+	 if( this->type == BITSTR ) {
+	    nelem = this->value.nelem;
+	    this->value.data.strptr[offset][ nelem ] = '\0';
+	    while( nelem-- ) this->value.data.strptr[offset][nelem] = '0';
+	    offset++;
+	 } else {
+	    while( nelem-- )
+	       this->value.undef[offset++] = 1;
+	 }
+	 nelem = nRealElem;
+	 fRow++;
+	 nRowReload--;
+      }
+
+   } else if( fRow + gParse.nRows > gParse.firstDataRow + gParse.nDataRows ) {
+
+      /* Must fill in data at end of array */
+
+      nRowReload = (fRow+gParse.nRows) - (gParse.firstDataRow+gParse.nDataRows);
+      if( nRowReload>gParse.nRows ) {
+	 nRowReload = gParse.nRows;
+      } else {
+	 fRow = gParse.firstDataRow + gParse.nDataRows;
+      }
+      nRowOverlap = gParse.nRows - nRowReload;
+
+      offset = nRowOverlap * nelem;
+
+      /*  NULLify any values falling out of bounds  */
+
+      elem = gParse.nRows * nelem;
+      while( fRow+nRowReload>gParse.totalRows && nRowReload>0 ) {
+	 if( this->type == BITSTR ) {
+	    nelem = this->value.nelem;
+	    elem--;
+	    this->value.data.strptr[elem][ nelem ] = '\0';
+	    while( nelem-- ) this->value.data.strptr[elem][nelem] = '0';
+	 } else {
+	    while( nelem-- )
+	       this->value.undef[--elem] = 1;
+	 }
+	 nelem = nRealElem;
+	 nRowReload--;
+      }
+
+   } else {
+
+      nRowReload  = 0;
+      nRowOverlap = gParse.nRows;
+      offset      = 0;
+
+   }
+
+   if( nRowReload>0 ) {
+      switch( this->type ) {
+      case BITSTR:
+      case STRING:
+	 status = (*gParse.loadData)( -col->operation, fRow, nRowReload,
+				      this->value.data.strptr+offset,
+				      this->value.undef+offset );
+	 break;
+      case BOOLEAN:
+	 status = (*gParse.loadData)( -col->operation, fRow, nRowReload,
+				      this->value.data.logptr+offset,
+				      this->value.undef+offset );
+	 break;
+      case LONG:
+	 status = (*gParse.loadData)( -col->operation, fRow, nRowReload,
+				      this->value.data.lngptr+offset,
+				      this->value.undef+offset );
+	 break;
+      case DOUBLE:
+	 status = (*gParse.loadData)( -col->operation, fRow, nRowReload,
+				      this->value.data.dblptr+offset,
+				      this->value.undef+offset );
+	 break;
+      }
+   }
+
+   /*  Now copy over the overlapping region, if any  */
+
+   if( nRowOverlap <= 0 ) return;
+
+   if( rowOffset>0 )
+      elem = nRowOverlap * nelem;
+   else
+      elem = gParse.nRows * nelem;
+
+   offset = nelem * rowOffset;
+   while( nRowOverlap-- && !gParse.status ) {
+      while( nelem-- && !gParse.status ) {
+	 elem--;
+	 if( this->type != BITSTR )
+	    this->value.undef[elem] = col->value.undef[elem+offset];
+	 switch( this->type ) {
+	 case BITSTR:
+	    strcpy( this->value.data.strptr[elem       ],
+                     col->value.data.strptr[elem+offset] );
+	    break;
+	 case STRING:
+	    strcpy( this->value.data.strptr[elem       ],
+                     col->value.data.strptr[elem+offset] );
+	    break;
+	 case BOOLEAN:
+	    this->value.data.logptr[elem] = col->value.data.logptr[elem+offset];
+	    break;
+	 case LONG:
+	    this->value.data.lngptr[elem] = col->value.data.lngptr[elem+offset];
+	    break;
+	 case DOUBLE:
+	    this->value.data.dblptr[elem] = col->value.data.dblptr[elem+offset];
+	    break;
+	 }
+      }
+      nelem = nRealElem;
    }
 }
 
@@ -3876,4 +4093,3 @@ static void yyerror(char *s)
     msg[79] = '\0';
     ffpmsg(msg);
 }
-

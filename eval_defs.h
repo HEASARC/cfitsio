@@ -60,6 +60,8 @@ typedef struct Node {
 typedef struct {
                   fitsfile    *def_fptr;
                   int         (*getData)( char *dataName, void *dataValue );
+                  int         (*loadData)( int varNum, long fRow, long nRows,
+					   void *data, char *undef );
 
                   int         compressed;
                   int         timeCol;
@@ -81,6 +83,10 @@ typedef struct {
                   int         nCols;
                   iteratorCol *colData;
                   DataInfo    *varData;
+
+                  long        firstDataRow;
+                  long        nDataRows;
+                  long        totalRows;
 
                   int         datatype;
 
@@ -134,8 +140,7 @@ extern "C" {
    int  fflex(void);
    void ffrestart(FILE*);
 
-   void Evaluate_Node( int thisNode );
-   void Reset_Parser ( long firstRow, long rowOffset, long nRows );
+   void Evaluate_Parser( long firstRow, long nRows );
 
 #ifdef __cplusplus
     }

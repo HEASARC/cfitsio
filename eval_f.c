@@ -63,11 +63,13 @@ typedef struct {
 
 /*  Internal routines needed to allow the evaluator to operate on FITS data  */
 
-static void Setup_DataArrays( int nCols, iteratorCol *cols, long nRows );
+static void Setup_DataArrays( int nCols, iteratorCol *cols,
+			      long fRow, long nRows );
 static int  find_column( char *colName, void *itslval );
 static int  find_keywd ( char *key,     void *itslval );
 static int  allocateCol( int nCol, int *status );
-
+static int  load_column( int varNum, long fRow, long nRows,
+			 void *data, char *undef );
 
 /*---------------------------------------------------------------------------*/
 int fffrow( fitsfile *fptr,         /* I - Input FITS file                   */
@@ -693,11 +695,14 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
    gParse.colData    = NULL;
    gParse.varData    = NULL;
    gParse.getData    = find_column;
+   gParse.loadData   = load_column;
    gParse.Nodes      = NULL;
    gParse.nNodesAlloc= 0;
    gParse.nNodes     = 0;
    gParse.status     = 0;
 
+   if( ffgkyj(fptr, "NAXIS2", &gParse.totalRows, 0, status) ) return( *status );
+   
    /*  Copy expression into parser... read from file if necessary  */
 
    if( expr[0]=='@' ) {
@@ -821,7 +826,7 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 /*---------------------------------------------------------------------------*/
 {
     int status, constant=0, anyNullThisTime=0;
-    long jj, kk, idx, remain, rowOffset, ntodo;
+    long jj, kk, idx, remain, ntodo;
     Node *result;
 
     /* declare variables static to preserve their values between calls */
@@ -931,9 +936,9 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 
     /* Alter nrows in case calling routine didn't want to do all rows */
 
-    nrows     = minvalue(nrows,lastRow-firstrow+1);
+    nrows = minvalue(nrows,lastRow-firstrow+1);
 
-    Setup_DataArrays( nCols, colData, nrows );
+    Setup_DataArrays( nCols, colData, firstrow, nrows );
 
     /* Parser allocates arrays for each column and calculation it performs. */
     /* Limit number of rows processed during each pass to reduce memory     */
@@ -942,17 +947,15 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
     /* hk-compressed files which must be decompressed in memory and sent    */
     /* whole to parse_data in a single iteration.                           */
 
-    rowOffset = 0;
-    remain    = nrows;
+    remain = nrows;
     while( remain ) {
 
        ntodo = minvalue(remain,2500);
-       Reset_Parser ( firstrow, rowOffset, ntodo );
-       Evaluate_Node( gParse.resultNode );
+       Evaluate_Parser ( firstrow, ntodo );
        if( gParse.status ) break;
 
-       rowOffset += ntodo;
-       remain    -= ntodo;
+       firstrow += ntodo;
+       remain   -= ntodo;
 
        /*  Copy results into data array  */
 
@@ -1080,7 +1083,14 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 		   strcpy( ((char**)Data)[jj], result->value.data.str );
 	     } else {
 		for( jj=0; jj<ntodo; jj++ )
-		   strcpy( ((char**)Data)[jj], result->value.data.strptr[jj] );
+		   if( result->value.undef[jj] ) {
+		      anyNullThisTime = 1;
+		      strcpy( ((char**)Data)[jj],
+			      Null );
+		   } else {
+		      strcpy( ((char**)Data)[jj],
+			      result->value.data.strptr[jj] );
+		   }
 	     }
           } else {
              ffpmsg("Cannot convert string expression to desired type.");
@@ -1118,14 +1128,15 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
     /*  Clean up procedures:  after processing all the rows  */
     /*-------------------------------------------------------*/
 
-    if( firstrow + nrows - 1 == lastRow ) {
+    if( firstrow - 1 == lastRow ) {
        if( !gParse.status && userInfo->maxRows<totalrows ) return (-1);
     }
 
     return(gParse.status);  /* return successful status */
 }
 
-static void Setup_DataArrays( int nCols, iteratorCol *cols, long nRows )
+static void Setup_DataArrays( int nCols, iteratorCol *cols,
+			      long fRow, long nRows )
     /***********************************************************************/
     /*  Setup the varData array in gParse to contain the fits column data. */
     /*  Then, allocate and initialize the necessary UNDEF arrays for each  */
@@ -1139,6 +1150,9 @@ static void Setup_DataArrays( int nCols, iteratorCol *cols, long nRows )
    char   *barray;
    long   *iarray;
    double *rarray;
+
+   gParse.firstDataRow = fRow;
+   gParse.nDataRows    = nRows;
 
    /*  Resize and fill in UNDEF arrays for each column  */
 
@@ -1878,8 +1892,7 @@ int ffffrw_work(long        totalrows, /* I - Total rows to be processed     */
     long idx;
     Node *result;
 
-    Reset_Parser ( firstrow, 0, nrows );
-    Evaluate_Node( gParse.resultNode );
+    Evaluate_Parser( firstrow, nrows );
 
     if( !gParse.status ) {
 
@@ -1908,7 +1921,7 @@ int ffffrw_work(long        totalrows, /* I - Total rows to be processed     */
 /*************************************************************************
 
         Functions used by the evaluator to access FITS data
-            (find_column, find_keywd, allocateCol)
+            (find_column, find_keywd, allocateCol, load_column)
 
  *************************************************************************/
 
@@ -2087,6 +2100,68 @@ static int allocateCol( int nCol, int *status )
 	 return( *status = MEMORY_ALLOCATION );
       }
    }
+   gParse.varData[nCol].data  = NULL;
    gParse.varData[nCol].undef = NULL;
+   return 0;
+}
+
+static int load_column( int varNum, long fRow, long nRows,
+			void *data, char *undef )
+{
+   iteratorCol *var = gParse.colData+varNum;
+   long nelem,nbytes,row,len,idx;
+   char **bitStrs;
+   unsigned char *bytes;
+   int status = 0, anynul;
+
+   nelem = nRows * var->repeat;
+
+   switch( var->datatype ) {
+   case TBYTE:
+      nbytes = ((var->repeat+7)/8) * nRows;
+      bytes = (unsigned char *)malloc( nbytes * sizeof(char) );
+
+      ffgcvb(var->fptr, var->colnum, fRow, 1L, nbytes,
+	     0, bytes, &anynul, &status);
+
+      nelem = var->repeat;
+      bitStrs = (char **)data;
+      for( row=0; row<nRows; row++ ) {
+	 idx = (row)*( (nelem+7)/8 ) + 1;
+	 for(len=0; len<nelem; len++) {
+	    if( bytes[idx] & (1<<(7-len%8)) )
+	       bitStrs[row][len] = '1';
+	    else
+	       bitStrs[row][len] = '0';
+	    if( len%8==7 ) idx++;
+	 }
+	 bitStrs[row][len] = '\0';
+      }
+
+      free( (char *)bytes );
+      break;
+   case TSTRING:
+      ffgcfs(var->fptr, var->colnum, fRow, 1L, nRows,
+	     (char **)data, undef, &anynul, &status);
+      break;
+   case TLOGICAL:
+      ffgcfl(var->fptr, var->colnum, fRow, 1L, nelem,
+	     (char *)data, undef, &anynul, &status);
+      break;
+   case TLONG:
+      ffgcfj(var->fptr, var->colnum, fRow, 1L, nelem,
+	     (long *)data, undef, &anynul, &status);
+      break;
+   case TDOUBLE:
+      ffgcfd(var->fptr, var->colnum, fRow, 1L, nelem,
+	     (double *)data, undef, &anynul, &status);
+      break;
+   }
+
+   if( status ) {
+      gParse.status = status;
+      return pERROR;
+   }
+
    return 0;
 }
