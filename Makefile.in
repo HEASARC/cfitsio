@@ -35,8 +35,8 @@ libcfitsio.a:	psplit
 
 install:	libcfitsio.a
 		mv libcfitsio.a ${FTOOLS}/host/
-		cp -f *.h ${FTOOLS}/include/
-        
+		cp *.h ${FTOOLS}/include/
+
 clean:
 		rm -f *.o ; \
 		rm -rf split.*
