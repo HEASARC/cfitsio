@@ -331,7 +331,7 @@ static int iraftofits (
     fitsheader = (char *) calloc (*nbfits, 1);
     if (fitsheader == NULL) {
 	sprintf(errmsg, "IRAF2FITS Cannot allocate %d-byte FITS header",
-		*nbfits);
+		(int) (*nbfits));
         ffpmsg(hdrname);
 	return (*status = FILE_NOT_OPENED);
 	}
@@ -663,7 +663,7 @@ static int irafrdimage (
       fitsheader =  (char *) realloc (*buffptr, newfilesize);
       if (fitsheader == NULL) {
 	sprintf(errmsg, "IRAFRIMAGE Cannot allocate %d-byte image buffer",
-		*filesize);
+		(int) (*filesize));
         ffpmsg(errmsg);
         ffpmsg(pixname);
 	fclose (fd);

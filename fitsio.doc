@@ -838,6 +838,8 @@ CFITSIO to read and/or write the file.  Currently supported types are
                    for accessing password-protected ftp sites.
         http://  - a readonly file accessed with the HTTP protocol.  It
                    does not  support username:password like the ftp driver.
+                   Proxy HTTP survers are supported using the http_proxy
+                   environment variable.
         root://  - uses the CERN root protocol for writing as well as
                    reading files over the network.
         shmem:// - opens or creates a file which persists in the computer's
@@ -850,7 +852,18 @@ CFITSIO to read and/or write the file.  Currently supported types are
 If the filetype is not specified, then type file:// is assumed.
 The double slashes '//' are optional and may be omitted in most cases.
 
-***1.  Notes about the root filetype
+***1.  Notes about HTTP proxy servers
+
+A proxy HTTP server may be used by defining the address (URL) and port 
+number of the proxy server with the http\_proxy environment variable.
+For example
+-
+    setenv http_proxy http://heasarc.gsfc.nasa.gov:3128
+-
+will cause CFITSIO to use port 3128 on the heasarc proxy server whenever
+reading a FITS file with HTTP.
+
+***2.  Notes about the root filetype
 
 The original rootd server can be obtained from:
 \verb-ftp://root.cern.ch/root/rootd.tar.gz-
@@ -929,7 +942,7 @@ home directory, therefore only files below the home directory can be
 accessed.  Anonymous mode only works when the server is started via
 inetd.
 
-***2.  Notes about the shmem filetype:
+***3.  Notes about the shmem filetype:
 
 Shared memory files are currently supported on most Unix platforms,
 where the shared memory segments are managed by the operating system

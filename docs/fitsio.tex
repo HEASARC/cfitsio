@@ -916,6 +916,8 @@ CFITSIO to read and/or write the file.  Currently supported types are
                    for accessing password-protected ftp sites.
         http://  - a readonly file accessed with the HTTP protocol.  It
                    does not  support username:password like the ftp driver.
+                   Proxy HTTP survers are supported using the http_proxy
+                   environment variable.
         root://  - uses the CERN root protocol for writing as well as
                    reading files over the network.
         shmem:// - opens or creates a file which persists in the computer's
@@ -927,6 +929,19 @@ CFITSIO to read and/or write the file.  Currently supported types are
 \end{verbatim}
 If the filetype is not specified, then type file:// is assumed.
 The double slashes '//' are optional and may be omitted in most cases.
+
+
+\subsection{Notes about HTTP proxy servers}
+
+A proxy HTTP server may be used by defining the address (URL) and port
+number of the proxy server with the http\_proxy environment variable.
+For example
+
+\begin{verbatim}
+    setenv http_proxy http://heasarc.gsfc.nasa.gov:3128
+\end{verbatim}
+will cause CFITSIO to use port 3128 on the heasarc proxy server whenever
+reading a FITS file with HTTP.
 
 
 \subsection{Notes about the root filetype}

@@ -60,11 +60,12 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.450;
+      *version = 2.460;
 
-/*     30 April 2003
+/*     20 May 2003
 
    Previous releases:
+      *version = 2.450   30 Apr 2003  (internal release only)
       *version = 2.440    8 Jan 2003
       *version = 2.430;   4 Nov 2002
       *version = 2.420;  19 Jul 2002
@@ -866,7 +867,7 @@ int fftkey(char *keyword,    /* I -  keyword name */
           {
             /* don't print error message if status < 0  */
             sprintf(msg, "Character %d in this keyword is illegal: %.8s",
-                    ii+1, keyword);
+                    (int) (ii+1), keyword);
             ffpmsg(msg);
 
             /* explicitly flag the 2 most common cases */

@@ -11,10 +11,11 @@
 \contentsline {chapter}{\numberline {4} Extended File Name Syntax }{13}
 \contentsline {section}{\numberline {4.1}Overview}{13}
 \contentsline {section}{\numberline {4.2}Filetype}{16}
-\contentsline {subsection}{\numberline {4.2.1}Notes about the root filetype}{16}
-\contentsline {subsection}{\numberline {4.2.2}Notes about the shmem filetype:}{18}
+\contentsline {subsection}{\numberline {4.2.1}Notes about HTTP proxy servers}{16}
+\contentsline {subsection}{\numberline {4.2.2}Notes about the root filetype}{16}
+\contentsline {subsection}{\numberline {4.2.3}Notes about the shmem filetype:}{18}
 \contentsline {section}{\numberline {4.3}Base Filename}{19}
-\contentsline {section}{\numberline {4.4}Output File Name when Opening an Existing File}{20}
+\contentsline {section}{\numberline {4.4}Output File Name when Opening an Existing File}{21}
 \contentsline {section}{\numberline {4.5}Template File Name when Creating a New File}{22}
 \contentsline {section}{\numberline {4.6}HDU Location Specification}{22}
 \contentsline {section}{\numberline {4.7}Image Section}{23}
@@ -22,7 +23,7 @@
 \contentsline {section}{\numberline {4.9}Row Filtering Specification}{26}
 \contentsline {subsection}{\numberline {4.9.1}General Syntax}{26}
 \contentsline {subsection}{\numberline {4.9.2}Vector Columns}{29}
-\contentsline {subsection}{\numberline {4.9.3}Good Time Interval Filtering}{30}
+\contentsline {subsection}{\numberline {4.9.3}Good Time Interval Filtering}{31}
 \contentsline {subsection}{\numberline {4.9.4}Spatial Region Filtering}{31}
 \contentsline {subsection}{\numberline {4.9.5}Example Row Filters}{33}
 \contentsline {section}{\numberline {4.10} Binning or Histogramming Specification}{34}

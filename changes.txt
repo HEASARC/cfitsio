@@ -1,9 +1,29 @@
 
                    Log of Changes Made to CFITSIO
 
+Version 2.460 - 20 May 2003
+
+  Enhancements:
+
+  - modified the HTTP driver in drvrnet.c so that CFITSIO can read
+    FITS files via a proxy HTTP server.  (This code was contributed by
+    Philippe Prugniel, Obs. de Lyon).  To use this feature, the 
+    'http_proxy' environment variable must be defined with the
+    address (URL) and port number of the proxy server, i.e.,
+      > setenv http_proxy http://heasarc.gsfc.nasa.gov:3128
+    will use port 3128 on heasarc.gsfc.nasa.gov
+
+  - suppressed some compiler warnings by casting a variable of 
+    type 'size_t' to type 'int' in fftkey (in fitscore.c) and
+    iraftofits and irafrdimge (in iraffits.c).
+
 Version 2.450 - 30 April 2003
 
   Enhancements:
+
+  - modified the WCS keyword reading routine (ffgics) to support cases
+    where some of the CDi_j keywords are omitted (with an assumed 
+    value = 0).
 
   - Made a change to http_open_network in drvrnet.c to add a 'Host: '
     string to the open request.  This is required by newer HTTP 1.1
@@ -1299,7 +1319,7 @@ Version 2.031 - 31 Mar 1999
      keyword (number of rows in the table) to not be updated.
 
    - fixed bug (introduced in version 2.030) when writing null values
-     to a primary array or image extention.  If trying to set more
+     to a primary array or image extension.  If trying to set more
      than 1 pixel to null at a time, then typically only 1 null would
      be written.  Also fixed related bug when writing null values to
      rows in a table that are beyond the currently defined size of the
@@ -2199,7 +2219,7 @@ Version 1.04 - 17 Sept 1996
      to support the Mac platforms.
 
    - fixed bug in ffpdfl that caused an EOF error (107) when a program
-     creates a new extention that is an exact multiple of 2880 bytes long,
+     creates a new extension that is an exact multiple of 2880 bytes long,
      AND the program does not write a value to the last element
      in the table or image.
 
