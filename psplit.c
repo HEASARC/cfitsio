@@ -87,7 +87,7 @@ main(int argc, char **argv)
 			base_name = *argv; /* no .c so pass along unchanged. */
 		}
 		printf(" %s: Working on: %s\n", argv0, base_name);
-		sprintf(h_name, "tmp%s.h", base_name);
+		sprintf(h_name, "%s.h", base_name);
 		sprintf(common_header, "#include \"%s\" \n ", h_name);
 
 		if ((h_temp = fopen(h_name, "w")) == NULL) {
@@ -103,7 +103,7 @@ main(int argc, char **argv)
 		}
 		fclose(h_temp); /* done with header file */
 
-		sprintf(c_name, "tmp%s%03d.c", base_name, c_num++);
+		sprintf(c_name, "%s%03d.c", base_name, c_num++);
 
 		/* start dumping to c files  */
 		if ((c_temp = fopen(c_name, "w")) == NULL) {
@@ -118,7 +118,7 @@ main(int argc, char **argv)
 		while ( fgets(current_line, line_size, bigfile) != NULL) {
 			if (memcmp(current_line, split_key, key_size) == 0) {
 				fclose(c_temp);
-				sprintf(c_name, "tmp%s%03d.c", base_name, c_num++);
+				sprintf(c_name, "%s%03d.c", base_name, c_num++);
 				if ((c_temp = fopen(c_name, "w")) == NULL) {
 					fprintf(stderr, " %s : couldn't open %s \n", argv0, h_name);
 					exit(ENOFILE);
@@ -145,3 +145,6 @@ main(int argc, char **argv)
 	exit(0);
 
 }
+
+
+
