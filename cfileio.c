@@ -1083,6 +1083,7 @@ int ffselect_table(
       /* set number of rows = 0 */
       fits_modify_key_lng(newptr, "NAXIS2", 0, NULL,status);
       (newptr->Fptr)->numrows = 0;
+      (newptr->Fptr)->origrows = 0;
 
       if (ffrdef(*fptr, status) > 0)  /* force the header to be scanned */
       {

@@ -39,8 +39,15 @@
 #define MACHINE VAXVMS
 #define BYTESWAPPED TRUE
  
+#elif defined(__alpha) && defined(__VMS) &&  (__D_FLOAT == TRUE)
+
+/* this float option is the same as for VAX/VMS machines. */
+#define MACHINE VAXVMS
+#define BYTESWAPPED TRUE
+ 
 #elif defined(__alpha) && defined(__VMS) &&  (__G_FLOAT == TRUE)
  
+/*  G_FLOAT is the default for ALPHA VMS systems */
 #define MACHINE ALPHAVMS
 #define BYTESWAPPED TRUE
 #define FLOATTYPE GFLOAT

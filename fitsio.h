@@ -137,6 +137,7 @@ typedef struct      /* structure used to store basic FITS file information */
     long nextkey;   /* byte offset in file to beginning of next keyword */
     long datastart; /* byte offset in file to start of the current data unit */
     int tfield;     /* number of fields in the table (primary array has 2 */
+    long origrows;  /* original number of rows (value of NAXIS2 keyword)  */
     long numrows;   /* number of rows in the table (dynamically updated) */
     long rowlength; /* total length of a table row, in bytes */
     tcolumn *tableptr; /* pointer to the table structure */

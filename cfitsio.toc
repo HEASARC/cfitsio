@@ -29,7 +29,7 @@
 \contentsline {section}{\numberline {5.6}Unsigned Integers}{31}
 \contentsline {section}{\numberline {5.7}Character Strings}{33}
 \contentsline {section}{\numberline {5.8}Implicit Data Type Conversion}{34}
-\contentsline {section}{\numberline {5.9}Data Scaling}{34}
+\contentsline {section}{\numberline {5.9}Data Scaling}{35}
 \contentsline {section}{\numberline {5.10}Error Status Values and the Error Message Stack}{35}
 \contentsline {section}{\numberline {5.11}Variable-Length Arrays in Binary Tables}{36}
 \contentsline {section}{\numberline {5.12}Support for IEEE Special Values}{37}

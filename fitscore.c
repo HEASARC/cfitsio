@@ -24,7 +24,7 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.013;   /*  beta release */
+      *version = 2.014;   /*  beta release */
 
  /*   *version = 1.40;    6 Feb 1998 */
  /*   *version = 1.33;   16 Dec 1997 (internal release only) */
@@ -1886,7 +1886,7 @@ int ffgnrw( fitsfile *fptr,  /* I - FITS file pointer                       */
     if ((fptr->Fptr)->hdutype == IMAGE_HDU)
         return(*status = NOT_TABLE);
 
-    /* the NAXIS2 keyword may not be up to date, */
+    /* the NAXIS2 keyword may not be up to date, so use the structure value */
     *nrows = (fptr->Fptr)->numrows;
 
     return(*status);
@@ -2338,6 +2338,7 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
         (fptr->Fptr)->tfield = 0;       /* table has no fields   */
         (fptr->Fptr)->tableptr = 0;     /* set a null table structure pointer */
         (fptr->Fptr)->numrows = 0;
+        (fptr->Fptr)->origrows = 0;
     }
     else
     {
@@ -2350,6 +2351,7 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
       */
         /* the number of rows is equal to the number of groups */
         (fptr->Fptr)->numrows = gcount;
+        (fptr->Fptr)->origrows = gcount;
 
         (fptr->Fptr)->rowlength = (pcount + npix) * bytlen; /* total size */
         (fptr->Fptr)->tfield = 2;  /* 2 fields: group params and the image */
@@ -2466,6 +2468,7 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
       There is no special data following an ASCII table.
     */
     (fptr->Fptr)->numrows = nrows;
+    (fptr->Fptr)->origrows = nrows;
     (fptr->Fptr)->heapstart = rowlen * nrows;
     (fptr->Fptr)->heapsize = 0;
 
@@ -2635,6 +2638,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
       end of the table data when checking the fill values in the last block. 
     */
     (fptr->Fptr)->numrows = nrows;
+    (fptr->Fptr)->origrows = nrows;
     (fptr->Fptr)->heapstart = rowlen * nrows;
     (fptr->Fptr)->heapsize = pcount;
 
@@ -3425,10 +3429,15 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
         if ((fptr->Fptr)->datastart != DATA_UNDEFINED)
         {
           /* update NAXIS2 keyword if more rows were written to the table */
+          /* and if the user has not explicitly reset the NAXIS2 value */
           if ((fptr->Fptr)->hdutype != IMAGE_HDU)
           {
             ffgkyj(fptr, "NAXIS2", &naxis2, comm, status);
-            if ((fptr->Fptr)->numrows > naxis2)
+            if ((fptr->Fptr)->numrows > naxis2
+              && (fptr->Fptr)->origrows == naxis2)
+              /* if origrows is not equal to naxis2, then the user must */
+              /* have manually modified the NAXIS2 keyword value, and */
+              /* we will assume that the current value is correct. */
             {
               /* would be simpler to just call ffmkyj here, but this */
               /* would force linking in all the modkey & putkey routines */

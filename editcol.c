@@ -229,7 +229,8 @@ int ffirow(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     /* update the NAXIS2 keyword */
     ffmkyj(fptr, "NAXIS2", naxis2 + nrows, "&", status);
-    (fptr->Fptr)->numrows = naxis2 + nrows;
+    ((fptr->Fptr)->numrows) += nrows;
+    ((fptr->Fptr)->origrows) += nrows;
 
     return(*status);
 }
@@ -312,7 +313,8 @@ int ffdrow(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     /* update the NAXIS2 keyword */
     ffmkyj(fptr, "NAXIS2", naxis2 - nrows, "&", status);
-    (fptr->Fptr)->numrows = naxis2 - nrows;
+    ((fptr->Fptr)->numrows) -= nrows;
+    ((fptr->Fptr)->origrows) -= nrows;
 
     return(*status);
 }

@@ -966,14 +966,13 @@ The format of the template file is described later in Section n.m.
 
 The optional HDU location specifier defines which HDU (Header-Data
 Unit, also known as an `extension') within the FITS file to initially
-open.  It must immediately follow the base file name (or the output file
-name if present).  If it is not
-specified then the first HDU (the primary array) is opened.  The HDU
-location specifier is required if the colFilter, rowFilter, or binSpec
-specifiers are present (because the primary
-array is not a valid HDU for these operations). The HDU may be
-specified either by absolute position number, starting with 0 for the
-primary array, or by reference to the HDU name, and optionally, the
+open.  It must immediately follow the base file name (or the output
+file name if present).  If it is not specified then the first HDU (the
+primary array) is opened.  The HDU location specifier is required if
+the colFilter, rowFilter, or binSpec specifiers are present, because
+the primary array is not a valid HDU for these operations. The HDU may
+be specified either by absolute position number, starting with 0 for
+the primary array, or by reference to the HDU name, and optionally, the
 version number and the HDU type of the desired extension.  The absolute
 position is specified either by enclosed the number in square brackets
 (e.g., `[1]' = the first extension following the primary array) or by
@@ -982,12 +981,14 @@ name, give the name of the desired HDU (the value of the EXTNAME or
 HDUNAME keyword) and optionally the extension version number (value of
 the EXTVER keyword) and the extension type (value of the XTENSION
 keyword: IMAGE, ASCII or TABLE, or BINTABLE), separated by commas and
-all enclosed in square brackets.  The extension name and type are not
-case sensitive, and the extension type may be abbreviated to the first
-letter (e.g., I = IMAGE extension or primary array, A or T = ASCII
-table extension, and B = binary table BINTABLE extension).   If the
-HDU location specifier is equal to `[PRIMARY]' or `[P]', then the
-primary array (the first HDU) will be opened.  Examples:
+all enclosed in square brackets.  If the value of EXTVER and XTENSION
+are not specified, then the first extension with the correct value of
+EXTNAME is opened. The extension name and type are not case sensitive,
+and the extension type may be abbreviated to a single letter (e.g., I =
+IMAGE extension or primary array, A or T = ASCII table extension, and B
+= binary table BINTABLE extension).   If the HDU location specifier is
+equal to `[PRIMARY]' or `[P]', then the primary array (the first HDU)
+will be opened.  Examples:
  
 \begin{verbatim}
    myfile.fits[3] - open the 3rd HDU following the primary array
@@ -1846,14 +1847,20 @@ the columns.
 The character string values in a FITS header or in an ASCII column in a
 FITS table extension are generally padded out with non-significant
 space characters (ASCII 32) to fill up the header record or the column
-width.  When reading a FITS string value, the  CFITSIO routines will
+width.  When reading a FITS string value, the CFITSIO routines will
 strip off these non-significant trailing spaces and will return a
 null-terminated string value containing only the significant
-characters.  Similarly, when writing string values to a FITS file the
+characters.  Leading spaces in a FITS string are considered
+significant.  If the string contains all blanks, then CFITSIO will
+return a single blank character, i.e, the first blank is considered to
+be significant, since it distinquishes the string from a null or
+undefined string, but the remaining trailing spaces are not
+significant.
+
+Similarly, when writing string values to a FITS file the
 CFITSIO routines expect to get a null-terminated string as input;
 CFITSIO will pad the string with blanks if necessary when writing it
-to the FITS file.  Note that leading spaces in a FITS string are
-considered significant.
+to the FITS file.
 
 When calling CFITSIO routines that return a character string it is
 vital that the size of the char array be large enough to hold the
@@ -2435,7 +2442,7 @@ the data to a different datatype can slow the program.
 7. Where feasible, design FITS binary tables using vector column
 elements so that the data are written as a contiguous set of bytes,
 rather than as single elements in multiple rows.  For example, it is
-much faster to access the data in a table that contains a single row
+faster to access the data in a table that contains a single row
 and 2 columns with TFORM keywords equal to  '10000E' and '10000J', than
 it is to access the same amount of data in a table with 10000 rows
 which has columns with the TFORM keywords equal to '1E' and '1J'.  In
@@ -6873,6 +6880,8 @@ improve the readability of their code.
  BAD_DATATYPE      410    illegal datatype code value
  BAD_DECIM         411    bad number of decimal places specified
  NUM_OVERFLOW      412    overflow during datatype conversion
+
+ PARSE_BAD_OUTPUT  436    output file not of proper type
 
  ANGLE_TOO_BIG     501    celestial angle too large for projection
  BAD_WCS_VAL       502    bad celestial coordinate or pixel value
