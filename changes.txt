@@ -1,12 +1,31 @@
 
                    Log of Changes Made to CFITSIO
-Version 2.480 -
+Version 2.480 - beta
 
   New Routines:
 
   - fits_split_names - splits an input string containing a comma or
     space delimited list of names (typically file names or column
     names) into individual name tokens.
+
+  Bug fixes:
+
+  - changed fhist in histo.c so that it can make histograms of ASCII
+    table columns as well as binary table columns (as long as they
+    contain numeric data).
+
+  - removed an erroneous reference to listhead.c in makefile.vcc, that is
+    used to build the cfitsio dll under Windows.  This caused a 'main'
+    routine to be added to the library, which causes problems when linking
+    fortran programs to cfitsio under windows.
+
+  - if an error occurs when opening for a 2nd time (with ffopen) a file that
+    is already open (e.g., the specified extension doesn't exist), and
+    if the file had been modified before attempting to reopen it, then
+    the modified buffers may not get written to disk and the internal
+    state of the file may become corrupted.  ffclos was modified to
+    always set status=0 before calling ffflsh if the file has been 
+    concurrently opened more than once.
 
 Version 2.470 - 18 August 2003
 
