@@ -232,7 +232,7 @@ int ffgsve(fitsfile *fptr, /* I - FITS file pointer                         */
 */
 {
     long ii,i0, i1,i2,i3,i4,i5,i6,i7,i8,row,rstr,rstp,rinc;
-    long str[9],stp[9],incr[9],dsize[10];
+    long str[9],stp[9],incr[9],dsize[10],dir[9];
     long felem, nelem, nultyp, ninc, numcol;
     int hdutype, anyf;
     char ldummy, msg[FLEN_ERRMSG];
@@ -301,22 +301,32 @@ int ffgsve(fitsfile *fptr, /* I - FITS file pointer                         */
         stp[ii] = 1;
         incr[ii] = 1;
         dsize[ii] = 1;
+        dir[ii] = 1;
     }
 
     for (ii = 0; ii < naxis; ii++)
     {
       if (trc[ii] < blc[ii])
       {
-        sprintf(msg, "ffgsve: illegal range specified for axis %ld", ii + 1);
-        ffpmsg(msg);
-        return(*status = BAD_PIX_NUM);
+        if (hdutype == IMAGE_HDU)
+        {
+           dir[ii] = -1;
+        }
+        else
+        {
+          sprintf(msg, "ffgsve: illegal range specified for axis %ld", ii + 1);
+          ffpmsg(msg);
+          return(*status = BAD_PIX_NUM);
+        }
       }
 
       str[ii] = blc[ii];
       stp[ii] = trc[ii];
       incr[ii] = inc[ii];
       dsize[ii + 1] = dsize[ii] * naxes[ii];
+      dsize[ii] = dsize[ii] * dir[ii];
     }
+    dsize[naxis] = dsize[naxis] * dir[naxis];
 
     if (naxis == 1 && naxes[0] == 1)
     {
@@ -328,32 +338,33 @@ int ffgsve(fitsfile *fptr, /* I - FITS file pointer                         */
     else
     {
       /* have to read each row individually, in all dimensions */
-      nelem = (stp[0] - str[0]) / inc[0] + 1;
-      ninc = incr[0];
+      nelem = (stp[0]*dir[0] - str[0]*dir[0]) / inc[0] + 1;
+      ninc = incr[0] * dir[0];
     }
 
     for (row = rstr; row <= rstp; row += rinc)
     {
-     for (i8 = str[8]; i8 <= stp[8]; i8 += incr[8])
+     for (i8 = str[8]*dir[8]; i8 <= stp[8]*dir[8]; i8 += incr[8])
      {
-      for (i7 = str[7]; i7 <= stp[7]; i7 += incr[7])
+      for (i7 = str[7]*dir[7]; i7 <= stp[7]*dir[7]; i7 += incr[7])
       {
-       for (i6 = str[6]; i6 <= stp[6]; i6 += incr[6])
+       for (i6 = str[6]*dir[6]; i6 <= stp[6]*dir[6]; i6 += incr[6])
        {
-        for (i5 = str[5]; i5 <= stp[5]; i5 += incr[5])
+        for (i5 = str[5]*dir[5]; i5 <= stp[5]*dir[5]; i5 += incr[5])
         {
-         for (i4 = str[4]; i4 <= stp[4]; i4 += incr[4])
+         for (i4 = str[4]*dir[4]; i4 <= stp[4]*dir[4]; i4 += incr[4])
          {
-          for (i3 = str[3]; i3 <= stp[3]; i3 += incr[3])
+          for (i3 = str[3]*dir[3]; i3 <= stp[3]*dir[3]; i3 += incr[3])
           {
-           for (i2 = str[2]; i2 <= stp[2]; i2 += incr[2])
+           for (i2 = str[2]*dir[2]; i2 <= stp[2]*dir[2]; i2 += incr[2])
            {
-            for (i1 = str[1]; i1 <= stp[1]; i1 += incr[1])
+            for (i1 = str[1]*dir[1]; i1 <= stp[1]*dir[1]; i1 += incr[1])
             {
-              felem=str[0] + (i1 - 1) * dsize[1] + (i2 - 1) * dsize[2] + 
-                             (i3 - 1) * dsize[3] + (i4 - 1) * dsize[4] +
-                             (i5 - 1) * dsize[5] + (i6 - 1) * dsize[6] +
-                             (i7 - 1) * dsize[7] + (i8 - 1) * dsize[8];
+
+              felem=str[0] + (i1 - dir[1]) * dsize[1] + (i2 - dir[2]) * dsize[2] + 
+                             (i3 - dir[3]) * dsize[3] + (i4 - dir[4]) * dsize[4] +
+                             (i5 - dir[5]) * dsize[5] + (i6 - dir[6]) * dsize[6] +
+                             (i7 - dir[7]) * dsize[7] + (i8 - dir[8]) * dsize[8];
 
               if ( ffgcle(fptr, numcol, row, felem, nelem, ninc, nultyp,
                    nulval, &array[i0], &ldummy, &anyf, status) > 0)
@@ -704,7 +715,7 @@ int ffgcle( fitsfile *fptr,   /* I - FITS file pointer                       */
     int tcode, maxelem, hdutype, xcode, decimals;
     long twidth, incre, repeat, rowlen, rownum, elemnum, remain, next, ntodo;
     long ii, rowincre, tnull, xwidth;
-    int convert, nulcheck;
+    int convert, nulcheck, readcheck = 0;
     long startpos, readptr;
     char tform[20];
     char message[81];
@@ -727,7 +738,10 @@ int ffgcle( fitsfile *fptr,   /* I - FITS file pointer                       */
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
     /*---------------------------------------------------*/
-    if ( ffgcpr( fptr, colnum, firstrow, firstelem, nelem, 0, &scale, &zero,
+    if (elemincre < 0)
+        readcheck = -1;  /* don't do range checking in this case */
+
+    if ( ffgcpr( fptr, colnum, firstrow, firstelem, nelem, readcheck, &scale, &zero,
          tform, &twidth, &tcode, &maxelem, &startpos, &elemnum, &incre,
          &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0 )
          return(*status);
@@ -797,8 +811,15 @@ int ffgcle( fitsfile *fptr,   /* I - FITS file pointer                       */
            will fit in the buffer or to the number of pixels that remain in
            the current vector, which ever is smaller.
         */
-        ntodo = minvalue(remain, maxelem);      
-        ntodo = minvalue(ntodo, ((repeat - elemnum - 1)/elemincre +1));
+        ntodo = minvalue(remain, maxelem);
+        if (elemincre >= 0)
+        {
+          ntodo = minvalue(ntodo, ((repeat - elemnum - 1)/elemincre +1));
+        }
+        else
+        {
+          ntodo = minvalue(ntodo, (elemnum/(-elemincre) +1));
+        }
 
         readptr = startpos + (rownum * rowlen) + (elemnum * (incre / elemincre));
 
@@ -896,6 +917,12 @@ int ffgcle( fitsfile *fptr,   /* I - FITS file pointer                       */
                 rowincre = elemnum / repeat;
                 rownum += rowincre;
                 elemnum = elemnum - (rowincre * repeat);
+            }
+            else if (elemnum < 0)  /* completed a row; start on a previous row */
+            {
+                rowincre = (-elemnum - 1) / repeat + 1;
+                rownum -= rowincre;
+                elemnum = (rowincre * repeat) + elemnum;
             }
         }
     }  /*  End of main while Loop  */

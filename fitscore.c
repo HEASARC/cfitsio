@@ -24,42 +24,45 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.0361; /* 5 Apr 2000 - for HEAsoft patch */
+      *version = 2.037;
 
- /*  *version = 2.036;  1 Feb 2000 */
- /*   *version = 2.035;   7 Dec 1999 (internal release only) */
- /*   *version = 2.034;  23 Nov 1999 */
- /*   *version = 2.033;  17 Sep 1999 */
- /*   *version = 2.032;  25 May 1999 */
- /*   *version = 2.031;  31 Mar 1999 */
- /*   *version = 2.030;  24 Feb 1999 */
- /*   *version = 2.029;  11 Feb 1999 */
- /*   *version = 2.028;  26 Jan 1999 */
- /*   *version = 2.027;  12 Jan 1999 */
- /*   *version = 2.026;  23 Dec 1998 */
- /*   *version = 2.025;   1 Dec 1998 */
- /*   *version = 2.024;   9 Nov 1998 */
- /*   *version = 2.023;   1 Nov 1998 first full release of V2.0 */
- /*   *version = 1.42;   30 Apr 1998 */
- /*   *version = 1.40;    6 Feb 1998 */
- /*   *version = 1.33;   16 Dec 1997 (internal release only) */
- /*   *version = 1.32;   21 Nov 1997 (internal release only) */
- /*   *version = 1.31;    4 Nov 1997 (internal release only) */
- /*   *version = 1.30;   11 Sep 1997 */
- /*   *version = 1.27;    3 Sep 1997 (internal release only) */
- /*   *version = 1.25;    2 Jul 1997 */
- /*   *version = 1.24;    2 May 1997 */
- /*   *version = 1.23;   24 Apr 1997 */
- /*   *version = 1.22;   18 Apr 1997 */
- /*   *version = 1.21;   26 Mar 1997 */
- /*   *version = 1.2;    29 Jan 1997 */
- /*   *version = 1.11;   04 Dec 1996 */
- /*   *version = 1.101;  13 Nov 1996 */
- /*   *version = 1.1;     6 Nov 1996 */
- /*   *version = 1.04;   17 Sep 1996 */
- /*   *version = 1.03;   20 Aug 1996 */
- /*   *version = 1.02;   15 Aug 1996 */
- /*   *version = 1.01;   12 Aug 1996 */
+/* 6 July 2000
+
+      *version = 2.036;   1 Feb 2000
+      *version = 2.035;   7 Dec 1999 (internal release only)
+      *version = 2.034;  23 Nov 1999
+      *version = 2.033;  17 Sep 1999
+      *version = 2.032;  25 May 1999
+      *version = 2.031;  31 Mar 1999
+      *version = 2.030;  24 Feb 1999
+      *version = 2.029;  11 Feb 1999
+      *version = 2.028;  26 Jan 1999
+      *version = 2.027;  12 Jan 1999
+      *version = 2.026;  23 Dec 1998
+      *version = 2.025;   1 Dec 1998
+      *version = 2.024;   9 Nov 1998
+      *version = 2.023;   1 Nov 1998 first full release of V2.0
+      *version = 1.42;   30 Apr 1998
+      *version = 1.40;    6 Feb 1998
+      *version = 1.33;   16 Dec 1997 (internal release only)
+      *version = 1.32;   21 Nov 1997 (internal release only)
+      *version = 1.31;    4 Nov 1997 (internal release only)
+      *version = 1.30;   11 Sep 1997
+      *version = 1.27;    3 Sep 1997 (internal release only)
+      *version = 1.25;    2 Jul 1997
+      *version = 1.24;    2 May 1997
+      *version = 1.23;   24 Apr 1997
+      *version = 1.22;   18 Apr 1997
+      *version = 1.21;   26 Mar 1997
+      *version = 1.2;    29 Jan 1997
+      *version = 1.11;   04 Dec 1996
+      *version = 1.101;  13 Nov 1996
+      *version = 1.1;     6 Nov 1996
+      *version = 1.04;   17 Sep 1996
+      *version = 1.03;   20 Aug 1996
+      *version = 1.02;   15 Aug 1996
+      *version = 1.01;   12 Aug 1996
+*/
 
     return(*version);
 }
@@ -3548,6 +3551,8 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
         int writemode,  /* I - = 1 if writing data, = 0 if reading data     */
                         /*     If = 2, then writing data, but don't modify  */
                         /*     the returned values of repeat and incre.     */
+                        /*     If = -1, then reading data in reverse        */
+                        /*     direction.                                   */
         double *scale,  /* O - FITS scaling factor (TSCALn keyword value)   */
         double *zero,   /* O - FITS scaling zero pt (TZEROn keyword value)  */
         char *tform,    /* O - ASCII column format: value of TFORMn keyword */
@@ -3568,7 +3573,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
   validity.  
 */
 {
-    int nulpos;
+    int nulpos, rangecheck = 1;
     long datastart, tbcol, endrow, nrows, endpos, nblock;
     char message[81];
     tcolumn *colptr;
@@ -3654,6 +3659,14 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
        strcpy(snull, "                 ");   /* maximum of 17 spaces */
        nulpos = minvalue(17, *twidth);      /* truncate to width of column */
        snull[nulpos] = '\0';
+    }
+
+    /* Special case:  interpret writemode = -1 as reading data, but */
+    /* don't do error check for exceeding the range of pixels  */
+    if (writemode == -1)
+    {
+      writemode = 0;
+      rangecheck = 0;
     }
 
     /* Special case: interprete 'X' column as 'B' */
@@ -3746,13 +3759,17 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
                 }
                 else
                 {
-                   (fptr->Fptr)->numrows = endrow; /* update number of rows */
+                  /* update heap starting address */
+                  (fptr->Fptr)->heapstart += 
+                  ((endrow - (fptr->Fptr)->numrows) * (fptr->Fptr)->rowlength );
+
+                  (fptr->Fptr)->numrows = endrow; /* update number of rows */
                 }
             }
         }
         else  /* reading from the file */
         {
-          if ( endrow > (fptr->Fptr)->numrows)
+          if ( endrow > (fptr->Fptr)->numrows && rangecheck)
           {
             if (*hdutype == IMAGE_HDU) /*  Primary Array or IMAGE */
             {
@@ -4894,6 +4911,7 @@ int ffmahd(fitsfile *fptr,      /* I - FITS file pointer             */
             {
                 if (ffgext(fptr, moveto, exttype, status) > 0)
                 {   /* failed to get the requested extension */
+
                     tstatus = 0;
                     ffrhdu(fptr, exttype, &tstatus); /* restore the CHDU */
                 }
@@ -5024,6 +5042,12 @@ int ffthdu(fitsfile *fptr,      /* I - FITS file pointer                    */
         return(*status);
 
     extnum = fptr->HDUposition + 1;  /* save the current HDU number */
+    *nhdu = extnum - 1;
+
+    /* if the CHDU is empty or not completely defined, just return */
+    if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        return(*status);
+
     tstatus = 0;
 
     /* loop until EOF */

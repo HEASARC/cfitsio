@@ -10,6 +10,7 @@
 */
 #include "fitsio.h"
 
+int main( void );
 void writeimage( void );
 void writeascii( void );
 void writebintable( void );
@@ -20,7 +21,7 @@ void readimage( void );
 void readtable( void );
 void printerror( int status);
 
-main()
+int main()
 {
 /*************************************************************************
    This is a simple main program that calls the following routines:
@@ -131,7 +132,7 @@ void writeascii ( void )
     /* define the name, datatype, and physical units for the 3 columns */
     char *ttype[] = { "Planet", "Diameter", "Density" };
     char *tform[] = { "a8",     "I6",       "F4.2"    };
-    char *tunit[] = { " ",      "km",       "g/cm"    };
+    char *tunit[] = { "\0",      "km",       "g/cm"    };
 
     /* define the name diameter, and density of each planet */
     char *planet[] = {"Mercury", "Venus", "Earth", "Mars","Jupiter","Saturn"};
@@ -187,7 +188,7 @@ void writebintable ( void )
     /* define the name, datatype, and physical units for the 3 columns */
     char *ttype[] = { "Planet", "Diameter", "Density" };
     char *tform[] = { "8a",     "1J",       "1E"    };
-    char *tunit[] = { " ",      "km",       "g/cm"    };
+    char *tunit[] = { "\0",      "km",       "g/cm"    };
 
     /* define the name diameter, and density of each planet */
     char *planet[] = {"Mercury", "Venus", "Earth", "Mars","Jupiter","Saturn"};
@@ -366,7 +367,7 @@ void readheader ( void )
     fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
 
     int status, nkeys, keypos, hdutype, ii, jj;
-    char filename[]  = "btestfil.fit";     /* name of existing FITS file   */
+    char filename[]  = "atestfil.fit";     /* name of existing FITS file   */
     char card[FLEN_CARD];   /* standard string lengths defined in fitsioc.h */
 
     status = 0;
@@ -473,8 +474,8 @@ void readtable( void )
     /************************************************************/
 {
     fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
-    int status, hdutype,  nfound, anynull, ii;
-    long hdunum, frow, felem, nelem, longnull, dia[6];
+    int status, hdunum, hdutype,  nfound, anynull, ii;
+    long frow, felem, nelem, longnull, dia[6];
     float floatnull, den[6];
     char strnull[10], *name[6], *ttype[3]; 
 
@@ -528,7 +529,7 @@ void readtable( void )
                     &anynull, &status);
 
       for (ii = 0; ii < 6; ii++)
-        printf("%5d %10s %10d %10.2f\n", ii + 1, name[ii], dia[ii], den[ii]);
+        printf("%5d %10s %10ld %10.2f\n", ii + 1, name[ii], dia[ii], den[ii]);
     }
 
     for (ii = 0; ii < 3; ii++)      /* free the memory for the column labels */

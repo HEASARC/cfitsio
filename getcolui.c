@@ -1050,6 +1050,27 @@ int fffi2u2(short *input,         /* I - array of values to be converted     */
                     output[ii] =  ( *(unsigned short *) &input[ii] ) ^ 0x8000;
             }
         }
+        else if (scale == 1. && zero == 0.)  /* no scaling */
+        {       
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] == tnull)
+                {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                }
+                else if (input[ii] < 0)
+                {
+                    *status = OVERFLOW_ERR;
+                    output[ii] = 0;
+                }
+                else
+                    output[ii] = (unsigned short) input[ii]; /* copy input */
+            }
+        }
         else                  /* must scale the data */
         {
             for (ii = 0; ii < ntodo; ii++)

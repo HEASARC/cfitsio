@@ -1,4 +1,4 @@
-\documentstyle[11pt]{book}
+\documentclass[11pt]{book}
 %\input{html.sty}
 %\htmladdtonavigation
 %   {\begin{rawhtml}
@@ -7,11 +7,12 @@
 \oddsidemargin=0.00in
 \evensidemargin=0.00in
 \textwidth=6.5in
-\topmargin=0.0in
-\textheight=8.5in
+%\topmargin=0.0in
+\textheight=8.75in
 \parindent=0cm
 \parskip=0.2cm
 \begin{document}
+\pagenumbering{roman}
 
 \begin{titlepage}
 \normalsize
@@ -45,20 +46,14 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large December 1999\\}
+{\Large July 2000\\}
 \end{center}
 \vfill
 \end{titlepage}
 
-\begin{titlepage}
-\vspace*{7.6cm}
-\vfill
-\end{titlepage}
-
-\pagenumbering{roman}
+\clearpage
 
 \tableofcontents
-
 \chapter{Introduction }
 \pagenumbering{arabic}
 
@@ -101,6 +96,7 @@ Web or via anonymous ftp from:
         http://heasarc.gsfc.nasa.gov/fitsio
         ftp://legacy.gsfc.nasa.gov/software/fitsio/c
 \end{verbatim}
+\newpage
 Any questions, bug reports, or suggested enhancements related to the CFITSIO
 package should be sent to the primary author:
  
@@ -155,6 +151,7 @@ CFITSIO has currently been tested on the following platforms:
    Sun OS                     gcc and cc (3.0.1)
    Sun Solaris                gcc and cc
    Silicon Graphics IRIX      gcc and cc
+   Silicon Graphics IRIX64    MIPS
    Dec Alpha OSF/1            gcc and cc
    DECstation  Ultrix         gcc
    Dec Alpha OpenVMS          cc
@@ -163,14 +160,15 @@ CFITSIO has currently been tested on the following platforms:
    IBM AIX                    gcc
    Linux                      gcc
    MkLinux                    DR3
-   Windows 95/98              Borland C++ V4.5
-   Windows NT                 Microsoft Visual C++ v5.0, v6.0
+   Windows 95/98/NT           Borland C++ V4.5
+   Windows 95/98/NT           Microsoft/Compaq Visual C++ v5.0, v6.0
    OS/2                       gcc + EMX
    MacOS 7.1 or greater       Metrowerks 10.+
 \end{verbatim}
 CFITSIO will probably run on most other Unix platforms.  Cray
 supercomputers and IBM mainframe computers are currently not
 supported.
+\newpage
 
  
 \subsection{ Unix Systems}
@@ -246,12 +244,13 @@ The disadvantages are:
 \subsection{VMS}
 On VAX/VMS and ALPHA/VMS systems the make.com command file may be used
 to build the cfitsio.olb object library using the default G-floating
-point option for double variables.  The make\_dfloat.com and make\_ieee.com
-files may be used instead to build the library with the other floating
-point options. Note that the getcwd function that is used in the group.c
-module may require that programs using CFITSIO be linked with the
-ALPHA\$LIBRARY:VAXCRTL.OLB library.  See the example link line in the
-next section of this document.
+point option for double variables.  The make\_dfloat.com and
+make\_ieee.com files may be used instead to build the library with the
+other floating point options. Note that the getcwd function that is
+used in the group.c module may require that programs using CFITSIO be
+linked with the ALPHA\$LIBRARY:VAXCRTL.OLB library.  See the example
+link line in the next section of this document.
+
 
  
 \subsection{Windows PCs}
@@ -823,25 +822,25 @@ the final 2-D image in the primary array of the opened file.
  
 \section{Detailed Filename Syntax}
 
-This section describes the full syntax for the CFITSIO FITS file names,
-which can contain the following components:
+This section describes the full extended syntax for the CFITSIO FITS file names.
+The filename can contain several different components depending on the context:
  
 \begin{verbatim}
-filetype://BaseFilename(outName)[HDUlocation][ImageSection]
+When creating a new file:
+   filetype://BaseFilename(templateName)
+
+When opening an existing primary array or image HDU:
+   filetype://BaseFilename(outName)[HDUlocation][ImageSection]
+
+When opening an existing table HDU:
+   filetype://BaseFilename(outName)[HDUlocation][colFilter][rowFilter][binSpec]
 \end{verbatim}
-for an image HDU, or
- 
-\begin{verbatim}
-filetype://BaseFilename(outName)[HDUlocation][colFilter][rowFilter][binSpec]
-\end{verbatim}
-for a table HDU, where each of these components is described below.
 The filetype, BaseFilename, outName, HDUlocation, and ImageSection
 components, if present, must be given in that order, but the colFilter,
 rowFilter, and binSpec specifiers may follow in any order.  Regardless
 of the order, however, the colFilter specifier, if present, will be
 processed first by CFITSIO, followed by the rowFilter specifier, and
 finally by the binSpec specifier.
-
 
  
 \subsection{Filetype}
@@ -1033,7 +1032,7 @@ then CFITSIO will return an error and will not overwrite the existing
 file.  Note  that the exclamation point,  '!', is a special UNIX character,
 so if it is used  on the command line rather than entered at a task
 prompt, it must be  preceded by a backslash to force the UNIX
-shell to ignore it.
+shell to pass it verbatim to the application program.
 
 The input file may be compressed with the gzip or Unix compress
 algorithms, in which case CFITSIO will uncompress the file on the fly
@@ -1454,14 +1453,18 @@ syntax as described in the Row Filter Specifier section, below.
  
 \subsection{Image Section}
 
-A subsection of an image can be opened by specifying the range of
-pixels (start:end), or with an optional pixel increment
-(start:end:step), for each axis of the input image.  A pixel step = 1
-will be assumed if it is not specified, and an asterisk, '*', may be
-used to specify the entire range of an axis.  The input image can be
-in the primary array, in an image extension, or in a vector cell of a
-binary table. In the later 2 cases the extension name or number must be
-specified before the image section specifier.
+A virtual file containing a rectangular subsection of an image can be
+extracted and opened by specifying the range of pixels (start:end)
+along each axis to be extracted from the original image.  One can also
+specify an optional pixel increment (start:end:step) for each axis of
+the input image.  A pixel step = 1 will be assumed if it is not
+specified.  If the start pixel is larger then the end pixel, then the
+image will be flipped (producing a mirror image) along that dimension.
+An asterisk, '*', may be used to specify the entire range of an axis,
+and '-*' will flip the entire axis. The input image can be in the
+primary array, in an image extension, or contained in a vector cell of
+a binary table. In the later 2 cases the extension name or number must
+be specified before the image section specifier.
 
  Examples:
  
@@ -1471,18 +1474,24 @@ specified before the image section specifier.
               the even numbered rows (2nd axis) of the image in the
               primary array of the file.
 
-  myfile.fits[*, 256:512] - open an image consisting of all the columns
+  myfile.fits[*, 512:256] - open an image consisting of all the columns
               in the input image, but only rows 256 through 512.
+              The image will be flipped along the 2nd axis since
+              the starting pixel is greater than the ending pixel.
 
-  myfile.fits[*:2, 256:512:2] - same as above but keeping only
+  myfile.fits[*:2, 512:256:2] - same as above but keeping only
               every other row and column in the input image.
 
-  myfile.fits[3][1:256,1:256] - opens a subsection of the image in
-              the 3rd extension of the file.
+  myfile.fits[-*, *] - copy the entire image, flipping it along
+              the first axis.
 
-  myfile.fits[4; images(12)][*,*] - open the whole image contained
-              in the 12th row of the 'images' vector column
-              in the table in the 4th extension of the file.
+  myfile.fits[3][1:256,1:256] - opens a subsection of the image that
+              is in the 3rd extension of the file.
+
+  myfile.fits[4; images(12)][1:10,1:10] - open an image consisting
+	      of the first 10 pixels in both dimensions. The original
+	      image resides in the 12th row of the 'images' vector
+	      column in the table in the 4th extension of the file.
 \end{verbatim}
 
 When CFITSIO opens an image section it first creates a temporary file
@@ -2237,8 +2246,8 @@ Logical states (if TRUE and FALSE are not already defined):
 
 Values to represent undefined floating point numbers:
 
-  #define FLOATNULLVALUE -9.11E-36F
-  #define DOUBLENULLVALUE -9.11E-36L
+  #define FLOATNULLVALUE -9.11912E-36F
+  #define DOUBLENULLVALUE -9.1191291391491E-36
 \end{verbatim}
  
 \section{CFITSIO Size Limitations}
@@ -2701,7 +2710,7 @@ variable length field should only be written once.  An exception to
 this general rule occurs when setting elements of an array as
 undefined.  One must first write a dummy value into the array with
 fits\_write\_col, and then call fits\_write\_col\_nul to flag the
-desired elements as undefined.  (Do not use the fits\_write\_colnul
+desired elements as undefined.  (Do not use the fits\_write\_colnull
 routines with variable length fields).  Note that the rows of a table,
 whether fixed or variable length, do not have to be written
 consecutively and may be written in any order.
@@ -3609,7 +3618,7 @@ definition of each routine.  This symbol is not actually part of the C
 calling sequence.
 
 3. The function parameters are defined in more detail in the
-alphabetical listing in the appendix.
+alphabetical listing in Appendix B.
 
 4.  The first argument in almost all the functions is a pointer to a
 structure of type `fitsfile'.  Memory for this structure is allocated
@@ -3698,6 +3707,7 @@ status value is also returned as the value of the function itself.
 These routines will open or close a new or existing FITS file or return
 information about the opened FITS file.  These routines support the
 extended file name syntax that is described in a previous chapter.
+See Appendix B for the definition of the parameters used in these routines.
 
 The same FITS file may be opened more than once simultaneously and the
 resulting pointers to the files may be treated as though they were
@@ -3877,8 +3887,9 @@ specifications.
  
 \section{HDU Access Routines\label{FFMAHD}}
 
-The following functions perform operations on Header-Data Units (HDUs) as
-a whole.
+The following functions perform operations on Header-Data Units (HDUs)
+as a whole.  See Appendix B for the definition of the parameters used in
+these routines.
 
  
 \begin{description}
@@ -3907,12 +3918,12 @@ a whole.
  
 \begin{description}
 \item[3 ] Move to the (first) HDU which has the specified extension type and
-    EXTNAME (or HDUNAME) and EXTVERS keyword values.  The hdutype parameter
+    EXTNAME (or HDUNAME) and EXTVER keyword values.  The hdutype parameter
     may have
     a value of IMAGE\_HDU, ASCII\_TBL, BINARY\_TBL, or ANY\_HDU where
-    ANY\_HDU means that only the extname and extvers values will be
+    ANY\_HDU means that only the extname and extver values will be
     used to locate the correct extension.  If the input value of
-    extvers is 0 then the EXTVERS keyword is ignored and the first HDU
+    extver is 0 then the EXTVER keyword is ignored and the first HDU
     with a matching EXTNAME (or HDUNAME) keyword will be found.  If no
     matching HDU is found in the file then the current HDU will remain
     unchanged
@@ -3921,7 +3932,7 @@ a whole.
  
 \begin{verbatim}
   int fits_movnam_hdu / ffmnhd
-      (fitsfile *fptr, int hdutype, char *extname, int extvers, > int *status)
+      (fitsfile *fptr, int hdutype, char *extname, int extver, > int *status)
 \end{verbatim}
  
 \begin{description}
@@ -4040,7 +4051,9 @@ done when no wildcards are included in the keyword name.  The
 fits\_read\_record routine may be used to set the starting position
 when doing wild card searchs.  A status value of KEY\_NO\_EXIST is
 returned if the specified keyword to be read is not found in the
-header.
+header.  See Appendix B for the definition of the parameters used in
+these routines.
+
 
  
 \begin{description}
@@ -4382,12 +4395,13 @@ array[100][50].
 
 The `datatype'  parameter specifies the datatype of the `nulval'  and
 `array' pointers and can have one of the following  values:  TBYTE,
-TSHORT, TUSHORT, TINT, TUINT, TLONG, TULONG, TFLOAT, TDOUBLE.  Automatic data
-type conversion is performed if the data type of the FITS array (as
-defined by the BITPIX keyword) differs from that specified by
-'datatype'.  The data values are also automatically scaled by the
-BSCALE and BZERO keyword values as they are being read or written in
-the FITS array.
+TSHORT, TUSHORT, TINT, TUINT, TLONG, TULONG, TFLOAT, TDOUBLE.
+Automatic data type conversion is performed if the data type of the
+FITS array (as defined by the BITPIX keyword) differs from that
+specified by 'datatype'.  The data values are also automatically scaled
+by the BSCALE and BZERO keyword values as they are being read or
+written in the FITS array.  See Appendix B for the definition of the
+parameters used in these routines.
 
  
 \begin{description}
@@ -4485,14 +4499,27 @@ the FITS array.
       (fitsfile *fptr, int  datatype, long firstelem, long nelements,
        DTYPE *nulval, > DTYPE *array, int *anynul, int *status)
 \end{verbatim}
+ 
+\begin{description}
+\item[9 ] Read elements from the FITS data array.   Any undefined FITS array
+    elements will have the corresponding nullarray element set
+   to TRUE.  \label{ffgpf}
+\end{description}
+ 
+\begin{verbatim}
+  int fits_read_imgnull / ffgpf
+      (fitsfile *fptr, int  datatype, long firstelem, long nelements,
+       > DTYPE *array, char *nullarray, int *anynul, int *status)
+\end{verbatim}
 
  
 \section{ASCII and Binary Table Routines}
 
-These routines perform read and write operations on columns
-of data in FITS ASCII or Binary tables.  Note that in the
-following discussions, the first row and column in a table
-is at position 1 not 0.
+These routines perform read and write operations on columns of data in
+FITS ASCII or Binary tables.  Note that in the following discussions,
+the first row and column in a table is at position 1 not 0.  See
+Appendix B for the definition of the parameters used in these
+routines.
 
  
 \subsection{Column Information Routines \label{FFGCNO}}
@@ -4765,14 +4792,15 @@ TCOMPLEX, and TDBLCOMPLEX.
 Numerical data values are automatically scaled by the TSCALn and TZEROn
 keyword values (if they exist).
 
-    In the case of binary tables with vector elements, the 'felem'
+In the case of binary tables with vector elements, the 'felem'
 parameter defines the starting pixel within the cell (a cell is defined
 as the intersection of a row and a column and may contain a single
 value or a vector of values).  The felem parameter is ignored when
 dealing with ASCII tables. Similarly, in the case of binary tables the
 'nelements' parameter specifies the total number of vector values to be
 read or written (continuing on subsequent rows if required) and not the
-number of table cells.
+number of table cells.  See Appendix B for the definition of the
+parameters used in these routines.
 
  
 \begin{description}
@@ -4801,7 +4829,7 @@ number of table cells.
 \end{description}
  
 \begin{verbatim}
-  int fits_write_colnul / ffpcn
+  int fits_write_colnull / ffpcn
       (fitsfile *fptr, int datatype, int colnum, long firstrow,
       long firstelem, long nelements, DTYPE *array, DTYPE *nulval,
       > int *status)
@@ -4862,6 +4890,19 @@ number of table cells.
       (fitsfile *fptr, int datatype, int colnum, long firstrow, long firstelem,
        long nelements, DTYPE *nulval, DTYPE *array, int *anynul, int *status)
 \end{verbatim}
+ 
+\begin{description}
+\item[5 ] Read elements from an ASCII or binary table column.  The datatype
+    parameter specifies the datatype of the and `array'  pointer;
+    Any undefined elements will have the corresponding nullarray element set
+   to TRUE. \label{ffgcf}
+\end{description}
+ 
+\begin{verbatim}
+  int fits_read_colnull / ffgcf
+      (fitsfile *fptr, int datatype, int colnum, long firstrow, long firstelem,
+      long nelements, DTYPE *array, char *nullarray, int *anynul, int *status)
+\end{verbatim}
 
  
 \section{Celestial Coordinate System Routines \label{FFGICS}}
@@ -4877,7 +4918,8 @@ Both sets of routines require that a 2 step procedure be followed:
 first an initialization routine must be called to read the relevent WCS
 keywords in the header.  These parameters are then passed to a pair of
 routines that convert from pixel to sky coordinates, or from sky to
-pixel coordinates.
+pixel coordinates.  See Appendix B for the definition of the
+parameters used in these routines.
 
 The first set of routines described below have the advantage that they
 are completely self-contained within the CFITSIO library and thus are
@@ -4910,7 +4952,25 @@ AIPS.  All the angular quantities are given in units of degrees.
 \item[1 ] Get the values of all the standard FITS celestial coordinate system
     keywords from the header of a FITS image (i.e., the primary array or
     an image extension).  These values may then be passed to the routines
-   that perform the coordinate transformations. \label{ffgics}
+    that perform the coordinate transformations.  If any or all of the WCS
+    keywords are not present, then default values will be returned. If
+    the first coordinate axis is the declination-like coordinate, then
+    this routine will swap them so that the longitudinal-like coordinate
+    is returned as the first axis.
+
+    If the file uses the newer 'CDj\_i' WCS transformation matrix
+    keywords instead of old style 'CDELTn' and 'CROTA2' keywords, then
+    this routine will calculate and return the values of the equivalent
+    old-style keywords.  Note that the conversion from the new-style
+    keywords to the old-style values is sometimes only an
+    approximation, so if the approximation is larger than an internally
+    defined threshold level, then CFITSIO will still return the
+    approximate WCS keyword values, but will also return with status =
+    APPROX\_WCS\_KEY, to warn the calling program that approximations
+    have been made.  It is then up to the calling program to decide
+    whether the approximations are sufficiently accurate for the
+    particular application, or whether more precise WCS transformations
+   must be performed using new-style WCS keywords directly. \label{ffgics}
 \end{description}
  
 \begin{verbatim}
@@ -5433,7 +5493,9 @@ FITS table, based on whether the expression evaluates to true (not
 equal to zero) or false (zero).  The other routines evaluate the
 expression and calculate a value for each row of the table.  The
 allowed expression syntax is described in the row filter section in the
-earlier `Extended File Name Syntax' chapter of this document.
+earlier `Extended File Name Syntax' chapter of this document.  See
+Appendix B for the definition of the parameters used in these
+routines.
 
  
 \begin{description}
@@ -5548,7 +5610,8 @@ If the file has been modified since the checksums were computed, then
 the HDU checksum will usually not equal zero.  These checksum keyword
 conventions are based on a paper by Rob Seaman published in the
 proceedings of the ADASS IV conference in Baltimore in November 1994
-and a later revision in June 1995.
+and a later revision in June 1995.  See Appendix B for the definition
+of the parameters used in these routines.
 
  
 \begin{description}
@@ -5638,7 +5701,8 @@ the values of other `DATE-' keywords) must have the form 'YYYY-MM-DD'
 (date only) or 'YYYY-MM-DDThh:mm:ss.ddd...' (date and time) where the
 number of decimal places in the seconds value is optional.  These times
 are in UTC.  The older 'dd/mm/yy' date format may not be used for dates
-after 01 January 2000.
+after 01 January 2000.  See Appendix B for the definition of the
+parameters used in these routines.
 
  
 \begin{description}
@@ -5730,7 +5794,9 @@ parameters.
  
 \section{ General Utility Routines}
 
-The following utility routines may be useful for certain applications:
+The following utility routines may be useful for certain applications.
+See Appendix B for the definition of the parameters used in these
+routines.
 
  
 \begin{description}
@@ -6084,22 +6150,27 @@ be used  whenever possible, but the routines described in this chapter
 are also available if necessary.  Some of these routines perform more
 specialized function that cannot easily be done with the basic
 interface routines while others duplicate the functionality of the
-basic routines but have a slightly different calling sequence.
+basic routines but have a slightly different calling sequence.  See
+Appendix B for the definition of the parameters used in these
+routines.
 
  
 \section{Specialized FITS File Access Routines}
 
  
 \begin{description}
-\item[1 ] Open a FITS file residing in core computer memory.  This routine
-analogous to fits\_open\_file.  In general, the application must
-preallocate an initial block of memory to hold the FITS file:
-'buffptr' points to the starting address and 'buffsize' gives the
-initial size of the block of memory.  'mem\_realloc' is a pointer to an
-optional function that CFITSIO can call to allocate additional memory,
-if needed, and is modeled after the standard C 'realloc' function;  a
-null pointer may be given if the initial allocation of memory is all
-that will be required.  The 'deltasize' parameter may be used to
+\item[1 ] Open an existing FITS file residing in core computer memory.  This
+routine is analogous to fits\_open\_file.   The 'filename'  is
+currently ignored by this routine and may be any arbitrary string. In
+general, the application must have preallocated an initial block of
+memory to hold the FITS file prior to calling this routine:  'memptr'
+points to the starting address and 'memsize' gives the initial size of
+the block of memory.  'mem\_realloc' is a pointer to an optional
+function that CFITSIO can call to allocate additional memory, if needed
+(only if mode = READWRITE), and is modeled after the standard C
+'realloc' function;  a null pointer may be given if the initial
+allocation of memory is all that will be required (e.g., if the file is
+opened with mode = READONLY).  The 'deltasize' parameter may be used to
 suggest a minimum amount of additional memory that should be allocated
 during each call to the memory reallocation function.  By default,
 CFITSIO will reallocate enough additional space to hold the entire
@@ -6107,20 +6178,49 @@ currently defined FITS file (as given by the NAXISn keywords) or 1 FITS
 block (= 2880 bytes), which ever is larger.  Values of deltasize less
 than 2880 will be ignored.  Since the memory reallocation operation can
 be computationally expensive, allocating a larger initial block of
-memory, and/or specifying a larger delta\_size value may help to reduce
+memory, and/or specifying a larger deltasize value may help to reduce
 the number of reallocation calls and make the application program run
  faster. \label{ffomem}
 \end{description}
  
 \begin{verbatim}
-  int fits_open_memory / ffomem
-      (fitsfile **fptr, const char *name, int mode, void **buffptr,
-       size_t *buffsize, size_t deltasize,
+  int fits_open_memfile / ffomem
+      (fitsfile **fptr, const char *filename, int mode, void **memptr,
+       size_t *memsize, size_t deltasize,
        void *(*mem_realloc)(void *p, size_t newsize), int *status)
 \end{verbatim}
  
 \begin{description}
-\item[2 ]Flush any internal buffers of data to the output FITS file. This
+\item[2 ] Create a new FITS file residing in core computer memory.  This
+routine is analogous to fits\_create\_file.    In general, the
+application must have preallocated an initial block of memory to hold
+the FITS file prior to calling this routine:  'memptr' points to the
+starting address and 'memsize' gives the initial size of the block of
+memory.  'mem\_realloc' is a pointer to an optional function that
+CFITSIO can call to allocate additional memory, if needed, and is
+modeled after the standard C 'realloc' function;  a null pointer may be
+given if the initial allocation of memory is all that will be
+required.  The 'deltasize' parameter may be used to suggest a minimum
+amount of additional memory that should be allocated during each call
+to the memory reallocation function.  By default, CFITSIO will
+reallocate enough additional space to hold 1 FITS block (= 2880 bytes)
+and  values of deltasize less than 2880 will be ignored.  Since the
+memory reallocation operation can be computationally expensive,
+allocating a larger initial block of memory, and/or specifying a larger
+deltasize value may help to reduce the number of reallocation calls
+and make the application program run
+ faster. \label{ffimem}
+\end{description}
+ 
+\begin{verbatim}
+  int fits_create_memfile / ffimem
+      (fitsfile **fptr, void **memptr,
+       size_t *memsize, size_t deltasize,
+       void *(*mem_realloc)(void *p, size_t newsize), int *status)
+\end{verbatim}
+ 
+\begin{description}
+\item[3 ]Flush any internal buffers of data to the output FITS file. This
    routine rarely needs to be called, but can be useful when writing to
    the FITS files in memory, and will ensure
    that if the program subsequently aborts then the FITS file will
@@ -6423,9 +6523,11 @@ the number of reallocation calls and make the application program run
 \subsection{Specialized Write Keyword Routines}
 
 These routines simply append a new keyword to the header and do not
-check to see if a keyword with the same name already exists.  In general it is
-preferable to use the fits\_update\_key routine to ensure that the same keyword
-is not written more than once to the header.
+check to see if a keyword with the same name already exists.  In
+general it is preferable to use the fits\_update\_key routine to ensure
+that the same keyword is not written more than once to the header.  See
+Appendix B for the definition of the parameters used in these
+routines.
 
  
 \begin{description}
@@ -6442,8 +6544,15 @@ is not written more than once to the header.
  
 \begin{description}
 \item[2 ]  Write (append) a new keyword of the appropriate datatype into the CHU.
-     A null pointer may be entered for the comment parameter, which will
-    cause the comment field of the keyword to be left blank. \label{ffpkyx}
+     A null pointer may be entered for the comment parameter, which
+     will cause the comment field of the keyword to be left blank.  The
+     flt, dbl, cmp, and dblcmp versions of this routine have the added
+     feature that if the 'decimals' parameter is negative, then the 'G'
+     display format rather then the 'E' format will be used when
+     constructing the keyword value, taking the absolute value of
+     'decimals' for the precision.  This will suppress trailing zeros,
+     and will use a fixed format rather than an exponential format,
+    depending on the magnitude of the value. \label{ffpkyx}
 \end{description}
  
 \begin{verbatim}
@@ -6467,18 +6576,17 @@ is not written more than once to the header.
 \begin{description}
 \item[3 ] Write (append) a string valued keyword into the CHU which may be longer
     than 68 characters in length.  This uses the Long String Keyword
-    convention that is described in the`Local FITS Conventions'
-    section in Chapter 4.  Since this uses a non-standard FITS
-    convention to encode the long keyword string, programs which use
-    this routine should also call the fits\_write\_key\_longwarn routine
-    to add some COMMENT
-    keywords to warn users of the FITS file that this convention is
-    being used.  The fits\_write\_key\_longwarn routine also writes
-    a keyword called LONGSTRN to
-    record the version of the longstring convention that has been used, in
-    case a new convention is adopted at some point in the future.   If the
-    LONGSTRN keyword is already present in the header,
-    then fits\_write\_key\_longwarn will
+    convention that is described in the`Local FITS Conventions' section
+    in Chapter 4.  Since this uses a non-standard FITS convention to
+    encode the long keyword string, programs which use this routine
+    should also call the fits\_write\_key\_longwarn routine to add some
+    COMMENT keywords to warn users of the FITS file that this
+    convention is being used.  The fits\_write\_key\_longwarn routine
+    also writes a keyword called LONGSTRN to record the version of the
+    longstring convention that has been used, in case a new convention
+    is adopted at some point in the future.   If the LONGSTRN keyword
+    is already present in the header, then fits\_write\_key\_longwarn
+    will
    simply return without doing anything. \label{ffpkls} \label{ffplsw}
 \end{description}
  
@@ -6563,7 +6671,9 @@ is not written more than once to the header.
 
 These insert routines are somewhat less efficient than the `update' or
 `write' keyword routines  because the following keywords in the header
-must be shifted down to make room for the inserted keyword.
+must be shifted down to make room for the inserted keyword.  See
+Appendix B for the definition of the parameters used in these
+routines.
 
  
 \begin{description}
@@ -6579,12 +6689,19 @@ must be shifted down to make room for the inserted keyword.
  
 \begin{description}
 \item[2 ] Insert a new keyword into the CHU.  The new keyword is inserted
-    immediately following the last keyword that has been read from the header.
-    The `longstr' version has the same functionality as the `str' version
-    except that it also supports the local long string keyword convention
-    for strings longer than 68 characters.
-    A null pointer may be entered for the comment parameter which will cause
-   the comment field to be left blank. \label{ffikyx}
+    immediately following the last keyword that has been read from the
+    header.  The `longstr' version has the same functionality as the
+    `str' version except that it also supports the local long string
+    keyword convention for strings longer than 68 characters.  A null
+    pointer may be entered for the comment parameter which will cause
+    the comment field to be left blank.  The flt, dbl, cmp, and dblcmp
+    versions of this routine have the added
+     feature that if the 'decimals' parameter is negative, then the 'G'
+     display format rather then the 'E' format will be used when
+     constructing the keyword value, taking the absolute value of
+     'decimals' for the precision.  This will suppress trailing zeros,
+     and will use a fixed format rather than an exponential format,
+    depending on the magnitude of the value. \label{ffikyx}
 \end{description}
  
 \begin{verbatim}
@@ -6618,7 +6735,9 @@ must be shifted down to make room for the inserted keyword.
  
 \subsection{ Specialized Read Keyword Routines}
 
-Wild card characters may be used when specifying the name of the keyword to be read.
+Wild card characters may be used when specifying the name of the
+keyword to be read.  See Appendix B for the definition of the
+parameters used in these routines.
 
  
 \begin{description}
@@ -6732,8 +6851,10 @@ Wild card characters may be used when specifying the name of the keyword to be r
 \subsection{ Modify Keyword Routines}
 
 These routines modify the value of an existing keyword.  An error is
-returned if the keyword does not exist.  Wild card characters
-may be used when specifying the name of the keyword to be modified.
+returned if the keyword does not exist.  Wild card characters may be
+used when specifying the name of the keyword to be modified.  See
+Appendix B for the definition of the parameters used in these
+routines.
 
  
 \begin{description}
@@ -6758,13 +6879,20 @@ may be used when specifying the name of the keyword to be modified.
  
 \begin{description}
 \item[5 ] Modify the value and comment fields of an existing keyword in the CHU.
-    The `longstr' version has the same functionality as the `str' version
-    except that it also supports the local long string keyword convention
-    for strings longer than 68 characters.
-    Optionally, one may modify only the value field and leave the comment
-    field unchanged by setting the input COMMENT parameter equal to
-    the ampersand character (\&) or by entering a null pointer for the
-   comment parameter.  \label{ffmkyx}
+    The `longstr' version has the same functionality as the `str'
+    version except that it also supports the local long string keyword
+    convention for strings longer than 68 characters.  Optionally, one
+    may modify only the value field and leave the comment field
+    unchanged by setting the input COMMENT parameter equal to the
+    ampersand character (\&) or by entering a null pointer for the
+    comment parameter.  The flt, dbl, cmp, and dblcmp versions of this
+    routine have the added feature that if the 'decimals' parameter is
+    negative, then the 'G' display format rather then the 'E' format
+    will be used when constructing the keyword value, taking the
+    absolute value of 'decimals' for the precision.  This will suppress
+    trailing zeros, and will use a fixed format rather than an
+    exponential format,
+   depending on the magnitude of the value. \label{ffmkyx}
 \end{description}
  
 \begin{verbatim}
@@ -6803,14 +6931,20 @@ may be used when specifying the name of the keyword to be modified.
  
 \begin{description}
 \item[1 ] These update routines modify the value, and optionally the comment field,
-    of the keyword if it already exists,
-    otherwise the new keyword is appended to the header.
-    A separate routine is provided for each keyword datatype.
-    The `longstr' version has the same functionality as the `str' version
-    except that it also supports the local long string keyword convention
-    for strings longer than 68 characters.
-    A null pointer may be entered for the comment parameter
-   which will leave the comment field unchanged or blank. \label{ffukyx}
+    of the keyword if it already exists, otherwise the new keyword is
+    appended to the header.  A separate routine is provided for each
+    keyword datatype.  The `longstr' version has the same functionality
+    as the `str' version except that it also supports the local long
+    string keyword convention for strings longer than 68 characters.  A
+    null pointer may be entered for the comment parameter which will
+    leave the comment field unchanged or blank.  The flt, dbl, cmp, and
+    dblcmp versions of this routine have the added feature that if the
+    'decimals' parameter is negative, then the 'G' display format
+    rather then the 'E' format will be used when constructing the
+    keyword value, taking the absolute value of 'decimals' for the
+    precision.  This will suppress trailing zeros, and will use a fixed
+    format rather than an exponential format,
+   depending on the magnitude of the value. \label{ffukyx}
 \end{description}
  
 \begin{verbatim}
@@ -6834,16 +6968,17 @@ may be used when specifying the name of the keyword to be modified.
  
 \section{Define Data Scaling and Undefined Pixel Parameters}
 
-These routines define or modify the internal parameters used by
-CFITSIO to either scale the data or to represent undefined pixels.
-Generally CFITSIO will scale the data according to the values of the BSCALE
-and BZERO (or TSCALn and TZEROn) keywords, however these routines
-may be used to override the keyword values.  This may be useful when
-one wants to read or write the raw unscaled values in the FITS file.
-Similarly, CFITSIO generally uses the value of the BLANK or TNULLn
-keyword to signify an undefined pixel, but these routines may be used
-to override this value.  These routines do not create or modify the
-corresponding header keyword values.
+These routines define or modify the internal parameters used by CFITSIO
+to either scale the data or to represent undefined pixels.  Generally
+CFITSIO will scale the data according to the values of the BSCALE and
+BZERO (or TSCALn and TZEROn) keywords, however these routines may be
+used to override the keyword values.  This may be useful when one wants
+to read or write the raw unscaled values in the FITS file.  Similarly,
+CFITSIO generally uses the value of the BLANK or TNULLn keyword to
+signify an undefined pixel, but these routines may be used to override
+this value.  These routines do not create or modify the corresponding
+header keyword values.  See Appendix B for the definition of the
+parameters used in these routines.
 
  
 \begin{description}
@@ -6923,7 +7058,8 @@ type of the array in the calling routine.  The data values are
 automatically scaled by the BSCALE and BZERO header values as they are
 being written or read from the FITS array.  Unlike the basic routines
 described in the previous chapter, most of these routines specifically
-support the FITS random groups format.
+support the FITS random groups format.  See Appendix B for the
+definition of the parameters used in these routines.
 
 The more primitive reading and writing routines (i. e., ffppr\_,
 ffppn\_, ffppn, ffgpv\_, or ffgpf\_) simply treat the primary array as
@@ -7249,7 +7385,8 @@ or part of a table from one location to another.  These routines simply
 read or write the specified number of consecutive bytes in an ASCII or
 binary table, without regard for column boundaries or the row length in
 the table.  These routines do not perform any machine dependent data
-conversion or byte swapping.
+conversion or byte swapping.  See Appendix B for the definition of the
+parameters used in these routines.
 
  
 \begin{description}
@@ -7301,7 +7438,7 @@ conversion or byte swapping.
 \end{description}
  
 \begin{verbatim}
-  int fits_write_colnul_[log, byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
+  int fits_write_colnull_[log, byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
       ffpcn[l,b,i,ui,k,uk,j,uj,e,d]
       (fitsfile *fptr, int colnum, long firstrow, long firstelem,
        long nelements, DTYPE *array, DTYPE nulval, > int *status)
@@ -7315,7 +7452,7 @@ conversion or byte swapping.
 \end{description}
  
 \begin{verbatim}
-  int fits_write_colnul_str / ffpcns
+  int fits_write_colnull_str / ffpcns
       (fitsfile *fptr, int colnum, long firstrow, long firstelem,
        long nelements, char **array, char *nulstr, > int *status)
 \end{verbatim}
@@ -7363,7 +7500,8 @@ parameter.  If nullval = 0, then no checks for undefined pixels will be
 performed, thus increasing the speed of the program.  The second set of
 routines (ffgcf) returns the data element array and in addition a
 logical array of flags which defines whether the corresponding data
-pixel is undefined.
+pixel is undefined.  See Appendix B for the definition of the
+parameters used in these routines.
 
     Any column, regardless of it's intrinsic datatype, may be read as a
     string.  It should be noted however that reading a numeric column as
@@ -7553,6 +7691,7 @@ fits\_create\_file    & \pageref{ffinit} \\
 fits\_create\_group  & \pageref{ffgtcr} \\
 fits\_create\_hdu     & \pageref{ffcrhd} \\
 fits\_create\_img     & \pageref{ffcrim} \\
+fits\_create\_memfile    & \pageref{ffimem} \\
 fits\_create\_tbl     & \pageref{ffcrtb} \\
 fits\_create\_template & \pageref{fftplt} \\
 fits\_date2str  & \pageref{ffdt2s} \\
@@ -7562,9 +7701,9 @@ fits\_delete\_col   & \pageref{ffdcol} \\
 fits\_delete\_file    & \pageref{ffdelt} \\
 fits\_delete\_hdu     & \pageref{ffdhdu} \\
 fits\_delete\_key     & \pageref{ffdkey} \\
-fits\_delete\_record  & \pageref{ffdrec} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_delete\_record  & \pageref{ffdrec} \\
 fits\_delete\_rowlist & \pageref{ffdrws} \\
 fits\_delete\_rows  & \pageref{ffdrow} \\
 fits\_encode\_chksum  & \pageref{ffesum} \\
@@ -7596,9 +7735,9 @@ fits\_get\_keyname    & \pageref{ffgknm} \\
 fits\_get\_keytype    & \pageref{ffdtyp} \\
 fits\_get\_num\_cols     & \pageref{ffgnrw} \\
 fits\_get\_num\_groups  & \pageref{ffgmng} \\
-fits\_get\_num\_hdus   & \pageref{ffthdu} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_get\_num\_hdus   & \pageref{ffthdu} \\
 fits\_get\_num\_members  & \pageref{ffgtnm} \\
 fits\_get\_num\_rows     & \pageref{ffgnrw} \\
 fits\_get\_rowsize    & \pageref{ffgrsz} \\
@@ -7630,10 +7769,10 @@ fits\_movabs\_hdu     & \pageref{ffmahd} \\
 fits\_movnam\_hdu     & \pageref{ffmnhd} \\
 fits\_movrel\_hdu     & \pageref{ffmrhd} \\
 fits\_null\_check     & \pageref{ffnchk} \\
-fits\_open\_file      & \pageref{ffopen} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_open\_file      & \pageref{ffopen} \\
 fits\_open\_group    & \pageref{ffgtop} \\
 fits\_open\_member    & \pageref{ffgmop} \\
 fits\_open\_memfile   & \pageref{ffomem} \\
@@ -7651,6 +7790,7 @@ fits\_read\_card         & \pageref{ffgcrd} \\
 fits\_read\_col        & \pageref{ffgcv} \\
 fits\_read\_col\_bit\_ & \pageref{ffgcx} \\
 fits\_read\_col\_TYP    & \pageref{ffgcvx} \\
+fits\_read\_colnull    & \pageref{ffgcf} \\
 fits\_read\_colnull\_TYP    & \pageref{ffgcfx} \\
 fits\_read\_descript & \pageref{ffgdes} \\
 fits\_read\_descripts & \pageref{ffgdes} \\
@@ -7660,6 +7800,7 @@ fits\_read\_img         & \pageref{ffgpv} \\
 fits\_read\_img\_coord & \pageref{ffgics} \\
 fits\_read\_img\_TYP     & \pageref{ffgpvx} \\
 fits\_read\_imghdr       & \pageref{ffghpr} \\
+fits\_read\_imgnull & \pageref{ffgpf} \\
 fits\_read\_imgnull\_TYP & \pageref{ffgpfx} \\
 fits\_read\_key          & \pageref{ffgky} \\
 fits\_read\_key\_longstr  & \pageref{ffgkls} \\
@@ -7677,11 +7818,11 @@ fits\_read\_tblbytes    & \pageref{ffgtbb} \\
 fits\_read\_tdim         & \pageref{ffgtdm} \\
 fits\_remove\_group  & \pageref{ffgtrm} \\
 fits\_remove\_member   & \pageref{ffgmrm} \\
+\end{tabular}
+\begin{tabular}{lr}
 fits\_reopen\_file      & \pageref{ffreopen} \\
 fits\_report\_error   & \pageref{ffrprt} \\
 fits\_resize\_img     & \pageref{ffrsim} \\
-\end{tabular}
-\begin{tabular}{lr}
 fits\_select\_rows  & \pageref{ffsrow} \\
 fits\_set\_atblnull   & \pageref{ffsnul} \\
 fits\_set\_bscale     & \pageref{ffpscl} \\
@@ -7725,11 +7866,11 @@ fits\_write\_grphdr       & \pageref{ffphpr} \\
 fits\_write\_grppar\_TYP & \pageref{ffpgpx} \\
 fits\_write\_history      & \pageref{ffphis} \\
 fits\_write\_img        & \pageref{ffppr} \\
+\end{tabular}
+\begin{tabular}{lr}
 fits\_write\_img\_null & \pageref{ffppru} \\
 fits\_write\_img\_TYP    & \pageref{ffpprx} \\
 fits\_write\_imghdr       & \pageref{ffphps} \\
-\end{tabular}
-\begin{tabular}{lr}
 fits\_write\_imgnull     & \pageref{ffppn} \\
 fits\_write\_imgnull\_TYP & \pageref{ffppnx} \\
 fits\_write\_key          & \pageref{ffpky} \\
@@ -7791,14 +7932,15 @@ ffgabc      & \pageref{ffgabc} \\
 ffgacl  & \pageref{ffgacl} \\
 ffgbcl  & \pageref{ffgbcl} \\
 ffgcdw  & \pageref{ffgcdw} \\
+ffgcf    & \pageref{ffgcf} \\
 ffgcf\_    & \pageref{ffgcfx} \\
 ffgcks     & \pageref{ffgcks} \\
 ffgcnn    & \pageref{ffgcnn} \\
 ffgcno     & \pageref{ffgcno} \\
 ffgcrd         & \pageref{ffgcrd} \\
-ffgcv        & \pageref{ffgcv} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffgcv        & \pageref{ffgcv} \\
 ffgcv\_    & \pageref{ffgcvx} \\
 ffgcx     & \pageref{ffgcx} \\
 ffgdes & \pageref{ffgdes} \\
@@ -7836,6 +7978,7 @@ ffgmtf  & \pageref{ffgmtf} \\
 ffgncl     & \pageref{ffgnrw} \\
 ffgnrw     & \pageref{ffgnrw} \\
 ffgnxk      & \pageref{ffgnxk} \\
+ffgpf & \pageref{ffgpf} \\
 ffgpf\_ & \pageref{ffgpfx} \\
 ffgpv         & \pageref{ffgpv} \\
 ffgpv\_     & \pageref{ffgpvx} \\
@@ -7843,10 +7986,10 @@ ffgrec       & \pageref{ffgrec} \\
 ffgrsz    & \pageref{ffgrsz} \\
 ffgsdt        & \pageref{ffdt2s} \\
 ffgsf\_ & \pageref{ffgsfx} \pageref{ffgsfx2} \\
-ffgstm        & \pageref{ffdt2s} \\
-ffgsv\_  & \pageref{ffgsvx} \pageref{ffgsvx2}\\
 \end{tabular}
 \begin{tabular}{lr}
+ffgstm        & \pageref{ffdt2s} \\
+ffgsv\_  & \pageref{ffgsvx} \pageref{ffgsvx2}\\
 ffgtam & \pageref{ffgtam} \\
 ffgtbb    & \pageref{ffgtbb} \\
 ffgtch  & \pageref{ffgtch} \\
@@ -7872,6 +8015,7 @@ ffiimg     & \pageref{ffiimg} \\
 ffikls    & \pageref{ffikyx} \\
 ffikyu   & \pageref{ffikyu} \\
 ffiky\_    & \pageref{ffikyx} \\
+ffimem  & \pageref{ffimem} \\
 ffinit  & \pageref{ffinit} \\
 ffirec     & \pageref{ffirec} \\
 ffirow  & \pageref{ffirow} \\
@@ -7890,11 +8034,11 @@ ffmnhd     & \pageref{ffmnhd} \\
 ffmrec     & \pageref{ffmrec} \\
 ffmrhd     & \pageref{ffmrhd} \\
 ffmvec  & \pageref{ffmvec} \\
+\end{tabular}
+\begin{tabular}{lr}
 ffnchk  & \pageref{ffnchk} \\
 ffnkey      & \pageref{ffnkey} \\
 ffomem   & \pageref{ffomem} \\
-\end{tabular}
-\begin{tabular}{lr}
 ffopen      & \pageref{ffopen} \\
 ffp2d\_   & \pageref{ffp2dx} \\
 ffp3d\_   & \pageref{ffp3dx} \\
@@ -7938,11 +8082,11 @@ ffptdm         & \pageref{ffptdm} \\
 ffpthp    & \pageref{ffpthp} \\
 ffpunt     & \pageref{ffpunt} \\
 ffrdef   & \pageref{ffrdef} \\
+\end{tabular}
+\begin{tabular}{lr}
 ffreopen      & \pageref{ffreopen} \\
 ffrprt   & \pageref{ffrprt} \\
 ffrsim     & \pageref{ffrsim} \\
-\end{tabular}
-\begin{tabular}{lr}
 ffrtnm & \pageref{ffrtnm} \\
 ffs2dt  & \pageref{ffdt2s} \\
 ffs2tm  & \pageref{ffdt2s} \\
@@ -8019,7 +8163,7 @@ datestr  - FITS date/time string: 'YYYY-MM-DDThh:mm:ss.ddd', 'YYYY-MM-dd',
            or 'dd/mm/yy'
 day      - calendar day (UTC) (1-31)
 decimals - number of decimal places to be displayed
-delta_size - increment for allocating more memory
+deltasize - increment for allocating more memory
 dim1     - declared size of the first dimension of the image or cube array
 dim2     - declared size of the second dimension of the data cube array
 dispwidth - display width of a column = length of string that will be read
@@ -8038,7 +8182,7 @@ expr     - boolean or arithmetic expression
 extend   - TRUE (=1) if FITS file may have extensions, else FALSE (=0)
 extname  - value of the EXTNAME keyword (null-terminated)
 extspec  - the extension or HDU specifier; a number or name, version, and type
-extvers  - value of the EXTVERS keyword = integer version number
+extver   - value of the EXTVER keyword = integer version number
 filename - full name of the FITS file, including optional HDU and filtering specs
 filetype - type of file (file://, ftp://, http://, etc.)
 filter   - the input file filtering specifier
@@ -8086,7 +8230,7 @@ maxdim   - maximum number of values to return
 member   - row number of a grouping table member HDU.
 memptr   - pointer to the a FITS file in memory
 mem_realloc - pointer to a function for reallocating more memory
-mem_size - size of the memory block allocated for the FITS file
+memsize  - size of the memory block allocated for the FITS file
 mfptr    - fitsfile* pointer to a grouping table member HDU.
 mgopt    - grouping table merge option parameter. Allowed values are:
            OPT_MRG_COPY, and OPT_MRG_MOV.
@@ -8353,6 +8497,7 @@ improve the readability of their code.
  WCS_ERROR         503    error in celestial coordinate calculation
  BAD_WCS_PROJ      504    unsupported type of celestial projection
  NO_WCS_KEY        505    celestial coordinate keywords not found
+ APPROX_WCS_KEY    506    approximate wcs keyword values were returned
 \end{verbatim}
 \end{document}
 

@@ -1178,7 +1178,7 @@ int fffi4u4(INT32BIT *input,      /* I - array of values to be converted     */
                         nullarray[ii] = 1;
                 }
                 else
-                   output[ii] =  ( *(unsigned long *) &input[ii] ) ^ 0x80000000;
+                   output[ii] =  ( *(unsigned int *) &input[ii] ) ^ 0x80000000;
             }
         }
         else if (scale == 1. && zero == 0.)      /* no scaling */

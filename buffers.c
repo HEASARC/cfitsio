@@ -352,7 +352,7 @@ int ffgbyt(fitsfile *fptr,    /* I - FITS file pointer             */
 int ffgbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
            long gsize,        /* I - size of each group of bytes         */
            long ngroups,      /* I - number of groups to read            */
-           long offset,       /* I - size of gap between groups          */
+           long offset,       /* I - size of gap between groups (may be < 0) */
            void *buffer,      /* I - buffer to be filled                 */
            int *status)       /* IO - error status                       */
 /*
@@ -404,15 +404,24 @@ int ffgbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
         nspace -= (offset + nread);
       }
 
-      if (nspace <= 0) /* beyond current record? */
+      if (nspace <= 0 || nspace > IOBUFLEN) /* beyond current record? */
       {
-        record += ((IOBUFLEN - nspace) / IOBUFLEN); /* new record number */
+        if (nspace <= 0)
+        {
+          record += ((IOBUFLEN - nspace) / IOBUFLEN); /* new record number */
+          bufpos = (-nspace) % IOBUFLEN; /* starting buffer pos */
+        }
+        else
+        {
+          record -= ((nspace - 1 ) / IOBUFLEN); /* new record number */
+          bufpos = IOBUFLEN - (nspace % IOBUFLEN); /* starting buffer pos */
+        }
+
         ffldrc(fptr, record, REPORT_EOF, status);
         bcurrent = (fptr->Fptr)->curbuf;
 
-        bufpos = (-nspace) % IOBUFLEN; /* starting buffer pos */
         nspace = IOBUFLEN - bufpos;
-        ioptr = iobuffer[bcurrent] + bufpos;  
+        ioptr = iobuffer[bcurrent] + bufpos;
       }
     }
 

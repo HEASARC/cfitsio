@@ -9,9 +9,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(fitscore.c)
 
-AC_PREREQ(2.13)
-AC_REVISION($Revision$)
-
 #--------------------------------------------------------------------
 # Check "uname" to determine system type
 #--------------------------------------------------------------------
@@ -27,25 +24,27 @@ fi
 dnl Checks for programs.
 AC_PROG_CC
 
-CFORTRANFLAGS=
 AC_CHECK_PROGS(FC, f77 xlf cf77 gf77 g77 af77 ncf f2c , nope)
 if test $FC = 'nope' ; then
    AC_MSG_WARN(cfitsio: == No acceptable f77 found in \$PATH)
    AC_MSG_WARN(cfitsio: == Cfitsio will be built without Fortran wrapper support)
    FC=
 else
-  F77=$FC; export F77
-  AC_PROG_F77
-  AC_MSG_CHECKING(whether we are using GNU Fortran)
-  if test "x$G77" = xyes; then
-    AC_MSG_RESULT(yes)
+  CFORTRANFLAGS=
+  echo $ac_n "checking whether we are using GNU Fortran""... $ac_c" 1>&6
+  if test `$FC --version -c < /dev/null 2> /dev/null | grep -c GNU` -gt 0 -o \
+          `$FC --version -c < /dev/null 2> /dev/null | grep -ic egcs` -gt 0
+  then
+    echo "$ac_t""yes" 1>&6
+    echo $ac_n "cfitsio: == Adding wrapper support for GNU Fortran""... $ac_c" 1>&6
     CFORTRANFLAGS="-Dg77Fortran"
-    AC_MSG_RESULT(cfitsio: == Adding wrapper support for GNU Fortran)
+    echo "$ac_t"" done" 1>&6
   else
-    AC_MSG_RESULT(no)
-    if test `echo $FC | grep -c 'f2c'` -ne 0; then
-      AC_MSG_RESULT(cfitsio: == Adding wrapper support for f2c)
+    echo "$ac_t""no" 1>&6
+    if test $FC = 'f2c' ; then
+      echo $ac_n "cfitsio: == Adding wrapper support for f2c""... $ac_c" 1>&6
       CFORTRANFLAGS="-Df2cFortran"
+      echo "$ac_t"" done" 1>&6
     fi
   fi
 fi
@@ -139,7 +138,7 @@ case $CC in
 		CFLAGS=`echo $CFLAGS | sed -e "s/-g/-O/"`
 		case $system in
 		    SunOS-5*)
-         		CFLAGS="$CFLAGS -DHAVE_ALLOCA_H -DHAVE_POSIX_SIGNALS"
+         		CFLAGS="$CFLAGS -DHAVE_ALLOCA_H -DHAVE_POSIX_SIGNALS -Xc"
 			;;
 		    *)
 			echo "== No special changes for $system"

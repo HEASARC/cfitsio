@@ -12,6 +12,7 @@
 #define fits_open_file      ffopen
 #define fits_reopen_file    ffreopen
 #define fits_create_file    ffinit
+#define fits_create_memfile ffimem
 #define fits_create_template fftplt
 #define fits_flush_file     ffflus
 #define fits_close_file     ffclos

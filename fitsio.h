@@ -424,6 +424,10 @@ int ffomem(fitsfile **fptr, const char *name, int mode, void **buffptr,
 int ffopen(fitsfile **fptr, const char *filename, int iomode, int *status);
 int ffreopen(fitsfile *openfptr, fitsfile **newfptr, int *status); 
 int ffinit(fitsfile **fptr, const char *filename, int *status);
+int ffimem(fitsfile **fptr,  void **buffptr,
+           size_t *buffsize, size_t deltasize,
+           void *(*mem_realloc)(void *p, size_t newsize),
+           int *status);
 int fftplt(fitsfile **fptr, const char *filename, const char *tempname,
            int *status);
 int ffflus(fitsfile *fptr, int *status);

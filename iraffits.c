@@ -1087,7 +1087,6 @@ machswap (void)
 /*--------------------------------------------------------------------------*/
 
 
-char val[30];
 static int lhead0 = 0;
 
 /*--------------------------------------------------------------------------*/
@@ -1109,6 +1108,7 @@ int *ival;
 char *value;
 double dval;
 int minint;
+char val[30]; 
 
 /* Get value and comment from header string */
 	value = hgetc (hstring,keyword);

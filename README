@@ -105,6 +105,7 @@ CFITSIO has currently been tested on the following platforms:
    Sun OS                     gcc and cc (3.0.1)
    Sun Solaris                gcc and cc
    Silicon Graphics IRIX      gcc and cc
+   Silicon Graphics IRIX64    MIPS
    Dec Alpha OSF/1            gcc and cc
    DECstation  Ultrix         gcc
    Dec Alpha OpenVMS          cc 
@@ -113,8 +114,8 @@ CFITSIO has currently been tested on the following platforms:
    IBM AIX                    gcc
    Linux                      gcc
    MkLinux                    DR3
-   Windows 95                 Borland C++ V4.5
-   Windows NT                 Microsoft Visual C++ v5.0, v6.0
+   Windows 95/98/NT           Borland C++ V4.5
+   Windows 95/98/NT           Microsoft/Compaq Visual C++ v5.0, v6.0
    OS/2                       gcc + EMX
    MacOS 7.1 or greater       Metrowerks 10.+
 

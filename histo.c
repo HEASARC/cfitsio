@@ -1193,7 +1193,7 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
             continue;
 
         pix = (col1[ii] - histData.amin1) / histData.binsize1;
-        ipix = pix + 1; /* add 1 because the 1st pixel is the null value */
+        ipix = (long) (pix + 1.); /* add 1 because the 1st pixel is the null value */
 
 	/* test if bin is within range */
         if (ipix < 1 || ipix > histData.haxis1 || pix > histData.maxbin1)
@@ -1206,7 +1206,8 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
 
           axisbin = (col2[ii] - histData.amin2) / histData.binsize2;
           iaxisbin = axisbin;
-          if (iaxisbin < 0 || iaxisbin >= histData.haxis2 || axisbin > histData.maxbin2)
+
+          if (axisbin < 0. || iaxisbin >= histData.haxis2 || axisbin > histData.maxbin2)
               continue;
 
           ipix += (iaxisbin * incr2);
@@ -1218,7 +1219,7 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
 
             axisbin = (col3[ii] - histData.amin3) / histData.binsize3;
             iaxisbin = axisbin;
-            if (iaxisbin < 0 || iaxisbin >= histData.haxis3 || axisbin > histData.maxbin3)
+            if (axisbin < 0. || iaxisbin >= histData.haxis3 || axisbin > histData.maxbin3)
                 continue;
 
             ipix += (iaxisbin * incr3);
@@ -1230,7 +1231,7 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
 
               axisbin = (col4[ii] - histData.amin4) / histData.binsize4;
               iaxisbin = axisbin;
-              if (iaxisbin < 0 || iaxisbin >= histData.haxis4 || axisbin > histData.maxbin4)
+              if (axisbin < 0. || iaxisbin >= histData.haxis4 || axisbin > histData.maxbin4)
                   continue;
 
               ipix += (iaxisbin * incr4);

@@ -274,7 +274,11 @@ int ffdrow(fitsfile *fptr,  /* I - FITS file pointer                        */
         return(*status);   /* no op, so just return */
 
     ffgkyj(fptr, "NAXIS1", &naxis1, comm, status); /* get the current   */
-    ffgkyj(fptr, "NAXIS2", &naxis2, comm, status); /* size of the table */
+
+   /* ffgkyj(fptr, "NAXIS2", &naxis2, comm, status);*/ /* size of the table */
+
+    /* the NAXIS2 keyword may not be up to date, so use the structure value */
+    naxis2 = (fptr->Fptr)->numrows;
 
     if (firstrow > naxis2)
     {
@@ -540,8 +544,10 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0) 
         return(*status);
 
-    naxis1 = (fptr->Fptr)->rowlength;          /* current width of the table */
-    ffgkyj(fptr, "NAXIS2", &naxis2, comm, status); /* number of rows */
+    /* get the current size of the table */
+    /* use internal structure since NAXIS2 keyword may not be up to date */
+    naxis1 = (fptr->Fptr)->rowlength;
+    naxis2 = (fptr->Fptr)->numrows;
 
     /* current size of data */
     datasize = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;
@@ -750,7 +756,7 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
         width = 1;      /* width was equal to width of unit string */
 
     naxis1 = (fptr->Fptr)->rowlength;          /* current width of the table */
-    ffgkyj(fptr, "NAXIS2", &naxis2, NULL, status); /* number of rows */
+    naxis2 = (fptr->Fptr)->numrows;
 
     delbyte = (newveclen - repeat) * width;    /* no. of bytes to insert */
     if (datacode == TBIT)  /* BIT column is a special case */
@@ -1303,7 +1309,7 @@ int ffdcol(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
 
     naxis1 = (fptr->Fptr)->rowlength;          /* current width of the table */
-    ffgkyj(fptr, "NAXIS2", &naxis2, comm, status); /* number of rows */
+    naxis2 = (fptr->Fptr)->numrows;
 
     /* current size of table */
     size = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;

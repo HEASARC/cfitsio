@@ -1,17 +1,19 @@
-\documentstyle{book}
+\documentclass[11pt]{book}
 %\input{html.sty}
 %\htmladdtonavigation
 %   {\begin{rawhtml}
 % <A HREF="http://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html">FITSIO Home</A>
 %    \end{rawhtml}}
-\oddsidemargin=0.25in
+%\oddsidemargin=0.25in
+\oddsidemargin=0.00in
 \evensidemargin=0.00in
-\textwidth=6.0in
-\topmargin=0.0in
+\textwidth=6.5in
+%\topmargin=0.0in
 \textheight=8.75in
 \parindent=0cm
 \parskip=0.2cm
 \begin{document}
+\pagenumbering{roman}
 
 \begin{titlepage}
 \normalsize
@@ -21,22 +23,19 @@
 \end{center}
 \medskip 
 \medskip
-\medskip 
 \begin{center}
 {\LARGE \bf A Subroutine Interface to FITS Format Files}\\
 \end{center}
-\medskip
 \begin{center}
 {\LARGE \bf for Fortran Programmers}\\
 \end{center}
-\medskip
 \medskip
 \medskip
 \begin{center}
 {\Large Version 2.0\\}
 \end{center}
 \bigskip
-\vskip 3.0cm
+\vskip 2.5cm
 \begin{center}
 {HEASARC\\
 Code 662\\
@@ -48,17 +47,12 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large December 1999\\}
+{\Large July 2000\\}
 \end{center}
 \vfill
 \end{titlepage}
 
-\begin{titlepage}
-\vspace*{7.6cm}
-\vfill
-\end{titlepage}
-
-\pagenumbering{roman}
+\clearpage
 
 \tableofcontents
 
@@ -72,38 +66,39 @@ should be consulted for further information about the underlying
 CFITSIO library.  In the remainder of this document, the terms FITSIO
 and CFITSIO are interchangable and refer to the same library.
 
-FITSIO/CFITSIO is a machine-independent library of routines for
-reading and writing data files in the FITS (Flexible Image Transport
-System) data format. This library was written to provide a powerful yet
-simple interface for accessing FITS files which will run on most
-commonly used computers and workstations. FITSIO
-supports all the features described in the official NOST definition of
-the FITS format and can read and write all the currently defined types
-of extensions, including ASCII tables (TABLE), Binary tables (BINTABLE)
-and IMAGE extensions. The FITSIO subroutines insulate the programmer
-from having to deal with the complicated formatting details in the FITS
-file, however, it is assumed that users have a general knowledge about
-the structure and usage of FITS files.
+FITSIO/CFITSIO is a machine-independent library of routines for reading
+and writing data files in the FITS (Flexible Image Transport System)
+data format. This library was written to provide a powerful yet simple
+interface for accessing FITS files which will run on most commonly used
+computers and workstations. FITSIO supports all the features described
+in the official NOST definition of the FITS format and can read and
+write all the currently defined types of extensions, including ASCII
+tables (TABLE), Binary tables (BINTABLE) and IMAGE extensions. The
+FITSIO subroutines insulate the programmer from having to deal with the
+complicated formatting details in the FITS file, however, it is assumed
+that users have a general knowledge about the structure and usage of
+FITS files.
 
 The CFITSIO package was initially developed by the HEASARC (High Energy
 Astrophysics Science Archive Research Center) at the NASA Goddard Space
 Flight Center to convert various existing and newly acquired
 astronomical data sets into FITS format and to further analyze data
 already in FITS format.  New features continue to be added to CFITSIO
-in large part due to contributions of ideas or actual code from
-users of the package.  The Integral Science Data Center in Switzerland,
-and the XMM/ESTEC project in The Netherlands made especially significant
+in large part due to contributions of ideas or actual code from users
+of the package.  The Integral Science Data Center in Switzerland, and
+the XMM/ESTEC project in The Netherlands made especially significant
 contributions that resulted in many of the new features that appeared
 in v2.0 of CFITSIO.
 
-The latest version of the CFITSIO source code,
-documentation, and example programs are available on the World-Wide
-Web or via anonymous ftp from:
+The latest version of the CFITSIO source code, documentation, and
+example programs are available on the World-Wide Web or via anonymous
+ftp from:
 
 \begin{verbatim}
         http://heasarc.gsfc.nasa.gov/fitsio
         ftp://legacy.gsfc.nasa.gov/software/fitsio/c
 \end{verbatim}
+\newpage
 Any questions, bug reports, or suggested enhancements related to the CFITSIO
 package should be sent to the primary author:
 
@@ -153,14 +148,24 @@ compilers will also work.  The CFITSIO code is contained in about 40 C
 source files (*.c) and header files (*.h). On VAX/VMS systems 2
 assembly-code files (vmsieeed.mar and vmsieeer.mar) are also needed.
 
+The Fortran interface subroutines to the C CFITSIO routines are located
+in the f77\_wrap1.c and f77\_wrap2.c files.  These are relatively simple
+'wrappers' that translate the arguments in the Fortran subroutine into
+the appropriate format for the corresponding C routine.  This
+translation is performed transparently to the user by a set of C macros
+located in the cfortran.h file.  Unfortunately cfortran.h does not
+support every combination of C and Fortran compilers so the Fortran
+interface is not supported on all platforms.  This is especially true
+for PC and Mac users (see further notes below).
+
 The CFITSIO library is built on Unix systems by typing:
 
 \begin{verbatim}
    > ./configure
    > make
 \end{verbatim}
-at the operating system prompt.  Please type ./configure and not simply
-`configure' to ensure that you run the configure script in the current
+at the operating system prompt.  Type ./configure and not simply
+`configure' to ensure that the configure script in the current
 directory and not some other system-wide configure script.  The
 configure command customizes the Makefile for the particular system,
 then the `make' command compiles the source files and builds the
@@ -188,14 +193,10 @@ Then to get the staticly linkable libcfitsio.a library file do another
 make clean, undefine HAVE\_NET\_SERVICES on the CFLAGS line and rebuild.
 It's unimportant whether or not you use -fPIC for static builds.
 
-An alternate makefile called Makefile.shared is included in the
-distribution that will build CFITSIO as a shared library.  It has only
-been tested under Solaris 2.5 but will likely also work on other
-systems, at least with gcc or cc.  When using the shared library the
-executable code is not copied into your program at link time and
-instead the program locates the necessary library code at run time,
-normally through LD\_LIBRARY\_PATH or some other method.  The
-advantages are:
+When using the shared library the executable code is not copied into
+your program at link time and instead the program locates the necessary
+library code at run time, normally through LD\_LIBRARY\_PATH or some
+other method.  The advantages are:
 
 \begin{verbatim}
    1.  Less disk space if you build more than 1 program
@@ -220,9 +221,12 @@ The disadvantages are:
 
 On VAX/VMS and ALPHA/VMS systems the make.com command file may be used
 to build the cfitsio.olb object library using the default G-floating
-point option for double variables.  The make\_dfloat.com and make\_ieee.com
-files may be used instead to build the library with the other floating
-point options.
+point option for double variables.  The make\_dfloat.com and
+make\_ieee.com files may be used instead to build the library with the
+other floating point options. Note that the getcwd function that is
+used in the group.c module may require that programs using CFITSIO be
+linked with the ALPHA\$LIBRARY:VAXCRTL.OLB library.  See the example
+link line in the next section of this document.
 
 As of February 1999 this version of FITSIO has not yet been ported to work
 on DOS or Windows based PC computers or MacOS.  The main issue is how
@@ -248,14 +252,17 @@ CFITSIO has currently been tested on the following platforms:
    Sun OS                     gcc and cc (3.0.1)
    Sun Solaris                gcc and cc
    Silicon Graphics IRIX      gcc and cc
+   Silicon Graphics IRIX64    MIPS
+   Dec Alpha OSF/1            gcc and cc
    DECstation  Ultrix         gcc
-   Dec Alpha OSF/1            gcc
    Dec Alpha OpenVMS          cc
    DEC VAX/VMS                gcc and cc
    HP-UX                      gcc
    IBM AIX                    gcc
    Linux                      gcc
    MkLinux                    DR3
+   Windows 95/98/NT           Borland C++ V4.5
+   Windows 95/98/NT           Microsoft/Compaq Visual C++ v5.0, v6.0
    OS/2                       gcc + EMX
    MacOS 7.1 or greater       Metrowerks 10.+
 \end{verbatim}
@@ -268,10 +275,10 @@ supported.
 
 The CFITSIO library should be tested by building and running
 the testprog.c program that is included with the release.
-On Unix systems (assuming the gcc compiler is being used), type:
+On Unix systems type:
 
 \begin{verbatim}
-    % gcc -o testprog testprog.c -L. -lcfitsio -lm
+    % make testprog
     % testprog > testprog.lis
     % diff testprog.lis testprog.out
     % cmp testprog.fit testprog.std
@@ -281,7 +288,7 @@ On Unix systems (assuming the gcc compiler is being used), type:
 
 \begin{verbatim}
     $ cc testprog.c
-    $ link testprog, cfitsio/lib
+    $ link testprog, cfitsio/lib, alpha$library:vaxcrtl/lib
     $ run testprog
 \end{verbatim}
 The testprog program should produce a FITS file called `testprog.fit'
@@ -337,6 +344,12 @@ A few other utility  programs are included with CFITSIO:
     iter_a, iter_b, iter_c - tests of the CFITSIO iterator routine
 \end{verbatim}
 
+The first 4 of these utility programs can be compiled and linked by typing
+
+\begin{verbatim}
+   %  make program_name
+\end{verbatim}
+
 
 \section{Linking Programs with FITSIO}
 
@@ -347,6 +360,10 @@ added.  The typical libraries that may need to be added are -lm (the math
 library) and -lnsl and -lsocket (needed only for FTP and HTTP file access).
 These latter 2 libraries are not needed on VMS and Windows platforms,
 because FTP file access is not currently supported on those platforms.
+
+Note that when upgrading to a newer version of CFITSIO it is usually
+necessay to recompile, as well as relink, the programs that use CFITSIO,
+because the definitions in fitsio.h often change.
 
 
 \section{Getting Started with FITSIO}
@@ -792,25 +809,25 @@ the final 2-D image in the primary array of the opened file.
 
 \section{Detailed Filename Syntax}
 
-This section describes the full syntax for the CFITSIO FITS file names,
-which can contain the following components:
+This section describes the full extended syntax for the FITSIO FITS file names.
+The filename can contain several different components depending on the context:
 
 \begin{verbatim}
-filetype://BaseFilename(outName)[HDUlocation][ImageSection]
-\end{verbatim}
-for an image HDU, or
+When creating a new file:
+   filetype://BaseFilename(templateName)
 
-\begin{verbatim}
-filetype://BaseFilename(outName)[HDUlocation][colFilter][rowFilter][binSpec]
+When opening an existing primary array or image HDU:
+   filetype://BaseFilename(outName)[HDUlocation][ImageSection]
+
+When opening an existing table HDU:
+   filetype://BaseFilename(outName)[HDUlocation][colFilter][rowFilter][binSpec]
 \end{verbatim}
-for a table HDU, where each of these components is described below.
 The filetype, BaseFilename, outName, HDUlocation, and ImageSection
 components, if present, must be given in that order, but the colFilter,
 rowFilter, and binSpec specifiers may follow in any order.  Regardless
 of the order, however, the colFilter specifier, if present, will be
 processed first by CFITSIO, followed by the rowFilter specifier, and
 finally by the binSpec specifier.
-
 
 
 \subsection{Filetype}
@@ -1002,7 +1019,7 @@ then CFITSIO will return an error and will not overwrite the existing
 file.  Note  that the exclamation point,  '!', is a special UNIX character,
 so if it is used  on the command line rather than entered at a task
 prompt, it must be  preceded by a backslash to force the UNIX
-shell to ignore it.
+shell to pass it verbatim to the application program.
 
 The input file may be compressed with the gzip or Unix compress
 algorithms, in which case CFITSIO will uncompress the file on the fly
@@ -1423,14 +1440,18 @@ syntax as described in the Row Filter Specifier section, below.
 
 \subsection{age Section}
 
-A subsection of an image can be opened by specifying the range of
-pixels (start:end), or with an optional pixel increment
-(start:end:step), for each axis of the input image.  A pixel step = 1
-will be assumed if it is not specified, and an asterisk, '*', may be
-used to specify the entire range of an axis.  The input image can be
-in the primary array, in an image extension, or in a vector cell of a
-binary table. In the later 2 cases the extension name or number must be
-specified before the image section specifier.
+A virtual file containing a rectangular subsection of an image can be
+extracted and opened by specifying the range of pixels (start:end)
+along each axis to be extracted from the original image.  One can also
+specify an optional pixel increment (start:end:step) for each axis of
+the input image.  A pixel step = 1 will be assumed if it is not
+specified.  If the start pixel is larger then the end pixel, then the
+image will be flipped (producing a mirror image) along that dimension.
+An asterisk, '*', may be used to specify the entire range of an axis,
+and '-*' will flip the entire axis. The input image can be in the
+primary array, in an image extension, or contained in a vector cell of
+a binary table. In the later 2 cases the extension name or number must
+be specified before the image section specifier.
 
  Examples:
 
@@ -1440,18 +1461,24 @@ specified before the image section specifier.
               the even numbered rows (2nd axis) of the image in the
               primary array of the file.
 
-  myfile.fits[*, 256:512] - open an image consisting of all the columns
+  myfile.fits[*, 512:256] - open an image consisting of all the columns
               in the input image, but only rows 256 through 512.
+              The image will be flipped along the 2nd axis since
+              the starting pixel is greater than the ending pixel.
 
-  myfile.fits[*:2, 256:512:2] - same as above but keeping only
+  myfile.fits[*:2, 512:256:2] - same as above but keeping only
               every other row and column in the input image.
 
-  myfile.fits[3][1:256,1:256] - opens a subsection of the image in
-              the 3rd extension of the file.
+  myfile.fits[-*, *] - copy the entire image, flipping it along
+              the first axis.
 
-  myfile.fits[4; images(12)][*,*] - open the whole image contained
-              in the 12th row of the 'images' vector column
-              in the table in the 4th extension of the file.
+  myfile.fits[3][1:256,1:256] - opens a subsection of the image that
+              is in the 3rd extension of the file.
+
+  myfile.fits[4; images(12)][1:10,1:10] - open an image consisting
+	      of the first 10 pixels in both dimensions. The original
+	      image resides in the 12th row of the 'images' vector
+	      column in the table in the 4th extension of the file.
 \end{verbatim}
 
 When CFITSIO opens an image section it first creates a temporary file
@@ -3130,6 +3157,13 @@ used by these interface routines.
 
 \begin{description}
 \item[2 ] Put (append) a new keyword of the appropriate datatype into the CHU.
+     The E and D versions of this routine have the added feature that
+     if the 'decimals' parameter is negative, then the 'G' display
+     format rather then the 'E' format will be used when constructing
+     the keyword value, taking the absolute value of 'decimals' for the
+     precision.  This will suppress trailing zeros, and will use a
+     fixed format rather than an exponential format,
+    depending on the magnitude of the value.
 \end{description}
 
 \begin{verbatim}
@@ -3483,12 +3517,12 @@ and so on.
 
 \begin{description}
 \item[3 ] Move to the (first) HDU which has the specified extension type and
-    EXTNAME (or HDUNAME) and EXTVERS keyword values.  The hdutype parameter
+    EXTNAME (or HDUNAME) and EXTVER keyword values.  The hdutype parameter
     may have
     a value of IMAGE\_HDU, ASCII\_TBL, BINARY\_TBL, or ANY\_HDU where
-    ANY\_HDU means that only the extname and extvers values will be
+    ANY\_HDU means that only the extname and extver values will be
     used to locate the correct extension.  If the input value of
-    extvers is 0 then the EXTVERS keyword is ignored and the first HDU
+    extver is 0 then the EXTVER keyword is ignored and the first HDU
     with a matching EXTNAME (or HDUNAME) keyword will be found.  If no
     matching HDU is found in the file then the current HDU will remain
     unchanged
@@ -3496,7 +3530,7 @@ and so on.
 \end{description}
 
 \begin{verbatim}
-        FTMNHD(unit, hdutype, extname, extvers, > status)
+        FTMNHD(unit, hdutype, extname, extver, > status)
 \end{verbatim}
 
 \begin{description}
@@ -3933,7 +3967,14 @@ values are not blank.
 \item[5 ] Put (append) a new keyword of the appropriate datatype into the CHU.
     Note that FTPKYS will only write string values up to 68 characters in
     length; longer strings will be truncated.  The FTPKLS routine can be
-   used to write longer strings, using a non-standard FITS convention.
+    used to write longer strings, using a non-standard FITS convention.
+     The E and D versions of this routine have the added feature that
+     if the 'decimals' parameter is negative, then the 'G' display
+     format rather then the 'E' format will be used when constructing
+     the keyword value, taking the absolute value of 'decimals' for the
+     precision.  This will suppress trailing zeros, and will use a
+     fixed format rather than an exponential format,
+    depending on the magnitude of the value.
 \end{description}
 
 \begin{verbatim}
@@ -4249,7 +4290,14 @@ may be used when specifying the name of the keyword to be modified.
     it also supports long string values greater than 68 characters in length.
     Optionally, one may modify only the value field and leave the comment
     field unchanged by setting the input COMMENT parameter equal to
-   the ampersand character (\&).
+    the ampersand character (\&).
+     The E and D versions of this routine have the added feature that
+     if the 'decimals' parameter is negative, then the 'G' display
+     format rather then the 'E' format will be used when constructing
+     the keyword value, taking the absolute value of 'decimals' for the
+     precision.  This will suppress trailing zeros, and will use a
+     fixed format rather than an exponential format,
+    depending on the magnitude of the value.
 \end{description}
 
 \begin{verbatim}
@@ -4288,7 +4336,14 @@ may be used when specifying the name of the keyword to be modified.
 \begin{description}
 \item[2 ] Update the value and comment fields of a keyword in the CHU.
     The specified keyword is modified if it already exists (by calling
-   FTMKYx) otherwise a new keyword is created by calling FTPKYx.
+    FTMKYx) otherwise a new keyword is created by calling FTPKYx.
+     The E and D versions of this routine have the added feature that
+     if the 'decimals' parameter is negative, then the 'G' display
+     format rather then the 'E' format will be used when constructing
+     the keyword value, taking the absolute value of 'decimals' for the
+     precision.  This will suppress trailing zeros, and will use a
+     fixed format rather than an exponential format,
+    depending on the magnitude of the value.
 \end{description}
 
 \begin{verbatim}
@@ -5317,15 +5372,32 @@ celestial coordinates on the sky.  These support the following standard
 map projections:  -SIN, -TAN, -ARC, -NCP, -GLS, -MER, and -AIT (these
 are the legal values for the coordtype parameter).  These routines are
 based on similar functions in Classic AIPS.  All the angular quantities
-are given in units of degrees. (Note: these subroutines are provisional
-and may change slightly in a future release of FITSIO).
+are given in units of degrees.
 
 
 \begin{description}
 \item[1 ] Get the values of all the standard FITS celestial coordinate system
     keywords from the header of a FITS image (i.e., the primary array or
     an image extension).  These values may then be passed to the subroutines
-   that perform the coordinate transformations.
+    that perform the coordinate transformations.  If any or all of the WCS
+    keywords are not present, then default values will be returned. If
+    the first coordinate axis is the declination-like coordinate, then
+    this routine will swap them so that the longitudinal-like coordinate
+    is returned as the first axis.
+
+    If the file uses the newer 'CDj\_i' WCS transformation matrix
+    keywords instead of old style 'CDELTn' and 'CROTA2' keywords, then
+    this routine will calculate and return the values of the equivalent
+    old-style keywords.    Note that the conversion from the new-style
+    keywords to the old-style values is sometimes only an
+    approximation, so if the approximation is larger than an internally
+    defined threshold level, then CFITSIO will still return the
+    approximate WCS keyword values, but will also return with status =
+    506, to warn the calling program that approximations have been
+    made.  It is then up to the calling program to decide whether the
+    approximations are sufficiently accurate for the particular
+    application, or whether more precise WCS transformations must be
+   performed using new-style WCS keywords directly.
 \end{description}
 
 \begin{verbatim}
@@ -5921,7 +5993,7 @@ The following utility subroutines may be useful for certain applications:
         FTMAHD(unit,nhdu, > hdutype,status)
         FTMRHD(unit,nmove, > hdutype,status)
         FTGHDN(unit, > nhdu)
-        FTMNHD(unit, hdutype, extname, extvers, > status)
+        FTMNHD(unit, hdutype, extname, extver, > status)
         FTGHDT(unit, > hdutype, status)
         FTTHDU(unit, > hdunum, status)
         FTCRHD(unit, > status)
@@ -6529,5 +6601,6 @@ FITSIO use.
 503  error in celestial coordinate calculation
 504  unsupported type of celestial projection
 505  required celestial coordinate keywords not found
+506  approximate wcs keyword values were returned
 \end{verbatim}
 \end{document}

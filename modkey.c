@@ -71,19 +71,19 @@ int ffuky( fitsfile *fptr,     /* I - FITS file pointer        */
     }
     else if (datatype == TFLOAT)
     {
-        ffukye(fptr, keyname, *(float *) value, 6, comm, status);
+        ffukye(fptr, keyname, *(float *) value, -7, comm, status);
     }
     else if (datatype == TDOUBLE)
     {
-        ffukyd(fptr, keyname, *(double *) value, 14, comm, status);
+        ffukyd(fptr, keyname, *(double *) value, -15, comm, status);
     }
     else if (datatype == TCOMPLEX)
     {
-        ffukyc(fptr, keyname, (float *) value, 6, comm, status);
+        ffukyc(fptr, keyname, (float *) value, -7, comm, status);
     }
     else if (datatype == TDBLCOMPLEX)
     {
-        ffukym(fptr, keyname, (double *) value, 14, comm, status);
+        ffukym(fptr, keyname, (double *) value, -15, comm, status);
     }
     else
         *status = BAD_DATATYPE;

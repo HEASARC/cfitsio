@@ -1646,6 +1646,8 @@ int fits_select_image_section(
 
        if (smax == 0)
           smax = naxes[ii];   /* use whole axis  by default */
+       else if (smin == 0)
+          smin = naxes[ii];   /* use inverted whole axis */
 
        if (smin > naxes[ii] || smax > naxes[ii])
        {
@@ -1685,7 +1687,7 @@ int fits_select_image_section(
            if (fpixels[ii] <= lpixels[ii])
              crpix = (crpix - (fpixels[ii] - 1.0) - .5) / incs[ii] + 0.5;
            else
-             crpix = (lpixels[ii] - (crpix - 1.0) - .5) / incs[ii] + 0.5;
+             crpix = (fpixels[ii] - (crpix - 1.0) - .5) / incs[ii] + 0.5;
             
            /* modify the value in the output file */
            fits_modify_key_dbl(newptr, keyname, crpix, 15, NULL, status);
@@ -1708,13 +1710,42 @@ int fits_select_image_section(
                /* modify the value in the output file */
                fits_modify_key_dbl(newptr, keyname, cdelt, 15, NULL, status);
              }
+
+             /* modify the CDi_j keywords if thet exist in the input file */
+
+             fits_make_keyn("CD1_", ii + 1, keyname, status);
+             tstatus = 0;
+             if (fits_read_key(*fptr, TDOUBLE, keyname, 
+               &cdelt, NULL, &tstatus) == 0)
+             {
+                 /* calculate the new CDi_j value */
+                 if (fpixels[ii] <= lpixels[ii])
+                   cdelt = cdelt * incs[ii];
+                 else
+                   cdelt = cdelt * (-incs[ii]);
+              
+                 /* modify the value in the output file */
+                 fits_modify_key_dbl(newptr, keyname, cdelt, 15, NULL, status);
+             }
+
+             fits_make_keyn("CD2_", ii + 1, keyname, status);
+             tstatus = 0;
+             if (fits_read_key(*fptr, TDOUBLE, keyname, 
+               &cdelt, NULL, &tstatus) == 0)
+             {
+                 /* calculate the new CDi_j value */
+                 if (fpixels[ii] <= lpixels[ii])
+                   cdelt = cdelt * incs[ii];
+                 else
+                   cdelt = cdelt * (-incs[ii]);
+              
+                 /* modify the value in the output file */
+                 fits_modify_key_dbl(newptr, keyname, cdelt, 15, NULL, status);
+             }
            }
          }
        }
     }  /* end of main NAXIS loop */
-
-    /* if the WCS CD matrix keywords exist, update them if necessary */
-    /*  this code needs to be added here */
 
     if (ffrdef(newptr, status) > 0)  /* force the header to be scanned */
     {
@@ -1852,6 +1883,11 @@ int fits_get_section_range(char **ptr,
        *secmin = 1;
        *secmax = 0;
     }
+    else if (*token == '-' && *(token+1) == '*' )  /* invert the whole range */
+    {
+       *secmin = 0;
+       *secmax = 1;
+    }
     else
     {
       if (slen == 0 || !isanumber || **ptr != ':')
@@ -1889,7 +1925,7 @@ int fits_get_section_range(char **ptr,
     while (**ptr == ' ')   /* skip any trailing blanks */
          (*ptr)++;
 
-    if (*secmin < 1 || *secmax < 0 || *incre < 1)
+    if (*secmin < 0 || *secmax < 0 || *incre < 1)
         *status = URL_PARSE_ERROR;
 
     return(*status);
@@ -2139,6 +2175,105 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
         ffoptplt(*fptr, tmplfile, status);
 
     return(*status);                       /* successful return */
+}
+/*--------------------------------------------------------------------------*/
+/* ffimem == fits_create_memfile */
+
+int ffimem(fitsfile **fptr,      /* O - FITS file pointer                   */ 
+           void **buffptr,       /* I - address of memory pointer           */
+           size_t *buffsize,     /* I - size of buffer, in bytes            */
+           size_t deltasize,     /* I - increment for future realloc's      */
+           void *(*mem_realloc)(void *p, size_t newsize), /* function       */
+           int *status)          /* IO - error status                       */
+
+/*
+  Create and initialize a new FITS file in memory
+*/
+{
+    int driver, slen;
+    char urltype[MAX_PREFIX_LEN];
+    int handle;
+
+    if (*status > 0)
+        return(*status);
+
+    *fptr = 0;              /* initialize null file pointer */
+
+    if (need_to_initialize)            /* this is called only once */
+       *status = fits_init_cfitsio();
+
+    if (*status > 0)
+        return(*status);
+
+    strcpy(urltype, "memkeep://"); /* URL type for pre-existing memory file */
+
+    *status = urltype2driver(urltype, &driver);
+
+    if (*status > 0)
+    {
+        ffpmsg("could not find driver for pre-existing memory file: (ffimem)");
+        return(*status);
+    }
+
+    /* call driver routine to "open" the memory file */
+    *status =   mem_openmem( buffptr, buffsize, deltasize,
+                            mem_realloc,  &handle);
+
+    if (*status > 0)
+    {
+         ffpmsg("failed to open pre-existing memory file: (ffimem)");
+         return(*status);
+    }
+
+        /* allocate fitsfile structure and initialize = 0 */
+    *fptr = (fitsfile *) calloc(1, sizeof(fitsfile));
+
+    if (!(*fptr))
+    {
+        (*driverTable[driver].close)(handle);  /* close the file */
+        ffpmsg("failed to allocate structure for memory file: (ffimem)");
+        return(*status = MEMORY_ALLOCATION);
+    }
+
+        /* allocate FITSfile structure and initialize = 0 */
+    (*fptr)->Fptr = (FITSfile *) calloc(1, sizeof(FITSfile));
+
+    if (!((*fptr)->Fptr))
+    {
+        (*driverTable[driver].close)(handle);  /* close the file */
+        ffpmsg("failed to allocate structure for memory file: (ffimem)");
+        free(*fptr);
+        *fptr = 0;       
+        return(*status = MEMORY_ALLOCATION);
+    }
+
+    slen = 32; /* reserve at least 32 chars */ 
+    ((*fptr)->Fptr)->filename = (char *) malloc(slen); /* mem for file name */
+
+    if ( !(((*fptr)->Fptr)->filename) )
+    {
+        (*driverTable[driver].close)(handle);  /* close the file */
+        ffpmsg("failed to allocate memory for filename: (ffimem)");
+        free((*fptr)->Fptr);
+        free(*fptr);
+        *fptr = 0;              /* return null file pointer */
+        return(*status = MEMORY_ALLOCATION);
+    }
+
+        /* store the parameters describing the file */
+    ((*fptr)->Fptr)->filehandle = handle;        /* file handle */
+    ((*fptr)->Fptr)->driver = driver;            /* driver number */
+    strcpy(((*fptr)->Fptr)->filename, "memfile"); /* dummy filename */
+    ((*fptr)->Fptr)->filesize = *buffsize;        /* physical file size */
+    ((*fptr)->Fptr)->logfilesize = *buffsize;     /* logical file size */
+    ((*fptr)->Fptr)->writemode = 1;               /* read-write mode    */
+    ((*fptr)->Fptr)->datastart = DATA_UNDEFINED;  /* unknown start of data */
+    ((*fptr)->Fptr)->curbuf = -1;             /* undefined current IO buffer */
+    ((*fptr)->Fptr)->open_count = 1;     /* structure is currently used once */
+    ((*fptr)->Fptr)->validcode = VALIDSTRUC; /* flag denoting valid structure */
+
+    ffldrc(*fptr, 0, IGNORE_EOF, status);     /* initialize first record */
+    return(*status); 
 }
 /*--------------------------------------------------------------------------*/
 int fits_init_cfitsio(void)
@@ -2769,7 +2904,14 @@ int ffiurl(char *url,
     ptr1 = url;
 
         /*  get urltype (e.g., file://, ftp://, http://, etc.)  */
-    if (*ptr1 == '-')        /* "-" means read file from stdin */
+    if (*ptr1 == '-' && 
+                     ( *(ptr1 +1) ==  0   || *(ptr1 +1) == ' ' || 
+                       *(ptr1 +1) == '['  || *(ptr1 +1) == '(' ) )
+
+         /* "-" means read file from stdin */
+         /* also support "- ", "-[extname]" and '-(outfile.fits)"    */
+         /* but exclude disk file names that begin with a minus sign */
+         /* e.g., "-55d33m.fits"   */
     {
         if (urltype)
             strcat(urltype, "stdin://");
@@ -3004,6 +3146,7 @@ int ffiurl(char *url,
        }
 
        /* test if this is an image section:  an integer followed by ':' */
+       /*  or a '*' or '-*'  */
        tmptr = ptr1;
 
        while (*tmptr == ' ')
@@ -3012,7 +3155,7 @@ int ffiurl(char *url,
        while (isdigit((int) *tmptr))
           tmptr++;             /* skip over leading digits */
 
-       if (*tmptr == ':')
+       if (*tmptr == ':' || *tmptr == '*' || *tmptr == '-')
        {
            /* this is an image section specifier */
            if (extspec)
@@ -3134,6 +3277,18 @@ int ffiurl(char *url,
                 {
                   ffpmsg
           ("literal string in input file URL is missing closing single quote");
+                  free(infile);
+                  return(*status = URL_PARSE_ERROR);  /* error, no closing ] */
+                }
+            }
+
+            if (*ptr2 == '[')  /* set of nested square brackets */
+            {
+                ptr2 = strchr(ptr2 + 1, ']');  /* find closing bracket */
+                if (!ptr2)
+                {
+                  ffpmsg
+          ("nested brackets in input file URL is missing closing bracket");
                   free(infile);
                   return(*status = URL_PARSE_ERROR);  /* error, no closing ] */
                 }
@@ -3345,7 +3500,14 @@ int ffourl(char *url,             /* I - full input URL   */
       *tpltfile = '\0';
 
     /*  get urltype (e.g., file://, ftp://, http://, etc.)  */
-    if (*ptr1 == '-')        /* "-" means write file to stdout */
+    if (*ptr1 == '-' && 
+                     ( *(ptr1 +1) ==  0   || *(ptr1 +1) == ' ' || 
+                       *(ptr1 +1) == '['  || *(ptr1 +1) == '(' ) )
+
+         /* "-" means write to stdout */
+         /* also support "- ", "-[extname]" and '-(outfile.fits)"    */
+         /* but exclude disk file names that begin with a minus sign */
+         /* e.g., "-55d33m.fits"   */
     {
       if (urltype)
         strcpy(urltype, "stdout://");

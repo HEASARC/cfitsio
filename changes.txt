@@ -1,5 +1,107 @@
                    Log of Changes Made to CFITSIO
 
+Version 2.037 - 6 July 2000
+
+  Enhancements
+
+   - added support in the extended filename syntax for flipping
+     an image along any axis either by specifying a starting 
+     section pixel number greater than the ending pixel number,
+     or by using '-*' to flip the whole axis.  Examples:
+     "myfile.fits[1:100, 50:10]" or "myfile.fits[-*,*]".
+
+   - when reading a section of an image with the extended filename
+     syntax (e.g. image.fits[1:100:2, 1:100:2), any CDi_j WCS keywords
+     will be updated if necessary to transfer the world coordinate
+     system from the imput image to the output image section.
+
+   - on UNIX platforms, added support for filenames that begin
+     with "~/" or "~user/".  The "~" symbol will get expanded
+     into a string that gives the user's home directory.
+
+   - changed the filename parser to support disk file names that
+     begin with a minus sign.  Previously, the leading minus sign would
+     cause CFITSIO to try to read/write the file from/to stdin/stdout.
+
+   - modified the general fits_update_key routine, which writes
+     or updates a keyword value, to use the 'G' display format
+     instead of the 'E' format for floating point keyword values.
+     This will eliminate trailing zeros from appearing in the value.
+
+   - added support for the "-CAR" celestial coordinate projection
+     in the ffwldp and ffxypx routines.  The "-CAR" projection is
+     the default simplest possible linear projection.
+
+   - added new fits_create_memfile/ffimem routine to create a new
+     fits file at a designated memory location.
+
+   - ported f77_wrap.h and f77_wrap1.c so that the Fortran interface
+     wrappers work correctly on 64-bit SGI operating systems.  In this
+     environment, C 'long's  are 8-bytes long, but Fortran 'integers'
+     are still only 4-bytes long, so the words have to be converted
+     by the wrappers.
+
+   - minor modification to cfortran.h to automatically detect when it
+     is running on a linux platform, and then define f2cFortran in that
+     case.  This eliminates the need to define -Df2cFortran on the
+     command line.
+
+   - modified group.c to support multiple "/" characters in
+     the path name of the file to be opened/created.
+
+   - minor modifications to the parser (eval.y, eval_f.c, eval_y.c)
+     to a) add the unary '+' operator, and b) support copying the
+     TDIMn keyword from the input to the output image under certain
+     circumstances.
+
+   - modified the lexical parser in eval_l.y and eval_l.c to
+     support #NULL and #SNULL constants which act to set the
+     value to Null.  Support was also added for the C-conditional
+     expression: 'boolean ? trueVal : falseVal'.
+
+   - small modification to eval_f.c to write an error message to
+     the error stack if numerical overflow occurs when evaluating
+     an expression.
+
+   - configure and configure.in now support the egcs g77 compiler
+     on Linux platforms.
+
+  Bug fixes:
+
+   - fixed a significant bug when using the extended filename binning
+     syntax to generate a 2-dimensional image from a histogram of the
+     values in 2 table columns.  This bug would cause table events that
+     should have been located in the row just below the bottom row of
+     the image (and thus should have been excluded from the histogram)
+     to be instead added into the first row of the image.  Similarly,
+     the first plane of a 3-D or 4-D data cube would include the events
+     that should have been excluded as falling in the previous plane of
+     the cube.
+
+   - fixed minor bug when parsing an extended filename that contains
+     nested pairs of square brackets (e.g., '[col newcol=oldcol[9]]').
+
+   - fixed bug when reading unsigned integer values from a table or
+     image with fits_read_col_uint/ffgcvuk.  This bug only occurred on
+     systems like Digital Unix (now Tru64 Unix) in which 'long'
+     integers are 8 bytes long, and only when reading more than 7200
+     elements at a time.  This bug would generally cause the program to
+     crash with a segmentation fault.
+
+   - modified ffgcpr to update 'heapstart' as well as 'numrows' when
+     writing more rows beyond the end of the table.  heapstart
+     is needed to calculate if more space needs to be inserted in the
+     table when inserting columns into the table.
+
+   - modified fficls (insert column), ffmvec, ffdrow and ffdcol to 
+     not use the value of the NAXIS2 keyword as the number of rows
+     in the table, and instead use the value that is stored in
+     an internal structure, because the keyword value may not
+     be up to date.
+
+   - Fixed bug in the iterator function that affected the handling
+     of null values in string columns in ASCII and binary tables.
+
    - Reading a subsample of pixels in very large images, (e.g., 
      file = myfile.fits[1:10000:10,1:10000:10],  could cause a
      long integer overflow (value > 2**31) in the computation of the
@@ -10,12 +112,18 @@
 
    - In version 2.031, a fix to prevent compressed files from being
      opened with write privilege was implemented incorrectly.  The fix
-     was intended not allow a compressed FITS file to be opened except 
-     when a local uncompressed copy of the file is being produced (then
-     the copy is opened with write access), but in fact the opposite
-     behavior occurs.  Compressed files can be opened, EXCEPT when
-     a local copy is produced.   This behavior has now been fixed
-     in the mem_compress_open and file_compress_open routines.
+     was intended to not allow a compressed FITS file to be opened
+     except when a local uncompressed copy of the file is being
+     produced (then the copy is opened with write access), but in fact
+     the opposite behavior occurred:  Compressed files could be opened
+     with write access, EXCEPT when a local copy is produced.   This
+     has been fixed in the mem_compress_open and file_compress_open
+     routines.
+
+   - in iraffits.c, a global variable called 'val' caused multiply
+     defined symbols warning when linking cfitsio and IRAF libraries.
+     This was fixed by making 'val' a local variable within the
+     routine.
 
 Version 2.036 - 1 Feb 2000
 

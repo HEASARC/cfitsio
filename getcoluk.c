@@ -612,7 +612,7 @@ int ffgcfuk(fitsfile *fptr,   /* I - FITS file pointer                       */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffgcluk( fitsfile *fptr,   /* I - FITS file pointer                       */
+int ffgcluk( fitsfile *fptr,  /* I - FITS file pointer                       */
             int  colnum,      /* I - number of column to read (1 = 1st col)  */
             long  firstrow,   /* I - first row to read (1 = 1st row)         */
             long  firstelem,  /* I - first vector element to read (1 = 1st)  */
@@ -640,11 +640,11 @@ int ffgcluk( fitsfile *fptr,   /* I - FITS file pointer                       */
   and will be scaled by the FITS TSCALn and TZEROn values if necessary.
 */
 {
-    double scale, zero, power;
+    double scale, zero, power = 1.;
     int tcode, maxelem, hdutype, xcode, decimals;
     long twidth, incre, repeat, rowlen, rownum, elemnum, remain, next, ntodo;
     long ii, rowincre, tnull, xwidth;
-    int nulcheck, convert;
+    int nulcheck;
     long startpos, readptr;
     char tform[20];
     char message[81];
@@ -674,7 +674,6 @@ int ffgcluk( fitsfile *fptr,   /* I - FITS file pointer                       */
     */
 
     buffer = cbuff;
-    power = 1.;
 
     if (anynul)
         *anynul = 0;
@@ -724,13 +723,9 @@ int ffgcluk( fitsfile *fptr,   /* I - FITS file pointer                       */
     /*  If FITS column and output data array have same datatype, then we do */
     /*  not need to use a temporary buffer to store intermediate datatype.  */
     /*----------------------------------------------------------------------*/
-    convert = 1;
-    if (tcode == TLONG)  /* Special Case:                        */
-    {                             /* no type convertion required, so read */
+    if (tcode == TLONG)  /* Special Case: */
+    {                             /* data are 4-bytes long, so read       */
         maxelem = nelem;          /* data directly into output buffer.    */
-
-        if (nulcheck == 0 && scale == 1. && zero == 0.)
-            convert = 0;  /* no need to scale data or find nulls */
     }
 
     /*---------------------------------------------------------------------*/
@@ -762,10 +757,9 @@ int ffgcluk( fitsfile *fptr,   /* I - FITS file pointer                       */
         switch (tcode) 
         {
             case (TLONG):
-                ffgi4b(fptr, readptr, ntodo, incre, (INT32BIT *) buffer,
+                ffgi4b(fptr, readptr, ntodo, incre, (INT32BIT *) &array[next],
                        status);
-                if (convert)
-                    fffi4uint((INT32BIT *) buffer, ntodo, scale, zero, 
+                    fffi4uint((INT32BIT *) &array[next], ntodo, scale, zero, 
                            nulcheck, (INT32BIT) tnull, nulval, &nularray[next],
                            anynul, &array[next], status);
                 break;
@@ -1142,7 +1136,15 @@ int fffi4uint(INT32BIT *input,    /* I - array of values to be converted     */
 
     if (nullcheck == 0)     /* no null checking required */
     {
-        if (scale == 1. && zero == 0.)      /* no scaling */
+        if (scale == 1. && zero == 2147483648.)
+        {       
+           /* Instead of adding 2147483648, it is more efficient */
+           /* to just flip the sign bit with the XOR operator */
+
+            for (ii = 0; ii < ntodo; ii++)
+               output[ii] =  ( *(unsigned int *) &input[ii] ) ^ 0x80000000;
+        }
+        else if (scale == 1. && zero == 0.)      /* no scaling */
         {       
             for (ii = 0; ii < ntodo; ii++)
             {
@@ -1178,7 +1180,7 @@ int fffi4uint(INT32BIT *input,    /* I - array of values to be converted     */
     }
     else        /* must check for null values */
     {
-        if (scale == 1. && zero == 0.)  /* no scaling */
+        if (scale == 1. && zero == 2147483648.) 
         {       
             for (ii = 0; ii < ntodo; ii++)
             {
@@ -1191,15 +1193,28 @@ int fffi4uint(INT32BIT *input,    /* I - array of values to be converted     */
                         nullarray[ii] = 1;
                 }
                 else
+                   output[ii] =  ( *(unsigned int *) &input[ii] ) ^ 0x80000000;
+            }
+        }
+        else if (scale == 1. && zero == 0.)  /* no scaling */
+        {       
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] == tnull)
                 {
-                    if (input[ii] < 0)
-                    {
-                        *status = OVERFLOW_ERR;
-                        output[ii] = 0;
-                    }
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
                     else
-                        output[ii] = (unsigned int) input[ii];
+                        nullarray[ii] = 1;
                 }
+                else if (input[ii] < 0)
+                {
+                    *status = OVERFLOW_ERR;
+                    output[ii] = 0;
+                }
+                else
+                    output[ii] = (unsigned int) input[ii];
             }
         }
         else                  /* must scale the data */

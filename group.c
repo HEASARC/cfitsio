@@ -2837,6 +2837,7 @@ int ffgmrm(fitsfile *gfptr,  /* FITS file pointer to group table             */
   char grplc[FLEN_VALUE];
   char keyvalue[FLEN_VALUE];
   char card[FLEN_CARD];
+  char *editLocation;
 
   fitsfile *mfptr  = NULL;
 
@@ -3076,7 +3077,15 @@ int ffgmrm(fitsfile *gfptr,  /* FITS file pointer to group table             */
 		      if(*grplc != 0 && !fits_is_url_absolute(grplc) &&
 			 *grplc != '/')
 			{
-			  strcpy(grpLocation3,cwd);
+			    /* No, wrong, 
+			       strcpy(grpLocation3,cwd);
+			       should be */
+			    *status = fits_file_name(mfptr,grpLocation3,status);
+			    /* Remove everything after the last / */
+			    if (NULL != (editLocation = strrchr(grpLocation3,'/'))) {
+				*editLocation = '\0';
+			    }
+				
 			  strcat(grpLocation3,"/");
 			  strcat(grpLocation3,grplc);
 			  *status = fits_clean_url(grpLocation3,grplc,
@@ -4991,12 +5000,27 @@ int fits_path2url(char *inpath,  /* input file path string                  */
   /*
      Default Unix case.
 
-     Nothing special to do here
+     Nothing special to do here except to remove the double or more // and 
+     replace them with single /
    */
+
+  int ii = 0;
+  int jj = 0;
 
   if(*status > 0) return(*status);
 
-  strcpy(buff,inpath);
+  while (inpath[ii]) {
+      if (inpath[ii] == '/' && inpath[ii+1] == '/') {
+	  /* do nothing */
+      } else {
+	  buff[jj] = inpath[ii];
+	  jj++;
+      }
+      ii++;
+  }
+  buff[jj] = '\0';
+  /* printf("buff is %s\ninpath is %s\n",buff,inpath); */
+  /* strcpy(buff,inpath); */
 
 #endif
 

@@ -10,7 +10,12 @@
 /*  and perform such material.                                             */
 
 #include <string.h>
+#include <stdlib.h>
 #include "fitsio2.h"
+
+#if defined(unix) || defined(__unix__)
+#include <pwd.h>         /* needed in file_openfile */
+#endif
 
 #ifdef HAVE_FTRUNCATE
 #include <unistd.h>      /* contains prototype of UNIX file truncate fn  */
@@ -148,6 +153,12 @@ int file_openfile(char *filename, int rwmode, FILE **diskfile)
 {
     char mode[4];
 
+#if defined(unix) || defined(__unix__)
+    char tempname[512], *cptr, user[80];
+    struct passwd *pwd;
+    int ii = 0;
+#endif
+
     if (rwmode == READWRITE)
     {
           strcpy(mode, "r+b");    /* open existing file with read-write */
@@ -161,8 +172,59 @@ int file_openfile(char *filename, int rwmode, FILE **diskfile)
         /* specify VMS record structure: fixed format, 2880 byte records */
         /* but force stream mode access to enable random I/O access      */
     *diskfile = fopen(filename, mode, "rfm=fix", "mrs=2880", "ctx=stm"); 
+
+#elif defined(unix) || defined(__unix__)
+
+    /* support the ~user/file.fits or ~/file.fits filenames in UNIX */
+
+    if (*filename == '~')
+    {
+        if (filename[1] == '/')
+        {
+            cptr = getenv("HOME");
+            if (cptr)
+            {
+                 strcpy(tempname, cptr);
+                 strcat(tempname, filename+1);
+            }
+            else
+            {
+                 strcpy(tempname, filename);
+            }
+        }
+        else
+        {
+            /* copy user name */
+            cptr = filename+1;
+            while (*cptr && (*cptr != '/'))
+            {
+                user[ii] = *cptr;
+                cptr++;
+                ii++;
+            }
+            user[ii] = '\0';
+
+            /* get structure that includes name of user's home directory */
+            pwd = getpwnam(user);
+
+            /* copy user's home directory */
+            strcpy(tempname, pwd->pw_dir);
+            strcat(tempname, cptr);
+        }
+
+        *diskfile = fopen(tempname, mode); 
+    }
+    else
+    {
+        /* don't need to expand the input file name */
+        *diskfile = fopen(filename, mode); 
+    }
+
 #else
+
+    /* other non-UNIX machines */
     *diskfile = fopen(filename, mode); 
+
 #endif
 
     if (!(*diskfile))           /* couldn't open file */
