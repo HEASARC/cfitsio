@@ -1,9 +1,10 @@
 #include "fitsio2.h"
 #include "f77_wrap.h"
 
+/* Use a simple ellipse prototype for Fwork_fn to satisfy finicky compilers */
 typedef struct {
    void *userData;
-   void (*Fwork_fn)();
+   void (*Fwork_fn)(PLONG_cfTYPE *total_n, ...);
 } FtnUserData;
 
 /******************************************************************/
@@ -20,7 +21,7 @@ typedef struct {
 
 void Cffiter( int n_cols, int *units, int *colnum, char *colname[], 
 	      int *datatype, int *iotype,
-              long offset, long n_per_loop, void (*Fwork_fn)(),
+              long offset, long n_per_loop, void *Fwork_fn,
 	      void *userData, int *status)
 {
    iteratorCol *cols;
@@ -46,7 +47,7 @@ void Cffiter( int n_cols, int *units, int *colnum, char *colname[],
    free(cols);
 }
 #define ftiter_STRV_A4 NUM_ELEM_ARG(1)
-FCALLSCSUB11(Cffiter,FTITER,ftiter,INT,INTV,INTV,STRINGV,INTV,INTV,LONG,LONG,ROUTINE,PVOID,PINT)
+FCALLSCSUB11(Cffiter,FTITER,ftiter,INT,INTV,INTV,STRINGV,INTV,INTV,LONG,LONG,PVOID,PVOID,PINT)
 
 /*-----------------------------------------------------------------*/
 /*  This function is called by CFITSIO's ffiter and serves as the  */
@@ -92,7 +93,8 @@ int Cwork_fn( long total_n, long offset,       long first_n,    long n_values,
 	 ptrs[i] = cols[i].array;
    }
 
-   if(1) {    /*  Handle Fortran function call manually...  */
+   if(!status) {
+              /*  Handle Fortran function call manually...  */
 	      /*  cfortran.h cannot handle all the desired  */
               /*  'ptrs' nor the indirect function call.    */
 
@@ -178,7 +180,7 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),PVOID,INT,STRING,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0
    QCF(INT,2)
    QCF(STRING,3)
    char **p;
-   int Fstrlen, Cstrlen, elemNum;
+   int Cstrlen, elemNum;
    char *str;
 
    p       = TCF(ftpistr,PVOID,1,0);
@@ -190,9 +192,9 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),PVOID,INT,STRING,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0
    /*  by subtracting these two pointers.                         */
 
    Cstrlen = p[1]-p[0];
-   Fstrlen = strlen(str);
 
    memcpy(p[elemNum-1],str,Cstrlen);
+   p[elemNum-1][Cstrlen]='0';  /* Put 0 in in case str is longer than Cstrlen */
 
    RCF(PVOID,1)
    RCF(INT,2)
