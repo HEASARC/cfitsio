@@ -15,7 +15,7 @@
 
 /*--------------------------------------------------------------------------*/
 int ffopenx(FILE **diskfile, /* O - pointer to  file descriptor             */
-            char *filename,  /* I - name of file to open or create          */
+            const char *filename,  /* I - name of file to open or create    */
             int newfile,     /* I - 0=open existing file; 1=create new file */
             int readwrite,   /* I - 0 = open readonly; 1 = open read/write  */
             long *filesize,  /* O - size of file (bytes); needed when       */
@@ -101,7 +101,7 @@ int ffopenx(FILE **diskfile, /* O - pointer to  file descriptor             */
 }
 /*--------------------------------------------------------------------------*/
 int ffclosex(FILE *diskfile, /* I - file descriptor                        */
-             char *filename, /* I - name of the file                       */
+             const char *filename, /* I - name of the file                 */
              int keep,       /* I - 0=discard the file, else keep the file */
              int *status)    /* O - error status                           */
 

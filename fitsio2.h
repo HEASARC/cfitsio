@@ -41,7 +41,7 @@
 #define MACHINE LINUX
 #define BYTESWAPPED TRUE       
 
-#elif defined(_MCS_VER) || defined(__BORLANDC__) || defined(__TURBOC__)
+#elif defined(_MSC_VER) || defined(__BORLANDC__) || defined(__TURBOC__)
 
 #define MACHINE IBMPC
 #define BYTESWAPPED TRUE
@@ -193,9 +193,9 @@ int ffgcpr(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long *elemnum, long *incre, long *repeat,long *rowlen, 
            int *hdutype, long *tnull, char *snull, int *status);
 
-int ffopenx(FILE **diskfile, char *filename, int newfile, int readwrite,
+int ffopenx(FILE **diskfile, const char *filename, int newfile, int readwrite,
            long *filesize, int *status);
-int ffclosex(FILE *diskfile, char *filename, int keep, int *status);
+int ffclosex(FILE *diskfile, const char *filename, int keep, int *status);
 int ffread(FILE *diskfile, long bytepos, long nbytes, void *buffer,
             int *status);
 int ffwrite(FILE *diskfile, long bytepos, long nbytes, void *buffer,

@@ -70,7 +70,7 @@ int ffpky( fitsfile *fptr,     /* I - FITS file pointer        */
 } 
 /*-------------------------------------------------------------------------*/
 int ffprec(fitsfile *fptr,     /* I - FITS file pointer        */
-           char *card,         /* I - string to be written     */
+           const char *card,   /* I - string to be written     */
            int *status)        /* IO - error status            */
 /*
   write a keyword record (80 bytes long) to the end of the header
@@ -429,7 +429,7 @@ int ffpkyt( fitsfile *fptr,      /* I - FITS file pointer        */
 }
 /*-----------------------------------------------------------------*/
 int ffpcom( fitsfile *fptr,      /* I - FITS file pointer   */
-            char  *comm,         /* I - comment string      */
+            const char  *comm,   /* I - comment string      */
             int   *status)       /* IO - error status       */
 /*
   Write 1 or more COMMENT keywords.  If the comment string is too
@@ -458,7 +458,7 @@ int ffpcom( fitsfile *fptr,      /* I - FITS file pointer   */
 }
 /*-----------------------------------------------------------------*/
 int ffphis( fitsfile *fptr,      /* I - FITS file pointer  */
-            char  *history,      /* I - history string     */
+            const char *history, /* I - history string     */
             int   *status)       /* IO - error status      */
 /*
   Write 1 or more HISTORY keywords.  If the history string is too

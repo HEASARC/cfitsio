@@ -1,26 +1,19 @@
-                     CFITSIO - Beta Release
-                         June 4, 1996
+                   CFITSIO Interface Routines
 
-  Beta Software Disclaimer:  While this software has been extensively
-  tested on many different machines, every single routine in the CFITSIO
-  library has not been tested, nor has every possible option in the
-  routines been tested.  Programmers should be cautious about using this
-  software for critical applications and should independently verify any
-  FITS files produced with this software to ensure that they are valid and
-  correct.
+                           July 1996
 
 CFITSIO is a library of ANSI C routines for reading and writing FITS
 format files.  The design of these C routines closely follows the
-Fortran subroutines provided in the original fitsio library.
-The CFITSIO User's Guide, in the file cfitsio.ps (postscript format)
-or cfitsio.doc (plain ASCII text) contains full instructions on
-building and using this library.
+Fortran subroutines provided in the original fitsio library.  The
+CFITSIO User's Guide, in the file cfitsio.ps (postscript format) or
+cfitsio.doc (plain ASCII text) contains full instructions on building
+and using this library.
 
-This new CFITSIO library, written entirely in ANSI C, should
-not be confused with the previously available set of C macros which
-provide a C-callable interface to the Fortran fitsio routines.  These
-older macros are contained in the cfitsio.h file that is distributed
-along with the Fortran fitsio source files.
+This new CFITSIO library, written entirely in ANSI C, should not be
+confused with the previously available set of C macros which provide a
+C-callable interface to the Fortran fitsio routines.  These older
+macros are contained in the cfitsio.h file that is distributed along
+with the Fortran fitsio source files.
 
 BUILDING CFITSIO
 ----------------
@@ -70,10 +63,12 @@ On Unix systems (assuming the gcc compiler is being used), type:
 
 The testprog program should produce a FITS file called testprog.fit
 which is identical to the testprog.std FITS file included in this
-release.  The diagnotic messages (which were piped to the file
-testprog.lis) should be identical to the listing contained in the file
-testprog.out.  The 'diff' and 'cmp' commands shown above should not
-report any differences in the files.
+release.  The diagnotic messages sent to standard output (which are
+piped to the file testprog.lis in the above example) should be
+identical to the listing contained in the file testprog.out.  The
+'diff' and 'cmp' commands shown above should not report any differences
+in the files.
+
 
 USING CFITSIO
 -------------
@@ -120,15 +115,12 @@ would be appreciated.  Any problem reports or suggestions for
 improvements are also welcome.  Please send any reports to the author
 at:   pence@tetra.gsfc.nasa.gov
 
-KNOWN PROBLEMS:
----------------
 
- - none
+Known problems or limitations:
+------------------------------
 
-NOT CURRENTLY IMPLEMENTED:
---------------------------
-
- - the routines that deal with FITS world coordinate system keywords
+ - The routines that deal with FITS world coordinate system keywords
+   have not yet been implemented.
 
 -------------------------------------------------------------------------
 William D. Pence

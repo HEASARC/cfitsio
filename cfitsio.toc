@@ -2,7 +2,7 @@
 \contentsline {chapter}{\numberline {2} Creating the CFITSIO Library }{3}
 \contentsline {section}{\numberline {2.1}Building the Library}{3}
 \contentsline {section}{\numberline {2.2}Testing the Library}{4}
-\contentsline {section}{\numberline {2.3}Getting Started}{4}
+\contentsline {section}{\numberline {2.3}Getting Started with CFITSIO}{4}
 \contentsline {section}{\numberline {2.4}Example Program}{4}
 \contentsline {chapter}{\numberline {3} A FITS Primer }{7}
 \contentsline {chapter}{\numberline {4} Basic CFITSIO Conventions }{9}

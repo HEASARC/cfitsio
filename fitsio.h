@@ -162,8 +162,8 @@ typedef struct      /* structure used to store basic HDU information */
 #define NUM_OVERFLOW      412  /* overflow during datatype conversion */
 
 /*----------------  FITS file I/O routines -------------*/
-int ffopen(fitsfile **fptr, char *filename, int iomode, int *status);
-int ffinit(fitsfile **fptr, char *filename, int *status);
+int ffopen(fitsfile **fptr, const char *filename, int iomode, int *status);
+int ffinit(fitsfile **fptr, const char *filename, int *status);
 int ffflus(fitsfile *fptr, int *status);
 int ffclos(fitsfile *fptr, int *status);
 int ffdelt(fitsfile *fptr, int *status);
@@ -172,7 +172,7 @@ int ffdelt(fitsfile *fptr, int *status);
 float ffvers(float *version);
 void ffupch(char *string);
 void ffgerr(int status, char *errtext);
-void ffpmsg(char *err_message);
+void ffpmsg(const char *err_message);
 int  ffgmsg(char *err_message);
 void ffcmsg(void);
 void ffcmps(char *templt, char *colname, int  casesen, int *match,
@@ -192,9 +192,9 @@ int ffgabc(int tfields, char **tform, int space, long *rowlen, long *tbcol,
 /*----------------- write single keywords --------------*/
 int ffpky(fitsfile *fptr, int datatype, char *keyname, void *value,
           char *comm, int *status);
-int ffprec(fitsfile *fptr, char *card, int *status);
-int ffpcom(fitsfile *fptr, char *comm, int *status);
-int ffphis(fitsfile *fptr, char *history, int *status);
+int ffprec(fitsfile *fptr, const char *card, int *status);
+int ffpcom(fitsfile *fptr, const char *comm, int *status);
+int ffphis(fitsfile *fptr, const char *history, int *status);
 int ffpdat(fitsfile *fptr, int *status);
 int ffpkys(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
 int ffpkls(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);

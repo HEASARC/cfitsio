@@ -17,10 +17,10 @@
 #include "fitsio2.h"
 
 /*--------------------------------------------------------------------------*/
-int ffopen(fitsfile **fptr,  /* O - FITS file pointer                       */ 
-           char *filename,   /* I - name of file to open                    */
-           int readwrite,    /* I - 0 = open readonly; 1 = open read/write  */
-           int *status)      /* IO - error status                           */
+int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */ 
+           const char *filename, /* I - name of file to open                */
+           int readwrite,        /* I - 0 = open readonly; 1 = read/write   */
+           int *status)          /* IO - error status                       */
 {
     int ii, hdutype, slen, tstatus;
     long filesize;
@@ -89,9 +89,9 @@ int ffopen(fitsfile **fptr,  /* O - FITS file pointer                       */
     return(*status = FILE_NOT_OPENED);
 }
 /*--------------------------------------------------------------------------*/
-int ffinit(fitsfile **fptr,  /* O - FITS file pointer                       */
-           char *filename,   /* I - name of file to create                  */
-           int *status)      /* IO - error status                           */
+int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
+           const char *filename, /* I - name of file to create              */
+           int *status)          /* IO - error status                       */
 {
     int ii, slen, tstatus;
     long dummy;

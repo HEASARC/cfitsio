@@ -2879,7 +2879,7 @@ int ffggpb( fitsfile *fptr,   /* I - FITS file pointer                       */
 */
 {
     long row;
-    int *idummy;
+    int idummy;
     char *cdummy;
     /*
       the primary array is represented as a binary table:
@@ -2891,7 +2891,7 @@ int ffggpb( fitsfile *fptr,   /* I - FITS file pointer                       */
     row=maxvalue(1,group);
 
     ffgclb(fptr, 1, row, firstelem, nelem, 1, 1, 0,
-               array, cdummy, idummy, status);
+               array, cdummy, &idummy, status);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -2908,7 +2908,7 @@ int ffggpi( fitsfile *fptr,   /* I - FITS file pointer                       */
 */
 {
     long row;
-    int *idummy;
+    int idummy;
     char *cdummy;
     /*
       the primary array is represented as a binary table:
@@ -2920,7 +2920,7 @@ int ffggpi( fitsfile *fptr,   /* I - FITS file pointer                       */
     row=maxvalue(1,group);
 
     ffgcli(fptr, 1, row, firstelem, nelem, 1, 1, 0,
-               array, cdummy, idummy, status);
+               array, cdummy, &idummy, status);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -2937,7 +2937,7 @@ int ffggpj( fitsfile *fptr,   /* I - FITS file pointer                       */
 */
 {
     long row;
-    int *idummy;
+    int idummy;
     char *cdummy;
     /*
       the primary array is represented as a binary table:
@@ -2949,7 +2949,7 @@ int ffggpj( fitsfile *fptr,   /* I - FITS file pointer                       */
     row=maxvalue(1,group);
 
     ffgclj(fptr, 1, row, firstelem, nelem, 1, 1, 0L,
-               array, cdummy, idummy, status);
+               array, cdummy, &idummy, status);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -2966,7 +2966,7 @@ int ffggpe( fitsfile *fptr,   /* I - FITS file pointer                       */
 */
 {
     long row;
-    int *idummy;
+    int idummy;
     char *cdummy;
     /*
       the primary array is represented as a binary table:
@@ -2978,7 +2978,7 @@ int ffggpe( fitsfile *fptr,   /* I - FITS file pointer                       */
     row=maxvalue(1,group);
 
     ffgcle(fptr, 1, row, firstelem, nelem, 1, 1, 0.F,
-               array, cdummy, idummy, status);
+               array, cdummy, &idummy, status);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -2995,7 +2995,7 @@ int ffggpd( fitsfile *fptr,   /* I - FITS file pointer                       */
 */
 {
     long row;
-    int *idummy;
+    int idummy;
     char *cdummy;
     /*
       the primary array is represented as a binary table:
@@ -3007,7 +3007,7 @@ int ffggpd( fitsfile *fptr,   /* I - FITS file pointer                       */
     row=maxvalue(1,group);
 
     ffgcld(fptr, 1, row, firstelem, nelem, 1, 1, 0.,
-               array, cdummy, idummy, status);
+               array, cdummy, &idummy, status);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

@@ -30,7 +30,7 @@
 \medskip
 \medskip
 \medskip
-{\Large Beta Version 0.99\\}
+{\Large Version 1.00\\}
 \bigskip
 \vskip 3.0cm
 {Dr. William D. Pence\\
@@ -42,7 +42,7 @@ USA}
 
 \vfill
 \bigskip
-{\Large June 1996\\}
+{\Large July 1996\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -92,7 +92,7 @@ documentation, and example programs are all available on the World-Wide
 Web at the following URL:
 
 \begin{verbatim}
-        http://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html
+        http://heasarc.gsfc.nasa.gov/fitsio
 \end{verbatim}
 CFITSIO also can be obtained from the HEASARC via anonymous ftp from
 {\bf legacy.gsfc.nasa.gov}    (or, 128.183.126.108) in the
@@ -160,7 +160,7 @@ The CFITSIO library is built on Unix systems by typing:
    > make
 \end{verbatim}
 at the operating system prompt.  The `configure' command customizes
-the Makefile for your particular system, then the `make' command
+the Makefile for the particular system, then the `make' command
 builds the library.  The build process splits each routine in the
 source files into a separate disk file in a scratch subdirectory.
 Depending on the speed of the CPU, it can anywhere from a couple
@@ -225,7 +225,7 @@ contained in the file testprog.out.  The 'diff' and 'cmp' commands
 shown above should not report any differences in the files.
 
 
-\section{Getting Started}
+\section{Getting Started with CFITSIO}
 
 In order to effectively use the CFITSIO library as quickly as possible,
 it is recommended that new users follow these steps:
@@ -279,7 +279,6 @@ main()
     int bitpix   =  16;   /* 16-bit short signed integer pixel values       */
     long naxis    =   2;  /* 2-dimensional image                            */
     long naxes[2] = { 300, 200 };   /* image is 300 pixels wide by 200 rows */
-
     status = 0;         /* initialize status before calling fitsio routines */
 
     if (fits_create_file(&fptr, filename, &status)) /* create new FITS file */
@@ -390,7 +389,6 @@ previous Data Unit (or Header Unit if there is no Data Unit).
 \chapter{  Basic CFITSIO Conventions }
 
 
-
 \section{CFITSIO definitions}
 
 Any program that uses the CFITSIO interface must include the fitsio.h
@@ -437,11 +435,11 @@ All the CFITSIO routines have both a short name and a longer
 descriptive name.  The short name is only 5 or 6 characters long and is
 similar to the subroutine name in the Fortran-77 version of FITSIO.
 The longer name is more descriptive and helps to document the source
-code, but it naturally makes the source code somewhat greater in
-length.  It is purely a matter of personal preference whether to use
-the short or the long names since they are identical in terms of
-function or efficiency.  The descriptions of the routines given in
-chapters 6 and 7 list both the long and short names.
+code; these long names are defined as macros in the longname.h header
+file.  It is purely a matter of personal preference whether to use the
+short or the long names since they are identical in terms of function
+or efficiency.  The descriptions of the routines given in chapters 6
+and 7 list both the long and short names.
 
 
 \section{Routine Families and Datatypes}
@@ -486,10 +484,10 @@ pair is the real part, and the second is the imaginary part.
 
 \section{1's Based Index Numbers}
 
-The CFITSIO parameters that specify a position in the FITS file, such
-as row number, column number or HDU number, generally start with 1 as
-the first value, rather than 0.  This is the same convention that is
-used in the Fortran version of FITSIO.
+The CFITSIO parameters that specify a position in the FITS file, such as
+row number, column number or HDU number, generally start with 1 as the
+first value, rather than 0. This is the same convention that is used in
+the Fortran version of FITSIO.
 
 
 \section{Character Strings}
@@ -549,11 +547,11 @@ data types.
 
 One feature of the CFITSIO routines is that they can operate on
 a `X' (bit) column in a binary table as though it were a `B' (byte) column.
-For example a `15X' datatype column can be interpreted the same
-as a `3B' column (i.e., 3 unsigned 8-bit bytes).
+For example a `11X' datatype column can be interpreted the same
+as a `2B' column (i.e., 2 unsigned 8-bit bytes).
 In some instances, it can be more efficient to read and write whole
 bytes at a time, rather than reading or writing each individual bit
-(with the ffgcx, ffpclx and ffgcx routines).
+(with the ffgcx and ffpclx routines).
 
 
 \section{Data Scaling}
@@ -643,7 +641,7 @@ error status number alone.  It it recommended that the error message
 stack be printed out whenever a program detects a CFITSIO error.  To do
 this, call the ffgmsg routine repeatedly to get the successive messages
 on the stack.  When the stack is empty ffgmsg will return a null value
-(and a null string).  Note that this is a 'First In -- First Out'
+(and a null string).  Note that this is a `First In -- First Out'
 stack, so the oldest error message is returned first by ffgmsg.
 
 In some situations programs may encounter a non-fatal CFITSIO error and
@@ -658,27 +656,29 @@ routine.
 \section{Variable-Length Arrays in Binary Tables}
 
 CFITSIO provides easy-to-use support for reading and writing data in
-variable length fields of a binary table.  The variable length columns
+variable length fields of a binary table. The variable length columns
 have TFORMn keyword values of the form `1Pt' where `t' is the datatype
-code (e.g., I, J, E, D, etc.).
+code (e.g., I, J, E, D, etc.). The same routines which read and write
+data in an ordinary fixed length binary table extension are also used
+for variable length fields, however, the routine parameters take on a
+slightly different interpretation as described below.
 
-The way this feature is implemented in FITS files is by writing all the
-variable length data into an area called the `heap' which follows the
-main fixed-length FITS binary table.  The size of the heap, in bytes,
-is specified by the PCOUNT keyword in the FITS header.  When creating a
-new binary table, the initial value of PCOUNT should usually be set to
-zero.  CFITSIO will recompute the size of the heap as the data is
-written and will automatically update the PCOUNT keyword value when the
-table is closed. Thus, application programs usually do not need to
-worry about the heap size, except when inserting a new binary table HDU
-in front of other existing HDUs in the FITS file (with ffibin).  In
-this specific case the correct final value of PCOUNT must be specified
-when the HDU is initially created so that the correct amount of space
-will be inserted into the FITS file.
+All the data in a variable length field is written into an area called
+the `heap' which follows the main fixed-length FITS binary table. The
+size of the heap, in bytes, is specified by the PCOUNT keyword in the
+FITS header. When creating a new binary table, the initial value of
+PCOUNT should usually be set to zero. CFITSIO will recompute the size of
+the heap as the data is written and will automatically update the PCOUNT
+keyword value when the table is closed. Thus, application programs
+usually do not need to worry about the heap size, except when inserting
+a new binary table HDU in front of other existing HDUs in the FITS file
+(with ffibin). In this specific case the correct final value of PCOUNT
+must be specified when the HDU is initially created so that the correct
+amount of space will be inserted into the FITS file.
 
 By default the heap data area starts immediately after the last row of
-the fixed-length table.  This default starting location may be
-overridden by the THEAP keyword, but this is not recommended.  Thus
+the fixed-length table.  (This default starting location may be
+overridden by the THEAP keyword, but this is not recommended).  Thus
 when writing variable length arrays the number of rows in the table
 should be correctly specified (with the NAXIS2 keyword) at the time the
 table is first created.  This differs from the simpler case of tables
@@ -688,11 +688,6 @@ table is closed.  It is still possible to insert additional rows into a
 binary table containing variable-length columns (with the ffirow
 routine), however, the performance may be rather slow due to all the
 internal shuffling of the data that must be performed.
-
-The same routines which read and write data in an ordinary fixed length
-binary table extension are also used for variable length fields,
-however, the routine parameters take on a slightly different
-interpretation as described below:
 
 When writing to a variable length field the entire array of values for
 a given row of the table must be written with a single call to
@@ -707,11 +702,11 @@ this general rule occurs when setting elements of an array as
 undefined.  One must first write a dummy value into the array with
 ffpcl\_, and then call ffpclu to flag the desired elements as
 undefined.  (Do not use the ffpcn\_ family of routines with variable
-length fields). Note that The rows of a table may be written in any
+length fields). Note that the rows of a table may be written in any
 order.
 
 When writing to a variable length ASCII character field (e.g., TFORM =
-'PA') only a single character string can be written written.  The
+'1PA') only a single character string can be written written.  The
 `firstelem' and `nelements' parameter values in the ffpcls routine are
 ignored and the number of characters to write is simply determined by
 the length of the input null-terminated character string.
@@ -791,7 +786,7 @@ to any software that must read the keywords.  A routine called ffplsw
 has been provided in CFITSIO to write this keyword if it does not
 already exist.
 
-  This long string convention is supported by the following CFITSIO
+This long string convention is supported by the following CFITSIO
 routines:
 
 \begin{verbatim}
@@ -929,10 +924,12 @@ length arrays.
 
 \section{Optimizing Code for Maximum Processing Speed}
 
-Care must be taken when designing software to achieve the best possible
-performance when processing the FITS data files.  The following
-paragraphs describe some strategies that may be used to improve the
-processing speed of software that uses CFITSIO.
+The CFITSIO code is generally not very CPU intensive, hence programs are
+basically limited by the speed of the underlying magnetic disk read and
+write operations.  Care must be taken when designing software to achieve
+the best possible performance when processing the FITS data files. The
+following paragraphs describe some strategies that may be used to
+improve the processing speed of software that uses CFITSIO.
 
 1.  All operating systems buffer the magnetic disk read and write
 operations by using an array in memory (a cache) as an intermediate
@@ -1044,9 +1041,9 @@ internal format of the FITS tables they are reading or writing.
 \section{CFITSIO Size Limitations}
 
 In general, CFITSIO places no limits on the sizes of the FITS files that
-it read or writes. In particular there is no internal limit on the size of the
+it reads or writes. In particular there is no internal limit on the size of the
 dimensions of the primary array or IMAGE extension. Tables extensions may have
-up to the maximum of 999 columns (as allowed by the FITS standard) and
+up to 999 columns (the maximum allowed by the FITS standard) and
 may have an arbitrarily large number of rows. There are a few other limits,
 however, which may affect some extreme cases:
 
@@ -1066,7 +1063,6 @@ long.
 the maximum value of a signed long integer.  Some machines that use
 8-byte words for a long integer may support larger files, but this has
 not been tested.
-
 
 \chapter{ Basic Interface Routines }
 
@@ -1112,7 +1108,7 @@ the FITS file is closed.
 
 \begin{verbatim}
   int fits_open_file / ffopen
-      (fitsfile **fptr, char *filename, int iomode, > int *status)
+      (fitsfile **fptr, const char *filename, int iomode, > int *status)
 \end{verbatim}
 
 \begin{description}
@@ -1121,7 +1117,7 @@ the FITS file is closed.
 
 \begin{verbatim}
   int fits_create_file / ffinit
-      (fitsfile **fptr, char *filename, > int *status)
+      (fitsfile **fptr, const char *filename, > int *status)
 \end{verbatim}
 
 \begin{description}
@@ -2366,7 +2362,9 @@ working with large data arrays.
 
 \begin{description}
 \item[5 ] Put values into group parameters.  This routine only applies
-   to the obsolete `Random Grouped' FITS format files.
+    to the `Random Grouped' FITS format which has been used for
+    applications in radio interferometry, but is offically deprecated
+   for future use.
 \end{description}
 
 \begin{verbatim}
@@ -2450,8 +2448,10 @@ working with large data arrays.
 \end{verbatim}
 
 \begin{description}
-\item[4 ] Get values from group parameters.   This routine only applies
-   to the obsolete `Random Grouped' FITS format files.
+\item[4 ] Get values from group parameters.  This routine only applies
+    to the `Random Grouped' FITS format which has been used for
+    applications in radio interferometry, but is offically deprecated
+   for future use.
 \end{description}
 
 \begin{verbatim}
@@ -3492,8 +3492,8 @@ The following utility routines may be useful for certain applications:
  FITS File Open and Close Routines: page~\pageref{FFOPEN}
 
 \begin{verbatim}
-  int ffopen(fitsfile **fptr, char *filename, int iomode, > int *status)
-  int ffinit(fitsfile **fptr, char *filename, > int *status)
+  int ffopen(fitsfile **fptr, const char *filename, int iomode, > int *status)
+  int ffinit(fitsfile **fptr, const char *filename, > int *status)
   int ffflus(fitsfile *fptr, > int *status)
   int ffclos(fitsfile *fptr, > int *status)
   int ffdelt(fitsfile *fptr, > int *status)
@@ -3947,24 +3947,24 @@ value    - the keyword value string (70 char max, null-terminated)
 version  - current version number of the CFITSIO library
 width    - width of the character string field
 zero     - scaling offset; true value = (FITS value) * scale + zero
-        --------------------------------------------------------------------
-
-coordtype -  type of coordinate projection (-SIN, -TAN, -ARC,
-          -NCP, -GLS, -MER, or -AIT)
-rot -  celestial coordinate rotation angle (degrees)
-xcol -  number of the column containing the X coordinate values
-xinc -  X axis coordinate increment at reference pixel (deg)
-xpix -  X axis pixel location
-xpos -  X axis celestial coordinate (usually RA) (deg)
-xrpix -  X axis reference pixel array location
-xrval -  X axis coordinate value at the reference pixel (deg)
-ycol -  number of the column containing the X coordinate values
-yinc -  Y axis coordinate increment at reference pixel (deg)
-ypix -  y axis pixel location
-ypos -  y axis celestial coordinate (usually DEC) (deg)
-yrpix -  Y axis reference pixel array location
-yrval -  Y axis coordinate value at the reference pixel (deg)
 \end{verbatim}
+%        --------------------------------------------------------------------
+%
+%coordtype -  type of coordinate projection (-SIN, -TAN, -ARC,
+%          -NCP, -GLS, -MER, or -AIT)
+%rot -  celestial coordinate rotation angle (degrees)
+%xcol -  number of the column containing the X coordinate values
+%xinc -  X axis coordinate increment at reference pixel (deg)
+%xpix -  X axis pixel location
+%xpos -  X axis celestial coordinate (usually RA) (deg)
+%xrpix -  X axis reference pixel array location
+%xrval -  X axis coordinate value at the reference pixel (deg)
+%ycol -  number of the column containing the X coordinate values
+%yinc -  Y axis coordinate increment at reference pixel (deg)
+%ypix -  y axis pixel location
+%ypos -  y axis celestial coordinate (usually DEC) (deg)
+%yrpix -  Y axis reference pixel array location
+%yrval -  Y axis coordinate value at the reference pixel (deg)
 
 \chapter{ CFITSIO Error Status Codes }
 

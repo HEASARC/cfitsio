@@ -22,7 +22,7 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-    *version = 0.99;  /* beta development version */
+    *version = 1.00;  /* July 25, 1996 */
 
     return(*version);
 }
@@ -1875,12 +1875,12 @@ int ffc2dd(char *cval,   /* I - string representation of the value */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-void ffpmsg(char *err_message)
+void ffpmsg(const char *err_message)
 /*
   put message on to error stack
 */
 {
-    ffxmsg(1, err_message);
+    ffxmsg(1, (char *)err_message);
     return;
 }
 /*--------------------------------------------------------------------------*/

@@ -82,6 +82,9 @@ case $system in
     ULTRIX*)
 	ARCH="dec"
 	;;
+    Linux*)
+	ARCH="linux"
+	;;
     *)
 		echo "cfitsio: == Don't know what do do with $system"
 	;;
