@@ -114,6 +114,7 @@ extern "C" {
    int  fflex(void);
    void ffrestart(FILE*);
    int  ffbuildcolumn( char *ColName, long *ColNum );
+   int  ffallocatecol( int nCol, int *status );
 
    void Evaluate_Node( int thisNode );
    void Reset_Parser ( long firstRow, long rowOffset, long nRows );

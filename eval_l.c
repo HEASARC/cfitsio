@@ -2178,6 +2178,34 @@ int ffbuildcolumn( char *ColName, long *ColNum )
    return( type );
 }
 
+int ffallocatecol( int nCol, int *status )
+{
+   if( (nCol%25)==0 ) {
+      if( nCol ) {
+	 gParse.colData  = (iteratorCol*) realloc( gParse.colData,
+                                              (nCol+25)*sizeof(iteratorCol) );
+	 gParse.colInfo  = (DataInfo   *) realloc( gParse.colInfo,
+                                              (nCol+25)*sizeof(DataInfo)    );
+	 gParse.colNulls = (char      **) realloc( gParse.colNulls,
+					      (nCol+25)*sizeof(char*)       );
+      } else {
+	 gParse.colData  = (iteratorCol*) malloc( 25*sizeof(iteratorCol) );
+	 gParse.colInfo  = (DataInfo   *) malloc( 25*sizeof(DataInfo)    );
+	 gParse.colNulls = (char      **) malloc( 25*sizeof(char*)       );
+      }
+      if(    gParse.colData  == NULL
+          || gParse.colInfo  == NULL
+          || gParse.colNulls == NULL    ) {
+	 if( gParse.colData  ) free(gParse.colData);
+	 if( gParse.colInfo  ) free(gParse.colInfo);
+	 if( gParse.colNulls ) free(gParse.colNulls);
+	 return( *status = MEMORY_ALLOCATION );
+      }
+   }
+   gParse.colNulls[nCol] = NULL;
+   return 0;
+}
+
 static int build_column_array( char *colname, FFSTYPE *thelval )
 {
    int col_cnt, status;
@@ -2190,34 +2218,9 @@ static int build_column_array( char *colname, FFSTYPE *thelval )
    col_cnt = find_column(colname);
    if( col_cnt<0 ) {
 
-      col_cnt = gParse.nCols;
       fptr = gParse.def_fptr;
-
-      /*  Do we need to allocate more memory?  */
-      
-      if( (col_cnt%25)==0 ) {  /*  Yes  */
-         if( col_cnt ) {
-	    gParse.colData = 
-	       (iteratorCol*)realloc( gParse.colData,
-				      (col_cnt+25)*sizeof(iteratorCol) );
-	    gParse.colInfo =
-	       (DataInfo*)realloc( gParse.colInfo,
-				   (col_cnt+25)*sizeof(DataInfo) );
-	    gParse.colNulls = (char**)realloc( gParse.colNulls,
-					       (col_cnt+25)*sizeof(char*) );
-	 } else {
-	    gParse.colData  = (iteratorCol*)malloc( 25*sizeof(iteratorCol) );
-	    gParse.colInfo  = (DataInfo   *)malloc( 25*sizeof(DataInfo)    );
-	    gParse.colNulls = (char      **)malloc( 25*sizeof(char*)       );
-	 }
-	 if(    gParse.colData  == NULL
-	     || gParse.colInfo  == NULL
-	     || gParse.colNulls == NULL    ) {
-	    gParse.status = MEMORY_ALLOCATION;
-	    return ERROR;
-	 }
-      }
-      gParse.colNulls[col_cnt] = NULL;
+      col_cnt = gParse.nCols;
+      if( ffallocatecol( col_cnt, &gParse.status ) ) return ERROR;
 
       status = 0;
       if( gParse.compressed )
@@ -2233,6 +2236,9 @@ static int build_column_array( char *colname, FFSTYPE *thelval )
 	 gParse.status = status;
 	 return ERROR;
       }
+
+      fits_iter_set_by_num( gParse.colData+col_cnt, fptr, colnum, 0, InputCol );
+      strcpy(gParse.colData[col_cnt].colname,colname);
 
       switch( typecode ) {
       case TBIT:
@@ -2272,11 +2278,6 @@ static int build_column_array( char *colname, FFSTYPE *thelval )
 	 gParse.colInfo[col_cnt].naxis = 1;
 	 gParse.colInfo[col_cnt].naxes[0] = 1;
       }
-
-      gParse.colData[col_cnt].fptr   = fptr;
-      gParse.colData[col_cnt].colnum = colnum;
-      gParse.colData[col_cnt].iotype = InputCol;
-      strcpy(gParse.colData[col_cnt].colname,colname);
       gParse.nCols++;
    }
    thelval->lng = col_cnt;

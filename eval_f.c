@@ -95,6 +95,18 @@ int fits_find_rows( fitsfile *fptr,        /* I - Input FITS file            */
    Info.nullPtr = NULL;
    Info.maxRows = nrows;
    
+   /*  Check whether there is at least 1 column referenced in   */
+   /*  expression.  If not, setup the first column as a dummy.  */
+
+   if( !gParse.nCols ) {
+      if( ffallocatecol( 0, status ) ) {
+	 ffcprs();
+	 return( *status );
+      }
+      fits_iter_set_by_num( gParse.colData, fptr, 1, 0, InputCol );
+      gParse.nCols++;
+   }
+
    if( ffiter( gParse.nCols, gParse.colData, firstrow-1, 0,
                parse_data, (void*)&Info, status ) == -1 )
       *status = 0;  /* -1 indicates exitted without error before end... OK */
@@ -167,6 +179,18 @@ int fits_select_rows( fitsfile *infptr,  /* I - Input FITS file             */
    Info.nullPtr = NULL;
    Info.maxRows = nrows;
    
+   /*  Check whether there is at least 1 column referenced in   */
+   /*  expression.  If not, setup the first column as a dummy.  */
+
+   if( !gParse.nCols ) {
+      if( ffallocatecol( 0, status ) ) {
+	 ffcprs();
+	 return( *status );
+      }
+      fits_iter_set_by_num( gParse.colData, infptr, 1, 0, InputCol );
+      gParse.nCols++;
+   }
+
    if( ffiter( gParse.nCols, gParse.colData, 0L, 0L,
                parse_data, (void*)&Info, status )  ) {
       /* Error... Do nothing */
@@ -284,6 +308,18 @@ int fits_calc_rows( fitsfile *fptr,     /* I - Input FITS file               */
    Info.nullPtr = nulval;
    Info.maxRows = nelements / nelem1;
    
+   /*  Check whether there is at least 1 column referenced in   */
+   /*  expression.  If not, setup the first column as a dummy.  */
+
+   if( !gParse.nCols ) {
+      if( ffallocatecol( 0, status ) ) {
+	 ffcprs();
+	 return( *status );
+      }
+      fits_iter_set_by_num( gParse.colData, fptr, 1, 0, InputCol );
+      gParse.nCols++;
+   }
+
    if( ffiter( gParse.nCols, gParse.colData, firstrow-1, 0,
                parse_data, (void*)&Info, status ) == -1 )
       *status=0;  /* -1 indicates exitted without error before end... OK */
@@ -325,32 +361,13 @@ int fits_calc_col( fitsfile *infptr,  /* I - Input FITS file                */
    /*************************************/
 
    col_cnt = gParse.nCols;
-   if( (col_cnt%25)==0 ) {
-      gParse.colData = 
-         (iteratorCol*)realloc( gParse.colData,
-                                (col_cnt+25)*sizeof(iteratorCol) );
-      gParse.colInfo =
-         (DataInfo*)realloc( gParse.colInfo,
-                             (col_cnt+25)*sizeof(DataInfo) );
-      gParse.colNulls = (char**)realloc( gParse.colNulls,
-                                         (col_cnt+25)*sizeof(char*) );
-      if(    gParse.colData  == NULL
-          || gParse.colInfo  == NULL
-          || gParse.colNulls == NULL    ) {
-         if( gParse.colData  ) free(gParse.colData);
-         if( gParse.colInfo  ) free(gParse.colInfo);
-         if( gParse.colNulls ) free(gParse.colNulls);
-         ffcprs();
-         return( *status = MEMORY_ALLOCATION );
-      }
+   if( ffallocatecol( col_cnt, status ) ) {
+      ffcprs();
+      return( *status );
    }
-   gParse.colNulls[col_cnt]         = NULL;
+   fits_iter_set_by_name( gParse.colData+col_cnt, outfptr,
+			  colname, 0, OutputCol );
    gParse.nCols++;
-   gParse.colData[col_cnt].fptr     = outfptr;
-   gParse.colData[col_cnt].colnum   = 0;
-   gParse.colData[col_cnt].iotype   = OutputCol;
-   gParse.colData[col_cnt].datatype = 0;
-   strcpy(gParse.colData[col_cnt].colname,colname);
 
    Info.dataPtr = NULL;
    Info.maxRows = -1;    /*  Process all of the rows  */
