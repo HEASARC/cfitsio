@@ -26,8 +26,12 @@
 
 
 #include <stdio.h>
+#ifdef macintosh
+#include <stdlib.h>
+#else
 #include <malloc.h>
 #include <memory.h>
+#endif
 #include <string.h>
 
 #include "fitsio.h"

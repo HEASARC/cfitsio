@@ -19,7 +19,7 @@
 /*  by Jennings, Pence, Folk and Schlesinger. The development of the       */
 /*  grouping structure was partially funded under the NASA AISRP Program.  */ 
     
-#include "fitsio.h"
+#include "fitsio2.h"
 #include "group.h"
 #include <string.h>
 #include <stdlib.h>

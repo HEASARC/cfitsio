@@ -52,9 +52,13 @@
 #include <time.h>
 
    /*  Bison uses alloca for allocations, but VMS lacks it  */
-#if defined(vms) || defined(__vms)
+#if defined(vms) || defined(__vms) || defined(macintosh)
 #define alloca malloc
 #endif
+
+   /*  Shrink the initial stack depth to keep local data <32K (mac limit)  */
+   /*  yacc will allocate more space if needed, though.                    */
+#define  YYINITDEPTH   100
 
 /***************************************************************/
 /*  Replace Bison's BACKUP macro with one that fixes a bug --  */
