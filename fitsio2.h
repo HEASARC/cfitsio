@@ -195,7 +195,7 @@ int ffikey(fitsfile *fptr, char *card, int *status);
  
 int ffmbyt(fitsfile *fptr, long bytpos, int ignore_err, int *status);
 int ffgbyt(fitsfile *fptr, long nbytes, void *buffer, int *status);
-int ffpbyt(fitsfile *fptr, int nbytes, void *buffer, int *status);
+int ffpbyt(fitsfile *fptr, long nbytes, void *buffer, int *status);
 int ffgbytoff(fitsfile *fptr, long gsize, long ngroups, long offset, 
            void *buffer, int *status);
 int ffpbytoff(fitsfile *fptr, long gsize, long ngroups, long offset,

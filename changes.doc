@@ -1,5 +1,24 @@
              Log of Changes Made to CFITSIO
 
+Version 1.24 - 2 May 1997
+
+   - fixed bug in ffpbyt that incorrectly computed the current
+     location in the FITS file when writing > 10000 bytes.
+
+   - changed the datatype of the 'nbytes' parameter in ffpbyt 
+     from 'int' to 'long'.   Made corresponding datatype change
+     to some internal variables in ffshft.
+
+   - changed '(unsigned short *)' to '(short *)' in getcolui.c, and
+     changed '(unsigned long *)'  to '(long *)'  in getcoluj.c, to
+     work around problem with the VAX/VMS cc compiler.
+
+
+Version 1.23 - 24 April 1997
+
+   - modified ffcins and ffdins (in editcol.c) to simply return 
+     without error if there are no (zero) rows in the table.
+
 Version 1.22 - 18 April 1997
 
    - fixed bug in ffgcpr that caused it to think that all values were

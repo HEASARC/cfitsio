@@ -686,8 +686,8 @@ int ffgclui( fitsfile *fptr,   /* I - FITS file pointer                       */
         {
             case (TSHORT):
                 ffgi2b(fptr, readptr, ntodo, incre,
-                       (signed short *) &array[next], status);
-                fffi2u2((signed short *) &array[next], ntodo, scale,
+                       (short *) &array[next], status);
+                fffi2u2((short *) &array[next], ntodo, scale,
                        zero, nulcheck, (short) tnull, nulval, &nularray[next],
                        anynul, &array[next], status);
                 break;

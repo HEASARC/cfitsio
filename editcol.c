@@ -486,6 +486,9 @@ int ffcins(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
+    if (naxis2 == 0)
+        return(*status);  /* just return if there are 0 rows in the table */
+
     /* select appropriate fill value */
     if (fptr->hdutype == ASCII_TBL)
         cfill = 32;                     /* ASCII tables use blank fill */
@@ -610,6 +613,9 @@ int ffcdel(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     if (*status > 0)
         return(*status);
+
+    if (naxis2 == 0)
+        return(*status);  /* just return if there are 0 rows in the table */
 
     newlen = naxis1 - ndelete;
 
@@ -786,8 +792,7 @@ int ffshft(fitsfile *fptr,  /* I - FITS file pointer                        */
     negative value shifts the block towards the beginning of the file.
 */
 {
-    int ntodo, ntomov, ii;
-    long ptr;
+    long ntodo, ntomov, ptr;
     char buffer[10000];
 
     if (*status > 0)

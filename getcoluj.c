@@ -686,8 +686,8 @@ int ffgcluj( fitsfile *fptr,   /* I - FITS file pointer                       */
         {
             case (TLONG):
                 ffgi4b(fptr, readptr, ntodo, incre,
-                (signed long *) &array[next], status);
-                fffi4u4((signed long *) &array[next], ntodo, scale, zero,
+                (long *) &array[next], status);
+                fffi4u4((long *) &array[next], ntodo, scale, zero,
                          nulcheck, tnull, nulval, &nularray[next], anynul, 
                          &array[next], status);
                 break;

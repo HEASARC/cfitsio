@@ -280,7 +280,7 @@ int ffmbyt(fitsfile *fptr,    /* I - FITS file pointer                */
 }
 /*--------------------------------------------------------------------------*/
 int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
-           int nbytes,       /* I - number of bytes to write             */
+           long nbytes,      /* I - number of bytes to write             */
            void *buffer,     /* I - buffer containing the bytes to write */
            int *status)      /* IO - error status                        */
 /*
@@ -379,7 +379,7 @@ int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
       bufptr[nbuff] = fptr;      /* file pointer associated with IO buffer */
 
       fptr->logfilesize = maxvalue(fptr->logfilesize, (recend + 1) * IOBUFLEN);
-      fptr->bytepos = fptr->io_pos + ntodo;
+      fptr->bytepos = filepos + nwrite + ntodo;
     }
     else
     {
