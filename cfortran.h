@@ -115,6 +115,9 @@ only C calling FORTRAN subroutines will work using K&R style.*/
 #if defined(macintosh)
 #define f2cFortran
 #endif
+#if defined(__APPLE__)
+#define f2cFortran
+#endif
 #if defined(__hpux)             /* 921107: Use __hpux instead of __hp9000s300 */
 #define       hpuxFortran       /*         Should also allow hp9000s7/800 use.*/
 #endif
