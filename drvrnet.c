@@ -206,7 +206,7 @@ static char netoutfile[MAXLEN];
 typedef struct    /* structure containing disk file structure */ 
 {
   int sock;
-  OFF_T currentpos;
+  LONGLONG currentpos;
 } rootdriver;
 
 static rootdriver handleTable[NMAXFILES];  /* allocate diskfile handle tables */
@@ -2256,7 +2256,7 @@ int root_create(char *filename, int *handle)
     return(0);
 }
 /*--------------------------------------------------------------------------*/
-int root_size(int handle, OFF_T *filesize)
+int root_size(int handle, LONGLONG *filesize)
 /*
   return the size of the file in bytes
 */
@@ -2271,7 +2271,7 @@ int root_size(int handle, OFF_T *filesize)
 
   status = root_send_buffer(sock,ROOTD_STAT,NULL,0);
   status = root_recv_buffer(sock,&op,(char *)&offset, 4);
-  *filesize = (OFF_T) ntohl(offset);
+  *filesize = (LONGLONG) ntohl(offset);
   
   return(0);
 }
@@ -2305,7 +2305,7 @@ int root_flush(int handle)
   return(0);
 }
 /*--------------------------------------------------------------------------*/
-int root_seek(int handle, OFF_T offset)
+int root_seek(int handle, LONGLONG offset)
 /*
   seek to position relative to start of the file
 */

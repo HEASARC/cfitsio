@@ -31,7 +31,7 @@ static char file_outfile[FLEN_FILENAME];
 typedef struct    /* structure containing disk file structure */ 
 {
     FILE *fileptr;
-    OFF_T currentpos;
+    LONGLONG currentpos;
     int last_io_op;
 } diskdriver;
 
@@ -340,7 +340,7 @@ int file_create(char *filename, int *handle)
     return(0);
 }
 /*--------------------------------------------------------------------------*/
-int file_truncate(int handle, OFF_T filesize)
+int file_truncate(int handle, LONGLONG filesize)
 /*
   truncate the diskfile to a new smaller size
 */
@@ -350,7 +350,7 @@ int file_truncate(int handle, OFF_T filesize)
     int fdesc;
 
     fdesc = fileno(handleTable[handle].fileptr);
-    ftruncate(fdesc, filesize);
+    ftruncate(fdesc, (OFF_T) filesize);
 
     handleTable[handle].currentpos = filesize;
     handleTable[handle].last_io_op = IO_WRITE;
@@ -360,12 +360,12 @@ int file_truncate(int handle, OFF_T filesize)
     return(0);
 }
 /*--------------------------------------------------------------------------*/
-int file_size(int handle, OFF_T *filesize)
+int file_size(int handle, LONGLONG *filesize)
 /*
   return the size of the file in bytes
 */
 {
-    OFF_T position1;
+    OFF_T position1,position2;
     FILE *diskfile;
 
     diskfile = handleTable[handle].fileptr;
@@ -382,8 +382,8 @@ int file_size(int handle, OFF_T *filesize)
     if (fseeko(diskfile, 0, 2) != 0)  /* seek to end of file */
         return(SEEK_ERROR);
 
-    *filesize = ftello(diskfile);     /* get file size */
-    if (*filesize < 0)
+    position2 = ftello(diskfile);     /* get file size */
+    if (position2 < 0)
         return(SEEK_ERROR);
 
     if (fseeko(diskfile, position1, 0) != 0)  /* seek back to original pos */
@@ -398,8 +398,8 @@ int file_size(int handle, OFF_T *filesize)
     if (fseek(diskfile, 0, 2) != 0)  /* seek to end of file */
         return(SEEK_ERROR);
 
-    *filesize = ftell(diskfile);     /* get file size */
-    if (*filesize < 0)
+    position2 = ftell(diskfile);     /* get file size */
+    if (position2 < 0)
         return(SEEK_ERROR);
 
     if (fseek(diskfile, position1, 0) != 0)  /* seek back to original pos */
@@ -407,6 +407,8 @@ int file_size(int handle, OFF_T *filesize)
 
 #endif
 
+    *filesize = (LONGLONG) position2;
+    
     return(0);
 }
 /*--------------------------------------------------------------------------*/
@@ -455,7 +457,7 @@ int file_flush(int handle)
     return(0);
 }
 /*--------------------------------------------------------------------------*/
-int file_seek(int handle, OFF_T offset)
+int file_seek(int handle, LONGLONG offset)
 /*
   seek to position relative to start of the file
 */
@@ -463,12 +465,12 @@ int file_seek(int handle, OFF_T offset)
 
 #if _FILE_OFFSET_BITS - 0 == 64
 
-    if (fseeko(handleTable[handle].fileptr, offset, 0) != 0)
+    if (fseeko(handleTable[handle].fileptr, (OFF_T) offset, 0) != 0)
         return(SEEK_ERROR);
 
 #else
 
-    if (fseek(handleTable[handle].fileptr, offset, 0) != 0)
+    if (fseek(handleTable[handle].fileptr, (OFF_T) offset, 0) != 0)
         return(SEEK_ERROR);
 
 #endif

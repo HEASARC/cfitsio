@@ -4562,7 +4562,9 @@ int ffgtcpr(fitsfile   *infptr,  /* input FITS file pointer                 */
 	     strcasecmp(keyvalue,"MEMBER_LOCATION") != 0 &&
 	     strcasecmp(keyvalue,"MEMBER_URI_TYPE") != 0   )
 	    {
-	      *status = fits_copy_col(infptr,outfptr,i,newTfields,1,status);
+ 
+	      /* SPR 3956, add at the end of the table */
+	      *status = fits_copy_col(infptr,outfptr,i,newTfields+1,1,status);
 	      ++newTfields;
 	    }
 	}

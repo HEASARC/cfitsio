@@ -133,7 +133,8 @@ typedef enum {
 		  median_fct,
 		  average_fct,
 		  stddev_fct,
-		  nonnull_fct
+		  nonnull_fct,
+		  angsep_fct
                                 } funcOp;
 
 extern ParseData gParse;

@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include "fitsio2.h"
+
 /*--------------------------------------------------------------------------*/
 int ffgpxv( fitsfile *fptr,   /* I - FITS file pointer                       */
             int  datatype,    /* I - datatype of the value                   */
@@ -28,8 +29,10 @@ int ffgpxv( fitsfile *fptr,   /* I - FITS file pointer                       */
 */
 {
     int naxis, ii;
+    char cdummy;
+    int nullcheck = 1;
     long naxes[9];
-    OFF_T dimsize = 1, firstelem;
+    LONGLONG dimsize = 1, firstelem;
 
     if (*status > 0 || nelem == 0)   /* inherit input status value if > 0 */
         return(*status);
@@ -47,6 +50,15 @@ int ffgpxv( fitsfile *fptr,   /* I - FITS file pointer                       */
     }
     firstelem++;
 
+    if (fits_is_compressed_image(fptr, status))
+    {
+        /* this is a compressed image in a binary table */
+
+        fits_read_compressed_pixels(fptr, datatype, firstelem, nelem,
+            nullcheck, nulval, array, NULL, anynul, status);
+        return(*status);
+    }
+
     /*
       the primary array is represented as a binary table:
       each group of the primary array is a row in the table,
@@ -57,103 +69,101 @@ int ffgpxv( fitsfile *fptr,   /* I - FITS file pointer                       */
     if (datatype == TBYTE)
     {
       if (nulval == 0)
-        ffgpvb(fptr, 1, firstelem, nelem, 0,
-               (unsigned char *) array, anynul, status);
+        ffgclb(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (unsigned char *) array, &cdummy, anynul, status);
       else
-        ffgpvb(fptr, 1, firstelem, nelem, *(unsigned char *) nulval,
-               (unsigned char *) array, anynul, status);
+        ffgclb(fptr, 2, 1, firstelem, nelem, 1, 1, *(unsigned char *) nulval,
+               (unsigned char *) array, &cdummy, anynul, status);
     }
     else if (datatype == TSBYTE)
     {
       if (nulval == 0)
-        ffgpvsb(fptr, 1, firstelem, nelem, 0,
-               (signed char *) array, anynul, status);
+        ffgclsb(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (signed char *) array, &cdummy, anynul, status);
       else
-        ffgpvsb(fptr, 1, firstelem, nelem, *(signed char *) nulval,
-               (signed char *) array, anynul, status);
+        ffgclsb(fptr, 2, 1, firstelem, nelem, 1, 1, *(signed char *) nulval,
+               (signed char *) array, &cdummy, anynul, status);
     }
     else if (datatype == TUSHORT)
     {
       if (nulval == 0)
-        ffgpvui(fptr, 1, firstelem, nelem, 0,
-               (unsigned short *) array, anynul, status);
+        ffgclui(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (unsigned short *) array, &cdummy, anynul, status);
       else
-        ffgpvui(fptr, 1, firstelem, nelem, *(unsigned short *) nulval,
-               (unsigned short *) array, anynul, status);
+        ffgclui(fptr, 2, 1, firstelem, nelem, 1, 1, *(unsigned short *) nulval,
+               (unsigned short *) array, &cdummy, anynul, status);
     }
     else if (datatype == TSHORT)
     {
       if (nulval == 0)
-        ffgpvi(fptr, 1, firstelem, nelem, 0,
-               (short *) array, anynul, status);
+        ffgcli(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (short *) array, &cdummy, anynul, status);
       else
-        ffgpvi(fptr, 1, firstelem, nelem, *(short *) nulval,
-               (short *) array, anynul, status);
+        ffgcli(fptr, 2, 1, firstelem, nelem, 1, 1, *(short *) nulval,
+               (short *) array, &cdummy, anynul, status);
     }
     else if (datatype == TUINT)
     {
       if (nulval == 0)
-        ffgpvuk(fptr, 1, firstelem, nelem, 0,
-               (unsigned int *) array, anynul, status);
+        ffgcluk(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (unsigned int *) array, &cdummy, anynul, status);
       else
-        ffgpvuk(fptr, 1, firstelem, nelem, *(unsigned int *) nulval,
-               (unsigned int *) array, anynul, status);
+        ffgcluk(fptr, 2, 1, firstelem, nelem, 1, 1, *(unsigned int *) nulval,
+               (unsigned int *) array, &cdummy, anynul, status);
     }
     else if (datatype == TINT)
     {
       if (nulval == 0)
-        ffgpvk(fptr, 1, firstelem, nelem, 0,
-               (int *) array, anynul, status);
+        ffgclk(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (int *) array, &cdummy, anynul, status);
       else
-        ffgpvk(fptr, 1, firstelem, nelem, *(int *) nulval,
-               (int *) array, anynul, status);
+        ffgclk(fptr, 2, 1, firstelem, nelem, 1, 1, *(int *) nulval,
+               (int *) array, &cdummy, anynul, status);
     }
     else if (datatype == TULONG)
     {
       if (nulval == 0)
-        ffgpvuj(fptr, 1, firstelem, nelem, 0,
-               (unsigned long *) array, anynul, status);
+        ffgcluj(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (unsigned long *) array, &cdummy, anynul, status);
       else
-        ffgpvuj(fptr, 1, firstelem, nelem, *(unsigned long *) nulval,
-               (unsigned long *) array, anynul, status);
+        ffgcluj(fptr, 2, 1, firstelem, nelem, 1, 1, *(unsigned long *) nulval,
+               (unsigned long *) array, &cdummy, anynul, status);
     }
     else if (datatype == TLONG)
     {
       if (nulval == 0)
-        ffgpvj(fptr, 1, firstelem, nelem, 0,
-               (long *) array, anynul, status);
+        ffgclj(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (long *) array, &cdummy, anynul, status);
       else
-        ffgpvj(fptr, 1, firstelem, nelem, *(long *) nulval,
-               (long *) array, anynul, status);
+        ffgclj(fptr, 2, 1, firstelem, nelem, 1, 1, *(long *) nulval,
+               (long *) array, &cdummy, anynul, status);
     }
     else if (datatype == TLONGLONG)
     {
       if (nulval == 0)
-        ffgpvjj(fptr, 1, firstelem, nelem, 0,
-               (LONGLONG *) array, anynul, status);
+        ffgcljj(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (LONGLONG *) array, &cdummy, anynul, status);
       else
-        ffgpvjj(fptr, 1, firstelem, nelem, *(LONGLONG *) nulval,
-               (LONGLONG *) array, anynul, status);
+        ffgcljj(fptr, 2, 1, firstelem, nelem, 1, 1, *(LONGLONG *) nulval,
+               (LONGLONG *) array, &cdummy, anynul, status);
     }
     else if (datatype == TFLOAT)
     {
       if (nulval == 0)
-        ffgpve(fptr, 1, firstelem, nelem, 0,
-               (float *) array, anynul, status);
+        ffgcle(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (float *) array, &cdummy, anynul, status);
       else
-        ffgpve(fptr, 1, firstelem, nelem, *(float *) nulval,
-               (float *) array, anynul, status);
+        ffgcle(fptr, 2, 1, firstelem, nelem, 1, 1, *(float *) nulval,
+               (float *) array, &cdummy, anynul, status);
     }
     else if (datatype == TDOUBLE)
     {
       if (nulval == 0)
-        ffgpvd(fptr, 1, firstelem, nelem, 0,
-               (double *) array, anynul, status);
+        ffgcld(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (double *) array, &cdummy, anynul, status);
       else
-      {
-        ffgpvd(fptr, 1, firstelem, nelem, *(double *) nulval,
-               (double *) array, anynul, status);
-      }
+        ffgcld(fptr, 2, 1, firstelem, nelem, 1, 1, *(double *) nulval,
+               (double *) array, &cdummy, anynul, status);
     }
     else
       *status = BAD_DATATYPE;
@@ -179,8 +189,9 @@ int ffgpxf( fitsfile *fptr,   /* I - FITS file pointer                       */
 */
 {
     int naxis, ii;
+    int nullcheck = 2;
     long naxes[9];
-    OFF_T dimsize = 1, firstelem;
+    LONGLONG dimsize = 1, firstelem;
 
     if (*status > 0 || nelem == 0)   /* inherit input status value if > 0 */
         return(*status);
@@ -198,6 +209,15 @@ int ffgpxf( fitsfile *fptr,   /* I - FITS file pointer                       */
     }
     firstelem++;
 
+    if (fits_is_compressed_image(fptr, status))
+    {
+        /* this is a compressed image in a binary table */
+
+        fits_read_compressed_pixels(fptr, datatype, firstelem, nelem,
+            nullcheck, NULL, array, nullarray, anynul, status);
+        return(*status);
+    }
+
     /*
       the primary array is represented as a binary table:
       each group of the primary array is a row in the table,
@@ -207,57 +227,57 @@ int ffgpxf( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     if (datatype == TBYTE)
     {
-        ffgpfb(fptr, 1, firstelem, nelem, 
+        ffgclb(fptr, 2, 1, firstelem, nelem, 1, 2, 0,
                (unsigned char *) array, nullarray, anynul, status);
     }
     else if (datatype == TSBYTE)
     {
-        ffgpfsb(fptr, 1, firstelem, nelem, 
+        ffgclsb(fptr, 2, 1, firstelem, nelem, 1, 2, 0,
                (signed char *) array, nullarray, anynul, status);
     }
     else if (datatype == TUSHORT)
     {
-        ffgpfui(fptr, 1, firstelem, nelem, 
+        ffgclui(fptr, 2, 1, firstelem, nelem, 1, 2, 0,
                (unsigned short *) array, nullarray, anynul, status);
     }
     else if (datatype == TSHORT)
     {
-        ffgpfi(fptr, 1, firstelem, nelem, 
+        ffgcli(fptr, 2, 1, firstelem, nelem, 1, 2, 0,
                (short *) array, nullarray, anynul, status);
     }
     else if (datatype == TUINT)
     {
-        ffgpfuk(fptr, 1, firstelem, nelem, 
+        ffgcluk(fptr, 2, 1, firstelem, nelem, 1, 2, 0,
                (unsigned int *) array, nullarray, anynul, status);
     }
     else if (datatype == TINT)
     {
-        ffgpfk(fptr, 1, firstelem, nelem, 
+        ffgclk(fptr, 2, 1, firstelem, nelem, 1, 2, 0,
                (int *) array, nullarray, anynul, status);
     }
     else if (datatype == TULONG)
     {
-        ffgpfuj(fptr, 1, firstelem, nelem, 
+        ffgcluj(fptr, 2, 1, firstelem, nelem, 1, 2, 0,
                (unsigned long *) array, nullarray, anynul, status);
     }
     else if (datatype == TLONG)
     {
-        ffgpfj(fptr, 1, firstelem, nelem,
+        ffgclj(fptr, 2, 1, firstelem, nelem, 1, 2, 0,
                (long *) array, nullarray, anynul, status);
     }
     else if (datatype == TLONGLONG)
     {
-        ffgpfjj(fptr, 1, firstelem, nelem,
+        ffgcljj(fptr, 2, 1, firstelem, nelem, 1, 2, 0,
                (LONGLONG *) array, nullarray, anynul, status);
     }
     else if (datatype == TFLOAT)
     {
-        ffgpfe(fptr, 1, firstelem, nelem, 
+        ffgcle(fptr, 2, 1, firstelem, nelem, 1, 2, 0,
                (float *) array, nullarray, anynul, status);
     }
     else if (datatype == TDOUBLE)
     {
-        ffgpfd(fptr, 1, firstelem, nelem,
+        ffgcld(fptr, 2, 1, firstelem, nelem, 1, 2, 0,
                (double *) array, nullarray, anynul, status);
     }
     else
@@ -402,8 +422,8 @@ int ffgsv(  fitsfile *fptr,   /* I - FITS file pointer                       */
 /*--------------------------------------------------------------------------*/
 int ffgpv(  fitsfile *fptr,   /* I - FITS file pointer                       */
             int  datatype,    /* I - datatype of the value                   */
-            long firstelem,   /* I - first vector element to read (1 = 1st)  */
-            long nelem,       /* I - number of values to read                */
+            LONGLONG firstelem,   /* I - first vector element to read (1 = 1st)  */
+            LONGLONG nelem,       /* I - number of values to read                */
             void *nulval,     /* I - value for undefined pixels              */
             void *array,      /* O - array of values that are returned       */
             int  *anynul,     /* O - set to 1 if any values are null; else 0 */
@@ -538,8 +558,8 @@ int ffgpv(  fitsfile *fptr,   /* I - FITS file pointer                       */
 /*--------------------------------------------------------------------------*/
 int ffgpf(  fitsfile *fptr,   /* I - FITS file pointer                       */
             int  datatype,    /* I - datatype of the value                   */
-            long firstelem,   /* I - first vector element to read (1 = 1st)  */
-            long nelem,       /* I - number of values to read                */
+            LONGLONG firstelem,   /* I - first vector element to read (1 = 1st)  */
+            LONGLONG nelem,       /* I - number of values to read                */
             void *array,      /* O - array of values that are returned       */
             char *nullarray,  /* O - array of null value flags               */
             int  *anynul,     /* O - set to 1 if any values are null; else 0 */
@@ -628,9 +648,9 @@ int ffgpf(  fitsfile *fptr,   /* I - FITS file pointer                       */
 int ffgcv(  fitsfile *fptr,   /* I - FITS file pointer                       */
             int  datatype,    /* I - datatype of the value                   */
             int  colnum,      /* I - number of column to write (1 = 1st col) */
-            long  firstrow,   /* I - first row to write (1 = 1st row)        */
-            long  firstelem,  /* I - first vector element to read (1 = 1st)  */
-            long nelem,       /* I - number of values to read                */
+            LONGLONG  firstrow,   /* I - first row to write (1 = 1st row)        */
+            LONGLONG  firstelem,  /* I - first vector element to read (1 = 1st)  */
+            LONGLONG nelem,       /* I - number of values to read                */
             void *nulval,     /* I - value for undefined pixels              */
             void *array,      /* O - array of values that are returned       */
             int  *anynul,     /* O - set to 1 if any values are null; else 0 */
@@ -805,9 +825,9 @@ int ffgcv(  fitsfile *fptr,   /* I - FITS file pointer                       */
 int ffgcf(  fitsfile *fptr,   /* I - FITS file pointer                       */
             int  datatype,    /* I - datatype of the value                   */
             int  colnum,      /* I - number of column to write (1 = 1st col) */
-            long  firstrow,   /* I - first row to write (1 = 1st row)        */
-            long  firstelem,  /* I - first vector element to read (1 = 1st)  */
-            long nelem,       /* I - number of values to read                */
+            LONGLONG  firstrow,   /* I - first row to write (1 = 1st row)        */
+            LONGLONG  firstelem,  /* I - first vector element to read (1 = 1st)  */
+            LONGLONG nelem,       /* I - number of values to read                */
             void *array,      /* O - array of values that are returned       */
             char *nullarray,  /* O - array of null value flags               */
             int  *anynul,     /* O - set to 1 if any values are null; else 0 */

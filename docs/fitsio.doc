@@ -309,7 +309,7 @@ A few other utility  programs are included with CFITSIO:
     fitscopy - copies any FITS file (especially useful in conjunction
                  with the CFITSIO's extended input filename syntax)
 
-    cookbook - a sample program that peforms common read and
+    cookbook - a sample program that performs common read and
                  write operations on a FITS file.
 
     iter_a, iter_b, iter_c - examples of the CFITSIO iterator routine
@@ -456,16 +456,24 @@ library (which in turn uses the gzip code) must conform to the
 provisions in the GNU General Public License.  A copy of the GNU
 license is included at the beginning of compress.c file.
 
-An alternate version of the compress.c file (called
-compress\_alternate.c) is provided for users who want to use the CFITSIO
+Similarly, the file wcsutil.c contains 2 slightly modified routines
+from the Classic AIPS package that are also distributed under the GNU
+General Public License.
+
+Alternate versions of the compress.c and wcsutil.c files (called
+compress\_alternate.c and wcsutil\_alternate.c) are provided for users 
+who want to use the CFITSIO
 library but are unwilling or unable to publicly release their software
-under the terms of the GNU General Public License.   This alternate
-version contains non-functional stubs for the file compression and
-uncompression routines used by CFITSIO.  Replace the file `compress.c'
-with `compress\_alternate.c' before compiling the CFITSIO library.  This
+under the terms of the GNU General Public License.   These alternate
+versions contains non-functional stubs for the file compression and
+uncompression routines and the world coordinate transformation routines
+used by CFITSIO.  Replace the file `compress.c'
+with `compress\_alternate.c' and 'wcsutil.c' with 'wcsutil\_alternate.c
+before compiling the CFITSIO library.  This
 will produce a version of CFITSIO which does not support reading or
-writing compressed FITS files but is otherwise identical to the
-standard version.  
+writing compressed FITS files, or doing image coordinate transformations,
+but is otherwise identical to the standard version.  
+
 
 **G.  Acknowledgements
 
@@ -1539,6 +1547,7 @@ by a backslash to force the UNIX shell to ignore it.
     "minimum"            min(x,y)   "maximum"              max(x,y)
     "cumulative sum"    accum(x)   "sequential difference" seqdiff(x)
     "if-then-else"       b?x:y
+    "angular separation"  angsep(ra1,dec1,ra2,de2) (all in degrees)
 -
 
     An alternate syntax for the min and max functions  has only a single
@@ -1553,6 +1562,12 @@ by a backslash to force the UNIX shell to ignore it.
     value in x causes a pair of nulls in the output.  The seqdiff and 
     accum functions are functional inverses, i.e., seqdiff(accum(x)) == x
     as long as no null values are present.
+    
+    The angsep function computes the angular separation in degrees 
+    between 2 celestial positions, where the first 2 parameters
+    give the RA-like and Dec-like coordinates (in decimal degrees)
+    of the first position, and the 3rd and 4th parameters give the
+    coordinates of the second position.
     
     The  following  type  casting  operators  are  available,  where the
     inclosing parentheses are required and taken  from  the  C  language
@@ -4797,8 +4812,7 @@ of flags which defines whether the corresponding data pixel is undefined.
 -
 >2  Put elements into an ASCII or binary table column (in the CDU)
     substituting the appropriate FITS null value for any elements that
-    are equal to NULLVAL.  This family of routines must NOT be used to 
-    write to  variable length array columns. For ASCII TABLE extensions, the
+    are equal to NULLVAL.   For ASCII TABLE extensions, the
     null value defined by the previous call to FTSNUL will be substituted;
     For integer FITS columns, in a binary table  the null value
     defined by the previous call to FTTNUL will be substituted;
@@ -5223,7 +5237,7 @@ The following utility subroutines may be useful for certain applications:
 
 >>1  Return the starting byte address of the CHDU and the next HDU.
 -
-        FTGHAD(iunit, > curaddr,nextaddr)
+        FTGHAD(iunit, > curaddr, nextaddr)
 -
 >>2  Convert a character string to uppercase (operates in place).
 -
@@ -5232,14 +5246,15 @@ The following utility subroutines may be useful for certain applications:
 >3  Compare the input template string against the reference string
     to see if they match.  The template string may contain wildcard
     characters: '*' will match any sequence of characters (including
-    zero characters) and '%' will match any single character in the
-    reference string.  If CASESN = .true. then the match will be
+    zero characters) and '?' will match any single character in the
+    reference string. The '\#' character will match any consecutive string
+    of decimal digits (0 - 9).  If CASESN = .true. then the match will be
     case sensitive.  The returned MATCH parameter will be .true. if
     the 2 strings match, and EXACT will be .true. if the match is
     exact (i.e., if no wildcard characters were used in the match).
 >   Both strings must be 68 characters or less in length.
 -
-        FTCMPS(str_template,string,casesen, > match,exact)
+        FTCMPS(str_template, string, casesen, > match, exact)
 -
 
 >4  Test that the keyword name contains only legal characters: A-Z,0-9,
@@ -5271,7 +5286,8 @@ The following utility subroutines may be useful for certain applications:
     record, except under the HIERARCH convention where the name can
 >   be up to 70 characters in length.
 -
-        FTGKNM(card, > keyname, keylength, status)
+        FTGKNM(card, > keyname, keylength, staThe '\#' character will match any consecutive string
+    of decimal digits (0 - 9). tus)
 -  
 >8  Parse a header keyword record.
     This subroutine parses the input header record to return the value (as

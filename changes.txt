@@ -1,6 +1,76 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.000 - 1 March 2005
 
+  Enhancements:
+
+   - Made major changes to many of the CFITSIO routines to more generally 
+     support Large Files (> 2.1 GB).  These changes are intended to 
+     be 100% backward compatible with software that used the previous 
+     versions of CFITSIO.  The datatype of many of the integer parameters 
+     in the CFITSIO functions has been changed from 'long' to 'LONGLONG', 
+     which is typedef'ed to be equivalent to an 8-byte integer datatype on 
+     each platform. With these changes, CFITSIO supports the following:
+        - integer FITS keywords with absolute values > 2**31
+        - FITS files with total sizes > 2**31 bytes
+	- FITS tables in which the number of rows, the row width, or
+	  the size of the heap is > 2**31 bytes
+	- FITS images with dimensions > 2**31 bytes (support is still 
+	  somewhat limited, with full support to be added later).
+
+   - added another lexical parser function (thanks to Craig Markwardt,
+     GSFC): angsep computes the angular separation between 2 positions
+     on the celestial sphere.
+  
+   - modified the image subset extraction code (e.g., when specifying
+     an image subregion when opening the file, such as 
+     'myimage.fits[21:40, 81:90]') so that in addition to
+     updating the values of the primary WCS keywords CRPIXk, CDELTi, and
+     CDj_i in the extracted/binned image, it also looks for and updates 
+     any secondary WCS keywords (e.g., 'CRPIX1P').
+
+   - made cosmetic change to group.c, so that when a group table is
+     copied, any extra columns will be appended after the last existing
+     column, instead of being inserted before the last column.
+     
+   - modified the routines that read tile compressed images to support
+     NULL as the input value for the 'anynul' parameter (meaning the
+     calling program does not want the value of 'anynul' returned to it).
+      
+   - when constructing or parsing a year/month/day character string,
+     (e.g, when writing the DATE keyword) the routines now rigorously
+     verify that the input day value is valid for the given month 
+     (including leap years).
+
+   - added some checks in cfileio.c to detect if some vital parameters
+     that are stored in memory have been corrupted.  This can occur if
+     a user's program writes to areas of memory that it did not allocate.
+
+   - added the wcsutil_alternate.c source code file which contains
+     non-working stubs for the 2 Classic AIPS world coordinate
+     conversion routines that are distributed under the GNU General
+     Public License.  Users who are unwilling or unable to distribute
+     their software under the General Public License may use this 
+     alternate source file which has no GPL restrictions, instead
+     of wcsutil.c.  This will have no effect on programs that use 
+     CFITSIO as long as they do not call the fits_pix_to_world/ffwldp
+     or fits_world_to_pix/ffxypx routines.
+     
+   Bug Fixes
+   
+   - in ffdtdm (which parses the TDIMn keyword value), the check for
+     consistency between the length of the array defined by TDIMn and
+     the size of the TFORMn repeat value, is now not performed for variable
+     length array columns (which always have repeat = 1).
+
+   - fixed byteswaping problem when writing null values to non-standard
+     long integer FITS images with BITPIX = 64 and FITS table columns with
+     TFORMn = 'K'.
+
+   - fixed buffer overflow problem in fits_parse_template/ffgthd that
+     occurred only if the input template keyword value string was much
+     longer than can fit in an 80-char header record.
+     
 Version 2.501 - 2 December 2004
 
   New Routines:
@@ -252,7 +322,7 @@ Version 2.470 - 18 August 2003
     support the new AMD Opteron 64-bit processor
 
   - modified configure to not use the -fast compiler flag on Solaris
-    platforms when using the proprietary Solaris cc compilar.  This
+    platforms when using the proprietary Solaris cc compiler.  This
     flag causes compilation problems in eval_y.c (compiler just
     hangs forever).
 
@@ -376,7 +446,7 @@ Version 2.440 - 8 January 2003
   Bug fixes:
 
   - in fits_decompress_img, needed to add a call to ffpscl to turn
-    off the BZERO and BSCALE scaline when reading the compressed image.
+    off the BZERO and BSCALE scaling when reading the compressed image.
 
 Version 2.430 - 4 November 2002
 

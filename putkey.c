@@ -44,7 +44,7 @@ int ffcrim(fitsfile *fptr,      /* I - FITS file pointer           */
 /*--------------------------------------------------------------------------*/
 int ffcrtb(fitsfile *fptr,  /* I - FITS file pointer                        */
            int tbltype,     /* I - type of table to create                  */
-           long naxis2,     /* I - number of rows in the table              */
+           LONGLONG naxis2,     /* I - number of rows in the table              */
            int tfields,     /* I - number of columns in the table           */
            char **ttype,    /* I - name of each column                      */
            char **tform,    /* I - value of TFORMn keyword for each column  */
@@ -55,7 +55,8 @@ int ffcrtb(fitsfile *fptr,  /* I - FITS file pointer                        */
   Create a table extension in a FITS file. 
 */
 {
-    long naxis1 = 0, *tbcol = 0;
+    LONGLONG naxis1 = 0;
+    long *tbcol = 0;
 
     if (*status > 0)
         return(*status);
@@ -76,7 +77,6 @@ int ffcrtb(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (tbltype == BINARY_TBL)
     {
       /* write the required header keywords. This will write PCOUNT = 0 */
-      /* so variable length array columns are not supported             */
       ffphbn(fptr, naxis2, tfields, ttype, tform, tunit, extnm, 0, status);
     }
     else if (tbltype == ASCII_TBL)
@@ -214,6 +214,10 @@ int ffpky( fitsfile *fptr,     /* I - FITS file pointer        */
     else if (datatype == TLONG)
     {
         ffpkyj(fptr, keyname, *(long *) value, comm, status);
+    }
+    else if (datatype == TLONGLONG)
+    {
+        ffpkyjj(fptr, keyname, *(LONGLONG *) value, comm, status);
     }
     else if (datatype == TFLOAT)
     {
@@ -532,6 +536,29 @@ int ffpkyj( fitsfile *fptr,     /* I - FITS file pointer        */
         return(*status);
 
     ffi2c(value, valstring, status);   /* convert to formatted string */
+    ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword*/
+    ffprec(fptr, card, status);  /* write the keyword*/
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffpkyjj( fitsfile *fptr,     /* I - FITS file pointer        */
+            char *keyname,      /* I - name of keyword to write */
+            LONGLONG value,     /* I - keyword value            */
+            char *comm,         /* I - keyword comment          */
+            int  *status)       /* IO - error status            */
+/*
+  Write (put) the keyword, value and comment into the FITS header.
+  Writes an integer keyword value.
+*/
+{
+    char valstring[FLEN_VALUE];
+    char card[FLEN_CARD];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    ffii2c(value, valstring, status);   /* convert to formatted string */
     ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword*/
     ffprec(fptr, card, status);  /* write the keyword*/
 
@@ -881,6 +908,75 @@ int ffpdat( fitsfile *fptr,      /* I - FITS file pointer  */
 
     return(*status);
 }
+/*-------------------------------------------------------------------*/
+int ffverifydate(int year,          /* I - year (0 - 9999)           */
+                 int month,         /* I - month (1 - 12)            */
+                 int day,           /* I - day (1 - 31)              */
+                 int   *status)     /* IO - error status             */
+/*
+  Verify that the date is valid
+*/
+{
+    int ndays[] = {0,31,28,31,30,31,30,31,31,30,31,30,31};
+    char errmsg[81];
+    
+
+    if (year < 0 || year > 9999)
+    {
+       sprintf(errmsg, 
+       "input year value = %d is out of range 0 - 9999", year);
+       ffpmsg(errmsg);
+       return(*status = BAD_DATE);
+    }
+    else if (month < 1 || month > 12)
+    {
+       sprintf(errmsg, 
+       "input month value = %d is out of range 1 - 12", month);
+       ffpmsg(errmsg);
+       return(*status = BAD_DATE);
+    }
+    
+    if (ndays[month] == 31) {
+        if (day < 1 || day > 31)
+        {
+           sprintf(errmsg, 
+           "input day value = %d is out of range 1 - 31 for month %d", day, month);
+           ffpmsg(errmsg);
+           return(*status = BAD_DATE);
+        }
+    } else if (ndays[month] == 30) {
+        if (day < 1 || day > 30)
+        {
+           sprintf(errmsg, 
+           "input day value = %d is out of range 1 - 30 for month %d", day, month);
+           ffpmsg(errmsg);
+           return(*status = BAD_DATE);
+        }
+    } else {
+        if (day < 1 || day > 28)
+        {
+            if (day == 29)
+            {
+	      /* year is a leap year if it is divisible by 4 but not by 100,
+	         except years divisible by 400 are leap years
+	      */
+	        if ((year % 4 == 0 && year % 100 != 0 ) || year % 400 == 0)
+		   return (*status);
+		   
+ 	        sprintf(errmsg, 
+           "input day value = %d is out of range 1 - 28 for February %d (not leap year)", day, year);
+                ffpmsg(errmsg);
+	    } else {
+                sprintf(errmsg, 
+                "input day value = %d is out of range 1 - 28 (or 29) for February", day);
+                ffpmsg(errmsg);
+	    }
+	    
+            return(*status = BAD_DATE);
+        }
+    }
+    return(*status);
+}
 /*-----------------------------------------------------------------*/
 int ffgstm( char *timestr,   /* O  - returned system date and time string  */
             int  *timeref,   /* O - GMT = 0, Local time = 1  */
@@ -923,31 +1019,15 @@ int ffdt2s(int year,          /* I - year (0 - 9999)           */
   Construct a date character string
 */
 {
-    char errmsg[81];
-
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
-    if (year < 0 || year > 9999)
+    *datestr = '\0';
+    
+    if (ffverifydate(year, month, day, status) > 0)
     {
-       sprintf(errmsg, 
-       "input year value is out of range 0 - 9999: %d (ffdt2s)", year);
-       ffpmsg(errmsg);
-       return(*status = BAD_DATE);
-    }
-    else if (month < 1 || month > 12)
-    {
-       sprintf(errmsg, 
-       "input month value is out of range 1 - 12: %d (ffdt2s)", month);
-       ffpmsg(errmsg);
-       return(*status = BAD_DATE);
-    }
-    else if (day < 1 || day > 31)
-    {
-       sprintf(errmsg, 
-       "input day value is out of range 1 - 31: %d (ffdt2s)", day);
-       ffpmsg(errmsg);
-       return(*status = BAD_DATE);
+        ffpmsg("invalid date (ffdt2s)");
+        return(*status);
     }
 
     if (year >= 1900 && year <= 1998)  /* use old 'dd/mm/yy' format */
@@ -965,14 +1045,20 @@ int ffs2dt(char *datestr,   /* I - date string: "YYYY-MM-DD" or "dd/mm/yy" */
            int *day,        /* O - day (1 - 31)                            */
            int   *status)   /* IO - error status                           */
 /*
-  Parse a date character string into year, month, and date values
+  Parse a date character string into year, month, and day values
 */
 {
-    int slen;
-    char errmsg[81];
+    int slen, lyear, lmonth, lday;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
+
+    if (year)
+        *year = 0;
+    if (month)
+        *month = 0;
+    if (day)
+        *day   = 0;
 
     if (!datestr)
     {
@@ -989,17 +1075,20 @@ int ffs2dt(char *datestr,   /* I - date string: "YYYY-MM-DD" or "dd/mm/yy" */
          && isdigit((int) datestr[6]) && isdigit((int) datestr[7]) )
         {
             /* this is an old format string: "dd/mm/yy" */
+            lyear  = atoi(&datestr[6]) + 1900;
+            lmonth = atoi(&datestr[3]);
+	    lday   = atoi(datestr);
+	    
             if (year)
-               *year = atoi(&datestr[6]) + 1900;
-
+                *year = lyear;
             if (month)
-                *month = atoi(&datestr[3]);
+                *month = lmonth;
             if (day)
-                *day   = atoi(datestr);
+                *day   = lday;
         }
         else
         {
-            ffpmsg("input date string has illegal format:");
+            ffpmsg("input date string has illegal format (ffs2dt):");
             ffpmsg(datestr);
             return(*status = BAD_DATE);
         }
@@ -1013,63 +1102,42 @@ int ffs2dt(char *datestr,   /* I - date string: "YYYY-MM-DD" or "dd/mm/yy" */
         {
             if (slen > 10 && datestr[10] != 'T')
             {
-                ffpmsg("input date string has illegal format:");
+                ffpmsg("input date string has illegal format (ffs2dt):");
                 ffpmsg(datestr);
                 return(*status = BAD_DATE);
             }
 
             /* this is a new format string: "yyyy-mm-dd" */
+            lyear  = atoi(datestr);
+            lmonth = atoi(&datestr[5]);
+            lday   = atoi(&datestr[8]);
+
             if (year)
-               *year = atoi(datestr);
-
+               *year  = lyear;
             if (month)
-               *month = atoi(&datestr[5]);
-
+               *month = lmonth;
             if (day)
-               *day   = atoi(&datestr[8]);
+               *day   = lday;
         }
         else
         {
-                ffpmsg("input date string has illegal format:");
+                ffpmsg("input date string has illegal format (ffs2dt):");
                 ffpmsg(datestr);
                 return(*status = BAD_DATE);
         }
     }
     else
     {
-                ffpmsg("input date string has illegal format:");
+                ffpmsg("input date string has illegal format (ffs2dt):");
                 ffpmsg(datestr);
                 return(*status = BAD_DATE);
     }
 
 
-    if (year)
-       if (*year < 0 || *year > 9999)
-       {
-          sprintf(errmsg, 
-          "year value is out of range 0 - 9999: %d (ffs2dt)", *year);
-          ffpmsg(errmsg);
-          return(*status = BAD_DATE);
-       }
-
-    if (month)
-       if (*month < 1 || *month > 12)
-       {
-          sprintf(errmsg, 
-          "month value is out of range 1 - 12: %d (ffs2dt)", *month);
-          ffpmsg(errmsg);
-          return(*status = BAD_DATE);
-       }
-
-
-    if (day)
-       if (*day < 1 || *day > 31)
-       {
-          sprintf(errmsg, 
-          "day value is out of range 1 - 31: %d (ffs2dt)", *day);
-          ffpmsg(errmsg);
-          return(*status = BAD_DATE);
-       }
+    if (ffverifydate(lyear, lmonth, lday, status) > 0)
+    {
+        ffpmsg("invalid date (ffs2dt)");
+    }
 
     return(*status);
 }
@@ -1094,28 +1162,18 @@ int fftm2s(int year,          /* I - year (0 - 9999)           */
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
-    if (year < 0 || year > 9999)
-    {
-       sprintf(errmsg, 
-       "input year value is out of range 0 - 9999: %d (fftm2s)", year);
-       ffpmsg(errmsg);
-       return(*status = BAD_DATE);
+    *datestr='\0';
+
+    if (year != 0 || month != 0 || day !=0)
+    { 
+        if (ffverifydate(year, month, day, status) > 0)
+	{
+            ffpmsg("invalid date (fftm2s)");
+            return(*status);
+        }
     }
-    else if (month < 0 || month > 12)
-    {
-       sprintf(errmsg, 
-       "input month value is out of range 0 - 12: %d (fftm2s)", month);
-       ffpmsg(errmsg);
-       return(*status = BAD_DATE);
-    }
-    else if (day < 0 || day > 31)
-    {
-       sprintf(errmsg, 
-       "input day value is out of range 0 - 31: %d (fftm2s)", day);
-       ffpmsg(errmsg);
-       return(*status = BAD_DATE);
-    }
-    else if (hour < 0 || hour > 23)
+
+    if (hour < 0 || hour > 23)
     {
        sprintf(errmsg, 
        "input hour value is out of range 0 - 23: %d (fftm2s)", hour);
@@ -1189,20 +1247,24 @@ int ffs2tm(char *datestr,     /* I - date string: "YYYY-MM-DD"    */
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
+    if (year)
+       *year   = 0;
+    if (month)
+       *month  = 0;
+    if (day)
+       *day    = 0;
+    if (hour)
+       *hour   = 0;
+    if (minute)
+       *minute = 0;
+    if (second)
+       *second = 0.;
+
     if (!datestr)
     {
         ffpmsg("error: null input date string (ffs2tm)");
         return(*status = BAD_DATE);   /* Null datestr pointer ??? */
     }
-
-    if (hour)
-       *hour   = 0;
-
-    if (minute)
-       *minute = 0;
-
-    if (second)
-       *second = 0.;
 
     if (datestr[2] == '/' || datestr[4] == '-')
     {
@@ -1254,15 +1316,6 @@ int ffs2tm(char *datestr,     /* I - date string: "YYYY-MM-DD"    */
     }
     else   /* no date fields */
     {
-        if (year)
-           *year = 0;
-
-        if (month)
-           *month = 0;
-
-        if (day)
-           *day = 0;
-
         if (datestr[2] == ':' && datestr[5] == ':')   /* time string */
         {
             if (isdigit((int) datestr[0]) && isdigit((int) datestr[1])
@@ -1532,6 +1585,64 @@ int ffpknj( fitsfile *fptr,     /* I - FITS file pointer                    */
             ffpkyj(fptr, keyname, value[ii], tcomment, status);
         else
             ffpkyj(fptr, keyname, value[ii], comm[ii], status);
+
+        if (*status > 0)
+            return(*status);
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffpknjj( fitsfile *fptr,    /* I - FITS file pointer                    */
+            char *keyroot,      /* I - root name of keywords to write       */
+            int  nstart,        /* I - starting index number                */
+            int  nkey,          /* I - number of keywords to write          */
+            LONGLONG *value,    /* I - array of keyword values              */
+            char *comm[],       /* I - array of pointers to keyword comment */
+            int  *status)       /* IO - error status                        */
+/*
+  Write (put) an indexed array of keywords with index numbers between
+  NSTART and (NSTART + NKEY -1) inclusive.  Write integer keywords
+*/
+{
+    char keyname[FLEN_KEYWORD], tcomment[FLEN_COMMENT];
+    int ii, jj, repeat, len;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    /* check if first comment string is to be repeated for all the keywords */
+    /* by looking to see if the last non-blank character is a '&' char      */
+
+    repeat = 0;
+
+    if (comm)
+    {
+      len = strlen(comm[0]);
+
+      while (len > 0  && comm[0][len - 1] == ' ')
+        len--;                               /* ignore trailing blanks */
+
+      if (comm[0][len - 1] == '&')
+      {
+        len = minvalue(len, FLEN_COMMENT);
+        tcomment[0] = '\0';
+        strncat(tcomment, comm[0], len-1); /* don't copy the final '&' char */
+        repeat = 1;
+      }
+    }
+    else
+    {
+      repeat = 1;
+      tcomment[0] = '\0';
+    }
+
+    for (ii=0, jj=nstart; ii < nkey; ii++, jj++)
+    {
+        ffkeyn(keyroot, jj, keyname, status);
+        if (repeat)
+            ffpkyjj(fptr, keyname, value[ii], tcomment, status);
+        else
+            ffpkyjj(fptr, keyname, value[ii], comm[ii], status);
 
         if (*status > 0)
             return(*status);
@@ -2077,8 +2188,8 @@ int ffphpr( fitsfile *fptr, /* I - FITS file pointer                        */
 }
 /*--------------------------------------------------------------------------*/
 int ffphtb(fitsfile *fptr,  /* I - FITS file pointer                        */
-           long naxis1,     /* I - width of row in the table                */
-           long naxis2,     /* I - number of rows in the table              */
+           LONGLONG naxis1,     /* I - width of row in the table                */
+           LONGLONG naxis2,     /* I - number of rows in the table              */
            int tfields,     /* I - number of columns in the table           */
            char **ttype,    /* I - name of each column                      */
            long *tbcol,     /* I - byte offset in row to each column        */
@@ -2091,7 +2202,7 @@ int ffphtb(fitsfile *fptr,  /* I - FITS file pointer                        */
 */
 {
     int ii, ncols, gotmem = 0;
-    long rowlen;
+    long rowlen; /* must be 'long' because it is passed to ffgabc */
     char tfmt[30], name[FLEN_KEYWORD], comm[FLEN_COMMENT];
 
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
@@ -2130,8 +2241,8 @@ int ffphtb(fitsfile *fptr,  /* I - FITS file pointer                        */
     ffpkys(fptr, "XTENSION", "TABLE", "ASCII table extension", status);
     ffpkyj(fptr, "BITPIX", 8, "8-bit ASCII characters", status);
     ffpkyj(fptr, "NAXIS", 2, "2-dimensional ASCII table", status);
-    ffpkyj(fptr, "NAXIS1", rowlen, "width of table in characters", status);
-    ffpkyj(fptr, "NAXIS2", naxis2, "number of rows in table", status);
+    ffpkyjj(fptr, "NAXIS1", rowlen, "width of table in characters", status);
+    ffpkyjj(fptr, "NAXIS2", naxis2, "number of rows in table", status);
     ffpkyj(fptr, "PCOUNT", 0, "no group parameters (required keyword)", status);
     ffpkyj(fptr, "GCOUNT", 1, "one data group (required keyword)", status);
     ffpkyj(fptr, "TFIELDS", tfields, "number of fields in each row", status);
@@ -2187,20 +2298,21 @@ int ffphtb(fitsfile *fptr,  /* I - FITS file pointer                        */
 }
 /*--------------------------------------------------------------------------*/
 int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
-           long naxis2,     /* I - number of rows in the table              */
+           LONGLONG naxis2,     /* I - number of rows in the table              */
            int tfields,     /* I - number of columns in the table           */
            char **ttype,    /* I - name of each column                      */
            char **tform,    /* I - value of TFORMn keyword for each column  */
            char **tunit,    /* I - value of TUNITn keyword for each column  */
            char *extnm,   /* I - value of EXTNAME keyword, if any         */
-           long pcount,     /* I - size of the variable length heap area    */
+           LONGLONG pcount,     /* I - size of the variable length heap area    */
            int *status)     /* IO - error status                            */
 /*
   Put required Header keywords into the Binary Table:
 */
 {
     int ii, datatype, iread = 0;
-    long repeat, width, naxis1;
+    long repeat, width;
+    LONGLONG naxis1;
 
     char tfmt[30], name[FLEN_KEYWORD], comm[FLEN_COMMENT];
     char *cptr;
@@ -2235,15 +2347,19 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
             naxis1 += (repeat + 7) / 8;
         else if (datatype > 0)
             naxis1 += repeat * (datatype / 10);
-        else   /* this is a variable length descriptor (neg. datatype) */
+        else if (tform[ii][0] == 'P' || tform[ii][1] == 'P')
+           /* this is a 'P' variable length descriptor (neg. datatype) */
             naxis1 += 8;
+        else
+           /* this is a 'Q' variable length descriptor (neg. datatype) */
+            naxis1 += 16;
 
         if (*status > 0)
             break;       /* abort loop on error */
     }
 
-    ffpkyj(fptr, "NAXIS1", naxis1, "width of table in bytes", status);
-    ffpkyj(fptr, "NAXIS2", naxis2, "number of rows in table", status);
+    ffpkyjj(fptr, "NAXIS1", naxis1, "width of table in bytes", status);
+    ffpkyjj(fptr, "NAXIS2", naxis2, "number of rows in table", status);
 
     /*
       the initial value of PCOUNT (= size of the variable length array heap)
@@ -2430,6 +2546,43 @@ int ffi2c(long ival,   /* I - value to be converted to a string */
         ffpmsg("Error in ffi2c converting integer to string");
         *status = BAD_I2C;
     }
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffii2c(LONGLONG ival,  /* I - value to be converted to a string */
+          char *cval,     /* O - character string representation of the value */
+          int *status)    /* IO - error status */
+/*
+  convert  value to a null-terminated formatted string.
+*/
+{
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    cval[0] = '\0';
+
+/* Microsoft Visual C++ uses a strange '%I64d' syntax */
+#if defined(_MSC_VER)
+    /* Microsoft Visual C++ uses a strange '%I64d' syntax  for 8-byte integers */
+    if (sprintf(cval, "%I64d", ival) < 0)
+    {
+        ffpmsg("Error in ffii2c converting integer to string");
+        *status = BAD_I2C;
+    }
+#elif (USE_LL_SUFFIX == 1)
+    if (sprintf(cval, "%lld", ival) < 0)
+    {
+        ffpmsg("Error in ffii2c converting integer to string");
+        *status = BAD_I2C;
+    }
+#else
+    if (sprintf(cval, "%ld", ival) < 0)
+    {
+        ffpmsg("Error in ffii2c converting integer to string");
+        *status = BAD_I2C;
+    }
+#endif
 
     return(*status);
 }

@@ -202,16 +202,23 @@ library (which in turn uses the gzip code) must conform to the
 provisions in the GNU General Public License.  A copy of the GNU
 license is included at the beginning of compress.c file.
 
-An alternate version of the compress.c file (called
-compress\_alternate.c) is provided for users who want to use the CFITSIO
+Similarly, the file wcsutil.c contains 2 slightly modified routines
+from the Classic AIPS package that are also distributed under the GNU
+General Public License.
+
+Alternate versions of the compress.c and wcsutil.c files (called
+compress\_alternate.c and wcsutil\_alternate.c) are provided for users 
+who want to use the CFITSIO
 library but are unwilling or unable to publicly release their software
-under the terms of the GNU General Public License.   This alternate
-version contains non-functional stubs for the file compression and
-uncompression routines used by CFITSIO.  Replace the file `compress.c'
-with `compress\_alternate.c' before compiling the CFITSIO library.  This
+under the terms of the GNU General Public License.   These alternate
+versions contains non-functional stubs for the file compression and
+uncompression routines and the world coordinate transformation routines
+used by CFITSIO.  Replace the file `compress.c'
+with `compress\_alternate.c' and 'wcsutil.c' with 'wcsutil\_alternate.c
+before compiling the CFITSIO library.  This
 will produce a version of CFITSIO which does not support reading or
-writing compressed FITS files but is otherwise identical to the
-standard version.  
+writing compressed FITS files, or doing image coordinate transformations,
+but is otherwise identical to the standard version.  
 
 *II.  Creating the CFITSIO Library
  
@@ -2562,8 +2569,7 @@ rows if required) and not the number of table cells.
    For floating point columns  the special IEEE NaN (Not-a-Number)
    value will be written into the FITS file.  If a null pointer is
    entered for nulval, then the null value is ignored and this routine
-   behaves the same as the first routine. The second routine must not
-   be used to write to variable length array columns.  The third routine
+   behaves the same as the first routine.  The third routine
    simply writes undefined pixel values to the column.
    \label{ffpcl} \label{ffpcn} \label{ffpclu}
 -
@@ -2879,12 +2885,13 @@ The following utility routines may be useful for certain applications.
 -
   void fits_uppercase / ffupch (char *string)
 -
->4   Compare the input template string against the reference string
+>4  Compare the input template string against the reference string
     to see if they match.  The template string may contain wildcard
     characters: '*' will match any sequence of characters (including
-    zero characters) and '\%' will match any single character in the
-    reference string.  If casesen = CASESEN = TRUE then the match will be
-    case sensitive, otherwise the case of the letters will be ignored
+    zero characters) and '?' will match any single character in the
+    reference string.  The '\#' character will match any consecutive string
+    of decimal digits (0 - 9).  If casesen = CASESEN = TRUE then the match will
+    be case sensitive, otherwise the case of the letters will be ignored
     if casesen = CASEINSEN = FALSE.  The returned MATCH parameter will be 
     TRUE if the 2 strings match, and EXACT will be TRUE if the match is
     exact (i.e., if no wildcard characters were used in the match).
@@ -5093,8 +5100,7 @@ parameters used in these routines.
 -
 >2  Write elements into an ASCII or binary table column
     substituting the appropriate FITS null value for any elements that
-    are equal to the nulval parameter.  This routines must not be used to
->   write to  variable length array columns.  \label{ffpcnx}
+>    are equal to the nulval parameter.    \label{ffpcnx}
 -
   int fits_write_colnull_[log, byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
       ffpcn[l,b,i,ui,k,uk,j,uj,jj,e,d]
@@ -5103,8 +5109,7 @@ parameters used in these routines.
 -
 >3  Write string elements into a binary table column (in the CDU)
     substituting the FITS null value for any elements that
-    are equal to the nulstr string.  This routine must NOT be 
->   used to write to  variable length array columns. \label{ffpcns}
+>   are equal to the nulstr string.  \label{ffpcns}
 -
   int fits_write_colnull_str / ffpcns
       (fitsfile *fptr, int colnum, long firstrow, long firstelem,
@@ -6210,7 +6215,8 @@ by a backslash to force the UNIX shell to ignore it.
     "modulus"           i % j      "random # [0.0,1.0)"    random()
     "minimum"           min(x,y)   "maximum"               max(x,y)
     "cumulative sum"    accum(x)   "sequential difference" seqdiff(x)
-    "if-then-else"      b?x:y
+    "if-then-else"      b?x:y      
+    "angular separation"  angsep(ra1,dec1,ra2,de2) (all in degrees)
 -
 
     An alternate syntax for the min and max functions  has only a single
@@ -6225,6 +6231,12 @@ by a backslash to force the UNIX shell to ignore it.
     value in x causes a pair of nulls in the output.  The seqdiff and 
     accum functions are functional inverses, i.e., seqdiff(accum(x)) == x
     as long as no null values are present.
+    
+    The angsep function computes the angular separation in degrees 
+    between 2 celestial positions, where the first 2 parameters
+    give the RA-like and Dec-like coordinates (in decimal degrees)
+    of the first position, and the 3rd and 4th parameters give the
+    coordinates of the second position.
     
     The  following  type  casting  operators  are  available,  where the
     inclosing parentheses are required and taken  from  the  C  language

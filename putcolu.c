@@ -9,17 +9,15 @@
 #include <stdlib.h>
 #include "fitsio2.h"
 
-/* declare variable for passing large firstelem values between routines */
-extern OFF_T large_first_elem_val;
-
 /*--------------------------------------------------------------------------*/
 int ffppru( fitsfile *fptr,  /* I - FITS file pointer                       */
             long  group,      /* I - group to write(1 = 1st group)          */
-            long  firstelem,  /* I - first vector element to write(1 = 1st) */
-            long  nelem,      /* I - number of values to write              */
+            LONGLONG  firstelem,  /* I - first vector element to write(1 = 1st) */
+            LONGLONG  nelem,      /* I - number of values to write              */
             int  *status)     /* IO - error status                          */
 /*
   Write null values to the primary array.
+
 */
 {
     long row;
@@ -47,11 +45,12 @@ int ffppru( fitsfile *fptr,  /* I - FITS file pointer                       */
 }
 /*--------------------------------------------------------------------------*/
 int ffpprn( fitsfile *fptr,  /* I - FITS file pointer                       */
-            long  firstelem,  /* I - first vector element to write(1 = 1st) */
-            long  nelem,      /* I - number of values to write              */
+            LONGLONG  firstelem,  /* I - first vector element to write(1 = 1st) */
+            LONGLONG  nelem,      /* I - number of values to write              */
             int  *status)     /* IO - error status                          */
 /*
   Write null values to the primary array. (Doesn't support groups).
+
 */
 {
     long row = 1;
@@ -78,9 +77,9 @@ int ffpprn( fitsfile *fptr,  /* I - FITS file pointer                       */
 /*--------------------------------------------------------------------------*/
 int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
             int  colnum,     /* I - number of column to write (1 = 1st col) */
-            long  firstrow,  /* I - first row to write (1 = 1st row)        */
-            long  firstelem, /* I - first vector element to write (1 = 1st) */
-            long  nelempar,     /* I - number of values to write               */
+            LONGLONG  firstrow,  /* I - first row to write (1 = 1st row)        */
+            LONGLONG  firstelem, /* I - first vector element to write (1 = 1st) */
+            LONGLONG  nelempar,     /* I - number of values to write               */
             int  *status)    /* IO - error status                           */
 /*
   Set elements of a table column to the appropriate null value for the column
@@ -101,7 +100,8 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
     INT32BIT i4null, i8null[2];
     long twidth, incre, rownum, remain, next, ntodo;
     long tnull, ii, nelem;
-    OFF_T repeat, startpos, elemnum, large_elem, wrtptr, rowlen;
+    LONGLONG largeelem;
+    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen;
     double scale, zero;
     unsigned char i1null, lognul = 0;
     char tform[20], *cstring = 0;
@@ -115,10 +115,7 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     nelem = nelempar;
     
-    if (firstelem == USE_LARGE_VALUE)
-        large_elem = large_first_elem_val;
-    else
-        large_elem = firstelem;
+    largeelem = firstelem;
 
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
@@ -138,11 +135,11 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     if (abs(tcode) >= TCOMPLEX)
     { /* treat complex columns as pairs of numbers */
-      large_elem = (large_elem - 1) * 2 + 1;
+      largeelem = (largeelem - 1) * 2 + 1;
       nelem *= 2;
     }
     
-    if (ffgcpr( fptr, colnum, firstrow, large_elem, nelem, writemode, &scale,
+    if (ffgcpr( fptr, colnum, firstrow, largeelem, nelem, writemode, &scale,
        &zero, tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
@@ -211,7 +208,7 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
 
          i8null[1] = tnull;
 #if BYTESWAPPED
-         ffswap8( (double *) i8null, 1); /* reverse order of bytes */
+         ffswap4(i8null, 2); /* reverse order of bytes */
 #endif
       }
     }
@@ -231,7 +228,7 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
            in the current vector, which ever is smaller.
         */
         ntodo = minvalue(ntodo, (repeat - elemnum));
-        wrtptr = startpos + ((OFF_T)rownum * rowlen) + (elemnum * incre);
+        wrtptr = startpos + ((LONGLONG)rownum * rowlen) + (elemnum * incre);
 
         ffmbyt(fptr, wrtptr, IGNORE_EOF, status); /* move to write position */
 
@@ -335,9 +332,9 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
 /*--------------------------------------------------------------------------*/
 int ffpcluc( fitsfile *fptr,  /* I - FITS file pointer                       */
             int  colnum,     /* I - number of column to write (1 = 1st col) */
-            long  firstrow,  /* I - first row to write (1 = 1st row)        */
-            long  firstelem, /* I - first vector element to write (1 = 1st) */
-            long  nelem,     /* I - number of values to write               */
+            LONGLONG  firstrow,  /* I - first row to write (1 = 1st row)        */
+            LONGLONG  firstelem, /* I - first vector element to write (1 = 1st) */
+            LONGLONG  nelem,     /* I - number of values to write               */
             int  *status)    /* IO - error status                           */
 /*
   Set elements of a table column to the appropriate null value for the column
@@ -360,7 +357,7 @@ int ffpcluc( fitsfile *fptr,  /* I - FITS file pointer                       */
     INT32BIT i4null, i8null[2];
     long twidth, incre, rownum, remain, next, ntodo;
     long tnull, ii;
-    OFF_T repeat, startpos, elemnum, large_elem, wrtptr, rowlen;
+    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen;
     double scale, zero;
     unsigned char i1null, lognul = 0;
     char tform[20], *cstring = 0;
@@ -371,11 +368,6 @@ int ffpcluc( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
-
-    if (firstelem == USE_LARGE_VALUE)
-        large_elem = large_first_elem_val;
-    else
-        large_elem = firstelem;
 
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
@@ -393,7 +385,7 @@ int ffpcluc( fitsfile *fptr,  /* I - FITS file pointer                       */
     if (tcode < 0)
          writemode = 0;  /* this is a variable length column */
     
-    if (ffgcpr( fptr, colnum, firstrow, large_elem, nelem, writemode, &scale,
+    if (ffgcpr( fptr, colnum, firstrow, firstelem, nelem, writemode, &scale,
        &zero, tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
@@ -462,7 +454,7 @@ int ffpcluc( fitsfile *fptr,  /* I - FITS file pointer                       */
 
          i8null[1] = tnull;
 #if BYTESWAPPED
-         ffswap8( (double *) i8null, 1); /* reverse order of bytes */
+         ffswap4(i8null, 2); /* reverse order of bytes */
 #endif
       }
     }
@@ -482,7 +474,7 @@ int ffpcluc( fitsfile *fptr,  /* I - FITS file pointer                       */
            in the current vector, which ever is smaller.
         */
         ntodo = minvalue(ntodo, (repeat - elemnum));
-        wrtptr = startpos + ((OFF_T)rownum * rowlen) + (elemnum * incre);
+        wrtptr = startpos + ((LONGLONG)rownum * rowlen) + (elemnum * incre);
 
         ffmbyt(fptr, wrtptr, IGNORE_EOF, status); /* move to write position */
 

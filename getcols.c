@@ -14,9 +14,9 @@
 /*--------------------------------------------------------------------------*/
 int ffgcvs( fitsfile *fptr,   /* I - FITS file pointer                       */
             int  colnum,      /* I - number of column to read (1 = 1st col)  */
-            long  firstrow,   /* I - first row to read (1 = 1st row)         */
-            long  firstelem,  /* I - first vector element to read (1 = 1st)  */
-            long  nelem,      /* I - number of strings to read               */
+            LONGLONG  firstrow,   /* I - first row to read (1 = 1st row)         */
+            LONGLONG  firstelem,  /* I - first vector element to read (1 = 1st)  */
+            LONGLONG  nelem,      /* I - number of strings to read               */
             char *nulval,     /* I - string for null pixels                  */
             char **array,     /* O - array of values that are read           */
             int  *anynul,     /* O - set to 1 if any values are null; else 0 */
@@ -36,9 +36,9 @@ int ffgcvs( fitsfile *fptr,   /* I - FITS file pointer                       */
 /*--------------------------------------------------------------------------*/
 int ffgcfs( fitsfile *fptr,   /* I - FITS file pointer                       */
             int  colnum,      /* I - number of column to read (1 = 1st col) */
-            long  firstrow,   /* I - first row to read (1 = 1st row)        */
-            long  firstelem,  /* I - first vector element to read (1 = 1st) */
-            long  nelem,      /* I - number of strings to read              */
+            LONGLONG  firstrow,   /* I - first row to read (1 = 1st row)        */
+            LONGLONG  firstelem,  /* I - first vector element to read (1 = 1st) */
+            LONGLONG  nelem,      /* I - number of strings to read              */
             char **array,     /* O - array of values that are read           */
             char *nularray,   /* O - array of flags = 1 if nultyp = 2        */
             int  *anynul,     /* O - set to 1 if any values are null; else 0 */
@@ -58,9 +58,9 @@ int ffgcfs( fitsfile *fptr,   /* I - FITS file pointer                       */
 /*--------------------------------------------------------------------------*/
 int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
             int  colnum,      /* I - number of column to read (1 = 1st col) */
-            long  firstrow,   /* I - first row to read (1 = 1st row)        */
-            long  firstelem,  /* I - first vector element to read (1 = 1st) */
-            long  nelem,      /* I - number of strings to read              */
+            LONGLONG  firstrow,   /* I - first row to read (1 = 1st row)        */
+            LONGLONG  firstelem,  /* I - first vector element to read (1 = 1st) */
+            LONGLONG  nelem,      /* I - number of strings to read              */
             int   nultyp,     /* I - null value handling code:               */
                               /*     1: set undefined pixels = nulval        */
                               /*     2: set nularray=1 for undefined pixels  */
@@ -548,9 +548,9 @@ int ffgcdw( fitsfile *fptr,   /* I - FITS file pointer                       */
 /*--------------------------------------------------------------------------*/
 int ffgcls2 ( fitsfile *fptr,   /* I - FITS file pointer                       */
             int  colnum,      /* I - number of column to read (1 = 1st col) */
-            long  firstrow,   /* I - first row to read (1 = 1st row)        */
-            long  firstelem,  /* I - first vector element to read (1 = 1st) */
-            long  nelem,      /* I - number of strings to read              */
+            LONGLONG  firstrow,   /* I - first row to read (1 = 1st row)        */
+            LONGLONG  firstelem,  /* I - first vector element to read (1 = 1st) */
+            LONGLONG  nelem,      /* I - number of strings to read              */
             int   nultyp,     /* I - null value handling code:               */
                               /*     1: set undefined pixels = nulval        */
                               /*     2: set nularray=1 for undefined pixels  */
@@ -567,7 +567,7 @@ int ffgcls2 ( fitsfile *fptr,   /* I - FITS file pointer                       *
     int tcode, maxelem, hdutype, nulcheck;
     long twidth, incre, rownum;
     long ii, jj, ntodo, tnull, remain, next;
-    OFF_T repeat, startpos, elemnum, readptr, rowlen;
+    LONGLONG repeat, startpos, elemnum, readptr, rowlen;
     double scale, zero;
     char tform[20];
     char message[FLEN_ERRMSG];
@@ -662,7 +662,7 @@ int ffgcls2 ( fitsfile *fptr,   /* I - FITS file pointer                       *
       ntodo = minvalue(remain, maxelem);      
       ntodo = minvalue(ntodo, (repeat - elemnum));
 
-      readptr = startpos + ((OFF_T)rownum * rowlen) + (elemnum * incre);
+      readptr = startpos + ((LONGLONG)rownum * rowlen) + (elemnum * incre);
       ffmbyt(fptr, readptr, REPORT_EOF, status);  /* move to read position */
 
       /* read the array of strings from the FITS file into the buffer */

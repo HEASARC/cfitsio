@@ -26,12 +26,12 @@ typedef struct    /* structure containing pointers to I/O driver functions */
     int (*checkfile)(char *urltype, char *infile, char *outfile);
     int (*open)(char *filename, int rwmode, int *driverhandle);
     int (*create)(char *filename, int *drivehandle);
-    int (*truncate)(int drivehandle, OFF_T size);
+    int (*truncate)(int drivehandle, LONGLONG size);
     int (*close)(int drivehandle);
     int (*remove)(char *filename);
-    int (*size)(int drivehandle, OFF_T *size);
+    int (*size)(int drivehandle, LONGLONG *size);
     int (*flush)(int drivehandle);
-    int (*seek)(int drivehandle, OFF_T offset);
+    int (*seek)(int drivehandle, LONGLONG offset);
     int (*read)(int drivehandle, void *buffer, long nbytes);
     int (*write)(int drivehandle, void *buffer, long nbytes);
 } fitsdriver;
@@ -60,7 +60,7 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
 {
     int driver, handle, hdutyp, slen, movetotype, extvers, extnum;
     char extname[FLEN_VALUE];
-    OFF_T filesize;
+    LONGLONG filesize;
     char urltype[MAX_PREFIX_LEN], infile[FLEN_FILENAME], outfile[FLEN_FILENAME];
     char extspec[FLEN_FILENAME], rowfilter[FLEN_FILENAME];
     char binspec[FLEN_FILENAME], colspec[FLEN_FILENAME];
@@ -75,6 +75,14 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
 
     if (need_to_initialize)           /* this is called only once */
     {
+        if (need_to_initialize != 1) {
+	  /* This is bad. looks like memory has been corrupted. */
+	  ffpmsg("Vital CFITSIO parameters held in memory have been corrupted!!");
+	  ffpmsg("Fatal condition detected in ffomem.");
+	  *status = FILE_NOT_OPENED;
+	  return(*status);
+	}
+	
         *status = fits_init_cfitsio();
 
         if (*status > 0)
@@ -159,7 +167,7 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
     }
 
     /* mem for headstart array */
-    ((*fptr)->Fptr)->headstart = (OFF_T *) calloc(1001, sizeof(OFF_T)); 
+    ((*fptr)->Fptr)->headstart = (LONGLONG *) calloc(1001, sizeof(LONGLONG)); 
 
     if ( !(((*fptr)->Fptr)->headstart) )
     {
@@ -369,7 +377,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
 */
 {
     int  driver, hdutyp, hdunum, slen, writecopy, isopen;
-    OFF_T filesize;
+    LONGLONG filesize;
     long rownum, nrows, goodrows;
     int extnum, extvers, handle, movetotype, tstatus = 0;
     char urltype[MAX_PREFIX_LEN], infile[FLEN_FILENAME], outfile[FLEN_FILENAME];
@@ -433,9 +441,19 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     *fptr = 0;              /* initialize null file pointer */
     writecopy = 0;  /* have we made a write-able copy of the input file? */
 
-    if (need_to_initialize)           /* this is called only once */
+    if (need_to_initialize) {          /* this is called only once */
+    
+       if (need_to_initialize != 1) {
+	  /* This is bad. looks like memory has been corrupted. */
+	  ffpmsg("Vital CFITSIO parameters held in memory have been corrupted!!");
+	  ffpmsg("Fatal condition detected in ffopen.");
+	  *status = FILE_NOT_OPENED;
+	  return(*status);
+       }
+	
        *status = fits_init_cfitsio();
-
+    }
+    
     if (*status > 0)
         return(*status);
 
@@ -640,7 +658,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     }
 
     /* mem for headstart array */
-    ((*fptr)->Fptr)->headstart = (OFF_T *) calloc(1001, sizeof(OFF_T));
+    ((*fptr)->Fptr)->headstart = (LONGLONG *) calloc(1001, sizeof(LONGLONG));
 
     if ( !(((*fptr)->Fptr)->headstart) )
     {
@@ -1693,7 +1711,7 @@ int fits_copy_image_cell(
     unsigned char buffer[30000];
     int ii, hdutype, colnum, typecode, bitpix, naxis, maxelem, tstatus;
     long naxes[9], nbytes, firstbyte, twidth;
-    OFF_T repeat, startpos, elemnum, rowlen;
+    LONGLONG repeat, startpos, elemnum, rowlen;
     long incre, tnull, ntodo;
     double scale, zero;
     char tform[20];
@@ -2024,6 +2042,7 @@ int fits_select_image_section(
 
     fitsfile *newptr;
     int ii, hdunum, naxis, bitpix, tstatus, anynull, nkey, numkeys;
+    int klen, kk, jj;
     long naxes[9], smin, smax, sinc, fpixels[9], lpixels[9], incs[9];
     long outnaxes[9], outsize, buffsize, dummy[2];
     char *cptr, keyname[FLEN_KEYWORD], card[FLEN_CARD];
@@ -2143,10 +2162,18 @@ int fits_select_image_section(
 
        if (fpixels[ii] != 1 || incs[ii] != 1)
        {
+        for (kk=-1;kk<26; kk++)  /* modify any alternate WCS keywords */
+	{
          /* read the CRPIXn keyword if it exists in the input file */
          fits_make_keyn("CRPIX", ii + 1, keyname, status);
-         tstatus = 0;
+	 
+         if (kk != -1) {
+	   klen = strlen(keyname);
+	   keyname[klen]='A' + kk;
+	   keyname[klen + 1] = '\0';
+	 }
 
+         tstatus = 0;
          if (fits_read_key(*fptr, TDOUBLE, keyname, 
              &crpix, NULL, &tstatus) == 0)
          {
@@ -2163,8 +2190,14 @@ int fits_select_image_section(
            {
              /* read the CDELTn keyword if it exists in the input file */
              fits_make_keyn("CDELT", ii + 1, keyname, status);
-             tstatus = 0;
 
+             if (kk != -1) {
+	       klen = strlen(keyname);
+	       keyname[klen]='A' + kk;
+	       keyname[klen + 1] = '\0';
+	     }
+
+             tstatus = 0;
              if (fits_read_key(*fptr, TDOUBLE, keyname, 
                  &cdelt, NULL, &tstatus) == 0)
              {
@@ -2178,28 +2211,24 @@ int fits_select_image_section(
                fits_modify_key_dbl(newptr, keyname, cdelt, 15, NULL, status);
              }
 
-             /* modify the CDi_j keywords if thet exist in the input file */
+             /* modify the CDi_j keywords if they exist in the input file */
 
              fits_make_keyn("CD1_", ii + 1, keyname, status);
-             tstatus = 0;
-             if (fits_read_key(*fptr, TDOUBLE, keyname, 
-               &cdelt, NULL, &tstatus) == 0)
-             {
-                 /* calculate the new CDi_j value */
-                 if (fpixels[ii] <= lpixels[ii])
-                   cdelt = cdelt * incs[ii];
-                 else
-                   cdelt = cdelt * (-incs[ii]);
-              
-                 /* modify the value in the output file */
-                 fits_modify_key_dbl(newptr, keyname, cdelt, 15, NULL, status);
-             }
 
-             fits_make_keyn("CD2_", ii + 1, keyname, status);
-             tstatus = 0;
-             if (fits_read_key(*fptr, TDOUBLE, keyname, 
-               &cdelt, NULL, &tstatus) == 0)
-             {
+             if (kk != -1) {
+	       klen = strlen(keyname);
+	       keyname[klen]='A' + kk;
+	       keyname[klen + 1] = '\0';
+	     }
+
+             for (jj=0; jj < 9; jj++)   /* look for up to 9 dimensions */
+	     {
+	       keyname[2] = '1' + jj;
+	       
+               tstatus = 0;
+               if (fits_read_key(*fptr, TDOUBLE, keyname, 
+                 &cdelt, NULL, &tstatus) == 0)
+               {
                  /* calculate the new CDi_j value */
                  if (fpixels[ii] <= lpixels[ii])
                    cdelt = cdelt * incs[ii];
@@ -2208,9 +2237,12 @@ int fits_select_image_section(
               
                  /* modify the value in the output file */
                  fits_modify_key_dbl(newptr, keyname, cdelt, 15, NULL, status);
-             }
-           }
-         }
+               }
+	     }
+	     
+           } /* end of if (incs[ii]... loop */
+         }   /* end of fits_read_key loop */
+	}    /* end of for (kk  loop */
        }
     }  /* end of main NAXIS loop */
 
@@ -2687,8 +2719,18 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
 
     *fptr = 0;              /* initialize null file pointer */
 
-    if (need_to_initialize)            /* this is called only once */
+    if (need_to_initialize)  {          /* this is called only once */
+    
+       if (need_to_initialize != 1) {
+	  /* This is bad. looks like memory has been corrupted. */
+	  ffpmsg("Vital CFITSIO parameters held in memory have been corrupted!!");
+	  ffpmsg("Fatal condition detected in ffinit.");
+	  *status = FILE_NOT_CREATED;
+	  return(*status);
+       }
+	
        *status = fits_init_cfitsio();
+    }
 
     if (*status > 0)
         return(*status);
@@ -2808,7 +2850,7 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
     }
 
     /* mem for headstart array */
-    ((*fptr)->Fptr)->headstart = (OFF_T *) calloc(1001, sizeof(OFF_T)); 
+    ((*fptr)->Fptr)->headstart = (LONGLONG *) calloc(1001, sizeof(LONGLONG)); 
 
     if ( !(((*fptr)->Fptr)->headstart) )
     {
@@ -2873,9 +2915,19 @@ int ffimem(fitsfile **fptr,      /* O - FITS file pointer                   */
 
     *fptr = 0;              /* initialize null file pointer */
 
-    if (need_to_initialize)            /* this is called only once */
-       *status = fits_init_cfitsio();
+    if (need_to_initialize)    {        /* this is called only once */
 
+       if (need_to_initialize != 1) {
+	  /* This is bad. looks like memory has been corrupted. */
+	  ffpmsg("Vital CFITSIO parameters held in memory have been corrupted!!");
+	  ffpmsg("Fatal condition detected in ffimem.");
+	  *status = FILE_NOT_CREATED;
+	  return(*status);
+       }
+	
+       *status = fits_init_cfitsio();
+    }
+    
     if (*status > 0)
         return(*status);
 
@@ -2935,7 +2987,7 @@ int ffimem(fitsfile **fptr,      /* O - FITS file pointer                   */
     }
 
     /* mem for headstart array */
-    ((*fptr)->Fptr)->headstart = (OFF_T *) calloc(1001, sizeof(OFF_T)); 
+    ((*fptr)->Fptr)->headstart = (LONGLONG *) calloc(1001, sizeof(LONGLONG)); 
 
     if ( !(((*fptr)->Fptr)->headstart) )
     {
@@ -3610,12 +3662,12 @@ int fits_register_driver(char *prefix,
 	int (*checkfile) (char *urltype, char *infile, char *outfile),
 	int (*open)(char *filename, int rwmode, int *driverhandle),
 	int (*create)(char *filename, int *driverhandle),
-	int (*truncate)(int driverhandle, OFF_T filesize),
+	int (*truncate)(int driverhandle, LONGLONG filesize),
 	int (*close)(int driverhandle),
 	int (*fremove)(char *filename),
-        int (*size)(int driverhandle, OFF_T *size),
+        int (*size)(int driverhandle, LONGLONG *size),
 	int (*flush)(int driverhandle),
-	int (*seek)(int driverhandle, OFF_T offset),
+	int (*seek)(int driverhandle, LONGLONG offset),
 	int (*read) (int driverhandle, void *buffer, long nbytes),
 	int (*write)(int driverhandle, void *buffer, long nbytes) )
 /*
@@ -3623,6 +3675,13 @@ int fits_register_driver(char *prefix,
 */
 {
     int status;
+ 
+    if (no_of_drivers < 0 ) {
+	  /* This is bad. looks like memory has been corrupted. */
+	  ffpmsg("Vital CFITSIO parameters held in memory have been corrupted!!");
+	  ffpmsg("Fatal condition detected in fits_register_driver.");
+	  return(TOO_MANY_DRIVERS);
+    }
 
     if (no_of_drivers + 1 > MAX_DRIVERS)
         return(TOO_MANY_DRIVERS);
@@ -5399,7 +5458,7 @@ int ffdelt(fitsfile *fptr,      /* I - FITS file pointer */
 }
 /*--------------------------------------------------------------------------*/
 int fftrun( fitsfile *fptr,    /* I - FITS file pointer           */
-             OFF_T filesize,   /* I - size to truncate the file   */
+             LONGLONG filesize,   /* I - size to truncate the file   */
              int *status)      /* O - error status                */
 /*
   low level routine to truncate a file to a new smaller size.
@@ -5432,7 +5491,7 @@ int ffflushx( FITSfile *fptr)     /* I - FITS file pointer                  */
 }
 /*--------------------------------------------------------------------------*/
 int ffseek( FITSfile *fptr,   /* I - FITS file pointer              */
-            OFF_T position)   /* I - byte position to seek to       */
+            LONGLONG position)   /* I - byte position to seek to       */
 /*
   low level routine to seek to a position in a file.
 */

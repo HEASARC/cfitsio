@@ -60,13 +60,14 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.51;
+      *version = (float) 3.0;
 
-/*     2 December 2004
+/*     1 March 2005
 
 
    Previous releases:
-      *version = 2.50    28 July 2004
+      *version = 2.51     2 Dec 2004
+      *version = 2.50    28 Jul 2004
       *version = 2.49    11 Feb 2004
       *version = 2.48    28 Jan 2004
       *version = 2.470   18 Aug 2003
@@ -1390,8 +1391,8 @@ int ffgthd(char *tmplt, /* I - input header template string */
   character string which is suitable for appending to a FITS header 
 */
 {
-    char keyname[FLEN_KEYWORD], value[FLEN_VALUE], comment[FLEN_COMMENT];
-    char *tok, *suffix, *loc, tvalue[FLEN_VALUE];
+    char keyname[FLEN_KEYWORD], value[140], comment[140];
+    char *tok, *suffix, *loc, tvalue[140];
     int len, vlen, more, tstatus;
     double dval;
 
@@ -1864,7 +1865,7 @@ int ffbnfm(char *tform,     /* I - format code from the TFORMn keyword */
 
     form = form + ii;  /* skip over the repeat field */
 
-    if (form[0] == 'P')
+    if (form[0] == 'P' || form[0] == 'Q')
     {
         variable = 1;  /* this is a variable length column */
         repeat = 1;   /* disregard any other repeat value */
@@ -2550,8 +2551,8 @@ int ffeqty( fitsfile *fptr,  /* I - FITS file pointer                       */
         min_val = tzero + tscale * max_val;
     }
     if (tzero < 2147483648.)  /* don't exceed range of 32-bit integer */
-       lngzero = tzero;
-    lngscale = tscale;
+       lngzero = (long) tzero;
+    lngscale   = (long) tscale;
 
     if ((tzero != 2147483648.) && /* special value that exceeds integer range */
        (lngzero != tzero || lngscale != tscale)) { /* not integers? */
@@ -2640,7 +2641,7 @@ int ffgnrw( fitsfile *fptr,  /* I - FITS file pointer                       */
         return(*status = NOT_TABLE);
 
     /* the NAXIS2 keyword may not be up to date, so use the structure value */
-    *nrows = (fptr->Fptr)->numrows;
+    *nrows = (long) (fptr->Fptr)->numrows;
 
     return(*status);
 }
@@ -2686,7 +2687,7 @@ int ffgacl( fitsfile *fptr,   /* I - FITS file pointer                      */
         strcpy(ttype, colptr->ttype);
 
     if (tbcol)
-        *tbcol = (colptr->tbcol) + 1;  /* first col is 1, not 0 */
+        *tbcol = (long) ((colptr->tbcol) + 1);  /* first col is 1, not 0 */
 
     if (tform)
         strcpy(tform, colptr->tform);
@@ -2800,7 +2801,7 @@ int ffgbcl( fitsfile *fptr,   /* I - FITS file pointer                      */
         *tzero  = colptr->tzero;
 
     if (tnull)
-        *tnull  = colptr->tnull;
+        *tnull  = (long) colptr->tnull;
 
     /* read keywords to get additional parameters */
 
@@ -2835,11 +2836,11 @@ int ffghdn(fitsfile *fptr,   /* I - FITS file pointer                      */
     return(*chdunum);
 }
 /*--------------------------------------------------------------------------*/
-int ffghof(fitsfile *fptr,     /* I - FITS file pointer                     */
-            OFF_T *headstart,  /* O - byte offset to beginning of CHDU      */
-            OFF_T *datastart,  /* O - byte offset to beginning of next HDU  */
-            OFF_T *dataend,    /* O - byte offset to beginning of next HDU  */
-            int *status)       /* IO - error status     */
+int ffghadjj(fitsfile *fptr,     /* I - FITS file pointer                     */
+            LONGLONG *headstart, /* O - byte offset to beginning of CHDU      */
+            LONGLONG *datastart, /* O - byte offset to beginning of next HDU  */
+            LONGLONG *dataend,   /* O - byte offset to beginning of next HDU  */
+            int *status)         /* IO - error status     */
 /*
   Return the address (= byte offset) in the FITS file to the beginning of
   the current HDU, the beginning of the data unit, and the end of the data unit.
@@ -2872,6 +2873,43 @@ int ffghof(fitsfile *fptr,     /* I - FITS file pointer                     */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffghof(fitsfile *fptr,     /* I - FITS file pointer                     */
+            OFF_T *headstart,  /* O - byte offset to beginning of CHDU      */
+            OFF_T *datastart,  /* O - byte offset to beginning of next HDU  */
+            OFF_T *dataend,    /* O - byte offset to beginning of next HDU  */
+            int *status)       /* IO - error status     */
+/*
+  Return the address (= byte offset) in the FITS file to the beginning of
+  the current HDU, the beginning of the data unit, and the end of the data unit.
+*/
+{
+    if (*status > 0)
+        return(*status);
+
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+    {
+        if (ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status) > 0)
+            return(*status);
+    }
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+    {
+        if (ffrdef(fptr, status) > 0)           /* rescan header */
+            return(*status);
+    }
+
+    if (headstart)
+        *headstart = (OFF_T) (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu];       
+
+    if (datastart)
+        *datastart = (OFF_T) (fptr->Fptr)->datastart;
+
+    if (dataend)
+        *dataend   = (OFF_T) (fptr->Fptr)->headstart[((fptr->Fptr)->curhdu) + 1];       
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffghad(fitsfile *fptr,     /* I - FITS file pointer                     */
             long *headstart,  /* O - byte offset to beginning of CHDU      */
             long *datastart,  /* O - byte offset to beginning of next HDU  */
@@ -2882,12 +2920,12 @@ int ffghad(fitsfile *fptr,     /* I - FITS file pointer                     */
   the current HDU, the beginning of the data unit, and the end of the data unit.
 */
 {
-    OFF_T shead, sdata, edata;
+    LONGLONG shead, sdata, edata;
 
     if (*status > 0)
         return(*status);
 
-    ffghof(fptr, &shead, &sdata, &edata, status);
+    ffghadjj(fptr, &shead, &sdata, &edata, status);
 
     if (headstart)
     {
@@ -3063,7 +3101,7 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
     int groups, tstatus, simple, bitpix, naxis, extend, nspace;
     int ttype = 0, bytlen = 0, ii;
     long naxes[999], pcount, gcount, blank;
-    OFF_T npix;
+    LONGLONG npix;
     double bscale, bzero;
     char comm[FLEN_COMMENT];
     tcolumn *colptr;
@@ -3167,7 +3205,7 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
 
     (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] =
          (fptr->Fptr)->datastart + 
-         ( (OFF_T)(pcount + npix) * bytlen * gcount + 2879) / 2880 * 2880;
+         ( (LONGLONG)(pcount + npix) * bytlen * gcount + 2879) / 2880 * 2880;
 
     /*
       initialize the fictitious heap starting address (immediately following
@@ -3227,7 +3265,7 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
         colptr->tbcol = 0;
         colptr->tdatatype = ttype;
         colptr->twidth = bytlen;
-        colptr->trepeat = (OFF_T) pcount;
+        colptr->trepeat = (LONGLONG) pcount;
         colptr->tscale = 1.;
         colptr->tzero = 0.;
         colptr->tnull = blank;
@@ -3256,8 +3294,9 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
 /*
   initialize the parameters defining the structure of an ASCII table 
 */
-    int  ii, nspace, tbcoln;
-    long nrows, rowlen, pcount, tfield;
+    int  ii, nspace;
+    long tfield;
+    LONGLONG pcount, rowlen, nrows, tbcoln;
     tcolumn *colptr = 0;
     char name[FLEN_KEYWORD], value[FLEN_VALUE], comm[FLEN_COMMENT];
     char message[FLEN_ERRMSG], errmsg[81];
@@ -3279,12 +3318,12 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
     if (pcount != 0)
     {
        ffpmsg("PCOUNT keyword not equal to 0 in ASCII table (ffainit).");
-       sprintf(errmsg, "  PCOUNT = %ld", pcount);
+       sprintf(errmsg, "  PCOUNT = %ld", (long) pcount);
        ffpmsg(errmsg);
        return(*status = BAD_PCOUNT);
     }
 
-    (fptr->Fptr)->rowlength = (OFF_T) rowlen; /* store length of a row */
+    (fptr->Fptr)->rowlength = rowlen; /* store length of a row */
     (fptr->Fptr)->tfield = tfield; /* store number of table fields in row */
 
     if ((fptr->Fptr)->tableptr)
@@ -3325,7 +3364,7 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
     */
     (fptr->Fptr)->numrows = nrows;
     (fptr->Fptr)->origrows = nrows;
-    (fptr->Fptr)->heapstart = (OFF_T)rowlen * nrows;
+    (fptr->Fptr)->heapstart = rowlen * nrows;
     (fptr->Fptr)->heapsize = 0;
 
     (fptr->Fptr)->compressimg = 0;  /* this is not a compressed image */
@@ -3395,7 +3434,7 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
         {
             ffkeyn("TBCOL", ii+1, name, status);  /* construct keyword name */
             sprintf(message,"Value of %s keyword out of range: %d (ffainit).",
-            name, tbcoln);
+            name, (long) tbcoln);
             ffpmsg(message);
             return(*status = BAD_TBCOL);
         }
@@ -3427,7 +3466,7 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
     /* the next HDU begins in the next logical block after the data  */
     (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] =
          (fptr->Fptr)->datastart +
-         ( ((OFF_T)rowlen * nrows + 2879) / 2880 * 2880 );
+         ( ((LONGLONG)rowlen * nrows + 2879) / 2880 * 2880 );
 
     /* reset next keyword pointer to the start of the header */
     (fptr->Fptr)->nextkey = (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu ];
@@ -3442,7 +3481,8 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
   initialize the parameters defining the structure of a binary table 
 */
     int  ii, nspace;
-    long nrows, rowlen, tfield, pcount, totalwidth;
+    long tfield, totalwidth;
+    LONGLONG pcount, rowlen, nrows;
     tcolumn *colptr = 0;
     char name[FLEN_KEYWORD], value[FLEN_VALUE], comm[FLEN_COMMENT];
     char message[FLEN_ERRMSG];
@@ -3461,7 +3501,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     if (ffgttb(fptr, &rowlen, &nrows, &pcount, &tfield, status) > 0)
        return(*status);
 
-    (fptr->Fptr)->rowlength = (OFF_T) rowlen; /* store length of a row */
+    (fptr->Fptr)->rowlength =  rowlen; /* store length of a row */
     (fptr->Fptr)->tfield = tfield; /* store number of table fields in row */
 
     if ((fptr->Fptr)->tableptr)
@@ -3502,7 +3542,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     */
     (fptr->Fptr)->numrows = nrows;
     (fptr->Fptr)->origrows = nrows;
-    (fptr->Fptr)->heapstart = (OFF_T)rowlen * nrows;
+    (fptr->Fptr)->heapstart = rowlen * nrows;
     (fptr->Fptr)->heapsize = pcount;
 
     (fptr->Fptr)->compressimg = 0;  /* initialize as not a compressed image */
@@ -3580,7 +3620,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     /* the next HDU begins in the next logical block after the data  */
     (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] = 
          (fptr->Fptr)->datastart +
-         ( ((OFF_T)rowlen * nrows + pcount + 2879) / 2880 * 2880 );
+         ( ((LONGLONG)rowlen * nrows + pcount + 2879) / 2880 * 2880 );
 
     /* determine the byte offset to the beginning of each column */
     ffgtbc(fptr, &totalwidth, status);
@@ -3686,8 +3726,12 @@ int ffgtbc(fitsfile *fptr,    /* I - FITS file pointer          */
         {
             nbytes = (long) colptr->trepeat * (colptr->tdatatype / 10);
         }
-        else   /* this is a variable length descriptor (neg. tdatatype) */
+        else  if ((colptr->tform[0] == 'P') || (colptr->tform[1] == 'P')) 
+	   /* this is a 'P' variable length descriptor (neg. tdatatype) */
             nbytes = 8;
+	else
+	   /* this is a 'Q' variable length descriptor (neg. tdatatype) */
+            nbytes = 16;
 
         *totalwidth = *totalwidth + nbytes;
     }
@@ -3771,7 +3815,7 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
               return(*status);  /* bad format code */
 
           colptr->tdatatype = datacode; /* store datatype code */
-          colptr->trepeat = (OFF_T) repeat;     /* field repeat count  */
+          colptr->trepeat = (LONGLONG) repeat;     /* field repeat count  */
           colptr->twidth = width;   /*  width of a unit value in chars */
         }
     }
@@ -3894,7 +3938,7 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
             /* ignore this error, so don't return error status */
             return(*status);
         }
-        (fptr->Fptr)->heapstart = (OFF_T)ivalue; /* starting byte of the heap */
+        (fptr->Fptr)->heapstart = (LONGLONG)ivalue; /* starting byte of the heap */
         return(*status);
     }
 
@@ -3903,9 +3947,9 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
 /*--------------------------------------------------------------------------*/
 int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
         int colnum,     /* I - column number (1 = 1st column of table)      */
-        long firstrow,  /* I - first row (1 = 1st row of table)             */
-        OFF_T firstelem, /* I - first element within vector (1 = 1st)       */
-        long nelem,     /* I - number of elements to read or write          */
+        LONGLONG firstrow,  /* I - first row (1 = 1st row of table)             */
+        LONGLONG firstelem, /* I - first element within vector (1 = 1st)       */
+        LONGLONG nelem,     /* I - number of elements to read or write          */
         int writemode,  /* I - = 1 if writing data, = 0 if reading data     */
                         /*     If = 2, then writing data, but don't modify  */
                         /*     the returned values of repeat and incre.     */
@@ -3917,11 +3961,11 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
         long *twidth,   /* O - width of ASCII column (characters)           */
         int *tcode,     /* O - column datatype code: I*4=41, R*4=42, etc    */
         int *maxelem,   /* O - max number of elements that fit in buffer    */
-        OFF_T *startpos,/* O - offset in file to starting row & column      */
-        OFF_T *elemnum, /* O - starting element number ( 0 = 1st element)   */
+        LONGLONG *startpos,/* O - offset in file to starting row & column      */
+        LONGLONG *elemnum, /* O - starting element number ( 0 = 1st element)   */
         long *incre,    /* O - byte offset between elements within a row    */
-        OFF_T *repeat,  /* O - number of elements in a row (vector column)  */
-        OFF_T *rowlen,  /* O - length of a row, in bytes                    */
+        LONGLONG *repeat,  /* O - number of elements in a row (vector column)  */
+        LONGLONG *rowlen,  /* O - length of a row, in bytes                    */
         int  *hdutype,  /* O - HDU type: 0, 1, 2 = primary, table, bintable */
         long *tnull,    /* O - null value for integer columns               */
         char *snull,    /* O - null value for ASCII table columns           */
@@ -3933,8 +3977,9 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
 */
 {
     int nulpos, rangecheck = 1, tstatus = 0;
-    OFF_T datastart, endpos;
-    long tbcol, endrow, nrows, nblock, heapoffset, lrepeat;
+    LONGLONG datastart, endpos;
+    long tbcol, nblock;
+    LONGLONG heapoffset, lrepeat, endrow, nrows;
     char message[81];
     tcolumn *colptr;
 
@@ -4091,7 +4136,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
 
     /* calc starting byte position to 1st element of col  */
     /*  (this does not apply to variable length columns)  */
-    *startpos = datastart + ((OFF_T)(firstrow - 1) * *rowlen) + tbcol;
+    *startpos = datastart + ((LONGLONG)(firstrow - 1) * *rowlen) + tbcol;
 
     if (*hdutype == IMAGE_HDU && writemode) /*  Primary Array or IMAGE */
     { /*
@@ -4141,7 +4186,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
                 {
                   /* update heap starting address */
                   (fptr->Fptr)->heapstart += 
-                  ((OFF_T)(endrow - (fptr->Fptr)->numrows) * 
+                  ((LONGLONG)(endrow - (fptr->Fptr)->numrows) * 
                           (fptr->Fptr)->rowlength );
 
                   (fptr->Fptr)->numrows = endrow; /* update number of rows */
@@ -4225,7 +4270,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
 
         if ( firstrow <= (fptr->Fptr)->numrows )
         {
-          ffgdes(fptr, colnum, firstrow, &lrepeat, &heapoffset, &tstatus);
+          ffgdesjj(fptr, colnum, firstrow, &lrepeat, &heapoffset, &tstatus);
           if (!tstatus)
           {
             if (colptr->tdatatype <= -TCOMPLEX)
@@ -4241,12 +4286,12 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
               if (colptr->tdatatype <= -TCOMPLEX)
               {
                 /* divide repeat count by 2 to get no. of complex values */
-                ffpdes(fptr, colnum, firstrow, (long) *repeat / 2, 
+                ffpdes(fptr, colnum, firstrow, *repeat / 2, 
                       heapoffset, status);
               }
               else
               {
-                ffpdes(fptr, colnum, firstrow, (long) *repeat,
+                ffpdes(fptr, colnum, firstrow, *repeat,
                       heapoffset, status);
               }
               return(*status);
@@ -4277,12 +4322,12 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
         if (colptr->tdatatype <= -TCOMPLEX)
         {
           /* divide repeat count by 2 to get no. of complex values */
-          ffpdes(fptr, colnum, firstrow, (long) *repeat / 2, 
+          ffpdes(fptr, colnum, firstrow, *repeat / 2, 
                 (fptr->Fptr)->heapsize, status);
         }
         else
         {
-          ffpdes(fptr, colnum, firstrow, (long) *repeat, (fptr->Fptr)->heapsize,
+          ffpdes(fptr, colnum, firstrow, *repeat, (fptr->Fptr)->heapsize,
                  status);
         }
 
@@ -4292,14 +4337,14 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
         if ( !((fptr->Fptr)->lasthdu) )
         {
             endpos = datastart + (fptr->Fptr)->heapstart + 
-                     (fptr->Fptr)->heapsize + ((long) *repeat * (*incre));
+                     (fptr->Fptr)->heapsize + ( *repeat * (*incre));
 
             if (endpos > (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1])
             {
                 /* calc the number of blocks that need to be added */
-                nblock = ((endpos - 1 - 
+                nblock = (long) (((endpos - 1 - 
                          (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] ) 
-                         / 2880) + 1;
+                         / 2880) + 1);
 
                 if (ffiblk(fptr, nblock, 1, status) > 0) /* insert blocks */
                 {
@@ -4313,7 +4358,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
         }
 
         /* increment the address to the next empty heap position */
-        (fptr->Fptr)->heapsize += ((long) *repeat * (*incre)); 
+        (fptr->Fptr)->heapsize += ( *repeat * (*incre)); 
       }
       else    /*  get the read start position in the heap */
       {
@@ -4327,8 +4372,8 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
             return(*status = BAD_ROW_NUM);
         }
 
-        ffgdes(fptr, colnum, firstrow, &lrepeat, &heapoffset, status);
-        *repeat = (OFF_T) lrepeat;
+        ffgdesjj(fptr, colnum, firstrow, &lrepeat, &heapoffset, status);
+        *repeat = lrepeat;
 
         if (colptr->tdatatype <= -TCOMPLEX)
             *repeat = *repeat * 2;  /* no. of float or double values */
@@ -4352,13 +4397,13 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     }
     return(*status);
 }
-/*--------------------------------------------------------------------------*/
-int fftheap(fitsfile *fptr,  /* I - FITS file pointer                       */
-           long *heapsz,     /* O - current size of the heap                */
-           long *unused,     /* O - no. of unused bytes in the heap         */
-           long *overlap,    /* O - no. of bytes shared by > 1 descriptors  */
-           int  *valid,      /* O - are all the heap addresses valid?       */
-           int *status)     /* IO - error status                            */
+/*---------------------------------------------------------------------------*/
+int fftheap(fitsfile *fptr, /* I - FITS file pointer                         */
+           LONGLONG *heapsz,   /* O - current size of the heap               */
+           LONGLONG *unused,   /* O - no. of unused bytes in the heap        */
+           LONGLONG *overlap,  /* O - no. of bytes shared by > 1 descriptors */
+           int  *valid,     /* O - are all the heap addresses valid?         */
+           int *status)     /* IO - error status                             */
 /*
   Tests the contents of the binary table variable length array heap.
   Returns the number of bytes that are currently not pointed to by any
@@ -4369,7 +4414,8 @@ int fftheap(fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     int jj, typecode, pixsize;
-    long ii, kk, repeat, offset, nbytes, theapsz, tunused = 0, toverlap = 0;
+    long ii, kk, theapsz, nbytes;
+    LONGLONG repeat, offset, tunused = 0, toverlap = 0;
     char *buffer, message[81];
 
     if (*status > 0)
@@ -4392,9 +4438,14 @@ int fftheap(fitsfile *fptr,  /* I - FITS file pointer                       */
     if ( (fptr->Fptr)->hdutype != BINARY_TBL || (fptr->Fptr)->heapsize == 0 )
         return(*status);
 
-    theapsz = (fptr->Fptr)->heapsize;
+    if ((fptr->Fptr)->heapsize > LONG_MAX) {
+        ffpmsg("Heap is too big to test ( > 2**31 bytes). (fftheap)");
+        return(*status = MEMORY_ALLOCATION);
+    }
+
+    theapsz = (long) (fptr->Fptr)->heapsize;
     buffer = calloc(1, theapsz);     /* allocate temp space */
-    if (!buffer)
+    if (!buffer )
     {
         sprintf(message,"Failed to allocate buffer to test the heap");
         ffpmsg(message);
@@ -4410,14 +4461,13 @@ int fftheap(fitsfile *fptr,  /* I - FITS file pointer                       */
 
         pixsize = -typecode / 10;
 
-        /* copy heap data, row by row */
         for (ii = 1; ii <= (fptr->Fptr)->numrows; ii++)
         {
-            ffgdes(fptr, jj, ii, &repeat, &offset, status);
+            ffgdesjj(fptr, jj, ii, &repeat, &offset, status);
             if (typecode == -TBIT)
-                nbytes = (repeat + 7) / 8;
+                nbytes = (long) (repeat + 7) / 8;
             else
-                nbytes = repeat * pixsize;
+                nbytes = (long) repeat * pixsize;
 
             if (offset < 0 || offset + nbytes > theapsz)
             {
@@ -4460,11 +4510,13 @@ int ffcmph(fitsfile *fptr,  /* I -FITS file pointer                         */
 {
     fitsfile *tptr;
     int jj, typecode, pixsize, valid;
-    long ii, repeat, offset, buffsize = 10000, nblock, pcount, nbytes;
-    long unused, overlap;
-    char *buffer, *tbuff = 0, comm[FLEN_COMMENT], valstring[FLEN_CARD];
-    char message[81], card[FLEN_CARD];
-    OFF_T readheapstart, writeheapstart, endpos, t1heapsize, t2heapsize;
+    long ii, buffsize = 10000, nblock, nbytes;
+    LONGLONG  unused, overlap;
+    LONGLONG repeat, offset;
+    char *buffer, *tbuff = 0, comm[FLEN_COMMENT];
+    char message[81];
+    LONGLONG pcount;
+    LONGLONG readheapstart, writeheapstart, endpos, t1heapsize, t2heapsize;
 
     if (*status > 0)
         return(*status);
@@ -4522,11 +4574,11 @@ int ffcmph(fitsfile *fptr,  /* I -FITS file pointer                         */
         /* copy heap data, row by row */
         for (ii = 1; ii <= (fptr->Fptr)->numrows; ii++)
         {
-            ffgdes(tptr, jj, ii, &repeat, &offset, status);
+            ffgdesjj(tptr, jj, ii, &repeat, &offset, status);
             if (typecode == -TBIT)
-                nbytes = (repeat + 7) / 8;
+                nbytes = (long) (repeat + 7) / 8;
             else
-                nbytes = repeat * pixsize;
+                nbytes = (long) repeat * pixsize;
 
             /* increase size of buffer if necessary to read whole array */
             if (nbytes > buffsize)
@@ -4552,9 +4604,9 @@ int ffcmph(fitsfile *fptr,  /* I -FITS file pointer                         */
               if (endpos > (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1])
               {
                 /* calc the number of blocks that need to be added */
-                nblock = ((endpos - 1 - 
+                nblock = (long) (((endpos - 1 - 
                          (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] ) 
-                         / 2880) + 1;
+                         / 2880) + 1);
 
                 if (ffiblk(fptr, nblock, 1, status) > 0) /* insert blocks */
                 {
@@ -4594,8 +4646,8 @@ int ffcmph(fitsfile *fptr,  /* I -FITS file pointer                         */
     ffclos(tptr, status);
 
     /* delete any empty blocks at the end of the HDU */
-    nblock = ( (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] -
-             (writeheapstart + (fptr->Fptr)->heapsize) ) / 2880;
+    nblock = (long) (( (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] -
+             (writeheapstart + (fptr->Fptr)->heapsize) ) / 2880);
 
     if (nblock > 0)
     {
@@ -4607,12 +4659,10 @@ int ffcmph(fitsfile *fptr,  /* I -FITS file pointer                         */
     }
 
     /* update the PCOUNT value (size of heap) */
-    ffgkyj(fptr, "PCOUNT", &pcount, comm, status);
+    ffgkyjj(fptr, "PCOUNT", &pcount, comm, status);
     if ((fptr->Fptr)->heapsize != pcount)
     {
-        sprintf(valstring, "%ld", (fptr->Fptr)->heapsize);
-        ffmkky("PCOUNT", valstring, comm, card, status);
-        ffmkey(fptr, card, status);
+        ffmkyjj(fptr, "PCOUNT", (fptr->Fptr)->heapsize, comm, status);
     }
     ffrdef(fptr, status);  /* rescan new HDU structure */
     return(*status);
@@ -4620,7 +4670,7 @@ int ffcmph(fitsfile *fptr,  /* I -FITS file pointer                         */
 /*--------------------------------------------------------------------------*/
 int ffgdes(fitsfile *fptr, /* I - FITS file pointer                         */
            int colnum,     /* I - column number (1 = 1st column of table)   */
-           long rownum,    /* I - row number (1 = 1st row of table)         */
+           LONGLONG rownum,    /* I - row number (1 = 1st row of table)         */
            long *length,   /* O - number of elements in the row             */
            long *heapaddr, /* O - heap pointer to the data                  */
            int *status)    /* IO - error status                             */
@@ -4628,10 +4678,49 @@ int ffgdes(fitsfile *fptr, /* I - FITS file pointer                         */
   get (read) the variable length vector descriptor from the table.
 */
 {
-    OFF_T bytepos;
-    INT32BIT descript[2] = {0,0};
+    LONGLONG lengthjj, heapaddrjj;
+    
+    if (ffgdesjj(fptr, colnum, rownum, &lengthjj, &heapaddrjj, status) > 0)
+        return(*status);
+
+    /* convert the temporary 8-byte values to 4-byte values */
+    /* check for overflow */
+    if (length) {
+        if (lengthjj > LONG_MAX)
+	    *status = NUM_OVERFLOW;
+	else
+            *length = (long) lengthjj;
+    }
+    
+    if (heapaddr) {
+        if (heapaddrjj > LONG_MAX)
+	    *status = NUM_OVERFLOW;
+	else
+            *heapaddr = (long) heapaddrjj;
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgdesjj(fitsfile *fptr,   /* I - FITS file pointer                       */
+           int colnum,         /* I - column number (1 = 1st column of table) */
+           LONGLONG rownum,        /* I - row number (1 = 1st row of table)       */
+           LONGLONG *length,   /* O - number of elements in the row           */
+           LONGLONG *heapaddr, /* O - heap pointer to the data                */
+           int *status)        /* IO - error status                           */
+/*
+  get (read) the variable length vector descriptor from the binary table.
+  This is similar to ffgdes, except it supports the full 8-byte range of the
+  length and offset values in 'Q' columns, as well as 'P' columns.
+*/
+{
+    LONGLONG bytepos;
+    unsigned int descript4[2] = {0,0};
+    LONGLONG descript8[2] = {0,0};
     tcolumn *colptr;
 
+    if (*status > 0)
+       return(*status);
+       
     /* reset position to the correct HDU if necessary */
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
@@ -4642,31 +4731,45 @@ int ffgdes(fitsfile *fptr, /* I - FITS file pointer                         */
     colptr = (fptr->Fptr)->tableptr;  /* point to first column structure */
     colptr += (colnum - 1);   /* offset to the correct column */
 
-    if (colptr->tdatatype >= 0)
+    if (colptr->tdatatype >= 0) {
         *status = NOT_VARI_LEN;
+        return(*status);
+    }
 
-    else
-    {
-        bytepos = (fptr->Fptr)->datastart + 
+    bytepos = (fptr->Fptr)->datastart + 
                   ((fptr->Fptr)->rowlength * (rownum - 1)) +
                    colptr->tbcol;
 
-        /* read descriptor */
-        if (ffgi4b(fptr, bytepos, 2, 4, descript, status) <= 0) 
+    if (colptr->tform[0] == 'P' || colptr->tform[1] == 'P')
+    {
+        /* read 4-byte descriptor */
+        if (ffgi4b(fptr, bytepos, 2, 4, (INT32BIT *) descript4, status) <= 0) 
         {
            if (length)
-             *length = (long) descript[0];   /* 1st word is the length  */
+             *length = (LONGLONG) descript4[0];   /* 1st word is the length  */
            if (heapaddr)
-             *heapaddr = (long) descript[1]; /* 2nd word is the address */
+             *heapaddr = (LONGLONG) descript4[1]; /* 2nd word is the address */
         }
-     }
+
+    }
+    else  /* this is for 'Q' columns */
+    {
+        /* read 8 byte descriptor */
+        if (ffgi8b(fptr, bytepos, 2, 8, (long *) descript8, status) <= 0) 
+        {
+           if (length)
+             *length = descript8[0];   /* 1st word is the length  */
+           if (heapaddr)
+             *heapaddr = descript8[1]; /* 2nd word is the address */
+        }
+    }     
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
 int ffgdess(fitsfile *fptr, /* I - FITS file pointer                        */
            int colnum,     /* I - column number (1 = 1st column of table)   */
-           long firstrow,  /* I - first row  (1 = 1st row of table)         */
-           long nrows,     /* I - number or rows to read                    */
+           LONGLONG firstrow,  /* I - first row  (1 = 1st row of table)         */
+           LONGLONG nrows,     /* I - number or rows to read                    */
            long *length,   /* O - number of elements in the row             */
            long *heapaddr, /* O - heap pointer to the data                  */
            int *status)    /* IO - error status                             */
@@ -4674,10 +4777,14 @@ int ffgdess(fitsfile *fptr, /* I - FITS file pointer                        */
   get (read) a range of variable length vector descriptors from the table.
 */
 {
-    OFF_T rowsize, bytepos;
+    LONGLONG rowsize, bytepos;
     long  ii;
-    INT32BIT descript[2];
+    INT32BIT descript4[2] = {0,0};
+    LONGLONG descript8[2] = {0,0};
     tcolumn *colptr;
+
+    if (*status > 0)
+        return(*status);
 
     /* reset position to the correct HDU if necessary */
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
@@ -4689,43 +4796,169 @@ int ffgdess(fitsfile *fptr, /* I - FITS file pointer                        */
     colptr = (fptr->Fptr)->tableptr;  /* point to first column structure */
     colptr += (colnum - 1);   /* offset to the correct column */
 
-    if (colptr->tdatatype >= 0)
+    if (colptr->tdatatype >= 0) {
         *status = NOT_VARI_LEN;
-
-    else
-    {
-        rowsize = (fptr->Fptr)->rowlength;
-        bytepos = (fptr->Fptr)->datastart + 
+        return(*status);
+    }
+    
+    rowsize = (fptr->Fptr)->rowlength;
+    bytepos = (fptr->Fptr)->datastart + 
                   (rowsize  * (firstrow - 1)) +
                   colptr->tbcol;
 
+    if (colptr->tform[0] == 'P' || colptr->tform[1] == 'P')
+    {
+        /* read 4-byte descriptors */
         for (ii = 0; ii < nrows; ii++)
         {
-            ffgi4b(fptr, bytepos, 2, 4, descript, status); /* read descriptor */
+	    /* read descriptors */
+            if (ffgi4b(fptr, bytepos, 2, 4, descript4, status) <= 0)
+	    { 
+              if (length) {
+                *length =   (long) descript4[0];   /* 1st word is the length  */
+                length++;
+	      }
 
-            *length = (long) descript[0];   /* 1st word is the length  */
-            *heapaddr = (long) descript[1]; /* 2nd word is the address */
-
-            length++;
-            heapaddr++;
-            bytepos += rowsize;
+              if (heapaddr) {
+                *heapaddr = (long) descript4[1];   /* 2nd word is the address */
+                heapaddr++;
+	      }
+              bytepos += rowsize;
+	    }
+	    else
+	      return(*status);
+        }
+    }
+    else  /* this is for 'Q' columns */
+    {
+        /* read 8-byte descriptors */
+        for (ii = 0; ii < nrows; ii++)
+        {
+	    /* read descriptors */
+            if (ffgi8b(fptr, bytepos, 2, 8, (long *) descript8, status) <= 0)
+	    { 
+              if (length) {
+	        if (descript8[0] > LONG_MAX)*status = NUM_OVERFLOW;
+                *length =   (long) descript8[0];   /* 1st word is the length  */
+                length++;
+	      }
+              if (heapaddr) {
+	        if (descript8[1] > LONG_MAX)*status = NUM_OVERFLOW;
+                *heapaddr = (long) descript8[1];   /* 2nd word is the address */
+                heapaddr++;
+	      }
+              bytepos += rowsize;
+	    }
+	    else
+	      return(*status);
         }
     }
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffpdes(fitsfile *fptr, /* I - FITS file pointer                         */
+int ffgdessjj(fitsfile *fptr, /* I - FITS file pointer                      */
            int colnum,     /* I - column number (1 = 1st column of table)   */
-           long rownum,    /* I - row number (1 = 1st row of table)         */
-           long length,    /* I - number of elements in the row             */
-           long heapaddr,  /* I - heap pointer to the data                  */
+           LONGLONG firstrow,  /* I - first row  (1 = 1st row of table)         */
+           LONGLONG nrows,     /* I - number or rows to read                    */
+           LONGLONG *length,   /* O - number of elements in the row         */
+           LONGLONG *heapaddr, /* O - heap pointer to the data              */
            int *status)    /* IO - error status                             */
+/*
+  get (read) a range of variable length vector descriptors from the table.
+*/
+{
+    LONGLONG rowsize, bytepos;
+    long  ii;
+    unsigned int descript4[2] = {0,0};
+    LONGLONG descript8[2] = {0,0};
+    tcolumn *colptr;
+
+    if (*status > 0)
+        return(*status);
+
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               /* rescan header */
+            return(*status);
+
+    colptr = (fptr->Fptr)->tableptr;  /* point to first column structure */
+    colptr += (colnum - 1);           /* offset to the correct column */
+
+    if (colptr->tdatatype >= 0) {
+        *status = NOT_VARI_LEN;
+        return(*status);
+    }
+
+    rowsize = (fptr->Fptr)->rowlength;
+    bytepos = (fptr->Fptr)->datastart + 
+                  (rowsize  * (firstrow - 1)) +
+                  colptr->tbcol;
+
+    if (colptr->tform[0] == 'P' || colptr->tform[1] == 'P')
+    {
+        /* read 4-byte descriptors */
+        for (ii = 0; ii < nrows; ii++)
+        {
+	    /* read descriptors */
+            if (ffgi4b(fptr, bytepos, 2, 4, (INT32BIT *) descript4, status) <= 0)
+	    { 
+              if (length) {
+                *length =   (LONGLONG) descript4[0];   /* 1st word is the length  */
+                length++;
+	      }
+
+              if (heapaddr) {
+                *heapaddr = (LONGLONG) descript4[1];   /* 2nd word is the address */
+                heapaddr++;
+	      }
+              bytepos += rowsize;
+	    }
+	    else
+	      return(*status);
+        }
+    }
+    else  /* this is for 'Q' columns */
+    {
+        /* read 8-byte descriptors */
+        for (ii = 0; ii < nrows; ii++)
+        {
+	    /* read descriptors */
+	    /* cast to type (long *) even though it is actually (LONGLONG *) */
+            if (ffgi8b(fptr, bytepos, 2, 8, (long *) descript8, status) <= 0)
+	    { 
+              if (length) {
+                *length =   descript8[0];   /* 1st word is the length  */
+                length++;
+	      }
+
+              if (heapaddr) {
+                *heapaddr = descript8[1];   /* 2nd word is the address */
+                heapaddr++;
+	      }
+              bytepos += rowsize;
+	    }
+	    else
+	      return(*status);
+        }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffpdes(fitsfile *fptr,  /* I - FITS file pointer                         */
+           int colnum,      /* I - column number (1 = 1st column of table)   */
+           LONGLONG rownum,     /* I - row number (1 = 1st row of table)         */
+           LONGLONG length,    /* I - number of elements in the row             */
+           LONGLONG heapaddr,  /* I - heap pointer to the data                  */
+           int *status)     /* IO - error status                             */
 /*
   put (write) the variable length vector descriptor to the table.
 */
 {
-    OFF_T bytepos;
-    INT32BIT descript[2];
+    LONGLONG bytepos;
+    unsigned int descript4[2];
+    LONGLONG descript8[2];
     tcolumn *colptr;
 
     if (*status > 0)
@@ -4744,19 +4977,34 @@ int ffpdes(fitsfile *fptr, /* I - FITS file pointer                         */
     if (colptr->tdatatype >= 0)
         *status = NOT_VARI_LEN;
 
-    else
-    {
-        bytepos = (fptr->Fptr)->datastart + 
+    bytepos = (fptr->Fptr)->datastart + 
                   ((fptr->Fptr)->rowlength * (rownum - 1)) +
                   colptr->tbcol;
 
-        ffmbyt(fptr, bytepos, IGNORE_EOF, status); /* move to element */
+    ffmbyt(fptr, bytepos, IGNORE_EOF, status); /* move to element */
 
-        descript[0] = (INT32BIT) length;   /* 1st word is the length  */
-        descript[1] = (INT32BIT) heapaddr; /* 2nd word is the address */
+    if (colptr->tform[0] == 'P' || colptr->tform[1] == 'P')
+    {
+        if (length   > UINT_MAX || length   < 0 ||
+            heapaddr > UINT_MAX || heapaddr < 0) {
+            ffpmsg("P variable length column descriptor is out of range");
+	    *status = NUM_OVERFLOW;
+            return(*status);
+        }
+           
+        descript4[0] = (unsigned int) length;   /* 1st word is the length  */
+        descript4[1] = (unsigned int) heapaddr; /* 2nd word is the address */
  
-        ffpi4b(fptr, 2, 4, descript, status); /* write the descriptor */
+        ffpi4b(fptr, 2, 4, (INT32BIT *) descript4, status); /* write the descriptor */
     }
+    else /* this is a 'Q' descriptor column */
+    {
+        descript8[0] =  length;   /* 1st word is the length  */
+        descript8[1] =  heapaddr; /* 2nd word is the address */
+ 
+        ffpi8b(fptr, 2, 8, (long *) descript8, status); /* write the descriptor */
+    }
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -4812,14 +5060,15 @@ int ffuptf(fitsfile *fptr,      /* I - FITS file pointer */
 */
 {
     int ii;
-    long tflds, naxis2, maxlen, jj, length, addr;
+    long tflds;
+    LONGLONG length, addr, maxlen, naxis2, jj;
     char comment[FLEN_COMMENT], keyname[FLEN_KEYWORD];
     char tform[FLEN_VALUE], newform[FLEN_VALUE], lenval[40];
     char card[FLEN_CARD];
     char message[FLEN_ERRMSG];
 
     ffgkyj(fptr, "TFIELDS", &tflds, comment, status);
-    ffgkyj(fptr, "NAXIS2", &naxis2, comment, status);
+    ffgkyjj(fptr, "NAXIS2", &naxis2, comment, status);
 
     for (ii = 1; ii <= tflds; ii++)        /* loop over all the columns */
     {
@@ -4832,7 +5081,7 @@ int ffuptf(fitsfile *fptr,      /* I - FITS file pointer */
         return(*status);
       }
       /* is this a variable array length column ? */
-      if (tform[0] == 'P' || tform[1] == 'P')
+      if (tform[0] == 'P' || tform[1] == 'P' || tform[0] == 'Q' || tform[1] == 'Q')
       {
         if (strlen(tform) < 5)  /* is maxlen field missing? */
         {
@@ -4840,14 +5089,24 @@ int ffuptf(fitsfile *fptr,      /* I - FITS file pointer */
           maxlen = 0;
           for (jj=1; jj <= naxis2; jj++)
           {
-            ffgdes(fptr, ii, jj, &length, &addr, status);
-            maxlen = maxvalue(maxlen, length);
+            ffgdesjj(fptr, ii, jj, &length, &addr, status);
+	    if (length > maxlen)
+	         maxlen = length;
           }
 
           /* construct the new keyword value */
           strcpy(newform, "'");
           strcat(newform, tform);
+
+#if defined(_MSC_VER)
+    /* Microsoft Visual C++ uses a strange '%I64d' syntax  for 8-byte integers */
+          sprintf(lenval, "(%I64d)", maxlen);
+#elif (USE_LL_SUFFIX == 1)
+          sprintf(lenval, "(%lld)", maxlen);
+#else
           sprintf(lenval, "(%ld)", maxlen);
+#endif
+
           strcat(newform,lenval);
           while(strlen(newform) < 9)
              strcat(newform," ");   /* append spaces 'till length = 8 */
@@ -4871,7 +5130,8 @@ int ffrdef(fitsfile *fptr,      /* I - FITS file pointer */
 */
 {
     int dummy, tstatus = 0;
-    long naxis2, pcount;
+    LONGLONG naxis2;
+    LONGLONG pcount;
     char card[FLEN_CARD], comm[FLEN_COMMENT], valstring[FLEN_VALUE];
 
     if (*status > 0)
@@ -4891,7 +5151,7 @@ int ffrdef(fitsfile *fptr,      /* I - FITS file pointer */
           /* and if the user has not explicitly reset the NAXIS2 value */
           if ((fptr->Fptr)->hdutype != IMAGE_HDU)
           {
-            if (ffgkyj(fptr, "NAXIS2", &naxis2, comm, &tstatus) > 0)
+            if (ffgkyjj(fptr, "NAXIS2", &naxis2, comm, &tstatus) > 0)
             {
                 /* Couldn't read NAXIS2 (odd!);  in certain circumstances */
                 /* this may be normal, so ignore the error. */
@@ -4906,7 +5166,17 @@ int ffrdef(fitsfile *fptr,      /* I - FITS file pointer */
             {
               /* would be simpler to just call ffmkyj here, but this */
               /* would force linking in all the modkey & putkey routines */
+
+#if defined(_MSC_VER)
+    /* Microsoft Visual C++ uses a strange '%I64d' syntax  for 8-byte integers */
+              sprintf(valstring, "%I64d", (fptr->Fptr)->numrows);
+#elif (USE_LL_SUFFIX == 1)
+              sprintf(valstring, "%lld", (fptr->Fptr)->numrows);
+#else
               sprintf(valstring, "%ld", (fptr->Fptr)->numrows);
+#endif
+
+
               ffmkky("NAXIS2", valstring, comm, card, status);
               ffmkey(fptr, card, status);
             }
@@ -4916,14 +5186,10 @@ int ffrdef(fitsfile *fptr,      /* I - FITS file pointer */
           /* binary table, then we may need to update the PCOUNT value */
           if ((fptr->Fptr)->heapsize > 0)
           {
-            ffgkyj(fptr, "PCOUNT", &pcount, comm, status);
+            ffgkyjj(fptr, "PCOUNT", &pcount, comm, status);
             if ((fptr->Fptr)->heapsize > pcount)
             {
-              /* would be simpler to just call ffmkyj here, but this */
-              /* would force linking in all the modkey & putkey routines */
-              sprintf(valstring, "%ld", (fptr->Fptr)->heapsize);
-              ffmkky("PCOUNT", valstring, comm, card, status);
-              ffmkey(fptr, card, status);
+              ffmkyjj(fptr, "PCOUNT", (fptr->Fptr)->heapsize, comm, status);
             }
           }
         }
@@ -4952,7 +5218,7 @@ int ffhdef(fitsfile *fptr,      /* I - FITS file pointer                    */
   the space in advance.
 */
 {
-    OFF_T delta;
+    LONGLONG delta;
 
     if (*status > 0 || morekeys < 1)
         return(*status);
@@ -4989,7 +5255,7 @@ int ffwend(fitsfile *fptr,       /* I - FITS file pointer */
 */
 {
     int ii, tstatus;
-    OFF_T endpos;
+    LONGLONG endpos;
     long nspace;
     char blankkey[FLEN_CARD], endkey[FLEN_CARD], keyrec[FLEN_CARD];
 
@@ -5005,7 +5271,7 @@ int ffwend(fitsfile *fptr,       /* I - FITS file pointer */
         (fptr->Fptr)->datastart = ( endpos / 2880 + 1 ) * 2880;
 
     /* calculate the number of blank keyword slots in the header */
-    nspace = ( (fptr->Fptr)->datastart - endpos ) / 80;
+    nspace = (long) (( (fptr->Fptr)->datastart - endpos ) / 80);
 
     /* construct a blank and END keyword (80 spaces )  */
     strcpy(blankkey, "                                        ");
@@ -5069,7 +5335,7 @@ int ffpdfl(fitsfile *fptr,      /* I - FITS file pointer */
 */
 {
     char chfill, fill[2880];
-    OFF_T fillstart;
+    LONGLONG fillstart;
     int nfill, tstatus, ii;
 
     if (*status > 0)
@@ -5084,7 +5350,7 @@ int ffpdfl(fitsfile *fptr,      /* I - FITS file pointer */
     fillstart = (fptr->Fptr)->datastart + (fptr->Fptr)->heapstart +
                 (fptr->Fptr)->heapsize;
 
-    nfill = (fillstart + 2879) / 2880 * 2880 - fillstart;
+    nfill = (long) ((fillstart + 2879) / 2880 * 2880 - fillstart);
 
     if ((fptr->Fptr)->hdutype == ASCII_TBL)
         chfill = 32;         /* ASCII tables are filled with spaces */
@@ -5148,7 +5414,7 @@ int ffpdfl(fitsfile *fptr,      /* I - FITS file pointer */
 int ffchfl( fitsfile *fptr, int *status)
 {
    int nblank,i,gotend;
-   OFF_T endpos;
+   LONGLONG endpos;
    char rec[FLEN_CARD];
    char *blanks="                                                                                ";  /*  80 spaces  */
 
@@ -5161,7 +5427,7 @@ int ffchfl( fitsfile *fptr, int *status)
    /*   calculate the number of blank keyword slots in the header  */
 
    endpos=(fptr->Fptr)->headend;
-   nblank=((fptr->Fptr)->datastart-endpos)/80;
+   nblank=(long) (((fptr->Fptr)->datastart-endpos)/80);
 
    /*   move the i/o pointer to the end of the header keywords   */
 
@@ -5219,7 +5485,7 @@ int ffchfl( fitsfile *fptr, int *status)
 int ffcdfl( fitsfile *fptr, int *status)
 {
    int nfill,i;
-   OFF_T filpos;
+   LONGLONG filpos;
    char chfill,chbuff[2880];
 
    if( *status > 0 ) return( *status );
@@ -5237,7 +5503,7 @@ int ffcdfl( fitsfile *fptr, int *status)
           + (fptr->Fptr)->heapsize;
 
    /*   calculate the number of fill bytes   */
-   nfill = (filpos + 2879) / 2880 * 2880 - filpos;
+   nfill = (long) ((filpos + 2879) / 2880 * 2880 - filpos);
    if( nfill == 0 ) return( *status );
 
    /*   move to the beginning of the fill bytes   */
@@ -5277,7 +5543,7 @@ int ffcrhd(fitsfile *fptr,      /* I - FITS file pointer */
 */
 {
     int  tstatus = 0;
-    OFF_T bytepos, *ptr;
+    LONGLONG bytepos, *ptr;
 
     if (*status > 0)
         return(*status);
@@ -5294,8 +5560,8 @@ int ffcrhd(fitsfile *fptr,      /* I - FITS file pointer */
     if ((fptr->Fptr)->maxhdu == (fptr->Fptr)->MAXHDU)
     {
         /* allocate more space for the headstart array */
-        ptr = (OFF_T*) realloc( (fptr->Fptr)->headstart,
-                        ((fptr->Fptr)->MAXHDU + 1001) * sizeof(OFF_T) );
+        ptr = (LONGLONG*) realloc( (fptr->Fptr)->headstart,
+                        ((fptr->Fptr)->MAXHDU + 1001) * sizeof(LONGLONG) );
 
         if (ptr == NULL)
            return (*status = MEMORY_ALLOCATION);
@@ -5331,7 +5597,7 @@ int ffdblk(fitsfile *fptr,      /* I - FITS file pointer                    */
 {
     char buffer[2880];
     int tstatus, ii;
-    OFF_T readpos, writepos;
+    LONGLONG readpos, writepos;
 
     if (*status > 0 || nblocks <= 0)
         return(*status);
@@ -5350,7 +5616,7 @@ int ffdblk(fitsfile *fptr,      /* I - FITS file pointer                    */
     
     readpos = (fptr->Fptr)->headstart[((fptr->Fptr)->curhdu) + 1];
 */
-    writepos = readpos - ((OFF_T)nblocks * 2880);
+    writepos = readpos - ((LONGLONG)nblocks * 2880);
 
     while ( !ffmbyt(fptr, readpos, REPORT_EOF, &tstatus) &&
             !ffgbyt(fptr, 2880L, buffer, &tstatus) )
@@ -5383,7 +5649,7 @@ int ffdblk(fitsfile *fptr,      /* I - FITS file pointer                    */
 
     /* recalculate the starting location of all subsequent HDUs */
     for (ii = (fptr->Fptr)->curhdu; ii <= (fptr->Fptr)->maxhdu; ii++)
-         (fptr->Fptr)->headstart[ii + 1] -= ((OFF_T)nblocks * 2880);
+         (fptr->Fptr)->headstart[ii + 1] -= ((LONGLONG)nblocks * 2880);
 
     return(*status);
 }
@@ -5614,8 +5880,8 @@ int ffgiet( fitsfile *fptr,  /* I - FITS file pointer                       */
         min_val = bzero + bscale * max_val;
     }
     if (bzero < 2147483648.)  /* don't exceed range of 32-bit integer */
-       lngzero = bzero;
-    lngscale = bscale;
+       lngzero = (long) bzero;
+    lngscale = (long) bscale;
 
     if ((bzero != 2147483648.) && /* special value that exceeds integer range */
        (lngzero != bzero || lngscale != bscale)) { /* not integers? */
@@ -5752,7 +6018,7 @@ int ffmahd(fitsfile *fptr,      /* I - FITS file pointer             */
 {
     int moveto, tstatus;
     char message[FLEN_ERRMSG];
-    OFF_T *ptr;
+    LONGLONG *ptr;
 
     if (*status > 0)
         return(*status);
@@ -5761,8 +6027,8 @@ int ffmahd(fitsfile *fptr,      /* I - FITS file pointer             */
     else if (hdunum >= (fptr->Fptr)->MAXHDU )
     {
         /* allocate more space for the headstart array */
-        ptr = (OFF_T*) realloc( (fptr->Fptr)->headstart,
-                        (hdunum + 1001) * sizeof(OFF_T) ); 
+        ptr = (LONGLONG*) realloc( (fptr->Fptr)->headstart,
+                        (hdunum + 1001) * sizeof(LONGLONG) ); 
 
         if (ptr == NULL)
            return (*status = MEMORY_ALLOCATION);
@@ -5960,7 +6226,7 @@ int ffgext(fitsfile *fptr,      /* I - FITS file pointer                */
 */
 {
     int xcurhdu, xmaxhdu;
-    OFF_T xheadend;
+    LONGLONG xheadend;
 
     if (*status > 0)
         return(*status);
@@ -5999,7 +6265,7 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
 */
 {
     int tstatus, savehdu, typhdu;
-    OFF_T insertpt, jpoint;
+    LONGLONG insertpt, jpoint;
     long ii, nshift;
     char charfill;
     char buff1[2880], buff2[2880];
@@ -6090,8 +6356,8 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
           ffmrec(fptr, 1, card, status); /* NOW change SIMPLE -> XTENSION */
 
         /* number of 2880-byte blocks that have to be shifted down */
-        nshift = ((fptr->Fptr)->headstart[(fptr->Fptr)->maxhdu + 1] - insertpt)
-                 / 2880;
+        nshift = (long) (((fptr->Fptr)->headstart[(fptr->Fptr)->maxhdu + 1] - insertpt)
+                 / 2880);
         /* position of last block in file to be shifted */
         jpoint =  (fptr->Fptr)->headstart[(fptr->Fptr)->maxhdu + 1] - 2880;
 
@@ -6120,11 +6386,11 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
     }
 
     if (headdata == 0)         /* update data start address */
-      (fptr->Fptr)->datastart += ((OFF_T)nblock * 2880);
+      (fptr->Fptr)->datastart += ((LONGLONG)nblock * 2880);
 
     /* update following HDU addresses */
     for (ii = (fptr->Fptr)->curhdu; ii <= (fptr->Fptr)->maxhdu; ii++)
-         (fptr->Fptr)->headstart[ii + 1] += ((OFF_T)nblock * 2880);
+         (fptr->Fptr)->headstart[ii + 1] += ((LONGLONG)nblock * 2880);
 
     return(*status);
 }
@@ -6608,6 +6874,35 @@ int ffc2x(char *cval,   /* I - formatted string representation of the value */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffc2xx(char *cval,   /* I - formatted string representation of the value */
+          char *dtype,  /* O - datatype code: C, L, F, I or X  */
+
+    /* Only one of the following will be defined, depending on datatype */
+          LONGLONG *ival, /* O - integer value       */
+          int *lval,     /* O - logical value       */
+          char *sval,    /* O - string value        */
+          double *dval,  /* O - double value        */
+
+          int *status)   /* IO - error status */
+/*
+  high level routine to convert formatted character string to its
+  intrinsic data type
+*/
+{
+    ffdtyp(cval, dtype, status);     /* determine the datatype */
+
+    if (*dtype == 'I')
+        ffc2jj(cval, ival, status);
+    else if (*dtype == 'F')
+        ffc2dd(cval, dval, status);
+    else if (*dtype == 'L')
+        ffc2ll(cval, lval, status);
+    else 
+        ffc2s(cval, sval, status);   /* C and X formats */
+        
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffc2i(char *cval,   /* I - string representation of the value */
           long *ival,   /* O - numerical value of the input string */
           int *status)  /* IO - error status */
@@ -6660,6 +6955,67 @@ int ffc2i(char *cval,   /* I - string representation of the value */
     {
             *ival = 0;
             strcpy(msg,"Error in ffc2i evaluating string as an integer: ");
+            strncat(msg,cval,30);
+            ffpmsg(msg);
+            return(*status);
+    }
+
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffc2j(char *cval,     /* I - string representation of the value */
+          LONGLONG *ival, /* O - numerical value of the input string */
+          int *status)    /* IO - error status */
+/*
+  convert formatted string to a LONGLONG integer value, doing implicit
+  datatype conversion if necessary.
+*/
+{
+    char dtype, sval[81], msg[81];
+    int lval;
+    double dval;
+    
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (cval[0] == '\0')
+        return(*status = VALUE_UNDEFINED);  /* null value string */
+        
+    /* convert the keyword to its native datatype */
+    ffc2xx(cval, &dtype, ival, &lval, sval, &dval, status);
+
+    if (dtype == 'X' )
+    {
+            *status = BAD_INTKEY;
+    }
+    else if (dtype == 'C')
+    {
+            /* try reading the string as a number */
+            if (ffc2dd(sval, &dval, status) <= 0)
+            {
+              if (dval > (double) LONGLONG_MAX || dval < (double) LONGLONG_MIN)
+                *status = NUM_OVERFLOW;
+              else
+                *ival = (LONGLONG) dval;
+            }
+    }
+    else if (dtype == 'F')
+    {
+            if (dval > (double) LONGLONG_MAX || dval < (double) LONGLONG_MIN)
+                *status = NUM_OVERFLOW;
+            else
+                *ival = (LONGLONG) dval;
+    }
+    else if (dtype == 'L')
+    {
+            *ival = (LONGLONG) lval;
+    }
+
+    if (*status > 0)
+    {
+            *ival = 0;
+            strcpy(msg,"Error in ffc2j evaluating string as a long integer: ");
             strncat(msg,cval,30);
             ffpmsg(msg);
             return(*status);
@@ -6837,6 +7193,47 @@ int ffc2ii(char *cval,  /* I - string representation of the value */
     if (errno == ERANGE)
     {
         strcpy(msg,"Range Error in ffc2ii converting string to long int: ");
+        strncat(msg,cval,25);
+        ffpmsg(msg);
+
+        *status = NUM_OVERFLOW;
+        errno = 0;
+    }
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffc2jj(char *cval,  /* I - string representation of the value */
+          LONGLONG *ival,   /* O - numerical value of the input string */
+          int *status)  /* IO - error status */
+/*
+  convert null-terminated formatted string to an long long integer value
+*/
+{
+    char *loc, msg[81];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    errno = 0;
+    *ival = 0;
+
+/*  Microsoft Visual C++ Version 6.0 does not have the strtoll function */
+#if defined(_MSC_VER)
+    *ival = (LONGLONG) strtol(cval, &loc, 10);  /* read the string as an integer */
+#elif (USE_LL_SUFFIX == 1)
+    *ival = strtoll(cval, &loc, 10);  /* read the string as an integer */
+#else
+    *ival = strtol(cval, &loc, 10);  /* read the string as an integer */
+#endif
+
+    /* check for read error, or junk following the integer */
+    if (*loc != '\0' && *loc != ' ' ) 
+        *status = BAD_C2I;
+
+    if (errno == ERANGE)
+    {
+        strcpy(msg,"Range Error in ffc2jj converting string to longlong int: ");
         strncat(msg,cval,25);
         ffpmsg(msg);
 

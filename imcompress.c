@@ -1025,7 +1025,7 @@ int fits_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer     */
 /*--------------------------------------------------------------------------*/
 int fits_write_compressed_pixels(fitsfile *fptr, /* I - FITS file pointer   */
             int  datatype,  /* I - datatype of the array to be written      */
-            OFF_T   fpixel,  /* I - 'first pixel to write          */
+            LONGLONG   fpixel,  /* I - 'first pixel to write          */
             long   npixel,  /* I - number of pixels to write      */
             int  nullcheck,  /* I - 0 for no null checking                   */
                              /*     1: pixels that are = nullval will be     */
@@ -1047,7 +1047,7 @@ int fits_write_compressed_pixels(fitsfile *fptr, /* I - FITS file pointer   */
 {
     int naxis, ii, bytesperpixel;
     long naxes[MAX_COMPRESS_DIM], nread;
-    OFF_T tfirst, tlast, last0, last1, dimsize[MAX_COMPRESS_DIM];
+    LONGLONG tfirst, tlast, last0, last1, dimsize[MAX_COMPRESS_DIM];
     long nplane, firstcoord[MAX_COMPRESS_DIM], lastcoord[MAX_COMPRESS_DIM];
     char *arrayptr;
 
@@ -1566,7 +1566,8 @@ int fits_read_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
         ntemp *= tiledim[ii];
     }
 
-    *anynul = 0;  /* initialize */
+    if (anynul)
+       *anynul = 0;  /* initialize */
 
     /* support up to 6 dimensions for now */
     /* tfpixel and tlpixel are the first and last image pixels */
@@ -1615,6 +1616,11 @@ int fits_read_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
               /* calculate row of table containing this tile */
               irow = i0 + offset[1];
 
+/*
+printf("row %d, %d %d, %d %d, %d %d; %d\n",
+              irow, tfpixel[0],tlpixel[0],tfpixel[1],tlpixel[1],tfpixel[2],tlpixel[2],
+	      thistilesize[0]);
+*/      
               /* read and uncompress this row (tile) of the table */
               /* also do type conversion and undefined pixel substitution */
               /* at this point */
@@ -1624,7 +1630,11 @@ int fits_read_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
 
               if (tilenul && anynul)
                   *anynul = 1;  /* there are null pixels */
-
+/*
+printf(" pixlen=%d, ndim=%d, %d %d %d, %d %d %d, %d %d %d\n",
+     pixlen, ndim, fpixel[0],lpixel[0],inc[0],fpixel[1],lpixel[1],inc[1],
+     fpixel[2],lpixel[2],inc[2]);
+*/
               /* copy the intersecting pixels from this tile to the output */
               imcomp_copy_overlap(buffer, pixlen, ndim, tfpixel, tlpixel, 
                      bnullarray, array, fpixel, lpixel, inc, nullcheck, 
@@ -1646,7 +1656,7 @@ int fits_read_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
 /*--------------------------------------------------------------------------*/
 int fits_read_compressed_pixels(fitsfile *fptr, /* I - FITS file pointer    */
             int  datatype,  /* I - datatype of the array to be returned     */
-            OFF_T   fpixel, /* I - 'first pixel to read          */
+            LONGLONG   fpixel, /* I - 'first pixel to read          */
             long   npixel,  /* I - number of pixels to read      */
             int  nullcheck,  /* I - 0 for no null checking                   */
                               /*     1: set undefined pixels = nullval       */
@@ -1670,7 +1680,7 @@ int fits_read_compressed_pixels(fitsfile *fptr, /* I - FITS file pointer    */
     int naxis, ii, bytesperpixel, planenul;
     long naxes[MAX_COMPRESS_DIM], nread;
     long inc[MAX_COMPRESS_DIM];
-    OFF_T tfirst, tlast, last0, last1, dimsize[MAX_COMPRESS_DIM];
+    LONGLONG tfirst, tlast, last0, last1, dimsize[MAX_COMPRESS_DIM];
     long nplane, firstcoord[MAX_COMPRESS_DIM], lastcoord[MAX_COMPRESS_DIM];
     char *arrayptr, *nullarrayptr;
 
@@ -1922,7 +1932,7 @@ int fits_read_compressed_img_plane(fitsfile *fptr, /* I - FITS file   */
     fits_read_compressed_img(fptr, datatype, blc, trc, inc,
                 nullcheck, nullval, arrayptr, nullarrayptr, &tnull, status);
 
-    if (tnull)
+    if (tnull && anynul)
        *anynul = 1;
 
     *nread = *nread + trc[0] - blc[0] + 1;

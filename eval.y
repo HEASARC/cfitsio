@@ -55,6 +55,7 @@
 /*  Craig B Markwardt Jun 2004  Use NULL values for range errors instead*/
 /*                              of throwing a parse error               */
 /*  Craig B Markwardt Oct 2004  Add ACCUM() and SEQDIFF() functions     */
+/*  Craig B Markwardt Feb 2005  Add ANGSEP() function                   */
 /*                                                                      */
 /************************************************************************/
 
@@ -658,6 +659,30 @@ expr:    LONG
 		      }
 		   } else {
 		      yyerror("Function(expr,expr) not supported");
+		      YYERROR;
+		   }
+                }
+       | FUNCTION expr ',' expr ',' expr ',' expr ')'
+                { 
+		  if (FSTRCMP($1,"ANGSEP(") == 0) {
+		    if( TYPE($2) != DOUBLE ) $2 = New_Unary( DOUBLE, 0, $2 );
+		    if( TYPE($4) != DOUBLE ) $4 = New_Unary( DOUBLE, 0, $4 );
+		    if( TYPE($6) != DOUBLE ) $6 = New_Unary( DOUBLE, 0, $6 );
+		    if( TYPE($8) != DOUBLE ) $8 = New_Unary( DOUBLE, 0, $8 );
+		    if( Test_Dims( $2, $4 ) && Test_Dims( $4, $6 ) && 
+			Test_Dims( $6, $8 ) ) {
+		      $$ = New_Func( 0, angsep_fct, 4, $2, $4, $6, $8,0,0,0 );
+		      TEST($$); 
+		      if( SIZE($2)<SIZE($4) ) Copy_Dims($$, $4);
+		      if( SIZE($4)<SIZE($6) ) Copy_Dims($$, $6);
+		      if( SIZE($6)<SIZE($8) ) Copy_Dims($$, $8);
+		    } else {
+		      yyerror("Dimensions of ANGSEP arguments "
+			      "are not compatible");
+		      YYERROR;
+		    }
+		   } else {
+		      yyerror("Function(expr,expr,expr,expr) not supported");
 		      YYERROR;
 		   }
                 }
@@ -3136,6 +3161,34 @@ double qselect_median_dbl(double arr[], int n)
 
 #undef ELEM_SWAP
 
+/*
+ * angsep_calc - compute angular separation between celestial coordinates
+ *   
+ * This routine computes the angular separation between to coordinates
+ * on the celestial sphere (i.e. RA and Dec).  Note that all units are
+ * in DEGREES, unlike the other trig functions in the calculator.
+ *
+ * double ra1, dec1 - RA and Dec of the first position in degrees
+ * double ra2, dec2 - RA and Dec of the second position in degrees
+ * 
+ * RETURNS: (double) angular separation in degrees
+ *
+ */
+double angsep_calc(double ra1, double dec1, double ra2, double dec2)
+{
+  double cd;
+  static double deg = 0;
+  if (deg == 0) deg = ((double)4)*atan((double)1)/((double)180);
+  /* deg = 1.0; **** UNCOMMENT IF YOU WANT RADIANS */
+
+  cd = sin(dec1*deg)*sin(dec2*deg) 
+    + cos(dec1*deg)*cos(dec2*deg)*cos((ra1-ra2)*deg);
+  if (cd < (-1)) cd = -1;
+  if (cd > (+1)) cd = +1;
+  return acos(cd)/deg;
+}
+
+
 static void Do_Func( Node *this )
 {
    Node *theParams[MAXSUBS];
@@ -3310,6 +3363,12 @@ static void Do_Func( Node *this )
 	    this->value.data.dbl =
 	       atan2( pVals[0].data.dbl, pVals[1].data.dbl );
 	    break;
+
+	    /* Four-argument ANGSEP function */
+         case angsep_fct:
+	    this->value.data.dbl = 
+	      angsep_calc(pVals[0].data.dbl, pVals[1].data.dbl,
+			  pVals[2].data.dbl, pVals[3].data.dbl);
 
 	    /*  Min/Max functions taking 1 or 2 arguments  */
 
@@ -4006,6 +4065,34 @@ static void Do_Func( Node *this )
 	       }
 	    }
 	    break;
+
+	    /* Four-argument ANGSEP Function */
+	    
+	 case angsep_fct:
+	    while( row-- ) {
+	       nelem = this->value.nelem;
+	       while( nelem-- ) {
+		  elem--;
+		  i=4; while( i-- )
+		     if( vector[i]>1 ) {
+			pVals[i].data.dbl =
+			   theParams[i]->value.data.dblptr[elem];
+			pNull[i] = theParams[i]->value.undef[elem];
+		     } else if( vector[i] ) {
+			pVals[i].data.dbl =
+			   theParams[i]->value.data.dblptr[row];
+			pNull[i] = theParams[i]->value.undef[row];
+		     }
+		  if( !(this->value.undef[elem] = (pNull[0] || pNull[1] ||
+						   pNull[2] || pNull[3]) ) )
+		     this->value.data.dblptr[elem] =
+		       angsep_calc(pVals[0].data.dbl, pVals[1].data.dbl,
+				   pVals[2].data.dbl, pVals[3].data.dbl);
+	       }
+	    }
+	    break;
+
+
 
 	    /*  Min/Max functions taking 1 or 2 arguments  */
 

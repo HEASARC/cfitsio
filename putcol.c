@@ -10,8 +10,6 @@
 #include <limits.h>
 #include "fitsio2.h"
 
-OFF_T large_first_elem_val = 0;  /* used to pass large firstelem values */
-
 /*--------------------------------------------------------------------------*/
 int ffppx(  fitsfile *fptr,  /* I - FITS file pointer                       */
             int  datatype,   /* I - datatype of the value                   */
@@ -23,14 +21,16 @@ int ffppx(  fitsfile *fptr,  /* I - FITS file pointer                       */
   Write an array of pixels to the primary array.  The datatype of the
   input array is defined by the 2nd argument. Data conversion
   and scaling will be performed if necessary (e.g, if the datatype of
-  the FITS array is not the same as the array being written). This routine
-  is simillar to ffppr, except it supports writing large images with
-  more than 2.1E9 pixels.
+  the FITS array is not the same as the array being written). 
+  
+  This routine is simillar to ffppr, except it supports writing to 
+  large images with more than 2**31 pixels.
 */
 {
     int naxis, ii;
-    long naxes[9], firstelem, group = 1;
-    OFF_T dimsize = 1;
+    long naxes[9], group = 1;
+    LONGLONG firstelem;
+    LONGLONG dimsize = 1;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
@@ -39,19 +39,14 @@ int ffppx(  fitsfile *fptr,  /* I - FITS file pointer                       */
     ffgidm(fptr, &naxis, status);
     ffgisz(fptr, 9, naxes, status);
 
-    /* store the actual first element value in a external variable      */
-    /* because we can't pass the value directly to the lower routine    */
-    /* because the parameter is declared as 'long' instead of 'off_t'.  */
 
-    large_first_elem_val = 0;
+    firstelem = 0;
     for (ii=0; ii < naxis; ii++)
     {
-        large_first_elem_val += ((firstpix[ii] - 1) * dimsize);
+        firstelem += ((firstpix[ii] - 1) * dimsize);
         dimsize *= naxes[ii];
     }
-    large_first_elem_val++;
-
-    firstelem = USE_LARGE_VALUE; /* special flag value */
+    firstelem++;
 
     if (datatype == TBYTE)
     {
@@ -116,11 +111,15 @@ int ffppxn(  fitsfile *fptr,  /* I - FITS file pointer                       */
   input array is defined by the 2nd argument. Data conversion
   and scaling will be performed if necessary (e.g, if the datatype of
   the FITS array is not the same as the array being written).
+
+  This routine supports writing to large images with
+  more than 2**31 pixels.
 */
 {
     int naxis, ii;
-    long naxes[9], firstelem, group = 1;
-    OFF_T dimsize = 1;
+    long naxes[9], group = 1;
+    LONGLONG firstelem;
+    LONGLONG dimsize = 1;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
@@ -135,19 +134,13 @@ int ffppxn(  fitsfile *fptr,  /* I - FITS file pointer                       */
     ffgidm(fptr, &naxis, status);
     ffgisz(fptr, 9, naxes, status);
 
-    /* store the actual first element value in a external variable      */
-    /* because we can't pass the value directly to the lower routine    */
-    /* because the parameter is declared as 'long' instead of 'off_t'.  */
-
-    large_first_elem_val = 0;
+    firstelem = 0;
     for (ii=0; ii < naxis; ii++)
     {
-        large_first_elem_val += ((firstpix[ii] - 1) * dimsize);
+        firstelem += ((firstpix[ii] - 1) * dimsize);
         dimsize *= naxes[ii];
     }
-    large_first_elem_val++;
-
-    firstelem = USE_LARGE_VALUE; /* special flag value */
+    firstelem++;
 
     if (datatype == TBYTE)
     {
@@ -212,8 +205,8 @@ int ffppxn(  fitsfile *fptr,  /* I - FITS file pointer                       */
 /*--------------------------------------------------------------------------*/
 int ffppr(  fitsfile *fptr,  /* I - FITS file pointer                       */
             int  datatype,   /* I - datatype of the value                   */
-            long  firstelem, /* I - first vector element to write(1 = 1st)  */
-            long  nelem,     /* I - number of values to write               */
+            LONGLONG  firstelem, /* I - first vector element to write(1 = 1st)  */
+            LONGLONG  nelem,     /* I - number of values to write               */
             void  *array,    /* I - array of values that are written        */
             int  *status)    /* IO - error status                           */
 /*
@@ -221,6 +214,7 @@ int ffppr(  fitsfile *fptr,  /* I - FITS file pointer                       */
   input array is defined by the 2nd argument. Data conversion
   and scaling will be performed if necessary (e.g, if the datatype of
   the FITS array is not the same as the array being written).
+
 */
 {
     long group = 1;
@@ -281,8 +275,8 @@ int ffppr(  fitsfile *fptr,  /* I - FITS file pointer                       */
 /*--------------------------------------------------------------------------*/
 int ffppn(  fitsfile *fptr,  /* I - FITS file pointer                       */
             int  datatype,   /* I - datatype of the value                   */
-            long  firstelem, /* I - first vector element to write(1 = 1st)  */
-            long  nelem,     /* I - number of values to write               */
+            LONGLONG  firstelem, /* I - first vector element to write(1 = 1st)  */
+            LONGLONG  nelem,     /* I - number of values to write               */
             void  *array,    /* I - array of values that are written        */
             void  *nulval,   /* I - pointer to the null value               */
             int  *status)    /* IO - error status                           */
@@ -291,6 +285,7 @@ int ffppn(  fitsfile *fptr,  /* I - FITS file pointer                       */
   input array is defined by the 2nd argument. Data conversion
   and scaling will be performed if necessary (e.g, if the datatype of
   the FITS array is not the same as the array being written).
+
 */
 {
     long group = 1;
@@ -376,6 +371,9 @@ int ffpss(  fitsfile *fptr,   /* I - FITS file pointer                       */
   input array is defined by the 2nd argument.  Data conversion
   and scaling will be performed if necessary (e.g, if the datatype of
   the FITS array is not the same as the array being written).
+
+  This routine supports writing to large images with
+  more than 2**31 pixels.
 */
 {
     int naxis;
@@ -451,9 +449,9 @@ int ffpss(  fitsfile *fptr,   /* I - FITS file pointer                       */
 int ffpcl(  fitsfile *fptr,  /* I - FITS file pointer                       */
             int  datatype,   /* I - datatype of the value                   */
             int  colnum,     /* I - number of column to write (1 = 1st col) */
-            long  firstrow,  /* I - first row to write (1 = 1st row)        */
-            long  firstelem, /* I - first vector element to write (1 = 1st) */
-            long  nelem,     /* I - number of elements to write             */
+            LONGLONG  firstrow,  /* I - first row to write (1 = 1st row)        */
+            LONGLONG  firstelem, /* I - first vector element to write (1 = 1st) */
+            LONGLONG  nelem,     /* I - number of elements to write             */
             void  *array,    /* I - array of values that are written        */
             int  *status)    /* IO - error status                           */
 /*
@@ -461,6 +459,7 @@ int ffpcl(  fitsfile *fptr,  /* I - FITS file pointer                       */
   input array is defined by the 2nd argument. Data conversion
   and scaling will be performed if necessary (e.g, if the datatype of
   the FITS column is not the same as the array being written).
+
 */
 {
     if (*status > 0)           /* inherit input status value if > 0 */
@@ -555,9 +554,9 @@ int ffpcl(  fitsfile *fptr,  /* I - FITS file pointer                       */
 int ffpcn(  fitsfile *fptr,  /* I - FITS file pointer                       */
             int  datatype,   /* I - datatype of the value                   */
             int  colnum,     /* I - number of column to write (1 = 1st col) */
-            long  firstrow,  /* I - first row to write (1 = 1st row)        */
-            long  firstelem, /* I - first vector element to write (1 = 1st) */
-            long  nelem,     /* I - number of elements to write             */
+            LONGLONG  firstrow,  /* I - first row to write (1 = 1st row)        */
+            LONGLONG  firstelem, /* I - first vector element to write (1 = 1st) */
+            LONGLONG  nelem,     /* I - number of elements to write             */
             void  *array,    /* I - array of values that are written        */
             void  *nulval,   /* I - pointer to the null value               */
             int  *status)    /* IO - error status                           */
@@ -566,6 +565,7 @@ int ffpcn(  fitsfile *fptr,  /* I - FITS file pointer                       */
   input array is defined by the 2nd argument. Data conversion
   and scaling will be performed if necessary (e.g, if the datatype of
   the FITS column is not the same as the array being written).
+
 */
 {
     if (*status > 0)           /* inherit input status value if > 0 */

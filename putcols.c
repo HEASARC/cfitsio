@@ -11,9 +11,9 @@
 /*--------------------------------------------------------------------------*/
 int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
             int  colnum,     /* I - number of column to write (1 = 1st col) */
-            long  firstrow,  /* I - first row to write (1 = 1st row)        */
-            long  firstelem, /* I - first vector element to write (1 = 1st) */
-            long  nelem,     /* I - number of strings to write              */
+            LONGLONG  firstrow,  /* I - first row to write (1 = 1st row)        */
+            LONGLONG  firstelem, /* I - first vector element to write (1 = 1st) */
+            LONGLONG  nelem,     /* I - number of strings to write              */
             char  **array,   /* I - array of pointers to strings            */
             int  *status)    /* IO - error status                           */
 /*
@@ -23,7 +23,7 @@ int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
     int tcode, maxelem, hdutype, nchar;
     long twidth, incre, rownum, remain, next;
     long ii, jj, ntodo, tnull;
-    OFF_T repeat, startpos, elemnum, wrtptr, rowlen;
+    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen;
     double scale, zero;
     char tform[20], *blanks;
     char message[FLEN_ERRMSG];
@@ -115,7 +115,7 @@ int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
       ntodo = minvalue(remain, maxelem);      
       ntodo = minvalue(ntodo, (repeat - elemnum));
 
-      wrtptr = startpos + ((OFF_T)rownum * rowlen) + (elemnum * incre);
+      wrtptr = startpos + ((LONGLONG)rownum * rowlen) + (elemnum * incre);
       ffmbyt(fptr, wrtptr, IGNORE_EOF, status);  /* move to write position */
 
       buffer = (char *) cbuff;
@@ -188,9 +188,9 @@ int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
 /*--------------------------------------------------------------------------*/
 int ffpcns( fitsfile *fptr,  /* I - FITS file pointer                       */
             int  colnum,     /* I - number of column to write (1 = 1st col) */
-            long  firstrow,  /* I - first row to write (1 = 1st row)        */
-            long  firstelem, /* I - first vector element to write (1 = 1st) */
-            long  nelem,     /* I - number of values to write               */
+            LONGLONG  firstrow,  /* I - first row to write (1 = 1st row)        */
+            LONGLONG  firstelem, /* I - first vector element to write (1 = 1st) */
+            LONGLONG  nelem,     /* I - number of values to write               */
             char  **array,   /* I - array of values to write                */
             char  *nulvalue, /* I - string representing a null value        */
             int  *status)    /* IO - error status                           */

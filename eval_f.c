@@ -165,12 +165,12 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
    parseInfo Info;
    int naxis, constant;
    long nelem, rdlen, naxes[MAXDIMS], maxrows, nbuff, nGood, inloc, outloc;
-   OFF_T inbyteloc, outbyteloc, hsize;
+   LONGLONG inbyteloc, outbyteloc, hsize;
    long ntodo, freespace;
    unsigned char *buffer, result;
    struct {
       long rowLength, numRows, heapSize;
-      OFF_T dataStart, heapStart;
+      LONGLONG dataStart, heapStart;
    } inExt, outExt;
 
    if( *status ) return( *status );

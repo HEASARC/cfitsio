@@ -11,9 +11,9 @@
 /*--------------------------------------------------------------------------*/
 int ffgcvl( fitsfile *fptr,   /* I - FITS file pointer                       */
             int  colnum,      /* I - number of column to read (1 = 1st col)  */
-            long  firstrow,   /* I - first row to read (1 = 1st row)         */
-            long  firstelem,  /* I - first vector element to read (1 = 1st)  */
-            long  nelem,      /* I - number of values to read                */
+            LONGLONG  firstrow,   /* I - first row to read (1 = 1st row)         */
+            LONGLONG  firstelem,  /* I - first vector element to read (1 = 1st)  */
+            LONGLONG  nelem,      /* I - number of values to read                */
             char  nulval,     /* I - value for null pixels                   */
             char *array,      /* O - array of values                         */
             int  *anynul,     /* O - set to 1 if any values are null; else 0 */
@@ -34,9 +34,9 @@ int ffgcvl( fitsfile *fptr,   /* I - FITS file pointer                       */
 /*--------------------------------------------------------------------------*/
 int ffgcl(  fitsfile *fptr,   /* I - FITS file pointer                       */
             int  colnum,      /* I - number of column to read (1 = 1st col)  */
-            long  firstrow,   /* I - first row to read (1 = 1st row)         */
-            long  firstelem,  /* I - first vector element to read (1 = 1st)  */
-            long  nelem,      /* I - number of values to read                */
+            LONGLONG  firstrow,   /* I - first row to read (1 = 1st row)         */
+            LONGLONG  firstelem,  /* I - first vector element to read (1 = 1st)  */
+            LONGLONG  nelem,      /* I - number of values to read                */
             char *array,      /* O - array of values                         */
             int  *status)     /* IO - error status                           */
 /*
@@ -57,9 +57,9 @@ int ffgcl(  fitsfile *fptr,   /* I - FITS file pointer                       */
 /*--------------------------------------------------------------------------*/
 int ffgcfl( fitsfile *fptr,   /* I - FITS file pointer                       */
             int  colnum,      /* I - number of column to read (1 = 1st col)  */
-            long  firstrow,   /* I - first row to read (1 = 1st row)         */
-            long  firstelem,  /* I - first vector element to read (1 = 1st)  */
-            long  nelem,      /* I - number of values to read                */
+            LONGLONG  firstrow,   /* I - first row to read (1 = 1st row)         */
+            LONGLONG  firstelem,  /* I - first vector element to read (1 = 1st)  */
+            LONGLONG  nelem,      /* I - number of values to read                */
             char *array,      /* O - array of values                         */
             char *nularray,   /* O - array of flags = 1 if nultyp = 2        */
             int  *anynul,     /* O - set to 1 if any values are null; else 0 */
@@ -78,9 +78,9 @@ int ffgcfl( fitsfile *fptr,   /* I - FITS file pointer                       */
 /*--------------------------------------------------------------------------*/
 int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
             int  colnum,      /* I - number of column to read (1 = 1st col)  */
-            long  firstrow,   /* I - first row to read (1 = 1st row)         */
-            OFF_T  firstelem, /* I - first vector element to read (1 = 1st)  */
-            long  nelem,      /* I - number of values to read                */
+            LONGLONG  firstrow,   /* I - first row to read (1 = 1st row)         */
+            LONGLONG  firstelem, /* I - first vector element to read (1 = 1st)  */
+            LONGLONG  nelem,      /* I - number of values to read                */
             int   nultyp,     /* I - null value handling code:               */
                               /*     1: set undefined pixels = nulval        */
                               /*     2: set nularray=1 for undefined pixels  */
@@ -96,7 +96,7 @@ int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
     int tcode, maxelem, hdutype, ii, nulcheck;
     long twidth, incre, rownum;
     long tnull, remain, next, ntodo;
-    OFF_T repeat, startpos, elemnum, readptr, rowlen;
+    LONGLONG repeat, startpos, elemnum, readptr, rowlen;
     double scale, zero;
     char tform[20];
     char message[FLEN_ERRMSG];
@@ -210,9 +210,9 @@ int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
 /*--------------------------------------------------------------------------*/
 int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
             int   colnum,    /* I - number of column to write (1 = 1st col) */
-            long  frow,      /* I - first row to write (1 = 1st row)        */
-            long  fbit,      /* I - first bit to write (1 = 1st)            */
-            long  nbit,      /* I - number of bits to write                 */
+            LONGLONG  frow,      /* I - first row to write (1 = 1st row)        */
+            LONGLONG  fbit,      /* I - first bit to write (1 = 1st)            */
+            LONGLONG  nbit,      /* I - number of bits to write                 */
             char *larray,    /* O - array of logicals corresponding to bits */
             int  *status)    /* IO - error status                           */
 /*
@@ -222,7 +222,7 @@ int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
   The binary table column being read from must have datatype 'B' or 'X'. 
 */
 {
-    OFF_T bstart;
+    LONGLONG bstart;
     long offset, fbyte, bitloc, ndone;
     long ii, repeat, rstart, estart;
     int tcode, descrp;
@@ -340,8 +340,8 @@ int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
 /*--------------------------------------------------------------------------*/
 int ffgcxui(fitsfile *fptr,   /* I - FITS file pointer                       */
             int  colnum,      /* I - number of column to read (1 = 1st col)  */
-            long  firstrow,   /* I - first row to read (1 = 1st row)         */
-            long  nrows,      /* I - no. of rows to read                     */
+            LONGLONG  firstrow,   /* I - first row to read (1 = 1st row)         */
+            LONGLONG  nrows,      /* I - no. of rows to read                     */
             long  input_first_bit, /* I - first bit to read (1 = 1st)        */
             int   input_nbits,     /* I - number of bits to read (<= 32)     */
             unsigned short *array, /* O - array of integer values            */
@@ -477,8 +477,8 @@ int ffgcxui(fitsfile *fptr,   /* I - FITS file pointer                       */
 /*--------------------------------------------------------------------------*/
 int ffgcxuk(fitsfile *fptr,   /* I - FITS file pointer                       */
             int  colnum,      /* I - number of column to read (1 = 1st col)  */
-            long  firstrow,   /* I - first row to read (1 = 1st row)         */
-            long  nrows,      /* I - no. of rows to read                     */
+            LONGLONG  firstrow,   /* I - first row to read (1 = 1st row)         */
+            LONGLONG  nrows,      /* I - no. of rows to read                     */
             long  input_first_bit, /* I - first bit to read (1 = 1st)        */
             int   input_nbits,     /* I - number of bits to read (<= 32)     */
             unsigned int *array,   /* O - array of integer values            */

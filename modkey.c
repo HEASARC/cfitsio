@@ -68,6 +68,10 @@ int ffuky( fitsfile *fptr,     /* I - FITS file pointer        */
     {
         ffukyj(fptr, keyname, *(long *) value, comm, status);
     }
+    else if (datatype == TLONGLONG)
+    {
+        ffukyjj(fptr, keyname, *(LONGLONG *) value, comm, status);
+    }
     else if (datatype == TFLOAT)
     {
         ffukye(fptr, keyname, *(float *) value, -7, comm, status);
@@ -191,6 +195,27 @@ int ffukyj(fitsfile *fptr,    /* I - FITS file pointer  */
     {
         *status = tstatus;
         ffpkyj(fptr, keyname, value, comm, status);
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffukyjj(fitsfile *fptr,    /* I - FITS file pointer  */
+           char *keyname,     /* I - keyword name       */
+           LONGLONG value,    /* I - keyword value      */
+           char *comm,        /* I - keyword comment    */
+           int *status)       /* IO - error status      */
+{
+    int tstatus;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    tstatus = *status;
+
+    if (ffmkyjj(fptr, keyname, value, comm, status) == KEY_NO_EXIST)
+    {
+        *status = tstatus;
+        ffpkyjj(fptr, keyname, value, comm, status);
     }
     return(*status);
 }
@@ -589,7 +614,7 @@ int ffmkys(fitsfile *fptr,    /* I - FITS file pointer  */
 
     ffmkey(fptr, card, status); /* overwrite the previous keyword */
 
-    keypos = ((((fptr->Fptr)->nextkey) - ((fptr->Fptr)->headstart[(fptr->Fptr)->curhdu])) / 80) + 1;
+    keypos = (int) (((((fptr->Fptr)->nextkey) - ((fptr->Fptr)->headstart[(fptr->Fptr)->curhdu])) / 80) + 1);
 
     /* check if old string value was continued over multiple keywords */
     ffc2s(oldval, valstring, status); /* remove quotes and trailing spaces */
@@ -786,6 +811,34 @@ int ffmkyj(fitsfile *fptr,    /* I - FITS file pointer  */
         return(*status);                               /* get old comment */
 
     ffi2c(value, valstring, status);   /* convert value to a string */
+
+    if (!comm || comm[0] == '&')  /* preserve the current comment string */
+        ffmkky(keyname, valstring, oldcomm, card, status);
+    else
+        ffmkky(keyname, valstring, comm, card, status);
+
+    ffmkey(fptr, card, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffmkyjj(fitsfile *fptr,   /* I - FITS file pointer  */
+           char *keyname,     /* I - keyword name       */
+           LONGLONG value,    /* I - keyword value      */
+           char *comm,        /* I - keyword comment    */
+           int *status)       /* IO - error status      */
+{
+    char valstring[FLEN_VALUE];
+    char oldcomm[FLEN_COMMENT];
+    char card[FLEN_CARD];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (ffgkey(fptr, keyname, valstring, oldcomm, status) > 0)
+        return(*status);                               /* get old comment */
+
+    ffii2c(value, valstring, status);   /* convert value to a string */
 
     if (!comm || comm[0] == '&')  /* preserve the current comment string */
         ffmkky(keyname, valstring, oldcomm, card, status);
@@ -1233,6 +1286,25 @@ int ffikyj(fitsfile *fptr,    /* I - FITS file pointer  */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffikyjj(fitsfile *fptr,    /* I - FITS file pointer  */
+           char *keyname,     /* I - keyword name       */
+           LONGLONG value,    /* I - keyword value      */
+           char *comm,        /* I - keyword comment    */
+           int *status)       /* IO - error status      */
+{
+    char valstring[FLEN_VALUE];
+    char card[FLEN_CARD];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    ffii2c(value, valstring, status);   /* convert to formatted string */
+    ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword*/
+    ffikey(fptr, card, status);  /* write the keyword*/
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffikyf(fitsfile *fptr,    /* I - FITS file pointer  */
            char *keyname,     /* I - keyword name       */
            float value,       /* I - keyword value      */
@@ -1445,7 +1517,7 @@ int ffikey(fitsfile *fptr,    /* I - FITS file pointer  */
 {
     int ii, len, nshift;
     long nblocks;
-    OFF_T bytepos;
+    LONGLONG bytepos;
     char *inbuff, *outbuff, *tmpbuff, buff1[FLEN_CARD], buff2[FLEN_CARD];
 
     if (*status > 0)           /* inherit input status value if > 0 */
@@ -1462,7 +1534,8 @@ int ffikey(fitsfile *fptr,    /* I - FITS file pointer  */
             return(*status);  
     }
 
-    nshift=( (fptr->Fptr)->headend - (fptr->Fptr)->nextkey ) / 80; /* no. keywords to shift */
+    /* no. keywords to shift */
+    nshift= (int) (( (fptr->Fptr)->headend - (fptr->Fptr)->nextkey ) / 80); 
 
     strncpy(buff2, card, 80);     /* copy card to output buffer */
     buff2[80] = '\0';
@@ -1528,7 +1601,7 @@ int ffdkey(fitsfile *fptr,    /* I - FITS file pointer  */
     }
 
     /* calc position of keyword in header */
-    keypos = (((fptr->Fptr)->nextkey) - ((fptr->Fptr)->headstart[(fptr->Fptr)->curhdu])) / 80;
+    keypos = (int) ((((fptr->Fptr)->nextkey) - ((fptr->Fptr)->headstart[(fptr->Fptr)->curhdu])) / 80);
 
     ffdrec(fptr, keypos, status);  /* delete the keyword */
 
@@ -1558,7 +1631,7 @@ int ffdrec(fitsfile *fptr,   /* I - FITS file pointer  */
 */
 {
     int ii, nshift;
-    OFF_T bytepos;
+    LONGLONG bytepos;
     char *inbuff, *outbuff, *tmpbuff, buff1[81], buff2[81];
     char message[FLEN_ERRMSG];
 
@@ -1575,7 +1648,7 @@ int ffdrec(fitsfile *fptr,   /* I - FITS file pointer  */
 
     (fptr->Fptr)->nextkey = (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] + (keypos - 1) * 80;
 
-    nshift=( (fptr->Fptr)->headend - (fptr->Fptr)->nextkey ) / 80; /* no. keywords to shift */
+    nshift=(int) (( (fptr->Fptr)->headend - (fptr->Fptr)->nextkey ) / 80); /* no. keywords to shift */
 
     if (nshift <= 0)
     {

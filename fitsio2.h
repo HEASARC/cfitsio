@@ -280,7 +280,6 @@
 #endif
 #endif  /* end of ndef LONGLONG_MAX section */
 
-
 #define COMPRESS_NULL_VALUE -2147483647
 
 int ffmkky(char *keyname, char *keyval, char *comm, char *card, int *status);
@@ -291,6 +290,7 @@ void ffswap2(short *values, long nvalues);
 void ffswap4(INT32BIT *values, long nvalues);
 void ffswap8(double *values, long nvalues);
 int ffi2c(long ival, char *cval, int *status);
+int ffii2c(LONGLONG ival, char *cval, int *status);
 int ffl2c(int lval, char *cval, int *status);
 int ffs2c(char *instr, char *outstr, int *status);
 int ffr2f(float fval, int decim, char *cval, int *status);
@@ -298,6 +298,7 @@ int ffr2e(float fval, int decim, char *cval, int *status);
 int ffd2f(double dval, int decim, char *cval, int *status);
 int ffd2e(double dval, int decim, char *cval, int *status);
 int ffc2ii(char *cval, long *ival, int *status);
+int ffc2jj(char *cval, LONGLONG *ival, int *status);
 int ffc2ll(char *cval, int *lval, int *status);
 int ffc2rr(char *cval, float *fval, int *status);
 int ffc2dd(char *cval, double *dval, int *status);
@@ -305,24 +306,26 @@ int ffc2x(char *cval, char *dtype, long *ival, int *lval, char *sval,
           double *dval, int *status);
 int ffc2s(char *instr, char *outstr, int *status);
 int ffc2i(char *cval, long *ival, int *status);
+int ffc2j(char *cval, LONGLONG *ival, int *status);
 int ffc2r(char *cval, float *fval, int *status);
 int ffc2d(char *cval, double *dval, int *status);
 int ffc2l(char *cval, int *lval, int *status);
 void ffxmsg(int action, char *err_message);
 int ffgcnt(fitsfile *fptr, char *value, int *status);
 int ffgtkn(fitsfile *fptr, int numkey, char *keyname, long *value, int *status);
+int ffgtknjj(fitsfile *fptr, int numkey, char *keyname, LONGLONG *value, int *status);
 int fftkyn(fitsfile *fptr, int numkey, char *keyname, char *value, int *status);
 int ffgphd(fitsfile *fptr, int maxdim, int *simple, int *bitpix, int *naxis,
         long naxes[], long *pcount, long *gcount, int *extend, double *bscale,
           double *bzero, long *blank, int *nspace, int *status);
-int ffgttb(fitsfile *fptr, long *rowlen, long *nrows, long *pcount,
+int ffgttb(fitsfile *fptr, LONGLONG *rowlen, LONGLONG *nrows, LONGLONG *pcount,
           long *tfield, int *status);
  
 int ffmkey(fitsfile *fptr, char *card, int *status);
  
-int ffmbyt(fitsfile *fptr, OFF_T bytpos, int ignore_err, int *status);
-int ffgbyt(fitsfile *fptr, long nbytes, void *buffer, int *status);
-int ffpbyt(fitsfile *fptr, long nbytes, void *buffer, int *status);
+/*  ffmbyt has been moved to fitsio.h */
+int ffgbyt(fitsfile *fptr, LONGLONG nbytes, void *buffer, int *status);
+int ffpbyt(fitsfile *fptr, LONGLONG nbytes, void *buffer, int *status);
 int ffgbytoff(fitsfile *fptr, long gsize, long ngroups, long offset, 
            void *buffer, int *status);
 int ffpbytoff(fitsfile *fptr, long gsize, long ngroups, long offset,
@@ -368,67 +371,67 @@ int ffgext(fitsfile *fptr, int moveto, int *exttype, int *status);
 int ffgtbc(fitsfile *fptr, long *totalwidth, int *status);
 int ffgtbp(fitsfile *fptr, char *name, char *value, int *status);
 int ffiblk(fitsfile *fptr, long nblock, int headdata, int *status);
-int ffshft(fitsfile *fptr, OFF_T firstbyte, OFF_T nbytes, OFF_T nshift,
+int ffshft(fitsfile *fptr, LONGLONG firstbyte, LONGLONG nbytes, LONGLONG nshift,
     int *status);
  
-int ffgcpr(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
-           long nelem, int writemode, double *scale, double *zero, char *tform,
-           long *twidth, int *tcode, int *maxelem, OFF_T *startpos,
-           OFF_T *elemnum, long *incre, OFF_T *repeat, OFF_T *rowlen,
+int ffgcpr(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+           LONGLONG nelem, int writemode, double *scale, double *zero, char *tform,
+           long *twidth, int *tcode, int *maxelem, LONGLONG *startpos,
+           LONGLONG *elemnum, long *incre, LONGLONG *repeat, LONGLONG *rowlen,
            int *hdutype, long *tnull, char *snull, int *status);
  
 int ffflushx(FITSfile *fptr);
-int ffseek(FITSfile *fptr, OFF_T position);
+int ffseek(FITSfile *fptr, LONGLONG position);
 int ffread(FITSfile *fptr, long nbytes, void *buffer,
             int *status);
 int ffwrite(FITSfile *fptr, long nbytes, void *buffer,
             int *status);
-int fftrun(fitsfile *fptr, OFF_T filesize, int *status);
+int fftrun(fitsfile *fptr, LONGLONG filesize, int *status);
 
-int ffpcluc(fitsfile *fptr, int colnum, long firstrow, long firstelem, long
-           nelem, int *status);
+int ffpcluc(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+           LONGLONG nelem, int *status);
 	   
-int ffgcll(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem, long
-           nelem, int nultyp, char nulval, char *array, char *nularray,
+int ffgcll(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+           LONGLONG nelem, int nultyp, char nulval, char *array, char *nularray,
            int *anynul, int *status);
-int ffgcls(fitsfile *fptr, int colnum, long firstrow, long firstelem,
-           long nelem, int nultyp, char *nulval,
+int ffgcls(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+           LONGLONG nelem, int nultyp, char *nulval,
            char **array, char *nularray, int *anynul, int  *status);
-int ffgcls2(fitsfile *fptr, int colnum, long firstrow, long firstelem,
-           long nelem, int nultyp, char *nulval,
+int ffgcls2(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+           LONGLONG nelem, int nultyp, char *nulval,
            char **array, char *nularray, int *anynul, int  *status);
-int ffgclb(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
-           long nelem, long  elemincre, int nultyp, unsigned char nulval,
+int ffgclb(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+           LONGLONG nelem, long  elemincre, int nultyp, unsigned char nulval,
            unsigned char *array, char *nularray, int *anynul, int  *status);
-int ffgclsb(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
-           long nelem, long  elemincre, int nultyp, signed char nulval,
+int ffgclsb(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+           LONGLONG nelem, long  elemincre, int nultyp, signed char nulval,
            signed char *array, char *nularray, int *anynul, int  *status);
-int ffgclui(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
-           long nelem, long  elemincre, int nultyp, unsigned short nulval,
+int ffgclui(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+           LONGLONG nelem, long  elemincre, int nultyp, unsigned short nulval,
            unsigned short *array, char *nularray, int *anynul, int  *status);
-int ffgcli(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
-           long nelem, long  elemincre, int nultyp, short nulval,
+int ffgcli(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+           LONGLONG nelem, long  elemincre, int nultyp, short nulval,
            short *array, char *nularray, int *anynul, int  *status);
-int ffgcluj(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
-           long nelem, long elemincre, int nultyp, unsigned long nulval,
+int ffgcluj(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+           LONGLONG nelem, long elemincre, int nultyp, unsigned long nulval,
            unsigned long *array, char *nularray, int *anynul, int  *status);
-int ffgcljj(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
-           long nelem, long elemincre, int nultyp, LONGLONG nulval, 
+int ffgcljj(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+           LONGLONG nelem, long elemincre, int nultyp, LONGLONG nulval, 
            LONGLONG *array, char *nularray, int *anynul, int  *status);
-int ffgclj(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
-           long nelem, long elemincre, int nultyp, long nulval, long *array,
+int ffgclj(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+           LONGLONG nelem, long elemincre, int nultyp, long nulval, long *array,
            char *nularray, int *anynul, int  *status);
-int ffgcluk(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
-           long nelem, long elemincre, int nultyp, unsigned int nulval,
+int ffgcluk(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+           LONGLONG nelem, long elemincre, int nultyp, unsigned int nulval,
            unsigned int *array, char *nularray, int *anynul, int  *status);
-int ffgclk(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
-           long nelem, long elemincre, int nultyp, int nulval, int *array,
+int ffgclk(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+           LONGLONG nelem, long elemincre, int nultyp, int nulval, int *array,
            char *nularray, int *anynul, int  *status);
-int ffgcle(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
-           long nelem, long elemincre, int nultyp,  float nulval, float *array,
+int ffgcle(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+           LONGLONG nelem, long elemincre, int nultyp,  float nulval, float *array,
            char *nularray, int *anynul, int  *status);
-int ffgcld(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
-           long nelem, long elemincre, int nultyp, double nulval,
+int ffgcld(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+           LONGLONG nelem, long elemincre, int nultyp, double nulval,
            double *array, char *nularray, int *anynul, int  *status);
  
 int ffpi1b(fitsfile *fptr, long nelem, long incre, unsigned char *buffer,
@@ -440,17 +443,17 @@ int ffpi8b(fitsfile *fptr, long nelem, long incre, long *buffer, int *status);
 int ffpr4b(fitsfile *fptr, long nelem, long incre, float *buffer, int *status);
 int ffpr8b(fitsfile *fptr, long nelem, long incre, double *buffer, int *status);
  
-int ffgi1b(fitsfile *fptr, OFF_T pos, long nelem, long incre,
+int ffgi1b(fitsfile *fptr, LONGLONG pos, long nelem, long incre,
           unsigned char *buffer, int *status);
-int ffgi2b(fitsfile *fptr, OFF_T pos, long nelem, long incre, short *buffer,
+int ffgi2b(fitsfile *fptr, LONGLONG pos, long nelem, long incre, short *buffer,
           int *status);
-int ffgi4b(fitsfile *fptr, OFF_T pos, long nelem, long incre, INT32BIT *buffer,
+int ffgi4b(fitsfile *fptr, LONGLONG pos, long nelem, long incre, INT32BIT *buffer,
           int *status);
-int ffgi8b(fitsfile *fptr, OFF_T pos, long nelem, long incre, long *buffer,
+int ffgi8b(fitsfile *fptr, LONGLONG pos, long nelem, long incre, long *buffer,
           int *status);
-int ffgr4b(fitsfile *fptr, OFF_T pos, long nelem, long incre, float *buffer,
+int ffgr4b(fitsfile *fptr, LONGLONG pos, long nelem, long incre, float *buffer,
           int *status);
-int ffgr8b(fitsfile *fptr, OFF_T pos, long nelem, long incre, double *buffer,
+int ffgr8b(fitsfile *fptr, LONGLONG pos, long nelem, long incre, double *buffer,
           int *status);
  
 int ffcins(fitsfile *fptr, long naxis1, long naxis2, long nbytes,
@@ -906,7 +909,7 @@ int fits_write_compressed_img(fitsfile *fptr,
             int nullcheck, void *array,  void *nulval,
             int  *status);
 int fits_write_compressed_pixels(fitsfile *fptr, 
-            int  datatype, OFF_T  fpixel, long npixels,   
+            int  datatype, LONGLONG  fpixel, long npixels,   
             int nullcheck,  void *array, void *nulval,
             int  *status);
 int fits_write_compressed_img_plane(fitsfile *fptr, int  datatype, 
@@ -932,7 +935,7 @@ int fits_read_compressed_img(fitsfile *fptr,
             int nullcheck, void *nulval,  void *array, char *nullarray,
             int  *anynul, int  *status);
 int fits_read_compressed_pixels(fitsfile *fptr, 
-            int  datatype, OFF_T  fpixel, long npixels,   
+            int  datatype, LONGLONG  fpixel, long npixels,   
             int nullcheck, void *nulval,  void *array, char *nullarray,
             int  *anynul, int  *status);
 int fits_read_compressed_img_plane(fitsfile *fptr, int  datatype, 
@@ -980,12 +983,12 @@ int fits_register_driver( char *prefix,
 	int (*checkfile) (char *urltype, char *infile, char *outfile),
 	int (*fitsopen)(char *filename, int rwmode, int *driverhandle),
 	int (*fitscreate)(char *filename, int *driverhandle),
-	int (*fitstruncate)(int driverhandle, OFF_T filesize),
+	int (*fitstruncate)(int driverhandle, LONGLONG filesize),
 	int (*fitsclose)(int driverhandle),
 	int (*fremove)(char *filename),
-        int (*size)(int driverhandle, OFF_T *size),
+        int (*size)(int driverhandle, LONGLONG *size),
 	int (*flush)(int driverhandle),
-	int (*seek)(int driverhandle, OFF_T offset),
+	int (*seek)(int driverhandle, LONGLONG offset),
 	int (*fitsread) (int driverhandle, void *buffer, long nbytes),
 	int (*fitswrite)(int driverhandle, void *buffer, long nbytes));
 
@@ -1001,12 +1004,12 @@ int file_open(char *filename, int rwmode, int *driverhandle);
 int file_compress_open(char *filename, int rwmode, int *hdl);
 int file_openfile(char *filename, int rwmode, FILE **diskfile);
 int file_create(char *filename, int *driverhandle);
-int file_truncate(int driverhandle, OFF_T filesize);
-int file_size(int driverhandle, OFF_T *filesize);
+int file_truncate(int driverhandle, LONGLONG filesize);
+int file_size(int driverhandle, LONGLONG *filesize);
 int file_close(int driverhandle);
 int file_remove(char *filename);
 int file_flush(int driverhandle);
-int file_seek(int driverhandle, OFF_T offset);
+int file_seek(int driverhandle, LONGLONG offset);
 int file_read (int driverhandle, void *buffer, long nbytes);
 int file_write(int driverhandle, void *buffer, long nbytes);
 int file_is_compressed(char *filename);
@@ -1033,12 +1036,12 @@ int mem_compress_open(char *filename, int rwmode, int *hdl);
 int mem_compress_stdin_open(char *filename, int rwmode, int *hdl);
 int mem_iraf_open(char *filename, int rwmode, int *hdl);
 int mem_rawfile_open(char *filename, int rwmode, int *hdl);
-int mem_size(int handle, OFF_T *filesize);
-int mem_truncate(int handle, OFF_T filesize);
+int mem_size(int handle, LONGLONG *filesize);
+int mem_truncate(int handle, LONGLONG filesize);
 int mem_close_free(int handle);
 int mem_close_keep(int handle);
 int mem_close_comp(int handle);
-int mem_seek(int handle, OFF_T offset);
+int mem_seek(int handle, LONGLONG offset);
 int mem_read(int hdl, void *buffer, long nbytes);
 int mem_write(int hdl, void *buffer, long nbytes);
 int mem_uncompress2mem(char *filename, FILE *diskfile, int hdl);
@@ -1057,10 +1060,10 @@ int root_open(char *filename, int rwmode, int *driverhandle);
 int root_create(char *filename, int *driverhandle);
 int root_close(int driverhandle);
 int root_flush(int driverhandle);
-int root_seek(int driverhandle, OFF_T offset);
+int root_seek(int driverhandle, LONGLONG offset);
 int root_read (int driverhandle, void *buffer, long nbytes);
 int root_write(int driverhandle, void *buffer, long nbytes);
-int root_size(int handle, OFF_T *filesize);
+int root_size(int handle, LONGLONG *filesize);
 
 /* http driver I/O routines */
 

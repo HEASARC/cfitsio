@@ -407,7 +407,7 @@ static int irafrdimage (
 	for (i = 0; i < naxis2; i++) {
 	    nbl = fread (linebuff, 1, nbaxis, fd);
 	    nbr = nbr + nbl;
-	    nbx = fseek (fd, nbdiff, SEEK_CUR);
+	    nbx = fseek (fd, nbdiff, 1);
 	    linebuff = linebuff + nbaxis;
 	    }
 	}
