@@ -1376,7 +1376,7 @@ int ffgthd(char *tmplt, /* I - input header template string */
         /* copy the new name to card + 40;  This is awkward, */
         /* but is consistent with the way the Fortran FITSIO works */
 	strcat(card,"                                        ");
-        strncpy(&card[40], tok, len);
+        strncpy(&card[40], tok, len+1); /* copy len+1 to get terminator */
 
         /*
             The HIERARCH convention supports non-standard characters
