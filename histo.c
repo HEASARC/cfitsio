@@ -915,6 +915,7 @@ int fits_get_col_minmax(fitsfile *fptr, int colnum, float *datamin,
    Simple utility routine to compute the min and max value in a column
 */
 {
+    int anynul;
     long nrows, ntodo, firstrow, ii;
     float array[1000], nulval;
 
@@ -928,8 +929,8 @@ int fits_get_col_minmax(fitsfile *fptr, int colnum, float *datamin,
     while(nrows)
     {
         ntodo = minvalue(nrows, 100);
-        ffgcv(fptr, TFLOAT, colnum, firstrow, 1, ntodo, &nulval, array, NULL,
-              status);
+        ffgcv(fptr, TFLOAT, colnum, firstrow, 1, ntodo, &nulval, array,
+              &anynul, status);
 
         for (ii = 0; ii < ntodo; ii++)
         {
