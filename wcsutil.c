@@ -24,9 +24,9 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
        keywords are not present.
 */
 {
-    int tstat;
+    int tstat = 0, cd_exists = 0;
     char ctype[FLEN_VALUE];
-    double cd11, cd21, cd22, cd12;
+    double cd11 = 0.0, cd21 = 0.0, cd22 = 0.0, cd12 = 0.0;
     double pi =  3.1415926535897932;
     double phia, phib, temp;
     double toler = .0002;  /* tolerance for angles to agree (radians) */
@@ -56,12 +56,27 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
     {
         /* no CDELTn keyword, so look for the CD matrix */
         tstat = 0;
-        ffgkyd(fptr, "CD1_1", &cd11, NULL, &tstat);
-        ffgkyd(fptr, "CD2_1", &cd21, NULL, &tstat);
-        ffgkyd(fptr, "CD1_2", &cd12, NULL, &tstat);
-        ffgkyd(fptr, "CD2_2", &cd22, NULL, &tstat);
+        if (ffgkyd(fptr, "CD1_1", &cd11, NULL, &tstat))
+            tstat = 0;  /* reset keyword not found error */
+        else
+            cd_exists = 1;  /* found at least 1 CD_ keyword */
 
-        if (!tstat)  /* convert CDi_j back to CDELTn */
+        if (ffgkyd(fptr, "CD2_1", &cd21, NULL, &tstat))
+            tstat = 0;  /* reset keyword not found error */
+        else
+            cd_exists = 1;  /* found at least 1 CD_ keyword */
+
+        if (ffgkyd(fptr, "CD1_2", &cd12, NULL, &tstat))
+            tstat = 0;  /* reset keyword not found error */
+        else
+            cd_exists = 1;  /* found at least 1 CD_ keyword */
+
+        if (ffgkyd(fptr, "CD2_2", &cd22, NULL, &tstat))
+            tstat = 0;  /* reset keyword not found error */
+        else
+            cd_exists = 1;  /* found at least 1 CD_ keyword */
+
+        if (cd_exists)  /* convert CDi_j back to CDELTn */
         {
             /* there are 2 ways to compute the angle: */
             phia = atan2( cd21, cd11);
