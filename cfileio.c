@@ -213,7 +213,10 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
             return(*status = FILE_NOT_OPENED);
         }
 
-        slen = strlen(&filename[ii]) + 1;
+        /* add an additional 4 characters to the allocation to allow for
+           a compressed file suffix to be appended to the file name;
+           current worst case is ".zip" */
+        slen = strlen(&filename[ii]) + 1 + 4;
         slen = maxvalue(slen, 32); /* reserve at least 32 chars */ 
         (*fptr)->filename = (char *) malloc(slen); /* mem for file name */
 
