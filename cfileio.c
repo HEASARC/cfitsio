@@ -11,6 +11,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 #include <ctype.h>
 #include <stddef.h>  /* apparently needed to define size_t */
 #include "fitsio2.h"
