@@ -454,7 +454,7 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONG,PLONG,PINT,PSTRINGV,LONGV,P
    status =  TCF(ftghtb,PINT,B,0);
    maxdim =  TCF(ftghtb,INT,2,0);
    ffgkyj( fptr, "TFIELDS", &tfields, 0, status );
-   maxdim = _cfMIN(tfields,maxdim);
+   maxdim = (maxdim<0) ? tfields : _cfMIN(tfields,maxdim);
 
    ffghtb(   fptr, maxdim
              TCF(ftghtb,PLONG,3,1)
@@ -507,7 +507,7 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONG,PINT,PSTRINGV,PSTRINGV,PSTR
    status =  TCF(ftghbn,PINT,A,0);
    maxdim =  TCF(ftghbn,INT,2,0);
    ffgkyj( fptr, "TFIELDS", &tfields, 0, status );
-   maxdim = _cfMIN(tfields,maxdim);
+   maxdim = (maxdim<0) ? tfields : _cfMIN(tfields,maxdim);
 
    ffghbn(   fptr, maxdim
              TCF(ftghbn,PLONG,3,1)
