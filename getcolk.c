@@ -637,7 +637,6 @@ int ffgclk( fitsfile *fptr,   /* I - FITS file pointer                       */
          tform, &twidth, &tcode, &maxelem, &startpos, &elemnum, &incre,
          &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0 )
          return(*status);
-
     incre *= elemincre;   /* multiply incre to just get every nth pixel */
 
     if (tcode == TSTRING)    /* setup for ASCII tables */

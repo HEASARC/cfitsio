@@ -1455,7 +1455,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
     *pcount = 0;
     *gcount = 1;
     *extend = 0;
-    *blank = NO_NULL; /* by default, no null value for BITPIX = 8, 16, 32 */
+    *blank = NULL_UNDEFINED; /* by default, no null value for BITPIX = 8, 16, 32 */
 
     *nspace = 0;
     found_end = 0;

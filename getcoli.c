@@ -622,7 +622,6 @@ int ffgcli( fitsfile *fptr,   /* I - FITS file pointer                       */
          tform, &twidth, &tcode, &maxelem, &startpos, &elemnum, &incre,
          &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0 )
          return(*status);
-
     incre *= elemincre;   /* multiply incre to just get every nth pixel */
 
     if (tcode == TSTRING)    /* setup for ASCII tables */
@@ -930,7 +929,6 @@ int fffi2i2(short *input,         /* I - array of values to be converted     */
 {
     long ii;
     double dvalue;
-
     if (nullcheck == 0)     /* no null checking required */
     {
         if (scale == 1. && zero == 0.)      /* no scaling */
