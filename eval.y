@@ -98,6 +98,7 @@ static int  New_Func  ( int returnType, funcOp Op, int nNodes,
 			int Node5, int Node6, int Node7 );
 static int  New_Deref ( int Var,  int nDim,
 			int Dim1, int Dim2, int Dim3, int Dim4, int Dim5 );
+static int  New_GTI   ( char *fname, int Node, char *start, char *stop );
 static int  Test_Dims ( int Node1, int Node2 );
 
 static void Allocate_Ptrs( Node *this );
@@ -109,6 +110,7 @@ static void Do_BinOp_lng ( Node *this );
 static void Do_BinOp_dbl ( Node *this );
 static void Do_Func      ( Node *this );
 static void Do_Deref     ( Node *this );
+static void Do_GTI       ( Node *this );
 
 static char  saobox (double xcen, double ycen, double xwid, double ywid,
 		     double rot,  double xcol, double ycol);
@@ -147,6 +149,7 @@ static void  yyerror(char *msg);
 %token <str>   BITSTR
 %token <str>   FUNCTION
 %token <str>   BFUNCTION
+%token <str>   FILTER
 %token <lng>   COLUMN
 %token <lng>   BCOLUMN
 %token <lng>   SCOLUMN
@@ -578,6 +581,62 @@ bexpr:   BOOLEAN
 		   }
                    TEST($$); 
 		}
+       | FILTER ')'
+                { /* Use defaults for all except filename */
+                   if (FSTRCMP($1,"GTIFILTER(") == 0) {
+                      $$ = New_GTI( "", -99, "*START*", "*STOP*" );
+                   } else {
+                      yyerror("Filter Function not supported");
+		      YYERROR;
+		   }
+                   TEST($$); 
+                }
+       | FILTER STRING ')'
+                { /* Use defaults for all except filename */
+                   if (FSTRCMP($1,"GTIFILTER(") == 0) {
+                      $$ = New_GTI( $2, -99, "*START*", "*STOP*" );
+                   } else {
+                      yyerror("Filter Function not supported");
+		      YYERROR;
+		   }
+                   TEST($$); 
+                }
+       | FILTER STRING ',' expr ')'
+                {
+                   if (FSTRCMP($1,"GTIFILTER(") == 0) {
+                      if( SIZE($4)>1 ) {
+                         yyerror("Cannot filter on a vector column");
+                         YYERROR;
+                      }
+		      if( gParse.Nodes[$4].operation==-1000 ) {
+                         yyerror("Cannot filter on a constant");
+                         YYERROR;
+                      }
+                      $$ = New_GTI( $2, $4, "*START*", "*STOP*" );
+                   } else {
+                      yyerror("Filter Function not supported");
+		      YYERROR;
+		   }
+                   TEST($$); 
+                }
+       | FILTER STRING ',' expr ',' STRING ',' STRING ')'
+                {
+                   if (FSTRCMP($1,"GTIFILTER(") == 0) {
+                      if( SIZE($4)>1 ) {
+                         yyerror("Cannot filter on a vector column");
+                         YYERROR;
+                      }
+		      if( gParse.Nodes[$4].operation==-1000 ) {
+                         yyerror("Cannot filter on a constant");
+                         YYERROR;
+                      }
+                      $$ = New_GTI( $2, $4, $6, $8 );
+                   } else {
+                      yyerror("Filter Function not supported");
+		      YYERROR;
+		   }
+                   TEST($$); 
+                }
        | bexpr '[' expr ']'
                 { $$ = New_Deref( $1, 1, $3,  0,  0,  0,   0 ); TEST($$); }
        | bexpr '[' expr ',' expr ']'
@@ -918,6 +977,199 @@ static int New_Deref( int Var,  int nDim,
       }
    }
    return(n);
+}
+
+static int New_GTI( char *fname, int Node1, char *start, char *stop )
+{
+   fitsfile *fptr;
+   Node *this, *that1, *that0;
+   int  type,i,n, startCol, stopCol, Node0;
+   int  hdutype, hdunum, evthdu, samefile, extvers, movetotype, tstat;
+   char extname[100];
+   int  allDigits, endBracket;
+   long colnum, nrows;
+   double timeZeroI[2], timeZeroF[2], dt, timeSpan;
+
+   if( Node1==-99 ) {
+      type = yybuildcolumn( "TIME", &colnum );
+      if( (type==LONG || type==DOUBLE) && gParse.colInfo[colnum].nelem==1 ) {
+	 Node1 = New_Column( colnum );
+      } else {
+	 yyerror("Could not build TIME column for GTIFILTER");
+	 return(-1);
+      }
+   }
+   Node1 = New_Unary( DOUBLE, 0, Node1 );
+   Node0 = Alloc_Node(); /* This will hold the START/STOP times */
+   if( Node1<0 || Node0<0 ) return(-1);
+
+   /*  Record current HDU number in case we need to move within this file  */
+
+   fptr = gParse.def_fptr;
+   ffghdn( fptr, &evthdu );
+
+   /*  Look for TIMEZERO keywords in current extension  */
+
+   tstat = 0;
+   if( ffgkyd( fptr, "TIMEZERO", timeZeroI, NULL, &tstat ) ) {
+      tstat = 0;
+      if( ffgkyd( fptr, "TIMEZERI", timeZeroI, NULL, &tstat ) ) {
+	 timeZeroI[0] = timeZeroF[0] = 0.0;
+      } else if( ffgkyd( fptr, "TIMEZERF", timeZeroF, NULL, &tstat ) ) {
+	 timeZeroF[0] = 0.0;
+      }
+   } else {
+      timeZeroF[0] = 0.0;
+   }
+
+   /*  Resolve filename parameter  */
+
+   switch( fname[0] ) {
+   case '\0':
+      samefile = 1;
+      hdunum = 1;
+      break;
+   case '[':
+      samefile = 1;
+      i = 1;
+      while( fname[i] != '\0' && fname[i] != ']' ) i++;
+      if( fname[i] ) {
+	 fname[i] = '\0';
+	 fname++;
+	 ffexts( fname, &hdunum, extname, &extvers, &movetotype,
+		 &gParse.status );
+         if( *extname ) {
+	    ffmnhd( fptr, movetotype, extname, extvers, &gParse.status );
+	    ffghdn( fptr, &hdunum );
+	 } else if( hdunum ) {
+	    ffmahd( fptr, ++hdunum, &hdutype, &gParse.status );
+	 } else if( !gParse.status ) {
+	    yyerror("Cannot use primary array for GTI filter");
+	    return( -1 );
+	 }
+      } else {
+	 yyerror("File extension specifier lacks closing ']'");
+	 return( -1 );
+      }
+      break;
+   case '+':
+      samefile = 1;
+      hdunum = atoi( fname ) + 1;
+      if( hdunum>1 )
+	 ffmahd( fptr, hdunum, &hdutype, &gParse.status );
+      else {
+	 yyerror("Cannot use primary array for GTI filter");
+	 return( -1 );
+      }
+      break;
+   default:
+      samefile = 0;
+      if( ! ffopen( &fptr, fname, READONLY, &gParse.status ) )
+	 ffghdn( fptr, &hdunum );
+      break;
+   }
+   if( gParse.status ) return(-1);
+
+   /*  If at primary, search for GTI extension  */
+
+   if( hdunum==1 ) {
+      while( 1 ) {
+	 hdunum++;
+	 if( ffmahd( fptr, hdunum, &hdutype, &gParse.status ) ) break;
+	 if( hdutype==IMAGE_HDU ) continue;
+	 tstat = 0;
+	 if( ffgkys( fptr, "EXTNAME", extname, NULL, &tstat ) ) continue;
+	 ffupch( extname );
+	 if( strstr( extname, "GTI" ) ) break;
+      }
+      if( gParse.status ) {
+	 if( gParse.status==END_OF_FILE )
+	    yyerror("GTI extension not found in this file");
+	 return(-1);
+      }
+   }
+
+   /*  Locate START/STOP Columns  */
+
+   ffgcno( fptr, CASEINSEN, start, &startCol, &gParse.status );
+   ffgcno( fptr, CASEINSEN, stop,  &stopCol,  &gParse.status );
+   if( gParse.status ) return(-1);
+
+   /*  Look for TIMEZERO keywords in GTI extension  */
+
+   tstat = 0;
+   if( ffgkyd( fptr, "TIMEZERO", timeZeroI+1, NULL, &tstat ) ) {
+      tstat = 0;
+      if( ffgkyd( fptr, "TIMEZERI", timeZeroI+1, NULL, &tstat ) ) {
+	 timeZeroI[1] = timeZeroF[1] = 0.0;
+      } else if( ffgkyd( fptr, "TIMEZERF", timeZeroF+1, NULL, &tstat ) ) {
+	 timeZeroF[1] = 0.0;
+      }
+   } else {
+      timeZeroF[1] = 0.0;
+   }
+
+   n = Alloc_Node();
+   if( n >= 0 ) {
+      this                 = gParse.Nodes + n;
+      this->nSubNodes      = 2;
+      this->SubNodes[1]    = Node1;
+      this->operation      = (int)gtifilt_fct;
+      this->DoOp           = Do_GTI;
+      this->type           = BOOLEAN;
+      this->value.nelem    = 1;
+      this->value.naxis    = 1;
+      this->value.naxes[0] = 1;
+
+      /* Init START/STOP node to be treated as a "constant" */
+
+      this->SubNodes[0]    = Node0;
+      that0                = gParse.Nodes + Node0;
+      that0->operation     = -1000;
+      that0->DoOp          = NULL;
+
+      /*  Read in START/STOP times  */
+
+      if( ffgkyj( fptr, "NAXIS2", &nrows, NULL, &gParse.status ) )
+	 return(-1);
+      if( !nrows ) {
+	 yyerror("GTI extension is empty.");
+	 return(-1);
+      }
+      that0->value.nelem = nrows;
+
+      that0->value.data.dblptr = (double*)malloc( 2*nrows*sizeof(double) );
+      if( !that0->value.data.dblptr ) {
+	 gParse.status = MEMORY_ALLOCATION;
+	 return(-1);
+      }
+
+      ffgcvd( fptr, startCol, 1L, 1L, nrows, 0.0,
+	      that0->value.data.dblptr, &i, &gParse.status );
+      ffgcvd( fptr, stopCol, 1L, 1L, nrows, 0.0,
+	      that0->value.data.dblptr+nrows, &i, &gParse.status );
+      if( gParse.status ) {
+	 free( that0->value.data.dblptr );
+	 return(-1);
+      }
+
+      /*  Handle TIMEZERO offset, if any  */
+
+      dt = (timeZeroI[1] - timeZeroI[0]) + (timeZeroF[1] - timeZeroF[0]);
+      timeSpan = that0->value.data.dblptr[nrows+nrows-1]
+	         - that0->value.data.dblptr[0];
+
+      if( fabs( dt / timeSpan ) > 1e-12 ) {
+	 for( i=0; i<(nrows+nrows); i++ )
+	    that0->value.data.dblptr[i] += dt;
+      }
+   }
+
+   if( samefile )
+      ffmahd( fptr, evthdu, &hdutype, &gParse.status );
+   else
+      ffclos( fptr, &gParse.status );
+   return( n );
 }
 
 static int Test_Dims( int Node1, int Node2 )
@@ -2588,6 +2840,46 @@ static void Do_Deref( Node *this )
       if( theDims[i]->operation>0 ) {
 	 free( theDims[i]->value.data.ptr );
       }
+}
+
+static void Do_GTI( Node *this )
+{
+   Node *theExpr, *theTimes;
+   double *start, *stop, *times;
+   long row, nGTI, i, lastGTI;
+
+   theTimes = gParse.Nodes + this->SubNodes[0];
+   theExpr  = gParse.Nodes + this->SubNodes[1];
+
+   nGTI  = theTimes->value.nelem;
+   start = theTimes->value.data.dblptr;
+   stop  = theTimes->value.data.dblptr + nGTI;
+
+   times = theExpr->value.data.dblptr;
+
+   Allocate_Ptrs( this );
+
+   if( !gParse.status ) {
+
+      i = 0;
+      row = gParse.nRows;
+      while( row-- ) {
+	 this->value.undef[row] = theExpr->value.undef[row];
+
+	 /*  Before searching entire GTI, check the GTI found last time  */
+	 if( i<0 || times[row]<start[i] || times[row]>stop[i] ) {
+	    i = nGTI;
+	    while( i-- )
+	       if( times[row]>=start[i] && times[row]<=stop[i] )
+		  break;
+	 }
+	 this->value.data.logptr[row] = ( i>=0 );
+      }
+
+   }
+
+   if( theExpr->operation>0 )
+      free( theExpr->value.data.ptr );
 }
 
 /*****************************************************************************/

@@ -500,7 +500,7 @@ void ffcprs( void )  /*  No parameters                                      */
 /* Clear the parser, making it ready to accept a new expression.            */
 /*--------------------------------------------------------------------------*/
 {
-   int col;
+   int col, node;
 
    if( gParse.nCols > 0 ) {
       free( gParse.colData  );
@@ -514,6 +514,12 @@ void ffcprs( void )  /*  No parameters                                      */
       free( gParse.colNulls );
       gParse.nCols = 0;
    }
+
+   for( node=0; node<gParse.nNodes; node++ ) {
+      if( gParse.Nodes[node].operation==gtifilt_fct )
+	 free( gParse.Nodes[ gParse.Nodes[node].SubNodes[0] ].value.data.ptr );
+   }
+   free( gParse.Nodes );
 }
 
 /*---------------------------------------------------------------------------*/

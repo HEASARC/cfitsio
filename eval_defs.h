@@ -99,6 +99,7 @@ typedef enum {
                   elps_fct,
                   isnull_fct,
                   defnull_fct,
+                  gtifilt_fct,
                   row_fct
                                 } funcOp;
 
@@ -111,6 +112,7 @@ extern "C" {
    int  ffparse(void);
    int  fflex(void);
    void ffrestart(FILE*);
+   int  ffbuildcolumn( char *ColName, long *ColNum );
 
    void Evaluate_Node( int thisNode );
    void Reset_Parser ( long firstRow, long rowOffset, long nRows );

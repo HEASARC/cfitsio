@@ -377,6 +377,9 @@ nl		\n
                          )
                      /* Return type is always boolean  */
 		     return( BFUNCTION );
+                  else if (FSTRCMP(fname,"GTIFILTER(")==0
+                         )
+                     return( FILTER    );
                   else 
 		     return( FUNCTION  );
 		}
@@ -442,6 +445,17 @@ static int find_column(char *colname)
          }
       }
    return( -1 );
+}
+
+/* Public entry point for calls from eval.y */
+int yybuildcolumn( char *ColName, long *ColNum )
+{
+   YYSTYPE lval;
+   int type;
+
+   type = build_column_array( ColName, &lval );
+   *ColNum = lval.lng;
+   return( type );
 }
 
 static int build_column_array( char *colname, YYSTYPE *lval )
