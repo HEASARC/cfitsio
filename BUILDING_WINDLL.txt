@@ -1,0 +1,29 @@
+
+1. Checkout the latest cfitsio from the repository and make sure you're setup to
+run Borland C++.  You can't make a proper dll/def file pair that will work with both 
+Borland and VC++ using VC++ (I know, you're shocked :), so you've got to use Borland
+to build unless we drop support for Borland.
+
+2. 'del make.com'  or you can't type 'make' without trying to run this old VMS
+relic.
+
+3. 'make -f makefile.bc' This should generate cfitsio.def and cfitsio.dll, along
+the way it will make windumpexts.exe to write the cfitsio.def file.
+
+4. To wrap up the distribution, put the following files into a zip file. You may
+want to rename README_WINUSER to README before putting it in the distribution for
+consistency with past releases but whatever.
+
+
+cfitsio.def
+cfitsio.dll
+fitsio.h
+longnam.h
+README_WINUSER ---->README
+testprog.c
+testprog.std
+testprog.tpt
+
+5. Unzip your distribution to a temporary directory and follow the WINUSER README to
+build and run the test program with VC++ and Borland to be sure it works.
+ 
