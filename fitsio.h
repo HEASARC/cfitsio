@@ -38,7 +38,7 @@ SERVICES PROVIDED HEREUNDER."
 
 #include <stdio.h>
 
-#if defined(linux)
+#if defined(linux) || defined(__APPLE__)
 #  include <sys/types.h>  /* apparently needed on debian linux systems */
 #endif                    /* to define off_t                           */
 
