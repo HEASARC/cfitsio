@@ -1441,39 +1441,39 @@ FCALLSCSUB4(ffpbyt,FTPBYT,ftpbyt,FITSUNIT,LONG,PVOID,PINT)
 /*                     (defined in fitsio2.h)                    */
 /*---------------------------------------------------------------*/
 
-int Cfnan( short *sptr )
+int Cfnan( float *val )
 {
    int code;
 
 #if BYTESWAPPED
-   code = fnan(*(sptr+1));
+   short *sptr = (short*)val + 1;
 #else
+   short *sptr = (short*)val;
+#endif
+
    code = fnan(*sptr);
-#endif
+   if( code==2 ) *val = 0.0;   /* Underflow */
 
-   if (code==2) {
-      sptr[0]=sptr[1]=0;
-   }
    return( code!=0 );
 }
-FCALLSCFUN1(LOGICAL,Cfnan,FTTRNN,fttrnn,PSHORT)
+FCALLSCFUN1(LOGICAL,Cfnan,FTTRNN,fttrnn,PFLOAT)
 
-int Cdnan( short *sptr )
+int Cdnan( double *val )
 {
    int code;
 
 #if BYTESWAPPED
-   code = dnan(*(sptr+3));
+   short *sptr = (short*)val + 3;
 #else
-   code = dnan(*sptr);
+   short *sptr = (short*)val;
 #endif
 
-   if (code==2) {
-      sptr[0]=sptr[1]=sptr[2]=sptr[3]=0;
-   }
+   code = dnan(*sptr);
+   if( code==2 ) *val = 0.0;   /* Underflow */
+
    return( code!=0 );
 }
-FCALLSCFUN1(LOGICAL,Cdnan,FTTDNN,fttdnn,PSHORT)
+FCALLSCFUN1(LOGICAL,Cdnan,FTTDNN,fttdnn,PDOUBLE)
 
 /*-------------- Additional missing FITSIO routines -------------*/
 /*                   (abandoned in CFITSIO)                      */
