@@ -1897,28 +1897,39 @@ int ffpdfl(fitsfile *fptr,      /* I - FITS file pointer */
 
     nfill = (fillstart + 2879) / 2880 * 2880 - fillstart;
 
-    if (!nfill)
-        return(*status);  /* return if there are no fill bytes to write */
-
     if (fptr->hdutype == ASCII_TBL)
         chfill = 32;         /* ASCII tables are filled with spaces */
     else
         chfill = 0;          /* all other extensions are filled with zeros */
 
     tstatus = 0;
-    ffmbyt(fptr, fillstart, REPORT_EOF, &tstatus); /* move to fill area */
-    ffgbyt(fptr, nfill, fill, &tstatus);           /* get the fill bytes */
 
-    if (tstatus == 0)
+    if (!nfill)  /* no fill bytes; just check that entire table exists */
     {
-        for (ii = 0; ii < nfill; ii++)
-        {
-            if (fill[ii] != chfill)
-                break;
-        }
+        fillstart--;
+        nfill = 1;
+        ffmbyt(fptr, fillstart, REPORT_EOF, &tstatus); /* move to last byte */
+        ffgbyt(fptr, nfill, fill, &tstatus);           /* get the last byte */
 
-        if (ii == nfill)
-            return(*status);   /* all the fill values were correct */
+        if (tstatus == 0)
+            return(*status);  /* no EOF error, so everything is OK */
+    }
+    else
+    {
+        ffmbyt(fptr, fillstart, REPORT_EOF, &tstatus); /* move to fill area */
+        ffgbyt(fptr, nfill, fill, &tstatus);           /* get the fill bytes */
+
+        if (tstatus == 0)
+        {
+            for (ii = 0; ii < nfill; ii++)
+            {
+                if (fill[ii] != chfill)
+                    break;
+            }
+
+            if (ii == nfill)
+                return(*status);   /* all the fill values were correct */
+        }
     }
 
     /* fill values are incorrect or have not been written, so write them */

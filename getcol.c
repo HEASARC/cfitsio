@@ -1669,7 +1669,7 @@ int ffgsvb(fitsfile *fptr, /* I - FITS file pointer                         */
     }
 
     nultyp = 1;
-    anynul = FALSE;
+    *anynul = FALSE;
     i0 = 0;
     for (ii = 0; ii < 9; ii++)
     {
@@ -1811,7 +1811,7 @@ int ffgsvi(fitsfile *fptr, /* I - FITS file pointer                         */
     }
 
     nultyp = 1;
-    anynul = FALSE;
+    *anynul = FALSE;
     i0 = 0;
     for (ii = 0; ii < 9; ii++)
     {
@@ -1952,7 +1952,7 @@ int ffgsvj(fitsfile *fptr, /* I - FITS file pointer                         */
     }
 
     nultyp = 1;
-    anynul = FALSE;
+    *anynul = FALSE;
     i0 = 0;
     for (ii = 0; ii < 9; ii++)
     {
@@ -2094,7 +2094,7 @@ int ffgsvk(fitsfile *fptr, /* I - FITS file pointer                         */
     }
 
     nultyp = 1;
-    anynul = FALSE;
+    *anynul = FALSE;
     i0 = 0;
     for (ii = 0; ii < 9; ii++)
     {
@@ -2236,7 +2236,7 @@ int ffgsve(fitsfile *fptr, /* I - FITS file pointer                         */
     }
 
     nultyp = 1;
-    anynul = FALSE;
+    *anynul = FALSE;
     i0 = 0;
     for (ii = 0; ii < 9; ii++)
     {
@@ -2378,7 +2378,7 @@ int ffgsvd(fitsfile *fptr, /* I - FITS file pointer                         */
     }
 
     nultyp = 1;
-    anynul = FALSE;
+    *anynul = FALSE;
     i0 = 0;
     for (ii = 0; ii < 9; ii++)
     {
@@ -2521,7 +2521,7 @@ int ffgsfb(fitsfile *fptr, /* I - FITS file pointer                         */
     }
 
     nultyp = 2;
-    anynul = FALSE;
+    *anynul = FALSE;
     i0 = 0;
     for (ii = 0; ii < 9; ii++)
     {
@@ -2664,7 +2664,7 @@ int ffgsfi(fitsfile *fptr, /* I - FITS file pointer                         */
     }
 
     nultyp = 2;
-    anynul = FALSE;
+    *anynul = FALSE;
     i0 = 0;
     for (ii = 0; ii < 9; ii++)
     {
@@ -2807,7 +2807,7 @@ int ffgsfj(fitsfile *fptr, /* I - FITS file pointer                         */
     }
 
     nultyp = 2;
-    anynul = FALSE;
+    *anynul = FALSE;
     i0 = 0;
     for (ii = 0; ii < 9; ii++)
     {
@@ -2950,7 +2950,7 @@ int ffgsfk(fitsfile *fptr, /* I - FITS file pointer                         */
     }
 
     nultyp = 2;
-    anynul = FALSE;
+    *anynul = FALSE;
     i0 = 0;
     for (ii = 0; ii < 9; ii++)
     {
@@ -3093,7 +3093,7 @@ int ffgsfe(fitsfile *fptr, /* I - FITS file pointer                         */
     }
 
     nultyp = 2;
-    anynul = FALSE;
+    *anynul = FALSE;
     i0 = 0;
     for (ii = 0; ii < 9; ii++)
     {
@@ -3236,7 +3236,7 @@ int ffgsfd(fitsfile *fptr, /* I - FITS file pointer                         */
     }
 
     nultyp = 2;
-    anynul = FALSE;
+    *anynul = FALSE;
     i0 = 0;
     for (ii = 0; ii < 9; ii++)
     {

@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large August 1996\\}
+{\Large September 1996\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -180,13 +180,16 @@ of how to build the CFITSIO library.  This file will probably
 need to be editted to include the appropriate command switches
 if a different C compiler or linker is used.
 
+The MacOS version of the cfitsio library can be built by following
+the procedure outlined in the README\_MacOS file.
+
 CFITSIO has currently been tested on the following platforms:
 
 \begin{verbatim}
    Operating System          Compiler
    ----------------          --------
    Sun OS                     gcc
-   Sun Solaris                gcc
+   Sun Solaris                gcc and cc
    Silicon Graphics IRIX      gcc and cc
    DECstation  Ultrix         gcc
    Dec Alpha OSF/1            gcc
@@ -195,6 +198,7 @@ CFITSIO has currently been tested on the following platforms:
    Linux running on IBM PC    gcc
    IBM PC w/ Windows 95       Borland C++ V4.5
    Mac IIci                   Symantec C++
+   MacOS 7.5.3                Metrowerks 9.
 \end{verbatim}
 CFITSIO will probably run on most other Unix platforms without
 modification.  Cray supercomputers and IBM mainframe computers are

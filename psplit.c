@@ -1,4 +1,4 @@
-/*    $Header$
+/*    /redshift/sgi6/lheavc/ftools/cfitsio/psplit.c,v 1.3 1996/05/29 18:19:48 dunfee Exp
 
      jdd May 1996
 

@@ -1,5 +1,19 @@
          Log of Changes Made to CFITSIO
 
+
+Version 1.04 - 
+
+   - added README.MacOS and cfitsio_mac.sit.hqx to the distribution
+     to support the Mac platforms.
+
+   - fixed bug in ffpdfl that caused an EOF error (107) when a program
+     creats a new extention that is an exact multiple of 2880 bytes long,
+     AND the program does not write a value to the last element
+     in the table or image.
+
+   - fixed bug in all the ffgsf* and ffgcv* routines which caused
+     core dumps when reading null values in a table.
+
 Version 1.03 - 20 August 1996
 
    - added full support for reading and writing the C 'int'
@@ -16,7 +30,7 @@ Version 1.02 - 15 August 1996
    - ffgtbp was not correctly reading the THEAP keyword, hence would
      not correctly read variable length data in binary tables if
      the heap was not at the default starting location (i.e., 
-     starting immeadiately after the fixed length table).
+     starting immediately after the fixed length table).
 
    - now force the cbuff variable in ffpcl_ and ffgcl_ to be
      aligned on a double word boundary.  Non-alignment can
