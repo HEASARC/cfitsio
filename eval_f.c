@@ -2012,6 +2012,9 @@ static int find_column( char *colName, void *itslval )
    int colnum, typecode, type, hdutype;
    long repeat, width;
    fitsfile *fptr;
+   char temp[80];
+   double tzero,tscale;
+   int istatus;
 
    if( *colName == '#' )
       return( find_keywd( colName + 1, itslval ) );
@@ -2054,8 +2057,27 @@ static int find_column( char *colName, void *itslval )
    case TBYTE:
    case TSHORT:
    case TLONG:
-      gParse.varData[col_cnt].type     = LONG;
-      gParse.colData[col_cnt].datatype = TLONG;
+      /* The datatype of column with TZERO and TSCALE keywords might be 
+         float or double. 
+      */
+      sprintf(temp,"TZERO%d",colnum);
+      istatus = 0;
+      if(fits_read_key(fptr,TDOUBLE,temp,&tzero,NULL,&istatus)) {
+          tzero = 0.0;
+      } 
+      sprintf(temp,"TSCAL%d",colnum);
+      istatus = 0;
+      if(fits_read_key(fptr,TDOUBLE,temp,&tscale,NULL,&istatus)) {
+          tscale = 1.0;
+      } 
+      if (tscale == 1.0 && (tzero == 0.0 || tzero == 32768.0 || 
+                            tzero == 2147483648.0 )) {
+          gParse.varData[col_cnt].type     = LONG;
+          gParse.colData[col_cnt].datatype = TLONG;
+      } else {
+          gParse.varData[col_cnt].type     = DOUBLE;
+          gParse.colData[col_cnt].datatype = TDOUBLE;
+      }
       type = COLUMN;
       break;
    case TFLOAT:
