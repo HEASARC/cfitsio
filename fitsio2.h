@@ -3,7 +3,7 @@
  
 #include "fitsio.h"
 
-#define SUPPORT_64BIT_INTEGERS 0
+#define SUPPORT_64BIT_INTEGERS 1
 
 #define USE_LARGE_VALUE -99  /* flag used when writing images */
 
