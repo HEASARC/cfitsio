@@ -337,6 +337,34 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,STRING,PSTRING,PSTRING,PINT,CF_0,CF_0
    RCF(PINT,5)
 }
 
+/*   This is the *real* wrapper to FFGKLS, although it is exactly the
+     same as the one for FFGKYS.  To handle the pointer to a pointer,
+     manually expand the FCALLSC macro and modify function call.       */
+
+CFextern VOID_cfF(FTGKLS,ftgkls)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,STRING,PSTRING,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0));
+CFextern VOID_cfF(FTGKLS,ftgkls)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,STRING,PSTRING,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0))
+{
+   QCF(FITSUNIT,1)
+   QCF(STRING,2)
+   QCF(PSTRING,3)   /*  Defines a character pointer  */
+   QCF(PSTRING,4)
+   QCF(PINT,5)
+
+   ffgkls( TCF(ftgkls,FITSUNIT,1,0)
+           TCF(ftgkls,STRING,2,1)
+           , &B3                        /*  Pass address of pointer  */
+           TCF(ftgkls,PSTRING,4,1)
+           TCF(ftgkls,PINT,5,1)     );
+
+   RCF(FITSUNIT,1)
+   RCF(STRING,2)
+   RCF(PSTRING,3)      /*  Copies as much of pointer as will fit   */
+   RCF(PSTRING,4)      /*     into fortran string and frees space  */
+   RCF(PINT,5)
+}
+
 FCALLSCSUB5(ffgkyl,FTGKYL,ftgkyl,FITSUNIT,STRING,PINT,PSTRING,PINT)
 FCALLSCSUB5(ffgkyj,FTGKYJ,ftgkyj,FITSUNIT,STRING,PLONG,PSTRING,PINT)
 FCALLSCSUB5(ffgkye,FTGKYE,ftgkye,FITSUNIT,STRING,PFLOAT,PSTRING,PINT)
