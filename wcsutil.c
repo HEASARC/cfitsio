@@ -126,7 +126,11 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
         if (!strncmp(ctype, "DEC-", 4) || !strncmp(ctype+1, "LAT", 3))
         {
             /* the latitudinal axis is given first, so swap them */
-            *rot = 90. - (*rot);
+            if ((*xinc / *yinc) < 0. )  /* negative == mirror image on sky */
+                *rot = -90. - (*rot);
+            else
+                *rot = 90. - (*rot);
+
             temp = *xinc;
             *xinc = *yinc;
             *yinc = -temp;
