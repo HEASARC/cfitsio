@@ -114,7 +114,7 @@ typedef struct      /* structure used to store basic HDU information */
 #define HEADER_NOT_EMPTY  201  /* header already contains keywords */
 #define KEY_NO_EXIST      202  /* keyword not found in header */
 #define KEY_OUT_BOUNDS    203  /* keyword record number is out of bounds */
-#define NO_VALUE          204  /* keyword value field is blank */
+#define VALUE_UNDEFINED   204  /* keyword value field is blank */
 #define NO_QUOTE          205  /* string is missing the closing quote */
 #define BAD_KEYCHAR       207  /* illegal character in keyword name or card */
 #define BAD_ORDER         208  /* required keywords out of order */
@@ -229,8 +229,10 @@ int ffpky(fitsfile *fptr, int datatype, char *keyname, void *value,
           char *comm, int *status);
 int ffprec(fitsfile *fptr, const char *card, int *status);
 int ffpcom(fitsfile *fptr, const char *comm, int *status);
+int ffpunt(fitsfile *fptr, char *keyname, char *unit, int *status);
 int ffphis(fitsfile *fptr, const char *history, int *status);
 int ffpdat(fitsfile *fptr, int *status);
+int ffpkyu(fitsfile *fptr, char *keyname, char *comm, int *status);
 int ffpkys(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
 int ffpkls(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
 int ffplsw(fitsfile *fptr, int *status);
@@ -286,6 +288,7 @@ int ffgnxk(fitsfile *fptr, char **inclist, int ninc, char **exclist,
            int nexc, char *card, int  *status);
 int ffgrec(fitsfile *fptr, int nrec,      char *card, int *status);
 int ffgcrd(fitsfile *fptr, char *keyname, char *card, int *status);
+int ffgunt(fitsfile *fptr, char *keyname, char *unit, int  *status);
 int ffgkyn(fitsfile *fptr, int nkey, char *keyname, char *keyval, char *comm,
            int *status);
 int ffgkey(fitsfile *fptr, char *keyname, char *keyval, char *comm,
@@ -331,6 +334,7 @@ int ffghbn(fitsfile *fptr, int maxfield, long *naxis2, int *tfields,
  
 /*--------------------- update keywords ---------------*/
 int ffucrd(fitsfile *fptr, char *keyname, char *card, int *status);
+int ffukyu(fitsfile *fptr, char *keyname, char *comm, int *status);
 int ffukys(fitsfile *fptr, char *keyname, char *value, char *comm, int *status);
 int ffukyl(fitsfile *fptr, char *keyname, int value, char *comm, int *status);
 int ffukyj(fitsfile *fptr, char *keyname, long value, char *comm, int *status);
@@ -348,6 +352,7 @@ int ffmrec(fitsfile *fptr, int nkey, char *card, int *status);
 int ffmcrd(fitsfile *fptr, char *keyname, char *card, int *status);
 int ffmnam(fitsfile *fptr, char *oldname, char *newname, int *status);
 int ffmcom(fitsfile *fptr, char *keyname, char *comm, int *status);
+int ffmkyu(fitsfile *fptr, char *keyname, char *comm, int *status);
 int ffmkys(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
 int ffmkyl(fitsfile *fptr, char *keyname, int value, char *comm, int *status);
 int ffmkyj(fitsfile *fptr, char *keyname, long value, char *comm, int *status);
@@ -362,6 +367,7 @@ int ffmkyd(fitsfile *fptr, char *keyname, double value, int decim, char *comm,
  
 /*--------------------- insert keywords ---------------*/
 int ffirec(fitsfile *fptr, int nkey, char *card, int *status);
+int ffikyu(fitsfile *fptr, char *keyname, char *comm, int *status);
 int ffikys(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
 int ffikyl(fitsfile *fptr, char *keyname, int value, char *comm, int *status);
 int ffikyj(fitsfile *fptr, char *keyname, long value, char *comm, int *status);
@@ -394,6 +400,7 @@ int ffitab(fitsfile *fptr, long naxis1, long naxis2, int tfields, char **ttype,
            long *tbcol, char **tform, char **tunit, char *extname, int *status);
 int ffibin(fitsfile *fptr,long naxis2, int tfields, char **ttype, char **tform,
            char **tunit, char *extname, long pcount, int *status);
+int ffrsim(fitsfile *fptr, int bitpix, int naxis, long *naxes, int *status);
 int ffdhdu(fitsfile *fptr, int *hdutype, int *status);
 int ffcopy(fitsfile *infptr, fitsfile *outfptr, int morekeys, int *status);
 int ffcpdt(fitsfile *infptr, fitsfile *outfptr, int *status);

@@ -1,5 +1,50 @@
              Log of Changes Made to CFITSIO
 
+Version 1.25 - 7 July 1997
+
+   - improved the efficiency of the ffiblk routine, when inserting
+     more than one block into the file.
+
+   - fixed bug in ffwend that in rare instances caused the beginning
+     of the following extension to be overwritten by blank fill.
+
+   - added new routine to modify the size of an existing primary
+     array or image extension: fits_resize_img/ffrsim.
+
+   - added support for null-valued keywords, e.g., keywords that
+     have no defined value.  These keywords have an equal sign and
+     space in columns 9-10, but have not value string.  Example:
+     KEYNAME =                      / null-valued keyword
+     Support for this feature required the following changes:
+       - modified ffpsvc to return a null value string without error
+       - modified ffc2[ilrd] to return error VALUE_UNDEFINED in this case
+       - modified ffgkn[sljed] to continue reading additional keywords
+         even if one or more keywords have undefined values.
+       - added 4 new routines:  ffpkyu, ffikyu, ffmkyu, ffukyu to
+         write, insert, modify, or update an undefined keyword
+
+   - a new makefile.os2 file was added, for building CFITSIO
+     on OS/2 systems.
+
+   - modified ffgtkn so that if it finds an unexpected keyword
+     name, the returned error status = BAD_ORDER instead of
+     NOT_POS_INT.
+
+   - added 2 new routines, fits_write_key_unit/ffpunt and
+     fits_read_key_unit/ffgunt to write/read the physical
+     units of a keyword value.  These routines use a local
+     FITS convention for storing the units in square brackets
+     following the '/' comment field separator, as in:
+     VELOCITY=                   12 / [km/s] orbit speed 
+     The testprog.c program was modified to test these
+     new routines.
+
+   - in the test of Alpha OSF/1 machines in fitsio2.h,
+     change 'defined(unix)' to 'defined(__unix__)' which
+     appears to be a more robust test.
+
+   - remove test for linux environment variable from fitsio2.h
+
 Version 1.24 - 2 May 1997
 
    - fixed bug in ffpbyt that incorrectly computed the current
@@ -12,7 +57,6 @@ Version 1.24 - 2 May 1997
    - changed '(unsigned short *)' to '(short *)' in getcolui.c, and
      changed '(unsigned long *)'  to '(long *)'  in getcoluj.c, to
      work around problem with the VAX/VMS cc compiler.
-
 
 Version 1.23 - 24 April 1997
 
@@ -120,7 +164,7 @@ Version 1.101 - 17 Nov 1996
 
    - Made major I/O efficiency improvements by adding internal buffers
      rather than directly reading or writing to disk.  Access to 
-     columns in binary tables is now 50 - 150 times fasters.  Access to
+     columns in binary tables is now 50 - 150 times faster.  Access to
      FITS image is also slightly faster.
 
    - made significant speed improvements when reading numerical data

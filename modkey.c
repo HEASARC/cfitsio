@@ -13,6 +13,26 @@
 #include <string.h>
 #include "fitsio2.h"
 /*--------------------------------------------------------------------------*/
+int ffukyu(fitsfile *fptr,    /* I - FITS file pointer  */
+           char *keyname,     /* I - keyword name       */
+           char *comm,        /* I - keyword comment    */
+           int *status)       /* IO - error status      */
+{
+    int tstatus;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    tstatus = *status;
+
+    if (ffmkyu(fptr, keyname, comm, status) == KEY_NO_EXIST)
+    {
+        *status = tstatus;
+        ffpkyu(fptr, keyname, comm, status);
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffukys(fitsfile *fptr,    /* I - FITS file pointer  */
            char *keyname,     /* I - keyword name       */
            char *value,       /* I - keyword value      */
@@ -252,7 +272,103 @@ int ffmcom(fitsfile *fptr,    /* I - FITS file pointer  */
         return(*status);
 
     ffmkky(keyname, value, comm, card);  /* construct the card */
-    ffmkey(fptr, card, status);  /* rewrite with new name */
+    ffmkey(fptr, card, status);  /* rewrite with new comment */
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffpunt(fitsfile *fptr,    /* I - FITS file pointer   */
+           char *keyname,     /* I - keyword name        */
+           char *unit,        /* I - keyword unit string */
+           int *status)       /* IO - error status       */
+/*
+    Write (put) the units string into the comment field of the existing
+    keyword. This routine uses a local FITS convention (not defined in the
+    official FITS standard) in which the units are enclosed in 
+    square brackets following the '/' comment field delimiter, e.g.:
+
+    KEYWORD =                   12 / [kpc] comment string goes here
+*/
+{
+    char oldcomm[FLEN_COMMENT];
+    char newcomm[FLEN_COMMENT];
+    char value[FLEN_VALUE];
+    char card[FLEN_CARD];
+    char *loc;
+    size_t len;
+ 
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (ffgkey(fptr, keyname, value, oldcomm, status) > 0)
+        return(*status);
+
+    /* copy the units string to the new comment string if not null */
+    if (*unit)
+    {
+        strcpy(newcomm, "[");
+        strncat(newcomm, unit, 45);  /* max allowed length is about 45 chars */
+        strcat(newcomm, "] ");
+        len = strlen(newcomm);  
+        len = FLEN_COMMENT - len - 1;  /* amount of space left in the field */
+    }
+    else
+    {
+        newcomm[0] = '\0';
+        len = FLEN_COMMENT - 1;
+    }
+
+    if (oldcomm[0] == '[')  /* check for existing units field */
+    {
+        loc = strchr(oldcomm, ']');  /* look for the closing bracket */
+        if (loc)
+        {
+            loc++;
+            while (*loc == ' ')   /* skip any blank spaces */
+               loc++;
+
+            strncat(newcomm, loc, len);  /* concat remainder of comment */
+        }
+        else
+        {
+            strncat(newcomm, oldcomm, len);  /* append old comment onto new */
+        }
+    }
+    else
+    {
+        strncat(newcomm, oldcomm, len);
+    }
+
+    ffmkky(keyname, value, newcomm, card);  /* construct the card */
+    ffmkey(fptr, card, status);  /* rewrite with new units string */
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffmkyu(fitsfile *fptr,    /* I - FITS file pointer  */
+           char *keyname,     /* I - keyword name       */
+           char *comm,        /* I - keyword comment    */
+           int *status)       /* IO - error status      */
+{
+    char valstring[FLEN_VALUE];
+    char oldcomm[FLEN_COMMENT];
+    char card[FLEN_CARD];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (ffgkey(fptr, keyname, valstring, oldcomm, status) > 0)
+        return(*status);                               /* get old comment */
+
+    strcpy(valstring,"0");  /* create a dummy value string */
+
+    if (comm[0] == '&')  /* preserve the current comment string */
+        ffmkky(keyname, valstring, oldcomm, card);
+    else
+        ffmkky(keyname, valstring, comm, card);
+
+    card[29] = ' ';        /* reset the dummy value string to a blank */
+    ffmkey(fptr, card, status);
 
     return(*status);
 }
@@ -474,6 +590,28 @@ int ffmkyd(fitsfile *fptr,    /* I - FITS file pointer  */
         ffmkky(keyname, valstring, comm, card);
 
     ffmkey(fptr, card, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffikyu(fitsfile *fptr,    /* I - FITS file pointer  */
+           char *keyname,     /* I - keyword name       */
+           char *comm,        /* I - keyword comment    */
+           int *status)       /* IO - error status      */
+/*
+  Insert a null-valued keyword and comment into the FITS header.  
+*/
+{
+    char valstring[FLEN_VALUE];
+    char card[FLEN_CARD];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    strcpy(valstring,"0");  /* create a dummy value string */
+    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    card[29] = ' ';        /* reset the dummy value string to a blank */
+    ffikey(fptr, card, status);
 
     return(*status);
 }

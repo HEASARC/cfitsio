@@ -1,5 +1,5 @@
 /*  This file, editcol.c, contains the set of FITSIO routines that    */
-/*  insert or delete rows or columns in a table.                      */
+/*  insert or delete rows or columns in a table or resize an image    */
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
@@ -11,7 +11,142 @@
 /*  and perform such material.                                             */
 
 #include <string.h>
+#include <stdlib.h>
 #include "fitsio2.h"
+/*--------------------------------------------------------------------------*/
+int ffrsim(fitsfile *fptr,      /* I - FITS file pointer           */
+           int bitpix,          /* I - bits per pixel              */
+           int naxis,           /* I - number of axes in the array */
+           long *naxes,         /* I - size of each axis           */
+           int *status)         /* IO - error status               */
+/*
+   resize an existing primary array or IMAGE extension.
+*/
+{
+    int ii, simple, obitpix, onaxis, extend, nmodify;
+    long onaxes[99], pcount, gcount, newsize, oldsize, nblocks, longval;
+    char comment[25], keyname[9], message[FLEN_ERRMSG];
+
+    if (*status > 0)
+        return(*status);
+
+    /* get current image size parameters */
+    if (ffghpr(fptr, 99, &simple, &obitpix, &onaxis, onaxes, &pcount,
+               &gcount, &extend, status) > 0)
+        return(*status);
+
+    /* test that the new values are legal */
+
+    if (bitpix != BYTE_IMG && bitpix != SHORT_IMG && 
+        bitpix != LONG_IMG &&
+        bitpix != FLOAT_IMG && bitpix != DOUBLE_IMG)
+    {
+        sprintf(message,
+        "Illegal value for BITPIX keyword: %d", bitpix);
+        ffpmsg(message);
+        return(*status = BAD_BITPIX);
+    }
+
+    if (naxis < 0 || naxis > 999)
+    {
+        sprintf(message,
+        "Illegal value for NAXIS keyword: %d", naxis);
+        ffpmsg(message);
+        return(*status = BAD_NAXIS);
+    }
+
+    if (naxis == 0)
+        newsize = 0;
+    else
+        newsize = 1;
+
+    for (ii = 0; ii < naxis; ii++)
+    {
+        if (naxes[ii] < 0)
+        {
+            sprintf(message,
+            "Illegal value for NAXIS%d keyword: %ld", ii + 1,  naxes[ii]);
+            ffpmsg(message);
+            return(*status = BAD_NAXES);
+        }
+
+        newsize *= naxes[ii];  /* compute new image size, in poxels */
+    }
+
+    /* compute size of old image, in bytes */
+
+    if (onaxis == 0)
+        oldsize = 0;
+    else
+    {
+        oldsize = 1;
+        for (ii = 0; ii < onaxis; ii++)
+            oldsize *= onaxes[ii];  
+        oldsize = (oldsize + pcount) * gcount * abs(obitpix) / 8;
+    }
+
+    oldsize = (oldsize + 2879) / 2880; /* old size, in blocks */
+
+    newsize = (newsize + pcount) * gcount * abs(bitpix) / 8;
+    newsize = (newsize + 2879) / 2880; /* new size, in blocks */
+
+    if (newsize > oldsize)   /* have to insert new blocks for image */
+    {
+        nblocks = newsize - oldsize;
+        if (ffiblk(fptr, nblocks, 1, status) > 0)  
+            return(*status);
+    }
+    else if (oldsize > newsize)  /* have to delete blocks from image */
+    {
+        nblocks = oldsize - newsize;
+        if (ffdblk(fptr, nblocks, status) > 0)  
+            return(*status);
+    }
+
+    /* now update the header keywords */
+
+    strcpy(comment,"&");  /* special value to leave comments unchanged */
+
+    if (bitpix != obitpix)
+    {                         /* update BITPIX value */
+        longval = bitpix;
+        ffmkyj(fptr, "BITPIX", longval, comment, status);
+    }
+
+    if (naxis != onaxis)
+    {                        /* update NAXIS value */
+        longval = naxis;
+        ffmkyj(fptr, "NAXIS", longval, comment, status);
+    }
+
+    /* modify the existing NAXISn keywords */
+    nmodify = minvalue(naxis, onaxis); 
+    for (ii = 0; ii < nmodify; ii++)
+    {
+        ffkeyn("NAXIS", ii+1, keyname, status);
+        ffmkyj(fptr, keyname, naxes[ii], comment, status);
+    }
+
+    if (naxis > onaxis)  /* insert additional NAXISn keywords */
+    {
+        strcpy(comment,"length of data axis");  
+        for (ii = onaxis; ii < naxis; ii++)
+        {
+            ffkeyn("NAXIS", ii+1, keyname, status);
+            ffikyj(fptr, keyname, naxes[ii], comment, status);
+        }
+    }
+    else if (onaxis > naxis) /* delete old NAXISn keywords */
+    {
+        for (ii = naxis; ii < onaxis; ii++)
+        {
+            ffkeyn("NAXIS", ii+1, keyname, status);
+            ffdkey(fptr, keyname, status);
+        }
+    }
+
+    return(*status);
+}
 /*--------------------------------------------------------------------------*/
 int ffirow(fitsfile *fptr,  /* I - FITS file pointer                        */
            long firstrow,   /* I - insert space AFTER this row              */

@@ -1,4 +1,4 @@
-CFITSIO TESTPROG, v1.240
+CFITSIO TESTPROG, v1.250
 
 Try opening then closing a nonexistent file:
   ffopen fptr, status  = 0 104 (expect an error)
@@ -59,6 +59,9 @@ KEY_PKYE 13.131310 fxpkye comment 0
 KEY_PKYG 14.14141414141414 fxpkyg comment 0
 KEY_PKYD 15.15151515151520 fxpkyd comment 0
 KEY_PKYT 12345678 0.12345678901235 fxpkyt comment 0
+KEY_PKY J 11 [km/s/Mpc] fxpkyj comment 0
+KEY_PKY J 11 fxpkyj comment 0
+KEY_PKY J 11 [feet/second/second] fxpkyj comment 0
 KEY_PKLS long string value = 
 This is a very long string value that is continued over more than one keyword.
 header contains 63 keywords; located at keyword 25 
@@ -117,7 +120,7 @@ COMMENT   character at the end of each substring which is then continued
 Keywords found using wildcard search (should be 9)...
 KEY_PKYS= 'value_string'       / fxpkys comment
 KEY_PKYL=                    T / fxpkyl comment
-KEY_PKYJ=                   11 / fxpkyj comment
+KEY_PKYJ=                   11 / [feet/second/second] fxpkyj comment
 KEY_PKYF=             12.12121 / fxpkyf comment
 KEY_PKYE=         1.313131E+01 / fxpkye comment
 KEY_PKYG=    14.14141414141414 / fxpkyg comment

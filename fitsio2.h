@@ -33,7 +33,7 @@
 #define MACHINE ALPHAVMS
 #define BYTESWAPPED TRUE
  
-#elif defined(__alpha) && defined(unix)
+#elif defined(__alpha) && defined(__unix__)
  
 #define MACHINE ALPHA_OSF
 #define BYTESWAPPED TRUE
@@ -43,9 +43,9 @@
 #define MACHINE ULTRIX
 #define BYTESWAPPED TRUE
  
-#elif defined(__linux__) && ( defined(__i386__) || defined(__i486__) || defined(__i586__) )
+#elif defined(__i386) || defined(__i386__) || defined(__i486__) || defined(__i586__) 
 
-/*  IBM PC running linux */
+/*  IBM PC */
 #define MACHINE IBMPC
 #define BYTESWAPPED TRUE
 

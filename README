@@ -38,6 +38,13 @@ to build the CFITSIO library.  This file will probably need to be
 editted to include the appropriate command switches if a different C
 compiler or linker is used.
 
+On OS/2 systems, CFITSIO can be built using the supplied
+makefile by typing 'make -f makefile.os2'.
+This makefile requires the GCC compiler and EMX library,
+which are available from many Internet sites containing OS/2
+software, such as ftp-os2.nmsu.edu/pub/os2/dev/emx/v0.9c
+and ftp.leo.org/pub/comp/os/os2/leo/devtools/emx+gcc.
+
 The MacOS version of the cfitsio library can be built by (1) unbinhex
 and unstuff cfitsio_mac.sit.hqx, and (2) for the PPC,  load CFitsio
 PPCLibrary.(pi) into CodeWarrior 10+ and make.  This builds the cfitsio
@@ -101,6 +108,7 @@ CFITSIO has currently been tested on the following platforms:
    DEC VAX/VMS                gcc and cc
    Linux running on IBM PC    gcc
    IBM PC w/ Windows 95       Borland C++ V4.5
+   IBM PC w/ OS/2             gcc + EMX
    MacOS 7.1 or greater       Metrowerks 10.+
 
 CFITSIO will probably run on most other Unix platforms without

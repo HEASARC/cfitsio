@@ -20,8 +20,9 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
- *version = 1.24;  /* 2 May 1997 */
+   *version = 1.25;  /* 2 Jul 1997 */
 
+ /*   *version = 1.24;    2 May 1997 */
  /*   *version = 1.23;   24 Apr 1997 */
  /*   *version = 1.22;   18 Apr 1997 */
  /*   *version = 1.21;   26 Mar 1997 */
@@ -92,7 +93,7 @@ void ffgerr(int status,     /* I - error status value */
        strcpy(errtext, "keyword number out of bounds");
        break;
     case 204:
-       strcpy(errtext, "keyword value field is blank");
+       strcpy(errtext, "keyword value is undefined");
        break;
     case 205:
        strcpy(errtext, "string missing closing quote");
@@ -359,7 +360,16 @@ void ffxmsg( int action,
     static char *txtbuff[errmsgsiz];
     static nummsg = 0;
 
-    if (action == -1)  /* return and remove oldest message from stack */ 
+    if (action == -2)  /* remove newest message from stack */ 
+    {
+      if (nummsg > 0)
+      {
+
+        nummsg--;  
+        free(txtbuff[nummsg]);  /* free the memory for this msg */
+      }
+    }
+    else if (action == -1)  /* return and remove oldest message from stack */ 
     {
       if (nummsg > 0)
       {
@@ -706,16 +716,29 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
 
     if (nblank + 10 == cardlen)
     {
+      /* the absence of a value string is legal, and simply indicates
+         that the keyword value is undefined.  Don't write an error
+         message in this case.
+
         strcpy(errmsg,"The keyword ");
         strncat(errmsg, card, 8);
         strcat(errmsg, " has no value string after the equal sign:");
         ffpmsg(errmsg);
         ffpmsg(card);
-        return(*status = NO_VALUE);
+      */
+        value[0] = '\0';
+        comm[0] = '\0';
+        return(*status);
     }
 
     ii = nblank + 10;
-    if (card[ii] == '\'' )  /* is this a quoted string value? */
+
+    if (card[ii] == '/' )  /* is there no defined value? */
+    {
+         value[0] = '\0';
+    }
+
+    else if (card[ii] == '\'' )  /* is this a quoted string value? */
     {
         value[0] = card[ii];
         for (jj=1, ii++; ii < cardlen; ii++, jj++)
@@ -3018,7 +3041,6 @@ int ffwend(fitsfile *fptr,       /* I - FITS file pointer */
 
     /* calculate the number of blank keyword slots in the header */
     nspace = ( fptr->datastart - endpos ) / 80;
-
     /* construct a blank and END keyword (80 spaces )  */
     strcpy(blankkey, "                                        ");
     strcat(blankkey, "                                        ");
@@ -3046,6 +3068,7 @@ int ffwend(fitsfile *fptr,       /* I - FITS file pointer */
     }
 
     /* header was not correctly terminated, so write the END and blank fill */
+    endpos = fptr->headend;
     ffmbyt(fptr, endpos, IGNORE_EOF, status); /* move to header end */
     for (ii=0; ii < nspace; ii++)
         ffpbyt(fptr, 80, blankkey, status);  /* write the blank keywords */
@@ -3340,15 +3363,16 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
    insert 2880-byte blocks at the end of the current header or data unit
 */
 {
-    int tstatus;
-    long ii, jj, insertpt;
+    int tstatus, savehdu, typhdu;
+    long ii, jj, insertpt, nshift, jpoint;
     char charfill;
     char buff1[2880], buff2[2880];
     char *inbuff, *outbuff, *tmpbuff;
+    char errmsg[FLEN_ERRMSG];
 
-    if (*status > 0)
+    if (*status > 0 || nblock <= 0)
         return(*status);
-
+        
     tstatus = *status;
 
     if (headdata == 0 || fptr->hdutype == ASCII_TBL)
@@ -3356,20 +3380,19 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
     else
         charfill = 0;   /* images and binary tables have zero fill */
 
-    for (jj = 0; jj < nblock; jj++)  /* insert one block at a time */
-    {
 
-      if (headdata == 0)  
+    if (headdata == 0)  
         insertpt = fptr->datastart;  /* insert just before data, or */
-      else
+    else
         insertpt = fptr->headstart[fptr->curhdu + 1]; /* before next HDU */
 
+    inbuff = buff1;   /* set pointers to input and output buffers */
+    outbuff = buff2;
 
-      inbuff = buff1;   /* set pointers to input and output buffers */
-      outbuff = buff2;
+    memset(outbuff, charfill, 2880); /* initialize buffer with fill */
 
-      memset(outbuff, charfill, 2880); /* initialize buffer with fill */
-
+    if (nblock == 1)  /* insert one block */
+    {
       ffmbyt(fptr, insertpt, REPORT_EOF, status);  /* move to 1st point */
       ffgbyt(fptr, 2880, inbuff, status);  /* read first block of bytes */
 
@@ -3393,13 +3416,59 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
       *status = tstatus;  /* reset status value */
       ffmbyt(fptr, insertpt, IGNORE_EOF, status); /* move back to insert pt */
       ffpbyt(fptr, 2880, outbuff, status);  /* write the final block */
-
-      if (headdata == 0)
-        fptr->datastart += 2880;  /* update data start address */
-
-      for (ii = fptr->curhdu; ii <= fptr->maxhdu; ii++)
-         fptr->headstart[ii + 1] += 2880; /* update following HDU addresses */
     }
+
+    else   /*  inserting more than 1 block */
+
+    {
+        savehdu = fptr->curhdu;  /* save the current HDU number */
+        tstatus = *status;
+        while(*status <= 0)  /* find the last HDU in file */
+              ffmrhd(fptr, 1, &typhdu, status);
+
+        if (*status == END_OF_FILE)
+        {
+            *status = tstatus;
+            ffxmsg(-2, errmsg); /* clear the end of file error message */
+        }
+
+        ffmahd(fptr, savehdu + 1, &typhdu, status);  /* move back to CHDU */
+
+        /* number of 2880-byte blocks that have to be shifted down */
+        nshift = (fptr->headstart[fptr->maxhdu + 1] - insertpt) / 2880;
+        /* position of last block in file to be shifted */
+        jpoint =  fptr->headstart[fptr->maxhdu + 1] - 2880;
+
+        /* move all the blocks starting at end of file working backwards */
+        for (ii = 0; ii < nshift; ii++)
+        {
+            /* move to the read start position */
+            if (ffmbyt(fptr, jpoint, REPORT_EOF, status) > 0)
+                return(*status);
+
+            ffgbyt(fptr, 2880, inbuff,status);  /* read one record */
+
+            /* move forward to the write postion */
+            ffmbyt(fptr, jpoint + (nblock * 2880), IGNORE_EOF, status);
+
+            ffpbyt(fptr, 2880, inbuff, status);  /* write the record */
+
+            jpoint -= 2880;
+        }
+
+        /* move back to the write start postion */
+        ffmbyt(fptr, insertpt, REPORT_EOF, status);
+
+        for (ii = 0; ii < nblock; ii++)   /* insert correct fill value */
+             ffpbyt(fptr, 2880, outbuff, status);
+    }
+
+    if (headdata == 0)         /* update data start address */
+      fptr->datastart += (nblock * 2880);
+
+    /* update following HDU addresses */
+    for (ii = fptr->curhdu; ii <= fptr->maxhdu; ii++)
+         fptr->headstart[ii + 1] += (2880 * nblock);
 
     return(*status);
 }
@@ -3473,6 +3542,9 @@ int ffc2i(char *cval,   /* I - string representation of the value */
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
+    if (cval[0] == '\0')
+        return(*status = VALUE_UNDEFINED);  /* null value string */
+
     /* convert the keyword to its native datatype */
     ffc2x(cval, &dtype, ival, &lval, sval, &dval, status);
 
@@ -3510,6 +3582,9 @@ int ffc2l(char *cval,  /* I - string representation of the value */
     
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
+
+    if (cval[0] == '\0')
+        return(*status = VALUE_UNDEFINED);  /* null value string */
 
     /* convert the keyword to its native datatype */
     ffc2x(cval, &dtype, &ival, lval, sval, &dval, status);
@@ -3560,6 +3635,9 @@ int ffc2r(char *cval,   /* I - string representation of the value */
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
+    if (cval[0] == '\0')
+        return(*status = VALUE_UNDEFINED);  /* null value string */
+
     /* convert the keyword to its native datatype */
     ffc2x(cval, &dtype, &ival, &lval, sval, &dval, status);
 
@@ -3599,6 +3677,9 @@ int ffc2d(char *cval,   /* I - string representation of the value */
     
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
+
+    if (cval[0] == '\0')
+        return(*status = VALUE_UNDEFINED);  /* null value string */
 
     /* convert the keyword to its native datatype */
     ffc2x(cval, &dtype, &ival, &lval, sval, dval, status);

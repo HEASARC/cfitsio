@@ -201,7 +201,7 @@ int ffgky( fitsfile *fptr,     /* I - FITS file pointer        */
            char *comm,         /* O - keyword comment          */
            int  *status)       /* IO - error status            */
 /*
-  Read (gut) the keyword value and comment from the FITS header.
+  Read (get) the keyword value and comment from the FITS header.
   Reads a keyword value with the datatype specified by the 2nd argument.
 */
 {
@@ -391,6 +391,39 @@ int ffgcrd( fitsfile *fptr,     /* I - FITS file pointer        */
     }
 
     return(*status = KEY_NO_EXIST);  /* couldn't find the keyword */
+}
+/*--------------------------------------------------------------------------*/
+int ffgunt( fitsfile *fptr,     /* I - FITS file pointer         */
+            char *keyname,      /* I - name of keyword to read   */
+            char *unit,         /* O - keyword units             */
+            int  *status)       /* IO - error status             */
+/*
+    Read (get) the units string from the comment field of the existing
+    keyword. This routine uses a local FITS convention (not defined in the
+    official FITS standard) in which the units are enclosed in 
+    square brackets following the '/' comment field delimiter, e.g.:
+
+    KEYWORD =                   12 / [kpc] comment string goes here
+*/
+{
+    char valstring[FLEN_VALUE];
+    char comm[FLEN_COMMENT];
+    char *loc;
+
+    ffgkey(fptr, keyname, valstring, comm, status);  /* read the keyword */
+
+    if (comm[0] == '[')
+    {
+        loc = strchr(comm, ']');   /*  find the closing bracket */
+        if (loc)
+            *loc = '\0';           /*  terminate the string */
+
+        strcpy(unit, &comm[1]);    /*  copy the string */
+     }
+     else
+        comm[0] = '\0';
+ 
+    return(*status);
 }
 /*--------------------------------------------------------------------------*/
 int ffgkys( fitsfile *fptr,     /* I - FITS file pointer         */
@@ -685,7 +718,7 @@ int ffgkns( fitsfile *fptr,     /* I - FITS file pointer                    */
   This routine does NOT support the HEASARC long string convention.
 */
 {
-    int nend, lenroot, ii, nkeys, mkeys, tstatus;
+    int nend, lenroot, ii, nkeys, mkeys, tstatus, undefinedval;
     long ival;
     char keyroot[FLEN_KEYWORD], keyindex[8], card[FLEN_CARD];
     char svalue[FLEN_VALUE], comm[FLEN_COMMENT];
@@ -708,6 +741,7 @@ int ffgkns( fitsfile *fptr,     /* I - FITS file pointer                    */
 
     ffghps(fptr, &nkeys, &mkeys, status);  /*  get the number of keywords  */
 
+    undefinedval = FALSE;
     for (ii=3; ii <= nkeys; ii++)  
     {
        if (ffgrec(fptr, ii, card, status) > 0)     /*  get next keyword  */
@@ -715,23 +749,31 @@ int ffgkns( fitsfile *fptr,     /* I - FITS file pointer                    */
 
        if (strncmp(keyroot, card, lenroot) == 0)  /* see if keyword matches */
        {
-           keyindex[0] = '\0';
-           strncat(keyindex, &card[lenroot], 8-lenroot);  /*  copy suffix */
+          keyindex[0] = '\0';
+          strncat(keyindex, &card[lenroot], 8-lenroot);  /*  copy suffix */
 
-           tstatus = 0;
-           if (ffc2ii(keyindex, &ival, &tstatus) <= 0)     /*  test suffix  */
-           {
-               if (ival <= nend && ival >= nstart)
-               {
-                 ffpsvc(card, svalue, comm, status);   /*  parse the value */
+          tstatus = 0;
+          if (ffc2ii(keyindex, &ival, &tstatus) <= 0)     /*  test suffix  */
+          {
+             if (ival <= nend && ival >= nstart)
+             {
+                ffpsvc(card, svalue, comm, status);  /*  parse the value */
+                ffc2s(svalue, value[ival-nstart], status); /* convert */
+                if (ival > *nfound)
+                      *nfound = ival;  /* record the max index found */ 
 
-                 ffc2s(svalue, value[ival-nstart], status); /* convert */
-                 if (ival > *nfound)
-                       *nfound = ival;  /* record the max index found */ 
-               }
-           }
+                if (*status == VALUE_UNDEFINED)
+                {
+                   undefinedval = TRUE;
+                   *status = 0;  /* reset status to read remaining values */
+                }
+             }
+          }
        }
     }
+    if (undefinedval && (*status <= 0) )
+        *status = VALUE_UNDEFINED;  /* report at least 1 value undefined */
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -748,7 +790,7 @@ int ffgknl( fitsfile *fptr,     /* I - FITS file pointer                    */
   The returned value = 1 if the keyword is true, else = 0 if false.
 */
 {
-    int nend, lenroot, ii, nkeys, mkeys, tstatus;
+    int nend, lenroot, ii, nkeys, mkeys, tstatus, undefinedval;
     long ival;
     char keyroot[FLEN_KEYWORD], keyindex[8], card[FLEN_CARD];
     char svalue[FLEN_VALUE], comm[FLEN_COMMENT];
@@ -773,6 +815,7 @@ int ffgknl( fitsfile *fptr,     /* I - FITS file pointer                    */
 
     ffmaky(fptr, 3, status);  /* move to 3rd keyword (skip 1st 2 keywords) */
 
+    undefinedval = FALSE;
     for (ii=3; ii <= nkeys; ii++)  
     {
        if (ffgnky(fptr, card, status) > 0)     /*  get next keyword  */
@@ -780,20 +823,31 @@ int ffgknl( fitsfile *fptr,     /* I - FITS file pointer                    */
 
        if (strncmp(keyroot, card, lenroot) == 0)  /* see if keyword matches */
        {
-           keyindex[0] = '\0';
-           strncat(keyindex, &card[lenroot], 8-lenroot);  /*  copy suffix */
+          keyindex[0] = '\0';
+          strncat(keyindex, &card[lenroot], 8-lenroot);  /*  copy suffix */
 
-           tstatus = 0;
-           if (ffc2ii(keyindex, &ival, &tstatus) <= 0)    /*  test suffix  */
-               if (ival <= nend && ival >= nstart)
-               {
-                 ffpsvc(card, svalue, comm, status);   /*  parse the value */
-                 ffc2l(svalue, &value[ival-nstart], status); /* convert*/
-                 if (ival > *nfound)
+          tstatus = 0;
+          if (ffc2ii(keyindex, &ival, &tstatus) <= 0)    /*  test suffix  */
+          {
+             if (ival <= nend && ival >= nstart)
+             {
+                ffpsvc(card, svalue, comm, status);   /*  parse the value */
+                ffc2l(svalue, &value[ival-nstart], status); /* convert*/
+                if (ival > *nfound)
                        *nfound = ival;   /* record the max index found */
-               }
+
+                if (*status == VALUE_UNDEFINED)
+                {
+                    undefinedval = TRUE;
+                   *status = 0;  /* reset status to read remaining values */
+                }
+             }
+          }
        }
     }
+    if (undefinedval && (*status <= 0) )
+        *status = VALUE_UNDEFINED;  /* report at least 1 value undefined */
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -809,7 +863,7 @@ int ffgknj( fitsfile *fptr,     /* I - FITS file pointer                    */
   NSTART and (NSTART + NMAX -1) inclusive.  
 */
 {
-    int nend, lenroot, ii, nkeys, mkeys, tstatus;
+    int nend, lenroot, ii, nkeys, mkeys, tstatus, undefinedval;
     long ival;
     char keyroot[FLEN_KEYWORD], keyindex[8], card[FLEN_CARD];
     char svalue[FLEN_VALUE], comm[FLEN_COMMENT];
@@ -834,6 +888,7 @@ int ffgknj( fitsfile *fptr,     /* I - FITS file pointer                    */
 
     ffmaky(fptr, 3, status);  /* move to 3rd keyword (skip 1st 2 keywords) */
 
+    undefinedval = FALSE;
     for (ii=3; ii <= nkeys; ii++)  
     {
        if (ffgnky(fptr, card, status) > 0)     /*  get next keyword  */
@@ -841,20 +896,31 @@ int ffgknj( fitsfile *fptr,     /* I - FITS file pointer                    */
 
        if (strncmp(keyroot, card, lenroot) == 0)  /* see if keyword matches */
        {
-           keyindex[0] = '\0';
-           strncat(keyindex, &card[lenroot], 8-lenroot);  /*  copy suffix */
+          keyindex[0] = '\0';
+          strncat(keyindex, &card[lenroot], 8-lenroot);  /*  copy suffix */
 
-           tstatus = 0;
-           if (ffc2ii(keyindex, &ival, &tstatus) <= 0)     /*  test suffix  */
-               if (ival <= nend && ival >= nstart)
-               {
-                 ffpsvc(card, svalue, comm, status);   /*  parse the value */
-                 ffc2i(svalue, &value[ival-nstart], status);  /* convert */
-                 if (ival > *nfound)
+          tstatus = 0;
+          if (ffc2ii(keyindex, &ival, &tstatus) <= 0)     /*  test suffix  */
+          {
+             if (ival <= nend && ival >= nstart)
+             {
+                ffpsvc(card, svalue, comm, status);   /*  parse the value */
+                ffc2i(svalue, &value[ival-nstart], status);  /* convert */
+                if (ival > *nfound)
                      *nfound = ival;           /* record the max index found */ 
-              }
+
+                if (*status == VALUE_UNDEFINED)
+                {
+                    undefinedval = TRUE;
+                   *status = 0;  /* reset status to read remaining values */
+                }
+             }
+          }
        }
     }
+    if (undefinedval && (*status <= 0) )
+        *status = VALUE_UNDEFINED;  /* report at least 1 value undefined */
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -870,7 +936,7 @@ int ffgkne( fitsfile *fptr,     /* I - FITS file pointer                    */
   NSTART and (NSTART + NMAX -1) inclusive.  
 */
 {
-    int nend, lenroot, ii, nkeys, mkeys, tstatus;
+    int nend, lenroot, ii, nkeys, mkeys, tstatus, undefinedval;
     long ival;
     char keyroot[FLEN_KEYWORD], keyindex[8], card[FLEN_CARD];
     char svalue[FLEN_VALUE], comm[FLEN_COMMENT];
@@ -895,6 +961,7 @@ int ffgkne( fitsfile *fptr,     /* I - FITS file pointer                    */
 
     ffmaky(fptr, 3, status);  /* move to 3rd keyword (skip 1st 2 keywords) */
 
+    undefinedval = FALSE;
     for (ii=3; ii <= nkeys; ii++)  
     {
        if (ffgnky(fptr, card, status) > 0)     /*  get next keyword  */
@@ -902,20 +969,31 @@ int ffgkne( fitsfile *fptr,     /* I - FITS file pointer                    */
 
        if (strncmp(keyroot, card, lenroot) == 0)  /* see if keyword matches */
        {
-           keyindex[0] = '\0';
-           strncat(keyindex, &card[lenroot], 8-lenroot);  /*  copy suffix */
+          keyindex[0] = '\0';
+          strncat(keyindex, &card[lenroot], 8-lenroot);  /*  copy suffix */
 
-           tstatus = 0;
-           if (ffc2ii(keyindex, &ival, &tstatus) <= 0)     /*  test suffix  */
-               if (ival <= nend && ival >= nstart)
-               {
-                 ffpsvc(card, svalue, comm, status);   /*  parse the value */
-                 ffc2r(svalue, &value[ival-nstart], status); /* convert */
-                 if (ival > *nfound)
+          tstatus = 0;
+          if (ffc2ii(keyindex, &ival, &tstatus) <= 0)     /*  test suffix  */
+          {
+             if (ival <= nend && ival >= nstart)
+             {
+                ffpsvc(card, svalue, comm, status);   /*  parse the value */
+                ffc2r(svalue, &value[ival-nstart], status); /* convert */
+                if (ival > *nfound)
                      *nfound = ival;          /* record the max index found */
-              }
+
+                if (*status == VALUE_UNDEFINED)
+                {
+                    undefinedval = TRUE;
+                   *status = 0;  /* reset status to read remaining values */
+                }
+             }
+          }
        }
     }
+    if (undefinedval && (*status <= 0) )
+        *status = VALUE_UNDEFINED;  /* report at least 1 value undefined */
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -931,7 +1009,7 @@ int ffgknd( fitsfile *fptr,     /* I - FITS file pointer                    */
   NSTART and (NSTART + NMAX -1) inclusive.  
 */
 {
-    int nend, lenroot, ii, nkeys, mkeys, tstatus;
+    int nend, lenroot, ii, nkeys, mkeys, tstatus, undefinedval;
     long ival;
     char keyroot[FLEN_KEYWORD], keyindex[8], card[FLEN_CARD];
     char svalue[FLEN_VALUE], comm[FLEN_COMMENT];
@@ -956,6 +1034,7 @@ int ffgknd( fitsfile *fptr,     /* I - FITS file pointer                    */
 
     ffmaky(fptr, 3, status);  /* move to 3rd keyword (skip 1st 2 keywords) */
 
+    undefinedval = FALSE;
     for (ii=3; ii <= nkeys; ii++)  
     {
        if (ffgnky(fptr, card, status) > 0)     /*  get next keyword  */
@@ -963,20 +1042,31 @@ int ffgknd( fitsfile *fptr,     /* I - FITS file pointer                    */
 
        if (strncmp(keyroot, card, lenroot) == 0)   /* see if keyword matches */
        {
-           keyindex[0] = '\0';
-           strncat(keyindex, &card[lenroot], 8-lenroot);  /*  copy suffix */
+          keyindex[0] = '\0';
+          strncat(keyindex, &card[lenroot], 8-lenroot);  /*  copy suffix */
 
-           tstatus = 0;
-           if (ffc2ii(keyindex, &ival, &tstatus) <= 0)      /*  test suffix */ 
-               if (ival <= nend && ival >= nstart) /* is index within range? */
-               {
-                 ffpsvc(card, svalue, comm, status);   /*  parse the value */
-                 ffc2d(svalue, &value[ival-nstart], status); /* convert */
-                 if (ival > *nfound)
+          tstatus = 0;
+          if (ffc2ii(keyindex, &ival, &tstatus) <= 0)      /*  test suffix */
+          {
+             if (ival <= nend && ival >= nstart) /* is index within range? */
+             {
+                ffpsvc(card, svalue, comm, status);   /*  parse the value */
+                ffc2d(svalue, &value[ival-nstart], status); /* convert */
+                if (ival > *nfound)
                      *nfound = ival;           /* record the max index found */
-              }
+
+                if (*status == VALUE_UNDEFINED)
+                {
+                    undefinedval = TRUE;
+                   *status = 0;  /* reset status to read remaining values */
+                }
+             }
+          }
        }
     }
+    if (undefinedval && (*status <= 0) )
+        *status = VALUE_UNDEFINED;  /* report at least 1 value undefined */
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -1565,26 +1655,29 @@ int ffgtkn(fitsfile *fptr,  /* I - FITS file pointer              */
         if (strcmp(keyname, name) )
             *status = BAD_ORDER;  /* incorrect keyword name */
 
-        ffc2ii(valuestring, value, status);  /* convert to integer */
+        else
+        {
+            ffc2ii(valuestring, value, status);  /* convert to integer */
 
-        if (*status > 0 || *value < 0 )
-           *status = NOT_POS_INT;
-    }
+            if (*status > 0 || *value < 0 )
+               *status = NOT_POS_INT;
+        }
 
-    if (*status > 0)
-    {
-        sprintf(message,
-          "ffgtkn found unexpected keyword or value for keyword no. %d.",
-          numkey);
-        ffpmsg(message);
+        if (*status > 0)
+        {
+            sprintf(message,
+              "ffgtkn found unexpected keyword or value for keyword no. %d.",
+              numkey);
+            ffpmsg(message);
 
-        sprintf(message,
-          " Expected positive integer keyword %s, but instead", name);
-        ffpmsg(message);
+            sprintf(message,
+              " Expected positive integer keyword %s, but instead", name);
+            ffpmsg(message);
 
-        sprintf(message,
-          " found keyword %s with value %s", keyname, valuestring);
-        ffpmsg(message);
+            sprintf(message,
+              " found keyword %s with value %s", keyname, valuestring);
+            ffpmsg(message);
+        }
     }
 
     return(*status);

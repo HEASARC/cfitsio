@@ -28,11 +28,13 @@
 
 #define fits_write_record       ffprec
 #define fits_write_key          ffpky
+#define fits_write_key_unit     ffpunt
 #define fits_write_comment      ffpcom
 #define fits_write_history      ffphis 
 #define fits_write_date         ffpdat
 #define fits_write_key_longstr  ffpkls
 #define fits_write_key_longwarn ffplsw
+#define fits_write_key_null     ffpkyu
 #define fits_write_key_str      ffpkys
 #define fits_write_key_log      ffpkyl
 #define fits_write_key_lng      ffpkyj
@@ -62,6 +64,7 @@
 
 #define fits_read_record       ffgrec
 #define fits_read_card         ffgcrd
+#define fits_read_key_unit     ffgunt
 #define fits_read_keyn         ffgkyn
 #define fits_read_key          ffgky
 #define fits_read_keyword      ffgkey
@@ -83,6 +86,7 @@
 #define fits_read_btblhdr      ffghbn
 
 #define fits_update_card       ffucrd
+#define fits_update_key_null   ffukyu
 #define fits_update_key_str    ffukys
 #define fits_update_key_log    ffukyl
 #define fits_update_key_lng    ffukyj
@@ -95,6 +99,7 @@
 #define fits_modify_card       ffmcrd
 #define fits_modify_name       ffmnam
 #define fits_modify_comment    ffmcom
+#define fits_modify_key_null   ffmkyu
 #define fits_modify_key_str    ffmkys
 #define fits_modify_key_log    ffmkyl
 #define fits_modify_key_lng    ffmkyj
@@ -104,6 +109,7 @@
 #define fits_modify_key_dbl    ffmkyd
 
 #define fits_insert_record     ffirec
+#define fits_insert_key_null   ffikyu
 #define fits_insert_key_str    ffikys
 #define fits_insert_key_log    ffikyl
 #define fits_insert_key_lng    ffikyj
@@ -126,6 +132,7 @@
 #define fits_insert_img     ffiimg
 #define fits_insert_atbl    ffitab
 #define fits_insert_btbl    ffibin
+#define fits_resize_img     ffrsim
 #define fits_delete_hdu     ffdhdu
 #define fits_copy_hdu       ffcopy
 #define fits_copy_data      ffcpdt

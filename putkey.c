@@ -201,6 +201,28 @@ int ffprec(fitsfile *fptr,     /* I - FITS file pointer        */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffpkyu( fitsfile *fptr,     /* I - FITS file pointer        */
+            char *keyname,      /* I - name of keyword to write */
+            char *comm,         /* I - keyword comment          */
+            int  *status)       /* IO - error status            */
+/*
+  Write (put) a null-valued keyword and comment into the FITS header.  
+*/
+{
+    char valstring[FLEN_VALUE];
+    char card[FLEN_CARD];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    strcpy(valstring,"0");  /* create a dummy value string */
+    ffmkky(keyname, valstring, comm, card);  /* construct the keyword */
+    card[29] = ' ';        /* reset the dummy value string to a blank */
+    ffprec(fptr, card, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffpkys( fitsfile *fptr,     /* I - FITS file pointer        */
             char *keyname,      /* I - name of keyword to write */
             char *value,        /* I - keyword value            */
@@ -219,7 +241,7 @@ int ffpkys( fitsfile *fptr,     /* I - FITS file pointer        */
         return(*status);
 
     ffs2c(value, valstring, status);   /* put quotes around the string */
-    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffmkky(keyname, valstring, comm, card);  /* construct the keyword */
     ffprec(fptr, card, status);
 
     return(*status);

@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large March 1997\\}
+{\Large July 1997\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -174,6 +174,12 @@ to build the CFITSIO library.  This file will probably need to be
 editted to include the appropriate command switches if a different C
 compiler or linker is used.
 
+On OS/2 systems, CFITSIO can be built by typing 'make -f makefile.os2'.
+This makefile requires the GCC compiler and EMX library,
+which are available from many Internet sites containing OS/2
+software, such as ftp-os2.nmsu.edu/pub/os2/dev/emx/v0.9c
+and ftp.leo.org/pub/comp/os/os2/leo/devtools/emx+gcc.
+
 The MacOS version of the cfitsio library can be built by (1) unbinhex
 and unstuff cfitsio\_mac.sit.hqx, and (2) for the PPC,  load CFitsio
 PPCLibrary.(pi) into CodeWarrior 10+ and make.  This builds the cfitsio
@@ -183,8 +189,7 @@ CFitsio PPC testprog.(pi) into CodeWarrior 10+ and make.
 CFITSIO has currently been tested on the following platforms:
 
 \begin{verbatim}
-   Operating System          Compiler
-   ----------------          --------
+  OPERATING SYSTEM           COMPILER
    Sun OS                     gcc and cc (3.0.1)
    Sun Solaris                gcc and cc
    Silicon Graphics IRIX      gcc and cc
@@ -194,6 +199,7 @@ CFITSIO has currently been tested on the following platforms:
    DEC VAX/VMS                gcc and cc
    Linux running on IBM PC    gcc
    IBM PC w/ Windows 95       Borland C++ V4.5
+   IBM PC w/ OS/2             gcc + EMX
    MacOS 7.1 or greater       Metrowerks 10.+
 \end{verbatim}
 CFITSIO will probably run on most other Unix platforms without
@@ -239,9 +245,9 @@ computer system.
 In order to effectively use the CFITSIO library as quickly as possible,
 it is recommended that new users follow these steps:
 
-1.  Read the following `FITS Primer' chapter for a brief
+1.  Read the following `FITS Primer' chapter for an
 overview of the structure of FITS files.  This is especially important
-for users who have not previously dealt with the FITS table and image
+for users who are unfamiliar with the FITS table and image
 extensions.
 
 2.  Write a simple program to read or write a FITS file using the Basic
@@ -266,8 +272,7 @@ Interface routines.
 
 The following listing shows an example of how to use the CFITSIO
 routines in a C program.  Refer to the cookbook.c program that
-is included with the CFITSIO distribution for examples of other
-FITS programs.
+is included with the CFITSIO distribution for other examples.
 
 
 \begin{verbatim}
@@ -277,8 +282,6 @@ main()
     fitsfile *fptr;       /* pointer to the FITS file; defined in fitsio.h */
     int status, ii, jj;
     long  fpixel, nelements, array[200][300], exposure;
-
-    /* Initialize FITS image parameters */
     char filename[] = "atestfil.fit";             /* name for new FITS file */
     int bitpix   =  16;         /* 16-bit short signed integer pixel values */
     long naxis    =   2;        /* 2-dimensional image                      */
@@ -368,12 +371,18 @@ character. The keyword name is (usually) followed by an equals sign and
 a space character (= ) in columns 9 - 10 of the record, followed by the
 value of the keyword which may be either an integer, a floating point
 number, a character string (enclosed in single quotes), or a boolian
-value (the letter T or F). The last keyword in the header is always the
-`END' keyword which has no value or comment fields. There are many
-rules governing the exact format of a keyword record (see the NOST FITS
-Standard) so it is better to rely on standard interface software like
-FITSIO to correctly construct or to parse the keyword records rather
-than try to deal directly with the raw FITS formats.
+value (the letter T or F).   A keyword may also have a null, or undefined
+value if there is no specified value string, as in the following example:
+
+\begin{verbatim}
+  KEYNAME =         / comment: keyword has no value
+\end{verbatim}
+The last keyword in the header is always the `END' keyword which has no
+value or comment fields. There are many rules governing the exact
+format of a keyword record (see the NOST FITS Standard) so it is better
+to rely on standard interface software like FITSIO to correctly
+construct or to parse the keyword records rather than try to deal
+directly with the raw FITS formats.
 
 Each Header Unit begins with a series of required keywords which depend
 on the type of HDU.  These required keywords specify the size and
@@ -414,13 +423,15 @@ at the beginning of the program similar to:
 \begin{verbatim}
   fitsfile *fptr;
 \end{verbatim}
-This structure is initialized (i.e., memory is allocated
-for the structure) when the FITS file is first opened or created
-with the fits\_open\_file or fits\_create\_file routines.  This fitsfile
-pointer is then passed as the first argument to every other CFITSIO
-routine that operates on the FITS file.  The cookbook.c program
-that is included with the CFITSIO library contains example programs
-illustrating this usage.
+This structure is initialized (i.e., memory is allocated for the
+structure) when the FITS file is first opened or created with the
+fits\_open\_file or fits\_create\_file routines.  This fitsfile pointer
+is then passed as the first argument to every other CFITSIO routine
+that operates on the FITS file.  Application programs must not directly
+read or write information in this fitsfile structure because the
+definition of the structure may change in future versions of CFITSIO.
+The cookbook.c program that is included with the CFITSIO library
+contains example programs illustrating this usage.
 
 
 \section{Current Header Data Unit (CHDU)}
@@ -496,6 +507,79 @@ supported in ANSI C, so these datatypes should be interpreted as pairs
 of float or double values, respectively, where the first  value in each
 pair is the real part, and the second is the imaginary part.
 
+
+\section{Defined Symbolic Constants}
+
+A number of symbolic constants have been defined within CFITSIO (in
+fitsio.h) for the convenience of application programmers.  Use of these
+symbolic constants, rather than the actual numeric value, may help to make
+the source code more readable and easier for others to understand.
+
+\begin{verbatim}
+String Lengths, for use when allocating character arrays:
+
+  #define FLEN_KEYWORD    9  /* max length of a keyword                   */
+  #define FLEN_CARD      81  /* max length of a FITS header card          */
+  #define FLEN_VALUE     71  /* max length of a keyword value string      */
+  #define FLEN_COMMENT   73  /* max length of a keyword comment string    */
+  #define FLEN_ERRMSG    81  /* max length of a FITSIO error message      */
+  #define FLEN_STATUS    31  /* max length of a FITSIO status text string */
+
+Access modes when opening a FITS file:
+
+  #define READONLY  0
+  #define READWRITE 1
+
+BITPIX code values for FITS image data types:
+
+  #define BYTE_IMG      8  /*  8-bit unsigned integers */
+  #define SHORT_IMG    16  /* 16-bit   signed integers */
+  #define LONG_IMG     32  /* 32-bit   signed integers */
+  #define FLOAT_IMG   -32  /* 32-bit single precision floating point */
+  #define DOUBLE_IMG  -64  /* 64-bit double precision floating point */
+
+  The following 2 codes are used internally by CFITSIO:
+  #define USHORT_IMG  20  /* 16-bit unsigned integers, equivalent to */
+                          /*  BITPIX = 16, BSCALE = 1, BZERO = 32768 */
+  #define ULONG_IMG   40  /* 32-bit unsigned integers, equivalent to */
+                          /*  BITPIX = 32, BSCALE = 1, BZERO = 2147483648 */
+
+Codes for the datatype of binary table columns and/or for the
+datatype of variables when reading or writing keywords or data:
+
+                              DATATYPE               TFORM CODE
+  #define TBIT          1  /*                            'X' */
+  #define TBYTE        11  /* 8-bit unsigned byte,       'B' */
+  #define TLOGICAL     14  /* logicals (int)             'L' */
+  #define TSTRING      16  /* ASCII string,              'A' */
+  #define TSHORT       21  /* signed short,              'I' */
+  #define TLONG        41  /* signed long,               'J' */
+  #define TFLOAT       42  /* single precision float,    'E' */
+  #define TDOUBLE      82  /* double precision float,    'D' */
+  #define TCOMPLEX     83  /* complex (pair of floats)   'C' */
+  #define TDBLCOMPLEX 163  /* double complex (2 doubles) 'M' */
+
+  The following codes are used internally by CFITSIO:
+  #define TINT         31  /* int                            */
+  #define TUSHORT      20  /* unsigned short                 */
+  #define TULONG       40  /* unsigned long                  */
+
+HDU type code values (value returned when moving to new HDU):
+
+  #define IMAGE_HDU  0  /* Primary Array or IMAGE HDU */
+  #define ASCII_TBL  1  /* ASCII  table HDU */
+  #define BINARY_TBL 2  /* Binary table HDU */
+
+Column name and string matching case-sensitivity:
+
+  #define CASESEN   1   /* do case-sensitive string match */
+  #define CASEINSEN 0   /* do case-insensitive string match */
+
+Logical states:
+
+  #define TRUE 1
+  #define FALSE 0
+\end{verbatim}
 
 \section{Unsigned Integers}
 
@@ -1506,13 +1590,14 @@ CFITSIO.
 
 The following routines read or write data values in the current HDU of
 the FITS file. The `datatype' parameter specifies the datatype of the
-`array` of values and the `nulval' parameter can have one of the
-following symbolic constant values: TBYTE, TUSHORT, TSHORT, TINT,
-TULONG, TLONG, TFLOAT, or TDOUBLE.  The routines for reading or writing
-table columns also support the TBIT, TLOGICAL, TSTRING, TCOMPLEX and
-TDBLCOMPLEX datatypes. Automatic datatype conversion will be attempted
-for numerical datatypes if the specified datatype is different from the
-actual datatype of the FITS array or table column.
+parameters pointed to by the `array` and  `nulval' pointers.
+`Datatype'  can have one of the following symbolic constant values:
+TBYTE, TUSHORT, TSHORT, TINT, TULONG, TLONG, TFLOAT, or TDOUBLE.  The
+routines for reading or writing table columns also support the
+TLOGICAL, TSTRING, TCOMPLEX and TDBLCOMPLEX datatypes. Automatic
+datatype conversion will be attempted for numerical datatypes if the
+specified datatype is different from the actual datatype of the FITS
+array or table column.
 
 
 \begin{description}
@@ -1832,7 +1917,26 @@ insert, copy, and delete HDUs.
 \end{verbatim}
 
 \begin{description}
-\item[10] Delete the CHDU in the FITS file.  Any following HDUs will be shifted
+\item[10] Modify the size, dimensions, and/or datatype of the current
+    primary array or image extension. If the new image, as specified
+    by the input arguments, is larger than the current existing image
+    in the FITS file then zero fill data will be inserted at the end
+    of the current image and any following extensions will be moved
+    further back in the file.  Similarly, if the new image is
+    smaller than the current image then any following extensions
+    will be shifted up towards the beginning of the FITS file
+    and the image data will be truncated to the new size.
+    This routine rewrites the BITPIX, NAXIS, and NAXISn keywords
+   with the appropriate values for new image.
+\end{description}
+
+\begin{verbatim}
+  int fits_resize_img / ffrsim
+      (fitsfile *fptr, int bitpix, int naxis, long *naxes, > int *status)
+\end{verbatim}
+
+\begin{description}
+\item[11] Delete the CHDU in the FITS file.  Any following HDUs will be shifted
     forward in the file, to fill in the gap created by the deleted HDU.
     This routine will only delete extensions; the primary array (the first
     HDU in the file) cannot be deleted.  The physical size of the FITS file
@@ -1852,7 +1956,7 @@ insert, copy, and delete HDUs.
 \end{verbatim}
 
 \begin{description}
-\item[11] Copy the entire CHDU from the FITS file associated with infptr to the CHDU
+\item[12] Copy the entire CHDU from the FITS file associated with infptr to the CHDU
     of the FITS file associated with outfptr. The output HDU must be empty
     and not already contain any keywords.  Space will be reserved for MOREKEYS
     additional  keywords in the output header if there is not already enough
@@ -1865,7 +1969,7 @@ insert, copy, and delete HDUs.
 \end{verbatim}
 
 \begin{description}
-\item[12] Copy the data (and not the header) from the CHDU associated with infptr
+\item[13] Copy the data (and not the header) from the CHDU associated with infptr
     to the CHDU associated with outfptr. This will overwrite
     any data previously in the output CHDU.  This low level routine is used
     by ffcopy, but it may also be useful in certain application programs
@@ -1881,7 +1985,7 @@ insert, copy, and delete HDUs.
 \end{verbatim}
 
 \begin{description}
-\item[13] This routine forces CFITSIO to scan the current header keywords that
+\item[14] This routine forces CFITSIO to scan the current header keywords that
     define the structure of the HDU (such as the NAXISn, PCOUNT and GCOUNT
     keywords) so that it can initialize the internal buffers that describe
     the HDU structure.  This routine is
@@ -2169,7 +2273,17 @@ image or table.
 \end{verbatim}
 
 \begin{description}
-\item[8 ] Put (append) a numbered sequence of keywords into the CHU.   One may
+\item[8 ] Put (append) a new keyword with an undefined, or null, value into the CHU.
+   The value string of the keyword is left blank in this case.
+\end{description}
+
+\begin{verbatim}
+  int fits_write_key_null / ffpkyu
+      (fitsfile *fptr, char *keyname, char *comment, > int *status)
+\end{verbatim}
+
+\begin{description}
+\item[9 ] Put (append) a numbered sequence of keywords into the CHU.   One may
     append the same comment to every keyword (and eliminate the need
     to have an array of identical comment strings, one for each keyword) by
     including the ampersand character as the last non-blank character in the
@@ -2192,7 +2306,7 @@ image or table.
 \end{verbatim}
 
 \begin{description}
-\item[9 ] Put (append) a `triple precision' keyword into the CHU in F28.16 format.
+\item[10] Put (append) a `triple precision' keyword into the CHU in F28.16 format.
     The floating point keyword value is constructed by concatenating the
     input integer value with the input double precision fraction value
     (which must have a value between 0.0 and 1.0). The ffgkyt routine should
@@ -2205,6 +2319,23 @@ image or table.
       (fitsfile *fptr, char *keyname, long intval, double frac,
        char *comment, > int *status)
 \end{verbatim}
+
+\begin{description}
+\item[11] Append the physical units string to an existing keyword.  This
+    routine uses a local convention, shown in the following example,
+    in which the keyword units are
+    enclosed in square brackets in the beginning of the keyword comment
+    field.  This routine is currently experimental, and this local
+   convention may change in future releases of CFITSIO.
+\end{description}
+
+\begin{verbatim}
+  VELOCITY=                 12.3 / [km/s] orbital speed
+
+  int fits_write_key_unit / ffpunt
+      (fitsfile *fptr, char *keyname, char *unit, > int *status)
+\end{verbatim}
+
 
 \subsection{ Insert Keyword Routines \label{FFIREC}}
 
@@ -2240,6 +2371,16 @@ be shifted down one position.
   int fits_insert_key_[flt, fixflt, dbl, fixdbl] / ffiky[edfg]
       (fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
        char *comment, > int *status)
+\end{verbatim}
+
+\begin{description}
+\item[3 ] Insert a new keyword with an undefined, or null, value into the CHU.
+   The value string of the keyword is left blank in this case.
+\end{description}
+
+\begin{verbatim}
+  int fits_insert_key_null / ffikyu
+      (fitsfile *fptr, char *keyname, char *comment, > int *status)
 \end{verbatim}
 
 \subsection{ Read Keyword Routines \label{FFGREC}}
@@ -2279,7 +2420,9 @@ wild card searches.
 \item[2 ] Get the name, value (as a string), and comment of the nth keyword in CHU.
     This routine also checks that the returned keyword name (keyname) contains
     only legal ASCII characters. If a NULL comment pointer is given on input,
-   then the comment string will not be returned.
+    then the comment string will not be returned.  A null value string
+    will be returned if the keyword has no defined value (i.e., if the
+   value field in the keyword is blank).
 \end{description}
 
 \begin{verbatim}
@@ -2336,8 +2479,10 @@ wild card searches.
     CHU. The datatype parameter specifies the datatype of the keyword value
     and can have one of the following symbolic constant values:  TSTRING,
     TLOGICAL, TBYTE, TSHORT, TUSHORT, TINT, TLONG, TULONG, TFLOAT, TDOUBLE.
-    If a NULL comment
-   pointer is given on input, then the comment string will not be returned.
+    If a NULL comment pointer is given on input, then the comment string
+    will not be returned.  If the value of the keyword is not defined
+    (i.e., the value field is blank) then an error status = VALUE\_UNDEFINED
+   (204) will be returned and the input value will not be changed.
 \end{description}
 
 \begin{verbatim}
@@ -2349,7 +2494,9 @@ wild card searches.
 \begin{description}
 \item[7 ] Get a keyword value (with the appropriate datatype) and comment from
     the CHU.  If a NULL comment pointer is given on input, then the comment
-   string will not be returned.
+    string will not be returned.  If the value of the keyword is not defined
+    (i.e., the value field is blank) then an error status = VALUE\_UNDEFINED
+   (204) will be returned and the input value will not be changed.
 \end{description}
 
 \begin{verbatim}
@@ -2370,7 +2517,10 @@ wild card searches.
 \end{verbatim}
 
 \begin{description}
-\item[8 ] Get a sequence of numbered keyword values.
+\item[8 ] Get a sequence of indexed keyword values.  If the value of any of
+    the keywords is not defined (i.e., the value field is blank) then an
+    error status = VALUE\_UNDEFINED (204) will be returned and the input
+   value for the undefined keyword(s) will not be changed.
 \end{description}
 
 \begin{verbatim}
@@ -2394,6 +2544,23 @@ wild card searches.
   int fits_read_key_triple / ffgkyt
       (fitsfile *fptr, char *keyname, > long *intval, double *frac,
        char *comment, int *status)
+\end{verbatim}
+
+\begin{description}
+\item[10] Get the physical units string in an existing keyword.  This
+    routine uses a local convention, shown in the following example,
+    in which the keyword units are
+    enclosed in square brackets in the beginning of the keyword comment
+    field.  A null string is returned if no units are defined
+    for the keyword.  This routine is currently experimental, and this local
+   convention may change in future releases of CFITSIO.
+\end{description}
+
+\begin{verbatim}
+  VELOCITY=                 12.3 / [km/s] orbital speed
+
+  int fits_read_key_unit / ffgunt
+      (fitsfile *fptr, char *keyname, > char *unit, int *status)
 \end{verbatim}
 
 
@@ -2463,6 +2630,16 @@ may be used when specifying the name of the keyword to be modified.
                   char *comment, > int *status)
 \end{verbatim}
 
+\begin{description}
+\item[6 ] Modify the value of an existing keyword to be undefined, or null.
+   The value string of the keyword is left blank in this case.
+\end{description}
+
+\begin{verbatim}
+  int fits_modify_key_null / ffmkyu
+      (fitsfile *fptr, char *keyname, char *comment, > int *status)
+\end{verbatim}
+
 \subsection{ Update Keyword Routines \label{FFUCRD}}
 
 These update routines modify the value of the keyword if it already exists,
@@ -2494,6 +2671,17 @@ otherwise the new keyword is appended to the header.
   int fits_update_key_[flt, dbl, fixflt, fixdbl] / ffuky[edfg]
       (fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
        char *comment, > int *status)
+\end{verbatim}
+
+\begin{description}
+\item[3 ] Update the value of an existing keyword to be undefined, or null,
+    or insert a new undefined-value keyword if it doesn't already exist.
+   The value string of the keyword is left blank in this case.
+\end{description}
+
+\begin{verbatim}
+  int fits_update_key_null / ffukyu
+      (fitsfile *fptr, char *keyname, char *comment, > int *status)
 \end{verbatim}
 
 \subsection{ Delete Keyword Routines \label{FFDREC}}
@@ -2773,7 +2961,8 @@ working with large data arrays.
 
 \begin{description}
 \item[1 ] Get elements from the data array.  The `datatype' parameter specifies
-    the datatype of the `nulval' parameter and of the `array' of values; it
+    the datatype of the  parameters pointed to by the `nulval'  and `array'
+    pointers; it
     can have one of the following symbolic constant values:  TBYTE, TSHORT,
     TUSHORT, TINT, TLONG, TULONG, TFLOAT, TDOUBLE.  Undefined array
     elements will be returned with a value = *nullval, (note that this
@@ -3158,7 +3347,7 @@ required) and not the number of table elements.
     values and can have one of the following symbolic constant values:
     TSTRING, TBYTE, TSHORT, TUSHORT, TINT, TLONG, TULONG, TFLOAT, or
     TDOUBLE.  Binary tables also support the following additional
-   datatypes: TBIT, TLOGICAL, TCOMPLEX, and TDBLCOMPLEX.
+   datatypes: TLOGICAL, TCOMPLEX, and TDBLCOMPLEX.
 \end{description}
 
 \begin{verbatim}
@@ -3280,11 +3469,11 @@ pixel is undefined.
 
 \begin{description}
 \item[1 ] Get elements from an ASCII or binary table column (in the CDU).  The
-    `datatype' parameter specifies the datatype of the `nulval' parameter
-    and of the `array' of values; it can have one of the following symbolic
-    constant values:  TSTRING, TBYTE, TSHORT, TUSHORT, TINT, TLONG, TULONG,
-    TFLOAT, or TDOUBLE.  Binary tables also support the following
-    additional datatypes: TBIT, TLOGICAL, TCOMPLEX, and TDBLCOMPLEX.
+    `datatype' parameter specifies the datatype of the  parameters pointed to by
+    the `nulval'  and `array'  pointers; it can have one of the following
+    symbolic constant values:  TSTRING, TBYTE, TSHORT, TUSHORT, TINT, TLONG,
+    TULONG, TFLOAT, or TDOUBLE.  Binary tables also support the following
+    additional datatypes: TLOGICAL, TCOMPLEX, and TDBLCOMPLEX.
     Undefined array elements will be returned with a value = *nullval,
     (note that this parameter gives the address of the null value, not the
     null value itself) unless nulval = 0 or *nulval = 0, in which case no
@@ -3979,6 +4168,7 @@ The following utility routines may be useful for certain applications:
   int ffpkls(fitsfile *fptr, char *keyname, char *longstr,
              char *comment, > int *status)
   int ffplsw(fitsfile *fptr, > int *status)
+  int ffpkyu(fitsfile *fptr, char *keyname, char *comment, > int *status)
   int ffpkns(fitsfile *fptr, char *keyroot, int nstart, int nkeys,
              char **value, char **comment, > int *status)
   int ffpkn[lj](fitsfile *fptr, char *keyroot, int nstart, int nkeys,
@@ -3987,6 +4177,7 @@ The following utility routines may be useful for certain applications:
                 DTYPE *numval, int decimals, char **comment, > int *status)
   int ffpkyt(fitsfile *fptr, char *keyname, long intval, double frac,
              char *comment, > int *status)
+  int ffpunt(fitsfile *fptr, char *keyname, char *unit, > int *status)
 \end{verbatim}
  Insert Keyword Routines: page~\pageref{FFIREC}
 
@@ -3998,6 +4189,7 @@ The following utility routines may be useful for certain applications:
               > int *status)
   int ffiky[edfg](fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
                   char *comment, > int *status)
+  int ffikyu(fitsfile *fptr, char *keyname, char *comment, > int *status)
 \end{verbatim}
  Read Keyword Routines: page~\pageref{FFGREC}
 
@@ -4024,6 +4216,7 @@ The following utility routines may be useful for certain applications:
                   > DTYPE *numval, int *nfound, int *status)
   int ffgkyt(fitsfile *fptr, char *keyname, > long *intval, double *frac,
              char *comment, int *status)
+  int ffgunt(fitsfile *fptr, char *keyname, > char *unit, int *status)
 \end{verbatim}
  Modify Keyword Routines: page~\pageref{FFMREC}
 
@@ -4038,6 +4231,7 @@ The following utility routines may be useful for certain applications:
                > int *status)
   int ffmky[edfg](fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
                   char *comment, > int *status)
+  int ffmkyu(fitsfile *fptr, char *keyname, char *comment, > int *status)
 \end{verbatim}
  Update Keyword Routines: page~\pageref{FFUCRD}
 
@@ -4049,6 +4243,7 @@ The following utility routines may be useful for certain applications:
                > int *status)
   int ffuky[edfg](fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
                   char *comment, > int *status)
+  int ffukyu(fitsfile *fptr, char *keyname, char *comment, > int *status)
 \end{verbatim}
  Delete Keyword Routines: page~\pageref{FFDREC}
 
@@ -4288,7 +4483,7 @@ dataok   - was the data unit verification successful (=1) or
            not (= -1).  Equals zero if the DATASUM keyword is not present.
 datasum  - 32-bit 1's complement checksum for the data unit
 datatype - specifies the datatype of the value.  Allowed value are:
-           TSTRING, TLOGICAL, TBIT, TBYTE, TSHORT, TUSHORT, TINT, TLONG, TULONG,
+           TSTRING, TLOGICAL, TBYTE, TSHORT, TUSHORT, TINT, TLONG, TULONG,
            TFLOAT, TDOUBLE, TCOMPLEX, and TDBLCOMPLEX
 decimals - number of decimal places to be displayed
 dim1     - declared size of the first dimension of the image or cube array
@@ -4395,6 +4590,7 @@ typecode - datatype code of the table column.  The negative of
                 double precision, D     82        TDOUBLE
                 complex, C              83        TCOMPLEX
                 double complex, M      163        TDBLCOMPLEX
+unit     - the physical unit string (e.g., 'km/s') for a keyword
 value    - the keyword value string (70 char max, null-terminated)
 version  - current version number of the CFITSIO library
 width    - width of the character string field
@@ -4437,7 +4633,7 @@ improve the readability of their code.
  HEADER_NOT_EMPTY  201    header already contains keywords
  KEY_NO_EXIST      202    keyword not found in header
  KEY_OUT_BOUNDS    203    keyword record number is out of bounds
- NO_VALUE          204    keyword value field is blank
+ VALUE_UNDEFINED   204    keyword value field is blank
  NO_QUOTE          205    string is missing the closing quote
  BAD_KEYCHAR       207    illegal character in keyword name or card
  BAD_ORDER         208    required keywords out of order

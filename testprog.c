@@ -615,6 +615,21 @@ main()
     ffgkyt(fptr, "KEY_PKYT", &ijkey, &idkey, comment, &status);
     printf("KEY_PKYT %d %.14f %s %d\n",ijkey, idkey, comment, status);
 
+    ffpunt(fptr, "KEY_PKYJ", "km/s/Mpc", &status);
+    ijkey = 0;
+    ffgky(fptr, TLONG, "KEY_PKYJ", &ijkey, comment, &status);
+    printf("KEY_PKY J %d %s %d\n",ijkey, comment, status);
+
+    ffpunt(fptr, "KEY_PKYJ", "", &status);
+    ijkey = 0;
+    ffgky(fptr, TLONG, "KEY_PKYJ", &ijkey, comment, &status);
+    printf("KEY_PKY J %d %s %d\n",ijkey, comment, status);
+
+    ffpunt(fptr, "KEY_PKYJ", "feet/second/second", &status);
+    ijkey = 0;
+    ffgky(fptr, TLONG, "KEY_PKYJ", &ijkey, comment, &status);
+    printf("KEY_PKY J %d %s %d\n",ijkey, comment, status);
+
     ffgkls(fptr, "key_pkls", &lsptr, comment, &status);
     printf("KEY_PKLS long string value = \n%s\n", lsptr);
 
