@@ -1180,6 +1180,8 @@ int fffrow( fitsfile *infptr, char *expr,
 	    long firstrow, long nrows,
             long *n_good_rows, char *row_status, int *status);
 
+int ffffrw( fitsfile *fptr, char *expr, long *rownum, int *status );
+
 int fffrwc( fitsfile *fptr, char *expr, char *timeCol,    
             char *parCol, char *valCol, long ntimes,      
             double *times, char *time_status, int  *status );

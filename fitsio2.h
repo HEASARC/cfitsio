@@ -665,6 +665,9 @@ int  parse_data( long totalrows, long offset, long firstrow,
                  void *userPtr );
 int  uncompress_hkdata( fitsfile *fptr, long ntimes, 
                         double *times, int *status );
+int  ffffrw_work( long totalrows, long offset, long firstrow,
+                  long nrows, int nCols, iteratorCol *colData,
+                  void *userPtr );
 
 /* general driver routines */
 

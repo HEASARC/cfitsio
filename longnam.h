@@ -430,6 +430,7 @@
 #define fits_init_wcs_img ffiwcs
 
 #define fits_find_rows          fffrow
+#define fits_find_first_row     ffffrw
 #define fits_find_rows_cmp      fffrwc
 #define fits_select_rows        ffsrow
 #define fits_calc_rows          ffcrow

@@ -1625,3 +1625,97 @@ int uncompress_hkdata( fitsfile *fptr,
       }
    return( *status );
 }
+
+/*---------------------------------------------------------------------------*/
+int ffffrw( fitsfile *fptr,         /* I - Input FITS file                   */
+            char     *expr,         /* I - Boolean expression                */
+            long     *rownum,       /* O - First row of table to eval to T   */
+            int      *status )      /* O - Error status                      */
+/*                                                                           */
+/* Evaluate a boolean expression, returning the row number of the first      */
+/* row which evaluates to TRUE                                               */
+/*---------------------------------------------------------------------------*/
+{
+   int naxis, constant, dtype;
+   long nelem, naxes[MAXDIMS];
+   char result;
+
+   if( *status ) return( *status );
+
+   if( ffiprs( fptr, 0, expr, MAXDIMS, &dtype, &nelem, &naxis,
+               naxes, status ) ) {
+      ffcprs();
+      return( *status );
+   }
+   if( nelem<0 ) {
+      constant = 1;
+      nelem = -nelem;
+   } else
+      constant = 0;
+
+   if( dtype!=TLOGICAL || nelem!=1 ) {
+      ffcprs();
+      ffpmsg("Expression does not evaluate to a logical scalar.");
+      return( *status = PARSE_BAD_TYPE );
+   }
+
+   *rownum = 0;
+   if( constant ) { /* No need to call parser... have result from ffiprs */
+      result = gParse.Nodes[gParse.nNodes-1].value.data.log;
+      if( result ) {
+	 /*  Make sure there is at least 1 row in table  */
+	 ffgnrw( fptr, &nelem, status );
+	 if( nelem )
+	    *rownum = 1;
+      }
+   } else {
+      if( ffiter( gParse.nCols, gParse.colData, 0, 0,
+		  ffffrw_work, (void*)rownum, status ) == -1 )
+	 *status = 0;  /* -1 indicates exitted without error before end... OK */
+   }
+
+   ffcprs();
+   return(*status);
+}
+
+/*---------------------------------------------------------------------------*/
+int ffffrw_work(long        totalrows, /* I - Total rows to be processed     */
+                long        offset,    /* I - Number of rows skipped at start*/
+                long        firstrow,  /* I - First row of this iteration    */
+                long        nrows,     /* I - Number of rows in this iter    */
+                int         nCols,     /* I - Number of columns in use       */
+                iteratorCol *colData,  /* IO- Column information/data        */
+                void        *userPtr ) /* I - Data handling instructions     */
+/*                                                                           */
+/* Iterator work function which calls the parser and searches for the        */
+/* first row which evaluates to TRUE.                                        */
+/*---------------------------------------------------------------------------*/
+{
+    long idx;
+    Node *result;
+
+    Reset_Parser ( firstrow, 0, nrows );
+    Evaluate_Node( gParse.nNodes-1 );
+
+    if( !gParse.status ) {
+
+       result = gParse.Nodes + gParse.nNodes-1;
+       if( result->operation==CONST_OP ) {
+
+	  if( result->value.data.log ) {
+	     *(long*)userPtr = firstrow;
+	     return( -1 );
+	  }
+
+       } else {
+
+	  for( idx=0; idx<nrows; idx++ )
+	     if( result->value.data.logptr[idx] && !result->value.undef[idx] ) {
+		*(long*)userPtr = firstrow + idx;
+		return( -1 );
+	     }
+       }
+    }
+
+    return( gParse.status );
+}
