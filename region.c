@@ -180,9 +180,9 @@ int ffrrgn( const char *filename,
                if( aRgn->Shapes )
                   tmpShape = (RgnShape *)realloc( aRgn->Shapes,
                                                   (10+aRgn->nShapes)
-                                                  * sizeof(Region) );
+                                                  * sizeof(RgnShape) );
                else
-                  tmpShape = (RgnShape *) malloc( 10 * sizeof(Region) );
+                  tmpShape = (RgnShape *) malloc( 10 * sizeof(RgnShape) );
                if( tmpShape ) {
                   aRgn->Shapes = tmpShape;
                } else {
