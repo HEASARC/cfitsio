@@ -1,5 +1,8 @@
                Log of Changes Made to CFITSIO
 
+   - fixed major bug when freeing memory in the iterator function.  It caused
+     mysterious crashes on a few platforms, but had no effect on most others.
+
    - added support for reading IRAF format image (.imh files)
 
    - added more error checking to return an error if the size of the FITS

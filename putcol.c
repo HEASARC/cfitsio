@@ -1179,9 +1179,9 @@ cleanup:
                 free(col[jj].null.stringnull); /* free the null string */
             }
         }
-        free(cols[jj].array);
-        free(col);
+        free(cols[jj].array); /* memory for the array of values from the col */
     }
+    free(col);   /* the structure containing the null values */
     return(*status);
 }
 
