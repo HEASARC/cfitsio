@@ -1015,6 +1015,9 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,LONG,LONG,LONG,STRING,PSTRINGV,PL
 
 #define ftgcl_LOGV_A6 A5
 FCALLSCSUB7(ffgcl,FTGCL,ftgcl,FITSUNIT,INT,LONG,LONG,LONG,LOGICALV,PINT)
+
+#define ftgcvl_LOGV_A7 A5
+FCALLSCSUB9(ffgcvl,FTGCVL,ftgcvl,FITSUNIT,INT,LONG,LONG,LONG,LOGICAL,LOGICALV,PLOGICAL,PINT)
 FCALLSCSUB9(ffgcvb,FTGCVB,ftgcvb,FITSUNIT,INT,LONG,LONG,LONG,BYTE,PPSTRING,PLOGICAL,PINT)
 FCALLSCSUB9(ffgcvi,FTGCVI,ftgcvi,FITSUNIT,INT,LONG,LONG,LONG,SHORT,SHORTV,PLOGICAL,PINT)
 FCALLSCSUB9(ffgcvk,FTGCVJ,ftgcvj,FITSUNIT,INT,LONG,LONG,LONG,INT,INTV,PLOGICAL,PINT)
@@ -1203,6 +1206,7 @@ FCALLSCSUB6(ffpgpe,FTPGPE,ftpgpe,FITSUNIT,LONG,LONG,LONG,FLOATV,PINT)
 FCALLSCSUB6(ffpgpd,FTPGPD,ftpgpd,FITSUNIT,LONG,LONG,LONG,DOUBLEV,PINT)
 
 FCALLSCSUB5(ffppru,FTPPRU,ftppru,FITSUNIT,LONG,LONG,LONG,PINT)
+FCALLSCSUB4(ffpprn,FTPPRN,ftpprn,FITSUNIT,LONG,LONG,PINT)
 
 /*--------------------- write column elements -------------*/
 #define ftpcls_STRV_A6 NUM_ELEM_ARG(5)
@@ -1225,10 +1229,6 @@ FCALLSCSUB7(ffpclx,FTPCLX,ftpclx,FITSUNIT,INT,LONG,LONG,LONG,LOGICALV,PINT)
 
 #define ftpcns_STRV_A6 NUM_ELEM_ARG(5)
 FCALLSCSUB8(ffpcns,FTPCNS,ftpcns,FITSUNIT,INT,LONG,LONG,LONG,STRINGV,STRING,PINT)
-
-#define ftpcnl_LOGV_A6 A5
-#define ftpcnl_LOGV_A7 A5
-FCALLSCSUB8(ffpcnl,FTPCNL,ftpcnl,FITSUNIT,INT,LONG,LONG,LONG,LOGICALV,LOGICAL,PINT)
 
 FCALLSCSUB8(ffpcnb,FTPCNB,ftpcnb,FITSUNIT,INT,LONG,LONG,LONG,PPSTRING,BYTE,PINT)
 FCALLSCSUB8(ffpcni,FTPCNI,ftpcni,FITSUNIT,INT,LONG,LONG,LONG,SHORTV,SHORT,PINT)
@@ -1263,21 +1263,12 @@ FCALLSCSUB13(ffxypx,FTXYPX,ftxypx,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUB
 /*                Included only to support older code                     */
 /*------------------------------------------------------------------------*/
 
-void Cffpdef(void *a, void *b, void *c, void *d, void *e, void *f, void *g )
+void Cffempty()
 { return; }
-FCALLSCSUB7(Cffpdef,FTPDEF,ftpdef,PVOID,PVOID,PVOID,PVOID,PVOID,PVOID,PVOID)
-
-void Cffbdef(void *a, void *b, void *c, void *d, void *e, void *f )
-{ return; }
-FCALLSCSUB6(Cffbdef,FTBDEF,ftbdef,PVOID,PVOID,PVOID,PVOID,PVOID,PVOID)
-
-void Cffadef(void *a, void *b, void *c, void *d, void *e, void *f, void *g )
-{ return; }
-FCALLSCSUB7(Cffadef,FTADEF,ftadef,PVOID,PVOID,PVOID,PVOID,PVOID,PVOID,PVOID)
-
-void Cffddef(void *a, void *b, void *c )
-{ return; }
-FCALLSCSUB3(Cffddef,FTDDEF,ftddef,PVOID,PVOID,PVOID)
+FCALLSCSUB0(Cffempty,FTPDEF,ftpdef)
+FCALLSCSUB0(Cffempty,FTBDEF,ftbdef)
+FCALLSCSUB0(Cffempty,FTADEF,ftadef)
+FCALLSCSUB0(Cffempty,FTDDEF,ftddef)
 
 
 /*------------------- Conversion Utilities -----------------*/
