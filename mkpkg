@@ -43,7 +43,7 @@ cfitsio:
 	    !cp *.h splitc/
 	    !cp *.h ../include
 	    !cp psplit splitc/
-            !cd splitc ; psplit *.c
+            !cd splitc ; ./psplit *.c
 	    $delete splitc/cfileio.c
 	    $delete splitc/convert.c
 	    $delete splitc/fitscore.c 
