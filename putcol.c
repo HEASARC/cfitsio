@@ -789,11 +789,11 @@ int ffiter(int n_cols,
             ntodo = n_optimum; 
             cols[jj].repeat = 1;
 
-            /* get the BNULL keyword value, if it exists */
+            /* get the BLANK keyword value, if it exists */
             if (typecode == TBYTE || typecode == TSHORT || typecode == TLONG)
             {
                 tstatus = 0;
-                ffgkyj(cols[jj].fptr, "BNULL", &tnull, 0, &tstatus);
+                ffgkyj(cols[jj].fptr, "BLANK", &tnull, 0, &tstatus);
                 if (tstatus)
                 {
                     tnull = 0L;  /* no null values */
