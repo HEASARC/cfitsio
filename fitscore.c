@@ -5689,7 +5689,7 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffgkcl(char *card)
+int ffgkcl(char *tcard)
 
 /*
    Return the type classification of the input header record
@@ -5746,7 +5746,10 @@ int ffgkcl(char *card)
 
 */ 
 {
-    char *card1, *card5;
+    char card[20], *card1, *card5;
+
+    strncpy(card, tcard, 8);   /* copy the keyword name */
+    strcat(card, "        "); /* append blanks to make at least 8 chars long */
 
     card1 = card + 1;  /* pointer to 2nd character */
     card5 = card + 5;  /* pointer to 6th character */
