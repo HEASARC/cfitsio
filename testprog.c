@@ -15,7 +15,7 @@ main()
     int datastatus, hdustatus;
     int status, simple, bitpix, naxis, extend, hdutype, hdunum, tfields;
     long ii, jj;
-    int nkeys, nfound, colnum, typecode;
+    int nkeys, nfound, colnum, typecode, signval,nmsg;
     char cval;
     long repeat, offset, width, jnulval;
     int anynull;
@@ -846,13 +846,16 @@ main()
     */
 
     /* initialize arrays of values to write to table */
+    signval = -1;
     for (ii = 0; ii < 21; ii++)
     {
-        boutarray[ii] = ii + 1;
-        ioutarray[ii] = ii + 1;
-        joutarray[ii] = ii + 1;
-        eoutarray[ii] = ii + 1;
-        doutarray[ii] = ii + 1;
+        signval *= -1;
+        boutarray[ii] = (ii + 1);
+        ioutarray[ii] = (ii + 1) * signval;
+        joutarray[ii] = (ii + 1) * signval;
+        koutarray[ii] = (ii + 1) * signval;
+        eoutarray[ii] = (ii + 1) * signval;
+        doutarray[ii] = (ii + 1) * signval;
     }
 
     ffpcls(fptr, 1, 1, 1, 3, onskey, &status);  /* write string values */
@@ -906,7 +909,7 @@ main()
         ffpcli(fptr, ii, 3, 1, 2, &ioutarray[2], &status); 
         if (status == NUM_OVERFLOW)
             status = 0;
-        ffpclj(fptr, ii, 5, 1, 2, &joutarray[4], &status); 
+        ffpclk(fptr, ii, 5, 1, 2, &koutarray[4], &status); 
         if (status == NUM_OVERFLOW)
             status = 0;
         ffpcle(fptr, ii, 7, 1, 2, &eoutarray[6], &status);
@@ -930,7 +933,7 @@ main()
         ffpcni(fptr, ii, 14, 1, 2, &ioutarray[13], 15, &status); 
         if (status == NUM_OVERFLOW)
             status = 0;
-        ffpcnj(fptr, ii, 16, 1, 2, &joutarray[15], 17, &status); 
+        ffpcnk(fptr, ii, 16, 1, 2, &koutarray[15], 17, &status); 
         if (status == NUM_OVERFLOW)
             status = 0;
         ffpcne(fptr, ii, 18, 1, 2, &eoutarray[17], 19., &status);
@@ -951,6 +954,11 @@ main()
       #########################################
     */
 
+    printf("\nFind the column numbers; a returned status value of 237 is");
+    printf("\nexpected and indicates that more than one column name matches");
+    printf("\nthe input column name template.  Status = 219 indicates that");
+    printf("\nthere was no matching column name.");
+
     ffgcno(fptr, 0, "Xvalue", &colnum, &status);
     printf("\nColumn Xvalue is number %d; status = %d.\n", colnum, status);
 
@@ -961,6 +969,8 @@ main()
            colname, colnum, status);
     }
     status = 0;
+
+    printf("\nInformation about each column:\n");
 
     for (ii = 0; ii < tfields; ii++)
     {
@@ -1097,7 +1107,7 @@ main()
 
     ffgtbb(fptr, 1, 20, 78, uchars, &status);
     uchars[78] = '\0';
-    printf("%s\n", uchars);
+    printf("\n%s\n", uchars);
     ffptbb(fptr, 1, 20, 78, uchars, &status);
 
     /*
@@ -1252,7 +1262,7 @@ main()
     ffgcvb(fptr, 3, 1, 1, nrows, 98, xinarray, &anynull, &status);
     ffgcvb(fptr, 4, 1, 1, nrows, 98, binarray, &anynull, &status);
     ffgcvi(fptr, 5, 1, 1, nrows, 98, iinarray, &anynull, &status);
-    ffgcvj(fptr, 6, 1, 1, nrows, 98, jinarray, &anynull, &status);
+    ffgcvk(fptr, 6, 1, 1, nrows, 98, kinarray, &anynull, &status);
     ffgcve(fptr, 7, 1, 1, nrows, 98., einarray, &anynull, &status);
     ffgcvd(fptr, 8, 1, 1, nrows, 98., dinarray, &anynull, &status);
     ffgcvc(fptr, 9, 1, 1, nrows, 98., cinarray, &anynull, &status);
@@ -1261,9 +1271,9 @@ main()
     printf("\nRead columns with ffgcv_:\n");
     for (ii = 0; ii < nrows; ii++)
     {
-  printf("%15s %d %3d %2d %2d %2d %4.1f %4.1f (%4.1f,%4.1f) (%4.1f,%4.1f) \n",
+  printf("%15s %d %3d %2d %3d %3d %5.1f %5.1f (%5.1f,%5.1f) (%5.1f,%5.1f) \n",
         inskey[ii], larray[ii], xinarray[ii], binarray[ii], iinarray[ii], 
-        jinarray[ii], einarray[ii], dinarray[ii], cinarray[ii * 2], 
+        kinarray[ii], einarray[ii], dinarray[ii], cinarray[ii * 2], 
         cinarray[ii * 2 + 1], minarray[ii * 2], minarray[ii * 2 + 1]);
     }
 
@@ -1273,7 +1283,7 @@ main()
       xinarray[ii] = 0;
       binarray[ii] = 0;
       iinarray[ii] = 0; 
-      jinarray[ii] = 0;
+      kinarray[ii] = 0;
       einarray[ii] = 0.; 
       dinarray[ii] = 0.;
       cinarray[ii * 2] = 0.; 
@@ -1287,7 +1297,7 @@ main()
     ffgcfb(fptr, 3, 1, 1, nrows, xinarray, larray2, &anynull, &status);
     ffgcfb(fptr, 4, 1, 1, nrows, binarray, larray2, &anynull, &status);
     ffgcfi(fptr, 5, 1, 1, nrows, iinarray, larray2, &anynull, &status);
-    ffgcfj(fptr, 6, 1, 1, nrows, jinarray, larray2, &anynull, &status);
+    ffgcfk(fptr, 6, 1, 1, nrows, kinarray, larray2, &anynull, &status);
     ffgcfe(fptr, 7, 1, 1, nrows, einarray, larray2, &anynull, &status);
     ffgcfd(fptr, 8, 1, 1, nrows, dinarray, larray2, &anynull, &status);
     ffgcfc(fptr, 9, 1, 1, nrows, cinarray, larray2, &anynull, &status);
@@ -1297,17 +1307,16 @@ main()
     for (ii = 0; ii < 10; ii++)
     {
     
-    printf("%15s %d %3d %2d %2d %2d %4.1f %4.1f (%4.1f,%4.1f) (%4.1f,%4.1f)\n",
+    printf("%15s %d %3d %2d %3d %3d %5.1f %5.1f (%5.1f,%5.1f) (%5.1f,%5.1f)\n",
         inskey[ii], larray[ii], xinarray[ii], binarray[ii], iinarray[ii], 
-        jinarray[ii], einarray[ii], dinarray[ii], cinarray[ii * 2], 
+        kinarray[ii], einarray[ii], dinarray[ii], cinarray[ii * 2], 
         cinarray[ii * 2 + 1], minarray[ii * 2], minarray[ii * 2 + 1]);
     }
     for (ii = 10; ii < nrows; ii++)
     {
       /* don't try to print the NaN values */
-      printf("%15s %d %3d %2d %2d %2d \n",
-        inskey[ii], larray[ii], xinarray[ii], binarray[ii], iinarray[ii], 
-        jinarray[ii]);
+      printf("%15s %d %3d %2d %3d \n",
+        inskey[ii], larray[ii], xinarray[ii], binarray[ii], iinarray[ii]);
     }
     ffprec(fptr, 
     "key_prec= 'This keyword was written by ffprec' / comment here", &status);
@@ -1331,7 +1340,7 @@ main()
     printf("\nData values after inserting 3 rows after row 2:\n");
     for (ii = 0; ii < nrows; ii++)
     {
-      printf("%15s %2d %2d %2d %4.1f %4.1f\n",  inskey[ii], binarray[ii],
+      printf("%15s %2d %3d %3d %5.1f %5.1f\n",  inskey[ii], binarray[ii],
           iinarray[ii], jinarray[ii], einarray[ii], dinarray[ii]);
     }
 
@@ -1349,7 +1358,7 @@ main()
     printf("\nData values after deleting 2 rows at row 10:\n");
     for (ii = 0; ii < nrows; ii++)
     {
-      printf("%15s %2d %2d %2d %4.1f %4.1f\n",  inskey[ii], binarray[ii],
+      printf("%15s %2d %3d %3d %5.1f %5.1f\n",  inskey[ii], binarray[ii],
           iinarray[ii], jinarray[ii], einarray[ii], dinarray[ii]);
     }
 
@@ -1365,7 +1374,7 @@ main()
     printf("\nData values after deleting column 6:\n");
     for (ii = 0; ii < nrows; ii++)
     {
-      printf("%15s %2d %2d %4.1f %4.1f\n", inskey[ii], binarray[ii],
+      printf("%15s %2d %3d %5.1f %5.1f\n", inskey[ii], binarray[ii],
           iinarray[ii], einarray[ii], dinarray[ii]);
     }
 
@@ -1382,7 +1391,7 @@ main()
     printf("\nData values after inserting column 8:\n");
     for (ii = 0; ii < nrows; ii++)
     {
-      printf("%15s %2d %2d %4.1f %4.1f %d\n", inskey[ii], binarray[ii],
+      printf("%15s %2d %3d %5.1f %5.1f %d\n", inskey[ii], binarray[ii],
           iinarray[ii], einarray[ii], dinarray[ii] , jinarray[ii]);
     }
 
@@ -1398,7 +1407,7 @@ main()
     printf("\nValues after setting 1st 10 elements in column 8 = null:\n");
     for (ii = 0; ii < nrows; ii++)
     {
-      printf("%15s %2d %2d %4.1f %4.1f %d\n", inskey[ii], binarray[ii],
+      printf("%15s %2d %3d %5.1f %5.1f %d\n", inskey[ii], binarray[ii],
           iinarray[ii], einarray[ii], dinarray[ii] , jinarray[ii]);
     }
 
@@ -1930,8 +1939,7 @@ main()
 
     ffgpv(fptr, TBYTE,   1,  12, &bnul, binarray, &anynull, &status);
     ffgpv(fptr, TSHORT,  1,  12, &inul, iinarray, &anynull, &status);
-/*   TINIT is not supported on ALPHA OSF/1 */
-/*  ffgpv(fptr, TINT,    1,  12, &knul, kinarray, &anynull, &status); */
+    ffgpv(fptr, TINT,    1,  12, &knul, kinarray, &anynull, &status);
     ffgpv(fptr, TLONG,   1,  12, &jnul, jinarray, &anynull, &status);
     ffgpv(fptr, TFLOAT,  1,  12, &enul, einarray, &anynull, &status);
     ffgpv(fptr, TDOUBLE, 1,  12, &dnul, dinarray, &anynull, &status);
@@ -1944,11 +1952,9 @@ main()
     for (ii = 0; ii < npixels; ii++)
         printf(" %2d", iinarray[ii]);
     printf("  %d (short)\n", anynull);  
-/*
     for (ii = 0; ii < npixels; ii++)
         printf(" %2d", kinarray[ii]);
     printf("  %d (int)\n", anynull); 
-*/
     for (ii = 0; ii < npixels; ii++)
         printf(" %2d", jinarray[ii]);
     printf("  %d (long)\n", anynull); 
@@ -2130,19 +2136,25 @@ main()
     ffclos(fptr, &status);
     printf("ffclos status = %d\n", status);
 
-    ffgerr(status, errmsg);
-    printf("\nStatus = %d: %s\n", status, errmsg);
+    printf("\nNormally, there should be 8 error messages on the stack\n");
+    printf("all regarding 'numerical overflows':\n");
 
     ffgmsg(errmsg);
-
-    if (errmsg[0])
-        printf("\n***** Error message stack: *****\n");
+    nmsg = 0;
 
     while (errmsg[0])
     {
         printf(" %s\n", errmsg);
+        nmsg++;
         ffgmsg(errmsg);
     }
+
+    if (nmsg != 8)
+        printf("\nWARNING: Did not find the expected 8 error messages!\n");
+
+    ffgerr(status, errmsg);
+    printf("\nStatus = %d: %s\n", status, errmsg);
+
     return(0);
 }
 

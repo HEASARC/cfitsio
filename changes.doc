@@ -1,4 +1,15 @@
-      Log of Changes Made to CFITSIO
+         Log of Changes Made to CFITSIO
+
+Version 1.03 - 20 August 1996
+
+   - added full support for reading and writing the C 'int'
+     data type.  This was a problem on Alpha/OSF where short,
+     int, and long datatypes are 2, 4, and 8 bytes long, respectively.
+
+   - cleaned up the code in the byte-swapping routines.
+
+   - renamed the file 'longname.h' to 'longnam.h' to avoid conflict
+     with a file with the same name in another unrelated package.
 
 Version 1.02 - 15 August 1996
 

@@ -1,4 +1,4 @@
-CFITSIO TESTPROG, v1.020
+CFITSIO TESTPROG, v1.030
 
 Try opening then closing a nonexistent file:
   ffopen fptr, status  = 0 104 (expect an error)
@@ -118,6 +118,10 @@ header contains 33 keywords with room for 74 more
 TDIM3 = (1,2,8), 3, 1, 2, 8
 ffpcl_ status = 0
 
+Find the column numbers; a returned status value of 237 is
+expected and indicates that more than one column name matches
+the input column name template.  Status = 219 indicates that
+there was no matching column name.
 Column Xvalue is number 3; status = 0.
 Column Avalue is number 1; status = 237.
 Column Lvalue is number 2; status = 237.
@@ -130,6 +134,8 @@ Column Dvalue is number 8; status = 237.
 Column Cvalue is number 9; status = 237.
 Column Mvalue is number 10; status = 237.
 Column  is number 0; status = 219.
+
+Information about each column:
  15A  16  1 15 Avalue, , A, 1, 1.000000, 0.000000, 123454321, .
   1L  14  1  1 Lvalue, m**2, L, 1, 1.000000, 0.000000, 123454321, .
  16X   1 16  1 Xvalue, cm, X, 16, 1.000000, 0.000000, 123454321, .
@@ -163,6 +169,7 @@ Data values read from ASCII table:
                  9  9  9  9.0  9.0
                 10 10 10 10.0 10.0
                 99 99 99 99.0 99.0
+
       1       1.000000  1.00000E+00  1.00000000000000E+00second string        
 
 Column name is number 1; status = 0.
@@ -259,122 +266,122 @@ Data values read from binary table:
 null string column value = -- (should be --)
 
 Read columns with ffgcv_:
-   first string 0  76  1  1  1  1.0  1.0 ( 1.0, 2.0) ( 1.0, 2.0) 
-  second string 1 112  2  2  2  2.0  2.0 ( 3.0, 4.0) ( 3.0, 4.0) 
-                0 240  3  3  3  3.0  3.0 ( 5.0, 6.0) ( 5.0, 6.0) 
-    NOT DEFINED 0 124  4  4  4  4.0  4.0 ( 7.0, 8.0) ( 7.0, 8.0) 
-    NOT DEFINED 1   0  5  5  5  5.0  5.0 ( 9.0,10.0) ( 9.0,10.0) 
-    NOT DEFINED 1   0  6  6  6  6.0  6.0 (11.0,12.0) (11.0,12.0) 
-    NOT DEFINED 0   0  7  7  7  7.0  7.0 (13.0,14.0) (13.0,14.0) 
-    NOT DEFINED 0   0  8  8  8  8.0  8.0 (15.0,16.0) (15.0,16.0) 
-    NOT DEFINED 0   0  9  9  9  9.0  9.0 (17.0,18.0) (17.0,18.0) 
-    NOT DEFINED 1   0 10 10 10 10.0 10.0 (19.0,20.0) (19.0,20.0) 
-    NOT DEFINED 0   0 98 98 98 98.0 98.0 ( 0.0, 0.0) ( 0.0, 0.0) 
-    NOT DEFINED 1   0 12 12 12 12.0 12.0 ( 0.0, 0.0) ( 0.0, 0.0) 
-    NOT DEFINED 0   0 98 98 98 98.0 98.0 ( 0.0, 0.0) ( 0.0, 0.0) 
-    NOT DEFINED 0   0 14 14 14 14.0 14.0 ( 0.0, 0.0) ( 0.0, 0.0) 
-    NOT DEFINED 0   0 98 98 98 98.0 98.0 ( 0.0, 0.0) ( 0.0, 0.0) 
-    NOT DEFINED 0   0 16 16 16 16.0 16.0 ( 0.0, 0.0) ( 0.0, 0.0) 
-    NOT DEFINED 1   0 98 98 98 98.0 98.0 ( 0.0, 0.0) ( 0.0, 0.0) 
-    NOT DEFINED 1   0 18 18 18 18.0 18.0 ( 0.0, 0.0) ( 0.0, 0.0) 
-    NOT DEFINED 1   0 98 98 98 98.0 98.0 ( 0.0, 0.0) ( 0.0, 0.0) 
-    NOT DEFINED 1   0 20 20 20 20.0 20.0 ( 0.0, 0.0) ( 0.0, 0.0) 
-    NOT DEFINED 0   0 98 98 98 98.0 98.0 ( 0.0, 0.0) ( 0.0, 0.0) 
+   first string 0  76  1   1   1   1.0   1.0 (  1.0, -2.0) (  1.0, -2.0) 
+  second string 1 112  2   2   2   2.0   2.0 (  3.0, -4.0) (  3.0, -4.0) 
+                0 240  3   3   3   3.0   3.0 (  5.0, -6.0) (  5.0, -6.0) 
+    NOT DEFINED 0 124  0  -4  -4  -4.0  -4.0 (  7.0, -8.0) (  7.0, -8.0) 
+    NOT DEFINED 1   0  5   5   5   5.0   5.0 (  9.0,-10.0) (  9.0,-10.0) 
+    NOT DEFINED 1   0  0  -6  -6  -6.0  -6.0 ( 11.0,-12.0) ( 11.0,-12.0) 
+    NOT DEFINED 0   0  7   7   7   7.0   7.0 ( 13.0,-14.0) ( 13.0,-14.0) 
+    NOT DEFINED 0   0  0  -8  -8  -8.0  -8.0 ( 15.0,-16.0) ( 15.0,-16.0) 
+    NOT DEFINED 0   0  9   9   9   9.0   9.0 ( 17.0,-18.0) ( 17.0,-18.0) 
+    NOT DEFINED 1   0  0 -10 -10 -10.0 -10.0 ( 19.0,-20.0) ( 19.0,-20.0) 
+    NOT DEFINED 0   0 98  98  98  98.0  98.0 (  0.0,  0.0) (  0.0,  0.0) 
+    NOT DEFINED 1   0 12  12  12  12.0  12.0 (  0.0,  0.0) (  0.0,  0.0) 
+    NOT DEFINED 0   0 98  98  98  98.0  98.0 (  0.0,  0.0) (  0.0,  0.0) 
+    NOT DEFINED 0   0  0 -14 -14 -14.0 -14.0 (  0.0,  0.0) (  0.0,  0.0) 
+    NOT DEFINED 0   0  0  98  98  98.0  98.0 (  0.0,  0.0) (  0.0,  0.0) 
+    NOT DEFINED 0   0  0 -16 -16 -16.0 -16.0 (  0.0,  0.0) (  0.0,  0.0) 
+    NOT DEFINED 1   0  0  98  98  98.0  98.0 (  0.0,  0.0) (  0.0,  0.0) 
+    NOT DEFINED 1   0  0 -18 -18 -18.0 -18.0 (  0.0,  0.0) (  0.0,  0.0) 
+    NOT DEFINED 1   0  0  98  98  98.0  98.0 (  0.0,  0.0) (  0.0,  0.0) 
+    NOT DEFINED 1   0  0 -20 -20 -20.0 -20.0 (  0.0,  0.0) (  0.0,  0.0) 
+    NOT DEFINED 0   0  0  98  98  98.0  98.0 (  0.0,  0.0) (  0.0,  0.0) 
 
 Read columns with ffgcf_:
-   first string 0  76  1  1  1  1.0  1.0 ( 1.0, 2.0) ( 1.0, 2.0)
-  second string 1 112  2  2  2  2.0  2.0 ( 3.0, 4.0) ( 3.0, 4.0)
-                0 240  3  3  3  3.0  3.0 ( 5.0, 6.0) ( 5.0, 6.0)
-                0 124  4  4  4  4.0  4.0 ( 7.0, 8.0) ( 7.0, 8.0)
-                1   0  5  5  5  5.0  5.0 ( 9.0,10.0) ( 9.0,10.0)
-                1   0  6  6  6  6.0  6.0 (11.0,12.0) (11.0,12.0)
-                0   0  7  7  7  7.0  7.0 (13.0,14.0) (13.0,14.0)
-                0   0  8  8  8  8.0  8.0 (15.0,16.0) (15.0,16.0)
-                0   0  9  9  9  9.0  9.0 (17.0,18.0) (17.0,18.0)
-                1   0 10 10 10 10.0 10.0 (19.0,20.0) (19.0,20.0)
-                0   0 99 99 99 
-                1   0 12 12 12 
-                0   0 99 99 99 
-                0   0 14 14 14 
-                0   0 99 99 99 
-                0   0 16 16 16 
-                1   0 99 99 99 
-                1   0 18 18 18 
-                1   0 99 99 99 
-                1   0 20 20 20 
-                0   0 99 99 99 
+   first string 0  76  1   1   1   1.0   1.0 (  1.0, -2.0) (  1.0, -2.0)
+  second string 1 112  2   2   2   2.0   2.0 (  3.0, -4.0) (  3.0, -4.0)
+                0 240  3   3   3   3.0   3.0 (  5.0, -6.0) (  5.0, -6.0)
+                0 124  0  -4  -4  -4.0  -4.0 (  7.0, -8.0) (  7.0, -8.0)
+                1   0  5   5   5   5.0   5.0 (  9.0,-10.0) (  9.0,-10.0)
+                1   0  0  -6  -6  -6.0  -6.0 ( 11.0,-12.0) ( 11.0,-12.0)
+                0   0  7   7   7   7.0   7.0 ( 13.0,-14.0) ( 13.0,-14.0)
+                0   0  0  -8  -8  -8.0  -8.0 ( 15.0,-16.0) ( 15.0,-16.0)
+                0   0  9   9   9   9.0   9.0 ( 17.0,-18.0) ( 17.0,-18.0)
+                1   0  0 -10 -10 -10.0 -10.0 ( 19.0,-20.0) ( 19.0,-20.0)
+                0   0 99  99 
+                1   0 12  12 
+                0   0 99  99 
+                0   0  0 -14 
+                0   0  0  99 
+                0   0  0 -16 
+                1   0  0  99 
+                1   0  0 -18 
+                1   0  0  99 
+                1   0  0 -20 
+                0   0  0  99 
 
 Data values after inserting 3 rows after row 2:
-   first string  1  1  1  1.0  1.0
-  second string  2  2  2  2.0  2.0
-    NOT DEFINED  0  0  0  0.0  0.0
-    NOT DEFINED  0  0  0  0.0  0.0
-    NOT DEFINED  0  0  0  0.0  0.0
-                 3  3  3  3.0  3.0
-    NOT DEFINED  4  4  4  4.0  4.0
-    NOT DEFINED  5  5  5  5.0  5.0
-    NOT DEFINED  6  6  6  6.0  6.0
-    NOT DEFINED  7  7  7  7.0  7.0
-    NOT DEFINED  8  8  8  8.0  8.0
-    NOT DEFINED  9  9  9  9.0  9.0
-    NOT DEFINED 10 10 10 10.0 10.0
-    NOT DEFINED 98 98 98 98.0 98.0
+   first string  1   1   1   1.0   1.0
+  second string  2   2   2   2.0   2.0
+    NOT DEFINED  0   0   0   0.0   0.0
+    NOT DEFINED  0   0   0   0.0   0.0
+    NOT DEFINED  0   0   0   0.0   0.0
+                 3   3   3   3.0   3.0
+    NOT DEFINED  0  -4  -4  -4.0  -4.0
+    NOT DEFINED  5   5   5   5.0   5.0
+    NOT DEFINED  0  -6  -6  -6.0  -6.0
+    NOT DEFINED  7   7   7   7.0   7.0
+    NOT DEFINED  0  -8  -8  -8.0  -8.0
+    NOT DEFINED  9   9   9   9.0   9.0
+    NOT DEFINED  0 -10 -10 -10.0 -10.0
+    NOT DEFINED 98  98  98  98.0  98.0
 
 Data values after deleting 2 rows at row 10:
-   first string  1  1  1  1.0  1.0
-  second string  2  2  2  2.0  2.0
-    NOT DEFINED  0  0  0  0.0  0.0
-    NOT DEFINED  0  0  0  0.0  0.0
-    NOT DEFINED  0  0  0  0.0  0.0
-                 3  3  3  3.0  3.0
-    NOT DEFINED  4  4  4  4.0  4.0
-    NOT DEFINED  5  5  5  5.0  5.0
-    NOT DEFINED  6  6  6  6.0  6.0
-    NOT DEFINED  9  9  9  9.0  9.0
-    NOT DEFINED 10 10 10 10.0 10.0
-    NOT DEFINED 98 98 98 98.0 98.0
+   first string  1   1   1   1.0   1.0
+  second string  2   2   2   2.0   2.0
+    NOT DEFINED  0   0   0   0.0   0.0
+    NOT DEFINED  0   0   0   0.0   0.0
+    NOT DEFINED  0   0   0   0.0   0.0
+                 3   3   3   3.0   3.0
+    NOT DEFINED  0  -4  -4  -4.0  -4.0
+    NOT DEFINED  5   5   5   5.0   5.0
+    NOT DEFINED  0  -6  -6  -6.0  -6.0
+    NOT DEFINED  9   9   9   9.0   9.0
+    NOT DEFINED  0 -10 -10 -10.0 -10.0
+    NOT DEFINED 98  98  98  98.0  98.0
 
 Data values after deleting column 6:
-   first string  1  1  1.0  1.0
-  second string  2  2  2.0  2.0
-    NOT DEFINED  0  0  0.0  0.0
-    NOT DEFINED  0  0  0.0  0.0
-    NOT DEFINED  0  0  0.0  0.0
-                 3  3  3.0  3.0
-    NOT DEFINED  4  4  4.0  4.0
-    NOT DEFINED  5  5  5.0  5.0
-    NOT DEFINED  6  6  6.0  6.0
-    NOT DEFINED  9  9  9.0  9.0
-    NOT DEFINED 10 10 10.0 10.0
-    NOT DEFINED 98 98 98.0 98.0
+   first string  1   1   1.0   1.0
+  second string  2   2   2.0   2.0
+    NOT DEFINED  0   0   0.0   0.0
+    NOT DEFINED  0   0   0.0   0.0
+    NOT DEFINED  0   0   0.0   0.0
+                 3   3   3.0   3.0
+    NOT DEFINED  0  -4  -4.0  -4.0
+    NOT DEFINED  5   5   5.0   5.0
+    NOT DEFINED  0  -6  -6.0  -6.0
+    NOT DEFINED  9   9   9.0   9.0
+    NOT DEFINED  0 -10 -10.0 -10.0
+    NOT DEFINED 98  98  98.0  98.0
 
 Data values after inserting column 8:
-   first string  1  1  1.0  1.0 0
-  second string  2  2  2.0  2.0 0
-    NOT DEFINED  0  0  0.0  0.0 0
-    NOT DEFINED  0  0  0.0  0.0 0
-    NOT DEFINED  0  0  0.0  0.0 0
-                 3  3  3.0  3.0 0
-    NOT DEFINED  4  4  4.0  4.0 0
-    NOT DEFINED  5  5  5.0  5.0 0
-    NOT DEFINED  6  6  6.0  6.0 0
-    NOT DEFINED  9  9  9.0  9.0 0
-    NOT DEFINED 10 10 10.0 10.0 0
-    NOT DEFINED 98 98 98.0 98.0 0
+   first string  1   1   1.0   1.0 0
+  second string  2   2   2.0   2.0 0
+    NOT DEFINED  0   0   0.0   0.0 0
+    NOT DEFINED  0   0   0.0   0.0 0
+    NOT DEFINED  0   0   0.0   0.0 0
+                 3   3   3.0   3.0 0
+    NOT DEFINED  0  -4  -4.0  -4.0 0
+    NOT DEFINED  5   5   5.0   5.0 0
+    NOT DEFINED  0  -6  -6.0  -6.0 0
+    NOT DEFINED  9   9   9.0   9.0 0
+    NOT DEFINED  0 -10 -10.0 -10.0 0
+    NOT DEFINED 98  98  98.0  98.0 0
 
 Values after setting 1st 10 elements in column 8 = null:
-   first string  1  1  1.0  1.0 98
-  second string  2  2  2.0  2.0 98
-    NOT DEFINED  0  0  0.0  0.0 98
-    NOT DEFINED  0  0  0.0  0.0 98
-    NOT DEFINED  0  0  0.0  0.0 98
-                 3  3  3.0  3.0 98
-    NOT DEFINED  4  4  4.0  4.0 98
-    NOT DEFINED  5  5  5.0  5.0 98
-    NOT DEFINED  6  6  6.0  6.0 98
-    NOT DEFINED  9  9  9.0  9.0 98
-    NOT DEFINED 10 10 10.0 10.0 0
-    NOT DEFINED 98 98 98.0 98.0 0
+   first string  1   1   1.0   1.0 98
+  second string  2   2   2.0   2.0 98
+    NOT DEFINED  0   0   0.0   0.0 98
+    NOT DEFINED  0   0   0.0   0.0 98
+    NOT DEFINED  0   0   0.0   0.0 98
+                 3   3   3.0   3.0 98
+    NOT DEFINED  0  -4  -4.0  -4.0 98
+    NOT DEFINED  5   5   5.0   5.0 98
+    NOT DEFINED  0  -6  -6.0  -6.0 98
+    NOT DEFINED  9   9   9.0   9.0 98
+    NOT DEFINED  0 -10 -10.0 -10.0 0
+    NOT DEFINED 98  98  98.0  98.0 0
 ffibin status = 0
       0   1000  10000  32000  65000   -999
       0   1000  10000  32768  65535   -999
@@ -660,6 +667,7 @@ ffppr status = 0
 Image values written with ffppr and read with ffgpv:
   0  2  4  6  8 10 12 14 16 18 20 22  0 (byte)
   0  2  4  6  8 10 12 14 16 18 20 22  0 (short)
+  0  2  4  6  8 10 12 14 16 18 20 22  0 (int)
   0  2  4  6  8 10 12 14 16 18 20 22  0 (long)
   0  2  4  6  8 10 12 14 16 18 20 22  0 (float)
   0  2  4  6  8 10 12 14 16 18 20 22  0 (double)
@@ -686,5 +694,16 @@ ffupck status = 0
 DATASUM = '2338390162'        
 ffvcks datastatus, hdustatus, status = 1 1 0
 ffclos status = 0
+
+Normally, there should be 8 error messages on the stack
+all regarding 'numerical overflows':
+ Numerical overflow during type conversion while writing FITS data.
+ Numerical overflow during type conversion while writing FITS data.
+ Numerical overflow during type conversion while writing FITS data.
+ Numerical overflow during type conversion while writing FITS data.
+ Numerical overflow during type conversion while writing FITS data.
+ Numerical overflow during type conversion while writing FITS data.
+ Numerical overflow during type conversion while writing FITS data.
+ Numerical overflow during type conversion while writing FITS data.
 
 Status = 0: OK - no error

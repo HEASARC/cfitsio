@@ -2,7 +2,7 @@
 #define _FITSIO_H
 
 #include <stdio.h>
-#include "longname.h"
+#include "longnam.h"
 
 /* global variables */
 
@@ -405,6 +405,8 @@ int ffgpvi(fitsfile *fptr, long group, long firstelem, long nelem,
            short nulval, short *array, int *anynul, int *status);
 int ffgpvj(fitsfile *fptr, long group, long firstelem, long nelem,
            long nulval, long *array, int *anynul, int *status);
+int ffgpvk(fitsfile *fptr, long group, long firstelem, long nelem,
+           int nulval, int *array, int *anynul, int *status);
 int ffgpve(fitsfile *fptr, long group, long firstelem, long nelem,
            float nulval, float *array, int *anynul, int *status);
 int ffgpvd(fitsfile *fptr, long group, long firstelem, long nelem,
@@ -416,6 +418,8 @@ int ffgpfi(fitsfile *fptr, long group, long firstelem, long nelem,
            short *array, char *nularray, int *anynul, int *status);
 int ffgpfj(fitsfile *fptr, long group, long firstelem, long nelem,
            long *array, char *nularray, int *anynul, int *status);
+int ffgpfk(fitsfile *fptr, long group, long firstelem, long nelem,
+           int *array, char *nularray, int *anynul, int *status);
 int ffgpfe(fitsfile *fptr, long group, long firstelem, long nelem,
            float *array, char *nularray, int *anynul, int *status);
 int ffgpfd(fitsfile *fptr, long group, long firstelem, long nelem,
@@ -429,6 +433,9 @@ int ffg2di(fitsfile *fptr, long group, short nulval, long ncols,
            int *anynul, int *status);
 int ffg2dj(fitsfile *fptr, long group, long nulval, long ncols,
            long naxis1, long naxis2, long *array,
+           int *anynul, int *status);
+int ffg2dk(fitsfile *fptr, long group, int nulval, long ncols,
+           long naxis1, long naxis2, int *array,
            int *anynul, int *status);
 int ffg2de(fitsfile *fptr, long group, float nulval, long ncols,
            long naxis1, long naxis2, float *array,
@@ -446,6 +453,9 @@ int ffg3di(fitsfile *fptr, long group, short nulval, long ncols,
 int ffg3dj(fitsfile *fptr, long group, long nulval, long ncols,
            long nrows, long naxis1, long naxis2, long naxis3, 
            long *array, int *anynul, int *status);
+int ffg3dk(fitsfile *fptr, long group, int nulval, long ncols,
+           long nrows, long naxis1, long naxis2, long naxis3, 
+           int *array, int *anynul, int *status);
 int ffg3de(fitsfile *fptr, long group, float nulval, long ncols,
            long nrows, long naxis1, long naxis2, long naxis3, 
            float *array, int *anynul, int *status);
@@ -460,6 +470,8 @@ int ffgsvi(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc,
   long *trc, long *inc, short nulval, short *array, int *anynul, int *status);
 int ffgsvj(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, 
   long *trc, long *inc, long nulval, long *array, int *anynul, int *status);
+int ffgsvk(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, 
+  long *trc, long *inc, int nulval, int *array, int *anynul, int *status);
 int ffgsve(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, 
   long *trc, long *inc, float nulval, float *array, int *anynul, int *status);
 int ffgsvd(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, 
@@ -473,6 +485,8 @@ int ffgsfi(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc,
   long *trc, long *inc, short *array, char *flagval, int *anynul, int *status);
 int ffgsfj(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, 
   long  *trc, long *inc, long *array, char *flagval, int *anynul, int *status);
+int ffgsfk(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, 
+  long  *trc, long *inc, int *array, char *flagval, int *anynul, int *status);
 int ffgsfe(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, 
   long *trc, long *inc, float *array, char *flagval, int *anynul, int *status);
 int ffgsfd(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, 
@@ -485,6 +499,8 @@ int ffggpi(fitsfile *fptr, long group, long firstelem, long nelem,
            short *array, int *status);
 int ffggpj(fitsfile *fptr, long group, long firstelem, long nelem,
            long *array, int *status);
+int ffggpk(fitsfile *fptr, long group, long firstelem, long nelem,
+           int *array, int *status);
 int ffggpe(fitsfile *fptr, long group, long firstelem, long nelem,
            float *array, int *status);
 int ffggpd(fitsfile *fptr, long group, long firstelem, long nelem,
@@ -505,6 +521,8 @@ int ffgcvi(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, short nulval, short *array, int *anynul, int *status);
 int ffgcvj(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, long nulval, long *array, int *anynul, int *status);
+int ffgcvk(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+           long nelem, int nulval, int *array, int *anynul, int *status);
 int ffgcve(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, float nulval, float *array, int *anynul, int *status);
 int ffgcvd(fitsfile *fptr, int colnum, long firstrow, long firstelem,
@@ -526,6 +544,8 @@ int ffgcfi(fitsfile *fptr, int colnum, long firstrow, long firstelem,
       long nelem, short *array, char *nularray, int *anynul, int *status);
 int ffgcfj(fitsfile *fptr, int colnum, long firstrow, long firstelem,
       long nelem, long *array, char *nularray, int *anynul, int *status);
+int ffgcfk(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+      long nelem, int *array, char *nularray, int *anynul, int *status);
 int ffgcfe(fitsfile *fptr, int colnum, long firstrow, long firstelem,
       long nelem, float *array, char *nularray, int *anynul, int *status);
 int ffgcfd(fitsfile *fptr, int colnum, long firstrow, long firstelem,
@@ -550,6 +570,8 @@ int ffppri(fitsfile *fptr, long group, long firstelem,
            long nelem, short *array, int *status);
 int ffpprj(fitsfile *fptr, long group, long firstelem, 
            long nelem, long *array, int *status);
+int ffpprk(fitsfile *fptr, long group, long firstelem, 
+           long nelem, int *array, int *status);
 int ffppre(fitsfile *fptr, long group, long firstelem, 
            long nelem, float *array, int *status);
 int ffpprd(fitsfile *fptr, long group, long firstelem, 
@@ -561,6 +583,8 @@ int ffppni(fitsfile *fptr, long group, long firstelem,
            long nelem, short *array, short nulval, int *status);
 int ffppnj(fitsfile *fptr, long group, long firstelem, 
            long nelem, long *array, long nulval, int *status);
+int ffppnk(fitsfile *fptr, long group, long firstelem, 
+           long nelem, int *array, int nulval, int *status);
 int ffppne(fitsfile *fptr, long group, long firstelem, 
            long nelem, float *array, float nulval, int *status);
 int ffppnd(fitsfile *fptr, long group, long firstelem, 
@@ -572,6 +596,8 @@ int ffp2di(fitsfile *fptr, long group, long ncols, long naxis1,
            long naxis2, short *array, int *status);
 int ffp2dj(fitsfile *fptr, long group, long ncols, long naxis1,
            long naxis2, long *array, int *status);
+int ffp2dk(fitsfile *fptr, long group, long ncols, long naxis1,
+           long naxis2, int *array, int *status);
 int ffp2de(fitsfile *fptr, long group, long ncols, long naxis1,
            long naxis2, float *array, int *status);
 int ffp2dd(fitsfile *fptr, long group, long ncols, long naxis1,
@@ -583,6 +609,8 @@ int ffp3di(fitsfile *fptr, long group, long ncols, long nrows, long naxis1,
            long naxis2, long naxis3, short *array, int *status);
 int ffp3dj(fitsfile *fptr, long group, long ncols, long nrows, long naxis1,
            long naxis2, long naxis3, long *array, int *status);
+int ffp3dk(fitsfile *fptr, long group, long ncols, long nrows, long naxis1,
+           long naxis2, long naxis3, int *array, int *status);
 int ffp3de(fitsfile *fptr, long group, long ncols, long nrows, long naxis1,
            long naxis2, long naxis3, float *array, int *status);
 int ffp3dd(fitsfile *fptr, long group, long ncols, long nrows, long naxis1,
@@ -594,6 +622,8 @@ int ffpssi(fitsfile *fptr, long group, long naxis, long *naxes,
            long *fpixel, long *lpixel, short *array, int *status);
 int ffpssj(fitsfile *fptr, long group, long naxis, long *naxes,
            long *fpixel, long *lpixel, long *array, int *status);
+int ffpssk(fitsfile *fptr, long group, long naxis, long *naxes,
+           long *fpixel, long *lpixel, int *array, int *status);
 int ffpsse(fitsfile *fptr, long group, long naxis, long *naxes,
            long *fpixel, long *lpixel, float *array, int *status);
 int ffpssd(fitsfile *fptr, long group, long naxis, long *naxes,
@@ -605,6 +635,8 @@ int ffpgpi(fitsfile *fptr, long group, long firstelem,
            long nelem, short *array, int *status);
 int ffpgpj(fitsfile *fptr, long group, long firstelem, 
            long nelem, long *array, int *status);
+int ffpgpk(fitsfile *fptr, long group, long firstelem, 
+           long nelem, int *array, int *status);
 int ffpgpe(fitsfile *fptr, long group, long firstelem, 
            long nelem, float *array, int *status);
 int ffpgpd(fitsfile *fptr, long group, long firstelem, 
@@ -626,6 +658,8 @@ int ffpcli(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, short *array, int *status);
 int ffpclj(fitsfile *fptr, int colnum, long firstrow, long firstelem, 
            long nelem, long *array, int *status);
+int ffpclk(fitsfile *fptr, int colnum, long firstrow, long firstelem, 
+           long nelem, int *array, int *status);
 int ffpcle(fitsfile *fptr, int colnum, long firstrow, long firstelem, 
            long nelem, float *array, int *status);
 int ffpcld(fitsfile *fptr, int colnum, long firstrow, long firstelem, 
@@ -645,6 +679,8 @@ int ffpcni(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, short *array, short nulvalue, int *status);
 int ffpcnj(fitsfile *fptr, int colnum, long firstrow, long firstelem, 
            long nelem, long *array, long nulvalue, int *status);
+int ffpcnk(fitsfile *fptr, int colnum, long firstrow, long firstelem, 
+           long nelem, int *array, int nulvalue, int *status);
 int ffpcne(fitsfile *fptr, int colnum, long firstrow, long firstelem, 
            long nelem, float *array, float nulvalue, int *status);
 int ffpcnd(fitsfile *fptr, int colnum, long firstrow, long firstelem, 

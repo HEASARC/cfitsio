@@ -22,8 +22,9 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-    *version = 1.02;  /* August 15, 1996 */
+    *version = 1.03;  /* August 20, 1996 */
 
+ /*   *version = 1.02;   August 15, 1996 */
  /*   *version = 1.01;   August 12, 1996 */
 
     return(*version);
@@ -1138,21 +1139,22 @@ void ffswap2(short *svalues,  /* IO - pointer to shorts to be swapped       */
   swap the bytes in the input short integers: ( 0 1 -> 1 0 )
 */
 {
-    register char *cvalues, *cval0, *cval1;
-    short sval;
+    register char *cvalues;
     register long ii;
 
-    cval0 = (char *) &sval;  /* pointer to 1st byte of 2-byte short */
-    cval1 = cval0 + 1;       /* pointer to 2nd byte of 2-byte short */
+    union u_tag {
+        char cvals[2];   /* equivalence an array of 4 bytes with */
+        short sval;      /* a short */
+    } u;
 
     cvalues = (char *) svalues;      /* copy the initial pointer value */
 
     for (ii = 0; ii < nvals;)
     {
-        sval = svalues[ii++];  /* copy next short to temporary buffer */
+        u.sval = svalues[ii++];  /* copy next short to temporary buffer */
 
-        *cvalues++ = *cval1; /* copy the 2 bytes to output in reverse order */
-        *cvalues++ = *cval0;
+        *cvalues++ = u.cvals[1]; /* copy the 2 bytes to output in turn */
+        *cvalues++ = u.cvals[0];
     }
     return;
 }
@@ -1166,25 +1168,24 @@ void ffswaplong(long *lvalues, /* IO - pointer to longs to be swapped       */
   array of bytes.
 */
 {
-    register char *cvalues, *cval0, *cval1, *cval2, *cval3;
+    register char *cvalues;
     register long ii;
-    long lval;
 
-    cval0 = (char *) &lval;  /* pointer to 1st byte of 4-byte long */
-    cval1 = cval0 + 1;       /* pointer to 2nd byte of 4-byte long */
-    cval2 = cval1 + 1;       /* pointer to 3rd byte of 4-byte long */
-    cval3 = cval2 + 1;       /* pointer to 4th byte of 4-byte long */
+    union u_tag {
+        char cvals[4];   /* equivalence an array of 4 bytes with */
+        long lval;      /* a long */
+    } u;
 
     cvalues = (char *) lvalues;    /* copy the initial pointer value */
 
     for (ii = 0; ii < nvals;)
     {
-        lval = lvalues[ii++];  /* copy next long to temporary buffer */
+        u.lval = lvalues[ii++];  /* copy next long to temporary buffer */
 
-        *cvalues++ = *cval3; /* copy the 4 bytes to output in reverse order */
-        *cvalues++ = *cval2;
-        *cvalues++ = *cval1;
-        *cvalues++ = *cval0; 
+        *cvalues++ = u.cvals[3]; /* copy the 4 bytes in turn */
+        *cvalues++ = u.cvals[2];
+        *cvalues++ = u.cvals[1];
+        *cvalues++ = u.cvals[0]; 
     }
     return;
 }
@@ -1198,14 +1199,13 @@ void ffunswaplong(long *lvalues, /* IO - pointer to longs to be swapped     */
   bytes into 8-byte words.
 */
 {
-    register unsigned char *cvalues, *cval0, *cval1, *cval2, *cval3;
+    register unsigned char *cvalues;
     register long ii;
-    long lval;
 
-    cval0 = (unsigned char *) &lval; /* pointer to 1st byte of 4-byte long */
-    cval1 = cval0 + 1;               /* pointer to 2nd byte of 4-byte long */
-    cval2 = cval1 + 1;               /* pointer to 3rd byte of 4-byte long */
-    cval3 = cval2 + 1;               /* pointer to 4th byte of 4-byte long */
+    union u_tag {
+        unsigned char cvals[4];   /* equivalence an array of 4 bytes */
+        long lval;      /* with a long */
+    } u;
 
     /* set pointer to last byte of last long to be swapped */
     cvalues = (unsigned char *) lvalues + (nvals * 4) - 1;  
@@ -1219,18 +1219,18 @@ void ffunswaplong(long *lvalues, /* IO - pointer to longs to be swapped     */
         /* initialize the word with the sign bit which is in the   */
         /* most sig. byte, i.e. at location *(cvalues-3)           */
         if ( *(cvalues-3) >  127)
-            lval = -1; 
+            u.lval = -1; 
         else
-            lval = 0;
+            u.lval = 0;
 
 #endif
 
-        *cval0 =  *cvalues--;  /* copy the 4 bytes in turn into buffer */
-        *cval1 =  *cvalues--;
-        *cval2 =  *cvalues--;
-        *cval3 =  *cvalues--;
+        u.cvals[0] =  *cvalues--;  /* copy the 4 bytes in turn */
+        u.cvals[1] =  *cvalues--;
+        u.cvals[2] =  *cvalues--;
+        u.cvals[3] =  *cvalues--;
 
-        lvalues[ii--] = lval; /* copy swapped value back to the long array */
+        lvalues[ii--] = u.lval; /* copy swapped value back to the array */
     }
     return;
 }
@@ -1241,29 +1241,28 @@ void ffswapfloat(float *fvalues, /* IO - pointer to floats to be swapped    */
   swap the bytes in the input floats: ( 0 1 2 3 -> 3 2 1 0 )
   Currently, this routine is idential to ffswaplong except for type casts.
   Future ports to any machines which store a 4-byte float in an 8-byte word
-  will require separate ffswapfloat and ffunswapfloat routines, similar
+  may require separate ffswapfloat and ffunswapfloat routines, similar
   to the ffswaplong and ffunswaplong routines.
 */
 {
-    register char *cvalues, *cval0, *cval1, *cval2, *cval3;
+    register char *cvalues;
     register long ii;
-    float fval;
 
-    cval0 = (char *) &fval;  /* pointer to 1st byte of 4-byte float */
-    cval1 = cval0 + 1;       /* pointer to 2nd byte of 4-byte float */
-    cval2 = cval1 + 1;       /* pointer to 3rd byte of 4-byte float */
-    cval3 = cval2 + 1;       /* pointer to 4th byte of 4-byte float */
+    union u_tag {
+        char cvals[4];   /* equivalence an array of 4 bytes with */
+        float fval;      /* a float */
+    } u;
 
     cvalues = (char *) fvalues;   /* copy the initial pointer value */
 
     for (ii = 0; ii < nvals;)
     {
-        fval = fvalues[ii++];  /* copy next float to temporary buffer */
+        u.fval = fvalues[ii++];  /* copy next float to buffer */
 
-        *cvalues++ = *cval3; /* copy the 4 bytes to output in reverse order */
-        *cvalues++ = *cval2;
-        *cvalues++ = *cval1;
-        *cvalues++ = *cval0; 
+        *cvalues++ = u.cvals[3]; /* copy the 4 bytes in turn */
+        *cvalues++ = u.cvals[2];
+        *cvalues++ = u.cvals[1];
+        *cvalues++ = u.cvals[0]; 
     }
     return;
 }
@@ -1274,28 +1273,28 @@ void ffswap8(double *dvalues,  /* IO - pointer to doubles to be swapped     */
   swap the bytes in the input doubles: ( 01234567  -> 76543210 )
 */
 {
-    char *cvalues;
-    long j1, ii;
+    register char *cvalues;
+    register long ii;
 
     union u_tag {
-        char cvals[8];   /* equivalence an array of 4 bytes with */
-        double dval;      /* a float */
+        char cvals[8];   /* equivalence an array of 8 bytes with */
+        double dval;      /* a double */
     } u;
 
     cvalues = (char *) dvalues;      /* copy the pointer value */
 
-    for (j1 = 0, ii = 0; ii < nvals; ii++)
+    for (ii = 0; ii < nvals;)
     {
-        u.dval = dvalues[ii];  /* copy next long to equivalenced buffer */
+        u.dval = dvalues[ii++];  /* copy next double to buffer */
 
-        cvalues[j1++] = u.cvals[7];   /* copy the 8 bytes in turn */
-        cvalues[j1++] = u.cvals[6];
-        cvalues[j1++] = u.cvals[5];
-        cvalues[j1++] = u.cvals[4];
-        cvalues[j1++] = u.cvals[3];
-        cvalues[j1++] = u.cvals[2];
-        cvalues[j1++] = u.cvals[1];
-        cvalues[j1++] = u.cvals[0];
+        *cvalues++ = u.cvals[7]; /* copy the 8 bytes in turn */
+        *cvalues++ = u.cvals[6];
+        *cvalues++ = u.cvals[5];
+        *cvalues++ = u.cvals[4];
+        *cvalues++ = u.cvals[3];
+        *cvalues++ = u.cvals[2];
+        *cvalues++ = u.cvals[1];
+        *cvalues++ = u.cvals[0];
     }
     return;
 }

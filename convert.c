@@ -171,6 +171,61 @@ int ffi4fi1(long *input,           /* I - array of values to be converted  */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffintfi1(int *input,           /* I - array of values to be converted  */
+            long ntodo,            /* I - number of elements in the array  */
+            double scale,          /* I - FITS TSCALn or BSCALE value      */
+            double zero,           /* I - FITS TZEROn or BZERO  value      */
+            unsigned char *output, /* O - output array of converted values */
+            int *status)           /* IO - error status                    */
+/*
+  Copy input to output prior to writing output to a FITS file.
+  Do datatype conversion and scaling if required.
+*/
+{
+    long ii;
+    double dvalue;
+
+    if (scale == 1. && zero == 0.)
+    {       
+        for (ii = 0; ii < ntodo; ii++)
+        {
+            if (input[ii] < 0)
+            {
+                *status = OVERFLOW_ERR;
+                output[ii] = 0;
+            }
+            else if (input[ii] > UCHAR_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                output[ii] = UCHAR_MAX;
+            }
+            else
+                output[ii] = input[ii];
+        }
+    }
+    else
+    {
+        for (ii = 0; ii < ntodo; ii++)
+        {
+            dvalue = (input[ii] - zero) / scale;
+
+            if (dvalue < DUCHAR_MIN)
+            {
+                *status = OVERFLOW_ERR;
+                output[ii] = 0;
+            }
+            else if (dvalue > DUCHAR_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                output[ii] = UCHAR_MAX;
+            }
+            else
+                output[ii] = (unsigned char) dvalue;
+        }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffr4fi1(float *input,          /* I - array of values to be converted  */
             long ntodo,            /* I - number of elements in the array  */
             double scale,          /* I - FITS TSCALn or BSCALE value      */
@@ -366,6 +421,61 @@ int ffi2fi2(short *input,       /* I - array of values to be converted  */
 }
 /*--------------------------------------------------------------------------*/
 int ffi4fi2(long *input,       /* I - array of values to be converted  */
+            long ntodo,        /* I - number of elements in the array  */
+            double scale,      /* I - FITS TSCALn or BSCALE value      */
+            double zero,       /* I - FITS TZEROn or BZERO  value      */
+            short *output,     /* O - output array of converted values */
+            int *status)       /* IO - error status                    */
+/*
+  Copy input to output prior to writing output to a FITS file.
+  Do datatype conversion and scaling if required.
+*/
+{
+    long ii;
+    double dvalue;
+
+    if (scale == 1. && zero == 0.)
+    {       
+        for (ii = 0; ii < ntodo; ii++)
+        {
+            if (input[ii] < SHRT_MIN)
+            {
+                *status = OVERFLOW_ERR;
+                output[ii] = SHRT_MIN;
+            }
+            else if (input[ii] > SHRT_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                output[ii] = SHRT_MAX;
+            }
+            else
+                output[ii] = input[ii];
+        }
+    }
+    else
+    {
+        for (ii = 0; ii < ntodo; ii++)
+        {
+            dvalue = (input[ii] - zero) / scale;
+
+            if (dvalue < DSHRT_MIN)
+            {
+                *status = OVERFLOW_ERR;
+                output[ii] = SHRT_MIN;
+            }
+            else if (dvalue > DSHRT_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                output[ii] = SHRT_MAX;
+            }
+            else
+                output[ii] = (short) dvalue;
+        }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffintfi2(int *input,       /* I - array of values to be converted  */
             long ntodo,        /* I - number of elements in the array  */
             double scale,      /* I - FITS TSCALn or BSCALE value      */
             double zero,       /* I - FITS TZEROn or BZERO  value      */
@@ -656,6 +766,48 @@ int ffi4fi4(long *input,       /* I - array of values to be converted  */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffintfi4(int *input,       /* I - array of values to be converted  */
+            long ntodo,        /* I - number of elements in the array  */
+            double scale,      /* I - FITS TSCALn or BSCALE value      */
+            double zero,       /* I - FITS TZEROn or BZERO  value      */
+            long *output,      /* O - output array of converted values */
+            int *status)       /* IO - error status                    */
+/*
+  Copy input to output prior to writing output to a FITS file.
+  Do datatype conversion and scaling if required
+*/
+{
+    long ii;
+    double dvalue;
+
+    if (scale == 1. && zero == 0.)
+    {       
+        for (ii = 0; ii < ntodo; ii++)
+            output[ii] = (long) input[ii];   /* just copy input to output */
+    }
+    else
+    {
+        for (ii = 0; ii < ntodo; ii++)
+        {
+            dvalue = (input[ii] - zero) / scale;
+
+            if (dvalue < DLONG_MIN)
+            {
+                *status = OVERFLOW_ERR;
+                output[ii] = LONG_MIN;
+            }
+            else if (dvalue > DLONG_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                output[ii] = LONG_MAX;
+            }
+            else
+                output[ii] = (long) dvalue;
+        }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffr4fi4(float *input,      /* I - array of values to be converted  */
             long ntodo,        /* I - number of elements in the array  */
             double scale,      /* I - FITS TSCALn or BSCALE value      */
@@ -844,6 +996,32 @@ int ffi4fr4(long *input,       /* I - array of values to be converted  */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffintfr4(int *input,       /* I - array of values to be converted  */
+            long ntodo,        /* I - number of elements in the array  */
+            double scale,      /* I - FITS TSCALn or BSCALE value      */
+            double zero,       /* I - FITS TZEROn or BZERO  value      */
+            float *output,     /* O - output array of converted values */
+            int *status)       /* IO - error status                    */
+/*
+  Copy input to output prior to writing output to a FITS file.
+  Do datatype conversion and scaling if required.
+*/
+{
+    long ii;
+
+    if (scale == 1. && zero == 0.)
+    {       
+        for (ii = 0; ii < ntodo; ii++)
+                output[ii] = (float) input[ii];
+    }
+    else
+    {
+        for (ii = 0; ii < ntodo; ii++)
+            output[ii] = (input[ii] - zero) / scale;
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffr4fr4(float *input,      /* I - array of values to be converted  */
             long ntodo,        /* I - number of elements in the array  */
             double scale,      /* I - FITS TSCALn or BSCALE value      */
@@ -949,6 +1127,32 @@ int ffi2fr8(short *input,      /* I - array of values to be converted  */
 }
 /*--------------------------------------------------------------------------*/
 int ffi4fr8(long *input,       /* I - array of values to be converted  */
+            long ntodo,        /* I - number of elements in the array  */
+            double scale,      /* I - FITS TSCALn or BSCALE value      */
+            double zero,       /* I - FITS TZEROn or BZERO  value      */
+            double *output,    /* O - output array of converted values */
+            int *status)       /* IO - error status                    */
+/*
+  Copy input to output prior to writing output to a FITS file.
+  Do datatype conversion and scaling if required.
+*/
+{
+    long ii;
+
+    if (scale == 1. && zero == 0.)
+    {       
+        for (ii = 0; ii < ntodo; ii++)
+                output[ii] = (double) input[ii];
+    }
+    else
+    {
+        for (ii = 0; ii < ntodo; ii++)
+            output[ii] = (input[ii] - zero) / scale;
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffintfr8(int *input,       /* I - array of values to be converted  */
             long ntodo,        /* I - number of elements in the array  */
             double scale,      /* I - FITS TSCALn or BSCALE value      */
             double zero,       /* I - FITS TZEROn or BZERO  value      */
@@ -3056,6 +3260,659 @@ int fffr8i4(double *input,        /* I - array of values to be converted     */
                     }
                     else
                         output[ii] = (long) dvalue;
+                }
+            }
+        }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fffi1int(unsigned char *input,/* I - array of values to be converted     */
+            long ntodo,           /* I - number of elements in the array     */
+            double scale,         /* I - FITS TSCALn or BSCALE value         */
+            double zero,          /* I - FITS TZEROn or BZERO  value         */
+            int nullcheck,        /* I - null checking code; 0 = don't check */
+                                  /*     1:set null pixels = nullval         */
+                                  /*     2: if null pixel, set nullarray = 1 */
+            unsigned char tnull,  /* I - value of FITS TNULLn keyword if any */
+            int  nullval,         /* I - set null pixels, if nullcheck = 1   */
+            char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
+            int  *anynull,        /* O - set to 1 if any pixels are null     */
+            int  *output,         /* O - array of converted pixels           */
+            int *status)          /* IO - error status                       */
+/*
+  Copy input to output following reading of the input from a FITS file.
+  Check for null values and do datatype conversion and scaling if required.
+  The nullcheck code value determines how any null values in the input array
+  are treated.  A null value is an input pixel that is equal to tnull.  If 
+  nullcheck = 0, then no checking for nulls is performed and any null values
+  will be transformed just like any other pixel.  If nullcheck = 1, then the
+  output pixel will be set = nullval if the corresponding input pixel is null.
+  If nullcheck = 2, then if the pixel is null then the corresponding value of
+  nullarray will be set to 1; the value of nullarray for non-null pixels 
+  will = 0.  The anynull parameter will be set = 1 if any of the returned
+  pixels are null, otherwise anynull will be returned with a value = 0;
+*/
+{
+    long ii;
+    double dvalue;
+
+    if (nullcheck == 0)     /* no null checking required */
+    {
+        if (scale == 1. && zero == 0.)      /* no scaling */
+        {       
+            for (ii = 0; ii < ntodo; ii++)
+                output[ii] = (int) input[ii];  /* copy input to output */
+        }
+        else             /* must scale the data */
+        {
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                dvalue = input[ii] * scale + zero;
+
+                if (dvalue < DLONG_MIN)
+                {
+                    *status = OVERFLOW_ERR;
+                    output[ii] = LONG_MIN;
+                }
+                else if (dvalue > DLONG_MAX)
+                {
+                    *status = OVERFLOW_ERR;
+                    output[ii] = LONG_MAX;
+                }
+                else
+                    output[ii] = (int) dvalue;
+            }
+        }
+    }
+    else        /* must check for null values */
+    {
+        if (scale == 1. && zero == 0.)  /* no scaling */
+        {       
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] == tnull)
+                {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                }
+                else
+                    output[ii] = (int) input[ii];
+            }
+        }
+        else                  /* must scale the data */
+        {
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] == tnull)
+                {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                }
+                else
+                {
+                    dvalue = input[ii] * scale + zero;
+
+                    if (dvalue < DLONG_MIN)
+                    {
+                        *status = OVERFLOW_ERR;
+                        output[ii] = LONG_MIN;
+                    }
+                    else if (dvalue > DLONG_MAX)
+                    {
+                        *status = OVERFLOW_ERR;
+                        output[ii] = LONG_MAX;
+                    }
+                    else
+                        output[ii] = (int) dvalue;
+                }
+            }
+        }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fffi2int(short *input,        /* I - array of values to be converted     */
+            long ntodo,           /* I - number of elements in the array     */
+            double scale,         /* I - FITS TSCALn or BSCALE value         */
+            double zero,          /* I - FITS TZEROn or BZERO  value         */
+            int nullcheck,        /* I - null checking code; 0 = don't check */
+                                  /*     1:set null pixels = nullval         */
+                                  /*     2: if null pixel, set nullarray = 1 */
+            short tnull,          /* I - value of FITS TNULLn keyword if any */
+            int  nullval,         /* I - set null pixels, if nullcheck = 1   */
+            char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
+            int  *anynull,        /* O - set to 1 if any pixels are null     */
+            int  *output,         /* O - array of converted pixels           */
+            int *status)          /* IO - error status                       */
+/*
+  Copy input to output following reading of the input from a FITS file.
+  Check for null values and do datatype conversion and scaling if required.
+  The nullcheck code value determines how any null values in the input array
+  are treated.  A null value is an input pixel that is equal to tnull.  If 
+  nullcheck = 0, then no checking for nulls is performed and any null values
+  will be transformed just like any other pixel.  If nullcheck = 1, then the
+  output pixel will be set = nullval if the corresponding input pixel is null.
+  If nullcheck = 2, then if the pixel is null then the corresponding value of
+  nullarray will be set to 1; the value of nullarray for non-null pixels 
+  will = 0.  The anynull parameter will be set = 1 if any of the returned
+  pixels are null, otherwise anynull will be returned with a value = 0;
+*/
+{
+    long ii;
+    double dvalue;
+
+    if (nullcheck == 0)     /* no null checking required */
+    {
+        if (scale == 1. && zero == 0.)      /* no scaling */
+        {       
+            for (ii = 0; ii < ntodo; ii++)
+                output[ii] = (int) input[ii];   /* copy input to output */
+        }
+        else             /* must scale the data */
+        {
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                dvalue = input[ii] * scale + zero;
+
+                if (dvalue < DLONG_MIN)
+                {
+                    *status = OVERFLOW_ERR;
+                    output[ii] = LONG_MIN;
+                }
+                else if (dvalue > DLONG_MAX)
+                {
+                    *status = OVERFLOW_ERR;
+                    output[ii] = LONG_MAX;
+                }
+                else
+                    output[ii] = (int) dvalue;
+            }
+        }
+    }
+    else        /* must check for null values */
+    {
+        if (scale == 1. && zero == 0.)  /* no scaling */
+        {       
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] == tnull)
+                {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                }
+                else
+                    output[ii] = (int) input[ii];
+            }
+        }
+        else                  /* must scale the data */
+        {
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] == tnull)
+                {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                }
+                else
+                {
+                    dvalue = input[ii] * scale + zero;
+
+                    if (dvalue < DLONG_MIN)
+                    {
+                        *status = OVERFLOW_ERR;
+                        output[ii] = LONG_MIN;
+                    }
+                    else if (dvalue > DLONG_MAX)
+                    {
+                        *status = OVERFLOW_ERR;
+                        output[ii] = LONG_MAX;
+                    }
+                    else
+                        output[ii] = (int) dvalue;
+                }
+            }
+        }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fffi4int(long *input,         /* I - array of values to be converted     */
+            long ntodo,           /* I - number of elements in the array     */
+            double scale,         /* I - FITS TSCALn or BSCALE value         */
+            double zero,          /* I - FITS TZEROn or BZERO  value         */
+            int nullcheck,        /* I - null checking code; 0 = don't check */
+                                  /*     1:set null pixels = nullval         */
+                                  /*     2: if null pixel, set nullarray = 1 */
+            long tnull,           /* I - value of FITS TNULLn keyword if any */
+            int  nullval,         /* I - set null pixels, if nullcheck = 1   */
+            char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
+            int  *anynull,        /* O - set to 1 if any pixels are null     */
+            int  *output,         /* O - array of converted pixels           */
+            int *status)          /* IO - error status                       */
+/*
+  Copy input to output following reading of the input from a FITS file.
+  Check for null values and do datatype conversion and scaling if required.
+  The nullcheck code value determines how any null values in the input array
+  are treated.  A null value is an input pixel that is equal to tnull.  If 
+  nullcheck = 0, then no checking for nulls is performed and any null values
+  will be transformed just like any other pixel.  If nullcheck = 1, then the
+  output pixel will be set = nullval if the corresponding input pixel is null.
+  If nullcheck = 2, then if the pixel is null then the corresponding value of
+  nullarray will be set to 1; the value of nullarray for non-null pixels 
+  will = 0.  The anynull parameter will be set = 1 if any of the returned
+  pixels are null, otherwise anynull will be returned with a value = 0;
+*/
+{
+    long ii;
+    double dvalue;
+
+    if (nullcheck == 0)     /* no null checking required */
+    {
+        if (scale == 1. && zero == 0.)      /* no scaling */
+        {       
+            for (ii = 0; ii < ntodo; ii++)
+                output[ii] = (int) input[ii];   /* copy input to output */
+        }
+        else             /* must scale the data */
+        {
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                dvalue = input[ii] * scale + zero;
+
+                if (dvalue < DLONG_MIN)
+                {
+                    *status = OVERFLOW_ERR;
+                    output[ii] = LONG_MIN;
+                }
+                else if (dvalue > DLONG_MAX)
+                {
+                    *status = OVERFLOW_ERR;
+                    output[ii] = LONG_MAX;
+                }
+                else
+                    output[ii] = (int) dvalue;
+            }
+        }
+    }
+    else        /* must check for null values */
+    {
+        if (scale == 1. && zero == 0.)  /* no scaling */
+        {       
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] == tnull)
+                {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                }
+                else
+                    output[ii] = (int) input[ii];
+
+            }
+        }
+        else                  /* must scale the data */
+        {
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] == tnull)
+                {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                }
+                else
+                {
+                    dvalue = input[ii] * scale + zero;
+
+                    if (dvalue < DLONG_MIN)
+                    {
+                        *status = OVERFLOW_ERR;
+                        output[ii] = LONG_MIN;
+                    }
+                    else if (dvalue > DLONG_MAX)
+                    {
+                        *status = OVERFLOW_ERR;
+                        output[ii] = LONG_MAX;
+                    }
+                    else
+                        output[ii] = (int) dvalue;
+                }
+            }
+        }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fffr4int(float *input,        /* I - array of values to be converted     */
+            long ntodo,           /* I - number of elements in the array     */
+            double scale,         /* I - FITS TSCALn or BSCALE value         */
+            double zero,          /* I - FITS TZEROn or BZERO  value         */
+            int nullcheck,        /* I - null checking code; 0 = don't check */
+                                  /*     1:set null pixels = nullval         */
+                                  /*     2: if null pixel, set nullarray = 1 */
+            int  nullval,         /* I - set null pixels, if nullcheck = 1   */
+            char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
+            int  *anynull,        /* O - set to 1 if any pixels are null     */
+            int  *output,         /* O - array of converted pixels           */
+            int *status)          /* IO - error status                       */
+/*
+  Copy input to output following reading of the input from a FITS file.
+  Check for null values and do datatype conversion and scaling if required.
+  The nullcheck code value determines how any null values in the input array
+  are treated.  A null value is an input pixel that is equal to NaN.  If 
+  nullcheck = 0, then no checking for nulls is performed and any null values
+  will be transformed just like any other pixel.  If nullcheck = 1, then the
+  output pixel will be set = nullval if the corresponding input pixel is null.
+  If nullcheck = 2, then if the pixel is null then the corresponding value of
+  nullarray will be set to 1; the value of nullarray for non-null pixels 
+  will = 0.  The anynull parameter will be set = 1 if any of the returned
+  pixels are null, otherwise anynull will be returned with a value = 0;
+*/
+{
+    long ii;
+    double dvalue;
+    short *sptr, iret;
+
+    if (nullcheck == 0)     /* no null checking required */
+    {
+        if (scale == 1. && zero == 0.)      /* no scaling */
+        {       
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] < DLONG_MIN)
+                {
+                    *status = OVERFLOW_ERR;
+                    output[ii] = LONG_MIN;
+                }
+                else if (input[ii] > DLONG_MAX)
+                {
+                    *status = OVERFLOW_ERR;
+                    output[ii] = LONG_MAX;
+                }
+                else
+                    output[ii] = (int) input[ii];
+            }
+        }
+        else             /* must scale the data */
+        {
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                dvalue = input[ii] * scale + zero;
+
+                if (dvalue < DLONG_MIN)
+                {
+                    *status = OVERFLOW_ERR;
+                    output[ii] = LONG_MIN;
+                }
+                else if (dvalue > DLONG_MAX)
+                {
+                    *status = OVERFLOW_ERR;
+                    output[ii] = LONG_MAX;
+                }
+                else
+                    output[ii] = (int) dvalue;
+            }
+        }
+    }
+    else        /* must check for null values */
+    {
+        sptr = (short *) input;
+
+#if MACHINE == VAXVMS
+   /* do nothing */
+
+#elif MACHINE == ALPHAVMS
+        if (*(short *) &testfloat == IEEEFLOAT)
+            sptr++;       /* point to MSBs */
+
+#elif BYTESWAPPED == TRUE
+        sptr++;       /* point to MSBs */
+#endif
+
+        if (scale == 1. && zero == 0.)  /* no scaling */
+        {       
+            for (ii = 0; ii < ntodo; ii++, sptr += 2)
+            {
+              if (0 != (iret = fnan(*sptr) ) )  /* test for NaN or underflow */
+              {
+                  if (iret == 1)  /* is it a NaN? */
+                  {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                  }
+                  else            /* it's an underflow */
+                     output[ii] = 0;
+              }
+              else
+                {
+                    if (input[ii] < DLONG_MIN)
+                    {
+                        *status = OVERFLOW_ERR;
+                        output[ii] = LONG_MIN;
+                    }
+                    else if (input[ii] > DLONG_MAX)
+                    {
+                        *status = OVERFLOW_ERR;
+                        output[ii] = LONG_MAX;
+                    }
+                    else
+                        output[ii] = (int) input[ii];
+                }
+            }
+        }
+        else                  /* must scale the data */
+        {
+            for (ii = 0; ii < ntodo; ii++, sptr += 2)
+            {
+              if (0 != (iret = fnan(*sptr) ) )  /* test for NaN or underflow */
+              {
+                  if (iret == 1)  /* is it a NaN? */
+                  {  
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                  }
+                  else            /* it's an underflow */
+                     output[ii] = (int) zero;
+              }
+              else
+                {
+                    dvalue = input[ii] * scale + zero;
+
+                    if (dvalue < DLONG_MIN)
+                    {
+                        *status = OVERFLOW_ERR;
+                        output[ii] = LONG_MIN;
+                    }
+                    else if (dvalue > DLONG_MAX)
+                    {
+                        *status = OVERFLOW_ERR;
+                        output[ii] = LONG_MAX;
+                    }
+                    else
+                        output[ii] = (int) dvalue;
+                }
+            }
+        }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fffr8int(double *input,       /* I - array of values to be converted     */
+            long ntodo,           /* I - number of elements in the array     */
+            double scale,         /* I - FITS TSCALn or BSCALE value         */
+            double zero,          /* I - FITS TZEROn or BZERO  value         */
+            int nullcheck,        /* I - null checking code; 0 = don't check */
+                                  /*     1:set null pixels = nullval         */
+                                  /*     2: if null pixel, set nullarray = 1 */
+            int  nullval,         /* I - set null pixels, if nullcheck = 1   */
+            char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
+            int  *anynull,        /* O - set to 1 if any pixels are null     */
+            int  *output,         /* O - array of converted pixels           */
+            int *status)          /* IO - error status                       */
+/*
+  Copy input to output following reading of the input from a FITS file.
+  Check for null values and do datatype conversion and scaling if required.
+  The nullcheck code value determines how any null values in the input array
+  are treated.  A null value is an input pixel that is equal to NaN.  If 
+  nullcheck = 0, then no checking for nulls is performed and any null values
+  will be transformed just like any other pixel.  If nullcheck = 1, then the
+  output pixel will be set = nullval if the corresponding input pixel is null.
+  If nullcheck = 2, then if the pixel is null then the corresponding value of
+  nullarray will be set to 1; the value of nullarray for non-null pixels 
+  will = 0.  The anynull parameter will be set = 1 if any of the returned
+  pixels are null, otherwise anynull will be returned with a value = 0;
+*/
+{
+    long ii;
+    double dvalue;
+    short *sptr, iret;
+
+    if (nullcheck == 0)     /* no null checking required */
+    {
+        if (scale == 1. && zero == 0.)      /* no scaling */
+        {       
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] < DLONG_MIN)
+                {
+                    *status = OVERFLOW_ERR;
+                    output[ii] = LONG_MIN;
+                }
+                else if (input[ii] > DLONG_MAX)
+                {
+                    *status = OVERFLOW_ERR;
+                    output[ii] = LONG_MAX;
+                }
+                else
+                    output[ii] = (int) input[ii];
+            }
+        }
+        else             /* must scale the data */
+        {
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                dvalue = input[ii] * scale + zero;
+
+                if (dvalue < DLONG_MIN)
+                {
+                    *status = OVERFLOW_ERR;
+                    output[ii] = LONG_MIN;
+                }
+                else if (dvalue > DLONG_MAX)
+                {
+                    *status = OVERFLOW_ERR;
+                    output[ii] = LONG_MAX;
+                }
+                else
+                    output[ii] = (int) dvalue;
+            }
+        }
+    }
+    else        /* must check for null values */
+    {
+        sptr = (short *) input;
+
+#if MACHINE == VAXVMS
+   /* do nothing */
+
+#elif MACHINE == ALPHAVMS
+        if (*(short *) &testfloat == IEEEFLOAT)
+            sptr += 3;       /* point to MSBs */
+
+#elif BYTESWAPPED == TRUE
+        sptr += 3;       /* point to MSBs */
+#endif
+        if (scale == 1. && zero == 0.)  /* no scaling */
+        {       
+            for (ii = 0; ii < ntodo; ii++, sptr += 4)
+            {
+              if (0 != (iret = dnan(*sptr)) )  /* test for NaN or underflow */
+              {
+                  if (iret == 1)  /* is it a NaN? */
+                  {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                  }
+                  else            /* it's an underflow */
+                     output[ii] = 0;
+              }
+              else
+                {
+                    if (input[ii] < DLONG_MIN)
+                    {
+                        *status = OVERFLOW_ERR;
+                        output[ii] = LONG_MIN;
+                    }
+                    else if (input[ii] > DLONG_MAX)
+                    {
+                        *status = OVERFLOW_ERR;
+                        output[ii] = LONG_MAX;
+                    }
+                    else
+                        output[ii] = (int) input[ii];
+                }
+            }
+        }
+        else                  /* must scale the data */
+        {
+            for (ii = 0; ii < ntodo; ii++, sptr += 4)
+            {
+              if (0 != (iret = dnan(*sptr)) )  /* test for NaN or underflow */
+              {
+                  if (iret == 1)  /* is it a NaN? */
+                  {  
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                  }
+                  else            /* it's an underflow */
+                     output[ii] = (int) zero;
+              }
+              else
+                {
+                    dvalue = input[ii] * scale + zero;
+
+                    if (dvalue < DLONG_MIN)
+                    {
+                        *status = OVERFLOW_ERR;
+                        output[ii] = LONG_MIN;
+                    }
+                    else if (dvalue > DLONG_MAX)
+                    {
+                        *status = OVERFLOW_ERR;
+                        output[ii] = LONG_MAX;
+                    }
+                    else
+                        output[ii] = (int) dvalue;
                 }
             }
         }

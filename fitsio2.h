@@ -213,6 +213,9 @@ int ffgcli(fitsfile *fptr, int colnum, long firstrow, long firstelem,
 int ffgclj(fitsfile *fptr, int colnum, long firstrow, long firstelem, 
            long nelem, long elemincre, int nultyp, long nulval, long *array,
            char *nularray, int *anynul, int  *status);
+int ffgclk(fitsfile *fptr, int colnum, long firstrow, long firstelem, 
+           long nelem, long elemincre, int nultyp, int nulval, int *array,
+           char *nularray, int *anynul, int  *status);
 int ffgcle(fitsfile *fptr, int colnum, long firstrow, long firstelem, 
            long nelem, long elemincre, int nultyp,  float nulval, float *array,
            char *nularray, int *anynul, int  *status);
@@ -288,6 +291,22 @@ int fffr8i4(double *input, long ntodo, double scale, double zero,
             int nullcheck, long nullval, char *nullarray,
             int *anynull, long *output, int *status);
 
+int fffi1int(unsigned char *input, long ntodo, double scale, double zero, 
+            int nullcheck, unsigned char tnull, int nullval, char *nullarray,
+            int *anynull, int *output, int *status);
+int fffi2int(short *input, long ntodo, double scale, double zero, 
+            int nullcheck, short tnull, int nullval, char *nullarray,
+            int *anynull, int *output, int *status);
+int fffi4int(long *input, long ntodo, double scale, double zero, 
+            int nullcheck, long tnull, int nullval, char *nullarray,
+            int *anynull, int *output, int *status);
+int fffr4int(float *input, long ntodo, double scale, double zero, 
+            int nullcheck, int nullval, char *nullarray,
+            int *anynull, int *output, int *status);
+int fffr8int(double *input, long ntodo, double scale, double zero, 
+            int nullcheck, int nullval, char *nullarray,
+            int *anynull, int *output, int *status);
+
 int fffi1r4(unsigned char *input, long ntodo, double scale, double zero, 
             int nullcheck, unsigned char tnull, float nullval, char *nullarray,
             int *anynull, float *output, int *status);
@@ -327,6 +346,8 @@ int ffi2fi1(short *array, long ntodo, double scale, double zero,
             unsigned char *buffer, int *status);
 int ffi4fi1(long *array, long ntodo, double scale, double zero, 
             unsigned char *buffer, int *status);
+int ffintfi1(int *array, long ntodo, double scale, double zero, 
+            unsigned char *buffer, int *status);
 int ffr4fi1(float *array, long ntodo, double scale, double zero, 
             unsigned char *buffer, int *status);
 int ffr8fi1(double *array, long ntodo, double scale, double zero, 
@@ -337,6 +358,8 @@ int ffi1fi2(unsigned char *array, long ntodo, double scale, double zero,
 int ffi2fi2(short *array, long ntodo, double scale, double zero, 
             short *buffer, int *status);
 int ffi4fi2(long *array, long ntodo, double scale, double zero, 
+            short *buffer, int *status);
+int ffintfi2(int *array, long ntodo, double scale, double zero, 
             short *buffer, int *status);
 int ffr4fi2(float *array, long ntodo, double scale, double zero, 
             short *buffer, int *status);
@@ -349,6 +372,8 @@ int ffi2fi4(short *array, long ntodo, double scale, double zero,
             long *buffer, int *status);
 int ffi4fi4(long *array, long ntodo, double scale, double zero, 
             long *buffer, int *status);
+int ffintfi4(int *array, long ntodo, double scale, double zero, 
+            long *buffer, int *status);
 int ffr4fi4(float *array, long ntodo, double scale, double zero, 
             long *buffer, int *status);
 int ffr8fi4(double *array, long ntodo, double scale, double zero, 
@@ -360,6 +385,8 @@ int ffi2fr4(short *array, long ntodo, double scale, double zero,
             float *buffer, int *status);
 int ffi4fr4(long *array, long ntodo, double scale, double zero, 
             float *buffer, int *status);
+int ffintfr4(int *array, long ntodo, double scale, double zero, 
+            float *buffer, int *status);
 int ffr4fr4(float *array, long ntodo, double scale, double zero, 
             float *buffer, int *status);
 int ffr8fr4(double *array, long ntodo, double scale, double zero, 
@@ -370,6 +397,8 @@ int ffi1fr8(unsigned char *array, long ntodo, double scale, double zero,
 int ffi2fr8(short *array, long ntodo, double scale, double zero, 
             double *buffer, int *status);
 int ffi4fr8(long *array, long ntodo, double scale, double zero, 
+            double *buffer, int *status);
+int ffintfr8(int *array, long ntodo, double scale, double zero, 
             double *buffer, int *status);
 int ffr4fr8(float *array, long ntodo, double scale, double zero, 
             double *buffer, int *status);

@@ -11,14 +11,14 @@
 \contentsline {section}{\numberline {4.3}Routine Names}{9}
 \contentsline {section}{\numberline {4.4}Routine Families and Datatypes}{10}
 \contentsline {section}{\numberline {4.5}1's Based Index Numbers}{10}
-\contentsline {section}{\numberline {4.6}Character Strings}{10}
+\contentsline {section}{\numberline {4.6}Character Strings}{11}
 \contentsline {section}{\numberline {4.7}Implicit Data Type Conversion}{11}
-\contentsline {section}{\numberline {4.8}Data Scaling}{11}
+\contentsline {section}{\numberline {4.8}Data Scaling}{12}
 \contentsline {section}{\numberline {4.9}Error Status Values and the Error Message Stack}{12}
 \contentsline {section}{\numberline {4.10}Variable-Length Arrays in Binary Tables}{13}
 \contentsline {section}{\numberline {4.11}Support for IEEE Special Values}{14}
 \contentsline {section}{\numberline {4.12}Local FITS Conventions supported by CFITSIO}{14}
-\contentsline {subsection}{\numberline {4.12.1}Support for Long String Keyword Values.}{14}
+\contentsline {subsection}{\numberline {4.12.1}Support for Long String Keyword Values.}{15}
 \contentsline {subsection}{\numberline {4.12.2}Arrays of Strings in Binary Table Extensions}{15}
 \contentsline {chapter}{\numberline {5} Programming Guidelines }{17}
 \contentsline {section}{\numberline {5.1}Reading an existing FITS file}{17}

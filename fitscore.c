@@ -21,6 +21,9 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
            const char *filename, /* I - name of file to open                */
            int readwrite,        /* I - 0 = open readonly; 1 = read/write   */
            int *status)          /* IO - error status                       */
+/*
+  Open an existing FITS file with either readonly or read/write access.
+*/
 {
     int ii, hdutype, slen, tstatus;
     long filesize;
@@ -92,6 +95,9 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
 int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
            const char *filename, /* I - name of file to create              */
            int *status)          /* IO - error status                       */
+/*
+  Create and initialize a new FITS file.
+*/
 {
     int ii, slen, tstatus;
     long dummy;
@@ -1071,6 +1077,22 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
         !strncmp(name, "THEAP", 5) )
     {
 
+    if (!strncmp(name, "THEAP", 5))
+    {
+        if (fptr->hdutype == ASCII_TBL)  /* ASCII table */
+            return(*status);  /* ASCII tables don't have a heap */ 
+
+        if (ffc2ii(value, &ivalue, status) > 0) 
+        {
+            sprintf(message,
+            "Error reading value of %s as an integer: %s", name, value);
+            ffpmsg(message);
+            return(*status);
+        }
+        fptr->heapstart = ivalue; /* the starting byte of the heap */
+        return(*status);
+    }
+
     if( ffc2ii(&name[5], &nfield, &tstatus) > 0) /* read index no. */
         return(*status);    /* must not be an indexed keyword */
 
@@ -1173,21 +1195,6 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
             }
             colptr->tnull = ivalue; /* null value for integer column */
         }
-    }
-
-    else if (!strncmp(name, "THEAP", 5))
-    {
-        if (fptr->hdutype == ASCII_TBL)  /* ASCII table */
-            return(*status);  /* ASCII tables don't have THEAPn keywords */ 
-
-        if (ffc2ii(value, &ivalue, status) > 0) 
-        {
-            sprintf(message,
-            "Error reading value of %s as an integer: %s", name, value);
-            ffpmsg(message);
-            return(*status);
-        }
-        fptr->heapstart = ivalue; /* the starting byte of the heap */
     }
     }
     return(*status);
@@ -1324,9 +1331,13 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
       {
          *maxelem = DBUFFSIZE / sizeof(long);
       }
-      if (abs(*tcode) == TFLOAT)
+      else if (abs(*tcode) == TFLOAT)
       {
          *maxelem = DBUFFSIZE / sizeof(float);
+      }
+      else if (abs(*tcode) == TDOUBLE)
+      {
+         *maxelem = DBUFFSIZE / sizeof(double);
       }
       else
         *maxelem = DBUFFSIZE / bytepix; 

@@ -406,7 +406,7 @@ void readimage( void )
 {
     fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
     int status,  nfound, anynull;
-    long naxes[2], group, fpixel, nbuffer, npixels, ii;
+    long naxes[2], fpixel, nbuffer, npixels, ii;
 
 #define buffsize 1000
     float datamin, datamax, nullval, buffer[buffsize];
@@ -422,7 +422,6 @@ void readimage( void )
          printerror( status );
 
     npixels  = naxes[0] * naxes[1];         /* number of pixels in the image */
-    group    = 1;
     fpixel   = 1;
     nullval  = 0;                /* don't check for null values in the image */
     datamin  = 1.0E30;

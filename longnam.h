@@ -155,6 +155,7 @@
 #define fits_read_grppar_byt  ffggpb
 #define fits_read_grppar_sht  ffggpi
 #define fits_read_grppar_lng  ffggpj
+#define fits_read_grppar_int  ffggpk
 #define fits_read_grppar_flt  ffggpe
 #define fits_read_grppar_dbl  ffggpd
 
@@ -162,36 +163,42 @@
 #define fits_read_img_byt     ffgpvb
 #define fits_read_img_sht     ffgpvi
 #define fits_read_img_lng     ffgpvj
+#define fits_read_img_int     ffgpvk
 #define fits_read_img_flt     ffgpve
 #define fits_read_img_dbl     ffgpvd
 
 #define fits_read_imgnull_byt ffgpfb
 #define fits_read_imgnull_sht ffgpfi
 #define fits_read_imgnull_lng ffgpfj
+#define fits_read_imgnull_int ffgpfk
 #define fits_read_imgnull_flt ffgpfe
 #define fits_read_imgnull_dbl ffgpfd
 
 #define fits_read_2d_byt      ffg2db
 #define fits_read_2d_sht      ffg2di
 #define fits_read_2d_lng      ffg2dj
+#define fits_read_2d_int      ffg2dk
 #define fits_read_2d_flt      ffg2de
 #define fits_read_2d_dbl      ffg2dd
 
 #define fits_read_3d_byt      ffg3db
 #define fits_read_3d_sht      ffg3di
 #define fits_read_3d_lng      ffg3dj
+#define fits_read_3d_int      ffg3dk
 #define fits_read_3d_flt      ffg3de
 #define fits_read_3d_dbl      ffg3dd
 
 #define fits_read_subset_byt  ffgsvb
 #define fits_read_subset_sht  ffgsvi
 #define fits_read_subset_lng  ffgsvj
+#define fits_read_subset_int  ffgsvk
 #define fits_read_subset_flt  ffgsve
 #define fits_read_subset_dbl  ffgsvd
 
 #define fits_read_subsetnull_byt ffgsfb
 #define fits_read_subsetnull_sht ffgsfi
 #define fits_read_subsetnull_lng ffgsfj
+#define fits_read_subsetnull_int ffgsfk
 #define fits_read_subsetnull_flt ffgsfe
 #define fits_read_subsetnull_dbl ffgsfd
 
@@ -201,6 +208,7 @@
 #define fits_read_col_byt    ffgcvb
 #define fits_read_col_sht    ffgcvi
 #define fits_read_col_lng    ffgcvj
+#define fits_read_col_int    ffgcvk
 #define fits_read_col_flt    ffgcve
 #define fits_read_col_dbl    ffgcvd
 #define fits_read_col_cmp    ffgcvc
@@ -212,6 +220,7 @@
 #define fits_read_colnull_byt    ffgcfb
 #define fits_read_colnull_sht    ffgcfi
 #define fits_read_colnull_lng    ffgcfj
+#define fits_read_colnull_int    ffgcfk
 #define fits_read_colnull_flt    ffgcfe
 #define fits_read_colnull_dbl    ffgcfd
 #define fits_read_colnull_cmp    ffgcfc
@@ -223,6 +232,7 @@
 #define fits_write_grppar_byt ffpgpb
 #define fits_write_grppar_sht ffpgpi
 #define fits_write_grppar_lng ffpgpj
+#define fits_write_grppar_int ffpgpk
 #define fits_write_grppar_flt ffpgpe
 #define fits_write_grppar_dbl ffpgpd
 
@@ -230,12 +240,14 @@
 #define fits_write_img_byt    ffpprb
 #define fits_write_img_sht    ffppri
 #define fits_write_img_lng    ffpprj
+#define fits_write_img_int    ffpprk
 #define fits_write_img_flt    ffppre
 #define fits_write_img_dbl    ffpprd
 
 #define fits_write_imgnull_byt ffppnb
 #define fits_write_imgnull_sht ffppni
 #define fits_write_imgnull_lng ffppnj
+#define fits_write_imgnull_int ffppnk
 #define fits_write_imgnull_flt ffppne
 #define fits_write_imgnull_dbl ffppnd
 
@@ -244,18 +256,21 @@
 #define fits_write_2d_byt   ffp2db
 #define fits_write_2d_sht   ffp2di
 #define fits_write_2d_lng   ffp2dj
+#define fits_write_2d_int   ffp2dk
 #define fits_write_2d_flt   ffp2de
 #define fits_write_2d_dbl   ffp2dd
 
 #define fits_write_3d_byt   ffp3db
 #define fits_write_3d_sht   ffp3di
 #define fits_write_3d_lng   ffp3dj
+#define fits_write_3d_int   ffp3dk
 #define fits_write_3d_flt   ffp3de
 #define fits_write_3d_dbl   ffp3dd
 
 #define fits_write_subset_byt  ffpssb
 #define fits_write_subset_sht  ffpssi
 #define fits_write_subset_lng  ffpssj
+#define fits_write_subset_int  ffpssk
 #define fits_write_subset_flt  ffpsse
 #define fits_write_subset_dbl  ffpssd
 
@@ -265,6 +280,7 @@
 #define fits_write_col_byt     ffpclb
 #define fits_write_col_sht     ffpcli
 #define fits_write_col_lng     ffpclj
+#define fits_write_col_int     ffpclk
 #define fits_write_col_flt     ffpcle
 #define fits_write_col_dbl     ffpcld
 #define fits_write_col_cmp     ffpclc
@@ -275,6 +291,7 @@
 #define fits_write_colnull_byt ffpcnb
 #define fits_write_colnull_sht ffpcni
 #define fits_write_colnull_lng ffpcnj
+#define fits_write_colnull_int ffpcnk
 #define fits_write_colnull_flt ffpcne
 #define fits_write_colnull_dbl ffpcnd
 

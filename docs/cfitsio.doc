@@ -2,7 +2,7 @@
  
                     William D Pence, HEASARC, NASA/GSFC
                             Version 1.00
-                             July 1996
+                             August 1996
  
  
 [Note: This file contains various formatting command symbols in the first
@@ -94,7 +94,7 @@ or via anonymous FTP at:
  
 The CFITSIO code is contained in 9 source files (cfileio.c, convert.c,
 fitscore.c, getcol.c, getkey.c, modkey.c, putcol.c, putkey.c, and
-utilproc.c) and 3 header files (fitsio.h, fitsio2.h and longname.h).
+utilproc.c) and 3 header files (fitsio.h, fitsio2.h and longnam.h).
 On VAX/VMS systems 2 assembly-code files (vmsieeed.mar and
 vmsieeer.mar) are also needed.
 
@@ -365,7 +365,7 @@ All the CFITSIO routines have both a short name and a longer
 descriptive name.  The short name is only 5 or 6 characters long and is
 similar to the subroutine name in the Fortran-77 version of FITSIO.
 The longer name is more descriptive and helps to document the source
-code; these long names are defined as macros in the longname.h header
+code; these long names are defined as macros in the longnam.h header
 file.  It is purely a matter of personal preference whether to use the
 short or the long names since they are identical in terms of function
 or efficiency.  The descriptions of the routines given in chapters 6
@@ -387,6 +387,7 @@ as shown in the following table:
     _byt     b    unsigned byte
     _sht     i    short integer
     _lng     j    long integer
+    _int     k    int integer
     _flt     e    real exponential floating point (float)
     _fixflt  f    real fixed-decimal format floating point (float)
     _dbl     d    double precision real floating-point (double)
@@ -396,6 +397,13 @@ as shown in the following table:
     _log     l    logical (int)
     _str     s    character string
 -
+The `int' datatype is often 2 bytes long on IBM PC compatible
+systems and 4 bytes long on most other systems.  The Alpha/OSF systems
+are unusual in that the `short', `int', and `long' integer datatypes
+are 2, 4, and 8 bytes long, respectively.  Note that the FITS standard
+only supports 2 and 4 byte intergers, so FITSIO always converts between
+4 and 8 bytes when reading or writing `long' integers on Alpha/OSF systems.
+
 When dealing with the FITS byte datatype, it is important to remember that
 the raw values (before any scaling by the BSCALE and BZERO, or TSCALn
 and TZEROn keyword values) in byte arrays (BITPIX = 8) or byte columns
@@ -998,7 +1006,10 @@ value of the pointer is defined by the call to open or create the FITS
 file and then the pointer must be passed as the first argument to all
 the other CFITSIO routines that read or write the FITS file.  The
 memory that is allocated for the fitsfile structure is freed when
-the FITS file is closed.
+the FITS file is closed.  Application programs must not directly 
+read or write information in this fitsfile structure because
+the definition of the structure may change in future versions of
+CFITSIO. 
 
 >1  Open an existing FITS file with readonly or readwrite access.
     The iomode parameter has allowed symbolic constant values of 
@@ -1113,7 +1124,7 @@ different from the actual datatype of the FITS array or table column.
 -
   int fits_write_col / ffpcl
       (fitsfile *fptr, int datatype, int colnum, long firstrow,
-       long firstelem, long nelements, char **array, > int *status)
+       long firstelem, long nelements, void *array, > int *status)
 -
 >4  Read elements from an ASCII or binary table column.  Undefined
     array elements will be returned with a value = *nulval unless nulval = 0
@@ -1159,11 +1170,11 @@ of listing the last letter(s) of the routine names in square brackets.
 For example, the routines for reading data from a primary array
 are defined as:
 -
-  int ffgpv[bijed](fitsfile *fptr, long group, long firstelem, long nelements,
+  int ffgpv[bijked](fitsfile *fptr, long group, long firstelem, long nelements,
            DTYPE nulval, > DTYPE *array, int *anynul, int *status)
 -
-This is a short-hand notation for indicating that there are 5
-separate routines, ffgpvb, ffgpvi, ffgpvj, ffgpve, and ffgpvd, 
+This is a short-hand notation for indicating that there are 6
+separate routines, ffgpvb, ffgpvi, ffgpvj, ffgpvk, ffgpve, and ffgpvd, 
 which have different datatypes for the nulval and array arguments.
 
 4. A datatype specification of `DTYPE' is used to indicate
@@ -1175,8 +1186,9 @@ letter of the routine's short name as given by the following table:
       ----     --------
         b   -  unsigned char
         l   -  int (logical value)
-        i   -  short int
-        j   -  long int
+        i   -  short integer
+        j   -  long integer
+        k   -  int integer
      e, f   -  float
      d, g   -  double
         c   -  pairs of floats (complex value)
@@ -1904,7 +1916,7 @@ working with large data arrays.
 >2  Put elements into the data array.  The datatype is specified
 >   by the suffix of the name of the routine.
 -
-  int fits_write_img_[byt, sht, lng, flt, dbl] / ffppr[bijed]
+  int fits_write_img_[byt, sht, lng, int, flt, dbl] / ffppr[bijked]
       (fitsfile *fptr, long group, long firstelem, long nelements,
        DTYPE *array, > int *status);
 -
@@ -1916,7 +1928,7 @@ working with large data arrays.
    or -64) then the special IEEE NaN (Not-a-Number) value will be
 >  substituted.
 -
-  int fits_write_imgnull_[byt, sht, lng, flt, dbl] / ffppn[bijed]
+  int fits_write_imgnull_[byt, sht, lng, int, flt, dbl] / ffppn[bijked]
       (fitsfile *fptr, long group, long firstelem,
            long nelements, DTYPE *array, DTYPE nulval, > int *status);
 -
@@ -1931,25 +1943,25 @@ working with large data arrays.
     applications in radio interferometry, but is offically deprecated
 >   for future use.
 -
-  int fits_write_grppar_[byt, sht, lng, flt, dbl] / ffpgp[bijed]
+  int fits_write_grppar_[byt, sht, int, lng, flt, dbl] / ffpgp[bijked]
       (fitsfile *fptr, long group, long firstelem, long nelements,
        > DTYPE *array, int *status)
 -
 >>6  Put 2-D image into the data array.
 -
-  int fits_write_2d_[byt, sht, lng, flt, dbl] / ffp2d[bijed]
+  int fits_write_2d_[byt, sht, lng, flt, dbl] / ffp2d[bijked]
       (fitsfile *fptr, long group, long dim1, long naxis1,
        long naxis2, DTYPE *array, > int *status)
 -
 >>7  Put 3-D cube into the data array.
 -
-  int its_write_3d_[byt, sht, lng, flt, dbl] / ffp3d[bijed]
+  int its_write_3d_[byt, sht, lng, flt, dbl] / ffp3d[bijked]
       (fitsfile *fptr, long group, long dim1, long dim2,
        long naxis1, long naxis2, long naxis3, DTYPE *array, > int *status)
 -
 >>8    Put an arbitrary data subsection into the data array.
 -
-  int fits_write_subset_[byt, sht, lng, flt, dbl] / ffpss[bijed]
+  int fits_write_subset_[byt, sht, lng, int, flt, dbl] / ffpss[bijked]
       (fitsfile *fptr, long group, long naxis, long *naxes,
        long *fpixel, long *lpixel, DTYPE *array, > int *status)
 -
@@ -1972,7 +1984,7 @@ working with large data arrays.
     returned with a value = nullval, unless nullval = 0 in which case no
 >   checks for undefined pixels will be performed.
 -
-  int fits_read_img_[byt, sht, lng, flt, dbl] / ffgpv[bijed]
+  int fits_read_img_[byt, sht, lng, int, flt, dbl] / ffgpv[bijked]
       (fitsfile *fptr, long group, long firstelem, long nelements,
        DTYPE nulval, > DTYPE *array, int *anynul, int *status)
 -
@@ -1980,7 +1992,7 @@ working with large data arrays.
     Any undefined array elements will have the corresponding nularray element
 >   set equal to 1, else 0.
 -
-  int  fits_read_imgnull_[byt, sht, lng, flt, dbl] / ffgpf[bijed]
+  int  fits_read_imgnull_[byt, sht, lng, int, flt, dbl] / ffgpf[bijked]
       (fitsfile *fptr, long group, long firstelem, long nelements,
        > DTYPE *array, char *nularray, int *anynul, int *status)
 -
@@ -1989,7 +2001,7 @@ working with large data arrays.
     applications in radio interferometry, but is offically deprecated
 >   for future use.
 -
-  int  fits_read_grppar_[byt, sht, lng, flt, dbl] / ffggp[bijed]
+  int  fits_read_grppar_[byt, sht, lng, int, flt, dbl] / ffggp[bijked]
       (fitsfile *fptr, long group, long firstelem, long nelements,
        > DTYPE *array, int *status)
 -
@@ -1998,7 +2010,7 @@ working with large data arrays.
      unless nulval=0 in which case no testing for undefined pixels will
 >    be performed.
 -
-  int  fits_read_2d_[byt, sht, lng, flt, dbl] / ffg2d[bijed]
+  int  fits_read_2d_[byt, sht, lng, int, flt, dbl] / ffg2d[bijked]
       (fitsfile *fptr, long group, DTYPE nulval, long dim1, long naxis1,
        long naxis2, > DTYPE *array, int *anynul, int *status)
 -
@@ -2007,7 +2019,7 @@ working with large data arrays.
     unless nulval=0 in which case no testing for undefined pixels will
 >   be performed.
 -
-  int  fits_read_3d_[byt, sht, lng, flt, dbl] / ffg3d[bijed]
+  int  fits_read_3d_[byt, sht, lng, int, flt, dbl] / ffg3d[bijked]
       (fitsfile *fptr, long group, DTYPE nulval, long dim1,
        long dim2, long naxis1, long naxis2, long naxis3,
        > DTYPE *array, int *anynul, int *status)
@@ -2018,7 +2030,7 @@ working with large data arrays.
        unless nullval=0 in which case no testing for undefined pixels will
 >      be performed.
 -
-  int  fits_read_subset_[byt, sht, lng, flt, dbl] / ffgsv[bijed]
+  int  fits_read_subset_[byt, sht, lng, int, flt, dbl] / ffgsv[bijked]
       (fitsfile *fptr, int group, int naxis, long *naxes, 
        long *fpixels, long *lpixels, long *inc, DTYPE nulval, 
        > DTYPE *array, int *anynul, int *status)
@@ -2027,7 +2039,7 @@ working with large data arrays.
        pixels in the array will have the corresponding 'nularray'
 >      element set equal to TRUE.
 -
-  int  fits_read_subsetnull_[byt, sht, lng, flt, dbl] / ffgsf[bijed]
+  int  fits_read_subsetnull_[byt, sht, lng, int, flt, dbl] / ffgsf[bijked]
       (fitsfile *fptr, int group, int naxis, long *naxes, 
        long *fpixels, long *lpixels, long *inc, > DTYPE *array, 
        char *nularray, int *anynul, int *status)
@@ -2242,7 +2254,7 @@ of flags which defines whether the corresponding data pixel is undefined.
 -
   int fits_write_col / ffpcl
       (fitsfile *fptr, int datatype, int colnum, long firstrow,
-       long firstelem, long nelements, char **array, > int *status)
+       long firstelem, long nelements, void *array, > int *status)
 -
 >>2  Put elements into an ASCII or binary table column (in the CDU).
 -
@@ -2250,8 +2262,8 @@ of flags which defines whether the corresponding data pixel is undefined.
       (fitsfile *fptr, int colnum, long firstrow, long firstelem,
        long nelements, char **array, > int *status)
  
-  int fits_write_col_[log, byt, sht, lng, flt, dbl, cmp, dblcmp] /
-      ffpcl[lbijedcm]
+  int fits_write_col_[log, byt, sht, lng, int, flt, dbl, cmp, dblcmp] /
+      ffpcl[lbijkedcm]
       (fitsfile *fptr, int colnum, long firstrow,
            long firstelem, long nelements, DTYPE *array, > int *status)
 -
@@ -2265,7 +2277,7 @@ of flags which defines whether the corresponding data pixel is undefined.
     For floating point FITS columns a special IEEE NaN (Not-a-Number)
 >   value will be substituted.
 -
-  int fits_write_colnul_[byt, sht, lng, flt, dbl] / ffpcn[bijed]
+  int fits_write_colnul_[byt, sht, lng, int, flt, dbl] / ffpcn[bijked]
       (fitsfile *fptr, int colnum, long firstrow, long firstelem,
        long nelements, DTYPE *array, DTYPE nulval, > int *status)
 -
@@ -2338,7 +2350,7 @@ of flags which defines whether the corresponding data pixel is undefined.
        long nelements, char *nulstr, > char **array, int *anynul,
        int *status)
  
-  int fits_read_col_[byt, sht, lng, flt, dbl, cmp, dblcmp] / ffgcv[bijedcm]
+  int fits_read_col_[byt, sht, lng, int, flt, dbl, cmp, dblcmp] / ffgcv[bijkedcm]
       (fitsfile *fptr, int colnum, long firstrow, long firstelem,
        long nelements, DTYPE nulval, > DTYPE *array, int *anynul,
        int *status)
@@ -2359,7 +2371,7 @@ of flags which defines whether the corresponding data pixel is undefined.
        long nelements, > char *array, char *nularray, int *anynul, 
        int *status)
 
-  int fits_read_col_[byt, sht, lng, flt, dbl, cmp, dblcmp] / ffgcf[bijedcm]
+  int fits_read_col_[byt, sht, lng, int, flt, dbl, cmp, dblcmp] / ffgcf[bijkedcm]
       (fitsfile *fptr, int colnum, long firstrow, 
        long firstelem, long nelements, > DTYPE *array,
        char *nularray, int *anynul, int *status)
@@ -2374,7 +2386,7 @@ of flags which defines whether the corresponding data pixel is undefined.
     array.  The INC parameter specifies the sampling interval in
 >   each dimension between the data elements that will be returned.
 -
-  int fits_read_subset_[byt, sht, lng, flt, dbl] / ffgsv[bijed]
+  int fits_read_subset_[byt, sht, lng, int, flt, dbl] / ffgsv[bijked]
       (fitsfile *fptr, int colnum, int naxis, long *naxes, long *fpixels,
        long *lpixels, long *inc, DTYPE nulval, > DTYPE *array, int *anynul,
        int *status)
@@ -2389,7 +2401,7 @@ of flags which defines whether the corresponding data pixel is undefined.
     interval in each dimension between the data elements that will be
 >   returned.
 -
-  int fits_read_subsetnull_[byt, sht, lng, flt, dbl] / ffgsf[bijed]
+  int fits_read_subsetnull_[byt, sht, lng, int, flt, dbl] / ffgsf[bijked]
       (fitsfile *fptr, int colnum, int naxis, long *naxes, 
        long *fpixels, long *lpixels, long *inc, > DTYPE *array, 
        char *nularray, int *anynul, int *status)
@@ -2924,41 +2936,41 @@ The following utility routines may be useful for certain applications:
 -
   int ffppr(fitsfile *fptr, int datatype, long firstelem, long nelements,
            void *array, int *status);
-  int ffppr[bijed](fitsfile *fptr, long group, long firstelem,
+  int ffppr[bijked](fitsfile *fptr, long group, long firstelem,
            long nelements, DTYPE *array, > int *status);
-  int ffppn[bijed](fitsfile *fptr, long group, long firstelem,
+  int ffppn[bijked](fitsfile *fptr, long group, long firstelem,
            long nelements, DTYPE *array, DTYPE nulval, > int *status);
-  int ffpgp[bijed](fitsfile *fptr, long group, long firstelem, long nelements,
+  int ffpgp[bijked](fitsfile *fptr, long group, long firstelem, long nelements,
            > DTYPE *array, int *status)
   int ffppru(fitsfile *fptr, long group, long firstelem,
            long nelements, > int *status)
-  int ffp2d[bijed](fitsfile *fptr, long group, long dim1, long naxis1,
+  int ffp2d[bijked](fitsfile *fptr, long group, long dim1, long naxis1,
            long naxis2, DTYPE *array, > int *status)
-  int ffp3d[bijed](fitsfile *fptr, long group, long dim1, long dim2,
+  int ffp3d[bijked](fitsfile *fptr, long group, long dim1, long dim2,
            long naxis1, long naxis2, long naxis3, DTYPE *array, > int *status)
-  int ffpss[bijed](fitsfile *fptr, long group, long naxis, long *naxes,
+  int ffpss[bijked](fitsfile *fptr, long group, long naxis, long *naxes,
            long *fpixel, long *lpixel, DTYPE *array, > int *status)
 -
  Read Image Data Routines: page~\pageref{FFGPV}
 -
   int ffgpv(fitsfile *fptr, int  datatype, long firstelem, long nelements,
            void *nulval, > void *array, int *anynul, int *status)
-  int ffgpv[bijed](fitsfile *fptr, long group, long firstelem, long nelements,
+  int ffgpv[bijked](fitsfile *fptr, long group, long firstelem, long nelements,
            DTYPE nulval, > DTYPE *array, int *anynul, int *status)
-  int ffgpf[bijed](fitsfile *fptr, long group, long firstelem, long nelements,
+  int ffgpf[bijked](fitsfile *fptr, long group, long firstelem, long nelements,
           > DTYPE *array, char *nularray, int *anynul, int *status)
-  int ffggp[bijed](fitsfile *fptr, long group, long firstelem, long nelements,
+  int ffggp[bijked](fitsfile *fptr, long group, long firstelem, long nelements,
           > DTYPE *array, int *status)
-  int ffg2d[bijed](fitsfile *fptr, long group, DTYPE nulval, long dim1,
+  int ffg2d[bijked](fitsfile *fptr, long group, DTYPE nulval, long dim1,
            long naxis1, long naxis2, > DTYPE *array,
            int *anynul, int *status)
-  int ffg3d[bijed](fitsfile *fptr, long group, DTYPE nulval, long dim1,
+  int ffg3d[bijked](fitsfile *fptr, long group, DTYPE nulval, long dim1,
            long dim2, long naxis1, long naxis2, long naxis3,
            > DTYPE *array, int *anynul, int *status)
-  int ffgsv[bijed](fitsfile *fptr, int group, int naxis, long *naxes, 
+  int ffgsv[bijked](fitsfile *fptr, int group, int naxis, long *naxes, 
             long *fpixels, long *lpixels, long *inc, DTYPE nulval, 
             > DTYPE *array, int *anynul, int *status)
-  int ffgsf[bijed](fitsfile *fptr, int group, int naxis, long *naxes, 
+  int ffgsf[bijked](fitsfile *fptr, int group, int naxis, long *naxes, 
             long *fpixels, long *lpixels, long *inc, > DTYPE *array, 
             char *nularray, int *anynul, int *status)
 -
@@ -3004,9 +3016,9 @@ The following utility routines may be useful for certain applications:
            long firstelem, long nelements, char **array, > int *status)
   int ffpcls(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelements, char **array, > int *status)
-  int ffpcl[lbijedcm](fitsfile *fptr, int colnum, long firstrow,
+  int ffpcl[lbijkedcm](fitsfile *fptr, int colnum, long firstrow,
            long firstelem, long nelements, DTYPE *array, > int *status)
-  int ffpcn[bijed](fitsfile *fptr, int colnum, long firstrow,
+  int ffpcn[bijked](fitsfile *fptr, int colnum, long firstrow,
            long firstelem, long nelements, DTYPE *array, DTYPE nulval,
            > int *status)
   int ffpclx(fitsfile *fptr, int colnum, long firstrow, long firstbit, 
@@ -3027,7 +3039,7 @@ The following utility routines may be useful for certain applications:
   int ffgcvs(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelements, char *nulstr, > char **array, int *anynul,
            int *status)
-  int ffgcv[bijedcm](fitsfile *fptr, int colnum, long firstrow,
+  int ffgcv[bijkedcm](fitsfile *fptr, int colnum, long firstrow,
            long firstelem, long nelements, DTYPE nulval, > DTYPE *array,
            int *anynul, int *status)
   int ffgcfs(fitsfile *fptr, int colnum, long firstrow, long firstelem,
@@ -3036,13 +3048,13 @@ The following utility routines may be useful for certain applications:
   int ffgcfl(fitsfile *fptr, int colnum, long firstrow, long firstelem, 
            long nelements, > char *array, char *nularray, int *anynul, 
            int *status)
-  int ffgcf[bijedcm](fitsfile *fptr, int colnum, long firstrow, 
+  int ffgcf[bijkedcm](fitsfile *fptr, int colnum, long firstrow, 
            long firstelem, long nelements, > DTYPE *array,
            char *nularray, int *anynul, int *status)
-  int ffgsv[bijed](fitsfile *fptr, int colnum, int naxis, long *naxes, 
+  int ffgsv[bijked](fitsfile *fptr, int colnum, int naxis, long *naxes, 
             long *fpixels, long *lpixels, long *inc, DTYPE nulval, 
             > DTYPE *array, int *anynul, int *status)
-  int ffgsf[bijed](fitsfile *fptr, int colnum, int naxis, long *naxes, 
+  int ffgsf[bijked](fitsfile *fptr, int colnum, int naxis, long *naxes, 
             long *fpixels, long *lpixels, long *inc, > DTYPE *array, 
             char *nularray, int *anynul, int *status)
   int ffgcx(fitsfile *fptr, int colnum, long firstrow, long firstbit, 
