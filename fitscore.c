@@ -3442,6 +3442,8 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
         long firstelem, /* I - first element within vector (1 = 1st)        */
         long nelem,     /* I - number of elements to read or write          */
         int writemode,  /* I - = 1 if writing data, = 0 if reading data     */
+                        /*     If = 2, then writing data, but don't modify  */
+                        /*     the returned values of repeat and incre.     */
         double *scale,  /* O - FITS scaling factor (TSCALn keyword value)   */
         double *zero,   /* O - FITS scaling zero pt (TZEROn keyword value)  */
         char *tform,    /* O - ASCII column format: value of TFORMn keyword */
@@ -3692,13 +3694,16 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
           }
         }
 
-        if (*repeat == 1 && nelem > 1)
+        if (*repeat == 1 && nelem > 1 && writemode != 2)
         { /*
             When accessing a scalar column, fool the calling routine into
             thinking that this is a vector column with very big elements.
             This allows multiple values (up to the maxelem number of elements
             that will fit in the buffer) to be read or written with a single
             routine call, which increases the efficiency.
+
+            If writemode == 2, then the calling program does not want to
+            have this efficiency trick applied.
           */           
             *incre = *rowlen;
             *repeat = nelem;
@@ -3708,7 +3713,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     {
       *tcode *= (-1);  
 
-      if (writemode)     /* return next empty heap address for writing */
+      if (writemode)    /* return next empty heap address for writing */
       {
         /* Add more rows to the table, if writing beyond the end. */
         /* It is necessary to shift the heap down in this case */

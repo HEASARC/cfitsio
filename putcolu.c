@@ -76,7 +76,7 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
   images.
 */
 {
-    int tcode, maxelem, hdutype, lennull, nwrite = 0, writemode = 1;
+    int tcode, maxelem, hdutype, lennull, nwrite = 0, writemode = 2;
     short i2null;
     INT32BIT i4null;
     long twidth, incre, repeat, rowlen, rownum, elemnum, remain, next, ntodo;
@@ -95,8 +95,8 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
     /*  Check input and get parameters about the column: */
     /*---------------------------------------------------*/
 
-    /* note that the 5th parameter = 1, not nelem, so that the returned */
-    /* repeat and incre values will be the actual values for this column */
+    /* note that writemode = 2 by default (not 1), so that the returned */
+    /* repeat and incre values will be the actual values for this column. */
 
     /* If writing nulls to a variable length column then dummy data values  */
     /* must have already been written to the heap. */
@@ -107,8 +107,8 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
     if (tcode < 0)
          writemode = 0;  /* this is a variable length column */
 
-    if (ffgcpr( fptr, colnum, firstrow, firstelem, 1, writemode, &scale, &zero,
-        tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
+    if (ffgcpr( fptr, colnum, firstrow, firstelem, nelem, writemode, &scale,
+       &zero, tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
 
@@ -175,7 +175,7 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     while (ntodo)
     {
-        /* limit the number of pixels to process a one time to the number that
+        /* limit the number of pixels to process at one time to the number that
            will fit in the buffer space or to the number of pixels that remain
            in the current vector, which ever is smaller.
         */
