@@ -197,6 +197,12 @@ int stdin_open(char *filename, int rwmode, int *handle)
 {
     int status;
 
+    if (rwmode != READONLY)
+    {
+        ffpmsg("cannot open stdin with WRITE access");
+        return(FILE_NOT_OPENED);
+    }
+
     status = mem_createmem(2880L, handle);
 
     if (status)
