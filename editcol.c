@@ -335,6 +335,9 @@ int ffdrow(fitsfile *fptr,  /* I - FITS file pointer                        */
     ((fptr->Fptr)->numrows) -= nrows;
     ((fptr->Fptr)->origrows) -= nrows;
 
+    /* Update the heap data, if any.  This will remove any orphaned data */
+    /* that was only pointed to by the rows that have been deleted */
+    ffcmph(fptr, status);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -546,6 +549,10 @@ int ffdrws(fitsfile *fptr,  /* I - FITS file pointer                        */
     
     /* now delete the empty rows at the end of the table */
     ffdrow(fptr, naxis2 - nrows + 1, nrows, status);
+
+    /* Update the heap data, if any.  This will remove any orphaned data */
+    /* that was only pointed to by the rows that have been deleted */
+    ffcmph(fptr, status);
     
     return(*status);
 }
