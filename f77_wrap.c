@@ -808,40 +808,43 @@ FCALLSCSUB11(ffg3dk,FTG3DK,ftg3dk,FITSUNIT,LONG,INT,LONG,LONG,LONG,LONG,LONG,INT
 FCALLSCSUB11(ffg3de,FTG3DE,ftg3de,FITSUNIT,LONG,FLOAT,LONG,LONG,LONG,LONG,LONG,FLOATV,PLOGICAL,PINT)
 FCALLSCSUB11(ffg3dd,FTG3DD,ftg3dd,FITSUNIT,LONG,DOUBLE,LONG,LONG,LONG,LONG,LONG,DOUBLEV,PLOGICAL,PINT)
 
-#define ftgsvb_LONGV_A4 A3
-#define ftgsvb_LONGV_A5 A3
-#define ftgsvb_LONGV_A6 A3
-#define ftgsvb_LONGV_A7 A3
+     /*  The follow LONGV definitions have +1 appended because the   */
+     /*  routines use of NAXIS+1 elements of the long vectors.       */
+
+#define ftgsvb_LONGV_A4 A3+1
+#define ftgsvb_LONGV_A5 A3+1
+#define ftgsvb_LONGV_A6 A3+1
+#define ftgsvb_LONGV_A7 A3+1
 FCALLSCSUB11(ffgsvb,FTGSVB,ftgsvb,FITSUNIT,INT,INT,LONGV,LONGV,LONGV,LONGV,BYTE,BYTEV,PLOGICAL,PINT)
 
-#define ftgsvi_LONGV_A4 A3
-#define ftgsvi_LONGV_A5 A3
-#define ftgsvi_LONGV_A6 A3
-#define ftgsvi_LONGV_A7 A3
+#define ftgsvi_LONGV_A4 A3+1
+#define ftgsvi_LONGV_A5 A3+1
+#define ftgsvi_LONGV_A6 A3+1
+#define ftgsvi_LONGV_A7 A3+1
 FCALLSCSUB11(ffgsvi,FTGSVI,ftgsvi,FITSUNIT,INT,INT,LONGV,LONGV,LONGV,LONGV,SHORT,SHORTV,PLOGICAL,PINT)
 
-#define ftgsvj_LONGV_A4 A3
-#define ftgsvj_LONGV_A5 A3
-#define ftgsvj_LONGV_A6 A3
-#define ftgsvj_LONGV_A7 A3
+#define ftgsvj_LONGV_A4 A3+1
+#define ftgsvj_LONGV_A5 A3+1
+#define ftgsvj_LONGV_A6 A3+1
+#define ftgsvj_LONGV_A7 A3+1
 FCALLSCSUB11(ffgsvk,FTGSVJ,ftgsvj,FITSUNIT,INT,INT,LONGV,LONGV,LONGV,LONGV,INT,INTV,PLOGICAL,PINT)
 
-#define ftgsvk_LONGV_A4 A3
-#define ftgsvk_LONGV_A5 A3
-#define ftgsvk_LONGV_A6 A3
-#define ftgsvk_LONGV_A7 A3
+#define ftgsvk_LONGV_A4 A3+1
+#define ftgsvk_LONGV_A5 A3+1
+#define ftgsvk_LONGV_A6 A3+1
+#define ftgsvk_LONGV_A7 A3+1
 FCALLSCSUB11(ffgsvk,FTGSVK,ftgsvk,FITSUNIT,INT,INT,LONGV,LONGV,LONGV,LONGV,INT,INTV,PLOGICAL,PINT)
 
-#define ftgsve_LONGV_A4 A3
-#define ftgsve_LONGV_A5 A3
-#define ftgsve_LONGV_A6 A3
-#define ftgsve_LONGV_A7 A3
+#define ftgsve_LONGV_A4 A3+1
+#define ftgsve_LONGV_A5 A3+1
+#define ftgsve_LONGV_A6 A3+1
+#define ftgsve_LONGV_A7 A3+1
 FCALLSCSUB11(ffgsve,FTGSVE,ftgsve,FITSUNIT,INT,INT,LONGV,LONGV,LONGV,LONGV,FLOAT,FLOATV,PLOGICAL,PINT)
 
-#define ftgsvd_LONGV_A4 A3
-#define ftgsvd_LONGV_A5 A3
-#define ftgsvd_LONGV_A6 A3
-#define ftgsvd_LONGV_A7 A3
+#define ftgsvd_LONGV_A4 A3+1
+#define ftgsvd_LONGV_A5 A3+1
+#define ftgsvd_LONGV_A6 A3+1
+#define ftgsvd_LONGV_A7 A3+1
 FCALLSCSUB11(ffgsvd,FTGSVD,ftgsvd,FITSUNIT,INT,INT,LONGV,LONGV,LONGV,LONGV,DOUBLE,DOUBLEV,PLOGICAL,PINT)
 
 
@@ -858,10 +861,10 @@ void Cffgsfb( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, lon
    ffgsfb( fptr, colnum, naxis, naxes, blc, trc, inc, array, Cflagval, anynul, status );   
    C2FcopyLogVect(nflagval, flagval, Cflagval);
 }
-#define ftgsfb_LONGV_A4 A3
-#define ftgsfb_LONGV_A5 A3
-#define ftgsfb_LONGV_A6 A3
-#define ftgsfb_LONGV_A7 A3
+#define ftgsfb_LONGV_A4 A3+1
+#define ftgsfb_LONGV_A5 A3+1
+#define ftgsfb_LONGV_A6 A3+1
+#define ftgsfb_LONGV_A7 A3+1
 FCALLSCSUB11(Cffgsfb,FTGSFB,ftgsfb,FITSUNIT,INT,INT,LONGV,LONGV,LONGV,LONGV,BYTEV,INTV,PLOGICAL,PINT)
 
 /*   Must handle LOGICALV conversion manually   */
@@ -877,10 +880,10 @@ void Cffgsfi( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, lon
    ffgsfi( fptr, colnum, naxis, naxes, blc, trc, inc, array, Cflagval, anynul, status );   
    C2FcopyLogVect(nflagval, flagval, Cflagval);
 }
-#define ftgsfi_LONGV_A4 A3
-#define ftgsfi_LONGV_A5 A3
-#define ftgsfi_LONGV_A6 A3
-#define ftgsfi_LONGV_A7 A3
+#define ftgsfi_LONGV_A4 A3+1
+#define ftgsfi_LONGV_A5 A3+1
+#define ftgsfi_LONGV_A6 A3+1
+#define ftgsfi_LONGV_A7 A3+1
 FCALLSCSUB11(Cffgsfi,FTGSFI,ftgsfi,FITSUNIT,INT,INT,LONGV,LONGV,LONGV,LONGV,SHORTV,INTV,PLOGICAL,PINT)
 
 /*   Must handle LOGICALV conversion manually   */
@@ -896,16 +899,16 @@ void Cffgsfk( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, lon
    ffgsfk( fptr, colnum, naxis, naxes, blc, trc, inc, array, Cflagval, anynul, status );   
    C2FcopyLogVect(nflagval, flagval, Cflagval);
 }
-#define ftgsfk_LONGV_A4 A3
-#define ftgsfk_LONGV_A5 A3
-#define ftgsfk_LONGV_A6 A3
-#define ftgsfk_LONGV_A7 A3
+#define ftgsfk_LONGV_A4 A3+1
+#define ftgsfk_LONGV_A5 A3+1
+#define ftgsfk_LONGV_A6 A3+1
+#define ftgsfk_LONGV_A7 A3+1
 FCALLSCSUB11(Cffgsfk,FTGSFK,ftgsfk,FITSUNIT,INT,INT,LONGV,LONGV,LONGV,LONGV,INTV,INTV,PLOGICAL,PINT)
 
-#define ftgsfj_LONGV_A4 A3
-#define ftgsfj_LONGV_A5 A3
-#define ftgsfj_LONGV_A6 A3
-#define ftgsfj_LONGV_A7 A3
+#define ftgsfj_LONGV_A4 A3+1
+#define ftgsfj_LONGV_A5 A3+1
+#define ftgsfj_LONGV_A6 A3+1
+#define ftgsfj_LONGV_A7 A3+1
 FCALLSCSUB11(Cffgsfk,FTGSFJ,ftgsfj,FITSUNIT,INT,INT,LONGV,LONGV,LONGV,LONGV,INTV,INTV,PLOGICAL,PINT)
 
 /*   Must handle LOGICALV conversion manually   */
@@ -921,10 +924,10 @@ void Cffgsfe( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, lon
    ffgsfe( fptr, colnum, naxis, naxes, blc, trc, inc, array, Cflagval, anynul, status );   
    C2FcopyLogVect(nflagval, flagval, Cflagval);
 }
-#define ftgsfe_LONGV_A4 A3
-#define ftgsfe_LONGV_A5 A3
-#define ftgsfe_LONGV_A6 A3
-#define ftgsfe_LONGV_A7 A3
+#define ftgsfe_LONGV_A4 A3+1
+#define ftgsfe_LONGV_A5 A3+1
+#define ftgsfe_LONGV_A6 A3+1
+#define ftgsfe_LONGV_A7 A3+1
 FCALLSCSUB11(Cffgsfe,FTGSFE,ftgsfe,FITSUNIT,INT,INT,LONGV,LONGV,LONGV,LONGV,FLOATV,INTV,PLOGICAL,PINT)
 
 /*   Must handle LOGICALV conversion manually   */
@@ -940,10 +943,10 @@ void Cffgsfd( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, lon
    ffgsfd( fptr, colnum, naxis, naxes, blc, trc, inc, array, Cflagval, anynul, status );   
    C2FcopyLogVect(nflagval, flagval, Cflagval);
 }
-#define ftgsfd_LONGV_A4 A3
-#define ftgsfd_LONGV_A5 A3
-#define ftgsfd_LONGV_A6 A3
-#define ftgsfd_LONGV_A7 A3
+#define ftgsfd_LONGV_A4 A3+1
+#define ftgsfd_LONGV_A5 A3+1
+#define ftgsfd_LONGV_A6 A3+1
+#define ftgsfd_LONGV_A7 A3+1
 FCALLSCSUB11(Cffgsfd,FTGSFD,ftgsfd,FITSUNIT,INT,INT,LONGV,LONGV,LONGV,LONGV,DOUBLEV,INTV,PLOGICAL,PINT)
 
 FCALLSCSUB6(ffggpb,FTGGPB,ftggpb,FITSUNIT,LONG,LONG,LONG,BYTEV,PINT)
