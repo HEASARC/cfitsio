@@ -26,9 +26,10 @@ libcfitsio.a:	psplit
 		cp *.h split.$$$$; \
 		cd split.$$$$ ; \
 		../psplit ${SOURCES} ; \
+		rm -f ${SOURCES} ; \
 		echo "cfitsio: compiling split c files..."; \
-		${CC} -c ${CFLAGS} tmp*.c; \
-		ar rv libcfitsio.a tmp*.o; \
+		${CC} -c ${CFLAGS} *.c; \
+		ar rv libcfitsio.a *.o; \
 		${RANLIB} libcfitsio.a; \
 		mv libcfitsio.a .. ;
 
