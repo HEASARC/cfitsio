@@ -58,8 +58,8 @@
 
 /*****  Internal functions  *****/
 
-static int find_keywd( char *key, YYSTYPE *lval );
-static int build_column_array( char *colname, YYSTYPE *lval );
+static int find_keywd( char *key, YYSTYPE *thelval );
+static int build_column_array( char *colname, YYSTYPE *thelval );
 static int find_column( char *colname );
 static int expr_read( char *buf, int nbytes );
 
@@ -450,15 +450,15 @@ static int find_column(char *colname)
 /* Public entry point for calls from eval.y */
 int yybuildcolumn( char *ColName, long *ColNum )
 {
-   YYSTYPE lval;
+   YYSTYPE thelval;
    int type;
 
-   type = build_column_array( ColName, &lval );
-   *ColNum = lval.lng;
+   type = build_column_array( ColName, &thelval );
+   *ColNum = thelval.lng;
    return( type );
 }
 
-static int build_column_array( char *colname, YYSTYPE *lval )
+static int build_column_array( char *colname, YYSTYPE *thelval )
 {
    int col_cnt, status;
    int colnum, typecode;
@@ -559,11 +559,11 @@ static int build_column_array( char *colname, YYSTYPE *lval )
       strcpy(gParse.colData[col_cnt].colname,colname);
       gParse.nCols++;
    }
-   lval->lng = col_cnt;
+   thelval->lng = col_cnt;
    return( gParse.colInfo[col_cnt].type );
 }
 
-static int find_keywd(char *keyname, YYSTYPE *lval )
+static int find_keywd(char *keyname, YYSTYPE *thelval )
 {
    int status, type;
    char keyvalue[71], dtype;
@@ -590,22 +590,22 @@ static int find_keywd(char *keyname, YYSTYPE *lval )
    case 'C':
       fits_read_key_str( fptr, keyname, keyvalue, NULL, &status );
       type = STRING;
-      strcpy( lval->str , keyvalue );
+      strcpy( thelval->str , keyvalue );
       break;
    case 'L':
       fits_read_key_log( fptr, keyname, &bval, NULL, &status );
       type = BOOLEAN;
-      lval->log = bval;
+      thelval->log = bval;
       break;
    case 'I':
       fits_read_key_lng( fptr, keyname, &ival, NULL, &status );
       type = LONG;
-      lval->lng = ival;
+      thelval->lng = ival;
       break;
    case 'F':
       fits_read_key_dbl( fptr, keyname, &rval, NULL, &status );
       type = DOUBLE;
-      lval->dbl = rval;
+      thelval->dbl = rval;
       break;
    default:
       type = ERROR;

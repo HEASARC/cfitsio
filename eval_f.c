@@ -397,7 +397,7 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
    FILE *fexpr;
    Node *result;
    char line[1024];
-   int  i,lexpr,len,mlen,type;
+   int  i,lexpr,len,mlen;
 
    if( *status ) return( *status );
 
@@ -508,7 +508,7 @@ void ffcprs( void )  /*  No parameters                                      */
       if( gParse.colNulls[0] )
          for( col=0; col<gParse.nCols; col++ ) {
             if( gParse.colInfo[col].type == BITSTR )
-               free( ((char**)gParse.colNulls[col])[0] );
+               free( ((char***)gParse.colNulls)[col][0] );
             free( gParse.colNulls[col] );
          }
       free( gParse.colNulls );

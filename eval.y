@@ -98,7 +98,7 @@ static int  New_Func  ( int returnType, funcOp Op, int nNodes,
 			int Node5, int Node6, int Node7 );
 static int  New_Deref ( int Var,  int nDim,
 			int Dim1, int Dim2, int Dim3, int Dim4, int Dim5 );
-static int  New_GTI   ( char *fname, int Node, char *start, char *stop );
+static int  New_GTI   ( char *fname, int Node1, char *start, char *stop );
 static int  Test_Dims ( int Node1, int Node2 );
 
 static void Allocate_Ptrs( Node *this );
@@ -982,11 +982,10 @@ static int New_Deref( int Var,  int nDim,
 static int New_GTI( char *fname, int Node1, char *start, char *stop )
 {
    fitsfile *fptr;
-   Node *this, *that1, *that0;
+   Node *this, *that0;
    int  type,i,n, startCol, stopCol, Node0;
    int  hdutype, hdunum, evthdu, samefile, extvers, movetotype, tstat;
    char extname[100];
-   int  allDigits, endBracket;
    long colnum, nrows;
    double timeZeroI[2], timeZeroF[2], dt, timeSpan;
 
@@ -1127,41 +1126,40 @@ static int New_GTI( char *fname, int Node1, char *start, char *stop )
       that0                = gParse.Nodes + Node0;
       that0->operation     = -1000;
       that0->DoOp          = NULL;
+      that0->value.data.ptr= NULL;
 
       /*  Read in START/STOP times  */
 
       if( ffgkyj( fptr, "NAXIS2", &nrows, NULL, &gParse.status ) )
 	 return(-1);
-      if( !nrows ) {
-	 yyerror("GTI extension is empty.");
-	 return(-1);
-      }
       that0->value.nelem = nrows;
+      if( nrows ) {
 
-      that0->value.data.dblptr = (double*)malloc( 2*nrows*sizeof(double) );
-      if( !that0->value.data.dblptr ) {
-	 gParse.status = MEMORY_ALLOCATION;
-	 return(-1);
-      }
-
-      ffgcvd( fptr, startCol, 1L, 1L, nrows, 0.0,
-	      that0->value.data.dblptr, &i, &gParse.status );
-      ffgcvd( fptr, stopCol, 1L, 1L, nrows, 0.0,
-	      that0->value.data.dblptr+nrows, &i, &gParse.status );
-      if( gParse.status ) {
-	 free( that0->value.data.dblptr );
-	 return(-1);
-      }
-
-      /*  Handle TIMEZERO offset, if any  */
-
-      dt = (timeZeroI[1] - timeZeroI[0]) + (timeZeroF[1] - timeZeroF[0]);
-      timeSpan = that0->value.data.dblptr[nrows+nrows-1]
-	         - that0->value.data.dblptr[0];
-
-      if( fabs( dt / timeSpan ) > 1e-12 ) {
-	 for( i=0; i<(nrows+nrows); i++ )
-	    that0->value.data.dblptr[i] += dt;
+	 that0->value.data.dblptr = (double*)malloc( 2*nrows*sizeof(double) );
+	 if( !that0->value.data.dblptr ) {
+	    gParse.status = MEMORY_ALLOCATION;
+	    return(-1);
+	 }
+	 
+	 ffgcvd( fptr, startCol, 1L, 1L, nrows, 0.0,
+		 that0->value.data.dblptr, &i, &gParse.status );
+	 ffgcvd( fptr, stopCol, 1L, 1L, nrows, 0.0,
+		 that0->value.data.dblptr+nrows, &i, &gParse.status );
+	 if( gParse.status ) {
+	    free( that0->value.data.dblptr );
+	    return(-1);
+	 }
+	 
+	 /*  Handle TIMEZERO offset, if any  */
+	 
+	 dt = (timeZeroI[1] - timeZeroI[0]) + (timeZeroF[1] - timeZeroF[0]);
+	 timeSpan = that0->value.data.dblptr[nrows+nrows-1]
+	    - that0->value.data.dblptr[0];
+	 
+	 if( fabs( dt / timeSpan ) > 1e-12 ) {
+	    for( i=0; i<(nrows+nrows); i++ )
+	       that0->value.data.dblptr[i] += dt;
+	 }
       }
    }
 
@@ -1259,7 +1257,7 @@ void Reset_Parser( long firstRow, long rowOffset, long nRows )
       case BITSTR:
       /* No need for UNDEF array, but must make string DATA array */
 	 len = (nelem+1)*nRows;   /* Count '\0' */
-	 bitStrs = (char**)gParse.colNulls[i];
+	 bitStrs = ((char***)gParse.colNulls)[i];
 	 if( bitStrs ) free( bitStrs[0] );
 	 free( bitStrs );
 	 bitStrs = (char**)malloc( nRows*sizeof(char*) );
@@ -1347,7 +1345,7 @@ void Reset_Parser( long firstRow, long rowOffset, long nRows )
       if( gParse.status ) {  /*  Deallocate NULL arrays of previous columns */
 	 while( i-- ) {
 	    if( gParse.colInfo[i].type==BITSTR )
-	       free( ((char**)gParse.colNulls[i])[0] );
+	       free( ((char***)gParse.colNulls)[i][0] );
 	    free( gParse.colNulls[i] );
 	    gParse.colNulls[i] = NULL;
 	 }
@@ -1368,7 +1366,7 @@ void Reset_Parser( long firstRow, long rowOffset, long nRows )
 
       switch( gParse.Nodes[i].type ) {
       case BITSTR:
-	 gParse.Nodes[i].value.data.strptr = (char**)gParse.colNulls[column];
+	 gParse.Nodes[i].value.data.strptr = ((char***)gParse.colNulls)[column];
 	 gParse.Nodes[i].value.undef       = NULL;
 	 break;
       case STRING:
@@ -1430,6 +1428,7 @@ static void Allocate_Ptrs( Node *this )
       case DOUBLE:  size = sizeof( double ); break;
       case LONG:    size = sizeof( long   ); break;
       case BOOLEAN: size = sizeof( char   ); break;
+      default:      size = 1;                break;
       }
 
       this->value.data.ptr = malloc( elem*(size+1) );
@@ -1538,7 +1537,7 @@ static void Do_Unary( Node *this )
 static void Do_BinOp_bit( Node *this )
 {
    Node *that1, *that2;
-   char *sptr1, *sptr2;
+   char *sptr1=NULL, *sptr2=NULL;
    int  const1, const2;
    long rows;
 
@@ -1547,8 +1546,8 @@ static void Do_BinOp_bit( Node *this )
 
    const1 = ( that1->operation==-1000 );
    const2 = ( that2->operation==-1000 );
-   if( const1 ) sptr1 = that1->value.data.str;
-   if( const2 ) sptr2 = that2->value.data.str;
+   sptr1  = ( const1 ? that1->value.data.str : NULL );
+   sptr2  = ( const2 ? that2->value.data.str : NULL );
 
    if( const1 && const2 ) {
       switch( this->operation ) {
@@ -1653,7 +1652,7 @@ static void Do_BinOp_bit( Node *this )
 static void Do_BinOp_str( Node *this )
 {
    Node *that1, *that2;
-   char *sptr1, *sptr2, null1, null2;
+   char *sptr1, *sptr2, null1=0, null2=0;
    int const1, const2, val;
    long rows;
 
@@ -1662,14 +1661,8 @@ static void Do_BinOp_str( Node *this )
 
    const1 = ( that1->operation==-1000 );
    const2 = ( that2->operation==-1000 );
-   if( const1 ) {
-      sptr1 = that1->value.data.str;
-      null1 = 0;
-   }
-   if( const2 ) {
-      sptr2 = that2->value.data.str;
-      null2 = 0;
-   }
+   sptr1  = ( const1 ? that1->value.data.str : NULL );
+   sptr2  = ( const2 ? that2->value.data.str : NULL );
 
    if( const1 && const2 ) {  /*  Result is a constant  */
       switch( this->operation ) {
@@ -1751,7 +1744,7 @@ static void Do_BinOp_log( Node *this )
 {
    Node *that1, *that2;
    int vector1, vector2;
-   char val1, val2, null1, null2;
+   char val1=0, val2=0, null1=0, null2=0;
    long rows, nelem, elem;
 
    that1 = gParse.Nodes + this->SubNodes[0];
@@ -1762,7 +1755,6 @@ static void Do_BinOp_log( Node *this )
       vector1 = that1->value.nelem;
    else {
       val1  = that1->value.data.log;
-      null1 = 0;
    }
 
    vector2 = ( that2->operation!=-1000 );
@@ -1770,7 +1762,6 @@ static void Do_BinOp_log( Node *this )
       vector2 = that2->value.nelem;
    else {
       val2  = that2->value.data.log;
-      null2 = 0;
    }
 
    if( !vector1 && !vector2 ) {  /*  Result is a constant  */
@@ -1865,8 +1856,8 @@ static void Do_BinOp_lng( Node *this )
 {
    Node *that1, *that2;
    int  vector1, vector2;
-   long val1, val2;
-   char null1, null2;
+   long val1=0, val2=0;
+   char null1=0, null2=0;
    long rows, nelem, elem;
 
    that1 = gParse.Nodes + this->SubNodes[0];
@@ -1877,7 +1868,6 @@ static void Do_BinOp_lng( Node *this )
       vector1 = that1->value.nelem;
    else {
       val1  = that1->value.data.lng;
-      null1 = 0;
    }
 
    vector2 = ( that2->operation!=-1000 );
@@ -1885,7 +1875,6 @@ static void Do_BinOp_lng( Node *this )
       vector2 = that2->value.nelem;
    else {
       val2  = that2->value.data.lng;
-      null2 = 0;
    }
 
    if( !vector1 && !vector2 ) {  /*  Result is a constant  */
@@ -1994,8 +1983,8 @@ static void Do_BinOp_dbl( Node *this )
 {
    Node   *that1, *that2;
    int    vector1, vector2;
-   double val1, val2;
-   char   null1, null2;
+   double val1=0.0, val2=0.0;
+   char   null1=0, null2=0;
    long   rows, nelem, elem;
 
    that1 = gParse.Nodes + this->SubNodes[0];
@@ -2006,7 +1995,6 @@ static void Do_BinOp_dbl( Node *this )
       vector1 = that1->value.nelem;
    else {
       val1  = that1->value.data.dbl;
-      null1 = 0;
    }
 
    vector2 = ( that2->operation!=-1000 );
@@ -2014,7 +2002,6 @@ static void Do_BinOp_dbl( Node *this )
       vector2 = that2->value.nelem;
    else {
       val2  = that2->value.data.dbl;
-      null2 = 0;
    } 
 
    if( !vector1 && !vector2 ) {  /*  Result is a constant  */
@@ -2846,7 +2833,7 @@ static void Do_GTI( Node *this )
 {
    Node *theExpr, *theTimes;
    double *start, *stop, *times;
-   long row, nGTI, i, lastGTI;
+   long row, nGTI, i;
 
    theTimes = gParse.Nodes + this->SubNodes[0];
    theExpr  = gParse.Nodes + this->SubNodes[1];
@@ -2863,18 +2850,24 @@ static void Do_GTI( Node *this )
 
       i = 0;
       row = gParse.nRows;
-      while( row-- ) {
-	 this->value.undef[row] = theExpr->value.undef[row];
+      if( nGTI )
+	 while( row-- ) {
+	    this->value.undef[row] = theExpr->value.undef[row];
 
-	 /*  Before searching entire GTI, check the GTI found last time  */
-	 if( i<0 || times[row]<start[i] || times[row]>stop[i] ) {
-	    i = nGTI;
-	    while( i-- )
-	       if( times[row]>=start[i] && times[row]<=stop[i] )
-		  break;
+	    /*  Before searching entire GTI, check the GTI found last time  */
+	    if( i<0 || times[row]<start[i] || times[row]>stop[i] ) {
+	       i = nGTI;
+	       while( i-- )
+		  if( times[row]>=start[i] && times[row]<=stop[i] )
+		     break;
+	    }
+	    this->value.data.logptr[row] = ( i>=0 );
 	 }
-	 this->value.data.logptr[row] = ( i>=0 );
-      }
+      else
+	 while( row-- ) {
+	    this->value.data.logptr[row] = 0;
+	    this->value.undef[row]       = 0;
+	 }
 
    }
 
@@ -3094,16 +3087,16 @@ static char near(double x, double y, double tolerance)
 static char saobox(double xcen, double ycen, double xwid, double ywid,
 		   double rot,  double xcol, double ycol)
 {
- double x0,y0,xprime,yprime,xmin,xmax,ymin,ymax,theta;
+ double x,y,xprime,yprime,xmin,xmax,ymin,ymax,theta;
 
  theta = (rot / 180.0) * myPI;
  xprime = xcol - xcen;
  yprime = ycol - ycen;
- x0 =  xprime * cos(theta) + yprime * sin(theta);
- y0 = -xprime * sin(theta) + yprime * cos(theta);
+ x =  xprime * cos(theta) + yprime * sin(theta);
+ y = -xprime * sin(theta) + yprime * cos(theta);
  xmin = - 0.5 * xwid; xmax = 0.5 * xwid;
  ymin = - 0.5 * ywid; ymax = 0.5 * ywid;
- if ((x0 >= xmin) && (x0 <= xmax) && (y0 >= ymin) && (y0 <= ymax))
+ if ((x >= xmin) && (x <= xmax) && (y >= ymin) && (y <= ymax))
    return ( 1 );
  else
    return ( 0 );
@@ -3128,14 +3121,14 @@ static char circle(double xcen, double ycen, double rad,
 static char ellipse(double xcen, double ycen, double xrad, double yrad,
 		    double rot, double xcol, double ycol)
 {
- double x0,y0,xprime,yprime,dx,dy,dlen,theta;
+ double x,y,xprime,yprime,dx,dy,dlen,theta;
 
  theta = (rot / 180.0) * myPI;
  xprime = xcol - xcen;
  yprime = ycol - ycen;
- x0 =  xprime * cos(theta) + yprime * sin(theta);
- y0 = -xprime * sin(theta) + yprime * cos(theta);
- dx = x0 / xrad; dy = y0 / yrad;
+ x =  xprime * cos(theta) + yprime * sin(theta);
+ y = -xprime * sin(theta) + yprime * cos(theta);
+ dx = x / xrad; dy = y / yrad;
  dx *= dx; dy *= dy;
  dlen = dx + dy;
  if (dlen <= 1.0)
