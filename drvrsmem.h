@@ -8,11 +8,15 @@
 */
 
 
-#include <sys/ipc.h>			/* this is necessary for Solaris/Linux */
+#include <sys/ipc.h>		/* this is necessary for Solaris/Linux */
 #include <sys/shm.h>
 #include <sys/sem.h>
-#include <sys/fcntl.h>
 
+#ifdef _AIX
+#include <fcntl.h>
+#else
+#include <sys/fcntl.h>
+#endif
 
 		/* configuration parameters */
 
@@ -126,7 +130,7 @@ typedef struct flock flock_t;
 union semun
       {	int val;
 	struct semid_ds *buf;
-	ushort *array;
+	unsigned short *array;
       };
 #define HAVE_UNION_SEMUN
 #endif

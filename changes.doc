@@ -1,5 +1,8 @@
                Log of Changes Made to CFITSIO
 
+   - modified the iterator to support null values in logical columns in
+     binary tables.
+
    - fixed bug in iterator to support null values in integer columns in
      ASCII tables.
 

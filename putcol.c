@@ -1043,8 +1043,8 @@ int ffiter(int n_cols,
           cols[jj].array = calloc(ntodo + 1, sizeof(char));
           col[jj].nullsize  = sizeof(char);  /* number of bytes per value */
 
-          /* null values not currently supported for logical columns */
-          col[jj].null.charnull = 0;
+          /* use value = 2 to flag null values in logical columns */
+          col[jj].null.charnull = 2;
           break;
 
          default:

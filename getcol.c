@@ -266,7 +266,12 @@ int ffgcv(  fitsfile *fptr,   /* I - FITS file pointer                       */
 
     else if (datatype == TLOGICAL)
     {
-       ffgcl(fptr, colnum, firstrow, firstelem, nelem, (char *) array, status);
+      if (nulval == 0)
+        ffgcll(fptr, colnum, firstrow, firstelem, nelem, 1, 0,
+          (char *) array, cdummy, anynul, status);
+      else
+        ffgcll(fptr, colnum, firstrow, firstelem, nelem, 1, *(char *) nulval,
+          (char *) array, cdummy, anynul, status);
     }
     else if (datatype == TSTRING)
     {
