@@ -634,7 +634,9 @@ int ffflsh(fitsfile *fptr,        /* I - FITS file pointer           */
       }
     }
 
-    ffflushx(fptr->Fptr);  /* flush system buffers to disk */
+    if (*status != READONLY_FILE)
+      ffflushx(fptr->Fptr);  /* flush system buffers to disk */
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -681,7 +683,7 @@ int ffbfwt(int nbuff,             /* I - which buffer to write          */
     {
         ffpmsg("Error: trying to write to READONLY file.");
         dirty[nbuff] = FALSE;  /* reset buffer status to prevent later probs */
-        *status = WRITE_ERROR;
+        *status = READONLY_FILE;
         return(*status);
     }
 

@@ -74,11 +74,12 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
   Returns a formated string value, regardless of the datatype of the column
 */
 {
-    int tcode, hdutype, tstatus, scaled, intcol, dwidth, nulwidth;
+    int tcode, hdutype, tstatus, scaled, intcol, dwidth, nulwidth, ll;
     long ii, jj;
     tcolumn *colptr;
     char message[FLEN_ERRMSG], *carray, keyname[FLEN_KEYWORD];
     char cform[20], dispfmt[20], tmpstr[80];
+    unsigned char byteval;
     float *earray;
     double *darray, tscale = 1.0;
 
@@ -324,12 +325,12 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
             if (scaled && tcode <= TSHORT)
             {
                   /* scaled short integer column == float */
-                  strcpy(cform, "%14.6G");
+                  strcpy(cform, "%#14.6G");
             }
             else if (scaled && tcode == TLONG)
             {
                   /* scaled long integer column == double */
-                  strcpy(cform, "%23.15G");
+                  strcpy(cform, "%#23.15G");
             }
             else
             {
@@ -342,16 +343,18 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
                else
                {
                  /* this is a binary table, need to convert the format */
-                  if (tcode <= TBYTE) {         /* 'X' and 'B' */
+                  if (tcode == TBIT) {            /* 'X' */
+                     strcpy(cform, "%4d");
+                  } else if (tcode == TBYTE) {           /* 'B' */
                      strcpy(cform, "%4d");
                   } else if (tcode == TSHORT) {   /* 'I' */
                      strcpy(cform, "%6d");
                   } else if (tcode == TLONG) {    /* 'J' */
                      strcpy(cform, "%11d");
                   } else if (tcode == TFLOAT) {   /* 'E' */
-                     strcpy(cform, "%14.6E");
+                     strcpy(cform, "%#14.6G");
                   } else if (tcode == TDOUBLE) {  /* 'D' */
-                     strcpy(cform, "%23.15E");
+                     strcpy(cform, "%#23.15G");
                   }
                }
             }
@@ -361,8 +364,21 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
       nulwidth = strlen(nulval);
       for (ii = 0; ii < nelem; ii++)
       {
+           if (tcode == TBIT)
+           {
+               byteval = (char) darray[ii];
+
+               for (ll=0; ll < 8; ll++)
+               {
+                   if ( ((unsigned char) (byteval << ll)) >> 7 )
+                       *(array[ii] + ll) = '1';
+                   else
+                       *(array[ii] + ll) = '0';
+               }
+               *(array[ii] + 8) = '\0';
+           }
            /* test for null value */
-           if ( (nultyp == 1 && darray[ii] == DOUBLENULLVALUE) ||
+           else if ( (nultyp == 1 && darray[ii] == DOUBLENULLVALUE) ||
                 (nultyp == 2 && nularray[ii]) )
            {
               *array[ii] = '\0';
@@ -471,12 +487,12 @@ int ffgcdw( fitsfile *fptr,   /* I - FITS file pointer                       */
 
         if (scaled && tcode <= TSHORT)
         {
-            /* scaled short integer col == float; default format is 14.6E */
+            /* scaled short integer col == float; default format is 14.6G */
             *width = 14;
         }
         else if (scaled && tcode == TLONG)
         {
-            /* scaled long integer col == double; default format is 23.15E */
+            /* scaled long integer col == double; default format is 23.15G */
             *width = 23;
         }
         else
@@ -494,7 +510,9 @@ int ffgcdw( fitsfile *fptr,   /* I - FITS file pointer                       */
            else
            {
                  /* this is a binary table */
-                  if (tcode <= TBYTE)          /* 'X' and 'B' */
+                  if (tcode == TBIT)           /* 'X' */
+                     *width = 8;
+                  else if (tcode == TBYTE)          /* 'B' */
                      *width = 4;
                   else if (tcode == TSHORT)    /* 'I' */
                      *width = 6;

@@ -687,6 +687,13 @@ int ffrwrg(
            while (*next == ' ')next++;   /* skip more spaces */
       }
     }
+
+    if (*numranges == 0) {  /* a null string was entered */
+         minrow[0] = 1;
+         maxrow[0] = maxrows;
+         *numranges = 1;
+    }
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
