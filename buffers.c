@@ -32,7 +32,6 @@ int ffmbyt(fitsfile *fptr,    /* I - FITS file pointer                */
   or simply ignored.
 */
     long record;
-/*    extern long bufrecnum[NIOBUF]; */
 
     if (*status > 0)
        return(*status);
@@ -607,9 +606,12 @@ int ffflsh(fitsfile *fptr,        /* I - FITS file pointer           */
 */
     int ii;
 
+/*
+   no need to move to a different HDU
+
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
-
+*/
     for (ii = 0; ii < NIOBUF; ii++)
     {
       if (bufptr[ii] == fptr->Fptr)

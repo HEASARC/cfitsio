@@ -268,22 +268,23 @@ extern "C" {
 
 /*----------------  FITS file URL parsing routines -------------*/
 int fits_get_token(char **ptr, char *delimiter, char *token, int *isanumber);
-int fits_parse_input_url(char *url,  char *urltype, char *infile,
+int ffiurl(char *url,  char *urltype, char *infile,
                     char *outfile, char *extspec, char *rowfilter,
-                    char *binspec, char *colspec);
-int fits_parse_output_url(char *url, char *urltype, char *outfile);
-int fits_parse_extspec(char *extspec, int *extnum,  char *extname,
-                       int *extvers, int *hdutype);
-int ffextn(char *url, int *extension_num);
-int fits_parse_binspec(char *binspec, int *imagetype, int *haxis, 
+                    char *binspec, char *colspec, int *status);
+int ffrtnm(char *url, char *rootname, int *status);
+int ffourl(char *url, char *urltype, char *outfile, int *status);
+int ffexts(char *extspec, int *extnum,  char *extname,
+                       int *extvers, int *hdutype, int *status);
+int ffextn(char *url, int *extension_num, int *status);
+int ffbins(char *binspec, int *imagetype, int *haxis, 
                       char colname[4][FLEN_VALUE], double *minin,
                       double *maxin, double *binsizein,
                       char minname[4][FLEN_VALUE], char maxname[4][FLEN_VALUE],
                       char binname[4][FLEN_VALUE], double *weight, char *wtname,
-                      int *recip);
-int fits_parse_binrange(char **binspec, char *colname, double *minin, 
+                      int *recip, int *status);
+int ffbinr(char **binspec, char *colname, double *minin, 
                         double *maxin, double *binsizein, char *minname,
-                        char *maxname, char *binname);
+                        char *maxname, char *binname, int *status);
 
 /*----------------  FITS file I/O routines -------------*/
 int ffomem(fitsfile **fptr, const char *name, int mode, void **buffptr,

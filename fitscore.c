@@ -22,7 +22,7 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.003;   /*  beta I/O driver release */
+      *version = 2.004;   /*  beta I/O driver release */
 
  /*   *version = 1.40;    6 Feb 1998 */
  /*   *version = 1.33;   16 Dec 1997 (internal release only) */
@@ -3351,8 +3351,15 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
         ffpdfl(fptr, status);  /* insure correct data file values */
     }
 
-    free((fptr->Fptr)->tableptr);      /* free memory for the CHDU structure */
-    (fptr->Fptr)->tableptr = 0;
+    if ((fptr->Fptr)->open_count == 1)
+    {
+    /* free memory for the CHDU structure only if no other files are using it */
+        if ((fptr->Fptr)->tableptr)
+        {
+            free((fptr->Fptr)->tableptr);
+           (fptr->Fptr)->tableptr = NULL;
+        }
+    }
 
     if (*status > 0)
     {
@@ -4085,6 +4092,7 @@ int ffgext(fitsfile *fptr,      /* I - FITS file pointer                */
             (fptr->Fptr)->headend = xheadend;
         }
     }
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

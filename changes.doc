@@ -10,6 +10,7 @@
    - major modification to support opening the same FITS file more
      than once.  Now one can open the same file multiple times and
      read and write simulataneously to different HDUs within the file.
+     fits_open_file automatically detects if the file is already opened.
 
    - added the ability to clobber/overwrite an existing file
      with the same name when creating a new output file.  Just

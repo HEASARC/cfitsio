@@ -265,22 +265,37 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
                           ffwritehisto, NULL, status) )
          return(*status);
 
-    /* write the World Coordinate System keywords if present in the table */
+    /* write the World Coordinate System (WCS) keywords */
+    /* create default values if WCS keywords are not present in the table */
     for (ii = 0; ii < haxis; ii++)
     {
        tstatus = 0;
        ffkeyn("TCTYP", hcolnum[ii], keyname, &tstatus);
        ffgky(*fptr, TSTRING, keyname, svalue, NULL, &tstatus);
+       if (tstatus)
+       {               /* just use column name as the type */
+          tstatus = 0;
+          ffkeyn("TTYPE", hcolnum[ii], keyname, &tstatus);
+          ffgky(*fptr, TSTRING, keyname, svalue, NULL, &tstatus);
+       }
+
        if (!tstatus)
        {
         ffkeyn("CTYPE", ii + 1, keyname, &tstatus);
         ffpky(histptr, TSTRING, keyname, svalue, "Coordinate Type", &tstatus);
        }
        else
-           tstatus = 0;
+          tstatus = 0;
 
        ffkeyn("TCUNI", hcolnum[ii], keyname, &tstatus);
        ffgky(*fptr, TSTRING, keyname, svalue, NULL, &tstatus);
+       if (tstatus)
+       {         /* use the column units */
+          tstatus = 0;
+          ffkeyn("TCUNI", hcolnum[ii], keyname, &tstatus);
+          ffgky(*fptr, TSTRING, keyname, svalue, NULL, &tstatus);
+       }
+
        if (!tstatus)
        {
         ffkeyn("CUNIT", ii + 1, keyname, &tstatus);
@@ -291,35 +306,38 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
 
        ffkeyn("TCRPX", hcolnum[ii], keyname, &tstatus);
        ffgky(*fptr, TDOUBLE, keyname, &dvalue, NULL, &tstatus);
-       if (!tstatus)
+       if (tstatus)
        {
-        dvalue = (dvalue - amin[ii] + .5) / binsize[ii] + .5;
-        ffkeyn("CRPIX", ii + 1, keyname, &tstatus);
-        ffpky(histptr, TDOUBLE, keyname, &dvalue, "Reference Pixel", &tstatus);
-       }
-       else
+         dvalue = 1.0;  /* pick a default reference pixel */
          tstatus = 0;
+       }
+
+       dvalue = (dvalue - amin[ii] + .5) / binsize[ii] + .5;
+       ffkeyn("CRPIX", ii + 1, keyname, &tstatus);
+       ffpky(histptr, TDOUBLE, keyname, &dvalue, "Reference Pixel", &tstatus);
 
        ffkeyn("TCRVL", hcolnum[ii], keyname, &tstatus);
        ffgky(*fptr, TDOUBLE, keyname, &dvalue, NULL, &tstatus);
-       if (!tstatus)
+       if (tstatus)
        {
-        ffkeyn("CRVAL", ii + 1, keyname, &tstatus);
-        ffpky(histptr, TDOUBLE, keyname, &dvalue, "Reference Value", &tstatus);
-       }
-       else
+         dvalue = 1.0;  /* pick a default reference value */
          tstatus = 0;
+       }
+
+       ffkeyn("CRVAL", ii + 1, keyname, &tstatus);
+       ffpky(histptr, TDOUBLE, keyname, &dvalue, "Reference Value", &tstatus);
 
        ffkeyn("TCDLT", hcolnum[ii], keyname, &tstatus);
        ffgky(*fptr, TDOUBLE, keyname, &dvalue, NULL, &tstatus);
-       if (!tstatus)
+       if (tstatus)
        {
-        dvalue = dvalue * binsize[ii];
-        ffkeyn("CDELT", ii + 1, keyname, &tstatus);
-        ffpky(histptr, TDOUBLE, keyname, &dvalue, "Pixel size", &tstatus);
-       }
-       else
+         dvalue = 1.0;  /* use default pixel size */
          tstatus = 0;
+       }
+
+       dvalue = dvalue * binsize[ii];
+       ffkeyn("CDELT", ii + 1, keyname, &tstatus);
+       ffpky(histptr, TDOUBLE, keyname, &dvalue, "Pixel size", &tstatus);
 
        ffkeyn("TCROT", hcolnum[ii], keyname, &tstatus);
        ffgky(*fptr, TDOUBLE, keyname, &dvalue, NULL, &tstatus);

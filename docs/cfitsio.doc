@@ -1870,9 +1870,11 @@ See the file README.filenames for further information.
 >2  Reopen a FITS file that was previously opened with 
     fits\_open\_file or fits\_create\_file.  The new fitsfile
     pointer may then be treated as a separate file, and one may
-    simultaneously read or write to 2 different extensions in
-    the same file.
-
+    simultaneously read or write to 2 (or more)  different extensions in
+    the same file.   The fits\_open\_file routine (above) automatically
+    detects cases where a previously opened file is being opened again,
+    and then internally call fits\_reopen\_file, so programs should rarely
+    need to explicitly call this routine.
 >\label{ffreopen}
 -
   int fits_reopen_file / ffreopen
@@ -1884,9 +1886,13 @@ See the file README.filenames for further information.
       (fitsfile **fptr, char *filename, > int *status)
 -
 >4   Create a new FITS file, using a template file to define its
-  initial size and structure.  The template may be another FITS file
+  initial size and structure.  The template may be another FITS HDU
   or an ASCII template file.  If the input template file name pointer
   is null, then this routine behaves the same as fits\_create\_file.
+  The currently supported format of the ASCII template file is described
+  under the fits\_parse\_template routiene (in the general Utilities 
+  section), but this may change slightly in the full v2.0 release of
+  CFITSIO.
 >\label{fftplt}
 -
   int fits_create_template / fftplt
@@ -1907,12 +1913,44 @@ See the file README.filenames for further information.
   int fits_file_mode / ffflmd
       (fitsfile *fptr, > int *iomode, int *status)
 -
->8 Parse the input filename and return the extension number that
-would be moved to if the file were opened with fits\_open\_file.
+>8  Parse the input filename or URL into its component parts: the file
+type (file://, ftp://, http://, etc), the base input file name, the
+name of the output file that the input file is to be copied to prior
+to opening, the HDU or extension specification, the filtering
+specifier, the binning specifier, and the column specifier.  Null
+strings will be returned for any components that are not present
+in the input file name.
+> \label{ffiurl}
+-
+  int fits_parse_input_url / ffiurl
+      (char *filename, > char *filetype, char *infile, char *outfile, char
+       *extspec, char *filter, char *binspec, char *colspec, int *status)
+-
+>9  Parse the input filename and return the extension number that would
+be moved to if the file were opened with fits\_open\_file.  If an
+extension name is included in the file name specification (e.g.
+"myfile.fits[EVENTS]" then this routine will have to open the FITS file
+and look for the position of the named extension.  This routine is mainly
+used for backward compatibility in the ftools software package and is
+not recommended for general use.  It is generally better and more
+efficient to open the FITS file with fits\_open\_file, then use
+fits\_get\_hdu\_num to determine which HDU in the file has been
+opened.
 > \label{ffextn}
 -
    int fits_parse_extnum / ffextn (char *filename, > int *hdunum)
 -
+>10 Parse the input file name and return the root file name.  The root
+name includes the file type if specified, (e.g.  'ftp://' or 'http://')
+and the full path name, to the extent that it is specified in the input
+filename.  It does not enclude the HDU name or number, or any filtering
+specifications.
+> \label{ffrtnm}
+-
+   int fits_parse_rootname / ffrtnm
+       (char *filename, > char *rootname, int *status);
+-
+
 
 **C.  HDU Access Routines\label{FFMAHD}
 
@@ -2421,8 +2459,8 @@ the first 8 characters, and strongly recommended that the names be
       (fitsfile *fptr, long firstrow, long nrows, > int *status)
 -
 >3  Delete a list of rows from an ASCII or binary table (in the CDU).
-    rownum is an array of row numbers to be deleted from the table.
-    (The first row in the table has rownum = 1 not 0).  The list of
+    rowlist is an array of row numbers to be deleted from the table.
+    (The first row in the table is 1 not 0).  The list of
     row numbers must be sorted in ascending order.  nrows is the
     number of row numbers in the list.
     The physical size of the FITS file may not be reduced by this
@@ -2430,7 +2468,7 @@ the first 8 characters, and strongly recommended that the names be
 >   at the end of the file will be padded with zeros. \label{ffdrws}
 -
   int fits_delete_rowlist / ffdrws
-      (fitsfile *fptr, long *rownum, long nrows, > int *status)
+      (fitsfile *fptr, long *rowlist, long nrows, > int *status)
 -
 >4  Insert a blank column (or columns) into an ASCII or binary
     table.  COLNUM specifies the column number that the (first)
@@ -4135,7 +4173,9 @@ fits\_movrel\_hdu     & \pageref{ffmrhd} \\
 \begin{tabular}{lr}
 fits\_open\_file      & \pageref{ffopen} \\
 fits\_open\_memfile   & \pageref{ffomem} \\
-fits\_parse\_extnum   & \label{ffextn} \\
+fits\_parse\_extnum   & \pageref{ffextn} \\
+fits\_parse\_input\_url & \pageref{ffiurl} \\
+fits\_parse\_rootname & \pageref{ffrtnm} \\
 fits\_parse\_template & \pageref{ffgthd} \\
 fits\_parse\_value    & \pageref{ffpsvc} \\
 fits\_pix\_to\_world & \pageref{ffwldp} \\
@@ -4243,6 +4283,7 @@ fits\_write\_theap    & \pageref{ffpthp} \\
 anynul   - set to TRUE (=1) if any returned values are undefined, else FALSE
 array    - array of numerical data values to read or write
 ascii    - encoded checksum string
+binspec  - the input table binning specifier
 bitpix   - bits per pixel. The following symbolic mnemonics are predefined: 
                BYTE_IMG   =   8 (unsigned char)
                SHORT_IMG  =  16 (signed short integer)
@@ -4258,6 +4299,8 @@ card     - header record to be read or written (80 char max, null-terminated)
 casesen  - CASESEN (=1) for case-sensitive string matching, else CASEINSEN (=0)
 colname  - name of the column (null-terminated)
 colnum   - column number (first column = 1)
+colspec  - the input file column specification; used to delete, create, or rename 
+           table columns
 comment  - the keyword comment field (72 char max, null-terminated)
 complm   - should the checksum be complemented?
 coordtype- type of coordinate projection (-SIN, -TAN, -ARC, -NCP, 
@@ -4291,8 +4334,11 @@ exact    - TRUE (=1) if the strings match exactly;
 exclist  - array of pointers to keyword names to be excluded from search
 extend   - TRUE (=1) if FITS file may have extensions, else FALSE (=0)
 extname  - value of the EXTNAME keyword (null-terminated)
+extspec  - the extension or HDU specifier; a number or name, version, and type
 extvers  - value of the EXTVERS keyword = integer version number
-filename - name of the FITS file (null-terminated)
+filename - full name of the FITS file, including optional HDU and filtering specs
+filetype - type of file (file://, ftp://, http://, etc.)
+filter   - the input file filtering specifier
 firstchar- starting byte in the row (first byte of row = 1)
 firstelem- first element in a vector (ignored for ASCII tables)
 firstrow - starting row number (first row of table = 1)
@@ -4312,6 +4358,7 @@ hour     - hour within day (UTC) (0 - 23)
 inc      - sampling interval for pixels in each FITS dimension
 inclist  - array of pointers to matching keyword names
 incolnum - input column number; range = 1 to TFIELDS
+infile   - the input filename, including path if specified
 infptr   - pointer to a 'fitsfile' structure describing the input FITS file.
 intval   - integer part of the keyword value
 iomode   - file access mode: either READONLY (=0) or READWRITE (=1)
@@ -4354,12 +4401,15 @@ numval   - numerical data value, of the appropriate datatype
 offset   -  byte offset in the heap to the first element of the vector
 openfptr - pointer to a currently open FITS file
 outcolnum- output column number; range = 1 to TFIELDS + 1
+outfile  - and optional output filename; the input file will be copied to this prior
+           to opening the file
 outfptr  - pointer to a 'fitsfile' structure describing the output FITS file.
 pcount   - value of the PCOUNT keyword = size of binary table heap
 repeat   - length of column vector (e.g. 12J); == 1 for ASCII table
-rownum   - sorted list of row numbers to be deleted from the table
+rootname - root filename, minus any extension or filtering specifications
 rot      - celestial coordinate rotation angle (degrees)
 rowlen   - length of a table row, in characters or bytes
+rowlist  - sorted list of row numbers to be deleted from the table
 rownum   - number of the row (first row = 1)
 scale    - linear scaling factor; true value = (FITS value) * scale + zero
 second   - second within minute (0 - 60.9999999999) (leapsecond!)

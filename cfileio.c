@@ -84,14 +84,14 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
         url++;
 
         /* parse the input file specification */
-    *status = fits_parse_input_url(url, urltype, infile, outfile, extspec,
-              rowfilter, binspec, colspec);
+    ffiurl(url, urltype, infile, outfile, extspec,
+              rowfilter, binspec, colspec, status);
 
     strcpy(urltype, "memkeep://");   /* URL type for pre-existing memory file */
 
     *status = urltype2driver(urltype, &driver);
 
-    if (*status)
+    if (*status > 0)
     {
         ffpmsg("could not find driver for pre-existing memory file: (ffomem)");
         return(*status);
@@ -101,7 +101,7 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
     *status =   mem_openmem( buffptr, buffsize,deltasize,
                             mem_realloc,  &handle);
 
-    if (*status)
+    if (*status > 0)
     {
          ffpmsg("failed to open pre-existing memory file: (ffomem)");
          return(*status);
@@ -110,7 +110,7 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
         /* get initial file size */
     *status = (*driverTable[driver].size)(handle, &filesize);
 
-    if (*status)
+    if (*status > 0)
     {
         (*driverTable[driver].close)(handle);  /* close the file */
         ffpmsg("failed get the size of the memory file: (ffomem)");
@@ -190,8 +190,8 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
     if (*extspec)
     {
        /* parse the extension specifier into individual parameters */
-       *status = fits_parse_extspec(extspec, &extnum, 
-                            extname, &extvers, &movetotype);
+       ffexts(extspec, &extnum, 
+                            extname, &extvers, &movetotype, status);
 
       if (*status > 0)
           return(*status);
@@ -296,10 +296,10 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     }
 
         /* parse the input file specification */
-    *status = fits_parse_input_url(url, urltype, infile, outfile, extspec,
-              rowfilter, binspec, colspec);
+    ffiurl(url, urltype, infile, outfile, extspec,
+              rowfilter, binspec, colspec, status);
 
-    if (*status)
+    if (*status > 0)
     {
         ffpmsg("could not parse the input filename: (ffopen)");
         ffpmsg(url);
@@ -312,11 +312,11 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
         ffcurbuf(ii, &oldFptr);  
         if (oldFptr)            /* this is the current buffer of a file */
         {
-          *status = fits_parse_input_url(oldFptr->filename, oldurltype, 
+          ffiurl(oldFptr->filename, oldurltype, 
                     oldinfile, oldoutfile, oldextspec, oldrowfilter, 
-                    oldbinspec, oldcolspec);
+                    oldbinspec, oldcolspec, status);
 
-          if (*status)
+          if (*status > 0)
           {
             ffpmsg("could not parse the previously opened filename: (ffopen)");
             ffpmsg(oldFptr->filename);
@@ -375,7 +375,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
 
     *status = urltype2driver(urltype, &driver);
 
-    if (*status)
+    if (*status > 0)
     {
         ffpmsg("could not find driver for this file: (ffopen)");
         ffpmsg(url);
@@ -400,7 +400,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
         if (strcmp(origurltype, urltype))  /* did driver changed on us? */
         {
             *status = urltype2driver(urltype, &driver);
-            if (*status)
+            if (*status > 0)
             {
                 ffpmsg("could not change driver for this file: (ffopen)");
                 ffpmsg(url);
@@ -414,7 +414,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     if (driverTable[driver].open)
     {
         *status =  (*driverTable[driver].open)(infile, mode, &handle);
-        if (*status)
+        if (*status > 0)
         {
             ffpmsg("failed to find or open the following file: (ffopen)");
             ffpmsg(url);
@@ -431,7 +431,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
         /* get initial file size */
     *status = (*driverTable[driver].size)(handle, &filesize);
 
-    if (*status)
+    if (*status > 0)
     {
         (*driverTable[driver].close)(handle);  /* close the file */
         ffpmsg("failed get the size of the following file: (ffopen)");
@@ -515,8 +515,8 @@ move2hdu:
     if (*extspec)
     {
        /* parse the extension specifier into individual parameters */
-       *status = fits_parse_extspec(extspec, &extnum, 
-                            extname, &extvers, &movetotype);
+       ffexts(extspec, &extnum, 
+                            extname, &extvers, &movetotype, status);
 
       if (*status > 0)
           return(*status);
@@ -587,10 +587,10 @@ move2hdu:
     if (*binspec)
     {
        /* parse the binning specifier into individual parameters */
-       *status = fits_parse_binspec(binspec, &imagetype, &haxis, colname, 
+       ffbins(binspec, &imagetype, &haxis, colname, 
                           minin, maxin, binsizein, 
                           minname, maxname, binname,
-                          &weight, wtcol, &recip);
+                          &weight, wtcol, &recip, status);
 
        /* Create the histogram in memory and open it as the current fptr.  */
        /* This will close the table that was used to create the histogram. */
@@ -616,14 +616,14 @@ int ffreopen(fitsfile *openfptr, /* I - FITS file pointer to open file  */
     /* check that the open file pointer is valid */
     if (!openfptr)
         return(*status = NULL_INPUT_PTR);
-    else if ((openfptr->Fptr)->validcode != VALIDSTRUC) /* check for magic value */
+    else if ((openfptr->Fptr)->validcode != VALIDSTRUC) /* check magic value */
         return(*status = BAD_FILEPTR); 
 
         /* allocate fitsfile structure and initialize = 0 */
     *newfptr = (fitsfile *) calloc(1, sizeof(fitsfile));
 
-    (*newfptr)->Fptr = openfptr->Fptr; /* both files point to the same structure */
-    (*newfptr)->HDUposition = 0;     /* set initial position to the primary array */
+    (*newfptr)->Fptr = openfptr->Fptr; /* both point to the same structure */
+    (*newfptr)->HDUposition = 0;  /* set initial position to primary array */
     (((*newfptr)->Fptr)->open_count)++;   /* increment the file usage counter */
 
     return(*status);
@@ -760,9 +760,9 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
         clobber = FALSE;
 
         /* parse the output file specification */
-    *status = fits_parse_output_url(url, urltype, outfile);
+    ffourl(url, urltype, outfile, status);
 
-    if (*status)
+    if (*status > 0)
     {
         ffpmsg("could not parse the output filename: (ffinit)");
         ffpmsg(url);
@@ -1340,14 +1340,15 @@ int fits_register_driver(char *prefix,
     return(0);
  }
 /*--------------------------------------------------------------------------*/
-int fits_parse_input_url(char *url, 
+int ffiurl(char *url, 
                     char *urltype,
                     char *infile,
                     char *outfile, 
                     char *extspec,
                     char *rowfilter,
                     char *binspec,
-                    char *colspec)
+                    char *colspec,
+                    int *status)
 /*
    parse the input URL into its basic components.
 */
@@ -1355,6 +1356,9 @@ int fits_parse_input_url(char *url,
 { 
     int ii, jj, slen, infilelen;
     char *ptr1, *ptr2, *ptr3, tmpstr[FLEN_FILENAME];
+
+    if (*status > 0)
+        return(*status);
 
     ptr1 = url;
     *urltype = '\0';
@@ -1425,7 +1429,7 @@ int fits_parse_input_url(char *url,
 
         ptr1 = strchr(ptr2, ')' );   /* search for closing ) */
         if (!ptr1)
-            return(1);  /* error, no closing ) */
+            return(*status = URL_PARSE_ERROR);  /* error, no closing ) */
 
         strncat(outfile, ptr2, ptr1 - ptr2);
     }
@@ -1436,7 +1440,7 @@ int fits_parse_input_url(char *url,
 
         ptr1 = strchr(ptr2, ')' );   /* search for closing ) */
         if (!ptr1)
-            return(1);  /* error, no closing ) */
+            return(*status = URL_PARSE_ERROR);  /* error, no closing ) */
 
         strncat(outfile, ptr2, ptr1 - ptr2);
     }
@@ -1514,7 +1518,7 @@ int fits_parse_input_url(char *url,
     }
 
     if (!ptr3)     /* no [ character in the input string? */
-        return(0);
+        return(*status);
 
     /* ------------------------------------------- */
     /* see if [ extension specification ] is given */
@@ -1529,7 +1533,7 @@ int fits_parse_input_url(char *url,
        if (!ptr2)
        {
             ffpmsg("input file URL is missing closing bracket ']'");
-            return(URL_PARSE_ERROR);  /* error, no closing ] */
+            return(*status = URL_PARSE_ERROR);  /* error, no closing ] */
        }
 
        /* copy the extension specification */
@@ -1554,7 +1558,7 @@ int fits_parse_input_url(char *url,
     }
 
     if (!rowfilter[0])
-       return(0);      /* nothing left to parse */
+       return(*status);      /* nothing left to parse */
 
     /* ------------------------------------------------------- */
     /* convert filter to all lowercase to simplify comparisons */
@@ -1598,7 +1602,7 @@ int fits_parse_input_url(char *url,
         {
             ffpmsg("input file URL is missing closing bracket ']'");
             ffpmsg(rowfilter);
-            return(URL_PARSE_ERROR);  /* error, no closing ] */
+            return(*status = URL_PARSE_ERROR);  /* error, no closing ] */
         }
 
         /* delete the binning spec from the filter string */
@@ -1628,7 +1632,7 @@ int fits_parse_input_url(char *url,
         else
         {
             ffpmsg("input file URL is missing closing bracket ']'");
-            return(URL_PARSE_ERROR);  /* error, no closing ] */
+            return(*status = URL_PARSE_ERROR);  /* error, no closing ] */
         }
 
         /* delete the column selection spec from the filter string */
@@ -1637,18 +1641,166 @@ int fits_parse_input_url(char *url,
         strcpy(ptr1, tmpstr);    /* overwrite binspec */
     }
     
-    return(0);
+    return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int fits_parse_output_url(char *url, 
-                    char *urltype,
-                    char *outfile)
+int ffrtnm(char *url, 
+           char *rootname,
+           int *status)
+/*
+   parse the input URL, returning the root name (filetype://basename).
+*/
+
+{ 
+    int ii, jj, slen, infilelen;
+    char *ptr1, *ptr2, *ptr3;
+    char urltype[MAX_PREFIX_LEN];
+    char infile[FLEN_FILENAME];
+
+    if (*status > 0)
+        return(*status);
+
+    ptr1 = url;
+    *rootname = '\0';
+    *urltype = '\0';
+    *infile  = '\0';
+
+    /*  get urltype (e.g., file://, ftp://, http://, etc.)  */
+    if (*ptr1 == '-')        /* "-" means read file from stdin */
+    {
+        strcat(urltype, "-");
+        ptr1++;
+    }
+    else
+    {
+        ptr2 = strstr(ptr1, "://");
+        if (ptr2)                  /* copy the explicit urltype string */ 
+        {
+            strncat(urltype, ptr1, ptr2 - ptr1 + 3);
+            ptr1 = ptr2 + 3;
+        }
+        else if (!strncmp(ptr1, "ftp:", 4) )
+        {                              /* the 2 //'s are optional */
+            strcat(urltype, "ftp://");
+            ptr1 += 4;
+        }
+        else if (!strncmp(ptr1, "http:", 5) )
+        {                              /* the 2 //'s are optional */
+            strcat(urltype, "http://");
+            ptr1 += 5;
+        }
+        else if (!strncmp(ptr1, "mem:", 4) )
+        {                              /* the 2 //'s are optional */
+            strcat(urltype, "mem://");
+            ptr1 += 4;
+        }
+        else if (!strncmp(ptr1, "shmem:", 6) )
+        {                              /* the 2 //'s are optional */
+            strcat(urltype, "shmem://");
+            ptr1 += 6;
+        }
+        else if (!strncmp(ptr1, "file:", 5) )
+        {                              /* the 2 //'s are optional */
+            ptr1 += 5;
+        }
+
+        /* else assume file driver    */
+    }
+ 
+       /*  get the input file name  */
+    ptr2 = strchr(ptr1, '(');   /* search for opening parenthesis ( */
+    ptr3 = strchr(ptr1, '[');   /* search for opening bracket [ */
+
+    if (ptr2 == ptr3)  /* simple case: no [ or ( in the file name */
+    {
+        strcat(infile, ptr1);
+    }
+    else if (!ptr3)     /* no bracket, so () enclose output file name */
+    {
+        strncat(infile, ptr1, ptr2 - ptr1);
+        ptr2++;
+
+        ptr1 = strchr(ptr2, ')' );   /* search for closing ) */
+        if (!ptr1)
+            return(*status = URL_PARSE_ERROR);  /* error, no closing ) */
+
+    }
+    else if (ptr2 && (ptr2 < ptr3)) /* () enclose output name before bracket */
+    {
+        strncat(infile, ptr1, ptr2 - ptr1);
+        ptr2++;
+
+        ptr1 = strchr(ptr2, ')' );   /* search for closing ) */
+        if (!ptr1)
+            return(*status = URL_PARSE_ERROR);  /* error, no closing ) */
+    }
+    else    /*   bracket comes first, so there is no output name */
+    {
+        strncat(infile, ptr1, ptr3 - ptr1);
+    }
+
+       /* strip off any trailing blanks in the names */
+    slen = strlen(infile);
+    for (ii = slen - 1; ii > 0; ii--)   
+    {
+        if (infile[ii] == ' ')
+            infile[ii] = '\0';
+        else
+            break;
+    }
+
+    /* --------------------------------------------- */
+    /* check if the 'filename+n' convention has been */
+    /* used to specifiy which HDU number to open     */ 
+    /* --------------------------------------------- */
+
+    jj = strlen(infile);
+
+    for (ii = jj - 1; ii >= 0; ii--)
+    {
+        if (infile[ii] == '+')    /* search backwards for '+' sign */
+            break;
+    }
+
+    if (ii != 0 && (jj - ii) < 5)  /* limit extension numbers to 4 digits */
+    {
+        infilelen = ii;
+        ii++;
+        ptr1 = infile+ii;   /* pointer to start of sequence */
+
+        for (; ii < jj; ii++)
+        {
+            if (!isdigit( infile[ii] ) ) /* are all the chars digits? */
+                break;
+        }
+
+        if (ii == jj)      
+        {
+             /* yes, the '+n' convention was used.  */
+
+             infile[infilelen] = '\0'; /* delete the extension number */
+        }
+    }
+
+    strcat(rootname, urltype);  /* construct the root name */
+    strcat(rootname, infile);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffourl(char *url, 
+           char *urltype,
+           char *outfile,
+           int *status)
 /*
    parse the output URL into its basic components.
 */
 
 { 
     char *ptr1, *ptr2;
+
+    if (*status > 0)
+        return(*status);
 
     ptr1 = url;
     *urltype = '\0';
@@ -1674,14 +1826,15 @@ int fits_parse_output_url(char *url,
        /*  get the output file name  */
         strcpy(outfile, ptr1);
     }
-    return(0);
+    return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int fits_parse_extspec(char *extspec, 
+int ffexts(char *extspec, 
                        int *extnum, 
                        char *extname,
                        int *extvers,
-                       int *hdutype)
+                       int *hdutype,
+                       int *status)
 {
 /*
    Parse the input extension specification string, returning either the
@@ -1696,6 +1849,9 @@ int fits_parse_extspec(char *extspec,
     *extvers = 0;
     *hdutype = ANY_HDU;
 
+    if (*status > 0)
+        return(*status);
+
     ptr1 = extspec;       /* pointer to first char */
 
     while (*ptr1 == ' ')  /* skip over any leading blanks */
@@ -1709,7 +1865,7 @@ int fits_parse_extspec(char *extspec,
             *extnum = 0;   /* this is not a reasonable extension number */
             ffpmsg("specified extension number is out of range:");
             ffpmsg(extspec);
-            return(URL_PARSE_ERROR); 
+            return(*status = URL_PARSE_ERROR); 
         }
     }
     else
@@ -1732,7 +1888,7 @@ int fits_parse_extspec(char *extspec,
                {
                    ffpmsg("illegal EXTVER value in input URL:");
                    ffpmsg(extspec);
-                   return(URL_PARSE_ERROR);
+                   return(*status = URL_PARSE_ERROR);
                }
 
                ptr1 += slen;
@@ -1753,16 +1909,17 @@ int fits_parse_extspec(char *extspec,
                  {
                      ffpmsg("unknown type of HDU in input URL:");
                      ffpmsg(extspec);
-                     return(URL_PARSE_ERROR);
+                     return(*status = URL_PARSE_ERROR);
                  }
                }
            }
     }
-    return(0);
+    return(*status);
 }
 /*--------------------------------------------------------------------------*/
 int ffextn(char *url,           /* I - input filename/URL  */
-           int *extension_num)  /* O - returned extension number */
+           int *extension_num,  /* O - returned extension number */
+           int *status)
 {
 /*
    Parse the input url string and return the number of the extension that
@@ -1804,40 +1961,45 @@ int ffextn(char *url,           /* I - input filename/URL  */
     char binspec[FLEN_FILENAME];
     char colspec[FLEN_FILENAME];
     char *cptr;
-    int extnum, extvers, hdutype, status;
+    int extnum, extvers, hdutype;
+
+    if (*status > 0)
+        return(*status);
 
     /*  parse the input URL into its basic components  */
-    status = fits_parse_input_url(url, urltype, infile, outfile,
-             extspec, rowfilter,binspec, colspec);
-    if (status)
-        return(status);
+    ffiurl(url, urltype, infile, outfile,
+             extspec, rowfilter,binspec, colspec, status);
+
+    if (*status > 0)
+        return(*status);
 
     if (*binspec)   /* is there a binning specification? */
     {
        *extension_num = 1; /* a temporary primary array image is created */
-       return(0);
+       return(*status);
     }
 
     if (*extspec)   /* is an extension specified? */
     {
-      status = fits_parse_extspec(extspec, &extnum, extname, &extvers,
-                                  &hdutype);
-      if (status)
-        return(status);
+      ffexts(extspec, &extnum, extname, &extvers,
+                                  &hdutype, status);
+      if (*status > 0)
+        return(*status);
 
       if (*extname)
       {
          /* have to open the file to search for the extension name (curses!) */
 
          if (!strcmp(urltype, "stdin://"))
-            return(URL_PARSE_ERROR); /* opening stdin would destroying it! */
+            /* opening stdin would destroying it! */
+            return(*status = URL_PARSE_ERROR); 
 
          /* First, strip off any filtering specification */
          strcpy(infile, url);
          cptr = strchr(infile, ']');  /* locate the closing bracket */
          if (!cptr)
          {
-             return(URL_PARSE_ERROR);
+             return(*status = URL_PARSE_ERROR);
          }
          else
          {
@@ -1845,30 +2007,30 @@ int ffextn(char *url,           /* I - input filename/URL  */
              *cptr = '\0'; /* terminate URl after the extension spec */
          }
 
-         if (ffopen(&fptr, infile, READONLY, &status) > 0) /* open the file */
-            return(status);
+         if (ffopen(&fptr, infile, READONLY, status) > 0) /* open the file */
+            return(*status);
 
          ffghdn(fptr, &extnum);    /* where am I in the file? */
          *extension_num = extnum;
-         ffclos(fptr, &status);
+         ffclos(fptr, status);
 
-         return(0);
+         return(*status);
       }
       else
       {
          *extension_num = extnum + 1;  /* return the specified number (+ 1) */
-         return(0);
+         return(*status);
       }
     }
     else
     {
          *extension_num = -99;  /* no specific extension was specified */
                                 /* defaults to primary array */
-         return(0);
+         return(*status);
     }
 }
 /*--------------------------------------------------------------------------*/
-int fits_parse_binspec(char *binspec,   /* I - binning specification */
+int ffbins(char *binspec,   /* I - binning specification */
                    int *imagetype,      /* O - image type, TINT or TSHORT */
                    int *haxis,          /* O - no. of axes in the histogram */
                    char colname[4][FLEN_VALUE],  /* column name for axis */
@@ -1880,7 +2042,8 @@ int fits_parse_binspec(char *binspec,   /* I - binning specification */
                    char binname[4][FLEN_VALUE],  /* keyword name for binsize */
                    double *weight,       /* weighting factor          */
                    char *wtname,        /* keyword or column name for weight */
-                   int *recip)          /* the reciprocal of the weight? */
+                   int *recip,          /* the reciprocal of the weight? */
+                   int *status)
 {
 /*
    Parse the input binning specification string, returning the binning
@@ -1896,9 +2059,12 @@ int fits_parse_binspec(char *binspec,   /* I - binning specification */
 
    most other reasonable combinations are supported.        
 */
-    int ii, slen, status, defaulttype;
+    int ii, slen, defaulttype;
     char *ptr, tmpname[30];
     double  dummy;
+
+    if (*status > 0)
+         return(*status);
 
     /* set the default values */
     *haxis = 2;
@@ -1953,19 +2119,19 @@ int fits_parse_binspec(char *binspec,   /* I - binning specification */
     }
 
     if (*ptr == '\0')  /* use all defaults for other parameters */
-        return(0);
+        return(*status);
     else if (*ptr != ' ')  /* must be at least one blank */
     {
         ffpmsg("binning specification syntax error:");
         ffpmsg(binspec);
-        return(URL_PARSE_ERROR);
+        return(*status = URL_PARSE_ERROR);
     }
 
     while (*ptr == ' ')  /* skip over blanks */
            ptr++;
 
     if (*ptr == '\0')   /* no other parameters; use defaults */
-        return(0);
+        return(*status);
 
     if (*ptr == '(' )
     {
@@ -1997,7 +2163,7 @@ int fits_parse_binspec(char *binspec,   /* I - binning specification */
             ffpmsg(
  "binning specification has too many column names or is missing closing ')':");
             ffpmsg(binspec);
-            return(URL_PARSE_ERROR);
+            return(*status = URL_PARSE_ERROR);
         }
 
         ptr++;  /* skip over the closing parenthesis */
@@ -2005,14 +2171,14 @@ int fits_parse_binspec(char *binspec,   /* I - binning specification */
             ptr++;
 
         if (*ptr == '\0')
-            return(0);  /* parsed the entire string */
+            return(*status);  /* parsed the entire string */
 
         else if (*ptr != '=')  /* must be an equals sign now*/
         {
             ffpmsg("illegal binning specification in URL:");
             ffpmsg(" an equals sign '=' must follow the column names");
             ffpmsg(binspec);
-            return(URL_PARSE_ERROR);
+            return(*status = URL_PARSE_ERROR);
         }
 
         ptr++;  /* skip over the equals sign */
@@ -2021,14 +2187,14 @@ int fits_parse_binspec(char *binspec,   /* I - binning specification */
 
 
         /* get the single range specification for all the columns */
-        status = fits_parse_binrange(&ptr, tmpname, minin,
+        ffbinr(&ptr, tmpname, minin,
                                      maxin, binsizein, minname[0],
-                                     maxname[0], binname[0]);
-        if (status)
+                                     maxname[0], binname[0], status);
+        if (*status > 0)
         {
             ffpmsg("illegal binning specification in URL:");
             ffpmsg(binspec);
-            return(URL_PARSE_ERROR);
+            return(*status);
         }
 
         for (ii = 1; ii < *haxis; ii++)
@@ -2051,10 +2217,10 @@ int fits_parse_binspec(char *binspec,   /* I - binning specification */
         {
             ffpmsg("illegal binning specification in URL:");
             ffpmsg(binspec);
-            return(URL_PARSE_ERROR);
+            return(*status = URL_PARSE_ERROR);
         }
 
-        return(0);
+        return(*status);
     }             /* end of case with list of column names in ( )  */
 
     /* if we've reached this point, then the binning specification */
@@ -2064,15 +2230,15 @@ int fits_parse_binspec(char *binspec,   /* I - binning specification */
 
     for (ii = 0; ii < 4; ii++) /* allow up to 4 histogram dimensions */
     {
-        status = fits_parse_binrange(&ptr, colname[ii], &minin[ii],
+        ffbinr(&ptr, colname[ii], &minin[ii],
                                      &maxin[ii], &binsizein[ii], minname[ii],
-                                     maxname[ii], binname[ii]);
+                                     maxname[ii], binname[ii], status);
 
-        if (status)
+        if (*status > 0)
         {
             ffpmsg("illegal binning specification in URL:");
             ffpmsg(binspec);
-            return(URL_PARSE_ERROR);
+            return(*status);
         }
 
         if (*ptr == '\0' || *ptr == ';')
@@ -2097,7 +2263,7 @@ int fits_parse_binspec(char *binspec,   /* I - binning specification */
         {
             ffpmsg("illegal binning specification in URL:");
             ffpmsg(binspec);
-            return(URL_PARSE_ERROR);
+            return(*status = URL_PARSE_ERROR);
         }
     }
 
@@ -2107,7 +2273,7 @@ int fits_parse_binspec(char *binspec,   /* I - binning specification */
         ffpmsg("illegal binning specification in URL:");
         ffpmsg("apparently too many histogram dimension (> 4)");
         ffpmsg(binspec);
-        return(URL_PARSE_ERROR);
+        return(*status = URL_PARSE_ERROR);
     }
     else
         *haxis = ii + 1;
@@ -2142,15 +2308,14 @@ getweight:
         /* parse the weight as though it were a binrange. */
         /* either a column name or a numerical value will be returned */
 
-        status = fits_parse_binrange(&ptr, wtname, &dummy,
-                                     &dummy, weight, tmpname,
-                                     tmpname, tmpname);
+        ffbinr(&ptr, wtname, &dummy, &dummy, weight, tmpname,
+                                     tmpname, tmpname, status);
 
-        if (status)
+        if (*status > 0)
         {
             ffpmsg("illegal binning specification in URL:");
             ffpmsg(binspec);
-            return(URL_PARSE_ERROR);
+            return(*status);
         }
     }
 
@@ -2161,10 +2326,10 @@ getweight:
     {
         ffpmsg("illegal binning specification in URL:");
         ffpmsg(binspec);
-        return(URL_PARSE_ERROR);
+        *status = URL_PARSE_ERROR;
     }
 
-    return(0);
+    return(*status);
 }
 /*--------------------------------------------------------------------------*/
 int fits_get_token(char **ptr, 
@@ -2174,7 +2339,7 @@ int fits_get_token(char **ptr,
 /*
    parse off the next token, delimited by a character in 'delimiter',
    from the input ptr string;  increment *ptr to the end of the token.
-   Returns 
+   Returns the length of the token;
 */
 {
     int slen, ii;
@@ -2205,14 +2370,15 @@ int fits_get_token(char **ptr,
     return(slen);
 }
 /*--------------------------------------------------------------------------*/
-int fits_parse_binrange(char **ptr, 
+int ffbinr(char **ptr, 
                    char *colname, 
                    double *minin,
                    double *maxin, 
                    double *binsizein,
                    char *minname,
                    char *maxname,
-                   char *binname)
+                   char *binname,
+                   int *status)
 /*
    Parse the input binning range specification string, returning 
    the column name, histogram min and max values, and bin size.
@@ -2221,10 +2387,13 @@ int fits_parse_binrange(char **ptr,
     int slen, isanumber;
     char token[FLEN_VALUE];
 
+    if (*status > 0)
+        return(*status);
+
     slen = fits_get_token(ptr, " ,=:;", token, &isanumber); /* get 1st token */
 
     if (slen == 0 && (**ptr == '\0' || **ptr == ',' || **ptr == ';') )
-        return(0);   /* a null range string */
+        return(*status);   /* a null range string */
 
     if (!isanumber && **ptr != ':')
     {
@@ -2239,7 +2408,7 @@ int fits_parse_binrange(char **ptr,
             strcpy(colname, token);
 
         if (**ptr != '=')
-            return(0);  /* reached the end */
+            return(*status);  /* reached the end */
 
         (*ptr)++;   /* skip over the = sign */
 
@@ -2255,7 +2424,7 @@ int fits_parse_binrange(char **ptr,
         else
             *binsizein =  strtod(token, NULL);
 
-        return(0);  /* reached the end */
+        return(*status);  /* reached the end */
     }
     else
     {
@@ -2282,7 +2451,7 @@ int fits_parse_binrange(char **ptr,
     }
 
     if (**ptr != ':')
-        return(0);  /* reached the end; no binsize token */
+        return(*status);  /* reached the end; no binsize token */
 
     (*ptr)++;  /* skip the colon between the min and max values */
     slen = fits_get_token(ptr, " ,:;", token, &isanumber); /* get token */
@@ -2296,7 +2465,7 @@ int fits_parse_binrange(char **ptr,
             *binsizein = strtod(token, NULL);
     }
 
-    return(0);
+    return(*status);
 }
 /*--------------------------------------------------------------------------*/
 int urltype2driver(char *urltype, int *driver)
@@ -2334,10 +2503,10 @@ int ffclos(fitsfile *fptr,      /* I - FITS file pointer */
     else if ((fptr->Fptr)->validcode != VALIDSTRUC) /* check for magic value */
         return(*status = BAD_FILEPTR); 
 
-    ((fptr->Fptr)->open_count)--;           /* decrement usage counter */
-
     ffchdu(fptr, status);         /* close and flush the current HDU   */
     ffflsh(fptr, TRUE, status);   /* flush and disassociate IO buffers */
+
+    ((fptr->Fptr)->open_count)--;           /* decrement usage counter */
 
     if ((fptr->Fptr)->open_count == 0)  /* if no other files use structure */
     {
@@ -2493,7 +2662,7 @@ int fftplt(fitsfile **fptr,      /* O - FITS file pointer                   */
 {
     FILE *diskfile;
     fitsfile *tptr;
-    int tstatus, nkeys, nadd, ii, newhdu, slen, keytype;
+    int tstatus = 0, nkeys, nadd, ii, newhdu, slen, keytype;
     char card[FLEN_CARD], template[161];
 
     if (*status > 0)
@@ -2502,7 +2671,7 @@ int fftplt(fitsfile **fptr,      /* O - FITS file pointer                   */
     if ( ffinit(fptr, filename, status) )
         return(*status);
 
-    if (template == NULL || *template == '\0')     /* no template file? */
+    if (tempname == NULL || *tempname == '\0')     /* no template file? */
         return(*status);
 
     /* try opening template */

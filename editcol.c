@@ -520,9 +520,10 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
         {
             ffbnfm(tfm, &datacode, &repeat, &width, status);
 
-            if (datacode == 1) /* bit column; round up to multiple of 8 bits */
-            delbyte += (repeat + 7) / 8;
-
+            if (datacode < 0)         /* variable length array column */
+                delbyte += 8;
+            else if (datacode == 1)          /* bit column; round up  */
+                delbyte += (repeat + 7) / 8; /* to multiple of 8 bits */
             else if (datacode == 16)  /* ASCII string column */
                 delbyte += repeat;
             else                      /* numerical data type */
@@ -530,13 +531,14 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
         }
     }
 
-    if (*status > 0 || delbyte <= 0) /* also aborts on variable-length cols */
+    if (*status > 0) 
         return(*status);
 
     naxis1 = (fptr->Fptr)->rowlength;          /* current width of the table */
     ffgkyj(fptr, "NAXIS2", &naxis2, comm, status); /* number of rows */
 
-    datasize = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;    /* current size of data */
+    /* current size of data */
+    datasize = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;
     freespace = ( ( (datasize + 2879) / 2880) * 2880) - datasize;
     nadd = delbyte * naxis2;                /* no. of bytes to add to table */
 
@@ -551,7 +553,9 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
     if ((fptr->Fptr)->heapsize > 0)
     {
         nbytes = (fptr->Fptr)->heapsize;    /* no. of bytes to shift down */
-        firstbyte = (fptr->Fptr)->datastart + (fptr->Fptr)->heapstart; /* absolute heap pos */
+
+        /* absolute heap pos */
+        firstbyte = (fptr->Fptr)->datastart + (fptr->Fptr)->heapstart;
 
         if (ffshft(fptr, firstbyte, nbytes, nadd, status) > 0) /* move heap */
             return(*status);
@@ -597,7 +601,8 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
     ffmkyj(fptr, "NAXIS1", naxis1 + delbyte, "&", status);
 
     /* increment the index value on any existing column keywords */
-    ffkshf(fptr, colnum, tfields, ncols, status);
+    if(colnum <= tfields)
+        ffkshf(fptr, colnum, tfields, ncols, status);
 
     /* add the required keywords for the new columns */
     for (ii = 0; ii < ncols; ii++, colnum++)
@@ -615,7 +620,7 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
         if ((fptr->Fptr)->hdutype == ASCII_TBL)   /* write the TBCOL keyword */
         {
             if (colnum == tfields + 1)
-                tbcol = firstbyte + 2;  /* allow space between preceding column */
+                tbcol = firstbyte + 2;  /* allow space between preceding col */
             else
                 tbcol = firstbyte + 1;
 
@@ -703,7 +708,8 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     if (delbyte > 0)  /* insert space for more elements */
     {
-      datasize = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;  /* current size of data */
+      /* current size of data */
+      datasize = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;
       freespace = ( ( (datasize + 2879) / 2880) * 2880) - datasize;
 
       nadd = delbyte * naxis2;             /* no. of bytes to add to table */
@@ -719,7 +725,9 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
       if ((fptr->Fptr)->heapsize > 0)
       {
         nbytes = (fptr->Fptr)->heapsize;    /* no. of bytes to shift down */
-        firstbyte = (fptr->Fptr)->datastart + (fptr->Fptr)->heapstart; /* absolute heap pos */
+
+        /* absolute heap pos */
+        firstbyte = (fptr->Fptr)->datastart + (fptr->Fptr)->heapstart;
 
         if (ffshft(fptr, firstbyte, nbytes, nadd, status) > 0) /* move heap */
             return(*status);
@@ -739,7 +747,8 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
     else if (delbyte < 0)
     {
-      size = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;  /* current size of table */
+      /* current size of table */
+      size = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;
       freespace = ((size + 2879) / 2880) * 2880 - size - (delbyte * naxis2);
       nblock = freespace / 2880;   /* number of empty blocks to delete */
       firstbyte = colptr->tbcol + (repeat * width);  /* delete position */
@@ -751,7 +760,8 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
       if ((fptr->Fptr)->heapsize > 0)
       {
         nbytes = (fptr->Fptr)->heapsize;    /* no. of bytes to shift up */
-        firstbyte = (fptr->Fptr)->datastart + (fptr->Fptr)->heapstart; /* abs heap pos */
+        /* abs heap pos */
+        firstbyte = (fptr->Fptr)->datastart + (fptr->Fptr)->heapstart;
         ndelete = delbyte * naxis2; /* size of shift (negative) */
 
         if (ffshft(fptr, firstbyte, nbytes, ndelete, status) > 0)
@@ -845,7 +855,7 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     if ((infptr->Fptr)->hdutype == IMAGE_HDU || (outfptr->Fptr)->hdutype == IMAGE_HDU)
     {
        ffpmsg
-       ("Can only copy columns between ASCII or Binary tables (ffcpcl)");
+       ("Can not copy columns to or from IMAGE HDUs (ffcpcl)");
        return(*status = NOT_TABLE);
     }
 
@@ -1237,7 +1247,8 @@ int ffdcol(fitsfile *fptr,  /* I - FITS file pointer                        */
     naxis1 = (fptr->Fptr)->rowlength;          /* current width of the table */
     ffgkyj(fptr, "NAXIS2", &naxis2, comm, status); /* number of rows */
 
-    size = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;  /* current size of table */
+    /* current size of table */
+    size = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;
     freespace = (delbyte * naxis2) + ((size + 2879) / 2880) * 2880 - size;
     nblock = freespace / 2880;   /* number of empty blocks to delete */
 
@@ -1247,7 +1258,9 @@ int ffdcol(fitsfile *fptr,  /* I - FITS file pointer                        */
     if ((fptr->Fptr)->heapsize > 0)
     {
       nbytes = (fptr->Fptr)->heapsize;    /* no. of bytes to shift up */
-      firstbyte = (fptr->Fptr)->datastart + (fptr->Fptr)->heapstart; /* absolute heap pos */
+
+      /* absolute heap pos */
+      firstbyte = (fptr->Fptr)->datastart + (fptr->Fptr)->heapstart;
       ndelete = delbyte * naxis2; /* size of shift */
 
       if (ffshft(fptr, firstbyte, nbytes, -ndelete, status) > 0) /* mv heap */
@@ -1339,18 +1352,18 @@ int ffcins(fitsfile *fptr,  /* I - FITS file pointer                        */
         /* write the row (with leading fill bytes) in the new place */
         nbytes += ninsert;
         ffptbb(fptr, naxis2, fbyte, nbytes, buffer, status);
-        (fptr->Fptr)->rowlength = naxis1;  /* reset row length to original value */
+        (fptr->Fptr)->rowlength = naxis1;  /* reset row length to orig. value */
 
         /*  now move the rest of the rows */
         for (irow = naxis2 - 1; irow > 0; irow--)
         {
             /* read the row to be shifted (work backwards thru the table) */
             ffgtbb(fptr, irow, fbyte, naxis1, &buffer[ninsert], status);
-            (fptr->Fptr)->rowlength = newlen;  /* set row length to its new value */
+            (fptr->Fptr)->rowlength = newlen; /* set row length to new value */
 
             /* write the row (with the leading fill bytes) in the new place */
             ffptbb(fptr, irow, fbyte, newlen, buffer, status);
-            (fptr->Fptr)->rowlength = naxis1; /* reset row length to original value */
+            (fptr->Fptr)->rowlength = naxis1; /* reset row len to orig value */
         }
     }
     else
@@ -1369,10 +1382,10 @@ int ffcins(fitsfile *fptr,  /* I - FITS file pointer                        */
         for (ii = 0; ii < nseg; ii++)
         {
             ffgtbb(fptr, naxis2, fbyte, nbytes, buffer, status);
-            (fptr->Fptr)->rowlength = newlen;  /* set row length to its new value */
+            (fptr->Fptr)->rowlength = newlen;  /* set row length to new value */
 
             ffptbb(fptr, naxis2, fbyte + ninsert, nbytes, buffer, status);
-            (fptr->Fptr)->rowlength = naxis1; /* reset row length to original value */
+            (fptr->Fptr)->rowlength = naxis1; /* reset row len to orig value */
 
             fbyte -= 10000;
             nbytes = 10000;
@@ -1388,11 +1401,11 @@ int ffcins(fitsfile *fptr,  /* I - FITS file pointer                        */
           { 
             /* read the row to be shifted (work backwards thru the table) */
             ffgtbb(fptr, irow, fbyte, nbytes, buffer, status);
-            (fptr->Fptr)->rowlength = newlen;  /* set row length to its new value */
+            (fptr->Fptr)->rowlength = newlen;  /* set row length to new value */
 
             /* write the row in the new place */
             ffptbb(fptr, irow, fbyte + ninsert, nbytes, buffer, status);
-            (fptr->Fptr)->rowlength = naxis1; /* reset row length to original value */
+            (fptr->Fptr)->rowlength = naxis1; /* reset row len to orig value */
 
             fbyte -= 10000;
             nbytes = 10000;
@@ -1417,7 +1430,7 @@ int ffcins(fitsfile *fptr,  /* I - FITS file pointer                        */
             nbytes = 10000;
           }
         }
-        (fptr->Fptr)->rowlength = naxis1;  /* reset row length to original value */
+        (fptr->Fptr)->rowlength = naxis1;  /* reset row length to orig value */
     }
     return(*status);
 }
@@ -1456,7 +1469,7 @@ int ffcdel(fitsfile *fptr,  /* I - FITS file pointer                        */
         (fptr->Fptr)->rowlength = newlen;  /* set row length to its new value */
 
         ffptbb(fptr, irow, i1, newlen, buffer, status); /* write row */
-        (fptr->Fptr)->rowlength = naxis1;  /* reset row length to original value */
+        (fptr->Fptr)->rowlength = naxis1;  /* reset row length to orig value */
       }
 
       /* now do the last row */
@@ -1468,7 +1481,7 @@ int ffcdel(fitsfile *fptr,  /* I - FITS file pointer                        */
         (fptr->Fptr)->rowlength = newlen;  /* set row length to its new value */
 
         ffptbb(fptr, naxis2, i1, remain, buffer, status); /* write row */
-        (fptr->Fptr)->rowlength = naxis1;  /* reset row length to original value */
+        (fptr->Fptr)->rowlength = naxis1;  /* reset row length to orig value */
       }
     }
     else
@@ -1487,10 +1500,10 @@ int ffcdel(fitsfile *fptr,  /* I - FITS file pointer                        */
           for (ii = 0; ii < nseg; ii++)
           { 
             ffgtbb(fptr, irow, i2, nbytes, buffer, status); /* read bytes */
-            (fptr->Fptr)->rowlength = newlen;  /* set row length to its new value */
+            (fptr->Fptr)->rowlength = newlen;  /* set row length to new value */
 
             ffptbb(fptr, irow, i1, nbytes, buffer, status); /* rewrite bytes */
-            (fptr->Fptr)->rowlength = naxis1; /* reset row length to original value */
+            (fptr->Fptr)->rowlength = naxis1; /* reset row len to orig value */
 
             i1 += nbytes;
             i2 += nbytes;
@@ -1510,10 +1523,10 @@ int ffcdel(fitsfile *fptr,  /* I - FITS file pointer                        */
           for (ii = 0; ii < nseg; ii++)
           { 
             ffgtbb(fptr, naxis2, i2, nbytes, buffer, status);
-            (fptr->Fptr)->rowlength = newlen;  /* set row length to its new value */
+            (fptr->Fptr)->rowlength = newlen;  /* set row length to new value */
 
             ffptbb(fptr, naxis2, i1, nbytes, buffer, status); /* write row */
-            (fptr->Fptr)->rowlength = naxis1;  /* reset row length to original value */
+            (fptr->Fptr)->rowlength = naxis1;  /* reset row len to orig value */
 
             i1 += nbytes;
             i2 += nbytes;

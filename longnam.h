@@ -1,7 +1,13 @@
 #ifndef _LONGNAME_H
 #define _LONGNAME_H
 
+#define fits_parse_input_url ffiurl
+#define fits_parse_rootname ffrtnm
+#define fits_parse_output_url ffourl
+#define fits_parse_extspec  ffexts
 #define fits_parse_extnum   ffextn
+#define fits_parse_binspec  ffbins
+#define fits_parse_binrange ffbinr
 #define fits_open_memfile   ffomem
 #define fits_open_file      ffopen
 #define fits_reopen_file    ffreopen
