@@ -137,6 +137,9 @@ case $system in
 	if test "x$CFORTRANFLAGS" = x ; then
 		CFORTRANFLAGS="-Dsolaris"
 	fi
+        # For large file support:
+        AC_DEFINE(_LARGEFILE_SOURCE)
+        AC_DEFINE(_FILE_OFFSET_BITS,64)
 	;;
     OSF1*)
 	ARCH="alpha"
@@ -155,6 +158,9 @@ case $system in
     Linux*)
 	ARCH="linux"
 	EXT="lnx"
+        # For large file support:
+        AC_DEFINE(_LARGEFILE_SOURCE)
+        AC_DEFINE(_FILE_OFFSET_BITS,64)
 	;;
     FREEBSD*|FreeBSD*)
 	ARCH="linux"
