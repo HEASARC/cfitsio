@@ -1360,7 +1360,7 @@ int ffiurl(char *url,
     /* must have temporary variable for these, in case inputs are NULL */
     char *infile;
     char *rowfilter;
-    char * tmpstr;
+    char *tmpstr;
 
     if (*status > 0)
         return(*status);
@@ -1393,6 +1393,10 @@ int ffiurl(char *url,
 
     rowfilter = &infile[slen + 1];
     tmpstr = &rowfilter[slen + 1];
+
+    *infile = '\0';
+    *rowfilter = '\0';
+    *tmpstr = '\0';
 
     ptr1 = url;
 
