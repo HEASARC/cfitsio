@@ -342,16 +342,17 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
                else
                {
                  /* this is a binary table, need to convert the format */
-                  if (tcode <= TBYTE)          /* 'X' and 'B' */
+                  if (tcode <= TBYTE) {         /* 'X' and 'B' */
                      strcpy(cform, "%4d");
-                  else if (tcode == TSHORT)    /* 'I' */
+                  } else if (tcode == TSHORT) {   /* 'I' */
                      strcpy(cform, "%6d");
-                  else if (tcode == TLONG)     /* 'J' */
+                  } else if (tcode == TLONG) {    /* 'J' */
                      strcpy(cform, "%11d");
-                  else if (tcode == TFLOAT)    /* 'E' */
+                  } else if (tcode == TFLOAT) {   /* 'E' */
                      strcpy(cform, "%14.6E");
-                  else if (tcode == TDOUBLE)   /* 'D' */
+                  } else if (tcode == TDOUBLE) {  /* 'D' */
                      strcpy(cform, "%23.15E");
+                  }
                }
             }
       } 
@@ -364,7 +365,10 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
                 (nultyp == 2 && nularray[ii]) )
            {
               *array[ii] = '\0';
-              strncat(array[ii], "NULL", dwidth);
+              if (dwidth < 5)
+                  strncat(array[ii], "NULL", dwidth);
+              else
+                  sprintf(array[ii],"%*s",dwidth,"NULL");
            }
            else
            {

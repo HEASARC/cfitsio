@@ -4472,8 +4472,10 @@ int ffgdes(fitsfile *fptr, /* I - FITS file pointer                         */
         /* read descriptor */
         if (ffgi4b(fptr, bytepos, 2, 4, descript, status) <= 0) 
         {
-            *length = (long) descript[0];   /* 1st word is the length  */
-            *heapaddr = (long) descript[1]; /* 2nd word is the address */
+           if (length)
+             *length = (long) descript[0];   /* 1st word is the length  */
+           if (heapaddr)
+             *heapaddr = (long) descript[1]; /* 2nd word is the address */
         }
      }
     return(*status);
@@ -5201,24 +5203,29 @@ int ffghdt(fitsfile *fptr,      /* I - FITS file pointer             */
     if (*status > 0)
         return(*status);
 
-    /* reset position to the correct HDU if necessary */
-    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
-    {
-        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
-    }
-    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
-    {
-        /* rescan header if data structure is undefined */
-        if ( ffrdef(fptr, status) > 0)               
-            return(*status);
-    }
-
-    *exttype = (fptr->Fptr)->hdutype; /* return the type of HDU */
-
-    /*  check if this is a compressed image */
-    if ((fptr->Fptr)->compressimg)
+    if (fptr->HDUposition == 0) {  /* primary array is alway an IMAGE_HDU */
          *exttype = IMAGE_HDU;
+    }
+    else {
+ 
+        /* reset position to the correct HDU if necessary */
+        if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        {
+            ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+        }
+        else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        {
+            /* rescan header if data structure is undefined */
+            if ( ffrdef(fptr, status) > 0)               
+                return(*status);
+        }
 
+        *exttype = (fptr->Fptr)->hdutype; /* return the type of HDU */
+
+        /*  check if this is a compressed image */
+        if ((fptr->Fptr)->compressimg)
+            *exttype = IMAGE_HDU;
+    }
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
