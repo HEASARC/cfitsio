@@ -332,7 +332,7 @@ int ffwldp(double xpix, double ypix, double xref, double yref,
 /*   d   *xpos   x (RA) coordinate (deg)                                 */
 /*   d   *ypos   y (dec) coordinate (deg)                                */
 /*-----------------------------------------------------------------------*/
- {double cosr, sinr, dx, dy, dz, temp;
+ {double cosr, sinr, dx, dy, dz, temp, x, y, z;
   double sins, coss, dect, rat, dt, l, m, mg, da, dd, cos0, sin0;
   double dec0, ra0, decout, raout;
   double geo1, geo2, geo3;
@@ -388,11 +388,11 @@ int ffwldp(double xpix, double ypix, double xref, double yref,
       rat = atan2 (l, rat) + ra0;
       break;
     case 2:   /* -TAN tan */
-      if (sins>1.0) return(*status = 501);
-      dect = cos0 - m * sin0;
-      if (dect==0.0) return(*status = 501);
-      rat = ra0 + atan2 (l, dect);
-      dect = atan (cos(rat-ra0) * (m * cos0 + sin0) / dect);
+      x = cos0*cos(ra0) - l*sin(ra0) - m*cos(ra0)*sin0;
+      y = cos0*sin(ra0) + l*cos(ra0) - m*sin(ra0)*sin0;
+      z = sin0                       + m*         cos0;
+      rat  = atan2( y, x );
+      dect = atan ( z / sqrt(x*x+y*y) );
       break;
     case 3:   /* -ARC Arc*/
       if (sins>=twopi*twopi/4.0) return(*status = 501);
@@ -542,7 +542,7 @@ int ffxypx(double xpos, double ypos, double xref, double yref,
 /*   f  *ypiy    y pixel number  (dec or lat without rotation)           */
 /*-----------------------------------------------------------------------*/
  {double dx, dy, dz, r, ra0, dec0, ra, dec, coss, sins, dt, da, dd, sint;
-  double l, m, geo1, geo2, geo3, sinr, cosr;
+  double l, m, geo1, geo2, geo3, sinr, cosr, cos0, sin0;
   double cond2r=1.745329252e-2, deps=1.0e-5, twopi=6.28318530717959;
   int   i, itype;
   char ctypes[9][5] ={"-CAR","-SIN","-TAN","-ARC","-NCP", "-GLS", "-MER",
@@ -587,8 +587,11 @@ int ffxypx(double xpos, double ypos, double xref, double yref,
 /* compute direction cosine */
   coss = cos (dec);
   sins = sin (dec);
+  cos0 = cos (dec0);
+  sin0 = sin (dec0);
   l = sin(ra-ra0) * coss;
-  sint = sins * sin(dec0) + coss * cos(dec0) * cos(ra-ra0);
+  sint = sins * sin0 + coss * cos0 * cos(ra-ra0);
+
 /* process by case  */
   switch (itype) {
     case 1:   /* -SIN sin*/ 
@@ -597,9 +600,20 @@ int ffxypx(double xpos, double ypos, double xref, double yref,
       break;
     case 2:   /* -TAN tan */
          if (sint<=0.0) return(*status = 501);
- 	 m = sins * sin(dec0) + coss * cos(dec0) * cos(ra-ra0);
-	 l = l / m;
-	 m = (sins * cos(dec0) - coss * sin(dec0) * cos(ra-ra0)) / m;
+         if( cos0<0.001 ) {
+            /* Do a first order expansion around pole */
+            m = (coss * cos(ra-ra0)) / (sins * sin0);
+            m = (-m + cos0 * (1.0 + m*m)) / sin0;
+         } else {
+            m = ( sins/sint - sin0 ) / cos0;
+         }
+	 if( fabs(sin(ra0)) < 0.3 ) {
+	    l  = coss*sin(ra)/sint - cos0*sin(ra0) + m*sin(ra0)*sin0;
+	    l /= cos(ra0);
+	 } else {
+	    l  = coss*cos(ra)/sint - cos0*cos(ra0) + m*cos(ra0)*sin0;
+	    l /= -sin(ra0);
+	 }
       break;
     case 3:   /* -ARC Arc*/
          m = sins * sin(dec0) + coss * cos(dec0) * cos(ra-ra0);
