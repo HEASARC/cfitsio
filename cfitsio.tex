@@ -121,7 +121,7 @@ NOST, at:
         Code 633.2,
         Goddard Space Flight Center
         Greenbelt MD 20771, USA
-        WWW: http://fits.gsfc.nasa.gov/l
+        WWW: http://fits.gsfc.nasa.gov/
         E-mail: fits@fits.gsfc.nasa.gov
         (301) 286-2899
 \end{verbatim}
@@ -2163,7 +2163,7 @@ reciprocal of the value when constructing the histogram.
 
 For  complex or commonly  used  histograms, one  can also  place its
 description  into  a  text  file and  import   it  into  the binning
-specification  using the  syntax '[bin  @filename.txt]'.  The
+specification  using the  syntax [bin  @filename.txt].  The
 file's contents  can extend over   multiple lines, although  it must
 still conform to the  no-spaces rule  for the min:max:binsize syntax
 and each axis specification must still be comma-separated.
@@ -4469,18 +4469,14 @@ name.
 \section{Primary Array or IMAGE Extension I/O Routines}
 
 These routines read or write data values in the primary data array
-(i.e., the first HDU in a FITS file) or an IMAGE extension.  These
-routines simply treat the array as a long 1-dimensional array of pixels
-ignoring the intrinsic dimensionality of the array as defined by the
-NAXISn keywords.  When dealing with a 2D image, for example, the
-application program must calculate the pixel offset in the 1-D array
-that corresponds to any particular X, Y coordinate in the image.  C
-programmers should note that the ordering of arrays in FITS files, and
-hence in all the CFITSIO calls, is more similar to the dimensionality
-of arrays in Fortran rather than C.  For instance if a FITS image has
-NAXIS1 = 100 and NAXIS2 = 50, then a 2-D array just large enough to
-hold the image should be declared as array[50][100] and not as
-array[100][50].
+(i.e., the first HDU in a FITS file) or an IMAGE extension.   There are
+also routines to get information about the data type and size of the
+image.  C programmers should note that the ordering of arrays in FITS
+files, and hence in all the CFITSIO calls, is more similar to the
+dimensionality of arrays in Fortran rather than C.  For instance if a
+FITS image has NAXIS1 = 100 and NAXIS2 = 50, then a 2-D array just
+large enough to hold the image should be declared as array[50][100] and
+not as array[100][50].
 
 The `datatype'  parameter specifies the datatype of the `nulval'  and
 `array' pointers and can have one of the following  values:  TBYTE,
@@ -4489,8 +4485,8 @@ Automatic data type conversion is performed if the data type of the
 FITS array (as defined by the BITPIX keyword) differs from that
 specified by 'datatype'.  The data values are also automatically scaled
 by the BSCALE and BZERO keyword values as they are being read or
-written in the FITS array.  See Appendix B for the definition of the
-parameters used in these routines.
+written in the FITS array.  See Appendix B for further information
+about the parameters used in these routines.
 
  
 \begin{description}
@@ -4514,7 +4510,8 @@ parameters used in these routines.
 \end{verbatim}
  
 \begin{description}
-\item[3 ] Get the size of all the dimensions of the image \label{ffgisz}
+\item[3 ] Get the size of all the dimensions (up to maxdim dimensions) of
+  the image \label{ffgisz}
 \end{description}
  
 \begin{verbatim}
@@ -4534,12 +4531,15 @@ parameters used in these routines.
 \end{verbatim}
  
 \begin{description}
-\item[5 ] Write pixels into the FITS data array.  \label{ffppx}
+\item[5 ] Write pixels into the FITS data array.  'fpixel' is an array of
+   length NAXIS which gives the coordinate of the starting pixel to be
+   written to, such that fpixel[0] is in the range 1 to NAXIS1,
+  fpixel[1] is in the range 1 to NAXIS2, etc. \label{ffppx}
 \end{description}
  
 \begin{verbatim}
   int fits_write_pix / ffppx
-      (fitsfile *fptr, int datatype, long *firstpix, long nelements,
+      (fitsfile *fptr, int datatype, long *fpixel, long nelements,
        DTYPE *array, int *status);
 \end{verbatim}
  
@@ -4552,22 +4552,24 @@ parameters used in these routines.
    returned if the BLANK keyword doesn't exist).  For floating point
    FITS arrays  the special IEEE NaN (Not-a-Number) value will be
    written into the FITS file.  If a null pointer is entered for
-   nulval, then the null value is
-  ignored and this routine behaves the same as fits\_write\_pix. \label{ffppxn}
+   nulval, then the null value is  ignored and this routine behaves
+  the same as fits\_write\_pix.   \label{ffppxn}
 \end{description}
  
 \begin{verbatim}
   int fits_write_pixnull / ffppxn
-      (fitsfile *fptr, int datatype, long *firstpix, long nelements,
+      (fitsfile *fptr, int datatype, long *fpixel, long nelements,
        DTYPE *array, DTYPE *nulval, > int *status);
 \end{verbatim}
  
 \begin{description}
-\item[7 ]Set FITS data array elements equal to the appropriate null
-   pixel value. For integer FITS arrays, the FITS null value is defined by
-   the BLANK keyword  (an error is returned if the BLANK keyword
-   doesn't exist). For floating point FITS arrays the special IEEE NaN
-  (Not-a-Number) value will be written into the FITS file. \label{ffpprn}
+\item[7 ] Set FITS data array elements equal to the appropriate null pixel
+    value. For integer FITS arrays, the FITS null value is defined by
+    the BLANK keyword  (an error is returned if the BLANK keyword
+    doesn't exist). For floating point FITS arrays the special IEEE NaN
+    (Not-a-Number) value will be written into the FITS file.  Note that
+    'firstelem' is a scalar giving the  offset to the first pixel to be
+   written in the equivalent 1-dimensional array of image pixels. \label{ffpprn}
 \end{description}
  
 \begin{verbatim}
@@ -4580,13 +4582,12 @@ parameters used in these routines.
     elements will be returned with a value = *nullval, (note that this
     parameter gives the address of the null value, not the null value
     itself) unless nulval = 0 or *nulval = 0, in which case no checks for
-    undefined pixels will be performed.  This routine supports reading
-   Large images which may contain more than 2**31 = 2.1E9 pixels. \label{ffgsv}
+   undefined pixels will be performed.  \label{ffgsv}
 \end{description}
  
 \begin{verbatim}
   int fits_read_subset / ffgsv
-      (fitsfile *fptr, int  datatype, long *fpixels, long *lpixels, long *inc,
+      (fitsfile *fptr, int  datatype, long *fpixel, long *lpixel, long *inc,
        DTYPE *nulval, > DTYPE *array, int *anynul, int *status)
 \end{verbatim}
  
@@ -4595,12 +4596,15 @@ parameters used in these routines.
     pixels will be returned with a value = *nullval, (note that this
     parameter gives the address of the null value, not the null value
     itself) unless nulval = 0 or *nulval = 0, in which case no checks for
-   undefined pixels will be performed. \label{ffgpxv}
+    undefined pixels will be performed. 'fpixel' is an array of
+    length NAXIS which gives the coordinate of the starting pixel to be
+    read, such that fpixel[0] is in the range 1 to NAXIS1,
+   fpixel[1] is in the range 1 to NAXIS2, etc. \label{ffgpxv}
 \end{description}
  
 \begin{verbatim}
   int fits_read_pix / ffgpxv
-      (fitsfile *fptr, int  datatype, long *firstpix, long nelements,
+      (fitsfile *fptr, int  datatype, long *fpixel, long nelements,
        DTYPE *nulval, > DTYPE *array, int *anynul, int *status)
 \end{verbatim}
  
@@ -4612,7 +4616,7 @@ parameters used in these routines.
  
 \begin{verbatim}
   int fits_read_pixnull / ffgpxf
-      (fitsfile *fptr, int  datatype, long *firstpix, long nelements,
+      (fitsfile *fptr, int  datatype, long *fpixel, long nelements,
        > DTYPE *array, char *nullarray, int *anynul, int *status)
 \end{verbatim}
 
@@ -7211,8 +7215,8 @@ the program array).
 The most general set of routines (ffpss\_, ffgsv\_, and ffgsf\_) may be
 used to transfer a rectangular subset of the pixels in a FITS
 N-dimensional image to or from an array which has been declared in the
-calling program.  The fpixels and lpixels parameters are integer arrays
-which specify the starting and ending pixels in each dimension
+calling program.  The fpixel and lpixel parameters are integer arrays
+which specify the starting and ending pixel coordinate in each dimension
 (starting with 1, not 0) of the FITS image that is to be read or
 written.  It is important to note that these are the starting and
 ending pixels in the FITS image, not in the declared array in the
@@ -7464,7 +7468,7 @@ working with large data arrays.
   int  fits_read_subset_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
        ffgsv[b,i,ui,k,uk,j,uj,e,d]
        (fitsfile *fptr, int group, int naxis, long *naxes,
-       long *fpixels, long *lpixels, long *inc, DTYPE nulval,
+       long *fpixel, long *lpixel, long *inc, DTYPE nulval,
        > DTYPE *array, int *anynul, int *status)
 \end{verbatim}
  
@@ -7478,7 +7482,7 @@ working with large data arrays.
   int  fits_read_subsetnull_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
        ffgsf[b,i,ui,k,uk,j,uj,e,d]
        (fitsfile *fptr, int group, int naxis, long *naxes,
-       long *fpixels, long *lpixels, long *inc, > DTYPE *array,
+       long *fpixel, long *lpixel, long *inc, > DTYPE *array,
        char *nularray, int *anynul, int *status)
 \end{verbatim}
 
@@ -7757,7 +7761,7 @@ parameters used in these routines.
     in the array will be set equal to the value of 'nulval',
     unless nulval=0 in which case no testing for undefined pixels will
     be performed.  The first and last rows in the table to be read
-    are specified by fpixels(naxis+1) and lpixels(naxis+1), and hence
+    are specified by fpixel(naxis+1) and lpixel(naxis+1), and hence
     are treated as the next higher dimension of the FITS N-dimensional
     array.  The INC parameter specifies the sampling interval in
    each dimension between the data elements that will be returned. \label{ffgsvx2}
@@ -7766,8 +7770,8 @@ parameters used in these routines.
 \begin{verbatim}
   int fits_read_subset_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
       ffgsv[b,i,ui,k,uk,j,uj,e,d]
-      (fitsfile *fptr, int colnum, int naxis, long *naxes, long *fpixels,
-       long *lpixels, long *inc, DTYPE nulval, > DTYPE *array, int *anynul,
+      (fitsfile *fptr, int colnum, int naxis, long *naxes, long *fpixel,
+       long *lpixel, long *inc, DTYPE nulval, > DTYPE *array, int *anynul,
        int *status)
 \end{verbatim}
  
@@ -7776,7 +7780,7 @@ parameters used in these routines.
     in a binary table vector column.  Any Undefined
     pixels in the array will have the corresponding 'nularray'
     element set equal to TRUE.  The first and last rows in the table
-    to be read are specified by fpixels(naxis+1) and lpixels(naxis+1),
+    to be read are specified by fpixel(naxis+1) and lpixel(naxis+1),
     and hence are treated as the next higher dimension of the FITS
     N-dimensional array.  The INC parameter specifies the sampling
     interval in each dimension between the data elements that will be
@@ -7787,7 +7791,7 @@ parameters used in these routines.
   int fits_read_subsetnull_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
       ffgsf[b,i,ui,k,uk,j,uj,e,d]
       (fitsfile *fptr, int colnum, int naxis, long *naxes,
-       long *fpixels, long *lpixels, long *inc, > DTYPE *array,
+       long *fpixel, long *lpixel, long *inc, > DTYPE *array,
        char *nularray, int *anynul, int *status)
 \end{verbatim}
  
@@ -8387,13 +8391,10 @@ firstfailed - member HDU ID (if positive) or grouping table GRPIDn index
            value (if negative) that failed grouping table verification.
 firstelem- first element in a vector (ignored for ASCII tables)
 firstrow - starting row number (first row of table = 1)
-firstpix - Coordinate of the first pixel to be read or written in the
-           FITS array.  The number of elements in this array must = NAXIS.
-           First pixel in each dimension = 1, and the coordinates are
-           given in order of the FITS dimensions, i.e., the first element
-           of the firstpix array gives the coordinate of the pixel along
-           the NAXIS1 axis.
-fpixels  - the first included pixel in each dimension (first pixel = 1)
+fpixel   - coordinate of the first pixel to be read or written in the
+           FITS array.  The array must be of length NAXIS and have values such
+           that fpixel[0] is in the range 1 to NAXIS1, fpixel[1] is in the
+           range 1 to NAXIS2, etc.
 fptr     - pointer to a 'fitsfile' structure describing the FITS file.
 frac     - factional part of the keyword value
 gcount   - number of groups in the primary array (usually = 1)
@@ -8426,7 +8427,10 @@ keysexist- number of existing keyword records in the CHU
 keytype  - header record type: -1=delete;  0=append or replace;
                    1=append; 2=this is the END keyword
 longstr  - arbitrarily long string keyword value (null-terminated)
-lpixels  - the last included pixel in each dimension (first pixel = 1)
+lpixel   - coordinate of the last pixel to be read or written in the
+           FITS array.  The array must be of length NAXIS and have values such
+           that lpixel[0] is in the range 1 to NAXIS1, lpixel[1] is in the
+           range 1 to NAXIS2, etc.
 match    - TRUE (=1) if the 2 strings match, else FALSE (=0)
 maxdim   - maximum number of values to return
 member   - row number of a grouping table member HDU.

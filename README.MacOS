@@ -1,6 +1,6 @@
 To build the MacOS port:
 
-1. Un binhex and unstuff cfitsio_mac.hqx
+1. Un binhex and unstuff cfitsio_mac.sit.hqx
 2. put CFitsioPPC.mcp in the cfitsio directory.
 2. Load CFitsioPPC.mcp into CodeWarrior Pro 5 and make.
    This builds the cfitsio library for PPC.  There are also targets for both 

@@ -1,6 +1,7 @@
                    Log of Changes Made to CFITSIO
 
-Version 2.1 - 26 Sept 2000
+
+Version 2.100 - 18 Oct 2000
 
   Enhancements
 
@@ -34,6 +35,10 @@ Version 2.1 - 26 Sept 2000
      in files greater than 2.1GB in size.
 
   Bug fixes:
+
+   - fixed bug in fits_select_image_section that caused an integer
+     overflow when reading very large image sections (bigger than
+     8192 x 8192 4-byte pixels).
 
    - improved ffptbb, the low-level table writing routine, so that 
      it will insert additional rows in the table if the table is

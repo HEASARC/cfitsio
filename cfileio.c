@@ -1765,14 +1765,14 @@ int fits_select_image_section(
     }
 
     /* allocate memory for the entire image section */
-    buffsize = outsize * abs(bitpix) / 8;
+    buffsize = (abs(bitpix) / 8) * outsize;
 
     buffer = (double *) malloc(buffsize);
     if (!buffer)
     {
         ffpmsg("error allocating memory for image section");
         ffclos(newptr, status);
-        return(*status);
+        return(*status = MEMORY_ALLOCATION);
     }
 
     /* turn off any scaling of the pixel values */
