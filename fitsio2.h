@@ -228,6 +228,9 @@ int ffbfwt(int nbuff, int *status);
 int fits_get_num_files(void);
 
 int fits_is_this_a_copy(char *urltype);
+int fits_already_open(fitsfile **fptr, char *url, 
+    char *urltype, char *infile, char *extspec, char *rowfilter,
+    char *binspec, char *colspec, int  mode,int  *isopen, int  *status);
 int ffedit_columns(fitsfile **fptr, char *outfile, char *expr, int *status);
 int ffhist(fitsfile **fptr, char *outfile, int imagetype, int naxis,
            char colname[4][FLEN_VALUE],

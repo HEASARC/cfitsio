@@ -999,95 +999,92 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
     /*  Main loop: increment the histogram at position of each event */
     for (ii = 1; ii <= nrows; ii++) 
     {
-      if (col1[ii] == FLOATNULLVALUE)  /* test for null value */
-      {
-          break;
-      }
+        if (col1[ii] == FLOATNULLVALUE)  /* test for null value */
+            continue;
 
-      /* add 1 because the 1st pixel is the null pixel value */
-      ipix = (col1[ii] - amin1) / binsize1 + 1;
-      if (ipix < 1 || ipix > haxis1)   /* test if bin is within range */
-      {
-          break;
-      }
+        /* add 1 because the 1st pixel is the null pixel value */
+        ipix = (col1[ii] - amin1) / binsize1 + 1;
+        if (ipix < 1 || ipix > haxis1)   /* test if bin is within range */
+            continue;
 
-      if (haxis > 1)
-      {
-        if (col2[ii] == FLOATNULLVALUE)
-          break;
-
-        axisbin = (col2[ii] - amin2) / binsize2;
-        if (axisbin < 0 || axisbin >= haxis2)
-          break;
-
-        ipix += (axisbin * incr2);
-
-        if (haxis > 2)
+        if (haxis > 1)
         {
-          if (col3[ii] == FLOATNULLVALUE)
-            break;
+          if (col2[ii] == FLOATNULLVALUE)
+              continue;
 
-          axisbin = (col3[ii] - amin3) / binsize3;
-          if (axisbin < 0 || axisbin >= haxis3)
-            break;
+          axisbin = (col2[ii] - amin2) / binsize2;
+          if (axisbin < 0 || axisbin >= haxis2)
+              continue;
 
-          ipix += (axisbin * incr3);
+          ipix += (axisbin * incr2);
 
-          if (haxis > 3)
+          if (haxis > 2)
           {
-            if (col4[ii] == FLOATNULLVALUE)
-              break;
+            if (col3[ii] == FLOATNULLVALUE)
+                continue;
 
-            axisbin = (col4[ii] - amin4) / binsize4;
-            if (axisbin < 0 || axisbin >= haxis4)
-              break;
+            axisbin = (col3[ii] - amin3) / binsize3;
+            if (axisbin < 0 || axisbin >= haxis3)
+                continue;
 
-            ipix += (axisbin * incr4);
-          }
+            ipix += (axisbin * incr3);
+ 
+            if (haxis > 3)
+            {
+              if (col4[ii] == FLOATNULLVALUE)
+                  continue;
+
+              axisbin = (col4[ii] - amin4) / binsize4;
+              if (axisbin < 0 || axisbin >= haxis4)
+                  continue;
+
+              ipix += (axisbin * incr4);
+            }
+          }  /* end of haxis > 2 case */
+        }  /* end of haxis > 1 case */
+
+        /* increment the histogram pixel */
+        if (weight != FLOATNULLVALUE) /* constant weight factor */
+        {
+            if (himagetype == TINT)
+              histj[ipix]+= weight;
+            else if (himagetype == TSHORT)
+              histi[ipix] += weight;
+            else if (himagetype == TFLOAT)
+              histr[ipix] += weight;
+            else if (himagetype == TDOUBLE)
+              histd[ipix] += weight;
+            else if (himagetype == TBYTE)
+              histb[ipix] += weight;
         }
-      }
+        else if (wtrecip) /* use reciprocal of the weight */
+        {
+            if (himagetype == TINT)
+              histj[ipix]+= 1./wtcol[ii];
+            else if (himagetype == TSHORT)
+              histi[ipix] += 1./wtcol[ii];
+            else if (himagetype == TFLOAT)
+              histr[ipix] += 1./wtcol[ii];
+            else if (himagetype == TDOUBLE)
+              histd[ipix] += 1./wtcol[ii];
+            else if (himagetype == TBYTE)
+              histb[ipix] += 1./wtcol[ii];
+        }
+        else
+        {
+            if (himagetype == TINT)
+              histj[ipix]+= wtcol[ii];
+            else if (himagetype == TSHORT)
+              histi[ipix] += wtcol[ii];
+            else if (himagetype == TFLOAT)
+              histr[ipix] += wtcol[ii];
+            else if (himagetype == TDOUBLE)
+              histd[ipix] += wtcol[ii];
+            else if (himagetype == TBYTE)
+              histb[ipix] += wtcol[ii];
+        }
 
-      /* increment the histogram pixel */
-      if (weight != FLOATNULLVALUE) /* constant weight factor */
-      {
-        if (himagetype == TINT)
-          histj[ipix]+= weight;
-        else if (himagetype == TSHORT)
-          histi[ipix] += weight;
-        else if (himagetype == TFLOAT)
-          histr[ipix] += weight;
-        else if (himagetype == TDOUBLE)
-          histd[ipix] += weight;
-        else if (himagetype == TBYTE)
-          histb[ipix] += weight;
-      }
-      else if (wtrecip) /* use reciprocal of the weight */
-      {
-        if (himagetype == TINT)
-          histj[ipix]+= 1./wtcol[ii];
-        else if (himagetype == TSHORT)
-          histi[ipix] += 1./wtcol[ii];
-        else if (himagetype == TFLOAT)
-          histr[ipix] += 1./wtcol[ii];
-        else if (himagetype == TDOUBLE)
-          histd[ipix] += 1./wtcol[ii];
-        else if (himagetype == TBYTE)
-          histb[ipix] += 1./wtcol[ii];
-      }
-      else
-      {
-        if (himagetype == TINT)
-          histj[ipix]+= wtcol[ii];
-        else if (himagetype == TSHORT)
-          histi[ipix] += wtcol[ii];
-        else if (himagetype == TFLOAT)
-          histr[ipix] += wtcol[ii];
-        else if (himagetype == TDOUBLE)
-          histd[ipix] += wtcol[ii];
-        else if (himagetype == TBYTE)
-          histb[ipix] += wtcol[ii];
-      }
-    }
+    }  /* end of main loop over all rows */
 
     return(0);
 }

@@ -253,8 +253,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
 */
 {
     fitsfile *copyfptr;
-    FITSfile *oldFptr;
-    int ii, driver, hdutyp, slen, writecopy;
+    int ii, driver, hdutyp, slen, writecopy, isopen;
     long filesize;
     int extnum, extvers, handle, movetotype;
     char urltype[MAX_PREFIX_LEN], infile[FLEN_FILENAME], outfile[FLEN_FILENAME];
@@ -265,10 +264,6 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     char wtcol[FLEN_VALUE];
     char minname[4][FLEN_VALUE], maxname[4][FLEN_VALUE];
     char binname[4][FLEN_VALUE];
-    char oldurltype[MAX_PREFIX_LEN], oldinfile[FLEN_FILENAME];
-    char oldextspec[FLEN_FILENAME], oldoutfile[FLEN_FILENAME];
-    char oldrowfilter[FLEN_FILENAME];
-    char oldbinspec[FLEN_FILENAME], oldcolspec[FLEN_FILENAME];
 
     char *url;
     double minin[4], maxin[4], binsizein[4], weight;
@@ -317,94 +312,25 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     /* rowfilter are specified.                                          */
     /*-------------------------------------------------------------------*/
 
+    histfilename[0] = '\0';
     if (*outfile && *binspec)
     {
         strcpy(histfilename, outfile);
         outfile[0] = '\0';
     }
         
-    /* check if this same file is already open, and if so, attach to it */
-    for (ii = 0; ii < NIOBUF; ii++)   /* check every buffer */
-    {
-        ffcurbuf(ii, &oldFptr);  
-        if (oldFptr)            /* this is the current buffer of a file */
-        {
-          ffiurl(oldFptr->filename, oldurltype, 
-                    oldinfile, oldoutfile, oldextspec, oldrowfilter, 
-                    oldbinspec, oldcolspec, status);
+    /*-------------------------------------------------------------------*/
+    /* check if this same file is already open, and if so, attach to it  */
+    /*-------------------------------------------------------------------*/
 
-          if (*status > 0)
-          {
-            ffpmsg("could not parse the previously opened filename: (ffopen)");
-            ffpmsg(oldFptr->filename);
-            return(*status);
-          }
+    fits_already_open(fptr, url, urltype, infile, extspec, rowfilter,
+            binspec, colspec, mode, &isopen, status);
 
-          if (!strcmp(urltype, oldurltype) && !strcmp(infile, oldinfile) )
-          {
-              /* identical type of file and root file name */
+    if (isopen)
+       goto move2hdu;  
 
-              if ( (!rowfilter[0] && !oldrowfilter[0] &&
-                    !binspec[0]   && !oldbinspec[0] &&
-                    !colspec[0]   && !oldcolspec[0])
 
-                  /* no filtering or binning specs for either file, so */
-                  /* this is a case where the same file is being reopened. */
-                  /* It doesn't matter if the extensions are different */
-
-                      ||   /* or */
-
-                  (!strcmp(rowfilter, oldrowfilter) &&
-                   !strcmp(binspec, oldbinspec)     &&
-                   !strcmp(colspec, oldcolspec)     &&
-                   !strcmp(extspec, oldextspec) ) )
-
-                  /* filtering specs are given and are identical, and */
-                  /* the same extension is specified */
-
-              {
-                  if (mode == READWRITE && oldFptr->writemode == READONLY)
-                  {
-                    /*
-                      cannot assume that a file previously opened with READONLY
-                      can now be written to (e.g., files on CDROM, or over the
-                      the network, or STDIN), so return with an error.
-                    */
-
-                    ffpmsg(
-                "cannot reopen file READWRITE when previously opened READONLY");
-                    ffpmsg(url);
-                    return(*status = FILE_NOT_OPENED);
-                  }
-
-                  *fptr = (fitsfile *) calloc(1, sizeof(fitsfile));
-
-                  if (!(*fptr))
-                  {
-                     ffpmsg(
-                   "failed to allocate structure for following file: (ffopen)");
-                     ffpmsg(url);
-                     return(*status = MEMORY_ALLOCATION);
-                  }
-
-                  (*fptr)->Fptr = oldFptr; /* point to the structure */
-                  (*fptr)->HDUposition = 0;     /* set initial position */
-                (((*fptr)->Fptr)->open_count)++;  /* increment usage counter */
-
-                  if (binspec[0])  /* if binning specified, don't move */
-                      extspec[0] = '\0';
-
-                  /* all the filtering has already been applied, so ignore */
-                  rowfilter[0] = '\0';
-                  binspec[0] = '\0';
-                  colspec[0] = '\0';
-
-                  goto move2hdu;  
-              }
-            }
-        }
-    }
-
+    /* get the driver number corresponding to this urltype */
     *status = urltype2driver(urltype, &driver);
 
     if (*status > 0)
@@ -414,14 +340,14 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
         return(*status);
     }
 
-    /*
+    /*-------------------------------------------------------------------
         deal with all those messy special cases which may require that
         a different driver be used:
             - is disk file compressed?
             - are ftp: or http: files compressed?
             - has user requested that a local copy be made of
               the ftp or http file?
-    */
+      -------------------------------------------------------------------*/
 
     if (driverTable[driver].checkfile)
     {
@@ -549,6 +475,8 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     /* ---------------------------------------------------------- */
     /* at this point, we can assume the file has been opened.     */
     /* If 'outfile' was specified, then copy file to it           */
+    /*  (this is a temporary fix until the open routines are      */
+    /*  modified to create the outfile copy directly)             */
     /* ---------------------------------------------------------- */
 
     if (*outfile)
@@ -577,8 +505,11 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
             }
         }
 
-        if (*status == END_OF_FILE)   
+        if (*status == END_OF_FILE)
+        {   
             *status = 0;        /* got the expected EOF error; reset = 0  */
+            ffxmsg(-2, NULL);   /* clear error message stack */
+        }
 
         ffclos(*fptr,  status);
 
@@ -601,7 +532,7 @@ move2hdu:
       if (*status > 0)
           return(*status);
 
-      if (extnum)
+      if (extnum)  /* extension number was specified */
       {
         ffmahd(*fptr, extnum + 1, &hdutyp, status);
       }
@@ -610,7 +541,7 @@ move2hdu:
         ffmnhd(*fptr, movetotype, extname, extvers, status);
       }
 
-      if (*status > 0)
+      if (*status > 0)  /* clean up after error */
       {
         ffpmsg("ffopen could not move to the specified extension:");
         if (extnum > 0)
@@ -645,9 +576,9 @@ move2hdu:
       }
     }
 
-    /* ------------------------------------------------------------------- */
-    /* edit columns in the table, if specified in the URL                  */
-    /* ------------------------------------------------------------------- */
+    /* --------------------------------------------------------------------- */
+    /* edit columns (and/or keywords) in the table, if specified in the URL  */
+    /* --------------------------------------------------------------------- */
  
     if (*colspec)
     {
@@ -685,7 +616,6 @@ move2hdu:
 
        if (!writecopy)
        {
-printf("creating  memory file\n");
            strcpy(outfile, "mem://_2");  /* will create copy in memory */
        }
        else
@@ -698,7 +628,6 @@ printf("creating  memory file\n");
        /* not already been made, then this routine will make a copy */
        /* and then close the input file, so that the modifications will */
        /* only be made on the copy, not the original */
-printf("ffselect_table_being called: %d %s\n",fptr,outfile);
 
        if (ffselect_table(fptr, outfile, rowfilter, status) > 0)
        {
@@ -763,6 +692,112 @@ int ffreopen(fitsfile *openfptr, /* I - FITS file pointer to open file  */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */ 
+           char *url, 
+           char *urltype, 
+           char *infile, 
+           char *extspec, 
+           char *rowfilter,
+           char *binspec, 
+           char *colspec, 
+           int  mode,             /* I - 0 = open readonly; 1 = read/write   */
+           int  *isopen,
+           int  *status)          /* IO - error status                       */
+/*
+  Check if the file to be opened is already open.  If so, then attach to it.
+*/
+{
+    FITSfile *oldFptr;
+    int ii;
+    char oldurltype[MAX_PREFIX_LEN], oldinfile[FLEN_FILENAME];
+    char oldextspec[FLEN_FILENAME], oldoutfile[FLEN_FILENAME];
+    char oldrowfilter[FLEN_FILENAME];
+    char oldbinspec[FLEN_FILENAME], oldcolspec[FLEN_FILENAME];
+
+
+    for (ii = 0; ii < NIOBUF; ii++)   /* check every buffer */
+    {
+        ffcurbuf(ii, &oldFptr);  
+        if (oldFptr)            /* this is the current buffer of a file */
+        {
+          ffiurl(oldFptr->filename, oldurltype, 
+                    oldinfile, oldoutfile, oldextspec, oldrowfilter, 
+                    oldbinspec, oldcolspec, status);
+
+          if (*status > 0)
+          {
+            ffpmsg("could not parse the previously opened filename: (ffopen)");
+            ffpmsg(oldFptr->filename);
+            return(*status);
+          }
+
+          if (!strcmp(urltype, oldurltype) && !strcmp(infile, oldinfile) )
+          {
+              /* identical type of file and root file name */
+
+              if ( (!rowfilter[0] && !oldrowfilter[0] &&
+                    !binspec[0]   && !oldbinspec[0] &&
+                    !colspec[0]   && !oldcolspec[0])
+
+                  /* no filtering or binning specs for either file, so */
+                  /* this is a case where the same file is being reopened. */
+                  /* It doesn't matter if the extensions are different */
+
+                      ||   /* or */
+
+                  (!strcmp(rowfilter, oldrowfilter) &&
+                   !strcmp(binspec, oldbinspec)     &&
+                   !strcmp(colspec, oldcolspec)     &&
+                   !strcmp(extspec, oldextspec) ) )
+
+                  /* filtering specs are given and are identical, and */
+                  /* the same extension is specified */
+
+              {
+                  if (mode == READWRITE && oldFptr->writemode == READONLY)
+                  {
+                    /*
+                      cannot assume that a file previously opened with READONLY
+                      can now be written to (e.g., files on CDROM, or over the
+                      the network, or STDIN), so return with an error.
+                    */
+
+                    ffpmsg(
+                "cannot reopen file READWRITE when previously opened READONLY");
+                    ffpmsg(url);
+                    return(*status = FILE_NOT_OPENED);
+                  }
+
+                  *fptr = (fitsfile *) calloc(1, sizeof(fitsfile));
+
+                  if (!(*fptr))
+                  {
+                     ffpmsg(
+                   "failed to allocate structure for following file: (ffopen)");
+                     ffpmsg(url);
+                     return(*status = MEMORY_ALLOCATION);
+                  }
+
+                  (*fptr)->Fptr = oldFptr; /* point to the structure */
+                  (*fptr)->HDUposition = 0;     /* set initial position */
+                (((*fptr)->Fptr)->open_count)++;  /* increment usage counter */
+
+                  if (binspec[0])  /* if binning specified, don't move */
+                      extspec[0] = '\0';
+
+                  /* all the filtering has already been applied, so ignore */
+                  rowfilter[0] = '\0';
+                  binspec[0] = '\0';
+                  colspec[0] = '\0';
+
+                  *isopen = 1;
+              }
+            }
+        }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int fits_is_this_a_copy(char *urltype) /* I - type of file */
 /*
   specialized routine that returns 1 if the file is known to be a temporary
@@ -793,20 +828,21 @@ int ffedit_columns(
            char *outfile,    /* I - name for output file */
            char *expr,       /* I - column edit expression    */
            int *status)
+/*
+   modify columns in a table and/or header keywords in the HDU
+*/
 {
     fitsfile *newptr;
-    int ii, hdunum, hdutype, slen, colnum;
+    int ii, hdunum, slen, colnum;
     char *cptr, *cptr2, clause[FLEN_FILENAME], keyname[FLEN_KEYWORD];
-    char colname[FLEN_VALUE], oldname[FLEN_VALUE];
-    char colformat[8];
+    char colname[FLEN_VALUE], oldname[FLEN_VALUE], colformat[FLEN_VALUE];
 
     if (*outfile)
     {
       /* create new empty file in to hold the selected rows */
       if (ffinit(&newptr, outfile, status) > 0)
       {
-        ffpmsg(
-         "failed to make copy of input file (ffedit_columns)");
+        ffpmsg("failed to create file for copy (ffedit_columns)");
         return(*status);
       }
 
@@ -830,6 +866,7 @@ int ffedit_columns(
       else if (*status > 0)
       {
         ffclos(newptr, status);
+        ffpmsg("failed to copy all HDUs from input file (ffedit_columns)");
         return(*status);
       }
 
@@ -839,7 +876,11 @@ int ffedit_columns(
       *fptr = newptr; /* reset the pointer to the new table */
 
       /* move back to the selected table HDU */
-      fits_movabs_hdu(*fptr, hdunum, NULL, status);
+      if (fits_movabs_hdu(*fptr, hdunum, NULL, status) > 0)
+      {
+         ffpmsg("failed to copy the input file (ffedit_columns)");
+         return(*status);
+      }
     }
 
     /* remove the "col " from the beginning of the column edit expression */
@@ -857,21 +898,35 @@ int ffedit_columns(
 
         if (clause[0] == '!')
         {
-            /* delete this column */
+            /* delete this column or keyword */
 
-            ffgcno(*fptr, CASEINSEN, &clause[1], &colnum, status);
-            if (ffdcol(*fptr, colnum, status) > 0)
+            if (ffgcno(*fptr, CASEINSEN, &clause[1], &colnum, status) <= 0)
             {
-                ffpmsg("failed to delete column in input file:");
-                ffpmsg(clause);
-                return(*status);
+                /* a column with this name exists, so try to delete it */
+                if (ffdcol(*fptr, colnum, status) > 0)
+                {
+                    ffpmsg("failed to delete column in input file:");
+                    ffpmsg(clause);
+                    return(*status);
+                }
+            }
+            else
+            {
+                /* try deleting a keyword with this name */
+                *status = 0;
+                if (ffdkey(*fptr, &clause[1], status) > 0)
+                {
+                    ffpmsg("column or keyword to be deleted does not exist:");
+                    ffpmsg(clause);
+                    return(*status);
+                }
             }
         }
         else
         {
             /*
-               this is either a column name followed by a single "=" 
-               and a calculation expression, or
+               this is either a column or keyword name followed by a 
+               single "=" and a calculation expression, or
                a column name followed by double = ("==") followed
                by the new name to which it should be renamed.
             */
@@ -880,7 +935,7 @@ int ffedit_columns(
             slen = fits_get_token(&cptr2, " =", colname, NULL);
             if (slen == 0)
             {
-                ffpmsg("error: column name is blank!:");
+                ffpmsg("error: column or keyword name is blank:");
                 ffpmsg(clause);
                 return(*status= URL_PARSE_ERROR);
             }
@@ -900,8 +955,8 @@ int ffedit_columns(
             if (*cptr2 == '=')
             {
                 /*
-                    Case 1:  rename a column;  syntax is
-                   "new_column_name == old_column_name"
+                    Case 1:  rename a column or keyword;  syntax is
+                    "new_name == old_name"
                 */
 
                 cptr2++;  /* skip the 2nd '=' */
@@ -911,53 +966,51 @@ int ffedit_columns(
                 fits_get_token(&cptr2, " ", oldname, NULL);
 
                 /* get column number of the existing column */
-                if (ffgcno(*fptr, CASEINSEN, oldname, &colnum, status) > 0)
+                if (ffgcno(*fptr, CASEINSEN, oldname, &colnum, status) <= 0)
                 {
-                  ffpmsg("failed to rename column in input file");
-                  ffpmsg(" This column does not exist:");
-                  ffpmsg(clause);
-                  return(*status);
+                    /* modify the TTYPEn keyword value with the new name */
+                    ffkeyn("TTYPE", colnum, keyname, status);
+
+                    if (ffmkys(*fptr, keyname, colname, NULL, status) > 0)
+                    {
+                      ffpmsg("failed to rename column in input file");
+                      ffpmsg(" oldname =");
+                      ffpmsg(oldname);
+                      ffpmsg(" newname =");
+                      ffpmsg(colname);
+                      return(*status);
+                    }
                 }
-
-                /* modify the TTYPEn keyword value with the new name */
-                ffkeyn("TTYPE", colnum, keyname, status);
-
-                if (ffmkys(*fptr, keyname, colname, NULL, status) > 0)
+                else
                 {
-                  ffpmsg("failed to rename column in input file");
-                  ffpmsg(" oldname =");
-                  ffpmsg(oldname);
-                  ffpmsg(" newname =");
-                  ffpmsg(colname);
-                  return(*status);
+                    /* try renaming a keyword */
+                    *status = 0;
+                    if (ffmnam(*fptr, oldname, colname, status) > 0)
+                    {
+                        ffpmsg("column or keyword to be renamed does not exist:");
+                        ffpmsg(clause);
+                        return(*status);
+                    }
                 }
             }  
             else
             {
-                /* this must be a general column calculation expression */
-                /* "colname = expression"  */
+                /* this must be a general column/keyword calculation expression */
+                /* "name = expression" or "colname(TFORM) = expression" */
 
-                if (ffgcno(*fptr, CASEINSEN, colname, &colnum, status) > 0)
+                /* parse the name and TFORM values, if present */
+                colformat[0] = '\0';
+                cptr = colname;
+
+                fits_get_token(&cptr, "(", colname, NULL);
+
+                if (cptr[0] == '(' )
                 {
-                    /* column doesn't exist; create it (with DOUBLE format) */
-                    *status = 0;
-
-                    ffghdt(*fptr, &hdutype, status);
-                    if (hdutype == BINARY_TBL)
-                        strcpy(colformat, "1D");
-                    else
-                        strcpy(colformat, "E21.14");
-
-                    /* insert new column at end of table */
-                    if (fficol(*fptr, 999, colname, colformat, status) > 0)
-                    {
-                        ffpmsg("failed to insert new column in table:");
-                        ffpmsg(colname);
-                        return(*status);
-                    }
+                   cptr++;  /* skip the '(' */
+                   fits_get_token(&cptr, ")", colformat, NULL);
                 }
 
-                /* calculate values for each row of the column */ 
+                /* calculate values for the column or keyword */ 
                 fits_calc_col(*fptr, cptr2, *fptr, colname, status);
             }
         }
