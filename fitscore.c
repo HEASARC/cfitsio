@@ -24,7 +24,7 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.028; /* 26 jan 1999 */
+      *version = 2.0281; /* 26 jan 1999 */
 
  /*   *version = 2.027;  12 Jan 1999 */
  /*   *version = 2.026;  23 Dec 1998 */
@@ -1206,7 +1206,7 @@ int ffgthd(char *tmplt, /* I - input header template string */
 {
     char keyname[FLEN_KEYWORD], value[FLEN_VALUE], comment[FLEN_COMMENT];
     char *tok, *suffix;
-    int len, vlen, more;
+    int len, vlen, more, tstatus;
     double dval;
 
     if (*status > 0)
@@ -1215,7 +1215,7 @@ int ffgthd(char *tmplt, /* I - input header template string */
     card[0]   = '\0';
     *hdtype   = 0;
 
-    if (!strncmp(tmplt, "        ", 8) )
+    if (!FSTRNCMP(tmplt, "        ", 8) )
     {
         /* if first 8 chars of template are blank, then this is a comment */
         strncat(card, tmplt, 80);
@@ -1242,13 +1242,29 @@ int ffgthd(char *tmplt, /* I - input header template string */
         if (len < 8)  /* not a blank name? */
         {
           len = strcspn(tok, " =");  /* length of name */
-          if (len > 8)
+          if (len >= FLEN_KEYWORD)
             return(*status = BAD_KEYCHAR);
 
           strncat(card, tok, len);
-          ffupch(card);
-          if (fftkey(card, status) > 0)
-              return(*status);      /* illegal chars in name */
+
+          /*
+            The HIERARCH convention supports non-standard characters
+            in the keyword name, so don't always convert to upper case or
+            abort if there are illegal characters in the name or if the
+            name is greater than 8 characters long.
+          */
+
+          if (len < 9)  /* this is possibly a normal FITS keyword name */
+          {
+            ffupch(card);
+            tstatus = 0;
+            if (fftkey(card, &tstatus) > 0)
+            {
+               /* name contained non-standard characters, so reset */
+               card[0] = '\0';
+               strncat(card, tok, len);
+            }
+          }
 
           tok += len;
         }
@@ -1263,30 +1279,62 @@ int ffgthd(char *tmplt, /* I - input header template string */
 
         *hdtype = -2;
         len = strcspn(tok, " ");  /* length of new name */
-        if (len > 8)
+        if (len > 40)  /* name has to fit on columns 41-80 of card */
           return(*status = BAD_KEYCHAR);
 
         /* copy the new name to card + 40;  This is awkward, */
         /* but is consistent with the way the Fortran FITSIO works */
 	strcat(card,"                                        ");
         strncpy(&card[40], tok, len);
-        ffupch(&card[40]);
-        fftkey(&card[40], status);
+
+        /*
+            The HIERARCH convention supports non-standard characters
+            in the keyword name, so don't always convert to upper case or
+            abort if there are illegal characters in the name or if the
+            name is greater than 8 characters long.
+        */
+
+        if (len < 9)  /* this is possibly a normal FITS keyword name */
+        {
+            ffupch(&card[40]);
+            tstatus = 0;
+            if (fftkey(&card[40], &tstatus) > 0)
+            {
+               /* name contained non-standard characters, so reset */
+               strncpy(&card[40], tok, len);
+            }
+        }
     }
     else  /* no negative sign at beginning of template */
     {
       /* get the keyword name token */
 
       len = strcspn(tok, " =");  /* length of keyword name */
-      if (len > 8)
+      if (len >= FLEN_KEYWORD)
         return(*status = BAD_KEYCHAR);
 
       strncat(keyname, tok, len);
-      ffupch(keyname);
-      if (fftkey(keyname, status) > 0)
-          return(*status);
 
-      if (!strcmp(keyname, "END") )
+      /*
+        The HIERARCH convention supports non-standard characters
+        in the keyword name, so don't always convert to upper case or
+        abort if there are illegal characters in the name or if the
+        name is greater than 8 characters long.
+      */
+
+      if (len < 9)  /* this is possibly a normal FITS keyword name */
+      {
+        ffupch(keyname);
+        tstatus = 0;
+        if (fftkey(keyname, &tstatus) > 0)
+        {
+           /* name contained non-standard characters, so reset */
+           keyname[0] = '\0';
+           strncat(keyname, tok, len);
+        }
+      }
+
+      if (!FSTRCMP(keyname, "END") )
       {
          strcpy(card, "END");
          *hdtype = 2;
@@ -1295,7 +1343,7 @@ int ffgthd(char *tmplt, /* I - input header template string */
 
       tok += len; /* move token pointer to end of the keyword */
 
-      if (!strcmp(keyname, "COMMENT") || !strcmp(keyname, "HISTORY") )
+      if (!FSTRCMP(keyname, "COMMENT") || !FSTRCMP(keyname, "HISTORY") )
       {
         *hdtype = 1;   /* simply append COMMENT and HISTORY keywords */
         strcpy(card, keyname);
@@ -4656,7 +4704,6 @@ int ffgext(fitsfile *fptr,      /* I - FITS file pointer                */
             (fptr->Fptr)->headend = xheadend;
         }
     }
-
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
