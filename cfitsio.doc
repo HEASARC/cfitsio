@@ -1,0 +1,2718 @@
+        CFITSIO - An Interface to FITS Format Files for C Programmers
+ 
+                    William D Pence, HEASARC, NASA/GSFC
+                         DRAFT Version 0.9
+                             March 1996
+ 
+ 
+[Note: This file contains various formatting command symbols in the first
+column which are used when generating the LATeX version of this document.]
+ 
+*I.  Introduction
+ 
+CFITSIO is a machine-independent library of routines for reading and
+writing data files in the FITS (Flexible Image Transport System) data
+format.  CFITSIO is written entirely in ANSI-C and  provides the same
+functions that are available in the previously released Fortran FITSIO
+library.  This package was written to provide a powerful yet simple
+interface for accessing FITS files which will run on most commonly used
+computers and workstations.  This version of CFITSIO supports all the
+features described in the official NOST definition of the FITS format,
+and can read and write all the currently defined types of extensions,
+including the ASCII table (TABLE), the Binary table (BINTABLE), and the
+IMAGE extensions.  The CFITSIO routines insulate the programmer from
+having to deal with the complicated formatting details in the FITS
+file, however, it is assumed that users have a general knowledge about
+the structure and usage of FITS files.
+
+This new ANSI-C library  should not be confused with the previously
+available set of C macros which provide a C-callable interface to the
+Fortran FITSIO routines.  These older macros are contained in the
+cfitsio.h file that is distributed along with the Fortran FITSIO source
+files.  These macros will continue to be supported, but they should be
+considered obsolete.  New FITS application software should be written
+using the new CFITSIO interface described here.
+
+The CFITSIO package was developed for use by the HEASARC (High Energy
+Astrophysics Science Archive Research Center) at the NASA Goddard Space
+Flight Center to convert various existing and newly acquired
+astronomical data sets into FITS format and to further analyze data
+already in FITS format.  The latest version of the CFITSIO source code,
+documentation, and example programs are all available on the World-Wide
+Web at the following URL:
+-
+        http://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html
+-
+CFITSIO also can be obtained from the HEASARC via anonymous ftp from
+{\bf legacy.gsfc.nasa.gov}    (or, 128.183.126.108) in the
+{\bf software/fitsio/c} subdirectory.
+
+Any questions, bug reports, or suggested enhancements related to the CFITSIO
+package should be sent to the author:
+-
+        Dr. William Pence                 Telephone:  (301) 286-4599
+        HEASARC                           E-mail: pence@tetra.gsfc.nasa.gov
+        Code 662                          
+        NASA/Goddard Space Flight Center
+        Greenbelt, MD 20771
+        USA
+-
+This User's Guide assumes that readers already have a general
+understanding of the definition and structure of FITS format files.
+For further information about FITS formats, please obtain a copy of the
+`FITS User's Guide' and the `NOST FITS Standard', which are available
+from the NASA, Science Office of Standards and Technology at the
+address given below.  Both of these documents are available
+electronically from their Web site, and via anonymous ftp at
+nssdc.gsfc.nasa.gov in the /pub/fits directory. Any questions about
+FITS formats should be directed to the NOST, at:
+-
+        NASA, Science Office of Standards and Technology
+        Code 633.2,
+        Goddard Space Flight Center
+        Greenbelt MD 20771
+        USA
+        WWW: http://ssdoo.gsfc.nasa.gov/astro/fits/fits_home.html
+        E-mail: nost@nssdca.gsfc.nasa.gov
+        (301) 286-3575
+-
+CFITSIO users may also be interested in the FTOOLS package of programs
+that can be used to manipulate and analyze FITS format files.
+Information about FTOOLS can be obtained on the WWW at:
+-
+        http://heasarc.gsfc.nasa.gov/docs/software/ftools/ftools_menu.html
+-
+or via anonymous FTP at:
+-
+        legacy.gsfc.nasa.gov  /software/ftools/release
+-
+
+*II.  Creating the CFITSIO Library
+ 
+**A.  Building the Library
+ 
+The CFITSIO code is contained in the 9 source files (cfileio.c,
+convert.c, fitscore.c, getcol.c, getkey.c, modkey.c, putcol.c,
+putkey.c, and utilproc.c) and 2 header files (fitsio.h and fitsio2.h).
+On VAX/VMS systems the 2 assembly-code files, vmsieeed.mar and
+vmsieeer.mar, are also needed.
+ 
+CFITSIO has currently been tested on the following platforms:
+-
+   Operating System          Compiler
+   ----------------          --------
+   Sun OS                     gcc
+   Sun Solaris                gcc
+   Silicon Graphics IRIX      gcc and cc
+   DECstation  Ultrix         gcc
+   Dec Alpha OSF/1            gcc
+   Dec Alpha OpenVMS          cc with /float=gfloat or /float=ieee options
+   DEC VAX/VMS                gcc and cc
+   IBM PC w/ Windows 95       Borland C++ V4.5
+
+-
+CFITSIO will probably run on most other 32-bit Unix platforms without
+any modification. CFITSIO should also run on a Mac PC, but this has not
+been tested.  Cray supercomputers and IBM mainframe computers are
+currently not supported.
+
+The Makefile that is included in this release may be used to build the
+libcfitsio.a library file on most Unix systems.  First, the 'CC'
+environment variable needs to be set equal to the name of the C
+compiler that is to be used (the compiler must be ANSI C compliant).
+Then type 'make' to build the CFITSIO library into a file called
+libcfitsio.a.  For example,
+-
+   % setenv CC gcc
+   % make
+-
+will build the CFITSIO library using the gcc compiler.
+ 
+On VAX/VMS and ALPHA/VMS systems, the makevaxvms.com and makealphavms.com
+command files may be used to build the cfitsio.olb object library
+(e.g., type '@makevaxvms' at the Vax command line to build the CFITSIO
+library on a Vax).
+ 
+On DOS-based PC computers, the makepc.bat file gives an example
+of how to build the CFITSIO library.  This file will probably
+need to be editted to include the appropriate command switches
+for the particular C compiler and linker.
+ 
+**B.  Testing the Library
+ 
+The CFITSIO library should be tested by building and running
+the testprog.c file included with the release. 
+On Unix systems (assuming the gcc compiler is being used), type:
+-
+    % gcc -o testprog testprog.c -L. -lcfitsio
+    % testprog
+-
+ On VMS systems,
+(assuming cc is the name of the C compiler command), type:
+-
+    $ cc testprog.c
+    $ link testprog, cfitsio/lib
+    $ run testprog
+-
+The testprog program should produce a FITS file called testprog.fit
+that is identical to the testprog.std FITS file included in this
+release.  The diagnotic messages that are sent to the user's terminal
+should be identical to the listing contained in the file testprog.out,
+except that the date on the DATE keyword may vary depending on when the
+programs is run.
+ 
+*III.  Basic CFITSIO Conventions
+ 
+**A.  Current Header Data Unit (CHDU)
+ 
+A basic concept used throughout this interface is that of the Current
+Header Data Unit (CHDU).  When a FITS file is first opened, the  CHDU is
+defined to be the primary header and data array (i.e., the first HDU in the
+FITS file).  Routines are provided to move to other HDUs within the
+FITS file or to append a new HDU to the end of the FITS file.  The other
+routines which read or write header keywords or data values always
+operate only within the CHDU.
+ 
+**B.  Routine Names
+ 
+All CFITSIO routine names begin with the letters 'ff' to distinguish
+them from other routines and are generally 5 or 6 characters long (this
+reflects the Fortran-77 roots of this software).  Programmers should not
+name their own routines beginning with 'ff' to avoid possible
+conflicts.   Routines which read or get information from the FITS file
+have names beginning with 'ffg...'.  and routines which write or put
+information into the FITS file have names beginning with 'ffp...'.
+ 
+**C.  Routine Families and Datatypes
+Many of the routines come in families which differ only in the
+datatype of the associated parameter(s).  The datatype of these
+routines is indicated by the last letter of the routine name
+(e.g., 'j' in 'ffpkyj') as follows:
+-
+        x - bit
+        b - unsigned byte
+        i - short integer
+        j - long integer
+        e - real exponential floating point (float)
+        f - real fixed-decimal format floating point (float)
+        d - double precision real floating-point (double)
+        g - double precision fixed-format floating point (double)
+        c - complex reals (pairs of float values)
+        m - double precision complex (pairs of double values)
+        l - logical (int)
+        s - char string
+-
+When dealing with the FITS byte datatype, it is important to remember that
+the raw values (before any scaling by the BSCALE and BZERO, or TSCALn
+and TZEROn keyword values) in byte arrays (BITPIX = 8) or byte columns
+(TFORMn = 'B') are interpreted as unsigned bytes with values ranging
+from 0 to 255.  Some C compilers define a 'char' variable as signed, so
+it is important to always explicitly declare a numeric char variable as
+'unsigned char'.
+
+The complex and double precision complex datatypes are not directly
+supported in ANSI C, so these datatypes should be interpreted as pairs
+of float or double values, respectively, where the first  value in each
+pair is the real part, and the second is the imaginary part.
+
+The CFITSIO routines internally handle bit array columns (with
+TFORM = 'nX') as Byte array columns.  For instance if TFORM = '13X',
+then this is interpreted as if TFORM = '2B'.
+ 
+**D.  1's Based Index Numbers
+
+The CFITSIO parameters that specify a position in the FITS file, such
+as row number, column number or HDU number, generally start with 1 as
+the first value, rather than 0.  This is the same convention that is
+used in the Fortran version of FITSIO.
+
+**E.  Character Strings
+
+The character string values in a FITS header or in an ASCII column
+in a FITS table extension are generally padded out with non-significant space 
+characters (ASCII 32) to fill up the header record or the column
+width.  When reading a FITS string value, the  CFITSIO routines will strip 
+off these non-significant trailing 
+spaces and will return a null-terminated
+string value contain only the significant characters.  Similarly,
+when writing string values to a FITS file the CFITSIO routines
+expect to get a null-terminated string as input; CFITSIO will
+pad the string with blanks if necessary before writing it to
+the FITS file.  Note that leading spaces in a FITS string are
+considered significant.
+
+When calling CFITSIO routines that return a character string, it is
+vital that the size of the char array be large enough to hold the
+entire string of characters otherwise CFITSIO will overwrite
+whatever memory locations follow the char array, possibly causing
+the program to execute incorrectly.  This type of error can be
+very difficult to debug, so programmers should always ensure
+that the char arrays are allocated enough space to hold the longest possible
+string, {\bf including} the terminating NULL character.
+The fitsio.h file contains the following defined constants which
+programmers are strongly encouraged to use whenever they
+are allocating space for char arrays:
+-
+#define FLEN_KEYWORD    9  /* max length of a keyword */
+#define FLEN_CARD      81  /* length of a FITS header card */
+#define FLEN_VALUE     71  /* max length of a keyword value string */
+#define FLEN_COMMENT   73  /* max length of a keyword comment string */
+#define FLEN_ERRMSG    81  /* max length of a FITSIO error message */ 
+#define FLEN_STATUS    31  /* max length of a FITSIO status text string */ 
+-
+For example, then declaring a char array to hold the value string
+of FITS keyword, use the following statment:
+-
+    char value[FLEN_VALUE];
+-
+ 
+**F.  Implicit Data Type Conversion
+ 
+Many of the CFITSIO data I/O routines have the ability to perform
+implicit data type conversion.  This means that the data type of the
+routine parameter does not need to be the same as the data type of the
+value in the FITS file.  More specifically, the implicit data type
+conversion will be performed for b,i,j,e,f,d and g data types when
+getting a FITS header keyword value (ffgky\_ and ffgkn\_ routines) and
+when putting or getting values to or from the primary array or a table.
+CFITSIO returns status = NUM\_OVERFLOW = 412 if the value exceeds
+the range of the output datatype.  Data type conversion is not allowed
+when reading or writing string (s), logical (l), complex (c), or double
+complex (m) data types.
+ 
+**G.  Data Scaling
+ 
+When reading numerical data values in the primary array or a
+table column, the values will be scaled automatically by the BSCALE and
+BZERO (or TSCALn and TZEROn) header keyword values if they are
+present in the header.  The scaled data that is returned to the reading
+program will have
+-
+        output value = (FITS value) * BSCALE + BZERO
+-
+(a corresponding formula using TSCALn and TZEROn is used when reading
+from table columns).  In the case of integer output values the floating
+point scaled value is truncated to an integer (not rounded to the
+nearest integer).  The ffpscl and fftscl routines may be used to
+override the scaling parameters defined in the header (e.g., to turn
+off the scaling so that the program can read the raw unscaled values
+from the FITS file).
+ 
+When writing numerical data to the primary array or to a table
+column the data values will generally be automatically inversely scaled
+by the value of the BSCALE and BZERO (or TSCALn and TZEROn) header
+keyword values if they they exist in the header.  These keywords must
+have been written to the header before any data is written for them to
+have any effect.  Otherwise, one may use the ffpscl and fftscl
+routines to define or override the scaling keywords in the header
+(e.g., to turn off the scaling so that the program can write the raw
+unscaled values into the FITS file). If scaling is performed, the
+inverse scaled output value that is written into the FITS file will
+have
+-
+         FITS value = ((input value) - BZERO) / BSCALE
+-
+(a corresponding formula using TSCALn and TZEROn is used when
+writing to table columns).  Rounding to the nearest integer, rather
+than truncation, is performed when writing integer datatypes to the
+FITS file.
+ 
+**H.  Error Status Values and the Error Message Stack
+
+Nearly all the CFITSIO routines return an error status value
+in 2 ways: as the value of the last parameter in the function call,
+and as the returned value of the function itself.  This provides
+some flexibility in the way programmers can test if an error
+occurred, as illustrated in the following 2 code fragments:
+-
+    if ( ffcrhd(fptr, &status) )
+         printf(" Error occurred in the call to ffcrhd");
+-
+or,
+-
+    ffcrhd(fptr, &status);
+    if ( status )
+         printf(" Error occurred in the call to ffcrhd");
+-
+A listing of all the CFITSIO status code values and their symbolic
+mnemonics is given at the end of this document.  Programmers are
+encouraged to use the symbolic  mnemonics (defined in fitsio.h) rather
+than the actual integer status values to improve the readibility of
+their code.
+
+The CFITSIO library uses an `inherited status' convention for the
+status parameter which means that if a routine is called with a
+positive input value of the status parameter as input, then the routine will
+exit immediately without changing the value of the status parameter.
+Thus, if one passes the status value returned from each CFITSIO routine
+as input to the next CFITSIO routine, then whenever an error is
+detected all further CFITSIO processing will cease.  This convention
+can simplify the error checking in application programs because it is
+not necessary to check the value of the status parameter after every
+single CFITSIO routine call.  If a program contains a sequence of
+several CFITSIO calls, one can just check the status value after the
+last call.  Since the returned status values are generally distinctive,
+it should be possible to determine which routine originally returned
+the error status.
+
+CFITSIO also maintains an internal stack of error messages
+(80-character maximum length)  which in many cases provide a more
+detailed explanation of the cause of the error than is provided by the
+error status number alone.  It it recommended that the error message
+stack be printed out whenever a program detects a CFITSIO error.  To do
+this, call the ffgmsg routine repeatedly to get the successive messages
+on the stack.  When the stack is empty ffgmsg will return a null value
+(and a null string).  Note that this is a 'First In -- First Out'
+stack, so the oldest error message is returned first by ffgmsg.
+
+In some situations programs may encounter a non-fatal CFITSIO error and
+will want to continue processing.  An example is when a program fails
+to find an optional keyword in the header and CFITSIO returns status =
+KEY\_NO\_EXIST (202).  The program may ignore this error and reset status = 0,
+however this may still leave error messages on the stack.  To clear the
+entire message stack in this situation, call the ffcmsg routine.
+ 
+**I.  Variable-Length Array Facility in Binary Tables
+ 
+The CFITSIO package supports reading and writing data in variable length
+fields of a binary table which have TFORM = 'rPt' where r is the
+repeat count and t is the datatype code (e.g., L, X, I, E, etc.).  The
+same routines which read and write data in an ordinary fixed length
+binary table extension (ffpcl\_, ffgcv\_, ffgcf\_) are also used for variable
+length fields, however, the routine parameters take on a slightly
+different interpretation as described below:
+ 
+All the data in a variable length field is written into an area called
+the heap which follows the main fixed-length FITS binary table.  The
+size of the heap, in bytes, is specified with the PCOUNT keyword
+in the FITS header. When creating a new FITS table it is often
+the case that the size of the heap will not be known until all the data
+have been written.  In this case, the program should initially set
+PCOUNT = 0, and then keep track of how many elements are written to the
+heap.  Once all the data have been written, the program should go back
+and update the value of the PCOUNT keyword before closing the HDU.
+ 
+When writing to a variable length field, the entire array of values for
+a given row of the table must be written with a single call to ffpclx.
+The total length of the array is calculated from (NELEM+FELEM-1).  One
+cannot append more elements to an existing field at a later time; any
+attempt to do so will simply overwrite all the  data which was
+previously written.  Note also that the new data will be written to a
+new area of the heap and the heap space used by the previous write
+cannot be reclaimed.  For this reason it is advised that each row of a
+variable length field only be written once.  An exception to this
+general rule occurs when setting elements of an array as undefined.
+One must first write a dummy value into the array with ffpcl\_, and then
+call ffpclu to flag the desired elements as undefined.  (Do not used
+the ffpcn\_ family of routines with variable length fields). The rows of
+a table may be written in any order.
+ 
+When reading from a variable length array field one can only read as many
+elements as exist in that row of the table; reading does not automatically
+continue with the next row of the table as occurs when reading an ordinary
+fixed length table field.  Attempts to read more than this will return an
+error.  One can determine the length of each row of the field with the
+ffgdes routine.
+ 
+When reading or writing to a variable length ASCII character field
+(e.g., TFORM = 'PA') only a single character string is read or
+written.  The number of characters in the string is specified with the
+NELEM parameter (the FELEM parameter is ignored).
+ 
+The ffpdes routine is useful in situations where multiple rows of a
+variable length column have the identical array of values.  One can simply
+write the array once for the first row, and then use ffpdes to write the
+same descriptor values into the other rows;  all the rows will then point
+to the same storage location thus saving disk space.
+ 
+By default the heap starts immediately following the end of the fixed
+length table, (i.e., at byte location = NAXIS1 x NAXIS2).  If desired,
+the starting location of the heap can be changed by using the ffpthp
+routine.  Ffpthp must be called after the table structure is defined
+and after the required header keywords have been written,
+but before any data are written to the table.  This routine also
+automatically writes the THEAP keyword to the binary table extension
+header.
+ 
+**J.  Support for IEEE Special Values
+ 
+The ANSI/IEEE-754 floating-point number standard defines certain
+special values that are used to represent such quantities as
+Not-a-Number (NaN), denormalized, underflow, overflow, and infinity.
+(See the Appendix in the NOST FITS standard or the NOST FITS User's
+Guide for a list of these values).  The CFITSIO routines that read
+floating point data in FITS files recognize these IEEE special values
+and by default interpret the overflow and infinity values as being
+equivalent to a NaN, and convert the underflow and denormalized values
+into zeros.  In some cases programmers may want access to the raw IEEE
+values, without any modification by CFITSIO.  This can be done by
+calling the ffgpv\_ or ffgcv\_ routines while specifying 0.0 as the value
+of the NULLVAL parameter.  This will force CFITSIO to simply pass the
+IEEE values through to the application program, without any
+modification.  This is not supported, however, on VAX/VMS machines,
+where there is no easy way to bypass the default interpretation of the
+IEEE special values.
+
+**K.  Local FITS Conventions supported by CFITSIO
+ 
+In a few cases CFITSIO supports local FITS conventions which are not
+defined in the official NOST FITS standard and which are not
+necessarily recognized or supported by other FITS software packages.
+Programmers should be cautious about using these features, especially
+if the FITS files that are produced are expected to be processed by
+other software systems which do not use the CFITSIO interface.  These
+local conventions should be considered as prototypes, and they may not
+necessarily be supported in future versions of CFITSIO, especially if an
+alternative convention is officially adopted by the FITS community.
+ 
+***1.  Support for Long String Keyword Values.
+ 
+The length of a standard FITS string keyword is limited to 68
+characters because it must fit entirely within a single FITS header
+keyword record.  In some instances it is necessary to encode strings
+longer than this limit, so CFITSIO supports a local convention in which
+the string value is continued over multiple keywords.  This
+continuation convention uses a ampersand character at the end of each
+substring to indicate that it is continued on the next keyword, and the
+continuation keywords all have the name CONTINUE without an equal sign
+in column 9. The string value may be continued in this way over as many
+additional CONTINUE keywords as is required.  The following lines
+illustrate this continuation convention which is used in the value of
+the STRKEY keyword:
+-
+LONGSTRN= 'OGIP 1.0'    / The OGIP Long String Convention may be used.
+STRKEY  = 'This is a very long string keyword&'  / Optional Comment
+CONTINUE  ' value that is continued over 3 keywords in the &  '
+CONTINUE  'FITS header.' / This is another optional comment.
+-
+It is recommended that the LONGSTRN keyword, as shown here, always be
+included in any HDU that uses this longstring convention as a warning
+to any software that must read the keywords.  A routine called ffplsw
+has been provided in CFITSIO to write this keyword if it does not
+already exist.
+
+  This long string convention is supported by the following CFITSIO
+routines:
+-
+      ffpkls - write an arbitrarily long string keyword value
+      ffgkls - read  an arbitrarily long string keyword value
+      ftdkey - delete a keyword
+-
+The ffgkls routine is unique among all the CFITSIO routines in that it
+internally allocates memory for the long string value;  all the other
+CFITSIO routines that deal with strings require that the calling
+program pre-allocate adequate space to hold the array of characters.
+Consequently, programs which use the ffgkls routine must be careful to
+free the allocated memory for the string when it is no longer needed.
+
+The following 2 routines also have limited support for this
+long string convention,
+-
+      ffmkys - modify an existing string keyword value
+      ffukys - update a string keyword value
+-
+in that they will correctly overwrite an existing long string value,
+but the new string value is limited to a maximum of 68 characters in
+length.
+
+The more commonly used CFITSIO routine to write string valued
+keywords (ffpkys) does NOT support this long string convention and only
+supports strings up to 68 characters in length.  This has been done
+deliberately to prevent programs from inadvertently writing keywords
+using this non-standard convention without the explicit intent of the
+programmer or user.   The ffpkls routine must be called instead to
+write long strings. (This routine can also be used to write ordinary
+string values less than 68 characters in length).
+ 
+***2.  Arrays of Strings in Binary Table Extensions
+ 
+The definition of the FITS binary table extension format does not
+provide a simple way to specify that a character column contains an
+array of fixed-length strings.  To support this feature, CFITSIO uses a
+local convention for the format of the TFORMn keyword value of the form
+'rAw' where 'r' is an integer specifying the total width in characters
+of the column, and 'w' is an integer specifying the (fixed) length of
+an individual unit string within the vector.  For example, TFORM1 =
+'120A10' would indicate that the binary table column is 120 characters
+wide and consists of 12 10-character length strings.  This convention
+is recognized by the CFITSIO routines that read or write strings in
+binary tables.   The Binary Table definition document specifies that
+other optional characters may follow the datatype code in the TFORM
+keyword, so this local convention is in compliance with the
+FITS standard, although other FITS readers are not required to
+recognize this convention.
+ 
+The Binary Table definition document that was approved by the IAU in
+1994 contains an appendix describing an alternate convention for
+specifying arrays of fixed or variable length strings in a binary table
+character column (with the form 'rA:SSTRw/nnn)'.  This appendix was not
+officially voted on by the IAU and hence is still provisional.  CFITSIO
+does not currently support this proposal.
+
+
+*IV.  Programming Guidelines
+ 
+The CFITSIO Cookbook (available in the file cookbook.c in the CFITSIO
+software distribution directory) contains listings of various
+programs that read and write CFITSIO files.  New users of CFITSIO should
+study these example programs to help learn how to correctly use the
+CFITSIO library.   The following sections briefly summarize the
+main steps in reading or writing a FITS file.
+ 
+**A.  Reading an existing FITS file
+ 
+The following sequence of routine calls illustrate a simple example
+of reading an existing FITS file. 
+-
+ 1. Open the file with ffopen.
+ 2. Read any desired header keywords with ffghpr or ffgky_.
+ 3. Read the primary data, if any, with ffgpv_ or ffgpf_.
+ 4. Repeat steps 2 and 3 until all the desired information has been read.
+ 5. Move to another extension with ffmahd or ffmrhd.
+ 6. Read any extension header keywords (e.g. with ffghtb, ffghbn or ffgkyx)
+ 7. Read any columns of data from the extension (e.g. with ffgcv_ or ffgcf_)
+ 8. Repeat steps 6 and 7 until all the information has been read.
+ 9. Repeat steps 5 through 8 for any other extensions.
+10. Close the file with ffclos.
+-
+ 
+**B.  Creating a new FITS file
+ 
+The following sequence of routine calls illustrate a simple example
+of writing a new FITS file:
+-
+ 1. Create the new file with ffinit.
+ 2. Write the required primary array keywords with ffphpr.
+ 3. Write any additional keywords with ffpky_.
+ 4. Write the primary array data, if any, with ffppr_.
+ 5. Create another extension, if desired, with ffcrhd.
+ 6. Write required header keywords for the extension with ffphtb or ffphbn.
+ 7. Write any additional keywords with ffpkyx.
+ 8. Write data to the extension, one column at a time with ffpcl_.
+ 9. Repeat steps 5 - 8 for any more extensions.
+10. Close the fits file with ffclos.
+-
+Note that the application program must NOT explicitly write the
+required 'END' keyword at the end of each header;  the CFITSIO interface
+will automatically append the END record whenever the header is closed.
+As a standard practice, users should always read back any FITS files
+that they have created to ensure that the header values and data structure
+are correct and self-consistent.
+ 
+**C.  When the Final Size of the FITS File is Unknown
+ 
+It is not required to know the total size of a FITS data array or table
+before beginning to write the data to the FITS file.  In the case of
+the primary array or an image extension, one should initially create
+the array with the size of the highest dimension (largest NAXISn
+keyword) set to a dummy value, such as 1.  Then after all the data have
+been written and the true dimensions are known, then the NAXISn value
+should be updated using the ffmkyj routine before moving to another
+extension or closing the FITS file.
+
+A similar procedure may be used in the case of FITS tables, where the
+number of rows in the table (the NAXIS2 value) may initially be set to
+1 and then updated with the correct value before closing the table.
+Alternatively, one may use the ffirow routine to insert additional rows
+into a table if the original value turns out to be too small.  This
+latter method must be used if any of the columns contain variable
+length arrays.
+
+**D.  Optimizing Code for Maximum Processing Speed
+ 
+Care must be taken when designing software to achieve the best possible
+performance when processing the FITS data files.  The following
+paragraphs describe some strategies that may be used to improve the
+processing speed of software that uses CFITSIO.
+ 
+1.  All operating systems buffer the magnetic disk read and write
+operations by using an array in memory (a cache) as an intermediate
+storage area for blocks of data on disk.  When reading or writing FITS
+files, it is generally better to use a large buffer to minimize the
+number of physical disk I/O operations.  For critical operations, the
+system administrator should tune the size of the disk buffer as well as
+other system parameters that may affect disk I/O speed, to achieve
+optimal performance.  Note that other factors, such as the average seek time
+of the disk, the amount of file fragmentation on the disk, and the location
+of the disk on the computer network, can also make a large difference
+in overall disk I/O performance.
+ 
+2.  The most important efficiency factor in software design is to read
+or write the data in the FITS file in a single pass through the file.
+As an example, if one reads a large, 3-column table by sequentially
+reading the entire first column, then going back to read the 2nd
+column, and finally the 3rd column, this obviously requires 3 passes
+through the file.  Since many FITS programs are I/O limited, this could
+effectively triple the execution time of the program as compared to a
+program that reads a limited range of rows from all the columns in
+parallel before advancing on to the next set of rows.  The optimum
+number of rows to process at one time is not too critical, but it
+should be large enough to avoid an excessive number of individual
+routine calls (it is generally inefficient to read or write each row
+of a table one at a time) but still small enough so that the relevant
+section of the FITS file will all fit in the system memory
+cache.   As long as the section of the
+FITS file that is to be read or written is still contained in the
+cache, then the program will run more efficiently.  If designed
+properly, software should be able to read or write a FITS file by
+sequentially accessing successive blocks in the file in a single pass
+without having to go back to read or write a block that has already
+been flushed out of the memory cache.
+ 
+3. Design software so that it reads the FITS header keywords in
+the same order in which they occur in the file.  When reading
+keywords, CFITSIO searches forward starting from the position of the
+last keyword that was read.  If it reaches the end of the header
+without finding the keyword, it then goes back to the start of the
+header and continues the search down to the position where it started.
+ 
+4. Avoid the use of scaling (by using the BSCALE and BZERO or
+TSCAL and TZERO keywords) in FITS files since the scaling operations
+add to the processing time needed to read or write the data.
+In some cases it may be more efficient to temporarily turn off
+the scaling (using ftpscl or fttscl) and then read or write
+the raw unscaled values in the FITS file.
+ 
+5. Use FITS binary tables (BINTABLE) rather than FITS ASCII tables
+(TABLE) whenever possible. Binary tables are more compact and can be
+read or written much more efficiently, whereas each field of an ASCII
+table must be individually formatted or parsed.
+ 
+6. Design FITS binary tables so that every column is aligned on a
+computer word boundary and so that each row is a multiple number of
+computer words in length.  Accessing non-aligned words can be much
+slower on some machines.  In practice, this means that double precision
+columns should start at a multiple of 8 bytes within the row, single
+precision floating point columns and integer columns should start at a
+multiple of 4 bytes, and short integer columns should start at a
+multiple of 2 bytes.  If necessary, the row length should be padded out
+by adding a dummy column of the appropriate width or by adjusting the
+width of an existing column so that the row length is also a multiple
+number of words in length.  For example, if a binary table contains a
+'1B', a '1E', and a '1D' column, then the optimum design would place
+the '1D' column first in the table followed by the '1E' and then the
+'1B' column.  Since the row length is then 8 + 4 + 1 = 13 bytes, one
+should add another dummy column, with a 3A datatype to make the length
+a multiple of the double precision word length.  Alternatively, one
+could change the last column from '1B' to '4B'. This will insure that
+all the data values are optimally aligned.
+ 
+7. Where possible, design FITS binary tables so that the columns of
+data are written as a contiguous set of bytes, rather than as single
+elements in multiple rows.  For example, it is much faster to access
+the data in a table that contains a single row and 2 columns with TFORM
+keywords equal to  '1000E' and '1000J', than it is to access the same
+amount of data in a table with 1000 rows which has columns with the
+TFORM keywords equal to '1E' and '1J'.  In the former case the 1000
+floating point values in the first column are all written in a
+contiguous block of the file which can be read or written quickly,
+whereas in the second case each floating point value in the first
+column is interleaved with the integer value in the second column of
+the same row so CFITSIO has to explicitly move to the position of each
+element to be read or written.
+ 
+8. Avoid the use of variable length vector columns in binary tables, since
+any reading or writing of these data requires that CFITSIO first
+look up or compute the starting address of each row of data in the heap.
+ 
+9. When copying data from one FITS table to another, it is faster to
+transfer the raw bytes instead of reading then writing each column of
+the table.  The CFITSIO routines ffgtbb and ffptbb will perform
+low-level reads or writes of any contiguous range of bytes in a table
+extension.  These routines can be used to read or write a whole row (or
+multiple rows) of a table with a single routine call.   These
+routines are fast because they bypass all the usual data scaling, error
+checking and machine dependent data conversion that is normally done by
+CFITSIO, and they allow the program to write the data to the output file
+in exactly the same byte order.  For these same reasons, use of these
+routines can be somewhat risky because no validation or machine
+dependent conversion is performed by these routines.  In general these
+routines are only recommended for optimizing critical pieces of code
+and should only be used by programmers who thoroughly understand the
+internal format of the FITS tables they are reading or
+writing.
+
+**E.  CFITSIO Size Limitations
+ 
+In general, CFITSIO places no limits on the sizes of the FITS files that
+it read or writes. In particular there is no internal limit on the size of the
+dimensions of the primary array or IMAGE extension. Tables extensions may have
+up to the maximum of 999 columns (as allowed by the FITS standard) and
+may have an arbitrarily large number of rows. There are a few other limits,
+however, which may affect some extreme cases:
+ 
+1.  The maximum number of files that may be simultaneously opened may
+be limited by the underlying C compiler or machine operating system.
+The C symbolic constant FOPEN\_MAX usually defines the total number of
+files that may open at once (this includes any other text or binary
+files which may be open, not just FITS files).
+ 
+2.  The maximum number of extensions that can be read or written in a
+single FITS file is current set to 1000 as defined by MAXHDU in the
+fitsio.h file.  This value may be increased if necessary, but the
+access times to the later extensions in such files may become very
+long.
+ 
+3.  CFITSIO can handle FITS files up to about 2.1 GB in size which is
+the maximum value of a signed long integer.  Some machines that use
+8-byte words for a long integer may support larger files, but this has
+not been tested.
+ 
+
+
+*V.  Calling Sequence Definitions
+ 
+This section defines the calling sequence of parameters for all
+the user-callable CFITSIO routines.  An alphabetical
+list and definition of all the parameters is given at the end of this
+document.  The following conventions
+are used in this document:
+
+1. A right arrow symbol ($>$) is used to separate the input parameters from
+the output parameters in the  definition of each routine.  This symbol
+is not actually part of the C calling sequence.  Note that
+the status parameter is both an input and an output parameter.
+
+2. Families of similar routines which differ only in the datatype
+of the argument(s) are defined together using a convention
+of listing the last letter of the routine names in square brackets.
+For example, the routines for reading data from a primary array
+are defined as:
+-
+  int ffgpv[bijed](fitsfile *fptr, long group, long firstelem, long nelements,
+           DTYPE nulval, > DTYPE *array, int *anynul, int *status)
+-
+This is a short-hand notation for indicating that there are 5
+separate routines, ffgpvb, ffgpvi, ffgpvj, ffgpve, and ffgpvd, 
+which have different datatypes for the nulval and array arguments.
+
+3. A datatype specification of `DTYPE' is used to indicate
+that the parameter has a numerical datatype which depends on the last
+letter of the routine's name as given by the following table:
+-
+        b  -  unsigned char
+        l  -  int (logical value)
+        i  -  short int
+        j  -  long int
+     e, f  -  float
+     d, g  -  double
+        c  -  pairs of floats (complex value)
+        m  -  pairs of doubles (complex value)
+-
+Thus, in the previous example the `nulval' and `array'  parameters have
+a short int datatype in the ffgpvi routine, and have a
+double datatype in the ffgpvd routine.
+
+
+**A.  FITS File Open and Close Routines: \label{FFOPEN}
+
+CFITSIO uses a C structure which is defined in fitsio.h to store
+all the relevant parameters about the format of an opened FITS file.
+Application programs must declare a pointer to this structure (which
+is called 'fitsfile') for each FITS file that is opened.  The value
+of the pointer is originally defined in the call to ffopen or ffinit;
+this pointer value must then be passed as the first argument to
+all the other CFITSIO routines which read or write the FITS file.
+The memory that is allocated for the fitsfile structure is then
+freed by the ffclos routine.
+ 
+>1  Open an existing FITS file with readonly or readwrite access.
+    This assigns a value to the FITS file pointer (fptr) which is
+>   then used by all other CFITSIO routines which access this file.
+-
+  int ffopen(fitsfile **fptr, char *filename, int iomode, > int *status)
+-
+>2  Open and initialize a new empty FITS file
+    This assigns a value to the FITS file pointer (fptr) which is
+>   then used by all other CFITSIO routines which access this file.
+-
+  int ffinit(fitsfile **fptr, char *filename, > int *status)
+-
+>3 Flush internal buffers of data to the output FITS file 
+   previously opened with ftopen or ftinit.  The routine usually
+   never needs to be called, but doing so will ensure that
+   if the program subsequently aborts, then the FITS file will
+>  have at least been closed properly.
+-
+  int ffflus(fitsfile *fptr, > int *status)
+-
+>>4 Close a FITS file previously opened with ffopen or ffinit
+-
+  int ffclos(fitsfile *fptr, > int *status)
+-
+>5  Close and Delete a FITS file previously opened with ffopen or ffinit.
+    This routine may be  useful in cases where a FITS file is created, but
+>   then an error occurs which prevents the complete file from being written.
+-
+  int ffdelt(fitsfile *fptr, > int *status)
+-
+ 
+**B.  HDU-Level Operations\label{FFMAHD}
+
+The following routines perform operations on entire HDUs: move
+to a different HDU, create a new HDU, insert a new HDU, copy
+a HDU, and delete a HDU.
+ 
+>1  Move to a specified (absolute) HDU in the FITS file (hdunum = 1 for the
+    FITS primary array).  When a FITS file is first opened or created
+>   it is automatically positioned to the first HDU in the file.
+-
+  int ffmahd(fitsfile *fptr, int hdunum, > int *hdutype, int *status)
+-
+>>2 Move forward or backwards to another HDU in the FITS file
+-
+  int ffmrhd(fitsfile *fptr, int nmove, > int *hdutype, int *status)
+-
+>3  Get the number of the current HDU in the FITS file (primary array = 1)
+>   This routine returns the HDU number, rather than a status value.
+-
+  int ffghdn(fitsfile *fptr, > int *hdunum)
+-
+>4 Create (append) a new empty HDU following the last extension that
+    has been previously accessed by the program.   This will overwrite
+    any later extensions that may exist in the FITS file.
+    For example, if an existing FITS file contains a primary array and 5
+    extensions and a program (1) opens the FITS file, (2) moves to
+    extension 4, (3) moves back to the primary array, and (4) then calls
+    ffcrhd, then the new extension will be written following the 4th
+>   extension, overwriting the existing 5th extension.
+-
+  int ffcrhd(fitsfile *fptr, > int *status)
+-
+>5  Insert a new IMAGE extension immediately following the CHDU.
+    Any following extensions will be shifted down to make room for
+    the new extension.  If there are no other following extensions
+    then the new image extension will simply be appended to the
+>   end of the file.  The new extension will become the CHDU.
+-
+  int ffiimg(fitsfile *fptr, int bitpix, int naxis, long *naxes, > int *status)
+-
+>6  Insert a new ASCII TABLE extension immediately following the CHDU.
+    Any following extensions will be shifted down to make room for
+    the new extension.  If there are no other following extensions
+    then the new table extension will simply be appended to the
+>   end of the file.  The new extension will become the CHDU.
+-
+  int ffitab(fitsfile *fptr, long rowlen, long nrows, int tfields, char **ttype,
+         long *tbcol, char **tform, char **tunit, char *extname, > int *status)
+-
+>7  Insert a new binary table extension immediately following the CHDU.
+    Any following extensions will be shifted down to make room for
+    the new extension.  If there are no other following extensions
+    then the new bintable extension will simply be appended to the
+>   end of the file.  The new extension will become the CHDU.
+-
+  int ffibin(fitsfile *fptr, long nrows, int tfields, char **ttype,
+       char **tform, char **tunit, char *extname, long pcount, > int *status)
+-
+>8 Delete the CHDU in the FITS file.  Any following HDUs will be shifted
+    forward in the file, to fill in the gap created by the deleted HDU.
+    This routine will only delete extensions; the primary array (the
+    first HDU in the file) cannot be deleted.  Note that Fortran
+    (unfortunately) does not have the facility to decrease the size
+    of an existing file, therefore the physical size of the FITS file
+    will not change and the end of the file will be padded out with
+    zeros to fill in the space left after the CHDU is deleted. If
+    there are more extensions in the file following the one that is deleted,
+    then the the CHDU will be defined to point to the following extension.
+    If there are no following extensions then the CHDU will be redefined
+    to point to the previous extension (or the primary array if there
+    was only one extension in the file).  The output HDUTYPE parameter
+    indicates the type of the new CHDU after the previous CHDU has been
+>   deleted.
+-
+  int ffdhdu(fitsfile *fptr, > int *hdutype, int *status)
+-
+>9  Copy the entire CHDU from the FITS file associated with infptr to the CHDU
+    of the FITS file associated with outfptr. This will overwrite any data
+    previously in the outfptr CHDU.  Space will be reserved for MOREKEYS
+    additional  keywords in the output header if there is not already enough
+>   space.
+-
+  int ffcopy(fitsfile *infptr, fitsfile *outfptr, int morekeys, > int *status)
+-
+>10 Copy just the data from the CHDU associated with infptr
+    to the CHDU associated with outfptr. This will overwrite
+    any data previously in the OUNIT CHDU.  This low level routine is used
+    by ffcopy, but it may also be useful in certain application programs
+    which want to copy the data from one FITS file to another but also
+    want to modify the header keywords in the process. all the required
+    header keywords must be written to the output CHDU before calling
+>   this routine
+-
+  int ffcpdt(fitsfile *infptr, fitsfile *outfptr, > int *status)
+-
+>11 This routine forces CFITSIO to scan the current header keywords that
+    define the structure of the HDU (such as the NAXISn, PCOUNT and GCOUNT
+    keywords) so that it can initialize the internal buffers that describe
+    the HDU structure.  This routine is
+    useful for reinitializing the structure of an HDU, e.g.,
+    if the number of rows in a table, as specified by the NAXIS2 keyword,
+    has been modified from its initial value.  In practice it should 
+    rarely be necessary to call this routine because CFITSIO
+>   internally calls it in most situations.
+-
+  int ffrdef(fitsfile *fptr, > int *status)   (DEPRECATED)
+-
+
+**C.  FITS Header I/O Routines
+
+***1.   Header Space and Position Routines \label{FFHDEF}
+
+>1  Reserve space in the CHU for MOREKEYS more header keywords.
+    This routine may be called to reserve space for keywords which are
+    to be written at a later time, after the data unit or subsequent
+    extensions have been written to the FITS file.  If this routine is
+    not explicitly called, then the initial size of the FITS header will be
+    limited to the space available at the time that  the first data is written
+    to the associated data unit.   CFITSIO will dynamically
+    add more space to the header if needed, however it is more efficient
+>   to preallocate the required space if the size is known in advance.
+-
+  int ffhdef(fitsfile *fptr, int morekeys, > int *status)
+-
+>2  Return the number of existing keywords in the CHU (NOT including the
+    END keyword which is not considered a real keyword) and the remaining
+    space available to write additional keywords in the CHU.  (returns
+    KEYSADD = -1 if the header has not yet been closed).
+    Note that CFITSIO will attempt to dynamically add space for more
+>   keywords if required when appending new keywords to a header.
+-
+  int ffghsp(fitsfile *fptr, > int *keysexist, int *morekeys, int *status)
+-
+>3  Return the number of keywords in the header and the current position
+    in the header.  This returns the number of the keyword record that
+    will be read next (or one greater than the position of the last keyword
+    that was read or written). A value of 1 is returned if the pointer is
+>   positioned at the beginning of the header.
+-
+  int ffghps(fitsfile *fptr, > int *keysexist, int *keynum, int *status)
+-
+
+***2.   Write Keyword Routines  \label{FFPREC}
+
+>1 Put (append) an 80-character keyword record into the CHU.  The
+   record will be padded with blanks if the input null-terminated
+>  card string is less than 80 characters long.
+-
+  int ffprec(fitsfile *fptr, char *card, > int *status)
+-
+>2  Put (append) a COMMENT keyword into the CHU.  Multiple COMMENT keywords
+>   will be written if the input comment string is longer than 70 characters.
+-
+  int ffpcom(fitsfile *fptr, char *comment, > int *status)
+-
+>3 Put (append) a HISTORY keyword into the CHU.  Multiple HISTORY keywords
+>   will be written if the input history string is longer than 70 characters.
+-
+  int ffphis(fitsfile *fptr, char *history, > int *status)
+-
+>4  Put (append) the DATE keyword into the CHU.  The keyword value will contain
+    the current system date as a character string in 'dd/mm/yy' format. If
+    a DATE keyword already exists in the header, then this routine will
+>   simply update the keyword value in-place with the current date.
+-
+  int ffpdat(fitsfile *fptr, > int *status)
+-
+>5  Put (append) a new keyword of the appropriate datatype into the CHU.
+    Note that ffpkys will only write string values up to 68 characters in
+    length; longer strings will be truncated.  The ffpkls routine can be
+>   used to write longer strings, using a non-standard FITS convention.
+-
+  int ffpkys(fitsfile *fptr, char *keyname, char *value, char *comment,
+             > int *status)
+ 
+  int ffpky[lj](fitsfile *fptr, char *keyname, DTYPE numval, char *comment,
+                 > int *status)
+ 
+  int ffpky[edfg](fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
+                  char *comment, > int *status)
+-
+>6  Put (append) a string valued keyword into the CHU which may be longer
+    than 68 characters in length.  This uses the Long String Keyword
+    convention that is described in the "Usage Guidelines and Suggestions"
+    section of this document.  Since this uses a non-standard FITS
+    convention to encode the long keyword string, programs which use
+    this routine should also call the ffplsw routine to add some COMMENT
+    keywords to warn users of the FITS file that this convention is
+    being used.  The ffplsw routine also writes a keyword called LONGSTRN to
+    record the version of the longstring convention that has been used, in
+    case a new convention is adopted at some point in the future.   If the
+    LONGSTRN keyword is already present in the header, then ffplsw will
+>   simply return and will not write duplicate keywords.
+-
+  int ffpkls(fitsfile *fptr, char *keyname, char *longstr,
+             char *comment, > int *status)
+ 
+  int ffplsw(fitsfile *fptr, > int *status)
+-
+>7  Put (append) a numbered sequence of keywords into the CHU.   One may
+    append the same comment to every keyword (and eliminate the need
+    to have an array of identical comment strings, one for each keyword) by
+    including the ampersand character as the last non-blank character in the
+    (first) COMMENTS string parameter.  This same string
+>   will then be used for the comment field in all the keywords.
+-
+  int ffpkns(fitsfile *fptr, char *keyroot, int nstart, int nkeys,
+             char **value, char **comment, > int *status)
+ 
+  int ffpkn[lj](fitsfile *fptr, char *keyroot, int nstart, int nkeys,
+             DTYPE *numval, char **comment, int *status)
+ 
+  int ffpkne[edfg](fitsfile *fptr, char *keyroot, int nstart, int nkey,
+                DTYPE *numval, int decimals, char **comment, > int *status)
+-
+>8  Put (append) a 'triple precision' keyword into the CHU in F28.16 format.
+    The floating point keyword value is constructed by concatenating the
+    input integer value with the input double precision fraction value
+    (which must have a value between 0.0 and 1.0). The ffgkyt routine should
+    be used to read this keyword value, because the other keyword reading
+>   routines will not preserve the full precision of the value.
+-
+  int ffpkyt(fitsfile *fptr, char *keyname, long intval, double frac,
+             char *comment, > int *status)
+-
+***3.   Insert Keyword Routines \label{FFIREC}
+
+>1  Insert a new keyword record into the CHU at the specified position
+    (i.e., immediately preceding the (keyno)th keyword in the header.)
+    This `insert record' routine is somewhat less efficient
+    then the 'append record' routine (ffprec) described above because
+>   the remaining keywords in the header have to be shifted down one slot.
+-
+  int ffirec(fitsfile *fptr, int keynum, char *card, > int *status)
+-
+>2  Insert a new keyword into the CHU.  The new keyword is inserted
+    immediately following the last keyword that has been read from the header.
+    These `insert keyword' routines are somewhat less efficient then
+    the 'append keyword' routines described above because the remaining
+>   keywords in the header have to be shifted down one slot.
+-
+  int ffikys(fitsfile *fptr, char *keyname, char *value, char *comment,
+             > int *status)
+ 
+  int ffiky[lj](fitsfile *fptr, char *keyname, DTYPE numval, char *comment,
+              > int *status)
+ 
+  int ffiky[edfg](fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
+                  char *comment, > int *status)
+-
+***4.   Read Keyword Routines \label{FFGREC}
+
+>>1  Get the nth 80-character header record from the CHU
+-
+  int ffgrec(fitsfile *fptr, int keynum, > char *card, int *status)
+-
+>2  Get the name, value (as a string), and comment of the nth keyword in CHU.
+    This routine also checks that the returned keyword name (KEYWORD) contains
+>   only legal ASCII characters.
+-
+  int ffgkyn(fitsfile *fptr, int keynum, > char *keyname, char *value,
+             char *comment, int *status)
+-
+>>3  Get the 80-character header record for the named keyword
+-
+  int ffgcrd(fitsfile *fptr, char *keyname, > char *card, int *status)
+-
+>4   Get the literal keyword value as a character string.  Regardless
+     of the datatype of the keyword, this routine simply returns the
+     string of characters in the value field of the keyword along with
+>    the comment field.
+-
+  int ffgkey(fitsfile *fptr, char *keyname, > char *value, char *comment,
+           int *status)
+-
+>5  Get a keyword value (with the appropriate datatype) and comment from
+>   the CHU
+-
+  int ffgkys(fitsfile *fptr, char *keyname, > char *value, char *comment,
+             int *status);
+ 
+  NOTE: after calling the following routine, programs must explicitly free
+        the memory allocated for 'longstr' after it is no longer needed.
+
+  int ffgkls(fitsfile *fptr, char *keyname, > char **longstr, char *comment,
+             int *status)
+ 
+  int ffgky[ljed](fitsfile *fptr, char *keyname, > DTYPE *numval, char *comment,
+             int *status)
+-
+>>6  Get a sequence of numbered keyword values
+-
+  int ffgkns(fitsfile *fptr, char *keyname, int nstart, int nkeys,
+             > char **value, int *nfound,  int *status)
+ 
+  int ffgkn[ljed](fitsfile *fptr, char *keyname, int nstart, int nkeys,
+                  > DTYPE *numval, int *nfound, int *status)
+-
+>7  Get the value of a floating point keyword, returning the integer and
+    fractional parts of the value in separate routine arguments.
+    This routine may be used to read any keyword but is especially
+>   useful for reading the 'triple precision' keywords written by ffpkyt.
+-
+  int ffgkyt(fitsfile *fptr, char *keyname, > long *intval, double *frac,
+             char *comment, int *status)
+-
+
+***5.   Modify Keyword Routines \label{FFMREC}
+
+>>1  Modify (overwrite) the nth 80-character header record in the CHU
+-
+  int ffmrec(fitsfile *fptr, int keynum, char *card, > int *status)
+-
+>2  Modify (overwrite) the 80-character header record for the named keyword
+    in the CHU.  This can be used to overwrite the name of the keyword as
+>   well as its value and comment fields.
+-
+  int ffmcrd(fitsfile *fptr, char *keyname, char *card, > int *status)
+-
+>3  Modify (overwrite) the name of an existing keyword in the CHU
+>   preserving the current value and comment fields.
+-
+  int ffmnam(fitsfile *fptr, char *oldname, char *newname, > int *status)
+-
+>>4  Modify (overwrite) the comment field of an existing keyword in the CHU
+-
+  int ffmcom(fitsfile *fptr, char *keyname, char *comment, > int *status)
+-
+>5  Modify the value and comment fields of an existing keyword in the CHU.
+    Optionally, one may modify only the value field and leave the comment
+    field unchanged by setting the input COMMENT parameter equal to
+>   the ampersand character (\&).
+-
+  int ffmkys(fitsfile *fptr, char *keyname, char *value, char *comment,
+             > int *status);
+ 
+  int ffmky[lj](fitsfile *fptr, char *keyname, DTYPE numval, char *comment,
+               > int *status)
+ 
+  int ffmky[edfg](fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
+                  char *comment, > int *status)
+-
+***6.   Update Keyword Routines \label{FFUCRD}
+
+>1  Update an 80-character record in the CHU.  If the specified keyword
+    already exists then that header record will be replaced with
+    the input CARD string.  If it does not exist then the new record will
+>   be added to the header.
+-
+  int ffucrd(fitsfile *fptr, char *keyname, char *card, > int *status)
+-
+>2  Update the value and comment fields of a keyword in the CHU.
+    The specified keyword is modified if it already exists (by calling
+>   ffmkyx) otherwise a new keyword is created by calling ffpkyx.
+-
+  int ffukys(fitsfile *fptr, char *keyname, char *value, char *comment,
+             > int *status)
+ 
+  int ffuky[lj](fitsfile *fptr, char *keyname, DTYPE numval, char *comment,
+               > int *status)
+ 
+  int ffuky[edfg](fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
+                  char *comment, > int *status)
+-
+***7.   Delete Keyword Routines \label{FFDREC}
+
+>1  Delete an existing keyword record.  The space previously occupied by
+    the keyword is reclaimed by moving all the following header records up
+    one row in the header.  The first routine deletes a keyword at a
+    specified position in the header (the first keyword is at position 1),
+>   whereas the second routine deletes a specifically named keyword.
+-
+  int ffdrec(fitsfile *fptr, int   keynum,  > int *status)
+  int ffdkey(fitsfile *fptr, char *keyname, > int *status)
+-
+***8.   Read or Write Standard Header Routines \label{FFPHPS}
+ 
+These routines provide a simple method of reading or writing most of
+the keyword values that are normally required in a FITS files.  These
+routines are provided for convenience only and are not required to
+be used.  If preferred, users may call the lower-level routines
+described in the previous section to individually read or write the
+required keywords.  Note that in most cases, the required keywords such
+as NAXIS, TFIELD, TTYPEn, etc, which define the structure of the HDU
+must be written to the header before any data can be written to the
+image or table.
+ 
+>1  Put the primary header or IMAGE extension keywords into the CHU.
+The ffphps routine is exactly equivalent to calling ffphpr with the
+default values of simple = TRUE, pcount = 0, gcount = 1, extend =
+TRUE.  The PCOUNT, GCOUNT and EXTEND keywords are not required in the
+primary header and are only written if pcount is not equal to zero,
+gcount is not equal to zero or one, and if extend is TRUE,
+respectively.  When writing to an IMAGE extension, the SIMPLE and
+> EXTEND parameters are ignored.
+-
+  int ffphps( fitsfile *fptr, int bitpix, int naxis, long *naxes, > int *status)
+
+  int ffphpr( fitsfile *fptr, int simple, int bitpix, int naxis, long *naxes,
+            long pcount, long gcount, int extend, > int *status)
+-
+>2  Get primary header or IMAGE extension keywords from the CHU.  When
+    reading from an IMAGE extension the SIMPLE and EXTEND parameters are
+>   ignored.
+-
+  int ffghpr(fitsfile *fptr, int maxdim, > int *simple, int *bitpix, int *naxis,
+          long *naxes, long *pcount, long *gcount, int *extend, int *status)
+-
+>3  Put the ASCII table header keywords into the CHU The optional
+TUNITn and EXTNAME keywords are written only if the input string
+>values are not blank.
+-
+  int ffphtb(fitsfile *fptr, long rowlen, long nrows, int tfields, char **ttype,
+          long *tbcol, char **tform, char **tunit, char *extname, > int *status)
+-
+>>4  Get the ASCII table header keywords from the CHU
+-
+  int ffghtb(fitsfile *fptr,int maxdim, > long *rowlen, long *nrows,
+           int *tfields, char **ttype, long *tbcol, char **tform, char **tunit,
+           char *extname,  int *status)
+-
+>5 Put the binary table header keywords into the CHU The optional
+   TUNITn and EXTNAME keywords are written only if the input string
+>values are not null.
+-
+  int ffphbn(fitsfile *fptr, long nrows, int tfields, char **ttype,
+          char **tform, char **tunit, char *extname, long pcount, > int *status)
+-
+>>6 Get the binary table header keywords from the CHU
+-
+  int ffghbn(fitsfile *fptr, int maxdim, > long *nrows, int *tfields,
+           char **ttype, char **tform, char **tunit, char *extname,
+           long *pcount, int *status)
+-
+
+**E.  Data Scaling and Undefined Pixel Parameters  \label{FFPSCL}
+ 
+These routines define or modify the internal parameters used by
+CFITSIO to either scale the data or to represent undefined pixels.
+Generally CFITSIO will scale the data according to the values of the BSCALE
+and BZERO (or TSCALn and TZEROn) keywords, however these routines
+may be used to override the keyword values.  This may be useful when
+one wants to read or write the raw unscaled values in the FITS file.
+Similarly, CFITSIO generally uses the value of the BLANK or TNULLn
+keyword to signify an undefined pixel, but these routines may be used
+to override this value.  These routines do not create or modify the
+corresponding header keyword values.
+ 
+>1  Reset the scaling factors in the primary array or image extension; does
+    not change the BSCALE and BZERO keyword values and only affects the
+    automatic scaling performed when the data elements are written/read
+    to/from the FITS file.   When reading from a FITS file the returned
+    data value = (the value given in the FITS array) * BSCALE + BZERO.
+    The inverse formula is used when writing data values to the FITS
+    file.  (NOTE: BSCALE and BZERO must be declared as Double Precision
+>   variables).
+-
+  int ffpscl(fitsfile *fptr, double scale, double zero, > int *status)
+-
+>2  Reset the scaling parameters for a table column; does not change
+    the TSCALn or TZEROn keyword values and only affects the automatic
+    scaling performed when the data elements are written/read to/from
+    the FITS file.  When reading from a FITS file the returned data
+    value = (the value given in the FITS array) * TSCAL + TZERO.  The
+    inverse formula is used when writing data values to the FITS file.
+    (NOTE: TSCAL and TZERO  must be declared as Double Precision
+>   variables).
+-
+  int fftscl(fitsfile *fptr, int colnum, double scale, double zero,
+             > int *status)
+-
+>3  Define the integer value to be used to signify undefined pixels in the
+    primary array or image extension.  This is only used if BITPIX = 8, 16,
+    or 32.  This does not create or change the value of the BLANK keyword in
+>   the header.
+-
+  int ffpnul(fitsfile *fptr, long nulval, > int *status)
+-
+>4  Define the string to be used to signify undefined pixels in
+    a column in an ASCII table.  This does not create or change the value
+>   of the TNULLn keyword.
+-
+  int ffsnul(fitsfile *fptr, int colnum, char *nulstr, > int *status)
+-
+>5  Define the value to be used to signify undefined pixels in
+    an integer column in a binary table (where TFORMn = 'B', 'I', or 'J').
+>   This does not create or  change the value of the TNULLn keyword.
+-
+  int fftnul(fitsfile *fptr, int colnum, long nulval, > int *status)
+-
+
+**F.  FITS Primary Array or IMAGE Extension I/O Routines 
+ 
+These routines put or get data values in the primary data array
+(i.e., the first HDU in the FITS file) or an IMAGE extension.  The
+data array is represented as a single one-dimensional array of
+pixels regardless of the actual dimensionality of the array, and the
+FPIXEL parameter gives the position within this 1-D array of the first
+pixel to read  or write.  Automatic data type conversion is performed
+for numeric data (except for complex data types) if the data type of
+the primary array (defined by the BITPIX keyword) differs from the data
+type of the array in the calling routine.  The data values are also
+scaled by the BSCALE and BZERO header values as they are being written
+or read from the FITS array.  The ftpscl routine MUST be
+called to define the scaling parameters when writing data to the FITS
+array or to override the default scaling value given in the header when
+reading the FITS array.
+ 
+    Two sets of routines are provided to read the data array which
+differ in the way undefined pixels are handled.  The first set of
+routines (ffgpvx) simply return an array of data elements in which
+undefined pixels are set equal to a value specified by the user in the
+'nullval' parameter.  An additional feature of these routines is
+that if the user sets nullval = 0, then no checks for undefined pixels
+will be performed, thus increasing the speed of the program.  The
+second set of routines (ffgpfx) returns the data element array and, in
+addition, a logical array which defines whether the corresponding data
+pixel is undefined.  The latter set of routines may be more
+convenient to use in some circumstances, however, it requires an
+additional array of logical values which can be unwieldy when working
+with large data arrays.  Also for programmer convenience, sets of
+routines to directly read or write 2 and 3 dimensional arrays  have
+been provided, as well as a set of routines to read or write any
+contiguous rectangular subset of pixels within the n-dimensional array.
+
+Four of the routines transfer FITS images with 2 or 3 dimensions
+to or from a data array which has been declared in the calling program.
+The dimensionality of the FITS image is passed by the naxis1, naxis2,
+and naxis3 parameters and the declared dimensions of the program array
+are passed in the dim1 and dim2 parameters.  Note that the program array
+does not have to have the same dimensions as the FITS array, but must
+be at least as big.  For example if a FITS image with NAXIS1 = NAXIS2 = 400
+is read into a program array which is dimensioned as 512 x 512 pixels,
+then the image will just fill the lower left corner of the array
+with pixels in the range 1 - 400 in the X an Y directions.  This has
+the effect of taking a contiguous set of pixel value in the FITS array
+and writing them to a non-contiguous array in program memory
+(i.e., there are now some blank pixels around the edge of the image
+in the program array).
+
+Some of the routines transfer a rectangular subset of the pixels
+in a FITS N-dimensional image to or from an array which has been
+declared in the calling program.  The fpixels and lpixels parameters
+are integer arrays which specify the starting and ending pixels in each
+dimension of the FITS image that are to be read or written.  (Note that
+these are the starting and ending pixels in the FITS image, not in the
+declared array). The array parameter is treated simply as a large
+one-dimensional array of the appropriate datatype containing the pixel
+values; The pixel values in the FITS array are read/written  from/to
+this program array in strict sequence without any gaps;  it is up to
+the calling routine to correctly interpret the dimensionality of this
+array.  The two families of FITS reading routines (ffgsv\_ and ffgsf\_ 
+routines) also have an `incs' parameter which defines the
+data sampling interval in each dimension of the FITS array.  For
+example, if incs(1)=2 and incs(2)=3 when reading a 2-dimensional
+FITS image, then only every other pixel in the first dimension
+and every 3rd pixel in the second dimension will be returned in
+the 'array' parameter. [Note: the ffgss\_ family of routines which
+were present in previous versions of CFITSIO have been superseded
+by the more general ffgsv\_ family of routines.]
+ 
+***1.  Write Image Data Routines \label{FFPPR}
+>>1 Put elements into the data array
+-
+  int ffppr[bijed](fitsfile *fptr, long group, long firstelem,
+           long nelements, DTYPE *array, > int *status);
+-
+>2 Put elements into the data array, substituting the appropriate FITS null
+   value for all elements which are equal to the value of NULLVAL.  For
+   integer FITS arrays, the null value defined by the previous call to ffpnul
+   will be substituted;  for floating point FITS arrays (BITPIX = -32
+   or -64) then the special IEEE NaN (Not-a-Number) value will be
+>  substituted.
+-
+  int ffppn[bijed](fitsfile *fptr, long group, long firstelem,
+           long nelements, DTYPE *array, DTYPE nulval, > int *status);
+-
+>>3 Set data array elements as undefined
+-
+  int ffppru(fitsfile *fptr, long group, long firstelem,
+           long nelements, > int *status)
+-
+>>4  Put values into group parameters
+-
+  int ffpgp[bijed](fitsfile *fptr, long group, long firstelem, long nelements,
+           > DTYPE *array, int *status)
+-
+>>5  Put 2-D image into the data array
+-
+  int ffp2d[bijed](fitsfile *fptr, long group, long dim1, long naxis1,
+           long naxis2, DTYPE *array, > int *status)
+-
+>>6  Put 3-D cube into the data array
+-
+  int ffp3d[bijed](fitsfile *fptr, long group, long dim1, long dim2,
+           long naxis1, long naxis2, long naxis3, DTYPE *array, > int *status)
+-
+>>7    Put an arbitrary data subsection into the data array.
+-
+  int ffpss[bijed](fitsfile *fptr, long group, long naxis, long *naxes,
+           long *fpixel, long *lpixel, DTYPE *array, > int *status)
+-
+
+
+***2.   Read Image Data Routines \label{FFGPV}
+
+>1  Get elements from the data array.  Undefined array elements will be
+    returned with a value = nullval, unless nullval = 0 in which case no
+>   checks for undefined pixels will be performed.
+-
+  int ffgpv[bijed](fitsfile *fptr, long group, long firstelem, long nelements,
+           DTYPE nulval, > DTYPE *array, int *anynul, int *status)
+-
+>2  Get elements and nullflags from data array.
+    Any undefined array elements will have the corresponding nularray element
+>   set equal to 1, else 0.
+-
+  int ffgpf[bijed](fitsfile *fptr, long group, long firstelem, long nelements,
+          > DTYPE *array, char *nularray, int *anynul, int *status)
+-
+>>3  Get values from group parameters
+-
+  int ffggp[bijed](fitsfile *fptr, long group, long firstelem, long nelements,
+          > DTYPE *array, int *status)
+-
+ 
+>4   Get 2-D image from the data array.  Undefined
+     pixels in the array will be set equal to the value of 'nulval',
+     unless nulval=0 in which case no testing for undefined pixels will
+>    be performed.
+-
+  int ffg2d[bijed](fitsfile *fptr, long group, DTYPE nulval, long dim1,
+           long naxis1, long naxis2, > DTYPE *array,
+           int *anynul, int *status)
+-
+>5  Get 3-D cube from the data array.   Undefined
+    pixels in the array will be set equal to the value of 'nulval',
+    unless nulval=0 in which case no testing for undefined pixels will
+>   be performed.
+-
+  int ffg3d[bijed](fitsfile *fptr, long group, DTYPE nulval, long dim1,
+          long dim2, long naxis1, long naxis2, long naxis3,
+          > DTYPE *array, int *anynul, int *status)
+-
+
+>6    Get an arbitrary data subsection from the data array.  Undefined
+       pixels in the array will be set equal to the value of 'nullval',
+       unless nullval=0 in which case no testing for undefined pixels will
+>      be performed.
+-
+  int ffgsv[bijed](fitsfile *fptr, int group, int naxis, long *naxes, 
+            long *fpixels, long *lpixels, long *inc, DTYPE nulval, 
+            > DTYPE *array, int *anynul, int *status)
+-
+>7    Get an arbitrary data subsection from the data array.  Any Undefined
+       pixels in the array will have the corresponding 'nularray'
+>      element set equal to .TRUE.
+-
+  int ffgsf[bijed](fitsfile *fptr, int group, int naxis, long *naxes, 
+            long *fpixels, long *lpixels, long *inc, > DTYPE *array, 
+            char *nularray, int *anynul, int *status)
+-
+
+**G.  FITS ASCII and Binary Table Data I/O Routines
+ 
+***1.  Column Information Routines \label{FFGCNO}
+ 
+>1  Get the table column number (and name) of the column whose name
+matches an input template name.  The table column names are defined by
+the TTYPEn keywords in the FITS header.  If a column does not have a
+TTYPEn keyword, then these routines assume that the name consists of
+all blank characters.  These 2 routines perform the same function
+except that ffgcno only returns the number of the matching column whereas
+ffgcnn also returns the name of the column.  If CASESEN = .true. then
+the column name match will be case-sensitive.
+ 
+The input column name template (COLTEMPLATE) is (1) either the exact
+name of the column to be searched for, or (2) it may contain wild cards
+characters (* or ?), or (3) it may contain the number of the desired
+column (where the number is expressed as ASCII digits).  The wild cards
+behave similarly to UNIX filenames:  the '*' character matches any
+sequence of characters (including zero characters) and the '?'
+character matches any single character.  As an example, the template
+strings 'AB?DE', 'AB*E', and 'AB*CDE' will all match the string
+'ABCDE'.  If more than one column name in the table matches the
+template string, then the first match is returned and the status value
+will be set to 237 as a warning that a unique match was not found.  To
+find the other cases that match the template, simply call the
+routine again leaving the input status value equal to  237 and the
+next matching name will then be returned.  Repeat this process until a
+status = 219 (column name not found) is returned.  If these routines
+fail to match the template to any of the columns in the table, they
+lastly check if the template can be interpreted as a simple positive
+integer (e.g., '7', or '512') and if so, they return that column
+number.  If no matches are found then a status = 219 error is
+returned.
+ 
+Note that the FITS Standard recommends that only letters, digits, and
+the underscore character be used in column names (with no embedded
+spaces in the name).  Trailing blank characters are not significant.
+It is recommended that the column names in a given table be unique
+>within the first 8 characters.
+-
+  int ffgcno(fitsfile *fptr, int casesen, char *templt, > int *colnum,
+           int *status)
+ 
+  int ffgcnn(fitsfile *fptr, int casesen, char *templt, > char *colname,
+           int *colnum, int *status)
+-
+>2  Get the datatype of a column in an ASCII or binary table.  This
+    routine returns an integer code value corresponding to the datatype
+    of the column. (See the ffbnfm and ffsafm routines in the Utilities
+    section of this document for a list of the code values).  The vector
+    repeat count (which is alway 1 for ASCII table columns) is also returned.
+    If the specified column has an ASCII character datatype (code = 16) then
+    the width of a unit string in the column is also returned.  Note that
+    this routine supports the local convention for specifying arrays of
+    strings within a binary table character column, using the syntax
+    TFORM = 'rAw' where 'r' is the total number of characters (= the width
+    of the column) and 'w' is the width of a unit string within the column.
+    Thus if the column has TFORM = '60A12' then this routine will return
+>   datacode = 16, repeat = 60, and width = 12.
+-
+  int ffgtcl(fitsfile *fptr, int colnum, > int *typecode, long *repeat,
+           long *width, int *status)
+-
+>>3  Get information about an existing ASCII table column.  
+-
+int ffgacl(fitsfile *fptr, int colnum, > char *ttype, long *tbcol,
+           char *tunit, char *tform, double *scale, double *zero,
+           char *nulstr, char *tdisp, int *status)
+-
+>4  Get information about an existing binary table column. DATATYPE is a
+    character string which returns the datatype of the column as defined
+    by the TFORMn keyword (e.g., 'I', 'J','E', 'D', etc.).  In the case
+    of an ASCII character column, DATATYPE will have a value of the
+    form 'An' where 'n' is an integer expressing the width of the field
+    in characters.  For example, if TFORM = '160A8' then ffgbcl will return
+    DATATYPE='A8' and REPEAT=20.   All the returned parameters are scalar
+>   quantities.
+-
+  int ffgbcl(fitsfile *fptr, int colnum, > char *ttype, char *tunit,
+           char *datatype, long *repeat, double *scale, double *zero,
+           long *nulval, char *tdisp, int  *status)
+-
+> 5 Put (append) a TDIMn keyword whose value has the form '(l,m,n...)'
+    where l, m, n... are the dimensions of a multidimension array
+>   column in a binary table.
+-
+  int ffptdm( fitsfile *fptr, int colnum, int naxis, long *naxes,
+     >  int *status)
+-
+> 6 Return the number of and size of the dimensions of a table column.
+    Normally this information is given by the TDIMn keyword, but if
+    this keyword is not present then this routine returns NAXIS = 1
+>   and NAXES[0] equal to the repeat count in the TFORM keyword.
+-
+  int ffgtdm(fitsfile *fptr, int colnum, int maxdim, > int *naxis,
+           long *naxes, int *status)
+-
+***2.  Low-Level Table Access Routines \label{FFGTBB}
+ 
+The following 2 routines provide low-level access to the data in ASCII
+or binary tables and are mainly useful as an efficient way to copy all
+or part of a table from one location to another.  These routines simply
+read or write the specified number of consecutive bytes in an ASCII or
+binary table, without regard for column boundaries or the row length in
+the table.  These routines do not perform any machine dependent data
+conversion or byte swapping.
+ 
+>>1  Read a consecutive array of bytes from an ASCII or binary table
+-
+  int ffgtbb(fitsfile *fptr, long firstrow, long firstchar, long nchars,
+           > unsigned char *values, int *status)
+-
+>>2  Write a consecutive array of bytes to an ASCII or binary table
+-
+  int ffptbb(fitsfile *fptr, long firstrow, long firstchar, long nchars,
+           unsigned char *values, > int *status)
+-
+***3.   Insert or Delete Rows and Columns Routines \label{FFIROW}
+
+>1  Insert blank rows into an existing ASCII or binary table (in the CDU).
+    All the rows FOLLOWING row FROW are shifted down by NROWS rows.  If
+    FROW = 0 then the blank rows are inserted at the beginning of the
+    table.  This routine modifies the NAXIS2 keyword to reflect the new
+>   number of rows in the table.
+-
+  int ffirow(fitsfile *fptr, long firstrow, long nrows, > int *status)
+-
+>2  Delete rows from an existing ASCII or binary table (in the CDU).
+    The NROWS number of rows are deleted, starting with row FROW, and
+    any remaining rows in the table are shifted up to fill in the space.
+    This routine modifies the NAXIS2 keyword to reflect the new number
+    of rows in the table.  Note that the physical size of the FITS file will
+    not be reduced by this operation, and the empty FITS blocks if any
+>   at the end of the file will be padded with zeros.
+-
+  int ffdrow(fitsfile *fptr, long firstrow, long nrows, > int *status)
+-
+>3  Insert a blank column (or columns) into an existing ASCII or binary
+    table (in the CDU).  COLNUM specifies the column number that the (first)
+    new column should occupy in the table.  NCOLS specifies how many
+    columns are to be inserted. Any existing columns from this position and
+    higher are moved over to allow room for the new column(s).
+    The index number on all the following keywords will be incremented
+    if necessary to reflect the new position of the column(s) in the table:
+    TBCOLn, TFORMn, TTYPEn, TUNITn, TNULLn, TSCALn, TZEROn, TDISPn, TDIMn,
+    TLMINn, TLMAXn, TDMINn, TDMAXn, TCTYPn, TCRPXn, TCRVLn, TCDLTn, TCROTn,
+>   and TCUNIn.
+-
+  int fficol(fitsfile *fptr, int colnum, char *ttype, char *tform,
+            > int *status)
+-
+>4  Delete a column from an existing ASCII or binary table (in the CDU).
+    The index number of all the keywords listed above (for fficol) will be
+    decremented if necessary to reflect the new position of the column(s) in
+    the table.  Those index keywords that refer to the deleted column will
+    also be deleted.  Note that the physical size of the FITS file will
+    not be reduced by this operation, and the empty FITS blocks if any
+>   at the end of the file will be padded with zeros.
+-
+  int ffdcol(fitsfile *fptr, int colnum, > int *status)
+-
+***4.   Write Column Data Routines \label{FFPCLS}
+
+The following routines put or get data values in the current ASCII or
+Binary table extension.  Automatic data type conversion is performed
+for numerical data types (B,I,J,E,D) if the data type of the column
+(defined by the TFORM keyword) differs from the data type of the
+calling routine.  The data values are also scaled by the TSCALn and
+TZEROn header values as they are being written to or read from the FITS
+array.  The fttscl routine MUST be used to define the scaling
+parameters when writing data to the table or to override the default
+scaling values given in the header when reading from the table.
+ 
+    In the case of binary tables with vector elements, the 'felem'
+parameter defines the starting pixel within the element vector.  This
+parameter is ignored with ASCII tables. Similarly, in the case of
+binary tables the 'nelements' parameter specifies the total number of
+vector values read or written (continuing on subsequent rows if
+required) and not the number of table elements.  Two sets of
+routines are provided to get the column data which differ in the way
+undefined pixels are handled.  The first set of routines (ffgcv)
+simply return an array of data elements in which undefined pixels are
+set equal to a value specified by the user in the 'nullval' parameter.
+An additional feature of these routines is that if the user sets
+nullval = 0, then no checks for undefined pixels will be performed,
+thus increasing the speed of the program.  The second set of routines
+(ffgcf) returns the data element array and in addition a logical array
+of flags which defines whether the corresponding data pixel is undefined.
+ 
+>>1  Put elements into an ASCII or binary table column (in the CDU).
+-
+  int ffpcls(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+           long nelements, char **array, > int *status)
+ 
+  int ffpcl[lbijedcm](fitsfile *fptr, int colnum, long firstrow,
+           long firstelem, long nelements, DTYPE *array, > int *status)
+-
+>2  Put elements into an ASCII or binary table column (in the CDU)
+    substituting the appropriate FITS null value for any elements that
+    are equal to NULLVAL.  This family of routines must NOT be used to
+    write to  variable length array columns. For ASCII TABLE extensions, the
+    null value defined by the previous call to ffsnul will be substituted;
+    For integer FITS columns, in a binary table  the null value
+    defined by the previous call to fftnul will be substituted;
+    For floating point FITS columns a special IEEE NaN (Not-a-Number)
+>   value will be substituted.
+-
+  int ffpcn[bijed](fitsfile *fptr, int colnum, long firstrow,
+           long firstelem, long nelements, DTYPE *array, DTYPE nulval,
+           > int *status)
+-
+>3  Put bit values into a binary byte ('B') or bit ('X') table column (in the
+    CDU).  Larray is an array of logical values corresponding to the sequence of
+    bits to be written.  If larray is true then the corresponding bit is
+    set to 1, otherwise the bit is set to 0.  Note that in the case of
+    'X' columns, CFITSIO can write to all 8 bits of each byte whether
+    they are formally valid or not.  Thus if the column is defined as
+    '4X', and one calls ffpclx with  firstbit=1 and nbits=8, then all 8 bits
+    will be written into the first byte (as opposed to writing the
+    first 4 bits into the first row and then the next 4 bits into the
+    next row), even though the last 4 bits of each byte are formally
+>   not defined.
+-
+  int ffpclx(fitsfile *fptr, int colnum, long firstrow, long firstbit, 
+            long nbits, char *larray, > int *status)
+-
+>>4  Set table elements in a column as undefined
+-
+   int ffpclu(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+           long nelements, > int *status)
+-
+>5   Put the descriptor for a variable length column in a binary table.
+    This routine can be used in conjunction with FFGDES to enable
+    2 or more arrays to point to the same storage location to save
+>   storage space if the arrays are identical.
+-
+    int ffpdes(fitsfile *fptr, int colnum, long rownum, long repeat,
+           long offset, > int *status)
+-
+
+>6  Define the zero indexed byte offset of the 'heap' measured from
+    the start of the binary table data.  By default the heap is assumed
+    to start immediately following the regular table data, i.e., at
+    location NAXIS1 x NAXIS2.  This routine is only relevant for
+    binary tables which contain variable length array columns (with
+    TFORMn = 'Pt').  This routine also automatically writes
+    the value of theap to a keyword in the extension header.  This
+    routine must be called after the required keywords have been
+    written (with ftphbn) and after the table structure has been defined
+>   (with ftbdef) but before any data is written to the table.
+-
+  int ffpthp(fitsfile *fptr, long theap, > int *status)
+-
+***6.   Read Column Data Routines \label{FFGCL}
+
+>1  Get elements from an ASCII or binary table column (in the CDU).  These
+    routines return the values of the table column array elements.  Undefined
+    array elements will be returned with a value = nulval, unless nulval = 0
+    (or = ' ' for ftgcvs) in which case no checking for undefined values will
+    be performed. The ANYF parameter is set to true if any of the returned
+    elements are undefined. (Note: the ftgcl routine simple gets an array
+    of logical data values without any checks for undefined values;  use
+>   the ftgcfl routine to check for undefined logical elements).
+-
+  int ffgcl (fitsfile *fptr, int colnum, long firstrow, long firstelem,
+           long nelements, > char *array, int  *status)
+ 
+  int ffgcvs(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+           long nelements, char *nulstr, > char **array, int *anynul,
+           int *status)
+ 
+  int ffgcv[bijedcm](fitsfile *fptr, int colnum, long firstrow,
+           long firstelem, long nelements, DTYPE nulval, > DTYPE *array,
+            int *anynul, int *status)
+-
+>2   Get elements and null flags from an ASCII or binary table column (in the
+    CHDU).  These routines return the values of the table column array elements.
+    Any undefined array elements will have the corresponding nularray element
+    set equal to TRUE.  The anynul parameter is set to true if any of the
+>   returned elements are undefined.
+-
+  int ffgcfs(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+          long nelements, > char **array, char *nularray, int *anynul,
+          int *status)
+
+  int ffgcfl(fitsfile *fptr, int colnum, long firstrow, long firstelem, 
+          long nelements, > char *array, char *nularray, int *anynul, 
+          int *status)
+
+  int ffgcf[bijedcm](fitsfile *fptr, int colnum, long firstrow, 
+          long firstelem, long nelements, > DTYPE *array,
+          char *nularray, int *anynul, int *status)
+
+-
+>3   Get an arbitrary data subsection from an N-dimensional array
+    in a binary table vector column.  Undefined pixels
+    in the array will be set equal to the value of 'nulval',
+    unless nulval=0 in which case no testing for undefined pixels will
+    be performed.  The first and last rows in the table to be read
+    are specified by fpixels(naxis+1) and lpixels(naxis+1), and hence
+    are treated as the next higher dimension of the FITS N-dimensional
+    array.  The INC parameter specifies the sampling interval in
+>   each dimension between the data elements that will be returned.
+-
+  int ffgsv[bijed](fitsfile *fptr, int colnum, int naxis, long *naxes, 
+            long *fpixels, long *lpixels, long *inc, DTYPE nulval,
+            > DTYPE *array, int *anynul, int *status)
+-
+>4  Get an arbitrary data subsection from an N-dimensional array
+    in a binary table vector column.  Any Undefined
+    pixels in the array will have the corresponding 'nularray'
+    element set equal to TRUE.  The first and last rows in the table
+    to be read are specified by fpixels(naxis+1) and lpixels(naxis+1),
+    and hence are treated as the next higher dimension of the FITS
+    N-dimensional array.  The INC parameter specifies the sampling
+    interval in each dimension between the data elements that will be
+>   returned.
+-
+  int ffgsf[bijed](fitsfile *fptr, int colnum, int naxis, long *naxes, 
+            long *fpixels, long *lpixels, long *inc, > DTYPE *array, 
+            char *nularray, int *anynul, int *status)
+-
+>5  Get bit values from a byte ('B') or bit (`X`) table column (in the
+    CDU).  Larray is an array of logical values corresponding to the
+    sequence of bits to be read.  If larray is true then the
+    corresponding bit was set to 1, otherwise the bit was set to 0.
+    Note that in the case of 'X' columns, CFITSIO can read  all 8 bits
+    of each byte whether they are formally valid or not.  Thus if the
+    column is defined as '4X', and one calls ffgcx with  firstbit=1 and
+    nbits=8, then all 8 bits will be read from the first byte (as
+    opposed to reading the first 4 bits from the first row and then the
+    first 4 bits from the next row), even though the last 4 bits of
+>   each byte are formally not defined.
+-
+  int ffgcx(fitsfile *fptr, int colnum, long firstrow, long firstbit, 
+            long nbits, > char *larray, int *status)
+-
+>6  Get the descriptor for a variable length column in a binary table.
+    The descriptor consists of 2 integer parameters: the number of elements
+>   in the array and the starting offset relative to the start of the heap.
+-
+  int ffgdes(fitsfile *fptr, int colnum, long rownum, > long *repeat,
+           long *offset, int *status)
+-
+
+**H.  Celestial Coordinate System Routines \label{FFGICS}
+ 
+The following routines are provided to help calculate the
+transformation between pixel location in an image and the corresponding
+celestial coordinates on the sky.  These support the following standard
+map projections:  -SIN, -TAN, -ARC, -NCP, -GLS, -MER, and -AIT (these
+are the legal values for the coordtype parameter).  These routines are
+based on similar functions in Classic AIPS.  All the angular quantities
+are given in units of degrees. (Note: these routines are provisional
+and may change slightly in a future release of CFITSIO).
+ 
+>1  Get the values of all the standard FITS celestial coordinate system
+    keywords from the header of a FITS image (i.e., the primary array or
+    an image extension).  These values may then be passed to the routines
+>   that perform the coordinate transformations.
+-
+       Not yet implemented
+-
+>2  Get the values of all the standard FITS celestial coordinate system
+    keywords from the header of a FITS table where the X and Y (or RA and
+    DEC coordinates are stored in 2 separate columns of the table.
+    These values may then be passed to the routines that perform the
+>   coordinate transformations.
+-
+       Not yet implemented
+-
+>3   Calculate the celestial coordinate corresponding to the input
+>    X and Y pixel location in the image.
+-
+       Not yet implemented
+-
+>4   Calculate the X and Y pixel location corresponding to the input
+>    celestial coordinate in the image.
+-
+       Not yet implemented
+-
+
+**I.  File Checksum Routines \label{FFPCKS}
+ 
+The following routines either compute or validate the checksums for the
+CHDU.  The DATASUM keyword is used to store the numerical value of the
+32-bit, 1's complement checksum for the data unit alone.  If there is
+no data unit then the value is set to zero. The numerical value is
+stored as an ASCII string of digits, enclosed in quotes, because the
+value may be too large to represent as a 32-bit signed integer.  The
+CHECKSUM keyword is used to store the ASCII encoded COMPLEMENT of the
+checksum for the entire HDU.  Storing the complement, rather than the
+actual checksum, forces the checksum for the whole HDU to equal zero.
+If the file has been modified since the checksums were computed, then
+the HDU checksum will usually not equal zero.  These checksum keyword
+conventions are based on a paper by Rob Seaman published in the
+proceedings of the ADASS IV conference in Baltimore in November 1994
+and a later revision in June 1995.
+ 
+>1  Compute and write the DATASUM and CHECKSUM keyword values for the CHDU
+    into the current header.  The DATASUM value is the 32-bit checksum
+    for the data unit, expressed as a decimal integer enclosed in single
+    quotes. The CHECKSUM keyword value is a 16-character string which
+    is the ASCII-encoded value for the complement of the checksum for
+    the whole HDU.  If these keywords already exist, their values
+    will be updated only if necessary (i.e., if the file has been modified
+>   since the original keyword values were computed).
+-
+       Not yet implemented
+-
+>2  Update the CHECKSUM keyword value in the CHDU, assuming that the
+    DATASUM keyword exists and already has the correct value.  This routine
+    calculates the new checksum for the current header unit, adds it to the
+    data unit checksum, encodes the value into an ASCII string, and writes
+>   the string to the CHECKSUM keyword.
+-
+       Not yet implemented
+-
+>3  Verify the CHDU by computing the checksums and comparing
+    them with the keywords.  The data unit is verified correctly
+    if the computed checksum equals the value of the DATASUM
+    keyword.  The checksum for the entire HDU (header plus data unit) is
+    correct if it equals zero.  The output DATAOK and HDUOK parameters
+    in this routine are integers which will have a value = 1
+    if the data or HDU is verified correctly, a value = 0
+    if the DATASUM or CHECKSUM keyword is not present, or value = -1
+>   if the computed checksum is not correct.
+-
+       Not yet implemented
+-
+>4  Compute and return the checksum values for the CHDU (as
+    double precision variables) without creating or modifying the
+    CHECKSUM and DATASUM keywords.  This routine is used internally by
+>   ffvcks, but may be useful in other situations as well.
+-
+       Not yet implemented
+-
+>5  Encode a checksum value (stored in a double precision variable)
+    into a 16-character string.  If COMPLEMENT = .true. then the 32-bit
+>   sum value will be complemented before encoding.
+-
+       Not yet implemented
+-
+>6  Decode a 16 character checksum string into a double precision value.
+    If COMPLEMENT = .true. then the 32-bit sum value will be complemented
+>   after decoding.
+-
+       Not yet implemented
+-
+
+**J.  General Utility Routines \label{FFVERS}
+ 
+The following utility routines may be useful for certain applications:
+ 
+>1  Return the revision number of the fitsio library.
+    This routine returns the current revision number of the CFITSIO
+    software library.  The revision number will be incremented whenever any
+>    modifications or enhancements are made to the code.
+-
+ float ffvers( > float *version)
+-
+>>2  Return the starting byte address of the CHDU and the next HDU.
+-
+  void ffghad(fitsfile *fptr, > long *chduaddr, long *nextaddr)
+-
+>3  Return a descriptive text string corresponding to a CFITSIO error
+    status code.   The 30-character length string contains a brief
+>   description of the cause of the error.
+-
+ void ffgerr(int status, > char *err_text)
+-
+>4  Return the top (oldest) 80-character error message from the
+    internal CFITSIO stack of error messages and shift any remaining
+    messages on the stack up one level.  Any CFITSIO error will
+    generate one or more messages on the stack.  Call this routine
+    repeatedly to get each message in sequence.  The error stack is empty
+>   when a blank string is returned or the routine returns a value of zero.
+-
+  int  ffgmsg(char *err_msg)
+-
+>5  Write an 80-character message to the CFITSIO error stack.  Application
+    programs should not normally write to the stack, but there may be
+>   some situations where this is desirable.
+-
+  void ffpmsg(char *err_msg)
+-
+>6   Clear the entire error message stack.  This routine is useful
+     to clear any error message that may have been generated by
+     a non-fatal CFITSIO error (such as failing to find an optional
+>    header keyword).  This routine is called without any arguments.
+-
+  void ffcmsg(void)
+-
+>>7  Convert a character string to uppercase (operates in place).
+-
+  void ffupch(char *string)
+-
+>8   Compare the input template string against the reference string
+    to see if they match.  The template string may contain wildcard
+    characters: '*' will match any sequence of characters (including
+    zero characters) and '%' will match any single character in the
+    reference string.  If CASESN = .true. then the match will be
+    case sensitive.  The returned MATCH parameter will be .true. if
+    the 2 strings match, and EXACT will be .true. if the match is
+    exact (i.e., if no wildcard characters were used in the match).
+>   Both strings must be 68 characters or less in length.
+-
+  void ffcmps(char *templt, char *string, int casesen, > int *match, int *exact)
+-
+ 
+>9  Test that the keyword name contains only legal characters: A-Z,0-9,
+>   hyphen, and underscore.
+-
+  int fftkey(char *keyname, > int *status)
+-
+>10 Parse a header keyword record.
+    This routine parses the input header record to return the value (as
+    a character string) and comment strings.  If the keyword has no
+    value (columns 9-10 not equal to '= '), then the value string is returned
+    blank and the comment string is set equal to column 9 - 80 of the
+>   input string.
+-
+  int ffpsvc(char *card, > char *value, char *comment, int *status)
+-
+>11 Construct a sequence keyword name (ROOT + nnn).
+    This routine appends the sequence number to the root string to create
+>   a keyword name (e.g., 'NAXIS' + 2 = 'NAXIS2')
+-
+  int ffkeyn(char *keyroot, int value, > char *keyname, int *status)
+-
+>12 Construct a sequence keyword name (n + ROOT).
+    This routine concatenates the sequence number to the front of the
+>   root string to create a keyword name (e.g., 1 + 'CTYP' = '1CTYP')
+-
+  int ffnkey(int value, char *keyroot, > char *keyname, int *status)
+-
+>13 Determine the datatype of a keyword value string.
+    This routine parses the keyword value string (usually columns 11-30
+>   of the header record) to determine its datatype.
+-
+  int ffdtyp(char *value, > char *dtype, int *status)
+-
+>14 Parse the 'TFORM' binary table column format string.
+    This routine parses the input TFORM character string and returns the
+    integer datatype code, the repeat count of the field, and, in the case
+    of character string fields, the length of the unit string.  The following
+>   datatype codes are used:
+-
+                Datatype                typecode value
+                bit, X                   1
+                byte, B                 11
+                logical, L              14
+                ASCII character, A      16
+                short integer, I        21
+                integer, J              41
+                real, E                 42
+                double precision, D     82
+                complex, C              83
+                double complex, M      163
+ 
+   int ffbnfm(char *tform, > int *typecode, long *repeat, long *width,
+                int *status)
+-
+>15 Parse the 'TFORM' keyword value that defines the column format in
+    an ASCII table.  This routine parses the input TFORM character
+    string and returns the datatype code, the width of the column,
+    and (if it is a floating point column) the number of decimal places
+    to the right of the decimal point.  The returned datatype codes are
+    the same as for the binary table, listed above, with the following
+    additional rules:  integer columns that are between 1 and 4 characters
+    wide are defined to be short integers (code = 21).  Wider integer
+    columns are defined to be regular integers (code = 41).  Similarly,
+    Fixed decimal point columns (with TFORM = 'Fw.d') are defined to
+    be single precision reals (code = 42) if w is between 1 and 7 characters
+    wide, inclusive.  Wider 'F' columns will return a double precision
+    data code (= 82).  'Ew.d' format columns will have datacode = 42,
+>   and 'Dw.d' format columns will have datacode = 82.
+-
+  int ffasfm(char *tform, > int *typecode, long *width, int *decimals,
+             int *status)
+-
+>16 Calculate the starting column positions and total ASCII table width
+    based on the input array of ASCII table TFORM values.  The SPACE input
+    parameter defines how many blank spaces to leave between each column
+    (it is recommended to have one space between columns for better human
+>   readability).
+-
+  int ffgabc(int tfields, char **tform, int space, > long *rowlen, 
+            long *tbcol, int *status)
+-
+>17 Parse a template string and return a formatted 80-character string
+    suitable for appending to (or deleting from) a FITS header file.
+    This routine is useful for parsing lines from an ASCII template file
+    and reformatting them into legal FITS header records.  The formatted
+    string may then be passed to the ffprec, ffmcrd, or ffdkey routines
+>   to append or modify a FITS header record.
+-
+  int ffgthd(char *templt, > char *card, int *keytype, int *status)
+-
+    The input templt character string generally should contain 3 tokens:
+    (1) the KEYNAME, (2) the VALUE, and (3) the COMMENT string.  The
+    TEMPLATE string must adhere to the following format:
+ 
+>-      The KEYNAME token must begin in columns 1-8 and be a maximum  of 8
+        characters long.  If the first 8 characters of the template line are
+        blank then the remainder of the line is considered to be a FITS comment
+        (with a blank keyword name).  A legal FITS keyword name may only
+        contain the characters A-Z, 0-9, and '-' (minus sign) and
+        underscore.  This routine will automatically convert any lowercase
+        characters to uppercase in the output string.  If KEYNAME = 'COMMENT'
+        or 'HISTORY' then the remainder of the line is considered to be a FITS
+>       COMMENT or HISTORY record, respectively.
+ 
+>-      The VALUE token must be separated from the KEYNAME token by one or more
+        spaces and/or an '=' character.  The datatype of the VALUE token
+        (numeric, logical, or character string) is automatically determined
+        and  the output CARD string is formatted accordingly.  The value
+        token may be forced to be interpreted as a string (e.g. if it is a
+>       string of numeric digits) by enclosing it in single quotes.
+ 
+>-      The COMMENT token is optional, but if present must be separated from
+        the VALUE token by at least one blank space.  A leading '/' character
+        may be used to mark the beginning of the comment field, otherwise the
+        comment field begins with the first non-blank character following the
+>       value token.
+ 
+>-      One exception to the above rules is that if the first non-blank
+        character in the template string is a minus sign ('-') followed
+        by a single token, or a single token followed by an equal sign,
+        then it is interpreted as the name of a keyword which is to be
+>       deleted from the FITS header.
+ 
+>-      The second exception is that if the template string starts with
+        a minus sign and is followed by 2 tokens then the second token
+        is interpreted as the new name for the keyword specified by
+        first token.  In this case the old keyword name (first token)
+        is returned in characters 1-8 of the returned CARD string, and
+        the new keyword name (the second token) is returned in characters
+        41-48 of the returned CARD string.  These old and new names
+        may then be passed to the ffmnam routine which will change
+>       the keyword name.
+ 
+    The keytype output parameter indicates how the returned CARD string
+    should be interpreted:
+-
+        keytype                  interpretation
+        -------          -------------------------------------------------
+           -2            Modify the name of the keyword given in CARD(1:8)
+                         to the new name given in CARD(41:48)
+ 
+           -1            CARD(1:8) contains the name of a keyword to be deleted
+                         from the FITS header.
+ 
+            0            append the CARD string to the FITS header if the
+                         keyword does not already exist, otherwise update
+                         the value/comment if the keyword is already present
+                         in the header.
+ 
+            1            simply append this keyword to the FITS header (CARD
+                         is either a HISTORY or COMMENT keyword).
+ 
+            2            This is a FITS END record; it should not be written
+                         to the FITS header because CFITSIO automatically
+                         appends the END record when the header is closed.
+-
+     EXAMPLES:  The following lines illustrate valid input template strings:
+-
+      INTVAL 7 This is an integer keyword
+      RVAL           34.6   /     This is a floating point keyword
+      EVAL=-12.45E-03  This is a floating point keyword in exponential notation
+      lval F This is a boolean keyword
+                  This is a comment keyword with a blank keyword name
+      SVAL1 = 'Hello world'   /  this is a string keyword
+      SVAL2  '123.5'  this is also a string keyword
+      sval3  123+  /  this is also a string keyword with the value '123+    '
+      # the following template line deletes the DATE keyword
+      - DATE
+      # the following template line modifies the NAME keyword to OBJECT
+      - NAME OBJECT
+-
+
+*VI.  Summary of all CFITSIO User-Interface Routines
+ 
+ FITS File Open and Close Routines: page~\pageref{FFOPEN}
+-
+  int ffopen(fitsfile **fptr, char *filename, int iomode, > int *status)
+  int ffinit(fitsfile **fptr, char *filename, > int *status)
+  int ffflus(fitsfile *fptr, > int *status)
+  int ffclos(fitsfile *fptr, > int *status)
+  int ffdelt(fitsfile *fptr, > int *status)
+-
+ HDU-Level Operations: page~\pageref{FFMAHD}
+-
+  int ffmahd(fitsfile *fptr, int hdunum, > int *hdutype, int *status)
+  int ffmrhd(fitsfile *fptr, int nmove, > int *hdutype, int *status)
+  int ffghdn(fitsfile *fptr, > int *hdunum)
+  int ffcrhd(fitsfile *fptr, > int *status)
+  int ffiimg(fitsfile *fptr, int bitpix, int naxis, long *naxes, > int *status)
+  int ffitab(fitsfile *fptr, long rowlen, long nrows, int tfields, char **ttype,
+         long *tbcol, char **tform, char **tunit, char *extname, > int *status)
+  int ffibin(fitsfile *fptr, long nrows, int tfields, char **ttype,
+       char **tform, char **tunit, char *extname, long pcount, > int *status)
+  int ffdhdu(fitsfile *fptr, > int *hdutype, int *status)
+  int ffcopy(fitsfile *infptr, fitsfile *outfptr, int morekeys, > int *status)
+  int ffcpdt(fitsfile *infptr, fitsfile *outfptr, > int *status)
+  int ffrdef(fitsfile *fptr, > int *status)   (DEPRECATED)
+-
+ Header Space and Position Routines: page~\pageref{FFHDEF}
+-
+  int ffhdef(fitsfile *fptr, int morekeys, > int *status)
+  int ffghsp(fitsfile *fptr, > int *keysexist, int *morekeys, int *status)
+  int ffghps(fitsfile *fptr, > int *keysexist, int *keynum, int *status)
+-
+ Write Keyword Routines: page~\pageref{FFPREC}
+-
+  int ffprec(fitsfile *fptr, char *card, > int *status)
+  int ffpcom(fitsfile *fptr, char *comment, > int *status)
+  int ffphis(fitsfile *fptr, char *history, > int *status)
+  int ffpdat(fitsfile *fptr, > int *status)
+  int ffpkys(fitsfile *fptr, char *keyname, char *value, char *comment,
+             > int *status)
+  int ffpky[lj](fitsfile *fptr, char *keyname, DTYPE numval, char *comment,
+                 > int *status)
+  int ffpky[edfg](fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
+                  char *comment, > int *status)
+  int ffpkls(fitsfile *fptr, char *keyname, char *longstr,
+             char *comment, > int *status)
+  int ffplsw(fitsfile *fptr, > int *status)
+  int ffpkns(fitsfile *fptr, char *keyroot, int nstart, int nkeys,
+             char **value, char **comment, > int *status)
+  int ffpkn[lj](fitsfile *fptr, char *keyroot, int nstart, int nkeys,
+             DTYPE *numval, char **comment, int *status)
+  int ffpkne[edfg](fitsfile *fptr, char *keyroot, int nstart, int nkey,
+                DTYPE *numval, int decimals, char **comment, > int *status)
+  int ffpkyt(fitsfile *fptr, char *keyname, long intval, double frac,
+             char *comment, > int *status)
+-
+ Insert Keyword Routines: page~\pageref{FFIREC}
+-
+  int ffirec(fitsfile *fptr, int keynum, char *card, > int *status)
+  int ffikys(fitsfile *fptr, char *keyname, char *value, char *comment,
+             > int *status)
+  int ffiky[lj](fitsfile *fptr, char *keyname, DTYPE numval, char *comment,
+              > int *status)
+  int ffiky[edfg](fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
+                  char *comment, > int *status)
+-
+ Read Keyword Routines: page~\pageref{FFGREC}
+-
+  int ffgrec(fitsfile *fptr, int keynum, > char *card, int *status)
+  int ffgkyn(fitsfile *fptr, int keynum, > char *keyname, char *value,
+             char *comment, int *status)
+  int ffgcrd(fitsfile *fptr, char *keyname, > char *card, int *status)
+  int ffgkey(fitsfile *fptr, char *keyname, > char *value, char *comment,
+           int *status)
+  int ffgkys(fitsfile *fptr, char *keyname, > char *value, char *comment,
+             int *status);
+  int ffgkls(fitsfile *fptr, char *keyname, > char **longstr, char *comment,
+             int *status)
+  int ffgky[ljed](fitsfile *fptr, char *keyname, > DTYPE *numval, char *comment,
+             int *status)
+  int ffgkns(fitsfile *fptr, char *keyname, int nstart, int nkeys,
+             > char **value, int *nfound,  int *status)
+  int ffgkn[ljed](fitsfile *fptr, char *keyname, int nstart, int nkeys,
+                  > DTYPE *numval, int *nfound, int *status)
+  int ffgkyt(fitsfile *fptr, char *keyname, > long *intval, double *frac,
+             char *comment, int *status)
+-
+ Modify Keyword Routines: page~\pageref{FFMREC}
+-
+  int ffmrec(fitsfile *fptr, int keynum, char *card, > int *status)
+  int ffmcrd(fitsfile *fptr, char *keyname, char *card, > int *status)
+  int ffmnam(fitsfile *fptr, char *oldname, char *newname, > int *status)
+  int ffmcom(fitsfile *fptr, char *keyname, char *comment, > int *status)
+  int ffmkys(fitsfile *fptr, char *keyname, char *value, char *comment,
+             > int *status);
+  int ffmky[lj](fitsfile *fptr, char *keyname, DTYPE numval, char *comment,
+               > int *status)
+  int ffmky[edfg](fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
+                  char *comment, > int *status)
+-
+ Update Keyword Routines: page~\pageref{FFUCRD}
+-
+  int ffucrd(fitsfile *fptr, char *keyname, char *card, > int *status)
+  int ffukys(fitsfile *fptr, char *keyname, char *value, char *comment,
+             > int *status)
+  int ffuky[lj](fitsfile *fptr, char *keyname, DTYPE numval, char *comment,
+               > int *status)
+  int ffuky[edfg](fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
+                  char *comment, > int *status)
+-
+ Delete Keyword Routines: page~\pageref{FFDREC}
+-
+  int ffdrec(fitsfile *fptr, int   keynum,  > int *status)
+  int ffdkey(fitsfile *fptr, char *keyname, > int *status)
+-
+ Read or Write Standard Header Routines: page~\pageref{FFPHPS}
+-
+  int ffphps( fitsfile *fptr, int bitpix, int naxis, long *naxes, > int *status)
+  int ffphpr( fitsfile *fptr, int simple, int bitpix, int naxis, long *naxes,
+            long pcount, long gcount, int extend, > int *status)
+  int ffghpr(fitsfile *fptr, int maxdim, > int *simple, int *bitpix, int *naxis,
+          long *naxes, long *pcount, long *gcount, int *extend, int *status)
+  int ffphtb(fitsfile *fptr, long rowlen, long nrows, int tfields, char **ttype,
+          long *tbcol, char **tform, char **tunit, char *extname, > int *status)
+  int ffghtb(fitsfile *fptr,int maxdim, > long *rowlen, long *nrows,
+           int *tfields, char **ttype, long *tbcol, char **tform, char **tunit,
+           char *extname,  int *status)
+  int ffphbn(fitsfile *fptr, long nrows, int tfields, char **ttype,
+          char **tform, char **tunit, char *extname, long pcount, > int *status)
+  int ffghbn(fitsfile *fptr, int maxdim, > long *nrows, int *tfields,
+           char **ttype, char **tform, char **tunit, char *extname,
+           long *pcount, int *status)
+-
+ Define Data Scaling Parameters and Undefined Pixel Flags: page~\pageref{FFPSCL}
+-
+  int ffpscl(fitsfile *fptr, double scale, double zero, > int *status)
+  int fftscl(fitsfile *fptr, int colnum, double scale, double zero,
+             > int *status)
+  int ffpnul(fitsfile *fptr, long nulval, > int *status)
+  int ffsnul(fitsfile *fptr, int colnum, char *nulstr, > int *status)
+  int fftnul(fitsfile *fptr, int colnum, long nulval, > int *status)
+-
+ Write Image Data Routines: page~\pageref{FFPPR}
+-
+  int ffppr[bijed](fitsfile *fptr, long group, long firstelem,
+           long nelements, DTYPE *array, > int *status);
+  int ffppn[bijed](fitsfile *fptr, long group, long firstelem,
+           long nelements, DTYPE *array, DTYPE nulval, > int *status);
+  int ffpgp[bijed](fitsfile *fptr, long group, long firstelem, long nelements,
+           > DTYPE *array, int *status)
+  int ffppru(fitsfile *fptr, long group, long firstelem,
+           long nelements, > int *status)
+  int ffp2d[bijed](fitsfile *fptr, long group, long dim1, long naxis1,
+           long naxis2, DTYPE *array, > int *status)
+  int ffp3d[bijed](fitsfile *fptr, long group, long dim1, long dim2,
+           long naxis1, long naxis2, long naxis3, DTYPE *array, > int *status)
+  int ffpss[bijed](fitsfile *fptr, long group, long naxis, long *naxes,
+           long *fpixel, long *lpixel, DTYPE *array, > int *status)
+-
+ Read Image Data Routines: page~\pageref{FFGPV}
+-
+  int ffgpv[bijed](fitsfile *fptr, long group, long firstelem, long nelements,
+           DTYPE nulval, > DTYPE *array, int *anynul, int *status)
+  int ffgpf[bijed](fitsfile *fptr, long group, long firstelem, long nelements,
+          > DTYPE *array, char *nularray, int *anynul, int *status)
+  int ffggp[bijed](fitsfile *fptr, long group, long firstelem, long nelements,
+          > DTYPE *array, int *status)
+  int ffg2d[bijed](fitsfile *fptr, long group, DTYPE nulval, long dim1,
+           long naxis1, long naxis2, > DTYPE *array,
+           int *anynul, int *status)
+  int ffg3d[bijed](fitsfile *fptr, long group, DTYPE nulval, long dim1,
+           long dim2, long naxis1, long naxis2, long naxis3,
+           > DTYPE *array, int *anynul, int *status)
+  int ffgsv[bijed](fitsfile *fptr, int group, int naxis, long *naxes, 
+            long *fpixels, long *lpixels, long *inc, DTYPE nulval, 
+            > DTYPE *array, int *anynul, int *status)
+  int ffgsf[bijed](fitsfile *fptr, int group, int naxis, long *naxes, 
+            long *fpixels, long *lpixels, long *inc, > DTYPE *array, 
+            char *nularray, int *anynul, int *status)
+-
+ Table Column Information Routines: page~\pageref{FFGCNO}
+-
+  int ffgcno(fitsfile *fptr, int casesen, char *templt, > int *colnum,
+           int *status)
+  int ffgcnn(fitsfile *fptr, int casesen, char *templt, > char *colname,
+           int *colnum, int *status)
+  int ffgtcl(fitsfile *fptr, int colnum, > int *typecode, long *repeat,
+           long *width, int *status)
+  int ffgacl(fitsfile *fptr, int colnum, > char *ttype, long *tbcol,
+           char *tunit, char *tform, double *scale, double *zero,
+           char *nulstr, char *tdisp, int *status)
+  int ffgbcl(fitsfile *fptr, int colnum, > char *ttype, char *tunit,
+           char *datatype, long *repeat, double *scale, double *zero,
+           long *nulval, char *tdisp, int  *status)
+  int ffptdm( fitsfile *fptr, int colnum, int naxis, long *naxes,
+            >  int *status)
+  int ffgtdm(fitsfile *fptr, int colnum, int maxdim, > int *naxis,
+           long *naxes, int *status)
+-
+ Low-Level Table Access Routines: page~\pageref{FFGTBB}
+-
+  int ffgtbb(fitsfile *fptr, long firstrow, long firstchar, long nchars,
+           > unsigned char *values, int *status)
+  int ffptbb(fitsfile *fptr, long firstrow, long firstchar, long nchars,
+           unsigned char *values, > int *status)
+-
+ Insert or Delete Rows and Columns Routines: page~\pageref{FFIROW}
+-
+  int ffirow(fitsfile *fptr, long firstrow, long nrows, > int *status)
+  int ffdrow(fitsfile *fptr, long firstrow, long nrows, > int *status)
+  int fficol(fitsfile *fptr, int colnum, char *ttype, char *tform,
+            > int *status)
+  int ffdcol(fitsfile *fptr, int colnum, > int *status)
+-
+ Write Column Data Routines: page~\pageref{FFPCLS}
+-
+  int ffpcls(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+           long nelements, char **array, > int *status)
+  int ffpcl[lbijedcm](fitsfile *fptr, int colnum, long firstrow,
+           long firstelem, long nelements, DTYPE *array, > int *status)
+  int ffpcn[bijed](fitsfile *fptr, int colnum, long firstrow,
+           long firstelem, long nelements, DTYPE *array, DTYPE nulval,
+           > int *status)
+  int ffpclx(fitsfile *fptr, int colnum, long firstrow, long firstbit, 
+            long nbits, char *larray, > int *status)
+  int ffpclu(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+           long nelements, > int *status)
+  int ffpdes(fitsfile *fptr, int colnum, long rownum, long repeat,
+           long offset, > int *status)
+  int ffpthp(fitsfile *fptr, long theap, > int *status)
+-
+ Read Column Data Routines: page~\pageref{FFGCL}
+-
+  int ffgcl (fitsfile *fptr, int colnum, long firstrow, long firstelem,
+           long nelements, > char *array, int  *status)
+  int ffgcvs(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+           long nelements, char *nulstr, > char **array, int *anynul,
+           int *status)
+  int ffgcv[bijedcm](fitsfile *fptr, int colnum, long firstrow,
+           long firstelem, long nelements, DTYPE nulval, > DTYPE *array,
+            int *anynul, int *status)
+  int ffgcfs(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+          long nelements, > char **array, char *nularray, int *anynul,
+          int *status)
+  int ffgcfl(fitsfile *fptr, int colnum, long firstrow, long firstelem, 
+          long nelements, > char *array, char *nularray, int *anynul, 
+          int *status)
+  int ffgcf[bijedcm](fitsfile *fptr, int colnum, long firstrow, 
+          long firstelem, long nelements, > DTYPE *array,
+          char *nularray, int *anynul, int *status)
+  int ffgsv[bijed](fitsfile *fptr, int colnum, int naxis, long *naxes, 
+            long *fpixels, long *lpixels, long *inc, DTYPE nulval, > DTYPE *array, 
+            int *anynul, int *status)
+  int ffgsf[bijed](fitsfile *fptr, int colnum, int naxis, long *naxes, 
+            long *fpixels, long *lpixels, long *inc, > DTYPE *array, 
+            char *nularray, int *anynul, int *status)
+  int ffgcx(fitsfile *fptr, int colnum, long firstrow, long firstbit, 
+            long nbits, > char *larray, int *status)
+  int ffgdes(fitsfile *fptr, int colnum, long rownum, > long *repeat,
+           long *offset, int *status)
+-
+ Celestial Coordinate System Routines: page~\pageref{FFGICS}
+-
+
+-
+ File Checksum Routines: page~\pageref{FFPCKS}
+-
+
+-
+ General Utility Routines: page~\pageref{FFVERS}
+-
+  float ffvers( > float *version)
+  void ffghad(fitsfile *fptr, > long *chduaddr, long *nextaddr)
+  void ffgerr(int status, > char *err_text)
+  int  ffgmsg(char *err_msg)
+  void ffpmsg(char *err_msg)
+  void ffcmsg(void)
+  void ffupch(char *string)
+  void ffcmps(char *templt, char *string, int casesen, > int *match, int *exact)
+  int fftkey(char *keyname, > int *status)
+  int ffpsvc(char *card, > char *value, char *comment, int *status)
+  int ffkeyn(char *keyroot, int value, > char *keyname, int *status)
+  int ffnkey(int value, char *keyroot, > char *keyname, int *status)
+  int ffdtyp(char *value, > char *dtype, int *status)
+  int ffbnfm(char *tform, > int *typecode, long *repeat, long *width,
+                int *status)
+  int ffasfm(char *tform, > int *typecode, long *width, int *decimals,
+             int *status)
+  int ffgabc(int tfields, char **tform, int space, > long *rowlen, 
+            long *tbcol, int *status)
+  int ffgthd(char *templt, > char *card, int *keytype, int *status)
+-
+
+*VII.  Parameter Definitions
+-
+anynul   - set to TRUE (=1) if any returned values are undefined, else FALSE
+array    - array of numerical data values to read or write
+bitpix   - bits per pixel: 8 (unsigned char), 16 (short int), 
+           32 (long int), -32 (float), or -64 (double)
+card     - header record to be read or written (80 char max, null-terminated)
+casesen  - TRUE (=1) to force case-sensitive string matching, else FALSE (=0)
+colname  - name of the column (null-terminated)
+colnum   - column number (first column = 1)
+comment  - the keyword comment field (72 char max, null-terminated)
+chduaddr -  starting address (in bytes) of the CHDU
+datatype - symbolic code of the table column datatype
+decimals - number of decimal places to be displayed
+dim1     - declared size of the first dimension of the image or cube array
+dim2     - declared size of the second dimension of the data cube array
+dtype    - datatype of the keyword ('C', 'L', 'I',  or 'F')
+                C = character string
+                L = logical
+                I = integer
+                F = floating point number
+err_msg  - error message on the internal stack (80 chars max)
+err_text - error message string corresponding to error number (30 chars max)
+exact    - TRUE (=1) if the strings match exactly; 
+           FALSE (=0) if wildcards are used
+extend   - TRUE (=1) if FITS file may have extensions, else FALSE (=0)
+extname  - value of the EXTNAME keyword (null-terminated)
+filename - name of the FITS file (null-terminated)
+firstchar- starting byte in the row (first byte of row = 1)
+firstelem- first element in a vector (ignored for ASCII tables)
+firstrow - starting row number (first row of table = 1)
+fpixels  - the first included pixel in each dimension (first pixel = 1)
+fptr     - pointer to a 'fitsfile' structure describing the FITS file.
+frac     - factional part of the keyword value
+gcount   - number of groups in the primary array (usually = 1)
+group    - data group number (=0 for non-grouped data)
+hdunum   - sequence number of the HDU (Primary array = 1)
+hdutype  - type of HDU: HDU_IMAGE (=0), HDU_ATABLE (=1), or HDU_BTABLE (=2)
+history  - the HISTORY keyword comment string (70 char max, null-terminated)
+inc      - sampling interval for pixels in each FITS dimension
+infptr   - pointer to a 'fitsfile' structure describing the input FITS file.
+intval   - integer part of the keyword value
+iomode   - file access mode: either READONLY (=0) or READWRITE (=1)
+keyname  - name of a keyword (8 char max, null-terminated)
+keynum   - position of keyword in header (1st keyword = 1)
+keyroot  - root string for the keyword name (5 char max, null-terminated)
+keysexist- number of existing keyword records in the CHU
+keytype  - header record type: -1=delete;  0=append or replace;
+                   1=append; 2=this is the END keyword
+longstr  - arbitrarily long string keyword value (null-terminated)
+lpixels  - the last included pixel in each dimension (first pixel = 1)
+match    - TRUE (=1) if the 2 strings match, else FALSE (=0)
+maxdim   - maximum number of values to return
+morekeys - space in the header for this many more keywords
+naxes    - size of each dimension in the FITS array
+naxis    - number of dimensions in the FITS array
+naxis1   - length of the X/first axis of the FITS array
+naxis2   - length of the Y/second axis of the FITS array
+naxis3   - length of the Z/third axis of the FITS array
+nchars   - number of characters to read or write
+nelements- number of data elements to read or write
+nextaddr - starting address (in bytes) of the HDU following the CHDU
+nfound   - number of keywords found (highest keyword number)
+nkeys    - number of keywords in the sequence
+nmove    - number of HDUs to move (+ or -), relative to current position
+nrows    - number of rows in the table
+nstart   - first integer value
+nularray - set to TRUE (=1) if corresponding data element is undefined
+nulval   - numerical value to represent undefined pixels
+nulstr   - character string used to represent undefined values in ASCII table
+numval   - numerical data value, of the appropriate datatype
+offset   -  byte offset in the heap to the first element of the vector
+outfptr  - pointer to a 'fitsfile' structure describing the output FITS file.
+pcount   - value of the PCOUNT keyword = size of binary table heap
+repeat   - length of column vector (e.g. 12J); == 1 for ASCII table
+rowlen   - length of a table row, in characters or bytes
+rownum   - number of the row (first row = 1)
+scale    - linear scaling factor; true value = (FITS value) * scale + zero
+simple   - TRUE (=1) if FITS file conforms to the Standard, else FALSE (=0)
+space    - number of blank spaces to leave between ASCII table columns
+status   - returned error status code (0 = OK)
+tbcol    - byte position in row to start of column (1st col has tbcol = 1)
+tdisp    - Fortran style display format for the table column
+templt   - template string used in comparison (null-terminated)
+tfields  - number of fields (columns) in the table
+tform    - format of the column (null-terminated); allowed values are:
+           ASCII tables:  Iw, Aw, Fww.dd, Eww.dd, or Dww.dd
+           binary tables: rL, rX, rB, rI, rJ, rA, rAw, rE, rD, rC, rM
+            where 'w'=width of the field, 'd'=no. of decimals, 'r'=repeat count
+theap    - zero indexed byte offset of starting address of the heap
+           relative to the beginning of the binary table data
+ttype    - label or name for table column (null-terminated)
+tunit    - physical unit for table column (null-terminated)
+typecode - datatype code of the table column
+                Datatype             typecode
+                bit, X                   1
+                byte, B                 11
+                logical, L              14
+                ASCII character, A      16
+                short integer, I        21
+                integer, J              41
+                real, E                 42
+                double precision, D     82
+                complex, C              83
+                double complex, M      163
+
+value    - the keyword value string (70 char max, null-terminated)
+version  - current version number of the CFITSIO library
+width    - width of the character string field
+zero     - scaling offset; true value = (FITS value) * scale + zero
+        --------------------------------------------------------------------
+
+checksum -  encoded checksum string
+complement -  should the checksum be complemented?
+dataok -  was the data unit verification successful (=1) or
+         not (= -1).  Equals zero if the DATASUM keyword is not present.
+datasum -  32-bit 1's complement checksum for the data unit
+hduok -  was the HDU verification successful (=1) or
+         not (= -1).  Equals zero if the CHECKSUM keyword is not present.
+hdusum -  32 bit 1's complement checksum for the entire CHDU
+sum -  32 bit unsigned checksum value
+
+coordtype -  type of coordinate projection (-SIN, -TAN, -ARC,
+          -NCP, -GLS, -MER, or -AIT)
+rot -  celestial coordinate rotation angle (degrees)
+xcol -  number of the column containing the X coordinate values
+xinc -  X axis coordinate increment at reference pixel (deg)
+xpix -  X axis pixel location
+xpos -  X axis celestial coordinate (usually RA) (deg)
+xrpix -  X axis reference pixel array location
+xrval -  X axis coordinate value at the reference pixel (deg)
+ycol -  number of the column containing the X coordinate values
+yinc -  Y axis coordinate increment at reference pixel (deg)
+ypix -  y axis pixel location
+ypos -  y axis celestial coordinate (usually DEC) (deg)
+yrpix -  Y axis reference pixel array location
+yrval -  Y axis coordinate value at the reference pixel (deg)
+-
+
+*VIII  CFITSIO Error Status Codes
+
+The following table lists all the error status codes used by CFITSIO.
+Programmers are encouraged to use the symbolic  mnemonics (defined in
+the file fitsio.h) rather than the actual integer status values to
+improve the readibility of their code.
+- 
+ Symbolic Const    Value     Meaning
+ --------------    -----  -----------------------------------------
+ SAME_FILE         101    input and output files are the same
+ FILE_NOT_OPENED   104    could not open the named file
+ FILE_NOT_CREATED  105    could not create the named file
+ WRITE_ERROR       106    error writing to FITS file
+ END_OF_FILE       107    tried to move past end of file
+ READ_ERROR        108    error reading from FITS file
+ FILE_NOT_CLOSED   110    could not close the file
+ ARRAY_TOO_BIG     111    array dimensions exceed internal limit
+ READONLY_FILE     112    Cannot write to readonly file
+ HEADER_NOT_EMPTY  201    header already contains keywords
+ KEY_NO_EXIST      202    keyword not found in header
+ KEY_OUT_BOUNDS    203    keyword record number is out of bounds
+ NO_VALUE          204    keyword value field is blank
+ NO_QUOTE          205    string is missing the closing quote
+ BAD_KEYCHAR       207    illegal character in keyword name or card
+ BAD_ORDER         208    required keywords out of order
+ NOT_POS_INT       209    keyword value is not a positive integer
+ NO_END            210    couldn't find END keyword
+ BAD_BITPIX        211    illegal BITPIX keyword value
+ BAD_NAXIS         212    illegal NAXIS keyword value
+ BAD_NAXES         213    illegal NAXISn keyword value
+ BAD_PCOUNT        214    illegal PCOUNT keyword value
+ BAD_GCOUNT        215    illegal GCOUNT keyword value
+ BAD_TFIELDS       216    illegal TFIELDS keyword value
+ NEG_WIDTH         217    negative table row size
+ NEG_ROWS          218    negative number of rows in table
+ COL_NOT_FOUND     219    column with this name not found in table
+ BAD_SIMPLE        220    illegal value of SIMPLE keyword
+ NO_SIMPLE         221    Primary array doesn't start with SIMPLE
+ NO_BITPIX         222    Second keyword not BITPIX
+ NO_NAXIS          223    Third keyword not NAXIS
+ NO_NAXES          224    Couldn't find all the NAXISn keywords
+ NO_XTENSION       225    HDU doesn't start with XTENSION keyword
+ NOT_ATABLE        226    the CHDU is not an ASCII table extension
+ NOT_BTABLE        227    the CHDU is not a binary table extension
+ NO_PCOUNT         228    couldn't find PCOUNT keyword
+ NO_GCOUNT         229    couldn't find GCOUNT keyword
+ NO_TFIELDS        230    couldn't find TFIELDS keyword
+ NO_TBCOL          231    couldn't find TBCOLn keyword
+ NO_TFORM          232    couldn't find TFORMn keyword
+ NOT_IMAGE         233    the CHDU is not an IMAGE extension
+ BAD_TBCOL         234    TBCOLn keyword value < 0 or > rowlength
+ NOT_TABLE         235    the CHDU is not a table
+ COL_TOO_WIDE      236    column is too wide to fit in table
+ COL_NOT_UNIQUE    237    more than 1 column name matches template
+ BAD_ROW_WIDTH     241    sum of column widths not = NAXIS1
+ UNKNOWN_EXT       251    unrecognizable FITS extension type
+ UNKNOWN_REC       252    unrecognizable FITS record
+ END_JUNK          253    END keyword is not blank
+ BAD_TFORM         261    illegal TFORM format code
+ BAD_TFORM_DTYPE   262    unrecognizable TFORM datatype code
+ BAD_TDIM          263    illegal TDIMn keyword value
+ 
+ BAD_HDU_NUM       301    HDU number < 1 or > MAXHDU
+ BAD_COL_NUM       302    column number < 1 or > tfields
+ NEG_FILE_POS      304    keyword not found in header
+ NEG_BYTES         306    tried to read or write negative number of bytes
+ BAD_ROW_NUM       307    illegal starting row number in table
+ BAD_ELEM_NUM      308    illegal starting element number in vector
+ NOT_ASCII_COL     309    this is not an ASCII string column
+ NOT_LOGICAL_COL   310    this is not a logical datatype column
+ BAD_ATABLE_FORMAT 311    ASCII table column has wrong format
+ BAD_BTABLE_FORMAT 312    Binary table column has wrong format
+ NO_NULL           314    null value has not been defined
+ NOT_VARI_LEN      317    this is not a variable length column
+ BAD_DIMEN         320    illegal number of dimensions in array
+ BAD_PIX_NUM       321    first pixel number greater than last pixel
+ ZERO_SCALE        322    illegal BSCALE or TSCALn keyword = 0
+ NEG_AXIS          323    illegal axis length < 1
+ 
+ BAD_I2C           401    bad int to formatted string conversion
+ BAD_F2C           402    bad float to formatted string conversion
+ BAD_INTKEY        403    can't interprete keyword value as integer
+ BAD_LOGICALKEY    404    can't interprete keyword value as logical
+ BAD_FLOATKEY      405    can't interprete keyword value as float
+ BAD_DOUBLEKEY     406    can't interprete keyword value as double
+ BAD_C2I           407    bad formatted string to int conversion
+ BAD_C2F           408    bad formatted string to float conversion
+ BAD_C2D           409    bad formatted string to double conversion
+ BAD_DECIM         411    bad number of decimal places specified
+ NUM_OVERFLOW      412    overflow during datatype conversion
+-
+\end{document}
+ 

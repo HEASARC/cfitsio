@@ -1,0 +1,141 @@
+                     CFITSIO - Beta Release
+                         April 12, 1996
+
+  Beta Software Disclaimer:  While this software has been extensively
+  tested on many different machines, every single routine in the CFITSIO
+  library has not been tested, nor has every possible option in the
+  routines been tested.  Programmers should be cautious about using this
+  software for critical applications and should independently verify any
+  FITS files produced with this software to ensure that they are valid and
+  correct.
+
+CFITSIO is a library of ANSI C routines for reading and writing FITS
+format files.  These C routines have nearly the same calling sequences
+as the Fortran subroutines provided in the original fitsio library.
+The main difference is that the C routines all have names beginning
+with 'ff' rather than 'ft' in the Fortran subroutines.  Due to this
+close similarity, users of CFITSIO may refer to the FITSIO User's Guide
+(which is included with this release in the files fitsio.doc and
+fitsio.ps; the postscript file is 65 pages long) to help understand
+what each routine does.  Users should also refer to the prototypes of
+all the user-callable routines that are included in the fitsio.h file.
+
+This new CFITSIO library, written entirely in ANSI C, should
+not be confused with the previously available set of C macros which
+provide a C-callable interface to the Fortran fitsio routines.  These
+older macros are contained in the cfitsio.h file that is distributed
+along with the Fortran fitsio source files.
+
+BUILDING CFITSIO
+----------------
+
+The CFITSIO code is contained in the following 9 source files:
+  cfileio.c, convert.c, fitscore.c, getcol.c, getkey.c, modkey.c,
+  putcol.c, putkey.c, and utilproc.c. The fitsio.h and fitsio2.h
+  header files are also needed.
+
+On VAX/VMS systems the following 2 macro-code files are needed:
+   vmsieeed.mar and vmsieeer.mar
+
+On VAX/VMS and ALPHA/VMS systems, the makevaxvms.com and makealphavms.com
+command files may be used to build the cfitsio.olb object library
+(e.g., type '@makevaxvms' at the Vax command line to build the CFITSIO
+library on a Vax).
+
+On Unix systems the Makefile included in this release may be used to
+build the libcfitsio.a library file.  First, the name of the C compiler
+to be used should be defined using the setenv command.  Then type,
+'make' to build the CFITSIO library in the file libcfitsio.a.
+For example,
+
+% setenv CC gcc
+% make
+
+will build the CFITSIO library using the gcc compiler.
+
+TESTING CFITSIO
+---------------
+
+The CFITSIO library should be tested by building and running
+the testprog.c file included with the release.  On VMS systems,
+type (assuming cc is the name of the C compiler command), type:
+
+$ cc testprog.c
+$ link testprog, cfitsio/lib
+$ run testprog
+
+On Unix systems (assuming the gcc compiler is being used), type:
+
+% gcc -o testprog testprog.c -L. -lcfitsio
+% testprog
+
+The testprog program should produce a FITS file called testprog.fit
+which is identical to the testprog.std FITS file included in this
+release.  The diagnotic messages that are sent to the user's terminal
+should be identical to the listing contained in the file testprog.out,
+except that the date on the DATE keyword may vary depending on when the
+programs is run.
+
+USING CFITSIO
+-------------
+
+The CFITSIO User's Guide, contained in the files cfitsio.doc (plain
+text file) and cfitsio.ps (postscript file), provides detailed
+documentation about how to build and use the CFITSIO library.
+It contains a description of every user-callable routine in the
+CFITSIO interface.
+
+The cookbook.c file provides some sample routines for performing common
+operations on various types of FITS files.  Programmers are urged to
+examine these routines for recommended programming practices when using
+CFITSIO.  Users are free to copy or modify these routines for their own
+purposes.
+
+The cookbook program produces 2 FITS files, atestfil.fit and
+btestfil.fit, which should be identical to the atestfil.std and
+btestfil.std FITS files provided with this release.
+
+SUPPORTED PLATFORMS
+-------------------
+
+CFITSIO has currently been tested on the following platforms:
+
+   Operating System          Compiler
+   ----------------          --------
+   Sun OS                     gcc
+   Sun Solaris                gcc
+   Silicon Graphics IRIX      gcc and cc
+   DECstation  Ultrix         gcc
+   Dec Alpha OSF/1            gcc
+   Dec Alpha OpenVMS          cc with /float=gfloat or /float=ieee options
+   DEC VAX/VMS                gcc
+   IBM PC w/ Windows 95       Borland C++ V4.5
+
+CFITSIO will probably run on most other 32-bit Unix platforms without
+any modification.  CFITSIO should also run on a Mac PC, but this has
+not been tested.  Cray supercomputers and IBM mainframe computers are
+currently not supported.
+
+Reports of any success or failure to run CFITSIO on other platforms
+would be appreciated.  Any problem reports or suggestions for
+improvements are also welcome.  Please send any reports to the author
+at:   pence@tetra.gsfc.nasa.gov
+
+KNOWN BUGS:
+-----------
+
+ - none
+
+NOT CURRENTLY IMPLEMENTED:
+--------------------------
+
+ All the routines described in the Fortran FITSIO User's Guide are also 
+ available in the CFITSIO library, except for:
+
+ - the routines which write or check the checksum keyword value
+
+ - the routines that deal with FITS world coordinate system keywords
+
+-------------------------------------------------------------------------
+William D. Pence
+HEASARC, NASA/GSFC
