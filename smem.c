@@ -1,7 +1,11 @@
 #include <stdio.h>
 #include <memory.h>
 #include <string.h>
+#ifdef __APPLE__
+#include <stdlib.h>
+#else
 #include <malloc.h>
+#endif
 #include "fitsio.h"     /* needed to define OFF_T */
 #include "drvrsmem.h"   /* uses OFF_T */
 
