@@ -11,28 +11,31 @@ SHELL = /bin/sh
 RANLIB=@RANLIB@
 CC=@CC@
 
+SOURCES = 	cfileio.c convert.c fitscore.c getcol.c \
+		getkey.c modkey.c putcol.c putkey.c \
+		utilproc.c 
 
-all:	
-		@echo \
-		"cfitsio: Please enter stand_alone or install as a target."
 
 stand_alone:	libcfitsio.a
 
 libcfitsio.a:	psplit
-		@psplit cfileio.c convert.c fitscore.c getcol.c \
-			getkey.c modkey.c putcol.c putkey.c \
-			utilproc.c ; \
+		@mkdir split.$$$$; \
+		cp ${SOURCES} split.$$$$; \
+		cp *.h split.$$$$; \
+		cd split.$$$$ ; \
+		../psplit ${SOURCES} ; \
 		echo "cfitsio: compiling split c files..."; \
 		${CC} -c ${CFLAGS} tmp*.c; \
 		ar rv libcfitsio.a tmp*.o; \
 		${RANLIB} libcfitsio.a; \
-		rm -f tmp*.c tmp*.h *.o;
+		mv libcfitsio.a .. ;
 
 install:        libcfitsio.a
 		mv libcfitsio.a ../host/
         
 clean:          
-		rm -f *.o tmp*.c tmp*.h
+		rm -f *.o ; \
+		rm -rf split.*
 
 
 psplit :
