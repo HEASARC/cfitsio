@@ -42,6 +42,7 @@
 /*                              resulting in a speed increase of        */
 /*                              10-100 times.                           */
 /*   Peter D Wilson   Jul 1998  gtifilter(a,b,c,d) function added       */
+/*   Peter D Wilson   Aug 1998  regfilter(a,b,c,d) function added       */
 /*                                                                      */
 /************************************************************************/
 
@@ -196,6 +197,10 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
    inExt.rowLength = (infptr->Fptr)->rowlength;
    inExt.numRows   = (infptr->Fptr)->numrows;
    inExt.heapSize  = (infptr->Fptr)->heapsize;
+   if( inExt.numRows == 0 ) { /* Nothing to copy */
+      ffcprs();
+      return( *status );
+   }
 
    if( outfptr->HDUposition != (outfptr->Fptr)->curhdu )
       ffmahd( outfptr, (outfptr->HDUposition) + 1, NULL, status );
@@ -775,7 +780,7 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 /* structure.                                                                */
 /*---------------------------------------------------------------------------*/
 {
-    int status, constant=0;
+    int status, constant=0, anyNullThisTime=0;
     long jj, kk, idx, remain, rowOffset, ntodo;
     Node *result;
 
@@ -792,6 +797,7 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
     if (firstrow == offset+1)
     {
        userInfo = (parseInfo*)userPtr;
+       userInfo->anyNull = 0;
 
        if( userInfo->maxRows>0 )
           userInfo->maxRows = minvalue(totalrows,userInfo->maxRows);
@@ -848,7 +854,6 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
     /*  If writing to output column, set first element to appropriate  */
     /*  null value.  If no NULLs encounter, zero out before returning. */
 
-    userInfo->anyNull = 0;
     if( userInfo->dataPtr == NULL ) {
        /* First, reset Data pointer to start of output array */
        Data = (char*)colData[nCols-1].array + datasize;
@@ -906,14 +911,14 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 			&undef, result->value.nelem,
 			userInfo->datatype, Null,
 			(char*)Data+kk*datasize*result->value.nelem,
-			&userInfo->anyNull, &gParse.status );
+			&anyNullThisTime, &gParse.status );
 	  } else {
 	     ffcvtn( gParse.datatype,
 		     result->value.data.ptr,
 		     result->value.undef,
 		     result->value.nelem*ntodo,
 		     userInfo->datatype, Null, Data,
-		     &userInfo->anyNull, &gParse.status );
+		     &anyNullThisTime, &gParse.status );
 	     if( result->operation>0 ) {
 		free( result->value.data.ptr );
 	     }
@@ -1012,7 +1017,9 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
     /* If no NULLs encountered during this pass, set Null value to */
     /* zero to make the writing of the output column data faster   */
 
-    if( userInfo->dataPtr == NULL && !userInfo->anyNull )
+    if( anyNullThisTime )
+       userInfo->anyNull = 1;
+    else if( userInfo->dataPtr == NULL )
        memcpy( Null, zeros, datasize );
 
     /*-------------------------------------------------------*/
