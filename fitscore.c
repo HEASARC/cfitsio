@@ -2000,6 +2000,7 @@ int ffbnfmll(char *tform,     /* I - format code from the TFORMn keyword */
     long width;
     LONGLONG repeat;
     char *form, temp[FLEN_VALUE], message[FLEN_ERRMSG];
+    double drepeat;
 
     if (*status > 0)
         return(*status);
@@ -2044,21 +2045,11 @@ int ffbnfmll(char *tform,     /* I - format code from the TFORMn keyword */
     else {
        /* read repeat count */
 
-#if defined(_MSC_VER)
+        /* print as double, because the string-to-64-bit int conversion */
+        /* character is platform dependent (%lld, %ld, %I64d)           */
 
-#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
-    /* Microsoft Visual C++ 6.0 uses '%I64d' syntax  for 8-byte integers */
-        sscanf(form,"%I64d", &repeat);
-#  else
-        sscanf(form,"%lld", &repeat);
-#  endif
-
-#elif (USE_LL_SUFFIX == 1)
-        sscanf(form,"%lld", &repeat);
-#else
-        sscanf(form,"%ld", &repeat);
-#endif
-	
+        sscanf(form,"%f", &drepeat);
+        repeat = (LONGLONG) (drepeat + 0.1);
     }
     /*-----------------------------------------------*/
     /*             determine datatype code           */
@@ -5425,20 +5416,10 @@ int ffuptf(fitsfile *fptr,      /* I - FITS file pointer */
           strcpy(newform, "'");
           strcat(newform, tform);
 
-#if defined(_MSC_VER)
+          /* print as double, because the string-to-64-bit */
+          /* conversion is platform dependent (%lld, %ld, %I64d) */
 
-#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
-    /* Microsoft Visual C++ 6.0 uses '%I64d' syntax  for 8-byte integers */
-          sprintf(lenval, "(%I64d)", maxlen);
-#  else
-          sprintf(lenval, "(%lld)", maxlen);
-#  endif
-
-#elif (USE_LL_SUFFIX == 1)
-          sprintf(lenval, "(%lld)", maxlen);
-#else
-          sprintf(lenval, "(%ld)", maxlen);
-#endif
+          sprintf(lenval, "(%.0f)", (double) maxlen);
 
           strcat(newform,lenval);
           while(strlen(newform) < 9)
@@ -5500,21 +5481,10 @@ int ffrdef(fitsfile *fptr,      /* I - FITS file pointer */
               /* would be simpler to just call ffmkyj here, but this */
               /* would force linking in all the modkey & putkey routines */
 
-#if defined(_MSC_VER)
+              /* print as double because the 64-bit int conversion */
+              /* is platform dependent (%lld, %ld, %I64 )          */
 
-#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
-    /* Microsoft Visual C++ 6.0 uses '%I64d' syntax  for 8-byte integers */
-              sprintf(valstring, "%I64d", (fptr->Fptr)->numrows);
-#  else
-              sprintf(valstring, "%lld", (fptr->Fptr)->numrows);
-#  endif
-
-#elif (USE_LL_SUFFIX == 1)
-              sprintf(valstring, "%lld", (fptr->Fptr)->numrows);
-#else
-              sprintf(valstring, "%ld", (fptr->Fptr)->numrows);
-#endif
-
+              sprintf(valstring, "%.0f", (double) ((fptr->Fptr)->numrows));
 
               ffmkky("NAXIS2", valstring, comm, card, status);
               ffmkey(fptr, card, status);
@@ -7640,13 +7610,13 @@ int ffc2jj(char *cval,  /* I - string representation of the value */
 
 #if defined(_MSC_VER)
 
-#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
     /* Microsoft Visual C++ 6.0 does not have the strtoll function */
-    /* this will fail if the integer is greater than 2**31 */
-    *ival = (LONGLONG) strtol(cval, &loc, 10);  /* read the string as an integer */
-#  else
-    *ival = strtoll(cval, &loc, 10);  /* read the string as an integer */
-#  endif
+    *ival =  _atoi64(cval);
+    loc = cval;
+    while (*loc == ' ') loc++;     /* skip spaces */
+    if    (*loc == '-') loc++;     /* skip minus sign */
+    if    (*loc == '+') loc++;     /* skip plus sign */
+    while (isdigit(*loc)) loc++;   /* skip digits */
 
 #elif (USE_LL_SUFFIX == 1)
     *ival = strtoll(cval, &loc, 10);  /* read the string as an integer */

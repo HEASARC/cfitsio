@@ -2042,23 +2042,10 @@ int ffptdmll( fitsfile *fptr, /* I - FITS file pointer                      */
             return(*status = BAD_TDIM);
         }
 
-/* Microsoft Visual C++ uses a strange '%I64d' syntax */
-#if defined(_MSC_VER)
+        /* cast to double because the 64-bit int conversion character in */
+        /* sprintf is platform dependent ( %lld, %ld, %I64d )            */
 
-#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
-    /* Microsoft Visual C++ 6.0 uses '%I64d' syntax  for 8-byte integers */
-        sprintf(value, "%I64d", naxes[ii]);
-#  else
-        sprintf(value, "%lld", naxes[ii]);
-#  endif
-
-#elif (USE_LL_SUFFIX == 1)
-        sprintf(value, "%lld", naxes[ii]);
-
-#else
-        sprintf(value, "%ld", naxes[ii]);
-
-#endif
+        sprintf(value, "%.0f", (double) naxes[ii]);
 
         strcat(tdimstr, value);     /* append the axis size */
 
@@ -2704,14 +2691,9 @@ int ffi2c(LONGLONG ival,  /* I - value to be converted to a string */
 
     cval[0] = '\0';
 
-/* Microsoft Visual C++ uses a strange '%I64d' syntax */
 #if defined(_MSC_VER)
-#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
     /* Microsoft Visual C++ 6.0 uses '%I64d' syntax  for 8-byte integers */
     if (sprintf(cval, "%I64d", ival) < 0)
-#  else
-    if (sprintf(cval, "%lld", ival) < 0)
-#  endif
 
 #elif (USE_LL_SUFFIX == 1)
     if (sprintf(cval, "%lld", ival) < 0)

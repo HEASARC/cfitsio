@@ -1723,6 +1723,7 @@ int ffdtdmll(fitsfile *fptr,  /* I - FITS file pointer                        */
     LONGLONG totalpix = 1;
     char *loc, *lastloc, message[81];
     tcolumn *colptr;
+    double doublesize;
 
     if (*status > 0)
         return(*status);
@@ -1756,23 +1757,13 @@ int ffdtdmll(fitsfile *fptr,  /* I - FITS file pointer                        */
         while (loc)
         {
             loc++;
-	    
-/*  Microsoft Visual C++ Version 6.0 does not have the strtoll function */
-#if defined(_MSC_VER)
 
-#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
-    /* Microsoft Visual C++ 6.0 does not have the strtoll function */
-    /* this will fail if the integer is greater than 2**31 */
-    dimsize = (LONGLONG) strtol(loc, &loc, 10);   
-#  else
-    dimsize = strtoll(loc, &loc, 10);  
-#  endif
+    /* Read value as a double because the string to 64-bit int function is  */
+    /* platform dependent (strtoll, strtol, _atoI64).  This still gives     */
+    /* about 48 bits of precision, which is plenty for this purpose.        */
 
-#elif (USE_LL_SUFFIX == 1)
-    dimsize = strtoll(loc, &loc, 10);  
-#else
-    dimsize = strtol(loc, &loc, 10);  
-#endif
+            doublesize = strtod(loc, &loc);
+            dimsize = (LONGLONG) (doublesize + 0.1);
 
             if (*naxis < maxdim)
                 naxes[*naxis] = dimsize;

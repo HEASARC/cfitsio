@@ -903,6 +903,7 @@ int ffrwrgll(
 */
     char *next;
     LONGLONG minval, maxval;
+    double dvalue;
 
     if (*status > 0)
         return(*status);
@@ -925,21 +926,11 @@ int ffrwrgll(
           minval = 1;    /* implied minrow value = 1 */
       } else if ( isdigit((int) *next) ) {
 
-#if defined(_MSC_VER)
+        /* read as a double, because the string to LONGLONG function */
+        /* is platform dependent (strtoll, strtol, _atoI64)          */
 
-#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
-    /* Microsoft Visual C++ 6.0 does not have the strtoll function */
-    /* this will fail if the integer is greater than 2**31 */
-          minval = (LONGLONG) strtol(next, &next, 10);
-#  else
-          minval = strtoll(next, &next, 10);
-#  endif
-
-#elif (USE_LL_SUFFIX == 1)
-          minval = strtoll(next, &next, 10);
-#else
-          minval = strtol(next, &next, 10);
-#endif
+          dvalue = strtod(next, &next);
+          minval = (LONGLONG) (dvalue + 0.1);
 
       } else {
           *status = RANGE_PARSE_ERROR;
@@ -957,21 +948,11 @@ int ffrwrgll(
 
           if ( isdigit((int) *next) ) {
 
-#if defined(_MSC_VER)
+            /* read as a double, because the string to LONGLONG function */
+            /* is platform dependent (strtoll, strtol, _atoI64)          */
 
-#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
-    /* Microsoft Visual C++ 6.0 does not have the strtoll function */
-    /* this will fail if the integer is greater than 2**31 */
-              maxval = (LONGLONG) strtol(next, &next, 10);
-#  else
-              maxval = strtoll(next, &next, 10);
-#  endif
-
-#elif (USE_LL_SUFFIX == 1)
-              maxval = strtoll(next, &next, 10);
-#else
-              maxval = strtol(next, &next, 10);
-#endif
+              dvalue = strtod(next, &next);
+              maxval = (LONGLONG) (dvalue + 0.1);
 
           } else if (*next == ',' || *next == '\0') {
               maxval = maxrows;  /* implied max value */
@@ -1477,23 +1458,10 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
     else if (datacode == TDBLCOMPLEX)
       strcpy(tcode,"M");
 
+    /* write as a double value because the LONGLONG conversion */
+    /* character in sprintf is platform dependent ( %lld, %ld, %I64d ) */
 
-#if defined(_MSC_VER)
-
-#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
-    /* Microsoft Visual C++ 6.0 uses '%I64d' syntax  for 8-byte integers */
-    sprintf(tfm,"%I64d%s",newveclen,tcode); 
-#  else
-    sprintf(tfm,"%lld%s",newveclen,tcode); 
-#  endif
-
-#elif (USE_LL_SUFFIX == 1)
-    sprintf(tfm,"%lld%s",newveclen,tcode); 
-
-#else
-    sprintf(tfm,"%ld%s",newveclen,tcode); 
-#endif
-
+    sprintf(tfm,"%.0f%s",(double) newveclen, tcode); 
 
     ffkeyn("TFORM", colnum, keyname, status);  /* Keyword name */
     ffmkys(fptr, keyname, tfm, "&", status);   /* modify TFORM keyword */
