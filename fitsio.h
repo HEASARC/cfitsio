@@ -204,6 +204,17 @@ typedef struct  /* structure for the iterator function column information */
 #define NO_MATCHING_DRIVER 124  /* matching driver is not registered */
 #define URL_PARSE_ERROR    125  /* failed to parse input file URL */
 
+#define	SHARED_ERRBASE	(150)
+#define	SHARED_BADARG	(SHARED_ERRBASE + 1)
+#define	SHARED_NULPTR	(SHARED_ERRBASE + 2)
+#define	SHARED_TABFULL	(SHARED_ERRBASE + 3)
+#define	SHARED_NOTINIT	(SHARED_ERRBASE + 4)
+#define	SHARED_IPCERR	(SHARED_ERRBASE + 5)
+#define	SHARED_NOMEM	(SHARED_ERRBASE + 6)
+#define	SHARED_AGAIN	(SHARED_ERRBASE + 7)
+#define	SHARED_NOFILE	(SHARED_ERRBASE + 8)
+#define	SHARED_NORESIZE	(SHARED_ERRBASE + 9)
+
 #define HEADER_NOT_EMPTY  201  /* header already contains keywords */
 #define KEY_NO_EXIST      202  /* keyword not found in header */
 #define KEY_OUT_BOUNDS    203  /* keyword record number is out of bounds */
@@ -867,7 +878,11 @@ int ffgcvm(fitsfile *fptr, int colnum, long firstrow, long firstelem,
          long nelem, double nulval, double *array, int *anynul, int *status);
 int ffgcx(fitsfile *fptr, int colnum, long firstrow, long firstbit,
             long nbits, char *larray, int *status);
- 
+int ffgcxui(fitsfile *fptr, int colnum, long firstrow, long nrows,
+            long firstbit, int nbits, unsigned short *array, int *status);
+int ffgcxuk(fitsfile *fptr, int colnum, long firstrow, long nrows,
+            long firstbit, int nbits, unsigned int *array, int *status);
+
 int ffgcfs(fitsfile *fptr, int colnum, long firstrow, long firstelem, long
           nelem, char **array, char *nularray, int *anynul, int *status);
 int ffgcfl(fitsfile *fptr, int colnum, long firstrow, long firstelem, long

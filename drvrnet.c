@@ -126,6 +126,10 @@
 $Id$
 
 $Log$
+Revision 1.39  1998/12/02 15:31:33  oneel
+Updates to drvrnet.c so that less compiler warnings would be
+generated.  Fixes the signal handling.
+
 Revision 1.38  1998/11/23 10:03:24  oneel
 Added in a useragent string, as suggested by:
 Tim Kimball · Data Systems Division ¦ kimball@stsci.edu · 410-338-4417
@@ -138,7 +142,6 @@ Baltimore MD 21218 USA              ¦ http://faxafloi.stsci.edu:4547/
 
 #ifdef HAVE_NET_SERVICES
 #include <string.h>
-#include "fitsio2.h"
 
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -153,6 +156,7 @@ Baltimore MD 21218 USA              ¦ http://faxafloi.stsci.edu:4547/
 #include <unistd.h>
 #include <signal.h>
 #include <setjmp.h>
+#include "fitsio2.h"
 
 static jmp_buf env; /* holds the jump buffer for setjmp/longjmp pairs */
 static void signal_handler(int sig);
@@ -217,6 +221,20 @@ static int root_send_buffer(int sock, int op, char *buffer, int buflen);
 static int root_recv_buffer(int sock, int *op, char *buffer,int buflen);
 static int root_openfile(char *filename, char *rwmode, int *sock);
 
+/***************************/
+/* Static variables */
+
+static int closehttpfile;
+static int closememfile;
+static int closefdiskfile;
+static int closediskfile;
+static int closefile;
+static int closeoutfile;
+static int closecommandfile;
+static int closeftpfile;
+static FILE *diskfile;
+static FILE *outfile;
+
 /*--------------------------------------------------------------------------*/
 /* This creates a memory file handle with a copy of the URL in filename. The 
    file is uncompressed if necessary */
@@ -232,8 +250,8 @@ int http_open(char *filename, int rwmode, int *handle)
   long len;
   int contentlength;
   int status;
-  int closehttpfile = 0;
-  int closememfile = 0;
+  closehttpfile = 0;
+  closememfile = 0;
 
   /* don't do r/w files */
   if (rwmode != 0) {
@@ -370,16 +388,16 @@ int http_open(char *filename, int rwmode, int *handle)
 int http_compress_open(char *url, int rwmode, int *handle)
 {
   FILE *httpfile;
-  FILE *diskfile;
   char contentencoding[SHORTLEN];
   char recbuf[MAXLEN];
   long len;
   int contentlength;
   int status;
-  int closehttpfile = 0;
-  int closediskfile = 0;
-  int closefdiskfile = 0;
-  int closememfile = 0;
+
+  closehttpfile = 0;
+  closediskfile = 0;
+  closefdiskfile = 0;
+  closememfile = 0;
 
 
   /* cfileio made a mistake, should set the netoufile first otherwise 
@@ -509,16 +527,16 @@ int http_compress_open(char *url, int rwmode, int *handle)
 int http_file_open(char *url, int rwmode, int *handle)
 {
   FILE *httpfile;
-  FILE *outfile;
   char contentencoding[SHORTLEN];
   char errorstr[MAXLEN];
   char recbuf[MAXLEN];
   long len;
   int contentlength;
   int status;
-  int closehttpfile = 0;
-  int closefile = 0;
-  int closeoutfile = 0;
+
+  closehttpfile = 0;
+  closefile = 0;
+  closeoutfile = 0;
 
 
   /* cfileio made a mistake, we need to know where to write the file */
@@ -794,9 +812,6 @@ int ftp_open(char *filename, int rwmode, int *handle)
   char errorstr[MAXLEN];
   long len;
   int status;
-  int closememfile;
-  int closecommandfile;
-  int closeftpfile;
 
   closememfile = 0;
   closecommandfile = 0;
@@ -936,15 +951,15 @@ int ftp_file_open(char *url, int rwmode, int *handle)
 {
   FILE *ftpfile;
   FILE *command;
-  FILE *outfile;
   char recbuf[MAXLEN];
   long len;
   int sock;
   int status;
-  int closeftpfile = 0;
-  int closecommandfile = 0;
-  int closefile = 0;
-  int closeoutfile = 0;
+
+  closeftpfile = 0;
+  closecommandfile = 0;
+  closefile = 0;
+  closeoutfile = 0;
   
 
   /* cfileio made a mistake, need to know where to write the output file */
@@ -1074,17 +1089,22 @@ int ftp_compress_open(char *url, int rwmode, int *handle)
 {
   FILE *ftpfile;
   FILE *command;
-  FILE *diskfile;
   char recbuf[MAXLEN];
   long len;
   int status;
   int sock;
-  int closeftpfile = 0;
-  int closecommandfile = 0;
-  int closememfile = 0;
-  int closefdiskfile = 0;
-  int closediskfile = 0;
-  
+
+  closeftpfile = 0;
+  closecommandfile = 0;
+  closememfile = 0;
+  closefdiskfile = 0;
+  closediskfile = 0;
+
+  /* don't do r/w files */
+  if (rwmode != 0) {
+    ffpmsg("Compressed files must be r/o");
+    return (FILE_NOT_OPENED);
+  }
   
   /* Need to know where to write the output file */
   if (!strlen(netoutfile)) 
@@ -1109,7 +1129,7 @@ int ftp_compress_open(char *url, int rwmode, int *handle)
   alarm(NETTIMEOUT);
   if ((status = ftp_open_network(url,&ftpfile,&command,&sock))) {
     alarm(0);
-    ffpmsg("Unable to open http file (ftp_compress_open)");
+    ffpmsg("Unable to open ftp file (ftp_compress_open)");
     goto error;
   }
   closeftpfile++;
@@ -1689,7 +1709,7 @@ static int NET_ParseUrl(const char *url, char *proto, char *host, int *port,
 /* Called by cfileio after parsing the output file off of the input file
    url */
 
-int http_checkfile (char *urltype, char *infile, char *outfile)
+int http_checkfile (char *urltype, char *infile, char *outfile1)
 
 {
   char newinfile[MAXLEN];
@@ -1702,16 +1722,16 @@ int http_checkfile (char *urltype, char *infile, char *outfile)
     
   strcpy(urltype,"http://");
 
-  if (strlen(outfile)) {
+  if (strlen(outfile1)) {
     /* there is an output file */
-    strcpy(netoutfile,outfile);
+    strcpy(netoutfile,outfile1);
 
     if (!http_open_network(infile,&httpfile,contentencoding,&contentlength)) {
       fclose(httpfile);
       /* It's there, we're happy */
       if (strstr(infile,".gz") || (strstr(infile,".Z"))) {
 	/* It's compressed */
-	if (strstr(outfile,".gz") || (strstr(outfile,".Z"))) {
+	if (strstr(outfile1,".gz") || (strstr(outfile1,".Z"))) {
 	  strcpy(urltype,"httpcompress://");
 	} else {
 	  strcpy(urltype,"httpfile://");
@@ -1731,7 +1751,7 @@ int http_checkfile (char *urltype, char *infile, char *outfile)
       strcpy(infile,newinfile);
       /* It's there, we're happy, and, it's compressed  */
       /* It's compressed */
-      if (strstr(outfile,".gz") || (strstr(outfile,".Z"))) {
+      if (strstr(outfile1,".gz") || (strstr(outfile1,".Z"))) {
 	strcpy(urltype,"httpcompress://");
       } else {
 	strcpy(urltype,"httpfile://");
@@ -1747,7 +1767,7 @@ int http_checkfile (char *urltype, char *infile, char *outfile)
       fclose(httpfile);
       strcpy(infile,newinfile);
       /* It's there, we're happy, and, it's compressed  */
-      if (strstr(outfile,".gz") || (strstr(outfile,".Z"))) {
+      if (strstr(outfile1,".gz") || (strstr(outfile1,".Z"))) {
 	strcpy(urltype,"httpcompress://");
       } else {
 	strcpy(urltype,"httpfile://");
@@ -1760,7 +1780,7 @@ int http_checkfile (char *urltype, char *infile, char *outfile)
   return 0;
 }
 /*--------------------------------------------------------------------------*/
-int ftp_checkfile (char *urltype, char *infile, char *outfile)
+int ftp_checkfile (char *urltype, char *infile, char *outfile1)
 
 {
   
@@ -1769,17 +1789,15 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile)
   FILE *command;
   int sock;
 
-  char contentencoding[MAXLEN];
-  int contentlength;
   
   /* default to ftp://
    */
     
   strcpy(urltype,"ftp://");
 
-  if (strlen(outfile)) {
+  if (strlen(outfile1)) {
     /* there is an output file */
-    strcpy(netoutfile,outfile);
+    strcpy(netoutfile,outfile1);
 
     if (!ftp_open_network(infile,&ftpfile,&command,&sock)) {
       fclose(ftpfile);
@@ -1787,7 +1805,7 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile)
       /* It's there, we're happy */
       if (strstr(infile,".gz") || (strstr(infile,".Z"))) {
 	/* It's compressed */
-	if (strstr(outfile,".gz") || (strstr(outfile,".Z"))) {
+	if (strstr(outfile1,".gz") || (strstr(outfile1,".Z"))) {
 	  strcpy(urltype,"ftpcompress://");
 	} else {
 	  strcpy(urltype,"ftpfile://");
@@ -1806,7 +1824,7 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile)
       fclose(command);
       strcpy(infile,newinfile);
       /* It's there, we're happy, and, it's compressed  */
-      if (strstr(outfile,".gz") || (strstr(outfile,".Z"))) {
+      if (strstr(outfile1,".gz") || (strstr(outfile1,".Z"))) {
 	strcpy(urltype,"ftpcompress://");
       } else {
 	strcpy(urltype,"ftpfile://");
@@ -1821,7 +1839,7 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile)
       fclose(ftpfile);
       fclose(command);
       strcpy(infile,newinfile);
-      if (strstr(outfile,".gz") || (strstr(outfile,".Z"))) {
+      if (strstr(outfile1,".gz") || (strstr(outfile1,".Z"))) {
 	strcpy(urltype,"ftpcompress://");
       } else {
 	strcpy(urltype,"ftpfile://");
@@ -1900,7 +1918,7 @@ CreateSocketAddress(
 	addr.s_addr = INADDR_ANY;
     } else {
         addr.s_addr = inet_addr(localhost);
-        if (addr.s_addr == -1) {
+        if (addr.s_addr == 0xFFFFFFFF) {
             hostent = gethostbyname(localhost);
             if (hostent != NULL) {
                 memcpy((void *) &addr,
@@ -1945,7 +1963,6 @@ static void signal_handler(int sig) {
   }
 }
 
-#endif
 
 /**************************************************************/
 
@@ -2126,7 +2143,7 @@ int root_read(int hdl, void *buffer, long nbytes)
 
   sprintf(msg,"%ld %ld ",handleTable[hdl].currentpos,nbytes);
   status = root_send_buffer(handleTable[hdl].sock,ROOTD_GET,msg,strlen(msg));
-  if (status != strlen(msg)) {
+  if ((unsigned) status != strlen(msg)) {
     return (READ_ERROR);
   }
   astat = 0;
@@ -2263,7 +2280,7 @@ int root_openfile(char *url, char *rwmode, int *sock)
     recbuf[strlen(recbuf)-1] = '\0';
   }
   /* ones complement the password */
-  for (ii=0;ii<strlen(recbuf);ii++) {
+  for (ii=0;(unsigned) ii<strlen(recbuf);ii++) {
     recbuf[ii] = ~recbuf[ii];
   }
   
@@ -2377,7 +2394,7 @@ static int root_recv_buffer(int sock, int *op, char *buffer, int buflen)
 
   */
 
-  int recv = 0;
+  int recv1 = 0;
   int len;
   int status;
   char recbuf[MAXLEN];
@@ -2389,7 +2406,7 @@ static int root_recv_buffer(int sock, int *op, char *buffer, int buflen)
   if (status < 0) {
     return status;
   }
-  recv += status;
+  recv1 += status;
 
   len = ntohl(len);
 #ifdef DEBUG
@@ -2403,7 +2420,7 @@ static int root_recv_buffer(int sock, int *op, char *buffer, int buflen)
     return status;
   }
 
-  recv += status;
+  recv1 += status;
 
   *op = ntohl(*op);
 #ifdef DEBUG
@@ -2425,7 +2442,8 @@ static int root_recv_buffer(int sock, int *op, char *buffer, int buflen)
     }
   } 
 
-  recv += status;
-  return recv;
+  recv1 += status;
+  return recv1;
 
 }
+#endif

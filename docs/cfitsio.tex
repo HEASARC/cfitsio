@@ -172,10 +172,22 @@ then they may be omitted from the build by typing 'make all-nofitsio'
 instead of simply typing 'make'.  This will reduce the size
 of the CFITSIO library slightly.
 
-Note that starting with V2.0 of CFITSIO, it may no longer be possible
-to build staticly linked executables on some system.  On SUN Solaris,
-for example the required nsl library is apparently only available as
-a shared library.
+It may not be possible to staticly link programs that use CFITSIO on
+some platforms (namely, on Solaris 2.6) due to the network drivers
+(which provide FTP and HTTP access to FITS files).  It is possible to
+make both a dynamic and a static version of the CFITSIO library, but
+network file access will not be possible using the static version.  To
+build the dynamic libcfitsio.so library (on solaris), type 'make
+clean', then edit the Makefile to add -fPIC or -KPIC (gcc or cc) to the
+CFLAGS line, then rebuild the library with 'make'.  Once you're done,
+build the shared library with
+ 
+\begin{verbatim}
+ ld -G -z text -o libcfitsio.so *.o
+\end{verbatim}
+Then to get the staticly linkable libcfitsio.a library file do another
+make clean, undefine HAVE\_NET\_SERVICES on the CFLAGS line and rebuild.
+It's unimportant whether or not you use -fPIC for static builds.
 
 An alternate makefile called Makefile.shared is included in the
 distribution that will build CFITSIO as a shared library.  It has only
@@ -3719,7 +3731,7 @@ a whole.
    be set = 0.  CFITSIO
    will automatically increase the size of the table as
    additional rows are written.  A non-zero number of rows may be specified
-   to reserve space for that many rows, even if a few number of rows will
+   to reserve space for that many rows, even if a fewer number of rows will
    be written.  The tunit and extname parameters
    are optional and a null pointer may be given if they are not defined.
    The FITS Standard recommends that only letters, digits, and the
@@ -6839,7 +6851,23 @@ pixel is undefined.
 \end{verbatim}
  
 \begin{description}
-\item[6 ] Return the descriptor for a variable length column in a binary table.
+\item[6 ] Read any consecutive set of bits from an 'X' or 'B' column and
+    interpret them as an unsigned n-bit integer.  nbits must be less
+    than 16 or 32 in ffgcxui and ffgcxuk, respectively.  If nrows
+    is greater than 1, then the same set of bits will be read from
+    each row, starting with firstrow. The bits are numbered with
+    1 = the most significant bit of the first element of the column.
+   \label{ffgcxui}
+\end{description}
+ 
+\begin{verbatim}
+  int fits_read_col_bit_[usht, uint] / ffgcx[ui,uk]
+      (fitsfile *fptr, int colnum, long firstrow, long, nrows,
+       long firstbit, long nbits, > DTYPE *array, int *status)
+\end{verbatim}
+ 
+\begin{description}
+\item[7 ] Return the descriptor for a variable length column in a binary table.
     The descriptor consists of 2 integer parameters: the number of elements
     in the array and the starting offset relative to the start of the heap.
     The first routine returns a single descriptor whereas the second routine
@@ -6968,6 +6996,7 @@ fits\_read\_atblhdr      & \pageref{ffghtb} \\
 fits\_read\_btblhdr      & \pageref{ffghbn} \\
 fits\_read\_card         & \pageref{ffgcrd} \\
 fits\_read\_col        & \pageref{ffgcv} \\
+fits\_read\_col\_bit\_ & \pageref{ffgcx} \\
 fits\_read\_col\_TYP    & \pageref{ffgcvx} \\
 fits\_read\_colnull\_TYP    & \pageref{ffgcfx} \\
 fits\_read\_descript & \pageref{ffgdes} \\
@@ -7008,9 +7037,9 @@ fits\_set\_imgnull    & \pageref{ffpnul} \\
 fits\_set\_tscale     & \pageref{fftscl} \\
 fits\_str2date        & \pageref{ffdt2s} \\
 fits\_str2time        & \pageref{ffdt2s} \\
-fits\_test\_expr    & \pageref{fftexp} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_test\_expr    & \pageref{fftexp} \\
 fits\_test\_keyword   & \pageref{fftkey} \\
 fits\_test\_record    & \pageref{fftrec} \\
 fits\_time2str  & \pageref{ffdt2s} \\
@@ -7057,9 +7086,9 @@ fits\_write\_key\_unit     & \pageref{ffpunt} \\
 fits\_write\_key\_TYP      & \pageref{ffpkyx} \\
 fits\_write\_keys\_TYP     & \pageref{ffpknx} \\
 fits\_write\_null\_img & \pageref{ffpprn} \\
-fits\_write\_record       & \pageref{ffprec} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_write\_record       & \pageref{ffprec} \\
 fits\_write\_subset\_TYP  & \pageref{ffpssx} \\
 fits\_write\_tblbytes  & \pageref{ffptbb} \\
 fits\_write\_tdim         & \pageref{ffptdm} \\
@@ -7100,24 +7129,25 @@ ffflmd      & \pageref{ffflmd} \\
 ffflnm      & \pageref{ffflnm} \\
 ffflus     & \pageref{ffflus} \\
 fffrow    & \pageref{fffrow} \\
-ffg2dx      & \pageref{ffg2dx} \\
-ffg3dx      & \pageref{ffg3dx} \\
+ffg2d\_      & \pageref{ffg2dx} \\
+ffg3d\_      & \pageref{ffg3dx} \\
 ffgabc      & \pageref{ffgabc} \\
 ffgacl  & \pageref{ffgacl} \\
 ffgbcl  & \pageref{ffgbcl} \\
-ffgcfx    & \pageref{ffgcfx} \\
+ffgcf\_    & \pageref{ffgcfx} \\
 ffgcks     & \pageref{ffgcks} \\
 ffgcnn    & \pageref{ffgcnn} \\
 ffgcno     & \pageref{ffgcno} \\
 ffgcrd         & \pageref{ffgcrd} \\
 ffgcv        & \pageref{ffgcv} \\
-ffgcvx    & \pageref{ffgcvx} \\
+ffgcv\_    & \pageref{ffgcvx} \\
+ffgcx     & \pageref{ffgcx} \\
 ffgdes & \pageref{ffgdes} \\
-ffgdess & \pageref{ffgdes} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffgdess & \pageref{ffgdes} \\
 ffgerr  & \pageref{ffgerr} \\
-ffggpx  & \pageref{ffggpx} \\
+ffggp\_  & \pageref{ffggpx} \\
 ffghad    & \pageref{ffghad} \\
 ffghbn      & \pageref{ffghbn} \\
 ffghdn    & \pageref{ffghdn} \\
@@ -7129,11 +7159,11 @@ ffghtb      & \pageref{ffghtb} \\
 ffgics & \pageref{ffgics} \\
 ffgkey      & \pageref{ffgkey} \\
 ffgkls  & \pageref{ffgkls} \\
-ffgknx     & \pageref{ffgknx} \\
+ffgkn\_     & \pageref{ffgknx} \\
 ffgky          & \pageref{ffgky} \\
 ffgkyn         & \pageref{ffgkyn} \\
 ffgkyt   & \pageref{ffgkyt} \\
-ffgkyx      & \pageref{ffgkyx} \\
+ffgky\_      & \pageref{ffgkyx} \\
 ffgmcp   & \pageref{ffgmcp} \\
 ffgmng  & \pageref{ffgmng} \\
 ffgmop    & \pageref{ffgmop} \\
@@ -7143,15 +7173,15 @@ ffgmtf  & \pageref{ffgmtf} \\
 ffgncl     & \pageref{ffgnrw} \\
 ffgnrw     & \pageref{ffgnrw} \\
 ffgnxk      & \pageref{ffgnxk} \\
-ffgpfx & \pageref{ffgpfx} \\
+ffgpf\_ & \pageref{ffgpfx} \\
 ffgpv         & \pageref{ffgpv} \\
-ffgpvx     & \pageref{ffgpvx} \\
+ffgpv\_     & \pageref{ffgpvx} \\
 ffgrec       & \pageref{ffgrec} \\
 ffgrsz    & \pageref{ffgrsz} \\
 ffgsdt        & \pageref{ffdt2s} \\
-ffgsfx & \pageref{ffgsfx} \pageref{ffgsfx2} \\
+ffgsf\_ & \pageref{ffgsfx} \pageref{ffgsfx2} \\
 ffgstm        & \pageref{ffdt2s} \\
-ffgsvx  & \pageref{ffgsvx} \pageref{ffgsvx2}\\
+ffgsv\_  & \pageref{ffgsvx} \pageref{ffgsvx2}\\
 ffgtam & \pageref{ffgtam} \\
 ffgtbb    & \pageref{ffgtbb} \\
 ffgtch  & \pageref{ffgtch} \\
@@ -7161,9 +7191,9 @@ ffgtcp  & \pageref{ffgtcp} \\
 ffgtcr  & \pageref{ffgtcr} \\
 ffgtcs & \pageref{ffgtcs} \\
 ffgtdm         & \pageref{ffgtdm} \\
-ffgthd & \pageref{ffgthd} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffgthd & \pageref{ffgthd} \\
 ffgtis  & \pageref{ffgtis} \\
 ffgtmg  & \pageref{ffgtmg} \\
 ffgtnm  & \pageref{ffgtnm} \\
@@ -7177,7 +7207,7 @@ fficls  & \pageref{fficls} \\
 fficol   & \pageref{fficol} \\
 ffiimg     & \pageref{ffiimg} \\
 ffikyu   & \pageref{ffikyu} \\
-ffikyx    & \pageref{ffikyx} \\
+ffiky\_    & \pageref{ffikyx} \\
 ffinit  & \pageref{ffinit} \\
 ffirec     & \pageref{ffirec} \\
 ffirow  & \pageref{ffirow} \\
@@ -7189,7 +7219,7 @@ ffmahd     & \pageref{ffmahd} \\
 ffmcom    & \pageref{ffmcom} \\
 ffmcrd       & \pageref{ffmcrd} \\
 ffmkyu   & \pageref{ffmkyu} \\
-ffmkyx    & \pageref{ffmkyx} \\
+ffmky\_    & \pageref{ffmkyx} \\
 ffmnam       & \pageref{ffmnam} \\
 ffmnhd     & \pageref{ffmnhd} \\
 ffmrec     & \pageref{ffmrec} \\
@@ -7198,43 +7228,43 @@ ffmvec  & \pageref{ffmvec} \\
 ffnkey      & \pageref{ffnkey} \\
 ffomem   & \pageref{ffomem} \\
 ffopen      & \pageref{ffopen} \\
-ffp2dx   & \pageref{ffp2dx} \\
-ffp3dx   & \pageref{ffp3dx} \\
+ffp2d\_   & \pageref{ffp2dx} \\
+ffp3d\_   & \pageref{ffp3dx} \\
 ffpcks   & \pageref{ffpcks} \\
 ffpcl         & \pageref{ffpcl} \\
 ffpcls     & \pageref{ffpcls} \\
-ffpclx     & \pageref{ffpclx} \\
-ffpcnx & \pageref{ffpcnx} \\
+ffpcl\_     & \pageref{ffpclx} \\
+ffpcn\_ & \pageref{ffpcnx} \\
 ffpcom      & \pageref{ffpcom} \\
 ffpdat         & \pageref{ffpdat} \\
 ffpdes  & \pageref{ffpdes} \\
-ffpgpx & \pageref{ffpgpx} \\
-ffphbn      & \pageref{ffphbn} \\
+ffpgp\_ & \pageref{ffpgpx} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffphbn      & \pageref{ffphbn} \\
 ffphis      & \pageref{ffphis} \\
 ffphpr       & \pageref{ffphpr} \\
 ffphps       & \pageref{ffphps} \\
 ffphtb      & \pageref{ffphtb} \\
 ffpkls  & \pageref{ffpkls} \\
-ffpknx     & \pageref{ffpknx} \\
+ffpkn\_     & \pageref{ffpknx} \\
 ffpktp & \pageref{ffpktp} \\
 ffpky          & \pageref{ffpky} \\
 ffpkyt   & \pageref{ffpkyt} \\
 ffpkyu     & \pageref{ffpkyu} \\
-ffpkyx      & \pageref{ffpkyx} \\
+ffpky\_      & \pageref{ffpkyx} \\
 ffplsw & \pageref{ffplsw} \\
 ffpmsg   & \pageref{ffpmsg} \\
 ffpnul    & \pageref{ffpnul} \\
 ffppn     & \pageref{ffppn} \\
-ffppnx & \pageref{ffppnx} \\
+ffppn\_ & \pageref{ffppnx} \\
 ffppr        & \pageref{ffppr} \\
 ffpprn & \pageref{ffpprn} \\
 ffppru & \pageref{ffppru} \\
-ffpprx    & \pageref{ffpprx} \\
+ffppr\_    & \pageref{ffpprx} \\
 ffprec       & \pageref{ffprec} \\
 ffpscl     & \pageref{ffpscl} \\
-ffpssx  & \pageref{ffpssx} \\
+ffpss\_  & \pageref{ffpssx} \\
 ffpsvc    & \pageref{ffpsvc} \\
 ffptbb  & \pageref{ffptbb} \\
 ffptdm         & \pageref{ffptdm} \\
@@ -7257,12 +7287,12 @@ fftnul   & \pageref{fftnul} \\
 fftplt & \pageref{fftplt} \\
 fftrec    & \pageref{fftrec} \\
 fftscl     & \pageref{fftscl} \\
-ffucrd       & \pageref{ffucrd} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffucrd       & \pageref{ffucrd} \\
 ffuky        & \pageref{ffuky} \\
 ffukyu   & \pageref{ffukyu} \\
-ffukyx    & \pageref{ffukyx} \\
+ffuky\_    & \pageref{ffukyx} \\
 ffupch      & \pageref{ffupch} \\
 ffupck  & \pageref{ffupck} \\
 ffurlt  & \pageref{ffurlt} \\
@@ -7525,6 +7555,16 @@ improve the readability of their code.
  NO_MATCHING_DRIVER 124   matching driver is not registered
  URL_PARSE_ERROR    125   failed to parse input file URL
 
+ SHARED_BADARG     151    bad argument in shared memory driver
+ SHARED_NULPTR     152    null pointer passed as an argument
+ SHARED_TABFULL    153    no more free shared memory handles
+ SHARED_NOTINIT    154    shared memory driver is not initialized
+ SHARED_IPCERR     155    IPC error returned by a system call
+ SHARED_NOMEM      156    no memory in shared memory driver
+ SHARED_AGAIN      157    resource deadlock would occur
+ SHARED_NOFILE     158    attempt to open/create lock file failed
+ SHARED_NORESIZE   159    shared memory block cannot be resized at the moment
+
  HEADER_NOT_EMPTY  201    header already contains keywords
  KEY_NO_EXIST      202    keyword not found in header
  KEY_OUT_BOUNDS    203    keyword record number is out of bounds
@@ -7588,7 +7628,7 @@ improve the readability of their code.
  ZERO_SCALE        322    illegal BSCALE or TSCALn keyword = 0
  NEG_AXIS          323    illegal axis length < 1
 
- NOT_GROUP_TABLE       340
+ NOT_GROUP_TABLE       340   Grouping function error
  HDU_ALREADY_MEMBER    341
  MEMBER_NOT_FOUND      342
  GROUP_NOT_FOUND       343

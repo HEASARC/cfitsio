@@ -296,6 +296,8 @@
 #define fits_read_col_cmp    ffgcvc
 #define fits_read_col_dblcmp ffgcvm
 #define fits_read_col_bit    ffgcx
+#define fits_read_col_bit_usht ffgcxui
+#define fits_read_col_bit_uint ffgcxuk
 
 #define fits_read_colnull_str    ffgcfs
 #define fits_read_colnull_log    ffgcfl

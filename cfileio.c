@@ -1830,7 +1830,7 @@ int ffiurl(char *url,
 */
 
 { 
-    int ii, jj, slen, infilelen, plus_ext = 0;
+    int ii, jj, slen, infilelen, plus_ext = 0, collen;
     char *ptr1, *ptr2, *ptr3;
 
     /* must have temporary variable for these, in case inputs are NULL */
@@ -2170,37 +2170,56 @@ int ffiurl(char *url,
 
     ptr1 = strstr(rowfilter, "[col ");
     if (!ptr1)
+    {
         ptr1 = strstr(rowfilter, "[COL ");
-    if (!ptr1)
-        ptr1 = strstr(rowfilter, "[Col ");
+
+        if (!ptr1)
+            ptr1 = strstr(rowfilter, "[Col ");
+    }
 
     if (ptr1)
-    {
-        if (colspec)
+    {           /* find the end of the column specifier */
+        ptr2 = ptr1 + 5;
+        while (*ptr2 != ']')
         {
-            strcpy(colspec, ptr1 + 1);       
-
-            ptr2 = strchr(colspec, ']');
-
-            if (ptr2)      /* terminate the binning filter */
-            {
-                *ptr2 = '\0';
-
-                if ( *(--ptr2) == ' ')  /* delete trailing spaces */
-                    *ptr2 = '\0';
-            }
-            else
+            if (*ptr2 == '\0')
             {
                 ffpmsg("input file URL is missing closing bracket ']'");
                 free(infile);
                 return(*status = URL_PARSE_ERROR);  /* error, no closing ] */
             }
+
+            if (*ptr2 == '\'')  /* start of a literal string */
+            {
+                ptr2 = strchr(ptr2 + 1, '\'');  /* find closing quote */
+                if (!ptr2)
+                {
+                  ffpmsg
+          ("literal string in input file URL is missing closing single quote");
+                  free(infile);
+                  return(*status = URL_PARSE_ERROR);  /* error, no closing ] */
+                }
+            }
+
+            ptr2++;  /* continue search for the closing bracket character */
+        } 
+
+        collen = ptr2 - ptr1 - 1;
+
+        if (colspec)    /* copy the column specifier to output string */
+        {
+            strncpy(colspec, ptr1 + 1, collen);       
+            colspec[collen] = '\0';
+ 
+            while (colspec[--collen] == ' ')
+            {
+                colspec[collen] = '\0';  /* strip trailing blanks */
+            }
         }
 
         /* delete the column selection spec from the row filter string */
-        ptr2 = strchr(ptr1, ']');
-        strcpy(tmpstr, ptr2+1);  /* copy any chars after the colspec */
-        strcpy(ptr1, tmpstr);    /* overwrite binspec */
+        strcpy(tmpstr, ptr2 + 1);  /* copy any chars after the colspec */
+        strcpy(ptr1, tmpstr);      /* overwrite binspec */
     }
 
     /* copy the remaining string to the rowfilter output... should only */

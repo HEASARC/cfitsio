@@ -24,8 +24,9 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.025;   /* 25 Nov 1998 */
+      *version = 2.026;   /* 23 Dec 1998 */
 
+ /*   *version = 2.025;   1 Dec 1998 */
  /*   *version = 2.024;   9 Nov 1998 */
  /*   *version = 2.023;   1 Nov 1998 first full release of V2.0 */
  /*   *version = 1.42;   30 Apr 1998 */
@@ -150,6 +151,33 @@ void ffgerr(int status,     /* I - error status value */
        break;
     case 125:
        strcpy(errtext, "parse error in input file URL");
+       break;
+    case 151:
+       strcpy(errtext, "bad argument (shared mem drvr)");
+       break;
+    case 152:
+       strcpy(errtext, "null ptr arg (shared mem drvr)");
+       break;
+    case 153:
+       strcpy(errtext, "no free shared memory handles");
+       break;
+    case 154:
+       strcpy(errtext, "share mem drvr not initialized");
+       break;
+    case 155:
+       strcpy(errtext, "IPC system error (shared mem)");
+       break;
+    case 156:
+       strcpy(errtext, "no memory (shared mem drvr)");
+       break;
+    case 157:
+       strcpy(errtext, "share mem resource deadlock");
+       break;
+    case 158:
+       strcpy(errtext, "lock file open/create failed");
+       break;
+    case 159:
+       strcpy(errtext, "can't resize share mem block");
        break;
     case 201:
        strcpy(errtext, "header already has keywords");
@@ -345,6 +373,63 @@ void ffgerr(int status,     /* I - error status value */
        break;
     case 323:
        strcpy(errtext, "illegal axis length < 1");
+       break;
+    case 340:
+       strcpy(errtext, "not group table");
+       break;
+    case 341:
+       strcpy(errtext, "HDU already member of group");
+       break;
+    case 342:
+       strcpy(errtext, "group member not found");
+       break;
+    case 343:
+       strcpy(errtext, "group not found");
+       break;
+    case 344:
+       strcpy(errtext, "bad group id");
+       break;
+    case 345:
+       strcpy(errtext, "too many HDUs tracked");
+       break;
+    case 346:
+       strcpy(errtext, "HDU alread tracked");
+       break;
+    case 347:
+       strcpy(errtext, "bad Grouping option");
+       break;
+    case 348:
+       strcpy(errtext, "identical pointers (groups)");
+       break;
+    case 360:
+       strcpy(errtext, "malloc failed in parser");
+       break;
+    case 361:
+       strcpy(errtext, "file read error in parser");
+       break;
+    case 362:
+       strcpy(errtext, "null pointer arg (parser)");
+       break;
+    case 363:
+       strcpy(errtext, "empty line (parser)");
+       break;
+    case 364:
+       strcpy(errtext, "cannot unread > 1 line");
+       break;
+    case 365:
+       strcpy(errtext, "parser too deeply nested");
+       break;
+    case 366:
+       strcpy(errtext, "file open failed (parser)");
+       break;
+    case 367:
+       strcpy(errtext, "hit EOF (parser)");
+       break;
+    case 368:
+       strcpy(errtext, "bad argument (parser)");
+       break;
+    case 369:
+       strcpy(errtext, "unexpected token (parser)");
        break;
     case 401:
        strcpy(errtext, "bad int to string conversion");
@@ -3135,10 +3220,20 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     /* Do sanity check of input parameters */
     if (firstrow < 1)
     {
-        sprintf(message, "Starting row number is less than 1: %ld",
+        if ((fptr->Fptr)->hdutype == IMAGE_HDU) /*  Primary Array or IMAGE */
+        {
+          sprintf(message, "Image group number is less than 1: %ld",
                 firstrow);
-        ffpmsg(message);
-        return(*status = BAD_ROW_NUM);
+          ffpmsg(message);
+          return(*status = BAD_ROW_NUM);
+        }
+        else
+        {
+          sprintf(message, "Starting row number is less than 1: %ld",
+                firstrow);
+          ffpmsg(message);
+          return(*status = BAD_ROW_NUM);
+        }
     }
     else if ((fptr->Fptr)->hdutype != ASCII_TBL && firstelem < 1)
     {
@@ -3295,15 +3390,29 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
           {
             if (*hdutype == IMAGE_HDU) /*  Primary Array or IMAGE */
             {
-              ffpmsg("Attempt to read past end of array:");
-              sprintf(message, 
-                "  Image has  %ld elements;", *repeat);
-              ffpmsg(message);
+              if (firstrow > (fptr->Fptr)->numrows)
+              {
+                sprintf(message, 
+                  "Attempted to read from group %ld of the HDU,", firstrow);
+                ffpmsg(message);
 
-              sprintf(message, 
-              "  Tried to read %ld elements starting at element %ld.",
-              nelem, firstelem);
-              ffpmsg(message);
+                sprintf(message, 
+                  "however the HDU only contains %ld group(s).",
+                   (fptr->Fptr)->numrows );
+                ffpmsg(message);
+              }
+              else
+              {
+                ffpmsg("Attempt to read past end of array:");
+                sprintf(message, 
+                  "  Image has  %ld elements;", *repeat);
+                ffpmsg(message);
+
+                sprintf(message, 
+                "  Tried to read %ld elements starting at element %ld.",
+                nelem, firstelem);
+                ffpmsg(message);
+              }
             }
             else
             {

@@ -33,6 +33,7 @@ extern "C" {
 #define	NGP_MAX_STRING		(80)			/* max size for various strings */
 #define	NGP_MAX_ARRAY_DIM	(999)			/* max. number of dimensions in array */
 #define NGP_MAX_FNAME           (1000)                  /* max size of combined path+fname */
+#define	NGP_MAX_ENVFILES	(10000)			/* max size of CFITSIO_INCLUDE_FILES env. variable */
 
 #define	NGP_TOKEN_UNKNOWN	(-1)			/* token type unknown */
 #define	NGP_TOKEN_INCLUDE	(0)			/* \INCLUDE token */

@@ -673,21 +673,21 @@ int fits_init_cfitsio(void);
 
 int fits_register_driver( char *prefix,
 	int (*init)(void),
-	int (*shutdown)(void),
+	int (*fitsshutdown)(void),
 	int (*setoptions)(int option),
 	int (*getoptions)(int *options),
 	int (*getversion)(int *version),
 	int (*checkfile) (char *urltype, char *infile, char *outfile),
-	int (*open)(char *filename, int rwmode, int *driverhandle),
-	int (*create)(char *filename, int *driverhandle),
-	int (*truncate)(int driverhandle, long filesize),
-	int (*close)(int driverhandle),
+	int (*fitsopen)(char *filename, int rwmode, int *driverhandle),
+	int (*fitscreate)(char *filename, int *driverhandle),
+	int (*fitstruncate)(int driverhandle, long filesize),
+	int (*fitsclose)(int driverhandle),
 	int (*fremove)(char *filename),
         int (*size)(int driverhandle, long *size),
 	int (*flush)(int driverhandle),
 	int (*seek)(int driverhandle, long offset),
-	int (*read) (int driverhandle, void *buffer, long nbytes),
-	int (*write)(int driverhandle, void *buffer, long nbytes));
+	int (*fitsread) (int driverhandle, void *buffer, long nbytes),
+	int (*fitswrite)(int driverhandle, void *buffer, long nbytes));
 
 /* file driver I/O routines */
 

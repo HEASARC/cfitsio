@@ -42,16 +42,24 @@
                 of file to be included does not specify absolute pathname.
 16-Nov-98: bugfix to bugfix from 13-Nov-98
 19-Nov-98: EXTVER keyword is now automatically assigned value by parser.
+17-Dev-98: 2 new things added: 1st: CFITSIO_INCLUDE_FILES environment
+		variable can contain a colon separated list of directories
+		to look for when looking for template include files (and master
+		template also). 2nd: it is now possible to append template
+		to nonempty FITS. file. fitsfile *ff no longer needs to point
+		to an empty FITS file with 0 HDUs in it. All data written by
+		parser will simple be appended at the end of file.
 */
 
 
 #include <stdio.h>
-#ifdef macintosh
 #include <stdlib.h>
-#else
+
+#ifndef macintosh
 #include <malloc.h>
 #include <memory.h>
 #endif
+
 #include <string.h>
 
 #include "fitsio.h"
@@ -454,12 +462,14 @@ int	ngp_extract_tokens(NGP_RAW_LINE *cl)
 
 /*      try to open include file. If open fails and fname
         does not specify absolute pathname, try to open fname
+        in any directory specified in CFITSIO_INCLUDE_FILES
+        environment variable. Finally try to open fname
         relative to ngp_master_dir, which is directory of top
         level include file
 */
 
 int	ngp_include_file(char *fname)		/* try to open include file */
- { char *p;
+ { char *p, *p2, *cp, *envar, envfiles[NGP_MAX_ENVFILES];
 
    if (NULL == fname) return(NGP_NUL_PTR);
 
@@ -468,23 +478,54 @@ int	ngp_include_file(char *fname)		/* try to open include file */
 
    if (NULL == (ngp_fp[ngp_inclevel] = fopen(fname, "r")))
      {                                          /* if simple open failed .. */
+       envar = getenv("CFITSIO_INCLUDE_FILES");	/* scan env. variable, and retry to open */
+
+       if (NULL != envar)			/* is env. variable defined ? */
+         { strncpy(envfiles, envar, NGP_MAX_ENVFILES - 1);
+           envfiles[NGP_MAX_ENVFILES - 1] = 0;	/* copy search path to local variable, env. is fragile */
+
+           for (p2 = strtok(envfiles, ":"); NULL != p2; p2 = strtok(NULL, ":"))
+            {
+	      cp = (char *)ngp_alloc(strlen(fname) + strlen(p2) + 2);
+	      if (NULL == cp) return(NGP_NO_MEMORY);
+
+	      strcpy(cp, p2);
 #ifdef  MSDOS
-       if ('\\' == fname[0]) return(NGP_ERR_FOPEN); /* abs. pathname for MSDOS */
+              strcat(cp, "\\");			/* abs. pathname for MSDOS */
+               
 #else
-       if ('/' == fname[0]) return(NGP_ERR_FOPEN); /* and for unix */
+              strcat(cp, "/");			/* and for unix */
 #endif
-       if (0 == ngp_master_dir[0]) return(NGP_ERR_FOPEN);
+	      strcat(cp, fname);
+	  
+	      ngp_fp[ngp_inclevel] = fopen(cp, "r");
+	      ngp_free(cp);
 
-       p = ngp_alloc(strlen(fname) + strlen(ngp_master_dir) + 1);
-       if (NULL == p) return(NGP_NO_MEMORY);
+	      if (NULL != ngp_fp[ngp_inclevel]) break;
+	    }
+        }
+                                      
+       if (NULL == ngp_fp[ngp_inclevel])	/* finally try to open relative to top level */
+         {
+#ifdef  MSDOS
+           if ('\\' == fname[0]) return(NGP_ERR_FOPEN); /* abs. pathname for MSDOS, does not support C:\\PATH */
+#else
+           if ('/' == fname[0]) return(NGP_ERR_FOPEN); /* and for unix */
+#endif
+           if (0 == ngp_master_dir[0]) return(NGP_ERR_FOPEN);
 
-       strcpy(p, ngp_master_dir);               /* construct composite pathname */
-       strcat(p, fname);                        /* comp = master + fname */
+	   p = ngp_alloc(strlen(fname) + strlen(ngp_master_dir) + 1);
+           if (NULL == p) return(NGP_NO_MEMORY);
 
-       ngp_fp[ngp_inclevel] = fopen(p, "r");    /* try to open composite */
-       ngp_free(p);                             /* we don't need buffer anymore */
-       
-       if (NULL == ngp_fp[ngp_inclevel]) return(NGP_ERR_FOPEN); /* fail if error */
+           strcpy(p, ngp_master_dir);		/* construct composite pathname */
+           strcat(p, fname);			/* comp = master + fname */
+
+           ngp_fp[ngp_inclevel] = fopen(p, "r");/* try to open composite */
+           ngp_free(p);				/* we don't need buffer anymore */
+
+           if (NULL == ngp_fp[ngp_inclevel])
+             return(NGP_ERR_FOPEN);		/* fail if error */
+         }
      }
 
    ngp_inclevel++;
@@ -1090,7 +1131,7 @@ int	ngp_read_group(fitsfile *ff, char *grpname, int parent_hn)
 /* read whole template. ff should point to the opened empty fits file. */
 
 int	fits_execute_template(fitsfile *ff, char *ngp_template, int *status)
- { int r, exit_flg, first_extension, i;
+ { int r, exit_flg, first_extension, i, my_hn, tmp0, keys_exist, more_keys;
    char grnm[NGP_MAX_STRING];
 
    if (NULL == ff) return(NGP_NUL_PTR);
@@ -1102,7 +1143,21 @@ int	fits_execute_template(fitsfile *ff, char *ngp_template, int *status)
    ngp_grplevel = 0;
    master_grp_idx = 1;
    exit_flg = 0;
-   first_extension = 1;
+   ngp_master_dir[0] = 0;			/* this should be before 1st call to ngp_include_file */
+   first_extension = 1;				/* we need to create PHDU */
+
+   fits_get_hdu_num(ff, &my_hn);		/* our HDU position */
+   if (my_hn <= 1)				/* check whether we really need to create PHDU */
+     { fits_movabs_hdu(ff, 1, &tmp0, status);
+       fits_get_hdrspace(ff, &keys_exist, &more_keys, status);
+       fits_movabs_hdu(ff, my_hn, &tmp0, status);
+       if (NGP_OK != *status) return(*status);	/* error here means file is corrupted */
+       if (keys_exist > 0) first_extension = 0;	/* if keywords exist assume PHDU already exist */
+     }
+   else
+     { first_extension = 0;			/* PHDU (followed by 1+ extensions) exist */
+     }
+                                                                          
 
    if (NGP_OK != (r = ngp_delete_extver_tab()))
      { *status = r;
@@ -1126,7 +1181,6 @@ int	fits_execute_template(fitsfile *ff, char *ngp_template, int *status)
    i++;
    if (i > (NGP_MAX_FNAME - 1)) i = NGP_MAX_FNAME - 1;
 
-   ngp_master_dir[0] = 0;
    if (i > 0)
      { memcpy(ngp_master_dir, ngp_template, i);
        ngp_master_dir[i] = 0;
