@@ -5,13 +5,35 @@ Version 2.402
 
   New Routines:
 
+  - fits_copy_file copies all or part of the HDUs in the input file
+    to the output file.
+
   - fits_open_data behaves similarly to fits_open_file except that it
     also will move to the first HDU containing significant data if
     and an explicit HDU name or number to open was not specified.
     This is useful for automatically skipping over a null primary
     array when opening the file.
 
+  - added fits_insert_card/ffikey to the publicly defined set
+    of routines (previously, it was a private routine)
+
   Enhancements:
+
+  - modified ffedit_columns so that wild card characters may be
+    used when specifying column names in the 'col' file filter
+    specifier (e.g.,  file.fits[col TIME; *RAW] will create a
+    virtual table contain only the TIME column and any other columns
+    whose name ends with 'RAW').
+
+  - modified the keyword classifier utility, fits_get_keyclass, to
+    support cases where the input string is just the keyword name,
+    not the entire 80-character card.
+
+  - modified configure.in and configure to see if a proprietary
+    C compiler is available (e.g. 'cc'), and only use 'gcc' if not.
+
+  - modified ffcpcl (copy columns from one table to another) so that
+    it also copies any WCS keywords related to that column.
 
   - included an alternate source file that can be used to replace
     compress.c, which is distributed under the GNU General Public
@@ -45,6 +67,15 @@ Version 2.402
     datatype on debian linux systems.
 
   Bug fixes:
+
+  - fixed minor problem in the keyword template parsing routine, ffgthd
+    which in rare cases could cause an improperly terminated string to
+    be returned.
+
+  - the routine to compare 2 strings, ffcmps, failed to find a match 
+    in comparing strings like "*R" and "ERROR" where the match occurs
+    on the last character, but where the same matching character occurs
+    previously in the 2nd string.
 
   - the region file reading routine (ffrrgn) did not work correctly if
     the region file (created by POW and perhaps other programs) had an

@@ -196,6 +196,7 @@
 #define fits_resize_img     ffrsim
 #define fits_delete_hdu     ffdhdu
 #define fits_copy_hdu       ffcopy
+#define fits_copy_file      ffcpfl
 #define fits_copy_header    ffcphd
 #define fits_copy_data      ffcpdt
 

@@ -795,6 +795,8 @@ int ffibin(fitsfile *fptr,long naxis2, int tfields, char **ttype, char **tform,
 int ffrsim(fitsfile *fptr, int bitpix, int naxis, long *naxes, int *status);
 int ffdhdu(fitsfile *fptr, int *hdutype, int *status);
 int ffcopy(fitsfile *infptr, fitsfile *outfptr, int morekeys, int *status);
+int ffcpfl(fitsfile *infptr, fitsfile *outfptr, int prev, int cur, int follow,
+            int *status);
 int ffcphd(fitsfile *infptr, fitsfile *outfptr, int *status);
 int ffcpdt(fitsfile *infptr, fitsfile *outfptr, int *status);
 int ffchfl(fitsfile *fptr, int *status);
