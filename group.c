@@ -4757,8 +4757,9 @@ int fits_path2url(char *inpath,  /* input file path string                  */
 	    {
 	      buff[j] = '/';
 	      buff[j+1] = 0;
-	      ++i;
 	    }
+
+	  ++i;
 
 	  break;
 
