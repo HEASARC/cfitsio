@@ -520,6 +520,7 @@ int ffgkys( fitsfile *fptr,     /* I - FITS file pointer         */
         return(*status);
 
     ffgkey(fptr, keyname, valstring, comm, status);  /* read the keyword */
+    value[0] = '\0';
     ffc2s(valstring, value, status);   /* remove quotes from string */
  
     return(*status);
