@@ -821,7 +821,7 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
     /* declare variables static to preserve their values between calls */
     static void *Data, *Null;
     static int  datasize;
-    static long lastRow, jnull;
+    static long lastRow, jnull, repeat;
     static parseInfo *userInfo;
     static long zeros[4] = {0,0,0,0};
 
@@ -866,11 +866,13 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 	     case TLONG:   jnull = LONG_MIN;      break;
 	     }
 	  }
+	  repeat = colData[nCols-1].repeat;
 
        } else {
 
           Data = userInfo->dataPtr;
           Null = (userInfo->nullPtr ? userInfo->nullPtr : zeros);
+	  repeat = gParse.Nodes[gParse.nNodes-1].value.nelem;
 
        }
 
@@ -948,19 +950,42 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 	  if( constant ) {
 	     char undef=0;
 	     for( kk=0; kk<ntodo; kk++ )
-		ffcvtn( gParse.datatype,
-			&(result->value.data),
-			&undef, result->value.nelem,
-			userInfo->datatype, Null,
-			(char*)Data+kk*datasize*result->value.nelem,
-			&anyNullThisTime, &gParse.status );
+		for( jj=0; jj<repeat; jj++ )
+		   ffcvtn( gParse.datatype,
+			   &(result->value.data),
+			   &undef, result->value.nelem /* 1 */,
+			   userInfo->datatype, Null,
+			   (char*)Data + (kk*repeat+jj)*datasize,
+			   &anyNullThisTime, &gParse.status );
 	  } else {
-	     ffcvtn( gParse.datatype,
-		     result->value.data.ptr,
-		     result->value.undef,
-		     result->value.nelem*ntodo,
-		     userInfo->datatype, Null, Data,
-		     &anyNullThisTime, &gParse.status );
+	     if ( repeat == result->value.nelem ) {
+		ffcvtn( gParse.datatype,
+			result->value.data.ptr,
+			result->value.undef,
+			result->value.nelem*ntodo,
+			userInfo->datatype, Null, Data,
+			&anyNullThisTime, &gParse.status );
+	     } else if( (repeat % result->value.nelem)==0 ) {
+		int resDataSize;
+		resDataSize = ( result->type==BOOLEAN ? sizeof(char) :
+				( result->type==LONG    ? sizeof(long) :
+				                        sizeof(double) ) );
+		for( kk=0; kk<ntodo; kk++ )
+		   for( jj=0; jj<repeat; jj+=result->value.nelem ) {
+		      ffcvtn( gParse.datatype,
+			      (char*)result->value.data.ptr
+			                + kk*result->value.nelem*resDataSize,
+			      (char*)result->value.undef
+			                + kk*result->value.nelem,
+			      result->value.nelem,
+			      userInfo->datatype, Null,
+			      (char*)Data + (kk*repeat+jj)*datasize,
+			      &anyNullThisTime, &gParse.status );
+		   }
+	     } else {
+		ffpmsg("Vector result does not fit cleanly into output column");
+		gParse.status = PARSE_BAD_TYPE;
+	     }
 	     if( result->operation>0 ) {
 		free( result->value.data.ptr );
 	     }
@@ -1053,7 +1078,7 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
        else if( result->type==STRING )
           Data = (char*)Data + datasize * ntodo;
        else
-          Data = (char*)Data + datasize * ntodo * result->value.nelem;
+          Data = (char*)Data + datasize * ntodo * repeat;
     }
 
     /* If no NULLs encountered during this pass, set Null value to */
