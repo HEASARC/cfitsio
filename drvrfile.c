@@ -19,7 +19,6 @@
 #define IO_SEEK 0        /* last file I/O operation was a seek */
 #define IO_READ 1        /* last file I/O operation was a read */
 #define IO_WRITE 2       /* last file I/O operation was a write */
-#define MAX_BUFFER_SIZE 1024000
 
 static char file_outfile[FLEN_FILENAME];
 
@@ -469,50 +468,6 @@ int file_write(int hdl, void *buffer, long nbytes)
     handleTable[hdl].currentpos += nbytes;
     handleTable[hdl].last_io_op = IO_WRITE;
     return(0);
-}
-/*--------------------------------------------------------------------------*/
-int file_compress_open_first_record(char *filename, int rwmode, int *hdl)
-/*
-  This routine opens the compressed diskfile by creating a new uncompressed
-  file then opening it.  The input file name (the name of the compressed
-  file) gets replaced with the name of the uncompressed file, which is
-  initially stored in the global file_outfile string.   file_outfile
-  then gets set to a null string.
-*/
-{   
-    FILE *indiskfile, *outdiskfile;
-    int filesize = 0;
-    int status, clobber = 0;
-    int inputsize = MAX_BUFFER_SIZE;
-    char *cptr;
-    char buffer[MAX_BUFFER_SIZE];
-
-    /* open the compressed disk file */
-    status = file_openfile(filename, READONLY, &indiskfile);
-    if (status)
-    {
-        ffpmsg("failed to open compressed disk file (file_compress_open)");
-        ffpmsg(filename);
-        return(status);
-    }
-
-    /* name of the output uncompressed file is stored in the */
-    /* global variable called 'file_outfile'.                */
-
-    /* uncompress file into another file */
-    uncompress2memByLength(filename, indiskfile, &status);
-
-    fclose(indiskfile);
-    indiskfile = fopen("first_fits_record.fits.tmp", "r");   
-    outdiskfile = fopen("first_fits_record.fits", "w");   
-
-    fgets(buffer, MAX_BUFFER_SIZE, indiskfile);
-    fputs(buffer, outdiskfile);
-
-    fclose(indiskfile);
-    fclose(outdiskfile);
-
-    return(status);
 }
 /*--------------------------------------------------------------------------*/
 int file_compress_open(char *filename, int rwmode, int *hdl)
