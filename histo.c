@@ -3,8 +3,12 @@
 #include <stdlib.h>
 #include "fitsio2.h"
 
-short *hist16;
-int   *hist32;
+char   *histb;
+short  *histi;
+int    *histj;
+float  *histr;
+double *histd;
+
 int hcolnum[4], haxis, haxis1, haxis2, haxis3, haxis4, himagetype;
 float amin1, amin2, amin3, amin4;
 float binsize1, binsize2, binsize3, binsize4;
@@ -13,12 +17,12 @@ fitsfile *tblptr;
 /*--------------------------------------------------------------------------*/
 int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
                              /*     on output, points to histogram image    */
-           int imagetype,     /* I - datatype for image: TINT or TSHORT     */
+           int imagetype,    /* I - datatype for image: TINT, TSHORT, etc  */
            int naxis,        /* I - number of axes in the histogram image   */
            char colname[4][FLEN_VALUE],   /* I - column names            */
-           float *minin,     /* I - minimum histogram value, for each axis  */
-           float *maxin,     /* I - maximum histogram value, for each axis  */
-           float *binsizein, /* I - bin size along each axis */
+           double *minin,     /* I - minimum histogram value, for each axis  */
+           double *maxin,     /* I - maximum histogram value, for each axis  */
+           double *binsizein, /* I - bin size along each axis */
            int *status)
 {
     int ii, datatype, repeat, imin, imax, ibin, bitpix, tstatus;
@@ -50,10 +54,18 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
     tblptr = *fptr;
     himagetype = imagetype;
     haxis = naxis;
-    if (imagetype == TSHORT)
+    if (imagetype == TBYTE)
+        bitpix = BYTE_IMG;
+    else if (imagetype == TSHORT)
         bitpix = SHORT_IMG;
-    else
+    else if (imagetype == TINT)
         bitpix = LONG_IMG;
+    else if (imagetype == TFLOAT)
+        bitpix = FLOAT_IMG;
+    else if (imagetype == TDOUBLE)
+        bitpix = DOUBLE_IMG;
+    else
+        return(*status = BAD_DATATYPE);
 
     for (ii = 0; ii < naxis; ii++)
     {
@@ -64,13 +76,13 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
       }
 
       /* Get the default column name if not already specified. The */
-      /* PREFn keyword, if it exists, gives the preferred  column  */
+      /* CPREFn keyword, if it exists, gives the preferred  column  */
       /* for that axis.  Otherwise, assume "X", "Y", "Z", and "T"  */
 
       if (*colname[ii] == '\0')
       {
          tstatus = 0;
-         ffkeyn("PREF", ii + 1, keyname, &tstatus);
+         ffkeyn("CPREF", ii + 1, keyname, &tstatus);
          ffgky(*fptr, TSTRING, keyname, colname[ii], NULL, &tstatus);
 
          if (tstatus || *colname[ii] == '\0')
@@ -153,7 +165,7 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
       if (binsizein[ii] == FLOATNULLVALUE)
       {
          tstatus = 0;
-         ffkeyn("TDBIN", ii + 1, keyname, &tstatus);
+         ffkeyn("TDBIN", hcolnum[ii], keyname, &tstatus);
          if (ffgky(*fptr, TFLOAT, keyname, binsizein + ii, NULL, &tstatus) > 0)
          {
             binsizein[ii] = 1.;  /* use default bin size */
@@ -311,10 +323,10 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
 
        ffkeyn("TCROT", hcolnum[ii], keyname, &tstatus);
        ffgky(*fptr, TDOUBLE, keyname, &dvalue, NULL, &tstatus);
-       if (!tstatus)
+       if (!tstatus && dvalue != 0.)  /* only write keyword if angle != 0 */
        {
           ffkeyn("CROTA", ii + 1, keyname, &tstatus);
-          ffpky(histptr, TDOUBLE, keyname, &dvalue, "Reference Value", &tstatus);
+          ffpky(histptr, TDOUBLE, keyname, &dvalue, "Rotation angle", &tstatus);
        }
     }
 
@@ -339,9 +351,15 @@ int ffwritehisto(long totaln, long pixoffset, long firstn, long nvalues,
 
     /* store pointer to the histogram array, and initialize to zero */
     if (himagetype == TSHORT)
-        hist16 = (short *) fits_iter_get_array(imagepars);
-    else 
-        hist32 = (int *) fits_iter_get_array(imagepars);  /* TINT datatype */
+        histi = (short *) fits_iter_get_array(imagepars);
+    else if (himagetype == TINT)
+        histj = (int *) fits_iter_get_array(imagepars);  /* TINT datatype */
+    else if (himagetype == TBYTE)
+        histb = (char *) fits_iter_get_array(imagepars);
+    else if (himagetype == TFLOAT)
+        histr = (float *) fits_iter_get_array(imagepars);
+    else if (himagetype == TDOUBLE)
+        histd = (double *) fits_iter_get_array(imagepars);
 
     /* set the column parameters for the iterator function */
     for (ii = 0; ii < haxis; ii++)
@@ -438,10 +456,16 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
       }
 
       /* increment the histogram pixel */
-      if (himagetype == TSHORT)
-          hist16[ipix]++;
-      else
-          hist32[ipix]++;
+      if (himagetype == TINT)
+          histj[ipix]++;
+      else if (himagetype == TSHORT)
+          histi[ipix]++;
+      else if (himagetype == TFLOAT)
+          histr[ipix]++;
+      else if (himagetype == TDOUBLE)
+          histd[ipix]++;
+      else if (himagetype == TBYTE)
+          histb[ipix]++;
     }
 
     return(0);

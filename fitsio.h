@@ -267,6 +267,7 @@ extern "C" {
 #endif
 
 /*----------------  FITS file URL parsing routines -------------*/
+int fits_get_token(char **ptr, char *delimiter, char *token, int *isanumber);
 int fits_parse_input_url(char *url,  char *urltype, char *infile,
                     char *outfile, char *extspec, char *rowfilter,
                     char *binspec, char *colspec);
@@ -275,10 +276,14 @@ int fits_parse_extspec(char *extspec, int *extnum,  char *extname,
                        int *extvers, int *hdutype);
 int ffextn(char *url, int *extension_num);
 int fits_parse_binspec(char *binspec, int *imagetype, int *haxis, 
-                       char colname[4][FLEN_VALUE], float *minin,float *maxin,
-                       float *binsizein);
-int fits_parse_binrange(char **binspec, char *colname, float *minin, 
-                        float *maxin, float *binsizein);
+                      char colname[4][FLEN_VALUE], double *minin,
+                      double *maxin, double *binsizein,
+                      char minname[4][FLEN_VALUE], char maxname[4][FLEN_VALUE],
+                      char binname[4][FLEN_VALUE], double *weight, char *wtname,
+                      int *recip);
+int fits_parse_binrange(char **binspec, char *colname, double *minin, 
+                        double *maxin, double *binsizein, char *minname,
+                        char *maxname, char *binname);
 
 /*----------------  FITS file I/O routines -------------*/
 int ffomem(fitsfile **fptr, const char *name, int mode, void **buffptr,
@@ -828,6 +833,9 @@ int ffgcfm(fitsfile *fptr, int colnum, long firstrow, long firstelem,
       long nelem, double *array, char *nularray, int *anynul, int *status);
  
 int ffgdes(fitsfile *fptr, int colnum, long rownum, long *length,
+           long *heapaddr, int *status);
+ 
+int ffgdess(fitsfile *fptr, int colnum, long firstrow, long nrows, long *length,
            long *heapaddr, int *status);
  
 int ffgtbb(fitsfile *fptr, long firstrow, long firstchar, long nchars,

@@ -3643,10 +3643,16 @@ pixel is undefined.
 >6  Return the descriptor for a variable length column in a binary table.
     The descriptor consists of 2 integer parameters: the number of elements
     in the array and the starting offset relative to the start of the heap.
+    The first routine returns a single descriptor whereas the second routine
+    returns the descriptors for a range of rows in the table.
 > \label{ffgdes}
 -
   int fits_read_descript / ffgdes
       (fitsfile *fptr, int colnum, long rownum, > long *repeat,
+           long *offset, int *status)
+
+  int fits_read_descripts / ffgdess
+      (fitsfile *fptr, int colnum, long firstrow, long nrows > long *repeat,
            long *offset, int *status)
 -
 
@@ -4142,6 +4148,7 @@ fits\_read\_col        & \pageref{ffgcv} \\
 fits\_read\_col\_TYP    & \pageref{ffgcvx} \\
 fits\_read\_colnull\_TYP    & \pageref{ffgcfx} \\
 fits\_read\_descript & \pageref{ffgdes} \\
+fits\_read\_descripts & \pageref{ffgdes} \\
 fits\_read\_errmsg    & \pageref{ffgmsg} \\
 fits\_read\_grppar\_TYP  & \pageref{ffggpx} \\
 fits\_read\_img         & \pageref{ffgpv} \\

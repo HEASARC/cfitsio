@@ -63,7 +63,7 @@
 \contentsline {subsection}{\numberline {6.6.3}Advanced Write Column Data Routines}{71}
 \contentsline {subsection}{\numberline {6.6.4}Advanced Read Column Data Routines}{72}
 \contentsline {section}{\numberline {6.7}Celestial Coordinate System Routines }{74}
-\contentsline {section}{\numberline {6.8}File Checksum Routines }{75}
+\contentsline {section}{\numberline {6.8}File Checksum Routines }{76}
 \contentsline {section}{\numberline {6.9}Advanced General Utility Routines}{77}
 \contentsline {chapter}{\numberline {A}Index of Routines }{83}
 \contentsline {chapter}{\numberline {B}Parameter Definitions }{87}

@@ -301,6 +301,7 @@
 #define fits_read_colnull_dblcmp ffgcfm
 
 #define fits_read_descript ffgdes
+#define fits_read_descripts ffgdess
 #define fits_read_tblbytes    ffgtbb
 
 #define fits_write_grppar_byt ffpgpb

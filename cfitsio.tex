@@ -4336,12 +4336,18 @@ pixel is undefined.
 \item[6 ] Return the descriptor for a variable length column in a binary table.
     The descriptor consists of 2 integer parameters: the number of elements
     in the array and the starting offset relative to the start of the heap.
+    The first routine returns a single descriptor whereas the second routine
+    returns the descriptors for a range of rows in the table.
  \label{ffgdes}
 \end{description}
 
 \begin{verbatim}
   int fits_read_descript / ffgdes
       (fitsfile *fptr, int colnum, long rownum, > long *repeat,
+           long *offset, int *status)
+
+  int fits_read_descripts / ffgdess
+      (fitsfile *fptr, int colnum, long firstrow, long nrows > long *repeat,
            long *offset, int *status)
 \end{verbatim}
 
@@ -4837,7 +4843,7 @@ it will be in local time.
 
 \begin{verbatim}
 int fits_get_system_time/ffgstm
-    (char *timestr, int  *timeref, int   *status)
+    (> char *timestr, int  *timeref, int *status)
 \end{verbatim}
 
 Construct a new-format date string ('YYYY-MM-DD') from the
@@ -4863,7 +4869,7 @@ in either the old or new FITS format.  Null pointers may be supplied
 for any unwanted return date parameters.
 
 \begin{verbatim}
-int fits_str2date/ffs2dt  (read the date from the string)
+int fits_str2date/ffs2dt
     (char *datestr, > int *year, int *month, int *day, int *status)
 \end{verbatim}
 
@@ -4876,7 +4882,7 @@ string.  Null pointers may be supplied for any unwanted return date and
 time parameters.
 
 \begin{verbatim}
-int fits_str2time/ffs2tm  (read date and time from the string)
+int fits_str2time/ffs2tm
     (char *datestr, > int *year, int *month, int *day, int *hour,
      int *minute, double *second, int *status)
 \end{verbatim}
@@ -4973,6 +4979,7 @@ fits\_read\_col        & \pageref{ffgcv} \\
 fits\_read\_col\_TYP    & \pageref{ffgcvx} \\
 fits\_read\_colnull\_TYP    & \pageref{ffgcfx} \\
 fits\_read\_descript & \pageref{ffgdes} \\
+fits\_read\_descripts & \pageref{ffgdes} \\
 fits\_read\_errmsg    & \pageref{ffgmsg} \\
 fits\_read\_grppar\_TYP  & \pageref{ffggpx} \\
 fits\_read\_img         & \pageref{ffgpv} \\

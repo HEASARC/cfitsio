@@ -1,102 +1,277 @@
                      CFITSIO File Name Syntax
 
-CFITSIO now supports an extended syntax for the input and output FITS
-file  names.  The full form of the file name looks like:
+Overview
+--------
 
-   filetype://filename.ext[extension][rowfilter][binning][columns]
+CFITSIO supports an extended syntax for the input and output FITS file
+names.  Before describing the full syntax in detail here are some
+examples which illustrate some of the main features:
 
-where
+'myfile.fits'  - the simplest case: a FITS file on disk in the current
+directory
+
+'myfile.fits[events, 2]' - opens the file myfile.fits then moves to the
+extension which has EXTNAME = 'EVENTS' and EXTVER = 2
+
+'myfile.fits.gz[3]' - opens the compressed FITS file, then moves to the
+3rd extension following the primary array. Both gzip (.gz) and Unix
+compress (.Z) compression formats are supported.
+
+'-' - if the file name is a dash (minus sign) then CFITSIO will read the
+input file from the stdin file stream or write the output file to the
+stdout stream.  This allows FITS files to be piped in and out of
+programs.
+
+'ftp://legacy.gsfc.nasa.gov/rosat/data/pspc/images/test/rf700426_sky.fits'
+- FITS files in any ftp archive site on the internet may be directly
+opened (with read-only access).
+
+'http://legacy.gsfc.nasa.gov/docs/software/fitsio/test.fits' - any
+valid URL to a FITS file on the Web may be given.  The FITS file is
+opened with read-only access.
+
+'root://legacy.gsfc.nasa.gov/data/myfile.fits' - similar to ftp except
+that it provides write as well as read access to the files across the
+network. This uses the root protocol developed at CERN.
+
+'shmem://myfile.fits[EVENTS]' - opens the file in shared memory and
+moves to the EVENTS extension.  Using shared memory can provide
+faster I/O performance compared with accessing the same file on
+magnetic disk.
+
+'mem://'  -  creates a scratch output file in core memory.  The
+resulting 'file' will disappear as soon as the program exits, so this
+is mainly useful for testing purposes when one does not want a
+permanent copy of the output file.
+
+'myfile.fits[EVENTS][PHA > 5]' - creates and opens a temporary FITS
+files which is identical to 'myfile.fits' except that the EVENTS table
+will only contain the rows that have values of the PHA column greater
+than 5.
+
+'myfile.fits[EVENTS][(X-200)**2 + (Y-300)**2 < 25]' - creates and opens
+a temporary FITS file containing the rows in the EVENTS extension which have
+X and Y column coordinates which are within a circle with radius = 5
+centered on position (200, 300).  In general any arbitrary boolean
+expression, using a C-like syntax which may combine && (and) and || (or)
+operators, may be used to select rows from a table. 
+
+'myfile.fits[EVENTS][bin (X,Y)=1,2048,4]' - opens a temporary
+FITS primary array image which is created on the fly by binning (i.e,
+computing the 2-dimensional histogram) of the values in the
+X and Y columns of the EVENTS extension.  In this case the X and Y
+coordinates range from 1 to 2048 and the image pixel size is 4 units
+in both dimensions, so the resulting image is 512 x 512 pixels in size.
+
+'ftp://legacy.gsfc.nasa.gov/rosat/data/hri/sample_files/rh400612n00/
+       rh400612n00_bas.fits.Z[2][pha > 5 && pha < 14][bin (X,Y)=32]'
+- This is a working example which combines many of the features in the
+previous examples: it first reads the compressed file from the ftp site
+on the legacy machine, moves to the second extension following the
+primary array, selects the rows in the table that have a value of PHA
+greater than 5 and less than 14, and finally bins the remaining rows on
+the X and Y column coordinates, using a pixel size = 32 into a 2D image.
+
+Detailed Filename Syntax
+------------------------
+
+The full CFITSIO input FITS file name can have the form:
+
+   filetype://base_filename[HDU_location][row_filter][binning][columns]
+
+where each component is described below:
 
 filetype
 --------
 
-Defines which internal device driver is used by CFITSIO to read
-and/or write the file.  Currently supported types are
+The type of file determines which internal device driver is used by
+CFITSIO to read and/or write the file.  Currently supported types are
 
-	file://  - magnetic disk (default)
+	file://  - (default) magnetic disk 
+        shmem:// - shared memory.  File persists after program exits.
+        ftp://   - anonymous FTP protocol - readonly; also supports 
+                   ftp://username:password@hostname/... for accessing
+                   password-protected ftp sites. (not very secure)
+        http://  - HTTP protocol - readonly file access; does not 
+                   support username:password like the ftp driver.
+	root://  - CERN root protocol for writing over the network
 	mem://   - core memory.  File disappears when the program exits.
                    Sometimes useful for testing when you don't want
-                   an output file.
-        shmem:// - shared memory.  File persists after program exits.
-        ftp://   - FTP protocol - readonly
-        http://  - HTTP protocol - readonly
-	root://  - CERN root protocol for writing over the network
+                   a permanent output file.
 
-The double slashes '//' are optional in most cases.
 
-filename.ext
-------------
+The double slashes '//' are optional and may be omitted in most cases.
+If no filetype is specified it is assumed to be of type 'file://'
 
-Full path name to the file, including machine (for ftp, http,
-and root filetypes) and directory information. Examples
+base_filename
+-------------
+
+The base filename is the name of the file, optionally including the
+directory/subdirectory path and the machine identifier in the
+case of 'ftp', 'http', and 'root' filetypes.  Examples:
 
 	myfile.fits
-	/irafdir/data/myfile.fits
+	/data/myfile.fits
 	fits.gsfc.nasa.gov/ftp/sampledata/myfile.fits
 
-extension
----------
+The input file may be compressed with the gzip or Unix compress
+algorithms, in which case CFITSIO will uncompress the file on the fly
+into a temporary file (currently in memory).  Compressed files may only
+be opened with read-only permission.
 
-Optionally defines which HDU (Header-Data Unit) within the FITS file to
-open.  If not specified, the first HDU (the primary array) is opened.
-The HDU may be specified either by an integer number giving the
-position within the file (0 = the primary array), or by specifying the
-name of the extension (given by the EXTENSION keyword) followed
-optionally by the the version number (EXTVER keyword value) and
-extension type (XTENSION keyword value with values of IMAGE, TABLE, or
-BINTABLE).  Examples:
+One special case is where the filename = '-' (a dash or minus sign),
+which signifies that the input file is to be read from the stdin stream
+(or written to the stdout stream if a new output file is being
+created).  This allows FITS files to be piped between tasks in memory
+rather than having to create temporary intermediate FITS files on
+disk.  For example if task1 creates an output FITS file, and task2
+reads an input FITS file, the FITS file may be piped between the 2
+tasks by specifying 'task1 - | task2 -', where the vertical bar is the
+Unix piping symbol.  (This assumes that the 2 tasks read the name of
+the FITS file off of the command line).
 
-	[3]
-	[EVENTS]
-	[EVENTS, 2]
-	[EVENTS, 2, BINTABLE]
-	[EXPOSURE, 1, IMAGE]
+HDU_location
+------------
 
-rowfilter
----------
+The optional HDU location specifier defines which HDU (Header-Data
+Unit) within the FITS file to initially open.  If it is not specified
+then the first HDU (the primary array) is opened.  The HDU may be
+specified either by absolute position or by reference to the HDU name,
+version number, and extension type of the desired extension.  The
+absolute position is specified by enclosed the number in square
+brackets ('[0]' = the primary array, '[1]' = the first extension) or by
+preceded it with a plus sign ( '+1').  To specify the HDU by name, give
+the name of the desired HDU (given by the EXTNAME keyword) and
+optionally the extension version number (EXTVER keyword) and the
+extension type (XTENSION keyword: IMAGE, ASCII or TABLE, or BINTABLE),
+separated by commas and all enclosed in square brackets.  The extension
+name and type are not case sensitive, and the extension type may be
+abbreviated to the first letter (e.g., I = IMAGE extension or primary
+array, A or T = ASCII table extension, and B = binary table BINTABLE
+extension.) Examples:
 
-Specifies a boolean expression for filtering (selecting) rows from
-the input table.   A temporary new FITS file is created which
-contains only those rows in which the boolean expression evaluates
-to true.  See the ftools fselect help file for complete
-description of the allowed syntax.  Examples:
+	[3] - open the 3rd HDU following the primary array
+        +3  - same as above, but using the ftools-style notation  
+	[EVENTS] - open the extension that has EXTNAME = 'EVENTS'
+	[EVENTS, 2] - same as above, but also requires EXTVER = 2
+	[events,2,b] - same, but also requires XTENSION = 'BINTABLE'
 
-	[pha < 5 && pha < 60]
-        [circle(8000.,8000.,1000.,X,Y]  - selects rows which have
-           X and Y column coordinates within a 1000 radius circle
-           centered on (8000.,8000).
+row_filter
+----------
 
+The optional row filter is a boolean expression enclosed in square
+brackets for filtering or selecting rows from the input FITS table and
+is enclosed in square brackets.  A temporary new FITS file is then
+created which contains only those rows for which the boolean expression
+evaluates to true.  (The primary array and any other extensions in the
+input file are also copied to the temporary file).  The original FITS
+file is then closed and the new temporary file is opened and passed to
+the application program.
+
+The row filtering algorithms in CFITSIO are currently being enhanced to
+improve the speed and to support additional features, so the current
+implementation as described here should be considered provisional.
+
+Boolean  operators  can  be  used in the expression in either  their
+Fortran  or  C forms.   The  following   boolean  operators  can  be
+used in the expression:
+    
+    "equal"         .eq. .EQ. ==  "not equal"          .ne.  .NE.  !=
+    "less than"     .lt. .LT. <   "less than/equal"    .le.  .LE.  <= =<
+    "greater than"  .gt. .GT. >   "greater than/equal" .ge.  .GE.  >= =>
+    "or"            .or. .OR. ||  "and"                .and. .AND. &&
+    "negation"     .not. .NOT. !  "approx. equal(1e-7)"  ~
+    
+The expression may also include arithmetic operators and  functions.
+Trigonometric  functions  use  degrees,  not radians.  The following
+arithmetic operators and functions can be used in the expression:
+    
+    "addition"            +         "subtraction"         -
+    "multiplication"      *         "division"            /
+    "negation"            -         "exponentiation"      **   ^
+    "absolute value"      abs(x)    "cosine"              cos(x)
+    "sine"                sin(x)    "tangent"             tan(x)
+    "arc cosine"          arccos(x) "arc sine"            arcsin(x)
+    "arc tangent"         arctan(x) "arc tangent"         arctan2(x,y)
+    "exponential"         exp(x)    "square root"         sqrt(x)
+    "natural log"         log(x)    "common log"          log10(x)
+    "modulus"             i % j
+    
+There  are  three functions that are primarily for use with SAO region
+files.  They return   a  boolean  true  or  false  depending  on
+whether  a  two dimensional point is in the region or not:
+
+    "point in a circular region"
+           CIRCLE(xcntr,ycntr,radius,Xcolumn,Ycolumn)
+           circle(xcntr,ycntr,radius,Xcolumn,Ycolumn)
+    
+    "point in a rectangular region"
+           BOX(xcntr,ycntr,xhlf_wdth,yhlf_wdth,rotation,Xcolumn,Ycolumn)
+           box(xcntr,ycntr,xhlf_wdth,yhlf_wdth,rotation,Xcolumn,Ycolumn)
+    
+    "point in an elliptical region"
+         ELLIPSE(xcntr,ycntr,xhlf_wdth,yhlf_wdth,rotation,Xcolumn,Ycolumn)
+         ellipse(xcntr,ycntr,xhlf_wdth,yhlf_wdth,rotation,Xcolumn,Ycolumn)
+    
+    where 
+       (xcntr,ycntr) are the (x,y) position of the center of the region
+       (xhlf_wdth,yhlf_wdth) are the (x,y) half widths of the region
+       (radius) is half the diameter of the circle
+       (rotation) is the angle(degrees) that the region is rotated wrt (x,y)
+       (Xcolumn,Ycolumn) are the (x,y) column names in the FITS table
+       NOTE: all parameters that are not a column name must be specified
+       as reals, i.e., having decimal places.
+    
 binning
 -------
 
-If binning is specified then a temporary FITS primary array (a
-n-dimensional array) is created by binning/histogramming the specified
-columns of a FITS table extension.  The FITS primary array (rather than
-the input FITS table) is then opened by the application program.  The
-histogram may have from 1 to 4 dimensions (axes), depending on the
-number of columns that are specified.  The array pixels will have a
-32-bit integer data type by default, but a 16-bit integer pixels may be
-created by specifying 'bin16' instead of 'bin' in the binning
-specification.
+The optional binning specifier is enclosed in square brackets and can
+be distinguished from a row filter specification because it begins with
+the keyword 'bin'.  The binning causes a temporary FITS primary array
+(a n-dimensional array) to be created by histogramming the specified
+columns of a FITS table extension.  After the histogram is computed the
+input FITS file containing the table is then closed and the temporary
+FITS primary array is opened and passed to the application program.
+Thus, the application program never sees the original FITS table and
+only sees the image in the new temporary file which has no extensions.
+Obviously, the application program must be expecting to get a FITS
+image and not a FITS table in this case.
+
+The histogram image may have from 1 to 4 dimensions (axes), depending
+on the number of columns that are specified. 
+
+The image will have a 32-bit integer data type by default  without the
+weight option. If the weight option is present, the default data type
+is 32-bit floating point. Other data-type may be specified by appending
+'b'(byte), 'i'(for 16-bit integers), 'j'(for 32-bit integer), 'r'(for
+32-bit floating points), or 'd' (for 64-bit double precision floating
+point)  to the 'bin' keyword (e.g. '[binr (X,Y)]' creates a real
+floating point image).
 
 The general form of the binning specification is:
 
-    [bin  Xcol=min:max:binsize, Ycol= ..., Zcol=..., Tcol=...]
+  [bin[ijrd]  Xcol=min:max:binsize, Ycol= ..., Zcol=..., Tcol=...; weight]
 
 in which up to 4 columns, each corresponding to an axis of the image,
 may be specified.  Instead of specifying the column name, one may also
-specify the number of the column to bin, as in [bin #4=1:512].  The
-column names are case insensitive and the min, max, and bin size values
-may be integer or floating point numbers.  Spaces are allowed before
-and after the equals sign but not within the 'min:max:binsize string'.
-Each column specification is separated by a comma and/or spaces
-.
+specify the number of the column to be binned, as in [bin #4=1:512].
+The column names are case insensitive.  If the column name is not
+specified, then the 'preferred column' as specified by the CPREFn
+keyword will be used if the keyword exists (CPREFn is an AXAF Common
+Data Model keyword), otherwise column names 'X', 'Y', 'Z', and 'T' will
+be assumed for the 4 axes, respectively.
 
-Default values for any of the quantities will be substituted if not
-explicitly given in the binning expression.  If no column names are
-specified, then a 2-D image is assumed using the default X and Y
-columns.  The following examples illustrate various types of legal
-binning specifiers which use one or more default values:
+Each column name may be followed by an equals sign and then the lower and
+upper range of the histogram, and the size of the histogram bins,
+separated by colons.  Spaces are allowed before and after the equals
+sign but not within the 'min:max:binsize' string.  The min, max and
+binsize values may be integer or floating point numbers, or they may be
+the names of keywords in the header of the table.  If the latter, then
+the value of the keyword is substituted into the expression.
+
+Default values for the min, max and binsize quantities will be
+substituted if not explicitly given in the binning expression
+as shown in these examples:
 
     [bin xcol = :512:2]  - default minimum value
     [bin xcol = 1::2]    - default maximum value
@@ -104,73 +279,106 @@ binning specifiers which use one or more default values:
     [bin xcol = 1:]      - default maximum value and bin size
     [bin xcol = :512]    - default minimum value and bin size
     [bin xcol = 2]       - default minimum and maximum values
-    [bin xcol]           - defaults for minimum, maximum and bin size
+    [bin xcol]           - default minimum, maximum and bin size
     [bin 2]              - default 2-D image, bin size = 2 in both axes
     [bin]                - default 2-D image
+
+The default min, max, and binsize values may be specified in the FITS
+table with the TLMINn, TLMAXn, and TDBINn keywords, respectively.  If
+the keyword is not present then the default value will be the actual
+min and max value in the column for min and max, and 1 for the bin
+size.
 
 If all the columns/axes have the same binning specification, then all
 the columns may be listed within parentheses, followed by the (single)
 binning specification, as in:
 
     [bin (X,Y)=1:512:2]
-    [bin (X,Y,Z)=5]
+    [bin (X,Y) = 5]
 
-The default minimum and maximum values for each column are given the by
-TLMINn and TLMAXn keywords. The default bin size is 1.  If an image is
-to be created from the default columns, then CFITSIO first looks for
-the 'PREF1' and 'PREF2' keywords in the header of the FITS table for
-the names of the preferred X and Y columns.  If these keywords do not
-exist then CFITSIO uses the 'X' and 'Y' columns in the table if they
-exist, otherwise CFITSIO returns an error.
-
+The optional 'weight' token in the binning specifier gives a weighting
+factor that is used while constructing the histogram.  It must be
+separated from the list of columns by a semi-colon.  If it is not
+present then weight = 1 is assumed.  If weight is the name of a column
+in the table, then the value in that column, on a row by row basis, is
+added to the appropriate histogram bin (instead of just adding 1 for
+each histogrammed event).  Otherwise, if weight is the name of a
+keyword or is an integer or floating point number, then each pixel of
+the final histogram will be multiplied by this value.  In some cases,
+the column or keyword may give the reciprocal of the actual weight
+value that is needed.  In this case, precede the weight keyword or
+column name by a slash '/' to tell CFITSIO to use the reciprocal of the
+value when constructing the histogram.  One example where this option
+is useful is when constructing a 2D image from a list of events in a
+table.  If the table contains an EXPOSURE keyword which gives the total
+integration time of the observation in seconds, then by supplying
+'/EXPOSURE' for the weight factor, this will convert the image pixels
+from units of 'counts' into more meaningful units of 'counts/s'.
+ 
 Here are more examples of the binning specifier:
 
-    [bin16 detx, dety]                 - 2-D image with 16-bit pixels
-                                         of DETX and DETY columns.
+    [bini detx, dety]                  - 2-D image with 16-bit pixels
+                                         of DETX and DETY columns, using
+                                         the default values for the histogram
 
-    [bin16 (detx, dety) = 16]          - 2-D image with 16-bit pixels
+    [binr (detx, dety) = 16; /exposure] - 2-D image with 32-bit real pixels
                                          of DETX and DETY columns with a
-                                         bin size = 16 in both axes.
+                                         bin size = 16 in both axes. The
+                                         image pixels are divided by the
+                                         value of the EXPOSURE keyword.
 
-    [bin time=5000.,6000.,0.1]         - 1-D lightcurve, 10000 bins ranging 
+    [bin time=5000.,6000.,0.1] - 1-D lightcurve, 10000 bins ranging 
                                          from 5000. to 6000. in TIME with
-                                         0.1 unit size bins.
+                                         0.1 unit size bins.  
  
-    [bin pha, time=10000.,11000.,0.1]  - 2-D image using default binning
+    [bin pha, time=8000.,8100.,0.1]  - 2-D image using default binning
                                          of the PHA column for the X axis,
-                                         and 10000 bins in the range 
-                                         10000. to 11000. for the Y axis.
+                                         and 1000 bins in the range 
+                                         8000. to 8100. for the Y axis.
     
 columns
 -------
 
-If specified, contains a list of the columns in the input table which
-are to be copied into a temporary table which is then opened and
-passed to the application program.  The 'binning' and 'columns'
-specifiers are mutually exclusive. (Not yet implimented)
+The optional columns specifier is enclosed in square brackets and can
+be distinguished from a row filter specification because it begins with
+the keyword 'col'.  The 'binning' and 'columns' specifiers are mutually
+exclusive.  If specified, the columns specifier contains a list of the
+columns in the input table which are to be copied into a temporary
+table which is then opened and passed to the application program (along
+with any other extensions in the file).  The column names are not case
+sensitive. The columns may also be renamed in the process by specifying
+'newname=oldname'.  Examples:
 
-Examples:
-
-	[cols X,Y,PHA]
-
-
-Complete Examples:
-------------------
-
-myfile.fits  - simply opens this FITS file on disk in the current directory
-
-myfile.fits[GTI,2] - opens the file myfile.fits and moves to the GTI extension
-                     which also has EXTVER = 2.
-
-myfile.fits[EVENTS][pha < 200] - opens the EVENTS table extension and selects
-                                 only those rows that have PHA column values
-                                 less than 200.
-
-myfile.fits[EVENTS][pha < 200][bin (X,Y)=16] - as above, then creates a 2-D
-                                               image by binning the X and Y
-                                               columns with binsize = 16.
-
-ftp://heasarc.gsfc.nasa.gov/software/fitsio/c/testprog.std - reads the file
-                                                             at this ftp site
+    [cols X,Y, PHA] - copies only the X, Y and PHA columns
+    [cols Xsky = X, Ysky = Y, PHA] - copies only the X, Y, and PHA columns
+                                     and renames X to Xsky and Y to Ysky
 
 
+Multiple access to the same FITS file
+-------------------------------------
+
+One other important feature of CFITSIO related to filenames is that it
+supports simultaneous read and write access to multiple HDUs in the
+same FITS file.  Thus, one can open the same FITS file twice and move
+to 2 different HDUs in the file, and then read and write data or
+keywords to the 2 extensions just as if one were accessing 2 completely
+separate FITS files.   Since in general it is not possible to
+physically open the same file twice and then expect to be able to
+simultaneously (or in alternating succession) write to 2 different
+locations in the file, CFITSIO recognizes when the file to be opened
+(in the call to fits_open_file) has already been opened and instead of
+opening the file again, just logically links the new file to the old
+file.  (This only applies if the file is opened more than once within
+the same program, and does not prevent the same file from being
+simulateously opened by more than one program).  Then before CFITSIO
+reads or writes to either (logical) file, it makes sure that any
+modifications made to the other file have been completely flushed from
+the internal buffers to the file.  Thus, in principle, one could open a
+file twice, in one case pointing to the first extension and in the
+other pointing to the 2nd extension and then write data to both
+extensions, in any order, without danger of corrupting the file,  There
+may be some efficiency penalties in doing this however, since CFITSIO
+has to flush all the internal buffers related to one file before
+switching to the  other, so it would still be prudent to minimize the
+number of times one switches back and forth between doing I/O to different
+HDUs in the same file.

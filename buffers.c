@@ -551,6 +551,28 @@ int ffwhbf(fitsfile *fptr,        /* I - FITS file pointer             */
     return(*nbuff = (fptr->Fptr)->curbuf);
 }
 /*--------------------------------------------------------------------------*/
+int ffcurbuf(int nbuff,             /* i - buffer index number           */
+             FITSfile **Fptr)       /* I - FITS file pointer             */
+{
+/*
+  returns pointer to the corresponding FITSfile structure if the input
+  buffer is the current I/O buffer for that FITSfile.  If it is not the
+  current buffer, then it returns a null pointer.
+*/
+    if (bufptr[nbuff] != NULL)
+    {
+        if ((bufptr[nbuff])->curbuf == nbuff)
+        {
+             /* this is the current buffer for this file */
+             *Fptr = bufptr[nbuff];
+            return(0);
+        }
+    }
+
+    *Fptr = NULL;
+    return(0);
+}
+/*--------------------------------------------------------------------------*/
 int ffflus(fitsfile *fptr,   /* I - FITS file pointer                       */
            int *status)      /* IO - error status                           */
 /*

@@ -221,12 +221,13 @@ int ffpbytoff(fitsfile *fptr, long gsize, long ngroups, long offset,
            void *buffer, int *status);
 int ffldrc(fitsfile *fptr, long record, int err_mode, int *status);
 int ffwhbf(fitsfile *fptr, int *nbuff);
+int ffcurbuf(int nbuff, FITSfile **Fptr);
 int ffflsh(fitsfile *fptr, int clearbuf, int *status);
 int ffbfwt(int nbuff, int *status);
 int fits_get_num_files(void);
 
 int ffhist(fitsfile **fptr, int imagetype, int naxis, char colname[4][FLEN_VALUE],
-           float *minin, float *maxin, float *binsizein, int *status);
+           double *minin, double *maxin, double *binsizein, int *status);
 int ffwritehisto(long totaln, long offset, long firstn, long nvalues,
              int narrays, iteratorCol *imagepars, void *userPointer);
 int ffcalchist(long totalrows, long offset, long firstrow, long nrows,

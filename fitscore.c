@@ -22,7 +22,7 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.002;   /*  beta I/O driver release */
+      *version = 2.003;   /*  beta I/O driver release */
 
  /*   *version = 1.40;    6 Feb 1998 */
  /*   *version = 1.33;   16 Dec 1997 (internal release only) */
@@ -3213,6 +3213,55 @@ int ffgdes(fitsfile *fptr, /* I - FITS file pointer                         */
         *length = (long) descript[0];   /* 1st word is the length  */
         *heapaddr = (long) descript[1]; /* 2nd word is the address */
      }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgdess(fitsfile *fptr, /* I - FITS file pointer                         */
+           int colnum,     /* I - column number (1 = 1st column of table)   */
+           long firstrow,  /* I - first row  (1 = 1st row of table)         */
+           long nrows,     /* I - number or rows to read                    */
+           long *length,   /* O - number of elements in the row             */
+           long *heapaddr, /* O - heap pointer to the data                  */
+           int *status)    /* IO - error status                             */
+/*
+  get (read) a range of variable length vector descriptors from the table.
+*/
+{
+    long bytepos, rowsize, ii;
+    INT32BIT descript[2];
+    tcolumn *colptr;
+
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               /* rescan header */
+            return(*status);
+
+    colptr = (fptr->Fptr)->tableptr;  /* point to first column structure */
+    colptr += (colnum - 1);   /* offset to the correct column */
+
+    if (colptr->tdatatype >= 0)
+        *status = NOT_VARI_LEN;
+
+    else
+    {
+        rowsize = (fptr->Fptr)->rowlength;
+        bytepos = (fptr->Fptr)->datastart + (firstrow - 1) *
+                  rowsize + colptr->tbcol;
+
+        for (ii = 0; ii < nrows; ii++)
+        {
+            ffgi4b(fptr, bytepos, 2, 4, descript, status); /* read descriptor */
+
+            *length = (long) descript[0];   /* 1st word is the length  */
+            *heapaddr = (long) descript[1]; /* 2nd word is the address */
+
+            length++;
+            heapaddr++;
+            bytepos += rowsize;
+        }
+    }
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

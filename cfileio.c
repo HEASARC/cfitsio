@@ -251,16 +251,25 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
   Open an existing FITS file with either readonly or read/write access.
 */
 {
-    int driver, hdutyp, slen;
+    FITSfile *oldFptr;
+    int ii, driver, hdutyp, slen;
     long filesize;
     int extnum, extvers, handle, movetotype;
     char urltype[MAX_PREFIX_LEN], infile[FLEN_FILENAME], outfile[FLEN_FILENAME];
     char origurltype[MAX_PREFIX_LEN], extspec[FLEN_FILENAME];
     char extname[FLEN_VALUE], rowfilter[FLEN_FILENAME];
     char binspec[FLEN_FILENAME], colspec[FLEN_FILENAME];
+    char wtcol[FLEN_VALUE];
+    char minname[4][FLEN_VALUE], maxname[4][FLEN_VALUE];
+    char binname[4][FLEN_VALUE];
+    char oldurltype[MAX_PREFIX_LEN], oldinfile[FLEN_FILENAME];
+    char oldextspec[FLEN_FILENAME], oldoutfile[FLEN_FILENAME];
+    char oldrowfilter[FLEN_FILENAME];
+    char oldbinspec[FLEN_FILENAME], oldcolspec[FLEN_FILENAME];
+
     char *url;
-    float minin[4], maxin[4], binsizein[4];
-    int imagetype, haxis;
+    double minin[4], maxin[4], binsizein[4], weight;
+    int imagetype, haxis, recip;
     char colname[4][FLEN_VALUE];
     char errmsg[FLEN_ERRMSG];
     char *hdtype[3] = {"IMAGE", "TABLE", "BINTABLE"};
@@ -295,6 +304,73 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
         ffpmsg("could not parse the input filename: (ffopen)");
         ffpmsg(url);
         return(*status);
+    }
+
+    /* check if this same file is already open, and if so, attach to it */
+    for (ii = 0; ii < NIOBUF; ii++)   /* check every buffer */
+    {
+        ffcurbuf(ii, &oldFptr);  
+        if (oldFptr)            /* this is the current buffer of a file */
+        {
+          *status = fits_parse_input_url(oldFptr->filename, oldurltype, 
+                    oldinfile, oldoutfile, oldextspec, oldrowfilter, 
+                    oldbinspec, oldcolspec);
+
+          if (*status)
+          {
+            ffpmsg("could not parse the previously opened filename: (ffopen)");
+            ffpmsg(oldFptr->filename);
+            return(*status);
+          }
+
+          if (!strcmp(urltype, oldurltype) && !strcmp(infile, oldinfile) )
+          {
+              /* identical type of file and root file name */
+
+              if ( (!rowfilter[0] && !oldrowfilter[0] &&
+                    !binspec[0]   && !oldbinspec[0] &&
+                    !colspec[0]   && !oldcolspec[0])
+
+                  /* no filtering or binning specs for either file, so */
+                  /* this is a case where the same file is being reopened. */
+                  /* It doesn't matter if the extensions are different */
+
+                      ||   /* or */
+
+                  (!strcmp(rowfilter, oldrowfilter) &&
+                   !strcmp(binspec, oldbinspec)     &&
+                   !strcmp(colspec, oldcolspec)     &&
+                   !strcmp(extspec, oldextspec) ) )
+
+                  /* filtering specs are given and are identical, and */
+                  /* the same extension is specified */
+
+              {
+                  *fptr = (fitsfile *) calloc(1, sizeof(fitsfile));
+
+                  if (!(*fptr))
+                  {
+          ffpmsg("failed to allocate structure for following file: (ffopen)");
+                     ffpmsg(url);
+                     return(*status = MEMORY_ALLOCATION);
+                  }
+
+                  (*fptr)->Fptr = oldFptr; /* point to the structure */
+                  (*fptr)->HDUposition = 0;     /* set initial position */
+                (((*fptr)->Fptr)->open_count)++;  /* increment usage counter */
+
+                  if (binspec[0])  /* if binning specified, don't move */
+                      extspec[0] = '\0';
+
+                  /* all the filtering has already been applied, so ignore */
+                  rowfilter[0] = '\0';
+                  binspec[0] = '\0';
+                  colspec[0] = '\0';
+
+                  goto move2hdu;  
+              }
+            }
+        }
     }
 
     *status = urltype2driver(urltype, &driver);
@@ -434,6 +510,8 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     /* move to desired extension, if specified as part of the URL */
     /* ---------------------------------------------------------- */
 
+move2hdu:
+
     if (*extspec)
     {
        /* parse the extension specifier into individual parameters */
@@ -510,7 +588,9 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     {
        /* parse the binning specifier into individual parameters */
        *status = fits_parse_binspec(binspec, &imagetype, &haxis, colname, 
-                          minin, maxin, binsizein);
+                          minin, maxin, binsizein, 
+                          minname, maxname, binname,
+                          &weight, wtcol, &recip);
 
        /* Create the histogram in memory and open it as the current fptr.  */
        /* This will close the table that was used to create the histogram. */
@@ -1473,36 +1553,37 @@ int fits_parse_input_url(char *url,
             break;
     }
 
+    if (!rowfilter[0])
+       return(0);      /* nothing left to parse */
+
+    /* ------------------------------------------------------- */
+    /* convert filter to all lowercase to simplify comparisons */
+    /* ------------------------------------------------------- */
+
+    ptr1 = rowfilter;
+    while (*ptr1)
+       *(ptr1++) = tolower( *ptr1);
+
     /* ------------------------------------------------ */
     /* does the filter contain a binning specification? */
     /* ------------------------------------------------ */
 
     ptr1 = strstr(rowfilter, "[bin");      /* search for "[bin" */
     if (ptr1)
-      if ( *(ptr1+4) != ' ' && *(ptr1+4) != ']')
-        ptr1 = NULL;     /* bin string must be followed by space or ] */
-
-    if (!ptr1)
     {
-      ptr1 = strstr(rowfilter, "[bin16");  /* search for "[bin16" */
+      ptr2 = ptr1 + 4;     /* end of the '[bin' string */
+      if (*ptr2 == 'b' || *ptr2 == 'i' || *ptr2 == 'j' ||
+          *ptr2 == 'r' || *ptr2 == 'd')
+         ptr2++;  /* skip the datatype code letter */
 
-      if (ptr1)
-        if ( *(ptr1+6) != ' ' && *(ptr1+6) != ']')
-          ptr1 = NULL;     /* bin string must be followed by space or ] */
-    }
 
-    if (!ptr1)
-    {
-      ptr1 = strstr(rowfilter, "[bin32");  /* search for "[bin32" */
-
-      if (ptr1)
-        if ( *(ptr1+6) != ' ' && *(ptr1+6) != ']')
-          ptr1 = NULL;     /* bin string must be followed by space or ] */
+      if ( *ptr2 != ' ' && *ptr2 != ']')
+        ptr1 = NULL;   /* bin string must be followed by space or ] */
     }
 
     if (ptr1)
     {
-        /* found the string 'bin ', 'bin16 ', or 'bin32 ' */
+        /* found the binning string */
         strcpy(binspec, ptr1 + 1);       
         ptr2 = strchr(binspec, ']');
 
@@ -1791,9 +1872,15 @@ int fits_parse_binspec(char *binspec,   /* I - binning specification */
                    int *imagetype,      /* O - image type, TINT or TSHORT */
                    int *haxis,          /* O - no. of axes in the histogram */
                    char colname[4][FLEN_VALUE],  /* column name for axis */
-                   float *minin,        /* minimum value for each axis */
-                   float *maxin,        /* maximum value for each axis */
-                   float *binsizein)    /* size of bins on each axis */
+                   double *minin,        /* minimum value for each axis */
+                   double *maxin,        /* maximum value for each axis */
+                   double *binsizein,    /* size of bins on each axis */
+                   char minname[4][FLEN_VALUE],  /* keyword name for min */
+                   char maxname[4][FLEN_VALUE],  /* keyword name for max */
+                   char binname[4][FLEN_VALUE],  /* keyword name for binsize */
+                   double *weight,       /* weighting factor          */
+                   char *wtname,        /* keyword or column name for weight */
+                   int *recip)          /* the reciprocal of the weight? */
 {
 /*
    Parse the input binning specification string, returning the binning
@@ -1809,36 +1896,70 @@ int fits_parse_binspec(char *binspec,   /* I - binning specification */
 
    most other reasonable combinations are supported.        
 */
-    int ii, slen, status;
-    char *ptr, tmpname[8];
-    float tmpmin, tmpmax, tmpbinsize;
+    int ii, slen, status, defaulttype;
+    char *ptr, tmpname[30];
+    double  dummy;
 
     /* set the default values */
     *haxis = 2;
     *imagetype = TINT;
+    defaulttype = 1;
+    *weight = 1.;
+    *recip = 0;
+    *wtname = '\0';
 
+    /* set default values */
     for (ii = 0; ii < 4; ii++)
     {
         *colname[ii] = '\0';
-        minin[ii] = FLOATNULLVALUE;  /* undefined values */
-        maxin[ii] = FLOATNULLVALUE;
-        binsizein[ii] = FLOATNULLVALUE;
+        *minname[ii] = '\0';
+        *maxname[ii] = '\0';
+        *binname[ii] = '\0';
+        minin[ii] = DOUBLENULLVALUE;  /* undefined values */
+        maxin[ii] = DOUBLENULLVALUE;
+        binsizein[ii] = DOUBLENULLVALUE;
     }
 
     ptr = binspec + 3;  /* skip over 'bin' */
 
-    if (*ptr == '1' && *(ptr + 1) == '6')  /* bin16 */
+    if (*ptr == 'i' )  /* bini */
     {
         *imagetype = TSHORT;
-        ptr += 2;
+        defaulttype = 0;
+        ptr++;
     }
-    else if (*ptr == '3' && *(ptr + 1) == '2')  /* bin32 */
+    else if (*ptr == 'j' )  /* binj; same as default */
     {
-        ptr += 2;
+        defaulttype = 0;
+        ptr ++;
+    }
+    else if (*ptr == 'r' )  /* binr */
+    {
+        *imagetype = TFLOAT;
+        defaulttype = 0;
+        ptr ++;
+    }
+    else if (*ptr == 'd' )  /* bind */
+    {
+        *imagetype = TDOUBLE;
+        defaulttype = 0;
+        ptr ++;
+    }
+    else if (*ptr == 'b' )  /* binb */
+    {
+        *imagetype = TBYTE;
+        defaulttype = 0;
+        ptr ++;
     }
 
-    if (*ptr == '\0')  /* binspec = 'bin', 'bin16', or 'bin32' */
+    if (*ptr == '\0')  /* use all defaults for other parameters */
         return(0);
+    else if (*ptr != ' ')  /* must be at least one blank */
+    {
+        ffpmsg("binning specification syntax error:");
+        ffpmsg(binspec);
+        return(URL_PARSE_ERROR);
+    }
 
     while (*ptr == ' ')  /* skip over blanks */
            ptr++;
@@ -1886,7 +2007,7 @@ int fits_parse_binspec(char *binspec,   /* I - binning specification */
         if (*ptr == '\0')
             return(0);  /* parsed the entire string */
 
-        else if (*ptr != '=')  /* must be an equals sign */
+        else if (*ptr != '=')  /* must be an equals sign now*/
         {
             ffpmsg("illegal binning specification in URL:");
             ffpmsg(" an equals sign '=' must follow the column names");
@@ -1898,17 +2019,11 @@ int fits_parse_binspec(char *binspec,   /* I - binning specification */
         while (*ptr == ' ')  /* skip over blanks */
             ptr++;
 
-        if (!isdigit(*ptr) && *ptr != '.' && *ptr != '-')
-        {
-            /* expected to find a number next */
-            ffpmsg("illegal binning specification in URL:");
-            ffpmsg(binspec);
-            return(URL_PARSE_ERROR);
-        }
 
         /* get the single range specification for all the columns */
-        status = fits_parse_binrange(&ptr, tmpname, &tmpmin,
-                                     &tmpmax, &tmpbinsize);
+        status = fits_parse_binrange(&ptr, tmpname, minin,
+                                     maxin, binsizein, minname[0],
+                                     maxname[0], binname[0]);
         if (status)
         {
             ffpmsg("illegal binning specification in URL:");
@@ -1916,15 +2031,21 @@ int fits_parse_binspec(char *binspec,   /* I - binning specification */
             return(URL_PARSE_ERROR);
         }
 
-        for (ii = 0; ii < *haxis; ii++)
+        for (ii = 1; ii < *haxis; ii++)
         {
-            minin[ii] = tmpmin;
-            maxin[ii] = tmpmax;
-            binsizein[ii] = tmpbinsize;
+            minin[ii] = minin[0];
+            maxin[ii] = maxin[0];
+            binsizein[ii] = binsizein[0];
+            strcpy(minname[ii], minname[0]);
+            strcpy(maxname[ii], maxname[0]);
+            strcpy(binname[ii], binname[0]);
         }
 
         while (*ptr == ' ')  /* skip over blanks */
             ptr++;
+
+        if (*ptr == ';')
+            goto getweight;   /* a weighting factor is specified */
 
         if (*ptr != '\0')  /* must have reached end of string */
         {
@@ -1944,7 +2065,9 @@ int fits_parse_binspec(char *binspec,   /* I - binning specification */
     for (ii = 0; ii < 4; ii++) /* allow up to 4 histogram dimensions */
     {
         status = fits_parse_binrange(&ptr, colname[ii], &minin[ii],
-                                     &maxin[ii], &binsizein[ii]);
+                                     &maxin[ii], &binsizein[ii], minname[ii],
+                                     maxname[ii], binname[ii]);
+
         if (status)
         {
             ffpmsg("illegal binning specification in URL:");
@@ -1952,7 +2075,7 @@ int fits_parse_binspec(char *binspec,   /* I - binning specification */
             return(URL_PARSE_ERROR);
         }
 
-        if (*ptr == '\0')
+        if (*ptr == '\0' || *ptr == ';')
             break;        /* reached the end of the string */
 
         if (*ptr == ' ')
@@ -1960,7 +2083,7 @@ int fits_parse_binspec(char *binspec,   /* I - binning specification */
             while (*ptr == ' ')  /* skip over blanks */
                 ptr++;
 
-            if (*ptr == '\0')
+            if (*ptr == '\0' || *ptr == ';')
                 break;        /* reached the end of the string */
 
             if (*ptr == ',')
@@ -1998,154 +2121,182 @@ int fits_parse_binspec(char *binspec,   /* I - binning specification */
         binsizein[1] = binsizein[0];
     }
 
+getweight:
+    if (*ptr == ';')  /* looks like a weighting factor is given */
+    {
+        ptr++;
+       
+        while (*ptr == ' ')  /* skip over blanks */
+            ptr++;
+
+        recip = 0;
+        if (*ptr == '/')
+        {
+            *recip = 1;  /* the reciprocal of the weight is entered */
+            ptr++;
+
+            while (*ptr == ' ')  /* skip over blanks */
+                ptr++;
+        }
+
+        /* parse the weight as though it were a binrange. */
+        /* either a column name or a numerical value will be returned */
+
+        status = fits_parse_binrange(&ptr, wtname, &dummy,
+                                     &dummy, weight, tmpname,
+                                     tmpname, tmpname);
+
+        if (status)
+        {
+            ffpmsg("illegal binning specification in URL:");
+            ffpmsg(binspec);
+            return(URL_PARSE_ERROR);
+        }
+    }
+
+    while (*ptr == ' ')  /* skip over blanks */
+         ptr++;
+
+    if (*ptr != '\0')  /* should have reached the end of string */
+    {
+        ffpmsg("illegal binning specification in URL:");
+        ffpmsg(binspec);
+        return(URL_PARSE_ERROR);
+    }
 
     return(0);
 }
 /*--------------------------------------------------------------------------*/
+int fits_get_token(char **ptr, 
+                   char *delimiter,
+                   char *token,
+                   int *isanumber)   /* O - is this token a number? */
+/*
+   parse off the next token, delimited by a character in 'delimiter',
+   from the input ptr string;  increment *ptr to the end of the token.
+   Returns 
+*/
+{
+    int slen, ii;
+
+    *token = '\0';
+
+    while (**ptr == ' ')  /* skip over leading blanks */
+        (*ptr)++;
+
+    slen = strcspn(*ptr, delimiter);  /* length of next token */
+    if (slen)
+    {
+        strncat(token, *ptr, slen);       /* copy token */
+        (*ptr) += slen;                   /* skip over the token */
+
+        *isanumber = 1;
+ 
+        for (ii = 0; ii < slen; ii++)
+        {
+            if ( !isdigit(token[ii]) && token[ii] != '.' && token[ii] != '-')
+            {
+                *isanumber = 0;
+                break;
+            }
+        }
+    }
+
+    return(slen);
+}
+/*--------------------------------------------------------------------------*/
 int fits_parse_binrange(char **ptr, 
                    char *colname, 
-                   float *minin,
-                   float *maxin, 
-                   float *binsizein)
+                   double *minin,
+                   double *maxin, 
+                   double *binsizein,
+                   char *minname,
+                   char *maxname,
+                   char *binname)
 /*
    Parse the input binning range specification string, returning 
    the column name, histogram min and max values, and bin size.
 */
 {
-    int slen;
+    int slen, isanumber;
+    char token[FLEN_VALUE];
 
-    while (**ptr == ' ')  /* skip over leading blanks */
-        (*ptr)++;
+    slen = fits_get_token(ptr, " ,=:;", token, &isanumber); /* get 1st token */
 
-    if (**ptr == '\0' || **ptr == ',')   /* a null string */
-        return(0);
+    if (slen == 0 && (**ptr == '\0' || **ptr == ',' || **ptr == ';') )
+        return(0);   /* a null range string */
 
-    if (!isdigit(**ptr) && **ptr != '.' && **ptr != '-')
+    if (!isanumber && **ptr != ':')
     {
         /* this looks like the column name */
 
-        if (**ptr == '#' && isdigit(**(ptr + 1)) )
+        if (token[0] == '#' && isdigit(token[1]) )
         {
-            (*ptr)++;   /* omit the leading '#' in the column number */
-        }
-
-        slen = strcspn(*ptr, " ,=");  /* length of column name */
-        if (slen == 0)
-        {
-            return(URL_PARSE_ERROR);
-        }
-        strncat(colname, *ptr, slen); /* copy column name */
-
-        *ptr += slen;
-
-        while (**ptr == ' ')  /* skip over blanks */
-            (*ptr)++;
-
-        if (**ptr == '=')
-        {
-            (*ptr)++;
-            while (**ptr == ' ')  /* skip over blanks after equals sign */
-               (*ptr)++;
+            /* omit the leading '#' in the column number */
+            strcpy(colname, token+1);
         }
         else
-        {
-            return(0);  /* reached the end of the string or next column */
-        }
+            strcpy(colname, token);
+
+        if (**ptr != '=')
+            return(0);  /* reached the end */
+
+        (*ptr)++;   /* skip over the = sign */
+
+        slen = fits_get_token(ptr, " ,:;", token, &isanumber); /* get token */
     }
 
-    /* now look for a number or a colon */
-    if (isdigit(**ptr) || **ptr == '.' || **ptr == '-')
+    if (**ptr != ':')
     {
-      /* this is either min value or binning factor for the column */
-      /* assume it is the min value, for now */
-      *minin = (float) strtod(*ptr,  ptr);
+        /* this is the first token, and since it is not followed by */
+        /* a ':' this must be the binsize token */
+        if (!isanumber)
+            strcpy(binname, token);
+        else
+            *binsizein =  strtod(token, NULL);
 
-      if (**ptr == ':')  /* separates min and max values */
-      {
-        (*ptr)++;
-
-        if (**ptr == ':')  /* separates max and binsize value */
+        return(0);  /* reached the end */
+    }
+    else
+    {
+        /* the token contains the min value */
+        if (slen)
         {
-          (*ptr)++;
-          if (isdigit(**ptr) || **ptr == '.' || **ptr == '-')  /* binsize */
-          {
-            /* this is the binning factor for the column */
-            *binsizein = (float) strtod(*ptr,  ptr);
-            return(0);      /* case  "min::binsize"  */
-          }
-          else
-            return(URL_PARSE_ERROR); /* case "min::junk"  */
-        }
-        else if (isdigit(**ptr) || **ptr == '.' || **ptr == '-') /* max val */
-        {
-          *maxin = (float) strtod(*ptr, ptr);
-
-          if (**ptr == ':')  /* separates max and binsize */
-          {
-            (*ptr)++;
-
-            if (isdigit(**ptr) || **ptr == '.' || **ptr == '-')  /* binsize */
-            {
-              /* this is the binning factor for the column */
-              *binsizein = (float) strtod(*ptr,  ptr);
-              return(0);      /* case  "min:max:binsize"  */
-            }
+            if (!isanumber)
+                strcpy(minname, token);
             else
-              return(URL_PARSE_ERROR); /* case "min:max:junk"  */
-          }
-          else
-            return(0);  /* case  "min:max"   */
+                *minin = strtod(token, NULL);
         }
-        else
-          return(0);  /* case "min:"  */
-      }
-      else
-      {
-        /* only a single number given, so must be binsize not min */
-        *binsizein = *minin;
-        *minin = FLOATNULLVALUE;
-        return(0);        /* case "binsize"   */
-      }
     }
-    else if (**ptr == ':')  /* separates min and max values */
+
+    (*ptr)++;  /* skip the colon between the min and max values */
+    slen = fits_get_token(ptr, " ,:;", token, &isanumber); /* get token */
+
+    /* the token contains the max value */
+    if (slen)
     {
-      (*ptr)++;
-
-      if (**ptr == ':')  /* separates max and binsize value */
-      {
-        (*ptr)++;
-        if (isdigit(**ptr) || **ptr == '.' || **ptr == '-')  /* binsize */
-        {
-          /* this is the binning factor for the column */
-          *binsizein = (float) strtod(*ptr,  ptr);
-          return(0);      /* case  "::binsize"  */
-        }
+        if (!isanumber)
+            strcpy(maxname, token);
         else
-          return(URL_PARSE_ERROR); /* case "::junk"  */
-      }
-      else if (isdigit(**ptr) || **ptr == '.' || **ptr == '-') /* max value */
-      {
-        *maxin = (float) strtod(*ptr, ptr);
-
-        if (**ptr == ':')  /* separates max and binsize */
-        {
-          (*ptr)++;
-
-          if (isdigit(**ptr) || **ptr == '.' || **ptr == '-')  /* binsize */
-          {
-            /* this is the binning factor for the column */
-            *binsizein = (float) strtod(*ptr,  ptr);
-            return(0);      /* case  ":max:binsize"  */
-          }
-          else
-            return(URL_PARSE_ERROR); /* case ":max:junk"  */
-        }
-        else
-          return(0);  /* case  ":max"  */
-      }
+            *maxin = strtod(token, NULL);
     }
 
-    return(URL_PARSE_ERROR);  /* case  "junk" */
+    if (**ptr != ':')
+        return(0);  /* reached the end; no binsize token */
+
+    (*ptr)++;  /* skip the colon between the min and max values */
+    slen = fits_get_token(ptr, " ,:;", token, &isanumber); /* get token */
+
+    /* the token contains the binsize value */
+    if (slen)
+    {
+        if (!isanumber)
+            strcpy(binname, token);
+        else
+            *binsizein = strtod(token, NULL);
+    }
+
+    return(0);
 }
 /*--------------------------------------------------------------------------*/
 int urltype2driver(char *urltype, int *driver)
