@@ -853,6 +853,7 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
     ((*fptr)->Fptr)->writemode = 1;              /* read-write mode        */
     ((*fptr)->Fptr)->datastart = DATA_UNDEFINED; /* unknown start of data  */
     ((*fptr)->Fptr)->curbuf = -1;         /* undefined current IO buffer   */
+    ((*fptr)->Fptr)->open_count = 1;      /* structure is currently used once */
     ((*fptr)->Fptr)->validcode = VALIDSTRUC; /* flag denoting valid structure */
 
     ffldrc(*fptr, 0, IGNORE_EOF, status);     /* initialize first record */
