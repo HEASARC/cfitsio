@@ -85,6 +85,11 @@
 /*  Craig B Markwardt Jun 2004  Add MEDIAN() function                   */
 /*  Craig B Markwardt Jun 2004  Add SUM(), and MIN/MAX() for bit arrays */
 /*  Craig B Markwardt Jun 2004  Allow subscripting of nX bit arrays     */
+/*  Craig B Markwardt Jun 2004  Implement statistical functions         */
+/*                              NVALID(), AVERAGE(), and STDDEV()       */
+/*                              for integer and floating point vectors  */
+/*  Craig B Markwardt Jun 2004  Use NULL values for range errors instead*/
+/*                              of throwing a parse error               */
 /*                                                                      */
 /************************************************************************/
 
@@ -201,7 +206,7 @@ static void  fferror(char *msg);
 #endif
 
 
-#line 169 "eval.y"
+#line 174 "eval.y"
 #ifndef FFSTYPE
 typedef union {
     int    Node;        /* Index of Node */
@@ -345,19 +350,19 @@ static const short ffrhs[] =
 /* FFRLINE[FFN] -- source line where rule number FFN was defined. */
 static const short ffrline[] =
 {
-       0,   218,   219,   222,   223,   229,   235,   241,   247,   250,
-     252,   265,   267,   280,   291,   305,   309,   313,   318,   320,
-     329,   332,   335,   338,   340,   342,   344,   346,   348,   351,
-     355,   357,   359,   361,   370,   372,   374,   377,   380,   383,
-     386,   389,   392,   394,   396,   398,   402,   406,   425,   444,
-     463,   473,   484,   493,   513,   572,   624,   626,   628,   630,
-     632,   634,   636,   638,   640,   644,   646,   648,   657,   660,
-     663,   666,   669,   672,   675,   678,   681,   684,   687,   690,
-     693,   696,   699,   702,   705,   708,   711,   714,   716,   718,
-     720,   723,   730,   747,   760,   773,   784,   800,   818,   839,
-     866,   870,   874,   877,   881,   885,   888,   892,   894,   896,
-     898,   900,   902,   904,   908,   911,   913,   922,   924,   926,
-     929,   941
+       0,   223,   224,   227,   228,   234,   240,   246,   252,   255,
+     257,   270,   272,   285,   296,   310,   314,   318,   323,   325,
+     334,   337,   340,   343,   345,   347,   349,   351,   353,   356,
+     360,   362,   364,   366,   375,   377,   379,   382,   385,   388,
+     391,   394,   397,   399,   401,   403,   407,   411,   430,   449,
+     468,   478,   489,   501,   523,   591,   643,   645,   647,   649,
+     651,   653,   655,   657,   659,   663,   665,   667,   676,   679,
+     682,   685,   688,   691,   694,   697,   700,   703,   706,   709,
+     712,   715,   718,   721,   724,   727,   730,   733,   735,   737,
+     739,   742,   749,   766,   779,   792,   803,   819,   837,   858,
+     885,   889,   893,   896,   900,   904,   907,   911,   913,   915,
+     917,   919,   921,   923,   927,   930,   932,   941,   943,   945,
+     948,   960
 };
 #endif
 
@@ -1490,11 +1495,11 @@ ffreduce:
   switch (ffn) {
 
 case 3:
-#line 222 "eval.y"
+#line 227 "eval.y"
 {}
     break;
 case 4:
-#line 224 "eval.y"
+#line 229 "eval.y"
 { if( ffvsp[-1].Node<0 ) {
 		     fferror("Couldn't build node structure: out of memory?");
 		     FFERROR;  }
@@ -1502,7 +1507,7 @@ case 4:
 		}
     break;
 case 5:
-#line 230 "eval.y"
+#line 235 "eval.y"
 { if( ffvsp[-1].Node<0 ) {
 		     fferror("Couldn't build node structure: out of memory?");
 		     FFERROR;  }
@@ -1510,7 +1515,7 @@ case 5:
 		}
     break;
 case 6:
-#line 236 "eval.y"
+#line 241 "eval.y"
 { if( ffvsp[-1].Node<0 ) {
 		     fferror("Couldn't build node structure: out of memory?");
 		     FFERROR;  } 
@@ -1518,7 +1523,7 @@ case 6:
 		}
     break;
 case 7:
-#line 242 "eval.y"
+#line 247 "eval.y"
 { if( ffvsp[-1].Node<0 ) {
 		     fferror("Couldn't build node structure: out of memory?");
 		     FFERROR;  }
@@ -1526,15 +1531,15 @@ case 7:
 		}
     break;
 case 8:
-#line 247 "eval.y"
+#line 252 "eval.y"
 {  fferrok;  }
     break;
 case 9:
-#line 251 "eval.y"
+#line 256 "eval.y"
 { ffval.Node = New_Vector( ffvsp[0].Node ); TEST(ffval.Node); }
     break;
 case 10:
-#line 253 "eval.y"
+#line 258 "eval.y"
 {
                   if( gParse.Nodes[ffvsp[-2].Node].nSubNodes >= MAXSUBS ) {
 		     ffvsp[-2].Node = Close_Vec( ffvsp[-2].Node ); TEST(ffvsp[-2].Node);
@@ -1547,11 +1552,11 @@ case 10:
                 }
     break;
 case 11:
-#line 266 "eval.y"
+#line 271 "eval.y"
 { ffval.Node = New_Vector( ffvsp[0].Node ); TEST(ffval.Node); }
     break;
 case 12:
-#line 268 "eval.y"
+#line 273 "eval.y"
 {
                   if( TYPE(ffvsp[-2].Node) < TYPE(ffvsp[0].Node) )
                      TYPE(ffvsp[-2].Node) = TYPE(ffvsp[0].Node);
@@ -1566,7 +1571,7 @@ case 12:
                 }
     break;
 case 13:
-#line 281 "eval.y"
+#line 286 "eval.y"
 {
                   if( gParse.Nodes[ffvsp[-2].Node].nSubNodes >= MAXSUBS ) {
 		     ffvsp[-2].Node = Close_Vec( ffvsp[-2].Node ); TEST(ffvsp[-2].Node);
@@ -1579,7 +1584,7 @@ case 13:
                 }
     break;
 case 14:
-#line 292 "eval.y"
+#line 297 "eval.y"
 {
                   TYPE(ffvsp[-2].Node) = TYPE(ffvsp[0].Node);
                   if( gParse.Nodes[ffvsp[-2].Node].nSubNodes >= MAXSUBS ) {
@@ -1593,26 +1598,26 @@ case 14:
                 }
     break;
 case 15:
-#line 306 "eval.y"
+#line 311 "eval.y"
 { ffval.Node = Close_Vec( ffvsp[-1].Node ); TEST(ffval.Node); }
     break;
 case 16:
-#line 310 "eval.y"
+#line 315 "eval.y"
 { ffval.Node = Close_Vec( ffvsp[-1].Node ); TEST(ffval.Node); }
     break;
 case 17:
-#line 314 "eval.y"
+#line 319 "eval.y"
 {
                   ffval.Node = New_Const( BITSTR, ffvsp[0].str, strlen(ffvsp[0].str)+1 ); TEST(ffval.Node);
 		  SIZE(ffval.Node) = strlen(ffvsp[0].str);
 		}
     break;
 case 18:
-#line 319 "eval.y"
+#line 324 "eval.y"
 { ffval.Node = New_Column( ffvsp[0].lng ); TEST(ffval.Node); }
     break;
 case 19:
-#line 321 "eval.y"
+#line 326 "eval.y"
 {
                   if( TYPE(ffvsp[-1].Node) != LONG
 		      || gParse.Nodes[ffvsp[-1].Node].operation != CONST_OP ) {
@@ -1623,62 +1628,62 @@ case 19:
                 }
     break;
 case 20:
-#line 330 "eval.y"
+#line 335 "eval.y"
 { ffval.Node = New_BinOp( BITSTR, ffvsp[-2].Node, '&', ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = ( SIZE(ffvsp[-2].Node)>SIZE(ffvsp[0].Node) ? SIZE(ffvsp[-2].Node) : SIZE(ffvsp[0].Node) );  }
     break;
 case 21:
-#line 333 "eval.y"
+#line 338 "eval.y"
 { ffval.Node = New_BinOp( BITSTR, ffvsp[-2].Node, '|', ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = ( SIZE(ffvsp[-2].Node)>SIZE(ffvsp[0].Node) ? SIZE(ffvsp[-2].Node) : SIZE(ffvsp[0].Node) );  }
     break;
 case 22:
-#line 336 "eval.y"
+#line 341 "eval.y"
 { ffval.Node = New_BinOp( BITSTR, ffvsp[-2].Node, '+', ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = SIZE(ffvsp[-2].Node) + SIZE(ffvsp[0].Node);                          }
     break;
 case 23:
-#line 339 "eval.y"
+#line 344 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-3].Node, 1, ffvsp[-1].Node,  0,  0,  0,   0 ); TEST(ffval.Node); }
     break;
 case 24:
-#line 341 "eval.y"
+#line 346 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-5].Node, 2, ffvsp[-3].Node, ffvsp[-1].Node,  0,  0,   0 ); TEST(ffval.Node); }
     break;
 case 25:
-#line 343 "eval.y"
+#line 348 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-7].Node, 3, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,  0,   0 ); TEST(ffval.Node); }
     break;
 case 26:
-#line 345 "eval.y"
+#line 350 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-9].Node, 4, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,   0 ); TEST(ffval.Node); }
     break;
 case 27:
-#line 347 "eval.y"
+#line 352 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-11].Node, 5, ffvsp[-9].Node, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node ); TEST(ffval.Node); }
     break;
 case 28:
-#line 349 "eval.y"
+#line 354 "eval.y"
 { ffval.Node = New_Unary( BITSTR, NOT, ffvsp[0].Node ); TEST(ffval.Node);     }
     break;
 case 29:
-#line 352 "eval.y"
+#line 357 "eval.y"
 { ffval.Node = ffvsp[-1].Node; }
     break;
 case 30:
-#line 356 "eval.y"
+#line 361 "eval.y"
 { ffval.Node = New_Const( LONG,   &(ffvsp[0].lng), sizeof(long)   ); TEST(ffval.Node); }
     break;
 case 31:
-#line 358 "eval.y"
+#line 363 "eval.y"
 { ffval.Node = New_Const( DOUBLE, &(ffvsp[0].dbl), sizeof(double) ); TEST(ffval.Node); }
     break;
 case 32:
-#line 360 "eval.y"
+#line 365 "eval.y"
 { ffval.Node = New_Column( ffvsp[0].lng ); TEST(ffval.Node); }
     break;
 case 33:
-#line 362 "eval.y"
+#line 367 "eval.y"
 {
                   if( TYPE(ffvsp[-1].Node) != LONG
 		      || gParse.Nodes[ffvsp[-1].Node].operation != CONST_OP ) {
@@ -1689,69 +1694,69 @@ case 33:
                 }
     break;
 case 34:
-#line 371 "eval.y"
+#line 376 "eval.y"
 { ffval.Node = New_Func( LONG, row_fct,  0, 0, 0, 0, 0, 0, 0, 0 ); }
     break;
 case 35:
-#line 373 "eval.y"
+#line 378 "eval.y"
 { ffval.Node = New_Func( LONG, null_fct, 0, 0, 0, 0, 0, 0, 0, 0 ); }
     break;
 case 36:
-#line 375 "eval.y"
+#line 380 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '%', ffvsp[0].Node );
 		  TEST(ffval.Node);                                                }
     break;
 case 37:
-#line 378 "eval.y"
+#line 383 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '+', ffvsp[0].Node );
 		  TEST(ffval.Node);                                                }
     break;
 case 38:
-#line 381 "eval.y"
+#line 386 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '-', ffvsp[0].Node ); 
 		  TEST(ffval.Node);                                                }
     break;
 case 39:
-#line 384 "eval.y"
+#line 389 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '*', ffvsp[0].Node ); 
 		  TEST(ffval.Node);                                                }
     break;
 case 40:
-#line 387 "eval.y"
+#line 392 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '/', ffvsp[0].Node ); 
 		  TEST(ffval.Node);                                                }
     break;
 case 41:
-#line 390 "eval.y"
+#line 395 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, POWER, ffvsp[0].Node );
 		  TEST(ffval.Node);                                                }
     break;
 case 42:
-#line 393 "eval.y"
+#line 398 "eval.y"
 { ffval.Node = ffvsp[0].Node; }
     break;
 case 43:
-#line 395 "eval.y"
+#line 400 "eval.y"
 { ffval.Node = New_Unary( TYPE(ffvsp[0].Node), UMINUS, ffvsp[0].Node ); TEST(ffval.Node); }
     break;
 case 44:
-#line 397 "eval.y"
+#line 402 "eval.y"
 { ffval.Node = ffvsp[-1].Node; }
     break;
 case 45:
-#line 399 "eval.y"
+#line 404 "eval.y"
 { ffvsp[0].Node = New_Unary( TYPE(ffvsp[-2].Node), 0, ffvsp[0].Node );
                   ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '*', ffvsp[0].Node ); 
 		  TEST(ffval.Node);                                }
     break;
 case 46:
-#line 403 "eval.y"
+#line 408 "eval.y"
 { ffvsp[-2].Node = New_Unary( TYPE(ffvsp[0].Node), 0, ffvsp[-2].Node );
                   ffval.Node = New_BinOp( TYPE(ffvsp[0].Node), ffvsp[-2].Node, '*', ffvsp[0].Node );
                   TEST(ffval.Node);                                }
     break;
 case 47:
-#line 407 "eval.y"
+#line 412 "eval.y"
 {
                   PROMOTE(ffvsp[-2].Node,ffvsp[0].Node);
                   if( ! Test_Dims(ffvsp[-2].Node,ffvsp[0].Node) ) {
@@ -1772,7 +1777,7 @@ case 47:
                 }
     break;
 case 48:
-#line 426 "eval.y"
+#line 431 "eval.y"
 {
                   PROMOTE(ffvsp[-2].Node,ffvsp[0].Node);
                   if( ! Test_Dims(ffvsp[-2].Node,ffvsp[0].Node) ) {
@@ -1793,7 +1798,7 @@ case 48:
                 }
     break;
 case 49:
-#line 445 "eval.y"
+#line 450 "eval.y"
 {
                   PROMOTE(ffvsp[-2].Node,ffvsp[0].Node);
                   if( ! Test_Dims(ffvsp[-2].Node,ffvsp[0].Node) ) {
@@ -1814,7 +1819,7 @@ case 49:
                 }
     break;
 case 50:
-#line 464 "eval.y"
+#line 469 "eval.y"
 { if (FSTRCMP(ffvsp[-1].str,"RANDOM(") == 0) {
                      srand( (unsigned int) time(NULL) );
                      ffval.Node = New_Func( DOUBLE, rnd_fct, 0, 0, 0, 0, 0, 0, 0, 0 );
@@ -1826,7 +1831,7 @@ case 50:
                 }
     break;
 case 51:
-#line 474 "eval.y"
+#line 479 "eval.y"
 { if (FSTRCMP(ffvsp[-2].str,"SUM(") == 0) {
 		     ffval.Node = New_Func( LONG, sum_fct, 1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
                   } else if (FSTRCMP(ffvsp[-2].str,"NELEM(") == 0) {
@@ -1839,9 +1844,12 @@ case 51:
 		}
     break;
 case 52:
-#line 485 "eval.y"
+#line 490 "eval.y"
 { if (FSTRCMP(ffvsp[-2].str,"NELEM(") == 0) {
                      ffval.Node = New_Const( LONG, &( SIZE(ffvsp[-1].Node) ), sizeof(long) );
+		  } else if (FSTRCMP(ffvsp[-2].str,"NVALID(") == 0) {
+		     ffval.Node = New_Func( LONG, nonnull_fct, 1, ffvsp[-1].Node,
+				    0, 0, 0, 0, 0, 0 );
 		  } else {
                      fferror("Function(str) not supported");
 		     FFERROR;
@@ -1850,8 +1858,10 @@ case 52:
 		}
     break;
 case 53:
-#line 494 "eval.y"
+#line 502 "eval.y"
 { if (FSTRCMP(ffvsp[-2].str,"NELEM(") == 0) {
+                     ffval.Node = New_Const( LONG, &( SIZE(ffvsp[-1].Node) ), sizeof(long) );
+		} else if (FSTRCMP(ffvsp[-2].str,"NVALID(") == 0) { /* Bit arrays do not have NULL */
                      ffval.Node = New_Const( LONG, &( SIZE(ffvsp[-1].Node) ), sizeof(long) );
 		} else if (FSTRCMP(ffvsp[-2].str,"SUM(") == 0) {
 		     ffval.Node = New_Func( LONG, sum_fct, 1, ffvsp[-1].Node,
@@ -1872,15 +1882,24 @@ case 53:
 		}
     break;
 case 54:
-#line 514 "eval.y"
+#line 524 "eval.y"
 { if (FSTRCMP(ffvsp[-2].str,"SUM(") == 0)
 		     ffval.Node = New_Func( TYPE(ffvsp[-1].Node), sum_fct, 1, ffvsp[-1].Node,
+				    0, 0, 0, 0, 0, 0 );
+		  else if (FSTRCMP(ffvsp[-2].str,"AVERAGE(") == 0)
+		     ffval.Node = New_Func( DOUBLE, average_fct, 1, ffvsp[-1].Node,
+				    0, 0, 0, 0, 0, 0 );
+		  else if (FSTRCMP(ffvsp[-2].str,"STDDEV(") == 0)
+		     ffval.Node = New_Func( DOUBLE, stddev_fct, 1, ffvsp[-1].Node,
 				    0, 0, 0, 0, 0, 0 );
 		  else if (FSTRCMP(ffvsp[-2].str,"MEDIAN(") == 0)
 		     ffval.Node = New_Func( TYPE(ffvsp[-1].Node), median_fct, 1, ffvsp[-1].Node,
 				    0, 0, 0, 0, 0, 0 );
 		  else if (FSTRCMP(ffvsp[-2].str,"NELEM(") == 0)
                      ffval.Node = New_Const( LONG, &( SIZE(ffvsp[-1].Node) ), sizeof(long) );
+		  else if (FSTRCMP(ffvsp[-2].str,"NVALID(") == 0)
+		     ffval.Node = New_Func( LONG, nonnull_fct, 1, ffvsp[-1].Node,
+				    0, 0, 0, 0, 0, 0 );
 		  else if (FSTRCMP(ffvsp[-2].str,"ABS(") == 0)
 		     ffval.Node = New_Func( 0, abs_fct, 1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
  		  else if (FSTRCMP(ffvsp[-2].str,"MIN(") == 0)
@@ -1933,7 +1952,7 @@ case 54:
                 }
     break;
 case 55:
-#line 573 "eval.y"
+#line 592 "eval.y"
 { 
 		   if (FSTRCMP(ffvsp[-4].str,"DEFNULL(") == 0) {
 		      if( SIZE(ffvsp[-3].Node)>=SIZE(ffvsp[-1].Node) && Test_Dims( ffvsp[-3].Node, ffvsp[-1].Node ) ) {
@@ -1987,51 +2006,51 @@ case 55:
                 }
     break;
 case 56:
-#line 625 "eval.y"
+#line 644 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-3].Node, 1, ffvsp[-1].Node,  0,  0,  0,   0 ); TEST(ffval.Node); }
     break;
 case 57:
-#line 627 "eval.y"
+#line 646 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-5].Node, 2, ffvsp[-3].Node, ffvsp[-1].Node,  0,  0,   0 ); TEST(ffval.Node); }
     break;
 case 58:
-#line 629 "eval.y"
+#line 648 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-7].Node, 3, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,  0,   0 ); TEST(ffval.Node); }
     break;
 case 59:
-#line 631 "eval.y"
+#line 650 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-9].Node, 4, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,   0 ); TEST(ffval.Node); }
     break;
 case 60:
-#line 633 "eval.y"
+#line 652 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-11].Node, 5, ffvsp[-9].Node, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node ); TEST(ffval.Node); }
     break;
 case 61:
-#line 635 "eval.y"
+#line 654 "eval.y"
 { ffval.Node = New_Unary( LONG,   INTCAST, ffvsp[0].Node );  TEST(ffval.Node);  }
     break;
 case 62:
-#line 637 "eval.y"
+#line 656 "eval.y"
 { ffval.Node = New_Unary( LONG,   INTCAST, ffvsp[0].Node );  TEST(ffval.Node);  }
     break;
 case 63:
-#line 639 "eval.y"
+#line 658 "eval.y"
 { ffval.Node = New_Unary( DOUBLE, FLTCAST, ffvsp[0].Node );  TEST(ffval.Node);  }
     break;
 case 64:
-#line 641 "eval.y"
+#line 660 "eval.y"
 { ffval.Node = New_Unary( DOUBLE, FLTCAST, ffvsp[0].Node );  TEST(ffval.Node);  }
     break;
 case 65:
-#line 645 "eval.y"
+#line 664 "eval.y"
 { ffval.Node = New_Const( BOOLEAN, &(ffvsp[0].log), sizeof(char) ); TEST(ffval.Node); }
     break;
 case 66:
-#line 647 "eval.y"
+#line 666 "eval.y"
 { ffval.Node = New_Column( ffvsp[0].lng ); TEST(ffval.Node); }
     break;
 case 67:
-#line 649 "eval.y"
+#line 668 "eval.y"
 {
                   if( TYPE(ffvsp[-1].Node) != LONG
 		      || gParse.Nodes[ffvsp[-1].Node].operation != CONST_OP ) {
@@ -2042,118 +2061,118 @@ case 67:
                 }
     break;
 case 68:
-#line 658 "eval.y"
+#line 677 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node ); TEST(ffval.Node);
 		  SIZE(ffval.Node) = 1;                                     }
     break;
 case 69:
-#line 661 "eval.y"
+#line 680 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     }
     break;
 case 70:
-#line 664 "eval.y"
+#line 683 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LT,  ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     }
     break;
 case 71:
-#line 667 "eval.y"
+#line 686 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LTE, ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     }
     break;
 case 72:
-#line 670 "eval.y"
+#line 689 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GT,  ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     }
     break;
 case 73:
-#line 673 "eval.y"
+#line 692 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GTE, ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     }
     break;
 case 74:
-#line 676 "eval.y"
+#line 695 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GT,  ffvsp[0].Node );
                   TEST(ffval.Node);                                               }
     break;
 case 75:
-#line 679 "eval.y"
+#line 698 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LT,  ffvsp[0].Node );
                   TEST(ffval.Node);                                               }
     break;
 case 76:
-#line 682 "eval.y"
+#line 701 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GTE, ffvsp[0].Node );
                   TEST(ffval.Node);                                               }
     break;
 case 77:
-#line 685 "eval.y"
+#line 704 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LTE, ffvsp[0].Node );
                   TEST(ffval.Node);                                               }
     break;
 case 78:
-#line 688 "eval.y"
+#line 707 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, '~', ffvsp[0].Node );
                   TEST(ffval.Node);                                               }
     break;
 case 79:
-#line 691 "eval.y"
+#line 710 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node );
                   TEST(ffval.Node);                                               }
     break;
 case 80:
-#line 694 "eval.y"
+#line 713 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node );
                   TEST(ffval.Node);                                               }
     break;
 case 81:
-#line 697 "eval.y"
+#line 716 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = 1; }
     break;
 case 82:
-#line 700 "eval.y"
+#line 719 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = 1; }
     break;
 case 83:
-#line 703 "eval.y"
+#line 722 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GT,  ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = 1; }
     break;
 case 84:
-#line 706 "eval.y"
+#line 725 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GTE, ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = 1; }
     break;
 case 85:
-#line 709 "eval.y"
+#line 728 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LT,  ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = 1; }
     break;
 case 86:
-#line 712 "eval.y"
+#line 731 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LTE, ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = 1; }
     break;
 case 87:
-#line 715 "eval.y"
+#line 734 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, AND, ffvsp[0].Node ); TEST(ffval.Node); }
     break;
 case 88:
-#line 717 "eval.y"
+#line 736 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, OR,  ffvsp[0].Node ); TEST(ffval.Node); }
     break;
 case 89:
-#line 719 "eval.y"
+#line 738 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node ); TEST(ffval.Node); }
     break;
 case 90:
-#line 721 "eval.y"
+#line 740 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node ); TEST(ffval.Node); }
     break;
 case 91:
-#line 724 "eval.y"
+#line 743 "eval.y"
 { PROMOTE(ffvsp[-4].Node,ffvsp[-2].Node); PROMOTE(ffvsp[-4].Node,ffvsp[0].Node); PROMOTE(ffvsp[-2].Node,ffvsp[0].Node);
 		  ffvsp[-2].Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LTE, ffvsp[-4].Node );
                   ffvsp[0].Node = New_BinOp( BOOLEAN, ffvsp[-4].Node, LTE, ffvsp[0].Node );
@@ -2161,7 +2180,7 @@ case 91:
                   TEST(ffval.Node);                                         }
     break;
 case 92:
-#line 731 "eval.y"
+#line 750 "eval.y"
 {
                   if( ! Test_Dims(ffvsp[-2].Node,ffvsp[0].Node) ) {
                      fferror("Incompatible dimensions in '?:' arguments");
@@ -2179,7 +2198,7 @@ case 92:
                 }
     break;
 case 93:
-#line 748 "eval.y"
+#line 767 "eval.y"
 {
 		   if (FSTRCMP(ffvsp[-2].str,"ISNULL(") == 0) {
 		      ffval.Node = New_Func( 0, isnull_fct, 1, ffvsp[-1].Node, 0, 0,
@@ -2194,7 +2213,7 @@ case 93:
 		}
     break;
 case 94:
-#line 761 "eval.y"
+#line 780 "eval.y"
 {
 		   if (FSTRCMP(ffvsp[-2].str,"ISNULL(") == 0) {
 		      ffval.Node = New_Func( 0, isnull_fct, 1, ffvsp[-1].Node, 0, 0,
@@ -2209,7 +2228,7 @@ case 94:
 		}
     break;
 case 95:
-#line 774 "eval.y"
+#line 793 "eval.y"
 {
 		   if (FSTRCMP(ffvsp[-2].str,"ISNULL(") == 0) {
 		      ffval.Node = New_Func( BOOLEAN, isnull_fct, 1, ffvsp[-1].Node, 0, 0,
@@ -2222,7 +2241,7 @@ case 95:
 		}
     break;
 case 96:
-#line 785 "eval.y"
+#line 804 "eval.y"
 {
 		   if (FSTRCMP(ffvsp[-4].str,"DEFNULL(") == 0) {
 		      if( SIZE(ffvsp[-3].Node)>=SIZE(ffvsp[-1].Node) && Test_Dims( ffvsp[-3].Node, ffvsp[-1].Node ) ) {
@@ -2240,7 +2259,7 @@ case 96:
 		}
     break;
 case 97:
-#line 801 "eval.y"
+#line 820 "eval.y"
 {
 		   if( SIZE(ffvsp[-5].Node)>1 || SIZE(ffvsp[-3].Node)>1 || SIZE(ffvsp[-1].Node)>1 ) {
 		      fferror("Cannot use array as function argument");
@@ -2260,7 +2279,7 @@ case 97:
 		}
     break;
 case 98:
-#line 819 "eval.y"
+#line 838 "eval.y"
 {
 		   if( SIZE(ffvsp[-9].Node)>1 || SIZE(ffvsp[-7].Node)>1 || SIZE(ffvsp[-5].Node)>1 || SIZE(ffvsp[-3].Node)>1
 		       || SIZE(ffvsp[-1].Node)>1 ) {
@@ -2283,7 +2302,7 @@ case 98:
 		}
     break;
 case 99:
-#line 840 "eval.y"
+#line 859 "eval.y"
 {
 		   if( SIZE(ffvsp[-13].Node)>1 || SIZE(ffvsp[-11].Node)>1 || SIZE(ffvsp[-9].Node)>1 || SIZE(ffvsp[-7].Node)>1
 		       || SIZE(ffvsp[-5].Node)>1 || SIZE(ffvsp[-3].Node)>1 || SIZE(ffvsp[-1].Node)>1 ) {
@@ -2311,82 +2330,82 @@ case 99:
 		}
     break;
 case 100:
-#line 867 "eval.y"
+#line 886 "eval.y"
 { /* Use defaults for all elements */
                    ffval.Node = New_GTI( "", -99, "*START*", "*STOP*" );
                    TEST(ffval.Node);                                        }
     break;
 case 101:
-#line 871 "eval.y"
+#line 890 "eval.y"
 { /* Use defaults for all except filename */
                    ffval.Node = New_GTI( ffvsp[-1].str, -99, "*START*", "*STOP*" );
                    TEST(ffval.Node);                                        }
     break;
 case 102:
-#line 875 "eval.y"
+#line 894 "eval.y"
 {  ffval.Node = New_GTI( ffvsp[-3].str, ffvsp[-1].Node, "*START*", "*STOP*" );
                    TEST(ffval.Node);                                        }
     break;
 case 103:
-#line 878 "eval.y"
+#line 897 "eval.y"
 {  ffval.Node = New_GTI( ffvsp[-7].str, ffvsp[-5].Node, ffvsp[-3].str, ffvsp[-1].str );
                    TEST(ffval.Node);                                        }
     break;
 case 104:
-#line 882 "eval.y"
+#line 901 "eval.y"
 { /* Use defaults for all except filename */
                    ffval.Node = New_REG( ffvsp[-1].str, -99, -99, "" );
                    TEST(ffval.Node);                                        }
     break;
 case 105:
-#line 886 "eval.y"
+#line 905 "eval.y"
 {  ffval.Node = New_REG( ffvsp[-5].str, ffvsp[-3].Node, ffvsp[-1].Node, "" );
                    TEST(ffval.Node);                                        }
     break;
 case 106:
-#line 889 "eval.y"
+#line 908 "eval.y"
 {  ffval.Node = New_REG( ffvsp[-7].str, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].str );
                    TEST(ffval.Node);                                        }
     break;
 case 107:
-#line 893 "eval.y"
+#line 912 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-3].Node, 1, ffvsp[-1].Node,  0,  0,  0,   0 ); TEST(ffval.Node); }
     break;
 case 108:
-#line 895 "eval.y"
+#line 914 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-5].Node, 2, ffvsp[-3].Node, ffvsp[-1].Node,  0,  0,   0 ); TEST(ffval.Node); }
     break;
 case 109:
-#line 897 "eval.y"
+#line 916 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-7].Node, 3, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,  0,   0 ); TEST(ffval.Node); }
     break;
 case 110:
-#line 899 "eval.y"
+#line 918 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-9].Node, 4, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,   0 ); TEST(ffval.Node); }
     break;
 case 111:
-#line 901 "eval.y"
+#line 920 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-11].Node, 5, ffvsp[-9].Node, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node ); TEST(ffval.Node); }
     break;
 case 112:
-#line 903 "eval.y"
+#line 922 "eval.y"
 { ffval.Node = New_Unary( BOOLEAN, NOT, ffvsp[0].Node ); TEST(ffval.Node); }
     break;
 case 113:
-#line 905 "eval.y"
+#line 924 "eval.y"
 { ffval.Node = ffvsp[-1].Node; }
     break;
 case 114:
-#line 909 "eval.y"
+#line 928 "eval.y"
 { ffval.Node = New_Const( STRING, ffvsp[0].str, strlen(ffvsp[0].str)+1 ); TEST(ffval.Node);
                   SIZE(ffval.Node) = strlen(ffvsp[0].str);                            }
     break;
 case 115:
-#line 912 "eval.y"
+#line 931 "eval.y"
 { ffval.Node = New_Column( ffvsp[0].lng ); TEST(ffval.Node); }
     break;
 case 116:
-#line 914 "eval.y"
+#line 933 "eval.y"
 {
                   if( TYPE(ffvsp[-1].Node) != LONG
 		      || gParse.Nodes[ffvsp[-1].Node].operation != CONST_OP ) {
@@ -2397,20 +2416,20 @@ case 116:
                 }
     break;
 case 117:
-#line 923 "eval.y"
+#line 942 "eval.y"
 { ffval.Node = New_Func( STRING, null_fct, 0, 0, 0, 0, 0, 0, 0, 0 ); }
     break;
 case 118:
-#line 925 "eval.y"
+#line 944 "eval.y"
 { ffval.Node = ffvsp[-1].Node; }
     break;
 case 119:
-#line 927 "eval.y"
+#line 946 "eval.y"
 { ffval.Node = New_BinOp( STRING, ffvsp[-2].Node, '+', ffvsp[0].Node );  TEST(ffval.Node);
 		  SIZE(ffval.Node) = SIZE(ffvsp[-2].Node) + SIZE(ffvsp[0].Node);                   }
     break;
 case 120:
-#line 930 "eval.y"
+#line 949 "eval.y"
 {
                   if( SIZE(ffvsp[-4].Node)!=1 ) {
                      fferror("Cannot have a vector string column");
@@ -2423,7 +2442,7 @@ case 120:
                 }
     break;
 case 121:
-#line 942 "eval.y"
+#line 961 "eval.y"
 { 
 		  if (FSTRCMP(ffvsp[-4].str,"DEFNULL(") == 0) {
 		     ffval.Node = New_Func( 0, defnull_fct, 2, ffvsp[-3].Node, ffvsp[-1].Node, 0,
@@ -2666,7 +2685,7 @@ ffreturn:
 #endif
   return ffresult;
 }
-#line 952 "eval.y"
+#line 971 "eval.y"
 
 
 /*************************************************************************/
@@ -4314,15 +4333,15 @@ static void Do_BinOp_lng( Node *this )
 	    case '%':   
 	       if( val2 ) this->value.data.lngptr[elem] = (val1 % val2);
 	       else {
-		  fferror("Divide by Zero");
-		  free( this->value.data.ptr );
+		 this->value.data.lngptr[elem] = 0;
+		 this->value.undef[elem] = 1;
 	       }
 	       break;
 	    case '/': 
 	       if( val2 ) this->value.data.lngptr[elem] = (val1 / val2); 
 	       else {
-		  fferror("Divide by Zero");
-		  free( this->value.data.ptr );
+		 this->value.data.lngptr[elem] = 0;
+		 this->value.undef[elem] = 1;
 	       }
 	       break;
 	    case POWER:
@@ -4443,15 +4462,15 @@ static void Do_BinOp_dbl( Node *this )
 	       if( val2 ) this->value.data.dblptr[elem] =
                                 val1 - val2*((int)(val1/val2));
 	       else {
-		  fferror("Divide by Zero");
-		  free( this->value.data.ptr );
+		 this->value.data.dblptr[elem] = 0.0;
+		 this->value.undef[elem] = 1;
 	       }
 	       break;
 	    case '/': 
 	       if( val2 ) this->value.data.dblptr[elem] = (val1 / val2); 
 	       else {
-		  fferror("Divide by Zero");
-		  free( this->value.data.ptr );
+		 this->value.data.dblptr[elem] = 0.0;
+		 this->value.undef[elem] = 1;
 	       }
 	       break;
 	    case POWER:
@@ -4673,6 +4692,15 @@ static void Do_Func( Node *this )
 	    else if( theParams[0]->type==BITSTR )
 	      strcpy(this->value.data.str, pVals[0].data.str);
 	    break;
+         case average_fct:
+	    if( theParams[0]->type==LONG )
+	       this->value.data.dbl = pVals[0].data.lng;
+	    else if( theParams[0]->type==DOUBLE )
+	       this->value.data.dbl = pVals[0].data.dbl;
+	    break;
+         case stddev_fct:
+	    this->value.data.dbl = 0;  /* Standard deviation of a constant = 0 */
+	    break;
 	 case median_fct:
 	    if( theParams[0]->type==BOOLEAN )
 	       this->value.data.lng = ( pVals[0].data.log ? 1 : 0 );
@@ -4693,6 +4721,9 @@ static void Do_Func( Node *this )
 
             /* Special Null-Handling Functions */
 
+         case nonnull_fct:
+	    this->value.data.lng = 1; /* Constants are always 1-element and defined */
+	    break;
          case isnull_fct:  /* Constants are always defined */
 	    this->value.data.log = 0;
 	    break;
@@ -4925,40 +4956,46 @@ static void Do_Func( Node *this )
 	    if( theParams[0]->type==BOOLEAN ) {
 	       while( row-- ) {
 		  this->value.data.lngptr[row] = 0;
-		  this->value.undef[row] = 0;
+		  /* Default is UNDEF until a defined value is found */
+		  this->value.undef[row] = 1;
 		  nelem = theParams[0]->value.nelem;
 		  while( nelem-- ) {
 		     elem--;
-		     this->value.data.lngptr[row] +=
-			( theParams[0]->value.data.logptr[elem] ? 1 : 0 );
-		     this->value.undef[row] |=
-			  theParams[0]->value.undef[elem];
+		     if ( ! theParams[0]->value.undef[elem] ) {
+		       this->value.data.lngptr[row] +=
+			 ( theParams[0]->value.data.logptr[elem] ? 1 : 0 );
+		       this->value.undef[row] = 0;
+		     }
 		  }
-	       }		  
+	       }
 	    } else if( theParams[0]->type==LONG ) {
 	       while( row-- ) {
 		  this->value.data.lngptr[row] = 0;
-		  this->value.undef[row] = 0;
+		  /* Default is UNDEF until a defined value is found */
+		  this->value.undef[row] = 1;
 		  nelem = theParams[0]->value.nelem;
 		  while( nelem-- ) {
 		     elem--;
-		     this->value.data.lngptr[row] +=
-			theParams[0]->value.data.lngptr[elem];
-		     this->value.undef[row] |=
-			  theParams[0]->value.undef[elem];
+		     if ( ! theParams[0]->value.undef[elem] ) {
+		       this->value.data.lngptr[row] +=
+			 theParams[0]->value.data.lngptr[elem];
+		       this->value.undef[row] = 0;
+		     }
 		  }
 	       }		  
 	    } else if( theParams[0]->type==DOUBLE ){
 	       while( row-- ) {
 		  this->value.data.dblptr[row] = 0.0;
-		  this->value.undef[row] = 0;
+		  /* Default is UNDEF until a defined value is found */
+		  this->value.undef[row] = 1;
 		  nelem = theParams[0]->value.nelem;
 		  while( nelem-- ) {
 		     elem--;
-		     this->value.data.dblptr[row] +=
-			theParams[0]->value.data.dblptr[elem];
-		     this->value.undef[row] |=
-			  theParams[0]->value.undef[elem];
+		     if ( ! theParams[0]->value.undef[elem] ) {
+		       this->value.data.dblptr[row] +=
+			 theParams[0]->value.data.dblptr[elem];
+		       this->value.undef[row] = 0;
+		     }
 		  }
 	       }		  
 	    } else { /* BITSTR */
@@ -4972,6 +5009,131 @@ static void Do_Func( Node *this )
 		    sptr1++;
 		  }
 	       }		  
+	    }
+	    break;
+
+	 case average_fct:
+	    elem = row * theParams[0]->value.nelem;
+	    if( theParams[0]->type==LONG ) {
+	       while( row-- ) {
+		  int count = 0;
+		  this->value.data.dblptr[row] = 0;
+		  nelem = theParams[0]->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     if (theParams[0]->value.undef[elem] == 0) {
+		       this->value.data.dblptr[row] +=
+			 theParams[0]->value.data.lngptr[elem];
+		       count ++;
+		     }
+		  }
+		  if (count == 0) {
+		    this->value.undef[row] = 1;
+		  } else {
+		    this->value.undef[row] = 0;
+		    this->value.data.dblptr[row] /= count;
+		  }
+	       }		  
+	    } else if( theParams[0]->type==DOUBLE ){
+	       while( row-- ) {
+		  int count = 0;
+		  this->value.data.dblptr[row] = 0;
+		  nelem = theParams[0]->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     if (theParams[0]->value.undef[elem] == 0) {
+		       this->value.data.dblptr[row] +=
+			 theParams[0]->value.data.dblptr[elem];
+		       count ++;
+		     }
+		  }
+		  if (count == 0) {
+		    this->value.undef[row] = 1;
+		  } else {
+		    this->value.undef[row] = 0;
+		    this->value.data.dblptr[row] /= count;
+		  }
+	       }		  
+	    }
+	    break;
+	 case stddev_fct:
+	    elem = row * theParams[0]->value.nelem;
+	    if( theParams[0]->type==LONG ) {
+
+	       /* Compute the mean value */
+	       while( row-- ) {
+		  int count = 0;
+		  double sum = 0, sum2 = 0;
+
+		  nelem = theParams[0]->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     if (theParams[0]->value.undef[elem] == 0) {
+		       sum += theParams[0]->value.data.lngptr[elem];
+		       count ++;
+		     }
+		  }
+		  if (count > 1) {
+		    sum /= count;
+
+		    /* Compute the sum of squared deviations */
+		    nelem = theParams[0]->value.nelem;
+		    elem += nelem;  /* Reset elem for second pass */
+		    while( nelem-- ) {
+		      elem--;
+		      if (theParams[0]->value.undef[elem] == 0) {
+			double dx = (theParams[0]->value.data.lngptr[elem] - sum);
+			sum2 += (dx*dx);
+		      }
+		    }
+
+		    sum2 /= (double)count-1;
+
+		    this->value.undef[row] = 0;
+		    this->value.data.dblptr[row] = sqrt(sum2);
+		  } else {
+		    this->value.undef[row] = 0;       /* STDDEV => 0 */
+		    this->value.data.dblptr[row] = 0;
+		  }
+	       }
+	    } else if( theParams[0]->type==DOUBLE ){
+
+	       /* Compute the mean value */
+	       while( row-- ) {
+		  int count = 0;
+		  double sum = 0, sum2 = 0;
+
+		  nelem = theParams[0]->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     if (theParams[0]->value.undef[elem] == 0) {
+		       sum += theParams[0]->value.data.dblptr[elem];
+		       count ++;
+		     }
+		  }
+		  if (count > 1) {
+		    sum /= count;
+
+		    /* Compute the sum of squared deviations */
+		    nelem = theParams[0]->value.nelem;
+		    elem += nelem;  /* Reset elem for second pass */
+		    while( nelem-- ) {
+		      elem--;
+		      if (theParams[0]->value.undef[elem] == 0) {
+			double dx = (theParams[0]->value.data.dblptr[elem] - sum);
+			sum2 += (dx*dx);
+		      }
+		    }
+
+		    sum2 /= (double)count-1;
+
+		    this->value.undef[row] = 0;
+		    this->value.data.dblptr[row] = sqrt(sum2);
+		  } else {
+		    this->value.undef[row] = 0;       /* STDDEV => 0 */
+		    this->value.data.dblptr[row] = 0;
+		  }
+	       }
 	    }
 	    break;
 
@@ -4995,18 +5157,25 @@ static void Do_Func( Node *this )
 	       for (irow=0; irow<row; irow++) {
 		  long *p = mptr;
 		  int nelem1 = nelem;
+		  int count = 0;
 
-		  this->value.undef[irow] = 0;
 		  while ( nelem1-- ) { 
-		    *p++ = *dptr++;
-		    if (*uptr++) {
-		      this->value.undef[irow] = 1;
-		      break;
+		    if (*uptr == 0) {
+		      *p++ = *dptr;   /* Only advance the dest pointer if we copied */
 		    }
-		  }		    
-
-		  if (this->value.undef[irow] == 0) 
-		    this->value.data.lngptr[irow] = qselect_median_lng(mptr, nelem);
+		    dptr ++;  /* Advance the source pointer ... */
+		    uptr ++;  /* ... and source "undef" pointer */
+		  }
+		  
+		  nelem1 = (p - mptr);  /* Number of accepted data points */
+		  if (nelem1 > 0) {
+		    this->value.undef[irow] = 0;
+		    this->value.data.lngptr[irow] = qselect_median_lng(mptr, nelem1);
+		  } else {
+		    this->value.undef[irow] = 1;
+		    this->value.data.lngptr[irow] = 0;
+		  }
+		    
 	       }		  
 
 	       free(mptr);
@@ -5028,18 +5197,24 @@ static void Do_Func( Node *this )
 		  double *p = mptr;
 		  int nelem1 = nelem;
 
-		  this->value.undef[irow] = 0;
 		  while ( nelem1-- ) { 
-		    *p++ = *dptr++;
-		    if (*uptr++) {
-		      this->value.undef[irow] = 1;
-		      break;
+		    if (*uptr == 0) {
+		      *p++ = *dptr;   /* Only advance the dest pointer if we copied */
 		    }
+		    dptr ++;  /* Advance the source pointer ... */
+		    uptr ++;  /* ... and source "undef" pointer */
 		  }
 
-		  if (this->value.undef[irow] == 0) 
-		    this->value.data.dblptr[irow] = qselect_median_dbl(mptr, nelem);
-	       }		  
+		  nelem1 = (p - mptr);  /* Number of accepted data points */
+		  if (nelem1 > 0) {
+		    this->value.undef[irow] = 0;
+		    this->value.data.dblptr[irow] = qselect_median_dbl(mptr, nelem1);
+		  } else {
+		    this->value.undef[irow] = 1;
+		    this->value.data.dblptr[irow] = 0;
+		  }
+
+	       }
 	       free(mptr);
 	    }
 	    break;
@@ -5060,6 +5235,21 @@ static void Do_Func( Node *this )
 
             /* Special Null-Handling Functions */
 
+	 case nonnull_fct:
+	   nelem = theParams[0]->value.nelem;
+	   if ( theParams[0]->type==STRING ) nelem = 1;
+	   elem = row * nelem;
+	   while( row-- ) {
+	     int nelem1 = nelem;
+
+	     this->value.undef[row] = 0;        /* Initialize to 0 (defined) */
+	     this->value.data.lngptr[row] = 0;
+	     while( nelem1-- ) {	
+	       elem --;
+	       if ( theParams[0]->value.undef[elem] == 0 ) this->value.data.lngptr[row] ++;
+	     }
+	   }
+	   break;
 	 case isnull_fct:
 	    if( theParams[0]->type==STRING ) elem = row;
 	    while( elem-- ) {
@@ -5191,9 +5381,8 @@ static void Do_Func( Node *this )
 	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<-1.0 || dval>1.0 ) {
-		     fferror("Out of range argument to arcsin");
-		     free( this->value.data.ptr );
-		     break;
+		     this->value.data.dblptr[elem] = 0.0;
+		     this->value.undef[elem] = 1;
 		  } else
 		     this->value.data.dblptr[elem] = asin( dval );
 	       }
@@ -5203,9 +5392,8 @@ static void Do_Func( Node *this )
 	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<-1.0 || dval>1.0 ) {
-		     fferror("Out of range argument to arccos");
-		     free( this->value.data.ptr );
-		     break;
+		     this->value.data.dblptr[elem] = 0.0;
+		     this->value.undef[elem] = 1;
 		  } else
 		     this->value.data.dblptr[elem] = acos( dval );
 	       }
@@ -5250,9 +5438,8 @@ static void Do_Func( Node *this )
 	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<=0.0 ) {
-		     fferror("Out of range argument to log");
-		     free( this->value.data.ptr );
-		     break;
+		     this->value.data.dblptr[elem] = 0.0;
+		     this->value.undef[elem] = 1;
 		  } else
 		     this->value.data.dblptr[elem] = log( dval );
 	       }
@@ -5262,9 +5449,8 @@ static void Do_Func( Node *this )
 	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<=0.0 ) {
-		     fferror("Out of range argument to log10");
-		     free( this->value.data.ptr );
-		     break;
+		     this->value.data.dblptr[elem] = 0.0;
+		     this->value.undef[elem] = 1;
 		  } else
 		     this->value.data.dblptr[elem] = log10( dval );
 	       }
@@ -5274,9 +5460,8 @@ static void Do_Func( Node *this )
 	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<0.0 ) {
-		     fferror("Out of range argument to sqrt");
-		     free( this->value.data.ptr );
-		     break;
+		     this->value.data.dblptr[elem] = 0.0;
+		     this->value.undef[elem] = 1;
 		  } else
 		     this->value.data.dblptr[elem] = sqrt( dval );
 	       }
@@ -5335,40 +5520,42 @@ static void Do_Func( Node *this )
 	       long minVal=0;
 	       while( row-- ) {
 		  valInit = 1;
-		  this->value.undef[row] = 0;
+		  this->value.undef[row] = 1;
 		  nelem = theParams[0]->value.nelem;
 		  while( nelem-- ) {
 		     elem--;
-		     if( valInit && !theParams[0]->value.undef[elem] ) {
-			valInit = 0;
-			minVal  = theParams[0]->value.data.lngptr[elem];
-		     } else {
-			minVal  = minvalue( minVal,
-					    theParams[0]->value.data.lngptr[elem] );
+		     if ( !theParams[0]->value.undef[elem] ) {
+		       if ( valInit ) {
+			 valInit = 0;
+			 minVal  = theParams[0]->value.data.lngptr[elem];
+		       } else {
+			 minVal  = minvalue( minVal,
+					     theParams[0]->value.data.lngptr[elem] );
+		       }
+		       this->value.undef[row] = 0;
 		     }
-		     this->value.undef[row] |=
-			theParams[0]->value.undef[elem];
-		  }
+		  }  
 		  this->value.data.lngptr[row] = minVal;
 	       }		  
 	    } else if( this->type==DOUBLE ) {
 	       double minVal=0.0;
 	       while( row-- ) {
 		  valInit = 1;
-		  this->value.undef[row] = 0;
+		  this->value.undef[row] = 1;
 		  nelem = theParams[0]->value.nelem;
 		  while( nelem-- ) {
 		     elem--;
-		     if( valInit && !theParams[0]->value.undef[elem] ) {
-			valInit = 0;
-			minVal  = theParams[0]->value.data.dblptr[elem];
-		     } else {
-			minVal  = minvalue( minVal,
-					    theParams[0]->value.data.dblptr[elem] );
+		     if ( !theParams[0]->value.undef[elem] ) {
+		       if ( valInit ) {
+			 valInit = 0;
+			 minVal  = theParams[0]->value.data.dblptr[elem];
+		       } else {
+			 minVal  = minvalue( minVal,
+					     theParams[0]->value.data.dblptr[elem] );
+		       }
+		       this->value.undef[row] = 0;
 		     }
-		     this->value.undef[row] |=
-			theParams[0]->value.undef[elem];
-		  }
+		  }  
 		  this->value.data.dblptr[row] = minVal;
 	       }		  
 	    } else if( this->type==BITSTR ) {
@@ -5401,9 +5588,20 @@ static void Do_Func( Node *this )
 			      theParams[i]->value.data.lngptr[row];
 			   pNull[i] = theParams[i]->value.undef[row];
 			}
-		     if( !(this->value.undef[elem] = (pNull[0] || pNull[1]) ) )
-			this->value.data.lngptr[elem] =
-			   minvalue( pVals[0].data.lng, pVals[1].data.lng );
+		     if( pNull[0] && pNull[1] ) {
+		       this->value.undef[elem] = 1;
+		       this->value.data.lngptr[elem] = 0;
+		     } else if (pNull[0]) {
+		       this->value.undef[elem] = 0;
+		       this->value.data.lngptr[elem] = pVals[1].data.lng;
+		     } else if (pNull[1]) {
+		       this->value.undef[elem] = 0;
+		       this->value.data.lngptr[elem] = pVals[0].data.lng;
+		     } else {
+		       this->value.undef[elem] = 0;
+		       this->value.data.lngptr[elem] =
+			 minvalue( pVals[0].data.lng, pVals[1].data.lng );
+		     }
 		  }
 	       }
 	    } else if( this->type==DOUBLE ) {
@@ -5421,11 +5619,22 @@ static void Do_Func( Node *this )
 			      theParams[i]->value.data.dblptr[row];
 			   pNull[i] = theParams[i]->value.undef[row];
 			}
-		     if( !(this->value.undef[elem] = (pNull[0] || pNull[1]) ) )
-			this->value.data.dblptr[elem] =
-			   minvalue( pVals[0].data.dbl, pVals[1].data.dbl );
+		     if( pNull[0] && pNull[1] ) {
+		       this->value.undef[elem] = 1;
+		       this->value.data.dblptr[elem] = 0;
+		     } else if (pNull[0]) {
+		       this->value.undef[elem] = 0;
+		       this->value.data.dblptr[elem] = pVals[1].data.dbl;
+		     } else if (pNull[1]) {
+		       this->value.undef[elem] = 0;
+		       this->value.data.dblptr[elem] = pVals[0].data.dbl;
+		     } else {
+		       this->value.undef[elem] = 0;
+		       this->value.data.dblptr[elem] =
+			 minvalue( pVals[0].data.dbl, pVals[1].data.dbl );
+		     }
 		  }
-	       }
+ 	       }
 	    }
 	    break;
 
@@ -5435,19 +5644,20 @@ static void Do_Func( Node *this )
 	       long maxVal=0;
 	       while( row-- ) {
 		  valInit = 1;
-		  this->value.undef[row] = 0;
+		  this->value.undef[row] = 1;
 		  nelem = theParams[0]->value.nelem;
 		  while( nelem-- ) {
 		     elem--;
-		     if( valInit && !theParams[0]->value.undef[elem] ) {
-			valInit = 0;
-			maxVal  = theParams[0]->value.data.lngptr[elem];
-		     } else {
-			maxVal  = maxvalue( maxVal,
-					    theParams[0]->value.data.lngptr[elem] );
+		     if ( !theParams[0]->value.undef[elem] ) {
+		       if ( valInit ) {
+			 valInit = 0;
+			 maxVal  = theParams[0]->value.data.lngptr[elem];
+		       } else {
+			 maxVal  = maxvalue( maxVal,
+					     theParams[0]->value.data.lngptr[elem] );
+		       }
+		       this->value.undef[row] = 0;
 		     }
-		     this->value.undef[row] |=
-			theParams[0]->value.undef[elem];
 		  }
 		  this->value.data.lngptr[row] = maxVal;
 	       }		  
@@ -5455,19 +5665,20 @@ static void Do_Func( Node *this )
 	       double maxVal=0.0;
 	       while( row-- ) {
 		  valInit = 1;
-		  this->value.undef[row] = 0;
+		  this->value.undef[row] = 1;
 		  nelem = theParams[0]->value.nelem;
 		  while( nelem-- ) {
 		     elem--;
-		     if( valInit && !theParams[0]->value.undef[elem] ) {
-			valInit = 0;
-			maxVal  = theParams[0]->value.data.dblptr[elem];
-		     } else {
-			maxVal  = maxvalue( maxVal,
-					    theParams[0]->value.data.dblptr[elem] );
+		     if ( !theParams[0]->value.undef[elem] ) {
+		       if ( valInit ) {
+			 valInit = 0;
+			 maxVal  = theParams[0]->value.data.dblptr[elem];
+		       } else {
+			 maxVal  = maxvalue( maxVal,
+					     theParams[0]->value.data.dblptr[elem] );
+		       }
+		       this->value.undef[row] = 0;
 		     }
-		     this->value.undef[row] |=
-			theParams[0]->value.undef[elem];
 		  }
 		  this->value.data.dblptr[row] = maxVal;
 	       }		  
@@ -5501,9 +5712,20 @@ static void Do_Func( Node *this )
 			      theParams[i]->value.data.lngptr[row];
 			   pNull[i] = theParams[i]->value.undef[row];
 			}
-		     if( !(this->value.undef[elem] = (pNull[0] || pNull[1]) ) )
-			this->value.data.lngptr[elem] =
-			   maxvalue( pVals[0].data.lng, pVals[1].data.lng );
+		     if( pNull[0] && pNull[1] ) {
+		       this->value.undef[elem] = 1;
+		       this->value.data.lngptr[elem] = 0;
+		     } else if (pNull[0]) {
+		       this->value.undef[elem] = 0;
+		       this->value.data.lngptr[elem] = pVals[1].data.lng;
+		     } else if (pNull[1]) {
+		       this->value.undef[elem] = 0;
+		       this->value.data.lngptr[elem] = pVals[0].data.lng;
+		     } else {
+		       this->value.undef[elem] = 0;
+		       this->value.data.lngptr[elem] =
+			 maxvalue( pVals[0].data.lng, pVals[1].data.lng );
+		     }
 		  }
 	       }
 	    } else if( this->type==DOUBLE ) {
@@ -5521,9 +5743,20 @@ static void Do_Func( Node *this )
 			      theParams[i]->value.data.dblptr[row];
 			   pNull[i] = theParams[i]->value.undef[row];
 			}
-		     if( !(this->value.undef[elem] = (pNull[0] || pNull[1]) ) )
-			this->value.data.dblptr[elem] =
-			   maxvalue( pVals[0].data.dbl, pVals[1].data.dbl );
+		     if( pNull[0] && pNull[1] ) {
+		       this->value.undef[elem] = 1;
+		       this->value.data.dblptr[elem] = 0;
+		     } else if (pNull[0]) {
+		       this->value.undef[elem] = 0;
+		       this->value.data.dblptr[elem] = pVals[1].data.dbl;
+		     } else if (pNull[1]) {
+		       this->value.undef[elem] = 0;
+		       this->value.data.dblptr[elem] = pVals[0].data.dbl;
+		     } else {
+		       this->value.undef[elem] = 0;
+		       this->value.data.dblptr[elem] =
+			 maxvalue( pVals[0].data.dbl, pVals[1].data.dbl );
+		     }
 		  }
 	       }
 	    }

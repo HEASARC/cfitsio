@@ -3,23 +3,23 @@
 
 Version 2.500 -   2004
 
-  Bug fixes:
-
-   - made small change to ffsrow in eval_f.c to avoid potential array 
-     bounds overflow.
-
-   - corrected a memory allocation error in the new fits_hdr2str routine
-     that was added in version 2.49
-
-   - The on-the-fly row-selection filtering would fail with a segfault
-     if the length of a table row (NAXIS1 value) was greater than
-     500000 bytes.  A small change to eval_f.c was required to fix this.
-
   Enhancements:
 
-   - added new 'median' vector function to the lexical parser in addition
-     to the existing min, max and sum functions (thanks to Craig Markwardt,
-     GSFC)
+   - Craig Markwardt, at GSFC, provided a number of significant enhancements
+     to the CFITSIO lexical parser that is used to evaluate expressions:
+     
+       - the parser now can operate on bit columns ('X') in a similar
+         way as for other numeric coluns (e.g., 'B' or 'I' columns)
+	 
+       - range checking has been implemented, so that the following 
+         conditions return a Null value, rather than returning an error:
+	 divide by zero, sqrt(negative),  arccos(>1), arcsin(>1),
+	 log(negative), log10(negative)
+	 
+       - new vector functions:  MEDIAN, AVERAGE, STDDEV, and 
+         NVALID (returns the number of non-null values in the vector)
+
+       - all the new functions (and SUM, MIN and MAX) ignore null values
 
    - modified configure to support AIX systems that have flock in a non-
      standard location.
@@ -36,6 +36,18 @@ Version 2.500 -   2004
 
    - modified f77_wrap.h and f77_wrap3.c to support the Fortran wrappers
      on 64-bit AMD Opteron machines
+
+  Bug fixes:
+
+   - made small change to ffsrow in eval_f.c to avoid potential array 
+     bounds overflow.
+
+   - corrected a memory allocation error in the new fits_hdr2str routine
+     that was added in version 2.49
+
+   - The on-the-fly row-selection filtering would fail with a segfault
+     if the length of a table row (NAXIS1 value) was greater than
+     500000 bytes.  A small change to eval_f.c was required to fix this.
 
 Version 2.490 -  11 February 2004
 

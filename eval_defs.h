@@ -130,7 +130,10 @@ typedef enum {
                   ifthenelse_fct,
                   row_fct,
                   null_fct,
-		  median_fct
+		  median_fct,
+		  average_fct,
+		  stddev_fct,
+		  nonnull_fct
                                 } funcOp;
 
 extern ParseData gParse;

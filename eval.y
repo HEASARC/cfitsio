@@ -49,6 +49,11 @@
 /*  Craig B Markwardt Jun 2004  Add MEDIAN() function                   */
 /*  Craig B Markwardt Jun 2004  Add SUM(), and MIN/MAX() for bit arrays */
 /*  Craig B Markwardt Jun 2004  Allow subscripting of nX bit arrays     */
+/*  Craig B Markwardt Jun 2004  Implement statistical functions         */
+/*                              NVALID(), AVERAGE(), and STDDEV()       */
+/*                              for integer and floating point vectors  */
+/*  Craig B Markwardt Jun 2004  Use NULL values for range errors instead*/
+/*                              of throwing a parse error               */
 /*                                                                      */
 /************************************************************************/
 
@@ -484,6 +489,9 @@ expr:    LONG
        | FUNCTION sexpr ')'
                 { if (FSTRCMP($1,"NELEM(") == 0) {
                      $$ = New_Const( LONG, &( SIZE($2) ), sizeof(long) );
+		  } else if (FSTRCMP($1,"NVALID(") == 0) {
+		     $$ = New_Func( LONG, nonnull_fct, 1, $2,
+				    0, 0, 0, 0, 0, 0 );
 		  } else {
                      yyerror("Function(str) not supported");
 		     YYERROR;
@@ -492,6 +500,8 @@ expr:    LONG
 		}
        | FUNCTION bits ')'
                 { if (FSTRCMP($1,"NELEM(") == 0) {
+                     $$ = New_Const( LONG, &( SIZE($2) ), sizeof(long) );
+		} else if (FSTRCMP($1,"NVALID(") == 0) { /* Bit arrays do not have NULL */
                      $$ = New_Const( LONG, &( SIZE($2) ), sizeof(long) );
 		} else if (FSTRCMP($1,"SUM(") == 0) {
 		     $$ = New_Func( LONG, sum_fct, 1, $2,
@@ -514,11 +524,20 @@ expr:    LONG
                 { if (FSTRCMP($1,"SUM(") == 0)
 		     $$ = New_Func( TYPE($2), sum_fct, 1, $2,
 				    0, 0, 0, 0, 0, 0 );
+		  else if (FSTRCMP($1,"AVERAGE(") == 0)
+		     $$ = New_Func( DOUBLE, average_fct, 1, $2,
+				    0, 0, 0, 0, 0, 0 );
+		  else if (FSTRCMP($1,"STDDEV(") == 0)
+		     $$ = New_Func( DOUBLE, stddev_fct, 1, $2,
+				    0, 0, 0, 0, 0, 0 );
 		  else if (FSTRCMP($1,"MEDIAN(") == 0)
 		     $$ = New_Func( TYPE($2), median_fct, 1, $2,
 				    0, 0, 0, 0, 0, 0 );
 		  else if (FSTRCMP($1,"NELEM(") == 0)
                      $$ = New_Const( LONG, &( SIZE($2) ), sizeof(long) );
+		  else if (FSTRCMP($1,"NVALID(") == 0)
+		     $$ = New_Func( LONG, nonnull_fct, 1, $2,
+				    0, 0, 0, 0, 0, 0 );
 		  else if (FSTRCMP($1,"ABS(") == 0)
 		     $$ = New_Func( 0, abs_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
  		  else if (FSTRCMP($1,"MIN(") == 0)
@@ -2596,15 +2615,15 @@ static void Do_BinOp_lng( Node *this )
 	    case '%':   
 	       if( val2 ) this->value.data.lngptr[elem] = (val1 % val2);
 	       else {
-		  yyerror("Divide by Zero");
-		  free( this->value.data.ptr );
+		 this->value.data.lngptr[elem] = 0;
+		 this->value.undef[elem] = 1;
 	       }
 	       break;
 	    case '/': 
 	       if( val2 ) this->value.data.lngptr[elem] = (val1 / val2); 
 	       else {
-		  yyerror("Divide by Zero");
-		  free( this->value.data.ptr );
+		 this->value.data.lngptr[elem] = 0;
+		 this->value.undef[elem] = 1;
 	       }
 	       break;
 	    case POWER:
@@ -2725,15 +2744,15 @@ static void Do_BinOp_dbl( Node *this )
 	       if( val2 ) this->value.data.dblptr[elem] =
                                 val1 - val2*((int)(val1/val2));
 	       else {
-		  yyerror("Divide by Zero");
-		  free( this->value.data.ptr );
+		 this->value.data.dblptr[elem] = 0.0;
+		 this->value.undef[elem] = 1;
 	       }
 	       break;
 	    case '/': 
 	       if( val2 ) this->value.data.dblptr[elem] = (val1 / val2); 
 	       else {
-		  yyerror("Divide by Zero");
-		  free( this->value.data.ptr );
+		 this->value.data.dblptr[elem] = 0.0;
+		 this->value.undef[elem] = 1;
 	       }
 	       break;
 	    case POWER:
@@ -2955,6 +2974,15 @@ static void Do_Func( Node *this )
 	    else if( theParams[0]->type==BITSTR )
 	      strcpy(this->value.data.str, pVals[0].data.str);
 	    break;
+         case average_fct:
+	    if( theParams[0]->type==LONG )
+	       this->value.data.dbl = pVals[0].data.lng;
+	    else if( theParams[0]->type==DOUBLE )
+	       this->value.data.dbl = pVals[0].data.dbl;
+	    break;
+         case stddev_fct:
+	    this->value.data.dbl = 0;  /* Standard deviation of a constant = 0 */
+	    break;
 	 case median_fct:
 	    if( theParams[0]->type==BOOLEAN )
 	       this->value.data.lng = ( pVals[0].data.log ? 1 : 0 );
@@ -2975,6 +3003,9 @@ static void Do_Func( Node *this )
 
             /* Special Null-Handling Functions */
 
+         case nonnull_fct:
+	    this->value.data.lng = 1; /* Constants are always 1-element and defined */
+	    break;
          case isnull_fct:  /* Constants are always defined */
 	    this->value.data.log = 0;
 	    break;
@@ -3207,40 +3238,46 @@ static void Do_Func( Node *this )
 	    if( theParams[0]->type==BOOLEAN ) {
 	       while( row-- ) {
 		  this->value.data.lngptr[row] = 0;
-		  this->value.undef[row] = 0;
+		  /* Default is UNDEF until a defined value is found */
+		  this->value.undef[row] = 1;
 		  nelem = theParams[0]->value.nelem;
 		  while( nelem-- ) {
 		     elem--;
-		     this->value.data.lngptr[row] +=
-			( theParams[0]->value.data.logptr[elem] ? 1 : 0 );
-		     this->value.undef[row] |=
-			  theParams[0]->value.undef[elem];
+		     if ( ! theParams[0]->value.undef[elem] ) {
+		       this->value.data.lngptr[row] +=
+			 ( theParams[0]->value.data.logptr[elem] ? 1 : 0 );
+		       this->value.undef[row] = 0;
+		     }
 		  }
-	       }		  
+	       }
 	    } else if( theParams[0]->type==LONG ) {
 	       while( row-- ) {
 		  this->value.data.lngptr[row] = 0;
-		  this->value.undef[row] = 0;
+		  /* Default is UNDEF until a defined value is found */
+		  this->value.undef[row] = 1;
 		  nelem = theParams[0]->value.nelem;
 		  while( nelem-- ) {
 		     elem--;
-		     this->value.data.lngptr[row] +=
-			theParams[0]->value.data.lngptr[elem];
-		     this->value.undef[row] |=
-			  theParams[0]->value.undef[elem];
+		     if ( ! theParams[0]->value.undef[elem] ) {
+		       this->value.data.lngptr[row] +=
+			 theParams[0]->value.data.lngptr[elem];
+		       this->value.undef[row] = 0;
+		     }
 		  }
 	       }		  
 	    } else if( theParams[0]->type==DOUBLE ){
 	       while( row-- ) {
 		  this->value.data.dblptr[row] = 0.0;
-		  this->value.undef[row] = 0;
+		  /* Default is UNDEF until a defined value is found */
+		  this->value.undef[row] = 1;
 		  nelem = theParams[0]->value.nelem;
 		  while( nelem-- ) {
 		     elem--;
-		     this->value.data.dblptr[row] +=
-			theParams[0]->value.data.dblptr[elem];
-		     this->value.undef[row] |=
-			  theParams[0]->value.undef[elem];
+		     if ( ! theParams[0]->value.undef[elem] ) {
+		       this->value.data.dblptr[row] +=
+			 theParams[0]->value.data.dblptr[elem];
+		       this->value.undef[row] = 0;
+		     }
 		  }
 	       }		  
 	    } else { /* BITSTR */
@@ -3254,6 +3291,131 @@ static void Do_Func( Node *this )
 		    sptr1++;
 		  }
 	       }		  
+	    }
+	    break;
+
+	 case average_fct:
+	    elem = row * theParams[0]->value.nelem;
+	    if( theParams[0]->type==LONG ) {
+	       while( row-- ) {
+		  int count = 0;
+		  this->value.data.dblptr[row] = 0;
+		  nelem = theParams[0]->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     if (theParams[0]->value.undef[elem] == 0) {
+		       this->value.data.dblptr[row] +=
+			 theParams[0]->value.data.lngptr[elem];
+		       count ++;
+		     }
+		  }
+		  if (count == 0) {
+		    this->value.undef[row] = 1;
+		  } else {
+		    this->value.undef[row] = 0;
+		    this->value.data.dblptr[row] /= count;
+		  }
+	       }		  
+	    } else if( theParams[0]->type==DOUBLE ){
+	       while( row-- ) {
+		  int count = 0;
+		  this->value.data.dblptr[row] = 0;
+		  nelem = theParams[0]->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     if (theParams[0]->value.undef[elem] == 0) {
+		       this->value.data.dblptr[row] +=
+			 theParams[0]->value.data.dblptr[elem];
+		       count ++;
+		     }
+		  }
+		  if (count == 0) {
+		    this->value.undef[row] = 1;
+		  } else {
+		    this->value.undef[row] = 0;
+		    this->value.data.dblptr[row] /= count;
+		  }
+	       }		  
+	    }
+	    break;
+	 case stddev_fct:
+	    elem = row * theParams[0]->value.nelem;
+	    if( theParams[0]->type==LONG ) {
+
+	       /* Compute the mean value */
+	       while( row-- ) {
+		  int count = 0;
+		  double sum = 0, sum2 = 0;
+
+		  nelem = theParams[0]->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     if (theParams[0]->value.undef[elem] == 0) {
+		       sum += theParams[0]->value.data.lngptr[elem];
+		       count ++;
+		     }
+		  }
+		  if (count > 1) {
+		    sum /= count;
+
+		    /* Compute the sum of squared deviations */
+		    nelem = theParams[0]->value.nelem;
+		    elem += nelem;  /* Reset elem for second pass */
+		    while( nelem-- ) {
+		      elem--;
+		      if (theParams[0]->value.undef[elem] == 0) {
+			double dx = (theParams[0]->value.data.lngptr[elem] - sum);
+			sum2 += (dx*dx);
+		      }
+		    }
+
+		    sum2 /= (double)count-1;
+
+		    this->value.undef[row] = 0;
+		    this->value.data.dblptr[row] = sqrt(sum2);
+		  } else {
+		    this->value.undef[row] = 0;       /* STDDEV => 0 */
+		    this->value.data.dblptr[row] = 0;
+		  }
+	       }
+	    } else if( theParams[0]->type==DOUBLE ){
+
+	       /* Compute the mean value */
+	       while( row-- ) {
+		  int count = 0;
+		  double sum = 0, sum2 = 0;
+
+		  nelem = theParams[0]->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     if (theParams[0]->value.undef[elem] == 0) {
+		       sum += theParams[0]->value.data.dblptr[elem];
+		       count ++;
+		     }
+		  }
+		  if (count > 1) {
+		    sum /= count;
+
+		    /* Compute the sum of squared deviations */
+		    nelem = theParams[0]->value.nelem;
+		    elem += nelem;  /* Reset elem for second pass */
+		    while( nelem-- ) {
+		      elem--;
+		      if (theParams[0]->value.undef[elem] == 0) {
+			double dx = (theParams[0]->value.data.dblptr[elem] - sum);
+			sum2 += (dx*dx);
+		      }
+		    }
+
+		    sum2 /= (double)count-1;
+
+		    this->value.undef[row] = 0;
+		    this->value.data.dblptr[row] = sqrt(sum2);
+		  } else {
+		    this->value.undef[row] = 0;       /* STDDEV => 0 */
+		    this->value.data.dblptr[row] = 0;
+		  }
+	       }
 	    }
 	    break;
 
@@ -3277,18 +3439,25 @@ static void Do_Func( Node *this )
 	       for (irow=0; irow<row; irow++) {
 		  long *p = mptr;
 		  int nelem1 = nelem;
+		  int count = 0;
 
-		  this->value.undef[irow] = 0;
 		  while ( nelem1-- ) { 
-		    *p++ = *dptr++;
-		    if (*uptr++) {
-		      this->value.undef[irow] = 1;
-		      break;
+		    if (*uptr == 0) {
+		      *p++ = *dptr;   /* Only advance the dest pointer if we copied */
 		    }
-		  }		    
-
-		  if (this->value.undef[irow] == 0) 
-		    this->value.data.lngptr[irow] = qselect_median_lng(mptr, nelem);
+		    dptr ++;  /* Advance the source pointer ... */
+		    uptr ++;  /* ... and source "undef" pointer */
+		  }
+		  
+		  nelem1 = (p - mptr);  /* Number of accepted data points */
+		  if (nelem1 > 0) {
+		    this->value.undef[irow] = 0;
+		    this->value.data.lngptr[irow] = qselect_median_lng(mptr, nelem1);
+		  } else {
+		    this->value.undef[irow] = 1;
+		    this->value.data.lngptr[irow] = 0;
+		  }
+		    
 	       }		  
 
 	       free(mptr);
@@ -3310,18 +3479,24 @@ static void Do_Func( Node *this )
 		  double *p = mptr;
 		  int nelem1 = nelem;
 
-		  this->value.undef[irow] = 0;
 		  while ( nelem1-- ) { 
-		    *p++ = *dptr++;
-		    if (*uptr++) {
-		      this->value.undef[irow] = 1;
-		      break;
+		    if (*uptr == 0) {
+		      *p++ = *dptr;   /* Only advance the dest pointer if we copied */
 		    }
+		    dptr ++;  /* Advance the source pointer ... */
+		    uptr ++;  /* ... and source "undef" pointer */
 		  }
 
-		  if (this->value.undef[irow] == 0) 
-		    this->value.data.dblptr[irow] = qselect_median_dbl(mptr, nelem);
-	       }		  
+		  nelem1 = (p - mptr);  /* Number of accepted data points */
+		  if (nelem1 > 0) {
+		    this->value.undef[irow] = 0;
+		    this->value.data.dblptr[irow] = qselect_median_dbl(mptr, nelem1);
+		  } else {
+		    this->value.undef[irow] = 1;
+		    this->value.data.dblptr[irow] = 0;
+		  }
+
+	       }
 	       free(mptr);
 	    }
 	    break;
@@ -3342,6 +3517,21 @@ static void Do_Func( Node *this )
 
             /* Special Null-Handling Functions */
 
+	 case nonnull_fct:
+	   nelem = theParams[0]->value.nelem;
+	   if ( theParams[0]->type==STRING ) nelem = 1;
+	   elem = row * nelem;
+	   while( row-- ) {
+	     int nelem1 = nelem;
+
+	     this->value.undef[row] = 0;        /* Initialize to 0 (defined) */
+	     this->value.data.lngptr[row] = 0;
+	     while( nelem1-- ) {	
+	       elem --;
+	       if ( theParams[0]->value.undef[elem] == 0 ) this->value.data.lngptr[row] ++;
+	     }
+	   }
+	   break;
 	 case isnull_fct:
 	    if( theParams[0]->type==STRING ) elem = row;
 	    while( elem-- ) {
@@ -3473,9 +3663,8 @@ static void Do_Func( Node *this )
 	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<-1.0 || dval>1.0 ) {
-		     yyerror("Out of range argument to arcsin");
-		     free( this->value.data.ptr );
-		     break;
+		     this->value.data.dblptr[elem] = 0.0;
+		     this->value.undef[elem] = 1;
 		  } else
 		     this->value.data.dblptr[elem] = asin( dval );
 	       }
@@ -3485,9 +3674,8 @@ static void Do_Func( Node *this )
 	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<-1.0 || dval>1.0 ) {
-		     yyerror("Out of range argument to arccos");
-		     free( this->value.data.ptr );
-		     break;
+		     this->value.data.dblptr[elem] = 0.0;
+		     this->value.undef[elem] = 1;
 		  } else
 		     this->value.data.dblptr[elem] = acos( dval );
 	       }
@@ -3532,9 +3720,8 @@ static void Do_Func( Node *this )
 	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<=0.0 ) {
-		     yyerror("Out of range argument to log");
-		     free( this->value.data.ptr );
-		     break;
+		     this->value.data.dblptr[elem] = 0.0;
+		     this->value.undef[elem] = 1;
 		  } else
 		     this->value.data.dblptr[elem] = log( dval );
 	       }
@@ -3544,9 +3731,8 @@ static void Do_Func( Node *this )
 	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<=0.0 ) {
-		     yyerror("Out of range argument to log10");
-		     free( this->value.data.ptr );
-		     break;
+		     this->value.data.dblptr[elem] = 0.0;
+		     this->value.undef[elem] = 1;
 		  } else
 		     this->value.data.dblptr[elem] = log10( dval );
 	       }
@@ -3556,9 +3742,8 @@ static void Do_Func( Node *this )
 	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<0.0 ) {
-		     yyerror("Out of range argument to sqrt");
-		     free( this->value.data.ptr );
-		     break;
+		     this->value.data.dblptr[elem] = 0.0;
+		     this->value.undef[elem] = 1;
 		  } else
 		     this->value.data.dblptr[elem] = sqrt( dval );
 	       }
@@ -3617,40 +3802,42 @@ static void Do_Func( Node *this )
 	       long minVal=0;
 	       while( row-- ) {
 		  valInit = 1;
-		  this->value.undef[row] = 0;
+		  this->value.undef[row] = 1;
 		  nelem = theParams[0]->value.nelem;
 		  while( nelem-- ) {
 		     elem--;
-		     if( valInit && !theParams[0]->value.undef[elem] ) {
-			valInit = 0;
-			minVal  = theParams[0]->value.data.lngptr[elem];
-		     } else {
-			minVal  = minvalue( minVal,
-					    theParams[0]->value.data.lngptr[elem] );
+		     if ( !theParams[0]->value.undef[elem] ) {
+		       if ( valInit ) {
+			 valInit = 0;
+			 minVal  = theParams[0]->value.data.lngptr[elem];
+		       } else {
+			 minVal  = minvalue( minVal,
+					     theParams[0]->value.data.lngptr[elem] );
+		       }
+		       this->value.undef[row] = 0;
 		     }
-		     this->value.undef[row] |=
-			theParams[0]->value.undef[elem];
-		  }
+		  }  
 		  this->value.data.lngptr[row] = minVal;
 	       }		  
 	    } else if( this->type==DOUBLE ) {
 	       double minVal=0.0;
 	       while( row-- ) {
 		  valInit = 1;
-		  this->value.undef[row] = 0;
+		  this->value.undef[row] = 1;
 		  nelem = theParams[0]->value.nelem;
 		  while( nelem-- ) {
 		     elem--;
-		     if( valInit && !theParams[0]->value.undef[elem] ) {
-			valInit = 0;
-			minVal  = theParams[0]->value.data.dblptr[elem];
-		     } else {
-			minVal  = minvalue( minVal,
-					    theParams[0]->value.data.dblptr[elem] );
+		     if ( !theParams[0]->value.undef[elem] ) {
+		       if ( valInit ) {
+			 valInit = 0;
+			 minVal  = theParams[0]->value.data.dblptr[elem];
+		       } else {
+			 minVal  = minvalue( minVal,
+					     theParams[0]->value.data.dblptr[elem] );
+		       }
+		       this->value.undef[row] = 0;
 		     }
-		     this->value.undef[row] |=
-			theParams[0]->value.undef[elem];
-		  }
+		  }  
 		  this->value.data.dblptr[row] = minVal;
 	       }		  
 	    } else if( this->type==BITSTR ) {
@@ -3683,9 +3870,20 @@ static void Do_Func( Node *this )
 			      theParams[i]->value.data.lngptr[row];
 			   pNull[i] = theParams[i]->value.undef[row];
 			}
-		     if( !(this->value.undef[elem] = (pNull[0] || pNull[1]) ) )
-			this->value.data.lngptr[elem] =
-			   minvalue( pVals[0].data.lng, pVals[1].data.lng );
+		     if( pNull[0] && pNull[1] ) {
+		       this->value.undef[elem] = 1;
+		       this->value.data.lngptr[elem] = 0;
+		     } else if (pNull[0]) {
+		       this->value.undef[elem] = 0;
+		       this->value.data.lngptr[elem] = pVals[1].data.lng;
+		     } else if (pNull[1]) {
+		       this->value.undef[elem] = 0;
+		       this->value.data.lngptr[elem] = pVals[0].data.lng;
+		     } else {
+		       this->value.undef[elem] = 0;
+		       this->value.data.lngptr[elem] =
+			 minvalue( pVals[0].data.lng, pVals[1].data.lng );
+		     }
 		  }
 	       }
 	    } else if( this->type==DOUBLE ) {
@@ -3703,11 +3901,22 @@ static void Do_Func( Node *this )
 			      theParams[i]->value.data.dblptr[row];
 			   pNull[i] = theParams[i]->value.undef[row];
 			}
-		     if( !(this->value.undef[elem] = (pNull[0] || pNull[1]) ) )
-			this->value.data.dblptr[elem] =
-			   minvalue( pVals[0].data.dbl, pVals[1].data.dbl );
+		     if( pNull[0] && pNull[1] ) {
+		       this->value.undef[elem] = 1;
+		       this->value.data.dblptr[elem] = 0;
+		     } else if (pNull[0]) {
+		       this->value.undef[elem] = 0;
+		       this->value.data.dblptr[elem] = pVals[1].data.dbl;
+		     } else if (pNull[1]) {
+		       this->value.undef[elem] = 0;
+		       this->value.data.dblptr[elem] = pVals[0].data.dbl;
+		     } else {
+		       this->value.undef[elem] = 0;
+		       this->value.data.dblptr[elem] =
+			 minvalue( pVals[0].data.dbl, pVals[1].data.dbl );
+		     }
 		  }
-	       }
+ 	       }
 	    }
 	    break;
 
@@ -3717,19 +3926,20 @@ static void Do_Func( Node *this )
 	       long maxVal=0;
 	       while( row-- ) {
 		  valInit = 1;
-		  this->value.undef[row] = 0;
+		  this->value.undef[row] = 1;
 		  nelem = theParams[0]->value.nelem;
 		  while( nelem-- ) {
 		     elem--;
-		     if( valInit && !theParams[0]->value.undef[elem] ) {
-			valInit = 0;
-			maxVal  = theParams[0]->value.data.lngptr[elem];
-		     } else {
-			maxVal  = maxvalue( maxVal,
-					    theParams[0]->value.data.lngptr[elem] );
+		     if ( !theParams[0]->value.undef[elem] ) {
+		       if ( valInit ) {
+			 valInit = 0;
+			 maxVal  = theParams[0]->value.data.lngptr[elem];
+		       } else {
+			 maxVal  = maxvalue( maxVal,
+					     theParams[0]->value.data.lngptr[elem] );
+		       }
+		       this->value.undef[row] = 0;
 		     }
-		     this->value.undef[row] |=
-			theParams[0]->value.undef[elem];
 		  }
 		  this->value.data.lngptr[row] = maxVal;
 	       }		  
@@ -3737,19 +3947,20 @@ static void Do_Func( Node *this )
 	       double maxVal=0.0;
 	       while( row-- ) {
 		  valInit = 1;
-		  this->value.undef[row] = 0;
+		  this->value.undef[row] = 1;
 		  nelem = theParams[0]->value.nelem;
 		  while( nelem-- ) {
 		     elem--;
-		     if( valInit && !theParams[0]->value.undef[elem] ) {
-			valInit = 0;
-			maxVal  = theParams[0]->value.data.dblptr[elem];
-		     } else {
-			maxVal  = maxvalue( maxVal,
-					    theParams[0]->value.data.dblptr[elem] );
+		     if ( !theParams[0]->value.undef[elem] ) {
+		       if ( valInit ) {
+			 valInit = 0;
+			 maxVal  = theParams[0]->value.data.dblptr[elem];
+		       } else {
+			 maxVal  = maxvalue( maxVal,
+					     theParams[0]->value.data.dblptr[elem] );
+		       }
+		       this->value.undef[row] = 0;
 		     }
-		     this->value.undef[row] |=
-			theParams[0]->value.undef[elem];
 		  }
 		  this->value.data.dblptr[row] = maxVal;
 	       }		  
@@ -3783,9 +3994,20 @@ static void Do_Func( Node *this )
 			      theParams[i]->value.data.lngptr[row];
 			   pNull[i] = theParams[i]->value.undef[row];
 			}
-		     if( !(this->value.undef[elem] = (pNull[0] || pNull[1]) ) )
-			this->value.data.lngptr[elem] =
-			   maxvalue( pVals[0].data.lng, pVals[1].data.lng );
+		     if( pNull[0] && pNull[1] ) {
+		       this->value.undef[elem] = 1;
+		       this->value.data.lngptr[elem] = 0;
+		     } else if (pNull[0]) {
+		       this->value.undef[elem] = 0;
+		       this->value.data.lngptr[elem] = pVals[1].data.lng;
+		     } else if (pNull[1]) {
+		       this->value.undef[elem] = 0;
+		       this->value.data.lngptr[elem] = pVals[0].data.lng;
+		     } else {
+		       this->value.undef[elem] = 0;
+		       this->value.data.lngptr[elem] =
+			 maxvalue( pVals[0].data.lng, pVals[1].data.lng );
+		     }
 		  }
 	       }
 	    } else if( this->type==DOUBLE ) {
@@ -3803,9 +4025,20 @@ static void Do_Func( Node *this )
 			      theParams[i]->value.data.dblptr[row];
 			   pNull[i] = theParams[i]->value.undef[row];
 			}
-		     if( !(this->value.undef[elem] = (pNull[0] || pNull[1]) ) )
-			this->value.data.dblptr[elem] =
-			   maxvalue( pVals[0].data.dbl, pVals[1].data.dbl );
+		     if( pNull[0] && pNull[1] ) {
+		       this->value.undef[elem] = 1;
+		       this->value.data.dblptr[elem] = 0;
+		     } else if (pNull[0]) {
+		       this->value.undef[elem] = 0;
+		       this->value.data.dblptr[elem] = pVals[1].data.dbl;
+		     } else if (pNull[1]) {
+		       this->value.undef[elem] = 0;
+		       this->value.data.dblptr[elem] = pVals[0].data.dbl;
+		     } else {
+		       this->value.undef[elem] = 0;
+		       this->value.data.dblptr[elem] =
+			 maxvalue( pVals[0].data.dbl, pVals[1].data.dbl );
+		     }
 		  }
 	       }
 	    }
