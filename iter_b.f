@@ -103,8 +103,11 @@ C--------------------------------------------------------------------------
 
       integer totalrows,offset,firstrow,nrows,ncols,status
       integer units(*),colnum(*),datatype(*),iotype(*),repeat(*)
-      integer userData, stringCol
+      integer userData
+      character*(*) stringCol(*)
       logical logicalCol(*)
+
+      integer ii
 
 C     include f77.inc -------------------------------------
 C     Codes for FITS extension types
@@ -139,9 +142,6 @@ C     Codes for iterator column types
      &     OutputCol      = 2  )
 C     End of f77.inc -------------------------------------
 
-      integer ii
-      character*20 string
-
       if (status .ne. 0) return
 
 C    --------------------------------------------------------
@@ -170,14 +170,13 @@ C     NOTE: 1st element of array is the null pixel value!
 C     Loop over elements 2 to nrows+1, not 1 to nrows.
       
       do 10 ii=2,nrows+1
-         call ftgistr(stringCol,ii,string)
-         print *, string, logicalCol(ii)
+         print *, stringCol(ii), logicalCol(ii)
          if( logicalCol(ii) ) then
             logicalCol(ii) = .false.
-            call ftpistr(stringCol,ii,'changed to false')
+            stringCol(ii) = 'changed to false'
          else
             logicalCol(ii) = .true.
-            call ftpistr(stringCol,ii,'changed to true')
+            stringCol(ii) = 'changed to true'
          endif
  10   continue
       
