@@ -5204,7 +5204,8 @@ int ffghdt(fitsfile *fptr,      /* I - FITS file pointer             */
     if (*status > 0)
         return(*status);
 
-    if (fptr->HDUposition == 0) {  /* primary array is alway an IMAGE_HDU */
+    if (fptr->HDUposition == 0 && (fptr->Fptr)->headend == 0) { 
+         /* empty primary array is alway an IMAGE_HDU */
          *exttype = IMAGE_HDU;
     }
     else {
