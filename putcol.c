@@ -1893,7 +1893,7 @@ int ffpclb( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     char snull[20];   /*  the FITS null value  */
 
-    char cbuff[DBUFFSIZE];
+    double cbuff[DBUFFSIZE / sizeof(double)]; /* align cbuff on word boundary */
     void *buffer;
 
     if (*status > 0)           /* inherit input status value if > 0 */
@@ -2094,7 +2094,7 @@ int ffpcli( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     char snull[20];   /*  the FITS null value  */
 
-    char cbuff[DBUFFSIZE];
+    double cbuff[DBUFFSIZE / sizeof(double)]; /* align cbuff on word boundary */
     void *buffer;
 
     if (*status > 0)           /* inherit input status value if > 0 */
@@ -2295,7 +2295,7 @@ int ffpclj( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     char snull[20];   /*  the FITS null value  */
 
-    char cbuff[DBUFFSIZE];
+    double cbuff[DBUFFSIZE / sizeof(double)]; /* align cbuff on word boundary */
     void *buffer;
 
     if (*status > 0)           /* inherit input status value if > 0 */
@@ -2497,7 +2497,7 @@ int ffpcle( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     char snull[20];   /*  the FITS null value  */
 
-    char cbuff[DBUFFSIZE];
+    double cbuff[DBUFFSIZE / sizeof(double)]; /* align cbuff on word boundary */
     void *buffer;
 
     if (*status > 0)           /* inherit input status value if > 0 */
@@ -2699,7 +2699,7 @@ int ffpcld( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     char snull[20];   /*  the FITS null value  */
 
-    char cbuff[DBUFFSIZE];
+    double cbuff[DBUFFSIZE / sizeof(double)]; /* align cbuff on word boundary */
     void *buffer;
 
     if (*status > 0)           /* inherit input status value if > 0 */
