@@ -250,7 +250,7 @@ int ffdopn(fitsfile **fptr,      /* O - FITS file pointer                   */
            int mode,             /* I - 0 = open readonly; 1 = read/write   */
            int *status)          /* IO - error status                       */
 /*
-  Open an existing FITS file with either readonly or read/write access. ane
+  Open an existing FITS file with either readonly or read/write access. and
   move to the first HDU that contains 'interesting' data, if the primary
   array contains a null image (i.e., NAXIS = 0). 
 */
@@ -270,16 +270,49 @@ int fftopn(fitsfile **fptr,      /* O - FITS file pointer                   */
            int mode,             /* I - 0 = open readonly; 1 = read/write   */
            int *status)          /* IO - error status                       */
 /*
-  Open an existing FITS file with either readonly or read/write access. ane
+  Open an existing FITS file with either readonly or read/write access. and
   move to the first HDU that contains 'interesting' table (not an image). 
 */
 {
+    int hdutype;
+
     if (*status > 0)
         return(*status);
 
     *status = SKIP_IMAGE;
 
     ffopen(fptr, name, mode, status);
+
+    if (ffghdt(*fptr, &hdutype, status) <= 0) {
+        if (hdutype == IMAGE_HDU)
+            *status = NOT_TABLE;
+    }
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffiopn(fitsfile **fptr,      /* O - FITS file pointer                   */ 
+           const char *name,     /* I - full name of file to open           */
+           int mode,             /* I - 0 = open readonly; 1 = read/write   */
+           int *status)          /* IO - error status                       */
+/*
+  Open an existing FITS file with either readonly or read/write access. and
+  move to the first HDU that contains 'interesting' image (not an table). 
+*/
+{
+    int hdutype;
+
+    if (*status > 0)
+        return(*status);
+
+    *status = SKIP_TABLE;
+
+    ffopen(fptr, name, mode, status);
+
+    if (ffghdt(*fptr, &hdutype, status) <= 0) {
+        if (hdutype != IMAGE_HDU)
+            *status = NOT_IMAGE;
+    }
 
     return(*status);
 }
@@ -311,7 +344,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     char *url;
     double minin[4], maxin[4], binsizein[4], weight;
     int imagetype, naxis = 1, haxis, recip;
-    int skip_null = 0, skip_image = 0;
+    int skip_null = 0, skip_image = 0, skip_table = 0;
     char colname[4][FLEN_VALUE];
     char errmsg[FLEN_ERRMSG];
     char *hdtype[3] = {"IMAGE", "TABLE", "BINTABLE"};
@@ -334,6 +367,14 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
       /* ffopen to move to 1st significant table when opening the file. */
 
        skip_image = 1;
+       *status = 0;
+    }
+    else if (*status == SKIP_TABLE)
+    {
+      /* this special status value is used as a flag by fftopn to tell */
+      /* ffopen to move to 1st significant image when opening the file. */
+
+       skip_table = 1;
        *status = 0;
     }
 
@@ -621,17 +662,18 @@ move2hdu:
         return(*status);
       }
     }
-    else if (skip_null || skip_image ||
+    else if (skip_null || skip_image || skip_image ||
             (*imagecolname || *colspec || *rowfilter || *binspec))
     {
       /* ------------------------------------------------------------------
 
-      If no explicit extension specifier is given as part of the file name,
-      and, if a) skip_null is true (set if ffopen is called by ffdopn) or 
-      b) skip_image is true (set if ffopen is called by fftopn) or
-      c) other file filters are specified, then CFITSIO will attempt to
-      move to the first 'interesting' HDU after opening an existing FITS
-      file (or to first interesting table HDU if skip_image is true);
+      If no explicit extension specifier is given as part of the file
+      name, and, if a) skip_null is true (set if ffopen is called by
+      ffdopn) or b) skip_image or skip_table is true (set if ffopen is
+      called by fftopn or ffdopn) or c) other file filters are
+      specified, then CFITSIO will attempt to move to the first
+      'interesting' HDU after opening an existing FITS file (or to
+      first interesting table HDU if skip_image is true);
 
       An 'interesting' HDU is defined to be either an image with NAXIS
       > 0 (i.e., not a null array) or a table which has an EXTNAME
@@ -668,6 +710,10 @@ move2hdu:
             if (hdutyp == IMAGE_HDU && skip_image) {
 
                 continue;   /* skip images */
+
+            } else if (hdutyp != IMAGE_HDU && skip_table) {
+
+                continue;   /* skip tabless */
 
             } else if (hdutyp == IMAGE_HDU) {
 

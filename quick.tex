@@ -285,8 +285,11 @@ stream.  The {\tt stream} parameter is usually set equal to
 \subsection{File-level I/O Routines}
 
 \begin{verbatim}
-int fits_open_file(fitsfile **fptr, char *filename, int mode, int *status)
-int fits_open_data(fitsfile **fptr, char *filename, int mode, int *status)
+int fits_open_file( fitsfile **fptr, char *filename, int mode, int *status)
+int fits_open_data( fitsfile **fptr, char *filename, int mode, int *status)
+int fits_open_table(fitsfile **fptr, char *filename, int mode, int *status)
+int fits_open_image(fitsfile **fptr, char *filename, int mode, int *status)
+
 int fits_create_file(fitsfile **fptr, char *filename, int *status)
 int fits_close_file(fitsfile *fptr, int *status)
 \end{verbatim}
@@ -306,12 +309,13 @@ fitsio.h}.
 
 The fits\_open\_data routine is similar to the fits\_open\_file routine
 except that it will move to the first HDU containing significant data,
-if a) an HDU name or number to open was not explicitly specified as
-part of the filename, and b) if the FITS file contains a null primary
-array (i.e., NAXIS = 0).  In this case, it will look for the first
-IMAGE HDU with NAXIS > 0, or the first table that does not contain the
-strings `GTI' (a Good Time Interval extension) or `OBSTABLE' in the
-EXTNAME keyword value.
+if a HDU name or number to open is not explicitly specified as part of
+the filename.  It will move to the first IMAGE HDU with NAXIS > 0, or
+the first table that does not contain the strings `GTI' (a Good Time
+Interval extension) or `OBSTABLE' in the EXTNAME keyword value.  The
+fits\_open\_table and fits\_open\_image  routines are similar except
+that they will move to the first significant table HDU or image HDU,
+respectively.
 
 In {\tt fits\_create\_file},  the {\tt filename} is simply the root name of
 the file to be created.  You can overwrite an existing file by
@@ -383,12 +387,17 @@ ASCII\_TBL, or BINARY\_TBL}.
 ____________________________________________________________________
 int fits_copy_hdu(fitsfile *infptr, fitsfile *outfptr, int morekeys,
                   int *status)
+int fits_copy_file(fitsfile *infptr, fitsfile *outfptr, int previous,
+                  int current, int following, > int *status)
 \end{verbatim}
 
-Copy the current HDU from the FITS file associated with infptr and
-append it to the end of the FITS file associated with outfptr.  Space
-may be reserved for {\tt morekeys} additional keywords in the output
-header.
+The first routine copies the current HDU from the FITS file associated
+with infptr and appends it to the end of the FITS file associated with
+outfptr.  Space may be reserved for {\tt morekeys} additional keywords
+in the output header.   The second routine copies any HDUs previous
+to the current HDU, and/or the current HDU, and/or any HDUs following the
+current HDU, depending on the value (True or False) of 'previous',
+'current', and 'following', respectively.
 
 \begin{verbatim}
 _______________________________________________________________________
@@ -592,15 +601,16 @@ length array column.  The repeat count is always 1 in ASCII tables.
 ____________________________________________________________________________
 int fits_insert_rows(fitsfile *fptr, long firstrow, long nrows, int *status)
 int fits_delete_rows(fitsfile *fptr, long firstrow, long nrows, int *status)
+int fits_delete_rowrange(fitsfile *fptr, char *rangelist, int *status)
 \end{verbatim}
 
-Insert or delete rows in a table.
-The blank rows are
-inserted immediately following row {\tt frow}. Set {\tt frow} = 0 to
-insert rows at the beginning of the table.  The rows
-are deleted beginning with row {\tt frow}.  These routines update the
-value of the {\tt NAXIS2} keyword to reflect the new number of rows in
-the table.
+Insert or delete rows in a table.  The blank rows are inserted
+immediately following row {\tt frow}. Set {\tt frow} = 0 to insert rows
+at the beginning of the table.  The rows are deleted beginning with row
+{\tt frow}.   The last routine takes an input string listing the rows
+or row ranges to be deleted (e.g., '2,4-7, 9-12').  These routines
+update the value of the {\tt NAXIS2} keyword to reflect the new number
+of rows in the table.
 
 \begin{verbatim}
 _________________________________________________________________________
@@ -677,9 +687,15 @@ can perform complicated transformations on tables based on an input
 arithmetic expression which is evaluated for each row of the table.
 The first routine will select or copy rows of the table for which the
 expression evaluates to TRUE ($ \neq 0$).  The second routine writes
-the value of the expression to a column in the output table.  The
-arithmetic expression may be a function of any column or keyword in the
-input table as shown in these examples:
+the value of the expression to a column in the output table.  Rather
+than supplying the expression directly to these routines, the
+expression may also be written to a text file (continued over multiple
+lines if necessary) and the name of the file, prepended with a '@'
+character, may be supplied as the value of the 'expr' parameter (e.g.
+'@filename.txt').
+
+The arithmetic expression may be a function of any column or keyword in
+the input table as shown in these examples:
 
 \begin{verbatim}
 Row Selection Expressions:
@@ -916,8 +932,11 @@ If the name of the file to be opened is {\tt 'stdin'} or {\tt '-'} (a
 single dash character) then CFITSIO will read the file from the
 standard input stream.  Similarly, if the output file name is {\tt
 'stdout'} or {\tt '-'}, then the file will be written to the standard
-output stream.  This mechanism can be used to pipe FITS files from one task
-to another without having to write an intermediary FITS file on magnetic disk.
+output stream.  In addition, if the output filename is {\tt
+'stdout.gz'} or {\tt '-.gz'} then it will be gzip compressed before
+being written to stdout.  This mechanism can be used to pipe FITS files
+from one task to another without having to write an intermediary FITS
+file on magnetic disk.
 
 \item FITS files that exist only in memory, or shared memory.
 
@@ -1112,8 +1131,9 @@ Overwrite the values in an existing column or keyword by giving the
 name followed by an equals sign and an arithmetic expression.
 
 \item
-Select a set of columns to be included in the filtered file by
-listing the column names separated with semi-colons.  Any other
+Select a set of columns to be included in the filtered file by listing
+the column names separated with semi-colons.   Wild card characters may
+be used in the column names to match multiple columns.  Any other
 columns in the input table will not appear in the filtered file.
 
 \item
@@ -1144,6 +1164,9 @@ Some examples:
 
   [col TIME; X; Y]              - only the listed columns will appear
                                   in the filtered file
+
+  [col Time;*raw]               - include the Time column and any other
+                                  columns whose name ends with 'raw'.
 
   [col -TIME; Good == STATUS]   - deletes the TIME column and
                                   renames the STATUS column to GOOD

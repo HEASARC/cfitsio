@@ -683,6 +683,7 @@ int compress2file_from_mem(
     in_memsize = inmemsize;
 
     ofd = outdiskfile;
+
     realloc_fn = NULL; /* a null reallocation fn signals that the file is */
                        /* to be compressed to a file on disk, not memory */
 

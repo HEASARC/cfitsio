@@ -1546,6 +1546,12 @@ int fits_open_file / ffopen
 
 int fits_open_data / ffdopn
     (fitsfile **fptr, char *filename, int iomode, > int *status)
+
+int fits_open_table / fftopn
+    (fitsfile **fptr, char *filename, int iomode, > int *status)
+
+int fits_open_image / ffiopn
+    (fitsfile **fptr, char *filename, int iomode, > int *status)
 \end{verbatim}
 
 The iomode parameter determines the read/write access allowed in the
@@ -1559,12 +1565,16 @@ keyword EXTNAME = 'EVENTS').
 
 The fits\_open\_data routine is similar to the fits\_open\_file routine
 except that it will move to the first HDU containing significant data,
-if a) an HDU name or number to open was not explicitly specified as
-part of the filename, and b) if the FITS file contains a null primary
-array (i.e., NAXIS = 0).  In this case, it will look for the first
+if a HDU name or number to open was not explicitly specified as
+part of the filename.  In this case, it will look for the first
 IMAGE HDU with NAXIS > 0, or the first table that does not contain the
 strings `GTI' (Good Time Interval extension) or `OBSTABLE' in the
 EXTNAME keyword value.
+
+The fits\_open\_table and fits\_open\_image routines are similar to
+fits\_open\_data except they will move to the first significant table
+HDU or image HDU in the file, respectively, if a HDU name or
+number is not specified as part of the filename.
 
 IRAF images (.imh format files) and raw binary data arrays may also be
 opened with READONLY access.  CFITSIO will automatically test if the
@@ -1649,7 +1659,9 @@ it is used on the command line it must be preceded by a backslash to
 force the UNIX shell to accept the character as part of the filename.
 
 The output file will be written to the 'stdout' file stream if a dash
-character ('-') is given as the filename.
+character ('-') or the string 'stdout' is given as the filename. Similarly,
+'-.gz' or 'stdout.gz' will cause the file to be gzip compressed before
+it is written out to the stdout stream.
 
 Optionally, the name of a template file which is used to define the
 structure of the new file may be specified in parentheses following the
@@ -2860,7 +2872,13 @@ FITS table, based on whether the expression evaluates to true (not
 equal to zero) or false (zero).  The other routines evaluate the
 expression and calculate a value for each row of the table.  The
 allowed expression syntax is described in the row filter section in the
-`Extended File Name Syntax' chapter of this document.
+`Extended File Name Syntax' chapter of this document.  The expression
+may also be written to a text file, and the name of the file, prepended
+with a '@' character may be supplied for the 'expr' parameter (e.g.
+'@filename.txt'). The  expression  in  the  file can be arbitrarily
+complex and extend over multiple lines of the file.  Lines  that begin
+with 2 slash characters ('//') will  be ignored and may be used to add
+comments to the file.
 
  
 \begin{description}
@@ -6580,18 +6598,22 @@ Further examples:
 \end{verbatim}
 
 One special case of input file is where the filename = `-' (a dash or
-minus sign), which signifies that the input file is to be read from the
-stdin stream, or written to the stdout stream if a new output file is
-being created.  In the case of reading from stdin, CFITSIO first copies
-the whole stream into a temporary FITS file (in memory or on disk), and
-subsequent reading of the FITS file occurs in this copy.  When writing
-to stdout, CFITSIO first constructs the whole file in memory (since
-random access is required), then flushes it out to the stdout stream
-when the file is closed.  This feature allows FITS files to be piped
-between tasks in memory rather than having to create temporary
-intermediate FITS files on disk.  For example if task1 creates an
-output FITS file, and task2 reads an input FITS file, the FITS file may
-be piped between the 2 tasks by specifying
+minus sign) or 'stdin' or 'stdout', which signifies that the input file
+is to be read from the stdin stream, or written to the stdout stream if
+a new output file is being created.  In the case of reading from stdin,
+CFITSIO first copies the whole stream into a temporary FITS file (in
+memory or on disk), and subsequent reading of the FITS file occurs in
+this copy.  When writing to stdout, CFITSIO first constructs the whole
+file in memory (since random access is required), then flushes it out
+to the stdout stream when the file is closed.  In addition, if the
+output filename = '-.gz' or 'stdout.gz' then it will be gzip compressed
+before being written to stdout.
+
+This ability to read and write on the stdin and stdout steams allows
+FITS files to be piped between tasks in memory rather than having to
+create temporary intermediate FITS files on disk.  For example if task1
+creates an output FITS file, and task2 reads an input FITS file, the
+FITS file may be piped between the 2 tasks by specifying
  
 \begin{verbatim}
    task1 - | task2 -
@@ -8436,6 +8458,8 @@ fits\_movrel\_hdu     & \pageref{ffmrhd} \\
 fits\_null\_check     & \pageref{ffnchk} \\
 fits\_open\_data      & \pageref{ffopen} \\
 fits\_open\_file      & \pageref{ffopen} \\
+fits\_open\_image      & \pageref{ffopen} \\
+fits\_open\_table      & \pageref{ffopen} \\
 fits\_open\_group    & \pageref{ffgtop} \\
 fits\_open\_member    & \pageref{ffgmop} \\
 fits\_open\_memfile   & \pageref{ffomem} \\
@@ -8470,10 +8494,10 @@ fits\_read\_key          & \pageref{ffgky} \\
 fits\_read\_key\_longstr  & \pageref{ffgkls} \\
 fits\_read\_key\_triple   & \pageref{ffgkyt} \\
 fits\_read\_key\_unit     & \pageref{ffgunt} \\
-fits\_read\_key\_TYP      & \pageref{ffgkyx} \\
-fits\_read\_keyn         & \pageref{ffgkyn} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_read\_key\_TYP      & \pageref{ffgkyx} \\
+fits\_read\_keyn         & \pageref{ffgkyn} \\
 fits\_read\_keys\_TYP     & \pageref{ffgknx} \\
 fits\_read\_keyword      & \pageref{ffgkey} \\
 fits\_read\_pix  & \pageref{ffgpxv} \\
@@ -8518,10 +8542,10 @@ fits\_url\_type      & \pageref{ffurlt} \\
 fits\_verify\_chksum  & \pageref{ffvcks} \\
 fits\_verify\_group  & \pageref{ffgtvf} \\
 fits\_world\_to\_pix & \pageref{ffxypx} \\
-fits\_write\_2d\_TYP   & \pageref{ffp2dx} \\
-fits\_write\_3d\_TYP   & \pageref{ffp3dx} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_write\_2d\_TYP   & \pageref{ffp2dx} \\
+fits\_write\_3d\_TYP   & \pageref{ffp3dx} \\
 fits\_write\_atblhdr      & \pageref{ffphtb} \\
 fits\_write\_btblhdr      & \pageref{ffphbn} \\
 fits\_write\_chksum   & \pageref{ffpcks} \\
@@ -8700,6 +8724,7 @@ ffikyu   & \pageref{ffikyu} \\
 ffiky\_    & \pageref{ffikyx} \\
 ffimem  & \pageref{ffimem} \\
 ffinit  & \pageref{ffinit} \\
+ffiopn & \pageref{ffopen} \\
 ffirec     & \pageref{ffirec} \\
 ffirow  & \pageref{ffirow} \\
 ffitab    & \pageref{ffitab} \\
@@ -8708,9 +8733,9 @@ ffiurl & \pageref{ffiurl} \\
 ffkeyn      & \pageref{ffkeyn} \\
 ffmahd     & \pageref{ffmahd} \\
 ffmcom    & \pageref{ffmcom} \\
-ffmcrd       & \pageref{ffmcrd} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffmcrd       & \pageref{ffmcrd} \\
 ffmkls    & \pageref{ffmkyx} \\
 ffmkyu   & \pageref{ffmkyu} \\
 ffmky\_    & \pageref{ffmkyx} \\
@@ -8756,9 +8781,9 @@ ffppn     & \pageref{ffppn} \\
 ffppn\_ & \pageref{ffppnx} \\
 ffppr        & \pageref{ffppr} \\
 ffpprn & \pageref{ffpprn} \\
-ffppru & \pageref{ffppru} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffppru & \pageref{ffppru} \\
 ffppr\_    & \pageref{ffpprx} \\
 ffppx & \pageref{ffppx} \\
 ffppxn & \pageref{ffppxn} \\
@@ -8787,6 +8812,7 @@ fftheap  & \pageref{fftheap} \\
 fftkey   & \pageref{fftkey} \\
 fftm2s  & \pageref{ffdt2s} \\
 fftnul   & \pageref{fftnul} \\
+fftopn & \pageref{ffopen} \\
 fftplt & \pageref{fftplt} \\
 fftrec    & \pageref{fftrec} \\
 fftscl     & \pageref{fftscl} \\
@@ -9063,7 +9089,6 @@ improve the readability of their code.
  Symbolic Const    Value     Meaning
  --------------    -----  -----------------------------------------
                      0    OK, no error
- PREPEND_PRIMARY    -9    used in ffiimg to prepend a new primary array
  SAME_FILE         101    input and output files are the same
  TOO_MANY_FILES    103    tried to open too many FITS files at once
  FILE_NOT_OPENED   104    could not open the named file

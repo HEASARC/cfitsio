@@ -1,16 +1,26 @@
                    Log of Changes Made to CFITSIO
 
 
-Version 2.402
+Version 2.410 - 22 April 2002
 
   New Routines:
+
+  - fits_open_data behaves similarly to fits_open_file except that it
+    also will move to the first HDU containing significant data if
+    and an explicit HDU name or number to open was not specified.
+    This is useful for automatically skipping over a null primary
+    array when opening the file.
+
+  - fits_open_table and fits_open_image behaves similarly to 
+    fits_open_data, except they move to the first table or image
+    HDU in the file, respectively.
 
   - fits_write_errmark and fits_clear_errmark routines can be use
     to write an invisible marker to the CFITSIO error stack, and
     then clear any more recent messages on the stack, back to 
     that mark.  This preserves any older messages on the stack.
 
-  - fits_parse_range utility routines parses a row list string
+  - fits_parse_range utility routine parses a row list string
     and returns integer arrays giving the min and max row in each
     range.
 
@@ -20,16 +30,22 @@ Version 2.402
   - fits_copy_file copies all or part of the HDUs in the input file
     to the output file.
 
-  - fits_open_data behaves similarly to fits_open_file except that it
-    also will move to the first HDU containing significant data if
-    and an explicit HDU name or number to open was not specified.
-    This is useful for automatically skipping over a null primary
-    array when opening the file.
-
   - added fits_insert_card/ffikey to the publicly defined set
-    of routines (previously, it was a private routine)
+    of routines (previously, it was a private routine).
 
   Enhancements:
+
+  - changed the default numeric display format in ffgkys from 'E' format
+    to 'G' format, and changed the format for 'X' columns to a 
+    string of 8 1s or 0s representing each bit value.
+
+  - modified ffflsh so the system 'fflush' call is not made in cases
+    where the file was opened with 'READONLY' access.
+
+  - modified the output filename parser so the "-.gz", and "stdout.gz"
+    now cause the output file to be initially created in memory,
+    and then compressed and written out to the stdout stream when
+    the file is closed.
 
   - modified the routines that delete rows from a table to also 
     update the variable length array heap, to remove any orphaned
@@ -82,7 +98,15 @@ Version 2.402
   - a couple minor modifications to fitsio.h needed to support the off_t
     datatype on debian linux systems.
 
+  - increased internal buffer sizes in ffshft and ffsrow to improve
+    the I/O performance.
+
   Bug fixes:
+
+  - fits_create_template no longer worked because of improvements made
+    to other routines.  Had to modify ffghdt to not try to rescan
+    the header keywords if the file is still empty and contains no
+    keywords yet.
 
   - ffrtnm, which returns the root filename, sometimes did not work 
     properly when testing if the 'filename+n' convention was used for

@@ -168,6 +168,30 @@ void Cffdopn( fitsfile **fptr, const char *filename, int iomode, int *status )
 }
 FCALLSCSUB4(Cffdopn,FTDOPN,ftdopn,PFITSUNIT,STRING,INT,PINT)
 
+void Cfftopn( fitsfile **fptr, const char *filename, int iomode, int *status );
+void Cfftopn( fitsfile **fptr, const char *filename, int iomode, int *status )
+{
+   if( *fptr==NULL || *fptr==(fitsfile*)1 ) {
+      fftopn( fptr, filename, iomode, status );
+   } else {
+      *status = FILE_NOT_OPENED;
+      ffpmsg("Cfftopn tried to use an already opened unit.");
+   }
+}
+FCALLSCSUB4(Cfftopn,FTTOPN,fttopn,PFITSUNIT,STRING,INT,PINT)
+
+void Cffiopn( fitsfile **fptr, const char *filename, int iomode, int *status );
+void Cffiopn( fitsfile **fptr, const char *filename, int iomode, int *status )
+{
+   if( *fptr==NULL || *fptr==(fitsfile*)1 ) {
+      ffiopn( fptr, filename, iomode, status );
+   } else {
+      *status = FILE_NOT_OPENED;
+      ffpmsg("Cffiopn tried to use an already opened unit.");
+   }
+}
+FCALLSCSUB4(Cffiopn,FTIOPN,ftiopn,PFITSUNIT,STRING,INT,PINT)
+
 void Cffreopen( fitsfile *openfptr, fitsfile **newfptr, int *status );
 void Cffreopen( fitsfile *openfptr, fitsfile **newfptr, int *status )
 {

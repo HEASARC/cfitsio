@@ -1151,18 +1151,22 @@ Further examples:
 \end{verbatim}
 
 One special case of input file is where the filename = `-' (a dash or
-minus sign), which signifies that the input file is to be read from the
-stdin stream, or written to the stdout stream if a new output file is
-being created.  In the case of reading from stdin, CFITSIO first copies
-the whole stream into a temporary FITS file (in memory or on disk), and
-subsequent reading of the FITS file occurs in this copy.  When writing
-to stdout, CFITSIO first constructs the whole file in memory (since
-random access is required), then flushes it out to the stdout stream
-when the file is closed.  This feature allows FITS files to be piped
-between tasks in memory rather than having to create temporary
-intermediate FITS files on disk.  For example if task1 creates an
-output FITS file, and task2 reads an input FITS file, the FITS file may
-be piped between the 2 tasks by specifying
+minus sign) or 'stdin' or 'stdout', which signifies that the input file
+is to be read from the stdin stream, or written to the stdout stream if
+a new output file is being created.  In the case of reading from stdin,
+CFITSIO first copies the whole stream into a temporary FITS file (in
+memory or on disk), and subsequent reading of the FITS file occurs in
+this copy.  When writing to stdout, CFITSIO first constructs the whole
+file in memory (since random access is required), then flushes it out
+to the stdout stream when the file is closed.   In addition, if the
+output filename = '-.gz' or 'stdout.gz' then it will be gzip compressed
+before being written to stdout.
+
+This ability to read and write on the stdin and stdout steams allows
+FITS files to be piped between tasks in memory rather than having to
+create temporary intermediate FITS files on disk.  For example if task1
+creates an output FITS file, and task2 reads an input FITS file, the
+FITS file may be piped between the 2 tasks by specifying
 
 \begin{verbatim}
    task1 - | task2 -
@@ -3383,11 +3387,17 @@ used by these interface routines.
    filename, and b) if the FITS file contains a null primary array (i.e.,
    NAXIS = 0).  In this case, it will look for the first IMAGE HDU with
    NAXIS > 0, or the first table that does not contain the strings `GTI'
-  (Good Time Interval) or `OBSTABLE' in the EXTNAME keyword value.
+   (Good Time Interval) or `OBSTABLE' in the EXTNAME keyword value.  FTTOPN
+   is similar, except it will move to the first significant table HDU
+   (skipping over any image HDUs) in the file if a specific HDU name
+   or number is not specified.  FTIOPN will move to the first non-null
+  image HDU, skipping over any tables.
 \end{description}
 
 \begin{verbatim}
         FTDOPN(unit,filename,rwmode, > status)
+        FTTOPN(unit,filename,rwmode, > status)
+        FTIOPN(unit,filename,rwmode, > status)
 \end{verbatim}
 
 \begin{description}
@@ -3611,9 +3621,7 @@ previous chapter are also repeated here. A right arrow symbol is used
 here to separate the input parameters from the output parameters in the
 definition of each subroutine. This symbol is not actually part of the
 calling sequence. An alphabetical list and definition of all the
-parameters is given at the end of this section. The SPP interface
-subroutines have the same arguments but have names that begin with 'fs'
-rather than 'ft'.
+parameters is given at the end of this section.
 
 
 \section{FITS File Open and Close Subroutines: \label{FTOPEN}}
@@ -3622,13 +3630,18 @@ rather than 'ft'.
 \begin{description}
 \item[1 ]Open an existing FITS file with readonly or readwrite access. FTDOPN
 also moves to the first HDU containing significant data, if no specific
-HDU was specified as part of the filename.
+HDU is specified as part of the filename.  FTTOPN and FTIOPN are similar
+except that they will move to the first table HDU or image HDU, respectively,
+if a HDU name or number is not specified as part of the filename.
 \end{description}
 
 \begin{verbatim}
         FTOPEN(unit,filename,rwmode, > blocksize,status)
         FTDOPN(unit,filename,rwmode, > status)
+        FTTOPN(unit,filename,rwmode, > status)
+        FTIOPN(unit,filename,rwmode, > status)
 \end{verbatim}
+
 
 \begin{description}
 \item[2 ]Open an existing FITS file with readonly or readwrite access
@@ -5617,7 +5630,13 @@ FITS table, based on whether the expression evaluates to true (not
 equal to zero) or false (zero).  The other routines evaluate the
 expression and calculate a value for each row of the table.  The
 allowed expression syntax is described in the row filter section in the
-earlier `Extended File Name Syntax' chapter of this document.
+earlier `Extended File Name Syntax' chapter of this document.  The
+expression may also be written to a text file, and the name of the
+file, prepended with a '@' character may be supplied for the 'expr'
+parameter (e.g.  '@filename.txt'). The  expression  in  the  file can
+be arbitrarily complex and extend over multiple lines of the file.
+Lines  that begin with 2 slash characters ('//') will  be ignored and
+may be used to add comments to the file.
 
 
 \begin{description}
@@ -6335,6 +6354,8 @@ The following utility subroutines may be useful for certain applications:
         FTOPEN(unit,filename,rwmode, > blocksize,status)
         FTNOPN(unit,filename,rwmode, > status)
         FTDOPN(unit,filename,rwmode, > status)
+        FTTOPN(unit,filename,rwmode, > status)
+        FTIOPN(unit,filename,rwmode, > status)
         FTREOPEN(unit, > newunit, status)
         FTINIT(unit,filename,blocksize, > status)
         FTTPLT(unit, filename, tplfilename, > status)
@@ -6820,7 +6841,6 @@ Status codes in the range -99 to -999  and 1 to 999 are reserved for future
 FITSIO use.
 
   0  OK, no error
- -9  used in ffiimg to prepend a new primary array
 101  input and output files are the same
 103  too many FITS files open at once; all internal buffers full
 104  error opening existing file
