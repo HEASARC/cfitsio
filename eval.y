@@ -632,6 +632,18 @@ bexpr:   BOOLEAN
        | sexpr NE sexpr
                 { $$ = New_BinOp( BOOLEAN, $1, NE,  $3 ); TEST($$);
                   SIZE($$) = 1; }
+       | sexpr GT sexpr
+                { $$ = New_BinOp( BOOLEAN, $1, GT,  $3 ); TEST($$);
+                  SIZE($$) = 1; }
+       | sexpr GTE sexpr
+                { $$ = New_BinOp( BOOLEAN, $1, GTE, $3 ); TEST($$);
+                  SIZE($$) = 1; }
+       | sexpr LT sexpr
+                { $$ = New_BinOp( BOOLEAN, $1, LT,  $3 ); TEST($$);
+                  SIZE($$) = 1; }
+       | sexpr LTE sexpr
+                { $$ = New_BinOp( BOOLEAN, $1, LTE, $3 ); TEST($$);
+                  SIZE($$) = 1; }
        | bexpr AND bexpr
                 { $$ = New_BinOp( BOOLEAN, $1, AND, $3 ); TEST($$); }
        | bexpr OR bexpr
@@ -2136,6 +2148,18 @@ static void Do_BinOp_str( Node *this )
 	 val = ( FSTRCMP( sptr1, sptr2 ) == 0 );
 	 this->value.data.log = ( this->operation==EQ ? val : !val );
 	 break;
+      case GT:
+	 this->value.data.log = ( FSTRCMP( sptr1, sptr2 ) > 0 );
+	 break;
+      case LT:
+	 this->value.data.log = ( FSTRCMP( sptr1, sptr2 ) < 0 );
+	 break;
+      case GTE:
+	 this->value.data.log = ( FSTRCMP( sptr1, sptr2 ) >= 0 );
+	 break;
+      case LTE:
+	 this->value.data.log = ( FSTRCMP( sptr1, sptr2 ) <= 0 );
+	 break;
 
 	 /*  Concat Strings  */
 
@@ -2173,6 +2197,38 @@ static void Do_BinOp_str( Node *this )
 	    }
 	    break;
 	    
+	 case GT:
+	 case LT:
+	    while( rows-- ) {
+	       if( !const1 ) null1 = that1->value.undef[rows];
+	       if( !const2 ) null2 = that2->value.undef[rows];
+	       this->value.undef[rows] = (null1 || null2);
+	       if( ! this->value.undef[rows] ) {
+		  if( !const1 ) sptr1  = that1->value.data.strptr[rows];
+		  if( !const2 ) sptr2  = that2->value.data.strptr[rows];
+		  val = ( FSTRCMP( sptr1, sptr2 ) );
+		  this->value.data.logptr[rows] =
+		     ( this->operation==GT ? val>0 : val<0 );
+	       }
+	    }
+	    break;
+
+	 case GTE:
+	 case LTE:
+	    while( rows-- ) {
+	       if( !const1 ) null1 = that1->value.undef[rows];
+	       if( !const2 ) null2 = that2->value.undef[rows];
+	       this->value.undef[rows] = (null1 || null2);
+	       if( ! this->value.undef[rows] ) {
+		  if( !const1 ) sptr1  = that1->value.data.strptr[rows];
+		  if( !const2 ) sptr2  = that2->value.data.strptr[rows];
+		  val = ( FSTRCMP( sptr1, sptr2 ) );
+		  this->value.data.logptr[rows] =
+		     ( this->operation==GTE ? val>=0 : val<=0 );
+	       }
+	    }
+	    break;
+
 	    /*  Concat Strings  */
 	    
 	 case '+':
