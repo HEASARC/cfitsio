@@ -19,193 +19,10 @@
 ************************************************************************/
 
 #include "fitsio2.h"
-
-#define UNSIGNED_BYTE
-#include "cfortran.h"
-
-/************************************************************************
-   DEC C creates longs as 8-byte integers.  On most other machines, ints
-   and longs are both 4-bytes, so both are compatible with Fortrans
-   default integer which is 4-bytes.  To support DECs, we must redefine
-   LONGs and convert them to 8-bytes when going to C, and restore them
-   to 4-bytes when returning to Fortran.  Ugh!!!
-*************************************************************************/
-
-#ifdef DECFortran
-
-#undef LONGV_cfSTR
-#undef PLONG_cfSTR
-#undef LONGVVVVVVV_cfTYPE
-#undef PLONG_cfTYPE
-#undef LONGV_cfT
-#undef PLONG_cfT
-
-#define    LONGV_cfSTR(N,T,A,B,C,D,E) _(CFARGS,N)(T,LONGV,A,B,C,D,E)
-#define    PLONG_cfSTR(N,T,A,B,C,D,E) _(CFARGS,N)(T,PLONG,A,B,C,D,E)
-#define    LONGVVVVVVV_cfTYPE    int
-#define    PLONG_cfTYPE          int
-#define    LONGV_cfQ(B)          long *B, _(B,N);
-#define    PLONG_cfQ(B)          long B;
-#define    LONGV_cfT(M,I,A,B,D)  ( (_(B,N) = * _3(M,_LONGV_A,I)), \
-				    B = F2Clongv(_(B,N),A) )
-#define    PLONG_cfT(M,I,A,B,D)  ((B=*A),&B)
-#define    LONGV_cfR(A,B,D)      C2Flongv(_(B,N),A,B);
-#define    PLONG_cfR(A,B,D)      *A=B;
-#define    LONGV_cfH(S,U,B)
-#define    PLONG_cfH(S,U,B)
-
-long *F2Clongv(long size, int *A)
-{
-  long i;
-  long *B;
-
-  B=(long *)malloc( size*sizeof(long) );
-  for(i=0;i<size;i++) B[i]=A[i];
-  return(B);
-}
-
-void C2Flongv(long size, int *A, long *B)
-{
-  long i;
-
-  for(i=0;i<size;i++) A[i]=B[i];
-  free(B);
-}
-
-#endif
-
-/************************************************************************
-   Modify cfortran.h's handling of strings.  C interprets a "char **"
-   parameter as an array of pointers to the strings (or as a handle),
-   not as a pointer to a block of contiguous strings.  Also set a
-   a minimum length for string allocations, to minimize risk of
-   overflow.
-*************************************************************************/
+#include "f77_wrap.h"
 
 long gMinStrLen=80L;
-
-#undef  STRINGV_cfQ
-#undef  STRINGV_cfR
-#undef  TTSTR
-#undef  TTTTSTRV
-#undef  RRRRPSTRV
-
-#undef  PPSTRING_cfT
-
-#ifdef vmsFortran
-#define       PPSTRING_cfT(M,I,A,B,D)     (unsigned char*)A->dsc$a_pointer
-#else
-#ifdef CRAYFortran
-#define       PPSTRING_cfT(M,I,A,B,D)     (unsigned char*)_fcdtocp(A)
-#else
-#define       PPSTRING_cfT(M,I,A,B,D)     (unsigned char*)A
-#endif
-#endif
-
-#define _cfMAX(A,B)  ( (A>B) ? A : B )
-#define  STRINGV_cfQ(B)      char **B; unsigned int _(B,N), _(B,M);
-#define  STRINGV_cfR(A,B,D)  free(B[0]); free(B);
-#define  TTSTR(    A,B,D)  \
-            ((B=(char*)malloc(_cfMAX(D,gMinStrLen)+1))[D]='\0',memcpy(B,A,D), \
-               kill_trailing(B,' '))
-#define  TTTTSTRV( A,B,D,E)  ( \
-            _(B,N)=E, \
-            _(B,M)=_cfMAX(D,gMinStrLen)+1, \
-            B=(char**)malloc(_(B,N)*sizeof(char*)), \
-            B[0]=(char*)malloc(_(B,N)*_(B,M)), \
-            (void *)vindex(B,_(B,M),_(B,N),f2cstrv2(A,B[0],D,_(B,M),_(B,N))) \
-            )
-#define  RRRRPSTRV(A,B,D)    \
-            c2fstrv2(B[0],A,_(B,M),D,_(B,N)), \
-            free(B[0]), \
-            free(B);
-
-char **vindex(char **B, int elem_len, int nelem, char *B0)
-{
-   int i;
-   for( i=0;i<nelem;i++ ) B[i] = B0+i*elem_len;
-   return B;
-}
-
-char *c2fstrv2(char* cstr, char *fstr, int celem_len, int felem_len,
-               int nelem)
-{
-   int i,j;
-
-   for (i=0; i<nelem; i++) {
-      for (j=0; j<felem_len && *cstr; j++) *fstr++ = *cstr++;
-      cstr += celem_len-j;
-      for (; j<felem_len; j++) *fstr++ = ' ';
-   }
-   return( fstr-felem_len*nelem );
-}
-
-char *f2cstrv2(char *fstr, char* cstr, int felem_len, int celem_len,
-               int nelem)
-{
-   int i,j;
-
-   for (i=0; i<nelem; i++, cstr+=(celem_len-felem_len)) {
-      for (j=0; j<felem_len; j++) *cstr++ = *fstr++;
-      *cstr='\0';
-      kill_trailingn( cstr-felem_len, ' ', cstr );
-   }
-   return( cstr-celem_len*nelem );
-}
-
-/************************************************************************
-   The following definitions and functions handle conversions between
-   C and Fortran arrays of LOGICALS.  Individually, LOGICALS are
-   treated as int's but as char's when in an array.  cfortran defines
-   (F2C/C2F)LOGICALV but never uses them, so these routines also
-   handle TRUE/FALSE conversions.
-*************************************************************************/
-
-#undef  LOGICALV_cfSTR
-#undef  LOGICALV_cfT
-#define LOGICALV_cfSTR(N,T,A,B,C,D,E) _(CFARGS,N)(T,LOGICALV,A,B,C,D,E)
-#define LOGICALV_cfQ(B)               char *B; unsigned int _(B,N);
-#define LOGICALV_cfT(M,I,A,B,D)       (_(B,N)= * _3(M,_LOGV_A,I), \
-                                            B=F2CcopyLogVect(_(B,N),A))
-#define LOGICALV_cfR(A,B,D)           C2FcopyLogVect(_(B,N),A,B);
-#define LOGICALV_cfH(S,U,B)
-
-char *F2CcopyLogVect(long size, int *A)
-{
-   long i;
-   char *B;
-
-   B=(char *)malloc(size*sizeof(char));
-   for( i=0; i<size; i++ ) B[i]=F2CLOGICAL(A[i]);
-   return(B);
-}
-
-void C2FcopyLogVect(long size, int *A, char *B)
-{
-   long i;
-
-   for( i=0; i<size; i++ ) A[i]=C2FLOGICAL(B[i]);
-   free(B);
-}
-
-/*------------------  Fortran File Handling  ----------------------*/
-/*  Fortran uses unit numbers, whereas C uses file pointers, so    */
-/*  a global array of file pointers is setup in which Fortran's    */
-/*  unit number serves as the index.  Two FITSIO routines are      */
-/*  the integer unit number and the fitsfile file pointer.         */
-/*-----------------------------------------------------------------*/
-
-#define MAXFITSFILES 200                 /*  Array of file pointers indexed  */
-fitsfile *gFitsFiles[MAXFITSFILES]={0};  /*    by Fortran unit numbers       */
-
-#define  FITSUNIT_cfINT(N,A,B,X,Y,Z)   INT_cfINT(N,A,B,X,Y,Z)
-#define  FITSUNIT_cfSTR(N,T,A,B,C,D,E) INT_cfSTR(N,T,A,B,C,D,E)
-#define  FITSUNIT_cfT(M,I,A,B,D)       gFitsFiles[*A]
-#define  FITSUNITVVVVVVV_cfTYPE        int
-#define PFITSUNIT_cfINT(N,A,B,X,Y,Z)   PINT_cfINT(N,A,B,X,Y,Z)
-#define PFITSUNIT_cfSTR(N,T,A,B,C,D,E) PINT_cfSTR(N,T,A,B,C,D,E)
-#define PFITSUNIT_cfT(M,I,A,B,D)       (gFitsFiles + *A)
-#define PFITSUNIT_cfTYPE               int
+fitsfile *gFitsFiles[MAXFITSFILES]={0};
 
 void Cffgiou( int *unit, int *status )
 {
@@ -276,6 +93,8 @@ void Cffclos( int unit, int *status )
 FCALLSCSUB2(Cffclos,FTCLOS,ftclos,INT,PINT)
 
 FCALLSCSUB2(ffdelt,FTDELT,ftdelt,FITSUNIT,PINT)
+FCALLSCSUB3(ffflnm,FTFLNM,ftflnm,FITSUNIT,PSTRING,PINT)
+FCALLSCSUB3(ffflmd,FTFLMD,ftflmd,FITSUNIT,PINT,PINT)
 
 /*--------------- utility routines ---------------*/
 FCALLSCSUB1(ffvers,FTVERS,ftvers,PFLOAT)
@@ -285,6 +104,27 @@ FCALLSCSUB2(ffgerr,FTGERR,ftgerr,INT,PSTRING)
 FCALLSCSUB1(ffpmsg,FTPMSG,ftpmsg,STRING)
 FCALLSCSUB1(ffgmsg,FTGMSG,ftgmsg,PSTRING)
 FCALLSCSUB0(ffcmsg,FTCMSG,ftcmsg)
+
+void Cffrprt( char *fname, int status )
+{
+   if( !strcmp(fname,"STDOUT") || !strcmp(fname,"stdout") )
+      ffrprt( stdout, status );
+   else if( !strcmp(fname,"STDERR") || !strcmp(fname,"stderr") )
+      ffrprt( stderr, status );
+   else {
+      FILE *fptr;
+
+      fptr = fopen(fname, "a");
+      if (fptr==NULL)
+	 printf("file point is null.\n");
+      else {
+	 ffrprt(fptr,status);
+	 fclose(fptr);
+      }
+   }
+}
+FCALLSCSUB2(Cffrprt,FTRPRT,ftrprt,STRING,INT)
+
 FCALLSCSUB5(ffcmps,FTCMPS,ftcmps,STRING,STRING,LOGICAL,PLOGICAL,PLOGICAL)
 FCALLSCSUB2(fftkey,FTTKEY,fttkey,STRING,PINT)
 FCALLSCSUB2(fftrec,FTTREC,fttrec,STRING,PINT)
@@ -316,6 +156,10 @@ FCALLSCSUB6(ffpkyf,FTPKYF,ftpkyf,FITSUNIT,STRING,FLOAT,INT,STRING,PINT)
 FCALLSCSUB6(ffpkye,FTPKYE,ftpkye,FITSUNIT,STRING,FLOAT,INT,STRING,PINT)
 FCALLSCSUB6(ffpkyg,FTPKYG,ftpkyg,FITSUNIT,STRING,DOUBLE,INT,STRING,PINT)
 FCALLSCSUB6(ffpkyd,FTPKYD,ftpkyd,FITSUNIT,STRING,DOUBLE,INT,STRING,PINT)
+FCALLSCSUB6(ffpkyc,FTPKYC,ftpkyc,FITSUNIT,STRING,FLOATV,INT,STRING,PINT)
+FCALLSCSUB6(ffpkym,FTPKYM,ftpkym,FITSUNIT,STRING,DOUBLEV,INT,STRING,PINT)
+FCALLSCSUB6(ffpkfc,FTPKFC,ftpkfc,FITSUNIT,STRING,FLOATV,INT,STRING,PINT)
+FCALLSCSUB6(ffpkfm,FTPKFM,ftpkfm,FITSUNIT,STRING,DOUBLEV,INT,STRING,PINT)
 FCALLSCSUB6(ffpkyt,FTPKYT,ftpkyt,FITSUNIT,STRING,LONG,DOUBLE,STRING,PINT)
 
 #define ftptdm_LONGV_A4 A3
@@ -356,6 +200,8 @@ FCALLSCSUB8(ffpkng,FTPKNG,ftpkng,FITSUNIT,STRING,INT,INT,DOUBLEV,INT,STRINGV,PIN
 
 #define ftpknd_STRV_A7 NUM_ELEM_ARG(4)
 FCALLSCSUB8(ffpknd,FTPKND,ftpknd,FITSUNIT,STRING,INT,INT,DOUBLEV,INT,STRINGV,PINT)
+
+FCALLSCSUB6(ffcpky,FTCPKY,ftcpky,FITSUNIT,FITSUNIT,INT,INT,STRING,PINT)
 
 /*----------------- write required header keywords --------------*/
 #define ftphps_LONGV_A4 A3
@@ -398,6 +244,9 @@ FCALLSCSUB9(ffphbn,FTPBNH,ftpbnh,FITSUNIT,LONG,INT,STRINGV,STRINGV,STRINGV,STRIN
 #define ftptbh_LONGV_A6 A4
 FCALLSCSUB10(ffphtb,FTPTBH,ftptbh,FITSUNIT,LONG,LONG,INT,STRINGV,LONGV,STRINGV,STRINGV,STRING,PINT)
 
+/*----------------- write template keywords --------------*/
+FCALLSCSUB3(ffpktp,FTPKTP,ftpktp,FITSUNIT,STRING,PINT)
+
 /*------------------ get header information --------------*/
 FCALLSCSUB4(ffghsp,FTGHSP,ftghsp,FITSUNIT,PINT,PINT,PINT)
 FCALLSCSUB4(ffghps,FTGHPS,ftghps,FITSUNIT,PINT,PINT,PINT)
@@ -406,7 +255,7 @@ FCALLSCSUB4(ffghps,FTGHPS,ftghps,FITSUNIT,PINT,PINT,PINT)
 FCALLSCSUB3(ffmaky,FTMAKY,ftmaky,FITSUNIT,INT,PINT)
 FCALLSCSUB3(ffmrky,FTMRKY,ftmrky,FITSUNIT,INT,PINT)
 
-/*------------------ read single keywords -----------------*/
+/*------------------ read single keywords ----------------*/
 #define ftgnxk_STRV_A2 NUM_ELEM_ARG(3)
 #define ftgnxk_STRV_A4 NUM_ELEM_ARG(5)
 FCALLSCSUB7(ffgnxk,FTGNXK,ftgnxk,FITSUNIT,STRINGV,INT,STRINGV,INT,PSTRING,PINT)
@@ -446,6 +295,8 @@ FCALLSCSUB5(ffgkyl,FTGKYL,ftgkyl,FITSUNIT,STRING,PINT,PSTRING,PINT)
 FCALLSCSUB5(ffgkyj,FTGKYJ,ftgkyj,FITSUNIT,STRING,PLONG,PSTRING,PINT)
 FCALLSCSUB5(ffgkye,FTGKYE,ftgkye,FITSUNIT,STRING,PFLOAT,PSTRING,PINT)
 FCALLSCSUB5(ffgkyd,FTGKYD,ftgkyd,FITSUNIT,STRING,PDOUBLE,PSTRING,PINT)
+FCALLSCSUB5(ffgkyc,FTGKYC,ftgkyc,FITSUNIT,STRING,PFLOAT,PSTRING,PINT)
+FCALLSCSUB5(ffgkym,FTGKYM,ftgkym,FITSUNIT,STRING,PDOUBLE,PSTRING,PINT)
 FCALLSCSUB6(ffgkyt,FTGKYT,ftgkyt,FITSUNIT,STRING,PLONG,PDOUBLE,PSTRING,PINT)
 
 #define ftgtdm_LONGV_A5 A3
@@ -768,6 +619,10 @@ FCALLSCSUB6(ffukyf,FTUKYF,ftukyf,FITSUNIT,STRING,FLOAT,INT,STRING,PINT)
 FCALLSCSUB6(ffukye,FTUKYE,ftukye,FITSUNIT,STRING,FLOAT,INT,STRING,PINT)
 FCALLSCSUB6(ffukyg,FTUKYG,ftukyg,FITSUNIT,STRING,DOUBLE,INT,STRING,PINT)
 FCALLSCSUB6(ffukyd,FTUKYD,ftukyd,FITSUNIT,STRING,DOUBLE,INT,STRING,PINT)
+FCALLSCSUB6(ffukyc,FTUKYC,ftukyc,FITSUNIT,STRING,FLOATV,INT,STRING,PINT)
+FCALLSCSUB6(ffukym,FTUKYM,ftukym,FITSUNIT,STRING,DOUBLEV,INT,STRING,PINT)
+FCALLSCSUB6(ffukfc,FTUKFC,ftukfc,FITSUNIT,STRING,FLOATV,INT,STRING,PINT)
+FCALLSCSUB6(ffukfm,FTUKFM,ftukfm,FITSUNIT,STRING,DOUBLEV,INT,STRING,PINT)
 
 /*--------------------- modify keywords ---------------*/
 FCALLSCSUB4(ffmrec,FTMREC,ftmrec,FITSUNIT,INT,STRING,PINT)
@@ -782,6 +637,10 @@ FCALLSCSUB6(ffmkyf,FTMKYF,ftmkyf,FITSUNIT,STRING,FLOAT,INT,STRING,PINT)
 FCALLSCSUB6(ffmkye,FTMKYE,ftmkye,FITSUNIT,STRING,FLOAT,INT,STRING,PINT)
 FCALLSCSUB6(ffmkyg,FTMKYG,ftmkyg,FITSUNIT,STRING,DOUBLE,INT,STRING,PINT)
 FCALLSCSUB6(ffmkyd,FTMKYD,ftmkyd,FITSUNIT,STRING,DOUBLE,INT,STRING,PINT)
+FCALLSCSUB6(ffmkyc,FTMKYC,ftmkyc,FITSUNIT,STRING,FLOATV,INT,STRING,PINT)
+FCALLSCSUB6(ffmkym,FTMKYM,ftmkym,FITSUNIT,STRING,DOUBLEV,INT,STRING,PINT)
+FCALLSCSUB6(ffmkfc,FTMKFC,ftmkfc,FITSUNIT,STRING,FLOATV,INT,STRING,PINT)
+FCALLSCSUB6(ffmkfm,FTMKFM,ftmkfm,FITSUNIT,STRING,DOUBLEV,INT,STRING,PINT)
 
 /*--------------------- insert keywords ---------------*/
 FCALLSCSUB4(ffirec,FTIREC,ftirec,FITSUNIT,INT,STRING,PINT)
@@ -793,6 +652,10 @@ FCALLSCSUB6(ffikyf,FTIKYF,ftikyf,FITSUNIT,STRING,FLOAT,INT,STRING,PINT)
 FCALLSCSUB6(ffikye,FTIKYE,ftikye,FITSUNIT,STRING,FLOAT,INT,STRING,PINT)
 FCALLSCSUB6(ffikyg,FTIKYG,ftikyg,FITSUNIT,STRING,DOUBLE,INT,STRING,PINT)
 FCALLSCSUB6(ffikyd,FTIKYD,ftikyd,FITSUNIT,STRING,DOUBLE,INT,STRING,PINT)
+FCALLSCSUB6(ffikyc,FTIKYC,ftikyc,FITSUNIT,STRING,FLOATV,INT,STRING,PINT)
+FCALLSCSUB6(ffikym,FTIKYM,ftikym,FITSUNIT,STRING,DOUBLEV,INT,STRING,PINT)
+FCALLSCSUB6(ffikfc,FTIKFC,ftikfc,FITSUNIT,STRING,FLOATV,INT,STRING,PINT)
+FCALLSCSUB6(ffikfm,FTIKFM,ftikfm,FITSUNIT,STRING,DOUBLEV,INT,STRING,PINT)
 
 /*--------------------- delete keywords ---------------*/
 FCALLSCSUB3(ffdkey,FTDKEY,ftdkey,FITSUNIT,STRING,PINT)
@@ -800,11 +663,14 @@ FCALLSCSUB3(ffdrec,FTDREC,ftdrec,FITSUNIT,INT,PINT)
 
 /*--------------------- get HDU information -------------*/
 FCALLSCSUB2(ffghdn,FTGHDN,ftghdn,FITSUNIT,PINT)
+FCALLSCSUB3(ffghdt,FTGHDT,ftghdt,FITSUNIT,PINT,PINT)
 FCALLSCSUB3(ffghad,FTGHAD,ftghad,FITSUNIT,PLONG,PLONG)
 
 /*--------------------- HDU operations -------------*/
 FCALLSCSUB4(ffmahd,FTMAHD,ftmahd,FITSUNIT,INT,PINT,PINT)
 FCALLSCSUB4(ffmrhd,FTMRHD,ftmrhd,FITSUNIT,INT,PINT,PINT)
+FCALLSCSUB4(ffmnhd,FTMNHD,ftmnhd,FITSUNIT,STRING,INT,PINT)
+FCALLSCSUB3(ffthdu,FTTHDU,ftthdu,FITSUNIT,PINT,PINT)
 FCALLSCSUB2(ffcrhd,FTCRHD,ftcrhd,FITSUNIT,PINT)
 
 #define ftcrim_LONGV_A4 A3
@@ -1355,6 +1221,14 @@ FCALLSCSUB6(ffpclu,FTPCLU,ftpclu,FITSUNIT,INT,LONG,LONG,LONG,PINT)
 
 #define ftpclx_LOGV_A6 A5
 FCALLSCSUB7(ffpclx,FTPCLX,ftpclx,FITSUNIT,INT,LONG,LONG,LONG,LOGICALV,PINT)
+
+#define ftpcns_STRV_A6 NUM_ELEM_ARG(5)
+FCALLSCSUB8(ffpcns,FTPCNS,ftpcns,FITSUNIT,INT,LONG,LONG,LONG,STRINGV,STRING,PINT)
+
+#define ftpcnl_LOGV_A6 A5
+#define ftpcnl_LOGV_A7 A5
+FCALLSCSUB8(ffpcnl,FTPCNL,ftpcnl,FITSUNIT,INT,LONG,LONG,LONG,LOGICALV,LOGICALV,PINT)
+
 FCALLSCSUB8(ffpcnb,FTPCNB,ftpcnb,FITSUNIT,INT,LONG,LONG,LONG,PPSTRING,BYTE,PINT)
 FCALLSCSUB8(ffpcni,FTPCNI,ftpcni,FITSUNIT,INT,LONG,LONG,LONG,SHORTV,SHORT,PINT)
 FCALLSCSUB8(ffpcnk,FTPCNJ,ftpcnj,FITSUNIT,INT,LONG,LONG,LONG,INTV,INT,PINT)
@@ -1376,6 +1250,7 @@ FCALLSCSUB5(fficol,FTICOL,fticol,FITSUNIT,INT,STRING,STRING,PINT)
 #define fticls_STRV_A5 NUM_ELEM_ARG(3)
 FCALLSCSUB6(fficls,FTICLS,fticls,FITSUNIT,INT,INT,STRINGV,STRINGV,PINT)
 FCALLSCSUB3(ffdcol,FTDCOL,ftdcol,FITSUNIT,INT,PINT)
+FCALLSCSUB6(ffcpcl,FTCPCL,ftcpcl,FITSUNIT,FITSUNIT,INT,INT,INT,PINT)
 
 /*--------------------- WCS Utilities -------------*/
 FCALLSCSUB10(ffgics,FTGICS,ftgics,FITSUNIT,PDOUBLE,PDOUBLE,PDOUBLE,PDOUBLE,PDOUBLE,PDOUBLE,PDOUBLE,PSTRING,PINT)
@@ -1555,33 +1430,6 @@ FCALLSCSUB3(ffc2r,FTC2R,ftc2r,STRING,PFLOAT,PINT)
 FCALLSCSUB3(ffc2d,FTC2D,ftc2d,STRING,PDOUBLE,PINT)
 FCALLSCSUB3(ffc2l,FTC2L,ftc2l,STRING,PINT,PINT)
 
-/*-------------- General Read Column Routines --------------*/
-/*                 (prototyped in fitsio2.h)                */
-/*----------------------------------------------------------*/
-
-
-#define ftgcls_STRV_A8 NUM_ELEM_ARG(5)
-#define ftgcls_LOGV_A9 A5
-FCALLSCSUB11(ffgcls,FTGCLS,ftgcls,FITSUNIT,INT,LONG,LONG,LONG,INT,STRING,PSTRINGV,LOGICALV,PLOGICAL,PINT)
-
-#define ftgclb_LOGV_AA A5
-FCALLSCSUB12(ffgclb,FTGCLB,ftgclb,FITSUNIT,INT,LONG,LONG,LONG,LONG,INT,BYTE,PPSTRING,LOGICALV,PLOGICAL,PINT)
-
-#define ftgcli_LOGV_AA A5
-FCALLSCSUB12(ffgcli,FTGCLI,ftgcli,FITSUNIT,INT,LONG,LONG,LONG,LONG,INT,SHORT,SHORTV,LOGICALV,PLOGICAL,PINT)
-
-#define ftgclj_LOGV_AA A5
-FCALLSCSUB12(ffgclk,FTGCLJ,ftgclj,FITSUNIT,INT,LONG,LONG,LONG,LONG,INT,INT,INTV,LOGICALV,PLOGICAL,PINT)
-
-#define ftgclk_LOGV_AA A5
-FCALLSCSUB12(ffgclk,FTGCLK,ftgclk,FITSUNIT,INT,LONG,LONG,LONG,LONG,INT,INT,INTV,LOGICALV,PLOGICAL,PINT)
-
-#define ftgcle_LOGV_AA A5
-FCALLSCSUB12(ffgcle,FTGCLE,ftgcle,FITSUNIT,INT,LONG,LONG,LONG,LONG,INT,FLOAT,FLOATV,LOGICALV,PLOGICAL,PINT)
-
-#define ftgcld_LOGV_AA A5
-FCALLSCSUB12(ffgcld,FTGCLD,ftgcld,FITSUNIT,INT,LONG,LONG,LONG,LONG,INT,DOUBLE,DOUBLEV,LOGICALV,PLOGICAL,PINT)
- 
 /*------------------ Byte-level read/seek/write -----------------*/
 /*                   (prototyped in fitsio2.h)                   */
 /*---------------------------------------------------------------*/
