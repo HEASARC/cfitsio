@@ -1104,9 +1104,6 @@ int fits_clear_Fptr(FITSfile *Fptr,  /* O - FITS file pointer               */
 {
     int ii;
 
-    if (*status > 0)
-        return(*status);
-
     for (ii = 0; ii < NMAXFILES; ii++) {
         if (FptrTable[ii] == Fptr) {
             FptrTable[ii] = 0;
