@@ -455,10 +455,10 @@ int ffgr4b(fitsfile *fptr, LONGLONG pos, long nelem, long incre, float *buffer,
 int ffgr8b(fitsfile *fptr, LONGLONG pos, long nelem, long incre, double *buffer,
           int *status);
  
-int ffcins(fitsfile *fptr, long naxis1, long naxis2, long nbytes,
-           long bytepos, int *status);
-int ffcdel(fitsfile *fptr, long naxis1, long naxis2, long nbytes,
-           long bytepos, int *status);
+int ffcins(fitsfile *fptr, LONGLONG naxis1, LONGLONG naxis2, LONGLONG nbytes,
+           LONGLONG bytepos, int *status);
+int ffcdel(fitsfile *fptr, LONGLONG naxis1, LONGLONG naxis2, LONGLONG nbytes,
+           LONGLONG bytepos, int *status);
 int ffkshf(fitsfile *fptr, int firstcol, int tfields, int nshift, int *status);
  
 int fffi1i1(unsigned char *input, long ntodo, double scale, double zero,

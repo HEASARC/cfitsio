@@ -2122,7 +2122,7 @@ int ffbnfmll(char *tform,     /* I - format code from the TFORMn keyword */
         }
 
         if (iread != 1 || (!variable && (width > repeat)) )
-            width = repeat;
+            width = (long) repeat;
   
     }
     else if (form[0] == 'L')
@@ -2596,10 +2596,10 @@ int ffgtcl( fitsfile *fptr,  /* I - FITS file pointer                       */
     ffgtclll(fptr, colnum, typecode, &trepeat, &twidth, status);
 
     if (repeat)
-      *repeat= trepeat;
+      *repeat= (long) trepeat;
       
     if (width)
-      *width = twidth;
+      *width = (long) twidth;
 
     return(*status);
 }
@@ -2691,8 +2691,12 @@ int ffeqty( fitsfile *fptr,  /* I - FITS file pointer                       */
     LONGLONG trepeat, twidth;
     
     ffeqtyll(fptr, colnum, typecode, &trepeat, &twidth, status);
-    *repeat= trepeat;
-    *width = twidth;
+
+    if (repeat)
+        *repeat= (long) trepeat;
+
+    if (width)
+        *width = (long) twidth;
 
     return(*status);
 }
@@ -4294,8 +4298,8 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
 {
     int nulpos, rangecheck = 1, tstatus = 0;
     LONGLONG datastart, endpos;
-    long tbcol, nblock;
-    LONGLONG heapoffset, lrepeat, endrow, nrows;
+    long nblock;
+    LONGLONG heapoffset, lrepeat, endrow, nrows, tbcol;
     char message[81];
     tcolumn *colptr;
 
