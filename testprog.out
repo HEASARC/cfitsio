@@ -1,4 +1,4 @@
-CFITSIO TESTPROG, v1.040
+CFITSIO TESTPROG, v1.101
 
 Try opening then closing a nonexistent file:
   ffopen fptr, status  = 0 104 (expect an error)
@@ -136,7 +136,7 @@ Column Mvalue is number 10; status = 237.
 Column  is number 0; status = 219.
 
 Information about each column:
- 15A  16  1 15 Avalue, , A, 1, 1.000000, 0.000000, 123454321, .
+ 15A  16 15 15 Avalue, , A, 15, 1.000000, 0.000000, 123454321, .
   1L  14  1  1 Lvalue, m**2, L, 1, 1.000000, 0.000000, 123454321, .
  16X   1 16  1 Xvalue, cm, X, 16, 1.000000, 0.000000, 123454321, .
   1B  11  1  1 Bvalue, erg/s, B, 1, 1.000000, 0.000000, 99, .
@@ -665,12 +665,12 @@ ffcrim status = 0
 ffppr status = 0
 
 Image values written with ffppr and read with ffgpv:
-  0  2  4  6  8 10 12 14 16 18 20 22  0 (byte)
-  0  2  4  6  8 10 12 14 16 18 20 22  0 (short)
-  0  2  4  6  8 10 12 14 16 18 20 22  0 (int)
-  0  2  4  6  8 10 12 14 16 18 20 22  0 (long)
-  0  2  4  6  8 10 12 14 16 18 20 22  0 (float)
-  0  2  4  6  8 10 12 14 16 18 20 22  0 (double)
+  0  2  4  6  8 10 12 14 16 18 20 22 24 26  0 (byte)
+  0  2  4  6  8 10 12 14 16 18 20 22 24 26  0 (short)
+  0  2  4  6  8 10 12 14 16 18 20 22 24 26  0 (int)
+  0  2  4  6  8 10 12 14 16 18 20 22 24 26  0 (long)
+  0  2  4  6  8 10 12 14 16 18 20 22 24 26  0 (float)
+  0  2  4  6  8 10 12 14 16 18 20 22 24 26  0 (double)
 
 ffcrtb status = 0
 ffpcl status = 0
@@ -678,6 +678,7 @@ ffpcl status = 0
 Column values written with ffpcl and read with ffgcl:
   0  3  6  9 12 15 18 21 24 27  0 (byte)
   0  3  6  9 12 15 18 21 24 27  0 (short)
+  0  3  6  9 12 15 18 21 24 27  0 (int)
   0  3  6  9 12 15 18 21 24 27  0 (long)
   0  3  6  9 12 15 18 21 24 27  0 (float)
   0  3  6  9 12 15 18 21 24 27  0 (double)

@@ -12,7 +12,6 @@
 
 #include <string.h>
 #include "fitsio2.h"
-
 /*--------------------------------------------------------------------------*/
 int ffukys(fitsfile *fptr,    /* I - FITS file pointer  */
            char *keyname,     /* I - keyword name       */
@@ -782,27 +781,5 @@ int ffdrec(fitsfile *fptr,   /* I - FITS file pointer  */
 
     fptr->headend -= 80; /* decrement the position of the END keyword */
     return(*status);
-}
-/*--------------------------------------------------------------------------*/
-int ffmkey(fitsfile *fptr,    /* I - FITS file pointer  */
-           char *card,        /* I - card string value  */
-           int *status)       /* IO - error status      */
-/*
-  replace the previously read card (i.e. starting 80 bytes before the
-  fptr->nextkey position) with the contents of the input card.
-*/
-{
-    long headend;
-
-    headend = fptr->headend;                 /* save current end position */
-
-    fptr->headend = ( fptr->nextkey ) - 80;  /* point to card to be modified */
-
-    ffprec(fptr, card, status);              /* overwrite the existing card */
-
-    fptr->headend = headend;                 /* reset to the true position */
- 
-
- return(*status);
 }
 

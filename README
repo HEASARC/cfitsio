@@ -1,6 +1,6 @@
                    CFITSIO Interface Routines
 
-                           July 1996
+                        November 1996
 
 CFITSIO is a library of ANSI C routines for reading and writing FITS
 format files.  The design of these C routines closely follows the
@@ -18,48 +18,41 @@ with the Fortran fitsio source files.
 BUILDING CFITSIO
 ----------------
 
-The CFITSIO code is contained in the following 9 source files:
-  cfileio.c, convert.c, fitscore.c, getcol.c, getkey.c, modkey.c,
-  putcol.c, putkey.c, and utilproc.c. The fitsio.h, fitsio2.h, and
-  longname.h header files are also needed.
+The CFITSIO code is contained in about 30 .c source files and 3 .h
+header files.  The CFITSIO library is built on Unix systems by typing:
+
+  configure
+  make
+
+at the operating system prompt.  The 'configure' command customizes
+the Makefile for your particular system, then the 'make' command
+builds the library.
 
 On VAX/VMS systems 2 additional macro-code files are needed:
-   vmsieeed.mar and vmsieeer.mar
+vmsieeed.mar and vmsieeer.mar
 
 On VAX/VMS and ALPHA/VMS systems, the makevaxvms.com and makealphavms.com
 command files may be used to build the cfitsio.olb object library
 (e.g., type '@makevaxvms' at the Vax command line to build the CFITSIO
 library on a Vax).
 
-The CFITSIO library is built on Unix systems by typing:
-
-    configure
-    make
-
-at the operating system prompt.  The 'configure' command customizes
-the Makefile for your particular system, then the 'make' command
-builds the library.  The build process splits each routine in the
-source files into a separate disk file in a scratch subdirectory.
-Depending on the speed of the CPU, it can anywhere from a couple
-minutes to an hour to create the libcfitsio.a library file.
-
 TESTING CFITSIO
 ---------------
 
-The CFITSIO library should be tested by building and running
-the testprog.c program that is included with the release.  On VMS systems,
-type (assuming cc is the name of the C compiler command):
+The CFITSIO library should be tested by building and running the
+testprog.c program that is included with the release.  On Unix systems
+(assuming the gcc compiler is being used), type:
+
+% gcc -o testprog testprog.c -L. -lcfitsio -lm
+% testprog > testprog.lis
+% diff testprog.lis testprog.out
+% cmp testprog.fit testprog.std
+
+On VMS systems, type (assuming cc is the name of the C compiler command):
 
 $ cc testprog.c
 $ link testprog, cfitsio/lib
 $ run testprog
-
-On Unix systems (assuming the gcc compiler is being used), type:
-
-% gcc -o testprog testprog.c -L. -lcfitsio
-% testprog > testprog.lis
-% diff testprog.lis testprog.out
-% cmp testprog.fit testprog.std
 
 The testprog program should produce a FITS file called testprog.fit
 which is identical to the testprog.std FITS file included in this
@@ -68,7 +61,6 @@ piped to the file testprog.lis in the above example) should be
 identical to the listing contained in the file testprog.out.  The
 'diff' and 'cmp' commands shown above should not report any differences
 in the files.
-
 
 USING CFITSIO
 -------------
@@ -95,16 +87,17 @@ CFITSIO has currently been tested on the following platforms:
 
    Operating System          Compiler
    ----------------          --------
-   Sun OS                     gcc
-   Sun Solaris                gcc
+   Sun OS                     gcc and cc (3.0.1)
+   Sun Solaris                gcc and cc
    Silicon Graphics IRIX      gcc and cc
    DECstation  Ultrix         gcc
    Dec Alpha OSF/1            gcc
    Dec Alpha OpenVMS          cc with /float=gfloat or /float=ieee options
-   DEC VAX/VMS                gcc
-   IBM PC w/ Windows 95       Borland C++ V4.5
+   DEC VAX/VMS                gcc and cc
    Linux running on IBM PC    gcc
+   IBM PC w/ Windows 95       Borland C++ V4.5
    Mac IIci                   Symantec C++
+   MacOS 7.5.3                Metrowerks 9.
 
 CFITSIO will probably run on most other Unix platforms without
 modification.  Cray supercomputers and IBM mainframe computers are
@@ -114,13 +107,6 @@ Reports of any success or failure to run CFITSIO on other platforms
 would be appreciated.  Any problem reports or suggestions for
 improvements are also welcome.  Please send any reports to the author
 at:   pence@tetra.gsfc.nasa.gov
-
-
-Known problems or limitations:
-------------------------------
-
- - The routines that deal with FITS world coordinate system keywords
-   have not yet been implemented.
 
 -------------------------------------------------------------------------
 William D. Pence

@@ -91,7 +91,6 @@ main()
 
     comms[0] = comm;
 
-
     strcpy(filename, "testprog.fit");
 
     /* delete previous version of the file, if it exists */
@@ -203,6 +202,7 @@ main()
         printf("ffpdat status = %d\n", status);
         goto errstatus;
     }
+
     /*
       ###############################
       #  write arrays of keywords   #
@@ -314,15 +314,15 @@ main()
     ffppnj(fptr, 1, 11, 2, &joutarray[10],  12, &status);
     ffppne(fptr, 1, 15, 2, &eoutarray[14], 16., &status);
     ffppnd(fptr, 1, 19, 2, &doutarray[18], 20., &status);
-
     ffppru(fptr, 1, 1, 1, &status);
+
     if (status > 0)
     {
         printf("ffppnx status = %d\n", status);
         goto errstatus;
     }
 
-    ffflus(fptr, &status);   /* flush all data to the disk file */
+    ffflus(fptr, &status);   /* flush all data to the disk file */ 
     printf("ffflus status = %d\n", status);
 
     /*
@@ -1219,12 +1219,13 @@ main()
       #  read data from binary table #
       ################################
     */
+
     if (ffmrhd(fptr, 1, &hdutype, &status) > 0)
         goto errstatus;
 
     printf("\nMoved to BINTABLE; headend, datastart = %d %d\n",
         fptr->headend, fptr->datastart);
-
+ 
     ffghsp(fptr, &existkeys, &morekeys, &status);
     printf("header contains %d keywords with room for %d more\n",existkeys,
             morekeys);
@@ -1253,7 +1254,7 @@ main()
     }
 
     printf("\n\n");
-    ffgcvs(fptr, 1, 4, 1, nrows, "",  inskey,   &anynull, &status);
+    ffgcvs(fptr, 1, 4, 1, 1, "",  inskey,   &anynull, &status);
     printf("null string column value = -%s- (should be --)\n",inskey[0]);
 
     nrows = 21;
@@ -1410,8 +1411,6 @@ main()
       printf("%15s %2d %3d %5.1f %5.1f %d\n", inskey[ii], binarray[ii],
           iinarray[ii], einarray[ii], dinarray[ii] , jinarray[ii]);
     }
-
-
 
     /*
       ####################################################
@@ -1813,6 +1812,7 @@ main()
       ffpclu(fptr, 8, ii, ii-1, 1, &status);
     }
     printf("ffpcl_ status = %d\n", status);
+
     /*
       #################################
       #  close then reopen this HDU   #
@@ -1919,14 +1919,11 @@ main()
     /* write a few pixels with each datatype */
     ffppr(fptr, TBYTE,   1,  2, &boutarray[0],  &status);
     ffppr(fptr, TSHORT,  3,  2, &ioutarray[2],  &status);
-
-/*   TINIT is not supported on ALPHA OSF/1 */
-/*  ffppr(fptr, TINT,    5,  2, &koutarray[4],  &status); */
-    ffppr(fptr, TSHORT,  5,  2, &ioutarray[4],  &status);
-
-    ffppr(fptr, TLONG,   7,  2, &joutarray[6],  &status);
-    ffppr(fptr, TFLOAT,  9,  2, &eoutarray[8], &status);
-    ffppr(fptr, TDOUBLE, 11, 2, &doutarray[10], &status);
+    ffppr(fptr, TINT,    5,  2, &koutarray[4],  &status);
+    ffppr(fptr, TSHORT,  7,  2, &ioutarray[6],  &status);
+    ffppr(fptr, TLONG,   9,  2, &joutarray[8],  &status);
+    ffppr(fptr, TFLOAT,  11, 2, &eoutarray[10], &status);
+    ffppr(fptr, TDOUBLE, 13, 2, &doutarray[12], &status);
     printf("ffppr status = %d\n", status);
 
     /* read back the pixels with each datatype */
@@ -1937,15 +1934,15 @@ main()
     enul = 0.;
     dnul = 0.;
 
-    ffgpv(fptr, TBYTE,   1,  12, &bnul, binarray, &anynull, &status);
-    ffgpv(fptr, TSHORT,  1,  12, &inul, iinarray, &anynull, &status);
-    ffgpv(fptr, TINT,    1,  12, &knul, kinarray, &anynull, &status);
-    ffgpv(fptr, TLONG,   1,  12, &jnul, jinarray, &anynull, &status);
-    ffgpv(fptr, TFLOAT,  1,  12, &enul, einarray, &anynull, &status);
-    ffgpv(fptr, TDOUBLE, 1,  12, &dnul, dinarray, &anynull, &status);
+    ffgpv(fptr, TBYTE,   1,  14, &bnul, binarray, &anynull, &status);
+    ffgpv(fptr, TSHORT,  1,  14, &inul, iinarray, &anynull, &status);
+    ffgpv(fptr, TINT,    1,  14, &knul, kinarray, &anynull, &status);
+    ffgpv(fptr, TLONG,   1,  14, &jnul, jinarray, &anynull, &status);
+    ffgpv(fptr, TFLOAT,  1,  14, &enul, einarray, &anynull, &status);
+    ffgpv(fptr, TDOUBLE, 1,  14, &dnul, dinarray, &anynull, &status);
 
     printf("\nImage values written with ffppr and read with ffgpv:\n");
-    npixels = 12;
+    npixels = 14;
     for (ii = 0; ii < npixels; ii++)
         printf(" %2d", binarray[ii]);
     printf("  %d (byte)\n", anynull);  
@@ -2024,10 +2021,7 @@ main()
     /* read back the pixels with each datatype */
     ffgcv(fptr, TBYTE,   2, 1, 1, 10, &bnul, binarray, &anynull, &status);
     ffgcv(fptr, TSHORT,  2, 1, 1, 10, &inul, iinarray, &anynull, &status);
-
-/*  TINT is not supported on ALPHA OSF/1 */
-/*  ffgcv(fptr, TINT,    3, 1, 1, 10, &knul, kinarray, &anynull, &status); */
-
+    ffgcv(fptr, TINT,    3, 1, 1, 10, &knul, kinarray, &anynull, &status);
     ffgcv(fptr, TLONG,   3, 1, 1, 10, &jnul, jinarray, &anynull, &status);
     ffgcv(fptr, TFLOAT,  4, 1, 1, 10, &enul, einarray, &anynull, &status);
     ffgcv(fptr, TDOUBLE, 5, 1, 1, 10, &dnul, dinarray, &anynull, &status);
@@ -2040,11 +2034,11 @@ main()
     for (ii = 0; ii < npixels; ii++)
         printf(" %2d", iinarray[ii]);
     printf("  %d (short)\n", anynull);
-/*
+
     for (ii = 0; ii < npixels; ii++)
         printf(" %2d", kinarray[ii]);
     printf("  %d (int)\n", anynull); 
-*/
+
     for (ii = 0; ii < npixels; ii++)
         printf(" %2d", jinarray[ii]);
     printf("  %d (long)\n", anynull); 
@@ -2133,7 +2127,7 @@ main()
 
  errstatus:  /* jump here on error */
 
-    ffclos(fptr, &status);
+    ffclos(fptr, &status); 
     printf("ffclos status = %d\n", status);
 
     printf("\nNormally, there should be 8 error messages on the stack\n");

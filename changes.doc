@@ -1,7 +1,64 @@
          Log of Changes Made to CFITSIO
 
+Version 1.101 - 
 
-Version 1.04 - 
+   - Made major I/O efficiency improvements by adding internal buffers
+     rather than directly reading or writing to disk.  Access to 
+     columns in binary tables is now 50 - 150 times fasters.  Access to
+     FITS image is also slightly faster.
+
+   - made significant speed improvements when reading numerical data
+     in FITS ASCII tables by writing my own number parsing routines
+     rather than using the sscanf C library routine.  This change
+     requires that the -lm argument now be included when linking
+     a program that calls cfitsio (under UNIX).
+
+   - regrouped the source files into logically related sets of routines.
+     The Makefile now runs much faster since every single routine is
+     not split into a separate file.
+
+   - now use the memcpy function, rather than a 'for' loop in several
+     places for added efficiency
+
+   - redesigned the low-level binary table read and write routines
+     (ffpbytoff and ffgbytoff) for greater efficiency.
+
+   - added a new error status: 103 = too many open FITS files.
+
+   - added a 'extern "C"' statement around the function prototypes
+     in fitsio.h, to support use of cfitsio by C++ compilers.
+
+   - fixed routines for writing or reading fixed-length substrings
+     within a binary table ASCII column, with TFORM values of
+     of the form 'rAw' where 'r' is the total width of the ASCII
+     column and 'w' is the width of a substring within the column.
+
+   - no longer automatically rewrite the END card and following fill
+     values if they are already correct.
+
+   - all the 'get keyword value and comment' routines have been changed 
+     so that the comment is not returned if the input pointer is NULL.
+
+   - added new routine to return the optimum number of tables rows
+     that should be read or written at one time for optimum efficiency.
+
+   - modified the way numerical values in ASCII tables are parsed so
+     that embedded spaces in the value are ignored, and implicit
+     decimal points are now supported.   (e.g, the string '123E 12'
+     in a 'E10.2' format column will be interpreted as 1.23 * 10**12).
+
+   - modified ffpcl and ffgcl to support binary table columns of
+     all datatype (added logical, bit, complex, and double complex)
+
+   - when writing numerical data to ASCII table columns, the ffpcl_
+     routines now return an overflow error if a value is too large
+     to be expressed in the column format.
+
+   - closed small memory leak in ffpcls.
+
+   - initialized the 'incre' variable in ffgcpr to eliminate compiler warning.
+
+Version 1.04 - 17 Sept 1996
 
    - added README.MacOS and cfitsio_mac.sit.hqx to the distribution
      to support the Mac platforms.

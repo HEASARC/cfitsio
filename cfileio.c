@@ -12,7 +12,6 @@
 
 #include <string.h>
 #include "fitsio2.h"
-
 /*--------------------------------------------------------------------------*/
 int ffopenx(FILE **diskfile, /* O - pointer to  file descriptor             */
             const char *filename,  /* I - name of file to open or create    */
@@ -86,12 +85,14 @@ int ffopenx(FILE **diskfile, /* O - pointer to  file descriptor             */
     *diskfile =  fopen(filename,mode); 
 
 #endif
+
     if (*diskfile)
     {
         if (!newfile)
         {
             fseek(*diskfile, 0, 2);   /* move to end of the existing file */
             *filesize = ftell(*diskfile);  /* position = size of file */
+            fseek(*diskfile, 0, 0);   /* move back to beginning of file */
         }
 
         return(*status = 0);
@@ -121,8 +122,25 @@ int ffclosex(FILE *diskfile, /* I - file descriptor                        */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffflushx( FILE *diskfile )   /* I - file descriptor                */
+/*
+  lowest level system-dependent routine to flush file buffers to disk.
+*/
+{
+    return(fflush(diskfile));
+}
+/*--------------------------------------------------------------------------*/
+int ffseek( FILE *diskfile,   /* I - file descriptor                */
+            long position)    /* I - byte position to seek to       */
+/*
+  lowest level system-dependent routine to seek to a position in a file.
+  Return non-zero on error.
+*/
+{
+    return(fseek(diskfile, position, 0));
+}
+/*--------------------------------------------------------------------------*/
 int ffwrite( FILE *diskfile,   /* I - file descriptor                */
-             long bytepos,     /* I - starting byte position in file */
              long nbytes,      /* I - number of bytes to write       */
              void *buffer,     /* I - buffer to write                */
              int *status)      /* O - error status                   */
@@ -131,8 +149,6 @@ int ffwrite( FILE *diskfile,   /* I - file descriptor                */
   Return status = 106 on write error.
 */
 {
-    fseek(diskfile, bytepos, 0);
-
     if(fwrite(buffer, 1, nbytes, diskfile) != nbytes)
         *status = 106;
 
@@ -140,7 +156,6 @@ int ffwrite( FILE *diskfile,   /* I - file descriptor                */
 }
 /*--------------------------------------------------------------------------*/
 int ffread( FILE *diskfile,   /* I - file descriptor                */
-            long bytepos,     /* I - starting byte position in file */
             long nbytes,      /* I - number of bytes to read        */
             void *buffer,     /* O - buffer to read into            */
             int *status)      /* O - error status                   */
@@ -149,13 +164,9 @@ int ffread( FILE *diskfile,   /* I - file descriptor                */
   Return status = 108 on error.
 */
 {
-    if ( !fseek(diskfile, bytepos, 0) )
-    {
-       if(fread(buffer, 1, nbytes, diskfile) != nbytes)
-           *status = 108;
-    }
-    else
+    if(fread(buffer, 1, nbytes, diskfile) != nbytes)
         *status = 108;
 
     return(*status);
 }
+

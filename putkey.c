@@ -15,7 +15,86 @@
 #include <ctype.h>
 #include <time.h>
 #include "fitsio2.h"
+/*--------------------------------------------------------------------------*/
+int ffcrim(fitsfile *fptr,      /* I - FITS file pointer           */
+           int bitpix,          /* I - bits per pixel              */
+           int naxis,           /* I - number of axes in the array */
+           long *naxes,         /* I - size of each axis           */
+           int *status)         /* IO - error status               */
+/*
+  create an IMAGE extension following the current HDU. If the
+  current HDU is empty (contains no header keywords), then simply
+  write the required image (or primary array) keywords to the current
+  HDU. 
+*/
+{
+    if (*status > 0)
+        return(*status);
 
+    /* create new extension if current header is not empty */
+    if (fptr->headend != fptr->headstart[fptr->curhdu] )
+        ffcrhd(fptr, status);
+
+    /* write the required header keywords */
+    ffphpr(fptr, TRUE, bitpix, naxis, naxes, 0, 1, TRUE, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffcrtb(fitsfile *fptr,  /* I - FITS file pointer                        */
+           int tbltype,     /* I - type of table to create                  */
+           long naxis2,     /* I - number of rows in the table              */
+           int tfields,     /* I - number of columns in the table           */
+           char **ttype,    /* I - name of each column                      */
+           char **tform,    /* I - value of TFORMn keyword for each column  */
+           char **tunit,    /* I - value of TUNITn keyword for each column  */
+           char *extname,   /* I - value of EXTNAME keyword, if any         */
+           int *status)     /* IO - error status                            */
+/*
+  Create a table extension in a FITS file. 
+*/
+{
+    long naxis1, ncols, *tbcol;
+
+    if (*status > 0)
+        return(*status);
+
+    /* create new extension if current header is not empty */
+    if (fptr->headend != fptr->headstart[fptr->curhdu] )
+        ffcrhd(fptr, status);
+
+    if (tbltype == BINARY_TBL)
+    {
+      /* write the required header keywords. This will write PCOUNT = 0 */
+      /* so variable length array columns are not supported             */
+      ffphbn(fptr, naxis2, tfields, ttype, tform, tunit, extname, 0, status);
+    }
+    else if (tbltype == ASCII_TBL)
+    {
+      /* allocate mem for tbcol; malloc can have problems allocating small */
+      /* arrays, so allocate at least 20 bytes */
+
+      ncols = maxvalue(5, tfields);
+      tbcol = (long *) calloc(ncols, sizeof(long));
+
+      if (tbcol)
+      {
+        /* calculate width of a row and starting position of each column. */
+        /* Each column will be separated by 1 blank space */
+        ffgabc(tfields, tform, 1, &naxis1, tbcol, status);
+
+        /* write the required header keywords */
+        ffphtb(fptr, naxis1, naxis2, tfields, ttype, tbcol, tform, tunit,
+               extname, status);
+
+        free(tbcol);
+      }
+    }
+    else
+      *status = NOT_TABLE;
+
+    return(*status);
+}
 /*--------------------------------------------------------------------------*/
 int ffpky( fitsfile *fptr,     /* I - FITS file pointer        */
            int  datatype,      /* I - datatype of the value    */
@@ -1276,3 +1355,204 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     return(*status);
 }
+/*--------------------------------------------------------------------------*/
+int ffi2c(long ival,   /* I - value to be converted to a string */
+          char *cval,  /* O - character string representation of the value */
+          int *status) /* IO - error status */
+/*
+  convert  value to a null-terminated formatted string.
+*/
+{
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    cval[0] = '\0';
+
+    if (sprintf(cval, "%ld", ival) < 0)
+    {
+        ffpmsg("Error in ffi2c converting integer to string");
+        *status = BAD_I2C;
+    }
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffl2c(int lval,    /* I - value to be converted to a string */
+          char *cval,  /* O - character string representation of the value */
+          int *status) /* IO - error status ) */
+/*
+  convert logical value to a null-terminated formatted string.  If the
+  input value == 0, then the output character is the letter F, else
+  the output character is the letter T.  The output string is null terminated.
+*/
+{
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (lval)
+        strcpy(cval,"T");
+    else
+        strcpy(cval,"F");
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffs2c(char *instr,   /* I - null terminated input string  */
+          char *outstr,  /* O - null terminated quoted output string */
+          int *status)   /* IO - error status */
+/*
+  convert an input string to a quoted string. Leading spaces 
+  are significant.  FITS string keyword values must be at least 
+  8 chars long so pad out string with spaces if necessary.
+      Example:   km/s ==> 'km/s    '
+  Single quote characters in the input string will be replace by
+  two single quote characters. e.g., o'brian ==> 'o''brian'
+*/
+{
+    size_t len, ii, jj;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    outstr[0] = '\'';      /* start output string with a quote */
+
+    len = strlen(instr);
+    if (len > 68)
+        len = 68;    /* limit input string to 68 chars */
+
+    for (ii=0, jj=1; ii < len && jj < 69; ii++, jj++)
+    {
+        outstr[jj] = instr[ii];  /* copy each char from input to output */
+        if (instr[ii] == '\'')
+        {
+            jj++;
+            outstr[jj]='\'';   /* duplicate any apostrophies in the input */
+        }
+    }
+
+    for (; jj < 9; jj++)       /* pad string so it is at least 8 chars long */
+        outstr[jj] = ' ';
+
+    if (jj == 70)   /* only occurs if the last char of string was a quote */
+        outstr[69] = '\0';
+    else
+    {
+        outstr[jj] = '\'';         /* append closing quote character */
+        outstr[jj+1] = '\0';          /* terminate the string */
+    }
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffr2f(float fval,   /* I - value to be converted to a string */
+          int  decim,   /* I - number of decimal places to display */
+          char *cval,   /* O - character string representation of the value */
+          int  *status) /* IO - error status */
+/*
+  convert float value to a null-terminated F format string
+*/
+{
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    cval[0] = '\0';
+
+    if (decim < 0)
+    {
+        ffpmsg("Error in ffr2f:  no. of decimal places < 0");
+        return(*status = BAD_DECIM);
+    }
+
+    if (sprintf(cval, "%.*f", decim, fval) < 0)
+    {
+        ffpmsg("Error in ffr2f converting float to string");
+        *status = BAD_F2C;
+    }
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffr2e(float fval,  /* I - value to be converted to a string */
+         int decim,    /* I - number of decimal places to display */
+         char *cval,   /* O - character string representation of the value */
+         int *status)  /* IO - error status */
+/*
+  convert float value to a null-terminated exponential format string
+*/
+{
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    cval[0] = '\0';
+
+    if (decim < 0)
+    {
+        ffpmsg("Error in ffr2e:  no. of decimal places < 0");
+        return(*status = BAD_DECIM);
+    }
+
+    if (sprintf(cval, "%.*E", decim, fval) < 0)
+    {
+        ffpmsg("Error in ffr2e converting float to string");
+        *status = BAD_F2C;
+    }
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffd2f(double dval,  /* I - value to be converted to a string */
+          int decim,    /* I - number of decimal places to display */
+          char *cval,   /* O - character string representation of the value */
+          int *status)  /* IO - error status */
+/*
+  convert double value to a null-terminated F format string
+*/
+{
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    cval[0] = '\0';
+
+    if (decim < 0)
+    {
+        ffpmsg("Error in ffd2f:  no. of decimal places < 0");
+        return(*status = BAD_DECIM);
+    }
+
+    if (sprintf(cval, "%.*f", decim, dval) < 0)
+    {
+        ffpmsg("Error in ffd2f converting double to string");
+        *status = BAD_F2C;
+    }
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffd2e(double dval,  /* I - value to be converted to a string */
+          int decim,    /* I - number of decimal places to display */
+          char *cval,   /* O - character string representation of the value */
+          int *status)  /* IO - error status */
+/*
+  convert double value to a null-terminated exponential format string.
+*/
+{
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    cval[0] = '\0';
+
+    if (decim < 0)
+    {
+        ffpmsg("Error in ffd2e:  no. of decimal places < 0");
+        return(*status = BAD_DECIM);
+    }
+
+    if (sprintf(cval, "%.*E", decim, dval) < 0)
+    {
+        ffpmsg("Error in ffd2e converting double to string");
+        *status = BAD_F2C;
+    }
+
+    return(*status);
+}
+

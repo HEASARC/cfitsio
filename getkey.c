@@ -216,7 +216,9 @@ int ffgkey( fitsfile *fptr,     /* I - FITS file pointer        */
     char card[FLEN_CARD];
 
     keyval[0] = '\0';
-    comm[0] = '\0';
+    if (comm)
+       comm[0] = '\0';
+
     if (ffgcrd(fptr, keyname, card, status) > 0)    /* get the 80-byte card */
         return(*status);
 
@@ -530,7 +532,7 @@ int ffgkyn( fitsfile *fptr,      /* I - FITS file pointer             */
   value includes the leading and closing quote characters.  The value may be
   up to 70 characters long, and the comment may be up to 72 characters long.
   If the keyword has no value (no equal sign in column 9) then a null value
-  is returned.
+  is returned.  If comm = NULL, then do not return the comment string.
 */
 {
     char card[FLEN_CARD], sbuff[FLEN_CARD];
@@ -538,7 +540,8 @@ int ffgkyn( fitsfile *fptr,      /* I - FITS file pointer             */
 
     keyname[0] = '\0';
     value[0] = '\0';
-    comm[0] = '\0';
+    if (comm)
+        comm[0] = '\0';
 
     if (ffgrec(fptr, nkey, card, status) > 0 )  /* get the 80-byte card */
         return(*status);

@@ -30,7 +30,7 @@
 \medskip
 \medskip
 \begin{center}
-{\Large Version 1.0\\}
+{\Large Version 1.1\\}
 \end{center}
 \bigskip
 \vskip 3.0cm
@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large September 1996\\}
+{\Large November 1996\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -151,10 +151,8 @@ or via anonymous FTP at:
 
 \section{Building the Library}
 
-The CFITSIO code is contained in 9 source files (cfileio.c, convert.c,
-fitscore.c, getcol.c, getkey.c, modkey.c, putcol.c, putkey.c, and
-utilproc.c) and 3 header files (fitsio.h, fitsio2.h and longnam.h).
-On VAX/VMS systems 2 assembly-code files (vmsieeed.mar and
+The CFITSIO code is contained in 30 source files (*.c) and 3 header
+files (*.h). On VAX/VMS systems 2 assembly-code files (vmsieeed.mar and
 vmsieeer.mar) are also needed.
 
 The CFITSIO library is built on Unix systems by typing:
@@ -163,32 +161,29 @@ The CFITSIO library is built on Unix systems by typing:
    > configure
    > make
 \end{verbatim}
-at the operating system prompt.  The `configure' command customizes
-the Makefile for the particular system, then the `make' command
-builds the library.  The build process splits each routine in the
-source files into a separate disk file in a scratch subdirectory.
-Depending on the speed of the CPU, it can anywhere from a couple
-minutes to an hour to create the libcfitsio.a library file.
+at the operating system prompt.  The `configure' command customizes the
+Makefile for the particular system, then the `make' command builds the
+library.
 
-On VAX/VMS and ALPHA/VMS systems, the makevaxvms.com and makealphavms.com
-command files may be used to build the cfitsio.olb object library
-(e.g., type '@makevaxvms' at the Vax command line to build the CFITSIO
-library on a Vax).
+On VAX/VMS and ALPHA/VMS systems, the makevaxvms.com and
+makealphavms.com command files may be used to build the cfitsio.olb
+object library (e.g., type '@makevaxvms' at the Vax command line to
+build the CFITSIO library on a Vax).
 
-On DOS-based PC computers, the makepc.bat file gives an example
-of how to build the CFITSIO library.  This file will probably
-need to be editted to include the appropriate command switches
-if a different C compiler or linker is used.
+On DOS-based PC computers, the makepc.bat file gives an example of how
+to build the CFITSIO library.  This file will probably need to be
+editted to include the appropriate command switches if a different C
+compiler or linker is used.
 
-The MacOS version of the cfitsio library can be built by following
-the procedure outlined in the README\_MacOS file.
+The MacOS version of the cfitsio library can be built by following the
+procedure outlined in the README\_MacOS file.
 
 CFITSIO has currently been tested on the following platforms:
 
 \begin{verbatim}
    Operating System          Compiler
    ----------------          --------
-   Sun OS                     gcc
+   Sun OS                     gcc and cc (3.0.1)
    Sun Solaris                gcc and cc
    Silicon Graphics IRIX      gcc and cc
    DECstation  Ultrix         gcc
@@ -212,7 +207,7 @@ the testprog.c program that is included with the release.
 On Unix systems (assuming the gcc compiler is being used), type:
 
 \begin{verbatim}
-    % gcc -o testprog testprog.c -L. -lcfitsio
+    % gcc -o testprog testprog.c -L. -lcfitsio -lm
     % testprog > testprog.lis
     % diff testprog.lis testprog.out
     % cmp testprog.fit testprog.std
@@ -252,7 +247,8 @@ for examples of routines that perform various common FITS file
 operations.
 
 4. Read Chapters 4 and 5 to become familiar with the conventions and
-advanced features of the CFITSIO interface.
+advanced features of the CFITSIO interface.  Note especially the
+section on code optimization.
 
 5.  Scan through the more extensive set of routines that are provided
 in the `Advanced Interface', as described in Chapter 7.  These routines
@@ -269,11 +265,8 @@ FITS programs.
 
 
 \begin{verbatim}
-#include "fitsio.h"  /* Every program that uses the CFITSIO interface must */
-                     /* include the fitsio.h header file.  This file       */
-                     /* contains the prototypes for all the routines and   */
-                     /* defines the error status values and other symbolic */
-                     /* constants used in the interface.                   */
+#include "fitsio.h"  /* required by every program that uses CFITSIO  */
+
 main()
 {
     /* Create a FITS primary array containing a 2-D image */
@@ -284,8 +277,8 @@ main()
 
     /* Initialize FITS image parameters */
     char filename[] = "atestfil.fit";             /* name for new FITS file */
-    int bitpix   =  16;   /* 16-bit short signed integer pixel values       */
-    long naxis    =   2;  /* 2-dimensional image                            */
+    int bitpix   =  16;         /* 16-bit short signed integer pixel values */
+    long naxis    =   2;        /* 2-dimensional image                      */
     long naxes[2] = { 300, 200 };   /* image is 300 pixels wide by 200 rows */
     status = 0;         /* initialize status before calling fitsio routines */
 
@@ -304,22 +297,19 @@ main()
     fpixel = 1;                               /* first pixel to write      */
     nelements = naxes[0] * naxes[1];          /* number of pixels to write */
 
-    /* Write the array of long integers to the file. These will be      */
-    /* converted to short integers in the FITS file (since BITPIX = 16) */
+    /* Write the array of long integers (after converting them to short) */
     if ( fits_write_img(fptr, TLONG, fpixel, nelements, array[0], &status) )
         return( status );
 
-    /* Write another optional keyword to the header. */
-    /* Note that the ADDRESS of the value is passed in the routine. */
+    /* Write another optional keyword; must pass the ADDRESS of the value */
     exposure = 1500.;
     if ( fits_write_key(fptr, TLONG, "EXPOSURE", &exposure,
          "Total Exposure Time", &status) )
          return( status );
 
-    if ( fits_close_file(fptr, &status) )              /* close the file */
-         return( status );
+    fits_close_file(fptr, &status);            /* close the file */
 
-    return(0);
+    return( status );
 }
 \end{verbatim}
 
@@ -775,7 +765,7 @@ necessarily be supported in future versions of CFITSIO, especially if
 an alternative convention is officially adopted by the FITS community.
 
 
-\subsection{Support for Long String Keyword Values.}
+\subsection{Long String Keyword Values.}
 
 The length of a standard FITS string keyword is limited to 68
 characters because it must fit entirely within a single FITS header
@@ -940,76 +930,187 @@ length arrays.
 
 \section{Optimizing Code for Maximum Processing Speed}
 
-The CFITSIO code is generally not very CPU intensive, hence programs are
-basically limited by the speed of the underlying magnetic disk read and
-write operations.  Care must be taken when designing software to achieve
-the best possible performance when processing the FITS data files. The
-following paragraphs describe some strategies that may be used to
-improve the processing speed of software that uses CFITSIO.
+CFITSIO has been carefully designed to obtain the highest possible
+speed when reading and writing FITS files.  In order to achieve the
+best performance, however, application programmers must be careful to
+call the CFITSIO routines appropriately and in an efficient sequence;
+inappropriate usage of CFITSIO routines can greatly slow down the
+execution speed of a program.
 
-1.  All operating systems buffer the magnetic disk read and write
-operations by using an array in memory (a cache) as an intermediate
-storage area for blocks of data on disk.  When reading or writing FITS
-files, it is generally better to use a large buffer to minimize the
-number of physical disk I/O operations.  For critical operations, the
-system administrator should tune the size of the disk buffer as well as
-other system parameters that may affect disk I/O speed, to achieve
-optimal performance.  Note that other factors, such as the average seek
-time of the disk, the amount of file fragmentation on the disk, and the
-location of the disk on the computer network, can also make a large
-difference in overall disk I/O performance.
+The maximum possible I/O speed of CFITSIO depends of course on the type
+of computer system that it is running on.  As a rough guide, the
+current generation of workstations can achieve speeds of 2 -- 10 MB/s
+when reading or writing FITS images and speeds of 1 -- 3 MB/s with FITS
+binary tables.  To more accurately predict the best performance that is
+possible on any particular system, a diagnostic program called
+``speed.c'' is included with the CFITSIO distribution which can be run
+to measure the maximum possible speed of writing and reading a test
+FITS file.
 
-2.  The most important efficiency factor in software design is to read
-or write the data in the FITS file in a single pass through the file.
-As an example, if one reads a large, 3-column table by sequentially
-reading the entire first column, then going back to read the 2nd
-column, and finally the 3rd column, this obviously requires 3 passes
-through the file.  Since many FITS programs are I/O limited, this could
-effectively triple the execution time of the program as compared to a
-program that reads a limited range of rows from all the columns in
-parallel before advancing on to the next set of rows.  The optimum
-number of rows to process at one time is not too critical, but it
-should be large enough to avoid an excessive number of individual
-routine calls (it is generally inefficient to read or write each row of
-a table one at a time) but still small enough so that the relevant
-section of the FITS file will all fit in the system memory cache.   As
-long as the section of the FITS file that is to be read or written is
-still contained in the cache, then the program will run more
-efficiently.  If designed properly, software should be able to read or
-write a FITS file by sequentially accessing successive blocks in the
-file in a single pass without having to go back to read or write a
-block that has already been flushed out of the memory cache.
+The following 2 sections provide some background on how CFITSIO
+internally manages the data I/O and describes some strategies that may
+be used to optimize the processing speed of software that uses
+CFITSIO.
 
-3. Design software so that it reads the FITS header keywords in the
+
+\subsection{Background Information: How CFITSIO Manages Data I/O}
+
+Many CFITSIO operations involve transfering only a small number of
+bytes to or from the FITS file (e.g, reading a keyword, or writing a
+row in a table); it would be very inefficient to physically read or
+write such small blocks of data directly in the FITS file on disk,
+therefore CFITSIO maintains a set of internal IO buffers in RAM memory
+that each contain one FITS block (2880 bytes) of data.  Whenever
+CFITSIO needs to access data in the FITS file, it first transfers the
+FITS block containing those bytes into one of the IO buffers in
+memory.  The next time CFITSIO needs to access bytes in the same block
+it can then go to the fast IO buffer rather than using a much slower
+system disk access routine.  The number of available IO buffers is
+determined by the NIOBUF parameter (in fitsio2.h) and is currently set
+to 25.
+
+Whenever CFITSIO reads or writes data it first checks to see if that
+block of the FITS file is already loaded into one of the IO buffers.
+If not, and if there is an empty IO buffer available, then it will load
+that block into the IO buffer (when reading a FITS file) or will
+initialize a new block (when writing to a FITS file).  If all the IO
+buffers are already full, it must decide which one to reuse (generally
+the one that has been accessed least recently), and flush the contents
+back to disk if it has been modified before loading the new block.
+
+The one major exception to the above process occurs whenever a large
+contiguous set of bytes are accessed, as might occur when reading or
+writing a FITS image.  In this case CFITSIO bypasses the internal IO
+buffers and simply reads or writes the desired bytes directly in the
+disk file with a single call to a low-level file read or write
+routine.  The minimum threshold for the number of bytes to read or
+write this way is set by the MINDIRECT parameter and is currently set
+to 3 FITS blocks = 8640 bytes.  This is the most efficient way to read
+or write large chunks of data and can achieve IO transfer rates of
+10MB/s or greater.  Note that this fast direct IO process is not
+applicable when accessing columns of data in a FITS table because the
+bytes are generally not contiguous since they are interleaved by the
+other columns of data in the table.  This explains why the speed for
+accessing FITS tables is generally several times slower than accessing
+FITS images.
+
+Given this background information, the general strategy for efficiently
+accessing FITS files should now be apparent:  when dealing with FITS
+images, read or write large chunks of data at a time so that the direct
+IO mechanism will be envoked;  when accessing FITS headers or FITS
+tables, on the other hand, once a particular FITS block has been
+loading into one of the IO buffers, try to access all the needed
+information in that block before it gets flushed out of the IO buffer.
+It is important to avoid the situation where the same FITS block is
+being read then flushed from a IO buffer multiple time.
+
+The following section gives more specific suggestions for optimizing
+the use of CFITSIO.
+
+
+\subsection{Optimization Strategies}
+
+1.  When dealing with a FITS primary array or IMAGE extension, it is
+more efficient to read or write large chunks of the  image at a time
+(at least 3 FITS blocks = 8640 bytes) so that the direct IO mechanism
+will be used as described in the previous section.  Smaller chunks of
+data are read or written via the IO buffers, which is somewhat less
+efficient because of the extra copy operation and additional
+bookkeeping steps that are required.  In principle it is more efficient
+to read or write as big an array of image pixels at one time as
+possible, however, if the array becomes so large that the operating
+system cannot store it all in RAM, then the performance may be degraded
+because of the increased swapping of virtual memory to disk.
+
+2.  When dealing with FITS tables, the most important efficiency factor
+in the software design is to read or write the data in the FITS file in
+a single pass through the file.  An example of poor program design
+would be to read a large, 3-column table by sequentially reading the
+entire first column, then going back to read the 2nd column, and
+finally the 3rd column; this obviously requires 3 passes through the
+file which could triple the execution time of an IO limited program.
+For small tables this is not important, but when reading multi-megabyte
+sized tables these inefficiencies can become significant.  The more
+efficient procedure in this case is to read or write only as many rows
+of the table as will fit into the available internal IO buffers, then
+access all the necessary columns of data within that range of rows.
+Then after the program is completely finished with the data in those
+rows it can move on to the next range of rows that will fit in the
+buffers, continuing in this way until the entire file has been
+processed.  By using this procedure of accessing all the columns of a
+table in parallel rather than sequentially, each block of the FITS file
+will only be read or written once.
+
+The optimal number of rows to read or write at one time in a given
+table depends on the width of the table row, on the number of IO
+buffers that have been allocated in CFITSIO, and also on the number of
+other FITS files that are open at the same time (since one IO buffer is
+always reserved for each open FITS file).  Fortunately, a CFITSIO
+routine is available that will return the optimal number of rows for a
+given table:  fits\_get\_rowsize(fitsfile *fptr, long *nrows, int *status).
+It is not critical to use exactly the value of nrows
+returned by this routine, as long as one does not exceed it.  Using a
+very small value however can also lead to poor preformance because of
+the overhead from the larger number of subroutine calls.
+
+The optimal number of rows returned by fits\_get\_rowsize is valid only
+as long as the application program is only reading or writing data in
+the specified table.  Any other calls to access data in the table
+header or in any other FITS file would  cause additional blocks of data
+to be loaded into the IO buffers displacing data from the original
+table, and should be avoided during the critical period while the table
+is being read or written.
+
+Occasionally it is necessary to simultaneously access more than one
+FITS table, for example when transfering values from an input table to
+an output table.  In cases like this, one should call
+fits\_get\_rowsize to get the optimal number of rows for each table
+separately, than reduce the number of rows proportionally.  For
+example, if the optimal number of rows in the input table is 3600 and
+is 1400 in the output table, then these values should be cut in half to
+1800 and 700, respectively, if both tables are going to be accessed at
+the same time.
+
+3.  Alway use binary table extensions rather than ASCII table
+extensions for better efficiency  when dealing with tabular data.
+CFITSIO can typically read or write a binary table 10 times faster than
+the equivalent ASCII table.
+
+4. Design software so that it reads the FITS header keywords in the
 same order in which they occur in the file.  When reading keywords,
 CFITSIO searches forward starting from the position of the last keyword
 that was read.  If it reaches the end of the header without finding the
 keyword, it then goes back to the start of the header and continues the
-search down to the position where it started.
+search down to the position where it started.  In practice, as long as
+the entire FITS header can fit at one time in the available internal IO
+buffers, then the header keyword access will be very fast and it makes
+little difference which order they are accessed.
 
-4. Avoid the use of scaling (by using the BSCALE and BZERO or TSCAL and
+5. Avoid the use of scaling (by using the BSCALE and BZERO or TSCAL and
 TZERO keywords) in FITS files since the scaling operations add to the
 processing time needed to read or write the data.  In some cases it may
 be more efficient to temporarily turn off the scaling (using ffpscl or
 fftscl) and then read or write the raw unscaled values in the FITS
 file.
 
-5. Use FITS binary tables (BINTABLE) rather than FITS ASCII tables
-(TABLE) whenever possible. Binary tables are more compact and can be
-read or written much more efficiently, whereas each field of an ASCII
-table must be individually formatted or parsed.
+6. Avoid using the 'implicit datatype conversion' capability in
+CFITSIO.  For instance, when reading a FITS image with BITPIX = -32
+(32-bit floating point pixels), read the data into a single precision
+floating point data array in the program.  Forcing CFITSIO to convert
+the data to a different datatype can significantly slow the program.
 
-6. Design FITS binary tables so that every column is aligned on a
-computer word boundary and so that each row is a multiple number of
-computer words in length.  Accessing non-aligned words can be much
-slower on some machines.  In practice, this means that double precision
+7. Design FITS binary tables so that every column is aligned on a
+computer word boundary and each row is a multiple number of computer
+words in length.  In principle, accessing non-aligned words can degrade
+performance, however, the author has not actually seen this problem
+occur in practice.  In an optimally designed table,  double precision
 columns should start at a multiple of 8 bytes within the row, single
-precision floating point columns and integer columns should start at a
-multiple of 4 bytes, and short integer columns should start at a
+precision floating point columns and long integer columns should start
+at a multiple of 4 bytes, and short integer columns should start at a
 multiple of 2 bytes.  If necessary, the row length should be padded out
 by adding a dummy column of the appropriate width or by adjusting the
 width of an existing column so that the row length is also a multiple
-number of words in length.  For example, if a binary table contains a
+number of 8 bytes in length.  For example, if a binary table contains a
 '1B', a '1E', and a '1D' column, then the optimum design would place
 the '1D' column first in the table followed by the '1E' and then the
 '1B' column.  Since the row length is then 8 + 4 + 1 = 13 bytes, one
@@ -1018,19 +1119,19 @@ a multiple of the double precision word length.  Alternatively, one
 could change the last column from '1B' to '4B'. This will insure that
 all the data values are optimally aligned.
 
-7. Where possible, design FITS binary tables so that the columns of
-data are written as a contiguous set of bytes, rather than as single
-elements in multiple rows.  For example, it is much faster to access
-the data in a table that contains a single row and 2 columns with TFORM
-keywords equal to  '1000E' and '1000J', than it is to access the same
-amount of data in a table with 1000 rows which has columns with the
-TFORM keywords equal to '1E' and '1J'.  In the former case the 1000
-floating point values in the first column are all written in a
-contiguous block of the file which can be read or written quickly,
-whereas in the second case each floating point value in the first
-column is interleaved with the integer value in the second column of
-the same row so CFITSIO has to explicitly move to the position of each
-element to be read or written.
+8. Where feasible, design FITS binary tables using vector column
+elements so that the data are written as a contiguous set of bytes,
+rather than as single elements in multiple rows.  For example, it is
+much faster to access the data in a table that contains a single row
+and 2 columns with TFORM keywords equal to  '10000E' and '10000J', than
+it is to access the same amount of data in a table with 10000 rows
+which has columns with the TFORM keywords equal to '1E' and '1J'.  In
+the former case the 10000 floating point values in the first column are
+all written in a contiguous block of the file which can be read or
+written quickly, whereas in the second case each floating point value
+in the first column is interleaved with the integer value in the second
+column of the same row so CFITSIO has to explicitly move to the
+position of each element to be read or written.
 
 8. Avoid the use of variable length vector columns in binary tables,
 since any reading or writing of these data requires that CFITSIO first
@@ -1042,16 +1143,49 @@ transfer the raw bytes instead of reading then writing each column of
 the table.  The CFITSIO routines ffgtbb and ffptbb will perform
 low-level reads or writes of any contiguous range of bytes in a table
 extension.  These routines can be used to read or write a whole row (or
-multiple rows) of a table with a single routine call.   These routines
-are fast because they bypass all the usual data scaling, error checking
-and machine dependent data conversion that is normally done by CFITSIO,
-and they allow the program to write the data to the output file in
-exactly the same byte order.  For these same reasons, use of these
-routines can be somewhat risky because no validation or machine
-dependent conversion is performed by these routines.  In general these
-routines are only recommended for optimizing critical pieces of code
-and should only be used by programmers who thoroughly understand the
-internal format of the FITS tables they are reading or writing.
+multiple rows  for even greater efficiency) of a table with a single
+function call.   These routines are fast because they bypass all the
+usual data scaling, error checking and machine dependent data
+conversion that is normally done by CFITSIO, and they allow the program
+to write the data to the output file in exactly the same byte order.
+For these same reasons, use of these routines can be somewhat risky
+because no validation or machine dependent conversion is performed by
+these routines.  In general these routines are only recommended for
+optimizing critical pieces of code and should only be used by
+programmers who thoroughly understand the internal format of the FITS
+tables they are reading or writing.
+
+10. Another strategy for improving the speed of writing a FITS table,
+similar to the previous one, is to directly construct the entire byte
+stream for a whole table row (or multiple rows) within the application
+program and then write it to the FITS file with ffptbb.  This avoids
+all the overhead normally present in the column-oriented CFITSIO write
+routines.  This technique should only be used for critical
+applications, because it makes the code more difficult to understand
+and maintain, and it makes the code more system dependent (e.g., do the
+bytes need to be swapped before writing to the FITS file?).
+
+11.  All other factors being equal, better performance will be achieved
+on computer systems that use the ``big endian'' byte order for storing
+numerical data which is the same as is used in FITS files.  This
+includes SUN, HP, NeXT and Silicon Graphics workstations and Macintosh
+PCs.  Systems that use the ``little endian'' byte order (DEC Alpha, DEC
+VAX, and IBM PCs) require that the order of the bytes in each integer
+or floating point data value be reversed before transfering to or from
+the FITS file.  This effect is most noticable when writing large blocks
+of data to a FITS image:  on big endian machines the block of data can
+simply be written to the FITS file with a single low-level call, but on
+little endian machines the data must first be copied to a temporary
+buffer where the bytes are then swapped before being written to the
+FITS file.
+
+12.  Finally, external factors such as the type of magnetic disk
+controller (SCSI or IDE), the size of the disk cache, the average seek
+speed of the disk, the amount of disk fragmentation, and the amount of
+RAM available on the system can all have a significant impact on
+overall IO efficiency.  For critical applications, a system
+adminstrator should review the proposed system hardware to identify any
+potential IO bottlenecks.
 
 
 \section{CFITSIO Size Limitations}
@@ -1063,8 +1197,10 @@ up to 999 columns (the maximum allowed by the FITS standard) and
 may have an arbitrarily large number of rows. There are a few other limits,
 however, which may affect some extreme cases:
 
-1.  The maximum number of files that may be simultaneously opened may
-be limited by the underlying C compiler or machine operating system.
+1.  The maximum number of files that may be simultaneously opened is limited
+to the number of internal IO buffers allocated in CFITSIO (currently 25),
+or by the limit of the underlying C compiler or machine operating system, which
+ever is smaller.
 The C symbolic constant FOPEN\_MAX usually defines the total number of
 files that may open at once (this includes any other text or binary
 files which may be open, not just FITS files).
@@ -1076,7 +1212,7 @@ access times to the later extensions in such files may become very
 long.
 
 3.  CFITSIO can handle FITS files up to about 2.1 GB in size which is
-the maximum value of a signed long integer.  Some machines that use
+the maximum value of a 4-byte signed long integer.  Some machines that use
 8-byte words for a long integer may support larger files, but this has
 not been tested.
 
@@ -1224,6 +1360,8 @@ CFITSIO.
 \item[4 ] Read a keyword value and comment from the current header.
     Automatic datatype conversion will be attempted if
    `datatype' is not the same as the actual datatype of the keyword.
+    If a NULL comment pointer is given on input, then the comment string
+   will not be returned.
 \end{description}
 
 \begin{verbatim}
@@ -1248,8 +1386,8 @@ The following routines read or write data values in the current HDU of
 the FITS file. The `datatype' parameter specifies the datatype of the
 array of values and can have one of the following symbolic constant
 values: TBYTE, TSHORT, TINT, TLONG, TFLOAT, or TDOUBLE.  The routines
-for reading or writing table columns also support the TSTRING datatype
-when dealing with ASCII string columns. Automatic datatype conversion
+for reading or writing table columns also support the TBIT, TLOGICAL,
+TSTRING, TCOMPLEX and TDBLCOMPLEX datatypes. Automatic datatype conversion
 will be attempted for numerical datatypes if the specified datatype is
 different from the actual datatype of the FITS array or table column.
 
@@ -1972,8 +2110,10 @@ be shifted down one position.
 \begin{description}
 \item[2 ] Get the name, value (as a string), and comment of the nth keyword in CHU.
     This routine also checks that the returned keyword name (keyname) contains
-   only legal ASCII characters.
+    only legal ASCII characters. If a NULL comment pointer is given on input,
+   then the comment string will not be returned.
 \end{description}
+
 
 \begin{verbatim}
   int fits_read_keyn / ffgkyn
@@ -1991,10 +2131,11 @@ be shifted down one position.
 \end{verbatim}
 
 \begin{description}
-\item[4 ]  Get the literal keyword value as a character string.  Regardless
-     of the datatype of the keyword, this routine simply returns the
-     string of characters in the value field of the keyword along with
-    the comment field.
+\item[4 ] Get the literal keyword value as a character string.  Regardless
+    of the datatype of the keyword, this routine simply returns the
+    string of characters in the value field of the keyword along with
+    the comment field.   If a NULL comment pointer is given on input,
+   then the comment string will not be returned.
 \end{description}
 
 \begin{verbatim}
@@ -2007,7 +2148,8 @@ be shifted down one position.
 \item[5 ] Get a keyword value (with the appropriate datatype) and comment from the
     CHU. The datatype parameter specifies the datatype of the keyword value
     and can have one of the following symbolic constant values:  TSTRING,
-   TLOGICAL, TBYTE, TSHORT, TINT, TLONG, TFLOAT, TDOUBLE.
+    TLOGICAL, TBYTE, TSHORT, TINT, TLONG, TFLOAT, TDOUBLE.  If a NULL comment
+   pointer is given on input, then the comment string will not be returned.
 \end{description}
 
 \begin{verbatim}
@@ -2018,7 +2160,8 @@ be shifted down one position.
 
 \begin{description}
 \item[6 ] Get a keyword value (with the appropriate datatype) and comment from
-   the CHU.
+    the CHU.  If a NULL comment pointer is given on input, then the comment
+   string will not be returned.
 \end{description}
 
 \begin{verbatim}
@@ -2592,10 +2735,11 @@ unique withing the first 16 characters.
 \end{verbatim}
 
 \begin{description}
-\item[2 ] Get the datatype of a column in an ASCII or binary table.  This
-    routine returns an integer code value corresponding to the datatype
-    of the column. (See the ffbnfm and ffasfm routines in the Utilities
-    section of this document for a list of the code values).  The vector
+\item[2 ] Get the datatype of a column in an ASCII or binary table.  This routine
+    returns an integer code value corresponding to the datatype of the column.
+    (See the ffbnfm and ffasfm routines in the Utilities section of this document
+    for a list of the code values).  The negative of the code value is returned
+    if it is a variable length array column. The vector
     repeat count (which is alway 1 for ASCII table columns) is also returned.
     If the specified column has an ASCII character datatype (code = 16) then
     the width of a unit string in the column is also returned.  Note that
@@ -2665,6 +2809,19 @@ int fits_get_acolparms / ffgacl
       (fitsfile *fptr, int colnum, int maxdim, > int *naxis,
        long *naxes, int *status)
 \end{verbatim}
+
+\begin{description}
+\item[ 7] Return the width (in bytes) of one row in a FITS binary table and optimal number
+    of rows to read or write at one time for maximum I/O efficiency.  Refer to the
+    ``Optimizing Code'' section in Chapter 5 for more discussion on how
+   to use this routine.
+\end{description}
+
+\begin{verbatim}
+  int fits_get_rowsize / ffgrsz
+      (fitsfile *fptr, long *nrows, *status)
+\end{verbatim}
+
 
 \subsection{Low-Level Table Access Routines \label{FFGTBB}}
 
@@ -2782,16 +2939,7 @@ parameter defines the starting pixel within the element vector.  This
 parameter is ignored with ASCII tables. Similarly, in the case of
 binary tables the 'nelements' parameter specifies the total number of
 vector values read or written (continuing on subsequent rows if
-required) and not the number of table elements.  Two sets of
-routines are provided to get the column data which differ in the way
-undefined pixels are handled.  The first set of routines (ffgcv)
-simply return an array of data elements in which undefined pixels are
-set equal to a value specified by the user in the 'nullval' parameter.
-An additional feature of these routines is that if the user sets
-nullval = 0, then no checks for undefined pixels will be performed,
-thus increasing the speed of the program.  The second set of routines
-(ffgcf) returns the data element array and in addition a logical array
-of flags which defines whether the corresponding data pixel is undefined.
+required) and not the number of table elements.
 
 
 \begin{description}
@@ -2900,6 +3048,16 @@ of flags which defines whether the corresponding data pixel is undefined.
 
 \subsection{ Read Column Data Routines \label{FFGCL}}
 
+Two sets of routines are provided to get the column data which differ in the way
+undefined pixels are handled.  The first set of routines (ffgcv)
+simply return an array of data elements in which undefined pixels are
+set equal to a value specified by the user in the 'nullval' parameter.
+An additional feature of these routines is that if the user sets
+nullval = 0, then no checks for undefined pixels will be performed,
+thus increasing the speed of the program.  The second set of routines
+(ffgcf) returns the data element array and in addition a logical array
+of flags which defines whether the corresponding data pixel is undefined.
+
 
 \begin{description}
 \item[1 ] Get elements from an ASCII or binary table column (in the CDU).  These
@@ -2946,12 +3104,12 @@ of flags which defines whether the corresponding data pixel is undefined.
        long nelements, > char **array, char *nularray, int *anynul,
        int *status)
 
-  int fits_read_col_log / ffgcfl
+  int fits_read_colnull_log / ffgcfl
       (fitsfile *fptr, int colnum, long firstrow, long firstelem,
        long nelements, > char *array, char *nularray, int *anynul,
        int *status)
 
-  int fits_read_col_[byt, sht, lng, int, flt, dbl, cmp, dblcmp] / ffgcf[bijkedcm]
+  int fits_read_colnull_[byt, sht, lng, int, flt, dbl, cmp, dblcmp] / ffgcf[bijkedcm]
       (fitsfile *fptr, int colnum, long firstrow,
        long firstelem, long nelements, > DTYPE *array,
        char *nularray, int *anynul, int *status)
@@ -3730,6 +3888,7 @@ The following utility routines may be useful for certain applications:
             >  int *status)
   int ffgtdm(fitsfile *fptr, int colnum, int maxdim, > int *naxis,
            long *naxes, int *status)
+  int ffgrsz(fitsfile *fptr, long *nrows, *status)
 \end{verbatim}
  Low-Level Table Access Routines: page~\pageref{FFGTBB}
 
@@ -3864,7 +4023,8 @@ dataok   - was the data unit verification successful (=1) or
            not (= -1).  Equals zero if the DATASUM keyword is not present.
 datasum  - 32-bit 1's complement checksum for the data unit
 datatype - specifies the datatype of the value.  Allowed value are:
-           TSTRING, TLOGICAL, TBYTE, TSHORT, TINT, TLONG, TFLOAT, TDOUBLE
+           TSTRING, TLOGICAL, TBIT, TBYTE, TSHORT, TINT, TLONG, TFLOAT, TDOUBLE
+           TCOMPLEX, and TDBLCOMPLEX
 decimals - number of decimal places to be displayed
 dim1     - declared size of the first dimension of the image or cube array
 dim2     - declared size of the second dimension of the data cube array
@@ -3950,7 +4110,8 @@ theap    - zero indexed byte offset of starting address of the heap
 ttype    - label or name for table column (null-terminated)
 tunit    - physical unit for table column (null-terminated)
 typechar - symbolic code of the table column datatype
-typecode - datatype code of the table column
+typecode - datatype code of the table column.  The negative of
+           the value indicated a variable length array column.
                 Datatype             typecode
                 bit, X                   1
                 byte, B                 11
@@ -3989,7 +4150,7 @@ zero     - scaling offset; true value = (FITS value) * scale + zero
 \chapter{ CFITSIO Error Status Codes }
 
 The following table lists all the error status codes used by CFITSIO.
-Programmers are encouraged to use the symbolic  mnemonics (defined in
+Programmers are encouraged to use the symbolic mnemonics (defined in
 the file fitsio.h) rather than the actual integer status values to
 improve the readability of their code.
 
@@ -3997,6 +4158,7 @@ improve the readability of their code.
  Symbolic Const    Value     Meaning
  --------------    -----  -----------------------------------------
  SAME_FILE         101    input and output files are the same
+ TOO_MANY_FILES    103    tried to open too many FITS files at once
  FILE_NOT_OPENED   104    could not open the named file
  FILE_NOT_CREATED  105    could not create the named file
  WRITE_ERROR       106    error writing to FITS file
@@ -4065,7 +4227,6 @@ improve the readability of their code.
  BAD_PIX_NUM       321    first pixel number greater than last pixel
  ZERO_SCALE        322    illegal BSCALE or TSCALn keyword = 0
  NEG_AXIS          323    illegal axis length < 1
-
  BAD_I2C           401    bad int to formatted string conversion
  BAD_F2C           402    bad float to formatted string conversion
  BAD_INTKEY        403    can't interprete keyword value as integer

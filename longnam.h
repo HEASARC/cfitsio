@@ -24,6 +24,7 @@
 #define fits_ascii_tform    ffasfm
 #define fits_binary_tform   ffbnfm
 #define fits_get_tbcol      ffgabc
+#define fits_get_rowsize    ffgrsz
 
 #define fits_write_record       ffprec
 #define fits_write_key          ffpky
