@@ -248,9 +248,22 @@ int ffgcpr(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long *elemnum, long *incre, long *repeat,long *rowlen,
            int *hdutype, long *tnull, char *snull, int *status);
  
-int ffopenx(fitsfile *fptr, int newfile, int readwrite,
-           long *filesize, int *status);
+int ffopenfile(char *filename, int newfile, int readwrite,
+           FILE **diskfile, size_t *filesize, int *status);
+int ffisfilecompressed(char *filename, FILE **diskfile, size_t *filesize,
+     size_t *finalsize,int *status);
 int ffclosex(fitsfile *fptr, int keep, int *status);
+int ffclosefile(char *filename, FILE *diskfile, int keep,  int *status);
+int ffstdin2mem(void **buffptr, size_t *buffsize,
+    void *(*mem_realloc)(void *p, size_t newsize), size_t *filesize,
+    int *status);
+int fffile2mem(char *filename, void **buffptr, size_t *buffsize,
+    void *(*mem_realloc)(void *p, size_t newsize), size_t *filesize,
+    int *status);
+int ffuncompress2mem(char *filename, FILE *diskfile,  void **buffptr,
+    size_t *buffsize, void *(*mem_realloc)(void *p, size_t newsize),
+    size_t *filesize, int *status);
+int ffcreate_mem(fitsfile *fptr, size_t init_size, int *status);
 int ffflushx(fitsfile *fptr);
 int ffseek(fitsfile *fptr, long position);
 int ffread(fitsfile *fptr, long nbytes, void *buffer,

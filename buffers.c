@@ -125,7 +125,7 @@ int ffmbyt(fitsfile *fptr,    /* I - FITS file pointer                */
     /* if this is not the current record, then load it */
     if (record != bufrecnum[fptr->curbuf]) 
         ffldrc(fptr, record, err_mode, status);
-    
+
     if (*status <= 0)
         fptr->bytepos = bytepos;  /* save new file position */
 
@@ -397,7 +397,9 @@ int ffgbyt(fitsfile *fptr,    /* I - FITS file pointer             */
 
        /* move to the correct read position; must seek if last op was write */
       if (fptr->io_pos != filepos || fptr->last_io_op == IO_WRITE)
+      {
          ffseek(fptr, filepos);
+      }
 
       ffread(fptr, nbytes, cptr, status); /* read the data */
       fptr->io_pos = filepos + nbytes; /* update the file position */

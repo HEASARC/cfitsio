@@ -746,7 +746,8 @@ int ffgclui( fitsfile *fptr,   /* I - FITS file pointer                       */
           sprintf(message,
           "Error reading elements %ld thru %ld of input data array (ffgclui).",
              next+1, next+ntodo);
-           return(*status);
+          ffpmsg(message);
+          return(*status);
         }
 
         /*--------------------------------------------*/

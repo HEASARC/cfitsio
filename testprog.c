@@ -848,8 +848,13 @@ main()
     tfields = 10;
     pcount = 0;
 
+/*
     ffcrtb(fptr, BINARY_TBL, nrows, tfields, ttype, tform, tunit, binname,
             &status);
+*/
+    ffibin(fptr, nrows, tfields, ttype, tform, tunit, binname, 0L,
+            &status);
+
     printf("\nffcrtb status = %d\n", status);
     printf("HDU number = %d\n", ffghdn(fptr, &hdunum));
 
@@ -1978,7 +1983,8 @@ main()
     naxes[1] = 2;
     npixels = 20;
  
-    ffcrim(fptr, bitpix, naxis, naxes, &status);
+/*    ffcrim(fptr, bitpix, naxis, naxes, &status); */
+    ffiimg(fptr, bitpix, naxis, naxes, &status);
     printf("\nffcrim status = %d\n", status);
 
     /* initialize arrays of values to write to primary array */
@@ -2060,8 +2066,8 @@ main()
     ffpkyd(fptr, "CDELT1", xinc, 10, "comment", &status);
     ffpkyd(fptr, "CDELT2", yinc, 10, "comment", &status);
  /*   ffpkyd(fptr, "CROTA2", rot, 10, "comment", &status); */
-    ffpkys(fptr, "CTYPE1", xcoordtype, " ", &status);
-    ffpkys(fptr, "CTYPE2", ycoordtype, " ", &status);
+    ffpkys(fptr, "CTYPE1", xcoordtype, "comment", &status);
+    ffpkys(fptr, "CTYPE2", ycoordtype, "comment", &status);
     printf("\nWrote WCS keywords status = %d\n",status);
 
     xrval =  0.;
@@ -2280,6 +2286,16 @@ main()
 
     ffgerr(status, errmsg);
     printf("\nStatus = %d: %s\n", status, errmsg);
+
+    /* free the allocated memory */
+    for (ii = 0; ii < 21; ii++) 
+        free(inskey[ii]);   
+    for (ii = 0; ii < 10; ii++)
+    {
+      free(ttype[ii]);
+      free(tform[ii]);
+      free(tunit[ii]);
+    }
 
     return(0);
 }

@@ -622,7 +622,7 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     incre *= elemincre;   /* multiply incre to just get every nth pixel */
 
-    if (tcode == TSTRING)    /* setup for ASCII tables */
+    if (tcode == TSTRING && hdutype == ASCII_TBL) /* setup for ASCII tables */
     {
       /* get the number of implied decimal places if no explicit decmal point */
       ffasfm(tform, &xcode, &xwidth, &decimals, status); 
@@ -726,7 +726,12 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
                      ffgbytoff(fptr, twidth, ntodo, incre - twidth, buffer,
                                status);
 
-                fffstri1((char *) buffer, ntodo, scale, zero, twidth, power,
+                /* copy raw bytes from an 'A' column, otherwise     */
+                /* interpret the string as an ASCII formated number */
+                if(strchr(tform,'A') != NULL) 
+                   memcpy(array+next,buffer,ntodo);
+                else
+                   fffstri1((char *) buffer, ntodo, scale, zero, twidth, power,
                      nulcheck, snull, nulval, &nularray[next], anynul,
                      &array[next], status);
                 break;
@@ -751,6 +756,7 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
          sprintf(message,
           "Error reading elements %ld thru %ld of input data array (ffgclb).",
               next+1, next+ntodo);
+         ffpmsg(message);
          return(*status);
         }
 

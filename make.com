@@ -3,6 +3,7 @@ $ set verify
 $ cc buffers.c
 $ cc cfileio.c
 $ cc checksum.c
+$ cc compress.c
 $ cc fitscore.c
 $ cc getcol.c
 $ cc getcolb.c
@@ -35,9 +36,9 @@ $ cc putkey.c
 $ cc scalnull.c
 $ cc swapproc.c
 $ cc wcsutil.c
-$ lib/create cfitsio buffers,cfileio,checksum,fitscore,getcol,getcolb
-$ lib/insert cfitsio getcoli,getcolj,getcolk,getcole,getcold,getcoll
-$ lib/insert cfitsio getcols,editcol,edithdu,getkey,modkey,putcol
+$ lib/create cfitsio buffers,cfileio,checksum,compress,fitscore,getcol
+$ lib/insert cfitsio getcolb,getcoli,getcolj,getcolk,getcole,getcold
+$ lib/insert cfitsio getcoll,getcols,editcol,edithdu,getkey,modkey,putcol
 $ lib/insert cfitsio putcolb,putcoli,putcolj,putcolk,putcole,putcold
 $ lib/insert cfitsio getcolui,getcoluj,putcolui,putcoluj
 $ lib/insert cfitsio putcols,putcoll,putcolu,putkey,scalnull,swapproc,wcsutil

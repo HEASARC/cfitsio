@@ -4,13 +4,14 @@ rem:
 bcc32 -c buffers.c
 bcc32 -c cfileio.c
 bcc32 -c checksum.c
+bcc32 -c compress.c
 bcc32 -c fitscore.c
 bcc32 -c getcol.c
 bcc32 -c getcolb.c
 bcc32 -c getcoli.c
 bcc32 -c getcolj.c
 bcc32 -c getcolui.c
-bcc32 -c getcoljj.c
+bcc32 -c getcoluj.c
 bcc32 -c getcolk.c
 bcc32 -c getcole.c
 bcc32 -c getcold.c
@@ -37,7 +38,7 @@ bcc32 -c scalnull.c
 bcc32 -c swapproc.c
 bcc32 -c wcsutil.c
 del cfitsio.lib
-tlib cfitsio +buffers +cfileio +checksum +fitscore
+tlib cfitsio +buffers +cfileio +checksum +compress +fitscore
 tlib cfitsio +getcol  +getcolb +getcoli +getcolj +getcolk +getcole +getcold
 tlib cfitsio +getcoll +getcols +editcol +edithdu +getkey  +modkey  +putkey 
 tlib cfitsio +putcol  +putcolb +putcoli +putcolj +putcolk +putcole +putcold

@@ -159,6 +159,8 @@ typedef struct      /* structure used to store basic HDU information */
 #define UNKNOWN_EXT       251  /* unrecognizable FITS extension type */
 #define UNKNOWN_REC       252  /* unrecognizable FITS record */
 #define END_JUNK          253  /* END keyword is not blank */
+#define BAD_HEADER_FILL   254  /* Header fill area not blank */
+#define BAD_DATA_FILL     255  /* Data fill area not blank or zero */
 #define BAD_TFORM         261  /* illegal TFORM format code */
 #define BAD_TFORM_DTYPE   262  /* unrecognizable TFORM datatype code */
 #define BAD_TDIM          263  /* illegal TDIMn keyword value */
@@ -218,6 +220,7 @@ int ffdelt(fitsfile *fptr, int *status);
  
 /*---------------- utility routines -------------*/
 float ffvers(float *version);
+int ffgsdt(int *day, int *month, int *year2, int *status);
 void ffupch(char *string);
 void ffgerr(int status, char *errtext);
 void ffpmsg(const char *err_message);
@@ -417,7 +420,9 @@ int ffrsim(fitsfile *fptr, int bitpix, int naxis, long *naxes, int *status);
 int ffdhdu(fitsfile *fptr, int *hdutype, int *status);
 int ffcopy(fitsfile *infptr, fitsfile *outfptr, int morekeys, int *status);
 int ffcpdt(fitsfile *infptr, fitsfile *outfptr, int *status);
- 
+int ffchfl(fitsfile *fptr, int *status);
+int ffcdfl(fitsfile *fptr, int *status);
+
 int ffrdef(fitsfile *fptr, int *status);
 int ffhdef(fitsfile *fptr, int morekeys, int *status);
 int ffpthp(fitsfile *fptr, long theap, int *status);

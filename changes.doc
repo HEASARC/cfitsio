@@ -1,8 +1,51 @@
              Log of Changes Made to CFITSIO
 
-Version 1.30 -
+Version 1.31 - 4 November 1997
 
   Enhancements:
+
+   - added support for directly reading compressed FITS files
+     by copying the algorithms from the gzip program. This 
+     supports the Unix compress, gzip and pkzip algorithms.
+
+   - modified ffiimg, ffitab, and ffibin (insert HDUs into
+     a FITS file) so that if the inserted HDU is at the end of
+     the FITS file, then it simply appends a new empty HDU
+     and writes the required keywords.  This allows space
+     to be reserved for additional keywords in the header
+     if desired.
+
+   - added the ffchfl and ffcdfl routines to check the header and
+     data fill values, for compatibility with the Fortran FITSIO
+     library.
+
+   - added the ffgsdt routine to return the system date
+     for compatibility with the Fortran FITSIO library.
+
+   - added a diagnostic error message (written to the error stack)
+     if the routines that read data from image or column fail.
+
+   - modified ffgclb so that it simply copies the bytes from 
+     an ASCII 'nA' or 'An' format column into the user's byte
+     array.  Previously, CFITSIO would return an error when 
+     trying to read an 'A' column with ffgclb.
+
+   - modified ffpclb so that it simply copies the input array 
+     of bytes to an ASCII 'nA' or 'An' format column.
+     Previously, CFITSIO would return an error when 
+     trying to write to an 'A' column with ffpclb.
+
+  Bug Fixes:
+
+   - ffgkls was allocating one too few bytes when reading continued
+     string keyword values. 
+
+   - in testprog.c added code to properly free the memory that
+     had been allocated for string arrays.
+
+   - corrected typographical errors in the User's Guide.
+
+Version 1.30 - 11 September 1997
 
    - major overhaul to support reading and writing FITS files
      in memory.   The new routines fits_set_mem_buff and 
@@ -22,6 +65,12 @@ Version 1.30 -
      at compile time, not run time.
 
   Bug Fixes:
+
+   - replaced the malloc calls in the error message stack routines
+     with a static fixed size array.  The malloc's cause more
+     problems than they solved, and were prone to cause memory
+     leaks if users don't clear the error message stack when
+     closing the FITS file.
 
    - when writing float or double keywords, test that the value
      is not a special IEEE value such as a NaN.  Some

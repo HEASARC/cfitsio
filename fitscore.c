@@ -9,6 +9,7 @@
 /*  Government purposes to publish, distribute, translate, copy, exhibit,  */
 /*  and perform such material.                                             */
 
+#include <time.h>   /* required only for ffgsdt at end */
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
@@ -22,8 +23,11 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-   *version = 1.27;  /* 3 Sept 1997 (beta) */
- /*   *version = 1.25;   2 Jul 1997 */
+   *version = 1.31;  /* 4 Nov 1997 */
+
+ /*   *version = 1.30;   11 Sep 1997 */
+ /*   *version = 1.27;    3 Sep 1997 (beta release only) */
+ /*   *version = 1.25;    2 Jul 1997 */
  /*   *version = 1.24;    2 May 1997 */
  /*   *version = 1.23;   24 Apr 1997 */
  /*   *version = 1.22;   18 Apr 1997 */
@@ -205,6 +209,12 @@ void ffgerr(int status,     /* I - error status value */
     case 253:
        strcpy(errtext, "END keyword is not blank");
        break;
+    case 254:
+       strcpy(errtext, "Header fill area not blank");
+       break;
+    case 255:
+       strcpy(errtext, "Data fill area invalid");
+       break;
     case 261:
        strcpy(errtext, "illegal TFORM format code");
        break;
@@ -353,22 +363,32 @@ void ffcmsg(void)
 void ffxmsg( int action,
             char *errmsg)
 /*
-  general routine to get, put, or clear the error message stack 
+  general routine to get, put, or clear the error message stack.
+  Use a static array rather than allocating memory as needed for
+  the error messages because it is likely to be more efficient
+  and because it is trick ensuring that the allocated memory
+  is always freed correctly.
+
+  Action Code:
+       -2  - delete the newest message from the stack
+       -1  - return the oldest message and delete it from the stack
+        0  - delete all the messages on the stack
+        1  - add a new message to the stack (this overwrites the
+             oldest message if the stack is full)
 */
 {
     int ii;
-    size_t len;
-#define errmsgsiz 50
-    static char *txtbuff[errmsgsiz];
+#define errmsgsiz 25
+    static char *txtbuff[errmsgsiz], *tmpbuff;
+    static char errbuff[errmsgsiz][81] = {0};  /* initialize all = \0 */
     static nummsg = 0;
 
     if (action == -2)  /* remove newest message from stack */ 
     {
       if (nummsg > 0)
       {
-
         nummsg--;  
-        free(txtbuff[nummsg]);  /* free the memory for this msg */
+        *txtbuff[nummsg] = '\0';  /* clear the buffer for this msg */
       }
     }
     else if (action == -1)  /* return and remove oldest message from stack */ 
@@ -377,45 +397,47 @@ void ffxmsg( int action,
       {
         strcpy(errmsg, txtbuff[0]);   /* copy oldest message to output */
 
-        free(txtbuff[0]);  /* free the memory for this msg */
+        *txtbuff[0] = '\0';  /* clear the buffer for this msg */
            
         nummsg--;  
         for (ii = 0; ii < nummsg; ii++)
              txtbuff[ii] = txtbuff[ii + 1]; /* shift remaining pointers */
       }
       else
-          errmsg[0] = 0;  /*  no messages in the stack */
+        errmsg[0] = '\0';  /*  no messages in the stack */
     }
     else if (action == 1)  /* add new message to stack */
     {
       if (nummsg == errmsgsiz)
       {
-        free(txtbuff[0]);  /* buffer full; delete oldest msg */
+        tmpbuff = txtbuff[0];  /* buffers full; reuse oldest buffer */
+        *txtbuff[0] = '\0';  /* clear the buffer for this msg */
+
         nummsg--;
         for (ii = 0; ii < nummsg; ii++)
              txtbuff[ii] = txtbuff[ii + 1];   /* shift remaining pointers */
-      }
 
-      len = minvalue(strlen(errmsg), 80);
-
-      txtbuff[nummsg] = (char *) malloc(len + 1);
-
-      if (!txtbuff[nummsg])
-      {
-        printf("\nmalloc failed in the ffpmsg routine of cfitsio.\n");
-        printf("%s\n", errmsg);
+        txtbuff[nummsg] = tmpbuff;  /* set pointer for the new message */
       }
       else
       {
-        *txtbuff[nummsg] = '\0';  /* initialize a null string */
-        strncat(txtbuff[nummsg], errmsg, len);
-        nummsg++;
+        for (ii = 0; ii < errmsgsiz; ii++)
+        {
+          if (*errbuff[ii] == '\0') /* find first empty buffer */
+          {
+            txtbuff[nummsg] = errbuff[ii];
+            break;
+          }
+        }
       }
+
+      strncat(txtbuff[nummsg], errmsg, 80);
+      nummsg++;
     }
-    else if (action == 0)
+    else if (action == 0)  /* clear the whole message stack */
     {
       for (ii = 0; ii < nummsg; ii ++)
-        free(txtbuff[ii]);
+        *txtbuff[ii] = '\0';
 
       nummsg = 0;
     }
@@ -1241,6 +1263,9 @@ int ffbnfm(char *tform,     /* I - format code from the TFORMn keyword */
         */
         iread = 0;
         if (form[1] != 0)
+            if (form[1] == '(')  /* skip parenthesis around */
+                form++;          /* variable length column width */
+
             iread = sscanf(&form[1],"%ld", width);
 
         if (iread != 1)
@@ -3181,6 +3206,131 @@ int ffpdfl(fitsfile *fptr,      /* I - FITS file pointer */
 
     return(*status);
 }
+/**********************************************************************
+   ffchfl : Check Header Fill values
+
+      Check that the header unit is correctly filled with blanks from
+      the END card to the end of the current FITS 2880-byte block
+
+         Function parameters:
+            fptr     Fits file pointer
+            status   output error status
+
+    Translated ftchfl into C by Peter Wilson, Oct. 1997
+**********************************************************************/
+int ffchfl( fitsfile *fptr, int *status)
+{
+   int nblank,i,gotend;
+   long endpos;
+   char rec[FLEN_CARD];
+   char *blanks="                                                                                ";  /*  80 spaces  */
+
+   if( *status>0 ) return (*status);
+
+   /*   calculate the number of blank keyword slots in the header  */
+
+   endpos=fptr->headend;
+   nblank=(fptr->datastart-endpos)/80;
+
+   /*   move the i/o pointer to the end of the header keywords   */
+
+   ffmbyt(fptr,endpos,TRUE,status);
+
+   /*   find the END card (there may be blank keywords perceeding it)   */
+
+   gotend=FALSE;
+   for(i=0;i<nblank;i++) {
+      ffgbyt(fptr,80,rec,status);
+      if( !strncmp(rec, "END     ", 8) ) {
+         if( gotend ) {
+            /*   There is a duplicate END record   */
+            *status=BAD_HEADER_FILL;
+            ffpmsg("Warning: Header fill area contains duplicate END card:");
+         }
+         gotend=TRUE;
+         if( strncmp( rec+8, blanks+8, 72) ) {
+            /*   END keyword has extra characters   */
+            *status=END_JUNK;
+            ffpmsg("Warning: END keyword contains extraneous non-blank characters:");
+         }
+      } else if( gotend ) {
+         if( strncmp( rec, blanks, 80 ) ) {
+            /*   The fill area contains extraneous characters   */
+            *status=BAD_HEADER_FILL;
+            ffpmsg("Warning: Header fill area contains extraneous non-blank characters:");
+         }
+      }
+
+      if( *status > 0 ) {
+         rec[FLEN_CARD - 1] = '\0';  /* make sure string is null terminated */
+         ffpmsg(rec);
+         return( *status );
+      }
+   }
+   return( *status );
+}
+
+/**********************************************************************
+   ffcdfl : Check Data Unit Fill values
+
+      Check that the data unit is correctly filled with zeros or
+      blanks from the end of the data to the end of the current
+      FITS 2880 byte block
+
+         Function parameters:
+            fptr     Fits file pointer
+            status   output error status
+
+    Translated ftcdfl into C by Peter Wilson, Oct. 1997
+**********************************************************************/
+int ffcdfl( fitsfile *fptr, int *status)
+{
+   int nfill,i;
+   long filpos;
+   char chfill,chbuff[2880];
+
+   if( *status > 0 ) return( *status );
+
+   /*   check if the data unit is null   */
+   if( fptr->heapstart==0 ) return( *status );
+
+   /* calculate starting position of the fill bytes, if any */
+   filpos = fptr->datastart 
+          + fptr->heapstart 
+          + fptr->heapsize;
+
+   /*   calculate the number of fill bytes   */
+   nfill = (filpos + 2879) / 2880 * 2880 - filpos;
+   if( nfill == 0 ) return( *status );
+
+   /*   move to the beginning of the fill bytes   */
+   ffmbyt(fptr, filpos, TRUE, status);
+
+   if( ffgbyt(fptr, nfill, chbuff, status) > 0)
+   {
+      ffpmsg("Error reading data unit fill bytes (ffcdfl).");
+      return( *status );
+   }
+
+   if( fptr->hdutype==ASCII_TBL )
+      chfill = 32;         /* ASCII tables are filled with spaces */
+   else
+      chfill = 0;          /* all other extensions are filled with zeros */
+   
+   /*   check for all zeros or blanks   */
+   
+   for(i=0;i<nfill;i++) {
+      if( chbuff[i] != chfill ) {
+         *status=BAD_DATA_FILL;
+         if( fptr->hdutype==ASCII_TBL )
+            ffpmsg("Warning: remaining bytes following ASCII table data are not filled with blanks.");
+         else
+            ffpmsg("Warning: remaining bytes following data are not filled with zeros.");
+         return( *status );
+      }
+   }
+   return( *status );
+}
 /*--------------------------------------------------------------------------*/
 int ffcrhd(fitsfile *fptr,      /* I - FITS file pointer */
            int *status)         /* IO - error status     */
@@ -3490,6 +3640,32 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
 
     return(*status);
 }
+/*--------------------------------------------------------------------------*/
+int ffgsdt( int *day, int *month, int *year2, int *status )
+{  
+/**********************************************************************
+   ffgsdt : Get current System DaTe
+
+      Return integer values of the day, month, and year
+
+         Function parameters:
+            day      Day of the month
+            month    Numerical month (1=Jan, etc.)
+            year2    Last 2 digits of year (Yr2000 problems?)
+            status   output error status
+
+**********************************************************************/
+   time_t now;
+   struct tm *date;
+
+   now = time( NULL );
+   date = localtime( &now );
+   *day = date->tm_mday;
+   *month = date->tm_mon + 1;
+   *year2 = date->tm_year%100;  /* tm_year is defined as years since 1900 */
+   return( *status );
+}
+
 /*--------------------------------------------------------------------------*/
 int ffdtyp(char *cval,  /* I - formatted string representation of the value */
            char *dtype, /* O - datatype code: C, L, F or I */

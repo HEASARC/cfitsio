@@ -3,6 +3,7 @@ $ set verify
 $ cc/float=ieee_float buffers.c
 $ cc/float=ieee_float cfileio.c
 $ cc/float=ieee_float checksum.c
+$ cc/float=ieee_float compress.c
 $ cc/float=ieee_float fitscore.c
 $ cc/float=ieee_float getcol.c
 $ cc/float=ieee_float getcolb.c
@@ -35,9 +36,9 @@ $ cc/float=ieee_float putkey.c
 $ cc/float=ieee_float scalnull.c
 $ cc/float=ieee_float swapproc.c
 $ cc/float=ieee_float wcsutil.c
-$ lib/create cfitsio buffers,cfileio,checksum,fitscore,getcol,getcolb
-$ lib/insert cfitsio getcoli,getcolj,getcolk,getcole,getcold,getcoll
-$ lib/insert cfitsio getcols,editcol,edithdu,getkey,modkey,putcol
+$ lib/create cfitsio buffers,cfileio,checksum,compress,fitscore,getcol
+$ lib/insert cfitsio getcolb,getcoli,getcolj,getcolk,getcole,getcold
+$ lib/insert cfitsio getcoll,getcols,editcol,edithdu,getkey,modkey,putcol
 $ lib/insert cfitsio putcolb,putcoli,putcolj,putcolk,putcole,putcold
 $ lib/insert cfitsio getcolui,getcoluj,putcolui,putcoluj
 $ lib/insert cfitsio putcols,putcoll,putcolu,putkey,scalnull,swapproc,wcsutil

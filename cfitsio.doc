@@ -305,7 +305,7 @@ uppercase letters, the digits 0-9, the hyphen, and the underscore
 character. The keyword name is (usually) followed by an equals sign and
 a space character (= ) in columns 9 - 10 of the record, followed by the
 value of the keyword which may be either an integer, a floating point
-number, a character string (enclosed in single quotes), or a boolian
+number, a character string (enclosed in single quotes), or a boolean
 value (the letter T or F).   A keyword may also have a null or undefined
 value if there is no specified value string, as in the following example:
 -
@@ -320,7 +320,7 @@ directly with the raw FITS formats.
 
 Each Header Unit begins with a series of required keywords which depend
 on the type of HDU.  These required keywords specify the size and
-format of the following Data Unit.  The header many contain other
+format of the following Data Unit.  The header may contain other
 optional keywords to describe other aspects of the data, such as the
 units or scaling values.  Other COMMENT or HISTORY keywords are also
 frequently added to further document the data file.
@@ -364,15 +364,31 @@ definition of the structure may change in future versions of CFITSIO.
 The cookbook.c program that is included with the CFITSIO library
 contains example programs illustrating this usage.
 
-**B.  Disk Files, Memory-Resident Files, and Piped Files
+**B.  File Access: on Disk and in Memory
 
-In addition to reading or writing traditional FITS files on magnetic
+In addition to reading or writing traditional FITS files or
+compressed FITS files on magnetic
 disk, CFITSIO can also access FITS files in computer memory and can
 read or write FITS files that are piped to the `stdin' and `stdout'
 file streams.  The use of these features is outlined in the following
 sections.
 
-***1.  Reading or Writing Memory-Resident FITS Files
+***1.  Compressed FITS Files
+
+CFITSIO can directly read compressed FITS files on disk.  Files that
+have been compressed with Unix 'compress', with gzip, or with pkzip are
+all supported.  Currently these files may only be opened with READONLY
+access and there is no provision for directly writing compressed FITS
+files to disk.  When specifying the name of the file to be opened
+it is not necessary to append the compressed file suffix (e.g., '.gz'
+or '.Z').  If CFITSIO cannot find the input file name, it will then
+automatically search for a compressed file with the same root name.
+
+Note that CFITSIO decompresses the entire FITS file into temporary
+memory, so an error will occur if it cannot allocate sufficient memory
+for this purpose.
+
+***2.  Reading or Writing Memory-Resident FITS Files
 
 CFITSIO can read and write FITS 'files' in a block of core computer
 memory, in shared memory, or memory-mapped disk files.  Most of the
@@ -410,7 +426,7 @@ test FITS file in memory.  This program also calls
 fits\_write\_mem\_buff to copy the memory file out to a disk file
 called 'testmem.fit'.
 
-***2.  Piped FITS Files via STDIN and STDOUT.
+***3.  Piped FITS Files via STDIN and STDOUT.
 
 A related feature of CFITSIO is the ability to read FITS files from the
 'stdin' file stream and write them to the 'stdout' file stream.   This
@@ -716,7 +732,7 @@ encouraged to use whenever they are allocating space for char arrays:
 #define FLEN_ERRMSG    81  /* max length of a FITSIO error message */ 
 #define FLEN_STATUS    31  /* max length of a FITSIO status text string */ 
 -
-For example, then declaring a char array to hold the value string
+For example, when declaring a char array to hold the value string
 of FITS keyword, use the following statment:
 -
     char value[FLEN_VALUE];
@@ -822,7 +838,7 @@ originally returned the error status.
 CFITSIO also maintains an internal stack of error messages
 (80-character maximum length)  which in many cases provide a more
 detailed explanation of the cause of the error than is provided by the
-error status number alone.  It it recommended that the error message
+error status number alone.  It is recommended that the error message
 stack be printed out whenever a program detects a CFITSIO error.  To do
 this, call the ffgmsg routine repeatedly to get the successive messages
 on the stack.  When the stack is empty ffgmsg will return a null value
@@ -955,7 +971,7 @@ characters because it must fit entirely within a single FITS header
 keyword record.  In some instances it is necessary to encode strings
 longer than this limit, so CFITSIO supports a local convention in which
 the string value is continued over multiple keywords.  This
-continuation convention uses a ampersand character at the end of each
+continuation convention uses an ampersand character at the end of each
 substring to indicate that it is continued on the next keyword, and the
 continuation keywords all have the name CONTINUE without an equal sign
 in column 9. The string value may be continued in this way over as many
@@ -1209,7 +1225,7 @@ tables, on the other hand, once a particular FITS block has been
 loading into one of the IO buffers, try to access all the needed
 information in that block before it gets flushed out of the IO buffer.
 It is important to avoid the situation where the same FITS block is
-being read then flushed from a IO buffer multiple time.
+being read then flushed from a IO buffer multiple times.
 
 The following section gives more specific suggestions for optimizing
 the use of CFITSIO.
@@ -1385,7 +1401,7 @@ potential IO bottlenecks.
  
 In general, CFITSIO places no limits on the sizes of the FITS files that
 it reads or writes. In particular there is no internal limit on the size of the
-dimensions of the primary array or IMAGE extension. Tables extensions may have
+dimensions of the primary array or IMAGE extension. Table extensions may have
 up to 999 columns (the maximum allowed by the FITS standard) and
 may have an arbitrarily large number of rows. There are a few other limits,
 however, which may affect some extreme cases:
@@ -1448,7 +1464,8 @@ CFITSIO.
 
 >1  Open an existing FITS file with readonly or readwrite access.
     The iomode parameter has allowed symbolic constant values of 
->   READONLY or READWRITE.
+    READONLY or READWRITE.  Compressed FITS files (Unix compress,
+>   gzip, or pkzip format) may be opened with READONLY mode.
 -
   int fits_open_file / ffopen
       (fitsfile **fptr, const char *filename, int iomode, > int *status)
@@ -1657,7 +1674,9 @@ is freed when the FITS file is closed.
 
 >1  Open an existing FITS file with readonly or readwrite access.
     The iomode parameter has allowed symbolic constant values of 
-    READONLY or READWRITE.  If the filename = "-" then
+    READONLY or READWRITE.    Compressed FITS files (Unix compress,
+    gzip, or pkzip format) may be opened with READONLY mode.
+    If the filename = "-" then
     CFITSIO will read the FITS file from the stdin file stream rather
     than from a disk file.  If the file to be opened resides in memory
     (see fits\_set\_mem\_buff, below) then a null file name may be given to
@@ -2765,7 +2784,7 @@ the underscore character be used in column names (with no embedded
 spaces in the name).  Trailing blank characters are not significant.
 It is recommended that the column names in a given table be unique
 within the first 8 characters, and HIGHLY recommended that the names be
->unique withing the first 16 characters.
+>unique within the first 16 characters.
 -
   int fits_get_colnum / ffgcno
       (fitsfile *fptr, int casesen, char *templt, > int *colnum,
@@ -2780,7 +2799,7 @@ within the first 8 characters, and HIGHLY recommended that the names be
     (See the ffbnfm and ffasfm routines in the Utilities section of this
     document for a list of the code values).  The negative of the code value is
     returned if it is a variable length array column. The vector
-    repeat count (which is alway 1 for ASCII table columns) is also returned.
+    repeat count (which is always 1 for ASCII table columns) is also returned.
     If the specified column has an ASCII character datatype (code = 16) then
     the width of a unit string in the column is also returned.  Note that
     this routine supports the local convention for specifying arrays of
@@ -3245,8 +3264,8 @@ and a later revision in June 1995.
   int fits_verify_chksum / ffvcks
       (fitsfile *fptr, > int *dataok, int *hduok, int *status)
 -
->4  Compute and return the checksum values for the CHDU (as
-    double precision variables) without creating or modifying the
+>4  Compute and return the checksum values for the CHDU
+    without creating or modifying the
     CHECKSUM and DATASUM keywords.  This routine is used internally by
 >   ffvcks, but may be useful in other situations as well.
 -
@@ -3254,15 +3273,15 @@ and a later revision in June 1995.
       (fitsfile *fptr, > unsigned long *datasum, unsigned long *hdusum,
        int *status)
 -
->5  Encode a checksum value (stored in a double precision variable)
-    into a 16-character string.  If COMPLEMENT = .true. then the 32-bit
+>5  Encode a checksum value 
+    into a 16-character string.  If complm is non-zero (true) then the 32-bit
 >   sum value will be complemented before encoding.
 -
   int fits_encode_chksum / ffesum
       (unsigned long sum, int complm, > char *ascii);
 -
 >6  Decode a 16-character checksum string into a unsigned long value.
-    If COMPLEMENT = .true. then the 32-bit sum value will be complemented
+    If is non-zero (true). then the 32-bit sum value will be complemented
     after decoding.  The checksum value is also returned as the 
 >   value of the function.
 -
@@ -3279,16 +3298,20 @@ The following utility routines may be useful for certain applications:
     software library.  The revision number will be incremented whenever any
 >   modifications or enhancements are made to the code.
 -
-  float fits_get_version ffvers
-       ( > float *version)
+  float fits_get_version / ffvers ( > float *version)
 -
->2  Return a descriptive text string corresponding to a CFITSIO error
+>2  Get the current system data (provided for compatibility with
+>   the Fortran FITSIO library).
+-
+  int ffgsdt( > int *day, int *month, int *year, int *status )
+-
+>3  Return a descriptive text string corresponding to a CFITSIO error
     status code.   The 30-character length string contains a brief
 >   description of the cause of the error.
 -
  void fits_get_errstatus / ffgerr (int status, > char *err_text)
 -
->3  Return the top (oldest) 80-character error message from the
+>4  Return the top (oldest) 80-character error message from the
     internal CFITSIO stack of error messages and shift any remaining
     messages on the stack up one level.  Any CFITSIO error will
     generate one or more messages on the stack.  Call this routine
@@ -3297,24 +3320,24 @@ The following utility routines may be useful for certain applications:
 -
   int fits_read_errmsg / ffgmsg (char *err_msg)
 -
->4  Write an 80-character message to the CFITSIO error stack.  Application
+>5  Write an 80-character message to the CFITSIO error stack.  Application
     programs should not normally write to the stack, but there may be
 >   some situations where this is desirable.
 -
   void fits_write_errmsg / ffpmsg (char *err_msg)
 -
->5   Clear the entire error message stack.  This routine is useful
+>6   Clear the entire error message stack.  This routine is useful
      to clear any error message that may have been generated by
      a non-fatal CFITSIO error (such as failing to find an optional
 >    header keyword).  This routine is called without any arguments.
 -
   void fits_clear_errmsg / ffcmsg (void)
 -
->>6  Convert a character string to uppercase (operates in place).
+>>7  Convert a character string to uppercase (operates in place).
 -
   void fits_uppercase / ffupch (char *string)
 -
->7   Compare the input template string against the reference string
+>8   Compare the input template string against the reference string
     to see if they match.  The template string may contain wildcard
     characters: '*' will match any sequence of characters (including
     zero characters) and '\%' will match any single character in the
@@ -3328,12 +3351,12 @@ The following utility routines may be useful for certain applications:
        (char *templt, char *string, int casesen, > int *match, int *exact)
 -
  
->8  Test that the keyword name contains only legal characters: A-Z,0-9,
+>9  Test that the keyword name contains only legal characters: A-Z,0-9,
 >   hyphen, and underscore.
 -
   int fits_test_keyword / fftkey (char *keyname, > int *status)
 -
->9  Parse a header keyword record.
+>10 Parse a header keyword record.
     This routine parses the input header record to return the value (as
     a character string) and comment strings.  If the keyword has no
     value (columns 9-10 not equal to '= '), then the value string is returned
@@ -3343,28 +3366,28 @@ The following utility routines may be useful for certain applications:
   int fits_parse_value / ffpsvc
       (char *card, > char *value, char *comment, int *status)
 -
->10 Construct a sequence keyword name (ROOT + nnn).
+>11 Construct a sequence keyword name (ROOT + nnn).
     This routine appends the sequence number to the root string to create
 >   a keyword name (e.g., 'NAXIS' + 2 = 'NAXIS2')
 -
   int fits_make_keyn / ffkeyn
       (char *keyroot, int value, > char *keyname, int *status)
 -
->11 Construct a sequence keyword name (n + ROOT).
+>12 Construct a sequence keyword name (n + ROOT).
     This routine concatenates the sequence number to the front of the
 >   root string to create a keyword name (e.g., 1 + 'CTYP' = '1CTYP')
 -
   int fits_make_nkey / ffnkey
       (int value, char *keyroot, > char *keyname, int *status)
 -
->12 Determine the datatype of a keyword value string.
+>13 Determine the datatype of a keyword value string.
     This routine parses the keyword value string (usually columns 11-30
 >   of the header record) to determine its datatype.
 -
   int fits_get_keytype / ffdtyp
       (char *value, > char *dtype, int *status)
 -
->13 Parse the 'TFORM' binary table column format string.
+>14 Parse the 'TFORM' binary table column format string.
     This routine parses the input TFORM character string and returns the
     integer datatype code, the repeat count of the field, and, in the case
     of character string fields, the length of the unit string.  See Chapter
@@ -3374,7 +3397,7 @@ The following utility routines may be useful for certain applications:
        (char *tform, > int *typecode, long *repeat, long *width, 
         int *status)
 -
->14 Parse the 'TFORM' keyword value that defines the column format in
+>15 Parse the 'TFORM' keyword value that defines the column format in
     an ASCII table.  This routine parses the input TFORM character
     string and returns the datatype code, the width of the column,
     and (if it is a floating point column) the number of decimal places
@@ -3393,7 +3416,7 @@ The following utility routines may be useful for certain applications:
       (char *tform, > int *typecode, long *width, int *decimals, 
        int *status)
 -
->15 Calculate the starting column positions and total ASCII table width
+>16 Calculate the starting column positions and total ASCII table width
     based on the input array of ASCII table TFORM values.  The SPACE input
     parameter defines how many blank spaces to leave between each column
     (it is recommended to have one space between columns for better human
@@ -3403,7 +3426,7 @@ The following utility routines may be useful for certain applications:
       (int tfields, char **tform, int space, > long *rowlen, 
        long *tbcol, int *status)
 -
->16 Parse a template string and return a formatted 80-character string
+>17 Parse a template string and return a formatted 80-character string
     suitable for appending to (or deleting from) a FITS header file.
     This routine is useful for parsing lines from an ASCII template file
     and reformatting them into legal FITS header records.  The formatted
@@ -3493,6 +3516,14 @@ The following utility routines may be useful for certain applications:
       - DATE
       # the following template line modifies the NAME keyword to OBJECT
       - NAME OBJECT
+-
+>>18 Check that the Header fill bytes (if any) are all blank.
+-
+  int ffchfl(fitsfile *fptr, > int *status)
+-
+>>19 Check that the Data fill bytes (if any) are all zero or blank.
+-
+  int ffcdfl(fitsfile *fptr, > int *status)
 -
 
 *VIII   Summary of all CFITSIO User-Interface Routines
@@ -3818,6 +3849,7 @@ The following utility routines may be useful for certain applications:
  General Utility Routines: page~\pageref{FFVERS}
 -
   float ffvers( > float *version)
+  int ffgsdt( > int *day, int *month, int *year, int *status )
   void ffgerr(int status, > char *err_text)
   int  ffgmsg(char *err_msg)
   void ffpmsg(char *err_msg)
@@ -3836,6 +3868,8 @@ The following utility routines may be useful for certain applications:
   int ffgabc(int tfields, char **tform, int space, > long *rowlen, 
             long *tbcol, int *status)
   int ffgthd(char *templt, > char *card, int *keytype, int *status)
+  int ffchfl(fitsfile *fptr, > int *status)
+  int ffcdfl(fitsfile *fptr, > int *status)
 -
 
 *IX.  Parameter Definitions
@@ -4057,6 +4091,8 @@ improve the readability of their code.
  UNKNOWN_EXT       251    unrecognizable FITS extension type
  UNKNOWN_REC       252    unrecognizable FITS record
  END_JUNK          253    END keyword is not blank
+ BAD_HEADER_FILL   254    Header fill area contains non-blank chars
+ BAD_DATA_FILL     255    Illegal data fill bytes (not zero or blank)
  BAD_TFORM         261    illegal TFORM format code
  BAD_TFORM_DTYPE   262    unrecognizable TFORM datatype code
  BAD_TDIM          263    illegal TDIMn keyword value

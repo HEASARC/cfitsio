@@ -12,8 +12,7 @@
 
 #include <string.h>
 #include <stdlib.h>
-/* stddef.h is apparently needed to define size_t */
-#include <stddef.h>
+#include <stddef.h>  /* apparently needed to define size_t */
 #include "fitsio2.h"
 /*--------------------------------------------------------------------------*/
 int ffsbuf(fitsfile **fptr,    /* I - FITS file pointer                   */
@@ -35,15 +34,24 @@ int ffsbuf(fitsfile **fptr,    /* I - FITS file pointer                   */
 
     if (*fptr)
     {
-        (*fptr)->bufftype = MEMBUFF;
-        (*fptr)->memptr = buffptr;
-        (*fptr)->memsize = buffsize;
-        (*fptr)->mem_realloc = mem_realloc;
-        (*fptr)->deltasize = deltasize;
-        return(*status = USE_MEM_BUFF);
+        (*fptr)->filename = (char *) malloc(160); /* mem for file name */
+        if (!((*fptr)->filename))
+        {
+            free(*fptr);
+        }
+        else
+        {
+            (*fptr)->bufftype = MEMBUFF;
+            (*fptr)->memptr = buffptr;
+            (*fptr)->memsize = buffsize;
+            (*fptr)->mem_realloc = mem_realloc;
+            (*fptr)->deltasize = deltasize;
+            return(*status = USE_MEM_BUFF);
+        }
     }
-    else
-        return(*status = FILE_NOT_CREATED);
+
+    ffpmsg("ffsbuf failed to allocate memory for FITS file structure");
+    return(*status = FILE_NOT_CREATED);
 }
 /*--------------------------------------------------------------------------*/
 int ffwbuf(void *buffptr,          /* I - memory pointer                    */
@@ -173,7 +181,8 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     void **buffptr;
     size_t *buffsize;
     int ii, hdutype, slen, tstatus;
-    long filesize;
+    size_t filesize, finalsize;
+    FILE *diskfile;
 
     if (*status > 0)
         return(*status);
@@ -182,118 +191,220 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     while (filename[ii] == ' ')  /* ignore leading spaces in the filename */
         ii++;
 
-    if (*status != USE_MEM_BUFF)  /* not using memory? */
+    if (*status == USE_MEM_BUFF)  /*  using preallocated memory? */
     {
-      if (!filename[ii])
-      {
-        ffpmsg("Name of file to open is blank. (ffopen)");
-        return(*status = FILE_NOT_OPENED);
-      }
+        /* the FITS file structure has already been created by ffsbuff */
 
-      /* allocate mem and init = 0 */
-      *fptr = (fitsfile *) calloc(1, sizeof(fitsfile)); 
-
-      if (!strcmp(&filename[ii], "-") )
-      {
-        /* 
-        if reading file from stdin, must allocate temporary memory
-        buffer since the user has not already done so.  Must remember
-        to free the memory when the file is closed.
-        */
-        if (*fptr)
+        *status = 0;  /* simply clear the status flag */
+    }
+    else   /* must allocate the FITS file structure */
+    {
+        if (!filename[ii])
         {
-            buffsize = malloc(sizeof(size_t));
-            if (!buffsize)
+            ffpmsg("Name of file to open is blank. (ffopen)");
+            return(*status = FILE_NOT_OPENED);
+        }
+
+        /* allocate FITSfile structure and init = 0 */
+        *fptr = (fitsfile *) calloc(1, sizeof(fitsfile));
+
+        if (!(*fptr))
+        {
+            ffpmsg("ffopen failed to allocate memory for following file:");
+            ffpmsg(filename);
+            return(*status = FILE_NOT_OPENED);
+        }
+
+        slen = strlen(&filename[ii]) + 1;
+        slen = maxvalue(slen, 32); /* reserve at least 32 chars */ 
+        (*fptr)->filename = (char *) malloc(slen); /* mem for file name */
+
+        if ( !((*fptr)->filename) )
+        {
+            ffpmsg("ffopen failed to allocate memory for filename:");
+            ffpmsg(filename);
+            free(*fptr);
+            *fptr = 0;              /* return null file pointer */
+            return(*status = FILE_NOT_OPENED);
+        }
+    }
+
+    strcpy((*fptr)->filename, &filename[ii]); /* store the input filename */
+
+    /*
+    Now open the file.  There are 5 different cases to handle:
+      1.  FITS file already exists in preallocated memory (blank filename)
+      2.  FITS file piped in on stdin; 
+      3.  Open a compressed FITS file on disk; uncompress into memory
+      4.  Copy a disk file into preallocated memory
+      5.  Open an ordinary FITS file on disk
+    */
+
+    if (!filename[ii])   /*  Case 1: file pre-exists in memory (no name) */
+    {
+        filesize = *((*fptr)->memsize);  /* upper limit to the file size */
+    }
+    else if ( !strcmp(&filename[ii], "-") )  /* Case 2: reading from stdin */
+    {
+        strcpy((*fptr)->filename, "_stdin"); /* store special filename */
+
+        if ((*fptr)->bufftype != MEMBUFF) /* must allocate temporary memory */
+        {
+            if (ffcreate_mem(*fptr, 2880L, status) > 0)
             {
-                ffpmsg("malloc of buffsize failed (ffopen)");
+                ffpmsg("failed to create temporary memory buffer");
+                free((*fptr)->filename);
+                free(*fptr);
+                *fptr = 0;              /* return null file pointer */
                 return(*status = FILE_NOT_OPENED);
-             }
+            }
+        }
 
-            *buffsize = 2880;            /* initial size of the buffer */
+        /* call routine that copies stdin into memory */
 
-            buffptr  = malloc(sizeof(buffptr));
-            if (!buffptr)
+        if ( ffstdin2mem((*fptr)->memptr, (*fptr)->memsize, 
+           (*fptr)->mem_realloc, &filesize, status) > 0 )
+        {
+            /* error copying stdin; free previously allocated memeory */
+            if ((*fptr)->bufftype == TMPMEMBUFF)
             {
-                ffpmsg("malloc of buffptr failed (ffopen)");
-                free(buffsize);
-                return(*status = FILE_NOT_OPENED);
-             }
-
-            *buffptr  = malloc(2880); 
-            if (!(*buffptr))
-            {
-                ffpmsg("malloc of *buffptr failed (ffopen)");
+                free(*buffptr);
                 free(buffptr);
                 free(buffsize);
-                return(*status = FILE_NOT_OPENED);
-             }
-
-            (*fptr)->bufftype = TMPMEMBUFF;  /* using temporary buffer */
-            (*fptr)->memptr = buffptr;
-            (*fptr)->memsize = buffsize;
-            (*fptr)->mem_realloc = realloc;  /* use the standard function */
-            (*fptr)->deltasize = 2880;       /* increment by 1 FITS block */
-        }
-      }
-    }
-    else
-    {
-      *status = 0;  /* clear the USE_MEM_BUFF status flag */
-    }
-
-    if (*fptr)
-    {
-      slen = strlen(&filename[ii]) + 1;
-      slen = maxvalue(slen, 20); /* malloc may crash on small lengths */ 
-      (*fptr)->filename = (char *) malloc(slen); /* mem for file name */
-
-      if ( (*fptr)->filename )
-      {
-        if (!strcmp(&filename[ii], "-") )
-            strcpy((*fptr)->filename, "_stdin"); /* reading from stdin */
-        else
-            strcpy((*fptr)->filename, &filename[ii]); /* store the filename */
-
-        ffopenx(*fptr, 0, readwrite, &filesize, &tstatus); /* open file */
-
-        if (!tstatus)
-        {
-            (*fptr)->filesize = filesize;          /* physical file size */
-            (*fptr)->logfilesize = filesize;       /* logical file size */
-            (*fptr)->writemode = readwrite;        /* read-write mode    */
-            (*fptr)->datastart = DATA_UNDEFINED;   /* unknown start of data */
-            (*fptr)->curbuf = -1;   /* undefined current IO buffer */
-
-            ffldrc(*fptr, 0, REPORT_EOF, status);     /* load first record */
-            if (ffrhdu(*fptr, &hdutype, status) > 0)  /* set HDU structure */
-            {
-              ffpmsg(
-                "ffopen could not interpret primary array header of file:");
-              ffpmsg(&filename[ii]);
-
-              if (*status == UNKNOWN_REC)
-                 ffpmsg("This does not look like a FITS file.");
             }
-            return(*status);   
+
+            free((*fptr)->filename);
+            free(*fptr);
+            *fptr = 0;              /* return null file pointer */
+            return(*status = FILE_NOT_OPENED);
         }
-        /* error opening the file; free previously allocated memeory */
+    }
+    else if (ffisfilecompressed((*fptr)->filename, &diskfile, 
+            &filesize, &finalsize, status)) /* Case 3: compressed file? */
+    {
+        if (readwrite)
+        {
+            ffpmsg("Compressed files may only be opened 'READONLY'");
+            ffclosefile((*fptr)->filename, diskfile, 1, status);
+            free((*fptr)->filename);
+            free(*fptr);
+            *fptr = 0;              /* return null file pointer */
+            return(*status = FILE_NOT_OPENED);
+        }
+
+        /* if memory has not been preallocated, them must allocate  */
+        /* temporary memory buffer to uncompress the file into.     */
+
+        if ((*fptr)->bufftype != MEMBUFF) 
+        {
+            if (finalsize == 0)  /* unknow uncompressed file size? */
+            {
+                finalsize = filesize * 3;  /* estimate final size */
+            }
+
+            if (ffcreate_mem(*fptr, finalsize, status) > 0)
+            {
+                ffpmsg
+              ("failed to create temporary memory buffer for decompression");
+                ffclosefile((*fptr)->filename, diskfile, 1, status);
+                free((*fptr)->filename);
+                free(*fptr);
+                *fptr = 0;              /* return null file pointer */
+                return(*status = FILE_NOT_OPENED);
+            }
+        }
+
+        /* call routine to uncompress the file into memory */
+
+        if ( ffuncompress2mem((*fptr)->filename, diskfile, (*fptr)->memptr,
+           (*fptr)->memsize, (*fptr)->mem_realloc, &filesize, status) > 0 )
+        {
+            ffclosefile((*fptr)->filename, diskfile, 1, status);
+
+            /* error uncompressing file; free previously allocated memeory */
+            if ((*fptr)->bufftype == TMPMEMBUFF)
+            {
+                free(*buffptr);
+                free(buffptr);
+                free(buffsize);
+            }
+
+            free((*fptr)->filename);
+            free(*fptr);
+            *fptr = 0;              /* return null file pointer */
+
+            return(*status = FILE_NOT_OPENED);
+        }
+
+        ffclosefile((*fptr)->filename, diskfile, 1, status);
+
+        if ((*fptr)->bufftype == TMPMEMBUFF)
+        {
+           if (*((*fptr)->memsize) > (filesize + 256L) )
+           {
+              /* if we allocated too much memory initially, then free it */
+              (*fptr)->memptr = realloc((*fptr)->memptr, filesize);
+              *((*fptr)->memsize) = filesize;
+           }
+        }
+    }
+    else if ((*fptr)->bufftype == MEMBUFF) /* Case 4: copy file into memory */
+    {
+        if ( fffile2mem((char *)&filename[ii], (*fptr)->memptr, 
+           (*fptr)->memsize, (*fptr)->mem_realloc, &filesize, status) > 0 )
+        {
+            /* error copying file; free previously allocated memeory */
+            free((*fptr)->filename);
+            free(*fptr);
+            *fptr = 0;              /* return null file pointer */
+            return(*status = FILE_NOT_OPENED);
+        }
+    }
+    else  /* case 5: open ordinary FITS file on disk */
+    {
+        if (ffopenfile((*fptr)->filename, 0, readwrite, &diskfile, 
+            &filesize, status) > 0)
+        {
+            free((*fptr)->filename);
+            free(*fptr);
+            *fptr = 0;              /* return null file pointer */
+            return(*status = FILE_NOT_OPENED);
+        }
+
+        (*fptr)->fileptr = diskfile;   /* store the file pointer */
+    }
+
+    /* store the file size and other parameters */
+
+    (*fptr)->filesize = filesize;          /* physical file size */
+    (*fptr)->logfilesize = filesize;       /* logical file size */
+    (*fptr)->writemode = readwrite;        /* read-write mode    */
+    (*fptr)->datastart = DATA_UNDEFINED;   /* unknown start of data */
+    (*fptr)->curbuf = -1;   /* undefined current IO buffer */
+
+    ffldrc(*fptr, 0, REPORT_EOF, status);     /* load first record */
+
+    if (ffrhdu(*fptr, &hdutype, status) > 0)  /* determine HDU structure */
+    {
+        ffpmsg(
+          "ffopen could not interpret primary array header of file:");
+        ffpmsg(&filename[ii]);
+
+        if (*status == UNKNOWN_REC)
+           ffpmsg("This does not look like a FITS file.");
+
+        /* free previously allocated memeory */
         if ((*fptr)->bufftype == TMPMEMBUFF)
         {
             free(*buffptr);
             free(buffptr);
             free(buffsize);
         }
-
-        free( (*fptr)->filename);       /* free memory for the filename */
-      }
-      free(*fptr);            /* free memory for the FITS structure */
-      *fptr = 0;              /* return null file pointer */
+        free((*fptr)->filename);
+        free(*fptr);
+        *fptr = 0;              /* return null file pointer */
     }
-
-    ffpmsg("ffopen failed to find and/or open the following file:");
-    ffpmsg(filename);
-
-    return(*status = FILE_NOT_OPENED);
+    return(*status);
 }
 /*--------------------------------------------------------------------------*/
 int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
@@ -306,7 +417,8 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
     void **buffptr;
     size_t *buffsize;
     int ii, slen, tstatus;
-    long filesize;
+    size_t filesize;
+    FILE *diskfile;
 
     if (*status > 0)
         return(*status);
@@ -315,126 +427,252 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
     while (filename[ii] == ' ')  /* ignore leading spaces in the filename */
         ii++;
 
-    if (*status != USE_MEM_BUFF)  /* not using memory? */
+    if (*status == USE_MEM_BUFF)  /*  using preallocated memory? */
     {
-      if (!filename[ii])
-      {
-        ffpmsg("Name of file to create is blank. (ffinit)");
-        return(*status = FILE_NOT_CREATED);
-      }
+        /* the FITS file structure has already been created by ffsbuff */
 
-      /* allocate mem and init = 0 */
-      *fptr = (fitsfile *) calloc(1, sizeof(fitsfile)); 
-
-      if (!strcmp(&filename[ii], "-") )
-      {
-        /* 
-        if writing file to stdout, must allocate temporary memory
-        buffer since the user has not already done so.  Must remember
-        to free the memory when the file is closed.
-        */
-        if (*fptr)
-        {
-            buffsize = malloc(sizeof(size_t));
-            if (!buffsize)
-            {
-                ffpmsg("malloc of buffsize failed (ffinit)");
-                return(*status = FILE_NOT_OPENED);
-             }
-
-            *buffsize = 2880;            /* initial size of the buffer */
-
-            buffptr  = malloc(sizeof(buffptr));
-            if (!buffptr)
-            {
-                ffpmsg("malloc of buffptr failed (ffinit)");
-                free(buffsize);
-                return(*status = FILE_NOT_OPENED);
-             }
-
-            *buffptr  = malloc(2880); 
-            if (!(*buffptr))
-            {
-                ffpmsg("malloc of *buffptr failed (ffinit)");
-                free(buffptr);
-                free(buffsize);
-                return(*status = FILE_NOT_OPENED);
-             }
-
-            (*fptr)->bufftype = TMPMEMBUFF;  /* using temporary buffer */
-            (*fptr)->memptr = buffptr;
-            (*fptr)->memsize = buffsize;
-            (*fptr)->mem_realloc = realloc;  /* use the standard function */
-            (*fptr)->deltasize = 2880;       /* increment by 1 FITS block */
-        }
-      }
+        *status = 0;  /* simply clear the status flag */
     }
-    else
+    else   /* must allocate the FITS file structure */
     {
-      *status = 0;  /* clear the USE_MEM_BUFF status flag */
-    }
-
-    if (*fptr)
-    {
-      slen = strlen(&filename[ii]) + 1;
-      slen = maxvalue(slen, 20); /* malloc may crash on small lengths */ 
-      (*fptr)->filename = (char *) malloc(slen); /* mem for file name */
-
-      if ( (*fptr)->filename )
-      {
-        if (!strcmp(&filename[ii], "-") )
-            strcpy((*fptr)->filename, "_stdout"); /* writing to stdout */
-        else
-            strcpy((*fptr)->filename, &filename[ii]); /* store the filename */
-
-        ffopenx(*fptr, 1, 1, &filesize, &tstatus);    /* create file */
-
-        if (!tstatus)
+        if (!filename[ii])
         {
-          (*fptr)->writemode = 1;                /* read-write mode    */
-          (*fptr)->datastart = DATA_UNDEFINED;   /* unknown start of data */
-          (*fptr)->curbuf = -1;   /* undefined current IO buffer */
-
-          ffldrc(*fptr, 0, IGNORE_EOF, status);  /* initialize first record */
-          return(*status);                       /* successful return */
-        }
-        /* error opening the file; free previously allocated memeory */
-        if ((*fptr)->bufftype == TMPMEMBUFF)
-        {
-            free(*buffptr);
-            free(buffptr);
-            free(buffsize);
+            ffpmsg("Name of file to create is blank. (ffinit)");
+            return(*status = FILE_NOT_CREATED);
         }
 
-        free( (*fptr)->filename);       /* free memory for the filename */
-      } 
-      free(*fptr);            /* free memory for the FITS structure */
-      *fptr = 0;              /* return null file pointer */
+        /* allocate FITSfile structure and init = 0 */
+        *fptr = (fitsfile *) calloc(1, sizeof(fitsfile));
+
+        if (!(*fptr))
+        {
+            ffpmsg("ffinit failed to allocate memory for new file:");
+            ffpmsg(filename);
+            return(*status = FILE_NOT_CREATED);
+        }
+
+        slen = strlen(&filename[ii]) + 1;
+        slen = maxvalue(slen, 32); /* reserve at least 32 chars */ 
+        (*fptr)->filename = (char *) malloc(slen); /* mem for file name */
+
+        if ( !((*fptr)->filename) )
+        {
+            ffpmsg("ffinit failed to allocate memory for filename:");
+            ffpmsg(filename);
+            free(*fptr);
+            *fptr = 0;              /* return null file pointer */
+            return(*status = FILE_NOT_CREATED);
+        }
     }
 
-    ffpmsg("ffinit failed to create the following new file:");
-    ffpmsg(filename);
+    if ( !strcmp(&filename[ii], "-") )  /* Case 1: writing to stdout */
+    {
+        strcpy((*fptr)->filename, "_stdout"); /* store special filename */
 
-    return(*status = FILE_NOT_CREATED);
+        if ((*fptr)->bufftype != MEMBUFF) /* must allocate temporary memory */
+        {
+            if (ffcreate_mem(*fptr, 2880, status) > 0)
+            {
+                ffpmsg("failed to create temporary memory buffer for stdout");
+                free((*fptr)->filename);
+                free(*fptr);
+                *fptr = 0;              /* return null file pointer */
+                return(*status = FILE_NOT_CREATED);
+            }
+        }
+    }
+    else if ((*fptr)->bufftype == MEMBUFF) /* Case 2: create file in memory */
+    {
+       /* don't have to do anything */
+    }
+    else   /* Case 3: create ordinary disk file */
+    {
+        strcpy((*fptr)->filename, &filename[ii]); /* store the filename */
+
+        if (ffopenfile((*fptr)->filename, 1, 1, &diskfile, 
+            &filesize, status) > 0)
+        {
+            free((*fptr)->filename);
+            free(*fptr);
+            *fptr = 0;              /* return null file pointer */
+            return(*status = FILE_NOT_CREATED);
+        }
+
+        (*fptr)->fileptr = diskfile;   /* store the file pointer */
+    }
+
+    /* store the file  parameters */
+
+    (*fptr)->writemode = 1;           /* read-write mode    */
+    (*fptr)->datastart = DATA_UNDEFINED;   /* unknown start of data */
+    (*fptr)->curbuf = -1;   /* undefined current IO buffer */
+
+    ffldrc(*fptr, 0, IGNORE_EOF, status);     /* initialize first record */
+
+    return(*status);                       /* successful return */
 }
 /*--------------------------------------------------------------------------*/
-int ffopenx(fitsfile *fptr,  /* I - FITS file pointer                       */
-            int newfile,     /* I - 0=open existing file; 1=create new file */
-            int readwrite,   /* I - 0 = open readonly; 1 = open read/write  */
-            long *filesize,  /* O - size of file (bytes); needed when       */
-                             /*     opening an existing file with write mode*/
-            int *status)     /* O - error status: 0 = success, 1 = error    */
+int ffcreate_mem(fitsfile *fptr,  /* I - FITS file pointer                  */
+             size_t init_size,    /* I - initial size of the buffer         */
+             int *status)         /* IO - error status                      */
+
+/* 
+    Create temporary memory buffer to hold the input FITS file,
+*/
+{
+    void **buffptr;
+    size_t *buffsize;
+
+    buffsize = malloc(sizeof(size_t));
+    if (!buffsize)
+    {
+        ffpmsg("malloc of buffsize failed (ffcreate_mem)");
+        return(*status = 1);
+    }
+
+    *buffsize = init_size;            /* initial size of the buffer */
+
+    buffptr  = malloc(sizeof(buffptr));
+    if (!buffptr)
+    {
+        ffpmsg("malloc of buffptr failed (ffcreate_mem)");
+        free(buffsize);
+        return(*status = 1);
+    }
+
+    *buffptr  = malloc(init_size); 
+    if (!(*buffptr))
+    {
+        ffpmsg("malloc of *buffptr failed (ffcreate_mem)");
+        free(buffptr);
+        free(buffsize);
+        return(*status = FILE_NOT_OPENED);
+    }
+
+    fptr->bufftype = TMPMEMBUFF;  /* using temporary buffer */
+    fptr->memptr = buffptr;
+    fptr->memsize = buffsize;
+    fptr->mem_realloc = realloc;  /* use the standard function */
+    fptr->deltasize = 2880;       /* increment by 1 FITS block */
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffstdin2mem(void **buffptr,  /* IO - memory pointer                     */
+             size_t *buffsize,   /* IO - size of buffer, in bytes           */
+             void *(*mem_realloc)(void *p, size_t newsize), /* function     */
+             size_t *filesize,   /* O - size of file, in bytes              */
+             int *status)        /* IO - error status                       */
+
 /*
-  lowest-level routine to open or create a file;  If creating a new file,
-  make sure a file with the same name doesn't already exist.  If opening 
-  an existing file then must also return the current size of the file.
+  Copy the stdin stream into memory.  Fill whatever amount of memory
+  has already been allocated, then realloc more memory, using the
+  input function, if necessary.
+*/
+{
+    size_t nread;
+
+    if (*status > 0)
+       return(*status);
+
+    *filesize = 0;
+
+    /* fill up the initial buffer allocation */
+    nread = fread( (char *) *buffptr, 1, *buffsize, stdin);
+
+    *filesize += nread;
+
+    if (nread < *buffsize)    /* reached the end? */
+       return(*status);
+
+    while (1)
+    {
+        /* allocate memory for another FITS block */
+        *buffptr = mem_realloc(*buffptr, *buffsize + 2880);
+        if (!(*buffptr))
+        {
+            ffpmsg("malloc failed while copying stdin (ffstdin2mem)");
+            return(*status = FILE_NOT_OPENED);
+        }
+        *buffsize += 2880;
+
+        /* read another FITS block */
+        nread = fread( (char *) (*buffptr) + *filesize, 1, 2880, stdin);
+        *filesize += nread;
+
+        if (nread < 2880)    /* reached the end? */
+           break;
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fffile2mem(char *filename,   /* I - file to copy into memory      */
+             void **buffptr,     /* IO - memory pointer                     */
+             size_t *buffsize,   /* IO - size of buffer, in bytes           */
+             void *(*mem_realloc)(void *p, size_t newsize), /* function     */
+             size_t *filesize,   /* O - size of file, in bytes              */
+             int *status)        /* IO - error status                       */
+
+/*
+  Copy the file into memory.  
 */
 {
     FILE *diskfile;
+    size_t nread;
+    void *ptr;
+
+    if (*status > 0)
+       return(*status);
+
+    *filesize = 0;
+
+    if (ffopenfile(filename, 0, 0, &diskfile, filesize, status) > 0)
+        return(*status);
+
+     if (*filesize > *buffsize)
+    {
+        /* have to allocate more memory to hold the file */
+        if (!mem_realloc)
+        {
+            ffpmsg("need a realloc function in fffile2mem");
+            return(*status = 1);
+        }
+        ptr = mem_realloc(*buffptr, *filesize);
+        if (!ptr)
+        {
+            ffpmsg("Failed to allocate memory in fffile2mem!");
+            return(*status = 1);
+        }
+
+        *buffptr = ptr;
+        *buffsize = *filesize;
+    }
+
+    /* now read the file into memory */
+    if(fread(ptr, 1, *filesize, diskfile) != *filesize)
+       *status = 1;
+
+    /* close the diskfile */
+    ffclosefile(filename, diskfile, 1, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffopenfile(char *filename, /* I - FITS file pointer                    */
+            int newfile,     /* I - 0=open existing file; 1=create new file */
+            int readwrite,   /* I - 0 = open readonly; 1 = open read/write  */
+            FILE **diskfile, /* O - file pointer                            */
+            size_t *filesize, /* O - size of file (bytes)                   */
+            int *status)     /* O - error status: 0 = success, 1 = error    */
+/*
+  lowest-level routine to open or create a file;  If creating a new file,
+  make sure a file with the same name doesn't already exist.  Return the 
+  current size of the file.
+*/
+{
     char mode[4];
     void *ptr;
-    long tmpsize, nread;
 
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 /* temporarily add test for correct byteswapping.  Remove this after
    cfitsio is more fully tested on all machines.
 */
@@ -456,143 +694,165 @@ int ffopenx(fitsfile *fptr,  /* I - FITS file pointer                       */
    printf(  "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
    }
 
-/* end of temporary byteswap checking code */
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
     *filesize = 0;
 
-    if (fptr->bufftype >= MEMBUFF) /* using memory buffer instead of file? */
+    if (newfile)
     {
-      if (newfile)
-      {
-          /* creating new file in memory; don't have to do anything */
-      }
-      else if (!(fptr->filename[0])) 
-      {
-          /* blank filename, so file must already exist in memory */
-          *filesize = *(fptr->memsize);
-      }
-      else if (!strcmp(fptr->filename, "_stdin") )
-      {
-          /* Copy the FITS file from STDIN into memeory.  This   */
-          /* simple algorithm allocates memory 1 block at a time */
-
-          tmpsize = 0;
-          nread = 2880;
-          ptr = *(fptr->memptr);
-          while(nread == 2880)
-          {
-              tmpsize += 2880;
-              if (tmpsize > *(fptr->memsize))
-              {
-                  /* allocate memory for another FITS block */
-                  ptr = (fptr->mem_realloc)(*(fptr->memptr), tmpsize);
-
-                  if (!ptr)
-                  {
-                      ffpmsg("Failed to allocate memory in ffopenx!");
-                      return(*status = 1);
-                  }
-
-                  *(fptr->memptr) = ptr;
-                  *(fptr->memsize) = tmpsize;
-              }
-
-              /* try to read another FITS block into memory */
-              nread = fread( (char *) ptr + tmpsize - 2880, 1, 2880, stdin);
-          }
-
-          *filesize = tmpsize - 2880;  /* final file size */
-      }
-      else
-      {
-          /* open the disk file and copy into memory */
-
-#if MACHINE == ALPHAVMS || MACHINE == VAXVMS
-          diskfile = fopen(fptr->filename,"rb","rfm=fix","mrs=2880","ctx=stm"); 
-#else
-          diskfile = fopen(fptr->filename,"rb"); 
-#endif
-
-          if (!diskfile)  /* couldn't open the disk file */
-              return(*status = 1); 
-
-          /* determine the size of the file */
-          fseek(diskfile, 0, 2);   /* move to end of the existing file */
-          *filesize = ftell(diskfile);  /* position = size of file */
-          fseek(diskfile, 0, 0);   /* move back to beginning of file */
-
-          if (*filesize > *(fptr->memsize))
-          {
-              /* have to allocate more memory to hold the file */
-              if (!(fptr->mem_realloc))
-              {
-                  ffpmsg("need a realloc function in ffopenx");
-                  return(*status = 1);
-              }
-              ptr = (fptr->mem_realloc)(*(fptr->memptr), *filesize);
-              if (!ptr)
-              {
-                  ffpmsg("Failed to allocate memory in ffopenx!");
-                  return(*status = 1);
-              }
-
-              *(fptr->memptr) = ptr;
-              *(fptr->memsize) = *filesize;
-          }
-
-          /* now copy the file into memory */
-          if(fread(ptr, 1, *filesize, diskfile) != *filesize)
-          {
-              fclose(diskfile);  /* close the diskfile */
-              return(*status = 1);
-          }
-
-          fclose(diskfile);  /* close the diskfile */
-      }
-    }             /* end of memory buffer case */
-    else
-    {             /* file will exist on magnetic disk */
-        if (newfile)
-        {
           strcpy(mode, "w+b");  /* new file must have read and write access */
 
-          diskfile = fopen(fptr->filename, "r"); /* does file already exist? */
+          *diskfile = fopen(filename, "r"); /* does file already exist? */
 
-          if (diskfile)
+          if (*diskfile)
           {
-              fclose(diskfile);         /* close file and exit with error */
+              fclose(*diskfile);         /* close file and exit with error */
               return(*status = 1); 
           }
-        }
-
-        else if (readwrite)
+    }
+    else if (readwrite)
+    {
           strcpy(mode, "r+b");    /* open existing file with read-write */
-        else
+    }
+    else
+    {
           strcpy(mode, "rb");     /* open existing file readonly */
-
-        /* now open the file */
+    }
+    /* now open the file */
 
 #if MACHINE == ALPHAVMS || MACHINE == VAXVMS
-
         /* specify VMS record structure: fixed format, 2880 byte records */
         /* but force stream mode access to enable random I/O access      */
-        diskfile = fopen(fptr->filename,mode,"rfm=fix","mrs=2880","ctx=stm"); 
+    *diskfile = fopen(filename,mode,"rfm=fix","mrs=2880","ctx=stm"); 
 #else
-        diskfile = fopen(fptr->filename,mode); 
+    *diskfile = fopen(filename,mode); 
 #endif
 
-        if (!diskfile)           /* couldn't open file */
+    if (!(*diskfile))           /* couldn't open file */
+    {
             return(*status = 1); 
-
-        fptr->fileptr = diskfile; /* copy file pointer to the structure */
-        if (!newfile)
-        {
-            fseek(diskfile, 0, 2);   /* move to end of the existing file */
-            *filesize = ftell(diskfile);  /* position = size of file */
-            fseek(diskfile, 0, 0);   /* move back to beginning of file */
-        }
     }
-    return(*status = 0);
+
+    if (!newfile)
+    {
+            fseek(*diskfile, 0, 2);   /* move to end of the existing file */
+            *filesize = ftell(*diskfile);  /* position = size of file */
+            fseek(*diskfile, 0, 0);   /* move back to beginning of file */
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffisfilecompressed(char *filename, /* I - FITS file name          */
+            FILE **diskfile, /* O - file pointer                            */
+            size_t *filesize, /* O - size of file (bytes)                   */
+            size_t *finalsize, /* O - size of uncompressed file             */
+            int *status)     /* O - error status: 0 = success, 1 = error    */
+/*
+  Test if the file is compressed, and if so, return the file pointer
+  and size of the compressed file.
+*/
+{
+    void *ptr;
+    unsigned char buffer[4];
+    char tmpfilename[160];
+
+    if (*status > 0)
+       return(0);
+
+    strcpy(tmpfilename,filename);
+
+    /* Open file.  Try various suffix combinations */  
+    if (ffopenfile(filename, 0, 0, diskfile, filesize, status) > 0)
+    {
+      *status = 0;
+      strcat(filename,".gz");
+      if (ffopenfile(filename, 0, 0, diskfile, filesize, status) > 0)
+      {
+        *status = 0;
+        strcpy(filename, tmpfilename);
+        strcat(filename,".Z");
+        if (ffopenfile(filename, 0, 0, diskfile, filesize, status) > 0)
+        {
+          *status = 0;
+          strcpy(filename, tmpfilename);
+          strcat(filename,".z");   /* it's often lower case on CDROMs */
+          if (ffopenfile(filename, 0, 0, diskfile, filesize, status) > 0)
+          {
+            *status = 0;
+            strcpy(filename, tmpfilename);
+            strcat(filename,".zip");
+            if (ffopenfile(filename, 0, 0, diskfile, filesize, status) > 0)
+            {
+             *status = 0;
+             strcpy(filename, tmpfilename);
+             strcat(filename,"-z");      /* VMS suffix */
+             if (ffopenfile(filename, 0, 0, diskfile, filesize, status) > 0)
+             {
+              *status = 0;
+              strcpy(filename, tmpfilename);
+              strcat(filename,"-gz");    /* VMS suffix */
+              if (ffopenfile(filename, 0, 0, diskfile, filesize, status) > 0)
+              {
+                *status = 0;
+                strcpy(filename,tmpfilename);  /* restore original name */
+                ffclosefile(filename, *diskfile, 1, status);
+                return(0);    /* file not found */
+              }
+             }
+            }
+          }
+        }
+      }
+    }
+
+    if(fread(buffer, 1, 2, *diskfile) != 2)  /* read 2 bytes */
+    {
+        ffclosefile(filename, *diskfile, 1, status);
+        return(0);
+    }
+
+    if (memcmp(buffer, "\037\213", 2) == 0)  /* GZIP */
+    {
+        /* the uncompressed file size is give at the end of the file */
+
+        fseek(*diskfile, 0, 2);            /* move to end of file */
+        fseek(*diskfile, -4L, 1);          /* move back 4 bytes */
+        fread(buffer, 1, 4L, *diskfile);   /* read 4 bytes
+
+        /* have to worry about integer byte order */
+	*finalsize  = buffer[0];
+	*finalsize |= buffer[1] << 8;
+	*finalsize |= buffer[2] << 16;
+	*finalsize |= buffer[3] << 24;
+    }
+    else if (memcmp(buffer, "\120\113", 2) == 0)   /* PKZIP */
+    {
+        /* the uncompressed file size is give at byte 22 the file */
+
+        fseek(*diskfile, 22L, 0);            /* move to byte 22 */
+        fread(buffer, 1, 4L, *diskfile);   /* read 4 bytes
+
+        /* have to worry about integer byte order */
+	*finalsize  = buffer[0];
+	*finalsize |= buffer[1] << 8;
+	*finalsize |= buffer[2] << 16;
+	*finalsize |= buffer[3] << 24;
+    }
+    else if (memcmp(buffer, "\037\036", 2) == 0)  /* PACK */
+        *finalsize = 0;  /* for most methods we can't determine final size */
+    else if (memcmp(buffer, "\037\235", 2) == 0)  /* LZW */
+        *finalsize = 0;  /* for most methods we can't determine final size */
+    else if (memcmp(buffer, "\037\240", 2) == 0)  /* LZH */
+        *finalsize = 0;  /* for most methods we can't determine final size */
+    else
+    {
+        /* not a compressed file */
+        ffclosefile(filename, *diskfile, 1, status);
+        return(0);
+    }
+
+    fseek(*diskfile, 0, 0);   /* move back to beginning of file */
+    return(1);                /* this may be a compressed FITS file */
 }
 /*--------------------------------------------------------------------------*/
 int ffclosex(fitsfile *fptr, /* I - FITS file pointer                      */
@@ -600,7 +860,7 @@ int ffclosex(fitsfile *fptr, /* I - FITS file pointer                      */
              int *status)    /* O - error status                           */
 
 /*
-  Low-level, system dependent routine to close the disk file.
+  Low-level routine to close the disk file.
   If keep = 0, then the file will also be deleted from disk.
 */
 {
@@ -608,11 +868,7 @@ int ffclosex(fitsfile *fptr, /* I - FITS file pointer                      */
 
     if (fptr->bufftype < MEMBUFF) /* not using memory buffer? */
     {
-      if ( fclose(fptr->fileptr) )   /* close the disk file */
-        *status = 1;
-
-      if (!keep)
-        remove(fptr->filename);    /* delete the file */
+      ffclosefile(fptr->filename, fptr->fileptr, keep, status);
     }
     else    /* using memory buffer */
     {
@@ -637,6 +893,25 @@ int ffclosex(fitsfile *fptr, /* I - FITS file pointer                      */
 
         fptr->bufftype = 0; /* unset the buffer type flag */  
     }
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffclosefile(char *filename, /* I - FITS file pointer                   */
+             FILE *diskfile, /* file pointer                                */
+             int keep,       /* I - 0=discard the file, else keep the file  */
+             int *status)    /* O - error status                            */
+
+/*
+  Lowest-level routine to close a disk file.
+  If keep = 0, then the file will also be deleted from disk.
+*/
+{
+      if ( fclose(diskfile) )   /* close the disk file */
+        *status = 1;
+
+      if (!keep)
+        remove(filename);       /* delete the file */
 
     return(*status);
 }

@@ -448,7 +448,20 @@ int ffpclb( fitsfile *fptr,  /* I - FITS file pointer                       */
 
             case (TSTRING):  /* numerical column in an ASCII table */
 
-                if (cform[1] != 's')  /*  "%s" format is a string */
+                if (strchr(tform,'A'))
+                {
+                    /* write raw input bytes without conversion        */
+                    /* This case is a hack to let users write a stream */
+                    /* of bytes directly to the 'A' format column      */
+
+                    if (incre == twidth)
+                        ffpbyt(fptr, ntodo, &array[next], status);
+                    else
+                        ffpbytoff(fptr, twidth, ntodo/twidth, incre - twidth, 
+                                &array[next], status);
+                    break;
+                }
+                else if (cform[1] != 's')  /*  "%s" format is a string */
                 {
                   ffi1fstr(&array[next], ntodo, scale, zero, cform,
                           twidth, (char *) buffer, status);

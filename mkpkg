@@ -33,6 +33,7 @@ cfitsio:
 	    $copy buffers.c splitc/buffers.c
 	    $copy cfileio.c splitc/cfileio.c
 	    $copy checksum.c splitc/checksum.c
+	    $copy compress.c splitc/compress.c
 	    $copy fitscore.c splitc/fitscore.c
 	    $copy editcol.c splitc/editcol.c
 	    $copy edithdu.c splitc/edithdu.c

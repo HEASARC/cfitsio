@@ -147,6 +147,13 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
     if (*status > 0)
         return(*status);
 
+    /* if at the end of file, simply append new image extension */
+    if ( (fptr->curhdu) == (fptr->maxhdu) )
+    {
+        ffcrim(fptr, bitpix, naxis, naxes, status);
+        return(*status);
+    }
+
     if (bitpix == 8)
         bytlen = 1;
     else if (bitpix == 16)
@@ -232,6 +239,14 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
+    /* if at the end of file, simply append new table extension */
+    if ( (fptr->curhdu) == (fptr->maxhdu) )
+    {
+        ffcrtb(fptr, ASCII_TBL, naxis2, tfields, ttype, tform, tunit,
+               extnm, status);
+        return(*status);
+    }
+
     if (naxis1 < 0)
         return(*status = NEG_WIDTH);
     else if (naxis2 < 0)
@@ -311,6 +326,14 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     if (*status > 0)
         return(*status);
+
+    /* if at the end of file, simply append new table extension */
+    if ( (fptr->curhdu) == (fptr->maxhdu) )
+    {
+        ffcrtb(fptr, BINARY_TBL, naxis2, tfields, ttype, tform, tunit,
+               extnm, status);
+        return(*status);
+    }
 
     if (naxis2 < 0)
         return(*status = NEG_ROWS);

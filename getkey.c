@@ -493,7 +493,7 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer         */
             {
                *(*value+len-1) = '\0';         /* erase the trailing & char */
                len += strlen(valstring) - 1;
-               *value = (char *) realloc(*value, len); /* increase str size */
+               *value = (char *) realloc(*value, len + 1); /* increase size */
                strcat(*value, valstring);     /* append the continued chars */
             }
             else
@@ -1267,7 +1267,6 @@ int ffghbn(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     if (ffgttb(fptr, &naxis1, naxis2, pcount, &fields, status) > 0)
         return(*status);
-
     *tfields = fields;
 
     if (maxfield < 0)
@@ -1305,7 +1304,6 @@ int ffghbn(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         if (*status == KEY_NO_EXIST)
             *status = tstatus;  /* keyword not required, so ignore error */
-
     }
     return(*status);
 }
