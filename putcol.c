@@ -566,7 +566,7 @@ int ffiter(int n_cols,
     long rept, width, tnull;
     double zeros = 0.;
     char message[FLEN_ERRMSG], keyname[FLEN_KEYWORD], nullstr[FLEN_VALUE];
-    char **stringptr, *cptr;
+    char **stringptr, *nullptr, *cptr;
 
     if (*status > 0)
         return(*status);
@@ -1166,20 +1166,22 @@ int ffiter(int n_cols,
           {
             stringptr = cols[jj].array;
             dataptr = stringptr + 1;
+            nullptr = *stringptr;
             nbytes = 1;
           }
           else
           {
             dataptr = (char *) cols[jj].array + col[jj].nullsize;
+            nullptr = (char *) cols[jj].array;
             nbytes = col[jj].nullsize;
           }
 
-          if (memcmp(cols[jj].array, &zeros, nbytes) ) 
+          if (memcmp(nullptr, &zeros, nbytes) ) 
           {
             /* null value flag not zero; must check for and write nulls */
             if (ffpcn(cols[jj].fptr, cols[jj].datatype, cols[jj].colnum, frow,
                       felement, cols[jj].repeat * ntodo, dataptr,
-                      cols[jj].array, &tstatus) > 0)
+                      nullptr, &tstatus) > 0)
               break;
           }
           else
