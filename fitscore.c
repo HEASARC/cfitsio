@@ -201,6 +201,9 @@ void ffgerr(int status,     /* I - error status value */
     case 125:
        strcpy(errtext, "parse error in input file URL");
        break;
+    case 126:
+       strcpy(errtext, "parse error in range list");
+       break;
     case 151:
        strcpy(errtext, "bad argument (shared mem drvr)");
        break;

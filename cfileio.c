@@ -4672,7 +4672,7 @@ int ffimport_file( char *filename,   /* Text file to read                   */
    reallocating memory.
 */
 {
-   int allocLen, totalLen, lineLen;
+   int allocLen, totalLen, llen;
    char *lines,line[256];
    FILE *aFile;
 
@@ -4680,7 +4680,7 @@ int ffimport_file( char *filename,   /* Text file to read                   */
 
    totalLen =    0;
    allocLen = 1024;
-   lines    = (char *)malloc( (2+allocLen)*sizeof(char) );
+   lines    = (char *)malloc( allocLen * sizeof(char) );
    if( !lines ) {
       ffpmsg("Couldn't allocate memory to hold ASCII file contents.");
       return(*status = MEMORY_ALLOCATION );
@@ -4695,15 +4695,22 @@ int ffimport_file( char *filename,   /* Text file to read                   */
    }
 
    while( fgets(line,256,aFile)!=NULL ) {
-      lineLen = strlen(line);
-
-      if (lineLen > 1 && line[0] == '/' && line[1] == '/')
+      llen = strlen(line);
+      if ((llen > 1) && (line[0] == '/' && line[1] == '/'))
           continue;       /* skip comment lines begging with // */
       
-      if( line[lineLen-1]=='\n' ) line[--lineLen] = '\0';
+      /* replace CR and newline chars at end of line with nulls */
+      if ((llen > 0) && (line[llen-1]=='\n' || line[llen-1] == '\r')) {
+          line[--llen] = '\0';
 
-      if( totalLen+lineLen>=allocLen ) {
-         lines = (char *)realloc(lines, (2+(allocLen+=256))*sizeof(char) );
+          if ((llen > 0) && (line[llen-1]=='\n' || line[llen-1] == '\r')) {
+                 line[--llen] = '\0';
+          }
+      }
+
+      if( totalLen + llen + 3 >= allocLen ) {
+         allocLen += 256;
+         lines = (char *)realloc(lines, allocLen * sizeof(char) );
          if( ! lines ) {
             ffpmsg("Couldn't allocate memory to hold ASCII file contents.");
             *status = MEMORY_ALLOCATION;
@@ -4711,7 +4718,9 @@ int ffimport_file( char *filename,   /* Text file to read                   */
          }
       }
       strcpy( lines+totalLen, line );
-      totalLen += lineLen;
+      totalLen += llen;
+      strcpy( lines+totalLen, " "); /* add a space between lines */
+      totalLen += 1;
    }
    fclose(aFile);
 

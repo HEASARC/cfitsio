@@ -335,6 +335,7 @@ typedef struct  /* structure for the iterator function column information */
 #define DRIVER_INIT_FAILED 123  /* driver initialization failed */
 #define NO_MATCHING_DRIVER 124  /* matching driver is not registered */
 #define URL_PARSE_ERROR    125  /* failed to parse input file URL */
+#define RANGE_PARSE_ERROR  126  /* failed to parse input file URL */
 
 #define	SHARED_ERRBASE	(150)
 #define	SHARED_BADARG	(SHARED_ERRBASE + 1)
@@ -501,6 +502,8 @@ int ffbinr(char **binspec, char *colname, double *minin,
                         double *maxin, double *binsizein, char *minname,
                         char *maxname, char *binname, int *status);
 int ffimport_file( char *filename, char **contents, int *status );
+int ffrwrg( char *rowlist, long maxrows, int maxranges, int *numranges,
+      long *minrow, long *maxrow, int *status);
 
 /*----------------  FITS file I/O routines -------------*/
 int ffomem(fitsfile **fptr, const char *name, int mode, void **buffptr,
@@ -1372,6 +1375,7 @@ int ffptbb(fitsfile *fptr, long firstrow, long firstchar, long nchars,
  
 int ffirow(fitsfile *fptr, long firstrow, long nrows, int *status);
 int ffdrow(fitsfile *fptr, long firstrow, long nrows, int *status);
+int ffdrrg(fitsfile *fptr, char *ranges, int *status);
 int ffdrws(fitsfile *fptr, long *rownum,  long nrows, int *status);
 int fficol(fitsfile *fptr, int numcol, char *ttype, char *tform, int *status);
 int fficls(fitsfile *fptr, int firstcol, int ncols, char **ttype,

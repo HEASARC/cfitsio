@@ -5,6 +5,13 @@ Version 2.402
 
   New Routines:
 
+  - fits_parse_range utility routines parses a row list string
+    and returns integer arrays giving the min and max row in each
+    range.
+
+  - fits_delete_rowrange deletes a specified list of rows or row
+    ranges.
+
   - fits_copy_file copies all or part of the HDUs in the input file
     to the output file.
 

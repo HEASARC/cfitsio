@@ -6,6 +6,7 @@
 /*  Goddard Space Flight Center.                                           */
 
 #include <string.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include "fitsio2.h"
 /*--------------------------------------------------------------------------*/
@@ -337,6 +338,93 @@ int ffdrow(fitsfile *fptr,  /* I - FITS file pointer                        */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffdrrg(fitsfile *fptr,  /* I - FITS file pointer to table               */
+           char *ranges,    /* I - ranges of rows to delete (1 = first)     */
+           int *status)     /* IO - error status                            */
+/*
+ delete the ranges of rows from the table (1 = first row of table).
+
+The 'ranges' parameter typically looks like:
+    '10-20, 30 - 40, 55' or '50-'
+and gives a list of rows or row ranges separated by commas.
+*/
+{
+    char *cptr;
+    int nranges, nranges2, ii;
+    long *minrow, *maxrow, naxis2, nrows, *rowarray, jj, kk;
+
+    if (*status > 0)
+        return(*status);
+
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+    {
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    }
+        /* rescan header if data structure is undefined */
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               
+            return(*status);
+
+    if ((fptr->Fptr)->hdutype == IMAGE_HDU)
+    {
+        ffpmsg("Can only delete rows in TABLE or BINTABLE extension (ffdrrg)");
+        return(*status = NOT_TABLE);
+    }
+
+    /* the NAXIS2 keyword may not be up to date, so use the structure value */
+    naxis2 = (fptr->Fptr)->numrows;
+
+    /* find how many ranges were specified ( = no. of commas in string + 1) */
+    cptr = ranges;
+    for (nranges = 1; (cptr = strchr(cptr, ',')); nranges++)
+        cptr++;
+ 
+    minrow = calloc(nranges, sizeof(long));
+    maxrow = calloc(nranges, sizeof(long));
+
+    if (!minrow || !maxrow) {
+        *status = MEMORY_ALLOCATION;
+        ffpmsg("failed to allocate memory for row ranges (ffdrrg)");
+        return(*status);
+    }
+
+    /* parse range list into array of range min and max values */
+    ffrwrg(ranges, naxis2, nranges, &nranges2, minrow, maxrow, status);
+    if (*status > 0 || nranges2 == 0) {
+        free(maxrow);
+        free(minrow);
+        return(*status);
+    }
+
+    /* determine total number or rows to delete */
+    nrows = 0;
+    for (ii = 0; ii < nranges2; ii++) {
+       nrows = nrows + maxrow[ii] - minrow[ii] + 1;
+    }
+
+    rowarray = calloc(nrows, sizeof(long));
+    if (!rowarray) {
+        *status = MEMORY_ALLOCATION;
+        ffpmsg("failed to allocate memory for row array (ffdrrg)");
+        return(*status);
+    }
+
+    for (kk = 0, ii = 0; ii < nranges2; ii++) {
+       for (jj = minrow[ii]; jj <= maxrow[ii]; jj++) {
+           rowarray[kk] = jj;
+           kk++;
+       }
+    }
+
+    /* delete the rows */
+    ffdrws(fptr, rowarray, nrows, status);
+    
+    free(rowarray);
+    free(maxrow);
+    free(minrow);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffdrws(fitsfile *fptr,  /* I - FITS file pointer                        */
            long *rownum,    /* I - list of rows to delete (1 = first)       */
            long nrows,      /* I - number of rows to delete                 */
@@ -459,6 +547,137 @@ int ffdrws(fitsfile *fptr,  /* I - FITS file pointer                        */
     /* now delete the empty rows at the end of the table */
     ffdrow(fptr, naxis2 - nrows + 1, nrows, status);
     
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffrwrg(
+      char *rowlist,      /* I - list of rows and row ranges */
+      long maxrows,       /* I - number of rows in the table */
+      int maxranges,     /* I - max number of ranges to be returned */
+      int *numranges,    /* O - number ranges returned */
+      long *minrow,       /* O - first row in each range */
+      long *maxrow,       /* O - last row in each range */
+      int *status)        /* IO - status value */
+{
+/*
+   parse the input list of row ranges, returning the number of ranges,
+   and the min and max row value in each range. 
+
+   The only characters allowed in the input rowlist are 
+       decimal digits, minus sign, and comma (and non-significant spaces) 
+
+   Example:  
+
+     list = "10-20, 30-35,50"
+
+   would return numranges = 3, minrow[] = {10, 30, 50}, maxrow[] = {20, 35, 50}
+
+   error is returned if min value of range is > max value of range or if the
+   ranges are not monotonically increasing.
+*/
+    char *next;
+    long minval, maxval;
+
+    if (*status > 0)
+        return(*status);
+
+    if (maxrows <= 0 ) {
+        *status = RANGE_PARSE_ERROR;
+        ffpmsg("Input maximum range value is <= 0 (fits_parse_ranges)");
+        return(*status);
+    }
+
+    next = rowlist;
+    *numranges = 0;
+
+    while (*next == ' ')next++;   /* skip spaces */
+   
+    while (*next != '\0') {
+
+      /* find min value of next range; *next must be '-' or a digit */
+      if (*next == '-') {
+          minval = 1;    /* implied minrow value = 1 */
+      } else if ( isdigit((int) *next) ) {
+          minval = strtol(next, &next, 10);
+      } else {
+          *status = RANGE_PARSE_ERROR;
+          ffpmsg("Syntax error in this row range list:");
+          ffpmsg(rowlist);
+          return(*status);
+      }
+
+      while (*next == ' ')next++;   /* skip spaces */
+
+      /* find max value of next range; *next must be '-', or ',' */
+      if (*next == '-') {
+          next++;
+          while (*next == ' ')next++;   /* skip spaces */
+
+          if ( isdigit((int) *next) ) {
+              maxval = strtol(next, &next, 10);
+          } else if (*next == ',' || *next == '\0') {
+              maxval = maxrows;  /* implied max value */
+          } else {
+              *status = RANGE_PARSE_ERROR;
+              ffpmsg("Syntax error in this row range list:");
+              ffpmsg(rowlist);
+              return(*status);
+          }
+      } else if (*next == ',' || *next == '\0') {
+          maxval = minval;  /* only a single integer in this range */
+      } else {
+          *status = RANGE_PARSE_ERROR;
+          ffpmsg("Syntax error in this row range list:");
+          ffpmsg(rowlist);
+          return(*status);
+      }
+
+      if (*numranges + 1 > maxranges) {
+          *status = RANGE_PARSE_ERROR;
+          ffpmsg("Overflowed maximum number of ranges (fits_parse_ranges)");
+          return(*status);
+      }
+
+      if (minval < 1 ) {
+          *status = RANGE_PARSE_ERROR;
+          ffpmsg("Syntax error in this row range list: row number < 1");
+          ffpmsg(rowlist);
+          return(*status);
+      }
+
+      if (maxval < minval) {
+          *status = RANGE_PARSE_ERROR;
+          ffpmsg("Syntax error in this row range list: min > max");
+          ffpmsg(rowlist);
+          return(*status);
+      }
+
+      if (*numranges > 0) {
+          if (minval <= maxrow[(*numranges) - 1]) {
+             *status = RANGE_PARSE_ERROR;
+             ffpmsg("Syntax error in this row range list.  Range minimum is");
+             ffpmsg("  less than or equal to previous range maximum");
+             ffpmsg(rowlist);
+             return(*status);
+         }
+      }
+
+      if (minval <= maxrows) {   /* ignore range if greater than maxrows */
+          if (maxval > maxrows)
+              maxval = maxrows;
+
+           minrow[*numranges] = minval;
+           maxrow[*numranges] = maxval;
+
+           (*numranges)++;
+      }
+
+      while (*next == ' ')next++;   /* skip spaces */
+      if (*next == ',') {
+           next++;
+           while (*next == ' ')next++;   /* skip more spaces */
+      }
+    }
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

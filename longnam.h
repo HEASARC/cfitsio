@@ -8,6 +8,7 @@
 #define fits_parse_extnum   ffextn
 #define fits_parse_binspec  ffbins
 #define fits_parse_binrange ffbinr
+#define fits_parse_range    ffrwrg
 #define fits_open_memfile   ffomem
 #define fits_open_file      ffopen
 #define fits_open_data      ffdopn
@@ -464,6 +465,7 @@
 #define fits_write_tblbytes  ffptbb
 #define fits_insert_rows  ffirow
 #define fits_delete_rows  ffdrow
+#define fits_delete_rowrange ffdrrg
 #define fits_delete_rowlist ffdrws
 #define fits_insert_col   fficol
 #define fits_insert_cols  fficls
