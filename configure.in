@@ -212,6 +212,10 @@ SHLIB_LD=:
 SHLIB_SUFFIX=".so"
 lhea_shlib_cflags=
 case $EXT in
+  cygwin)
+    SHLIB_LD="$CC -shared"
+    SHLIB_SUFFIX=".dll"
+    ;;
   darwin)
     SHLIB_LD="cc -dynamiclib"
     SHLIB_SUFFIX=".dylib"
@@ -221,7 +225,7 @@ case $EXT in
     SHLIB_LD="ld -b" 
     SHLIB_SUFFIX=".sl"
     ;;
-  lnx|cygwin)
+  lnx)
     SHLIB_LD=":"
     ;;
   osf)
@@ -241,7 +245,7 @@ case $EXT in
 esac
 # Darwin uses gcc (=cc), but needs different flags (see above)
 # if test "x$GCC" = xyes; then
-if test "x$GCC" = xyes && test "x$EXT" != xdarwin; then
+if test "x$GCC" = xyes && test "x$EXT" != xdarwin && test "x$EXT" != xcygwin; then
   SHLIB_LD="$CC -shared"
   lhea_shlib_cflags='-fPIC'
 fi
