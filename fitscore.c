@@ -5750,6 +5750,7 @@ int ffgkcl(char *tcard)
 
     strncpy(card, tcard, 8);   /* copy the keyword name */
     strcat(card, "        "); /* append blanks to make at least 8 chars long */
+    ffupch(card);  /* make sure it is in upper case */
 
     card1 = card + 1;  /* pointer to 2nd character */
     card5 = card + 5;  /* pointer to 6th character */
