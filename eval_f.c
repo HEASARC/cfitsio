@@ -821,7 +821,7 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
     /* declare variables static to preserve their values between calls */
     static void *Data, *Null;
     static int  datasize;
-    static long lastRow, jnull, repeat;
+    static long lastRow, jnull, repeat, resDataSize;
     static parseInfo *userInfo;
     static long zeros[4] = {0,0,0,0};
 
@@ -888,6 +888,15 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
        case TFLOAT:    datasize = sizeof(float);    break;
        case TDOUBLE:   datasize = sizeof(double);   break;
        case TSTRING:   datasize = sizeof(char*);    break;
+       }
+
+       /* Determine the size of each element of the calculated result */
+       /*   (only matters for numeric/logical data)                   */
+
+       switch( gParse.Nodes[gParse.nNodes-1].type ) {
+       case BOOLEAN:   resDataSize = sizeof(char);    break;
+       case LONG:      resDataSize = sizeof(long);    break;
+       case DOUBLE:    resDataSize = sizeof(double);  break;
        }
     }
 
@@ -965,26 +974,34 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 			result->value.nelem*ntodo,
 			userInfo->datatype, Null, Data,
 			&anyNullThisTime, &gParse.status );
-	     } else if( (repeat % result->value.nelem)==0 ) {
-		int resDataSize;
-		resDataSize = ( result->type==BOOLEAN ? sizeof(char) :
-				( result->type==LONG    ? sizeof(long) :
-				                        sizeof(double) ) );
+	     } else if( result->value.nelem == 1 ) {
 		for( kk=0; kk<ntodo; kk++ )
-		   for( jj=0; jj<repeat; jj+=result->value.nelem ) {
+		   for( jj=0; jj<repeat; jj++ ) {
 		      ffcvtn( gParse.datatype,
-			      (char*)result->value.data.ptr
-			                + kk*result->value.nelem*resDataSize,
-			      (char*)result->value.undef
-			                + kk*result->value.nelem,
-			      result->value.nelem,
-			      userInfo->datatype, Null,
+			      (char*)result->value.data.ptr + kk*resDataSize,
+			      (char*)result->value.undef + kk,
+			      1, userInfo->datatype, Null,
 			      (char*)Data + (kk*repeat+jj)*datasize,
 			      &anyNullThisTime, &gParse.status );
 		   }
 	     } else {
-		ffpmsg("Vector result does not fit cleanly into output column");
-		gParse.status = PARSE_BAD_TYPE;
+		int nCopy;
+		nCopy = minvalue( repeat, result->value.nelem );
+		for( kk=0; kk<ntodo; kk++ ) {
+		   ffcvtn( gParse.datatype,
+			   (char*)result->value.data.ptr
+                                  + kk*result->value.nelem*resDataSize,
+			   (char*)result->value.undef
+                                  + kk*result->value.nelem,
+			   nCopy, userInfo->datatype, Null,
+			   (char*)Data + (kk*repeat)*datasize,
+			   &anyNullThisTime, &gParse.status );
+		   if( nCopy < repeat ) {
+		      memset( (char*)Data + (kk*repeat+nCopy)*datasize,
+			      0, (repeat-nCopy)*datasize);
+		   }
+		}
+
 	     }
 	     if( result->operation>0 ) {
 		free( result->value.data.ptr );
