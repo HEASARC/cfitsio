@@ -807,7 +807,7 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
       size = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;
       freespace = ((size + 2879) / 2880) * 2880 - size - ((OFF_T)delbyte * naxis2);
       nblock = freespace / 2880;   /* number of empty blocks to delete */
-      firstcol = colptr->tbcol + (repeat * width);  /* delete position */
+      firstcol = colptr->tbcol + (newveclen * width);  /* delete position */
 
       /* delete elements from the vector */
       ffcdel(fptr, naxis1, naxis2, -delbyte, firstcol, status);
