@@ -51,6 +51,11 @@
 #include "region.h"
 #include <time.h>
 
+   /*  Bison uses alloca for allocations, but VMS lacks it  */
+#if defined(vms) || defined(__vms)
+#define alloca malloc
+#endif
+
 /***************************************************************/
 /*  Replace Bison's BACKUP macro with one that fixes a bug --  */
 /*  must update state after popping the stack -- and allows    */

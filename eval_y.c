@@ -87,6 +87,11 @@
 #include "region.h"
 #include <time.h>
 
+   /*  Bison uses alloca for allocations, but VMS lacks it  */
+#if defined(vms) || defined(__vms)
+#define alloca malloc
+#endif
+
 /***************************************************************/
 /*  Replace Bison's BACKUP macro with one that fixes a bug --  */
 /*  must update state after popping the stack -- and allows    */
@@ -178,7 +183,7 @@ static void  fferror(char *msg);
 #endif
 
 
-#line 146 "eval.y"
+#line 151 "eval.y"
 typedef union {
     int    Node;        /* Index of Node */
     double dbl;         /* real value    */
@@ -298,16 +303,16 @@ static const short ffrhs[] = {    -1,
 
 #if FFDEBUG != 0
 static const short ffrline[] = { 0,
-   190,   191,   194,   195,   200,   205,   210,   215,   218,   223,
-   225,   228,   231,   234,   236,   240,   242,   244,   246,   248,
-   251,   254,   257,   260,   263,   266,   268,   270,   274,   278,
-   288,   299,   308,   317,   354,   391,   393,   395,   397,   399,
-   401,   403,   405,   407,   411,   413,   415,   418,   421,   424,
-   427,   430,   433,   436,   439,   442,   445,   448,   451,   454,
-   457,   460,   462,   464,   466,   469,   476,   489,   502,   513,
-   529,   547,   568,   595,   599,   603,   606,   610,   614,   617,
-   621,   623,   625,   627,   629,   631,   633,   637,   640,   642,
-   644,   647
+   195,   196,   199,   200,   205,   210,   215,   220,   223,   228,
+   230,   233,   236,   239,   241,   245,   247,   249,   251,   253,
+   256,   259,   262,   265,   268,   271,   273,   275,   279,   283,
+   293,   304,   313,   322,   359,   396,   398,   400,   402,   404,
+   406,   408,   410,   412,   416,   418,   420,   423,   426,   429,
+   432,   435,   438,   441,   444,   447,   450,   453,   456,   459,
+   462,   465,   467,   469,   471,   474,   481,   494,   507,   518,
+   534,   552,   573,   600,   604,   608,   611,   615,   619,   622,
+   626,   628,   630,   632,   634,   636,   638,   642,   645,   647,
+   649,   652
 };
 #endif
 
@@ -1125,143 +1130,143 @@ ffreduce:
   switch (ffn) {
 
 case 3:
-#line 194 "eval.y"
+#line 199 "eval.y"
 {;
     break;}
 case 4:
-#line 196 "eval.y"
-{ if( ffvsp[-1].Node<0 ) {
-		     fferror("Couldn't build node structure: out of memory?");
-		     FFERROR;  }
-		;
-    break;}
-case 5:
 #line 201 "eval.y"
 { if( ffvsp[-1].Node<0 ) {
 		     fferror("Couldn't build node structure: out of memory?");
 		     FFERROR;  }
 		;
     break;}
-case 6:
+case 5:
 #line 206 "eval.y"
+{ if( ffvsp[-1].Node<0 ) {
+		     fferror("Couldn't build node structure: out of memory?");
+		     FFERROR;  }
+		;
+    break;}
+case 6:
+#line 211 "eval.y"
 { if( ffvsp[-1].Node<0 ) {
 		     fferror("Couldn't build node structure: out of memory?");
 		     FFERROR;  } 
 		;
     break;}
 case 7:
-#line 211 "eval.y"
+#line 216 "eval.y"
 { if( ffvsp[-1].Node<0 ) {
 		     fferror("Couldn't build node structure: out of memory?");
 		     FFERROR;  }
 		;
     break;}
 case 8:
-#line 215 "eval.y"
+#line 220 "eval.y"
 {  fferrok;  ;
     break;}
 case 9:
-#line 219 "eval.y"
+#line 224 "eval.y"
 {
                   ffval.Node = New_Const( BITSTR, ffvsp[0].str, strlen(ffvsp[0].str)+1 ); TEST(ffval.Node);
 		  SIZE(ffval.Node) = strlen(ffvsp[0].str);
 		;
     break;}
 case 10:
-#line 224 "eval.y"
+#line 229 "eval.y"
 { ffval.Node = New_Column( ffvsp[0].lng ); TEST(ffval.Node); ;
     break;}
 case 11:
-#line 226 "eval.y"
+#line 231 "eval.y"
 { ffval.Node = New_BinOp( BITSTR, ffvsp[-2].Node, '&', ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = ( SIZE(ffvsp[-2].Node)>SIZE(ffvsp[0].Node) ? SIZE(ffvsp[-2].Node) : SIZE(ffvsp[0].Node) );  ;
     break;}
 case 12:
-#line 229 "eval.y"
+#line 234 "eval.y"
 { ffval.Node = New_BinOp( BITSTR, ffvsp[-2].Node, '|', ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = ( SIZE(ffvsp[-2].Node)>SIZE(ffvsp[0].Node) ? SIZE(ffvsp[-2].Node) : SIZE(ffvsp[0].Node) );  ;
     break;}
 case 13:
-#line 232 "eval.y"
+#line 237 "eval.y"
 { ffval.Node = New_BinOp( BITSTR, ffvsp[-2].Node, '+', ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = SIZE(ffvsp[-2].Node) + SIZE(ffvsp[0].Node);                          ;
     break;}
 case 14:
-#line 235 "eval.y"
+#line 240 "eval.y"
 { ffval.Node = New_Unary( BITSTR, NOT, ffvsp[0].Node ); TEST(ffval.Node);     ;
     break;}
 case 15:
-#line 237 "eval.y"
+#line 242 "eval.y"
 { ffval.Node = ffvsp[-1].Node; ;
     break;}
 case 16:
-#line 241 "eval.y"
+#line 246 "eval.y"
 { ffval.Node = New_Const( LONG,   &(ffvsp[0].lng), sizeof(long)   ); TEST(ffval.Node); ;
     break;}
 case 17:
-#line 243 "eval.y"
+#line 248 "eval.y"
 { ffval.Node = New_Const( DOUBLE, &(ffvsp[0].dbl), sizeof(double) ); TEST(ffval.Node); ;
     break;}
 case 18:
-#line 245 "eval.y"
+#line 250 "eval.y"
 { ffval.Node = New_Column( ffvsp[0].lng ); TEST(ffval.Node); ;
     break;}
 case 19:
-#line 247 "eval.y"
+#line 252 "eval.y"
 { ffval.Node = New_Func( LONG, row_fct, 0, 0, 0, 0, 0, 0, 0, 0 ); ;
     break;}
 case 20:
-#line 249 "eval.y"
+#line 254 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '%', ffvsp[0].Node );
 		  TEST(ffval.Node);                                                ;
     break;}
 case 21:
-#line 252 "eval.y"
+#line 257 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '+', ffvsp[0].Node );
 		  TEST(ffval.Node);                                                ;
     break;}
 case 22:
-#line 255 "eval.y"
+#line 260 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '-', ffvsp[0].Node ); 
 		  TEST(ffval.Node);                                                ;
     break;}
 case 23:
-#line 258 "eval.y"
+#line 263 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '*', ffvsp[0].Node ); 
 		  TEST(ffval.Node);                                                ;
     break;}
 case 24:
-#line 261 "eval.y"
+#line 266 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '/', ffvsp[0].Node ); 
 		  TEST(ffval.Node);                                                ;
     break;}
 case 25:
-#line 264 "eval.y"
+#line 269 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, POWER, ffvsp[0].Node );
 		  TEST(ffval.Node);                                                ;
     break;}
 case 26:
-#line 267 "eval.y"
+#line 272 "eval.y"
 { ffval.Node = New_Unary( TYPE(ffvsp[0].Node), UMINUS, ffvsp[0].Node ); TEST(ffval.Node); ;
     break;}
 case 27:
-#line 269 "eval.y"
+#line 274 "eval.y"
 { ffval.Node = ffvsp[-1].Node; ;
     break;}
 case 28:
-#line 271 "eval.y"
+#line 276 "eval.y"
 { ffvsp[0].Node = New_Unary( TYPE(ffvsp[-2].Node), 0, ffvsp[0].Node );
                   ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '*', ffvsp[0].Node ); 
 		  TEST(ffval.Node);                                ;
     break;}
 case 29:
-#line 275 "eval.y"
+#line 280 "eval.y"
 { ffvsp[-2].Node = New_Unary( TYPE(ffvsp[0].Node), 0, ffvsp[-2].Node );
                   ffval.Node = New_BinOp( TYPE(ffvsp[0].Node), ffvsp[-2].Node, '*', ffvsp[0].Node );
                   TEST(ffval.Node);                                ;
     break;}
 case 30:
-#line 279 "eval.y"
+#line 284 "eval.y"
 { if (FSTRCMP(ffvsp[-1].str,"RANDOM(") == 0) {
                      srand( (unsigned int) time(NULL) );
                      ffval.Node = New_Func( DOUBLE, rnd_fct, 0, 0, 0, 0, 0, 0, 0, 0 );
@@ -1273,7 +1278,7 @@ case 30:
                 ;
     break;}
 case 31:
-#line 289 "eval.y"
+#line 294 "eval.y"
 { if (FSTRCMP(ffvsp[-2].str,"SUM(") == 0) {
 		     ffval.Node = New_Func( LONG, sum_fct, 1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
                   } else if (FSTRCMP(ffvsp[-2].str,"NELEM(") == 0) {
@@ -1286,7 +1291,7 @@ case 31:
 		;
     break;}
 case 32:
-#line 300 "eval.y"
+#line 305 "eval.y"
 { if (FSTRCMP(ffvsp[-2].str,"NELEM(") == 0) {
                      ffval.Node = New_Const( LONG, &( SIZE(ffvsp[-1].Node) ), sizeof(long) );
 		  } else {
@@ -1297,7 +1302,7 @@ case 32:
 		;
     break;}
 case 33:
-#line 309 "eval.y"
+#line 314 "eval.y"
 { if (FSTRCMP(ffvsp[-2].str,"NELEM(") == 0) {
                      ffval.Node = New_Const( LONG, &( SIZE(ffvsp[-1].Node) ), sizeof(long) );
 		  } else {
@@ -1308,7 +1313,7 @@ case 33:
 		;
     break;}
 case 34:
-#line 318 "eval.y"
+#line 323 "eval.y"
 { if (FSTRCMP(ffvsp[-2].str,"SUM(") == 0)
 		     ffval.Node = New_Func( TYPE(ffvsp[-1].Node), sum_fct, 1, ffvsp[-1].Node,
 				    0, 0, 0, 0, 0, 0 );
@@ -1347,7 +1352,7 @@ case 34:
                 ;
     break;}
 case 35:
-#line 355 "eval.y"
+#line 360 "eval.y"
 { 
 		   if (FSTRCMP(ffvsp[-4].str,"DEFNULL(") == 0) {
 		      if( SIZE(ffvsp[-3].Node)>=SIZE(ffvsp[-1].Node) && Test_Dims( ffvsp[-3].Node, ffvsp[-1].Node ) ) {
@@ -1386,142 +1391,142 @@ case 35:
                 ;
     break;}
 case 36:
-#line 392 "eval.y"
+#line 397 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-3].Node, 1, ffvsp[-1].Node,  0,  0,  0,   0 ); TEST(ffval.Node); ;
     break;}
 case 37:
-#line 394 "eval.y"
+#line 399 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-5].Node, 2, ffvsp[-3].Node, ffvsp[-1].Node,  0,  0,   0 ); TEST(ffval.Node); ;
     break;}
 case 38:
-#line 396 "eval.y"
+#line 401 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-7].Node, 3, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,  0,   0 ); TEST(ffval.Node); ;
     break;}
 case 39:
-#line 398 "eval.y"
+#line 403 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-9].Node, 4, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,   0 ); TEST(ffval.Node); ;
     break;}
 case 40:
-#line 400 "eval.y"
+#line 405 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-11].Node, 5, ffvsp[-9].Node, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node ); TEST(ffval.Node); ;
     break;}
 case 41:
-#line 402 "eval.y"
+#line 407 "eval.y"
 { ffval.Node = New_Unary( LONG,   INTCAST, ffvsp[0].Node );  TEST(ffval.Node);  ;
     break;}
 case 42:
-#line 404 "eval.y"
+#line 409 "eval.y"
 { ffval.Node = New_Unary( LONG,   INTCAST, ffvsp[0].Node );  TEST(ffval.Node);  ;
     break;}
 case 43:
-#line 406 "eval.y"
+#line 411 "eval.y"
 { ffval.Node = New_Unary( DOUBLE, FLTCAST, ffvsp[0].Node );  TEST(ffval.Node);  ;
     break;}
 case 44:
-#line 408 "eval.y"
+#line 413 "eval.y"
 { ffval.Node = New_Unary( DOUBLE, FLTCAST, ffvsp[0].Node );  TEST(ffval.Node);  ;
     break;}
 case 45:
-#line 412 "eval.y"
+#line 417 "eval.y"
 { ffval.Node = New_Const( BOOLEAN, &(ffvsp[0].log), sizeof(char) ); TEST(ffval.Node); ;
     break;}
 case 46:
-#line 414 "eval.y"
+#line 419 "eval.y"
 { ffval.Node = New_Column( ffvsp[0].lng ); TEST(ffval.Node); ;
     break;}
 case 47:
-#line 416 "eval.y"
+#line 421 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node ); TEST(ffval.Node);
 		  SIZE(ffval.Node) = 1;                                     ;
     break;}
 case 48:
-#line 419 "eval.y"
+#line 424 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     ;
     break;}
 case 49:
-#line 422 "eval.y"
+#line 427 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LT,  ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     ;
     break;}
 case 50:
-#line 425 "eval.y"
+#line 430 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LTE, ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     ;
     break;}
 case 51:
-#line 428 "eval.y"
+#line 433 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GT,  ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     ;
     break;}
 case 52:
-#line 431 "eval.y"
+#line 436 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GTE, ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     ;
     break;}
 case 53:
-#line 434 "eval.y"
+#line 439 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GT,  ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 54:
-#line 437 "eval.y"
+#line 442 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LT,  ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 55:
-#line 440 "eval.y"
+#line 445 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GTE, ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 56:
-#line 443 "eval.y"
+#line 448 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LTE, ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 57:
-#line 446 "eval.y"
+#line 451 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, '~', ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 58:
-#line 449 "eval.y"
+#line 454 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 59:
-#line 452 "eval.y"
+#line 457 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 60:
-#line 455 "eval.y"
+#line 460 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = 1; ;
     break;}
 case 61:
-#line 458 "eval.y"
+#line 463 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = 1; ;
     break;}
 case 62:
-#line 461 "eval.y"
+#line 466 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, AND, ffvsp[0].Node ); TEST(ffval.Node); ;
     break;}
 case 63:
-#line 463 "eval.y"
+#line 468 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, OR,  ffvsp[0].Node ); TEST(ffval.Node); ;
     break;}
 case 64:
-#line 465 "eval.y"
+#line 470 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node ); TEST(ffval.Node); ;
     break;}
 case 65:
-#line 467 "eval.y"
+#line 472 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node ); TEST(ffval.Node); ;
     break;}
 case 66:
-#line 470 "eval.y"
+#line 475 "eval.y"
 { PROMOTE(ffvsp[-4].Node,ffvsp[-2].Node); PROMOTE(ffvsp[-4].Node,ffvsp[0].Node); PROMOTE(ffvsp[-2].Node,ffvsp[0].Node);
 		  ffvsp[-2].Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LTE, ffvsp[-4].Node );
                   ffvsp[0].Node = New_BinOp( BOOLEAN, ffvsp[-4].Node, LTE, ffvsp[0].Node );
@@ -1529,7 +1534,7 @@ case 66:
                   TEST(ffval.Node);                                         ;
     break;}
 case 67:
-#line 477 "eval.y"
+#line 482 "eval.y"
 {
 		   if (FSTRCMP(ffvsp[-2].str,"ISNULL(") == 0) {
 		      ffval.Node = New_Func( 0, isnull_fct, 1, ffvsp[-1].Node, 0, 0,
@@ -1544,7 +1549,7 @@ case 67:
 		;
     break;}
 case 68:
-#line 490 "eval.y"
+#line 495 "eval.y"
 {
 		   if (FSTRCMP(ffvsp[-2].str,"ISNULL(") == 0) {
 		      ffval.Node = New_Func( 0, isnull_fct, 1, ffvsp[-1].Node, 0, 0,
@@ -1559,7 +1564,7 @@ case 68:
 		;
     break;}
 case 69:
-#line 503 "eval.y"
+#line 508 "eval.y"
 {
 		   if (FSTRCMP(ffvsp[-2].str,"ISNULL(") == 0) {
 		      ffval.Node = New_Func( BOOLEAN, isnull_fct, 1, ffvsp[-1].Node, 0, 0,
@@ -1572,7 +1577,7 @@ case 69:
 		;
     break;}
 case 70:
-#line 514 "eval.y"
+#line 519 "eval.y"
 {
 		   if (FSTRCMP(ffvsp[-4].str,"DEFNULL(") == 0) {
 		      if( SIZE(ffvsp[-3].Node)>=SIZE(ffvsp[-1].Node) && Test_Dims( ffvsp[-3].Node, ffvsp[-1].Node ) ) {
@@ -1590,7 +1595,7 @@ case 70:
 		;
     break;}
 case 71:
-#line 530 "eval.y"
+#line 535 "eval.y"
 {
 		   if( SIZE(ffvsp[-5].Node)>1 || SIZE(ffvsp[-3].Node)>1 || SIZE(ffvsp[-1].Node)>1 ) {
 		      fferror("Cannot use array as function argument");
@@ -1610,7 +1615,7 @@ case 71:
 		;
     break;}
 case 72:
-#line 548 "eval.y"
+#line 553 "eval.y"
 {
 		   if( SIZE(ffvsp[-9].Node)>1 || SIZE(ffvsp[-7].Node)>1 || SIZE(ffvsp[-5].Node)>1 || SIZE(ffvsp[-3].Node)>1
 		       || SIZE(ffvsp[-1].Node)>1 ) {
@@ -1633,7 +1638,7 @@ case 72:
 		;
     break;}
 case 73:
-#line 569 "eval.y"
+#line 574 "eval.y"
 {
 		   if( SIZE(ffvsp[-13].Node)>1 || SIZE(ffvsp[-11].Node)>1 || SIZE(ffvsp[-9].Node)>1 || SIZE(ffvsp[-7].Node)>1
 		       || SIZE(ffvsp[-5].Node)>1 || SIZE(ffvsp[-3].Node)>1 || SIZE(ffvsp[-1].Node)>1 ) {
@@ -1661,91 +1666,91 @@ case 73:
 		;
     break;}
 case 74:
-#line 596 "eval.y"
+#line 601 "eval.y"
 { /* Use defaults for all elements */
                   ffval.Node = New_GTI( "", -99, "*START*", "*STOP*" );
                   TEST(ffval.Node);                                         ;
     break;}
 case 75:
-#line 600 "eval.y"
+#line 605 "eval.y"
 { /* Use defaults for all except filename */
                    ffval.Node = New_GTI( ffvsp[-1].str, -99, "*START*", "*STOP*" );
                    TEST(ffval.Node);                                        ;
     break;}
 case 76:
-#line 604 "eval.y"
+#line 609 "eval.y"
 { ffval.Node = New_GTI( ffvsp[-3].str, ffvsp[-1].Node, "*START*", "*STOP*" );
                   TEST(ffval.Node);                                         ;
     break;}
 case 77:
-#line 607 "eval.y"
+#line 612 "eval.y"
 {  ffval.Node = New_GTI( ffvsp[-7].str, ffvsp[-5].Node, ffvsp[-3].str, ffvsp[-1].str );
                    TEST(ffval.Node);                                        ;
     break;}
 case 78:
-#line 611 "eval.y"
+#line 616 "eval.y"
 { /* Use defaults for all except filename */
                    ffval.Node = New_REG( ffvsp[-1].str, -99, -99, "" );
                    TEST(ffval.Node);                                        ;
     break;}
 case 79:
-#line 615 "eval.y"
+#line 620 "eval.y"
 {  ffval.Node = New_REG( ffvsp[-5].str, ffvsp[-3].Node, ffvsp[-1].Node, "" );
                    TEST(ffval.Node);                                        ;
     break;}
 case 80:
-#line 618 "eval.y"
+#line 623 "eval.y"
 {  ffval.Node = New_REG( ffvsp[-7].str, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].str );
                    TEST(ffval.Node);                                        ;
     break;}
 case 81:
-#line 622 "eval.y"
+#line 627 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-3].Node, 1, ffvsp[-1].Node,  0,  0,  0,   0 ); TEST(ffval.Node); ;
     break;}
 case 82:
-#line 624 "eval.y"
+#line 629 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-5].Node, 2, ffvsp[-3].Node, ffvsp[-1].Node,  0,  0,   0 ); TEST(ffval.Node); ;
     break;}
 case 83:
-#line 626 "eval.y"
+#line 631 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-7].Node, 3, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,  0,   0 ); TEST(ffval.Node); ;
     break;}
 case 84:
-#line 628 "eval.y"
+#line 633 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-9].Node, 4, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,   0 ); TEST(ffval.Node); ;
     break;}
 case 85:
-#line 630 "eval.y"
+#line 635 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-11].Node, 5, ffvsp[-9].Node, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node ); TEST(ffval.Node); ;
     break;}
 case 86:
-#line 632 "eval.y"
+#line 637 "eval.y"
 { ffval.Node = New_Unary( BOOLEAN, NOT, ffvsp[0].Node ); TEST(ffval.Node); ;
     break;}
 case 87:
-#line 634 "eval.y"
+#line 639 "eval.y"
 { ffval.Node = ffvsp[-1].Node; ;
     break;}
 case 88:
-#line 638 "eval.y"
+#line 643 "eval.y"
 { ffval.Node = New_Const( STRING, ffvsp[0].str, strlen(ffvsp[0].str)+1 ); TEST(ffval.Node);
                   SIZE(ffval.Node) = strlen(ffvsp[0].str);                            ;
     break;}
 case 89:
-#line 641 "eval.y"
+#line 646 "eval.y"
 { ffval.Node = New_Column( ffvsp[0].lng ); TEST(ffval.Node); ;
     break;}
 case 90:
-#line 643 "eval.y"
+#line 648 "eval.y"
 { ffval.Node = ffvsp[-1].Node; ;
     break;}
 case 91:
-#line 645 "eval.y"
+#line 650 "eval.y"
 { ffval.Node = New_BinOp( STRING, ffvsp[-2].Node, '+', ffvsp[0].Node );  TEST(ffval.Node);
 		  SIZE(ffval.Node) = SIZE(ffvsp[-2].Node) + SIZE(ffvsp[0].Node);                   ;
     break;}
 case 92:
-#line 648 "eval.y"
+#line 653 "eval.y"
 { 
 		  if (FSTRCMP(ffvsp[-4].str,"DEFNULL(") == 0) {
 		     ffval.Node = New_Func( 0, defnull_fct, 2, ffvsp[-3].Node, ffvsp[-1].Node, 0,
@@ -1953,7 +1958,7 @@ fferrhandle:
   ffstate = ffn;
   goto ffnewstate;
 }
-#line 658 "eval.y"
+#line 663 "eval.y"
 
 
 /*************************************************************************/

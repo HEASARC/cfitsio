@@ -731,3 +731,22 @@ static int Pt_in_Poly( double x,
    }
    return( flag );
 }
+
+
+#if defined(vms) || defined(__vms)
+
+/* A very dumb patch for VMS, which lacks a strncasecmp */
+int strncasecmp(char *s1, char *s2, int n)
+{
+ int i,l;
+ char st1[1024],st2[1014];
+
+ l = strlen(s1);
+ for (i=0;i<=l && i<n;i++)
+    st1[i] = toupper(s1[i]);
+ l = strlen(s2);
+ for (i=0;i<=l && i<n;i++)
+    st2[i] = toupper(s2[i]);
+ return ( strncmp(st1,st2,n) );
+}
+#endif
