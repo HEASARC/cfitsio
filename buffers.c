@@ -835,6 +835,9 @@ int ffgtbb(fitsfile *fptr,        /* I - FITS file pointer                 */
     else if (firstchar < 1)
         return(*status=BAD_ELEM_NUM);
 
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
     /* check that we do not exceed number of rows in the table */
     endrow = ((firstchar + nchars - 2) / (fptr->Fptr)->rowlength) + firstrow;
     if (endrow > (fptr->Fptr)->numrows)
@@ -842,9 +845,6 @@ int ffgtbb(fitsfile *fptr,        /* I - FITS file pointer                 */
         ffpmsg("attempt to read past end of table (ffgtbb)");
         return(*status=BAD_ROW_NUM);
     }
-
-    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
-        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
     /* move the i/o pointer to the start of the sequence of characters */
     bytepos = (fptr->Fptr)->datastart + ( (firstrow - 1) *
