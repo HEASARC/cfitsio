@@ -32,7 +32,7 @@ libcfitsio.a:
 
 install:	libcfitsio.a
 		mv libcfitsio.a ${FTOOLS_LIB}
-		cp *.h ../include/
+		cp *.h ${FTOOLS_INCLUDE}/
 
 clean:
 		rm -f *.o 
