@@ -1375,13 +1375,54 @@ int ffghtb(fitsfile *fptr,  /* I - FITS file pointer                        */
 {
     int ii, maxf, nfound, tstatus;
     long pcount, fields;
-    char comm[FLEN_COMMENT];
+    char name[FLEN_KEYWORD], value[FLEN_VALUE], comm[FLEN_COMMENT];
+    char xtension[FLEN_VALUE], message[81];
 
     if (*status > 0)
         return(*status);
 
+    /* read the first keyword of the extension */
+    ffgkyn(fptr, 1, name, value, comm, status);
+
+    if (!strcmp(name, "XTENSION"))
+    {
+            if (ffc2s(value, xtension, status) > 0)  /* get the value string */
+            {
+                ffpmsg("Bad value string for XTENSION keyword:");
+                ffpmsg(value);
+                return(*status);
+            }
+
+            /* allow the quoted string value to begin in any column and */
+            /* allow any number of trailing blanks before the closing quote */
+            if ( (value[0] != '\'')   ||  /* first char must be a quote */
+                 ( strcmp(xtension, "TABLE") ) )
+            {
+                sprintf(message,
+                "This is not a TABLE extension: %s", value);
+                ffpmsg(message);
+                return(*status = NOT_ATABLE);
+            }
+    }
+
+    else  /* error: 1st keyword of extension != XTENSION */
+    {
+        sprintf(message,
+        "First keyword of the extension is not XTENSION: %s", name);
+        ffpmsg(message);
+        return(*status = NO_XTENSION);
+    }
+
     if (ffgttb(fptr, naxis1, naxis2, &pcount, &fields, status) > 0)
         return(*status);
+
+    if (pcount != 0)
+    {
+       sprintf(message, "PCOUNT = %ld is illegal in ASCII table; must = 0",
+               pcount);
+       ffpmsg(message);
+       return(*status = BAD_PCOUNT);
+    }
 
     if (tfields)
        *tfields = fields;
@@ -1461,17 +1502,53 @@ int ffghbn(fitsfile *fptr,  /* I - FITS file pointer                        */
            long *pcount,    /* O - value of PCOUNT keyword                  */
            int *status)     /* IO - error status                            */
 /*
-  Get keywords from the Header of the ASCII TaBle:
+  Get keywords from the Header of the BiNary table:
   Check that the keywords conform to the FITS standard and return the
   parameters which describe the table.
 */
 {
     int ii, maxf, nfound, tstatus;
     long naxis1, fields;
-    char comm[FLEN_COMMENT];
+    char name[FLEN_KEYWORD], value[FLEN_VALUE], comm[FLEN_COMMENT];
+    char xtension[FLEN_VALUE], message[81];
 
     if (*status > 0)
         return(*status);
+
+    /* read the first keyword of the extension */
+    ffgkyn(fptr, 1, name, value, comm, status);
+
+    if (!strcmp(name, "XTENSION"))
+    {
+            if (ffc2s(value, xtension, status) > 0)  /* get the value string */
+            {
+                ffpmsg("Bad value string for XTENSION keyword:");
+                ffpmsg(value);
+                return(*status);
+            }
+
+            /* allow the quoted string value to begin in any column and */
+            /* allow any number of trailing blanks before the closing quote */
+            if ( (value[0] != '\'')   ||  /* first char must be a quote */
+                 ( strcmp(xtension, "BINTABLE") &&
+                   strcmp(xtension, "A3DTABLE") &&
+                   strcmp(xtension, "3DTABLE")
+                 ) )
+            {
+                sprintf(message,
+                "This is not a BINTABLE extension: %s", value);
+                ffpmsg(message);
+                return(*status = NOT_BTABLE);
+            }
+    }
+
+    else  /* error: 1st keyword of extension != XTENSION */
+    {
+        sprintf(message,
+        "First keyword of the extension is not XTENSION: %s", name);
+        ffpmsg(message);
+        return(*status = NO_XTENSION);
+    }
 
     if (ffgttb(fptr, &naxis1, naxis2, pcount, &fields, status) > 0)
         return(*status);
@@ -1665,8 +1742,12 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     if (*status == BAD_ORDER)
         return(*status = NO_NAXIS);
-    else if (*status == NOT_POS_INT)
+    else if (*status == NOT_POS_INT || longnaxis > 999)
+    {
+        sprintf(message,"NAXIS = %ld is illegal", longnaxis);
+        ffpmsg(message);
         return(*status = BAD_NAXIS);
+    }
     else
         if (naxis)
              *naxis = longnaxis;  /* do explicit type conversion */
