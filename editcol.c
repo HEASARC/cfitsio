@@ -296,6 +296,128 @@ int ffdrow(fitsfile *fptr,  /* I - FITS file pointer                        */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffdrws(fitsfile *fptr,  /* I - FITS file pointer                        */
+           long *rownum,    /* I - list of rows to delete (1 = first)       */
+           long nrows,      /* I - number of rows to delete                 */
+           int *status)     /* IO - error status                            */
+/*
+ delete the list of rows from the table (1 = first row of table).
+*/
+{
+    long naxis1, naxis2, ii, insertpos, nextrow, nextrowpos;
+    char comm[FLEN_COMMENT];
+    unsigned char *buffer;
+
+    if (*status > 0)
+        return(*status);
+
+    if (fptr->datastart < 0)    /* rescan header if data pointer undefined */
+        ffrdef(fptr, status);
+
+    if (*status > 0)
+        return(*status);
+
+    if (fptr->hdutype == IMAGE_HDU)
+    {
+        ffpmsg("Can only delete rows in TABLE or BINTABLE extension (ffdrws)");
+        return(*status = NOT_TABLE);
+    }
+
+    if (nrows < 0 )
+        return(*status = NEG_BYTES);
+    else if (nrows == 0)
+        return(*status);   /* no op, so just return */
+
+    ffgkyj(fptr, "NAXIS1", &naxis1, comm, status); /* row width   */
+    ffgkyj(fptr, "NAXIS2", &naxis2, comm, status); /* number of rows */
+
+    /* check that input row list is in ascending order */
+    for (ii = 1; ii < nrows; ii++)
+    {
+        if (rownum[ii - 1] >= rownum[ii])
+        {
+            ffpmsg("row numbers are not in increasing order (ffdrws)");
+            return(*status = BAD_ROW_NUM);
+        }
+    }
+
+    if (rownum[0] < 1)
+    {
+        ffpmsg("first row to delete is less than 1 (ffdrws)");
+        return(*status = BAD_ROW_NUM);
+    }
+    else if (rownum[nrows - 1] > naxis2)
+    {
+        ffpmsg("last row to delete exceeds size of table (ffdrws)");
+        return(*status = BAD_ROW_NUM);
+    }
+
+    buffer = (unsigned char *) malloc(naxis1);  /* buffer for one row */
+
+    if (!buffer)
+    {
+        ffpmsg("malloc failed (ffdrws)");
+        return(*status = MEMORY_ALLOCATION);
+    }
+
+    /* byte location to start of first row to delete, and the next row */
+    insertpos = fptr->datastart + ((rownum[0] - 1) * naxis1);
+    nextrowpos = insertpos + naxis1;
+    nextrow = rownum[0] + 1;
+
+    /* work through the list of rows to delete */
+    for (ii = 1; ii < nrows; nextrow++, nextrowpos += naxis1)
+    {
+        if (nextrow < rownum[ii])  
+        {   /* keep this row, so copy it to the new position */
+
+            ffmbyt(fptr, nextrowpos, REPORT_EOF, status);
+            ffgbyt(fptr, naxis1, buffer, status);  /* read the bytes */
+
+            ffmbyt(fptr, insertpos, IGNORE_EOF, status);
+            ffpbyt(fptr, naxis1, buffer, status);  /* write the bytes */
+
+            if (*status > 0)
+            {
+                ffpmsg("error while copying good rows in table (ffdrws)");
+                free(buffer);
+                return(*status);
+            }
+            insertpos += naxis1;
+        }
+        else
+        {   /* skip over this row since it is in the list */
+            ii++;
+        }
+    }
+
+    /* finished with all the rows to delete; copy remaining rows */
+    while(nextrow <= naxis2)
+    {
+        ffmbyt(fptr, nextrowpos, REPORT_EOF, status);
+        ffgbyt(fptr, naxis1, buffer, status);  /* read the bytes */
+
+        ffmbyt(fptr, insertpos, IGNORE_EOF, status);
+        ffpbyt(fptr, naxis1, buffer, status);  /* write the bytes */
+
+        if (*status > 0)
+        {
+            ffpmsg("failed to copy remaining rows in table (ffdrws)");
+            free(buffer);
+            return(*status);
+        }
+        insertpos  += naxis1;
+        nextrowpos += naxis1;
+        nextrow++; 
+    }
+    free(buffer);
+    
+    /* now delete the empty rows at the end of the table */
+    ffdrow(fptr, naxis2 - nrows + 1, nrows, status);
+    
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int fficol(fitsfile *fptr,  /* I - FITS file pointer                        */
            int numcol,      /* I - position for new col. (1 = 1st)          */
            char *ttype,     /* I - name of column (TTYPE keyword)           */

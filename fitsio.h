@@ -502,6 +502,7 @@ int ffrsim(fitsfile *fptr, int bitpix, int naxis, long *naxes, int *status);
 int ffdhdu(fitsfile *fptr, int *hdutype, int *status);
 int ffcopy(fitsfile *infptr, fitsfile *outfptr, int morekeys, int *status);
 int ffcpdt(fitsfile *infptr, fitsfile *outfptr, int *status);
+int ffcphd(fitsfile *infptr, fitsfile *outfptr, int *status);
 int ffchfl(fitsfile *fptr, int *status);
 int ffcdfl(fitsfile *fptr, int *status);
 
@@ -964,6 +965,7 @@ int ffptbb(fitsfile *fptr, long firstrow, long firstchar, long nchars,
  
 int ffirow(fitsfile *fptr, long firstrow, long nrows, int *status);
 int ffdrow(fitsfile *fptr, long firstrow, long nrows, int *status);
+int ffdrws(fitsfile *fptr, long *rownum,  long nrows, int *status);
 int fficol(fitsfile *fptr, int numcol, char *ttype, char *tform, int *status);
 int fficls(fitsfile *fptr, int firstcol, int ncols, char **ttype,
            char **tform, int *status);

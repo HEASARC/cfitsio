@@ -165,6 +165,7 @@
 #define fits_resize_img     ffrsim
 #define fits_delete_hdu     ffdhdu
 #define fits_copy_hdu       ffcopy
+#define fits_copy_header    ffcphd
 #define fits_copy_data      ffcpdt
 
 #define fits_set_hdustruc   ffrdef
@@ -378,6 +379,7 @@
 #define fits_write_tblbytes  ffptbb
 #define fits_insert_rows  ffirow
 #define fits_delete_rows  ffdrow
+#define fits_delete_rowlist ffdrws
 #define fits_insert_col   fficol
 #define fits_insert_cols  fficls
 #define fits_delete_col   ffdcol

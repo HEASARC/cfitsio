@@ -1,6 +1,10 @@
              Log of Changes Made to CFITSIO
 
-Version 1.41 - 6 March 1998 (for the FTOOLS release)
+Version 1.41 - 16 March 1998 (for the FTOOLS release)
+
+   - added ffdrws to delete a list of rows in a table
+
+   - added ffcphd to copy the header keywords from one hdu to another
 
    - small changes to ffpclx to fix problems when writing bit (X) data
      columns beyond the current end of file.

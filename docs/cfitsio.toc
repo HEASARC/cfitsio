@@ -49,9 +49,9 @@
 \contentsline {section}{\numberline {6.2}Advanced HDU Access Routines}{52}
 \contentsline {section}{\numberline {6.3}Advanced Header Keyword Routines}{54}
 \contentsline {subsection}{\numberline {6.3.1}Header Information Routines}{54}
-\contentsline {subsection}{\numberline {6.3.2}Read and Write the Required Keywords}{54}
+\contentsline {subsection}{\numberline {6.3.2}Read and Write the Required Keywords}{55}
 \contentsline {subsection}{\numberline {6.3.3}Write Keyword Routines}{56}
-\contentsline {subsection}{\numberline {6.3.4} Insert Keyword Routines}{58}
+\contentsline {subsection}{\numberline {6.3.4} Insert Keyword Routines}{59}
 \contentsline {subsection}{\numberline {6.3.5} Advanced Read Keyword Routines}{59}
 \contentsline {subsection}{\numberline {6.3.6} Modify Keyword Routines}{61}
 \contentsline {subsection}{\numberline {6.3.7} Advanced Update Keyword Routines }{62}
@@ -60,9 +60,9 @@
 \contentsline {section}{\numberline {6.6}Advanced FITS ASCII and Binary Table Routines}{68}
 \contentsline {subsection}{\numberline {6.6.1}Column Information Routines}{68}
 \contentsline {subsection}{\numberline {6.6.2}Low-Level Table Access Routines }{69}
-\contentsline {subsection}{\numberline {6.6.3}Advanced Write Column Data Routines}{69}
-\contentsline {subsection}{\numberline {6.6.4}Advanced Read Column Data Routines}{70}
-\contentsline {section}{\numberline {6.7}Celestial Coordinate System Routines }{72}
+\contentsline {subsection}{\numberline {6.6.3}Advanced Write Column Data Routines}{70}
+\contentsline {subsection}{\numberline {6.6.4}Advanced Read Column Data Routines}{71}
+\contentsline {section}{\numberline {6.7}Celestial Coordinate System Routines }{73}
 \contentsline {section}{\numberline {6.8}File Checksum Routines }{74}
 \contentsline {section}{\numberline {6.9}Advanced General Utility Routines }{75}
 \contentsline {chapter}{\numberline {A}Parameter Definitions }{81}

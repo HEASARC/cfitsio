@@ -23,6 +23,30 @@ int ffcopy(fitsfile *infptr,    /* I - FITS file pointer to input file  */
   This will also allocate space in the output header for MOREKY keywords
 */
 {
+    if (*status > 0)
+        return(*status);
+
+    if (infptr == outfptr)
+        return(*status = SAME_FILE);
+
+    if (ffcphd(infptr, outfptr, status) )  /* copy the header keywords */
+       return(*status);
+
+    if (morekeys > 0)
+      ffhdef(outfptr, morekeys, status); /* reserve space for more keywords */
+
+    ffcpdt(infptr, outfptr, status);  /* now copy the data unit */
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffcphd(fitsfile *infptr,    /* I - FITS file pointer to input file  */
+           fitsfile *outfptr,   /* I - FITS file pointer to output file */
+           int *status)         /* IO - error status     */
+/*
+  copy the header keywords from infptr to  outfptr.
+*/
+{
     int simple, bitpix, naxis, extend;
     int nkeys, nadd, ii;
     long naxes[99], pcount, gcount;
@@ -74,15 +98,10 @@ int ffcopy(fitsfile *infptr,    /* I - FITS file pointer to input file  */
         /* input and output HDUs are same type; simply copy all keywords */
         for (ii = 1; ii <= nkeys; ii++)
         {
-            ffgrec(infptr,  ii, card, status);
+            ffgrec(infptr, ii, card, status);
             ffprec(outfptr, card, status);
         }
     }
-
-    if (morekeys > 0)
-      ffhdef(outfptr, morekeys, status); /* reserve space for more keywords */
-
-    ffcpdt(infptr, outfptr, status);  /* now copy the data unit */
 
     return(*status);
 }

@@ -2353,13 +2353,25 @@ the first 8 characters, and strongly recommended that the names be
     Any remaining rows in the table are shifted up to fill in the space.
     This routine modifies the NAXIS2 keyword to reflect the new number
     of rows in the table.  The physical size of the FITS file may
-    not be reduced by this operation, and the empty FITS blocks if any
->   at the end of the file will be padded with zeros.
+    not be reduced by this operation, in which case the empty FITS blocks
+>    if anyat the end of the file will be padded with zeros.
 -
   int fits_delete_rows / ffdrow
       (fitsfile *fptr, long firstrow, long nrows, > int *status)
 -
->3  Insert a blank column (or columns) into an ASCII or binary
+>3  Delete a list of rows from an ASCII or binary table (in the CDU).
+    rownum is an array of row numbers to be deleted from the table.
+    (The first row in the table has rownum = 1 not 0).  The list of
+    row numbers must be sorted in ascending order.  nrows is the
+    number of row numbers in the list.
+    The physical size of the FITS file may not be reduced by this
+    operation, in which case the empty FITS blocks if any
+>   at the end of the file will be padded with zeros.
+-
+  int fits_delete_rowlist / ffdrws
+      (fitsfile *fptr, long *rownum, long nrows, > int *status)
+-
+>4  Insert a blank column (or columns) into an ASCII or binary
     table.  COLNUM specifies the column number that the (first)
     new column should occupy in the table.  NCOLS specifies how many
     columns are to be inserted. Any existing columns from this position and
@@ -2378,7 +2390,7 @@ the first 8 characters, and strongly recommended that the names be
       (fitsfile *fptr, int colnum, int ncols, char **ttype,
        char **tform, > int *status)
 -
->4  Delete a column from an  ASCII or binary table (in the CDU).
+>5  Delete a column from an  ASCII or binary table (in the CDU).
     The index number of all the keywords listed above will be
     decremented if necessary to reflect the new position of the column(s) in
     the table.    The physical size of the FITS file may
@@ -2387,7 +2399,7 @@ the first 8 characters, and strongly recommended that the names be
 -
   int fits_delete_col / ffdcol(fitsfile *fptr, int colnum, > int *status)
 -
->5  Copy a column from one HDU to another (or to the same HDU).  If
+>6  Copy a column from one HDU to another (or to the same HDU).  If
     create\_col = TRUE, then a new column will be inserted in the output
     table, at position `outcolumn', otherwise the existing output column will
     be overwritten (in which case it must have a compatible datatype).  
@@ -2609,7 +2621,18 @@ included with the CFITSIO distribution provides an example of how to
   int fits_resize_img / ffrsim
       (fitsfile *fptr, int bitpix, int naxis, long *naxes, > int *status)
 -
->6  Copy the data (and not the header) from the CHDU associated with infptr
+>6  Copy the header (and not the data) from the CHDU associated with infptr
+    to the CHDU associated with outfptr.  If the current output HDU
+    is not completely empty, then the CHDU will be closed and a new
+    HDU will be appended to the output file.  This routine will automatically
+    transform the necessary keywords when copying a primary array to
+    and image extension, or an image extension to a primary array. 
+>   An empty output data unit will be created (all values = 0).
+-
+  int fits_copy_data / ffcphd
+      (fitsfile *infptr, fitsfile *outfptr, > int *status)
+-
+>7  Copy the data (and not the header) from the CHDU associated with infptr
     to the CHDU associated with outfptr. This will overwrite any data
     previously in the output CHDU.  This low level routine is used by 
     fits\_copy\_hdu, but it may also be useful in certain application programs
@@ -2621,7 +2644,7 @@ included with the CFITSIO distribution provides an example of how to
   int fits_copy_data / ffcpdt
       (fitsfile *infptr, fitsfile *outfptr, > int *status)
 -
->7  This routine forces CFITSIO to scan the current header keywords that
+>8  This routine forces CFITSIO to scan the current header keywords that
     define the structure of the HDU (such as the NAXIS and BITPIX
     keywords) so that it can initialize the internal buffers that describe
     the HDU structure.  This routine is
@@ -4038,7 +4061,8 @@ outcolnum- output column number; range = 1 to TFIELDS + 1
 outfptr  - pointer to a 'fitsfile' structure describing the output FITS file.
 pcount   - value of the PCOUNT keyword = size of binary table heap
 repeat   - length of column vector (e.g. 12J); == 1 for ASCII table
-rot      -  celestial coordinate rotation angle (degrees)
+rownum   - sorted list of row numbers to be deleted from the table
+rot      - celestial coordinate rotation angle (degrees)
 rowlen   - length of a table row, in characters or bytes
 rownum   - number of the row (first row = 1)
 scale    - linear scaling factor; true value = (FITS value) * scale + zero
