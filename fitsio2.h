@@ -240,6 +240,7 @@
 #ifndef LONGLONG_MAX
 
 #ifdef LLONG_MAX
+/* Linux and Solaris definition */
 #define LONGLONG_MAX LLONG_MAX
 #define LONGLONG_MIN LLONG_MIN
 
@@ -247,11 +248,23 @@
 #define LONGLONG_MAX LONG_LONG_MAX
 #define LONGLONG_MIN LONG_LONG_MIN
 
+#elif defined(__LONG_LONG_MAX__)
+/* Mac OS X & CYGWIN defintion */
+#define LONGLONG_MAX __LONG_LONG_MAX__
+#define LONGLONG_MIN (-LONGLONG_MAX -1LL)
+
 #elif defined(INT64_MAX)
+/* windows definition */
 #define LONGLONG_MAX INT64_MAX
 #define LONGLONG_MIN INT64_MIN
 
-#elif (LONGSIZE == 64) || defined(HAVE_LONGLONG)
+#elif defined(HAVE_LONGLONG)
+/* compiler has a 'long long' or equivalent type */
+#define LONGLONG_MAX  9223372036854775807LL /* max 64-bit integer */
+#define LONGLONG_MIN (-LONGLONG_MAX -1LL)   /* min 64-bit integer */
+
+#elif (LONGSIZE == 64)
+/* Compiler may not have a 'long long' type, but sizeof(long) = 64 */
 #define LONGLONG_MAX  9223372036854775807L /* max 64-bit integer */
 #define LONGLONG_MIN (-LONGLONG_MAX -1L)   /* min 64-bit integer */
 
