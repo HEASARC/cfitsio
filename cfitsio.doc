@@ -2874,7 +2874,10 @@ write data to the 2 extensions in any order.
   int fits_reopen_file / ffreopen
       (fitsfile *openfptr, fitsfile **newfptr, > int *status)
 -
->>3   Create a new empty FITS file. \label{ffinit}
+>3   Create a new empty FITS file.  An error will be returned if
+   the specified file already exists unless the filename is
+   prefixed with an exclamation point (!).  In that case CFITSIO
+>  will overwrite the existing file. \label{ffinit}
 -
   int fits_create_file / ffinit
       (fitsfile **fptr, char *filename, > int *status)
@@ -4200,7 +4203,9 @@ The following utility routines may be useful for certain applications:
       (int value, char *keyroot, > char *keyname, int *status)
 -
 >8  Determine the datatype of a keyword value string. This routine
->   parses the keyword value string  to determine its datatype.  \label{ffdtyp}
+    parses the keyword value string  to determine its datatype. 
+    Returns 'C', 'L', 'I', 'F' or 'X', for character string, logical,
+>   integer, floating point, or complex, respectively. \label{ffdtyp}
 -
   int fits_get_keytype / ffdtyp
       (char *value, > char *dtype, int *status)
@@ -5894,11 +5899,12 @@ decimals - number of decimal places to be displayed
 delta_size - increment for allocating more memory
 dim1     - declared size of the first dimension of the image or cube array
 dim2     - declared size of the second dimension of the data cube array
-dtype    - datatype of the keyword ('C', 'L', 'I',  or 'F')
+dtype    - datatype of the keyword ('C', 'L', 'I', 'F' or 'X')
                 C = character string
                 L = logical
                 I = integer
                 F = floating point number
+                X = complex, e.g., "(1.23, -4.56)"
 err_msg  - error message on the internal stack (80 chars max)
 err_text - error message string corresponding to error number (30 chars max)
 exact    - TRUE (=1) if the strings match exactly; 

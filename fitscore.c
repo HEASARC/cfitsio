@@ -24,7 +24,7 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.015;   /*  beta release */
+      *version = 2.016;   /*  beta release */
 
  /*   *version = 1.40;    6 Feb 1998 */
  /*   *version = 1.33;   16 Dec 1997 (internal release only) */
@@ -2248,7 +2248,7 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
     int groups, tstatus, simple, bitpix, naxis, extend, nspace;
     int ttype = 0, bytlen = 0, ii;
     long naxes[999], pcount, gcount, npix, blank;
-    double bscale, bzero;
+    double bscale, bzero, filesize;
     char comm[FLEN_COMMENT];
     tcolumn *colptr;
 
@@ -2318,22 +2318,45 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
         
     /*   calculate the size of the primary array  */
     if (naxis == 0)
+    {
         npix = 0;
+        filesize = 0.;
+    }
     else
     {
         if (groups)
+        {
             npix = 1;  /* NAXIS1 = 0 is a special flag for 'random groups' */
+            filesize = 1.;
+        }
         else
+        {
             npix = naxes[0];
+            filesize = naxes[0];
+        }
 
         for (ii=1; ii < naxis; ii++)
-             npix = npix*naxes[ii];   /* calc number of pixels in the array */
+        {
+            npix = npix*naxes[ii];   /* calc number of pixels in the array */
+            filesize = filesize * naxes[ii];
+        }
     }
 
     /*
        now we know everything about the array; just fill in the parameters:
        the next HDU begins in the next logical block after the data
     */
+
+    filesize = (fptr->Fptr)->datastart + 
+         ( (pcount + filesize) * bytlen * gcount);
+
+    if (filesize > (double) LONG_MAX)
+    {
+        ffpmsg("FITS file is too large; limit is LONG_MAX bytes");
+        *status = ARRAY_TOO_BIG;
+        return(*status);
+    }
+
     (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] =
          (fptr->Fptr)->datastart + 
          ( (pcount + npix) * bytlen * gcount + 2879) / 2880 * 2880;
@@ -2424,6 +2447,7 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
     tcolumn *colptr;
     char name[FLEN_KEYWORD], value[FLEN_VALUE], comm[FLEN_COMMENT];
     char message[FLEN_ERRMSG], errmsg[81];
+    double filesize;
 
     if (*status > 0)
         return(*status);
@@ -2581,8 +2605,19 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
     /* the data unit begins at the beginning of the next logical block */
     (fptr->Fptr)->datastart = ( ((fptr->Fptr)->nextkey - 80) / 2880 + 1) * 2880;
 
+    filesize = (double) (fptr->Fptr)->datastart + 
+         ( (double) rowlen * (double) nrows );
+
+    if (filesize > (double) LONG_MAX)
+    {
+        ffpmsg("FITS file is too large; limit is LONG_MAX bytes");
+        *status = ARRAY_TOO_BIG;
+        return(*status);
+    }
+
     /* the next HDU begins in the next logical block after the data  */
-    (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] = (fptr->Fptr)->datastart +
+    (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] =
+         (fptr->Fptr)->datastart +
          ( (rowlen * nrows + 2879) / 2880 * 2880 );
 
     /* reset next keyword pointer to the start of the header */
@@ -2602,6 +2637,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     tcolumn *colptr;
     char name[FLEN_KEYWORD], value[FLEN_VALUE], comm[FLEN_COMMENT];
     char message[FLEN_ERRMSG];
+    double filesize;
 
     if (*status > 0)
         return(*status);
@@ -2716,13 +2752,25 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
       the 'END' record is 80 bytes before the current position, minus
       any trailing blank keywords just before the END keyword.
     */
+
     (fptr->Fptr)->headend = (fptr->Fptr)->nextkey - (80 * (nspace + 1));
  
     /* the data unit begins at the beginning of the next logical block */
     (fptr->Fptr)->datastart = ( ((fptr->Fptr)->nextkey - 80) / 2880 + 1) * 2880;
 
+    filesize = (double) (fptr->Fptr)->datastart + 
+         ( (double) rowlen * (double) nrows + (double) pcount );
+
+    if (filesize > (double) LONG_MAX)
+    {
+        ffpmsg("FITS file is too large; limit is LONG_MAX bytes");
+        *status = ARRAY_TOO_BIG;
+        return(*status);
+    }
+
     /* the next HDU begins in the next logical block after the data  */
-    (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] = (fptr->Fptr)->datastart +
+    (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] = 
+         (fptr->Fptr)->datastart +
          ( (rowlen * nrows + pcount + 2879) / 2880 * 2880 );
 
     /* determine the byte offset to the beginning of each column */
@@ -3230,9 +3278,23 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
                 }
             }
         }
-        else
+        else  /* reading from the file */
         {
-            if ( endrow > (fptr->Fptr)->numrows)
+          if ( endrow > (fptr->Fptr)->numrows)
+          {
+            if (*hdutype == IMAGE_HDU) /*  Primary Array or IMAGE */
+            {
+              ffpmsg("Attempt to read past end of array:");
+              sprintf(message, 
+                "  Image has  %ld elements;", *repeat);
+              ffpmsg(message);
+
+              sprintf(message, 
+              "  Tried to read %ld elements starting at element %ld.",
+              nelem, firstelem);
+              ffpmsg(message);
+            }
+            else
             {
               ffpmsg("Attempt to read past end of table:");
               sprintf(message, 
@@ -3245,8 +3307,9 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
               nelem, firstrow, firstelem);
               ffpmsg(message);
 
-              return(*status = BAD_ROW_NUM);
             }
+            return(*status = BAD_ROW_NUM);
+          }
         }
 
         if (*repeat == 1 && nelem > 1)
@@ -4439,7 +4502,7 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
 }
 /*--------------------------------------------------------------------------*/
 int ffdtyp(char *cval,  /* I - formatted string representation of the value */
-           char *dtype, /* O - datatype code: C, L, F or I */
+           char *dtype, /* O - datatype code: C, L, F, I, or X */
           int *status)  /* IO - error status */
 /*
   determine implicit datatype of input string.
@@ -4451,10 +4514,14 @@ int ffdtyp(char *cval,  /* I - formatted string representation of the value */
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
+    if (cval[0] == '\0')
+        return(*status = VALUE_UNDEFINED);
     if (cval[0] == '\'')
         *dtype = 'C';          /* character string starts with a quote */
     else if (cval[0] == 'T' || cval[0] == 'F')
         *dtype = 'L';          /* logical = T or F character */
+    else if (cval[0] == '(')
+        *dtype = 'X';          /* complex datatype "(1.2, -3.4)" */
     else if (strchr(cval,'.'))
         *dtype = 'F';          /* float contains a decimal point */
     else
@@ -4464,7 +4531,7 @@ int ffdtyp(char *cval,  /* I - formatted string representation of the value */
 }
 /*--------------------------------------------------------------------------*/
 int ffc2x(char *cval,   /* I - formatted string representation of the value */
-          char *dtype,  /* O - datatype code: C, L, F or I  */
+          char *dtype,  /* O - datatype code: C, L, F, I or X  */
 
     /* Only one of the following will be defined, depending on datatype */
           long *ival,    /* O - integer value       */
@@ -4487,7 +4554,7 @@ int ffc2x(char *cval,   /* I - formatted string representation of the value */
     else if (*dtype == 'L')
         ffc2ll(cval, lval, status);
     else 
-        ffc2s(cval, sval, status);
+        ffc2s(cval, sval, status);   /* C and X formats */
         
     return(*status);
 }
@@ -4513,7 +4580,7 @@ int ffc2i(char *cval,   /* I - string representation of the value */
     /* convert the keyword to its native datatype */
     ffc2x(cval, &dtype, ival, &lval, sval, &dval, status);
 
-    if (dtype == 'C')
+    if (dtype == 'C' || dtype == 'X' )
     {
             *status = BAD_INTKEY;
     }
@@ -4563,7 +4630,7 @@ int ffc2l(char *cval,  /* I - string representation of the value */
     /* convert the keyword to its native datatype */
     ffc2x(cval, &dtype, &ival, lval, sval, &dval, status);
 
-    if (dtype == 'C')
+    if (dtype == 'C' || dtype == 'X' )
         *status = BAD_LOGICALKEY;
 
     if (*status > 0)

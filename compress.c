@@ -54,7 +54,7 @@ long total_out = 0;        /* output bytes for all files */
 char ifname[128];          /* input file name */
 
 FILE *ifd;               /* input file descriptor */
-FILE *ofd;               /* output file descriptor; not actually used */
+FILE *ofd;               /* output file descriptor */
 
 void **memptr;          /* memory location for uncompressed file */
 size_t *memsize;        /* size (bytes) of memory allocated for file */
@@ -64,13 +64,18 @@ unsigned insize;           /* valid bytes in inbuf */
 unsigned inptr;            /* index of next byte to be processed in inbuf */
 unsigned outcnt;           /* bytes in output buffer */
 
-/* prototype for the following function */
+/* prototype for the following functions */
 int uncompress2mem(char *filename, 
              FILE *diskfile, 
              char **buffptr, 
              size_t *buffsize, 
              void *(*mem_realloc)(void *p, size_t newsize),
              size_t *filesize,
+             int *status);
+
+int uncompress2file(char *filename, 
+             FILE *indiskfile, 
+             FILE *outdiskfile, 
              int *status);
 
 /*--------------------------------------------------------------------------*/
@@ -130,6 +135,56 @@ int uncompress2mem(char *filename,  /* name of input file                 */
     *buffptr = *memptr;
     *buffsize = *memsize;
     *filesize = bytes_out;
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int uncompress2file(char *filename,  /* name of input file                  */
+             FILE *indiskfile,     /* I - input file pointer                */
+             FILE *outdiskfile,    /* I - output file pointer               */
+             int *status)        /* IO - error status                       */
+
+/*
+  Uncompress the file into file. 
+*/
+{
+    if (*status > 0)
+        return(*status);
+
+    /*  save input parameters into global variables */
+    strcpy(ifname, filename);
+    ifd = indiskfile;
+    ofd = outdiskfile;
+    realloc_fn = NULL; /* a null reallocation fn signals that the file is */
+                       /* to be uncompressed to a file on disk, not memory */
+
+    /* clear input and output buffers */
+    outcnt = 0;
+    insize = inptr = 0;
+    bytes_in = bytes_out = 0L;
+
+    part_nb = 0;
+
+    method = get_method(ifd); 
+    if (method < 0)
+    {
+	return(*status = 1);       /* error message already emitted */
+    }
+
+    /* Actually do the compression/decompression. Loop over zipped members.
+     */
+    for (;;) {
+	if ((*work)(ifd, ofd) != OK) {
+	    method = -1; /* force cleanup */
+	    break;
+	}
+	if (last_member || inptr == insize) break;
+	/* end of file */
+
+	method = get_method(ifd);
+	if (method < 0) break;    /* error message already emitted */
+	bytes_out = 0;            /* required for length check */
+    }
 
     return(*status);
 }
@@ -364,22 +419,38 @@ local void write_buf(buf, cnt)
     voidp     buf;
     unsigned  cnt;
 {
-    /* get more memory if current buffer is too small */
-    if (bytes_out + cnt > *memsize)
+    if (!realloc_fn)
     {
+      /* append buffer to file */
+      if ((long) fwrite(buf, 1, cnt, ofd) != cnt)
+      {
+          error
+          ("failed to write buffer to uncompressed output file (write_buf)");
+          exit_code = ERROR;
+          return;
+      }
+    }
+    else
+    {
+      /* copy/append buffer into memory */
+
+      /* get more memory if current buffer is too small */
+      if (bytes_out + cnt > *memsize)
+      {
         *memptr = realloc_fn(*memptr, bytes_out + cnt);
         *memsize = bytes_out + cnt;  /* new memory buffer size */
-    }
+      }
 
-    if (!(*memptr))
-    {
+      if (!(*memptr))
+      {
             error("malloc failed while uncompressing (write_buf)");
             exit_code = ERROR;
             return;
-    }
+      }
 
-    /* copy  into memory buffer */
-    memcpy((char *) *memptr + bytes_out, (char *) buf, cnt);
+      /* copy  into memory buffer */
+      memcpy((char *) *memptr + bytes_out, (char *) buf, cnt);
+    }
 }
 
 /* ========================================================================

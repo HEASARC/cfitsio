@@ -1,5 +1,9 @@
                Log of Changes Made to CFITSIO
 
+   - added more error checking to return an error if the size of the FITS
+     file exceeds the largest value of a long integer (2.1 GB on 32-bit
+     platforms).
+
    - CFITSIO now will automatically insert space for additional table rows
      or add space to the data heap, if one writes beyond the current end
      of the table or heap.  This prevents any HDUs which might follow

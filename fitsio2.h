@@ -178,9 +178,15 @@
 #define DINT_MAX  2147483647.49 /* max double value that fits in a 4-byte int */
 #define DINT_MIN -2147483648.49 /* min double value that fits in a 4-byte int */
 
+#ifndef UINT32_MAX
 #define UINT32_MAX 4294967295U /* max unsigned 32-bit integer */
+#endif
+#ifndef INT32_MAX
 #define INT32_MAX  2147483647 /* max 32-bit integer */
+#endif
+#ifndef INT32_MIN
 #define INT32_MIN -2147483647 /* min 32-bit integer */
+#endif
 
 void ffmkky(char *keyname, char *keyval, char *comm, char *card);
 int ffgnky(fitsfile *fptr, char *card, int *status);
@@ -691,6 +697,7 @@ int file_getversion(int *version);
 int file_shutdown(void);
 int file_checkfile(char *urltype, char *infile, char *outfile);
 int file_open(char *filename, int rwmode, int *driverhandle);
+int file_compress_open(char *filename, int rwmode, int *hdl);
 int file_openfile(char *filename, int rwmode, FILE **diskfile);
 int file_create(char *filename, int *driverhandle);
 int file_truncate(int driverhandle, long filesize);
@@ -718,7 +725,7 @@ int stdin_checkfile(char *urltype, char *infile, char *outfile);
 int stdin_open(char *filename, int rwmode, int *handle);
 int stdin2mem(int hd);
 int stdout_close(int handle);
-int compress_open(char *filename, int rwmode, int *hdl);
+int mem_compress_open(char *filename, int rwmode, int *hdl);
 int mem_size(int handle, long *filesize);
 int mem_truncate(int handle, long filesize);
 int mem_close_free(int handle);
@@ -764,6 +771,11 @@ int uncompress2mem(char *filename, FILE *diskfile,
              char **buffptr, size_t *buffsize,
              void *(*mem_realloc)(void *p, size_t newsize),
              size_t *filesize, int *status);
+
+int uncompress2file(char *filename, 
+             FILE *indiskfile, 
+             FILE *outdiskfile, 
+             int *status);
 
 /* ==================== SHARED MEMORY DRIVER SECTION ======================= */
 

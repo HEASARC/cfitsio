@@ -732,7 +732,7 @@ int ffgkyc( fitsfile *fptr,     /* I - FITS file pointer         */
   will be performed.
 */
 {
-    char valstring[FLEN_VALUE];
+    char valstring[FLEN_VALUE], message[81];
     int len;
 
     if (*status > 0)
@@ -741,7 +741,13 @@ int ffgkyc( fitsfile *fptr,     /* I - FITS file pointer         */
     ffgkey(fptr, keyname, valstring, comm, status);  /* read the keyword */
 
     if (valstring[0] != '(' )   /* test that this is a complex keyword */
+    {
+      sprintf(message, "keyword %s does not have a complex value (ffgkyc):",
+              keyname);
+      ffpmsg(message);
+      ffpmsg(valstring);
       return(*status = BAD_C2F);
+    }
 
     valstring[0] = ' ';            /* delete the opening parenthesis */
     len = strcspn(valstring, ")" );  
@@ -766,7 +772,7 @@ int ffgkym( fitsfile *fptr,     /* I - FITS file pointer         */
   will be performed.
 */
 {
-    char valstring[FLEN_VALUE];
+    char valstring[FLEN_VALUE], message[81];
     int len;
 
     if (*status > 0)
@@ -775,7 +781,13 @@ int ffgkym( fitsfile *fptr,     /* I - FITS file pointer         */
     ffgkey(fptr, keyname, valstring, comm, status);  /* read the keyword */
 
     if (valstring[0] != '(' )   /* test that this is a complex keyword */
+    {
+      sprintf(message, "keyword %s does not have a complex value (ffgkym):",
+              keyname);
+      ffpmsg(message);
+      ffpmsg(valstring);
       return(*status = BAD_C2D);
+    }
 
     valstring[0] = ' ';            /* delete the opening parenthesis */
     len = strcspn(valstring, ")" );  

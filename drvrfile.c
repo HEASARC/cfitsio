@@ -349,6 +349,70 @@ int file_write(int hdl, void *buffer, long nbytes)
     return(0);
 }
 /*--------------------------------------------------------------------------*/
+int file_compress_open(char *filename, int rwmode, int *hdl)
+/*
+  This routine opens the compressed diskfile by creating a new uncompressed
+  file then opening it.  The input file name (the name of the compressed
+  file) gets replaced with the name of the uncompressed file, which is
+  initially stored in the global file_outfile string.   file_outfile
+  then gets set to a null string.
+*/
+{
+    FILE *indiskfile, *outdiskfile;
+    int status;
+
+    /* open the compressed disk file */
+    status = file_openfile(filename, READONLY, &indiskfile);
+    if (status)
+    {
+        ffpmsg("failed to open compressed disk file (file_compress_open)");
+        ffpmsg(filename);
+        return(status);
+    }
+
+    /* name of the output uncompressed file is stored in the */
+    /* global variable called 'file_outfile'.                */
+
+    outdiskfile = fopen(file_outfile, "r"); /* does file already exist? */
+
+    if (outdiskfile)
+    {
+        ffpmsg("uncompressed file already exists: (file_compress_open)");
+        ffpmsg(file_outfile);
+        fclose(outdiskfile);         /* close file and exit with error */
+        return(FILE_NOT_CREATED); 
+    }
+
+    outdiskfile = fopen(file_outfile, "w+b"); /* create new file */
+    if (!outdiskfile)
+    {
+        ffpmsg("could not create uncompressed file: (file_compress_open)");
+        ffpmsg(file_outfile);
+        return(FILE_NOT_CREATED); 
+    }
+
+    /* uncompress file into another file */
+    uncompress2file(filename, indiskfile, outdiskfile, &status);
+    fclose(indiskfile);
+    fclose(outdiskfile);
+
+    if (status)
+    {
+        ffpmsg("error in file_compress_open: failed to uncompressed file:");
+        ffpmsg(filename);
+        ffpmsg(" into new output file:");
+        ffpmsg(file_outfile);
+        return(status);
+    }
+
+    strcpy(filename, file_outfile);  /* switch the names */
+    file_outfile[0] = '\0';
+
+    status = file_open(filename, rwmode, hdl);
+
+    return(status);
+}
+/*--------------------------------------------------------------------------*/
 int file_is_compressed(char *filename) /* I - FITS file name          */
 /*
   Test if the disk file is compressed.  Returns 1 if compressed, 0 if not.
@@ -424,14 +488,20 @@ int file_checkfile (char *urltype, char *infile, char *outfile)
     /* special case: if file:// driver, check if the file is compressed */
     if ( file_is_compressed(infile) )
     {
-      strcpy(urltype, "compress://");  /* use special driver */
-    }
-
-    /* if output file has been specified, save the name for future use */
-    if (strlen(outfile))
+      /* if output file has been specified, save the name for future use: */
+      /* This is the name of the uncompressed file to be created on disk. */
+      if (strlen(outfile))
+      {
+        strcpy(urltype, "compressfile://");  /* use special driver */
         strcpy(file_outfile, outfile); /* an output file is specified */
-    else
+      }
+      else
+      {
+        /* uncompress the file in memory */
+        strcpy(urltype, "compress://");  /* use special driver */
         *file_outfile = '\0';  /* no output file was specified */
+      }
+    }
 
     return 0;
 }

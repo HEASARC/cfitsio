@@ -1,7 +1,7 @@
 %!PS (but not EPSF; comments have been disabled)
 %DVIPSCommandLine: dvips cfitsio
 %DVIPSParameters: dpi=600, compressed, comments removed
-%DVIPSSource:  TeX output 1998.08.19:1809
+%DVIPSSource:  TeX output 1998.08.26:1412
 /TeXDict 250 dict def TeXDict begin /N{def}def /B{bind def}N /S{exch}N
 /X{S N}B /TR{translate}N /isls false N /vsize 11 72 mul N /hsize 8.5 72
 mul N /landplus90{false}def /@rigin{isls{[0 landplus90{1 -1}{-1 1}
@@ -5712,57 +5712,62 @@ Fj(Op)s(en)34 b(an)h(existing)f(FITS)h(\014le)g(with)f(a)i(sp)s
 (eci\014ed)e(access)i(mo)s(de.)56 b(The)35 b(iomo)s(de)g(parameter)h
 (ma)m(y)g(ha)m(v)m(e)h(a)227 5365 y(v)-5 b(alue)30 b(of)h(READONL)-8
 b(Y)31 b(or)f(READ)m(WRITE.)p eop
-55 60 bop 0 100 a Fg(7.2.)72 b(FITS)30 b(FILE)g(A)m(CCESS)f(R)m
-(OUTINES)2244 b Fj(55)95 356 y Fe(int)47 b(fits_open_file)d(/)k(ffopen)
+55 60 bop 0 100 a Fg(7.2.)62 b(FITS)30 b(FILE)g(A)m(CCESS)f(R)m
+(OUTINES)2254 b Fj(55)95 356 y Fe(int)47 b(fits_open_file)d(/)k(ffopen)
 286 469 y(\(fitsfile)e(**fptr,)f(char)i(*filename,)e(int)i(iomode,)f(>)
-h(int)g(*status\))0 734 y Fi(2)81 b Fj(Reop)s(en)34 b(a)i(FITS)e
+h(int)g(*status\))0 717 y Fi(2)81 b Fj(Reop)s(en)34 b(a)i(FITS)e
 (\014le)g(that)i(w)m(as)f(previously)e(op)s(ened)i(with)e(\014ts)p
-2414 734 28 4 v 33 w(op)s(en)p 2637 734 V 32 w(\014le)h(or)h(\014ts)p
-3058 734 V 33 w(create)p 3327 734 V 34 w(\014le.)54 b(The)34
-b(new)227 847 y(\014ts\014le)h(p)s(oin)m(ter)h(ma)m(y)h(then)f(b)s(e)f
+2414 717 28 4 v 33 w(op)s(en)p 2637 717 V 32 w(\014le)h(or)h(\014ts)p
+3058 717 V 33 w(create)p 3327 717 V 34 w(\014le.)54 b(The)34
+b(new)227 830 y(\014ts\014le)h(p)s(oin)m(ter)h(ma)m(y)h(then)f(b)s(e)f
 (treated)j(as)e(a)h(separate)g(\014le,)g(and)f(one)h(ma)m(y)g(sim)m
-(ultaneously)d(read)i(or)227 960 y(write)d(to)i(2)f(\(or)g(more\))g
+(ultaneously)d(read)i(or)227 943 y(write)d(to)i(2)f(\(or)g(more\))g
 (di\013eren)m(t)f(extensions)g(in)g(the)h(same)g(\014le.)50
-b(The)33 b(\014ts)p 2886 960 V 32 w(op)s(en)p 3108 960
-V 32 w(\014le)g(routine)g(\(ab)s(o)m(v)m(e\))227 1073
+b(The)33 b(\014ts)p 2886 943 V 32 w(op)s(en)p 3108 943
+V 32 w(\014le)g(routine)g(\(ab)s(o)m(v)m(e\))227 1056
 y(automatically)i(detects)i(cases)f(where)e(a)i(previously)d(op)s(ened)
 h(\014le)h(is)f(b)s(eing)g(op)s(ened)g(again,)j(and)d(then)227
-1186 y(in)m(ternally)29 b(call)g(\014ts)p 930 1186 V
-33 w(reop)s(en)p 1229 1186 V 32 w(\014le,)h(so)g(programs)g(should)f
+1169 y(in)m(ternally)29 b(call)g(\014ts)p 930 1169 V
+33 w(reop)s(en)p 1229 1169 V 32 w(\014le,)h(so)g(programs)g(should)f
 (rarely)g(need)h(to)h(explicitly)d(call)i(this)f(routine.)95
-1451 y Fe(int)47 b(fits_reopen_file)d(/)j(ffreopen)286
-1564 y(\(fitsfile)f(*openfptr,)f(fitsfile)g(**newfptr,)g(>)j(int)f
-(*status\))0 1829 y Fi(3)81 b Fj(Create)31 b(a)g(new)e(empt)m(y)i(FITS)
-f(\014le.)95 2094 y Fe(int)47 b(fits_create_file)d(/)j(ffinit)286
-2207 y(\(fitsfile)f(**fptr,)f(char)i(*filename,)e(>)j(int)e(*status\))0
-2472 y Fi(4)81 b Fj(Create)24 b(a)g(new)f(FITS)g(\014le,)h(using)e(a)i
+1417 y Fe(int)47 b(fits_reopen_file)d(/)j(ffreopen)286
+1529 y(\(fitsfile)f(*openfptr,)f(fitsfile)g(**newfptr,)g(>)j(int)f
+(*status\))0 1777 y Fi(3)81 b Fj(Create)25 b(a)h(new)e(empt)m(y)i(FITS)
+e(\014le.)38 b(An)25 b(error)g(will)d(b)s(e)j(returned)e(if)h(the)i(sp)
+s(eci\014ed)d(\014le)h(already)h(exists)g(unless)227
+1890 y(the)33 b(\014lename)e(is)h(pre\014xed)f(with)g(an)h(exclamation)
+g(p)s(oin)m(t)g(\(!\).)47 b(In)32 b(that)h(case)g(CFITSIO)e(will)e(o)m
+(v)m(erwrite)227 2003 y(the)i(existing)e(\014le.)95 2251
+y Fe(int)47 b(fits_create_file)d(/)j(ffinit)286 2364
+y(\(fitsfile)f(**fptr,)f(char)i(*filename,)e(>)j(int)e(*status\))0
+2612 y Fi(4)81 b Fj(Create)24 b(a)g(new)f(FITS)g(\014le,)h(using)e(a)i
 (template)g(\014le)e(to)j(de\014ne)d(its)h(initial)e(size)j(and)f
-(structure.)37 b(The)24 b(template)227 2585 y(ma)m(y)i(b)s(e)f(another)
+(structure.)37 b(The)24 b(template)227 2725 y(ma)m(y)i(b)s(e)f(another)
 g(FITS)g(HDU)h(or)f(an)g(ASCI)s(I)f(template)i(\014le.)38
 b(If)25 b(the)g(input)f(template)h(\014le)g(name)g(p)s(oin)m(ter)227
-2698 y(is)i(n)m(ull,)g(then)g(this)g(routine)f(b)s(eha)m(v)m(es)j(the)f
-(same)g(as)g(\014ts)p 2160 2698 V 32 w(create)p 2428
-2698 V 35 w(\014le.)39 b(The)27 b(curren)m(tly)g(supp)s(orted)f(format)
-227 2811 y(of)33 b(the)g(ASCI)s(I)e(template)i(\014le)e(is)h(describ)s
-(ed)e(under)h(the)i(\014ts)p 2350 2811 V 33 w(parse)p
-2591 2811 V 32 w(template)g(routine)f(\(in)f(the)i(general)227
-2924 y(Utilities)c(section\),)i(but)f(this)f(ma)m(y)i(c)m(hange)g
+2838 y(is)i(n)m(ull,)g(then)g(this)g(routine)f(b)s(eha)m(v)m(es)j(the)f
+(same)g(as)g(\014ts)p 2160 2838 V 32 w(create)p 2428
+2838 V 35 w(\014le.)39 b(The)27 b(curren)m(tly)g(supp)s(orted)f(format)
+227 2951 y(of)33 b(the)g(ASCI)s(I)e(template)i(\014le)e(is)h(describ)s
+(ed)e(under)h(the)i(\014ts)p 2350 2951 V 33 w(parse)p
+2591 2951 V 32 w(template)g(routine)f(\(in)f(the)i(general)227
+3064 y(Utilities)c(section\),)i(but)f(this)f(ma)m(y)i(c)m(hange)g
 (sligh)m(tly)e(in)g(the)i(full)d(v2.0)j(release)g(of)f(CFITSIO.)95
-3189 y Fe(int)47 b(fits_create_template)c(/)k(fftplt)286
-3302 y(\(fitsfile)f(**fptr,)f(char)i(*filename,)e(char)i(*tpltfile)e(>)
-i(int)g(*status\))0 3567 y Fi(5)81 b Fj(Close)30 b(a)g(previously)e(op)
-s(ened)i(FITS)g(\014le.)95 3832 y Fe(int)47 b(fits_close_file)d(/)j
+3312 y Fe(int)47 b(fits_create_template)c(/)k(fftplt)286
+3425 y(\(fitsfile)f(**fptr,)f(char)i(*filename,)e(char)i(*tpltfile)e(>)
+i(int)g(*status\))0 3673 y Fi(5)81 b Fj(Close)30 b(a)g(previously)e(op)
+s(ened)i(FITS)g(\014le.)95 3921 y Fe(int)47 b(fits_close_file)d(/)j
 (ffclos)g(\(fitsfile)e(*fptr,)h(>)h(int)g(*status\))0
-4097 y Fi(6)81 b Fj(Close)30 b(and)h(DELETE)f(a)i(FITS)e(disk)g(\014le)
+4169 y Fi(6)81 b Fj(Close)30 b(and)h(DELETE)f(a)i(FITS)e(disk)g(\014le)
 g(previously)f(op)s(ened)h(with)g(\013op)s(en)g(or)h(\016nit.)42
-b(This)29 b(routine)h(ma)m(y)227 4210 y(b)s(e)k(useful)f(in)g(cases)i
+b(This)29 b(routine)h(ma)m(y)227 4282 y(b)s(e)k(useful)f(in)g(cases)i
 (where)f(a)h(FITS)e(\014le)h(is)f(created)j(but)d(then)h(an)h(error)f
-(o)s(ccurs)g(whic)m(h)f(prev)m(en)m(ts)i(the)227 4323
-y(\014le)30 b(from)g(b)s(eing)f(completed.)95 4588 y
-Fe(int)47 b(fits_delete_file)d(/)j(ffdelt)286 4701 y(\(fitsfile)f
-(*fptr,)g(>)h(int)g(*status\))0 4966 y Fi(7)81 b Fj(Return)29
+(o)s(ccurs)g(whic)m(h)f(prev)m(en)m(ts)i(the)227 4395
+y(\014le)30 b(from)g(b)s(eing)f(completed.)95 4643 y
+Fe(int)47 b(fits_delete_file)d(/)j(ffdelt)286 4756 y(\(fitsfile)f
+(*fptr,)g(>)h(int)g(*status\))0 5004 y Fi(7)81 b Fj(Return)29
 b(the)i(name)f(of)h(the)f(op)s(ened)g(FITS)g(\014le.)95
-5232 y Fe(int)47 b(fits_file_name)d(/)k(ffflnm)286 5344
+5252 y Fe(int)47 b(fits_file_name)d(/)k(ffflnm)286 5365
 y(\(fitsfile)e(*fptr,)g(>)h(char)g(*filename,)e(int)i(*status\))p
 eop
 56 61 bop 0 100 a Fj(56)1339 b Fg(CHAPTER)30 b(7.)111
@@ -7337,7 +7342,7 @@ b(zero)k(c)m(haracters\))h(and)d('\045')i(will)c(matc)m(h)k(an)m(y)f
 b(If)227 5365 y(casesen)25 b(=)f(CASESEN)f(=)h(TR)m(UE)h(then)e(the)i
 (matc)m(h)g(will)d(b)s(e)h(case)j(sensitiv)m(e,)f(otherwise)e(the)i
 (case)g(of)g(the)p eop
-80 85 bop 0 100 a Fj(80)1359 b Fg(CHAPTER)30 b(7.)91
+80 85 bop 0 100 a Fj(80)1339 b Fg(CHAPTER)30 b(7.)111
 b(BASIC)30 b(CFITSIO)f(INTERF)-10 b(A)m(CE)30 b(R)m(OUTINES)227
 356 y Fj(letters)c(will)d(b)s(e)i(ignored)f(if)h(casesen)h(=)f
 (CASEINSEN)f(=)h(F)-10 b(ALSE.)25 b(The)g(returned)g(MA)-8
@@ -7346,46 +7351,49 @@ b(TCH)25 b(parameter)227 469 y(will)30 b(b)s(e)h(TR)m(UE)i(if)e(the)h
 (if)e(the)h(matc)m(h)h(is)f(exact)h(\(i.e.,)227 582 y(if)27
 b(no)h(wildcard)e(c)m(haracters)j(w)m(ere)g(used)e(in)f(the)j(matc)m
 (h\).)41 b(Both)28 b(strings)f(m)m(ust)h(b)s(e)f(68)i(c)m(haracters)h
-(or)e(less)227 695 y(in)h(length.)95 957 y Fe(void)47
-b(fits_compare_str)c(/)48 b(ffcmps)334 1070 y(\(char)e(*templt,)g(char)
+(or)e(less)227 695 y(in)h(length.)95 948 y Fe(void)47
+b(fits_compare_str)c(/)48 b(ffcmps)334 1061 y(\(char)e(*templt,)g(char)
 h(*string,)e(int)i(casesen,)f(>)h(int)g(*match,)f(int)h(*exact\))0
-1332 y Fi(3)81 b Fj(T)-8 b(est)31 b(that)g(the)f(k)m(eyw)m(ord)h(name)f
+1314 y Fi(3)81 b Fj(T)-8 b(est)31 b(that)g(the)f(k)m(eyw)m(ord)h(name)f
 (con)m(tains)h(only)e(legal)i(c)m(haracters:)42 b(A-Z,0-9,)32
-b(h)m(yphen,)d(and)h(underscore.)95 1594 y Fe(int)47
+b(h)m(yphen,)d(and)h(underscore.)95 1568 y Fe(int)47
 b(fits_test_keyword)c(/)48 b(fftkey)e(\(char)g(*keyname,)g(>)h(int)g
-(*status\))0 1856 y Fi(4)81 b Fj(T)-8 b(est)31 b(that)g(the)f(k)m(eyw)m
+(*status\))0 1821 y Fi(4)81 b Fj(T)-8 b(est)31 b(that)g(the)f(k)m(eyw)m
 (ord)h(record)f(con)m(tains)h(only)e(legal)h(prin)m(table)f(ASCI)s(I)g
-(c)m(haracters)95 2118 y Fe(int)47 b(fits_test_record)d(/)j(fftrec)f
-(\(char)h(*card,)f(>)h(int)g(*status\))0 2380 y Fi(5)81
+(c)m(haracters)95 2075 y Fe(int)47 b(fits_test_record)d(/)j(fftrec)f
+(\(char)h(*card,)f(>)h(int)g(*status\))0 2328 y Fi(5)81
 b Fj(P)m(arse)29 b(a)h(header)f(k)m(eyw)m(ord)h(record,)f(returning)f
 (the)h(v)-5 b(alue)29 b(\(as)h(a)f(literal)f(c)m(haracter)j(string\))d
-(and)h(commen)m(t)227 2493 y(strings.)39 b(If)27 b(the)g(k)m(eyw)m(ord)
+(and)h(commen)m(t)227 2441 y(strings.)39 b(If)27 b(the)g(k)m(eyw)m(ord)
 h(has)f(no)g(v)-5 b(alue)27 b(\(columns)f(9-10)j(not)f(equal)e(to)i('=)
 g('\),)g(then)f(a)h(n)m(ull)d(v)-5 b(alue)27 b(string)227
-2606 y(is)j(returned)f(and)h(the)g(commen)m(t)i(string)d(is)g(set)i
+2554 y(is)j(returned)f(and)h(the)g(commen)m(t)i(string)d(is)g(set)i
 (equal)f(to)h(column)e(9)i(-)g(80)g(of)g(the)f(input)f(string.)95
-2868 y Fe(int)47 b(fits_parse_value)d(/)j(ffpsvc)286
-2981 y(\(char)g(*card,)f(>)h(char)g(*value,)f(char)g(*comment,)g(int)h
-(*status\))0 3243 y Fi(6)81 b Fj(Construct)27 b(an)h(arra)m(y)g
+2808 y Fe(int)47 b(fits_parse_value)d(/)j(ffpsvc)286
+2920 y(\(char)g(*card,)f(>)h(char)g(*value,)f(char)g(*comment,)g(int)h
+(*status\))0 3174 y Fi(6)81 b Fj(Construct)27 b(an)h(arra)m(y)g
 (indexed)f(k)m(eyw)m(ord)h(name)g(\(R)m(OOT)g(+)f(nnn\).)39
 b(This)26 b(routine)h(app)s(ends)f(the)j(sequence)227
-3356 y(n)m(um)m(b)s(er)g(to)i(the)g(ro)s(ot)g(string)e(to)i(create)h(a)
+3287 y(n)m(um)m(b)s(er)g(to)i(the)g(ro)s(ot)g(string)e(to)i(create)h(a)
 f(k)m(eyw)m(ord)g(name)f(\(e.g.,)i('NAXIS')f(+)f(2)h(=)f('NAXIS2'\))95
-3618 y Fe(int)47 b(fits_make_keyn)d(/)k(ffkeyn)286 3731
+3540 y Fe(int)47 b(fits_make_keyn)d(/)k(ffkeyn)286 3653
 y(\(char)f(*keyroot,)e(int)i(value,)f(>)h(char)g(*keyname,)e(int)i
-(*status\))0 3993 y Fi(7)81 b Fj(Construct)42 b(a)h(sequence)g(k)m(eyw)
+(*status\))0 3907 y Fi(7)81 b Fj(Construct)42 b(a)h(sequence)g(k)m(eyw)
 m(ord)h(name)f(\(n)f(+)h(R)m(OOT\).)f(This)f(routine)h(concatenates)k
-(the)d(sequence)227 4106 y(n)m(um)m(b)s(er)20 b(to)j(the)e(fron)m(t)h
+(the)d(sequence)227 4020 y(n)m(um)m(b)s(er)20 b(to)j(the)e(fron)m(t)h
 (of)g(the)f(ro)s(ot)h(string)f(to)h(create)h(a)f(k)m(eyw)m(ord)g(name)g
-(\(e.g.,)j(1)d(+)f('CTYP')g(=)g('1CTYP'\))95 4481 y Fe(int)47
-b(fits_make_nkey)d(/)k(ffnkey)286 4594 y(\(int)f(value,)f(char)h
+(\(e.g.,)j(1)d(+)f('CTYP')g(=)g('1CTYP'\))95 4386 y Fe(int)47
+b(fits_make_nkey)d(/)k(ffnkey)286 4499 y(\(int)f(value,)f(char)h
 (*keyroot,)e(>)i(char)g(*keyname,)e(int)i(*status\))0
-4856 y Fi(8)81 b Fj(Determine)26 b(the)h(datat)m(yp)s(e)g(of)f(a)h(k)m
+4752 y Fi(8)81 b Fj(Determine)26 b(the)h(datat)m(yp)s(e)g(of)f(a)h(k)m
 (eyw)m(ord)g(v)-5 b(alue)26 b(string.)38 b(This)25 b(routine)g(parses)h
-(the)g(k)m(eyw)m(ord)h(v)-5 b(alue)26 b(string)227 4969
-y(to)31 b(determine)f(its)g(datat)m(yp)s(e.)95 5232 y
-Fe(int)47 b(fits_get_keytype)d(/)j(ffdtyp)286 5344 y(\(char)g(*value,)f
-(>)h(char)g(*dtype,)e(int)i(*status\))p eop
+(the)g(k)m(eyw)m(ord)h(v)-5 b(alue)26 b(string)227 4865
+y(to)g(determine)e(its)h(datat)m(yp)s(e.)39 b(Returns)25
+b('C',)g('L',)h('I',)f('F')h(or)f('X',)h(for)f(c)m(haracter)h(string,)f
+(logical,)h(in)m(teger,)227 4978 y(\015oating)31 b(p)s(oin)m(t,)e(or)i
+(complex,)f(resp)s(ectiv)m(ely)-8 b(.)95 5232 y Fe(int)47
+b(fits_get_keytype)d(/)j(ffdtyp)286 5344 y(\(char)g(*value,)f(>)h(char)
+g(*dtype,)e(int)i(*status\))p eop
 81 86 bop 0 100 a Fg(7.13.)113 b(GENERAL)30 b(UTILITY)g(R)m(OUTINES)
 2122 b Fj(81)0 356 y Fi(9)81 b Fj(P)m(arse)29 b(the)g('TF)m(ORM')h
 (binary)d(table)i(column)f(format)h(string.)39 b(This)27
@@ -9314,226 +9322,227 @@ b(declared)f(size)g(of)h(the)g(first)g(dimension)e(of)i(the)g(image)f
 (or)i(cube)e(array)0 2163 y(dim2)238 b(-)47 b(declared)f(size)g(of)h
 (the)g(second)f(dimension)g(of)h(the)g(data)f(cube)h(array)0
 2275 y(dtype)190 b(-)47 b(datatype)f(of)h(the)g(keyword)e(\('C',)i
-('L',)f('I',)95 b(or)47 b('F'\))764 2388 y(C)g(=)h(character)d(string)
+('L',)f('I',)h('F')g(or)g('X'\))764 2388 y(C)g(=)h(character)d(string)
 764 2501 y(L)i(=)h(logical)764 2614 y(I)f(=)h(integer)764
-2727 y(F)f(=)h(floating)d(point)h(number)0 2840 y(err_msg)94
-b(-)47 b(error)f(message)g(on)h(the)g(internal)f(stack)g(\(80)h(chars)f
-(max\))0 2953 y(err_text)g(-)h(error)f(message)g(string)g
-(corresponding)e(to)k(error)e(number)g(\(30)h(chars)f(max\))0
-3066 y(exact)190 b(-)47 b(TRUE)g(\(=1\))f(if)h(the)g(strings)f(match)h
-(exactly;)525 3179 y(FALSE)f(\(=0\))h(if)g(wildcards)e(are)i(used)0
-3292 y(exclist)94 b(-)47 b(array)f(of)i(pointers)d(to)i(keyword)f
-(names)g(to)i(be)f(excluded)e(from)i(search)0 3405 y(expr)238
-b(-)47 b(boolean)f(or)h(arithmetic)e(expression)0 3517
+2727 y(F)f(=)h(floating)d(point)h(number)764 2840 y(X)h(=)h(complex,)d
+(e.g.,)h("\(1.23,)g(-4.56\)")0 2953 y(err_msg)94 b(-)47
+b(error)f(message)g(on)h(the)g(internal)f(stack)g(\(80)h(chars)f(max\))
+0 3066 y(err_text)g(-)h(error)f(message)g(string)g(corresponding)e(to)k
+(error)e(number)g(\(30)h(chars)f(max\))0 3179 y(exact)190
+b(-)47 b(TRUE)g(\(=1\))f(if)h(the)g(strings)f(match)h(exactly;)525
+3292 y(FALSE)f(\(=0\))h(if)g(wildcards)e(are)i(used)0
+3405 y(exclist)94 b(-)47 b(array)f(of)i(pointers)d(to)i(keyword)f
+(names)g(to)i(be)f(excluded)e(from)i(search)0 3517 y(expr)238
+b(-)47 b(boolean)f(or)h(arithmetic)e(expression)0 3630
 y(extend)142 b(-)47 b(TRUE)g(\(=1\))f(if)h(FITS)g(file)g(may)g(have)f
-(extensions,)f(else)i(FALSE)f(\(=0\))0 3630 y(extname)94
+(extensions,)f(else)i(FALSE)f(\(=0\))0 3743 y(extname)94
 b(-)47 b(value)f(of)i(the)e(EXTNAME)g(keyword)g(\(null-terminated\))0
-3743 y(extspec)94 b(-)47 b(the)g(extension)e(or)i(HDU)g(specifier;)e(a)
-j(number)e(or)h(name,)f(version,)g(and)h(type)0 3856
+3856 y(extspec)94 b(-)47 b(the)g(extension)e(or)i(HDU)g(specifier;)e(a)
+j(number)e(or)h(name,)f(version,)g(and)h(type)0 3969
 y(extvers)94 b(-)47 b(value)f(of)i(the)e(EXTVERS)g(keyword)g(=)i
-(integer)d(version)h(number)0 3969 y(filename)g(-)h(full)g(name)f(of)h
+(integer)d(version)h(number)0 4082 y(filename)g(-)h(full)g(name)f(of)h
 (the)g(FITS)g(file,)f(including)g(optional)f(HDU)i(and)g(filtering)e
-(specs)0 4082 y(filetype)h(-)h(type)g(of)g(file)f(\(file://,)g(ftp://,)
-g(http://,)f(etc.\))0 4195 y(filter)142 b(-)47 b(the)g(input)f(file)h
-(filtering)e(specifier)0 4308 y(firstchar-)g(starting)h(byte)g(in)h
-(the)g(row)g(\(first)f(byte)h(of)g(row)g(=)g(1\))0 4421
+(specs)0 4195 y(filetype)h(-)h(type)g(of)g(file)f(\(file://,)g(ftp://,)
+g(http://,)f(etc.\))0 4308 y(filter)142 b(-)47 b(the)g(input)f(file)h
+(filtering)e(specifier)0 4421 y(firstchar-)g(starting)h(byte)g(in)h
+(the)g(row)g(\(first)f(byte)h(of)g(row)g(=)g(1\))0 4534
 y(firstfailed)e(-)i(member)f(HDU)h(ID)g(\(if)g(positive\))f(or)h
-(grouping)e(table)i(GRPIDn)f(index)525 4534 y(value)g(\(if)h
+(grouping)e(table)i(GRPIDn)f(index)525 4647 y(value)g(\(if)h
 (negative\))f(that)g(failed)g(grouping)g(table)g(verification.)0
-4647 y(firstelem-)f(first)h(element)g(in)h(a)h(vector)e(\(ignored)f
-(for)i(ASCII)g(tables\))0 4759 y(firstrow)f(-)h(starting)f(row)g
-(number)h(\(first)f(row)h(of)g(table)f(=)i(1\))0 4872
+4759 y(firstelem-)f(first)h(element)g(in)h(a)h(vector)e(\(ignored)f
+(for)i(ASCII)g(tables\))0 4872 y(firstrow)f(-)h(starting)f(row)g
+(number)h(\(first)f(row)h(of)g(table)f(=)i(1\))0 4985
 y(fpixels)94 b(-)47 b(the)g(first)f(included)g(pixel)g(in)h(each)g
-(dimension)e(\(first)h(pixel)h(=)g(1\))0 4985 y(fptr)238
+(dimension)e(\(first)h(pixel)h(=)g(1\))0 5098 y(fptr)238
 b(-)47 b(pointer)f(to)h(a)g('fitsfile')e(structure)h(describing)f(the)i
-(FITS)f(file.)0 5098 y(frac)238 b(-)47 b(factional)e(part)i(of)g(the)g
-(keyword)f(value)0 5211 y(gcount)142 b(-)47 b(number)f(of)h(groups)f
-(in)i(the)e(primary)g(array)h(\(usually)e(=)j(1\))0 5324
-y(gfptr)190 b(-)47 b(fitsfile*)e(pointer)h(to)h(a)h(grouping)d(table)i
-(HDU.)p eop
-113 118 bop 3764 100 a Fj(113)0 356 y Fe(group)190 b(-)47
-b(GRPIDn/GRPLCn)d(index)j(value)f(identifying)f(a)i(grouping)f(table)g
-(HDU,)h(or)525 469 y(data)g(group)f(number)g(\(=0)h(for)g(non-grouped)e
-(data\))0 582 y(grouptype)g(-)j(Grouping)d(table)i(parameter)e(that)i
-(specifies)e(the)i(columns)f(to)h(be)525 695 y(created)f(in)h(a)g
-(grouing)f(table)h(HDU.)f(Allowed)g(values)g(are:)h(GT_ID_ALL_URI,)525
-808 y(GT_ID_REF,)e(GT_ID_POS,)g(GT_ID_ALL,)g(GT_ID_REF_URI,)f(and)j
-(GT_ID_POS_URI.)0 920 y(grpname)94 b(-)47 b(value)f(to)i(use)e(for)h
-(the)g(GRPNAME)f(keyword)g(value.)0 1033 y(hdunum)142
-b(-)47 b(sequence)f(number)g(of)h(the)g(HDU)g(\(Primary)e(array)i(=)g
-(1\))0 1146 y(hduok)190 b(-)47 b(was)g(the)g(HDU)g(verification)d
-(successful)h(\(=1\))i(or)525 1259 y(not)g(\(=)g(-1\).)94
-b(Equals)47 b(zero)f(if)h(the)g(CHECKSUM)f(keyword)g(is)h(not)g
-(present.)0 1372 y(hdusum)142 b(-)47 b(32)g(bit)g(1's)g(complement)e
-(checksum)h(for)g(the)h(entire)f(CHDU)0 1485 y(hdutype)94
-b(-)47 b(type)g(of)g(HDU:)f(IMAGE_HDU)g(\(=0\),)g(ASCII_TBL)f(\(=1\),)i
-(or)g(BINARY_TBL)e(\(=2\))0 1598 y(headstart-)g(starting)h(address)f
-(\(in)i(bytes\))f(of)i(the)e(CHDU)0 1711 y(history)94
-b(-)47 b(the)g(HISTORY)f(keyword)g(comment)f(string)h(\(70)h(char)g
-(max,)g(null-terminated\))0 1824 y(hour)238 b(-)47 b(hour)g(within)f
-(day)h(\(UTC\))f(\(0)h(-)h(23\))0 1937 y(inc)286 b(-)47
-b(sampling)f(interval)f(for)i(pixels)f(in)h(each)g(FITS)g(dimension)0
-2050 y(inclist)94 b(-)47 b(array)f(of)i(pointers)d(to)i(matching)f
-(keyword)g(names)0 2163 y(incolnum)g(-)h(input)f(column)g(number;)g
-(range)h(=)g(1)h(to)f(TFIELDS)0 2275 y(infile)142 b(-)47
-b(the)g(input)f(filename,)g(including)f(path)h(if)i(specified)0
-2388 y(infptr)142 b(-)47 b(pointer)f(to)h(a)g('fitsfile')e(structure)h
-(describing)f(the)i(input)f(FITS)h(file.)0 2501 y(intval)142
-b(-)47 b(integer)f(part)g(of)i(the)f(keyword)e(value)0
-2614 y(iomode)142 b(-)47 b(file)g(access)f(mode:)g(either)g(READONLY)g
-(\(=0\))g(or)i(READWRITE)d(\(=1\))0 2727 y(keyname)94
+(FITS)f(file.)0 5211 y(frac)238 b(-)47 b(factional)e(part)i(of)g(the)g
+(keyword)f(value)0 5324 y(gcount)142 b(-)47 b(number)f(of)h(groups)f
+(in)i(the)e(primary)g(array)h(\(usually)e(=)j(1\))p eop
+113 118 bop 3764 100 a Fj(113)0 356 y Fe(gfptr)190 b(-)47
+b(fitsfile*)e(pointer)h(to)h(a)h(grouping)d(table)i(HDU.)0
+469 y(group)190 b(-)47 b(GRPIDn/GRPLCn)d(index)j(value)f(identifying)f
+(a)i(grouping)f(table)g(HDU,)h(or)525 582 y(data)g(group)f(number)g
+(\(=0)h(for)g(non-grouped)e(data\))0 695 y(grouptype)g(-)j(Grouping)d
+(table)i(parameter)e(that)i(specifies)e(the)i(columns)f(to)h(be)525
+808 y(created)f(in)h(a)g(grouing)f(table)h(HDU.)f(Allowed)g(values)g
+(are:)h(GT_ID_ALL_URI,)525 920 y(GT_ID_REF,)e(GT_ID_POS,)g(GT_ID_ALL,)g
+(GT_ID_REF_URI,)f(and)j(GT_ID_POS_URI.)0 1033 y(grpname)94
+b(-)47 b(value)f(to)i(use)e(for)h(the)g(GRPNAME)f(keyword)g(value.)0
+1146 y(hdunum)142 b(-)47 b(sequence)f(number)g(of)h(the)g(HDU)g
+(\(Primary)e(array)i(=)g(1\))0 1259 y(hduok)190 b(-)47
+b(was)g(the)g(HDU)g(verification)d(successful)h(\(=1\))i(or)525
+1372 y(not)g(\(=)g(-1\).)94 b(Equals)47 b(zero)f(if)h(the)g(CHECKSUM)f
+(keyword)g(is)h(not)g(present.)0 1485 y(hdusum)142 b(-)47
+b(32)g(bit)g(1's)g(complement)e(checksum)h(for)g(the)h(entire)f(CHDU)0
+1598 y(hdutype)94 b(-)47 b(type)g(of)g(HDU:)f(IMAGE_HDU)g(\(=0\),)g
+(ASCII_TBL)f(\(=1\),)i(or)g(BINARY_TBL)e(\(=2\))0 1711
+y(headstart-)g(starting)h(address)f(\(in)i(bytes\))f(of)i(the)e(CHDU)0
+1824 y(history)94 b(-)47 b(the)g(HISTORY)f(keyword)g(comment)f(string)h
+(\(70)h(char)g(max,)g(null-terminated\))0 1937 y(hour)238
+b(-)47 b(hour)g(within)f(day)h(\(UTC\))f(\(0)h(-)h(23\))0
+2050 y(inc)286 b(-)47 b(sampling)f(interval)f(for)i(pixels)f(in)h(each)
+g(FITS)g(dimension)0 2163 y(inclist)94 b(-)47 b(array)f(of)i(pointers)d
+(to)i(matching)f(keyword)g(names)0 2275 y(incolnum)g(-)h(input)f
+(column)g(number;)g(range)h(=)g(1)h(to)f(TFIELDS)0 2388
+y(infile)142 b(-)47 b(the)g(input)f(filename,)g(including)f(path)h(if)i
+(specified)0 2501 y(infptr)142 b(-)47 b(pointer)f(to)h(a)g('fitsfile')e
+(structure)h(describing)f(the)i(input)f(FITS)h(file.)0
+2614 y(intval)142 b(-)47 b(integer)f(part)g(of)i(the)f(keyword)e(value)
+0 2727 y(iomode)142 b(-)47 b(file)g(access)f(mode:)g(either)g(READONLY)
+g(\(=0\))g(or)i(READWRITE)d(\(=1\))0 2840 y(keyname)94
 b(-)47 b(name)g(of)g(a)g(keyword)f(\(8)h(char)g(max,)g
-(null-terminated\))0 2840 y(keynum)142 b(-)47 b(position)f(of)h
+(null-terminated\))0 2953 y(keynum)142 b(-)47 b(position)f(of)h
 (keyword)f(in)h(header)f(\(1st)g(keyword)g(=)i(1\))0
-2953 y(keyroot)94 b(-)47 b(root)g(string)f(for)h(the)g(keyword)e(name)i
-(\(5)g(char)g(max,)f(null-terminated\))0 3066 y(keysexist-)f(number)h
+3066 y(keyroot)94 b(-)47 b(root)g(string)f(for)h(the)g(keyword)e(name)i
+(\(5)g(char)g(max,)f(null-terminated\))0 3179 y(keysexist-)f(number)h
 (of)h(existing)f(keyword)g(records)f(in)j(the)f(CHU)0
-3179 y(keytype)94 b(-)47 b(header)f(record)g(type:)h(-1=delete;)92
-b(0=append)46 b(or)h(replace;)907 3292 y(1=append;)e(2=this)h(is)h(the)
-g(END)g(keyword)0 3405 y(longstr)94 b(-)47 b(arbitrarily)e(long)h
-(string)g(keyword)g(value)h(\(null-terminated\))0 3517
+3292 y(keytype)94 b(-)47 b(header)f(record)g(type:)h(-1=delete;)92
+b(0=append)46 b(or)h(replace;)907 3405 y(1=append;)e(2=this)h(is)h(the)
+g(END)g(keyword)0 3517 y(longstr)94 b(-)47 b(arbitrarily)e(long)h
+(string)g(keyword)g(value)h(\(null-terminated\))0 3630
 y(lpixels)94 b(-)47 b(the)g(last)g(included)e(pixel)h(in)i(each)e
-(dimension)g(\(first)g(pixel)g(=)h(1\))0 3630 y(match)190
+(dimension)g(\(first)g(pixel)g(=)h(1\))0 3743 y(match)190
 b(-)47 b(TRUE)g(\(=1\))f(if)h(the)g(2)h(strings)e(match,)g(else)g
-(FALSE)h(\(=0\))0 3743 y(maxdim)142 b(-)47 b(maximum)f(number)g(of)h
-(values)f(to)h(return)0 3856 y(member)142 b(-)47 b(row)g(number)f(of)h
-(a)h(grouping)d(table)i(member)f(HDU.)0 3969 y(memptr)142
+(FALSE)h(\(=0\))0 3856 y(maxdim)142 b(-)47 b(maximum)f(number)g(of)h
+(values)f(to)h(return)0 3969 y(member)142 b(-)47 b(row)g(number)f(of)h
+(a)h(grouping)d(table)i(member)f(HDU.)0 4082 y(memptr)142
 b(-)47 b(pointer)f(to)h(the)g(a)g(FITS)g(file)g(in)g(memory)0
-4082 y(mem_realloc)e(-)i(pointer)f(to)h(a)h(function)d(for)i
-(reallocating)e(more)h(memory)0 4195 y(mem_size)g(-)h(size)g(of)g(the)g
+4195 y(mem_realloc)e(-)i(pointer)f(to)h(a)h(function)d(for)i
+(reallocating)e(more)h(memory)0 4308 y(mem_size)g(-)h(size)g(of)g(the)g
 (memory)f(block)g(allocated)f(for)i(the)g(FITS)g(file)0
-4308 y(mfptr)190 b(-)47 b(fitsfile*)e(pointer)h(to)h(a)h(grouping)d
-(table)i(member)f(HDU.)0 4421 y(mgopt)190 b(-)47 b(grouping)f(table)g
+4421 y(mfptr)190 b(-)47 b(fitsfile*)e(pointer)h(to)h(a)h(grouping)d
+(table)i(member)f(HDU.)0 4534 y(mgopt)190 b(-)47 b(grouping)f(table)g
 (merge)g(option)g(parameter.)f(Allowed)h(values)g(are:)525
-4534 y(OPT_MRG_COPY,)e(and)j(OPT_MRG_MOV.)0 4647 y(minute)142
+4647 y(OPT_MRG_COPY,)e(and)j(OPT_MRG_MOV.)0 4759 y(minute)142
 b(-)47 b(minute)f(within)g(hour)h(\(UTC\))f(\(0)h(-)h(59\))0
-4759 y(month)190 b(-)47 b(calendar)f(month)g(\(UTC\))g(\(1)h(-)h(12\))0
-4872 y(morekeys)e(-)h(space)f(in)i(the)e(header)h(for)f(this)h(many)g
-(more)f(keywords)0 4985 y(n_good_rows)f(-)i(number)f(of)h(rows)g
-(evaluating)e(to)i(TRUE)0 5098 y(naxes)190 b(-)47 b(size)g(of)g(each)f
-(dimension)g(in)h(the)g(FITS)f(array)0 5211 y(naxis)190
-b(-)47 b(number)f(of)h(dimensions)e(in)i(the)g(FITS)g(array)0
-5324 y(naxis1)142 b(-)47 b(length)f(of)h(the)g(X/first)f(axis)h(of)g
-(the)g(FITS)f(array)p eop
+4872 y(month)190 b(-)47 b(calendar)f(month)g(\(UTC\))g(\(1)h(-)h(12\))0
+4985 y(morekeys)e(-)h(space)f(in)i(the)e(header)h(for)f(this)h(many)g
+(more)f(keywords)0 5098 y(n_good_rows)f(-)i(number)f(of)h(rows)g
+(evaluating)e(to)i(TRUE)0 5211 y(naxes)190 b(-)47 b(size)g(of)g(each)f
+(dimension)g(in)h(the)g(FITS)f(array)0 5324 y(naxis)190
+b(-)47 b(number)f(of)h(dimensions)e(in)i(the)g(FITS)g(array)p
+eop
 114 119 bop 0 100 a Fj(114)1822 b Fg(APPENDIX)31 b(B.)61
-b(P)-8 b(ARAMETER)30 b(DEFINITIONS)0 356 y Fe(naxis2)142
-b(-)47 b(length)f(of)h(the)g(Y/second)f(axis)g(of)i(the)e(FITS)h(array)
-0 469 y(naxis3)142 b(-)47 b(length)f(of)h(the)g(Z/third)f(axis)h(of)g
-(the)g(FITS)f(array)0 582 y(nchars)142 b(-)47 b(number)f(of)h
-(characters)e(to)i(read)g(or)g(write)0 695 y(nelements-)e(number)h(of)h
-(data)g(elements)e(to)j(read)e(or)h(write)0 808 y(newfptr)94
-b(-)47 b(returned)f(pointer)f(to)j(the)e(reopened)g(file)0
-920 y(newveclen-)f(new)i(value)f(for)h(the)g(column)f(vector)g(repeat)g
-(parameter)0 1033 y(nexc)238 b(-)47 b(number)f(of)h(names)g(in)g(the)g
-(exclusion)e(list)i(\(may)f(=)i(0\))0 1146 y(nfound)142
-b(-)47 b(number)f(of)h(keywords)f(found)g(\(highest)g(keyword)g
-(number\))0 1259 y(nkeys)190 b(-)47 b(number)f(of)h(keywords)f(in)h
-(the)g(sequence)0 1372 y(ninc)238 b(-)47 b(number)f(of)h(names)g(in)g
-(the)g(inclusion)e(list)0 1485 y(nmembers)h(-)h(Number)f(of)h(grouping)
-f(table)g(members)g(\(NAXIS2)g(value\).)0 1598 y(nmove)190
-b(-)47 b(number)f(of)h(HDUs)g(to)g(move)g(\(+)g(or)g(-\),)g(relative)f
-(to)h(current)f(position)0 1711 y(nrows)190 b(-)47 b(number)f(of)h
-(rows)g(in)g(the)g(table)0 1824 y(nstart)142 b(-)47 b(first)f(integer)g
-(value)0 1937 y(nularray)g(-)h(set)g(to)g(TRUE)g(\(=1\))f(if)i
-(corresponding)c(data)i(element)g(is)h(undefined)0 2050
-y(nulval)142 b(-)47 b(numerical)e(value)i(to)g(represent)e(undefined)g
-(pixels)0 2163 y(nulstr)142 b(-)47 b(character)e(string)h(used)h(to)g
-(represent)e(undefined)h(values)g(in)h(ASCII)f(table)0
-2275 y(numval)142 b(-)47 b(numerical)e(data)i(value,)f(of)h(the)g
-(appropriate)e(datatype)0 2388 y(offset)142 b(-)95 b(byte)46
-b(offset)g(in)i(the)f(heap)f(to)h(the)g(first)g(element)e(of)j(the)f
-(vector)0 2501 y(openfptr)f(-)h(pointer)f(to)h(a)g(currently)f(open)g
-(FITS)h(file)0 2614 y(outcolnum-)e(output)h(column)g(number;)g(range)g
-(=)i(1)f(to)g(TFIELDS)f(+)i(1)0 2727 y(outfile)94 b(-)47
-b(and)g(optional)e(output)i(filename;)e(the)i(input)f(file)h(will)f(be)
-i(copied)e(to)h(this)f(prior)525 2840 y(to)h(opening)f(the)h(file)0
-2953 y(outfptr)94 b(-)47 b(pointer)f(to)h(a)g('fitsfile')e(structure)h
-(describing)f(the)i(output)f(FITS)g(file.)0 3066 y(pcount)142
-b(-)47 b(value)f(of)i(the)e(PCOUNT)h(keyword)e(=)j(size)e(of)i(binary)e
-(table)g(heap)0 3179 y(repeat)142 b(-)47 b(length)f(of)h(column)f
-(vector)g(\(e.g.)h(12J\);)f(==)h(1)h(for)f(ASCII)f(table)0
-3292 y(rmopt)190 b(-)47 b(grouping)f(table)g(remove)g(option)g
-(parameter.)f(Allowed)h(values)g(are:)525 3405 y(OPT_RM_GPT,)f
-(OPT_RM_ENTRY,)f(OPT_RM_MBR,)h(and)i(OPT_RM_ALL.)0 3517
-y(rootname)f(-)h(root)g(filename,)e(minus)h(any)h(extension)e(or)j
-(filtering)d(specifications)0 3630 y(rot)286 b(-)47 b(celestial)e
-(coordinate)g(rotation)h(angle)g(\(degrees\))0 3743 y(rowlen)142
-b(-)47 b(length)f(of)h(a)h(table)e(row,)h(in)g(characters)e(or)i(bytes)
-0 3856 y(rowlist)94 b(-)47 b(sorted)f(list)h(of)g(row)g(numbers)f(to)h
-(be)g(deleted)f(from)g(the)h(table)0 3969 y(rownum)142
-b(-)47 b(number)f(of)h(the)g(row)g(\(first)f(row)h(=)h(1\))0
-4082 y(row_status)d(-)i(array)g(of)g(True/False)e(results)h(for)h(each)
-f(row)h(that)g(was)g(evaluated)0 4195 y(scale)190 b(-)47
-b(linear)f(scaling)g(factor;)g(true)g(value)h(=)g(\(FITS)g(value\))f(*)
-h(scale)f(+)i(zero)0 4308 y(second)142 b(-)47 b(second)f(within)g
-(minute)g(\(0)h(-)h(60.9999999999\))c(\(leapsecond!\))0
-4421 y(simple)142 b(-)47 b(TRUE)g(\(=1\))f(if)h(FITS)g(file)g(conforms)
-e(to)i(the)g(Standard,)f(else)g(FALSE)h(\(=0\))0 4534
-y(space)190 b(-)47 b(number)f(of)h(blank)g(spaces)f(to)h(leave)f
-(between)g(ASCII)g(table)h(columns)0 4647 y(status)142
+b(P)-8 b(ARAMETER)30 b(DEFINITIONS)0 356 y Fe(naxis1)142
+b(-)47 b(length)f(of)h(the)g(X/first)f(axis)h(of)g(the)g(FITS)f(array)0
+469 y(naxis2)142 b(-)47 b(length)f(of)h(the)g(Y/second)f(axis)g(of)i
+(the)e(FITS)h(array)0 582 y(naxis3)142 b(-)47 b(length)f(of)h(the)g
+(Z/third)f(axis)h(of)g(the)g(FITS)f(array)0 695 y(nchars)142
+b(-)47 b(number)f(of)h(characters)e(to)i(read)g(or)g(write)0
+808 y(nelements-)e(number)h(of)h(data)g(elements)e(to)j(read)e(or)h
+(write)0 920 y(newfptr)94 b(-)47 b(returned)f(pointer)f(to)j(the)e
+(reopened)g(file)0 1033 y(newveclen-)f(new)i(value)f(for)h(the)g
+(column)f(vector)g(repeat)g(parameter)0 1146 y(nexc)238
+b(-)47 b(number)f(of)h(names)g(in)g(the)g(exclusion)e(list)i(\(may)f(=)
+i(0\))0 1259 y(nfound)142 b(-)47 b(number)f(of)h(keywords)f(found)g
+(\(highest)g(keyword)g(number\))0 1372 y(nkeys)190 b(-)47
+b(number)f(of)h(keywords)f(in)h(the)g(sequence)0 1485
+y(ninc)238 b(-)47 b(number)f(of)h(names)g(in)g(the)g(inclusion)e(list)0
+1598 y(nmembers)h(-)h(Number)f(of)h(grouping)f(table)g(members)g
+(\(NAXIS2)g(value\).)0 1711 y(nmove)190 b(-)47 b(number)f(of)h(HDUs)g
+(to)g(move)g(\(+)g(or)g(-\),)g(relative)f(to)h(current)f(position)0
+1824 y(nrows)190 b(-)47 b(number)f(of)h(rows)g(in)g(the)g(table)0
+1937 y(nstart)142 b(-)47 b(first)f(integer)g(value)0
+2050 y(nularray)g(-)h(set)g(to)g(TRUE)g(\(=1\))f(if)i(corresponding)c
+(data)i(element)g(is)h(undefined)0 2163 y(nulval)142
+b(-)47 b(numerical)e(value)i(to)g(represent)e(undefined)g(pixels)0
+2275 y(nulstr)142 b(-)47 b(character)e(string)h(used)h(to)g(represent)e
+(undefined)h(values)g(in)h(ASCII)f(table)0 2388 y(numval)142
+b(-)47 b(numerical)e(data)i(value,)f(of)h(the)g(appropriate)e(datatype)
+0 2501 y(offset)142 b(-)95 b(byte)46 b(offset)g(in)i(the)f(heap)f(to)h
+(the)g(first)g(element)e(of)j(the)f(vector)0 2614 y(openfptr)f(-)h
+(pointer)f(to)h(a)g(currently)f(open)g(FITS)h(file)0
+2727 y(outcolnum-)e(output)h(column)g(number;)g(range)g(=)i(1)f(to)g
+(TFIELDS)f(+)i(1)0 2840 y(outfile)94 b(-)47 b(and)g(optional)e(output)i
+(filename;)e(the)i(input)f(file)h(will)f(be)i(copied)e(to)h(this)f
+(prior)525 2953 y(to)h(opening)f(the)h(file)0 3066 y(outfptr)94
+b(-)47 b(pointer)f(to)h(a)g('fitsfile')e(structure)h(describing)f(the)i
+(output)f(FITS)g(file.)0 3179 y(pcount)142 b(-)47 b(value)f(of)i(the)e
+(PCOUNT)h(keyword)e(=)j(size)e(of)i(binary)e(table)g(heap)0
+3292 y(repeat)142 b(-)47 b(length)f(of)h(column)f(vector)g(\(e.g.)h
+(12J\);)f(==)h(1)h(for)f(ASCII)f(table)0 3405 y(rmopt)190
+b(-)47 b(grouping)f(table)g(remove)g(option)g(parameter.)f(Allowed)h
+(values)g(are:)525 3517 y(OPT_RM_GPT,)f(OPT_RM_ENTRY,)f(OPT_RM_MBR,)h
+(and)i(OPT_RM_ALL.)0 3630 y(rootname)f(-)h(root)g(filename,)e(minus)h
+(any)h(extension)e(or)j(filtering)d(specifications)0
+3743 y(rot)286 b(-)47 b(celestial)e(coordinate)g(rotation)h(angle)g
+(\(degrees\))0 3856 y(rowlen)142 b(-)47 b(length)f(of)h(a)h(table)e
+(row,)h(in)g(characters)e(or)i(bytes)0 3969 y(rowlist)94
+b(-)47 b(sorted)f(list)h(of)g(row)g(numbers)f(to)h(be)g(deleted)f(from)
+g(the)h(table)0 4082 y(rownum)142 b(-)47 b(number)f(of)h(the)g(row)g
+(\(first)f(row)h(=)h(1\))0 4195 y(row_status)d(-)i(array)g(of)g
+(True/False)e(results)h(for)h(each)f(row)h(that)g(was)g(evaluated)0
+4308 y(scale)190 b(-)47 b(linear)f(scaling)g(factor;)g(true)g(value)h
+(=)g(\(FITS)g(value\))f(*)h(scale)f(+)i(zero)0 4421 y(second)142
+b(-)47 b(second)f(within)g(minute)g(\(0)h(-)h(60.9999999999\))c
+(\(leapsecond!\))0 4534 y(simple)142 b(-)47 b(TRUE)g(\(=1\))f(if)h
+(FITS)g(file)g(conforms)e(to)i(the)g(Standard,)f(else)g(FALSE)h(\(=0\))
+0 4647 y(space)190 b(-)47 b(number)f(of)h(blank)g(spaces)f(to)h(leave)f
+(between)g(ASCII)g(table)h(columns)0 4759 y(status)142
 b(-)47 b(returned)f(error)g(status)g(code)h(\(0)g(=)g(OK\))0
-4759 y(sum)286 b(-)47 b(32)g(bit)g(unsigned)f(checksum)f(value)0
-4872 y(tbcol)190 b(-)47 b(byte)g(position)e(in)i(row)g(to)g(start)g(of)
-g(column)f(\(1st)h(col)g(has)g(tbcol)f(=)h(1\))0 4985
+4872 y(sum)286 b(-)47 b(32)g(bit)g(unsigned)f(checksum)f(value)0
+4985 y(tbcol)190 b(-)47 b(byte)g(position)e(in)i(row)g(to)g(start)g(of)
+g(column)f(\(1st)h(col)g(has)g(tbcol)f(=)h(1\))0 5098
 y(tdisp)190 b(-)47 b(Fortran)f(style)g(display)g(format)g(for)h(the)g
-(table)f(column)0 5098 y(templt)142 b(-)47 b(template)f(string)g(used)g
-(in)h(comparison)e(\(null-terminated\))0 5211 y(tfields)94
-b(-)47 b(number)f(of)h(fields)f(\(columns\))g(in)h(the)g(table)0
-5324 y(tfopt)190 b(-)47 b(grouping)f(table)g(member)g(transfer)g
-(option)g(parameter.)f(Allowed)g(values)i(are:)p eop
-115 120 bop 3764 100 a Fj(115)525 356 y Fe(OPT_MCP_ADD,)44
-b(and)j(OPT_MCP_MOV.)0 469 y(tform)190 b(-)47 b(format)f(of)h(the)g
-(column)f(\(null-terminated\);)d(allowed)j(values)g(are:)525
-582 y(ASCII)g(tables:)94 b(Iw,)47 b(Aw,)g(Fww.dd,)f(Eww.dd,)f(or)j
-(Dww.dd)525 695 y(Binary)e(tables:)g(rL,)h(rX,)g(rB,)g(rI,)g(rJ,)f(rA,)
-h(rAw,)g(rE,)g(rD,)g(rC,)g(rM)525 808 y(where)f('w'=width)g(of)h(the)g
-(field,)f('d'=no.)g(of)h(decimals,)e('r'=repeat)g(count.)525
-920 y(When)i(creating)e(a)j(binary)e(table,)g(2)h(addition)f(tform)g
-(values)g(are)h(allowed:)525 1033 y(rU)g(and)g(rV)g(for)g(unsigned)f
+(table)f(column)0 5211 y(templt)142 b(-)47 b(template)f(string)g(used)g
+(in)h(comparison)e(\(null-terminated\))0 5324 y(tfields)94
+b(-)47 b(number)f(of)h(fields)f(\(columns\))g(in)h(the)g(table)p
+eop
+115 120 bop 3764 100 a Fj(115)0 356 y Fe(tfopt)190 b(-)47
+b(grouping)f(table)g(member)g(transfer)g(option)g(parameter.)f(Allowed)
+g(values)i(are:)525 469 y(OPT_MCP_ADD,)d(and)j(OPT_MCP_MOV.)0
+582 y(tform)190 b(-)47 b(format)f(of)h(the)g(column)f
+(\(null-terminated\);)d(allowed)j(values)g(are:)525 695
+y(ASCII)g(tables:)94 b(Iw,)47 b(Aw,)g(Fww.dd,)f(Eww.dd,)f(or)j(Dww.dd)
+525 808 y(Binary)e(tables:)g(rL,)h(rX,)g(rB,)g(rI,)g(rJ,)f(rA,)h(rAw,)g
+(rE,)g(rD,)g(rC,)g(rM)525 920 y(where)f('w'=width)g(of)h(the)g(field,)f
+('d'=no.)g(of)h(decimals,)e('r'=repeat)g(count.)525 1033
+y(When)i(creating)e(a)j(binary)e(table,)g(2)h(addition)f(tform)g
+(values)g(are)h(allowed:)525 1146 y(rU)g(and)g(rV)g(for)g(unsigned)f
 (16-bit)g(and)h(unsigned)e(32-bit)h(integer,)g(respectively.)0
-1146 y(theap)190 b(-)47 b(zero)g(indexed)e(byte)i(offset)f(of)h
-(starting)f(address)g(of)h(the)g(heap)525 1259 y(relative)f(to)h(the)g
-(beginning)e(of)i(the)g(binary)f(table)g(data)0 1372
+1259 y(theap)190 b(-)47 b(zero)g(indexed)e(byte)i(offset)f(of)h
+(starting)f(address)g(of)h(the)g(heap)525 1372 y(relative)f(to)h(the)g
+(beginning)e(of)i(the)g(binary)f(table)g(data)0 1485
 y(ttype)190 b(-)47 b(label)f(or)i(name)e(for)h(table)f(column)h
-(\(null-terminated\))0 1485 y(tunit)190 b(-)47 b(physical)f(unit)g(for)
-h(table)f(column)h(\(null-terminated\))0 1598 y(typechar)f(-)h
+(\(null-terminated\))0 1598 y(tunit)190 b(-)47 b(physical)f(unit)g(for)
+h(table)f(column)h(\(null-terminated\))0 1711 y(typechar)f(-)h
 (symbolic)f(code)g(of)h(the)g(table)g(column)f(datatype)0
-1711 y(typecode)g(-)h(datatype)f(code)g(of)h(the)g(table)g(column.)93
-b(The)47 b(negative)f(of)525 1824 y(the)h(value)f(indicates)g(a)h
-(variable)f(length)g(array)g(column.)764 1937 y(Datatype)618
-b(typecode)189 b(Mnemonic)764 2050 y(bit,)46 b(X)907
-b(1)381 b(TBIT)764 2163 y(byte,)46 b(B)811 b(11)381 b(TBYTE)764
-2275 y(logical,)45 b(L)668 b(14)381 b(TLOGICAL)764 2388
+1824 y(typecode)g(-)h(datatype)f(code)g(of)h(the)g(table)g(column.)93
+b(The)47 b(negative)f(of)525 1937 y(the)h(value)f(indicates)g(a)h
+(variable)f(length)g(array)g(column.)764 2050 y(Datatype)618
+b(typecode)189 b(Mnemonic)764 2163 y(bit,)46 b(X)907
+b(1)381 b(TBIT)764 2275 y(byte,)46 b(B)811 b(11)381 b(TBYTE)764
+2388 y(logical,)45 b(L)668 b(14)381 b(TLOGICAL)764 2501
 y(ASCII)46 b(character,)f(A)286 b(16)381 b(TSTRING)764
-2501 y(short)46 b(integer,)g(I)381 b(21)g(TSHORT)764
-2614 y(integer,)45 b(J)668 b(41)381 b(TLONG)764 2727
-y(real,)46 b(E)811 b(42)381 b(TFLOAT)764 2840 y(double)46
-b(precision,)f(D)238 b(82)381 b(TDOUBLE)764 2953 y(complex,)45
-b(C)668 b(83)381 b(TCOMPLEX)764 3066 y(double)46 b(complex,)f(M)286
-b(163)381 b(TDBLCOMPLEX)0 3179 y(unit)238 b(-)47 b(the)g(physical)e
+2614 y(short)46 b(integer,)g(I)381 b(21)g(TSHORT)764
+2727 y(integer,)45 b(J)668 b(41)381 b(TLONG)764 2840
+y(real,)46 b(E)811 b(42)381 b(TFLOAT)764 2953 y(double)46
+b(precision,)f(D)238 b(82)381 b(TDOUBLE)764 3066 y(complex,)45
+b(C)668 b(83)381 b(TCOMPLEX)764 3179 y(double)46 b(complex,)f(M)286
+b(163)381 b(TDBLCOMPLEX)0 3292 y(unit)238 b(-)47 b(the)g(physical)e
 (unit)i(string)f(\(e.g.,)g('km/s'\))g(for)h(a)g(keyword)0
-3292 y(value)190 b(-)47 b(the)g(keyword)f(value)g(string)g(\(70)h(char)
-g(max,)f(null-terminated\))0 3405 y(version)94 b(-)47
+3405 y(value)190 b(-)47 b(the)g(keyword)f(value)g(string)g(\(70)h(char)
+g(max,)f(null-terminated\))0 3517 y(version)94 b(-)47
 b(current)f(version)g(number)g(of)h(the)g(CFITSIO)f(library)0
-3517 y(width)190 b(-)47 b(width)f(of)i(the)e(character)g(string)g
-(field)0 3630 y(xcol)238 b(-)47 b(number)f(of)h(the)g(column)f
-(containing)f(the)i(X)h(coordinate)d(values)0 3743 y(xinc)238
+3630 y(width)190 b(-)47 b(width)f(of)i(the)e(character)g(string)g
+(field)0 3743 y(xcol)238 b(-)47 b(number)f(of)h(the)g(column)f
+(containing)f(the)i(X)h(coordinate)d(values)0 3856 y(xinc)238
 b(-)47 b(X)g(axis)g(coordinate)e(increment)g(at)j(reference)d(pixel)h
-(\(deg\))0 3856 y(xpix)238 b(-)47 b(X)g(axis)g(pixel)f(location)0
-3969 y(xpos)238 b(-)47 b(X)g(axis)g(celestial)e(coordinate)g(\(usually)
-h(RA\))h(\(deg\))0 4082 y(xrefpix)94 b(-)47 b(X)g(axis)g(reference)e
-(pixel)i(array)f(location)0 4195 y(xrefval)94 b(-)47
+(\(deg\))0 3969 y(xpix)238 b(-)47 b(X)g(axis)g(pixel)f(location)0
+4082 y(xpos)238 b(-)47 b(X)g(axis)g(celestial)e(coordinate)g(\(usually)
+h(RA\))h(\(deg\))0 4195 y(xrefpix)94 b(-)47 b(X)g(axis)g(reference)e
+(pixel)i(array)f(location)0 4308 y(xrefval)94 b(-)47
 b(X)g(axis)g(coordinate)e(value)h(at)i(the)f(reference)e(pixel)h
-(\(deg\))0 4308 y(ycol)238 b(-)47 b(number)f(of)h(the)g(column)f
-(containing)f(the)i(X)h(coordinate)d(values)0 4421 y(year)238
+(\(deg\))0 4421 y(ycol)238 b(-)47 b(number)f(of)h(the)g(column)f
+(containing)f(the)i(X)h(coordinate)d(values)0 4534 y(year)238
 b(-)47 b(calendar)f(year)g(\(e.g.)h(1999,)f(2000,)g(etc\))0
-4534 y(yinc)238 b(-)47 b(Y)g(axis)g(coordinate)e(increment)g(at)j
-(reference)d(pixel)h(\(deg\))0 4647 y(ypix)238 b(-)47
-b(y)g(axis)g(pixel)f(location)0 4759 y(ypos)238 b(-)47
+4647 y(yinc)238 b(-)47 b(Y)g(axis)g(coordinate)e(increment)g(at)j
+(reference)d(pixel)h(\(deg\))0 4759 y(ypix)238 b(-)47
+b(y)g(axis)g(pixel)f(location)0 4872 y(ypos)238 b(-)47
 b(y)g(axis)g(celestial)e(coordinate)g(\(usually)h(DEC\))h(\(deg\))0
-4872 y(yrefpix)94 b(-)47 b(Y)g(axis)g(reference)e(pixel)i(array)f
-(location)0 4985 y(yrefval)94 b(-)47 b(Y)g(axis)g(coordinate)e(value)h
-(at)i(the)f(reference)e(pixel)h(\(deg\))0 5098 y(zero)238
+4985 y(yrefpix)94 b(-)47 b(Y)g(axis)g(reference)e(pixel)i(array)f
+(location)0 5098 y(yrefval)94 b(-)47 b(Y)g(axis)g(coordinate)e(value)h
+(at)i(the)f(reference)e(pixel)h(\(deg\))0 5211 y(zero)238
 b(-)47 b(scaling)f(offset;)g(true)g(value)h(=)g(\(FITS)f(value\))h(*)g
 (scale)f(+)i(zero)p eop
 116 121 bop 0 100 a Fj(116)1822 b Fg(APPENDIX)31 b(B.)61

@@ -435,9 +435,10 @@ int stdout_close(int handle)
     return(status);
 }
 /*--------------------------------------------------------------------------*/
-int compress_open(char *filename, int rwmode, int *hdl)
+int mem_compress_open(char *filename, int rwmode, int *hdl)
 /*
-  open a compressed disk FITS file and uncompress it into memory.
+  This routine opens the compressed diskfile and creates an empty memory
+  buffer with an appropriate size, then calls mem_uncompress2mem.
 */
 {
     FILE *diskfile;
@@ -520,11 +521,7 @@ int compress_open(char *filename, int rwmode, int *hdl)
     }
 
     /* uncompress file into memory */
-    uncompress2mem(filename, diskfile,
-             memTable[*hdl].memaddrptr,   /* pointer to memory address */
-             memTable[*hdl].memsizeptr,   /* pointer to size of memory */
-             realloc,                     /* reallocation function */
-             &finalsize, &status);        /* returned file size and status */
+    status = mem_uncompress2mem(filename, diskfile, *hdl);
 
     fclose(diskfile);
 
@@ -536,26 +533,30 @@ int compress_open(char *filename, int rwmode, int *hdl)
     }
 
     /* if we allocated too much memory initially, then free it */
-    if (*(memTable[*hdl].memsizeptr) > (finalsize + 256L) ) 
+    if (*(memTable[*hdl].memsizeptr) > (memTable[*hdl].fitsfilesize + 256L) ) 
     {
-        ptr = realloc(*(memTable[*hdl].memaddrptr), finalsize);
+        ptr = realloc(*(memTable[*hdl].memaddrptr), 
+                       memTable[*hdl].fitsfilesize);
         if (!ptr)
         {
-            ffpmsg("Failed to reallocate memory (compress_open)");
+            ffpmsg("Failed to reduce size of allocated memory (compress_open)");
             return(MEMORY_ALLOCATION);
         }
 
         *(memTable[*hdl].memaddrptr) = ptr;
-        *(memTable[*hdl].memsizeptr) = finalsize;
+        *(memTable[*hdl].memsizeptr) = memTable[*hdl].fitsfilesize;
     }
 
-    memTable[*hdl].currentpos = 0;           /* save starting position */
-    memTable[*hdl].fitsfilesize=finalsize;   /* and initial file size  */
     return(0);
 }
 /*--------------------------------------------------------------------------*/
 int mem_uncompress2mem(char *filename, FILE *diskfile, int hdl)
 {
+/*
+  lower level routine to uncompress a file into memory.  The file
+  has already been opened and the memory buffer has been allocated.
+*/
+
   size_t finalsize;
   int status;
   /* uncompress file into memory */

@@ -323,12 +323,14 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     /* check if this same file is already open, and if so, attach to it  */
     /*-------------------------------------------------------------------*/
 
-    fits_already_open(fptr, url, urltype, infile, extspec, rowfilter,
-            binspec, colspec, mode, &isopen, status);
+    if (fits_already_open(fptr, url, urltype, infile, extspec, rowfilter,
+            binspec, colspec, mode, &isopen, status) > 0)
+    {
+        return(*status);
+    }
 
     if (isopen)
        goto move2hdu;  
-
 
     /* get the driver number corresponding to this urltype */
     *status = urltype2driver(urltype, &driver);
@@ -1438,7 +1440,7 @@ int fits_init_cfitsio(void)
         return(status);
     }
 
-    /*------------------compressed disk file driver ----------------*/
+    /*------------------compressed disk file to memory driver -----------*/
     status = fits_register_driver("compress://",
             mem_init,
             mem_shutdown,
@@ -1446,7 +1448,7 @@ int fits_init_cfitsio(void)
             mem_getoptions, 
             mem_getversion,
             NULL,            /* checkfile not needed */ 
-            compress_open,
+            mem_compress_open,
             NULL,            /* create function not required */
             mem_truncate,
             mem_close_free,
@@ -1463,6 +1465,34 @@ int fits_init_cfitsio(void)
         return(status);
     }
 
+    /*------------------compressed disk file to disk file driver -------*/
+    status = fits_register_driver("compressfile://",
+            file_init,
+            file_shutdown,
+            file_setoptions,
+            file_getoptions, 
+            file_getversion,
+            NULL,            /* checkfile not needed */ 
+            file_compress_open,
+            file_create,
+#ifdef HAVE_FTRUNCATE
+            file_truncate,
+#else
+            NULL,   /* no file truncate function */
+#endif
+            file_close,
+            file_remove,
+            file_size,
+            file_flush,
+            file_seek,
+            file_read,
+            file_write);
+
+    if (status)
+    {
+        ffpmsg("failed to register the compressfile:// driver (init_cfitsio)");
+        return(status);
+    }
 
     /* Register Optional drivers */
 
