@@ -1702,8 +1702,10 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
         if (!strcmp(name, "SIMPLE"))
         {
             if (value[0] == 'F')
+            {
                 if (simple)
                     *simple=0;          /* not a simple FITS file */
+            }
             else if (value[0] != 'T')
                 return(*status = BAD_SIMPLE);
         }
@@ -1818,7 +1820,6 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
                 naxes[ii] = axislen;
     }
 
-
     /*---------------------------------------------------------*/
     /*  now look for other keywords of interest:               */
     /*  BSCALE, BZERO, BLANK, PCOUNT, GCOUNT, EXTEND, and END  */
@@ -1864,6 +1865,10 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
         {
             if (ffc2dd(value, bscale, status) > 0) /* convert to double */
             {
+                /* reset error status and continue, but still issue warning */
+                *status = tstatus;
+                *bscale = 1.0;
+
                 sprintf(message,
                 "Error reading BSCALE keyword value as a double: %s", value);
                 ffpmsg(message);
@@ -1874,6 +1879,10 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
         {
             if (ffc2dd(value, bzero, status) > 0) /* convert to double */
             {
+                /* reset error status and continue, but still issue warning */
+                *status = tstatus;
+                *bzero = 0.0;
+
                 sprintf(message,
                 "Error reading BZERO keyword value as a double: %s", value);
                 ffpmsg(message);
@@ -1884,6 +1893,10 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
         {
             if (ffc2ii(value, blank, status) > 0) /* convert to long */
             {
+                /* reset error status and continue, but still issue warning */
+                *status = tstatus;
+                *blank = NULL_UNDEFINED;
+
                 sprintf(message,
                 "Error reading BLANK keyword value as an integer: %s", value);
                 ffpmsg(message);
@@ -1912,8 +1925,12 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         else if (!strcmp(name, "EXTEND") && extend)
         {
-            if (ffc2ll(value, extend, status) > 0) /* convert to int */
+            if (ffc2ll(value, extend, status) > 0) /* convert to logical */
             {
+                /* reset error status and continue, but still issue warning */
+                *status = tstatus;
+                *extend = 0;
+
                 sprintf(message,
                 "Error reading EXTEND keyword value as a logical: %s", value);
                 ffpmsg(message);
@@ -1943,7 +1960,6 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
         return(*status);
       }
     }
-
 
     if (unknown)
        *status = NOT_IMAGE;

@@ -5,7 +5,7 @@
 
 void printerror( int status);
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
 
@@ -52,7 +52,7 @@ main(int argc, char *argv[])
     if ( fits_close_file(fptr, &status) )
          printerror( status );
 
-    return;
+    return(0);
 }
 /*--------------------------------------------------------------------------*/
 void printerror( int status)

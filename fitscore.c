@@ -24,8 +24,10 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.023;   /*  beta release */
+      *version = 2.025;   /* 25 Nov 1998 */
 
+ /*   *version = 2.024;   9 Nov 1998 */
+ /*   *version = 2.023;   1 Nov 1998 first full release of V2.0 */
  /*   *version = 1.42;   30 Apr 1998 */
  /*   *version = 1.40;    6 Feb 1998 */
  /*   *version = 1.33;   16 Dec 1997 (internal release only) */
@@ -481,7 +483,7 @@ void ffxmsg( int action,
 #define errmsgsiz 25
     static char *txtbuff[errmsgsiz], *tmpbuff;
     static char errbuff[errmsgsiz][81];  /* initialize all = \0 */
-    static nummsg = 0;
+    static int nummsg = 0;
 
     if (action == -2)  /* remove newest message from stack */ 
     {
@@ -1345,7 +1347,7 @@ int ffbnfm(char *tform,     /* I - format code from the TFORMn keyword */
     /*-----------------------------------------------*/
 
     ii = 0;
-    while(isdigit(form[ii]))
+    while(isdigit((int) form[ii]))
         ii++;   /* look for leading digits in the field */
 
     if (ii == 0)
@@ -1740,13 +1742,13 @@ void ffcmps(char *templt,   /* I - input template (may have wildcards)      */
         s1++;  /* corresponding chars in the 2 strings match */
         t1++;  /* increment both pointers and loop back again */
       }
-      else if (temp[t1] == '#' && isdigit(col[s1]) )
+      else if (temp[t1] == '#' && isdigit((int) col[s1]) )
       {
         s1++;  /* corresponding chars in the 2 strings match */
         t1++;  /* increment both pointers */
 
         /* find the end of the string of digits */
-        while (isdigit(col[s1]) ) 
+        while (isdigit((int) col[s1]) ) 
             s1++;        
       }
       else if (temp[t1] == '*')
@@ -3002,11 +3004,13 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
         colptr = (fptr->Fptr)->tableptr;        /* get pointer to columns */
         colptr = colptr + nfield - 1;   /* point to the correct column */
 
-        if (ffc2dd(value, &dvalue, status) > 0)
+        if (ffc2dd(value, &dvalue, &tstatus) > 0)
         {
             sprintf(message,
             "Error reading value of %s as a double: %s", name, value);
             ffpmsg(message);
+
+            /* ignore this error, so don't return error status */
             return(*status);
         }
         colptr->tscale = dvalue;
@@ -3023,11 +3027,13 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
         colptr = (fptr->Fptr)->tableptr;        /* get pointer to columns */
         colptr = colptr + nfield - 1;   /* point to the correct column */
 
-        if (ffc2dd(value, &dvalue, status) > 0)
+        if (ffc2dd(value, &dvalue, &tstatus) > 0)
         {
             sprintf(message,
             "Error reading value of %s as a double: %s", name, value);
             ffpmsg(message);
+
+            /* ignore this error, so don't return error status */
             return(*status);
         }
         colptr->tzero = dvalue;
@@ -3055,11 +3061,13 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
         }
         else  /* binary table */
         {
-            if (ffc2ii(value, &ivalue, status) > 0) 
+            if (ffc2ii(value, &ivalue, &tstatus) > 0) 
             {
                 sprintf(message,
                 "Error reading value of %s as an integer: %s", name, value);
                 ffpmsg(message);
+
+                /* ignore this error, so don't return error status */
                 return(*status);
             }
             colptr->tnull = ivalue; /* null value for integer column */

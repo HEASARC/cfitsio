@@ -334,6 +334,7 @@ int ffourl(char *url, char *urltype, char *outfile, char *tmplfile,
 int ffexts(char *extspec, int *extnum,  char *extname,
                        int *extvers, int *hdutype, int *status);
 int ffextn(char *url, int *extension_num, int *status);
+int ffurlt(fitsfile *fptr, char *urlType, int *status);
 int ffbins(char *binspec, int *imagetype, int *haxis, 
                       char colname[4][FLEN_VALUE], double *minin,
                       double *maxin, double *binsizein,
@@ -1151,7 +1152,9 @@ int ffwldp(double xpix, double ypix, double xref, double yref,
 int ffxypx(double xpos, double ypos, double xref, double yref, 
            double xrefpix, double yrefpix, double xinc, double yinc,
            double rot, char *type, double *xpix, double *ypix, int *status);
-int ffiwcs(fitsfile *fptr,  void **wcs, int *status);
+
+/*  temporarily remove ffiwcs until full WCS support is added */
+/*  int ffiwcs(fitsfile *fptr,  void **wcs, int *status);     */
 
 /*--------------------- lexical parsing routines ------------------*/
 int fftexp( fitsfile *fptr, char *expr, int maxdim,

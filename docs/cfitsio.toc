@@ -52,7 +52,7 @@
 \contentsline {chapter}{\numberline {7} Basic CFITSIO Interface Routines }{61}
 \contentsline {section}{\numberline {7.1}CFITSIO Error Status Routines}{61}
 \contentsline {section}{\numberline {7.2}FITS File Access Routines}{62}
-\contentsline {section}{\numberline {7.3}HDU Access Routines}{64}
+\contentsline {section}{\numberline {7.3}HDU Access Routines}{65}
 \contentsline {section}{\numberline {7.4}Header Keyword Read/Write Routines}{67}
 \contentsline {section}{\numberline {7.5}Iterator Routines}{70}
 \contentsline {section}{\numberline {7.6}Primary Array or IMAGE Extension I/O Routines}{72}

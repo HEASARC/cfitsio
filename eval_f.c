@@ -534,7 +534,7 @@ int ffcalc( fitsfile *infptr,   /* I - Input FITS file                      */
 	       }
 	    }
 	    parInfo = card;
-	 } else if( !(isdigit(*parInfo)) && hdutype==BINARY_TBL ) {
+	 } else if( !(isdigit((int) *parInfo)) && hdutype==BINARY_TBL ) {
 	    if( Info.datatype==TBIT && *parInfo=='B' )
 	       nelem = (nelem+7)/8;
 	    sprintf(card,"%ld%s",nelem,parInfo);

@@ -122,6 +122,17 @@
    ROOTD_CLOSE - closes the file
 
    Once the file is closed then the socket is closed.
+
+$Id$
+
+$Log$
+Revision 1.38  1998/11/23 10:03:24  oneel
+Added in a useragent string, as suggested by:
+Tim Kimball · Data Systems Division ¦ kimball@stsci.edu · 410-338-4417
+Space Telescope Science Institute   ¦ http://www.stsci.edu/~kimball/
+3700 San Martin Drive               ¦ http://archive.stsci.edu/
+Baltimore MD 21218 USA              ¦ http://faxafloi.stsci.edu:4547/
+
    
  */
 
@@ -161,7 +172,7 @@ static void signal_handler(int sig);
 #define NETTIMEOUT 180 /* in secs */
 
 /* local defines and variables */
-#define MAXLEN 1000
+#define MAXLEN 1200
 #define SHORTLEN 100
 static char netoutfile[MAXLEN];
 
@@ -648,6 +659,7 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
   int tmpint;
   char recbuf[MAXLEN];
   char tmpstr[MAXLEN];
+  char tmpstr1[SHORTLEN];
   char errorstr[MAXLEN];
   char proto[SHORTLEN];
   char host[SHORTLEN];
@@ -655,6 +667,7 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
   char turl[MAXLEN];
   char *scratchstr;
   int port;
+  float version;
 
 
   /* Parse the URL apart again */
@@ -683,7 +696,9 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
   /* Send the GET request to the remote server */
   strcpy(tmpstr,"GET ");
   strcat(tmpstr,fn);
-  strcat(tmpstr," http/1.0\n\n");
+  strcat(tmpstr," http/1.0\n");
+  sprintf(tmpstr1,"User-Agent: HEASARC/CFITSIO/%-8.3f\n\n",ffvers(&version));
+  strcat(tmpstr,tmpstr1);
   status = NET_SendRaw(sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
 
   /* read the header */

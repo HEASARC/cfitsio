@@ -33,36 +33,35 @@ DECLARE(uch, window, 2L*WSIZE);
     DECLARE(ush, tab_prefix1, 1L<<(BITS-1));
 #endif
 
-long header_bytes;   /* number of bytes in gzip header */
+static long header_bytes;   /* number of bytes in gzip header */
 
 		/* local variables */
 
-int force = 0;        /* don't ask questions, compress links (-f) */
-int verbose = 0;      /* be verbose (-v) */
-int quiet = 0;        /* be very quiet (-q) */
-int maxbits = BITS;   /* max bits per code for LZW */
-int method = DEFLATED;/* compression method */
-int level = 6;        /* compression level */
-int exit_code = OK;   /* program exit code */
-int last_member;      /* set for .zip and .Z files */
-int part_nb;          /* number of parts in .gz file */
+/* 11/25/98: added 'static' to local variable definitions, to avoid */
+/* conflict with external source files */
 
-long bytes_in;             /* number of input bytes */
-long bytes_out;            /* number of output bytes */
-long total_in = 0;         /* input bytes for all files */
-long total_out = 0;        /* output bytes for all files */
-char ifname[128];          /* input file name */
+static int force = 0;        /* don't ask questions, compress links (-f) */
+static int maxbits = BITS;   /* max bits per code for LZW */
+static int method = DEFLATED;/* compression method */
+/* static int level = 6;  */      /* compression level */
+static int exit_code = OK;   /* program exit code */
+static int last_member;      /* set for .zip and .Z files */
+static int part_nb;          /* number of parts in .gz file */
 
-FILE *ifd;               /* input file descriptor */
-FILE *ofd;               /* output file descriptor */
+static long bytes_in;             /* number of input bytes */
+static long bytes_out;            /* number of output bytes */
+static char ifname[128];          /* input file name */
 
-void **memptr;          /* memory location for uncompressed file */
-size_t *memsize;        /* size (bytes) of memory allocated for file */
+static FILE *ifd;               /* input file descriptor */
+static FILE *ofd;               /* output file descriptor */
+
+static void **memptr;          /* memory location for uncompressed file */
+static size_t *memsize;        /* size (bytes) of memory allocated for file */
 void *(*realloc_fn)(void *p, size_t newsize);  /* reallocation function */
 
-unsigned insize;           /* valid bytes in inbuf */
-unsigned inptr;            /* index of next byte to be processed in inbuf */
-unsigned outcnt;           /* bytes in output buffer */
+static unsigned insize;     /* valid bytes in inbuf */
+static unsigned inptr;      /* index of next byte to be processed in inbuf */
+static unsigned outcnt;     /* bytes in output buffer */
 
 /* prototype for the following functions */
 int uncompress2mem(char *filename, 

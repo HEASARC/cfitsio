@@ -381,7 +381,7 @@ int ffbinr(char **ptr,
     {
         /* this looks like the column name */
 
-        if (token[0] == '#' && isdigit(token[1]) )
+        if (token[0] == '#' && isdigit((int) token[1]) )
         {
             /* omit the leading '#' in the column number */
             strcpy(colname, token+1);

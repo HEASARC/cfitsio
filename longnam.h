@@ -18,6 +18,7 @@
 #define fits_delete_file    ffdelt
 #define fits_file_name      ffflnm
 #define fits_file_mode      ffflmd
+#define fits_url_type       ffurlt
 
 #define fits_get_version    ffvers
 #define fits_uppercase      ffupch

@@ -1,7 +1,7 @@
          CFITSIO - An Interface to FITS Format Files for C Programmers
  
                     William D Pence, HEASARC, NASA/GSFC
-                              Version 2.0 beta
+                               Version 2.0 
  
  
 [Note: This file contains various formatting command symbols ('*', '-')
@@ -357,12 +357,12 @@ Borkowski) and the hierarchical grouping routines (written by Don
 Jennings).  The ISDC DAL (Data Access Layer) routines are layered on
 top of CFITSIO and make extensive use of these features.
 
-Uwe Lamers (XMM/ESA/ESTEC, The Netherlands) designed the
+Uwe Lammers (XMM/ESA/ESTEC, The Netherlands) designed the
 high-performance lexical parsing algorithm that is used to do
 on-the-fly filtering of FITS tables.  This algorithm essentially
 pre-compiles the user-supplied selection expression into a form that
 can be rapidly evaluated for each row.  Peter Wilson (RSTX, NASA/GSFC)
-then wrote the parsing routines used by CFITSIO based on Lamers'
+then wrote the parsing routines used by CFITSIO based on Lammers'
 design, combined with other techniques such as the CFITSIO iterator
 routine to further enhance the data processing throughput.  This effort
 also benefitted from a much earlier lexical parsing routine that was
@@ -625,7 +625,7 @@ across the network. This uses the root protocol developed at CERN.
 moves to the EVENTS extension.  
 
 \item
-{\tt 'mem://'}:  creates a scratch output file in core cpmputer memory.  The
+{\tt 'mem://'}:  creates a scratch output file in core computer memory.  The
 resulting 'file' will disappear when the program exits, so this
 is mainly useful for testing purposes when one does not want a
 permanent copy of the output file.
@@ -3315,7 +3315,14 @@ write data to the 2 extensions in any order.
   int fits_file_mode / ffflmd
       (fitsfile *fptr, > int *iomode, int *status)
 -
->9  Parse the input filename or URL into its component parts: the file
+>9 Return the file type of the opened FITS file (e.g. 'file://', 'ftp://',
+   etc.).
+>\label{ffurlt}
+-
+  int fits_url_type / ffurlt
+      (fitsfile *fptr, > char *urltype, int *status)
+-
+>10  Parse the input filename or URL into its component parts: the file
 type (file://, ftp://, http://, etc), the base input file name, the
 name of the output file that the input file is to be copied to prior
 to opening, the HDU or extension specification, the filtering
@@ -3328,7 +3335,7 @@ in the input file name.
       (char *filename, > char *filetype, char *infile, char *outfile, char
        *extspec, char *filter, char *binspec, char *colspec, int *status)
 -
->10  Parse the input filename and return the HDU number that would be
+>11  Parse the input filename and return the HDU number that would be
 moved to if the file were opened with fits\_open\_file.  The returned
 HDU number begins with 1 for the primary array, so for example, if the
 input filename = `myfile.fits[2]' then hdunum = 3 will be returned.  If
@@ -3349,7 +3356,7 @@ fits\_parse\_input\_url then calling fits\_open\_file.
 -
    int fits_parse_extnum / ffextn (char *filename, > int *hdunum)
 -
->11 Parse the input file name and return the root file name.  The root
+>12 Parse the input file name and return the root file name.  The root
 name includes the file type if specified, (e.g.  'ftp://' or 'http://')
 and the full path name, to the extent that it is specified in the input
 filename.  It does not enclude the HDU name or number, or any filtering
@@ -3431,7 +3438,7 @@ a whole.
    be set = 0.  CFITSIO 
    will automatically increase the size of the table as 
    additional rows are written.  A non-zero number of rows may be specified
-   to reserve space for that many rows, even if a few number of rows will
+   to reserve space for that many rows, even if a fewer number of rows will
    be written.  The tunit and extname parameters
    are optional and a null pointer may be given if they are not defined.
    The FITS Standard recommends that only letters, digits, and the
@@ -6008,6 +6015,7 @@ fits\_update\_key        & \pageref{ffuky} \\
 fits\_update\_key\_null   & \pageref{ffukyu} \\
 fits\_update\_key\_TYP    & \pageref{ffukyx} \\
 fits\_uppercase      & \pageref{ffupch} \\
+fits\_url\_type      & \pageref{ffurlt} \\
 fits\_verify\_chksum  & \pageref{ffvcks} \\
 fits\_verify\_group  & \pageref{ffgtvf} \\
 fits\_world\_to\_pix & \pageref{ffxypx} \\
@@ -6251,6 +6259,7 @@ ffukyu   & \pageref{ffukyu} \\
 ffukyx    & \pageref{ffukyx} \\
 ffupch      & \pageref{ffupch} \\
 ffupck  & \pageref{ffupck} \\
+ffurlt  & \pageref{ffurlt} \\
 ffvcks  & \pageref{ffvcks} \\
 ffvers    & \pageref{ffvers} \\
 ffwldp & \pageref{ffwldp} \\
@@ -6457,6 +6466,7 @@ typecode - datatype code of the table column.  The negative of
                 complex, C              83        TCOMPLEX
                 double complex, M      163        TDBLCOMPLEX
 unit     - the physical unit string (e.g., 'km/s') for a keyword
+urltype  - the file type of the FITS file (file://, ftp://, mem://, etc.)
 value    - the keyword value string (70 char max, null-terminated)
 version  - current version number of the CFITSIO library
 width    - width of the character string field

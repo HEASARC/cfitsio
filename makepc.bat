@@ -7,6 +7,11 @@ bcc32 -c checksum.c
 bcc32 -c compress.c
 bcc32 -c drvrfile.c
 bcc32 -c drvrmem.c
+bcc32 -c editcol.c
+bcc32 -c edithdu.c
+bcc32 -c eval_l.c
+bcc32 -c eval_y.c
+bcc32 -c eval_f.c
 bcc32 -c fitscore.c
 bcc32 -c getcol.c
 bcc32 -c getcolb.c
@@ -20,12 +25,11 @@ bcc32 -c getcole.c
 bcc32 -c getcold.c
 bcc32 -c getcoll.c
 bcc32 -c getcols.c
-bcc32 -c editcol.c
-bcc32 -c edithdu.c
 bcc32 -c getkey.c
 bcc32 -c group.c
 bcc32 -c grparser.c
 bcc32 -c histo.c
+bcc32 -c iraffits.c
 bcc32 -c modkey.c
 bcc32 -c putcol.c
 bcc32 -c putcolb.c
@@ -41,18 +45,19 @@ bcc32 -c putcols.c
 bcc32 -c putcoll.c
 bcc32 -c putcolu.c
 bcc32 -c putkey.c
+bcc32 -c region.c
 bcc32 -c scalnull.c
 bcc32 -c swapproc.c
 bcc32 -c wcsutil.c
 del cfitsio.lib
-tlib cfitsio +buffers +cfileio +checksum +compress +drvrfile +drvrmem +fitscore
+tlib cfitsio +buffers +cfileio +checksum +compress +drvrfile +drvrmem 
+tlib cfitsio +editcol +edithdu +eval_l +eval_y +eval_f +fitscore
 tlib cfitsio +getcol  +getcolb +getcoli +getcolj +getcolk +getcoluk 
 tlib cfitsio +getcolui +getcoluj +getcole +getcold +getcoll +getcols
-tlib cfitsio +group +grparser
-tlib cfitsio +editcol +edithdu +getkey +histo +modkey +putkey 
+tlib cfitsio +getkey +group +grparser +histo +iraffits +modkey +putkey 
 tlib cfitsio +putcol  +putcolb +putcoli +putcolj +putcolk +putcole +putcold
 tlib cfitsio +putcoll +putcols +putcolu +putcolui +putcoluj +putcoluk
-tlib cfitsio +scalnull +swapproc +wcsutil
+tlib cfitsio +region +scalnull +swapproc +wcsutil
 bcc32 -f testprog.c cfitsio.lib
 bcc32 -f cookbook.c cfitsio.lib
 

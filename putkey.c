@@ -940,8 +940,9 @@ int ffs2dt(char *datestr,   /* I - date string: "YYYY-MM-DD" or "dd/mm/yy" */
 
     if (slen == 8 && datestr[2] == '/' && datestr[5] == '/')
     {
-        if (isdigit(datestr[0]) && isdigit(datestr[1]) && isdigit(datestr[3]) 
-         && isdigit(datestr[4]) && isdigit(datestr[6]) && isdigit(datestr[7]) )
+        if (isdigit((int) datestr[0]) && isdigit((int) datestr[1])
+         && isdigit((int) datestr[3]) && isdigit((int) datestr[4])
+         && isdigit((int) datestr[6]) && isdigit((int) datestr[7]) )
         {
             /* this is an old format string: "dd/mm/yy" */
             if (year)
@@ -961,9 +962,10 @@ int ffs2dt(char *datestr,   /* I - date string: "YYYY-MM-DD" or "dd/mm/yy" */
     }
     else if (slen >= 10 && datestr[4] == '-' && datestr[7] == '-')
         {
-        if (isdigit(datestr[0]) && isdigit(datestr[1]) && isdigit(datestr[2]) 
-         && isdigit(datestr[3]) && isdigit(datestr[5]) && isdigit(datestr[6])
-         && isdigit(datestr[8]) && isdigit(datestr[9]) )
+        if (isdigit((int) datestr[0]) && isdigit((int) datestr[1])
+         && isdigit((int) datestr[2]) && isdigit((int) datestr[3])
+         && isdigit((int) datestr[5]) && isdigit((int) datestr[6])
+         && isdigit((int) datestr[8]) && isdigit((int) datestr[9]) )
         {
             if (slen > 10 && datestr[10] != 'T')
             {
@@ -1176,8 +1178,9 @@ int ffs2tm(char *datestr,     /* I - date string: "YYYY-MM-DD"    */
 
         else if (datestr[10] == 'T' && datestr[13] == ':' && datestr[16] == ':')
         {
-          if (isdigit(datestr[11]) && isdigit(datestr[12]) && isdigit(datestr[14]) 
-           && isdigit(datestr[15]) && isdigit(datestr[17]) && isdigit(datestr[18]) )
+          if (isdigit((int) datestr[11]) && isdigit((int) datestr[12])
+           && isdigit((int) datestr[14]) && isdigit((int) datestr[15])
+           && isdigit((int) datestr[17]) && isdigit((int) datestr[18]) )
             {
                 if (slen > 19 && datestr[19] != '.')
                 {
@@ -1218,8 +1221,9 @@ int ffs2tm(char *datestr,     /* I - date string: "YYYY-MM-DD"    */
 
         if (datestr[2] == ':' && datestr[5] == ':')   /* time string */
         {
-            if (isdigit(datestr[0]) && isdigit(datestr[1]) && isdigit(datestr[3]) 
-            && isdigit(datestr[4]) && isdigit(datestr[6]) && isdigit(datestr[7]) )
+            if (isdigit((int) datestr[0]) && isdigit((int) datestr[1])
+             && isdigit((int) datestr[3]) && isdigit((int) datestr[4])
+             && isdigit((int) datestr[6]) && isdigit((int) datestr[7]) )
             {
                  /* this is a time string: "hh:mm:ss.dddd" */
                  if (hour)

@@ -2026,7 +2026,7 @@ int ffiurl(char *url,
 
         for (; ii < jj; ii++)
         {
-            if (!isdigit( infile[ii] ) ) /* are all the chars digits? */
+            if (!isdigit((int) infile[ii] ) ) /* are all the chars digits? */
                 break;
         }
 
@@ -2346,7 +2346,7 @@ int ffrtnm(char *url,
 
         for (; ii < jj; ii++)
         {
-            if (!isdigit( infile[ii] ) ) /* are all the chars digits? */
+            if (!isdigit((int) infile[ii] ) ) /* are all the chars digits? */
                 break;
         }
 
@@ -2467,7 +2467,7 @@ int ffexts(char *extspec,
     while (*ptr1 == ' ')  /* skip over any leading blanks */
         ptr1++;
 
-    if (isdigit(*ptr1))  /* is the extension specification a number? */
+    if (isdigit((int) *ptr1))  /* is the extension specification a number? */
     {
         sscanf(ptr1, "%d", extnum);
         if (*extnum < 0 || *extnum > 9999)
@@ -2646,6 +2646,18 @@ int ffextn(char *url,           /* I - input filename/URL  */
          return(*status);
     }
 }
+/*--------------------------------------------------------------------------*/
+
+int ffurlt(fitsfile *fptr, char *urlType, int *status)
+/*
+   return the prefix string associated with the driver in use by the
+   fitsfile pointer fptr
+*/
+
+{ 
+  strcpy(urlType, driverTable[fptr->Fptr->driver].prefix);
+  return(*status);
+}
 
 /*--------------------------------------------------------------------------*/
 int ffimport_file( char *filename,   /* Text file to read                   */
@@ -2734,7 +2746,8 @@ int fits_get_token(char **ptr,
  
             for (ii = 0; ii < slen; ii++)
             {
-                if ( !isdigit(token[ii]) && token[ii] != '.' && token[ii] != '-')
+                if ( !isdigit((int) token[ii]) && token[ii] != '.' && 
+                     token[ii] != '-')
                 {
                     *isanumber = 0;
                     break;

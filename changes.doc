@@ -1,5 +1,40 @@
                Log of Changes Made to CFITSIO
 
+Version 2.025 - 1 Dec 1998
+
+   - modified ffgphd and ffgtbp so that they ignores BLANK and TNULLn keywords
+     that  do not have a valid integer value.  Also, any error while reading
+     the BSCALE, BZERO, TSCALn, or TZEROn keywords will be ignored.  
+     Previously, CFITSIO would have simply refused to read an HDU that had 
+     such an invalid keyword.
+
+   - modified the parser in eval_f.c to accept out of order times in GTIs
+
+   - updated cfitsio_mac.sit.hqx to fix bad target parameters for Mac's
+     speed test program
+
+   - modified template parser in grparser.c to: 1) not write GRPNAME keyword
+     twice, and 2) assign correct value for EXTVERS keyword.
+
+   - fixed minor bugs in group.c; mainly would only affect users of the
+     INTEGRAL Data Access Layer.
+
+   - temporarily removed the prototype for ffiwcs from fitsio.h until
+     full WCS support is added to CFITSIO in the near future.
+
+   - modified the HTTP driver to send a User-Agent string:
+     HEASARC/CFITSIO/<version number>
+
+   - declared local variables in compress.c as 'static' to avoid
+     conflicts with other libraries.
+
+Version 2.024 - 9 Nov 1998
+
+   - added new function fits_url_type which returns the driver prefix string
+     associated with a particular FITS file pointer.
+
+Version 2.023 - 1 Nov 1998 - first full release of CFITSIO 2.0
+
    - slightly modified the way real keyword values are formated, to ensure
      that it includes a decimal point.  E.g.,  '1.0E-09' instead of '1E-09'
 
