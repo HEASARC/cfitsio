@@ -1556,6 +1556,7 @@ int ffdrec(fitsfile *fptr,   /* I - FITS file pointer  */
     int ii, nshift;
     OFF_T bytepos;
     char *inbuff, *outbuff, *tmpbuff, buff1[81], buff2[81];
+    char message[FLEN_ERRMSG];
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
@@ -1572,6 +1573,14 @@ int ffdrec(fitsfile *fptr,   /* I - FITS file pointer  */
 
     nshift=( (fptr->Fptr)->headend - (fptr->Fptr)->nextkey ) / 80; /* no. keywords to shift */
 
+    if (nshift <= 0)
+    {
+        sprintf(message, "Cannot delete keyword number %d.  It does not exist.",
+                keypos);
+        ffpmsg(message);
+        return(*status = KEY_OUT_BOUNDS);
+    }
+
     bytepos = (fptr->Fptr)->headend - 80;  /* last keyword in header */  
 
     /* construct a blank keyword */
@@ -1579,7 +1588,6 @@ int ffdrec(fitsfile *fptr,   /* I - FITS file pointer  */
     strcat(buff2, "                                        ");
     inbuff  = buff1;
     outbuff = buff2;
-
     for (ii = 0; ii < nshift; ii++) /* shift each keyword up one position */
     {
 

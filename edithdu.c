@@ -205,7 +205,25 @@ int ffcpdt(fitsfile *infptr,    /* I - FITS file pointer to input file  */
 
     if (nb > 0)
     {
-        /* move the initial copy position in each of the files */
+      if (infptr->Fptr == outfptr->Fptr)
+      {
+        /* copying between 2 HDUs in the SAME file */
+        for (ii = 0; ii < nb; ii++)
+        {
+            ffmbyt(infptr,  indatastart,  REPORT_EOF, status);
+            ffgbyt(infptr,  2880L, buffer, status); /* read input block */
+
+            ffmbyt(outfptr, outdatastart, IGNORE_EOF, status);
+            ffpbyt(outfptr, 2880L, buffer, status); /* write output block */
+
+            indatastart  += 2880; /* move address */
+            outdatastart += 2880; /* move address */
+        }
+      }
+      else
+      {
+        /* copying between HDUs in separate files */
+        /* move to the initial copy position in each of the files */
         ffmbyt(infptr,  indatastart,  REPORT_EOF, status);
         ffmbyt(outfptr, outdatastart, IGNORE_EOF, status);
 
@@ -214,6 +232,7 @@ int ffcpdt(fitsfile *infptr,    /* I - FITS file pointer to input file  */
             ffgbyt(infptr,  2880L, buffer, status); /* read input block */
             ffpbyt(outfptr, 2880L, buffer, status); /* write output block */
         }
+      }
     }
     return(*status);
 }
@@ -227,10 +246,10 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
   insert an IMAGE extension following the current HDU 
 */
 {
-    int bytlen, nexthdu, maxhdu, ii;
+    int bytlen, nexthdu, maxhdu, ii, onaxis;
     long nblocks;
     OFF_T npixels, newstart, datasize;
-    char errmsg[81];
+    char errmsg[FLEN_ERRMSG], card[FLEN_CARD], naxiskey[FLEN_KEYWORD];
 
     if (*status > 0)
         return(*status);
@@ -240,15 +259,18 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
 
     maxhdu = (fptr->Fptr)->maxhdu;
 
-    /* if the current header is completely empty ...  */
-    if (( (fptr->Fptr)->headend == (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] )
-        /* or, if we are at the end of the file, ... */
-    ||  ( (((fptr->Fptr)->curhdu) == maxhdu ) &&
-       ((fptr->Fptr)->headstart[maxhdu + 1] >= (fptr->Fptr)->logfilesize ) ) )
+    if (*status != PREPEND_PRIMARY)
     {
+      /* if the current header is completely empty ...  */
+      if (( (fptr->Fptr)->headend == (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu])
+        /* or, if we are at the end of the file, ... */
+      ||  ( (((fptr->Fptr)->curhdu) == maxhdu ) &&
+       ((fptr->Fptr)->headstart[maxhdu + 1] >= (fptr->Fptr)->logfilesize ) ) )
+      {
         /* then simply append new image extension */
         ffcrim(fptr, bitpix, naxis, naxes, status);
         return(*status);
+      }
     }
 
     if (bitpix == 8)
@@ -305,17 +327,59 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
     else
         return(*status = READONLY_FILE);
 
-    nexthdu = ((fptr->Fptr)->curhdu) + 1; /* number of the next (new) hdu */
-    newstart = (fptr->Fptr)->headstart[nexthdu]; /* save starting addr of HDU */
+    if (*status == PREPEND_PRIMARY)
+    {
+        /* inserting a new primary array; the current primary */
+        /* array must be transformed into an image extension. */
 
-    (fptr->Fptr)->hdutype = IMAGE_HDU;  /* so that correct fill value is used */
-    /* ffiblk also increments headstart for all following HDUs */
-    if (ffiblk(fptr, nblocks, 1, status) > 0)  /* insert the blocks */
-        return(*status);
+        *status = 0;   
+        ffmahd(fptr, 1, NULL, status);  /* move to the primary array */
+
+        ffgidm(fptr, &onaxis, status);
+        if (onaxis > 0)
+            ffkeyn("NAXIS",onaxis, naxiskey, status);
+        else
+            strcpy(naxiskey, "NAXIS");
+
+        ffgcrd(fptr, naxiskey, card, status);  /* read last NAXIS keyword */
+        
+        ffikyj(fptr, "PCOUNT", 0L, "required keyword", status); /* add PCOUNT and */
+        ffikyj(fptr, "GCOUNT", 1L, "required keyword", status); /* GCOUNT keywords */
+
+        if (*status > 0)
+            return(*status);
+
+        if (ffdkey(fptr, "EXTEND", status) ) /* delete the EXTEND keyword */
+            *status = 0;
+
+        /* redefine internal structure for this HDU */
+        ffrdef(fptr, status);
+
+
+        /* insert space for the primary array */
+        if (ffiblk(fptr, nblocks, -1, status) > 0)  /* insert the blocks */
+            return(*status);
+
+        nexthdu = 0;  /* number of the new hdu */
+        newstart = 0; /* starting addr of HDU */
+    }
+    else
+    {
+        nexthdu = ((fptr->Fptr)->curhdu) + 1; /* number of the next (new) hdu */
+        newstart = (fptr->Fptr)->headstart[nexthdu]; /* save starting addr of HDU */
+
+        (fptr->Fptr)->hdutype = IMAGE_HDU;  /* so that correct fill value is used */
+        /* ffiblk also increments headstart for all following HDUs */
+        if (ffiblk(fptr, nblocks, 1, status) > 0)  /* insert the blocks */
+            return(*status);
+    }
 
     ((fptr->Fptr)->maxhdu)++;      /* increment known number of HDUs in the file */
     for (ii = (fptr->Fptr)->maxhdu; ii > (fptr->Fptr)->curhdu; ii--)
         (fptr->Fptr)->headstart[ii + 1] = (fptr->Fptr)->headstart[ii]; /* incre start addr */
+
+    if (nexthdu == 0)
+       (fptr->Fptr)->headstart[1] = nblocks * 2880; /* start of the old Primary array */
 
     (fptr->Fptr)->headstart[nexthdu] = newstart; /* set starting addr of HDU */
 
@@ -332,7 +396,6 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
 
     /* redefine internal structure for this HDU */
     ffrdef(fptr, status);
-
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

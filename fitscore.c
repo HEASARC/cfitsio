@@ -49,9 +49,11 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.200;
+      *version = 2.201;
 
-/* 26 Jan 2001
+/* 15 Mar 2001
+
+      *version = 2.200;  26 Jan 2001
       *version = 2.100;  26 Sep 2000
       *version = 2.037;   6 July 2000
       *version = 2.036;   1 Feb 2000
@@ -5174,6 +5176,7 @@ int ffgext(fitsfile *fptr,      /* I - FITS file pointer                */
 int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
            long nblock,         /* I - no. of blocks to insert         */ 
            int headdata,        /* O - insert where? 0=header, 1=data  */
+                                /*     -1=beginning of file            */
            int *status)         /* IO - error status                   */
 /*
    insert 2880-byte blocks at the end of the current header or data unit
@@ -5185,7 +5188,7 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
     char charfill;
     char buff1[2880], buff2[2880];
     char *inbuff, *outbuff, *tmpbuff;
-    char errmsg[FLEN_ERRMSG];
+    char errmsg[FLEN_ERRMSG], card[FLEN_CARD];
 
     if (*status > 0 || nblock <= 0)
         return(*status);
@@ -5199,6 +5202,11 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
 
     if (headdata == 0)  
         insertpt = (fptr->Fptr)->datastart;  /* insert just before data, or */
+    else if (headdata == -1)
+    {
+        insertpt = 0;
+        strcpy(card, "XTENSION= 'IMAGE   '          / IMAGE extension");
+    }
     else                                     /* at end of data, */
     {
         insertpt = (fptr->Fptr)->datastart + 
@@ -5220,6 +5228,9 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
 
     if (nblock == 1)  /* insert one block */
     {
+      if (headdata == -1)
+        ffmrec(fptr, 1, card, status);    /* change SIMPLE -> XTENSION */
+
       ffmbyt(fptr, insertpt, REPORT_EOF, status);  /* move to 1st point */
       ffgbyt(fptr, 2880, inbuff, status);  /* read first block of bytes */
 
@@ -5260,6 +5271,8 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
         }
 
         ffmahd(fptr, savehdu + 1, &typhdu, status);  /* move back to CHDU */
+        if (headdata == -1)
+          ffmrec(fptr, 1, card, status); /* NOW change SIMPLE -> XTENSION */
 
         /* number of 2880-byte blocks that have to be shifted down */
         nshift = ((fptr->Fptr)->headstart[(fptr->Fptr)->maxhdu + 1] - insertpt)
@@ -5779,9 +5792,20 @@ int ffc2i(char *cval,   /* I - string representation of the value */
     /* convert the keyword to its native datatype */
     ffc2x(cval, &dtype, ival, &lval, sval, &dval, status);
 
-    if (dtype == 'C' || dtype == 'X' )
+    if (dtype == 'X' )
     {
             *status = BAD_INTKEY;
+    }
+    else if (dtype == 'C')
+    {
+            /* try reading the string as a number */
+            if (ffc2dd(sval, &dval, status) <= 0)
+            {
+              if (dval > (double) LONG_MAX || dval < (double) LONG_MIN)
+                *status = NUM_OVERFLOW;
+              else
+                *ival = (long) dval;
+            }
     }
     else if (dtype == 'F')
     {
@@ -5867,7 +5891,7 @@ int ffc2r(char *cval,   /* I - string representation of the value */
   datatype conversion if necessary
 */
 {
-    char dtype, msg[81];
+    char dtype, sval[81], msg[81];
     int lval;
     
     if (*status > 0)           /* inherit input status value if > 0 */
@@ -5884,6 +5908,12 @@ int ffc2r(char *cval,   /* I - string representation of the value */
     {
         ffc2ll(cval, &lval, status);
         *fval = (float) lval;
+    }
+    else if (dtype == 'C')
+    {
+        /* try reading the string as a number */
+        ffc2s(cval, sval, status); 
+        ffc2rr(sval, fval, status);
     }
     else 
         *status = BAD_FLOATKEY;
@@ -5908,7 +5938,7 @@ int ffc2d(char *cval,   /* I - string representation of the value */
   datatype conversion if necessary
 */
 {
-    char dtype, msg[81];
+    char dtype, sval[81], msg[81];
     int lval;
     
     if (*status > 0)           /* inherit input status value if > 0 */
@@ -5925,6 +5955,12 @@ int ffc2d(char *cval,   /* I - string representation of the value */
     {
         ffc2ll(cval, &lval, status);
         *dval = (double) lval;
+    }
+    else if (dtype == 'C')
+    {
+        /* try reading the string as a number */
+        ffc2s(cval, sval, status); 
+        ffc2dd(sval, dval, status);
     }
     else 
         *status = BAD_DOUBLEKEY;

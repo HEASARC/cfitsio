@@ -710,7 +710,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
           int *status);
 int imcomp_copy_overlap (char *tile, int datatype, int ndim,
          long *tfpixel, long *tlpixel, char *bnullarray, char *image,
-         long *fpixel, long *lpixel, int nullcheck, char *nullarray,
+         long *fpixel, long *lpixel, long *inc, int nullcheck, char *nullarray,
          int *status);
 
 int pl_p2li (int *pxsrc, int xs, short *lldst, int npix);

@@ -638,7 +638,7 @@ int ffpcnj( fitsfile *fptr,  /* I - FITS file pointer                       */
 
       ffpclj(fptr, colnum, fstrow, firstelem, ngood, &array[ii-ngood], status);
     }
-    else  /* write last string of bad pixels */
+    else if (nbad) /* write last string of bad pixels */
     {
       fstelm = ii - nbad + first;  /* absolute element number */
       fstrow = (fstelm - 1) / repeat + 1;  /* starting row number */

@@ -754,8 +754,6 @@ int fits_read_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
     if (*status > 0) 
         return(*status);
 
-    buffer = inc; /* dummy statement to stop warning about unused variable */
-
     if (!fits_is_compressed_image(fptr, status) )
     {
         ffpmsg("CHDU is not a compressed image (fits_decomp_img)");
@@ -931,8 +929,8 @@ int fits_read_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
 
               /* copy the intersecting pixels from this tile to the output */
               imcomp_copy_overlap(buffer, pixlen, ndim, tfpixel, tlpixel, 
-                     bnullarray, array, fpixel, lpixel, nullcheck, nullarray,
-                     status);
+                     bnullarray, array, fpixel, lpixel, inc, nullcheck, 
+                     nullarray, status);
             }
           }
         }
@@ -1793,6 +1791,7 @@ int imcomp_copy_overlap (
     char *image,        /* O - multi dimensional output image */
     long *fpixel,       /* I - first pixel number in each dim. of the image */
     long *lpixel,       /* I - last pixel number in each dim. of the image */
+    long *inc,          /* I - increment to be applied in each image dimen. */
     int nullcheck,      /* I - 0, 1: do nothing; 2: set nullarray for nulls */
     char *nullarray, 
     int *status)
@@ -1802,15 +1801,22 @@ int imcomp_copy_overlap (
   Both the tile and the image must have the same number of dimensions. 
 */
 {
-    long imgdim[MAX_COMPRESS_DIM]; /* length of each axis of the output image */
-    long tiledim[MAX_COMPRESS_DIM]; /* length of each axis of the input tile */
-    long imgfpix[MAX_COMPRESS_DIM]; /* 1st image pix overlapping tile: 0 base */
-    long imglpix[MAX_COMPRESS_DIM]; /* last img pix overlapping tile: 0 base */
-    long tilefpix[MAX_COMPRESS_DIM]; /* 1st tile pix overlapping img: 0 base */
+    long imgdim[MAX_COMPRESS_DIM]; /* product of preceding dimensions in the */
+                                   /* output image, allowing for inc factor */
+    long tiledim[MAX_COMPRESS_DIM]; /* product of preceding dimensions in the */
+                                 /* tile, array;  inc factor is not relevant */
+    long imgfpix[MAX_COMPRESS_DIM]; /* 1st img pix overlapping tile: 0 base, */
+                                    /*  allowing for inc factor */
+    long imglpix[MAX_COMPRESS_DIM]; /* last img pix overlapping tile: 0 base, */
+                                    /*  allowing for inc factor */
+    long tilefpix[MAX_COMPRESS_DIM]; /* 1st tile pix overlapping img: 0 base, */
+                                    /*  allowing for inc factor */
     long i1, i2, i3, i4;   /* offset along each axis of the image */
-    long im2, im3, im4;
+    long it1, it2, it3, it4;
+    long im2, im3, im4;  /* used for offset to image pixel, allowing for inc */
+    long ipos, tf, tl;
     long t2, t3, t4;   /* offset along each axis of the tile */
-    long tilepix, imgpix;
+    long tilepix, imgpix, tilepixbyte, imgpixbyte;
     int ii, overlap_bytes, overlap_flags;
 
     if (*status > 0)
@@ -1825,8 +1831,10 @@ int imcomp_copy_overlap (
         tilefpix[ii] = 0;
     }
 
-    /* calc amount of overlap in each dimension; if there is zero */
+    /* ------------------------------------------------------------ */
+    /* calc amount of overlap in each dimension; if there is zero   */
     /* overlap in any dimension then just return  */
+    /* ------------------------------------------------------------ */
     
     for (ii = 0; ii < ndim; ii++)
     {
@@ -1834,7 +1842,7 @@ int imcomp_copy_overlap (
             return(*status);  /* there are no overlapping pixels */
 
         /* calc dimensions of the output image section */
-        imgdim[ii] = lpixel[ii] - fpixel[ii] + 1;
+        imgdim[ii] = (lpixel[ii] - fpixel[ii]) / inc[ii] + 1;
         if (imgdim[ii] < 1)
             return(*status = NEG_AXIS);
 
@@ -1847,53 +1855,125 @@ int imcomp_copy_overlap (
            tiledim[ii] *= tiledim[ii - 1];  /* product of dimensions */
 
         /* first and last pixels in image that overlap with the tile (0 base) */
-        imgfpix[ii] = maxvalue(tfpixel[ii] - fpixel[ii] , 0);
-        imglpix[ii] = minvalue(tlpixel[ii] - fpixel[ii] , imgdim[ii] - 1);
+
+        /* skip this plane if it falls in the cracks of the subsampled image */
+        tf = tfpixel[ii] - 1;
+        tl = tlpixel[ii] - 1;
+
+        while ((tf-(fpixel[ii] - 1)) % inc[ii])
+        {
+           tf++;
+           if (tf > tl)
+             return(*status);  /* no overlapping pixels */
+        }
+
+        while ((tl-(fpixel[ii] - 1)) % inc[ii])
+        {
+           tl--;
+           if (tf > tl)
+             return(*status);  /* no overlapping pixels */
+        }
+        imgfpix[ii] = maxvalue((tf - fpixel[ii] +1) / inc[ii] , 0);
+        imglpix[ii] = minvalue((tl - fpixel[ii] +1) / inc[ii] ,
+                               imgdim[ii] - 1);
 
         /* first pixel in the tile that overlaps with the image (0 base) */
         tilefpix[ii] = maxvalue(fpixel[ii] - tfpixel[ii], 0);
 
+        while ((tfpixel[ii] + tilefpix[ii] - fpixel[ii]) % inc[ii])
+        {
+           (tilefpix[ii])++;
+           if (tilefpix[ii] >= tiledim[ii])
+              return(*status);  /* no overlapping pixels */
+        }
+/*
+printf("ii tfpixel, tlpixel %d %d %d \n",ii, tfpixel[ii], tlpixel[ii]);
+printf("ii, tf, tl, imgfpix,imglpix, tilefpix %d %d %d %d %d %d\n",ii,
+ tf,tl,imgfpix[ii], imglpix[ii],tilefpix[ii]);
+*/
         if (ii > 0)
            imgdim[ii] *= imgdim[ii - 1];  /* product of dimensions */
     }
-    /* calc number of pixels in each row (first dimension) that overlap */
-    /* multiply by pixlen to get number of bytes to copy in each loop */
 
-    overlap_flags = imglpix[0] - imgfpix[0] + 1;
+    /* ---------------------------------------------------------------- */
+    /* calc number of pixels in each row (first dimension) that overlap */
+    /* multiply by pixlen to get number of bytes to copy in each loop   */
+    /* ---------------------------------------------------------------- */
+
+    if (inc[0] > 1)
+       overlap_flags = 1;  /* can only copy 1 pixel at a time */
+    else
+       overlap_flags = imglpix[0] - imgfpix[0] + 1;  /* can copy whole row */
+
     overlap_bytes = overlap_flags * pixlen;
 
     /* support up to 5 dimensions for now */
-    for (i4 = 0; i4 <= imglpix[4] - imgfpix[4]; i4++)
+    for (i4 = 0, it4=0; i4 <= imglpix[4] - imgfpix[4]; i4++, it4++)
     {
+     /* increment plane if it falls in the cracks of the subsampled image */
+     while (ndim > 4 &&  (tfpixel[4] + tilefpix[4] - fpixel[4] + it4)
+                          % inc[4] != 0)
+        it4++;
+
       im4 = (i4 + imgfpix[4]) * imgdim[3];
-      t4 = (tilefpix[4] + i4) * tiledim[3];
-      for (i3 = 0; i3 <= imglpix[3] - imgfpix[3]; i3++)
+      t4 = (tilefpix[4] + it4) * tiledim[3];
+      for (i3 = 0, it3=0; i3 <= imglpix[3] - imgfpix[3]; i3++, it3++)
       {
+       /* increment plane if it falls in the cracks of the subsampled image */
+       while (ndim > 3 &&  (tfpixel[3] + tilefpix[3] - fpixel[3] + it3)
+                            % inc[3] != 0)
+          it3++;
+
        im3 = (i3 + imgfpix[3]) * imgdim[2] + im4;
-       t3 = (tilefpix[3] + i3) * tiledim[2] + t4;
-        for (i2 = 0; i2 <= imglpix[2] - imgfpix[2]; i2++)
-        {
+       t3 = (tilefpix[3] + it3) * tiledim[2] + t4;
+       for (i2 = 0, it2=0; i2 <= imglpix[2] - imgfpix[2]; i2++, it2++)
+       {
+          /* incre plane if it falls in the cracks of the subsampled image */
+          while (ndim > 2 &&  (tfpixel[2] + tilefpix[2] - fpixel[2] + it2)
+                               % inc[2] != 0)
+             it2++;
+
           im2 = (i2 + imgfpix[2]) * imgdim[1] + im3;
-          t2 = (tilefpix[2] + i2) * tiledim[1] + t3;
-          for (i1 = 0; i1 <= imglpix[1] - imgfpix[1]; i1++)
+          t2 = (tilefpix[2] + it2) * tiledim[1] + t3;
+          for (i1 = 0, it1=0; i1 <= imglpix[1] - imgfpix[1]; i1++, it1++)
           {
+             /* incre row if it falls in the cracks of the subsampled image */
+             while (ndim > 1 &&  (tfpixel[1] + tilefpix[1] - fpixel[1] + it1)
+                                  % inc[1] != 0)
+                it1++;
+/*
+printf("tilefpix0,1, imgfpix1, it1, inc1, t2= %d %d %d %d %d %d\n",
+       tilefpix[0],tilefpix[1],imgfpix[1],it1,inc[1], t2);
+printf("i1, it1, tilepix, imgpix %d %d %d %d \n", i1, it1, tilepix, imgpix);
+*/
              /* calc position of first pixel in tile to be copied */
-             tilepix = tilefpix[0] + (tilefpix[1] + i1) * tiledim[0] + t2;
+             tilepix = tilefpix[0] + (tilefpix[1] + it1) * tiledim[0] + t2;
 
              /* calc position in image to copy to */
              imgpix = imgfpix[0] + (i1 + imgfpix[1]) * imgdim[0] + im2;
- 
-             /* copy overlapping null flags from tile to image */
-             if (nullcheck == 2)
-                 memcpy(nullarray + imgpix, bnullarray + tilepix,
-                        overlap_flags);
 
-             /* convert from image pixel to byte offset */
-             tilepix *= pixlen;
-             imgpix  *= pixlen;
+             for (ipos = imgfpix[0]; ipos <= imglpix[0]; ipos += overlap_flags)
+             {
+               if (nullcheck == 2)
+               {
+                   /* copy overlapping null flags from tile to image */
+                   memcpy(nullarray + imgpix, bnullarray + tilepix,
+                          overlap_flags);
+               }
 
-             /* copy overlapping row of pixels from tile to image */
-             memcpy(image + imgpix, tile + tilepix, overlap_bytes);
+               /* convert from image pixel to byte offset */
+               tilepixbyte = tilepix * pixlen;
+               imgpixbyte  = imgpix  * pixlen;
+/*
+printf("  tilepix, tilepixbyte, imgpix, imgpixbyte= %d %d %d %d\n",
+          tilepix, tilepixbyte, imgpix, imgpixbyte);
+*/
+               /* copy overlapping row of pixels from tile to image */
+               memcpy(image + imgpixbyte, tile + tilepixbyte, overlap_bytes);
+
+               tilepix += (overlap_flags * inc[0]);
+               imgpix += overlap_flags;
+            }
           }
         }
       }

@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large January 2001\\}
+{\Large March 2001\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -1063,12 +1063,18 @@ The CFITSIO routines that read and write numerical data can perform
 implicit data type conversion.  This means that the data type of the
 variable or array in the program does not need to be the same as the
 data type of the value in the FITS file.  Data type conversion is
-supported for numerical data types when reading a FITS header keyword
-value and when reading or writing values in the primary array or a
-table column.  CFITSIO returns status = NUM\_OVERFLOW  if the converted
-data value exceeds the range of the output data type.  Implicit data type
-conversion is not supported for string, logical, complex, or double
-complex data types.
+supported for numerical and string data types (if the string contains a
+valid number enclosed in quotes) when reading a FITS header keyword
+value and for numeric values when reading or writing values in the
+primary array or a table column.  CFITSIO returns status =
+NUM\_OVERFLOW  if the converted data value exceeds the range of the
+output data type.  Implicit data type conversion is not supported
+within binary tables for string, logical, complex, or double complex
+data types.
+
+In addition, any table column may be read as if it contained string values.
+In the case of numeric columns the returned string will be formated
+using the TDISPn display format if it exists.
 
  
 \section{Data Scaling}
@@ -4163,7 +4169,7 @@ twice.
 \end{verbatim}
 
  
-\section{roup Member Routines}
+\section{Group Member Routines}
 
  
 \begin{description}
@@ -4475,12 +4481,17 @@ specifications.
 \end{verbatim}
  
 \begin{description}
-\item[3 ] Insert a new IMAGE extension immediately following the CHDU.
-    Any following extensions will be shifted down to make room for
-    the new extension.  If there are no other following extensions
-    then the new image extension will simply be appended to the
-    end of the file.  The new extension will become the CHDU.
-   Refer to Chapter 9 for a list of pre-defined bitpix values. \label{ffiimg}
+\item[3 ] Insert a new IMAGE extension immediately following the CHDU, or
+    insert a new Primary Array at the beginning of the file.  Any
+    following extensions in the file will be shifted down to make room
+    for the new extension.  If the CHDU is the last HDU in the file
+    then the new image extension will simply be appended to the end of
+    the file.   One can force a new primary array to be inserted at the
+    beginning of the FITS file by setting status = PREPEND\_PRIMAY prior
+    to calling the routine.  In this case the old primary array will be
+    converted to an IMAGE extension. The new extension (or primary
+    array) will become the CHDU.  Refer to Chapter 9 for a list of
+   pre-defined bitpix values.  \label{ffiimg}
 \end{description}
  
 \begin{verbatim}
@@ -4909,7 +4920,8 @@ keyword to be read.
     the CHU.  If a NULL comment pointer is given on input, then the comment
     string will not be returned.  If the value of the keyword is not defined
     (i.e., the value field is blank) then an error status = VALUE\_UNDEFINED
-    will be returned and the input value will not be changed.
+    will be returned and the input value will not be changed (except that
+    ffgkys will reset the value to a null string).
   \label{ffgkyx} \label{ffgkls}
 \end{description}
  
@@ -6453,8 +6465,9 @@ them with semi-colons.
 
 \begin{itemize}
 \item
-Delete a column or keyword by listing the name preceded by an
-exclamation mark (!), e.g., '!TIME' will delete the TIME column if it
+Delete a column or keyword by listing the name preceded by a minus sign
+or an
+exclamation mark (!), e.g., '-TIME' will delete the TIME column if it
 exists, otherwise the TIME keyword.  An error is returned if neither a
 column nor keyword with this name exists.  Note  that the exclamation
 point,  '!', is a special UNIX character, so if it is used  on the
@@ -6508,7 +6521,7 @@ be separated by semicolons.
 Examples:
  
 \begin{verbatim}
-   [col !TIME; Good == STATUS]   - deletes the TIME column and
+   [col -TIME; Good == STATUS]   - deletes the TIME column and
                                    renames the status column to 'Good'
 
    [col PI=PHA * 1.1 + 0.2]      - creates new PI column from PHA values
@@ -8518,6 +8531,7 @@ improve the readability of their code.
  Symbolic Const    Value     Meaning
  --------------    -----  -----------------------------------------
                      0    OK, no error
+ PREPEND_PRIMARY    -9    used in ffiimg to prepend a new primary array
  SAME_FILE         101    input and output files are the same
  TOO_MANY_FILES    103    tried to open too many FITS files at once
  FILE_NOT_OPENED   104    could not open the named file

@@ -1090,7 +1090,7 @@ int ffedit_columns(
         if( *cptr==';' ) cptr++;
         clause[slen] = '\0';
 
-        if (clause[0] == '!')
+        if (clause[0] == '!' || clause[0] == '-')
         {
             /* delete this column or keyword */
 
@@ -1555,7 +1555,7 @@ int fits_select_image_section(
     fitsfile *newptr;
     int ii, hdunum, naxis, bitpix, tstatus, anynull, nkey, numkeys;
     long naxes[9], smin, smax, sinc, fpixels[9], lpixels[9], incs[9];
-    long outnaxes[9], outsize, buffsize;
+    long outnaxes[9], outsize, buffsize, dummy[2];
     char *cptr, keyname[FLEN_KEYWORD], card[FLEN_CARD];
     double *buffer = 0, crpix, cdelt;
 
@@ -1757,7 +1757,12 @@ int fits_select_image_section(
     /* reduces the probability that the memory for the FITS file will have */
     /* to be reallocated to a new location later. */
 
-    if (fits_write_img(newptr, TLONG, outsize, 1, incs, status) > 0)
+    /* turn off any scaling of the pixel values */
+    fits_set_bscale(*fptr,  1.0, 0.0, status);
+    fits_set_bscale(newptr, 1.0, 0.0, status);
+
+    dummy[0] = 0;
+    if (fits_write_img(newptr, TLONG, outsize, 1, dummy, status) > 0)
     {
         ffpmsg("error trying to write dummy value to the last image pixel");
         ffclos(newptr, status);
@@ -1774,10 +1779,6 @@ int fits_select_image_section(
         ffclos(newptr, status);
         return(*status = MEMORY_ALLOCATION);
     }
-
-    /* turn off any scaling of the pixel values */
-    fits_set_bscale(*fptr,  1.0, 0.0, status);
-    fits_set_bscale(newptr, 1.0, 0.0, status);
 
     /* read the image section then write it to the output file */
 

@@ -280,6 +280,7 @@ typedef struct  /* structure for the iterator function column information */
  
 #define USE_MEM_BUFF     -101  /* use memory buffer when opening file */
 #define OVERFLOW_ERR      -11  /* overflow during datatype conversion */
+#define PREPEND_PRIMARY    -9  /* used in ffiimg to insert new primary array */
 #define SAME_FILE         101  /* input and output files are the same */
 #define TOO_MANY_FILES    103  /* tried to open too many FITS files */
 #define FILE_NOT_OPENED   104  /* could not open the named file */

@@ -1,5 +1,66 @@
                    Log of Changes Made to CFITSIO
 
+Version 2.201 - 15 March 2001
+
+  Enhancements
+
+   - enhanced the keyword reading routines so that they will do
+     implicit datatype conversion from a string keyword value
+     to a numeric keyword value, if the string consist of a
+     valid number enclosed in quotes.  For example, the keyword
+     mykey = '37.5' can be read by ffgkye.
+
+   - modified ffiimg so that it is possible to insert a new
+     primary array at the beginning of the file.  The original
+     primary array is then converted into an IMAGE extension.
+
+   - modified ffcpdt (copy data unit) to support the case where 
+     the data unit is being copied between 2 HDUs in the same file.
+
+   - enhanced the fits_read_pix and fits_read_pixnull routines so
+     that they support the tiled image compression format that the
+     other image reading routines also support.
+
+   - modified the Extended File Name syntax to also accept a 
+     minus sign (-) as well as an exclamation point (!) as
+     the leading character when specifying a column or or keyword
+     to be deleted, as in [col -time] will delete the TIME column.
+
+   - now completely support reading subimages, including pixel
+     increments in each dimension, for tile-compressed images
+     (where the compressed image tiles are stored in a binary
+      table).
+
+  Bug fixes:
+
+   - fixed confusion in the use of the fpos_t and off_t datatypes
+     in the fgetpos and fsetpos routines in drvrfile.c which caused
+     problems with the Windows VC++ compiler.  (fpos_t is not 
+     necessarily identical to off_t)
+
+   - fixed a typo in the fits_get_url function in group.c which 
+     caused problems when determining the relative URL to a compressed
+     FITS file.
+
+   - included fitsio.h in the shared memory utility program,
+     smem.c, in order to define OFF_T. 
+
+   - fixed typo in the datatype of 'nullvalue' in ffgsvi, which caused
+     attempts to read subsections of a short integer tiled compressed
+     image to fail with a bus error.    
+
+   - fixed bug in ffdkey which sometimes worked incorrectly if one 
+     tried to delete a nonexistent keyword beyond the end of the header.
+
+   - fixed problem in fits_select_image_section when it writes a dummy
+     value to the last pixel of the section.  If the image contains
+     scaled integer pixels, then in some cases the pixel value could end
+     up out of range.
+
+   - fixed obscure bug in the ffpcn_ family of routines which gave
+     a floating exception when trying to write zero number of pixels to
+     a zero length array  (why would anyone do this?)
+
 Version 2.200 - 26 Jan 2001
 
   Enhancements

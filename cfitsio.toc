@@ -55,7 +55,7 @@
 \contentsline {section}{\numberline {7.2}WCS Routines that require the WCS library}{63}
 \contentsline {chapter}{\numberline {8} Hierarchical Grouping Routines }{65}
 \contentsline {section}{\numberline {8.1}Grouping Table Routines}{66}
-\contentsline {section}{\numberline {8.2}roup Member Routines}{68}
+\contentsline {section}{\numberline {8.2}Group Member Routines}{68}
 \contentsline {chapter}{\numberline {9} Specialized CFITSIO Interface Routines }{71}
 \contentsline {section}{\numberline {9.1}FITS File Access Routines}{71}
 \contentsline {section}{\numberline {9.2}HDU Access Routines}{73}
@@ -87,7 +87,7 @@
 \contentsline {section}{\numberline {10.8}Column and Keyword Filtering Specification}{106}
 \contentsline {section}{\numberline {10.9}Row Filtering Specification}{107}
 \contentsline {subsection}{\numberline {10.9.1}General Syntax}{107}
-\contentsline {subsection}{\numberline {10.9.2}Vector Columns}{110}
+\contentsline {subsection}{\numberline {10.9.2}Vector Columns}{111}
 \contentsline {subsection}{\numberline {10.9.3}Good Time Interval Filtering}{112}
 \contentsline {subsection}{\numberline {10.9.4}Spatial Region Filtering}{112}
 \contentsline {subsection}{\numberline {10.9.5}Example Row Filters}{114}

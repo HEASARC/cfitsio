@@ -2,10 +2,11 @@
 #include <memory.h>
 #include <string.h>
 #include <malloc.h>
-#include "drvrsmem.h"
+#include "fitsio.h"     /* needed to define OFF_T */
+#include "drvrsmem.h"   /* uses OFF_T */
 
 int	main(int argc, char **argv)
-{ int r, cmdok, listmode, longlistmode, recovermode, deletemode, id;
+{ int cmdok, listmode, longlistmode, recovermode, deletemode, id;
 
 listmode = longlistmode = recovermode = deletemode = 0;
 id = -1;
@@ -57,7 +58,6 @@ if (shared_init(0))
   { printf("couldn't initialize shared memory, aborting ...\n");
     return(10);
   }
-
 
 if (listmode) shared_list(id);
 else if (recovermode) shared_recover(id);

@@ -231,7 +231,7 @@ int ffgsvi(fitsfile *fptr, /* I - FITS file pointer                         */
     int hdutype, anyf;
     char ldummy, msg[FLEN_ERRMSG];
     int nullcheck = 1;
-    unsigned char nullvalue;
+    short nullvalue;
 
     if (naxis < 1 || naxis > 9)
     {
@@ -248,6 +248,7 @@ int ffgsvi(fitsfile *fptr, /* I - FITS file pointer                         */
 
         fits_read_compressed_img(fptr, TSHORT, blc, trc, inc,
             nullcheck, &nullvalue, array, NULL, anynul, status);
+
         return(*status);
     }
 

@@ -5668,7 +5668,7 @@ int  fits_get_url(fitsfile *fptr,       /* I ptr to FITS file to evaluate    */
 	}
 
       if(realAccess  != NULL)  strcpy(realAccess,tmpStr3);
-      if(startAccess != NULL)  strcpy(startAccess,tmpStr3);
+      if(startAccess != NULL)  strcpy(startAccess,tmpStr4);
       if(iostate     != NULL) *iostate = tmpIOstate;
 
     }while(0);

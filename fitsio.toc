@@ -44,7 +44,7 @@
 \contentsline {section}{\numberline {6.8}Error Status Values and the Error Message Stack}{46}
 \contentsline {section}{\numberline {6.9}Variable-Length Array Facility in Binary Tables}{47}
 \contentsline {section}{\numberline {6.10}Support for IEEE Special Values}{48}
-\contentsline {section}{\numberline {6.11}When the Final Size of the FITS HDU is Unknown}{48}
+\contentsline {section}{\numberline {6.11}When the Final Size of the FITS HDU is Unknown}{49}
 \contentsline {section}{\numberline {6.12}Local FITS Conventions supported by FITSIO}{49}
 \contentsline {subsection}{\numberline {6.12.1}Support for Long String Keyword Values.}{49}
 \contentsline {subsection}{\numberline {6.12.2}Arrays of Fixed-Length Strings in Binary Tables}{50}
