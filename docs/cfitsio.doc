@@ -30,11 +30,18 @@ allow Fortran programs to call the CFITSIO routines.  See the companion
 calling sequences.  These wrappers replace the older Fortran FITSIO
 library which is no longer supported.
 
-The CFITSIO package was developed for use by the HEASARC (High Energy
+The CFITSIO package was initially developed by the HEASARC (High Energy
 Astrophysics Science Archive Research Center) at the NASA Goddard Space
 Flight Center to convert various existing and newly acquired
 astronomical data sets into FITS format and to further analyze data
-already in FITS format.  The latest version of the CFITSIO source code,
+already in FITS format.  New features continue to be added to CFITSIO
+in large part due to contributions of ideas or actual code from
+users of the package.  The Integral Science Data Center in Switzerland,
+and the XMM/ESTEC project in The Netherlands made especially significant
+contributions that resulted in many of the new features that appeared
+in v2.0 of CFITSIO.
+
+The latest version of the CFITSIO source code,
 documentation, and example programs are available on the World-Wide
 Web or via anonymous ftp from:
 -
@@ -42,7 +49,7 @@ Web or via anonymous ftp from:
         ftp://legacy.gsfc.nasa.gov/software/fitsio/c
 -
 Any questions, bug reports, or suggested enhancements related to the CFITSIO
-package should be sent to the author:
+package should be sent to the primary author:
 -
         Dr. William Pence                 Telephone:  (301) 286-4599
         HEASARC, Code 662                 E-mail: pence@tetra.gsfc.nasa.gov
@@ -330,22 +337,25 @@ main()
 -
 **E.  Acknowledgements
 
-The development of CFITSIO was made possible through the help of
-dozens of people from around the world.  The following people in
-particular have made especially significant contributions:
+The development of many of the powerful features in CFITSIO was made
+possible through collaborations with many people or organizations from
+around the world.  The following, in particular, have made especially
+significant contributions:
 
-Jurek Borkowski, with help from Bruce O'Neel and Don Jennings (all at
-the Integral Science Data Center, Switzerland), provided the initial
-design for the plug-in I/O drivers that were introduced in CFITSIO
-2.0.  This `driver' concept greatly simplified  the low-level I/O,
-which in turn made many of the other new features in CFITSIO much
-easier to implement.  Jurek Borkowski wrote the Shared Memory driver,
-and Bruce O'Neel wrote the drivers for accessing FITS files over the
-network using the FTP, HTTP, and ROOT protocols.
+Programmers from the Integral Science Data Center, Switzerland (namely,
+Jurek Borkowski, Bruce O'Neel, and Don Jennings), designed the concept
+for the plug-in I/O drivers that was introduced with CFITSIO 2.0.  The
+use of `drivers' greatly simplified  the low-level I/O, which in turn
+made other new features in CFITSIO (e.g., support for compressed FITS
+files and support for IRAF format image files) much easier to
+implement.  Jurek Borkowski wrote the Shared Memory driver, and Bruce
+O'Neel wrote the drivers for accessing FITS files over the network
+using the FTP, HTTP, and ROOT protocols.
 
-Jurek Borkowski also wrote the template parsing routines.
-
-Don Jennings designed and wrote the `Hierarchical Grouping' routines.
+The ISDC also provided the template parsing routines (written by Jurek
+Borkowski) and the hierarchical grouping routines (written by Don
+Jennings).  The ISDC DAL (Data Access Layer) routines are layered on
+top of CFITSIO and make extensive use of these features.
 
 Uwe Lamers (XMM/ESA/ESTEC, The Netherlands) designed the
 high-performance lexical parsing algorithm that is used to do
@@ -358,12 +368,12 @@ routine to further enhance the data processing throughput.  This effort
 also benefitted from a much earlier lexical parsing routine that was
 developed by Kent Blackburn (NASA/GSFC).
 
-Peter Wilson also wrote the complete set of Fortran-callable wrappers
-for all the CFITSIO routines, which rely on the CFORTRAN macro
-developed by Burkhard Burow.
-
 The CFITSIO iterator function is loosely based on similar ideas
 developed for the XMM Data Access Layer.
+
+Peter Wilson (RSTX, NASA/GSFC) wrote the complete set of
+Fortran-callable wrappers for all the CFITSIO routines, which in turn
+rely on the CFORTRAN macro developed by Burkhard Burow.
 
 The syntax used by CFITSIO for filtering or binning input FITS files is
 based on ideas developed for the AXAF Science Center Data Model by
@@ -378,8 +388,8 @@ Doug Mink, SAO, provided the routines for converting IRAF format
 images into FITS format.
 
 In addition, many other people have made valuable contributions to the
-development of CFITSIO.  These include (with apologies to others I may
-have inadvertently omitted):
+development of CFITSIO.  These include (with apologies to others that may
+have inadvertently been omitted):
 
 Steve Allen, Carl Akerlof, Keith Arnaud, Morten Krabbe Barfoed, Kent
 Blackburn, G Bodammer, Romke Bontekoe, Lucio Chiappetti, Keith Costorf,
@@ -393,11 +403,6 @@ Chris Rogers, Arnold Rots, Barry Schlesinger, Robin Stebbins, Andrew
 Szymkowiak, Allyn Tennant, Peter Teuben, James Theiler, Doug Tody,
 Shiro Ueno, Steve Walton, Archie Warnock, Alan Watson, Dan Whipple, Wim
 Wimmers, Peter Young, Jianjun Xu, and Nelson Zarate.
-
-Finally, special thanks go out to the members of the U.S. Congress who in
-January 1996 shut down the U.S. government offices, including NASA,
-by failing to pass funding legislation, thus giving the author
-sufficient free time to write the initial version of CFITSIO.
 
 
 *III.  A FITS Primer

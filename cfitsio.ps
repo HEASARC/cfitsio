@@ -1,7 +1,7 @@
 %!PS (but not EPSF; comments have been disabled)
 %DVIPSCommandLine: dvips cfitsio
 %DVIPSParameters: dpi=600, compressed, comments removed
-%DVIPSSource:  TeX output 1998.10.23:1536
+%DVIPSSource:  TeX output 1998.10.29:1159
 /TeXDict 250 dict def TeXDict begin /N{def}def /B{bind def}N /S{exch}N
 /X{S N}B /TR{translate}N /isls false N /vsize 11 72 mul N /hsize 8.5 72
 mul N /landplus90{false}def /@rigin{isls{[0 landplus90{1 -1}{-1 1}
@@ -2010,11 +2010,10 @@ TeXDict begin
 0 0 bop 777 1599 a Fm(CFITSIO)76 b(User's)g(Guide)727
 2058 y Fl(An)53 b(In)l(terface)f(to)i(FITS)g(F)-13 b(ormat)53
 b(Files)1263 2318 y(for)h(C)f(Programmers)1667 2814 y
-Fk(V)-10 b(ersion)38 b(2.0)1514 3717 y Fj(Dr.)i(William)28
-b(D.)j(P)m(ence)1727 3829 y(HEASAR)m(C)1764 3942 y(Co)s(de)f(662)1363
-4055 y(Go)s(ddard)f(Space)i(Fligh)m(t)f(Cen)m(ter)1522
-4168 y(Green)m(b)s(elt,)g(MD)i(20771)1857 4281 y(USA)1607
-5021 y Fk(Octob)s(er)38 b(1998)p eop
+Fk(V)-10 b(ersion)38 b(2.0)1727 3717 y Fj(HEASAR)m(C)1764
+3829 y(Co)s(de)30 b(662)1363 3942 y(Go)s(ddard)f(Space)i(Fligh)m(t)f
+(Cen)m(ter)1522 4055 y(Green)m(b)s(elt,)g(MD)i(20771)1857
+4168 y(USA)1607 4964 y Fk(Octob)s(er)38 b(1998)p eop
 0 1 bop eop
 1 2 bop 0 1067 a Fm(Con)-6 b(ten)g(ts)0 1668 y Fi(1)84
 b(In)m(tro)s(duction)3136 b(1)0 1938 y(2)119 b(Creating)34
@@ -2278,56 +2277,65 @@ b(call)e(the)h(CFITSIO)e(routines.)40 b(See)30 b(the)g(companion)f
 3383 y(F)-8 b(ortran)39 b(subroutine)c(calling)i(sequences.)63
 b(These)38 b(wrapp)s(ers)e(replace)i(the)g(older)f(F)-8
 b(ortran)39 b(FITSIO)d(library)0 3496 y(whic)m(h)29 b(is)h(no)g(longer)
-g(supp)s(orted.)0 3656 y(The)24 b(CFITSIO)f(pac)m(k)-5
-b(age)27 b(w)m(as)e(dev)m(elop)s(ed)f(for)g(use)g(b)m(y)h(the)f(HEASAR)
-m(C)h(\(High)f(Energy)g(Astroph)m(ysics)g(Science)0 3769
+g(supp)s(orted.)0 3656 y(The)20 b(CFITSIO)f(pac)m(k)-5
+b(age)23 b(w)m(as)e(initially)d(dev)m(elop)s(ed)i(b)m(y)g(the)h(HEASAR)
+m(C)g(\(High)g(Energy)f(Astroph)m(ysics)g(Science)0 3769
 y(Arc)m(hiv)m(e)34 b(Researc)m(h)h(Cen)m(ter\))f(at)h(the)f(NASA)g(Go)s
 (ddard)e(Space)j(Fligh)m(t)e(Cen)m(ter)h(to)h(con)m(v)m(ert)g(v)-5
-b(arious)33 b(existing)0 3881 y(and)g(newly)f(acquired)g(astronomical)h
-(data)h(sets)f(in)m(to)g(FITS)g(format)g(and)g(to)h(further)e(analyze)h
-(data)h(already)0 3994 y(in)39 b(FITS)g(format.)70 b(The)40
-b(latest)g(v)m(ersion)g(of)g(the)g(CFITSIO)f(source)h(co)s(de,)j(do)s
-(cumen)m(tation,)g(and)c(example)0 4107 y(programs)30
-b(are)h(a)m(v)-5 b(ailable)30 b(on)g(the)g(W)-8 b(orld-Wide)30
-b(W)-8 b(eb)31 b(or)g(via)f(anon)m(ymous)g(ftp)g(from:)382
-4338 y Fe(http://heasarc.gsfc.nasa)o(.go)o(v/fi)o(tsio)382
-4451 y(ftp://legacy.gsfc.nasa.g)o(ov/)o(soft)o(ware)o(/fi)o(tsio)o(/c)0
-4682 y Fj(An)m(y)e(questions,)f(bug)g(rep)s(orts,)h(or)f(suggested)i
+b(arious)33 b(existing)0 3881 y(and)25 b(newly)g(acquired)g
+(astronomical)h(data)g(sets)h(in)m(to)f(FITS)f(format)h(and)f(to)i
+(further)e(analyze)h(data)h(already)e(in)0 3994 y(FITS)i(format.)41
+b(New)28 b(features)g(con)m(tin)m(ue)g(to)h(b)s(e)e(added)h(to)g
+(CFITSIO)f(in)f(large)i(part)g(due)g(to)g(con)m(tributions)f(of)0
+4107 y(ideas)32 b(or)h(actual)g(co)s(de)g(from)f(users)g(of)h(the)g
+(pac)m(k)-5 b(age.)49 b(The)33 b(In)m(tegral)g(Science)f(Data)i(Cen)m
+(ter)f(in)f(Switzerland,)0 4220 y(and)h(the)g(XMM/ESTEC)h(pro)5
+b(ject)34 b(in)e(The)h(Netherlands)f(made)h(esp)s(ecially)f
+(signi\014can)m(t)g(con)m(tributions)g(that)0 4333 y(resulted)d(in)g
+(man)m(y)i(of)f(the)h(new)f(features)g(that)h(app)s(eared)f(in)f(v2.0)j
+(of)e(CFITSIO.)0 4493 y(The)22 b(latest)h(v)m(ersion)f(of)h(the)f
+(CFITSIO)f(source)i(co)s(de,)h(do)s(cumen)m(tation,)h(and)c(example)i
+(programs)f(are)h(a)m(v)-5 b(ailable)0 4606 y(on)30 b(the)h(W)-8
+b(orld-Wide)30 b(W)-8 b(eb)31 b(or)f(via)g(anon)m(ymous)g(ftp)g(from:)
+382 4873 y Fe(http://heasarc.gsfc.nasa)o(.go)o(v/fi)o(tsio)382
+4985 y(ftp://legacy.gsfc.nasa.g)o(ov/)o(soft)o(ware)o(/fi)o(tsio)o(/c)0
+5252 y Fj(An)m(y)e(questions,)f(bug)g(rep)s(orts,)h(or)f(suggested)i
 (enhancemen)m(ts)f(related)f(to)i(the)e(CFITSIO)f(pac)m(k)-5
-b(age)30 b(should)c(b)s(e)0 4795 y(sen)m(t)31 b(to)g(the)g(author:)382
-5026 y Fe(Dr.)47 b(William)f(Pence)810 b(Telephone:)92
-b(\(301\))47 b(286-4599)382 5139 y(HEASARC,)e(Code)i(662)811
-b(E-mail:)45 b(pence@tetra.gsfc.nasa.gov)382 5252 y(NASA/Goddard)f
-(Space)j(Flight)f(Center)382 5365 y(Greenbelt,)f(MD)i(20771,)f(USA)1927
-5593 y Fj(1)p eop
-2 7 bop 0 100 a Fj(2)2452 b Fg(CHAPTER)30 b(1.)71 b(INTR)m(ODUCTION)0
-356 y Fj(This)26 b(User's)i(Guide)f(assumes)g(that)i(readers)e(already)
+b(age)30 b(should)c(b)s(e)0 5365 y(sen)m(t)31 b(to)g(the)g(primary)d
+(author:)1927 5593 y(1)p eop
+2 7 bop 0 100 a Fj(2)2452 b Fg(CHAPTER)30 b(1.)71 b(INTR)m(ODUCTION)382
+356 y Fe(Dr.)47 b(William)f(Pence)810 b(Telephone:)92
+b(\(301\))47 b(286-4599)382 469 y(HEASARC,)e(Code)i(662)811
+b(E-mail:)45 b(pence@tetra.gsfc.nasa.gov)382 582 y(NASA/Goddard)f
+(Space)j(Flight)f(Center)382 695 y(Greenbelt,)f(MD)i(20771,)f(USA)0
+954 y Fj(This)26 b(User's)i(Guide)f(assumes)g(that)i(readers)e(already)
 h(ha)m(v)m(e)h(a)f(general)g(understanding)d(of)j(the)g(de\014nition)e
-(and)0 469 y(structure)32 b(of)h(FITS)g(format)g(\014les.)47
+(and)0 1067 y(structure)32 b(of)h(FITS)g(format)g(\014les.)47
 b(F)-8 b(urther)33 b(information)e(ab)s(out)h(FITS)h(formats)g(is)f(a)m
-(v)-5 b(ailable)32 b(in)f(the)i(`FITS)0 582 y(User's)f(Guide')f(and)g
+(v)-5 b(ailable)32 b(in)f(the)i(`FITS)0 1180 y(User's)f(Guide')f(and)g
 (the)h(`NOST)f(FITS)g(Standard',)g(whic)m(h)g(are)h(a)m(v)-5
 b(ailable)31 b(from)g(the)h(NASA)g(Science)g(O\016ce)0
-695 y(of)j(Standards)f(and)h(T)-8 b(ec)m(hnology)36 b(at)g(the)f
-(address)g(giv)m(en)g(b)s(elo)m(w.)54 b(Both)36 b(of)f(these)h(do)s
-(cumen)m(ts)f(are)h(a)m(v)-5 b(ailable)0 808 y(electronically)35
-b(from)h(their)f(W)-8 b(eb)37 b(site)f(and)f(via)h(anon)m(ymous)g(ftp)g
-(at)h(nssdc.gsfc.nasa.go)m(v)h(in)d(the)h(/pub/\014ts)0
-920 y(directory)-8 b(.)41 b(An)m(y)30 b(questions)g(ab)s(out)g(FITS)f
-(formats)i(should)d(b)s(e)i(directed)g(to)h(the)f(NOST,)g(at:)382
-1180 y Fe(NASA,)46 b(Science)g(Office)g(of)h(Standards)f(and)g
-(Technology)382 1293 y(Code)g(633.2,)382 1406 y(Goddard)g(Space)g
-(Flight)g(Center)382 1519 y(Greenbelt)f(MD)i(20771,)f(USA)382
-1632 y(WWW:)g(http://ssdoo.gsfc.nasa.gov)o(/ast)o(ro/)o(fits)o(/fit)o
-(s_h)o(ome.)o(html)382 1745 y(E-mail:)g(fits@nssdca.gsfc.nasa.g)o(ov)
-382 1858 y(\(301\))g(286-2899)0 2118 y Fj(CFITSIO)33
-b(users)g(ma)m(y)h(also)g(b)s(e)g(in)m(terested)g(in)f(the)h(FTOOLS)f
-(pac)m(k)-5 b(age)36 b(of)e(programs)g(that)g(can)h(b)s(e)e(used)g(to)0
-2230 y(manipulate)i(and)g(analyze)i(FITS)f(format)g(\014les.)58
+1293 y(of)j(Standards)f(and)h(T)-8 b(ec)m(hnology)36
+b(at)g(the)f(address)g(giv)m(en)g(b)s(elo)m(w.)54 b(Both)36
+b(of)f(these)h(do)s(cumen)m(ts)f(are)h(a)m(v)-5 b(ailable)0
+1406 y(electronically)35 b(from)h(their)f(W)-8 b(eb)37
+b(site)f(and)f(via)h(anon)m(ymous)g(ftp)g(at)h(nssdc.gsfc.nasa.go)m(v)h
+(in)d(the)h(/pub/\014ts)0 1519 y(directory)-8 b(.)41
+b(An)m(y)30 b(questions)g(ab)s(out)g(FITS)f(formats)i(should)d(b)s(e)i
+(directed)g(to)h(the)f(NOST,)g(at:)382 1779 y Fe(NASA,)46
+b(Science)g(Office)g(of)h(Standards)f(and)g(Technology)382
+1892 y(Code)g(633.2,)382 2005 y(Goddard)g(Space)g(Flight)g(Center)382
+2118 y(Greenbelt)f(MD)i(20771,)f(USA)382 2230 y(WWW:)g
+(http://ssdoo.gsfc.nasa.gov)o(/ast)o(ro/)o(fits)o(/fit)o(s_h)o(ome.)o
+(html)382 2343 y(E-mail:)g(fits@nssdca.gsfc.nasa.g)o(ov)382
+2456 y(\(301\))g(286-2899)0 2716 y Fj(CFITSIO)33 b(users)g(ma)m(y)h
+(also)g(b)s(e)g(in)m(terested)g(in)f(the)h(FTOOLS)f(pac)m(k)-5
+b(age)36 b(of)e(programs)g(that)g(can)h(b)s(e)e(used)g(to)0
+2829 y(manipulate)i(and)g(analyze)i(FITS)f(format)g(\014les.)58
 b(Information)35 b(ab)s(out)h(FTOOLS)f(can)i(b)s(e)f(obtained)f(on)i
-(the)0 2343 y(W)-8 b(eb)31 b(or)f(via)g(anon)m(ymous)h(ftp)f(at:)382
-2603 y Fe(http://heasarc.gsfc.nasa)o(.go)o(v/ft)o(ools)382
-2716 y(ftp://legacy.gsfc.nasa.g)o(ov/)o(soft)o(ware)o(/ft)o(ools)o
+(the)0 2942 y(W)-8 b(eb)31 b(or)f(via)g(anon)m(ymous)h(ftp)f(at:)382
+3202 y Fe(http://heasarc.gsfc.nasa)o(.go)o(v/ft)o(ools)382
+3315 y(ftp://legacy.gsfc.nasa.g)o(ov/)o(soft)o(ware)o(/ft)o(ools)o
 (/rel)o(eas)o(e)p eop
 3 8 bop 0 1026 a Ff(Chapter)65 b(2)0 1488 y Fm(Creating)77
 b(the)h(CFITSIO)e(Library)0 2017 y Fd(2.1)135 b(Building)45
@@ -2586,96 +2594,97 @@ b(/*)47 b(print)g(out)g(any)f(error)h(messages)e(*/)191
 5244 y(return\()h(status)g(\);)0 5357 y(})p eop
 8 13 bop 0 100 a Fj(8)1580 b Fg(CHAPTER)30 b(2.)112 b(CREA)-8
 b(TING)30 b(THE)g(CFITSIO)f(LIBRAR)-8 b(Y)0 356 y Fd(2.5)135
-b(Ac)l(kno)l(wledgemen)l(ts)0 667 y Fj(The)26 b(dev)m(elopmen)m(t)g(of)
-h(CFITSIO)e(w)m(as)h(made)h(p)s(ossible)d(through)h(the)i(help)e(of)h
-(dozens)g(of)h(p)s(eople)e(from)h(around)0 780 y(the)31
-b(w)m(orld.)39 b(The)30 b(follo)m(wing)f(p)s(eople)g(in)g(particular)g
-(ha)m(v)m(e)j(made)e(esp)s(ecially)f(signi\014can)m(t)g(con)m
-(tributions:)0 940 y(Jurek)f(Bork)m(o)m(wski,)h(with)f(help)f(from)h
-(Bruce)h(O'Neel)g(and)f(Don)g(Jennings)f(\(all)h(at)h(the)g(In)m
-(tegral)g(Science)f(Data)0 1053 y(Cen)m(ter,)35 b(Switzerland\),)d(pro)
-m(vided)g(the)h(initial)e(design)h(for)h(the)g(plug-in)e(I/O)i(driv)m
-(ers)f(that)i(w)m(ere)g(in)m(tro)s(duced)0 1166 y(in)j(CFITSIO)f(2.0.)
-65 b(This)36 b(`driv)m(er')h(concept)i(greatly)f(simpli\014ed)d(the)j
-(lo)m(w-lev)m(el)g(I/O,)g(whic)m(h)e(in)h(turn)g(made)0
-1279 y(man)m(y)g(of)h(the)f(other)h(new)f(features)g(in)f(CFITSIO)g(m)m
-(uc)m(h)h(easier)g(to)h(implemen)m(t.)60 b(Jurek)37 b(Bork)m(o)m(wski)h
-(wrote)0 1392 y(the)d(Shared)g(Memory)g(driv)m(er,)h(and)f(Bruce)g
-(O'Neel)g(wrote)h(the)g(driv)m(ers)e(for)h(accessing)g(FITS)g(\014les)f
-(o)m(v)m(er)j(the)0 1505 y(net)m(w)m(ork)31 b(using)e(the)i(FTP)-8
-b(,)31 b(HTTP)-8 b(,)30 b(and)g(R)m(OOT)f(proto)s(cols.)0
-1665 y(Jurek)h(Bork)m(o)m(wski)g(also)h(wrote)g(the)f(template)h
-(parsing)e(routines.)0 1825 y(Don)i(Jennings)d(designed)h(and)h(wrote)h
-(the)g(`Hierarc)m(hical)e(Grouping')h(routines.)0 1985
-y(Uw)m(e)23 b(Lamers)f(\(XMM/ESA/ESTEC,)h(The)e(Netherlands\))h
+b(Ac)l(kno)l(wledgemen)l(ts)0 715 y Fj(The)29 b(dev)m(elopmen)m(t)g(of)
+h(man)m(y)f(of)h(the)f(p)s(o)m(w)m(erful)f(features)h(in)f(CFITSIO)g(w)
+m(as)i(made)f(p)s(ossible)e(through)h(collab-)0 827 y(orations)34
+b(with)f(man)m(y)i(p)s(eople)e(or)i(organizations)f(from)g(around)f
+(the)i(w)m(orld.)51 b(The)34 b(follo)m(wing,)g(in)f(particular,)0
+940 y(ha)m(v)m(e)f(made)e(esp)s(ecially)f(signi\014can)m(t)g(con)m
+(tributions:)0 1100 y(Programmers)c(from)h(the)f(In)m(tegral)h(Science)
+g(Data)h(Cen)m(ter,)g(Switzerland)d(\(namely)-8 b(,)27
+b(Jurek)d(Bork)m(o)m(wski,)k(Bruce)0 1213 y(O'Neel,)33
+b(and)f(Don)h(Jennings\),)e(designed)g(the)i(concept)g(for)f(the)h
+(plug-in)d(I/O)i(driv)m(ers)f(that)i(w)m(as)g(in)m(tro)s(duced)0
+1326 y(with)h(CFITSIO)f(2.0.)56 b(The)34 b(use)h(of)g(`driv)m(ers')f
+(greatly)h(simpli\014ed)d(the)j(lo)m(w-lev)m(el)g(I/O,)g(whic)m(h)e(in)
+h(turn)g(made)0 1439 y(other)40 b(new)f(features)i(in)d(CFITSIO)g
+(\(e.g.,)45 b(supp)s(ort)38 b(for)h(compressed)h(FITS)f(\014les)g(and)g
+(supp)s(ort)f(for)i(IRAF)0 1552 y(format)32 b(image)f(\014les\))g(m)m
+(uc)m(h)g(easier)h(to)g(implemen)m(t.)42 b(Jurek)31 b(Bork)m(o)m(wski)g
+(wrote)h(the)g(Shared)e(Memory)i(driv)m(er,)0 1665 y(and)23
+b(Bruce)i(O'Neel)f(wrote)g(the)g(driv)m(ers)f(for)g(accessing)i(FITS)e
+(\014les)g(o)m(v)m(er)i(the)f(net)m(w)m(ork)h(using)d(the)j(FTP)-8
+b(,)24 b(HTTP)-8 b(,)0 1778 y(and)30 b(R)m(OOT)g(proto)s(cols.)0
+1938 y(The)45 b(ISDC)g(also)g(pro)m(vided)f(the)i(template)g(parsing)e
+(routines)g(\(written)h(b)m(y)g(Jurek)g(Bork)m(o)m(wski\))h(and)f(the)0
+2051 y(hierarc)m(hical)36 b(grouping)f(routines)h(\(written)h(b)m(y)g
+(Don)h(Jennings\).)59 b(The)37 b(ISDC)f(D)m(AL)i(\(Data)h(Access)f(La)m
+(y)m(er\))0 2164 y(routines)29 b(are)i(la)m(y)m(ered)g(on)f(top)h(of)f
+(CFITSIO)f(and)h(mak)m(e)h(extensiv)m(e)g(use)f(of)h(these)g(features.)
+0 2324 y(Uw)m(e)23 b(Lamers)f(\(XMM/ESA/ESTEC,)h(The)e(Netherlands\))h
 (designed)f(the)i(high-p)s(erformance)d(lexical)h(parsing)0
-2098 y(algorithm)39 b(that)h(is)e(used)h(to)h(do)g(on-the-\015y)g
+2437 y(algorithm)39 b(that)h(is)e(used)h(to)h(do)g(on-the-\015y)g
 (\014ltering)e(of)h(FITS)g(tables.)68 b(This)38 b(algorithm)h(essen)m
-(tially)f(pre-)0 2211 y(compiles)31 b(the)h(user-supplied)c(selection)k
+(tially)f(pre-)0 2550 y(compiles)31 b(the)h(user-supplied)c(selection)k
 (expression)f(in)m(to)h(a)g(form)f(that)i(can)f(b)s(e)f(rapidly)f(ev)-5
-b(aluated)32 b(for)g(eac)m(h)0 2324 y(ro)m(w.)82 b(P)m(eter)46
+b(aluated)32 b(for)g(eac)m(h)0 2663 y(ro)m(w.)82 b(P)m(eter)46
 b(Wilson)d(\(RSTX,)h(NASA/GSF)m(C\))h(then)f(wrote)h(the)f(parsing)f
-(routines)g(used)g(b)m(y)h(CFITSIO)0 2437 y(based)28
+(routines)g(used)g(b)m(y)h(CFITSIO)0 2776 y(based)28
 b(on)g(Lamers')h(design,)e(com)m(bined)h(with)f(other)h(tec)m(hniques)g
 (suc)m(h)g(as)h(the)f(CFITSIO)f(iterator)i(routine)e(to)0
-2550 y(further)35 b(enhance)i(the)f(data)h(pro)s(cessing)e(throughput.)
+2889 y(further)35 b(enhance)i(the)f(data)h(pro)s(cessing)e(throughput.)
 58 b(This)35 b(e\013ort)i(also)f(b)s(ene\014tted)g(from)g(a)h(m)m(uc)m
-(h)f(earlier)0 2663 y(lexical)29 b(parsing)g(routine)h(that)h(w)m(as)f
+(h)f(earlier)0 3002 y(lexical)29 b(parsing)g(routine)h(that)h(w)m(as)f
 (dev)m(elop)s(ed)g(b)m(y)g(Ken)m(t)h(Blac)m(kburn)e(\(NASA/GSF)m(C\).)0
-2823 y(P)m(eter)c(Wilson)d(also)i(wrote)g(the)g(complete)g(set)g(of)g
-(F)-8 b(ortran-callable)24 b(wrapp)s(ers)e(for)h(all)g(the)h(CFITSIO)e
-(routines,)0 2936 y(whic)m(h)29 b(rely)h(on)g(the)g(CF)m(OR)-8
-b(TRAN)31 b(macro)g(dev)m(elop)s(ed)f(b)m(y)g(Burkhard)f(Buro)m(w.)0
-3096 y(The)40 b(CFITSIO)g(iterator)h(function)e(is)h(lo)s(osely)g
+3162 y(The)40 b(CFITSIO)g(iterator)h(function)e(is)h(lo)s(osely)g
 (based)h(on)f(similar)f(ideas)h(dev)m(elop)s(ed)g(for)h(the)g(XMM)g
-(Data)0 3209 y(Access)31 b(La)m(y)m(er.)0 3369 y(The)f(syn)m(tax)i
-(used)e(b)m(y)h(CFITSIO)f(for)g(\014ltering)g(or)h(binning)c(input)i
-(FITS)i(\014les)f(is)g(based)g(on)h(ideas)g(dev)m(elop)s(ed)0
-3482 y(for)41 b(the)g(AXAF)h(Science)f(Cen)m(ter)h(Data)h(Mo)s(del)d(b)
-m(y)h(Jonathan)g(McDo)m(w)m(ell,)k(An)m(tonella)c(F)-8
-b(ruscione,)44 b(Aneta)0 3595 y(Siemigino)m(wsk)-5 b(a)24
-b(and)h(Bill)f(Jo)m(y)m(e.)41 b(See)26 b(h)m
+(Data)0 3275 y(Access)31 b(La)m(y)m(er.)0 3435 y(P)m(eter)25
+b(Wilson)e(\(RSTX,)h(NASA/GSF)m(C\))h(wrote)g(the)f(complete)h(set)f
+(of)h(F)-8 b(ortran-callable)24 b(wrapp)s(ers)e(for)i(all)f(the)0
+3548 y(CFITSIO)29 b(routines,)g(whic)m(h)g(in)g(turn)h(rely)f(on)i(the)
+f(CF)m(OR)-8 b(TRAN)31 b(macro)g(dev)m(elop)s(ed)f(b)m(y)g(Burkhard)f
+(Buro)m(w.)0 3708 y(The)h(syn)m(tax)i(used)e(b)m(y)h(CFITSIO)f(for)g
+(\014ltering)g(or)h(binning)c(input)i(FITS)i(\014les)f(is)g(based)g(on)
+h(ideas)g(dev)m(elop)s(ed)0 3821 y(for)41 b(the)g(AXAF)h(Science)f(Cen)
+m(ter)h(Data)h(Mo)s(del)d(b)m(y)h(Jonathan)g(McDo)m(w)m(ell,)k(An)m
+(tonella)c(F)-8 b(ruscione,)44 b(Aneta)0 3934 y(Siemigino)m(wsk)-5
+b(a)24 b(and)h(Bill)f(Jo)m(y)m(e.)41 b(See)26 b(h)m
 (ttp://heasarc.gsfc.nasa.go)m(v/do)s(cs/journal/axaf7.h)m(t)q(ml)31
-b(for)25 b(further)0 3708 y(description)j(of)j(the)g(AXAF)g(Data)h(Mo)s
-(del.)0 3868 y(The)j(\014le)f(decompression)g(co)s(de)h(w)m(ere)h(tak)m
+b(for)25 b(further)0 4047 y(description)j(of)j(the)g(AXAF)g(Data)h(Mo)s
+(del.)0 4207 y(The)j(\014le)f(decompression)g(co)s(de)h(w)m(ere)h(tak)m
 (en)g(directly)e(from)g(the)i(gzip)e(\(GNU)i(zip\))f(program)g(dev)m
-(elop)s(ed)f(b)m(y)0 3981 y(Jean-loup)29 b(Gailly)g(and)h(others.)0
-4141 y(Doug)h(Mink,)f(SA)m(O,)g(pro)m(vided)f(the)i(routines)e(for)h
+(elop)s(ed)f(b)m(y)0 4320 y(Jean-loup)29 b(Gailly)g(and)h(others.)0
+4480 y(Doug)h(Mink,)f(SA)m(O,)g(pro)m(vided)f(the)i(routines)e(for)h
 (con)m(v)m(erting)h(IRAF)g(format)g(images)f(in)m(to)g(FITS)g(format.)0
-4301 y(In)d(addition,)g(man)m(y)h(other)g(p)s(eople)f(ha)m(v)m(e)i
+4640 y(In)d(addition,)g(man)m(y)h(other)g(p)s(eople)f(ha)m(v)m(e)i
 (made)f(v)-5 b(aluable)27 b(con)m(tributions)f(to)j(the)f(dev)m
-(elopmen)m(t)g(of)g(CFITSIO.)0 4414 y(These)i(include)e(\(with)i(ap)s
-(ologies)g(to)h(others)f(I)g(ma)m(y)h(ha)m(v)m(e)h(inadv)m(erten)m(tly)
-e(omitted\):)0 4574 y(Stev)m(e)f(Allen,)e(Carl)g(Ak)m(erlof,)h(Keith)f
-(Arnaud,)h(Morten)g(Krabb)s(e)e(Barfo)s(ed,)j(Ken)m(t)f(Blac)m(kburn,)g
-(G)g(Bo)s(dammer,)0 4687 y(Romk)m(e)h(Bon)m(tek)m(o)s(e,)i(Lucio)c
-(Chiapp)s(etti,)f(Keith)h(Costorf,)h(Robin)f(Corb)s(et,)h(John)e(Da)m
-(vis,)j(Ric)m(hard)e(Fink,)h(Ning)0 4800 y(Gan,)h(Emily)c(Greene,)k(Jo)
-s(e)f(Harrington,)g(Cheng)f(Ho,)i(Phil)c(Ho)s(dge,)k(Jim)e(Ingham,)h(Y)
--8 b(oshitak)j(a)28 b(Ishisaki,)e(Diab)0 4913 y(Jerius,)k(Mark)i
-(Levine,)f(T)-8 b(o)s(dd)30 b(Karak)-5 b(askian,)31 b(Edw)m(ard)g
-(King,)f(Scott)j(Ko)s(c)m(h,)e(Claire)f(Larkin,)g(Rob)i(Managan,)0
-5026 y(Eric)37 b(Mandel,)i(John)e(Matto)m(x,)43 b(Carsten)37
-b(Mey)m(er,)42 b(Emi)36 b(Miy)m(ata,)42 b(Stefan)c(Mo)s(c)m(hnac)m(ki,)
-i(Mik)m(e)f(Noble,)g(Oliv)m(er)0 5139 y(Ob)s(erdorf,)d(Cliv)m(e)g(P)m
-(age,)k(Arvind)34 b(P)m(armar,)k(Je\013)f(P)m(edelt)m(y)-8
-b(,)39 b(Tim)c(P)m(earson,)k(Maren)e(Purv)m(es,)h(Scott)f(Randall,)0
-5252 y(Chris)c(Rogers,)k(Arnold)d(Rots,)j(Barry)f(Sc)m(hlesinger,)f
-(Robin)f(Stebbins,)g(Andrew)g(Szymk)m(o)m(wiak,)j(Allyn)d(T)-8
-b(en-)0 5365 y(nan)m(t,)31 b(P)m(eter)g(T)-8 b(eub)s(en,)30
-b(James)g(Theiler,)f(Doug)i(T)-8 b(o)s(dy)g(,)31 b(Shiro)d(Ueno,)k
-(Stev)m(e)f(W)-8 b(alton,)32 b(Arc)m(hie)e(W)-8 b(arno)s(c)m(k,)32
-b(Alan)p eop
+(elopmen)m(t)g(of)g(CFITSIO.)0 4753 y(These)i(include)e(\(with)i(ap)s
+(ologies)g(to)h(others)f(that)h(ma)m(y)g(ha)m(v)m(e)h(inadv)m(erten)m
+(tly)e(b)s(een)f(omitted\):)0 4913 y(Stev)m(e)g(Allen,)e(Carl)g(Ak)m
+(erlof,)h(Keith)f(Arnaud,)h(Morten)g(Krabb)s(e)e(Barfo)s(ed,)j(Ken)m(t)
+f(Blac)m(kburn,)g(G)g(Bo)s(dammer,)0 5026 y(Romk)m(e)h(Bon)m(tek)m(o)s
+(e,)i(Lucio)c(Chiapp)s(etti,)f(Keith)h(Costorf,)h(Robin)f(Corb)s(et,)h
+(John)e(Da)m(vis,)j(Ric)m(hard)e(Fink,)h(Ning)0 5139
+y(Gan,)h(Emily)c(Greene,)k(Jo)s(e)f(Harrington,)g(Cheng)f(Ho,)i(Phil)c
+(Ho)s(dge,)k(Jim)e(Ingham,)h(Y)-8 b(oshitak)j(a)28 b(Ishisaki,)e(Diab)0
+5252 y(Jerius,)k(Mark)i(Levine,)f(T)-8 b(o)s(dd)30 b(Karak)-5
+b(askian,)31 b(Edw)m(ard)g(King,)f(Scott)j(Ko)s(c)m(h,)e(Claire)f
+(Larkin,)g(Rob)i(Managan,)0 5365 y(Eric)37 b(Mandel,)i(John)e(Matto)m
+(x,)43 b(Carsten)37 b(Mey)m(er,)42 b(Emi)36 b(Miy)m(ata,)42
+b(Stefan)c(Mo)s(c)m(hnac)m(ki,)i(Mik)m(e)f(Noble,)g(Oliv)m(er)p
+eop
 9 14 bop 0 100 a Fg(2.5.)72 b(A)m(CKNO)m(WLEDGEMENTS)2561
-b Fj(9)0 356 y(W)-8 b(atson,)32 b(Dan)f(Whipple,)d(Wim)i(Wimmers,)g(P)m
-(eter)h(Y)-8 b(oung,)31 b(Jianjun)d(Xu,)i(and)g(Nelson)g(Zarate.)0
-516 y(Finally)-8 b(,)26 b(sp)s(ecial)f(thanks)h(go)h(out)f(to)h(the)g
-(mem)m(b)s(ers)e(of)i(the)f(U.S.)h(Congress)f(who)g(in)f(Jan)m(uary)g
-(1996)j(sh)m(ut)e(do)m(wn)0 629 y(the)i(U.S.)g(go)m(v)m(ernmen)m(t)h
-(o\016ces,)g(including)24 b(NASA,)k(b)m(y)g(failing)d(to)k(pass)e
-(funding)e(legislation,)i(th)m(us)g(giving)g(the)0 742
-y(author)j(su\016cien)m(t)g(free)g(time)h(to)g(write)e(the)i(initial)c
-(v)m(ersion)j(of)h(CFITSIO.)p eop
+b Fj(9)0 356 y(Ob)s(erdorf,)36 b(Cliv)m(e)g(P)m(age,)k(Arvind)34
+b(P)m(armar,)k(Je\013)f(P)m(edelt)m(y)-8 b(,)39 b(Tim)c(P)m(earson,)k
+(Maren)e(Purv)m(es,)h(Scott)f(Randall,)0 469 y(Chris)c(Rogers,)k
+(Arnold)d(Rots,)j(Barry)f(Sc)m(hlesinger,)f(Robin)f(Stebbins,)g(Andrew)
+g(Szymk)m(o)m(wiak,)j(Allyn)d(T)-8 b(en-)0 582 y(nan)m(t,)31
+b(P)m(eter)g(T)-8 b(eub)s(en,)30 b(James)g(Theiler,)f(Doug)i(T)-8
+b(o)s(dy)g(,)31 b(Shiro)d(Ueno,)k(Stev)m(e)f(W)-8 b(alton,)32
+b(Arc)m(hie)e(W)-8 b(arno)s(c)m(k,)32 b(Alan)0 695 y(W)-8
+b(atson,)32 b(Dan)f(Whipple,)d(Wim)i(Wimmers,)g(P)m(eter)h(Y)-8
+b(oung,)31 b(Jianjun)d(Xu,)i(and)g(Nelson)g(Zarate.)p
+eop
 10 15 bop 0 100 a Fj(10)1535 b Fg(CHAPTER)30 b(2.)112
 b(CREA)-8 b(TING)30 b(THE)g(CFITSIO)f(LIBRAR)-8 b(Y)p
 eop
