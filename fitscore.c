@@ -3418,35 +3418,39 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
     }
     else if ((fptr->Fptr)->writemode == 1)  /* write access to the file? */
     {
-        /* update NAXIS2 keyword if more rows were written to the table */
-        if ((fptr->Fptr)->hdutype != IMAGE_HDU)
+        /* don't need to check NAXIS2 and PCOUNT if data hasn't been written */
+        if ((fptr->Fptr)->datastart != DATA_UNDEFINED)
         {
-          ffgkyj(fptr, "NAXIS2", &naxis2, comm, status);
-          if ((fptr->Fptr)->numrows > naxis2)
+          /* update NAXIS2 keyword if more rows were written to the table */
+          if ((fptr->Fptr)->hdutype != IMAGE_HDU)
           {
-            /* would be simpler to just call ffmkyj here, but this */
-            /* would force linking in all the modkey & putkey routines */
-            sprintf(valstring, "%ld", (fptr->Fptr)->numrows);
-            ffmkky("NAXIS2", valstring, comm, card);
-            ffmkey(fptr, card, status);
-          }
-        }
-
-        /* if data has been written to variable length columns in a  */
-        /* binary table, then we may need to update the PCOUNT value */
-        if ((fptr->Fptr)->heapsize > 0)
-        {
-          ffgkyj(fptr, "PCOUNT", &pcount, comm, status);
-          if ((fptr->Fptr)->heapsize > pcount)
-          {
-            /* would be simpler to just call ffmkyj here, but this */
-            /* would force linking in all the modkey & putkey routines */
-            sprintf(valstring, "%ld", (fptr->Fptr)->heapsize);
-            ffmkky("PCOUNT", valstring, comm, card);
-            ffmkey(fptr, card, status);
+            ffgkyj(fptr, "NAXIS2", &naxis2, comm, status);
+            if ((fptr->Fptr)->numrows > naxis2)
+            {
+              /* would be simpler to just call ffmkyj here, but this */
+              /* would force linking in all the modkey & putkey routines */
+              sprintf(valstring, "%ld", (fptr->Fptr)->numrows);
+              ffmkky("NAXIS2", valstring, comm, card);
+              ffmkey(fptr, card, status);
+            }
           }
 
-          ffuptf(fptr, status);  /* update the variable length TFORM values */
+          /* if data has been written to variable length columns in a  */
+          /* binary table, then we may need to update the PCOUNT value */
+          if ((fptr->Fptr)->heapsize > 0)
+          {
+            ffgkyj(fptr, "PCOUNT", &pcount, comm, status);
+            if ((fptr->Fptr)->heapsize > pcount)
+            {
+              /* would be simpler to just call ffmkyj here, but this */
+              /* would force linking in all the modkey & putkey routines */
+              sprintf(valstring, "%ld", (fptr->Fptr)->heapsize);
+              ffmkky("PCOUNT", valstring, comm, card);
+              ffmkey(fptr, card, status);
+            }
+
+            ffuptf(fptr, status);  /* update the variable length TFORM values */
+          }
         }
 
         ffrdef(fptr, status);  /* scan header to redefine structure */
