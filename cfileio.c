@@ -1686,7 +1686,7 @@ int ffextn(char *url,           /* I - input filename/URL  */
 /*
    Parse the input url string and return the number of the extension that
    CFITSIO would automatically move to if CFITSIO were to open this input URL.
-   The extension numbers are zero based, so 0 = the primary array, 1 = the
+   The extension numbers are one's based, so 1 = the primary array, 2 = the
    first extension, etc.
 
    The extension number that gets returned is determined by the following 
@@ -1694,12 +1694,12 @@ int ffextn(char *url,           /* I - input filename/URL  */
 
    1. If the input URL includes a binning specification (e.g.
    'myfile.fits[3][bin X,Y]') then the returned extension number
-   will always = 0, since CFITSIO would create a temporary primary
+   will always = 1, since CFITSIO would create a temporary primary
    image on the fly in this case.
 
    2.  Else if the input URL specifies an extension number (e.g.,
    'myfile.fits[3]' or 'myfile.fits+3') then the specified extension
-   number is returned.  
+   number (+ 1) is returned.  
 
    3.  Else if the extension name is specified in brackets
    (e.g., this 'myfile.fits[EVENTS]') then the file will be opened and searched
@@ -1709,7 +1709,9 @@ int ffextn(char *url,           /* I - input filename/URL  */
    4.  Else if the URL does not specify an extension (e.g. 'myfile.fits') then
    a special extension number = -99 will be returned to signal that no
    extension was specified.  This feature is mainly for compatibility with
-   existing FTOOLS software.
+   existing FTOOLS software.  CFITSIO would open the primary array by default
+   (extension_num = 1) in this case.
+
 */
     fitsfile *fptr;
     char urltype[20];
@@ -1731,7 +1733,7 @@ int ffextn(char *url,           /* I - input filename/URL  */
 
     if (*binspec)   /* is there a binning specification? */
     {
-       *extension_num = 0; /* a temporary primary array image is created */
+       *extension_num = 1; /* a temporary primary array image is created */
        return(0);
     }
 
@@ -1765,21 +1767,22 @@ int ffextn(char *url,           /* I - input filename/URL  */
          if (ffopen(&fptr, infile, READONLY, &status) > 0) /* open the file */
             return(status);
 
-         ffghdn(fptr, &extnum);
-         *extension_num = extnum - 1;  /* so primary array = 0, not 1 */
+         ffghdn(fptr, &extnum);    /* where am I in the file? */
+         *extension_num = extnum;
          ffclos(fptr, &status);
 
          return(0);
       }
       else
       {
-         *extension_num = extnum;  /* simply return the specified number */
+         *extension_num = extnum + 1;  /* return the specified number (+ 1) */
          return(0);
       }
     }
     else
     {
-         *extension_num = -99;  /* no extension was specified */
+         *extension_num = -99;  /* no specific extension was specified */
+                                /* defaults to primary array */
          return(0);
     }
 }
