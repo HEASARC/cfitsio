@@ -331,7 +331,8 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,STRING,INT,INT,PSTRINGV,PINT,PINT,CF_
            TCF(ftgkns,PINT,6,1)
            TCF(ftgkns,PINT,7,1)     );
 
-   B5N = *A6;          /*  Redefine number of array elements to number   */
+   if (*A7 == 0)
+      B5N = *A6;       /*  Redefine number of array elements to number   */
 		       /*  found. Should work even if none found.        */
    RCF(FITSUNIT,1)
    RCF(STRING,2)
