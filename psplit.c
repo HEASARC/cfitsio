@@ -23,10 +23,10 @@
                  etc...
 
 
-   Everything before the first split_key goes into a file "tmp<bigfilename>.h".
-   Each routine is written to a file "bigfilenameXXX.c" where XXX is 001, 002,
-   003, etc. At the beginning of each bigfilenameXXX.c is a line to include the
-   stripped preprocs': "#include tmp<bigfilename>.h"
+   Everything before the first split_key goes into a file "<bigfilename>.h".
+   Each routine is written to a file "bigfilenameXX.c" where XX is 01, 02,
+   03, etc. At the beginning of each bigfilenameXX.c is a line to include the
+   stripped preprocs': "#include <bigfilename>.h"
 
 
   Important Points:
@@ -103,7 +103,7 @@ main(int argc, char **argv)
 		}
 		fclose(h_temp); /* done with header file */
 
-		sprintf(c_name, "%s%03d.c", base_name, c_num++);
+		sprintf(c_name, "%s%02d.c", base_name, c_num++);
 
 		/* start dumping to c files  */
 		if ((c_temp = fopen(c_name, "w")) == NULL) {
@@ -118,7 +118,7 @@ main(int argc, char **argv)
 		while ( fgets(current_line, line_size, bigfile) != NULL) {
 			if (memcmp(current_line, split_key, key_size) == 0) {
 				fclose(c_temp);
-				sprintf(c_name, "%s%03d.c", base_name, c_num++);
+				sprintf(c_name, "%s%02d.c", base_name, c_num++);
 				if ((c_temp = fopen(c_name, "w")) == NULL) {
 					fprintf(stderr, " %s : couldn't open %s \n", argv0, h_name);
 					exit(ENOFILE);
