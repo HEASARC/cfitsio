@@ -603,7 +603,7 @@ int ffgclk( fitsfile *fptr,   /* I - FITS file pointer                       */
     double cbuff[DBUFFSIZE / sizeof(double)]; /* align cbuff on word boundary */
     void *buffer;
 
-    if (*status > 0)           /* inherit input status value if > 0 */
+    if (*status > 0 || nelem == 0)  /* inherit input status value if > 0 */
         return(*status);
 
     /* call the 'short' or 'long' version of this routine, if possible */

@@ -34,7 +34,7 @@ int ffgpv(  fitsfile *fptr,   /* I - FITS file pointer                       */
     long row = 1;
     char cdummy;
 
-    if (*status > 0)           /* inherit input status value if > 0 */
+    if (*status > 0 || nelem == 0)   /* inherit input status value if > 0 */
         return(*status);
 
     /*

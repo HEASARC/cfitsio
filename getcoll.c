@@ -107,7 +107,7 @@ int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
     char snull[20];   /*  the FITS null value  */
     unsigned char buffer[DBUFFSIZE];
 
-    if (*status > 0)           /* inherit input status value if > 0 */
+    if (*status > 0 || nelem == 0)  /* inherit input status value if > 0 */
         return(*status);
 
     *anynul = 0;

@@ -3,6 +3,9 @@
 
 Version 1.41 - 2 March 1998 (for the FTOOLS release)
 
+   - modified all the ffgcl* routines to simply return without
+     error if nelem = 0.
+
    - initialized the dummy variable in ffgcfe and ffgcfd which
      was causing crashes under OSF in some cases.
 

@@ -91,7 +91,7 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
     double cbuff[DBUFFSIZE / sizeof(double)]; /* align cbuff on word boundary */
     char *buffer, *arrayptr;
 
-    if (*status > 0)           /* inherit input status value if > 0 */
+    if (*status > 0 || nelem == 0)  /* inherit input status value if > 0 */
         return(*status);
 
     *anynul = 0;

@@ -663,7 +663,7 @@ int ffgcle( fitsfile *fptr,   /* I - FITS file pointer                       */
     double cbuff[DBUFFSIZE / sizeof(double)]; /* align cbuff on word boundary */
     void *buffer;
 
-    if (*status > 0)           /* inherit input status value if > 0 */
+    if (*status > 0 || nelem == 0)  /* inherit input status value if > 0 */
         return(*status);
 
     buffer = cbuff;
