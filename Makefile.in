@@ -11,10 +11,12 @@ SHELL = /bin/sh
 RANLIB=@RANLIB@
 CC=@CC@
 
+
 SOURCES = 	cfileio.c convert.c fitscore.c getcol.c \
 		getkey.c modkey.c putcol.c putkey.c \
 		utilproc.c 
 
+all:		stand_alone clean
 
 stand_alone:	libcfitsio.a
 
@@ -30,15 +32,15 @@ libcfitsio.a:	psplit
 		${RANLIB} libcfitsio.a; \
 		mv libcfitsio.a .. ;
 
-install:        libcfitsio.a
+install:	libcfitsio.a
 		mv libcfitsio.a ../host/
         
-clean:          
-		rm -f psplit ; \
+clean:
 		rm -f *.o ; \
 		rm -rf split.*
 
-dist_clean:
+distclean:	clean
+		rm -f psplit ; \
 		rm -f Makefile config.*
 
 psplit :
