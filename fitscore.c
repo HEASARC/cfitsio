@@ -5839,7 +5839,8 @@ int ffgkcl(char *tcard)
 {
     char card[20], *card1, *card5;
 
-    strncpy(card, tcard, 8);   /* copy the keyword name */
+    card[0] = '\0';
+    strncat(card, tcard, 8);   /* copy the keyword name */
     strcat(card, "        "); /* append blanks to make at least 8 chars long */
     ffupch(card);  /* make sure it is in upper case */
 

@@ -103,6 +103,9 @@ Version 2.410 - 22 April 2002
 
   Bug fixes:
 
+  - fits_get_keyclass could sometimes try to append to an unterminated 
+    string, causing an overflow of a string array.   
+
   - fits_create_template no longer worked because of improvements made
     to other routines.  Had to modify ffghdt to not try to rescan
     the header keywords if the file is still empty and contains no
