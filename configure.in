@@ -86,7 +86,7 @@ case $system in
 	;;
     FREEBSD*)
 	ARCH="linux"
-	CFLAGS="$CFLAGS -Dg77Fortran"
+	CFLAGS="$CFLAGS -Df2cFortran"
 	;;
     CYGWIN*)
 	ARCH="cygwin"
