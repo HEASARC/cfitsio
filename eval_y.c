@@ -149,8 +149,8 @@ static int  New_Deref ( int Var,  int nDim,
 			int Dim1, int Dim2, int Dim3, int Dim4, int Dim5 );
 static int  New_GTI   ( char *fname, int Node1, char *start, char *stop );
 static int  New_REG   ( char *fname, int NodeX, int NodeY, char *colNames );
-static int  New_Vector( int Node );
-static int  Close_Vec ( int Node );
+static int  New_Vector( int subNode );
+static int  Close_Vec ( int vecNode );
 static int  Locate_Col( Node *this );
 static int  Test_Dims ( int Node1, int Node2 );
 
