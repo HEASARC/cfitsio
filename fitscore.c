@@ -20,9 +20,11 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
- *version = 1.101;  /* 13 Nov 1996 */
+ *version = 1.2;  /* 29 Jan 1997 */
 
- /*   *version = 1.1;    6 Nov 1996 */
+ /*   *version = 1.11;   04 Dec 1996 */
+ /*   *version = 1.101;  13 Nov 1996 */
+ /*   *version = 1.1;     6 Nov 1996 */
  /*   *version = 1.04;   17 Sep 1996 */
  /*   *version = 1.03;   20 Aug 1996 */
  /*   *version = 1.02;   15 Aug 1996 */
@@ -291,6 +293,21 @@ void ffgerr(int status,     /* I - error status value */
        break;
     case 412:
        strcpy(errtext, "datatype conversion overflow");
+       break;
+    case 501:
+       strcpy(errtext, "WCS angle too large");
+       break;
+    case 502:
+       strcpy(errtext, "bad WCS coordinate");
+       break;
+    case 503:
+       strcpy(errtext, "error in WCS calculation");
+       break;
+    case 504:
+       strcpy(errtext, "bad WCS projection type");
+       break;
+    case 505:
+       strcpy(errtext, "WCS keywords not found");
        break;
     }
   }
@@ -1427,7 +1444,9 @@ void ffcmps(char *templt,   /* I - input template (may have wildcards)      */
   when looking for a match.  If there is no literal match, then
   it interpretes it as a wild card.  So the template 'AB*DE'
   is considered to be an exact rather than a wild card match to
-  the string 'AB*DE'.
+  the string 'AB*DE'.  The '#' wild card in the template string will 
+  match any consecutive string of decimal digits in the colname.
+  
 */
 {
     int found, t1, s1;
@@ -1438,7 +1457,7 @@ void ffcmps(char *templt,   /* I - input template (may have wildcards)      */
 
     strncpy(temp, templt, FLEN_VALUE); /* copy strings to work area */
     strncpy(col, colname, FLEN_VALUE);
-    temp[FLEN_VALUE -1] = '\0';  /* make sure strings are teminated */
+    temp[FLEN_VALUE -1] = '\0';  /* make sure strings are terminated */
     col[FLEN_VALUE -1]  = '\0';
 
     if (!casesen)
@@ -1467,10 +1486,19 @@ void ffcmps(char *templt,   /* I - input template (may have wildcards)      */
          return;
       }
 
-      if (temp[t1] == col[s1] || temp[t1] == '?')
+      if (temp[t1] == col[s1] || (temp[t1] == '?' && col[s1] != ' ') )
       {
         s1++;  /* corresponding chars in the 2 strings match */
         t1++;  /* increment both pointers and loop back again */
+      }
+      else if (temp[t1] == '#' && isdigit(col[s1]) )
+      {
+        s1++;  /* corresponding chars in the 2 strings match */
+        t1++;  /* increment both pointers */
+
+        /* find the end of the string of digits */
+        while (isdigit(col[s1]) ) 
+            s1++;        
       }
       else if (temp[t1] == '*')
       {    
@@ -1483,14 +1511,14 @@ void ffcmps(char *templt,   /* I - input template (may have wildcards)      */
           return;
         }
 
-        found = 0;
+        found = FALSE;
         while (col[s1] && !found)
         {
           if (temp[t1] == col[s1])
           {
             t1++;  /* found matching characters; incre both pointers */
             s1++;  /* and loop back to compare next chars */
-            found = 1;
+            found = TRUE;
           }
           else
             s1++;  /* increment the column name pointer and try again */
@@ -1520,6 +1548,7 @@ int ffgtcl( fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     tcolumn *colptr;
+    int decims;
 
     if (*status > 0)
         return(*status);
@@ -1534,9 +1563,17 @@ int ffgtcl( fitsfile *fptr,  /* I - FITS file pointer                       */
     colptr = fptr->tableptr;   /* pointer to first column */
     colptr += (colnum - 1);    /* offset to correct column */
 
-    *typecode = colptr->tdatatype;
-    *repeat = colptr->trepeat;
-    *width = colptr->twidth;
+    if (fptr->hdutype == ASCII_TBL)
+    {
+       ffasfm(colptr->tform, typecode, width, &decims, status);
+       *repeat = 1;
+    }
+    else
+    {
+      *typecode = colptr->tdatatype;
+      *width = colptr->twidth;
+      *repeat = colptr->trepeat;
+    }
 
     return(*status);
 }
@@ -1576,7 +1613,7 @@ int ffgacl( fitsfile *fptr,   /* I - FITS file pointer                      */
     colptr += (colnum -1);     /* offset to correct column */
 
     strcpy(ttype, colptr->ttype);
-    *tbcol = colptr->tbcol;
+    *tbcol = (colptr->tbcol) + 1;  /* first col is 1, not 0 */
     strcpy(tform, colptr->tform);
     *tscal = colptr->tscale;
     *tzero = colptr->tzero;
@@ -2809,6 +2846,8 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
             ffmkky("PCOUNT", valstring, comm, card);
             ffmkey(fptr, card, status);
           }
+
+          ffuptf(fptr, status);  /* update the variable length TFORM values */
         }
 
         ffrdef(fptr, status);  /* scan header to redefine structure */
@@ -2825,6 +2864,67 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
         ffpmsg(message);
     }
 
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffuptf(fitsfile *fptr,      /* I - FITS file pointer */
+           int *status)         /* IO - error status     */
+/*
+  Update the value of the TFORM keywords for the variable length array
+  columns to make sure they all have the form 1Px(len) or Px(len) where
+  'len' is the maximum length of the vector in the table (e.g., '1PE(400)')
+*/
+{
+    int ii;
+    long tflds, naxis2, maxlen, jj, length, addr;
+    char comment[FLEN_COMMENT], keyname[FLEN_KEYWORD];
+    char tform[FLEN_VALUE], newform[FLEN_VALUE], lenval[40];
+    char card[FLEN_CARD];
+    char message[FLEN_ERRMSG];
+
+    ffgkyj(fptr, "TFIELDS", &tflds, comment, status);
+    ffgkyj(fptr, "NAXIS2", &naxis2, comment, status);
+
+    for (ii = 1; ii <= tflds; ii++)        /* loop over all the columns */
+    {
+      ffkeyn("TFORM", ii, keyname, status);          /* construct name */
+      if (ffgkys(fptr, keyname, tform, comment, status) > 0)
+      {
+        sprintf(message,
+        "Error while updating variable length vector TFORMn values (ffuptf).");
+        ffpmsg(message);
+        return(*status);
+      }
+
+      /* is this a variable array length column ? */
+      if (tform[0] == 'P' || tform[1] == 'P')
+      {
+        if (strlen(tform) < 5)  /* is maxlen field missing? */
+        {
+          /* get the max length */
+          maxlen = 0;
+          for (jj=1; jj <= naxis2; jj++)
+          {
+            ffgdes(fptr, ii, jj, &length, &addr, status);
+            maxlen = maxvalue(maxlen, length);
+          }
+
+          /* construct the new keyword value */
+          strcpy(newform, "'");
+          strcat(newform, tform);
+          sprintf(lenval, "(%d)", maxlen);
+          strcat(newform,lenval);
+          while(strlen(newform) < 9)
+             strcat(newform," ");   /* append spaces 'till length = 8 */
+          strcat(newform,"'" );     /* append closing parenthesis */
+
+          /* would be simpler to just call ffmkyj here, but this */
+          /* would force linking in all the modkey & putkey routines */
+          ffmkky(keyname, newform, comment, card);  /* make new card */
+          ffmkey(fptr, card, status);   /* replace last read keyword */
+       }
+      }
+    }
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

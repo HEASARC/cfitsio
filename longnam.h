@@ -58,7 +58,7 @@
 #define fits_get_hdrpos        ffghps
 #define fits_movabs_key        ffmaky
 #define fits_movrel_key        ffmrky
-#define fits_read_nextkey      ffgnky
+#define fits_find_nextkey      ffgnxk
 
 #define fits_read_record       ffgrec
 #define fits_read_card         ffgcrd
@@ -305,4 +305,8 @@
 #define fits_insert_cols  fficls
 #define fits_delete_col   ffdcol
 
+#define fits_read_img_coord ffgics
+#define fits_read_tbl_coord ffgtcs
+#define fits_pix_to_world ffwldp
+#define fits_world_to_pix ffxypx
 #endif

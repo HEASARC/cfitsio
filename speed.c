@@ -9,31 +9,25 @@
   the routines and defines the error status values and other symbolic
   constants used in the interface.  
 */
-#include "fitsio2.h"
+#include "fitsio.h"
 
 #define minvalue(A,B) ((A) < (B) ? (A) : (B))
 
-#define RAWLOOP 8700
-#define RAWSIZE 2880
+/* size of the image */
+#define XSIZE 3000
+#define YSIZE 3000
 
-#define XSIZE 2500
-#define YSIZE 5000
-
-#define SHTSIZE 100000
-static short array[ SHTSIZE ];
-
-#define BUFFSIZE 6000
-static short  sarray[BUFFSIZE];
-static float  farray[BUFFSIZE];
-static double darray[BUFFSIZE];
+/* size of data buffer */
+#define SHTSIZE 20000
+static long sarray[ SHTSIZE ] = {SHTSIZE * 0};
 
 /* no. of rows in binary table */
-#define BROWS 1800000
+#define BROWS 2500000
 
 /* no. of rows in ASCII table */
-#define AROWS 500000
+#define AROWS 400000
 
-/*  CLOCKS_PER_SEC should be defined in most compilers */
+/*  CLOCKS_PER_SEC should be defined by most compilers */
 #if defined(CLOCKS_PER_SEC)
 #define CLOCKTICKS CLOCKS_PER_SEC
 #else
@@ -42,6 +36,10 @@ static double darray[BUFFSIZE];
 #define difftime(A,B) ((double) A - (double) B)
 #endif
 
+/* define variables for measuring elapsed time */
+clock_t scpu, ecpu;
+time_t start, finish;
+
 int writeimage(fitsfile *fptr, int *status);
 int writebintable(fitsfile *fptr, int *status);
 int writeasctable(fitsfile *fptr, int *status);
@@ -49,6 +47,8 @@ int readimage(fitsfile *fptr, int *status);
 int readatable(fitsfile *fptr, int *status);
 int readbtable(fitsfile *fptr, int *status);
 void printerror( int status);
+int marktime(int *status);
+int gettime(double *elapse, float *elapscpu, int *status);
 
 main()
 {
@@ -59,121 +59,54 @@ main()
     FILE *diskfile;
     fitsfile *fptr;        /* pointer to the FITS file, defined in fitsio.h */
     int status, ii;
-    char filename[] = "speedxx.fit";              /* name for new FITS file */
+    long rawloop;
+    char filename[] = "speedcc.fit";           /* name for new FITS file */
     char buffer[2880] = {2880 * 0};
-    char buff2[2880];
-    clock_t scpu, ecpu;
-    time_t start, finish;
     time_t tbegin, tend;
     float rate, size, elapcpu, cpufrac;
     double elapse;
 
     tbegin = time(0);
 
-/* goto skipit; */
-
     remove(filename);               /* Delete old file if it already exists */
 
     diskfile =  fopen(filename,"w+b");
+    rawloop = XSIZE * YSIZE / 720;
+
     printf("                                                ");
-    printf(" SIZE / ELAPSE(\%CPU) = RATE\n");
-/*-----------------------------------------------------------------*/
+    printf(" SIZE / ELAPSE(%%CPU) = RATE\n");
     printf("RAW fwrite (2880 bytes/loop)...                 ");
+    marktime(&status);
 
-    scpu = clock();
-    start = time(0);
-
-    for (ii = 0; ii < RAWLOOP; ii++)
-      if (fwrite(buff2, 1, 2880, diskfile) != 2880)
+    for (ii = 0; ii < rawloop; ii++)
+      if (fwrite(buffer, 1, 2880, diskfile) != 2880)
         printf("write error \n");
 
-    finish = time(0);
-    ecpu = clock();
-    elapcpu = (ecpu - scpu) * 1.0 / CLOCKTICKS;
-    elapse = difftime(finish, start) + 0.5;
-    cpufrac = elapcpu / elapse * 100.;
-    size = 2880. * RAWLOOP / 1000000.;
-    rate = size / elapse;
-    printf(" %4.1fMB/%4.1fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
-/*-----------------------------------------------------------------*/
+    gettime(&elapse, &elapcpu, &status);
 
-#if BYTESWAPPED == TRUE
-    printf("RAW fwrite (2880 bytes/loop) + copy + swap...   ");
-#else
-    printf("RAW fwrite (2880 bytes/loop) + copy...          ");
-#endif
-
-    scpu = clock();
-    start = time(0);
-    for (ii = 0; ii < RAWLOOP; ii++)
-    {
-      memcpy(buff2, buffer, 2880);
-#if BYTESWAPPED == TRUE
-      ffswap2( (short *) buff2, 2880/2);
-#endif
-      if (fwrite(buff2, 1, 2880, diskfile) != 2880)
-        printf("write error \n");
-    }
-    finish = time(0);
-    ecpu = clock();
-    elapcpu = (ecpu - scpu) * 1.0 / CLOCKTICKS;
-    elapse = difftime(finish, start) + 0.5;
     cpufrac = elapcpu / elapse * 100.;
-    size = 2880. * RAWLOOP / 1000000.;
+    size = 2880. * rawloop / 1000000.;
     rate = size / elapse;
     printf(" %4.1fMB/%4.1fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
 
-/*-----------------------------------------------------------------*/
+    /* read back the binary records */
+    fseek(diskfile, 0, 0);
 
     printf("RAW fread  (2880 bytes/loop)...                 ");
+    marktime(&status);
 
-    fseek(diskfile, 0, 0);
-    scpu = clock();
-    start = time(0);
-    for (ii = 0; ii < RAWLOOP; ii++)
-      if (fread(buff2, 1, 2880, diskfile) != 2880)
+    for (ii = 0; ii < rawloop; ii++)
+      if (fread(buffer, 1, 2880, diskfile) != 2880)
         printf("read error \n");
 
-    finish = time(0);
-    ecpu = clock();
-    elapcpu = (ecpu - scpu) * 1.0 / CLOCKTICKS;
-    elapse = difftime(finish, start) + 0.5;
+    gettime(&elapse, &elapcpu, &status);
+
     cpufrac = elapcpu / elapse * 100.;
-    size = 2880. * RAWLOOP / 1000000.;
+    size = 2880. * rawloop / 1000000.;
     rate = size / elapse;
     printf(" %4.1fMB/%4.1fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
-/*-----------------------------------------------------------------*/
-
-#if BYTESWAPPED == TRUE
-    printf("RAW fread  (2880 bytes/loop) + copy + swap...   ");
-#else
-    printf("RAW fread  (2880 bytes/loop) + copy...          ");
-#endif
-
-    scpu = clock();
-    start = time(0);
-    for (ii = 0; ii < RAWLOOP; ii++)
-    {
-      memcpy(buff2, buffer, 2880);
-#if BYTESWAPPED == TRUE
-      ffswap2( (short *) buff2, 2880/2);
-#endif
-      if (fread(buff2, 1, 2880, diskfile) != 2880)
-        printf("read error \n");
-    }
-    finish = time(0);
-    ecpu = clock();
-    elapcpu = (ecpu - scpu) * 1.0 / CLOCKTICKS;
-    elapse = difftime(finish, start) + 0.5;
-    cpufrac = elapcpu / elapse * 100.;
-    size = 2880. * RAWLOOP / 1000000.;
-    rate = size / elapse;
-    printf(" %4.1fMB/%4.1fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
-/*-----------------------------------------------------------------*/
 
     fclose(diskfile);
-skipit:
-
     remove(filename);
 
     status = 0;     
@@ -214,14 +147,12 @@ int writeimage(fitsfile *fptr, int *status)
     /* write the primary array containing a 2-D image */
     /**************************************************/
 {
-    long  nremain, ntodo, fpixel = 1;
-    time_t start, finish;
-    clock_t scpu, ecpu;
+    long  nremain, ii;
     float rate, size, elapcpu, cpufrac;
     double elapse;
 
     /* initialize FITS image parameters */
-    int bitpix   =  16;   /* 16-bit short signed integer pixel values       */
+    int bitpix   =  32;   /* 32-bit  signed integer pixel values       */
     long naxis    =   2;  /* 2-dimensional image                            */    
     long naxes[2] = {XSIZE, YSIZE }; /* image size */
 
@@ -229,30 +160,21 @@ int writeimage(fitsfile *fptr, int *status)
     if ( fits_create_img(fptr, bitpix, naxis, naxes, status) )
          printerror( *status );          
 
-    printf("\nWrite %dx%d short image, %d pixels/loop:", XSIZE, YSIZE, SHTSIZE);
+    printf("\nWrite %dx%d I*4 image, %d pixels/loop:   ",XSIZE,YSIZE,SHTSIZE);
+    marktime(status);
 
     nremain = XSIZE * YSIZE;
-
-    scpu = clock();
-    start = time(0);
-
-    while(nremain)
+    for (ii = 1; ii <= nremain; ii += SHTSIZE)
     {
-      ntodo = minvalue(SHTSIZE, nremain);
-      ffppri(fptr, 0, fpixel, ntodo, array, status);
-      fpixel += ntodo;
-      nremain -= ntodo;
+      ffpprj(fptr, 0, ii, SHTSIZE, sarray, status);
     }
 
     ffflus(fptr, status);  /* flush all buffers to disk */
 
-    finish = time(0);
+    gettime(&elapse, &elapcpu, status);
 
-    elapse = difftime(finish, start) + 0.5;
-    ecpu = clock();
-    elapcpu = (ecpu - scpu) * 1.0 / CLOCKTICKS;
     cpufrac = elapcpu / elapse * 100.;
-    size = XSIZE * 2. * YSIZE / 1000000.;
+    size = XSIZE * 4. * YSIZE / 1000000.;
     rate = size / elapse;
     printf(" %4.1fMB/%4.1fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
 
@@ -265,20 +187,17 @@ int writebintable (fitsfile *fptr, int *status)
     /* Create a binary table extension containing 3 columns  */
     /*********************************************************/
 {
-    int hdutype, tfields = 3;
-    long nremain, ntodo, firstrow = 1, firstelem = 1;
-    long nrows;
-    clock_t scpu, ecpu;
-    time_t start, finish;
+    int hdutype, tfields = 2;
+    long nremain, ntodo, firstrow = 1, firstelem = 1, nrows;
     float rate, size, elapcpu, cpufrac;
     double elapse;
 
     char extname[] = "Speed_Test";           /* extension name */
 
     /* define the name, datatype, and physical units for the columns */
-    char *ttype[] = { "first", "second", "third" };
-    char *tform[] = {"1D",       "1E",      "1I" };
-    char *tunit[] = { " ",      " ",       " "   };
+    char *ttype[] = { "first", "second" };
+    char *tform[] = {"1J",       "1J"   };
+    char *tunit[] = { " ",       " "    };
 
     /* append a new empty binary table onto the FITS file */
 
@@ -288,33 +207,28 @@ int writebintable (fitsfile *fptr, int *status)
 
     /* get table row size and optimum number of rows to write per loop */
     fits_get_rowsize(fptr, &nrows, status);
-    nrows = minvalue(nrows, BUFFSIZE);
+    nrows = minvalue(nrows, SHTSIZE);
     nremain = BROWS;
 
     printf("Write %7drow x %dcol bintable %4d rows/loop:", BROWS, tfields,
        nrows);
-
-    scpu = clock();
-    start = time(0);
+    marktime(status);
 
     while(nremain)
     {
       ntodo = minvalue(nrows, nremain);
-      ffpcld(fptr, 1, firstrow, firstelem, ntodo, darray, status);
-      ffpcle(fptr, 2, firstrow, firstelem, ntodo, farray, status);
-      ffpcli(fptr, 3, firstrow, firstelem, ntodo, sarray, status);
+      ffpclj(fptr, 1, firstrow, firstelem, ntodo, sarray, status);
+      ffpclj(fptr, 2, firstrow, firstelem, ntodo, sarray, status);
       firstrow += ntodo;
       nremain -= ntodo;
     }
 
     ffflus(fptr, status);  /* flush all buffers to disk */
 
-    finish = time(0);
-    ecpu = clock();
-    elapcpu = (ecpu - scpu) * 1.0 / CLOCKTICKS;
-    elapse = difftime(finish, start) + 0.5;
+    gettime(&elapse, &elapcpu, status);
+
     cpufrac = elapcpu / elapse * 100.;
-    size = BROWS * 14. / 1000000.;
+    size = BROWS * 8. / 1000000.;
     rate = size / elapse;
     printf(" %4.1fMB/%4.1fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
 
@@ -330,8 +244,6 @@ int writeasctable (fitsfile *fptr, int *status)
     int hdutype, tfields = 2;
     long nremain, ntodo, firstrow = 1, firstelem = 1;
     long nrows;
-    clock_t scpu, ecpu;
-    time_t start, finish;
     float rate, size, elapcpu, cpufrac;
     double elapse;
 
@@ -349,31 +261,26 @@ int writeasctable (fitsfile *fptr, int *status)
 
     /* get table row size and optimum number of rows to write per loop */
     fits_get_rowsize(fptr, &nrows, status);
-    nrows = minvalue(nrows, BUFFSIZE);
+    nrows = minvalue(nrows, SHTSIZE);
     nremain = AROWS;
 
     printf("Write %7drow x %dcol asctable %4d rows/loop:", AROWS, tfields,
            nrows);
-
-    scpu = clock();
-    start = time(0);
-    sarray[0] = 32000;
+    marktime(status);
 
     while(nremain)
     {
       ntodo = minvalue(nrows, nremain);
-      ffpcli(fptr, 1, firstrow, firstelem, ntodo, sarray, status);
-      ffpcli(fptr, 2, firstrow, firstelem, ntodo, sarray, status);
+      ffpclj(fptr, 1, firstrow, firstelem, ntodo, sarray, status);
+      ffpclj(fptr, 2, firstrow, firstelem, ntodo, sarray, status);
       firstrow += ntodo;
       nremain -= ntodo;
     }
 
     ffflus(fptr, status);  /* flush all buffers to disk */
 
-    finish = time(0);
-    ecpu = clock();
-    elapcpu = (ecpu - scpu) * 1.0 / CLOCKTICKS;
-    elapse = difftime(finish, start) + 0.5;
+    gettime(&elapse, &elapcpu, status);
+
     cpufrac = elapcpu / elapse * 100.;
     size = AROWS * 13. / 1000000.;
     rate = size / elapse;
@@ -389,10 +296,8 @@ int readimage( fitsfile *fptr, int *status )
     /*********************/
 {
     int anynull, hdutype;
-    long nremain, ntodo, fpixel = 1;
-    short shortnull = 0;
-    clock_t scpu, ecpu;
-    time_t start, finish;
+    long nremain, ii;
+    long longnull = 0;
     float rate, size, elapcpu, cpufrac;
     double elapse;
 
@@ -400,26 +305,19 @@ int readimage( fitsfile *fptr, int *status )
     if ( fits_movabs_hdu(fptr, 1, &hdutype, status) ) 
          printerror( *status );
 
-    printf("\nRead  %dx%d short image, %d pixels/loop:", XSIZE, YSIZE, SHTSIZE);
+    printf("\nRead back image                                 ");
+    marktime(status);
+
     nremain = XSIZE * YSIZE;
-
-    scpu = clock();
-    start = time(0);
-
-    while(nremain)
+    for (ii=1; ii <= nremain; ii += SHTSIZE)
     {
-      ntodo = minvalue(SHTSIZE, nremain);
-      ffgpvi(fptr, 0, fpixel, ntodo, shortnull, array, &anynull, status);
-      fpixel += ntodo;
-      nremain -= ntodo;
+      ffgpvj(fptr, 0, ii, SHTSIZE, longnull, sarray, &anynull, status);
     }
 
-    finish = time(0);
-    ecpu = clock();
-    elapcpu = (ecpu - scpu) * 1.0 / CLOCKTICKS;
-    elapse = difftime(finish, start) + 0.5;
+    gettime(&elapse, &elapcpu, status);
+
     cpufrac = elapcpu / elapse * 100.;
-    size = XSIZE * 2. * YSIZE / 1000000.;
+    size = XSIZE * 4. * YSIZE / 1000000.;
     rate = size / elapse;
     printf(" %4.1fMB/%4.1fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
 
@@ -432,14 +330,10 @@ int readbtable( fitsfile *fptr, int *status )
     /* read and print data values from the binary table */
     /************************************************************/
 {
-    int hdutype, anynull, tfields = 3;
+    int hdutype, anynull;
     long nremain, ntodo, firstrow = 1, firstelem = 1;
     long nrows;
-    short snull = 0;
-    float fnull = 0.;
-    double dnull = 0;
-    clock_t scpu, ecpu;
-    time_t start, finish;
+    long lnull = 0;
     float rate, size, elapcpu, cpufrac;
     double elapse;
 
@@ -449,35 +343,29 @@ int readbtable( fitsfile *fptr, int *status )
 
     /* get table row size and optimum number of rows to read per loop */
     fits_get_rowsize(fptr, &nrows, status);
-    nrows = minvalue(nrows, BUFFSIZE);
+    nrows = minvalue(nrows, SHTSIZE);
     
     /*  read the columns */  
     nremain = BROWS;
 
-    printf("Read  %7drow x %dcol bintable %4d rows/loop:", BROWS, tfields,
-            nrows);
-    scpu = clock();
-    start = time(0);
+    printf("Read back BINTABLE                              ");
+    marktime(status);
 
     while(nremain)
     {
       ntodo = minvalue(nrows, nremain);
-      ffgcvd(fptr, 1, firstrow, firstelem, ntodo,
-                     dnull, darray, &anynull, status);
-      ffgcve(fptr, 2, firstrow, firstelem, ntodo,
-                     fnull, farray, &anynull, status);
-      ffgcvi(fptr, 3, firstrow, firstelem, ntodo,
-                     snull, sarray, &anynull, status);
+      ffgcvj(fptr, 1, firstrow, firstelem, ntodo,
+                     lnull, sarray, &anynull, status);
+      ffgcvj(fptr, 2, firstrow, firstelem, ntodo,
+                     lnull, sarray, &anynull, status);
       firstrow += ntodo; 
       nremain  -= ntodo;
     }
 
-    finish = time(0);
-    ecpu = clock();
-    elapcpu = (ecpu - scpu) * 1.0 / CLOCKTICKS;
-    elapse = difftime(finish, start) + 0.5;
+    gettime(&elapse, &elapcpu, status);
+
     cpufrac = elapcpu / elapse * 100.;
-    size = BROWS * 14. / 1000000.;
+    size = BROWS * 8. / 1000000.;
     rate = size / elapse;
     printf(" %4.1fMB/%4.1fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
 
@@ -490,12 +378,10 @@ int readatable( fitsfile *fptr, int *status )
     /* read and print data values from an ASCII or binary table */
     /************************************************************/
 {
-    int hdutype, anynull, tfields = 2;
+    int hdutype, anynull;
     long nremain, ntodo, firstrow = 1, firstelem = 1;
     long nrows;
-    short shortnull = 0;
-    clock_t scpu, ecpu;
-    time_t start, finish;
+    long lnull = 0;
     float rate, size, elapcpu, cpufrac;
     double elapse;
 
@@ -505,31 +391,27 @@ int readatable( fitsfile *fptr, int *status )
 
     /* get table row size and optimum number of rows to read per loop */
     fits_get_rowsize(fptr, &nrows, status);
-    nrows = minvalue(nrows, BUFFSIZE);
+    nrows = minvalue(nrows, SHTSIZE);
  
     /*  read the columns */  
     nremain = AROWS;
 
-    printf("Read  %7drow x %dcol asctable %4d rows/loop:", AROWS, tfields,
-           nrows);
-    scpu = clock();
-    start = time(0);
+    printf("Read back ASCII Table                           ");
+    marktime(status);
 
     while(nremain)
     {
       ntodo = minvalue(nrows, nremain);
-      ffgcvi(fptr, 1, firstrow, firstelem, ntodo,
-                     shortnull, sarray, &anynull, status);
-      ffgcvi(fptr, 2, firstrow, firstelem, ntodo,
-                     shortnull, sarray, &anynull, status);
+      ffgcvj(fptr, 1, firstrow, firstelem, ntodo,
+                     lnull, sarray, &anynull, status);
+      ffgcvj(fptr, 2, firstrow, firstelem, ntodo,
+                     lnull, sarray, &anynull, status);
       firstrow += ntodo;
       nremain  -= ntodo;
     }
 
-    finish = time(0);
-    ecpu = clock();
-    elapcpu = (ecpu - scpu) * 1.0 / CLOCKTICKS;
-    elapse = difftime(finish, start) + 0.5;
+    gettime(&elapse, &elapcpu, status);
+
     cpufrac = elapcpu / elapse * 100.;
     size = AROWS * 13. / 1000000.;
     rate = size / elapse;
@@ -564,4 +446,39 @@ void printerror( int status)
 
     exit( status );       /* terminate the program, returning error status */
 }
+/*--------------------------------------------------------------------------*/
+int marktime( int *status)
+{
+    double telapse;
+    time_t temp;
 
+    temp = time(0);
+
+    /* Since elapsed time is only measured to the nearest second */
+    /* keep getting the time until the seconds tick just changes. */
+    /* This provides more consistent timing measurements since the */
+    /* intervals all start on an integer seconds. */
+
+    telapse = 0.;
+    while (telapse == 0.)
+    {
+        scpu = clock();
+        start = time(0);
+        telapse = difftime( start, temp );
+    }
+    return( *status );
+}
+/*--------------------------------------------------------------------------*/
+int gettime(double *elapse, float *elapscpu, int *status)
+{
+    clock_t ecpu;
+    time_t  finish;
+
+    ecpu = clock();
+    finish = time(0);
+
+    *elapse = difftime(finish, start) + 0.5;
+    *elapscpu = (ecpu - scpu) * 1.0 / CLOCKTICKS;
+
+    return( *status );
+}

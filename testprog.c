@@ -44,11 +44,19 @@ main()
     double odkey = 15.1515151515151515, idkey;
     double otfrac = .1234567890123456;
 
+    double xrval,yrval,xrpix,yrpix,xinc,yinc,rot,xpos,ypos,xpix,ypix;
+    char xcoordtype[] = "RA---TAN";
+    char ycoordtype[] = "DEC--TAN";
+    char ctype[5];
+
     char *lsptr;    /* pointer to long string value */
     char  comm[73];
     char *comms[3];
     char *inskey[21];
     char *onskey[3] = {"first string", "second string", "        "};
+    char *inclist[2] = {"key*", "newikys"};
+    char *exclist[2] = {"key_pr*", "key_pkls"};
+
     int   onlkey[3] = {1, 0, 1}, inlkey[3];
     long  onjkey[3] = {11, 12, 13}, injkey[3];
     float onfkey[3] = {12.121212, 13.131313, 14.141414};
@@ -233,7 +241,7 @@ main()
         printf("ffpkne status = %d\n", status);
 
     strcpy(comm, "fxpkng comment&");
-    if (ffpkng(fptr, "ky_pkng", 1, nkeys, ongkey, 14, comms, &status) > 0)
+    if (ffpkng(fptr, "ky_pkng", 1, nkeys, ongkey, 13, comms, &status) > 0)
         printf("ffpkng status = %d\n", status);
 
     strcpy(comm, "fxpknd comment&");
@@ -324,6 +332,7 @@ main()
 
     ffflus(fptr, &status);   /* flush all data to the disk file */ 
     printf("ffflus status = %d\n", status);
+    printf("HDU number = %d\n", ffghdn(fptr, &hdunum));
 
     /*
       ############################
@@ -498,6 +507,7 @@ main()
       }
     }
     printf("\nClosed then reopened the FITS file 10 times.\n");
+    printf("HDU number = %d\n", ffghdn(fptr, &hdunum));
 
     /*
       ############################
@@ -683,7 +693,7 @@ main()
     ffikye(fptr, "KY_IKYE", 12.3456, 4, "ikye comment", &status);
     ffikyd(fptr, "KY_IKYD", 12.345678901234567, 14, "ikyd comment", &status);
     ffikyf(fptr, "KY_IKYF", 12.3456, 4, "ikyf comment", &status);
-    ffikyg(fptr, "KY_IKYG", 12.345678901234567, 14, "ikyg comment", &status);
+    ffikyg(fptr, "KY_IKYG", 12.345678901234567, 13, "ikyg comment", &status);
 
     printf("\nAfter inserting the keywords...\n");
     for (ii = 27; ii <= 36; ii++)
@@ -712,7 +722,7 @@ main()
     ffmkyd(fptr, "KY_IKYD", -12.345678901234567, 14, "modified comment",
             &status);
     ffmkyf(fptr, "KY_IKYF", -12.3456, 4, "&", &status);
-    ffmkyg(fptr, "KY_IKYG", -12.345678901234567, 14, "&", &status);
+    ffmkyg(fptr, "KY_IKYG", -12.345678901234567, 13, "&", &status);
 
     printf("\nAfter modifying the keywords...\n");
     for (ii = 27; ii <= 36; ii++)
@@ -738,7 +748,7 @@ main()
     ffukyd(fptr, "KY_IKYD", -13.345678901234567, 14, "modified comment",
             &status);
     ffukyf(fptr, "KY_IKYF", -13.3456, 4, "&", &status);
-    ffukyg(fptr, "KY_IKYG", -13.345678901234567, 14, "&", &status);
+    ffukyg(fptr, "KY_IKYG", -13.345678901234567, 13, "&", &status);
 
     printf("\nAfter updating the keywords...\n");
     for (ii = 27; ii <= 36; ii++)
@@ -748,6 +758,23 @@ main()
     }
     if (status > 0)
        printf("\nERROR modifying keywords\n");
+
+    /* move to top of header and find keywords using wild cards */
+    ffgrec(fptr, 0, card, &status);
+
+    printf("\nKeywords found using wildcard search (should be 9)...\n");
+    nfound = 0;
+    while (!ffgnxk(fptr,inclist, 2, exclist, 2, card, &status))
+    {
+        nfound++;
+        printf("%s\n", card);
+    }
+    if (nfound != 9)
+    {
+       printf("\nERROR reading keywords using wildcards (ffgnxk)\n");
+       goto errstatus;
+    }
+    status = 0;
 
     /*
       ############################
@@ -802,6 +829,7 @@ main()
     ffcrtb(fptr, BINARY_TBL, nrows, tfields, ttype, tform, tunit, binname,
             &status);
     printf("\nffcrtb status = %d\n", status);
+    printf("HDU number = %d\n", ffghdn(fptr, &hdunum));
 
     /* get size and position in header, and reserve space for more keywords */
     ffghps(fptr, &existkeys, &keynum, &status);
@@ -1018,6 +1046,7 @@ main()
     ffitab(fptr, rowlen, nrows, tfields, ttype, tbcol, tform, tunit, tblname,
             &status);
     printf("ffitab status = %d\n", status);
+    printf("HDU number = %d\n", ffghdn(fptr, &hdunum));
 
     ffsnul(fptr, 1, "null1", &status);   /* define null value for int cols */
     ffsnul(fptr, 2, "null2", &status);
@@ -1223,6 +1252,8 @@ main()
     if (ffmrhd(fptr, 1, &hdutype, &status) > 0)
         goto errstatus;
 
+    printf("HDU number = %d\n", ffghdn(fptr, &hdunum));
+
     printf("\nMoved to BINTABLE; headend, datastart = %d %d\n",
         fptr->headend, fptr->datastart);
  
@@ -1251,6 +1282,21 @@ main()
       for (ii = 0; ii < 8; ii++)
         printf("%1d",larray[jj * 8 + ii]);
       printf(" ");
+    }
+
+    for (ii = 0; ii < nrows; ii++)
+    {
+      larray[ii] = 0;
+      xinarray[ii] = 0;
+      binarray[ii] = 0;
+      iinarray[ii] = 0; 
+      kinarray[ii] = 0;
+      einarray[ii] = 0.; 
+      dinarray[ii] = 0.;
+      cinarray[ii * 2] = 0.; 
+      minarray[ii * 2] = 0.;
+      cinarray[ii * 2 + 1] = 0.; 
+      minarray[ii * 2 + 1] = 0.;
     }
 
     printf("\n\n");
@@ -1320,7 +1366,7 @@ main()
         inskey[ii], larray[ii], xinarray[ii], binarray[ii], iinarray[ii]);
     }
     ffprec(fptr, 
-    "key_prec= 'This keyword was written by ffprec' / comment here", &status);
+    "key_prec= 'This keyword was written by f_prec' / comment here", &status);
 
     /*
       ###############################################
@@ -1460,6 +1506,7 @@ main()
     ffibin(fptr, nrows, tfields, ttype, tform, tunit, binname, pcount,
             &status);
     printf("ffibin status = %d\n", status);
+    printf("HDU number = %d\n", ffghdn(fptr, &hdunum));
 
 
     ffpkyj(fptr, "TNULL4", 77, "value for undefined pixels", &status);
@@ -1546,6 +1593,7 @@ main()
     naxes[1] = 25;
     ffiimg(fptr, bitpix, naxis, naxes, &status);
     printf("\nCreate image extension: ffiimg status = %d\n", status);
+    printf("HDU number = %d\n", ffghdn(fptr, &hdunum));
 
     for (jj = 0; jj < 30; jj++)
     {
@@ -1654,14 +1702,15 @@ main()
     naxes[1] = 25;
     ffiimg(fptr, bitpix, naxis, naxes, &status);
     printf("\nCreate image extension: ffiimg status = %d\n", status);
+    printf("HDU number = %d\n", ffghdn(fptr, &hdunum));
 
     strcpy(filename, "t1q2s3v4.tmp");
     ffinit(&tmpfile, filename, &status);
     printf("Create temporary file: ffinit status = %d\n", status);
 
     ffcopy(fptr, tmpfile, 0, &status);
-    printf("Copy image extension to primary array of tmp file.");
-    printf(" ffcopy status = %d\n", status);
+    printf("Copy image extension to primary array of tmp file.\n");
+    printf("ffcopy status = %d\n", status);
 
     ffgrec(tmpfile, 1, card, &status);
     printf("%s\n", card);
@@ -1682,6 +1731,7 @@ main()
     ffdhdu(fptr, &hdutype, &status);
     printf("Delete the image extension; hdutype, status = %d %d\n",
              hdutype, status);
+    printf("HDU number = %d\n", ffghdn(fptr, &hdunum));
 
     /*
       ###########################################################
@@ -1819,6 +1869,7 @@ main()
       #################################
     */
 
+
      ffmrhd(fptr, -1, &hdutype, &status);
      ffmrhd(fptr,  1, &hdutype, &status);
 
@@ -1835,19 +1886,20 @@ main()
     strcpy(inskey[0]," ");
     strcpy(iskey," ");
 
-    for (ii = 0; ii < 20; ii++)
-    {
-        larray[ii] = 0;
-        boutarray[ii] = 0;
-        ioutarray[ii] = 0;
-        joutarray[ii] = 0;
-        eoutarray[ii] = 0;
-        doutarray[ii] = 0;
-    }
 
     printf("HDU number = %d\n", ffghdn(fptr, &hdunum));
     for (ii = 1; ii <= 20; ii++)   /* loop over rows 1 - 20 */
     {
+      for (jj = 0; jj < ii; jj++)
+      {
+        larray[jj] = 0;
+        boutarray[jj] = 0;
+        ioutarray[jj] = 0;
+        joutarray[jj] = 0;
+        eoutarray[jj] = 0;
+        doutarray[jj] = 0;
+      }
+
       ffgcvs(fptr, 1, ii, 1, 1, iskey, inskey, &anynull, &status);  
       printf("A %s %d\nL", inskey[0], status);
 
@@ -1962,6 +2014,62 @@ main()
         printf(" %2.0f", dinarray[ii]);
     printf("  %d (double)\n", anynull);
 
+    /*
+      ##########################################
+      #  test world coordinate system routines #
+      ##########################################
+    */
+
+    xrval = 45.83;
+    yrval =  63.57;
+    xrpix =  256.;
+    yrpix =  257.;
+    xinc =   -.00277777;
+    yinc =   .00277777;
+
+    /* write the WCS keywords */
+    /* use example values from the latest WCS document */
+    ffpkyd(fptr, "CRVAL1", xrval, 10, "comment", &status);
+    ffpkyd(fptr, "CRVAL2", yrval, 10, "comment", &status);
+    ffpkyd(fptr, "CRPIX1", xrpix, 10, "comment", &status);
+    ffpkyd(fptr, "CRPIX2", yrpix, 10, "comment", &status);
+    ffpkyd(fptr, "CDELT1", xinc, 10, "comment", &status);
+    ffpkyd(fptr, "CDELT2", yinc, 10, "comment", &status);
+ /*   ffpkyd(fptr, "CROTA2", rot, 10, "comment", &status); */
+    ffpkys(fptr, "CTYPE1", xcoordtype, " ", &status);
+    ffpkys(fptr, "CTYPE2", ycoordtype, " ", &status);
+    printf("\nWrote WCS keywords status = %d\n",status);
+
+    xrval =  0.;
+    yrval =  0.;
+    xrpix =  0.;
+    yrpix =  0.;
+    xinc =   0.;
+    yinc =   0.;
+    rot =    0.;
+
+    ffgics(fptr, &xrval, &yrval, &xrpix,
+           &yrpix, &xinc, &yinc, &rot, ctype, &status);
+    printf("Read WCS keywords with ffgics status = %d\n",status);
+
+    xpix = 0.5;
+    ypix = 0.5;
+
+    ffwldp(xpix,ypix,xrval,yrval,xrpix,yrpix,xinc,yinc,rot,ctype,
+           &xpos, &ypos,&status);
+
+    printf("  CRVAL1, CRVAL2 = %16.12f, %16.12f\n", xrval,yrval);
+    printf("  CRPIX1, CRPIX2 = %16.12f, %16.12f\n", xrpix,yrpix);
+    printf("  CDELT1, CDELT2 = %16.12f, %16.12f\n", xinc,yinc);
+    printf("  Rotation = %10.3f, CTYPE = %s\n", rot, ctype);
+    printf("Calculated sky coordinate with ffwldp status = %d\n",status);
+    printf("  Pixels (%8.4f,%8.4f) --> (%11.6f, %11.6f) Sky\n",
+            xpix,ypix,xpos,ypos);
+    ffxypx(xpos,ypos,xrval,yrval,xrpix,yrpix,xinc,yinc,rot,ctype,
+           &xpix, &ypix,&status);
+    printf("Calculated pixel coordinate with ffxypx status = %d\n",status);
+    printf("  Sky (%11.6f, %11.6f) --> (%8.4f,%8.4f) Pixels\n",
+            xpos,ypos,xpix,ypix);
     /*
       ######################################
       #  append another ASCII table        #

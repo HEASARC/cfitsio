@@ -148,10 +148,14 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
        nulcheck = 0;    /* calling routine does not want to check for nulls */
 
     else if (snull[0] == ASCII_NULL_UNDEFINED)
-         nulcheck = 0;   /* null value string in ASCII table not defined */
+       nulcheck = 0;   /* null value string in ASCII table not defined */
+
+    else if (nullen > twidth)
+       nulcheck = 0;   /* null value string is longer than width of column  */
+                       /* thus impossible for any column elements to = null */
 
     /*---------------------------------------------------------------------*/
-    /*  Now read the strings one at a time from the FITS column.            */
+    /*  Now read the strings one at a time from the FITS column.           */
     /*---------------------------------------------------------------------*/
     next = 0;                 /* next element in array to be read  */
     rownum = 0;               /* row number, relative to firstrow     */

@@ -1,6 +1,6 @@
                    CFITSIO Interface Routines
 
-                        November 1996
+                        January 1997
 
 CFITSIO is a library of ANSI C routines for reading and writing FITS
 format files.  The design of these C routines closely follows the
@@ -12,55 +12,63 @@ and using this library.
 This new CFITSIO library, written entirely in ANSI C, should not be
 confused with the previously available set of C macros which provide a
 C-callable interface to the Fortran fitsio routines.  These older
-macros are contained in the cfitsio.h file that is distributed along
-with the Fortran fitsio source files.
+macros which are no longer being supported, are contained in the
+cfitsio.h file that is distributed along with the Fortran fitsio source
+files.
 
 BUILDING CFITSIO
 ----------------
 
-The CFITSIO code is contained in about 30 .c source files and 3 .h
+The CFITSIO code is contained in about 30 *.c source files and 3 *.h
 header files.  The CFITSIO library is built on Unix systems by typing:
 
-  configure
-  make
+>  configure
+>  make
 
 at the operating system prompt.  The 'configure' command customizes
 the Makefile for your particular system, then the 'make' command
 builds the library.
 
-On VAX/VMS systems 2 additional macro-code files are needed:
-vmsieeed.mar and vmsieeer.mar
+On VAX/VMS and ALPHA/VMS systems, the make.com command file may be
+used to build the cfitsio.olb object library.  Execute this command
+file by typing '@make' on the command line.
 
-On VAX/VMS and ALPHA/VMS systems, the makevaxvms.com and makealphavms.com
-command files may be used to build the cfitsio.olb object library
-(e.g., type '@makevaxvms' at the Vax command line to build the CFITSIO
-library on a Vax).
+On DOS-based PC computers, the makepc.bat file gives an example of how
+to build the CFITSIO library.  This file will probably need to be
+editted to include the appropriate command switches if a different C
+compiler or linker is used.
+
+The MacOS version of the cfitsio library can be built by (1) unbinhex
+and unstuff cfitsio_mac.sit.hqx, and (2) for the PPC,  load CFitsio
+PPCLibrary.(pi) into CodeWarrior 10+ and make.  This builds the cfitsio
+library for PPC.  If you would like to build the test program, load
+CFitsio PPC testprog.(pi) into CodeWarrior 10+ and make.
 
 TESTING CFITSIO
 ---------------
 
-The CFITSIO library should be tested by building and running the
-testprog.c program that is included with the release.  On Unix systems
-(assuming the gcc compiler is being used), type:
-
-% gcc -o testprog testprog.c -L. -lcfitsio -lm
-% testprog > testprog.lis
-% diff testprog.lis testprog.out
-% cmp testprog.fit testprog.std
-
-On VMS systems, type (assuming cc is the name of the C compiler command):
-
-$ cc testprog.c
-$ link testprog, cfitsio/lib
-$ run testprog
-
-The testprog program should produce a FITS file called testprog.fit
-which is identical to the testprog.std FITS file included in this
-release.  The diagnotic messages sent to standard output (which are
-piped to the file testprog.lis in the above example) should be
-identical to the listing contained in the file testprog.out.  The
-'diff' and 'cmp' commands shown above should not report any differences
-in the files.
+The CFITSIO library should be tested by building and running
+the testprog.c program that is included with the release. 
+On Unix systems (assuming the gcc compiler is being used), type:
+-
+    % gcc -o testprog testprog.c -L. -lcfitsio -lm
+    % testprog > testprog.lis
+    % diff testprog.lis testprog.out
+    % cmp testprog.fit testprog.std
+-
+ On VMS systems,
+(assuming cc is the name of the C compiler command), type:
+-
+    $ cc testprog.c
+    $ link testprog, cfitsio/lib
+    $ run testprog
+-
+The testprog program should produce a FITS file called `testprog.fit'
+that is identical to the testprog.std FITS file included in this
+release.  The diagnostic messages (which were piped to the file
+testprog.lis in the Unix example) should be identical to the listing
+contained in the file testprog.out.  The 'diff' and 'cmp' commands
+shown above should not report any differences in the files.
 
 USING CFITSIO
 -------------
@@ -76,9 +84,6 @@ operations on various types of FITS files.  Programmers are urged to
 examine these routines for recommended programming practices when using
 CFITSIO.  Users are free to copy or modify these routines for their own
 purposes.
-
-The cookbook program produces 2 FITS files, atestfil.fit and
-btestfil.fit.
 
 SUPPORTED PLATFORMS
 -------------------
@@ -96,8 +101,7 @@ CFITSIO has currently been tested on the following platforms:
    DEC VAX/VMS                gcc and cc
    Linux running on IBM PC    gcc
    IBM PC w/ Windows 95       Borland C++ V4.5
-   Mac IIci                   Symantec C++
-   MacOS 7.5.3                Metrowerks 9.
+   MacOS 7.1 or greater       Metrowerks 10.+
 
 CFITSIO will probably run on most other Unix platforms without
 modification.  Cray supercomputers and IBM mainframe computers are

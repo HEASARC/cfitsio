@@ -694,7 +694,7 @@ int ffr8fi1(double *input,         /* I - array of values to be converted  */
                 output[ii] = UCHAR_MAX;
             }
             else
-                output[ii] = (unsigned char) dvalue;
+                output[ii] = (unsigned char) (dvalue + .5);
         }
     }
     return(*status);
@@ -749,7 +749,12 @@ int ffr8fi2(double *input,     /* I - array of values to be converted  */
                 output[ii] = SHRT_MAX;
             }
             else
-                output[ii] = (short) dvalue;
+            {
+                if (dvalue >= 0)
+                    output[ii] = (short) (dvalue + .5);
+                else
+                    output[ii] = (short) (dvalue - .5);
+            }
         }
     }
     return(*status);
@@ -804,7 +809,12 @@ int ffr8fi4(double *input,     /* I - array of values to be converted  */
                 output[ii] = LONG_MAX;
             }
             else
-                output[ii] = (long) dvalue;
+            {
+                if (dvalue >= 0)
+                    output[ii] = (long) (dvalue + .5);
+                else
+                    output[ii] = (long) (dvalue - .5);
+            }
         }
     }
     return(*status);

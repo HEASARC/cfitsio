@@ -48,7 +48,7 @@ int ffcrtb(fitsfile *fptr,  /* I - FITS file pointer                        */
            char **ttype,    /* I - name of each column                      */
            char **tform,    /* I - value of TFORMn keyword for each column  */
            char **tunit,    /* I - value of TUNITn keyword for each column  */
-           char *extname,   /* I - value of EXTNAME keyword, if any         */
+           char *extnm,   /* I - value of EXTNAME keyword, if any         */
            int *status)     /* IO - error status                            */
 /*
   Create a table extension in a FITS file. 
@@ -67,7 +67,7 @@ int ffcrtb(fitsfile *fptr,  /* I - FITS file pointer                        */
     {
       /* write the required header keywords. This will write PCOUNT = 0 */
       /* so variable length array columns are not supported             */
-      ffphbn(fptr, naxis2, tfields, ttype, tform, tunit, extname, 0, status);
+      ffphbn(fptr, naxis2, tfields, ttype, tform, tunit, extnm, 0, status);
     }
     else if (tbltype == ASCII_TBL)
     {
@@ -85,7 +85,7 @@ int ffcrtb(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         /* write the required header keywords */
         ffphtb(fptr, naxis1, naxis2, tfields, ttype, tbcol, tform, tunit,
-               extname, status);
+               extnm, status);
 
         free(tbcol);
       }
@@ -1161,7 +1161,7 @@ int ffphtb(fitsfile *fptr,  /* I - FITS file pointer                        */
            long *tbcol,     /* I - byte offset in row to each column        */
            char **tform,    /* I - value of TFORMn keyword for each column  */
            char **tunit,    /* I - value of TUNITn keyword for each column  */
-           char *extname,   /* I - value of EXTNAME keyword, if any         */
+           char *extnm,   /* I - value of EXTNAME keyword, if any         */
            int *status)     /* IO - error status                            */
 /*
   Put required Header keywords into the ASCII TaBle:
@@ -1221,8 +1221,8 @@ int ffphtb(fitsfile *fptr,  /* I - FITS file pointer                        */
             break;       /* abort loop on error */
     }
 
-    if (extname[0])       /* optional EXTNAME keyword */
-        ffpkys(fptr, "EXTNAME", extname,
+    if (extnm[0])       /* optional EXTNAME keyword */
+        ffpkys(fptr, "EXTNAME", extnm,
                "name of this ASCII table extension", status);
 
     if (*status > 0)
@@ -1237,7 +1237,7 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
            char **ttype,    /* I - name of each column                      */
            char **tform,    /* I - value of TFORMn keyword for each column  */
            char **tunit,    /* I - value of TUNITn keyword for each column  */
-           char *extname,   /* I - value of EXTNAME keyword, if any         */
+           char *extnm,   /* I - value of EXTNAME keyword, if any         */
            long pcount,     /* I - size of the variable length heap area    */
            int *status)     /* IO - error status                            */
 /*
@@ -1261,7 +1261,7 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
         return(*status = BAD_TFIELDS);
 
     ffpkys(fptr, "XTENSION", "BINTABLE", "binary table extension", status);
-    ffpkyj(fptr, "BITPIX", 8, "8-bit ASCII characters", status);
+    ffpkyj(fptr, "BITPIX", 8, "8-bit bytes", status);
     ffpkyj(fptr, "NAXIS", 2, "2-dimensional binary table", status);
 
     naxis1 = 0;
@@ -1282,7 +1282,7 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
             break;       /* abort loop on error */
     }
 
-    ffpkyj(fptr, "NAXIS1", naxis1, "width of table in characters", status);
+    ffpkyj(fptr, "NAXIS1", naxis1, "width of table in bytes", status);
     ffpkyj(fptr, "NAXIS2", naxis2, "number of rows in table", status);
 
     /*
@@ -1346,9 +1346,9 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
             break;       /* abort loop on error */
     }
 
-    if (extname[0])       /* optional EXTNAME keyword */
-        ffpkys(fptr, "EXTNAME", extname,
-               "name of this ASCII table extension", status);
+    if (extnm[0])       /* optional EXTNAME keyword */
+        ffpkys(fptr, "EXTNAME", extnm,
+               "name of this binary table extension", status);
 
     if (*status > 0)
         ffpmsg("Failed to write binary table header keywords (ffphbn)");

@@ -41,6 +41,7 @@ cfitsio:
 	    $copy putkey.c splitc/cfileio.c
 	    $copy scalnull.c splitc/cfileio.c
 	    $copy swapproc.c splitc/cfileio.c
+	    $copy wcsutil.c splitc/wcsutil.c
 	    !cp getcol*.c splitc/
 	    !cp putcol*.c splitc/
 	    !cp *.h splitc/
@@ -63,7 +64,7 @@ libcfitsio.a:
 	    @splitc
 	$else
 	    # simply compile the files on VMS systems.
-	    !@makealphavms.com
+	    !@makevms.com
 	$endif
 
 	;

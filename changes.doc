@@ -1,6 +1,69 @@
          Log of Changes Made to CFITSIO
 
-Version 1.101 - 
+Version 1.20 - 29 Jan 1997
+
+   - when creating a binary table with variable length vector columns, if the
+     calling routine does not specify a value for the maximum length of
+     the vector (e.g.,  TFORMn = '1PE(400)')  then cfitsio will automatically
+     calculate the maximum value and append it to the TFORM value
+     when the binary table is first closed.
+
+   - added check in ffdelt to make sure input fits file pointer is
+     not already null
+
+   - added check in ffcopy to make sure the output HDU does not
+     already contain any keywords (it must be empty).
+
+   - added the set of routines to do coordinate system transformations
+
+   - modified ftgrec so that it simply moves to the beginning
+      of the header if the input keyword number = 0
+
+   - added support for wildcards ('*', '?', and '#') in the input
+     keyword name when reading, modifying, or deleting keywords.
+
+   - added new general keyword reading routine, ffgnxk, to return
+     the next keyword whose name matches a list of template names,
+     but does not match any names on a second template list.
+
+   - modified testprog.c to include tests of keyword wildcards
+     and the WCS routines.
+
+   - added a test for 'EMX' in fitsio2.h which is a signature of
+     a PC running OS/2.
+
+   - modified ffgcls so that it does not test if each string column
+     value equals the null string value if the null string value
+     is longer than the width of the column.
+
+   - fixed bug in ftgtdm that caused it to fail if the TDIMn 
+     keyword did not exist in the FITS file
+
+Version 1.11 - 04 Dec 1996
+
+   - modified the testprog.c program that is included with the
+     distribution, so that the output FITS file is identical to
+     that produced by the Fortran FITSIO test program.
+
+   - changed all instances of the 'extname' variable to 'extnm'
+     to avoid a conflict with the -Dextname switch in cfortran.h
+     on HP machines.
+
+   - in all the routines like ffi4fi1, which convert an array
+     of values to integers just prior to writing them to the FITS
+     file, the integer value is now rounded to the nearest integer
+     rather than truncated. (ffi4fi1, ffi4fi2, ffi4fi4, etc)
+
+   - changed ffgcfl (and hence ffgcl) so that the input value
+     of the logical array element is not changed if the corresponding
+     FITS value is undefined.
+
+   - in ffgacl, the returned value of TBCOL was off by 1 (too small)
+
+   - fixed the comment of EXTNAME keyword to read 'binary table'
+     instead of 'ASCII table' in the header of binary tables.
+
+Version 1.101 - 17 Nov 1996
 
    - Made major I/O efficiency improvements by adding internal buffers
      rather than directly reading or writing to disk.  Access to 

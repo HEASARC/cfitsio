@@ -33,6 +33,14 @@ int ffcopy(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     if (infptr == outfptr)
         return(*status = SAME_FILE);
 
+    /* check that the output header is empty */
+    ffghsp(outfptr, &nkeys, &nadd, status); /* get no. of keywords in header */
+    if (nkeys != 0)
+    {
+        ffpmsg("Cannot copy HDU to a non-empty HDU (ffcopy)");
+        return(*status = HEADER_NOT_EMPTY);
+    }
+
     ffghsp(infptr, &nkeys, &nadd, status); /* get no. of keywords in header */
 
     if ( ( infptr->curhdu == 0 && outfptr->curhdu != 0 )  ||
@@ -178,6 +186,7 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
     newstart = fptr->headstart[nexthdu]; /* save starting addr of HDU */
 
     fptr->hdutype = IMAGE_HDU;  /* so that correct fill value is used */
+    /* ffiblk also increments headstart for all following HDUs */
     if (ffiblk(fptr, nblocks, 1, status) > 0)  /* insert the blocks */
         return(*status);
 
@@ -210,7 +219,7 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
            long *tbcol,     /* I - byte offset in row to each column        */
            char **tform,    /* I - value of TFORMn keyword for each column  */
            char **tunit,    /* I - value of TUNITn keyword for each column  */
-           char *extname,   /* I - value of EXTNAME keyword, if any         */
+           char *extnm,   /* I - value of EXTNAME keyword, if any         */
            int *status)     /* IO - error status                            */
 /*
   insert an ASCII table extension following the current HDU 
@@ -237,7 +246,7 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
             nunit++;
     }
 
-    if (*extname)
+    if (*extnm)
          nunit++;     /* add one for the EXTNAME keyword */
 
     nhead = (9 + (3 * tfields) + nunit + 35) / 36;  /* no. of header blocks */
@@ -256,7 +265,7 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
     newstart = fptr->headstart[nexthdu]; /* save starting addr of HDU */
 
     fptr->hdutype = ASCII_TBL;  /* so that correct fill value is used */
-
+    /* ffiblk also increments headstart for all following HDUs */
     if (ffiblk(fptr, nblocks, 1, status) > 0)  /* insert the blocks */
        return(*status);
 
@@ -275,7 +284,7 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
     /* write the required header keywords */
 
     ffphtb(fptr, naxis1, naxis2, tfields, ttype, tbcol, tform, tunit,
-           extname, status);
+           extnm, status);
 
     /* redefine internal structure for this HDU */
 
@@ -289,7 +298,7 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
            char **ttype,    /* I - name of each column                      */
            char **tform,    /* I - value of TFORMn keyword for each column  */
            char **tunit,    /* I - value of TUNITn keyword for each column  */
-           char *extname,   /* I - value of EXTNAME keyword, if any         */
+           char *extnm,   /* I - value of EXTNAME keyword, if any         */
            long pcount,     /* I - size of special data area (heap)         */
            int *status)     /* IO - error status                            */
 /*
@@ -315,7 +324,7 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
             nunit++;
     }
 
-    if (*extname)
+    if (*extnm)
          nunit++;     /* add one for the EXTNAME keyword */
 
     nhead = (9 + (2 * tfields) + nunit + 35) / 36;  /* no. of header blocks */
@@ -349,6 +358,7 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
     newstart = fptr->headstart[nexthdu]; /* save starting addr of HDU */
 
     fptr->hdutype = BINARY_TBL;  /* so that correct fill value is used */
+    /* ffiblk also increments headstart for all following HDUs */
     if (ffiblk(fptr, nblocks, 1, status) > 0)  /* insert the blocks */
         return(*status);
 
@@ -366,7 +376,7 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     /* write the required header keywords. This will write PCOUNT = 0 */
     /* so that the variable length data will be written at the right place */
-    ffphbn(fptr, naxis2, tfields, ttype, tform, tunit, extname, pcount,
+    ffphbn(fptr, naxis2, tfields, ttype, tform, tunit, extnm, pcount,
            status);
 
     /* redefine internal structure for this HDU (with PCOUNT = 0) */
@@ -397,6 +407,7 @@ int ffdhdu(fitsfile *fptr,      /* I - FITS file pointer                   */
     nblocks = ( fptr->headstart[fptr->curhdu + 1] - 
                 fptr->headstart[fptr->curhdu] ) / 2880;
 
+    /* ffdblk also updates the starting address of all following HDUs */
     if (ffdblk(fptr, nblocks, status) > 0) /* delete the HDU */
         return(*status);
 

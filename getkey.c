@@ -88,7 +88,7 @@ int ffgnky(fitsfile *fptr,  /* I - FITS file pointer     */
            char *card,      /* O - card string           */
            int *status)     /* IO - error status         */
 /*
-  read the next keyword from the header
+  read the next keyword from the header - used internally by cfitsio
 */
 {
     int jj, nrec;
@@ -136,6 +136,59 @@ int ffgnky(fitsfile *fptr,  /* I - FITS file pointer     */
                 card[jj] = '\0';
             else
                 break;
+        }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgnxk( fitsfile *fptr,     /* I - FITS file pointer              */
+            char **inclist,     /* I - list of included keyword names */
+            int ninc,           /* I - number of names in inclist     */
+            char **exclist,     /* I - list of excluded keyword names */
+            int nexc,           /* I - number of names in exclist     */
+            char *card,         /* O - first matching keyword         */
+            int  *status)       /* IO - error status                  */
+/*
+    Return the next keyword that matches one of the names in inclist
+    but does not match any of the names in exclist.  The search
+    goes from the current position to the end of the header, only.
+    Wild card characters may be used in the name lists ('*', '?' and '#').
+*/
+{
+    int casesn, match, exact;
+    long ii, jj;
+    char keybuf[FLEN_CARD];
+
+    card[0] = '\0';
+    if (*status > 0)
+        return(*status);
+
+    casesn = FALSE;
+
+    /* get next card, and return with an error if hit end of header */
+    while( ffgcrd(fptr, "*", keybuf, status) <= 0)
+    {
+        /* does keyword match any names in the include list? */
+        for (ii = 0; ii < ninc; ii++)
+        {
+            ffcmps(inclist[ii], keybuf, casesn, &match, &exact);
+            if (match)
+            {
+                /* does keyword match any names in the exclusion list? */
+                for (jj = 0; jj < nexc; jj++)
+                {
+                    ffcmps(exclist[jj], keybuf, casesn, &match, &exact);
+                    if (match)
+                        break;
+                }
+
+                if (jj >= nexc)
+                {
+                    /* not in exclusion list, so return this keyword */
+                    strcat(card, keybuf);
+                    return(*status);
+                }
+            }
         }
     }
     return(*status);
@@ -235,14 +288,25 @@ int ffgrec( fitsfile *fptr,     /* I - FITS file pointer          */
   Read (get) the nrec-th keyword, returning the entire keyword card up to
   80 characters long.  The first keyword in the header has nrec = 1, not 0.
   The returned card value is null terminated with any trailing blank 
-  characters removed.
+  characters removed.  If nrec = 0, then this routine simply moves the
+  current header pointer to the top of the header.
 */
 {
+    char sbuff[FLEN_CARD];
+
     if (*status > 0)
         return(*status);
 
-    ffmaky(fptr, nrec, status);
-    ffgnky(fptr, card, status);
+    if (nrec == 0)
+    {
+        ffmaky(fptr, 1, status);  /* simply move to beginning of header */
+        card[0] = '\0';           /* and return null card */
+    }
+    else if (nrec > 0)
+    {
+        ffmaky(fptr, nrec, status);
+        ffgnky(fptr, card, status);
+    }
 
     return(*status);
 }
@@ -256,16 +320,27 @@ int ffgcrd( fitsfile *fptr,     /* I - FITS file pointer        */
   80 characters long.  The first keyword in the header has nrec = 1, not 0.
   The returned card value is null terminated with any trailing blank 
   characters removed.
+
+  If the input name contains wild cards ('?' matches any single char
+  and '*' matches any sequence of chars, # matches any string of decimal
+  digits) then the search ends once the end of header is reached and does 
+  not automatically resume from the top of the header.
 */
 {
-    int nkeys, nextkey, ntodo, namelen, ii, jj;
-    char keyname[FLEN_KEYWORD];
+    int nkeys, nextkey, ntodo, namelen, ii, jj, wild, match, exact;
+    char keyname[10], ctemp;
 
     if (*status > 0)
         return(*status);
 
-    keyname[0] = '\0';
-    strncat(keyname, name, 8);
+    /* does input name contain wild card chars?  ('?',  '*', or '#') */
+    if (strchr(name,'?') || strchr(name,'*') || strchr(name,'#'))
+        wild = 1;
+    else
+        wild = 0;
+
+    strncpy(keyname, name, 8);
+    keyname[8] = '\0';  /* make sure string is terminated */
 
     namelen=strlen(keyname);
 
@@ -273,7 +348,7 @@ int ffgcrd( fitsfile *fptr,     /* I - FITS file pointer        */
         keyname[ii] = toupper(name[ii]);    /*  make sure upper case  */
 
     for (ii=namelen; ii < 8; ii++)
-        keyname[ii] = ' ';     /*  pad name with blanks to 8 characters  */
+        keyname[ii] = ' '; /*  pad name with blanks to 8 characters  */
 
     ffghps(fptr, &nkeys, &nextkey, status); /* get no. keywords and position */
 
@@ -283,11 +358,26 @@ int ffgcrd( fitsfile *fptr,     /* I - FITS file pointer        */
         for (ii = 0; ii < ntodo; ii++)
         {
             ffgnky(fptr, card, status);     /*  get next keyword */
-            if (strncmp(keyname, card, 8) == 0)
-                return(*status);  /* found the matching keyword */
+            if (wild)
+            {
+                ctemp = card[8];   /* save 9th char in temporary variable */
+                card[8] = '\0';    /* terminate the keyword name */
+                ffcmps(keyname, card, 1, &match, &exact);
+                if (match)
+                {
+                    card[8] = ctemp;  /* restore the 9th char */
+                    return(*status); /* found a matching keyword */
+                }
+            }
+            else if (strncmp(keyname, card, 8) == 0)
+                    return(*status);  /* found the matching keyword */
         }
+
+        if (wild || jj == 1)
+            break;  /* stop at end of header if template contains wildcards */
+
         ffmaky(fptr, 1, status);  /* reset pointer to beginning of header */
-        ntodo = nextkey - 1;       /* number of keyword to read */ 
+        ntodo = nextkey - 1;      /* number of keyword to read */ 
     }
 
     return(*status = KEY_NO_EXIST);  /* couldn't find the keyword */
@@ -907,7 +997,7 @@ int ffgtdm(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     ffkeyn("TDIM", colnum, keyname, status);      /* construct keyword name */
     tstatus = 0;
-    ffgkys(fptr, keyname, tdimstr, comm, status); /* try reading keyword */
+    ffgkys(fptr, keyname, tdimstr, comm, &tstatus); /* try reading keyword */
 
     if (tstatus)   /* TDIMnnn keyword doesn't exist? */
     {
@@ -977,7 +1067,7 @@ int ffghtb(fitsfile *fptr,  /* I - FITS file pointer                        */
            long *tbcol,     /* O - byte offset in row to each column        */
            char **tform,    /* O - value of TFORMn keyword for each column  */
            char **tunit,    /* O - value of TUNITn keyword for each column  */
-           char *extname,   /* O - value of EXTNAME keyword, if any         */
+           char *extnm,   /* O - value of EXTNAME keyword, if any         */
            int *status)     /* IO - error status                            */
 /*
   Get keywords from the Header of the ASCII TaBle:
@@ -1034,10 +1124,10 @@ int ffghtb(fitsfile *fptr,  /* I - FITS file pointer                        */
         return(*status = NO_TFORM);
         }
 
-        extname[0] = '\0';
+        extnm[0] = '\0';
 
         tstatus = *status;
-        ffgkys(fptr, "EXTNAME", extname, comm, status);
+        ffgkys(fptr, "EXTNAME", extnm, comm, status);
 
         if (*status == KEY_NO_EXIST)
             *status = tstatus;  /* keyword not required, so ignore error */
@@ -1053,7 +1143,7 @@ int ffghbn(fitsfile *fptr,  /* I - FITS file pointer                        */
            char **ttype,    /* O - name of each column                      */
            char **tform,    /* O - TFORMn value for each column             */
            char **tunit,    /* O - TUNITn value for each column             */
-           char *extname,   /* O - value of EXTNAME keyword, if any         */
+           char *extnm,   /* O - value of EXTNAME keyword, if any         */
            long *pcount,    /* O - value of PCOUNT keyword                  */
            int *status)     /* IO - error status                            */
 /*
@@ -1102,10 +1192,10 @@ int ffghbn(fitsfile *fptr,  /* I - FITS file pointer                        */
         return(*status = NO_TFORM);
         }
 
-        extname[0] = '\0';
+        extnm[0] = '\0';
 
         tstatus = *status;
-        ffgkys(fptr, "EXTNAME", extname, comm, status);
+        ffgkys(fptr, "EXTNAME", extnm, comm, status);
 
         if (*status == KEY_NO_EXIST)
             *status = tstatus;  /* keyword not required, so ignore error */

@@ -32,9 +32,14 @@
 #define READONLY  0    /* options when openning a file */
 #define READWRITE 1
  
-#define TRUE  1
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
 #define FALSE 0
- 
+#endif
+
 #define CASESEN   1   /* do case-sensitive string match */
 #define CASEINSEN 0   /* do case-insensitive string match */
  
@@ -93,7 +98,7 @@ typedef struct      /* structure used to store basic HDU information */
 #define ARRAY_TOO_BIG     111  /* array dimensions exceed internal limit */
 #define READONLY_FILE     112  /* Cannot write to readonly file */
 #define HEADER_NOT_EMPTY  201  /* header already contains keywords */
-#define KEY_NO_EXIST     202  /* keyword not found in header */
+#define KEY_NO_EXIST      202  /* keyword not found in header */
 #define KEY_OUT_BOUNDS    203  /* keyword record number is out of bounds */
 #define NO_VALUE          204  /* keyword value field is blank */
 #define NO_QUOTE          205  /* string is missing the closing quote */
@@ -165,6 +170,12 @@ typedef struct      /* structure used to store basic HDU information */
 #define BAD_DATATYPE      410  /* bad keyword datatype code */
 #define BAD_DECIM         411  /* bad number of decimal places specified */
 #define NUM_OVERFLOW      412  /* overflow during datatype conversion */
+
+#define ANGLE_TOO_BIG     501  /* celestial angle too large for projection */
+#define BAD_WCS_VAL       502  /* bad celestial coordinate or pixel value */
+#define WCS_ERROR         503  /* error in celestial coordinate calculation */
+#define BAD_WCS_PROJ      505  /* unsupported type of celestial projection */
+#define NO_WCS_KEY        505  /* celestial coordinate keywords not found */
 
 /*  the following 3 lines are needed to support C++ compilers */
 #ifdef __cplusplus
@@ -257,7 +268,8 @@ int ffmaky(fitsfile *fptr, int nrec, int *status);
 int ffmrky(fitsfile *fptr, int nrec, int *status);
  
 /*------------------ read single keywords -----------------*/
-int ffgnky(fitsfile *fptr, char *card, int *status);
+int ffgnxk(fitsfile *fptr, char **inclist, int ninc, char **exclist,
+           int nexc, char *card, int  *status);
 int ffgrec(fitsfile *fptr, int nrec,      char *card, int *status);
 int ffgcrd(fitsfile *fptr, char *keyname, char *card, int *status);
 int ffgkyn(fitsfile *fptr, int nkey, char *keyname, char *keyval, char *comm,
@@ -710,6 +722,20 @@ int fficol(fitsfile *fptr, int numcol, char *ttype, char *tform, int *status);
 int fficls(fitsfile *fptr, int firstcol, int ncols, char **ttype,
            char **tform, int *status);
 int ffdcol(fitsfile *fptr, int numcol, int *status);
+
+/*--------------------- WCS Utilities -------------*/
+int ffgics(fitsfile *fptr, double *xrval, double *yrval, double *xrpix,
+           double *yrpix, double *xinc, double *yinc, double *rot,
+           char *type, int *status);
+int ffgtcs(fitsfile *fptr, int xcol, int ycol, double *xrval,
+           double *yrval, double *xrpix, double *yrpix, double *xinc,
+           double *yinc, double *rot, char *type, int *status);
+int ffwldp(double xpix, double ypix, double xref, double yref,
+           double xrefpix, double yrefpix, double xinc, double yinc,
+           double rot, char *type, double *xpos, double *ypos, int *status);
+int ffxypx(double xpos, double ypos, double xref, double yref, 
+           double xrefpix, double yrefpix, double xinc, double yinc,
+           double rot, char *type, double *xpix, double *ypix, int *status);
 
 #ifdef __cplusplus
 }

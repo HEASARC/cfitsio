@@ -54,7 +54,7 @@ case $system in
     SunOS-4*)
 	ARCH="sun"
 	;;
-    HP-UX-*.09.*)
+    HP-UX-*)
 	ARCH="hp"
 	CFLAGS="$CFLAGS -Dextname -Dsolaris" 
 	LIBPRE="-Wl,"

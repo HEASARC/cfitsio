@@ -30,7 +30,7 @@
 \medskip
 \medskip
 \begin{center}
-{\Large Version 1.1\\}
+{\Large Version 1.2\\}
 \end{center}
 \bigskip
 \vskip 3.0cm
@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large November 1996\\}
+{\Large January 1997\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -165,18 +165,20 @@ at the operating system prompt.  The `configure' command customizes the
 Makefile for the particular system, then the `make' command builds the
 library.
 
-On VAX/VMS and ALPHA/VMS systems, the makevaxvms.com and
-makealphavms.com command files may be used to build the cfitsio.olb
-object library (e.g., type '@makevaxvms' at the Vax command line to
-build the CFITSIO library on a Vax).
+On VAX/VMS and ALPHA/VMS systems, the make.com command file may be
+used to build the cfitsio.olb object library.  Execute this command
+file by typing '@make' on the command line.
 
 On DOS-based PC computers, the makepc.bat file gives an example of how
 to build the CFITSIO library.  This file will probably need to be
 editted to include the appropriate command switches if a different C
 compiler or linker is used.
 
-The MacOS version of the cfitsio library can be built by following the
-procedure outlined in the README\_MacOS file.
+The MacOS version of the cfitsio library can be built by (1) unbinhex
+and unstuff cfitsio\_mac.sit.hqx, and (2) for the PPC,  load CFitsio
+PPCLibrary.(pi) into CodeWarrior 10+ and make.  This builds the cfitsio
+library for PPC.  If you would like to build the test program, load
+CFitsio PPC testprog.(pi) into CodeWarrior 10+ and make.
 
 CFITSIO has currently been tested on the following platforms:
 
@@ -192,8 +194,7 @@ CFITSIO has currently been tested on the following platforms:
    DEC VAX/VMS                gcc and cc
    Linux running on IBM PC    gcc
    IBM PC w/ Windows 95       Borland C++ V4.5
-   Mac IIci                   Symantec C++
-   MacOS 7.5.3                Metrowerks 9.
+   MacOS 7.1 or greater       Metrowerks 10.+
 \end{verbatim}
 CFITSIO will probably run on most other Unix platforms without
 modification.  Cray supercomputers and IBM mainframe computers are
@@ -226,6 +227,11 @@ release.  The diagnostic messages (which were piped to the file
 testprog.lis in the Unix example) should be identical to the listing
 contained in the file testprog.out.  The 'diff' and 'cmp' commands
 shown above should not report any differences in the files.
+
+The program speed.c that is included with CFITSIO may be used to
+approximately measure the maximum possible throughput (in MB per
+second) for writing and reading FITS files with CFITSIO on a particular
+computer system.
 
 
 \section{Getting Started with CFITSIO}
@@ -266,11 +272,8 @@ FITS programs.
 
 \begin{verbatim}
 #include "fitsio.h"  /* required by every program that uses CFITSIO  */
-
 main()
-{
-    /* Create a FITS primary array containing a 2-D image */
-
+{   /* Create a FITS primary array containing a 2-D image */
     fitsfile *fptr;       /* pointer to the FITS file; defined in fitsio.h */
     int status, ii, jj;
     long  fpixel, nelements, array[200][300], exposure;
@@ -308,7 +311,6 @@ main()
          return( status );
 
     fits_close_file(fptr, &status);            /* close the file */
-
     return( status );
 }
 \end{verbatim}
@@ -663,11 +665,19 @@ routine.
 
 CFITSIO provides easy-to-use support for reading and writing data in
 variable length fields of a binary table. The variable length columns
-have TFORMn keyword values of the form `1Pt' where `t' is the datatype
-code (e.g., I, J, E, D, etc.). The same routines which read and write
-data in an ordinary fixed length binary table extension are also used
-for variable length fields, however, the routine parameters take on a
-slightly different interpretation as described below.
+have TFORMn keyword values of the form `1Pt(len)' where `t' is the
+datatype code (e.g., I, J, E, D, etc.) and `len' is an integer
+specifying the maximum length of the vector in the table.  If the value
+of `len' is not specified when the table is created (e.g., if the TFORM
+keyword value is simply specified as '1PE' instead of '1PE(400) ), then
+CFITSIO will automatically scan the table when it is closed to
+determine the maximum length of the vector and will append this value
+to the TFORMn value.
+
+The same routines which read and write data in an ordinary fixed length
+binary table extension are also used for variable length fields,
+however, the routine parameters take on a slightly different
+interpretation as described below.
 
 All the data in a variable length field is written into an area called
 the `heap' which follows the main fixed-length FITS binary table. The
@@ -712,7 +722,7 @@ length fields). Note that the rows of a table may be written in any
 order.
 
 When writing to a variable length ASCII character field (e.g., TFORM =
-'1PA') only a single character string can be written written.  The
+'1PA') only a single character string can be written.  The
 `firstelem' and `nelements' parameter values in the ffpcls routine are
 ignored and the number of characters to write is simply determined by
 the length of the input null-terminated character string.
@@ -940,12 +950,15 @@ execution speed of a program.
 The maximum possible I/O speed of CFITSIO depends of course on the type
 of computer system that it is running on.  As a rough guide, the
 current generation of workstations can achieve speeds of 2 -- 10 MB/s
-when reading or writing FITS images and speeds of 1 -- 3 MB/s with FITS
-binary tables.  To more accurately predict the best performance that is
-possible on any particular system, a diagnostic program called
-``speed.c'' is included with the CFITSIO distribution which can be run
-to measure the maximum possible speed of writing and reading a test
-FITS file.
+when reading or writing FITS images and similar, or slightly slower
+speeds with FITS binary tables.  Reading of FITS files can occur at
+even higher rates (30MB/s or more) if the FITS file is still cached in
+system memory following a previous read or write operation on the same
+file.  To more accurately predict the best performance that is possible
+on any particular system, a diagnostic program called ``speed.c'' is
+included with the CFITSIO distribution which can be run to
+approximately measure the maximum possible speed of writing and reading
+a test FITS file.
 
 The following 2 sections provide some background on how CFITSIO
 internally manages the data I/O and describes some strategies that may
@@ -987,11 +1000,11 @@ routine.  The minimum threshold for the number of bytes to read or
 write this way is set by the MINDIRECT parameter and is currently set
 to 3 FITS blocks = 8640 bytes.  This is the most efficient way to read
 or write large chunks of data and can achieve IO transfer rates of
-10MB/s or greater.  Note that this fast direct IO process is not
+5 -- 10MB/s or greater.  Note that this fast direct IO process is not
 applicable when accessing columns of data in a FITS table because the
 bytes are generally not contiguous since they are interleaved by the
 other columns of data in the table.  This explains why the speed for
-accessing FITS tables is generally several times slower than accessing
+accessing FITS tables is generally slower than accessing
 FITS images.
 
 Given this background information, the general strategy for efficiently
@@ -1072,9 +1085,10 @@ is 1400 in the output table, then these values should be cut in half to
 the same time.
 
 3.  Alway use binary table extensions rather than ASCII table
-extensions for better efficiency  when dealing with tabular data.
-CFITSIO can typically read or write a binary table 10 times faster than
-the equivalent ASCII table.
+extensions for better efficiency  when dealing with tabular data.  The
+I/O to ASCII tables is slower because of the overhead in formatting or
+parsing the ASCII data fields, and because ASCII tables are about twice
+as large as binary tables with the same information content.
 
 4. Design software so that it reads the FITS header keywords in the
 same order in which they occur in the file.  When reading keywords,
@@ -1102,11 +1116,12 @@ the data to a different datatype can significantly slow the program.
 7. Design FITS binary tables so that every column is aligned on a
 computer word boundary and each row is a multiple number of computer
 words in length.  In principle, accessing non-aligned words can degrade
-performance, however, the author has not actually seen this problem
-occur in practice.  In an optimally designed table,  double precision
-columns should start at a multiple of 8 bytes within the row, single
-precision floating point columns and long integer columns should start
-at a multiple of 4 bytes, and short integer columns should start at a
+performance.   This is usually not a problem when using CFITSIO to read
+or write the FITS files, but other FITS readers and writers could be
+affected. In an optimally designed table,  double precision columns
+should start at a multiple of 8 bytes within the row, single precision
+floating point columns and long integer columns should start at a
+multiple of 4 bytes, and short integer columns should start at a
 multiple of 2 bytes.  If necessary, the row length should be padded out
 by adding a dummy column of the appropriate width or by adjusting the
 width of an existing column so that the row length is also a multiple
@@ -1133,12 +1148,12 @@ in the first column is interleaved with the integer value in the second
 column of the same row so CFITSIO has to explicitly move to the
 position of each element to be read or written.
 
-8. Avoid the use of variable length vector columns in binary tables,
+9. Avoid the use of variable length vector columns in binary tables,
 since any reading or writing of these data requires that CFITSIO first
 look up or compute the starting address of each row of data in the
 heap.
 
-9. When copying data from one FITS table to another, it is faster to
+10. When copying data from one FITS table to another, it is faster to
 transfer the raw bytes instead of reading then writing each column of
 the table.  The CFITSIO routines ffgtbb and ffptbb will perform
 low-level reads or writes of any contiguous range of bytes in a table
@@ -1165,21 +1180,7 @@ applications, because it makes the code more difficult to understand
 and maintain, and it makes the code more system dependent (e.g., do the
 bytes need to be swapped before writing to the FITS file?).
 
-11.  All other factors being equal, better performance will be achieved
-on computer systems that use the ``big endian'' byte order for storing
-numerical data which is the same as is used in FITS files.  This
-includes SUN, HP, NeXT and Silicon Graphics workstations and Macintosh
-PCs.  Systems that use the ``little endian'' byte order (DEC Alpha, DEC
-VAX, and IBM PCs) require that the order of the bytes in each integer
-or floating point data value be reversed before transfering to or from
-the FITS file.  This effect is most noticable when writing large blocks
-of data to a FITS image:  on big endian machines the block of data can
-simply be written to the FITS file with a single low-level call, but on
-little endian machines the data must first be copied to a temporary
-buffer where the bytes are then swapped before being written to the
-FITS file.
-
-12.  Finally, external factors such as the type of magnetic disk
+11.  Finally, external factors such as the type of magnetic disk
 controller (SCSI or IDE), the size of the disk cache, the average seek
 speed of the disk, the amount of disk fragmentation, and the amount of
 RAM available on the system can all have a significant impact on
@@ -1348,7 +1349,7 @@ CFITSIO.
 
 \begin{description}
 \item[3 ] Read the nth 80-character header record from the current header.
-   Note that the first keyword in the header is at keynum = 1, not 0.
+   The first keyword in the header is at keynum = 1.
 \end{description}
 
 \begin{verbatim}
@@ -1721,8 +1722,8 @@ insert, copy, and delete HDUs.
 
 \begin{description}
 \item[11] Copy the entire CHDU from the FITS file associated with infptr to the CHDU
-    of the FITS file associated with outfptr. This will overwrite any data
-    previously in the outfptr CHDU.  Space will be reserved for MOREKEYS
+    of the FITS file associated with outfptr. The output HDU must be empty
+    and not already contain any keywords.  Space will be reserved for MOREKEYS
     additional  keywords in the output header if there is not already enough
    space.
 \end{description}
@@ -1830,6 +1831,7 @@ must be written to the header before any data can be written to the
 image or table.
 
 
+
 \begin{description}
 \item[1 ] Put the primary header or IMAGE extension keywords into the CHU.
 The simpler ffphps routine is equivalent to calling ffphpr with the
@@ -1889,9 +1891,20 @@ respectively.  When writing to an IMAGE extension, the SIMPLE and
 \item[5 ]Put the binary table header keywords into the CHU. The optional
    TUNITn and EXTNAME keywords are written only if the input string
    values are not null.  The pcount parameter, which specifies the
-   size of the variable length array heap, should always = 0;
+   size of the variable length array heap, should initially = 0;
    CFITSIO will automatically update the PCOUNT keyword value if any
-  variable length array data is written to the heap.
+   variable length array data is written to the heap.  The TFORM keyword
+   value for variable length vector columns should have the form 'Pt(len)'
+   or '1Pt(len)' where `t' is the data type code letter (A,I,J,E,D, etc.)
+   and  `len' is an integer specifying the maximum length of the vectors
+   in that column (len must be greater than or equal to the longest
+   vector in the column).  If `len' is not specified when the table is
+   created (e.g., the input TFORMn value is just '1Pt') then CFITSIO will
+   scan the column when the table is first closed and will append the
+   maximum length to the TFORM keyword value.  Note that if the table
+   is subsequently modified to increase the maximum length of the vectors
+   then the modifying program is responsible for also updating the TFORM
+  keyword value.
 \end{description}
 
 \begin{verbatim}
@@ -2097,9 +2110,30 @@ be shifted down one position.
 
 \subsection{ Read Keyword Routines \label{FFGREC}}
 
+These routines return the value of the specified keyword(s).  Wild card
+characters (*, ?, or \#) may be used when specifying the name of the keyword
+to be read: a '?' will match any single character at that position in the
+keyword name and a '*' will match any length (including zero) string of
+characters.  The '\#' character will match any consecutive string of
+decimal digits (0 - 9). Note that when a wild card is used in the input
+keyword name, the routine will only search for a match from the current
+header position to the end of the header.  It will not resume the search
+from the top of the header back to the original header position as is done
+when no wildcards are included in the keyword name.  If the desired
+keyword string is 8-characters long (the maximum length of a keyword
+name) then a '*' may be appended as the ninth character of the input
+name to force the keyword search to stop at the end of the header
+(e.g., 'COMMENT *' will search for the next COMMENT keyword).  The
+ffgrec routine may be used to set the starting position when doing
+wild card searches.
+
 
 \begin{description}
-\item[1 ] Get the nth 80-character header record from the CHU
+\item[1 ]Get the nth 80-character header record from the CHU.  The first keyword
+   in the header is at keynum = 1;  if keynum = 0 then this routine
+   simple moves the internal pointer to the beginning of the header
+   so that subsequent keyword operations will start at the top of
+  the header; it returns a null card value in this case.
 \end{description}
 
 \begin{verbatim}
@@ -2113,7 +2147,6 @@ be shifted down one position.
     only legal ASCII characters. If a NULL comment pointer is given on input,
    then the comment string will not be returned.
 \end{description}
-
 
 \begin{verbatim}
   int fits_read_keyn / ffgkyn
@@ -2131,7 +2164,27 @@ be shifted down one position.
 \end{verbatim}
 
 \begin{description}
-\item[4 ] Get the literal keyword value as a character string.  Regardless
+\item[4 ] Get the next keyword whose name matches one of the strings in
+    'inclist' but does not match any of the strings in 'exclist'.
+    The strings in inclist and exclist may contain wild card characters
+    (*, ?, and \#) as described at the beginning of this section.
+    This routine searches from the current header position to the
+    end of the header, only, and does not continue the search from
+    the top of the header back to the original position.  The current
+    header position may be reset with the ffgrec routine.  Note
+    that nexc may be set = 0 if there are no keywords to be excluded.
+    This routine returns status = KEY\_NO\_EXIST (202) if a matching
+   keyword is not found.
+\end{description}
+
+\begin{verbatim}
+  int fits_find_nextkey / ffgnxk
+      (fitsfile *fptr, char **inclist, int ninc, char **exclist,
+       int nexc, > char *card, int  *status)
+\end{verbatim}
+
+\begin{description}
+\item[5 ] Get the literal keyword value as a character string.  Regardless
     of the datatype of the keyword, this routine simply returns the
     string of characters in the value field of the keyword along with
     the comment field.   If a NULL comment pointer is given on input,
@@ -2145,7 +2198,7 @@ be shifted down one position.
 \end{verbatim}
 
 \begin{description}
-\item[5 ] Get a keyword value (with the appropriate datatype) and comment from the
+\item[6 ] Get a keyword value (with the appropriate datatype) and comment from the
     CHU. The datatype parameter specifies the datatype of the keyword value
     and can have one of the following symbolic constant values:  TSTRING,
     TLOGICAL, TBYTE, TSHORT, TINT, TLONG, TFLOAT, TDOUBLE.  If a NULL comment
@@ -2159,7 +2212,7 @@ be shifted down one position.
 \end{verbatim}
 
 \begin{description}
-\item[6 ] Get a keyword value (with the appropriate datatype) and comment from
+\item[7 ] Get a keyword value (with the appropriate datatype) and comment from
     the CHU.  If a NULL comment pointer is given on input, then the comment
    string will not be returned.
 \end{description}
@@ -2182,7 +2235,7 @@ be shifted down one position.
 \end{verbatim}
 
 \begin{description}
-\item[7 ] Get a sequence of numbered keyword values.
+\item[8 ] Get a sequence of numbered keyword values.
 \end{description}
 
 \begin{verbatim}
@@ -2196,7 +2249,7 @@ be shifted down one position.
 \end{verbatim}
 
 \begin{description}
-\item[8 ] Get the value of a floating point keyword, returning the integer and
+\item[9 ] Get the value of a floating point keyword, returning the integer and
     fractional parts of the value in separate routine arguments.
     This routine may be used to read any keyword but is especially
    useful for reading the 'triple precision' keywords written by ffpkyt.
@@ -2210,6 +2263,9 @@ be shifted down one position.
 
 
 \subsection{ Modify Keyword Routines \label{FFMREC}}
+
+Wild card characters, as described in the Read Keyword section, above,
+may be used when specifying the name of the keyword to be modified.
 
 
 \begin{description}
@@ -2313,7 +2369,10 @@ otherwise the new keyword is appended to the header.
     the keyword is reclaimed by moving all the following header records up
     one row in the header.  The first routine deletes a keyword at a
     specified position in the header (the first keyword is at position 1),
-   whereas the second routine deletes a specifically named keyword.
+    whereas the second routine deletes a specifically named keyword.
+    Wild card characters, as described in the Read Keyword section, above,
+    may be used when specifying the name of the keyword to be deleted
+   (be careful!).
 \end{description}
 
 \begin{verbatim}
@@ -2696,12 +2755,13 @@ ffgcnn also returns the name of the column.  If casesen = TRUE then
 the column name match will be case-sensitive.
 
 The input column name template (templt) is either the exact name of the
-column to be searched for, or it may contain wild card characters (* or
-?), or it may contain the integer number of the desired column (where
-the number is expressed as ASCII digits).  The wild cards behave
-similarly to UNIX filename matching:  the '*' character matches any
-sequence of characters (including zero characters) and the '?'
-character matches any single character.  As an example, the template
+column to be searched for, or it may contain wild card characters (*,
+?, or \#), or it may contain the integer number of the desired column
+(where the number is expressed as ASCII digits).  The first 2 wild
+cards behave similarly to UNIX filename matching:  the '*' character
+matches any sequence of characters (including zero characters) and the
+'?' character matches any single character.  The \# wildcard will match
+any consecutive string of decimal digits (0-9).  As an example, the template
 strings `AB?DE', `AB*E', and `AB*CDE' will all match the string
 'ABCDE'.  If more than one column name in the table matches the
 template string, then the first match is returned and the status value
@@ -2811,8 +2871,8 @@ int fits_get_acolparms / ffgacl
 \end{verbatim}
 
 \begin{description}
-\item[ 7] Return the width (in bytes) of one row in a FITS binary table and optimal number
-    of rows to read or write at one time for maximum I/O efficiency.  Refer to the
+\item[ 7] Return optimal number of rows to read or write at one time for
+    maximum I/O efficiency.  Refer to the
     ``Optimizing Code'' section in Chapter 5 for more discussion on how
    to use this routine.
 \end{description}
@@ -3194,8 +3254,7 @@ celestial coordinates on the sky.  These support the following standard
 map projections:  -SIN, -TAN, -ARC, -NCP, -GLS, -MER, and -AIT (these
 are the legal values for the coordtype parameter).  These routines are
 based on similar functions in Classic AIPS.  All the angular quantities
-are given in units of degrees. (Note: these routines are provisional
-and may change slightly in a future release of CFITSIO).
+are given in units of degrees.
 
 
 \begin{description}
@@ -3206,7 +3265,10 @@ and may change slightly in a future release of CFITSIO).
 \end{description}
 
 \begin{verbatim}
-       Not yet implemented
+  int fits_read_img_coord / ffgics
+      (fitsfile *fptr, > double *xrefval, double *yrefval,
+       double *xrefpix, double *yrefpix, double *xinc, double *yinc,
+       double *rot, char *coordtype, int *status)
 \end{verbatim}
 
 \begin{description}
@@ -3218,7 +3280,10 @@ and may change slightly in a future release of CFITSIO).
 \end{description}
 
 \begin{verbatim}
-       Not yet implemented
+  int fits_read_tbl_coord / ffgtcs
+      (fitsfile *fptr, int xcol, int ycol, > double *xrefval,
+       double *yrefval, double *xrefpix, double *yrefpix, double *xinc,
+       double *yinc, double *rot, char *coordtype, int *status)
 \end{verbatim}
 
 \begin{description}
@@ -3227,7 +3292,11 @@ and may change slightly in a future release of CFITSIO).
 \end{description}
 
 \begin{verbatim}
-       Not yet implemented
+  int fits_pix_to_world / ffwldp
+      (double xpix, double ypix, double xrefval, double yrefval,
+       double xrefpix, double yrefpix, double xinc, double yinc,
+       double rot, char *coordtype, > double *xpos, double *ypos,
+       int *status)
 \end{verbatim}
 
 \begin{description}
@@ -3236,7 +3305,11 @@ and may change slightly in a future release of CFITSIO).
 \end{description}
 
 \begin{verbatim}
-       Not yet implemented
+  int fits_world_to_pix / ffxypx
+      (double xpos, double ypos, double xrefval, double yrefval,
+       double xrefpix, double yrefpix, double xinc, double yinc,
+       double rot, char *coordtype, double *xpix, double *ypix,
+       int *status)
 \end{verbatim}
 
 
@@ -3767,8 +3840,10 @@ The following utility routines may be useful for certain applications:
   int ffgkyn(fitsfile *fptr, int keynum, > char *keyname, char *value,
              char *comment, int *status)
   int ffgcrd(fitsfile *fptr, char *keyname, > char *card, int *status)
+  int ffgnxk(fitsfile *fptr, char **inclist, int ninc, char **exclist,
+             int nexc,  > char *card, int  *status)
   int ffgkey(fitsfile *fptr, char *keyname, > char *value, char *comment,
-           int *status)
+             int *status)
   int ffgky(fitsfile *fptr, int datatype, char *keyname, > void *value,
        char *comment, int *status)
   int ffgkys(fitsfile *fptr, char *keyname, > char *value, char *comment,
@@ -3966,7 +4041,20 @@ The following utility routines may be useful for certain applications:
  Celestial Coordinate System Routines: page~\pageref{FFGICS}
 
 \begin{verbatim}
-
+  int  ffgics (fitsfile *fptr, > double *xrefval, double *yrefval,
+       double *xrefpix, double *yrefpix, double *xinc, double *yinc,
+       double *rot, char *coordtype, int *status)
+  int ffgtcs(fitsfile *fptr, int xcol, int ycol, > double *xrefval,
+       double *yrefval, double *xrefpix, double *yrefpix, double *xinc,
+       double *yinc, double *rot, char *coordtype, int *status)
+  int ffwldp(double xpix, double ypix, double xrefval, double yrefval,
+       double xrefpix, double yrefpix, double xinc, double yinc,
+       double rot, char *coordtype, > double *xpos, double *ypos,
+       int *status)
+  int ffxypx(double xpos, double ypos, double xrefval, double yrefval,
+       double xrefpix, double yrefpix, double xinc, double yinc,
+       double rot, char *coordtype, double *xpix, double *ypix,
+       int *status)
 \end{verbatim}
  File Checksum Routines: page~\pageref{FFPCKS}
 
@@ -4014,11 +4102,13 @@ bitpix   - bits per pixel: 8 (unsigned char), 16 (short int),
            32 (long int), -32 (float), or -64 (double)
 card     - header record to be read or written (80 char max, null-terminated)
 casesen  - TRUE (=1) to force case-sensitive string matching, else FALSE (=0)
+chduaddr - starting address (in bytes) of the CHDU
 colname  - name of the column (null-terminated)
 colnum   - column number (first column = 1)
 comment  - the keyword comment field (72 char max, null-terminated)
 complm   - should the checksum be complemented?
-chduaddr - starting address (in bytes) of the CHDU
+coordtype- type of coordinate projection (-SIN, -TAN, -ARC, -NCP,
+           -GLS, -MER, or -AIT)
 dataok   - was the data unit verification successful (=1) or
            not (= -1).  Equals zero if the DATASUM keyword is not present.
 datasum  - 32-bit 1's complement checksum for the data unit
@@ -4037,6 +4127,7 @@ err_msg  - error message on the internal stack (80 chars max)
 err_text - error message string corresponding to error number (30 chars max)
 exact    - TRUE (=1) if the strings match exactly;
            FALSE (=0) if wildcards are used
+exclist  - array of pointers to keyword names to be excluded from search
 extend   - TRUE (=1) if FITS file may have extensions, else FALSE (=0)
 extname  - value of the EXTNAME keyword (null-terminated)
 filename - name of the FITS file (null-terminated)
@@ -4055,6 +4146,7 @@ hdusum   - 32 bit 1's complement checksum for the entire CHDU
 hdutype  - type of HDU: HDU_IMAGE (=0), HDU_ATABLE (=1), or HDU_BTABLE (=2)
 history  - the HISTORY keyword comment string (70 char max, null-terminated)
 inc      - sampling interval for pixels in each FITS dimension
+inclist  - array of pointers to matching keyword names
 infptr   - pointer to a 'fitsfile' structure describing the input FITS file.
 intval   - integer part of the keyword value
 iomode   - file access mode: either READONLY (=0) or READWRITE (=1)
@@ -4076,9 +4168,11 @@ naxis2   - length of the Y/second axis of the FITS array
 naxis3   - length of the Z/third axis of the FITS array
 nchars   - number of characters to read or write
 nelements- number of data elements to read or write
+nexc     - number of names in the exclusion list (may = 0)
 nextaddr - starting address (in bytes) of the HDU following the CHDU
 nfound   - number of keywords found (highest keyword number)
 nkeys    - number of keywords in the sequence
+ninc     - number of names in the inclusion list
 nmove    - number of HDUs to move (+ or -), relative to current position
 nrows    - number of rows in the table
 nstart   - first integer value
@@ -4090,6 +4184,7 @@ offset   -  byte offset in the heap to the first element of the vector
 outfptr  - pointer to a 'fitsfile' structure describing the output FITS file.
 pcount   - value of the PCOUNT keyword = size of binary table heap
 repeat   - length of column vector (e.g. 12J); == 1 for ASCII table
+rot      -  celestial coordinate rotation angle (degrees)
 rowlen   - length of a table row, in characters or bytes
 rownum   - number of the row (first row = 1)
 scale    - linear scaling factor; true value = (FITS value) * scale + zero
@@ -4127,25 +4222,20 @@ typecode - datatype code of the table column.  The negative of
 value    - the keyword value string (70 char max, null-terminated)
 version  - current version number of the CFITSIO library
 width    - width of the character string field
+xcol     - number of the column containing the X coordinate values
+xinc     - X axis coordinate increment at reference pixel (deg)
+xpix     - X axis pixel location
+xpos     - X axis celestial coordinate (usually RA) (deg)
+xrefpix  - X axis reference pixel array location
+xrefval  - X axis coordinate value at the reference pixel (deg)
+ycol     - number of the column containing the X coordinate values
+yinc     - Y axis coordinate increment at reference pixel (deg)
+ypix     - y axis pixel location
+ypos     - y axis celestial coordinate (usually DEC) (deg)
+yrefpix  - Y axis reference pixel array location
+yrefval  - Y axis coordinate value at the reference pixel (deg)
 zero     - scaling offset; true value = (FITS value) * scale + zero
 \end{verbatim}
-%        --------------------------------------------------------------------
-%
-%coordtype -  type of coordinate projection (-SIN, -TAN, -ARC,
-%          -NCP, -GLS, -MER, or -AIT)
-%rot -  celestial coordinate rotation angle (degrees)
-%xcol -  number of the column containing the X coordinate values
-%xinc -  X axis coordinate increment at reference pixel (deg)
-%xpix -  X axis pixel location
-%xpos -  X axis celestial coordinate (usually RA) (deg)
-%xrpix -  X axis reference pixel array location
-%xrval -  X axis coordinate value at the reference pixel (deg)
-%ycol -  number of the column containing the X coordinate values
-%yinc -  Y axis coordinate increment at reference pixel (deg)
-%ypix -  y axis pixel location
-%ypos -  y axis celestial coordinate (usually DEC) (deg)
-%yrpix -  Y axis reference pixel array location
-%yrval -  Y axis coordinate value at the reference pixel (deg)
 
 \chapter{ CFITSIO Error Status Codes }
 
@@ -4239,6 +4329,11 @@ improve the readability of their code.
  BAD_DATATYPE      410    illegal datatype code value
  BAD_DECIM         411    bad number of decimal places specified
  NUM_OVERFLOW      412    overflow during datatype conversion
+ ANGLE_TOO_BIG     501    celestial angle too large for projection
+ BAD_WCS_VAL       502    bad celestial coordinate or pixel value
+ WCS_ERROR         503    error in celestial coordinate calculation
+ BAD_WCS_PROJ      505    unsupported type of celestial projection
+ NO_WCS_KEY        505    celestial coordinate keywords not found
 \end{verbatim}
 \end{document}
 

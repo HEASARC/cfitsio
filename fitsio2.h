@@ -45,12 +45,20 @@
 #define BYTESWAPPED TRUE
  
 #elif defined(__linux__)
- 
+
+/*  IBM PC running linux */
 #define MACHINE LINUX
 #define BYTESWAPPED TRUE
 
-#elif defined(_MSC_VER) || defined(__BORLANDC__) || defined(__TURBOC__)
- 
+#elif defined(_MSC_VER) || defined(__BORLANDC__) || defined(__TURBOC__) 
+
+/*  IBM PC running Windows */
+#define MACHINE IBMPC       
+#define BYTESWAPPED TRUE
+
+#elif  defined(__EMX__)
+
+/*  IBM PC running OS/2 */
 #define MACHINE IBMPC
 #define BYTESWAPPED TRUE
 
@@ -137,6 +145,7 @@ value = 1.1111111.   The equivalent short value will then equal 16526 or
 #define DLONG_MIN -2147483648.49 /* min double value that fits in a long */
  
 void ffmkky(char *keyname, char *keyval, char *comm, char *card);
+int ffgnky(fitsfile *fptr, char *card, int *status);
 void ffcfmt(char *tform, char *cform);
 void ffswap2(short *values, long nvalues);
 void ffswaplong(long *values, long nvalues);
@@ -177,9 +186,9 @@ int ffikey(fitsfile *fptr, char *card, int *status);
 int ffmbyt(fitsfile *fptr, long bytpos, int ignore_err, int *status);
 int ffgbyt(fitsfile *fptr, long nbytes, void *buffer, int *status);
 int ffpbyt(fitsfile *fptr, int nbytes, void *buffer, int *status);
-int ffgbytoff(fitsfile *fptr, long gsize, long ngroups, long offset,       /* I - size of gap between groups          */
+int ffgbytoff(fitsfile *fptr, long gsize, long ngroups, long offset, 
            void *buffer, int *status);
-int ffpbytoff(fitsfile *fptr, long gsize, long ngroups, long offset,       /* I - size of gap between groups          */
+int ffpbytoff(fitsfile *fptr, long gsize, long ngroups, long offset,
            void *buffer, int *status);
 int ffldrc(fitsfile *fptr, long record, int err_mode, int *status);
 int ffwhbf(fitsfile *fptr, int *nbuff);
@@ -193,7 +202,8 @@ int ffbinit(fitsfile *fptr, int *status);
 int ffchdu(fitsfile *fptr, int *status);
 int ffwend(fitsfile *fptr, int *status);
 int ffpdfl(fitsfile *fptr, int *status);
- 
+int ffuptf(fitsfile *fptr, int *status);
+
 int ffdblk(fitsfile *fptr, long nblocks, int *status);
 int ffgext(fitsfile *fptr, int moveto, int *exttype, int *status);
 int ffgtbc(fitsfile *fptr, long *totalwidth, int *status);

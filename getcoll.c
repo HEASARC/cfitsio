@@ -110,9 +110,9 @@ int ffgcfl( fitsfile *fptr,   /* I - FITS file pointer                       */
       {
         if (buffer[ii] == 'T')
           array[next] = 1;
-        else if (buffer[ii] =='F' || nulcheck == 0)
+        else if (buffer[ii] =='F') 
           array[next] = 0;
-        else
+        else if (nulcheck)
         {
           nularray[next] = 1;    /* this is an undefined pixel value */
           *anynul = 1;

@@ -31,12 +31,13 @@ bcc32 -c putcolu.c
 bcc32 -c putkey.c
 bcc32 -c scalnull.c
 bcc32 -c swapproc.c
+bcc32 -c wcsutil.c
 del cfitsio.lib
 tlib cfitsio +buffers +cfileio +checksum +fitscore
 tlib cfitsio +getcol  +getcolb +getcoli +getcolj +getcolk +getcole +getcold
 tlib cfitsio +getcoll +getcols +editcol +edithdu +getkey  +modkey  +putkey 
 tlib cfitsio +putcol  +putcolb +putcoli +putcolj +putcolk +putcole +putcold
-tlib cfitsio +putcoll +putcols +putcolu +scalnull +swapproc
+tlib cfitsio +putcoll +putcols +putcolu +scalnull +swapproc +wcsutil
 bcc32 -f testprog.c cfitsio.lib
 bcc32 -f cookbook.c cfitsio.lib
 

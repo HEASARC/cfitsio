@@ -176,7 +176,7 @@ int ffclos(fitsfile *fptr,      /* I - FITS file pointer */
 {
     int tstatus;
 
-    /* if null pointer file is not opened, so just return */
+    /* if null pointer, then file is not opened, so just return */
     if (!fptr)
         return(*status);
 
@@ -202,6 +202,10 @@ int ffdelt(fitsfile *fptr,      /* I - FITS file pointer */
 */
 {    
     int tstatus = 0;
+
+    /* if null pointer, then file is not opened, so just return */
+    if (!fptr)
+        return(*status);
 
     ffchdu(fptr, &tstatus);    /* close the current HDU, ignore any errors */
     ffflsh(fptr, TRUE, &tstatus);     /* flush and disassociate IO buffers */
