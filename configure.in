@@ -145,11 +145,11 @@ CFLAGS="$CFLAGS $CFORTRANFLAGS"
 
 case $CC in
 	gcc)
-		GCCVERSION="`gcc -v 2>&1 | grep version`"
-		echo "cfitsio: == Using $GCCVERSION"
+		GCCVERSION="`gcc -dumpversion 2>&1`"
+		echo "cfitsio: == Using gcc version $GCCVERSION"
 		AC_SUBST(GCCVERSION)
                 changequote(,)
-		if test `echo $GCCVERSION | grep -c 'version 2\.[45678]\.'` -gt 0
+		if test `echo $GCCVERSION | grep -c '2\.[45678]'` -gt 0
 		then
 		    CFLAGS=`echo $CFLAGS | sed 's:-O[^ ]* *::'`
 		    AC_MSG_WARN(This gcc is pretty old. Disabling optimization to be safe.)
