@@ -230,7 +230,7 @@ typedef struct  /* structure for the iterator function column information */
 #define ANGLE_TOO_BIG     501  /* celestial angle too large for projection */
 #define BAD_WCS_VAL       502  /* bad celestial coordinate or pixel value */
 #define WCS_ERROR         503  /* error in celestial coordinate calculation */
-#define BAD_WCS_PROJ      505  /* unsupported type of celestial projection */
+#define BAD_WCS_PROJ      504  /* unsupported type of celestial projection */
 #define NO_WCS_KEY        505  /* celestial coordinate keywords not found */
 
 /*  the following 3 lines are needed to support C++ compilers */
