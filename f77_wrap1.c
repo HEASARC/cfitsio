@@ -378,9 +378,12 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,STRING,INT,INT,PSTRINGV,PINT,PINT,CF_
            TCF(ftgkns,PINT,6,1)
            TCF(ftgkns,PINT,7,1)     );
 
-   if (*A7 == 0)
-      B5N = *A6;       /*  Redefine number of array elements to number   */
-		       /*  found. Should work even if none found.        */
+   if( *A6 )             /* Convert from CFITSIO to FITSIO definition */
+       *A6 = *A6-*A3+1;
+
+   if ( ! *A7 && *A6 )   /*  Redefine number of array elements to  */
+      B5N = *A6;         /*  number found.                         */
+		      
    RCF(FITSUNIT,1)
    RCF(STRING,2)
    RCF(INT,3)
@@ -398,18 +401,49 @@ void Cffgknl( fitsfile *fptr, char *keyroot, int nstart, int nkeys,
 {
    int i;
  
-   for( i=0; i<nkeys; i++ )
+   for( i=0; i<nkeys; i++ )  /*  This preserves array elements across call  */
       numval[i] = F2CLOGICAL(numval[i]);
    ffgknl( fptr, keyroot, nstart, nkeys, numval, nfound, status );
+   if (*nfound)          /* Convert from CFITSIO to FITSIO definition */
+      *nfound = *nfound-nstart+1;
    for( i=0; i<nkeys; i++ )
       numval[i] = C2FLOGICAL(numval[i]);
 }
 FCALLSCSUB7(Cffgknl,FTGKNL,ftgknl,FITSUNIT,STRING,INT,INT,INTV,PINT,PINT)
 
+void Cffgknj( fitsfile *fptr, char *keyroot, int nstart, int nkeys,
+              long *numval, int *nfound, int *status );
+void Cffgknj( fitsfile *fptr, char *keyroot, int nstart, int nkeys,
+              long *numval, int *nfound, int *status )
+{
+   ffgknj( fptr, keyroot, nstart, nkeys, numval, nfound, status );
+   if (*nfound)          /* Convert from CFITSIO to FITSIO definition */
+      *nfound = *nfound-nstart+1;
+}
 #define ftgknj_LONGV_A5 A4
-FCALLSCSUB7(ffgknj,FTGKNJ,ftgknj,FITSUNIT,STRING,INT,INT,LONGV,PINT,PINT)
-FCALLSCSUB7(ffgkne,FTGKNE,ftgkne,FITSUNIT,STRING,INT,INT,FLOATV,PINT,PINT)
-FCALLSCSUB7(ffgknd,FTGKND,ftgknd,FITSUNIT,STRING,INT,INT,DOUBLEV,PINT,PINT)
+FCALLSCSUB7(Cffgknj,FTGKNJ,ftgknj,FITSUNIT,STRING,INT,INT,LONGV,PINT,PINT)
+
+void Cffgkne( fitsfile *fptr, char *keyroot, int nstart, int nkeys,
+              float *numval, int *nfound, int *status );
+void Cffgkne( fitsfile *fptr, char *keyroot, int nstart, int nkeys,
+              float *numval, int *nfound, int *status )
+{
+   ffgkne( fptr, keyroot, nstart, nkeys, numval, nfound, status );
+   if (*nfound)          /* Convert from CFITSIO to FITSIO definition */
+      *nfound = *nfound-nstart+1;
+}
+FCALLSCSUB7(Cffgkne,FTGKNE,ftgkne,FITSUNIT,STRING,INT,INT,FLOATV,PINT,PINT)
+
+void Cffgknd( fitsfile *fptr, char *keyroot, int nstart, int nkeys,
+              double *numval, int *nfound, int *status );
+void Cffgknd( fitsfile *fptr, char *keyroot, int nstart, int nkeys,
+              double *numval, int *nfound, int *status )
+{
+   ffgknd( fptr, keyroot, nstart, nkeys, numval, nfound, status );
+   if (*nfound)          /* Convert from CFITSIO to FITSIO definition */
+      *nfound = *nfound-nstart+1;
+}
+FCALLSCSUB7(Cffgknd,FTGKND,ftgknd,FITSUNIT,STRING,INT,INT,DOUBLEV,PINT,PINT)
 
 /*----------------- read required header keywords --------------*/
 #define ftghpr_LONGV_A6 A2
