@@ -765,7 +765,7 @@ int fftrec(char *card,       /* I -  keyword card to test */
         {
             sprintf(msg, 
            "Character %d in this keyword is illegal. Hex Value = %X",
-              (int) (ii+1), card[ii] );
+              (int) (ii+1), (int) card[ii] );
             ffpmsg(msg);
 
             strncpy(msg, card, 80);

@@ -70,6 +70,10 @@ int fits_comp_img(fitsfile *infptr, /* pointer to image to be compressed */
     /* Read each image tile, compress, and write to a table row. */
     imcomp_compress_image (infptr, outfptr, status);
 
+    /* force another rescan of the output file keywords, to */
+    /* update PCOUNT and TFORMn = '1PB(iii)' keyword values. */
+    ffrdef(outfptr, status);
+
     return (*status);
 }
 /*--------------------------------------------------------------------------*/

@@ -12,7 +12,9 @@
 
 #include <string.h>
 /* stddef.h is apparently needed to define size_t */
+#include <ctype.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include "fitsio2.h"
 /*--------------------------------------------------------------------------*/
 int ffuky( fitsfile *fptr,     /* I - FITS file pointer        */
@@ -120,11 +122,33 @@ int ffukys(fitsfile *fptr,    /* I - FITS file pointer  */
     if (ffmkys(fptr, keyname, value, comm, status) == KEY_NO_EXIST)
     {
         *status = tstatus;
-        ffpkls(fptr, keyname, value, comm, status);
+        ffpkys(fptr, keyname, value, comm, status);
     }
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffukls(fitsfile *fptr,    /* I - FITS file pointer  */
+           char *keyname,     /* I - keyword name       */
+           char *value,       /* I - keyword value      */
+           char *comm,        /* I - keyword comment    */
+           int *status)       /* IO - error status      */ 
+{
+    /* update a long string keyword */
+
+    int tstatus;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    tstatus = *status;
+
+    if (ffmkls(fptr, keyname, value, comm, status) == KEY_NO_EXIST)
+    {
+        *status = tstatus;
+        ffpkls(fptr, keyname, value, comm, status);
+    }
+    return(*status);
+}/*--------------------------------------------------------------------------*/
 int ffukyl(fitsfile *fptr,    /* I - FITS file pointer  */
            char *keyname,     /* I - keyword name       */
            int value,         /* I - keyword value      */
@@ -581,6 +605,138 @@ int ffmkys(fitsfile *fptr,    /* I - FITS file pointer  */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffmkls( fitsfile *fptr,     /* I - FITS file pointer        */
+            char *keyname,      /* I - name of keyword to write */
+            char *value,        /* I - keyword value            */
+            char *incomm,       /* I - keyword comment          */
+            int  *status)       /* IO - error status            */
+/*
+  Modify the value and optionally the comment of a long string keyword.
+  This routine supports the
+  HEASARC long string convention and can modify arbitrarily long string
+  keyword values.  The value is continued over multiple keywords that
+  have the name COMTINUE without an equal sign in column 9 of the card.
+  This routine also supports simple string keywords which are less than
+  69 characters in length.
+
+  This routine is not very efficient, so it should be used sparingly.
+*/
+{
+    char valstring[FLEN_VALUE];
+    char card[FLEN_CARD];
+    char comm[FLEN_COMMENT];
+    char tstring[FLEN_VALUE], *cptr;
+    char *longval;
+    int next, remain, vlen, nquote, nchar, namelen, contin, tstatus = -1;
+    int nkeys, keypos;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (!incomm || incomm[0] == '&')  /* preserve the old comment string */
+    {
+        ffghps(fptr, &nkeys, &keypos, status); /* save current position */
+
+        if (ffgkls(fptr, keyname, &longval, comm, status) > 0)
+            return(*status);            /* keyword doesn't exist */
+
+        free(longval);  /* don't need the old value */
+
+        /* move back to previous position to ensure that we delete */
+        /* the right keyword in case there are more than one keyword */
+        /* with this same name. */
+        ffgrec(fptr, keypos - 1, card, status); 
+    }
+    else
+        strcpy(comm, incomm);  /* copy the input comment string */
+
+    /* delete the old keyword */
+    if (ffdkey(fptr, keyname, status) > 0)
+        return(*status);            /* keyword doesn't exist */
+
+    ffghps(fptr, &nkeys, &keypos, status); /* save current position */
+
+    /* now construct the new keyword, and insert into header */
+    remain = strlen(value);    /* number of characters to write out */
+    next = 0;                  /* pointer to next character to write */
+    
+    /* count the number of single quote characters in the string */
+    nquote = 0;
+    cptr = strchr(value, '\'');   /* search for quote character */
+
+    while (cptr)  /* search for quote character */
+    {
+        nquote++;            /*  increment no. of quote characters  */
+        cptr++;              /*  increment pointer to next character */
+        cptr = strchr(cptr, '\'');  /* search for another quote char */
+    }
+
+    cptr = keyname;
+    while(*cptr == ' ')   /* skip over leading spaces in name */
+        cptr++;
+
+    /* determine the number of characters that will fit on the line */
+    /* Note: each quote character is expanded to 2 quotes */
+
+    namelen = strlen(cptr);
+    if (namelen <= 8 && (fftkey(cptr, &tstatus) <= 0) )
+    {
+        /* This a normal 8-character FITS keyword */
+        nchar = 68 - nquote; /*  max of 68 chars fit in a FITS string value */
+    }
+    else
+    {
+        /* This a HIERARCH keyword */
+        if (FSTRNCMP(cptr, "HIERARCH ", 9) && 
+            FSTRNCMP(cptr, "hierarch ", 9))
+            nchar = 66 - nquote - namelen;
+        else
+            nchar = 75 - nquote - namelen;  /* don't count 'HIERARCH' twice */
+
+    }
+
+    contin = 0;
+    while (remain > 0)
+    {
+        strncpy(tstring, &value[next], nchar); /* copy string to temp buff */
+        tstring[nchar] = '\0';
+        ffs2c(tstring, valstring, status);  /* put quotes around the string */
+
+        if (remain > nchar)   /* if string is continued, put & as last char */
+        {
+            vlen = strlen(valstring);
+            nchar -= 1;        /* outputting one less character now */
+
+            if (valstring[vlen-2] != '\'')
+                valstring[vlen-2] = '&';  /*  over write last char with &  */
+            else
+            { /* last char was a pair of single quotes, so over write both */
+                valstring[vlen-3] = '&';
+                valstring[vlen-1] = '\0';
+            }
+        }
+
+        if (contin)           /* This is a CONTINUEd keyword */
+        {
+           ffmkky("CONTINUE", valstring, comm, card, status); /* make keyword */
+           strncpy(&card[8], "   ",  2);  /* overwrite the '=' */
+        }
+        else
+        {
+           ffmkky(keyname, valstring, comm, card, status);  /* make keyword */
+        }
+
+        ffirec(fptr, keypos, card, status);  /* insert the keyword */
+       
+        keypos++;        /* next insert position */
+        contin = 1;
+        remain -= nchar;
+        next  += nchar;
+        nchar = 68 - nquote;
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffmkyl(fitsfile *fptr,    /* I - FITS file pointer  */
            char *keyname,     /* I - keyword name       */
            int value,         /* I - keyword value      */
@@ -933,6 +1089,108 @@ int ffikys(fitsfile *fptr,    /* I - FITS file pointer  */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffikls( fitsfile *fptr,     /* I - FITS file pointer        */
+            char *keyname,      /* I - name of keyword to write */
+            char *value,        /* I - keyword value            */
+            char *comm,         /* I - keyword comment          */
+            int  *status)       /* IO - error status            */
+/*
+  Insert a long string keyword.  This routine supports the
+  HEASARC long string convention and can insert arbitrarily long string
+  keyword values.  The value is continued over multiple keywords that
+  have the name COMTINUE without an equal sign in column 9 of the card.
+  This routine also supports simple string keywords which are less than
+  69 characters in length.
+*/
+{
+    char valstring[FLEN_VALUE];
+    char card[FLEN_CARD];
+    char tstring[FLEN_VALUE], *cptr;
+    int next, remain, vlen, nquote, nchar, namelen, contin, tstatus = -1;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    /*  construct the new keyword, and insert into header */
+    remain = strlen(value);    /* number of characters to write out */
+    next = 0;                  /* pointer to next character to write */
+    
+    /* count the number of single quote characters in the string */
+    nquote = 0;
+    cptr = strchr(value, '\'');   /* search for quote character */
+
+    while (cptr)  /* search for quote character */
+    {
+        nquote++;            /*  increment no. of quote characters  */
+        cptr++;              /*  increment pointer to next character */
+        cptr = strchr(cptr, '\'');  /* search for another quote char */
+    }
+
+    cptr = keyname;
+    while(*cptr == ' ')   /* skip over leading spaces in name */
+        cptr++;
+
+    /* determine the number of characters that will fit on the line */
+    /* Note: each quote character is expanded to 2 quotes */
+
+    namelen = strlen(cptr);
+    if (namelen <= 8 && (fftkey(cptr, &tstatus) <= 0) )
+    {
+        /* This a normal 8-character FITS keyword */
+        nchar = 68 - nquote; /*  max of 68 chars fit in a FITS string value */
+    }
+    else
+    {
+        /* This a HIERARCH keyword */
+        if (FSTRNCMP(cptr, "HIERARCH ", 9) && 
+            FSTRNCMP(cptr, "hierarch ", 9))
+            nchar = 66 - nquote - namelen;
+        else
+            nchar = 75 - nquote - namelen;  /* don't count 'HIERARCH' twice */
+
+    }
+
+    contin = 0;
+    while (remain > 0)
+    {
+        strncpy(tstring, &value[next], nchar); /* copy string to temp buff */
+        tstring[nchar] = '\0';
+        ffs2c(tstring, valstring, status);  /* put quotes around the string */
+
+        if (remain > nchar)   /* if string is continued, put & as last char */
+        {
+            vlen = strlen(valstring);
+            nchar -= 1;        /* outputting one less character now */
+
+            if (valstring[vlen-2] != '\'')
+                valstring[vlen-2] = '&';  /*  over write last char with &  */
+            else
+            { /* last char was a pair of single quotes, so over write both */
+                valstring[vlen-3] = '&';
+                valstring[vlen-1] = '\0';
+            }
+        }
+
+        if (contin)           /* This is a CONTINUEd keyword */
+        {
+           ffmkky("CONTINUE", valstring, comm, card, status); /* make keyword */
+           strncpy(&card[8], "   ",  2);  /* overwrite the '=' */
+        }
+        else
+        {
+           ffmkky(keyname, valstring, comm, card, status);  /* make keyword */
+        }
+
+        ffikey(fptr, card, status);  /* insert the keyword */
+       
+        contin = 1;
+        remain -= nchar;
+        next  += nchar;
+        nchar = 68 - nquote;
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffikyl(fitsfile *fptr,    /* I - FITS file pointer  */
            char *keyname,     /* I - keyword name       */
            int value,         /* I - keyword value      */
@@ -1202,10 +1460,17 @@ int ffikey(fitsfile *fptr,    /* I - FITS file pointer  */
     nshift=( (fptr->Fptr)->headend - (fptr->Fptr)->nextkey ) / 80; /* no. keywords to shift */
 
     strncpy(buff2, card, 80);     /* copy card to output buffer */
+    buff2[80] = '\0';
 
     len = strlen(buff2);
     for (ii=len; ii < 80; ii++)   /* fill buffer with spaces if necessary */
         buff2[ii] = ' ';
+
+    for (ii=0; ii < 8; ii++)       /* make sure keyword name is uppercase */
+        buff2[ii] = toupper(buff2[ii]);
+
+    fftkey(buff2, status);        /* test keyword name contains legal chars */
+    fftrec(buff2, status);        /* test rest of keyword for legal chars   */
 
     inbuff = buff1;
     outbuff = buff2;

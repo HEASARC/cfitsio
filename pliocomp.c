@@ -1,3 +1,5 @@
+/* stdlib is needed for the abs function */
+#include <stdlib.h>
 /*
    The following prototype code was provided by Doug Tody, NRAO, for
    performing conversion between pixel arrays and line lists.  The

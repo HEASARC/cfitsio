@@ -445,7 +445,7 @@ int mem_compress_open(char *filename, int rwmode, int *hdl)
 */
 {
     FILE *diskfile;
-    int status;
+    int status, estimated = 1;
     unsigned char buffer[4];
     size_t finalsize;
     char *ptr;
@@ -478,6 +478,8 @@ int mem_compress_open(char *filename, int rwmode, int *hdl)
 	finalsize |= buffer[1] << 8;
 	finalsize |= buffer[2] << 16;
 	finalsize |= buffer[3] << 24;
+
+        estimated = 0;  /* file size is known, not estimated */
     }
     else if (memcmp(buffer, "\120\113", 2) == 0)   /* PKZIP */
     {
@@ -491,6 +493,8 @@ int mem_compress_open(char *filename, int rwmode, int *hdl)
 	finalsize |= buffer[1] << 8;
 	finalsize |= buffer[2] << 16;
 	finalsize |= buffer[3] << 24;
+
+        estimated = 0;  /* file size is known, not estimated */
     }
     else if (memcmp(buffer, "\037\036", 2) == 0)  /* PACK */
         finalsize = 0;  /* for most methods we can't determine final size */
@@ -516,6 +520,14 @@ int mem_compress_open(char *filename, int rwmode, int *hdl)
 
     /* create a memory file big enough (hopefully) for the uncompressed file */
     status = mem_createmem(finalsize, hdl);
+
+    if (status && estimated)
+    {
+        /* memory allocation failed, so try a smaller estimated size */
+        finalsize = finalsize / 3;
+        status = mem_createmem(finalsize, hdl);
+    }
+
     if (status)
     {
         fclose(diskfile);

@@ -122,6 +122,7 @@
 #define fits_update_key        ffuky
 #define fits_update_key_null   ffukyu
 #define fits_update_key_str    ffukys
+#define fits_update_key_longstr    ffukls
 #define fits_update_key_log    ffukyl
 #define fits_update_key_lng    ffukyj
 #define fits_update_key_fixflt ffukyf
@@ -139,6 +140,7 @@
 #define fits_modify_comment    ffmcom
 #define fits_modify_key_null   ffmkyu
 #define fits_modify_key_str    ffmkys
+#define fits_modify_key_longstr    ffmkls
 #define fits_modify_key_log    ffmkyl
 #define fits_modify_key_lng    ffmkyj
 #define fits_modify_key_fixflt ffmkyf
@@ -153,6 +155,7 @@
 #define fits_insert_record     ffirec
 #define fits_insert_key_null   ffikyu
 #define fits_insert_key_str    ffikys
+#define fits_insert_key_longstr    ffikls
 #define fits_insert_key_log    ffikyl
 #define fits_insert_key_lng    ffikyj
 #define fits_insert_key_fixflt ffikyf

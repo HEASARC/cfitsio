@@ -579,6 +579,7 @@ int ffuky(fitsfile *fptr, int datatype, char *keyname, void *value,
 int ffucrd(fitsfile *fptr, char *keyname, char *card, int *status);
 int ffukyu(fitsfile *fptr, char *keyname, char *comm, int *status);
 int ffukys(fitsfile *fptr, char *keyname, char *value, char *comm, int *status);
+int ffukls(fitsfile *fptr, char *keyname, char *value, char *comm, int *status);
 int ffukyl(fitsfile *fptr, char *keyname, int value, char *comm, int *status);
 int ffukyj(fitsfile *fptr, char *keyname, long value, char *comm, int *status);
 int ffukyf(fitsfile *fptr, char *keyname, float value, int decim, char *comm,
@@ -605,6 +606,7 @@ int ffmnam(fitsfile *fptr, char *oldname, char *newname, int *status);
 int ffmcom(fitsfile *fptr, char *keyname, char *comm, int *status);
 int ffmkyu(fitsfile *fptr, char *keyname, char *comm, int *status);
 int ffmkys(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
+int ffmkls(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
 int ffmkyl(fitsfile *fptr, char *keyname, int value, char *comm, int *status);
 int ffmkyj(fitsfile *fptr, char *keyname, long value, char *comm, int *status);
 int ffmkyf(fitsfile *fptr, char *keyname, float value, int decim, char *comm,
@@ -628,6 +630,7 @@ int ffmkfm(fitsfile *fptr, char *keyname, double *value, int decim, char *comm,
 int ffirec(fitsfile *fptr, int nkey, char *card, int *status);
 int ffikyu(fitsfile *fptr, char *keyname, char *comm, int *status);
 int ffikys(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
+int ffikls(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
 int ffikyl(fitsfile *fptr, char *keyname, int value, char *comm, int *status);
 int ffikyj(fitsfile *fptr, char *keyname, long value, char *comm, int *status);
 int ffikyf(fitsfile *fptr, char *keyname, float value, int decim, char *comm,
