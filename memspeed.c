@@ -56,6 +56,8 @@ main()
     This program tests the speed of writing/reading FITS files with cfitsio
 **************************************************************************/
 
+    void *memptr;
+    long memsize;
     FILE *diskfile;
     fitsfile *fptr;        /* pointer to the FITS file, defined in fitsio.h */
     int status, ii;
@@ -68,13 +70,14 @@ main()
 
     tbegin = time(0);
 
-    remove(filename);               /* Delete old file if it already exists */
+    printf("                                                ");
+    printf(" SIZE / ELAPSE(%%CPU) = RATE\n");
+ /*
+    remove(filename);               
 
     diskfile =  fopen(filename,"w+b");
     rawloop = XSIZE * YSIZE / 720;
 
-    printf("                                                ");
-    printf(" SIZE / ELAPSE(%%CPU) = RATE\n");
     printf("RAW fwrite (2880 bytes/loop)...                 ");
     marktime(&status);
 
@@ -89,7 +92,6 @@ main()
     rate = size / elapse;
     printf(" %4.1fMB/%4.1fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
 
-    /* read back the binary records */
     fseek(diskfile, 0, 0);
 
     printf("RAW fread  (2880 bytes/loop)...                 ");
@@ -107,11 +109,21 @@ main()
     printf(" %4.1fMB/%4.1fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
 
     fclose(diskfile);
+
+ */
+
     remove(filename);
 
     status = 0;     
-    fptr = 0;
 
+    memsize = 70000000;
+    memptr = malloc(memsize);
+    ffsbuf(&fptr, memptr, memsize, &status);
+/*
+    printf("memptr = %d\n", memptr);
+    printf("ffsbuf create memory buffer file status = %d\n", status);
+    printf("ffsbuf memory buffer address = %u\n", fptr);
+*/
     if (fits_create_file(&fptr, filename, &status)) /* create new FITS file */
        printerror( status);          
    

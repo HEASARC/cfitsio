@@ -35,6 +35,7 @@ int ffcopy(fitsfile *infptr,    /* I - FITS file pointer to input file  */
 
     /* check that the output header is empty */
     ffghsp(outfptr, &nkeys, &nadd, status); /* get no. of keywords in header */
+
     if (nkeys != 0)
     {
         ffpmsg("Cannot copy HDU to a non-empty HDU (ffcopy)");

@@ -16,10 +16,6 @@
 #include <string.h>
 #include "fitsio2.h"
 
-#if MACHINE == ALPHAVMS
-  static float testfloat = TESTFLOAT;  /* use to test floating pt format */
-#endif
-
 /*--------------------------------------------------------------------------*/
 int ffgpve( fitsfile *fptr,   /* I - FITS file pointer                       */
             long  group,      /* I - group to read (1 = 1st group)           */
@@ -1152,14 +1148,7 @@ int fffr4r4(float *input,         /* I - array of values to be converted     */
     {
         sptr = (short *) input;
 
-#if MACHINE == VAXVMS
-   /* do nothing */
-
-#elif MACHINE == ALPHAVMS
-        if (*(short *) &testfloat == IEEEFLOAT)
-            sptr++;       /* point to MSBs */
-
-#elif BYTESWAPPED == TRUE
+#if BYTESWAPPED == TRUE
         sptr++;       /* point to MSBs */
 #endif
 
@@ -1257,14 +1246,7 @@ int fffr8r4(double *input,        /* I - array of values to be converted     */
     {
         sptr = (short *) input;
 
-#if MACHINE == VAXVMS
-   /* do nothing */
-
-#elif MACHINE == ALPHAVMS
-        if (*(short *) &testfloat == IEEEFLOAT)
-            sptr += 3;       /* point to MSBs */
-
-#elif BYTESWAPPED == TRUE
+#if BYTESWAPPED == TRUE
         sptr += 3;       /* point to MSBs */
 #endif
         if (scale == 1. && zero == 0.)  /* no scaling */

@@ -70,7 +70,7 @@ int ffrsim(fitsfile *fptr,      /* I - FITS file pointer           */
             return(*status = BAD_NAXES);
         }
 
-        newsize *= naxes[ii];  /* compute new image size, in poxels */
+        newsize *= naxes[ii];  /* compute new image size, in pixels */
     }
 
     /* compute size of old image, in bytes */
@@ -145,6 +145,8 @@ int ffrsim(fitsfile *fptr,      /* I - FITS file pointer           */
         }
     }
 
+    /* re-read the header, to make sure structures are updated */
+    ffrdef(fptr, status);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

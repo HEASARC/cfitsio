@@ -16,10 +16,6 @@
 #include <string.h>
 #include "fitsio2.h"
 
-#if MACHINE == ALPHAVMS
-  static float testfloat = TESTFLOAT;  /* use to test floating pt format */
-#endif
-
 /*--------------------------------------------------------------------------*/
 int ffgpvk( fitsfile *fptr,   /* I - FITS file pointer                       */
             long  group,      /* I - group to read (1 = 1st group)           */
@@ -637,6 +633,7 @@ int ffgclk( fitsfile *fptr,   /* I - FITS file pointer                       */
          tform, &twidth, &tcode, &maxelem, &startpos, &elemnum, &incre,
          &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0 )
          return(*status);
+
     incre *= elemincre;   /* multiply incre to just get every nth pixel */
 
     if (tcode == TSTRING)    /* setup for ASCII tables */
@@ -835,12 +832,12 @@ int fffi1int(unsigned char *input,/* I - array of values to be converted     */
                 if (dvalue < DLONG_MIN)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = LONG_MIN;
+                    output[ii] = INT_MIN;
                 }
                 else if (dvalue > DLONG_MAX)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = LONG_MAX;
+                    output[ii] = INT_MAX;
                 }
                 else
                     output[ii] = (int) dvalue;
@@ -884,12 +881,12 @@ int fffi1int(unsigned char *input,/* I - array of values to be converted     */
                     if (dvalue < DLONG_MIN)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = LONG_MIN;
+                        output[ii] = INT_MIN;
                     }
                     else if (dvalue > DLONG_MAX)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = LONG_MAX;
+                        output[ii] = INT_MAX;
                     }
                     else
                         output[ii] = (int) dvalue;
@@ -946,12 +943,12 @@ int fffi2int(short *input,        /* I - array of values to be converted     */
                 if (dvalue < DLONG_MIN)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = LONG_MIN;
+                    output[ii] = INT_MIN;
                 }
                 else if (dvalue > DLONG_MAX)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = LONG_MAX;
+                    output[ii] = INT_MAX;
                 }
                 else
                     output[ii] = (int) dvalue;
@@ -995,12 +992,12 @@ int fffi2int(short *input,        /* I - array of values to be converted     */
                     if (dvalue < DLONG_MIN)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = LONG_MIN;
+                        output[ii] = INT_MIN;
                     }
                     else if (dvalue > DLONG_MAX)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = LONG_MAX;
+                        output[ii] = INT_MAX;
                     }
                     else
                         output[ii] = (int) dvalue;
@@ -1057,12 +1054,12 @@ int fffi4int(long *input,         /* I - array of values to be converted     */
                 if (dvalue < DLONG_MIN)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = LONG_MIN;
+                    output[ii] = INT_MIN;
                 }
                 else if (dvalue > DLONG_MAX)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = LONG_MAX;
+                    output[ii] = INT_MAX;
                 }
                 else
                     output[ii] = (int) dvalue;
@@ -1107,12 +1104,12 @@ int fffi4int(long *input,         /* I - array of values to be converted     */
                     if (dvalue < DLONG_MIN)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = LONG_MIN;
+                        output[ii] = INT_MIN;
                     }
                     else if (dvalue > DLONG_MAX)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = LONG_MAX;
+                        output[ii] = INT_MAX;
                     }
                     else
                         output[ii] = (int) dvalue;
@@ -1162,12 +1159,12 @@ int fffr4int(float *input,        /* I - array of values to be converted     */
                 if (input[ii] < DLONG_MIN)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = LONG_MIN;
+                    output[ii] = INT_MIN;
                 }
                 else if (input[ii] > DLONG_MAX)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = LONG_MAX;
+                    output[ii] = INT_MAX;
                 }
                 else
                     output[ii] = (int) input[ii];
@@ -1182,12 +1179,12 @@ int fffr4int(float *input,        /* I - array of values to be converted     */
                 if (dvalue < DLONG_MIN)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = LONG_MIN;
+                    output[ii] = INT_MIN;
                 }
                 else if (dvalue > DLONG_MAX)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = LONG_MAX;
+                    output[ii] = INT_MAX;
                 }
                 else
                     output[ii] = (int) dvalue;
@@ -1198,14 +1195,7 @@ int fffr4int(float *input,        /* I - array of values to be converted     */
     {
         sptr = (short *) input;
 
-#if MACHINE == VAXVMS
-   /* do nothing */
-
-#elif MACHINE == ALPHAVMS
-        if (*(short *) &testfloat == IEEEFLOAT)
-            sptr++;       /* point to MSBs */
-
-#elif BYTESWAPPED == TRUE
+#if BYTESWAPPED == TRUE
         sptr++;       /* point to MSBs */
 #endif
 
@@ -1231,12 +1221,12 @@ int fffr4int(float *input,        /* I - array of values to be converted     */
                     if (input[ii] < DLONG_MIN)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = LONG_MIN;
+                        output[ii] = INT_MIN;
                     }
                     else if (input[ii] > DLONG_MAX)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = LONG_MAX;
+                        output[ii] = INT_MAX;
                     }
                     else
                         output[ii] = (int) input[ii];
@@ -1267,12 +1257,12 @@ int fffr4int(float *input,        /* I - array of values to be converted     */
                     if (dvalue < DLONG_MIN)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = LONG_MIN;
+                        output[ii] = INT_MIN;
                     }
                     else if (dvalue > DLONG_MAX)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = LONG_MAX;
+                        output[ii] = INT_MAX;
                     }
                     else
                         output[ii] = (int) dvalue;
@@ -1322,12 +1312,12 @@ int fffr8int(double *input,       /* I - array of values to be converted     */
                 if (input[ii] < DLONG_MIN)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = LONG_MIN;
+                    output[ii] = INT_MIN;
                 }
                 else if (input[ii] > DLONG_MAX)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = LONG_MAX;
+                    output[ii] = INT_MAX;
                 }
                 else
                     output[ii] = (int) input[ii];
@@ -1342,12 +1332,12 @@ int fffr8int(double *input,       /* I - array of values to be converted     */
                 if (dvalue < DLONG_MIN)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = LONG_MIN;
+                    output[ii] = INT_MIN;
                 }
                 else if (dvalue > DLONG_MAX)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = LONG_MAX;
+                    output[ii] = INT_MAX;
                 }
                 else
                     output[ii] = (int) dvalue;
@@ -1358,14 +1348,7 @@ int fffr8int(double *input,       /* I - array of values to be converted     */
     {
         sptr = (short *) input;
 
-#if MACHINE == VAXVMS
-   /* do nothing */
-
-#elif MACHINE == ALPHAVMS
-        if (*(short *) &testfloat == IEEEFLOAT)
-            sptr += 3;       /* point to MSBs */
-
-#elif BYTESWAPPED == TRUE
+#if BYTESWAPPED == TRUE
         sptr += 3;       /* point to MSBs */
 #endif
         if (scale == 1. && zero == 0.)  /* no scaling */
@@ -1390,12 +1373,12 @@ int fffr8int(double *input,       /* I - array of values to be converted     */
                     if (input[ii] < DLONG_MIN)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = LONG_MIN;
+                        output[ii] = INT_MIN;
                     }
                     else if (input[ii] > DLONG_MAX)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = LONG_MAX;
+                        output[ii] = INT_MAX;
                     }
                     else
                         output[ii] = (int) input[ii];
@@ -1426,12 +1409,12 @@ int fffr8int(double *input,       /* I - array of values to be converted     */
                     if (dvalue < DLONG_MIN)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = LONG_MIN;
+                        output[ii] = INT_MIN;
                     }
                     else if (dvalue > DLONG_MAX)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = LONG_MAX;
+                        output[ii] = INT_MAX;
                     }
                     else
                         output[ii] = (int) dvalue;
@@ -1550,12 +1533,12 @@ int fffstrinta(char *input,        /* I - array of values to be converted     */
         if (dvalue < DLONG_MIN)
         {
             *status = OVERFLOW_ERR;
-            output[ii] = LONG_MIN;
+            output[ii] = INT_MIN;
         }
         else if (dvalue > DLONG_MAX)
         {
             *status = OVERFLOW_ERR;
-            output[ii] = LONG_MAX;
+            output[ii] = INT_MAX;
         }
        else
             output[ii] = (int) dvalue;
@@ -1724,12 +1707,12 @@ int fffstrint(char *input,        /* I - array of values to be converted     */
         if (dvalue < DLONG_MIN)
         {
             *status = OVERFLOW_ERR;
-            output[ii] = LONG_MIN;
+            output[ii] = INT_MIN;
         }
         else if (dvalue > DLONG_MAX)
         {
             *status = OVERFLOW_ERR;
-            output[ii] = LONG_MAX;
+            output[ii] = INT_MAX;
         }
         else
             output[ii] = (long) dvalue;

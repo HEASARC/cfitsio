@@ -88,7 +88,8 @@ main()
 
     printf("Try opening then closing a nonexistent file:\n");
     ffopen(&fptr, "tq123x.kjl", READWRITE, &status);
-    printf("  ffopen fptr, status  = %d %d (expect an error)\n", fptr, status);
+    printf("  ffopen fptr, status  = %lu %d (expect an error)\n", 
+           (unsigned long) fptr, status);
     ffclos(fptr, &status);
     printf("  ffclos status = %d\n\n", status);
     ffcmsg();
@@ -361,7 +362,7 @@ main()
     ffgpvj(fptr, 1, 1, npixels, 99,  jinarray, &anynull, &status);
 
     for (ii = 0; ii < npixels; ii++)
-        printf(" %2d", jinarray[ii]);
+        printf(" %2ld", jinarray[ii]);
     printf("  %d (ffgpvj)\n", anynull);  
 
     ffgpve(fptr, 1, 1, npixels, 99., einarray, &anynull, &status);
@@ -408,16 +409,16 @@ main()
            printf("bout != bin = %u %u \n", boutarray[ii], binarray[ii]);
 
        if (ioutarray[ii] != iinarray[ii])
-           printf("bout != bin = %d %d \n", ioutarray[ii], iinarray[ii]);
+           printf("iout != iin = %d %d \n", ioutarray[ii], iinarray[ii]);
 
        if (joutarray[ii] != jinarray[ii])
-           printf("bout != bin = %d %d \n", joutarray[ii], jinarray[ii]);
+           printf("jout != jin = %ld %ld \n", joutarray[ii], jinarray[ii]);
 
        if (eoutarray[ii] != einarray[ii])
-           printf("bout != bin = %f %f \n", eoutarray[ii], einarray[ii]);
+           printf("eout != ein = %f %f \n", eoutarray[ii], einarray[ii]);
 
        if (doutarray[ii] != dinarray[ii])
-           printf("bout != bin = %f %f \n", doutarray[ii], dinarray[ii]);
+           printf("dout != din = %f %f \n", doutarray[ii], dinarray[ii]);
     }
 
     for (ii = 0; ii < npixels; ii++)
@@ -455,7 +456,7 @@ main()
       if (larray[ii])
         printf("  *");
       else
-        printf(" %2d", jinarray[ii]);
+        printf(" %2ld", jinarray[ii]);
     printf("  %d (ffgpfj)\n", anynull);  
 
     ffgpfe(fptr, 1, 1, npixels, einarray, larray, &anynull, &status);
@@ -526,9 +527,9 @@ main()
     printf("\nRead back keywords:\n");
     ffghpr(fptr, 99, &simple, &bitpix, &naxis, naxes, &pcount,
            &gcount, &extend, &status);
-    printf("simple = %d, bitpix = %d, naxis = %d, naxes = (%d, %d)\n",
+    printf("simple = %d, bitpix = %d, naxis = %d, naxes = (%ld, %ld)\n",
            simple, bitpix, naxis, naxes[0], naxes[1]);
-    printf("  pcount = %d, gcount = %d, extend = %d\n",
+    printf("  pcount = %ld, gcount = %ld, extend = %d\n",
                pcount, gcount, extend);
 
     ffgrec(fptr, 11, card, &status);
@@ -560,7 +561,7 @@ main()
     printf("KEY_PKYL %d %s %d\n", ilkey, comment, status);
 
     ffgkyj(fptr, "KEY_PKYJ", &ijkey, comment, &status);
-    printf("KEY_PKYJ %d %s %d\n",ijkey, comment, status);
+    printf("KEY_PKYJ %ld %s %d\n",ijkey, comment, status);
 
     ffgkye(fptr, "KEY_PKYJ", &iekey, comment, &status);
     printf("KEY_PKYJ %f %s %d\n",iekey, comment, status);
@@ -569,7 +570,7 @@ main()
     printf("KEY_PKYJ %f %s %d\n",idkey, comment, status);
 
     if (ijkey != 11 || iekey != 11. || idkey != 11.)
-       printf("ERROR in ffgky[jed]: %d, %f, %f\n",ijkey, iekey, idkey);
+       printf("ERROR in ffgky[jed]: %ld, %f, %f\n",ijkey, iekey, idkey);
 
     iskey[0] = '\0';
     ffgky(fptr, TSTRING, "key_pkys", iskey, comment, &status);
@@ -590,7 +591,7 @@ main()
 
     ijkey = 0;
     ffgky(fptr, TLONG, "KEY_PKYJ", &ijkey, comment, &status);
-    printf("KEY_PKY J %d %s %d\n",ijkey, comment, status);
+    printf("KEY_PKY J %ld %s %d\n",ijkey, comment, status);
 
     iekey = 0;
     ffgky(fptr, TFLOAT, "KEY_PKYE", &iekey, comment, &status);
@@ -613,22 +614,28 @@ main()
     printf("KEY_PKYD %.14f %s %d\n",idkey, comment, status);
 
     ffgkyt(fptr, "KEY_PKYT", &ijkey, &idkey, comment, &status);
-    printf("KEY_PKYT %d %.14f %s %d\n",ijkey, idkey, comment, status);
+    printf("KEY_PKYT %ld %.14f %s %d\n",ijkey, idkey, comment, status);
 
     ffpunt(fptr, "KEY_PKYJ", "km/s/Mpc", &status);
     ijkey = 0;
     ffgky(fptr, TLONG, "KEY_PKYJ", &ijkey, comment, &status);
-    printf("KEY_PKY J %d %s %d\n",ijkey, comment, status);
+    printf("KEY_PKY J %ld %s %d\n",ijkey, comment, status);
+    ffgunt(fptr,"KEY_PKYJ", comment, &status);
+    printf("KEY_PKY units = %s\n",comment);
 
     ffpunt(fptr, "KEY_PKYJ", "", &status);
     ijkey = 0;
     ffgky(fptr, TLONG, "KEY_PKYJ", &ijkey, comment, &status);
-    printf("KEY_PKY J %d %s %d\n",ijkey, comment, status);
+    printf("KEY_PKY J %ld %s %d\n",ijkey, comment, status);
+    ffgunt(fptr,"KEY_PKYJ", comment, &status);
+    printf("KEY_PKY units = %s\n",comment);
 
     ffpunt(fptr, "KEY_PKYJ", "feet/second/second", &status);
     ijkey = 0;
     ffgky(fptr, TLONG, "KEY_PKYJ", &ijkey, comment, &status);
-    printf("KEY_PKY J %d %s %d\n",ijkey, comment, status);
+    printf("KEY_PKY J %ld %s %d\n",ijkey, comment, status);
+    ffgunt(fptr,"KEY_PKYJ", comment, &status);
+    printf("KEY_PKY units = %s\n",comment);
 
     ffgkls(fptr, "key_pkls", &lsptr, comment, &status);
     printf("KEY_PKLS long string value = \n%s\n", lsptr);
@@ -657,7 +664,7 @@ main()
        printf("\nERROR in ffgknl %d, %d\n", nfound, status);
 
     ffgknj(fptr, "ky_pknj", 1, 3, injkey, &nfound, &status);
-    printf("ffgknj:  %d, %d, %d\n", injkey[0], injkey[1], injkey[2]);
+    printf("ffgknj:  %ld, %ld, %ld\n", injkey[0], injkey[1], injkey[2]);
     if (nfound != 3 || status > 0)
        printf("\nERROR in ffgknj %d, %d\n", nfound, status);
 
@@ -877,7 +884,7 @@ main()
     naxes[2] = 0;
     ffgtdm(fptr, 3, 3, &naxis, naxes, &status);
     ffgkys(fptr, "TDIM3", iskey, comment, &status);
-    printf("TDIM3 = %s, %d, %d, %d, %d\n", iskey, naxis, naxes[0],
+    printf("TDIM3 = %s, %d, %ld, %ld, %ld\n", iskey, naxis, naxes[0],
          naxes[1], naxes[2]);
 
     ffrdef(fptr, &status);  /* force header to be scanned (not required) */
@@ -1018,10 +1025,10 @@ main()
     for (ii = 0; ii < tfields; ii++)
     {
       ffgtcl(fptr, ii + 1, &typecode, &repeat, &width, &status);
-      printf("%4s %3d %2d %2d", tform[ii], typecode, repeat, width);
+      printf("%4s %3d %2ld %2ld", tform[ii], typecode, repeat, width);
       ffgbcl(fptr, ii + 1, ttype[0], tunit[0], &cval, &repeat, &scale,
            &zero, &jnulval, tdisp, &status);
-      printf(" %s, %s, %c, %d, %f, %f, %d, %s.\n",
+      printf(" %s, %s, %c, %ld, %f, %f, %ld, %s.\n",
          ttype[0], tunit[0], cval, repeat, scale, zero, jnulval, tdisp);
     }
 
@@ -1127,11 +1134,11 @@ main()
     ffghtb(fptr, 99, &rowlen, &nrows, &tfields, ttype, tbcol, 
            tform, tunit, tblname, &status);
 
-    printf("\nASCII table: rowlen, nrows, tfields, extname: %d %d %d %s\n",
+    printf("\nASCII table: rowlen, nrows, tfields, extname: %ld %ld %d %s\n",
            rowlen, nrows, tfields, tblname);
 
     for (ii = 0; ii < tfields; ii++)
-      printf("%8s %3d %8s %8s \n", ttype[ii], tbcol[ii], 
+      printf("%8s %3ld %8s %8s \n", ttype[ii], tbcol[ii], 
                                    tform[ii], tunit[ii]);
 
     nrows = 11;
@@ -1145,7 +1152,7 @@ main()
     printf("\nData values read from ASCII table:\n");
     for (ii = 0; ii < nrows; ii++)
     {
-      printf("%15s %2d %2d %2d %4.1f %4.1f\n", inskey[ii], binarray[ii],
+      printf("%15s %2d %2d %2ld %4.1f %4.1f\n", inskey[ii], binarray[ii],
            iinarray[ii], jinarray[ii], einarray[ii], dinarray[ii]); 
     }
 
@@ -1174,10 +1181,10 @@ main()
     for (ii = 0; ii < tfields; ii++)
     {
       ffgtcl(fptr, ii + 1, &typecode, &repeat, &width, &status);
-      printf("%4s %3d %2d %2d", tform[ii], typecode, repeat, width);
+      printf("%4s %3d %2ld %2ld", tform[ii], typecode, repeat, width);
       ffgacl(fptr, ii + 1, ttype[0], tbcol, tunit[0], tform[0], &scale,
            &zero, nulstr, tdisp, &status);
-      printf(" %s, %d, %s, %s, %f, %f, %s, %s.\n",
+      printf(" %s, %ld, %s, %s, %f, %f, %s, %s.\n",
          ttype[0], tbcol[0], tunit[0], tform[0], scale, zero,
          nulstr, tdisp);
     }
@@ -1204,7 +1211,7 @@ main()
     printf("\nData values after inserting 3 rows after row 2:\n");
     for (ii = 0; ii < nrows; ii++)
     {
-      printf("%15s %2d %2d %2d %4.1f %4.1f\n",  inskey[ii], binarray[ii],
+      printf("%15s %2d %2d %2ld %4.1f %4.1f\n",  inskey[ii], binarray[ii],
           iinarray[ii], jinarray[ii], einarray[ii], dinarray[ii]);
     }
 
@@ -1222,7 +1229,7 @@ main()
     printf("\nData values after deleting 2 rows at row 10:\n");
     for (ii = 0; ii < nrows; ii++)
     {
-      printf("%15s %2d %2d %2d %4.1f %4.1f\n",  inskey[ii], binarray[ii],
+      printf("%15s %2d %2d %2ld %4.1f %4.1f\n",  inskey[ii], binarray[ii],
           iinarray[ii], jinarray[ii], einarray[ii], dinarray[ii]);
     }
     if (ffdcol(fptr, 3, &status) > 0)
@@ -1254,7 +1261,7 @@ main()
     printf("\nData values after inserting column 5:\n");
     for (ii = 0; ii < nrows; ii++)
     {
-      printf("%15s %2d %2d %4.1f %4.1f %d\n", inskey[ii], binarray[ii],
+      printf("%15s %2d %2d %4.1f %4.1f %ld\n", inskey[ii], binarray[ii],
           iinarray[ii], einarray[ii], dinarray[ii] , jinarray[ii]);
     }
 
@@ -1269,7 +1276,7 @@ main()
 
     printf("HDU number = %d\n", ffghdn(fptr, &hdunum));
 
-    printf("\nMoved to BINTABLE; headend, datastart = %d %d\n",
+    printf("\nMoved to BINTABLE; headend, datastart = %ld %ld\n",
         fptr->headend, fptr->datastart);
  
     ffghsp(fptr, &existkeys, &morekeys, &status);
@@ -1279,7 +1286,7 @@ main()
     ffghbn(fptr, 99, &nrows, &tfields, ttype, 
            tform, tunit, binname, &pcount, &status);
 
-    printf("\nBinary table: nrows, tfields, extname, pcount: %d %d %s %d\n",
+    printf("\nBinary table: nrows, tfields, extname, pcount: %ld %d %s %ld\n",
            nrows, tfields, binname, pcount);
 
     for (ii = 0; ii < tfields; ii++)
@@ -1402,7 +1409,7 @@ main()
     printf("\nData values after inserting 3 rows after row 2:\n");
     for (ii = 0; ii < nrows; ii++)
     {
-      printf("%15s %2d %3d %3d %5.1f %5.1f\n",  inskey[ii], binarray[ii],
+      printf("%15s %2d %3d %3ld %5.1f %5.1f\n",  inskey[ii], binarray[ii],
           iinarray[ii], jinarray[ii], einarray[ii], dinarray[ii]);
     }
 
@@ -1420,7 +1427,7 @@ main()
     printf("\nData values after deleting 2 rows at row 10:\n");
     for (ii = 0; ii < nrows; ii++)
     {
-      printf("%15s %2d %3d %3d %5.1f %5.1f\n",  inskey[ii], binarray[ii],
+      printf("%15s %2d %3d %3ld %5.1f %5.1f\n",  inskey[ii], binarray[ii],
           iinarray[ii], jinarray[ii], einarray[ii], dinarray[ii]);
     }
 
@@ -1453,7 +1460,7 @@ main()
     printf("\nData values after inserting column 8:\n");
     for (ii = 0; ii < nrows; ii++)
     {
-      printf("%15s %2d %3d %5.1f %5.1f %d\n", inskey[ii], binarray[ii],
+      printf("%15s %2d %3d %5.1f %5.1f %ld\n", inskey[ii], binarray[ii],
           iinarray[ii], einarray[ii], dinarray[ii] , jinarray[ii]);
     }
 
@@ -1469,7 +1476,7 @@ main()
     printf("\nValues after setting 1st 10 elements in column 8 = null:\n");
     for (ii = 0; ii < nrows; ii++)
     {
-      printf("%15s %2d %3d %5.1f %5.1f %d\n", inskey[ii], binarray[ii],
+      printf("%15s %2d %3d %5.1f %5.1f %ld\n", inskey[ii], binarray[ii],
           iinarray[ii], einarray[ii], dinarray[ii] , jinarray[ii]);
     }
 
@@ -1564,7 +1571,7 @@ main()
         ffpclj(fptr, ii, 1, 1, 5, joutarray, &status); 
         if (status == NUM_OVERFLOW)
         {
-            printf("Overflow writing to column %d\n", ii);
+            printf("Overflow writing to column %ld\n", ii);
             status = 0;
         }
 
@@ -1576,7 +1583,7 @@ main()
       ffgcvj(fptr, jj, 1, 1, 6, -999, jinarray, &anynull, &status);
       for (ii = 0; ii < 6; ii++)
       {
-        printf(" %6d", jinarray[ii]);
+        printf(" %6ld", jinarray[ii]);
       }
       printf("\n");
     }
@@ -1592,7 +1599,7 @@ main()
       ffgcvj(fptr, jj, 1, 1, 6, -999, jinarray, &anynull, &status);
       for (ii = 0; ii < 6; ii++)
       {
-        printf(" %6d", jinarray[ii]);
+        printf(" %6ld", jinarray[ii]);
       }
       printf("\n");
     }
@@ -1840,8 +1847,9 @@ main()
     larray[18] = 1;
     larray[19] = 1;
 
-      strncpy(inskey[0], iskey, 1);
-      inskey[0][1] = '\0';
+    /* write values in 1st row */
+    /*  strncpy(inskey[0], iskey, 1); */
+      inskey[0][0] = '\0';  /* write a null string (i.e., a blank) */
       ffpcls(fptr, 1, 1, 1, 1, inskey, &status);  /* write string values */
       ffpcll(fptr, 2, 1, 1, 1, larray, &status);  /* write logicals */
       ffpclx(fptr, 3, 1, 1, 1, larray, &status);  /* write bits */
@@ -1850,6 +1858,7 @@ main()
       ffpclj(fptr, 6, 1, 1, 1, joutarray, &status); 
       ffpcle(fptr, 7, 1, 1, 1, eoutarray, &status);
       ffpcld(fptr, 8, 1, 1, 1, doutarray, &status);
+
     for (ii = 2; ii <= 20; ii++)   /* loop over rows 1 - 20 */
     {
       strncpy(inskey[0], iskey, ii);
@@ -1895,7 +1904,7 @@ main()
     */
 
     ffgkyj(fptr, "PCOUNT", &pcount, comm, &status);
-    printf("PCOUNT = %d\n", pcount);
+    printf("PCOUNT = %ld\n", pcount);
 
     /* initialize the variables to be read */
     strcpy(inskey[0]," ");
@@ -1940,7 +1949,7 @@ main()
 
       ffgcvj(fptr, 6, ii, 1, ii, 99, joutarray, &anynull, &status); 
       for (jj = 0; jj < ii; jj++)
-        printf(" %2d", joutarray[jj]);
+        printf(" %2ld", joutarray[jj]);
       printf(" %d\nE", status);
 
       ffgcve(fptr, 7, ii, 1, ii, 99., eoutarray, &anynull, &status);
@@ -1954,7 +1963,7 @@ main()
       printf(" %d\n", status);
 
       ffgdes(fptr, 8, ii, &repeat, &offset, &status);
-      printf("Column 8 repeat and offset = %d %d\n", repeat, offset);
+      printf("Column 8 repeat and offset = %ld %ld\n", repeat, offset);
     }
 
     /*
@@ -2020,7 +2029,7 @@ main()
         printf(" %2d", kinarray[ii]);
     printf("  %d (int)\n", anynull); 
     for (ii = 0; ii < npixels; ii++)
-        printf(" %2d", jinarray[ii]);
+        printf(" %2ld", jinarray[ii]);
     printf("  %d (long)\n", anynull); 
     for (ii = 0; ii < npixels; ii++)
         printf(" %2.0f", einarray[ii]);
@@ -2163,7 +2172,7 @@ main()
     printf("  %d (int)\n", anynull); 
 
     for (ii = 0; ii < npixels; ii++)
-        printf(" %2d", jinarray[ii]);
+        printf(" %2ld", jinarray[ii]);
     printf("  %d (long)\n", anynull); 
     for (ii = 0; ii < npixels; ii++)
         printf(" %2.0f", einarray[ii]);
@@ -2197,10 +2206,10 @@ main()
 
     checksum = 1234567890;
     ffesum(checksum, 0, asciisum);
-    printf("\nEncode checksum: %u -> %s\n", checksum, asciisum);
+    printf("\nEncode checksum: %lu -> %s\n", checksum, asciisum);
     checksum = 0;
     ffdsum(asciisum, 0, &checksum);
-    printf("Decode checksum: %s -> %u\n", asciisum, checksum);
+    printf("Decode checksum: %s -> %lu\n", asciisum, checksum);
 
     ffpcks(fptr, &status);
 
@@ -2216,7 +2225,7 @@ main()
     printf("%.30s\n", card);
 
     ffgcks(fptr, &datsum, &checksum, &status);
-    printf("ffgcks data checksum, status = %u, %d\n",
+    printf("ffgcks data checksum, status = %lu, %d\n",
             datsum, status);
 
     ffvcks(fptr, &datastatus, &hdustatus, &status); 

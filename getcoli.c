@@ -16,10 +16,6 @@
 #include <string.h>
 #include "fitsio2.h"
 
-#if MACHINE == ALPHAVMS
-  static float testfloat = TESTFLOAT;  /* use to test floating pt format */
-#endif
-
 /*--------------------------------------------------------------------------*/
 int ffgpvi( fitsfile *fptr,   /* I - FITS file pointer                       */
             long  group,      /* I - group to read (1 = 1st group)           */
@@ -622,6 +618,7 @@ int ffgcli( fitsfile *fptr,   /* I - FITS file pointer                       */
          tform, &twidth, &tcode, &maxelem, &startpos, &elemnum, &incre,
          &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0 )
          return(*status);
+
     incre *= elemincre;   /* multiply incre to just get every nth pixel */
 
     if (tcode == TSTRING)    /* setup for ASCII tables */
@@ -929,6 +926,7 @@ int fffi2i2(short *input,         /* I - array of values to be converted     */
 {
     long ii;
     double dvalue;
+
     if (nullcheck == 0)     /* no null checking required */
     {
         if (scale == 1. && zero == 0.)      /* no scaling */
@@ -1221,14 +1219,7 @@ int fffr4i2(float *input,         /* I - array of values to be converted     */
     {
         sptr = (short *) input;
 
-#if MACHINE == VAXVMS
-   /* do nothing */
-
-#elif MACHINE == ALPHAVMS
-        if (*(short *) &testfloat == IEEEFLOAT)
-            sptr++;       /* point to MSBs */
-
-#elif BYTESWAPPED == TRUE
+#if BYTESWAPPED == TRUE
         sptr++;       /* point to MSBs */
 #endif
 
@@ -1381,14 +1372,7 @@ int fffr8i2(double *input,        /* I - array of values to be converted     */
     {
         sptr = (short *) input;
 
-#if MACHINE == VAXVMS
-   /* do nothing */
-
-#elif MACHINE == ALPHAVMS
-        if (*(short *) &testfloat == IEEEFLOAT)
-            sptr += 3;       /* point to MSBs */
-
-#elif BYTESWAPPED == TRUE
+#if BYTESWAPPED == TRUE
         sptr += 3;       /* point to MSBs */
 #endif
         if (scale == 1. && zero == 0.)  /* no scaling */

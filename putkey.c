@@ -14,6 +14,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <time.h>
+/* stddef.h is apparently needed to define size_t */
+#include <stddef.h>
 #include "fitsio2.h"
 /*--------------------------------------------------------------------------*/
 int ffcrim(fitsfile *fptr,      /* I - FITS file pointer           */
@@ -136,7 +138,8 @@ int ffpky( fitsfile *fptr,     /* I - FITS file pointer        */
     }
     else if (datatype == TULONG)
     {
-        ffpkyj(fptr, keyname, (long) *(unsigned long *) value, comm, status);
+        ffpkyg(fptr, keyname, (double) *(unsigned long *) value, 0,
+               comm, status);
     }
     else if (datatype == TLONG)
     {
@@ -1572,6 +1575,13 @@ int ffr2f(float fval,   /* I - value to be converted to a string */
         *status = BAD_F2C;
     }
 
+    /* test if output string is 'NaN', 'INDEF', or 'INF' */
+    if (strchr(cval, 'N'))
+    {
+        ffpmsg("Error in ffr2f: float value is a NaN or INDEF");
+        *status = BAD_F2C;
+    }
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -1597,6 +1607,13 @@ int ffr2e(float fval,  /* I - value to be converted to a string */
     if (sprintf(cval, "%.*E", decim, fval) < 0)
     {
         ffpmsg("Error in ffr2e converting float to string");
+        *status = BAD_F2C;
+    }
+
+    /* test if output string is 'NaN', 'INDEF', or 'INF' */
+    if (strchr(cval, 'N'))
+    {
+        ffpmsg("Error in ffr2e: float value is a NaN or INDEF");
         *status = BAD_F2C;
     }
 
@@ -1628,6 +1645,13 @@ int ffd2f(double dval,  /* I - value to be converted to a string */
         *status = BAD_F2C;
     }
 
+    /* test if output string is 'NaN', 'INDEF', or 'INF' */
+    if (strchr(cval, 'N'))
+    {
+        ffpmsg("Error in ffd2f: double value is a NaN or INDEF");
+        *status = BAD_F2C;
+    }
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -1653,6 +1677,13 @@ int ffd2e(double dval,  /* I - value to be converted to a string */
     if (sprintf(cval, "%.*E", decim, dval) < 0)
     {
         ffpmsg("Error in ffd2e converting double to string");
+        *status = BAD_F2C;
+    }
+
+    /* test if output string is 'NaN', 'INDEF', or 'INF' */
+    if (strchr(cval, 'N'))
+    {
+        ffpmsg("Error in ffd2e: double value is a NaN or INDEF");
         *status = BAD_F2C;
     }
 

@@ -1,5 +1,84 @@
              Log of Changes Made to CFITSIO
 
+Version 1.30 -
+
+  Enhancements:
+
+   - major overhaul to support reading and writing FITS files
+     in memory.   The new routines fits_set_mem_buff and 
+     fits_write_mem_buff have been added to intialize and
+     copy out the memory buffer, respectively.
+
+   - added support for reading FITS files piped in on 'stdin'
+     and piped out on 'stdout'.  Just specify the file name as '-'
+     when opening or creating the FITS file.
+
+   - added support for 64-bit SGI IRIX machines.  This required
+     adding routines to pack and unpack 32-bit integers into
+     64-bit integers.
+
+   - cleaned up the code that supports G_FLOAT and IEEE_FLOAT
+     on Alpha VMS systems.  Now, the type of float is determined
+     at compile time, not run time.
+
+  Bug Fixes:
+
+   - when writing float or double keywords, test that the value
+     is not a special IEEE value such as a NaN.  Some
+     compilers would write the string 'NaN' in this case into
+     the output value string.
+
+   - fixed bug in ffiblk, to ignore EOF status return if it is
+     inserting blocks at the end of the file.
+
+   - removed the 'l' from printf format string that is constructed
+     in the ffcfmt routine.  This 'l' is non-standard and causes problems
+     with the Metrowerks compiler on a Mac.
+
+   - the default null value in images was mistakenly being set
+     equal to NO_NULL = 314, rather than NULL_UNDEFINED = 1234554321
+     in the ffgphd routine.
+
+   - check status value in ffgkls to make sure the keyword exists
+     before allocating memeory for the value string.
+
+   - fixed the support for writing and reading unsigned long integer
+     keyword values in ffpky and ffgky by internally treating
+     the values as doubles.  This required changes to ffc2r and
+     ffc2d as well.
+
+   - added explicit cast to 'double' in one place in putcolb.c and
+     6 places in pubcolui.c, to get rid of warning messages issued
+     by one compiler.
+
+   - in ffbinit and ffainit, it is necessary to test that tfield > 0
+     before trying to allocate memory with calloc.  Otherwise, some
+     compilers return a null pointer which CFITSIO interprets to 
+     mean the memory allocation failed.
+
+   - had to explicitly cast the null buffer pointer to a char
+     pointer (cptr = (char *)buffer;) in 4 places in the buffers.c
+     file to satisfy a picky C++ compiler.
+
+   - changed the test for an ALPHA VMS system to see if
+     '__VMS' is defined, rather than 'VMS'.  The latter
+     is not defined by at least one C++ compiler.
+
+   - modified ffpcls so that it can write a null string to
+     a variable length string column, without going into
+     an infinite loop.
+
+   - fixed bug in ffgcfl that caused the 'next' variable to be
+     incremented twice.
+
+   - fixed bug in ffgcpr that caused it write 2x the number of
+     complex elements into the descriptor when writing to
+     a complex or double complex variable length array column.
+
+   - added call to ffrdef at the end of ffrsim to ensure that
+     the internal structures are updated to correspond to the
+     modified header keywords
+
 Version 1.25 - 7 July 1997
 
    - improved the efficiency of the ffiblk routine, when inserting

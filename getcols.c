@@ -12,6 +12,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+/* stddef.h is apparently needed to define size_t */
+#include <stddef.h>
 #include "fitsio2.h"
 /*--------------------------------------------------------------------------*/
 int ffgcvs( fitsfile *fptr,   /* I - FITS file pointer                       */

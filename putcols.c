@@ -62,7 +62,8 @@ int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
     if (tcode == -TSTRING) /* variable length column in a binary table? */
     {
       /* only write a single string; ignore value of firstelem */
-      nchar = strlen(array[0]); 
+      nchar = maxvalue(1,strlen(array[0])); /* will write at least 1 char */
+                                          /* even if input string is null */
 
       if (ffgcpr( fptr, colnum, firstrow, 1, nchar, 1, &scale, &zero,
         tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,

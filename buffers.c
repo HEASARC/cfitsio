@@ -19,153 +19,6 @@ fitsfile *bufptr[NIOBUF];             /* initialize to zero by default  */
 long bufrecnum[NIOBUF];               /* initialize to zero by default  */
 int dirty[NIOBUF], ageindex[NIOBUF];  /* ages get initialized in ffwhbf */
 
-#if MACHINE == ALPHAVMS
-  static float testfloat = TESTFLOAT;  /* use to test floating pt format */
-#endif
-
-/*--------------------------------------------------------------------------*/
-int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */ 
-           const char *filename, /* I - name of file to open                */
-           int readwrite,        /* I - 0 = open readonly; 1 = read/write   */
-           int *status)          /* IO - error status                       */
-/*
-  Open an existing FITS file with either readonly or read/write access.
-*/
-{
-    int ii, hdutype, slen, tstatus;
-    long filesize;
-    FILE *diskfile;
-
-    /* initialize a null file pointer */
-    *fptr = 0;
-
-    if (*status > 0)
-        return(*status);
-
-    ii = 0;
-    while (filename[ii] == ' ')  /* ignore leading spaces in the filename */
-        ii++;
-
-    if (!filename[ii])
-    {
-        ffpmsg("Name of file to open is blank. (ffopen)");
-        return(*status = FILE_NOT_OPENED);
-    }
-
-    /* allocate mem and init = 0 */
-    *fptr = (fitsfile *) calloc(1, sizeof(fitsfile)); 
-    if (*fptr)
-    {
-      ffopenx(&diskfile, &filename[ii], 0, readwrite, 
-              &filesize, &tstatus);                   /* open the file */
-
-      if (!tstatus)
-      {
-        (*fptr)->fileptr = diskfile;  /* copy file pointer to the structure */
-
-        slen = strlen(filename) + 1;
-        slen = maxvalue(slen, 20); /* malloc sometimes crashes on small lens */ 
-        (*fptr)->filename = (char *) malloc(slen); /* mem for   name */
-
-        if ( (*fptr)->filename )
-        {
-          strcpy((*fptr)->filename, filename);   /* store the filename */
-
-          (*fptr)->filesize = filesize;          /* physical file size */
-          (*fptr)->logfilesize = filesize;       /* logical file size */
-          (*fptr)->writemode = readwrite;        /* read-write mode    */
-          (*fptr)->datastart = DATA_UNDEFINED;   /* unknown start of data */
-          (*fptr)->curbuf = -1;   /* undefined current IO buffer */
-
-          ffldrc(*fptr, 0, REPORT_EOF, status);     /* load first record */
-          if (ffrhdu(*fptr, &hdutype, status) > 0)  /* set HDU structure */
-          {
-             ffpmsg(
-                "ffopen could not interpret primary array header of file:");
-             ffpmsg(&filename[ii]);
-
-             if (*status == UNKNOWN_REC)
-                 ffpmsg("This does not look like a FITS file.");
-          }
-          return(*status);   
-        }
-        /* ERROR: failed to get memory for file name string */
-        ffclosex(diskfile, &filename[ii], 1, &tstatus);  /* close the file */
-      }
-      free(*fptr);            /* free memory for the FITS structure */
-      *fptr = 0;              /* return null file pointer */
-    }
-
-    ffpmsg("ffopen failed to find and/or open the following file:");
-    ffpmsg(filename);
-
-    return(*status = FILE_NOT_OPENED);
-}
-/*--------------------------------------------------------------------------*/
-int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
-           const char *filename, /* I - name of file to create              */
-           int *status)          /* IO - error status                       */
-/*
-  Create and initialize a new FITS file.
-*/
-{
-    int ii, slen, tstatus;
-    long dummy;
-    FILE *diskfile;
-
-    /* initialize a null file pointer */
-    *fptr = 0;
-
-    if (*status > 0)
-        return(*status);
-
-    ii = 0;
-    while (filename[ii] == ' ')  /* ignore leading spaces in the filename */
-        ii++;
-
-    if (!filename[ii])
-    {
-        ffpmsg("Name of file to create is blank. (ffinit)");
-        return(*status = FILE_NOT_CREATED);
-    }
-
-    /* allocate mem and init = 0 */
-    *fptr = (fitsfile *) calloc(1, sizeof(fitsfile));
-    if (*fptr)
-    {
-      ffopenx( &diskfile, &filename[ii], 1, 1, 
-               &dummy, &tstatus);                /* create file */
-
-      if (!tstatus)
-      {
-        (*fptr)->fileptr = diskfile;  /* copy file pointer to the structure */
-
-        slen = strlen(filename) + 1;
-        slen = maxvalue(slen, 20); /* malloc sometimes crashes on small lens */ 
-        (*fptr)->filename = (char *) malloc(slen); /* mem for   name */
-
-        if ( (*fptr)->filename )
-        {
-          strcpy((*fptr)->filename, filename);   /* store the filename */
-          (*fptr)->writemode = 1;                /* read-write mode    */
-          (*fptr)->datastart = DATA_UNDEFINED;   /* unknown start of data */
-          (*fptr)->curbuf = -1;   /* undefined current IO buffer */
-          ffldrc(*fptr, 0, IGNORE_EOF, status);  /* initialize first record */
-          return(*status);                       /* successful return */
-        }
-
-        /* ERROR: failed to get memory for file name string */
-        ffclosex(diskfile, &filename[ii], 0, &tstatus);  /* DELETE the file */
-      } 
-      free(*fptr);            /* free memory for the FITS structure */
-      *fptr = 0;              /* return null file pointer */
-     }
-
-    ffpmsg("ffinit failed to create the following new file:");
-    ffpmsg(filename);
-
-    return(*status = FILE_NOT_CREATED);
-}
 /*--------------------------------------------------------------------------*/
 int ffclos(fitsfile *fptr,      /* I - FITS file pointer */
            int *status)         /* IO - error status     */
@@ -183,7 +36,7 @@ int ffclos(fitsfile *fptr,      /* I - FITS file pointer */
     ffchdu(fptr, status);           /* close and flush the current HDU */
     ffflsh(fptr, TRUE, status);     /* flush and disassociate IO buffers */
 
-    ffclosex(fptr->fileptr, fptr->filename, 1, &tstatus);  /* close file */
+    ffclosex(fptr, 1, &tstatus);  /* close file */
 
     if (*status <= 0 && tstatus > 0)
         *status = FILE_NOT_CLOSED;  /* report error if no previous error */
@@ -210,7 +63,7 @@ int ffdelt(fitsfile *fptr,      /* I - FITS file pointer */
     ffchdu(fptr, &tstatus);    /* close the current HDU, ignore any errors */
     ffflsh(fptr, TRUE, &tstatus);     /* flush and disassociate IO buffers */
 
-    ffclosex(fptr->fileptr, fptr->filename, 0, &tstatus);  /* DELETE file */
+    ffclosex(fptr, 0, &tstatus);  /* DELETE file */
 
     if (*status <= 0 && tstatus > 0)
         *status = FILE_NOT_CLOSED;  /* report error if no previous error */
@@ -302,7 +155,7 @@ int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
     if (*status > 0)
        return(*status);
 
-    cptr = buffer;
+    cptr = (char *)buffer;
     ntodo =  nbytes;
 
     if (nbytes >= MINDIRECT)
@@ -342,11 +195,11 @@ int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
 
       /* move to the correct write position; must seek if last op was a read */
       if (fptr->io_pos != filepos || fptr->last_io_op == IO_READ)
-         ffseek(fptr->fileptr, filepos);
+         ffseek(fptr, filepos);
 
       nwrite = ((ntodo - 1) / IOBUFLEN) * IOBUFLEN; /* don't write last buff */
 
-      ffwrite(fptr->fileptr, nwrite, cptr, status); /* write the data */
+      ffwrite(fptr, nwrite, cptr, status); /* write the data */
       ntodo -= nwrite;                /* decrement remaining number of bytes */
       cptr += nwrite;                  /* increment user buffer pointer */
       fptr->io_pos = filepos + nwrite; /* update the file position */
@@ -365,9 +218,9 @@ int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
       else
       {
         /* read next record; must seek because last op was a write */
-        ffseek(fptr->fileptr, fptr->io_pos);
+        ffseek(fptr, fptr->io_pos);
 
-        ffread(fptr->fileptr, IOBUFLEN, iobuffer[nbuff], status);
+        ffread(fptr, IOBUFLEN, iobuffer[nbuff], status);
         fptr->io_pos += IOBUFLEN; 
         fptr->last_io_op = IO_READ;    /* save type of last operation */
       }
@@ -431,7 +284,7 @@ int ffpbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
     if (*status > 0)
        return(*status);
 
-    cptr = buffer;
+    cptr = (char *)buffer;
     bcurrent = fptr->curbuf;     /* number of the current IO buffer */
     record = bufrecnum[bcurrent];  /* zero-indexed record number */
     bufpos = fptr->bytepos - (record * IOBUFLEN); /* starting buffer pos. */
@@ -523,7 +376,7 @@ int ffgbyt(fitsfile *fptr,    /* I - FITS file pointer             */
     if (*status > 0)
        return(*status);
 
-    cptr = buffer;
+    cptr = (char *)buffer;
 
     if (nbytes >= MINDIRECT)
     {
@@ -544,9 +397,9 @@ int ffgbyt(fitsfile *fptr,    /* I - FITS file pointer             */
 
        /* move to the correct read position; must seek if last op was write */
       if (fptr->io_pos != filepos || fptr->last_io_op == IO_WRITE)
-         ffseek(fptr->fileptr, filepos);
+         ffseek(fptr, filepos);
 
-      ffread(fptr->fileptr, nbytes, cptr, status); /* read the data */
+      ffread(fptr, nbytes, cptr, status); /* read the data */
       fptr->io_pos = filepos + nbytes; /* update the file position */
       fptr->last_io_op = IO_READ;      /* save type of last operation */
     }
@@ -602,7 +455,7 @@ int ffgbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
     if (*status > 0)
        return(*status);
 
-    cptr = buffer;
+    cptr = (char *)buffer;
     bcurrent = fptr->curbuf;     /* number of the current IO buffer */
     record = bufrecnum[bcurrent];  /* zero-indexed record number */
     bufpos = fptr->bytepos - (record * IOBUFLEN); /* starting buffer pos. */
@@ -698,7 +551,6 @@ int ffldrc(fitsfile *fptr,        /* I - FITS file pointer             */
     }
 
     /* record is not already loaded */
-
     rstart = record * IOBUFLEN;
 
     if ( !err_mode && (rstart >= fptr->logfilesize) )  /* EOF? */
@@ -724,9 +576,9 @@ int ffldrc(fitsfile *fptr,        /* I - FITS file pointer             */
     else  /* not EOF, so read record from disk */
     {
       if (fptr->io_pos != rstart || fptr->last_io_op == IO_WRITE)
-           ffseek(fptr->fileptr, rstart);
+           ffseek(fptr, rstart);
 
-      ffread(fptr->fileptr, IOBUFLEN, iobuffer[nbuff], status);
+      ffread(fptr, IOBUFLEN, iobuffer[nbuff], status);
       fptr->io_pos = rstart + IOBUFLEN;  /* set new IO position */
       fptr->last_io_op = IO_READ;        /* save type of last operation */
     }
@@ -751,7 +603,6 @@ updatebuf:
       ageindex[ibuff - 1] = ageindex[ibuff];
 
     ageindex[NIOBUF - 1] = nbuff; /* this is now the youngest buffer */
-
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -813,7 +664,7 @@ int ffflsh(fitsfile *fptr,        /* I - FITS file pointer           */
       }
     }
 
-    ffflushx(fptr->fileptr);  /* flush system buffers to disk */
+    ffflushx(fptr);  /* flush system buffers to disk */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -846,9 +697,9 @@ int ffbfwt(int nbuff,             /* I - which buffer to write          */
 
       /* move to the correct write position; must seek if last op was a read */
       if (fptr->io_pos != filepos || fptr->last_io_op == IO_READ)
-         ffseek(fptr->fileptr, filepos);
+         ffseek(fptr, filepos);
 
-      ffwrite(fptr->fileptr, IOBUFLEN, iobuffer[nbuff], status);
+      ffwrite(fptr, IOBUFLEN, iobuffer[nbuff], status);
       fptr->io_pos = filepos + IOBUFLEN;
       fptr->last_io_op = IO_WRITE;     /* save type of last operation */
 
@@ -863,7 +714,7 @@ int ffbfwt(int nbuff,             /* I - which buffer to write          */
     {
       /* move to EOF; must seek if last op was a read */
       if (fptr->io_pos != fptr->filesize || fptr->last_io_op == IO_READ)
-         ffseek(fptr->fileptr, fptr->filesize);
+         ffseek(fptr, fptr->filesize);
 
       ibuff = NIOBUF;  /* initialize to impossible value */
       while(ibuff != nbuff) /* repeat until requested buffer is written */
@@ -893,13 +744,13 @@ int ffbfwt(int nbuff,             /* I - which buffer to write          */
           nloop = (filepos - (fptr->filesize)) / IOBUFLEN; 
 
           for (jj = 0; jj < nloop; jj++)
-            ffwrite(fptr->fileptr, IOBUFLEN, zeros, status);
+            ffwrite(fptr, IOBUFLEN, zeros, status);
 
           fptr->filesize = filepos;   /* increment the file size */
         } 
 
         /* write the buffer itself */
-        ffwrite(fptr->fileptr, IOBUFLEN, iobuffer[ibuff], status);
+        ffwrite(fptr, IOBUFLEN, iobuffer[ibuff], status);
         dirty[ibuff] = FALSE;
 
         fptr->filesize += IOBUFLEN;     /* increment the file size */
@@ -1057,9 +908,7 @@ int ffgi2b(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
 
 #if BYTESWAPPED == TRUE
-
     ffswap2(values, nvals);    /* reverse order of bytes in each value */
-
 #endif
 
     return(*status);
@@ -1102,6 +951,11 @@ int ffgi4b(fitsfile *fptr,  /* I - FITS file pointer                        */
 #if BYTESWAPPED == TRUE
 
     ffunswaplong(values, nvals);    /* reverse order of bytes in each value */
+                         /* this also converts to 8-byte longs on ALPHA OSF */
+
+#elif LONGSIZE == 64
+
+    ffunpacklong(values, nvals);   /* unpack 4-byte longs into 8-byte longs */
 
 #endif
 
@@ -1149,22 +1003,17 @@ int ffgr4b(fitsfile *fptr,  /* I - FITS file pointer                        */
     ii = nvals;                      /* call VAX macro routine to convert */
     ieevur(values, values, &ii);     /* from  IEEE float -> F float       */
 
-#elif MACHINE == ALPHAVMS
+#elif (MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
 
-    if (*(short *) &testfloat == GFLOAT)
+    ffswap2( (short *) values, nvals * 2);  /* swap pairs of bytes */
+
+    /* convert from IEEE float format to VMS GFLOAT float format */
+    sptr = (short *) values;
+    for (ii = 0; ii < nvals; ii++, sptr += 2)
     {
-        ffswap2( (short *) values, nvals * 2);  /* swap pairs of bytes */
-
-        /* convert from IEEE float format to VMS GFLOAT float format */
-        sptr = (short *) values;
-        for (ii = 0; ii < nvals; ii++, sptr += 2)
-        {
-            if (!fnan(*sptr) )  /* test for NaN or underflow */
-                values[ii] *= 4.0;
-        }
+        if (!fnan(*sptr) )  /* test for NaN or underflow */
+            values[ii] *= 4.0;
     }
-    else
-        ffswapfloat(values, nvals); /* reverse order of bytes in each value */
 
 #elif BYTESWAPPED == TRUE
 
@@ -1215,22 +1064,17 @@ int ffgr8b(fitsfile *fptr,  /* I - FITS file pointer                        */
     ii = nvals;                      /* call VAX macro routine to convert */
     ieevud(values, values, &ii);     /* from  IEEE float -> D float       */
 
-#elif MACHINE == ALPHAVMS
+#elif (MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
 
-    if (*(short *) &testfloat == GFLOAT)
+    ffswap2( (short *) values, nvals * 4);  /* swap pairs of bytes */
+
+    /* convert from IEEE float format to VMS GFLOAT float format */
+    sptr = (short *) values;
+    for (ii = 0; ii < nvals; ii++, sptr += 4)
     {
-        ffswap2( (short *) values, nvals * 4);  /* swap pairs of bytes */
-
-        /* convert from IEEE float format to VMS GFLOAT float format */
-        sptr = (short *) values;
-        for (ii = 0; ii < nvals; ii++, sptr += 4)
-        {
-            if (!dnan(*sptr) )  /* test for NaN or underflow */
-                values[ii] *= 4.0;
-        }
+        if (!dnan(*sptr) )  /* test for NaN or underflow */
+            values[ii] *= 4.0;
     }
-    else
-        ffswap8(values, nvals); /* reverse order of bytes in each value */
 
 #elif BYTESWAPPED == TRUE
 
@@ -1309,9 +1153,7 @@ int ffpi2b(fitsfile *fptr, /* I - FITS file pointer                         */
 */
 {
 #if BYTESWAPPED == TRUE
-
     ffswap2(values, nvals);  /* reverse order of bytes in each value */
-
 #endif
 
     if (incre == 2)      /* write all the values at once (contiguous bytes) */
@@ -1337,7 +1179,12 @@ int ffpi4b(fitsfile *fptr, /* I - FITS file pointer                         */
 {
 #if BYTESWAPPED == TRUE
 
-    ffswaplong(values, nvals); /* reverse order of bytes in each value */
+    ffswaplong(values, nvals);    /* reverse order of bytes in each value */
+                     /* this also converts from 8-byte longs on ALPHA OSF */
+
+#elif LONGSIZE == 64
+
+    ffpacklong(values, nvals);   /* pack 8-byte longs into 4-byte longs */
 
 #endif
 
@@ -1369,18 +1216,13 @@ int ffpr4b(fitsfile *fptr, /* I - FITS file pointer                         */
     ii = nvals;                      /* call VAX macro routine to convert */
     ieevpr(values, values, &ii);     /* from F float -> IEEE float        */
 
-#elif MACHINE == ALPHAVMS
+#elif (MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
 
-    if (*(short *) &testfloat == GFLOAT)
-    {
-        /* convert from VMS FFLOAT float format to IEEE float format */
-        for (ii = 0; ii < nvals; ii++)
-            values[ii] *= 0.25;
+    /* convert from VMS FFLOAT float format to IEEE float format */
+    for (ii = 0; ii < nvals; ii++)
+        values[ii] *= 0.25;
 
-        ffswap2( (short *) values, nvals * 2);  /* swap pairs of bytes */
-    }
-    else
-        ffswapfloat(values, nvals); /* swap bytes in each IEEE value */
+    ffswap2( (short *) values, nvals * 2);  /* swap pairs of bytes */
 
 #elif BYTESWAPPED == TRUE
 
@@ -1416,18 +1258,13 @@ int ffpr8b(fitsfile *fptr, /* I - FITS file pointer                         */
     ii = nvals;                      /* call VAX macro routine to convert */
     ieevpd(values, values, &ii);     /* from D float -> IEEE float        */
 
-#elif MACHINE == ALPHAVMS
+#elif (MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
 
-    if (*(short *) &testfloat ==  GFLOAT)
-    {
-        /* convert from VMS GFLOAT float format to IEEE float format */
-        for (ii = 0; ii < nvals; ii++)
-            values[ii] *= 0.25;
+    /* convert from VMS GFLOAT float format to IEEE float format */
+    for (ii = 0; ii < nvals; ii++)
+        values[ii] *= 0.25;
 
-        ffswap2( (short *) values, nvals * 4);  /* swap pairs of bytes */
-    }
-    else
-        ffswap8(values, nvals); /* reverse order of bytes in each value */
+    ffswap2( (short *) values, nvals * 4);  /* swap pairs of bytes */
 
 #elif BYTESWAPPED == TRUE
 

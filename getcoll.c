@@ -134,7 +134,6 @@ int ffgcfl( fitsfile *fptr,   /* I - FITS file pointer                       */
       remain -= ntodo;
       if (remain)
       {
-        next += ntodo;
         elemnum += ntodo;
 
         if (elemnum == repeat)  /* completed a row; start on later row */

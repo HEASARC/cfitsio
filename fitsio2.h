@@ -13,6 +13,15 @@
 #define IO_READ 1        /* last file I/O operation was a read */
 #define IO_WRITE 2       /* last file I/O operation was a write */
 
+#define MEMBUFF 101      /* code to signify user-allocated memory buffer    */
+                         /* rather then disk file is used for the file I/O  */
+
+#define TMPMEMBUFF 102   /* code to signify temporary memory buffer         */
+                         /* rather then disk file is used for the file I/O. */
+                         /* CFITSIO must free this buffer when the file     */
+                         /* is closed.                                      */
+
+
 #define NATIVE             0 /* a generic machine that uses the same IEEE formats as FITS */
 #define ULTRIX             1
 #define ALPHA_OSF          2
@@ -21,17 +30,40 @@
 #define IBMPC              5
 #define CRAY               6
 
+#define GFLOAT             1
+#define IEEEFLOAT          2
+
 /* the following are used to determine what type machine we are running on */
- 
+
+/* the following block determines the size of longs on SGI IRIX machines */
+#if defined(_MIPS_SZLONG)
+#  if _MIPS_SZLONG == 32
+#    define LONGSIZE 32
+#  elif _MIPS_SZLONG == 64
+#    define LONGSIZE 64
+#  else
+#    error "can't handle long size given by _MIPS_SZLONG"
+#  endif
+#else
+#  define LONGSIZE 32
+#endif
+
 #if defined(vax) && defined(VMS)
  
 #define MACHINE VAXVMS
 #define BYTESWAPPED TRUE
  
-#elif defined(__alpha) && defined(VMS)
+#elif defined(__alpha) && defined(__VMS) &&  (__G_FLOAT == TRUE)
  
 #define MACHINE ALPHAVMS
 #define BYTESWAPPED TRUE
+#define FLOATTYPE GFLOAT
+ 
+#elif defined(__alpha) && defined(__VMS) &&  (__IEEE_FLOAT == TRUE)
+ 
+#define MACHINE ALPHAVMS
+#define BYTESWAPPED TRUE
+#define FLOATTYPE IEEEFLOAT
  
 #elif defined(__alpha) && defined(__unix__)
  
@@ -74,25 +106,11 @@
 #define BYTESWAPPED FALSE
  
 #endif
- 
-/*
-There are several compiler options on the Alpha for the way floating point
-numbers are stored.  FITSIO supports either the default DEC GFLOAT format
-(cc /float=GFLOAT option) or the IEEE float format (cc /float=IEEE option).
-Test which format is in use at run time by equivalencing a known floating
-point value with a short integer value.  The value of the short integer
-will vary depending on the float format in use.  Chose an arbitrary float
-value = 1.1111111.   The equivalent short value will then equal 16526 or
-14564 if the GFLOAT or IEEE float format is being used, respectively.
-*/
-#define TESTFLOAT 1.1111111111
-#define IEEEFLOAT 14564
-#define GFLOAT    16526
- 
+  
 #define IGNORE_EOF 1
 #define REPORT_EOF 0
 #define DATA_UNDEFINED -1
-#define NULL_UNDEFINED 123454321
+#define NULL_UNDEFINED 1234554321
 #define ASCII_NULL_UNDEFINED 1   /* indicate no defined null value */
  
 #define maxvalue(A,B) ((A) > (B) ? (A) : (B))
@@ -160,6 +178,8 @@ void ffcfmt(char *tform, char *cform);
 void ffswap2(short *values, long nvalues);
 void ffswaplong(long *values, long nvalues);
 void ffunswaplong(long *values, long nvalues);
+void ffpacklong(long *values, long nvalues);
+void ffunpacklong(long *values, long nvalues);
 void ffswapfloat(float *values, long nvalues);
 void ffswap8(double *values, long nvalues);
 int ffi2c(long ival, char *cval, int *status);
@@ -228,14 +248,14 @@ int ffgcpr(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long *elemnum, long *incre, long *repeat,long *rowlen,
            int *hdutype, long *tnull, char *snull, int *status);
  
-int ffopenx(FILE **diskfile, const char *filename, int newfile, int readwrite,
+int ffopenx(fitsfile *fptr, int newfile, int readwrite,
            long *filesize, int *status);
-int ffclosex(FILE *diskfile, const char *filename, int keep, int *status);
-int ffflushx(FILE *diskfile);
-int ffseek(FILE *diskfile, long position);
-int ffread(FILE *diskfile, long nbytes, void *buffer,
+int ffclosex(fitsfile *fptr, int keep, int *status);
+int ffflushx(fitsfile *fptr);
+int ffseek(fitsfile *fptr, long position);
+int ffread(fitsfile *fptr, long nbytes, void *buffer,
             int *status);
-int ffwrite(FILE *diskfile, long nbytes, void *buffer,
+int ffwrite(fitsfile *fptr, long nbytes, void *buffer,
             int *status);
  
 int ffgcls(fitsfile *fptr, int colnum, long firstrow, long firstelem,

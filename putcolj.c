@@ -371,7 +371,7 @@ int ffpclj( fitsfile *fptr,  /* I - FITS file pointer                       */
        format in a temporary buffer that has been allocated for this purpose.
     */
     if (scale == 1. && zero == 0. && 
-       MACHINE == NATIVE && tcode == TLONG)
+       MACHINE == NATIVE && tcode == TLONG && LONGSIZE == 32)
     {
         writeraw = 1;
         maxelem = nelem;  /* we can write the entire array at one time */

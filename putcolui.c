@@ -619,7 +619,7 @@ int ffu2fi1(unsigned short *input, /* I - array of values to be converted  */
     {
         for (ii = 0; ii < ntodo; ii++)
         {
-            dvalue = (input[ii] - zero) / scale;
+            dvalue = ((double) input[ii] - zero) / scale;
 
             if (dvalue < DUCHAR_MIN)
             {
@@ -664,7 +664,7 @@ int ffu2fi2(unsigned short *input, /* I - array of values to be converted */
     {
         for (ii = 0; ii < ntodo; ii++)
         {
-            dvalue = (input[ii] - zero) / scale;
+            dvalue = ((double) input[ii] - zero) / scale;
 
             if (dvalue < DSHRT_MIN)
             {
@@ -711,7 +711,7 @@ int ffu2fi4(unsigned short *input, /* I - array of values to be converted */
     {
         for (ii = 0; ii < ntodo; ii++)
         {
-            dvalue = (input[ii] - zero) / scale;
+            dvalue = ((double) input[ii] - zero) / scale;
 
             if (dvalue < DLONG_MIN)
             {
@@ -756,7 +756,7 @@ int ffu2fr4(unsigned short *input, /* I - array of values to be converted */
     else
     {
         for (ii = 0; ii < ntodo; ii++)
-            output[ii] = (input[ii] - zero) / scale;
+            output[ii] = ((double) input[ii] - zero) / scale;
     }
     return(*status);
 }
@@ -782,7 +782,7 @@ int ffu2fr8(unsigned short *input, /* I - array of values to be converted */
     else
     {
         for (ii = 0; ii < ntodo; ii++)
-            output[ii] = (input[ii] - zero) / scale;
+            output[ii] = ((double) input[ii] - zero) / scale;
     }
     return(*status);
 }
@@ -818,7 +818,7 @@ int ffu2fstr(unsigned short *input, /* I - array of values to be converted  */
     {
         for (ii = 0; ii < ntodo; ii++)
         {
-          dvalue = (input[ii] - zero) / scale;
+          dvalue = ((double) input[ii] - zero) / scale;
           sprintf(output, cform, dvalue);
           output += twidth;
 

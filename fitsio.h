@@ -2,6 +2,8 @@
 #define _FITSIO_H
  
 #include <stdio.h>
+/* stddef.h is apparently needed to define size_t */
+#include <stddef.h>
 #include "longnam.h"
  
 /* global variables */
@@ -77,6 +79,11 @@ typedef struct      /* structure used to store basic HDU information */
 {
     FILE *fileptr;  /* ptr returned by fopen */
     char *filename; /* file name */
+    long bufftype;  /* buffer type: 101 = use memory buffer, else diskfile */
+    void **memptr;  /* address of memory pointer, if used */
+    size_t *memsize;  /* size of the memory buffer (bytes), if used */ 
+    size_t deltasize; /* increment for future realloc's of memory buffer */
+    void *(*mem_realloc)(void *p, size_t newsize);  /* realloc function */
     long filesize;  /* current size of the physical disk file in bytes */
     long logfilesize; /* logical size of file, including unflushed buffers */
     long bytepos;   /* current logical I/O pointer position in file */
@@ -100,6 +107,7 @@ typedef struct      /* structure used to store basic HDU information */
  
 /* error status codes */
  
+#define USE_MEM_BUFF     -101  /* use memory buffer when opening file */
 #define OVERFLOW_ERR      -11  /* overflow during datatype conversion */
 #define SAME_FILE         101  /* input and output files are the same */
 #define TOO_MANY_FILES    103  /* tried to open too many FITS files */
@@ -197,6 +205,11 @@ extern "C" {
 #endif
 
 /*----------------  FITS file I/O routines -------------*/
+int ffsbuf(fitsfile **fptr, void **buffptr, size_t *buffsize,
+           size_t deltasize, void *(*mem_realloc)(void *p, size_t newsize),
+           int *status);
+int ffwbuf(void *buffptr, size_t buffsize, const char *filename,
+           int *status);
 int ffopen(fitsfile **fptr, const char *filename, int iomode, int *status);
 int ffinit(fitsfile **fptr, const char *filename, int *status);
 int ffflus(fitsfile *fptr, int *status);
@@ -386,7 +399,7 @@ int ffdrec(fitsfile *fptr, int keypos, int *status);
  
 /*--------------------- get HDU information -------------*/
 int ffghdn(fitsfile *fptr, int *chdunum);
-void ffghad(fitsfile *fptr, long *chduaddr, long *nextaddr);
+int ffghad(fitsfile *fptr, long *chduaddr, long *nextaddr);
  
 /*--------------------- HDU operations -------------*/
 int ffmahd(fitsfile *fptr, int hdunum, int *exttype, int *status);

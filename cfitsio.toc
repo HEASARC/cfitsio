@@ -7,21 +7,25 @@
 \contentsline {chapter}{\numberline {3} A FITS Primer }{7}
 \contentsline {chapter}{\numberline {4} Basic CFITSIO Conventions }{9}
 \contentsline {section}{\numberline {4.1}CFITSIO definitions}{9}
-\contentsline {section}{\numberline {4.2}Current Header Data Unit (CHDU)}{9}
-\contentsline {section}{\numberline {4.3}Routine Names}{10}
-\contentsline {section}{\numberline {4.4}Routine Families and Datatypes}{10}
-\contentsline {section}{\numberline {4.5}Defined Symbolic Constants}{11}
-\contentsline {section}{\numberline {4.6}Unsigned Integers}{12}
-\contentsline {section}{\numberline {4.7}1's Based Index Numbers}{14}
-\contentsline {section}{\numberline {4.8}Character Strings}{14}
-\contentsline {section}{\numberline {4.9}Implicit Data Type Conversion}{14}
-\contentsline {section}{\numberline {4.10}Data Scaling}{15}
-\contentsline {section}{\numberline {4.11}Error Status Values and the Error Message Stack}{15}
-\contentsline {section}{\numberline {4.12}Variable-Length Arrays in Binary Tables}{16}
-\contentsline {section}{\numberline {4.13}Support for IEEE Special Values}{17}
-\contentsline {section}{\numberline {4.14}Local FITS Conventions supported by CFITSIO}{18}
-\contentsline {subsection}{\numberline {4.14.1}Long String Keyword Values.}{18}
-\contentsline {subsection}{\numberline {4.14.2}Arrays of Strings in Binary Table Extensions}{19}
+\contentsline {section}{\numberline {4.2}Disk Files, Memory-Resident Files, and Piped Files}{9}
+\contentsline {subsection}{\numberline {4.2.1}Reading or Writing Memory-Resident FITS Files}{9}
+\contentsline {subsection}{\numberline {4.2.2}Piped FITS Files via STDIN and STDOUT.}{10}
+\contentsline {section}{\numberline {4.3}Current Header Data Unit (CHDU)}{10}
+\contentsline {section}{\numberline {4.4}Routine Names}{10}
+\contentsline {section}{\numberline {4.5}Routine Families and Datatypes}{11}
+\contentsline {section}{\numberline {4.6}Defined Symbolic Constants}{11}
+\contentsline {section}{\numberline {4.7}Unsigned Integers}{13}
+\contentsline {section}{\numberline {4.8}1's Based Index Numbers}{15}
+\contentsline {section}{\numberline {4.9}Character Strings}{15}
+\contentsline {section}{\numberline {4.10}Implicit Data Type Conversion}{15}
+\contentsline {section}{\numberline {4.11}Data Scaling}{16}
+\contentsline {section}{\numberline {4.12}Error Status Values and the Error Message Stack}{16}
+\contentsline {section}{\numberline {4.13}Variable-Length Arrays in Binary Tables}{17}
+\contentsline {section}{\numberline {4.14}Support for IEEE Special Values}{18}
+\contentsline {section}{\numberline {4.15}Local FITS Conventions supported by CFITSIO}{19}
+\contentsline {subsection}{\numberline {4.15.1}Long String Keyword Values.}{19}
+\contentsline {subsection}{\numberline {4.15.2}Arrays of Strings in Binary Table Extensions}{20}
+\contentsline {subsection}{\numberline {4.15.3}Keyword Units Strings}{20}
 \contentsline {chapter}{\numberline {5} Programming Guidelines }{21}
 \contentsline {section}{\numberline {5.1}Reading an existing FITS file}{21}
 \contentsline {section}{\numberline {5.2}Creating a new FITS file}{21}
@@ -37,28 +41,28 @@
 \contentsline {chapter}{\numberline {7} Advanced Interface Routines }{31}
 \contentsline {section}{\numberline {7.1}FITS File Open and Close Routines }{32}
 \contentsline {section}{\numberline {7.2}HDU-Level Operations}{33}
-\contentsline {section}{\numberline {7.3}FITS Header I/O Routines}{35}
-\contentsline {subsection}{\numberline {7.3.1} Header Space and Position Routines }{35}
-\contentsline {subsection}{\numberline {7.3.2} Read or Write Standard Header Routines }{36}
-\contentsline {subsection}{\numberline {7.3.3} Write Keyword Routines }{37}
-\contentsline {subsection}{\numberline {7.3.4} Insert Keyword Routines }{39}
-\contentsline {subsection}{\numberline {7.3.5} Read Keyword Routines }{40}
-\contentsline {subsection}{\numberline {7.3.6} Modify Keyword Routines }{42}
-\contentsline {subsection}{\numberline {7.3.7} Update Keyword Routines }{43}
-\contentsline {subsection}{\numberline {7.3.8} Delete Keyword Routines }{44}
-\contentsline {section}{\numberline {7.4}Data Scaling and Undefined Pixel Parameters }{44}
-\contentsline {section}{\numberline {7.5}FITS Primary Array or IMAGE Extension I/O Routines}{45}
-\contentsline {subsection}{\numberline {7.5.1}Write Image Data Routines }{46}
+\contentsline {section}{\numberline {7.3}FITS Header I/O Routines}{36}
+\contentsline {subsection}{\numberline {7.3.1} Header Space and Position Routines }{36}
+\contentsline {subsection}{\numberline {7.3.2} Read or Write Standard Header Routines }{37}
+\contentsline {subsection}{\numberline {7.3.3} Write Keyword Routines }{38}
+\contentsline {subsection}{\numberline {7.3.4} Insert Keyword Routines }{40}
+\contentsline {subsection}{\numberline {7.3.5} Read Keyword Routines }{41}
+\contentsline {subsection}{\numberline {7.3.6} Modify Keyword Routines }{43}
+\contentsline {subsection}{\numberline {7.3.7} Update Keyword Routines }{44}
+\contentsline {subsection}{\numberline {7.3.8} Delete Keyword Routines }{45}
+\contentsline {section}{\numberline {7.4}Data Scaling and Undefined Pixel Parameters }{45}
+\contentsline {section}{\numberline {7.5}FITS Primary Array or IMAGE Extension I/O Routines}{46}
+\contentsline {subsection}{\numberline {7.5.1}Write Image Data Routines }{47}
 \contentsline {subsection}{\numberline {7.5.2} Read Image Data Routines }{48}
-\contentsline {section}{\numberline {7.6}FITS ASCII and Binary Table Data I/O Routines}{49}
-\contentsline {subsection}{\numberline {7.6.1}Column Information Routines }{49}
-\contentsline {subsection}{\numberline {7.6.2}Low-Level Table Access Routines }{51}
-\contentsline {subsection}{\numberline {7.6.3} Insert or Delete Rows and Columns Routines }{51}
-\contentsline {subsection}{\numberline {7.6.4} Write Column Data Routines }{52}
-\contentsline {subsection}{\numberline {7.6.5} Read Column Data Routines }{54}
-\contentsline {section}{\numberline {7.7}Celestial Coordinate System Routines }{56}
-\contentsline {section}{\numberline {7.8}File Checksum Routines }{57}
-\contentsline {section}{\numberline {7.9}General Utility Routines }{58}
-\contentsline {chapter}{\numberline {8} Summary of all CFITSIO User-Interface Routines }{63}
-\contentsline {chapter}{\numberline {9} Parameter Definitions }{71}
-\contentsline {chapter}{\numberline {10} CFITSIO Error Status Codes }{75}
+\contentsline {section}{\numberline {7.6}FITS ASCII and Binary Table Data I/O Routines}{50}
+\contentsline {subsection}{\numberline {7.6.1}Column Information Routines }{50}
+\contentsline {subsection}{\numberline {7.6.2}Low-Level Table Access Routines }{52}
+\contentsline {subsection}{\numberline {7.6.3} Insert or Delete Rows and Columns Routines }{52}
+\contentsline {subsection}{\numberline {7.6.4} Write Column Data Routines }{53}
+\contentsline {subsection}{\numberline {7.6.5} Read Column Data Routines }{55}
+\contentsline {section}{\numberline {7.7}Celestial Coordinate System Routines }{57}
+\contentsline {section}{\numberline {7.8}File Checksum Routines }{58}
+\contentsline {section}{\numberline {7.9}General Utility Routines }{59}
+\contentsline {chapter}{\numberline {8} Summary of all CFITSIO User-Interface Routines }{65}
+\contentsline {chapter}{\numberline {9} Parameter Definitions }{73}
+\contentsline {chapter}{\numberline {10} CFITSIO Error Status Codes }{77}

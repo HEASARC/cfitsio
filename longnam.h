@@ -1,6 +1,8 @@
 #ifndef _LONGNAME_H
 #define _LONGNAME_H
 
+#define fits_set_mem_buff   ffsbuf
+#define fits_write_mem_buff ffwbuf
 #define fits_open_file      ffopen
 #define fits_create_file    ffinit
 #define fits_flush_file     ffflus

@@ -13,6 +13,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+/* stddef.h is apparently needed to define size_t */
+#include <stddef.h>
 #include "fitsio2.h"
 
 /*--------------------------------------------------------------------------*/
@@ -206,6 +208,7 @@ int ffgky( fitsfile *fptr,     /* I - FITS file pointer        */
 */
 {
     long longval;
+    double doubleval;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
@@ -240,8 +243,8 @@ int ffgky( fitsfile *fptr,     /* I - FITS file pointer        */
     }
     else if (datatype == TULONG)
     {
-        ffgkyj(fptr, keyname, &longval, comm, status);
-        *(unsigned long *) value = longval;
+        ffgkyd(fptr, keyname, &doubleval, comm, status);
+        *(unsigned long *) value = doubleval;
     }
     else if (datatype == TLONG)
     {
@@ -421,7 +424,7 @@ int ffgunt( fitsfile *fptr,     /* I - FITS file pointer         */
         strcpy(unit, &comm[1]);    /*  copy the string */
      }
      else
-        comm[0] = '\0';
+        unit[0] = '\0';
  
     return(*status);
 }
@@ -469,6 +472,9 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer         */
     size_t len;
 
     ffgkey(fptr, keyname, valstring, comm, status);  /* read the keyword */
+
+    if (*status > 0)
+        return(*status);
 
     /* allocate space, minus the 2 quote chars, plus 1 for null */
     *value = (char *) malloc(strlen(valstring)-1);
@@ -1455,7 +1461,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
     *pcount = 0;
     *gcount = 1;
     *extend = 0;
-    *blank = NULL_UNDEFINED; /* by default, no null value for BITPIX = 8, 16, 32 */
+    *blank = NULL_UNDEFINED; /* by default no null value for BITPIX=8,16,32 */
 
     *nspace = 0;
     found_end = 0;

@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <ctype.h>
+/* stddef.h is apparently needed to define size_t */
+#include <stddef.h>
 #include "fitsio2.h"
 /*--------------------------------------------------------------------------*/
 float ffvers(float *version)  /* IO - version number */
@@ -20,8 +22,8 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-   *version = 1.25;  /* 2 Jul 1997 */
-
+   *version = 1.27;  /* 3 Sept 1997 (beta) */
+ /*   *version = 1.25;   2 Jul 1997 */
  /*   *version = 1.24;    2 May 1997 */
  /*   *version = 1.23;   24 Apr 1997 */
  /*   *version = 1.22;   18 Apr 1997 */
@@ -1308,13 +1310,13 @@ void ffcfmt(char *tform,    /* value of an ASCII table TFORMn keyword */
     if (tform[ii] == 'A')
         strcat(cform, "s");
     else if (tform[ii] == 'I')
-        strcat(cform, ".0lf");  /*  0 precision to suppress decimal point */
+        strcat(cform, ".0f");  /*  0 precision to suppress decimal point */
     if (tform[ii] == 'F')
-        strcat(cform, "lf");
+        strcat(cform, "f");
     if (tform[ii] == 'E')
-        strcat(cform, "lE");
+        strcat(cform, "E");
     if (tform[ii] == 'D')
-        strcat(cform, "lE");
+        strcat(cform, "E");
 
     return;
 }
@@ -1765,7 +1767,7 @@ int ffghdn(fitsfile *fptr,   /* I - FITS file pointer                      */
     return(*chdunum);
 }
 /*--------------------------------------------------------------------------*/
-void ffghad(fitsfile *fptr,   /* I - FITS file pointer                     */
+int ffghad(fitsfile *fptr,   /* I - FITS file pointer                     */
             long *chduaddr,   /* O - byte offset to beginning of CHDU      */
             long *nextaddr)   /* O - byte offset to beginning of next HDU  */
 /*
@@ -1774,10 +1776,13 @@ void ffghad(fitsfile *fptr,   /* I - FITS file pointer                     */
   the CHDU.
 */
 {
+    int status = 0;
+
+    ffrdef(fptr, &status);    /* update internal file structure */
     *chduaddr = fptr->headstart[fptr->curhdu];       
     *nextaddr = fptr->headstart[(fptr->curhdu) + 1];       
 
-    return;
+    return(status);
 }
 /*--------------------------------------------------------------------------*/
 int ffrhdu(fitsfile *fptr,    /* I - FITS file pointer */
@@ -2082,13 +2087,13 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
 
     /* mem for column structures ; space is initialized = 0  */
     colptr = (tcolumn *) calloc(tfield, sizeof(tcolumn) );
-    if (!colptr)
-        {
-          ffpmsg
-          ("malloc failed to get memory for FITS table descriptors (ffainit)");
-          fptr->tableptr = 0;  /* set a null table structure pointer */
-          return(*status = ARRAY_TOO_BIG);
-        }
+    if (!colptr && tfield > 0)
+    {
+        ffpmsg
+        ("malloc failed to get memory for FITS table descriptors (ffainit)");
+        fptr->tableptr = 0;  /* set a null table structure pointer */
+        return(*status = ARRAY_TOO_BIG);
+    }
 
     /* copy the table structure address to the fitsfile structure */
     fptr->tableptr = colptr; 
@@ -2140,7 +2145,7 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
             nspace = 0;
     }
 
-    /* test that all the required keywords were found and have legal values */
+    /* test that all required keywords were found and have legal values */
     colptr = fptr->tableptr;
     for (ii = 0; ii < tfield; ii++, colptr++)
     {
@@ -2233,9 +2238,9 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     if (fptr->tableptr)
        free(fptr->tableptr); /* free memory for the old CHDU structure */
 
-   /* mem for column structures ; space is initialized = 0  */
+    /* mem for column structures ; space is initialized = 0  */
     colptr = (tcolumn *) calloc(tfield, sizeof(tcolumn) );
-    if (!colptr)
+    if (!colptr && tfield > 0)
     {
         ffpmsg
         ("malloc failed to get memory for FITS table descriptors (ffbinit)");
@@ -2246,7 +2251,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     /* copy the table structure address to the fitsfile structure */
     fptr->tableptr = colptr; 
 
-    /*  initialize the table field parameters */
+    /* initialize the table field parameters */
     for (ii = 0; ii < tfield; ii++, colptr++)
     {
         colptr->ttype[0] = '\0';  /* null column name */
@@ -2764,7 +2769,15 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
         *startpos = datastart + fptr->heapstart + fptr->heapsize;
 
         /*  write the descriptor into the fixed length part of table */
-        ffpdes(fptr, colnum, firstrow, *repeat, fptr->heapsize, status);
+        if (colptr->tdatatype <= -TCOMPLEX)
+        {
+          /* divide repeat count by 2 to get no. of complex values */
+          ffpdes(fptr, colnum, firstrow, *repeat / 2, fptr->heapsize, status);
+        }
+        else
+        {
+          ffpdes(fptr, colnum, firstrow, *repeat,     fptr->heapsize, status);
+        }
 
         /* increment the address to the next empty heap position */
         fptr->heapsize += (*repeat * (*incre)); 
@@ -2773,7 +2786,9 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
       {
         ffgdes(fptr, colnum, firstrow, repeat, startpos, status);
 
-        if (colptr->tdatatype == -TBIT)
+        if (colptr->tdatatype <= -TCOMPLEX)
+            *repeat = *repeat * 2;  /* no. of float or double values */
+        else if (colptr->tdatatype == -TBIT)
             *repeat = (*repeat + 7) / 8;  /* convert from bits to bytes */
 
         if (*elemnum >= *repeat)
@@ -2987,9 +3002,12 @@ int ffrdef(fitsfile *fptr,      /* I - FITS file pointer */
     int dummy;
 
     if (*status <= 0 && fptr->writemode == 1) /* write access to the file? */
+    {
         if (ffwend(fptr, status) <= 0)     /* rewrite END keyword and fill */
+        {
             ffrhdu(fptr, &dummy, status);  /* re-scan the header keywords  */
-
+        }
+    }
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -3456,8 +3474,8 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
             jpoint -= 2880;
         }
 
-        /* move back to the write start postion */
-        ffmbyt(fptr, insertpt, REPORT_EOF, status);
+        /* move back to the write start postion (might be EOF) */
+        ffmbyt(fptr, insertpt, IGNORE_EOF, status);
 
         for (ii = 0; ii < nblock; ii++)   /* insert correct fill value */
              ffpbyt(fptr, 2880, outbuff, status);
@@ -3627,8 +3645,7 @@ int ffc2r(char *cval,   /* I - string representation of the value */
   datatype conversion if necessary
 */
 {
-    char dtype, sval[81], msg[81];
-    long ival;
+    char dtype, msg[81];
     int lval;
     double dval;
     
@@ -3638,10 +3655,16 @@ int ffc2r(char *cval,   /* I - string representation of the value */
     if (cval[0] == '\0')
         return(*status = VALUE_UNDEFINED);  /* null value string */
 
-    /* convert the keyword to its native datatype */
-    ffc2x(cval, &dtype, &ival, &lval, sval, &dval, status);
+    ffdtyp(cval, &dtype, status);     /* determine the datatype */
 
-    if (dtype == 'C')
+    if (dtype == 'I' || dtype == 'F')
+        ffc2rr(cval, fval, status);
+    else if (dtype == 'L')
+    {
+        ffc2ll(cval, &lval, status);
+        *fval = (float) lval;
+    }
+    else 
         *status = BAD_FLOATKEY;
 
     if (*status > 0)
@@ -3652,13 +3675,6 @@ int ffc2r(char *cval,   /* I - string representation of the value */
             ffpmsg(msg);
             return(*status);
     }
-
-    if (dtype == 'F')
-        *fval = (float) dval;
-    else if (dtype == 'I')
-        *fval = (float) ival;
-    else if (dtype == 'L')
-        *fval = (float) lval;
 
     return(*status);
 }
@@ -3671,8 +3687,7 @@ int ffc2d(char *cval,   /* I - string representation of the value */
   datatype conversion if necessary
 */
 {
-    char dtype, sval[81], msg[81];
-    long ival;
+    char dtype, msg[81];
     int lval;
     
     if (*status > 0)           /* inherit input status value if > 0 */
@@ -3681,10 +3696,16 @@ int ffc2d(char *cval,   /* I - string representation of the value */
     if (cval[0] == '\0')
         return(*status = VALUE_UNDEFINED);  /* null value string */
 
-    /* convert the keyword to its native datatype */
-    ffc2x(cval, &dtype, &ival, &lval, sval, dval, status);
+    ffdtyp(cval, &dtype, status);     /* determine the datatype */
 
-    if (dtype == 'C')
+    if (dtype == 'I' || dtype == 'F')
+        ffc2dd(cval, dval, status);
+    else if (dtype == 'L')
+    {
+        ffc2ll(cval, &lval, status);
+        *dval = (double) lval;
+    }
+    else 
         *status = BAD_DOUBLEKEY;
 
     if (*status > 0)
@@ -3695,11 +3716,6 @@ int ffc2d(char *cval,   /* I - string representation of the value */
             ffpmsg(msg);
             return(*status);
     }
-
-    if (dtype == 'I')
-        *dval = (double) ival;
-    else if (dtype == 'L')
-        *dval = (double) lval;
 
     return(*status);
 }

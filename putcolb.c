@@ -827,7 +827,7 @@ int ffi1fstr(unsigned char *input, /* I - array of values to be converted  */
     {
         for (ii = 0; ii < ntodo; ii++)
         {
-          dvalue = (input[ii] - zero) / scale;
+          dvalue = ((double) input[ii] - zero) / scale;
           sprintf(output, cform, dvalue);
           output += twidth;
 

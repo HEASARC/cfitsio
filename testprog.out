@@ -1,4 +1,4 @@
-CFITSIO TESTPROG, v1.250
+CFITSIO TESTPROG, v1.270
 
 Try opening then closing a nonexistent file:
   ffopen fptr, status  = 0 104 (expect an error)
@@ -60,8 +60,11 @@ KEY_PKYG 14.14141414141414 fxpkyg comment 0
 KEY_PKYD 15.15151515151520 fxpkyd comment 0
 KEY_PKYT 12345678 0.12345678901235 fxpkyt comment 0
 KEY_PKY J 11 [km/s/Mpc] fxpkyj comment 0
+KEY_PKY units = km/s/Mpc
 KEY_PKY J 11 fxpkyj comment 0
+KEY_PKY units = 
 KEY_PKY J 11 [feet/second/second] fxpkyj comment 0
+KEY_PKY units = feet/second/second
 KEY_PKLS long string value = 
 This is a very long string value that is continued over more than one keyword.
 header contains 63 keywords; located at keyword 25 
@@ -153,16 +156,16 @@ Column Mvalue is number 10; status = 237.
 Column  is number 0; status = 219.
 
 Information about each column:
- 15A  16 15 15 Avalue, , A, 15, 1.000000, 0.000000, 123454321, .
-  1L  14  1  1 Lvalue, m**2, L, 1, 1.000000, 0.000000, 123454321, .
- 16X   1 16  1 Xvalue, cm, X, 16, 1.000000, 0.000000, 123454321, .
+ 15A  16 15 15 Avalue, , A, 15, 1.000000, 0.000000, 1234554321, .
+  1L  14  1  1 Lvalue, m**2, L, 1, 1.000000, 0.000000, 1234554321, .
+ 16X   1 16  1 Xvalue, cm, X, 16, 1.000000, 0.000000, 1234554321, .
   1B  11  1  1 Bvalue, erg/s, B, 1, 1.000000, 0.000000, 99, .
   1I  21  1  2 Ivalue, km/s, I, 1, 1.000000, 0.000000, 99, .
   1J  41  1  4 Jvalue, , J, 1, 1.000000, 0.000000, 99, .
-  1E  42  1  4 Evalue, , E, 1, 1.000000, 0.000000, 123454321, .
-  1D  82  1  8 Dvalue, , D, 1, 1.000000, 0.000000, 123454321, .
-  1C  83  1  8 Cvalue, , C, 1, 1.000000, 0.000000, 123454321, .
-  1M 163  1 16 Mvalue, , M, 1, 1.000000, 0.000000, 123454321, .
+  1E  42  1  4 Evalue, , E, 1, 1.000000, 0.000000, 1234554321, .
+  1D  82  1  8 Dvalue, , D, 1, 1.000000, 0.000000, 1234554321, .
+  1C  83  1  8 Cvalue, , C, 1, 1.000000, 0.000000, 1234554321, .
+  1M 163  1 16 Mvalue, , M, 1, 1.000000, 0.000000, 1234554321, .
 
 ffitab status = 0
 HDU number = 2
@@ -504,7 +507,7 @@ Variable length arrays: ffphbn status = 0
 ffpcl_ status = 0
 PCOUNT = 4446
 HDU number = 6
-A a 0
+A   0
 L  0 0
 X  0 0
 B  1 0

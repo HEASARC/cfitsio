@@ -10,12 +10,8 @@
 /*  Government purposes to publish, distribute, translate, copy, exhibit,  */
 /*  and perform such material.                                             */
 
-/*
 #include <string.h>
 #include <stdlib.h>
-#include <math.h>
-#include <ctype.h>
-*/
 #include "fitsio2.h"
 /*--------------------------------------------------------------------------*/
 void ffswap2(short *svalues,  /* IO - pointer to shorts to be swapped       */
@@ -183,4 +179,59 @@ void ffswap8(double *dvalues,  /* IO - pointer to doubles to be swapped     */
     }
     return;
 }
+/*--------------------------------------------------------------------------*/
+void ffpacklong(long *lvalues, /* IO - pointer to longs to be packed       */
+                long nvals)    /* I  - number of 4-byte words to be packed  */
+/*
+  On machines that use 8-byte words to store a long value, pack the 
+  least significant 4-bytes from each long into a contiguous array of bytes.
+  This routine operates in place, overwriting the original data.           
+*/
+{
+    char *cin, *cout;
+    long ii;
 
+    cin  = ((char *) lvalues) + 4;  /* point to the 4 LSBs */
+    cout = (char *) lvalues;         
+
+    for (ii = 0; ii < nvals; ii++)
+    {
+        memcpy(cout, cin, 4);      
+        cin += 8;
+        cout += 4;
+    }
+    return;
+}
+/*--------------------------------------------------------------------------*/
+void ffunpacklong(long *lvalues, /* IO - pointer to longs to be unpacked    */
+                  long nvals)    /* I  - number of longs to be unpacked     */
+/*
+  On machines which use 8-byte words to store the long value, unpack
+  the contiguous 4-byte longs into 8-byte words.  If the value is negative,
+  then must set the 4 MSBs of the 8 byte word equal to -1.
+  This routine operates in place, overwriting the original data.           
+*/
+{
+    unsigned char *cin, *cout;
+    long ii;
+
+    /* set pointer to L.S. 4 bytes of last long to be unpacked */
+
+    cin =  ((unsigned char *) lvalues) + (nvals - 1) * 4;  
+    cout = ((unsigned char *) lvalues) + (nvals - 1) * 8;
+
+    /* work backwards from last long to the first */
+    for (ii = nvals - 1; ii >= 0; ii--)
+    {
+        memcpy(cout + 4, cin, 4);
+
+        if (*cin < 127)
+           memset(cout, 0, 4);    /* set 4 MSBs to zero (positive integer) */
+        else
+           memset(cout, 255, 4);  /* set 4 MSBs to -1 (negative integer) */
+
+        cin -= 4;
+        cout -=8;
+    }
+    return;
+}
