@@ -877,6 +877,7 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     long inloop, outloop, maxloop, ndone, ntodo, npixels;
     long firstrow, firstelem, ii;
     char keyname[FLEN_KEYWORD], ttype[FLEN_VALUE], tform[FLEN_VALUE];
+    char ttype_comm[FLEN_COMMENT],tform_comm[FLEN_COMMENT];
     char *lvalues = 0, nullflag, **strarray = 0;
     char nulstr[] = {'\5', '\0'};  /* unique null string value */
     double dnull = 0.l, *dvalues = 0;
@@ -929,10 +930,10 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     {
         tstatus = 0;
         ffkeyn("TTYPE", incol, keyname, &tstatus);
-        ffgkys(infptr, keyname, ttype, 0, &tstatus);
+        ffgkys(infptr, keyname, ttype, ttype_comm, &tstatus);
         ffkeyn("TFORM", incol, keyname, &tstatus);
     
-        if (ffgkys(infptr, keyname, tform, 0, &tstatus) )
+        if (ffgkys(infptr, keyname, tform, tform_comm, &tstatus) )
         {
           ffpmsg
           ("Could not find TTYPE and TFORM keywords in input table (ffcpcl)");
@@ -974,6 +975,13 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
            ("Could not append new column to output file (ffcpcl)");
            return(*status);
         }
+
+        /* copy the comment strings from the input file for TTYPE and TFORM */
+        tstatus = 0;
+        ffkeyn("TTYPE", colnum, keyname, &tstatus);
+        ffmcom(outfptr, keyname, ttype_comm, &tstatus);
+        ffkeyn("TFORM", colnum, keyname, &tstatus);
+        ffmcom(outfptr, keyname, tform_comm, &tstatus);
 
         /* copy other column-related keywords if they exist */
 

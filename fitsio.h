@@ -369,6 +369,7 @@ typedef struct  /* structure for the iterator function column information */
 #define WCS_ERROR         503  /* error in celestial coordinate calculation */
 #define BAD_WCS_PROJ      504  /* unsupported type of celestial projection */
 #define NO_WCS_KEY        505  /* celestial coordinate keywords not found */
+#define APPROX_WCS_KEY    506  /* approximate WCS keywords were calculated */
 
 /*------- following error codes are used in the grparser.c file -----------*/
 #define	NGP_ERRBASE		(360)			/* base chosen so not to interfere with CFITSIO */
@@ -747,6 +748,8 @@ int ffgcdw(fitsfile *fptr, int colnum, int *width, int *status);
 /*--------------------- read primary array or image elements -------------*/
 int ffgpv(fitsfile *fptr, int  datatype, long firstelem, long nelem,
           void *nulval, void *array, int *anynul, int  *status);
+int ffgpf(fitsfile *fptr, int  datatype, long firstelem, long nelem,
+          void *array, char *nullarray, int  *anynul, int  *status);
 int ffgpvb(fitsfile *fptr, long group, long firstelem, long nelem, unsigned
            char nulval, unsigned char *array, int *anynul, int *status);
 int ffgpvui(fitsfile *fptr, long group, long firstelem, long nelem,
@@ -914,6 +917,9 @@ int ffggpd(fitsfile *fptr, long group, long firstelem, long nelem,
 int ffgcv( fitsfile *fptr, int datatype, int colnum, long firstrow,
            long firstelem, long nelem, void *nulval, void *array, int *anynul,
            int  *status);
+int ffgcf( fitsfile *fptr, int datatype, int colnum, long firstrow,
+           long firstelem, long nelem, void *array, char *nullarray,
+           int *anynul, int *status);
 int ffgcvs(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, char *nulval, char **array, int *anynul, int *status);
 int ffgcl (fitsfile *fptr, int colnum, long firstrow, long firstelem,

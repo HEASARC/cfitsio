@@ -28,7 +28,7 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
     double cd11, cd21, cd22, cd12;
     double pi =  3.1415926535897932;
     double phia, phib, temp;
-    double toler = .001;  /* tolerance for angles to agree */
+    double toler = .0002;  /* tolerance for angles to agree (radians) */
 
     if (*status > 0)
        return(*status);
@@ -84,7 +84,7 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
             {
                /* angles don't agree, so looks like there is some skewness */
                /* between the axes.  Return with an error to be safe. */
-               return(*status = NO_WCS_KEY);
+               *status = APPROX_WCS_KEY;
             }
       
             phia = (phia + phib) /2.;  /* use the average of the 2 values */

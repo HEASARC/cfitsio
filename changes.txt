@@ -1,5 +1,28 @@
                    Log of Changes Made to CFITSIO
 
+   - added 2 new generic routines, ffgpf and ffgcf which are analogous
+     to ffgpv and ffgcv but return an array of null flag values instead
+     of setting null pixels to a reserved value.
+
+   - modified ffgics to reduce the tolerance for acceptable skewness
+     between the axes, and added a new warning return status = 
+     APPROX_WCS_KEY in cases where there is significant skewness
+     between the axes.
+
+   - fixed bug in ffgics that affected cases where the first coordinate
+     axis was DEC, not RA, and the image was a mirror image of the sky.
+
+   - modified ffhist so that is correctly computes the rotation angle
+     in a 2-D image if the first histogram column has a CROTA type
+     keyword but the 2nd column does not.
+
+   - modified ffcpcl so that it preserves the comment fields on the
+     TTYPE and TFORM keywords when the column is copied to a new file.
+
+   - make small change to configure.in to support FreeBSD Linux 
+     by setting CFLAGS = -Df2cFortran instead of -Dg77Fortran. Then
+     regenerated configure with autoconf 2.13 instead of 2.12.     
+
 Version 2.035 - 7 Dec 1999
 
    - added new routine called fits_get_keyclass/ffgkcl that returns

@@ -104,7 +104,7 @@ int imcomp_init_table(fitsfile *outfptr,
     char *ttype[] = {"COMPRESSED_DATA", "UNCOMPRESSED_DATA", "ZSCALE", "ZZERO"};
     char *tform[4];
     char tf0[4], tf1[4], tf2[4], tf3[4];
-    char *tunit[] = {" ",               " ",                 " ",      " "    };
+    char *tunit[] = {"\0",            "\0",            "\0",      "\0"    };
 
     if (*status > 0)
         return(*status);
@@ -747,7 +747,7 @@ int fits_read_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
     long ftile[MAX_COMPRESS_DIM], ltile[MAX_COMPRESS_DIM];
     long tfpixel[MAX_COMPRESS_DIM], tlpixel[MAX_COMPRESS_DIM];
     long rowdim[MAX_COMPRESS_DIM], offset[MAX_COMPRESS_DIM],ntemp;
-    int ii, i5, i4, i3, i2, i1, i0, ndim, irow, pixlen;
+    int ii, i5, i4, i3, i2, i1, i0, ndim, irow, pixlen, tilenul;
     void *buffer;
     char *bnullarray = 0;
 
@@ -869,6 +869,8 @@ int fits_read_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
         ntemp *= tiledim[ii];
     }
 
+    *anynul = 0;  /* initialize */
+
     /* support up to 6 dimensions for now */
     /* tfpixel and tlpixel are the first and last image pixels */
     /* along each dimension of the compression tile */
@@ -919,9 +921,13 @@ int fits_read_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
               /* read and uncompress this row (tile) of the table */
               /* also do type conversion and undefined pixel substitution */
               /* at this point */
+
               imcomp_decompress_tile(fptr, irow, thistilesize[0],
-                    datatype, nullcheck, nullval, buffer, bnullarray, anynul,
+                    datatype, nullcheck, nullval, buffer, bnullarray, &tilenul,
                      status);
+
+              if (tilenul && anynul)
+                  *anynul = 1;  /* there are null pixels */
 
               /* copy the intersecting pixels from this tile to the output */
               imcomp_copy_overlap(buffer, pixlen, ndim, tfpixel, tlpixel, 
@@ -965,13 +971,17 @@ int fits_read_compressed_pixels(fitsfile *fptr, /* I - FITS file pointer    */
    that correspond to rectangular image sections.  
 */
 {
-    int naxis, ii, bytesperpixel;
-    long naxes[MAX_COMPRESS_DIM], dimsize[MAX_COMPRESS_DIM];
+    int naxis, ii, bytesperpixel, planenul;
+    long naxes[MAX_COMPRESS_DIM], dimsize[MAX_COMPRESS_DIM], nread;
     long inc[MAX_COMPRESS_DIM], tfirst, tlast, last0, last1;
     long nplane, firstcoord[MAX_COMPRESS_DIM], lastcoord[MAX_COMPRESS_DIM];
+    char *arrayptr, *nullarrayptr;
 
     if (*status > 0)
         return(*status);
+
+    arrayptr = (char *) array;
+    nullarrayptr = nullarray;
 
     /* get size of array pixels, in bytes */
     bytesperpixel = ffpxsz(datatype);
@@ -1023,10 +1033,13 @@ int fits_read_compressed_pixels(fitsfile *fptr, /* I - FITS file pointer    */
 
         fits_read_compressed_img_plane(fptr, datatype, bytesperpixel,
           nplane, firstcoord, lastcoord, inc, naxes, nullcheck, nullval,
-          array, nullarray, anynul, status);
+          array, nullarray, anynul, &nread, status);
     }
     else if (naxis == 3)
     {
+        if (anynul)
+            *anynul = 0;  /* initialize */
+
         /* save last coordinate in temporary variables */
         last0 = lastcoord[0];
         last1 = lastcoord[1];
@@ -1049,16 +1062,24 @@ int fits_read_compressed_pixels(fitsfile *fptr, /* I - FITS file pointer    */
 
             fits_read_compressed_img_plane(fptr, datatype, bytesperpixel,
               nplane, firstcoord, lastcoord, inc, naxes, nullcheck, nullval,
-              array, nullarray, anynul, status);
+              arrayptr, nullarrayptr, &planenul, &nread, status);
+
+            if (planenul && anynul)
+               *anynul = 1;  /* there are null pixels */
 
             /* for all subsequent planes, we start with the first pixel */
             firstcoord[0] = 0;
             firstcoord[1] = 0;
+
+            /* increment pointers to next elements to be read */
+            arrayptr = arrayptr + nread * bytesperpixel;
+            if (nullarrayptr && (nullcheck == 2) )
+                nullarrayptr = nullarrayptr + nread;
         }
     }
     else
     {
-        ffpmsg("only 1D and 2D images are currently supported");
+        ffpmsg("only 1D, 2D, or 3D images are currently supported");
         return(*status = DATA_DECOMPRESSION_ERR);
     }
 
@@ -1080,6 +1101,7 @@ int fits_read_compressed_img_plane(fitsfile *fptr, /* I - FITS file   */
             void *array,      /* O - array of values that are returned       */
             char *nullarray,  /* O - array of flags = 1 if nullcheck = 2     */
             int  *anynul,     /* O - set to 1 if any values are null; else 0 */
+            long *nread,      /* O - total number of pixels read and returned*/
             int  *status)     /* IO - error status                           */
 
    /*
@@ -1092,6 +1114,12 @@ int fits_read_compressed_img_plane(fitsfile *fptr, /* I - FITS file   */
      /* bottom left coord. and top right coord. */
     long blc[MAX_COMPRESS_DIM], trc[MAX_COMPRESS_DIM]; 
     char *arrayptr, *nullarrayptr;
+    int tnull;
+
+    if (anynul)
+        *anynul = 0;
+
+    *nread = 0;
 
     arrayptr = (char *) array;
     nullarrayptr = nullarray;
@@ -1111,7 +1139,10 @@ int fits_read_compressed_img_plane(fitsfile *fptr, /* I - FITS file   */
                trc[0] = naxes[0];  /* read entire rest of the row */
 
             fits_read_compressed_img(fptr, datatype, blc, trc, inc,
-                nullcheck, nullval, arrayptr, nullarrayptr, anynul, status);
+                nullcheck, nullval, arrayptr, nullarrayptr, &tnull, status);
+
+            if (tnull && anynul)
+               *anynul = 1;  /* there are null pixels */
 
             if (lastcoord[1] == firstcoord[1])
             {
@@ -1122,8 +1153,10 @@ int fits_read_compressed_img_plane(fitsfile *fptr, /* I - FITS file   */
             firstcoord[0] = 0;
             firstcoord[1] += 1;
             arrayptr = arrayptr + (trc[0] - blc[0] + 1) * bytesperpixel;
-            if (nullarrayptr)
+            if (nullarrayptr && (nullcheck == 2) )
                 nullarrayptr = nullarrayptr + (trc[0] - blc[0] + 1);
+
+            *nread = *nread + trc[0] - blc[0] + 1;
     }
 
     /* read contiguous complete rows of the image, if any */
@@ -1145,16 +1178,24 @@ int fits_read_compressed_img_plane(fitsfile *fptr, /* I - FITS file   */
     if (trc[1] >= blc[1])  /* must have at least one whole line to read */
     {
         fits_read_compressed_img(fptr, datatype, blc, trc, inc,
-                nullcheck, nullval, arrayptr, nullarrayptr, anynul, status);
+                nullcheck, nullval, arrayptr, nullarrayptr, &tnull, status);
+
+        if (tnull && anynul)
+           *anynul = 1;
 
         if (lastcoord[1] + 1 == trc[1])
                return(*status);  /* finished */
 
         /* increment pointers for the last partial row */
         arrayptr = arrayptr + (trc[1] - blc[1] + 1) * naxes[0] * bytesperpixel;
-        if (nullarrayptr)
+        if (nullarrayptr && (nullcheck == 2) )
                 nullarrayptr = nullarrayptr + (trc[1] - blc[1] + 1) * naxes[0];
-    }
+
+        *nread = *nread + (trc[1] - blc[1] + 1) * naxes[0];
+     }
+
+    if (trc[1] == lastcoord[1] + 1)
+        return(*status);           /* all done */
 
     /* set starting and ending coord to last line */
 
@@ -1163,7 +1204,12 @@ int fits_read_compressed_img_plane(fitsfile *fptr, /* I - FITS file   */
     blc[1] = trc[1];
 
     fits_read_compressed_img(fptr, datatype, blc, trc, inc,
-                nullcheck, nullval, arrayptr, nullarrayptr, anynul, status);
+                nullcheck, nullval, arrayptr, nullarrayptr, &tnull, status);
+
+    if (tnull)
+       *anynul = 1;
+
+    *nread = *nread + trc[0] - blc[0] + 1;
 
     return(*status);
 }
@@ -1435,13 +1481,13 @@ int imcomp_decompress_tile (fitsfile *infptr,
 {
     int *idata = 0;          /* uncompressed integer data */
     size_t idatalen, tilebytesize;
-    int tnull;               /* value in the data which represents nulls */
+    int ii, tnull;        /* value in the data which represents nulls */
     unsigned char *cbuf = 0; /* compressed data */
     unsigned char charnull = 0;
     short *sbuf = 0;
     short snull = 0;
     int blocksize;
-    double bscale, bzero;    /* scaling parameters */
+    double bscale, bzero, dummy = 0;    /* scaling parameters */
     long nelem, offset;      /* number of bytes */
 
     if (*status > 0)
@@ -1464,13 +1510,28 @@ int imcomp_decompress_tile (fitsfile *infptr,
         /* directly from the UNCOMPRESSED_DATA column, then return */   
         ffgdes (infptr, (infptr->Fptr)->cn_uncompressed, nrow, &nelem,
                &offset, status);
-        fits_read_col(infptr, datatype, (infptr->Fptr)->cn_uncompressed, nrow,
-               1, nelem, nulval, buffer, anynul, status);
+
+        if (nullcheck <= 1)  
+            fits_read_col(infptr, datatype, (infptr->Fptr)->cn_uncompressed,
+               nrow, 1, nelem, nulval, buffer, anynul, status);
+        else
+            fits_read_colnull(infptr, datatype, (infptr->Fptr)->cn_uncompressed,
+               nrow, 1, nelem, buffer, bnullarray, anynul, status);
+
         return(*status);
     }
     
     /* **************************************************************** */
 
+    if (nullcheck == 2)
+    {
+        for (ii = 0; ii < tilelen; ii++)  /* initialize the null array */
+            bnullarray[ii] = 0;
+    }
+
+    if (anynul)
+       *anynul = 0;
+    
     /* get linear scaling and offset values, if they exist */
     if ((infptr->Fptr)->cn_zscale == 0)
     {
@@ -1548,7 +1609,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
 
         /* read array of compressed bytes */
         if (fits_read_col(infptr, TBYTE, (infptr->Fptr)->cn_compressed, nrow,
-             1, nelem, &charnull, cbuf, anynul, status) > 0)
+             1, nelem, &charnull, cbuf, NULL, status) > 0)
         {
             ffpmsg("error reading compressed byte stream from binary table");
             free(idata);
@@ -1583,7 +1644,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
 
         /* read array of compressed bytes */
         if (fits_read_col(infptr, TSHORT, (infptr->Fptr)->cn_compressed, nrow,
-             1, nelem, &snull, sbuf, anynul, status) > 0)
+             1, nelem, &snull, sbuf, NULL, status) > 0)
         {
             ffpmsg("error reading compressed byte stream from binary table");
             free(idata);
@@ -1610,7 +1671,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
 
         /* read array of compressed bytes */
         if (fits_read_col(infptr, TBYTE, (infptr->Fptr)->cn_compressed, nrow,
-             1, nelem, &charnull, cbuf, anynul, status) > 0)
+             1, nelem, &charnull, cbuf, NULL, status) > 0)
         {
             ffpmsg("error reading compressed byte stream from binary table");
             free(idata);
@@ -1655,6 +1716,10 @@ int imcomp_decompress_tile (fitsfile *infptr,
     /* ************************************************************* */
     /* copy the uncompressed tile data to the output buffer, doing */
     /* null checking, datatype conversion and linear scaling, if necessary */
+
+
+    if (nulval == 0)
+         nulval = &dummy;  /* set address to dummy value */
 
     if (datatype == TSHORT)
     {

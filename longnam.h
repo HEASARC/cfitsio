@@ -233,6 +233,7 @@
 #define fits_read_grppar_dbl  ffggpd
 
 #define fits_read_img         ffgpv
+#define fits_read_imgnull     ffgpf
 #define fits_read_img_byt     ffgpvb
 #define fits_read_img_usht     ffgpvui
 #define fits_read_img_ulng     ffgpvuj
@@ -294,6 +295,7 @@
 #define fits_read_subsetnull_dbl ffgsfd
 
 #define fits_read_col        ffgcv
+#define fits_read_colnull    ffgcf
 #define fits_read_col_str    ffgcvs
 #define fits_read_col_log    ffgcvl
 #define fits_read_col_byt    ffgcvb

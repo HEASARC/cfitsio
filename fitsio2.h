@@ -699,7 +699,7 @@ int imcomp_compress_tile (fitsfile *outfptr, long row,
 int fits_read_compressed_img_plane(fitsfile *fptr, int  datatype, 
       int  bytesperpixel,  long   nplane, long *firstcoord, long *lastcoord, 
       long *inc,  long *naxes,  int  nullcheck,  void *nullval, 
-      void *array, char *nullarray, int  *anynul, int  *status);
+      void *array, char *nullarray, int  *anynul, long *nread, int  *status);
 int imcomp_get_compressed_image_parms(fitsfile *infptr, int *status);
 int imcomp_decompress_tile (fitsfile *infptr,
           int nrow, int tilesize, int datatype, int nullcheck,

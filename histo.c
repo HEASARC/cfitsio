@@ -991,12 +991,32 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
        ffpky(histptr, TDOUBLE, keyname, &dvalue, "Pixel size", &tstatus);
 
      /*  CROTAn - Rotation angle (degrees CCW)  */
-       ffkeyn("TCROT", histData.hcolnum[ii], keyname, &tstatus);
-       ffgky(*fptr, TDOUBLE, keyname, &dvalue, NULL, &tstatus);
-       if (!tstatus && dvalue != 0.)  /* only write keyword if angle != 0 */
+     /*  There should only be a CROTA2 keyword, and only for 2+ D images */
+       if (ii == 1)
        {
-          ffkeyn("CROTA", ii + 1, keyname, &tstatus);
-          ffpky(histptr, TDOUBLE, keyname, &dvalue, "Rotation angle", &tstatus);
+         ffkeyn("TCROT", histData.hcolnum[ii], keyname, &tstatus);
+         ffgky(*fptr, TDOUBLE, keyname, &dvalue, NULL, &tstatus);
+         if (!tstatus && dvalue != 0.)  /* only write keyword if angle != 0 */
+         {
+           ffkeyn("CROTA", ii + 1, keyname, &tstatus);
+           ffpky(histptr, TDOUBLE, keyname, &dvalue,
+                 "Rotation angle", &tstatus);
+         }
+         else
+         {
+            /* didn't find CROTA for the 2nd axis, so look for one */
+            /* on the first axis */
+           tstatus = 0;
+           ffkeyn("TCROT", histData.hcolnum[0], keyname, &tstatus);
+           ffgky(*fptr, TDOUBLE, keyname, &dvalue, NULL, &tstatus);
+           if (!tstatus && dvalue != 0.)  /* only write keyword if angle != 0 */
+           {
+             dvalue *= -1.;   /* negate the value, because mirror image */
+             ffkeyn("CROTA", ii + 1, keyname, &tstatus);
+             ffpky(histptr, TDOUBLE, keyname, &dvalue,
+                   "Rotation angle", &tstatus);
+           }
+         }
        }
     }
 
