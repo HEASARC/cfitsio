@@ -23,7 +23,10 @@
 #include "group.h"
 #include <string.h>
 #include <stdlib.h>
+
+#if defined(__unix__) || defined (unix)
 #include <sys/stat.h>
+#endif
 
 /*---------------------------------------------------------------------------
  Change record:
@@ -1208,7 +1211,9 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
 
   unsigned char charNull[]  = {'\0'};
 
+#if defined(__unix__) || defined (unix)
   struct stat tmpStat;
+#endif
 
   fitsfile *tmpfptr = NULL;
 

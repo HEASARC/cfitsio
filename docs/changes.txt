@@ -1,5 +1,61 @@
                Log of Changes Made to CFITSIO
 
+Version 2.030 - 24 Feb 1999
+
+   - major new feature:  enhanced the routines that read ASCII string
+     columns in tables so that they can read any table column, including
+     logical and numeric valued columns.  The column values are returned
+     as a formated string.  The format is determined by the TDISPn
+     keyword if present, otherwise a default format based on the
+     datatype of the column is used.
+
+  -  new routine:  fits_get_col_display_width/ffgcdw returns the length
+     of the formated strings that will be returned by the routines that
+     read table columns as strings. 
+
+   - major new feature:  added support for specifying an 'image section'
+     when opening an image:  e.g,  myfile.fits[1:512:2,2:512:2] to 
+     open a 256x256 pixel image consisting of the odd columns and the 
+     even numbered rows of the input image.
+
+   - added supporting project files and instructions for building 
+     CFITSIO under Windows NT with the Microsoft Visual C++ compiler.
+
+   - changed the variable 'template' to 'templt' in testprog.c since
+     it conflicted with a reserved word on some compilers.
+
+   - modified group.c to conditionally include sys/stat.h only on
+     unix platforms
+
+   - fixed bug in the ffiter iterator function that caused to to always
+     pass 'firstn' = 1 to the work function when reading from the
+     primary array or IMAGE extension. It worked correctly for tables.
+
+   - fixed bug in the template header keyword parser (ffgthd) in cases
+     where the input template line contains a logical valued keyword
+     (T or F) without any following comment string.  It was previously
+     interpreting this as a string-valued keyword.
+
+   - modified ffrhdu that reads and opens a new HDU, so that it
+     ignores any leading blank characters in the XTENSION name, e.g.,
+     XTENSION= '  BINTABLE' will not cause any errors, even though
+     this technically violates the FITS Standard.
+
+   - modified ffgtbp that reads the required table keywords to make
+     it more lenient and not exit with an error if the THEAP keyword
+     in binary tables cannot be read as an integer.  Now it will
+     simply ignore this keyword if it cannot be read.
+
+   - added test for 'WIN32' as well as '__WIN32__' in fitsio2.h,
+     eval.l and eval_l.c in a preprocessor statement.
+
+   - changed definition of strcasecmp and strncasecmp in fitsio2.h,
+     eval.l and eval_l.c to conform to the function prototypes under
+     the Alpha VMS v7.1 compiler.
+
+   - corrected the long function names in longnam.h for the new WCS 
+     utility functions in wcssubs.c
+
 Version 2.029 - 11 Feb 1999
 
    - fixed bug in the way NANs and underflows were being detected on

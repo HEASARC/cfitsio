@@ -155,13 +155,12 @@ The disadvantages are:
 -
 
 On VAX/VMS and ALPHA/VMS systems the make.com command file may be used
-to build the cfitsio.olb object library.  Execute this command file by
-typing '@make' on the command line.  CFITSIO can support both the
-native G-float format and the IEEE float format on ALPHA/VMS systems;
-the makeieee.com file can be used to build the CFITSIO library using
-IEEE float.
+to build the cfitsio.olb object library using the default G-floating
+point option for double variables.  The make\_dfloat.com and make\_ieee.com
+files may be used instead to build the library with the other floating
+point options.
 
-As of December 1998 this version of FITSIO has not yet been ported to work
+As of February 1999 this version of FITSIO has not yet been ported to work
 on DOS or Windows based PC computers or MacOS.  The main issue is how
 to call C routines from Fortran programs, given the great variety of
 different compilers that are available.  In principle, this should only
@@ -186,14 +185,13 @@ CFITSIO has currently been tested on the following platforms:
    Silicon Graphics IRIX      gcc and cc
    DECstation  Ultrix         gcc
    Dec Alpha OSF/1            gcc
-   Dec Alpha OpenVMS          cc with /float=gfloat or /float=ieee options
+   Dec Alpha OpenVMS          cc 
    DEC VAX/VMS                gcc and cc
    HP-UX                      gcc
    IBM AIX                    gcc
-   Linux running on IBM PC    gcc
+   Linux                      gcc
    MkLinux                    DR3
-   IBM PC w/ Windows 95       Borland C++ V4.5
-   IBM PC w/ OS/2             gcc + EMX
+   OS/2                       gcc + EMX
    MacOS 7.1 or greater       Metrowerks 10.+
 -
 CFITSIO will probably run on most other Unix platforms.  Cray
@@ -225,7 +223,8 @@ testprog.lis in the Unix example) should be identical to the listing
 contained in the file testprog.out.  The 'diff' and 'cmp' commands
 shown above should not report any differences in the files.  (There
 may be some minor formating differences, such as the presence or
-absence of leading zeros, which can be ignored).
+absence of leading zeros, or 3 digit exponents in numbers,
+which can be ignored).
 
 The Fortran wrappers in CFITSIO may be tested with the testf77
 program on Unix systems with:
@@ -649,6 +648,18 @@ is mainly useful for testing purposes when one does not want a
 permanent copy of the output file.
 
 \item
+{\tt 'myfile.fits[3; Images(10)]'}: opens a copy of the image contained in the
+10th row of the 'Images' column in the binary table in the 3th extension
+of the FITS file.  The application just sees this single image as the 
+primary array.
+
+\item
+{\tt 'myfile.fits[1:512:2, 1:512:2]'}: opens a section of the input image
+ranging from the 1st to the 512th pixel in  X and Y, and selects every 
+second pixel in both dimensions, resulting in a 256 x 256 pixel image 
+in this case.
+
+\item
 {\tt 'myfile.fits[EVENTS][col Rad = sqrt(X**2 + Y**2)]'}:  creates and opens
 a temporary file on the fly (in memory or on disk) that is identical to
 myfile.fits except that it will contain a new column in the EVENTS
@@ -694,15 +705,19 @@ the final 2-D image in the primary array of the opened file.
 This section describes the full syntax for the CFITSIO FITS file names,
 which can contain the following components: 
 -
+filetype://BaseFilename(outName)[HDUlocation][ImageSection]
+-
+for an image HDU, or
+-
 filetype://BaseFilename(outName)[HDUlocation][colFilter][rowFilter][binSpec]
 -
-where each of these components is described below.  The filetype,
-BaseFilename, outName, and HDUlocation components, if present, must be
-given in that order, but the colFilter, rowFilter, and binSpec
-specifiers may follow in any order.  Regardless of the order, however,
-the colFilter specifier, if present, will be processed first by
-CFITSIO, followed by the rowFilter specifier, and finally by the
-binSpec specifier.
+for a table HDU, where each of these components is described below.
+The filetype, BaseFilename, outName, HDUlocation, and ImageSection
+components, if present, must be given in that order, but the colFilter,
+rowFilter, and binSpec specifiers may follow in any order.  Regardless
+of the order, however, the colFilter specifier, if present, will be
+processed first by CFITSIO, followed by the rowFilter specifier, and
+finally by the binSpec specifier.
 
 
 ***1.  Filetype
@@ -1304,7 +1319,29 @@ syntax as described in the Row Filter Specifier section, below.
                    greater than 100.
 -
 
-***6.  Column and Keyword Filtering Specification
+***6 Image Section
+
+A subsection of an image can be opened by specifying the range of
+pixels (start:end), or with an optional pixel increment
+(start:end:step), for each axis of the input image. For example,
+'myfile.fits[1:512:2, 2:512:2]' will open an a 256x256 pixel image
+consisting of the odd numbered columns and the even numbered rows of
+the image in the primary array of the file myfile.fits.  The input
+image can be in the primary array, in an image extension, or in a
+vector cell of a binary table. In the later 2 cases the extension name
+or number must be specified before the image section specifier, as in:
+'myfile.fits[3][1:256,1:256]' to open a subsection of the image in the
+3rd extension of the file. A pixel step = 1 will be assumed if it is
+not specified. CFITSIO creates a tempory copy of the file containing
+the image section plus a copy of any other HDUs in the file which is
+then opened by the application program, so it is not possible to write
+to or modify the origninal file when specifying an image section.  If
+necessary, CFITSIO automatically updates the world coordinate system
+keywords in the header of the image, if they exist, so that the
+coordinate associated with each pixel in the image section will be
+computed correctly.
+
+***7.  Column and Keyword Filtering Specification
 
 The optional column/keyword filtering specifier is used to modify the
 column structure and/or the header keywords in the HDU that was
@@ -1389,7 +1426,7 @@ Examples:
                                    it by the EXPOSURE keyword value.
 -
 
-***7.  Row Filtering Specification
+***8.  Row Filtering Specification
 
     The  optional row filter is a  boolean expression enclosed in square
     brackets for filtering or selecting rows from  the input FITS table.
@@ -1779,7 +1816,7 @@ EXAMPLES:
                                      rowFilter.txt
 -
 
-***8.  Binning or Histogramming Specification
+***9.  Binning or Histogramming Specification
 
 The optional binning specifier is enclosed in square brackets and can
 be distinguished from a general row filter specification by the fact
@@ -2804,7 +2841,30 @@ different from the actual datatype of the FITS array or table column.
     array elements will be returned with a value = nullval, unless nullval = 0 
     (or = ' ' for ftgcvs) in which case no checking for undefined values will
     be performed. The ANYF parameter is set to true if any of the returned
->   elements are undefined. 
+    elements are undefined. 
+
+    Any column, regardless of it's intrinsic datatype, may be read as a
+    string.  It should be noted however that reading a numeric column
+    as a string is 10 - 100 times slower than reading the same column
+    as a number due to the large overhead in constructing the formatted
+    strings.  The display format of the returned strings will be
+    determined by the TDISPn keyword, if it exists, otherwise by the
+    datatype of the column.  The length of the returned strings  can be
+    determined with the ftgcdw routine.  The following TDISPn display
+    formats are currently supported:
+-
+    Iw.m   Integer
+    Ow.m   Octal integer
+    Zw.m   Hexadecimal integer
+    Fw.d   Fixed floating point
+    Ew.d   Exponential floating point
+    Dw.d   Exponential floating point
+    Gw.d   General; uses Fw.d if significance not lost, else Ew.d
+-
+  where w is the width in characters of the displayed values, m is the minimum
+  number of digits displayed, and d is the number of digits to the right of the 
+>  decimal.  The .m field is optional.
+
 -
         FTGCV[SBIJEDCM](unit,colnum,frow,felem,nelements,nullval, > 
                        values,anyf,status)
@@ -3648,7 +3708,15 @@ by the more general FTGSVx family of routines.]
 
 ***1.  Column Information Subroutines \label{FTGCNO}
 
->1  Get the table column number (and name) of the column whose name
+>1   Get the number of rows or columns in the current FITS table.
+     The number of rows is given by the NAXIS2 keyword and the
+     number of columns is given by the TFIELDS keyword in the header
+>    of the table.
+-
+        FTGNRW(unit, > nrows, status)
+        FTGNCL(unit, > ncols, status)
+-
+>2  Get the table column number (and name) of the column whose name
 matches an input template name.  The table column names are defined by
 the TTYPEn keywords in the FITS header.  If a column does not have a
 TTYPEn keyword, then these routines assume that the name consists of
@@ -3688,7 +3756,7 @@ It is recommended that the column names in a given table be unique
         FTGCNO(unit,casesen,coltemplate, > colnum,status)
         FTGCNN(unit,casesen,coltemplate, > colname,colnum,status)
 -
->2  Get the datatype of a column in an ASCII or binary table.  This 
+>3  Get the datatype of a column in an ASCII or binary table.  This 
     routine returns an integer code value corresponding to the datatype
     of the column. (See the FTBNFM and FTASFM subroutines in the Utilities
     section of this document for a list of the code values).  The vector
@@ -3704,14 +3772,22 @@ It is recommended that the column names in a given table be unique
 -
         FTGTCL(unit,colnum, > datacode,repeat,width,status)
 -
->3  Get information about an existing ASCII table column.  (NOTE: TSCAL and
+>4  Return the display width of a column.  This is the length
+    of the string that will be returned  
+    when reading the column as a formatted string.  The display width is
+    determined by the TDISPn keyword, if present, otherwise by the data
+>   type of the column.
+-
+        FTGCDW(unit, colnum, > dispwidth, status)
+-
+>5  Get information about an existing ASCII table column.  (NOTE: TSCAL and
     TZERO must be declared as Double Precision variables).  All the
 >   returned parameters are scalar quantities.
 -
         FTGACL(unit,colnum, >
                ttype,tbcol,tunit,tform,tscal,tzero,snull,tdisp,status)
 -
->4  Get information about an existing binary table column. (NOTE: TSCAL and
+>6  Get information about an existing binary table column. (NOTE: TSCAL and
     TZERO must be declared as Double Precision variables). DATATYPE is a 
     character string which returns the datatype of the column as defined
     by the TFORMn keyword (e.g., 'I', 'J','E', 'D', etc.).  In the case
@@ -3724,20 +3800,20 @@ It is recommended that the column names in a given table be unique
         FTGBCL(unit,colnum, >
                ttype,tunit,datatype,repeat,tscal,tzero,tnull,tdisp,status)
 -
-> 5 Put (append) a TDIMn keyword whose value has the form '(l,m,n...)'
+> 7 Put (append) a TDIMn keyword whose value has the form '(l,m,n...)'
     where l, m, n... are the dimensions of a multidimension array
 >   column in a binary table.
 -
         FTPTDM(unit,colnum,naxis,naxes, > status)
 -
-> 6 Return the number of and size of the dimensions of a table column.
+> 8 Return the number of and size of the dimensions of a table column.
     Normally this information is given by the TDIMn keyword, but if 
     this keyword is not present then this routine returns NAXIS = 1
 >   and NAXES(1) equal to the repeat count in the TFORM keyword.
 -
         FTGTDM(unit,colnum,maxdim, > naxis,naxes,status)
 -
-> 7 Return the optimal number of rows to read or write at one time for
+> 9 Return the optimal number of rows to read or write at one time for
     maximum I/O efficiency.  Refer to the ``Optimizing Code'' section
 >   in Chapter 5 for more discussion on how to use this routine.
 
@@ -3820,6 +3896,29 @@ nullval = 0, then no checks for undefined pixels will be performed,
 thus increasing the speed of the program.  The second set of routines
 (FTGCF) returns the data element array and in addition a logical array
 of flags which defines whether the corresponding data pixel is undefined.
+
+    Any column, regardless of it's intrinsic datatype, may be read as a
+    string.  It should be noted however that reading a numeric column
+    as a string is 10 - 100 times slower than reading the same column as
+    a number due to the large overhead in constructing the formatted
+    strings.    The display format of the returned strings will be
+    determined by the TDISPn keyword, if it exists, otherwise by the
+    datatype of the column.  The length of the returned strings can be
+    determined with the ftgcdw routine.  The following TDISPn display
+    formats are currently supported:
+-
+    Iw.m   Integer
+    Ow.m   Octal integer
+    Zw.m   Hexadecimal integer
+    Fw.d   Fixed floating point
+    Ew.d   Exponential floating point
+    Dw.d   Exponential floating point
+    Gw.d   General; uses Fw.d if significance not lost, else Ew.d
+-
+  where w is the width in characters of the displayed values, m is the minimum
+  number of digits displayed, and d is the number of digits to the right of the 
+  decimal.  The .m field is optional.
+
 
 >1  Insert blank rows into an existing ASCII or binary table (in the CDU).
     All the rows FOLLOWING row FROW are shifted down by NROWS rows.  If
@@ -4106,7 +4205,68 @@ and a later revision in June 1995.
         FTDSUM(checksum,complement, > sum)
 -
         
-**K.  General Utility Subroutines \label{FTVERS}
+**K.   Date and Time Utility Routines \label{FTGSDT}
+
+The following routines help to construct or parse the FITS date/time
+strings.   Starting in the year 2000, the FITS DATE keyword values (and
+the values of other `DATE-' keywords) must have the form 'YYYY-MM-DD'
+(date only) or 'YYYY-MM-DDThh:mm:ss.ddd...' (date and time) where the
+number of decimal places in the seconds value is optional.  These times
+are in UTC.  The older 'dd/mm/yy' date format may not be used for dates
+after 01 January 2000.
+
+>1  Get the current system date.  The returned year has 4 digits
+>    (1999, 2000, etc.) 
+-
+        FTGSDT( > day, month, year, status )
+-
+
+>2  Get the current system date and time string ('YYYY-MM-DDThh:mm:ss').
+The time will be in UTC/GMT if available, as indicated by a returned timeref 
+value = 0.  If the returned value of timeref = 1 then this indicates that
+it was not possible to convert the local time to UTC, and thus the local
+>time was returned.
+-
+        FTGSTM(> datestr, timeref, status)
+-
+
+>3  Construct a date string from the input date values.  If the year
+is between 1900 and 1998, inclusive, then the returned date string will
+have the old FITS format ('dd/mm/yy'), otherwise the date string will
+have the new FITS format ('YYYY-MM-DD').  Use FTTM2S instead
+> to always return a date string using the new FITS format. 
+-
+        FTDT2S( year, month, day, > datestr, status)
+-
+
+>4  Construct a new-format date + time string ('YYYY-MM-DDThh:mm:ss.ddd...').
+  If the year, month, and day values all = 0 then only the time is encoded
+  with format 'hh:mm:ss.ddd...'.  The decimals parameter specifies how many
+  decimal places of fractional seconds to include in the string.  If `decimals'
+> is negative, then only the date will be return ('YYYY-MM-DD').
+-
+        FTTM2S( year, month, day, hour, minute, second, decimals, 
+                > datestr, status)
+-
+
+>5  Return the date as read from the input string, where the string may be
+in either the old ('dd/mm/yy')  or new ('YYYY-MM-DDThh:mm:ss' or
+>'YYYY-MM-DD') FITS format.  
+-
+        FTS2DT(datestr, > year, month, day, status)
+-
+
+>6  Return the date and time as read from the input string, where the
+string may be in either the old  or new FITS format.  The returned hours,
+minutes, and seconds values will be set to zero if the input string
+does not include the time ('dd/mm/yy' or 'YYYY-MM-DD') .  Similarly,
+the returned year, month, and date values will be set to zero if the
+>date is not included in the input string ('hh:mm:ss.ddd...'). 
+-
+        FTS2TM(datestr, > year, month, day, hour, minute, second, status)
+-
+
+**L.  General Utility Subroutines \label{FTVERS}
 
 The following utility subroutines may be useful for certain applications:
 
@@ -4117,35 +4277,17 @@ The following utility subroutines may be useful for certain applications:
 -
         FTVERS( > version)
 -
->2  Return a code value indicating the word architecture of the computer 
-    that the program is running on.  The routine compares
-    the internal architecture used to store floating point and integer
->   numbers and returns one of the following codes:
-- 
-        FTARCH( > compid)
-
-           compid = 1  -  VAX or Alpha VMS system
-                    2  -  Decstation or Alpha OSF/1, or IBM PC
-                    3  -  SUN workstation 
-                    4  -  IBM mainframe
-                    0  -  unknown type of machine
--
->3  Get the current system date.  The day, month and year are returned
->   as integers.  The year value ranges from 00 to 99.
--
-        FTGSDT(> day,month,year,status)
--
->>4  Return the starting byte address of the CHDU and the next HDU.
+>>2  Return the starting byte address of the CHDU and the next HDU.
 -
         FTGHAD(iunit, > curaddr,nextaddr)
 -
->5  Return the descriptive text string corresponding to a FITSIO error
+>3  Return the descriptive text string corresponding to a FITSIO error
     status code.   The 30-character length string contains a brief
 >   description of the cause of the error.
 -
         FTGERR(status, > errtext)
 -
->6  Return the top (oldest) 80-character error message from the
+>4  Return the top (oldest) 80-character error message from the
     internal FITSIO stack of error messages and shift any remaining
     messages on the stack up one level.  Any FITSIO error will
     generate one or more messages on the stack.  Call this routine
@@ -4154,24 +4296,24 @@ The following utility subroutines may be useful for certain applications:
 -
         FTGMSG( > errmsg)
 -
->7  Write an 80-character message to the FITSIO error stack.  Application
+>5  Write an 80-character message to the FITSIO error stack.  Application
     programs should not normally write to the stack, but there may be
 >   some situations where this is desirable.
 -
         FTPMSG(errmsg)
 -
->8   Clear the entire error message stack.  This routine is useful
+>6   Clear the entire error message stack.  This routine is useful
      to clear any error message that may have been generated by
      a non-fatal FITSIO error (such as failing to find an optional
 >    header keyword).  This routine is called without any arguments.
 -
         FTCMSG
 -
->>9  Convert a character string to uppercase (operates in place).
+>>7  Convert a character string to uppercase (operates in place).
 -
         FTUPCH(string)
 -
->10  Compare the input template string against the reference string
+>8  Compare the input template string against the reference string
     to see if they match.  The template string may contain wildcard
     characters: '*' will match any sequence of characters (including
     zero characters) and '%' will match any single character in the
@@ -4184,12 +4326,12 @@ The following utility subroutines may be useful for certain applications:
         FTCMPS(str_template,string,casesen, > match,exact)
 -
 
->11 Test that the keyword name contains only legal characters: A-Z,0-9,
+>9  Test that the keyword name contains only legal characters: A-Z,0-9,
 >   hyphen, and underscore.
 -
         FTTKEY(keyword, > status)
 -
->12 Parse a header keyword record.
+>10 Parse a header keyword record.
     This subroutine parses the input header record to return the value (as
     a character string) and comment strings.  If the keyword has no
     value (columns 9-10 not equal to '= '), then the value string is returned
@@ -4198,25 +4340,25 @@ The following utility subroutines may be useful for certain applications:
 -
         FTPSVC(card, > value,comment,status)
 -
->13 Construct a sequence keyword name (ROOT + nnn).
+>11 Construct a sequence keyword name (ROOT + nnn).
     This subroutine appends the sequence number to the root string to create
 >   a keyword name (e.g., 'NAXIS' + 2 = 'NAXIS2')
 -
         FTKEYN(keyroot,seq_no, > keyword,status)
 -
->14 Construct a sequence keyword name (n + ROOT).
+>12 Construct a sequence keyword name (n + ROOT).
     This subroutine concatenates the sequence number to the front of the
 >   root string to create a keyword name (e.g., 1 + 'CTYP' = '1CTYP')
 -
         FTNKEY(seq_no,keyroot, > keyword,status)
 -
->15 Determine the datatype of a keyword value string.
+>13 Determine the datatype of a keyword value string.
     This subroutine parses the keyword value string (usually columns 11-30
 >   of the header record) to determine its datatype.  
 -
         FTDTYP(value, > dtype,status)
 -
->16 Parse the 'TFORM' binary table column format string.
+>14 Parse the 'TFORM' binary table column format string.
     This subroutine parses the input TFORM character string and returns the
     integer datatype code, the repeat count of the field, and, in the case
     of character string fields, the length of the unit string.  The following
@@ -4237,7 +4379,7 @@ The following utility subroutines may be useful for certain applications:
 
         FTBNFM(tform, > datacode,repeat,width,status)
 -
->17 Parse the 'TFORM' keyword value that defines the column format in
+>15 Parse the 'TFORM' keyword value that defines the column format in
     an ASCII table.  This routine parses the input TFORM character
     string and returns the datatype code, the width of the column,
     and (if it is a floating point column) the number of decimal places
@@ -4254,7 +4396,7 @@ The following utility subroutines may be useful for certain applications:
 -
         FTASFM(tform, > datacode,width,decimals,status)
 -
->18 Calculate the starting column positions and total ASCII table width
+>16 Calculate the starting column positions and total ASCII table width
     based on the input array of ASCII table TFORM values.  The SPACE input
     parameter defines how many blank spaces to leave between each column
     (it is recommended to have one space between columns for better human
@@ -4262,7 +4404,7 @@ The following utility subroutines may be useful for certain applications:
 -
         FTGABC(tfields,tform,space, > rowlen,tbcol,status)
 -
->19 Parse a template string and return a formatted 80-character string
+>17 Parse a template string and return a formatted 80-character string
     suitable for appending to (or deleting from) a FITS header file.  
     This subroutine is useful for parsing lines from an ASCII template file
     and reformatting them into legal FITS header records.  The formatted
@@ -4497,9 +4639,12 @@ The following utility subroutines may be useful for certain applications:
 -
  Table Column Information Subroutines: page~\pageref{FTGCNO}
 -
+        FTGNRW(unit, > nrows, status)
+        FTGNCL(unit, > ncols, status)
         FTGCNO(unit,casesen,coltemplate, > colnum,status)
         FTGCNN(unit,casesen,coltemplate, > colnam,colnum,status)
         FTGTCL(unit,colnum, > datacode,repeat,width,status)
+        FTGCDW(unit,colnum, > dispwidth,status)
         FTGACL(unit,colnum, >
                ttype,tbcol,tunit,tform,tscal,tzero,snull,tdisp,status)
         FTGBCL(unit,colnum, >
@@ -4558,12 +4703,21 @@ The following utility subroutines may be useful for certain applications:
         FTGCKS(unit, > datasum,hdusum,status) 
         FTESUM(sum,complement, > checksum)
         FTDSUM(checksum,complement, > sum)
+
+-
+ Time and Date Utility Subroutines: page~\pageref{FTGSDT}
+-
+        FTGSDT( > day, month, year, status )
+        FTGSTM(> datestr, timeref, status)
+        FTDT2S( year, month, day, > datestr, status)
+        FTTM2S( year, month, day, hour, minute, second, decimals, 
+                > datestr, status)
+        FTS2DT(datestr, > year, month, day, status)
+        FTS2TM(datestr, > year, month, day, hour, minute, second, status)
 -
  General Utility Subroutines: page~\pageref{FTVERS}
 -
         FTVERS( > version)
-        FTARCH( > compid)
-        FTGSDT(> day,month,year,status)
         FTGHAD(iunit, > curaddr,nextaddr)
         FTGERR(status, > errtext)
         FTGMSG( > errmsg)
@@ -4614,11 +4768,14 @@ dataok - (integer) was the data unit verification successful (=1) or
          not (= -1).  Equals zero if the DATASUM keyword is not present.      
 datasum - (double precision) 32-bit 1's complement checksum for the data unit
 datatype - (character) datatype (format) of the binary table column 
+datestr  - (string) FITS date/time string: 'YYYY-MM-DDThh:mm:ss.ddd',
+           'YYYY-MM-dd', or 'dd/mm/yy'
 day - (integer) current day of the month
 dblval - (double precision) fractional part of the keyword value
 decimals - (integer) number of decimal places to be displayed
 dim1 - (integer) actual size of the first dimension of the image or cube array
 dim2 - (integer) actual size of the second dimension of the cube array
+dispwidth - (integer) - the display width (length of string) for a column
 dtype - (character) datatype of the keyword ('C', 'L', 'I',  or 'F')
                 C = character string
                 L = logical
@@ -4649,6 +4806,7 @@ hdusum - (double precsion) 32 bit 1's complement checksum for the entire CHDU
 hdutype - (integer) type of HDU: 0 = primary array or IMAGE, 1 = ASCII table,
                    2 = binary table, -1 = unknown
 history - (character) the HISTORY keyword comment string
+hour - (integer) hour from 0 - 23
 image - 2D image of the appropriate datatype
 inclist  (character array) list of names to be included in search
 incs - (integer array) sampling interval for pixels in each FITS dimension
@@ -4667,6 +4825,7 @@ lpixels - (integer array) the last included pixel in each dimension
 match - (logical) do the 2 strings match?
 maxdim - (integer) dimensioned size of the NAXES, TTYPE, TFORM or TUNIT arrays
 max_keys - (integer) maximum number of keywords to search for
+minute - (integer) minute of an hour (0 - 59)
 month - (integer) current month of the year (1 - 12)
 morekeys - (integer) will leave space in the header for this many more keywords
 naxes - (integer array) size of each dimension in the FITS array
@@ -4697,6 +4856,7 @@ rot - (double precision) celestial coordinate rotation angle (degrees)
 rowlen - (integer) length of a table row, in characters or bytes
 rownum - (integer) number of the row (first row = 1)
 rwmode - (integer) file access mode: 0 = readonly, 1 = readwrite 
+second   (double)- second within minute (0 - 60.9999999999) (leapsecond!)
 seq_no - (integer) the sequence number to append to the keyword root name
 simple - (logical) does the FITS file conform to all the FITS standards
 snull - (character) value used to represent undefined values in ASCII table

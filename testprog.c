@@ -79,7 +79,7 @@ int main()
     char *ttype[10], *tform[10], *tunit[10];
     char tblname[40];
     char binname[] = "Test-BINTABLE";
-    char template[] = "testprog.tpt";
+    char templt[] = "testprog.tpt";
     char errmsg[FLEN_ERRMSG];
     short imgarray[30][19], imgarray2[20][10];
     long fpixels[2], lpixels[2], inc[2];
@@ -861,7 +861,7 @@ int main()
       #  modify header using template file #
       ######################################
     */
-    if (ffpktp(fptr, template, &status))
+    if (ffpktp(fptr, templt, &status))
     {
        printf("\nERROR returned by ffpktp\n");
        goto errstatus;

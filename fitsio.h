@@ -681,6 +681,7 @@ int ffgbcl(fitsfile *fptr, int colnum, char *ttype, char *tunit,
            char *dtype, long *repeat, double *tscal, double *tzero,
            long *tnull, char *tdisp, int  *status);
 int ffgrsz(fitsfile *fptr, long *nrows, int *status);
+int ffgcdw(fitsfile *fptr, int colnum, int *width, int *status);
 
 /*--------------------- read primary array or image elements -------------*/
 int ffgpv(fitsfile *fptr, int  datatype, long firstelem, long nelem,
@@ -1215,6 +1216,11 @@ int ffhist(fitsfile **fptr, char *outfile, int imagetype, int naxis,
            char binname[4][FLEN_VALUE], 
            double weightin, char wtcol[FLEN_VALUE],
            int recip, char *rowselect, int *status);
+
+int fits_select_image_section(fitsfile **fptr, char *outfile,
+           char *imagesection, int *status);
+int fits_select_section( fitsfile *infptr, fitsfile *outfptr,
+           char *imagesection, int *status);
 
 /*--------------------- grouping routines ------------------*/
 

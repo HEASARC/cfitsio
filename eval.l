@@ -630,7 +630,7 @@ static int find_keywd(char *keyname, YYSTYPE *thelval )
    return( type );
 }
 
-#if defined(vms) || defined(__vms) || defined(__WIN32__) || defined(macintosh)
+#if defined(vms) || defined(__vms) || defined(WIN32) || defined(__WIN32__) || defined(macintosh)
 
 /* ================================================================== */
 /* A hack for nonunix machines, which lack strcasecmp and strncasecmp */

@@ -39,6 +39,7 @@
 #define fits_binary_tform   ffbnfm
 #define fits_get_tbcol      ffgabc
 #define fits_get_rowsize    ffgrsz
+#define fits_get_col_display_width    ffgcdw
 
 #define fits_write_record       ffprec
 #define fits_write_key          ffpky
@@ -47,6 +48,7 @@
 #define fits_write_history      ffphis 
 #define fits_write_date         ffpdat
 #define fits_get_system_time    ffgstm
+#define fits_get_system_date    ffgsdt
 #define fits_date2str           ffdt2s
 #define fits_time2str           fftm2s
 #define fits_str2date           ffs2dt
@@ -427,7 +429,9 @@
 #define fits_read_tbl_coord ffgtcs
 #define fits_pix_to_world ffwldp
 #define fits_world_to_pix ffxypx
-#define fits_init_wcs_img ffiwcs
+
+#define fits_get_image_wcs_keys ffgiwcs
+#define fits_get_table_wcs_keys ffgtwcs
 
 #define fits_find_rows          fffrow
 #define fits_find_first_row     ffffrw

@@ -24,8 +24,8 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.029; /* 11 Feb 1999 */
-
+      *version = 2.030; /* 24 Feb 1999 */
+ /*   *version = 2.029;  11 Feb 1999 */
  /*   *version = 2.028;  26 Jan 1999 */
  /*   *version = 2.027;  12 Jan 1999 */
  /*   *version = 2.026;  23 Dec 1998 */
@@ -1385,8 +1385,10 @@ int ffgthd(char *tmplt, /* I - input header template string */
 
           strncat(value, tok, len);
           if (!( (tok[0] == 'T' || tok[0] == 'F') &&
-                 (tok[1] == ' ' || tok[1] == '/') ))  /* not a logical value */
+                 (tok[1] == ' ' || tok[1] == '/' || tok[1] == '\0') )) 
           {
+             /* not a logical value */
+
             dval = strtod(value, &suffix); /* try to read value as number */
 
             if (*suffix != '\0' && *suffix != ' ' && *suffix != '/')
@@ -1745,7 +1747,8 @@ void ffcfmt(char *tform,    /* value of an ASCII table TFORMn keyword */
             char *cform)    /* equivalent format code in C language syntax */
 /*
   convert the FITS format string for an ASCII Table extension column into the
-  equivalent C format string that can be used in a printf statement.
+  equivalent C format string that can be used in a printf statement, after
+  the values have been read as a double.
 */
 {
     int ii;
@@ -1773,6 +1776,48 @@ void ffcfmt(char *tform,    /* value of an ASCII table TFORMn keyword */
         strcat(cform, "E");
     if (tform[ii] == 'D')
         strcat(cform, "E");
+
+    return;
+}
+/*--------------------------------------------------------------------------*/
+void ffcdsp(char *tform,    /* value of an ASCII table TFORMn keyword */
+            char *cform)    /* equivalent format code in C language syntax */
+/*
+  convert the FITS TDISPn display format into the equivalent C format
+  suitable for use in a printf statement.
+*/
+{
+    int ii;
+
+    cform[0] = '\0';
+    ii = 0;
+    while (tform[ii] != 0 && tform[ii] == ' ') /* find first non-blank char */
+         ii++;
+
+    if (tform[ii] == 0)
+        return;    /* input format string was blank */
+
+    cform[0] = '%';  /* start the format string */
+
+    strcpy(&cform[1], &tform[ii + 1]); /* append the width and decimal code */
+
+
+    if (tform[ii] == 'A')
+        strcat(cform, "s");
+    else if (tform[ii] == 'I')
+        strcat(cform, "d");
+    else if (tform[ii] == 'O')
+        strcat(cform, "o");
+    else if (tform[ii] == 'Z')
+        strcat(cform, "X");
+    else if (tform[ii] == 'F')
+        strcat(cform, "f");
+    else if (tform[ii] == 'E')
+        strcat(cform, "E");
+    else if (tform[ii] == 'D')
+        strcat(cform, "E");
+    else if (tform[ii] == 'G')
+        strcat(cform, "G");
 
     return;
 }
@@ -2426,7 +2471,7 @@ int ffrhdu(fitsfile *fptr,    /* I - FITS file pointer */
     int ii, tstatus;
     char card[FLEN_CARD];
     char name[FLEN_KEYWORD], value[FLEN_VALUE], comm[FLEN_COMMENT];
-    char xtension[FLEN_VALUE];
+    char xname[FLEN_VALUE], *xtension;
 
     if (*status > 0)
         return(*status);
@@ -2447,6 +2492,7 @@ int ffrhdu(fitsfile *fptr,    /* I - FITS file pointer */
         else
             break;
     }
+
     if (ffpsvc(card, value, comm, status) > 0)   /* parse value and comment */
     {
         ffpmsg("Cannot read value of first  keyword in header (ffrhdu):");
@@ -2463,12 +2509,16 @@ int ffrhdu(fitsfile *fptr,    /* I - FITS file pointer */
 
     else if (!strcmp(name, "XTENSION"))   /* this is an XTENSION keyword */
     {
-        if (ffc2s(value, xtension, status) > 0)  /* get the value string */
+        if (ffc2s(value, xname, status) > 0)  /* get the value string */
         {
             ffpmsg("Bad value string for XTENSION keyword:");
             ffpmsg(value);
             return(*status);
         }
+
+        xtension = xname;
+        while (*xtension == ' ')  /* ignore any leading spaces in name */
+           xtension++;
 
         if (!strcmp(xtension, "TABLE"))
         {
@@ -3369,11 +3419,13 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
         if ((fptr->Fptr)->hdutype == ASCII_TBL)  /* ASCII table */
             return(*status);  /* ASCII tables don't have a heap */ 
 
-        if (ffc2ii(value, &ivalue, status) > 0) 
+        if (ffc2ii(value, &ivalue, &tstatus) > 0) 
         {
             sprintf(message,
             "Error reading value of %s as an integer: %s", name, value);
             ffpmsg(message);
+
+            /* ignore this error, so don't return error status */
             return(*status);
         }
         (fptr->Fptr)->heapstart = ivalue; /* the starting byte of the heap */

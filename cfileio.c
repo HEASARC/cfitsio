@@ -617,7 +617,10 @@ move2hdu:
           return(*status);
        }
 
-       /* add some HISTORY */
+       writecopy = 1;  /* we are now dealing with a copy of the original file */
+
+       /* add some HISTORY; fits_copy_image_cell also wrote HISTORY keywords */
+       
        if (*extname)
          sprintf(card,"HISTORY  in HDU '%.16s' of file '%.36s'", extname, infile);
        else
@@ -664,10 +667,40 @@ move2hdu:
 
     /* ------------------------------------------------------------------- */
     /* select rows from the table, if specified in the URL                 */
+    /* or select a subimage (if this is an image HDU and not a table)      */
     /* ------------------------------------------------------------------- */
  
     if (*rowfilter)
     {
+
+     fits_get_hdu_type(*fptr, &hdutyp, status);  /* get type of HDU */
+     if (hdutyp == IMAGE_HDU)
+     {
+        /* this is an image so 'rowfilter' is an image section specification */
+
+        if (*filtfilename && *outfile == '\0')
+            strcpy(outfile, filtfilename); /* the original outfile name */
+        else if (*outfile == '\0') /* output file name not already defined? */
+            strcpy(outfile, "mem://_2");  /* will create file in memory */
+
+        /* create new file containing the image section, plus a copy of */
+        /* any other HDUs that exist in the input file.  This routine   */
+        /* will the close the original image file and return a pointer  */
+        /* to the new file. */
+
+        if (fits_select_image_section(fptr, outfile, rowfilter, status) > 0)
+        {
+           ffpmsg("on-the-fly selection of image section failed (ffopen)");
+           ffpmsg(" while trying to use the following section filter:");
+           ffpmsg(rowfilter);
+           return(*status);
+        }
+        writecopy = 1;
+     }
+     else
+     {
+       /* this is a table HDU, so the rowfilter is really a row filter */
+
       if (*binspec)
       {
         /*  since we are going to make a histogram of the selected rows,   */
@@ -728,8 +761,10 @@ move2hdu:
            ffpmsg(rowfilter);
            return(*status);
         }
-      }
-    }
+
+      }    /* end of no binspec case */
+     }   /* end of table HDU case */
+    }  /* end of rowfilter exists case */
 
     /* ------------------------------------------------------------------- */
     /* make an image histogram by binning columns, if specified in the URL */
@@ -1463,6 +1498,334 @@ int fits_copy_image_keywords(
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int fits_select_image_section(
+           fitsfile **fptr,  /* IO - pointer to input image; on output it  */
+                             /*      points to the new subimage */
+           char *outfile,    /* I - name for output file        */
+           char *expr,       /* I - Image section expression    */
+           int *status)
+{
+  /*
+     copies an image section from the input file to an output file
+  */
+
+    fitsfile *newptr;
+    int ii, hdunum, naxis, bitpix, nfound, tstatus, anynull;
+    long naxes[9], smin, smax, sinc, fpixels[9], lpixels[9], incs[9];
+    long outnaxes[9], outsize, buffsize;
+    char *cptr, keyname[FLEN_KEYWORD];
+    double *buffer = 0, crpix, cdelt;
+
+    /* create new empty file to hold the image section */
+    if (ffinit(&newptr, outfile, status) > 0)
+    {
+        ffpmsg(
+         "failed to create output file for image section:");
+        ffpmsg(outfile);
+        return(*status);
+    }
+
+    fits_get_hdu_num(*fptr, &hdunum);  /* current HDU number in input file */
+
+    /* copy all preceding extensions to the output file */
+    for (ii = 1; ii < hdunum; ii++)
+    {
+        fits_movabs_hdu(*fptr, ii, NULL, status);
+        if (fits_copy_hdu(*fptr, newptr, 0, status) > 0)
+        {
+            ffclos(newptr, status);
+            return(*status);
+        }
+    }
+
+    /* copy all the header keywords from the input to output file */
+    fits_movabs_hdu(*fptr, hdunum, NULL, status);
+    if (fits_copy_header(*fptr, newptr, status) > 0)
+    {
+        ffclos(newptr, status);
+        return(*status);
+    }
+
+    /* get the size of the input image */
+
+    fits_read_key(*fptr, TINT, "BITPIX", &bitpix, NULL, status);
+    fits_read_key(*fptr, TINT, "NAXIS", &naxis, NULL, status);
+    if (fits_read_keys_lng(*fptr, "NAXIS", 1, naxis,
+        naxes, &nfound, status) > 0)
+    {
+        ffclos(newptr, status);
+        return(*status);
+    }
+
+    if (naxis < 1 || naxis > 9)
+    {
+        ffpmsg(
+        "Input image either had NAXIS = 0 (NULL image) or has > 9 dimensions");
+        ffclos(newptr, status);
+        return(*status = BAD_NAXIS);
+    }
+    else if (nfound < naxis)
+    {
+        ffpmsg("could not read all the NAXISn keywords in the input image");
+        ffclos(newptr, status);
+        return(*status = BAD_NAXES);
+    }
+
+    /* parse the section specifier to get min, max, and inc for each axis */
+    /* and the size of each output image axis */
+
+    outsize = 1;
+    cptr = expr;
+    for (ii=0; ii < naxis; ii++)
+    {
+       if (fits_get_section_range(&cptr, &smin, &smax, &sinc, status) > 0)
+       {
+          ffpmsg("error parsing the following image section specifier:");
+          ffpmsg(expr);
+          ffclos(newptr, status);
+          return(*status);
+       }
+
+       if (smin > naxes[ii] || smax > naxes[ii])
+       {
+          ffpmsg("image section exceeds dimensions of input image:");
+          ffpmsg(expr);
+          ffclos(newptr, status);
+          return(*status = BAD_NAXIS);
+       }
+
+       fpixels[ii] = smin;
+       lpixels[ii] = smax;
+       incs[ii] = sinc;
+
+       if (smin <= smax)
+           outnaxes[ii] = (smax - smin + sinc) / sinc;
+       else
+           outnaxes[ii] = (smin - smax + sinc) / sinc;
+
+       outsize = outsize * outnaxes[ii];
+
+       /* modify the NAXISn keyword */
+       fits_make_keyn("NAXIS", ii + 1, keyname, status);
+       fits_modify_key_lng(newptr, keyname, outnaxes[ii], NULL, status);
+
+       /* modify the WCS keywords if necessary */
+
+       if (fpixels[ii] != 1 || incs[ii] != 1)
+       {
+         /* read the CRPIXn keyword if it exists in the input file */
+         fits_make_keyn("CRPIX", ii + 1, keyname, status);
+         tstatus = 0;
+
+         if (fits_read_key(*fptr, TDOUBLE, keyname, 
+             &crpix, NULL, &tstatus) == 0)
+         {
+           /* calculate the new CRPIXn value */
+           if (fpixels[ii] <= lpixels[ii])
+             crpix = (crpix - (fpixels[ii] - 1.0) - .5) / incs[ii] + 0.5;
+           else
+             crpix = (lpixels[ii] - (crpix - 1.0) - .5) / incs[ii] + 0.5;
+            
+           /* modify the value in the output file */
+           fits_modify_key_dbl(newptr, keyname, crpix, 15, NULL, status);
+
+           if (incs[ii] != 1 || fpixels[ii] > lpixels[ii])
+           {
+             /* read the CDELTn keyword if it exists in the input file */
+             fits_make_keyn("CDELT", ii + 1, keyname, status);
+             tstatus = 0;
+
+             if (fits_read_key(*fptr, TDOUBLE, keyname, 
+                 &cdelt, NULL, &tstatus) == 0)
+             {
+               /* calculate the new CDELTn value */
+               if (fpixels[ii] <= lpixels[ii])
+                 cdelt = cdelt * incs[ii];
+               else
+                 cdelt = cdelt * (-incs[ii]);
+              
+               /* modify the value in the output file */
+               fits_modify_key_dbl(newptr, keyname, cdelt, 15, NULL, status);
+             }
+           }
+         }
+       }
+    }  /* end of main NAXIS loop */
+
+    /* if the WCS CD matrix keywords exist, update them if necessary */
+    /*  this code needs to be added here */
+
+    if (ffrdef(newptr, status) > 0)  /* force the header to be scanned */
+    {
+        ffclos(newptr, status);
+        return(*status);
+    }
+
+    /* write a dummy value to the last pixel in the output section */
+    /* This will force memory to be allocated for the FITS files if it */
+    /* is being written in memory, before we allocate some more memory */
+    /* below.  Hopefully this leads to better memory management and */
+    /* reduces the probability that the memory for the FITS file will have */
+    /* to be reallocated to a new location later. */
+
+    if (fits_write_img(newptr, TLONG, outsize, 1, incs, status) > 0)
+    {
+        ffpmsg("error trying to write dummy value to the last image pixel");
+        ffclos(newptr, status);
+        return(*status);
+    }
+
+    /* allocate memory for the entire image section */
+    buffsize = outsize * abs(bitpix) / 8;
+
+    buffer = (double *) malloc(buffsize);
+    if (!buffer)
+    {
+        ffpmsg("error allocating memory for image section");
+        ffclos(newptr, status);
+        return(*status);
+    }
+
+    /* turn off any scaling of the pixel values */
+    fits_set_bscale(*fptr,  1.0, 0.0, status);
+    fits_set_bscale(newptr, 1.0, 0.0, status);
+
+    /* read the image section then write it to the output file */
+
+    if (bitpix == 8)
+    {
+        ffgsvb(*fptr, 1, naxis, naxes, fpixels, lpixels, incs, 0,
+            (unsigned char *) buffer, &anynull, status);
+
+        ffpprb(newptr, 1, 1, outsize, (unsigned char *) buffer, status);
+    }
+    else if (bitpix == 16)
+    {
+        ffgsvi(*fptr, 1, naxis, naxes, fpixels, lpixels, incs, 0,
+            (short *) buffer, &anynull, status);
+
+        ffppri(newptr, 1, 1, outsize, (short *) buffer, status);
+    }
+    else if (bitpix == 32)
+    {
+        ffgsvk(*fptr, 1, naxis, naxes, fpixels, lpixels, incs, 0,
+            (int *) buffer, &anynull, status);
+
+        ffpprk(newptr, 1, 1, outsize, (int *) buffer, status);
+    }
+    else if (bitpix == -32)
+    {
+        ffgsve(*fptr, 1, naxis, naxes, fpixels, lpixels, incs, FLOATNULLVALUE,
+            (float *) buffer, &anynull, status);
+
+        ffppne(newptr, 1, 1, outsize, (float *) buffer, FLOATNULLVALUE, status);
+    }
+    else if (bitpix == -64)
+    {
+        ffgsvd(*fptr, 1, naxis, naxes, fpixels, lpixels, incs, DOUBLENULLVALUE,
+             buffer, &anynull, status);
+
+        ffppnd(newptr, 1, 1, outsize, buffer, DOUBLENULLVALUE,
+               status);
+    }
+
+    free(buffer);  /* finished with the memory */
+
+    if (*status > 0)
+    {
+        ffpmsg("error copying image section from input to output file");
+        ffclos(newptr, status);
+        return(*status);
+    }
+
+    /* copy any remaining HDUs to the output file */
+
+    for (ii = hdunum + 1; 1; ii++)
+    {
+        if (fits_movabs_hdu(*fptr, ii, NULL, status) > 0)
+            break;
+
+        fits_copy_hdu(*fptr, newptr, 0, status);
+    }
+
+    if (*status == END_OF_FILE)   
+        *status = 0;              /* got the expected EOF error; reset = 0  */
+    else if (*status > 0)
+    {
+        ffclos(newptr, status);
+        return(*status);
+    }
+
+    /* close the original file and return ptr to the new image */
+    ffclos(*fptr, status);
+
+    *fptr = newptr; /* reset the pointer to the new table */
+
+    /* move back to the image subsection */
+    fits_movabs_hdu(*fptr, hdunum, NULL, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_get_section_range(char **ptr, 
+                   long *secmin,
+                   long *secmax, 
+                   long *incre,
+                   int *status)
+/*
+   Parse the input image section specification string, returning 
+   the  min, max and increment values.
+   Typical string =   "1:512:2"  or "1:512"
+*/
+{
+    int slen, isanumber;
+    char token[FLEN_VALUE];
+
+    if (*status > 0)
+        return(*status);
+
+    slen = fits_get_token(ptr, " ,:", token, &isanumber); /* get 1st token */
+
+    if (slen == 0 || !isanumber || **ptr != ':')
+        return(*status = URL_PARSE_ERROR);   
+
+    /* the token contains the min value */
+    *secmin = atol(token);
+
+    (*ptr)++;  /* skip the colon between the min and max values */
+    slen = fits_get_token(ptr, " ,:", token, &isanumber); /* get token */
+
+    if (slen == 0 || !isanumber)
+        return(*status = URL_PARSE_ERROR);   
+
+    /* the token contains the max value */
+    *secmax = atol(token);
+
+    if (**ptr == ':')
+    {
+        (*ptr)++;  /* skip the colon between the max and incre values */
+        slen = fits_get_token(ptr, " ,", token, &isanumber); /* get token */
+
+        if (slen == 0 || !isanumber)
+            return(*status = URL_PARSE_ERROR);   
+
+        *incre = atol(token);
+    }
+    else
+        *incre = 1;  /* default increment if none is supplied */
+
+    if (**ptr == ',')
+        (*ptr)++;
+
+    while (**ptr == ' ')   /* skip any trailing blanks */
+         (*ptr)++;
+
+    if (*secmin < 1 || *secmax < 1 || *incre < 1)
+        *status = URL_PARSE_ERROR;
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffselect_table(
            fitsfile **fptr,  /* IO - pointer to input table; on output it  */
                              /*      points to the new selected rows table */
@@ -1510,7 +1873,7 @@ int ffselect_table(
       (newptr->Fptr)->numrows = 0;
       (newptr->Fptr)->origrows = 0;
 
-      if (ffrdef(*fptr, status) > 0)  /* force the header to be scanned */
+      if (ffrdef(newptr, status) > 0)  /* force the header to be scanned */
       {
         ffclos(newptr, status);
         return(*status);
@@ -2481,7 +2844,6 @@ int ffiurl(char *url,
         }
     }
 
-
     /* --------------------------------------------- */
     /* check if this is an IRAF file (.imh extension */
     /* --------------------------------------------- */
@@ -2558,8 +2920,9 @@ int ffiurl(char *url,
     /* see if [ extension specification ] is given */
     /* ------------------------------------------- */
 
-    if (!plus_ext) /* extension no. not already specified?  Then */
+    if (!plus_ext) /* extension no. not already specified?  Then      */
                    /* first brackets must enclose extension name or # */
+                   /* or it encloses a image subsection specification */
     {
        ptr1 = ptr3 + 1;    /* pointer to first char after the [ */
 
@@ -2571,12 +2934,31 @@ int ffiurl(char *url,
             return(*status = URL_PARSE_ERROR);  /* error, no closing ] */
        }
 
-       /* copy the extension specification */
-       if (extspec)
-           strncat(extspec, ptr1, ptr2 - ptr1);
+       /* test if this is an image section:  an integer followed by ':' */
+       tmptr = ptr1;
 
-       /* copy any remaining chars to filter spec string */
-       strcat(rowfilter, ptr2 + 1);
+       while (*tmptr == ' ')
+          tmptr++;   /* skip leading blanks */
+
+       while (isdigit((int) *tmptr))
+          tmptr++;             /* skip over leading digits */
+
+       if (*tmptr == ':')
+       {
+           /* this is an image section specifier */
+           if (extspec)
+              strcpy(extspec, "0"); /* the 0 extension number is implicit */
+           strcat(rowfilter, ptr3);
+       }
+       else
+       {
+           /* copy the extension specification */
+           if (extspec)
+               strncat(extspec, ptr1, ptr2 - ptr1);
+
+           /* copy any remaining chars to filter spec string */
+           strcat(rowfilter, ptr2 + 1);
+       }
     }
     else   /* copy all remaining input chars to filter spec */
     {

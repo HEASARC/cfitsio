@@ -21,14 +21,20 @@ at the operating system prompt.  The 'configure' command customizes
 the Makefile for your particular system, then the 'make' command
 builds the library.
 
-On VAX/VMS and ALPHA/VMS systems, the make.com command file may be used
-to build the cfitsio.olb object library.  Execute this command file by
-typing '@make' on the command line.
+On VAX/VMS and ALPHA/VMS systems the make.com command file may be used
+to build the cfitsio.olb object library using the default G-floating
+point option for double variables.  The make\_dfloat.com and make\_ieee.com
+files may be used instead to build the library with the other floating
+point options.
 
-On DOS-based PC computers, the makepc.bat file gives an example of how
-to build the CFITSIO library.  This file will probably need to be
-editted to include the appropriate command switches if a different C
-compiler or linker is used.
+On Windows PC computers, 2 files are included to help build the CFITSIO
+library:  The makepc.bat file gives an example of how to build CFITSIO
+with the Borland C++ v4.5 compiler.  This file will probably need to
+be  edited to include the appropriate command switches if a different C
+compiler or linker is used.  Also, the file cfitsio_visualc.zip
+contains the Microsoft Developer workspace files for building CFITSIO on
+WindowsNT using Microsoft Visual C++ 5.0.  Refer to the enclosed README 
+file for further instructions.
 
 On OS/2 systems, CFITSIO can be built using the supplied makefile by
 typing 'make -f makefile.os2'.  This makefile requires the GCC compiler
@@ -96,16 +102,21 @@ CFITSIO has currently been tested on the following platforms:
 
    Operating System          Compiler
    ----------------          --------
+  OPERATING SYSTEM           COMPILER
    Sun OS                     gcc and cc (3.0.1)
    Sun Solaris                gcc and cc
    Silicon Graphics IRIX      gcc and cc
    DECstation  Ultrix         gcc
    Dec Alpha OSF/1            gcc
-   Dec Alpha OpenVMS          cc with /float=gfloat or /float=ieee options
+   Dec Alpha OpenVMS          cc 
    DEC VAX/VMS                gcc and cc
-   Linux running on IBM PC    gcc
-   IBM PC w/ Windows 95       Borland C++ V4.5
-   IBM PC w/ OS/2             gcc + EMX
+   HP-UX                      gcc
+   IBM AIX                    gcc
+   Linux                      gcc
+   MkLinux                    DR3
+   Windows 95                 Borland C++ V4.5
+   Windows NT                 Microsoft Visual C++ v5.0
+   OS/2                       gcc + EMX
    MacOS 7.1 or greater       Metrowerks 10.+
 
 CFITSIO will probably run on most other Unix platforms without

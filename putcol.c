@@ -1145,7 +1145,13 @@ int ffiter(int n_cols,
          break;   /* looks like an error occurred; quit immediately */
 
       /* call work function */
-      *status = work_fn(totaln, offset, frow, ntodo, n_cols, cols, userPointer);
+
+      if (hdutype == IMAGE_HDU) 
+          *status = work_fn(totaln, offset, felement, ntodo, n_cols, cols,
+                    userPointer);
+      else
+          *status = work_fn(totaln, offset, frow, ntodo, n_cols, cols,
+                    userPointer);
 
       if (*status > 0 || *status < -1 ) 
          break;   /* looks like an error occurred; quit immediately */

@@ -45,7 +45,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large January 1999\\}
+{\Large February 1999\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -220,16 +220,19 @@ The disadvantages are:
 \end{verbatim}
 
 On VAX/VMS and ALPHA/VMS systems the make.com command file may be used
-to build the cfitsio.olb object library.  Execute this command file by
-typing '@make' on the command line.  CFITSIO can support both the
-native G-float format and the IEEE float format on ALPHA/VMS systems;
-the makeieee.com file can be used to build the CFITSIO library using
-IEEE float.
+to build the cfitsio.olb object library using the default G-floating
+point option for double variables.  The make\_dfloat.com and make\_ieee.com
+files may be used instead to build the library with the other floating
+point options.
 
-On DOS-based PC computers, the makepc.bat file gives an example of how
-to build the CFITSIO library.  This file will probably need to be
-edited to include the appropriate command switches if a different C
-compiler or linker is used.
+On Windows PC computers, 2 files are included to help build the CFITSIO
+library:  The makepc.bat file gives an example of how to build CFITSIO
+with the Borland C++ v4.5 compiler.  This file will probably need to
+be  edited to include the appropriate command switches if a different C
+compiler or linker is used.  Also, the file cfitsio\_visualc.zip
+contains the Microsoft Developer workspace files for building CFITSIO on
+WindowsNT using Microsoft Visual C++ 5.0.  Refer to the enclosed README
+file for further instructions.
 
 On OS/2 systems, CFITSIO can be built by typing 'make -f
 makefile.os2'.  This makefile requires the GCC compiler and EMX
@@ -260,14 +263,15 @@ CFITSIO has currently been tested on the following platforms:
    Silicon Graphics IRIX      gcc and cc
    DECstation  Ultrix         gcc
    Dec Alpha OSF/1            gcc
-   Dec Alpha OpenVMS          cc with /float=gfloat or /float=ieee options
+   Dec Alpha OpenVMS          cc
    DEC VAX/VMS                gcc and cc
    HP-UX                      gcc
    IBM AIX                    gcc
-   Linux running on IBM PC    gcc
+   Linux                      gcc
    MkLinux                    DR3
-   IBM PC w/ Windows 95       Borland C++ V4.5
-   IBM PC w/ OS/2             gcc + EMX
+   Windows 95                 Borland C++ V4.5
+   Windows NT                 Microsoft Visual C++ v5.0
+   OS/2                       gcc + EMX
    MacOS 7.1 or greater       Metrowerks 10.+
 \end{verbatim}
 CFITSIO will probably run on most other Unix platforms.  Cray
@@ -302,7 +306,8 @@ testprog.lis in the Unix example) should be identical to the listing
 contained in the file testprog.out.  The 'diff' and 'cmp' commands
 shown above should not report any differences in the files.  (There
 may be some minor formating differences, such as the presence or
-absence of leading zeros, which can be ignored).
+absence of leading zeros, or 3 digit exponents in numbers,
+which can be ignored).
 
 The Fortran wrappers in CFITSIO may be tested with the testf77
 program on Unix systems with:
@@ -479,16 +484,17 @@ have inadvertently been omitted):
 
 Steve Allen, Carl Akerlof, Keith Arnaud, Morten Krabbe Barfoed, Kent
 Blackburn, G Bodammer, Romke Bontekoe, Lucio Chiappetti, Keith Costorf,
-Robin Corbet, John Davis,  Richard Fink, Ning Gan, Emily Greene, Joe
-Harrington, Cheng Ho, Phil Hodge, Jim Ingham, Yoshitaka Ishisaki, Diab
-Jerius, Mark Levine, Todd Karakaskian, Edward King, Scott Koch,  Claire
-Larkin, Rob Managan, Eric Mandel, John Mattox, Carsten Meyer, Emi
-Miyata, Stefan Mochnacki, Mike Noble, Oliver Oberdorf, Clive Page,
-Arvind Parmar, Jeff Pedelty, Tim Pearson, Maren Purves, Scott Randall,
-Chris Rogers, Arnold Rots, Barry Schlesinger, Robin Stebbins, Andrew
-Szymkowiak, Allyn Tennant, Peter Teuben, James Theiler, Doug Tody,
-Shiro Ueno, Steve Walton, Archie Warnock, Alan Watson, Dan Whipple, Wim
-Wimmers, Peter Young, Jianjun Xu, and Nelson Zarate.
+Robin Corbet, John Davis,  Richard Fink, Ning Gan, Emily Greene,
+Gretchen Green, Joe Harrington, Cheng Ho, Phil Hodge, Jim Ingham,
+Yoshitaka Ishisaki, Diab Jerius, Mark Levine, Todd Karakaskian, Edward
+King, Scott Koch,  Claire Larkin, Rob Managan, Eric Mandel, John
+Mattox, Carsten Meyer, Emi Miyata, Stefan Mochnacki, Mike Noble, Oliver
+Oberdorf, Clive Page, Arvind Parmar, Jeff Pedelty, Tim Pearson, Maren
+Purves, Scott Randall, Chris Rogers, Arnold Rots, Barry Schlesinger,
+Robin Stebbins, Andrew Szymkowiak, Allyn Tennant, Peter Teuben, James
+Theiler, Doug Tody, Shiro Ueno, Steve Walton, Archie Warnock, Alan
+Watson, Dan Whipple, Wim Wimmers, Peter Young, Jianjun Xu, and Nelson
+Zarate.
 
 
 \chapter{  A FITS Primer }
@@ -719,6 +725,18 @@ is mainly useful for testing purposes when one does not want a
 permanent copy of the output file.
 
 \item
+{\tt 'myfile.fits[3; Images(10)]'}: opens a copy of the image contained in the
+10th row of the 'Images' column in the binary table in the 3th extension
+of the FITS file.  The application just sees this single image as the
+primary array.
+
+\item
+{\tt 'myfile.fits[1:512:2, 1:512:2]'}: opens a section of the input image
+ranging from the 1st to the 512th pixel in  X and Y, and selects every
+second pixel in both dimensions, resulting in a 256 x 256 pixel image
+in this case.
+
+\item
 {\tt 'myfile.fits[EVENTS][col Rad = sqrt(X**2 + Y**2)]'}:  creates and opens
 a temporary file on the fly (in memory or on disk) that is identical to
 myfile.fits except that it will contain a new column in the EVENTS
@@ -768,15 +786,20 @@ This section describes the full syntax for the CFITSIO FITS file names,
 which can contain the following components:
  
 \begin{verbatim}
+filetype://BaseFilename(outName)[HDUlocation][ImageSection]
+\end{verbatim}
+for an image HDU, or
+ 
+\begin{verbatim}
 filetype://BaseFilename(outName)[HDUlocation][colFilter][rowFilter][binSpec]
 \end{verbatim}
-where each of these components is described below.  The filetype,
-BaseFilename, outName, and HDUlocation components, if present, must be
-given in that order, but the colFilter, rowFilter, and binSpec
-specifiers may follow in any order.  Regardless of the order, however,
-the colFilter specifier, if present, will be processed first by
-CFITSIO, followed by the rowFilter specifier, and finally by the
-binSpec specifier.
+for a table HDU, where each of these components is described below.
+The filetype, BaseFilename, outName, HDUlocation, and ImageSection
+components, if present, must be given in that order, but the colFilter,
+rowFilter, and binSpec specifiers may follow in any order.  Regardless
+of the order, however, the colFilter specifier, if present, will be
+processed first by CFITSIO, followed by the rowFilter specifier, and
+finally by the binSpec specifier.
 
 
  
@@ -1411,6 +1434,29 @@ syntax as described in the Row Filter Specifier section, below.
                    in the first row that has an 'exposure' column value
                    greater than 100.
 \end{verbatim}
+
+ 
+\subsection{age Section}
+
+A subsection of an image can be opened by specifying the range of
+pixels (start:end), or with an optional pixel increment
+(start:end:step), for each axis of the input image. For example,
+'myfile.fits[1:512:2, 2:512:2]' will open an a 256x256 pixel image
+consisting of the odd numbered columns and the even numbered rows of
+the image in the primary array of the file myfile.fits.  The input
+image can be in the primary array, in an image extension, or in a
+vector cell of a binary table. In the later 2 cases the extension name
+or number must be specified before the image section specifier, as in:
+'myfile.fits[3][1:256,1:256]' to open a subsection of the image in the
+3rd extension of the file. A pixel step = 1 will be assumed if it is
+not specified. CFITSIO creates a tempory copy of the file containing
+the image section plus a copy of any other HDUs in the file which is
+then opened by the application program, so it is not possible to write
+to or modify the origninal file when specifying an image section.  If
+necessary, CFITSIO automatically updates the world coordinate system
+keywords in the header of the image, if they exist, so that the
+coordinate associated with each pixel in the image section will be
+computed correctly.
 
  
 \subsection{Column and Keyword Filtering Specification}
@@ -4393,7 +4439,21 @@ the first 8 characters, and strongly recommended that the names be
 \end{verbatim}
  
 \begin{description}
-\item[4 ] Write (append) a TDIMn keyword whose value has the form '(l,m,n...)'
+\item[4 ] Return the display width of a column.  This is the length
+    of the string that will be returned by the fits\_read\_col routine
+    when reading the column as a formatted string.  The display width is
+    determined by the TDISPn keyword, if present, otherwise by the data
+   type of the column. \label{ffgcdw}
+\end{description}
+ 
+\begin{verbatim}
+  int fits_get_col_display_width / ffgcdw
+      (fitsfile *fptr, int colnum, > int *dispwidth, int *status)
+\end{verbatim}
+
+ 
+\begin{description}
+\item[5 ] Write (append) a TDIMn keyword whose value has the form '(l,m,n...)'
     where l, m, n... are the dimensions of a multidimension array
    column in a binary table. \label{ffptdm}
 \end{description}
@@ -4404,7 +4464,7 @@ the first 8 characters, and strongly recommended that the names be
 \end{verbatim}
  
 \begin{description}
-\item[5 ] Return the number of and size of the dimensions of a table column in
+\item[6 ] Return the number of and size of the dimensions of a table column in
     a binary table. Normally this information is given by the TDIMn keyword,
     but if this keyword is not present then this routine returns naxis = 1
    and naxes[0] equal to the repeat count in the TFORM keyword. \label{ffgtdm}
@@ -4417,7 +4477,7 @@ the first 8 characters, and strongly recommended that the names be
 \end{verbatim}
  
 \begin{description}
-\item[6 ] Decode the input TDIMn keyword string (e.g. '(100,200)') and return the
+\item[7 ] Decode the input TDIMn keyword string (e.g. '(100,200)') and return the
     number of and size of the dimensions of a binary table column. If the input
     tdimstr character string is null, then this routine returns naxis = 1
     and naxes[0] equal to the repeat count in the TFORM keyword. This routine
@@ -4622,7 +4682,33 @@ number of table cells.
     Undefined array elements will be returned with a value = *nullval,
     (note that this parameter gives the address of the null value, not the
     null value itself) unless nulval = 0 or *nulval = 0, in which case no
-   checking for undefined pixels will be performed. \label{ffgcv}
+    checking for undefined pixels will be performed.
+
+    Any column, regardless of it's intrinsic datatype, may be read as a
+    string.  It should be noted however that reading a numeric column
+    as a string is 10 - 100 times slower than reading the same column as
+    a number due to the large overhead in constructing the formatted
+    strings.  The display format of the returned strings will be
+    determined by the TDISPn keyword, if it exists, otherwise by the
+    datatype of the column.  The length of the returned strings (not
+    including the null terminating character) can be determined with
+    the fits\_get\_col\_display\_width routine.  The following TDISPn
+    display formats are currently supported:
+ 
+\begin{verbatim}
+
+    Iw.m   Integer
+    Ow.m   Octal integer
+    Zw.m   Hexadecimal integer
+    Fw.d   Fixed floating point
+    Ew.d   Exponential floating point
+    Dw.d   Exponential floating point
+    Gw.d   General; uses Fw.d if significance not lost, else Ew.d
+\end{verbatim}
+    where w is the width in characters of the displayed values, m is the minimum
+    number of digits displayed, and d is the number of digits to the right of the
+    decimal.  The .m field is optional.
+   \label{ffgcv}
 \end{description}
  
 \begin{verbatim}
@@ -5363,7 +5449,7 @@ and a later revision in June 1995.
            (char *ascii, int complm, > unsigned long *sum);
 \end{verbatim}
  
-\section{ Date and Time Utility Routines}
+\section{  Date and Time Utility Routines}
 
 The following routines help to construct or parse the FITS date/time
 strings.   Starting in the year 2000, the FITS DATE keyword values (and
@@ -5378,24 +5464,27 @@ after 01 January 2000.
 \item[1 ] Get the current system date.  C already provides standard
     library routines for getting the current date and time,
     but this routine is provided for compatibility with
-    the Fortran FITSIO library).  The returned year has 4 digits
+    the Fortran FITSIO library.  The returned year has 4 digits
     (1999, 2000, etc.) \label{ffgsdt}
 \end{description}
  
 \begin{verbatim}
-  int ffgsdt( > int *day, int *month, int *year, int *status )
+  int fits_get_system_date/ffgsdt
+      ( > int *day, int *month, int *year, int *status )
 \end{verbatim}
 
  
 \begin{description}
 \item[2 ] Get the current system date and time string ('YYYY-MM-DDThh:mm:ss').
-This will be in UTC/GMT if available (indicated by timeref = 0) otherwise
-it will be in local time.
+The time will be in UTC/GMT if available, as indicated by a returned timeref
+value = 0.  If the returned value of timeref = 1 then this indicates that
+it was not possible to convert the local time to UTC, and thus the local
+time was returned.
 \end{description}
  
 \begin{verbatim}
-int fits_get_system_time/ffgstm
-    (> char *timestr, int  *timeref, int *status)
+  int fits_get_system_time/ffgstm
+      (> char *datestr, int  *timeref, int *status)
 \end{verbatim}
 
  
@@ -5408,8 +5497,8 @@ have the new FITS format ('YYYY-MM-DD').  Use fits\_time2str instead
 \end{description}
  
 \begin{verbatim}
-int fits_date2str/ffdt2s
-    (int year, int month, int day, > char *datestr, int *status)
+  int fits_date2str/ffdt2s
+      (int year, int month, int day, > char *datestr, int *status)
 \end{verbatim}
 
  
@@ -5422,9 +5511,9 @@ int fits_date2str/ffdt2s
 \end{description}
  
 \begin{verbatim}
-int fits_time2str/fftm2s
-    (int year, int month, int day, int hour, int minute, double second,
-     int decimals, > char *datestr, int *status)
+  int fits_time2str/fftm2s
+      (int year, int month, int day, int hour, int minute, double second,
+      int decimals, > char *datestr, int *status)
 \end{verbatim}
 
  
@@ -5436,8 +5525,8 @@ in either the old ('dd/mm/yy')  or new ('YYYY-MM-DDThh:mm:ss' or
 \end{description}
  
 \begin{verbatim}
-int fits_str2date/ffs2dt
-    (char *datestr, > int *year, int *month, int *day, int *status)
+  int fits_str2date/ffs2dt
+      (char *datestr, > int *year, int *month, int *day, int *status)
 \end{verbatim}
 
  
@@ -5453,9 +5542,9 @@ parameters.
 \end{description}
  
 \begin{verbatim}
-int fits_str2time/ffs2tm
-    (char *datestr, > int *year, int *month, int *day, int *hour,
-     int *minute, double *second, int *status)
+  int fits_str2time/ffs2tm
+      (char *datestr, > int *year, int *month, int *day, int *hour,
+      int *minute, double *second, int *status)
 \end{verbatim}
  
 \section{ General Utility Routines}
@@ -7008,13 +7097,35 @@ Two types of routines are provided to get the column data which differ
 in the way undefined pixels are handled.  The first set of routines
 (ffgcv) simply return an array of data elements in which undefined
 pixels are set equal to a value specified by the user in the 'nullval'
-parameter.  An additional feature of these routines is that if the user
-sets nullval = 0, then no checks for undefined pixels will be
+parameter.  If nullval = 0, then no checks for undefined pixels will be
 performed, thus increasing the speed of the program.  The second set of
 routines (ffgcf) returns the data element array and in addition a
 logical array of flags which defines whether the corresponding data
 pixel is undefined.
 
+    Any column, regardless of it's intrinsic datatype, may be read as a
+    string.  It should be noted however that reading a numeric column as
+    a string is 10 - 100 times slower than reading the same column as a number
+    due to the large overhead in constructing the formatted strings.
+    The display format of the returned strings will be
+    determined by the TDISPn keyword, if it exists, otherwise by the
+    datatype of the column.  The length of the returned strings (not
+    including the null terminating character) can be determined with
+    the fits\_get\_col\_display\_width routine.  The following TDISPn
+    display formats are currently supported:
+ 
+\begin{verbatim}
+    Iw.m   Integer
+    Ow.m   Octal integer
+    Zw.m   Hexadecimal integer
+    Fw.d   Fixed floating point
+    Ew.d   Exponential floating point
+    Dw.d   Exponential floating point
+    Gw.d   General; uses Fw.d if significance not lost, else Ew.d
+\end{verbatim}
+    where w is the width in characters of the displayed values, m is
+    the minimum number of digits displayed, and d is the number of
+    digits to the right of the decimal.  The .m field is optional.
 
  
 \begin{description}
@@ -7202,6 +7313,7 @@ fits\_flush\_file     & \pageref{ffflus} \\
 fits\_get\_acolparms  & \pageref{ffgacl} \\
 fits\_get\_bcolparms  & \pageref{ffgbcl} \\
 fits\_get\_chksum     & \pageref{ffgcks} \\
+fits\_get\_col\_display\_width    & \pageref{ffgcdw} \\
 fits\_get\_colname    & \pageref{ffgcnn} \\
 fits\_get\_colnum     & \pageref{ffgcno} \\
 fits\_get\_coltype    & \pageref{ffgtcl} \\
@@ -7223,9 +7335,9 @@ fits\_get\_tbcol      & \pageref{ffgabc} \\
 fits\_get\_version    & \pageref{ffvers} \\
 fits\_insert\_atbl    & \pageref{ffitab} \\
 fits\_insert\_btbl    & \pageref{ffibin} \\
-fits\_insert\_col   & \pageref{fficol} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_insert\_col   & \pageref{fficol} \\
 fits\_insert\_cols  & \pageref{fficls} \\
 fits\_insert\_group  & \pageref{ffgtis} \\
 fits\_insert\_img     & \pageref{ffiimg} \\
@@ -7257,10 +7369,10 @@ fits\_parse\_rootname & \pageref{ffrtnm} \\
 fits\_parse\_template & \pageref{ffgthd} \\
 fits\_parse\_value    & \pageref{ffpsvc} \\
 fits\_pix\_to\_world & \pageref{ffwldp} \\
-fits\_read\_2d\_TYP      & \pageref{ffg2dx} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_read\_2d\_TYP      & \pageref{ffg2dx} \\
 fits\_read\_3d\_TYP      & \pageref{ffg3dx} \\
 fits\_read\_atblhdr      & \pageref{ffghtb} \\
 fits\_read\_btblhdr      & \pageref{ffghbn} \\
@@ -7306,9 +7418,9 @@ fits\_set\_hdustruc   & \pageref{ffrdef} \\
 fits\_set\_imgnull    & \pageref{ffpnul} \\
 fits\_set\_tscale     & \pageref{fftscl} \\
 fits\_str2date        & \pageref{ffdt2s} \\
-fits\_str2time        & \pageref{ffdt2s} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_str2time        & \pageref{ffdt2s} \\
 fits\_test\_expr    & \pageref{fftexp} \\
 fits\_test\_keyword   & \pageref{fftkey} \\
 fits\_test\_record    & \pageref{fftrec} \\
@@ -7355,9 +7467,9 @@ fits\_write\_key\_triple   & \pageref{ffpkyt} \\
 fits\_write\_key\_unit     & \pageref{ffpunt} \\
 fits\_write\_key\_TYP      & \pageref{ffpkyx} \\
 fits\_write\_keys\_TYP     & \pageref{ffpknx} \\
-fits\_write\_null\_img & \pageref{ffpprn} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_write\_null\_img & \pageref{ffpprn} \\
 fits\_write\_record       & \pageref{ffprec} \\
 fits\_write\_subset\_TYP  & \pageref{ffpssx} \\
 fits\_write\_tblbytes  & \pageref{ffptbb} \\
@@ -7404,6 +7516,7 @@ ffg3d\_      & \pageref{ffg3dx} \\
 ffgabc      & \pageref{ffgabc} \\
 ffgacl  & \pageref{ffgacl} \\
 ffgbcl  & \pageref{ffgbcl} \\
+ffgcdw  & \pageref{ffgcdw} \\
 ffgcf\_    & \pageref{ffgcfx} \\
 ffgcks     & \pageref{ffgcks} \\
 ffgcnn    & \pageref{ffgcnn} \\
@@ -7412,9 +7525,9 @@ ffgcrd         & \pageref{ffgcrd} \\
 ffgcv        & \pageref{ffgcv} \\
 ffgcv\_    & \pageref{ffgcvx} \\
 ffgcx     & \pageref{ffgcx} \\
-ffgdes & \pageref{ffgdes} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffgdes & \pageref{ffgdes} \\
 ffgdess & \pageref{ffgdes} \\
 ffgerr  & \pageref{ffgerr} \\
 ffggp\_  & \pageref{ffggpx} \\
@@ -7460,9 +7573,9 @@ ffgtcm & \pageref{ffgtcm} \\
 ffgtcp  & \pageref{ffgtcp} \\
 ffgtcr  & \pageref{ffgtcr} \\
 ffgtcs & \pageref{ffgtcs} \\
-ffgtdm         & \pageref{ffgtdm} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffgtdm         & \pageref{ffgtdm} \\
 ffgthd & \pageref{ffgthd} \\
 ffgtis  & \pageref{ffgtis} \\
 ffgtmg  & \pageref{ffgtmg} \\
@@ -7508,9 +7621,9 @@ ffpcn\_ & \pageref{ffpcnx} \\
 ffpcom      & \pageref{ffpcom} \\
 ffpdat         & \pageref{ffpdat} \\
 ffpdes  & \pageref{ffpdes} \\
-ffpgp\_ & \pageref{ffpgpx} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffpgp\_ & \pageref{ffpgpx} \\
 ffphbn      & \pageref{ffphbn} \\
 ffphis      & \pageref{ffphis} \\
 ffphpr       & \pageref{ffphpr} \\
@@ -7556,9 +7669,9 @@ fftm2s  & \pageref{ffdt2s} \\
 fftnul   & \pageref{fftnul} \\
 fftplt & \pageref{fftplt} \\
 fftrec    & \pageref{fftrec} \\
-fftscl     & \pageref{fftscl} \\
 \end{tabular}
 \begin{tabular}{lr}
+fftscl     & \pageref{fftscl} \\
 ffucrd       & \pageref{ffucrd} \\
 ffuky        & \pageref{ffuky} \\
 ffukyu   & \pageref{ffukyu} \\
@@ -7624,6 +7737,7 @@ decimals - number of decimal places to be displayed
 delta_size - increment for allocating more memory
 dim1     - declared size of the first dimension of the image or cube array
 dim2     - declared size of the second dimension of the data cube array
+dispwidth - display width of a column = length of string that will be read
 dtype    - datatype of the keyword ('C', 'L', 'I', 'F' or 'X')
                 C = character string
                 L = logical

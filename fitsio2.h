@@ -188,6 +188,7 @@
 int ffmkky(char *keyname, char *keyval, char *comm, char *card, int *status);
 int ffgnky(fitsfile *fptr, char *card, int *status);
 void ffcfmt(char *tform, char *cform);
+void ffcdsp(char *tform, char *cform);
 void ffswap2(short *values, long nvalues);
 void ffswap4(INT32BIT *values, long nvalues);
 void ffswap8(double *values, long nvalues);
@@ -252,6 +253,8 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
 int fits_copy_image_cell(fitsfile **fptr, char *outfile, char *colname,
            long rownum, int *status);
 int fits_copy_image_keywords(fitsfile *infptr, fitsfile *outfptr, int *status);
+int fits_get_section_range(char **ptr,long *secmin,long *secmax,long *incre,
+              int *status);
 int ffrhdu(fitsfile *fptr, int *hdutype, int *status);
 int ffpinit(fitsfile *fptr, int *status);
 int ffainit(fitsfile *fptr, int *status);
@@ -287,6 +290,9 @@ int ffgcll(fitsfile *fptr, int colnum, long firstrow, long firstelem, long
            nelem, int nultyp, char nulval, char *array, char *nularray,
            int *anynul, int *status);
 int ffgcls(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+           long nelem, int nultyp, char *nulval,
+           char **array, char *nularray, int *anynul, int  *status);
+int ffgcls2(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, int nultyp, char *nulval,
            char **array, char *nularray, int *anynul, int  *status);
 int ffgclb(fitsfile *fptr, int colnum, long firstrow, long firstelem,
@@ -789,13 +795,13 @@ int uncompress2file(char *filename,
 #endif
 
 
-#if defined(vms) || defined(__vms) || defined(__WIN32__) || defined(macintosh)
+#if defined(vms) || defined(__vms) || defined(WIN32) || defined(__WIN32__) || defined(macintosh)
 
 /* ================================================================== */
 /* A hack for nonunix machines, which lack strcasecmp and strncasecmp */
 /* ================================================================== */
 
-int strcasecmp (char *s1, char *s2       );
-int strncasecmp(char *s1, char *s2, int n);
+int strcasecmp (const char *s1, const char *s2       );
+int strncasecmp(const char *s1, const char *s2, size_t n);
 
 #endif
