@@ -9,7 +9,6 @@
 #define FF_FLEX_MINOR_VERSION 5
 
 #include <stdio.h>
-#include <unistd.h>
 
 
 /* cfront 1.2 defines "c_plusplus" instead of "__cplusplus" */
@@ -23,6 +22,7 @@
 #ifdef __cplusplus
 
 #include <stdlib.h>
+#include <unistd.h>
 
 /* Use prototypes in function declarations. */
 #define FF_USE_PROTOS
@@ -769,7 +769,7 @@ FF_MALLOC_DECL
 FF_DECL
 	{
 	register ff_state_type ff_current_state;
-	register char *ff_cp = NULL, *ff_bp = NULL;
+	register char *ff_cp, *ff_bp;
 	register int ff_act;
 
 #line 142 "eval.l"
@@ -1767,6 +1767,11 @@ FF_BUFFER_STATE b;
 	}
 
 
+#ifndef FF_ALWAYS_INTERACTIVE
+#ifndef FF_NEVER_INTERACTIVE
+extern int isatty FF_PROTO(( int ));
+#endif
+#endif
 
 #ifdef FF_USE_PROTOS
 void ff_init_buffer( FF_BUFFER_STATE b, FILE *file )

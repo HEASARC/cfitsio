@@ -3,6 +3,7 @@
 
 #define fits_parse_input_url ffiurl
 #define fits_parse_rootname ffrtnm
+#define fits_file_exists    ffexist
 #define fits_parse_output_url ffourl
 #define fits_parse_extspec  ffexts
 #define fits_parse_extnum   ffextn

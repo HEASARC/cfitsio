@@ -1,7 +1,12 @@
 
                    Log of Changes Made to CFITSIO
 
-Version 2.500 -   2004
+Version 2.500 - 28 July 2004
+
+  New Routine:  
+  
+   - fits_file_exists tests whether the specified input file, or a 
+     compressed version of the file, exists on disk.
 
   Enhancements:
 
@@ -20,9 +25,18 @@ Version 2.500 -   2004
          NVALID (returns the number of non-null values in the vector)
 
        - all the new functions (and SUM, MIN and MAX) ignore null values
+       
+   - modified the iterator to support variable-length array columns
 
    - modified configure to support AIX systems that have flock in a non-
      standard location.
+     
+   - modified configure to remove the -D_FILE_OFFSET_BITS flag when running
+     on Mac Darwin systems.  This caused conflicts with the Fortran
+     wrappers, and should only be needed in any case when using CFITSIO
+     to read/write FITS files greater than 2.1 GB in size.
+
+   - modified fitsio2.h to support compilers that define LONG_LONG_MAX.
 
    - modified ffrsim (resize an existing image) so that it supports changing
      the datatype to an unsigned integer image using the USHORT_IMG and
@@ -41,15 +55,18 @@ Version 2.500 -   2004
 
    - made small change to ffsrow in eval_f.c to avoid potential array 
      bounds overflow.
+     
+   - made small change to group.c to fix problem where an 'int' was
+     incorrectly being cast to a 'long'.
 
    - corrected a memory allocation error in the new fits_hdr2str routine
-     that was added in version 2.49
+     that was added in version 2.48
 
    - The on-the-fly row-selection filtering would fail with a segfault
      if the length of a table row (NAXIS1 value) was greater than
      500000 bytes.  A small change to eval_f.c was required to fix this.
 
-Version 2.490 -  11 February 2004
+Version 2.490 - 11 February 2004
 
   Bug fixes:
 

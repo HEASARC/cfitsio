@@ -4329,6 +4329,63 @@ int ffiurl(char *url,               /* input filename */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffexist(const char *infile, /* I - input filename or URL */
+            int *exists,        /* O -  2 = a compressed version of file exists */
+	                        /*      1 = yes, disk file exists               */
+	                        /*      0 = no, disk file could not be found    */
+				/*     -1 = infile is not a disk file (could    */
+				/*       be a http, ftp, smem, or stdin file)   */
+            int *status)        /* I/O  status  */
+
+/*
+   test if the input file specifier is an existing file on disk
+   If the specified file can't be found, it then searches for a 
+   compressed version of the file.
+*/
+{
+    FILE *diskfile;
+    char rootname[FLEN_FILENAME];
+    char *ptr1;
+    
+    if (*status > 0)
+        return(*status);
+
+    /* strip off any extname or filters from the name */
+    ffrtnm( (char *)infile, rootname, status);
+
+    ptr1 = strstr(rootname, "://");
+    
+    if (ptr1 || *rootname == '-') {
+        if (!strncmp(rootname, "file", 4) ) {
+	    ptr1 = ptr1 + 3;   /* pointer to start of the disk file name */
+	} else {
+	    *exists = -1;   /* this is not a disk file */
+	    return (*status);
+	}
+    } else {
+        ptr1 = rootname;
+    }
+    
+    /* see if the disk file exists */
+    if (file_openfile(ptr1, 0, &diskfile)) {
+    
+        /* no, couldn't open file, so see if there is a compressed version */
+        if (file_is_compressed(ptr1) ) {
+           *exists = 2;  /* a compressed version of the file exists */
+        } else {
+	   *exists = 0;  /* neither file nor compressed version exist */
+	}
+	
+    } else {
+    
+        /* yes, file exists */
+        *exists = 1; 
+	fclose(diskfile);
+    }
+    	   
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffrtnm(char *url, 
            char *rootname,
            int *status)

@@ -1,4 +1,4 @@
-/*  Version Info: This file is distributed with version 2.490 of CFITSIO   */
+/*  Version Info: This file is distributed with version 2.500 of CFITSIO   */
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
@@ -494,6 +494,7 @@ int ffiurl(char *url,  char *urltype, char *infile,
                     char *outfile, char *extspec, char *rowfilter,
                     char *binspec, char *colspec, int *status);
 int ffrtnm(char *url, char *rootname, int *status);
+int ffexist(const char *infile, int *exists, int *status);
 int ffexts(char *extspec, int *extnum,  char *extname, int *extvers,
           int *hdutype, char *colname, char *rowexpress, int *status);
 int ffextn(char *url, int *extension_num, int *status);
