@@ -2,9 +2,10 @@
 \contentsline {chapter}{\numberline {2} Creating FITSIO/CFITSIO }{3}
 \contentsline {section}{\numberline {2.1}Building the Library}{3}
 \contentsline {section}{\numberline {2.2}Testing the Library}{5}
-\contentsline {section}{\numberline {2.3}Getting Started with FITSIO}{6}
-\contentsline {section}{\numberline {2.4}Example Program}{6}
-\contentsline {section}{\numberline {2.5}Acknowledgements}{7}
+\contentsline {section}{\numberline {2.3}Linking Programs with FITSIO}{6}
+\contentsline {section}{\numberline {2.4}Getting Started with FITSIO}{6}
+\contentsline {section}{\numberline {2.5}Example Program}{6}
+\contentsline {section}{\numberline {2.6}Acknowledgements}{7}
 \contentsline {chapter}{\numberline {3} A FITS Primer }{9}
 \contentsline {chapter}{\numberline {4} Extended File Name Syntax }{11}
 \contentsline {section}{\numberline {4.1}Overview}{11}

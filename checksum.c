@@ -192,7 +192,7 @@ int ffpcks(fitsfile *fptr,      /* I - FITS file pointer                  */
 {
     char datestr[20], checksum[FLEN_VALUE], datasum[FLEN_VALUE];
     char  comm[FLEN_COMMENT], chkcomm[FLEN_COMMENT], datacomm[FLEN_COMMENT];
-    int tstatus, chutype;
+    int tstatus;
     long nrec, headstart, datastart, dataend;
     unsigned long dsum, olddsum, sum;
     double tdouble;
@@ -242,11 +242,8 @@ int ffpcks(fitsfile *fptr,      /* I - FITS file pointer                  */
     }
 
     /* close header: rewrite END keyword and following blank fill */
-    if (ffwend(fptr, status) > 0)
-        return(*status);
-
-    /* now re-read the required keywords to determine the structure */
-    if (ffrhdu(fptr, &chutype, status) > 0)
+    /* and re-read the required keywords to determine the structure */
+    if (ffrdef(fptr, status) > 0)
         return(*status);
 
     /* write the correct data fill values, if they are not already correct */

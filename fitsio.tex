@@ -48,7 +48,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large February 1999\\}
+{\Large March 1999\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -298,11 +298,11 @@ The Fortran wrappers in CFITSIO may be tested with the testf77
 program on Unix systems with:
 
 \begin{verbatim}
-    % f77 -o testf77 testf77.f -L. -lcfitsio
+    % f77 -o testf77 testf77.f -L. -lcfitsio -lnsl -lsocket
   or
     % f77 -f -o testf77 testf77.f -L. -lcfitsio    (under SUN O/S)
   or
-    % f77 -o testf77 testf77.f -Wl,-L. -lcfitsio -lm  (HP/UX)
+    % f77 -o testf77 testf77.f -Wl,-L. -lcfitsio -lm -lnsl -lsocket (HP/UX)
 
     % testf77 > testf77.lis
     % diff testf77.lis testf77.out
@@ -333,6 +333,17 @@ A few other utility programs are included with CFITSIO:
 
     iter_a, iter_b, iter_c - tests of the CFITSIO iterator routine
 \end{verbatim}
+
+
+\section{Linking Programs with FITSIO}
+
+When linking applications software with the FITSIO library, several system libraries usually need to be specified on the link comman
+Unix systems, the most reliable way to determine what libraries are required
+is to type 'make testprog' and see what libraries the configure script has
+added.  The typical libraries that may need to be added are -lm (the math
+library) and -lnsl and -lsocket (needed only for FTP and HTTP file access).
+These latter 2 libraries are not needed on VMS and Windows platforms,
+because FTP file access is not currently supported on those platforms.
 
 
 \section{Getting Started with FITSIO}
@@ -492,7 +503,6 @@ Chris Rogers, Arnold Rots, Barry Schlesinger, Robin Stebbins, Andrew
 Szymkowiak, Allyn Tennant, Peter Teuben, James Theiler, Doug Tody,
 Shiro Ueno, Steve Walton, Archie Warnock, Alan Watson, Dan Whipple, Wim
 Wimmers, Peter Young, Jianjun Xu, and Nelson Zarate.
-
 
 
 \chapter{  A FITS Primer }
@@ -1438,23 +1448,43 @@ syntax as described in the Row Filter Specifier section, below.
 
 A subsection of an image can be opened by specifying the range of
 pixels (start:end), or with an optional pixel increment
-(start:end:step), for each axis of the input image. For example,
-'myfile.fits[1:512:2, 2:512:2]' will open an a 256x256 pixel image
-consisting of the odd numbered columns and the even numbered rows of
-the image in the primary array of the file myfile.fits.  The input
-image can be in the primary array, in an image extension, or in a
-vector cell of a binary table. In the later 2 cases the extension name
-or number must be specified before the image section specifier, as in:
-'myfile.fits[3][1:256,1:256]' to open a subsection of the image in the
-3rd extension of the file. A pixel step = 1 will be assumed if it is
-not specified. CFITSIO creates a tempory copy of the file containing
-the image section plus a copy of any other HDUs in the file which is
-then opened by the application program, so it is not possible to write
-to or modify the origninal file when specifying an image section.  If
-necessary, CFITSIO automatically updates the world coordinate system
-keywords in the header of the image, if they exist, so that the
-coordinate associated with each pixel in the image section will be
-computed correctly.
+(start:end:step), for each axis of the input image.  A pixel step = 1
+will be assumed if it is not specified, and an asterisk, '*', may be
+used to specify the entire range of an axis.  The input image can be
+in the primary array, in an image extension, or in a vector cell of a
+binary table. In the later 2 cases the extension name or number must be
+specified before the image section specifier.
+
+ Examples:
+
+\begin{verbatim}
+  myfile.fits[1:512:2, 2:512:2] -  open a 256x256 pixel image
+              consisting of the odd numbered columns (1st axis) and
+              the even numbered rows (2nd axis) of the image in the
+              primary array of the file.
+
+  myfile.fits[*, 256:512] - open an image consisting of all the columns
+              in the input image, but only rows 256 through 512.
+
+  myfile.fits[*:2, 256:512:2] - same as above but keeping only
+              every other row and column in the input image.
+
+  myfile.fits[3][1:256,1:256] - opens a subsection of the image in
+              the 3rd extension of the file.
+
+  myfile.fits[4; images(12)][*,*] - open the whole image contained
+              in the 12th row of the 'images' vector column
+              in the table in the 4th extension of the file.
+\end{verbatim}
+
+When CFITSIO opens an image section it first creates a temporary file
+containing the image section plus a copy of any other HDUs in the
+file.  This temporary file is then opened by the application program,
+so it is not possible to write to or modify the input file when
+specifying an image section.  Note that CFITSIO automatically updates
+the world coordinate system keywords in the header of the image
+section, if they exist, so that the coordinate associated with each
+pixel in the image section will be computed correctly.
 
 
 \subsection{Column and Keyword Filtering Specification}

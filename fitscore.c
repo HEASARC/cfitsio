@@ -24,9 +24,10 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.0301; /* 24 Feb 1999 */
+      *version = 2.031; /* 31 Mar 1999 */
  
-/*   *version = 2.029;  11 Feb 1999 */
+ /*   *version = 2.030;  24 Feb 1999 */
+ /*   *version = 2.029;  11 Feb 1999 */
  /*   *version = 2.028;  26 Jan 1999 */
  /*   *version = 2.027;  12 Jan 1999 */
  /*   *version = 2.026;  23 Dec 1998 */
@@ -3625,7 +3626,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
             /* check if we are writing beyond the current end of table */
             if (endrow > (fptr->Fptr)->numrows)
             {
-                /* if there are more HDUs following the current one, or */
+               /* if there are more HDUs following the current one, or */
                 /* if there is a data heap, then we must insert space */
                 /* for the new rows.  */
                 if ( !((fptr->Fptr)->lasthdu) || (fptr->Fptr)->heapsize > 0)
@@ -3958,9 +3959,7 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
     - write the END keyword and pad header with blanks if necessary
     - check the data fill values, and rewrite them if not correct
 */
-    long pcount, naxis2;
-    char comm[FLEN_COMMENT], message[FLEN_ERRMSG], valstring[FLEN_VALUE];
-    char card[FLEN_CARD];
+    char message[FLEN_ERRMSG];
 
     /* reset position to the correct HDU if necessary */
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
@@ -3970,46 +3969,6 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
     }
     else if ((fptr->Fptr)->writemode == 1)  /* write access to the file? */
     {
-        /* don't need to check NAXIS2 and PCOUNT if data hasn't been written */
-        if ((fptr->Fptr)->datastart != DATA_UNDEFINED)
-        {
-          /* update NAXIS2 keyword if more rows were written to the table */
-          /* and if the user has not explicitly reset the NAXIS2 value */
-          if ((fptr->Fptr)->hdutype != IMAGE_HDU)
-          {
-            ffgkyj(fptr, "NAXIS2", &naxis2, comm, status);
-            if ((fptr->Fptr)->numrows > naxis2
-              && (fptr->Fptr)->origrows == naxis2)
-              /* if origrows is not equal to naxis2, then the user must */
-              /* have manually modified the NAXIS2 keyword value, and */
-              /* we will assume that the current value is correct. */
-            {
-              /* would be simpler to just call ffmkyj here, but this */
-              /* would force linking in all the modkey & putkey routines */
-              sprintf(valstring, "%ld", (fptr->Fptr)->numrows);
-              ffmkky("NAXIS2", valstring, comm, card, status);
-              ffmkey(fptr, card, status);
-            }
-          }
-
-          /* if data has been written to variable length columns in a  */
-          /* binary table, then we may need to update the PCOUNT value */
-          if ((fptr->Fptr)->heapsize > 0)
-          {
-            ffgkyj(fptr, "PCOUNT", &pcount, comm, status);
-            if ((fptr->Fptr)->heapsize > pcount)
-            {
-              /* would be simpler to just call ffmkyj here, but this */
-              /* would force linking in all the modkey & putkey routines */
-              sprintf(valstring, "%ld", (fptr->Fptr)->heapsize);
-              ffmkky("PCOUNT", valstring, comm, card, status);
-              ffmkey(fptr, card, status);
-            }
-
-            ffuptf(fptr, status);  /* update the variable length TFORM values */
-          }
-        }
-
         ffrdef(fptr, status);  /* scan header to redefine structure */
         ffpdfl(fptr, status);  /* insure correct data file values */
     }
@@ -4103,6 +4062,9 @@ int ffrdef(fitsfile *fptr,      /* I - FITS file pointer */
 */
 {
     int dummy;
+    long naxis2, pcount;
+    char card[FLEN_CARD], comm[FLEN_COMMENT], valstring[FLEN_VALUE];
+
 
     if (*status > 0)
         return(*status);
@@ -4114,6 +4076,47 @@ int ffrdef(fitsfile *fptr,      /* I - FITS file pointer */
     }
     else if ((fptr->Fptr)->writemode == 1) /* write access to the file? */
     {
+        /* don't need to check NAXIS2 and PCOUNT if data hasn't been written */
+        if ((fptr->Fptr)->datastart != DATA_UNDEFINED)
+        {
+          /* update NAXIS2 keyword if more rows were written to the table */
+          /* and if the user has not explicitly reset the NAXIS2 value */
+          if ((fptr->Fptr)->hdutype != IMAGE_HDU)
+          {
+            ffgkyj(fptr, "NAXIS2", &naxis2, comm, status);
+
+            if ((fptr->Fptr)->numrows > naxis2
+              && (fptr->Fptr)->origrows == naxis2)
+              /* if origrows is not equal to naxis2, then the user must */
+              /* have manually modified the NAXIS2 keyword value, and */
+              /* we will assume that the current value is correct. */
+            {
+              /* would be simpler to just call ffmkyj here, but this */
+              /* would force linking in all the modkey & putkey routines */
+              sprintf(valstring, "%ld", (fptr->Fptr)->numrows);
+              ffmkky("NAXIS2", valstring, comm, card, status);
+              ffmkey(fptr, card, status);
+            }
+          }
+
+          /* if data has been written to variable length columns in a  */
+          /* binary table, then we may need to update the PCOUNT value */
+          if ((fptr->Fptr)->heapsize > 0)
+          {
+            ffgkyj(fptr, "PCOUNT", &pcount, comm, status);
+            if ((fptr->Fptr)->heapsize > pcount)
+            {
+              /* would be simpler to just call ffmkyj here, but this */
+              /* would force linking in all the modkey & putkey routines */
+              sprintf(valstring, "%ld", (fptr->Fptr)->heapsize);
+              ffmkky("PCOUNT", valstring, comm, card, status);
+              ffmkey(fptr, card, status);
+            }
+
+            ffuptf(fptr, status);  /* update the variable length TFORM values */
+          }
+        }
+
         if (ffwend(fptr, status) <= 0)     /* rewrite END keyword and fill */
         {
             ffrhdu(fptr, &dummy, status);  /* re-scan the header keywords  */
