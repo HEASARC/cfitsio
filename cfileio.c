@@ -4633,7 +4633,8 @@ int ffexts(char *extspec,
    if present.
 */
     char *ptr1, *ptr2;
-    int slen, nvals, notint = 0;
+    int slen, nvals;
+    int notint = 1; /* initially assume specified extname is not an integer */
     char tmpname[FLEN_VALUE], *loc;
 
     *extnum = 0;
@@ -4653,6 +4654,7 @@ int ffexts(char *extspec,
 
     if (isdigit((int) *ptr1))  /* is the extension specification a number? */
     {
+        notint = 0;  /* looks like extname may actually be the ext. number */
         *extnum = strtol(ptr1, &loc, 10);  /* read the string as an integer */
 
         while (*loc == ' ')  /* skip over trailing blanks */
@@ -4662,7 +4664,7 @@ int ffexts(char *extspec,
         if ((*loc != '\0'  ) || (errno == ERANGE) )
         {
            *extnum = 0;
-           notint = 1;
+           notint = 1;  /* no, extname was not a simple integer after all */
         }
 
         if ( *extnum < 0 || *extnum > 99999)
@@ -4675,7 +4677,9 @@ int ffexts(char *extspec,
     }
 
 
-/*
+/*  This logic was too simple, and failed on extnames like '1000TEMP' 
+    where it would try to move to the 1000th extension
+
     if (isdigit((int) *ptr1))  
     {
         sscanf(ptr1, "%d", extnum);
@@ -4688,6 +4692,7 @@ int ffexts(char *extspec,
         }
     }
 */
+
     if (notint)
     {
            /* not a number, so EXTNAME must be specified, followed by */

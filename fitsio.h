@@ -1,4 +1,4 @@
-/*  Version Info: This file is distributed with version 2.480 of CFITSIO   */
+/*  Version Info: This file is distributed with version 2.490 of CFITSIO   */
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */

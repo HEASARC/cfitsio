@@ -1,6 +1,30 @@
 
                    Log of Changes Made to CFITSIO
 
+Version 2.490 -  11 February 2004
+
+  Bug fixes:
+
+  - fixed a bug that was introduced in the previous release, which caused
+    the CFITSIO parser to no longer move to a named extension when opening
+    a FITS file, e.g., when opening myfile.fit[events] CFITSIO would just
+    open the primary array instead of moving to the EVENTS extension.
+
+  - new group.c file from the INTEGRAL Science Data Center.  It fixes
+    a problem when you attach a child to a parent and they are both
+    is the same file, but, that parent contains groups in other files.
+    In certain cases the attach would not happen because it seemed that
+    the new child was already in the parent group.
+
+  - fixed bug in fits_calculator_rng when performing a calculation
+    on a range of rows in a table, so that it does not reset the
+    value in all the other rows that are not in the range = 0.
+
+  - modified fits_write_chksum so that it updates the TFORMn 
+    keywords for any variable length vector table columns BEFORE 
+    calculating the CHECKSUM values.  Otherwise the CHECKSUM
+    value is invalidated when the HDU is subsequently closed.
+
 Version 2.480 - 28 January 2004
 
   New Routines:
