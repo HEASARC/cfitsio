@@ -1,5 +1,6 @@
 /*   Globally defined histogram parameters */
 #include <string.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include "fitsio2.h"
 
@@ -9,20 +10,433 @@ int    *histj;
 float  *histr;
 double *histd;
 
-int hcolnum[4], haxis, haxis1, haxis2, haxis3, haxis4, himagetype;
+int hcolnum[4], haxis, haxis1, haxis2, haxis3, haxis4, himagetype, wtcolnum;
+int wtrecip;
 float amin1, amin2, amin3, amin4;
-float binsize1, binsize2, binsize3, binsize4;
+float binsize1, binsize2, binsize3, binsize4, weight;
 fitsfile *tblptr;
 
 /*--------------------------------------------------------------------------*/
+int ffbins(char *binspec,   /* I - binning specification */
+                   int *imagetype,      /* O - image type, TINT or TSHORT */
+                   int *histaxis,       /* O - no. of axes in the histogram */
+                   char colname[4][FLEN_VALUE],  /* column name for axis */
+                   double *minin,        /* minimum value for each axis */
+                   double *maxin,        /* maximum value for each axis */
+                   double *binsizein,    /* size of bins on each axis */
+                   char minname[4][FLEN_VALUE],  /* keyword name for min */
+                   char maxname[4][FLEN_VALUE],  /* keyword name for max */
+                   char binname[4][FLEN_VALUE],  /* keyword name for binsize */
+                   double *wt,          /* weighting factor          */
+                   char *wtname,        /* keyword or column name for weight */
+                   int *recip,          /* the reciprocal of the weight? */
+                   int *status)
+{
+/*
+   Parse the input binning specification string, returning the binning
+   parameters.  Supports up to 4 dimensions.  The binspec string has
+   one of these forms:
+
+   bin binsize                  - 2D histogram with binsize on each axis
+   bin xcol                     - 1D histogram on column xcol
+   bin (xcol, ycol) = binsize   - 2D histogram with binsize on each axis
+   bin x=min:max:size, y=min:max:size, z..., t... 
+   bin x=:max, y=::size
+   bin x=size, y=min::size
+
+   most other reasonable combinations are supported.        
+*/
+    int ii, slen, defaulttype;
+    char *ptr, tmpname[30];
+    double  dummy;
+
+    if (*status > 0)
+         return(*status);
+
+    /* set the default values */
+    *histaxis = 2;
+    *imagetype = TINT;
+    defaulttype = 1;
+    *wt = 1.;
+    *recip = 0;
+    *wtname = '\0';
+
+    /* set default values */
+    for (ii = 0; ii < 4; ii++)
+    {
+        *colname[ii] = '\0';
+        *minname[ii] = '\0';
+        *maxname[ii] = '\0';
+        *binname[ii] = '\0';
+        minin[ii] = DOUBLENULLVALUE;  /* undefined values */
+        maxin[ii] = DOUBLENULLVALUE;
+        binsizein[ii] = DOUBLENULLVALUE;
+    }
+
+    ptr = binspec + 3;  /* skip over 'bin' */
+
+    if (*ptr == 'i' )  /* bini */
+    {
+        *imagetype = TSHORT;
+        defaulttype = 0;
+        ptr++;
+    }
+    else if (*ptr == 'j' )  /* binj; same as default */
+    {
+        defaulttype = 0;
+        ptr ++;
+    }
+    else if (*ptr == 'r' )  /* binr */
+    {
+        *imagetype = TFLOAT;
+        defaulttype = 0;
+        ptr ++;
+    }
+    else if (*ptr == 'd' )  /* bind */
+    {
+        *imagetype = TDOUBLE;
+        defaulttype = 0;
+        ptr ++;
+    }
+    else if (*ptr == 'b' )  /* binb */
+    {
+        *imagetype = TBYTE;
+        defaulttype = 0;
+        ptr ++;
+    }
+
+    if (*ptr == '\0')  /* use all defaults for other parameters */
+        return(*status);
+    else if (*ptr != ' ')  /* must be at least one blank */
+    {
+        ffpmsg("binning specification syntax error:");
+        ffpmsg(binspec);
+        return(*status = URL_PARSE_ERROR);
+    }
+
+    while (*ptr == ' ')  /* skip over blanks */
+           ptr++;
+
+    if (*ptr == '\0')   /* no other parameters; use defaults */
+        return(*status);
+
+    if (*ptr == '(' )
+    {
+        /* this must be the opening parenthesis around a list of column */
+        /* names, optionally followed by a '=' and the binning spec. */
+
+        for (ii = 0; ii < 4; ii++)
+        {
+            ptr++;               /* skip over the '(', ',', or ' ') */
+            while (*ptr == ' ')  /* skip over blanks */
+                ptr++;
+
+            slen = strcspn(ptr, " ,)");
+            strncat(colname[ii], ptr, slen); /* copy 1st column name */
+
+            ptr += slen;
+            while (*ptr == ' ')  /* skip over blanks */
+                ptr++;
+
+            if (*ptr == ')' )   /* end of the list of names */
+            {
+                *histaxis = ii + 1;
+                break;
+            }
+        }
+
+        if (ii == 4)   /* too many names in the list , or missing ')'  */
+        {
+            ffpmsg(
+ "binning specification has too many column names or is missing closing ')':");
+            ffpmsg(binspec);
+            return(*status = URL_PARSE_ERROR);
+        }
+
+        ptr++;  /* skip over the closing parenthesis */
+        while (*ptr == ' ')  /* skip over blanks */
+            ptr++;
+
+        if (*ptr == '\0')
+            return(*status);  /* parsed the entire string */
+
+        else if (*ptr != '=')  /* must be an equals sign now*/
+        {
+            ffpmsg("illegal binning specification in URL:");
+            ffpmsg(" an equals sign '=' must follow the column names");
+            ffpmsg(binspec);
+            return(*status = URL_PARSE_ERROR);
+        }
+
+        ptr++;  /* skip over the equals sign */
+        while (*ptr == ' ')  /* skip over blanks */
+            ptr++;
+
+        /* get the single range specification for all the columns */
+        ffbinr(&ptr, tmpname, minin,
+                                     maxin, binsizein, minname[0],
+                                     maxname[0], binname[0], status);
+        if (*status > 0)
+        {
+            ffpmsg("illegal binning specification in URL:");
+            ffpmsg(binspec);
+            return(*status);
+        }
+
+        for (ii = 1; ii < *histaxis; ii++)
+        {
+            minin[ii] = minin[0];
+            maxin[ii] = maxin[0];
+            binsizein[ii] = binsizein[0];
+            strcpy(minname[ii], minname[0]);
+            strcpy(maxname[ii], maxname[0]);
+            strcpy(binname[ii], binname[0]);
+        }
+
+        while (*ptr == ' ')  /* skip over blanks */
+            ptr++;
+
+        if (*ptr == ';')
+            goto getweight;   /* a weighting factor is specified */
+
+        if (*ptr != '\0')  /* must have reached end of string */
+        {
+            ffpmsg("illegal syntax after binning range specification in URL:");
+            ffpmsg(binspec);
+            return(*status = URL_PARSE_ERROR);
+        }
+
+        return(*status);
+    }             /* end of case with list of column names in ( )  */
+
+    /* if we've reached this point, then the binning specification */
+    /* must be of the form: XCOL = min:max:binsize, YCOL = ...     */
+    /* where the column name followed by '=' are optional.         */
+    /* If the column name is not specified, then use the default name */
+
+    for (ii = 0; ii < 4; ii++) /* allow up to 4 histogram dimensions */
+    {
+        ffbinr(&ptr, colname[ii], &minin[ii],
+                                     &maxin[ii], &binsizein[ii], minname[ii],
+                                     maxname[ii], binname[ii], status);
+
+        if (*status > 0)
+        {
+            ffpmsg("illegal syntax in binning range specification in URL:");
+            ffpmsg(binspec);
+            return(*status);
+        }
+
+        if (*ptr == '\0' || *ptr == ';')
+            break;        /* reached the end of the string */
+
+        if (*ptr == ' ')
+        {
+            while (*ptr == ' ')  /* skip over blanks */
+                ptr++;
+
+            if (*ptr == '\0' || *ptr == ';')
+                break;        /* reached the end of the string */
+
+            if (*ptr == ',')
+                ptr++;  /* comma separates the next column specification */
+        }
+        else if (*ptr == ',')
+        {          
+            ptr++;  /* comma separates the next column specification */
+        }
+        else
+        {
+            ffpmsg("illegal characters following binning specification in URL:");
+            ffpmsg(binspec);
+            return(*status = URL_PARSE_ERROR);
+        }
+    }
+
+    if (ii == 4)
+    {
+        /* there are yet more characters in the string */
+        ffpmsg("illegal binning specification in URL:");
+        ffpmsg("apparently greater than 4 histogram dimensions");
+        ffpmsg(binspec);
+        return(*status = URL_PARSE_ERROR);
+    }
+    else
+        *histaxis = ii + 1;
+
+    /* special case: if a single number was entered it should be      */
+    /* interpreted as the binning factor for the default X and Y axes */
+    if (*histaxis == 1 && *colname[0] == '\0' && 
+         minin[0] == FLOATNULLVALUE && maxin[0] == FLOATNULLVALUE)
+    {
+        *histaxis = 2;
+        binsizein[1] = binsizein[0];
+    }
+
+getweight:
+    if (*ptr == ';')  /* looks like a weighting factor is given */
+    {
+        ptr++;
+       
+        while (*ptr == ' ')  /* skip over blanks */
+            ptr++;
+
+        recip = 0;
+        if (*ptr == '/')
+        {
+            *recip = 1;  /* the reciprocal of the weight is entered */
+            ptr++;
+
+            while (*ptr == ' ')  /* skip over blanks */
+                ptr++;
+        }
+
+        /* parse the weight as though it were a binrange. */
+        /* either a column name or a numerical value will be returned */
+
+        ffbinr(&ptr, wtname, &dummy, &dummy, wt, tmpname,
+                                     tmpname, tmpname, status);
+
+        if (*status > 0)
+        {
+            ffpmsg("illegal binning weight specification in URL:");
+            ffpmsg(binspec);
+            return(*status);
+        }
+
+        /* creat a float datatype histogram by default, if weight */
+        /* factor is not = 1.0  */
+
+        if (defaulttype && *wt != 1.0)
+            *imagetype = TFLOAT;
+    }
+
+    while (*ptr == ' ')  /* skip over blanks */
+         ptr++;
+
+    if (*ptr != '\0')  /* should have reached the end of string */
+    {
+        ffpmsg("illegal syntax after binning weight specification in URL:");
+        ffpmsg(binspec);
+        *status = URL_PARSE_ERROR;
+    }
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffbinr(char **ptr, 
+                   char *colname, 
+                   double *minin,
+                   double *maxin, 
+                   double *binsizein,
+                   char *minname,
+                   char *maxname,
+                   char *binname,
+                   int *status)
+/*
+   Parse the input binning range specification string, returning 
+   the column name, histogram min and max values, and bin size.
+*/
+{
+    int slen, isanumber;
+    char token[FLEN_VALUE];
+
+    if (*status > 0)
+        return(*status);
+
+    slen = fits_get_token(ptr, " ,=:;", token, &isanumber); /* get 1st token */
+
+    if (slen == 0 && (**ptr == '\0' || **ptr == ',' || **ptr == ';') )
+        return(*status);   /* a null range string */
+
+    if (!isanumber && **ptr != ':')
+    {
+        /* this looks like the column name */
+
+        if (token[0] == '#' && isdigit(token[1]) )
+        {
+            /* omit the leading '#' in the column number */
+            strcpy(colname, token+1);
+        }
+        else
+            strcpy(colname, token);
+
+        if (**ptr != '=')
+            return(*status);  /* reached the end */
+
+        (*ptr)++;   /* skip over the = sign */
+
+        slen = fits_get_token(ptr, " ,:;", token, &isanumber); /* get token */
+    }
+
+    if (**ptr != ':')
+    {
+        /* this is the first token, and since it is not followed by */
+        /* a ':' this must be the binsize token */
+        if (!isanumber)
+            strcpy(binname, token);
+        else
+            *binsizein =  strtod(token, NULL);
+
+        return(*status);  /* reached the end */
+    }
+    else
+    {
+        /* the token contains the min value */
+        if (slen)
+        {
+            if (!isanumber)
+                strcpy(minname, token);
+            else
+                *minin = strtod(token, NULL);
+        }
+    }
+
+    (*ptr)++;  /* skip the colon between the min and max values */
+    slen = fits_get_token(ptr, " ,:;", token, &isanumber); /* get token */
+
+    /* the token contains the max value */
+    if (slen)
+    {
+        if (!isanumber)
+            strcpy(maxname, token);
+        else
+            *maxin = strtod(token, NULL);
+    }
+
+    if (**ptr != ':')
+        return(*status);  /* reached the end; no binsize token */
+
+    (*ptr)++;  /* skip the colon between the max and binsize values */
+    slen = fits_get_token(ptr, " ,:;", token, &isanumber); /* get token */
+
+    /* the token contains the binsize value */
+    if (slen)
+    {
+        if (!isanumber)
+            strcpy(binname, token);
+        else
+            *binsizein = strtod(token, NULL);
+    }
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
                              /*     on output, points to histogram image    */
-           int imagetype,    /* I - datatype for image: TINT, TSHORT, etc  */
+           char *outfile,    /* I - name for the output histogram file      */
+           int imagetype,    /* I - datatype for image: TINT, TSHORT, etc   */
            int naxis,        /* I - number of axes in the histogram image   */
-           char colname[4][FLEN_VALUE],   /* I - column names            */
-           double *minin,     /* I - minimum histogram value, for each axis  */
-           double *maxin,     /* I - maximum histogram value, for each axis  */
-           double *binsizein, /* I - bin size along each axis */
+           char colname[4][FLEN_VALUE],   /* I - column names               */
+           double *minin,     /* I - minimum histogram value, for each axis */
+           double *maxin,     /* I - maximum histogram value, for each axis */
+           double *binsizein, /* I - bin size along each axis               */
+           char minname[4][FLEN_VALUE], /* I - optional keywords for min    */
+           char maxname[4][FLEN_VALUE], /* I - optional keywords for max    */
+           char binname[4][FLEN_VALUE], /* I - optional keywords for binsize */
+           double weightin,        /* I - binning weighting factor          */
+           char wtcol[FLEN_VALUE], /* I - optional keyword or col for weight*/
+           int recip,              /* I - use reciprocal of the weight?     */
            int *status)
 {
     int ii, datatype, repeat, imin, imax, ibin, bitpix, tstatus;
@@ -34,7 +448,9 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
     int n_cols = 1;
     long  offset = 0;
     long n_per_loop = -1;  /* force whole array to be passed at one time */
+    
     float amin[4], amax, binsize[4];
+    float datamin = FLOATNULLVALUE, datamax = FLOATNULLVALUE;
     char svalue[FLEN_VALUE];
     double dvalue;
 
@@ -69,9 +485,42 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
 
     for (ii = 0; ii < naxis; ii++)
     {
+
+      /* get the min, max, and binsize values from keywords, if specified */
+
+      if (*minname[ii])
+      {
+         if (ffgky(*fptr, TDOUBLE, minname[ii], &minin[ii], NULL, status) )
+         {
+             ffpmsg("error reading histogramming minimum keyword");
+             ffpmsg(minname[ii]);
+             return(*status);
+         }
+      }
+
+      if (*maxname[ii])
+      {
+         if (ffgky(*fptr, TDOUBLE, maxname[ii], &maxin[ii], NULL, status) )
+         {
+             ffpmsg("error reading histogramming maximum keyword");
+             ffpmsg(maxname[ii]);
+             return(*status);
+         }
+      }
+
+      if (*binname[ii])
+      {
+         if (ffgky(*fptr, TDOUBLE, binname[ii], &binsizein[ii], NULL, status) )
+         {
+             ffpmsg("error reading histogramming binsize keyword");
+             ffpmsg(binname[ii]);
+             return(*status);
+         }
+      }
+
       if (binsizein[ii] == 0.)
       {
-        ffpmsg("histogram binsize = 0");
+        ffpmsg("error: histogram binsize = 0");
         return(*status = ZERO_SCALE);
       }
 
@@ -101,7 +550,7 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
       /* get the column number in the table */
       if (ffgcno(*fptr, CASEINSEN, colname[ii], hcolnum+ii, status) > 0)
       {
-        strcpy(errmsg, "column for binned image doesn't exist: ");
+        strcpy(errmsg, "column for histogram axis doesn't exist: ");
         strcat(errmsg, colname[ii]);
         ffpmsg(errmsg);
         return(*status);
@@ -122,39 +571,58 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
       datatype = colptr->tdatatype;
       if (datatype < 0 || datatype == TSTRING)
       {
-        strcpy(errmsg, "Inappropriate datatype; can't bin column: ");
+        strcpy(errmsg, "Inappropriate datatype; can't bin this column: ");
         strcat(errmsg, colname[ii]);
         ffpmsg(errmsg);
         return(*status = BAD_DATATYPE);
       }
 
       /* use TLMINn and TLMAXn keyword values if min and max were not given */
-      if (minin[ii] == FLOATNULLVALUE)
+      /* else use actual data min and max if TLMINn and TLMAXn don't exist */
+ 
+      if (minin[ii] == DOUBLENULLVALUE)
       {
         ffkeyn("TLMIN", hcolnum[ii], keyname, status);
         if (ffgky(*fptr, TFLOAT, keyname, amin+ii, NULL, status) > 0)
         {
-            strcpy(errmsg, "Missing TLMINn keyword for binning column: ");
-            strcat(errmsg, colname[ii]);
-            ffpmsg(errmsg);
-            return(*status);
-        }
+            /* use actual data minimum value for the histogram minimum */
+            *status = 0;
+            if (fits_get_col_minmax(*fptr, hcolnum[ii], amin+ii, &datamax, status) > 0)
+            {
+                strcpy(errmsg, "Error calculating datamin and datamax for column: ");
+                strcat(errmsg, colname[ii]);
+                ffpmsg(errmsg);
+                return(*status);
+            }
+         }
       }
       else
       {
         amin[ii] = minin[ii];
       }
 
-      if (minin[ii] == FLOATNULLVALUE)
+      if (maxin[ii] == DOUBLENULLVALUE)
       {
         ffkeyn("TLMAX", hcolnum[ii], keyname, status);
         if (ffgky(*fptr, TFLOAT, keyname, &amax, NULL, status) > 0)
         {
-            strcpy(errmsg, "Missing TLMAXn keyword for binning column: ");
-            strcat(errmsg, colname[ii]);
-            ffpmsg(errmsg);
-            return(*status);
-        }
+          *status = 0;
+          if(datamax != FLOATNULLVALUE)  /* already computed max value */
+          {
+             amax = datamax;
+          }
+          else
+          {
+             /* use actual data maximum value for the histogram maximum */
+             if (fits_get_col_minmax(*fptr, hcolnum[ii], &datamin, &amax, status) > 0)
+             {
+                 strcpy(errmsg, "Error calculating datamin and datamax for column: ");
+                 strcat(errmsg, colname[ii]);
+                 ffpmsg(errmsg);
+                 return(*status);
+             }
+           }
+         }
       }
       else
       {
@@ -162,19 +630,17 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
       }
 
       /* use TDBINn keyword or else 1 if bin size is not given */
-      if (binsizein[ii] == FLOATNULLVALUE)
+      if (binsizein[ii] == DOUBLENULLVALUE)
       {
          tstatus = 0;
          ffkeyn("TDBIN", hcolnum[ii], keyname, &tstatus);
          if (ffgky(*fptr, TFLOAT, keyname, binsizein + ii, NULL, &tstatus) > 0)
          {
-            binsizein[ii] = 1.;  /* use default bin size */
+            binsizein[ii] = (amax - amin[ii]) / 10. ;  /* make at least 10 bins */
+            if (binsizein[ii] > 1.)
+                binsizein[ii] = 1.;  /* use default bin size */
          }
       }
-
-      /* Determine the range and number of bins in the histogram. This  */
-      /* depends on whether the input columns are integer or floats, so */
-      /* treat each case separately.                                    */
 
       if ( (amin[ii] > amax && binsizein[ii] > 0. ) ||
            (amin[ii] < amax && binsizein[ii] < 0. ) )
@@ -185,6 +651,10 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
       ibin = binsize[ii];
       imin = amin[ii];
       imax = amax;
+
+      /* Determine the range and number of bins in the histogram. This  */
+      /* depends on whether the input columns are integer or floats, so */
+      /* treat each case separately.                                    */
 
       if (datatype <= TLONG && (float) imin == amin[ii] &&
                                (float) imax == amax &&
@@ -212,16 +682,51 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
       }
     }
 
-    /* size of histogram is now known, so create temp output file in memory */
-    if (ffinit(&histptr, "mem://", status) > 0)
+       /* get the histogramming weighting factor */
+    if (*wtcol)
     {
-        ffpmsg("failed to create memory file for histogram");
+        /* first, look for a keyword with the weight value */
+        if (ffgky(*fptr, TFLOAT, wtcol, &weight, NULL, status) )
+        {
+            /* not a keyword, so look for column with this name */
+            *status = 0;
+
+            /* get the column number in the table */
+            if (ffgcno(*fptr, CASEINSEN, wtcol, &wtcolnum, status) > 0)
+            {
+               ffpmsg(
+               "keyword or column for histogram weights doesn't exist: ");
+               ffpmsg(wtcol);
+               return(*status);
+            }
+
+            weight = FLOATNULLVALUE;
+        }
+    }
+    else
+        weight = (float) weightin;
+
+    if (weight <= 0. && weight != FLOATNULLVALUE)
+    {
+        ffpmsg("Illegal histogramming weighting factor <= 0.");
+        return(*status = URL_PARSE_ERROR);
+    }
+
+    if (recip && weight != FLOATNULLVALUE) /* take reciprocal of weight */
+       weight = 1.0 / weight;
+
+    wtrecip = recip;
+        
+    /* size of histogram is now known, so create temp output file */
+    if (ffinit(&histptr, outfile, status) > 0)
+    {
+        ffpmsg("failed to create temp output file for histogram");
         return(*status);
     }
 
     if (ffcrim(histptr, bitpix, haxis, haxes, status) > 0)
     {
-        ffpmsg("failed to create primary array histogram in memory");
+        ffpmsg("failed to create primary array histogram in temp file");
         ffclos(histptr, status);
         return(*status);
     }
@@ -254,7 +759,9 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
         }
       }
     }
-    
+printf("haxis, haxes = %d %d %d %d %d\n", haxis, haxis1, haxis2, haxis3, haxis4);
+printf("minvalues = %f %f %f %f\n", amin1, amin2, amin3, amin4);
+printf("binsizes  = %f %f %f %f\n", binsize1, binsize2, binsize3, binsize4);
     /* define parameters of image for the iterator function */
     fits_iter_set_file(imagepars, histptr);        /* pointer to image */
     fits_iter_set_datatype(imagepars, imagetype);  /* image datatype   */
@@ -362,6 +869,43 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int fits_get_col_minmax(fitsfile *fptr, int colnum, float *datamin, 
+                     float *datamax, int *status)
+/* 
+   Simple utility routine to compute the min and max value in a column
+*/
+{
+    long nrows, ntodo, firstrow, ii;
+    float array[1000], nulval;
+
+    ffgky(fptr, TLONG, "NAXIS2", &nrows, NULL, status); /* no. of rows */
+
+    firstrow = 1;
+    nulval = FLOATNULLVALUE;
+    *datamin =  9.0E36F;
+    *datamax = -9.0E36F;
+
+    while(nrows)
+    {
+        ntodo = minvalue(nrows, 100);
+        ffgcv(fptr, TFLOAT, colnum, firstrow, 1, ntodo, &nulval, array, NULL,
+              status);
+
+        for (ii = 0; ii < ntodo; ii++)
+        {
+            if (array[ii] != nulval)
+            {
+                *datamin = minvalue(*datamin, array[ii]);
+                *datamax = maxvalue(*datamax, array[ii]);
+            }
+        }
+
+        nrows -= ntodo;
+        firstrow += ntodo;
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffwritehisto(long totaln, long pixoffset, long firstn, long nvalues,
              int narrays, iteratorCol *imagepars, void *userPointer)
 /*
@@ -370,8 +914,8 @@ int ffwritehisto(long totaln, long pixoffset, long firstn, long nvalues,
    This work function only gets called once, and totaln = nvalues.
 */
 {
-    iteratorCol colpars[4];
-    int ii, status = 0;
+    iteratorCol colpars[5];
+    int ii, status = 0, ncols;
     long rows_per_loop = 0, offset = 0;
 
     /* store pointer to the histogram array, and initialize to zero */
@@ -391,9 +935,16 @@ int ffwritehisto(long totaln, long pixoffset, long firstn, long nvalues,
     {
       fits_iter_set_by_num(&colpars[ii], tblptr, hcolnum[ii], TFLOAT,InputCol);
     }
+    ncols = haxis;
+
+    if (weight == FLOATNULLVALUE)
+    {
+      fits_iter_set_by_num(&colpars[haxis], tblptr, wtcolnum, TFLOAT,InputCol);
+      ncols = haxis + 1;
+    }
 
     /* call iterator function to calc the histogram pixel values */
-    fits_iterate_data(haxis, colpars, offset, rows_per_loop,
+    fits_iterate_data(ncols, colpars, offset, rows_per_loop,
                           ffcalchist, NULL, &status);
 
     return(status);
@@ -407,6 +958,7 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
 {
     long ii, ipix, axisbin;
     static float *col1, *col2, *col3, *col4; /* static to preserve values */
+    static float *wtcol;
     static int incr2, incr3, incr4;
 
     /*  Initialization procedures: execute on the first call  */
@@ -430,6 +982,11 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
             incr4 = incr3 * haxis3;
           }
         }
+      }
+
+      if (ncols > haxis)  /* then weights are give in a column */
+      {
+        wtcol = (float *) fits_iter_get_array(&colpars[haxis]);
       }
     }   /* end of Initialization procedures */
 
@@ -481,16 +1038,45 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
       }
 
       /* increment the histogram pixel */
-      if (himagetype == TINT)
-          histj[ipix]++;
-      else if (himagetype == TSHORT)
-          histi[ipix]++;
-      else if (himagetype == TFLOAT)
-          histr[ipix]++;
-      else if (himagetype == TDOUBLE)
-          histd[ipix]++;
-      else if (himagetype == TBYTE)
-          histb[ipix]++;
+      if (weight != FLOATNULLVALUE) /* constant weight factor */
+      {
+        if (himagetype == TINT)
+          histj[ipix]+= weight;
+        else if (himagetype == TSHORT)
+          histi[ipix] += weight;
+        else if (himagetype == TFLOAT)
+          histr[ipix] += weight;
+        else if (himagetype == TDOUBLE)
+          histd[ipix] += weight;
+        else if (himagetype == TBYTE)
+          histb[ipix] += weight;
+      }
+      else if (wtrecip) /* use reciprocal of the weight */
+      {
+        if (himagetype == TINT)
+          histj[ipix]+= 1./wtcol[ii];
+        else if (himagetype == TSHORT)
+          histi[ipix] += 1./wtcol[ii];
+        else if (himagetype == TFLOAT)
+          histr[ipix] += 1./wtcol[ii];
+        else if (himagetype == TDOUBLE)
+          histd[ipix] += 1./wtcol[ii];
+        else if (himagetype == TBYTE)
+          histb[ipix] += 1./wtcol[ii];
+      }
+      else
+      {
+        if (himagetype == TINT)
+          histj[ipix]+= wtcol[ii];
+        else if (himagetype == TSHORT)
+          histi[ipix] += wtcol[ii];
+        else if (himagetype == TFLOAT)
+          histr[ipix] += wtcol[ii];
+        else if (himagetype == TDOUBLE)
+          histd[ipix] += wtcol[ii];
+        else if (himagetype == TBYTE)
+          histb[ipix] += wtcol[ii];
+      }
     }
 
     return(0);

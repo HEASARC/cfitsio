@@ -10,9 +10,11 @@
 /*  and perform such material.                                             */
 
 #include <string.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <math.h>
 #include <ctype.h>
+#include <errno.h>
 /* stddef.h is apparently needed to define size_t */
 #include <stddef.h>
 #include "fitsio2.h"
@@ -22,7 +24,7 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.009;   /*  beta release */
+      *version = 2.010;   /*  beta release */
 
  /*   *version = 1.40;    6 Feb 1998 */
  /*   *version = 1.33;   16 Dec 1997 (internal release only) */
@@ -4006,7 +4008,14 @@ int ffmnhd(fitsfile *fptr,      /* I - FITS file pointer                    */
         
         if (exttype == ANY_HDU || hdutype == exttype)  /* matching type? */
         {
-          if (ffgkys(fptr, "EXTNAME", extname, 0, &tstatus) <= 0) /* name */
+          if (ffgkys(fptr, "EXTNAME", extname, 0, &tstatus) > 0) /* name */
+          {
+               tstatus = 0;
+               /* look for HDUNAME, since EXTNAME didn't exist */
+               ffgkys(fptr, "HDUNAME", extname, 0, &tstatus);
+          }
+
+          if (tstatus <= 0)
           {
             ffcmps(extname, hduname, CASEINSEN, &match, &exact);
             if (exact)  /* names match? */
@@ -4288,12 +4297,25 @@ int ffc2i(char *cval,   /* I - string representation of the value */
 
     if (cval[0] == '\0')
         return(*status = VALUE_UNDEFINED);  /* null value string */
-
+        
     /* convert the keyword to its native datatype */
     ffc2x(cval, &dtype, ival, &lval, sval, &dval, status);
 
     if (dtype == 'C')
-        *status = BAD_INTKEY;
+    {
+            *status = BAD_INTKEY;
+    }
+    else if (dtype == 'F')
+    {
+            if (dval > (double) LONG_MAX || dval < (double) LONG_MIN)
+                *status = NUM_OVERFLOW;
+            else
+                *ival = (long) dval;
+    }
+    else if (dtype == 'L')
+    {
+            *ival = (long) lval;
+    }
 
     if (*status > 0)
     {
@@ -4304,10 +4326,6 @@ int ffc2i(char *cval,   /* I - string representation of the value */
             return(*status);
     }
 
-    if (dtype == 'F')
-            *ival = (long) dval;
-    else if (dtype == 'L')
-            *ival = (long) lval;
 
     return(*status);
 }
@@ -4452,17 +4470,28 @@ int ffc2ii(char *cval,  /* I - string representation of the value */
   convert null-terminated formatted string to an integer value
 */
 {
-    char *loc;
+    char *loc, msg[81];
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
+    errno = 0;
     *ival = 0;
     *ival = strtol(cval, &loc, 10);  /* read the string as an integer */
 
     /* check for read error, or junk following the integer */
     if (*loc != '\0' && *loc != ' ' ) 
         *status = BAD_C2I;
+
+    if (errno == ERANGE)
+    {
+        strcpy(msg,"Range Error in ffc2ii converting string to long int: ");
+        strncat(msg,cval,25);
+        ffpmsg(msg);
+
+        *status = NUM_OVERFLOW;
+        errno = 0;
+    }
 
     return(*status);
 }
@@ -4553,6 +4582,7 @@ int ffc2rr(char *cval,   /* I - string representation of the value */
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
+    errno = 0;
     *fval = 0.;
     *fval = (float) strtod(cval, &loc);  /* read the string as an float */
 
@@ -4564,6 +4594,16 @@ int ffc2rr(char *cval,   /* I - string representation of the value */
         ffpmsg(msg);
 
         *status = BAD_C2F;   
+    }
+
+    if (errno == ERANGE)
+    {
+        strcpy(msg,"Error in ffc2rr converting string to float: ");
+        strncat(msg,cval,30);
+        ffpmsg(msg);
+
+        *status = NUM_OVERFLOW;
+        errno = 0;
     }
 
     return(*status);
@@ -4587,6 +4627,7 @@ int ffc2dd(char *cval,   /* I - string representation of the value */
 
     if (loc)            /*  The C language does not support a 'D' */
        *loc = 'E';      /*  exponent so replace any D's with E's. */               
+    errno = 0;
     *dval = 0.;
     *dval = strtod(tval, &loc);  /* read the string as an double */
 
@@ -4598,6 +4639,16 @@ int ffc2dd(char *cval,   /* I - string representation of the value */
         ffpmsg(msg);
 
         *status = BAD_C2D;   
+    }
+
+    if (errno == ERANGE)
+    {
+        strcpy(msg,"Error in ffc2dd converting string to double: ");
+        strncat(msg,cval,30);
+        ffpmsg(msg);
+
+        *status = NUM_OVERFLOW;
+        errno = 0;
     }
 
     return(*status);

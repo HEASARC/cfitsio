@@ -1,5 +1,13 @@
                Log of Changes Made to CFITSIO
 
+   - improved the undocumented feature that allows a '20A' column to be
+     read as though it were a '20B' column by fits_read_col_byt.  
+
+   - added overflow error checking when reading keywords.  Previously, the
+     returned value could be silently truncated to the maximum allowed value
+     for that data type.  Now an error status is returned whenever an 
+     overflow occurs.
+
    - added new set of routines dealing with hierarchical groups of files.
      These were provided by Don Jennings of the INTEGRAL Science Data Center.
 

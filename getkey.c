@@ -11,6 +11,7 @@
 /*  and perform such material.                                             */
 
 #include <string.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <ctype.h>
 /* stddef.h is apparently needed to define size_t */
@@ -235,28 +236,53 @@ int ffgky( fitsfile *fptr,     /* I - FITS file pointer        */
     }
     else if (datatype == TBYTE)
     {
-        ffgkyj(fptr, keyname, &longval, comm, status);
-        *(unsigned char *) value = longval;
+        if (ffgkyj(fptr, keyname, &longval, comm, status) <= 0)
+        {
+            if (longval > UCHAR_MAX || longval < 0)
+                *status = NUM_OVERFLOW;
+            else
+                *(unsigned char *) value = longval;
+        }
     }
     else if (datatype == TUSHORT)
     {
-        ffgkyj(fptr, keyname, &longval, comm, status);
-        *(unsigned short *) value = longval;
+        if (ffgkyj(fptr, keyname, &longval, comm, status) <= 0)
+        {
+            if (longval > USHRT_MAX || longval < 0)
+                *status = NUM_OVERFLOW;
+            else
+                *(unsigned short *) value = longval;
+        }
     }
     else if (datatype == TSHORT)
     {
-        ffgkyj(fptr, keyname, &longval, comm, status);
-        *(short *) value = longval;
+        if (ffgkyj(fptr, keyname, &longval, comm, status) <= 0)
+        {
+            if (longval > SHRT_MAX || longval < SHRT_MIN)
+                *status = NUM_OVERFLOW;
+            else
+                *(short *) value = longval;
+        }
     }
     else if (datatype == TUINT)
     {
-        ffgkyj(fptr, keyname, &longval, comm, status);
-        *(unsigned int *) value = longval;
+        if (ffgkyj(fptr, keyname, &longval, comm, status) <= 0)
+        {
+            if (longval > (long) UINT_MAX || longval < 0)
+                *status = NUM_OVERFLOW;
+            else
+                *(unsigned int *) value = longval;
+        }
     }
     else if (datatype == TINT)
     {
-        ffgkyj(fptr, keyname, &longval, comm, status);
-        *(int *) value = longval;
+        if (ffgkyj(fptr, keyname, &longval, comm, status) <= 0)
+        {
+            if (longval > INT_MAX || longval < INT_MIN)
+                *status = NUM_OVERFLOW;
+            else
+                *(int *) value = longval;
+        }
     }
     else if (datatype == TLOGICAL)
     {
@@ -264,8 +290,13 @@ int ffgky( fitsfile *fptr,     /* I - FITS file pointer        */
     }
     else if (datatype == TULONG)
     {
-        ffgkyd(fptr, keyname, &doubleval, comm, status);
-        *(unsigned long *) value = doubleval;
+        if (ffgkyd(fptr, keyname, &doubleval, comm, status) <= 0)
+        {
+            if (doubleval > (double) ULONG_MAX || doubleval < 0)
+                *status = NUM_OVERFLOW;
+            else
+                 *(unsigned long *) value = doubleval;
+        }
     }
     else if (datatype == TLONG)
     {

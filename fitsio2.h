@@ -227,8 +227,17 @@ int ffbfeof(fitsfile *fptr, int *status);
 int ffbfwt(int nbuff, int *status);
 int fits_get_num_files(void);
 
-int ffhist(fitsfile **fptr, int imagetype, int naxis, char colname[4][FLEN_VALUE],
-           double *minin, double *maxin, double *binsizein, int *status);
+int fits_is_this_a_copy(char *urltype);
+int ffedit_columns(fitsfile **fptr, char *outfile, char *expr, int *status);
+int ffhist(fitsfile **fptr, char *outfile, int imagetype, int naxis,
+           char colname[4][FLEN_VALUE],
+           double *minin, double *maxin, double *binsizein,
+           char minname[4][FLEN_VALUE], char maxname[4][FLEN_VALUE],
+           char binname[4][FLEN_VALUE], 
+           double weightin, char wtcol[FLEN_VALUE],
+           int recip, int *status);
+int fits_get_col_minmax(fitsfile *fptr, int colnum, float *datamin, 
+                     float *datamax, int *status);
 int ffwritehisto(long totaln, long offset, long firstn, long nvalues,
              int narrays, iteratorCol *imagepars, void *userPointer);
 int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
@@ -626,7 +635,7 @@ void ieevud(double *inarray, double *outarray, long *nvals);
 
 
 /*  routines related to the lexical parser  */
-int  ffselect_table(fitsfile **fptr, char *expr,  int *status);
+int  ffselect_table(fitsfile **fptr, char *outfile, char *expr,  int *status);
 int  ffiprs( fitsfile *fptr, int compressed, char *expr, int maxdim,
 	     int *datatype, long *nelem, int *naxis, long *naxes,
 	     int *status );

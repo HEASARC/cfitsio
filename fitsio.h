@@ -58,7 +58,7 @@
 #define READWRITE 1
 
 #define FLOATNULLVALUE -9.11E-36F
-#define DOUBLENULLVALUE -9.11E-36L
+#define DOUBLENULLVALUE -9.11E-36
  
 #ifndef TRUE
 #define TRUE 1
@@ -370,7 +370,7 @@ int ffpunt(fitsfile *fptr, char *keyname, char *unit, int *status);
 int ffphis(fitsfile *fptr, const char *history, int *status);
 int ffpdat(fitsfile *fptr, int *status);
 int ffgstm(char *timestr, int *timeref, int *status);
-int ffgsdt(int *day, int *month, int *year2, int *status);
+int ffgsdt(int *day, int *month, int *year, int *status);
 int ffdt2s(int year, int month, int day, char *datestr, int *status);
 int fftm2s(int year, int month, int day, int hour, int minute, double second,
           int decimals, char *datestr, int *status);

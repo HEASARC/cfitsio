@@ -351,9 +351,9 @@ int ffgbyt(fitsfile *fptr,    /* I - FITS file pointer             */
 /*--------------------------------------------------------------------------*/
 int ffgbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
            long gsize,        /* I - size of each group of bytes         */
-           long ngroups,      /* I - number of groups to write           */
+           long ngroups,      /* I - number of groups to read            */
            long offset,       /* I - size of gap between groups          */
-           void *buffer,      /* I - buffer to be written                */
+           void *buffer,      /* I - buffer to be filled                 */
            int *status)       /* IO - error status                       */
 /*
   get (read) the requested number of bytes from the file, starting at

@@ -627,11 +627,37 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
     /*---------------------------------------------------*/
-    if ( ffgcpr( fptr, colnum, firstrow, firstelem, nelem, 0, &scale, &zero,
+    ffgcpr( fptr, colnum, firstrow, firstelem, nelem, 0, &scale, &zero,
          tform, &twidth, &tcode, &maxelem, &startpos, &elemnum, &incre,
-         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0 )
-         return(*status);
+         &repeat, &rowlen, &hdutype, &tnull, snull, status);
 
+    if (strchr(tform,'A') != NULL) 
+    {
+        if (*status == BAD_ELEM_NUM)
+        {
+            /* ignore this error message */
+            *status = 0;
+            ffcmsg();   /* clear error stack */
+        }
+
+        /*  interpret a 'A' ASCII column as a 'B' byte column ('8A' == '8B') */
+        /*  This is an undocumented 'feature' in CFITSIO */
+
+        /*  we have to reset some of the values returned by ffgcpr */
+        
+        tcode = TBYTE;
+        incre = 1;         /* each element is 1 byte wide */
+        repeat = twidth;   /* total no. of chars in the col */
+        twidth = 1;        /* width of each element */
+        scale = 1.0;       /* no scaling */
+        zero  = 0.0;
+        tnull = NULL_UNDEFINED;  /* don't test for nulls */
+        maxelem = DBUFFSIZE;
+    }
+
+    if (*status > 0)
+        return(*status);
+        
     incre *= elemincre;   /* multiply incre to just get every nth pixel */
 
     if (tcode == TSTRING && hdutype == ASCII_TBL) /* setup for ASCII tables */
@@ -738,14 +764,10 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
                      ffgbytoff(fptr, twidth, ntodo, incre - twidth, buffer,
                                status);
 
-                /* copy raw bytes from an 'A' column, otherwise     */
                 /* interpret the string as an ASCII formated number */
-                if(strchr(tform,'A') != NULL) 
-                   memcpy(array+next,buffer,ntodo);
-                else
-                   fffstri1((char *) buffer, ntodo, scale, zero, twidth, power,
-                     nulcheck, snull, nulval, &nularray[next], anynul,
-                     &array[next], status);
+                fffstri1((char *) buffer, ntodo, scale, zero, twidth, power,
+                      nulcheck, snull, nulval, &nularray[next], anynul,
+                      &array[next], status);
                 break;
 
             default:  /*  error trap for invalid column format */

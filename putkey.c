@@ -895,6 +895,9 @@ int ffs2dt(char *datestr,   /* I - date string: "YYYY-MM-DD" or "dd/mm/yy" */
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
+    if (!datestr)
+        return(*status = BAD_DATE);   /* Null datestr pointer ??? */
+
     slen = strlen(datestr);
 
     if (slen == 8 && datestr[2] == '/' && datestr[5] == '/')
@@ -961,7 +964,7 @@ int fftm2s(int year,          /* I - year (0 - 9999)           */
            int hour,          /* I - hour (0 - 23)             */
            int minute,        /* I - minute (0 - 59)           */
            double second,     /* I - second (0. - 60.9999999)  */
-           int decimals,       /* I - number of decimal points to write      */
+           int decimals,      /* I - number of decimal points to write      */
            char *datestr,     /* O - date string: "YYYY-MM-DDThh:mm:ss.ddd" */
                               /*   or "hh:mm:ss.ddd" if year, month day = 0 */
            int   *status)     /* IO - error status             */
@@ -969,6 +972,8 @@ int fftm2s(int year,          /* I - year (0 - 9999)           */
   Construct a date and time character string
 */
 {
+    int width;
+
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
@@ -977,15 +982,20 @@ int fftm2s(int year,          /* I - year (0 - 9999)           */
         second < 0. || second >= 61. || decimals < 0 || decimals > 25)
        return(*status = BAD_DATE);
 
+    if (decimals == 0)
+       width = 2;
+    else
+       width = decimals + 3;
+
     if (year == 0 && month == 0 && day == 0)
     {
-        sprintf(datestr, "%.2d:%.2d:%02.*f",
-            hour, minute, decimals, second);
+        sprintf(datestr, "%.2d:%.2d:%0*.*f",
+            hour, minute, width, decimals, second);
     }
     else
     {
-        sprintf(datestr, "%.4d-%.2d-%.2dT%.2d:%.2d:%02.*f",
-            year, month, day, hour, minute, decimals, second);
+        sprintf(datestr, "%.4d-%.2d-%.2dT%.2d:%.2d:%0*.*f",
+            year, month, day, hour, minute, width, decimals, second);
     }
     return(*status);
 }
@@ -1008,6 +1018,9 @@ int ffs2tm(char *datestr,     /* I - date string: "YYYY-MM-DD"    */
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
+
+    if (!datestr)
+        return(*status = BAD_DATE);   /* Null datestr pointer ??? */
 
     if (hour)
        *hour   = 0;
@@ -1113,7 +1126,7 @@ int ffgsdt( int *day, int *month, int *year, int *status )
          Function parameters:
             day      Day of the month
             month    Numerical month (1=Jan, etc.)
-            year2    Year (1999, 2000, etc.)
+            year     Year (1999, 2000, etc.)
             status   output error status
 
 */

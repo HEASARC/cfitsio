@@ -253,13 +253,14 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
 */
 {
     FITSfile *oldFptr;
-    int ii, driver, hdutyp, slen;
+    int ii, driver, hdutyp, slen, writecopy;
     long filesize;
     int extnum, extvers, handle, movetotype;
     char urltype[MAX_PREFIX_LEN], infile[FLEN_FILENAME], outfile[FLEN_FILENAME];
     char origurltype[MAX_PREFIX_LEN], extspec[FLEN_FILENAME];
     char extname[FLEN_VALUE], rowfilter[FLEN_FILENAME];
     char binspec[FLEN_FILENAME], colspec[FLEN_FILENAME];
+    char histfilename[FLEN_FILENAME];
     char wtcol[FLEN_VALUE];
     char minname[4][FLEN_VALUE], maxname[4][FLEN_VALUE];
     char binname[4][FLEN_VALUE];
@@ -279,6 +280,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
         return(*status);
 
     *fptr = 0;              /* initialize null file pointer */
+    writecopy = 0;  /* have we made a write-able copy of the input file? */
 
     if (need_to_initialize)           /* this is called only once */
        *status = fits_init_cfitsio();
@@ -307,6 +309,19 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
         return(*status);
     }
 
+    /*-------------------------------------------------------------------*/
+    /* special case: if outfile and binspec are both specified, then     */
+    /* the output file name is intended for the final histogram, and not */
+    /* the copy of the input file that will be created if colspec or     */
+    /* rowfilter are specified.                                          */
+    /*-------------------------------------------------------------------*/
+
+    if (*outfile && *binspec)
+    {
+        strcpy(histfilename, outfile);
+        outfile[0] = '\0';
+    }
+        
     /* check if this same file is already open, and if so, attach to it */
     for (ii = 0; ii < NIOBUF; ii++)   /* check every buffer */
     {
@@ -398,7 +413,15 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
         return(*status);
     }
 
-    /* deal with all those messy special cases */
+    /*
+        deal with all those messy special cases which may require that
+        a different driver be used:
+            - is disk file compressed?
+            - are ftp: or http: files compressed?
+            - has user requested that a local copy be made of
+              the ftp or http file?
+    */
+
     if (driverTable[driver].checkfile)
     {
         strcpy(origurltype,urltype);  /* Save the urltype */
@@ -523,10 +546,22 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     }
 
     /* ---------------------------------------------------------- */
-    /* move to desired extension, if specified as part of the URL */
+    /* at this point, we can assume the file has been opened.     */
+    /* If 'outfile' was specified, then the input file has been   */
+    /* copied to it, and we have write access to the copy.        */
     /* ---------------------------------------------------------- */
 
+    if (*outfile)
+    {
+        ((*fptr)->Fptr)->writemode = READWRITE; /* we can write to the copy */
+        writecopy = 1;                          /* set copy existence flag */
+    }
+
 move2hdu:
+
+    /* ---------------------------------------------------------- */
+    /* move to desired extension, if specified as part of the URL */
+    /* ---------------------------------------------------------- */
 
     if (*extspec)
     {
@@ -582,16 +617,61 @@ move2hdu:
     }
 
     /* ------------------------------------------------------------------- */
+    /* edit columns in the table, if specified in the URL                  */
+    /* ------------------------------------------------------------------- */
+ 
+    if (*colspec)
+    {
+       /* the column specifier will modify the file, so make sure */
+       /* we are already dealing with a copy, or else make a new copy */
+
+       if (!writecopy)  /* Is the current file already a copy? */
+           writecopy = fits_is_this_a_copy(urltype);
+
+       if (!writecopy)
+       {
+           strcpy(outfile, "mem://_1");  /* will create copy in memory */
+       }
+       else
+       {
+           ((*fptr)->Fptr)->writemode = READWRITE; /* we have write access */
+           outfile[0] = '\0';
+       }
+
+       if (ffedit_columns(fptr, outfile, colspec, status) > 0)
+       {
+           ffpmsg("editing columns in input table failed (ffopen)");
+           return(*status);
+       }
+    }
+
+    /* ------------------------------------------------------------------- */
     /* select rows from the table, if specified in the URL                 */
     /* ------------------------------------------------------------------- */
  
     if (*rowfilter)
     {
-       /* Create new table in memory and open it as the current fptr.  */
-       /*              This will close the original table.             */
-       if (ffselect_table(fptr, rowfilter, status) > 0)
+       if (!writecopy)  /* Is the current file already a copy? */
+           writecopy = fits_is_this_a_copy(urltype);
+
+       if (!writecopy)
        {
-           ffpmsg("on-the-fly selection of rows in input table failed");
+           strcpy(outfile, "mem://_2");  /* will create copy in memory */
+       }
+       else
+       {
+           ((*fptr)->Fptr)->writemode = READWRITE; /* we have write access */
+           outfile[0] = '\0';
+       }
+
+       /* select rows in the table.  If a copy of the input file has */
+       /* not already been made, then this routine will make a copy */
+       /* and then close the input file, so that the modifications will */
+       /* only be made on the copy, not the original */
+
+       if (ffselect_table(fptr, outfile, rowfilter, status) > 0)
+       {
+           ffpmsg("on-the-fly selection of rows in input table failed (ffopen)");
            return(*status);
        }
     }
@@ -602,6 +682,12 @@ move2hdu:
  
     if (*binspec)
     {
+       if (*histfilename)
+           strcpy(outfile, histfilename); /* the original outfile name */
+       else
+           strcpy(outfile, "mem://_3");  /* create histogram in memory */
+                                         /* if not already copied the file */ 
+
        /* parse the binning specifier into individual parameters */
        ffbins(binspec, &imagetype, &haxis, colname, 
                           minin, maxin, binsizein, 
@@ -610,8 +696,9 @@ move2hdu:
 
        /* Create the histogram in memory and open it as the current fptr.  */
        /* This will close the table that was used to create the histogram. */
-       ffhist(fptr, imagetype, haxis, colname, minin, maxin, binsizein,
-              status);
+       ffhist(fptr, outfile, imagetype, haxis, colname, minin, maxin,
+              binsizein, minname, maxname, binname,
+              weight, wtcol, recip, status);
     }
 
     return(*status);
@@ -645,9 +732,213 @@ int ffreopen(fitsfile *openfptr, /* I - FITS file pointer to open file  */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int fits_is_this_a_copy(char *urltype) /* I - type of file */
+/*
+  specialized routine that returns 1 if the file is known to be a temporary
+  copy of the originally opened file.  Otherwise it returns 0.
+*/
+{
+  int iscopy;
+
+  if (!strncmp(urltype, "mem", 3) )
+     iscopy = 1;    /* file copy is in memory */
+  else if (!strncmp(urltype, "compress", 8) )
+     iscopy = 1;    /* compressed diskfile that is uncompressed in memory */
+  else if (!strncmp(urltype, "http", 4) )
+     iscopy = 1;    /* copied file using http protocol */
+  else if (!strncmp(urltype, "ftp", 3) )
+     iscopy = 1;    /* copied file using ftp protocol */
+  else if (!strncpy(urltype, "stdin", 5) )
+     iscopy = 1;    /* piped stdin has been copied to memory */
+  else
+     iscopy = 0;    /* file is not known to be a copy */
+ 
+    return(iscopy);
+}
+/*--------------------------------------------------------------------------*/
+int ffedit_columns(
+           fitsfile **fptr,  /* IO - pointer to input table; on output it  */
+                             /*      points to the new selected rows table */
+           char *outfile,    /* I - name for output file */
+           char *expr,       /* I - column edit expression    */
+           int *status)
+{
+    fitsfile *newptr;
+    int ii, hdunum, hdutype, slen, colnum;
+    char *cptr, *cptr2, clause[FLEN_FILENAME], keyname[FLEN_KEYWORD];
+    char colname[FLEN_VALUE], oldname[FLEN_VALUE];
+    char colformat[8];
+
+    if (*outfile)
+    {
+      /* create new empty file in to hold the selected rows */
+      if (ffinit(&newptr, outfile, status) > 0)
+      {
+        ffpmsg(
+         "failed to make copy of input file (ffedit_columns)");
+        return(*status);
+      }
+
+      fits_get_hdu_num(*fptr, &hdunum);  /* current HDU number in input file */
+
+      /* copy all HDUs to the output copy */
+
+      for (ii = 1; 1; ii++)
+      {
+        if (fits_movabs_hdu(*fptr, ii, NULL, status) > 0)
+            break;
+
+        fits_copy_hdu(*fptr, newptr, 0, status);
+      }
+
+      if (*status == END_OF_FILE)
+      {
+        *status = 0;              /* got the expected EOF error; reset = 0  */
+        ffxmsg(-2, NULL);         /* remove extraneous error message */
+      }
+      else if (*status > 0)
+      {
+        ffclos(newptr, status);
+        return(*status);
+      }
+
+      /* close the original file and return ptr to the new image */
+      ffclos(*fptr, status);
+
+      *fptr = newptr; /* reset the pointer to the new table */
+
+      /* move back to the selected table HDU */
+      fits_movabs_hdu(*fptr, hdunum, NULL, status);
+    }
+
+    /* remove the "col " from the beginning of the column edit expression */
+    cptr = expr + 4;
+    ii = strlen(cptr);
+
+    while (*cptr == ' ')
+         cptr++;         /* skip leading white space */
+   
+    /* parse expression and get first clause, if more than 1 */
+
+    while ((slen = fits_get_token(&cptr, ";", clause, NULL)) > 0 )
+    {
+        clause[slen] = '\0';
+
+        if (clause[0] == '!')
+        {
+            /* delete this column */
+
+            ffgcno(*fptr, CASEINSEN, &clause[1], &colnum, status);
+            if (ffdcol(*fptr, colnum, status) > 0)
+            {
+                ffpmsg("failed to delete column in input file:");
+                ffpmsg(clause);
+                return(*status);
+            }
+        }
+        else
+        {
+            /*
+               this is either a column name followed by a single "=" 
+               and a calculation expression, or
+               a column name followed by double = ("==") followed
+               by the new name to which it should be renamed.
+            */
+
+            cptr2 = clause;
+            slen = fits_get_token(&cptr2, " =", colname, NULL);
+            if (slen == 0)
+            {
+                ffpmsg("error: column name is blank!:");
+                ffpmsg(clause);
+                return(*status= URL_PARSE_ERROR);
+            }
+
+            while (*cptr2 == ' ')
+                 cptr2++;         /* skip white space */
+
+            if (*cptr2 != '=')
+            {
+               ffpmsg("Syntax error in columns specifier in input URL:");
+               ffpmsg(cptr2);
+               return(*status = URL_PARSE_ERROR);
+            }
+
+            cptr2++;   /* skip over the first '=' */
+
+            if (*cptr2 == '=')
+            {
+                /*
+                    Case 1:  rename a column;  syntax is
+                   "new_column_name == old_column_name"
+                */
+
+                cptr2++;  /* skip the 2nd '=' */
+                while (*cptr2 == ' ')
+                      cptr2++;       /* skip white space */
+
+                fits_get_token(&cptr2, " ", oldname, NULL);
+
+                /* get column number of the existing column */
+                if (ffgcno(*fptr, CASEINSEN, oldname, &colnum, status) > 0)
+                {
+                  ffpmsg("failed to rename column in input file");
+                  ffpmsg(" This column does not exist:");
+                  ffpmsg(clause);
+                  return(*status);
+                }
+
+                /* modify the TTYPEn keyword value with the new name */
+                ffkeyn("TTYPE", colnum, keyname, status);
+
+                if (ffmkys(*fptr, keyname, colname, NULL, status) > 0)
+                {
+                  ffpmsg("failed to rename column in input file");
+                  ffpmsg(" oldname =");
+                  ffpmsg(oldname);
+                  ffpmsg(" newname =");
+                  ffpmsg(colname);
+                  return(*status);
+                }
+            }  
+            else
+            {
+                /* this must be a general column calculation expression */
+                /* "colname = expression"  */
+
+                if (ffgcno(*fptr, CASEINSEN, colname, &colnum, status) > 0)
+                {
+                    /* column doesn't exist; create it (with DOUBLE format) */
+                    *status = 0;
+
+                    ffghdt(*fptr, &hdutype, status);
+                    if (hdutype == BINARY_TBL)
+                        strcpy(colformat, "1D");
+                    else
+                        strcpy(colformat, "E21.14");
+
+                    /* insert new column at end of table */
+                    if (fficol(*fptr, 999, colname, colformat, status) > 0)
+                    {
+                        ffpmsg("failed to insert new column in table:");
+                        ffpmsg(colname);
+                        return(*status);
+                    }
+                }
+
+                /* calculate values for each row of the column */ 
+                fits_calc_col(*fptr, cptr2, *fptr, colname, status);
+            }
+        }
+    }
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffselect_table(
            fitsfile **fptr,  /* IO - pointer to input table; on output it  */
                              /*      points to the new selected rows table */
+           char *outfile,    /* I - name for output file */
            char *expr,       /* I - Boolean expression    */
            int *status)
 {
@@ -655,42 +946,47 @@ int ffselect_table(
     int ii, hdunum;
     char *cptr;
 
-    /* create new empty file in memory to hold the selected rows */
-    if (ffinit(&newptr, "mem://", status) > 0)
+    if (*outfile)
     {
+      /* create new empty file in to hold the selected rows */
+      if (ffinit(&newptr, outfile, status) > 0)
+      {
         ffpmsg(
          "failed to create memory file for selected rows from input table");
         return(*status);
-    }
+      }
 
-    fits_get_hdu_num(*fptr, &hdunum);  /* current HDU number in input file */
+      fits_get_hdu_num(*fptr, &hdunum);  /* current HDU number in input file */
 
-    /* copy all preceding extensions to the output file */
-    for (ii = 1; ii < hdunum; ii++)
-    {
+      /* copy all preceding extensions to the output file */
+      for (ii = 1; ii < hdunum; ii++)
+      {
         fits_movabs_hdu(*fptr, ii, NULL, status);
         if (fits_copy_hdu(*fptr, newptr, 0, status) > 0)
         {
             ffclos(newptr, status);
             return(*status);
         }
-    }
+      }
 
-    /* copy all the header keywords from the input to output file */
-    fits_movabs_hdu(*fptr, hdunum, NULL, status);
-    if (fits_copy_header(*fptr, newptr, status) > 0)
-    {
+      /* copy all the header keywords from the input to output file */
+      fits_movabs_hdu(*fptr, hdunum, NULL, status);
+      if (fits_copy_header(*fptr, newptr, status) > 0)
+      {
         ffclos(newptr, status);
         return(*status);
-    }
+      }
 
-    /* set number of rows = 0 */
-    fits_modify_key_lng(newptr, "NAXIS2", 0, NULL,status);
-    if (ffrdef(*fptr, status) > 0)  /* force the header to be scanned */
-    {
+      /* set number of rows = 0 */
+      fits_modify_key_lng(newptr, "NAXIS2", 0, NULL,status);
+      if (ffrdef(*fptr, status) > 0)  /* force the header to be scanned */
+      {
         ffclos(newptr, status);
         return(*status);
+      }
     }
+    else
+        newptr = *fptr;  /* will delete rows in place in the table */
 
     /* remove the brackets from around the selection expression */
     cptr = expr + 1;
@@ -698,37 +994,43 @@ int ffselect_table(
     cptr[ii - 1] = '\0';
 
     /* copy rows which satisfy the selection expression to the output table */
+    /* or delete the nonqualifying rows if *fptr = newptr.                  */
     if (fits_select_rows(*fptr, newptr, cptr, status) > 0)
     {
-        ffclos(newptr, status);
+        if (*outfile)
+            ffclos(newptr, status);
+
         return(*status);
     }
 
-    /* copy any remaining HDUs to the output file */
-
-    for (ii = hdunum + 1; 1; ii++)
+    if (*outfile)
     {
+      /* copy any remaining HDUs to the output copy */
+
+      for (ii = hdunum + 1; 1; ii++)
+      {
         if (fits_movabs_hdu(*fptr, ii, NULL, status) > 0)
             break;
 
         fits_copy_hdu(*fptr, newptr, 0, status);
-    }
+      }
 
-    if (*status == END_OF_FILE)   
+      if (*status == END_OF_FILE)   
         *status = 0;              /* got the expected EOF error; reset = 0  */
-    else if (*status > 0)
-    {
+      else if (*status > 0)
+      {
         ffclos(newptr, status);
         return(*status);
+      }
+
+      /* close the original file and return ptr to the new image */
+      ffclos(*fptr, status);
+
+      *fptr = newptr; /* reset the pointer to the new table */
+
+      /* move back to the selected table HDU */
+      fits_movabs_hdu(*fptr, hdunum, NULL, status);
     }
-
-    /* close the original file and return ptr to the new image */
-    ffclos(*fptr, status);
-
-    *fptr = newptr; /* reset the pointer to the new table */
-
-    /* move back to the selected table HDU */
-    fits_movabs_hdu(*fptr, hdunum, NULL, status);
 
     return(*status);
 }
@@ -1642,19 +1944,16 @@ int ffiurl(char *url,
         return(*status);      /* nothing left to parse */
     }
 
-    /* ------------------------------------------------------- */
-    /* convert filter to all lowercase to simplify comparisons */
-    /* ------------------------------------------------------- */
-
-    ptr1 = rowfilter;
-    while (*ptr1)
-       *(ptr1++) = tolower( *ptr1);
-
     /* ------------------------------------------------ */
     /* does the filter contain a binning specification? */
     /* ------------------------------------------------ */
 
     ptr1 = strstr(rowfilter, "[bin");      /* search for "[bin" */
+    if (!ptr1)
+        ptr1 = strstr(rowfilter, "[BIN");      /* search for "[BIN" */
+    if (!ptr1)
+        ptr1 = strstr(rowfilter, "[Bin");      /* search for "[Bin" */
+
     if (ptr1)
     {
       ptr2 = ptr1 + 4;     /* end of the '[bin' string */
@@ -1702,6 +2001,10 @@ int ffiurl(char *url,
     /* --------------------------------------------------------- */
 
     ptr1 = strstr(rowfilter, "[col");
+    if (!ptr1)
+        ptr1 = strstr(rowfilter, "[COL");
+    if (!ptr1)
+        ptr1 = strstr(rowfilter, "[Col");
 
     if (ptr1)
     {
@@ -1862,7 +2165,6 @@ int ffrtnm(char *url,
     {
         infilelen = ii;
         ii++;
-        ptr1 = infile+ii;   /* pointer to start of sequence */
 
         for (; ii < jj; ii++)
         {
@@ -1939,6 +2241,7 @@ int ffexts(char *extspec,
 */
     char *ptr1;
     int slen, nvals;
+    char tmpname[FLEN_VALUE];
 
     *extnum = 0;
     *extname = '\0';
@@ -2008,6 +2311,13 @@ int ffexts(char *extspec,
                      return(*status = URL_PARSE_ERROR);
                  }
                }
+           }
+           else
+           {
+                strcpy(tmpname, extname);
+                ffupch(tmpname);
+                if (!strcmp(tmpname, "PRIMARY") || !strcmp(tmpname, "P") )
+                    *extname = '\0';  /* return extnum = 0 */
            }
     }
     return(*status);
@@ -2125,308 +2435,7 @@ int ffextn(char *url,           /* I - input filename/URL  */
          return(*status);
     }
 }
-/*--------------------------------------------------------------------------*/
-int ffbins(char *binspec,   /* I - binning specification */
-                   int *imagetype,      /* O - image type, TINT or TSHORT */
-                   int *haxis,          /* O - no. of axes in the histogram */
-                   char colname[4][FLEN_VALUE],  /* column name for axis */
-                   double *minin,        /* minimum value for each axis */
-                   double *maxin,        /* maximum value for each axis */
-                   double *binsizein,    /* size of bins on each axis */
-                   char minname[4][FLEN_VALUE],  /* keyword name for min */
-                   char maxname[4][FLEN_VALUE],  /* keyword name for max */
-                   char binname[4][FLEN_VALUE],  /* keyword name for binsize */
-                   double *weight,       /* weighting factor          */
-                   char *wtname,        /* keyword or column name for weight */
-                   int *recip,          /* the reciprocal of the weight? */
-                   int *status)
-{
-/*
-   Parse the input binning specification string, returning the binning
-   parameters.  Supports up to 4 dimensions.  The binspec string has
-   one of these forms:
 
-   bin binsize                  - 2D histogram with binsize on each axis
-   bin xcol                     - 1D histogram on column xcol
-   bin (xcol, ycol) = binsize   - 2D histogram with binsize on each axis
-   bin x=min:max:size, y=min:max:size, z..., t... 
-   bin x=:max, y=::size
-   bin x=size, y=min::size
-
-   most other reasonable combinations are supported.        
-*/
-    int ii, slen, defaulttype;
-    char *ptr, tmpname[30];
-    double  dummy;
-
-    if (*status > 0)
-         return(*status);
-
-    /* set the default values */
-    *haxis = 2;
-    *imagetype = TINT;
-    defaulttype = 1;
-    *weight = 1.;
-    *recip = 0;
-    *wtname = '\0';
-
-    /* set default values */
-    for (ii = 0; ii < 4; ii++)
-    {
-        *colname[ii] = '\0';
-        *minname[ii] = '\0';
-        *maxname[ii] = '\0';
-        *binname[ii] = '\0';
-        minin[ii] = DOUBLENULLVALUE;  /* undefined values */
-        maxin[ii] = DOUBLENULLVALUE;
-        binsizein[ii] = DOUBLENULLVALUE;
-    }
-
-    ptr = binspec + 3;  /* skip over 'bin' */
-
-    if (*ptr == 'i' )  /* bini */
-    {
-        *imagetype = TSHORT;
-        defaulttype = 0;
-        ptr++;
-    }
-    else if (*ptr == 'j' )  /* binj; same as default */
-    {
-        defaulttype = 0;
-        ptr ++;
-    }
-    else if (*ptr == 'r' )  /* binr */
-    {
-        *imagetype = TFLOAT;
-        defaulttype = 0;
-        ptr ++;
-    }
-    else if (*ptr == 'd' )  /* bind */
-    {
-        *imagetype = TDOUBLE;
-        defaulttype = 0;
-        ptr ++;
-    }
-    else if (*ptr == 'b' )  /* binb */
-    {
-        *imagetype = TBYTE;
-        defaulttype = 0;
-        ptr ++;
-    }
-
-    if (*ptr == '\0')  /* use all defaults for other parameters */
-        return(*status);
-    else if (*ptr != ' ')  /* must be at least one blank */
-    {
-        ffpmsg("binning specification syntax error:");
-        ffpmsg(binspec);
-        return(*status = URL_PARSE_ERROR);
-    }
-
-    while (*ptr == ' ')  /* skip over blanks */
-           ptr++;
-
-    if (*ptr == '\0')   /* no other parameters; use defaults */
-        return(*status);
-
-    if (*ptr == '(' )
-    {
-        /* this must be the opening parenthesis around a list of column */
-        /* names, optionally followed by a '=' and the binning spec. */
-
-        for (ii = 0; ii < 4; ii++)
-        {
-            ptr++;               /* skip over the '(', ',', or ' ') */
-            while (*ptr == ' ')  /* skip over blanks */
-                ptr++;
-
-            slen = strcspn(ptr, " ,)");
-            strncat(colname[ii], ptr, slen); /* copy 1st column name */
-
-            ptr += slen;
-            while (*ptr == ' ')  /* skip over blanks */
-                ptr++;
-
-            if (*ptr == ')' )   /* end of the list of names */
-            {
-                *haxis = ii + 1;
-                break;
-            }
-        }
-
-        if (ii == 4)   /* too many names in the list , or missing ')'  */
-        {
-            ffpmsg(
- "binning specification has too many column names or is missing closing ')':");
-            ffpmsg(binspec);
-            return(*status = URL_PARSE_ERROR);
-        }
-
-        ptr++;  /* skip over the closing parenthesis */
-        while (*ptr == ' ')  /* skip over blanks */
-            ptr++;
-
-        if (*ptr == '\0')
-            return(*status);  /* parsed the entire string */
-
-        else if (*ptr != '=')  /* must be an equals sign now*/
-        {
-            ffpmsg("illegal binning specification in URL:");
-            ffpmsg(" an equals sign '=' must follow the column names");
-            ffpmsg(binspec);
-            return(*status = URL_PARSE_ERROR);
-        }
-
-        ptr++;  /* skip over the equals sign */
-        while (*ptr == ' ')  /* skip over blanks */
-            ptr++;
-
-
-        /* get the single range specification for all the columns */
-        ffbinr(&ptr, tmpname, minin,
-                                     maxin, binsizein, minname[0],
-                                     maxname[0], binname[0], status);
-        if (*status > 0)
-        {
-            ffpmsg("illegal binning specification in URL:");
-            ffpmsg(binspec);
-            return(*status);
-        }
-
-        for (ii = 1; ii < *haxis; ii++)
-        {
-            minin[ii] = minin[0];
-            maxin[ii] = maxin[0];
-            binsizein[ii] = binsizein[0];
-            strcpy(minname[ii], minname[0]);
-            strcpy(maxname[ii], maxname[0]);
-            strcpy(binname[ii], binname[0]);
-        }
-
-        while (*ptr == ' ')  /* skip over blanks */
-            ptr++;
-
-        if (*ptr == ';')
-            goto getweight;   /* a weighting factor is specified */
-
-        if (*ptr != '\0')  /* must have reached end of string */
-        {
-            ffpmsg("illegal binning specification in URL:");
-            ffpmsg(binspec);
-            return(*status = URL_PARSE_ERROR);
-        }
-
-        return(*status);
-    }             /* end of case with list of column names in ( )  */
-
-    /* if we've reached this point, then the binning specification */
-    /* must be of the form: XCOL = min:max:binsize, YCOL = ...     */
-    /* where the column name followed by '=' are optional.         */
-    /* If the column name is not specified, then use the default name */
-
-    for (ii = 0; ii < 4; ii++) /* allow up to 4 histogram dimensions */
-    {
-        ffbinr(&ptr, colname[ii], &minin[ii],
-                                     &maxin[ii], &binsizein[ii], minname[ii],
-                                     maxname[ii], binname[ii], status);
-
-        if (*status > 0)
-        {
-            ffpmsg("illegal binning specification in URL:");
-            ffpmsg(binspec);
-            return(*status);
-        }
-
-        if (*ptr == '\0' || *ptr == ';')
-            break;        /* reached the end of the string */
-
-        if (*ptr == ' ')
-        {
-            while (*ptr == ' ')  /* skip over blanks */
-                ptr++;
-
-            if (*ptr == '\0' || *ptr == ';')
-                break;        /* reached the end of the string */
-
-            if (*ptr == ',')
-                ptr++;  /* comma separates the next column specification */
-        }
-        else if (*ptr == ',')
-        {          
-            ptr++;  /* comma separates the next column specification */
-        }
-        else
-        {
-            ffpmsg("illegal binning specification in URL:");
-            ffpmsg(binspec);
-            return(*status = URL_PARSE_ERROR);
-        }
-    }
-
-    if (ii == 4)
-    {
-        /* there are yet more characters in the string */
-        ffpmsg("illegal binning specification in URL:");
-        ffpmsg("apparently too many histogram dimension (> 4)");
-        ffpmsg(binspec);
-        return(*status = URL_PARSE_ERROR);
-    }
-    else
-        *haxis = ii + 1;
-
-    /* special case: if a single number was entered it should be      */
-    /* interpreted as the binning factor for the default X and Y axes */
-    if (*haxis == 1 && *colname[0] == '\0' && 
-         minin[0] == FLOATNULLVALUE && maxin[0] == FLOATNULLVALUE)
-    {
-        *haxis = 2;
-        binsizein[1] = binsizein[0];
-    }
-
-getweight:
-    if (*ptr == ';')  /* looks like a weighting factor is given */
-    {
-        ptr++;
-       
-        while (*ptr == ' ')  /* skip over blanks */
-            ptr++;
-
-        recip = 0;
-        if (*ptr == '/')
-        {
-            *recip = 1;  /* the reciprocal of the weight is entered */
-            ptr++;
-
-            while (*ptr == ' ')  /* skip over blanks */
-                ptr++;
-        }
-
-        /* parse the weight as though it were a binrange. */
-        /* either a column name or a numerical value will be returned */
-
-        ffbinr(&ptr, wtname, &dummy, &dummy, weight, tmpname,
-                                     tmpname, tmpname, status);
-
-        if (*status > 0)
-        {
-            ffpmsg("illegal binning specification in URL:");
-            ffpmsg(binspec);
-            return(*status);
-        }
-    }
-
-    while (*ptr == ' ')  /* skip over blanks */
-         ptr++;
-
-    if (*ptr != '\0')  /* should have reached the end of string */
-    {
-        ffpmsg("illegal binning specification in URL:");
-        ffpmsg(binspec);
-        *status = URL_PARSE_ERROR;
-    }
-
-    return(*status);
-}
 /*--------------------------------------------------------------------------*/
 int fits_get_token(char **ptr, 
                    char *delimiter,
@@ -2435,7 +2444,7 @@ int fits_get_token(char **ptr,
 /*
    parse off the next token, delimited by a character in 'delimiter',
    from the input ptr string;  increment *ptr to the end of the token.
-   Returns the length of the token;
+   Returns the length of the token, not including the delimiter char;
 */
 {
     int slen, ii;
@@ -2449,119 +2458,25 @@ int fits_get_token(char **ptr,
     if (slen)
     {
         strncat(token, *ptr, slen);       /* copy token */
+
         (*ptr) += slen;                   /* skip over the token */
 
-        *isanumber = 1;
- 
-        for (ii = 0; ii < slen; ii++)
+        if (isanumber)
         {
-            if ( !isdigit(token[ii]) && token[ii] != '.' && token[ii] != '-')
+            *isanumber = 1;
+ 
+            for (ii = 0; ii < slen; ii++)
             {
-                *isanumber = 0;
-                break;
+                if ( !isdigit(token[ii]) && token[ii] != '.' && token[ii] != '-')
+                {
+                    *isanumber = 0;
+                    break;
+                }
             }
         }
     }
 
     return(slen);
-}
-/*--------------------------------------------------------------------------*/
-int ffbinr(char **ptr, 
-                   char *colname, 
-                   double *minin,
-                   double *maxin, 
-                   double *binsizein,
-                   char *minname,
-                   char *maxname,
-                   char *binname,
-                   int *status)
-/*
-   Parse the input binning range specification string, returning 
-   the column name, histogram min and max values, and bin size.
-*/
-{
-    int slen, isanumber;
-    char token[FLEN_VALUE];
-
-    if (*status > 0)
-        return(*status);
-
-    slen = fits_get_token(ptr, " ,=:;", token, &isanumber); /* get 1st token */
-
-    if (slen == 0 && (**ptr == '\0' || **ptr == ',' || **ptr == ';') )
-        return(*status);   /* a null range string */
-
-    if (!isanumber && **ptr != ':')
-    {
-        /* this looks like the column name */
-
-        if (token[0] == '#' && isdigit(token[1]) )
-        {
-            /* omit the leading '#' in the column number */
-            strcpy(colname, token+1);
-        }
-        else
-            strcpy(colname, token);
-
-        if (**ptr != '=')
-            return(*status);  /* reached the end */
-
-        (*ptr)++;   /* skip over the = sign */
-
-        slen = fits_get_token(ptr, " ,:;", token, &isanumber); /* get token */
-    }
-
-    if (**ptr != ':')
-    {
-        /* this is the first token, and since it is not followed by */
-        /* a ':' this must be the binsize token */
-        if (!isanumber)
-            strcpy(binname, token);
-        else
-            *binsizein =  strtod(token, NULL);
-
-        return(*status);  /* reached the end */
-    }
-    else
-    {
-        /* the token contains the min value */
-        if (slen)
-        {
-            if (!isanumber)
-                strcpy(minname, token);
-            else
-                *minin = strtod(token, NULL);
-        }
-    }
-
-    (*ptr)++;  /* skip the colon between the min and max values */
-    slen = fits_get_token(ptr, " ,:;", token, &isanumber); /* get token */
-
-    /* the token contains the max value */
-    if (slen)
-    {
-        if (!isanumber)
-            strcpy(maxname, token);
-        else
-            *maxin = strtod(token, NULL);
-    }
-
-    if (**ptr != ':')
-        return(*status);  /* reached the end; no binsize token */
-
-    (*ptr)++;  /* skip the colon between the min and max values */
-    slen = fits_get_token(ptr, " ,:;", token, &isanumber); /* get token */
-
-    /* the token contains the binsize value */
-    if (slen)
-    {
-        if (!isanumber)
-            strcpy(binname, token);
-        else
-            *binsizein = strtod(token, NULL);
-    }
-
-    return(*status);
 }
 /*--------------------------------------------------------------------------*/
 int urltype2driver(char *urltype, int *driver)

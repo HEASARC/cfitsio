@@ -6,67 +6,80 @@
 \contentsline {section}{\numberline {2.4}Example Program}{6}
 \contentsline {section}{\numberline {2.5}Acknowledgements}{7}
 \contentsline {chapter}{\numberline {3} A FITS Primer }{9}
-\contentsline {chapter}{\numberline {4} CFITSIO Conventions and Guidelines }{13}
-\contentsline {section}{\numberline {4.1}CFITSIO Definitions}{13}
-\contentsline {section}{\numberline {4.2}CFITSIO Size Limitations}{15}
-\contentsline {section}{\numberline {4.3}File Access: on Disk and in Memory}{15}
-\contentsline {subsection}{\numberline {4.3.1}Compressed FITS Files}{16}
-\contentsline {subsection}{\numberline {4.3.2}Reading or Writing Memory-Resident FITS Files}{16}
-\contentsline {subsection}{\numberline {4.3.3}Piped FITS Files via STDIN and STDOUT.}{17}
-\contentsline {section}{\numberline {4.4}Current Header Data Unit (CHDU)}{17}
-\contentsline {section}{\numberline {4.5}Function Names and Datatypes}{17}
-\contentsline {section}{\numberline {4.6}Unsigned Integers}{18}
-\contentsline {section}{\numberline {4.7}Character Strings}{20}
-\contentsline {section}{\numberline {4.8}Implicit Data Type Conversion}{21}
-\contentsline {section}{\numberline {4.9}Data Scaling}{21}
-\contentsline {section}{\numberline {4.10}Error Status Values and the Error Message Stack}{22}
-\contentsline {section}{\numberline {4.11}Variable-Length Arrays in Binary Tables}{23}
-\contentsline {section}{\numberline {4.12}Support for IEEE Special Values}{24}
-\contentsline {section}{\numberline {4.13}When the Final Size of the FITS HDU is Unknown}{25}
-\contentsline {section}{\numberline {4.14}The CFITSIO Iterator Function}{25}
-\contentsline {subsection}{\numberline {4.14.1}The Iterator Work Function}{26}
-\contentsline {subsection}{\numberline {4.14.2}The Iterator Driver Function}{28}
-\contentsline {subsection}{\numberline {4.14.3}Guidelines for Using the Iterator Function}{29}
-\contentsline {section}{\numberline {4.15}Local FITS Conventions supported by CFITSIO}{30}
-\contentsline {subsection}{\numberline {4.15.1}Long String Keyword Values.}{30}
-\contentsline {subsection}{\numberline {4.15.2}Arrays of Fixed-Length Strings in Binary Tables}{31}
-\contentsline {subsection}{\numberline {4.15.3}Keyword Units Strings}{32}
-\contentsline {section}{\numberline {4.16}Optimizing Code for Maximum Processing Speed}{32}
-\contentsline {subsection}{\numberline {4.16.1}Background Information: How CFITSIO Manages Data I/O}{33}
-\contentsline {subsection}{\numberline {4.16.2}Optimization Strategies}{34}
-\contentsline {chapter}{\numberline {5}Basic CFITSIO Interface Routines }{37}
-\contentsline {section}{\numberline {5.1}CFITSIO Error Status Routines}{37}
-\contentsline {section}{\numberline {5.2}FITS File Access Routines}{38}
-\contentsline {section}{\numberline {5.3}HDU Access Routines}{41}
-\contentsline {section}{\numberline {5.4}Header Keyword Read/Write Routines}{43}
-\contentsline {section}{\numberline {5.5}Iterator Routines}{46}
-\contentsline {section}{\numberline {5.6}Primary Array or IMAGE Extension I/O Routines}{47}
-\contentsline {section}{\numberline {5.7}ASCII and Binary Table Routines}{49}
-\contentsline {subsection}{\numberline {5.7.1}Column Information Routines }{49}
-\contentsline {subsection}{\numberline {5.7.2}Routines to Edit Rows or Columns }{50}
-\contentsline {subsection}{\numberline {5.7.3}Read and Write Column Data Routines }{52}
-\contentsline {section}{\numberline {5.8}Celestial Coordinate System Routines }{53}
-\contentsline {section}{\numberline {5.9}Hierarchical Grouping Convention Support Routines}{54}
-\contentsline {section}{\numberline {5.10}File Checksum Routines }{59}
-\contentsline {section}{\numberline {5.11} General Utility Routines}{60}
-\contentsline {chapter}{\numberline {6} Specialized CFITSIO Interface Routines }{67}
-\contentsline {section}{\numberline {6.1}Specialized FITS File Access Routines}{67}
-\contentsline {section}{\numberline {6.2}Specialized HDU Access Routines}{68}
-\contentsline {section}{\numberline {6.3}Specialized Header Keyword Routines}{70}
-\contentsline {subsection}{\numberline {6.3.1}Header Information Routines}{70}
-\contentsline {subsection}{\numberline {6.3.2}Read and Write the Required Keywords}{70}
-\contentsline {subsection}{\numberline {6.3.3}Specialized Write Keyword Routines}{72}
-\contentsline {subsection}{\numberline {6.3.4} Insert Keyword Routines}{74}
-\contentsline {subsection}{\numberline {6.3.5} Specialized Read Keyword Routines}{75}
-\contentsline {subsection}{\numberline {6.3.6} Modify Keyword Routines}{77}
-\contentsline {subsection}{\numberline {6.3.7} Specialized Update Keyword Routines }{78}
-\contentsline {section}{\numberline {6.4}Define Data Scaling and Undefined Pixel Parameters}{78}
-\contentsline {section}{\numberline {6.5}Specialized FITS Primary Array or IMAGE Extension I/O Routines}{79}
-\contentsline {section}{\numberline {6.6}Specialized FITS ASCII and Binary Table Routines}{83}
-\contentsline {subsection}{\numberline {6.6.1}Column Information Routines}{83}
-\contentsline {subsection}{\numberline {6.6.2}Low-Level Table Access Routines }{84}
-\contentsline {subsection}{\numberline {6.6.3}Specialized Write Column Data Routines}{85}
-\contentsline {subsection}{\numberline {6.6.4}Specialized Read Column Data Routines}{86}
-\contentsline {chapter}{\numberline {A}Index of Routines }{89}
-\contentsline {chapter}{\numberline {B}Parameter Definitions }{91}
-\contentsline {chapter}{\numberline {C}CFITSIO Error Status Codes }{97}
+\contentsline {chapter}{\numberline {4} Extended File Name Syntax }{11}
+\contentsline {section}{\numberline {4.1}Overview}{11}
+\contentsline {section}{\numberline {4.2}Detailed Filename Syntax}{13}
+\contentsline {subsection}{\numberline {4.2.1}Filetype}{13}
+\contentsline {subsubsection}{Notes about the root filetype}{14}
+\contentsline {subsubsection}{Notes about the shmem filetype:}{16}
+\contentsline {subsection}{\numberline {4.2.2}Base Filename}{16}
+\contentsline {subsection}{\numberline {4.2.3}Output or Template File Name}{17}
+\contentsline {subsubsection}{When Opening an Existing File}{17}
+\contentsline {subsubsection}{When Creating a New File}{18}
+\contentsline {subsection}{\numberline {4.2.4}HDU Location Specification}{18}
+\contentsline {subsection}{\numberline {4.2.5}Column Filtering Specification}{18}
+\contentsline {subsection}{\numberline {4.2.6}Row Filtering Specification}{19}
+\contentsline {subsection}{\numberline {4.2.7}Binning or Histogramming Specification}{24}
+\contentsline {chapter}{\numberline {5}CFITSIO Conventions and Guidelines }{27}
+\contentsline {section}{\numberline {5.1}CFITSIO Definitions}{27}
+\contentsline {section}{\numberline {5.2}CFITSIO Size Limitations}{29}
+\contentsline {section}{\numberline {5.3}Multiple Access to the Same FITS File}{29}
+\contentsline {section}{\numberline {5.4}Current Header Data Unit (CHDU)}{30}
+\contentsline {section}{\numberline {5.5}Function Names and Datatypes}{30}
+\contentsline {section}{\numberline {5.6}Unsigned Integers}{31}
+\contentsline {section}{\numberline {5.7}Character Strings}{33}
+\contentsline {section}{\numberline {5.8}Implicit Data Type Conversion}{34}
+\contentsline {section}{\numberline {5.9}Data Scaling}{34}
+\contentsline {section}{\numberline {5.10}Error Status Values and the Error Message Stack}{35}
+\contentsline {section}{\numberline {5.11}Variable-Length Arrays in Binary Tables}{36}
+\contentsline {section}{\numberline {5.12}Support for IEEE Special Values}{37}
+\contentsline {section}{\numberline {5.13}When the Final Size of the FITS HDU is Unknown}{38}
+\contentsline {section}{\numberline {5.14}Local FITS Conventions supported by CFITSIO}{38}
+\contentsline {subsection}{\numberline {5.14.1}Long String Keyword Values.}{38}
+\contentsline {subsection}{\numberline {5.14.2}Arrays of Fixed-Length Strings in Binary Tables}{39}
+\contentsline {subsection}{\numberline {5.14.3}Keyword Units Strings}{40}
+\contentsline {section}{\numberline {5.15}Optimizing Code for Maximum Processing Speed}{40}
+\contentsline {subsection}{\numberline {5.15.1}Background Information: How CFITSIO Manages Data I/O}{41}
+\contentsline {subsection}{\numberline {5.15.2}Optimization Strategies}{42}
+\contentsline {chapter}{\numberline {6} The CFITSIO Iterator Function }{45}
+\contentsline {section}{\numberline {6.1}The Iterator Work Function}{46}
+\contentsline {section}{\numberline {6.2}The Iterator Driver Function}{48}
+\contentsline {section}{\numberline {6.3}Guidelines for Using the Iterator Function}{49}
+\contentsline {chapter}{\numberline {7} Basic CFITSIO Interface Routines }{51}
+\contentsline {section}{\numberline {7.1}CFITSIO Error Status Routines}{51}
+\contentsline {section}{\numberline {7.2}FITS File Access Routines}{52}
+\contentsline {section}{\numberline {7.3}HDU Access Routines}{54}
+\contentsline {section}{\numberline {7.4}Header Keyword Read/Write Routines}{56}
+\contentsline {section}{\numberline {7.5}Iterator Routines}{60}
+\contentsline {section}{\numberline {7.6}Primary Array or IMAGE Extension I/O Routines}{61}
+\contentsline {section}{\numberline {7.7}ASCII and Binary Table Routines}{63}
+\contentsline {subsection}{\numberline {7.7.1}Column Information Routines }{63}
+\contentsline {subsection}{\numberline {7.7.2}Routines to Edit Rows or Columns }{64}
+\contentsline {subsection}{\numberline {7.7.3}Read and Write Column Data Routines }{65}
+\contentsline {section}{\numberline {7.8}Celestial Coordinate System Routines }{67}
+\contentsline {section}{\numberline {7.9}Hierarchical Grouping Convention Support Routines}{68}
+\contentsline {section}{\numberline {7.10}Row Selection and Calculator Routines}{73}
+\contentsline {section}{\numberline {7.11}File Checksum Routines }{74}
+\contentsline {section}{\numberline {7.12} Date and Time Utility Routines}{75}
+\contentsline {section}{\numberline {7.13} General Utility Routines}{76}
+\contentsline {chapter}{\numberline {8} Specialized CFITSIO Interface Routines }{81}
+\contentsline {section}{\numberline {8.1}Specialized FITS File Access Routines}{81}
+\contentsline {section}{\numberline {8.2}Specialized HDU Access Routines}{82}
+\contentsline {section}{\numberline {8.3}Specialized Header Keyword Routines}{84}
+\contentsline {subsection}{\numberline {8.3.1}Header Information Routines}{84}
+\contentsline {subsection}{\numberline {8.3.2}Read and Write the Required Keywords}{84}
+\contentsline {subsection}{\numberline {8.3.3}Specialized Write Keyword Routines}{86}
+\contentsline {subsection}{\numberline {8.3.4} Insert Keyword Routines}{88}
+\contentsline {subsection}{\numberline {8.3.5} Specialized Read Keyword Routines}{89}
+\contentsline {subsection}{\numberline {8.3.6} Modify Keyword Routines}{91}
+\contentsline {subsection}{\numberline {8.3.7} Specialized Update Keyword Routines }{92}
+\contentsline {section}{\numberline {8.4}Define Data Scaling and Undefined Pixel Parameters}{92}
+\contentsline {section}{\numberline {8.5}Specialized FITS Primary Array or IMAGE Extension I/O Routines}{93}
+\contentsline {section}{\numberline {8.6}Specialized FITS ASCII and Binary Table Routines}{97}
+\contentsline {subsection}{\numberline {8.6.1}Column Information Routines}{97}
+\contentsline {subsection}{\numberline {8.6.2}Low-Level Table Access Routines }{98}
+\contentsline {subsection}{\numberline {8.6.3}Specialized Write Column Data Routines}{99}
+\contentsline {subsection}{\numberline {8.6.4}Specialized Read Column Data Routines}{100}
+\contentsline {chapter}{\numberline {A}Index of Routines }{103}
+\contentsline {chapter}{\numberline {B}Parameter Definitions }{107}
+\contentsline {chapter}{\numberline {C}CFITSIO Error Status Codes }{113}
