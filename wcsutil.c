@@ -26,7 +26,7 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
     int tstat;
     char ctype[FLEN_VALUE];
     double cd11, cd21, cd22, cd12;
-    double rad = 57.2957795131;
+    double pi =  3.1415926535897932;
     double phia, phib, temp;
     double toler = .001;  /* tolerance for angles to agree */
 
@@ -66,6 +66,18 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
             phia = atan2( cd21, cd11);
             phib = atan2(-cd12, cd22);
 
+            /* ensure that phia <= phib */
+            temp = minvalue(phia, phib);
+            phib = maxvalue(phia, phib);
+            phia = temp;
+
+            /* there is a possible 180 degree ambiguity in the angles */
+            /* so add 180 degress to the smaller value if the values  */
+            /* differ by more than 90 degrees = pi/2 radians.         */
+
+            if ((phib - phia) > (pi / 2.))
+               phia += pi;
+
             if (fabs(phia - phib) > toler) 
             {
                /* angles don't agree, so looks like there is some skewness */
@@ -73,10 +85,10 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
                return(*status = NO_WCS_KEY);
             }
       
-
-            *xinc = cd11 / cos((phia + phib) /2.);
-            *yinc = cd22 / cos((phia + phib) /2.);
-            *rot = (((phia + phib) * rad) / 2.);
+            phia = (phia + phib) /2.;
+            *xinc = cd11 / cos(phia);
+            *yinc = cd22 / cos(phia);
+            *rot = phia * 180. / pi;
         }
         else   /* no CD matrix keywords either */
         {

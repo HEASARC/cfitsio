@@ -78,6 +78,7 @@
 /* Offsets into header in bytes for parameters in IRAF version 2 images */
 #define IM2_HDRLEN	  6		/* Length of header in 4-byte ints */
 #define IM2_PIXTYPE      10             /* Datatype of the pixels */
+#define IM2_SWAPPED      14             /* Pixels are byte swapped */
 #define IM2_NDIM         18             /* Number of dimensions */
 #define IM2_LEN          22             /* Length (as stored) */
 #define IM2_PHYSLEN      50             /* Physical length (as stored) */
@@ -115,7 +116,8 @@ static int iraftofits (char *hdrname, char *irafheader, int nbiraf,
     char **buffptr, size_t *nbfits, size_t *fitssize, int *status);
 static void same_path(char *pixname, char *hdrname);
 
-static int swapiraf=0;	/* =1 to swap data bytes of foreign IRAF file */
+static int swaphead=0;	/* =1 to swap data bytes of IRAF header values */
+static int swapdata=0;  /* =1 to swap bytes in IRAF data pixels */
 
 static void irafswap(int bitpix, char *string, int nbytes);
 static void irafswap2(char *string, int nbytes);
@@ -347,7 +349,11 @@ static int iraftofits (
     /*  first byte of the word != 0, then the file in little endian format */
     /*  like on an Alpha machine.                                          */
 
-    swapiraf = isirafswapped(irafheader, impixtype);
+    swaphead = isirafswapped(irafheader, impixtype);
+    if (imhver == 1)
+        swapdata = swaphead; /* vers 1 data has same swapness as header */
+    else
+        swapdata = irafgeti4 (irafheader, IM2_SWAPPED); 
 
     /*  Set pixel size in FITS header */
     pixtype = irafgeti4 (irafheader, impixtype);
@@ -463,7 +469,7 @@ static int iraftofits (
     fhead = fhead + 80;
 
     /* Save flag as to whether to swap IRAF data for this file and machine */
-    if (swapiraf)
+    if (swapdata)
 	hputl (fitsheader, "SWAPIRAF", 1);
     else
 	hputl (fitsheader, "SWAPIRAF", 0);
@@ -506,10 +512,11 @@ static int iraftofits (
     else {
 	imu = LEN_IMHDR;
 	chead = irafheader;
-	if (swapiraf == 1)
+	if (swaphead == 1)
 	    ib = 0;
 	else
 	    ib = 1;
+
 	for (k = 0; k < 80; k++)
 	    fitsline[k] = ' ';
 	j = 0;
@@ -684,7 +691,7 @@ static int irafrdimage (
 	}
 
     /* Byte-reverse image, if necessary */
-    if (swapiraf)
+    if (swapdata)
 	irafswap (bitpix, image, nbimage);
 
     return (*status);
@@ -833,7 +840,7 @@ int	offset)		/* Number of bytes to skip before number */
     cheader = irafheader;
     ctemp = (char *) &temp;
 
-    if (machswap() != swapiraf) {
+    if (machswap() != swaphead) {
 	ctemp[3] = cheader[offset];
 	ctemp[2] = cheader[offset+1];
 	ctemp[1] = cheader[offset+2];
