@@ -1519,22 +1519,17 @@ int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int *sock)
     return (FILE_NOT_OPENED);
   }
   
-  /* Send the retrieve command to see if the file exists*/
-  sprintf(tmpstr,"RETR %s\n",newfn);
-#ifdef DEBUG
-  printf ("Checking to see if %s, exists %d\n",tmpstr,strlen(newfn));
-#endif
+ 
+  /* Always use binary mode */
+  sprintf(tmpstr,"TYPE I\n");
   status = NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
-  /* We better get a 425 here, we haven't sent a PORT or PASV command
-     yet.  If we don't get a 425 then we're hosed and the file
-     doesn't exist */
-  if (ftp_status(*command,"425 ")) {
-/*    ffpmsg("File doesn't exist on remote server (ftp_open)"); */
+  
+  if (ftp_status(*command,"200 ")) {
+    ffpmsg ("TYPE I error, 200 not seen (ftp_open)");
     fclose(*command);
     return (FILE_NOT_OPENED);
   }
-  /* we're going to use passive mode here */
-  
+ 
   status = NET_SendRaw(*sock,"PASV\n",5,NET_DEFAULT);
   if (!(fgets(recbuf,MAXLEN,*command))) {
     ffpmsg ("PASV error (ftp_open)");
@@ -1607,15 +1602,6 @@ int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int *sock)
     sscanf(tstr,"%d",&tmpint);
     port += tmpint;
     
-    /* Always use binary mode */
-    sprintf(tmpstr,"TYPE I\n");
-    status = NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
-    
-    if (ftp_status(*command,"200 ")) {
-      ffpmsg ("TYPE I error, 200 not seen (ftp_open)");
-      fclose(*command);
-      return (FILE_NOT_OPENED);
-    }
     
     if (!strlen(newfn)) {
       ffpmsg("Null file name (ftp_open)");
@@ -1623,10 +1609,10 @@ int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int *sock)
       return (FILE_NOT_OPENED);
     }
     
-    /* Send the retrieve command */
-    sprintf(tmpstr,"RETR %s\n",newfn);
-    status = NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
 
+#ifdef DEBUG
+    puts("connection to passive port");
+#endif
     /* COnnect to the data port */
     sock1 = NET_TcpConnect(ip,port);
     if (NULL == (*ftpfile = fdopen(sock1,"r"))) {
@@ -1637,6 +1623,21 @@ int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int *sock)
 
     /* now we return */
 
+    /* Send the retrieve command */
+    sprintf(tmpstr,"RETR %s\n",newfn);
+    status = NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
+
+#ifdef DEBUG
+    puts("Sent RETR command");
+#endif
+    if (ftp_status(*command,"150 ")) {
+      ffpmsg ("RETR error, most likely file is not there (ftp_open)");
+      fclose(*command);
+#ifdef DEBUG
+      puts("File not there");
+#endif
+      return (FILE_NOT_OPENED);
+    }
     return 0;
   }
   
@@ -2046,8 +2047,15 @@ static int ftp_status(FILE *ftp, char *statusstr)
   len = strlen(statusstr);
   while (1) {
     if (!(fgets(recbuf,MAXLEN,ftp))) {
+#ifdef DEBUG
+      puts("error reading response in ftp_status");
+#endif
       return 1; /* error reading */
     }
+    
+#ifdef DEBUG
+    printf("ftp_status, return string was %s\n",recbuf);
+#endif
 
     recbuf[len] = '\0'; /* make it short */
     if (!strcmp(recbuf,statusstr)) {
@@ -2059,6 +2067,7 @@ static int ftp_status(FILE *ftp, char *statusstr)
     }
   }
 }
+
 
 /*
  *----------------------------------------------------------------------

@@ -1,18 +1,74 @@
 
                    Log of Changes Made to CFITSIO
-Version 2.480 - beta
+
+Version 2.480 - 28 January 2004
 
   New Routines:
+
+  - fits_get_img_equivtype - just like fits_get_img_type, except in
+    the case of scaled integer images, it returns the 'equivalent' 
+    data type that is necessary to store the scaled data values.  
+
+  - fits_hdr2str copies all the header keywords in the current HDU
+    into a single long character string.  This is a convenient method
+    of passing the header information to other subroutines.
+    The user may exclude any specified keywords from the list.
+
+  Enhancements:
+
+  - modified the filename parser so that it accepts extension
+    names that begin with digits, as in 'myfile.fits[123TEST]'.
+    In this case CFITSIO will try to open the extension with
+    EXTNAME = '123TEST' instead of trying to move to the 123rd
+    extension in the file.
+
+  - the template keyword parser now preserves the comments on the
+    the mandatory FITS keywords if present, otherwise a standard
+    default comment is provided.
+
+  - modified the ftp driver file (drvrnet.c) to overcome a timeout
+    or hangup problem caused by some firewall software at the user's
+    end (Thanks to Bruce O'Neel for this fix).
+
+  - modified iraffits.c to incorporate Doug Mink's latest changes to
+    his wcstools library routines.  The biggest change is that now
+    the actual image dimensions, rather than the physically stored
+    dimensions, are used when converting an IRAF file to FITS.
+
+  Bug fixes:
+
+  - when writing to ASCII FITS tables, the 'elemnum' parameter was
+    supposed to be ignored if it did not have the default value of 1.
+    In some cases however setting elemnum to a value other than 1 
+    could cause the wrong number of rows to be produced in the output
+    table.
+
+  - If a cfitsio calculator expression was imported from a text file
+    (e.g. using the extended filename syntax 'file.fits[col @file.calc]')
+    and if any individual lines in that text file were greater than 
+    255 characters long, then a space character would be inserted
+    after the 255th character.  This could corrupt the line if the space
+    was inserted within a column name or keyword name token.
+
+Version 2.480beta  (used in the FTOOLS 5.3 release, 1 Nov 2003)
+
+  New Routines:
+
+  - fits_get_eqcoltype - just like fits_get_coltype, except in the
+    case of scaled integer columns, it returns the 'equivalent' 
+    data type that is necessary to store the scaled data values.  
 
   - fits_split_names - splits an input string containing a comma or
     space delimited list of names (typically file names or column
     names) into individual name tokens.
 
-  Bug fixes:
+  Enhancements:
 
   - changed fhist in histo.c so that it can make histograms of ASCII
     table columns as well as binary table columns (as long as they
     contain numeric data).
+
+  Bug fixes:
 
   - removed an erroneous reference to listhead.c in makefile.vcc, that is
     used to build the cfitsio dll under Windows.  This caused a 'main'
@@ -257,7 +313,7 @@ Version 2.420 - 19 July 2002
 
   - several small changes to group.c to suppress compiler warnings.
 
-Version 2.410 - 22 April 2002
+Version 2.410 - 22 April 2002 (used in the FTOOLS 5.2 release)
 
   New Routines:
 

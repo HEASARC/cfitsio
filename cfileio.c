@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <ctype.h>
+#include <errno.h>
 #include <stddef.h>  /* apparently needed to define size_t */
 #include "fitsio2.h"
 #include "group.h"
@@ -4632,8 +4633,8 @@ int ffexts(char *extspec,
    if present.
 */
     char *ptr1, *ptr2;
-    int slen, nvals;
-    char tmpname[FLEN_VALUE];
+    int slen, nvals, notint = 0;
+    char tmpname[FLEN_VALUE], *loc;
 
     *extnum = 0;
     *extname = '\0';
@@ -4652,8 +4653,19 @@ int ffexts(char *extspec,
 
     if (isdigit((int) *ptr1))  /* is the extension specification a number? */
     {
-        sscanf(ptr1, "%d", extnum);
-        if (*extnum < 0 || *extnum > 9999)
+        *extnum = strtol(ptr1, &loc, 10);  /* read the string as an integer */
+
+        while (*loc == ' ')  /* skip over trailing blanks */
+           loc++;
+
+        /* check for read error, or junk following the integer */
+        if ((*loc != '\0'  ) || (errno == ERANGE) )
+        {
+           *extnum = 0;
+           notint = 1;
+        }
+
+        if ( *extnum < 0 || *extnum > 99999)
         {
             *extnum = 0;   /* this is not a reasonable extension number */
             ffpmsg("specified extension number is out of range:");
@@ -4661,7 +4673,22 @@ int ffexts(char *extspec,
             return(*status = URL_PARSE_ERROR); 
         }
     }
-    else
+
+
+/*
+    if (isdigit((int) *ptr1))  
+    {
+        sscanf(ptr1, "%d", extnum);
+        if (*extnum < 0 || *extnum > 9999)
+        {
+            *extnum = 0;   
+            ffpmsg("specified extension number is out of range:");
+            ffpmsg(extspec);
+            return(*status = URL_PARSE_ERROR); 
+        }
+    }
+*/
+    if (notint)
     {
            /* not a number, so EXTNAME must be specified, followed by */
            /* optional EXTVERS and XTENSION  values */
@@ -4915,7 +4942,7 @@ int ffimport_file( char *filename,   /* Text file to read                   */
    reallocating memory.
 */
 {
-   int allocLen, totalLen, llen;
+   int allocLen, totalLen, llen, eoline;
    char *lines,line[256];
    FILE *aFile;
 
@@ -4941,10 +4968,13 @@ int ffimport_file( char *filename,   /* Text file to read                   */
       llen = strlen(line);
       if ((llen > 1) && (line[0] == '/' && line[1] == '/'))
           continue;       /* skip comment lines begging with // */
-      
+
+      eoline = 0;
+
       /* replace CR and newline chars at end of line with nulls */
       if ((llen > 0) && (line[llen-1]=='\n' || line[llen-1] == '\r')) {
           line[--llen] = '\0';
+          eoline = 1;   /* found an end of line character */
 
           if ((llen > 0) && (line[llen-1]=='\n' || line[llen-1] == '\r')) {
                  line[--llen] = '\0';
@@ -4962,8 +4992,11 @@ int ffimport_file( char *filename,   /* Text file to read                   */
       }
       strcpy( lines+totalLen, line );
       totalLen += llen;
-      strcpy( lines+totalLen, " "); /* add a space between lines */
-      totalLen += 1;
+
+      if (eoline) {
+         strcpy( lines+totalLen, " "); /* add a space between lines */
+         totalLen += 1;
+      }
    }
    fclose(aFile);
 
@@ -5100,7 +5133,7 @@ int ffclos(fitsfile *fptr,      /* I - FITS file pointer */
   then calling the system dependent routine to physically close the FITS file
 */   
 {
-    int tstatus = NO_CLOSE_ERROR;
+    int tstatus = NO_CLOSE_ERROR, zerostatus = 0;
 
     if (!fptr)
         return(*status = NULL_INPUT_PTR);
@@ -5142,7 +5175,17 @@ int ffclos(fitsfile *fptr,      /* I - FITS file pointer */
     }
     else
     {
-        ffflsh(fptr, FALSE, status); /* flush but don't disassociate buffers */
+        /*
+           to minimize the fallout from any previous error (e.g., trying to 
+           open a non-existent extension in a already opened file), 
+           always call ffflsh with status = 0.
+        */
+        /* just flush the buffers, don't disassociate them */
+        if (*status > 0)
+            ffflsh(fptr, FALSE, &zerostatus); 
+        else
+            ffflsh(fptr, FALSE, status); 
+
         free(fptr);               /* free memory for the FITS file structure */
     }
 

@@ -1,4 +1,4 @@
-/*  Version Info: This file is distributed with version 2.470 of CFITSIO   */
+/*  Version Info: This file is distributed with version 2.480 of CFITSIO   */
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
@@ -142,6 +142,7 @@ SERVICES PROVIDED HEREUNDER."
                          /* datatypes; these codes are only used internally */
                          /* within cfitsio to make it easier for users      */
                          /* to deal with unsigned integers.                 */
+#define SBYTE_IMG    10
 #define USHORT_IMG   20
 #define ULONG_IMG    40
 
@@ -684,7 +685,9 @@ int ffgkne(fitsfile *fptr, char *keyname, int nstart, int nmax, float *value,
 int ffgknd(fitsfile *fptr, char *keyname, int nstart, int nmax, double *value,
            int *nfound, int *status);
 int ffh2st(fitsfile *fptr, char **header, int  *status);
- 
+int ffhdr2str( fitsfile *fptr,  int exclude_comm, char **exclist,
+   int nexc, char **header, int *nkeys, int  *status);
+
 /*----------------- read required header keywords --------------*/
 int ffghpr(fitsfile *fptr, int maxdim, int *simple, int *bitpix, int *naxis,
           long naxes[], long *pcount, long *gcount, int *extend, int *status);
@@ -789,6 +792,7 @@ int ffghof(fitsfile *fptr, OFF_T *headstart, OFF_T *datastart, OFF_T *dataend,
 int ffgipr(fitsfile *fptr, int maxaxis, int *imgtype, int *naxis,
            long *naxes, int *status);
 int ffgidt(fitsfile *fptr, int *imgtype, int *status);
+int ffgiet(fitsfile *fptr, int *imgtype, int *status);
 int ffgidm(fitsfile *fptr, int *naxis,  int *status);
 int ffgisz(fitsfile *fptr, int nlen, long *naxes, int *status);
 
@@ -844,6 +848,8 @@ int ffgcnn(fitsfile *fptr, int casesen, char *templt, char *colname,
            int *colnum, int *status);
  
 int ffgtcl(fitsfile *fptr, int colnum, int *typecode, long *repeat,
+           long *width, int *status);
+int ffeqty(fitsfile *fptr, int colnum, int *typecode, long *repeat,
            long *width, int *status);
 int ffgncl(fitsfile *fptr, int  *ncols, int *status);
 int ffgnrw(fitsfile *fptr, long *nrows, int *status);

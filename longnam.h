@@ -125,7 +125,7 @@
 #define fits_read_imghdr       ffghpr
 #define fits_read_atblhdr      ffghtb
 #define fits_read_btblhdr      ffghbn
-#define fits_header2str        ffh2st
+#define fits_hdr2str           ffhdr2str
 
 #define fits_update_card       ffucrd
 #define fits_update_key        ffuky
@@ -186,6 +186,7 @@
 
 #define fits_get_img_param  ffgipr
 #define fits_get_img_type   ffgidt
+#define fits_get_img_equivtype   ffgiet
 #define fits_get_img_dim    ffgidm
 #define fits_get_img_size   ffgisz
 
@@ -226,6 +227,7 @@
 #define fits_get_colnum     ffgcno
 #define fits_get_colname    ffgcnn
 #define fits_get_coltype    ffgtcl
+#define fits_get_eqcoltype  ffeqty
 #define fits_get_num_rows   ffgnrw
 #define fits_get_num_cols   ffgncl
 #define fits_get_acolparms  ffgacl

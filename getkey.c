@@ -2453,3 +2453,92 @@ int ffh2st(fitsfile *fptr,   /* I - FITS file pointer           */
 
     return(*status);
 }
+/*--------------------------------------------------------------------------*/
+int ffhdr2str( fitsfile *fptr,  /* I - FITS file pointer                    */
+            int exclude_comm,   /* I - if TRUE, exclude commentary keywords */
+            char **exclist,     /* I - list of excluded keyword names       */
+            int nexc,           /* I - number of names in exclist           */
+            char **header,      /* O - returned header string               */
+            int *nkeys,         /* O - returned number of 80-char keywords  */
+            int  *status)       /* IO - error status                        */
+/*
+  read header keywords into a long string of chars.  This routine allocates
+  memory for the string, so the calling routine must eventually free the
+  memory when it is not needed any more.  If exclude_comm is TRUE, then all 
+  the COMMENT, HISTORY, and <blank> keywords will be excluded from the output
+  string of keywords.  Any other list of keywords to be excluded may be
+  specified with the exclist parameter.
+*/
+{
+    int casesn, match, exact, totkeys;
+    long ii, jj;
+    char keybuf[162], keyname[FLEN_KEYWORD], *headptr;
+
+    *nkeys = 0;
+
+    if (*status > 0)
+        return(*status);
+
+    /* get number of keywords in the header (doesn't include END) */
+    if (ffghsp(fptr, &totkeys, NULL, status) > 0)
+        return(*status);
+
+    /* allocate memory for all the keywords (multiple of 2880 bytes) */
+    *header = (char *) calloc ( (totkeys + 1) * 80 + 1, 1);
+    if (!(*header))
+    {
+         *status = MEMORY_ALLOCATION;
+         ffpmsg("failed to allocate memory to hold all the header keywords");
+         return(*status);
+    }
+
+    headptr = *header;
+    casesn = FALSE;
+
+    /* read every keyword */
+    for (ii = 1; ii <= totkeys; ii++) 
+    {
+        ffgrec(fptr, ii, keybuf, status);
+        /* pad record with blanks so that it is at least 80 chars long */
+        strcat(keybuf,
+    "                                                                                ");
+
+        keyname[0] = '\0';
+        strncat(keyname, keybuf, 8); /* copy the keyword name */
+        
+        if (exclude_comm)
+        {
+            if (!FSTRCMP("COMMENT ", keyname) ||
+                !FSTRCMP("HISTORY ", keyname) ||
+                !FSTRCMP("        ", keyname) )
+              continue;  /* skip this commentary keyword */
+        }
+
+        /* does keyword match any names in the exclusion list? */
+        for (jj = 0; jj < nexc; jj++ )
+        {
+            ffcmps(exclist[jj], keyname, casesn, &match, &exact);
+                 if (match)
+                     break;
+        }
+
+        if (jj == nexc)
+        {
+            /* not in exclusion list, add this keyword to the string */
+            strcpy(headptr, keybuf);
+            headptr += 80;
+            (*nkeys)++;
+        }
+    }
+
+    /* add the END keyword */
+    strcpy(headptr,
+    "END                                                                             ");
+    headptr += 80;
+    (*nkeys)++;
+
+    *headptr = '\0';   /* terminate the header string */
+    realloc(header, (*nkeys *80) + 1);  /* minimize the allocated memory */
+
+    return(*status);
+}
