@@ -373,6 +373,8 @@ expr:    LONG
        | expr POWER expr
                 { PROMOTE($1,$3); $$ = New_BinOp( TYPE($1), $1, POWER, $3 );
 		  TEST($$);                                                }
+       | '+' expr %prec UMINUS
+                { $$ = $2; }
        | '-' expr %prec UMINUS
                 { $$ = New_Unary( TYPE($2), UMINUS, $2 ); TEST($$); }
        |  '(' expr ')'
