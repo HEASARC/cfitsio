@@ -302,35 +302,47 @@ int file_size(int handle, OFF_T *filesize)
   return the size of the file in bytes
 */
 {
-    /* NOTE:  fpos_t and off_t do not necessarily have the same size */
-    fpos_t position1, position2;
+    OFF_T position1;
     FILE *diskfile;
 
     diskfile = handleTable[handle].fileptr;
 
-    if (fgetpos(diskfile, &position1) != 0)      /* save current postion */
-        return(SEEK_ERROR);
-
-/* move to end of the existing file */
-
-/* call the newer fseeko routine, which supports Large Files (> 2GB) */
-/* if it is supported.  */
-
 #if _FILE_OFFSET_BITS - 0 == 64
-    if (fseeko(diskfile, 0, 2) != 0)
+
+/* call the newer ftello and fseeko routines , which support */
+/*  Large Files (> 2GB) if they are supported.  */
+
+    position1 = ftello(diskfile);   /* save current postion */
+    if (position1 < 0)
         return(SEEK_ERROR);
+
+    if (fseeko(diskfile, 0, 2) != 0)  /* seek to end of file */
+        return(SEEK_ERROR);
+
+    *filesize = ftello(diskfile);     /* get file size */
+    if (*filesize < 0)
+        return(SEEK_ERROR);
+
+    if (fseeko(diskfile, position1, 0) != 0)  /* seek back to original pos */
+        return(SEEK_ERROR);
+
 #else
-    if (fseek(diskfile, 0, 2) != 0)
+
+    position1 = ftell(diskfile);   /* save current postion */
+    if (position1 < 0)
         return(SEEK_ERROR);
+
+    if (fseek(diskfile, 0, 2) != 0)  /* seek to end of file */
+        return(SEEK_ERROR);
+
+    *filesize = ftell(diskfile);     /* get file size */
+    if (*filesize < 0)
+        return(SEEK_ERROR);
+
+    if (fseek(diskfile, position1, 0) != 0)  /* seek back to original pos */
+        return(SEEK_ERROR);
+
 #endif
-
-    if (fgetpos(diskfile, &position2) != 0)      /* position = size of file */
-        return(SEEK_ERROR);
-
-    *filesize = position2;
-
-    if (fsetpos(diskfile, &position1) != 0) /* move back to orig. position */
-        return(SEEK_ERROR);
 
     return(0);
 }
@@ -362,10 +374,6 @@ int file_flush(int handle)
   flush the file
 */
 {
-#if MACHINE == IBMPC
-    fpos_t position;
-#endif
-
     if (fflush(handleTable[handle].fileptr) )
         return(WRITE_ERROR);
 
@@ -376,10 +384,9 @@ int file_flush(int handle)
 
 #if MACHINE == IBMPC
 
-    position = (fpos_t) (handleTable[handle].currentpos);
+    if (file_seek(handle, handleTable[handle].currentpos))
+            return(SEEK_ERROR);
 
-    if (fsetpos(handleTable[handle].fileptr, &position) )
-        return(SEEK_ERROR);
 #endif
 
     return(0);
@@ -390,11 +397,18 @@ int file_seek(int handle, OFF_T offset)
   seek to position relative to start of the file
 */
 {
-    fpos_t toff;
 
-    toff = (fpos_t) offset;
-    if (fsetpos(handleTable[handle].fileptr, &toff) )
+#if _FILE_OFFSET_BITS - 0 == 64
+
+    if (fseeko(handleTable[handle].fileptr, offset, 0) != 0)
         return(SEEK_ERROR);
+
+#else
+
+    if (fseek(handleTable[handle].fileptr, offset, 0) != 0)
+        return(SEEK_ERROR);
+
+#endif
 
     handleTable[handle].currentpos = offset;
     return(0);
@@ -407,14 +421,11 @@ int file_read(int hdl, void *buffer, long nbytes)
 {
     long nread;
     char *cptr;
-    fpos_t position;
 
     if (handleTable[hdl].last_io_op == IO_WRITE)
     {
-      position = (fpos_t) (handleTable[hdl].currentpos);
-
-      if (fsetpos(handleTable[hdl].fileptr, &position ))
-        return(READ_ERROR);
+        if (file_seek(hdl, handleTable[hdl].currentpos))
+            return(SEEK_ERROR);
     }
   
     nread = (long) fread(buffer, 1, nbytes, handleTable[hdl].fileptr);
@@ -445,14 +456,12 @@ int file_write(int hdl, void *buffer, long nbytes)
   write bytes at the current position in the file
 */
 {
-    fpos_t position;
-
     if (handleTable[hdl].last_io_op == IO_READ) 
     {
-      position = (fpos_t) (handleTable[hdl].currentpos);
-      if (fsetpos(handleTable[hdl].fileptr, &position ))
-         return(WRITE_ERROR);
+        if (file_seek(hdl, handleTable[hdl].currentpos))
+            return(SEEK_ERROR);
     }
+
     if((long) fwrite(buffer, 1, nbytes, handleTable[hdl].fileptr) != nbytes)
         return(WRITE_ERROR);
 
