@@ -3075,6 +3075,10 @@ static int Locate_Col( Node *this )
    Node *that;
    int  i, col=0, newCol, nfound=0;
    
+   if( this->nSubNodes==0
+       && this->operation<=0 && this->operation!=CONST_OP )
+      return gParse.colData[ - this->operation].colnum;
+
    for( i=0; i<this->nSubNodes; i++ ) {
       that = gParse.Nodes + this->SubNodes[i];
       if( that->operation>0 ) {
