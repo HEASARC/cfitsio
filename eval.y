@@ -114,8 +114,8 @@ static void Do_Func      ( Node *this );
 static void Do_Deref     ( Node *this );
 static void Do_GTI       ( Node *this );
 
-static long Search_GTI   ( double time, long nGTI, double *start, double *stop,
-			   int ordered );
+static long Search_GTI   ( double evtTime, long nGTI, double *start,
+			   double *stop, int ordered );
 
 static char  saobox (double xcen, double ycen, double xwid, double ywid,
 		     double rot,  double xcol, double ycol);
@@ -2914,27 +2914,27 @@ static void Do_GTI( Node *this )
       free( theExpr->value.data.ptr );
 }
 
-static long Search_GTI( double time, long nGTI, double *start, double *stop,
-			int ordered )
+static long Search_GTI( double evtTime, long nGTI, double *start,
+			double *stop, int ordered )
 {
    long gti, step;
                              
    if( ordered && nGTI>15 ) { /*  If time-ordered and lots of GTIs,   */
                               /*  use "FAST" Binary search algorithm  */
-      if( time>=start[0] && time<=stop[nGTI-1] ) {
+      if( evtTime>=start[0] && evtTime<=stop[nGTI-1] ) {
 	 gti = step = (nGTI >> 1);
 	 while(1) {
 	    if( step>1L ) step >>= 1;
 	    
-	    if( time>stop[gti] ) {
-	       if( time>=start[gti+1] )
+	    if( evtTime>stop[gti] ) {
+	       if( evtTime>=start[gti+1] )
 		  gti += step;
 	       else {
 		  gti = -1L;
 		  break;
 	       }
-	    } else if( time<start[gti] ) {
-	       if( time<=stop[gti-1] )
+	    } else if( evtTime<start[gti] ) {
+	       if( evtTime<=stop[gti-1] )
 		  gti -= step;
 	       else {
 		  gti = -1L;
@@ -2950,7 +2950,7 @@ static long Search_GTI( double time, long nGTI, double *start, double *stop,
    } else { /*  Use "SLOW" linear search  */
       gti = nGTI;
       while( gti-- )
-	 if( time>=start[gti] && time<=stop[gti] )
+	 if( evtTime>=start[gti] && evtTime<=stop[gti] )
 	    break;
    }
    return( gti );
