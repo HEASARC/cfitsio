@@ -24,7 +24,7 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.031; /* 31 Mar 1999 */
+      *version = 2.0311; /* 31 Mar 1999 */
  
  /*   *version = 2.030;  24 Feb 1999 */
  /*   *version = 2.029;  11 Feb 1999 */
@@ -1208,7 +1208,7 @@ int ffgthd(char *tmplt, /* I - input header template string */
 */
 {
     char keyname[FLEN_KEYWORD], value[FLEN_VALUE], comment[FLEN_COMMENT];
-    char *tok, *suffix;
+    char *tok, *suffix, *loc, tvalue[FLEN_VALUE];
     int len, vlen, more, tstatus;
     double dval;
 
@@ -1395,6 +1395,28 @@ int ffgthd(char *tmplt, /* I - input header template string */
 
             if (*suffix != '\0' && *suffix != ' ' && *suffix != '/')
             { 
+                /* value not recognized as a number; might be because it */
+                /* contains a 'd' or 'D' exponent character  */ 
+                strcpy(tvalue, value);
+                loc = strchr(tvalue, 'D');
+                if (loc)
+                {          
+                    *loc = 'E'; /*  replace D's with E's. */ 
+                    dval = strtod(tvalue, &suffix); /* read value again */
+                }
+                else
+                {
+                    loc = strchr(tvalue, 'd');
+                    if (loc)
+                    {          
+                        *loc = 'E'; /*  replace d's with E's. */ 
+                        dval = strtod(tvalue, &suffix); /* read value again */
+                    }
+                }
+            }
+   
+            if (*suffix != '\0' && *suffix != ' ' && *suffix != '/')
+            { 
               /* value is not a number; must enclose it in quotes */
               strcpy(value, "'");
               strncat(value, tok, len);
@@ -1404,6 +1426,23 @@ int ffgthd(char *tmplt, /* I - input header template string */
               /* that dval is not used anywhere */
               if (dval == 0.)
                  len += (int) dval; 
+            }
+            else  
+            {
+                /* value is a number; convert any 'e' to 'E', or 'd' to 'D' */
+                loc = strchr(value, 'e');
+                if (loc)
+                {          
+                    *loc = 'E';  
+                }
+                else
+                {
+                    loc = strchr(value, 'd');
+                    if (loc)
+                    {          
+                        *loc = 'D';  
+                    }
+                }
             }
           }
           tok += len;

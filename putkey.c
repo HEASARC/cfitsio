@@ -1117,7 +1117,7 @@ int fftm2s(int year,          /* I - year (0 - 9999)           */
        ffpmsg(errmsg);
        return(*status = BAD_DATE);
     }
-    else if (decimals < 0 || decimals > 25)
+    else if (decimals > 25)
     {
        sprintf(errmsg, 
        "input decimals value is out of range 0 - 25: %d (fftm2s)", decimals);
