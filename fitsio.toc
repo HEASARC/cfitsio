@@ -24,7 +24,7 @@
 \contentsline {subsection}{\numberline {4.9.1}General Syntax}{28}
 \contentsline {subsection}{\numberline {4.9.2}Bit Masks}{30}
 \contentsline {subsection}{\numberline {4.9.3}Vector Columns}{31}
-\contentsline {subsection}{\numberline {4.9.4}Good Time Interval Filtering}{32}
+\contentsline {subsection}{\numberline {4.9.4}Good Time Interval Filtering}{33}
 \contentsline {subsection}{\numberline {4.9.5}Spatial Region Filtering}{33}
 \contentsline {subsection}{\numberline {4.9.6}Example Row Filters}{36}
 \contentsline {section}{\numberline {4.10} Binning or Histogramming Specification}{37}
@@ -41,19 +41,19 @@
 \contentsline {section}{\numberline {6.3}Current Header Data Unit (CHDU)}{48}
 \contentsline {section}{\numberline {6.4}Subroutine Names}{48}
 \contentsline {section}{\numberline {6.5}Subroutine Families and Datatypes}{49}
-\contentsline {section}{\numberline {6.6}Implicit Data Type Conversion}{49}
+\contentsline {section}{\numberline {6.6}Implicit Data Type Conversion}{50}
 \contentsline {section}{\numberline {6.7}Data Scaling}{50}
-\contentsline {section}{\numberline {6.8}Error Status Values and the Error Message Stack}{50}
+\contentsline {section}{\numberline {6.8}Error Status Values and the Error Message Stack}{51}
 \contentsline {section}{\numberline {6.9}Variable-Length Array Facility in Binary Tables}{51}
 \contentsline {section}{\numberline {6.10}Support for IEEE Special Values}{52}
 \contentsline {section}{\numberline {6.11}When the Final Size of the FITS HDU is Unknown}{53}
 \contentsline {section}{\numberline {6.12}Local FITS Conventions supported by FITSIO}{53}
-\contentsline {subsection}{\numberline {6.12.1}Support for Long String Keyword Values.}{53}
+\contentsline {subsection}{\numberline {6.12.1}Support for Long String Keyword Values.}{54}
 \contentsline {subsection}{\numberline {6.12.2}Arrays of Fixed-Length Strings in Binary Tables}{54}
 \contentsline {subsection}{\numberline {6.12.3}Keyword Units Strings}{55}
 \contentsline {subsection}{\numberline {6.12.4}HIERARCH Convention for Extended Keyword Names}{55}
 \contentsline {section}{\numberline {6.13}Optimizing Code for Maximum Processing Speed}{56}
-\contentsline {subsection}{\numberline {6.13.1}Background Information: How CFITSIO Manages Data I/O}{56}
+\contentsline {subsection}{\numberline {6.13.1}Background Information: How CFITSIO Manages Data I/O}{57}
 \contentsline {chapter}{\numberline {7} The CFITSIO Iterator Function }{61}
 \contentsline {chapter}{\numberline {8} Basic Interface Routines }{63}
 \contentsline {section}{\numberline {8.1}FITSIO Error Status Routines }{63}

@@ -612,7 +612,7 @@ int ffpcnd( fitsfile *fptr,  /* I - FITS file pointer                       */
     tcolumn *colptr;
     long  ngood = 0, nbad = 0, ii, fstrow;
     OFF_T large_elem, repeat, first, fstelm;
-    int tcode;
+    int tcode, overflow = 0;
 
     if (*status > 0)
         return(*status);
@@ -681,8 +681,15 @@ int ffpcnd( fitsfile *fptr,  /* I - FITS file pointer                       */
             large_first_elem_val = fstelm;
 
             if (ffpcld(fptr, colnum, fstrow, firstelem, ngood, &array[ii-ngood],
-                status) > 0)
-                return(*status);
+                status) > 0) {
+		if (*status == NUM_OVERFLOW) 
+		{
+		  overflow = 1;
+		  *status = 0;
+		} else { 
+                  return(*status);
+		}
+	    }
 
             ngood=0;
          }

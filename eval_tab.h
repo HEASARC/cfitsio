@@ -34,6 +34,8 @@ typedef union {
 #define	INTCAST	284
 #define	FLTCAST	285
 #define	UMINUS	286
+#define	ACCUM	287
+#define	DIFF	288
 
 
 extern FFSTYPE fflval;

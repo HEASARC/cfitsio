@@ -613,7 +613,7 @@ int ffpcne( fitsfile *fptr,  /* I - FITS file pointer                       */
     tcolumn *colptr;
     long  ngood = 0, nbad = 0, ii, fstrow;
     OFF_T large_elem, repeat, first, fstelm;
-    int tcode;
+    int tcode, overflow = 0;
 
     if (*status > 0)
         return(*status);
@@ -682,8 +682,15 @@ int ffpcne( fitsfile *fptr,  /* I - FITS file pointer                       */
             large_first_elem_val = fstelm;
 
             if (ffpcle(fptr, colnum, fstrow, firstelem, ngood, &array[ii-ngood],
-                status) > 0)
-                return(*status);
+                status) > 0) {
+		if (*status == NUM_OVERFLOW) 
+		{
+		  overflow = 1;
+		  *status = 0;
+		} else { 
+                  return(*status);
+		}
+	    }
 
             ngood=0;
          }
@@ -710,6 +717,12 @@ int ffpcne( fitsfile *fptr,  /* I - FITS file pointer                       */
       fstelm = fstelm - (fstrow - 1) * repeat;  /* relative number */
       large_first_elem_val = fstelm;
       ffpcluc(fptr, colnum, fstrow, firstelem, nbad, status);
+    }
+    
+    if (*status <= 0) {
+      if (overflow) {
+        *status = NUM_OVERFLOW;
+      }
     }
 
     return(*status);
@@ -785,7 +798,7 @@ int ffr4fi2(float *input,      /* I - array of values to be converted  */
     double dvalue;
 
     if (scale == 1. && zero == 0.)
-    {       
+    {           
         for (ii = 0; ii < ntodo; ii++)
         {
             if (input[ii] < DSHRT_MIN)

@@ -54,6 +54,7 @@
 /*                              for integer and floating point vectors  */
 /*  Craig B Markwardt Jun 2004  Use NULL values for range errors instead*/
 /*                              of throwing a parse error               */
+/*  Craig B Markwardt Oct 2004  Add ACCUM() and SEQDIFF() functions     */
 /*                                                                      */
 /************************************************************************/
 
@@ -217,6 +218,8 @@ static void  yyerror(char *msg);
 %left     INTCAST FLTCAST
 %left     UMINUS
 %left     '['
+
+%right    ACCUM DIFF
 
 %%
 
@@ -480,6 +483,9 @@ expr:    LONG
 		     $$ = New_Func( LONG, sum_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
                   } else if (FSTRCMP($1,"NELEM(") == 0) {
                      $$ = New_Const( LONG, &( SIZE($2) ), sizeof(long) );
+                  } else if (FSTRCMP($1,"ACCUM(") == 0) {
+		    long zero = 0;
+		    $$ = New_BinOp( LONG , $2, ACCUM, New_Const( LONG, &zero, sizeof(zero) ));
 		  } else {
                      yyerror("Function(bool) not supported");
 		     YYERROR;
@@ -510,6 +516,9 @@ expr:    LONG
 		     $$ = New_Func( TYPE($2),  /* Force 1D result */
 				    min1_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     SIZE($$) = 1;
+		} else if (FSTRCMP($1,"ACCUM(") == 0) {
+		    long zero = 0;
+		    $$ = New_BinOp( LONG , $2, ACCUM, New_Const( LONG, &zero, sizeof(zero) ));
 		} else if (FSTRCMP($1,"MAX(") == 0) {
 		     $$ = New_Func( TYPE($2),  /* Force 1D result */
 				    max1_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
@@ -538,7 +547,19 @@ expr:    LONG
 		  else if (FSTRCMP($1,"NVALID(") == 0)
 		     $$ = New_Func( LONG, nonnull_fct, 1, $2,
 				    0, 0, 0, 0, 0, 0 );
-		  else if (FSTRCMP($1,"ABS(") == 0)
+		  else if   ((FSTRCMP($1,"ACCUM(") == 0) && (TYPE($2) == LONG)) {
+		    long zero = 0;
+		    $$ = New_BinOp( LONG ,   $2, ACCUM, New_Const( LONG,   &zero, sizeof(zero) ));
+		  } else if ((FSTRCMP($1,"ACCUM(") == 0) && (TYPE($2) == DOUBLE)) {
+		    double zero = 0;
+		    $$ = New_BinOp( DOUBLE , $2, ACCUM, New_Const( DOUBLE, &zero, sizeof(zero) ));
+		  } else if ((FSTRCMP($1,"SEQDIFF(") == 0) && (TYPE($2) == LONG)) {
+		    long zero = 0;
+		    $$ = New_BinOp( LONG ,   $2, DIFF, New_Const( LONG,   &zero, sizeof(zero) ));
+		  } else if ((FSTRCMP($1,"SEQDIFF(") == 0) && (TYPE($2) == DOUBLE)) {
+		    double zero = 0;
+		    $$ = New_BinOp( DOUBLE , $2, DIFF, New_Const( DOUBLE, &zero, sizeof(zero) ));
+		  } else if (FSTRCMP($1,"ABS(") == 0)
 		     $$ = New_Func( 0, abs_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
  		  else if (FSTRCMP($1,"MIN(") == 0)
 		     $$ = New_Func( TYPE($2),  /* Force 1D result */
@@ -1139,7 +1160,14 @@ static int New_BinOp( int returnType, int Node1, int Op, int Node2 )
       for( i=0; i<that1->value.naxis; i++ )
 	 this->value.naxes[i] = that1->value.naxes[i];
 
-	 /*  Both subnodes should be of same time  */
+      if ( Op == ACCUM && that1->type == BITSTR ) {
+	/* ACCUM is rank-reducing on bit strings */
+	this->value.nelem = 1;
+	this->value.naxis = 1;
+	this->value.naxes[0] = 1;
+      }
+
+      /*  Both subnodes should be of same time  */
       switch( that1->type ) {
       case BITSTR:  this->DoOp = Do_BinOp_bit;  break;
       case STRING:  this->DoOp = Do_BinOp_str;  break;
@@ -2184,6 +2212,14 @@ static void Do_BinOp_bit( Node *this )
 	 strcpy( this->value.data.str, sptr1 );
 	 strcat( this->value.data.str, sptr2 );
 	 break;
+      case ACCUM:
+	this->value.data.lng = 0;
+	while( *sptr1 ) {
+	  if ( *sptr1 == '1' ) this->value.data.lng ++;
+	  sptr1 ++;
+	}
+	break;
+	
       }
       this->operation = CONST_OP;
 
@@ -2246,6 +2282,28 @@ static void Do_BinOp_bit( Node *this )
 	       }
 	    }
 	    break;
+
+	    /* Accumulate 1 bits */
+	 case ACCUM:
+	   { 
+	     long i, previous, curr;
+
+	     previous = that2->value.data.lng;
+	     
+	      /* Cumulative sum of this chunk */
+	     for (i=0; i<rows; i++) {
+	       sptr1 = that1->value.data.strptr[i];
+	       for (curr = 0; *sptr1; sptr1 ++) {
+		 if ( *sptr1 == '1' ) curr ++;
+	       }
+	       previous += curr;
+	       this->value.data.lngptr[i] = previous;
+	       this->value.undef[i] = 0;
+	     }
+	     
+	      /* Store final cumulant for next pass */
+	     that2->value.data.lng = previous;
+	   }
 	 }
       }
    }
@@ -2433,8 +2491,36 @@ static void Do_BinOp_log( Node *this )
       case NE:
 	 this->value.data.log = ( (val1 && !val2) || (!val1 && val2) );
 	 break;
+      case ACCUM:
+	 this->value.data.lng = val1;
+	 break;
       }
       this->operation=CONST_OP;
+   } else if (this->operation == ACCUM) {
+      long i, previous, curr;
+      rows  = gParse.nRows;
+      nelem = this->value.nelem;
+      elem  = this->value.nelem * rows;
+      
+      Allocate_Ptrs( this );
+      
+      if( !gParse.status ) {
+	previous = that2->value.data.lng;
+	
+	/* Cumulative sum of this chunk */
+	for (i=0; i<elem; i++) {
+	  if (!that1->value.undef[i]) {
+	    curr = that1->value.data.logptr[i];
+	    previous += curr;
+	  }
+	  this->value.data.lngptr[i] = previous;
+	  this->value.undef[i] = 0;
+	}
+	
+	/* Store final cumulant for next pass */
+	that2->value.data.lng = previous;
+      }
+      
    } else {
       rows  = gParse.nRows;
       nelem = this->value.nelem;
@@ -2443,6 +2529,26 @@ static void Do_BinOp_log( Node *this )
       Allocate_Ptrs( this );
 
       if( !gParse.status ) {
+	
+	 if (this->operation == ACCUM) {
+	   long i, previous, curr;
+	   
+	   previous = that2->value.data.lng;
+	   
+	   /* Cumulative sum of this chunk */
+	   for (i=0; i<elem; i++) {
+	     if (!that1->value.undef[i]) {
+	       curr = that1->value.data.logptr[i];
+	       previous += curr;
+	     }
+	     this->value.data.lngptr[i] = previous;
+	     this->value.undef[i] = 0;
+	   }
+	   
+	   /* Store final cumulant for next pass */
+	   that2->value.data.lng = previous;
+	 }
+	
 	 while( rows-- ) {
 	    while( nelem-- ) {
 	       elem--;
@@ -2567,9 +2673,62 @@ static void Do_BinOp_lng( Node *this )
       case POWER:
 	 this->value.data.lng = (long)pow((double)val1,(double)val2);
 	 break;
+      case ACCUM:
+	 this->value.data.lng = val1;
+	 break;
+      case DIFF:
+	 this->value.data.lng = 0;
+	 break;
       }
       this->operation=CONST_OP;
 
+   } else if ((this->operation == ACCUM) || (this->operation == DIFF)) {
+      long i, previous, curr;
+      int undef;
+      rows  = gParse.nRows;
+      nelem = this->value.nelem;
+      elem  = this->value.nelem * rows;
+      
+      Allocate_Ptrs( this );
+      
+      if( !gParse.status ) {
+	previous = that2->value.data.lng;
+	undef    = (int) that2->value.undef;
+	
+	if (this->operation == ACCUM) {
+	  /* Cumulative sum of this chunk */
+	  for (i=0; i<elem; i++) {
+	    if (!that1->value.undef[i]) {
+	      curr = that1->value.data.lngptr[i];
+	      previous += curr;
+	    }
+	    this->value.data.lngptr[i] = previous;
+	    this->value.undef[i] = 0;
+	  }
+	} else {
+	  /* Sequential difference for this chunk */
+	  for (i=0; i<elem; i++) {
+	    curr = that1->value.data.lngptr[i];
+	    if (that1->value.undef[i] || undef) {
+	      /* Either this, or previous, value was undefined */
+	      this->value.data.lngptr[i] = 0;
+	      this->value.undef[i] = 1;
+	    } else {
+	      /* Both defined, we are okay! */
+	      this->value.data.lngptr[i] = curr - previous;
+	      this->value.undef[i] = 0;
+	    }
+
+	    previous = curr;
+	    undef = that1->value.undef[i];
+	  }
+	}	  
+	
+	/* Store final cumulant for next pass */
+	that2->value.data.lng = previous;
+	that2->value.undef    = (char *) undef; /* XXX evil, but no harm here */
+      }
+      
    } else {
 
       rows  = gParse.nRows;
@@ -2694,9 +2853,63 @@ static void Do_BinOp_dbl( Node *this )
       case POWER:
 	 this->value.data.dbl = (double)pow(val1,val2);
 	 break;
+      case ACCUM:
+	 this->value.data.dbl = val1;
+	 break;
+      case DIFF:
+	this->value.data.dbl = 0;
+	 break;
       }
       this->operation=CONST_OP;
 
+   } else if ((this->operation == ACCUM) || (this->operation == DIFF)) {
+      long i;
+      int undef;
+      double previous, curr;
+      rows  = gParse.nRows;
+      nelem = this->value.nelem;
+      elem  = this->value.nelem * rows;
+      
+      Allocate_Ptrs( this );
+      
+      if( !gParse.status ) {
+	previous = that2->value.data.dbl;
+	undef    = (int) that2->value.undef;
+	
+	if (this->operation == ACCUM) {
+	  /* Cumulative sum of this chunk */
+	  for (i=0; i<elem; i++) {
+	    if (!that1->value.undef[i]) {
+	      curr = that1->value.data.dblptr[i];
+	      previous += curr;
+	    }
+	    this->value.data.dblptr[i] = previous;
+	    this->value.undef[i] = 0;
+	  }
+	} else {
+	  /* Sequential difference for this chunk */
+	  for (i=0; i<elem; i++) {
+	    curr = that1->value.data.dblptr[i];
+	    if (that1->value.undef[i] || undef) {
+	      /* Either this, or previous, value was undefined */
+	      this->value.data.dblptr[i] = 0;
+	      this->value.undef[i] = 1;
+	    } else {
+	      /* Both defined, we are okay! */
+	      this->value.data.dblptr[i] = curr - previous;
+	      this->value.undef[i] = 0;
+	    }
+
+	    previous = curr;
+	    undef = that1->value.undef[i];
+	  }
+	}	  
+	
+	/* Store final cumulant for next pass */
+	that2->value.data.dbl = previous;
+	that2->value.undef    = (char *) undef; /* XXX evil, but no harm here */
+      }
+      
    } else {
 
       rows  = gParse.nRows;

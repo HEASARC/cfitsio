@@ -1025,6 +1025,7 @@ int stdin2file(int hd);
 int stdout_close(int handle);
 int mem_compress_openrw(char *filename, int rwmode, int *hdl);
 int mem_compress_open(char *filename, int rwmode, int *hdl);
+int mem_compress_stdin_open(char *filename, int rwmode, int *hdl);
 int mem_iraf_open(char *filename, int rwmode, int *hdl);
 int mem_rawfile_open(char *filename, int rwmode, int *hdl);
 int mem_size(int handle, OFF_T *filesize);
