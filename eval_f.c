@@ -972,7 +972,8 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
        case TLONG:    *(long  *)Null = (long )jnull;    break;
        case TFLOAT:   *(float *)Null = FLOATNULLVALUE;  break;
        case TDOUBLE:  *(double*)Null = DOUBLENULLVALUE; break;
-       case TSTRING: **(char **)Null = '\0';            break;
+       case TSTRING: (*(char **)Null)[0] = '\1';
+                     (*(char **)Null)[1] = '\0';        break;
        }
     }
 
@@ -1163,8 +1164,12 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 
     if( anyNullThisTime )
        userInfo->anyNull = 1;
-    else if( userInfo->dataPtr == NULL )
-       memcpy( Null, zeros, datasize );
+    else if( userInfo->dataPtr == NULL ) {
+       if( userInfo->datatype == TSTRING )
+          memcpy( *(char **)Null, zeros, 2 );
+       else 
+          memcpy( Null, zeros, datasize );
+    }
 
     /*-------------------------------------------------------*/
     /*  Clean up procedures:  after processing all the rows  */
