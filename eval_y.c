@@ -88,7 +88,7 @@
 #include <time.h>
 
    /*  Bison uses alloca for allocations, but VMS lacks it  */
-#if defined(vms) || defined(__vms) || defined(macintosh)
+#if defined(vms) || defined(__vms) || defined(macintosh) || defined(__WIN32__)
 #define alloca malloc
 #endif
 
