@@ -29,12 +29,12 @@ void Cffgiou( int *unit, int *status )
    int i;
 
    if( *status>0 ) return;
-   for( i=99;i>49;i-- )  /*  Mimic FITSIO's way of doing things  */
+   for( i=50;i<MAXFITSFILES;i++ ) /* Using a unit=0 sounds bad, so start at 1 */
       if( gFitsFiles[i]==NULL ) break;
-   if( i==49 ) {
-      *unit = -1;
+   if( i==MAXFITSFILES ) {
+      *unit = 0;
       *status = 114;
-      ffpmsg("Ftgiou has no more available unit numbers.");
+      ffpmsg("Cffgiou has no more available unit numbers.");
    } else {
       *unit=i;
       gFitsFiles[i] = (void *)1;  /*  Flag it as taken until ftopen/init  */
@@ -48,9 +48,9 @@ void Cfffiou( int unit, int *status )
    if( *status>0 ) return;
    if( unit == -1 ) {
       int i; for( i=50; i<MAXFITSFILES; ) gFitsFiles[i++]=NULL;
-   } else if( unit<0 || unit>MAXFITSFILES ) {
+   } else if( unit<1 || unit>=MAXFITSFILES ) {
       *status=1;
-      ffpmsg("Ftfiou was sent an unacceptable unit number.");
+      ffpmsg("Cfffiou was sent an unacceptable unit number.");
    } else gFitsFiles[unit]=NULL;
 }
 FCALLSCSUB2(Cfffiou,FTFIOU,ftfiou,INT,PINT)
@@ -65,8 +65,13 @@ void Cffsbuf( fitsfile **fptr, void **buffptr, long *buffsize,
              size_t deltasize,
              int *status)
 {
-   ffsbuf( fptr, buffptr, (size_t *)buffsize, deltasize,
-           NULL, status );
+   if( *fptr==NULL || *fptr==(void*)1 ) {
+      ffsbuf( fptr, buffptr, (size_t *)buffsize, deltasize,
+	      NULL, status );
+   } else {
+      *status = FILE_NOT_OPENED;
+      ffpmsg("Cffsbuf tried to use a previously allocated unit number.");
+   }
 }
 FCALLSCSUB5(Cffsbuf,FTSBUF,ftsbuf,PFITSUNIT,PVOID,PLONG,LONG,PINT)
 
@@ -74,21 +79,35 @@ FCALLSCSUB4(ffwbuf,FTWBUF,ftwbuf,PVOID,LONG,STRING,PINT)
 
 void Cffopen( fitsfile **fptr, const char *filename, int iomode, int *blocksize, int *status )
 {
-   ffopen( fptr, filename, iomode, status );
-   *blocksize = 1;
+   if( *fptr==NULL || *fptr==(void*)1 ) {
+      ffopen( fptr, filename, iomode, status );
+      *blocksize = 1;
+   } else {
+      *status = FILE_NOT_OPENED;
+      ffpmsg("Cffopen tried to open an already opened file.");
+   }
 }
 FCALLSCSUB5(Cffopen,FTOPEN,ftopen,PFITSUNIT,STRING,INT,PINT,PINT)
 
 void Cffinit( fitsfile **fptr, const char *filename, int blocksize, int *status )
-{    ffinit( fptr, filename, status );   }
+{
+   if( *fptr==NULL || *fptr==(void*)1 ) {
+      ffinit( fptr, filename, status );
+   } else {
+      *status = FILE_NOT_CREATED;
+      ffpmsg("Cffinit tried to create an already opened file.");
+   }
+}
 FCALLSCSUB4(Cffinit,FTINIT,ftinit,PFITSUNIT,STRING,INT,PINT)
 
 FCALLSCSUB2(ffflus,FTFLUS,ftflus,FITSUNIT,PINT)
 
 void Cffclos( int unit, int *status )
 {
-   ffclos( gFitsFiles[unit], status );
-   gFitsFiles[unit]=NULL;
+   if( gFitsFiles[unit]!=NULL && gFitsFiles[unit]!=(void*)1 ) {
+      ffclos( gFitsFiles[unit], status );  /* Flag unit number as unavailable */
+      gFitsFiles[unit]=(void*)1;           /* in case want to reuse it        */
+   }
 }
 FCALLSCSUB2(Cffclos,FTCLOS,ftclos,INT,PINT)
 
