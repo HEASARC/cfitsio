@@ -1,29 +1,32 @@
-             Log of Changes Made to CFITSIO
+               Log of Changes Made to CFITSIO
 
-Version 1.41 - 16 March 1998 (for the FTOOLS release)
+Version 1.41 - 24 April 1998 (included in FTOOLS 4.1 release)
 
-   - modified ffbinit and ffainit to ignore minor format
-     errors in header keywords so that cfitsio can at least
-     move to an extention that contains illegal keywords.
+   - modified the routines which read a FITS float values into
+     a float array, or read FITS double values into a double array,
+     so that the array value is also explicitly set in addition
+     to setting the array of flag values, if the FITS value is a NaN.
+     This ensures that no NaN values get passed back to the calling
+     program, which can cause serious problems on some platforms (OSF).
 
-   - added ffdrws to delete a list of rows in a table
+   - added calls to ffrdef at the beginning of the insert
+     or delete rows or columns routines in editcol.c to make sure
+     that CFITSIO has correctly initialized the HDU information.
+
+   - added new routine ffdrws to delete a list of rows in a table
 
    - added ffcphd to copy the header keywords from one hdu to another
-
-   - small changes to ffpclx to fix problems when writing bit (X) data
-     columns beyond the current end of file.
 
    - made the anynul parameter in the ffgcl* routines optional
      by first checking to see if the pointer is not null before
      initializing it.
 
-   - fixed small bug in ffcrhd where a dummy pointer was not initialized
+   - modified ffbinit and ffainit to ignore minor format
+     errors in header keywords so that cfitsio can at least
+     move to an extension that contains illegal keywords.
 
    - modified all the ffgcl* routines to simply return without
      error if nelem = 0.
-
-   - initialized the dummy variable in ffgcfe and ffgcfd which
-     was causing crashes under OSF in some cases.
 
    - added check to ffclose to check the validity of the fitsfile
      pointer before closing it.  This should prevent program crashes
@@ -32,6 +35,21 @@ Version 1.41 - 16 March 1998 (for the FTOOLS release)
    - replaced calls to strcmp and strncmp with macros FSTRCMP and
      FSTRNCMP in a few places to improve performance when reading
      header keywords (suggested by Mike Noble)
+
+  Bug Fixes:
+
+   - fixed typo in macro definition of error 504 in the file fitsio.h.
+
+   - in ffopen, reserved space for 4 more characters in the input
+     file name in case a '.zip' suffix needs to be added.
+
+   - small changes to ffpclx to fix problems when writing bit (X) data
+     columns beyond the current end of file.
+
+   - fixed small bug in ffcrhd where a dummy pointer was not initialized
+
+   - initialized the dummy variable in ffgcfe and ffgcfd which
+     was causing crashes under OSF in some cases.
 
    - increased the length of the allocated string ffgkls by 2
      to support the case of reading a numeric keyword as a string
@@ -117,13 +135,15 @@ Version 1.4 - 6 Feb 1998
    - modified ffitab (insert new ASCII table) to allow tables with
      zero number of columns
 
-   - fixed small bug in ffgrz (get optimum row size) which sometimes
-     caused it to return slightly less than the maximum optimum size.
-     This bug would have done no harm to application programs.
-
    - modified Makefile.in and configure to define the -Dg77Fortran
      CFLAGS variable on Linux platforms.  This is needed to 
      compile the new f77_wrap.c file (which includes cfortran.h)
+
+  Bug Fixes:
+
+   - fixed small bug in ffgrz (get optimum row size) which sometimes
+     caused it to return slightly less than the maximum optimum size.
+     This bug would have done no harm to application programs.
 
    - fixed bug in ffpclk and ffgclk to add an 'else' case
      if size of int is not equal to size of short or size of long.

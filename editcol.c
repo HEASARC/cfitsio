@@ -168,6 +168,11 @@ int ffirow(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
+    /* rescan header if data structure is undefined */
+    if (fptr->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               
+            return(*status);
+
     if (fptr->hdutype == IMAGE_HDU)
     {
         ffpmsg("Can only add rows to TABLE or BINTABLE extension (ffirow)");
@@ -238,6 +243,11 @@ int ffdrow(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     if (*status > 0)
         return(*status);
+
+    /* rescan header if data structure is undefined */
+    if (fptr->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               
+            return(*status);
 
     if (fptr->hdutype == IMAGE_HDU)
     {
@@ -311,8 +321,10 @@ int ffdrws(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
-    if (fptr->datastart < 0)    /* rescan header if data pointer undefined */
-        ffrdef(fptr, status);
+    /* rescan header if data structure is undefined */
+    if (fptr->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               
+            return(*status);
 
     if (*status > 0)
         return(*status);
@@ -458,6 +470,11 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     if (*status > 0)
         return(*status);
+
+    /* rescan header if data structure is undefined */
+    if (fptr->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               
+            return(*status);
 
     if (fptr->hdutype == IMAGE_HDU)
     {
@@ -632,6 +649,9 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     if (outfptr->datastart == DATA_UNDEFINED)
         ffrdef(outfptr, status);               /* rescan header */
 
+    if (*status > 0)
+        return(*status);
+
     if (infptr->hdutype == IMAGE_HDU || outfptr->hdutype == IMAGE_HDU)
     {
        ffpmsg
@@ -799,7 +819,7 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     else if (typecode == TDBLCOMPLEX)
     {
        dvalues = (double *) calloc(maxloop * 2, sizeof(double) );
-       if (!fvalues)
+       if (!dvalues)
        {
          ffpmsg
          ("malloc failed to get memory for dbl complex (ffcpcl)");
@@ -964,6 +984,11 @@ int ffdcol(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     if (*status > 0)
         return(*status);
+
+    /* rescan header if data structure is undefined */
+    if (fptr->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               
+            return(*status);
 
     if (fptr->hdutype == IMAGE_HDU)
     {

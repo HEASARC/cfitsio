@@ -1268,7 +1268,11 @@ int fffr8r8(double *input,        /* I - array of values to be converted     */
                     if (nullcheck == 1)
                         output[ii] = nullval;
                     else
+                    {
                         nullarray[ii] = 1;
+                       /* explicitly set value in case output contains a NaN */
+                        output[ii] = DOUBLENULLVALUE;
+                    }
                   }
                   else            /* it's an underflow */
                      output[ii] = 0;
@@ -1289,7 +1293,11 @@ int fffr8r8(double *input,        /* I - array of values to be converted     */
                     if (nullcheck == 1)
                         output[ii] = nullval;
                     else
+                    {
                         nullarray[ii] = 1;
+                       /* explicitly set value in case output contains a NaN */
+                        output[ii] = DOUBLENULLVALUE;
+                    }
                   }
                   else            /* it's an underflow */
                      output[ii] = zero;
