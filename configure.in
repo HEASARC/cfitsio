@@ -24,17 +24,27 @@ fi
 dnl Checks for programs.
 AC_PROG_CC
 
-AC_CHECK_PROGS(FC, f77 xlf cf77 gf77 g77 af77 ncf, nope)
-if test $FC = 'nope'; then
-   AC_MSG_WARN(no acceptable f77 found in \$PATH -- not adding fortran-compatible flags)
+AC_CHECK_PROGS(FC, f77 xlf cf77 gf77 g77 af77 ncf f2c , nope)
+if test $FC = 'nope' ; then
+   AC_MSG_WARN(cfitsio: == No acceptable f77 found in \$PATH)
+   AC_MSG_WARN(cfitsio: == Cfitsio will be built without Fortran wrapper support)
+   FC=
 else
+  CFORTRANFLAGS=
   echo $ac_n "checking whether we are using GNU Fortran""... $ac_c" 1>&6
   if test `$FC --version -c < /dev/null 2> /dev/null | grep -c GNU` -gt 0
   then
     echo "$ac_t""yes" 1>&6
-    CFLAGS="$CFLAGS -Dg77Fortran"
+    echo $ac_n "cfitsio: == Adding wrapper support for GNU Fortran""... $ac_c" 1>&6
+    CFORTRANFLAGS="-Dg77Fortran"
+    echo "$ac_t"" done" 1>&6
   else
     echo "$ac_t""no" 1>&6
+    if test $FC = 'f2c' ; then
+      echo $ac_n "cfitsio: == Adding wrapper support for f2c""... $ac_c" 1>&6
+      CFORTRANFLAGS="-Df2cFortran"
+      echo "$ac_t"" done" 1>&6
+    fi
   fi
 fi
 
@@ -70,12 +80,17 @@ case $system in
 	;;
     HP-UX-*)
 	ARCH="hp"
-	CFLAGS="$CFLAGS -Dappendus -DPG_PPU" 
+	if test "x$CFORTRANFLAGS" = x ; then
+		CFORTRANFLAGS="-Dappendus"
+	fi
+	CFLAGS="$CFLAGS -DPG_PPU" 
 	LIBPRE="-Wl,"
 	;;
     SunOS-5*)
 	ARCH="solaris"
-	CFLAGS="$CFLAGS -Dsolaris"
+	if test "x$CFORTRANFLAGS" = x ; then
+		CFORTRANFLAGS="-Dsolaris"
+	fi
 	;;
     OSF1*)
 	ARCH="alpha"
@@ -97,9 +112,8 @@ case $system in
 		changequote([,])dnl
 	fi
 	;;
-    FREEBSD*)
+    FREEBSD*|FreeBSD*)
 	ARCH="linux"
-	CFLAGS="$CFLAGS -Df2cFortran"
 	;;
     CYGWIN*)
 	ARCH="cygwin"
@@ -109,6 +123,8 @@ case $system in
 		echo "cfitsio: == Don't know what do do with $system"
 	;;
 esac
+
+CFLAGS="$CFLAGS $CFORTRANFLAGS"
 
 case $CC in
 	gcc)
@@ -138,6 +154,7 @@ esac
 AC_SUBST(ARCH)dnl
 AC_SUBST(CFLAGS)dnl
 AC_SUBST(CC)dnl
+AC_SUBST(FC)dnl
 AC_SUBST(LIBPRE)dnl
 
 # ================= test for the unix ftruncate function ================
