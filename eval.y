@@ -48,6 +48,7 @@
 
 #define  APPROX 1.0e-7
 #include "eval_defs.h"
+#include "region.h"
 #include <time.h>
 
 /***************************************************************/
@@ -101,6 +102,8 @@ static int  New_Func  ( int returnType, funcOp Op, int nNodes,
 static int  New_Deref ( int Var,  int nDim,
 			int Dim1, int Dim2, int Dim3, int Dim4, int Dim5 );
 static int  New_GTI   ( char *fname, int Node1, char *start, char *stop );
+static int  New_REG   ( char *fname, int NodeX, int NodeY, char *colNames );
+static int  Locate_Col( Node *this );
 static int  Test_Dims ( int Node1, int Node2 );
 
 static void Allocate_Ptrs( Node *this );
@@ -113,6 +116,7 @@ static void Do_BinOp_dbl ( Node *this );
 static void Do_Func      ( Node *this );
 static void Do_Deref     ( Node *this );
 static void Do_GTI       ( Node *this );
+static void Do_REG       ( Node *this );
 
 static long Search_GTI   ( double evtTime, long nGTI, double *start,
 			   double *stop, int ordered );
@@ -154,7 +158,8 @@ static void  yyerror(char *msg);
 %token <str>   BITSTR
 %token <str>   FUNCTION
 %token <str>   BFUNCTION
-%token <str>   FILTER
+%token <str>   GTIFILTER
+%token <str>   REGFILTER
 %token <lng>   COLUMN
 %token <lng>   BCOLUMN
 %token <lng>   SCOLUMN
@@ -586,54 +591,33 @@ bexpr:   BOOLEAN
 		   }
                    TEST($$); 
 		}
-       | FILTER ')'
+
+       | GTIFILTER ')'
+                { /* Use defaults for all elements */
+                  $$ = New_GTI( "", -99, "*START*", "*STOP*" );
+                  TEST($$);                                         }
+       | GTIFILTER STRING ')'
                 { /* Use defaults for all except filename */
-                   if (FSTRCMP($1,"GTIFILTER(") == 0) {
-                      $$ = New_GTI( "", -99, "*START*", "*STOP*" );
-                   } else {
-                      yyerror("Filter Function not supported");
-		      YYERROR;
-		   }
-                   TEST($$); 
-                }
-       | FILTER STRING ')'
+                   $$ = New_GTI( $2, -99, "*START*", "*STOP*" );
+                   TEST($$);                                        }
+       | GTIFILTER STRING ',' expr ')'
+                { $$ = New_GTI( $2, $4, "*START*", "*STOP*" );
+                  TEST($$);                                         }
+       | GTIFILTER STRING ',' expr ',' STRING ',' STRING ')'
+                {  $$ = New_GTI( $2, $4, $6, $8 );
+                   TEST($$);                                        }
+
+       | REGFILTER STRING ')'
                 { /* Use defaults for all except filename */
-                   if (FSTRCMP($1,"GTIFILTER(") == 0) {
-                      $$ = New_GTI( $2, -99, "*START*", "*STOP*" );
-                   } else {
-                      yyerror("Filter Function not supported");
-		      YYERROR;
-		   }
-                   TEST($$); 
-                }
-       | FILTER STRING ',' expr ')'
-                {
-                   if (FSTRCMP($1,"GTIFILTER(") == 0) {
-                      if( SIZE($4)>1 ) {
-                         yyerror("Cannot filter on a vector column");
-                         YYERROR;
-                      }
-                      $$ = New_GTI( $2, $4, "*START*", "*STOP*" );
-                   } else {
-                      yyerror("Filter Function not supported");
-		      YYERROR;
-		   }
-                   TEST($$); 
-                }
-       | FILTER STRING ',' expr ',' STRING ',' STRING ')'
-                {
-                   if (FSTRCMP($1,"GTIFILTER(") == 0) {
-                      if( SIZE($4)>1 ) {
-                         yyerror("Cannot filter on a vector column");
-                         YYERROR;
-                      }
-                      $$ = New_GTI( $2, $4, $6, $8 );
-                   } else {
-                      yyerror("Filter Function not supported");
-		      YYERROR;
-		   }
-                   TEST($$); 
-                }
+                   $$ = New_REG( $2, -99, -99, "" );
+                   TEST($$);                                        }
+       | REGFILTER STRING ',' expr ',' expr ')'
+                {  $$ = New_REG( $2, $4, $6, "" );
+                   TEST($$);                                        }
+       | REGFILTER STRING ',' expr ',' expr ',' STRING ')'
+                {  $$ = New_REG( $2, $4, $6, $8 );
+                   TEST($$);                                        }
+
        | bexpr '[' expr ']'
                 { $$ = New_Deref( $1, 1, $3,  0,  0,  0,   0 ); TEST($$); }
        | bexpr '[' expr ',' expr ']'
@@ -948,16 +932,16 @@ static int New_Deref( int Var,  int nDim,
 static int New_GTI( char *fname, int Node1, char *start, char *stop )
 {
    fitsfile *fptr;
-   Node *this, *that0;
-   int  type,i,n, startCol, stopCol, Node0;
+   Node *this, *that0, *that1;
+   int  type,i,n, startCol, stopCol, Node0, colnum;
    int  hdutype, hdunum, evthdu, samefile, extvers, movetotype, tstat;
    char extname[100];
-   long colnum, nrows;
+   long nrows;
    double timeZeroI[2], timeZeroF[2], dt, timeSpan;
 
    if( Node1==-99 ) {
       type = yybuildcolumn( "TIME", &colnum );
-      if( (type==LONG || type==DOUBLE) && gParse.colInfo[colnum].nelem==1 ) {
+      if( type==LONG || type==DOUBLE ) {
 	 Node1 = New_Column( colnum );
       } else {
 	 yyerror("Could not build TIME column for GTIFILTER");
@@ -1082,9 +1066,11 @@ static int New_GTI( char *fname, int Node1, char *start, char *stop )
       this->operation      = (int)gtifilt_fct;
       this->DoOp           = Do_GTI;
       this->type           = BOOLEAN;
-      this->value.nelem    = 1;
-      this->value.naxis    = 1;
-      this->value.naxes[0] = 1;
+      that1                = gParse.Nodes + Node1;
+      this->value.nelem    = that1->value.nelem;
+      this->value.naxis    = that1->value.naxis;
+      for( i=0; i < that1->value.naxis; i++ )
+	 this->value.naxes[i] = that1->value.naxes[i];
 
       /* Init START/STOP node to be treated as a "constant" */
 
@@ -1150,6 +1136,172 @@ static int New_GTI( char *fname, int Node1, char *start, char *stop )
       ffclos( fptr, &gParse.status );
 
    return( n );
+}
+
+static int New_REG( char *fname, int NodeX, int NodeY, char *colNames )
+{
+   Node *this, *that0;
+   int  type, n, Node0;
+   int  colnum, Xcol, Ycol, tstat;
+   WCSdata wcs;
+   Region *Rgn;
+   char *cX, *cY;
+
+   if( NodeX==-99 ) {
+      type = yybuildcolumn( "X", &colnum );
+      if( type==LONG || type==DOUBLE ) {
+	 NodeX = New_Column( colnum );
+      } else {
+	 yyerror("Could not build X column for REGFILTER");
+	 return(-1);
+      }
+   }
+   if( NodeY==-99 ) {
+      type = yybuildcolumn( "Y", &colnum );
+      if( type==LONG || type==DOUBLE ) {
+	 NodeY = New_Column( colnum );
+      } else {
+	 yyerror("Could not build Y column for REGFILTER");
+	 return(-1);
+      }
+   }
+   NodeX = New_Unary( DOUBLE, 0, NodeX );
+   NodeY = New_Unary( DOUBLE, 0, NodeY );
+   Node0 = Alloc_Node(); /* This will hold the Region Data */
+   if( NodeX<0 || NodeY<0 || Node0<0 ) return(-1);
+
+   n = Alloc_Node();
+   if( n >= 0 ) {
+      this                 = gParse.Nodes + n;
+      this->nSubNodes      = 3;
+      this->SubNodes[0]    = Node0;
+      this->SubNodes[1]    = NodeX;
+      this->SubNodes[2]    = NodeY;
+      this->operation      = (int)regfilt_fct;
+      this->DoOp           = Do_REG;
+      this->type           = BOOLEAN;
+      this->value.nelem    = 1;
+      this->value.naxis    = 1;
+      this->value.naxes[0] = 1;
+
+      /* Init Region node to be treated as a "constant" */
+
+      that0                = gParse.Nodes + Node0;
+      that0->operation     = CONST_OP;
+      that0->DoOp          = NULL;
+
+      /*  Identify what columns to use for WCS information  */
+
+      Xcol = Ycol = 0;
+      if( *colNames ) {
+	 /*  Use the column names in this string for WCS info  */
+	 while( *colNames==' ' ) colNames++;
+	 cX = cY = colNames;
+	 while( *cY && *cY!=' ' && *cY!=',' ) cY++;
+	 if( *cY )
+	    *(cY++) = '\0';
+	 while( *cY==' ' ) cY++;
+	 if( !*cY ) {
+	    yyerror("Could not extract valid pair of column names from REGFILTER");
+	    Free_Last_Node();
+	    return( -1 );
+	 }
+	 fits_get_colnum( gParse.def_fptr, CASEINSEN, cX, &Xcol,
+			  &gParse.status );
+	 fits_get_colnum( gParse.def_fptr, CASEINSEN, cY, &Ycol,
+			  &gParse.status );
+	 if( gParse.status ) {
+	    yyerror("Could not locate columns indicated for WCS info");
+	    Free_Last_Node();
+	    return( -1 );
+	 }
+
+      } else {
+	 /*  Try to find columns used in X/Y expressions  */
+	 Xcol = Locate_Col( gParse.Nodes + NodeX );
+	 Ycol = Locate_Col( gParse.Nodes + NodeY );
+	 if( Xcol<0 || Ycol<0 ) {
+	    yyerror("Found multiple X/Y column references in REGFILTER");
+	    Free_Last_Node();
+	    return( -1 );
+	 }
+      }
+
+      /*  Now, get the WCS info, if it exists, from the indicated columns  */
+      wcs.exists = 0;
+      if( Xcol>0 && Ycol>0 ) {
+	 tstat = 0;
+	 ffgtcs( gParse.def_fptr, Xcol, Ycol,
+		 &wcs.xrefval, &wcs.yrefval,
+		 &wcs.xrefpix, &wcs.yrefpix,
+		 &wcs.xinc,    &wcs.yinc,
+		 &wcs.rot,      wcs.type,
+		 &tstat );
+	 if( tstat==NO_WCS_KEY ) {
+	    wcs.exists = 0;
+	 } else if( tstat ) {
+	    gParse.status = tstat;
+	    Free_Last_Node();
+	    return( -1 );
+	 } else {
+	    wcs.exists = 1;
+	 }
+      }
+
+      /*  Read in Region file  */
+
+      fits_read_rgnfile( fname, &wcs, &Rgn, &gParse.status );
+      if( gParse.status ) {
+	 Free_Last_Node();
+	 return( -1 );
+      }
+
+      that0->value.data.ptr = Rgn;
+
+      if( gParse.Nodes[NodeX].operation==CONST_OP
+	  && gParse.Nodes[NodeY].operation==CONST_OP )
+	 this->DoOp( this );
+   }
+
+   return( n );
+}
+
+static int Locate_Col( Node *this )
+/*  Locate the TABLE column number of any columns in "this" calculation.  */
+/*  Return ZERO if none found, or negative if more than 1 found.          */
+{
+   Node *that;
+   int  i, col=0, newCol, nfound=0;
+   
+   for( i=0; i<this->nSubNodes; i++ ) {
+      that = gParse.Nodes + this->SubNodes[i];
+      if( that->operation>0 ) {
+	 newCol = Locate_Col( that );
+	 if( newCol<=0 ) {
+	    nfound += -newCol;
+	 } else {
+	    if( !nfound ) {
+	       col = newCol;
+	       nfound++;
+	    } else if( col != newCol ) {
+	       nfound++;
+	    }
+	 }
+      } else if( that->operation!=CONST_OP ) {
+	 /*  Found a Column  */
+	 newCol = gParse.colData[- that->operation].colnum;
+	 if( !nfound ) {
+	    col = newCol;
+	    nfound++;
+	 } else if( col != newCol ) {
+	    nfound++;
+	 }
+      }
+   }
+   if( nfound!=1 )
+      return( - nfound );
+   else
+      return( col );
 }
 
 static int Test_Dims( int Node1, int Node2 )
@@ -2865,7 +3017,7 @@ static void Do_GTI( Node *this )
 {
    Node *theExpr, *theTimes;
    double *start, *stop, *times;
-   long row, nGTI, gti;
+   long elem, nGTI, gti;
    int ordered;
 
    theTimes = gParse.Nodes + this->SubNodes[0];
@@ -2889,23 +3041,23 @@ static void Do_GTI( Node *this )
       times = theExpr->value.data.dblptr;
       if( !gParse.status ) {
 
-	 row = gParse.nRows;
+	 elem = gParse.nRows * this->value.nelem;
 	 if( nGTI ) {
 	    gti = -1;
-	    while( row-- ) {
-	       if( (this->value.undef[row] = theExpr->value.undef[row]) )
+	    while( elem-- ) {
+	       if( (this->value.undef[elem] = theExpr->value.undef[elem]) )
 		  continue;
 
             /*  Before searching entire GTI, check the GTI found last time  */
-	       if( gti<0 || times[row]<start[gti] || times[row]>stop[gti] ) {
-		  gti = Search_GTI( times[row], nGTI, start, stop, ordered );
+	       if( gti<0 || times[elem]<start[gti] || times[elem]>stop[gti] ) {
+		  gti = Search_GTI( times[elem], nGTI, start, stop, ordered );
 	       }
-	       this->value.data.logptr[row] = ( gti>=0 );
+	       this->value.data.logptr[elem] = ( gti>=0 );
 	    }
 	 } else
-	    while( row-- ) {
-	       this->value.data.logptr[row] = 0;
-	       this->value.undef[row]       = 0;
+	    while( elem-- ) {
+	       this->value.data.logptr[elem] = 0;
+	       this->value.undef[elem]       = 0;
 	    }
       }
    }
@@ -2956,11 +3108,92 @@ static long Search_GTI( double evtTime, long nGTI, double *start,
    return( gti );
 }
 
+static void Do_REG( Node *this )
+{
+   Node *theRegion, *theX, *theY;
+   double Xval=0.0, Yval=0.0;
+   char   Xnull=0, Ynull=0;
+   int    Xvector, Yvector;
+   long   nelem, elem, rows;
+
+   theRegion = gParse.Nodes + this->SubNodes[0];
+   theX      = gParse.Nodes + this->SubNodes[1];
+   theY      = gParse.Nodes + this->SubNodes[2];
+
+   Xvector = ( theX->operation!=CONST_OP );
+   if( Xvector )
+      Xvector = theX->value.nelem;
+   else {
+      Xval  = theX->value.data.dbl;
+   }
+
+   Yvector = ( theY->operation!=CONST_OP );
+   if( Yvector )
+      Yvector = theY->value.nelem;
+   else {
+      Yval  = theY->value.data.dbl;
+   } 
+
+   if( !Xvector && !Yvector ) {
+
+      this->value.data.log =
+	 ( fits_in_region( Xval, Yval, (Region *)theRegion->value.data.ptr )
+	   != 0 );
+      this->operation      = CONST_OP;
+
+   } else {
+
+      Allocate_Ptrs( this );
+
+      if( !gParse.status ) {
+
+	 rows  = gParse.nRows;
+	 nelem = this->value.nelem;
+	 elem  = rows*nelem;
+
+	 while( rows-- ) {
+	    while( nelem-- ) {
+	       elem--;
+
+	       if( Xvector>1 ) {
+		  Xval  = theX->value.data.dblptr[elem];
+		  Xnull = theX->value.undef[elem];
+	       } else if( Xvector ) {
+		  Xval  = theX->value.data.dblptr[rows];
+		  Xnull = theX->value.undef[rows];
+	       }
+
+	       if( Yvector>1 ) {
+		  Yval  = theY->value.data.dblptr[elem];
+		  Ynull = theY->value.undef[elem];
+	       } else if( Yvector ) {
+		  Yval  = theY->value.data.dblptr[rows];
+		  Ynull = theY->value.undef[rows];
+	       }
+
+	       this->value.undef[elem] = ( Xnull || Ynull );
+	       if( this->value.undef[elem] )
+		  continue;
+
+	       this->value.data.logptr[elem] = 
+		  ( fits_in_region( Xval, Yval,
+				    (Region *)theRegion->value.data.ptr )
+		    != 0 );
+	    }
+	    nelem = this->value.nelem;
+	 }
+      }
+   }
+
+   if( theX->operation>0 )
+      free( theX->value.data.ptr );
+   if( theY->operation>0 )
+      free( theY->value.data.ptr );
+}
+
 /*****************************************************************************/
 /*  Utility routines which perform the calculations on bits and SAO regions  */
 /*****************************************************************************/
-
-#define myPI  3.1415926535897932385
 
 static char bitlgte(char *bits1, int oper, char *bits2)
 {

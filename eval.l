@@ -119,7 +119,7 @@ boolean         (t|f|T|F)
 real		([0-9]*"."[0-9]+)|([0-9]*"."*[0-9]+[eEdD][+-]?[0-9]+)|([0-9]*".")
 constant        ("#pi"|"#PI"|"#e"|"#E"|"#deg"|"#DEG"|"#row"|"#ROW")
 keyword		("#"[a-zA-Z0-9_]+)|("#""$"[^\n]*"$")
-string		[\"\'][^\"\'\n]*[\"\']
+string		([\"][^\"\n]*[\"])|([\'][^\'\n]*[\'])
 variable	([a-zA-Z_][a-zA-Z0-9_]*)|("$"[^$\n]*"$")
 function	[a-zA-Z][a-zA-Z0-9]+"("
 intcast		("(int)"|"(INT)")
@@ -380,9 +380,13 @@ nl		\n
                          )
                      /* Return type is always boolean  */
 		     return( BFUNCTION );
-                  else if (FSTRCMP(fname,"GTIFILTER(")==0
-                         )
-                     return( FILTER    );
+
+                  else if( FSTRCMP(fname,"GTIFILTER(")==0 )
+                     return( GTIFILTER );
+
+                  else if( FSTRCMP(fname,"REGFILTER(")==0 )
+                     return( REGFILTER );
+
                   else 
 		     return( FUNCTION  );
 		}
@@ -451,13 +455,13 @@ static int find_column(char *colname)
 }
 
 /* Public entry point for calls from eval.y */
-int yybuildcolumn( char *ColName, long *ColNum )
+int yybuildcolumn( char *ColName, int *ColNum )
 {
    YYSTYPE thelval;
    int type;
 
    type = build_column_array( ColName, &thelval );
-   *ColNum = thelval.lng;
+   *ColNum = (int)thelval.lng;
    return( type );
 }
 

@@ -49,6 +49,7 @@
 #include <ctype.h>
 #include "eval_defs.h"
 #include "eval_tab.h"
+#include "region.h"
 
 typedef struct {
      int  datatype;   /* Data type to cast parse results into for user       */
@@ -728,7 +729,7 @@ void ffcprs( void )  /*  No parameters                                      */
 /* Clear the parser, making it ready to accept a new expression.            */
 /*--------------------------------------------------------------------------*/
 {
-   int col, node;
+   int col, node, i;
 
    if( gParse.nCols > 0 ) {
       free( gParse.colData  );
@@ -746,8 +747,13 @@ void ffcprs( void )  /*  No parameters                                      */
    if( gParse.nNodes > 0 ) {
       node = gParse.nNodes;
       while( node-- ) {
-	 if( gParse.Nodes[node].operation==gtifilt_fct )
-	    free( gParse.Nodes[ gParse.Nodes[node].SubNodes[0] ].value.data.ptr );
+	 i = gParse.Nodes[node].SubNodes[0];
+	 if( gParse.Nodes[node].operation==gtifilt_fct ) {
+	    free( gParse.Nodes[ i ].value.data.ptr );
+	 }
+	 else if( gParse.Nodes[node].operation==regfilt_fct ) {
+	    fits_free_region( (Region *)gParse.Nodes[ i ].value.data.ptr );
+	 }
       }
       gParse.nNodes = 0;
    }

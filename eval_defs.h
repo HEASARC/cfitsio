@@ -102,6 +102,7 @@ typedef enum {
                   isnull_fct,
                   defnull_fct,
                   gtifilt_fct,
+                  regfilt_fct,
                   row_fct
                                 } funcOp;
 
@@ -114,7 +115,7 @@ extern "C" {
    int  ffparse(void);
    int  fflex(void);
    void ffrestart(FILE*);
-   int  ffbuildcolumn( char *ColName, long *ColNum );
+   int  ffbuildcolumn( char *ColName, int *ColNum );
    int  ffallocatecol( int nCol, int *status );
 
    void Evaluate_Node( int thisNode );
