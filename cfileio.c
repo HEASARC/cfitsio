@@ -2886,7 +2886,6 @@ int fftrun( fitsfile *fptr,    /* I - FITS file pointer           */
     ffflsh(fptr, FALSE, status);  /* flush all the buffers first */
     (fptr->Fptr)->filesize = filesize;
     (fptr->Fptr)->logfilesize = filesize;
-    (fptr->Fptr)->io_pos = filesize;
     (fptr->Fptr)->bytepos = filesize;
     ffbfeof(fptr, status);   /* eliminate any buffers beyond current EOF */
     return (

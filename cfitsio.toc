@@ -18,7 +18,7 @@
 \contentsline {subsubsection}{Detailed Template Line Format}{21}
 \contentsline {subsubsection}{Template Parser Directives}{22}
 \contentsline {subsubsection}{Formal Template Syntax}{22}
-\contentsline {subsubsection}{Auto-indexing of Kewyords}{23}
+\contentsline {subsubsection}{Auto-indexing of Keywords}{23}
 \contentsline {subsubsection}{Errors}{24}
 \contentsline {subsection}{\numberline {4.2.5}HDU Location Specification}{25}
 \contentsline {subsection}{\numberline {4.2.6}Column and Keyword Filtering Specification}{25}

@@ -234,6 +234,7 @@ int file_truncate(int handle, long filesize)
 
     handleTable[handle].currentpos = filesize;
     handleTable[handle].last_io_op = IO_WRITE;
+
 #endif
 
     return(0);
@@ -335,7 +336,7 @@ int file_write(int hdl, void *buffer, long nbytes)
   write bytes at the current position in the file
 */
 {
-    if (handleTable[hdl].last_io_op == IO_READ)
+    if (handleTable[hdl].last_io_op == IO_READ) 
     {
       if (fseek(handleTable[hdl].fileptr, handleTable[hdl].currentpos, 0 ))
          return(WRITE_ERROR);

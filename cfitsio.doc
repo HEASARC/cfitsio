@@ -994,9 +994,9 @@ TAB characters (blanks) are equivalent and treated as separators.
 
 The start of each record field is order dependent but position
 independent, except if the first 8 characters of a record are blanks
-then the entire line (without the first 8 spaces) is treated as a
-comment and copied verbatim into the FITS header. Thus lines can be
-indented, but indentation is limited to a maximum of 7 spaces.
+then the entire line is treated as a FITS comment keyword (with a blank
+keyword name) and copied verbatim into the FITS header. Thus lines can
+be indented, but indentation is limited to a maximum of 7 spaces.
 
 The KEYWORD field is limited to 8 characters in length and only the
 letters A-Z, digits 0-9, and the hyphen and underscore character may be
@@ -1123,15 +1123,15 @@ can define additional columns in a GROUP HDU using TFORMn and TTYPEn
 For a more complicated example of a template file using the group directives,
 look at the sample.tpl file that is included in the CFITSIO distribution.
 
-****4   Auto-indexing of Kewyords
+****4   Auto-indexing of Keywords
 
 If a template keyword name ends with a "\#" character, it is
 auto-indexed. The parser replaces the '\#' with the current integer
-keyword index value in the
-FITS header. The first keyword field encountered in a given HDU
-definition ending with '\#' is used as the index value incrementor.
-Each time this keyword field (also ending with '\#') is encountered in
-the header definition the index value is incremented by 1.
+keyword index value in the FITS header. The first keyword field
+encountered in a given HDU definition ending with '\#' is used as the
+index value incrementor.  Each time this keyword field (also ending
+with '\#') is encountered in the header definition the index value is
+incremented by 1.
 
 All keyword fields ending with '\#' encountered between index value
 incrementor keyword fields are assigned the current index value. The

@@ -22,6 +22,15 @@
 		they have them already defined by parser (EXTNAME = GROUPING).
 		Parser accepts EXTNAME oin GROUP HDU definition, but in this
 		case multiple EXTNAME keywords will present in HDU header.
+23-Oct-98: bugfix: unnecessary space was written to FITS file for blank
+		keywords.
+24-Oct-98: syntax change: empty lines and lines with only whitespaces are 
+		written to FITS files as blank keywords (if inside group/hdu
+		definition). Previously lines had to have at least 8 spaces.
+		Please note, that due to pecularities of CFITSIO if the
+		last keyword(s) defined for given HDU are blank keywords
+		consisting of only 80 spaces, then (some of) those keywords
+		may be silently deleted by CFITSIO.
 */
 
 
@@ -231,11 +240,17 @@ int	ngp_extract_tokens(NGP_RAW_LINE *cl)
    cl_flags = 0;
 
    for (i=0;; i++)				/* if 8 spaces at beginning then line is comment */
-    { if ((0 == *p) || ('\n' == *p)) return(NGP_OK);
+    { if ((0 == *p) || ('\n' == *p))
+        {					/* if line has only blanks -> write blank keyword */
+          cl->line[0] = 0;			/* create empty name (0 length string) */
+          cl->comment = cl->name = cl->line;
+	  cl->type = NGP_TTYPE_RAW;		/* signal write unformatted to FITS file */
+          return(NGP_OK);
+        }
       if ((' ' != *p) && ('\t' != *p)) break;
       if (i >= 7)
         { 
-          cl->comment = p;
+          cl->comment = p + 1;
           for (s = cl->comment;; s++)		/* filter out any EOS characters in comment */
            { if ('\n' == *s) *s = 0;
 	     if (0 == *s) break;
@@ -368,10 +383,11 @@ int	ngp_include_file(char *fname)		/* try to open include file */
 /* read line in the intelligent way. All \INCLUDE directives are handled,
    empty and comment line skipped. If this function returns NGP_OK, than
    decomposed line (name, type, value in proper type and comment) are
-   stored in ngp_linkey structure. 
+   stored in ngp_linkey structure. ignore_blank_lines parameter is zero
+   when parser is inside GROUP or HDU definition. Nonzero otherwise.
 */
 
-int	ngp_read_line(void)
+int	ngp_read_line(int ignore_blank_lines)
  { int r, nc;
    unsigned k;
 
@@ -404,7 +420,7 @@ int	ngp_read_line(void)
        }
       
       switch (ngp_curline.line[0])
-       { case 0:				/* ignore empty lines */
+       { case 0: if (0 == ignore_blank_lines) break; /* ignore empty lines if told so */
          case '#': continue;			/* ignore comment lines */
        }
       
@@ -581,7 +597,7 @@ int     ngp_keyword_all_write(NGP_HDU *ngph, fitsfile *ffp, int mode)
 			    break;
 			  }
 			sprintf(buf, "%-8.8s%s", ngph->tok[i].name, ngph->tok[i].comment);
-                        fits_write_record(ffp, buf, &r);
+			fits_write_record(ffp, buf, &r);
                         break;
            }
           if (r) return(r);
@@ -714,7 +730,7 @@ int	ngp_read_xtension(fitsfile *ff, int parent_hn, int simple_mode)
 
    if (NGP_OK != (r = ngp_hdu_init(&ngph))) return(r);
 
-   if (NGP_OK != (r = ngp_read_line())) return(r);	/* EOF always means error here */
+   if (NGP_OK != (r = ngp_read_line(0))) return(r);	/* EOF always means error here */
    switch (NGP_XTENSION_SIMPLE & simple_mode)
      {
        case 0:  if (NGP_TOKEN_XTENSION != ngp_keyidx) return(NGP_TOKEN_NOT_EXPECT);
@@ -726,7 +742,7 @@ int	ngp_read_xtension(fitsfile *ff, int parent_hn, int simple_mode)
    if (NGP_OK != (r = ngp_hdu_insert_token(&ngph, &ngp_linkey))) return(r);
 
    for (;;)
-    { if (NGP_OK != (r = ngp_read_line())) return(r);	/* EOF always means error here */
+    { if (NGP_OK != (r = ngp_read_line(0))) return(r);	/* EOF always means error here */
       exflg = 0;
       switch (ngp_keyidx)
        { 
@@ -886,7 +902,7 @@ int	ngp_read_group(fitsfile *ff, char *grpname, int parent_hn)
      }
 
    for (exitflg = 0; 0 == exitflg;)
-    { if (NGP_OK != (r = ngp_read_line())) break;	/* EOF always means error here */
+    { if (NGP_OK != (r = ngp_read_line(0))) break;	/* EOF always means error here */
       switch (ngp_keyidx)
        {
 	 case NGP_TOKEN_SIMPLE:
@@ -977,7 +993,7 @@ int	fits_execute_template(fitsfile *ff, char *ngp_template, int *status)
      }
 
    for (;;)
-    { if (NGP_OK != (r = ngp_read_line())) break;	/* EOF always means error here */
+    { if (NGP_OK != (r = ngp_read_line(1))) break;	/* EOF always means error here */
       switch (ngp_keyidx)
        {
          case NGP_TOKEN_SIMPLE:

@@ -12,6 +12,7 @@
 16-Oct-98: reference to fitsio.h removed, also removed strings after #endif
 		directives to make gcc -Wall not to complain
 20-Oct-98: added declarations NGP_XTENSION_SIMPLE and NGP_XTENSION_FIRST
+24-Oct-98: prototype of ngp_read_line() function updated.
 */
 
 #ifndef	GRPARSER_H_INCLUDED
@@ -28,17 +29,17 @@ extern "C" {
 #define	NGP_ALLOCCHUNK		(1000)
 #define	NGP_MAX_INCLUDE		(10)			/* include file nesting limit */
 #define	NGP_MAX_COMMENT		(80)			/* max size for comment */
-#define	NGP_MAX_NAME		(20)
-#define	NGP_MAX_STRING		(80)
-#define	NGP_MAX_ARRAY_DIM	(999)
+#define	NGP_MAX_NAME		(20)			/* max size for KEYWORD (FITS limits it to 8 chars) */
+#define	NGP_MAX_STRING		(80)			/* max size for various strings */
+#define	NGP_MAX_ARRAY_DIM	(999)			/* max. number of dimensions in array */
 
 #define	NGP_TOKEN_UNKNOWN	(-1)			/* token type unknown */
-#define	NGP_TOKEN_INCLUDE	(0)			/* token is an INCLUDE directive */
-#define	NGP_TOKEN_GROUP		(1)
-#define	NGP_TOKEN_END		(2)
-#define	NGP_TOKEN_XTENSION	(3)
-#define	NGP_TOKEN_SIMPLE	(4)
-#define	NGP_TOKEN_EOF		(5)
+#define	NGP_TOKEN_INCLUDE	(0)			/* \INCLUDE token */
+#define	NGP_TOKEN_GROUP		(1)			/* \GROUP token */
+#define	NGP_TOKEN_END		(2)			/* \END token */
+#define	NGP_TOKEN_XTENSION	(3)			/* XTENSION token */
+#define	NGP_TOKEN_SIMPLE	(4)			/* SIMPLE token */
+#define	NGP_TOKEN_EOF		(5)			/* End Of File pseudo token */
 
 #define	NGP_TTYPE_UNKNOWN	(0)			/* undef (yet) token type - invalid to print/write to disk */
 #define	NGP_TTYPE_BOOL		(1)			/* boolean, it is 'T' or 'F' */
@@ -145,7 +146,7 @@ int	ngp_read_line_buffered(FILE *fp);
 int	ngp_unread_line(void);
 int	ngp_extract_tokens(NGP_RAW_LINE *cl);
 int	ngp_include_file(char *fname);
-int	ngp_read_line(void);
+int	ngp_read_line(int ignore_blank_lines);
 int	ngp_keyword_is_write(NGP_TOKEN *ngp_tok);
 int     ngp_keyword_all_write(NGP_HDU *ngph, fitsfile *ffp, int mode);
 int	ngp_hdu_init(NGP_HDU *ngph);
