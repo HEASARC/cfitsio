@@ -15,6 +15,75 @@
 #include <stddef.h>
 #include "fitsio2.h"
 /*--------------------------------------------------------------------------*/
+int ffuky( fitsfile *fptr,     /* I - FITS file pointer        */
+           int  datatype,      /* I - datatype of the value    */
+           char *keyname,      /* I - name of keyword to write */
+           void *value,        /* I - keyword value            */
+           char *comm,         /* I - keyword comment          */
+           int  *status)       /* IO - error status            */
+/*
+  Update the keyword, value and comment in the FITS header.
+  The datatype is specified by the 2nd argument.
+*/
+{
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (datatype == TSTRING)
+    {
+        ffukys(fptr, keyname, (char *) value, comm, status);
+    }
+    else if (datatype == TBYTE)
+    {
+        ffukyj(fptr, keyname, (long) *(unsigned char *) value, comm, status);
+    }
+    else if (datatype == TUSHORT)
+    {
+        ffukyj(fptr, keyname, (long) *(unsigned short *) value, comm, status);
+    }
+    else if (datatype == TSHORT)
+    {
+        ffukyj(fptr, keyname, (long) *(short *) value, comm, status);
+    }
+    else if (datatype == TINT)
+    {
+        ffukyj(fptr, keyname, (long) *(int *) value, comm, status);
+    }
+    else if (datatype == TLOGICAL)
+    {
+        ffukyl(fptr, keyname, *(int *) value, comm, status);
+    }
+    else if (datatype == TULONG)
+    {
+        ffukyg(fptr, keyname, (double) *(unsigned long *) value, 0,
+               comm, status);
+    }
+    else if (datatype == TLONG)
+    {
+        ffukyj(fptr, keyname, *(long *) value, comm, status);
+    }
+    else if (datatype == TFLOAT)
+    {
+        ffukye(fptr, keyname, *(float *) value, 6, comm, status);
+    }
+    else if (datatype == TDOUBLE)
+    {
+        ffukyd(fptr, keyname, *(double *) value, 14, comm, status);
+    }
+    else if (datatype == TCOMPLEX)
+    {
+        ffukyc(fptr, keyname, (float *) value, 6, comm, status);
+    }
+    else if (datatype == TDBLCOMPLEX)
+    {
+        ffukym(fptr, keyname, (double *) value, 14, comm, status);
+    }
+    else
+        *status = BAD_DATATYPE;
+
+    return(*status);
+} 
+/*--------------------------------------------------------------------------*/
 int ffukyu(fitsfile *fptr,    /* I - FITS file pointer  */
            char *keyname,     /* I - keyword name       */
            char *comm,        /* I - keyword comment    */
@@ -452,7 +521,7 @@ int ffmkyu(fitsfile *fptr,    /* I - FITS file pointer  */
 
     strcpy(valstring,"0");  /* create a dummy value string */
 
-    if (comm[0] == '&')  /* preserve the current comment string */
+    if (!comm || comm[0] == '&')  /* preserve the current comment string */
         ffmkky(keyname, valstring, oldcomm, card);
     else
         ffmkky(keyname, valstring, comm, card);
@@ -484,7 +553,7 @@ int ffmkys(fitsfile *fptr,    /* I - FITS file pointer  */
 
     ffs2c(value, valstring, status);   /* convert value to a string */
 
-    if (comm[0] == '&')  /* preserve the current comment string */
+    if (!comm || comm[0] == '&')  /* preserve the current comment string */
         ffmkky(keyname, valstring, oldcomm, card);
     else
         ffmkky(keyname, valstring, comm, card);
@@ -530,7 +599,7 @@ int ffmkyl(fitsfile *fptr,    /* I - FITS file pointer  */
 
     ffl2c(value, valstring, status);   /* convert value to a string */
 
-    if (comm[0] == '&')  /* preserve the current comment string */
+    if (!comm || comm[0] == '&')  /* preserve the current comment string */
         ffmkky(keyname, valstring, oldcomm, card);
     else
         ffmkky(keyname, valstring, comm, card);
@@ -558,7 +627,7 @@ int ffmkyj(fitsfile *fptr,    /* I - FITS file pointer  */
 
     ffi2c(value, valstring, status);   /* convert value to a string */
 
-    if (comm[0] == '&')  /* preserve the current comment string */
+    if (!comm || comm[0] == '&')  /* preserve the current comment string */
         ffmkky(keyname, valstring, oldcomm, card);
     else
         ffmkky(keyname, valstring, comm, card);
@@ -587,7 +656,7 @@ int ffmkyf(fitsfile *fptr,    /* I - FITS file pointer  */
 
     ffr2f(value, decim, valstring, status);   /* convert value to a string */
 
-    if (comm[0] == '&')  /* preserve the current comment string */
+    if (!comm || comm[0] == '&')  /* preserve the current comment string */
         ffmkky(keyname, valstring, oldcomm, card);
     else
         ffmkky(keyname, valstring, comm, card);
@@ -616,7 +685,7 @@ int ffmkye(fitsfile *fptr,    /* I - FITS file pointer  */
 
     ffr2e(value, decim, valstring, status);   /* convert value to a string */
 
-    if (comm[0] == '&')  /* preserve the current comment string */
+    if (!comm || comm[0] == '&')  /* preserve the current comment string */
         ffmkky(keyname, valstring, oldcomm, card);
     else
         ffmkky(keyname, valstring, comm, card);
@@ -645,7 +714,7 @@ int ffmkyg(fitsfile *fptr,    /* I - FITS file pointer  */
 
     ffd2f(value, decim, valstring, status);   /* convert value to a string */
 
-    if (comm[0] == '&')  /* preserve the current comment string */
+    if (!comm || comm[0] == '&')  /* preserve the current comment string */
         ffmkky(keyname, valstring, oldcomm, card);
     else
         ffmkky(keyname, valstring, comm, card);
@@ -674,7 +743,7 @@ int ffmkyd(fitsfile *fptr,    /* I - FITS file pointer  */
 
     ffd2e(value, decim, valstring, status);   /* convert value to a string */
 
-    if (comm[0] == '&')  /* preserve the current comment string */
+    if (!comm || comm[0] == '&')  /* preserve the current comment string */
         ffmkky(keyname, valstring, oldcomm, card);
     else
         ffmkky(keyname, valstring, comm, card);
@@ -709,7 +778,7 @@ int ffmkfc(fitsfile *fptr,    /* I - FITS file pointer  */
     strcat(valstring, tmpstring);
     strcat(valstring, ")");
 
-    if (comm[0] == '&')  /* preserve the current comment string */
+    if (!comm || comm[0] == '&')  /* preserve the current comment string */
         ffmkky(keyname, valstring, oldcomm, card);
     else
         ffmkky(keyname, valstring, comm, card);
@@ -744,7 +813,7 @@ int ffmkyc(fitsfile *fptr,    /* I - FITS file pointer  */
     strcat(valstring, tmpstring);
     strcat(valstring, ")");
 
-    if (comm[0] == '&')  /* preserve the current comment string */
+    if (!comm || comm[0] == '&')  /* preserve the current comment string */
         ffmkky(keyname, valstring, oldcomm, card);
     else
         ffmkky(keyname, valstring, comm, card);
@@ -779,7 +848,7 @@ int ffmkfm(fitsfile *fptr,    /* I - FITS file pointer  */
     strcat(valstring, tmpstring);
     strcat(valstring, ")");
 
-    if (comm[0] == '&')  /* preserve the current comment string */
+    if (!comm || comm[0] == '&')  /* preserve the current comment string */
         ffmkky(keyname, valstring, oldcomm, card);
     else
         ffmkky(keyname, valstring, comm, card);
@@ -814,7 +883,7 @@ int ffmkym(fitsfile *fptr,    /* I - FITS file pointer  */
     strcat(valstring, tmpstring);
     strcat(valstring, ")");
 
-    if (comm[0] == '&')  /* preserve the current comment string */
+    if (!comm || comm[0] == '&')  /* preserve the current comment string */
         ffmkky(keyname, valstring, oldcomm, card);
     else
         ffmkky(keyname, valstring, comm, card);

@@ -34,6 +34,7 @@ cfitsio:
 	    $copy cfileio.c splitc/cfileio.c
 	    $copy checksum.c splitc/checksum.c
 	    $copy compress.c splitc/compress.c
+	    $copy f77_iter.c splitc/f77_iter.c
 	    $copy f77_wrap.c splitc/f77_wrap.c
 	    $copy fitscore.c splitc/fitscore.c
 	    $copy editcol.c splitc/editcol.c

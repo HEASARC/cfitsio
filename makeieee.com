@@ -5,6 +5,7 @@ $ cc/float=ieee_float cfileio.c
 $ cc/float=ieee_float checksum.c
 $ cc/float=ieee_float compress.c
 $ cc/float=ieee_float fitscore.c
+$ cc/float=ieee_float f77_iter.c
 $ cc/float=ieee_float f77_wrap.c
 $ cc/float=ieee_float getcol.c
 $ cc/float=ieee_float getcolb.c
@@ -37,7 +38,7 @@ $ cc/float=ieee_float putkey.c
 $ cc/float=ieee_float scalnull.c
 $ cc/float=ieee_float swapproc.c
 $ cc/float=ieee_float wcsutil.c
-$ lib/create cfitsio buffers,cfileio,checksum,compress,f77_wrap,fitscore
+$ lib/create cfitsio buffers,cfileio,checksum,compress,f77_iter,f77_wrap,fitscore
 $ lib/insert cfitsio getcol,getcolb,getcoli,getcolj,getcolk,getcole,getcold
 $ lib/insert cfitsio getcoll,getcols,editcol,edithdu,getkey,modkey,putcol
 $ lib/insert cfitsio putcolb,putcoli,putcolj,putcolk,putcole,putcold

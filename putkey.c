@@ -56,7 +56,7 @@ int ffcrtb(fitsfile *fptr,  /* I - FITS file pointer                        */
   Create a table extension in a FITS file. 
 */
 {
-    long naxis1, ncols, *tbcol;
+    long naxis1 = 0, *tbcol = 0;
 
     if (*status > 0)
         return(*status);
@@ -65,6 +65,12 @@ int ffcrtb(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (fptr->headend != fptr->headstart[fptr->curhdu] )
         ffcrhd(fptr, status);
 
+    if (fptr->curhdu == 0)  /* have to create dummy primary array */
+    {
+       ffcrim(fptr, 16, 0, tbcol, status);
+       ffcrhd(fptr, status);
+    }
+    
     if (tbltype == BINARY_TBL)
     {
       /* write the required header keywords. This will write PCOUNT = 0 */
@@ -73,24 +79,10 @@ int ffcrtb(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
     else if (tbltype == ASCII_TBL)
     {
-      /* allocate mem for tbcol; malloc can have problems allocating small */
-      /* arrays, so allocate at least 20 bytes */
-
-      ncols = maxvalue(5, tfields);
-      tbcol = (long *) calloc(ncols, sizeof(long));
-
-      if (tbcol)
-      {
-        /* calculate width of a row and starting position of each column. */
-        /* Each column will be separated by 1 blank space */
-        ffgabc(tfields, tform, 1, &naxis1, tbcol, status);
-
-        /* write the required header keywords */
-        ffphtb(fptr, naxis1, naxis2, tfields, ttype, tbcol, tform, tunit,
-               extnm, status);
-
-        free(tbcol);
-      }
+      /* write the required header keywords */
+      /* default values for naxis1 and tbcol will be calculated */
+      ffphtb(fptr, naxis1, naxis2, tfields, ttype, tbcol, tform, tunit,
+             extnm, status);
     }
     else
       *status = NOT_TABLE;
@@ -215,6 +207,14 @@ int ffpky( fitsfile *fptr,     /* I - FITS file pointer        */
     else if (datatype == TDOUBLE)
     {
         ffpkyd(fptr, keyname, *(double *) value, 14, comm, status);
+    }
+    else if (datatype == TCOMPLEX)
+    {
+        ffpkyc(fptr, keyname, (float *) value, 6, comm, status);
+    }
+    else if (datatype == TDBLCOMPLEX)
+    {
+        ffpkym(fptr, keyname, (double *) value, 14, comm, status);
     }
     else
         *status = BAD_DATATYPE;
@@ -836,17 +836,26 @@ int ffpkns( fitsfile *fptr,     /* I - FITS file pointer                    */
     /* by looking to see if the last non-blank character is a '&' char      */
 
     repeat = 0;
-    len = strlen(comm[0]);
 
-    while (len > 0  && comm[0][len - 1] == ' ')
-       len--;                               /* ignore trailing blanks */
-
-    if (comm[0][len - 1] == '&')
+    if (comm)
     {
+      len = strlen(comm[0]);
+
+      while (len > 0  && comm[0][len - 1] == ' ')
+        len--;                               /* ignore trailing blanks */
+
+      if (comm[0][len - 1] == '&')
+      {
         len = minvalue(len, FLEN_COMMENT);
         tcomment[0] = '\0';
         strncat(tcomment, comm[0], len-1); /* don't copy the final '&' char */
         repeat = 1;
+      }
+    }
+    else
+    {
+      repeat = 1;
+      tcomment[0] = '\0';
     }
 
     for (ii=0, jj=nstart; ii < nkey; ii++, jj++)
@@ -887,18 +896,27 @@ int ffpknl( fitsfile *fptr,     /* I - FITS file pointer                    */
     /* by looking to see if the last non-blank character is a '&' char      */
 
     repeat = 0;
-    len = strlen(comm[0]);
-
-    while (len > 0  && comm[0][len - 1] == ' ')
-       len--;                               /* ignore trailing blanks */
-
-    if (comm[0][len - 1] == '&')
+    if (comm)
     {
+      len = strlen(comm[0]);
+
+      while (len > 0  && comm[0][len - 1] == ' ')
+        len--;                               /* ignore trailing blanks */
+
+      if (comm[0][len - 1] == '&')
+      {
         len = minvalue(len, FLEN_COMMENT);
         tcomment[0] = '\0';
         strncat(tcomment, comm[0], len-1); /* don't copy the final '&' char */
         repeat = 1;
+      }
     }
+    else
+    {
+      repeat = 1;
+      tcomment[0] = '\0';
+    }
+
 
     for (ii=0, jj=nstart; ii < nkey; ii++, jj++)
     {
@@ -937,17 +955,26 @@ int ffpknj( fitsfile *fptr,     /* I - FITS file pointer                    */
     /* by looking to see if the last non-blank character is a '&' char      */
 
     repeat = 0;
-    len = strlen(comm[0]);
 
-    while (len > 0  && comm[0][len - 1] == ' ')
-       len--;                               /* ignore trailing blanks */
-
-    if (comm[0][len - 1] == '&')
+    if (comm)
     {
+      len = strlen(comm[0]);
+
+      while (len > 0  && comm[0][len - 1] == ' ')
+        len--;                               /* ignore trailing blanks */
+
+      if (comm[0][len - 1] == '&')
+      {
         len = minvalue(len, FLEN_COMMENT);
         tcomment[0] = '\0';
         strncat(tcomment, comm[0], len-1); /* don't copy the final '&' char */
         repeat = 1;
+      }
+    }
+    else
+    {
+      repeat = 1;
+      tcomment[0] = '\0';
     }
 
     for (ii=0, jj=nstart; ii < nkey; ii++, jj++)
@@ -987,17 +1014,26 @@ int ffpknf( fitsfile *fptr,     /* I - FITS file pointer                    */
     /* by looking to see if the last non-blank character is a '&' char      */
 
     repeat = 0;
-    len = strlen(comm[0]);
 
-    while (len > 0  && comm[0][len - 1] == ' ')
-       len--;                               /* ignore trailing blanks */
-
-    if (comm[0][len - 1] == '&')
+    if (comm)
     {
+      len = strlen(comm[0]);
+
+      while (len > 0  && comm[0][len - 1] == ' ')
+        len--;                               /* ignore trailing blanks */
+
+      if (comm[0][len - 1] == '&')
+      {
         len = minvalue(len, FLEN_COMMENT);
         tcomment[0] = '\0';
         strncat(tcomment, comm[0], len-1); /* don't copy the final '&' char */
         repeat = 1;
+      }
+    }
+    else
+    {
+      repeat = 1;
+      tcomment[0] = '\0';
     }
 
     for (ii=0, jj=nstart; ii < nkey; ii++, jj++)
@@ -1037,17 +1073,26 @@ int ffpkne( fitsfile *fptr,     /* I - FITS file pointer                    */
     /* by looking to see if the last non-blank character is a '&' char      */
 
     repeat = 0;
-    len = strlen(comm[0]);
 
-    while (len > 0  && comm[0][len - 1] == ' ')
-       len--;                               /* ignore trailing blanks */
-
-    if (comm[0][len - 1] == '&')
+    if (comm)
     {
+      len = strlen(comm[0]);
+
+      while (len > 0  && comm[0][len - 1] == ' ')
+        len--;                               /* ignore trailing blanks */
+
+      if (comm[0][len - 1] == '&')
+      {
         len = minvalue(len, FLEN_COMMENT);
         tcomment[0] = '\0';
         strncat(tcomment, comm[0], len-1); /* don't copy the final '&' char */
         repeat = 1;
+      }
+    }
+    else
+    {
+      repeat = 1;
+      tcomment[0] = '\0';
     }
 
     for (ii=0, jj=nstart; ii < nkey; ii++, jj++)
@@ -1087,17 +1132,26 @@ int ffpkng( fitsfile *fptr,     /* I - FITS file pointer                    */
     /* by looking to see if the last non-blank character is a '&' char      */
 
     repeat = 0;
-    len = strlen(comm[0]);
 
-    while (len > 0  && comm[0][len - 1] == ' ')
-       len--;                               /* ignore trailing blanks */
-
-    if (comm[0][len - 1] == '&')
+    if (comm)
     {
+      len = strlen(comm[0]);
+
+      while (len > 0  && comm[0][len - 1] == ' ')
+        len--;                               /* ignore trailing blanks */
+
+      if (comm[0][len - 1] == '&')
+      {
         len = minvalue(len, FLEN_COMMENT);
         tcomment[0] = '\0';
         strncat(tcomment, comm[0], len-1); /* don't copy the final '&' char */
         repeat = 1;
+      }
+    }
+    else
+    {
+      repeat = 1;
+      tcomment[0] = '\0';
     }
 
     for (ii=0, jj=nstart; ii < nkey; ii++, jj++)
@@ -1137,17 +1191,26 @@ int ffpknd( fitsfile *fptr,     /* I - FITS file pointer                    */
     /* by looking to see if the last non-blank character is a '&' char      */
 
     repeat = 0;
-    len = strlen(comm[0]);
 
-    while (len > 0  && comm[0][len - 1] == ' ')
-       len--;                               /* ignore trailing blanks */
-
-    if (comm[0][len - 1] == '&')
+    if (comm)
     {
+      len = strlen(comm[0]);
+
+      while (len > 0  && comm[0][len - 1] == ' ')
+        len--;                               /* ignore trailing blanks */
+
+      if (comm[0][len - 1] == '&')
+      {
         len = minvalue(len, FLEN_COMMENT);
         tcomment[0] = '\0';
         strncat(tcomment, comm[0], len-1); /* don't copy the final '&' char */
         repeat = 1;
+      }
+    }
+    else
+    {
+      repeat = 1;
+      tcomment[0] = '\0';
     }
 
     for (ii=0, jj=nstart; ii < nkey; ii++, jj++)
@@ -1411,7 +1474,8 @@ int ffphtb(fitsfile *fptr,  /* I - FITS file pointer                        */
   Put required Header keywords into the ASCII TaBle:
 */
 {
-    int ii;
+    int ii, ncols, gotmem = 0;
+    long rowlen;
     char tfmt[30], name[FLEN_KEYWORD], comm[FLEN_COMMENT];
 
     if (*status > 0)
@@ -1425,10 +1489,29 @@ int ffphtb(fitsfile *fptr,  /* I - FITS file pointer                        */
     else if (tfields < 0 || tfields > 999)
         return(*status = BAD_TFIELDS);
     
+    rowlen = naxis1;
+
+    if (!tbcol || !tbcol[0] || (!naxis1 && tfields)) /* spacing not defined? */
+    {
+      /* allocate mem for tbcol; malloc can have problems allocating small */
+      /* arrays, so allocate at least 20 bytes */
+
+      ncols = maxvalue(5, tfields);
+      tbcol = (long *) calloc(ncols, sizeof(long));
+
+      if (tbcol)
+      {
+        gotmem = 1;
+
+        /* calculate width of a row and starting position of each column. */
+        /* Each column will be separated by 1 blank space */
+        ffgabc(tfields, tform, 1, &rowlen, tbcol, status);
+      }
+    }
     ffpkys(fptr, "XTENSION", "TABLE", "ASCII table extension", status);
     ffpkyj(fptr, "BITPIX", 8, "8-bit ASCII characters", status);
     ffpkyj(fptr, "NAXIS", 2, "2-dimensional ASCII table", status);
-    ffpkyj(fptr, "NAXIS1", naxis1, "width of table in characters", status);
+    ffpkyj(fptr, "NAXIS1", rowlen, "width of table in characters", status);
     ffpkyj(fptr, "NAXIS2", naxis2, "number of rows in table", status);
     ffpkyj(fptr, "PCOUNT", 0, "no group parameters (required keyword)", status);
     ffpkyj(fptr, "GCOUNT", 1, "one data group (required keyword)", status);
@@ -1443,7 +1526,7 @@ int ffphtb(fitsfile *fptr,  /* I - FITS file pointer                        */
           ffpkys(fptr, name, ttype[ii], comm, status);
         }
 
-        if (tbcol[ii] < 1 || tbcol[ii] > naxis1)
+        if (tbcol[ii] < 1 || tbcol[ii] > rowlen)
            *status = BAD_TBCOL;
 
         sprintf(comm, "beginning column of field %3d", ii + 1);
@@ -1455,22 +1538,31 @@ int ffphtb(fitsfile *fptr,  /* I - FITS file pointer                        */
         ffkeyn("TFORM", ii + 1, name, status);
         ffpkys(fptr, name, tfmt, "Fortran-77 format of field", status);
 
-        if ( *(tunit[ii]) )       /* optional TUNITn keyword */
+        if (tunit)
         {
+         if (*tunit && *(tunit[ii]) )  /* optional TUNITn keyword */
+         {
           ffkeyn("TUNIT", ii + 1, name, status);
           ffpkys(fptr, name, tunit[ii], "physical unit of field", status) ;
+         }
         }
 
         if (*status > 0)
             break;       /* abort loop on error */
     }
 
-    if (extnm[0])       /* optional EXTNAME keyword */
+    if (extnm)
+    {
+      if (extnm[0])       /* optional EXTNAME keyword */
         ffpkys(fptr, "EXTNAME", extnm,
                "name of this ASCII table extension", status);
+    }
 
     if (*status > 0)
         ffpmsg("Failed to write ASCII table header keywords (ffphtb)");
+
+    if (gotmem)
+        free(tbcol); 
 
     return(*status);
 }
@@ -1628,20 +1720,26 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
            ffpkys(fptr, name, tfmt, comm, status);
         }
 
-        if ( *(tunit[ii]) )       /* optional TUNITn keyword */
+        if (tunit)
         {
+         if (*tunit && *(tunit[ii]) ) /* optional TUNITn keyword */
+         {
           ffkeyn("TUNIT", ii + 1, name, status);
           ffpkys(fptr, name, tunit[ii],
              "physical unit of field", status);
+         }
         }
 
         if (*status > 0)
             break;       /* abort loop on error */
     }
 
-    if (extnm[0])       /* optional EXTNAME keyword */
+    if (extnm)
+    {
+      if (extnm[0])       /* optional EXTNAME keyword */
         ffpkys(fptr, "EXTNAME", extnm,
                "name of this binary table extension", status);
+    }
 
     if (*status > 0)
         ffpmsg("Failed to write binary table header keywords (ffphbn)");

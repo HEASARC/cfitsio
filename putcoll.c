@@ -100,7 +100,7 @@ int ffpcnl( fitsfile *fptr,  /* I - FITS file pointer                       */
             long  firstelem, /* I - first vector element to write (1 = 1st) */
             long  nelem,     /* I - number of values to write               */
             char  *array,    /* I - array of values to write                */
-            char  *nulvalue, /* I - array flagging undefined pixels if true */
+            char  nulvalue,  /* I - array flagging undefined pixels if true */
             int  *status)    /* IO - error status                           */
 /*
   Write an array of elements to the specified column of a table.  Any input
@@ -128,7 +128,7 @@ int ffpcnl( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     for (ii = 0; ii < nelem; ii++)
     {
-      if (!nulvalue[ii])  /* is this a good pixel? */
+      if (array[ii] != nulvalue)  /* is this a good pixel? */
       {
          if (nbad)  /* write previous string of bad pixels */
          {

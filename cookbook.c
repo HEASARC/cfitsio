@@ -102,7 +102,7 @@ void writeimage( void )
     /* write another optional keyword to the header */
     /* Note that the ADDRESS of the value is passed in the routine */
     exposure = 1500.;
-    if ( fits_write_key(fptr, TLONG, "EXPOSURE", &exposure,
+    if ( fits_update_key(fptr, TLONG, "EXPOSURE", &exposure,
          "Total Exposure Time", &status) )
          printerror( status );           
 
@@ -260,10 +260,6 @@ void copyhdu( void)
     if ( fits_movabs_hdu(infptr, 3, &hdutype, &status) )
          printerror( status );
 
-    /* create new extension in output file */
-    if ( fits_create_hdu(outfptr, &status) )
-         printerror( status );
- 
     /* copy 3rd HDU from the input file to the output file (to 2nd HDU) */
     if ( fits_copy_hdu(infptr, outfptr, morekeys, &status) )
          printerror( status );
@@ -352,7 +348,7 @@ void selectrows( void )
     } }
 
     /* update the NAXIS2 keyword with the correct number of rows */
-    if ( fits_modify_key_lng(outfptr, "NAXIS2", noutrows, "&", &status) )
+    if ( fits_update_key(outfptr, TLONG, "NAXIS2", &noutrows, 0, &status) )
          printerror( status );
 
     if (fits_close_file(outfptr, &status) || fits_close_file(infptr, &status))
@@ -553,23 +549,12 @@ void printerror( int status)
     /* Print out cfitsio error messages and exit program */
     /*****************************************************/
 
-    char status_str[FLEN_STATUS], errmsg[FLEN_ERRMSG];
-  
+
     if (status)
-      fprintf(stderr, "\n*** Error occurred during program execution ***\n");
-
-    fits_get_errstatus(status, status_str);   /* get the error description */
-    fprintf(stderr, "\nstatus = %d: %s\n", status, status_str);
-
-    /* get first message; null if stack is empty */
-    if ( fits_read_errmsg(errmsg) ) 
     {
-         fprintf(stderr, "\nError message stack:\n");
-         fprintf(stderr, " %s\n", errmsg);
+       fits_report_error(stderr, status); /* print error report */
 
-         while ( fits_read_errmsg(errmsg) )  /* get remaining messages */
-             fprintf(stderr, " %s\n", errmsg);
+       exit( status );    /* terminate the program, returning error status */
     }
-
-    exit( status );       /* terminate the program, returning error status */
+    return;
 }

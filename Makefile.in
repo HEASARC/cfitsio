@@ -15,11 +15,11 @@ CFLAGS=@CFLAGS@
 
 SOURCES = 	buffers.c cfileio.c checksum.c fitscore.c getcol*.c \
 		editcol.c edithdu.c getkey.c modkey.c putcol*.c putkey.c \
-		scalnull.c swapproc.c wcsutil.c compress.c
+		scalnull.c swapproc.c wcsutil.c compress.c f77_wrap.c f77_iter.c
 
 OBJECTS = 	buffers.o cfileio.o checksum.o fitscore.o getcol*.o \
 		editcol.o edithdu.o getkey.o modkey.o putcol*.o putkey.o \
-		scalnull.o swapproc.o wcsutil.o compress.o
+		scalnull.o swapproc.o wcsutil.o compress.o f77_wrap.o f77_iter.o
 
 all:		stand_alone clean
 

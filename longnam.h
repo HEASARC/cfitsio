@@ -5,6 +5,7 @@
 #define fits_write_mem_buff ffwbuf
 #define fits_open_file      ffopen
 #define fits_create_file    ffinit
+#define fits_create_template fftplt
 #define fits_flush_file     ffflus
 #define fits_close_file     ffclos
 #define fits_delete_file    ffdelt
@@ -99,6 +100,7 @@
 #define fits_read_btblhdr      ffghbn
 
 #define fits_update_card       ffucrd
+#define fits_update_key        ffuky
 #define fits_update_key_null   ffukyu
 #define fits_update_key_str    ffukys
 #define fits_update_key_log    ffukyl
@@ -256,7 +258,7 @@
 
 #define fits_read_col        ffgcv
 #define fits_read_col_str    ffgcvs
-#define fits_read_col_log    ffgcl
+#define fits_read_col_log    ffgcvl
 #define fits_read_col_byt    ffgcvb
 #define fits_read_col_usht    ffgcvui
 #define fits_read_col_ulng    ffgcvuj
@@ -304,6 +306,7 @@
 #define fits_write_img_flt    ffppre
 #define fits_write_img_dbl    ffpprd
 
+#define fits_write_imgnull     ffppn
 #define fits_write_imgnull_byt ffppnb
 #define fits_write_imgnull_usht ffppnui
 #define fits_write_imgnull_ulng ffppnuj
@@ -314,6 +317,7 @@
 #define fits_write_imgnull_dbl ffppnd
 
 #define fits_write_img_null ffppru
+#define fits_write_null_img ffpprn
 
 #define fits_write_2d_byt   ffp2db
 #define fits_write_2d_usht   ffp2dui

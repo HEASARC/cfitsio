@@ -45,11 +45,15 @@ which are available from many Internet sites containing OS/2
 software, such as ftp-os2.nmsu.edu/pub/os2/dev/emx/v0.9c
 and ftp.leo.org/pub/comp/os/os2/leo/devtools/emx+gcc.
 
-The MacOS version of the cfitsio library can be built by (1) unbinhex
-and unstuff cfitsio_mac.sit.hqx, and (2) for the PPC,  load CFitsio
-PPCLibrary.(pi) into CodeWarrior 10+ and make.  This builds the cfitsio
-library for PPC.  If you would like to build the test program, load
-CFitsio PPC testprog.(pi) into CodeWarrior 10+ and make.
+The MacOS version of the cfitsio library can be built by (1) un binhex
+and unstuff cfitsio_mac.sit.hqx, (2) put CFitsioPPC.mcp in the cfitsio
+directory, and (3) load CFitsioPPC.mcp into CodeWarrior Pro 2 and make.
+This builds the cfitsio library for PPC.  There are also targets for
+both the test program and the speed test program.
+
+To use the MacOS port you can add Cfitsio PPC.lib to your Codewarrior
+Pro 2 project.  Note that this only has been tested for the PPC and
+probably won't work on 68k macs.
 
 TESTING CFITSIO
 ---------------

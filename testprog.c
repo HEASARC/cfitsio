@@ -2337,7 +2337,7 @@ main()
 
     ffpcl(fptr, TSTRING, 1, 1, 1, 3, onskey, &status);  /* write string values */
 
-    /* initialize arrays of values to write to primary array */
+    /* initialize arrays of values to write */
     
     for (ii = 0; ii < npixels; ii++)
     {
@@ -2415,36 +2415,36 @@ main()
 
     printf("Move to extensions by name and version number: (ffmnhd)\n");
     extvers = 1;
-    ffmnhd(fptr, binname, (int) extvers, &status);
+    ffmnhd(fptr, ANY_HDU, binname, (int) extvers, &status);
     ffghdn(fptr, &hdunum);
     printf(" %s, %d = hdu %d, %d\n", binname, extvers, hdunum, status);
     extvers = 3;
-    ffmnhd(fptr, binname, (int) extvers, &status);
+    ffmnhd(fptr, ANY_HDU, binname, (int) extvers, &status);
     ffghdn(fptr, &hdunum);
     printf(" %s, %d = hdu %d, %d\n", binname, extvers, hdunum, status);
     extvers = 4;
-    ffmnhd(fptr, binname, (int) extvers, &status);
+    ffmnhd(fptr, ANY_HDU, binname, (int) extvers, &status);
     ffghdn(fptr, &hdunum);
     printf(" %s, %d = hdu %d, %d\n", binname, extvers, hdunum, status);
 
 
     strcpy(tblname, "Test-ASCII");
     extvers = 2;
-    ffmnhd(fptr, tblname, (int) extvers, &status);
+    ffmnhd(fptr, ANY_HDU, tblname, (int) extvers, &status);
     ffghdn(fptr, &hdunum);
     printf(" %s, %d = hdu %d, %d\n", tblname, extvers, hdunum, status);
 
     strcpy(tblname, "new_table");
     extvers = 5;
-    ffmnhd(fptr, tblname, (int) extvers, &status);
+    ffmnhd(fptr, ANY_HDU, tblname, (int) extvers, &status);
     ffghdn(fptr, &hdunum);
     printf(" %s, %d = hdu %d, %d\n", tblname, extvers, hdunum, status);
     extvers = 0;
-    ffmnhd(fptr, binname, (int) extvers, &status);
+    ffmnhd(fptr, ANY_HDU, binname, (int) extvers, &status);
     ffghdn(fptr, &hdunum);
     printf(" %s, %d = hdu %d, %d\n", binname, extvers, hdunum, status);
     extvers = 17;
-    ffmnhd(fptr, binname, (int) extvers, &status);
+    ffmnhd(fptr, ANY_HDU, binname, (int) extvers, &status);
     ffghdn(fptr, &hdunum);
     printf(" %s, %d = hdu %d, %d", binname, extvers, hdunum, status);
     printf (" (expect a 301 error status here)\n");

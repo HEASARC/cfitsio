@@ -79,6 +79,84 @@ int ffppr(  fitsfile *fptr,  /* I - FITS file pointer                       */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffppn(  fitsfile *fptr,  /* I - FITS file pointer                       */
+            int  datatype,   /* I - datatype of the value                   */
+            long  firstelem, /* I - first vector element to write(1 = 1st)  */
+            long  nelem,     /* I - number of values to write               */
+            void  *array,    /* I - array of values that are written        */
+            void  *nulval,   /* I - pointer to the null value               */
+            int  *status)    /* IO - error status                           */
+/*
+  Write an array of values to the primary array.  The datatype of the
+  input array is defined by the 2nd argument. Data conversion
+  and scaling will be performed if necessary (e.g, if the datatype of
+  the FITS array is not the same as the array being written).
+*/
+{
+    long row = 1;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (nulval == NULL)  /* null value not defined? */
+    {
+        ffppr(fptr, datatype, firstelem, nelem, array, status);
+        return(*status);
+    }
+
+    /*
+      the primary array is represented as a binary table:
+      each group of the primary array is a row in the table,
+      where the first column contains the group parameters
+      and the second column contains the image itself.
+    */
+
+    if (datatype == TBYTE)
+    {
+      ffpcnb(fptr, 2, row, firstelem, nelem, (unsigned char *) array, 
+             *(unsigned char *) nulval, status);
+    }
+    else if (datatype == TUSHORT)
+    {
+      ffpcnui(fptr, 2, row, firstelem, nelem, (unsigned short *) array,
+              *(unsigned short *) nulval,status);
+    }
+    else if (datatype == TSHORT)
+    {
+      ffpcni(fptr, 2, row, firstelem, nelem, (short *) array,
+             *(short *) nulval, status);
+    }
+    else if (datatype == TINT)
+    {
+      ffpcnk(fptr, 2, row, firstelem, nelem, (int *) array,
+             *(int *) nulval, status);
+    }
+    else if (datatype == TULONG)
+    {
+      ffpcnuj(fptr, 2, row, firstelem, nelem, (unsigned long *) array,
+              *(unsigned long *) nulval,status);
+    }
+    else if (datatype == TLONG)
+    {
+      ffpcnj(fptr, 2, row, firstelem, nelem, (long *) array,
+             *(long *) nulval, status);
+    }
+    else if (datatype == TFLOAT)
+    {
+      ffpcne(fptr, 2, row, firstelem, nelem, (float *) array,
+             *(float *) nulval, status);
+    }
+    else if (datatype == TDOUBLE)
+    {
+      ffpcnd(fptr, 2, row, firstelem, nelem, (double *) array,
+             *(double *) nulval, status);
+    }
+    else
+      *status = BAD_DATATYPE;
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffpcl(  fitsfile *fptr,  /* I - FITS file pointer                       */
             int  datatype,   /* I - datatype of the value                   */
             int  colnum,     /* I - number of column to write (1 = 1st col) */
@@ -187,6 +265,13 @@ int ffpcn(  fitsfile *fptr,  /* I - FITS file pointer                       */
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
+    if (nulval == NULL)  /* null value not defined? */
+    {
+        ffpcl(fptr, datatype, colnum, firstrow, firstelem, nelem, array,
+              status);
+        return(*status);
+    }
+
     if (datatype == TBYTE)
     {
       ffpcnb(fptr, colnum, firstrow, firstelem, nelem, (unsigned char *) array,
@@ -229,10 +314,8 @@ int ffpcn(  fitsfile *fptr,  /* I - FITS file pointer                       */
     }
     else if (datatype == TLOGICAL)
     {
-       /*  there is a mismatch in the nulval pointer!!!  */
-       /*  need to come back and fix this before this can be used */
       ffpcnl(fptr, colnum, firstrow, firstelem, nelem, (char *) array,
-             (char *) nulval, status);
+             *(char *) nulval, status);
     }
     else if (datatype == TSTRING)
     {
@@ -751,6 +834,22 @@ int ffiter(int n_cols,
           }
           break;
 
+         case TINT:
+          cols[jj].array = calloc(ntodo + 1, sizeof(int));
+          col[jj].nullsize  = sizeof(int);  /* number of bytes per value */
+
+          if (typecode == TBYTE || typecode == TSHORT || typecode == TLONG)
+          {
+              tnull = minvalue(tnull, INT_MAX);
+              tnull = maxvalue(tnull, INT_MIN);
+              col[jj].null.intnull = (int) tnull;
+          }
+          else
+          {
+              col[jj].null.intnull = INT_MIN;  /* use minimum as null */
+          }
+          break;
+
          case TLONG:
           cols[jj].array = calloc(ntodo + 1, sizeof(long));
           col[jj].nullsize  = sizeof(long);  /* number of bytes per value */
@@ -940,10 +1039,10 @@ int ffiter(int n_cols,
       /* call work function */
       *status = work_fn(totaln, offset, frow, ntodo, n_cols, cols, userPointer);
 
-      if (*status > 0 && *status < 600 ) 
-         break;   /* looks like an internal CFITSIO error; quit immediately */
+      if (*status > 0 || *status < -1 ) 
+         break;   /* looks like an error occurred; quit immediately */
 
-      /*  write output columns to FITS file(s) before quiting on other error */
+      /*  write output columns  before quiting if status = -1 */
       tstatus = 0;
       for (jj = 0; jj < n_cols; jj++)
       {

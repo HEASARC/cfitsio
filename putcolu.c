@@ -38,6 +38,27 @@ int ffppru( fitsfile *fptr,  /* I - FITS file pointer                       */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffpprn( fitsfile *fptr,  /* I - FITS file pointer                       */
+            long  firstelem,  /* I - first vector element to write(1 = 1st) */
+            long  nelem,      /* I - number of values to write              */
+            int  *status)     /* IO - error status                          */
+/*
+  Write null values to the primary array. (Doesn't support groups).
+*/
+{
+    long row = 1;
+
+    /*
+      the primary array is represented as a binary table:
+      each group of the primary array is a row in the table,
+      where the first column contains the group parameters
+      and the second column contains the image itself.
+    */
+
+    ffpclu(fptr, 2, row, firstelem, nelem, status);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
             int  colnum,     /* I - number of column to write (1 = 1st col) */
             long  firstrow,  /* I - first row to write (1 = 1st row)        */

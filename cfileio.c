@@ -296,7 +296,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
 
         if ((*fptr)->bufftype != MEMBUFF) 
         {
-            if (finalsize == 0)  /* unknow uncompressed file size? */
+            if (finalsize == 0)  /* unknown uncompressed file size? */
             {
                 finalsize = filesize * 3;  /* estimate final size */
             }
@@ -368,6 +368,9 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
             free((*fptr)->filename);
             free(*fptr);
             *fptr = 0;              /* return null file pointer */
+            ffpmsg("ffopen failed to find and/or open the following file:");
+            ffpmsg(&filename[ii]);
+
             return(*status = FILE_NOT_OPENED);
         }
 
@@ -406,6 +409,99 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
         free(*fptr);
         *fptr = 0;              /* return null file pointer */
     }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fftplt(fitsfile **fptr,      /* O - FITS file pointer                   */
+           const char *filename, /* I - name of file to create              */
+           const char *tempname, /* I - name of template file               */
+           int *status)          /* IO - error status                       */
+/*
+  Create and initialize a new FITS file  based on a template file 
+*/
+{
+    FILE *diskfile;
+    fitsfile *tptr;
+    int tstatus, nkeys, nadd, ii, newhdu, slen, keytype;
+    char card[FLEN_CARD], template[161];
+
+    if (*status > 0)
+        return(*status);
+
+    if ( ffinit(fptr, filename, status) )
+        return(*status);
+
+    if (template == NULL || *template == '\0')     /* no template file? */
+        return(*status);
+
+    ffopen(&tptr, tempname, READONLY, &tstatus);  /* try opening template */
+
+    if (tstatus)  /* not a FITS file, so treat it as an ASCII template */
+    {
+        ffxmsg(-2, card);  /* clear the  error message */
+
+        diskfile = fopen(tempname,"r"); 
+        if (!diskfile)          /* couldn't open file */
+        {
+            ffpmsg("Could not open template file (fftplt)");
+            return(*status = FILE_NOT_OPENED); 
+        }
+
+        newhdu = 0;
+        while (fgets(template, 160, diskfile) )  /* get next template line */
+        {
+          template[160] = '\0';      /* make sure string is terminated */
+          slen = strlen(template);   /* get string length */
+          template[slen - 1] = '\0';  /* over write the 'newline' char */
+
+          if (ffgthd(template, card, &keytype, status) > 0) /* parse template */
+             break;
+
+          if (keytype == 2)       /* END card; start new HDU */
+          {
+             newhdu = 1;
+          }
+          else
+          {
+             if (newhdu)
+             {
+                ffcrhd(*fptr, status);      /* create empty new HDU */
+                newhdu = 0;
+             }
+             ffprec(*fptr, card, status);  /* write the card */
+          }
+        }
+
+        fclose(diskfile);   /* close the template file */
+        ffmahd(*fptr, 1, 0, status);   /* move back to the primary array */
+        return(*status);
+    }
+    else  /* template is a valid FITS file */
+    {
+        ffghsp(*fptr, &nkeys, &nadd, status); /* get no. of keywords */
+
+        while (*status <= 0)
+        {
+           for (ii = 1; ii <= nkeys; ii++)   /* copy keywords */
+           {
+              ffgrec(*fptr,  ii, card, status);
+              ffprec(tptr, card, status);
+           }
+
+           ffmrhd(tptr, 1, 0, status); /* move to next HDU until error */
+           ffcrhd(*fptr, status);      /* create empty new HDU in output file */
+        }
+        ffclos(tptr, status);       /* close the template file */
+    }
+
+    if (*status = END_OF_FILE)
+    {
+       ffxmsg(-2, card);  /* clear the end of file error message */
+       *status = 0;              /* expected error condition */
+    }
+
+    ffmahd(*fptr, 1, 0, status);   /* move to the primary array */
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -1042,20 +1138,12 @@ void ffrprt( FILE *stream, int status)
   
     if (status)
     {
-      fprintf(stream, "\n*** Error occurred during program execution ***\n");
 
       fits_get_errstatus(status, status_str);  /* get the error description */
-      fprintf(stream, "\nstatus = %d: %s\n", status, status_str);
+      fprintf(stream, "\nFITSIO status = %d: %s\n", status, status_str);
 
-      /* get first message; null if stack is empty */
-      if ( fits_read_errmsg(errmsg) ) 
-      {
-         fprintf(stream, "\nError message stack:\n");
-         fprintf(stream, " %s\n", errmsg);
-
-         while ( fits_read_errmsg(errmsg) )  /* get remaining messages */
-             fprintf(stream, " %s\n", errmsg);
-      }
+      while ( fits_read_errmsg(errmsg) )  /* get error stack messages */
+             fprintf(stream, "%s\n", errmsg);
     }
     return; 
 }

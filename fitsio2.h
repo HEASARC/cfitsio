@@ -270,6 +270,9 @@ int ffread(fitsfile *fptr, long nbytes, void *buffer,
 int ffwrite(fitsfile *fptr, long nbytes, void *buffer,
             int *status);
  
+int ffgcll(fitsfile *fptr, int colnum, long firstrow, long firstelem, long
+           nelem, int nultyp, char nulval, char *array, char *nularray,
+           int *anynul, int *status);
 int ffgcls(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, int nultyp, char *nulval,
            char **array, char *nularray, int *anynul, int  *status);

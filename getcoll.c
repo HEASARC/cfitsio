@@ -14,6 +14,29 @@
 #include <string.h>
 #include "fitsio2.h"
 /*--------------------------------------------------------------------------*/
+int ffgcvl( fitsfile *fptr,   /* I - FITS file pointer                       */
+            int  colnum,      /* I - number of column to read (1 = 1st col)  */
+            long  firstrow,   /* I - first row to read (1 = 1st row)         */
+            long  firstelem,  /* I - first vector element to read (1 = 1st)  */
+            long  nelem,      /* I - number of values to read                */
+            char  nulval,     /* I - value for null pixels                   */
+            char *array,      /* O - array of values                         */
+            int  *anynul,     /* O - set to 1 if any values are null; else 0 */
+            int  *status)     /* IO - error status                           */
+/*
+  Read an array of logical values from a column in the current FITS HDU.
+  Any undefined pixels will be set equal to the value of 'nulval' unless
+  nulval = 0 in which case no checks for undefined pixels will be made.
+*/
+{
+    char cdummy;
+
+    ffgcll( fptr, colnum, firstrow, firstelem, nelem, 1, nulval, array,
+            &cdummy, anynul, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffgcl(  fitsfile *fptr,   /* I - FITS file pointer                       */
             int  colnum,      /* I - number of column to read (1 = 1st col)  */
             long  firstrow,   /* I - first row to read (1 = 1st row)         */
@@ -22,18 +45,17 @@ int ffgcl(  fitsfile *fptr,   /* I - FITS file pointer                       */
             char *array,      /* O - array of values                         */
             int  *status)     /* IO - error status                           */
 /*
+  !!!! THIS ROUTINE IS DEPRECATED AND SHOULD NOT BE USED !!!!!!
+                  !!!! USE ffgcvl INSTEAD  !!!!!!
   Read an array of logical values from a column in the current FITS HDU.
   No checking for null values will be performed.
 */
 {
-    char cdummy[2];
-    int idummy;
+    char nulval = 0;
+    int anynul;
 
-    cdummy[0] = 127;   /* special flag value to signal no null detection */
-    idummy = 127;
-
-    ffgcfl( fptr, colnum, firstrow, firstelem, nelem, array,
-            cdummy, &idummy, status);
+    ffgcvl( fptr, colnum, firstrow, firstelem, nelem, nulval, array,
+            &anynul, status);
 
     return(*status);
 }
@@ -43,6 +65,31 @@ int ffgcfl( fitsfile *fptr,   /* I - FITS file pointer                       */
             long  firstrow,   /* I - first row to read (1 = 1st row)         */
             long  firstelem,  /* I - first vector element to read (1 = 1st)  */
             long  nelem,      /* I - number of values to read                */
+            char *array,      /* O - array of values                         */
+            char *nularray,   /* O - array of flags = 1 if nultyp = 2        */
+            int  *anynul,     /* O - set to 1 if any values are null; else 0 */
+            int  *status)     /* IO - error status                           */
+/*
+  Read an array of logical values from a column in the current FITS HDU.
+*/
+{
+    char nulval = 0;
+
+    ffgcll( fptr, colnum, firstrow, firstelem, nelem, 2, nulval, array,
+            nularray, anynul, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
+            int  colnum,      /* I - number of column to read (1 = 1st col)  */
+            long  firstrow,   /* I - first row to read (1 = 1st row)         */
+            long  firstelem,  /* I - first vector element to read (1 = 1st)  */
+            long  nelem,      /* I - number of values to read                */
+            int   nultyp,     /* I - null value handling code:               */
+                              /*     1: set undefined pixels = nulval        */
+                              /*     2: set nularray=1 for undefined pixels  */
+            char nulval,      /* I - value for null pixels if nultyp = 1     */
             char *array,      /* O - array of values                         */
             char *nularray,   /* O - array of flags = 1 if nultyp = 2        */
             int  *anynul,     /* O - set to 1 if any values are null; else 0 */
@@ -63,15 +110,14 @@ int ffgcfl( fitsfile *fptr,   /* I - FITS file pointer                       */
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
-    if (*anynul == 127 && *nularray == 127)
-        nulcheck = 0;      /* do not test for null values */
+    *anynul = 0;
+    if (nultyp == 2)      
+       memset(nularray, 0, nelem);   /* initialize nullarray */
 
-    else
-    {
-        nulcheck = 1;
-        *anynul = 0;
-        memset(nularray, 0, nelem);   /* initialize nullarray */
-    }
+    nulcheck = nultyp; /* by default, check for null values in the FITS file */
+
+    if (nultyp == 1 && nulval == 0)
+       nulcheck = 0;    /* calling routine does not want to check for nulls */
 
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
@@ -84,6 +130,15 @@ int ffgcfl( fitsfile *fptr,   /* I - FITS file pointer                       */
     if (tcode != TLOGICAL)   
         return(*status = NOT_LOGICAL_COL);
  
+    /*------------------------------------------------------------------*/
+    /*  Decide whether to check for null values in the input FITS file: */
+    /*------------------------------------------------------------------*/
+
+    nulcheck = nultyp; /* by default, check for null values in the FITS file */
+
+    if (nultyp == 1 && nulval == 0)
+       nulcheck = 0;    /* calling routine does not want to check for nulls */
+
     /*---------------------------------------------------------------------*/
     /*  Now read the logical values from the FITS column.                  */
     /*---------------------------------------------------------------------*/
@@ -112,10 +167,15 @@ int ffgcfl( fitsfile *fptr,   /* I - FITS file pointer                       */
           array[next] = 1;
         else if (buffer[ii] =='F') 
           array[next] = 0;
-        else if (nulcheck)
+        else
         {
-          nularray[next] = 1;    /* this is an undefined pixel value */
+          array[next] = nulval;  /* set null values to input nulval */
           *anynul = 1;
+
+          if (nulcheck == 2)
+          {
+            nularray[next] = 1;    /* set flags */
+          }
         }
       }
 

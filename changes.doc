@@ -1,6 +1,25 @@
              Log of Changes Made to CFITSIO
 
-Version 1.33 - December 1997
+
+
+Version 1.4 - 6 Feb 1998 
+
+   - major restructuring of the CFITSIO User's Guide
+
+   - added the new 'iterator' function.  The fortran wrapper is
+     in f77_iter.c for now.
+
+   - enhanced ffcrtb so that it writes a dummy primary array
+     if none currently exists before appending the table.
+
+   - removed the ffgcl routine and replaced it with ffgcvl 
+
+   - modified ffpcnl to just take a single input null value instead
+     of an entire array of null value flags.
+
+   - modified ffcmps and ffgnxk so that, for example, the string 'rate' 
+     is not considered a match to the string 'rate2', and 'rate*'
+     is a match to the string 'rate'.
 
    - modified ffgrsz to also work with images, in which case
      it returns the optimum number of pixels to process at
@@ -13,6 +32,11 @@ Version 1.33 - December 1997
      eventually replace the Fortran FITSIO library.
 
    - added new routines:
+     ffppn - generic write primary array with null values
+     ffpprn - write null values to primary array
+
+     ffuky - 'update' a keyword value, with any specified datatype.
+
      ffrprt - write out report of error status and error messages
      ffiter - apply a user function iteratively to all the rows of a table
      ffpkyc - write complex-valued keyword
@@ -43,7 +67,7 @@ Version 1.33 - December 1997
      ffcpky - copy an indexed keyword from one HDU to another
      ffpcnl - write logical values, including nulls, to binary table
      ffpcns - write string values,  including nulls, to table
-     ffmnhd - move to HDU with given EXTNAME and EXTVERS values
+     ffmnhd - move to HDU with given exttype, EXTNAME and EXTVERS values
      ffthdu - return the total number of HDUs in the file
      ffghdt - return the type of the  CHDU
      ffflnm - return the name of the open FITS file
@@ -80,7 +104,8 @@ Version 1.32 - 21 November 1997 (internal release only)
    - modified ffgphd to tolerate minor violations of the FITS 
      standard in the format of the XTENSION = 'IMAGE   '
      keyword when reading FITS files.  Extra trailing spaces
-     are now allowed in the keyword value.
+     are now allowed in the keyword value.  (FITS standard
+     will be changed so that this is not a violation).
 
 Version 1.31 - 4 November 1997 (internal release only)
 

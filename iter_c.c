@@ -3,159 +3,166 @@
 #include <stdlib.h>
 #include "fitsio.h"
 
+/*   Globally defined parameters */
+
+long xsize = 480; /* size of the histogram image */
+long ysize = 480;
+long xbinsize = 32;
+long ybinsize = 32;
+
 main()
 {
-    extern flux_rate(); /* external work function is passed to the iterator */
+/*
+    This example program illustrates how to use the CFITSIO iterator function.
+
+    This program creates a 2D histogram of the X and Y columns of an event
+    list.  The 'main' routine just creates the empty new image, then executes
+    the 'writehisto' work function by calling the CFITSIO iterator function.
+
+    'writehisto' opens the FITS event list that contains the X and Y columns.
+    It then calls a second work function, calchisto, (by recursively calling
+    the CFITSIO iterator function) which actually computes the 2D histogram.
+*/
+    extern writehisto();  /* external work function passed to the iterator */
+    extern long xsize, ysize;  /* size of image */
+
     fitsfile *fptr;
-    iteratorCol cols[3];
-    int n_cols;
-    long rows_per_loop, offset;
+    iteratorCol cols[1];
+    int n_cols, status = 0;
+    long n_per_loop, offset, naxes[2];
+    char filename[]  = "histoimg.fit";     /* name of FITS image */
 
-    int status = 0;
-    char filename[]  = "iterfile.fit";     /* name of rate FITS file */
+    remove(filename);   /* delete previous version of the file if it exists */
+    fits_create_file(&fptr, filename, &status);  /* create new output image */
 
-    n_cols  = 3;   /* number of columns */
+    naxes[0] = xsize;
+    naxes[1] = ysize;
+    fits_create_img(fptr, LONG_IMG, 2, naxes, &status); /* create primary HDU */
 
-    /* open the file */
-    fits_open_file(&fptr, filename, READWRITE, &status);
-
-    /* move to the HDU containing the rate table */
-    fits_movnam_hdu(fptr, "RATE", 0, &status);
+    n_cols  = 1;   /* number of columns */
 
     /* define input column structure members for the iterator function */
+    fits_iter_set_by_name(&cols[0], fptr, " ", TLONG, OutputCol);
 
-    /* all the columns are in the same FITS file */
-    cols[0].fptr  = fptr;
-    cols[1].fptr  = fptr;
-    cols[2].fptr  = fptr;
+    n_per_loop = -1;  /* force whole array to be passed at one time */
+    offset = 0;       /* don't skip over any pixels */
 
-    /* define the desired columns by name */
-    strcpy(cols[0].colname, "COUNTS");    
-    strcpy(cols[1].colname, "TIME");    
-    strcpy(cols[2].colname, "RATE");    
+    /* execute the function to create and write the 2D histogram */
+    printf("Calling writehisto iterator work function... %d\n", status);
 
-    /* leave column numbers undefined */
-    cols[0].colnum = 0;    
-    cols[1].colnum = 0;    
-    cols[2].colnum = 0;    
+    fits_iterate_data(n_cols, cols, offset, n_per_loop,
+                      writehisto, 0L, &status);
 
-    /* define the desired datatype for each column */
-    /* convert all to doubles */
-    cols[0].datatype = TDOUBLE;
-    cols[1].datatype = TDOUBLE;
-    cols[2].datatype = TDOUBLE;
-
-    /* define whether columns are input, input/output, or output only */
-    cols[0].iotype = InputCol;    
-    cols[1].iotype = InputCol;    
-    cols[2].iotype = OutputCol;
-
-    rows_per_loop = 0;  /* use default optimum number of rows */
-    offset = 0;         /* process all the rows */
-
-    /* apply the rate function to each row of the table */
-    printf("Calling iterator function...%d\n", status);
-
-    fits_iterate_data(n_cols, cols, offset, rows_per_loop,
-                      flux_rate, 0L, &status);
-
-    fits_close_file(fptr, &status);      /* all done */
+    fits_close_file(fptr, &status);      /* all done; close the file */
 
     if (status)
         fits_report_error(stderr, status);  /* print out error messages */
+    else
+        printf("Program completed successfully.\n");
 
     return(status);
 }
 /*--------------------------------------------------------------------------*/
-int flux_rate(long totalrows, long offset, long firstrow, long nrows,
-             int ncols, iteratorCol *cols, void *user_strct ) 
-
+int writehisto(long totaln, long offset, long firstn, long nvalues,
+             int narrays, iteratorCol *histo, void *userPointer)
 /*
-   Sample interator function that calculates the output flux 'rate' column
-   by dividing the input 'counts' by the 'time' column.
-   It also applies a constant deadtime correction factor if the 'deadtime'
-   keyword exists.  Finally, this creates or updates the 'LIVETIME'
-   keyword with the sum of all the individual integration times.
+   Interator work function that writes out the 2D histogram.
+   The histogram values are calculated by another work function, calchisto.
 */
 {
-    int ii, status = 0;
+    extern calchisto();  /* external function called by the iterator */
+    long *histogram;
+    fitsfile *tblptr;
+    iteratorCol cols[2];
+    int n_cols, status = 0;
+    long rows_per_loop, rowoffset;
+    char filename[]  = "iter_c.fit";     /* name of FITS table */
 
-    /* declare variables static to preserve their values between calls */
-    static double *counts;
-    static double *interval;
-    static double *rate;
-    static double deadtime, livetime; /* must preserve values between calls */
+    /* do sanity checking of input values */
+    if (totaln != nvalues)
+        return(-1);  /* whole image must be passed at one time */
+
+    if (narrays != 1)
+        return(-2);  /* number of images is incorrect */
+
+    if (fits_iter_get_datatype(&histo[0]) != TLONG)
+        return(-3);  /* input array has wrong data type */
+
+    /* assign the FITS array pointer to the global histogram pointer */
+    histogram = (long *) fits_iter_get_array(&histo[0]);
+
+    /* open the file and move to the table containing the X and Y columns */
+    fits_open_file(&tblptr, filename, READONLY, &status);
+    fits_movnam_hdu(tblptr, BINARY_TBL, "EVENTS", 0, &status);
+    if (status)
+       return(status);
+   
+    n_cols = 2; /* number of columns */
+
+    /* define input column structure members for the iterator function */
+    fits_iter_set_by_name(&cols[0], tblptr, "X", TLONG,  InputCol);
+    fits_iter_set_by_name(&cols[1], tblptr, "Y", TLONG, InputCol);
+
+    rows_per_loop = 0;  /* take default number of rows per interation */
+    rowoffset = 0;     
+
+    /* calculate the histogram */
+    printf("Calling calchisto iterator work function... %d\n", status);
+
+    fits_iterate_data(n_cols, cols, rowoffset, rows_per_loop,
+                      calchisto, histogram, &status);
+
+    fits_close_file(tblptr, &status);      /* all done */
+    return(status);
+}
+/*--------------------------------------------------------------------------*/
+int calchisto(long totalrows, long offset, long firstrow, long nrows,
+             int ncols, iteratorCol *cols, void *userPointer)
+
+/*
+   Interator work function that calculates values for the 2D histogram.
+*/
+{
+    extern long xsize, ysize, xbinsize, ybinsize;
+    long ii, ihisto, xbin, ybin;
+    static long *xcol, *ycol, *histogram;  /* static to preserve values */
 
     /*--------------------------------------------------------*/
     /*  Initialization procedures: execute on the first call  */
     /*--------------------------------------------------------*/
     if (firstrow == 1)
     {
-       if (ncols != 3)
-           return(-1);  /* number of columns incorrect */
+        /* do sanity checking of input values */
+       if (ncols != 2)
+         return(-3);  /* number of arrays is incorrect */
 
-       if (cols[0].datatype != TDOUBLE ||
-           cols[1].datatype != TDOUBLE ||
-           cols[2].datatype != TDOUBLE )
-           return(-2);  /* bad data type */
+       if (fits_iter_get_datatype(&cols[0]) != TLONG ||
+           fits_iter_get_datatype(&cols[1]) != TLONG)
+         return(-4);  /* wrong datatypes */
 
-       /* assign the input pointers to the appropriate arrays and null ptrs*/
-       counts       = (double *) cols[0].array;
-       interval     = (double *) cols[1].array;
-       rate         = (double *) cols[2].array;
+       /* assign the input array points to the X and Y arrays */
+       xcol = (long *) fits_iter_get_array(&cols[0]);
+       ycol = (long *) fits_iter_get_array(&cols[1]);
+       histogram = (long *) userPointer;
 
-       livetime = 0;  /* initialize the total integration time */
-
-       /* try to get the deadtime keyword value */
-       fits_read_key_dbl(cols[0].fptr, "DEADTIME", &deadtime, '\0', &status);
-       if (status)
-       {
-           deadtime = 1.0;  /* default deadtime if keyword doesn't exist */
-       }
-       else if (deadtime < 0. || deadtime > 1.0)
-       {
-           return(-1);    /* bad deadtime value */
-       }
-
-       printf("deadtime = %f\n", deadtime);
+       /* initialize the histogram image pixels = 0 */
+       for (ii = 0; ii <= xsize * ysize; ii++)
+           histogram[ii] = 0L;
     }
 
-    /*--------------------------------------------*/
-    /*  Main loop: process all the rows of data */
-    /*--------------------------------------------*/
+    /*------------------------------------------------------------------*/
+    /*  Main loop: increment the 2D histogram at position of each event */
+    /*------------------------------------------------------------------*/
 
-    /*  NOTE: 1st element of array is the null pixel value!  */
-    /*  Loop from 1 to nrows, not 0 to nrows - 1.  */
-
-    /* this version tests for null values */
-    rate[0] = DOUBLENULLVALUE;   /* define the value that represents null */
-
-    for (ii = 1; ii <= nrows; ii++)
+    for (ii = 1; ii <= nrows; ii++) 
     {
-       if (counts[ii] == counts[0])   /*  undefined counts value? */
-       {
-           rate[ii] = DOUBLENULLVALUE;
-       }
-       else if (interval[ii] > 0.)
-       {
-           rate[ii] = counts[ii] / interval[ii] / deadtime;
-           livetime += interval[ii];  /* accumulate total integration time */
-       }
-       else
-           return(-2);  /* bad integration time */
+        xbin = xcol[ii] / xbinsize;
+        ybin = ycol[ii] / ybinsize;
+
+        ihisto = ( ybin * xsize ) + xbin + 1;
+        histogram[ihisto]++;
     }
 
-    /*-------------------------------------------------------*/
-    /*  Clean up procedures:  after processing all the rows  */
-    /*-------------------------------------------------------*/
-
-    if (firstrow + nrows - 1 == totalrows)
-    {
-        /*  update the LIVETIME keyword value */
-
-        fits_update_key_fixdbl(cols[0].fptr, "LIVETIME", livetime, 3, 
-                 "total integration time", &status);
-        printf("livetime = %f\n", livetime);
-   }
-    return(0);  /* return successful status */
+    return(0);
 }
+

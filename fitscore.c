@@ -23,8 +23,9 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-   *version = 1.33;  /* 16 Dec 1997 */
+   *version = 1.40;  /* 6 Feb 1998 */
 
+ /*   *version = 1.33;   16 Dec 1997 (internal release only) */
  /*   *version = 1.32;   21 Nov 1997 (internal release only) */
  /*   *version = 1.31;    4 Nov 1997 (internal release only) */
  /*   *version = 1.30;   11 Sep 1997 */
@@ -364,6 +365,9 @@ void ffpmsg(const char *err_message)
 */
 {
     ffxmsg(1, (char *)err_message);
+
+/* printf("%s\n", err_message); */
+
     return;
 }
 /*--------------------------------------------------------------------------*/
@@ -601,10 +605,13 @@ void ffmkky(char *keyname,   /* I - keyword name    */
             strncat(card, value, 70);       /* append the value string */
             len = strlen(card);
 
-            if (comm[0] != 0)
+            if (comm)
             {
+              if (comm[0] != 0)
+              {
                 for (ii = len; ii < 30; ii++)
                   strcat(card, " "); /* add spaces so field ends in col 30 */
+              }
             }
         }
         else
@@ -616,16 +623,22 @@ void ffmkky(char *keyname,   /* I - keyword name    */
         }
 
         len = strlen(card);
-        if ((len < 77) && ( strlen(comm) > 0) )  /* room for a comment? */
+        if (comm)
         {
+          if ((len < 77) && ( strlen(comm) > 0) )  /* room for a comment? */
+          {
             strcat(card, " / ");   /* append comment separator */
             strncat(card, comm, 77 - len); /* append comment (what fits) */
-        } 
+          } 
+        }
     }
     else
     {
         card[8] = ' ';   /* keywords with no value have no equal sign */ 
-        strncat(card, comm, 70);   /* append comment (whatever fits) */
+        if (comm)
+        {
+          strncat(card, comm, 70);   /* append comment (whatever fits) */
+        }
     }
 }
 /*--------------------------------------------------------------------------*/
@@ -1072,8 +1085,8 @@ int ffgthd(char *tmplt, /* I - input header template string */
 }
 /*--------------------------------------------------------------------------*/
 int ffasfm(char *tform,    /* I - format code from the TFORMn keyword */
-           int *datacode,  /* O - numerical datatype code */
-           long *width,    /* O - width of the field, in chars */
+           int *dtcode,    /* O - numerical datatype code */
+           long *twidth,   /* O - width of the field, in chars */
            int *decimals,  /* O - number of decimal places (F, E, D format) */
            int *status)    /* IO - error status      */
 {
@@ -1081,17 +1094,22 @@ int ffasfm(char *tform,    /* I - format code from the TFORMn keyword */
   parse the ASCII table TFORM column format to determine the data
   type, the field width, and number of decimal places (if relevant)
 */
-    int ii;
-    long longval;
+    int ii, datacode;
+    long longval, width;
     float fwidth;
     char *form, temp[FLEN_VALUE], message[FLEN_ERRMSG];
 
     if (*status > 0)
         return(*status);
 
-    *datacode = 0;
-    *width = 0;
-    *decimals = 0;
+    if (dtcode)
+        *dtcode = 0;
+
+    if (twidth)
+        *twidth = 0;
+
+    if (decimals)
+        *decimals = 0;
 
     ii = 0;
     while (tform[ii] != 0 && tform[ii] == ' ') /* find first non-blank char */
@@ -1112,43 +1130,46 @@ int ffasfm(char *tform,    /* I - format code from the TFORMn keyword */
     /*       determine default datatype code         */
     /*-----------------------------------------------*/
     if (form[0] == 'A')
-        *datacode = TSTRING;
+        datacode = TSTRING;
     else if (form[0] == 'I')
-        *datacode = TLONG;
+        datacode = TLONG;
     else if (form[0] == 'F')
-        *datacode = TFLOAT;
+        datacode = TFLOAT;
     else if (form[0] == 'E')
-        *datacode = TFLOAT;
+        datacode = TFLOAT;
     else if (form[0] == 'D')
-        *datacode = TDOUBLE;
+        datacode = TDOUBLE;
     else
     {
         sprintf(message,
-        "Illegal ASCII table TFORMn datatype: \'%s\'", tform);
+                "Illegal ASCII table TFORMn datatype: \'%s\'", tform);
         ffpmsg(message);
         return(*status = BAD_TFORM_DTYPE);
     }
 
+    if (dtcode)
+       *dtcode = datacode;
+
     form++;  /* point to the start of field width */
 
-    if (*datacode == TSTRING || *datacode == TLONG)
+    if (datacode == TSTRING || datacode == TLONG)
     { 
         /*-----------------------------------------------*/
         /*              A or I data formats:             */
         /*-----------------------------------------------*/
 
-        if (ffc2ii(form, width, status) <= 0)  /* read the width field */
+        if (ffc2ii(form, &width, status) <= 0)  /* read the width field */
         {
-            if (*width <= 0)
+            if (width <= 0)
             {
-                *width = 0;
+                width = 0;
                 *status = BAD_TFORM;
             }
             else
             {                
                 /* set to shorter precision if I4 or less */
-                if (*width <= 4 && *datacode == TLONG)
-                    *datacode = TSHORT;
+                if (width <= 4 && datacode == TLONG)
+                    datacode = TSHORT;
             }
         }
     }
@@ -1164,12 +1185,12 @@ int ffasfm(char *tform,    /* I - format code from the TFORMn keyword */
             *status = BAD_TFORM;
           else
           {
-            *width = (long) fwidth;  /* convert from float to long */
+            width = (long) fwidth;  /* convert from float to long */
 
-            if (*width > 7 && *(form-1) == 'F')
-                *datacode = TDOUBLE;  /* type double if >7 digits */
+            if (width > 7 && *(form-1) == 'F')
+                datacode = TDOUBLE;  /* type double if >7 digits */
 
-            if (*width < 10)
+            if (width < 10)
                 form = form + 1; /* skip 1 digit  */
             else
                 form = form + 2; /* skip 2 digits */
@@ -1180,9 +1201,10 @@ int ffasfm(char *tform,    /* I - format code from the TFORMn keyword */
 
                 if (ffc2ii(form, &longval, status) <= 0) /* read decimals */
                 {
-                    *decimals = longval;  /* long to short convertion */
+                    if (decimals)
+                        *decimals = longval;  /* long to short convertion */
 
-                    if (*decimals >= *width)  /* width < no. of decimals */
+                    if (longval >= width)  /* width < no. of decimals */
                         *status = BAD_TFORM; 
                 }
             }
@@ -1195,13 +1217,20 @@ int ffasfm(char *tform,    /* I - format code from the TFORMn keyword */
         sprintf(message,"Illegal ASCII table TFORMn code: \'%s\'", tform);
         ffpmsg(message);
     }
+
+    if (dtcode)
+       *dtcode = datacode;
+
+    if (twidth)
+       *twidth = width;
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
 int ffbnfm(char *tform,     /* I - format code from the TFORMn keyword */
-           int *datacode,   /* O - numerical datatype code */
-           long *repeat,    /* O - repeat count of the field  */
-           long *width,     /* O - width of the field, in chars */
+           int *dtcode,   /* O - numerical datatype code */
+           long *trepeat,    /* O - repeat count of the field  */
+           long *twidth,     /* O - width of the field, in chars */
            int *status)     /* IO - error status      */
 {
 /*
@@ -1209,15 +1238,21 @@ int ffbnfm(char *tform,     /* I - format code from the TFORMn keyword */
   type, repeat count, and the field width (if it is an ASCII (A) field)
 */
     size_t ii, nchar;
-    int variable, iread;
+    int datacode, variable, iread;
+    long width, repeat;
     char *form, temp[FLEN_VALUE], message[FLEN_ERRMSG];
 
     if (*status > 0)
         return(*status);
 
-    *datacode = 0;
-    *repeat = 0;
-    *width = 0;
+    if (dtcode)
+        *dtcode = 0;
+
+    if (trepeat)
+        *trepeat = 0;
+
+    if (twidth)
+        *twidth = 0;
 
     nchar = strlen(tform);
 
@@ -1246,9 +1281,9 @@ int ffbnfm(char *tform,     /* I - format code from the TFORMn keyword */
         ii++;   /* look for leading digits in the field */
 
     if (ii == 0)
-        *repeat = 1;  /* no explicit repeat count */
+        repeat = 1;  /* no explicit repeat count */
     else
-        sscanf(form,"%ld", repeat);  /* read repeat count */
+        sscanf(form,"%ld", &repeat);  /* read repeat count */
 
     /*-----------------------------------------------*/
     /*             determine datatype code           */
@@ -1259,7 +1294,7 @@ int ffbnfm(char *tform,     /* I - format code from the TFORMn keyword */
     if (form[0] == 'P')
     {
         variable = 1;  /* this is a variable length column */
-        *repeat = 1;   /* disregard any other repeat value */
+        repeat = 1;   /* disregard any other repeat value */
         form++;        /* move to the next data type code char */
     }
     else
@@ -1267,37 +1302,37 @@ int ffbnfm(char *tform,     /* I - format code from the TFORMn keyword */
 
     if (form[0] == 'U')  /* internal code to signify unsigned integer */
     { 
-        *datacode = TUSHORT;
-        *width = 2;
+        datacode = TUSHORT;
+        width = 2;
     }
     else if (form[0] == 'I')
     {
-        *datacode = TSHORT;
-        *width = 2;
+        datacode = TSHORT;
+        width = 2;
     }
     else if (form[0] == 'V') /* internal code to signify unsigned integer */
     {
-        *datacode = TULONG;
-        *width = 4;
+        datacode = TULONG;
+        width = 4;
     }
     else if (form[0] == 'J')
     {
-        *datacode = TLONG;
-        *width = 4;
+        datacode = TLONG;
+        width = 4;
     }
     else if (form[0] == 'E')
     {
-        *datacode = TFLOAT;
-        *width = 4;
+        datacode = TFLOAT;
+        width = 4;
     }
     else if (form[0] == 'D')
     {
-        *datacode = TDOUBLE;
-        *width = 8;
+        datacode = TDOUBLE;
+        width = 8;
     }
     else if (form[0] == 'A')
     {
-        *datacode = TSTRING;
+        datacode = TSTRING;
 
         /*
           the following code is used to support the non-standard
@@ -1310,36 +1345,36 @@ int ffbnfm(char *tform,     /* I - format code from the TFORMn keyword */
             if (form[1] == '(' )  /* skip parenthesis around */
                 form++;          /* variable length column width */
 
-            iread = sscanf(&form[1],"%ld", width);
+            iread = sscanf(&form[1],"%ld", &width);
         }
 
         if (iread != 1)
-            *width = *repeat;  
+            width = repeat;  
     }
     else if (form[0] == 'L')
     {
-        *datacode = TLOGICAL;
-        *width = 1;
+        datacode = TLOGICAL;
+        width = 1;
     }
     else if (form[0] == 'X')
     {
-        *datacode = TBIT;
-        *width = 1;
+        datacode = TBIT;
+        width = 1;
     }
     else if (form[0] == 'B')
     {
-        *datacode = TBYTE;
-        *width = 1;
+        datacode = TBYTE;
+        width = 1;
     }
     else if (form[0] == 'C')
     {
-        *datacode = TCOMPLEX;
-        *width = 8;
+        datacode = TCOMPLEX;
+        width = 8;
     }
     else if (form[0] == 'M')
     {
-        *datacode = TDBLCOMPLEX;
-        *width = 16;
+        datacode = TDBLCOMPLEX;
+        width = 16;
     }
     else
     {
@@ -1350,7 +1385,16 @@ int ffbnfm(char *tform,     /* I - format code from the TFORMn keyword */
     }
 
     if (variable)
-        *datacode = *datacode * (-1); /* flag variable cols w/ neg type code */
+        datacode = datacode * (-1); /* flag variable cols w/ neg type code */
+
+    if (dtcode)
+       *dtcode = datacode;
+
+    if (trepeat)
+       *trepeat = repeat;
+
+    if (twidth)
+       *twidth = width;
 
     return(*status);
 }
@@ -1570,12 +1614,10 @@ void ffcmps(char *templt,   /* I - input template (may have wildcards)      */
     col[FLEN_VALUE - 1]  = '\0';
 
     /* truncate trailing non-significant blanks */
-    ii = strlen(temp) - 1;
-    while (ii >= 0 && temp[ii] == ' ')
+    for (ii = strlen(temp) - 1; ii >= 0 && temp[ii] == ' '; ii--)
         temp[ii] = '\0';
 
-    ii = strlen(col) - 1;
-    while (ii >= 0 && col[ii] == ' ')
+    for (ii = strlen(col) - 1; ii >= 0 && col[ii] == ' '; ii--)
         col[ii] = '\0';
        
     if (!casesen)
@@ -1603,13 +1645,25 @@ void ffcmps(char *templt,   /* I - input template (may have wildcards)      */
          *match = TRUE;
          return;
       }
-      else if (temp[t1] == '\0' || col[s1] == '\0')
+      else if (temp[t1] == '\0')
       { 
-         /* reached end of only one string so they don't match */
+         /* reached end of template string so they don't match */
          return;
       }
+      else if (col[s1] == '\0')
+      { 
+         /* reached end of other string; they match only if the next */
+         /* character in the template string is a '*' wild card */
 
-      if (temp[t1] == col[s1] || (temp[t1] == '?' && col[s1] != ' ') )
+        if (temp[t1] == '*' && temp[t1 + 1] == '\0')
+        {
+           *match = TRUE;
+        }
+
+        return;
+      }
+
+      if (temp[t1] == col[s1] || (temp[t1] == '?') )
       {
         s1++;  /* corresponding chars in the 2 strings match */
         t1++;  /* increment both pointers and loop back again */
@@ -1648,10 +1702,14 @@ void ffcmps(char *templt,   /* I - input template (may have wildcards)      */
         }
 
         if (!found)
+        {
           return;  /* hit end of column name and failed to find a match */
+        }
       }
       else
+      {
         return;   /* strings don't match */
+      }
     }
 }
 /*--------------------------------------------------------------------------*/
@@ -1689,13 +1747,20 @@ int ffgtcl( fitsfile *fptr,  /* I - FITS file pointer                       */
     if (fptr->hdutype == ASCII_TBL)
     {
        ffasfm(colptr->tform, typecode, width, &decims, status);
-       *repeat = 1;
+
+      if (repeat)
+           *repeat = 1;
     }
     else
     {
-      *typecode = colptr->tdatatype;
-      *width = colptr->twidth;
-      *repeat = colptr->trepeat;
+      if (typecode)
+          *typecode = colptr->tdatatype;
+
+      if (width)
+          *width = colptr->twidth;
+
+      if (repeat)
+          *repeat = colptr->trepeat;
     }
 
     return(*status);
@@ -1735,24 +1800,41 @@ int ffgacl( fitsfile *fptr,   /* I - FITS file pointer                      */
     colptr = fptr->tableptr;   /* pointer to first column */
     colptr += (colnum -1);     /* offset to correct column */
 
-    strcpy(ttype, colptr->ttype);
-    *tbcol = (colptr->tbcol) + 1;  /* first col is 1, not 0 */
-    strcpy(tform, colptr->tform);
-    *tscal = colptr->tscale;
-    *tzero = colptr->tzero;
-    strcpy(tnull, colptr->strnull);
+    if (ttype)
+        strcpy(ttype, colptr->ttype);
+
+    if (tbcol)
+        *tbcol = (colptr->tbcol) + 1;  /* first col is 1, not 0 */
+
+    if (tform)
+        strcpy(tform, colptr->tform);
+
+    if (tscal)
+        *tscal = colptr->tscale;
+
+    if (tzero)
+        *tzero = colptr->tzero;
+
+    if (tnull)
+        strcpy(tnull, colptr->strnull);
 
     /* read keywords to get additional parameters */
 
-    ffkeyn("TUNIT", colnum, name, status);
-    tstatus = 0;
-    *tunit = '\0';
-    ffgkys(fptr, name, tunit, comm, &tstatus);
+    if (tunit)
+    {
+        ffkeyn("TUNIT", colnum, name, status);
+        tstatus = 0;
+        *tunit = '\0';
+        ffgkys(fptr, name, tunit, comm, &tstatus);
+    }
 
-    ffkeyn("TDISP", colnum, name, status);
-    tstatus = 0;
-    *tdisp = '\0';
-    ffgkys(fptr, name, tdisp, comm, &tstatus);
+    if (tdisp)
+    {
+        ffkeyn("TDISP", colnum, name, status);
+        tstatus = 0;
+        *tdisp = '\0';
+        ffgkys(fptr, name, tdisp, comm, &tstatus);
+    }
 
     return(*status);
 }
@@ -1791,49 +1873,68 @@ int ffgbcl( fitsfile *fptr,   /* I - FITS file pointer                      */
     colptr = fptr->tableptr;   /* pointer to first column */
     colptr += (colnum -1);     /* offset to correct column */
 
-    strcpy(ttype, colptr->ttype);
-    if (colptr->tdatatype < 0)  /* add the "P" prefix for */
-        strcpy(dtype, "P");     /* variable length columns */
-    else
-        dtype[0] = 0;
+    if (ttype)
+        strcpy(ttype, colptr->ttype);
 
-    if      (abs(colptr->tdatatype) == TBIT)
-        strcat(dtype, "X");
-    else if (abs(colptr->tdatatype) == TBYTE)
-        strcat(dtype, "B");
-    else if (abs(colptr->tdatatype) == TLOGICAL)
-        strcat(dtype, "L");
-    else if (abs(colptr->tdatatype) == TSTRING)
-        strcat(dtype, "A");
-    else if (abs(colptr->tdatatype) == TSHORT)
-        strcat(dtype, "I");
-    else if (abs(colptr->tdatatype) == TLONG)
-        strcat(dtype, "J");
-    else if (abs(colptr->tdatatype) == TFLOAT)
-        strcat(dtype, "E");
-    else if (abs(colptr->tdatatype) == TDOUBLE)
-        strcat(dtype, "D");
-    else if (abs(colptr->tdatatype) == TCOMPLEX)
-        strcat(dtype, "C");
-    else if (abs(colptr->tdatatype) == TDBLCOMPLEX)
-        strcat(dtype, "M");
+    if (dtype)
+    {
+        if (colptr->tdatatype < 0)  /* add the "P" prefix for */
+            strcpy(dtype, "P");     /* variable length columns */
+        else
+            dtype[0] = 0;
 
-    *repeat = colptr->trepeat;
-    *tscal  = colptr->tscale;
-    *tzero  = colptr->tzero;
-    *tnull  = colptr->tnull;
+        if      (abs(colptr->tdatatype) == TBIT)
+            strcat(dtype, "X");
+        else if (abs(colptr->tdatatype) == TBYTE)
+            strcat(dtype, "B");
+        else if (abs(colptr->tdatatype) == TLOGICAL)
+            strcat(dtype, "L");
+        else if (abs(colptr->tdatatype) == TSTRING)
+            strcat(dtype, "A");
+        else if (abs(colptr->tdatatype) == TSHORT)
+            strcat(dtype, "I");
+        else if (abs(colptr->tdatatype) == TLONG)
+            strcat(dtype, "J");
+        else if (abs(colptr->tdatatype) == TFLOAT)
+            strcat(dtype, "E");
+        else if (abs(colptr->tdatatype) == TDOUBLE)
+            strcat(dtype, "D");
+        else if (abs(colptr->tdatatype) == TCOMPLEX)
+            strcat(dtype, "C");
+        else if (abs(colptr->tdatatype) == TDBLCOMPLEX)
+            strcat(dtype, "M");
+    }
+
+
+    if (repeat)
+        *repeat = colptr->trepeat;
+
+    if (tscal)
+        *tscal  = colptr->tscale;
+
+    if (tzero)
+        *tzero  = colptr->tzero;
+
+    if (tnull)
+        *tnull  = colptr->tnull;
 
     /* read keywords to get additional parameters */
 
-    ffkeyn("TUNIT", colnum, name, status);
-    tstatus = 0;
-    *tunit = '\0';
-    ffgkys(fptr, name, tunit, comm, &tstatus);
+    if (tunit)
+    {
+        ffkeyn("TUNIT", colnum, name, status);
+        tstatus = 0;
+        *tunit = '\0';
+        ffgkys(fptr, name, tunit, comm, &tstatus);
+    }
 
-    ffkeyn("TDISP", colnum, name, status);
-    tstatus = 0;
-    *tdisp = '\0';
-    ffgkys(fptr, name, tdisp, comm, &tstatus);
+    if (tdisp)
+    {
+        ffkeyn("TDISP", colnum, name, status);
+        tstatus = 0;
+        *tdisp = '\0';
+        ffgkys(fptr, name, tdisp, comm, &tstatus);
+    }
 
     return(*status);
 }
@@ -3402,20 +3503,27 @@ int ffcdfl( fitsfile *fptr, int *status)
 int ffcrhd(fitsfile *fptr,      /* I - FITS file pointer */
            int *status)         /* IO - error status     */
 /*
-  CReate Header Data unit:
-  Create, initialize, and move the i/o pointer to a new extension
-  after the last known existing extension of the FITS file.
+  CReate Header Data unit:  Create, initialize, and move the i/o pointer
+  to a new extension appended to the end of the FITS file.
 */
 {
+    int  tstatus = 0;
     long bytepos;
+    char *dummy;
 
     if (*status > 0)
         return(*status);
-
     else if (fptr->maxhdu == MAXHDU)
+    {
         *status = BAD_HDU_NUM;       /* too many HDUs in file */
+        return(*status);
+    }
 
-    else if (ffchdu(fptr, status) <= 0)  /* close the current HDU */
+    while (ffmrhd(fptr, 1, 0, &tstatus) == 0);  /* move to end of file */
+
+    ffxmsg(-2, dummy);  /* clear the end of file error message */
+
+    if (ffchdu(fptr, status) <= 0)  /* close the current HDU */
     {
       bytepos = fptr->headstart[ fptr->maxhdu + 1 ];  /* last known HDU */
       ffmbyt(fptr, bytepos, IGNORE_EOF, status);  /* move file ptr to it */
@@ -3522,7 +3630,7 @@ int ffmahd(fitsfile *fptr,      /* I - FITS file pointer             */
     while( (fptr->curhdu) + 1 != hdunum) /* at the correct HDU? */
     {
         /* move directly to the extension if we know that it exists,
-        otherwise move to the highest known extension.  */
+           otherwise move to the highest known extension.  */
         
         moveto = minvalue(hdunum - 1, (fptr->maxhdu) + 1);
 
@@ -3576,6 +3684,7 @@ int ffmrhd(fitsfile *fptr,      /* I - FITS file pointer                    */
 }
 /*--------------------------------------------------------------------------*/
 int ffmnhd(fitsfile *fptr,      /* I - FITS file pointer                    */
+           int exttype,         /* I - desired extension type               */
            char *hduname,       /* I - desired EXTNAME value for the HDU    */
            int hduvers,         /* I - desired EXTVERS value for the HDU    */
            int *status)         /* IO - error status                        */
@@ -3587,7 +3696,7 @@ int ffmnhd(fitsfile *fptr,      /* I - FITS file pointer                    */
 */
 {
     char extname[FLEN_VALUE];
-    int ii, extnum, tstatus, match, exact;
+    int ii, hdutype, extnum, tstatus, match, exact;
     long extvers, slen;
 
     if (*status > 0)
@@ -3598,28 +3707,31 @@ int ffmnhd(fitsfile *fptr,      /* I - FITS file pointer                    */
     for (ii=1; 1; ii++)    /* loop until EOF */
     {
         tstatus = 0;
-        if (ffmahd(fptr, ii, 0, &tstatus))  /* move to next HDU */
+        if (ffmahd(fptr, ii, &hdutype, &tstatus))  /* move to next HDU */
         {
            ffmahd(fptr, extnum, 0, status); /* restore file position */
            ffxmsg(-2, extname);  /* clear the end of file error message */
            return(*status = BAD_HDU_NUM);      /* couldn't find desired HDU */
         }
         
-        if (ffgkys(fptr, "EXTNAME", extname, 0, &tstatus) <= 0)  /* read name */
+        if (exttype == ANY_HDU || hdutype == exttype)
         {
-          ffcmps(extname, hduname, CASEINSEN, &match, &exact);
-          if (exact)  /* names match? */
+          if (ffgkys(fptr, "EXTNAME", extname, 0, &tstatus) <= 0) /* name */
           {
-            if (hduvers)  /* check if version numbers match? */
+            ffcmps(extname, hduname, CASEINSEN, &match, &exact);
+            if (exact)  /* names match? */
             {
-              if (ffgkyj(fptr, "EXTVERS", &extvers, 0, &tstatus) <= 0)
+              if (hduvers)  /* check if version numbers match? */
               {
-                 if ( (int) extvers == hduvers)
+                if (ffgkyj(fptr, "EXTVERS", &extvers, 0, &tstatus) <= 0)
+                {
+                  if ( (int) extvers == hduvers)
                     return(*status);    /* found matching name and vers */
+                }
               }
-            }
-            else
+              else
               return(*status); /* found matching name */
+            }
           }
         }
     }

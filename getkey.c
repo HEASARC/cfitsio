@@ -170,8 +170,8 @@ int ffgnxk( fitsfile *fptr,     /* I - FITS file pointer              */
     /* get next card, and return with an error if hit end of header */
     while( ffgcrd(fptr, "*", keybuf, status) <= 0)
     {
-        strncpy(keyname, keybuf, 8);
-
+        keyname[0] = '\0';
+        strncat(keyname, keybuf, 8);
         /* does keyword match any names in the include list? */
         for (ii = 0; ii < ninc; ii++)
         {
@@ -259,6 +259,14 @@ int ffgky( fitsfile *fptr,     /* I - FITS file pointer        */
     else if (datatype == TDOUBLE)
     {
         ffgkyd(fptr, keyname, (double *) value, comm, status);
+    }
+    else if (datatype == TCOMPLEX)
+    {
+        ffgkyc(fptr, keyname, (float *) value, comm, status);
+    }
+    else if (datatype == TDBLCOMPLEX)
+    {
+        ffgkym(fptr, keyname, (double *) value, comm, status);
     }
     else
         *status = BAD_DATATYPE;
@@ -1305,53 +1313,69 @@ int ffghtb(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (ffgttb(fptr, naxis1, naxis2, &pcount, &fields, status) > 0)
         return(*status);
 
-    *tfields = fields;
+    if (tfields)
+       *tfields = fields;
 
     if (maxfield < 0)
-        maxf = *tfields;
+        maxf = fields;
     else
-        maxf = minvalue(maxfield, *tfields);
+        maxf = minvalue(maxfield, fields);
 
     if (maxf > 0)
     {
         for (ii = 0; ii < maxf; ii++)
         {   /* initialize optional keyword values */
-            *ttype[ii] = '\0';   
-            *tunit[ii] = '\0';
+            if (ttype)
+                *ttype[ii] = '\0';   
+
+            if (tunit)
+                *tunit[ii] = '\0';
         }
 
-        ffgkns(fptr, "TTYPE", 1, maxf, ttype, &nfound, status);
-        ffgkns(fptr, "TUNIT", 1, maxf, tunit, &nfound, status);
+   
+        if (ttype)
+            ffgkns(fptr, "TTYPE", 1, maxf, ttype, &nfound, status);
+
+        if (tunit)
+            ffgkns(fptr, "TUNIT", 1, maxf, tunit, &nfound, status);
 
         if (*status > 0)
             return(*status);
 
-        ffgknj(fptr, "TBCOL", 1, maxf, tbcol, &nfound, status);
-
-        if (*status > 0 || nfound != maxf)
+        if (tbcol)
         {
-        ffpmsg(
+            ffgknj(fptr, "TBCOL", 1, maxf, tbcol, &nfound, status);
+
+            if (*status > 0 || nfound != maxf)
+            {
+                ffpmsg(
         "Required TBCOL keyword(s) not found in ASCII table header (ffghtb).");
-        return(*status = NO_TBCOL);
+                return(*status = NO_TBCOL);
+            }
         }
 
-        ffgkns(fptr, "TFORM", 1, maxf, tform, &nfound, status);
-
-        if (*status > 0 || nfound != maxf)
+        if (tform)
         {
-        ffpmsg(
+            ffgkns(fptr, "TFORM", 1, maxf, tform, &nfound, status);
+
+            if (*status > 0 || nfound != maxf)
+            {
+                ffpmsg(
         "Required TFORM keyword(s) not found in ASCII table header (ffghtb).");
-        return(*status = NO_TFORM);
+                return(*status = NO_TFORM);
+            }
         }
 
-        extnm[0] = '\0';
+        if (extnm)
+        {
+            extnm[0] = '\0';
 
-        tstatus = *status;
-        ffgkys(fptr, "EXTNAME", extnm, comm, status);
+            tstatus = *status;
+            ffgkys(fptr, "EXTNAME", extnm, comm, status);
 
-        if (*status == KEY_NO_EXIST)
-            *status = tstatus;  /* keyword not required, so ignore error */
-
+            if (*status == KEY_NO_EXIST)
+                *status = tstatus;  /* keyword not required, so ignore error */
+        }
     }
     return(*status);
 }
@@ -1381,43 +1405,57 @@ int ffghbn(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     if (ffgttb(fptr, &naxis1, naxis2, pcount, &fields, status) > 0)
         return(*status);
-    *tfields = fields;
+
+    if (tfields)
+        *tfields = fields;
 
     if (maxfield < 0)
-        maxf = *tfields;
+        maxf = fields;
     else
-        maxf = minvalue(maxfield, *tfields);
+        maxf = minvalue(maxfield, fields);
 
     if (maxf > 0)
     {
         for (ii = 0; ii < maxf; ii++)
         {   /* initialize optional keyword values */
-            *ttype[ii] = '\0';   
-            *tunit[ii] = '\0';
+            if (ttype)
+                *ttype[ii] = '\0';   
+
+            if (tunit)
+                *tunit[ii] = '\0';
         }
 
-        ffgkns(fptr, "TTYPE", 1, maxf, ttype, &nfound, status);
-        ffgkns(fptr, "TUNIT", 1, maxf, tunit, &nfound, status);
+        if (ttype)
+            ffgkns(fptr, "TTYPE", 1, maxf, ttype, &nfound, status);
+
+        if (tunit)
+            ffgkns(fptr, "TUNIT", 1, maxf, tunit, &nfound, status);
 
         if (*status > 0)
             return(*status);
 
-        ffgkns(fptr, "TFORM", 1, maxf, tform, &nfound, status);
-
-        if (*status > 0 || nfound != maxf)
+        if (tform)
         {
-        ffpmsg(
+            ffgkns(fptr, "TFORM", 1, maxf, tform, &nfound, status);
+
+            if (*status > 0 || nfound != maxf)
+            {
+                ffpmsg(
         "Required TFORM keyword(s) not found in binary table header (ffghbn).");
-        return(*status = NO_TFORM);
+                return(*status = NO_TFORM);
+            }
         }
 
-        extnm[0] = '\0';
+        if (extnm)
+        {
+            extnm[0] = '\0';
 
-        tstatus = *status;
-        ffgkys(fptr, "EXTNAME", extnm, comm, status);
+            tstatus = *status;
+            ffgkys(fptr, "EXTNAME", extnm, comm, status);
 
-        if (*status == KEY_NO_EXIST)
-            *status = tstatus;  /* keyword not required, so ignore error */
+            if (*status == KEY_NO_EXIST)
+              *status = tstatus;  /* keyword not required, so ignore error */
+        }
     }
     return(*status);
 }
@@ -1451,7 +1489,9 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
-    *simple = 1;
+    if (simple)
+       *simple = 1;
+
     unknown = 0;
 
     /*--------------------------------------------------------------------*/
@@ -1464,7 +1504,8 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
         if (!strcmp(name, "SIMPLE"))
         {
             if (value[0] == 'F')
-                *simple=0;          /* not a simple FITS file */
+                if (simple)
+                    *simple=0;          /* not a simple FITS file */
             else if (value[0] != 'T')
                 return(*status = BAD_SIMPLE);
         }
@@ -1540,7 +1581,8 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
         ffpmsg(message);
         return(*status = BAD_BITPIX);
     }
-    *bitpix = longbitpix;  /* do explicit type conversion */
+    if (bitpix)
+        *bitpix = longbitpix;  /* do explicit type conversion */
 
 
     /*---------------------------------------------------------------*/
@@ -1553,13 +1595,14 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
     else if (*status == NOT_POS_INT)
         return(*status = BAD_NAXIS);
     else
-        *naxis = longnaxis;  /* do explicit type conversion */
+        if (naxis)
+             *naxis = longnaxis;  /* do explicit type conversion */
 
 
     /*---------------------------------------------------------*/
     /*  Get the next NAXISn keywords and test for legal values */
     /*---------------------------------------------------------*/
-    for (ii=0, nextkey=4; ii < *naxis; ii++, nextkey++)
+    for (ii=0, nextkey=4; ii < longnaxis; ii++, nextkey++)
     {
         ffkeyn("NAXIS", ii+1, keyword, status);
         ffgtkn(fptr, 4+ii, keyword, &axislen, status);
@@ -1569,7 +1612,8 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
         else if (*status == NOT_POS_INT)
             return(*status = BAD_NAXES);
         else if (ii < maxdim)
-            naxes[ii] = axislen;
+            if (naxes)
+                naxes[ii] = axislen;
     }
 
 
@@ -1579,12 +1623,18 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
     /*---------------------------------------------------------*/
 
     /*  initialize default values in case keyword is not present */
-    *bscale = 1.0;
-    *bzero  = 0.0;
-    *pcount = 0;
-    *gcount = 1;
-    *extend = 0;
-    *blank = NULL_UNDEFINED; /* by default no null value for BITPIX=8,16,32 */
+    if (bscale)
+        *bscale = 1.0;
+    if (bzero)
+        *bzero  = 0.0;
+    if (pcount)
+        *pcount = 0;
+    if (gcount)
+        *gcount = 1;
+    if (extend)
+        *extend = 0;
+    if (blank)
+      *blank = NULL_UNDEFINED; /* no default null value for BITPIX=8,16,32 */
 
     *nspace = 0;
     found_end = 0;
@@ -1608,7 +1658,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
 
       else   /* got the next keyword without error */
       {
-        if (!strcmp(name, "BSCALE"))
+        if (!strcmp(name, "BSCALE") && bscale)
         {
             if (ffc2dd(value, bscale, status) > 0) /* convert to double */
             {
@@ -1618,7 +1668,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
             }
         }
 
-        else if (!strcmp(name, "BZERO"))
+        else if (!strcmp(name, "BZERO") && bzero)
         {
             if (ffc2dd(value, bzero, status) > 0) /* convert to double */
             {
@@ -1628,7 +1678,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
             }
         }
 
-        else if (!strcmp(name, "BLANK"))
+        else if (!strcmp(name, "BLANK") && blank)
         {
             if (ffc2ii(value, blank, status) > 0) /* convert to long */
             {
@@ -1638,7 +1688,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
             }
         }
 
-        else if (!strcmp(name, "PCOUNT"))
+        else if (!strcmp(name, "PCOUNT") && pcount)
         {
             if (ffc2ii(value, pcount, status) > 0) /* convert to long */
             {
@@ -1648,7 +1698,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
             }
         }
 
-        else if (!strcmp(name, "GCOUNT"))
+        else if (!strcmp(name, "GCOUNT") && gcount)
         {
             if (ffc2ii(value, gcount, status) > 0) /* convert to long */
             {
@@ -1658,7 +1708,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
             }
         }
 
-        else if (!strcmp(name, "EXTEND"))
+        else if (!strcmp(name, "EXTEND") && extend)
         {
             if (ffc2ll(value, extend, status) > 0) /* convert to int */
             {

@@ -7,47 +7,27 @@ main()
 {
     extern flux_rate(); /* external work function is passed to the iterator */
     fitsfile *fptr;
-    iteratorCol cols[3];
+    iteratorCol cols[3];  /* structure used by the iterator function */
     int n_cols;
     long rows_per_loop, offset;
 
-    int status = 0, nkeys, keypos, hdutype, ii, jj;
-    char filename[]  = "iterfile.fit";     /* name of rate FITS file */
+    int status, nkeys, keypos, hdutype, ii, jj;
+    char filename[]  = "iter_a.fit";     /* name of rate FITS file */
+
+    status = 0; 
+
+    fits_open_file(&fptr, filename, READWRITE, &status); /* open file */
+
+    /* move to the desired binary table extension */
+    if (fits_movnam_hdu(fptr, BINARY_TBL, "RATE", 0, &status) )
+        fits_report_error(stderr, status);    /* print out error messages */
 
     n_cols  = 3;   /* number of columns */
 
-    /* open the file */
-    fits_open_file(&fptr, filename, READWRITE, &status);
-
-    /* move to the HDU containing the rate table */
-    fits_movnam_hdu(fptr, "RATE", 0, &status);
-
     /* define input column structure members for the iterator function */
-
-    /* all the columns are in the same FITS file */
-    cols[0].fptr  = fptr;
-    cols[1].fptr  = fptr;
-    cols[2].fptr  = fptr;
-
-    /* define the desired columns by name */
-    strcpy(cols[0].colname, "COUNTS");    
-    strcpy(cols[1].colname, "TIME");    
-    strcpy(cols[2].colname, "RATE");    
-
-    /* leave column numbers undefined */
-    cols[0].colnum = 0;    
-    cols[1].colnum = 0;    
-    cols[2].colnum = 0;    
-
-    /* define the desired datatype for each column */
-    cols[0].datatype = TLONG;
-    cols[1].datatype = TFLOAT;
-    cols[2].datatype = TFLOAT;
-
-    /* define whether columns are input, input/output, or output only */
-    cols[0].iotype = InputCol;    
-    cols[1].iotype = InputCol;    
-    cols[2].iotype = OutputCol;
+    fits_iter_set_by_name(&cols[0], fptr, "COUNTS", TLONG,  InputCol);
+    fits_iter_set_by_name(&cols[1], fptr, "TIME",   TFLOAT, InputCol);
+    fits_iter_set_by_name(&cols[2], fptr, "RATE",   TFLOAT, OutputCol);
 
     rows_per_loop = 0;  /* use default optimum number of rows */
     offset = 0;         /* process all the rows */
@@ -93,20 +73,21 @@ int flux_rate(long totalrows, long offset, long firstrow, long nrows,
        if (ncols != 3)
            return(-1);  /* number of columns incorrect */
 
-       if (cols[0].datatype != TLONG ||
-           cols[1].datatype != TFLOAT ||
-           cols[2].datatype != TFLOAT )
+       if (fits_iter_get_datatype(&cols[0]) != TLONG  ||
+           fits_iter_get_datatype(&cols[1]) != TFLOAT ||
+           fits_iter_get_datatype(&cols[2]) != TFLOAT )
            return(-2);  /* bad data type */
 
        /* assign the input pointers to the appropriate arrays and null ptrs*/
-       counts       = (long *) cols[0].array;
-       interval     = (float *) cols[1].array;
-       rate         = (float *) cols[2].array;
+       counts       = (long *)  fits_iter_get_array(&cols[0]);
+       interval     = (float *) fits_iter_get_array(&cols[1]);
+       rate         = (float *) fits_iter_get_array(&cols[2]);
 
        livetime = 0;  /* initialize the total integration time */
 
        /* try to get the deadtime keyword value */
-       fits_read_key_flt(cols[0].fptr, "DEADTIME", &deadtime, '\0', &status);
+       fits_read_key(cols[0].fptr, TFLOAT, "DEADTIME", &deadtime, '\0',
+                     &status);
        if (status)
        {
            deadtime = 1.0;  /* default deadtime if keyword doesn't exist */
@@ -126,12 +107,16 @@ int flux_rate(long totalrows, long offset, long firstrow, long nrows,
     /*  NOTE: 1st element of array is the null pixel value!  */
     /*  Loop from 1 to nrows, not 0 to nrows - 1.  */
 
-    /* this version ignores null values */
-    rate[0] = 0.;  /* set the output null value to zero to ignore nulls */
+    /* this version tests for null values */
+    rate[0] = DOUBLENULLVALUE;   /* define the value that represents null */
 
     for (ii = 1; ii <= nrows; ii++)
     {
-       if (interval[ii] > 0.)
+       if (counts[ii] == counts[0])   /*  undefined counts value? */
+       {
+           rate[ii] = DOUBLENULLVALUE;
+       }
+       else if (interval[ii] > 0.)
        {
            rate[ii] = counts[ii] / interval[ii] / deadtime;
            livetime += interval[ii];  /* accumulate total integration time */
@@ -148,7 +133,7 @@ int flux_rate(long totalrows, long offset, long firstrow, long nrows,
     {
         /*  update the LIVETIME keyword value */
 
-        fits_update_key_fixflt(cols[0].fptr, "LIVETIME", livetime, 3, 
+        fits_update_key(cols[0].fptr, TFLOAT, "LIVETIME", &livetime, 
                  "total integration time", &status);
         printf("livetime = %f\n", livetime);
    }

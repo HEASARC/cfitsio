@@ -11,6 +11,7 @@
 /*  and perform such material.                                             */
 
 #include <string.h>
+#include <stdlib.h>
 #include "fitsio2.h"
 /*--------------------------------------------------------------------------*/
 int ffcopy(fitsfile *infptr,    /* I - FITS file pointer to input file  */
@@ -33,14 +34,9 @@ int ffcopy(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     if (infptr == outfptr)
         return(*status = SAME_FILE);
 
-    /* check that the output header is empty */
-    ffghsp(outfptr, &nkeys, &nadd, status); /* get no. of keywords in header */
-
-    if (nkeys != 0)
-    {
-        ffpmsg("Cannot copy HDU to a non-empty HDU (ffcopy)");
-        return(*status = HEADER_NOT_EMPTY);
-    }
+    /* check whether the output header is empty */
+    if (outfptr->headend != outfptr->headstart[outfptr->curhdu] )
+        ffcrhd(outfptr, status);  /* create new empty HDU */
 
     ffghsp(infptr, &nkeys, &nadd, status); /* get no. of keywords in header */
 
@@ -233,8 +229,8 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
   insert an ASCII table extension following the current HDU 
 */
 {
-    int nexthdu, ii, nunit, nhead;
-    long datasize, newstart, nblocks;
+    int nexthdu, ii, nunit, nhead, ncols, gotmem = 0;
+    long datasize, newstart, nblocks, rowlen;
 
     if (*status > 0)
         return(*status);
@@ -258,15 +254,35 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
     nunit = 0;
     for (ii = 0; ii < tfields; ii++)
     {
-        if (*tunit[ii])
+        if (tunit && *tunit && *tunit[ii])
             nunit++;
     }
 
-    if (*extnm)
+    if (extnm && *extnm)
          nunit++;     /* add one for the EXTNAME keyword */
 
+    rowlen = naxis1;
+
+    if (!tbcol || !tbcol[0] || (!naxis1 && tfields)) /* spacing not defined? */
+    {
+      /* allocate mem for tbcol; malloc may have problems allocating small */
+      /* arrays, so allocate at least 20 bytes */
+
+      ncols = maxvalue(5, tfields);
+      tbcol = (long *) calloc(ncols, sizeof(long));
+
+      if (tbcol)
+      {
+        gotmem = 1;
+
+        /* calculate width of a row and starting position of each column. */
+        /* Each column will be separated by 1 blank space */
+        ffgabc(tfields, tform, 1, &rowlen, tbcol, status);
+      }
+    }
+
     nhead = (9 + (3 * tfields) + nunit + 35) / 36;  /* no. of header blocks */
-    datasize = naxis1 * naxis2;          /* size of table in bytes */
+    datasize = rowlen * naxis2;          /* size of table in bytes */
     nblocks = ((datasize + 2879) / 2880) + nhead;  /* size of HDU */
 
     if (fptr->writemode == READWRITE) /* must have write access */
@@ -283,7 +299,11 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
     fptr->hdutype = ASCII_TBL;  /* so that correct fill value is used */
     /* ffiblk also increments headstart for all following HDUs */
     if (ffiblk(fptr, nblocks, 1, status) > 0)  /* insert the blocks */
-       return(*status);
+    {
+        if (gotmem)
+            free(tbcol); 
+        return(*status);
+    }
 
     (fptr->maxhdu)++;      /* increment known number of HDUs in the file */
     for (ii = fptr->maxhdu; ii > fptr->curhdu; ii--)
@@ -299,8 +319,11 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     /* write the required header keywords */
 
-    ffphtb(fptr, naxis1, naxis2, tfields, ttype, tbcol, tform, tunit,
+    ffphtb(fptr, rowlen, naxis2, tfields, ttype, tbcol, tform, tunit,
            extnm, status);
+
+    if (gotmem)
+        free(tbcol); 
 
     /* redefine internal structure for this HDU */
 
@@ -344,11 +367,11 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
     nunit = 0;
     for (ii = 0; ii < tfields; ii++)
     {
-        if (*tunit[ii])
+        if (tunit && *tunit && *tunit[ii])
             nunit++;
     }
 
-    if (*extnm)
+    if (extnm && *extnm)
          nunit++;     /* add one for the EXTNAME keyword */
 
     nhead = (9 + (2 * tfields) + nunit + 35) / 36;  /* no. of header blocks */
@@ -417,6 +440,7 @@ int ffdhdu(fitsfile *fptr,      /* I - FITS file pointer                   */
   type of the new CHDU after the old CHDU is deleted.
 */
 {
+    int tmptype;
     long nblocks, ii;
 
     if (*status > 0)
@@ -442,13 +466,17 @@ int ffdhdu(fitsfile *fptr,      /* I - FITS file pointer                   */
     fptr->headstart[fptr->maxhdu + 1] = 0;
     (fptr->maxhdu)--; /* decrement the known number of HDUs */
 
-    if (ffrhdu(fptr, hdutype, status) > 0)  /* initialize next HDU as CHDU */
+    if (ffrhdu(fptr, &tmptype, status) > 0)  /* initialize next HDU as CHDU */
     {
         /* failed (end of file?), so move back one HDU */
         *status = 0;
         ffcmsg();       /* clear extraneous error messages */
-        ffgext(fptr, (fptr->curhdu) - 1, hdutype, status);
+        ffgext(fptr, (fptr->curhdu) - 1, &tmptype, status);
     }
+
+    if (hdutype)
+       *hdutype = tmptype;
+
     return(*status);
 }
 

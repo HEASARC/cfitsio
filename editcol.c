@@ -496,7 +496,7 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     long inloop, outloop, maxloop, ndone, ntodo, npixels;
     long firstrow, firstelem, ii;
     char keyname[FLEN_KEYWORD], ttype[FLEN_VALUE], tform[FLEN_VALUE];
-    char *lvalues, *lnullflags, **strarray;
+    char *lvalues, nullflag, **strarray;
     char nulstr[] = {'\5', '\0'};  /* unique null string value */
     double dnull, *dvalues;
     float fnull, *fvalues;
@@ -653,14 +653,6 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
          ("malloc failed to get memory for logicals (ffcpcl)");
          return(*status = ARRAY_TOO_BIG);
        }
-
-       lnullflags = (char *) calloc(maxloop, sizeof(char) );
-       if (!lnullflags)
-       {
-         ffpmsg
-         ("malloc failed to get memory for logical flags (ffcpcl)");
-         return(*status = ARRAY_TOO_BIG);
-       }
     }
     else if (typecode == TSTRING)
     {
@@ -716,9 +708,8 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
 
         /* read from input table */
         if (typecode == TLOGICAL)
-            ffgcfl(infptr, incol, firstrow, firstelem, ntodo, 
-                       lvalues, lnullflags, &anynull, status);
-
+            ffgcl(infptr, incol, firstrow, firstelem, ntodo, 
+                       lvalues, status);
         else if (typecode == TSTRING)
             ffgcvs(infptr, incol, firstrow, firstelem, ntodo,
                        nulstr, strarray, &anynull, status);
@@ -744,12 +735,9 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
         /* write to output table */
         if (typecode == TLOGICAL)
         {
-            if (anynull)
-                ffpcnl(outfptr, colnum, firstrow, firstelem, ntodo, 
-                       lvalues, lnullflags, status);
-            else
-                ffpcll(outfptr, colnum, firstrow, firstelem, ntodo, 
-                       lvalues, status);
+            nullflag = 2;
+            ffpcnl(outfptr, colnum, firstrow, firstelem, ntodo, 
+                       lvalues, nullflag, status);
         }
 
         else if (typecode == TSTRING)
@@ -799,7 +787,6 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     if (typecode == TLOGICAL)
     {
         free(lvalues);
-        free(lnullflags);
     }
     else if (typecode == TSTRING)
     {
