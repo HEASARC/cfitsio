@@ -30,17 +30,17 @@ cfitsio:
                 !mkdir splitc
 	        !./configure
             $endif
-	    $copy buffers.c splitc/cfileio.c
+	    $copy buffers.c splitc/buffers.c
 	    $copy cfileio.c splitc/cfileio.c
-	    $copy checksum.c splitc/cfileio.c
-	    $copy fitscore.c splitc/cfileio.c
-	    $copy editcol.c splitc/cfileio.c
-	    $copy edithdu.c splitc/cfileio.c
-	    $copy getkey.c splitc/cfileio.c
-	    $copy modkey.c splitc/cfileio.c
-	    $copy putkey.c splitc/cfileio.c
-	    $copy scalnull.c splitc/cfileio.c
-	    $copy swapproc.c splitc/cfileio.c
+	    $copy checksum.c splitc/checksum.c
+	    $copy fitscore.c splitc/fitscore.c
+	    $copy editcol.c splitc/editcol.c
+	    $copy edithdu.c splitc/edithdu.c
+	    $copy getkey.c splitc/getkey.c
+	    $copy modkey.c splitc/modkey.c
+	    $copy putkey.c splitc/putkey.c
+	    $copy scalnull.c splitc/scalnull.c
+	    $copy swapproc.c splitc/swapproc.c
 	    $copy wcsutil.c splitc/wcsutil.c
 	    !cp getcol*.c splitc/
 	    !cp putcol*.c splitc/
