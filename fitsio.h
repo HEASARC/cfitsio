@@ -33,11 +33,22 @@ SERVICES PROVIDED HEREUNDER."
 
 #ifndef _FITSIO_H
 #define _FITSIO_H
- 
-#include <stdio.h>
-/* stddef.h is apparently needed to define size_t */
-#include <stddef.h>
 
+#include <stdio.h>
+
+/* Define the datatype for variables which store file offset values. */
+/* The new 'off_t' datatype should be used for this purpose, but some */
+/* older compilers do not recognize this type, in which case we use 'long' */
+/* instead.  Note that _OFF_T is defined (or not) in stdio.h depending */
+/* on whether _LARGEFILE_SOURCE is defined in sys/feature_tests.h  */
+/* (at least on Solaris platforms using cc)  */
+
+#if defined(_OFF_T) || defined(_MIPS_SZLONG)
+#    define OFF_T off_t
+#else
+#    define OFF_T long
+#endif
+ 
 /*  The following exclusion if __CINT__ is defined is needed for ROOT */
 #ifndef __CINT__
 #include "longnam.h"
@@ -85,17 +96,6 @@ SERVICES PROVIDED HEREUNDER."
 #define TYP_CONT_KEY  140
 #define TYP_USER_KEY  150
 
-/* Define the datatype for variables which store file offset values. */
-/* The new 'off_t' datatype should be used for this purpose, but */
-/* some older compilers do not recognize this type, in which case we */
-/* use 'long' instead. */
-
-#if defined(_FILE_OFFSET_BITS) || defined(_MIPS_SZLONG)
-#    define OFF_T off_t
-#else
-#    define OFF_T long
-#endif
- 
 
 #define INT32BIT int  /* 32-bit integer datatype.  Currently this       */
                       /* datatype is an 'int' on all useful platforms   */

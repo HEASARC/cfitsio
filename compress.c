@@ -4443,6 +4443,7 @@ local void build_tree(desc)
     int n, m;          /* iterate over heap elements */
     int max_code = -1; /* largest code with non zero frequency */
     int node = elems;  /* next internal node of the tree */
+    int new;    /* WDP added this, instead of declaring it below */
 
     /* Construct the initial heap, with least frequent element in
      * heap[SMALLEST]. The sons of heap[n] are heap[2*n] and heap[2*n+1].
@@ -4465,7 +4466,8 @@ local void build_tree(desc)
      * two codes of non zero frequency.
      */
     while (heap_len < 2) {
-        int new = heap[++heap_len] = (max_code < 2 ? ++max_code : 0);
+/*      int new = heap[++heap_len] = (max_code < 2 ? ++max_code : 0); */
+            new = heap[++heap_len] = (max_code < 2 ? ++max_code : 0);
         tree[new].Freq = 1;
         depth[new] = 0;
         opt_len--; if (stree) static_len -= stree[new].Len;

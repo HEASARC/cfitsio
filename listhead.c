@@ -1,83 +1,67 @@
 #include <string.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include "fitsio.h"
-
-void printerror( int status);
 
 int main(int argc, char *argv[])
 {
-    fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
+    fitsfile *fptr;         /* FITS file pointer, defined in fitsio.h */
+    char card[FLEN_CARD];   /* Standard string lengths defined in fitsio.h */
+    int status = 0, single = 0, hdupos, nkeys, ii;
 
-    int status, nkeys, keypos, hdutype, ii, jj;
-    char filename[FLEN_FILENAME];    /* input FITS file */
-    char card[FLEN_CARD];   /* standard string lengths defined in fitsioc.h */
+    if (argc != 2) {
+      printf("Usage:  listhead filename[ext] \n");
+      printf("\n");
+      printf("List the FITS header keywords in a single extension, or, if \n");
+      printf("ext is not given, list the keywords in all the extensions. \n");
+      printf("\n");
+      printf("Examples: \n");
+      printf("   listhead file.fits[0]   - list primary array header \n");
+      printf("   listhead file.fits[2]   - list header of 2nd extension \n");
+      printf("   listhead file.fits+2    - same as above \n");
+      printf("   listhead file.fits[GTI] - list header of GTI extension\n");
+      printf("   listhead file.fits      - list every header in the file \n");
+      printf("\n");
+      printf("Note that it may be necessary to enclose the input file\n");
+      printf("name in single quote characters on the Unix command line.\n");
+      return(0);
+    }
 
-    status = 0;
-
-    if (argc == 1)
-        strcpy(filename, "-");  /* no command line name, so assume stdin */
-    else
-        strcpy(filename, argv[1] );   /* name of file to list */
-
-
-    if ( fits_open_file(&fptr, filename, READONLY, &status) ) 
-         printerror( status );
-
-    /* get the current HDU number */
-    fits_get_hdu_num(fptr, &ii);
-
-    /* attempt to move to next HDU, until we get an EOF error */
-    for (; !(fits_movabs_hdu(fptr, ii, &hdutype, &status) ); ii++) 
+    if (!fits_open_file(&fptr, argv[1], READONLY, &status))
     {
+      fits_get_hdu_num(fptr, &hdupos);  /* Get the current HDU position */
+
+      /* List only a single header if a specific extension was given */ 
+      if (hdupos != 1 || strchr(argv[1], '[')) single = 1;
+
+      /* Main loop to print header of each extension */
+      for (; !status; hdupos++) 
+      {
         /* get no. of keywords */
-        if (fits_get_hdrpos(fptr, &nkeys, &keypos, &status) )
-            printerror( status );
+        fits_get_hdrspace(fptr, &nkeys, NULL, &status);
 
-        printf("Header listing for HDU #%d:\n", ii);
-        for (jj = 1; jj <= nkeys; jj++)  {
-            if ( fits_read_record(fptr, jj, card, &status) )
-                 printerror( status );
+        printf("Header listing for HDU #%d:\n", hdupos);
 
-            printf("%s\n", card); /* print the keyword card */
+        /* Keep reading keywords until we get an end-of-header error */
+        for (ii = 1; ii <= nkeys; ii++) {
+           if (fits_read_record(fptr, ii, card, &status))break;
+           printf("%s\n", card);
         }
         printf("END\n\n");  /* terminate listing with END */
+
+        if (single) break;  /* quit if only listing a single header */
+
+        /* Attempt to move to next extension */
+        fits_movrel_hdu(fptr, 1, NULL, &status);
+      }
+
+      /* Reset status after normal error */
+      if (status == END_OF_FILE)  status = 0;
+
+      fits_close_file(fptr, &status);
     }
 
-    if (status == END_OF_FILE)   /* status values are defined in fitsio.h */
-        status = 0;              /* got the expected EOF error; reset = 0  */
-    else
-       printerror( status );     /* got an unexpected error                */
-
-    if ( fits_close_file(fptr, &status) )
-         printerror( status );
-
-    return(0);
+    /* if error occured, print out error message */
+    if (status) fits_report_error(stderr, status);
+    return(status);
 }
-/*--------------------------------------------------------------------------*/
-void printerror( int status)
-{
-    /*****************************************************/
-    /* Print out cfitsio error messages and exit program */
-    /*****************************************************/
 
-    char status_str[FLEN_STATUS], errmsg[FLEN_ERRMSG];
-  
-    if (status)
-      fprintf(stderr, "\n*** Error occurred during program execution ***\n");
-
-    fits_get_errstatus(status, status_str);   /* get the error description */
-    fprintf(stderr, "\nstatus = %d: %s\n", status, status_str);
-
-    /* get first message; null if stack is empty */
-    if ( fits_read_errmsg(errmsg) ) 
-    {
-         fprintf(stderr, "\nError message stack:\n");
-         fprintf(stderr, " %s\n", errmsg);
-
-         while ( fits_read_errmsg(errmsg) )  /* get remaining messages */
-             fprintf(stderr, " %s\n", errmsg);
-    }
-
-    exit( status );       /* terminate the program, returning error status */
-}

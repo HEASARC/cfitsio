@@ -64,7 +64,7 @@
 
 #endif
 
-#elif defined(__alpha) && defined(__unix__)
+#elif defined(__alpha) && ( defined(__unix__) || defined(__NetBSD__) )
  
 #define MACHINE ALPHA_OSF
 #define BYTESWAPPED TRUE
@@ -779,6 +779,7 @@ int stdin2file(int hd);
 int stdout_close(int handle);
 int mem_compress_open(char *filename, int rwmode, int *hdl);
 int mem_iraf_open(char *filename, int rwmode, int *hdl);
+int mem_rawfile_open(char *filename, int rwmode, int *hdl);
 int mem_size(int handle, OFF_T *filesize);
 int mem_truncate(int handle, OFF_T filesize);
 int mem_close_free(int handle);

@@ -682,7 +682,7 @@ move2hdu:
 
         /* create new file containing the image section, plus a copy of */
         /* any other HDUs that exist in the input file.  This routine   */
-        /* will the close the original image file and return a pointer  */
+        /* will close the original image file and return a pointer      */
         /* to the new file. */
 
         if (fits_select_image_section(fptr, outfile, rowfilter, status) > 0)
@@ -2494,6 +2494,31 @@ int fits_init_cfitsio(void)
         return(status);
     }
 
+    /*------------------raw binary file to memory driver -----------*/
+    status = fits_register_driver("rawfile://",
+            mem_init,
+            mem_shutdown,
+            mem_setoptions,
+            mem_getoptions, 
+            mem_getversion,
+            NULL,            /* checkfile not needed */ 
+            mem_rawfile_open,
+            NULL,            /* create function not required */
+            mem_truncate,
+            mem_close_free,
+            NULL,            /* remove function not required */
+            mem_size,
+            NULL,            /* flush function not required */
+            mem_seek,
+            mem_read,
+            mem_write);
+
+    if (status)
+    {
+        ffpmsg("failed to register the irafmem:// driver (init_cfitsio)");
+        return(status);
+    }
+
     /*------------------compressed disk file to memory driver -----------*/
     status = fits_register_driver("compress://",
             mem_init,
@@ -2900,7 +2925,10 @@ int ffiurl(char *url,
 
     ptr1 = url;
 
-        /*  get urltype (e.g., file://, ftp://, http://, etc.)  */
+    /* -------------------------------------------------------- */
+    /*  get urltype (e.g., file://, ftp://, http://, etc.)  */
+    /* --------------------------------------------------------- */
+
     if (*ptr1 == '-' && 
                      ( *(ptr1 +1) ==  0   || *(ptr1 +1) == ' ' || 
                        *(ptr1 +1) == '['  || *(ptr1 +1) == '(' ) )
@@ -2961,7 +2989,7 @@ int ffiurl(char *url,
     }
 
 
-    /*
+    /* ----------------------------------------------------------    
        Look for VMS style filenames like: 
             disk:[directory.subdirectory]filename.ext, or
                  [directory.subdirectory]filename.ext
@@ -2970,7 +2998,7 @@ int ffiurl(char *url,
        or if there is a ':[' string in the remaining url string. If
        so, then need to move past this bracket character before
        search for the opening bracket of a filter specification.
-    */
+     ----------------------------------------------------------- */
 
     tmptr = ptr1;
     if (*ptr1 == '[')
@@ -2987,7 +3015,10 @@ int ffiurl(char *url,
           tmptr = ptr1;
     }
 
+    /* ------------------------ */
     /*  get the input file name */
+    /* ------------------------ */
+
     ptr2 = strchr(tmptr, '(');   /* search for opening parenthesis ( */
     ptr3 = strchr(tmptr, '[');   /* search for opening bracket [ */
 
@@ -3118,7 +3149,7 @@ int ffiurl(char *url,
     if (infilex)
         strcpy(infilex, infile);
 
-    if (!ptr3)     /* no [ character in the input string? */
+    if (!ptr3)     /* no [ character in the input string? Then we are done. */
     {
         free(infile);
         return(*status);
@@ -3131,6 +3162,7 @@ int ffiurl(char *url,
     if (!plus_ext) /* extension no. not already specified?  Then      */
                    /* first brackets must enclose extension name or # */
                    /* or it encloses a image subsection specification */
+                   /* or a raw binary image specifier */
     {
        ptr1 = ptr3 + 1;    /* pointer to first char after the [ */
 
@@ -3142,8 +3174,75 @@ int ffiurl(char *url,
             return(*status = URL_PARSE_ERROR);  /* error, no closing ] */
        }
 
-       /* test if this is an image section:  an integer followed by ':' */
-       /*  or a '*' or '-*'  */
+       /* ---------------------------------------------- */
+       /* First, test if this is a rawfile specifier     */
+       /* which looks something like: '[ib512,512:2880]' */
+       /* ---------------------------------------------- */
+
+       /* first character must be b,i,j,d,r,f, or u  */
+       if (*ptr1 == 'b' || *ptr1 == 'B' || *ptr1 == 'i' || *ptr1 == 'I' ||
+           *ptr1 == 'j' || *ptr1 == 'J' || *ptr1 == 'd' || *ptr1 == 'D' ||
+           *ptr1 == 'r' || *ptr1 == 'R' || *ptr1 == 'f' || *ptr1 == 'F' ||
+           *ptr1 == 'u' || *ptr1 == 'U')
+       {
+           /* next optional character may be a b or l (for Big or Little) */
+           ptr1++;
+           if (*ptr1 == 'b' || *ptr1 == 'B' || *ptr1 == 'l' || *ptr1 == 'L')
+              ptr1++;
+
+           if (isdigit((int) *ptr1))  /* must have at least 1 digit */
+           {
+             while (isdigit((int) *ptr1))
+              ptr1++;             /* skip over digits */
+
+             if (*ptr1 == ',' || *ptr1 == ':' || *ptr1 == ']' )
+             {
+               /* OK, this looks like a rawfile specifier */
+
+               if (urltype)
+               {
+                 if (strstr(urltype, "stdin") )
+                   strcpy(urltype, "rawstdin://");
+                 else
+                   strcpy(urltype, "rawfile://");
+               }
+
+               /* append the raw array specifier to infilex */
+               if (infilex)
+               {
+                 strcat(infilex, ptr3);
+                 ptr1 = strchr(infilex, ']'); /* find the closing ] char */
+                 if (ptr1)
+                   *(ptr1 + 1) = '\0';  /* terminate string after the ] */
+               }
+
+               if (extspec)
+                  strcpy(extspec, "0"); /* the 0 ext number is implicit */
+
+               tmptr = strchr(ptr2 + 1, '[' ); /* search for another [ char */ 
+
+               /* copy any remaining characters into rowfilterx  */
+               if (tmptr && rowfilterx)
+               {
+                 strcat(rowfilterx, tmptr + 1);
+
+                 tmptr = strchr(rowfilterx, ']' );   /* search for closing ] */
+                 if (tmptr)
+                   *tmptr = '\0'; /* overwrite the ] with null terminator */
+               }
+
+               free(infile);        /* finished parsing, so return */
+               return(*status);
+             }
+           }   
+       }
+
+       /* -------------------------------------------------------- */
+       /* Not a rawfile, so next, test if this is an image section */
+       /* i.e., an integer followed by a ':' or a '*' or '-*'      */
+       /* -------------------------------------------------------- */
+ 
+       ptr1 = ptr3 + 1;    /* reset pointer to first char after the [ */
        tmptr = ptr1;
 
        while (*tmptr == ' ')
@@ -3157,10 +3256,15 @@ int ffiurl(char *url,
            /* this is an image section specifier */
            if (extspec)
               strcpy(extspec, "0"); /* the 0 extension number is implicit */
+
            strcat(rowfilter, ptr3);
        }
        else
        {
+        /* -------------------------------------------------------------- */
+        /* not an image section or rawfile spec so must be extension spec */
+        /* -------------------------------------------------------------- */
+
            /* copy the extension specification */
            if (extspec)
                strncat(extspec, ptr1, ptr2 - ptr1);
@@ -3169,8 +3273,12 @@ int ffiurl(char *url,
            strcat(rowfilter, ptr2 + 1);
        }
     }
-    else   /* copy all remaining input chars to filter spec */
+    else   
     {
+      /* ------------------------------------------------------------------ */
+      /* already have extension, so this must be a filter spec of some sort */
+      /* ------------------------------------------------------------------ */
+
         strcat(rowfilter, ptr3);
     }
 

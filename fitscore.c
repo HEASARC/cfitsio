@@ -49,10 +49,11 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.100;
+      *version = 2.200;
 
-/*  26 Sep 2000
-      *version = 2.037    6 July 2000
+/* 26 Jan 2001
+      *version = 2.100;  26 Sep 2000
+      *version = 2.037;   6 July 2000
       *version = 2.036;   1 Feb 2000
       *version = 2.035;   7 Dec 1999 (internal release only)
       *version = 2.034;  23 Nov 1999
@@ -611,7 +612,7 @@ void ffxmsg( int action,
 {
     int ii;
 #define errmsgsiz 25
-    static char *txtbuff[errmsgsiz], *tmpbuff;
+    static char *txtbuff[errmsgsiz], *tmpbuff, *msgptr;
     static char errbuff[errmsgsiz][81];  /* initialize all = \0 */
     static int nummsg = 0;
 
@@ -640,6 +641,9 @@ void ffxmsg( int action,
     }
     else if (action == 1)  /* add new message to stack */
     {
+     msgptr = errmsg;
+     while (strlen(msgptr))
+     {
       if (nummsg == errmsgsiz)
       {
         tmpbuff = txtbuff[0];  /* buffers full; reuse oldest buffer */
@@ -663,8 +667,11 @@ void ffxmsg( int action,
         }
       }
 
-      strncat(txtbuff[nummsg], errmsg, 80);
+      strncat(txtbuff[nummsg], msgptr, 80);
       nummsg++;
+
+      msgptr += minvalue(80, strlen(msgptr));
+     }
     }
     else if (action == 0)  /* clear the whole message stack */
     {
@@ -1415,7 +1422,8 @@ int ffgthd(char *tmplt, /* I - input header template string */
 
       tok += len; /* move token pointer to end of the keyword */
 
-      if (!FSTRCMP(keyname, "COMMENT") || !FSTRCMP(keyname, "HISTORY") )
+      if (!FSTRCMP(keyname, "COMMENT") || !FSTRCMP(keyname, "HISTORY")
+         || !FSTRCMP(keyname, "HIERARCH") )
       {
         *hdtype = 1;   /* simply append COMMENT and HISTORY keywords */
         strcpy(card, keyname);
@@ -2943,7 +2951,7 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
 */
     int  ii, nspace, tbcoln;
     long nrows, rowlen, pcount, tfield;
-    tcolumn *colptr;
+    tcolumn *colptr = 0;
     char name[FLEN_KEYWORD], value[FLEN_VALUE], comm[FLEN_COMMENT];
     char message[FLEN_ERRMSG], errmsg[81];
 
@@ -2975,14 +2983,17 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
     if ((fptr->Fptr)->tableptr)
        free((fptr->Fptr)->tableptr); /* free memory for the old CHDU */
 
-    /* mem for column structures ; space is initialized = 0  */
-    colptr = (tcolumn *) calloc(tfield, sizeof(tcolumn) );
-    if (!colptr && tfield > 0)
+    /* mem for column structures ; space is initialized = 0 */
+    if (tfield > 0)
     {
+      colptr = (tcolumn *) calloc(tfield, sizeof(tcolumn) );
+      if (!colptr)
+      {
         ffpmsg
         ("malloc failed to get memory for FITS table descriptors (ffainit)");
         (fptr->Fptr)->tableptr = 0;  /* set a null table structure pointer */
         return(*status = ARRAY_TOO_BIG);
+      }
     }
 
     /* copy the table structure address to the fitsfile structure */
@@ -3125,7 +3136,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
 */
     int  ii, nspace;
     long nrows, rowlen, tfield, pcount, totalwidth;
-    tcolumn *colptr;
+    tcolumn *colptr = 0;
     char name[FLEN_KEYWORD], value[FLEN_VALUE], comm[FLEN_COMMENT];
     char message[FLEN_ERRMSG];
 
@@ -3150,13 +3161,16 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
        free((fptr->Fptr)->tableptr); /* free memory for the old CHDU */
 
     /* mem for column structures ; space is initialized = 0  */
-    colptr = (tcolumn *) calloc(tfield, sizeof(tcolumn) );
-    if (!colptr && tfield > 0)
+    if (tfield > 0)
     {
+      colptr = (tcolumn *) calloc(tfield, sizeof(tcolumn) );
+      if (!colptr)
+      {
         ffpmsg
         ("malloc failed to get memory for FITS table descriptors (ffbinit)");
         (fptr->Fptr)->tableptr = 0;  /* set a null table structure pointer */
         return(*status = ARRAY_TOO_BIG);
+      }
     }
 
     /* copy the table structure address to the fitsfile structure */
@@ -4308,6 +4322,8 @@ int ffhdef(fitsfile *fptr,      /* I - FITS file pointer                    */
   the space in advance.
 */
 {
+    OFF_T delta;
+
     if (*status > 0 || morekeys < 1)
         return(*status);
 
@@ -4319,8 +4335,19 @@ int ffhdef(fitsfile *fptr,      /* I - FITS file pointer                    */
     else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
     {
       ffrdef(fptr, status);
-      (fptr->Fptr)->datastart = (((fptr->Fptr)->headend + (morekeys * 80)) /
-                                2880 + 1) * 2880;
+
+      /* ffrdef defines the offset to datastart and the start of */
+      /* the next HDU based on the number of existing keywords. */
+      /* We need to increment both of these values based on */
+      /* the number of new keywords to be added.  */
+
+      delta = (((fptr->Fptr)->headend + (morekeys * 80)) / 2880 + 1)
+                                * 2880 - (fptr->Fptr)->datastart; 
+              
+      (fptr->Fptr)->datastart += delta;
+
+      (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] += delta;
+
     }
     return(*status);
 }
@@ -4349,6 +4376,7 @@ int ffwend(fitsfile *fptr,       /* I - FITS file pointer */
 
     /* calculate the number of blank keyword slots in the header */
     nspace = ( (fptr->Fptr)->datastart - endpos ) / 80;
+
     /* construct a blank and END keyword (80 spaces )  */
     strcpy(blankkey, "                                        ");
     strcat(blankkey, "                                        ");

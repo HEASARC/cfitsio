@@ -12,6 +12,7 @@
             no shmem segments remain, and last process terminates
 */
 
+#ifdef HAVE_SHMEM_SERVICES
 #include "fitsio2.h"                         /* drvrsmem.h is included by it */
 
 #include <stdio.h>
@@ -949,3 +950,4 @@ int     smem_write(int driverhandle, void *buffer, long nbytes)
    shared_lt[driverhandle].seekpos += nbytes;
    return(0);
  }
+#endif

@@ -603,6 +603,242 @@ int mem_iraf_open(char *filename, int rwmode, int *hdl)
     return(0);
 }
 /*--------------------------------------------------------------------------*/
+int mem_rawfile_open(char *filename, int rwmode, int *hdl)
+/*
+  This routine creates an empty memory buffer, writes a minimal
+  image header, then copies the image data from the raw file into
+  memory.  It will byteswap the pixel values if the raw array
+  is in little endian byte order.
+*/
+{
+    FILE *diskfile;
+    fitsfile *fptr;
+    short *sptr;
+    int status, endian, datatype, bytePerPix, naxis;
+    long dim[5] = {1,1,1,1,1}, ii, nvals, offset = 0;
+    size_t filesize = 0;
+    char rootfile[FLEN_FILENAME], *cptr = 0, *cptr2 = 0;
+    void *ptr;
+
+    if (rwmode != READONLY)
+    {
+        ffpmsg(
+  "cannot open raw binary file with WRITE access (mem_rawfile_open)");
+        ffpmsg(filename);
+        return(READONLY_FILE);
+    }
+
+    cptr = strchr(filename, '[');   /* search for opening bracket [ */
+
+    if (!cptr)
+    {
+        ffpmsg("binary file name missing '[' character (mem_rawfile_open)");
+        ffpmsg(filename);
+        return(URL_PARSE_ERROR);
+    }
+
+    strncpy(rootfile, filename, cptr - filename);  /* store the rootname */
+
+    cptr++;
+
+    while (*cptr == ' ')
+       cptr++;    /* skip leading blanks */
+
+    /* Get the Data Type of the Image */
+
+    if (*cptr == 'b' || *cptr == 'B')
+    {
+      datatype = BYTE_IMG;
+      bytePerPix = 1;
+    }
+    else if (*cptr == 'i' || *cptr == 'I')
+    {
+      datatype = SHORT_IMG;
+      bytePerPix = 2;
+    }
+    else if (*cptr == 'u' || *cptr == 'U')
+    {
+      datatype = USHORT_IMG;
+      bytePerPix = 2;
+
+    }
+    else if (*cptr == 'j' || *cptr == 'J')
+    {
+      datatype = LONG_IMG;
+      bytePerPix = 4;
+    }  
+    else if (*cptr == 'r' || *cptr == 'R' || *cptr == 'f' || *cptr == 'F')
+    {
+      datatype = FLOAT_IMG;
+      bytePerPix = 4;
+    }    
+    else if (*cptr == 'd' || *cptr == 'D')
+    {
+      datatype = DOUBLE_IMG;
+      bytePerPix = 8;
+    }
+    else
+    {
+        ffpmsg("error in raw binary file datatype (mem_rawfile_open)");
+        ffpmsg(filename);
+        return(URL_PARSE_ERROR);
+    }
+
+    cptr++;
+
+    /* get Endian: Big or Little; default is same as the local machine */
+    
+    if (*cptr == 'b' || *cptr == 'B')
+    {
+        endian = 0;
+        cptr++;
+    }
+    else if (*cptr == 'l' || *cptr == 'L')
+    {
+        endian = 1;
+        cptr++;
+    }
+    else
+        endian = BYTESWAPPED; /* byteswapped machines are little endian */
+
+    /* read each dimension (up to 5) */
+
+    naxis = 1;
+    dim[0] = strtol(cptr, &cptr2, 10);
+    
+    if (cptr2 && *cptr2 == ',')
+    {
+      naxis = 2;
+      dim[1] = strtol(cptr2+1, &cptr, 10);
+
+      if (cptr && *cptr == ',')
+      {
+        naxis = 3;
+        dim[2] = strtol(cptr+1, &cptr2, 10);
+
+        if (cptr2 && *cptr2 == ',')
+        {
+          naxis = 4;
+          dim[3] = strtol(cptr2+1, &cptr, 10);
+
+          if (cptr && *cptr == ',')
+            naxis = 5;
+            dim[4] = strtol(cptr+1, &cptr2, 10);
+        }
+      }
+    }
+
+    cptr = maxvalue(cptr, cptr2);
+
+    if (*cptr == ':')   /* read starting offset value */
+        offset = strtol(cptr+1, 0, 10);
+
+    nvals = dim[0] * dim[1] * dim[2] * dim[3] * dim[4];
+    filesize = nvals * bytePerPix + 2880;
+    filesize = ((filesize - 1) / 2880 + 1) * 2880; 
+
+    /* open the raw binary disk file */
+    status = file_openfile(rootfile, READONLY, &diskfile);
+    if (status)
+    {
+        ffpmsg("failed to open raw  binary file (mem_rawfile_open)");
+        ffpmsg(rootfile);
+        return(status);
+    }
+
+    /* create a memory file with corrct size for the FITS converted raw file */
+    status = mem_createmem(filesize, hdl);
+    if (status)
+    {
+        ffpmsg("failed to create memory file (mem_rawfile_open)");
+        fclose(diskfile);
+        return(status);
+    }
+
+    /* open this piece of memory as a new FITS file */
+    ffimem(&fptr, (void **) memTable[*hdl].memaddrptr, &filesize, 0, 0, &status);
+
+    /* write the required header keywords */
+    ffcrim(fptr, datatype, naxis, dim, &status);
+
+    /* close the file, but keep the memory allocated */
+    ffclos(fptr, &status);
+
+    if (status > 0)
+    {
+        ffpmsg("failed to write basic image header (mem_rawfile_open)");
+        fclose(diskfile);
+        mem_close_free(*hdl);   /* free up the memory */
+        return(status);
+    }
+
+    if (offset > 0)
+       fseek(diskfile, offset, 0);   /* offset to start of the data */
+
+    /* copy the data into memory */
+    cptr = *memTable[*hdl].memaddrptr + 2880;
+
+    /* read bytes */
+    if (fread(cptr, 1, filesize - 2880, diskfile) != filesize - 2880)
+      status = READ_ERROR;
+
+    fclose(diskfile);
+
+    if (status)
+    {
+        mem_close_free(*hdl);   /* free up the memory */
+        ffpmsg("failed to copy raw file data into memory (mem_rawfile_open)");
+        return(status);
+    }
+
+    if (datatype == USHORT_IMG)  /* have to subtract 32768 from each unsigned */
+    {                            /* value to conform to FITS convention. More */
+                                 /* efficient way to do this is to just flip  */
+                                 /* the most significant bit.                 */
+
+      sptr = (short *) memTable[*hdl].memaddrptr + 2880;
+
+      if (endian == BYTESWAPPED)  /* working with native format */
+      {
+        for (ii = 0; ii < nvals; ii++, sptr++)
+        {
+          *sptr =  ( *sptr ) ^ 0x8000;
+        }
+      }
+      else  /* pixels are byteswapped WRT the native format */
+      {
+        for (ii = 0; ii < nvals; ii++, sptr++)
+        {
+          *sptr =  ( *sptr ) ^ 0x80;
+        }
+      }
+    }
+
+    if (endian)  /* swap the bytes if array is in little endian byte order */
+    {
+      ptr = *memTable[*hdl].memaddrptr + 2880;
+
+      if (datatype == SHORT_IMG || datatype == USHORT_IMG)
+      {
+        ffswap2( (short *) ptr, nvals);
+      }
+      else if (datatype == LONG_IMG || datatype == FLOAT_IMG)
+      {
+        ffswap4( (INT32BIT *) ptr, nvals);
+      }
+
+      else if (datatype == DOUBLE_IMG)
+      {
+        ffswap8( (double *) ptr, nvals);
+      }
+    }
+
+    memTable[*hdl].currentpos = 0;           /* save starting position */
+    memTable[*hdl].fitsfilesize=filesize;    /* and initial file size  */
+
+    return(0);
+}
+/*--------------------------------------------------------------------------*/
 int mem_uncompress2mem(char *filename, FILE *diskfile, int hdl)
 {
 /*

@@ -32,7 +32,7 @@
 \medskip
 \medskip
 \begin{center}
-{\Large Version 2.1\\}
+{\Large Version 2.2\\}
 \end{center}
 \bigskip
 \vskip 2.5cm
@@ -47,7 +47,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large October 2000\\}
+{\Large January 2001\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -68,7 +68,9 @@ and CFITSIO are interchangable and refer to the same library.
 
 FITSIO/CFITSIO is a machine-independent library of routines for reading
 and writing data files in the FITS (Flexible Image Transport System)
-data format. This library was written to provide a powerful yet simple
+data format.  It can also read IRAF format image files and raw binary
+data arrays by converting them on the fly into a virtual FITS format
+file.  This library was written to provide a powerful yet simple
 interface for accessing FITS files which will run on most commonly used
 computers and workstations. FITSIO supports all the features described
 in the official NOST definition of the FITS format and can read and
@@ -693,7 +695,8 @@ end with the '.imh' extension, as well as reading and writing FITS
 files,   This feature is implemented in CFITSIO by first converting the
 IRAF image into a temporary FITS format file in memory, then opening
 the FITS file.  Any of the usual CFITSIO routines then may be used to
-read the image header or data.
+read the image header or data.  Similarly, raw binary data arrays can
+be read by converting them on the fly into virtual FITS images.
 
 \item
 FITS files on the internet can be read (and sometimes written) using the FTP,
@@ -755,6 +758,12 @@ directory.
 {\tt 'myfile.imh'}: opens an IRAF format image file and converts it on the
 fly into a temporary FITS format image in memory which can then be read with
 any other CFITSIO routine.
+
+\item
+{\tt rawfile.dat[i512,512]}: opens a raw binary data array (a 512 x 512
+short integer array in this case) and converts it on the fly into a
+temporary FITS format image in memory which can then be read with any
+other CFITSIO routine.
 
 \item
 {\tt 'myfile.fits.gz[events, 2]'}:  opens and uncompresses the gzipped file
@@ -844,11 +853,9 @@ completely transparent to the application program, which simply sees
 the final 2-D image in the primary array of the opened file.
 \end{itemize}
 
-
-\section{Detailed Filename Syntax}
-
-This section describes the full extended syntax for the FITSIO FITS file names.
-The filename can contain several different components depending on the context:
+The full extended CFITSIO FITS file name can contain several different
+components depending on the context.  These components are described in
+the following sections:
 
 \begin{verbatim}
 When creating a new file:
@@ -868,7 +875,7 @@ processed first by CFITSIO, followed by the rowFilter specifier, and
 finally by the binSpec specifier.
 
 
-\subsection{Filetype}
+\section{Filetype}
 
 The type of file determines the medium on which the file is located
 (e.g., disk or network) and, hence, which internal device driver is used by
@@ -894,14 +901,10 @@ If the filetype is not specified, then type file:// is assumed.
 The double slashes '//' are optional and may be omitted in most cases.
 
 
-\subsubsection*{Notes about the root filetype}
-
+\subsection{Notes about the root filetype}
 
 The original rootd server can be obtained from:
-
-\begin{verbatim}
-       ftp://root.cern.ch/root/rootd.tar.gz
-\end{verbatim}
+\verb-ftp://root.cern.ch/root/rootd.tar.gz-
 but, for it to work correctly with CFITSIO one has to use a modified
 version which supports a command to return the length of the file.
 This modified version is available in rootd subdirectory
@@ -929,11 +932,7 @@ and to /etc/inetd.conf, add the following line:
 Force inetd to reread its conf file with "kill -HUP <pid inetd>".
 You can also start rootd by hand running directly under your private
 account (no root system priviliges needed). For example to start
-rootd listening on port 5151 just type:
-
-\begin{verbatim}
-  rootd -p 5151
-\end{verbatim}
+rootd listening on port 5151 just type:   \verb+rootd -p 5151+
 Notice: no \& is needed. Rootd will go into background by itself.
 
 \begin{verbatim}
@@ -987,8 +986,7 @@ accessed.  Anonymous mode only works when the server is started via
 inetd.
 
 
-
-\subsubsection*{Notes about the shmem filetype:}
+\subsection{Notes about the shmem filetype:}
 
 Shared memory files are currently supported on most Unix platforms,
 where the shared memory segments are managed by the operating system
@@ -1036,7 +1034,7 @@ driver. To get a list of all the shared memory objects, run the system
 utility program `ipcs  [-a]'.
 
 
-\subsection{Base Filename}
+\section{Base Filename}
 
 The base filename is the name of the file optionally including the
 director/subdirectory path, and in the case of `ftp', `http', and `root'
@@ -1076,11 +1074,54 @@ FITS file, so in this case, the output filename specifier (see the next
 section) can be used to further control how CFITSIO reads ftp and http
 files.
 
-One special case is where the filename = `-' (a dash or minus sign),
-which signifies that the input file is to be read from the stdin
-stream, or written to the stdout stream if a new output file is being
-created.  In the case of reading from stdin, CFITSIO first copies the
-whole stream into a temporary FITS file (in memory or on disk), and
+If the input file is an IRAF image file (*.imh file) then CFITSIO will
+automatically convert it on the fly into a virtual FITS image before it
+is opened by the application program.  IRAF images can only be opened
+with READONLY file access.
+
+Similarly, if the input file is a raw binary data array, then CFITSIO
+will convert it on the fly into a virtual FITS image with the basic set
+of required header keywords before it is opened by the application
+program (with READONLY access).  In this case the data type and
+dimensions of the image must be specified in square brackets following
+the filename (e.g. rawfile.dat[ib512,512]). The first character (case
+insensitive) defines the datatype of the array:
+
+\begin{verbatim}
+     b         8-bit unsigned byte
+     i        16-bit signed integer
+     u        16-bit unsigned integer
+     j        32-bit signed integer
+     r or f   32-bit floating point
+     d        64-bit floating point
+\end{verbatim}
+An optional second character specifies the byte order of the array
+values: b or B indicates big endian (as in FITS files and the native
+format of SUN UNIX workstations and Mac PCs) and l or L indicates
+little endian (native format of DEC OSF workstations and IBM PCs).  If
+this character is omitted then the array is assumed to have the native
+byte order of the local machine.  These datatype characters are then
+followed by a series of one or more integer values separated by commas
+which define the size of each dimension of the raw array.  Arrays with
+up to 5 dimensions are currently supported.  Finally, a byte offset to
+the position of the first pixel in the data file may be specified by
+separating it with a ':' from the last dimension value.  If omitted, it
+is assumed that the offset = 0.  This parameter may be used to skip
+over any header information in the file that preceeds the binary data.
+Further examples:
+
+\begin{verbatim}
+  raw.dat[b10000]           1-dimensional 10000 pixel byte array
+  raw.dat[rb400,400,12]     3-dimensional floating point big-endian array
+  img.fits[ib512,512:2880]  reads the 512 x 512 short integer array in
+                            a FITS file, skipping over the 2880 byte header
+\end{verbatim}
+
+One special case of input file is where the filename = `-' (a dash or
+minus sign), which signifies that the input file is to be read from the
+stdin stream, or written to the stdout stream if a new output file is
+being created.  In the case of reading from stdin, CFITSIO first copies
+the whole stream into a temporary FITS file (in memory or on disk), and
 subsequent reading of the FITS file occurs in this copy.  When writing
 to stdout, CFITSIO first constructs the whole file in memory (since
 random access is required), then flushes it out to the stdout stream
@@ -1097,8 +1138,7 @@ where the vertical bar is the Unix piping symbol.  This assumes that the 2
 tasks read the name of the FITS file off of the command line.
 
 
-
-\subsection{Output File Name when Opening an Existing File}
+\section{Output File Name when Opening an Existing File}
 
 An optional output filename may be specified in parentheses immediately
 following the base file name to be opened.  This is mainly useful in
@@ -1116,10 +1156,7 @@ immediately following the base file name.  The output filename can
 include the '!' clobber flag.
 
 Thus, if the input filename to CFITSIO is:
-
-\begin{verbatim}
-    file1.fits.gz(file2.fits)
-\end{verbatim}
+\verb+file1.fits.gz(file2.fits)+
 then CFITSIO will uncompress `file1.fits.gz' into the local disk file
 `file2.fits' before opening it.  CFITSIO does not automatically delete
 the output file, so it will still exist after the application program
@@ -1189,7 +1226,7 @@ using the output file specifier with FTP or HTTP file types, to make
 sure they get the behavior that they expect.
 
 
-\subsection{Template File Name when Creating a New File}
+\section{Template File Name when Creating a New File}
 
 When a new FITS file is created with a call to fits\_create\_file, the
 name of a template file may be supplied in parentheses immediately
@@ -1203,233 +1240,7 @@ general) describes one FITS keyword record.  The format of the ASCII
 template file is described below.
 
 
-
-\subsubsection*{Detailed Template Line Format}
-
-The format of each ASCII template line closely follows the format of a
-FITS keyword record:
-
-\begin{verbatim}
-  KEYWORD = KEYVALUE / COMMENT
-\end{verbatim}
-except that free format may be used (e.g., the equals sign may appear
-at any position in the line) and TAB characters are allowed and are
-treated the same as space characters.  The KEYVALUE and COMMENT fields
-are optional.  The equals sign character is also optional, but it is
-recommended that it be included for clarity.  Any template line that
-begins with the pound '\#' character is ignored by the template parser
-and may be use to insert comments into the template file itself.
-
-The KEYWORD name field is limited to 8 characters in length and only
-the letters A-Z, digits 0-9, and the hyphen and underscore characters
-may be used, without any embedded spaces. Lowercase letters in the
-template keyword name will be converted to uppercase.  Leading spaces
-in the template line preceding the keyword name are generally ignored,
-except if the first 8 characters of a template line are all blank, then
-the entire line is treated as a FITS comment keyword (with a blank
-keyword name) and is copied verbatim into the FITS header.
-
-The KEYVALUE field may have any allowed  FITS  data type: character
-string, logical, integer, real, complex integer, or complex real.  The
-character string values need not be enclosed in single quote characters
-unless they are necessary to distinguish the string from a different
-data type (e.g.  2.0 is a real but '2.0' is a string).  The keyword has
-an undefined (null) value if the template record only contains blanks
-following the "=" or between the "=" and the "/" comment field
-delimiter.
-
-String keyword values longer than 68 characters (the maximum length
-that will fit in a single FITS keyword record) are permitted using the
-CFITSIO long string convention. They can either be specified as a
-single long line in the template, or by using multiple lines where the
-continuing lines contain the 'CONTINUE' keyword, as in this example:
-
-\begin{verbatim}
-  LONGKEY = 'This is a long string value that is contin&'
-  CONTINUE  'ued over 2 records' / comment field goes here
-\end{verbatim}
-The format of template lines with CONTINUE keyword is very strict:  3
-spaces must follow CONTINUE and the rest of the line is copied verbatim
-to the FITS file.
-
-The start of the optional COMMENT field must be preceded by "/", which
-is used to separate it from the keyword value field. Exceptions are if
-the KEYWORD name field contains COMMENT, HISTORY, CONTINUE, or if the
-first 8 characters of the template line are blanks.
-
-More than one Header-Data Unit (HDU) may be defined in the template
-file.  The start of an HDU definition is denoted with a SIMPLE or
-XTENSION template line:
-
-1) SIMPLE begins a Primary HDU definition. SIMPLE may only appear as
-the  first keyword in the template file. If the template file begins
-with XTENSION instead of SIMPLE, then a default empty Primary HDU is
-created, and the template is then assumed to define the keywords
-starting with the first extension following the Primary HDU.
-
-2) XTENSION marks the beginning of a new extension HDU definition.  The
-previous HDU will be closed at this point and processing of the next
-extension begins.
-
-
-\subsubsection*{Auto-indexing of Keywords}
-
-If a template keyword name ends with a "\#" character, it is said to be
-'auto-indexed'.   Each "\#" character will be replaced by the current
-integer index value, which gets reset = 1 at the start of each new HDU
-in the file (or 7 in the special case of a GROUP definition).  The
-FIRST indexed keyword in each template HDU definition is used as the
-'incrementor';  each subsequent occurence of this SAME keyword will
-cause the index value to be incremented.  This behavior can be rather
-subtle, as illustrated in the following examples in which the TTYPE
-keyword is the incrementor in both cases:
-
-\begin{verbatim}
-  TTYPE# = TIME
-  TFORM# = 1D
-  TTYPE# = RATE
-  TFORM# = 1E
-\end{verbatim}
-will create TTYPE1, TFORM1, TTYPE2, and TFORM2 keywords.  But if the
-template looks like,
-
-\begin{verbatim}
-  TTYPE# = TIME
-  TTYPE# = RATE
-  TFORM# = 1D
-  TFORM# = 1E
-\end{verbatim}
-this results in a FITS files with  TTYPE1, TTYPE2, TFORM2, and TFORM2,
-which is probably not what was intended!
-
-
-\subsubsection*{Template Parser Directives}
-
-In addition to the template lines which define individual keywords, the
-template parser recognizes 3 special directives which are each preceded
-by the backslash character:  \verb+ \include, \group+, and \verb+ \end+.
-
-The 'include' directive must be followed by a filename. It forces the
-parser to temporarily stop reading the current template file and begin
-reading the include file. Once the parser reaches the end of the
-include file it continues parsing the current template file.  Include
-files can be nested, and HDU definitions can span multiple template
-files.
-
-The start of a GROUP definition is denoted with the 'group' directive,
-and the end of a GROUP definition is denoted with the 'end' directive.
-Each GROUP contains 0 or more member blocks (HDUs or GROUPs). Member
-blocks of type GROUP can contain their own member blocks. The GROUP
-definition itself occupies one FITS file HDU of special type (GROUP
-HDU), so if a template specifies 1 group with 1 member HDU like:
-
-\begin{verbatim}
-\group
-grpdescr = 'demo'
-xtension bintable
-# this bintable has 0 cols, 0 rows
-\end
-\end{verbatim}
-then the parser creates a FITS file with 3 HDUs :
-
-\begin{verbatim}
-1) dummy PHDU
-2) GROUP HDU (has 1 member, which is bintable in HDU number 3)
-3) bintable (member of GROUP in HDU number 2)
-\end{verbatim}
-Technically speaking, the GROUP HDU is a BINTABLE with 6 columns. Applications
-can define additional columns in a GROUP HDU using TFORMn and TTYPEn
-(where n is 7, 8, ....) keywords or their auto-indexing equivalents.
-
-For a more complicated example of a template file using the group directives,
-look at the sample.tpl file that is included in the CFITSIO distribution.
-
-
-\subsubsection*{Formal Template Syntax}
-
-The template syntax can formally be defined as follows:
-
-\begin{verbatim}
-    TEMPLATE = BLOCK [ BLOCK ... ]
-
-       BLOCK = { HDU | GROUP }
-
-       GROUP = \GROUP [ BLOCK ... ] \END
-
-         HDU = XTENSION [ LINE ... ] { XTENSION | \GROUP | \END | EOF }
-
-        LINE = [ KEYWORD [ = ] ] [ VALUE ] [ / COMMENT ]
-
-    X ...     - X can be present 1 or more times
-    { X | Y } - X or Y
-    [ X ]     - X is optional
-\end{verbatim}
-
-At the topmost level, the template defines 1 or more template blocks. Blocks
-can be either HDU (Header Data Unit) or a GROUP. For each block the parser
-creates 1 (or more for GROUPs) FITS file HDUs.
-
-
-
-\subsubsection*{Errors}
-
-In general the fits\_execute\_template() function tries to be as atomic
-as possible, so either everything is done or nothing is done. If an
-error occurs during parsing of the template, fits\_execute\_template()
-will (try to) delete the top level BLOCK (with all its children if any)
-in which the error occured, then it will stop reading the template file
-and it will return with an error.
-
-
-\subsubsection*{Examples}
-
-1. This template file will create a 200 x 300 pixel image, with 4-byte
-integer pixel values, in the primary HDU:
-
-\begin{verbatim}
-  SIMPLE = T
-  BITPIX = 32
-  NAXIS = 2     / number of dimensions
-  NAXIS1 = 100  / length of first axis
-  NAXIS2 = 200  / length of second axis
-  OBJECT = NGC 253 / name of observed object
-\end{verbatim}
-The allowed values of BITPIX are 8, 16, 32, -32, or -64,
-representing, respectively, 8-bit integer, 16-bit integer, 32-bit
-integer, 32-bit floating point, or 64 bit floating point pixels.
-
-2.  To create a FITS  table, the template first needs to include
-XTENSION = TABLE or BINTABLE to define whether it is an ASCII or binary
-table, and NAXIS2 to define the number of rows in the table.  Two
-template lines are then needed to define the name (TTYPEn) and FITS data
-format (TFORMn) of the columns, as in this example:
-
-\begin{verbatim}
-  xtension = bintable
-  naxis2 = 40
-  ttype# = Name
-  tform# = 10a
-  ttype# = Npoints
-  tform# = j
-  ttype# = Rate
-  tunit# = counts/s
-  tform# = e
-\end{verbatim}
-The above example defines a null primary array followed by a 40-row
-binary table extension with 3 columns called 'Name', 'Npoints', and
-'Rate', with data formats of '10A' (ASCII character string), '1J'
-(integer) and '1E' (floating point), respectively.  Note that the other
-required FITS keywords (BITPIX, NAXIS, NAXIS1, PCOUNT, GCOUNT, TFIELDS,
-and END) do not need to be explicitly defined in the template because
-their values can be inferred from the other keywords in the template.
-This example also illustrates that the templates are generally
-case-insensitive (the keyword names and TFORMn values are converted to
-upper-case in the FITS file) and that string keyword values generally
-do not need to be enclosed in quotes.
-
-
-
-\subsection{HDU Location Specification}
+\section{HDU Location Specification}
 
 The optional HDU location specifier defines which HDU (Header-Data
 Unit, also known as an `extension') within the FITS file to initially
@@ -1493,7 +1304,7 @@ syntax as described in the Row Filter Specifier section, below.
 \end{verbatim}
 
 
-\subsection{age Section}
+\section{Image Section}
 
 A virtual file containing a rectangular subsection of an image can be
 extracted and opened by specifying the range of pixels (start:end)
@@ -1546,7 +1357,7 @@ section, if they exist, so that the coordinate associated with each
 pixel in the image section will be computed correctly.
 
 
-\subsection{Column and Keyword Filtering Specification}
+\section{Column and Keyword Filtering Specification}
 
 The optional column/keyword filtering specifier is used to modify the
 column structure and/or the header keywords in the HDU that was
@@ -1633,30 +1444,45 @@ Examples:
 \end{verbatim}
 
 
-\subsection{Row Filtering Specification}
+\section{Row Filtering Specification}
 
-    The  optional row filter is a  boolean expression enclosed in square
-    brackets for filtering or selecting rows from  the input FITS table.
-    A new FITS file is then created  which contains only those
-    rows for  which  the boolean   expression evaluates  to true.   (The
-    primary array and any  other extensions in the  input file  are also
-    copied to the new file).  The original FITS file is closed and
-    the new  file  is opened  and  passed to  the  application
-    program.  The new file will persist only until the file is closed
-    or until the program exits, unless the output file specifier (see
-    above) is also supplied.
+    When entering the name of a FITS table that is to be opened by a
+    program, an optional row filter may be specified to select a subset
+    of the rows in the table.  A temporary new FITS file is created on
+    the fly which contains only those rows for which the row filter
+    expression evaluates to true.  (The primary array and any other
+    extensions in the input file are also copied to the temporary
+    file).  The original FITS file is closed and the new virtual file
+    is opened by the application program.  The row filter expression is
+    enclosed in square brackets following the file name and extension
+    name (e.g., 'file.fits[events][GRADE==50]'  selects only those rows
+    where the GRADE column value equals 50).   When dealing with tables
+    where each row has an associated time and/or 2D spatial position,
+    the row filter expression can also be used to select rows based on
+    the times in a Good Time Intervals (GTI) extension, or on spatial
+    position as given in a SAO-style region file.
 
-    The expression can  be an arbitrarily  complex  series of operations
-    performed on constants, keyword values,  and column data taken  from
-    the specified FITS TABLE extension.
+
+\subsection{General Syntax}
+
+    The row filtering  expression can be an arbitrarily  complex series
+    of operations performed  on constants,  keyword values,  and column
+    data taken from the specified FITS TABLE extension.  The expression
+    must evaluate to a boolean  value for each row  of the table, where
+    a value of FALSE means that the row will be excluded.
+
+    For complex or commonly  used filters, one can place the expression
+    into a text file and import it into the row filter using the syntax
+    '[@filename.txt]'.  The expression can be  arbitrarily complex and
+    extend over multiple lines of the file.
 
     Keyword and   column data  are referenced by   name.  Any  string of
     characters not surrounded by    quotes (ie, a constant  string)   or
     followed by   an open parentheses (ie,   a  function name)   will be
-    initially interpretted   as a column  name and  its contents for the
+    initially interpreted   as a column  name and  its contents for the
     current row inserted into the expression.  If no such column exists,
     a keyword of that  name will be searched for  and its value used, if
-    found.  To force the  name to be  interpretted as a keyword (in case
+    found.  To force the  name to be  interpreted as a keyword (in case
     there is both a column and keyword with the  same name), precede the
     keyword name with a single pound sign, '\#', as in '\#NAXIS2'.  Due to
     the generalities of FITS column and  keyword names, if the column or
@@ -1752,7 +1578,7 @@ by a backslash to force the UNIX shell to ignore it.
 \end{verbatim}
     When  a  NULL, or undefined, value is encountered in the FITS table,
     the expression will evaluate to NULL unless the undefined  value  is
-    not   actually   required  for  evaluation,  eg.  "TRUE  .or.  NULL"
+    not   actually   required  for  evaluation,  e.g. "TRUE  .or.  NULL"
     evaluates to TRUE. The  following  two  functions  allow  some  NULL
     detection  and  handling:  ISNULL(x)  and  DEFNULL(x,y).  The former
     returns a boolean value of TRUE if the  argument  x  is  NULL.   The
@@ -1786,7 +1612,7 @@ by a backslash to force the UNIX shell to ignore it.
     insensitive.
 
     To construct the boolean expression using the mask  as  the  boolean
-    equal  operator  discribed above on a bit table column. For example,
+    equal  operator  described above on a bit table column. For example,
     if you had a 7 bit column named flags in a  FITS  table  and  wanted
     all  rows  having  the bit pattern 0010011, the selection expression
     would be:
@@ -1843,7 +1669,8 @@ by a backslash to force the UNIX shell to ignore it.
     "null" constants  are useful for conditionally  setting table values
     to a NULL, or undefined, value (eg., "col1==-99 ? \#NULL : col1").
 
-  Vector Columns
+
+\subsection{Vector Columns}
 
     Vector columns can also be used  in  building  the  expression.   No
     special  syntax  is required if one wants to operate on all elements
@@ -1914,19 +1741,27 @@ by a backslash to force the UNIX shell to ignore it.
     vectors, will be expanded out with  each of its elements becoming an
     element in the constructed vector.
 
-    A common filtering method  applied to  FITS  files is a time  filter
-    using a Good Time Interval (GTI)  extension.  A high-level function,
-    gtifilter(a,b,c,d),  is  available   which  performs this    special
-    evaluation, returning a boolean result for each time element tested.
-    Its syntax is
 
+\subsection{Good Time Interval Filtering}
+
+    A common filtering method involves selecting rows which have a time
+    value which lies within what is called a Good Time Interval or GTI.
+    The time intervals are defined in a separate FITS table extension
+    which contains 2 columns giving the start and stop time of each
+    good interval.  The filtering operation accepts only those rows of
+    the input table which have an associated time which falls within
+    one of the time intervals defined in the GTI extension. A high
+    level function, gtifilter(a,b,c,d), is available which evaluates
+    each row of the input table  and returns TRUE  or FALSE depending
+    whether the row is inside or outside the  good time interval.  The
+    syntax is
 
 \begin{verbatim}
-       gtifilter( [ "filename" [, expr [, "STARTCOL", "STOPCOL" ] ] ] )
+      gtifilter( [ "gtifile" [, expr [, "STARTCOL", "STOPCOL" ] ] ] )
 \end{verbatim}
-
-    where  each  "[]" demarks   optional parameters.   The  filename, if
-    specified,  can be  blank  ("") which will    mean to use  the first
+    where  each "[]" demarks optional parameters.  Note that  the quotes
+    around the gtifile and START/STOP column are required.  The gtifile,
+    if specified,  can be blank  ("") which will  mean to use  the first
     extension  with   the name "*GTI*"  in   the current  file,  a plain
     extension  specifier (eg, "+2",  "[2]", or "[STDGTI]") which will be
     used  to  select  an extension  in  the current  file, or  a regular
@@ -1936,17 +1771,14 @@ by a backslash to force the UNIX shell to ignore it.
     the time  column  name.  A  vector  time expression  will  produce a
     vector boolean  result.  STARTCOL and  STOPCOL are the  names of the
     START/STOP   columns in the    GTI extension.  If   one  of them  is
-    specified, they both  must be. Note that  the quotes surrounding the
-    filename and START/STOP column names are required.
+    specified, they both  must be.
 
     In  its  simplest form, no parameters need to be provided -- default
     values will be used.  The expression "gtifilter()" is equivalent to
 
-
 \begin{verbatim}
        gtifilter( "", TIME, "*START*", "*STOP*" )
 \end{verbatim}
-
     This will search the current file for a GTI  extension,  filter  the
     TIME  column in the current table, using START/STOP times taken from
     columns in the GTI  extension  with  names  containing  the  strings
@@ -1957,27 +1789,80 @@ by a backslash to force the UNIX shell to ignore it.
     searches   for   TIMEZERO/I/F   keywords  in  the  current  and  GTI
     extensions, applying a relative time offset, if necessary.
 
-    Another common  filtering method is  a  spatial filter using  a SAO-
-    style region file.  The syntax for this high-level filter is
 
+\subsection{Spatial Region Filtering}
+
+    Another common  filtering method selects rows based on whether the
+    spatial position associated with each row is located within a given
+    2-dimensional region.  The syntax for this high-level filter is
 
 \begin{verbatim}
        regfilter( "regfilename" [ , Xexpr, Yexpr [ , "wcs cols" ] ] )
 \end{verbatim}
+    where each "[]" demarks optional parameters. The region file name
+    is required and must be  enclosed in quotes.  The remaining
+    parameters are optional.  The region file is an ASCII text file
+    which contains a list of one or more geometric shapes (circle,
+    ellipse, box, etc.) which defines a region on the celestial sphere
+    or an area within a particular 2D image.  The region file is
+    typically generated using an image display program such as fv/POW
+    (distribute by the HEASARC), or ds9 (distributed by the Smithsonian
+    Astrophysical Observatory).  Users should refer to the documentation
+    provided with these programs for more details on the syntax used in
+    the region files.
 
-    The region file name is required, but the rest is optional.  Without
-    any explicit expression for the X and Y coordinates (in pixels), the
-    filter will search for  and operate on columns "X"  and "Y".  If the
-    region file is   in "degrees" format  instead  of "pixels" ("hhmmss"
-    format is not supported, yet), the  filter will need WCS information
-    to convert the region coordinates to pixels.  If supplied, the final
-    parameter string contains the names of the 2 columns (space or comma
-    separated) which contain   the   desired WCS information.    If  not
-    supplied, the filter  will scan the X  and Y expressions for  column
-    names.  If only one is found in each  expression, those columns will
-    be used.  Otherwise, an error will be returned.
+    In its simpliest form, (e.g., regfilter("region.reg") ) the
+    coordinates in the default 'X' and 'Y' columns will be used to
+    determine if each row is inside or outside the area specified in
+    the region file.  Alternate position column names, or expressions,
+    may be entered if needed, as in
 
-    The region shapes supported are (names are case insensitive):
+\begin{verbatim}
+        regfilter("region.reg", XPOS, YPOS)
+\end{verbatim}
+    Region filtering can be applied most unambiguously if the positions
+    in the region file and in the table to be filtered are both give in
+    terms of absolute celestial coordinate units.  In this case the
+    locations and sizes of the geometric shapes in the region file are
+    specified in angular units on the sky (e.g., positions given in
+    R.A. and Dec.  and sizes in arcseconds or arcminutes).  Similarly,
+    each row of the filtered table will have a celestial coordinate
+    associated with it.  This association is usually implemented using
+    a set of so-called 'World Coordinate System' (or WCS) FITS keywords
+    that define the coordinate transformation that must be applied to
+    the values in the 'X' and 'Y' columns to calculate the coordinate.
+
+    Alternatively, one can perform spatial filtering using unitless
+    'pixel' coordinates for the regions and row positions.  In this
+    case the user must be careful to ensure that the positions in the 2
+    files are self-consistent.  A typical problem is that the region
+    file may be generated using a binned image, but the unbinned
+    coordinates are given in the event table.  The ROSAT events files,
+    for example, have X and Y pixel coordinates that range from 1 -
+    15360.  These coordinates are typically binned by a factor of 32 to
+    produce a 480x480 pixel image.  If one then uses a region file
+    generated from this image (in image pixel units) to filter the
+    ROSAT events file, then the X and Y column values must be converted
+    to corresponding pixel units as in:
+
+\begin{verbatim}
+        regfilter("rosat.reg", X/32.+.5, Y/32.+.5)
+\end{verbatim}
+    Note that this binning conversion is not necessary if the region
+    file is specified using celestial coordinate units instead of pixel
+    units because CFITSIO is then able to directly compare the
+    celestial coordinate of each row in the table with the celestial
+    coordinates in the region file without having to know anything
+    about how the image may have been binned.
+
+    The last "wcs cols" parameter should rarely be needed. If supplied,
+    this  string contains the names of the 2 columns (space or comma
+    separated) which have the associated WCS keywords. If not supplied,
+    the filter  will scan the X  and Y expressions for column names.
+    If only one is found in each  expression, those columns will be
+    used, otherwise an error will be returned.
+
+    These region shapes are supported (names are case insensitive):
 
 \begin{verbatim}
        Point         ( X1, Y1 )               <- One pixel square region
@@ -1992,26 +1877,27 @@ by a backslash to force the UNIX shell to ignore it.
        Elliptannulus ( Xc, Yc, Rinx, Riny, Routx, Routy, Ain, Aout )
        Sector        ( Xc, Yc, Amin, Amax )
 \end{verbatim}
-
     where (Xc,Yc) is  the coordinate of  the shape's center; (X\#,Y\#) are
     the coordinates  of the shape's edges;  Rxxx are the shapes' various
     Radii or semimajor/minor  axes; and Axxx  are the angles of rotation
     (or bounding angles for Sector) in degrees.  For rotated shapes, the
     rotation angle  can  be left  off, indicating  no rotation.   Common
-    alternate  names for the regions  can also be  used: rotbox == box;
-    rotrectangle == rectangle;  (rot)rhombus == (rot)diamond;  and pie
-    == sector.  When a  shape's name is  preceded by a minus sign, '-',
+    alternate  names for the regions  can also be  used: rotbox <-> box;
+    rotrectangle <-> rectangle;  (rot)rhombus <-> (rot)diamond;  and pie
+    <-> sector.  When a  shape's name is  preceded by a minus sign, '-',
     the defined region  is instead the area  *outside* its boundary (ie,
     the region is inverted).  All the shapes within a single region file
-    are AND'd together to create the region.
+    are OR'd together to create the region.
 
-    For  complex  or commonly  used filters,  one   can also  place  the
-    expression into a text file and import it  into the row filter using
-    the syntax  '[@filename.txt]'.  The   expression can be  arbitrarily
-    complex and extend over multiple lines of the file.
+    The positional coordinates may be given either in pixel units,
+    decimal degrees or hh:mm:ss.s, dd:mm:ss.s units.  The shape sizes
+    may be given in pixels, degrees, arcminutes, or arcseconds.  Look
+    at examples of region file produced by fv/POW or ds9 for further
+    details of the region file format.
 
 
-EXAMPLES:
+
+\subsection{Example Row Filters}
 
 \begin{verbatim}
     [ binary && mag <= 5.0]        - Extract all binary stars brighter
@@ -2044,10 +1930,26 @@ EXAMPLES:
     [@rowFilter.txt]               - Extract rows using the expression
                                      contained within the text file
                                      rowFilter.txt
+
+    [gtifilter()]                  - Search the current file for a GTI
+				     extension,  filter  the TIME
+				     column in the current table, using
+				     START/STOP times taken from
+				     columns in the GTI  extension
+
+    [regfilter("pow.reg")]         - Extract rows which have a coordinate
+                                     (as given in the X and Y columns)
+                                     within the spatial region specified
+                                     in the pow.reg region file.
+
+    [regfilter("pow.reg", Xs, Ys)] - Same as above, except that the
+                                     Xs and Ys columns will be used to
+                                     determine the coordinate of each
+                                     row in the table.
 \end{verbatim}
 
 
-\subsection{Binning or Histogramming Specification}
+\section{ Binning or Histogramming Specification}
 
 The optional binning specifier is enclosed in square brackets and can
 be distinguished from a general row filter specification by the fact
@@ -2181,6 +2083,243 @@ and each axis specification must still be comma-separated.
 \end{verbatim}
 
 
+\chapter{Template Files }
+
+When a new FITS file is created with a call to fits\_create\_file, the
+name of a template file may be supplied in parentheses immediately
+following the name of the new file to be created.  This template is
+used to define the structure of one or more HDUs in the new file.  The
+template file may be another FITS file, in which case the newly created
+file will have exactly the same keywords in each HDU as in the template
+FITS file, but all the data units will be filled with zeros.  The
+template file may also be an ASCII text file, where each line (in
+general) describes one FITS keyword record.  The format of the ASCII
+template file is described in the following sections.
+
+
+\section{Detailed Template Line Format}
+
+The format of each ASCII template line closely follows the format of a
+FITS keyword record:
+
+\begin{verbatim}
+  KEYWORD = KEYVALUE / COMMENT
+\end{verbatim}
+except that free format may be used (e.g., the equals sign may appear
+at any position in the line) and TAB characters are allowed and are
+treated the same as space characters.  The KEYVALUE and COMMENT fields
+are optional.  The equals sign character is also optional, but it is
+recommended that it be included for clarity.  Any template line that
+begins with the pound '\#' character is ignored by the template parser
+and may be use to insert comments into the template file itself.
+
+The KEYWORD name field is limited to 8 characters in length and only
+the letters A-Z, digits 0-9, and the hyphen and underscore characters
+may be used, without any embedded spaces. Lowercase letters in the
+template keyword name will be converted to uppercase.  Leading spaces
+in the template line preceding the keyword name are generally ignored,
+except if the first 8 characters of a template line are all blank, then
+the entire line is treated as a FITS comment keyword (with a blank
+keyword name) and is copied verbatim into the FITS header.
+
+The KEYVALUE field may have any allowed  FITS  data type: character
+string, logical, integer, real, complex integer, or complex real.  The
+character string values need not be enclosed in single quote characters
+unless they are necessary to distinguish the string from a different
+data type (e.g.  2.0 is a real but '2.0' is a string).  The keyword has
+an undefined (null) value if the template record only contains blanks
+following the "=" or between the "=" and the "/" comment field
+delimiter.
+
+String keyword values longer than 68 characters (the maximum length
+that will fit in a single FITS keyword record) are permitted using the
+CFITSIO long string convention. They can either be specified as a
+single long line in the template, or by using multiple lines where the
+continuing lines contain the 'CONTINUE' keyword, as in this example:
+
+\begin{verbatim}
+  LONGKEY = 'This is a long string value that is contin&'
+  CONTINUE  'ued over 2 records' / comment field goes here
+\end{verbatim}
+The format of template lines with CONTINUE keyword is very strict:  3
+spaces must follow CONTINUE and the rest of the line is copied verbatim
+to the FITS file.
+
+The start of the optional COMMENT field must be preceded by "/", which
+is used to separate it from the keyword value field. Exceptions are if
+the KEYWORD name field contains COMMENT, HISTORY, CONTINUE, or if the
+first 8 characters of the template line are blanks.
+
+More than one Header-Data Unit (HDU) may be defined in the template
+file.  The start of an HDU definition is denoted with a SIMPLE or
+XTENSION template line:
+
+1) SIMPLE begins a Primary HDU definition. SIMPLE may only appear as
+the  first keyword in the template file. If the template file begins
+with XTENSION instead of SIMPLE, then a default empty Primary HDU is
+created, and the template is then assumed to define the keywords
+starting with the first extension following the Primary HDU.
+
+2) XTENSION marks the beginning of a new extension HDU definition.  The
+previous HDU will be closed at this point and processing of the next
+extension begins.
+
+
+\section{Auto-indexing of Keywords}
+
+If a template keyword name ends with a "\#" character, it is said to be
+'auto-indexed'.   Each "\#" character will be replaced by the current
+integer index value, which gets reset = 1 at the start of each new HDU
+in the file (or 7 in the special case of a GROUP definition).  The
+FIRST indexed keyword in each template HDU definition is used as the
+'incrementor';  each subsequent occurrence of this SAME keyword will
+cause the index value to be incremented.  This behavior can be rather
+subtle, as illustrated in the following examples in which the TTYPE
+keyword is the incrementor in both cases:
+
+\begin{verbatim}
+  TTYPE# = TIME
+  TFORM# = 1D
+  TTYPE# = RATE
+  TFORM# = 1E
+\end{verbatim}
+will create TTYPE1, TFORM1, TTYPE2, and TFORM2 keywords.  But if the
+template looks like,
+
+\begin{verbatim}
+  TTYPE# = TIME
+  TTYPE# = RATE
+  TFORM# = 1D
+  TFORM# = 1E
+\end{verbatim}
+this results in a FITS files with  TTYPE1, TTYPE2, TFORM2, and TFORM2,
+which is probably not what was intended!
+
+
+\section{Template Parser Directives}
+
+In addition to the template lines which define individual keywords, the
+template parser recognizes 3 special directives which are each preceded
+by the backslash character:  \verb+ \include, \group+, and \verb+ \end+.
+
+The 'include' directive must be followed by a filename. It forces the
+parser to temporarily stop reading the current template file and begin
+reading the include file. Once the parser reaches the end of the
+include file it continues parsing the current template file.  Include
+files can be nested, and HDU definitions can span multiple template
+files.
+
+The start of a GROUP definition is denoted with the 'group' directive,
+and the end of a GROUP definition is denoted with the 'end' directive.
+Each GROUP contains 0 or more member blocks (HDUs or GROUPs). Member
+blocks of type GROUP can contain their own member blocks. The GROUP
+definition itself occupies one FITS file HDU of special type (GROUP
+HDU), so if a template specifies 1 group with 1 member HDU like:
+
+\begin{verbatim}
+\group
+grpdescr = 'demo'
+xtension bintable
+# this bintable has 0 cols, 0 rows
+\end
+\end{verbatim}
+then the parser creates a FITS file with 3 HDUs :
+
+\begin{verbatim}
+1) dummy PHDU
+2) GROUP HDU (has 1 member, which is bintable in HDU number 3)
+3) bintable (member of GROUP in HDU number 2)
+\end{verbatim}
+Technically speaking, the GROUP HDU is a BINTABLE with 6 columns. Applications
+can define additional columns in a GROUP HDU using TFORMn and TTYPEn
+(where n is 7, 8, ....) keywords or their auto-indexing equivalents.
+
+For a more complicated example of a template file using the group directives,
+look at the sample.tpl file that is included in the CFITSIO distribution.
+
+
+\section{Formal Template Syntax}
+
+The template syntax can formally be defined as follows:
+
+\begin{verbatim}
+    TEMPLATE = BLOCK [ BLOCK ... ]
+
+       BLOCK = { HDU | GROUP }
+
+       GROUP = \GROUP [ BLOCK ... ] \END
+
+         HDU = XTENSION [ LINE ... ] { XTENSION | \GROUP | \END | EOF }
+
+        LINE = [ KEYWORD [ = ] ] [ VALUE ] [ / COMMENT ]
+
+    X ...     - X can be present 1 or more times
+    { X | Y } - X or Y
+    [ X ]     - X is optional
+\end{verbatim}
+
+At the topmost level, the template defines 1 or more template blocks. Blocks
+can be either HDU (Header Data Unit) or a GROUP. For each block the parser
+creates 1 (or more for GROUPs) FITS file HDUs.
+
+
+
+\section{Errors}
+
+In general the fits\_execute\_template() function tries to be as atomic
+as possible, so either everything is done or nothing is done. If an
+error occurs during parsing of the template, fits\_execute\_template()
+will (try to) delete the top level BLOCK (with all its children if any)
+in which the error occurred, then it will stop reading the template file
+and it will return with an error.
+
+
+\section{Examples}
+
+1. This template file will create a 200 x 300 pixel image, with 4-byte
+integer pixel values, in the primary HDU:
+
+\begin{verbatim}
+  SIMPLE = T
+  BITPIX = 32
+  NAXIS = 2     / number of dimensions
+  NAXIS1 = 100  / length of first axis
+  NAXIS2 = 200  / length of second axis
+  OBJECT = NGC 253 / name of observed object
+\end{verbatim}
+The allowed values of BITPIX are 8, 16, 32, -32, or -64,
+representing, respectively, 8-bit integer, 16-bit integer, 32-bit
+integer, 32-bit floating point, or 64 bit floating point pixels.
+
+2.  To create a FITS  table, the template first needs to include
+XTENSION = TABLE or BINTABLE to define whether it is an ASCII or binary
+table, and NAXIS2 to define the number of rows in the table.  Two
+template lines are then needed to define the name (TTYPEn) and FITS data
+format (TFORMn) of the columns, as in this example:
+
+\begin{verbatim}
+  xtension = bintable
+  naxis2 = 40
+  ttype# = Name
+  tform# = 10a
+  ttype# = Npoints
+  tform# = j
+  ttype# = Rate
+  tunit# = counts/s
+  tform# = e
+\end{verbatim}
+The above example defines a null primary array followed by a 40-row
+binary table extension with 3 columns called 'Name', 'Npoints', and
+'Rate', with data formats of '10A' (ASCII character string), '1J'
+(integer) and '1E' (floating point), respectively.  Note that the other
+required FITS keywords (BITPIX, NAXIS, NAXIS1, PCOUNT, GCOUNT, TFIELDS,
+and END) do not need to be explicitly defined in the template because
+their values can be inferred from the other keywords in the template.
+This example also illustrates that the templates are generally
+case-insensitive (the keyword names and TFORMn values are converted to
+upper-case in the FITS file) and that string keyword values generally
+do not need to be enclosed in quotes.
+
 \chapter{FITSIO Conventions and Guidelines }
 
 
@@ -3133,7 +3272,11 @@ used by these interface routines.
    This routine always opens the primary array (the first HDU) of
    the file, and does not move to a following extension, if one was
    specified as part of the filename.   Use the FTNOPN routine to
-  automatically move to the extension.
+   automatically move to the extension.  This routine will also
+   open IRAF images (.imh format files) and raw binary data arrays
+   with READONLY access by first converting them on the fly into
+   virtual FITS images.  See the `Extended File Name Syntax' chapter
+  for more details.
 \end{description}
 
 \begin{verbatim}
@@ -4015,7 +4158,7 @@ values are not blank.
 
 \begin{description}
 \item[2 ] Put (append) a COMMENT keyword into the CHU.  Multiple COMMENT keywords
-   will be written if the input comment string is longer than 70 characters.
+   will be written if the input comment string is longer than 72 characters.
 \end{description}
 
 \begin{verbatim}
@@ -4024,7 +4167,7 @@ values are not blank.
 
 \begin{description}
 \item[3 ]Put (append) a HISTORY keyword into the CHU.  Multiple HISTORY keywords
-   will be written if the input history string is longer than 70 characters.
+   will be written if the input history string is longer than 72 characters.
 \end{description}
 
 \begin{verbatim}

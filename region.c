@@ -20,10 +20,10 @@ int ffrrgn( const char *filename,
 {
    char     *currLine;
    char     *namePtr, *paramPtr, *currLoc;
-   char     *pX, *pY;
-   long     allocLen, lineLen;
-   double   *coords, X, Y, R, x, y;
-   int      nParams, nCoords;
+   char     *pX, *pY, *endp;
+   long     allocLen, lineLen, hh, mm, dd;
+   double   *coords = 0, X, Y, R, x, y, ss, xsave= 0., ysave= 0.;
+   int      nParams, nCoords, negdec;
    int      i, done;
    FILE     *rgnFile;
    coordFmt cFmt;
@@ -44,7 +44,7 @@ int ffrrgn( const char *filename,
    else
       aRgn->wcs.exists = 0;
 
-   cFmt = pixel_fmt;
+   cFmt = pixel_fmt; /* set default format */
 
    /*  Allocate Line Buffer  */
 
@@ -109,6 +109,8 @@ int ffrrgn( const char *filename,
                cFmt = degree_fmt;
             } else if( !strncasecmp( currLoc, "hhmmss", 6 ) ) {
                cFmt = hhmmss_fmt;
+            } else if( !strncasecmp( currLoc, "hms", 3 ) ) {
+               cFmt = hhmmss_fmt;
             } else {
                ffpmsg("Unknown format code encountered in region file.");
                *status = PARSE_SYNTAX_ERR;
@@ -116,7 +118,10 @@ int ffrrgn( const char *filename,
             }
          }
 
-      } else {
+      } else if( !strncasecmp( currLoc, "glob", 4 ) ) {
+		  /* skip lines that begin with the word 'global' */
+
+	  } else {
 
          while( *currLoc != '\0' ) {
 
@@ -150,6 +155,14 @@ int ffrrgn( const char *filename,
                   *currLoc = '\0';
                   if( !paramPtr )  /* Allow for a blank line */
                      done = 1;
+                  break;
+               case ':':  
+                  currLoc++;
+                  cFmt = hhmmss_fmt;
+                  break;
+               case 'd':
+                  currLoc++;
+                  cFmt = degree_fmt;
                   break;
                case ',':
                   nParams++;  /* Fall through to default */
@@ -196,7 +209,47 @@ int ffrrgn( const char *filename,
             newShape->sign  = 1;
             newShape->shape = point_rgn;
 
-            /*  Check for the shape's sign  */
+            /*  Check for format code at beginning of the line */
+
+            if( !strncasecmp( namePtr, "image;", 6 ) ) {
+				namePtr += 6;
+				cFmt = pixel_fmt;
+            } else if( !strncasecmp( namePtr, "fk4;", 4 ) ) {
+				namePtr += 4;
+				cFmt = degree_fmt;
+            } else if( !strncasecmp( namePtr, "fk5;", 4 ) ) {
+				namePtr += 4;
+				cFmt = degree_fmt;
+            } else if( !strncasecmp( namePtr, "icrs;", 5 ) ) {
+				namePtr += 5;
+				cFmt = degree_fmt;
+            } else if( !strncasecmp( namePtr, "fk5", 3 ) ) {
+				cFmt = degree_fmt;
+                                continue;  /* supports POW region file format */
+            } else if( !strncasecmp( namePtr, "fk4", 3 ) ) {
+				cFmt = degree_fmt;
+                                continue;  /* supports POW region file format */
+            } else if( !strncasecmp( namePtr, "icrs", 4 ) ) {
+				cFmt = degree_fmt;
+                                continue;  /* supports POW region file format */
+            } else if( !strncasecmp( namePtr, "image", 5 ) ) {
+				cFmt = pixel_fmt;
+                                continue;  /* supports POW region file format */
+            } else if( !strncasecmp( namePtr, "galactic;", 9 ) ) {
+               ffpmsg( "Galactic region coordinates not supported" );
+               ffpmsg( namePtr );
+			   *status = PARSE_SYNTAX_ERR;
+               goto error;
+			} else if( !strncasecmp( namePtr, "ecliptic;", 9 ) ) {
+               ffpmsg( "ecliptic region coordinates not supported" );
+               ffpmsg( namePtr );
+			   *status = PARSE_SYNTAX_ERR;
+               goto error;
+            }
+
+            while( *namePtr==' ' ) namePtr++;
+            
+			/*  Check for the shape's sign  */
 
             if( *namePtr=='+' ) {
                namePtr++;
@@ -288,6 +341,7 @@ int ffrrgn( const char *filename,
             } else {
                ffpmsg( "Unrecognized region found in region file:" );
                ffpmsg( namePtr );
+               *status = PARSE_SYNTAX_ERR;
                goto error;
             }
             if( *status ) {
@@ -322,15 +376,54 @@ int ffrrgn( const char *filename,
                while( *paramPtr!=',' && *paramPtr != '\0' ) paramPtr++;
                *(paramPtr++) = '\0';
 
-               if( cFmt==hhmmss_fmt ) {
+               if( strchr(pX, ':' ) ) {
                   /*  Read in special format & convert to decimal degrees  */
-                  ffpmsg("hhmmss format not supported.");
-                  *status = PARSE_SYNTAX_ERR;
-                  goto error;
+                  cFmt = hhmmss_fmt;
+                  mm = 0;
+                  ss = 0.;
+                  hh = strtol(pX, &endp, 10);
+                  if (endp && *endp==':') {
+                      pX = endp + 1;
+                      mm = strtol(pX, &endp, 10);
+                      if (endp && *endp==':') {
+                          pX = endp + 1;
+                          ss = atof( pX );
+                      }
+                  }
+                  X = 15. * (hh + mm/60. + ss/3600.); /* convert to degrees */
+
+                  mm = 0;
+                  ss = 0.;
+                  negdec = 0;
+
+                  while( *pY==' ' ) pY++;
+                  if (*pY=='-') {
+                      negdec = 1;
+                      pY++;
+                  }
+                  dd = strtol(pY, &endp, 10);
+                  if (endp && *endp==':') {
+                      pY = endp + 1;
+                      mm = strtol(pY, &endp, 10);
+                      if (endp && *endp==':') {
+                          pY = endp + 1;
+                          ss = atof( pY );
+                      }
+                  }
+                  if (negdec)
+                     Y = -dd - mm/60. - ss/3600.; /* convert to degrees */
+                  else
+                     Y = dd + mm/60. + ss/3600.;
+
                } else {
                   X = atof( pX );
                   Y = atof( pY );
                }
+               if (i==0) {   /* save 1st coord. in case needed later */
+                   xsave = X;
+                   ysave = Y;
+               }
+
                if( cFmt!=pixel_fmt ) {
                   /*  Convert to pixels  */
                   if( wcs==NULL || ! wcs->exists ) {
@@ -353,13 +446,80 @@ int ffrrgn( const char *filename,
                coords[i+1] = Y;
             }
 
-            /*  Read in remaining parameters... all in pixels or degrees  */
+            /*  Read in remaining parameters...  */
 
             for( ; i<nParams; i++ ) {
                pX = paramPtr;
                while( *paramPtr!=',' && *paramPtr != '\0' ) paramPtr++;
                *(paramPtr++) = '\0';
-               coords[i] = atof( pX );
+               coords[i] = strtod( pX, &endp );
+
+               if (endp && *endp=='"') {
+                   /* parameter given in arcsec so convert to pixels. */
+                   /* Increment first Y coordinate by this amount then calc */
+                   /* the distance in pixels from the original coordinate. */
+                   /* NOTE: This assumes the pixels are square!! */
+                   if (ysave < 0.)
+                       Y = ysave + coords[i]/3600.;  /* don't exceed -90 */
+                   else
+                       Y = ysave - coords[i]/3600.;  /* don't exceed +90 */
+
+                   X = xsave;
+                   if( ffxypx(  X,  Y, wcs->xrefval, wcs->yrefval,
+                                      wcs->xrefpix, wcs->yrefpix,
+                                      wcs->xinc,    wcs->yinc,
+                                      wcs->rot,     wcs->type,
+                              &x, &y, status ) ) {
+                     ffpmsg("Error converting region to pixel coordinates.");
+                     goto error;
+                   }
+
+                   coords[i] = sqrt( pow(x-coords[0],2) + pow(y-coords[1],2) );
+
+               } else if (endp && *endp=='\'') {
+                   /* parameter given in arcmin so convert to pixels. */
+                   /* Increment first Y coordinate by this amount, then calc */
+                   /* the distance in pixels from the original coordinate. */
+                   /* NOTE: This assumes the pixels are square!! */
+                   if (ysave < 0.)
+                       Y = ysave + coords[i]/60.;  /* don't exceed -90 */
+                   else
+                       Y = ysave - coords[i]/60.;  /* don't exceed +90 */
+
+                   X = xsave;
+                   if( ffxypx(  X,  Y, wcs->xrefval, wcs->yrefval,
+                                      wcs->xrefpix, wcs->yrefpix,
+                                      wcs->xinc,    wcs->yinc,
+                                      wcs->rot,     wcs->type,
+                              &x, &y, status ) ) {
+                     ffpmsg("Error converting region to pixel coordinates.");
+                     goto error;
+                   }
+
+                   coords[i] = sqrt( pow(x-coords[0],2) + pow(y-coords[1],2) );
+
+               } else if (endp && *endp=='d') {
+                   /* parameter given in degrees so convert to pixels. */
+                   /* Increment first Y coordinate by this amount, then calc */
+                   /* the distance in pixels from the original coordinate. */
+                   /* NOTE: This assumes the pixels are square!! */
+                   if (ysave < 0.)
+                       Y = ysave + coords[i];  /* don't exceed -90 */
+                   else
+                       Y = ysave - coords[i];  /* don't exceed +90 */
+
+                   X = xsave;
+                   if( ffxypx(  X,  Y, wcs->xrefval, wcs->yrefval,
+                                      wcs->xrefpix, wcs->yrefpix,
+                                      wcs->xinc,    wcs->yinc,
+                                      wcs->rot,     wcs->type,
+                              &x, &y, status ) ) {
+                     ffpmsg("Error converting region to pixel coordinates.");
+                     goto error;
+                   }
+
+                   coords[i] = sqrt( pow(x-coords[0],2) + pow(y-coords[1],2) );
+               }
             }
 
             /* Perform some useful calculations now to speed up filter later */
@@ -440,9 +600,11 @@ int ffrrgn( const char *filename,
             }
 
          }  /* End of while( *currLoc ) */
-
+/*
+  if (coords)printf("%.8f %.8f %.8f %.8f %.8f\n",
+   coords[0],coords[1],coords[2],coords[3],coords[4]); 
+*/
       }  /* End of if...else parse line */
-
    }   /* End of while( fgets(rgnFile) ) */
 
 
@@ -469,15 +631,18 @@ int fftrgn( double    X,
 {
    double x, y, dx, dy, xprime, yprime, r;
    RgnShape *Shapes;
-   int i;
+   int i, in_included_region = 0, in_excluded_region = 0;
    int result = 1;
 
-   /*  We are ANDing the tests for each region (with -regions being NOTed) */
-   /*  so we can stop as soon as the first region test fails               */
-
    Shapes = Rgn->Shapes;
-   for( i=0; i<Rgn->nShapes && result; i++, Shapes++ ) {
+   for( i=0; i<Rgn->nShapes && !in_excluded_region; i++, Shapes++ ) {
 
+    /* only need to test if the point is not already in an included region, */
+    /* or if the current region is an excluded region */
+
+    if (!in_included_region || !Shapes->sign ) { 
+
+      result = 1;
       switch( Shapes->shape ) {
 
          /* result is guaranteed to be 1 at start, so only test for failure */
@@ -641,10 +806,21 @@ int fftrgn( double    X,
          break;
       }
 
-      if( !Shapes->sign ) result = !result;
+      if (Shapes->sign && result)
+          in_included_region = 1;  /* point is in an included region */
+      else if (!Shapes->sign && result)
+          in_excluded_region = 1;  /* point is in an excluded region */
+
+     } /* end !in_included_region || !Shapes->sign */
 
    }
-   
+
+   result = 0;
+   if (in_included_region) {
+      result = 1;
+      if (in_excluded_region) result = 0;
+   }
+
    return( result );
 }
 
