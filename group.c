@@ -16,6 +16,7 @@
     
 #include "fitsio2.h"
 #include "group.h"
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -5677,6 +5678,36 @@ int  fits_get_url(fitsfile *fptr,       /* I ptr to FITS file to evaluate    */
 /*--------------------------------------------------------------------------
                            URL parse support functions
   --------------------------------------------------------------------------*/
+
+/* simple push/pop/shift/unshift string stack for use by fits_clean_url */
+typedef char* grp_stack_data; /* type of data held by grp_stack */
+
+typedef struct grp_stack_item_struct {
+  grp_stack_data data; /* value of this stack item */
+  struct grp_stack_item_struct* next; /* next stack item */
+  struct grp_stack_item_struct* prev; /* previous stack item */
+} grp_stack_item;
+
+typedef struct grp_stack_struct {
+  size_t stack_size; /* number of items on stack */
+  grp_stack_item* top; /* top item */
+} grp_stack;
+
+static char* grp_stack_default = NULL; /* initial value for new instances
+                                          of grp_stack_data */
+
+/* the following functions implement the group string stack grp_stack */
+static void delete_grp_stack(grp_stack** mystack);
+static grp_stack_item* grp_stack_append(
+  grp_stack_item* last, grp_stack_data data
+);
+static grp_stack_data grp_stack_remove(grp_stack_item* last);
+static grp_stack* new_grp_stack();
+static grp_stack_data pop_grp_stack(grp_stack* mystack);
+static void push_grp_stack(grp_stack* mystack, grp_stack_data data);
+static grp_stack_data shift_grp_stack(grp_stack* mystack);
+static void unshift_grp_stack(grp_stack* mystack, grp_stack_data data);
+
 int fits_clean_url(char *inURL,  /* I input URL string                      */
 		   char *outURL, /* O output URL string                     */
 		   int  *status)
@@ -5688,102 +5719,162 @@ int fits_clean_url(char *inURL,  /* I input URL string                      */
   dependent path strings are not allowed.
  */
 {
-  int i,j;
-  int appendCount = 0;
-  int absPath     = 0;
+  grp_stack* mystack; /* stack to hold pieces of URL */
+  char* tmp;
 
-  char *tmpStr1;
+  if(*status) return *status;
 
-  if(*status != 0) return(*status);
+  mystack = new_grp_stack();
+  *outURL = 0;
 
-  do
-    {
-      /*
-	if inURL starts with an access method specification copy it 
-	directly to the outURL string; else just initialize the outURL string
-	to zero length
-      */
-      
-      if(strstr(inURL,"://") != NULL)
-	{
-	  for(i = 0; inURL[i] != ':'; ++i) outURL[i] = inURL[i];
+  do {
+    /* handle URL scheme and domain if they exist */
+    tmp = strstr(inURL, "://");
+    if(tmp) {
+      /* there is a URL scheme, so look for the end of the domain too */
+      tmp = strchr(tmp + 3, '/');
+      if(tmp) {
+        /* tmp is now the end of the domain, so
+         * copy URL scheme and domain as is, and terminate by hand */
+        size_t string_size = (size_t) (tmp - inURL);
+        strncpy(outURL, inURL, string_size);
+        outURL[string_size] = 0;
 
-	  outURL[i] = 0;
-	  strcat(outURL,"://");
-	  i = strlen(outURL);
-	}
-      else
-	{
-	  i = 0;
-	  outURL[0] = 0;
-	}
-      
-      if(inURL[i] == '/')
-	absPath = 1;
-      else
-	absPath = 0;
-	  
-      /* 
-	 loop on the inURL string processing each slash (/) delimited
-	 token until all tokens are processed 
-       */
-      
-      for(tmpStr1  = strtok(inURL+i,"/"), j = i, appendCount = 0;
-	  tmpStr1 != NULL;
-	  tmpStr1  = strtok(NULL,"/"), j = strlen(outURL) - 1)
-	{
-	  /*
-	    if the token is ".." then we must strip off the last token
-	    from the outURL string; note that if appendCount is zero
-	    then this implies that the ourURL string will have
-	    leading ".." ==> there is nothing to strip off
-	   */
-	  
-	  if(strcmp(tmpStr1,"..") == 0 && appendCount > 0)
-	    {
-	      /* remove the last token from the outURL string */
-	      
-	      for(;outURL[j] != '/' && j >= 0; --j);
-	      
-	      outURL[j] = 0;		  
-	    }
-	  
-	  /*
-	    if the token is "." then its a dummy token and we just
-	    ignore it
-	   */
-	  
-	  else if(strcmp(tmpStr1,".") == 0)
-	    {
-	      /* in this case do nothing */
-	    }
-	  
-	  /*
-	    else append the token to the outURL string
-	   */
-	  
-	  else
-	    {
+        /* now advance the input pointer to just after the domain and go on */
+        inURL = tmp;
+      } else {
+        /* '/' was not found, which means there are no path-like
+         * portions, so copy whole inURL to outURL and we're done */
+        strcpy(outURL, inURL);
+        continue; /* while(0) */
+      }
+    }
 
-	      /*
-		make sure there is a slash separating the two tokens 
-		 and that OUTURL begins with a slash if the ABSPATH flag
-		 is set
-	      */
+    /* explicitly copy a leading / (absolute path) */
+    if('/' == *inURL) strcat(outURL, "/");
 
-	      if(outURL[j] != '/' && (j != 0 || absPath))
-		                                 strcat(outURL,"/");     
-	      
-	      strcat(outURL,tmpStr1);	       	  
-	      
-	      /* only increment appendCount if we do not add ".." */
-	      
-	      if(strcmp(tmpStr1,"..") != 0) ++appendCount;
-	    }
-	}  
-    }while(0);
+    /* now clean the remainder of the inURL. push URL segments onto
+     * stack, dealing with .. and . as we go */
+    tmp = strtok(inURL, "/"); /* finds first / */
+    while(tmp) {
+      if(!strcmp(tmp, "..")) {
+        /* discard previous URL segment, if there was one. if not,
+         * add the .. to the stack if this is *not* an absolute path
+         * (for absolute paths, leading .. has no effect, so skip it) */
+        if(0 < mystack->stack_size) pop_grp_stack(mystack);
+        else if('/' != *inURL) push_grp_stack(mystack, tmp);
+      } else {
+        /* always just skip ., but otherwise add segment to stack */
+        if(strcmp(tmp, ".")) push_grp_stack(mystack, tmp);
+      }
+      tmp = strtok(NULL, "/"); /* get the next segment */
+    }
 
-  return(*status);
+    /* stack now has pieces of cleaned URL, so just catenate them
+     * onto output string until stack is empty */
+    while(0 < mystack->stack_size) {
+      tmp = shift_grp_stack(mystack);
+      strcat(outURL, tmp);
+      strcat(outURL, "/");
+    }
+    outURL[strlen(outURL) - 1] = 0; /* blank out trailing / */
+  } while(0);
+  delete_grp_stack(&mystack);
+  return *status;
+}
+
+/* free all stack contents using pop_grp_stack before freeing the
+ * grp_stack itself */
+static void delete_grp_stack(grp_stack** mystack) {
+  if(!mystack || !*mystack) return;
+  while((*mystack)->stack_size) pop_grp_stack(*mystack);
+  free(*mystack);
+  *mystack = NULL;
+}
+
+/* append an item to the stack, handling the special case of the first
+ * item appended */
+static grp_stack_item* grp_stack_append(
+  grp_stack_item* last, grp_stack_data data
+) {
+  /* first create a new stack item, and copy data to it */
+  grp_stack_item* new_item = (grp_stack_item*) malloc(sizeof(grp_stack_item));
+  new_item->data = data;
+  if(last) {
+    /* attach this item between the "last" item and its "next" item */
+    new_item->next = last->next;
+    new_item->prev = last;
+    last->next->prev = new_item;
+    last->next = new_item;
+  } else {
+    /* stack is empty, so "next" and "previous" both point back to it */
+    new_item->next = new_item;
+    new_item->prev = new_item;
+  }
+  return new_item;
+}
+
+/* remove an item from the stack, handling the special case of the last
+ * item removed */
+static grp_stack_data grp_stack_remove(grp_stack_item* last) {
+  grp_stack_data retval = last->data;
+  last->prev->next = last->next;
+  last->next->prev = last->prev;
+  free(last);
+  return retval;
+}
+
+/* create new stack dynamically, and give it valid initial values */
+static grp_stack* new_grp_stack() {
+  grp_stack* retval = (grp_stack*) malloc(sizeof(grp_stack));
+  if(retval) {
+    retval->stack_size = 0;
+    retval->top = NULL;
+  }
+  return retval;
+}
+
+/* return the value at the top of the stack and remove it, updating
+ * stack_size. top->prev becomes the new "top" */
+static grp_stack_data pop_grp_stack(grp_stack* mystack) {
+  grp_stack_data retval = grp_stack_default;
+  if(mystack && mystack->top) {
+    grp_stack_item* newtop = mystack->top->prev;
+    retval = grp_stack_remove(mystack->top);
+    mystack->top = newtop;
+    if(0 == --mystack->stack_size) mystack->top = NULL;
+  }
+  return retval;
+}
+
+/* add to the stack after the top element. the added element becomes
+ * the new "top" */
+static void push_grp_stack(grp_stack* mystack, grp_stack_data data) {
+  if(!mystack) return;
+  mystack->top = grp_stack_append(mystack->top, data);
+  ++mystack->stack_size;
+  return;
+}
+
+/* return the value at the bottom of the stack and remove it, updating
+ * stack_size. "top" pointer is unaffected */
+static grp_stack_data shift_grp_stack(grp_stack* mystack) {
+  grp_stack_data retval = grp_stack_default;
+  if(mystack && mystack->top) {
+    retval = grp_stack_remove(mystack->top->next); /* top->next == bottom */
+    if(0 == --mystack->stack_size) mystack->top = NULL;
+  }
+  return retval;
+}
+
+/* add to the stack after the top element. "top" is unaffected, except
+ * in the special case of an initially empty stack */
+static void unshift_grp_stack(grp_stack* mystack, grp_stack_data data) {
+  if(!mystack) return;
+  if(mystack->top) grp_stack_append(mystack->top, data);
+  else mystack->top = grp_stack_append(NULL, data);
+  ++mystack->stack_size;
+  return;
 }
 
 /*--------------------------------------------------------------------------*/
