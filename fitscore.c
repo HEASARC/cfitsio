@@ -3555,7 +3555,6 @@ int ffcrhd(fitsfile *fptr,      /* I - FITS file pointer */
 {
     int  tstatus = 0;
     long bytepos;
-    char *dummy;
 
     if (*status > 0)
         return(*status);
@@ -3567,7 +3566,7 @@ int ffcrhd(fitsfile *fptr,      /* I - FITS file pointer */
 
     while (ffmrhd(fptr, 1, 0, &tstatus) == 0);  /* move to end of file */
 
-    ffxmsg(-2, dummy);  /* clear the end of file error message */
+    ffxmsg(-2, NULL);  /* clear the end of file error message */
 
     if (ffchdu(fptr, status) <= 0)  /* close the current HDU */
     {

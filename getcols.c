@@ -94,7 +94,9 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
     if (*status > 0 || nelem == 0)  /* inherit input status value if > 0 */
         return(*status);
 
-    *anynul = 0;
+    if (anynul)
+        *anynul = 0;
+
     if (nultyp == 2)
         memset(nularray, 0, nelem);   /* initialize nullarray */
 

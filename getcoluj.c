@@ -258,7 +258,9 @@ int ffgsvuj(fitsfile *fptr, /* I - FITS file pointer                         */
     }
 
     nultyp = 1;
-    *anynul = FALSE;
+    if (anynul)
+        *anynul = FALSE;
+
     i0 = 0;
     for (ii = 0; ii < 9; ii++)
     {
@@ -323,7 +325,7 @@ int ffgsvuj(fitsfile *fptr, /* I - FITS file pointer                         */
                    nulval, &array[i0], &ldummy, &anyf, status) > 0)
                    return(*status);
 
-              if (anyf)
+              if (anyf && anynul)
                   *anynul = TRUE;
 
               i0 += nelem;
@@ -400,7 +402,9 @@ int ffgsfuj(fitsfile *fptr, /* I - FITS file pointer                         */
     }
 
     nultyp = 2;
-    *anynul = FALSE;
+    if (anynul)
+        *anynul = FALSE;
+
     i0 = 0;
     for (ii = 0; ii < 9; ii++)
     {
@@ -466,7 +470,7 @@ int ffgsfuj(fitsfile *fptr, /* I - FITS file pointer                         */
                    nulval, &array[i0], &flagval[i0], &anyf, status) > 0)
                    return(*status);
 
-              if (anyf)
+              if (anyf && anynul)
                   *anynul = TRUE;
 
               i0 += nelem;
@@ -607,7 +611,9 @@ int ffgcluj( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     buffer = cbuff;
 
-    *anynul = 0;
+    if (anynul)
+        *anynul = 0;
+
     if (nultyp == 2)
         memset(nularray, 0, nelem);   /* initialize nullarray */
 

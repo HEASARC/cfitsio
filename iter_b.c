@@ -45,7 +45,7 @@ int str_iter(long totalrows, long offset, long firstrow, long nrows,
              int ncols, iteratorCol *cols, void *user_strct )
 
 /*
-   Sample interator function.
+   Sample iterator function.
 */
 {
     int ii;

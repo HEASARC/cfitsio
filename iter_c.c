@@ -66,7 +66,7 @@ main()
 int writehisto(long totaln, long offset, long firstn, long nvalues,
              int narrays, iteratorCol *histo, void *userPointer)
 /*
-   Interator work function that writes out the 2D histogram.
+   Iterator work function that writes out the 2D histogram.
    The histogram values are calculated by another work function, calchisto.
 */
 {

@@ -50,7 +50,7 @@ int flux_rate(long totalrows, long offset, long firstrow, long nrows,
              int ncols, iteratorCol *cols, void *user_strct ) 
 
 /*
-   Sample interator function that calculates the output flux 'rate' column
+   Sample iterator function that calculates the output flux 'rate' column
    by dividing the input 'counts' by the 'time' column.
    It also applies a constant deadtime correction factor if the 'deadtime'
    keyword exists.  Finally, this creates or updates the 'LIVETIME'

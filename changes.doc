@@ -1,7 +1,15 @@
              Log of Changes Made to CFITSIO
 
+Version 1.41 - 6 March 1998 (for the FTOOLS release)
 
-Version 1.41 - 2 March 1998 (for the FTOOLS release)
+   - small changes to ffpclx to fix problems when writing bit (X) data
+     columns beyond the current end of file.
+
+   - made the anynul parameter in the ffgcl* routines optional
+     by first checking to see if the pointer is not null before
+     initializing it.
+
+   - fixed small bug in ffcrhd where a dummy pointer was not initialized
 
    - modified all the ffgcl* routines to simply return without
      error if nelem = 0.

@@ -270,7 +270,7 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
     /* read the next byte (we may only be modifying some of the bits) */
     while (1)
     {
-      if (ffgbyt(fptr, 1, &cbuff, status) == READ_ERROR)
+      if (ffgbyt(fptr, 1, &cbuff, status) == END_OF_FILE)
       {
         /* hit end of file trying to read the byte, so just set byte = 0 */
         *status = 0;
@@ -278,7 +278,7 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
       }
 
       /* move back, to be able to overwrite the byte */
-      ffmbyt(fptr, bstart, REPORT_EOF, status);
+      ffmbyt(fptr, bstart, IGNORE_EOF, status);
  
       for (ii = bitloc; (ii < 8) && (ndone < nbit); ii++, ndone++)
       {

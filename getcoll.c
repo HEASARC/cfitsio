@@ -110,7 +110,9 @@ int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
     if (*status > 0 || nelem == 0)  /* inherit input status value if > 0 */
         return(*status);
 
-    *anynul = 0;
+    if (anynul)
+       *anynul = 0;
+
     if (nultyp == 2)      
        memset(nularray, 0, nelem);   /* initialize nullarray */
 
@@ -170,7 +172,8 @@ int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
         else
         {
           array[next] = nulval;  /* set null values to input nulval */
-          *anynul = 1;
+          if (anynul)
+              *anynul = 1;
 
           if (nulcheck == 2)
           {
