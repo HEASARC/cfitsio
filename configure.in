@@ -26,15 +26,24 @@ AC_PROG_CC
 
 AC_PROG_RANLIB
 
-dnl Checks for ANSI stuff, like string.h, stdlib.h.
-AC_HEADER_STDC
+dnl Checks for ANSI stdlib.h.
+AC_CHECK_HEADERS(stdlib.h string.h math.h limits.h ,ANSI_HEADER=yes,ANSI_HEADER=no)dnl
 
-if test $ac_cv_header_stdc = no ; then
-     echo " *********** WARNING: CFITSIO BUILD FAILURE ************  "
-     echo "cfitsio: ANSI C headers NOT found. Aborting cfitsio build."
+dnl Check if prototyping is allowed.
+AC_TRY_COMPILE( , void d( int , double) , PROTO=yes, PROTO=no)dnl
+
+if test $ANSI_HEADER = no -o $PROTO = no; then
+     echo "   *********** WARNING: CFITSIO CONFIGURE FAILURE ************  "
+     echo "cfitsio: ANSI C environment NOT found. Aborting cfitsio configure."
+     if test $ANSI_HEADER = no; then 
+        echo "cfitsio: You're missing a needed ANSI header file."
+     fi
+     if test $PROTO = no; then
+        echo "cfitsio: Your compiler can't do ANSI function prototypes."
+     fi
      echo "cfitsio: You need an ANSI C compiler and all ANSI trappings"
-     echo "cfitsio:  to build cfitsio.   "
-     echo " *******************************************************  "
+     echo "cfitsio: to build cfitsio.   "
+     echo "     *******************************************************  "
      exit 0;
 fi
 
