@@ -728,6 +728,7 @@ int ftp_open(char *filename, int rwmode, int *handle)
   FILE *ftpfile;
   FILE *command;
   int sock;
+  char newfilename[MAXLEN];
   char recbuf[MAXLEN];
   long len;
   int status;
@@ -759,10 +760,33 @@ int ftp_open(char *filename, int rwmode, int *handle)
      command is connected to port 21.  sock is the socket on port 21 */
 
   alarm(NETTIMEOUT);
-  if ((status = ftp_open_network(filename,&ftpfile,&command,&sock))) {
+  strcpy(newfilename,filename);
+  if (ftp_open_network(filename,&ftpfile,&command,&sock)) {
+
+    ffpmsg("Unable to open filename as given (ftp_open)");
     alarm(0);
-    ffpmsg("Unable to open ftp file (ftp_open)");
-    goto error;
+    /* Try the .gz one */
+    strcpy(newfilename,filename);
+    strcat(newfilename,".gz");
+    alarm(NETTIMEOUT);
+    ffpmsg("Trying filename + .gz (ftp_open)");
+    if (ftp_open_network(newfilename,&ftpfile,&command,&sock)) {
+
+      ffpmsg("Unable to open filename + .gz (ftp_open)");
+    
+      /* Now the .Z one */
+      alarm(0);
+      strcpy(newfilename,filename);
+      strcat(newfilename,".Z");
+      alarm(NETTIMEOUT);
+      ffpmsg("Trying filename + .Z (ftp_open)");
+      if (ftp_open_network(newfilename,&ftpfile,&command,&sock)) {
+	alarm(0);
+	ffpmsg("Unable to open filename + .Z (ftp_open)");
+	ffpmsg("Unable to open ftp file (ftp_open)");
+	goto error;
+      }
+    }
   }
 
   closeftpfile++;
@@ -778,7 +802,7 @@ int ftp_open(char *filename, int rwmode, int *handle)
      for instance */
 
   /* Decide if the file is compressed */
-  if (strstr(filename,".gz") || strstr(filename,".Z")) {
+  if (strstr(newfilename,".gz") || strstr(newfilename,".Z")) {
     
     status = 0;
     /* A bit arbritary really, the user will probably hit ^C */
@@ -2243,4 +2267,5 @@ static int root_recv_buffer(int sock, int *op, char *buffer, int buflen)
 
   recv += status;
   return recv;
+
 }
