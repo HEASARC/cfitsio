@@ -689,7 +689,7 @@ int ffkeyn(char *keyroot,   /* I - root string for keyword name */
   e.g., if root = "TTYPE" and value = 12 then keyname = "TTYPE12".
 */
 {
-    char suffix[4];
+    char suffix[8];
     size_t rootlen;
 
     keyname[0] = '\0';            /* initialize output name to null */
