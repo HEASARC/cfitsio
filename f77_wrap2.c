@@ -842,30 +842,38 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),DOUBLE,INT,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF
 }
 
 CFextern VOID_cfF(FTD2E,ftd2e)
-CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),DOUBLE,INT,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0));
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),DOUBLE,INT,PSTRING,PINT,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0));
 CFextern VOID_cfF(FTD2E,ftd2e)
-CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),DOUBLE,INT,PSTRING,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0))
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),DOUBLE,INT,PSTRING,PINT,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0))
 {
    QCF(DOUBLE,1)
    QCF(INT,2)
    QCF(PSTRING,3)
    QCF(PINT,4)
+   QCF(PINT,5)
    char str[21];
+   int *vlen;
 
+   vlen = TCF(ftd2e,PINT,4,0);
+
+   /*  C version of routine doesn't use the 4th parameter, vlen  */
    ffd2e( TCF(ftd2e,DOUBLE,1,0) 
           TCF(ftd2e,INT,2,1) 
           TCF(ftd2e,PSTRING,3,1) 
-          TCF(ftd2e,PINT,4,1) );
+          TCF(ftd2e,PINT,5,1) );
 
-   if ( strlen(B3)<21 ) {
-      sprintf(str,"%20s",B3);
+   *vlen = strlen(B3);
+   if ( *vlen<20 ) {
+      sprintf(str,"%20s",B3);  /* right justify if vlen<20 characters */
       strcpy(B3,str);
+      *vlen = 20;
    }
 
    RCF(DOUBLE,1)
    RCF(INT,2)
    RCF(PSTRING,3)
    RCF(PINT,4)
+   RCF(PINT,5)
 }
 
 FCALLSCSUB3(ffc2ii,FTC2II,ftc2ii,STRING,PLONG,PINT)
