@@ -1491,10 +1491,6 @@ int uncompress_hkdata( fitsfile *fptr,
                   &newtime, &anynul, status ) ) return( *status );
       if( newtime != currtime ) {
          /*  New time encountered... propogate parameters to next row  */
-         if( newtime<currtime ) {
-            ffpmsg("Time stamps out of order");
-            return( *status = PARSE_BAD_COL );
-         }
          if( currelem==ntimes ) {
             ffpmsg("Found more unique time stamps than caller indicated");
             return( *status = PARSE_BAD_COL );
