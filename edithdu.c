@@ -38,7 +38,7 @@ int ffcopy(fitsfile *infptr,    /* I - FITS file pointer to input file  */
 int ffcpfl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
            fitsfile *outfptr,   /* I - FITS file pointer to output file */
            int previous,        /* I - copy any previous HDUs?   */
-           int current ,        /* I - copy the current HDU?     */
+           int current,         /* I - copy the current HDU?     */
            int following,       /* I - copy any following HDUs?   */
            int *status)         /* IO - error status     */
 /*
@@ -67,9 +67,9 @@ int ffcpfl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
         ffcopy(infptr, outfptr, 0, status);
     }
 
-    if (following) {  /* copy any HDUs after the current one */
+    if (following && (*status <= 0) ) { /* copy any remaining HDUs */
         ii = hdunum + 1;
-        while ( !ffmahd(infptr, hdunum, NULL, status) ) {
+        while ( !ffmahd(infptr, ii, NULL, status) ) {
             ffcopy(infptr, outfptr, 0, status);
             ii++;
         }
