@@ -930,7 +930,7 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
        case TLONG:    *(long  *)Null = (long )jnull;    break;
        case TFLOAT:   *(float *)Null = FLOATNULLVALUE;  break;
        case TDOUBLE:  *(double*)Null = DOUBLENULLVALUE; break;
-       case TSTRING:  *(char  *)Null = '\0';            break;
+       case TSTRING: **(char **)Null = '\0';            break;
        }
     }
 
@@ -1086,7 +1086,7 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 		   if( result->value.undef[jj] ) {
 		      anyNullThisTime = 1;
 		      strcpy( ((char**)Data)[jj],
-			      Null );
+			      *(char **)Null );
 		   } else {
 		      strcpy( ((char**)Data)[jj],
 			      result->value.data.strptr[jj] );
