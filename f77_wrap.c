@@ -195,8 +195,8 @@ void C2FcopyLogVect(long size, int *A, char *B)
 /*  the integer unit number and the fitsfile file pointer.         */
 /*-----------------------------------------------------------------*/
 
-#define MAXFITSFILES 200             /*  Array of file pointers indexed  */
-fitsfile *gFitsFiles[MAXFITSFILES];  /*    by Fortran unit numbers       */
+#define MAXFITSFILES 200                 /*  Array of file pointers indexed  */
+fitsfile *gFitsFiles[MAXFITSFILES]={0};  /*    by Fortran unit numbers       */
 
 #define  FITSUNIT_cfINT(N,A,B,X,Y,Z)   INT_cfINT(N,A,B,X,Y,Z)
 #define  FITSUNIT_cfSTR(N,T,A,B,C,D,E) INT_cfSTR(N,T,A,B,C,D,E)
@@ -229,7 +229,7 @@ FCALLSCSUB2(Cffgiou,FTGIOU,ftgiou,PINT,PINT)
 void Cfffiou( int unit, int *status )
 {
    if( *status>0 ) return;
-   if( unit== -1 ) {
+   if( unit == -1 ) {
       int i; for( i=50; i<MAXFITSFILES; ) gFitsFiles[i++]=NULL;
    } else if( unit<0 || unit>MAXFITSFILES ) {
       *status=1;
@@ -267,7 +267,14 @@ void Cffinit( fitsfile **fptr, const char *filename, int blocksize, int *status 
 FCALLSCSUB4(Cffinit,FTINIT,ftinit,PFITSUNIT,STRING,INT,PINT)
 
 FCALLSCSUB2(ffflus,FTFLUS,ftflus,FITSUNIT,PINT)
-FCALLSCSUB2(ffclos,FTCLOS,ftclos,FITSUNIT,PINT)
+
+void Cffclos( int unit, int *status )
+{
+   ffclos( gFitsFiles[unit], status );
+   gFitsFiles[unit]=NULL;
+}
+FCALLSCSUB2(Cffclos,FTCLOS,ftclos,INT,PINT)
+
 FCALLSCSUB2(ffdelt,FTDELT,ftdelt,FITSUNIT,PINT)
 
 /*--------------- utility routines ---------------*/
@@ -319,8 +326,20 @@ FCALLSCSUB5(ffptdm,FTPTDM,ftptdm,FITSUNIT,INT,INT,LONGV,PINT)
 #define ftpkns_STRV_A6 NUM_ELEM_ARG(4)
 FCALLSCSUB7(ffpkns,FTPKNS,ftpkns,FITSUNIT,STRING,INT,INT,STRINGV,STRINGV,PINT)
 
+/*   Must handle LOGICALV conversion manually... ffpknl uses ints   */
+void Cffpknl( fitsfile *fptr, char *keyroot, int nstart, int nkeys,
+              int *numval, char **comment, int *status )
+{
+   int i;
+ 
+   for( i=0; i<nkeys; i++ )
+      numval[i] = F2CLOGICAL(numval[i]);
+   ffpknl( fptr, keyroot, nstart, nkeys, numval, comment, status );
+   for( i=0; i<nkeys; i++ )
+      numval[i] = C2FLOGICAL(numval[i]);
+}
 #define ftpknl_STRV_A6 NUM_ELEM_ARG(4)
-FCALLSCSUB7(ffpknl,FTPKNL,ftpknl,FITSUNIT,STRING,INT,INT,INTV,STRINGV,PINT)
+FCALLSCSUB7(Cffpknl,FTPKNL,ftpknl,FITSUNIT,STRING,INT,INT,INTV,STRINGV,PINT)
 
 #define ftpknj_STRV_A6 NUM_ELEM_ARG(4)
 #define ftpknj_LONGV_A5 A4
@@ -433,10 +452,58 @@ FCALLSCSUB6(ffgkyt,FTGKYT,ftgkyt,FITSUNIT,STRING,PLONG,PDOUBLE,PSTRING,PINT)
 FCALLSCSUB6(ffgtdm,FTGTDM,ftgtdm,FITSUNIT,INT,INT,PINT,LONGV,PINT)
 
 /*------------------ read array of keywords -----------------*/
-#define ftgkns_STRV_A5 NUM_ELEM_ARG(4)
-FCALLSCSUB7(ffgkns,FTGKNS,ftgkns,FITSUNIT,STRING,INT,INT,PSTRINGV,PINT,PINT)
 
-FCALLSCSUB7(ffgknl,FTGKNL,ftgknl,FITSUNIT,STRING,INT,INT,INTV,PINT,PINT)
+     /*    Handle array of strings such that only the number of     */
+     /*    keywords actually found get copied back to the Fortran   */
+     /*    array.  Faster as well as won't cause array overflows    */
+     /*    if the the array is smaller than nkeys, but larger than  */
+     /*    nfound.                                                  */
+
+#define ftgkns_STRV_A5 NUM_ELEM_ARG(4)
+CFextern VOID_cfF(FTGKNS,ftgkns)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,STRING,INT,INT,PSTRINGV,PINT,PINT,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0,CF_0))
+{
+   QCF(FITSUNIT,1)
+   QCF(STRING,2)
+   QCF(INT,3)
+   QCF(INT,4)
+   QCF(PSTRINGV,5)
+   QCF(PINT,6)
+   QCF(PINT,7)
+
+   ffgkns( TCF(ftgkns,FITSUNIT,1,0)
+           TCF(ftgkns,STRING,2,1)
+           TCF(ftgkns,INT,3,1)
+           TCF(ftgkns,INT,4,1)
+           TCF(ftgkns,PSTRINGV,5,1)   /*  Defines the number of strings  */
+                                      /*  in array, B5N                  */
+           TCF(ftgkns,PINT,6,1)
+           TCF(ftgkns,PINT,7,1)     );
+
+   B5N = *A6;          /*  Redefine number of array elements to number   */
+		       /*  found. Should work even if none found.        */
+   RCF(FITSUNIT,1)
+   RCF(STRING,2)
+   RCF(INT,3)
+   RCF(INT,4)
+   RCF(PSTRINGV,5)     /*  Copies only found keywords back to Fortran    */
+   RCF(PINT,6)
+   RCF(PINT,7)
+}
+
+/*   Must handle LOGICALV conversion manually... ffgknl uses ints   */
+void Cffgknl( fitsfile *fptr, char *keyroot, int nstart, int nkeys,
+              int *numval, int *nfound, int *status )
+{
+   int i;
+ 
+   for( i=0; i<nkeys; i++ )
+      numval[i] = F2CLOGICAL(numval[i]);
+   ffgknl( fptr, keyroot, nstart, nkeys, numval, nfound, status );
+   for( i=0; i<nkeys; i++ )
+      numval[i] = C2FLOGICAL(numval[i]);
+}
+FCALLSCSUB7(Cffgknl,FTGKNL,ftgknl,FITSUNIT,STRING,INT,INT,INTV,PINT,PINT)
 
 #define ftgknj_LONGV_A5 A4
 FCALLSCSUB7(ffgknj,FTGKNJ,ftgknj,FITSUNIT,STRING,INT,INT,LONGV,PINT,PINT)
