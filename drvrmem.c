@@ -702,7 +702,7 @@ int mem_rawfile_open(char *filename, int rwmode, int *hdl)
     short *sptr;
     int status, endian, datatype, bytePerPix, naxis;
     long dim[5] = {1,1,1,1,1}, ii, nvals, offset = 0;
-    size_t filesize = 0;
+    size_t filesize = 0, datasize;
     char rootfile[FLEN_FILENAME], *cptr = 0, *cptr2 = 0;
     void *ptr;
 
@@ -723,7 +723,8 @@ int mem_rawfile_open(char *filename, int rwmode, int *hdl)
         return(URL_PARSE_ERROR);
     }
 
-    strncpy(rootfile, filename, cptr - filename);  /* store the rootname */
+    *rootfile = '\0';
+    strncat(rootfile, filename, cptr - filename);  /* store the rootname */
 
     cptr++;
 
@@ -820,6 +821,7 @@ int mem_rawfile_open(char *filename, int rwmode, int *hdl)
         offset = strtol(cptr+1, 0, 10);
 
     nvals = dim[0] * dim[1] * dim[2] * dim[3] * dim[4];
+    datasize = nvals * bytePerPix;
     filesize = nvals * bytePerPix + 2880;
     filesize = ((filesize - 1) / 2880 + 1) * 2880; 
 
@@ -865,7 +867,7 @@ int mem_rawfile_open(char *filename, int rwmode, int *hdl)
     cptr = *memTable[*hdl].memaddrptr + 2880;
 
     /* read bytes */
-    if (fread(cptr, 1, filesize - 2880, diskfile) != filesize - 2880)
+    if (fread(cptr, 1, datasize, diskfile) != datasize)
       status = READ_ERROR;
 
     fclose(diskfile);
