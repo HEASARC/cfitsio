@@ -347,7 +347,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
                   /* the same extension is specified */
 
               {
-                  if (mode == READWRITE && ((*fptr)->Fptr)->writemode == READONLY)
+                  if (mode == READWRITE && oldFptr->writemode == READONLY)
                   {
                     /*
                       cannot assume that a file previously opened with READONLY
