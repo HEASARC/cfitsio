@@ -98,7 +98,7 @@ extern unsigned long gMinStrLen;
             ((B=(char*)malloc(_cfMAX(D,gMinStrLen)+1))[D]='\0',memcpy(B,A,D), \
                kill_trailing(B,' '))
 #define  TTTTSTRV( A,B,D,E)  ( \
-            _(B,N)=E, \
+            _(B,N)=_cfMAX(E,1), \
             _(B,M)=_cfMAX(D,gMinStrLen)+1, \
             B=(char**)malloc(_(B,N)*sizeof(char*)), \
             B[0]=(char*)malloc(_(B,N)*_(B,M)), \
