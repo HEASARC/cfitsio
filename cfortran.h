@@ -17,6 +17,8 @@
       Nov 1997: If g77Fortran defined, also define f2cFortran (PDW/HSTX)
       Nov 1997: Define MIN(A,B) as _cfMIN(A,B)
       Dec 1997: Change definition of fstringvector if running Alpha VMS
+      Feb 1998: Let VMS see the NUM_ELEMS code. Lets programs treat
+                single strings as vectors with single elements
  *******/
 #define MIN(A,B) _cfMIN(A,B)
 
@@ -530,7 +532,7 @@ typedef DSC$DESCRIPTOR_A(1) fstringvector;
                     *( (F).dsc$l_m[0]=(F).dsc$bounds[0].dsc$l_u=(ELEMNO)  ),   \
   (F).dsc$a_a0    =  ( (F).dsc$a_pointer=(C) ) - (F).dsc$w_length          ,(F))
 
-#else
+#endif      /* PDW: 2/10/98 -- Let VMS see NUM_ELEMS definitions */
 #define _NUM_ELEMS      -1
 #define _NUM_ELEM_ARG   -2
 #define NUM_ELEMS(A)    A,_NUM_ELEMS
@@ -558,7 +560,7 @@ for (num=0; ; num++) {
 }
 return (int)num;
 }
-#endif
+
 /*-------------------------------------------------------------------------*/
 
 /*           UTILITIES FOR C TO USE STRINGS IN FORTRAN COMMON BLOCKS       */

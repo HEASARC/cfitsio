@@ -72,6 +72,17 @@ extern long gMinStrLen;
 
 #ifdef vmsFortran
 #define       PPSTRING_cfT(M,I,A,B,D)     (unsigned char*)A->dsc$a_pointer
+
+/*  We want single strings to be equivalent to string vectors with  */
+/*  a single element, so ignore the number of elements info in the  */
+/*  vector structure, and rely on the NUM_ELEM definitions.         */
+
+#undef  STRINGV_cfT
+#define STRINGV_cfT(M,I,A,B,D)  TTTTSTRV(A->dsc$a_pointer, B, \
+                                         A->dsc$w_length, \
+                                         num_elem(A->dsc$a_pointer, \
+                                                  A->dsc$w_length, \
+                                                  _3(M,_STRV_A,I) ) )
 #else
 #ifdef CRAYFortran
 #define       PPSTRING_cfT(M,I,A,B,D)     (unsigned char*)_fcdtocp(A)
