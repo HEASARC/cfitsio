@@ -197,8 +197,6 @@ int ffpcns( fitsfile *fptr,  /* I - FITS file pointer                       */
   null value in the output FITS file. 
 */
 {
-    tcolumn *colptr;
-    int typecode;
     long repeat, width, first, ngood = 0, nbad = 0, ii, fstelm, fstrow;
 
     if (*status > 0)
@@ -208,8 +206,8 @@ int ffpcns( fitsfile *fptr,  /* I - FITS file pointer                       */
         if ( ffrdef(fptr, status) > 0)               /* rescan header */
             return(*status);
 
-    /* get the datatype and vector repeat length of the column */
-    ffgtcl(fptr, colnum, &typecode, &repeat, &width, status);
+    /* get the vector repeat length of the column */
+    ffgtcl(fptr, colnum, NULL, &repeat, &width, status);
 
     if (fptr->hdutype == BINARY_TBL)
         repeat = repeat / width;    /* convert from chars to unit strings */

@@ -53,6 +53,10 @@ int ffppr(  fitsfile *fptr,  /* I - FITS file pointer                       */
     {
       ffpcli(fptr, 2, row, firstelem, nelem, (short *) array, status);
     }
+    else if (datatype == TUINT)
+    {
+      ffpcluk(fptr, 2, row, firstelem, nelem, (unsigned int *) array, status);
+    }
     else if (datatype == TINT)
     {
       ffpclk(fptr, 2, row, firstelem, nelem, (int *) array, status);
@@ -126,6 +130,11 @@ int ffppn(  fitsfile *fptr,  /* I - FITS file pointer                       */
       ffpcni(fptr, 2, row, firstelem, nelem, (short *) array,
              *(short *) nulval, status);
     }
+    else if (datatype == TUINT)
+    {
+      ffpcnuk(fptr, 2, row, firstelem, nelem, (unsigned int *) array,
+             *(unsigned int *) nulval, status);
+    }
     else if (datatype == TINT)
     {
       ffpcnk(fptr, 2, row, firstelem, nelem, (int *) array,
@@ -194,6 +203,11 @@ int ffpcl(  fitsfile *fptr,  /* I - FITS file pointer                       */
     {
       ffpcli(fptr, colnum, firstrow, firstelem, nelem, (short *) array,
              status);
+    }
+    else if (datatype == TUINT)
+    {
+      ffpcluk(fptr, colnum, firstrow, firstelem, nelem, (unsigned int *) array,
+               status);
     }
     else if (datatype == TINT)
     {
@@ -286,6 +300,11 @@ int ffpcn(  fitsfile *fptr,  /* I - FITS file pointer                       */
     {
       ffpcni(fptr, colnum, firstrow, firstelem, nelem, (short *) array,
              *(unsigned short *) nulval, status);
+    }
+    else if (datatype == TUINT)
+    {
+      ffpcnuk(fptr, colnum, firstrow, firstelem, nelem, (unsigned int *) array,
+             *(unsigned int *) nulval, status);
     }
     else if (datatype == TINT)
     {
@@ -531,6 +550,7 @@ int ffiter(int n_cols,
             int    intnull;
             short  shortnull;
             long   longnull;
+            unsigned int   uintnull;
             unsigned short ushortnull;
             unsigned long  ulongnull;
             float  floatnull;
@@ -543,7 +563,7 @@ int ffiter(int n_cols,
     int ii, jj, tstatus;
     int typecode, hdutype, jtype, type, anynul, nfiles, nbytes;
     long totaln, nleft, frow, felement, n_optimum, i_optimum, ntodo;
-    long rept, width, tnull, tfields;
+    long rept, width, tnull;
     double zeros = 0.;
     char message[FLEN_ERRMSG], keyname[FLEN_KEYWORD], nullstr[FLEN_VALUE];
     char **stringptr;
@@ -676,7 +696,7 @@ int ffiter(int n_cols,
 
     if (hdutype == IMAGE_HDU)   /* get total number of pixels in the image */
     {
-      ffgtcl(cols[0].fptr, cols[0].colnum, &typecode, &totaln, &width, status);
+      ffgtcl(cols[0].fptr, cols[0].colnum, NULL, &totaln, &width, status);
       frow = 1;
       felement = 1 + offset;
     }
@@ -743,8 +763,18 @@ int ffiter(int n_cols,
                   &width, status) > 0)
             goto cleanup;
 
+        /* special case where sizeof(long) = 8: use TINT instead of TLONG */
+        if (typecode == TLONG && sizeof(long) == 8 && sizeof(int) == 4)
+            typecode = TINT;
+
         if (cols[jj].datatype == 0)    /* output datatype not specified? */
-            cols[jj].datatype = typecode;
+        {
+            /* special case if sizeof(long) = 8: use TINT instead of TLONG */
+            if (typecode == TLONG && sizeof(long) == 8 && sizeof(int) == 4)
+                cols[jj].datatype = TINT;
+            else
+                cols[jj].datatype = typecode;
+        }
 
         /* calc total number of elements to do on each iteration */
         if (hdutype == IMAGE_HDU || cols[jj].datatype == TSTRING)
@@ -798,7 +828,7 @@ int ffiter(int n_cols,
           }
           else
           {
-              col[jj].null.charnull = (char)255; /* use 255 as null value */
+              col[jj].null.charnull = (char) 255; /* use 255 as null value */
           }
           break;
 
@@ -847,6 +877,22 @@ int ffiter(int n_cols,
           else
           {
               col[jj].null.intnull = INT_MIN;  /* use minimum as null */
+          }
+          break;
+
+         case TUINT:
+          cols[jj].array = calloc(ntodo + 1, sizeof(unsigned int));
+          col[jj].nullsize  = sizeof(unsigned int);  /* bytes per value */
+
+          if (typecode == TBYTE || typecode == TSHORT || typecode == TLONG)
+          {
+              tnull = minvalue(tnull, UINT_MAX);
+              tnull = maxvalue(tnull, 0);
+              col[jj].null.uintnull = (unsigned int) tnull;
+          }
+          else
+          {
+              col[jj].null.intnull = UINT_MAX;  /* use maximum as null */
           }
           break;
 

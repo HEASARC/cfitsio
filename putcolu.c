@@ -76,8 +76,9 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
   images.
 */
 {
-    int tcode, maxelem, hdutype, lennull, nwrite;
+    int tcode, maxelem, hdutype, lennull, nwrite = 0;
     short i2null;
+    INT32BIT i4null;
     long twidth, incre, repeat, rowlen, rownum, elemnum, remain, next, ntodo;
     long tnull, startpos, wrtptr, ii;
     double scale, zero;
@@ -153,11 +154,9 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
       }
       else
       {
+         i4null = tnull;
 #if BYTESWAPPED
-         ffswaplong(&tnull, 1); /* reverse order of bytes */
-#elif LONGSIZE == 64
-         ffpacklong(&tnull, 1); /* move LSB's over to MSB if not byte swapped.
-                                  if byteswapped, they're already there. */
+         ffswap4(&i4null, 1); /* reverse order of bytes */
 #endif
       }
     }
@@ -198,7 +197,7 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
             case (TLONG):
 
                 for (ii = 0; ii < ntodo; ii++)
-                  ffpbyt(fptr, 4, &tnull, status);
+                  ffpbyt(fptr, 4, &i4null, status);
                 break;
 
             case (TFLOAT):

@@ -1002,3 +1002,16 @@ FCALLSCSUB0(Cffempty,FTPDEF,ftpdef)
 FCALLSCSUB0(Cffempty,FTBDEF,ftbdef)
 FCALLSCSUB0(Cffempty,FTADEF,ftadef)
 FCALLSCSUB0(Cffempty,FTDDEF,ftddef)
+
+
+/*-------- Functions which use the lex and yacc/bison parser code -----------*/
+/*---------------------------------------------------------------------------*/
+
+#define fttest_LONGV_A7 A3
+FCALLSCSUB8(fits_test_expr,FTTEST,fttest,FITSUNIT,STRING,INT,PINT,PLONG,PINT,LONGV,PINT)
+
+#define ftfind_LOGV_A6 A4
+FCALLSCSUB7(fits_find_rows,FTFIND,ftfind,FITSUNIT,STRING,LONG,LONG,PLONG,LOGICALV,PINT)
+FCALLSCSUB4(fits_select_rows,FTSLCT,ftslct,FITSUNIT,FITSUNIT,STRING,PINT)
+FCALLSCSUB9(fits_calc_rows,FTCLCR,ftclcr,FITSUNIT,INT,STRING,LONG,LONG,PVOID,PVOID,PLOGICAL,PINT)
+FCALLSCSUB5(fits_calc_col,FTCLCC,ftclcc,FITSUNIT,STRING,FITSUNIT,STRING,PINT)

@@ -1,8 +1,7 @@
 #ifndef _LONGNAME_H
 #define _LONGNAME_H
 
-#define fits_set_mem_buff   ffsbuf
-#define fits_write_mem_buff ffwbuf
+#define fits_open_memfile   ffomem
 #define fits_open_file      ffopen
 #define fits_create_file    ffinit
 #define fits_create_template fftplt
@@ -38,6 +37,10 @@
 #define fits_write_comment      ffpcom
 #define fits_write_history      ffphis 
 #define fits_write_date         ffpdat
+#define fits_date2str           ffdt2s
+#define fits_time2str           fftm2s
+#define fits_str2date           ffs2dt
+#define fits_str2time           ffs2tm
 #define fits_write_key_longstr  ffpkls
 #define fits_write_key_longwarn ffplsw
 #define fits_write_key_null     ffpkyu
@@ -199,6 +202,7 @@
 #define fits_read_grppar_sht  ffggpi
 #define fits_read_grppar_lng  ffggpj
 #define fits_read_grppar_int  ffggpk
+#define fits_read_grppar_uint  ffggpuk
 #define fits_read_grppar_flt  ffggpe
 #define fits_read_grppar_dbl  ffggpd
 
@@ -208,6 +212,7 @@
 #define fits_read_img_ulng     ffgpvuj
 #define fits_read_img_sht     ffgpvi
 #define fits_read_img_lng     ffgpvj
+#define fits_read_img_uint     ffgpvuk
 #define fits_read_img_int     ffgpvk
 #define fits_read_img_flt     ffgpve
 #define fits_read_img_dbl     ffgpvd
@@ -217,6 +222,7 @@
 #define fits_read_imgnull_ulng ffgpfuj
 #define fits_read_imgnull_sht ffgpfi
 #define fits_read_imgnull_lng ffgpfj
+#define fits_read_imgnull_uint ffgpfuk
 #define fits_read_imgnull_int ffgpfk
 #define fits_read_imgnull_flt ffgpfe
 #define fits_read_imgnull_dbl ffgpfd
@@ -226,6 +232,7 @@
 #define fits_read_2d_ulng      ffg2duj
 #define fits_read_2d_sht      ffg2di
 #define fits_read_2d_lng      ffg2dj
+#define fits_read_2d_uint      ffg2duk
 #define fits_read_2d_int      ffg2dk
 #define fits_read_2d_flt      ffg2de
 #define fits_read_2d_dbl      ffg2dd
@@ -235,6 +242,7 @@
 #define fits_read_3d_ulng      ffg3duj
 #define fits_read_3d_sht      ffg3di
 #define fits_read_3d_lng      ffg3dj
+#define fits_read_3d_uint      ffg3duk
 #define fits_read_3d_int      ffg3dk
 #define fits_read_3d_flt      ffg3de
 #define fits_read_3d_dbl      ffg3dd
@@ -244,6 +252,7 @@
 #define fits_read_subset_ulng  ffgsvuj
 #define fits_read_subset_sht  ffgsvi
 #define fits_read_subset_lng  ffgsvj
+#define fits_read_subset_uint  ffgsvuk
 #define fits_read_subset_int  ffgsvk
 #define fits_read_subset_flt  ffgsve
 #define fits_read_subset_dbl  ffgsvd
@@ -253,6 +262,7 @@
 #define fits_read_subsetnull_ulng ffgsfuj
 #define fits_read_subsetnull_sht ffgsfi
 #define fits_read_subsetnull_lng ffgsfj
+#define fits_read_subsetnull_uint ffgsfuk
 #define fits_read_subsetnull_int ffgsfk
 #define fits_read_subsetnull_flt ffgsfe
 #define fits_read_subsetnull_dbl ffgsfd
@@ -265,6 +275,7 @@
 #define fits_read_col_ulng    ffgcvuj
 #define fits_read_col_sht    ffgcvi
 #define fits_read_col_lng    ffgcvj
+#define fits_read_col_uint    ffgcvuk
 #define fits_read_col_int    ffgcvk
 #define fits_read_col_flt    ffgcve
 #define fits_read_col_dbl    ffgcvd
@@ -279,6 +290,7 @@
 #define fits_read_colnull_ulng    ffgcfuj
 #define fits_read_colnull_sht    ffgcfi
 #define fits_read_colnull_lng    ffgcfj
+#define fits_read_colnull_uint    ffgcfuk
 #define fits_read_colnull_int    ffgcfk
 #define fits_read_colnull_flt    ffgcfe
 #define fits_read_colnull_dbl    ffgcfd
@@ -293,6 +305,7 @@
 #define fits_write_grppar_ulng ffpgpuj
 #define fits_write_grppar_sht ffpgpi
 #define fits_write_grppar_lng ffpgpj
+#define fits_write_grppar_uint ffpgpuk
 #define fits_write_grppar_int ffpgpk
 #define fits_write_grppar_flt ffpgpe
 #define fits_write_grppar_dbl ffpgpd
@@ -303,6 +316,7 @@
 #define fits_write_img_ulng    ffppruj
 #define fits_write_img_sht    ffppri
 #define fits_write_img_lng    ffpprj
+#define fits_write_img_uint    ffppruk
 #define fits_write_img_int    ffpprk
 #define fits_write_img_flt    ffppre
 #define fits_write_img_dbl    ffpprd
@@ -313,6 +327,7 @@
 #define fits_write_imgnull_ulng ffppnuj
 #define fits_write_imgnull_sht ffppni
 #define fits_write_imgnull_lng ffppnj
+#define fits_write_imgnull_uint ffppnuk
 #define fits_write_imgnull_int ffppnk
 #define fits_write_imgnull_flt ffppne
 #define fits_write_imgnull_dbl ffppnd
@@ -325,6 +340,7 @@
 #define fits_write_2d_ulng   ffp2duj
 #define fits_write_2d_sht   ffp2di
 #define fits_write_2d_lng   ffp2dj
+#define fits_write_2d_uint   ffp2duk
 #define fits_write_2d_int   ffp2dk
 #define fits_write_2d_flt   ffp2de
 #define fits_write_2d_dbl   ffp2dd
@@ -334,6 +350,7 @@
 #define fits_write_3d_ulng   ffp3duj
 #define fits_write_3d_sht   ffp3di
 #define fits_write_3d_lng   ffp3dj
+#define fits_write_3d_uint   ffp3duk
 #define fits_write_3d_int   ffp3dk
 #define fits_write_3d_flt   ffp3de
 #define fits_write_3d_dbl   ffp3dd
@@ -343,6 +360,7 @@
 #define fits_write_subset_ulng  ffpssuj
 #define fits_write_subset_sht  ffpssi
 #define fits_write_subset_lng  ffpssj
+#define fits_write_subset_uint  ffpssuk
 #define fits_write_subset_int  ffpssk
 #define fits_write_subset_flt  ffpsse
 #define fits_write_subset_dbl  ffpssd
@@ -355,6 +373,7 @@
 #define fits_write_col_ulng     ffpcluj
 #define fits_write_col_sht     ffpcli
 #define fits_write_col_lng     ffpclj
+#define fits_write_col_uint     ffpcluk
 #define fits_write_col_int     ffpclk
 #define fits_write_col_flt     ffpcle
 #define fits_write_col_dbl     ffpcld
@@ -370,6 +389,7 @@
 #define fits_write_colnull_ulng ffpcnuj
 #define fits_write_colnull_sht ffpcni
 #define fits_write_colnull_lng ffpcnj
+#define fits_write_colnull_uint ffpcnuk
 #define fits_write_colnull_int ffpcnk
 #define fits_write_colnull_flt ffpcne
 #define fits_write_colnull_dbl ffpcnd
@@ -384,6 +404,7 @@
 #define fits_insert_cols  fficls
 #define fits_delete_col   ffdcol
 #define fits_copy_col     ffcpcl
+#define fits_modify_vector_len  ffmvec
 
 #define fits_read_img_coord ffgics
 #define fits_read_tbl_coord ffgtcs

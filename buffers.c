@@ -20,90 +20,6 @@ long bufrecnum[NIOBUF];               /* initialize to zero by default  */
 int dirty[NIOBUF], ageindex[NIOBUF];  /* ages get initialized in ffwhbf */
 
 /*--------------------------------------------------------------------------*/
-int ffclos(fitsfile *fptr,      /* I - FITS file pointer */
-           int *status)         /* IO - error status     */
-/*
-  close the FITS file by completing the current HDU, flushing it to disk,
-  then calling the system dependent routine to physically close the FITS file
-*/   
-{
-    int tstatus;
-
-    /* if null pointer, then file is not opened, so just return */
-    if (!fptr)
-        return(*status);
-    else if (fptr->bufftype == -999)   /* check for magic value; works */
-        return(*status = BAD_FILEPTR); /* if O/S has not reused the memory */
-
-    ffchdu(fptr, status);           /* close and flush the current HDU */
-    ffflsh(fptr, TRUE, status);     /* flush and disassociate IO buffers */
-
-    ffclosex(fptr, 1, &tstatus);    /* close file */
-
-    if (*status <= 0 && tstatus > 0)
-        *status = FILE_NOT_CLOSED;  /* report error if no previous error */
-
-    free(fptr->filename);       /* free memory for the filename */
-    fptr->filename = 0;
-
-    fptr->bufftype = -999;      /* magic value to indicate invalid fptr */
-    free(fptr);                 /* free memory for the FITS file structure */
-
-    return(*status);
-}
-/*--------------------------------------------------------------------------*/
-int ffdelt(fitsfile *fptr,      /* I - FITS file pointer */
-           int *status)         /* IO - error status     */
-/*
-  close and DELETE the FITS file 
-*/
-{    
-    int tstatus = 0;
-
-    /* if null pointer, then file is not opened, so just return */
-    if (!fptr)
-        return(*status);
-
-    ffchdu(fptr, &tstatus);    /* close the current HDU, ignore any errors */
-    ffflsh(fptr, TRUE, &tstatus);     /* flush and disassociate IO buffers */
-
-    ffclosex(fptr, 0, &tstatus);  /* DELETE file */
-
-    if (*status <= 0 && tstatus > 0)
-        *status = FILE_NOT_CLOSED;  /* report error if no previous error */
-
-    free(fptr->filename);       /* free memory for the filename */
-    fptr->filename = 0;
-    free(fptr);                 /* free memory for the FITS file structure */
-
-    return(*status);
-}
-/*--------------------------------------------------------------------------*/
-int ffflus(fitsfile *fptr,   /* I - FITS file pointer                       */
-           int *status)      /* IO - error status                           */
-/*
-  Flush all the data in the current FITS file to disk. This ensures that if
-  the program subsequently dies, the disk FITS file will be closed correctly.
-*/
-{
-    int hdunum, hdutype;
-
-    if (*status > 0)
-        return(*status);
-
-    ffghdn(fptr, &hdunum);     /* get the current HDU number */
-
-    if (ffchdu(fptr,status) > 0)   /* close out the current HDU */
-        ffpmsg("ffflus could not close the current HDU.");
-
-    ffflsh(fptr, FALSE, status);  /* flush any modified IO buffers to disk */
-
-    if (ffgext(fptr, hdunum - 1, &hdutype, status) > 0) /* reopen HDU */
-        ffpmsg("ffflus could not reopen the current HDU.");
-
-    return(*status);
-}
-/*--------------------------------------------------------------------------*/
 int ffmbyt(fitsfile *fptr,    /* I - FITS file pointer                */
            long bytepos,      /* I - byte position in file to move to */
            int err_mode,      /* I - 1=ignore error, 0 = return error */
@@ -116,7 +32,7 @@ int ffmbyt(fitsfile *fptr,    /* I - FITS file pointer                */
   or simply ignored.
 */
     long record;
-    extern long bufrecnum[NIOBUF];
+/*    extern long bufrecnum[NIOBUF]; */
 
     if (*status > 0)
        return(*status);
@@ -150,12 +66,12 @@ int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
     long filepos, recstart, recend;
     long ntodo, bufpos, nspace, nwrite;
     char *cptr;
-
+/*
     extern fitsfile *bufptr[NIOBUF];
     extern char iobuffer[NIOBUF][IOBUFLEN];
     extern long bufrecnum[NIOBUF]; 
     extern int dirty[NIOBUF];
-
+*/
     if (*status > 0)
        return(*status);
 
@@ -197,8 +113,8 @@ int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
         }
       }
 
-      /* move to the correct write position; must seek if last op was a read */
-      if (fptr->io_pos != filepos || fptr->last_io_op == IO_READ)
+      /* move to the correct write position */
+      if (fptr->io_pos != filepos)
          ffseek(fptr, filepos);
 
       nwrite = ((ntodo - 1) / IOBUFLEN) * IOBUFLEN; /* don't write last buff */
@@ -207,7 +123,6 @@ int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
       ntodo -= nwrite;                /* decrement remaining number of bytes */
       cptr += nwrite;                  /* increment user buffer pointer */
       fptr->io_pos = filepos + nwrite; /* update the file position */
-      fptr->last_io_op = IO_WRITE;     /* save type of last operation */
 
       if (fptr->io_pos >= fptr->filesize) /* at the EOF? */
       {
@@ -221,12 +136,9 @@ int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
       }
       else
       {
-        /* read next record; must seek because last op was a write */
-        ffseek(fptr, fptr->io_pos);
-
+        /* read next record */
         ffread(fptr, IOBUFLEN, iobuffer[nbuff], status);
         fptr->io_pos += IOBUFLEN; 
-        fptr->last_io_op = IO_READ;    /* save type of last operation */
       }
 
       /* copy remaining bytes from user buffer into current IO buffer */
@@ -279,12 +191,13 @@ int ffpbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
 */
 {
     int bcurrent;
-    long ii, ntodo, bufpos, nspace, nwrite, record;
+    long ii, bufpos, nspace, nwrite, record;
     char *cptr, *ioptr;
+/*
     extern char iobuffer[NIOBUF][IOBUFLEN];
     extern long bufrecnum[NIOBUF]; 
     extern int dirty[NIOBUF];
-
+*/
     if (*status > 0)
        return(*status);
 
@@ -372,11 +285,12 @@ int ffgbyt(fitsfile *fptr,    /* I - FITS file pointer             */
     long filepos, recstart, recend, ntodo, bufpos, nspace, nread;
     char *cptr;
 
+/*
     extern fitsfile *bufptr[NIOBUF];
     extern char iobuffer[NIOBUF][IOBUFLEN];
     extern long bufrecnum[NIOBUF]; 
     extern int dirty[NIOBUF];
-
+*/
     if (*status > 0)
        return(*status);
 
@@ -399,15 +313,12 @@ int ffgbyt(fitsfile *fptr,    /* I - FITS file pointer             */
             }
       }
 
-       /* move to the correct read position; must seek if last op was write */
-      if (fptr->io_pos != filepos || fptr->last_io_op == IO_WRITE)
-      {
+       /* move to the correct read position */
+      if (fptr->io_pos != filepos)
          ffseek(fptr, filepos);
-      }
 
       ffread(fptr, nbytes, cptr, status); /* read the data */
       fptr->io_pos = filepos + nbytes; /* update the file position */
-      fptr->last_io_op = IO_READ;      /* save type of last operation */
     }
     else
     {
@@ -453,11 +364,12 @@ int ffgbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
 */
 {
     int bcurrent;
-    long ii, ntodo, bufpos, nspace, nread, record;
+    long ii, bufpos, nspace, nread, record;
     char *cptr, *ioptr;
+/*
     extern char iobuffer[NIOBUF][IOBUFLEN];
     extern long bufrecnum[NIOBUF]; 
-
+*/
     if (*status > 0)
        return(*status);
 
@@ -538,14 +450,14 @@ int ffldrc(fitsfile *fptr,        /* I - FITS file pointer             */
   pointers to make this the new current record for that file.
   Update ages of all the physical buffers.
 */
-    int ibuff, nbuff, ii;
+    int ibuff, nbuff;
     long rstart;
-
+/*
     extern char iobuffer[NIOBUF][IOBUFLEN];
     extern fitsfile *bufptr[NIOBUF];
     extern long bufrecnum[NIOBUF]; 
     extern int dirty[NIOBUF], ageindex[NIOBUF];
-
+*/
     /* check if record is already loaded in one of the buffers */
     /* search from youngest to oldest buffer for efficiency */
 
@@ -581,12 +493,11 @@ int ffldrc(fitsfile *fptr,        /* I - FITS file pointer             */
     }
     else  /* not EOF, so read record from disk */
     {
-      if (fptr->io_pos != rstart || fptr->last_io_op == IO_WRITE)
+      if (fptr->io_pos != rstart)
            ffseek(fptr, rstart);
 
       ffread(fptr, IOBUFLEN, iobuffer[nbuff], status);
       fptr->io_pos = rstart + IOBUFLEN;  /* set new IO position */
-      fptr->last_io_op = IO_READ;        /* save type of last operation */
     }
 
     bufptr[nbuff] = fptr;   /* file pointer for this buffer */
@@ -620,10 +531,10 @@ int ffwhbf(fitsfile *fptr,        /* I - FITS file pointer             */
 */
     int ii, ibuff;
     static int ageinit = 0;
-
+/*
     extern fitsfile *bufptr[NIOBUF];
     extern int ageindex[NIOBUF];
-
+*/
     if (!ageinit)  /* first time thru, initialize default age of buffers */
     {
        for (ii = 0; ii < NIOBUF; ii++)
@@ -645,6 +556,31 @@ int ffwhbf(fitsfile *fptr,        /* I - FITS file pointer             */
     return(*nbuff = fptr->curbuf);
 }
 /*--------------------------------------------------------------------------*/
+int ffflus(fitsfile *fptr,   /* I - FITS file pointer                       */
+           int *status)      /* IO - error status                           */
+/*
+  Flush all the data in the current FITS file to disk. This ensures that if
+  the program subsequently dies, the disk FITS file will be closed correctly.
+*/
+{
+    int hdunum, hdutype;
+
+    if (*status > 0)
+        return(*status);
+
+    ffghdn(fptr, &hdunum);     /* get the current HDU number */
+
+    if (ffchdu(fptr,status) > 0)   /* close out the current HDU */
+        ffpmsg("ffflus could not close the current HDU.");
+
+    ffflsh(fptr, FALSE, status);  /* flush any modified IO buffers to disk */
+
+    if (ffgext(fptr, hdunum - 1, &hdutype, status) > 0) /* reopen HDU */
+        ffpmsg("ffflus could not reopen the current HDU.");
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffflsh(fitsfile *fptr,        /* I - FITS file pointer           */
            int clearbuf,          /* I - also clear buffer contents? */
            int *status)           /* IO - error status               */
@@ -653,11 +589,11 @@ int ffflsh(fitsfile *fptr,        /* I - FITS file pointer           */
   flush all dirty IO buffers associated with the file to disk
 */
     int ii;
-
+/*
     extern fitsfile *bufptr[NIOBUF];
     extern long bufrecnum[NIOBUF]; 
     extern int dirty[NIOBUF];
-
+*/
     for (ii = 0; ii < NIOBUF; ii++)
     {
       if (bufptr[ii] == fptr)
@@ -688,12 +624,12 @@ int ffbfwt(int nbuff,             /* I - which buffer to write          */
     long jj, irec, minrec, nloop, filepos;
 
     static char zeros[IOBUFLEN];  /*  initialized to zero by default */
-
+/*
     extern char iobuffer[NIOBUF][IOBUFLEN];
     extern fitsfile *bufptr[NIOBUF];
     extern long bufrecnum[NIOBUF]; 
     extern int dirty[NIOBUF];
-
+*/
     fptr = bufptr[nbuff];
     filepos = bufrecnum[nbuff] * IOBUFLEN;
 
@@ -701,13 +637,12 @@ int ffbfwt(int nbuff,             /* I - which buffer to write          */
     {
       /* record is located within current file, so just write it */
 
-      /* move to the correct write position; must seek if last op was a read */
-      if (fptr->io_pos != filepos || fptr->last_io_op == IO_READ)
+      /* move to the correct write position */
+      if (fptr->io_pos != filepos)
          ffseek(fptr, filepos);
 
       ffwrite(fptr, IOBUFLEN, iobuffer[nbuff], status);
       fptr->io_pos = filepos + IOBUFLEN;
-      fptr->last_io_op = IO_WRITE;     /* save type of last operation */
 
       if (filepos == fptr->filesize)   /* appended new record? */
          fptr->filesize += IOBUFLEN;   /* increment the file size */
@@ -718,8 +653,8 @@ int ffbfwt(int nbuff,             /* I - which buffer to write          */
     else  /* if record is beyond the EOF, append any other records */ 
           /* and/or insert fill values if necessary */
     {
-      /* move to EOF; must seek if last op was a read */
-      if (fptr->io_pos != fptr->filesize || fptr->last_io_op == IO_READ)
+      /* move to EOF */
+      if (fptr->io_pos != fptr->filesize)
          ffseek(fptr, fptr->filesize);
 
       ibuff = NIOBUF;  /* initialize to impossible value */
@@ -763,7 +698,6 @@ int ffbfwt(int nbuff,             /* I - which buffer to write          */
       } /* loop back if more buffers need to be written */
 
       fptr->io_pos = fptr->filesize;  /* currently positioned at EOF */
-      fptr->last_io_op = IO_WRITE;    /* save type of last operation */
     }
     return(*status);       
 }
@@ -778,7 +712,7 @@ int ffgrsz( fitsfile *fptr, /* I - FITS file pionter                        */
   may cause excessive flushing and rereading of buffers to/from disk.
 */
 {
-    int ii, jj, unique, nfiles, typecode, bytesperpixel;
+    int nfiles, typecode, bytesperpixel;
     long repeat, width;
 
     /* There are NIOBUF internal buffers available each IOBUFLEN bytes long. */
@@ -786,6 +720,34 @@ int ffgrsz( fitsfile *fptr, /* I - FITS file pionter                        */
     if (fptr->datastart == DATA_UNDEFINED)
       if ( ffrdef(fptr, status) > 0)   /* rescan header to get hdu struct */
            return(*status);
+
+    /* determine how many different FITS files are currently open */
+    nfiles = fits_get_num_files();
+
+    /* one buffer (at least) is always allocated to each open file */
+
+    if (fptr->hdutype == IMAGE_HDU ) /* calc pixels per buffer size */
+    {
+      /* image pixels are in column 2 of the 'table' */
+      ffgtcl(fptr, 2, &typecode, &repeat, &width, status);
+      bytesperpixel = typecode / 10;
+      *ndata = ((NIOBUF - nfiles) * IOBUFLEN) / bytesperpixel;
+    }
+    else   /* calc number of rows that fit in buffers */
+    {
+      *ndata = ((NIOBUF - nfiles) * IOBUFLEN) / maxvalue(1, fptr->rowlength);
+      *ndata = maxvalue(1, *ndata); 
+    }
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_get_num_files(void)
+/*
+  Returns the number of FITS files currently opened in CFITSIO
+*/
+{
+    int ii, jj, unique, nfiles;
 
     /* determine how many different FITS files are currently open */
     nfiles = 0;
@@ -808,23 +770,7 @@ int ffgrsz( fitsfile *fptr, /* I - FITS file pionter                        */
           nfiles++;
       }
     }
-
-    /* one buffer (at least) is always allocated to each open file */
-
-    if (fptr->hdutype == IMAGE_HDU ) /* calc pixels per buffer size */
-    {
-      /* image pixels are in column 2 of the 'table' */
-      ffgtcl(fptr, 2, &typecode, &repeat, &width, status);
-      bytesperpixel = typecode / 10;
-      *ndata = ((NIOBUF - nfiles) * IOBUFLEN) / bytesperpixel;
-    }
-    else   /* calc number of rows that fit in buffers */
-    {
-      *ndata = ((NIOBUF - nfiles) * IOBUFLEN) / maxvalue(1, fptr->rowlength);
-      *ndata = maxvalue(1, *ndata); 
-    }
-
-    return(*status);
+    return(nfiles);
 }
 /*--------------------------------------------------------------------------*/
 int ffgtbb(fitsfile *fptr,        /* I - FITS file pointer                 */
@@ -941,7 +887,7 @@ int ffgi4b(fitsfile *fptr,  /* I - FITS file pointer                        */
            long byteloc,    /* I - position within file to start reading    */
            long nvals,      /* I - number of pixels to read                 */
            long incre,      /* I - byte increment between pixels            */
-           long *values,    /* O - returned array of values                 */
+           INT32BIT *values, /* O - returned array of values                */
            int *status)     /* IO - error status                            */
 /*
   get (read) the array of values from the FITS file, doing machine dependent
@@ -972,14 +918,7 @@ int ffgi4b(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
 
 #if BYTESWAPPED
-
-    ffunswaplong(values, nvals);    /* reverse order of bytes in each value */
-                         /* this also converts to 8-byte longs on ALPHA OSF */
-
-#elif LONGSIZE == 64
-
-    ffunpacklong(values, nvals);   /* unpack 4-byte longs into 8-byte longs */
-
+    ffswap4(values, nvals);    /* reverse order of bytes in each value */
 #endif
 
     return(*status);
@@ -996,8 +935,7 @@ int ffgr4b(fitsfile *fptr,  /* I - FITS file pointer                        */
   format conversion (e.g. byte-swapping) if necessary.
 */
 {
-    short *sptr;
-    long ii, postemp;
+    long postemp;
 
     if (incre == 4)      /* read all the values at once (contiguous bytes) */
     {
@@ -1022,11 +960,13 @@ int ffgr4b(fitsfile *fptr,  /* I - FITS file pointer                        */
 
 
 #if MACHINE == VAXVMS
+    long ii;
 
     ii = nvals;                      /* call VAX macro routine to convert */
     ieevur(values, values, &ii);     /* from  IEEE float -> F float       */
 
 #elif (MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
+    short *sptr;
 
     ffswap2( (short *) values, nvals * 2);  /* swap pairs of bytes */
 
@@ -1039,9 +979,7 @@ int ffgr4b(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
 
 #elif BYTESWAPPED
-
-    ffswapfloat(values, nvals);  /* reverse order of bytes in each value */
-
+    ffswap4((INT32BIT *)values, nvals);  /* reverse order of bytes in values */
 #endif
 
     return(*status);
@@ -1058,8 +996,7 @@ int ffgr8b(fitsfile *fptr,  /* I - FITS file pointer                        */
   format conversion (e.g. byte-swapping) if necessary.
 */
 {
-    short *sptr;
-    long ii, postemp;
+    long  postemp;
 
     if (incre == 8)      /* read all the values at once (contiguous bytes) */
     {
@@ -1083,12 +1020,12 @@ int ffgr8b(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
 
 #if MACHINE == VAXVMS
-
+    long ii;
     ii = nvals;                      /* call VAX macro routine to convert */
     ieevud(values, values, &ii);     /* from  IEEE float -> D float       */
 
 #elif (MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
-
+    short *sptr;
     ffswap2( (short *) values, nvals * 4);  /* swap pairs of bytes */
 
     /* convert from IEEE float format to VMS GFLOAT float format */
@@ -1100,9 +1037,7 @@ int ffgr8b(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
 
 #elif BYTESWAPPED
-
     ffswap8(values, nvals);   /* reverse order of bytes in each value */
-
 #endif
 
     return(*status);
@@ -1193,7 +1128,7 @@ int ffpi2b(fitsfile *fptr, /* I - FITS file pointer                         */
 int ffpi4b(fitsfile *fptr, /* I - FITS file pointer                         */
            long nvals,     /* I - number of pixels in the values array      */
            long incre,     /* I - byte increment between pixels             */
-           long *values,   /* I - array of values to write                  */
+           INT32BIT *values, /* I - array of values to write                */
            int *status)    /* IO - error status                             */
 /*
   put (write) the array of values to the FITS file, doing machine dependent
@@ -1201,14 +1136,7 @@ int ffpi4b(fitsfile *fptr, /* I - FITS file pointer                         */
 */
 {
 #if BYTESWAPPED
-
-    ffswaplong(values, nvals);    /* reverse order of bytes in each value */
-                     /* this also converts from 8-byte longs on ALPHA OSF */
-
-#elif LONGSIZE == 64
-
-    ffpacklong(values, nvals);   /* pack 8-byte longs into 4-byte longs */
-
+    ffswap4(values, nvals);    /* reverse order of bytes in each value */
 #endif
 
     if (incre == 4)      /* write all the values at once (contiguous bytes) */
@@ -1232,14 +1160,14 @@ int ffpr4b(fitsfile *fptr, /* I - FITS file pointer                         */
   format conversion (e.g. byte-swapping) if necessary.
 */
 {
-    long ii;
-
 #if MACHINE == VAXVMS
+    long ii;
 
     ii = nvals;                      /* call VAX macro routine to convert */
     ieevpr(values, values, &ii);     /* from F float -> IEEE float        */
 
 #elif (MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
+    long ii;
 
     /* convert from VMS FFLOAT float format to IEEE float format */
     for (ii = 0; ii < nvals; ii++)
@@ -1248,9 +1176,7 @@ int ffpr4b(fitsfile *fptr, /* I - FITS file pointer                         */
     ffswap2( (short *) values, nvals * 2);  /* swap pairs of bytes */
 
 #elif BYTESWAPPED
-
-    ffswapfloat(values, nvals); /* reverse order of bytes in each value */
-
+    ffswap4((INT32BIT *) values, nvals); /* reverse order of bytes in values */
 #endif
 
     if (incre == 4)      /* write all the values at once (contiguous bytes) */
@@ -1274,14 +1200,14 @@ int ffpr8b(fitsfile *fptr, /* I - FITS file pointer                         */
   format conversion (e.g. byte-swapping) if necessary.
 */
 {
-    long ii;
-
 #if MACHINE == VAXVMS
+    long ii;
 
     ii = nvals;                      /* call VAX macro routine to convert */
     ieevpd(values, values, &ii);     /* from D float -> IEEE float        */
 
 #elif (MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
+    long ii;
 
     /* convert from VMS GFLOAT float format to IEEE float format */
     for (ii = 0; ii < nvals; ii++)
@@ -1290,9 +1216,7 @@ int ffpr8b(fitsfile *fptr, /* I - FITS file pointer                         */
     ffswap2( (short *) values, nvals * 4);  /* swap pairs of bytes */
 
 #elif BYTESWAPPED
-
     ffswap8(values, nvals); /* reverse order of bytes in each value */
-
 #endif
 
     if (incre == 8)      /* write all the values at once (contiguous bytes) */

@@ -64,10 +64,19 @@ unsigned insize;           /* valid bytes in inbuf */
 unsigned inptr;            /* index of next byte to be processed in inbuf */
 unsigned outcnt;           /* bytes in output buffer */
 
+/* prototype for the following function */
+int uncompress2mem(char *filename, 
+             FILE *diskfile, 
+             char **buffptr, 
+             size_t *buffsize, 
+             void *(*mem_realloc)(void *p, size_t newsize),
+             size_t *filesize,
+             int *status);
+
 /*--------------------------------------------------------------------------*/
-int ffuncompress2mem(char *filename,  /* name of input file                 */
+int uncompress2mem(char *filename,  /* name of input file                 */
              FILE *diskfile,     /* I - file pointer                        */
-             void **buffptr,     /* IO - memory pointer                     */
+             char **buffptr,   /* IO - memory pointer                     */
              size_t *buffsize,   /* IO - size of buffer, in bytes           */
              void *(*mem_realloc)(void *p, size_t newsize), /* function     */
              size_t *filesize,   /* O - size of file, in bytes              */
@@ -85,7 +94,7 @@ int ffuncompress2mem(char *filename,  /* name of input file                 */
     /*  save input parameters into global variables */
     strcpy(ifname, filename);
     ifd = diskfile;
-    memptr = buffptr;
+    memptr = (void **) buffptr;
     memsize = buffsize;
     realloc_fn = mem_realloc;
 
@@ -275,10 +284,10 @@ local ulg updcrc(s, n)
 {
     register ulg c;         /* temporary variable */
 
-    static ulg crc = (ulg)0xffffffffUL; /* shift register contents */
+    static ulg crc = (ulg)0xffffffffL; /* shift register contents */
 
     if (s == NULL) {
-	c = 0xffffffffL;
+	c = 0xffffffffUL;
     } else {
 	c = crc;
         if (n) do {
@@ -681,7 +690,7 @@ local void read_c_len()
 
 local unsigned decode_c()
 {
-    unsigned j, mask;
+    unsigned j = 0, mask;
 
     if (blocksize == 0) {
 	blocksize = getbits(16);
@@ -1146,7 +1155,7 @@ local int unlzw(in, out)
 	    
 	    /* And put them out in forward order */
 	    {
-		REG1 int	i;
+	/*	REG1 int	i;   already defined above (WDP) */
 	    
 		if (outpos+(i = (de_stack-stackp)) >= OUTBUFSIZ) {
 		    do {

@@ -23,7 +23,7 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 1.41;   /*  for ftools release  */
+      *version = 2.000;   /*  beta I/O driver release */
 
  /*   *version = 1.40;    6 Feb 1998 */
  /*   *version = 1.33;   16 Dec 1997 (internal release only) */
@@ -78,12 +78,17 @@ void ffgerr(int status,     /* I - error status value */
   the terminating null character.
 */
 {
-  if (status < 300)
+  errtext[0] = '\0';
+
+  if (status >= 0 && status < 300)
   {
     switch (status) {
 
     case 0:
        strcpy(errtext, "OK - no error");
+       break;
+    case 1:
+       strcpy(errtext, "non-CFITSIO program error");
        break;
     case 101:
        strcpy(errtext, "same input and output files");
@@ -120,6 +125,27 @@ void ffgerr(int status,     /* I - error status value */
        break;
     case 114:
        strcpy(errtext, "invalid fitsfile pointer");
+       break;
+    case 115:
+       strcpy(errtext, "NULL input pointer");
+       break;
+    case 116:
+       strcpy(errtext, "error seeking file position");
+       break;
+    case 121:
+       strcpy(errtext, "invalid URL prefix");
+       break;
+    case 122:
+       strcpy(errtext, "too many I/O drivers");
+       break;
+    case 123:
+       strcpy(errtext, "I/O driver init failed");
+       break;
+    case 124:
+       strcpy(errtext, "no I/O driver for this URLtype");
+       break;
+    case 125:
+       strcpy(errtext, "parse error in input file URL");
        break;
     case 201:
        strcpy(errtext, "header already has keywords");
@@ -259,9 +285,12 @@ void ffgerr(int status,     /* I - error status value */
     case 263:
        strcpy(errtext, "illegal TDIMn keyword value");
        break;
+    default:
+       strcpy(errtext, "unknown error status");
+       break;
     }
   }
-  else
+  else if (status < 600)
   {
     switch(status) {
 
@@ -303,6 +332,9 @@ void ffgerr(int status,     /* I - error status value */
        break;
     case 320:
        strcpy(errtext, "illegal number of dimensions");
+       break;
+    case 321:
+       strcpy(errtext, "1st pixel no. > last pixel no.");
        break;
     case 322:
        strcpy(errtext, "BSCALE or TSCALn = 0.");
@@ -346,6 +378,24 @@ void ffgerr(int status,     /* I - error status value */
     case 412:
        strcpy(errtext, "datatype conversion overflow");
        break;
+    case 420:
+       strcpy(errtext, "bad date or time conversion");
+       break;
+    case 431:
+       strcpy(errtext, "syntax error in expression");
+       break;
+    case 432:
+       strcpy(errtext, "expression result wrong type");
+       break;
+    case 433:
+       strcpy(errtext, "vector result too large");
+       break;
+    case 434:
+       strcpy(errtext, "missing output column");
+       break;
+    case 435:
+       strcpy(errtext, "bad data in parsed column");
+       break;
     case 501:
        strcpy(errtext, "WCS angle too large");
        break;
@@ -361,7 +411,14 @@ void ffgerr(int status,     /* I - error status value */
     case 505:
        strcpy(errtext, "WCS keywords not found");
        break;
+    default:
+       strcpy(errtext, "unknown error status");
+       break;
     }
+  }
+  else
+  {
+     strcpy(errtext, "unknown error status");
   }
   return;
 }
@@ -392,7 +449,7 @@ void ffcmsg(void)
   erase all messages in the error stack
 */
 {
-    char *dummy;
+    char *dummy = 0;
 
     ffxmsg(0, dummy);
     return;
@@ -689,7 +746,7 @@ int ffkeyn(char *keyroot,   /* I - root string for keyword name */
   e.g., if root = "TTYPE" and value = 12 then keyname = "TTYPE12".
 */
 {
-    char suffix[8];
+    char suffix[16];
     size_t rootlen;
 
     keyname[0] = '\0';            /* initialize output name to null */
@@ -722,7 +779,7 @@ int ffnkey(int value,       /* I - index number to be appended to root name */
     keyname[0] = '\0';            /* initialize output name to null */
     rootlen = strlen(keyroot);
 
-    if (rootlen == 0 || rootlen > 7 || value < 1 || value > 999)
+    if (rootlen == 0 || rootlen > 7 || value < 1 )
        return(*status = 206);
 
     sprintf(keyname, "%d", value); /* construct keyword prefix */
@@ -747,7 +804,6 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
 {
     int jj;
     size_t ii, cardlen, nblank;
-    char errmsg[FLEN_ERRMSG];
 
     if (*status > 0)
         return(*status);
@@ -791,7 +847,6 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
          that the keyword value is undefined.  Don't write an error
          message in this case.
       */
-
         value[0] = '\0';
         comm[0] = '\0';
         return(*status);
@@ -1501,6 +1556,7 @@ int ffgcnn( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     founde = FALSE;   /* initialize 'found exact match' flag */
     foundw = FALSE;   /* initialize 'found wildcard match' flag */
+    unique = FALSE;
 
     for (ii = startcol; ii < fptr->tfield; ii++, colptr++)
     {
@@ -2085,7 +2141,7 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
 */
 {
     int groups, tstatus, simple, bitpix, naxis, extend, nspace;
-    int ttype, bytlen, ii;
+    int ttype = 0, bytlen = 0, ii;
     long naxes[999], pcount, gcount, npix, blank;
     double bscale, bzero;
     char comm[FLEN_COMMENT];
@@ -2419,7 +2475,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
   initialize the parameters defining the structure of a binary table 
 */
     int  ii, nspace;
-    long nrows, rowlen, tfield, pcount, totalwidth, strrepeat;
+    long nrows, rowlen, tfield, pcount, totalwidth;
     tcolumn *colptr;
     char name[FLEN_KEYWORD], value[FLEN_VALUE], comm[FLEN_COMMENT];
     char message[FLEN_ERRMSG];
@@ -2967,10 +3023,8 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     }
 
     /* calculate no. of pixels that fit in buffer */
-    /* allow for case where longs or floats are 8 bytes long */
-    if (abs(*tcode) == TLONG)
-       *maxelem = DBUFFSIZE / sizeof(long);
-    else if (abs(*tcode) == TFLOAT)
+    /* allow for case where floats are 8 bytes long */
+    if (abs(*tcode) == TFLOAT)
        *maxelem = DBUFFSIZE / sizeof(float);
     else if (abs(*tcode) == TDOUBLE)
        *maxelem = DBUFFSIZE / sizeof(double);
@@ -3071,7 +3125,8 @@ int ffgdes(fitsfile *fptr, /* I - FITS file pointer                         */
   get (read) the variable length vector descriptor from the table.
 */
 {
-    long bytepos, descript[2];
+    long bytepos;
+    INT32BIT descript[2];
     tcolumn *colptr;
 
     if (fptr->datastart == DATA_UNDEFINED)
@@ -3089,10 +3144,10 @@ int ffgdes(fitsfile *fptr, /* I - FITS file pointer                         */
         bytepos = fptr->datastart + (rownum - 1) * fptr->rowlength +
                   colptr->tbcol;
 
-        ffgi4b(fptr, bytepos, 2, 4, descript, status); /* read the descriptor */
+        ffgi4b(fptr, bytepos, 2, 4, descript, status); /* read descriptor */
 
-        *length = descript[0];   /* 1st word of descriptor is the length  */
-        *heapaddr = descript[1]; /* 2nd word of descriptor is the address */
+        *length = (long) descript[0];   /* 1st word is the length  */
+        *heapaddr = (long) descript[1]; /* 2nd word is the address */
      }
     return(*status);
 }
@@ -3107,7 +3162,8 @@ int ffpdes(fitsfile *fptr, /* I - FITS file pointer                         */
   put (write) the variable length vector descriptor to the table.
 */
 {
-    long bytepos, descript[2];
+    long bytepos;
+    INT32BIT descript[2];
     tcolumn *colptr;
 
     if (*status > 0)
@@ -3130,8 +3186,8 @@ int ffpdes(fitsfile *fptr, /* I - FITS file pointer                         */
 
         ffmbyt(fptr, bytepos, IGNORE_EOF, status); /* move to element */
 
-        descript[0] = length;   /* 1st word of descriptor is the length  */
-        descript[1] = heapaddr; /* 2nd word of descriptor is the address */
+        descript[0] = (INT32BIT) length;   /* 1st word is the length  */
+        descript[1] = (INT32BIT) heapaddr; /* 2nd word is the address */
  
         ffpi4b(fptr, 2, 4, descript, status); /* write the descriptor */
     }
@@ -3643,6 +3699,9 @@ int ffdblk(fitsfile *fptr,      /* I - FITS file pointer                    */
     for (ii = 0; ii < nblocks; ii++)
         ffpbyt(fptr, 2880L, buffer, status);
 
+    /* truncate the file to the new size, if supported on this device */
+    fftrun(fptr, writepos, status);
+
     /* recalculate the starting location of all subsequent HDUs */
     for (ii = fptr->curhdu; ii <= fptr->maxhdu; ii++)
          fptr->headstart[ii + 1] -= (2880 * nblocks);
@@ -3748,7 +3807,7 @@ int ffmrhd(fitsfile *fptr,      /* I - FITS file pointer                    */
 int ffmnhd(fitsfile *fptr,      /* I - FITS file pointer                    */
            int exttype,         /* I - desired extension type               */
            char *hduname,       /* I - desired EXTNAME value for the HDU    */
-           int hduvers,         /* I - desired EXTVERS value for the HDU    */
+           int hduver,         /* I - desired EXTVERS value for the HDU    */
            int *status)         /* IO - error status                        */
 /*
   Move to the HDU with a given EXTNAME and EXTVERS keyword values.  If
@@ -3759,7 +3818,7 @@ int ffmnhd(fitsfile *fptr,      /* I - FITS file pointer                    */
 {
     char extname[FLEN_VALUE];
     int ii, hdutype, extnum, tstatus, match, exact;
-    long extvers, slen;
+    long extver;
 
     if (*status > 0)
         return(*status);
@@ -3776,23 +3835,23 @@ int ffmnhd(fitsfile *fptr,      /* I - FITS file pointer                    */
            return(*status = BAD_HDU_NUM);      /* couldn't find desired HDU */
         }
         
-        if (exttype == ANY_HDU || hdutype == exttype)
+        if (exttype == ANY_HDU || hdutype == exttype)  /* matching type? */
         {
           if (ffgkys(fptr, "EXTNAME", extname, 0, &tstatus) <= 0) /* name */
           {
             ffcmps(extname, hduname, CASEINSEN, &match, &exact);
             if (exact)  /* names match? */
             {
-              if (hduvers)  /* check if version numbers match? */
+              if (hduver)  /* need to check if version numbers match? */
               {
-                if (ffgkyj(fptr, "EXTVERS", &extvers, 0, &tstatus) <= 0)
-                {
-                  if ( (int) extvers == hduvers)
+                if (ffgkyj(fptr, "EXTVER", &extver, 0, &tstatus) > 0)
+                    extver = 1;  /* assume default EXTVER value */
+
+                if ( (int) extver == hduver)  
                     return(*status);    /* found matching name and vers */
-                }
               }
               else
-              return(*status); /* found matching name */
+                return(*status); /* found matching name */
             }
           }
         }
@@ -3807,7 +3866,7 @@ int ffthdu(fitsfile *fptr,      /* I - FITS file pointer                    */
 */
 {
     int ii, extnum, tstatus;
-    char *errmsg;
+    char *errmsg = 0;
 
     if (*status > 0)
         return(*status);
@@ -3871,7 +3930,7 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
 */
 {
     int tstatus, savehdu, typhdu;
-    long ii, jj, insertpt, nshift, jpoint;
+    long ii, insertpt, nshift, jpoint;
     char charfill;
     char buff1[2880], buff2[2880];
     char *inbuff, *outbuff, *tmpbuff;
@@ -4162,7 +4221,6 @@ int ffc2r(char *cval,   /* I - string representation of the value */
 {
     char dtype, msg[81];
     int lval;
-    double dval;
     
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);

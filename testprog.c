@@ -1,7 +1,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include "fitsio.h"
-main()
+int main(void);
+
+int main()
 {
 /*  
     This is a big and complicated program that tests most of
@@ -73,7 +75,7 @@ main()
     char value[FLEN_VALUE], comment[FLEN_COMMENT];
     unsigned char uchars[80];
 
-    fitsfile *fptr, *tmpfile;
+    fitsfile *fptr, *tmpfptr;
     char *ttype[10], *tform[10], *tunit[10];
     char tblname[40];
     char binname[] = "Test-BINTABLE";
@@ -850,7 +852,8 @@ main()
     ffgkne(fptr, "ky_pkne", 2, 4, inekey, &nfound, &status);
     printf("\nCopied keyword: ffgkne:  %f, %f, %f\n", inekey[0], inekey[1],
            inekey[2]);
-    if (nfound != 4 || status > 0)
+
+    if (status > 0)
     {
        printf("\nERROR in ffgkne %d, %d\n", nfound, status);
        goto errstatus;
@@ -943,7 +946,7 @@ main()
     fftnul(fptr, 6, 99, &status);
 
     extvers = 1;
-    ffpkyj(fptr, "EXTVERS", extvers, "extension version number", &status);
+    ffpkyj(fptr, "EXTVER", extvers, "extension version number", &status);
     ffpkyj(fptr, "TNULL4", 99, "value for undefined pixels", &status);
     ffpkyj(fptr, "TNULL5", 99, "value for undefined pixels", &status);
     ffpkyj(fptr, "TNULL6", 99, "value for undefined pixels", &status);
@@ -1153,7 +1156,7 @@ main()
     ffsnul(fptr, 5, "null5", &status);
  
     extvers = 2;
-    ffpkyj(fptr, "EXTVERS", extvers, "extension version number", &status);
+    ffpkyj(fptr, "EXTVER", extvers, "extension version number", &status);
 
     ffpkys(fptr, "TNULL1", "null1", "value for undefined pixels", &status);
     ffpkys(fptr, "TNULL2", "null2", "value for undefined pixels", &status);
@@ -1355,54 +1358,54 @@ main()
 
     strcpy(filename, "t1q2s3v6.tmp");
     remove(filename);  /* make sure previous version of file doesn't exist */
-    ffinit(&tmpfile, filename, &status);
+    ffinit(&tmpfptr, filename, &status);
     printf("Create temporary file: ffinit status = %d\n", status);
 
-    ffiimg(tmpfile, bitpix, naxis, naxes, &status);
+    ffiimg(tmpfptr, bitpix, naxis, naxes, &status);
     printf("\nCreate null primary array: ffiimg status = %d\n", status);
 
     /* create an empty table with 12 rows and 0 columns */
     nrows = 12;
     tfields = 0;
     rowlen = 0;
-    ffitab(tmpfile, rowlen, nrows, tfields, ttype, tbcol, tform, tunit,
+    ffitab(tmpfptr, rowlen, nrows, tfields, ttype, tbcol, tform, tunit,
            tblname, &status);
     printf("\nCreate ASCII table with 0 columns: ffitab status = %d\n",
            status);
 
     /* copy columns from one table to the other */
-    ffcpcl(fptr, tmpfile, 4, 1, TRUE, &status);
+    ffcpcl(fptr, tmpfptr, 4, 1, TRUE, &status);
     printf("copy column, ffcpcl status = %d\n", status);
-    ffcpcl(fptr, tmpfile, 3, 1, TRUE, &status);
+    ffcpcl(fptr, tmpfptr, 3, 1, TRUE, &status);
     printf("copy column, ffcpcl status = %d\n", status);
-    ffcpcl(fptr, tmpfile, 2, 1, TRUE, &status);
+    ffcpcl(fptr, tmpfptr, 2, 1, TRUE, &status);
     printf("copy column, ffcpcl status = %d\n", status);
-    ffcpcl(fptr, tmpfile, 1, 1, TRUE, &status);
+    ffcpcl(fptr, tmpfptr, 1, 1, TRUE, &status);
     printf("copy column, ffcpcl status = %d\n", status);
 
     /* now repeat by copying ASCII input to Binary output table */
-    ffibin(tmpfile, nrows, tfields, ttype, tform, tunit,
+    ffibin(tmpfptr, nrows, tfields, ttype, tform, tunit,
            tblname,  0L, &status);
     printf("\nCreate Binary table with 0 columns: ffibin status = %d\n",
            status);
 
     /* copy columns from one table to the other */
-    ffcpcl(fptr, tmpfile, 4, 1, TRUE, &status);
+    ffcpcl(fptr, tmpfptr, 4, 1, TRUE, &status);
     printf("copy column, ffcpcl status = %d\n", status);
-    ffcpcl(fptr, tmpfile, 3, 1, TRUE, &status);
+    ffcpcl(fptr, tmpfptr, 3, 1, TRUE, &status);
     printf("copy column, ffcpcl status = %d\n", status);
-    ffcpcl(fptr, tmpfile, 2, 1, TRUE, &status);
+    ffcpcl(fptr, tmpfptr, 2, 1, TRUE, &status);
     printf("copy column, ffcpcl status = %d\n", status);
-    ffcpcl(fptr, tmpfile, 1, 1, TRUE, &status);
+    ffcpcl(fptr, tmpfptr, 1, 1, TRUE, &status);
     printf("copy column, ffcpcl status = %d\n", status);
 
 
 /*
-    ffclos(tmpfile, &status);
+    ffclos(tmpfptr, &status);
     printf("Close the tmp file: ffclos status = %d\n", status);
 */
 
-    ffdelt(tmpfile, &status);  
+    ffdelt(tmpfptr, &status);  
     printf("Delete the tmp file: ffdelt status = %d\n", status);
 
     if (status > 0)
@@ -1636,42 +1639,42 @@ main()
 
     strcpy(filename, "t1q2s3v5.tmp");
     remove(filename);  /* make sure previous version of file doesn't exist */
-    ffinit(&tmpfile, filename, &status);
+    ffinit(&tmpfptr, filename, &status);
     printf("Create temporary file: ffinit status = %d\n", status);
 
-    ffiimg(tmpfile, bitpix, naxis, naxes, &status);
+    ffiimg(tmpfptr, bitpix, naxis, naxes, &status);
     printf("\nCreate null primary array: ffiimg status = %d\n", status);
 
     /* create an empty table with 22 rows and 0 columns */
     nrows = 22;
     tfields = 0;
-    ffibin(tmpfile, nrows, tfields, ttype, tform, tunit, binname, 0L,
+    ffibin(tmpfptr, nrows, tfields, ttype, tform, tunit, binname, 0L,
             &status);
     printf("\nCreate binary table with 0 columns: ffibin status = %d\n",
            status);
 
     /* copy columns from one table to the other */
-    ffcpcl(fptr, tmpfile, 7, 1, TRUE, &status);
+    ffcpcl(fptr, tmpfptr, 7, 1, TRUE, &status);
     printf("copy column, ffcpcl status = %d\n", status);
-    ffcpcl(fptr, tmpfile, 6, 1, TRUE, &status);
+    ffcpcl(fptr, tmpfptr, 6, 1, TRUE, &status);
     printf("copy column, ffcpcl status = %d\n", status);
-    ffcpcl(fptr, tmpfile, 5, 1, TRUE, &status);
+    ffcpcl(fptr, tmpfptr, 5, 1, TRUE, &status);
     printf("copy column, ffcpcl status = %d\n", status);
-    ffcpcl(fptr, tmpfile, 4, 1, TRUE, &status);
+    ffcpcl(fptr, tmpfptr, 4, 1, TRUE, &status);
     printf("copy column, ffcpcl status = %d\n", status);
-    ffcpcl(fptr, tmpfile, 3, 1, TRUE, &status);
+    ffcpcl(fptr, tmpfptr, 3, 1, TRUE, &status);
     printf("copy column, ffcpcl status = %d\n", status);
-    ffcpcl(fptr, tmpfile, 2, 1, TRUE, &status);
+    ffcpcl(fptr, tmpfptr, 2, 1, TRUE, &status);
     printf("copy column, ffcpcl status = %d\n", status);
-    ffcpcl(fptr, tmpfile, 1, 1, TRUE, &status);
+    ffcpcl(fptr, tmpfptr, 1, 1, TRUE, &status);
     printf("copy column, ffcpcl status = %d\n", status);
 
 /*
-    ffclos(tmpfile, &status);
+    ffclos(tmpfptr, &status);
     printf("Close the tmp file: ffclos status = %d\n", status);
 */
 
-    ffdelt(tmpfile, &status);
+    ffdelt(tmpfptr, &status);
     printf("Delete the tmp file: ffdelt status = %d\n", status);
     if (status > 0)
     {
@@ -1728,7 +1731,7 @@ main()
     printf("HDU number = %d\n", ffghdn(fptr, &hdunum));
 
     extvers = 3;
-    ffpkyj(fptr, "EXTVERS", extvers, "extension version number", &status);
+    ffpkyj(fptr, "EXTVER", extvers, "extension version number", &status);
 
 
     ffpkyj(fptr, "TNULL4", 77, "value for undefined pixels", &status);
@@ -1927,27 +1930,27 @@ main()
     printf("HDU number = %d\n", ffghdn(fptr, &hdunum));
 
     strcpy(filename, "t1q2s3v4.tmp");
-    ffinit(&tmpfile, filename, &status);
+    ffinit(&tmpfptr, filename, &status);
     printf("Create temporary file: ffinit status = %d\n", status);
 
-    ffcopy(fptr, tmpfile, 0, &status);
+    ffcopy(fptr, tmpfptr, 0, &status);
     printf("Copy image extension to primary array of tmp file.\n");
     printf("ffcopy status = %d\n", status);
 
-    ffgrec(tmpfile, 1, card, &status);
+    ffgrec(tmpfptr, 1, card, &status);
     printf("%s\n", card);
-    ffgrec(tmpfile, 2, card, &status);
+    ffgrec(tmpfptr, 2, card, &status);
     printf("%s\n", card);
-    ffgrec(tmpfile, 3, card, &status);
+    ffgrec(tmpfptr, 3, card, &status);
     printf("%s\n", card);
-    ffgrec(tmpfile, 4, card, &status);
+    ffgrec(tmpfptr, 4, card, &status);
     printf("%s\n", card);
-    ffgrec(tmpfile, 5, card, &status);
+    ffgrec(tmpfptr, 5, card, &status);
     printf("%s\n", card);
-    ffgrec(tmpfile, 6, card, &status);
+    ffgrec(tmpfptr, 6, card, &status);
     printf("%s\n", card);
 
-    ffdelt(tmpfile, &status);
+    ffdelt(tmpfptr, &status);
     printf("Delete the tmp file: ffdelt status = %d\n", status);
 
     ffdhdu(fptr, &hdutype, &status);
@@ -2007,7 +2010,7 @@ main()
 
 
     extvers = 4;
-    ffpkyj(fptr, "EXTVERS", extvers, "extension version number", &status);
+    ffpkyj(fptr, "EXTVER", extvers, "extension version number", &status);
 
     ffpkyj(fptr, "TNULL4", 88, "value for undefined pixels", &status);
     ffpkyj(fptr, "TNULL5", 88, "value for undefined pixels", &status);
@@ -2333,7 +2336,7 @@ main()
     printf("\nffcrtb status = %d\n", status);
 
     extvers = 5;
-    ffpkyj(fptr, "EXTVERS", extvers, "extension version number", &status);
+    ffpkyj(fptr, "EXTVER", extvers, "extension version number", &status);
 
     ffpcl(fptr, TSTRING, 1, 1, 1, 3, onskey, &status);  /* write string values */
 
@@ -2417,36 +2420,36 @@ main()
     extvers = 1;
     ffmnhd(fptr, ANY_HDU, binname, (int) extvers, &status);
     ffghdn(fptr, &hdunum);
-    printf(" %s, %d = hdu %d, %d\n", binname, extvers, hdunum, status);
+    printf(" %s, %ld = hdu %d, %d\n", binname, extvers, hdunum, status);
     extvers = 3;
     ffmnhd(fptr, ANY_HDU, binname, (int) extvers, &status);
     ffghdn(fptr, &hdunum);
-    printf(" %s, %d = hdu %d, %d\n", binname, extvers, hdunum, status);
+    printf(" %s, %ld = hdu %d, %d\n", binname, extvers, hdunum, status);
     extvers = 4;
     ffmnhd(fptr, ANY_HDU, binname, (int) extvers, &status);
     ffghdn(fptr, &hdunum);
-    printf(" %s, %d = hdu %d, %d\n", binname, extvers, hdunum, status);
+    printf(" %s, %ld = hdu %d, %d\n", binname, extvers, hdunum, status);
 
 
     strcpy(tblname, "Test-ASCII");
     extvers = 2;
     ffmnhd(fptr, ANY_HDU, tblname, (int) extvers, &status);
     ffghdn(fptr, &hdunum);
-    printf(" %s, %d = hdu %d, %d\n", tblname, extvers, hdunum, status);
+    printf(" %s, %ld = hdu %d, %d\n", tblname, extvers, hdunum, status);
 
     strcpy(tblname, "new_table");
     extvers = 5;
     ffmnhd(fptr, ANY_HDU, tblname, (int) extvers, &status);
     ffghdn(fptr, &hdunum);
-    printf(" %s, %d = hdu %d, %d\n", tblname, extvers, hdunum, status);
+    printf(" %s, %ld = hdu %d, %d\n", tblname, extvers, hdunum, status);
     extvers = 0;
     ffmnhd(fptr, ANY_HDU, binname, (int) extvers, &status);
     ffghdn(fptr, &hdunum);
-    printf(" %s, %d = hdu %d, %d\n", binname, extvers, hdunum, status);
+    printf(" %s, %ld = hdu %d, %d\n", binname, extvers, hdunum, status);
     extvers = 17;
     ffmnhd(fptr, ANY_HDU, binname, (int) extvers, &status);
     ffghdn(fptr, &hdunum);
-    printf(" %s, %d = hdu %d, %d", binname, extvers, hdunum, status);
+    printf(" %s, %ld = hdu %d, %d", binname, extvers, hdunum, status);
     printf (" (expect a 301 error status here)\n");
     status = 0;
 

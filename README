@@ -22,7 +22,7 @@ BUILDING CFITSIO
 The CFITSIO code is contained in about 30 *.c source files and 3 *.h
 header files.  The CFITSIO library is built on Unix systems by typing:
 
->  ./configure
+>  configure
 >  make
 
 at the operating system prompt.  The 'configure' command customizes

@@ -339,7 +339,7 @@ int ffpcluj( fitsfile *fptr,  /* I - FITS file pointer                       */
     long twidth, incre, repeat, rowlen, rownum, elemnum, remain, next, ntodo;
     long tnull, startpos, wrtptr;
     double scale, zero;
-    char tform[20], cform[20], cstring[50];
+    char tform[20], cform[20];
     char message[FLEN_ERRMSG];
 
     char snull[20];   /*  the FITS null value  */
@@ -391,8 +391,8 @@ int ffpcluj( fitsfile *fptr,  /* I - FITS file pointer                       */
             case (TLONG):
 
                 ffu4fi4(&array[next], ntodo, scale, zero,
-                      (long *) buffer, status);
-                ffpi4b(fptr, ntodo, incre, (long *) buffer, status);
+                      (INT32BIT *) buffer, status);
+                ffpi4b(fptr, ntodo, incre, (INT32BIT *) buffer, status);
                 break;
 
             case (TBYTE):
@@ -696,7 +696,7 @@ int ffu4fi4(unsigned long *input, /* I - array of values to be converted */
             long ntodo,        /* I - number of elements in the array  */
             double scale,      /* I - FITS TSCALn or BSCALE value      */
             double zero,       /* I - FITS TZEROn or BZERO  value      */
-            long *output,      /* O - output array of converted values */
+            INT32BIT *output,  /* O - output array of converted values */
             int *status)       /* IO - error status                    */
 /*
   Copy input to output prior to writing output to a FITS file.
@@ -706,7 +706,7 @@ int ffu4fi4(unsigned long *input, /* I - array of values to be converted */
     long ii;
     double dvalue;
 
-    if (scale == 1. && zero == 2147483648.)
+    if (scale == 1. && zero == 2147483648. && sizeof(long) == 4)
     {       
         /* Instead of subtracting 2147483648, it is more efficient */
         /* to just flip the sign bit with the XOR operator */
@@ -714,28 +714,41 @@ int ffu4fi4(unsigned long *input, /* I - array of values to be converted */
         for (ii = 0; ii < ntodo; ii++)
              output[ii] =  ( *(long *) &input[ii] ) ^ 0x80000000;
     }
+    else if (scale == 1. && zero == 0.)
+    {       
+        for (ii = 0; ii < ntodo; ii++)
+        {
+            if (input[ii] > INT32_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                output[ii] = INT32_MAX;
+            }
+            else
+                output[ii] = input[ii];
+        }
+    }
     else
     {
         for (ii = 0; ii < ntodo; ii++)
         {
             dvalue = (input[ii] - zero) / scale;
 
-            if (dvalue < DLONG_MIN)
+            if (dvalue < DINT_MIN)
             {
                 *status = OVERFLOW_ERR;
-                output[ii] = LONG_MIN;
+                output[ii] = INT32_MIN;
             }
-            else if (dvalue > DLONG_MAX)
+            else if (dvalue > DINT_MAX)
             {
                 *status = OVERFLOW_ERR;
-                output[ii] = LONG_MAX;
+                output[ii] = INT32_MAX;
             }
             else
             {
                 if (dvalue >= 0)
-                    output[ii] = (long) (dvalue + .5);
+                    output[ii] = (INT32BIT) (dvalue + .5);
                 else
-                    output[ii] = (long) (dvalue - .5);
+                    output[ii] = (INT32BIT) (dvalue - .5);
             }
         }
     }

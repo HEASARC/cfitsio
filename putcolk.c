@@ -335,11 +335,11 @@ int ffpclk( fitsfile *fptr,  /* I - FITS file pointer                       */
   and will be inverse-scaled by the FITS TSCALn and TZEROn values if necessary.
 */
 {
-    int tcode, maxelem, hdutype;
+    int tcode, maxelem, hdutype, writeraw;
     long twidth, incre, repeat, rowlen, rownum, elemnum, remain, next, ntodo;
     long tnull, startpos, wrtptr;
     double scale, zero;
-    char tform[20], cform[20], cstring[50];
+    char tform[20], cform[20];
     char message[FLEN_ERRMSG];
 
     char snull[20];   /*  the FITS null value  */
@@ -357,7 +357,6 @@ int ffpclk( fitsfile *fptr,  /* I - FITS file pointer                       */
     else if (sizeof(int) == sizeof(long))
         ffpclj(fptr, colnum, firstrow, firstelem, nelem, 
               (long *) array, status);
-
     else
     {
     /*
@@ -378,6 +377,22 @@ int ffpclk( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     if (tcode == TSTRING)   
          ffcfmt(tform, cform);     /* derive C format for writing strings */
+
+    /*
+       if there is no scaling and the native machine format is not byteswapped
+       then we can simply write the raw data bytes into the FITS file if the
+       datatype of the FITS column is the same as the input values.  Otherwise
+       we must convert the raw values into the scaled and/or machine dependent
+       format in a temporary buffer that has been allocated for this purpose.
+    */
+    if (scale == 1. && zero == 0. && 
+       MACHINE == NATIVE && tcode == TLONG)
+    {
+        writeraw = 1;
+        maxelem = nelem;  /* we can write the entire array at one time */
+    }
+    else
+        writeraw = 0;
 
     /*---------------------------------------------------------------------*/
     /*  Now write the pixels to the FITS column.                           */
@@ -405,11 +420,18 @@ int ffpclk( fitsfile *fptr,  /* I - FITS file pointer                       */
         switch (tcode) 
         {
             case (TLONG):
+              if (writeraw)
+              {
+                /* write raw input bytes without conversion */
+                ffpi4b(fptr, ntodo, incre, (INT32BIT *) &array[next], status);
+              }
+              else
+              {
                 /* convert the raw data before writing to FITS file */
                 ffintfi4(&array[next], ntodo, scale, zero,
-                        (long *) buffer, status);
-                ffpi4b(fptr, ntodo, incre, (long *) buffer, status);
-              
+                        (INT32BIT *) buffer, status);
+                ffpi4b(fptr, ntodo, incre, (INT32BIT *) buffer, status);
+              }
 
                 break;
 
@@ -726,7 +748,7 @@ int ffintfi4(int *input,       /* I - array of values to be converted  */
             long ntodo,        /* I - number of elements in the array  */
             double scale,      /* I - FITS TSCALn or BSCALE value      */
             double zero,       /* I - FITS TZEROn or BZERO  value      */
-            long *output,      /* O - output array of converted values */
+            INT32BIT *output,      /* O - output array of converted values */
             int *status)       /* IO - error status                    */
 /*
   Copy input to output prior to writing output to a FITS file.
@@ -736,10 +758,9 @@ int ffintfi4(int *input,       /* I - array of values to be converted  */
     long ii;
     double dvalue;
 
-    if (scale == 1. && zero == 0.)
+    if (scale == 1. && zero == 0.)  
     {       
-        for (ii = 0; ii < ntodo; ii++)
-            output[ii] = (long) input[ii];   /* just copy input to output */
+        memcpy(output, input, ntodo * sizeof(int) );
     }
     else
     {
@@ -747,22 +768,22 @@ int ffintfi4(int *input,       /* I - array of values to be converted  */
         {
             dvalue = (input[ii] - zero) / scale;
 
-            if (dvalue < DLONG_MIN)
+            if (dvalue < DINT_MIN)
             {
                 *status = OVERFLOW_ERR;
-                output[ii] = LONG_MIN;
+                output[ii] = INT32_MIN;
             }
-            else if (dvalue > DLONG_MAX)
+            else if (dvalue > DINT_MAX)
             {
                 *status = OVERFLOW_ERR;
-                output[ii] = LONG_MAX;
+                output[ii] = INT32_MAX;
             }
             else
             {
                 if (dvalue >= 0)
-                    output[ii] = (long) (dvalue + .5);
+                    output[ii] = (INT32BIT) (dvalue + .5);
                 else
-                    output[ii] = (long) (dvalue - .5);
+                    output[ii] = (INT32BIT) (dvalue - .5);
             }
         }
     }

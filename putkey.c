@@ -183,6 +183,10 @@ int ffpky( fitsfile *fptr,     /* I - FITS file pointer        */
     {
         ffpkyj(fptr, keyname, (long) *(short *) value, comm, status);
     }
+    else if (datatype == TUINT)
+    {
+        ffpkyj(fptr, keyname, (long) *(unsigned int *) value, comm, status);
+    }
     else if (datatype == TINT)
     {
         ffpkyj(fptr, keyname, (long) *(int *) value, comm, status);
@@ -792,7 +796,7 @@ int ffpdat( fitsfile *fptr,      /* I - FITS file pointer  */
   exists then the date will simply be updated in the existing keyword.
 */
 {
-    char date[9], card[FLEN_CARD];
+    char date[30], tmzone[10], card[FLEN_CARD];
     time_t tp;
     struct tm *ptr;
 
@@ -800,14 +804,187 @@ int ffpdat( fitsfile *fptr,      /* I - FITS file pointer  */
         return(*status);
 
     time(&tp);
-    ptr = localtime(&tp);
-    strftime(date, 9, "%d/%m/%y", ptr);
+    ptr = gmtime(&tp);         /* get GMT (= UTC) time */
+
+    if (!ptr)                  /* GMT not available on this machine */
+    {
+        ptr = localtime(&tp); 
+        tmzone[0] = '\0';
+    }
+    else
+        strcpy(tmzone, " UTC");    
+
+    strftime(date, 25, "%Y-%m-%dT%H:%M:%S", ptr);
 
     strcpy(card, "DATE    = '");
     strcat(card, date);
-    strcat(card, "'           / FITS file creation date (dd/mm/yy)");
+    strcat(card, "' / file creation date (YYYY-MM-DDThh:mm:ss");
+    strcat(card, tmzone);
+    strcat(card, ")");
 
     ffucrd(fptr, "DATE", card, status);
+
+    return(*status);
+}
+/*-----------------------------------------------------------------*/
+int ffdt2s(int year,          /* I - year (0 - 9999)           */
+           int month,         /* I - month (1 - 12)            */
+           int day,           /* I - day (1 - 31)              */
+           char *datestr,     /* O - date string: "YYYY-MM-DD" */
+           int   *status)     /* IO - error status             */
+/*
+  Construct a date character string
+*/
+{
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (year < 0 || year > 9999 || month < 1 || month > 12 || day < 1 ||
+        day > 31)
+       return(*status = BAD_DATE);
+
+    sprintf(datestr, "%.4d-%.2d-%.2d", year, month, day);
+    return(*status);
+}
+/*-----------------------------------------------------------------*/
+int ffs2dt(char *datestr,   /* I - date string: "YYYY-MM-DD" or "dd/mm/yy" */
+           int *year,       /* O - year (0 - 9999)                         */
+           int *month,      /* O - month (1 - 12)                          */
+           int *day,        /* O - day (1 - 31)                            */
+           int   *status)   /* IO - error status                           */
+/*
+  Parse a date character string into year, month, and date values
+*/
+{
+    int slen;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    slen = strlen(datestr);
+
+    if (slen == 8 && datestr[2] == '/' && datestr[5] == '/')
+    {
+        if (isdigit(datestr[0]) && isdigit(datestr[1]) && isdigit(datestr[3]) 
+         && isdigit(datestr[4]) && isdigit(datestr[6]) && isdigit(datestr[7]) )
+        {
+            /* this is an old format string: "dd/mm/yy" */
+            *year = atoi(&datestr[6]) + 1900;
+            *month = atoi(&datestr[3]);
+            *day   = atoi(datestr);
+        }
+        else
+            return(*status = BAD_DATE);
+    }
+    else if (slen >= 10 && datestr[4] == '-' && datestr[7] == '-')
+        {
+        if (isdigit(datestr[0]) && isdigit(datestr[1]) && isdigit(datestr[2]) 
+         && isdigit(datestr[3]) && isdigit(datestr[5]) && isdigit(datestr[6])
+         && isdigit(datestr[8]) && isdigit(datestr[9]) )
+        {
+            if (slen > 10 && datestr[10] != 'T')
+                return(*status = BAD_DATE);
+
+            /* this is a new format string: "yyyy-mm-dd" */
+            *year = atoi(datestr);
+            *month = atoi(&datestr[5]);
+            *day   = atoi(&datestr[8]);
+        }
+        else
+            return(*status = BAD_DATE);
+    }
+    else
+        return(*status = BAD_DATE);
+
+    if (*year < 0 || *year > 9999 || *month < 1 || *month > 12 || *day < 1 ||
+        *day > 31)
+       return(*status = BAD_DATE);
+
+    return(*status);
+}
+/*-----------------------------------------------------------------*/
+int fftm2s(int year,          /* I - year (0 - 9999)           */
+           int month,         /* I - month (1 - 12)            */
+           int day,           /* I - day (1 - 31)              */
+           int hour,          /* I - hour (0 - 23)             */
+           int minute,        /* I - minute (0 - 59)           */
+           double second,     /* I - second (0. - 60.9999999)  */
+           int decimals,       /* I - number of decimal points to write      */
+           char *datestr,     /* O - date string: "YYYY-MM-DDThh:mm:ss.ddd" */
+           int   *status)     /* IO - error status             */
+/*
+  Construct a date and time character string
+*/
+{
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (year < 0 || year > 9999 || month < 1 || month > 12 || day < 1 ||
+        day > 31 || hour < 0 || hour > 23 || minute < 0 || minute > 59 ||
+        second < 0. || second >= 61. || decimals < 0 || decimals > 25)
+       return(*status = BAD_DATE);
+
+    sprintf(datestr, "%.4d-%.2d-%.2dT%.2d:%.2d:%02.*f",
+            year, month, day, hour, minute, decimals, second);
+
+    return(*status);
+}
+/*-----------------------------------------------------------------*/
+int ffs2tm(char *datestr,     /* I - date string: "YYYY-MM-DD"    */
+                              /*     or "YYYY-MM-DDThh:mm:ss.ddd" */
+                              /*     or "dd/mm/yy"                */
+           int *year,         /* O - year (0 - 9999)              */
+           int *month,        /* O - month (1 - 12)               */
+           int *day,          /* O - day (1 - 31)                 */
+           int *hour,          /* I - hour (0 - 23)                */
+           int *minute,        /* I - minute (0 - 59)              */
+           double *second,     /* I - second (0. - 60.9999999)     */
+           int   *status)     /* IO - error status                */
+/*
+  Parse a date character string into year, month, and date values
+*/
+{
+    int slen;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    /*  Parse the year, month, and date */
+    if (ffs2dt(datestr, year, month, day, status) > 0)
+        return(*status);
+
+    *hour   = 0;
+    *minute = 0;
+    *second = 0.;
+
+    slen = strlen(datestr);
+    if (slen == 8 || slen == 10)
+        return(*status);               /* OK, no time fields */
+    else if (slen < 19) 
+       return(*status = BAD_DATE);     /* invalid string length */
+
+    else if (datestr[10] == 'T' && datestr[13] == ':' && datestr[16] == ':')
+    {
+      if (isdigit(datestr[11]) && isdigit(datestr[12]) && isdigit(datestr[14]) 
+       && isdigit(datestr[15]) && isdigit(datestr[17]) && isdigit(datestr[18]) )
+        {
+            if (slen > 19 && datestr[19] != '.')
+                return(*status = BAD_DATE);
+
+            /* this is a new format string: "yyyy-mm-ddThh:mm:ss.dddd" */
+            *hour   = atoi(&datestr[11]);
+            *minute = atoi(&datestr[14]);
+            *second = atof(&datestr[17]);
+        }
+        else
+            return(*status = BAD_DATE);
+    }
+    else
+        return(*status = BAD_DATE);
+
+    if (*hour < 0 || *hour > 23 || *minute < 0 || *minute > 59 ||
+        *second < 0 || *second >= 61.)
+       return(*status = BAD_DATE);
 
     return(*status);
 }

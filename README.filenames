@@ -1,0 +1,174 @@
+                     CFITSIO File Name Syntax
+
+CFITSIO now supports an extended syntax for the input and output FITS
+file  names.  The full form of the file name looks like:
+
+   filetype://filename.ext[extension][rowfilter][binning][columns]
+
+where
+
+filetype
+--------
+
+Defines which internal device driver is used by CFITSIO to read
+and/or write the file.  Currently supported types are
+
+	file://  - magnetic disk (default)
+	mem://   - core memory.  File disappears when the program exits.
+                   Sometimes useful for testing when you don't want
+                   an output file.
+        shmem:// - shared memory.  File persists after program exits.
+        ftp://   - FTP protocol - readonly
+        http://  - HTTP protocol - readonly
+	root://  - CERN root protocol for writing over the network
+
+The double slashes '//' are optional in most cases.
+
+filename.ext
+------------
+
+Full path name to the file, including machine (for ftp, http,
+and root filetypes) and directory information. Examples
+
+	myfile.fits
+	/irafdir/data/myfile.fits
+	fits.gsfc.nasa.gov/ftp/sampledata/myfile.fits
+
+extension
+---------
+
+Optionally defines which HDU (Header-Data Unit) within the FITS file to
+open.  If not specified, the first HDU (the primary array) is opened.
+The HDU may be specified either by an integer number giving the
+position within the file (0 = the primary array), or by specifying the
+name of the extension (given by the EXTENSION keyword) followed
+optionally by the the version number (EXTVER keyword value) and
+extension type (XTENSION keyword value with values of IMAGE, TABLE, or
+BINTABLE).  Examples:
+
+	[3]
+	[EVENTS]
+	[EVENTS, 2]
+	[EVENTS, 2, BINTABLE]
+	[EXPOSURE, 1, IMAGE]
+
+rowfilter
+---------
+
+Specifies a boolean expression for filtering (selecting) rows from
+the input table.   A temporary new FITS file is created which
+contains only those rows in which the boolean expression evaluates
+to true.  See the ftools fselect help file for complete
+description of the allowed syntax.  Examples:
+
+	[pha < 5 && pha < 60]
+        [circle(8000.,8000.,1000.,X,Y]  - selects rows which have
+           X and Y column coordinates within a 1000 radius circle
+           centered on (8000.,8000).
+
+binning
+-------
+
+If binning is specified then a temporary FITS primary array (a
+n-dimensional array) is created by binning/histogramming the specified
+columns of a FITS table extension.  The FITS primary array (rather than
+the input FITS table) is then opened by the application program.  The
+histogram may have from 1 to 4 dimensions (axes), depending on the
+number of columns that are specified.  The array pixels will have a
+32-bit integer data type by default, but a 16-bit integer pixels may be
+created by specifying 'bin16' instead of 'bin' in the binning
+specification.
+
+The general form of the binning specification is:
+
+    [bin  Xcol=min:max:binsize, Ycol= ..., Zcol=..., Tcol=...]
+
+in which up to 4 columns, each corresponding to an axis of the image,
+may be specified.  The column names are case insensitive and the min,
+max, and bin size values may be integer or floating point numbers.  Spaces
+are allowed before and after the equals sign but not within the
+'min:max:binsize string'.  Each column specification is separated by
+a comma and/or spaces.
+
+Default values for any of the quantities will be substituted if not
+explicitly given in the binning expression.  If no column names are
+specified, then a 2-D image is assumed using the default X and Y
+columns.  The following examples illustrate various types of legal
+binning specifiers which use one or more default values:
+
+    [bin xcol = :512:2]  - default minimum value
+    [bin xcol = 1::2]    - default maximum value
+    [bin xcol = 1:512]   - default bin size
+    [bin xcol = 1:]      - default maximum value and bin size
+    [bin xcol = :512]    - default minimum value and bin size
+    [bin xcol = 2]       - default minimum and maximum values
+    [bin xcol]           - defaults for minimum, maximum and bin size
+    [bin 2]              - default 2-D image, bin size = 2 in both axes
+    [bin]                - default 2-D image
+
+If all the columns/axes have the same binning specification, then all
+the columns may be listed within parentheses, followed by the (single)
+binning specification, as in:
+
+    [bin (X,Y)=1:512:2]
+    [bin (X,Y,Z)=5]
+
+The default minimum and maximum values for each column are given the by
+TLMINn and TLMAXn keywords. The default bin size is 1.  If an image is
+to be created from the default columns, then CFITSIO first looks for
+the 'PREF1' and 'PREF2' keywords in the header of the FITS table for
+the names of the preferred X and Y columns.  If these keywords do not
+exist then CFITSIO uses the 'X' and 'Y' columns in the table if they
+exist, otherwise CFITSIO returns an error.
+
+Here are more examples of the binning specifier:
+
+    [bin16 detx, dety]                 - 2-D image with 16-bit pixels
+                                         of DETX and DETY columns.
+
+    [bin16 (detx, dety) = 16]          - 2-D image with 16-bit pixels
+                                         of DETX and DETY columns with a
+                                         bin size = 16 in both axes.
+
+    [bin time=5000.,6000.,0.1]         - 1-D lightcurve, 10000 bins ranging 
+                                         from 5000. to 6000. in TIME with
+                                         0.1 unit size bins.
+ 
+    [bin pha, time=10000.,11000.,0.1]  - 2-D image using default binning
+                                         of the PHA column for the X axis,
+                                         and 10000 bins in the range 
+                                         10000. to 11000. for the Y axis.
+    
+columns
+-------
+
+If specified, contains a list of the columns in the input table which
+are to be copied into a temporary table which is then opened and
+passed to the application program.  The 'binning' and 'columns'
+specifiers are mutually exclusive. (Not yet implimented)
+
+Examples:
+
+	[cols X,Y,PHA]
+
+
+Complete Examples:
+------------------
+
+myfile.fits  - simply opens this FITS file on disk in the current directory
+
+myfile.fits[GTI,2] - opens the file myfile.fits and moves to the GTI extension
+                     which also has EXTVER = 2.
+
+myfile.fits[EVENTS][pha < 200] - opens the EVENTS table extension and selects
+                                 only those rows that have PHA column values
+                                 less than 200.
+
+myfile.fits[EVENTS][pha < 200][bin (X,Y)=16] - as above, then creates a 2-D
+                                               image by binning the X and Y
+                                               columns with binsize = 16.
+
+ftp://heasarc.gsfc.nasa.gov/software/fitsio/c/testprog.std - reads the file
+                                                             at this ftp site
+
+

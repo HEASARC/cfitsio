@@ -5,21 +5,30 @@
 
 void printerror( int status);
 
-main()
+main(int argc, char *argv[])
 {
     fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
 
     int status, nkeys, keypos, hdutype, ii, jj;
-    char filename[]  = "-";     /* read FITS file from STDIN */
+    char filename[FLEN_FILENAME];    /* input FITS file */
     char card[FLEN_CARD];   /* standard string lengths defined in fitsioc.h */
 
     status = 0;
 
+    if (argc == 1)
+        strcpy(filename, "-");  /* no command line name, so assume stdin */
+    else
+        strcpy(filename, argv[1] );   /* name of file to list */
+
+
     if ( fits_open_file(&fptr, filename, READONLY, &status) ) 
          printerror( status );
 
+    /* get the current HDU number */
+    fits_get_hdu_num(fptr, &ii);
+
     /* attempt to move to next HDU, until we get an EOF error */
-    for (ii = 1; !(fits_movabs_hdu(fptr, ii, &hdutype, &status) ); ii++) 
+    for (; !(fits_movabs_hdu(fptr, ii, &hdutype, &status) ); ii++) 
     {
         /* get no. of keywords */
         if (fits_get_hdrpos(fptr, &nkeys, &keypos, &status) )

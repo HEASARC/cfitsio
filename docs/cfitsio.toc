@@ -2,7 +2,7 @@
 \contentsline {chapter}{\numberline {2} Creating the CFITSIO Library }{3}
 \contentsline {section}{\numberline {2.1}Building the Library}{3}
 \contentsline {section}{\numberline {2.2}Testing the Library}{5}
-\contentsline {section}{\numberline {2.3}Getting Started with CFITSIO}{5}
+\contentsline {section}{\numberline {2.3}Getting Started with CFITSIO}{6}
 \contentsline {section}{\numberline {2.4}Example Program}{6}
 \contentsline {chapter}{\numberline {3} A FITS Primer }{9}
 \contentsline {chapter}{\numberline {4} CFITSIO Conventions and Guidelines }{13}
@@ -34,36 +34,37 @@
 \contentsline {subsection}{\numberline {4.16.1}Background Information: How CFITSIO Manages Data I/O}{33}
 \contentsline {subsection}{\numberline {4.16.2}Optimization Strategies}{34}
 \contentsline {chapter}{\numberline {5}Basic CFITSIO Interface Routines }{37}
-\contentsline {section}{\numberline {5.1}CFITSIO Error Status Utility Routines}{37}
+\contentsline {section}{\numberline {5.1}CFITSIO Error Status Routines}{37}
 \contentsline {section}{\numberline {5.2}FITS File Access Routines}{38}
 \contentsline {section}{\numberline {5.3}HDU Access Routines}{39}
 \contentsline {section}{\numberline {5.4}Header Keyword Read/Write Routines}{41}
 \contentsline {section}{\numberline {5.5}Iterator Routines}{44}
-\contentsline {section}{\numberline {5.6}FITS Primary Array or IMAGE Extension I/O Routines}{45}
+\contentsline {section}{\numberline {5.6}FITS Primary Array or IMAGE Extension I/O Routines}{46}
 \contentsline {section}{\numberline {5.7}FITS ASCII and Binary Table Routines}{47}
 \contentsline {subsection}{\numberline {5.7.1}Column Information Routines }{47}
-\contentsline {subsection}{\numberline {5.7.2}Routines to Insert, Delete, or Copy Rows and Columns }{48}
-\contentsline {subsection}{\numberline {5.7.3}Read and Write Column Data Routines }{49}
-\contentsline {chapter}{\numberline {6} Advanced CFITSIO Interface Routines }{51}
-\contentsline {section}{\numberline {6.1}Advanced FITS File Access Routines}{51}
-\contentsline {section}{\numberline {6.2}Advanced HDU Access Routines}{52}
-\contentsline {section}{\numberline {6.3}Advanced Header Keyword Routines}{54}
-\contentsline {subsection}{\numberline {6.3.1}Header Information Routines}{54}
-\contentsline {subsection}{\numberline {6.3.2}Read and Write the Required Keywords}{55}
-\contentsline {subsection}{\numberline {6.3.3}Write Keyword Routines}{56}
-\contentsline {subsection}{\numberline {6.3.4} Insert Keyword Routines}{59}
-\contentsline {subsection}{\numberline {6.3.5} Advanced Read Keyword Routines}{59}
-\contentsline {subsection}{\numberline {6.3.6} Modify Keyword Routines}{61}
-\contentsline {subsection}{\numberline {6.3.7} Advanced Update Keyword Routines }{62}
-\contentsline {section}{\numberline {6.4}Define Data Scaling and Undefined Pixel Parameters}{63}
-\contentsline {section}{\numberline {6.5}Advanced FITS Primary Array or IMAGE Extension I/O Routines}{64}
-\contentsline {section}{\numberline {6.6}Advanced FITS ASCII and Binary Table Routines}{68}
-\contentsline {subsection}{\numberline {6.6.1}Column Information Routines}{68}
-\contentsline {subsection}{\numberline {6.6.2}Low-Level Table Access Routines }{69}
-\contentsline {subsection}{\numberline {6.6.3}Advanced Write Column Data Routines}{70}
-\contentsline {subsection}{\numberline {6.6.4}Advanced Read Column Data Routines}{71}
-\contentsline {section}{\numberline {6.7}Celestial Coordinate System Routines }{73}
-\contentsline {section}{\numberline {6.8}File Checksum Routines }{74}
-\contentsline {section}{\numberline {6.9}Advanced General Utility Routines }{75}
-\contentsline {chapter}{\numberline {A}Parameter Definitions }{81}
-\contentsline {chapter}{\numberline {B}CFITSIO Error Status Codes }{85}
+\contentsline {subsection}{\numberline {5.7.2}Routines to Edit Rows or Columns }{48}
+\contentsline {subsection}{\numberline {5.7.3}Read and Write Column Data Routines }{50}
+\contentsline {chapter}{\numberline {6} Advanced CFITSIO Interface Routines }{53}
+\contentsline {section}{\numberline {6.1}Advanced FITS File Access Routines}{53}
+\contentsline {section}{\numberline {6.2}Advanced HDU Access Routines}{54}
+\contentsline {section}{\numberline {6.3}Advanced Header Keyword Routines}{56}
+\contentsline {subsection}{\numberline {6.3.1}Header Information Routines}{56}
+\contentsline {subsection}{\numberline {6.3.2}Read and Write the Required Keywords}{56}
+\contentsline {subsection}{\numberline {6.3.3}Write Keyword Routines}{58}
+\contentsline {subsection}{\numberline {6.3.4} Insert Keyword Routines}{60}
+\contentsline {subsection}{\numberline {6.3.5} Advanced Read Keyword Routines}{61}
+\contentsline {subsection}{\numberline {6.3.6} Modify Keyword Routines}{63}
+\contentsline {subsection}{\numberline {6.3.7} Advanced Update Keyword Routines }{64}
+\contentsline {section}{\numberline {6.4}Define Data Scaling and Undefined Pixel Parameters}{64}
+\contentsline {section}{\numberline {6.5}Advanced FITS Primary Array or IMAGE Extension I/O Routines}{65}
+\contentsline {section}{\numberline {6.6}Advanced FITS ASCII and Binary Table Routines}{69}
+\contentsline {subsection}{\numberline {6.6.1}Column Information Routines}{69}
+\contentsline {subsection}{\numberline {6.6.2}Low-Level Table Access Routines }{70}
+\contentsline {subsection}{\numberline {6.6.3}Advanced Write Column Data Routines}{71}
+\contentsline {subsection}{\numberline {6.6.4}Advanced Read Column Data Routines}{72}
+\contentsline {section}{\numberline {6.7}Celestial Coordinate System Routines }{74}
+\contentsline {section}{\numberline {6.8}File Checksum Routines }{75}
+\contentsline {section}{\numberline {6.9}Advanced General Utility Routines}{77}
+\contentsline {chapter}{\numberline {A}Index of Routines }{83}
+\contentsline {chapter}{\numberline {B}Parameter Definitions }{87}
+\contentsline {chapter}{\numberline {C}CFITSIO Error Status Codes }{93}

@@ -1182,10 +1182,9 @@ int ffikey(fitsfile *fptr,    /* I - FITS file pointer  */
   insert a keyword at the position of fptr->nextkey
 */
 {
-    int nshift;
-    size_t ii, len;
+    int ii, len, nshift;
     long nblocks, bytepos;
-    char *inbuff, *outbuff, *tmpbuff, buff1[80], buff2[80];
+    char *inbuff, *outbuff, *tmpbuff, buff1[FLEN_CARD], buff2[FLEN_CARD];
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);

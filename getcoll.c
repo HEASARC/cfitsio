@@ -99,7 +99,7 @@ int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
 */
 {
     int tcode, maxelem, hdutype, ii, nulcheck;
-    long twidth, offset, incre, repeat, rowlen, rownum, elemnum;
+    long twidth, incre, repeat, rowlen, rownum, elemnum;
     long tnull, startpos, readptr, remain, next, ntodo;
     double scale, zero;
     char tform[20];
@@ -116,11 +116,6 @@ int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
     if (nultyp == 2)      
        memset(nularray, 0, nelem);   /* initialize nullarray */
 
-    nulcheck = nultyp; /* by default, check for null values in the FITS file */
-
-    if (nultyp == 1 && nulval == 0)
-       nulcheck = 0;    /* calling routine does not want to check for nulls */
-
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
     /*---------------------------------------------------*/
@@ -135,7 +130,6 @@ int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
     /*------------------------------------------------------------------*/
     /*  Decide whether to check for null values in the input FITS file: */
     /*------------------------------------------------------------------*/
-
     nulcheck = nultyp; /* by default, check for null values in the FITS file */
 
     if (nultyp == 1 && nulval == 0)

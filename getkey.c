@@ -234,6 +234,11 @@ int ffgky( fitsfile *fptr,     /* I - FITS file pointer        */
         ffgkyj(fptr, keyname, &longval, comm, status);
         *(short *) value = longval;
     }
+    else if (datatype == TUINT)
+    {
+        ffgkyj(fptr, keyname, &longval, comm, status);
+        *(unsigned int *) value = longval;
+    }
     else if (datatype == TINT)
     {
         ffgkyj(fptr, keyname, &longval, comm, status);
@@ -318,8 +323,6 @@ int ffgrec( fitsfile *fptr,     /* I - FITS file pointer          */
   current header pointer to the top of the header.
 */
 {
-    char sbuff[FLEN_CARD];
-
     if (*status > 0)
         return(*status);
 
@@ -887,8 +890,8 @@ int ffgkns( fitsfile *fptr,     /* I - FITS file pointer                    */
              {
                 ffpsvc(card, svalue, comm, status);  /*  parse the value */
                 ffc2s(svalue, value[ival-nstart], status); /* convert */
-                if (ival > *nfound)
-                      *nfound = ival;  /* record the max index found */ 
+                if (ival - nstart + 1 > *nfound)
+                      *nfound = ival - nstart + 1;  /*  max found */ 
 
                 if (*status == VALUE_UNDEFINED)
                 {
@@ -961,8 +964,8 @@ int ffgknl( fitsfile *fptr,     /* I - FITS file pointer                    */
              {
                 ffpsvc(card, svalue, comm, status);   /*  parse the value */
                 ffc2l(svalue, &value[ival-nstart], status); /* convert*/
-                if (ival > *nfound)
-                       *nfound = ival;   /* record the max index found */
+                if (ival - nstart + 1 > *nfound)
+                      *nfound = ival - nstart + 1;  /*  max found */ 
 
                 if (*status == VALUE_UNDEFINED)
                 {
@@ -1034,8 +1037,8 @@ int ffgknj( fitsfile *fptr,     /* I - FITS file pointer                    */
              {
                 ffpsvc(card, svalue, comm, status);   /*  parse the value */
                 ffc2i(svalue, &value[ival-nstart], status);  /* convert */
-                if (ival > *nfound)
-                     *nfound = ival;           /* record the max index found */ 
+                if (ival - nstart + 1 > *nfound)
+                      *nfound = ival - nstart + 1;  /*  max found */ 
 
                 if (*status == VALUE_UNDEFINED)
                 {
@@ -1107,8 +1110,8 @@ int ffgkne( fitsfile *fptr,     /* I - FITS file pointer                    */
              {
                 ffpsvc(card, svalue, comm, status);   /*  parse the value */
                 ffc2r(svalue, &value[ival-nstart], status); /* convert */
-                if (ival > *nfound)
-                     *nfound = ival;          /* record the max index found */
+                if (ival - nstart + 1 > *nfound)
+                      *nfound = ival - nstart + 1;  /*  max found */ 
 
                 if (*status == VALUE_UNDEFINED)
                 {
@@ -1180,8 +1183,8 @@ int ffgknd( fitsfile *fptr,     /* I - FITS file pointer                    */
              {
                 ffpsvc(card, svalue, comm, status);   /*  parse the value */
                 ffc2d(svalue, &value[ival-nstart], status); /* convert */
-                if (ival > *nfound)
-                     *nfound = ival;           /* record the max index found */
+                if (ival - nstart + 1 > *nfound)
+                      *nfound = ival - nstart + 1;  /*  max found */ 
 
                 if (*status == VALUE_UNDEFINED)
                 {

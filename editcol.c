@@ -326,9 +326,6 @@ int ffdrws(fitsfile *fptr,  /* I - FITS file pointer                        */
         if ( ffrdef(fptr, status) > 0)               
             return(*status);
 
-    if (*status > 0)
-        return(*status);
-
     if (fptr->hdutype == IMAGE_HDU)
     {
         ffpmsg("Can only delete rows in TABLE or BINTABLE extension (ffdrws)");
@@ -620,6 +617,171 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
+           int colnum,      /* I - position of col to be modified           */
+           long newveclen,  /* I - new vector length of column (TFORM)       */
+           int *status)     /* IO - error status                            */
+/*
+  Modify the vector length of a column in a binary table, larger or smaller.
+  E.g., change a column from TFORMn = '1E' to '20E'.
+*/
+{
+    int datacode, tfields, tstatus;
+    long width, delbyte, repeat, naxis1, naxis2, datasize, freespace, nadd;
+    long nblock, firstbyte, nbytes, size, ndelete;
+    char tfm[FLEN_VALUE], keyname[FLEN_KEYWORD], tcode[2];
+    tcolumn *colptr;
+
+    if (*status > 0)
+        return(*status);
+
+    /* rescan header if data structure is undefined */
+    if (fptr->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               
+            return(*status);
+
+    if (fptr->hdutype != BINARY_TBL)
+    {
+       ffpmsg(
+  "Can only change vector length of a column in BINTABLE extension (ffmvec)");
+       return(*status = NOT_TABLE);
+    }
+
+    /*  is the column number valid?  */
+    tfields = fptr->tfield;
+    if (colnum < 1 || colnum > tfields)
+        return(*status = BAD_COL_NUM);
+
+    /* look up the current vector length and element width */
+
+    colptr = fptr->tableptr;
+    colptr += (colnum - 1);
+
+    datacode = colptr->tdatatype; /* datatype of the column */
+    repeat = colptr->trepeat;  /* field repeat count  */
+    width =  colptr->twidth;   /*  width of a single element in chars */
+
+    if (datacode < 0)
+    {
+        ffpmsg(
+        "Can't modify vector length of variable length column (ffmvec)");
+        return(*status = BAD_TFORM);
+    }
+
+    if (repeat == newveclen)
+        return(*status);  /* column already has the desired vector length */
+
+    if (datacode == TSTRING)
+        width = 1;      /* width was equal to width of unit string */
+
+    naxis1 = fptr->rowlength;          /* current width of the table */
+    ffgkyj(fptr, "NAXIS2", &naxis2, NULL, status); /* number of rows */
+
+    delbyte = (newveclen - repeat) * width;    /* no. of bytes to insert */
+    if (datacode == TBIT)  /* BIT column is a special case */
+       delbyte = ((newveclen + 1) / 8) - ((repeat + 1) / 8);
+
+    if (delbyte > 0)  /* insert space for more elements */
+    {
+      datasize = fptr->heapstart + fptr->heapsize;  /* current size of data */
+      freespace = ( ( (datasize + 2879) / 2880) * 2880) - datasize;
+
+      nadd = delbyte * naxis2;             /* no. of bytes to add to table */
+
+      if ( (freespace - nadd) < 0)   /* not enough existing space? */
+      {
+        nblock = (nadd - freespace + 2879) / 2880;    /* number of blocks  */
+        if (ffiblk(fptr, nblock, 1, status) > 0)      /* insert the blocks */
+          return(*status);
+      }
+
+      /* shift heap down (if it exists) */
+      if (fptr->heapsize > 0)
+      {
+        nbytes = fptr->heapsize;    /* no. of bytes to shift down */
+        firstbyte = fptr->datastart + fptr->heapstart; /* absolute heap pos */
+
+        if (ffshft(fptr, firstbyte, nbytes, nadd, status) > 0) /* move heap */
+            return(*status);
+
+        /* update the heap starting address */
+        fptr->heapstart += nadd;
+
+        /* update the THEAP keyword if it exists */
+        tstatus = 0;
+        ffmkyj(fptr, "THEAP", fptr->heapstart, "&", &tstatus);
+      }
+
+      firstbyte = colptr->tbcol + (repeat * width);  /* insert position */
+
+      /* insert delbyte bytes in every row, at byte position firstbyte */
+      ffcins(fptr, naxis1, naxis2, delbyte, firstbyte, status);
+    }
+    else if (delbyte < 0)
+    {
+      size = fptr->heapstart + fptr->heapsize;  /* current size of table */
+      freespace = ((size + 2879) / 2880) * 2880 - size - (delbyte * naxis2);
+      nblock = freespace / 2880;   /* number of empty blocks to delete */
+      firstbyte = colptr->tbcol + (repeat * width);  /* delete position */
+
+      /* delete elements from the vector */
+      ffcdel(fptr, naxis1, naxis2, -delbyte, firstbyte, status);
+ 
+      /* shift heap up (if it exists) */
+      if (fptr->heapsize > 0)
+      {
+        nbytes = fptr->heapsize;    /* no. of bytes to shift up */
+        firstbyte = fptr->datastart + fptr->heapstart; /* abs heap pos */
+        ndelete = delbyte * naxis2; /* size of shift (negative) */
+
+        if (ffshft(fptr, firstbyte, nbytes, ndelete, status) > 0)
+          return(*status);
+
+        /* update the heap starting address */
+        fptr->heapstart += ndelete;  /* ndelete is negative */
+
+        /* update the THEAP keyword if it exists */
+        tstatus = 0;
+        ffmkyj(fptr, "THEAP", fptr->heapstart, "&", &tstatus);
+      }
+
+      /* delete the empty  blocks at the end of the HDU */
+      if (nblock > 0)
+        ffdblk(fptr, nblock, status);
+    }
+
+    /* construct the new TFORM keyword for the column */
+    if (datacode == TBIT)
+      strcpy(tcode,"X");
+    else if (datacode == TBYTE)
+      strcpy(tcode,"B");
+    else if (datacode == TLOGICAL)
+      strcpy(tcode,"L");
+    else if (datacode == TSTRING)
+      strcpy(tcode,"A");
+    else if (datacode == TSHORT)
+      strcpy(tcode,"I");
+    else if (datacode == TLONG)
+      strcpy(tcode,"J");
+    else if (datacode == TFLOAT)
+      strcpy(tcode,"E");
+    else if (datacode == TDOUBLE)
+      strcpy(tcode,"D");
+    else if (datacode == TCOMPLEX)
+      strcpy(tcode,"C");
+    else if (datacode == TDBLCOMPLEX)
+      strcpy(tcode,"M");
+
+    sprintf(tfm,"%ld%s",newveclen,tcode);      /* TFORM value */
+    ffkeyn("TFORM", colnum, keyname, status);  /* Keyword name */
+    ffmkys(fptr, keyname, tfm, "&", status);   /* modify TFORM keyword */
+
+    ffmkyj(fptr, "NAXIS1", naxis1 + delbyte, "&", status); /* modify NAXIS1 */
+
+    ffrdef(fptr, status); /* reinitialize the new table structure */
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
            fitsfile *outfptr,   /* I - FITS file pointer to output file */
            int incol,           /* I - number of input column   */
@@ -635,10 +797,10 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     long inloop, outloop, maxloop, ndone, ntodo, npixels;
     long firstrow, firstelem, ii;
     char keyname[FLEN_KEYWORD], ttype[FLEN_VALUE], tform[FLEN_VALUE];
-    char *lvalues, nullflag, **strarray;
+    char *lvalues = 0, nullflag, **strarray = 0;
     char nulstr[] = {'\5', '\0'};  /* unique null string value */
-    double dnull, *dvalues;
-    float fnull, *fvalues;
+    double dnull = 0.l, *dvalues = 0;
+    float fnull = 0., *fvalues = 0;
 
     if (*status > 0)
         return(*status);

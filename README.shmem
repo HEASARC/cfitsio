@@ -1,0 +1,110 @@
+		S H A R E D   M E M O R Y   D R I V E R
+		=======================================
+
+		  by Jerzy.Borkowski@obs.unige.ch
+
+09-Mar-98 : initial version 1.0 released
+23-Mar-98 : shared_malloc now accepts new handle as an argument
+23-Mar-98 : shmem://0, shmem://1, etc changed to shmem://h0, etc due to bug
+	    in url parser.
+
+
+
+1) Changes to original cfitsio 1.40beta source code 
+
+
+This directory contains all files (either new or modified cfitsio ones)
+necessary to have shared memory driver working. They are :
+
+Makefile.in - completely rewritten Makefile. See description in Makefile
+	for details.
+
+cfileio.c - modified version of original cfileio.c file. The only changed
+	made is conditional initialization of shared memory driver. 
+
+configure - compiled version of configure.in
+
+configure.in - modified version of original configure.in file. Three
+	additional tests added.
+
+drvrsmem.c - source of shared memory driver (new file)
+
+drvrsmem.h - include file for shared memory driver (new file). This
+	file should be called from fitsio2.h file.
+	SHARED_MAXSEG contant specified maximum number of shared memory
+	segments managed by driver. Currently this is 16 but can be
+	changed to larger/smaller number. Please note that operating
+	system may impose additional limits. See output of sysdef
+	command for details. Library uses 1 shmem segment + 1 semaphore
+	for each handle.
+
+fitsio2.h - modified version of original fitsio2.h file. The only
+	change made is conditional inclusion of drvrsmem.h file.
+
+smem.c - source of small utility program for shared memory. Run make smem
+	to compile it and create executable.
+
+In most cases (except Makefile.in) all changes are between
+
+/* ==================== SHARED MEMORY DRIVER SECTION ======================= */
+
+and
+
+/* ==================== END OF SHARED MEMORY DRIVER SECTION ================ */
+
+lines. Makefile.in is almost completely rewritten
+
+
+2) How to use shared memory services :
+
+Shared memory segments are managed be operating system kernel and "live"
+independently of processes. They are not deleted (by default) when process
+which created them terminates. Applications can create shared memory
+segments by calling :
+
+	ffinit(&fitsfileptr, "shmem://h2", &status);
+	ffinit(&fitsfileptr, "shmem://hany_handle_number>=0", &status);
+
+Handle number can be anything between zero (inclusive) and SHARED_MAXSEG
+(exclusive). When opening an already existing object one has to call :
+
+	ffopen(&fitsfileptr, "shmem://h7", mode, &status)
+	ffopen(&fitsfileptr, "shmem://hany_handle_number>=0", mode, &status)
+
+Mode can be READWRITE or READONLY. The can be many processes operating in
+READONLY mode on the same segment at the same time. Library supports
+proper locking (both in READONLY and READWRITE modes). So ffopen MAY
+BLOCK until requested lock is granted (other processes call ffclos/ffdelt).
+
+When application does not use shared memory segment anymore it may close
+it with a call (segment will remain in the system) :
+
+	ffclos(fitsfileptr, &status);
+
+or delete it with a call :
+
+	ffdelt(fitsfileptr, &status);
+
+Physical deletion is postponed until last process calls ffclos/ffdelt.
+ffdelt tries to obtain READWRITE lock on object to be deleted, thus it can
+block if object is not opened in READWRITE mode.
+
+3) shared memory debug program : smem
+
+Running "make smem" will compile smem executable. Type smem -h to get a list
+of valid options. Without options program lists shared memory segments currently
+residing in a system and managed by shared memory driver. To get a list of
+all shared memory objects run system utility :	ipcs  [-a]
+
+smem options :
+
+-d [handle]
+	option deletes given/all handles (this option may block when
+	attempting to delete handle which is currently used by another
+	process).
+
+-r [handle]
+	option resets (recovers) given/all handles. This option may be
+	required to recover zombie handles left by processes terminated by
+	kill -9 signal. This is very unlikely to happen but anyway possible
+	since library is not a part of the opearating system's kernel.

@@ -66,24 +66,6 @@ FCALLSCSUB2(Cfffiou,FTFIOU,ftfiou,INT,PINT)
      /**************************************************/
 
 /*---------------- FITS file I/O routines ---------------*/
-void Cffsbuf( fitsfile **fptr, void *buffptr, long *buffsize,
-             size_t deltasize,
-             int *status);
-void Cffsbuf( fitsfile **fptr, void *buffptr, long *buffsize,
-             size_t deltasize,
-             int *status)
-{
-   if( *fptr==NULL || *fptr==(fitsfile*)1 ) {
-      ffsbuf( fptr, (void**)buffptr, (size_t *)buffsize, deltasize,
-	      NULL, status );
-   } else {
-      *status = FILE_NOT_OPENED;
-      ffpmsg("Cffsbuf tried to use a previously allocated unit number.");
-   }
-}
-FCALLSCSUB5(Cffsbuf,FTSBUF,ftsbuf,PFITSUNIT,PVOID,PLONG,LONG,PINT)
-
-FCALLSCSUB4(ffwbuf,FTWBUF,ftwbuf,PVOID,LONG,STRING,PINT)
 
 void Cffopen( fitsfile **fptr, const char *filename, int iomode, int *blocksize, int *status );
 void Cffopen( fitsfile **fptr, const char *filename, int iomode, int *blocksize, int *status )
@@ -156,7 +138,7 @@ void Cffrprt( char *fname, int status )
 
       fptr = fopen(fname, "a");
       if (fptr==NULL)
-	 printf("file point is null.\n");
+	 printf("file pointer is null.\n");
       else {
 	 ffrprt(fptr,status);
 	 fclose(fptr);

@@ -362,7 +362,7 @@ int ffgsfd(fitsfile *fptr, /* I - FITS file pointer                         */
     long str[9],stp[9],incr[9],dsize[10];
     long felem, nelem, nultyp, ninc, numcol;
     int anyf;
-    double nulval;
+    double nulval = 0;
     char msg[FLEN_ERRMSG];
 
     if (naxis < 1 || naxis > 9)
@@ -654,7 +654,7 @@ int ffgcld( fitsfile *fptr,   /* I - FITS file pointer                       */
   and will be scaled by the FITS TSCALn and TZEROn values if necessary.
 */
 {
-    double scale, zero, dblvalue, power = 1;
+    double scale, zero, power = 1;
     int tcode, maxelem, hdutype, xcode, decimals;
     long twidth, incre, repeat, rowlen, rownum, elemnum, remain, next, ntodo;
     long ii, rowincre, tnull, xwidth;
@@ -715,14 +715,13 @@ int ffgcld( fitsfile *fptr,   /* I - FITS file pointer                       */
     /*  If FITS column and output data array have same datatype, then we do */
     /*  not need to use a temporary buffer to store intermediate datatype.  */
     /*----------------------------------------------------------------------*/
+    convert = 1;
     if (tcode == TDOUBLE) /* Special Case:                        */
     {                              /* no type convertion required, so read */
         maxelem = nelem;           /* data directly into output buffer.    */
 
         if (nulcheck == 0 && scale == 1. && zero == 0.)
             convert = 0;  /* no need to scale data or find nulls */
-        else
-            convert = 1;
     }
 
     /*---------------------------------------------------------------------*/
@@ -774,9 +773,10 @@ int ffgcld( fitsfile *fptr,   /* I - FITS file pointer                       */
                        &array[next], status);
                 break;
             case (TLONG):
-                ffgi4b(fptr, readptr, ntodo, incre, (long  *) buffer, status);
-                fffi4r8((long  *) buffer, ntodo, scale, zero, nulcheck, 
-                       tnull, nulval, &nularray[next], anynul, 
+                ffgi4b(fptr, readptr, ntodo, incre, (INT32BIT *) buffer,
+                       status);
+                fffi4r8((INT32BIT *) buffer, ntodo, scale, zero, nulcheck, 
+                       (INT32BIT) tnull, nulval, &nularray[next], anynul, 
                        &array[next], status);
                 break;
             case (TFLOAT):
@@ -1024,14 +1024,14 @@ int fffi2r8(short *input,         /* I - array of values to be converted     */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int fffi4r8(long *input,          /* I - array of values to be converted     */
+int fffi4r8(INT32BIT *input,      /* I - array of values to be converted     */
             long ntodo,           /* I - number of elements in the array     */
             double scale,         /* I - FITS TSCALn or BSCALE value         */
             double zero,          /* I - FITS TZEROn or BZERO  value         */
             int nullcheck,        /* I - null checking code; 0 = don't check */
                                   /*     1:set null pixels = nullval         */
                                   /*     2: if null pixel, set nullarray = 1 */
-            long tnull,           /* I - value of FITS TNULLn keyword if any */
+            INT32BIT tnull,       /* I - value of FITS TNULLn keyword if any */
             double nullval,       /* I - set null pixels, if nullcheck = 1   */
             char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
             int  *anynull,        /* O - set to 1 if any pixels are null     */
@@ -1310,116 +1310,6 @@ int fffr8r8(double *input,        /* I - array of values to be converted     */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int fffstrr8a(char *input,         /* I - array of values to be converted     */
-            long ntodo,           /* I - number of elements in the array     */
-            double scale,         /* I - FITS TSCALn or BSCALE value         */
-            double zero,          /* I - FITS TZEROn or BZERO  value         */
-            long twidth,          /* I - width of each substring of chars    */
-            double power,         /* I - power of 10 of implied decimal      */
-            int nullcheck,        /* I - null checking code; 0 = don't check */
-                                  /*     1:set null pixels = nullval         */
-                                  /*     2: if null pixel, set nullarray = 1 */
-            char  *snull,         /* I - value of FITS null string, if any   */
-            double nullval,       /* I - set null pixels, if nullcheck = 1   */
-            char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
-            int  *anynull,        /* O - set to 1 if any pixels are null     */
-            double *output,       /* O - array of converted pixels           */
-            int *status)          /* IO - error status                       */
-/*
-  Copy input to output following reading of the input from a FITS file. Check
-  for null values and do scaling if required. The nullcheck code value
-  determines how any null values in the input array are treated. A null
-  value is an input pixel that is equal to snull.  If nullcheck= 0, then
-  no special checking for nulls is performed.  If nullcheck = 1, then the
-  output pixel will be set = nullval if the corresponding input pixel is null.
-  If nullcheck = 2, then if the pixel is null then the corresponding value of
-  nullarray will be set to 1; the value of nullarray for non-null pixels 
-  will = 0.  The anynull parameter will be set = 1 if any of the returned
-  pixels are null, otherwise anynull will be returned with a value = 0;
-*/
-{
-    int jj, nullen;
-    long ii;
-    double dvalue;
-    char cstring[50], message[81];
-    char *cptr1, *cptr2;
-
-    nullen = strlen(snull);
-    cptr1 = input;  /* pointer to start of input string */
-    for (ii = 0; ii < ntodo; ii++)
-    {
-      /* check if null value is defined, and if the    */
-      /* column string is identical to the null string */
-      if (snull[0] != ASCII_NULL_UNDEFINED && 
-         !strncmp(snull, cptr1, nullen) )
-      {
-        if (nullcheck)     /* report back the null value? */
-        {
-          *anynull = 1;    /* this is a null value */
-          if (nullcheck == 1)
-            output[ii] = nullval;
-          else
-            nullarray[ii] = 1;
-        }
-        cptr1 += twidth;
-      }
-      else
-      {
-        /* value is not the null value, so decode it */
-        /* remove any embedded blank characters from the string */
-
-        cptr2 = cstring;
-
-        for (jj = 0; jj < twidth; jj++)
-        {
-           if (*cptr1 != ' ')
-           {
-              if (*cptr1 == 'D') /* C doesn't support D exponent */
-                  *cptr2 = 'E';    /* so change the D to an E      */
-              else
-                  *cptr2 = *cptr1;
-
-              cptr2++;
-           }
-           cptr1++;
-        }
-        *cptr2 = '\0';
-
-        if (*cstring == '\0')
-        {
-          /* field is completely blank; interprete as = 0 */
-          dvalue = zero;
-        }
-        else
-        {
-          /* read the string as a double value */
-          if (sscanf(cstring, "%lf", &dvalue) == 1) 
-          {
-            if (power > 1.)
-            {
-              /* scale the value if no explicit decimal pt */
-              cptr2 = strchr(cstring, '.');
-              if (!cptr2)
-                dvalue = dvalue / power;
-            }
-
-            dvalue = dvalue * scale + zero;  /* apply the scaling */
-          }
-          else
-          {
-            sprintf(message, "Cannot read number from ASCII table");
-            ffpmsg(message);
-            sprintf(message, "Column field = %s.", cstring);
-            ffpmsg(message);
-            return(*status = BAD_C2D);
-          }
-        }
-        output[ii] = dvalue;
-      }
-    }
-    return(*status);
-}
-/*--------------------------------------------------------------------------*/
 int fffstrr8(char *input,         /* I - array of values to be converted     */
             long ntodo,           /* I - number of elements in the array     */
             double scale,         /* I - FITS TSCALn or BSCALE value         */
@@ -1448,7 +1338,7 @@ int fffstrr8(char *input,         /* I - array of values to be converted     */
   pixels are null, otherwise anynull will be returned with a value = 0;
 */
 {
-    int jj, nullen;
+    int nullen;
     long ii;
     double dvalue;
     char cstring[50], message[81];

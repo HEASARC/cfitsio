@@ -1,6 +1,53 @@
                Log of Changes Made to CFITSIO
 
-Version 1.41 - 24 April 1998 (included in FTOOLS 4.1 release)
+   - added the ability to clobber/overwrite an existing file
+     with the same name when creating a new output file.  Just
+     preceed the output file name with '!' (an exclamation mark)
+
+   - changed the ffpdat routine which writes the DATE keyword
+     to use the new 'YYYY-MM-DDThh:mm:ss' format.
+
+   - added 4 new routines to create or parse the new date/time
+     format string.
+
+   - changed ifdef for DECFortran in f77_wrap.h and f77_wrap1.c:
+     expanded to recognize Linux/Alpha
+
+   - added new lexical parsing routines (from Peter Wilson):
+     eval_l.c, eval_y.c, eval_f.c, eval_defs.h, and eval_tab.h.
+     These are used when doing on-the-fly table row selections.
+
+   - added new family of routines to support reading and writing
+     'unsigned int' data type values in keywords, images or tables.
+
+   - restructured all the putcol and getcol routines to provide
+     simpler and more robust support for machines which have
+     sizeof(long) = 8.  Defined a new datatype INT32BIT which is
+     always 32 bits long (platform independent) and is used internally
+     in CFITSIO when reading or writing BITPIX = 32 images or 'J'
+     columns.  This eliminated the need for specialize routines like
+     ffswaplong, ffunswaplong, and ffpacklong.
+
+   - overhauled cfileio.c (and other files) to use loadable drivers for
+     doing data I/O to different devices.  Now CFITSIO support network 
+     access to ftp:// and http:// files, and to shared memory files.
+
+   - removed the ffsmem routine and replaced it with ffomem.  This will
+     only affect software that reads an existing file in core memory.
+     (written there by some other process).
+
+   - modified all the ffgkn[] routines (get an array of keywords) so
+     that the 'nfound' parameter is = the number of keywords returned,
+     not the highest index value on the returned keywords.  This makes
+     no difference if the starting index value to look for = 1.
+     This change is not backward compatible with previous versions
+     of CFITSIO, but is the way that FITSIO behaved.
+
+   - added new error code = 1 for any application error external
+     to CFITSIO.  Also reports "unknown error status" if the
+     value doesn't match a known CFITSIO error.
+
+Version 1.42 - 30 April 1998 (included in FTOOLS 4.1 release)
 
    - modified the routines which read a FITS float values into
      a float array, or read FITS double values into a double array,

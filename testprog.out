@@ -1,8 +1,8 @@
-CFITSIO TESTPROG, v1.410
+CFITSIO TESTPROG, v2.000
 
 Try opening then closing a nonexistent file:
   ffopen fptr, status  = 0 104 (expect an error)
-  ffclos status = 104
+  ffclos status = 115
 
 ffinit create new file status = 0
 Name of file = testprog.fit, I/O mode = 1

@@ -72,6 +72,15 @@ int ffgpv(  fitsfile *fptr,   /* I - FITS file pointer                       */
         ffgcli(fptr, 2, row, firstelem, nelem, 1, 1, *(short *) nulval,
               (short *) array, &cdummy, anynul, status);
     }
+    else if (datatype == TUINT)
+    {
+      if (nulval == 0)
+        ffgcluk(fptr, 2, row, firstelem, nelem, 1, 1, 0,
+              (unsigned int *) array, &cdummy, anynul, status);
+      else
+        ffgcluk(fptr, 2, row, firstelem, nelem, 1, 1, *(unsigned int *) nulval,
+              (unsigned int *) array, &cdummy, anynul, status);
+    }
     else if (datatype == TINT)
     {
       if (nulval == 0)
@@ -180,13 +189,23 @@ int ffgcv(  fitsfile *fptr,   /* I - FITS file pointer                       */
         ffgcli(fptr, colnum, firstrow, firstelem, nelem, 1, 1, *(short *)
               nulval, (short *) array, cdummy, anynul, status);
     }
+    else if (datatype == TUINT)
+    {
+      if (nulval == 0)
+        ffgcluk(fptr, colnum, firstrow, firstelem, nelem, 1, 1, 0,
+              (unsigned int *) array, cdummy, anynul, status);
+      else
+        ffgcluk(fptr, colnum, firstrow, firstelem, nelem, 1, 1,
+         *(unsigned int *) nulval, (unsigned int *) array, cdummy, anynul,
+         status);
+    }
     else if (datatype == TINT)
     {
       if (nulval == 0)
         ffgclk(fptr, colnum, firstrow, firstelem, nelem, 1, 1, 0,
               (int *) array, cdummy, anynul, status);
       else
-         ffgclk(fptr, colnum, firstrow, firstelem, nelem, 1, 1, *(int *)
+        ffgclk(fptr, colnum, firstrow, firstelem, nelem, 1, 1, *(int *)
             nulval, (int *) array, cdummy, anynul, status);
     }
     else if (datatype == TULONG)

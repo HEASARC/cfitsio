@@ -145,8 +145,7 @@ C     End of f77.inc -------------------------------------
 C**********************************************************************
 C  must preserve these values between calls
       real deadtime, livetime
-      save deadtime
-      save livetime
+      common /fluxblock/ deadtime, livetime
 C**********************************************************************
 
       if (status .ne. 0) return
