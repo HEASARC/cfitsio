@@ -932,6 +932,7 @@ int ffiter(int n_cols,
         }
 
         n_optimum = n_optimum / nfiles;
+        n_optimum = maxvalue(n_optimum, 1);
     }
     else if (n_per_loop < 0)  /* must pass all the values at one time */
     {
