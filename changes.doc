@@ -1,12 +1,38 @@
-         Log of Changes Made to CFITSIO
+             Log of Changes Made to CFITSIO
+
+Version 1.22 - 18 April 1997
+
+   - fixed bug in ffgcpr that caused it to think that all values were
+     undefined in ASCII tables columns that have TNULLn = '        '
+     (i.e., the TNULLn keyword value is a string of blanks.
+
+   - fixed bug in the ffgcl[bdeijk,ui,uj] family of routines
+     when parsing a numeric value in an ASCII table.  The
+     returned values would have the decimal place shifted to
+     the left if the table field contained an explicit decimal
+     point followed by blanks.  Example:  in an F5.2 column,
+     the value '16.  ' would be returned as 0.16.  If the
+     trailing zeros were present, then cfitsio returned the
+     correct value (e.g.,  '16.00' returns 16.).
+
+   - fixed another bug in the ffgcl[bdeijk,ui,uj] family of routines
+     that caused them to misread values in an ASCII table in rows
+     following an undefined value when all the values were read
+     at once in a single call to the routine.
 
 Version 1.21 - 26 March 1997
 
    - added general support for reading and writing unsigned integer
      keywords, images, and binary table column values.
 
+   - fixed bug in the way the column number was used in ffgsve and
+     similar routines.  This bug caused cfitsio to read (colnum - 1)
+     rather than the desired column.
+
    - fixed a bug in ftgkls that prevented it from reading more than one
      continuation line of a long string keyword value.
+
+   - fixed the definition of fits_write_longwarn in longnam.h
 
 Version 1.20 - 29 Jan 1997
 

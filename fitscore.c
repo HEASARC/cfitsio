@@ -20,8 +20,9 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
- *version = 1.21;  /* 26 Mar 1997 */
+ *version = 1.22;  /* 18 Apr 1997 */
 
+ /*   *version = 1.21;   26 Mar 1997 */
  /*   *version = 1.2;    29 Jan 1997 */
  /*   *version = 1.11;   04 Dec 1996 */
  /*   *version = 1.101;  13 Nov 1996 */
@@ -2536,6 +2537,7 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
 
             strncpy(colptr->strnull, tvalue, 17);  /* copy TNULL string */
             colptr->strnull[17] = '\0';  /* terminate the strnull field */
+
         }
         else  /* binary table */
         {
@@ -2579,6 +2581,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
   validity.  
 */
 {
+    int nulpos;
     long datastart, tbcol;
     char message[81];
     tcolumn *colptr;
@@ -2624,11 +2627,8 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     *rowlen   = fptr->rowlength;   /* width of the table, in bytes     */
     datastart = fptr->datastart;   /* offset in file to start of table */
 
-    colptr  = fptr->tableptr;   /* point to first column */
-    colptr += (colnum - 1);     /* offset to correct column structure */
-
-    strcpy(tform, colptr->tform);    /* value of TFORMn keyword            */
-    strcpy(snull, colptr->strnull);  /* null value for ASCII table columns */
+    colptr  = fptr->tableptr;    /* point to first column */
+    colptr += (colnum - 1);      /* offset to correct column structure */
 
     *scale    = colptr->tscale;  /* value scaling factor;    default = 1.0 */
     *zero     = colptr->tzero;   /* value scaling zeropoint; default = 0.0 */
@@ -2638,6 +2638,18 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     *incre    = colptr->twidth;  /* increment between datums, in bytes     */
     *tcode    = colptr->tdatatype;
     *repeat   = colptr->trepeat;
+
+    strcpy(tform, colptr->tform);    /* value of TFORMn keyword            */
+    strcpy(snull, colptr->strnull);  /* null value for ASCII table columns */
+
+    if (*hdutype == ASCII_TBL && snull[0] == '\0')
+    {
+     /* In ASCII tables, a null value is equivalent to all spaces */
+
+       strcpy(snull, "                 ");   /* maximum of 17 spaces */
+       nulpos = minvalue(17, *twidth);         /* truncate to width of column */
+       snull[nulpos] = '\0';
+    }
 
     /* Special case: interprete 'X' column as 'B' */
     if (abs(*tcode) == TBIT)

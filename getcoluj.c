@@ -1615,7 +1615,7 @@ int fffstru4(char *input,         /* I - array of values to be converted     */
     char *cptr, *tpos;
     char tempstore, chrzero = '0';
     double val, power;
-    int exponent, sign, esign;
+    int exponent, sign, esign, decpt;
 
     nullen = strlen(snull);
     cptr = input;  /* pointer to start of input string */
@@ -1646,6 +1646,7 @@ int fffstru4(char *input,         /* I - array of values to be converted     */
         /* value is not the null value, so decode it */
         /* remove any embedded blank characters from the string */
 
+        decpt = 0;
         sign = 1;
         val  = 0.;
         power = 1.;
@@ -1677,6 +1678,7 @@ int fffstru4(char *input,         /* I - array of values to be converted     */
 
         if (*cptr == '.')              /* check for decimal point */
         {
+          decpt = 1;       /* set flag to show there was a decimal point */
           cptr++;
           while (*cptr == ' ')         /* skip any blanks */
             cptr++;
@@ -1728,7 +1730,7 @@ int fffstru4(char *input,         /* I - array of values to be converted     */
           return(*status = BAD_C2D);
         }
 
-        if (power == 1.)  /* if no explicit decimal, use implied decimal */
+        if (!decpt)  /* if no explicit decimal, use implied */
            power = implipower;
 
         dvalue = (sign * val / power) * pow(10., (double) (esign * exponent));
@@ -1747,10 +1749,9 @@ int fffstru4(char *input,         /* I - array of values to be converted     */
         }
         else
             output[ii] = (unsigned long) dvalue;
-
-        /* restore the char that was overwritten by the null */
-        *tpos = tempstore;
       }
+      /* restore the char that was overwritten by the null */
+      *tpos = tempstore;
     }
     return(*status);
 }
