@@ -318,12 +318,12 @@ static const short ffrline[] = { 0,
    252,   254,   267,   278,   292,   296,   300,   305,   307,   310,
    313,   316,   318,   322,   324,   326,   328,   330,   333,   336,
    339,   342,   345,   348,   350,   352,   356,   360,   370,   381,
-   390,   399,   451,   488,   490,   492,   494,   496,   498,   500,
-   502,   504,   508,   510,   512,   515,   518,   521,   524,   527,
-   530,   533,   536,   539,   542,   545,   548,   551,   554,   557,
-   559,   561,   563,   566,   573,   586,   599,   610,   626,   644,
-   665,   692,   696,   700,   703,   707,   711,   714,   718,   720,
-   722,   724,   726,   728,   730,   734,   737,   739,   741,   744
+   390,   399,   455,   534,   536,   538,   540,   542,   544,   546,
+   548,   550,   554,   556,   558,   561,   564,   567,   570,   573,
+   576,   579,   582,   585,   588,   591,   594,   597,   600,   603,
+   605,   607,   609,   612,   619,   632,   645,   656,   672,   690,
+   711,   738,   742,   746,   749,   753,   757,   760,   764,   766,
+   768,   770,   772,   774,   776,   780,   783,   785,   787,   790
 };
 #endif
 
@@ -641,7 +641,7 @@ static const short ffcheck[] = {     1,
     -1,    38,    -1,    -1,    -1,    -1,    43
 };
 /* -*-C-*-  Note some compilers choke on comments on `#line' lines.  */
-#line 3 "/usr/local/share/bison.simple"
+#line 3 "/usr/lib/bison.simple"
 
 /* Skeleton output parser for bison,
    Copyright (C) 1984, 1989, 1990 Free Software Foundation, Inc.
@@ -834,7 +834,7 @@ __ff_memcpy (char *to, char *from, int count)
 #endif
 #endif
 
-#line 196 "/usr/local/share/bison.simple"
+#line 196 "/usr/lib/bison.simple"
 
 /* The user can define FFPARSE_PARAM as the name of an argument to be passed
    into ffparse.  The argument should have type void *.
@@ -1405,7 +1405,13 @@ case 42:
                      ffval.Node = New_Const( LONG, &( SIZE(ffvsp[-1].Node) ), sizeof(long) );
 		  else if (FSTRCMP(ffvsp[-2].str,"ABS(") == 0)
 		     ffval.Node = New_Func( 0, abs_fct, 1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
-                  else {
+ 		  else if (FSTRCMP(ffvsp[-2].str,"MIN(") == 0)
+		     ffval.Node = New_Func( TYPE(ffvsp[-1].Node),  /* Force 1D result */
+				    min1_fct, 1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
+		  else if (FSTRCMP(ffvsp[-2].str,"MAX(") == 0)
+		     ffval.Node = New_Func( TYPE(ffvsp[-1].Node),  /* Force 1D result */
+				    max1_fct, 1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
+  		  else {  /*  These all take DOUBLE arguments  */
 		     if( TYPE(ffvsp[-1].Node) != DOUBLE ) ffvsp[-1].Node = New_Unary( DOUBLE, 0, ffvsp[-1].Node );
                      if (FSTRCMP(ffvsp[-2].str,"SIN(") == 0)
 			ffval.Node = New_Func( 0, sin_fct,  1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
@@ -1440,8 +1446,6 @@ case 42:
 			ffval.Node = New_Func( 0, floor_fct, 1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP(ffvsp[-2].str,"CEIL(") == 0)
 			ffval.Node = New_Func( 0, ceil_fct, 1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
-		     else if (FSTRCMP(ffvsp[-2].str,"ROUND(") == 0)
-			ffval.Node = New_Func( 0, round_fct, 1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
 		     else {
 			fferror("Function(expr) not supported");
 			FFERROR;
@@ -1451,7 +1455,7 @@ case 42:
                 ;
     break;}
 case 43:
-#line 452 "eval.y"
+#line 456 "eval.y"
 { 
 		   if (FSTRCMP(ffvsp[-4].str,"DEFNULL(") == 0) {
 		      if( SIZE(ffvsp[-3].Node)>=SIZE(ffvsp[-1].Node) && Test_Dims( ffvsp[-3].Node, ffvsp[-1].Node ) ) {
@@ -1460,7 +1464,8 @@ case 43:
 					0, 0, 0, 0 );
 			 TEST(ffval.Node); 
 		      } else {
-			 fferror("Dimensions of DEFNULL arguments are not compatible");
+			 fferror("Dimensions of DEFNULL arguments "
+				 "are not compatible");
 			 FFERROR;
 		      }
 		   } else if (FSTRCMP(ffvsp[-4].str,"ARCTAN2(") == 0) {
@@ -1480,152 +1485,193 @@ case 43:
 				 gParse.Nodes[ffvsp[-1].Node].value.naxes[i];
 			}
 		     } else {
-			fferror("Dimensions of arctan2 arguments are not compatible");
+			fferror("Dimensions of arctan2 arguments "
+				"are not compatible");
 			FFERROR;
 		     }
-		  } else {
-                     fferror("Function(expr,expr) not supported");
-		     FFERROR;
-		  }
+		   } else if (FSTRCMP(ffvsp[-4].str,"MIN(") == 0) {
+		      PROMOTE( ffvsp[-3].Node, ffvsp[-1].Node );
+		      if( Test_Dims( ffvsp[-3].Node, ffvsp[-1].Node ) ) {
+			ffval.Node = New_Func( 0, min2_fct, 2, ffvsp[-3].Node, ffvsp[-1].Node, 0, 0, 0, 0, 0 );
+			TEST(ffval.Node);
+			if( SIZE(ffvsp[-3].Node)<SIZE(ffvsp[-1].Node) ) {
+			   int i;
+			   gParse.Nodes[ffval.Node].value.nelem =
+			      gParse.Nodes[ffvsp[-1].Node].value.nelem;
+			   gParse.Nodes[ffval.Node].value.naxis =
+			      gParse.Nodes[ffvsp[-1].Node].value.naxis;
+			   for( i=0; i<gParse.Nodes[ffvsp[-1].Node].value.naxis; i++ )
+			      gParse.Nodes[ffval.Node].value.naxes[i] =
+				 gParse.Nodes[ffvsp[-1].Node].value.naxes[i];
+			}
+		      } else {
+			fferror("Dimensions of min(a,b) arguments "
+				"are not compatible");
+			FFERROR;
+		      }
+		   } else if (FSTRCMP(ffvsp[-4].str,"MAX(") == 0) {
+		      PROMOTE( ffvsp[-3].Node, ffvsp[-1].Node );
+		      if( Test_Dims( ffvsp[-3].Node, ffvsp[-1].Node ) ) {
+			ffval.Node = New_Func( 0, max2_fct, 2, ffvsp[-3].Node, ffvsp[-1].Node, 0, 0, 0, 0, 0 );
+			TEST(ffval.Node);
+			if( SIZE(ffvsp[-3].Node)<SIZE(ffvsp[-1].Node) ) {
+			   int i;
+			   gParse.Nodes[ffval.Node].value.nelem =
+			      gParse.Nodes[ffvsp[-1].Node].value.nelem;
+			   gParse.Nodes[ffval.Node].value.naxis =
+			      gParse.Nodes[ffvsp[-1].Node].value.naxis;
+			   for( i=0; i<gParse.Nodes[ffvsp[-1].Node].value.naxis; i++ )
+			      gParse.Nodes[ffval.Node].value.naxes[i] =
+				 gParse.Nodes[ffvsp[-1].Node].value.naxes[i];
+			}
+		      } else {
+			fferror("Dimensions of max(a,b) arguments "
+				"are not compatible");
+			FFERROR;
+		      }
+		   } else {
+		      fferror("Function(expr,expr) not supported");
+		      FFERROR;
+		   }
                 ;
     break;}
 case 44:
-#line 489 "eval.y"
+#line 535 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-3].Node, 1, ffvsp[-1].Node,  0,  0,  0,   0 ); TEST(ffval.Node); ;
     break;}
 case 45:
-#line 491 "eval.y"
+#line 537 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-5].Node, 2, ffvsp[-3].Node, ffvsp[-1].Node,  0,  0,   0 ); TEST(ffval.Node); ;
     break;}
 case 46:
-#line 493 "eval.y"
+#line 539 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-7].Node, 3, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,  0,   0 ); TEST(ffval.Node); ;
     break;}
 case 47:
-#line 495 "eval.y"
+#line 541 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-9].Node, 4, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,   0 ); TEST(ffval.Node); ;
     break;}
 case 48:
-#line 497 "eval.y"
+#line 543 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-11].Node, 5, ffvsp[-9].Node, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node ); TEST(ffval.Node); ;
     break;}
 case 49:
-#line 499 "eval.y"
+#line 545 "eval.y"
 { ffval.Node = New_Unary( LONG,   INTCAST, ffvsp[0].Node );  TEST(ffval.Node);  ;
     break;}
 case 50:
-#line 501 "eval.y"
+#line 547 "eval.y"
 { ffval.Node = New_Unary( LONG,   INTCAST, ffvsp[0].Node );  TEST(ffval.Node);  ;
     break;}
 case 51:
-#line 503 "eval.y"
+#line 549 "eval.y"
 { ffval.Node = New_Unary( DOUBLE, FLTCAST, ffvsp[0].Node );  TEST(ffval.Node);  ;
     break;}
 case 52:
-#line 505 "eval.y"
+#line 551 "eval.y"
 { ffval.Node = New_Unary( DOUBLE, FLTCAST, ffvsp[0].Node );  TEST(ffval.Node);  ;
     break;}
 case 53:
-#line 509 "eval.y"
+#line 555 "eval.y"
 { ffval.Node = New_Const( BOOLEAN, &(ffvsp[0].log), sizeof(char) ); TEST(ffval.Node); ;
     break;}
 case 54:
-#line 511 "eval.y"
+#line 557 "eval.y"
 { ffval.Node = New_Column( ffvsp[0].lng ); TEST(ffval.Node); ;
     break;}
 case 55:
-#line 513 "eval.y"
+#line 559 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node ); TEST(ffval.Node);
 		  SIZE(ffval.Node) = 1;                                     ;
     break;}
 case 56:
-#line 516 "eval.y"
+#line 562 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     ;
     break;}
 case 57:
-#line 519 "eval.y"
+#line 565 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LT,  ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     ;
     break;}
 case 58:
-#line 522 "eval.y"
+#line 568 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LTE, ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     ;
     break;}
 case 59:
-#line 525 "eval.y"
+#line 571 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GT,  ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     ;
     break;}
 case 60:
-#line 528 "eval.y"
+#line 574 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GTE, ffvsp[0].Node ); TEST(ffval.Node); 
 		  SIZE(ffval.Node) = 1;                                     ;
     break;}
 case 61:
-#line 531 "eval.y"
+#line 577 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GT,  ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 62:
-#line 534 "eval.y"
+#line 580 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LT,  ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 63:
-#line 537 "eval.y"
+#line 583 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GTE, ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 64:
-#line 540 "eval.y"
+#line 586 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LTE, ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 65:
-#line 543 "eval.y"
+#line 589 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, '~', ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 66:
-#line 546 "eval.y"
+#line 592 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 67:
-#line 549 "eval.y"
+#line 595 "eval.y"
 { PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node );
                   TEST(ffval.Node);                                               ;
     break;}
 case 68:
-#line 552 "eval.y"
+#line 598 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = 1; ;
     break;}
 case 69:
-#line 555 "eval.y"
+#line 601 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node ); TEST(ffval.Node);
                   SIZE(ffval.Node) = 1; ;
     break;}
 case 70:
-#line 558 "eval.y"
+#line 604 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, AND, ffvsp[0].Node ); TEST(ffval.Node); ;
     break;}
 case 71:
-#line 560 "eval.y"
+#line 606 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, OR,  ffvsp[0].Node ); TEST(ffval.Node); ;
     break;}
 case 72:
-#line 562 "eval.y"
+#line 608 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node ); TEST(ffval.Node); ;
     break;}
 case 73:
-#line 564 "eval.y"
+#line 610 "eval.y"
 { ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node ); TEST(ffval.Node); ;
     break;}
 case 74:
-#line 567 "eval.y"
+#line 613 "eval.y"
 { PROMOTE(ffvsp[-4].Node,ffvsp[-2].Node); PROMOTE(ffvsp[-4].Node,ffvsp[0].Node); PROMOTE(ffvsp[-2].Node,ffvsp[0].Node);
 		  ffvsp[-2].Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LTE, ffvsp[-4].Node );
                   ffvsp[0].Node = New_BinOp( BOOLEAN, ffvsp[-4].Node, LTE, ffvsp[0].Node );
@@ -1633,7 +1679,7 @@ case 74:
                   TEST(ffval.Node);                                         ;
     break;}
 case 75:
-#line 574 "eval.y"
+#line 620 "eval.y"
 {
 		   if (FSTRCMP(ffvsp[-2].str,"ISNULL(") == 0) {
 		      ffval.Node = New_Func( 0, isnull_fct, 1, ffvsp[-1].Node, 0, 0,
@@ -1648,7 +1694,7 @@ case 75:
 		;
     break;}
 case 76:
-#line 587 "eval.y"
+#line 633 "eval.y"
 {
 		   if (FSTRCMP(ffvsp[-2].str,"ISNULL(") == 0) {
 		      ffval.Node = New_Func( 0, isnull_fct, 1, ffvsp[-1].Node, 0, 0,
@@ -1663,7 +1709,7 @@ case 76:
 		;
     break;}
 case 77:
-#line 600 "eval.y"
+#line 646 "eval.y"
 {
 		   if (FSTRCMP(ffvsp[-2].str,"ISNULL(") == 0) {
 		      ffval.Node = New_Func( BOOLEAN, isnull_fct, 1, ffvsp[-1].Node, 0, 0,
@@ -1676,7 +1722,7 @@ case 77:
 		;
     break;}
 case 78:
-#line 611 "eval.y"
+#line 657 "eval.y"
 {
 		   if (FSTRCMP(ffvsp[-4].str,"DEFNULL(") == 0) {
 		      if( SIZE(ffvsp[-3].Node)>=SIZE(ffvsp[-1].Node) && Test_Dims( ffvsp[-3].Node, ffvsp[-1].Node ) ) {
@@ -1694,7 +1740,7 @@ case 78:
 		;
     break;}
 case 79:
-#line 627 "eval.y"
+#line 673 "eval.y"
 {
 		   if( SIZE(ffvsp[-5].Node)>1 || SIZE(ffvsp[-3].Node)>1 || SIZE(ffvsp[-1].Node)>1 ) {
 		      fferror("Cannot use array as function argument");
@@ -1714,7 +1760,7 @@ case 79:
 		;
     break;}
 case 80:
-#line 645 "eval.y"
+#line 691 "eval.y"
 {
 		   if( SIZE(ffvsp[-9].Node)>1 || SIZE(ffvsp[-7].Node)>1 || SIZE(ffvsp[-5].Node)>1 || SIZE(ffvsp[-3].Node)>1
 		       || SIZE(ffvsp[-1].Node)>1 ) {
@@ -1737,7 +1783,7 @@ case 80:
 		;
     break;}
 case 81:
-#line 666 "eval.y"
+#line 712 "eval.y"
 {
 		   if( SIZE(ffvsp[-13].Node)>1 || SIZE(ffvsp[-11].Node)>1 || SIZE(ffvsp[-9].Node)>1 || SIZE(ffvsp[-7].Node)>1
 		       || SIZE(ffvsp[-5].Node)>1 || SIZE(ffvsp[-3].Node)>1 || SIZE(ffvsp[-1].Node)>1 ) {
@@ -1765,91 +1811,91 @@ case 81:
 		;
     break;}
 case 82:
-#line 693 "eval.y"
+#line 739 "eval.y"
 { /* Use defaults for all elements */
                   ffval.Node = New_GTI( "", -99, "*START*", "*STOP*" );
                   TEST(ffval.Node);                                         ;
     break;}
 case 83:
-#line 697 "eval.y"
+#line 743 "eval.y"
 { /* Use defaults for all except filename */
                    ffval.Node = New_GTI( ffvsp[-1].str, -99, "*START*", "*STOP*" );
                    TEST(ffval.Node);                                        ;
     break;}
 case 84:
-#line 701 "eval.y"
+#line 747 "eval.y"
 { ffval.Node = New_GTI( ffvsp[-3].str, ffvsp[-1].Node, "*START*", "*STOP*" );
                   TEST(ffval.Node);                                         ;
     break;}
 case 85:
-#line 704 "eval.y"
+#line 750 "eval.y"
 {  ffval.Node = New_GTI( ffvsp[-7].str, ffvsp[-5].Node, ffvsp[-3].str, ffvsp[-1].str );
                    TEST(ffval.Node);                                        ;
     break;}
 case 86:
-#line 708 "eval.y"
+#line 754 "eval.y"
 { /* Use defaults for all except filename */
                    ffval.Node = New_REG( ffvsp[-1].str, -99, -99, "" );
                    TEST(ffval.Node);                                        ;
     break;}
 case 87:
-#line 712 "eval.y"
+#line 758 "eval.y"
 {  ffval.Node = New_REG( ffvsp[-5].str, ffvsp[-3].Node, ffvsp[-1].Node, "" );
                    TEST(ffval.Node);                                        ;
     break;}
 case 88:
-#line 715 "eval.y"
+#line 761 "eval.y"
 {  ffval.Node = New_REG( ffvsp[-7].str, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].str );
                    TEST(ffval.Node);                                        ;
     break;}
 case 89:
-#line 719 "eval.y"
+#line 765 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-3].Node, 1, ffvsp[-1].Node,  0,  0,  0,   0 ); TEST(ffval.Node); ;
     break;}
 case 90:
-#line 721 "eval.y"
+#line 767 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-5].Node, 2, ffvsp[-3].Node, ffvsp[-1].Node,  0,  0,   0 ); TEST(ffval.Node); ;
     break;}
 case 91:
-#line 723 "eval.y"
+#line 769 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-7].Node, 3, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,  0,   0 ); TEST(ffval.Node); ;
     break;}
 case 92:
-#line 725 "eval.y"
+#line 771 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-9].Node, 4, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,   0 ); TEST(ffval.Node); ;
     break;}
 case 93:
-#line 727 "eval.y"
+#line 773 "eval.y"
 { ffval.Node = New_Deref( ffvsp[-11].Node, 5, ffvsp[-9].Node, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node ); TEST(ffval.Node); ;
     break;}
 case 94:
-#line 729 "eval.y"
+#line 775 "eval.y"
 { ffval.Node = New_Unary( BOOLEAN, NOT, ffvsp[0].Node ); TEST(ffval.Node); ;
     break;}
 case 95:
-#line 731 "eval.y"
+#line 777 "eval.y"
 { ffval.Node = ffvsp[-1].Node; ;
     break;}
 case 96:
-#line 735 "eval.y"
+#line 781 "eval.y"
 { ffval.Node = New_Const( STRING, ffvsp[0].str, strlen(ffvsp[0].str)+1 ); TEST(ffval.Node);
                   SIZE(ffval.Node) = strlen(ffvsp[0].str);                            ;
     break;}
 case 97:
-#line 738 "eval.y"
+#line 784 "eval.y"
 { ffval.Node = New_Column( ffvsp[0].lng ); TEST(ffval.Node); ;
     break;}
 case 98:
-#line 740 "eval.y"
+#line 786 "eval.y"
 { ffval.Node = ffvsp[-1].Node; ;
     break;}
 case 99:
-#line 742 "eval.y"
+#line 788 "eval.y"
 { ffval.Node = New_BinOp( STRING, ffvsp[-2].Node, '+', ffvsp[0].Node );  TEST(ffval.Node);
 		  SIZE(ffval.Node) = SIZE(ffvsp[-2].Node) + SIZE(ffvsp[0].Node);                   ;
     break;}
 case 100:
-#line 745 "eval.y"
+#line 791 "eval.y"
 { 
 		  if (FSTRCMP(ffvsp[-4].str,"DEFNULL(") == 0) {
 		     ffval.Node = New_Func( 0, defnull_fct, 2, ffvsp[-3].Node, ffvsp[-1].Node, 0,
@@ -1861,7 +1907,7 @@ case 100:
     break;}
 }
    /* the action file gets copied in in place of this dollarsign */
-#line 498 "/usr/local/share/bison.simple"
+#line 498 "/usr/lib/bison.simple"
 
   ffvsp -= fflen;
   ffssp -= fflen;
@@ -2057,7 +2103,7 @@ fferrhandle:
   ffstate = ffn;
   goto ffnewstate;
 }
-#line 755 "eval.y"
+#line 801 "eval.y"
 
 
 /*************************************************************************/
@@ -3739,7 +3785,7 @@ static void Do_Func( Node *this )
    char pNull[MAXSUBS];
    long   ival;
    double dval;
-   int  i;
+   int  i, valInit;
    long row, elem, nelem;
 
    i = this->nSubNodes;
@@ -3881,6 +3927,39 @@ static void Do_Func( Node *this )
 	 case atan2_fct:
 	    this->value.data.dbl =
 	       atan2( pVals[0].data.dbl, pVals[1].data.dbl );
+	    break;
+
+	    /*  Min/Max functions taking 1 or 2 arguments  */
+
+         case min1_fct:
+	    /* No constant vectors! */
+	    if( this->type == DOUBLE )
+	       this->value.data.dbl = pVals[0].data.dbl;
+	    else if( this->type == LONG )
+	       this->value.data.lng = pVals[0].data.lng;
+	    break;
+         case min2_fct:
+	    if( this->type == DOUBLE )
+	       this->value.data.dbl =
+		  minvalue( pVals[0].data.dbl, pVals[1].data.dbl );
+	    else if( this->type == LONG )
+	       this->value.data.lng =
+		  minvalue( pVals[0].data.lng, pVals[1].data.lng );
+	    break;
+         case max1_fct:
+	    /* No constant vectors! */
+	    if( this->type == DOUBLE )
+	       this->value.data.dbl = pVals[0].data.dbl;
+	    else if( this->type == LONG )
+	       this->value.data.lng = pVals[0].data.lng;
+	    break;
+         case max2_fct:
+	    if( this->type == DOUBLE )
+	       this->value.data.dbl =
+		  maxvalue( pVals[0].data.dbl, pVals[1].data.dbl );
+	    else if( this->type == LONG )
+	       this->value.data.lng =
+		  maxvalue( pVals[0].data.lng, pVals[1].data.lng );
 	    break;
 
 	    /* Boolean SAO region Functions... all arguments scalar dbls */
@@ -4264,6 +4343,184 @@ static void Do_Func( Node *this )
 		  if( !(this->value.undef[elem] = (pNull[0] || pNull[1]) ) )
 		     this->value.data.dblptr[elem] =
 			atan2( pVals[0].data.dbl, pVals[1].data.dbl );
+	       }
+	    }
+	    break;
+
+	    /*  Min/Max functions taking 1 or 2 arguments  */
+
+         case min1_fct:
+	    elem = row * theParams[0]->value.nelem;
+	    if( this->type==LONG ) {
+	       long minVal;
+	       while( row-- ) {
+		  valInit = 1;
+		  this->value.undef[row] = 0;
+		  nelem = theParams[0]->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     if( valInit && !theParams[0]->value.undef[elem] ) {
+			valInit = 0;
+			minVal  = theParams[0]->value.data.lngptr[elem];
+		     } else {
+			minVal  = minvalue( minVal,
+					    theParams[0]->value.data.lngptr[elem] );
+		     }
+		     this->value.undef[row] |=
+			theParams[0]->value.undef[elem];
+		  }
+		  this->value.data.lngptr[row] = minVal;
+	       }		  
+	    } else if( this->type==DOUBLE ) {
+	       double minVal;
+	       while( row-- ) {
+		  valInit = 1;
+		  this->value.undef[row] = 0;
+		  nelem = theParams[0]->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     if( valInit && !theParams[0]->value.undef[elem] ) {
+			valInit = 0;
+			minVal  = theParams[0]->value.data.dblptr[elem];
+		     } else {
+			minVal  = minvalue( minVal,
+					    theParams[0]->value.data.dblptr[elem] );
+		     }
+		     this->value.undef[row] |=
+			theParams[0]->value.undef[elem];
+		  }
+		  this->value.data.dblptr[row] = minVal;
+	       }		  
+	    }
+	    break;
+         case min2_fct:
+	    if( this->type==LONG ) {
+	       while( row-- ) {
+		  nelem = this->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     i=2; while( i-- )
+			if( vector[i]>1 ) {
+			   pVals[i].data.lng =
+			      theParams[i]->value.data.lngptr[elem];
+			   pNull[i] = theParams[i]->value.undef[elem];
+			} else if( vector[i] ) {
+			   pVals[i].data.lng =
+			      theParams[i]->value.data.lngptr[row];
+			   pNull[i] = theParams[i]->value.undef[row];
+			}
+		     if( !(this->value.undef[elem] = (pNull[0] || pNull[1]) ) )
+			this->value.data.lngptr[elem] =
+			   minvalue( pVals[0].data.lng, pVals[1].data.lng );
+		  }
+	       }
+	    } else if( this->type==DOUBLE ) {
+	       while( row-- ) {
+		  nelem = this->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     i=2; while( i-- )
+			if( vector[i]>1 ) {
+			   pVals[i].data.dbl =
+			      theParams[i]->value.data.dblptr[elem];
+			   pNull[i] = theParams[i]->value.undef[elem];
+			} else if( vector[i] ) {
+			   pVals[i].data.dbl =
+			      theParams[i]->value.data.dblptr[row];
+			   pNull[i] = theParams[i]->value.undef[row];
+			}
+		     if( !(this->value.undef[elem] = (pNull[0] || pNull[1]) ) )
+			this->value.data.dblptr[elem] =
+			   minvalue( pVals[0].data.dbl, pVals[1].data.dbl );
+		  }
+	       }
+	    }
+	    break;
+
+         case max1_fct:
+	    elem = row * theParams[0]->value.nelem;
+	    if( this->type==LONG ) {
+	       long maxVal;
+	       while( row-- ) {
+		  valInit = 1;
+		  this->value.undef[row] = 0;
+		  nelem = theParams[0]->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     if( valInit && !theParams[0]->value.undef[elem] ) {
+			valInit = 0;
+			maxVal  = theParams[0]->value.data.lngptr[elem];
+		     } else {
+			maxVal  = maxvalue( maxVal,
+					    theParams[0]->value.data.lngptr[elem] );
+		     }
+		     this->value.undef[row] |=
+			theParams[0]->value.undef[elem];
+		  }
+		  this->value.data.lngptr[row] = maxVal;
+	       }		  
+	    } else if( this->type==DOUBLE ) {
+	       double maxVal;
+	       while( row-- ) {
+		  valInit = 1;
+		  this->value.undef[row] = 0;
+		  nelem = theParams[0]->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     if( valInit && !theParams[0]->value.undef[elem] ) {
+			valInit = 0;
+			maxVal  = theParams[0]->value.data.dblptr[elem];
+		     } else {
+			maxVal  = maxvalue( maxVal,
+					    theParams[0]->value.data.dblptr[elem] );
+		     }
+		     this->value.undef[row] |=
+			theParams[0]->value.undef[elem];
+		  }
+		  this->value.data.dblptr[row] = maxVal;
+	       }		  
+	    }
+	    break;
+         case max2_fct:
+	    if( this->type==LONG ) {
+	       while( row-- ) {
+		  nelem = this->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     i=2; while( i-- )
+			if( vector[i]>1 ) {
+			   pVals[i].data.lng =
+			      theParams[i]->value.data.lngptr[elem];
+			   pNull[i] = theParams[i]->value.undef[elem];
+			} else if( vector[i] ) {
+			   pVals[i].data.lng =
+			      theParams[i]->value.data.lngptr[row];
+			   pNull[i] = theParams[i]->value.undef[row];
+			}
+		     if( !(this->value.undef[elem] = (pNull[0] || pNull[1]) ) )
+			this->value.data.lngptr[elem] =
+			   maxvalue( pVals[0].data.lng, pVals[1].data.lng );
+		  }
+	       }
+	    } else if( this->type==DOUBLE ) {
+	       while( row-- ) {
+		  nelem = this->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     i=2; while( i-- )
+			if( vector[i]>1 ) {
+			   pVals[i].data.dbl =
+			      theParams[i]->value.data.dblptr[elem];
+			   pNull[i] = theParams[i]->value.undef[elem];
+			} else if( vector[i] ) {
+			   pVals[i].data.dbl =
+			      theParams[i]->value.data.dblptr[row];
+			   pNull[i] = theParams[i]->value.undef[row];
+			}
+		     if( !(this->value.undef[elem] = (pNull[0] || pNull[1]) ) )
+			this->value.data.dblptr[elem] =
+			   maxvalue( pVals[0].data.dbl, pVals[1].data.dbl );
+		  }
 	       }
 	    }
 	    break;
@@ -5034,3 +5291,4 @@ static void fferror(char *s)
     msg[79] = '\0';
     ffpmsg(msg);
 }
+

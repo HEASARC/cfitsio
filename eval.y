@@ -404,7 +404,13 @@ expr:    LONG
                      $$ = New_Const( LONG, &( SIZE($2) ), sizeof(long) );
 		  else if (FSTRCMP($1,"ABS(") == 0)
 		     $$ = New_Func( 0, abs_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
-                  else {
+ 		  else if (FSTRCMP($1,"MIN(") == 0)
+		     $$ = New_Func( TYPE($2),  /* Force 1D result */
+				    min1_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		  else if (FSTRCMP($1,"MAX(") == 0)
+		     $$ = New_Func( TYPE($2),  /* Force 1D result */
+				    max1_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+  		  else {  /*  These all take DOUBLE arguments  */
 		     if( TYPE($2) != DOUBLE ) $2 = New_Unary( DOUBLE, 0, $2 );
                      if (FSTRCMP($1,"SIN(") == 0)
 			$$ = New_Func( 0, sin_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
@@ -439,8 +445,6 @@ expr:    LONG
 			$$ = New_Func( 0, floor_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"CEIL(") == 0)
 			$$ = New_Func( 0, ceil_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
-		     else if (FSTRCMP($1,"ROUND(") == 0)
-			$$ = New_Func( 0, round_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else {
 			yyerror("Function(expr) not supported");
 			YYERROR;
@@ -457,7 +461,8 @@ expr:    LONG
 					0, 0, 0, 0 );
 			 TEST($$); 
 		      } else {
-			 yyerror("Dimensions of DEFNULL arguments are not compatible");
+			 yyerror("Dimensions of DEFNULL arguments "
+				 "are not compatible");
 			 YYERROR;
 		      }
 		   } else if (FSTRCMP($1,"ARCTAN2(") == 0) {
@@ -477,13 +482,54 @@ expr:    LONG
 				 gParse.Nodes[$4].value.naxes[i];
 			}
 		     } else {
-			yyerror("Dimensions of arctan2 arguments are not compatible");
+			yyerror("Dimensions of arctan2 arguments "
+				"are not compatible");
 			YYERROR;
 		     }
-		  } else {
-                     yyerror("Function(expr,expr) not supported");
-		     YYERROR;
-		  }
+		   } else if (FSTRCMP($1,"MIN(") == 0) {
+		      PROMOTE( $2, $4 );
+		      if( Test_Dims( $2, $4 ) ) {
+			$$ = New_Func( 0, min2_fct, 2, $2, $4, 0, 0, 0, 0, 0 );
+			TEST($$);
+			if( SIZE($2)<SIZE($4) ) {
+			   int i;
+			   gParse.Nodes[$$].value.nelem =
+			      gParse.Nodes[$4].value.nelem;
+			   gParse.Nodes[$$].value.naxis =
+			      gParse.Nodes[$4].value.naxis;
+			   for( i=0; i<gParse.Nodes[$4].value.naxis; i++ )
+			      gParse.Nodes[$$].value.naxes[i] =
+				 gParse.Nodes[$4].value.naxes[i];
+			}
+		      } else {
+			yyerror("Dimensions of min(a,b) arguments "
+				"are not compatible");
+			YYERROR;
+		      }
+		   } else if (FSTRCMP($1,"MAX(") == 0) {
+		      PROMOTE( $2, $4 );
+		      if( Test_Dims( $2, $4 ) ) {
+			$$ = New_Func( 0, max2_fct, 2, $2, $4, 0, 0, 0, 0, 0 );
+			TEST($$);
+			if( SIZE($2)<SIZE($4) ) {
+			   int i;
+			   gParse.Nodes[$$].value.nelem =
+			      gParse.Nodes[$4].value.nelem;
+			   gParse.Nodes[$$].value.naxis =
+			      gParse.Nodes[$4].value.naxis;
+			   for( i=0; i<gParse.Nodes[$4].value.naxis; i++ )
+			      gParse.Nodes[$$].value.naxes[i] =
+				 gParse.Nodes[$4].value.naxes[i];
+			}
+		      } else {
+			yyerror("Dimensions of max(a,b) arguments "
+				"are not compatible");
+			YYERROR;
+		      }
+		   } else {
+		      yyerror("Function(expr,expr) not supported");
+		      YYERROR;
+		   }
                 }
        | expr '[' expr ']'
                 { $$ = New_Deref( $1, 1, $3,  0,  0,  0,   0 ); TEST($$); }
@@ -2433,7 +2479,7 @@ static void Do_Func( Node *this )
    char pNull[MAXSUBS];
    long   ival;
    double dval;
-   int  i;
+   int  i, valInit;
    long row, elem, nelem;
 
    i = this->nSubNodes;
@@ -2575,6 +2621,39 @@ static void Do_Func( Node *this )
 	 case atan2_fct:
 	    this->value.data.dbl =
 	       atan2( pVals[0].data.dbl, pVals[1].data.dbl );
+	    break;
+
+	    /*  Min/Max functions taking 1 or 2 arguments  */
+
+         case min1_fct:
+	    /* No constant vectors! */
+	    if( this->type == DOUBLE )
+	       this->value.data.dbl = pVals[0].data.dbl;
+	    else if( this->type == LONG )
+	       this->value.data.lng = pVals[0].data.lng;
+	    break;
+         case min2_fct:
+	    if( this->type == DOUBLE )
+	       this->value.data.dbl =
+		  minvalue( pVals[0].data.dbl, pVals[1].data.dbl );
+	    else if( this->type == LONG )
+	       this->value.data.lng =
+		  minvalue( pVals[0].data.lng, pVals[1].data.lng );
+	    break;
+         case max1_fct:
+	    /* No constant vectors! */
+	    if( this->type == DOUBLE )
+	       this->value.data.dbl = pVals[0].data.dbl;
+	    else if( this->type == LONG )
+	       this->value.data.lng = pVals[0].data.lng;
+	    break;
+         case max2_fct:
+	    if( this->type == DOUBLE )
+	       this->value.data.dbl =
+		  maxvalue( pVals[0].data.dbl, pVals[1].data.dbl );
+	    else if( this->type == LONG )
+	       this->value.data.lng =
+		  maxvalue( pVals[0].data.lng, pVals[1].data.lng );
 	    break;
 
 	    /* Boolean SAO region Functions... all arguments scalar dbls */
@@ -2958,6 +3037,184 @@ static void Do_Func( Node *this )
 		  if( !(this->value.undef[elem] = (pNull[0] || pNull[1]) ) )
 		     this->value.data.dblptr[elem] =
 			atan2( pVals[0].data.dbl, pVals[1].data.dbl );
+	       }
+	    }
+	    break;
+
+	    /*  Min/Max functions taking 1 or 2 arguments  */
+
+         case min1_fct:
+	    elem = row * theParams[0]->value.nelem;
+	    if( this->type==LONG ) {
+	       long minVal;
+	       while( row-- ) {
+		  valInit = 1;
+		  this->value.undef[row] = 0;
+		  nelem = theParams[0]->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     if( valInit && !theParams[0]->value.undef[elem] ) {
+			valInit = 0;
+			minVal  = theParams[0]->value.data.lngptr[elem];
+		     } else {
+			minVal  = minvalue( minVal,
+					    theParams[0]->value.data.lngptr[elem] );
+		     }
+		     this->value.undef[row] |=
+			theParams[0]->value.undef[elem];
+		  }
+		  this->value.data.lngptr[row] = minVal;
+	       }		  
+	    } else if( this->type==DOUBLE ) {
+	       double minVal;
+	       while( row-- ) {
+		  valInit = 1;
+		  this->value.undef[row] = 0;
+		  nelem = theParams[0]->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     if( valInit && !theParams[0]->value.undef[elem] ) {
+			valInit = 0;
+			minVal  = theParams[0]->value.data.dblptr[elem];
+		     } else {
+			minVal  = minvalue( minVal,
+					    theParams[0]->value.data.dblptr[elem] );
+		     }
+		     this->value.undef[row] |=
+			theParams[0]->value.undef[elem];
+		  }
+		  this->value.data.dblptr[row] = minVal;
+	       }		  
+	    }
+	    break;
+         case min2_fct:
+	    if( this->type==LONG ) {
+	       while( row-- ) {
+		  nelem = this->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     i=2; while( i-- )
+			if( vector[i]>1 ) {
+			   pVals[i].data.lng =
+			      theParams[i]->value.data.lngptr[elem];
+			   pNull[i] = theParams[i]->value.undef[elem];
+			} else if( vector[i] ) {
+			   pVals[i].data.lng =
+			      theParams[i]->value.data.lngptr[row];
+			   pNull[i] = theParams[i]->value.undef[row];
+			}
+		     if( !(this->value.undef[elem] = (pNull[0] || pNull[1]) ) )
+			this->value.data.lngptr[elem] =
+			   minvalue( pVals[0].data.lng, pVals[1].data.lng );
+		  }
+	       }
+	    } else if( this->type==DOUBLE ) {
+	       while( row-- ) {
+		  nelem = this->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     i=2; while( i-- )
+			if( vector[i]>1 ) {
+			   pVals[i].data.dbl =
+			      theParams[i]->value.data.dblptr[elem];
+			   pNull[i] = theParams[i]->value.undef[elem];
+			} else if( vector[i] ) {
+			   pVals[i].data.dbl =
+			      theParams[i]->value.data.dblptr[row];
+			   pNull[i] = theParams[i]->value.undef[row];
+			}
+		     if( !(this->value.undef[elem] = (pNull[0] || pNull[1]) ) )
+			this->value.data.dblptr[elem] =
+			   minvalue( pVals[0].data.dbl, pVals[1].data.dbl );
+		  }
+	       }
+	    }
+	    break;
+
+         case max1_fct:
+	    elem = row * theParams[0]->value.nelem;
+	    if( this->type==LONG ) {
+	       long maxVal;
+	       while( row-- ) {
+		  valInit = 1;
+		  this->value.undef[row] = 0;
+		  nelem = theParams[0]->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     if( valInit && !theParams[0]->value.undef[elem] ) {
+			valInit = 0;
+			maxVal  = theParams[0]->value.data.lngptr[elem];
+		     } else {
+			maxVal  = maxvalue( maxVal,
+					    theParams[0]->value.data.lngptr[elem] );
+		     }
+		     this->value.undef[row] |=
+			theParams[0]->value.undef[elem];
+		  }
+		  this->value.data.lngptr[row] = maxVal;
+	       }		  
+	    } else if( this->type==DOUBLE ) {
+	       double maxVal;
+	       while( row-- ) {
+		  valInit = 1;
+		  this->value.undef[row] = 0;
+		  nelem = theParams[0]->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     if( valInit && !theParams[0]->value.undef[elem] ) {
+			valInit = 0;
+			maxVal  = theParams[0]->value.data.dblptr[elem];
+		     } else {
+			maxVal  = maxvalue( maxVal,
+					    theParams[0]->value.data.dblptr[elem] );
+		     }
+		     this->value.undef[row] |=
+			theParams[0]->value.undef[elem];
+		  }
+		  this->value.data.dblptr[row] = maxVal;
+	       }		  
+	    }
+	    break;
+         case max2_fct:
+	    if( this->type==LONG ) {
+	       while( row-- ) {
+		  nelem = this->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     i=2; while( i-- )
+			if( vector[i]>1 ) {
+			   pVals[i].data.lng =
+			      theParams[i]->value.data.lngptr[elem];
+			   pNull[i] = theParams[i]->value.undef[elem];
+			} else if( vector[i] ) {
+			   pVals[i].data.lng =
+			      theParams[i]->value.data.lngptr[row];
+			   pNull[i] = theParams[i]->value.undef[row];
+			}
+		     if( !(this->value.undef[elem] = (pNull[0] || pNull[1]) ) )
+			this->value.data.lngptr[elem] =
+			   maxvalue( pVals[0].data.lng, pVals[1].data.lng );
+		  }
+	       }
+	    } else if( this->type==DOUBLE ) {
+	       while( row-- ) {
+		  nelem = this->value.nelem;
+		  while( nelem-- ) {
+		     elem--;
+		     i=2; while( i-- )
+			if( vector[i]>1 ) {
+			   pVals[i].data.dbl =
+			      theParams[i]->value.data.dblptr[elem];
+			   pNull[i] = theParams[i]->value.undef[elem];
+			} else if( vector[i] ) {
+			   pVals[i].data.dbl =
+			      theParams[i]->value.data.dblptr[row];
+			   pNull[i] = theParams[i]->value.undef[row];
+			}
+		     if( !(this->value.undef[elem] = (pNull[0] || pNull[1]) ) )
+			this->value.data.dblptr[elem] =
+			   maxvalue( pVals[0].data.dbl, pVals[1].data.dbl );
+		  }
 	       }
 	    }
 	    break;
