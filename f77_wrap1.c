@@ -83,6 +83,18 @@ void Cffopen( fitsfile **fptr, const char *filename, int iomode, int *blocksize,
 }
 FCALLSCSUB5(Cffopen,FTOPEN,ftopen,PFITSUNIT,STRING,INT,PINT,PINT)
 
+void Cffnopn( fitsfile **fptr, const char *filename, int iomode, int *status );
+void Cffnopn( fitsfile **fptr, const char *filename, int iomode, int *status )
+{
+   if( *fptr==NULL || *fptr==(fitsfile*)1 ) {
+      ffopen( fptr, filename, iomode, status );
+   } else {
+      *status = FILE_NOT_OPENED;
+      ffpmsg("Cffnopn tried to open an already opened file.");
+   }
+}
+FCALLSCSUB4(Cffnopn,FTNOPN,ftnopn,PFITSUNIT,STRING,INT,PINT)
+
 void Cffinit( fitsfile **fptr, const char *filename, int blocksize, int *status );
 void Cffinit( fitsfile **fptr, const char *filename, int blocksize, int *status )
 {
