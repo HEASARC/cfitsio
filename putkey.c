@@ -972,7 +972,7 @@ int fftm2s(int year,          /* I - year (0 - 9999)           */
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
-    if (year < 0 || year > 9999 || month < 1 || month > 12 || day < 1 ||
+    if (year < 0 || year > 9999 || month < 0 || month > 12 || day < 0 ||
         day > 31 || hour < 0 || hour > 23 || minute < 0 || minute > 59 ||
         second < 0. || second >= 61. || decimals < 0 || decimals > 25)
        return(*status = BAD_DATE);
