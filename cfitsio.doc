@@ -152,11 +152,15 @@ software, such as
      ftp.leo.org/pub/comp/os/os2/leo/devtools/emx+gcc.
 -
 
-The MacOS version of the cfitsio library can be built by (1) unbinhex
-and unstuff cfitsio\_mac.sit.hqx, and (2) for the PPC,  load CFitsio
-PPCLibrary.(pi) into CodeWarrior Pro 1 and make.  This builds the
-cfitsio library for PPC.  There are also targets for both the test
-program and the speed test program..
+The MacOS version of the cfitsio library can be built by (1) un binhex
+and unstuff cfitsio_mac.sit.hqx, (2) put CFitsioPPC.mcp in the cfitsio
+directory, and (3) load CFitsioPPC.mcp into CodeWarrior Pro 2 and make.
+This builds the cfitsio library for PPC.  There are also targets for
+both the test program and the speed test program.
+
+To use the MacOS port you can add Cfitsio PPC.lib to your Codewarrior
+Pro 2 project.  Note that this only has been tested for the PPC and
+probably won't work on 68k macs.
 
 CFITSIO has currently been tested on the following platforms:
 -
@@ -504,24 +508,26 @@ routine names have a 1 or 2 character suffix (e.g., 'j' in 'ffpkyj')
 while the long routine names have a 4 character or longer suffix
 as shown in the following table:
 -
-    Long   Short  Data
-    Names  Names  Type
-    -----  -----  ----
-    _bit     x    bit
-    _byt     b    unsigned byte
-    _sht     i    short integer
-    _lng     j    long integer
-    _usht    ui   unsigned short integer
-    _ulng    uj   unsigned long integer
-    _int     k    int integer
-    _flt     e    real exponential floating point (float)
-    _fixflt  f    real fixed-decimal format floating point (float)
-    _dbl     d    double precision real floating-point (double)
-    _fixdbl  g    double precision fixed-format floating point (double)
-    _cmp     c    complex reals (pairs of float values)
-    _dblcmp  m    double precision complex (pairs of double values)
-    _log     l    logical (int)
-    _str     s    character string
+    Long      Short  Data
+    Names     Names  Type
+    -----     -----  ----
+    _bit        x    bit
+    _byt        b    unsigned byte
+    _sht        i    short integer
+    _lng        j    long integer
+    _usht       ui   unsigned short integer
+    _ulng       uj   unsigned long integer
+    _int        k    int integer
+    _flt        e    real exponential floating point (float)
+    _fixflt     f    real fixed-decimal format floating point (float)
+    _dbl        d    double precision real floating-point (double)
+    _fixdbl     g    double precision fixed-format floating point (double)
+    _cmp        c    complex reals (pairs of float values)
+    _fixcmp     fc   complex reals, fixed-format floating point
+    _dblcmp     m    double precision complex (pairs of double values)
+    _fixdblcmp  fm   double precision complex, fixed-format floating point
+    _log        l    logical (int)
+    _str        s    character string
 -
 The `int' datatype is often 2 bytes long on IBM PC compatible
 systems and 4 bytes long on most other systems.  The Alpha/OSF systems
@@ -1451,7 +1457,7 @@ access times to the later extensions in such files may become very
 long.
  
 3.  CFITSIO can handle FITS files up to about 2.1 GB in size which is
-the maximum value of a 4-byte signed long integer.  Some machines that use
+the maximum value of a 32-bit signed long integer.  Some machines that use
 8-byte words for a long integer may support larger files, but this has
 not been tested.
 
@@ -2048,7 +2054,6 @@ required keywords.  Note that in most cases the required keywords such
 as NAXIS, TFIELD, TTYPEn, etc, which define the structure of the HDU
 must be written to the header before any data can be written to the
 image or table.
-
  
 >1  Put the primary header or IMAGE extension keywords into the CHU.
   The simpler ffphps routine is equivalent to calling ffphpr with the
@@ -2178,9 +2183,13 @@ image or table.
       (fitsfile *fptr, char *keyname, DTYPE numval, char *comment,
        > int *status)
  
-  int fits_write_key_[flt, dbl, fixflg, fixdbl] / ffpky[edfg]
+  int fits_write_key_[flt, dbl, fixflg, fixdbl] / ffpky[edfg] 
       (fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
-       char *comment, > int *status)
+      char *comment, > int *status)
+
+  int fits_write_key_[cmp, dblcmp, fixcmp, fixdblcmp] / ffpk[yc,ym,fc,fm]
+      (fitsfile *fptr, char *keyname, DTYPE *numval, int decimals,
+      char *comment, > int *status)
 -
 >7  Put (append) a string valued keyword into the CHU which may be longer
     than 68 characters in length.  This uses the Long String Keyword
@@ -2287,6 +2296,10 @@ be shifted down one position.
  
   int fits_insert_key_[flt, fixflt, dbl, fixdbl] / ffiky[edfg]
       (fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
+       char *comment, > int *status)
+
+  int fits_insert_key_[cmp, dblcmp, fixcmp, fixdblcmp] / ffik[yc,ym,fc,fm]
+      (fitsfile *fptr, char *keyname, DTYPE *numval, int decimals,
        char *comment, > int *status)
 -
 >3  Insert a new keyword with an undefined, or null, value into the CHU.
@@ -2395,9 +2408,10 @@ wild card searches.
       (fitsfile *fptr, char *keyname, > char **longstr, char *comment,
              int *status)
  
-  int fits_read_key_[log, lng, flt, dbl] / ffgky[ljed]
+  int fits_read_key_[log, lng, flt, dbl, cmp, dblcmp] / ffgky[ljedcm]
       (fitsfile *fptr, char *keyname, > DTYPE *numval, char *comment,
        int *status)
+
 -
 >8  Get a sequence of indexed keyword values.  If the value of any of
     the keywords is not defined (i.e., the value field is blank) then an
@@ -2477,7 +2491,11 @@ may be used when specifying the name of the keyword to be modified.
  
   int fits_modify_key_[flt, dbl, fixflt, fixdbl] / ffmky[edfg]
       (fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
-                  char *comment, > int *status)
+       char *comment, > int *status)
+
+  int fits_modify_key_[cmp, dblcmp, fixcmp, fixdblcmp] / ffmk[yc,ym,fc,fm]
+      (fitsfile *fptr, char *keyname, DTYPE *numval, int decimals,
+       char *comment, > int *status)
 -
 >6  Modify the value of an existing keyword to be undefined, or null.
     The value string of the keyword is set to blank.
@@ -2509,6 +2527,10 @@ otherwise the new keyword is appended to the header.
  
   int fits_update_key_[flt, dbl, fixflt, fixdbl] / ffuky[edfg]
       (fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
+       char *comment, > int *status)
+
+  int fits_update_key_[cmp, dblcmp, fixcmp, fixdblcmp] / ffuk[yc,ym,fc,fm]
+      (fitsfile *fptr, char *keyname, DTYPE *numval, int decimals,
        char *comment, > int *status)
 -
 >3  Update the value of an existing keyword to be undefined, or null,
@@ -3708,6 +3730,8 @@ The following utility routines may be useful for certain applications:
                  > int *status)
   int ffpky[edfg](fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
                   char *comment, > int *status)
+  int ffpk[yc,ym,fc,fm](fitsfile *fptr, char *keyname, DTYPE *numval,
+                  int decimals, char *comment, > int *status)
   int ffpkls(fitsfile *fptr, char *keyname, char *longstr,
              char *comment, > int *status)
   int ffplsw(fitsfile *fptr, > int *status)
@@ -3733,6 +3757,8 @@ The following utility routines may be useful for certain applications:
               > int *status)
   int ffiky[edfg](fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
                   char *comment, > int *status)
+  int ffik[yc,ym,fc,fm](fitsfile *fptr, char *keyname, DTYPE *numval,
+                  int decimals, char *comment, > int *status)
   int ffikyu(fitsfile *fptr, char *keyname, char *comment, > int *status)
 -
  Read Keyword Routines: page~\pageref{FFGREC}
@@ -3751,8 +3777,8 @@ The following utility routines may be useful for certain applications:
              int *status);
   int ffgkls(fitsfile *fptr, char *keyname, > char **longstr, char *comment,
              int *status)
-  int ffgky[ljed](fitsfile *fptr, char *keyname, > DTYPE *numval, char *comment,
-             int *status)
+  int ffgky[ljedcm](fitsfile *fptr, char *keyname, > DTYPE *numval,
+             char *comment, int *status)
   int ffgkns(fitsfile *fptr, char *keyname, int nstart, int nkeys,
              > char **value, int *nfound,  int *status)
   int ffgkn[ljed](fitsfile *fptr, char *keyname, int nstart, int nkeys,
@@ -3773,6 +3799,8 @@ The following utility routines may be useful for certain applications:
                > int *status)
   int ffmky[edfg](fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
                   char *comment, > int *status)
+  int ffmk[yc,ym,fc,fm](fitsfile *fptr, char *keyname, DTYPE *numval,
+                  int decimals, char *comment, > int *status)
   int ffmkyu(fitsfile *fptr, char *keyname, char *comment, > int *status)
 -
  Update Keyword Routines: page~\pageref{FFUCRD}
@@ -3784,6 +3812,8 @@ The following utility routines may be useful for certain applications:
                > int *status)
   int ffuky[edfg](fitsfile *fptr, char *keyname, DTYPE numval, int decimals,
                   char *comment, > int *status)
+  int ffuk[yc,ym,fc,fm](fitsfile *fptr, char *keyname, DTYPE *numval,
+                  int decimals, char *comment, > int *status)
   int ffukyu(fitsfile *fptr, char *keyname, char *comment, > int *status)
 -
  Delete Keyword Routines: page~\pageref{FFDREC}

@@ -816,7 +816,7 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
             value[jj] = '\0';  /*  terminate the bad value string  */
             ffpmsg("This keyword string value has no closing quote:");
             ffpmsg(card);
-            return(*status = 205);
+            return(*status = NO_QUOTE);
         }
         else
         {
@@ -824,7 +824,21 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
             ii++;   /*  point to the character following the value  */
         }
     }
+    else if (card[ii] == '(' )  /* is this a complex value? */
+    {
+        nblank = strcspn(&card[ii], ")" ); /* find closing ) */
+        if (nblank == strlen( &card[ii] ) )
+        {
+            ffpmsg("This complex keyword value has no closing ')':");
+            ffpmsg(card);
+            return(*status = NO_QUOTE);
+        }
 
+        nblank++;
+        strncpy(value, &card[ii], nblank);
+        value[nblank] = '\0';
+        ii = ii + nblank;        
+    }
     else   /*  an integer, floating point, or logical FITS value string  */
     {
         nblank = strcspn(&card[ii], " /");  /* find the end of the token */
@@ -974,16 +988,22 @@ int ffgthd(char *tmplt, /* I - input header template string */
          return(*status);
       }
 
-      tok += len;
-      len = strspn(tok, " =");  /* space between name and value */
-      
-      if (strcmp(keyname, "COMMENT") && strcmp(keyname, "HISTORY") )
-      {
-        /* Get the Value token */
-        tok += len;
+      tok += len; /* move token pointer to end of the keyword */
 
-        if (*tok == '\'') /* is value enclosed in quotes? */
-        {
+      if (!strcmp(keyname, "COMMENT") || !strcmp(keyname, "HISTORY") )
+      {
+        *hdtype = 1;   /* simply append COMMENT and HISTORY keywords */
+        strcpy(card, keyname);
+        strncat(card, tok, 73);
+        return(*status);
+      }
+
+      /* look for the value token */
+      len = strspn(tok, " =");  /* spaces or = between name and value */
+      tok += len;
+
+      if (*tok == '\'') /* is value enclosed in quotes? */
+      {
           more = TRUE;
           while (more)
           {
@@ -1000,9 +1020,13 @@ int ffgthd(char *tmplt, /* I - input header template string */
             if (tok[0] != '\'')  /* 2 quote chars = literal quote */
               more = FALSE;
           }
-        }
-        else   /* not a quoted string value */
-        {
+      }
+      else if (*tok == '/' || *tok == '\0')  /* There is no value */
+      {
+          strcat(value, " ");
+      }
+      else   /* not a quoted string value */
+      {
           len = strcspn(tok, " /"); /* length of value string */
 
           strncat(value, tok, len);
@@ -1024,18 +1048,10 @@ int ffgthd(char *tmplt, /* I - input header template string */
             }
           }
           tok += len;
-        }
+      }
 
-        len = strspn(tok, " /"); /* no. of spaces between value and comment */
-        tok += len;
-      }
-      else
-      {
-        *hdtype = 1;   /* simply append COMMENT and HISTORY keywords */
-        strcpy(card, keyname);
-        strncat(card, tok, 73);
-        return(*status);
-      }
+      len = strspn(tok, " /"); /* no. of spaces between value and comment */
+      tok += len;
 
       vlen = strlen(value);
       if (vlen > 0 && vlen < 10 && value[0] == '\'')
@@ -1047,7 +1063,7 @@ int ffgthd(char *tmplt, /* I - input header template string */
       }
 
       /* get the comment string */
-      strncpy(comment, tok, 70);
+      strncat(comment, tok, 70);
 
       /* construct the complete FITS header card */
       ffmkky(keyname, value, comment, card);
@@ -1290,10 +1306,12 @@ int ffbnfm(char *tform,     /* I - format code from the TFORMn keyword */
         */
         iread = 0;
         if (form[1] != 0)
-            if (form[1] == '(')  /* skip parenthesis around */
+        {
+            if (form[1] == '(' )  /* skip parenthesis around */
                 form++;          /* variable length column width */
 
             iread = sscanf(&form[1],"%ld", width);
+        }
 
         if (iread != 1)
             *width = *repeat;  
@@ -3459,6 +3477,11 @@ int ffghdt(fitsfile *fptr,      /* I - FITS file pointer             */
     if (*status > 0)
         return(*status);
 
+    /* rescan header if data structure is undefined */
+    if (fptr->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               
+            return(*status);
+
     *exttype = fptr->hdutype; /* return the type of HDU */
 
     return(*status);
@@ -3586,7 +3609,6 @@ int ffmnhd(fitsfile *fptr,      /* I - FITS file pointer                    */
           }
         }
     }
-    return(*status);
 }
 /*--------------------------------------------------------------------------*/
 int ffthdu(fitsfile *fptr,      /* I - FITS file pointer                    */

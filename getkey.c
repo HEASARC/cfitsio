@@ -285,6 +285,9 @@ int ffgkey( fitsfile *fptr,     /* I - FITS file pointer        */
     if (comm)
        comm[0] = '\0';
 
+    if (*status > 0)
+        return(*status);
+
     if (ffgcrd(fptr, keyname, card, status) > 0)    /* get the 80-byte card */
         return(*status);
 
@@ -413,6 +416,9 @@ int ffgunt( fitsfile *fptr,     /* I - FITS file pointer         */
     char comm[FLEN_COMMENT];
     char *loc;
 
+    if (*status > 0)
+        return(*status);
+
     ffgkey(fptr, keyname, valstring, comm, status);  /* read the keyword */
 
     if (comm[0] == '[')
@@ -445,6 +451,9 @@ int ffgkys( fitsfile *fptr,     /* I - FITS file pointer         */
 {
     char valstring[FLEN_VALUE];
 
+    if (*status > 0)
+        return(*status);
+
     ffgkey(fptr, keyname, valstring, comm, status);  /* read the keyword */
     ffc2s(valstring, value, status);   /* remove quotes from string */
  
@@ -470,6 +479,9 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer         */
     char valstring[FLEN_VALUE];
     int contin;
     size_t len;
+
+    if (*status > 0)
+        return(*status);
 
     *value = NULL;  /* initialize a null pointer in case of error */
 
@@ -532,6 +544,9 @@ int ffgcnt( fitsfile *fptr,     /* I - FITS file pointer         */
     int tstatus;
     char card[FLEN_CARD], strval[FLEN_VALUE], comm[FLEN_COMMENT];
 
+    if (*status > 0)
+        return(*status);
+
     tstatus = 0;
     value[0] = '\0';
 
@@ -566,6 +581,9 @@ int ffgkyl( fitsfile *fptr,     /* I - FITS file pointer         */
 {
     char valstring[FLEN_VALUE];
 
+    if (*status > 0)
+        return(*status);
+
     ffgkey(fptr, keyname, valstring, comm, status);  /* read the keyword */
     ffc2l(valstring, value, status);   /* convert string to value */
 
@@ -584,6 +602,9 @@ int ffgkyj( fitsfile *fptr,     /* I - FITS file pointer         */
 */
 {
     char valstring[FLEN_VALUE];
+
+    if (*status > 0)
+        return(*status);
 
     ffgkey(fptr, keyname, valstring, comm, status);  /* read the keyword */
     ffc2i(valstring, value, status);   /* convert string to value */
@@ -604,6 +625,9 @@ int ffgkye( fitsfile *fptr,     /* I - FITS file pointer         */
 {
     char valstring[FLEN_VALUE];
 
+    if (*status > 0)
+        return(*status);
+
     ffgkey(fptr, keyname, valstring, comm, status);  /* read the keyword */
     ffc2r(valstring, value, status);   /* convert string to value */
 
@@ -623,8 +647,80 @@ int ffgkyd( fitsfile *fptr,      /* I - FITS file pointer         */
 {
     char valstring[FLEN_VALUE];
 
+    if (*status > 0)
+        return(*status);
+
     ffgkey(fptr, keyname, valstring, comm, status);  /* read the keyword */
     ffc2d(valstring, value, status);   /* convert string to value */
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgkyc( fitsfile *fptr,     /* I - FITS file pointer         */
+            char  *keyname,     /* I - name of keyword to read   */
+            float *value,       /* O - keyword value (real,imag) */
+            char  *comm,        /* O - keyword comment           */
+            int   *status)      /* IO - error status             */
+/*
+  Read (get) the named keyword, returning the value and comment.
+  The keyword must have a complex value. No implicit data conversion
+  will be performed.
+*/
+{
+    char valstring[FLEN_VALUE];
+    int len;
+
+    if (*status > 0)
+        return(*status);
+
+    ffgkey(fptr, keyname, valstring, comm, status);  /* read the keyword */
+
+    if (valstring[0] != '(' )   /* test that this is a complex keyword */
+      return(*status = BAD_C2F);
+
+    valstring[0] = ' ';            /* delete the opening parenthesis */
+    len = strcspn(valstring, ")" );  
+    valstring[len] = '\0';         /* delete the closing parenthesis */
+
+    len = strcspn(valstring, ",");
+    valstring[len] = '\0';
+
+    ffc2r(valstring, &value[0], status);       /* convert the real part */
+    ffc2r(&valstring[len + 1], &value[1], status); /* convert imag. part */
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgkym( fitsfile *fptr,     /* I - FITS file pointer         */
+            char  *keyname,     /* I - name of keyword to read   */
+            double *value,      /* O - keyword value (real,imag) */
+            char  *comm,        /* O - keyword comment           */
+            int   *status)      /* IO - error status             */
+/*
+  Read (get) the named keyword, returning the value and comment.
+  The keyword must have a complex value. No implicit data conversion
+  will be performed.
+*/
+{
+    char valstring[FLEN_VALUE];
+    int len;
+
+    if (*status > 0)
+        return(*status);
+
+    ffgkey(fptr, keyname, valstring, comm, status);  /* read the keyword */
+
+    if (valstring[0] != '(' )   /* test that this is a complex keyword */
+      return(*status = BAD_C2D);
+
+    valstring[0] = ' ';            /* delete the opening parenthesis */
+    len = strcspn(valstring, ")" );  
+    valstring[len] = '\0';         /* delete the closing parenthesis */
+
+    len = strcspn(valstring, ",");
+    valstring[len] = '\0';
+
+    ffc2d(valstring, &value[0], status);        /* convert the real part */
+    ffc2d(&valstring[len + 1], &value[1], status);  /* convert the imag. part */
 
     return(*status);
 }
@@ -645,6 +741,9 @@ int ffgkyt( fitsfile *fptr,      /* I - FITS file pointer                 */
 {
     char valstring[FLEN_VALUE];
     char *loc;
+
+    if (*status > 0)
+        return(*status);
 
     ffgkey(fptr, keyname, valstring, comm, status);  /* read the keyword */
 
@@ -691,6 +790,9 @@ int ffgkyn( fitsfile *fptr,      /* I - FITS file pointer             */
     value[0] = '\0';
     if (comm)
         comm[0] = '\0';
+
+    if (*status > 0)
+        return(*status);
 
     if (ffgrec(fptr, nkey, card, status) > 0 )  /* get the 80-byte card */
         return(*status);

@@ -60,6 +60,10 @@ KEY_PKYF 12.121210 fxpkyf comment 0
 KEY_PKYE 13.131310 fxpkye comment 0
 KEY_PKYG 14.14141414141414 fxpkyg comment 0
 KEY_PKYD 15.15151515151520 fxpkyd comment 0
+KEY_PKYC 13.131310 14.141410 fxpkyc comment 0
+KEY_PKFC 13.131313 14.141414 fxpkfc comment 0
+KEY_PKYM 15.151515 16.161616 fxpkym comment 0
+KEY_PKFM 15.151515 16.161616 fxpkfm comment 0
 KEY_PKYT 12345678 0.12345678901235 fxpkyt comment 0
 KEY_PKY J 11 [km/s/Mpc] fxpkyj comment 0
 KEY_PKY units = km/s/Mpc
@@ -69,7 +73,7 @@ KEY_PKY J 11 [feet/second/second] fxpkyj comment 0
 KEY_PKY units = feet/second/second
 KEY_PKLS long string value = 
 This is a very long string value that is continued over more than one keyword.
-header contains 63 keywords; located at keyword 25 
+header contains 67 keywords; located at keyword 29 
 ffgkns:  first string, second string, 
 ffgknl:  1, 0, 1
 ffgknj:  11, 12, 13
@@ -87,7 +91,7 @@ COMMENT   This keyword was written by fxpcom.
 KY_PKNS1= 'first string'       / fxpkns comment
 
 After inserting the keywords...
-COMMENT   continued over multiple keywords.  The HEASARC convention uses the &
+COMMENT   This keyword was written by fxpcom.
 KY_IREC = 'This keyword inserted by fxirec'
 KY_IKYS = 'insert_value_string' / ikys comment
 KY_IKYJ =                   49 / ikyj comment
@@ -96,7 +100,7 @@ KY_IKYE =           1.2346E+01 / ikye comment
 KY_IKYD = 1.23456789012346E+01 / ikyd comment
 KY_IKYF =              12.3456 / ikyf comment
 KY_IKYG =     12.3456789012346 / ikyg comment
-COMMENT   character at the end of each substring which is then continued
+KY_PKNS1= 'first string'       / fxpkns comment
 
 After modifying the keywords...
 COMMENT   This keyword was modified by fxmrec
@@ -108,7 +112,7 @@ KY_IKYE =          -1.2346E+01 / ikye comment
 KY_IKYD = -1.23456789012346E+01 / modified comment
 KY_IKYF =             -12.3456 / ikyf comment
 KY_IKYG =    -12.3456789012346 / ikyg comment
-COMMENT   character at the end of each substring which is then continued
+KY_PKNS1= 'first string'       / fxpkns comment
 
 After updating the keywords...
 COMMENT   This keyword was modified by fxmrec
@@ -120,9 +124,9 @@ KY_IKYE =          -1.3346E+01 / ikye comment
 KY_IKYD = -1.33456789012346E+01 / modified comment
 KY_IKYF =             -13.3456 / ikyf comment
 KY_IKYG =    -13.3456789012346 / ikyg comment
-COMMENT   character at the end of each substring which is then continued
+KY_PKNS1= 'first string'       / fxpkns comment
 
-Keywords found using wildcard search (should be 9)...
+Keywords found using wildcard search (should be 13)...
 KEY_PKYS= 'value_string'       / fxpkys comment
 KEY_PKYL=                    T / fxpkyl comment
 KEY_PKYJ=                   11 / [feet/second/second] fxpkyj comment
@@ -130,9 +134,15 @@ KEY_PKYF=             12.12121 / fxpkyf comment
 KEY_PKYE=         1.313131E+01 / fxpkye comment
 KEY_PKYG=    14.14141414141414 / fxpkyg comment
 KEY_PKYD= 1.51515151515152E+01 / fxpkyd comment
-NEWIKYS = 'updated_string'     / ikys comment
+KEY_PKYC= (1.313131E+01, 1.414141E+01) / fxpkyc comment
+KEY_PKYM= (1.51515151515152E+01, 1.61616161616162E+01) / fxpkym comment
+KEY_PKFC= (13.131313, 14.141414) / fxpkfc comment
+KEY_PKFM= (15.15151515151515, 16.16161616161616) / fxpkfm comment
 KEY_PKYT= 12345678.1234567890123456 / fxpkyt comment
+NEWIKYS = 'updated_string'     / ikys comment
+
 Copied keyword: ffgkne:  14.141410, 15.151520, 13.131310
+Updated header using template file (ffpktp)
 
 ffcrtb status = 0
 HDU number = 2
@@ -284,7 +294,7 @@ copy column, ffcpcl status = 0
 Delete the tmp file: ffdelt status = 0
 HDU number = 3
 
-Moved to BINTABLE; headend, datastart = 17440 23040
+Moved to BINTABLE; headend, datastart = 20320 25920
 header contains 38 keywords with room for 69 more
 
 Binary table: nrows, tfields, extname, pcount: 21 10 Test-BINTABLE 0

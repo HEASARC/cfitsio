@@ -1032,4 +1032,30 @@ int ffread( fitsfile *fptr,   /* I - FITS file pointer              */
     }
     return(*status);
 }
+/*--------------------------------------------------------------------------*/
+void ffrprt( FILE *stream, int status)
+/* 
+   Print out report of cfitsio error status and messages on the error stack.
+*/
+{
+    char status_str[FLEN_STATUS], errmsg[FLEN_ERRMSG];
+  
+    if (status)
+    {
+      fprintf(stream, "\n*** Error occurred during program execution ***\n");
 
+      fits_get_errstatus(status, status_str);  /* get the error description */
+      fprintf(stream, "\nstatus = %d: %s\n", status, status_str);
+
+      /* get first message; null if stack is empty */
+      if ( fits_read_errmsg(errmsg) ) 
+      {
+         fprintf(stream, "\nError message stack:\n");
+         fprintf(stream, " %s\n", errmsg);
+
+         while ( fits_read_errmsg(errmsg) )  /* get remaining messages */
+             fprintf(stream, " %s\n", errmsg);
+      }
+    }
+    return; 
+}

@@ -2,12 +2,43 @@
 
 Version 1.33 - December 1997
 
+   - modified ffgrsz to also work with images, in which case
+     it returns the optimum number of pixels to process at
+     one time.
+
+   - modified ffgthd to support null valued keywords
+
    - added a new source file 'f77_wrap.c' that includes all the
      Fortran77 wrapper routines for calling CFITSIO.  This will
      eventually replace the Fortran FITSIO library.
 
    - added new routines:
+     ffrprt - write out report of error status and error messages
      ffiter - apply a user function iteratively to all the rows of a table
+     ffpkyc - write complex-valued keyword
+     ffpkym - write double complex-valued keyword
+     ffpkfc - write complex-valued keyword in fixed format
+     ffpkfm - write double complex-valued keyword in fixed format
+
+     ffgkyc - read complex-valued keyword
+     ffgkym - read double complex-valued keyword
+
+     ffmkyc - modify complex-valued keyword
+     ffmkym - modify double complex-valued keyword
+     ffmkfc - modify complex-valued keyword in fixed format
+     ffmkfm - modify double complex-valued keyword in fixed format
+
+     ffukyc - update complex-valued keyword
+     ffukym - update double complex-valued keyword
+     ffukfc - update complex-valued keyword in fixed format
+     ffukfm - update double complex-valued keyword in fixed format
+
+     ffikyc - insert complex-valued keyword
+     ffikym - insert double complex-valued keyword
+     ffikfc - insert complex-valued keyword in fixed format
+     ffikfm - insert double complex-valued keyword in fixed format
+
+     ffpktp - write or modify keywords using ASCII template file
      ffcpcl - copy a column from one table to another
      ffcpky - copy an indexed keyword from one HDU to another
      ffpcnl - write logical values, including nulls, to binary table
@@ -38,7 +69,7 @@ Version 1.33 - December 1997
    - fixed bug in ffpclk and ffgclk to add an 'else' case
      if size of int is not equal to size of short or size of long.
 
-   - added test to ffgkls to check if the input string is null before
+   - added test to ffgkls to check if the input string is not null before
      allocating memory for it.
 
 Version 1.32 - 21 November 1997 (internal release only)

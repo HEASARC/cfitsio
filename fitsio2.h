@@ -20,8 +20,6 @@
                          /* rather then disk file is used for the file I/O. */
                          /* CFITSIO must free this buffer when the file     */
                          /* is closed.                                      */
-#define MAX_ITER_COLS 100 /* maximum number of columns allowed to be passed */
-                         /* as arguments in the ffiter iteration function   */
 
 #define NATIVE             0 /* a generic machine that uses IEEE formats */
 #define ULTRIX             1

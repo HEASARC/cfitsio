@@ -77,6 +77,7 @@ main()
     char *ttype[10], *tform[10], *tunit[10];
     char tblname[40];
     char binname[] = "Test-BINTABLE";
+    char template[] = "testprog.tpt";
     char errmsg[FLEN_ERRMSG];
     short imgarray[30][19], imgarray2[20][10];
     long fpixels[2], lpixels[2], inc[2];
@@ -193,6 +194,18 @@ main()
 
     if (ffpkyd(fptr, "key_pkyd", odkey, 14, "fxpkyd comment", &status) > 0)
         printf("ffpkyd status = %d\n", status);
+
+    if (ffpkyc(fptr, "key_pkyc", onekey, 6, "fxpkyc comment", &status) > 0)
+        printf("ffpkyc status = %d\n", status);
+
+    if (ffpkym(fptr, "key_pkym", ondkey, 14, "fxpkym comment", &status) > 0)
+        printf("ffpkym status = %d\n", status);
+
+    if (ffpkfc(fptr, "key_pkfc", onekey, 6, "fxpkfc comment", &status) > 0)
+        printf("ffpkfc status = %d\n", status);
+
+    if (ffpkfm(fptr, "key_pkfm", ondkey, 14, "fxpkfm comment", &status) > 0)
+        printf("ffpkfm status = %d\n", status);
 
     if (ffpkls(fptr, "key_pkls", 
 "This is a very long string value that is continued over more than one keyword.",
@@ -625,6 +638,18 @@ main()
     ffgkyd(fptr, "KEY_PKYD", &idkey, comment, &status);
     printf("KEY_PKYD %.14f %s %d\n",idkey, comment, status);
 
+    ffgkyc(fptr, "KEY_PKYC", inekey, comment, &status);
+    printf("KEY_PKYC %f %f %s %d\n",inekey[0], inekey[1], comment, status);
+
+    ffgkyc(fptr, "KEY_PKFC", inekey, comment, &status);
+    printf("KEY_PKFC %f %f %s %d\n",inekey[0], inekey[1], comment, status);
+
+    ffgkym(fptr, "KEY_PKYM", indkey, comment, &status);
+    printf("KEY_PKYM %f %f %s %d\n",indkey[0], indkey[1], comment, status);
+
+    ffgkym(fptr, "KEY_PKFM", indkey, comment, &status);
+    printf("KEY_PKFM %f %f %s %d\n",indkey[0], indkey[1], comment, status);
+
     ffgkyt(fptr, "KEY_PKYT", &ijkey, &idkey, comment, &status);
     printf("KEY_PKYT %ld %.14f %s %d\n",ijkey, idkey, comment, status);
 
@@ -690,8 +715,13 @@ main()
     if (nfound != 3 || status > 0)
        printf("\nERROR in ffgknd %d, %d\n", nfound, status);
 
+    /* get position of HISTORY keyword for subsequent deletes and inserts */
+    ffgcrd(fptr, "HISTORY", card, &status);
+    ffghps(fptr, &existkeys, &keynum, &status);
+    keynum -= 2;
+
     printf("\nBefore deleting the HISTORY and DATE keywords...\n");
-    for (ii = 31; ii <= 34; ii++)
+    for (ii = keynum; ii <= keynum + 3; ii++)
     {
         ffgrec(fptr, ii, card, &status);
         printf("%.8s\n", card);  /* don't print date value, so that */
@@ -702,11 +732,11 @@ main()
       ############################
     */
 
-    ffdrec(fptr, 32, &status);
+    ffdrec(fptr, keynum + 1, &status);
     ffdkey(fptr, "DATE", &status);
 
     printf("\nAfter deleting the keywords...\n");
-    for (ii = 31; ii <= 32; ii++)
+    for (ii = keynum; ii <= keynum + 1; ii++)
     {
         ffgrec(fptr, ii, card, &status);
         printf("%s\n", card);
@@ -719,7 +749,8 @@ main()
       #  insert keywords         #
       ############################
     */
-    ffirec(fptr, 28, "KY_IREC = 'This keyword inserted by fxirec'",
+    keynum += 4;
+    ffirec(fptr, keynum - 3, "KY_IREC = 'This keyword inserted by fxirec'",
            &status);
     ffikys(fptr, "KY_IKYS", "insert_value_string", "ikys comment", &status);
     ffikyj(fptr, "KY_IKYJ", 49, "ikyj comment", &status);
@@ -730,7 +761,7 @@ main()
     ffikyg(fptr, "KY_IKYG", 12.345678901234567, 13, "ikyg comment", &status);
 
     printf("\nAfter inserting the keywords...\n");
-    for (ii = 27; ii <= 36; ii++)
+    for (ii = keynum - 4; ii <= keynum + 5; ii++)
     {
         ffgrec(fptr, ii, card, &status);
         printf("%s\n", card);
@@ -743,7 +774,7 @@ main()
       #  modify keywords         #
       ############################
     */
-    ffmrec(fptr, 27, "COMMENT   This keyword was modified by fxmrec", &status);
+    ffmrec(fptr, keynum - 4, "COMMENT   This keyword was modified by fxmrec", &status);
     ffmcrd(fptr, "KY_IREC", "KY_MREC = 'This keyword was modified by fxmcrd'",
             &status);
     ffmnam(fptr, "KY_IKYS", "NEWIKYS", &status);
@@ -759,7 +790,7 @@ main()
     ffmkyg(fptr, "KY_IKYG", -12.345678901234567, 13, "&", &status);
 
     printf("\nAfter modifying the keywords...\n");
-    for (ii = 27; ii <= 36; ii++)
+    for (ii = keynum - 4; ii <= keynum + 5; ii++)
     {
         ffgrec(fptr, ii, card, &status);
         printf("%s\n", card);
@@ -785,7 +816,7 @@ main()
     ffukyg(fptr, "KY_IKYG", -13.345678901234567, 13, "&", &status);
 
     printf("\nAfter updating the keywords...\n");
-    for (ii = 27; ii <= 36; ii++)
+    for (ii = keynum - 4; ii <= keynum + 5; ii++)
     {
         ffgrec(fptr, ii, card, &status);
         printf("%s\n", card);
@@ -796,14 +827,14 @@ main()
     /* move to top of header and find keywords using wild cards */
     ffgrec(fptr, 0, card, &status);
 
-    printf("\nKeywords found using wildcard search (should be 9)...\n");
+    printf("\nKeywords found using wildcard search (should be 13)...\n");
     nfound = 0;
     while (!ffgnxk(fptr,inclist, 2, exclist, 2, card, &status))
     {
         nfound++;
         printf("%s\n", card);
     }
-    if (nfound != 9)
+    if (nfound != 13)
     {
        printf("\nERROR reading keywords using wildcards (ffgnxk)\n");
        goto errstatus;
@@ -817,11 +848,25 @@ main()
     */
     ffcpky(fptr, fptr, 1, 4, "KY_PKNE", &status);
     ffgkne(fptr, "ky_pkne", 2, 4, inekey, &nfound, &status);
-    printf("Copied keyword: ffgkne:  %f, %f, %f\n", inekey[0], inekey[1],
+    printf("\nCopied keyword: ffgkne:  %f, %f, %f\n", inekey[0], inekey[1],
            inekey[2]);
     if (nfound != 4 || status > 0)
+    {
        printf("\nERROR in ffgkne %d, %d\n", nfound, status);
+       goto errstatus;
+    }
 
+    /*
+      ######################################
+      #  modify header using template file #
+      ######################################
+    */
+    if (ffpktp(fptr, template, &status))
+    {
+       printf("\nERROR returned by ffpktp\n");
+       goto errstatus;
+    }
+    printf("Updated header using template file (ffpktp)\n");
     /*
       ############################
       #  create binary table     #

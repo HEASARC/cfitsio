@@ -47,6 +47,9 @@
  
 #define READONLY  0    /* options when openning a file */
 #define READWRITE 1
+
+#define FLOATNULLVALUE -9.11E-36F
+#define DOUBLENULLVALUE -9.11E-36L
  
 #ifndef TRUE
 #define TRUE 1
@@ -104,7 +107,32 @@ typedef struct      /* structure used to store basic HDU information */
     long heapstart;   /* heap start byte relative to start of data unit */
     long heapsize;    /* size of the heap, in bytes */
 } fitsfile;
- 
+
+typedef struct  /* structure for the iterator function column information */
+{  
+     /* elements required as input to fits_iterate_data: */
+
+    fitsfile *fptr;     /* pointer to the HDU containing the column */
+    int      colnum;    /* column number in the table (use name if < 1) */
+    char     colname[70]; /* name (= TTYPEn value) of the column (optional) */
+    int      datatype;  /* output datatype (converted if necessary  */
+    int      iotype;    /* = InputCol, InputOutputCol, or OutputCol */
+
+    /* output elements that may be useful for the work function: */
+
+    void     *array;    /* pointer to the array (and the null value) */
+    long     repeat;    /* binary table vector repeat value */
+    long     tlmin;     /* legal minimum data value */
+    long     tlmax;     /* legal maximum data value */
+    char     tunit[70]; /* physical unit string */
+    char     tdisp[70]; /* suggested display format */
+
+} iteratorCol;
+
+#define InputCol         0  /* flag for input only iterator column       */
+#define InputOutputCol   1  /* flag for input and output iterator column */
+#define OutputCol        2  /* flag for output only iterator column      */
+
 /* error status codes */
  
 #define USE_MEM_BUFF     -101  /* use memory buffer when opening file */
@@ -229,6 +257,7 @@ void ffgerr(int status, char *errtext);
 void ffpmsg(const char *err_message);
 int  ffgmsg(char *err_message);
 void ffcmsg(void);
+void ffrprt(FILE *stream, int status);
 void ffcmps(char *templt, char *colname, int  casesen, int *match,
            int *exact);
 int fftkey(char *keyword, int *status);
@@ -265,6 +294,14 @@ int ffpkyg(fitsfile *fptr, char *keyname, double value, int decim, char *comm,
           int *status);
 int ffpkyd(fitsfile *fptr, char *keyname, double value, int decim, char *comm,
           int *status);
+int ffpkyc(fitsfile *fptr, char *keyname, float *value, int decim, char *comm,
+          int *status);
+int ffpkym(fitsfile *fptr, char *keyname, double *value, int decim, char *comm,
+          int *status);
+int ffpkfc(fitsfile *fptr, char *keyname, float *value, int decim, char *comm,
+          int *status);
+int ffpkfm(fitsfile *fptr, char *keyname, double *value, int decim, char *comm,
+          int *status);
 int ffpkyt(fitsfile *fptr, char *keyname, long intval, double frac, char *comm,
           int *status);
 int ffptdm( fitsfile *fptr, int colnum, int naxis, long naxes[], int *status);
@@ -295,7 +332,10 @@ int ffphtb(fitsfile *fptr, long naxis1, long naxis2, int tfields, char **ttype,
           long *tbcol, char **tform, char **tunit, char *extname, int *status);
 int ffphbn(fitsfile *fptr, long naxis2, int tfields, char **ttype,
           char **tform, char **tunit, char *extname, long pcount, int *status);
- 
+
+/*----------------- write template keywords --------------*/
+int ffpktp(fitsfile *fptr, const char *filename, int *status);
+
 /*------------------ get header information --------------*/
 int ffghsp(fitsfile *fptr, int *nexist, int *nmore, int *status);
 int ffghps(fitsfile *fptr, int *nexist, int *position, int *status);
@@ -324,6 +364,8 @@ int ffgkyl(fitsfile *fptr, char *keyname, int *value, char *comm, int *status);
 int ffgkyj(fitsfile *fptr, char *keyname, long *value, char *comm, int *status);
 int ffgkye(fitsfile *fptr, char *keyname, float *value, char *comm,int *status);
 int ffgkyd(fitsfile *fptr, char *keyname, double *value,char *comm,int *status);
+int ffgkyc(fitsfile *fptr, char *keyname, float *value, char *comm,int *status);
+int ffgkym(fitsfile *fptr, char *keyname, double *value,char *comm,int *status);
 int ffgkyt(fitsfile *fptr, char *keyname, long *ivalue, double *dvalue,
            char *comm, int *status);
 int ffgtdm(fitsfile *fptr, int colnum, int maxdim, int *naxis, long naxes[],
@@ -367,7 +409,15 @@ int ffukyg(fitsfile *fptr, char *keyname, double value, int decim, char *comm,
           int *status);
 int ffukyd(fitsfile *fptr, char *keyname, double value, int decim, char *comm,
           int *status);
- 
+int ffukyc(fitsfile *fptr, char *keyname, float *value, int decim, char *comm,
+          int *status);
+int ffukym(fitsfile *fptr, char *keyname, double *value, int decim, char *comm,
+          int *status);
+int ffukfc(fitsfile *fptr, char *keyname, float *value, int decim, char *comm,
+          int *status);
+int ffukfm(fitsfile *fptr, char *keyname, double *value, int decim, char *comm,
+          int *status);
+
 /*--------------------- modify keywords ---------------*/
 int ffmrec(fitsfile *fptr, int nkey, char *card, int *status);
 int ffmcrd(fitsfile *fptr, char *keyname, char *card, int *status);
@@ -385,6 +435,14 @@ int ffmkyg(fitsfile *fptr, char *keyname, double value, int decim, char *comm,
           int *status);
 int ffmkyd(fitsfile *fptr, char *keyname, double value, int decim, char *comm,
           int *status);
+int ffmkyc(fitsfile *fptr, char *keyname, float *value, int decim, char *comm,
+          int *status);
+int ffmkym(fitsfile *fptr, char *keyname, double *value, int decim, char *comm,
+          int *status);
+int ffmkfc(fitsfile *fptr, char *keyname, float *value, int decim, char *comm,
+          int *status);
+int ffmkfm(fitsfile *fptr, char *keyname, double *value, int decim, char *comm,
+          int *status);
  
 /*--------------------- insert keywords ---------------*/
 int ffirec(fitsfile *fptr, int nkey, char *card, int *status);
@@ -400,14 +458,22 @@ int ffikyg(fitsfile *fptr, char *keyname, double value, int decim, char *comm,
           int *status);
 int ffikyd(fitsfile *fptr, char *keyname, double value, int decim, char *comm,
           int *status);
- 
+int ffikyc(fitsfile *fptr, char *keyname, float *value, int decim, char *comm,
+          int *status);
+int ffikym(fitsfile *fptr, char *keyname, double *value, int decim, char *comm,
+          int *status);
+int ffikfc(fitsfile *fptr, char *keyname, float *value, int decim, char *comm,
+          int *status);
+int ffikfm(fitsfile *fptr, char *keyname, double *value, int decim, char *comm,
+          int *status);
+
 /*--------------------- delete keywords ---------------*/
 int ffdkey(fitsfile *fptr, char *keyname, int *status);
 int ffdrec(fitsfile *fptr, int keypos, int *status);
  
 /*--------------------- get HDU information -------------*/
 int ffghdn(fitsfile *fptr, int *chdunum);
-int ffmhdt(fitsfile *fptr, int *exttype, int *status);
+int ffghdt(fitsfile *fptr, int *exttype, int *status);
 int ffghad(fitsfile *fptr, long *chduaddr, long *nextaddr);
  
 /*--------------------- HDU operations -------------*/
@@ -791,11 +857,36 @@ int ffpgpd(fitsfile *fptr, long group, long firstelem,
 int ffppru(fitsfile *fptr, long group, long firstelem,
            long nelem, int *status);
  
+/*--------------------- iterator functions -------------*/
+int fits_iter_set_by_name(iteratorCol *col, fitsfile *fptr, char *colname,
+          int datatype,  int iotype);
+int fits_iter_set_by_num(iteratorCol *col, fitsfile *fptr, int colnum,
+          int datatype,  int iotype);
+int fits_iter_set_file(iteratorCol *col, fitsfile *fptr);
+int fits_iter_set_colname(iteratorCol *col, char *colname);
+int fits_iter_set_colnum(iteratorCol *col, int colnum);
+int fits_iter_set_datatype(iteratorCol *col, int datatype);
+int fits_iter_set_iotype(iteratorCol *col, int iotype);
+
+fitsfile * fits_iter_get_file(iteratorCol *col);
+char * fits_iter_get_colname(iteratorCol *col);
+int fits_iter_get_colnum(iteratorCol *col);
+int fits_iter_get_datatype(iteratorCol *col);
+int fits_iter_get_iotype(iteratorCol *col);
+void * fits_iter_get_array(iteratorCol *col);
+long fits_iter_get_tlmin(iteratorCol *col);
+long fits_iter_get_tlmax(iteratorCol *col);
+long fits_iter_get_repeat(iteratorCol *col);
+char * fits_iter_get_tunit(iteratorCol *col);
+char * fits_iter_get_tdisp(iteratorCol *col);
+
+int ffiter(int n_cols,  iteratorCol *cols, long offset, long n_per_loop,
+           int (*work_fn)( long total_n, long offset, long first_n,
+             long n_values, int ncols, iteratorCol *cols, void *userPointer),
+           void *userStruct, int *status);
+
+
 /*--------------------- write column elements -------------*/
-int ffiter(fitsfile *fptr, int n_in_cols,    int *in_colnum, 
-           int n_inout_cols, int *inout_colnum, int n_out_cols,
-           int *out_colnum, int work_fn( fitsfile *fptr, long fstrow,
-           long nrows, void **col_ptrs), int *status);
 int ffpcl(fitsfile *fptr, int datatype, int colnum, long firstrow,
           long firstelem, long nelem, void *array, int *status);
 int ffpcls(fitsfile *fptr, int colnum, long firstrow, long firstelem,

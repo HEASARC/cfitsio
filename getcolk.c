@@ -590,7 +590,7 @@ int ffgclk( fitsfile *fptr,   /* I - FITS file pointer                       */
   and will be scaled by the FITS TSCALn and TZEROn values if necessary.
 */
 {
-    double scale, zero, dblvalue, power = 1.;
+    double scale, zero, dblvalue, power;
     int tcode, maxelem, hdutype, xcode, decimals;
     long twidth, incre, repeat, rowlen, rownum, elemnum, remain, next, ntodo;
     long ii, rowincre, tnull, xwidth;
@@ -623,6 +623,7 @@ int ffgclk( fitsfile *fptr,   /* I - FITS file pointer                       */
     */
 
     buffer = cbuff;
+    power = 1.;
 
     *anynul = 0;
     if (nultyp == 2)

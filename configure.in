@@ -56,7 +56,7 @@ case $system in
 	;;
     HP-UX-*)
 	ARCH="hp"
-	CFLAGS="$CFLAGS -Dextname -Dsolaris" 
+	CFLAGS="$CFLAGS -Dappendus -DPG_PPU" 
 	LIBPRE="-Wl,"
 	;;
     SunOS-5*)

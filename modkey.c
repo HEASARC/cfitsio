@@ -186,6 +186,94 @@ int ffukyd(fitsfile *fptr,    /* I - FITS file pointer  */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffukfc(fitsfile *fptr,    /* I - FITS file pointer  */
+           char *keyname,     /* I - keyword name       */
+           float *value,      /* I - keyword value      */
+           int decim,         /* I - no of decimals     */         
+           char *comm,        /* I - keyword comment    */
+           int *status)       /* IO - error status      */
+{
+    int tstatus;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    tstatus = *status;
+
+    if (ffmkfc(fptr, keyname, value, decim, comm, status) == KEY_NO_EXIST)
+    {
+        *status = tstatus;
+        ffpkfc(fptr, keyname, value, decim, comm, status);
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffukyc(fitsfile *fptr,    /* I - FITS file pointer  */
+           char *keyname,     /* I - keyword name       */
+           float *value,      /* I - keyword value      */
+           int decim,         /* I - no of decimals     */
+           char *comm,        /* I - keyword comment    */
+           int *status)       /* IO - error status      */
+{
+    int tstatus;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    tstatus = *status;
+
+    if (ffmkyc(fptr, keyname, value, decim, comm, status) == KEY_NO_EXIST)
+    {
+        *status = tstatus;
+        ffpkyc(fptr, keyname, value, decim, comm, status);
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffukfm(fitsfile *fptr,    /* I - FITS file pointer  */
+           char *keyname,     /* I - keyword name       */
+           double *value,     /* I - keyword value      */
+           int decim,         /* I - no of decimals     */
+           char *comm,        /* I - keyword comment    */
+           int *status)       /* IO - error status      */
+{
+    int tstatus;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    tstatus = *status;
+
+    if (ffmkfm(fptr, keyname, value, decim, comm, status) == KEY_NO_EXIST)
+    {
+        *status = tstatus;
+        ffpkfm(fptr, keyname, value, decim, comm, status);
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffukym(fitsfile *fptr,    /* I - FITS file pointer  */
+           char *keyname,     /* I - keyword name       */
+           double *value,     /* I - keyword value      */
+           int decim,         /* I - no of decimals     */
+           char *comm,        /* I - keyword comment    */
+           int *status)       /* IO - error status      */
+{
+    int tstatus;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    tstatus = *status;
+
+    if (ffmkym(fptr, keyname, value, decim, comm, status) == KEY_NO_EXIST)
+    {
+        *status = tstatus;
+        ffpkym(fptr, keyname, value, decim, comm, status);
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffucrd(fitsfile *fptr,    /* I - FITS file pointer  */
            char *keyname,     /* I - keyword name       */
            char *card,        /* I - card string value  */
@@ -596,6 +684,146 @@ int ffmkyd(fitsfile *fptr,    /* I - FITS file pointer  */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffmkfc(fitsfile *fptr,    /* I - FITS file pointer  */
+           char *keyname,     /* I - keyword name       */
+           float *value,      /* I - keyword value      */
+           int decim,         /* I - no of decimals     */
+           char *comm,        /* I - keyword comment    */
+           int *status)       /* IO - error status      */
+{
+    char valstring[FLEN_VALUE], tmpstring[FLEN_VALUE];
+    char oldcomm[FLEN_COMMENT];
+    char card[FLEN_CARD];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (ffgkey(fptr, keyname, valstring, oldcomm, status) > 0)
+        return(*status);                               /* get old comment */
+
+    strcpy(valstring, "(" );
+    ffr2f(value[0], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ", ");
+    ffr2f(value[1], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ")");
+
+    if (comm[0] == '&')  /* preserve the current comment string */
+        ffmkky(keyname, valstring, oldcomm, card);
+    else
+        ffmkky(keyname, valstring, comm, card);
+
+    ffmkey(fptr, card, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffmkyc(fitsfile *fptr,    /* I - FITS file pointer  */
+           char *keyname,     /* I - keyword name       */
+           float *value,      /* I - keyword value      */
+           int decim,         /* I - no of decimals     */
+           char *comm,        /* I - keyword comment    */
+           int *status)       /* IO - error status      */
+{
+    char valstring[FLEN_VALUE], tmpstring[FLEN_VALUE];
+    char oldcomm[FLEN_COMMENT];
+    char card[FLEN_CARD];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (ffgkey(fptr, keyname, valstring, oldcomm, status) > 0)
+        return(*status);                               /* get old comment */
+
+    strcpy(valstring, "(" );
+    ffr2e(value[0], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ", ");
+    ffr2e(value[1], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ")");
+
+    if (comm[0] == '&')  /* preserve the current comment string */
+        ffmkky(keyname, valstring, oldcomm, card);
+    else
+        ffmkky(keyname, valstring, comm, card);
+
+    ffmkey(fptr, card, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffmkfm(fitsfile *fptr,    /* I - FITS file pointer  */
+           char *keyname,     /* I - keyword name       */
+           double *value,     /* I - keyword value      */
+           int decim,         /* I - no of decimals     */
+           char *comm,        /* I - keyword comment    */
+           int *status)       /* IO - error status      */
+{
+    char valstring[FLEN_VALUE], tmpstring[FLEN_VALUE];
+    char oldcomm[FLEN_COMMENT];
+    char card[FLEN_CARD];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (ffgkey(fptr, keyname, valstring, oldcomm, status) > 0)
+        return(*status);                               /* get old comment */
+
+    strcpy(valstring, "(" );
+    ffd2f(value[0], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ", ");
+    ffd2f(value[1], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ")");
+
+    if (comm[0] == '&')  /* preserve the current comment string */
+        ffmkky(keyname, valstring, oldcomm, card);
+    else
+        ffmkky(keyname, valstring, comm, card);
+
+    ffmkey(fptr, card, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffmkym(fitsfile *fptr,    /* I - FITS file pointer  */
+           char *keyname,     /* I - keyword name       */
+           double *value,     /* I - keyword value      */
+           int decim,         /* I - no of decimals     */
+           char *comm,        /* I - keyword comment    */
+           int *status)       /* IO - error status      */
+{
+    char valstring[FLEN_VALUE], tmpstring[FLEN_VALUE];
+    char oldcomm[FLEN_COMMENT];
+    char card[FLEN_CARD];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (ffgkey(fptr, keyname, valstring, oldcomm, status) > 0)
+        return(*status);                               /* get old comment */
+
+    strcpy(valstring, "(" );
+    ffd2e(value[0], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ", ");
+    ffd2e(value[1], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ")");
+
+    if (comm[0] == '&')  /* preserve the current comment string */
+        ffmkky(keyname, valstring, oldcomm, card);
+    else
+        ffmkky(keyname, valstring, comm, card);
+
+    ffmkey(fptr, card, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffikyu(fitsfile *fptr,    /* I - FITS file pointer  */
            char *keyname,     /* I - keyword name       */
            char *comm,        /* I - keyword comment    */
@@ -749,6 +977,115 @@ int ffikyd(fitsfile *fptr,    /* I - FITS file pointer  */
         return(*status);
 
     ffd2e(value, decim, valstring, status);   /* convert to formatted string */
+    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffikey(fptr, card, status);  /* write the keyword*/
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffikfc(fitsfile *fptr,    /* I - FITS file pointer  */
+           char *keyname,     /* I - keyword name       */
+           float *value,      /* I - keyword value      */
+           int decim,         /* I - no of decimals     */
+           char *comm,        /* I - keyword comment    */ 
+           int *status)       /* IO - error status      */
+{
+    char valstring[FLEN_VALUE], tmpstring[FLEN_VALUE];
+    char card[FLEN_CARD];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    strcpy(valstring, "(" );
+    ffr2f(value[0], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ", ");
+    ffr2f(value[1], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ")");
+
+    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffikey(fptr, card, status);  /* write the keyword*/
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffikyc(fitsfile *fptr,    /* I - FITS file pointer  */
+           char *keyname,     /* I - keyword name       */
+           float *value,      /* I - keyword value      */
+           int decim,         /* I - no of decimals     */
+           char *comm,        /* I - keyword comment    */ 
+           int *status)       /* IO - error status      */
+{
+    char valstring[FLEN_VALUE], tmpstring[FLEN_VALUE];
+    char card[FLEN_CARD];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    strcpy(valstring, "(" );
+    ffr2e(value[0], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ", ");
+    ffr2e(value[1], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ")");
+
+    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffikey(fptr, card, status);  /* write the keyword*/
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffikfm(fitsfile *fptr,    /* I - FITS file pointer  */
+           char *keyname,     /* I - keyword name       */
+           double *value,     /* I - keyword value      */
+           int decim,         /* I - no of decimals     */
+           char *comm,        /* I - keyword comment    */ 
+           int *status)       /* IO - error status      */
+{
+    char valstring[FLEN_VALUE], tmpstring[FLEN_VALUE];
+    char card[FLEN_CARD];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+
+    strcpy(valstring, "(" );
+    ffd2f(value[0], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ", ");
+    ffd2f(value[1], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ")");
+
+    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffikey(fptr, card, status);  /* write the keyword*/
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffikym(fitsfile *fptr,    /* I - FITS file pointer  */
+           char *keyname,     /* I - keyword name       */
+           double *value,     /* I - keyword value      */
+           int decim,         /* I - no of decimals     */
+           char *comm,        /* I - keyword comment    */ 
+           int *status)       /* IO - error status      */
+{
+    char valstring[FLEN_VALUE], tmpstring[FLEN_VALUE];
+    char card[FLEN_CARD];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    strcpy(valstring, "(" );
+    ffd2e(value[0], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ", ");
+    ffd2e(value[1], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ")");
+
     ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
     ffikey(fptr, card, status);  /* write the keyword*/
 

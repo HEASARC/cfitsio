@@ -17,6 +17,7 @@
 #define fits_write_errmsg   ffpmsg
 #define fits_read_errmsg    ffgmsg
 #define fits_clear_errmsg   ffcmsg
+#define fits_report_error   ffrprt
 #define fits_compare_str    ffcmps
 #define fits_test_keyword   fftkey
 #define fits_test_record    fftrec
@@ -46,6 +47,10 @@
 #define fits_write_key_flt      ffpkye
 #define fits_write_key_fixdbl   ffpkyg
 #define fits_write_key_dbl      ffpkyd
+#define fits_write_key_fixcmp   ffpkfc
+#define fits_write_key_cmp      ffpkyc
+#define fits_write_key_fixdblcmp ffpkfm
+#define fits_write_key_dblcmp   ffpkym
 #define fits_write_key_triple   ffpkyt
 #define fits_write_tdim         ffptdm
 #define fits_write_keys_str     ffpkns
@@ -60,6 +65,7 @@
 #define fits_write_grphdr       ffphpr
 #define fits_write_atblhdr      ffphtb
 #define fits_write_btblhdr      ffphbn
+#define fits_write_key_template ffpktp
 
 #define fits_get_hdrspace      ffghsp
 #define fits_get_hdrpos        ffghps
@@ -78,6 +84,8 @@
 #define fits_read_key_lng      ffgkyj
 #define fits_read_key_flt      ffgkye
 #define fits_read_key_dbl      ffgkyd
+#define fits_read_key_cmp      ffgkyc
+#define fits_read_key_dblcmp   ffgkym
 #define fits_read_key_triple   ffgkyt
 #define fits_read_key_longstr  ffgkls
 #define fits_read_tdim         ffgtdm
@@ -99,6 +107,10 @@
 #define fits_update_key_flt    ffukye
 #define fits_update_key_fixdbl ffukyg
 #define fits_update_key_dbl    ffukyd
+#define fits_update_key_fixcmp ffukfc
+#define fits_update_key_cmp    ffukyc
+#define fits_update_key_fixdblcmp ffukfm
+#define fits_update_key_dblcmp ffukym
 
 #define fits_modify_record     ffmrec
 #define fits_modify_card       ffmcrd
@@ -112,6 +124,10 @@
 #define fits_modify_key_flt    ffmkye
 #define fits_modify_key_fixdbl ffmkyg
 #define fits_modify_key_dbl    ffmkyd
+#define fits_modify_key_fixcmp ffmkfc
+#define fits_modify_key_cmp    ffmkyc
+#define fits_modify_key_fixdblcmp ffmkfm
+#define fits_modify_key_dblcmp ffmkym
 
 #define fits_insert_record     ffirec
 #define fits_insert_key_null   ffikyu
@@ -122,6 +138,10 @@
 #define fits_insert_key_flt    ffikye
 #define fits_insert_key_fixdbl ffikyg
 #define fits_insert_key_dbl    ffikyd
+#define fits_insert_key_fixcmp ffikfc
+#define fits_insert_key_cmp    ffikyc
+#define fits_insert_key_fixdblcmp ffikfm
+#define fits_insert_key_dblcmp ffikym
 
 #define fits_delete_key     ffdkey
 #define fits_delete_record  ffdrec
@@ -167,7 +187,8 @@
 #define fits_get_coltype    ffgtcl
 #define fits_get_acolparms  ffgacl
 #define fits_get_bcolparms  ffgbcl
-#define fits_iterate_rows   ffiter
+
+#define fits_iterate_data   ffiter
 
 #define fits_read_grppar_byt  ffggpb
 #define fits_read_grppar_usht  ffggpui

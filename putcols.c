@@ -208,9 +208,6 @@ int ffpcns( fitsfile *fptr,  /* I - FITS file pointer                       */
         if ( ffrdef(fptr, status) > 0)               /* rescan header */
             return(*status);
 
-    colptr  = fptr->tableptr;   /* point to first column */
-    colptr += (colnum - 1);     /* offset to correct column structure */
-
     /* get the datatype and vector repeat length of the column */
     ffgtcl(fptr, colnum, &typecode, &repeat, &width, status);
 

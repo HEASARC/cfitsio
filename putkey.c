@@ -97,6 +97,69 @@ int ffcrtb(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     return(*status);
 }
+/*-------------------------------------------------------------------------*/
+int ffpktp(fitsfile *fptr,      /* I - FITS file pointer       */
+           const char *filename, /* I - name of template file   */
+           int *status)         /* IO - error status           */
+/*
+  read keywords from template file and append to the FITS file
+*/
+{
+    FILE *diskfile;
+    char card[FLEN_CARD], template[161];
+    char keyname[FLEN_KEYWORD], newname[FLEN_KEYWORD];
+    int keytype;
+    size_t slen;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    diskfile = fopen(filename,"r"); 
+    if (!diskfile)          /* couldn't open file */
+    {
+            return(*status = FILE_NOT_OPENED); 
+    }
+
+    while (fgets(template, 160, diskfile) )  /* get next template line */
+    {
+      template[160] = '\0';      /* make sure string is terminated */
+      slen = strlen(template);   /* get string length */
+      template[slen - 1] = '\0';  /* over write the 'newline' char */
+
+      if (ffgthd(template, card, &keytype, status) > 0) /* parse template */
+         break;
+
+      strncpy(keyname, card, 8);
+      keyname[8] = '\0';
+
+      if (keytype == -2)            /* rename the card */
+      {
+         strncpy(newname, &card[40], 8);
+         newname[8] = '\0';
+
+         ffmnam(fptr, keyname, newname, status); 
+      }
+      else if (keytype == -1)      /* delete the card */
+      {
+         ffdkey(fptr, keyname, status);
+      }
+      else if (keytype == 0)       /* update the card */
+      {
+         ffucrd(fptr, keyname, card, status);
+      }
+      else if (keytype == 1)      /* append the card */
+      {
+         ffprec(fptr, card, status);
+      }
+      else    /* END card; stop here */
+      {
+         break; 
+      }
+    }
+
+    fclose(diskfile);   /* close the template file */
+    return(*status);
+}
 /*--------------------------------------------------------------------------*/
 int ffpky( fitsfile *fptr,     /* I - FITS file pointer        */
            int  datatype,      /* I - datatype of the value    */
@@ -166,7 +229,7 @@ int ffprec(fitsfile *fptr,     /* I - FITS file pointer        */
   write a keyword record (80 bytes long) to the end of the header
 */
 {
-    char tcard[81];
+    char tcard[FLEN_CARD];
     size_t len, ii;
     long nblocks;
 
@@ -500,6 +563,130 @@ int ffpkyd( fitsfile *fptr,      /* I - FITS file pointer                   */
         return(*status);
 
     ffd2e(value, decim, valstring, status);  /* convert to formatted string */
+    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffprec(fptr, card, status);  /* write the keyword*/
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffpkyc( fitsfile *fptr,      /* I - FITS file pointer                   */
+            char  *keyname,      /* I - name of keyword to write            */
+            float *value,        /* I - keyword value (real, imaginary)     */
+            int   decim,         /* I - number of decimal places to display */
+            char  *comm,         /* I - keyword comment                     */
+            int   *status)       /* IO - error status                       */
+/*
+  Write (put) the keyword, value and comment into the FITS header.
+  Writes an complex float keyword value. Format = (realvalue, imagvalue)
+*/
+{
+    char valstring[FLEN_VALUE], tmpstring[FLEN_VALUE];
+    char card[FLEN_CARD];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    strcpy(valstring, "(" );
+    ffr2e(value[0], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ", ");
+    ffr2e(value[1], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ")");
+
+    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffprec(fptr, card, status);  /* write the keyword*/
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffpkym( fitsfile *fptr,      /* I - FITS file pointer                   */
+            char  *keyname,      /* I - name of keyword to write            */
+            double *value,       /* I - keyword value (real, imaginary)     */
+            int   decim,         /* I - number of decimal places to display */
+            char  *comm,         /* I - keyword comment                     */
+            int   *status)       /* IO - error status                       */
+/*
+  Write (put) the keyword, value and comment into the FITS header.
+  Writes an complex double keyword value. Format = (realvalue, imagvalue)
+*/
+{
+    char valstring[FLEN_VALUE], tmpstring[FLEN_VALUE];
+    char card[FLEN_CARD];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    strcpy(valstring, "(" );
+    ffd2e(value[0], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ", ");
+    ffd2e(value[1], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ")");
+
+    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffprec(fptr, card, status);  /* write the keyword*/
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffpkfc( fitsfile *fptr,      /* I - FITS file pointer                   */
+            char  *keyname,      /* I - name of keyword to write            */
+            float *value,        /* I - keyword value (real, imaginary)     */
+            int   decim,         /* I - number of decimal places to display */
+            char  *comm,         /* I - keyword comment                     */
+            int   *status)       /* IO - error status                       */
+/*
+  Write (put) the keyword, value and comment into the FITS header.
+  Writes an complex float keyword value. Format = (realvalue, imagvalue)
+*/
+{
+    char valstring[FLEN_VALUE], tmpstring[FLEN_VALUE];
+    char card[FLEN_CARD];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    strcpy(valstring, "(" );
+    ffr2f(value[0], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ", ");
+    ffr2f(value[1], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ")");
+
+    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffprec(fptr, card, status);  /* write the keyword*/
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffpkfm( fitsfile *fptr,      /* I - FITS file pointer                   */
+            char  *keyname,      /* I - name of keyword to write            */
+            double *value,       /* I - keyword value (real, imaginary)     */
+            int   decim,         /* I - number of decimal places to display */
+            char  *comm,         /* I - keyword comment                     */
+            int   *status)       /* IO - error status                       */
+/*
+  Write (put) the keyword, value and comment into the FITS header.
+  Writes an complex double keyword value. Format = (realvalue, imagvalue)
+*/
+{
+    char valstring[FLEN_VALUE], tmpstring[FLEN_VALUE];
+    char card[FLEN_CARD];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    strcpy(valstring, "(" );
+    ffd2f(value[0], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ", ");
+    ffd2f(value[1], decim, tmpstring, status); /* convert to string */
+    strcat(valstring, tmpstring);
+    strcat(valstring, ")");
+
     ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
     ffprec(fptr, card, status);  /* write the keyword*/
 

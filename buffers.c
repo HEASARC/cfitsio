@@ -765,21 +765,22 @@ int ffbfwt(int nbuff,             /* I - which buffer to write          */
 }
 /*--------------------------------------------------------------------------*/
 int ffgrsz( fitsfile *fptr, /* I - FITS file pionter                        */
-            long *nrows,    /* O - optimal number of rows to access         */
+            long *ndata,    /* O - optimal amount of data to access         */
             int  *status)   /* IO - error status                            */
 /*
-  Returns an optimal value for the number of rows that should be 
-  read or written at one time in a binary table for maximum efficiency.
-  Accessing more rows than this may cause excessive flushing and 
-  rereading of buffers to/from disk.
+  Returns an optimal value for the number of rows in a binary table
+  or the number of pixels in an image that should be read or written
+  at one time for maximum efficiency. Accessing more data than this
+  may cause excessive flushing and rereading of buffers to/from disk.
 */
 {
-    int ii, jj, unique, nfiles;
+    int ii, jj, unique, nfiles, typecode, bytesperpixel;
+    long repeat, width;
 
     /* There are NIOBUF internal buffers available each IOBUFLEN bytes long. */
 
     if (fptr->datastart == DATA_UNDEFINED)
-      if ( ffrdef(fptr, status) > 0)   /* rescan header to get col struct */
+      if ( ffrdef(fptr, status) > 0)   /* rescan header to get hdu struct */
            return(*status);
 
     /* determine how many different FITS files are currently open */
@@ -805,8 +806,20 @@ int ffgrsz( fitsfile *fptr, /* I - FITS file pionter                        */
     }
 
     /* one buffer (at least) is always allocated to each open file */
-    *nrows = ((NIOBUF - nfiles) * IOBUFLEN) / maxvalue(1, fptr->rowlength);
-    *nrows = maxvalue(1, *nrows); 
+
+    if (fptr->hdutype == IMAGE_HDU ) /* calc pixels per buffer size */
+    {
+      /* image pixels are in column 2 of the 'table' */
+      ffgtcl(fptr, 2, &typecode, &repeat, &width, status);
+      bytesperpixel = typecode / 10;
+      *ndata = ((NIOBUF - nfiles) * IOBUFLEN) / bytesperpixel;
+    }
+    else   /* calc number of rows that fit in buffers */
+    {
+      *ndata = ((NIOBUF - nfiles) * IOBUFLEN) / maxvalue(1, fptr->rowlength);
+      *ndata = maxvalue(1, *ndata); 
+    }
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
