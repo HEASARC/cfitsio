@@ -454,11 +454,11 @@ int ffcalc( fitsfile *infptr,   /* I - Input FITS file                      */
 /*--------------------------------------------------------------------------*/
 {
    parseInfo Info;
-   int naxis, constant;
-   long nelem, naxes[MAXDIMS];
-   int col_cnt, colNo;
+   int naxis, constant, typecode, newNullKwd=0;
+   long nelem, naxes[MAXDIMS], repeat, width;
+   int col_cnt, colNo, dec;
    Node *result;
-   char card[81];
+   char card[81], tform[16], nullKwd[9];
    int hdutype;
 
    if( *status ) return( *status );
@@ -517,13 +517,13 @@ int ffcalc( fitsfile *infptr,   /* I - Input FITS file                      */
 	 if( parInfo==NULL || *parInfo=='\0' ) {
 	    /*  Figure out best default column type  */
 	    if( hdutype==BINARY_TBL ) {
-	       sprintf(card,"%ld",nelem);
+	       sprintf(tform,"%ld",nelem);
 	       switch( Info.datatype ) {
-	       case TLOGICAL:  strcat(card,"L");  break;
-	       case TLONG:     strcat(card,"J");  break;
-	       case TDOUBLE:   strcat(card,"D");  break;
-	       case TSTRING:   strcat(card,"A");  break;
-	       case TBIT:      strcat(card,"X");  break;
+	       case TLOGICAL:  strcat(tform,"L");  break;
+	       case TLONG:     strcat(tform,"J");  break;
+	       case TDOUBLE:   strcat(tform,"D");  break;
+	       case TSTRING:   strcat(tform,"A");  break;
+	       case TBIT:      strcat(tform,"X");  break;
 	       }
 	    } else {
 	       switch( Info.datatype ) {
@@ -532,22 +532,51 @@ int ffcalc( fitsfile *infptr,   /* I - Input FITS file                      */
 		  ffpmsg("Cannot create LOGICAL column in ASCII table");
 		  return( *status = NOT_BTABLE );
 		  break;
-	       case TLONG:     strcpy(card,"I11");     break;
-	       case TDOUBLE:   strcpy(card,"D23.15");  break;
+	       case TLONG:     strcpy(tform,"I11");     break;
+	       case TDOUBLE:   strcpy(tform,"D23.15");  break;
 	       case TSTRING:   
-	       case TBIT:      sprintf(card,"A%ld",nelem);  break;
+	       case TBIT:      sprintf(tform,"A%ld",nelem);  break;
 	       }
 	    }
-	    parInfo = card;
+	    parInfo = tform;
 	 } else if( !(isdigit((int) *parInfo)) && hdutype==BINARY_TBL ) {
 	    if( Info.datatype==TBIT && *parInfo=='B' )
 	       nelem = (nelem+7)/8;
-	    sprintf(card,"%ld%s",nelem,parInfo);
-	    parInfo = card;
+	    sprintf(tform,"%ld%s",nelem,parInfo);
+	    parInfo = tform;
 	 }
 	 fficol( outfptr, colNo, parName, parInfo, status );
 	 if( naxis>1 )
 	    ffptdm( outfptr, colNo, naxis, naxes, status );
+
+	 /*  Setup TNULLn keyword in case NULLs are encountered  */
+
+	 ffkeyn("TNULL", colNo, nullKwd, status);
+	 if( ffgcrd( outfptr, nullKwd, card, status )==KEY_NO_EXIST ) {
+	    *status = 0;
+	    if( hdutype==BINARY_TBL ) {
+	       long nullVal=0;
+	       fits_binary_tform( parInfo, &typecode, &repeat, &width, status );
+	       if( typecode==TBYTE )
+		  nullVal = UCHAR_MAX;
+	       else if( typecode==TSHORT )
+		  nullVal = SHRT_MIN;
+	       else if( typecode==TINT )
+		  nullVal = INT_MIN;
+	       else if( typecode==TLONG )
+		  nullVal = LONG_MIN;
+	       if( nullVal ) {
+		  ffpkyj( outfptr, nullKwd, nullVal, "Null value", status );
+		  fits_set_btblnull( outfptr, colNo, nullVal, status );
+		  newNullKwd = 1;
+	       }
+	    } else if( hdutype==ASCII_TBL ) {
+	       ffpkys( outfptr, nullKwd, "NULL", "Null value string", status );
+	       fits_set_atblnull( outfptr, colNo, "NULL", status );
+	       newNullKwd = 1;
+	    }
+	 }
+
       }
 
    } else if( *status ) {
@@ -578,6 +607,11 @@ int ffcalc( fitsfile *infptr,   /* I - Input FITS file                      */
 
       ffiter( gParse.nCols, gParse.colData, 0, 0,
 	      parse_data, (void*)&Info, status );
+
+      if( newNullKwd && !Info.anyNull ) {
+	 ffdkey( outfptr, nullKwd, status );
+      }
+
    } else {
 
       /* Put constant result into keyword */
@@ -824,6 +858,14 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 	  jnull = 0L;
 	  ffgknj( colData[nCols-1].fptr, "TNULL", colData[nCols-1].colnum,
 		  1, &jnull, (int*)&jj, &status );
+	  if( status==BAD_INTKEY ) {
+	     /*  Probably ASCII table with text TNULL keyword  */
+	     switch( userInfo->datatype ) {
+	     case TSHORT:  jnull = SHRT_MIN;      break;
+	     case TINT:    jnull = INT_MIN;       break;
+	     case TLONG:   jnull = LONG_MIN;      break;
+	     }
+	  }
 
        } else {
 
@@ -1114,15 +1156,22 @@ int ffcvtn( int   inputType,  /* I - Data type of input array               */
          break;
       case TLONG:
          for (i = 0; i < ntodo; i++) {
-            if( ((long*)input)[i] < 0 ) {
-               *status = OVERFLOW_ERR;
-               ((unsigned char*)output)[i] = 0;
-            } else if( ((long*)input)[i] > UCHAR_MAX ) {
-               *status = OVERFLOW_ERR;
-               ((unsigned char*)output)[i] = UCHAR_MAX;
-            } else
-               ((unsigned char*)output)[i] = (unsigned char) ((long*)input)[i];
+	    if( undef[i] ) {
+	       ((unsigned char*)output)[i] = *(unsigned char*)nulval;
+	       *anynull = 1;
+	    } else {
+	       if( ((long*)input)[i] < 0 ) {
+		  *status = OVERFLOW_ERR;
+		  ((unsigned char*)output)[i] = 0;
+	       } else if( ((long*)input)[i] > UCHAR_MAX ) {
+		  *status = OVERFLOW_ERR;
+		  ((unsigned char*)output)[i] = UCHAR_MAX;
+	       } else
+		  ((unsigned char*)output)[i] = 
+		     (unsigned char) ((long*)input)[i];
+	    }
          }
+	 return( *status );
          break;
       case TFLOAT:
          fffr4i1((float*)input,ntodo,1.,0.,0,0,NULL,NULL,
@@ -1157,15 +1206,21 @@ int ffcvtn( int   inputType,  /* I - Data type of input array               */
          break;
       case TLONG:
          for (i = 0; i < ntodo; i++) {
-            if( ((long*)input)[i] < SHRT_MIN ) {
-               *status = OVERFLOW_ERR;
-               ((short*)output)[i] = SHRT_MIN;
-            } else if ( ((long*)input)[i] > SHRT_MAX ) {
-               *status = OVERFLOW_ERR;
-               ((short*)output)[i] = SHRT_MAX;
-            } else
-               ((short*)output)[i] = (short) ((long*)input)[i];
+	    if( undef[i] ) {
+	       ((short*)output)[i] = *(short*)nulval;
+	       *anynull = 1;
+	    } else {
+	       if( ((long*)input)[i] < SHRT_MIN ) {
+		  *status = OVERFLOW_ERR;
+		  ((short*)output)[i] = SHRT_MIN;
+	       } else if ( ((long*)input)[i] > SHRT_MAX ) {
+		  *status = OVERFLOW_ERR;
+		  ((short*)output)[i] = SHRT_MAX;
+	       } else
+		  ((short*)output)[i] = (short) ((long*)input)[i];
+	    }
          }
+	 return( *status );
          break;
       case TFLOAT:
          fffr4i2((float*)input,ntodo,1.,0.,0,0,NULL,NULL,
