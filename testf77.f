@@ -560,7 +560,7 @@ C        ############################
       gcount =  -99
       extend = .false.
       write(*,'(1x,A)') 'Read back keywords: '
-      call ftghpr(iunit, 99, simple, bitpix, naxis, naxes, pcount,
+      call ftghpr(iunit, 3, simple, bitpix, naxis, naxes, pcount,
      &       gcount, extend, status)
       write(*,'(1x,A,L4,4I4)')'simple, bitpix, naxis, naxes = ',
      &       simple, bitpix, naxis, naxes(1), naxes(2)
