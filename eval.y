@@ -42,6 +42,7 @@
 /*                              inspired by the work of Uwe Lammers,    */
 /*                              resulting in a speed increase of        */
 /*                              10-100 times.                           */
+/*   Peter D Wilson   Jul 1998  gtifilter(a,b,c,d) function added       */
 /*                                                                      */
 /************************************************************************/
 
@@ -1825,7 +1826,16 @@ static void Do_BinOp_log( Node *this )
 		  break;
 
 	       case AND:
-		  this->value.data.logptr[elem] = (val1 && val2);
+		  /*  This is more complicated than others to suppress UNDEFs */
+		  /*  in those cases where the other argument is DEF && FALSE */
+
+		  if( !null1 && !null2 ) {
+		     this->value.data.logptr[elem] = (val1 && val2);
+		  } else if( (null1 && !null2 && !val2)
+			     || ( !null1 && null2 && !val1 ) ) {
+		     this->value.data.logptr[elem] = 0;
+		     this->value.undef[elem] = 0;
+		  }
 		  break;
 
 	       case EQ:

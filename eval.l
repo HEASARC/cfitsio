@@ -42,6 +42,7 @@
 /*                              inspired by the work of Uwe Lammers,    */
 /*                              resulting in a speed increase of        */
 /*                              10-100 times.                           */
+/*   Peter D Wilson   Jul 1998  gtifilter(a,b,c,d) function added       */
 /*                                                                      */
 /************************************************************************/
 
