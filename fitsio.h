@@ -292,6 +292,7 @@ typedef struct  /* structure for the iterator function column information */
 #define PARSE_LRG_VECTOR  433  /* vector result too large to return in array */
 #define PARSE_NO_OUTPUT   434  /* data parser failed not sent an out column */
 #define PARSE_BAD_COL     435  /* bad data encounter while parsing column */
+#define PARSE_BAD_OUTPUT  436  /* Output file not of proper type          */
 
 #define ANGLE_TOO_BIG     501  /* celestial angle too large for projection */
 #define BAD_WCS_VAL       502  /* bad celestial coordinate or pixel value */

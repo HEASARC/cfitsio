@@ -397,6 +397,9 @@ void ffgerr(int status,     /* I - error status value */
     case 435:
        strcpy(errtext, "bad data in parsed column");
        break;
+    case 436:
+       strcpy(errtext, "output extension of wrong type");
+       break;
     case 501:
        strcpy(errtext, "WCS angle too large");
        break;

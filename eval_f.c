@@ -85,9 +85,9 @@ int fffrow( fitsfile *fptr,         /* I - Input FITS file                   */
       ffcprs();
       return( *status );
    }
-   if( Info.datatype<0 ) {
+   if( nelem<0 ) {
       constant = 1;
-      Info.datatype = -Info.datatype;
+      nelem = -nelem;
    } else
       constant = 0;
 
@@ -108,18 +108,6 @@ int fffrow( fitsfile *fptr,         /* I - Input FITS file                   */
       Info.nullPtr = NULL;
       Info.maxRows = nrows;
    
-      /*  Check whether there is at least 1 column referenced in   */
-      /*  expression.  If not, setup the first column as a dummy.  */
-
-      if( !gParse.nCols ) {
-	 if( ffallocatecol( 0, status ) ) {
-	    ffcprs();
-	    return( *status );
-	 }
-	 fits_iter_set_by_num( gParse.colData, fptr, 1, 0, InputCol );
-	 gParse.nCols++;
-      }
-
       if( ffiter( gParse.nCols, gParse.colData, firstrow-1, 0,
 		  parse_data, (void*)&Info, status ) == -1 )
 	 *status = 0;  /* -1 indicates exitted without error before end... OK */
@@ -156,13 +144,19 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
 /* Evaluate an expression on all rows of a table.  If the input and output  */
 /* files are not the same, copy the TRUE rows to the output file.  If the   */
 /* files are the same, delete the FALSE rows (preserve the TRUE rows).      */
+/* Can copy rows between extensions of the same file, *BUT* if output       */
+/* extension is before the input extension, the second extension *MUST* be  */
+/* opened using ffreopen, so that CFITSIO can handle changing file lengths. */
 /*--------------------------------------------------------------------------*/
 {
    parseInfo Info;
    int naxis, constant;
-   long nelem, naxes[MAXDIMS], nrows, rdlen, row, maxrows, nbuff;
-   long inloc, outloc, ntodo;
+   long nelem, naxes[MAXDIMS], rdlen, maxrows, nbuff, nGood;
+   long inloc, outloc, ntodo, freespace;
    char *buffer, result;
+   struct {
+      long rowLength, numRows, heapSize, heapStart, dataStart;
+   } inExt, outExt;
 
    if( *status ) return( *status );
 
@@ -171,9 +165,9 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
       ffcprs();
       return( *status );
    }
-   if( Info.datatype<0 ) {
+   if( nelem<0 ) {
       constant = 1;
-      Info.datatype = -Info.datatype;
+      nelem = -nelem;
    } else
       constant = 0;
 
@@ -187,92 +181,156 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
       return( *status = PARSE_BAD_TYPE );
    }
 
-   ffgkyj( infptr, "NAXIS1", &rdlen, NULL, status );
-   ffgkyj( infptr, "NAXIS2", &nrows, NULL, status );
+
+   /***********************************************************/
+   /*  Extract various table information from each extension  */
+   /***********************************************************/
+
+   if( infptr->HDUposition != (infptr->Fptr)->curhdu )
+      ffmahd( infptr, (infptr->HDUposition) + 1, NULL, status );
    if( *status ) {
       ffcprs();
       return( *status );
    }
+   inExt.rowLength = (infptr->Fptr)->rowlength;
+   inExt.numRows   = (infptr->Fptr)->numrows;
+   inExt.heapSize  = (infptr->Fptr)->heapsize;
 
-   Info.dataPtr = (char *)malloc( nrows*sizeof(char) );
+   if( outfptr->HDUposition != (outfptr->Fptr)->curhdu )
+      ffmahd( outfptr, (outfptr->HDUposition) + 1, NULL, status );
+   if( (outfptr->Fptr)->datastart < 0 )
+      ffrdef( outfptr, status );
+   if( *status ) {
+      ffcprs();
+      return( *status );
+   }
+   outExt.rowLength = (outfptr->Fptr)->rowlength;
+   outExt.numRows   = (outfptr->Fptr)->numrows;
+   if( !outExt.numRows )
+      (outfptr->Fptr)->heapsize = 0L;
+   outExt.heapSize  = (outfptr->Fptr)->heapsize;
+
+   if( inExt.rowLength != outExt.rowLength ) {
+      ffpmsg("Output table has different row length from input");
+      ffcprs();
+      return( *status = PARSE_BAD_OUTPUT );
+   }
+
+   /***********************************/
+   /*  Fill out Info data for parser  */
+   /***********************************/
+
+   Info.dataPtr = (char *)malloc( inExt.numRows * sizeof(char) );
    Info.nullPtr = NULL;
-   Info.maxRows = nrows;
+   Info.maxRows = inExt.numRows;
    
    if( constant ) { /*  Set all rows to the same value from constant result  */
 
       result = gParse.Nodes[gParse.nNodes-1].value.data.log;
-      for( ntodo = 0; ntodo<nrows; ntodo++ )
+      for( ntodo = 0; ntodo<inExt.numRows; ntodo++ )
 	 ((char*)Info.dataPtr)[ntodo] = result;
+      nGood = (result ? inExt.numRows : 0);
 
    } else {
 
-      /*  Check whether there is at least 1 column referenced in   */
-      /*  expression.  If not, setup the first column as a dummy.  */
-
-      if( !gParse.nCols ) {
-	 if( ffallocatecol( 0, status ) ) {
-	    ffcprs();
-	    return( *status );
-	 }
-	 fits_iter_set_by_num( gParse.colData, infptr, 1, 0, InputCol );
-	 gParse.nCols++;
-      }
-
       ffiter( gParse.nCols, gParse.colData, 0L, 0L,
 	      parse_data, (void*)&Info, status );
+
+      nGood = 0;
+      for( ntodo = 0; ntodo<inExt.numRows; ntodo++ )
+	 if( ((char*)Info.dataPtr)[ntodo] ) nGood++;
    }
 
    if( *status ) {
       /* Error... Do nothing */
    } else {
-      buffer  = (char *)malloc( 100000*sizeof(char) );
+      rdlen  = inExt.rowLength;
+      buffer = (char *)malloc( maxvalue(100000,rdlen) * sizeof(char) );
       if( buffer==NULL ) {
          ffcprs();
          return( *status=MEMORY_ALLOCATION );
       }
       maxrows = 100000L/rdlen;
       nbuff = 0;
-      row = 0;
-      if( infptr==outfptr )
-         while( ((char*)Info.dataPtr)[row] ) row++;
-      inloc  =  (infptr->Fptr)->datastart + row*rdlen;
-
-      if( (outfptr->Fptr)->datastart<0 )
-         /* rescan header if data pointer undefined */
-         ffrdef(outfptr, status);
-      outloc = (outfptr->Fptr)->datastart + row*rdlen;
+      inloc = 1;
+      if( infptr==outfptr ) { /* Skip initial good rows if input==output file */
+         while( ((char*)Info.dataPtr)[inloc-1] ) inloc++;
+	 outloc = inloc;
+      } else {
+	 outloc = outExt.numRows + 1;
+	 ffirow( outfptr, outExt.numRows, nGood, status );
+      }
 
       do {
-         if( ((char*)Info.dataPtr)[row] ) {
-            ffmbyt( infptr, inloc, REPORT_EOF,         status );
-            ffgbyt( infptr, rdlen, buffer+rdlen*nbuff, status );
+         if( ((char*)Info.dataPtr)[inloc-1] ) {
+            ffgtbb( infptr, inloc, 1L, rdlen, buffer+rdlen*nbuff, status );
             nbuff++;
             if( nbuff==maxrows ) {
-               ffmbyt( outfptr, outloc,      IGNORE_EOF, status );
-               ffpbyt( outfptr, rdlen*nbuff, buffer,     status );
-               outloc += nbuff*rdlen;
+               ffptbb( outfptr, outloc, 1L, rdlen*nbuff, buffer,  status );
+               outloc += nbuff;
                nbuff = 0;
             }
          }
-         row++;
-         inloc += rdlen;
-      } while( !*status && row<nrows );
+         inloc++;
+      } while( !*status && inloc<=inExt.numRows );
 
       if( nbuff ) {
-         ffmbyt( outfptr, outloc,      IGNORE_EOF, status );
-         ffpbyt( outfptr, rdlen*nbuff, buffer,     status );
-         outloc += nbuff*rdlen;
+	 ffptbb( outfptr, outloc, 1L, rdlen*nbuff, buffer,  status );
+         outloc += nbuff;
       }
 
-      row = (outloc - (outfptr->Fptr)->datastart)/rdlen;
       if( infptr==outfptr ) {
-         if( row<nrows ) ffdrow( infptr, row+1, nrows-row, status );
-      } else if( (infptr->Fptr)->heapsize ) { /* Copy heap, if it exists */
-         inloc = (infptr->Fptr)->datastart + (infptr->Fptr)->heapstart;
-         ntodo = (infptr->Fptr)->heapsize;
 
-         while ( ntodo ) {
-            rdlen = (ntodo<100000 ? ntodo : 100000);
+         if( outloc<=inExt.numRows )
+	    ffdrow( infptr, outloc, inExt.numRows-outloc+1, status );
+
+      } else if( inExt.heapSize && nGood ) {
+
+         /* Copy heap, if it exists and at least one row copied */
+
+         /********************************************************/
+         /*  Get location information from the output extension  */
+         /********************************************************/
+
+         if( outfptr->HDUposition != (outfptr->Fptr)->curhdu )
+            ffmahd( outfptr, (outfptr->HDUposition) + 1, NULL, status );
+         outExt.dataStart = (outfptr->Fptr)->datastart;
+         outExt.heapStart = (outfptr->Fptr)->heapstart;
+
+         /*************************************************/
+         /*  Insert more space into outfptr if necessary  */
+         /*************************************************/
+
+         rdlen     = outExt.heapStart + outExt.heapSize;
+         freespace = ( ( (rdlen + 2879) / 2880) * 2880) - rdlen;
+         ntodo     = inExt.heapSize;
+
+         if ( (freespace - ntodo) < 0) {       /* not enough existing space? */
+            ntodo = (ntodo - freespace + 2879) / 2880;  /* number of blocks  */
+            ffiblk(outfptr, ntodo, 1, status);          /* insert the blocks */
+         }
+         ffukyj( outfptr, "PCOUNT", inExt.heapSize+outExt.heapSize,
+                 NULL, status );
+
+         /*******************************************************/
+         /*  Get location information from the input extension  */
+         /*******************************************************/
+
+         if( infptr->HDUposition != (infptr->Fptr)->curhdu )
+            ffmahd( infptr, (infptr->HDUposition) + 1, NULL, status );
+         inExt.dataStart = (infptr->Fptr)->datastart;
+         inExt.heapStart = (infptr->Fptr)->heapstart;
+
+         /**********************************/
+         /*  Finally copy heap to outfptr  */
+         /**********************************/
+
+         ntodo  =  inExt.heapSize;
+         inloc  =  inExt.heapStart +  inExt.dataStart;
+         outloc = outExt.heapStart + outExt.dataStart + outExt.heapSize;
+
+         while ( ntodo && !*status ) {
+            rdlen = minvalue(ntodo,100000);
             ffmbyt( infptr,  inloc,  REPORT_EOF, status );
             ffgbyt( infptr,  rdlen,  buffer,     status );
             ffmbyt( outfptr, outloc, IGNORE_EOF, status );
@@ -281,10 +339,27 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
             outloc += rdlen;
             ntodo  -= rdlen;
          }
-      }
 
-      ffukyj( outfptr, "NAXIS2", row, "&", status );
-      (outfptr->Fptr)->numrows = row;
+         /***********************************************************/
+         /*  But must update DES if data is being appended to a     */
+         /*  pre-existing heap space.  Edit each new entry in file  */
+         /***********************************************************/
+
+         if( outExt.heapSize ) {
+            long repeat, offset, j;
+            int i;
+            for( i=1; i<=(outfptr->Fptr)->tfield; i++ ) {
+               if( (outfptr->Fptr)->tableptr[i-1].tdatatype<0 ) {
+                  for( j=outExt.numRows+1; j<=outExt.numRows+nGood; j++ ) {
+                     ffgdes( outfptr, i, j, &repeat, &offset, status );
+                     offset += outExt.heapSize;
+                     ffpdes( outfptr, i, j, repeat, offset, status );
+                  }
+               }
+            }
+         }
+
+      } /*  End of HEAP copy  */
 
       free(buffer);
    }
@@ -324,7 +399,7 @@ int ffcrow( fitsfile *fptr,      /* I - Input FITS file                      */
       ffcprs();
       return( *status );
    }
-   if( Info.datatype<0 ) Info.datatype = - Info.datatype;
+   if( nelem1<0 ) nelem1 = - nelem1;
 
    if( nelements<nelem1 ) {
       ffcprs();
@@ -340,18 +415,6 @@ int ffcrow( fitsfile *fptr,      /* I - Input FITS file                      */
    Info.nullPtr = nulval;
    Info.maxRows = nelements / nelem1;
    
-   /*  Check whether there is at least 1 column referenced in   */
-   /*  expression.  If not, setup the first column as a dummy.  */
-
-   if( !gParse.nCols ) {
-      if( ffallocatecol( 0, status ) ) {
-	 ffcprs();
-	 return( *status );
-      }
-      fits_iter_set_by_num( gParse.colData, fptr, 1, 0, InputCol );
-      gParse.nCols++;
-   }
-
    if( ffiter( gParse.nCols, gParse.colData, firstrow-1, 0,
                parse_data, (void*)&Info, status ) == -1 )
       *status=0;  /* -1 indicates exitted without error before end... OK */
@@ -399,9 +462,9 @@ int ffcalc( fitsfile *infptr,   /* I - Input FITS file                      */
       ffcprs();
       return( *status );
    }
-   if( Info.datatype<0 ) {
+   if( nelem<0 ) {
       constant = 1;
-      Info.datatype = -Info.datatype;
+      nelem = -nelem;
    } else
       constant = 0;
 
@@ -571,6 +634,7 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
 {
    Node *result;
    int  i,lexpr;
+   static iteratorCol dmyCol;
 
    if( *status ) return( *status );
 
@@ -617,6 +681,10 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
       ffpmsg("Blank expression");
       return( *status = PARSE_SYNTAX_ERR );
    }
+   if( !gParse.nCols ) {
+      dmyCol.fptr = fptr;         /* This allows iterator to know value of */
+      gParse.colData = &dmyCol;   /* fptr when no columns are referenced   */
+   }
 
    result = gParse.Nodes + gParse.nNodes-1;
 
@@ -650,7 +718,7 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
    gParse.datatype = *datatype;
    free(gParse.expr);
 
-   if( result->operation==CONST_OP ) *datatype = - *datatype;
+   if( result->operation==CONST_OP ) *nelem = - *nelem;
    return(*status);
 }
 
@@ -1287,9 +1355,9 @@ int fffrwc( fitsfile *fptr,        /* I - Input FITS file                    */
       ffcprs();
       return( *status );
    }
-   if( Info.datatype<0 ) {
+   if( nelem<0 ) {
       constant = 1;
-      Info.datatype = -Info.datatype;
+      nelem = -nelem;
       nCol = gParse.nCols;
       gParse.nCols = 0;    /*  Ignore all column references  */
    } else
