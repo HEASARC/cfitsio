@@ -666,18 +666,47 @@ int ffstdin2mem(void **buffptr,  /* IO - memory pointer                     */
 */
 {
     size_t nread;
+    char simple[] = "SIMPLE";
+    int c, ii, jj;
 
     if (*status > 0)
        return(*status);
 
     *filesize = 0;
+    ii = 0;
 
-    /* fill up the initial buffer allocation */
-    nread = fread( (char *) *buffptr, 1, *buffsize, stdin);
+    for(jj = 0; (c = fgetc(stdin)) != EOF && jj < 2000; jj++)
+    {
+       /* Skip over any garbage at the beginning of the stdin stream by */
+       /* reading 1 char at a time, looking for 'S', 'I', 'M', 'P', 'L', 'E' */
+       /* Give up if not found in the first 2000 characters */
+
+       if (c == simple[ii])
+       {
+           ii++;
+           if (ii == 6)   /* found the complete string? */
+           {
+              memcpy(*buffptr, simple, 6);  /* copy "SIMPLE" to buffer */
+              *filesize = 6;
+              break;
+           }
+       }
+       else
+          ii = 0;  /* reset search to beginning of the string */
+    }
+
+   if (*filesize == 0)
+   {
+       ffpmsg("Couldn't find the string 'SIMPLE' in the stdin stream");
+       return(*status);
+   }
+
+    /* fill up the remainder of the initial buffer allocation */
+    nread = fread( (char *) *buffptr + 6, 1, *buffsize - 6, stdin);
 
     *filesize += nread;
 
-    if (nread < *buffsize)    /* reached the end? */
+    if (nread < *buffsize - 6)    /* reached the end? */
        return(*status);
 
     while (1)
