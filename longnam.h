@@ -32,7 +32,7 @@
 #define fits_write_history      ffphis 
 #define fits_write_date         ffpdat
 #define fits_write_key_longstr  ffpkls
-#define fits_write_key_longwarn ffplwn
+#define fits_write_key_longwarn ffplsw
 #define fits_write_key_str      ffpkys
 #define fits_write_key_log      ffpkyl
 #define fits_write_key_lng      ffpkyj
