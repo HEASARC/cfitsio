@@ -948,6 +948,12 @@ int ffiter(int n_cols,
           }
           break;
 
+         case TCOMPLEX:
+          cols[jj].array = calloc((ntodo * 2) + 1, sizeof(float));
+          col[jj].nullsize  = sizeof(float);  /* number of bytes per value */
+          col[jj].null.floatnull = FLOATNULLVALUE;  /* special value */
+          break;
+
          case TDOUBLE:
           cols[jj].array = calloc(ntodo + 1, sizeof(double));
           col[jj].nullsize  = sizeof(double);  /* number of bytes per value */
@@ -960,6 +966,12 @@ int ffiter(int n_cols,
           {
               col[jj].null.doublenull = DOUBLENULLVALUE;  /* special value */
           }
+          break;
+
+         case TDBLCOMPLEX:
+          cols[jj].array = calloc((ntodo * 2) + 1, sizeof(double));
+          col[jj].nullsize  = sizeof(double);  /* number of bytes per value */
+          col[jj].null.doublenull = DOUBLENULLVALUE;  /* special value */
           break;
 
          case TSTRING:
