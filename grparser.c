@@ -61,6 +61,9 @@
                 instead of "TABLE" as the XTENSION value of an ASCII table,
                 and it did not allow for optional trailing spaces in the
                 "IMAGE" or "TABLE" string. 
+16-Dec-2003 James Peachey: ngp_keyword_all_write was modified to apply
+                comments from the template file to the output file in
+                the case of reserved keywords (e.g. tform#, ttype# etcetera).
 */
 
 
@@ -807,7 +810,8 @@ int     ngp_keyword_all_write(NGP_HDU *ngph, fitsfile *ffp, int mode)
    r = NGP_OK;
    
    for (i=0; i<ngph->tokcnt; i++)
-    { if ((NGP_REALLY_ALL & mode) || (NGP_OK == ngp_keyword_is_write(&(ngph->tok[i]))))
+    { r = ngp_keyword_is_write(&(ngph->tok[i]));
+      if ((NGP_REALLY_ALL & mode) || (NGP_OK == r))
         { switch (ngph->tok[i].type)
            { case NGP_TTYPE_BOOL:
 			ib = ngph->tok[i].value.b;
@@ -842,8 +846,17 @@ int     ngp_keyword_all_write(NGP_HDU *ngph, fitsfile *ffp, int mode)
 			fits_write_record(ffp, buf, &r);
                         break;
            }
-          if (r) return(r);
         }
+      else if (NGP_BAD_ARG == r) /* enhancement 10 dec 2003, James Peachey: template comments replace defaults */
+        { r = NGP_OK;						/* update comments of special keywords like TFORM */
+          if (ngph->tok[i].comment && *ngph->tok[i].comment)	/* do not update with a blank comment */
+            { fits_modify_comment(ffp, ngph->tok[i].name, ngph->tok[i].comment, &r);
+            }
+        }
+      else /* other problem, typically a blank token */
+        { r = NGP_OK;						/* skip this token, but continue */
+        }
+      if (r) return(r);
     }
      
    fits_set_hdustruc(ffp, &r);				/* resync cfitsio */
