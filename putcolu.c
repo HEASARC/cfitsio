@@ -126,13 +126,13 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
       else if (tcode == TSHORT)
       {
          i2null = tnull;
-#if BYTESWAPPED == TRUE
+#if BYTESWAPPED
          ffswap2(&i2null, 1); /* reverse order of bytes */
 #endif
       }
       else
       {
-#if BYTESWAPPED == TRUE
+#if BYTESWAPPED
          ffswaplong(&tnull, 1); /* reverse order of bytes */
 #elif LONGSIZE == 64
          ffpacklong(&tnull, 1); /* move LSB's over to MSB if not byte swapped.

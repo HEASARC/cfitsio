@@ -1,10 +1,11 @@
-CFITSIO TESTPROG, v1.320
+CFITSIO TESTPROG, v1.330
 
 Try opening then closing a nonexistent file:
   ffopen fptr, status  = 0 104 (expect an error)
   ffclos status = 104
 
 ffinit create new file status = 0
+Name of file = testprog.fit, I/O mode = 1
 
 test writing of long string keywords:
  123456789012345678901234567890123456789012345678901234567890123456789012345
@@ -33,6 +34,7 @@ The 1st, and every 4th pixel should be undefined:
 
 Closed then reopened the FITS file 10 times.
 HDU number = 1
+Name of file = testprog.fit, I/O mode = 1
 
 Read back keywords:
 simple = 1, bitpix = 32, naxis = 2, naxes = (10, 2)
@@ -130,6 +132,7 @@ KEY_PKYG=    14.14141414141414 / fxpkyg comment
 KEY_PKYD= 1.51515151515152E+01 / fxpkyd comment
 NEWIKYS = 'updated_string'     / ikys comment
 KEY_PKYT= 12345678.1234567890123456 / fxpkyt comment
+Copied keyword: ffgkne:  14.141410, 15.151520, 13.131310
 
 ffcrtb status = 0
 HDU number = 2
@@ -263,10 +266,26 @@ Data values after inserting column 5:
                  9  9  9.0  9.0 0
                 10 10 10.0 10.0 0
                 99 99 99.0 99.0 0
+Create temporary file: ffinit status = 0
+
+Create null primary array: ffiimg status = 0
+
+Create ASCII table with 0 columns: ffitab status = 0
+copy column, ffcpcl status = 0
+copy column, ffcpcl status = 0
+copy column, ffcpcl status = 0
+copy column, ffcpcl status = 0
+
+Create Binary table with 0 columns: ffibin status = 0
+copy column, ffcpcl status = 0
+copy column, ffcpcl status = 0
+copy column, ffcpcl status = 0
+copy column, ffcpcl status = 0
+Delete the tmp file: ffdelt status = 0
 HDU number = 3
 
-Moved to BINTABLE; headend, datastart = 17360 23040
-header contains 37 keywords with room for 70 more
+Moved to BINTABLE; headend, datastart = 17440 23040
+header contains 38 keywords with room for 69 more
 
 Binary table: nrows, tfields, extname, pcount: 21 10 Test-BINTABLE 0
   Avalue      15A          
@@ -404,6 +423,19 @@ Values after setting 1st 10 elements in column 8 = null:
     NOT DEFINED  9   9   9.0   9.0 98
     NOT DEFINED  0 -10 -10.0 -10.0 0
     NOT DEFINED 98  98  98.0  98.0 0
+Create temporary file: ffinit status = 0
+
+Create null primary array: ffiimg status = 0
+
+Create binary table with 0 columns: ffibin status = 0
+copy column, ffcpcl status = 0
+copy column, ffcpcl status = 0
+copy column, ffcpcl status = 0
+copy column, ffcpcl status = 0
+copy column, ffcpcl status = 0
+copy column, ffcpcl status = 0
+copy column, ffcpcl status = 0
+Delete the tmp file: ffdelt status = 0
 ffibin status = 0
 HDU number = 2
       0   1000  10000  33000  66000   -999
@@ -723,14 +755,23 @@ Column values written with ffpcl and read with ffgcl:
 
 Repeatedly move to the 1st 4 HDUs of the file:
 12343123431234312343123431234312343123431234312343
+Move to extensions by name and version number: (ffmnhd)
+ Test-BINTABLE, 1 = hdu 5, 0
+ Test-BINTABLE, 3 = hdu 2, 0
+ Test-BINTABLE, 4 = hdu 6, 0
+ Test-ASCII, 2 = hdu 4, 0
+ new_table, 5 = hdu 8, 0
+ Test-BINTABLE, 0 = hdu 2, 0
+ Test-BINTABLE, 17 = hdu 2, 301 (expect a 301 error status here)
+Total number of HDUs in the file = 8
 
 Encode checksum: 1234567890 -> dCW2fBU0dBU0dBU0
 Decode checksum: dCW2fBU0dBU0dBU0 -> 1234567890
-DATASUM = '2338390162'        
-ffgcks data checksum, status = 2338390162, 0
+DATASUM = '475248536'         
+ffgcks data checksum, status = 475248536, 0
 ffvcks datastatus, hdustatus, status = 1 1 0
 ffupck status = 0
-DATASUM = '2338390162'        
+DATASUM = '475248536'         
 ffvcks datastatus, hdustatus, status = 1 1 0
 ffclos status = 0
 

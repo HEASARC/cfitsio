@@ -2,7 +2,7 @@
 \contentsline {chapter}{\numberline {2} Creating the CFITSIO Library }{3}
 \contentsline {section}{\numberline {2.1}Building the Library}{3}
 \contentsline {section}{\numberline {2.2}Testing the Library}{4}
-\contentsline {section}{\numberline {2.3}Getting Started with CFITSIO}{4}
+\contentsline {section}{\numberline {2.3}Getting Started with CFITSIO}{5}
 \contentsline {section}{\numberline {2.4}Example Program}{5}
 \contentsline {chapter}{\numberline {3} A FITS Primer }{7}
 \contentsline {chapter}{\numberline {4} Basic CFITSIO Conventions }{9}
@@ -41,29 +41,29 @@
 \contentsline {section}{\numberline {6.3}Data I/O Routines}{31}
 \contentsline {chapter}{\numberline {7} Advanced Interface Routines }{33}
 \contentsline {section}{\numberline {7.1}FITS File Open and Close Routines }{34}
-\contentsline {section}{\numberline {7.2}HDU-Level Operations}{35}
-\contentsline {section}{\numberline {7.3}FITS Header I/O Routines}{38}
-\contentsline {subsection}{\numberline {7.3.1} Header Space and Position Routines }{38}
+\contentsline {section}{\numberline {7.2}HDU-Level Operations}{36}
+\contentsline {section}{\numberline {7.3}FITS Header I/O Routines}{39}
+\contentsline {subsection}{\numberline {7.3.1} Header Space and Position Routines }{39}
 \contentsline {subsection}{\numberline {7.3.2} Read or Write Standard Header Routines }{39}
-\contentsline {subsection}{\numberline {7.3.3} Write Keyword Routines }{40}
-\contentsline {subsection}{\numberline {7.3.4} Insert Keyword Routines }{42}
-\contentsline {subsection}{\numberline {7.3.5} Read Keyword Routines }{43}
-\contentsline {subsection}{\numberline {7.3.6} Modify Keyword Routines }{45}
-\contentsline {subsection}{\numberline {7.3.7} Update Keyword Routines }{46}
-\contentsline {subsection}{\numberline {7.3.8} Delete Keyword Routines }{47}
-\contentsline {section}{\numberline {7.4}Data Scaling and Undefined Pixel Parameters }{47}
-\contentsline {section}{\numberline {7.5}FITS Primary Array or IMAGE Extension I/O Routines}{48}
-\contentsline {subsection}{\numberline {7.5.1}Write Image Data Routines }{49}
-\contentsline {subsection}{\numberline {7.5.2} Read Image Data Routines }{50}
-\contentsline {section}{\numberline {7.6}FITS ASCII and Binary Table Data I/O Routines}{52}
-\contentsline {subsection}{\numberline {7.6.1}Column Information Routines }{52}
-\contentsline {subsection}{\numberline {7.6.2}Low-Level Table Access Routines }{54}
-\contentsline {subsection}{\numberline {7.6.3} Insert or Delete Rows and Columns Routines }{54}
-\contentsline {subsection}{\numberline {7.6.4} Write Column Data Routines }{55}
-\contentsline {subsection}{\numberline {7.6.5} Read Column Data Routines }{57}
-\contentsline {section}{\numberline {7.7}Celestial Coordinate System Routines }{59}
-\contentsline {section}{\numberline {7.8}File Checksum Routines }{60}
-\contentsline {section}{\numberline {7.9}General Utility Routines }{61}
+\contentsline {subsection}{\numberline {7.3.3} Write or Copy Keyword Routines }{41}
+\contentsline {subsection}{\numberline {7.3.4} Insert Keyword Routines }{43}
+\contentsline {subsection}{\numberline {7.3.5} Read Keyword Routines }{44}
+\contentsline {subsection}{\numberline {7.3.6} Modify Keyword Routines }{46}
+\contentsline {subsection}{\numberline {7.3.7} Update Keyword Routines }{47}
+\contentsline {subsection}{\numberline {7.3.8} Delete Keyword Routines }{48}
+\contentsline {section}{\numberline {7.4}Data Scaling and Undefined Pixel Parameters }{48}
+\contentsline {section}{\numberline {7.5}FITS Primary Array or IMAGE Extension I/O Routines}{49}
+\contentsline {subsection}{\numberline {7.5.1}Write Image Data Routines }{50}
+\contentsline {subsection}{\numberline {7.5.2} Read Image Data Routines }{51}
+\contentsline {section}{\numberline {7.6}FITS ASCII and Binary Table Data I/O Routines}{53}
+\contentsline {subsection}{\numberline {7.6.1}Column Information Routines }{53}
+\contentsline {subsection}{\numberline {7.6.2}Low-Level Table Access Routines }{55}
+\contentsline {subsection}{\numberline {7.6.3} Insert, Delete, or Copy Rows and Columns Routines }{55}
+\contentsline {subsection}{\numberline {7.6.4} Write Column Data Routines }{56}
+\contentsline {subsection}{\numberline {7.6.5} Read Column Data Routines }{58}
+\contentsline {section}{\numberline {7.7}Celestial Coordinate System Routines }{60}
+\contentsline {section}{\numberline {7.8}File Checksum Routines }{61}
+\contentsline {section}{\numberline {7.9}General Utility Routines }{62}
 \contentsline {chapter}{\numberline {8} Summary of all CFITSIO User-Interface Routines }{67}
 \contentsline {chapter}{\numberline {9} Parameter Definitions }{75}
 \contentsline {chapter}{\numberline {10} CFITSIO Error Status Codes }{79}

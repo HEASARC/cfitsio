@@ -682,7 +682,7 @@ int ffopenfile(char *filename, /* I - FITS file pointer                    */
    } u;
 
    u.ival = 1;
-   if  ((BYTESWAPPED == TRUE && u.cval[0] != 1) ||
+   if  ((BYTESWAPPED && u.cval[0] != 1) ||
         (BYTESWAPPED == FALSE && u.cval[1] != 1) )
    {
    printf

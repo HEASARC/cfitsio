@@ -44,7 +44,7 @@ int ffcsum(fitsfile *fptr,      /* I - FITS file pointer                  */
     {
       ffgbyt(fptr, 2880, sbuf, status);
 
-#if BYTESWAPPED == TRUE
+#if BYTESWAPPED
 
       ffswap2( (short *)sbuf, 1440); /* reverse order of bytes in each value */
 

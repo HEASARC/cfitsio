@@ -471,21 +471,30 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer         */
     int contin;
     size_t len;
 
+    *value = NULL;  /* initialize a null pointer in case of error */
+
     ffgkey(fptr, keyname, valstring, comm, status);  /* read the keyword */
 
     if (*status > 0)
         return(*status);
 
-    /* allocate space, minus the 2 quote chars, plus 1 for null */
-    *value = (char *) malloc(strlen(valstring)-1);
-
-    ffc2s(valstring, *value, status);   /* convert string to value */
-    len = strlen(*value);
-
-    /* If last character is a & then value may be continued on next keyword */
-    contin = 1;
-    while (contin)  
+    if (!valstring[0])   /* null value string? */
     {
+      *value = (char *) malloc(1);  /* allocate and return a null string */
+      **value = '\0';
+    }
+    else
+    {
+      /* allocate space, minus the 2 quote chars, plus 1 for null */
+      *value = (char *) malloc(strlen(valstring)-1);
+
+      ffc2s(valstring, *value, status);   /* convert string to value */
+      len = strlen(*value);
+
+      /* If last character is a & then value may be continued on next keyword */
+      contin = 1;
+      while (contin)  
+      {
         if (*(*value+len-1) == '&')  /*  is last char an anpersand?  */
         {
             ffgcnt(fptr, valstring, status);
@@ -501,6 +510,7 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer         */
         }
         else
             contin = 0;
+      }
     }
     return(*status);
 }

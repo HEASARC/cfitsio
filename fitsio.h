@@ -119,6 +119,7 @@ typedef struct      /* structure used to store basic HDU information */
 #define FILE_NOT_CLOSED   110  /* could not close the file */
 #define ARRAY_TOO_BIG     111  /* array dimensions exceed internal limit */
 #define READONLY_FILE     112  /* Cannot write to readonly file */
+#define MEMORY_ALLOCATION 113  /* Could not allocate memory */
 #define HEADER_NOT_EMPTY  201  /* header already contains keywords */
 #define KEY_NO_EXIST      202  /* keyword not found in header */
 #define KEY_OUT_BOUNDS    203  /* keyword record number is out of bounds */
@@ -217,7 +218,9 @@ int ffinit(fitsfile **fptr, const char *filename, int *status);
 int ffflus(fitsfile *fptr, int *status);
 int ffclos(fitsfile *fptr, int *status);
 int ffdelt(fitsfile *fptr, int *status);
- 
+int ffflnm(fitsfile *fptr, char *filename, int *status);
+int ffflmd(fitsfile *fptr, int *filemode, int *status);
+
 /*---------------- utility routines -------------*/
 float ffvers(float *version);
 int ffgsdt(int *day, int *month, int *year2, int *status);
@@ -265,7 +268,7 @@ int ffpkyd(fitsfile *fptr, char *keyname, double value, int decim, char *comm,
 int ffpkyt(fitsfile *fptr, char *keyname, long intval, double frac, char *comm,
           int *status);
 int ffptdm( fitsfile *fptr, int colnum, int naxis, long naxes[], int *status);
- 
+
 /*----------------- write array of keywords --------------*/
 int ffpkns(fitsfile *fptr, char *keyroot, int nstart, int nkey, char *value[],
            char *comm[], int *status);
@@ -281,7 +284,9 @@ int ffpkng(fitsfile *fptr, char *keyroot, int nstart, int nkey, double *value,
            int decim, char *comm[], int *status);
 int ffpknd(fitsfile *fptr, char *keyroot, int nstart, int nkey, double *value,
            int decim, char *comm[], int *status);
- 
+int ffcpky(fitsfile *infptr,fitsfile *outfptr,int incol,int outcol,
+           char *rootname, int *status); 
+
 /*----------------- write required header keywords --------------*/
 int ffphps( fitsfile *fptr, int bitpix, int naxis, long naxes[], int *status);
 int ffphpr( fitsfile *fptr, int simple, int bitpix, int naxis, long naxes[],
@@ -402,11 +407,14 @@ int ffdrec(fitsfile *fptr, int keypos, int *status);
  
 /*--------------------- get HDU information -------------*/
 int ffghdn(fitsfile *fptr, int *chdunum);
+int ffmhdt(fitsfile *fptr, int *exttype, int *status);
 int ffghad(fitsfile *fptr, long *chduaddr, long *nextaddr);
  
 /*--------------------- HDU operations -------------*/
 int ffmahd(fitsfile *fptr, int hdunum, int *exttype, int *status);
 int ffmrhd(fitsfile *fptr, int hdumov, int *exttype, int *status);
+int ffmnhd(fitsfile *fptr, char *hduname, int hduvers, int *status);
+int ffthdu(fitsfile *fptr, int *nhdu, int *status);
 int ffcrhd(fitsfile *fptr, int *status);
 int ffcrim(fitsfile *fptr, int bitpix, int naxis, long *naxes, int *status);
 int ffcrtb(fitsfile *fptr, int tbltype, long naxis2, int tfields, char **ttype,
@@ -784,6 +792,10 @@ int ffppru(fitsfile *fptr, long group, long firstelem,
            long nelem, int *status);
  
 /*--------------------- write column elements -------------*/
+int ffiter(fitsfile *fptr, int n_in_cols,    int *in_colnum, 
+           int n_inout_cols, int *inout_colnum, int n_out_cols,
+           int *out_colnum, int work_fn( fitsfile *fptr, long fstrow,
+           long nrows, void **col_ptrs), int *status);
 int ffpcl(fitsfile *fptr, int datatype, int colnum, long firstrow,
           long firstelem, long nelem, void *array, int *status);
 int ffpcls(fitsfile *fptr, int colnum, long firstrow, long firstelem,
@@ -814,6 +826,10 @@ int ffpclu(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, int *status);
 int ffpclx(fitsfile *fptr, int colnum, long frow, long fbit, long nbit,
             char *larray, int *status);
+int ffpcns( fitsfile *fptr, int  colnum, long  firstrow, long  firstelem,
+            long  nelem, char **array, char  *nulvalue, int  *status);
+int ffpcnl( fitsfile *fptr, int  colnum, long  firstrow, long  firstelem,
+            long  nelem, char *array, char  *nulvalue,  int  *status);
 int ffpcnb(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, unsigned char *array, unsigned char nulvalue,
            int *status);
@@ -846,6 +862,8 @@ int fficol(fitsfile *fptr, int numcol, char *ttype, char *tform, int *status);
 int fficls(fitsfile *fptr, int firstcol, int ncols, char **ttype,
            char **tform, int *status);
 int ffdcol(fitsfile *fptr, int numcol, int *status);
+int ffcpcl(fitsfile *infptr, fitsfile *outfptr, int incol, int outcol, 
+           int create_col, int *status);
 
 /*--------------------- WCS Utilities -------------*/
 int ffgics(fitsfile *fptr, double *xrval, double *yrval, double *xrpix,

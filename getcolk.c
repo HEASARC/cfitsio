@@ -614,6 +614,8 @@ int ffgclk( fitsfile *fptr,   /* I - FITS file pointer                       */
         ffgclj(fptr, colnum, firstrow, firstelem, nelem, elemincre, nultyp,
               (long) nulval, (long *) array, nularray, anynul, status);
 
+    else
+    {
     /*
       This is a special case: sizeof(int) is not equal to sizeof(short) or
       sizeof(long).  This occurs on Alpha OSF systems where short = 2 bytes,
@@ -783,6 +785,8 @@ int ffgclk( fitsfile *fptr,   /* I - FITS file pointer                       */
         "Numerical overflow during type conversion while reading FITS data.");
         *status = NUM_OVERFLOW;
     }
+
+    }  /* end of DEC Alpha special case */
 
     return(*status);
 }
@@ -1196,7 +1200,7 @@ int fffr4int(float *input,        /* I - array of values to be converted     */
     {
         sptr = (short *) input;
 
-#if BYTESWAPPED == TRUE
+#if BYTESWAPPED
         sptr++;       /* point to MSBs */
 #endif
 
@@ -1349,7 +1353,7 @@ int fffr8int(double *input,       /* I - array of values to be converted     */
     {
         sptr = (short *) input;
 
-#if BYTESWAPPED == TRUE
+#if BYTESWAPPED
         sptr += 3;       /* point to MSBs */
 #endif
         if (scale == 1. && zero == 0.)  /* no scaling */

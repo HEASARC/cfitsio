@@ -1252,7 +1252,7 @@ int fffr4i1(float *input,         /* I - array of values to be converted     */
     {
         sptr = (short *) input;
 
-#if BYTESWAPPED == TRUE 
+#if BYTESWAPPED 
         sptr++;       /* point to MSBs */
 #endif
         if (scale == 1. && zero == 0.)  /* no scaling */
@@ -1406,7 +1406,7 @@ int fffr8i1(double *input,        /* I - array of values to be converted     */
     {
         sptr = (short *) input;
 
-#if BYTESWAPPED == TRUE
+#if BYTESWAPPED
         sptr += 3;       /* point to MSBs */
 #endif
         if (scale == 1. && zero == 0.)  /* no scaling */

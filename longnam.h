@@ -8,6 +8,8 @@
 #define fits_flush_file     ffflus
 #define fits_close_file     ffclos
 #define fits_delete_file    ffdelt
+#define fits_file_name      ffflnm
+#define fits_file_mode      ffflmd
 
 #define fits_get_version    ffvers
 #define fits_uppercase      ffupch
@@ -53,6 +55,7 @@
 #define fits_write_keys_flt     ffpkne
 #define fits_write_keys_fixdbl  ffpkng
 #define fits_write_keys_dbl     ffpknd
+#define fits_copy_key           ffcpky
 #define fits_write_imghdr       ffphps
 #define fits_write_grphdr       ffphpr
 #define fits_write_atblhdr      ffphtb
@@ -123,11 +126,14 @@
 #define fits_delete_key     ffdkey
 #define fits_delete_record  ffdrec
 
-#define fits_get_hdunum     ffghdn
+#define fits_get_hdu_num    ffghdn
+#define fits_get_hdu_type   ffghdt
 #define fits_get_hduaddr    ffghad
 
 #define fits_movabs_hdu     ffmahd
 #define fits_movrel_hdu     ffmrhd
+#define fits_movnam_hdu     ffmnhd
+#define fits_get_num_hdus   ffthdu
 #define fits_create_img     ffcrim
 #define fits_create_tbl     ffcrtb
 #define fits_create_hdu     ffcrhd
@@ -161,7 +167,8 @@
 #define fits_get_coltype    ffgtcl
 #define fits_get_acolparms  ffgacl
 #define fits_get_bcolparms  ffgbcl
- 
+#define fits_iterate_rows   ffiter
+
 #define fits_read_grppar_byt  ffggpb
 #define fits_read_grppar_usht  ffggpui
 #define fits_read_grppar_ulng  ffggpuj
@@ -330,6 +337,8 @@
 #define fits_write_col_null    ffpclu
 #define fits_write_col_bit     ffpclx
 
+#define fits_write_colnull_str ffpcns
+#define fits_write_colnull_log ffpcnl
 #define fits_write_colnull_byt ffpcnb
 #define fits_write_colnull_usht ffpcnui
 #define fits_write_colnull_ulng ffpcnuj
@@ -347,6 +356,7 @@
 #define fits_insert_col   fficol
 #define fits_insert_cols  fficls
 #define fits_delete_col   ffdcol
+#define fits_copy_col     ffcpcl
 
 #define fits_read_img_coord ffgics
 #define fits_read_tbl_coord ffgtcs

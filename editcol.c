@@ -481,6 +481,365 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
+           fitsfile *outfptr,   /* I - FITS file pointer to output file */
+           int incol,           /* I - number of input column   */
+           int outcol,          /* I - number for output column  */
+           int create_col,      /* I - create new col if TRUE, else overwrite */
+           int *status)         /* IO - error status     */
+/*
+  copy a column from infptr and insert it in the outfptr table.
+*/
+{
+    int tstatus, colnum, typecode, anynull;
+    long tfields, repeat, width, nrows, outrows;
+    long inloop, outloop, maxloop, ndone, ntodo, npixels;
+    long firstrow, firstelem, ii;
+    char keyname[FLEN_KEYWORD], ttype[FLEN_VALUE], tform[FLEN_VALUE];
+    char *lvalues, *lnullflags, **strarray;
+    char nulstr[] = {'\5', '\0'};  /* unique null string value */
+    double dnull, *dvalues;
+    float fnull, *fvalues;
+
+    if (*status > 0)
+        return(*status);
+
+    if (infptr->datastart == DATA_UNDEFINED)
+        ffrdef(infptr, status);                /* rescan header */
+
+    if (outfptr->datastart == DATA_UNDEFINED)
+        ffrdef(outfptr, status);               /* rescan header */
+
+    if (infptr->hdutype == IMAGE_HDU || outfptr->hdutype == IMAGE_HDU)
+    {
+       ffpmsg
+       ("Can only copy columns between ASCII or Binary tables (ffcpcl)");
+       return(*status = NOT_TABLE);
+    }
+
+    if ( infptr->hdutype == BINARY_TBL &&  outfptr->hdutype == ASCII_TBL)
+    {
+       ffpmsg
+       ("Copying from Binary table to ASCII table is not supported (ffcpcl)");
+       return(*status = NOT_BTABLE);
+    }
+
+    /* get the datatype and vector repeat length of the column */
+    ffgtcl(infptr, incol, &typecode, &repeat, &width, status);
+
+    if (typecode < 0)
+    {
+        ffpmsg("Variable-length columns are not supported (ffcpcl)");
+        return(*status = BAD_TFORM);
+    }
+
+    if (create_col)    /* insert new column in output table? */
+    {
+        tstatus = 0;
+        ffkeyn("TTYPE", incol, keyname, &tstatus);
+        ffgkys(infptr, keyname, ttype, 0, &tstatus);
+        ffkeyn("TFORM", incol, keyname, &tstatus);
+    
+        if (ffgkys(infptr, keyname, tform, 0, &tstatus) )
+        {
+          ffpmsg
+          ("Could not find TTYPE and TFORM keywords in input table (ffcpcl)");
+          return(*status = NO_TFORM);
+        }
+
+        if (infptr->hdutype == ASCII_TBL && outfptr->hdutype == BINARY_TBL)
+        {
+            /* convert from ASCII table to BINARY table format string */
+            if (typecode == TSTRING)
+                ffnkey(width, "A", tform, status);
+
+            else if (typecode == TLONG)
+                strcpy(tform, "1J");
+
+            else if (typecode == TSHORT)
+                strcpy(tform, "1I");
+
+            else if (typecode == TFLOAT)
+                strcpy(tform,"1E");
+
+            else if (typecode == TDOUBLE)
+                strcpy(tform,"1D");
+        }
+
+        if (ffgkyj(outfptr, "TFIELDS", &tfields, 0, &tstatus))
+        {
+           ffpmsg
+           ("Could not read TFIELDS keyword in output table (ffcpcl)");
+           return(*status = NO_TFIELDS);
+        }
+
+        colnum = minvalue((int) tfields + 1, outcol); /* output col. number */
+
+        /* create the empty column */
+        if (fficol(outfptr, colnum, ttype, tform, status) > 0)
+        {
+           ffpmsg
+           ("Could not append new column to output file (ffcpcl)");
+           return(*status);
+        }
+
+        /* copy other column-related keywords if they exist */
+
+        ffcpky(infptr, outfptr, incol, colnum, "TUNIT", status);
+        ffcpky(infptr, outfptr, incol, colnum, "TSCAL", status);
+        ffcpky(infptr, outfptr, incol, colnum, "TZERO", status);
+        ffcpky(infptr, outfptr, incol, colnum, "TDISP", status);
+        ffcpky(infptr, outfptr, incol, colnum, "TLMIN", status);
+        ffcpky(infptr, outfptr, incol, colnum, "TLMAX", status);
+        ffcpky(infptr, outfptr, incol, colnum, "TDIM", status);
+
+        if (infptr->hdutype == ASCII_TBL && outfptr->hdutype == BINARY_TBL)
+        {
+            /* binary tables only have TNULLn keyword for integer columns */
+            if (typecode == TLONG || typecode == TSHORT)
+            {
+                /* check if null string is defined; replace with integer */
+                ffkeyn("TNULL", incol, keyname, &tstatus);
+                if (ffgkys(infptr, keyname, ttype, 0, &tstatus) <= 0)
+                {
+                   ffkeyn("TNULL", colnum, keyname, &tstatus);
+                   if (typecode == TLONG)
+                      ffpkyj(outfptr, keyname, -9999999L, "Null value", status);
+                   else
+                      ffpkyj(outfptr, keyname, -32768L, "Null value", status);
+                }
+            }
+        }
+        else
+        {
+            ffcpky(infptr, outfptr, incol, colnum, "TNULL", status);
+        }
+
+        /* rescan header to recognize the new keywords */
+        if (ffrdef(outfptr, status) )
+            return(*status);
+    }
+    else
+    {
+        colnum = outcol;
+    }
+
+    ffgkyj(infptr,  "NAXIS2", &nrows,   0, status);  /* no. of input rows */
+    ffgkyj(outfptr, "NAXIS2", &outrows, 0, status);  /* no. of output rows */
+    nrows = minvalue(nrows, outrows);
+
+    if (typecode == TBIT)
+        repeat = (repeat - 1) / 8 + 1;  /* convert from bits to bytes */
+    else if (typecode == TSTRING && infptr->hdutype == BINARY_TBL)
+        repeat = repeat / width;  /* convert from chars to unit strings */
+
+    /* get optimum number of rows to copy at one time */
+    ffgrsz(infptr,  &inloop,  status);
+    ffgrsz(outfptr, &outloop, status);
+
+    /* adjust optimum number, since 2 tables are open at once */
+    maxloop = minvalue(inloop, outloop); /* smallest of the 2 tables */
+    maxloop = maxvalue(1, maxloop / 2);  /* at least 1 row */
+    maxloop = minvalue(maxloop, nrows);  /* max = nrows to be copied */
+    maxloop *= repeat;                   /* mult by no of elements in a row */
+
+    /* allocate memory for arrays */
+    if (typecode == TLOGICAL)
+    {
+       lvalues   = (char *) calloc(maxloop, sizeof(char) );
+       if (!lvalues)
+       {
+         ffpmsg
+         ("malloc failed to get memory for logicals (ffcpcl)");
+         return(*status = ARRAY_TOO_BIG);
+       }
+
+       lnullflags = (char *) calloc(maxloop, sizeof(char) );
+       if (!lnullflags)
+       {
+         ffpmsg
+         ("malloc failed to get memory for logical flags (ffcpcl)");
+         return(*status = ARRAY_TOO_BIG);
+       }
+    }
+    else if (typecode == TSTRING)
+    {
+       /* allocate array of pointers */
+       strarray = (char **) calloc(maxloop, sizeof(strarray));
+
+       /* allocate space for each string */
+       for (ii = 0; ii < maxloop; ii++)
+          strarray[ii] = (char *) calloc(width+1, sizeof(char));
+    }
+    else if (typecode == TCOMPLEX)
+    {
+       fvalues = (float *) calloc(maxloop * 2, sizeof(float) );
+       if (!fvalues)
+       {
+         ffpmsg
+         ("malloc failed to get memory for complex (ffcpcl)");
+         return(*status = ARRAY_TOO_BIG);
+       }
+       fnull = 0.;
+    }
+    else if (typecode == TDBLCOMPLEX)
+    {
+       dvalues = (double *) calloc(maxloop * 2, sizeof(double) );
+       if (!fvalues)
+       {
+         ffpmsg
+         ("malloc failed to get memory for dbl complex (ffcpcl)");
+         return(*status = ARRAY_TOO_BIG);
+       }
+       dnull = 0.;
+    }
+    else    /* numerical datatype; read them all as doubles */
+    {
+       dvalues = (double *) calloc(maxloop, sizeof(double) );
+       if (!dvalues)
+       {
+         ffpmsg
+         ("malloc failed to get memory for doubles (ffcpcl)");
+         return(*status = ARRAY_TOO_BIG);
+       }
+         dnull = -9.99991999E31;  /* use an unlikely value for nulls */
+    }
+
+    npixels = nrows * repeat;          /* total no. of pixels to copy */
+    ntodo = minvalue(npixels, maxloop);   /* no. to copy per iteration */
+    ndone = 0;             /* total no. of pixels that have been copied */
+
+    while (ntodo)      /* iterate through the table */
+    {
+        firstrow = ndone / repeat + 1;
+        firstelem = ndone - ((firstrow - 1) * repeat) + 1;
+
+        /* read from input table */
+        if (typecode == TLOGICAL)
+            ffgcfl(infptr, incol, firstrow, firstelem, ntodo, 
+                       lvalues, lnullflags, &anynull, status);
+
+        else if (typecode == TSTRING)
+            ffgcvs(infptr, incol, firstrow, firstelem, ntodo,
+                       nulstr, strarray, &anynull, status);
+
+        else if (typecode == TCOMPLEX)  
+            ffgcvc(infptr, incol, firstrow, firstelem, ntodo, fnull, 
+                   fvalues, &anynull, status);
+
+        else if (typecode == TDBLCOMPLEX)
+            ffgcvm(infptr, incol, firstrow, firstelem, ntodo, dnull, 
+                   dvalues, &anynull, status);
+
+        else       /* all numerical types */
+            ffgcvd(infptr, incol, firstrow, firstelem, ntodo, dnull, 
+                   dvalues, &anynull, status);
+
+        if (*status > 0)
+        {
+            ffpmsg("Error reading input copy of column (ffcpcl)");
+            break;
+        }
+
+        /* write to output table */
+        if (typecode == TLOGICAL)
+        {
+            if (anynull)
+                ffpcnl(outfptr, colnum, firstrow, firstelem, ntodo, 
+                       lvalues, lnullflags, status);
+            else
+                ffpcll(outfptr, colnum, firstrow, firstelem, ntodo, 
+                       lvalues, status);
+        }
+
+        else if (typecode == TSTRING)
+        {
+            if (anynull)
+                ffpcns(outfptr, colnum, firstrow, firstelem, ntodo,
+                       strarray, nulstr, status);
+            else
+                ffpcls(outfptr, colnum, firstrow, firstelem, ntodo,
+                       strarray, status);
+        }
+
+        else if (typecode == TCOMPLEX)  
+        {                      /* doesn't support writing nulls */
+            ffpclc(outfptr, colnum, firstrow, firstelem, ntodo, 
+                       fvalues, status);
+        }
+
+        else if (typecode == TDBLCOMPLEX)  
+        {                      /* doesn't support writing nulls */
+            ffpclm(outfptr, colnum, firstrow, firstelem, ntodo, 
+                       dvalues, status);
+        }
+
+        else  /* all other numerical types */
+        {
+            if (anynull)
+                ffpcnd(outfptr, colnum, firstrow, firstelem, ntodo, 
+                       dvalues, dnull, status);
+            else
+                ffpcld(outfptr, colnum, firstrow, firstelem, ntodo, 
+                       dvalues, status);
+        }
+
+        if (*status > 0)
+        {
+            ffpmsg("Error writing output copy of column (ffcpcl)");
+            break;
+        }
+
+        npixels -= ntodo;
+        ndone += ntodo;
+        ntodo = minvalue(npixels, maxloop);
+    }
+
+    /* free the previously allocated memory */
+    if (typecode == TLOGICAL)
+    {
+        free(lvalues);
+        free(lnullflags);
+    }
+    else if (typecode == TSTRING)
+    {
+         for (ii = 0; ii < maxloop; ii++)
+             free(strarray[ii]);
+
+         free(strarray);
+    }
+    else
+    {
+        free(dvalues);
+    }
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffcpky(fitsfile *infptr,    /* I - FITS file pointer to input file  */
+           fitsfile *outfptr,   /* I - FITS file pointer to output file */
+           int incol,           /* I - input index number   */
+           int outcol,          /* I - output index number  */
+           char *rootname,      /* I - root name of the keyword to be copied */
+           int *status)         /* IO - error status     */
+/*
+  copy an indexed keyword from infptr to outfptr.
+*/
+{
+    int tstatus = 0;
+    char keyname[FLEN_KEYWORD];
+    char value[FLEN_VALUE], comment[FLEN_COMMENT], card[FLEN_CARD];
+
+    ffkeyn(rootname, incol, keyname, &tstatus);
+    if (ffgkey(infptr, keyname, value, comment, &tstatus) <= 0)
+    {
+        ffkeyn(rootname, outcol, keyname, &tstatus);
+        ffmkky(keyname, value, comment, card);
+        ffprec(outfptr, card, status);
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffdcol(fitsfile *fptr,  /* I - FITS file pointer                        */
            int colnum,      /* I - column to delete (1 = 1st)               */
            int *status)     /* IO - error status                            */

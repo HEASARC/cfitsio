@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large November 1997\\}
+{\Large December 1997\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -165,6 +165,35 @@ at the operating system prompt.  The `configure' command customizes the
 Makefile for the particular system, then the `make' command builds the
 library.
 
+An alternate makefile called Makefile.shared is included in the
+distribution that will build CFITSIO as a shared library.  It
+has only been tested under Solaris 2.5 but will likely also work
+on other systems, at least with cc.
+
+The only difference between the shared library and the .a library is
+that the shared library isn't copied into your program at link time.
+Rather, the program has to find it at run time, normally through
+LD\_LIBRARY\_PATH or some other method.  The advantages are:
+
+\begin{verbatim}
+   1.  Less disk space if you build more than 1 program
+   2.  Less memory if more than one copy of a program using the shared
+       library is running at the same time since the system is smart
+       enough to share copies of the shared library at run time.
+   3.  Possibly easier maintenance since you might be able to update the
+       shared library without relinking all the tools.
+   4.  No run-time penality.
+\end{verbatim}
+The disadvantages are:
+
+\begin{verbatim}
+   1. More hassle at runtime.  You have to either build the programs
+      specially or have LD_LIBRARY_PATH set right.
+   2. There may be a slight start up penality, depending on where you are
+      reading the shared library and the program from and if your CPU is
+      either really slow or really heavily loaded.
+\end{verbatim}
+
 On VAX/VMS and ALPHA/VMS systems, the make.com command file may be used
 to build the cfitsio.olb object library.  Execute this command file by
 typing '@make' on the command line.  CFITSIO can support both the
@@ -180,8 +209,12 @@ compiler or linker is used.
 On OS/2 systems, CFITSIO can be built by typing 'make -f
 makefile.os2'.  This makefile requires the GCC compiler and EMX
 library, which are available from many Internet sites containing OS/2
-software, such as ftp-os2.nmsu.edu/pub/os2/dev/emx/v0.9c and
-ftp.leo.org/pub/comp/os/os2/leo/devtools/emx+gcc.
+software, such as
+
+\begin{verbatim}
+     ftp-os2.nmsu.edu/pub/os2/dev/emx/v0.9c   and
+     ftp.leo.org/pub/comp/os/os2/leo/devtools/emx+gcc.
+\end{verbatim}
 
 The MacOS version of the cfitsio library can be built by (1) unbinhex
 and unstuff cfitsio\_mac.sit.hqx, and (2) for the PPC,  load CFitsio
@@ -1614,7 +1647,9 @@ CFITSIO.
 \begin{description}
 \item[4 ] Move to a specified (absolute) HDU in the FITS file.  When a FITS file
     is first opened or created it is automatically positioned to the first
-   HDU (the primary array) in the file which has hdunum = 1.
+    HDU (the primary array) in the file which has hdunum = 1.  If the
+    returned hdutype value is not desired, one may enter a null pointer for
+   that parameter.
 \end{description}
 
 \begin{verbatim}
@@ -1899,7 +1934,25 @@ is freed when the FITS file is closed.
 \end{verbatim}
 
 \begin{description}
-\item[3 ]Flush any internal buffers of data to the output FITS file. This
+\item[3 ]Return the name of the FITS file
+\end{description}
+
+\begin{verbatim}
+  int fits_file_name / ffflnm
+      (fitsfile *fptr, > char *filename, int *status)
+\end{verbatim}
+
+\begin{description}
+\item[4 ]Return the I/O mode of the FITS file (READONLY or READWRITE)
+\end{description}
+
+\begin{verbatim}
+  int fits_file_mode / ffflmd
+      (fitsfile *fptr, > int *iomode, int *status)
+\end{verbatim}
+
+\begin{description}
+\item[5 ]Flush any internal buffers of data to the output FITS file. This
    routine rarely needs to be called, but can be useful when writing to
    the FITS files in memory, and will ensure
    that if the program subsequently aborts then the FITS file will
@@ -1912,7 +1965,7 @@ is freed when the FITS file is closed.
 \end{verbatim}
 
 \begin{description}
-\item[4 ]Close a previously opened FITS file.  If the file resides in a
+\item[6 ]Close a previously opened FITS file.  If the file resides in a
    user-allocated memory buffer
    (see fits\_set\_mem\_buff, below) then the memory buffer is left unchanged
    and the application program must free the memory when it is no longer
@@ -1925,7 +1978,7 @@ is freed when the FITS file is closed.
 \end{verbatim}
 
 \begin{description}
-\item[5 ] Close and DELETE a FITS disk file previously opened with ffopen or ffinit.
+\item[7 ] Close and DELETE a FITS disk file previously opened with ffopen or ffinit.
     This routine may be  useful in cases where a FITS file is created but
    then an error occurs which prevents the file from being completed.
 \end{description}
@@ -1936,7 +1989,7 @@ is freed when the FITS file is closed.
 \end{verbatim}
 
 \begin{description}
-\item[6 ] Initialize a memory buffer to be used for reading or writing a FITS file
+\item[8 ] Initialize a memory buffer to be used for reading or writing a FITS file
 in computer memory.  This routine must be called before calling
 fits\_open\_file or fits\_create\_file to tell CFITSIO that the file
 will reside in memory instead of on magnetic disk, thus causing all
@@ -1974,7 +2027,7 @@ use this routine.
 \end{verbatim}
 
 \begin{description}
-\item[7 ] Copy a FITS file residing in memory (see fits\_set\_mem\_buff) out to
+\item[9 ] Copy a FITS file residing in memory (see fits\_set\_mem\_buff) out to
     a diskfile.  The memory may be copied out to the 'stdout' stream
     by giving a filename = "-".  The 'mem\_size' parameter specifies the
    maximum size of the file which may be greater than the actual file size.
@@ -1994,7 +2047,9 @@ insert, copy, and delete HDUs.
 \begin{description}
 \item[1 ] Move to a specified (absolute) HDU in the FITS file.  When a FITS file
     is first opened or created it is automatically positioned to the first
-   HDU (the primary array) in the file which has hdunum = 1.
+    HDU (the primary array) in the file which has hdunum = 1.  If the
+    returned hdutype value is not desired, one may enter a null pointer for
+   that parameter.
 \end{description}
 
 \begin{verbatim}
@@ -2003,7 +2058,9 @@ insert, copy, and delete HDUs.
 \end{verbatim}
 
 \begin{description}
-\item[2 ]Move a relative number of HDUs forward or backwards in the FITS file.
+\item[2 ] Move a relative number of HDUs forward or backwards in the FITS file.
+    If the returned hdutype value is not desired, one may enter a null
+   pointer for that parameter.
 \end{description}
 
 \begin{verbatim}
@@ -2012,17 +2069,51 @@ insert, copy, and delete HDUs.
 \end{verbatim}
 
 \begin{description}
-\item[3 ] Get the number of the current HDU in the FITS file (primary array = 1).
+\item[3 ] Move to the HDU which has the specified EXTNAME and EXTVERS keyword
+    values.  Setting extvers = 0 will move to the first HDU with
+    the given extname and will ignore the version number.  If no matching
+    HDU is found in the file, the current HDU will remain unchanged
+   and a status = BAD\_HDU\_NUM will be returned.
+\end{description}
+
+\begin{verbatim}
+  int fits_movnam_hdu / ffmnhd
+      (fitsfile *fptr, char *extname, int extvers, > int *status)
+\end{verbatim}
+
+\begin{description}
+\item[4 ] Get the number of the current HDU in the FITS file (primary array = 1).
    This routine returns the HDU number rather than a status value.
 \end{description}
 
 \begin{verbatim}
-  int fits_get_hdunum / ffghdn
+  int fits_get_hdu_num / ffghdn
       (fitsfile *fptr, > int *hdunum)
 \end{verbatim}
 
 \begin{description}
-\item[4 ] Get the byte offsets in the file to the start and end of the CHDU.
+\item[5 ] Get the type of the current HDU in the FITS file.  The allowed
+    values for hdutype are: IMAGE\_HDU (0), ASCII\_TBL (1), or
+   BINARY\_TBL (2).
+\end{description}
+
+\begin{verbatim}
+  int fits_get_hdu_type / ffghdt
+      (fitsfile *fptr, > int *hdutype, int *status)
+\end{verbatim}
+
+\begin{description}
+\item[6 ] Get the total number of HDUs in the FITS file by scanning through
+   the whole file.  The CHDU remains unchanged.
+\end{description}
+
+\begin{verbatim}
+  int fits_get_num_hdus / ffthdu
+      (fitsfile *fptr, > int *hdunum, int *status)
+\end{verbatim}
+
+\begin{description}
+\item[7 ] Get the byte offsets in the file to the start and end of the CHDU.
     The difference between these 2 values gives the size of the CHDU.
     If the CHDU is the last HDU in the file, then the ending offset
    is also equal to the size of the entire FITS file.
@@ -2034,7 +2125,7 @@ insert, copy, and delete HDUs.
 \end{verbatim}
 
 \begin{description}
-\item[5 ]Create a new primary array if a new empty FITS file has just been
+\item[8 ]Create a new primary array if a new empty FITS file has just been
    created, otherwise append a new IMAGE extension following the current HDU.
    Refer to Chapter 9 for a list of pre-defined bitpix values.
   This routine simply combines calls to ffcrhd and ffphps.
@@ -2046,7 +2137,7 @@ insert, copy, and delete HDUs.
 \end{verbatim}
 
 \begin{description}
-\item[6 ]Create (append) a new table extension following the current HDU.
+\item[9 ]Create (append) a new table extension following the current HDU.
    This routine simply combines calls to ffcrhd and ffphtb or ffphbn.
    The type of table is specified by the tbltype parameter which can have
    symbolic constant values of ASCII\_TBL or BINARY\_TBL.  See Chapter 9
@@ -2060,7 +2151,7 @@ insert, copy, and delete HDUs.
 \end{verbatim}
 
 \begin{description}
-\item[7 ]Create (append) a new empty HDU following the last extension that
+\item[10] Create (append) a new empty HDU following the last extension that
     has been previously accessed by the program.   This will overwrite
     any later extensions that may exist in the FITS file but which
     have not been accessed.
@@ -2077,7 +2168,7 @@ insert, copy, and delete HDUs.
 \end{verbatim}
 
 \begin{description}
-\item[8 ] Insert a new IMAGE extension immediately following the CHDU.
+\item[11]  Insert a new IMAGE extension immediately following the CHDU.
     Any following extensions will be shifted down to make room for
     the new extension.  If there are no other following extensions
     then the new image extension will simply be appended to the
@@ -2091,7 +2182,7 @@ insert, copy, and delete HDUs.
 \end{verbatim}
 
 \begin{description}
-\item[9 ] Insert a new ASCII TABLE extension immediately following the CHDU.
+\item[12] Insert a new ASCII TABLE extension immediately following the CHDU.
     Any following extensions will be shifted down to make room for
     the new extension.  If there are no other following extensions
     then the new table extension will simply be appended to the
@@ -2106,7 +2197,7 @@ insert, copy, and delete HDUs.
 \end{verbatim}
 
 \begin{description}
-\item[10] Insert a new binary table extension immediately following the CHDU.
+\item[13] Insert a new binary table extension immediately following the CHDU.
     Any following extensions will be shifted down to make room for
     the new extension.  If there are no other following extensions
     then the new bintable extension will simply be appended to the
@@ -2124,7 +2215,7 @@ insert, copy, and delete HDUs.
 \end{verbatim}
 
 \begin{description}
-\item[11] Modify the size, dimensions, and/or datatype of the current
+\item[14] Modify the size, dimensions, and/or datatype of the current
     primary array or image extension. If the new image, as specified
     by the input arguments, is larger than the current existing image
     in the FITS file then zero fill data will be inserted at the end
@@ -2143,7 +2234,7 @@ insert, copy, and delete HDUs.
 \end{verbatim}
 
 \begin{description}
-\item[12] Delete the CHDU in the FITS file.  Any following HDUs will be shifted
+\item[15] Delete the CHDU in the FITS file.  Any following HDUs will be shifted
     forward in the file, to fill in the gap created by the deleted HDU.
     This routine will only delete extensions; the primary array (the first
     HDU in the file) cannot be deleted.  The physical size of the FITS file
@@ -2163,7 +2254,7 @@ insert, copy, and delete HDUs.
 \end{verbatim}
 
 \begin{description}
-\item[13] Copy the entire CHDU from the FITS file associated with infptr to the CHDU
+\item[16] Copy the entire CHDU from the FITS file associated with infptr to the CHDU
     of the FITS file associated with outfptr. The output HDU must be empty
     and not already contain any keywords.  Space will be reserved for MOREKEYS
     additional  keywords in the output header if there is not already enough
@@ -2176,7 +2267,7 @@ insert, copy, and delete HDUs.
 \end{verbatim}
 
 \begin{description}
-\item[14] Copy the data (and not the header) from the CHDU associated with infptr
+\item[17] Copy the data (and not the header) from the CHDU associated with infptr
     to the CHDU associated with outfptr. This will overwrite
     any data previously in the output CHDU.  This low level routine is used
     by ffcopy, but it may also be useful in certain application programs
@@ -2192,7 +2283,7 @@ insert, copy, and delete HDUs.
 \end{verbatim}
 
 \begin{description}
-\item[15] This routine forces CFITSIO to scan the current header keywords that
+\item[18] This routine forces CFITSIO to scan the current header keywords that
     define the structure of the HDU (such as the NAXISn, PCOUNT and GCOUNT
     keywords) so that it can initialize the internal buffers that describe
     the HDU structure.  This routine is
@@ -2370,7 +2461,7 @@ image or table.
 \end{verbatim}
 
 
-\subsection{ Write Keyword Routines  \label{FFPREC}}
+\subsection{ Write or Copy Keyword Routines  \label{FFPREC}}
 
 
 \begin{description}
@@ -2513,7 +2604,23 @@ image or table.
 \end{verbatim}
 
 \begin{description}
-\item[10] Put (append) a `triple precision' keyword into the CHU in F28.16 format.
+\item[10] Copy an indexed keyword from one HDU to another, modifying
+    the index number of the keyword name in the process.  For example,
+    this routine could read the TLMIN3 keyword from the input HDU
+    (by giving keyroot = "TLMIN" and innum = 3) and write it to the
+    output HDU with the keyword name TLMIN4 (by setting outnum = 4).
+    If the input keyword does not exist, then this routine simply
+   returns without indicating an error.
+\end{description}
+
+\begin{verbatim}
+  int fits_copy_key / ffcpky
+      (fitsfile *infptr, fitsfile *outfptr, int innum, int outnum,
+       char *keyroot, int *status)
+\end{verbatim}
+
+\begin{description}
+\item[11] Put (append) a `triple precision' keyword into the CHU in F28.16 format.
     The floating point keyword value is constructed by concatenating the
     input integer value with the input double precision fraction value
     (which must have a value between 0.0 and 1.0). The ffgkyt routine should
@@ -2528,7 +2635,7 @@ image or table.
 \end{verbatim}
 
 \begin{description}
-\item[11] Append the physical units string to an existing keyword.  This
+\item[12] Append the physical units string to an existing keyword.  This
     routine uses a local convention, shown in the following example,
     in which the keyword units are
     enclosed in square brackets in the beginning of the keyword comment
@@ -3303,8 +3410,9 @@ the TTYPEn keywords in the FITS header.  If a column does not have a
 TTYPEn keyword, then these routines assume that the name consists of
 all blank characters.  These 2 routines perform the same function
 except that ffgcno only returns the number of the matching column whereas
-ffgcnn also returns the name of the column.  If casesen = TRUE then
-the column name match will be case-sensitive.
+ffgcnn also returns the name of the column.  If casesen = TRUE = CASESEN then
+the column name match will be case-sensitive, whereas if casesen = FALSE =
+CASEINSEN then the case of the letters will be ignored.
 
 The input column name template (templt) is either the exact name of the
 column to be searched for, or it may contain wild card characters (*,
@@ -3466,7 +3574,7 @@ conversion or byte swapping.
        unsigned char *values, > int *status)
 \end{verbatim}
 
-\subsection{ Insert or Delete Rows and Columns Routines \label{FFIROW}}
+\subsection{ Insert, Delete, or Copy Rows and Columns Routines \label{FFIROW}}
 
 
 \begin{description}
@@ -3532,6 +3640,20 @@ conversion or byte swapping.
 
 \begin{verbatim}
   int fits_delete_col / ffdcol(fitsfile *fptr, int colnum, > int *status)
+\end{verbatim}
+
+\begin{description}
+\item[5 ] Copy a column from one HDU to another (or to the same HDU).  If
+    create\_col = TRUE, then a new column will be inserted in the output
+    table, at position 'outcolumn', otherwise the existing output column will
+    be overwritten (in which case it must have an appropriate datatype).
+   Note that the first column in a table is at colnum = 1.
+\end{description}
+
+\begin{verbatim}
+int fits_copy_col / ffcpcl
+    (fitsfile *infptr, fitsfile *outfptr, int incolnum, int outcolnum,
+     int create_col, int *status);
 \end{verbatim}
 
 \subsection{ Write Column Data Routines \label{FFPCLS}}
@@ -3606,7 +3728,33 @@ required) and not the number of table elements.
 \end{verbatim}
 
 \begin{description}
-\item[4 ] Put bit values into a binary byte ('B') or bit ('X') table column (in the
+\item[4 ] Put string elements into a binary table column (in the CDU)
+    substituting the FITS null value for any elements that
+    are equal to the nulstr string.
+   This routine must NOT be used to write to  variable length array columns.
+\end{description}
+
+\begin{verbatim}
+  int fits_write_colnul_str / ffpcns
+      (fitsfile *fptr, int colnum, long firstrow, long firstelem,
+       long nelements, char **array, char *nulstr, > int *status)
+\end{verbatim}
+
+\begin{description}
+\item[5 ] Put logical elements into a binary table column (in the CDU)
+    substituting the FITS null value for any elements that
+    have the corresponding value of nularray = TRUE.
+   This routine must NOT be used to write to  variable length array columns.
+\end{description}
+
+\begin{verbatim}
+  int fits_write_colnul_log / ffpcnl
+      (fitsfile *fptr, int colnum, long firstrow, long firstelem,
+       long nelements, char *array, char *nularray, > int *status)
+\end{verbatim}
+
+\begin{description}
+\item[6 ] Put bit values into a binary byte ('B') or bit ('X') table column (in the
     CDU).  Larray is an array of logical values corresponding to the sequence of
     bits to be written.  If larray is true then the corresponding bit is
     set to 1, otherwise the bit is set to 0.  Note that in the case of
@@ -3626,7 +3774,7 @@ required) and not the number of table elements.
 \end{verbatim}
 
 \begin{description}
-\item[5 ] Set table elements in a column as undefined
+\item[7 ] Set table elements in a column as undefined
 \end{description}
 
 \begin{verbatim}
@@ -3636,7 +3784,7 @@ required) and not the number of table elements.
 \end{verbatim}
 
 \begin{description}
-\item[6 ] Put the descriptor for a variable length column in a binary table.
+\item[8 ] Put the descriptor for a variable length column in a binary table.
     This routine can be used in conjunction with FFGDES to enable
     2 or more arrays to point to the same storage location to save
    storage space if the arrays are identical.
@@ -3649,7 +3797,7 @@ required) and not the number of table elements.
 \end{verbatim}
 
 \begin{description}
-\item[7 ] Define the zero indexed byte offset of the 'heap' measured from
+\item[9 ] Define the zero indexed byte offset of the 'heap' measured from
     the start of the binary table data.  By default the heap is assumed
     to start immediately following the regular table data, i.e., at
     location NAXIS1 x NAXIS2.  This routine is only relevant for
@@ -3741,13 +3889,8 @@ pixel is undefined.
        long nelements, > char **array, char *nularray, int *anynul,
        int *status)
 
-  int fits_read_colnull_log / ffgcfl
-      (fitsfile *fptr, int colnum, long firstrow, long firstelem,
-       long nelements, > char *array, char *nularray, int *anynul,
-       int *status)
-
-  int fits_read_colnull_[byt, sht, usht, lng, ulng, int, flt, dbl, cmp, dblcmp] /
-      ffgcf[b,i,ui,j,uj,k,e,d,c,m]
+  int fits_read_colnull_[log,byt,sht,usht,lng,ulng, int, flt, dbl, cmp, dblcmp] /
+      ffgcf[l,b,i,ui,j,uj,k,e,d,c,m]
       (fitsfile *fptr, int colnum, long firstrow,
        long firstelem, long nelements, > DTYPE *array,
        char *nularray, int *anynul, int *status)
@@ -4073,9 +4216,10 @@ The following utility routines may be useful for certain applications:
     to see if they match.  The template string may contain wildcard
     characters: '*' will match any sequence of characters (including
     zero characters) and '\%' will match any single character in the
-    reference string.  If CASESN = .true. then the match will be
-    case sensitive.  The returned MATCH parameter will be .true. if
-    the 2 strings match, and EXACT will be .true. if the match is
+    reference string.  If casesen = CASESEN = TRUE then the match will be
+    case sensitive, otherwise the case of the letters will be ignored
+    if casesen = CASEINSEN = FALSE.  The returned MATCH parameter will be
+    TRUE if the 2 strings match, and EXACT will be TRUE if the match is
     exact (i.e., if no wildcard characters were used in the match).
    Both strings must be 68 characters or less in length.
 \end{description}
@@ -4328,6 +4472,8 @@ The following utility routines may be useful for certain applications:
 \begin{verbatim}
   int ffopen(fitsfile **fptr, const char *filename, int iomode, > int *status)
   int ffinit(fitsfile **fptr, const char *filename, > int *status)
+  int ffflnm(fitsfile *fptr, > char *filename, int *status)
+  int ffflmd(fitsfile *fptr, > int *iomode, int *status)
   int ffflus(fitsfile *fptr, > int *status)
   int ffclos(fitsfile *fptr, > int *status)
   int ffdelt(fitsfile *fptr, > int *status)
@@ -4341,7 +4487,10 @@ The following utility routines may be useful for certain applications:
 \begin{verbatim}
   int ffmahd(fitsfile *fptr, int hdunum, > int *hdutype, int *status)
   int ffmrhd(fitsfile *fptr, int nmove, > int *hdutype, int *status)
+  int ffmnhd(fitsfile *fptr, char *extname, int extvers, > int *status)
   int ffghdn(fitsfile *fptr, > int *hdunum)
+  int ffghdt(fitsfile *fptr, > int *hdutype, int *status)
+  int ffthdu(fitsfile *fptr, > int *hdunum, int *status)
   int ffghad(fitsfile *fptr, > long *chduaddr, long *nextaddr)
   int ffcrim(fitsfile *fptr, int bitpix, int naxis, long *naxes, > int *status)
   int ffcrtb(fitsfile *fptr, int tbltype, long naxis2, int tfields,
@@ -4407,7 +4556,9 @@ The following utility routines may be useful for certain applications:
   int ffpkn[lj](fitsfile *fptr, char *keyroot, int nstart, int nkeys,
              DTYPE *numval, char **comment, int *status)
   int ffpkne[edfg](fitsfile *fptr, char *keyroot, int nstart, int nkey,
-                DTYPE *numval, int decimals, char **comment, > int *status)
+             DTYPE *numval, int decimals, char **comment, > int *status)
+  int ffcpky(fitsfile *infptr, fitsfile *outfptr, int innum, int outnum,
+             char *keyroot, int *status)
   int ffpkyt(fitsfile *fptr, char *keyname, long intval, double frac,
              char *comment, > int *status)
   int ffpunt(fitsfile *fptr, char *keyname, char *unit, > int *status)
@@ -4567,7 +4718,7 @@ The following utility routines may be useful for certain applications:
   int ffptbb(fitsfile *fptr, long firstrow, long firstchar, long nchars,
            unsigned char *values, > int *status)
 \end{verbatim}
- Insert or Delete Rows and Columns Routines: page~\pageref{FFIROW}
+ Insert, Delete, or Copy Rows and Columns Routines: page~\pageref{FFIROW}
 
 \begin{verbatim}
   int ffirow(fitsfile *fptr, long firstrow, long nrows, > int *status)
@@ -4575,8 +4726,10 @@ The following utility routines may be useful for certain applications:
   int fficol(fitsfile *fptr, int colnum, char *ttype, char *tform,
             > int *status)
   int fficls(fitsfile *fptr, int colnum, int ncols, char **ttype,
-           char **tform, > int *status)
+            char **tform, > int *status)
   int ffdcol(fitsfile *fptr, int colnum, > int *status)
+  int ffcpcl(fitsfile *infptr, fitsfile *outfptr, int incolnum, int outcolnum,
+            int create_col, int *status);
 \end{verbatim}
  Write Column Data Routines: page~\pageref{FFPCLS}
 
@@ -4590,6 +4743,10 @@ The following utility routines may be useful for certain applications:
   int ffpcn[b,i,ui,j,uj,k,e,d](fitsfile *fptr, int colnum, long firstrow,
            long firstelem, long nelements, DTYPE *array, DTYPE nulval,
            > int *status)
+  int ffpcns(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+           long nelements, char **array, char *nulstr, > int *status)
+  int ffpcnl(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+           long nelements, char *array, char *nularray, > int *status)
   int ffpclx(fitsfile *fptr, int colnum, long firstrow, long firstbit,
            long nbits, char *larray, > int *status)
   int ffpclu(fitsfile *fptr, int colnum, long firstrow, long firstelem,
@@ -4615,10 +4772,7 @@ The following utility routines may be useful for certain applications:
   int ffgcfs(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelements, > char **array, char *nularray, int *anynul,
            int *status)
-  int ffgcfl(fitsfile *fptr, int colnum, long firstrow, long firstelem,
-           long nelements, > char *array, char *nularray, int *anynul,
-           int *status)
-  int ffgcf[b,i,ui,j,uj,k,e,d,c,m](fitsfile *fptr, int colnum, long firstrow,
+  int ffgcf[l,b,i,ui,j,uj,k,e,d,c,m](fitsfile *fptr, int colnum, long firstrow,
            long firstelem, long nelements, > DTYPE *array,
            char *nularray, int *anynul, int *status)
   int ffgsv[b,i,ui,j,uj,k,e,d](fitsfile *fptr, int colnum, int naxis, long *naxes,
@@ -4706,7 +4860,7 @@ bitpix   - bits per pixel. The following symbolic mnemonics are predefined:
            of 32768 or 2147483648, respectively, which is the convention that
            FITS uses to store unsigned integers.
 card     - header record to be read or written (80 char max, null-terminated)
-casesen  - TRUE (=1) to force case-sensitive string matching, else FALSE (=0)
+casesen  - CASESEN (=1) for case-sensitive string matching, else CASEINSEN (=0)
 chduaddr - starting address (in bytes) of the CHDU
 colname  - name of the column (null-terminated)
 colnum   - column number (first column = 1)
@@ -4714,6 +4868,8 @@ comment  - the keyword comment field (72 char max, null-terminated)
 complm   - should the checksum be complemented?
 coordtype- type of coordinate projection (-SIN, -TAN, -ARC, -NCP,
            -GLS, -MER, or -AIT)
+create_col- If TRUE, then insert a new column in the table, otherwise
+           overwrite the existing column.
 dataok   - was the data unit verification successful (=1) or
            not (= -1).  Equals zero if the DATASUM keyword is not present.
 datasum  - 32-bit 1's complement checksum for the data unit
@@ -4736,6 +4892,7 @@ exact    - TRUE (=1) if the strings match exactly;
 exclist  - array of pointers to keyword names to be excluded from search
 extend   - TRUE (=1) if FITS file may have extensions, else FALSE (=0)
 extname  - value of the EXTNAME keyword (null-terminated)
+extvers  - value of the EXTVERS keyword = integer version number
 filename - name of the FITS file (null-terminated)
 firstchar- starting byte in the row (first byte of row = 1)
 firstelem- first element in a vector (ignored for ASCII tables)
@@ -4749,10 +4906,11 @@ hdunum   - sequence number of the HDU (Primary array = 1)
 hduok    - was the HDU verification successful (=1) or
            not (= -1).  Equals zero if the CHECKSUM keyword is not present.
 hdusum   - 32 bit 1's complement checksum for the entire CHDU
-hdutype  - type of HDU: HDU_IMAGE (=0), HDU_ATABLE (=1), or HDU_BTABLE (=2)
+hdutype  - type of HDU: IMAGE_HDU (=0), ASCII_TBL (=1), or BINARY_TBL (=2)
 history  - the HISTORY keyword comment string (70 char max, null-terminated)
 inc      - sampling interval for pixels in each FITS dimension
 inclist  - array of pointers to matching keyword names
+incolnum - input column number; range = 1 to TFIELDS
 infptr   - pointer to a 'fitsfile' structure describing the input FITS file.
 intval   - integer part of the keyword value
 iomode   - file access mode: either READONLY (=0) or READWRITE (=1)
@@ -4790,6 +4948,7 @@ nulval   - numerical value to represent undefined pixels
 nulstr   - character string used to represent undefined values in ASCII table
 numval   - numerical data value, of the appropriate datatype
 offset   -  byte offset in the heap to the first element of the vector
+outcolnum- output column number; range = 1 to TFIELDS + 1
 outfptr  - pointer to a 'fitsfile' structure describing the output FITS file.
 pcount   - value of the PCOUNT keyword = size of binary table heap
 repeat   - length of column vector (e.g. 12J); == 1 for ASCII table
@@ -4868,6 +5027,7 @@ improve the readability of their code.
  FILE_NOT_CLOSED   110    could not close the file
  ARRAY_TOO_BIG     111    array dimensions exceed internal limit
  READONLY_FILE     112    Cannot write to readonly file
+ MEMORY_ALLOCATION 113    Could not allocate memory
 
  HEADER_NOT_EMPTY  201    header already contains keywords
  KEY_NO_EXIST      202    keyword not found in header

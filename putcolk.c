@@ -358,6 +358,8 @@ int ffpclk( fitsfile *fptr,  /* I - FITS file pointer                       */
         ffpclj(fptr, colnum, firstrow, firstelem, nelem, 
               (long *) array, status);
 
+    else
+    {
     /*
       This is a special case: sizeof(int) is not equal to sizeof(short) or
       sizeof(long).  This occurs on Alpha OSF systems where short = 2 bytes,
@@ -505,6 +507,8 @@ int ffpclk( fitsfile *fptr,  /* I - FITS file pointer                       */
         "Numerical overflow during type conversion while writing FITS data.");
         *status = NUM_OVERFLOW;
     }
+
+    }   /* end of Dec ALPHA special case */
 
     return(*status);
 }

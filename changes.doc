@@ -1,8 +1,49 @@
              Log of Changes Made to CFITSIO
 
-Version 1.32 - 21 November 1997
+Version 1.33 - December 1997
 
-   - fixed serious bug in the memory deallocation (free) statements
+   - added a new source file 'f77_wrap.c' that includes all the
+     Fortran77 wrapper routines for calling CFITSIO.  This will
+     eventually replace the Fortran FITSIO library.
+
+   - added new routines:
+     ffiter - apply a user function iteratively to all the rows of a table
+     ffcpcl - copy a column from one table to another
+     ffcpky - copy an indexed keyword from one HDU to another
+     ffpcnl - write logical values, including nulls, to binary table
+     ffpcns - write string values,  including nulls, to table
+     ffmnhd - move to HDU with given EXTNAME and EXTVERS values
+     ffthdu - return the total number of HDUs in the file
+     ffghdt - return the type of the  CHDU
+     ffflnm - return the name of the open FITS file
+     ffflmd - return the mode of the file (READONLY or READWRITE)
+
+   - modified ffmahd and ffmrhd (to move to a new extension) so that
+     a null pointer may be given for the returned HDUTYPE argument.
+
+   - worked around a bug in the Mac CWpro2 compiler by changing all
+     the statements like "#if BYTESWAPPED == TRUE" to "if BYTESWAPPED".
+
+   - modified ffitab (insert new ASCII table) to allow tables with
+     zero number of columns
+
+   - fixed small bug in ffgrz (get optimum row size) which sometimes
+     caused it to return slightly less than the maximum optimum size.
+     This bug would have done no harm to application programs.
+
+   - modified Makefile.in and configure to define the -Dg77Fortran
+     CFLAGS variable on Linux platforms.  This is needed to 
+     compile the new f77_wrap.c file (which includes cfortran.h)
+
+   - fixed bug in ffpclk and ffgclk to add an 'else' case
+     if size of int is not equal to size of short or size of long.
+
+   - added test to ffgkls to check if the input string is null before
+     allocating memory for it.
+
+Version 1.32 - 21 November 1997 (internal release only)
+
+   - fixed bug in the memory deallocation (free) statements
      in the ffopen routine in the cfileio.c file.
 
    - modified ffgphd to tolerate minor violations of the FITS 
@@ -10,7 +51,7 @@ Version 1.32 - 21 November 1997
      keyword when reading FITS files.  Extra trailing spaces
      are now allowed in the keyword value.
 
-Version 1.31 - 4 November 1997
+Version 1.31 - 4 November 1997 (internal release only)
 
   Enhancements:
 

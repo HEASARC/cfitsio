@@ -23,8 +23,9 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-   *version = 1.32;  /* 21 Nov 1997 */
+   *version = 1.33;  /* 16 Dec 1997 */
 
+ /*   *version = 1.32;   21 Nov 1997 (internal release only) */
  /*   *version = 1.31;    4 Nov 1997 (internal release only) */
  /*   *version = 1.30;   11 Sep 1997 */
  /*   *version = 1.27;    3 Sep 1997 (internal release only) */
@@ -43,6 +44,28 @@ float ffvers(float *version)  /* IO - version number */
  /*   *version = 1.01;   12 Aug 1996 */
 
     return(*version);
+}
+/*--------------------------------------------------------------------------*/
+int ffflnm(fitsfile *fptr,    /* I - FITS file pointer  */
+           char *filename,    /* O - name of the file   */
+           int *status)       /* IO - error status      */
+/*
+  return the name of the FITS file
+*/
+{
+    strcpy(filename,fptr->filename);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffflmd(fitsfile *fptr,    /* I - FITS file pointer  */
+           int *filemode,     /* O - open mode of the file  */
+           int *status)       /* IO - error status      */
+/*
+  return the access mode of the FITS file
+*/
+{
+    *filemode = fptr->writemode;
+    return(*status);
 }
 /*--------------------------------------------------------------------------*/
 void ffgerr(int status,     /* I - error status value */
@@ -89,6 +112,9 @@ void ffgerr(int status,     /* I - error status value */
        break;
     case 112:
        strcpy(errtext, "cannot write to readonly file");
+       break;
+    case 113:
+       strcpy(errtext, "could not allocate memory");
        break;
     case 201:
        strcpy(errtext, "header already has keywords");
@@ -1853,7 +1879,8 @@ int ffrhdu(fitsfile *fptr,    /* I - FITS file pointer */
     if (!strcmp(name, "SIMPLE"))        /* this is the primary array */
     {
        ffpinit(fptr, status);           /* initialize the primary array */
-       *hdutype = 0;
+       if (hdutype != NULL)
+           *hdutype = 0;
     }
 
     else if (!strcmp(name, "XTENSION"))   /* this is an XTENSION keyword */
@@ -1868,7 +1895,8 @@ int ffrhdu(fitsfile *fptr,    /* I - FITS file pointer */
         if (!strcmp(xtension, "TABLE"))
         {
             ffainit(fptr, status);       /* initialize the ASCII table */
-            *hdutype = 1;
+            if (hdutype != NULL)
+                *hdutype = 1;
         }
 
         else if (!strcmp(xtension, "BINTABLE") ||
@@ -1876,7 +1904,8 @@ int ffrhdu(fitsfile *fptr,    /* I - FITS file pointer */
                  !strcmp(xtension, "3DTABLE") )
         {
             ffbinit(fptr, status);       /* initialize the binary table */
-            *hdutype = 2;
+            if (hdutype != NULL)
+                *hdutype = 2;
         }
 
         else
@@ -1884,12 +1913,13 @@ int ffrhdu(fitsfile *fptr,    /* I - FITS file pointer */
             tstatus = 0;
             ffpinit(fptr, &tstatus);       /* probably an IMAGE extension */
 
-            if (tstatus == UNKNOWN_EXT)
+            if (tstatus == UNKNOWN_EXT && hdutype != NULL)
                 *hdutype = -1;       /* don't recognize this extension type */
             else
             {
                 *status = tstatus;
-                *hdutype = 0;
+                if (hdutype != NULL)
+                    *hdutype = 0;
             }
         }
     }
@@ -2390,6 +2420,10 @@ int ffgabc(int tfields,     /* I - number of columns in the table           */
         return(*status);
 
     *rowlen=0;
+
+    if (tfields <= 0)
+        return(*status);
+
     tbcol[0] = 1;
 
     for (ii = 0; ii < tfields; ii++)
@@ -3414,6 +3448,22 @@ int ffdblk(fitsfile *fptr,      /* I - FITS file pointer                    */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffghdt(fitsfile *fptr,      /* I - FITS file pointer             */
+           int *exttype,        /* O - type of extension, 0, 1, or 2 */
+           int *status)         /* IO - error status                 */
+/*
+  Return the type of the CHDU.
+*/
+{
+
+    if (*status > 0)
+        return(*status);
+
+    *exttype = fptr->hdutype; /* return the type of HDU */
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffmahd(fitsfile *fptr,      /* I - FITS file pointer             */
            int hdunum,          /* I - number of the HDU to move to  */
            int *exttype,        /* O - type of extension, 0, 1, or 2 */
@@ -3462,7 +3512,8 @@ int ffmahd(fitsfile *fptr,      /* I - FITS file pointer             */
         }
     }
 
-    *exttype = fptr->hdutype; /* return the type of HDU */
+    if (exttype != NULL)
+        *exttype = fptr->hdutype; /* return the type of HDU */
 
     return(*status);
 }
@@ -3484,6 +3535,83 @@ int ffmrhd(fitsfile *fptr,      /* I - FITS file pointer                    */
     extnum = fptr->curhdu + 1 + hdumov;  /* the absolute HDU number */
     ffmahd(fptr, extnum, exttype, status);  /* move to the HDU */
 
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffmnhd(fitsfile *fptr,      /* I - FITS file pointer                    */
+           char *hduname,       /* I - desired EXTNAME value for the HDU    */
+           int hduvers,         /* I - desired EXTVERS value for the HDU    */
+           int *status)         /* IO - error status                        */
+/*
+  Move to the HDU with a given EXTNAME and EXTVERS keyword values.  If
+  hduvers = 0, then move to the first HDU with the given name regardless of
+  EXTVERS value.  If no matching HDU is found in the file, then the current
+  open HDU will remain unchanged.
+*/
+{
+    char extname[FLEN_VALUE];
+    int ii, extnum, tstatus, match, exact;
+    long extvers, slen;
+
+    if (*status > 0)
+        return(*status);
+
+    extnum = fptr->curhdu + 1;  /* save the current HDU number */
+
+    for (ii=1; 1; ii++)    /* loop until EOF */
+    {
+        tstatus = 0;
+        if (ffmahd(fptr, ii, 0, &tstatus))  /* move to next HDU */
+        {
+           ffmahd(fptr, extnum, 0, status); /* restore file position */
+           ffxmsg(-2, extname);  /* clear the end of file error message */
+           return(*status = BAD_HDU_NUM);      /* couldn't find desired HDU */
+        }
+        
+        if (ffgkys(fptr, "EXTNAME", extname, 0, &tstatus) <= 0)  /* read name */
+        {
+          ffcmps(extname, hduname, CASEINSEN, &match, &exact);
+          if (exact)  /* names match? */
+          {
+            if (hduvers)  /* check if version numbers match? */
+            {
+              if (ffgkyj(fptr, "EXTVERS", &extvers, 0, &tstatus) <= 0)
+              {
+                 if ( (int) extvers == hduvers)
+                    return(*status);    /* found matching name and vers */
+              }
+            }
+            else
+              return(*status); /* found matching name */
+          }
+        }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffthdu(fitsfile *fptr,      /* I - FITS file pointer                    */
+           int *nhdu,            /* O - number of HDUs in the file           */
+           int *status)         /* IO - error status                        */
+/*
+  Return the number of HDUs that currently exist in the file.
+*/
+{
+    int ii, extnum, tstatus;
+    char *errmsg;
+
+    if (*status > 0)
+        return(*status);
+
+    extnum = fptr->curhdu + 1;  /* save the current HDU number */
+    tstatus = 0;
+
+    for (ii=extnum; ffmahd(fptr, ii, 0, &tstatus) <= 0; ii++) /* loop until EOF */
+    {
+        *nhdu = ii;
+    }
+
+    ffmahd(fptr, extnum, 0, status);       /* restore orig file position */
+    ffxmsg(-2, errmsg); /* clear the end of file error message */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

@@ -786,18 +786,22 @@ int ffgrsz( fitsfile *fptr, /* I - FITS file pionter                        */
     nfiles = 0;
     for (ii = 0; ii < NIOBUF; ii++)
     {
-      unique = TRUE;
-      for (jj = 0; jj < ii; jj++)
+      if (bufptr[ii])
       {
-        if (!bufptr[ii] || bufptr[ii] == bufptr[jj])
-        {
-          unique = FALSE;
-          break;
-        }
-      }
+        unique = TRUE;
 
-      if (unique)
-        nfiles++;
+        for (jj = 0; jj < ii; jj++)
+        {
+          if (bufptr[ii] == bufptr[jj])
+          {
+            unique = FALSE;
+            break;
+          }
+        }
+
+        if (unique)
+          nfiles++;
+      }
     }
 
     /* one buffer (at least) is always allocated to each open file */
@@ -909,7 +913,7 @@ int ffgi2b(fitsfile *fptr,  /* I - FITS file pointer                        */
         ffgbytoff(fptr, 2, nvals, incre - 2, values, status);
     }
 
-#if BYTESWAPPED == TRUE
+#if BYTESWAPPED
     ffswap2(values, nvals);    /* reverse order of bytes in each value */
 #endif
 
@@ -950,7 +954,7 @@ int ffgi4b(fitsfile *fptr,  /* I - FITS file pointer                        */
         ffgbytoff(fptr, 4, nvals, incre - 4, values, status);
     }
 
-#if BYTESWAPPED == TRUE
+#if BYTESWAPPED
 
     ffunswaplong(values, nvals);    /* reverse order of bytes in each value */
                          /* this also converts to 8-byte longs on ALPHA OSF */
@@ -1017,7 +1021,7 @@ int ffgr4b(fitsfile *fptr,  /* I - FITS file pointer                        */
             values[ii] *= 4.0;
     }
 
-#elif BYTESWAPPED == TRUE
+#elif BYTESWAPPED
 
     ffswapfloat(values, nvals);  /* reverse order of bytes in each value */
 
@@ -1078,7 +1082,7 @@ int ffgr8b(fitsfile *fptr,  /* I - FITS file pointer                        */
             values[ii] *= 4.0;
     }
 
-#elif BYTESWAPPED == TRUE
+#elif BYTESWAPPED
 
     ffswap8(values, nvals);   /* reverse order of bytes in each value */
 
@@ -1154,7 +1158,7 @@ int ffpi2b(fitsfile *fptr, /* I - FITS file pointer                         */
   format conversion (e.g. byte-swapping) if necessary.
 */
 {
-#if BYTESWAPPED == TRUE
+#if BYTESWAPPED
     ffswap2(values, nvals);  /* reverse order of bytes in each value */
 #endif
 
@@ -1179,7 +1183,7 @@ int ffpi4b(fitsfile *fptr, /* I - FITS file pointer                         */
   format conversion (e.g. byte-swapping) if necessary.
 */
 {
-#if BYTESWAPPED == TRUE
+#if BYTESWAPPED
 
     ffswaplong(values, nvals);    /* reverse order of bytes in each value */
                      /* this also converts from 8-byte longs on ALPHA OSF */
@@ -1226,7 +1230,7 @@ int ffpr4b(fitsfile *fptr, /* I - FITS file pointer                         */
 
     ffswap2( (short *) values, nvals * 2);  /* swap pairs of bytes */
 
-#elif BYTESWAPPED == TRUE
+#elif BYTESWAPPED
 
     ffswapfloat(values, nvals); /* reverse order of bytes in each value */
 
@@ -1268,7 +1272,7 @@ int ffpr8b(fitsfile *fptr, /* I - FITS file pointer                         */
 
     ffswap2( (short *) values, nvals * 4);  /* swap pairs of bytes */
 
-#elif BYTESWAPPED == TRUE
+#elif BYTESWAPPED
 
     ffswap8(values, nvals); /* reverse order of bytes in each value */
 

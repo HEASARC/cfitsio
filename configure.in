@@ -84,6 +84,7 @@ case $system in
 	;;
     Linux*)
 	ARCH="linux"
+	CFLAGS="$CFLAGS -Dg77Fortran"
 	;;
     *)
 		echo "cfitsio: == Don't know what do do with $system"
