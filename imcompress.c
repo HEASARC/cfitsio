@@ -1214,7 +1214,7 @@ int fits_read_compressed_img_plane(fitsfile *fptr, /* I - FITS file   */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int imcomp_get_compressed_image_parms(fitsfile *infptr, int *status)
+int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
  
 /* 
     This routine reads keywords from a BINTABLE extension containing a
@@ -1233,7 +1233,7 @@ int imcomp_get_compressed_image_parms(fitsfile *infptr, int *status)
     if (ffgky (infptr, TSTRING, "ZCMPTYPE", value, NULL, status) > 0)
     {
         ffpmsg("required ZCMPTYPE compression keyword not found in");
-        ffpmsg(" imcomp_get_compressed_image_parms");
+        ffpmsg(" imcomp_get_compressed_image_par");
         return(*status);
     }
 

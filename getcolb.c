@@ -764,7 +764,7 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
         ntodo = minvalue(remain, maxelem);      
         ntodo = minvalue(ntodo, ((repeat - elemnum - 1)/elemincre +1));
 
-        readptr = startpos + (rownum * rowlen) + (elemnum * incre / elemincre);
+        readptr = startpos + (rownum * rowlen) + (elemnum * (incre / elemincre));
 
         switch (tcode) 
         {

@@ -90,10 +90,8 @@
 #include "region.h"
 #include <time.h>
 
-   /*  Bison uses alloca for allocations, but VMS lacks it  */
-#if defined(vms) || defined(__vms) || defined(macintosh) || defined(__WIN32__) || defined(WIN32)
+#include <stdlib.h>
 #define alloca malloc
-#endif
 
    /*  Shrink the initial stack depth to keep local data <32K (mac limit)  */
    /*  yacc will allocate more space if needed, though.                    */

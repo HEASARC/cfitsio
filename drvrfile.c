@@ -393,14 +393,6 @@ int file_compress_open(char *filename, int rwmode, int *hdl)
     int status, clobber = 0;
     char *cptr;
 
-    if (rwmode != READONLY)
-    {
-        ffpmsg(
-  "cannot open compressed file with WRITE access (file_compress_open)");
-        ffpmsg(filename);
-        return(READONLY_FILE);
-    }
-
     /* open the compressed disk file */
     status = file_openfile(filename, READONLY, &indiskfile);
     if (status)

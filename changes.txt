@@ -1,8 +1,56 @@
                    Log of Changes Made to CFITSIO
 
+   - Reading a subsample of pixels in very large images, (e.g., 
+     file = myfile.fits[1:10000:10,1:10000:10],  could cause a
+     long integer overflow (value > 2**31) in the computation of the
+     starting byte offset in the file, and cause a return error status
+     = 304 (negative byte address).  This was fixed by changing the
+     order of the arithmetic operations in calculating the value of
+     'readptr' in the ffgcli, ffgclj, ffgcle, ffgcld, etc. routines.
+
+   - In version 2.031, a fix to prevent compressed files from being
+     opened with write privilege was implemented incorrectly.  The fix
+     was intended not allow a compressed FITS file to be opened except 
+     when a local uncompressed copy of the file is being produced (then
+     the copy is opened with write access), but in fact the opposite
+     behavior occurs.  Compressed files can be opened, EXCEPT when
+     a local copy is produced.   This behavior has now been fixed
+     in the mem_compress_open and file_compress_open routines.
+
+Version 2.036 - 1 Feb 2000
+
    - added 2 new generic routines, ffgpf and ffgcf which are analogous
      to ffgpv and ffgcv but return an array of null flag values instead
      of setting null pixels to a reserved value.
+
+   - minor change to eval_y.c and eval.y to "define alloca malloc"
+     on all platforms, not just VMS.
+
+   - added support for the unsigned int datatype (TUINT) in the
+     generic ffuky routine and changed ffpky so that unsigned ints
+     are cast to double instead of long before being written to 
+     the header. 
+
+   - modified ffs2c so that if a null string is given as input then
+     a null FITS string (2 successive single quotes) will be returned.
+     Previously this routine would just return a string with a single
+     quote, which could cause an illegal keyword record to be written.
+
+   - The file flush operation on Windows platforms apparently
+     changes the internal file position pointer (!) in violation of the
+     C standard.  Put a patch into the file_flush routine to explicitly
+     seek back to the original file position.
+
+   - changed the name of imcomp_get_compressed_image_parms to
+     imcomp_get_compressed_image_par to not exceed the 31 character
+     limit on some compilers.
+
+   - modified the filename parser (which is used when moving to a
+     named HDU) to support EXTNAME values which contain embedded blanks.
+
+   - modified drvrnet.c to deal with ftp compressed files better so
+     that even fits files returned from cgi queries which have the wrong
+     mime types and/or wrong types of file names should still decompress.
 
    - modified ffgics to reduce the tolerance for acceptable skewness
      between the axes, and added a new warning return status = 
@@ -11,6 +59,9 @@
 
    - fixed bug in ffgics that affected cases where the first coordinate
      axis was DEC, not RA, and the image was a mirror image of the sky.
+
+   - fixed bug in ffhist when trying to read the default binning
+     factor keyword, TDBIN.
 
    - modified ffhist so that is correctly computes the rotation angle
      in a 2-D image if the first histogram column has a CROTA type
@@ -23,7 +74,7 @@
      by setting CFLAGS = -Df2cFortran instead of -Dg77Fortran. Then
      regenerated configure with autoconf 2.13 instead of 2.12.     
 
-Version 2.035 - 7 Dec 1999
+Version 2.035 - 7 Dec 1999 (internal release only)
 
    - added new routine called fits_get_keyclass/ffgkcl that returns
      the general class of the keyword, e.g., required structural 

@@ -24,8 +24,9 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.035; /* 7 Dec 1999 */
+      *version = 2.036; /* 1 Feb 2000 */
 
+ /*   *version = 2.035;   7 Dec 1999 (internal release only) */
  /*   *version = 2.034;  23 Nov 1999 */
  /*   *version = 2.033;  17 Sep 1999 */
  /*   *version = 2.032;  25 May 1999 */
@@ -3234,7 +3235,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     (fptr->Fptr)->nextkey = (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu ];
 
     if ( (fptr->Fptr)->compressimg == 1) /*  Is this a compressed image */
-        imcomp_get_compressed_image_parms(fptr, status);
+        imcomp_get_compressed_image_par(fptr, status);
 
 
     return(*status);
@@ -4684,7 +4685,7 @@ int fits_is_compressed_image(fitsfile *fptr,  /* I - FITS file pointer  */
 */
 {
     if (*status > 0)
-        return(*status);
+        return(0);
 
     /* reset position to the correct HDU if necessary */
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)

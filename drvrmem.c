@@ -450,6 +450,14 @@ int mem_compress_open(char *filename, int rwmode, int *hdl)
     size_t finalsize;
     char *ptr;
 
+    if (rwmode != READONLY)
+    {
+        ffpmsg(
+  "cannot open compressed file with WRITE access (mem_compress_open)");
+        ffpmsg(filename);
+        return(READONLY_FILE);
+    }
+
     /* open the compressed disk file */
     status = file_openfile(filename, READONLY, &diskfile);
     if (status)

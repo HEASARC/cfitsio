@@ -195,7 +195,8 @@ int ffpky( fitsfile *fptr,     /* I - FITS file pointer        */
     }
     else if (datatype == TUINT)
     {
-        ffpkyj(fptr, keyname, (long) *(unsigned int *) value, comm, status);
+        ffpkyg(fptr, keyname, (double) *(unsigned int *) value, 0,
+               comm, status);
     }
     else if (datatype == TINT)
     {
@@ -2407,10 +2408,13 @@ int ffs2c(char *instr,   /* I - null terminated input string  */
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
-    outstr[0] = '\'';      /* start output string with a quote */
-
     if (!instr)            /* a null input pointer?? */
+    {
+       strcpy(outstr, "''");   /* a null FITS string */
        return(*status);
+    }
+
+    outstr[0] = '\'';      /* start output string with a quote */
 
     len = strlen(instr);
     if (len > 68)

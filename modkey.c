@@ -51,6 +51,11 @@ int ffuky( fitsfile *fptr,     /* I - FITS file pointer        */
     {
         ffukyj(fptr, keyname, (long) *(int *) value, comm, status);
     }
+    else if (datatype == TUINT)
+    {
+        ffukyg(fptr, keyname, (double) *(unsigned int *) value, 0,
+               comm, status);
+    }
     else if (datatype == TLOGICAL)
     {
         ffukyl(fptr, keyname, *(int *) value, comm, status);
