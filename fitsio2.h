@@ -11,6 +11,18 @@
 
 #define SUPPORT_64BIT_INTEGERS 1
 
+/*
+  If REPLACE_LINKS is defined, then whenever CFITSIO fails to open
+  a file with write access because it is a soft link to a file that
+  only has read access, then CFITSIO will attempt to replace
+  the link with a local copy of the file, with write access.  This
+  feature was originally added to support the ftools in the Hera
+  environment, where many of the user's data file are soft links.
+*/
+#if defined(BUILD_HERA)
+#define REPLACE_LINKS 1
+#endif
+
 #define USE_LARGE_VALUE -99  /* flag used when writing images */
 
 #define DBUFFSIZE 28800 /* size of data buffer in bytes */
