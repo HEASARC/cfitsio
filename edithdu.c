@@ -44,13 +44,13 @@ int ffcphd(fitsfile *infptr,    /* I - FITS file pointer to input file  */
            fitsfile *outfptr,   /* I - FITS file pointer to output file */
            int *status)         /* IO - error status     */
 /*
-  copy the header keywords from infptr to  outfptr.
+  copy the header keywords from infptr to outfptr.
 */
 {
-    int simple, bitpix, naxis, extend;
-    int nkeys, nadd, ii;
-    long naxes[99], pcount, gcount;
-    char card[FLEN_CARD];
+    int nkeys, ii, inPrim = 0, outPrim = 0;
+    long naxis, naxes[1];
+    char *card, comm[FLEN_COMMENT];
+    char *tmpbuff = NULL;
 
     if (*status > 0)
         return(*status);
@@ -58,43 +58,113 @@ int ffcphd(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     if (infptr == outfptr)
         return(*status = SAME_FILE);
 
+    /* set the input pointer to the correct HDU */
     if (infptr->HDUposition != (infptr->Fptr)->curhdu)
         ffmahd(infptr, (infptr->HDUposition) + 1, NULL, status);
 
+    if (ffghsp(infptr, &nkeys, NULL, status) > 0) /* get no. of keywords */
+        return(*status);
+
+    /* create a memory buffer to hold the header records */
+    tmpbuff = (char*) malloc(nkeys*FLEN_CARD*sizeof(char));
+    if (!tmpbuff)
+        return(*status = MEMORY_ALLOCATION);
+
+    /* read all of the header records in the input HDU */
+    for (ii = 0; ii < nkeys; ii++)
+      ffgrec(infptr, ii+1, tmpbuff + (ii * FLEN_CARD), status);
+
+    if (infptr->HDUposition == 0)  /* set flag if this is the Primary HDU */
+       inPrim = 1;
+
+    /* if input is an image hdu, get the number of axes */
+    naxis = -1;   /* negative if HDU is a table */
+    if ((infptr->Fptr)->hdutype == IMAGE_HDU)
+        ffgkyj(infptr, "NAXIS", &naxis, NULL, status);
+
+    /* set the output pointer to the correct HDU */
     if (outfptr->HDUposition != (outfptr->Fptr)->curhdu)
         ffmahd(outfptr, (outfptr->HDUposition) + 1, NULL, status);
 
-    /* check whether the output header is empty */
+    /* check if output header is empty; if not create new empty HDU */
     if ((outfptr->Fptr)->headend !=
         (outfptr->Fptr)->headstart[(outfptr->Fptr)->curhdu] )
-        ffcrhd(outfptr, status);  /* create new empty HDU */
+           ffcrhd(outfptr, status);   
 
-    ffghsp(infptr, &nkeys, &nadd, status); /* get no. of keywords in header */
-
-    if ( ( (infptr->Fptr)->curhdu == 0 && (outfptr->Fptr)->curhdu != 0 )  ||
-         ( (infptr->Fptr)->curhdu != 0 && (outfptr->Fptr)->curhdu == 0 ) )
+    if (outfptr->HDUposition == 0)
     {
-        /* copying between primary array and image extension */
-
-        /* get required keywords from input file */
-        if (ffghpr(infptr, 99, &simple, &bitpix, &naxis, naxes, &pcount,
-            &gcount, &extend, status) > 0)
-            return(*status);
-
-        simple = 1;
-        extend = 1;
-
-        /* write required keywords to output file */
-        if (ffphpr(outfptr, simple, bitpix, naxis, naxes, pcount,
-            gcount, extend, status) > 0)
-            return(*status);
-
-        /* copy remaining keywords, excluding pcount, gcount and extend */
-        for (ii = naxis + 4; ii <= nkeys; ii++)
+        if (naxis < 0)
         {
-            ffgrec(infptr, ii, card, status);
-            if (strncmp(card, "PCOUNT  ", 8) && strncmp(card, "GCOUNT  ", 8)
-            &&  strncmp(card, "EXTEND  ", 8) )
+            /* the input HDU is a table, so we have to create */
+            /* a dummy Primary array before copying it to the output */
+            ffcrim(outfptr, 8, 0, naxes, status);
+            ffcrhd(outfptr, status); /* create new empty HDU */
+        }
+        else
+        {
+            /* set flag that this is the Primary HDU */
+            outPrim = 1;
+        }
+    }
+
+    if (*status > 0)  /* check for errors before proceeding */
+    {
+        free(tmpbuff);
+        return(*status);
+    }
+
+    if ( inPrim == 1 && outPrim == 0 )
+    {
+        /* copying from primary array to image extension */
+        strcpy(comm, "IMAGE extension");
+        ffpkys(outfptr, "XTENSION", "IMAGE", comm, status);
+
+        /* copy BITPIX through NAXISn keywords */
+        for (ii = 1; ii < 3 + naxis; ii++)
+        {
+            card = tmpbuff + (ii * FLEN_CARD);
+            ffprec(outfptr, card, status);
+        }
+
+        strcpy(comm, "number of random group parameters");
+        ffpkyj(outfptr, "PCOUNT", 0, comm, status);
+  
+        strcpy(comm, "number of random groups");
+        ffpkyj(outfptr, "GCOUNT", 1, comm, status);
+
+
+        /* copy remaining keywords, excluding EXTEND */
+        for (ii = 3 + naxis ; ii < nkeys; ii++)
+        {
+            card = tmpbuff+(ii * FLEN_CARD);
+            if (FSTRNCMP(card, "EXTEND  ", 8))
+            {
+                 ffprec(outfptr, card, status);
+            }
+        }
+    }
+    else if ( inPrim == 0 && outPrim == 1 )
+    {
+        /* copying between image extension and primary array */
+        strcpy(comm, "file does conform to FITS standard");
+        ffpkyl(outfptr, "SIMPLE", TRUE, comm, status);
+
+        /* copy BITPIX through NAXISn keywords */
+        for (ii = 1; ii < 3 + naxis; ii++)
+        {
+            card = tmpbuff + (ii * FLEN_CARD);
+            ffprec(outfptr, card, status);
+        }
+
+        /* add the EXTEND keyword */
+        strcpy(comm, "FITS dataset may contain extensions");
+        ffpkyl(outfptr, "EXTEND", TRUE, comm, status);
+
+        /* copy remaining keywords, excluding pcount, gcount */
+        for (ii = 3 + naxis; ii < nkeys; ii++)
+        {
+            card = tmpbuff+(ii * FLEN_CARD);
+            if (FSTRNCMP(card, "PCOUNT  ", 8) && FSTRNCMP(card, "GCOUNT  ", 8))
             {
                  ffprec(outfptr, card, status);
             }
@@ -103,13 +173,14 @@ int ffcphd(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     else
     {
         /* input and output HDUs are same type; simply copy all keywords */
-        for (ii = 1; ii <= nkeys; ii++)
+        for (ii = 0; ii < nkeys; ii++)
         {
-            ffgrec(infptr, ii, card, status);
+            card = tmpbuff+(ii * FLEN_CARD);
             ffprec(outfptr, card, status);
         }
     }
 
+    free(tmpbuff);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -373,7 +444,7 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     ((fptr->Fptr)->maxhdu)++;      /* increment known number of HDUs in the file */
     for (ii = (fptr->Fptr)->maxhdu; ii > (fptr->Fptr)->curhdu; ii--)
-        (fptr->Fptr)->headstart[ii + 1] = (fptr->Fptr)->headstart[ii];  /* incre start addr */
+        (fptr->Fptr)->headstart[ii + 1] = (fptr->Fptr)->headstart[ii]; /* incre start addr */
 
     (fptr->Fptr)->headstart[nexthdu] = newstart; /* set starting addr of HDU */
 

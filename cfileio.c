@@ -15,6 +15,7 @@
 #include <ctype.h>
 #include <stddef.h>  /* apparently needed to define size_t */
 #include "fitsio2.h"
+#include "group.h"
 
 #define MAX_PREFIX_LEN 20  /* max length of file type prefix (e.g. 'http://') */
 #define MAX_DRIVERS 20     /* max number of file I/O drivers */
@@ -847,15 +848,45 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
 /*
   Check if the file to be opened is already open.  If so, then attach to it.
 */
+     /*
+       this function was changed so that for files of access method FILE://
+       the file paths are compared using standard URL syntax and absolute
+       paths (as opposed to relative paths). This eliminates some instances
+       where a file is already opened but it is not realized because it
+       was opened with another file path. For instance, if the CWD is
+       /a/b/c and I open /a/b/c/foo.fits then open ./foo.fits the previous
+       version of this function would not have reconized that the two files
+       were the same. This version does reconize that the two files are
+       the same.
+     */
 {
+
     FITSfile *oldFptr;
     int ii;
     char oldurltype[MAX_PREFIX_LEN], oldinfile[FLEN_FILENAME];
     char oldextspec[FLEN_FILENAME], oldoutfile[FLEN_FILENAME];
     char oldrowfilter[FLEN_FILENAME];
     char oldbinspec[FLEN_FILENAME], oldcolspec[FLEN_FILENAME];
+    char cwd[FLEN_FILENAME];
+    char tmpStr[FLEN_FILENAME];
+    char tmpinfile[FLEN_FILENAME];
 
     *isopen = 0;
+
+    if(strcasecmp(urltype,"FILE://") == 0)
+      {
+        fits_path2url(infile,tmpinfile,status);
+
+        if(tmpinfile[0] != '/')
+          {
+            fits_get_cwd(cwd,status);
+            strcat(cwd,"/");
+            strcat(cwd,tmpinfile);
+            fits_clean_url(cwd,tmpinfile,status);
+          }
+      }
+    else
+      strcpy(tmpinfile,infile);
 
     for (ii = 0; ii < NIOBUF; ii++)   /* check every buffer */
     {
@@ -873,7 +904,22 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
             return(*status);
           }
 
-          if (!strcmp(urltype, oldurltype) && !strcmp(infile, oldinfile) )
+          if(strcasecmp(oldurltype,"FILE://") == 0)
+            {
+              fits_path2url(oldinfile,tmpStr,status);
+              
+              if(tmpStr[0] != '/')
+                {
+                  fits_get_cwd(cwd,status);
+                  strcat(cwd,"/");
+                  strcat(cwd,tmpStr);
+                  fits_clean_url(cwd,tmpStr,status);
+                }
+
+              strcpy(oldinfile,tmpStr);
+            }
+
+          if (!strcmp(urltype, oldurltype) && !strcmp(tmpinfile, oldinfile) )
           {
               /* identical type of file and root file name */
 

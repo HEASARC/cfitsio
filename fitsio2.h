@@ -5,7 +5,7 @@
  
 #define DBUFFSIZE 28800 /* size of data buffer in bytes */
 
-#define NIOBUF 25        /* number of IO buffers to create */
+#define NIOBUF  25       /* number of IO buffers to create */
 #define IOBUFLEN 2880    /* size in bytes of each IO buffer */
 #define MINDIRECT 8640   /* minimum size for direct reads and writes */
                          /* MINDIRECT must have a value >= 8640 */
@@ -96,6 +96,13 @@
 /*  IBM PC running OS/2 */
 #define MACHINE IBMPC
 #define BYTESWAPPED TRUE
+
+#elif defined(__sparcv9)
+
+/*  SUN Solaris7 in 64-bit mode */
+#define BYTESWAPPED FALSE
+#define MACHINE NATIVE
+#define LONGSIZE 64   
 
 #else
 

@@ -538,8 +538,10 @@ int ffmkys(fitsfile *fptr,    /* I - FITS file pointer  */
            int *status)       /* IO - error status      */
 {
   /* NOTE: This routine does not support long continued strings */
+  /*  It will correctly overwrite an existing long continued string, */
+  /*  but it will not write a new long string.  */
 
-    char oldval[FLEN_VALUE],valstring[FLEN_VALUE];
+    char oldval[FLEN_VALUE], valstring[FLEN_VALUE];
     char oldcomm[FLEN_COMMENT];
     char card[FLEN_CARD];
     int len, keypos;
@@ -565,18 +567,17 @@ int ffmkys(fitsfile *fptr,    /* I - FITS file pointer  */
     ffc2s(oldval, valstring, status); /* remove quotes and trailing spaces */
     len = strlen(valstring);
 
-    while (valstring[len - 1] == '&')  /* ampersand is continuation char */
+    while (len && valstring[len - 1] == '&')  /* ampersand is continuation char */
     {
         ffgcnt(fptr, valstring, status);
-        if (valstring)
+        if (*valstring)
         {
             ffdrec(fptr, keypos, status);  /* delete the continuation */
             len = strlen(valstring);
         }
         else   /* a null valstring indicates no continuation */
-            len = 1;
+            len = 0;
     }
-
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -1265,17 +1266,16 @@ int ffdkey(fitsfile *fptr,    /* I - FITS file pointer  */
     ffc2s(valstring, value, status);   /* remove quotes and trailing spaces */
     len = strlen(value);
 
-    while (value[len - 1] == '&')  /* ampersand used as continuation char */
+    while (len && value[len - 1] == '&')  /* ampersand used as continuation char */
     {
         ffgcnt(fptr, value, status);
-        if (value)
+        if (*value)
         {
             ffdrec(fptr, keypos, status);  /* delete the keyword */
             len = strlen(value);
         }
         else   /* a null valstring indicates no continuation */
-            len = 1;
-
+            len = 0;
     }
     return(*status);
 }

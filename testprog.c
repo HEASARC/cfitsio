@@ -102,6 +102,13 @@ int main()
     for (ii = 0; ii < 21; ii++)  /* allocate space for string column value */
         inskey[ii] = (char *) malloc(21);   
 
+    for (ii = 0; ii < 10; ii++)
+    {
+      ttype[ii] = (char *) malloc(20);
+      tform[ii] = (char *) malloc(20);
+      tunit[ii] = (char *) malloc(20);
+    }
+
     comms[0] = comm;
 
     /* delete previous version of the file, if it exists (with ! prefix) */
@@ -863,8 +870,12 @@ int main()
     */
     if (ffpktp(fptr, templt, &status))
     {
-       printf("\nERROR returned by ffpktp\n");
-       goto errstatus;
+       printf("\nERROR returned by ffpktp:\n");
+       printf("Could not open or process the file 'testprog.tpt'.\n");
+       printf("  This file is included with the CFITSIO distribution\n");
+       printf("  and should be copied into the current directory\n");
+       printf("  before running the testprog program.\n");
+       status = 0;
     }
     printf("Updated header using template file (ffpktp)\n");
     /*
@@ -872,13 +883,6 @@ int main()
       #  create binary table     #
       ############################
     */
-
-    for (ii = 0; ii < 10; ii++)
-    {
-      ttype[ii] = (char *) malloc(20);
-      tform[ii] = (char *) malloc(20);
-      tunit[ii] = (char *) malloc(20);
-    }
 
     strcpy(tform[0], "15A");
     strcpy(tform[1], "1L");

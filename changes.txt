@@ -1,4 +1,80 @@
-               Log of Changes Made to CFITSIO
+                   Log of Changes Made to CFITSIO
+
+Version 2.033 - 17 Sept 1999
+
+   - New Feature: enhanced the row selection parser so that comparisons
+     between values in different rows of the table are allowed, and the
+     string comparisions with <, >, <=, and >= are supported.
+
+   - added new routine the returns the name of the keyword in the
+     input keyword record string.  The name is usually the first
+     8 characters of the record, except if the HIERARCH convention
+     is being used in which case the name may be up to 67 charcters
+     long.
+
+   - added new routine called fits_null_check/ffnchk that checks to
+     see if the current header contains any null (ASCII 0) characters.
+     These characters are illegal in FITS headers, but they go undetected
+     by the other CFITSIO routines that read the header keywords.
+
+   - the group.c file has been replaced with a new version as supplied
+     by the ISDC.  The changes are mainly to support partial URLs and
+     absolute URLs more robustly.  Host dependent directory paths are
+     now converted to true URLs before being read from/written to
+     grouping tables.
+
+   - modified ffnmhd slightly so that it will move to the first extension
+     in which either the EXTNAME or the HDUNAME keyword is equal to the
+     user-specified name.  Previously, it only checked for HDUNAME if
+     the EXTNAME keyword did not exist.
+
+   - made small change to drvrnet.c so that it uncompress files 
+     which end in .Z and .gz just as for ftp files.
+
+   - rewrote ffcphd (copy header) to handle the case where the
+     input and output HDU are in the same physical FITS file.
+
+   - fixed bug in how long string keyword values (using the CONTINUE
+     convention) were read.  If the string keyword value ended in an
+     '&' character, then fits_read_key_longstr, fits_modify_key_str,
+     and fits_delete_key would interpret the following keyword as
+     a continuation, regardless of whether that keyword name was
+     'CONTINUE' as required by this convention.  There was also a bug
+     in that if the string keyword value was all blanks, then 
+     fits_modify_key_str could in certain unusual cases think
+     that the keyword ended in an '&' and go into an infinite loop.
+
+   - modified ffgpv so that it calls the higher level ffgpv_ routine
+     rather than directly calling the lower level ffgcl_ routine. This
+     change is needed to eventually support reading compressed images.
+
+   - added 3 new routines to get the image datatype, image dimensions,
+     and image axes length.  These support the case where the image is
+     compressed and stored in a binary table.
+
+   - fixed bug in ffiblk that could sometimes cause it to insert a
+     new block in a file somewhere in the middle of the data, instead
+     of at the end of the HDU.  This fortunately is a rare problem,
+     mainly only occuring in certain cases when  inserting rows in a binary 
+     table that contains variable length array data (i.e., has a heap).
+
+   - modified fits_write_tdim so that it double checks the TFORMn
+     value directly if the column repeat count stored in the internal
+     structure is not equal to the product of all the dimensions.
+
+   - fixed bug that prevented ffitab or ffibin from inserting a new
+     table after a null primary array (can't read NAXIS2 keyword).
+     Required a small change to ffrdef.
+
+   - modified testprog.c so that it will continue to run even if
+     it cannot open or process the template file testprog.tpt.
+
+   - modified the logic in lines 1182-1185 of grparser.c so that
+     it returns the correct status value in case of an error.
+
+   - added test in fitsio2.h to see if __sparcv9 is defined; this
+     identifies a machine running Solaris 7 in 64-bit mode where
+     long integers are 64 bits long.
 
 Version 2.032 - 25 May 1999
 
@@ -112,7 +188,7 @@ Version 2.030 - 24 Feb 1999
    - modified group.c to conditionally include sys/stat.h only on
      unix platforms
 
-   - fixed bug in the ffiter iterator function that caused to to always
+   - fixed bug in the ffiter iterator function that caused it to always
      pass 'firstn' = 1 to the work function when reading from the
      primary array or IMAGE extension. It worked correctly for tables.
 
@@ -234,9 +310,7 @@ Version 2.027 - 12 Jan 1999
 
    - added support for the HIERARCH keyword convention for reading 
      and writing keywords longer than 8 characters or that contain
-     ASCII characters not allowed in normal FITS keywords. (not 
-     documented in the User's Guide yet, until more testing is
-     completed).
+     ASCII characters not allowed in normal FITS keywords. 
 
    - modified the extended filename syntax to support opening images
      that are contained in a single cell of a binary table with syntax:

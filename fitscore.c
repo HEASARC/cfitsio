@@ -24,8 +24,9 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.032; /* 25 May 1999 */
+      *version = 2.033; /* 17 Sep 1999 */
 
+ /*   *version = 2.032;  25 May 1999 */
  /*   *version = 2.031;  31 Mar 1999 */
  /*   *version = 2.030;  24 Feb 1999 */
  /*   *version = 2.029;  11 Feb 1999 */
@@ -472,6 +473,12 @@ void ffgerr(int status,     /* I - error status value */
        break;
     case 412:
        strcpy(errtext, "datatype conversion overflow");
+       break;
+    case 413:
+       strcpy(errtext, "error compressing image");
+       break;
+    case 414:
+       strcpy(errtext, "error uncompressing image");
        break;
     case 420:
        strcpy(errtext, "bad date or time conversion");
@@ -2761,6 +2768,8 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
     (fptr->Fptr)->heapstart = (pcount + npix) * bytlen * gcount;
     (fptr->Fptr)->heapsize = 0;
 
+    (fptr->Fptr)->compressimg = 0;  /* this is not a compressed image */
+
     if (naxis == 0)
     {
         (fptr->Fptr)->rowlength = 0;    /* rows have zero length */
@@ -2908,6 +2917,8 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
     (fptr->Fptr)->heapstart = rowlen * nrows;
     (fptr->Fptr)->heapsize = 0;
 
+    (fptr->Fptr)->compressimg = 0;  /* this is not a compressed image */
+
     /* now search for the table column keywords and the END keyword */
 
     for (nspace = 0, ii = 8; 1; ii++)  /* infinite loop  */
@@ -2936,7 +2947,7 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
         else if (name[0] == 'T')   /* keyword starts with 'T' ? */
             ffgtbp(fptr, name, value, status); /* test if column keyword */
 
-        else if (!strcmp(name, "END"))  /* is this the END keyword? */
+        else if (!FSTRCMP(name, "END"))  /* is this the END keyword? */
             break;
 
         if (!name[0] && !value[0] && !comm[0])  /* a blank keyword? */
@@ -3090,6 +3101,8 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     (fptr->Fptr)->heapstart = rowlen * nrows;
     (fptr->Fptr)->heapsize = pcount;
 
+    (fptr->Fptr)->compressimg = 0;  /* initialize as not a compressed image */
+
     /* now search for the table column keywords and the END keyword */
 
     for (nspace = 0, ii = 8; 1; ii++)  /* infinite loop  */
@@ -3118,7 +3131,12 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
         else if (name[0] == 'T')   /* keyword starts with 'T' ? */
             ffgtbp(fptr, name, value, status); /* test if column keyword */
 
-        else if (!strcmp(name, "END"))  /* is this the END keyword? */
+        else if (!FSTRCMP(name, "CMPRSSIMG"))
+        {
+            if (value[0] == 'T')
+                (fptr->Fptr)->compressimg = 1; /* this is a compressed image */
+        }
+        else if (!FSTRCMP(name, "END"))  /* is this the END keyword? */
             break;
 
 
@@ -4015,7 +4033,7 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
         /* no need to do any further updating of the HDU */
     }
-    else if ((fptr->Fptr)->writemode == 1)  /* write access to the file? */
+    else if ((fptr->Fptr)->writemode == 1)
     {
         ffrdef(fptr, status);  /* scan header to redefine structure */
         ffpdfl(fptr, status);  /* insure correct data file values */
@@ -4068,7 +4086,6 @@ int ffuptf(fitsfile *fptr,      /* I - FITS file pointer */
         ffpmsg(message);
         return(*status);
       }
-
       /* is this a variable array length column ? */
       if (tform[0] == 'P' || tform[1] == 'P')
       {
@@ -4090,7 +4107,6 @@ int ffuptf(fitsfile *fptr,      /* I - FITS file pointer */
           while(strlen(newform) < 9)
              strcat(newform," ");   /* append spaces 'till length = 8 */
           strcat(newform,"'" );     /* append closing parenthesis */
-
           /* would be simpler to just call ffmkyj here, but this */
           /* would force linking in all the modkey & putkey routines */
           ffmkky(keyname, newform, comment, card, status);  /* make new card */
@@ -4109,7 +4125,7 @@ int ffrdef(fitsfile *fptr,      /* I - FITS file pointer */
   current data unit.  This redefines the start of the next HDU.
 */
 {
-    int dummy;
+    int dummy, tstatus;
     long naxis2, pcount;
     char card[FLEN_CARD], comm[FLEN_COMMENT], valstring[FLEN_VALUE];
 
@@ -4131,9 +4147,13 @@ int ffrdef(fitsfile *fptr,      /* I - FITS file pointer */
           /* and if the user has not explicitly reset the NAXIS2 value */
           if ((fptr->Fptr)->hdutype != IMAGE_HDU)
           {
+            tstatus = *status;
             if (ffgkyj(fptr, "NAXIS2", &naxis2, comm, status) > 0)
             {
-                return(*status = 0);
+                /* Couldn't read NAXIS2 (odd!);  in certain circumstances */
+                /* this may be normal, so ignore the error and return. */
+                *status = tstatus;
+                return(*status);
             }
 
             if ((fptr->Fptr)->numrows > naxis2
@@ -4589,9 +4609,13 @@ int ffdblk(fitsfile *fptr,      /* I - FITS file pointer                    */
 /*--------------------------------------------------------------------------*/
 int ffghdt(fitsfile *fptr,      /* I - FITS file pointer             */
            int *exttype,        /* O - type of extension, 0, 1, or 2 */
+                                /*  for IMAGE_HDU, ASCII_TBL, or BINARY_TBL */
            int *status)         /* IO - error status                 */
 /*
-  Return the type of the CHDU.
+  Return the type of the CHDU. This returns the 'logical' type of the HDU,
+  not necessarily the physical type, so in the case of a compressed image
+  stored in a binary table, this will return the type as an Image, not a
+  binary table.
 */
 {
     if (*status > 0)
@@ -4608,6 +4632,127 @@ int ffghdt(fitsfile *fptr,      /* I - FITS file pointer             */
             return(*status);
 
     *exttype = (fptr->Fptr)->hdutype; /* return the type of HDU */
+
+    /*  check if this is a compressed image */
+    if ((fptr->Fptr)->compressimg)
+         *exttype = IMAGE_HDU;
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgidt( fitsfile *fptr,  /* I - FITS file pointer                       */
+            int  *imgtype,   /* O - image data type                         */
+            int  *status)    /* IO - error status                           */
+/*
+  Get the datatype of the image (= BITPIX keyword for normal image, or
+  CBITPIX for a compressed image)
+*/
+{
+    if (*status > 0)
+        return(*status);
+
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               /* rescan header */
+            return(*status);
+
+    if ((fptr->Fptr)->hdutype == IMAGE_HDU)
+    {
+        ffgky(fptr, TINT, "BITPIX", imgtype, NULL, status);
+    }
+    else if ((fptr->Fptr)->compressimg)
+    {
+        /* this is a binary table containing a compressed image */
+        ffgky(fptr, TINT, "CBITPIX", imgtype, NULL, status);
+    }
+    else
+    {
+        *status = NOT_IMAGE;
+    }
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgidm( fitsfile *fptr,  /* I - FITS file pointer                       */
+            int  *naxis  ,   /* O - image dimension (NAXIS value)           */
+            int  *status)    /* IO - error status                           */
+/*
+  Get the dimension of the image (= NAXIS keyword for normal image, or
+  CNAXIS for a compressed image)
+*/
+{
+    if (*status > 0)
+        return(*status);
+
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               /* rescan header */
+            return(*status);
+
+    if ((fptr->Fptr)->hdutype == IMAGE_HDU)
+    {
+        ffgky(fptr, TINT, "NAXIS", naxis, NULL, status);
+    }
+    else if ((fptr->Fptr)->compressimg)
+    {
+        /* this is a binary table containing a compressed image */
+        ffgky(fptr, TINT, "CNAXIS", naxis, NULL, status);
+    }
+    else
+    {
+        *status = NOT_IMAGE;
+    }
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgisz( fitsfile *fptr,  /* I - FITS file pointer                       */
+            long  *naxes  ,  /* O - size of image dimensions                */
+            int  *status)    /* IO - error status                           */
+/*
+  Get the size of the image dimensions (= NAXISn keywords for normal image, or
+  CNAXISn for a compressed image)
+*/
+{
+    int naxis, ii;
+    char keyroot[FLEN_KEYWORD], keyname[FLEN_KEYWORD];
+
+    if (*status > 0)
+        return(*status);
+
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               /* rescan header */
+            return(*status);
+
+    if ((fptr->Fptr)->hdutype == IMAGE_HDU)
+    {
+        strcpy(keyroot, "NAXIS");
+    }
+    else if ((fptr->Fptr)->compressimg)
+    {
+        /* this is a binary table containing a compressed image */
+        strcpy(keyroot, "CNAXIS");
+    }
+    else
+    {
+        return(*status = NOT_IMAGE);
+    }
+
+    /* get number of dimensions */
+    fits_get_img_dim(fptr, &naxis, status);
+
+    for (ii = 0; ii < naxis; ii++)
+    {
+        ffkeyn(keyroot, ii + 1, keyname, status);
+        ffgkyj(fptr, keyname, naxes + ii, NULL, status);
+    }
 
     return(*status);
 }
@@ -4696,10 +4841,10 @@ int ffmnhd(fitsfile *fptr,      /* I - FITS file pointer                    */
            int hduver,         /* I - desired EXTVERS value for the HDU    */
            int *status)         /* IO - error status                        */
 /*
-  Move to the HDU with a given EXTNAME and EXTVERS keyword values.  If
-  hduvers = 0, then move to the first HDU with the given name regardless of
-  EXTVERS value.  If no matching HDU is found in the file, then the current
-  open HDU will remain unchanged.
+  Move to the HDU with a given EXTNAME (or HDUNAME) and EXTVERS keyword 
+  values.  If hduvers = 0, then move to the first HDU with the given
+  name regardless of EXTVERS value.  If no matching HDU is found in the
+  file, then the current open HDU will remain unchanged.
 */
 {
     char extname[FLEN_VALUE];
@@ -4728,6 +4873,14 @@ int ffmnhd(fitsfile *fptr,      /* I - FITS file pointer                    */
                tstatus = 0;
                /* look for HDUNAME, since EXTNAME didn't exist */
                ffgkys(fptr, "HDUNAME", extname, 0, &tstatus);
+          }
+          else
+          {
+               /* check if EXTNAME is the name we are looking for. */
+               /* If not, try reading the HDUNAME keyword.         */
+               ffcmps(extname, hduname, CASEINSEN, &match, &exact);
+               if (!exact)
+                   ffgkys(fptr, "HDUNAME", extname, 0, &tstatus);
           }
 
           if (tstatus <= 0)
@@ -4849,7 +5002,18 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
     if (headdata == 0)  
         insertpt = (fptr->Fptr)->datastart;  /* insert just before data, or */
     else                                     /* at end of data, */
-        insertpt = (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu + 1];
+    {
+        insertpt = (fptr->Fptr)->datastart + 
+                   (fptr->Fptr)->heapstart + 
+                   (fptr->Fptr)->heapsize;
+        insertpt = ((insertpt + 2879) / 2880) * 2880; /* start of block */
+
+       /* the following formula is wrong because the current data unit
+          may have been extended without updating the headstart value
+          of the following HDU.
+       */
+       /* insertpt = (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu + 1]; */
+    }
 
     inbuff  = buff1;   /* set pointers to input and output buffers */
     outbuff = buff2;

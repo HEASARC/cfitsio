@@ -115,6 +115,8 @@ int ffpktp(fitsfile *fptr,      /* I - FITS file pointer       */
     diskfile = fopen(filename,"r"); 
     if (!diskfile)          /* couldn't open file */
     {
+            ffpmsg("ffpktp could not open the following template file:");
+            ffpmsg(filename);
             return(*status = FILE_NOT_OPENED); 
     }
 
@@ -1768,7 +1770,7 @@ int ffptdm( fitsfile *fptr, /* I - FITS file pointer                        */
     char keyname[FLEN_KEYWORD], tdimstr[FLEN_VALUE], comm[FLEN_COMMENT];
     char value[80], message[81];
     int ii;
-    long totalpix = 1;
+    long totalpix = 1, repeat;
     tcolumn *colptr;
 
     if (*status > 0)
@@ -1800,8 +1802,6 @@ int ffptdm( fitsfile *fptr, /* I - FITS file pointer                        */
        return(*status = NOT_BTABLE);
     }
 
-    ffkeyn("TDIM", colnum, keyname, status);      /* construct TDIMn name */
-
     strcpy(tdimstr, "(");            /* start constructing the TDIM value */   
 
     for (ii = 0; ii < naxis; ii++)
@@ -1826,16 +1826,28 @@ int ffptdm( fitsfile *fptr, /* I - FITS file pointer                        */
 
     if (colptr->trepeat != totalpix)
     {
-      sprintf(message,
-      "column vector length, %ld, does not equal TDIMn array size, %ld",
-      colptr->trepeat, totalpix);
-      ffpmsg(message);
-      return(*status = BAD_TDIM);
+      /* There is an apparent inconsistency between TDIMn and TFORMn. */
+      /* The colptr->trepeat value may be out of date, so re-read     */
+      /* the TFORMn keyword to be sure.                               */
+
+      ffkeyn("TFORM", colnum, keyname, status);   /* construct TFORMn name  */
+      ffgkys(fptr, keyname, value, NULL, status); /* read TFORMn keyword    */
+      ffbnfm(value, NULL, &repeat, NULL, status); /* parse the repeat count */
+
+      if (*status > 0 || repeat != totalpix)
+      {
+        sprintf(message,
+        "column vector length, %ld, does not equal TDIMn array size, %ld",
+        colptr->trepeat, totalpix);
+        ffpmsg(message);
+        return(*status = BAD_TDIM);
+      }
     }
 
     strcat(tdimstr, ")" );            /* append the closing parenthesis */
 
     strcpy(comm, "size of the multidimensional array");
+    ffkeyn("TDIM", colnum, keyname, status);      /* construct TDIMn name */
     ffpkys(fptr, keyname, tdimstr, comm, status);  /* write the keyword */
     return(*status);
 }

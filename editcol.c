@@ -233,6 +233,7 @@ int ffirow(fitsfile *fptr,  /* I - FITS file pointer                        */
     ((fptr->Fptr)->numrows) += nrows;
     ((fptr->Fptr)->origrows) += nrows;
 
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -1345,7 +1346,6 @@ int ffdcol(fitsfile *fptr,  /* I - FITS file pointer                        */
     /* update the mandatory keywords */
     ffmkyj(fptr, "TFIELDS", ((fptr->Fptr)->tfield) - 1, "&", status);        
     ffmkyj(fptr,  "NAXIS1",   naxis1 - delbyte, "&", status);
-
     /*
       delete the index keywords starting with 'T' associated with the 
       deleted column and subtract 1 from index of all higher keywords

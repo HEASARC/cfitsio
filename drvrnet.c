@@ -126,6 +126,13 @@
 $Id$
 
 $Log$
+Revision 1.51  1999/08/10 12:13:40  oneel
+Make the http code a bit less picky about the types of files it
+uncompresses.  Now it also uncompresses files which end in .Z or .gz.
+
+Revision 1.50  1999/08/04 12:38:46  oneel
+Don's 2.0.32 patch with dal 1.3
+
 Revision 1.39  1998/12/02 15:31:33  oneel
 Updates to drvrnet.c so that less compiler warnings would be
 generated.  Fixes the signal handling.
@@ -322,7 +329,9 @@ int http_open(char *filename, int rwmode, int *handle)
 
   /* Now, what do we do with the file */
   if (!strcmp(contentencoding,"x-gzip") || 
-      !strcmp(contentencoding,"x-compress")) {
+      !strcmp(contentencoding,"x-compress") ||
+      strstr(filename,".gz") || 
+      strstr(filename,".Z")) {
     /* do the compress dance, which is the same as the gzip dance */
     /* Using the cfitsio routine */
 

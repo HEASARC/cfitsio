@@ -1088,7 +1088,6 @@ int fffi4int(INT32BIT *input,     /* I - array of values to be converted     */
 {
     long ii;
     double dvalue;
-
     if (nullcheck == 0)     /* no null checking required */
     {
         if (scale == 1. && zero == 0.)      /* no scaling */

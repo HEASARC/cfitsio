@@ -1,4 +1,4 @@
-CFITSIO TESTPROG, v2.032
+CFITSIO TESTPROG, v2.033
 
 Try opening then closing a nonexistent file:
   ffopen fptr, status  = 0 104 (expect an error)

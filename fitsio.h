@@ -12,7 +12,7 @@
  
 /* global variables */
  
-#define FLEN_FILENAME 257  /* max length of a filename  */
+#define FLEN_FILENAME 1025 /* max length of a filename  */
 #define FLEN_KEYWORD   72  /* max length of a keyword (HIERARCH convention) */
 #define FLEN_CARD      81  /* length of a FITS header card */
 #define FLEN_VALUE     71  /* max length of a keyword value string */
@@ -137,6 +137,7 @@ typedef struct      /* structure used to store basic FITS file information */
     int curbuf;     /* number of I/O buffer currently in use */ 
     int curhdu;     /* current HDU number; 0 = primary array */
     int hdutype;    /* 0 = primary array, 1 = ASCII table, 2 = binary table */
+    int compressimg; /* 1 if HDU contains a compressed image, else 0 */
     int writemode;  /* 0 = readonly, 1 = readwrite */
     int maxhdu;     /* highest numbered HDU known to exist in the file */
     long headstart[MAXHDU + 1]; /* byte offset in file to start of each HDU */
@@ -304,6 +305,10 @@ typedef struct  /* structure for the iterator function column information */
 #define BAD_DATATYPE      410  /* bad keyword datatype code */
 #define BAD_DECIM         411  /* bad number of decimal places specified */
 #define NUM_OVERFLOW      412  /* overflow during datatype conversion */
+
+# define DATA_COMPRESSION_ERR 413  /* error in imcompress routines */
+# define DATA_DECOMPRESSION_ERR 414 /* error in imcompress routines */
+
 #define BAD_DATE          420  /* error in date or time conversion */
 
 #define PARSE_SYNTAX_ERR  431  /* syntax error in parser expression */
@@ -392,6 +397,7 @@ void ffcmps(char *templt, char *colname, int  casesen, int *match,
            int *exact);
 int fftkey(char *keyword, int *status);
 int fftrec(char *card, int *status);
+int ffnchk(fitsfile *fptr, int *status);
 int ffkeyn(char *keyroot, int value, char *keyname, int *status);
 int ffnkey(int value, char *keyroot, char *keyname, int *status);
 int ffdtyp(char *cval, char *dtype, int *status);
@@ -620,7 +626,10 @@ int ffghdn(fitsfile *fptr, int *chdunum);
 int ffghdt(fitsfile *fptr, int *exttype, int *status);
 int ffghad(fitsfile *fptr, long *headstart, long *datastart, long *dataend,
            int *status);
- 
+int ffgidt(fitsfile *fptr, int *imgtype, int *status);
+int ffgidm(fitsfile *fptr, int *naxis,  int *status);
+int ffgisz(fitsfile *fptr, long *naxes, int *status);
+
 /*--------------------- HDU operations -------------*/
 int ffmahd(fitsfile *fptr, int hdunum, int *exttype, int *status);
 int ffmrhd(fitsfile *fptr, int hdumov, int *exttype, int *status);
@@ -1203,12 +1212,12 @@ int ffcrow( fitsfile *fptr, int datatype, char *expr,
 	    long firstrow, long nelements, void *nulval,
 	    void *array, int *anynul, int *status );
 
+int ffcalc_rng( fitsfile *infptr, char *expr, fitsfile *outfptr,
+               char *parName, char *parInfo, int nRngs,
+                 long *start, long *end, int *status );
+
 int ffcalc( fitsfile *infptr, char *expr, fitsfile *outfptr,
             char *parName, char *parInfo, int *status );
-
-int ffcalc_rng( fitsfile *infptr, char *expr, fitsfile *outfptr,
-		char *parName, char *parInfo, int nRngs,
-                long *start, long *end, int *status );
 
   /* ffhist is not really intended as a user-callable routine */
   /* but it may be useful for some specialized applications   */
@@ -1250,6 +1259,24 @@ int ffgmrm(fitsfile *fptr, long member, int rmopt, int *status);
 /*--------------------- group template parser routines ------------------*/
 
 int	fits_execute_template(fitsfile *ff, char *ngp_template, int *status);
+
+/*--------------------- image compression routines ------------------*/
+
+int fits_comp_img(fitsfile *infptr, fitsfile *outfptr, long *tilesize,
+               int nbits, int blocksize, int *status);
+int fits_decomp_img (fitsfile *infptr, fitsfile *outfptr, int *status);
+int fits_read_compressed_img(fitsfile *fptr, 
+            int  datatype, long  *fpixel,long  *lpixel,long *inc,   
+            int nullcheck, void *nulval,  void *array, char *nullarray,
+            int  *anynul, int  *status);
+
+int fits_quantize_float (float fdata[], int nx, float in_null_value,
+           int noise_bits, int idata[], double *bscale, double *bzero);
+int fits_quantize_double (double fdata[], int nx, double in_null_value,
+           int noise_bits, int idata[], double *bscale, double *bzero);
+int fits_rcomp(int a[], int nx, unsigned char *c, int clen,int nblock);
+int fits_rdecomp (unsigned char *c, int clen, unsigned int array[], int nx,
+             int nblock);
 
 /*  The following exclusion if __CINT__ is defined is needed for ROOT */
 #ifndef __CINT__

@@ -1179,10 +1179,13 @@ int	fits_execute_template(fitsfile *ff, char *ngp_template, int *status)
    char		grnm[NGP_MAX_STRING], used_name[NGP_MAX_STRING];
    long		luv;
 
-   if (NULL == ff) return(NGP_NUL_PTR);
-   if (NULL == ngp_template) return(NGP_NUL_PTR);
    if (NULL == status) return(NGP_NUL_PTR);
    if (NGP_OK != *status) return(*status);
+
+   if ((NULL == ff) || (NULL == ngp_template))
+     { *status = NGP_NUL_PTR;
+       return(*status);
+     }
 
    ngp_inclevel = 0;				/* initialize things, not all should be zero */
    ngp_grplevel = 0;

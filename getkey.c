@@ -67,6 +67,57 @@ int ffghps(fitsfile *fptr, /* I - FITS file pointer                     */
   return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffnchk(fitsfile *fptr,  /* I - FITS file pointer                     */
+           int *status)     /* IO - error status                         */
+/*
+  function returns the position of the first null character (ASCII 0), if
+  any, in the current header.  Null characters are illegal, but the other
+  CFITSIO routines that read the header will not detect this error, because
+  the null gets interpreted as a normal end of string character.
+*/
+{
+    long ii, nblock, bytepos;
+    int length, nullpos;
+    char block[2881];
+    
+    if (*status > 0)
+        return(*status);
+
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+    if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+    {
+        return(0);  /* Don't check a file that is just being created.  */
+                    /* It cannot contain nulls since CFITSIO wrote it. */
+    }
+    else
+    {
+        /* calculate number of blocks in the header */
+        nblock = ( (fptr->Fptr)->datastart - 
+                   (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] ) / 2880;
+    }
+
+    bytepos = (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu];
+    ffmbyt(fptr, bytepos, REPORT_EOF, status);  /* move to read pos. */
+
+    block[2880] = '\0';
+    for (ii = 0; ii < nblock; ii++)
+    {
+        if (ffgbyt(fptr, 2880, block, status) > 0)
+            return(0);   /* read error of some sort */
+
+        length = strlen(block);
+        if (length != 2880)
+        {
+            nullpos = (ii * 2880) + length + 1;
+            return(nullpos);
+        }
+    }
+
+    return(0);
+}
+/*--------------------------------------------------------------------------*/
 int ffmaky(fitsfile *fptr,    /* I - FITS file pointer                    */
           int nrec,           /* I - one-based keyword number to move to  */
           int *status)        /* IO - error status                        */
@@ -91,15 +142,11 @@ int ffmrky(fitsfile *fptr,    /* I - FITS file pointer                   */
   move pointer to the specified keyword position relative to the current
   position.  E.g. this keyword  will then be read by the next call to ffgnky.
 */
-    int absrec;
 
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
-    absrec = ( ((fptr->Fptr)->nextkey) - ((fptr->Fptr)->headstart[(fptr->Fptr)->curhdu]) ) / 80
-              + 1 + nmove;
-
-    ffmaky(fptr, absrec, status);
+    (fptr->Fptr)->nextkey += (nmove * 80);
 
     return(*status);
 }
@@ -151,15 +198,14 @@ int ffgnky(fitsfile *fptr,  /* I - FITS file pointer     */
 
     if (ffgbyt(fptr, 80, card, status) <= 0) 
     {
-        ffmrky(fptr, 1, status);    /* increment pointer to next keyword */
+        (fptr->Fptr)->nextkey += 80;   /* increment pointer to next keyword */
 
-        for (jj=79; jj >= 0; jj--)  /* replace trailing blanks with nulls */
-        {
-            if (card[jj] == ' ')
-                card[jj] = '\0';
-            else
-                break;
-        }
+        /* strip off trailing blanks with terminated string */
+        jj = 79;
+        while (jj >= 0 && card[jj] == ' ')
+               jj--;
+
+        card[jj + 1] = '\0';
     }
     return(*status);
 }
@@ -408,7 +454,7 @@ int ffgcrd( fitsfile *fptr,     /* I - FITS file pointer        */
   not automatically resume from the top of the header.
 */
 {
-    int nkeys, nextkey, ntodo, namelen, cardlen;
+    int nkeys, nextkey, ntodo, namelen, namelenminus1, cardlen;
     int ii = 0, jj, kk, wild, match, exact, hier = 0;
     char keyname[FLEN_KEYWORD], cardname[FLEN_KEYWORD];
     char *ptr1, *ptr2;
@@ -472,12 +518,14 @@ int ffgcrd( fitsfile *fptr,     /* I - FITS file pointer        */
 
     ffghps(fptr, &nkeys, &nextkey, status); /* get no. keywords and position */
 
+    namelenminus1 = maxvalue(namelen - 1, 1);
     ntodo = nkeys - nextkey + 1;  /* first, read from next keyword to end */
     for (jj=0; jj < 2; jj++)
     {
       for (kk = 0; kk < ntodo; kk++)
       {
         ffgnky(fptr, card, status);     /* get next keyword */
+
         if (hier)
         {
            if (FSTRNCMP("HIERARCH", card, 8) == 0)
@@ -492,8 +540,19 @@ int ffgcrd( fitsfile *fptr,     /* I - FITS file pointer        */
             /* if there are no wild cards, lengths must be the same */
             if (!( !wild && cardlen != namelen) )
             {
-              for (ii=0; ii < cardlen; ii++)       
-                cardname[ii] = toupper(cardname[ii]); /* make upper case */
+              for (ii=0; ii < cardlen; ii++)
+              {    
+                /* make sure keyword is in uppercase */
+                if (cardname[ii] > 96)
+                {
+                  /* This assumes the ASCII character set in which */
+                  /* upper case characters start at ASCII(97)  */
+                  /* Timing tests showed that this is 20% faster */
+                  /* than calling the isupper function.          */
+
+                  cardname[ii] = toupper(cardname[ii]);  /* make upper case */
+                }
+              }
 
               if (wild)
               {
@@ -501,8 +560,17 @@ int ffgcrd( fitsfile *fptr,     /* I - FITS file pointer        */
                 if (match)
                     return(*status); /* found a matching keyword */
               }
-              else if (FSTRNCMP(keyname, cardname, namelen) == 0)
-                return(*status);  /* found the matching keyword */
+              else if (keyname[namelenminus1] == cardname[namelenminus1])
+              {
+                /* test the last character of the keyword name first, on */
+                /* the theory that it is less likely to match then the first */
+                /* character since many keywords begin with 'T', for example */
+
+                if (FSTRNCMP(keyname, cardname, namelenminus1) == 0)
+                {
+                  return(*status);   /* found the matching keyword */
+                }
+              }
             }
           }
         }
@@ -522,6 +590,11 @@ int ffgknm( char *card,         /* I - keyword card                   */
             char *name,         /* O - name of the keyword            */
             int *length,        /* O - length of the keyword name     */
             int  *status)       /* IO - error status                  */
+
+/*
+  Return the name of the keyword, and the name length.  This supports the
+  ESO HIERARCH convention where keyword names may be > 8 characters long.
+*/
 {
     char *ptr1, *ptr2;
     int ii;
@@ -549,18 +622,34 @@ int ffgknm( char *card,         /* I - keyword card                   */
 
         strncat(name, ptr1, ptr2 - ptr1);
         ii = ptr2 - ptr1;
+
+        while (ii > 0 && name[ii - 1] == ' ')  /* remove trailing spaces */
+            ii--;
+
+        name[ii] = '\0';
+        *length = ii;
     }
     else
     {
-        strncat(name, card, 8);
-        ii = 8;
+        for (ii = 0; ii < 8; ii++)
+        {
+           /* look for string terminator, or a blank */
+           if (*(card+ii) != ' ' && *(card+ii) !='\0')
+           {
+               *(name+ii) = *(card+ii);
+           }
+           else
+           {
+               name[ii] = '\0';
+               *length = ii;
+               return(*status);
+           }
+        }
+
+        /* if we got here, keyword is 8 characters long */
+        name[8] = '\0';
+        *length = 8;
     }
-
-    while (ii > 0 && name[ii - 1] == ' ')  /* remove trailing spaces */
-        ii--;
-
-    name[ii] = '\0';
-    *length = ii;
 
     return(*status);
 }
@@ -674,10 +763,10 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer         */
       contin = 1;
       while (contin)  
       {
-        if (*(*value+len-1) == '&')  /*  is last char an anpersand?  */
+        if (len && *(*value+len-1) == '&')  /*  is last char an anpersand?  */
         {
             ffgcnt(fptr, valstring, status);
-            if (valstring)    /* a null valstring indicates no continuation */
+            if (*valstring)    /* a null valstring indicates no continuation */
             {
                *(*value+len-1) = '\0';         /* erase the trailing & char */
                len += strlen(valstring) - 1;

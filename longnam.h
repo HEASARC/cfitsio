@@ -30,10 +30,12 @@
 #define fits_compare_str    ffcmps
 #define fits_test_keyword   fftkey
 #define fits_test_record    fftrec
+#define fits_null_check     ffnchk
 #define fits_make_keyn      ffkeyn
 #define fits_make_nkey      ffnkey
 #define fits_get_keytype    ffdtyp
 #define fits_parse_value    ffpsvc
+#define fits_get_keyname    ffgknm
 #define fits_parse_template ffgthd
 #define fits_ascii_tform    ffasfm
 #define fits_binary_tform   ffbnfm
@@ -168,6 +170,9 @@
 #define fits_get_hdu_num    ffghdn
 #define fits_get_hdu_type   ffghdt
 #define fits_get_hduaddr    ffghad
+#define fits_get_img_type   ffgidt
+#define fits_get_img_dim    ffgidm
+#define fits_get_img_size   ffgisz
 
 #define fits_movabs_hdu     ffmahd
 #define fits_movrel_hdu     ffmrhd
@@ -439,6 +444,7 @@
 #define fits_select_rows        ffsrow
 #define fits_calc_rows          ffcrow
 #define fits_calculator         ffcalc
+#define fits_calculator_rng     ffcalc_rng
 #define fits_test_expr          fftexp
 
 #define fits_create_group       ffgtcr 
