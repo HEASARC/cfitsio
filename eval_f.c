@@ -217,6 +217,7 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
 	 fits_iter_set_by_num( gParse.colData, infptr, 1, 0, InputCol );
 	 gParse.nCols++;
       }
+
       ffiter( gParse.nCols, gParse.colData, 0L, 0L,
 	      parse_data, (void*)&Info, status );
    }
@@ -283,6 +284,7 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
       }
 
       ffukyj( outfptr, "NAXIS2", row, "&", status );
+      (outfptr->Fptr)->numrows = row;
 
       free(buffer);
    }
@@ -567,10 +569,8 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
 /* produces.                                                                */
 /*--------------------------------------------------------------------------*/
 {
-   FILE *fexpr;
    Node *result;
-   char line[1024];
-   int  i,lexpr,len,mlen;
+   int  i,lexpr;
 
    if( *status ) return( *status );
 
@@ -582,41 +582,22 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
    gParse.colData    = NULL;
    gParse.colInfo    = NULL;
    gParse.colNulls   = NULL;
-   gParse.Nodes      = (Node *)malloc(sizeof(Node)*100);
-   if( gParse.Nodes ) {
-      gParse.nNodesAlloc = 100;
-      gParse.nNodes      =   0;
-   } else
-      return( *status = MEMORY_ALLOCATION );
+   gParse.Nodes      = NULL;
+   gParse.nNodesAlloc= 0;
+   gParse.nNodes     = 0;
    gParse.status     = 0;
 
    /*  Copy expression into parser... read from file if necessary  */
 
    if( expr[0]=='@' ) {
-      lexpr = len = 0;
-      gParse.expr = (char *)malloc(1024*sizeof(char));
-      gParse.expr[0]='\0';
-      mlen = 1024;
-      if( (fexpr = fopen( expr+1, "r" ))==NULL ) {
-         return 1;
-      }
-      while( fgets(line,1024,fexpr)!=NULL ) {
-         len=strlen(line);
-
-         if( line[len-1]=='\n' ) line[len-1] = ' ';
-         if( lexpr+len+1>=mlen ) /* Add one in case need to add \n later */
-            gParse.expr = (char *)realloc(gParse.expr, mlen+=1024);
-         strcpy(gParse.expr+lexpr,line);
-         lexpr+=len;
-      }
-      fclose(fexpr);
-      if( gParse.expr[lexpr-1] != '\n' ) strcat(gParse.expr+lexpr++,"\n");
+      if( ffimport_file( expr+1, &gParse.expr, status ) ) return( *status );
+      lexpr = strlen(gParse.expr);
    } else {
-      lexpr = strlen(expr) + 2;
-      gParse.expr = (char*)malloc(lexpr*sizeof(char));
+      lexpr = strlen(expr);
+      gParse.expr = (char*)malloc( (2+lexpr)*sizeof(char));
       strcpy(gParse.expr,expr);
-      strcat(gParse.expr,"\n");
    }
+   strcat(gParse.expr + lexpr,"\n");
    gParse.index    = 0;
    gParse.is_eobuf = 0;
 
@@ -624,12 +605,18 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
    /*  which columns are neded and what data type is returned  */
 
    ffrestart(NULL);
-   ffparse();
+   if( ffparse() )
+      return( *status = PARSE_SYNTAX_ERR );
 
    /*  Check results  */
 
    *status = gParse.status;
    if( *status ) return(*status);
+
+   if( !gParse.nNodes ) {
+      ffpmsg("Blank expression");
+      return( *status = PARSE_SYNTAX_ERR );
+   }
 
    result = gParse.Nodes + gParse.nNodes-1;
 

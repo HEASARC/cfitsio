@@ -323,6 +323,7 @@ int ffbins(char *binspec, int *imagetype, int *haxis,
 int ffbinr(char **binspec, char *colname, double *minin, 
                         double *maxin, double *binsizein, char *minname,
                         char *maxname, char *binname, int *status);
+int ffimport_file( char *filename, char **contents, int *status );
 
 /*----------------  FITS file I/O routines -------------*/
 int ffomem(fitsfile **fptr, const char *name, int mode, void **buffptr,

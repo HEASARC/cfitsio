@@ -56,7 +56,7 @@ int ffbins(char *binspec,   /* I - binning specification */
    most other reasonable combinations are supported.        
 */
     int ii, slen, defaulttype;
-    char *ptr, tmpname[30];
+    char *ptr, tmpname[30], *file_expr = NULL;
     double  dummy;
 
     if (*status > 0)
@@ -129,6 +129,15 @@ int ffbins(char *binspec,   /* I - binning specification */
     if (*ptr == '\0')   /* no other parameters; use defaults */
         return(*status);
 
+    /* Check if need to import expression from a file */
+
+    if( *ptr=='@' ) {
+       if( ffimport_file( ptr+1, &file_expr, status ) ) return(*status);
+       ptr = file_expr;
+       while (*ptr == ' ')
+               ptr++;       /* skip leading white space... again */
+    }
+
     if (*ptr == '(' )
     {
         /* this must be the opening parenthesis around a list of column */
@@ -159,6 +168,7 @@ int ffbins(char *binspec,   /* I - binning specification */
             ffpmsg(
  "binning specification has too many column names or is missing closing ')':");
             ffpmsg(binspec);
+	    if( file_expr ) free( file_expr );
             return(*status = URL_PARSE_ERROR);
         }
 
@@ -166,14 +176,17 @@ int ffbins(char *binspec,   /* I - binning specification */
         while (*ptr == ' ')  /* skip over blanks */
             ptr++;
 
-        if (*ptr == '\0')
+        if (*ptr == '\0') {
+	    if( file_expr ) free( file_expr );
             return(*status);  /* parsed the entire string */
+	}
 
         else if (*ptr != '=')  /* must be an equals sign now*/
         {
             ffpmsg("illegal binning specification in URL:");
             ffpmsg(" an equals sign '=' must follow the column names");
             ffpmsg(binspec);
+	    if( file_expr ) free( file_expr );
             return(*status = URL_PARSE_ERROR);
         }
 
@@ -189,6 +202,7 @@ int ffbins(char *binspec,   /* I - binning specification */
         {
             ffpmsg("illegal binning specification in URL:");
             ffpmsg(binspec);
+	    if( file_expr ) free( file_expr );
             return(*status);
         }
 
@@ -212,6 +226,7 @@ int ffbins(char *binspec,   /* I - binning specification */
         {
             ffpmsg("illegal syntax after binning range specification in URL:");
             ffpmsg(binspec);
+	    if( file_expr ) free( file_expr );
             return(*status = URL_PARSE_ERROR);
         }
 
@@ -233,6 +248,7 @@ int ffbins(char *binspec,   /* I - binning specification */
         {
             ffpmsg("illegal syntax in binning range specification in URL:");
             ffpmsg(binspec);
+	    if( file_expr ) free( file_expr );
             return(*status);
         }
 
@@ -258,6 +274,7 @@ int ffbins(char *binspec,   /* I - binning specification */
         {
             ffpmsg("illegal characters following binning specification in URL:");
             ffpmsg(binspec);
+	    if( file_expr ) free( file_expr );
             return(*status = URL_PARSE_ERROR);
         }
     }
@@ -310,6 +327,7 @@ getweight:
         {
             ffpmsg("illegal binning weight specification in URL:");
             ffpmsg(binspec);
+	    if( file_expr ) free( file_expr );
             return(*status);
         }
 
@@ -330,6 +348,7 @@ getweight:
         *status = URL_PARSE_ERROR;
     }
 
+    if( file_expr ) free( file_expr );
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

@@ -837,6 +837,7 @@ int ffedit_columns(
     int ii, hdunum, slen, colnum;
     char *cptr, *cptr2, *cptr3, clause[FLEN_FILENAME], keyname[FLEN_KEYWORD];
     char colname[FLEN_VALUE], oldname[FLEN_VALUE], colformat[FLEN_VALUE];
+    char *file_expr = NULL;
 
     if (*outfile)
     {
@@ -891,6 +892,15 @@ int ffedit_columns(
     while (*cptr == ' ')
          cptr++;         /* skip leading white space */
    
+    /* Check if need to import expression from a file */
+
+    if( *cptr=='@' ) {
+       if( ffimport_file( cptr+1, &file_expr, status ) ) return(*status);
+       cptr = file_expr;
+       while (*cptr == ' ')
+          cptr++;         /* skip leading white space... again */
+    }
+
     /* parse expression and get first clause, if more than 1 */
 
     while ((slen = fits_get_token(&cptr, ";", clause, NULL)) > 0 )
@@ -909,6 +919,7 @@ int ffedit_columns(
                 {
                     ffpmsg("failed to delete column in input file:");
                     ffpmsg(clause);
+                    if( file_expr ) free( file_expr );
                     return(*status);
                 }
             }
@@ -920,6 +931,7 @@ int ffedit_columns(
                 {
                     ffpmsg("column or keyword to be deleted does not exist:");
                     ffpmsg(clause);
+                    if( file_expr ) free( file_expr );
                     return(*status);
                 }
             }
@@ -939,6 +951,7 @@ int ffedit_columns(
             {
                 ffpmsg("error: column or keyword name is blank:");
                 ffpmsg(clause);
+                if( file_expr ) free( file_expr );
                 return(*status= URL_PARSE_ERROR);
             }
 
@@ -949,6 +962,7 @@ int ffedit_columns(
             {
                ffpmsg("Syntax error in columns specifier in input URL:");
                ffpmsg(cptr2);
+               if( file_expr ) free( file_expr );
                return(*status = URL_PARSE_ERROR);
             }
 
@@ -980,6 +994,7 @@ int ffedit_columns(
                       ffpmsg(oldname);
                       ffpmsg(" newname =");
                       ffpmsg(colname);
+                      if( file_expr ) free( file_expr );
                       return(*status);
                     }
                 }
@@ -991,6 +1006,7 @@ int ffedit_columns(
                     {
                         ffpmsg("column or keyword to be renamed does not exist:");
                         ffpmsg(clause);
+                        if( file_expr ) free( file_expr );
                         return(*status);
                     }
                 }
@@ -1014,11 +1030,12 @@ int ffedit_columns(
 
                 /* calculate values for the column or keyword */ 
                 fits_calculator(*fptr, cptr2, *fptr, oldname, colformat,
-				status);
+       	                        status);
             }
         }
     }
 
+    if( file_expr ) free( file_expr );
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -1031,7 +1048,6 @@ int ffselect_table(
 {
     fitsfile *newptr;
     int ii, hdunum;
-    char *cptr;
 
     if (*outfile)
     {
@@ -1077,14 +1093,9 @@ int ffselect_table(
     else
         newptr = *fptr;  /* will delete rows in place in the table */
 
-    /* remove the brackets from around the selection expression */
-    cptr = expr + 1;
-    ii = strlen(cptr);
-    cptr[ii - 1] = '\0';
-
     /* copy rows which satisfy the selection expression to the output table */
     /* or delete the nonqualifying rows if *fptr = newptr.                  */
-    if (fits_select_rows(*fptr, newptr, cptr, status) > 0)
+    if (fits_select_rows(*fptr, newptr, expr, status) > 0)
     {
         if (*outfile)
             ffclos(newptr, status);
@@ -2088,11 +2099,11 @@ int ffiurl(char *url,
     /* does the filter contain a column selection specification? */
     /* --------------------------------------------------------- */
 
-    ptr1 = strstr(rowfilter, "[col");
+    ptr1 = strstr(rowfilter, "[col ");
     if (!ptr1)
-        ptr1 = strstr(rowfilter, "[COL");
+        ptr1 = strstr(rowfilter, "[COL ");
     if (!ptr1)
-        ptr1 = strstr(rowfilter, "[Col");
+        ptr1 = strstr(rowfilter, "[Col ");
 
     if (ptr1)
     {
@@ -2123,9 +2134,19 @@ int ffiurl(char *url,
         strcpy(ptr1, tmpstr);    /* overwrite binspec */
     }
 
-    /* copy the local string to the output */
-    if (rowfilterx)
-        strcpy(rowfilterx, rowfilter);
+    /* copy the remaining string to the rowfilter output... should only */
+    /* contain a rowfilter expression of the form "[expr]"              */
+
+    if (rowfilterx && rowfilter[0]) {
+       ptr2 = rowfilter + strlen(rowfilter) - 1;
+       if( rowfilter[0]=='[' && *ptr2==']' ) {
+          *ptr2 = '\0';
+          strcpy(rowfilterx, rowfilter+1);
+       } else {
+          ffpmsg("input file URL lacks valid row filter expression");
+          *status = URL_PARSE_ERROR;
+       }
+    }
 
     free(infile);
     return(*status);
@@ -2522,6 +2543,62 @@ int ffextn(char *url,           /* I - input filename/URL  */
                                 /* defaults to primary array */
          return(*status);
     }
+}
+
+/*--------------------------------------------------------------------------*/
+int ffimport_file( char *filename,   /* Text file to read                   */
+                   char **contents,  /* Pointer to pointer to hold file     */
+                   int *status )     /* CFITSIO error code                  */
+/*
+   Read and concatenate all the lines from the given text file.  User
+   must free the pointer returned in contents.  Pointer is guaranteed
+   to hold 2 characters more than the length of the text... allows the
+   calling routine to append (or prepend) a newline (or quotes?) without
+   reallocating memory.
+*/
+{
+   int allocLen, totalLen, lineLen;
+   char *lines,line[256];
+   FILE *aFile;
+
+   if( *status > 0 ) return( *status );
+
+   totalLen =    0;
+   allocLen = 1024;
+   lines    = (char *)malloc( (2+allocLen)*sizeof(char) );
+   if( !lines ) {
+      ffpmsg("Couldn't allocate memory to hold ASCII file contents.");
+      return(*status = MEMORY_ALLOCATION );
+   }
+   lines[0] = '\0';
+
+   if( (aFile = fopen( filename, "r" ))==NULL ) {
+      sprintf(line,"Could not open ASCII file %s.",filename);
+      ffpmsg(line);
+      free( lines );
+      return(*status = FILE_NOT_OPENED);
+   }
+
+   while( fgets(line,256,aFile)!=NULL ) {
+      lineLen = strlen(line);
+      
+      if( line[lineLen-1]=='\n' ) line[--lineLen] = '\0';
+
+      if( totalLen+lineLen>=allocLen ) {
+         lines = (char *)realloc(lines, (2+(allocLen+=256))*sizeof(char) );
+         if( ! lines ) {
+            ffpmsg("Couldn't allocate memory to hold ASCII file contents.");
+            *status = MEMORY_ALLOCATION;
+            break;
+         }
+      }
+      strcpy( lines+totalLen, line );
+      totalLen += lineLen;
+   }
+   fclose(aFile);
+
+   *contents = lines;
+   return( *status );
 }
 
 /*--------------------------------------------------------------------------*/
