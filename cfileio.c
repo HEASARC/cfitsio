@@ -701,7 +701,7 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
            char *binspec, 
            char *colspec, 
            int  mode,             /* I - 0 = open readonly; 1 = read/write   */
-           int  *isopen,
+           int  *isopen,          /* O - 1 = file is already open            */
            int  *status)          /* IO - error status                       */
 /*
   Check if the file to be opened is already open.  If so, then attach to it.
@@ -714,6 +714,7 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
     char oldrowfilter[FLEN_FILENAME];
     char oldbinspec[FLEN_FILENAME], oldcolspec[FLEN_FILENAME];
 
+    *isopen = 0;
 
     for (ii = 0; ii < NIOBUF; ii++)   /* check every buffer */
     {
