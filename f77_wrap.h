@@ -9,7 +9,8 @@
    to 4-bytes when returning to Fortran.  Ugh!!!
 *************************************************************************/
 
-#if (defined DECFortran) || (defined(__alpha) && defined(g77Fortran))
+#if defined(DECFortran) || (defined(__alpha) && defined(g77Fortran)) \
+    || (defined(mipsFortran) && _MIPS_SZLONG==64)
 
 #undef LONGV_cfSTR
 #undef PLONG_cfSTR

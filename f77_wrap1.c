@@ -642,7 +642,8 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONG,PINT,PSTRINGV,PSTRINGV,PSTR
     /*   problem if ttype, tform, and tunit are declared with fewer          */
     /*   elements than the actual number of columns.                         */
 
-#if (defined DECFortran) || (defined(__alpha) && defined(g77Fortran))
+#if defined(DECFortran) || (defined(__alpha) && defined(g77Fortran)) \
+    || (defined(mipsFortran) && _MIPS_SZLONG==64)
     /*   If running under DECFortran, we also need to worry about the length */
     /*   of the long naxes array.  So read NAXIS manually. :(                */
 
