@@ -17,6 +17,8 @@ $ cc eval_y.c
 $ cc fitscore.c
 $ cc f77_wrap1.c
 $ cc f77_wrap2.c
+$ cc f77_wrap3.c
+$ cc f77_wrap4.c
 $ cc getcol.c
 $ cc getcolb.c
 $ cc getcoli.c
@@ -59,7 +61,8 @@ $ cc quantize.c
 $ cc ricecomp.c
 $ cc pliocomp.c
 $ lib/create cfitsio buffers,cfileio,checksum,compress,drvrfile,drvrmem
-$ lib/insert cfitsio editcol,edithdu,eval_f,eval_l,eval_y,f77_wrap1,f77_wrap2
+$ lib/insert cfitsio editcol,edithdu,eval_f,eval_l,eval_y
+$ lib/insert cfitsio f77_wrap1,f77_wrap2,f77_wrap3,f77_wrap4
 $ lib/insert cfitsio fitscore,getcol,getcolb,getcoli,getcolj,getcolk,getcole
 $ lib/insert cfitsio getcold,getcoll,getcols,getcolui,getcoluj,getcoluk
 $ lib/insert cfitsio getkey,group,grparser,histo,iraffits,modkey,putcol,putcolb

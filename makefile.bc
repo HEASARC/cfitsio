@@ -92,6 +92,8 @@ Dep_cfitsioddll = \
    fitscore.obj\
    f77_wrap1.obj\
    f77_wrap2.obj\
+   f77_wrap3.obj\
+   f77_wrap4.obj\
    eval_y.obj\
    eval_l.obj\
    eval_f.obj\
@@ -153,6 +155,8 @@ grparser.obj+
 fitscore.obj+
 f77_wrap1.obj+
 f77_wrap2.obj+
+f77_wrap3.obj+
+f77_wrap4.obj+
 eval_y.obj+
 eval_l.obj+
 eval_f.obj+
@@ -362,6 +366,16 @@ f77_wrap1.obj :  f77_wrap1.c
 f77_wrap2.obj :  f77_wrap2.c
   $(BCC32) -P- -c @&&|
  $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ f77_wrap2.c
+|
+
+f77_wrap3.obj :  f77_wrap3.c
+  $(BCC32) -P- -c @&&|
+ $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ f77_wrap3.c
+|
+
+f77_wrap4.obj :  f77_wrap4.c
+  $(BCC32) -P- -c @&&|
+ $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ f77_wrap4.c
 |
 
 eval_y.obj :  eval_y.c

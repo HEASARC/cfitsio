@@ -54,7 +54,7 @@ OBJECTS = 	${SOURCES:.c=.o}
 CORE_OBJECTS = 	${CORE_SOURCES:.c=.o}
 
 
-FITSIO_SRC =	f77_wrap1.c f77_wrap2.c
+FITSIO_SRC =	f77_wrap1.c f77_wrap2.c f77_wrap3.c f77_wrap4.c
 
 # ============ description of all targets =============
 #       -  <<-- ignore error code
