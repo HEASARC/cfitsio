@@ -1065,6 +1065,10 @@ int fits_find_rows(   fitsfile *infptr, char *expr,
 		      long firstrow, long nrows,
                       long *n_good_rows, char *row_status, int *status);
 
+int fits_find_rows_cmp( fitsfile *fptr, char *expr, char *timeCol,    
+                        char *parCol, char *valCol, long ntimes,      
+                        double *times, char *time_status, int  *status );
+
 int fits_select_rows( fitsfile *infptr, fitsfile *outfptr, char *expr, 
                       int *status);
 

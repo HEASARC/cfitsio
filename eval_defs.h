@@ -55,6 +55,12 @@ typedef struct {
 
 typedef struct {
                   fitsfile    *def_fptr;
+
+                  int         compressed;
+                  int         timeCol;
+                  int         parCol;
+                  int         valCol;
+
                   char        *expr;
                   int         index;
                   int         is_eobuf;

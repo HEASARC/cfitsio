@@ -2414,10 +2414,13 @@ static int build_column_array(char *colname)
       }
 
       status = 0;
-      if( fits_get_colnum( fptr, CASEINSEN, colname, &colnum, &status ) ) {
-	 gParse.status = status;
-	 return ERROR;
-      }
+      if( gParse.compressed )
+         colnum = gParse.valCol;
+      else
+         if( fits_get_colnum( fptr, CASEINSEN, colname, &colnum, &status ) ) {
+	    gParse.status = status;
+	    return ERROR;
+         }
 
       if( fits_get_coltype( fptr, colnum, &typecode,
 			    &repeat, &width, &status ) ) {

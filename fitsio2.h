@@ -636,7 +636,7 @@ void ieevud(double *inarray, double *outarray, long *nvals);
 
 /*  routines related to the lexical parser  */
 int  ffselect_table(fitsfile **fptr, char *expr,  int *status);
-int  ffiprs( fitsfile *fptr, char *expr, int maxdim,
+int  ffiprs( fitsfile *fptr, int compressed, char *expr, int maxdim,
 	     int *datatype, long *nelem, int *naxis, long *naxes,
 	     int *status );
 void ffcprs( void );
@@ -644,8 +644,10 @@ int  ffcvtn( int inputType, void *input, char *undef, long ntodo,
 	     int outputType, void *nulval, void *output,
 	     int *anynull, int *status );
 int  parse_data( long totalrows, long offset, long firstrow,
-	         long nrows, int nCols, iteratorCol *colData,
+                 long nrows, int nCols, iteratorCol *colData,
                  void *userPtr );
+int  uncompress_hkdata( fitsfile *fptr, long ntimes, 
+                        double *times, int *status );
 
 /* general driver routines */
 
