@@ -1206,6 +1206,10 @@ int ffcrow( fitsfile *fptr, int datatype, char *expr,
 int ffcalc( fitsfile *infptr, char *expr, fitsfile *outfptr,
             char *parName, char *parInfo, int *status );
 
+int ffcalc_rng( fitsfile *infptr, char *expr, fitsfile *outfptr,
+		char *parName, char *parInfo, int nRngs,
+                long *start, long *end, int *status );
+
   /* ffhist is not really intended as a user-callable routine */
   /* but it may be useful for some specialized applications   */
 

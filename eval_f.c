@@ -45,6 +45,8 @@
 /*   Peter D Wilson   Aug 1998  regfilter(a,b,c,d) function added       */
 /*   Peter D Wilson   Jul 1999  Make parser fitsfile-independent,       */
 /*                              allowing a purely vector-based usage    */
+/*   Peter D Wilson   Aug 1999  Add row-offset capability               */
+/*   Peter D Wilson   Sep 1999  Add row-range capability to ffcalc_rng  */
 /*                                                                      */
 /************************************************************************/
 
@@ -238,6 +240,11 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
    Info.dataPtr = (char *)malloc( inExt.numRows * sizeof(char) );
    Info.nullPtr = NULL;
    Info.maxRows = inExt.numRows;
+   if( !Info.dataPtr ) {
+      ffpmsg("Unable to allocate memory for row selection");
+      ffcprs();
+      return( *status = MEMORY_ALLOCATION );
+   }
    
    if( constant ) { /*  Set all rows to the same value from constant result  */
 
@@ -447,6 +454,26 @@ int ffcalc( fitsfile *infptr,   /* I - Input FITS file                      */
             char     *parInfo,  /* I - Extra information on parameter       */
             int      *status )  /* O - Error status                         */
 /*                                                                          */
+/* Evaluate an expression for all rows of a table.  Call ffcalc_rng with    */
+/* a row range of 1-MAX.                                                    */
+{
+   long start=1, end=LONG_MAX;
+
+   return ffcalc_rng( infptr, expr, outfptr, parName, parInfo,
+                      1, &start, &end, status );
+}
+
+/*--------------------------------------------------------------------------*/
+int ffcalc_rng( fitsfile *infptr,   /* I - Input FITS file                  */
+                char     *expr,     /* I - Arithmetic expression            */
+                fitsfile *outfptr,  /* I - Output fits file                 */
+                char     *parName,  /* I - Name of output parameter         */
+                char     *parInfo,  /* I - Extra information on parameter   */
+                int      nRngs,     /* I - Row range info                   */
+                long     *start,    /* I - Row range info                   */
+                long     *end,      /* I - Row range info                   */
+                int      *status )  /* O - Error status                     */
+/*                                                                          */
 /* Evaluate an expression using the data in the input FITS file and place   */
 /* the results into either a column or keyword in the output fits file,     */
 /* depending on the value of parName (keywords normally prefixed with '#')  */
@@ -597,6 +624,9 @@ int ffcalc( fitsfile *infptr,   /* I - Input FITS file                      */
 
       /*  Output column exists (now)... put results into it  */
 
+      int anyNull = 0;
+      int nPerLp, i;
+
       /*************************************/
       /* Create new iterator Output Column */
       /*************************************/
@@ -611,14 +641,26 @@ int ffcalc( fitsfile *infptr,   /* I - Input FITS file                      */
 			    colNo, 0, OutputCol );
       gParse.nCols++;
 
-      Info.dataPtr = NULL;
-      Info.maxRows = -1;    /*  Process all of the rows  */
+      for( i=0; i<nRngs; i++ ) {
+         Info.dataPtr = NULL;
+         Info.maxRows = end[i]-start[i]+1;
+         if( Info.maxRows < 10 )
+            nPerLp = Info.maxRows;
+         else
+            nPerLp = 0;
 
-      ffiter( gParse.nCols, gParse.colData, 0, 0,
-	      parse_data, (void*)&Info, status );
+         if( ffiter( gParse.nCols, gParse.colData, start[i]-1,
+                     nPerLp, parse_data, (void*)&Info, status ) == -1 )
+            *status = 0;
+         else if( *status ) {
+            ffcprs();
+            return( *status );
+         }
+         if( Info.anyNull ) anyNull = 1;
+      }
 
-      if( newNullKwd && !Info.anyNull ) {
-	 ffdkey( outfptr, nullKwd, status );
+      if( newNullKwd && !anyNull ) {
+         ffdkey( outfptr, nullKwd, status );
       }
 
    } else {
