@@ -156,6 +156,7 @@
 #define fits_modify_key_dblcmp ffmkym
 
 #define fits_insert_record     ffirec
+#define fits_insert_card       ffikey
 #define fits_insert_key_null   ffikyu
 #define fits_insert_key_str    ffikys
 #define fits_insert_key_longstr    ffikls

@@ -284,7 +284,6 @@ int ffgttb(fitsfile *fptr, long *rowlen, long *nrows, long *pcount,
           long *tfield, int *status);
  
 int ffmkey(fitsfile *fptr, char *card, int *status);
-int ffikey(fitsfile *fptr, char *card, int *status);
  
 int ffmbyt(fitsfile *fptr, OFF_T bytpos, int ignore_err, int *status);
 int ffgbyt(fitsfile *fptr, long nbytes, void *buffer, int *status);

@@ -737,6 +737,7 @@ int ffmkfm(fitsfile *fptr, char *keyname, double *value, int decim, char *comm,
  
 /*--------------------- insert keywords ---------------*/
 int ffirec(fitsfile *fptr, int nkey, char *card, int *status);
+int ffikey(fitsfile *fptr, char *card, int *status);
 int ffikyu(fitsfile *fptr, char *keyname, char *comm, int *status);
 int ffikys(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
 int ffikls(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
