@@ -1024,6 +1024,7 @@ int ffiter(int n_cols,
           {
             /* allocate string to store the null string value */
             col[jj].null.stringnull = calloc(rept + 1, sizeof(char) );
+            col[jj].null.stringnull[1] = 1; /* to make sure string != 0 */
 
             /* allocate big block for the array of table column strings */
             stringptr[0] = calloc((ntodo + 1) * (rept + 1), sizeof(char) );
@@ -1167,7 +1168,7 @@ int ffiter(int n_cols,
             stringptr = cols[jj].array;
             dataptr = stringptr + 1;
             nullptr = *stringptr;
-            nbytes = 1;
+            nbytes = 2;
           }
           else
           {
