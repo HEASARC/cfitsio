@@ -778,8 +778,13 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
   strcpy(tmpstr,"GET ");
   strcat(tmpstr,fn);
   strcat(tmpstr," HTTP/1.0\n");
-  sprintf(tmpstr1,"User-Agent: HEASARC/CFITSIO/%-8.3f\n\n",ffvers(&version));
+  sprintf(tmpstr1,"User-Agent: HEASARC/CFITSIO/%-8.3f\n",ffvers(&version));
   strcat(tmpstr,tmpstr1);
+
+  /* HTTP 1.1 servers require the following 'Host: ' string */
+  sprintf(tmpstr1,"Host: %s:%-d\n\n",host,port);
+  strcat(tmpstr,tmpstr1);
+
   status = NET_SendRaw(sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
 
   /* read the header */

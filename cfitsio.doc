@@ -2313,17 +2313,22 @@ the first 8 characters, and strongly recommended that the names be
     increasing number of compilers.
 
     The 'repeat' parameter returns the vector repeat count on the binary
-    table TFORMn keyword value; ASCII table columns always have repeat
-    = 1.  The 'width' parameter returns the width in bytes of a single
-    column value (e.g., a '10D' binary table column will have width =
-    8; an ASCII table 'F12.2' column will have width = 12);  Note that
+    table TFORMn keyword value. (ASCII table columns always have repeat
+    = 1).  The 'width' parameter returns the width in bytes of a single
+    column element (e.g., a '10D' binary table column will have width =
+    8, an ASCII table 'F12.2' column will have width = 12, and a binary
+    table'60A' character string  column will have width = 60);  Note that
     this routine supports the local convention for specifying arrays of
     fixed length strings within a binary table character column using
     the syntax TFORM = 'rAw' where 'r' is the total number of
     characters (= the width of the column) and 'w' is the width of a
     unit string within the column.  Thus if the column has TFORM =
-    '60A12' then this routine will return typecode = TSTRING, repeat =
-    60, and width = 12.  A null pointer may be given for any of
+    '60A12' then this means that each row of the table contains
+    5 12-character substrings within the 60-character field, and thus 
+    in this case this routine will return typecode = TSTRING, repeat =
+    60, and width = 12.  The number of substings in any binary table
+    character string field can be calculated by (repeat/width). 
+    A null pointer may be given for any of
 >   the output parameters that are not needed. \label{ffgtcl}
 -
   int fits_get_coltype / ffgtcl
@@ -4557,12 +4562,15 @@ keyword to be read.
        int *status)
 
 -
->2  Read a sequence of indexed keyword values.   The starting index number
-    (nstart) must be greater than 0.   If the value of any of
-    the keywords is not defined (i.e., the value field is blank) then an
-    error status = VALUE\_UNDEFINED will be returned and the input 
-    value for the undefined keyword(s) will not be changed.  These
->   routines do not support wild card characters in the root name.\label{ffgknx}
+>2  Read a sequence of indexed keyword values (e.g., NAXIS1, NAXIS2, ...).
+    The input starting index number (nstart) must be greater than 0.
+    If the value of any of the keywords is not defined (i.e., the value
+    field is blank) then an error status = VALUE\_UNDEFINED will be
+    returned and the input value for the undefined keyword(s) will not
+    be changed.  These routines do not support wild card characters in
+    the root name.  If there are no indexed keywords in the header with
+    the input root name then these routines do not return a non-zero
+>   status value and instead simply return nfound = 0. \label{ffgknx}
 -
   int fits_read_keys_str / ffgkns
       (fitsfile *fptr, char *keyname, int nstart, int nkeys,
@@ -5063,22 +5071,28 @@ parameters used in these routines.
        long nelements, char **array, char *nulstr, > int *status)
 -
 >4  Write bit values into a binary byte ('B') or bit ('X') table column (in
-    the CDU).  Larray is an array of logical values corresponding to the
-    sequence of bits to be written.  If larray is true then the
-    corresponding bit is set to 1, otherwise the bit is set to 0.  Note
-    that in the case of 'X' columns, CFITSIO can write to all 8 bits of
-    each byte whether they are formally valid or not.  Thus if the
-    column is defined as '4X', and one calls ffpclx with  firstbit=1
-    and nbits=8, then all 8 bits will be written into the first byte
-    (as opposed to writing the first 4 bits into the first row and then
-    the next 4 bits into the next row), even though the last 4 bits of
-    each byte are formally not defined.  It should also be noted that
+    the CDU).  Larray is an array of characters corresponding to the
+    sequence of bits to be written.  If an element of larray is true
+    (not equal to zero) then the corresponding bit in the FITS table is
+    set to 1, otherwise the bit is set to 0.  The 'X' column in a FITS
+    table is always padded out to a multiple of 8 bits where the bit
+    array starts with the most significant bit of the byte and works
+    down towards the 1's bit.  For example, a '4X' array, with the
+    first bit = 1 and the remaining 3 bits = 0 is equivalent to the 8-bit
+    unsigned byte decimal value of 128  ('1000 0000B').  In the case of
+    'X' columns, CFITSIO can write to all 8 bits of each byte whether
+    they are formally valid or not.  Thus if the column is defined as
+    '4X', and one calls ffpclx with firstbit=1 and nbits=8, then all
+    8 bits will be written into the first byte (as opposed to writing
+    the first 4 bits into the first row and then the next 4 bits into
+    the next row), even though the last 4 bits of each byte are formally
+    not defined and should all be set = 0.  It should also be noted that
     it is more efficient to write 'X' columns an entire byte at a time,
     instead of bit by bit.  Any of the CFITSIO routines that write to
-    columns (e.g. fits\_write\_col\_byt) may be used for this
-    purpose.  These routines will interpret 'X' columns as though they
-    were 'B' columns (e.g.,  '8X' is equivalent to '1B', and '16X' is
->   equivalent to '2B'). \label{ffpclx}
+    columns (e.g. fits\_write\_col\_byt) may be used for this purpose.
+    These routines will interpret 'X' columns as though they were 'B'
+    columns (e.g.,  '1X' through '8X' is equivalent
+>   to '1B', and '9X' through '16X' is equivalent to '2B').  \label{ffpclx}
 -
   int fits_write_col_bit / ffpclx
       (fitsfile *fptr, int colnum, long firstrow, long firstbit, 
@@ -5200,6 +5214,11 @@ parameters used in these routines.
     CDU).  Larray is an array of logical values corresponding to the
     sequence of bits to be read.  If larray is true then the
     corresponding bit was set to 1, otherwise the bit was set to 0.
+    The 'X' column in a FITS table is always padded out to a multiple
+    of 8 bits where the bit array starts with the most significan bit
+    of the byte and works down towards the 1's bit.  For example, a
+    '4X' array, with the first bit = 1 and the remaining 3 bits = 0 is
+    equivalent to the 8-bit unsigned byte value of 128. 
     Note that in the case of 'X' columns, CFITSIO can read  all 8 bits
     of each byte whether they are formally valid or not.  Thus if the
     column is defined as '4X', and one calls ffgcx with  firstbit=1 and

@@ -1301,7 +1301,7 @@ int ffedit_columns(
 {
     fitsfile *newptr;
     int ii, hdunum, slen, colnum, deletecol = 0, savecol = 0;
-    int numcols, *colindex = 0;
+    int numcols = 0, *colindex = 0, tstatus = 0;
     char *cptr, *cptr2, *cptr3, clause[FLEN_FILENAME], keyname[FLEN_KEYWORD];
     char colname[FLEN_VALUE], oldname[FLEN_VALUE], colformat[FLEN_VALUE];
     char *file_expr = NULL;
@@ -1366,7 +1366,8 @@ int ffedit_columns(
           cptr++;         /* skip leading white space... again */
     }
 
-    ffgncl(*fptr, &numcols, status);  /* get initial # of cols */
+    tstatus = 0;
+    ffgncl(*fptr, &numcols, &tstatus);  /* get initial # of cols */
 
     /* parse expression and get first clause, if more than 1 */
 
@@ -1377,7 +1378,9 @@ int ffedit_columns(
 
         if (clause[0] == '!' || clause[0] == '-')
         {
-            /* delete this column or keyword */
+            /* ===================================== */
+            /* Case I. delete this column or keyword */
+            /* ===================================== */
 
             if (ffgcno(*fptr, CASEINSEN, &clause[1], &colnum, status) <= 0)
             {
@@ -1409,16 +1412,19 @@ int ffedit_columns(
         }
         else
         {
-            /*
-	       this is either a column name, or a column
-	       or keyword name followed by a single "=" and a
-	       calculation expression, or a column name followed by
-	       double = ("==") followed by the new name to which it
-	       should be renamed.
-            */
+            /* ===================================================== */
+            /* Case II:
+	       this is either a column name, (case 1) 
 
+               or a new column name followed by double = ("==") followed
+               by the old name which is to be renamed. (case 2A)
+
+               or a column or keyword name followed by a single "=" and a
+	       calculation expression (case 2B) */
+            /* ===================================================== */
             cptr2 = clause;
-            slen = fits_get_token(&cptr2, " =", colname, NULL);
+            slen = fits_get_token(&cptr2, "( =", colname, NULL);
+
 
             if (slen == 0)
             {
@@ -1429,11 +1435,27 @@ int ffedit_columns(
                 return(*status= URL_PARSE_ERROR);
             }
 
+            /* if we encountered an opening parenthesis, then we need to */
+            /* find the closing parenthesis, and concatinate the 2 strings */
+            /* This supports expressions like:
+                [col #EXTNAME(Extension name)="GTI"]
+            */
+            if (*cptr2  == '(')
+            {
+                fits_get_token(&cptr2, ")", oldname, NULL);
+                strcat(colname, oldname);
+                strcat(colname, ")");
+                cptr2++;
+            }
+
             while (*cptr2 == ' ')
                  cptr2++;         /* skip white space */
 
             if (*cptr2 != '=')
             {
+              /* ------------------------------------ */
+              /* case 1 - simply the name of a column */
+              /* ------------------------------------ */
 
               /* look for matching column */
               ffgcno(*fptr, CASEINSEN, colname, &colnum, status);
@@ -1484,15 +1506,18 @@ int ffedit_columns(
             }
             else
             {
+              /* ----------------------------------------------- */
+              /* case 2 where the token ends with an equals sign */
+              /* ----------------------------------------------- */
 
               cptr2++;   /* skip over the first '=' */
 
               if (*cptr2 == '=')
               {
-                /*
-                    Case 1:  rename a column or keyword;  syntax is
-                    "new_name == old_name"
-                */
+                /*................................................. */
+                /*  Case A:  rename a column or keyword;  syntax is
+                    "new_name == old_name"  */
+                /*................................................. */
 
                 cptr2++;  /* skip the 2nd '=' */
                 while (*cptr2 == ' ')
@@ -1540,8 +1565,11 @@ int ffedit_columns(
               }  
               else
               {
+                /*...................................................... */
+                /* Case B: */
                 /* this must be a general column/keyword calc expression */
                 /* "name = expression" or "colname(TFORM) = expression" */
+                /*...................................................... */
 
                 /* parse the name and TFORM values, if present */
                 colformat[0] = '\0';
@@ -1554,18 +1582,30 @@ int ffedit_columns(
                    cptr3++;  /* skip the '(' */
                    fits_get_token(&cptr3, ")", colformat, NULL);
                 }
-                /* calculate values for the column or keyword */ 
+
+                /* calculate values for the column or keyword */
+                /*   cptr2 = the expression to be calculated */
+                /*   oldname = name of the column or keyword */
+                /*   colformat = column format, or keyword comment string */
+
+
                 fits_calculator(*fptr, cptr2, *fptr, oldname, colformat,
        	                        status);
 
-                /* keep this column in the output file */
-                savecol = 1;
+                /* test if this is a column and not a keyword */
+                tstatus = 0;
+                ffgcno(*fptr, CASEINSEN, oldname, &colnum, &tstatus);
+                if (tstatus == 0)
+                {
+                    /* keep this column in the output file */
+                    savecol = 1;
 
-                if (!colindex)
-                    colindex = calloc(999, sizeof(int));
+                    if (!colindex)
+                      colindex = calloc(999, sizeof(int));
 
-                colindex[numcols] = 1;
-                numcols++;
+                    colindex[colnum - 1] = 1;
+                    if (colnum > numcols)numcols++;
+                }
               }
             }
         }
@@ -1589,6 +1629,7 @@ int ffedit_columns(
          }
        }
     }
+
     if( colindex ) free( colindex );
     if( file_expr ) free( file_expr );
     return(*status);
@@ -2716,6 +2757,7 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
     fits_store_Fptr( (*fptr)->Fptr, status);  /* store Fptr address */
 
     /* if template file was given, use it to define structure of new file */
+
     if (tmplfile[0])
         ffoptplt(*fptr, tmplfile, status);
 
@@ -5234,8 +5276,7 @@ int ffoptplt(fitsfile *fptr,      /* O - FITS file pointer                   */
 
     if (tstatus)  /* not a FITS file, so treat it as an ASCII template */
     {
-        ffxmsg(-2, card);  /* clear the  error message */
-
+        ffxmsg(2, card);  /* clear the  error message */
         fits_execute_template(fptr, (char *) tempname, status);
 
         ffmahd(fptr, 1, 0, status);   /* move back to the primary array */

@@ -60,11 +60,12 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.440;
+      *version = 2.450;
 
-/*     8 Jan 2003
+/*     30 April 2003
 
    Previous releases:
+      *version = 2.440    8 Jan 2003
       *version = 2.430;   4 Nov 2002
       *version = 2.420;  19 Jul 2002
       *version = 2.410;  22 Apr 2002 used in ftools v5.2
@@ -5064,7 +5065,7 @@ int ffcdfl( fitsfile *fptr, int *status)
    if( nfill == 0 ) return( *status );
 
    /*   move to the beginning of the fill bytes   */
-   ffmbyt(fptr, filpos, TRUE, status);
+   ffmbyt(fptr, filpos, FALSE, status);
 
    if( ffgbyt(fptr, nfill, chbuff, status) > 0)
    {
@@ -5536,17 +5537,18 @@ int ffmrhd(fitsfile *fptr,      /* I - FITS file pointer                    */
 int ffmnhd(fitsfile *fptr,      /* I - FITS file pointer                    */
            int exttype,         /* I - desired extension type               */
            char *hduname,       /* I - desired EXTNAME value for the HDU    */
-           int hduver,         /* I - desired EXTVERS value for the HDU    */
+           int hduver,          /* I - desired EXTVERS value for the HDU    */
            int *status)         /* IO - error status                        */
 /*
-  Move to the HDU with a given EXTNAME (or HDUNAME) and EXTVERS keyword 
-  values.  If hduvers = 0, then move to the first HDU with the given
-  name regardless of EXTVERS value.  If no matching HDU is found in the
-  file, then the current open HDU will remain unchanged.
+  Move to the next HDU with a given extension type (IMAGE_HDU, ASCII_TBL,
+  BINARY_TBL, or ANY_HDU), extension name (EXTNAME or HDUNAME keyword),
+  and EXTVERS keyword values.  If hduvers = 0, then move to the first HDU
+  with the given type and name regardless of EXTVERS value.  If no matching
+  HDU is found in the file, then the current open HDU will remain unchanged.
 */
 {
     char extname[FLEN_VALUE];
-    int ii, hdutype, extnum, tstatus, match, exact;
+    int ii, hdutype, alttype, extnum, tstatus, match, exact;
     long extver;
 
     if (*status > 0)
@@ -5562,8 +5564,13 @@ int ffmnhd(fitsfile *fptr,      /* I - FITS file pointer                    */
            ffmahd(fptr, extnum, 0, status); /* restore file position */
            return(*status = BAD_HDU_NUM);   /* couldn't find desired HDU */
         }
+
+        alttype = -1; 
+        if (fits_is_compressed_image(fptr, status))
+            alttype = BINARY_TBL;
         
-        if (exttype == ANY_HDU || hdutype == exttype)  /* matching type? */
+        /* matching type? */
+        if (exttype == ANY_HDU || hdutype == exttype || hdutype == alttype)
         {
           if (ffgkys(fptr, "EXTNAME", extname, 0, &tstatus) > 0) /* name */
           {
@@ -6249,16 +6256,18 @@ int ffdtyp(char *cval,  /* I - formatted string representation of the value */
 
     if (cval[0] == '\0')
         return(*status = VALUE_UNDEFINED);
-    if (cval[0] == '\'')
+    else if (cval[0] == '\'')
         *dtype = 'C';          /* character string starts with a quote */
     else if (cval[0] == 'T' || cval[0] == 'F')
         *dtype = 'L';          /* logical = T or F character */
     else if (cval[0] == '(')
         *dtype = 'X';          /* complex datatype "(1.2, -3.4)" */
     else if (strchr(cval,'.'))
-        *dtype = 'F';          /* float contains a decimal point */
+        *dtype = 'F';          /* float usualy contains a decimal point */
+    else if (strchr(cval,'E') || strchr(cval,'D') )
+        *dtype = 'F';          /* exponential contains a E or D */
     else
-        *dtype = 'I';          /* if none of the above must be an integer */
+        *dtype = 'I';          /* if none of the above assume it is integer */
 
     return(*status);
 }

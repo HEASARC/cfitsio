@@ -1,6 +1,60 @@
 
                    Log of Changes Made to CFITSIO
 
+Version 2.450 - 30 April 2003
+
+  Enhancements:
+
+  - Made a change to http_open_network in drvrnet.c to add a 'Host: '
+    string to the open request.  This is required by newer HTTP 1.1
+    servers (so-called virtual servers).
+
+  - modified ffgcll (read logical table column) to return the illegal
+    character value itself if the FITS file contains a logical value that is
+    not equal to T, F or zero.  Previously it treated this case the
+    same as if the FITS file value was = 0.
+
+  - modified fits_movnam_hdu (ffmnhd) so that it will move to a tile-
+    compressed image (that is stored in a binary table) if the input
+    desired HDU type is BINARY_TBL as well as if the HDU type = IMAGE_HDU.
+
+  Bug fixes:
+
+  - in the routine that checks the data fill bytes (ffcdfl), the call
+    to ffmbyt should not ignore an EOF error when trying to read the bytes.
+    This is a little-used routine that is not called by any other CFITSIO
+    routine.
+
+  - fits_copy_file was not reporting an error if it hit the End Of File
+    while copying the last extension in the input file to the output file.
+
+  - fixed inconsistencies in the virtual file column filter parser
+    (ffedit_columns) to properly support expressions which create or
+    modify a keyword, instead of a column.  Previously it was only possible
+    to modify keywords in a table extension (not an image), and the 
+    keyword filtering could cause some of the table columns to not
+    get propogated into the virtual file.  Also, spaces are now
+    allowed within the specified keyword comment field.
+
+  - ffdtyp was incorrectly returning the data type of FITS keyword
+    values of the form '1E-09' (i.e., an exponential value without
+    a decimal point) as integer rather than floating point.
+
+  - The enhancement in the previous 2.440 release to allow more files to be
+    opened at one time introduced a bug: if ffclos is called with
+    a non-zero status value, then any subsequent call to ffopen will likely
+    cause a segmentation fault.  The fits_clear_Fptr routine was modified
+    to fix this.
+
+  - rearranged the order of some computations in fits_resize_img so as
+    to not exceed the range of a 32-bit integer when dealing with 
+    large images.
+
+  - the template parser routine, ngp_read_xtension, was testing for
+    "ASCIITABLE" instead of "TABLE" as the XTENSION value of an ASCII
+    table, and it did not allow for optional trailing spaces in the IMAGE"
+    or "TABLE" string value.
+
 Version 2.440 - 8 January 2003
 
   Enhancements:

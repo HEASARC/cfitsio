@@ -706,6 +706,25 @@ types: {\tt TLOGICAL, TBIT, TBYTE, TINT32BIT, TCOMPLEX and TDBLCOMPLEX}.  The
 negative of the datatype code value is returned if it is a variable
 length array column.  The repeat count is always 1 in ASCII tables.
 
+The 'repeat' parameter returns the vector repeat count on the binary
+table TFORMn keyword value. (ASCII table columns always have repeat
+= 1).  The 'width' parameter returns the width in bytes of a single
+column element (e.g., a '10D' binary table column will have width =
+8, an ASCII table 'F12.2' column will have width = 12, and a binary
+table'60A' character string  column will have width = 60);  Note that
+this routine supports the local convention for specifying arrays of
+fixed length strings within a binary table character column using
+the syntax TFORM = 'rAw' where 'r' is the total number of
+characters (= the width of the column) and 'w' is the width of a
+unit string within the column.  Thus if the column has TFORM =
+'60A12' then this means that each row of the table contains
+5 12-character substrings within the 60-character field, and thus 
+in this case this routine will return typecode = TSTRING, repeat =
+60, and width = 12.  The number of substings in any binary table
+character string field can be calculated by (repeat/width). 
+A null pointer may be given for any of the output parameters that
+ are not needed.
+
 \begin{verbatim}
 ____________________________________________________________________________
 int fits_insert_rows(fitsfile *fptr, long firstrow, long nrows, int *status)

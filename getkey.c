@@ -1956,7 +1956,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
     {
         /* this is a compressed image, so read ZBITPIX, ZNAXIS keywords */
         unknown = 0;  /* reset flag */
-        ffxmsg(-2, message); /* clear previous spurious error message */
+        ffxmsg(3, message); /* clear previous spurious error message */
 
         if (bitpix)
         {
@@ -2122,6 +2122,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         if (!strcmp(name, "BSCALE") && bscale)
         {
+            *nspace = 0;  /* reset count of blank keywords */
             ffpsvc(card, value, comm, status); /* parse value and comment */
 
             if (ffc2dd(value, bscale, status) > 0) /* convert to double */
@@ -2138,6 +2139,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         else if (!strcmp(name, "BZERO") && bzero)
         {
+            *nspace = 0;  /* reset count of blank keywords */
             ffpsvc(card, value, comm, status); /* parse value and comment */
 
             if (ffc2dd(value, bzero, status) > 0) /* convert to double */
@@ -2154,6 +2156,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         else if (!strcmp(name, "BLANK") && blank)
         {
+            *nspace = 0;  /* reset count of blank keywords */
             ffpsvc(card, value, comm, status); /* parse value and comment */
 
             if (ffc2ii(value, blank, status) > 0) /* convert to long */
@@ -2170,6 +2173,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         else if (!strcmp(name, "PCOUNT") && pcount)
         {
+            *nspace = 0;  /* reset count of blank keywords */
             ffpsvc(card, value, comm, status); /* parse value and comment */
 
             if (ffc2ii(value, pcount, status) > 0) /* convert to long */
@@ -2182,6 +2186,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         else if (!strcmp(name, "GCOUNT") && gcount)
         {
+            *nspace = 0;  /* reset count of blank keywords */
             ffpsvc(card, value, comm, status); /* parse value and comment */
 
             if (ffc2ii(value, gcount, status) > 0) /* convert to long */
@@ -2194,6 +2199,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         else if (!strcmp(name, "EXTEND") && extend)
         {
+            *nspace = 0;  /* reset count of blank keywords */
             ffpsvc(card, value, comm, status); /* parse value and comment */
 
             if (ffc2ll(value, extend, status) > 0) /* convert to logical */

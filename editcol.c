@@ -89,12 +89,12 @@ int ffrsim(fitsfile *fptr,      /* I - FITS file pointer           */
         oldsize = 1;
         for (ii = 0; ii < onaxis; ii++)
             oldsize *= onaxes[ii];  
-        oldsize = (oldsize + pcount) * gcount * abs(obitpix) / 8;
+        oldsize = (oldsize + pcount) * gcount * (abs(obitpix) / 8);
     }
 
     oldsize = (oldsize + 2879) / 2880; /* old size, in blocks */
 
-    newsize = (newsize + pcount) * gcount * abs(bitpix) / 8;
+    newsize = (newsize + pcount) * gcount * (abs(bitpix) / 8);
     newsize = (newsize + 2879) / 2880; /* new size, in blocks */
 
     if (newsize > oldsize)   /* have to insert new blocks for image */
