@@ -154,7 +154,7 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
    int naxis, constant;
    long nelem, naxes[MAXDIMS], rdlen, maxrows, nbuff, nGood;
    long inloc, outloc, ntodo, freespace;
-   char *buffer, result;
+   unsigned char *buffer, result;
    struct {
       long rowLength, numRows, heapSize, heapStart, dataStart;
    } inExt, outExt;
@@ -246,7 +246,7 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
       /* Error... Do nothing */
    } else {
       rdlen  = inExt.rowLength;
-      buffer = (char *)malloc( maxvalue(100000,rdlen) * sizeof(char) );
+      buffer = (unsigned char *)malloc( maxvalue(100000,rdlen) * sizeof(char) );
       if( buffer==NULL ) {
          ffcprs();
          return( *status=MEMORY_ALLOCATION );
