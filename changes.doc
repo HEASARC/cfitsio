@@ -1,5 +1,13 @@
                Log of Changes Made to CFITSIO
 
+   - CFITSIO now automatically keeps track of the number of rows that have
+     been written to a FITS table, and updates the NAXIS2 keyword accordingly
+     when the table is closed.  It is no longer necessary for the application
+     program to updated NAXIS2.  
+
+   - When reading from a FITS table, CFITSIO will now return an error if the
+     application tries to read beyond the end of the table. 
+
    - added 2 routines to get the number of rows or columns in a table.
 
    - improved the undocumented feature that allows a '20A' column to be

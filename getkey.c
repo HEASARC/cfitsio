@@ -32,13 +32,20 @@ int ffghsp(fitsfile *fptr,  /* I - FITS file pointer                     */
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
-    *nexist = ( ((fptr->Fptr)->headend) - ((fptr->Fptr)->headstart[(fptr->Fptr)->curhdu]) ) / 80;
+    *nexist = ( ((fptr->Fptr)->headend) - 
+                ((fptr->Fptr)->headstart[(fptr->Fptr)->curhdu]) ) / 80;
 
     if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+    {
+      if (nmore)
         *nmore = -1;   /* data not written yet, so room for any keywords */
+    }
     else
-        /* calculate space available between the data and the END card */
+    {
+      /* calculate space available between the data and the END card */
+      if (nmore)
         *nmore = ((fptr->Fptr)->datastart - (fptr->Fptr)->headend) / 80 - 1;
+    }
 
     return(*status);
 }
@@ -1962,4 +1969,42 @@ int fftkyn(fitsfile *fptr,  /* I - FITS file pointer              */
 
     return(*status);
 }
+/*--------------------------------------------------------------------------*/
+int ffh2st(fitsfile *fptr,   /* I - FITS file pointer           */
+           char **header,    /* O - returned header string      */
+           int  *status)     /* IO - error status               */
 
+/*
+  read header keywords into a long string of chars.  This routine allocates
+  memory for the string, so the calling routine must eventually free the
+  memory when it is not needed any more.
+*/
+{
+    int nkeys;
+    long nrec, headstart;
+
+    if (*status > 0)
+        return(*status);
+
+    /* get number of keywords in the header (doesn't include END) */
+    if (ffghsp(fptr, &nkeys, NULL, status) > 0)
+        return(*status);
+
+    nrec = (nkeys / 36 + 1);
+
+    /* allocate memory for all the keywords (multiple of 2880 bytes) */
+    *header = (char *) calloc ( nrec * 2880 + 1, 1);
+    if (!(*header))
+    {
+         *status = MEMORY_ALLOCATION;
+         ffpmsg("failed to allocate memory to hold all the header keywords");
+         return(*status);
+    }
+
+    ffghad(fptr, &headstart, NULL, NULL, status); /* get header address */
+    ffmbyt(fptr, headstart, REPORT_EOF, status);   /* move to header */
+    ffgbyt(fptr, nrec * 2880, *header, status);     /* copy header */
+    *(*header + (nrec * 2880)) = '\0';
+
+    return(*status);
+}

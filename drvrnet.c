@@ -772,7 +772,6 @@ int ftp_open(char *filename, int rwmode, int *handle)
   if ((status = mem_create(filename,handle))) {
     ffpmsg ("Could not create filename to passive port (ftp_open)");
     goto error;
-    return (FILE_NOT_OPENED);
   }
   closememfile++;
   /* This isn't quite right, it'll fail if the file has .gzabc at the end
@@ -1125,7 +1124,7 @@ int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int *sock)
   username = "anonymous";
   password = "user@host.com";
   /* is there an @ sign */
-  if (NULL != (newhost = strchr(host,'@'))) {
+  if (NULL != (newhost = strrchr(host,'@'))) {
     *newhost = '\0'; /* make it a null, */
     newhost++; /* Now newhost points to the host name and host points to the 
 		  user name, password combo */

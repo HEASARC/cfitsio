@@ -2102,14 +2102,21 @@ been written and the true dimensions are known, then the NAXISn value
 should be updated using the fits\_update\_key routine before moving to
 another extension or closing the FITS file.
 
-A similar procedure may be used in the case of FITS tables, where the
-number of rows in the table (the NAXIS2 value) may initially be set to
-1 and then updated with the correct value before closing the table.
-Alternatively, one may use the fits\_insert\_rows routine to insert
-additional rows into a table if the original value turns out to be too
-small.  This routine automatically updates the NAXIS2 value.  This
-latter method must be used if any of the columns contain variable
-length arrays.
+When creating FITS tables, CFITSIO will automatically keep track of the
+maximum number of rows that are written and will update the number of
+rows in the table (given by the NAXIS2 keyword) accordingly when the
+table is closed.  In general, when creating a new table it is best to
+specify the initial number of rows = 0, and then let CFITSIO keep track
+of the actual size of the table as the new rows are written.  If the
+table is initially created with more than zero rows, then this will be
+considered as the minimum size of the table, even if fewer rows are
+actually written to the table.  If more rows are appended to an
+existing table,  CFITSIO will also automatically update the NAXIS2
+keyword value.  Note, however, that if there are additional HDUs in the
+FITS file following the table, or if the table contains variable length
+columns, then it is required to call the fits\_insert\_rows routine
+prior to writing the new rows, otherwise the header of the following
+HDU, or the variable length column data heap, may get overwritten.
 
  
 \section{Local FITS Conventions supported by CFITSIO}
@@ -3208,7 +3215,11 @@ a whole.
    the FITS file is currently empty then a dummy primary array will be
    created before appending the table extension to it.
    The tbltype parameter defines the type of table and can have
-   values of ASCII\_TBL or BINARY\_TBL.  The tunit and extname parameters
+   values of ASCII\_TBL or BINARY\_TBL.  The naxis2 parameter gives the
+   initial number of rows to be created in the table, and may be
+   set = 0.  CFITSIO
+   will automatically increase the number of rows in the table as
+   additional rows are written. The tunit and extname parameters
    are optional and a null pointer may be given if they are not defined.
    The FITS Standard recommends that only letters, digits, and the
    underscore character be used in column names (with no embedded
@@ -3281,7 +3292,9 @@ header.
     It returns morekeys = -1 if the header has not yet been closed.
     Note that CFITSIO will dynamically add space if required when
     writing new keywords to a header so in practice there is no
-   limit to the number of keywords that can be added to a header. \label{ffghsp}
+    limit to the number of keywords that can be added to a header.
+    A null pointer may be entered for the morekeys parameter if it's
+   value is not needed. \label{ffghsp}
 \end{description}
  
 \begin{verbatim}
@@ -3876,7 +3889,6 @@ the first 8 characters, and strongly recommended that the names be
   int fits_modify_vector_len / ffmvec
       (fitsfile *fptr, int colnum, long newveclen, int *status)
 \end{verbatim}
-
  
 \begin{description}
 \item[6 ] Delete a column from an  ASCII or binary table (in the CDU).
@@ -3908,7 +3920,13 @@ int fits_copy_col / ffcpcl
 \subsection{Read and Write Column Data Routines \label{FFPCLS}}
 
 The following routines write or read data values in the current ASCII
-or binary table extension.  Automatic data type conversion is performed
+or binary table extension.  If a write operation extends beyond the
+current size of the table, then the number of rows in the table will
+automatically be increased and the NAXIS2 keyword value will be
+updated.  Attempts to read beyond the end of the table will result in
+an error.
+
+Automatic data type conversion is performed
 for numerical data types if the data type of the column (defined by the
 TFORMn keyword) differs from the data type of the calling routine.
 ASCII tables support the following datatype values:  TSTRING, TBYTE,
@@ -4548,6 +4566,13 @@ and a later revision in June 1995.
  
 \section{ Date and Time Utility Routines}
 
+The following routines help to construct or parse the FITS date/time
+strings.   Starting in the year 2000, the FITS DATE keyword values (and
+the values of other `DATE-' keywords) must have the form 'YYYY-MM-DD'
+(date only) or 'YYYY-MM-DDThh:mm:ss.ddd...' (date and time) where the
+number of decimal places in the seconds value is optional.  These times
+are in UTC.  The older 'dd/mm/yy' date format may not be used for dates
+after 01 January 2000.
 
  
 \begin{description}
@@ -4561,21 +4586,10 @@ and a later revision in June 1995.
 \begin{verbatim}
   int ffgsdt( > int *day, int *month, int *year, int *status )
 \end{verbatim}
- 
-\begin{description}
-\item[2 ] Create or parse the FITS format date and time string.  Starting in
-the year 2000, the FITS DATE keyword values (and the values of other
-`DATE-' keywords) must have the form 'YYYY-MM-DD' (date only) or
-'YYYY-MM-DDThh:mm:ss.ddd...' (date and time) where the number of decimal
-places in the seconds value is optional.  These times are in UTC.  The
-older 'dd/mm/yy' date format may not be used for dates after 01 January
-2000.  The following routines help to construct or parse these FITS
- date/time strings. \label{ffdt2s}
-\end{description}
 
  
 \begin{description}
-\item[3 ] Get the current system date and time string ('YYYY-MM-DDThh:mm:ss').
+\item[2 ] Get the current system date and time string ('YYYY-MM-DDThh:mm:ss').
 This will be in UTC/GMT if available (indicated by timeref = 0) otherwise
 it will be in local time.
 \end{description}
@@ -4587,10 +4601,10 @@ int fits_get_system_time/ffgstm
 
  
 \begin{description}
-\item[4 ] Construct a date string from the input date values.  If the year
+\item[3 ] Construct a date string from the input date values.  If the year
 is between 1900 and 1998, inclusive, then the returned date string will
 have the old FITS format ('dd/mm/yy'), otherwise the date string will
- have the new FITS format ('YYYY-MM-DD')
+ have the new FITS format ('YYYY-MM-DD') \label{ffdt2s}
 \end{description}
  
 \begin{verbatim}
@@ -4600,9 +4614,10 @@ int fits_date2str/ffdt2s
 
  
 \begin{description}
-\item[5 ] Construct a new-format date + time string ('YYYY-MM-DDThh:mm:ss.dddd').
-If the year, month, and day values all = 0 then only the time is encoded
- with format 'hh:mm:ss.dddd');
+\item[4 ] Construct a new-format date + time string ('YYYY-MM-DDThh:mm:ss.dddd').
+  If the year, month, and day values all = 0 then only the time is encoded
+  with format 'hh:mm:ss.ddd...'.  The decimals paramter specifies how many
+ decimal places of fractional seconds to include in the string.
 \end{description}
  
 \begin{verbatim}
@@ -4613,10 +4628,10 @@ int fits_time2str/fftm2s
 
  
 \begin{description}
-\item[6 ] Return the date as read from the input string, where the string may be
+\item[5 ] Return the date as read from the input string, where the string may be
 in either the old ('dd/mm/yy')  or new ('YYYY-MM-DDThh:mm:ss' or
 'YYYY-MM-DD') FITS format.  Null pointers may be supplied for any
-  unwanted return date parameters.
+  unwanted output date parameters.
 \end{description}
  
 \begin{verbatim}
@@ -4626,13 +4641,13 @@ int fits_str2date/ffs2dt
 
  
 \begin{description}
-\item[7 ] Return the date and time as read from the input string, where the
+\item[6 ] Return the date and time as read from the input string, where the
 string may be in either the old  or new FITS format.  The returned hours,
 minutes, and seconds values will be set to zero if the input string
 does not include the time ('dd/mm/yy' or 'YYYY-MM-DD') .  Similarly,
 the returned year, month, and date values will be set to zero if the
-date is not included in the input string ('hh:mm:ss.dddd').  Null
-pointers may be supplied for any unwanted return date and time
+date is not included in the input string ('hh:mm:ss.ddd...').  Null
+pointers may be supplied for any unwanted output date and time
 parameters.
 \end{description}
  
@@ -4982,7 +4997,9 @@ the number of reallocation calls and make the application program run
     and the start and end of the data in the CHDU. The difference
     between headstart and dataend is the size of the CHDU.
     If the CHDU is the last HDU in the file, then dataend
-   is also equal to the size of the entire FITS file. \label{ffghad}
+    is also equal to the size of the entire FITS file.
+    Null pointers may be input for any of the address parameters
+   if their values are not needed. \label{ffghad}
 \end{description}
  
 \begin{verbatim}

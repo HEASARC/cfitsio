@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include "fitsio.h"
 
-void printerror( int status);
-
 int main(int argc, char *argv[])
 {
     fitsfile *infptr, *outfptr;

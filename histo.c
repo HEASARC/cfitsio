@@ -824,12 +824,15 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
        ffgky(*fptr, TDOUBLE, keyname, &dvalue, NULL, &tstatus);
        if (tstatus)
        {
-         dvalue = 1.0; /* choose first pixel in original image as ref. pix. */
+         dvalue = 1.0; /* choose first pixel in new image as ref. pix. */
          tstatus = 0;
        }
+       else
+       {
+           /* calculate locate of the ref. pix. in the new image */
+           dvalue = (dvalue - amin[ii]) / binsize[ii] + .5;
+       }
 
-       /* calculate locate of the ref. pix. in the new image */
-       dvalue = (dvalue - amin[ii]) / binsize[ii] + .5;
        ffkeyn("CRPIX", ii + 1, keyname, &tstatus);
        ffpky(histptr, TDOUBLE, keyname, &dvalue, "Reference Pixel", &tstatus);
 
@@ -838,7 +841,8 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
        ffgky(*fptr, TDOUBLE, keyname, &dvalue, NULL, &tstatus);
        if (tstatus)
        {
-         dvalue = 1.0;  /* pick a default reference value */
+         /* calculate value at ref. pix. location (at center of 1st pixel) */
+         dvalue = amin[ii] + binsize[ii]/2.;
          tstatus = 0;
        }
 

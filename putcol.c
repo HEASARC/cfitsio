@@ -1090,6 +1090,9 @@ int ffiter(int n_cols,
         }
       }
 
+      if (*status > 0) 
+         break;   /* looks like an error occurred; quit immediately */
+
       /* call work function */
       *status = work_fn(totaln, offset, frow, ntodo, n_cols, cols, userPointer);
 

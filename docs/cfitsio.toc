@@ -49,17 +49,17 @@
 \contentsline {section}{\numberline {7.1}CFITSIO Error Status Routines}{51}
 \contentsline {section}{\numberline {7.2}FITS File Access Routines}{52}
 \contentsline {section}{\numberline {7.3}HDU Access Routines}{54}
-\contentsline {section}{\numberline {7.4}Header Keyword Read/Write Routines}{56}
+\contentsline {section}{\numberline {7.4}Header Keyword Read/Write Routines}{57}
 \contentsline {section}{\numberline {7.5}Iterator Routines}{60}
-\contentsline {section}{\numberline {7.6}Primary Array or IMAGE Extension I/O Routines}{61}
+\contentsline {section}{\numberline {7.6}Primary Array or IMAGE Extension I/O Routines}{62}
 \contentsline {section}{\numberline {7.7}ASCII and Binary Table Routines}{63}
 \contentsline {subsection}{\numberline {7.7.1}Column Information Routines }{63}
-\contentsline {subsection}{\numberline {7.7.2}Routines to Edit Rows or Columns }{64}
+\contentsline {subsection}{\numberline {7.7.2}Routines to Edit Rows or Columns }{65}
 \contentsline {subsection}{\numberline {7.7.3}Read and Write Column Data Routines }{66}
-\contentsline {section}{\numberline {7.8}Celestial Coordinate System Routines }{67}
-\contentsline {section}{\numberline {7.9}Hierarchical Grouping Convention Support Routines}{68}
+\contentsline {section}{\numberline {7.8}Celestial Coordinate System Routines }{68}
+\contentsline {section}{\numberline {7.9}Hierarchical Grouping Convention Support Routines}{69}
 \contentsline {section}{\numberline {7.10}Row Selection and Calculator Routines}{73}
-\contentsline {section}{\numberline {7.11}File Checksum Routines }{74}
+\contentsline {section}{\numberline {7.11}File Checksum Routines }{75}
 \contentsline {section}{\numberline {7.12} Date and Time Utility Routines}{76}
 \contentsline {section}{\numberline {7.13} General Utility Routines}{77}
 \contentsline {chapter}{\numberline {8} Specialized CFITSIO Interface Routines }{83}

@@ -895,7 +895,7 @@ int ffedit_columns(
 
     while ((slen = fits_get_token(&cptr, ";", clause, NULL)) > 0 )
     {
-       if( *cptr==';' ) cptr++;
+        if( *cptr==';' ) cptr++;
         clause[slen] = '\0';
 
         if (clause[0] == '!')
@@ -1197,7 +1197,6 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
     if (driverTable[driver].create)
     {
         *status = (*driverTable[driver].create)(outfile, &handle);
-
         if (*status)
         {
             ffpmsg("failed to create the following file: (ffinit)");

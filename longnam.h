@@ -110,6 +110,7 @@
 #define fits_read_imghdr       ffghpr
 #define fits_read_atblhdr      ffghtb
 #define fits_read_btblhdr      ffghbn
+#define fits_header2str        ffh2st
 
 #define fits_update_card       ffucrd
 #define fits_update_key        ffuky
@@ -422,6 +423,7 @@
 #define fits_read_tbl_coord ffgtcs
 #define fits_pix_to_world ffwldp
 #define fits_world_to_pix ffxypx
+#define fits_init_wcs_img ffiwcs
 
 #define fits_find_rows          fffrow
 #define fits_find_rows_cmp      fffrwc

@@ -480,6 +480,7 @@ int ffgkne(fitsfile *fptr, char *keyname, int nstart, int nmax, float *value,
            int *nfound, int *status);
 int ffgknd(fitsfile *fptr, char *keyname, int nstart, int nmax, double *value,
            int *nfound, int *status);
+int ffh2st(fitsfile *fptr, char **header, int  *status);
  
 /*----------------- read required header keywords --------------*/
 int ffghpr(fitsfile *fptr, int maxdim, int *simple, int *bitpix, int *naxis,
@@ -1127,7 +1128,7 @@ int ffwldp(double xpix, double ypix, double xref, double yref,
 int ffxypx(double xpos, double ypos, double xref, double yref, 
            double xrefpix, double yrefpix, double xinc, double yinc,
            double rot, char *type, double *xpix, double *ypix, int *status);
-
+int ffiwcs(fitsfile *fptr,  void **wcs, int *status);
 
 /*--------------------- lexical parsing routines ------------------*/
 int fftexp( fitsfile *fptr, char *expr, int maxdim,

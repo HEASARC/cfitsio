@@ -171,7 +171,7 @@
 #define DINT_MAX  2147483647.49 /* max double value that fits in a 4-byte int */
 #define DINT_MIN -2147483648.49 /* min double value that fits in a 4-byte int */
 
-#define UINT32_MAX 4294967295 /* max unsigned 32-bit integer */
+#define UINT32_MAX 4294967295U /* max unsigned 32-bit integer */
 #define INT32_MAX  2147483647 /* max 32-bit integer */
 #define INT32_MIN -2147483647 /* min 32-bit integer */
 
