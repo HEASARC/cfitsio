@@ -1342,10 +1342,10 @@ int fits_register_driver(char *prefix,
 /*--------------------------------------------------------------------------*/
 int ffiurl(char *url, 
                     char *urltype,
-                    char *infile,
+                    char *infilex,
                     char *outfile, 
                     char *extspec,
-                    char *rowfilter,
+                    char *rowfilterx,
                     char *binspec,
                     char *colspec,
                     int *status)
@@ -1354,25 +1354,53 @@ int ffiurl(char *url,
 */
 
 { 
-    int ii, jj, slen, infilelen;
-    char *ptr1, *ptr2, *ptr3, tmpstr[FLEN_FILENAME];
+    int ii, jj, slen, infilelen, plus_ext = 0;
+    char *ptr1, *ptr2, *ptr3;
+
+    /* must have temporary variable for these, in case inputs are NULL */
+    char *infile;
+    char *rowfilter;
+    char * tmpstr;
 
     if (*status > 0)
         return(*status);
 
+    if (infilex)
+        *infilex  = '\0';
+    if (rowfilterx)
+        *rowfilterx = '\0';
+
+    if (urltype)
+        *urltype = '\0';
+    if (outfile)
+        *outfile = '\0';
+    if (extspec)
+        *extspec = '\0';
+    if (binspec)
+        *binspec = '\0';
+    if (colspec)
+        *colspec = '\0';
+
+    slen = strlen(url);
+
+    if (slen == 0)       /* blank filename ?? */
+        return(*status);
+
+    /* allocate memory for 3 strings, each as long as the input url */
+    infile = (char *) malloc(3 * (slen + 1) );
+    if (!infile)
+       return(*status = MEMORY_ALLOCATION);
+
+    rowfilter = &infile[slen + 1];
+    tmpstr = &rowfilter[slen + 1];
+
     ptr1 = url;
-    *urltype = '\0';
-    *infile  = '\0';
-    *outfile = '\0';
-    *extspec = '\0';
-    *rowfilter = '\0';
-    *binspec = '\0';
-    *colspec = '\0';
 
         /*  get urltype (e.g., file://, ftp://, http://, etc.)  */
     if (*ptr1 == '-')        /* "-" means read file from stdin */
     {
-        strcat(urltype, "stdin://");
+        if (urltype)
+            strcat(urltype, "stdin://");
         ptr1++;
     }
     else
@@ -1380,37 +1408,44 @@ int ffiurl(char *url,
         ptr2 = strstr(ptr1, "://");
         if (ptr2)                  /* copy the explicit urltype string */ 
         {
-            strncat(urltype, ptr1, ptr2 - ptr1 + 3);
+            if (urltype)
+                 strncat(urltype, ptr1, ptr2 - ptr1 + 3);
             ptr1 = ptr2 + 3;
         }
         else if (!strncmp(ptr1, "ftp:", 4) )
         {                              /* the 2 //'s are optional */
-            strcat(urltype, "ftp://");
+            if (urltype)
+                strcat(urltype, "ftp://");
             ptr1 += 4;
         }
         else if (!strncmp(ptr1, "http:", 5) )
         {                              /* the 2 //'s are optional */
-            strcat(urltype, "http://");
+            if (urltype)
+                strcat(urltype, "http://");
             ptr1 += 5;
         }
         else if (!strncmp(ptr1, "mem:", 4) )
         {                              /* the 2 //'s are optional */
-            strcat(urltype, "mem://");
+            if (urltype)
+                strcat(urltype, "mem://");
             ptr1 += 4;
         }
         else if (!strncmp(ptr1, "shmem:", 6) )
         {                              /* the 2 //'s are optional */
-            strcat(urltype, "shmem://");
+            if (urltype)
+                strcat(urltype, "shmem://");
             ptr1 += 6;
         }
         else if (!strncmp(ptr1, "file:", 5) )
         {                              /* the 2 //'s are optional */
-            strcat(urltype, "file://");
+            if (urltype)
+                strcat(urltype, "file://");
             ptr1 += 5;
         }
         else                       /* assume file driver    */
         {
-            strcat(urltype, "file://");
+            if (urltype)
+                strcat(urltype, "file://");
         }
     }
  
@@ -1429,9 +1464,13 @@ int ffiurl(char *url,
 
         ptr1 = strchr(ptr2, ')' );   /* search for closing ) */
         if (!ptr1)
+        {
+            free(infile);
             return(*status = URL_PARSE_ERROR);  /* error, no closing ) */
+        }
 
-        strncat(outfile, ptr2, ptr1 - ptr2);
+        if (outfile)
+            strncat(outfile, ptr2, ptr1 - ptr2);
     }
     else if (ptr2 && (ptr2 < ptr3)) /* () enclose output name before bracket */
     {
@@ -1440,32 +1479,39 @@ int ffiurl(char *url,
 
         ptr1 = strchr(ptr2, ')' );   /* search for closing ) */
         if (!ptr1)
+        {
+            free(infile);
             return(*status = URL_PARSE_ERROR);  /* error, no closing ) */
+        }
 
-        strncat(outfile, ptr2, ptr1 - ptr2);
+        if (outfile)
+            strncat(outfile, ptr2, ptr1 - ptr2);
     }
     else    /*   bracket comes first, so there is no output name */
     {
         strncat(infile, ptr1, ptr3 - ptr1);
     }
 
-       /* strip off any trailing blanks in the names */
+   /* strip off any trailing blanks in the names */
     slen = strlen(infile);
     for (ii = slen - 1; ii > 0; ii--)   
     {
-        if (infile[ii] == ' ')
-            infile[ii] = '\0';
-        else
-            break;
+            if (infile[ii] == ' ')
+                infile[ii] = '\0';
+            else
+                break;
     }
 
-    slen = strlen(outfile);
-    for (ii = slen - 1; ii > 0; ii--)   
+    if (outfile)
     {
-        if (outfile[ii] == ' ')
-            outfile[ii] = '\0';
-        else
-            break;
+        slen = strlen(outfile);
+        for (ii = slen - 1; ii > 0; ii--)   
+        {
+            if (outfile[ii] == ' ')
+                outfile[ii] = '\0';
+            else
+                break;
+        }
     }
 
     /* --------------------------------------------- */
@@ -1497,14 +1543,17 @@ int ffiurl(char *url,
         {
              /* yes, the '+n' convention was used.  Copy */
              /* the digits to the output extspec string. */
-             strncpy(extspec, ptr1, jj - infilelen);
+             plus_ext = 1;
+
+             if (extspec)
+                 strncpy(extspec, ptr1, jj - infilelen);
 
              infile[infilelen] = '\0'; /* delete the extension number */
         }
     }
 
     /* if '*' was given for the output name expand it to the root file name */
-    if (outfile[0] == '*')
+    if (outfile && outfile[0] == '*')
     {
         /* scan input name backwards to the first '/' character */
         for (ii = jj - 1; ii >= 0; ii--)
@@ -1517,15 +1566,22 @@ int ffiurl(char *url,
         }
     }
 
+    /* copy strings from local copy to the output */
+    if (infilex)
+        strcpy(infilex, infile);
+
     if (!ptr3)     /* no [ character in the input string? */
+    {
+        free(infile);
         return(*status);
+    }
 
     /* ------------------------------------------- */
     /* see if [ extension specification ] is given */
     /* ------------------------------------------- */
 
-    if (*extspec == '\0') /* extension no. not already specified?  Then */
-                        /* first brackets must enclose extension name or # */
+    if (!plus_ext) /* extension no. not already specified?  Then */
+                   /* first brackets must enclose extension name or # */
     {
        ptr1 = ptr3 + 1;    /* pointer to first char after the [ */
 
@@ -1533,11 +1589,13 @@ int ffiurl(char *url,
        if (!ptr2)
        {
             ffpmsg("input file URL is missing closing bracket ']'");
+            free(infile);
             return(*status = URL_PARSE_ERROR);  /* error, no closing ] */
        }
 
        /* copy the extension specification */
-       strncat(extspec, ptr1, ptr2 - ptr1);
+       if (extspec)
+           strncat(extspec, ptr1, ptr2 - ptr1);
 
        /* copy any remaining chars to filter spec string */
        strcat(rowfilter, ptr2 + 1);
@@ -1558,7 +1616,10 @@ int ffiurl(char *url,
     }
 
     if (!rowfilter[0])
-       return(*status);      /* nothing left to parse */
+    {
+        free(infile);
+        return(*status);      /* nothing left to parse */
+    }
 
     /* ------------------------------------------------------- */
     /* convert filter to all lowercase to simplify comparisons */
@@ -1588,24 +1649,28 @@ int ffiurl(char *url,
     if (ptr1)
     {
         /* found the binning string */
-        strcpy(binspec, ptr1 + 1);       
-        ptr2 = strchr(binspec, ']');
-
-        if (ptr2)      /* terminate the binning filter */
+        if (binspec)
         {
-            *ptr2 = '\0';
+            strcpy(binspec, ptr1 + 1);       
+            ptr2 = strchr(binspec, ']');
 
-            if ( *(--ptr2) == ' ')  /* delete trailing spaces */
+            if (ptr2)      /* terminate the binning filter */
+            {
                 *ptr2 = '\0';
-        }
-        else
-        {
-            ffpmsg("input file URL is missing closing bracket ']'");
-            ffpmsg(rowfilter);
-            return(*status = URL_PARSE_ERROR);  /* error, no closing ] */
+
+                if ( *(--ptr2) == ' ')  /* delete trailing spaces */
+                    *ptr2 = '\0';
+            }
+            else
+            {
+                ffpmsg("input file URL is missing closing bracket ']'");
+                ffpmsg(rowfilter);
+                free(infile);
+                return(*status = URL_PARSE_ERROR);  /* error, no closing ] */
+            }
         }
 
-        /* delete the binning spec from the filter string */
+        /* delete the binning spec from the row filter string */
         ptr2 = strchr(ptr1, ']');
         strcpy(tmpstr, ptr2+1);  /* copy any chars after the binspec */
         strcpy(ptr1, tmpstr);    /* overwrite binspec */
@@ -1619,28 +1684,38 @@ int ffiurl(char *url,
 
     if (ptr1)
     {
-        strcpy(colspec, ptr1 + 1);       
-        ptr2 = strchr(colspec, ']');
-
-        if (ptr2)      /* terminate the binning filter */
+        if (colspec)
         {
-            *ptr2 = '\0';
+            strcpy(colspec, ptr1 + 1);       
 
-            if ( *(--ptr2) == ' ')  /* delete trailing spaces */
+            ptr2 = strchr(colspec, ']');
+
+            if (ptr2)      /* terminate the binning filter */
+            {
                 *ptr2 = '\0';
-        }
-        else
-        {
-            ffpmsg("input file URL is missing closing bracket ']'");
-            return(*status = URL_PARSE_ERROR);  /* error, no closing ] */
+
+                if ( *(--ptr2) == ' ')  /* delete trailing spaces */
+                    *ptr2 = '\0';
+            }
+            else
+            {
+                ffpmsg("input file URL is missing closing bracket ']'");
+                free(infile);
+                return(*status = URL_PARSE_ERROR);  /* error, no closing ] */
+            }
         }
 
-        /* delete the column selection spec from the filter string */
+        /* delete the column selection spec from the row filter string */
         ptr2 = strchr(ptr1, ']');
         strcpy(tmpstr, ptr2+1);  /* copy any chars after the colspec */
         strcpy(ptr1, tmpstr);    /* overwrite binspec */
     }
-    
+
+    /* copy the local string to the output */
+    if (rowfilterx)
+        strcpy(rowfilterx, rowfilter);
+
+    free(infile);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -2539,6 +2614,9 @@ int ffdelt(fitsfile *fptr,      /* I - FITS file pointer */
   close and DELETE the FITS file. 
 */
 {
+    char *basename;
+    int slen;
+
     if (!fptr)
         return(*status = NULL_INPUT_PTR);
     else if ((fptr->Fptr)->validcode != VALIDSTRUC) /* check for magic value */
@@ -2559,16 +2637,27 @@ int ffdelt(fitsfile *fptr,      /* I - FITS file pointer */
         }
     }
 
-        /* call driver function to actually delete the file */
+
+    /* call driver function to actually delete the file */
     if ( (driverTable[(fptr->Fptr)->driver].remove) )
     {
-       if ((*driverTable[(fptr->Fptr)->driver].remove)((fptr->Fptr)->filename))
+        /* parse the input URL to get the base filename */
+        slen = strlen((fptr->Fptr)->filename);
+        basename = (char *) malloc(slen +1);
+        if (!basename)
+            return(*status = MEMORY_ALLOCATION);
+    
+        ffiurl((fptr->Fptr)->filename, NULL, basename, NULL, NULL, NULL, NULL,
+               NULL, status);
+
+       if ((*driverTable[(fptr->Fptr)->driver].remove)(basename))
         {
             ffpmsg("failed to delete the following file: (ffdelt)");
             ffpmsg((fptr->Fptr)->filename);
             if (!(*status))
                 *status = FILE_NOT_CLOSED;
         }
+        free(basename);
     }
 
     free((fptr->Fptr)->filename);     /* free memory for the filename */

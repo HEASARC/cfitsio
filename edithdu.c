@@ -65,7 +65,8 @@ int ffcphd(fitsfile *infptr,    /* I - FITS file pointer to input file  */
         ffmahd(outfptr, (outfptr->HDUposition) + 1, NULL, status);
 
     /* check whether the output header is empty */
-    if ((outfptr->Fptr)->headend != (outfptr->Fptr)->headstart[(outfptr->Fptr)->curhdu] )
+    if ((outfptr->Fptr)->headend !=
+        (outfptr->Fptr)->headstart[(outfptr->Fptr)->curhdu] )
         ffcrhd(outfptr, status);  /* create new empty HDU */
 
     ffghsp(infptr, &nkeys, &nadd, status); /* get no. of keywords in header */
@@ -159,7 +160,7 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
   insert an IMAGE extension following the current HDU 
 */
 {
-    int bytlen, nexthdu, ii;
+    int bytlen, nexthdu, maxhdu, ii;
     long npixels, datasize, newstart, nblocks;
 
     if (*status > 0)
@@ -168,9 +169,15 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
-    /* if at the end of file, simply append new image extension */
-    if ( ((fptr->Fptr)->curhdu) == ((fptr->Fptr)->maxhdu) )
+    maxhdu = (fptr->Fptr)->maxhdu;
+
+    /* if the current header is completely empty ...  */
+    if (( (fptr->Fptr)->headend == (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] )
+        /* or, if we are at the end of the file, ... */
+    ||  ( (((fptr->Fptr)->curhdu) == maxhdu ) &&
+       ((fptr->Fptr)->headstart[maxhdu + 1] >= (fptr->Fptr)->logfilesize ) ) )
     {
+        /* then simply append new image extension */
         ffcrim(fptr, bitpix, naxis, naxes, status);
         return(*status);
     }
@@ -255,7 +262,7 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
   insert an ASCII table extension following the current HDU 
 */
 {
-    int nexthdu, ii, nunit, nhead, ncols, gotmem = 0;
+    int nexthdu, maxhdu, ii, nunit, nhead, ncols, gotmem = 0;
     long datasize, newstart, nblocks, rowlen;
 
     if (*status > 0)
@@ -264,9 +271,14 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
-    /* if at the end of file, simply append new table extension */
-    if ( ((fptr->Fptr)->curhdu) == ((fptr->Fptr)->maxhdu) )
+    maxhdu = (fptr->Fptr)->maxhdu;
+    /* if the current header is completely empty ...  */
+    if (( (fptr->Fptr)->headend == (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] )
+        /* or, if we are at the end of the file, ... */
+    ||  ( (((fptr->Fptr)->curhdu) == maxhdu ) &&
+       ((fptr->Fptr)->headstart[maxhdu + 1] >= (fptr->Fptr)->logfilesize ) ) )
     {
+        /* then simply append new image extension */
         ffcrtb(fptr, ASCII_TBL, naxis2, tfields, ttype, tform, tunit,
                extnm, status);
         return(*status);
@@ -374,7 +386,7 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
   insert a Binary table extension following the current HDU 
 */
 {
-    int nexthdu, ii, nunit, nhead, datacode;
+    int nexthdu, maxhdu, ii, nunit, nhead, datacode;
     long naxis1, datasize, newstart, nblocks, repeat, width;
 
     if (*status > 0)
@@ -384,9 +396,14 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
-    /* if at the end of file, simply append new table extension */
-    if ( ((fptr->Fptr)->curhdu) == ((fptr->Fptr)->maxhdu) )
+    maxhdu = (fptr->Fptr)->maxhdu;
+    /* if the current header is completely empty ...  */
+    if (( (fptr->Fptr)->headend == (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] )
+        /* or, if we are at the end of the file, ... */
+    ||  ( (((fptr->Fptr)->curhdu) == maxhdu ) &&
+       ((fptr->Fptr)->headstart[maxhdu + 1] >= (fptr->Fptr)->logfilesize ) ) )
     {
+        /* then simply append new image extension */
         ffcrtb(fptr, BINARY_TBL, naxis2, tfields, ttype, tform, tunit,
                extnm, status);
         return(*status);

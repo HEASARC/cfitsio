@@ -486,6 +486,7 @@ int ffldrc(fitsfile *fptr,        /* I - FITS file pointer             */
 
       (fptr->Fptr)->logfilesize = maxvalue((fptr->Fptr)->logfilesize, 
               rstart + IOBUFLEN);
+
       dirty[nbuff] = TRUE;  /* mark record as having been modified */
     }
     else  /* not EOF, so read record from disk */

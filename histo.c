@@ -269,6 +269,7 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
     /* create default values if WCS keywords are not present in the table */
     for (ii = 0; ii < haxis; ii++)
     {
+     /*  CTYPEn  */
        tstatus = 0;
        ffkeyn("TCTYP", hcolnum[ii], keyname, &tstatus);
        ffgky(*fptr, TSTRING, keyname, svalue, NULL, &tstatus);
@@ -287,12 +288,13 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
        else
           tstatus = 0;
 
+     /*  CUNITn  */
        ffkeyn("TCUNI", hcolnum[ii], keyname, &tstatus);
        ffgky(*fptr, TSTRING, keyname, svalue, NULL, &tstatus);
        if (tstatus)
        {         /* use the column units */
           tstatus = 0;
-          ffkeyn("TCUNI", hcolnum[ii], keyname, &tstatus);
+          ffkeyn("TUNIT", hcolnum[ii], keyname, &tstatus);
           ffgky(*fptr, TSTRING, keyname, svalue, NULL, &tstatus);
        }
 
@@ -304,18 +306,21 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
        else
          tstatus = 0;
 
+     /*  CRPIXn  - Reference Pixel  */
        ffkeyn("TCRPX", hcolnum[ii], keyname, &tstatus);
        ffgky(*fptr, TDOUBLE, keyname, &dvalue, NULL, &tstatus);
        if (tstatus)
        {
-         dvalue = 1.0;  /* pick a default reference pixel */
+         dvalue = 1.0; /* choose first pixel in original image as ref. pix. */
          tstatus = 0;
        }
 
-       dvalue = (dvalue - amin[ii] + .5) / binsize[ii] + .5;
+       /* calculate locate of the ref. pix. in the new image */
+       dvalue = (dvalue - amin[ii]) / binsize[ii] + .5;
        ffkeyn("CRPIX", ii + 1, keyname, &tstatus);
        ffpky(histptr, TDOUBLE, keyname, &dvalue, "Reference Pixel", &tstatus);
 
+     /*  CRVALn - Value at the location of the reference pixel */
        ffkeyn("TCRVL", hcolnum[ii], keyname, &tstatus);
        ffgky(*fptr, TDOUBLE, keyname, &dvalue, NULL, &tstatus);
        if (tstatus)
@@ -327,6 +332,7 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
        ffkeyn("CRVAL", ii + 1, keyname, &tstatus);
        ffpky(histptr, TDOUBLE, keyname, &dvalue, "Reference Value", &tstatus);
 
+     /*  CDELTn - unit size of pixels  */
        ffkeyn("TCDLT", hcolnum[ii], keyname, &tstatus);
        ffgky(*fptr, TDOUBLE, keyname, &dvalue, NULL, &tstatus);
        if (tstatus)
@@ -339,6 +345,7 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
        ffkeyn("CDELT", ii + 1, keyname, &tstatus);
        ffpky(histptr, TDOUBLE, keyname, &dvalue, "Pixel size", &tstatus);
 
+     /*  CROTAn - Rotation angle (degrees CCW)  */
        ffkeyn("TCROT", hcolnum[ii], keyname, &tstatus);
        ffgky(*fptr, TDOUBLE, keyname, &dvalue, NULL, &tstatus);
        if (!tstatus && dvalue != 0.)  /* only write keyword if angle != 0 */

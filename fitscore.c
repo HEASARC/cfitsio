@@ -22,7 +22,7 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.004;   /*  beta I/O driver release */
+      *version = 2.005;   /*  beta I/O driver release */
 
  /*   *version = 1.40;    6 Feb 1998 */
  /*   *version = 1.33;   16 Dec 1997 (internal release only) */
@@ -3911,7 +3911,7 @@ int ffmahd(fitsfile *fptr,      /* I - FITS file pointer             */
     else if (hdunum < 1 || hdunum >= MAXHDU )
         return(*status = BAD_HDU_NUM);
 
-    /* set logical HDU position to the actual position, incase they differ */
+    /* set logical HDU position to the actual position, in case they differ */
     fptr->HDUposition = (fptr->Fptr)->curhdu;
 
     while( ((fptr->Fptr)->curhdu) + 1 != hdunum) /* at the correct HDU? */
