@@ -633,6 +633,16 @@ int ffpcn(  fitsfile *fptr,  /* I - FITS file pointer                       */
       ffpcnd(fptr, colnum, firstrow, firstelem, nelem, (double *) array,
              *(double *) nulval, status);
     }
+    else if (datatype == TCOMPLEX)
+    {
+      ffpcne(fptr, colnum, firstrow, (firstelem - 1) * 2 + 1, nelem * 2,
+             (float *) array, *(float *) nulval, status);
+    }
+    else if (datatype == TDBLCOMPLEX)
+    {
+      ffpcnd(fptr, colnum, firstrow, (firstelem - 1) * 2 + 1, nelem * 2,
+             (double *) array, *(double *) nulval, status);
+    }
     else if (datatype == TLOGICAL)
     {
       ffpcnl(fptr, colnum, firstrow, firstelem, nelem, (char *) array,

@@ -613,6 +613,7 @@ int ffpcne( fitsfile *fptr,  /* I - FITS file pointer                       */
     tcolumn *colptr;
     long  ngood = 0, nbad = 0, ii, fstrow;
     OFF_T large_elem, repeat, first, fstelm;
+    int tcode;
 
     if (*status > 0)
         return(*status);
@@ -632,7 +633,13 @@ int ffpcne( fitsfile *fptr,  /* I - FITS file pointer                       */
     colptr += (colnum - 1);     /* offset to correct column structure */
 
     repeat = colptr->trepeat;  /* repeat count for this column */
+    fits_get_coltype(fptr, colnum, &tcode, NULL, NULL, status);
 
+    if (tcode >= TCOMPLEX)
+    { /* treat complex columns as pairs of numbers */
+        repeat *= 2;
+    }
+    
     if (firstelem == USE_LARGE_VALUE)
         large_elem = large_first_elem_val;
     else
@@ -655,7 +662,9 @@ int ffpcne( fitsfile *fptr,  /* I - FITS file pointer                       */
             fstelm = fstelm - (fstrow - 1) * repeat;  /* relative number */
             large_first_elem_val = fstelm;
 
-            if (ffpclu(fptr, colnum, fstrow, firstelem, nbad, status) > 0)
+            /* call ffpcluc, not ffpclu, in case we are writing to a
+	       complex ('C') binary table column */
+            if (ffpcluc(fptr, colnum, fstrow, firstelem, nbad, status) > 0)
                 return(*status);
 
             nbad=0;
@@ -700,7 +709,7 @@ int ffpcne( fitsfile *fptr,  /* I - FITS file pointer                       */
       fstrow = (fstelm - 1) / repeat + 1;  /* starting row number */
       fstelm = fstelm - (fstrow - 1) * repeat;  /* relative number */
       large_first_elem_val = fstelm;
-      ffpclu(fptr, colnum, fstrow, firstelem, nbad, status);
+      ffpcluc(fptr, colnum, fstrow, firstelem, nbad, status);
     }
 
     return(*status);

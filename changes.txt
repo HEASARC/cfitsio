@@ -1,7 +1,7 @@
 
                    Log of Changes Made to CFITSIO
 
-Version 2.500 - 28 July 2004
+Version 2.500 - 28 & 30 July 2004
 
   New Routine:  
   
@@ -9,6 +9,19 @@ Version 2.500 - 28 July 2004
      compressed version of the file, exists on disk.
 
   Enhancements:
+
+   - modified the way CFITSIO reads and writes data in COMPLEX ('C') and
+     DBLCOMPLEX 'M' column.  Now, in all cases, when refering to the
+     number of elements in the vector, or the value of the offset to a 
+     particular element within the vector, CFITSIO considers each pair of
+     numbers (the imaginary and real parts) as a single element instead of
+     treating each single number as an element. In particular, this changes
+     the behavior of fits_write_col_null when writing to complex columns.  
+     It also changes the length of the 'nullarray' vector in the
+     fits_read_colnull routine;  it is now only 1/2 as long as before.
+     Each element of the nullarray is set = 1 if either the real or 
+     imaginary parts of the corresponding complex value have a null
+     value.(this change was added to version 2.500 on 30 July).
 
    - Craig Markwardt, at GSFC, provided a number of significant enhancements
      to the CFITSIO lexical parser that is used to evaluate expressions:
