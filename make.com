@@ -8,6 +8,8 @@ $ cc getcol.c
 $ cc getcolb.c
 $ cc getcoli.c
 $ cc getcolj.c
+$ cc getcolui.c
+$ cc getcoluj.c
 $ cc getcolk.c
 $ cc getcole.c
 $ cc getcold.c
@@ -21,6 +23,8 @@ $ cc putcol.c
 $ cc putcolb.c
 $ cc putcoli.c
 $ cc putcolj.c
+$ cc putcolui.c
+$ cc putcoluj.c
 $ cc putcolk.c
 $ cc putcole.c
 $ cc putcold.c
@@ -35,6 +39,7 @@ $ lib/create cfitsio buffers,cfileio,checksum,fitscore,getcol,getcolb
 $ lib/insert cfitsio getcoli,getcolj,getcolk,getcole,getcold,getcoll
 $ lib/insert cfitsio getcols,editcol,edithdu,getkey,modkey,putcol
 $ lib/insert cfitsio putcolb,putcoli,putcolj,putcolk,putcole,putcold
+$ lib/insert cfitsio getcolui,getcoluj,putcolui,putcoluj
 $ lib/insert cfitsio putcols,putcoll,putcolu,putkey,scalnull,swapproc,wcsutil
 $ ! 
 $ if (F$GETSYI("ARCH_NAME") .eqs. "VAX") then goto VAX

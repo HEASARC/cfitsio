@@ -43,6 +43,11 @@ int ffppr(  fitsfile *fptr,  /* I - FITS file pointer                       */
     {
       ffpclb(fptr, 2, row, firstelem, nelem, (unsigned char *) array, status);
     }
+    else if (datatype == TUSHORT)
+    {
+      ffpclui(fptr, 2, row, firstelem, nelem, (unsigned short *) array,
+              status);
+    }
     else if (datatype == TSHORT)
     {
       ffpcli(fptr, 2, row, firstelem, nelem, (short *) array, status);
@@ -50,6 +55,10 @@ int ffppr(  fitsfile *fptr,  /* I - FITS file pointer                       */
     else if (datatype == TINT)
     {
       ffpclk(fptr, 2, row, firstelem, nelem, (int *) array, status);
+    }
+    else if (datatype == TULONG)
+    {
+      ffpcluj(fptr, 2, row, firstelem, nelem, (unsigned long *) array, status);
     }
     else if (datatype == TLONG)
     {
@@ -97,6 +106,11 @@ int ffpcl(  fitsfile *fptr,  /* I - FITS file pointer                       */
       ffpclb(fptr, colnum, firstrow, firstelem, nelem, (unsigned char *) array,
              status);
     }
+    else if (datatype == TUSHORT)
+    {
+      ffpclui(fptr, colnum, firstrow, firstelem, nelem, 
+             (unsigned short *) array, status);
+    }
     else if (datatype == TSHORT)
     {
       ffpcli(fptr, colnum, firstrow, firstelem, nelem, (short *) array,
@@ -106,6 +120,11 @@ int ffpcl(  fitsfile *fptr,  /* I - FITS file pointer                       */
     {
       ffpclk(fptr, colnum, firstrow, firstelem, nelem, (int *) array,
                status);
+    }
+    else if (datatype == TULONG)
+    {
+      ffpcluj(fptr, colnum, firstrow, firstelem, nelem, (unsigned long *) array,
+              status);
     }
     else if (datatype == TLONG)
     {

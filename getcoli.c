@@ -388,8 +388,8 @@ int ffgsfi(fitsfile *fptr, /* I - FITS file pointer                         */
         }
         else
         {
-            rstr = colnum - 1;
-            rstp = colnum - 1;
+            rstr = colnum;
+            rstp = colnum;
         }
         rinc = 1;
         numcol = 2;

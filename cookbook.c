@@ -57,11 +57,12 @@ void writeimage( void )
 {
     fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
     int status, ii, jj;
-    long  fpixel, nelements, array[200][300], exposure;
+    long  fpixel, nelements, exposure;
+    unsigned short array[200][300];
 
     /* initialize FITS image parameters */
     char filename[] = "atestfil.fit";             /* name for new FITS file */
-    int bitpix   =  16;   /* 16-bit short signed integer pixel values       */
+    int bitpix   =  USHORT_IMG; /* 16-bit unsigned short pixel values       */
     long naxis    =   2;  /* 2-dimensional image                            */    
     long naxes[2] = { 300, 200 };   /* image is 300 pixels wide by 200 rows */
 
@@ -72,7 +73,14 @@ void writeimage( void )
     if (fits_create_file(&fptr, filename, &status)) /* create new FITS file */
          printerror( status );           /* call printerror if error occurs */
 
-    /* write the required keywords for the primary array image */
+    /* write the required keywords for the primary array image.     */
+    /* Since bitpix = USHORT_IMG, this will cause cfitsio to create */
+    /* a FITS image with BITPIX = 16 (signed short integers) with   */
+    /* BSCALE = 1.0 and BZERO = 32768.  This is the convention that */
+    /* FITS uses to store unsigned integers.  Note that the BSCALE  */
+    /* and BZERO keywords will be automatically written by cfitsio  */
+    /* in this case.                                                */
+
     if ( fits_create_img(fptr,  bitpix, naxis, naxes, &status) )
          printerror( status );          
 
@@ -87,8 +95,8 @@ void writeimage( void )
     fpixel = 1;                               /* first pixel to write      */
     nelements = naxes[0] * naxes[1];          /* number of pixels to write */
 
-    /* write the array of long integers to the FITS file */
-    if ( fits_write_img(fptr, TLONG, fpixel, nelements, array[0], &status) )
+    /* write the array of unsigned integers to the FITS file */
+    if ( fits_write_img(fptr, TUSHORT, fpixel, nelements, array[0], &status) )
         printerror( status );            
 
     /* write another optional keyword to the header */
@@ -432,6 +440,12 @@ void readimage( void )
       nbuffer = npixels;
       if (npixels > buffsize)
         nbuffer = buffsize;     /* read as many pixels as will fit in buffer */
+
+      /* Note that even though the FITS images contains unsigned integer */
+      /* pixel values (or more accurately, signed integer pixels with    */
+      /* a bias of 32768),  this routine is reading the values into a    */
+      /* float array.   Cfitsio automatically performs the datatype      */
+      /* conversion in cases like this.                                  */
 
       if ( fits_read_img(fptr, TFLOAT, fpixel, nbuffer, &nullval,
                   buffer, &anynull, &status) )

@@ -118,6 +118,10 @@ int ffpky( fitsfile *fptr,     /* I - FITS file pointer        */
     {
         ffpkyj(fptr, keyname, (long) *(unsigned char *) value, comm, status);
     }
+    else if (datatype == TUSHORT)
+    {
+        ffpkyj(fptr, keyname, (long) *(unsigned short *) value, comm, status);
+    }
     else if (datatype == TSHORT)
     {
         ffpkyj(fptr, keyname, (long) *(short *) value, comm, status);
@@ -129,6 +133,10 @@ int ffpky( fitsfile *fptr,     /* I - FITS file pointer        */
     else if (datatype == TLOGICAL)
     {
         ffpkyl(fptr, keyname, *(int *) value, comm, status);
+    }
+    else if (datatype == TULONG)
+    {
+        ffpkyj(fptr, keyname, (long) *(unsigned long *) value, comm, status);
     }
     else if (datatype == TLONG)
     {
@@ -1046,8 +1054,16 @@ int ffphpr( fitsfile *fptr, /* I - FITS file pointer                        */
     }
 
     longbitpix = bitpix;
-    if (longbitpix != 8 && longbitpix != 16 && longbitpix != 32 &&
-             longbitpix != -32 && longbitpix != -64)
+
+    /* test for the 2 special cases that represent unsigned integers */
+    if (longbitpix == USHORT_IMG)
+        longbitpix = SHORT_IMG;
+    else if (longbitpix == ULONG_IMG)
+        longbitpix = LONG_IMG;
+
+    if (longbitpix != BYTE_IMG && longbitpix != SHORT_IMG && 
+        longbitpix != LONG_IMG &&
+        longbitpix != FLOAT_IMG && longbitpix != DOUBLE_IMG)
     {
         sprintf(message,
         "Illegal value for BITPIX keyword: %d", bitpix);
@@ -1058,7 +1074,6 @@ int ffphpr( fitsfile *fptr, /* I - FITS file pointer                        */
     strcpy(comm, "number of bits per data pixel");
     if (ffpkyj(fptr, "BITPIX", longbitpix, comm, status) > 0)
         return(*status);
-
 
     if (naxis < 0 || naxis > 999)
     {
@@ -1150,6 +1165,23 @@ int ffphpr( fitsfile *fptr, /* I - FITS file pointer                        */
             ffpkyj(fptr, "GCOUNT", gcount, comm, status);
         }
     }
+
+    /* Write the BSCALE and BZERO keywords, if an unsigned integer image */
+    if (bitpix == USHORT_IMG)
+    {
+        strcpy(comm, "offset data range to that of unsigned short");
+        ffpkyg(fptr, "BZERO", 32768., 0, comm, status);
+        strcpy(comm, "default scaling factor");
+        ffpkyg(fptr, "BSCALE", 1.0, 0, comm, status);
+    }
+    else if (bitpix == ULONG_IMG)
+    {
+        strcpy(comm, "offset data range to that of unsigned long");
+        ffpkyg(fptr, "BZERO", 2147483648., 0, comm, status);
+        strcpy(comm, "default scaling factor");
+        ffpkyg(fptr, "BSCALE", 1.0, 0, comm, status);
+    }
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -1248,6 +1280,7 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
     long repeat, width, naxis1;
 
     char tfmt[30], name[FLEN_KEYWORD], comm[FLEN_COMMENT];
+    char *cptr;
 
     if (*status > 0)
         return(*status);
@@ -1305,6 +1338,7 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         strcpy(tfmt, tform[ii]);  /* required TFORMn keyword */
         ffupch(tfmt);
+
         ffkeyn("TFORM", ii + 1, name, status);
         strcpy(comm, "data format of field");
 
@@ -1320,7 +1354,11 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
            strcat(comm, ": 1-byte LOGICAL");
         else if (datatype == TSHORT)
            strcat(comm, ": 2-byte INTEGER");
+        else if (datatype == TUSHORT)
+           strcat(comm, ": 2-byte INTEGER");
         else if (datatype == TLONG)
+           strcat(comm, ": 4-byte INTEGER");
+        else if (datatype == TULONG)
            strcat(comm, ": 4-byte INTEGER");
         else if (datatype == TFLOAT)
            strcat(comm, ": 4-byte REAL");
@@ -1333,7 +1371,50 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
         else if (datatype < 0)
            strcat(comm, ": variable length array");
 
-        ffpkys(fptr, name, tfmt, comm, status);
+        if (datatype == TUSHORT) 
+        {
+           /* Replace the 'U' with an 'I' in the TFORMn code */
+           cptr = tfmt;
+           while (*cptr != 'U') 
+              cptr++;
+
+           *cptr = 'I';
+           ffpkys(fptr, name, tfmt, comm, status);
+
+           /* write the TZEROn and TSCALn keywords */
+           ffkeyn("TZERO", ii + 1, name, status);
+           strcpy(comm, "offset for unsigned integers");
+
+           ffpkyg(fptr, name, 32768., 0, comm, status);
+
+           ffkeyn("TSCAL", ii + 1, name, status);
+           strcpy(comm, "data are not scaled");
+           ffpkyg(fptr, name, 1., 0, comm, status);
+        }
+        else if (datatype == TULONG) 
+        {
+           /* Replace the 'V' with an 'J' in the TFORMn code */
+           cptr = tfmt;
+           while (*cptr != 'V') 
+              cptr++;
+
+           *cptr = 'J';
+           ffpkys(fptr, name, tfmt, comm, status);
+
+           /* write the TZEROn and TSCALn keywords */
+           ffkeyn("TZERO", ii + 1, name, status);
+           strcpy(comm, "offset for unsigned integers");
+
+           ffpkyg(fptr, name, 2147483648., 0, comm, status);
+
+           ffkeyn("TSCAL", ii + 1, name, status);
+           strcpy(comm, "data are not scaled");
+           ffpkyg(fptr, name, 1., 0, comm, status);
+        }
+        else
+        {
+           ffpkys(fptr, name, tfmt, comm, status);
+        }
 
         if ( *(tunit[ii]) )       /* optional TUNITn keyword */
         {

@@ -219,6 +219,11 @@ int ffgky( fitsfile *fptr,     /* I - FITS file pointer        */
         ffgkyj(fptr, keyname, &longval, comm, status);
         *(unsigned char *) value = longval;
     }
+    else if (datatype == TUSHORT)
+    {
+        ffgkyj(fptr, keyname, &longval, comm, status);
+        *(unsigned short *) value = longval;
+    }
     else if (datatype == TSHORT)
     {
         ffgkyj(fptr, keyname, &longval, comm, status);
@@ -232,6 +237,11 @@ int ffgky( fitsfile *fptr,     /* I - FITS file pointer        */
     else if (datatype == TLOGICAL)
     {
         ffgkyl(fptr, keyname, (int *) value, comm, status);
+    }
+    else if (datatype == TULONG)
+    {
+        ffgkyj(fptr, keyname, &longval, comm, status);
+        *(unsigned long *) value = longval;
     }
     else if (datatype == TLONG)
     {
@@ -443,7 +453,7 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer         */
             if (valstring)    /* a null valstring indicates no continuation */
             {
                *(*value+len-1) = '\0';         /* erase the trailing & char */
-               len += strlen(valstring) +1;
+               len += strlen(valstring) - 1;
                *value = (char *) realloc(*value, len); /* increase str size */
                strcat(*value, valstring);     /* append the continued chars */
             }
@@ -1302,8 +1312,9 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
         ffpmsg(message);
         return(*status = BAD_BITPIX);
     }
-    else if (longbitpix != 8 && longbitpix != 16 && longbitpix != 32 &&
-             longbitpix != -32 && longbitpix != -64)
+    else if (longbitpix != BYTE_IMG && longbitpix != SHORT_IMG &&
+             longbitpix != LONG_IMG &&
+             longbitpix != FLOAT_IMG && longbitpix != DOUBLE_IMG)
     {
         sprintf(message,
         "Illegal value for BITPIX keyword: %s", value);

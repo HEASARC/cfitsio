@@ -1,5 +1,13 @@
          Log of Changes Made to CFITSIO
 
+Version 1.21 - 26 March 1997
+
+   - added general support for reading and writing unsigned integer
+     keywords, images, and binary table column values.
+
+   - fixed a bug in ftgkls that prevented it from reading more than one
+     continuation line of a long string keyword value.
+
 Version 1.20 - 29 Jan 1997
 
    - when creating a binary table with variable length vector columns, if the
@@ -8,16 +16,7 @@ Version 1.20 - 29 Jan 1997
      calculate the maximum value and append it to the TFORM value
      when the binary table is first closed.
 
-   - added check in ffdelt to make sure input fits file pointer is
-     not already null
-
-   - added check in ffcopy to make sure the output HDU does not
-     already contain any keywords (it must be empty).
-
    - added the set of routines to do coordinate system transformations
-
-   - modified ftgrec so that it simply moves to the beginning
-      of the header if the input keyword number = 0
 
    - added support for wildcards ('*', '?', and '#') in the input
      keyword name when reading, modifying, or deleting keywords.
@@ -26,11 +25,14 @@ Version 1.20 - 29 Jan 1997
      the next keyword whose name matches a list of template names,
      but does not match any names on a second template list.
 
-   - modified testprog.c to include tests of keyword wildcards
-     and the WCS routines.
+   - modified ftgrec so that it simply moves to the beginning
+     of the header if the input keyword number = 0
 
-   - added a test for 'EMX' in fitsio2.h which is a signature of
-     a PC running OS/2.
+   - added check in ffdelt to make sure the input fits file pointer is
+     not already null
+
+   - added check in ffcopy to make sure the output HDU does not
+     already contain any keywords (it must be empty).
 
    - modified ffgcls so that it does not test if each string column
      value equals the null string value if the null string value
@@ -38,6 +40,12 @@ Version 1.20 - 29 Jan 1997
 
    - fixed bug in ftgtdm that caused it to fail if the TDIMn 
      keyword did not exist in the FITS file
+
+   - modified testprog.c to include tests of keyword wildcards
+     and the WCS coordinate transformation routines.
+
+   - added a test for 'EMX' in fitsio2.h so that cfitsio builds 
+     correctly on a PC running OS/2.
 
 Version 1.11 - 04 Dec 1996
 

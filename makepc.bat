@@ -9,6 +9,8 @@ bcc32 -c getcol.c
 bcc32 -c getcolb.c
 bcc32 -c getcoli.c
 bcc32 -c getcolj.c
+bcc32 -c getcolui.c
+bcc32 -c getcoljj.c
 bcc32 -c getcolk.c
 bcc32 -c getcole.c
 bcc32 -c getcold.c
@@ -22,6 +24,8 @@ bcc32 -c putcol.c
 bcc32 -c putcolb.c
 bcc32 -c putcoli.c
 bcc32 -c putcolj.c
+bcc32 -c putcolui.c
+bcc32 -c putcoluj.c
 bcc32 -c putcolk.c
 bcc32 -c putcole.c
 bcc32 -c putcold.c
@@ -38,6 +42,7 @@ tlib cfitsio +getcol  +getcolb +getcoli +getcolj +getcolk +getcole +getcold
 tlib cfitsio +getcoll +getcols +editcol +edithdu +getkey  +modkey  +putkey 
 tlib cfitsio +putcol  +putcolb +putcoli +putcolj +putcolk +putcole +putcold
 tlib cfitsio +putcoll +putcols +putcolu +scalnull +swapproc +wcsutil
+tlib cfitsio +getcolui +getcoluj +putcolui +putcoluj
 bcc32 -f testprog.c cfitsio.lib
 bcc32 -f cookbook.c cfitsio.lib
 

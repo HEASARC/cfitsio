@@ -20,8 +20,9 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
- *version = 1.2;  /* 29 Jan 1997 */
+ *version = 1.21;  /* 26 Mar 1997 */
 
+ /*   *version = 1.2;    29 Jan 1997 */
  /*   *version = 1.11;   04 Dec 1996 */
  /*   *version = 1.101;  13 Nov 1996 */
  /*   *version = 1.1;     6 Nov 1996 */
@@ -1171,10 +1172,20 @@ int ffbnfm(char *tform,     /* I - format code from the TFORMn keyword */
     else
         variable = 0;
 
-    if      (form[0] == 'I')
+    if (form[0] == 'U')  /* internal code to signify unsigned integer */
+    { 
+        *datacode = TUSHORT;
+        *width = 2;
+    }
+    else if (form[0] == 'I')
     {
         *datacode = TSHORT;
         *width = 2;
+    }
+    else if (form[0] == 'V') /* internal code to signify unsigned integer */
+    {
+        *datacode = TULONG;
+        *width = 4;
     }
     else if (form[0] == 'J')
     {
@@ -1892,27 +1903,27 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
             groups = 0;          /* GROUPS keyword not found */
     }
 
-    if (bitpix == 8)   /* test  bitpix and set the datatype code */
+    if (bitpix == BYTE_IMG)   /* test  bitpix and set the datatype code */
     {
         ttype=TBYTE;
         bytlen=1;
     }
-    else if (bitpix == 16)
+    else if (bitpix == SHORT_IMG)
     {
         ttype=TSHORT;
         bytlen=2;
     }
-    else if (bitpix == 32)
+    else if (bitpix == LONG_IMG)
     {
         ttype=TLONG;
         bytlen=4;
     }
-    else if (bitpix == -32)
+    else if (bitpix == FLOAT_IMG)
     {
         ttype=TFLOAT;
         bytlen=4;
     }
-    else if (bitpix == -64)
+    else if (bitpix == DOUBLE_IMG)
     {
         ttype=TDOUBLE;
         bytlen=8;

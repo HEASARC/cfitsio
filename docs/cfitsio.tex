@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large January 1997\\}
+{\Large March 1997\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -130,8 +130,8 @@ FITS formats should be directed to the NOST, at:
         Greenbelt MD 20771
         USA
         WWW: http://ssdoo.gsfc.nasa.gov/astro/fits/fits_home.html
-        E-mail: nost@nssdca.gsfc.nasa.gov
-        (301) 286-3575
+        E-mail: fits@nssdca.gsfc.nasa.gov
+        (301) 286-2899
 \end{verbatim}
 CFITSIO users may also be interested in the FTOOLS package of programs
 that can be used to manipulate and analyze FITS format files.
@@ -330,8 +330,13 @@ astronomical data analysis software packages.
 A FITS file consists of one or more Header + Data Units (HDUs), where
 the first HDU is called the `Primary HDU', or `Primary Array'.  The
 primary array contains an N-dimensional array of pixels, such as a 1-D
-spectrum, a 2-D image, or a 3-D data cube.  The primary HDU can also
-consist of only a header with a null array containing no pixels.
+spectrum, a 2-D image, or a 3-D data cube.  Five different primary
+datatypes are supported: Unsigned 8-bit bytes, 16 and 32-bit signed
+integers, and 32 and 64-bit floating point reals.  FITS also has a
+convention for storing 16 and 32-bit unsigned integers (see the later
+section entitled `Unsigned Integers' for more details). The primary HDU
+may also consist of only a header with a null array containing no
+data pixels.
 
 Any number of additional HDUs may follow the primary array; these
 additional HDUs are called FITS `extensions'.  There are currently 3
@@ -447,8 +452,8 @@ and 7 list both the long and short names.
 Many of the CFITSIO routines come in families which differ only in the
 datatype of the associated parameter(s).  The datatype of these
 routines is indicated by the suffix of the routine name.  The short
-routine names have a 1 character suffix (e.g., 'j' in 'ffpkyj')
-while the long routine names have a 3 character or longer suffix
+routine names have a 1 or 2 character suffix (e.g., 'j' in 'ffpkyj')
+while the long routine names have a 4 character or longer suffix
 as shown in the following table:
 
 \begin{verbatim}
@@ -459,6 +464,8 @@ as shown in the following table:
     _byt     b    unsigned byte
     _sht     i    short integer
     _lng     j    long integer
+    _usht    ui   unsigned short integer
+    _ulng    uj   unsigned long integer
     _int     k    int integer
     _flt     e    real exponential floating point (float)
     _fixflt  f    real fixed-decimal format floating point (float)
@@ -488,6 +495,117 @@ The complex and double precision complex datatypes are not directly
 supported in ANSI C, so these datatypes should be interpreted as pairs
 of float or double values, respectively, where the first  value in each
 pair is the real part, and the second is the imaginary part.
+
+
+\section{Unsigned Integers}
+
+Although FITS does not directly support unsigned integers as one of
+its basic datatypes, FITS can still be used to efficiently store
+unsigned integer data values in images and binary tables.  The
+convention used in FITS files is to store the unsigned integers as
+signed integers with an appropriate offset (as specified by the BZERO
+or TZEROn keywords).  For example, to store unsigned 16-bit integer
+values in a FITS image, the image would be defined as a signed 16-bit
+integer (BITPIX keyword = 16) with the keywords BSCALE = 1.0 and BZERO
+= 32768.  Thus the unsigned values of 0, 32768, and 65535 would be
+physically stored in the FITS image as -32768, 0, and 32767,
+respectively, and CFITSIO will automatically add the BZERO offset to
+these values when they are read.  In the case of unsigned 32-bit
+integers, the BITBIX keyword would be equal to 32 and BZERO would be
+equal to 2147483648 (i.e. 2 raised to the 31st power).
+
+The CFITSIO interface routines will efficiently and transparently apply
+the appropriate offset in these cases, so in general, application
+programs do not need to be concerned with how the unsigned values are
+actually stored in the FITS file.  As a convenience for users, CFITSIO
+has several predefined constants for the value of BITPIX  (USHORT\_IMG,
+ULONG\_IMG) and for the TFORMn value in the case of binary tables (`U'
+and `V') which programmers can use when creating FITS files containing
+unsigned integer values.  For example, the following code fragment
+illustrates how to write a FITS 1-D primary array of unsigned 16-bit
+integers:
+
+\begin{verbatim}
+      unsigned short uarray[100];
+      int naxis, status;
+      long naxes[10], group, firstelem, nelements;
+       ...
+      status = 0;
+      naxis = 1;
+      naxes[0] = 100;
+      fits_write_imghdr(fptr, USHORT_IMG, naxis, naxes, &status);
+
+      group = 1;
+      firstelem = 1;
+      nelements = 100;
+      fits_write_img_usht(fptr, group, firstelem, nelements,
+                          uarray, &status);
+       ...
+\end{verbatim}
+In the above example, the 2nd parameter in the call to
+`fits\_write\_imghdr' tells CFITSIO to write the header keywords
+appropriate for an array of 16-bit unsigned integers (i.e., BITPIX = 16
+and BZERO = 32768).  Then the fits\_write\_img\_usht routine writes
+the array of unsigned short integers (uarray) into the primary array of
+the FITS file.  Similarly, a 32-bit unsigned integer image may be
+created by setting the second parameter in fits\_write\_imghdr equal to
+`ULONG\_IMG' and by calling the fits\_write\_img\_ulng routine to write
+the array of unsigned long image pixel values.
+
+An analogous set of routines are available for reading or writing
+unsigned integer values in a FITS binary table extension.  When
+specifying the TFORMn keyword value which defines the format of a
+column, CFITSIO recognized 2 additional datatype codes besides those
+already defined in the FITS standard: `U' meaning a 16-bit unsigned
+integer column, and `V' for a 32-bit unsigned integer column.  It must
+be stressed that these non-standard datatype codes are not actually
+written into the FITS file, but instead, are just used internally
+within CFITSIO.  The following code fragment illustrates how to use
+these features:
+
+\begin{verbatim}
+      unsigned short uarray[100];
+      unsigned long  varray[100];
+
+      int colnum, tfields, status;
+      long nrows, firstrow, firstelem, nelements;
+
+      char extname[] = "Test_table";           /* extension name */
+
+      /* define the name, datatype, and physical units for the 2 columns */
+      char *ttype[] = { "Col_1", "Col_2" };
+      char *tform[] = { "1U",      "1V"   };  /* special CFITSIO codes */
+      char *tunit[] = { " ",        " "   };
+       ...
+
+           /* write the header keywords */
+      status = 0;
+      nrows = 1;
+      tfields = 2
+      fits_write_btblhdr(fptr, nrows, tfields, ttype, tform, tunit,
+                extname, &status);
+
+           /* write the unsigned shorts to the 1st column */
+      colnum    = 1;
+      firstrow  = 1;
+      firstelem = 1;
+      nelements = 100;
+      fits_write_col_usht(fptr, colnum, firstrow, firstelem,
+              nelements, uarray, &status);
+
+           /* now write the unsigned longs to the 2nd column */
+      colnum    = 2;
+      fits_write_col_ulng(fptr, colnum, firstrow, firstelem,
+              nelements, varray, &status);
+       ...
+\end{verbatim}
+Note that the non-standard tform values for the 2 columns, `U' and `V',
+tell CFITSIO to write the keywords appropriate for unsigned 16-bit and
+unsigned 32-bit integers, respectively (i.e., TFORMn = '1I' and TSCALn
+= 32678 for unsigned 16-bit integers, and TFORMn = '1J' and TSCALn =
+2147483648 for unsigned 32-bit integers).  The calls to
+fits\_write\_col\_usht and to fits\_write\_col\_ulng then write the
+arrays of unsigned integer values to the columns.
 
 
 \section{1's Based Index Numbers}
@@ -1298,7 +1416,8 @@ CFITSIO.
 
 \begin{description}
 \item[5 ]Create a new primary array if a new empty FITS file has just been
-  created, otherwise append a new IMAGE extension following the current HDU.
+   created, otherwise append a new IMAGE extension following the current HDU.
+  Refer to Chapter 9 for a list of the pre-defined bitpix values.
 \end{description}
 
 \begin{verbatim}
@@ -1309,7 +1428,8 @@ CFITSIO.
 \begin{description}
 \item[6 ]Create (append) a new table extension following the current HDU.
    The type of table is specified by the tbltype parameter which can have
-  symbolic constant values of ASCII\_TBL or BINARY\_TBL.
+   symbolic constant values of ASCII\_TBL or BINARY\_TBL.  See Chapter 9
+  for a list of the allowed values for the tform parameter.
 \end{description}
 
 \begin{verbatim}
@@ -1336,14 +1456,14 @@ CFITSIO.
 \begin{description}
 \item[2 ] Write a new keyword with the specified datatype into the current header.
     The datatype parameter can have one of the following symbolic constant
-    values: TSTRING, TLOGICAL, TBYTE, TSHORT, TINT, TLONG, TFLOAT, TDOUBLE.
-    Note that the address of the value, not the value itself, must be supplied
-   to this routine.
+    values: TSTRING, TLOGICAL, TBYTE, TUSHORT, TSHORT, TINT, TULONG, TLONG,
+    TFLOAT, TDOUBLE.  Note that the address of the value, not the value
+   itself, must be supplied to this routine.
 \end{description}
 
 \begin{verbatim}
   int fits_write_key / ffpky
-      (fitsfile *fptr, int datatype, char *keyname, void *value,
+      (fitsfile *fptr, int datatype, char *keyname, DTYPE *value,
        char *comment, > int *status)
 \end{verbatim}
 
@@ -1358,7 +1478,8 @@ CFITSIO.
 \end{verbatim}
 
 \begin{description}
-\item[4 ] Read a keyword value and comment from the current header.
+\item[4 ] Read a keyword value and comment from the current header.  The
+    allowed values for the `datatype' parameter are listed above.
     Automatic datatype conversion will be attempted if
    `datatype' is not the same as the actual datatype of the keyword.
     If a NULL comment pointer is given on input, then the comment string
@@ -1367,7 +1488,7 @@ CFITSIO.
 
 \begin{verbatim}
   int fits_read_key / ffgky
-      (fitsfile *fptr, int datatype, char *keyname, > void *value,
+      (fitsfile *fptr, int datatype, char *keyname, > DTYPE *value,
        char *comment, int *status)
 \end{verbatim}
 
@@ -1385,12 +1506,13 @@ CFITSIO.
 
 The following routines read or write data values in the current HDU of
 the FITS file. The `datatype' parameter specifies the datatype of the
-array of values and can have one of the following symbolic constant
-values: TBYTE, TSHORT, TINT, TLONG, TFLOAT, or TDOUBLE.  The routines
-for reading or writing table columns also support the TBIT, TLOGICAL,
-TSTRING, TCOMPLEX and TDBLCOMPLEX datatypes. Automatic datatype conversion
-will be attempted for numerical datatypes if the specified datatype is
-different from the actual datatype of the FITS array or table column.
+`array` of values and the `nulval' parameter can have one of the
+following symbolic constant values: TBYTE, TUSHORT, TSHORT, TINT,
+TULONG, TLONG, TFLOAT, or TDOUBLE.  The routines for reading or writing
+table columns also support the TBIT, TLOGICAL, TSTRING, TCOMPLEX and
+TDBLCOMPLEX datatypes. Automatic datatype conversion will be attempted
+for numerical datatypes if the specified datatype is different from the
+actual datatype of the FITS array or table column.
 
 
 \begin{description}
@@ -1400,7 +1522,7 @@ different from the actual datatype of the FITS array or table column.
 \begin{verbatim}
   int fits_write_img / ffppr
       (fitsfile *fptr, int datatype, long firstelem, long nelements,
-       void *array, int *status);
+       DTYPE *array, int *status);
 \end{verbatim}
 
 \begin{description}
@@ -1416,7 +1538,7 @@ different from the actual datatype of the FITS array or table column.
 \begin{verbatim}
   int fits_read_img / ffgpv
       (fitsfile *fptr, int  datatype, long firstelem, long nelements,
-       void *nulval, > void *array, int *anynul, int *status)
+       DTYPE *nulval, > DTYPE *array, int *anynul, int *status)
 \end{verbatim}
 
 \begin{description}
@@ -1428,7 +1550,7 @@ different from the actual datatype of the FITS array or table column.
 \begin{verbatim}
   int fits_write_col / ffpcl
       (fitsfile *fptr, int datatype, int colnum, long firstrow,
-       long firstelem, long nelements, void *array, > int *status)
+       long firstelem, long nelements, DTYPE *array, > int *status)
 \end{verbatim}
 
 \begin{description}
@@ -1443,7 +1565,7 @@ different from the actual datatype of the FITS array or table column.
 \begin{verbatim}
   int fits_read_col / ffgcv
       (fitsfile *fptr, int datatype, int colnum, long firstrow, long firstelem,
-       long nelements, void *nulval, void *array, int *anynul, int *status)
+       long nelements, DTYPE *nulval, DTYPE *array, int *anynul, int *status)
 \end{verbatim}
 
 \begin{description}
@@ -1483,16 +1605,18 @@ For example, the routines for reading data from a primary array
 are defined as:
 
 \begin{verbatim}
-  int ffgpv[bijked](fitsfile *fptr, long group, long firstelem, long nelements,
-           DTYPE nulval, > DTYPE *array, int *anynul, int *status)
+  int ffgpv[b,i,ui,j,uj,k,e,d](fitsfile *fptr, long group, long firstelem,
+           long nelements, DTYPE nulval, > DTYPE *array, int *anynul,
+           int *status)
 \end{verbatim}
-This is a short-hand notation for indicating that there are 6
-separate routines, ffgpvb, ffgpvi, ffgpvj, ffgpvk, ffgpve, and ffgpvd,
-which have different datatypes for the nulval and array arguments.
+This is a short-hand notation for indicating that there are 8 separate
+routines, ffgpvb, ffgpvi, ffgpvui, ffgpvj, ffgpvuj, ffgpvk, ffgpve, and
+ffgpvd, which have different datatypes for the nulval and array
+arguments.
 
 4. A datatype specification of `DTYPE' is used to indicate
 that the parameter has a numerical datatype which depends on the last
-letter of the routine's short name as given by the following table:
+letter(s) of the routine's short name as given by the following table:
 
 \begin{verbatim}
       Name     Data
@@ -1502,6 +1626,8 @@ letter of the routine's short name as given by the following table:
         l   -  int (logical value)
         i   -  short integer
         j   -  long integer
+       ui   -  unsigned short integer
+       uj   -  unsigned long integer
         k   -  int integer
      e, f   -  float
      d, g   -  double
@@ -1616,8 +1742,9 @@ insert, copy, and delete HDUs.
 \end{verbatim}
 
 \begin{description}
-\item[4 ]Create a new primary array if a new empty FITS file has just been
-   created otherwise append a new IMAGE extension following the current HDU.
+\item[5 ]Create a new primary array if a new empty FITS file has just been
+   created, otherwise append a new IMAGE extension following the current HDU.
+   Refer to Chapter 9 for a list of pre-defined bitpix values.
   This routine simply combines calls to ffcrhd and ffphps.
 \end{description}
 
@@ -1630,7 +1757,8 @@ insert, copy, and delete HDUs.
 \item[5 ]Create (append) a new table extension following the current HDU.
    This routine simply combines calls to ffcrhd and ffphtb or ffphbn.
    The type of table is specified by the tbltype parameter which can have
-  symbolic constant values of ASCII\_TBL or BINARY\_TBL.
+   symbolic constant values of ASCII\_TBL or BINARY\_TBL.  See Chapter 9
+  for a list of allowed tform values.
 \end{description}
 
 \begin{verbatim}
@@ -1661,7 +1789,8 @@ insert, copy, and delete HDUs.
     Any following extensions will be shifted down to make room for
     the new extension.  If there are no other following extensions
     then the new image extension will simply be appended to the
-   end of the file.  The new extension will become the CHDU.
+    end of the file.  The new extension will become the CHDU.
+   Refer to Chapter 9 for a list of pre-defined bitpix values.
 \end{description}
 
 \begin{verbatim}
@@ -1674,7 +1803,8 @@ insert, copy, and delete HDUs.
     Any following extensions will be shifted down to make room for
     the new extension.  If there are no other following extensions
     then the new table extension will simply be appended to the
-   end of the file.  The new extension will become the CHDU.
+    end of the file.  The new extension will become the CHDU.
+   See Chapter 9  for a list of allowed tform values.
 \end{description}
 
 \begin{verbatim}
@@ -1692,6 +1822,7 @@ insert, copy, and delete HDUs.
     the table contains variable length array columns
     then pcount must specify the expected final size of the data heap,
     otherwise pcount must = 0.  The new extension will become the CHDU.
+   See Chapter 9  for a list of allowed tform values.
 \end{description}
 
 \begin{verbatim}
@@ -1834,13 +1965,14 @@ image or table.
 
 \begin{description}
 \item[1 ] Put the primary header or IMAGE extension keywords into the CHU.
-The simpler ffphps routine is equivalent to calling ffphpr with the
-default values of simple = TRUE, pcount = 0, gcount = 1, and extend =
-TRUE.  The PCOUNT, GCOUNT and EXTEND keywords are not required in the
-primary header and are only written if pcount is not equal to zero,
-gcount is not equal to zero or one, and if extend is TRUE,
-respectively.  When writing to an IMAGE extension, the SIMPLE and
- EXTEND parameters are ignored.
+  The simpler ffphps routine is equivalent to calling ffphpr with the
+  default values of simple = TRUE, pcount = 0, gcount = 1, and extend =
+  TRUE.  The PCOUNT, GCOUNT and EXTEND keywords are not required in the
+  primary header and are only written if pcount is not equal to zero,
+  gcount is not equal to zero or one, and if extend is TRUE,
+  respectively.  When writing to an IMAGE extension, the SIMPLE and
+  EXTEND parameters are ignored. Refer to Chapter 9 for a list of
+ pre-defined bitpix values.
 \end{description}
 
 \begin{verbatim}
@@ -1867,8 +1999,9 @@ respectively.  When writing to an IMAGE extension, the SIMPLE and
 \begin{description}
 \item[3 ] Put the ASCII table header keywords into the CHU The optional
     TUNITn and EXTNAME keywords are written only if the input string
-   values are not null.
+   values are not null. See Chapter 9  for a list of allowed tform values.
 \end{description}
+
 
 \begin{verbatim}
   int fits_write_atblhdr / ffphtb
@@ -1904,8 +2037,9 @@ respectively.  When writing to an IMAGE extension, the SIMPLE and
    maximum length to the TFORM keyword value.  Note that if the table
    is subsequently modified to increase the maximum length of the vectors
    then the modifying program is responsible for also updating the TFORM
-  keyword value.
+  keyword value.  See Chapter 9  for a list of allowed tform values.
 \end{description}
+
 
 \begin{verbatim}
   int fits_write_btblhdr / ffphbn
@@ -1976,14 +2110,14 @@ respectively.  When writing to an IMAGE extension, the SIMPLE and
     This is a generic routine in which
     the datatype parameter specifies the datatype of the keyword value
     with one of the following symbolic constant values:  TSTRING,
-    TLOGICAL, TBYTE, TSHORT, TINT, TLONG, TFLOAT, TDOUBLE.  This
-    routine then calls one of the datatype specific keyword writing
+    TLOGICAL, TBYTE, TSHORT, TUSHORT, TINT, TLONG, TULONG, TFLOAT, TDOUBLE.
+    This routine then calls one of the datatype specific keyword writing
    routines described immediately below.
 \end{description}
 
 \begin{verbatim}
   int fits_write_key / ffpky
-      (fitsfile *fptr, int datatype, char *keyname, void *value,
+      (fitsfile *fptr, int datatype, char *keyname, DTYPE *value,
           char *comment, > int *status)
 \end{verbatim}
 
@@ -2201,13 +2335,14 @@ wild card searches.
 \item[6 ] Get a keyword value (with the appropriate datatype) and comment from the
     CHU. The datatype parameter specifies the datatype of the keyword value
     and can have one of the following symbolic constant values:  TSTRING,
-    TLOGICAL, TBYTE, TSHORT, TINT, TLONG, TFLOAT, TDOUBLE.  If a NULL comment
+    TLOGICAL, TBYTE, TSHORT, TUSHORT, TINT, TLONG, TULONG, TFLOAT, TDOUBLE.
+    If a NULL comment
    pointer is given on input, then the comment string will not be returned.
 \end{description}
 
 \begin{verbatim}
   int fits_read_key / ffgky
-      (fitsfile *fptr, int datatype, char *keyname, > void *value,
+      (fitsfile *fptr, int datatype, char *keyname, > DTYPE *value,
        char *comment, int *status)
 \end{verbatim}
 
@@ -2536,13 +2671,14 @@ working with large data arrays.
 \begin{description}
 \item[1 ] Put elements into the data array. The datatype parameter specifies
     the datatype of the array of values and can have one of the following
-   symbolic constant values: TBYTE, TSHORT, TINT, TLONG, TFLOAT, TDOUBLE.
+    symbolic constant values: TBYTE, TSHORT, TUSHORT, TINT, TLONG, TULONG,
+   TFLOAT, TDOUBLE.
 \end{description}
 
 \begin{verbatim}
   int fits_write_img / ffppr
       (fitsfile *fptr, int datatype, long firstelem, long nelements,
-       void *array, int *status);
+       DTYPE *array, int *status);
 \end{verbatim}
 
 \begin{description}
@@ -2551,7 +2687,8 @@ working with large data arrays.
 \end{description}
 
 \begin{verbatim}
-  int fits_write_img_[byt, sht, lng, int, flt, dbl] / ffppr[bijked]
+  int fits_write_img_[byt, sht, usht, lng, ulng, int, flt, dbl] /
+      ffppr[b,i,ui,j,uj,k,e,d]
       (fitsfile *fptr, long group, long firstelem, long nelements,
        DTYPE *array, > int *status);
 \end{verbatim}
@@ -2567,7 +2704,8 @@ working with large data arrays.
 \end{description}
 
 \begin{verbatim}
-  int fits_write_imgnull_[byt, sht, lng, int, flt, dbl] / ffppn[bijked]
+  int fits_write_imgnull_[byt, sht, usht, lng, ulng, int, flt, dbl] /
+      ffppn[b,i,ui,j,uj,k,e,d]
       (fitsfile *fptr, long group, long firstelem,
            long nelements, DTYPE *array, DTYPE nulval, > int *status);
 \end{verbatim}
@@ -2590,7 +2728,8 @@ working with large data arrays.
 \end{description}
 
 \begin{verbatim}
-  int fits_write_grppar_[byt, sht, int, lng, flt, dbl] / ffpgp[bijked]
+  int fits_write_grppar_[byt, sht, usht, int, lng, ulng, flt, dbl] /
+      ffpgp[b,i,ui,j,uj,k,e,d]
       (fitsfile *fptr, long group, long firstelem, long nelements,
        > DTYPE *array, int *status)
 \end{verbatim}
@@ -2600,7 +2739,8 @@ working with large data arrays.
 \end{description}
 
 \begin{verbatim}
-  int fits_write_2d_[byt, sht, lng, flt, dbl] / ffp2d[bijked]
+  int fits_write_2d_[byt, sht, usht, lng, ulng, flt, dbl] /
+      ffp2d[b,i,ui,j,uj,k,e,d]
       (fitsfile *fptr, long group, long dim1, long naxis1,
        long naxis2, DTYPE *array, > int *status)
 \end{verbatim}
@@ -2610,7 +2750,8 @@ working with large data arrays.
 \end{description}
 
 \begin{verbatim}
-  int its_write_3d_[byt, sht, lng, flt, dbl] / ffp3d[bijked]
+  int fits_write_3d_[byt, sht, usht, lng, ulng, flt, dbl] /
+      ffp3d[b,i,ui,j,uj,k,e,d]
       (fitsfile *fptr, long group, long dim1, long dim2,
        long naxis1, long naxis2, long naxis3, DTYPE *array, > int *status)
 \end{verbatim}
@@ -2620,7 +2761,8 @@ working with large data arrays.
 \end{description}
 
 \begin{verbatim}
-  int fits_write_subset_[byt, sht, lng, int, flt, dbl] / ffpss[bijked]
+  int fits_write_subset_[byt, sht, usht, lng, ulng, int, flt, dbl] /
+      ffpss[b,i,ui,j,uj,k,e,d]
       (fitsfile *fptr, long group, long naxis, long *naxes,
        long *fpixel, long *lpixel, DTYPE *array, > int *status)
 \end{verbatim}
@@ -2630,19 +2772,20 @@ working with large data arrays.
 
 
 \begin{description}
-\item[1 ] Get elements from the data array.  The datatype parameter specifies
-    the datatype of the array of values and can have one of the following
-    symbolic constant values: TBYTE, TSHORT, TINT, TLONG, TFLOAT, TDOUBLE.
-    Undefined array elements will be returned with a value = *nullval,
-    (note that this is the address to the null value, not the null value
-    itself) unless nulval = 0 in which case no checks for undefined pixels
-   will be performed.
+\item[1 ] Get elements from the data array.  The `datatype' parameter specifies
+    the datatype of the `nulval' parameter and of the `array' of values; it
+    can have one of the following symbolic constant values:  TBYTE, TSHORT,
+    TUSHORT, TINT, TLONG, TULONG, TFLOAT, TDOUBLE.  Undefined array
+    elements will be returned with a value = *nullval, (note that this
+    parameter gives the address of the null value, not the null value
+    itself) unless nulval = 0 or *nulval = 0, in which case no checks for
+   undefined pixels will be performed.
 \end{description}
 
 \begin{verbatim}
   int fits_read_img / ffgpv
       (fitsfile *fptr, int  datatype, long firstelem, long nelements,
-       void *nulval, > void *array, int *anynul, int *status)
+       DTYPE *nulval, > DTYPE *array, int *anynul, int *status)
 \end{verbatim}
 
 \begin{description}
@@ -2652,7 +2795,8 @@ working with large data arrays.
 \end{description}
 
 \begin{verbatim}
-  int fits_read_img_[byt, sht, lng, int, flt, dbl] / ffgpv[bijked]
+  int fits_read_img_[byt, sht, usht, lng, ulng, int, flt, dbl] /
+      ffgpv[b,i,ui,j,uj,k,e,d]
       (fitsfile *fptr, long group, long firstelem, long nelements,
        DTYPE nulval, > DTYPE *array, int *anynul, int *status)
 \end{verbatim}
@@ -2664,8 +2808,9 @@ working with large data arrays.
 \end{description}
 
 \begin{verbatim}
-  int  fits_read_imgnull_[byt, sht, lng, int, flt, dbl] / ffgpf[bijked]
-      (fitsfile *fptr, long group, long firstelem, long nelements,
+  int  fits_read_imgnull_[byt, sht, usht, lng, ulng, int, flt, dbl] /
+       ffgpf[b,i,ui,j,uj,k,e,d]
+       (fitsfile *fptr, long group, long firstelem, long nelements,
        > DTYPE *array, char *nularray, int *anynul, int *status)
 \end{verbatim}
 
@@ -2677,8 +2822,9 @@ working with large data arrays.
 \end{description}
 
 \begin{verbatim}
-  int  fits_read_grppar_[byt, sht, lng, int, flt, dbl] / ffggp[bijked]
-      (fitsfile *fptr, long group, long firstelem, long nelements,
+  int  fits_read_grppar_[byt, sht, usht, lng, ulng, int, flt, dbl] /
+       ffggp[b,i,ui,j,uj,k,e,d]
+       (fitsfile *fptr, long group, long firstelem, long nelements,
        > DTYPE *array, int *status)
 \end{verbatim}
 
@@ -2690,8 +2836,9 @@ working with large data arrays.
 \end{description}
 
 \begin{verbatim}
-  int  fits_read_2d_[byt, sht, lng, int, flt, dbl] / ffg2d[bijked]
-      (fitsfile *fptr, long group, DTYPE nulval, long dim1, long naxis1,
+  int  fits_read_2d_[byt, sht, usht, lng, ulng, int, flt, dbl] /
+       ffg2d[b,i,ui,j,uj,k,e,d]
+       (fitsfile *fptr, long group, DTYPE nulval, long dim1, long naxis1,
        long naxis2, > DTYPE *array, int *anynul, int *status)
 \end{verbatim}
 
@@ -2703,8 +2850,9 @@ working with large data arrays.
 \end{description}
 
 \begin{verbatim}
-  int  fits_read_3d_[byt, sht, lng, int, flt, dbl] / ffg3d[bijked]
-      (fitsfile *fptr, long group, DTYPE nulval, long dim1,
+  int  fits_read_3d_[byt, sht, usht, lng, ulng, int, flt, dbl] /
+       ffg3d[b,i,ui,j,uj,k,e,d]
+       (fitsfile *fptr, long group, DTYPE nulval, long dim1,
        long dim2, long naxis1, long naxis2, long naxis3,
        > DTYPE *array, int *anynul, int *status)
 \end{verbatim}
@@ -2718,8 +2866,9 @@ working with large data arrays.
 \end{description}
 
 \begin{verbatim}
-  int  fits_read_subset_[byt, sht, lng, int, flt, dbl] / ffgsv[bijked]
-      (fitsfile *fptr, int group, int naxis, long *naxes,
+  int  fits_read_subset_[byt, sht, usht, lng, ulng, int, flt, dbl] /
+       ffgsv[b,i,ui,j,uj,k,e,d]
+       (fitsfile *fptr, int group, int naxis, long *naxes,
        long *fpixels, long *lpixels, long *inc, DTYPE nulval,
        > DTYPE *array, int *anynul, int *status)
 \end{verbatim}
@@ -2731,8 +2880,9 @@ working with large data arrays.
 \end{description}
 
 \begin{verbatim}
-  int  fits_read_subsetnull_[byt, sht, lng, int, flt, dbl] / ffgsf[bijked]
-      (fitsfile *fptr, int group, int naxis, long *naxes,
+  int  fits_read_subsetnull_[byt, sht, usht, lng, ulng, int, flt, dbl] /
+       ffgsf[b,i,ui,j,uj,k,e,d]
+       (fitsfile *fptr, int group, int naxis, long *naxes,
        long *fpixels, long *lpixels, long *inc, > DTYPE *array,
        char *nularray, int *anynul, int *status)
 \end{verbatim}
@@ -2797,9 +2947,9 @@ unique withing the first 16 characters.
 \begin{description}
 \item[2 ] Get the datatype of a column in an ASCII or binary table.  This routine
     returns an integer code value corresponding to the datatype of the column.
-    (See the ffbnfm and ffasfm routines in the Utilities section of this document
-    for a list of the code values).  The negative of the code value is returned
-    if it is a variable length array column. The vector
+    (See the ffbnfm and ffasfm routines in the Utilities section of this
+    document for a list of the code values).  The negative of the code value is
+    returned if it is a variable length array column. The vector
     repeat count (which is alway 1 for ASCII table columns) is also returned.
     If the specified column has an ASCII character datatype (code = 16) then
     the width of a unit string in the column is also returned.  Note that
@@ -3004,16 +3154,23 @@ required) and not the number of table elements.
 
 \begin{description}
 \item[1 ] Put elements into an ASCII or binary table column (in the CDU).
+    The `datatype' parameter specifies the datatype of the `array' of
+    values and can have one of the following symbolic constant values:
+    TSTRING, TBYTE, TSHORT, TUSHORT, TINT, TLONG, TULONG, TFLOAT, or
+    TDOUBLE.  Binary tables also support the following additional
+   datatypes: TBIT, TLOGICAL, TCOMPLEX, and TDBLCOMPLEX.
 \end{description}
 
 \begin{verbatim}
   int fits_write_col / ffpcl
       (fitsfile *fptr, int datatype, int colnum, long firstrow,
-       long firstelem, long nelements, void *array, > int *status)
+       long firstelem, long nelements, DTYPE *array, > int *status)
 \end{verbatim}
 
 \begin{description}
 \item[2 ] Put elements into an ASCII or binary table column (in the CDU).
+    The datatype of the array is implied by the suffix of the
+   routine name.
 \end{description}
 
 \begin{verbatim}
@@ -3021,8 +3178,8 @@ required) and not the number of table elements.
       (fitsfile *fptr, int colnum, long firstrow, long firstelem,
        long nelements, char **array, > int *status)
 
-  int fits_write_col_[log, byt, sht, lng, int, flt, dbl, cmp, dblcmp] /
-      ffpcl[lbijkedcm]
+  int fits_write_col_[log, byt, sht, usht, lng, ulng, int, flt, dbl, cmp, dblcmp] /
+      ffpcl[l,b,i,ui,j,uj,k,e,d,c,m]
       (fitsfile *fptr, int colnum, long firstrow,
            long firstelem, long nelements, DTYPE *array, > int *status)
 \end{verbatim}
@@ -3040,7 +3197,8 @@ required) and not the number of table elements.
 \end{description}
 
 \begin{verbatim}
-  int fits_write_colnul_[byt, sht, lng, int, flt, dbl] / ffpcn[bijked]
+  int fits_write_colnul_[byt, sht, usht, lng, ulng, int, flt, dbl] /
+      ffpcn[b,i,ui,j,uj,k,e,d]
       (fitsfile *fptr, int colnum, long firstrow, long firstelem,
        long nelements, DTYPE *array, DTYPE nulval, > int *status)
 \end{verbatim}
@@ -3108,19 +3266,39 @@ required) and not the number of table elements.
 
 \subsection{ Read Column Data Routines \label{FFGCL}}
 
-Two sets of routines are provided to get the column data which differ in the way
-undefined pixels are handled.  The first set of routines (ffgcv)
-simply return an array of data elements in which undefined pixels are
-set equal to a value specified by the user in the 'nullval' parameter.
-An additional feature of these routines is that if the user sets
-nullval = 0, then no checks for undefined pixels will be performed,
-thus increasing the speed of the program.  The second set of routines
-(ffgcf) returns the data element array and in addition a logical array
-of flags which defines whether the corresponding data pixel is undefined.
+Two types of routines are provided to get the column data which differ
+in the way undefined pixels are handled.  The first set of routines
+(ffgcv) simply return an array of data elements in which undefined
+pixels are set equal to a value specified by the user in the 'nullval'
+parameter.  An additional feature of these routines is that if the user
+sets nullval = 0, then no checks for undefined pixels will be
+performed, thus increasing the speed of the program.  The second set of
+routines (ffgcf) returns the data element array and in addition a
+logical array of flags which defines whether the corresponding data
+pixel is undefined.
 
 
 \begin{description}
-\item[1 ] Get elements from an ASCII or binary table column (in the CDU).  These
+\item[1 ] Get elements from an ASCII or binary table column (in the CDU).  The
+    `datatype' parameter specifies the datatype of the `nulval' parameter
+    and of the `array' of values; it can have one of the following symbolic
+    constant values:  TSTRING, TBYTE, TSHORT, TUSHORT, TINT, TLONG, TULONG,
+    TFLOAT, or TDOUBLE.  Binary tables also support the following
+    additional datatypes: TBIT, TLOGICAL, TCOMPLEX, and TDBLCOMPLEX.
+    Undefined array elements will be returned with a value = *nullval,
+    (note that this parameter gives the address of the null value, not the
+    null value itself) unless nulval = 0 or *nulval = 0, in which case no
+   checks for undefined pixels will be performed.
+\end{description}
+
+\begin{verbatim}
+  int fits_read_col / ffgcv
+      (fitsfile *fptr, int datatype, int colnum, long firstrow, long firstelem,
+       long nelements, DTYPE *nulval, DTYPE *array, int *anynul, int *status)
+\end{verbatim}
+
+\begin{description}
+\item[2 ] Get elements from an ASCII or binary table column (in the CDU).  These
     routines return the values of the table column array elements.  Undefined
     array elements will be returned with a value = nulval, unless nulval = 0
     (or = ' ' for ffgcvs) in which case no checking for undefined values will
@@ -3131,10 +3309,6 @@ of flags which defines whether the corresponding data pixel is undefined.
 \end{description}
 
 \begin{verbatim}
-  int fits_read_col / ffgcv
-      (fitsfile *fptr, int datatype, int colnum, long firstrow, long firstelem,
-       long nelements, void *nulval, void *array, int *anynul, int *status)
-
   int fits_read_col_log / ffgcl
       (fitsfile *fptr, int colnum, long firstrow, long firstelem,
        long nelements, > char *array, int  *status)
@@ -3144,14 +3318,15 @@ of flags which defines whether the corresponding data pixel is undefined.
        long nelements, char *nulstr, > char **array, int *anynul,
        int *status)
 
-  int fits_read_col_[byt, sht, lng, int, flt, dbl, cmp, dblcmp] / ffgcv[bijkedcm]
+  int fits_read_col_[byt, sht, usht, lng, ulng, int, flt, dbl, cmp, dblcmp] /
+      ffgcv[b,i,ui,j,uj,k,e,d,c,m]
       (fitsfile *fptr, int colnum, long firstrow, long firstelem,
        long nelements, DTYPE nulval, > DTYPE *array, int *anynul,
        int *status)
 \end{verbatim}
 
 \begin{description}
-\item[2 ]  Get elements and null flags from an ASCII or binary table column (in the
+\item[3 ]  Get elements and null flags from an ASCII or binary table column (in the
     CHDU).  These routines return the values of the table column array elements.
     Any undefined array elements will have the corresponding nularray element
     set equal to TRUE.  The anynul parameter is set to true if any of the
@@ -3169,14 +3344,15 @@ of flags which defines whether the corresponding data pixel is undefined.
        long nelements, > char *array, char *nularray, int *anynul,
        int *status)
 
-  int fits_read_colnull_[byt, sht, lng, int, flt, dbl, cmp, dblcmp] / ffgcf[bijkedcm]
+  int fits_read_colnull_[byt, sht, usht, lng, ulng, int, flt, dbl, cmp, dblcmp] /
+      ffgcf[b,i,ui,j,uj,k,e,d,c,m]
       (fitsfile *fptr, int colnum, long firstrow,
        long firstelem, long nelements, > DTYPE *array,
        char *nularray, int *anynul, int *status)
 \end{verbatim}
 
 \begin{description}
-\item[3 ] Get an arbitrary data subsection from an N-dimensional array
+\item[4 ] Get an arbitrary data subsection from an N-dimensional array
     in a binary table vector column.  Undefined pixels
     in the array will be set equal to the value of 'nulval',
     unless nulval=0 in which case no testing for undefined pixels will
@@ -3188,14 +3364,15 @@ of flags which defines whether the corresponding data pixel is undefined.
 \end{description}
 
 \begin{verbatim}
-  int fits_read_subset_[byt, sht, lng, int, flt, dbl] / ffgsv[bijked]
+  int fits_read_subset_[byt, sht, usht, lng, ulng, int, flt, dbl] /
+      ffgsv[b,i,ui,j,uj,k,e,d]
       (fitsfile *fptr, int colnum, int naxis, long *naxes, long *fpixels,
        long *lpixels, long *inc, DTYPE nulval, > DTYPE *array, int *anynul,
        int *status)
 \end{verbatim}
 
 \begin{description}
-\item[4 ] Get an arbitrary data subsection from an N-dimensional array
+\item[5 ] Get an arbitrary data subsection from an N-dimensional array
     in a binary table vector column.  Any Undefined
     pixels in the array will have the corresponding 'nularray'
     element set equal to TRUE.  The first and last rows in the table
@@ -3207,14 +3384,15 @@ of flags which defines whether the corresponding data pixel is undefined.
 \end{description}
 
 \begin{verbatim}
-  int fits_read_subsetnull_[byt, sht, lng, int, flt, dbl] / ffgsf[bijked]
+  int fits_read_subsetnull_[byt, sht, usht, lng, ulng, int, flt, dbl] /
+      ffgsf[b,i,ui,j,uj,k,e,d]
       (fitsfile *fptr, int colnum, int naxis, long *naxes,
        long *fpixels, long *lpixels, long *inc, > DTYPE *array,
        char *nularray, int *anynul, int *status)
 \end{verbatim}
 
 \begin{description}
-\item[5 ] Get bit values from a byte ('B') or bit (`X`) table column (in the
+\item[6 ] Get bit values from a byte ('B') or bit (`X`) table column (in the
     CDU).  Larray is an array of logical values corresponding to the
     sequence of bits to be read.  If larray is true then the
     corresponding bit was set to 1, otherwise the bit was set to 0.
@@ -3234,7 +3412,7 @@ of flags which defines whether the corresponding data pixel is undefined.
 \end{verbatim}
 
 \begin{description}
-\item[6 ] Get the descriptor for a variable length column in a binary table.
+\item[7 ] Get the descriptor for a variable length column in a binary table.
     The descriptor consists of 2 integer parameters: the number of elements
    in the array and the starting offset relative to the start of the heap.
 \end{description}
@@ -3424,7 +3602,7 @@ The following utility routines may be useful for certain applications:
 \end{description}
 
 \begin{verbatim}
- float fits_get_version ffvers
+  float fits_get_version ffvers
        ( > float *version)
 \end{verbatim}
 
@@ -3567,23 +3745,11 @@ The following utility routines may be useful for certain applications:
 \item[14] Parse the 'TFORM' binary table column format string.
     This routine parses the input TFORM character string and returns the
     integer datatype code, the repeat count of the field, and, in the case
-    of character string fields, the length of the unit string.  The following
-   datatype codes are used:
+    of character string fields, the length of the unit string.  See Chapter
+   9 for the allowed values for the returned typecode parameter:
 \end{description}
 
 \begin{verbatim}
-                Datatype                typecode value
-                bit, X                   1
-                byte, B                 11
-                logical, L              14
-                ASCII character, A      16
-                short integer, I        21
-                integer, J              41
-                real, E                 42
-                double precision, D     82
-                complex, C              83
-                double complex, M      163
-
    int fits_binary_tform / ffbnfm
        (char *tform, > int *typecode, long *repeat, long *width,
         int *status)
@@ -3595,15 +3761,15 @@ The following utility routines may be useful for certain applications:
     string and returns the datatype code, the width of the column,
     and (if it is a floating point column) the number of decimal places
     to the right of the decimal point.  The returned datatype codes are
-    the same as for the binary table, listed above, with the following
+    the same as for the binary table, with the following
     additional rules:  integer columns that are between 1 and 4 characters
-    wide are defined to be short integers (code = 21).  Wider integer
-    columns are defined to be regular integers (code = 41).  Similarly,
+    wide are defined to be short integers (code = TSHORT).  Wider integer
+    columns are defined to be regular integers (code = TLONG).  Similarly,
     Fixed decimal point columns (with TFORM = 'Fw.d') are defined to
-    be single precision reals (code = 42) if w is between 1 and 7 characters
+    be single precision reals (code = TFLOAT) if w is between 1 and 7 characters
     wide, inclusive.  Wider 'F' columns will return a double precision
-    data code (= 82).  'Ew.d' format columns will have datacode = 42,
-   and 'Dw.d' format columns will have datacode = 82.
+    data code (= TDOUBLE).  'Ew.d' format columns will have datacode = TFLOAT,
+   and 'Dw.d' format columns will have datacode = TDOUBLE.
 \end{description}
 
 \begin{verbatim}
@@ -3802,7 +3968,7 @@ The following utility routines may be useful for certain applications:
   int ffpcom(fitsfile *fptr, char *comment, > int *status)
   int ffphis(fitsfile *fptr, char *history, > int *status)
   int ffpdat(fitsfile *fptr, > int *status)
-  int ffpky(fitsfile *fptr, int datatype, char *keyname, void *value,
+  int ffpky(fitsfile *fptr, int datatype, char *keyname, DTYPE *value,
           char *comment, > int *status)
   int ffpkys(fitsfile *fptr, char *keyname, char *value, char *comment,
              > int *status)
@@ -3844,7 +4010,7 @@ The following utility routines may be useful for certain applications:
              int nexc,  > char *card, int  *status)
   int ffgkey(fitsfile *fptr, char *keyname, > char *value, char *comment,
              int *status)
-  int ffgky(fitsfile *fptr, int datatype, char *keyname, > void *value,
+  int ffgky(fitsfile *fptr, int datatype, char *keyname, > DTYPE *value,
        char *comment, int *status)
   int ffgkys(fitsfile *fptr, char *keyname, > char *value, char *comment,
              int *status);
@@ -3904,45 +4070,45 @@ The following utility routines may be useful for certain applications:
 
 \begin{verbatim}
   int ffppr(fitsfile *fptr, int datatype, long firstelem, long nelements,
-           void *array, int *status);
-  int ffppr[bijked](fitsfile *fptr, long group, long firstelem,
+           DTYPE *array, int *status);
+  int ffppr[b,i,ui,j,uj,k,e,d](fitsfile *fptr, long group, long firstelem,
            long nelements, DTYPE *array, > int *status);
-  int ffppn[bijked](fitsfile *fptr, long group, long firstelem,
+  int ffppn[b,i,ui,j,uj,k,e,d](fitsfile *fptr, long group, long firstelem,
            long nelements, DTYPE *array, DTYPE nulval, > int *status);
-  int ffpgp[bijked](fitsfile *fptr, long group, long firstelem, long nelements,
-           > DTYPE *array, int *status)
+  int ffpgp[b,i,ui,j,uj,k,e,d](fitsfile *fptr, long group, long firstelem,
+           long nelements, > DTYPE *array, int *status)
   int ffppru(fitsfile *fptr, long group, long firstelem,
            long nelements, > int *status)
-  int ffp2d[bijked](fitsfile *fptr, long group, long dim1, long naxis1,
+  int ffp2d[b,i,ui,j,uj,k,e,d](fitsfile *fptr, long group, long dim1, long naxis1,
            long naxis2, DTYPE *array, > int *status)
-  int ffp3d[bijked](fitsfile *fptr, long group, long dim1, long dim2,
+  int ffp3d[b,i,ui,j,uj,k,e,d](fitsfile *fptr, long group, long dim1, long dim2,
            long naxis1, long naxis2, long naxis3, DTYPE *array, > int *status)
-  int ffpss[bijked](fitsfile *fptr, long group, long naxis, long *naxes,
+  int ffpss[b,i,ui,j,uj,k,e,d](fitsfile *fptr, long group, long naxis, long *naxes,
            long *fpixel, long *lpixel, DTYPE *array, > int *status)
 \end{verbatim}
  Read Image Data Routines: page~\pageref{FFGPV}
 
 \begin{verbatim}
   int ffgpv(fitsfile *fptr, int  datatype, long firstelem, long nelements,
-           void *nulval, > void *array, int *anynul, int *status)
-  int ffgpv[bijked](fitsfile *fptr, long group, long firstelem, long nelements,
-           DTYPE nulval, > DTYPE *array, int *anynul, int *status)
-  int ffgpf[bijked](fitsfile *fptr, long group, long firstelem, long nelements,
-          > DTYPE *array, char *nularray, int *anynul, int *status)
-  int ffggp[bijked](fitsfile *fptr, long group, long firstelem, long nelements,
-          > DTYPE *array, int *status)
-  int ffg2d[bijked](fitsfile *fptr, long group, DTYPE nulval, long dim1,
+           DTYPE *nulval, > DTYPE *array, int *anynul, int *status)
+  int ffgpv[b,i,ui,j,uj,k,e,d](fitsfile *fptr, long group, long firstelem,
+           long nelements, DTYPE nulval, > DTYPE *array, int *anynul, int *status)
+  int ffgpf[b,i,ui,j,uj,k,e,d](fitsfile *fptr, long group, long firstelem,
+           long nelements, > DTYPE *array, char *nularray, int *anynul, int *status)
+  int ffggp[b,i,ui,j,uj,k,e,d](fitsfile *fptr, long group, long firstelem,
+           long nelements, > DTYPE *array, int *status)
+  int ffg2d[b,i,ui,j,uj,k,e,d](fitsfile *fptr, long group, DTYPE nulval, long dim1,
            long naxis1, long naxis2, > DTYPE *array,
            int *anynul, int *status)
-  int ffg3d[bijked](fitsfile *fptr, long group, DTYPE nulval, long dim1,
+  int ffg3d[b,i,ui,j,uj,k,e,d](fitsfile *fptr, long group, DTYPE nulval, long dim1,
            long dim2, long naxis1, long naxis2, long naxis3,
            > DTYPE *array, int *anynul, int *status)
-  int ffgsv[bijked](fitsfile *fptr, int group, int naxis, long *naxes,
-            long *fpixels, long *lpixels, long *inc, DTYPE nulval,
-            > DTYPE *array, int *anynul, int *status)
-  int ffgsf[bijked](fitsfile *fptr, int group, int naxis, long *naxes,
-            long *fpixels, long *lpixels, long *inc, > DTYPE *array,
-            char *nularray, int *anynul, int *status)
+  int ffgsv[b,i,ui,j,uj,k,e,d](fitsfile *fptr, int group, int naxis, long *naxes,
+           long *fpixels, long *lpixels, long *inc, DTYPE nulval,
+           > DTYPE *array, int *anynul, int *status)
+  int ffgsf[b,i,ui,j,uj,k,e,d](fitsfile *fptr, int group, int naxis, long *naxes,
+           long *fpixels, long *lpixels, long *inc, > DTYPE *array,
+           char *nularray, int *anynul, int *status)
 \end{verbatim}
  Table Column Information Routines: page~\pageref{FFGCNO}
 
@@ -3991,9 +4157,9 @@ The following utility routines may be useful for certain applications:
            long firstelem, long nelements, char **array, > int *status)
   int ffpcls(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelements, char **array, > int *status)
-  int ffpcl[lbijkedcm](fitsfile *fptr, int colnum, long firstrow,
+  int ffpcl[lb,i,ui,j,uj,k,e,d,c,m](fitsfile *fptr, int colnum, long firstrow,
            long firstelem, long nelements, DTYPE *array, > int *status)
-  int ffpcn[bijked](fitsfile *fptr, int colnum, long firstrow,
+  int ffpcn[b,i,ui,j,uj,k,e,d](fitsfile *fptr, int colnum, long firstrow,
            long firstelem, long nelements, DTYPE *array, DTYPE nulval,
            > int *status)
   int ffpclx(fitsfile *fptr, int colnum, long firstrow, long firstbit,
@@ -4008,14 +4174,14 @@ The following utility routines may be useful for certain applications:
 
 \begin{verbatim}
   int ffgcv(fitsfile *fptr, int datatype, int colnum, long firstrow,
-           long firstelem, long nelements, void *nulval, void *array,
+           long firstelem, long nelements, DTYPE *nulval, DTYPE *array,
            int *anynul, int *status)
   int ffgcl (fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelements, > char *array, int  *status)
   int ffgcvs(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelements, char *nulstr, > char **array, int *anynul,
            int *status)
-  int ffgcv[bijkedcm](fitsfile *fptr, int colnum, long firstrow,
+  int ffgcv[b,i,ui,j,uj,k,e,d,c,m](fitsfile *fptr, int colnum, long firstrow,
            long firstelem, long nelements, DTYPE nulval, > DTYPE *array,
            int *anynul, int *status)
   int ffgcfs(fitsfile *fptr, int colnum, long firstrow, long firstelem,
@@ -4024,13 +4190,13 @@ The following utility routines may be useful for certain applications:
   int ffgcfl(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelements, > char *array, char *nularray, int *anynul,
            int *status)
-  int ffgcf[bijkedcm](fitsfile *fptr, int colnum, long firstrow,
+  int ffgcf[b,i,ui,j,uj,k,e,d,c,m](fitsfile *fptr, int colnum, long firstrow,
            long firstelem, long nelements, > DTYPE *array,
            char *nularray, int *anynul, int *status)
-  int ffgsv[bijked](fitsfile *fptr, int colnum, int naxis, long *naxes,
+  int ffgsv[b,i,ui,j,uj,k,e,d](fitsfile *fptr, int colnum, int naxis, long *naxes,
             long *fpixels, long *lpixels, long *inc, DTYPE nulval,
             > DTYPE *array, int *anynul, int *status)
-  int ffgsf[bijked](fitsfile *fptr, int colnum, int naxis, long *naxes,
+  int ffgsf[b,i,ui,j,uj,k,e,d](fitsfile *fptr, int colnum, int naxis, long *naxes,
             long *fpixels, long *lpixels, long *inc, > DTYPE *array,
             char *nularray, int *anynul, int *status)
   int ffgcx(fitsfile *fptr, int colnum, long firstrow, long firstbit,
@@ -4098,8 +4264,17 @@ The following utility routines may be useful for certain applications:
 anynul   - set to TRUE (=1) if any returned values are undefined, else FALSE
 array    - array of numerical data values to read or write
 ascii    - encoded checksum string
-bitpix   - bits per pixel: 8 (unsigned char), 16 (short int),
-           32 (long int), -32 (float), or -64 (double)
+bitpix   - bits per pixel. The following symbolic mnemonics are predefined:
+               BYTE_IMG   =   8 (unsigned char)
+               SHORT_IMG  =  16 (signed short integer)
+               LONG_IMG   =  32 (signed long integer)
+               FLOAT_IMG  = -32 (float)
+               DOUBLE_IMG = -64 (double).
+           Two additional values, USHORT_IMG and ULONG_IMG are also available
+           for creating unsigned integer images.  These are equivalent to
+           creating a signed integer image with BZERO offset keyword values
+           of 32768 or 2147483648, respectively, which is the convention that
+           FITS uses to store unsigned integers.
 card     - header record to be read or written (80 char max, null-terminated)
 casesen  - TRUE (=1) to force case-sensitive string matching, else FALSE (=0)
 chduaddr - starting address (in bytes) of the CHDU
@@ -4113,8 +4288,8 @@ dataok   - was the data unit verification successful (=1) or
            not (= -1).  Equals zero if the DATASUM keyword is not present.
 datasum  - 32-bit 1's complement checksum for the data unit
 datatype - specifies the datatype of the value.  Allowed value are:
-           TSTRING, TLOGICAL, TBIT, TBYTE, TSHORT, TINT, TLONG, TFLOAT, TDOUBLE
-           TCOMPLEX, and TDBLCOMPLEX
+           TSTRING, TLOGICAL, TBIT, TBYTE, TSHORT, TUSHORT, TINT, TLONG, TULONG,
+           TFLOAT, TDOUBLE, TCOMPLEX, and TDBLCOMPLEX
 decimals - number of decimal places to be displayed
 dim1     - declared size of the first dimension of the image or cube array
 dim2     - declared size of the second dimension of the data cube array
@@ -4198,27 +4373,28 @@ templt   - template string used in comparison (null-terminated)
 tfields  - number of fields (columns) in the table
 tform    - format of the column (null-terminated); allowed values are:
            ASCII tables:  Iw, Aw, Fww.dd, Eww.dd, or Dww.dd
-           binary tables: rL, rX, rB, rI, rJ, rA, rAw, rE, rD, rC, rM
-           where 'w'=width of the field, 'd'=no. of decimals, 'r'=repeat count
+           Binary tables: rL, rX, rB, rI, rJ, rA, rAw, rE, rD, rC, rM
+           where 'w'=width of the field, 'd'=no. of decimals, 'r'=repeat count.
+           When creating a binary table, 2 addition tform values are allowed:
+           rU and rV for unsigned 16-bit and unsigned 32-bit integer, respectively.
 theap    - zero indexed byte offset of starting address of the heap
            relative to the beginning of the binary table data
 ttype    - label or name for table column (null-terminated)
 tunit    - physical unit for table column (null-terminated)
 typechar - symbolic code of the table column datatype
 typecode - datatype code of the table column.  The negative of
-           the value indicated a variable length array column.
-                Datatype             typecode
-                bit, X                   1
-                byte, B                 11
-                logical, L              14
-                ASCII character, A      16
-                short integer, I        21
-                integer, J              41
-                real, E                 42
-                double precision, D     82
-                complex, C              83
-                double complex, M      163
-
+           the value indicates a variable length array column.
+                Datatype             typecode    Mnemonic
+                bit, X                   1        TBIT
+                byte, B                 11        TBYTE
+                logical, L              14        TLOGICAL
+                ASCII character, A      16        TSTRING
+                short integer, I        21        TSHORT
+                integer, J              41        TLONG
+                real, E                 42        TFLOAT
+                double precision, D     82        TDOUBLE
+                complex, C              83        TCOMPLEX
+                double complex, M      163        TDBLCOMPLEX
 value    - the keyword value string (70 char max, null-terminated)
 version  - current version number of the CFITSIO library
 width    - width of the character string field
@@ -4257,6 +4433,7 @@ improve the readability of their code.
  FILE_NOT_CLOSED   110    could not close the file
  ARRAY_TOO_BIG     111    array dimensions exceed internal limit
  READONLY_FILE     112    Cannot write to readonly file
+
  HEADER_NOT_EMPTY  201    header already contains keywords
  KEY_NO_EXIST      202    keyword not found in header
  KEY_OUT_BOUNDS    203    keyword record number is out of bounds
@@ -4317,6 +4494,7 @@ improve the readability of their code.
  BAD_PIX_NUM       321    first pixel number greater than last pixel
  ZERO_SCALE        322    illegal BSCALE or TSCALn keyword = 0
  NEG_AXIS          323    illegal axis length < 1
+
  BAD_I2C           401    bad int to formatted string conversion
  BAD_F2C           402    bad float to formatted string conversion
  BAD_INTKEY        403    can't interprete keyword value as integer
@@ -4329,6 +4507,7 @@ improve the readability of their code.
  BAD_DATATYPE      410    illegal datatype code value
  BAD_DECIM         411    bad number of decimal places specified
  NUM_OVERFLOW      412    overflow during datatype conversion
+
  ANGLE_TOO_BIG     501    celestial angle too large for projection
  BAD_WCS_VAL       502    bad celestial coordinate or pixel value
  WCS_ERROR         503    error in celestial coordinate calculation

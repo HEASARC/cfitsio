@@ -53,6 +53,16 @@ int ffgpv(  fitsfile *fptr,   /* I - FITS file pointer                       */
         ffgclb(fptr, 2, row, firstelem, nelem, 1, 1, *(unsigned char *) nulval,
               (unsigned char *) array, &cdummy, anynul, status);
     }
+    else if (datatype == TUSHORT)
+    {
+      if (nulval == 0)
+        ffgclui(fptr, 2, row, firstelem, nelem, 1, 1, 0,
+               (unsigned short *) array, &cdummy, anynul, status);
+      else
+        ffgclui(fptr, 2, row, firstelem, nelem, 1, 1,
+               *(unsigned short *) nulval,
+               (unsigned short *) array, &cdummy, anynul, status);
+    }
     else if (datatype == TSHORT)
     {
       if (nulval == 0)
@@ -70,6 +80,15 @@ int ffgpv(  fitsfile *fptr,   /* I - FITS file pointer                       */
       else
         ffgclk(fptr, 2, row, firstelem, nelem, 1, 1, *(int *) nulval,
               (int *) array, &cdummy, anynul, status);
+    }
+    else if (datatype == TULONG)
+    {
+      if (nulval == 0)
+        ffgcluj(fptr, 2, row, firstelem, nelem, 1, 1, 0,
+              (unsigned long *) array, &cdummy, anynul, status);
+      else
+        ffgcluj(fptr, 2, row, firstelem, nelem, 1, 1, *(unsigned long *) nulval,
+              (unsigned long *) array, &cdummy, anynul, status);
     }
     else if (datatype == TLONG)
     {
@@ -142,6 +161,16 @@ int ffgcv(  fitsfile *fptr,   /* I - FITS file pointer                       */
        ffgclb(fptr, colnum, firstrow, firstelem, nelem, 1, 1, *(unsigned char *)
               nulval, (unsigned char *) array, cdummy, anynul, status);
     }
+    else if (datatype == TUSHORT)
+    {
+      if (nulval == 0)
+        ffgclui(fptr, colnum, firstrow, firstelem, nelem, 1, 1, 0,
+               (unsigned short *) array, cdummy, anynul, status);
+      else
+        ffgclui(fptr, colnum, firstrow, firstelem, nelem, 1, 1,
+               *(unsigned short *) nulval,
+               (unsigned short *) array, cdummy, anynul, status);
+    }
     else if (datatype == TSHORT)
     {
       if (nulval == 0)
@@ -159,6 +188,16 @@ int ffgcv(  fitsfile *fptr,   /* I - FITS file pointer                       */
       else
          ffgclk(fptr, colnum, firstrow, firstelem, nelem, 1, 1, *(int *)
             nulval, (int *) array, cdummy, anynul, status);
+    }
+    else if (datatype == TULONG)
+    {
+      if (nulval == 0)
+        ffgcluj(fptr, colnum, firstrow, firstelem, nelem, 1, 1, 0,
+               (unsigned long *) array, cdummy, anynul, status);
+      else
+        ffgcluj(fptr, colnum, firstrow, firstelem, nelem, 1, 1,
+               *(unsigned long *) nulval, 
+               (unsigned long *) array, cdummy, anynul, status);
     }
     else if (datatype == TLONG)
     {
