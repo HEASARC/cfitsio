@@ -124,7 +124,7 @@ C     library routines.
       call ftcmsg
       status = 0
 
-      filename = 'testprog.fft'
+      filename = 'testf77.fit'
 
 C delete previous version of the file, if it exists 
 

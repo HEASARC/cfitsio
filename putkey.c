@@ -202,19 +202,19 @@ int ffpky( fitsfile *fptr,     /* I - FITS file pointer        */
     }
     else if (datatype == TFLOAT)
     {
-        ffpkye(fptr, keyname, *(float *) value, 6, comm, status);
+        ffpkye(fptr, keyname, *(float *) value, -7, comm, status);
     }
     else if (datatype == TDOUBLE)
     {
-        ffpkyd(fptr, keyname, *(double *) value, 14, comm, status);
+        ffpkyd(fptr, keyname, *(double *) value, -15, comm, status);
     }
     else if (datatype == TCOMPLEX)
     {
-        ffpkyc(fptr, keyname, (float *) value, 6, comm, status);
+        ffpkyc(fptr, keyname, (float *) value, -7, comm, status);
     }
     else if (datatype == TDBLCOMPLEX)
     {
-        ffpkym(fptr, keyname, (double *) value, 14, comm, status);
+        ffpkym(fptr, keyname, (double *) value, -15, comm, status);
     }
     else
         *status = BAD_DATATYPE;
@@ -1878,21 +1878,27 @@ int ffr2e(float fval,  /* I - value to be converted to a string */
   convert float value to a null-terminated exponential format string
 */
 {
+
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
     cval[0] = '\0';
 
     if (decim < 0)
-    {
-        ffpmsg("Error in ffr2e:  no. of decimal places < 0");
-        return(*status = BAD_DECIM);
+    {   /* use G format if decim is negative */
+        if ( sprintf(cval, "%.*G", -decim, fval) < 0)
+        {
+            ffpmsg("Error in ffr2e converting float to string");
+            *status = BAD_F2C;
+        }
     }
-
-    if (sprintf(cval, "%.*E", decim, fval) < 0)
+    else
     {
-        ffpmsg("Error in ffr2e converting float to string");
-        *status = BAD_F2C;
+        if ( sprintf(cval, "%.*E", decim, fval) < 0)
+        {
+            ffpmsg("Error in ffr2e converting float to string");
+            *status = BAD_F2C;
+        }
     }
 
     /* test if output string is 'NaN', 'INDEF', or 'INF' */
@@ -1901,6 +1907,10 @@ int ffr2e(float fval,  /* I - value to be converted to a string */
         ffpmsg("Error in ffr2e: float value is a NaN or INDEF");
         *status = BAD_F2C;
     }
+
+    /* add decimal point if necessary to distinquish from integer */
+    if ( !strchr(cval, '.') && !strchr(cval,'E') )
+        strcat(cval, ".");
 
     return(*status);
 }
@@ -1954,15 +1964,20 @@ int ffd2e(double dval,  /* I - value to be converted to a string */
     cval[0] = '\0';
 
     if (decim < 0)
-    {
-        ffpmsg("Error in ffd2e:  no. of decimal places < 0");
-        return(*status = BAD_DECIM);
+    {   /* use G format if decim is negative */
+        if ( sprintf(cval, "%.*G", -decim, dval) < 0)
+        {
+            ffpmsg("Error in ffd2e converting float to string");
+            *status = BAD_F2C;
+        }
     }
-
-    if (sprintf(cval, "%.*E", decim, dval) < 0)
+    else
     {
-        ffpmsg("Error in ffd2e converting double to string");
-        *status = BAD_F2C;
+        if ( sprintf(cval, "%.*E", decim, dval) < 0)
+        {
+            ffpmsg("Error in ffd2e converting float to string");
+            *status = BAD_F2C;
+        }
     }
 
     /* test if output string is 'NaN', 'INDEF', or 'INF' */
@@ -1971,6 +1986,10 @@ int ffd2e(double dval,  /* I - value to be converted to a string */
         ffpmsg("Error in ffd2e: double value is a NaN or INDEF");
         *status = BAD_F2C;
     }
+
+    /* add decimal point if necessary to distinquish from integer */
+    if ( !strchr(cval, '.') && !strchr(cval,'E') )
+        strcat(cval, ".");
 
     return(*status);
 }
