@@ -22,7 +22,7 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.006;   /*  beta I/O driver release */
+      *version = 2.007;   /*  beta I/O driver release */
 
  /*   *version = 1.40;    6 Feb 1998 */
  /*   *version = 1.33;   16 Dec 1997 (internal release only) */
@@ -755,7 +755,7 @@ int ffkeyn(char *keyroot,   /* I - root string for keyword name */
     keyname[0] = '\0';            /* initialize output name to null */
     rootlen = strlen(keyroot);
 
-    if (rootlen == 0 || rootlen > 7 || value < 1 )
+    if (rootlen == 0 || rootlen > 7 || value < 0 )
        return(*status = 206);
 
     sprintf(suffix, "%d", value); /* construct keyword suffix */
@@ -782,7 +782,7 @@ int ffnkey(int value,       /* I - index number to be appended to root name */
     keyname[0] = '\0';            /* initialize output name to null */
     rootlen = strlen(keyroot);
 
-    if (rootlen == 0 || rootlen > 7 || value < 1 )
+    if (rootlen == 0 || rootlen > 7 || value < 0 )
        return(*status = 206);
 
     sprintf(keyname, "%d", value); /* construct keyword prefix */

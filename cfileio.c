@@ -347,6 +347,20 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
                   /* the same extension is specified */
 
               {
+                  if (mode == READWRITE && ((*fptr)->Fptr)->writemode == READONLY)
+                  {
+                    /*
+                      cannot assume that a file previously opened with READONLY
+                      can now be written to (e.g., files on CDROM, or over the
+                      the network, or STDIN), so return with an error.
+                    */
+
+                    ffpmsg(
+                   "cannot reopen file READWRITE when previously opened READONLY");
+                    ffpmsg(url);
+                    return(*status = FILE_NOT_OPENED);
+                  }
+
                   *fptr = (fitsfile *) calloc(1, sizeof(fitsfile));
 
                   if (!(*fptr))
@@ -1533,7 +1547,7 @@ int ffiurl(char *url,
             break;
     }
 
-    if (ii != 0 && (jj - ii) < 5)  /* limit extension numbers to 4 digits */
+    if (ii > 0 && (jj - ii) < 5)  /* limit extension numbers to 4 digits */
     {
         infilelen = ii;
         ii++;

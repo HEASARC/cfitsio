@@ -420,4 +420,23 @@
 #define fits_read_tbl_coord ffgtcs
 #define fits_pix_to_world ffwldp
 #define fits_world_to_pix ffxypx
+
+#define fits_create_group       ffgtcr 
+#define fits_insert_group       ffgtis 
+#define fits_change_group       ffgtch 
+#define fits_remove_group       ffgtrm 
+#define fits_copy_group         ffgtcp 
+#define fits_merge_groups       ffgtmg 
+#define fits_compact_group      ffgtcm 
+#define fits_verify_group       ffgtvf 
+#define fits_open_group         ffgtop 
+#define fits_add_group_member   ffgtam 
+#define fits_get_num_members    ffgtnm 
+
+#define fits_get_num_groups     ffgmng 
+#define fits_open_member        ffgmop 
+#define fits_copy_member        ffgmcp 
+#define fits_transfer_member    ffgmtf 
+#define fits_remove_member      ffgmrm
+
 #endif

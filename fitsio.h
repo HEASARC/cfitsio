@@ -235,6 +235,16 @@ typedef struct  /* structure for the iterator function column information */
 #define ZERO_SCALE        322  /* illegal BSCALE or TSCALn keyword = 0 */
 #define NEG_AXIS          323  /* illegal axis length < 1 */
  
+#define NOT_GROUP_TABLE         340
+#define HDU_ALREADY_MEMBER      341
+#define MEMBER_NOT_FOUND        342
+#define GROUP_NOT_FOUND         343
+#define BAD_GROUP_ID            344
+#define TOO_MANY_HDUS_TRACKED   345
+#define HDU_ALREADY_TRACKED     346
+#define BAD_OPTION              347
+#define IDENTICAL_POINTERS      348
+
 #define BAD_I2C           401  /* bad int to formatted string conversion */
 #define BAD_F2C           402  /* bad float to formatted string conversion */
 #define BAD_INTKEY        403  /* can't interprete keyword value as integer */
@@ -1112,6 +1122,27 @@ int fits_calc_rows(   fitsfile *fptr, int datatype, char *expr,
 int fits_calc_col(    fitsfile *infptr, char *expr,
 		      fitsfile *outfptr, char *colname,
 		      int *status );
+
+/*--------------------- grouping routines ------------------*/
+
+int ffgtcr(fitsfile *fptr, char *grpname, int grouptype, int *status);
+int ffgtis(fitsfile *fptr, char *grpname, int grouptype, int *status);
+int ffgtch(fitsfile *gfptr, int grouptype, int *status);
+int ffgtrm(fitsfile *gfptr, int rmopt, int *status);
+int ffgtcp(fitsfile *infptr, fitsfile *outfptr, int cpopt, int *status);
+int ffgtmg(fitsfile *infptr, fitsfile *outfptr, int mgopt, int *status);
+int ffgtcm(fitsfile *gfptr, int cmopt, int *status);
+int ffgtvf(fitsfile *gfptr, long *firstfailed, int *status);
+int ffgtop(fitsfile *mfptr,int group,fitsfile **gfptr,int *status);
+int ffgtam(fitsfile *gfptr, fitsfile *mfptr, int hdupos, int *status);
+int ffgtnm(fitsfile *gfptr, long *nmembers, int *status);
+int ffgmng(fitsfile *mfptr, long *nmembers, int *status);
+int ffgmop(fitsfile *gfptr, long member, fitsfile **mfptr, int *status);
+int ffgmcp(fitsfile *gfptr, fitsfile *mfptr, long member, int cpopt, 
+	   int *status);
+int ffgmtf(fitsfile *infptr, fitsfile *outfptr,	long member, int tfopt,	       
+	   int *status);
+int ffgmrm(fitsfile *fptr, long member, int rmopt, int *status);
 
 #ifdef __cplusplus
 }
