@@ -4018,6 +4018,9 @@ int ffimport_file( char *filename,   /* Text file to read                   */
 
    while( fgets(line,256,aFile)!=NULL ) {
       lineLen = strlen(line);
+
+      if (lineLen > 1 && line[0] == '/' && line[1] == '/')
+          continue;       /* skip comment lines begging with // */
       
       if( line[lineLen-1]=='\n' ) line[--lineLen] = '\0';
 
