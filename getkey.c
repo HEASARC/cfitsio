@@ -395,7 +395,7 @@ int ffgcrd( fitsfile *fptr,     /* I - FITS file pointer        */
                     return(*status); /* found a matching keyword */
                 }
             }
-            else if (strncmp(keyname, card, 8) == 0)
+            else if (FSTRNCMP(keyname, card, 8) == 0)
                     return(*status);  /* found the matching keyword */
         }
 
@@ -507,8 +507,8 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer         */
     }
     else
     {
-      /* allocate space, plus 1 for null */
-      *value = (char *) malloc(strlen(valstring)+1);
+      /* allocate space,  plus 1 for null */
+      *value = (char *) malloc(strlen(valstring) + 1);
 
       ffc2s(valstring, *value, status);   /* convert string to value */
       len = strlen(*value);

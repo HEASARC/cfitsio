@@ -32,17 +32,21 @@ int ffclos(fitsfile *fptr,      /* I - FITS file pointer */
     /* if null pointer, then file is not opened, so just return */
     if (!fptr)
         return(*status);
+    else if (fptr->bufftype == -999)   /* check for magic value; works */
+        return(*status = BAD_FILEPTR); /* if O/S has not reused the memory */
 
     ffchdu(fptr, status);           /* close and flush the current HDU */
     ffflsh(fptr, TRUE, status);     /* flush and disassociate IO buffers */
 
-    ffclosex(fptr, 1, &tstatus);  /* close file */
+    ffclosex(fptr, 1, &tstatus);    /* close file */
 
     if (*status <= 0 && tstatus > 0)
         *status = FILE_NOT_CLOSED;  /* report error if no previous error */
 
     free(fptr->filename);       /* free memory for the filename */
     fptr->filename = 0;
+
+    fptr->bufftype = -999;      /* magic value to indicate invalid fptr */
     free(fptr);                 /* free memory for the FITS file structure */
 
     return(*status);

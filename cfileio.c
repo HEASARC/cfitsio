@@ -494,7 +494,7 @@ int fftplt(fitsfile **fptr,      /* O - FITS file pointer                   */
         ffclos(tptr, status);       /* close the template file */
     }
 
-    if (*status = END_OF_FILE)
+    if (*status == END_OF_FILE)
     {
        ffxmsg(-2, card);  /* clear the end of file error message */
        *status = 0;              /* expected error condition */
@@ -913,7 +913,7 @@ int ffisfilecompressed(char *filename, /* I - FITS file name          */
 
         fseek(*diskfile, 0, 2);            /* move to end of file */
         fseek(*diskfile, -4L, 1);          /* move back 4 bytes */
-        fread(buffer, 1, 4L, *diskfile);   /* read 4 bytes
+        fread(buffer, 1, 4L, *diskfile);   /* read 4 bytes */
 
         /* have to worry about integer byte order */
 	*finalsize  = buffer[0];
@@ -926,7 +926,7 @@ int ffisfilecompressed(char *filename, /* I - FITS file name          */
         /* the uncompressed file size is give at byte 22 the file */
 
         fseek(*diskfile, 22L, 0);            /* move to byte 22 */
-        fread(buffer, 1, 4L, *diskfile);   /* read 4 bytes
+        fread(buffer, 1, 4L, *diskfile);   /* read 4 bytes */
 
         /* have to worry about integer byte order */
 	*finalsize  = buffer[0];
@@ -1003,12 +1003,14 @@ int ffclosefile(char *filename, /* I - FITS file pointer                   */
   If keep = 0, then the file will also be deleted from disk.
 */
 {
+    if (diskfile != NULL)
+    {
       if ( fclose(diskfile) )   /* close the disk file */
         *status = 1;
 
       if (!keep)
         remove(filename);       /* delete the file */
-
+    }
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

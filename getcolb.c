@@ -272,7 +272,7 @@ int ffgsvb(fitsfile *fptr, /* I - FITS file pointer                         */
     {
       if (trc[ii] < blc[ii])
       {
-        sprintf(msg, "ffgsvb: illegal range specified for axis %d", ii + 1);
+        sprintf(msg, "ffgsvb: illegal range specified for axis %ld", ii + 1);
         ffpmsg(msg);
         return(*status = BAD_PIX_NUM);
       }
@@ -415,7 +415,7 @@ int ffgsfb(fitsfile *fptr, /* I - FITS file pointer                         */
     {
       if (trc[ii] < blc[ii])
       {
-        sprintf(msg, "ffgsvb: illegal range specified for axis %d", ii + 1);
+        sprintf(msg, "ffgsvb: illegal range specified for axis %ld", ii + 1);
         ffpmsg(msg);
         return(*status = BAD_PIX_NUM);
       }

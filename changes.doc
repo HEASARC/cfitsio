@@ -1,6 +1,22 @@
              Log of Changes Made to CFITSIO
 
 
+Version 1.41 - 2 March 1998 (for the FTOOLS release)
+
+   - initialized the dummy variable in ffgcfe and ffgcfd which
+     was causing crashes under OSF in some cases.
+
+   - added check to ffclose to check the validity of the fitsfile
+     pointer before closing it.  This should prevent program crashes
+     when someone tries to close the same file more than once.
+
+   - replaced calls to strcmp and strncmp with macros FSTRCMP and
+     FSTRNCMP in a few places to improve performance when reading
+     header keywords (suggested by Mike Noble)
+
+   - increased the length of the allocated string ffgkls by 2
+     to support the case of reading a numeric keyword as a string
+     which doesn't have the enclosing quote characters.
 
 Version 1.4 - 6 Feb 1998 
 

@@ -798,7 +798,7 @@ int ffiter(int n_cols,
           }
           else
           {
-              col[jj].null.charnull = 255;   /* use 255 as the null value */
+              col[jj].null.charnull = (char)255; /* use 255 as null value */
           }
           break;
 

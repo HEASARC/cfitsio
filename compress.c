@@ -275,7 +275,7 @@ local ulg updcrc(s, n)
 {
     register ulg c;         /* temporary variable */
 
-    static ulg crc = (ulg)0xffffffffL; /* shift register contents */
+    static ulg crc = (ulg)0xffffffffUL; /* shift register contents */
 
     if (s == NULL) {
 	c = 0xffffffffL;
@@ -286,7 +286,7 @@ local ulg updcrc(s, n)
         } while (--n);
     }
     crc = c;
-    return c ^ 0xffffffffL;       /* (instead of ~c for 64-bit machines) */
+    return c ^ 0xffffffffUL;       /* (instead of ~c for 64-bit machines) */
 }
 
 /* ===========================================================================

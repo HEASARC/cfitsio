@@ -4,8 +4,8 @@ $ cc buffers.c
 $ cc cfileio.c
 $ cc checksum.c
 $ cc compress.c
-$ cc f77_wrap.c
-$ cc f77_iter.c
+$ cc f77_wrap1.c
+$ cc f77_wrap2.c
 $ cc fitscore.c
 $ cc getcol.c
 $ cc getcolb.c
@@ -38,7 +38,7 @@ $ cc putkey.c
 $ cc scalnull.c
 $ cc swapproc.c
 $ cc wcsutil.c
-$ lib/create cfitsio buffers,cfileio,checksum,compress,f77_iter,f77_wrap,fitscore
+$ lib/create cfitsio buffers,cfileio,checksum,compress,f77_wrap1,f77_wrap2,fitscore
 $ lib/insert cfitsio getcol,getcolb,getcoli,getcolj,getcolk,getcole,getcold
 $ lib/insert cfitsio getcoll,getcols,editcol,edithdu,getkey,modkey,putcol
 $ lib/insert cfitsio putcolb,putcoli,putcolj,putcolk,putcole,putcold

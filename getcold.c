@@ -272,7 +272,7 @@ int ffgsvd(fitsfile *fptr, /* I - FITS file pointer                         */
     {
       if (trc[ii] < blc[ii])
       {
-        sprintf(msg, "ffgsvd: illegal range specified for axis %d", ii + 1);
+        sprintf(msg, "ffgsvd: illegal range specified for axis %ld", ii + 1);
         ffpmsg(msg);
         return(*status = BAD_PIX_NUM);
       }
@@ -415,7 +415,7 @@ int ffgsfd(fitsfile *fptr, /* I - FITS file pointer                         */
     {
       if (trc[ii] < blc[ii])
       {
-        sprintf(msg, "ffgsvd: illegal range specified for axis %d", ii + 1);
+        sprintf(msg, "ffgsvd: illegal range specified for axis %ld", ii + 1);
         ffpmsg(msg);
         return(*status = BAD_PIX_NUM);
       }
@@ -585,7 +585,7 @@ int ffgcfd(fitsfile *fptr,   /* I - FITS file pointer                       */
   otherwise nularray will = 0.
 */
 {
-    double dummy;
+    double dummy = 0;
 
     ffgcld(fptr, colnum, firstrow, firstelem, nelem, 1, 2, dummy,
            array, nularray, anynul, status);
@@ -612,7 +612,7 @@ int ffgcfm(fitsfile *fptr,   /* I - FITS file pointer                       */
   TSCAL and ZERO should not be used with complex values. 
 */
 {
-    double dummy;
+    double dummy = 0;
 
     /* a complex double value is interpreted as a pair of double values,   */
     /* thus need to multiply the first element and number of elements by 2 */

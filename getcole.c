@@ -272,7 +272,7 @@ int ffgsve(fitsfile *fptr, /* I - FITS file pointer                         */
     {
       if (trc[ii] < blc[ii])
       {
-        sprintf(msg, "ffgsve: illegal range specified for axis %d", ii + 1);
+        sprintf(msg, "ffgsve: illegal range specified for axis %ld", ii + 1);
         ffpmsg(msg);
         return(*status = BAD_PIX_NUM);
       }
@@ -415,7 +415,7 @@ int ffgsfe(fitsfile *fptr, /* I - FITS file pointer                         */
     {
       if (trc[ii] < blc[ii])
       {
-        sprintf(msg, "ffgsve: illegal range specified for axis %d", ii + 1);
+        sprintf(msg, "ffgsve: illegal range specified for axis %ld", ii + 1);
         ffpmsg(msg);
         return(*status = BAD_PIX_NUM);
       }
@@ -585,7 +585,7 @@ int ffgcfe(fitsfile *fptr,   /* I - FITS file pointer                       */
   otherwise nularray will = 0.
 */
 {
-    float dummy;
+    float dummy = 0;
 
     ffgcle(fptr, colnum, firstrow, firstelem, nelem, 1, 2, dummy,
            array, nularray, anynul, status);
@@ -612,7 +612,7 @@ int ffgcfc(fitsfile *fptr,   /* I - FITS file pointer                       */
   TSCAL and ZERO should not be used with complex values. 
 */
 {
-    float dummy;
+    float dummy = 0;
 
     /* a complex value is interpreted as a pair of float values, thus */
     /* need to multiply the first element and number of elements by 2 */

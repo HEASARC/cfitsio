@@ -272,7 +272,7 @@ int ffpcks(fitsfile *fptr,      /* I - FITS file pointer                  */
     if (dsum != olddsum)
     {
         /* update the DATASUM keyword with the correct value */ 
-        sprintf(datasum, "%u", dsum);
+        sprintf(datasum, "%lu", dsum);
         ffmkys(fptr, "DATASUM", datasum, datacomm, status);
 
         /* set the CHECKSUM keyword as undefined, if it isn't already */

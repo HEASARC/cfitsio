@@ -139,29 +139,34 @@ vmsieeer.mar) are also needed.
 The CFITSIO library is built on Unix systems by typing:
 
 \begin{verbatim}
-   > configure
+   > ./configure
    > make
 \end{verbatim}
-at the operating system prompt.  The `configure' command customizes the
-Makefile for the particular system, then the `make' command compiles
-the source files and builds the library.
+at the operating system prompt.  Please type ./configure and not simply
+`configure' to ensure that you run the configure script in the current
+directory and not some other system-wide configure script.  The
+configure command customizes the Makefile for the particular system,
+then the `make' command compiles the source files and builds the
+library.
 
 An alternate makefile called Makefile.shared is included in the
-distribution that will build CFITSIO as a shared library.  It
-has only been tested under Solaris 2.5 but will likely also work
-on other systems, at least with cc.  When using the shared library
-the executable code is not copied into your program at link time
-and instead the program locates the necessary library code at run
-time, normally through
-LD\_LIBRARY\_PATH or some other method.  The advantages are:
+distribution that will build CFITSIO as a shared library.  It has only
+been tested under Solaris 2.5 but will likely also work on other
+systems, at least with gcc or cc.  When using the shared library the
+executable code is not copied into your program at link time and
+instead the program locates the necessary library code at run time,
+normally through LD\_LIBRARY\_PATH or some other method.  The
+advantages are:
 
 \begin{verbatim}
    1.  Less disk space if you build more than 1 program
    2.  Less memory if more than one copy of a program using the shared
        library is running at the same time since the system is smart
        enough to share copies of the shared library at run time.
-   3.  Possibly easier maintenance since you might be able to update the
-       shared library without relinking all the tools.
+   3.  Possibly easier maintenance since a new version of the shared
+       library can be installed without relinking all the software
+       that uses it (as long as the subroutine names and calling
+       sequences remain unchanged).
    4.  No run-time penalty.
 \end{verbatim}
 The disadvantages are:
@@ -3239,7 +3244,8 @@ check to see if a keyword with the same name already exists.
 \end{verbatim}
 
 \begin{description}
-\item[5 ] Write (append) a numbered sequence of keywords into the CHU.   One may
+\item[5 ] Write (append) a numbered sequence of keywords into the CHU.  The
+    starting index number (nstart) must be greater than 0. One may
     append the same comment to every keyword (and eliminate the need
     to have an array of identical comment strings, one for each keyword) by
     including the ampersand character as the last non-blank character in the
@@ -3440,7 +3446,8 @@ may be used when specifying the name of the keyword to be read.
 \end{verbatim}
 
 \begin{description}
-\item[5 ] Read a sequence of indexed keyword values.  If the value of any of
+\item[5 ] Read a sequence of indexed keyword values.   The starting index number
+    (nstart) must be greater than 0.   If the value of any of
     the keywords is not defined (i.e., the value field is blank) then an
     error status = VALUE\_UNDEFINED will be returned and the input
    value for the undefined keyword(s) will not be changed.
@@ -4909,6 +4916,7 @@ improve the readability of their code.
  ARRAY_TOO_BIG     111    array dimensions exceed internal limit
  READONLY_FILE     112    Cannot write to readonly file
  MEMORY_ALLOCATION 113    Could not allocate memory
+ BAD_FILEPTR       114    invalid fitsfile pointer
 
  HEADER_NOT_EMPTY  201    header already contains keywords
  KEY_NO_EXIST      202    keyword not found in header
@@ -4948,7 +4956,7 @@ improve the readability of their code.
  COL_NOT_UNIQUE    237    more than 1 column name matches template
  BAD_ROW_WIDTH     241    sum of column widths not = NAXIS1
  UNKNOWN_EXT       251    unrecognizable FITS extension type
- UNKNOWN_REC       252    unrecognizable FITS record
+ UNKNOWN_REC       252    unknown record; 1st keyword not SIMPLE or XTENSION
  END_JUNK          253    END keyword is not blank
  BAD_HEADER_FILL   254    Header fill area contains non-blank chars
  BAD_DATA_FILL     255    Illegal data fill bytes (not zero or blank)

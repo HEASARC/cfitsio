@@ -150,6 +150,7 @@ typedef struct  /* structure for the iterator function column information */
 #define ARRAY_TOO_BIG     111  /* array dimensions exceed internal limit */
 #define READONLY_FILE     112  /* Cannot write to readonly file */
 #define MEMORY_ALLOCATION 113  /* Could not allocate memory */
+#define BAD_FILEPTR       114  /* invalid fitsfile pointer */
 #define HEADER_NOT_EMPTY  201  /* header already contains keywords */
 #define KEY_NO_EXIST      202  /* keyword not found in header */
 #define KEY_OUT_BOUNDS    203  /* keyword record number is out of bounds */

@@ -23,8 +23,9 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-   *version = 1.40;  /* 6 Feb 1998 */
+      *version = 1.41;   /*  beta I/O driver release */
 
+ /*   *version = 1.40;    6 Feb 1998 */
  /*   *version = 1.33;   16 Dec 1997 (internal release only) */
  /*   *version = 1.32;   21 Nov 1997 (internal release only) */
  /*   *version = 1.31;    4 Nov 1997 (internal release only) */
@@ -117,6 +118,9 @@ void ffgerr(int status,     /* I - error status value */
     case 113:
        strcpy(errtext, "could not allocate memory");
        break;
+    case 114:
+       strcpy(errtext, "invalid fitsfile pointer");
+       break;
     case 201:
        strcpy(errtext, "header already has keywords");
        break;
@@ -131,6 +135,9 @@ void ffgerr(int status,     /* I - error status value */
        break;
     case 205:
        strcpy(errtext, "string missing closing quote");
+       break;
+    case 206:
+       strcpy(errtext, "error in indexed keyword name");
        break;
     case 207:
        strcpy(errtext, "illegal character in keyword");
@@ -232,7 +239,7 @@ void ffgerr(int status,     /* I - error status value */
        strcpy(errtext, "unknown FITS extension type");
        break;
     case 252:
-       strcpy(errtext, "unknown FITS record type");
+       strcpy(errtext, "1st key not SIMPLE or XTENSION");
        break;
     case 253:
        strcpy(errtext, "END keyword is not blank");
@@ -411,7 +418,7 @@ void ffxmsg( int action,
     int ii;
 #define errmsgsiz 25
     static char *txtbuff[errmsgsiz], *tmpbuff;
-    static char errbuff[errmsgsiz][81] = {0};  /* initialize all = \0 */
+    static char errbuff[errmsgsiz][81];  /* initialize all = \0 */
     static nummsg = 0;
 
     if (action == -2)  /* remove newest message from stack */ 
@@ -752,11 +759,11 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
     cardlen = strlen(card);
     
     if (cardlen < 9  ||
-        strncmp(card, "COMMENT ", 8) == 0 ||  /* keywords with no value */
-        strncmp(card, "HISTORY ", 8) == 0 ||
-        strncmp(card, "END     ", 8) == 0 ||
-        strncmp(card, "        ", 8) == 0 ||
-        strncmp(&card[8],      "= ", 2) != 0  ) /* no '= ' in cols 9-10 */
+        FSTRNCMP(card, "COMMENT ", 8) == 0 ||  /* keywords with no value */
+        FSTRNCMP(card, "HISTORY ", 8) == 0 ||
+        FSTRNCMP(card, "END     ", 8) == 0 ||
+        FSTRNCMP(card, "        ", 8) == 0 ||
+        FSTRNCMP(&card[8],      "= ", 2) != 0  ) /* no '= ' in cols 9-10 */
     {
         /*  no value and the comment extends from cols 9 - 80  */
         if (comm != NULL)
@@ -1626,7 +1633,7 @@ void ffcmps(char *templt,   /* I - input template (may have wildcards)      */
         ffupch(col);
     }
 
-    if (!strcmp(temp, col) )
+    if (!FSTRCMP(temp, col) )
     {
         *match = TRUE;     /* strings exactly match */
         return;
@@ -2645,50 +2652,35 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
 
     tstatus = 0;
 
-    if (!strncmp(name, "TTYPE", 5) ||
-        !strncmp(name, "TFORM", 5) ||
-        !strncmp(name, "TBCOL", 5) ||
-        !strncmp(name, "TSCAL", 5) ||
-        !strncmp(name, "TZERO", 5) ||
-        !strncmp(name, "TNULL", 5) ||
-        !strncmp(name, "THEAP", 5) )
+    if(!FSTRNCMP(name + 1, "TYPE", 4) )
     {
+        /* get the index number */
+        if( ffc2ii(name + 5, &nfield, &tstatus) > 0) /* read index no. */
+            return(*status);    /* must not be an indexed keyword */
 
-    if (!strncmp(name, "THEAP", 5))
-    {
-        if (fptr->hdutype == ASCII_TBL)  /* ASCII table */
-            return(*status);  /* ASCII tables don't have a heap */ 
-
-        if (ffc2ii(value, &ivalue, status) > 0) 
-        {
-            sprintf(message,
-            "Error reading value of %s as an integer: %s", name, value);
-            ffpmsg(message);
+        if (nfield < 1 || nfield > fptr->tfield )  /* index out of range */
             return(*status);
-        }
-        fptr->heapstart = ivalue; /* the starting byte of the heap */
-        return(*status);
-    }
 
-    if( ffc2ii(&name[5], &nfield, &tstatus) > 0) /* read index no. */
-        return(*status);    /* must not be an indexed keyword */
+        colptr = fptr->tableptr;        /* get pointer to columns */
+        colptr = colptr + nfield - 1;   /* point to the correct column */
 
-    if (nfield < 1 || nfield > fptr->tfield )  /* index out of range */
-        return(*status);
-
-    colptr = fptr->tableptr;        /* get pointer to columns */
-    colptr = colptr + nfield - 1;   /* point to the correct column */
-
-    if (!strncmp(name, "TTYPE", 5))
-    {
         if (ffc2s(value, tvalue, &tstatus) > 0)  /* remove quotes */
             return(*status);
 
         strcpy(colptr->ttype, tvalue);  /* copy col name to structure */
     }
-
-    else if (!strncmp(name, "TFORM", 5))
+    else if(!FSTRNCMP(name + 1, "FORM", 4) )
     {
+        /* get the index number */
+        if( ffc2ii(name + 5, &nfield, &tstatus) > 0) /* read index no. */
+            return(*status);    /* must not be an indexed keyword */
+
+        if (nfield < 1 || nfield > fptr->tfield )  /* index out of range */
+            return(*status);
+
+        colptr = fptr->tableptr;        /* get pointer to columns */
+        colptr = colptr + nfield - 1;   /* point to the correct column */
+
         if (ffc2s(value, tvalue, &tstatus) > 0)  /* remove quotes */
             return(*status);
 
@@ -2714,9 +2706,18 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
           colptr->twidth = width;   /*  width of a unit value in chars */
         }
     }
-
-    else if (!strncmp(name, "TBCOL", 5))
+    else if(!FSTRNCMP(name + 1, "BCOL", 4) )
     {
+        /* get the index number */
+        if( ffc2ii(name + 5, &nfield, &tstatus) > 0) /* read index no. */
+            return(*status);    /* must not be an indexed keyword */
+
+        if (nfield < 1 || nfield > fptr->tfield )  /* index out of range */
+            return(*status);
+
+        colptr = fptr->tableptr;        /* get pointer to columns */
+        colptr = colptr + nfield - 1;   /* point to the correct column */
+
         if (fptr->hdutype == BINARY_TBL)
             return(*status);  /* binary tables don't have TBCOL keywords */
 
@@ -2729,8 +2730,18 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
         }
         colptr->tbcol = ivalue - 1; /* convert to zero base */
     }
-    else if (!strncmp(name, "TSCAL", 5))
+    else if(!FSTRNCMP(name + 1, "SCAL", 4) )
     {
+        /* get the index number */
+        if( ffc2ii(name + 5, &nfield, &tstatus) > 0) /* read index no. */
+            return(*status);    /* must not be an indexed keyword */
+
+        if (nfield < 1 || nfield > fptr->tfield )  /* index out of range */
+            return(*status);
+
+        colptr = fptr->tableptr;        /* get pointer to columns */
+        colptr = colptr + nfield - 1;   /* point to the correct column */
+
         if (ffc2dd(value, &dvalue, status) > 0)
         {
             sprintf(message,
@@ -2740,8 +2751,18 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
         }
         colptr->tscale = dvalue;
     }
-    else if (!strncmp(name, "TZERO", 5))
+    else if(!FSTRNCMP(name + 1, "ZERO", 4) )
     {
+        /* get the index number */
+        if( ffc2ii(name + 5, &nfield, &tstatus) > 0) /* read index no. */
+            return(*status);    /* must not be an indexed keyword */
+
+        if (nfield < 1 || nfield > fptr->tfield )  /* index out of range */
+            return(*status);
+
+        colptr = fptr->tableptr;        /* get pointer to columns */
+        colptr = colptr + nfield - 1;   /* point to the correct column */
+
         if (ffc2dd(value, &dvalue, status) > 0)
         {
             sprintf(message,
@@ -2751,8 +2772,18 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
         }
         colptr->tzero = dvalue;
     }
-    else if (!strncmp(name, "TNULL", 5))
+    else if(!FSTRNCMP(name + 1, "NULL", 4) )
     {
+        /* get the index number */
+        if( ffc2ii(name + 5, &nfield, &tstatus) > 0) /* read index no. */
+            return(*status);    /* must not be an indexed keyword */
+
+        if (nfield < 1 || nfield > fptr->tfield )  /* index out of range */
+            return(*status);
+
+        colptr = fptr->tableptr;        /* get pointer to columns */
+        colptr = colptr + nfield - 1;   /* point to the correct column */
+
         if (fptr->hdutype == ASCII_TBL)  /* ASCII table */
         {
             if (ffc2s(value, tvalue, &tstatus) > 0)  /* remove quotes */
@@ -2774,7 +2805,22 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
             colptr->tnull = ivalue; /* null value for integer column */
         }
     }
+    else if (!FSTRNCMP(name + 1, "HEAP", 4) )
+    {
+        if (fptr->hdutype == ASCII_TBL)  /* ASCII table */
+            return(*status);  /* ASCII tables don't have a heap */ 
+
+        if (ffc2ii(value, &ivalue, status) > 0) 
+        {
+            sprintf(message,
+            "Error reading value of %s as an integer: %s", name, value);
+            ffpmsg(message);
+            return(*status);
+        }
+        fptr->heapstart = ivalue; /* the starting byte of the heap */
+        return(*status);
     }
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -3168,7 +3214,7 @@ int ffuptf(fitsfile *fptr,      /* I - FITS file pointer */
           /* construct the new keyword value */
           strcpy(newform, "'");
           strcat(newform, tform);
-          sprintf(lenval, "(%d)", maxlen);
+          sprintf(lenval, "(%ld)", maxlen);
           strcat(newform,lenval);
           while(strlen(newform) < 9)
              strcat(newform," ");   /* append spaces 'till length = 8 */

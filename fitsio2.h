@@ -115,6 +115,9 @@
 #define maxvalue(A,B) ((A) > (B) ? (A) : (B))
 #define minvalue(A,B) ((A) < (B) ? (A) : (B))
  
+#define FSTRCMP(a,b)     ((a)[0]<(b)[0]? -1:(a)[0]>(b)[0]?1:strcmp((a),(b)))
+#define FSTRNCMP(a,b,n)  ((a)[0]<(b)[0]?-1:(a)[0]>(b)[0]?1:strncmp((a),(b),(n)))
+
 #if MACHINE == ALPHAVMS
  
 #define FNANMASK   0x7F00 /* mask bits 1 - 7; all set on NaNs */
