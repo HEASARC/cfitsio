@@ -1369,7 +1369,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
             routine call, which increases the efficiency.
           */           
             *incre = *rowlen;
-            *repeat = *maxelem;
+            *repeat = nelem;
         }
     }
 

@@ -33,8 +33,8 @@ library on a Vax).
 
 The CFITSIO library is built on Unix systems by typing:
 
-   % configure
-   % make
+    configure
+    make
 
 at the operating system prompt.  The 'configure' command customizes
 the Makefile for your particular system, then the 'make' command
