@@ -260,8 +260,8 @@ int ffcpdt(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     if (infptr == outfptr)
         return(*status = SAME_FILE);
 
-    ffghadjj(infptr,  NULL, &indatastart, &indataend, status);
-    ffghadjj(outfptr, NULL, &outdatastart, NULL, status);
+    ffghadll(infptr,  NULL, &indatastart, &indataend, status);
+    ffghadll(outfptr, NULL, &outdatastart, NULL, status);
 
     /* Calculate the number of blocks to be copied  */
     nb = (long) ((indataend - indatastart) / 2880);
@@ -309,6 +309,34 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
   insert an IMAGE extension following the current HDU 
 */
 {
+    LONGLONG tnaxes[99];
+    int ii;
+    
+    if (*status > 0)
+        return(*status);
+
+    if (naxis > 99) {
+        ffpmsg("NAXIS value is too large (>99)  (ffiimg)");
+	return(*status = 212);
+    }
+
+    for (ii = 0; (ii < naxis); ii++)
+       tnaxes[ii] = naxes[ii];
+       
+    ffiimgll(fptr, bitpix, naxis, tnaxes, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffiimgll(fitsfile *fptr,    /* I - FITS file pointer           */
+           int bitpix,          /* I - bits per pixel              */
+           int naxis,           /* I - number of axes in the array */
+           LONGLONG *naxes,     /* I - size of each axis           */
+           int *status)         /* IO - error status               */
+/*
+  insert an IMAGE extension following the current HDU 
+*/
+{
     int bytlen, nexthdu, maxhdu, ii, onaxis;
     long nblocks;
     LONGLONG npixels, newstart, datasize;
@@ -331,7 +359,7 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
        ((fptr->Fptr)->headstart[maxhdu + 1] >= (fptr->Fptr)->logfilesize ) ) )
       {
         /* then simply append new image extension */
-        ffcrim(fptr, bitpix, naxis, naxes, status);
+        ffcrimll(fptr, bitpix, naxis, naxes, status);
         return(*status);
       }
     }
@@ -342,7 +370,7 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
         bytlen = 2;
     else if (bitpix == 32 || bitpix == -32)
         bytlen = 4;
-    else if (bitpix == -64)
+    else if (bitpix == 64 || bitpix == -64)
         bytlen = 8;
     else
     {
@@ -364,7 +392,7 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
         if (naxes[ii] < 0)
         {
             sprintf(errmsg,
-            "Illegal value for NAXIS%d keyword: %ld", ii + 1,  naxes[ii]);
+            "Illegal value for NAXIS%d keyword: %ld", ii + 1,  (long) naxes[ii]);
             ffpmsg(errmsg);
             return(*status = BAD_NAXES);
         }
@@ -406,8 +434,8 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
 
         ffgcrd(fptr, naxiskey, card, status);  /* read last NAXIS keyword */
         
-        ffikyj(fptr, "PCOUNT", 0L, "required keyword", status); /* add PCOUNT and */
-        ffikyj(fptr, "GCOUNT", 1L, "required keyword", status); /* GCOUNT keywords */
+        ffikyj(fptr, "PCOUNT", 0, "required keyword", status); /* add PCOUNT and */
+        ffikyj(fptr, "GCOUNT", 1, "required keyword", status); /* GCOUNT keywords */
 
         if (*status > 0)
             return(*status);
@@ -455,7 +483,7 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
     (fptr->Fptr)->hdutype = IMAGE_HDU;  /* might need to be reset... */
 
     /* write the required header keywords */
-    ffphpr(fptr, TRUE, bitpix, naxis, naxes, 0, 1, TRUE, status);
+    ffphprll(fptr, TRUE, bitpix, naxis, naxes, 0, 1, TRUE, status);
 
     /* redefine internal structure for this HDU */
     ffrdef(fptr, status);
@@ -463,8 +491,8 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
 }
 /*--------------------------------------------------------------------------*/
 int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
-           long naxis1,     /* I - width of row in the table                */
-           long naxis2,     /* I - number of rows in the table              */
+           LONGLONG naxis1,     /* I - width of row in the table                */
+           LONGLONG naxis2,     /* I - number of rows in the table              */
            int tfields,     /* I - number of columns in the table           */
            char **ttype,    /* I - name of each column                      */
            long *tbcol,     /* I - byte offset in row to each column        */

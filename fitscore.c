@@ -1984,6 +1984,201 @@ int ffbnfm(char *tform,     /* I - format code from the TFORMn keyword */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffbnfmll(char *tform,     /* I - format code from the TFORMn keyword */
+           int *dtcode,   /* O - numerical datatype code */
+           LONGLONG *trepeat,    /* O - repeat count of the field  */
+           long *twidth,     /* O - width of the field, in chars */
+           int *status)     /* IO - error status      */
+{
+/*
+  parse the binary table TFORM column format to determine the data
+  type, repeat count, and the field width (if it is an ASCII (A) field)
+*/
+    size_t ii, nchar;
+    int datacode, variable, iread;
+    long width;
+    LONGLONG repeat;
+    char *form, temp[FLEN_VALUE], message[FLEN_ERRMSG];
+
+    if (*status > 0)
+        return(*status);
+
+    if (dtcode)
+        *dtcode = 0;
+
+    if (trepeat)
+        *trepeat = 0;
+
+    if (twidth)
+        *twidth = 0;
+
+    nchar = strlen(tform);
+
+    for (ii = 0; ii < nchar; ii++)
+    {
+        if (tform[ii] != ' ')     /* find first non-space char */
+            break;
+    }
+
+    if (ii == nchar)
+    {
+        ffpmsg("Error: binary table TFORM code is blank (ffbnfm).");
+        return(*status = BAD_TFORM);
+    }
+
+    strcpy(temp, &tform[ii]); /* copy format string */
+    ffupch(temp);     /* make sure it is in upper case */
+    form = temp;      /* point to start of format string */
+
+    /*-----------------------------------------------*/
+    /*       get the repeat count                    */
+    /*-----------------------------------------------*/
+
+    ii = 0;
+    while(isdigit((int) form[ii]))
+        ii++;   /* look for leading digits in the field */
+
+    if (ii == 0)
+        repeat = 1;  /* no explicit repeat count */
+    else {
+       /* read repeat count */
+
+#if defined(_MSC_VER)
+    /* Microsoft Visual C++ uses a strange '%I64d' syntax  for 8-byte integers */
+        sscanf(form,"%I64d", &repeat);
+#elif (USE_LL_SUFFIX == 1)
+        sscanf(form,"%lld", &repeat);
+#else
+        sscanf(form,"%ld", &repeat);
+#endif
+	
+    }
+    /*-----------------------------------------------*/
+    /*             determine datatype code           */
+    /*-----------------------------------------------*/
+
+    form = form + ii;  /* skip over the repeat field */
+
+    if (form[0] == 'P' || form[0] == 'Q')
+    {
+        variable = 1;  /* this is a variable length column */
+        repeat = 1;   /* disregard any other repeat value */
+        form++;        /* move to the next data type code char */
+    }
+    else
+        variable = 0;
+
+    if (form[0] == 'U')  /* internal code to signify unsigned integer */
+    { 
+        datacode = TUSHORT;
+        width = 2;
+    }
+    else if (form[0] == 'I')
+    {
+        datacode = TSHORT;
+        width = 2;
+    }
+    else if (form[0] == 'V') /* internal code to signify unsigned integer */
+    {
+        datacode = TULONG;
+        width = 4;
+    }
+    else if (form[0] == 'J')
+    {
+        datacode = TLONG;
+        width = 4;
+    }
+    else if (form[0] == 'K')
+    {
+        datacode = TLONGLONG;
+        width = 8;
+    }
+    else if (form[0] == 'E')
+    {
+        datacode = TFLOAT;
+        width = 4;
+    }
+    else if (form[0] == 'D')
+    {
+        datacode = TDOUBLE;
+        width = 8;
+    }
+    else if (form[0] == 'A')
+    {
+        datacode = TSTRING;
+
+        /*
+          the following code is used to support the non-standard
+          datatype of the form rAw where r = total width of the field
+          and w = width of fixed-length substrings within the field.
+        */
+        iread = 0;
+        if (form[1] != 0)
+        {
+            if (form[1] == '(' )  /* skip parenthesis around */
+                form++;          /* variable length column width */
+
+            iread = sscanf(&form[1],"%ld", &width);
+        }
+
+        if (iread != 1 || (!variable && (width > repeat)) )
+            width = repeat;
+  
+    }
+    else if (form[0] == 'L')
+    {
+        datacode = TLOGICAL;
+        width = 1;
+    }
+    else if (form[0] == 'X')
+    {
+        datacode = TBIT;
+        width = 1;
+    }
+    else if (form[0] == 'B')
+    {
+        datacode = TBYTE;
+        width = 1;
+    }
+    else if (form[0] == 'S') /* internal code to signify signed byte */
+    {
+        datacode = TSBYTE;
+        width = 1;
+    }
+    else if (form[0] == 'C')
+    {
+        datacode = TCOMPLEX;
+        width = 8;
+    }
+    else if (form[0] == 'M')
+    {
+        datacode = TDBLCOMPLEX;
+        width = 16;
+    }
+    else
+    {
+        sprintf(message,
+        "Illegal binary table TFORMn datatype: \'%s\' ", tform);
+        ffpmsg(message);
+        return(*status = BAD_TFORM_DTYPE);
+    }
+
+    if (variable)
+        datacode = datacode * (-1); /* flag variable cols w/ neg type code */
+
+    if (dtcode)
+       *dtcode = datacode;
+
+    if (trepeat)
+       *trepeat = repeat;
+
+    if (twidth)
+       *twidth = width;
+
+    return(*status);
+}
+
+/*--------------------------------------------------------------------------*/
 void ffcfmt(char *tform,    /* value of an ASCII table TFORMn keyword */
             char *cform)    /* equivalent format code in C language syntax */
 /*
@@ -2396,8 +2591,37 @@ int ffgtcl( fitsfile *fptr,  /* I - FITS file pointer                       */
   if TFORMn = '60A12' then repeat = 60 and width = 12.
 */
 {
+    LONGLONG trepeat, twidth;
+    
+    ffgtclll(fptr, colnum, typecode, &trepeat, &twidth, status);
+
+    if (repeat)
+      *repeat= trepeat;
+      
+    if (width)
+      *width = twidth;
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgtclll( fitsfile *fptr,  /* I - FITS file pointer                       */
+            int  colnum,       /* I - column number                           */
+            int *typecode,   /* O - datatype code (21 = short, etc)         */
+            LONGLONG *repeat, /* O - repeat count of field                   */
+            LONGLONG *width, /* O - if ASCII, width of field or unit string */
+            int  *status)    /* IO - error status                           */
+/*
+  Get Type of table column. 
+  Returns the datatype code of the column, as well as the vector
+  repeat count and (if it is an ASCII character column) the
+  width of the field or a unit string within the field.  This supports the
+  TFORMn = 'rAw' syntax for specifying arrays of substrings, so
+  if TFORMn = '60A12' then repeat = 60 and width = 12.
+*/
+{
     tcolumn *colptr;
     int hdutype, decims;
+    long tmpwidth;
 
     if (*status > 0)
         return(*status);
@@ -2420,8 +2644,9 @@ int ffgtcl( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     if (hdutype == ASCII_TBL)
     {
-       ffasfm(colptr->tform, typecode, width, &decims, status);
-
+       ffasfm(colptr->tform, typecode, &tmpwidth, &decims, status);
+       *width = tmpwidth;
+       
       if (repeat)
            *repeat = 1;
     }
@@ -2434,7 +2659,7 @@ int ffgtcl( fitsfile *fptr,  /* I - FITS file pointer                       */
           *width = colptr->twidth;
 
       if (repeat)
-          *repeat = (long) colptr->trepeat;
+          *repeat = colptr->trepeat;
     }
 
     return(*status);
@@ -2463,10 +2688,42 @@ int ffeqty( fitsfile *fptr,  /* I - FITS file pointer                       */
   if TFORMn = '60A12' then repeat = 60 and width = 12.
 */
 {
+    LONGLONG trepeat, twidth;
+    
+    ffeqtyll(fptr, colnum, typecode, &trepeat, &twidth, status);
+    *repeat= trepeat;
+    *width = twidth;
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffeqtyll( fitsfile *fptr,  /* I - FITS file pointer                       */
+            int  colnum,     /* I - column number                           */
+            int *typecode,   /* O - datatype code (21 = short, etc)         */
+            LONGLONG *repeat,    /* O - repeat count of field                   */
+            LONGLONG *width,     /* O - if ASCII, width of field or unit string */
+            int  *status)    /* IO - error status                           */
+/*
+  Get the 'equivalent' table column type. 
+
+  This routine is similar to the ffgtcl routine (which returns the physical
+  datatype of the column, as stored in the FITS file) except that if the
+  TSCALn and TZEROn keywords are defined for the column, then it returns
+  the 'equivalent' datatype.  Thus, if the column is defined as '1I'  (short
+  integer) this routine may return the type as 'TUSHORT' or as 'TFLOAT'
+  depending on the TSCALn and TZEROn values.
+  
+  Returns the datatype code of the column, as well as the vector
+  repeat count and (if it is an ASCII character column) the
+  width of the field or a unit string within the field.  This supports the
+  TFORMn = 'rAw' syntax for specifying arrays of substrings, so
+  if TFORMn = '60A12' then repeat = 60 and width = 12.
+*/
+{
     tcolumn *colptr;
     int hdutype, decims, tcode, effcode;
     double tscale, tzero, min_val, max_val;
-    long lngscale = 1, lngzero = 0;
+    long lngscale = 1, lngzero = 0, tmpwidth;
 
     if (*status > 0)
         return(*status);
@@ -2489,7 +2746,8 @@ int ffeqty( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     if (hdutype == ASCII_TBL)
     {
-      ffasfm(colptr->tform, typecode, width, &decims, status);
+      ffasfm(colptr->tform, typecode, &tmpwidth, &decims, status);
+      *width = tmpwidth;
 
       if (repeat)
            *repeat = 1;
@@ -2503,7 +2761,7 @@ int ffeqty( fitsfile *fptr,  /* I - FITS file pointer                       */
           *width = colptr->twidth;
 
       if (repeat)
-          *repeat = (long) colptr->trepeat;
+          *repeat = colptr->trepeat;
     }
 
     /* return if caller is not interested in the typecode value */
@@ -2621,7 +2879,7 @@ int ffgncl( fitsfile *fptr,  /* I - FITS file pointer                       */
 }
 /*--------------------------------------------------------------------------*/
 int ffgnrw( fitsfile *fptr,  /* I - FITS file pointer                       */
-            long  *nrows,    /* O - number of rows in the table          */
+            long  *nrows,    /* O - number of rows in the table             */
             int  *status)    /* IO - error status                           */
 /*
   Get the number of rows in the table (= NAXIS2 keyword)
@@ -2642,6 +2900,32 @@ int ffgnrw( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     /* the NAXIS2 keyword may not be up to date, so use the structure value */
     *nrows = (long) (fptr->Fptr)->numrows;
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgnrwll( fitsfile *fptr,  /* I - FITS file pointer                     */
+            LONGLONG  *nrows,  /* O - number of rows in the table           */
+            int  *status)      /* IO - error status                         */
+/*
+  Get the number of rows in the table (= NAXIS2 keyword)
+*/
+{
+    if (*status > 0)
+        return(*status);
+
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               /* rescan header */
+            return(*status);
+
+    if ((fptr->Fptr)->hdutype == IMAGE_HDU)
+        return(*status = NOT_TABLE);
+
+    /* the NAXIS2 keyword may not be up to date, so use the structure value */
+    *nrows = (fptr->Fptr)->numrows;
 
     return(*status);
 }
@@ -2737,6 +3021,38 @@ int ffgbcl( fitsfile *fptr,   /* I - FITS file pointer                      */
   get BINTABLE column keyword values
 */
 {
+    LONGLONG trepeat, ttnull;
+    
+    if (*status > 0)
+        return(*status);
+
+    ffgbclll(fptr, colnum, ttype, tunit, dtype, &trepeat, tscal, tzero,
+             &ttnull, tdisp, status);
+
+    if (repeat)
+        *repeat = (long) trepeat;
+
+    if (tnull)
+        *tnull = (long) ttnull;
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgbclll( fitsfile *fptr,   /* I - FITS file pointer                      */
+            int  colnum,      /* I - column number                          */
+            char *ttype,      /* O - TTYPEn keyword value                   */
+            char *tunit,      /* O - TUNITn keyword value                   */
+            char *dtype,      /* O - datatype char: I, J, E, D, etc.        */
+            LONGLONG *repeat, /* O - vector column repeat count             */
+            double *tscal,    /* O - TSCALn keyword value                   */
+            double *tzero,    /* O - TZEROn keyword value                   */
+            LONGLONG *tnull,  /* O - TNULLn keyword value integer cols only */
+            char *tdisp,      /* O - TDISPn keyword value                   */
+            int  *status)     /* IO - error status                          */
+/*
+  get BINTABLE column keyword values
+*/
+{
     char name[FLEN_KEYWORD], comm[FLEN_COMMENT];
     tcolumn *colptr;
     int tstatus;
@@ -2792,7 +3108,7 @@ int ffgbcl( fitsfile *fptr,   /* I - FITS file pointer                      */
     }
 
     if (repeat)
-        *repeat = (long) colptr->trepeat;
+        *repeat = colptr->trepeat;
 
     if (tscal)
         *tscal  = colptr->tscale;
@@ -2801,7 +3117,7 @@ int ffgbcl( fitsfile *fptr,   /* I - FITS file pointer                      */
         *tzero  = colptr->tzero;
 
     if (tnull)
-        *tnull  = (long) colptr->tnull;
+        *tnull  = colptr->tnull;
 
     /* read keywords to get additional parameters */
 
@@ -2836,7 +3152,7 @@ int ffghdn(fitsfile *fptr,   /* I - FITS file pointer                      */
     return(*chdunum);
 }
 /*--------------------------------------------------------------------------*/
-int ffghadjj(fitsfile *fptr,     /* I - FITS file pointer                     */
+int ffghadll(fitsfile *fptr,     /* I - FITS file pointer                     */
             LONGLONG *headstart, /* O - byte offset to beginning of CHDU      */
             LONGLONG *datastart, /* O - byte offset to beginning of next HDU  */
             LONGLONG *dataend,   /* O - byte offset to beginning of next HDU  */
@@ -2925,7 +3241,7 @@ int ffghad(fitsfile *fptr,     /* I - FITS file pointer                     */
     if (*status > 0)
         return(*status);
 
-    ffghadjj(fptr, &shead, &sdata, &edata, status);
+    ffghadll(fptr, &shead, &sdata, &edata, status);
 
     if (headstart)
     {
@@ -3100,8 +3416,8 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
 {
     int groups, tstatus, simple, bitpix, naxis, extend, nspace;
     int ttype = 0, bytlen = 0, ii;
-    long naxes[999], pcount, gcount, blank;
-    LONGLONG npix;
+    long  pcount, gcount, blank;
+    LONGLONG naxes[999], npix;
     double bscale, bzero;
     char comm[FLEN_COMMENT];
     tcolumn *colptr;
@@ -4270,7 +4586,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
 
         if ( firstrow <= (fptr->Fptr)->numrows )
         {
-          ffgdesjj(fptr, colnum, firstrow, &lrepeat, &heapoffset, &tstatus);
+          ffgdesll(fptr, colnum, firstrow, &lrepeat, &heapoffset, &tstatus);
           if (!tstatus)
           {
             if (colptr->tdatatype <= -TCOMPLEX)
@@ -4372,7 +4688,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
             return(*status = BAD_ROW_NUM);
         }
 
-        ffgdesjj(fptr, colnum, firstrow, &lrepeat, &heapoffset, status);
+        ffgdesll(fptr, colnum, firstrow, &lrepeat, &heapoffset, status);
         *repeat = lrepeat;
 
         if (colptr->tdatatype <= -TCOMPLEX)
@@ -4463,7 +4779,7 @@ int fftheap(fitsfile *fptr, /* I - FITS file pointer                         */
 
         for (ii = 1; ii <= (fptr->Fptr)->numrows; ii++)
         {
-            ffgdesjj(fptr, jj, ii, &repeat, &offset, status);
+            ffgdesll(fptr, jj, ii, &repeat, &offset, status);
             if (typecode == -TBIT)
                 nbytes = (long) (repeat + 7) / 8;
             else
@@ -4574,7 +4890,7 @@ int ffcmph(fitsfile *fptr,  /* I -FITS file pointer                         */
         /* copy heap data, row by row */
         for (ii = 1; ii <= (fptr->Fptr)->numrows; ii++)
         {
-            ffgdesjj(tptr, jj, ii, &repeat, &offset, status);
+            ffgdesll(tptr, jj, ii, &repeat, &offset, status);
             if (typecode == -TBIT)
                 nbytes = (long) (repeat + 7) / 8;
             else
@@ -4662,7 +4978,7 @@ int ffcmph(fitsfile *fptr,  /* I -FITS file pointer                         */
     ffgkyjj(fptr, "PCOUNT", &pcount, comm, status);
     if ((fptr->Fptr)->heapsize != pcount)
     {
-        ffmkyjj(fptr, "PCOUNT", (fptr->Fptr)->heapsize, comm, status);
+        ffmkyj(fptr, "PCOUNT", (fptr->Fptr)->heapsize, comm, status);
     }
     ffrdef(fptr, status);  /* rescan new HDU structure */
     return(*status);
@@ -4680,7 +4996,7 @@ int ffgdes(fitsfile *fptr, /* I - FITS file pointer                         */
 {
     LONGLONG lengthjj, heapaddrjj;
     
-    if (ffgdesjj(fptr, colnum, rownum, &lengthjj, &heapaddrjj, status) > 0)
+    if (ffgdesll(fptr, colnum, rownum, &lengthjj, &heapaddrjj, status) > 0)
         return(*status);
 
     /* convert the temporary 8-byte values to 4-byte values */
@@ -4701,7 +5017,7 @@ int ffgdes(fitsfile *fptr, /* I - FITS file pointer                         */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffgdesjj(fitsfile *fptr,   /* I - FITS file pointer                       */
+int ffgdesll(fitsfile *fptr,   /* I - FITS file pointer                       */
            int colnum,         /* I - column number (1 = 1st column of table) */
            LONGLONG rownum,        /* I - row number (1 = 1st row of table)       */
            LONGLONG *length,   /* O - number of elements in the row           */
@@ -4856,7 +5172,7 @@ int ffgdess(fitsfile *fptr, /* I - FITS file pointer                        */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffgdessjj(fitsfile *fptr, /* I - FITS file pointer                      */
+int ffgdessll(fitsfile *fptr, /* I - FITS file pointer                      */
            int colnum,     /* I - column number (1 = 1st column of table)   */
            LONGLONG firstrow,  /* I - first row  (1 = 1st row of table)         */
            LONGLONG nrows,     /* I - number or rows to read                    */
@@ -5089,7 +5405,7 @@ int ffuptf(fitsfile *fptr,      /* I - FITS file pointer */
           maxlen = 0;
           for (jj=1; jj <= naxis2; jj++)
           {
-            ffgdesjj(fptr, ii, jj, &length, &addr, status);
+            ffgdesll(fptr, ii, jj, &length, &addr, status);
 	    if (length > maxlen)
 	         maxlen = length;
           }
@@ -5189,7 +5505,7 @@ int ffrdef(fitsfile *fptr,      /* I - FITS file pointer */
             ffgkyjj(fptr, "PCOUNT", &pcount, comm, status);
             if ((fptr->Fptr)->heapsize > pcount)
             {
-              ffmkyjj(fptr, "PCOUNT", (fptr->Fptr)->heapsize, comm, status);
+              ffmkyj(fptr, "PCOUNT", (fptr->Fptr)->heapsize, comm, status);
             }
           }
         }
@@ -5723,7 +6039,7 @@ int fits_is_compressed_image(fitsfile *fptr,  /* I - FITS file pointer  */
     return(0);
 }
 /*--------------------------------------------------------------------------*/
-int ffgipr(fitsfile *infptr,   /* I - FITS file pointer             */
+int ffgipr(fitsfile *infptr,   /* I - FITS file pointer                     */
         int maxaxis,           /* I - max number of axes to return          */
         int *bitpix,           /* O - image data type                       */
         int *naxis,            /* O - image dimension (NAXIS value)         */
@@ -5748,6 +6064,35 @@ int ffgipr(fitsfile *infptr,   /* I - FITS file pointer             */
 
     if (naxes)
       fits_get_img_size(infptr, maxaxis, naxes, status); /* get NAXISn values */
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgiprll(fitsfile *infptr,   /* I - FITS file pointer                   */
+        int maxaxis,           /* I - max number of axes to return          */
+        int *bitpix,           /* O - image data type                       */
+        int *naxis,            /* O - image dimension (NAXIS value)         */
+        LONGLONG *naxes,       /* O - size of image dimensions              */
+        int *status)           /* IO - error status      */
+
+/*
+    get the datatype and size of the input image
+*/
+{
+
+    if (*status > 0)
+        return(*status);
+
+    /* don't return the parameter if a null pointer was given */
+
+    if (bitpix)
+      fits_get_img_type(infptr, bitpix, status);  /* get BITPIX value */
+
+    if (naxis)
+      fits_get_img_dim(infptr, naxis, status);    /* get NAXIS value */
+
+    if (naxes)
+      fits_get_img_sizell(infptr, maxaxis, naxes, status); /* get NAXISn values */
 
     return(*status);
 }
@@ -5955,7 +6300,7 @@ int ffgidm( fitsfile *fptr,  /* I - FITS file pointer                       */
 /*--------------------------------------------------------------------------*/
 int ffgisz( fitsfile *fptr,  /* I - FITS file pointer                       */
             int nlen,        /* I - number of axes to return                */
-            long  *naxes  ,  /* O - size of image dimensions                */
+            long  *naxes,    /* O - size of image dimensions                */
             int  *status)    /* IO - error status                           */
 /*
   Get the size of the image dimensions (= NAXISn keywords for normal image, or
@@ -6006,6 +6351,58 @@ int ffgisz( fitsfile *fptr,  /* I - FITS file pointer                       */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffgiszll( fitsfile *fptr,  /* I - FITS file pointer                     */
+            int nlen,          /* I - number of axes to return              */
+            LONGLONG  *naxes,  /* O - size of image dimensions              */
+            int  *status)      /* IO - error status                         */
+/*
+  Get the size of the image dimensions (= NAXISn keywords for normal image, or
+  ZNAXISn for a compressed image)
+*/
+{
+    int ii, naxis;
+    char keyroot[FLEN_KEYWORD], keyname[FLEN_KEYWORD];
+
+    if (*status > 0)
+        return(*status);
+
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               /* rescan header */
+            return(*status);
+
+    if ((fptr->Fptr)->hdutype == IMAGE_HDU)
+    {
+        strcpy(keyroot, "NAXIS");
+    }
+    else if ((fptr->Fptr)->compressimg)
+    {
+        /* this is a binary table containing a compressed image */
+        strcpy(keyroot, "ZNAXIS");
+    }
+    else
+    {
+        return(*status = NOT_IMAGE);
+    }
+
+    /* initialize to 1 */
+    for (ii = 0; ii < nlen; ii++)
+        naxes[ii] = 1;
+
+    /* get number of dimensions */
+    fits_get_img_dim(fptr, &naxis, status);
+    naxis = minvalue(naxis, nlen);
+
+    for (ii = 0; ii < naxis; ii++)
+    {
+        ffkeyn(keyroot, ii + 1, keyname, status);
+        ffgkyjj(fptr, keyname, naxes + ii, NULL, status);
+    }
+
+    return(*status);
+}/*--------------------------------------------------------------------------*/
 int ffmahd(fitsfile *fptr,      /* I - FITS file pointer             */
            int hdunum,          /* I - number of the HDU to move to  */
            int *exttype,        /* O - type of extension, 0, 1, or 2 */
@@ -7218,8 +7615,8 @@ int ffc2jj(char *cval,  /* I - string representation of the value */
     errno = 0;
     *ival = 0;
 
-/*  Microsoft Visual C++ Version 6.0 does not have the strtoll function */
 #if defined(_MSC_VER)
+/*  Microsoft Visual C++ Version 6.0 does not have the strtoll function */
     *ival = (LONGLONG) strtol(cval, &loc, 10);  /* read the string as an integer */
 #elif (USE_LL_SUFFIX == 1)
     *ival = strtoll(cval, &loc, 10);  /* read the string as an integer */

@@ -13,7 +13,42 @@
 int ffgpxv( fitsfile *fptr,   /* I - FITS file pointer                       */
             int  datatype,    /* I - datatype of the value                   */
             long *firstpix,   /* I - coord of first pixel to read (1s based) */
-            long nelem,       /* I - number of values to read                */
+            LONGLONG nelem,   /* I - number of values to read                */
+            void *nulval,     /* I - value for undefined pixels              */
+            void *array,      /* O - array of values that are returned       */
+            int  *anynul,     /* O - set to 1 if any values are null; else 0 */
+            int  *status)     /* IO - error status                           */
+/*
+  Read an array of values from the primary array. The datatype of the
+  input array is defined by the 2nd argument.  Data conversion
+  and scaling will be performed if necessary (e.g, if the datatype of
+  the FITS array is not the same as the array being read).
+  Undefined elements will be set equal to NULVAL, unless NULVAL=0
+  in which case no checking for undefined values will be performed.
+  ANYNUL is returned with a value of .true. if any pixels are undefined.
+*/
+{
+    LONGLONG tfirstpix[99];
+    int naxis, ii;
+
+    if (*status > 0 || nelem == 0)   /* inherit input status value if > 0 */
+        return(*status);
+
+    /* get the size of the image */
+    ffgidm(fptr, &naxis, status);
+    
+    for (ii=0; ii < naxis; ii++)
+       tfirstpix[ii] = firstpix[ii];
+
+    ffgpxvll(fptr, datatype, tfirstpix, nelem, nulval, array, anynul, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgpxvll( fitsfile *fptr, /* I - FITS file pointer                       */
+            int  datatype,    /* I - datatype of the value                   */
+            LONGLONG *firstpix, /* I - coord of first pixel to read (1s based) */
+            LONGLONG nelem,   /* I - number of values to read                */
             void *nulval,     /* I - value for undefined pixels              */
             void *array,      /* O - array of values that are returned       */
             int  *anynul,     /* O - set to 1 if any values are null; else 0 */
@@ -31,7 +66,7 @@ int ffgpxv( fitsfile *fptr,   /* I - FITS file pointer                       */
     int naxis, ii;
     char cdummy;
     int nullcheck = 1;
-    long naxes[9];
+    LONGLONG naxes[9];
     LONGLONG dimsize = 1, firstelem;
 
     if (*status > 0 || nelem == 0)   /* inherit input status value if > 0 */
@@ -39,7 +74,7 @@ int ffgpxv( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     /* get the size of the image */
     ffgidm(fptr, &naxis, status);
-    ffgisz(fptr, 9, naxes, status);
+    ffgiszll(fptr, 9, naxes, status);
 
     /* calculate the position of the first element in the array */
     firstelem = 0;
@@ -174,7 +209,41 @@ int ffgpxv( fitsfile *fptr,   /* I - FITS file pointer                       */
 int ffgpxf( fitsfile *fptr,   /* I - FITS file pointer                       */
             int  datatype,    /* I - datatype of the value                   */
             long *firstpix,   /* I - coord of first pixel to read (1s based) */
-            long nelem,       /* I - number of values to read                */
+            LONGLONG nelem,       /* I - number of values to read            */
+            void *array,      /* O - array of values that are returned       */
+            char *nullarray,  /* O - returned array of null value flags      */
+            int  *anynul,     /* O - set to 1 if any values are null; else 0 */
+            int  *status)     /* IO - error status                           */
+/*
+  Read an array of values from the primary array. The datatype of the
+  input array is defined by the 2nd argument.  Data conversion
+  and scaling will be performed if necessary (e.g, if the datatype of
+  the FITS array is not the same as the array being read).
+  The nullarray values will = 1 if the corresponding array value is null.
+  ANYNUL is returned with a value of .true. if any pixels are undefined.
+*/
+{
+    LONGLONG tfirstpix[99];
+    int naxis, ii;
+
+    if (*status > 0 || nelem == 0)   /* inherit input status value if > 0 */
+        return(*status);
+
+    /* get the size of the image */
+    ffgidm(fptr, &naxis, status);
+
+    for (ii=0; ii < naxis; ii++)
+       tfirstpix[ii] = firstpix[ii];
+
+    ffgpxfll(fptr, datatype, tfirstpix, nelem, array, nullarray, anynul, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgpxfll( fitsfile *fptr, /* I - FITS file pointer                       */
+            int  datatype,    /* I - datatype of the value                   */
+            LONGLONG *firstpix, /* I - coord of first pixel to read (1s based) */
+            LONGLONG nelem,       /* I - number of values to read              */
             void *array,      /* O - array of values that are returned       */
             char *nullarray,  /* O - returned array of null value flags      */
             int  *anynul,     /* O - set to 1 if any values are null; else 0 */
@@ -190,7 +259,7 @@ int ffgpxf( fitsfile *fptr,   /* I - FITS file pointer                       */
 {
     int naxis, ii;
     int nullcheck = 2;
-    long naxes[9];
+    LONGLONG naxes[9];
     LONGLONG dimsize = 1, firstelem;
 
     if (*status > 0 || nelem == 0)   /* inherit input status value if > 0 */
@@ -198,7 +267,7 @@ int ffgpxf( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     /* get the size of the image */
     ffgidm(fptr, &naxis, status);
-    ffgisz(fptr, 9, naxes, status);
+    ffgiszll(fptr, 9, naxes, status);
 
     /* calculate the position of the first element in the array */
     firstelem = 0;

@@ -87,6 +87,7 @@ int ffppnb( fitsfile *fptr,  /* I - FITS file pointer                       */
     row=maxvalue(1,group);
 
     ffpcnb(fptr, 2, row, firstelem, nelem, array, nulval, status);
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -664,7 +665,7 @@ int ffpcnb( fitsfile *fptr,  /* I - FITS file pointer                       */
          nbad = nbad + 1;  /* the consecutive number of bad pixels */
       }
     }
-
+    
     /* finished loop;  now just write the last set of pixels */
 
     if (ngood)  /* write last string of good pixels */

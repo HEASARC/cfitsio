@@ -38,7 +38,7 @@ SERVICES PROVIDED HEREUNDER."
 
 #include <stdio.h>
 
-#if defined(linux) || defined(__APPLE__)
+#if defined(linux) || defined(__APPLE__) || defined(__sgi)
 #  include <sys/types.h>  /* apparently needed on debian linux systems */
 #endif                    /* to define off_t                           */
 
@@ -552,9 +552,10 @@ int ffbinr(char **binspec, char *colname, double *minin,
                         double *maxin, double *binsizein, char *minname,
                         char *maxname, char *binname, int *status);
 int ffimport_file( char *filename, char **contents, int *status );
-int ffrwrg( char *rowlist, long maxrows, int maxranges, int *numranges,
+int ffrwrg( char *rowlist, LONGLONG maxrows, int maxranges, int *numranges,
       long *minrow, long *maxrow, int *status);
-
+int ffrwrgll( char *rowlist, LONGLONG maxrows, int maxranges, int *numranges,
+      LONGLONG *minrow, LONGLONG *maxrow, int *status);
 /*----------------  FITS file I/O routines -------------*/
 int ffomem(fitsfile **fptr, const char *name, int mode, void **buffptr,
            size_t *buffsize, size_t deltasize,
@@ -606,6 +607,7 @@ int ffgknm(char *card, char *name, int *length, int *status);
 int ffgthd(char *tmplt, char *card, int *hdtype, int *status);
 int ffasfm(char *tform, int *datacode, long *width, int *decim, int *status);
 int ffbnfm(char *tform, int *datacode, long *repeat, long *width, int *status);
+int ffbnfmll(char *tform, int *datacode, LONGLONG *repeat, long *width, int *status);
 int ffgabc(int tfields, char **tform, int space, long *rowlen, long *tbcol,
            int *status);
 int fits_get_section_range(char **ptr,long *secmin,long *secmax,long *incre,
@@ -637,8 +639,7 @@ int ffpkys(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
 int ffpkls(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
 int ffplsw(fitsfile *fptr, int *status);
 int ffpkyl(fitsfile *fptr, char *keyname, int  value, char *comm, int *status);
-int ffpkyj(fitsfile *fptr, char *keyname, long value, char *comm, int *status);
-int ffpkyjj(fitsfile *fptr, char *keyname, LONGLONG value, char *comm, int *status);
+int ffpkyj(fitsfile *fptr, char *keyname, LONGLONG value, char *comm, int *status);
 int ffpkyf(fitsfile *fptr, char *keyname, float value, int decim, char *comm,
           int *status);
 int ffpkye(fitsfile *fptr, char *keyname, float  value, int decim, char *comm,
@@ -658,6 +659,7 @@ int ffpkfm(fitsfile *fptr, char *keyname, double *value, int decim, char *comm,
 int ffpkyt(fitsfile *fptr, char *keyname, long intval, double frac, char *comm,
           int *status);
 int ffptdm( fitsfile *fptr, int colnum, int naxis, long naxes[], int *status);
+int ffptdmll( fitsfile *fptr, int colnum, int naxis, LONGLONG naxes[], int *status);
 
 /*----------------- write array of keywords --------------*/
 int ffpkns(fitsfile *fptr, char *keyroot, int nstart, int nkey, char *value[],
@@ -681,8 +683,11 @@ int ffcpky(fitsfile *infptr,fitsfile *outfptr,int incol,int outcol,
 
 /*----------------- write required header keywords --------------*/
 int ffphps( fitsfile *fptr, int bitpix, int naxis, long naxes[], int *status);
+int ffphpsll( fitsfile *fptr, int bitpix, int naxis, LONGLONG naxes[], int *status);
 int ffphpr( fitsfile *fptr, int simple, int bitpix, int naxis, long naxes[],
-            long pcount, long gcount, int extend, int *status);
+            LONGLONG pcount, LONGLONG gcount, int extend, int *status);
+int ffphprll( fitsfile *fptr, int simple, int bitpix, int naxis, LONGLONG naxes[],
+            LONGLONG pcount, LONGLONG gcount, int extend, int *status);
 int ffphtb(fitsfile *fptr, LONGLONG naxis1, LONGLONG naxis2, int tfields, char **ttype,
           long *tbcol, char **tform, char **tunit, char *extname, int *status);
 int ffphbn(fitsfile *fptr, LONGLONG naxis2, int tfields, char **ttype,
@@ -726,8 +731,12 @@ int ffgkyt(fitsfile *fptr, char *keyname, long *ivalue, double *dvalue,
            char *comm, int *status);
 int ffgtdm(fitsfile *fptr, int colnum, int maxdim, int *naxis, long naxes[],
            int *status);
+int ffgtdmll(fitsfile *fptr, int colnum, int maxdim, int *naxis, LONGLONG naxes[],
+           int *status);
 int ffdtdm(fitsfile *fptr, char *tdimstr, int colnum, int maxdim,
            int *naxis, long naxes[], int *status);
+int ffdtdmll(fitsfile *fptr, char *tdimstr, int colnum, int maxdim,
+           int *naxis, LONGLONG naxes[], int *status);
 
 /*------------------ read array of keywords -----------------*/
 int ffgkns(fitsfile *fptr, char *keyname, int nstart, int nmax, char *value[],
@@ -750,14 +759,26 @@ int ffhdr2str( fitsfile *fptr,  int exclude_comm, char **exclist,
 int ffghpr(fitsfile *fptr, int maxdim, int *simple, int *bitpix, int *naxis,
           long naxes[], long *pcount, long *gcount, int *extend, int *status);
  
+int ffghprll(fitsfile *fptr, int maxdim, int *simple, int *bitpix, int *naxis,
+          LONGLONG naxes[], long *pcount, long *gcount, int *extend, int *status);
+
 int ffghtb(fitsfile *fptr,int maxfield, long *naxis1, long *naxis2,
            int *tfields, char **ttype, long *tbcol, char **tform, char **tunit,
            char *extname,  int *status);
+
+int ffghtbll(fitsfile *fptr,int maxfield, LONGLONG *naxis1, LONGLONG *naxis2,
+           int *tfields, char **ttype, LONGLONG *tbcol, char **tform, char **tunit,
+           char *extname,  int *status);
+ 
  
 int ffghbn(fitsfile *fptr, int maxfield, long *naxis2, int *tfields,
            char **ttype, char **tform, char **tunit, char *extname,
            long *pcount, int *status);
- 
+
+int ffghbnll(fitsfile *fptr, int maxfield, LONGLONG *naxis2, int *tfields,
+           char **ttype, char **tform, char **tunit, char *extname,
+           LONGLONG *pcount, int *status);
+
 /*--------------------- update keywords ---------------*/
 int ffuky(fitsfile *fptr, int datatype, char *keyname, void *value,
           char *comm, int *status);
@@ -766,8 +787,7 @@ int ffukyu(fitsfile *fptr, char *keyname, char *comm, int *status);
 int ffukys(fitsfile *fptr, char *keyname, char *value, char *comm, int *status);
 int ffukls(fitsfile *fptr, char *keyname, char *value, char *comm, int *status);
 int ffukyl(fitsfile *fptr, char *keyname, int value, char *comm, int *status);
-int ffukyj(fitsfile *fptr, char *keyname, long value, char *comm, int *status);
-int ffukyjj(fitsfile *fptr, char *keyname, LONGLONG value, char *comm, int *status);
+int ffukyj(fitsfile *fptr, char *keyname, LONGLONG value, char *comm, int *status);
 int ffukyf(fitsfile *fptr, char *keyname, float value, int decim, char *comm,
           int *status);
 int ffukye(fitsfile *fptr, char *keyname, float value, int decim, char *comm,
@@ -794,8 +814,7 @@ int ffmkyu(fitsfile *fptr, char *keyname, char *comm, int *status);
 int ffmkys(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
 int ffmkls(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
 int ffmkyl(fitsfile *fptr, char *keyname, int value, char *comm, int *status);
-int ffmkyj(fitsfile *fptr, char *keyname, long value, char *comm, int *status);
-int ffmkyjj(fitsfile *fptr, char *keyname, LONGLONG value, char *comm, int *status);
+int ffmkyj(fitsfile *fptr, char *keyname, LONGLONG value, char *comm, int *status);
 int ffmkyf(fitsfile *fptr, char *keyname, float value, int decim, char *comm,
           int *status);
 int ffmkye(fitsfile *fptr, char *keyname, float value, int decim, char *comm,
@@ -820,8 +839,7 @@ int ffikyu(fitsfile *fptr, char *keyname, char *comm, int *status);
 int ffikys(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
 int ffikls(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
 int ffikyl(fitsfile *fptr, char *keyname, int value, char *comm, int *status);
-int ffikyj(fitsfile *fptr, char *keyname, long value, char *comm, int *status);
-int ffikyjj(fitsfile *fptr, char *keyname, LONGLONG value, char *comm, int *status);
+int ffikyj(fitsfile *fptr, char *keyname, LONGLONG value, char *comm, int *status);
 int ffikyf(fitsfile *fptr, char *keyname, float value, int decim, char *comm,
           int *status);
 int ffikye(fitsfile *fptr, char *keyname, float value, int decim, char *comm,
@@ -848,16 +866,19 @@ int ffghdn(fitsfile *fptr, int *chdunum);
 int ffghdt(fitsfile *fptr, int *exttype, int *status);
 int ffghad(fitsfile *fptr, long *headstart, long *datastart, long *dataend,
            int *status);
-int ffghadjj(fitsfile *fptr, LONGLONG *headstart, LONGLONG *datastart,
+int ffghadll(fitsfile *fptr, LONGLONG *headstart, LONGLONG *datastart,
            LONGLONG *dataend, int *status);
 int ffghof(fitsfile *fptr, OFF_T *headstart, OFF_T *datastart, OFF_T *dataend,
            int *status);
 int ffgipr(fitsfile *fptr, int maxaxis, int *imgtype, int *naxis,
            long *naxes, int *status);
+int ffgiprll(fitsfile *fptr, int maxaxis, int *imgtype, int *naxis,
+           LONGLONG *naxes, int *status);
 int ffgidt(fitsfile *fptr, int *imgtype, int *status);
 int ffgiet(fitsfile *fptr, int *imgtype, int *status);
 int ffgidm(fitsfile *fptr, int *naxis,  int *status);
 int ffgisz(fitsfile *fptr, int nlen, long *naxes, int *status);
+int ffgiszll(fitsfile *fptr, int nlen, LONGLONG *naxes, int *status);
 
 /*--------------------- HDU operations -------------*/
 int ffmahd(fitsfile *fptr, int hdunum, int *exttype, int *status);
@@ -867,14 +888,17 @@ int ffmnhd(fitsfile *fptr, int exttype, char *hduname, int hduvers,
 int ffthdu(fitsfile *fptr, int *nhdu, int *status);
 int ffcrhd(fitsfile *fptr, int *status);
 int ffcrim(fitsfile *fptr, int bitpix, int naxis, long *naxes, int *status);
+int ffcrimll(fitsfile *fptr, int bitpix, int naxis, LONGLONG *naxes, int *status);
 int ffcrtb(fitsfile *fptr, int tbltype, LONGLONG naxis2, int tfields, char **ttype,
            char **tform, char **tunit, char *extname, int *status);
 int ffiimg(fitsfile *fptr, int bitpix, int naxis, long *naxes, int *status);
-int ffitab(fitsfile *fptr, long naxis1, long naxis2, int tfields, char **ttype,
+int ffiimgll(fitsfile *fptr, int bitpix, int naxis, LONGLONG *naxes, int *status);
+int ffitab(fitsfile *fptr, LONGLONG naxis1, LONGLONG naxis2, int tfields, char **ttype,
            long *tbcol, char **tform, char **tunit, char *extname, int *status);
-int ffibin(fitsfile *fptr,LONGLONG naxis2, int tfields, char **ttype, char **tform,
+int ffibin(fitsfile *fptr, LONGLONG naxis2, int tfields, char **ttype, char **tform,
            char **tunit, char *extname, LONGLONG pcount, int *status);
 int ffrsim(fitsfile *fptr, int bitpix, int naxis, long *naxes, int *status);
+int ffrsimll(fitsfile *fptr, int bitpix, int naxis, LONGLONG *naxes, int *status);
 int ffdhdu(fitsfile *fptr, int *hdutype, int *status);
 int ffcopy(fitsfile *infptr, fitsfile *outfptr, int morekeys, int *status);
 int ffcpfl(fitsfile *infptr, fitsfile *outfptr, int prev, int cur, int follow,
@@ -899,9 +923,9 @@ int ffgcks(fitsfile *fptr, unsigned long *datasum, unsigned long *hdusum,
  
 /*--------------------- define scaling or null values -------------*/
 int ffpscl(fitsfile *fptr, double scale, double zero, int *status);
-int ffpnul(fitsfile *fptr, long nulvalue, int *status);
+int ffpnul(fitsfile *fptr, LONGLONG nulvalue, int *status);
 int fftscl(fitsfile *fptr, int colnum, double scale, double zero, int *status);
-int fftnul(fitsfile *fptr, int colnum, long nulvalue, int *status);
+int fftnul(fitsfile *fptr, int colnum, LONGLONG nulvalue, int *status);
 int ffsnul(fitsfile *fptr, int colnum, char *nulstring, int *status);
  
 /*--------------------- get column information -------------*/
@@ -912,23 +936,35 @@ int ffgcnn(fitsfile *fptr, int casesen, char *templt, char *colname,
  
 int ffgtcl(fitsfile *fptr, int colnum, int *typecode, long *repeat,
            long *width, int *status);
+int ffgtclll(fitsfile *fptr, int colnum, int *typecode, LONGLONG *repeat,
+           LONGLONG *width, int *status);
 int ffeqty(fitsfile *fptr, int colnum, int *typecode, long *repeat,
            long *width, int *status);
+int ffeqtyll(fitsfile *fptr, int colnum, int *typecode, LONGLONG *repeat,
+           LONGLONG *width, int *status);
 int ffgncl(fitsfile *fptr, int  *ncols, int *status);
 int ffgnrw(fitsfile *fptr, long *nrows, int *status);
+int ffgnrwll(fitsfile *fptr, LONGLONG *nrows, int *status);
 int ffgacl(fitsfile *fptr, int colnum, char *ttype, long *tbcol,
            char *tunit, char *tform, double *tscal, double *tzero,
            char *tnull, char *tdisp, int *status);
 int ffgbcl(fitsfile *fptr, int colnum, char *ttype, char *tunit,
            char *dtype, long *repeat, double *tscal, double *tzero,
            long *tnull, char *tdisp, int  *status);
+int ffgbclll(fitsfile *fptr, int colnum, char *ttype, char *tunit,
+           char *dtype, LONGLONG *repeat, double *tscal, double *tzero,
+           LONGLONG *tnull, char *tdisp, int  *status);
 int ffgrsz(fitsfile *fptr, long *nrows, int *status);
 int ffgcdw(fitsfile *fptr, int colnum, int *width, int *status);
 
 /*--------------------- read primary array or image elements -------------*/
-int ffgpxv(fitsfile *fptr, int  datatype, long *firstpix, long nelem,
+int ffgpxv(fitsfile *fptr, int  datatype, long *firstpix, LONGLONG nelem,
           void *nulval, void *array, int *anynul, int *status);
-int ffgpxf(fitsfile *fptr, int  datatype, long *firstpix, long nelem,
+int ffgpxvll(fitsfile *fptr, int  datatype, LONGLONG *firstpix, LONGLONG nelem,
+          void *nulval, void *array, int *anynul, int *status);
+int ffgpxf(fitsfile *fptr, int  datatype, long *firstpix, LONGLONG nelem,
+           void *array, char *nullarray, int *anynul, int *status);
+int ffgpxfll(fitsfile *fptr, int  datatype, LONGLONG *firstpix, LONGLONG nelem,
            void *array, char *nullarray, int *anynul, int *status);
 int ffgsv(fitsfile *fptr, int datatype, long *blc, long *trc, long *inc,
           void *nulval, void *array, int *anynul, int  *status);
@@ -1225,11 +1261,11 @@ int ffgcfm(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
  
 int ffgdes(fitsfile *fptr, int colnum, LONGLONG rownum, long *length,
            long *heapaddr, int *status);
-int ffgdesjj(fitsfile *fptr, int colnum, LONGLONG rownum, LONGLONG *length,
+int ffgdesll(fitsfile *fptr, int colnum, LONGLONG rownum, LONGLONG *length,
            LONGLONG *heapaddr, int *status);
 int ffgdess(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG nrows, long *length,
            long *heapaddr, int *status);
-int ffgdessjj(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG nrows, LONGLONG *length,
+int ffgdessll(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG nrows, LONGLONG *length,
            LONGLONG *heapaddr, int *status);
 int ffpdes(fitsfile *fptr, int colnum, LONGLONG rownum, LONGLONG length,
            LONGLONG heapaddr, int *status);
@@ -1241,9 +1277,13 @@ int ffgtbb(fitsfile *fptr, LONGLONG firstrow, LONGLONG firstchar, LONGLONG nchar
            unsigned char *values, int *status);
  
 /*------------ write primary array or image elements -------------*/
-int ffppx(fitsfile *fptr, int datatype, long  *firstpix, long nelem,
+int ffppx(fitsfile *fptr, int datatype, long *firstpix, LONGLONG nelem,
           void *array, int *status);
-int ffppxn(fitsfile *fptr, int datatype, long  *firstpix, long nelem,
+int ffppxll(fitsfile *fptr, int datatype, LONGLONG *firstpix, LONGLONG nelem,
+          void *array, int *status);
+int ffppxn(fitsfile *fptr, int datatype, long *firstpix, LONGLONG nelem,
+          void *array, void *nulval, int *status);
+int ffppxnll(fitsfile *fptr, int datatype, LONGLONG *firstpix, LONGLONG nelem,
           void *array, void *nulval, int *status);
 int ffppr(fitsfile *fptr, int datatype, LONGLONG  firstelem,
            LONGLONG nelem, void *array, int *status);
@@ -1500,10 +1540,11 @@ int ffirow(fitsfile *fptr, LONGLONG firstrow, LONGLONG nrows, int *status);
 int ffdrow(fitsfile *fptr, LONGLONG firstrow, LONGLONG nrows, int *status);
 int ffdrrg(fitsfile *fptr, char *ranges, int *status);
 int ffdrws(fitsfile *fptr, long *rownum,  long nrows, int *status);
+int ffdrwsll(fitsfile *fptr, LONGLONG *rownum,  LONGLONG nrows, int *status);
 int fficol(fitsfile *fptr, int numcol, char *ttype, char *tform, int *status);
 int fficls(fitsfile *fptr, int firstcol, int ncols, char **ttype,
            char **tform, int *status);
-int ffmvec(fitsfile *fptr, int colnum, long newveclen, int *status);
+int ffmvec(fitsfile *fptr, int colnum, LONGLONG newveclen, int *status);
 int ffdcol(fitsfile *fptr, int numcol, int *status);
 int ffcpcl(fitsfile *infptr, fitsfile *outfptr, int incol, int outcol, 
            int create_col, int *status);

@@ -14,7 +14,7 @@
 int ffppx(  fitsfile *fptr,  /* I - FITS file pointer                       */
             int  datatype,   /* I - datatype of the value                   */
             long  *firstpix, /* I - coord of  first pixel to write(1 based) */
-            long  nelem,     /* I - number of values to write               */
+            LONGLONG  nelem,     /* I - number of values to write               */
             void  *array,    /* I - array of values that are written        */
             int  *status)    /* IO - error status                           */
 /*
@@ -28,17 +28,101 @@ int ffppx(  fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     int naxis, ii;
-    long naxes[9], group = 1;
-    LONGLONG firstelem;
-    LONGLONG dimsize = 1;
+    long group = 1;
+    LONGLONG firstelem, dimsize = 1, naxes[9];
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
     /* get the size of the image */
     ffgidm(fptr, &naxis, status);
-    ffgisz(fptr, 9, naxes, status);
+    ffgiszll(fptr, 9, naxes, status);
 
+    firstelem = 0;
+    for (ii=0; ii < naxis; ii++)
+    {
+        firstelem += ((firstpix[ii] - 1) * dimsize);
+        dimsize *= naxes[ii];
+    }
+    firstelem++;
+
+    if (datatype == TBYTE)
+    {
+      ffpprb(fptr, group, firstelem, nelem, (unsigned char *) array, status);
+    }
+    else if (datatype == TSBYTE)
+    {
+      ffpprsb(fptr, group, firstelem, nelem, (signed char *) array, status);
+    }
+    else if (datatype == TUSHORT)
+    {
+      ffpprui(fptr, group, firstelem, nelem, (unsigned short *) array,
+              status);
+    }
+    else if (datatype == TSHORT)
+    {
+      ffppri(fptr, group, firstelem, nelem, (short *) array, status);
+    }
+    else if (datatype == TUINT)
+    {
+      ffppruk(fptr, group, firstelem, nelem, (unsigned int *) array, status);
+    }
+    else if (datatype == TINT)
+    {
+      ffpprk(fptr, group, firstelem, nelem, (int *) array, status);
+    }
+    else if (datatype == TULONG)
+    {
+      ffppruj(fptr, group, firstelem, nelem, (unsigned long *) array, status);
+    }
+    else if (datatype == TLONG)
+    {
+      ffpprj(fptr, group, firstelem, nelem, (long *) array, status);
+    }
+    else if (datatype == TLONGLONG)
+    {
+      ffpprjj(fptr, group, firstelem, nelem, (LONGLONG *) array, status);
+    }
+    else if (datatype == TFLOAT)
+    {
+      ffppre(fptr, group, firstelem, nelem, (float *) array, status);
+    }
+    else if (datatype == TDOUBLE)
+    {
+      ffpprd(fptr, group, firstelem, nelem, (double *) array, status);
+    }
+    else
+      *status = BAD_DATATYPE;
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffppxll(  fitsfile *fptr,  /* I - FITS file pointer                       */
+            int  datatype,   /* I - datatype of the value                   */
+            LONGLONG  *firstpix, /* I - coord of  first pixel to write(1 based) */
+            LONGLONG  nelem,     /* I - number of values to write               */
+            void  *array,    /* I - array of values that are written        */
+            int  *status)    /* IO - error status                           */
+/*
+  Write an array of pixels to the primary array.  The datatype of the
+  input array is defined by the 2nd argument. Data conversion
+  and scaling will be performed if necessary (e.g, if the datatype of
+  the FITS array is not the same as the array being written). 
+  
+  This routine is simillar to ffppr, except it supports writing to 
+  large images with more than 2**31 pixels.
+*/
+{
+    int naxis, ii;
+    long group = 1;
+    LONGLONG firstelem, dimsize = 1, naxes[9];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    /* get the size of the image */
+    ffgidm(fptr, &naxis, status);
+    ffgiszll(fptr, 9, naxes, status);
 
     firstelem = 0;
     for (ii=0; ii < naxis; ii++)
@@ -102,7 +186,7 @@ int ffppx(  fitsfile *fptr,  /* I - FITS file pointer                       */
 int ffppxn(  fitsfile *fptr,  /* I - FITS file pointer                       */
             int  datatype,   /* I - datatype of the value                   */
             long  *firstpix, /* I - first vector element to write(1 = 1st)  */
-            long  nelem,     /* I - number of values to write               */
+            LONGLONG  nelem,     /* I - number of values to write               */
             void  *array,    /* I - array of values that are written        */
             void  *nulval,   /* I - pointer to the null value               */
             int  *status)    /* IO - error status                           */
@@ -117,9 +201,8 @@ int ffppxn(  fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     int naxis, ii;
-    long naxes[9], group = 1;
-    LONGLONG firstelem;
-    LONGLONG dimsize = 1;
+    long group = 1;
+    LONGLONG firstelem, dimsize = 1, naxes[9];
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
@@ -132,7 +215,110 @@ int ffppxn(  fitsfile *fptr,  /* I - FITS file pointer                       */
 
     /* get the size of the image */
     ffgidm(fptr, &naxis, status);
-    ffgisz(fptr, 9, naxes, status);
+    ffgiszll(fptr, 9, naxes, status);
+
+    firstelem = 0;
+    for (ii=0; ii < naxis; ii++)
+    {
+        firstelem += ((firstpix[ii] - 1) * dimsize);
+        dimsize *= naxes[ii];
+    }
+    firstelem++;
+
+    if (datatype == TBYTE)
+    {
+      ffppnb(fptr, group, firstelem, nelem, (unsigned char *) array, 
+             *(unsigned char *) nulval, status);
+    }
+    else if (datatype == TSBYTE)
+    {
+      ffppnsb(fptr, group, firstelem, nelem, (signed char *) array, 
+             *(signed char *) nulval, status);
+    }
+    else if (datatype == TUSHORT)
+    {
+      ffppnui(fptr, group, firstelem, nelem, (unsigned short *) array,
+              *(unsigned short *) nulval,status);
+    }
+    else if (datatype == TSHORT)
+    {
+      ffppni(fptr, group, firstelem, nelem, (short *) array,
+             *(short *) nulval, status);
+    }
+    else if (datatype == TUINT)
+    {
+      ffppnuk(fptr, group, firstelem, nelem, (unsigned int *) array,
+             *(unsigned int *) nulval, status);
+    }
+    else if (datatype == TINT)
+    {
+      ffppnk(fptr, group, firstelem, nelem, (int *) array,
+             *(int *) nulval, status);
+    }
+    else if (datatype == TULONG)
+    {
+      ffppnuj(fptr, group, firstelem, nelem, (unsigned long *) array,
+              *(unsigned long *) nulval,status);
+    }
+    else if (datatype == TLONG)
+    {
+      ffppnj(fptr, group, firstelem, nelem, (long *) array,
+             *(long *) nulval, status);
+    }
+    else if (datatype == TLONGLONG)
+    {
+      ffppnjj(fptr, group, firstelem, nelem, (LONGLONG *) array,
+             *(LONGLONG *) nulval, status);
+    }
+    else if (datatype == TFLOAT)
+    {
+      ffppne(fptr, group, firstelem, nelem, (float *) array,
+             *(float *) nulval, status);
+    }
+    else if (datatype == TDOUBLE)
+    {
+      ffppnd(fptr, group, firstelem, nelem, (double *) array,
+             *(double *) nulval, status);
+    }
+    else
+      *status = BAD_DATATYPE;
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffppxnll(  fitsfile *fptr,  /* I - FITS file pointer                       */
+            int  datatype,   /* I - datatype of the value                   */
+            LONGLONG  *firstpix, /* I - first vector element to write(1 = 1st)  */
+            LONGLONG  nelem,     /* I - number of values to write               */
+            void  *array,    /* I - array of values that are written        */
+            void  *nulval,   /* I - pointer to the null value               */
+            int  *status)    /* IO - error status                           */
+/*
+  Write an array of values to the primary array.  The datatype of the
+  input array is defined by the 2nd argument. Data conversion
+  and scaling will be performed if necessary (e.g, if the datatype of
+  the FITS array is not the same as the array being written).
+
+  This routine supports writing to large images with
+  more than 2**31 pixels.
+*/
+{
+    int naxis, ii;
+    long  group = 1;
+    LONGLONG firstelem, dimsize = 1, naxes[9];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (nulval == NULL)  /* null value not defined? */
+    {
+        ffppxll(fptr, datatype, firstpix, nelem, array, status);
+        return(*status);
+    }
+
+    /* get the size of the image */
+    ffgidm(fptr, &naxis, status);
+    ffgiszll(fptr, 9, naxes, status);
 
     firstelem = 0;
     for (ii=0; ii < naxis; ii++)

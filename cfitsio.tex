@@ -31,7 +31,7 @@
 \medskip
 \medskip
 \begin{center}
-{\Large Version 2.5 \\}
+{\Large Version 3.0 \\}
 \end{center}
 \bigskip
 \vskip 2.5cm
@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large December 2004\\}
+{\Large March 2005\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -256,16 +256,23 @@ library (which in turn uses the gzip code) must conform to the
 provisions in the GNU General Public License.  A copy of the GNU
 license is included at the beginning of compress.c file.
 
-An alternate version of the compress.c file (called
-compress\_alternate.c) is provided for users who want to use the CFITSIO
+Similarly, the file wcsutil.c contains 2 slightly modified routines
+from the Classic AIPS package that are also distributed under the GNU
+General Public License.
+
+Alternate versions of the compress.c and wcsutil.c files (called
+compress\_alternate.c and wcsutil\_alternate.c) are provided for users
+who want to use the CFITSIO
 library but are unwilling or unable to publicly release their software
-under the terms of the GNU General Public License.   This alternate
-version contains non-functional stubs for the file compression and
-uncompression routines used by CFITSIO.  Replace the file `compress.c'
-with `compress\_alternate.c' before compiling the CFITSIO library.  This
+under the terms of the GNU General Public License.   These alternate
+versions contains non-functional stubs for the file compression and
+uncompression routines and the world coordinate transformation routines
+used by CFITSIO.  Replace the file `compress.c'
+with `compress\_alternate.c' and 'wcsutil.c' with 'wcsutil\_alternate.c
+before compiling the CFITSIO library.  This
 will produce a version of CFITSIO which does not support reading or
-writing compressed FITS files but is otherwise identical to the
-standard version.
+writing compressed FITS files, or doing image coordinate transformations,
+but is otherwise identical to the standard version.
 
 \chapter{ Creating the CFITSIO Library }
 
@@ -915,24 +922,64 @@ logical table columns, but is for keywords, so a logical keyword may be
 read and cast to any numerical data type; a returned value = 0
 indicates false, and any other value = true.
 
-The `int' data type may be 2 bytes long on some IBM PC compatible
-systems and is usually 4 bytes long on most other systems.  Some 64-bit
-machines, however, like the Dec Alpha/OSF, define the `short', `int',
+The `int' data type may be 2 bytes long on some old PC compilers,
+but otherwise it is nearly always 4 bytes long.   Some 64-bit
+machines, like the Alpha/OSF, define the `short', `int',
 and `long' integer data types to be 2, 4, and 8 bytes long,
-respectively.  The FITS standard only supports 2 and 4 byte integer
-data types, so CFITSIO internally converts between 4 and 8 bytes when
-reading or writing `long' integers on Alpha/OSF systems.
+respectively.  The FITS standard only officially supports 2 and 4 byte integer
+data types, however CFITSIO also supports an experimental 8-byte
+integer datatype for FITS images (BITPIX = 64) and FITS table columns
+(TFORMn = 'K').
 
-The 8-byte 'LONGLONG' integer data type is supported on most platforms.
-CFITSIO defines the LONGLONG data type to be equivalent to 'long long'
-on most Unix platforms and on Mac OS-X.  Since most Windows compilers don't
-support the 'long long' data type, LONGLONG is defined instead to be
-equivalent to '\_\_int64'.  If the compiler does not support a 8-byte
-integer data type then LONGLONG is defined to be equivalent to 'long'.
-Note that the C format specifier to print out these long integer values
-is "\%lld" on most unix machines, except on OSF platforms where "\%ld"
-must be used.  On Windows platform that have the \_\_int64 data type,
-the format specifier is "\%INT64d".
+Because there is no universal C compiler standard for the name of the
+8-byte integer datatype, the fitsio.h include file typedef's
+'LONGLONG'  to be equivalent to  an
+appropriate 8-byte integer data type on each supported platform.
+For maximum software portability it is recommended that
+this LONGLONG datatype be used to define 8-byte integer variables
+rather than using the native data type name on a particular
+platform. On most
+32-bit Unix and Mac OS-X operating systems LONGLONG is equivalent to the
+intrinsic 'long long' 8-byte integer datatype.  On 64-bit systems (which currently
+includes Alpha OSF/1, 64-bit Sun Solaris, 64-bit SGI MIPS, and  64-bit
+Itanium and Opteron PC systems), LONGLONG is  simply typedef'ed to be
+equivalent to 'long'.   Microsoft Visual C++ Version 6.0 does not define
+a 'long long'  data type, so LONGLONG is typedef'ed to be equivalent to
+the '\_\_int64' data type on 32-bit windows systems when using Visual C++.
+
+A related issue that affects the portability of software is how to print
+out the value of a 'LONGLONG' variable with printf.  Developers may
+find it convenient to use the following preprocessing statements
+in their C programs to handle this in a machine-portable manner:
+
+
+\begin{verbatim}
+#if defined(_MSC_VER) /* Microsoft Visual C++ */
+          printf("%I64d", longlongvalue);
+	
+#elif (USE_LL_SUFFIX == 1)
+          printf("%lld", longlongvalue);
+	
+#else
+          printf("%ld", longlongvalue);
+#endif
+\end{verbatim}
+
+Similarly, the name of the C utility routine that converts a character
+string of digits into a 8-byte integer value is platform dependent:
+
+
+\begin{verbatim}
+#if defined(_MSC_VER) /* Microsoft Visual C++ */
+      /* VC++ 6.0 does not seem to have an 8-byte conversion routine */
+	
+#elif (USE_LL_SUFFIX == 1)
+          longlongvalue = atoll(*string);
+	
+#else
+          longlongvalue = atol(*string);
+#endif
+\end{verbatim}
 
 When dealing with the FITS byte data type it is important to remember
 that the raw values (before any scaling by the BSCALE and BZERO, or
@@ -1900,7 +1947,7 @@ header.
     the datatype parameter specifies the desired returned data type of the
     keyword value and can have one of the following symbolic constant
     values:  TSTRING, TLOGICAL (== int), TBYTE, TSHORT, TUSHORT, TINT,
-    TUINT, TLONG, TULONG, TFLOAT, TDOUBLE, TCOMPLEX, and TDBLCOMPLEX.
+    TUINT, TLONG, TULONG, TLONGLONG, TFLOAT, TDOUBLE, TCOMPLEX, and TDBLCOMPLEX.
     Within the context of this routine, TSTRING corresponds to a
     'char*' data type, i.e., a pointer to a character array.  Data type
     conversion will be performed for numeric values if the keyword
@@ -1911,7 +1958,8 @@ header.
     The second routine returns the keyword value as a character string
     (a literal copy of what is in the value field) regardless of the
     intrinsic data type of the keyword.  The third routine returns
-    the entire 80-character header record of the keyword.
+    the entire 80-character header record of the keyword, with any
+    trailing blank characters stripped off.
 
     If a NULL comment pointer is supplied then the comment string
    will not be returned. \label{ffgky} \label{ffgkey} \label{ffgcrd}
@@ -1937,8 +1985,9 @@ header.
    so that subsequent keyword operations will start at the top of the
    header (e.g., prior to searching for keywords using wild cards in
    the keyword name).   The first routine returns the entire
-   80-character header record, while the second routine parses the
-   record and returns the name, value, and comment fields as separate
+   80-character header record (with trailing blanks truncated),
+   while the second routine parses the record and returns the name,
+   value, and comment fields as separate (blank truncated)
    character strings.  If a NULL comment pointer is given on input,
    then the comment string will not be
   returned. \label{ffgrec} \label{ffgkyn}
@@ -2030,7 +2079,7 @@ header.
     itself, must be entered.    The datatype parameter specifies the
     data type of the keyword value with one of the following values:
     TSTRING, TLOGICAL (== int), TBYTE, TSHORT, TUSHORT, TINT, TUINT,
-    TLONG, TULONG, TFLOAT, TDOUBLE.  Within the context of this
+    TLONG, TLONGLONG, TULONG, TFLOAT, TDOUBLE.  Within the context of this
     routine, TSTRING corresponds to a 'char*' data type, i.e., a pointer
     to a character array.  A null pointer may be entered for the
     comment parameter in which case the  keyword comment
@@ -2203,8 +2252,12 @@ in the FITS array.
 \item[1 ] Get the data type or equivalent data type of the image.  The
     first routine returns the physical data type of the FITS image, as
     given by the BITPIX keyword, with allowed values of BYTE\_IMG (8),
-    SHORT\_IMG (16), LONG\_IMG (32), FLOAT\_IMG (-32), and DOUBLE\_IMG
-    (-64).  The second routine is similar, except that if the image pixel
+    SHORT\_IMG (16), LONG\_IMG (32), LONGLONG\_IMG (64),
+    FLOAT\_IMG (-32), and DOUBLE\_IMG
+    (-64).  Note that BITPIX = 64 is an experimental
+    data type that is not currently defined in the FITS standard
+    document.  It is not recommended for general use.
+    The second routine is similar, except that if the image pixel
     values are scaled, with non-default values for the BZERO and BSCALE
     keywords, then the routine will return the 'equivalent' data type
     that is needed to store the scaled values.  For example, if BITPIX
@@ -2237,8 +2290,15 @@ in the FITS array.
   int fits_get_img_size / ffgisz
       (fitsfile *fptr, int maxdim, > long *naxes, int *status)
 
+  int fits_get_img_sizell / ffgiszll
+      (fitsfile *fptr, int maxdim, > LONGLONG *naxes, int *status)
+
   int fits_get_img_param / ffgipr
       (fitsfile *fptr, int maxdim, > int *bitpix, int *naxis, long *naxes,
+       int *status)
+
+  int fits_get_img_paramll / ffgiprll
+      (fitsfile *fptr, int maxdim, > int *bitpix, int *naxis, LONGLONG *naxes,
        int *status)
 \end{verbatim}
 
@@ -2252,6 +2312,9 @@ in the FITS array.
 \begin{verbatim}
   int fits_create_img / ffcrim
       ( fitsfile *fptr, int bitpix, int naxis, long *naxes, > int *status)
+
+  int fits_create_imgll / ffcrimll
+      ( fitsfile *fptr, int bitpix, int naxis, LONGLONG *naxes, > int *status)
 \end{verbatim}
 
 \begin{description}
@@ -2271,9 +2334,9 @@ in the FITS array.
 \item[5 ] Write pixels into the FITS data array.  'fpixel' is an array of
    length NAXIS which gives the coordinate of the starting pixel to be
    written to, such that fpixel[0] is in the range 1 to NAXIS1,
-   fpixel[1] is in the range 1 to NAXIS2, etc.  The first routine
+   fpixel[1] is in the range 1 to NAXIS2, etc.  The first pair of routines
    simply writes the array of pixels to the FITS file (doing data type
-   conversion if necessary) whereas the second routine will substitute
+   conversion if necessary) whereas the second routines will substitute
    the  appropriate FITS null value for any elements which are equal to
    the input value of nulval (note that this parameter gives the
    address of the null value, not the null value itself).  For integer
@@ -2287,11 +2350,19 @@ in the FITS array.
 
 \begin{verbatim}
   int fits_write_pix / ffppx
-      (fitsfile *fptr, int datatype, long *fpixel, long nelements,
+      (fitsfile *fptr, int datatype, long *fpixel, LONGLONG nelements,
+       DTYPE *array, int *status);
+
+  int fits_write_pixll / ffppxll
+      (fitsfile *fptr, int datatype, LONGLONG *fpixel, LONGLONG nelements,
        DTYPE *array, int *status);
 
   int fits_write_pixnull / ffppxn
-      (fitsfile *fptr, int datatype, long *fpixel, long nelements,
+      (fitsfile *fptr, int datatype, long *fpixel, LONGLONG nelements,
+       DTYPE *array, DTYPE *nulval, > int *status);
+
+  int fits_write_pixnullll / ffppxnll
+      (fitsfile *fptr, int datatype, LONGLONG *fpixel, LONGLONG nelements,
        DTYPE *array, DTYPE *nulval, > int *status);
 \end{verbatim}
 
@@ -2307,7 +2378,7 @@ in the FITS array.
 
 \begin{verbatim}
   int fits_write_null_img / ffpprn
-      (fitsfile *fptr, long firstelem, long nelements, > int *status)
+      (fitsfile *fptr, LONGLONG firstelem, LONGLONG nelements, > int *status)
 \end{verbatim}
 
 \begin{description}
@@ -2349,11 +2420,19 @@ in the FITS array.
 
 \begin{verbatim}
   int fits_read_pix / ffgpxv
-      (fitsfile *fptr, int  datatype, long *fpixel, long nelements,
+      (fitsfile *fptr, int  datatype, long *fpixel, LONGLONG nelements,
+       DTYPE *nulval, > DTYPE *array, int *anynul, int *status)
+
+  int fits_read_pixll / ffgpxvll
+      (fitsfile *fptr, int  datatype, LONGLONG *fpixel, LONGLONG nelements,
        DTYPE *nulval, > DTYPE *array, int *anynul, int *status)
 
   int fits_read_pixnull / ffgpxf
-      (fitsfile *fptr, int  datatype, long *fpixel, long nelements,
+      (fitsfile *fptr, int  datatype, long *fpixel, LONGLONG nelements,
+       > DTYPE *array, char *nullarray, int *anynul, int *status)
+
+  int fits_read_pixnullll / ffgpxfll
+      (fitsfile *fptr, int  datatype, LONGLONG *fpixel, LONGLONG nelements,
        > DTYPE *array, char *nullarray, int *anynul, int *status)
 \end{verbatim}
 
@@ -2580,7 +2659,7 @@ efficient block size.
 
 \begin{verbatim}
   int fits_create_tbl / ffcrtb
-      (fitsfile *fptr, int tbltype, long naxis2, int tfields, char *ttype[],
+      (fitsfile *fptr, int tbltype, LONGLONG naxis2, int tfields, char *ttype[],
        char *tform[], char *tunit[], char *extname, int *status)
 \end{verbatim}
 
@@ -2597,6 +2676,9 @@ efficient block size.
 \begin{verbatim}
   int fits_get_num_rows / ffgnrw
       (fitsfile *fptr, > long *nrows, int *status);
+
+  int fits_get_num_rowsll / ffgnrwll
+      (fitsfile *fptr, > LONGLONG *nrows, int *status);
 
   int fits_get_num_cols / ffgncl
       (fitsfile *fptr, > int *ncols, int *status);
@@ -2692,9 +2774,17 @@ the first 8 characters, and strongly recommended that the names be
       (fitsfile *fptr, int colnum, > int *typecode, long *repeat,
        long *width, int *status)
 
+  int fits_get_coltypell / ffgtclll
+      (fitsfile *fptr, int colnum, > int *typecode, LONGLONG *repeat,
+       LONGLONG *width, int *status)
+
   int fits_get_eqcoltype / ffeqty
       (fitsfile *fptr, int colnum, > int *typecode, long *repeat,
        long *width, int *status)
+
+  int fits_get_eqcoltypell / ffeqtyll
+      (fitsfile *fptr, int colnum, > int *typecode, LONGLONG *repeat,
+       LONGLONG *width, int *status)
 \end{verbatim}
 
 \begin{description}
@@ -2722,6 +2812,10 @@ the first 8 characters, and strongly recommended that the names be
   int fits_read_tdim / ffgtdm
       (fitsfile *fptr, int colnum, int maxdim, > int *naxis,
        long *naxes, int *status)
+
+  int fits_read_tdimll / ffgtdmll
+      (fitsfile *fptr, int colnum, int maxdim, > int *naxis,
+       LONGLONG *naxes, int *status)
 \end{verbatim}
 
 \begin{description}
@@ -2736,6 +2830,10 @@ the first 8 characters, and strongly recommended that the names be
   int fits_decode_tdim / ffdtdm
       (fitsfile *fptr, char *tdimstr, int colnum, int maxdim, > int *naxis,
        long *naxes, int *status)
+
+  int fits_decode_tdimll / ffdtdmll
+      (fitsfile *fptr, char *tdimstr, int colnum, int maxdim, > int *naxis,
+       LONGLONG *naxes, int *status)
 \end{verbatim}
 
 \begin{description}
@@ -2747,6 +2845,9 @@ the first 8 characters, and strongly recommended that the names be
 \begin{verbatim}
   int fits_write_tdim / ffptdm
       (fitsfile *fptr, int colnum, int naxis, long *naxes, > int *status)
+
+  int fits_write_tdimll / ffptdmll
+      (fitsfile *fptr, int colnum, int naxis, LONGLONG *naxes, > int *status)
 \end{verbatim}
 
 
@@ -2770,16 +2871,19 @@ the first 8 characters, and strongly recommended that the names be
 
 \begin{verbatim}
   int fits_insert_rows / ffirow
-      (fitsfile *fptr, long firstrow, long nrows, > int *status)
+      (fitsfile *fptr, LONGLONG firstrow, LONGLONG nrows, > int *status)
 
   int fits_delete_rows / ffdrow
-      (fitsfile *fptr, long firstrow, long nrows, > int *status)
+      (fitsfile *fptr, LONGLONG firstrow, LONGLONG nrows, > int *status)
 
   int fits_delete_rowrange / ffdrrg
       (fitsfile *fptr, char *rangelist, > int *status)
 
   int fits_delete_rowlist / ffdrws
       (fitsfile *fptr, long *rowlist, long nrows, > int *status)
+
+  int fits_delete_rowlistll / ffdrwsll
+      (fitsfile *fptr, LONGLONG *rowlist, LONGLONG nrows, > int *status)
 \end{verbatim}
 
 \begin{description}
@@ -2834,7 +2938,7 @@ the first 8 characters, and strongly recommended that the names be
 
 \begin{verbatim}
   int fits_modify_vector_len / ffmvec
-      (fitsfile *fptr, int colnum, long newveclen, > int *status)
+      (fitsfile *fptr, int colnum, LONGLONG newveclen, > int *status)
 \end{verbatim}
 
 \subsection{Read and Write Column Data Routines}
@@ -2888,24 +2992,23 @@ rows if required) and not the number of table cells.
    For floating point columns  the special IEEE NaN (Not-a-Number)
    value will be written into the FITS file.  If a null pointer is
    entered for nulval, then the null value is ignored and this routine
-   behaves the same as the first routine. The second routine must not
-   be used to write to variable length array columns.  The third routine
+   behaves the same as the first routine.  The third routine
    simply writes undefined pixel values to the column.
    \label{ffpcl} \label{ffpcn} \label{ffpclu}
 
 \begin{verbatim}
   int fits_write_col / ffpcl
-      (fitsfile *fptr, int datatype, int colnum, long firstrow,
-       long firstelem, long nelements, DTYPE *array, > int *status)
+      (fitsfile *fptr, int datatype, int colnum, LONGLONG firstrow,
+       LONGLONG firstelem, LONGLONG nelements, DTYPE *array, > int *status)
 
   int fits_write_colnull / ffpcn
-      (fitsfile *fptr, int datatype, int colnum, long firstrow,
-      long firstelem, long nelements, DTYPE *array, DTYPE *nulval,
+      (fitsfile *fptr, int datatype, int colnum, LONGLONG firstrow,
+      LONGLONG firstelem, LONGLONG nelements, DTYPE *array, DTYPE *nulval,
       > int *status)
 
    int fits_write_col_null / ffpclu
-       (fitsfile *fptr, int colnum, long firstrow, long firstelem,
-        long nelements, > int *status)
+       (fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+        LONGLONG nelements, > int *status)
 \end{verbatim}
 
 \begin{description}
@@ -2946,12 +3049,12 @@ rows if required) and not the number of table cells.
 
 \begin{verbatim}
   int fits_read_col / ffgcv
-      (fitsfile *fptr, int datatype, int colnum, long firstrow, long firstelem,
-       long nelements, DTYPE *nulval, DTYPE *array, int *anynul, int *status)
+      (fitsfile *fptr, int datatype, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+       LONGLONG nelements, DTYPE *nulval, DTYPE *array, int *anynul, int *status)
 
   int fits_read_colnull / ffgcf
-      (fitsfile *fptr, int datatype, int colnum, long firstrow, long firstelem,
-      long nelements, DTYPE *array, char *nullarray, int *anynul, int *status)
+      (fitsfile *fptr, int datatype, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+      LONGLONG nelements, DTYPE *array, char *nullarray, int *anynul, int *status)
 \end{verbatim}
 
 
@@ -3306,12 +3409,13 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
 
 \begin{description}
-\item[4 ]  Compare the input template string against the reference string
+\item[4 ] Compare the input template string against the reference string
     to see if they match.  The template string may contain wildcard
     characters: '*' will match any sequence of characters (including
-    zero characters) and '\%' will match any single character in the
-    reference string.  If casesen = CASESEN = TRUE then the match will be
-    case sensitive, otherwise the case of the letters will be ignored
+    zero characters) and '?' will match any single character in the
+    reference string.  The '\#' character will match any consecutive string
+    of decimal digits (0 - 9).  If casesen = CASESEN = TRUE then the match will
+    be case sensitive, otherwise the case of the letters will be ignored
     if casesen = CASEINSEN = FALSE.  The returned MATCH parameter will be
     TRUE if the 2 strings match, and EXACT will be TRUE if the match is
     exact (i.e., if no wildcard characters were used in the match).
@@ -3496,6 +3600,10 @@ The following utility routines may be useful for certain applications.
    int fits_binary_tform / ffbnfm
        (char *tform, > int *typecode, long *repeat, long *width,
         int *status)
+
+   int fits_binary_tformll / ffbnfmll
+       (char *tform, > int *typecode, LONGLONG *repeat, long *width,
+        int *status)
 \end{verbatim}
 
 \begin{description}
@@ -3658,8 +3766,11 @@ The following utility routines may be useful for certain applications.
 \end{description}
 
 \begin{verbatim}
-    int fits_parse_range / ffrwrg(char *rowlist, long maxrows, int maxranges, >
+    int fits_parse_range / ffrwrg(char *rowlist, LONGLONG maxrows, int maxranges, >
        int *numranges, long *rangemin, long *rangemax, int *status)
+
+    int fits_parse_rangell / ffrwrgll(char *rowlist, LONGLONG maxrows, int maxranges, >
+       int *numranges, LONGLONG *rangemin, LONGLONG *rangemax, int *status)
 \end{verbatim}
 
 \begin{description}
@@ -4864,19 +4975,15 @@ the 'exists' parameter will have 1 of the 4 following values:
     between headstart and dataend equals the size of the CHDU.  If the
     CHDU is the last HDU in the file, then dataend is also equal to the
     size of the entire FITS file.  Null pointers may be input for any
-    of the address parameters if their values are not needed.  The
-    fits\_get\_hduaddr routine is obsolete and should no longer be
-    used.  The newer fits\_get\_hduoff routine uses the 'off\_t'
-    data type which can support offsets in large files greater than
-   2.1GB in size. \label{ffghad}
+   of the address parameters if their values are not needed. \label{ffghad}
 \end{description}
 
 \begin{verbatim}
-  int fits_get_hduoff / ffghof
-       (fitsfile *fptr, > off_t *headstart, off_t *datastart, off_t *dataend,
+  int fits_get_hduaddr / ffghad  (only supports files up to 2.1 GB in size)
+       (fitsfile *fptr, > long *headstart, long *datastart, long *dataend,
         int *status)
 
-  int fits_get_hduaddr / ffghad  (OBSOLETE routine)
+  int fits_get_hduaddrll / ffghadjj  (supports large files)
        (fitsfile *fptr, > long *headstart, long *datastart, long *dataend,
         int *status)
 \end{verbatim}
@@ -4910,6 +5017,9 @@ the 'exists' parameter will have 1 of the 4 following values:
 \begin{verbatim}
   int fits_insert_img / ffiimg
       (fitsfile *fptr, int bitpix, int naxis, long *naxes, > int *status)
+
+  int fits_insert_imgll / ffiimgll
+      (fitsfile *fptr, int bitpix, int naxis, LONGLONG *naxes, > int *status)
 \end{verbatim}
 
 \begin{description}
@@ -4935,11 +5045,11 @@ the 'exists' parameter will have 1 of the 4 following values:
 
 \begin{verbatim}
   int fits_insert_atbl / ffitab
-      (fitsfile *fptr, long rowlen, long nrows, int tfields, char *ttype[],
+      (fitsfile *fptr, LONGLONG rowlen, LONGLONG nrows, int tfields, char *ttype[],
        long *tbcol, char *tform[], char *tunit[], char *extname, > int *status)
 
   int fits_insert_btbl / ffibin
-      (fitsfile *fptr, long nrows, int tfields, char **ttype,
+      (fitsfile *fptr, LONGLONG nrows, int tfields, char **ttype,
       char **tform, char **tunit, char *extname, long pcount, > int *status)
 \end{verbatim}
 
@@ -4960,6 +5070,9 @@ the 'exists' parameter will have 1 of the 4 following values:
 \begin{verbatim}
   int fits_resize_img / ffrsim
       (fitsfile *fptr, int bitpix, int naxis, long *naxes, > int *status)
+
+  int fits_resize_imgll / ffrsimll
+      (fitsfile *fptr, int bitpix, int naxis, LONGLONG *naxes, > int *status)
 \end{verbatim}
 
 \begin{description}
@@ -5050,9 +5163,16 @@ the 'exists' parameter will have 1 of the 4 following values:
   int fits_write_imghdr / ffphps
       (fitsfile *fptr, int bitpix, int naxis, long *naxes, > int *status)
 
+  int fits_write_imghdrll / ffphpsll
+      (fitsfile *fptr, int bitpix, int naxis, LONGLONG *naxes, > int *status)
+
   int fits_write_grphdr / ffphpr
       (fitsfile *fptr, int simple, int bitpix, int naxis, long *naxes,
-       long pcount, long gcount, int extend, > int *status)
+       LONGLONG pcount, LONGLONG gcount, int extend, > int *status)
+
+  int fits_write_grphdrll / ffphprll
+      (fitsfile *fptr, int simple, int bitpix, int naxis, LONGLONG *naxes,
+       LONGLONG pcount, LONGLONG gcount, int extend, > int *status)
 \end{verbatim}
 
 \begin{description}
@@ -5067,7 +5187,7 @@ the 'exists' parameter will have 1 of the 4 following values:
 
 \begin{verbatim}
   int fits_write_atblhdr / ffphtb
-      (fitsfile *fptr, long rowlen, long nrows, int tfields, char **ttype,
+      (fitsfile *fptr, LONGLONG rowlen, LONGLONG nrows, int tfields, char **ttype,
        long *tbcol, char **tform, char **tunit, char *extname, > int *status)
 \end{verbatim}
 
@@ -5093,8 +5213,8 @@ the 'exists' parameter will have 1 of the 4 following values:
 
 \begin{verbatim}
   int fits_write_btblhdr / ffphbn
-      (fitsfile *fptr, long nrows, int tfields, char **ttype,
-       char **tform, char **tunit, char *extname, long pcount, > int *status)
+      (fitsfile *fptr, LONGLONG nrows, int tfields, char **ttype,
+       char **tform, char **tunit, char *extname, LONGLONG pcount, > int *status)
 \end{verbatim}
 
 \begin{description}
@@ -5109,13 +5229,27 @@ the 'exists' parameter will have 1 of the 4 following values:
       (fitsfile *fptr, int maxdim, > int *simple, int *bitpix, int *naxis,
        long *naxes, long *pcount, long *gcount, int *extend, int *status)
 
+  int fits_read_imghdrll / ffghprll
+      (fitsfile *fptr, int maxdim, > int *simple, int *bitpix, int *naxis,
+       LONGLONG *naxes, long *pcount, long *gcount, int *extend, int *status)
+
   int fits_read_atblhdr / ffghtb
       (fitsfile *fptr,int maxdim, > long *rowlen, long *nrows,
+       int *tfields, char **ttype, LONGLONG *tbcol, char **tform, char **tunit,
+       char *extname,  int *status)
+
+  int fits_read_atblhdrll / ffghtbll
+      (fitsfile *fptr,int maxdim, > LONGLONG *rowlen, LONGLONG *nrows,
        int *tfields, char **ttype, long *tbcol, char **tform, char **tunit,
        char *extname,  int *status)
 
   int fits_read_btblhdr / ffghbn
       (fitsfile *fptr, int maxdim, > long *nrows, int *tfields,
+       char **ttype, char **tform, char **tunit, char *extname,
+       long *pcount, int *status)
+
+  int fits_read_btblhdrll / ffghbnll
+      (fitsfile *fptr, int maxdim, > LONGLONG *nrows, int *tfields,
        char **ttype, char **tform, char **tunit, char *extname,
        long *pcount, int *status)
 \end{verbatim}
@@ -5357,6 +5491,9 @@ keyword to be read.
       (fitsfile *fptr, char *keyname, > DTYPE *numval, char *comment,
        int *status)
 
+  int fits_read_key_lnglng / ffgkyjj
+      (fitsfile *fptr, char *keyname, > LONGLONG *numval, char *comment,
+       int *status)
 \end{verbatim}
 
 \begin{description}
@@ -5568,7 +5705,7 @@ parameters used in these routines.
 
 \begin{verbatim}
   int fits_set_imgnull / ffpnul
-      (fitsfile *fptr, long nulval, > int *status)
+      (fitsfile *fptr, LONGLONG nulval, > int *status)
 \end{verbatim}
 
 \begin{description}
@@ -5591,7 +5728,7 @@ parameters used in these routines.
 
 \begin{verbatim}
   int fits_set_btblnull / fftnul
-      (fitsfile *fptr, int colnum, long nulval, > int *status)
+      (fitsfile *fptr, int colnum, LONGLONG nulval, > int *status)
 \end{verbatim}
 
 
@@ -5678,22 +5815,22 @@ with large data arrays.
 
 \begin{verbatim}
   int fits_write_img / ffppr
-      (fitsfile *fptr, int datatype, long firstelem, long nelements,
+      (fitsfile *fptr, int datatype, LONGLONG firstelem, LONGLONG nelements,
        DTYPE *array, int *status);
 
   int fits_write_img_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
       ffppr[b,i,ui,k,uk,j,uj,jj,e,d]
-      (fitsfile *fptr, long group, long firstelem, long nelements,
+      (fitsfile *fptr, long group, LONGLONG firstelem, LONGLONG nelements,
        DTYPE *array, > int *status);
 
   int fits_write_imgnull / ffppn
-      (fitsfile *fptr, int datatype, long firstelem, long nelements,
+      (fitsfile *fptr, int datatype, LONGLONG firstelem, LONGLONG nelements,
        DTYPE *array, DTYPE *nulval, > int *status);
 
   int fits_write_imgnull_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
       ffppn[b,i,ui,k,uk,j,uj,jj,e,d]
-      (fitsfile *fptr, long group, long firstelem,
-           long nelements, DTYPE *array, DTYPE nulval, > int *status);
+      (fitsfile *fptr, long group, LONGLONG firstelem,
+           LONGLONG nelements, DTYPE *array, DTYPE nulval, > int *status);
 \end{verbatim}
 
 \begin{description}
@@ -5702,7 +5839,7 @@ with large data arrays.
 
 \begin{verbatim}
   int fits_write_img_null / ffppru
-      (fitsfile *fptr, long group, long firstelem, long nelements,
+      (fitsfile *fptr, long group, LONGLONG firstelem, LONGLONG nelements,
        > int *status)
 \end{verbatim}
 
@@ -5727,13 +5864,13 @@ with large data arrays.
 \begin{verbatim}
   int fits_write_2d_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
       ffp2d[b,i,ui,k,uk,j,uj,jj,e,d]
-      (fitsfile *fptr, long group, long dim1, long naxis1,
-       long naxis2, DTYPE *array, > int *status)
+      (fitsfile *fptr, long group, LONGLONG dim1, LONGLONG naxis1,
+       LONGLONG naxis2, DTYPE *array, > int *status)
 
   int fits_write_3d_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
       ffp3d[b,i,ui,k,uk,j,uj,jj,e,d]
-      (fitsfile *fptr, long group, long dim1, long dim2,
-       long naxis1, long naxis2, long naxis3, DTYPE *array, > int *status)
+      (fitsfile *fptr, long group, LONGLONG dim1, LONGLONG dim2, LONGLONG naxis1,
+       LONGLONG naxis2, LONGLONG naxis3, DTYPE *array, > int *status)
 \end{verbatim}
 
 \begin{description}
@@ -5796,13 +5933,13 @@ with large data arrays.
 \begin{verbatim}
   int  fits_read_2d_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
        ffg2d[b,i,ui,k,uk,j,uj,jj,e,d]
-       (fitsfile *fptr, long group, DTYPE nulval, long dim1, long naxis1,
-       long naxis2, > DTYPE *array, int *anynul, int *status)
+       (fitsfile *fptr, long group, DTYPE nulval, LONGLONG dim1, LONGLONG naxis1,
+       LONGLONG naxis2, > DTYPE *array, int *anynul, int *status)
 
   int  fits_read_3d_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
        ffg3d[b,i,ui,k,uk,j,uj,jj,e,d]
-       (fitsfile *fptr, long group, DTYPE nulval, long dim1,
-       long dim2, long naxis1, long naxis2, long naxis3,
+       (fitsfile *fptr, long group, DTYPE nulval, LONGLONG dim1,
+       LONGLONG dim2, LONGLONG naxis1, LONGLONG naxis2, LONGLONG naxis3,
        > DTYPE *array, int *anynul, int *status)
 \end{verbatim}
 
@@ -5855,6 +5992,11 @@ with large data arrays.
       (fitsfile *fptr, int colnum, > char *ttype, char *tunit,
        char *typechar, long *repeat, double *scale, double *zero,
        long *nulval, char *tdisp, int  *status)
+
+  int fits_get_bcolparmsll / ffgbclll
+      (fitsfile *fptr, int colnum, > char *ttype, char *tunit,
+       char *typechar, LONGLONG *repeat, double *scale, double *zero,
+       LONGLONG *nulval, char *tdisp, int  *status)
 \end{verbatim}
 
 \begin{description}
@@ -5898,7 +6040,7 @@ with large data arrays.
 
 \begin{verbatim}
   int fits_test_heap / fftheap
-      (fitsfile *fptr, > long *heapsize, long *unused, long *overlap,
+      (fitsfile *fptr, > LONGLONG *heapsize, LONGLONG *unused, LONGLONG *overlap,
        int *validheap, int *status)
 \end{verbatim}
 
@@ -5939,11 +6081,11 @@ parameters used in these routines.
 
 \begin{verbatim}
   int fits_read_tblbytes / ffgtbb
-      (fitsfile *fptr, long firstrow, long firstchar, long nchars,
+      (fitsfile *fptr, LONGLONG firstrow, LONGLONG firstchar, LONGLONG nchars,
        > unsigned char *values, int *status)
 
   int fits_write_tblbytes / ffptbb
-      (fitsfile *fptr, long firstrow, long firstchar, long nchars,
+      (fitsfile *fptr, LONGLONG firstrow, LONGLONG firstchar, LONGLONG nchars,
        unsigned char *values, > int *status)
 \end{verbatim}
 
@@ -5959,40 +6101,38 @@ parameters used in these routines.
 
 \begin{verbatim}
   int fits_write_col_str / ffpcls
-      (fitsfile *fptr, int colnum, long firstrow, long firstelem,
-       long nelements, char **array, > int *status)
+      (fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+       LONGLONG nelements, char **array, > int *status)
 
   int fits_write_col_[log,byt,sht,usht,int,uint,lng,ulng,lnglng,flt,dbl,cmp,dblcmp] /
       ffpcl[l,b,i,ui,k,uk,j,uj,jj,e,d,c,m]
-      (fitsfile *fptr, int colnum, long firstrow,
-           long firstelem, long nelements, DTYPE *array, > int *status)
+      (fitsfile *fptr, int colnum, LONGLONG firstrow,
+           LONGLONG firstelem, LONGLONG nelements, DTYPE *array, > int *status)
 \end{verbatim}
 
 \begin{description}
 \item[2 ] Write elements into an ASCII or binary table column
     substituting the appropriate FITS null value for any elements that
-    are equal to the nulval parameter.  This routines must not be used to
-   write to  variable length array columns.  \label{ffpcnx}
+    are equal to the nulval parameter.    \label{ffpcnx}
 \end{description}
 
 \begin{verbatim}
   int fits_write_colnull_[log, byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
       ffpcn[l,b,i,ui,k,uk,j,uj,jj,e,d]
-      (fitsfile *fptr, int colnum, long firstrow, long firstelem,
-       long nelements, DTYPE *array, DTYPE nulval, > int *status)
+      (fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+       LONGLONG nelements, DTYPE *array, DTYPE nulval, > int *status)
 \end{verbatim}
 
 \begin{description}
 \item[3 ] Write string elements into a binary table column (in the CDU)
     substituting the FITS null value for any elements that
-    are equal to the nulstr string.  This routine must NOT be
-   used to write to  variable length array columns. \label{ffpcns}
+   are equal to the nulstr string.  \label{ffpcns}
 \end{description}
 
 \begin{verbatim}
   int fits_write_colnull_str / ffpcns
-      (fitsfile *fptr, int colnum, long firstrow, long firstelem,
-       long nelements, char **array, char *nulstr, > int *status)
+      (fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+       LONGLONG nelements, char **array, char *nulstr, > int *status)
 \end{verbatim}
 
 \begin{description}
@@ -6023,7 +6163,7 @@ parameters used in these routines.
 
 \begin{verbatim}
   int fits_write_col_bit / ffpclx
-      (fitsfile *fptr, int colnum, long firstrow, long firstbit,
+      (fitsfile *fptr, int colnum, LONGLONG firstrow, long firstbit,
        long nbits, char *larray, > int *status)
 \end{verbatim}
 
@@ -6036,8 +6176,8 @@ parameters used in these routines.
 
 \begin{verbatim}
     int fits_write_descript / ffpdes
-        (fitsfile *fptr, int colnum, long rownum, long repeat,
-         long offset, > int *status)
+        (fitsfile *fptr, int colnum, LONGLONG rownum, LONGLONG repeat,
+         LONGLONG offset, > int *status)
 \end{verbatim}
 
 \subsection{Read Column Data Routines}
@@ -6089,14 +6229,14 @@ parameters used in these routines.
 
 \begin{verbatim}
   int fits_read_col_str / ffgcvs
-      (fitsfile *fptr, int colnum, long firstrow, long firstelem,
-       long nelements, char *nulstr, > char **array, int *anynul,
+      (fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+       LONGLONG nelements, char *nulstr, > char **array, int *anynul,
        int *status)
 
   int fits_read_col_[log,byt,sht,usht,int,uint,lng,ulng, lnglng, flt, dbl, cmp, dblcmp] /
       ffgcv[l,b,i,ui,k,uk,j,uj,jj,e,d,c,m]
-      (fitsfile *fptr, int colnum, long firstrow, long firstelem,
-       long nelements, DTYPE nulval, > DTYPE *array, int *anynul,
+      (fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+       LONGLONG nelements, DTYPE nulval, > DTYPE *array, int *anynul,
        int *status)
 \end{verbatim}
 
@@ -6110,14 +6250,14 @@ parameters used in these routines.
 
 \begin{verbatim}
   int fits_read_colnull_str / ffgcfs
-      (fitsfile *fptr, int colnum, long firstrow, long firstelem,
-       long nelements, > char **array, char *nullarray, int *anynul,
+      (fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
+       LONGLONG nelements, > char **array, char *nullarray, int *anynul,
        int *status)
 
   int fits_read_colnull_[log,byt,sht,usht,int,uint,lng,ulng,lnglng,flt,dbl,cmp,dblcmp] /
       ffgcf[l,b,i,ui,k,uk,j,uj,jj,e,d,c,m]
-      (fitsfile *fptr, int colnum, long firstrow,
-       long firstelem, long nelements, > DTYPE *array,
+      (fitsfile *fptr, int colnum, LONGLONG firstrow,
+       LONGLONG firstelem, LONGLONG nelements, > DTYPE *array,
        char *nullarray, int *anynul, int *status)
 \end{verbatim}
 
@@ -6188,8 +6328,8 @@ parameters used in these routines.
 
 \begin{verbatim}
   int fits_read_col_bit / ffgcx
-      (fitsfile *fptr, int colnum, long firstrow, long firstbit,
-       long nbits, > char *larray, int *status)
+      (fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstbit,
+       LONGLONG nbits, > char *larray, int *status)
 \end{verbatim}
 
 \begin{description}
@@ -6204,7 +6344,7 @@ parameters used in these routines.
 
 \begin{verbatim}
   int fits_read_col_bit_[usht, uint] / ffgcx[ui,uk]
-      (fitsfile *fptr, int colnum, long firstrow, long, nrows,
+      (fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG, nrows,
        long firstbit, long nbits, > DTYPE *array, int *status)
 \end{verbatim}
 
@@ -6219,12 +6359,20 @@ parameters used in these routines.
 
 \begin{verbatim}
   int fits_read_descript / ffgdes
-      (fitsfile *fptr, int colnum, long rownum, > long *repeat,
+      (fitsfile *fptr, int colnum, LONGLONG rownum, > long *repeat,
            long *offset, int *status)
 
+  int fits_read_descriptll / ffgdesll
+      (fitsfile *fptr, int colnum, LONGLONG rownum, > LONGLONG *repeat,
+           LONGLONG *offset, int *status)
+
   int fits_read_descripts / ffgdess
-      (fitsfile *fptr, int colnum, long firstrow, long nrows > long *repeat,
-           long *offset, int *status)
+      (fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG nrows
+       > long *repeat, long *offset, int *status)
+
+  int fits_read_descriptsll / ffgdessll
+      (fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG nrows
+       > LONGLONG *repeat, LONGLONG *offset, int *status)
 \end{verbatim}
 
 \chapter{ Extended File Name Syntax }
@@ -7168,6 +7316,7 @@ by a backslash to force the UNIX shell to ignore it.
     "minimum"           min(x,y)   "maximum"               max(x,y)
     "cumulative sum"    accum(x)   "sequential difference" seqdiff(x)
     "if-then-else"      b?x:y
+    "angular separation"  angsep(ra1,dec1,ra2,de2) (all in degrees)
 \end{verbatim}
 
     An alternate syntax for the min and max functions  has only a single
@@ -7182,6 +7331,12 @@ by a backslash to force the UNIX shell to ignore it.
     value in x causes a pair of nulls in the output.  The seqdiff and
     accum functions are functional inverses, i.e., seqdiff(accum(x)) == x
     as long as no null values are present.
+
+    The angsep function computes the angular separation in degrees
+    between 2 celestial positions, where the first 2 parameters
+    give the RA-like and Dec-like coordinates (in decimal degrees)
+    of the first position, and the 3rd and 4th parameters give the
+    coordinates of the second position.
 
     The  following  type  casting  operators  are  available,  where the
     inclosing parentheses are required and taken  from  the  C  language
@@ -8563,7 +8718,7 @@ fits\_get\_hdu\_type   & \pageref{ffghdt} \\
 fits\_get\_hduaddr    & \pageref{ffghad} \\
 \end{tabular}
 \begin{tabular}{lr}
-fits\_get\_hduoff    & \pageref{ffghad} \\
+fits\_get\_hduaddrll    & \pageref{ffghad} \\
 fits\_get\_img\_dim & \pageref{ffgidm} \\
 fits\_get\_img\_equivtype & \pageref{ffgidt} \\
 fits\_get\_img\_param & \pageref{ffgipr} \\
@@ -8820,7 +8975,6 @@ ffghad    & \pageref{ffghad} \\
 ffghbn      & \pageref{ffghbn} \\
 ffghdn    & \pageref{ffghdn} \\
 ffghdt   & \pageref{ffghdt} \\
-ffghof    & \pageref{ffghad} \\
 ffghpr       & \pageref{ffghpr} \\
 ffghps        & \pageref{ffghps} \\
 ffghsp      & \pageref{ffghsp} \\
@@ -8847,10 +9001,10 @@ ffgmrm   & \pageref{ffgmrm} \\
 ffgmsg    & \pageref{ffgmsg} \\
 ffgmtf  & \pageref{ffgmtf} \\
 ffgncl     & \pageref{ffgnrw} \\
+ffgnrw     & \pageref{ffgnrw} \\
 
 \end{tabular}
 \begin{tabular}{lr}
-ffgnrw     & \pageref{ffgnrw} \\
 ffgnxk      & \pageref{ffgnxk} \\
 ffgpf & \pageref{ffgpf} \\
 ffgpf\_ & \pageref{ffgpfx} \\
@@ -8897,10 +9051,10 @@ ffirow  & \pageref{ffirow} \\
 ffitab    & \pageref{ffitab} \\
 ffiter   & \pageref{ffiter} \\
 ffiurl & \pageref{ffiurl} \\
+ffkeyn      & \pageref{ffkeyn} \\
 
 \end{tabular}
 \begin{tabular}{lr}
-ffkeyn      & \pageref{ffkeyn} \\
 ffmahd     & \pageref{ffmahd} \\
 ffmcom    & \pageref{ffmcom} \\
 ffmcrd       & \pageref{ffmcrd} \\
@@ -8947,10 +9101,10 @@ ffpmsg   & \pageref{ffpmsg} \\
 ffpnul    & \pageref{ffpnul} \\
 ffppn     & \pageref{ffppn} \\
 ffppn\_ & \pageref{ffppnx} \\
+ffppr        & \pageref{ffppr} \\
 
 \end{tabular}
 \begin{tabular}{lr}
-ffppr        & \pageref{ffppr} \\
 ffpprn & \pageref{ffpprn} \\
 ffppru & \pageref{ffppru} \\
 ffppr\_    & \pageref{ffpprx} \\

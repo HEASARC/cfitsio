@@ -22,10 +22,10 @@
 \contentsline {section}{\numberline {4.8}Column and Keyword Filtering Specification}{26}
 \contentsline {section}{\numberline {4.9}Row Filtering Specification}{28}
 \contentsline {subsection}{\numberline {4.9.1}General Syntax}{28}
-\contentsline {subsection}{\numberline {4.9.2}Bit Masks}{30}
+\contentsline {subsection}{\numberline {4.9.2}Bit Masks}{31}
 \contentsline {subsection}{\numberline {4.9.3}Vector Columns}{31}
 \contentsline {subsection}{\numberline {4.9.4}Good Time Interval Filtering}{33}
-\contentsline {subsection}{\numberline {4.9.5}Spatial Region Filtering}{33}
+\contentsline {subsection}{\numberline {4.9.5}Spatial Region Filtering}{34}
 \contentsline {subsection}{\numberline {4.9.6}Example Row Filters}{36}
 \contentsline {section}{\numberline {4.10} Binning or Histogramming Specification}{37}
 \contentsline {chapter}{\numberline {5}Template Files }{41}

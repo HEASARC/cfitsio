@@ -217,7 +217,7 @@ int fits_compress_img(fitsfile *infptr, /* pointer to image to be compressed */
 /*--------------------------------------------------------------------------*/
 int imcomp_init_table(fitsfile *outfptr,
         int compress_type,
-        int bitpix,
+        int inbitpix,
         int naxis,
         long *naxes,
         long *tiledim, 
@@ -230,18 +230,27 @@ int imcomp_init_table(fitsfile *outfptr,
 */
 {
     char keyname[FLEN_KEYWORD], zcmptype[12];
-    int ii, ncols;
+    int ii, ncols, bitpix;
     long nrows, tilesize[9] = {0,1,1,1,1,1,1,1,1};
     char *ttype[] = {"COMPRESSED_DATA", "UNCOMPRESSED_DATA", "ZSCALE", "ZZERO"};
     char *tform[4];
     char tf0[4], tf1[4], tf2[4], tf3[4];
     char *tunit[] = {"\0",            "\0",            "\0",      "\0"    };
+    char comm[FLEN_COMMENT];
 
     if (*status > 0)
         return(*status);
 
     for (ii = 0; ii < naxis; ii++)
         tilesize[ii] = tiledim[ii];  /* copy input to local variable */
+
+    /* test for the 2 special cases that represent unsigned integers */
+    if (inbitpix == USHORT_IMG)
+        bitpix = SHORT_IMG;
+    else if (inbitpix == ULONG_IMG)
+        bitpix = LONG_IMG;
+    else 
+        bitpix = inbitpix;
 
     /* if legal tile dimensions are not defined, use NAXIS1 as the */
     /* first dimension and 1 for all the higher dimensions */
@@ -305,6 +314,7 @@ int imcomp_init_table(fitsfile *outfptr,
         return(*status = DATA_COMPRESSION_ERR);
     }
 
+
     /* set correct datatype for any tiles that cannot be compressed */
     if (bitpix == SHORT_IMG)
        strcpy(tform[1], "1PI");
@@ -323,9 +333,9 @@ int imcomp_init_table(fitsfile *outfptr,
     ffpkyl (outfptr, "ZIMAGE", 1, 
            "extension contains compressed image", status);                  
     
-    ffpkyj (outfptr, "ZBITPIX", (long) bitpix,
+    ffpkyj (outfptr, "ZBITPIX", bitpix,
 			"data type of original image", status);
-    ffpkyj (outfptr, "ZNAXIS", (long) naxis,
+    ffpkyj (outfptr, "ZNAXIS", naxis,
 			"dimension of original image", status);
 
     for (ii = 0;  ii < naxis;  ii++)
@@ -373,6 +383,22 @@ int imcomp_init_table(fitsfile *outfptr,
             ffpkyj (outfptr, "ZVAL1", (long) rice_nbits,
                 "floating point quantization level", status);
         }
+    }
+
+    /* Write the BSCALE and BZERO keywords, if an unsigned integer image */
+    if (inbitpix == USHORT_IMG)
+    {
+        strcpy(comm, "offset data range to that of unsigned short");
+        ffpkyg(outfptr, "BZERO", 32768., 0, comm, status);
+        strcpy(comm, "default scaling factor");
+        ffpkyg(outfptr, "BSCALE", 1.0, 0, comm, status);
+    }
+    else if (inbitpix == ULONG_IMG)
+    {
+        strcpy(comm, "offset data range to that of unsigned long");
+        ffpkyg(outfptr, "BZERO", 2147483648., 0, comm, status);
+        strcpy(comm, "default scaling factor");
+        ffpkyg(outfptr, "BSCALE", 1.0, 0, comm, status);
     }
 
     return(*status);

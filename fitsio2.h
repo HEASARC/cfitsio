@@ -289,8 +289,7 @@ void ffcdsp(char *tform, char *cform);
 void ffswap2(short *values, long nvalues);
 void ffswap4(INT32BIT *values, long nvalues);
 void ffswap8(double *values, long nvalues);
-int ffi2c(long ival, char *cval, int *status);
-int ffii2c(LONGLONG ival, char *cval, int *status);
+int ffi2c(LONGLONG ival, char *cval, int *status);
 int ffl2c(int lval, char *cval, int *status);
 int ffs2c(char *instr, char *outstr, int *status);
 int ffr2f(float fval, int decim, char *cval, int *status);
@@ -316,7 +315,7 @@ int ffgtkn(fitsfile *fptr, int numkey, char *keyname, long *value, int *status);
 int ffgtknjj(fitsfile *fptr, int numkey, char *keyname, LONGLONG *value, int *status);
 int fftkyn(fitsfile *fptr, int numkey, char *keyname, char *value, int *status);
 int ffgphd(fitsfile *fptr, int maxdim, int *simple, int *bitpix, int *naxis,
-        long naxes[], long *pcount, long *gcount, int *extend, double *bscale,
+        LONGLONG naxes[], long *pcount, long *gcount, int *extend, double *bscale,
           double *bzero, long *blank, int *nspace, int *status);
 int ffgttb(fitsfile *fptr, LONGLONG *rowlen, LONGLONG *nrows, LONGLONG *pcount,
           long *tfield, int *status);

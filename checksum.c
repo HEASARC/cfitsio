@@ -250,7 +250,7 @@ int ffpcks(fitsfile *fptr,      /* I - FITS file pointer                  */
         return(*status);
 
     /* calc size of data unit, in FITS 2880-byte blocks */
-    if (ffghadjj(fptr, &headstart, &datastart, &dataend, status) > 0)
+    if (ffghadll(fptr, &headstart, &datastart, &dataend, status) > 0)
         return(*status);
 
     nrec = (long) ((dataend - datastart) / 2880);
@@ -348,7 +348,7 @@ int ffupck(fitsfile *fptr,      /* I - FITS file pointer                  */
     dsum = (unsigned long) tdouble;
 
     /* get size of the HDU */
-    if (ffghadjj(fptr, &headstart, &datastart, &dataend, status) > 0)
+    if (ffghadll(fptr, &headstart, &datastart, &dataend, status) > 0)
         return(*status);
 
     /* get the checksum keyword, if it exists */
@@ -480,7 +480,7 @@ int ffgcks(fitsfile *fptr,           /* I - FITS file pointer             */
         return(*status);
 
     /* get size of the HDU */
-    if (ffghadjj(fptr, &headstart, &datastart, &dataend, status) > 0)
+    if (ffghadll(fptr, &headstart, &datastart, &dataend, status) > 0)
         return(*status);
 
     nrec = (long) ((dataend - datastart) / 2880);

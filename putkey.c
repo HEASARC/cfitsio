@@ -42,6 +42,34 @@ int ffcrim(fitsfile *fptr,      /* I - FITS file pointer           */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffcrimll(fitsfile *fptr,    /* I - FITS file pointer           */
+           int bitpix,          /* I - bits per pixel              */
+           int naxis,           /* I - number of axes in the array */
+           LONGLONG *naxes,     /* I - size of each axis           */
+           int *status)         /* IO - error status               */
+/*
+  create an IMAGE extension following the current HDU. If the
+  current HDU is empty (contains no header keywords), then simply
+  write the required image (or primary array) keywords to the current
+  HDU. 
+*/
+{
+    if (*status > 0)
+        return(*status);
+
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+    /* create new extension if current header is not empty */
+    if ((fptr->Fptr)->headend != (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] )
+        ffcrhd(fptr, status);
+
+    /* write the required header keywords */
+    ffphprll(fptr, TRUE, bitpix, naxis, naxes, 0, 1, TRUE, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffcrtb(fitsfile *fptr,  /* I - FITS file pointer                        */
            int tbltype,     /* I - type of table to create                  */
            LONGLONG naxis2,     /* I - number of rows in the table              */
@@ -179,19 +207,19 @@ int ffpky( fitsfile *fptr,     /* I - FITS file pointer        */
     }
     else if (datatype == TBYTE)
     {
-        ffpkyj(fptr, keyname, (long) *(unsigned char *) value, comm, status);
+        ffpkyj(fptr, keyname, (LONGLONG) *(unsigned char *) value, comm, status);
     }
     else if (datatype == TSBYTE)
     {
-        ffpkyj(fptr, keyname, (long) *(signed char *) value, comm, status);
+        ffpkyj(fptr, keyname, (LONGLONG) *(signed char *) value, comm, status);
     }
     else if (datatype == TUSHORT)
     {
-        ffpkyj(fptr, keyname, (long) *(unsigned short *) value, comm, status);
+        ffpkyj(fptr, keyname, (LONGLONG) *(unsigned short *) value, comm, status);
     }
     else if (datatype == TSHORT)
     {
-        ffpkyj(fptr, keyname, (long) *(short *) value, comm, status);
+        ffpkyj(fptr, keyname, (LONGLONG) *(short *) value, comm, status);
     }
     else if (datatype == TUINT)
     {
@@ -200,7 +228,7 @@ int ffpky( fitsfile *fptr,     /* I - FITS file pointer        */
     }
     else if (datatype == TINT)
     {
-        ffpkyj(fptr, keyname, (long) *(int *) value, comm, status);
+        ffpkyj(fptr, keyname, (LONGLONG) *(int *) value, comm, status);
     }
     else if (datatype == TLOGICAL)
     {
@@ -213,11 +241,11 @@ int ffpky( fitsfile *fptr,     /* I - FITS file pointer        */
     }
     else if (datatype == TLONG)
     {
-        ffpkyj(fptr, keyname, *(long *) value, comm, status);
+        ffpkyj(fptr, keyname, (LONGLONG) *(long *) value, comm, status);
     }
     else if (datatype == TLONGLONG)
     {
-        ffpkyjj(fptr, keyname, *(LONGLONG *) value, comm, status);
+        ffpkyj(fptr, keyname, *(LONGLONG *) value, comm, status);
     }
     else if (datatype == TFLOAT)
     {
@@ -521,29 +549,6 @@ int ffpkyl( fitsfile *fptr,     /* I - FITS file pointer        */
 /*--------------------------------------------------------------------------*/
 int ffpkyj( fitsfile *fptr,     /* I - FITS file pointer        */
             char *keyname,      /* I - name of keyword to write */
-            long value,         /* I - keyword value            */
-            char *comm,         /* I - keyword comment          */
-            int  *status)       /* IO - error status            */
-/*
-  Write (put) the keyword, value and comment into the FITS header.
-  Writes an integer keyword value.
-*/
-{
-    char valstring[FLEN_VALUE];
-    char card[FLEN_CARD];
-
-    if (*status > 0)           /* inherit input status value if > 0 */
-        return(*status);
-
-    ffi2c(value, valstring, status);   /* convert to formatted string */
-    ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword*/
-    ffprec(fptr, card, status);  /* write the keyword*/
-
-    return(*status);
-}
-/*--------------------------------------------------------------------------*/
-int ffpkyjj( fitsfile *fptr,     /* I - FITS file pointer        */
-            char *keyname,      /* I - name of keyword to write */
             LONGLONG value,     /* I - keyword value            */
             char *comm,         /* I - keyword comment          */
             int  *status)       /* IO - error status            */
@@ -558,7 +563,7 @@ int ffpkyjj( fitsfile *fptr,     /* I - FITS file pointer        */
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
-    ffii2c(value, valstring, status);   /* convert to formatted string */
+    ffi2c(value, valstring, status);   /* convert to formatted string */
     ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword*/
     ffprec(fptr, card, status);  /* write the keyword*/
 
@@ -1640,9 +1645,9 @@ int ffpknjj( fitsfile *fptr,    /* I - FITS file pointer                    */
     {
         ffkeyn(keyroot, jj, keyname, status);
         if (repeat)
-            ffpkyjj(fptr, keyname, value[ii], tcomment, status);
+            ffpkyj(fptr, keyname, value[ii], tcomment, status);
         else
-            ffpkyjj(fptr, keyname, value[ii], comm[ii], status);
+            ffpkyj(fptr, keyname, value[ii], comm[ii], status);
 
         if (*status > 0)
             return(*status);
@@ -1980,6 +1985,112 @@ int ffptdm( fitsfile *fptr, /* I - FITS file pointer                        */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffptdmll( fitsfile *fptr, /* I - FITS file pointer                      */
+            int colnum,     /* I - column number                            */
+            int naxis,      /* I - number of axes in the data array         */
+            LONGLONG naxes[], /* I - length of each data axis               */
+            int *status)    /* IO - error status                            */
+/*
+  write the TDIMnnn keyword describing the dimensionality of a column
+*/
+{
+    char keyname[FLEN_KEYWORD], tdimstr[FLEN_VALUE], comm[FLEN_COMMENT];
+    char value[80], message[81];
+    int ii;
+    LONGLONG totalpix = 1, repeat;
+    tcolumn *colptr;
+
+    if (*status > 0)
+        return(*status);
+
+    if (colnum < 1 || colnum > 999)
+    {
+        ffpmsg("column number is out of range 1 - 999 (ffptdm)");
+        return(*status = BAD_COL_NUM);
+    }
+
+    if (naxis < 1)
+    {
+        ffpmsg("naxis is less than 1 (ffptdm)");
+        return(*status = BAD_DIMEN);
+    }
+
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               /* rescan header */
+            return(*status);
+
+    if ( (fptr->Fptr)->hdutype != BINARY_TBL)
+    {
+       ffpmsg(
+    "Error: The TDIMn keyword is only allowed in BINTABLE extensions (ffptdm)");
+       return(*status = NOT_BTABLE);
+    }
+
+    strcpy(tdimstr, "(");            /* start constructing the TDIM value */   
+
+    for (ii = 0; ii < naxis; ii++)
+    {
+        if (ii > 0)
+            strcat(tdimstr, ",");   /* append the comma separator */
+
+        if (naxes[ii] < 0)
+        {
+            ffpmsg("one or more TDIM values are less than 0 (ffptdm)");
+            return(*status = BAD_TDIM);
+        }
+
+/* Microsoft Visual C++ uses a strange '%I64d' syntax */
+#if defined(_MSC_VER)
+    /* Microsoft Visual C++ uses a strange '%I64d' syntax  for 8-byte integers */
+        sprintf(value, "%I64d", naxes[ii]);
+
+#elif (USE_LL_SUFFIX == 1)
+        sprintf(value, "%lld", naxes[ii]);
+
+#else
+        sprintf(value, "%ld", naxes[ii]);
+
+#endif
+
+        strcat(tdimstr, value);     /* append the axis size */
+
+        totalpix *= naxes[ii];
+    }
+
+    colptr = (fptr->Fptr)->tableptr;  /* point to first column structure */
+    colptr += (colnum - 1);      /* point to the specified column number */
+
+    if ( colptr->trepeat != totalpix)
+    {
+      /* There is an apparent inconsistency between TDIMn and TFORMn. */
+      /* The colptr->trepeat value may be out of date, so re-read     */
+      /* the TFORMn keyword to be sure.                               */
+
+      ffkeyn("TFORM", colnum, keyname, status);   /* construct TFORMn name  */
+      ffgkys(fptr, keyname, value, NULL, status); /* read TFORMn keyword    */
+      ffbnfmll(value, NULL, &repeat, NULL, status); /* parse the repeat count */
+
+      if (*status > 0 || repeat != totalpix)
+      {
+        sprintf(message,
+        "column vector length, %ld, does not equal TDIMn array size, %ld",
+        (long) colptr->trepeat, totalpix);
+        ffpmsg(message);
+        return(*status = BAD_TDIM);
+      }
+    }
+
+    strcat(tdimstr, ")" );            /* append the closing parenthesis */
+
+    strcpy(comm, "size of the multidimensional array");
+    ffkeyn("TDIM", colnum, keyname, status);      /* construct TDIMn name */
+    ffpkys(fptr, keyname, tdimstr, comm, status);  /* write the keyword */
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffphps( fitsfile *fptr, /* I - FITS file pointer                        */
             int bitpix,     /* I - number of bits per data value pixel      */
             int naxis,      /* I - number of axes in the data array         */
@@ -1998,13 +2109,31 @@ int ffphps( fitsfile *fptr, /* I - FITS file pointer                        */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffphpsll( fitsfile *fptr, /* I - FITS file pointer                        */
+            int bitpix,     /* I - number of bits per data value pixel      */
+            int naxis,      /* I - number of axes in the data array         */
+            LONGLONG naxes[],   /* I - length of each data axis                 */
+            int *status)    /* IO - error status                            */
+/*
+  write STANDARD set of required primary header keywords
+*/
+{
+    int simple = 1;     /* does file conform to FITS standard? 1/0  */
+    LONGLONG pcount = 0;    /* number of group parameters (usually 0)   */
+    LONGLONG gcount = 1;    /* number of random groups (usually 1 or 0) */
+    int extend = 1;     /* may FITS file have extensions?           */
+
+    ffphprll(fptr, simple, bitpix, naxis, naxes, pcount, gcount, extend, status);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffphpr( fitsfile *fptr, /* I - FITS file pointer                        */
             int simple,     /* I - does file conform to FITS standard? 1/0  */
             int bitpix,     /* I - number of bits per data value pixel      */
             int naxis,      /* I - number of axes in the data array         */
             long naxes[],   /* I - length of each data axis                 */
-            long pcount,    /* I - number of group parameters (usually 0)   */
-            long gcount,    /* I - number of random groups (usually 1 or 0) */
+            LONGLONG pcount, /* I - number of group parameters (usually 0)   */
+            LONGLONG gcount, /* I - number of random groups (usually 1 or 0) */
             int extend,     /* I - may FITS file have extensions?           */
             int *status)    /* IO - error status                            */
 /*
@@ -2012,7 +2141,32 @@ int ffphpr( fitsfile *fptr, /* I - FITS file pointer                        */
 */
 {
     int ii;
-    long longbitpix;
+    LONGLONG naxesll[20];
+   
+    for (ii = 0; (ii < naxis) && (ii < 20); ii++)
+       naxesll[ii] = naxes[ii];
+
+    ffphprll(fptr, simple, bitpix, naxis, naxesll, pcount, gcount,
+             extend, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffphprll( fitsfile *fptr, /* I - FITS file pointer                        */
+            int simple,     /* I - does file conform to FITS standard? 1/0  */
+            int bitpix,     /* I - number of bits per data value pixel      */
+            int naxis,      /* I - number of axes in the data array         */
+            LONGLONG naxes[], /* I - length of each data axis                 */
+            LONGLONG pcount,  /* I - number of group parameters (usually 0)   */
+            LONGLONG gcount,  /* I - number of random groups (usually 1 or 0) */
+            int extend,     /* I - may FITS file have extensions?           */
+            int *status)    /* IO - error status                            */
+/*
+  write required primary header keywords
+*/
+{
+    int ii;
+    long longbitpix, tnaxes[20];
     char name[FLEN_KEYWORD], comm[FLEN_COMMENT], message[FLEN_ERRMSG];
 
     if (*status > 0)
@@ -2028,9 +2182,13 @@ int ffphpr( fitsfile *fptr, /* I - FITS file pointer                        */
     {
       if ( (fptr->Fptr)->request_compress_type )
       {
+      
+       for (ii = 0; ii < naxis; ii++)
+           tnaxes[ii] = (long) naxes[ii];
+	   
         /* write header for a compressed image */
         imcomp_init_table(fptr, (fptr->Fptr)->request_compress_type, 
-        bitpix, naxis, naxes, (fptr->Fptr)->request_tilesize, 32,
+        bitpix, naxis, tnaxes, (fptr->Fptr)->request_tilesize, 32,
         (fptr->Fptr)->request_rice_nbits, status);
         return(*status);
       }
@@ -2161,10 +2319,10 @@ int ffphpr( fitsfile *fptr, /* I - FITS file pointer                        */
         else
         {
             strcpy(comm, "required keyword; must = 0");
-            ffpkyj(fptr, "PCOUNT", pcount, comm, status);
+            ffpkyj(fptr, "PCOUNT", 0, comm, status);
   
             strcpy(comm, "required keyword; must = 1");
-            ffpkyj(fptr, "GCOUNT", gcount, comm, status);
+            ffpkyj(fptr, "GCOUNT", 1, comm, status);
         }
     }
 
@@ -2241,8 +2399,8 @@ int ffphtb(fitsfile *fptr,  /* I - FITS file pointer                        */
     ffpkys(fptr, "XTENSION", "TABLE", "ASCII table extension", status);
     ffpkyj(fptr, "BITPIX", 8, "8-bit ASCII characters", status);
     ffpkyj(fptr, "NAXIS", 2, "2-dimensional ASCII table", status);
-    ffpkyjj(fptr, "NAXIS1", rowlen, "width of table in characters", status);
-    ffpkyjj(fptr, "NAXIS2", naxis2, "number of rows in table", status);
+    ffpkyj(fptr, "NAXIS1", rowlen, "width of table in characters", status);
+    ffpkyj(fptr, "NAXIS2", naxis2, "number of rows in table", status);
     ffpkyj(fptr, "PCOUNT", 0, "no group parameters (required keyword)", status);
     ffpkyj(fptr, "GCOUNT", 1, "one data group (required keyword)", status);
     ffpkyj(fptr, "TFIELDS", tfields, "number of fields in each row", status);
@@ -2358,8 +2516,8 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
             break;       /* abort loop on error */
     }
 
-    ffpkyjj(fptr, "NAXIS1", naxis1, "width of table in bytes", status);
-    ffpkyjj(fptr, "NAXIS2", naxis2, "number of rows in table", status);
+    ffpkyj(fptr, "NAXIS1", naxis1, "width of table in bytes", status);
+    ffpkyj(fptr, "NAXIS2", naxis2, "number of rows in table", status);
 
     /*
       the initial value of PCOUNT (= size of the variable length array heap)
@@ -2529,28 +2687,7 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffi2c(long ival,   /* I - value to be converted to a string */
-          char *cval,  /* O - character string representation of the value */
-          int *status) /* IO - error status */
-/*
-  convert  value to a null-terminated formatted string.
-*/
-{
-    if (*status > 0)           /* inherit input status value if > 0 */
-        return(*status);
-
-    cval[0] = '\0';
-
-    if (sprintf(cval, "%ld", ival) < 0)
-    {
-        ffpmsg("Error in ffi2c converting integer to string");
-        *status = BAD_I2C;
-    }
-
-    return(*status);
-}
-/*--------------------------------------------------------------------------*/
-int ffii2c(LONGLONG ival,  /* I - value to be converted to a string */
+int ffi2c(LONGLONG ival,  /* I - value to be converted to a string */
           char *cval,     /* O - character string representation of the value */
           int *status)    /* IO - error status */
 /*
@@ -2567,19 +2704,19 @@ int ffii2c(LONGLONG ival,  /* I - value to be converted to a string */
     /* Microsoft Visual C++ uses a strange '%I64d' syntax  for 8-byte integers */
     if (sprintf(cval, "%I64d", ival) < 0)
     {
-        ffpmsg("Error in ffii2c converting integer to string");
+        ffpmsg("Error in ffi2c converting integer to string");
         *status = BAD_I2C;
     }
 #elif (USE_LL_SUFFIX == 1)
     if (sprintf(cval, "%lld", ival) < 0)
     {
-        ffpmsg("Error in ffii2c converting integer to string");
+        ffpmsg("Error in ffi2c converting integer to string");
         *status = BAD_I2C;
     }
 #else
     if (sprintf(cval, "%ld", ival) < 0)
     {
-        ffpmsg("Error in ffii2c converting integer to string");
+        ffpmsg("Error in ffi2c converting integer to string");
         *status = BAD_I2C;
     }
 #endif

@@ -99,8 +99,8 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
     short i2null;
     INT32BIT i4null, i8null[2];
     long twidth, incre, rownum, remain, next, ntodo;
-    long tnull, ii, nelem;
-    LONGLONG largeelem;
+    long tnull, ii;
+    LONGLONG largeelem, nelem;
     LONGLONG repeat, startpos, elemnum, wrtptr, rowlen;
     double scale, zero;
     unsigned char i1null, lognul = 0;
@@ -138,7 +138,7 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
       largeelem = (largeelem - 1) * 2 + 1;
       nelem *= 2;
     }
-    
+
     if (ffgcpr( fptr, colnum, firstrow, largeelem, nelem, writemode, &scale,
        &zero, tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
@@ -169,7 +169,6 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
          leng++;        /* copy the terminator too in binary tables */
 
       strncpy(cstring, snull, leng);  /* copy null string to temp buffer */
-
     }
     else if ( tcode == TBYTE  ||
               tcode == TSHORT ||

@@ -32,23 +32,23 @@ int ffuky( fitsfile *fptr,     /* I - FITS file pointer        */
     }
     else if (datatype == TBYTE)
     {
-        ffukyj(fptr, keyname, (long) *(unsigned char *) value, comm, status);
+        ffukyj(fptr, keyname, (LONGLONG) *(unsigned char *) value, comm, status);
     }
     else if (datatype == TSBYTE)
     {
-        ffukyj(fptr, keyname, (long) *(signed char *) value, comm, status);
+        ffukyj(fptr, keyname, (LONGLONG) *(signed char *) value, comm, status);
     }
     else if (datatype == TUSHORT)
     {
-        ffukyj(fptr, keyname, (long) *(unsigned short *) value, comm, status);
+        ffukyj(fptr, keyname, (LONGLONG) *(unsigned short *) value, comm, status);
     }
     else if (datatype == TSHORT)
     {
-        ffukyj(fptr, keyname, (long) *(short *) value, comm, status);
+        ffukyj(fptr, keyname, (LONGLONG) *(short *) value, comm, status);
     }
     else if (datatype == TINT)
     {
-        ffukyj(fptr, keyname, (long) *(int *) value, comm, status);
+        ffukyj(fptr, keyname, (LONGLONG) *(int *) value, comm, status);
     }
     else if (datatype == TUINT)
     {
@@ -66,11 +66,11 @@ int ffuky( fitsfile *fptr,     /* I - FITS file pointer        */
     }
     else if (datatype == TLONG)
     {
-        ffukyj(fptr, keyname, *(long *) value, comm, status);
+        ffukyj(fptr, keyname, (LONGLONG) *(long *) value, comm, status);
     }
     else if (datatype == TLONGLONG)
     {
-        ffukyjj(fptr, keyname, *(LONGLONG *) value, comm, status);
+        ffukyj(fptr, keyname, *(LONGLONG *) value, comm, status);
     }
     else if (datatype == TFLOAT)
     {
@@ -180,7 +180,7 @@ int ffukyl(fitsfile *fptr,    /* I - FITS file pointer  */
 /*--------------------------------------------------------------------------*/
 int ffukyj(fitsfile *fptr,    /* I - FITS file pointer  */
            char *keyname,     /* I - keyword name       */
-           long value,        /* I - keyword value      */
+           LONGLONG value,    /* I - keyword value      */
            char *comm,        /* I - keyword comment    */
            int *status)       /* IO - error status      */
 {
@@ -195,27 +195,6 @@ int ffukyj(fitsfile *fptr,    /* I - FITS file pointer  */
     {
         *status = tstatus;
         ffpkyj(fptr, keyname, value, comm, status);
-    }
-    return(*status);
-}
-/*--------------------------------------------------------------------------*/
-int ffukyjj(fitsfile *fptr,    /* I - FITS file pointer  */
-           char *keyname,     /* I - keyword name       */
-           LONGLONG value,    /* I - keyword value      */
-           char *comm,        /* I - keyword comment    */
-           int *status)       /* IO - error status      */
-{
-    int tstatus;
-
-    if (*status > 0)           /* inherit input status value if > 0 */
-        return(*status);
-
-    tstatus = *status;
-
-    if (ffmkyjj(fptr, keyname, value, comm, status) == KEY_NO_EXIST)
-    {
-        *status = tstatus;
-        ffpkyjj(fptr, keyname, value, comm, status);
     }
     return(*status);
 }
@@ -794,35 +773,7 @@ int ffmkyl(fitsfile *fptr,    /* I - FITS file pointer  */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffmkyj(fitsfile *fptr,    /* I - FITS file pointer  */
-           char *keyname,     /* I - keyword name       */
-           long value,        /* I - keyword value      */
-           char *comm,        /* I - keyword comment    */
-           int *status)       /* IO - error status      */
-{
-    char valstring[FLEN_VALUE];
-    char oldcomm[FLEN_COMMENT];
-    char card[FLEN_CARD];
-
-    if (*status > 0)           /* inherit input status value if > 0 */
-        return(*status);
-
-    if (ffgkey(fptr, keyname, valstring, oldcomm, status) > 0)
-        return(*status);                               /* get old comment */
-
-    ffi2c(value, valstring, status);   /* convert value to a string */
-
-    if (!comm || comm[0] == '&')  /* preserve the current comment string */
-        ffmkky(keyname, valstring, oldcomm, card, status);
-    else
-        ffmkky(keyname, valstring, comm, card, status);
-
-    ffmkey(fptr, card, status);
-
-    return(*status);
-}
-/*--------------------------------------------------------------------------*/
-int ffmkyjj(fitsfile *fptr,   /* I - FITS file pointer  */
+int ffmkyj(fitsfile *fptr,   /* I - FITS file pointer  */
            char *keyname,     /* I - keyword name       */
            LONGLONG value,    /* I - keyword value      */
            char *comm,        /* I - keyword comment    */
@@ -838,7 +789,7 @@ int ffmkyjj(fitsfile *fptr,   /* I - FITS file pointer  */
     if (ffgkey(fptr, keyname, valstring, oldcomm, status) > 0)
         return(*status);                               /* get old comment */
 
-    ffii2c(value, valstring, status);   /* convert value to a string */
+    ffi2c(value, valstring, status);   /* convert value to a string */
 
     if (!comm || comm[0] == '&')  /* preserve the current comment string */
         ffmkky(keyname, valstring, oldcomm, card, status);
@@ -1269,25 +1220,6 @@ int ffikyl(fitsfile *fptr,    /* I - FITS file pointer  */
 /*--------------------------------------------------------------------------*/
 int ffikyj(fitsfile *fptr,    /* I - FITS file pointer  */
            char *keyname,     /* I - keyword name       */
-           long value,        /* I - keyword value      */
-           char *comm,        /* I - keyword comment    */
-           int *status)       /* IO - error status      */
-{
-    char valstring[FLEN_VALUE];
-    char card[FLEN_CARD];
-
-    if (*status > 0)           /* inherit input status value if > 0 */
-        return(*status);
-
-    ffi2c(value, valstring, status);   /* convert to formatted string */
-    ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword*/
-    ffikey(fptr, card, status);  /* write the keyword*/
-
-    return(*status);
-}
-/*--------------------------------------------------------------------------*/
-int ffikyjj(fitsfile *fptr,    /* I - FITS file pointer  */
-           char *keyname,     /* I - keyword name       */
            LONGLONG value,    /* I - keyword value      */
            char *comm,        /* I - keyword comment    */
            int *status)       /* IO - error status      */
@@ -1298,7 +1230,7 @@ int ffikyjj(fitsfile *fptr,    /* I - FITS file pointer  */
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
-    ffii2c(value, valstring, status);   /* convert to formatted string */
+    ffi2c(value, valstring, status);   /* convert to formatted string */
     ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword*/
     ffikey(fptr, card, status);  /* write the keyword*/
 
