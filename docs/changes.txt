@@ -1,6 +1,42 @@
 
                    Log of Changes Made to CFITSIO
 
+Version 2.470 - 18 August 2003
+
+  Enhancements:
+
+  - defined 'TSBYTE' to represent the 'signed char' datatype (similar to
+    'TBYTE' that represents the 'unsigned char' datatype) and added
+    support for this datatype to all the routines that read or write
+    data to a FITS image or table.   This was implemented by adding 2
+    new C source code files to the package: getcolsb.c and putcolsb.c.
+
+  - Defined a new '1S' shorthand data code for a signed byted column in
+    a binary table.  CFITSIO will write TFORMn = '1B' and
+    TZEROn = -128 in this case, which is the convention used to
+    store signed byte values in a 'B' type column.
+
+  - in fitsio2.h, added test of whether  `__x86_64__` is defined, to 
+    support the new AMD Opteron 64-bit processor
+
+  - modified configure to not use the -fast compiler flag on Solaris
+    platforms when using the proprietary Solaris cc compilar.  This
+    flag causes compilation problems in eval_y.c (compiler just
+    hangs forever).
+
+  Bug fixes:
+
+  - In the special case of writing 0 elements to a vector table colum
+    that contains 0 rows, ffgcpr no longer adds a blank row to the table.
+    
+  - added error checking code for cases where a ASCII string column
+    in a binary table is greater than 28800 characters wide, to avoid
+    going into an infinite loop.
+
+  - the fits_get_col_display_width routine was incorrectly returning
+    width = 0 for a 'A' binary table column that did not have an 
+    explicit vector length character.
+
 Version 2.460 - 20 May 2003
 
   Enhancements:

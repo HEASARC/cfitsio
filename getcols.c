@@ -345,12 +345,13 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
                  /* this is a binary table, need to convert the format */
                   if (tcode == TBIT) {            /* 'X' */
                      strcpy(cform, "%4d");
-                  } else if (tcode == TBYTE) {           /* 'B' */
+                  } else if (tcode == TBYTE) {    /* 'B' */
                      strcpy(cform, "%4d");
                   } else if (tcode == TSHORT) {   /* 'I' */
                      strcpy(cform, "%6d");
                   } else if (tcode == TLONG) {    /* 'J' */
-                     strcpy(cform, "%11d");
+                     strcpy(cform, "%11.0f");
+                     intcol = 0;  /* needed to support unsigned int */
                   } else if (tcode == TFLOAT) {   /* 'E' */
                      strcpy(cform, "%#14.6G");
                   } else if (tcode == TDOUBLE) {  /* 'D' */

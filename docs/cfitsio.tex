@@ -302,7 +302,7 @@ CFITSIO has currently been tested on the following platforms:
    Linux                      gcc
    MkLinux                    DR3
    Windows 95/98/NT           Borland C++ V4.5
-   Windows 95/98/NT           Microsoft/Compaq Visual C++ v5.0, v6.0
+   Windows 95/98/NT/ME/XP     Microsoft/Compaq Visual C++ v5.0, v6.0
    Windows 95/98/NT           Cygwin gcc
    MacOS 7.1 or greater       Metrowerks 10.+
    MacOS-X 10.1 or greater    cc (gcc)
@@ -813,8 +813,9 @@ datatype of variables when reading or writing keywords or data:
 
   The following data type codes are also supported by CFITSIO:
   #define TINT         31  /* int                            */
-  #define TUINT        30  /* unsigned int                   */
-  #define TUSHORT      20  /* unsigned short                 */
+  #define TSBYTE       12  /* 8-bit signed byte,         'S' */
+  #define TUINT        30  /* unsigned int               'V' */
+  #define TUSHORT      20  /* unsigned short             'U'  */
   #define TULONG       40  /* unsigned long                  */
   #define TLONGLONG    81  /* 64-bit long signed integer 'K' */
 
@@ -889,6 +890,7 @@ as shown in the following table:
     -----     -----  ----
     _bit        x    bit
     _byt        b    unsigned byte
+    _sbyt       sb   signed byte
     _sht        i    short integer
     _lng        j    long integer
     _lnglng     jj   8-byte LONGLONG integer (see note below)
@@ -957,7 +959,7 @@ of float or double values, respectively, where the first  value in each
 pair is the real part, and the second is the imaginary part.
 
  
-\section{Support for Unsigned Integers}
+\section{Support for Unsigned Integers and Signed Bytes}
 
 Although FITS does not directly support unsigned integers as one of its
 fundamental datatypes, FITS can still be used to efficiently store
@@ -1010,15 +1012,16 @@ in fits\_create\_img equal to `ULONG\_IMG' and by calling the
 fits\_write\_img routine with the second parameter = TULONG to write
 the array of unsigned long image pixel values.
 
-An analogous set of routines are available for reading or writing
-unsigned integer values in a FITS binary table extension.  When
-specifying the TFORMn keyword value which defines the format of a
-column, CFITSIO recognized 2 additional datatype codes besides those
+An analogous set of routines are available for reading or writing unsigned
+integer values and signed byte values in a FITS binary table extension.
+When specifying the TFORMn keyword value which defines the format of a
+column, CFITSIO recognized 3 additional datatype codes besides those
 already defined in the FITS standard: `U' meaning a 16-bit unsigned
-integer column, and `V' for a 32-bit unsigned integer column.  These
-non-standard datatype codes are not actually written into the FITS file
-but instead are just used internally within CFITSIO.  The following
-code fragment illustrates how to use these features:
+integer column, `V' for a 32-bit unsigned integer column, and 'S'
+for a signed byte column.  These non-standard datatype codes are not
+actually written into the FITS file but instead are just used internally
+within CFITSIO.  The following code fragment illustrates how to use
+these features:
  
 \begin{verbatim}
       unsigned short uarray[100];
@@ -1030,15 +1033,15 @@ code fragment illustrates how to use these features:
       char extname[] = "Test_table";           /* extension name */
 
       /* define the name, datatype, and physical units for the 2 columns */
-      char *ttype[] = { "Col_1", "Col_2" };
-      char *tform[] = { "1U",      "1V"   };  /* special CFITSIO codes */
-      char *tunit[] = { " ",        " "   };
+      char *ttype[] = { "Col_1", "Col_2", "Col_3" };
+      char *tform[] = { "1U",      "1V",    "1S"};  /* special CFITSIO codes */
+      char *tunit[] = { " ",        " ",    " " };
        ...
 
            /* write the header keywords */
       status  = 0;
       nrows   = 1;
-      tfields = 2
+      tfields = 3
       pcount  = 0;
       fits_create_tbl(fptr, BINARY_TBL, nrows, tfields, ttype, tform,
                 tunit, extname, &status);
@@ -1057,13 +1060,14 @@ code fragment illustrates how to use these features:
               nelements, varray, &status);
        ...
 \end{verbatim}
-Note that the non-standard TFORM values for the 2 columns, `U' and `V',
+Note that the non-standard TFORM values for the 3 columns, `U' and `V',
 tell CFITSIO to write the keywords appropriate for unsigned 16-bit and
 unsigned 32-bit integers, respectively (i.e., TFORMn = '1I' and TZEROn
 = 32678 for unsigned 16-bit integers, and TFORMn = '1J' and TZEROn =
-2147483648 for unsigned 32-bit integers).  The calls to
-fits\_write\_col then write the arrays of unsigned integer values to
-the columns.
+2147483648 for unsigned 32-bit integers).  The 'S' TFORMn value tells
+CFITSIO to write the keywords appropriate for a signed 8-bit byte column
+with TFORMn = '1B' and TZEROn = -128.  The calls to fits\_write\_col
+then write the arrays of unsigned integer values to the columns.
 
  
 \section{Dealing with Character Strings}
@@ -2142,7 +2146,7 @@ large enough to hold the image should be declared as array[50][100] and
 not as array[100][50].
 
 The `datatype'  parameter specifies the datatype of the `nulval'  and
-`array' pointers and can have one of the following  values:  TBYTE,
+`array' pointers and can have one of the following  values:  TBYTE, TSBYTE,
 TSHORT, TUSHORT, TINT, TUINT, TLONG, TLONGLONG, TULONG, TFLOAT, TDOUBLE.
 Automatic data type conversion is performed if the data type of the
 FITS array (as defined by the BITPIX keyword) differs from that
@@ -2279,7 +2283,7 @@ written in the FITS array.
     = 0 or *nulval = 0, in which case no checks for undefined pixels
     will be performed.  The second routine is similar except that any
     undefined pixels will have the corresponding nullarray element set
-   equal to TRUE.  \label{ffgpxv}  \label{ffgpxf}
+   equal to TRUE (= 1).  \label{ffgpxv}  \label{ffgpxf}
 \end{description}
  
 \begin{verbatim}
@@ -2770,7 +2774,7 @@ an error.
 Automatic data type conversion is performed for numerical data types
 (only) if the data type of the column (defined by the TFORMn keyword)
 differs from the data type of the calling routine.  ASCII and binary
-tables support the following datatype values:  TSTRING, TBYTE, TSHORT,
+tables support the following datatype values:  TSTRING, TBYTE, TSBYTE, TSHORT,
 TUSHORT, TINT, TUINT, TLONG, TLONGLONG, TULONG, TFLOAT, or TDOUBLE.
 Binary tables also support TLOGICAL (internally mapped to the `char'
 datatype), TCOMPLEX, and TDBLCOMPLEX.
@@ -2837,7 +2841,7 @@ rows if required) and not the number of table cells.
     null value itself) unless nulval = 0 or *nulval = 0, in which case
     no checking for undefined pixels will be performed.  The second
     routine is similar except that any undefined pixels will have the
-    corresponding nullarray element set equal to TRUE.
+    corresponding nullarray element set equal to TRUE (= 1).
 
     Any column, regardless of it's intrinsic datatype, may be read as a
     string.  It should be noted however that reading a numeric column
@@ -3810,7 +3814,7 @@ datatype -- The desired datatype of the array to be passed to the
             work function.  For numerical data the datatype does
             not need to be the same as the actual datatype in the
             FITS file, in which case CFITSIO will do the conversion.
-            Allowed values are: TSTRING, TLOGICAL, TBYTE, TSHORT, TUSHORT,
+            Allowed values are: TSTRING, TLOGICAL, TBYTE, TSBYTE, TSHORT, TUSHORT,
             TINT, TLONG, TULONG, TFLOAT, TDOUBLE.  If the input
             value of datatype equals 0, then the  existing
             datatype of the column or image will be used without
@@ -5624,19 +5628,19 @@ inc[1]=3 when reading a 2-dimensional FITS image, then only every other
 pixel in the first dimension and every 3rd pixel in the second
 dimension will be returned to the 'array' parameter.
 
-Two types of routines are provided to read the data array which differ
-in the way undefined pixels are handled.  The first type of routines
-(e.g., ffgpv\_) simply return an array of data elements in which
-undefined pixels are set equal to a value specified by the user in the
-`nulval' parameter.  An additional feature of these routines is that if
-the user sets nulval = 0, then no checks for undefined pixels will be
-performed, thus reducing the amount of CPU processing.  The second type
-of routines (e.g., ffgpf\_) returns the data element array and, in
-addition, a char array which defines whether the corresponding data
-pixel is defined (= 1) or not (= 0).  The latter type of routines may
+Two types of routines are provided to read the data array which differ in
+the way undefined pixels are handled.  The first type of routines (e.g.,
+ffgpv\_) simply return an array of data elements in which undefined
+pixels are set equal to a value specified by the user in the `nulval'
+parameter.  An additional feature of these routines is that if the user
+sets nulval = 0, then no checks for undefined pixels will be performed,
+thus reducing the amount of CPU processing.  The second type of routines
+(e.g., ffgpf\_) returns the data element array and, in addition, a char
+array that indicates whether the value of the corresponding data pixel
+is undefined (= 1) or defined (= 0).  The latter type of routines may
 be more convenient to use in some circumstances, however, it requires
-an additional array of logical values which can be unwieldy when
-working with large data arrays.
+an additional array of logical values which can be unwieldy when working
+with large data arrays.
 
  
 \begin{description}
@@ -5737,7 +5741,7 @@ working with large data arrays.
   int  fits_read_imgnull_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
        ffgpf[b,i,ui,k,uk,j,uj,jj,e,d]
        (fitsfile *fptr, long group, long firstelem, long nelements,
-       > DTYPE *array, char *nularray, int *anynul, int *status)
+       > DTYPE *array, char *nullarray, int *anynul, int *status)
 \end{verbatim}
  
 \begin{description}
@@ -5790,7 +5794,7 @@ working with large data arrays.
        ffgsf[b,i,ui,k,uk,j,uj,jj,e,d]
        (fitsfile *fptr, int group, int naxis, long *naxes,
        long *fpixel, long *lpixel, long *inc, > DTYPE *array,
-       char *nularray, int *anynul, int *status)
+       char *nullarray, int *anynul, int *status)
 \end{verbatim}
 
  
@@ -6071,7 +6075,7 @@ parameters used in these routines.
 \begin{description}
 \item[2 ] Read elements and null flags from an ASCII or binary table column (in the
     CHDU).  These routines return the values of the table column array elements.
-    Any undefined array elements will have the corresponding nularray element
+    Any undefined array elements will have the corresponding nullarray element
     set equal to TRUE.  The anynul parameter is set to true if any of the
    returned elements are undefined. \label{ffgcfx}
 \end{description}
@@ -6079,14 +6083,14 @@ parameters used in these routines.
 \begin{verbatim}
   int fits_read_colnull_str / ffgcfs
       (fitsfile *fptr, int colnum, long firstrow, long firstelem,
-       long nelements, > char **array, char *nularray, int *anynul,
+       long nelements, > char **array, char *nullarray, int *anynul,
        int *status)
 
   int fits_read_colnull_[log,byt,sht,usht,int,uint,lng,ulng,lnglng,flt,dbl,cmp,dblcmp] /
       ffgcf[l,b,i,ui,k,uk,j,uj,jj,e,d,c,m]
       (fitsfile *fptr, int colnum, long firstrow,
        long firstelem, long nelements, > DTYPE *array,
-       char *nularray, int *anynul, int *status)
+       char *nullarray, int *anynul, int *status)
 \end{verbatim}
  
 \begin{description}
@@ -6112,7 +6116,7 @@ parameters used in these routines.
 \begin{description}
 \item[4 ] Read an arbitrary data subsection from an N-dimensional array
     in a binary table vector column.  Any Undefined
-    pixels in the array will have the corresponding 'nularray'
+    pixels in the array will have the corresponding 'nullarray'
     element set equal to TRUE.  The first and last rows in the table
     to be read are specified by fpixel(naxis+1) and lpixel(naxis+1),
     and hence are treated as the next higher dimension of the FITS
@@ -6126,7 +6130,7 @@ parameters used in these routines.
       ffgsf[b,i,ui,k,uk,j,uj,jj,e,d]
       (fitsfile *fptr, int colnum, int naxis, long *naxes,
        long *fpixel, long *lpixel, long *inc, > DTYPE *array,
-       char *nularray, int *anynul, int *status)
+       char *nullarray, int *anynul, int *status)
 \end{verbatim}
  
 \begin{description}
@@ -8947,8 +8951,8 @@ dataok   - was the data unit verification successful (=1) or
 datasum  - 32-bit 1's complement checksum for the data unit
 dataend  - address (in bytes) of the end of the HDU
 datastart- address (in bytes) of the start of the data unit
-datatype - specifies the datatype of the value.  Allowed value are:
-           TSTRING, TLOGICAL, TBYTE, TSHORT, TUSHORT, TINT, TUINT, TLONG, TULONG,
+datatype - specifies the datatype of the value.  Allowed value are:  TSTRING,
+           TLOGICAL, TBYTE, TSBYTE, TSHORT, TUSHORT, TINT, TUINT, TLONG, TULONG,
            TFLOAT, TDOUBLE, TCOMPLEX, and TDBLCOMPLEX
 datestr  - FITS date/time string: 'YYYY-MM-DDThh:mm:ss.ddd', 'YYYY-MM-dd',
            or 'dd/mm/yy'
@@ -9055,7 +9059,7 @@ nmove    - number of HDUs to move (+ or -), relative to current position
 noisebits- number of bits to ignore when compressing floating point images
 nrows    - number of rows in the table
 nstart   - first integer value
-nularray - set to TRUE (=1) if corresponding data element is undefined
+nullarray- set to TRUE (=1) if corresponding data element is undefined
 nulval   - numerical value to represent undefined pixels
 nulstr   - character string used to represent undefined values in ASCII table
 numval   - numerical data value, of the appropriate datatype

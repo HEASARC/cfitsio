@@ -24,12 +24,14 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
        keywords are not present.
 */
 {
-    int tstat = 0, cd_exists = 0;
+    int tstat = 0, cd_exists = 0, pc_exists = 0;
     char ctype[FLEN_VALUE];
     double cd11 = 0.0, cd21 = 0.0, cd22 = 0.0, cd12 = 0.0;
+    double pc11 = 1.0, pc21 = 0.0, pc22 = 1.0, pc12 = 0.0;
     double pi =  3.1415926535897932;
     double phia, phib, temp;
     double toler = .0002;  /* tolerance for angles to agree (radians) */
+                           /*   (= approximately 0.01 degrees) */
 
     if (*status > 0)
        return(*status);
@@ -54,7 +56,7 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
     tstat = 0;
     if (ffgkyd(fptr, "CDELT1", xinc, NULL, &tstat))
     {
-        /* no CDELTn keyword, so look for the CD matrix */
+        /* CASE 1: no CDELTn keyword, so look for the CD matrix */
         tstat = 0;
         if (ffgkyd(fptr, "CD1_1", &cd11, NULL, &tstat))
             tstat = 0;  /* reset keyword not found error */
@@ -123,6 +125,7 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
         {
             *xinc = 1.;
 
+            /* there was no CDELT1 keyword, but check for CDELT2 just in case */
             tstat = 0;
             if (ffgkyd(fptr, "CDELT2", yinc, NULL, &tstat))
                 *yinc = 1.;
@@ -132,14 +135,69 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
                 *rot=0.;
         }
     }
-    else
+    else  /* Case 2: CDELTn + optional PC matrix */
     {
         if (ffgkyd(fptr, "CDELT2", yinc, NULL, &tstat))
             *yinc = 1.;
 
         tstat = 0;
         if (ffgkyd(fptr, "CROTA2", rot, NULL, &tstat))
+        {
             *rot=0.;
+
+            /* no CROTA2 keyword, so look for the PC matrix */
+            tstat = 0;
+            if (ffgkyd(fptr, "PC1_1", &pc11, NULL, &tstat))
+                tstat = 0;  /* reset keyword not found error */
+            else
+                pc_exists = 1;  /* found at least 1 PC_ keyword */
+
+            if (ffgkyd(fptr, "PC2_1", &pc21, NULL, &tstat))
+                tstat = 0;  /* reset keyword not found error */
+            else
+                pc_exists = 1;  /* found at least 1 PC_ keyword */
+
+            if (ffgkyd(fptr, "PC1_2", &pc12, NULL, &tstat))
+                tstat = 0;  /* reset keyword not found error */
+            else
+                pc_exists = 1;  /* found at least 1 PC_ keyword */
+
+            if (ffgkyd(fptr, "PC2_2", &pc22, NULL, &tstat))
+                tstat = 0;  /* reset keyword not found error */
+            else
+                pc_exists = 1;  /* found at least 1 PC_ keyword */
+
+            if (pc_exists)  /* convert PCi_j back to CDELTn */
+            {
+                /* there are 2 ways to compute the angle: */
+                phia = atan2( pc21, pc11);
+                phib = atan2(-pc12, pc22);
+
+                /* ensure that phia <= phib */
+                temp = minvalue(phia, phib);
+                phib = maxvalue(phia, phib);
+                phia = temp;
+
+                /* there is a possible 180 degree ambiguity in the angles */
+                /* so add 180 degress to the smaller value if the values  */
+                /* differ by more than 90 degrees = pi/2 radians.         */
+                /* (Later, we may decide to take the other solution by    */
+                /* subtracting 180 degrees from the larger value).        */
+
+                if ((phib - phia) > (pi / 2.))
+                   phia += pi;
+
+                if (fabs(phia - phib) > toler) 
+                {
+                  /* angles don't agree, so looks like there is some skewness */
+                  /* between the axes.  Return with an error to be safe. */
+                  *status = APPROX_WCS_KEY;
+                }
+      
+                phia = (phia + phib) /2.;  /* use the average of the 2 values */
+                *rot = phia * 180. / pi;
+            }
+        }
     }
 
     /* get the type of projection, if any */

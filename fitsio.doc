@@ -214,7 +214,7 @@ CFITSIO has currently been tested on the following platforms:
    Linux                      gcc
    MkLinux                    DR3
    Windows 95/98/NT           Borland C++ V4.5
-   Windows 95/98/NT           Microsoft/Compaq Visual C++ v5.0, v6.0
+   Windows 95/98/NT/ME/XP     Microsoft/Compaq Visual C++ v5.0, v6.0
    Windows 95/98/NT           Cygwin gcc
    OS/2                       gcc + EMX
    MacOS 7.1 or greater       Metrowerks 10.+
@@ -251,17 +251,20 @@ absence of leading zeros, or 3 digit exponents in numbers,
 which can be ignored).
 
 The Fortran wrappers in CFITSIO may be tested with the testf77
-program on Unix systems with:
+program.  On Unix systems the fortran compilation and link command
+may be called 'f77' or 'g77', depending on the system.
 -
-    % f77 -o testf77 testf77.f -L. -lcfitsio -lnsl -lsocket  
-  or
-    % f77 -f -o testf77 testf77.f -L. -lcfitsio    (under SUN O/S)
-  or
-    % f77 -o testf77 testf77.f -Wl,-L. -lcfitsio -lm -lnsl -lsocket (HP/UX)
+   % f77 -o testf77 testf77.f -L. -lcfitsio -lnsl -lsocket  
+ or
+   % f77 -f -o testf77 testf77.f -L. -lcfitsio    (under SUN O/S)
+ or
+   % f77 -o testf77 testf77.f -Wl,-L. -lcfitsio -lm -lnsl -lsocket (HP/UX)
+ or
+   % g77 -o testf77 -s testf77.f -lcfitsio -lcc_dynamic -lncurses (Mac OS-X)
 
-    % testf77 > testf77.lis
-    % diff testf77.lis testf77.out
-    % cmp testf77.fit testf77.std
+   % testf77 > testf77.lis
+   % diff testf77.lis testf77.out
+   % cmp testf77.fit testf77.std
 -
 On machines running SUN O/S, Fortran programs must be compiled with the
 '-f' option to force double precision variables to be aligned on 8-byte

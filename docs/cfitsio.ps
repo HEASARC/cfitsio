@@ -8,7 +8,7 @@
 %DVIPSWebPage: (www.radicaleye.com)
 %DVIPSCommandLine: dvips -N0 cfitsio
 %DVIPSParameters: dpi=600, compressed
-%DVIPSSource:  TeX output 2003.05.20:1216
+%DVIPSSource:  TeX output 2003.08.18:1636
 %%BeginProcSet: texc.pro
 %!
 /TeXDict 300 dict def TeXDict begin/N{def}def/B{bind def}N/S{exch}N/X{S
@@ -2135,10 +2135,10 @@ f(.)85 b(15)136 5066 y(4.2)94 b(Curren)m(t)30 b(Header)h(Data)h(Unit)d
 b(17)136 5228 y(4.3)94 b(F)-8 b(unction)31 b(Names)f(and)g(V)-8
 b(ariable)30 b(Datat)m(yp)s(es)41 b(.)46 b(.)g(.)g(.)f(.)h(.)g(.)f(.)h
 (.)g(.)g(.)f(.)h(.)g(.)f(.)h(.)g(.)g(.)f(.)h(.)g(.)f(.)h(.)g(.)f(.)85
-b(18)136 5390 y(4.4)94 b(Supp)s(ort)29 b(for)h(Unsigned)f(In)m(tegers)j
-(.)46 b(.)g(.)f(.)h(.)g(.)f(.)h(.)g(.)g(.)f(.)h(.)g(.)f(.)h(.)g(.)g(.)f
-(.)h(.)g(.)f(.)h(.)g(.)g(.)f(.)h(.)g(.)f(.)h(.)g(.)f(.)85
-b(19)136 5552 y(4.5)94 b(Dealing)31 b(with)e(Character)h(Strings)60
+b(18)136 5390 y(4.4)94 b(Supp)s(ort)29 b(for)h(Unsigned)f(In)m(tegers)i
+(and)f(Signed)f(Bytes)86 b(.)46 b(.)f(.)h(.)g(.)g(.)f(.)h(.)g(.)f(.)h
+(.)g(.)g(.)f(.)h(.)g(.)f(.)h(.)g(.)f(.)85 b(19)136 5552
+y(4.5)94 b(Dealing)31 b(with)e(Character)h(Strings)60
 b(.)46 b(.)f(.)h(.)g(.)f(.)h(.)g(.)g(.)f(.)h(.)g(.)f(.)h(.)g(.)g(.)f(.)
 h(.)g(.)f(.)h(.)g(.)g(.)f(.)h(.)g(.)f(.)h(.)g(.)f(.)85
 b(21)136 5714 y(4.6)94 b(Implicit)28 b(Data)k(T)m(yp)s(e)e(Con)m(v)m
@@ -2717,7 +2717,7 @@ b(Alpha)f(OpenVMS)476 b(cc)143 3862 y(DEC)47 b(VAX/VMS)762
 b(gcc)47 b(and)g(cc)143 3975 y(HP-UX)1049 b(gcc)143 4088
 y(IBM)47 b(AIX)954 b(gcc)143 4201 y(Linux)1049 b(gcc)143
 4314 y(MkLinux)953 b(DR3)143 4427 y(Windows)46 b(95/98/NT)523
-b(Borland)46 b(C++)h(V4.5)143 4540 y(Windows)f(95/98/NT)523
+b(Borland)46 b(C++)h(V4.5)143 4540 y(Windows)f(95/98/NT/ME/XP)235
 b(Microsoft/Compaq)43 b(Visual)j(C++)h(v5.0,)g(v6.0)143
 4653 y(Windows)f(95/98/NT)523 b(Cygwin)46 b(gcc)143 4765
 y(MacOS)h(7.1)f(or)i(greater)332 b(Metrowerks)45 b(10.+)143
@@ -3281,35 +3281,36 @@ b(/*)47 b(double)f(precision)f(float,)189 b('D')47 b(*/)95
 b(/*)47 b(double)f(complex)g(\(2)h(doubles\))e('M')i(*/)95
 4959 y(The)g(following)f(data)g(type)h(codes)f(are)h(also)g(supported)e
 (by)i(CFITSIO:)95 5072 y(#define)f(TINT)429 b(31)95 b(/*)47
-b(int)1335 b(*/)95 5185 y(#define)46 b(TUINT)381 b(30)95
-b(/*)47 b(unsigned)e(int)906 b(*/)95 5297 y(#define)46
-b(TUSHORT)285 b(20)95 b(/*)47 b(unsigned)e(short)810
-b(*/)95 5410 y(#define)46 b(TULONG)333 b(40)95 b(/*)47
-b(unsigned)e(long)858 b(*/)95 5523 y(#define)46 b(TLONGLONG)189
-b(81)95 b(/*)47 b(64-bit)f(long)h(signed)f(integer)f('K')i(*/)p
-eop
+b(int)1335 b(*/)95 5185 y(#define)46 b(TSBYTE)333 b(12)95
+b(/*)47 b(8-bit)f(signed)g(byte,)428 b('S')47 b(*/)95
+5297 y(#define)f(TUINT)381 b(30)95 b(/*)47 b(unsigned)e(int)715
+b('V')47 b(*/)95 5410 y(#define)f(TUSHORT)285 b(20)95
+b(/*)47 b(unsigned)e(short)619 b('U')95 b(*/)95 5523
+y(#define)46 b(TULONG)333 b(40)95 b(/*)47 b(unsigned)e(long)858
+b(*/)95 5636 y(#define)46 b(TLONGLONG)189 b(81)95 b(/*)47
+b(64-bit)f(long)h(signed)f(integer)f('K')i(*/)p eop
 %%Page: 17 25
 17 24 bop 0 299 a Fh(4.2.)72 b(CURRENT)30 b(HEADER)h(D)m(A)-8
-b(T)g(A)32 b(UNIT)e(\(CHDU\))1786 b Fj(17)0 555 y Fe(HDU)47
+b(T)g(A)32 b(UNIT)e(\(CHDU\))1786 b Fj(17)0 668 y Fe(HDU)47
 b(type)g(code)f(values)g(\(value)g(returned)g(when)h(moving)f(to)h(new)
-g(HDU\):)95 781 y(#define)f(IMAGE_HDU)93 b(0)i(/*)48
-b(Primary)d(Array)i(or)g(IMAGE)f(HDU)h(*/)95 894 y(#define)f(ASCII_TBL)
-93 b(1)i(/*)48 b(ASCII)94 b(table)46 b(HDU)h(*/)95 1007
-y(#define)f(BINARY_TBL)f(2)95 b(/*)48 b(Binary)e(table)g(HDU)h(*/)95
-1120 y(#define)f(ANY_HDU)142 b(-1)94 b(/*)48 b(matches)d(any)i(type)g
-(of)g(HDU)g(*/)0 1346 y(Column)f(name)h(and)g(string)f(matching)f
-(case-sensitivity:)95 1571 y(#define)h(CASESEN)142 b(1)g(/*)48
-b(do)f(case-sensitive)d(string)i(match)g(*/)95 1684 y(#define)g
+g(HDU\):)95 894 y(#define)f(IMAGE_HDU)93 b(0)i(/*)48
+b(Primary)d(Array)i(or)g(IMAGE)f(HDU)h(*/)95 1007 y(#define)f
+(ASCII_TBL)93 b(1)i(/*)48 b(ASCII)94 b(table)46 b(HDU)h(*/)95
+1120 y(#define)f(BINARY_TBL)f(2)95 b(/*)48 b(Binary)e(table)g(HDU)h(*/)
+95 1233 y(#define)f(ANY_HDU)142 b(-1)94 b(/*)48 b(matches)d(any)i(type)
+g(of)g(HDU)g(*/)0 1458 y(Column)f(name)h(and)g(string)f(matching)f
+(case-sensitivity:)95 1684 y(#define)h(CASESEN)142 b(1)g(/*)48
+b(do)f(case-sensitive)d(string)i(match)g(*/)95 1797 y(#define)g
 (CASEINSEN)g(0)142 b(/*)48 b(do)f(case-insensitive)c(string)j(match)h
-(*/)0 1910 y(Logical)f(states)g(\(if)h(TRUE)f(and)h(FALSE)g(are)g(not)g
-(already)e(defined\):)95 2136 y(#define)h(TRUE)h(1)95
-2249 y(#define)f(FALSE)h(0)0 2475 y(Values)f(to)h(represent)f
-(undefined)f(floating)g(point)i(numbers:)95 2700 y(#define)f
-(FLOATNULLVALUE)e(-9.11912E-36F)95 2813 y(#define)i(DOUBLENULLVALUE)e
-(-9.1191291391491E-36)0 3039 y(Image)i(compression)f(algorithm)g
-(definitions)95 3265 y(#define)h(RICE_1)285 b(11)95 3378
-y(#define)46 b(GZIP_1)285 b(21)95 3491 y(#define)46 b(PLIO_1)285
-b(31)0 4250 y Ff(4.2)135 b(Curren)l(t)46 b(Header)f(Data)h(Unit)g
+(*/)0 2023 y(Logical)f(states)g(\(if)h(TRUE)f(and)h(FALSE)g(are)g(not)g
+(already)e(defined\):)95 2249 y(#define)h(TRUE)h(1)95
+2362 y(#define)f(FALSE)h(0)0 2588 y(Values)f(to)h(represent)f
+(undefined)f(floating)g(point)i(numbers:)95 2813 y(#define)f
+(FLOATNULLVALUE)e(-9.11912E-36F)95 2926 y(#define)i(DOUBLENULLVALUE)e
+(-9.1191291391491E-36)0 3152 y(Image)i(compression)f(algorithm)g
+(definitions)95 3378 y(#define)h(RICE_1)285 b(11)95 3491
+y(#define)46 b(GZIP_1)285 b(21)95 3604 y(#define)46 b(PLIO_1)285
+b(31)0 4268 y Ff(4.2)135 b(Curren)l(t)46 b(Header)f(Data)h(Unit)g
 (\(CHDU\))0 4585 y Fj(The)37 b(concept)h(of)g(the)f(Curren)m(t)g
 (Header)g(and)g(Data)i(Unit,)g(or)e(CHDU,)h(is)e(fundamen)m(tal)h(to)h
 (the)f(use)g(of)h(the)0 4698 y(CFITSIO)31 b(library)-8
@@ -3360,462 +3361,470 @@ b('j')c(in)g('\013pkyj'\))h(while)d(the)j(long)f(routine)g(names)0
 1905 y Fe(Long)285 b(Short)94 b(Data)191 2018 y(Names)237
 b(Names)94 b(Type)191 2131 y(-----)237 b(-----)94 b(----)191
 2244 y(_bit)381 b(x)190 b(bit)191 2357 y(_byt)381 b(b)190
-b(unsigned)46 b(byte)191 2469 y(_sht)381 b(i)190 b(short)47
-b(integer)191 2582 y(_lng)381 b(j)190 b(long)47 b(integer)191
-2695 y(_lnglng)237 b(jj)142 b(8-byte)46 b(LONGLONG)g(integer)g(\(see)g
-(note)h(below\))191 2808 y(_usht)333 b(ui)142 b(unsigned)46
-b(short)g(integer)191 2921 y(_ulng)333 b(uj)142 b(unsigned)46
-b(long)g(integer)191 3034 y(_uint)333 b(uk)142 b(unsigned)46
-b(int)h(integer)191 3147 y(_int)381 b(k)190 b(int)47
-b(integer)191 3260 y(_flt)381 b(e)190 b(real)47 b(exponential)e
-(floating)g(point)i(\(float\))191 3373 y(_fixflt)237
+b(unsigned)46 b(byte)191 2469 y(_sbyt)333 b(sb)142 b(signed)46
+b(byte)191 2582 y(_sht)381 b(i)190 b(short)47 b(integer)191
+2695 y(_lng)381 b(j)190 b(long)47 b(integer)191 2808
+y(_lnglng)237 b(jj)142 b(8-byte)46 b(LONGLONG)g(integer)g(\(see)g(note)
+h(below\))191 2921 y(_usht)333 b(ui)142 b(unsigned)46
+b(short)g(integer)191 3034 y(_ulng)333 b(uj)142 b(unsigned)46
+b(long)g(integer)191 3147 y(_uint)333 b(uk)142 b(unsigned)46
+b(int)h(integer)191 3260 y(_int)381 b(k)190 b(int)47
+b(integer)191 3373 y(_flt)381 b(e)190 b(real)47 b(exponential)e
+(floating)g(point)i(\(float\))191 3486 y(_fixflt)237
 b(f)190 b(real)47 b(fixed-decimal)d(format)i(floating)g(point)g
-(\(float\))191 3486 y(_dbl)381 b(d)190 b(double)46 b(precision)g(real)g
-(floating-point)e(\(double\))191 3599 y(_fixdbl)237 b(g)190
+(\(float\))191 3599 y(_dbl)381 b(d)190 b(double)46 b(precision)g(real)g
+(floating-point)e(\(double\))191 3711 y(_fixdbl)237 b(g)190
 b(double)46 b(precision)g(fixed-format)e(floating)i(point)g(\(double\))
-191 3711 y(_cmp)381 b(c)190 b(complex)46 b(reals)g(\(pairs)h(of)g
-(float)f(values\))191 3824 y(_fixcmp)237 b(fc)142 b(complex)46
-b(reals,)g(fixed-format)f(floating)g(point)191 3937 y(_dblcmp)237
+191 3824 y(_cmp)381 b(c)190 b(complex)46 b(reals)g(\(pairs)h(of)g
+(float)f(values\))191 3937 y(_fixcmp)237 b(fc)142 b(complex)46
+b(reals,)g(fixed-format)f(floating)g(point)191 4050 y(_dblcmp)237
 b(m)190 b(double)46 b(precision)g(complex)f(\(pairs)i(of)g(double)f
-(values\))191 4050 y(_fixdblcmp)93 b(fm)142 b(double)46
+(values\))191 4163 y(_fixdblcmp)93 b(fm)142 b(double)46
 b(precision)g(complex,)f(fixed-format)g(floating)g(point)191
-4163 y(_log)381 b(l)190 b(logical)46 b(\(int\))191 4276
-y(_str)381 b(s)190 b(character)46 b(string)0 4538 y Fj(The)35
+4276 y(_log)381 b(l)190 b(logical)46 b(\(int\))191 4389
+y(_str)381 b(s)190 b(character)46 b(string)0 4650 y Fj(The)35
 b(logical)f(datat)m(yp)s(e)i(corresp)s(onds)e(to)h(`in)m(t')g(for)g
 (logical)g(k)m(eyw)m(ord)g(v)-5 b(alues,)36 b(and)e(`b)m(yte')i(for)f
-(logical)g(binary)0 4650 y(table)k(columns.)66 b(In)39
+(logical)g(binary)0 4763 y(table)k(columns.)66 b(In)39
 b(other)g(w)m(ords,)i(the)f(v)-5 b(alue)38 b(when)h(writing)e(a)j
 (logical)e(k)m(eyw)m(ord)i(m)m(ust)f(b)s(e)g(stored)g(in)f(an)0
-4763 y(`in)m(t')g(v)-5 b(ariable,)38 b(and)g(m)m(ust)f(b)s(e)g(stored)h
+4876 y(`in)m(t')g(v)-5 b(ariable,)38 b(and)g(m)m(ust)f(b)s(e)g(stored)h
 (in)f(a)h(`c)m(har')h(arra)m(y)f(when)f(reading)g(or)g(writing)f(to)j
-(`L')f(columns)e(in)h(a)0 4876 y(binary)e(table.)59 b(Inplicit)34
+(`L')f(columns)e(in)h(a)0 4989 y(binary)e(table.)59 b(Inplicit)34
 b(data)j(t)m(yp)s(e)f(con)m(v)m(ersion)h(is)f(not)h(supp)s(orted)d(for)
-i(logical)g(table)h(columns,)g(but)f(is)f(for)0 4989
+i(logical)g(table)h(columns,)g(but)f(is)f(for)0 5102
 y(k)m(eyw)m(ords,)30 b(so)f(a)h(logical)e(k)m(eyw)m(ord)i(ma)m(y)f(b)s
 (e)g(read)f(and)h(cast)h(to)g(an)m(y)f(n)m(umerical)f(data)h(t)m(yp)s
-(e;)h(a)g(returned)d(v)-5 b(alue)0 5102 y(=)30 b(0)h(indicates)e
+(e;)h(a)g(returned)d(v)-5 b(alue)0 5215 y(=)30 b(0)h(indicates)e
 (false,)h(and)g(an)m(y)h(other)f(v)-5 b(alue)30 b(=)g(true.)0
-5262 y(The)c(`in)m(t')g(datat)m(yp)s(e)h(ma)m(y)g(b)s(e)e(2)i(b)m(ytes)
+5375 y(The)c(`in)m(t')g(datat)m(yp)s(e)h(ma)m(y)g(b)s(e)e(2)i(b)m(ytes)
 f(long)g(on)g(some)h(IBM)f(PC)g(compatible)f(systems)h(and)g(is)f
-(usually)f(4)i(b)m(ytes)0 5375 y(long)32 b(on)g(most)h(other)g
+(usually)f(4)i(b)m(ytes)0 5488 y(long)32 b(on)g(most)h(other)g
 (systems.)46 b(Some)33 b(64-bit)g(mac)m(hines,)f(ho)m(w)m(ev)m(er,)j
 (lik)m(e)c(the)i(Dec)h(Alpha/OSF,)d(de\014ne)h(the)0
-5488 y(`short',)42 b(`in)m(t',)f(and)d(`long')i(in)m(teger)f(datat)m
+5601 y(`short',)42 b(`in)m(t',)f(and)d(`long')i(in)m(teger)f(datat)m
 (yp)s(es)h(to)g(b)s(e)e(2,)k(4,)f(and)e(8)g(b)m(ytes)h(long,)h(resp)s
-(ectiv)m(ely)-8 b(.)66 b(The)39 b(FITS)0 5601 y(standard)32
+(ectiv)m(ely)-8 b(.)66 b(The)39 b(FITS)0 5714 y(standard)32
 b(only)g(supp)s(orts)g(2)h(and)g(4)g(b)m(yte)h(in)m(teger)f(data)h(t)m
 (yp)s(es,)g(so)f(CFITSIO)f(in)m(ternally)f(con)m(v)m(erts)j(b)s(et)m(w)
-m(een)0 5714 y(4)d(and)f(8)g(b)m(ytes)h(when)f(reading)f(or)h(writing)f
-(`long')h(in)m(tegers)h(on)f(Alpha/OSF)f(systems.)p eop
+m(een)p eop
 %%Page: 19 27
 19 26 bop 0 299 a Fh(4.4.)72 b(SUPPOR)-8 b(T)30 b(F)m(OR)g(UNSIGNED)h
-(INTEGERS)1903 b Fj(19)0 555 y(The)29 b(8-b)m(yte)j('LONGLONG')e(in)m
-(teger)h(datat)m(yp)s(e)f(is)f(supp)s(orted)g(on)g(most)i(platforms.)39
-b(CFITSIO)29 b(de\014nes)g(the)0 668 y(LONGLONG)i(datat)m(yp)s(e)h(to)f
-(b)s(e)f(equiv)-5 b(alen)m(t)30 b(to)i('long)f(long')f(on)h(most)g
-(Unix)f(platforms)f(and)h(on)h(Mac)h(OS-X.)0 781 y(Since)39
-b(most)i(Windo)m(ws)e(compilers)g(don't)h(supp)s(ort)e(the)j('long)f
-(long')g(datat)m(yp)s(e,)k(LONGLONG)c(is)f(de\014ned)0
-894 y(instead)d(to)h(b)s(e)f(equiv)-5 b(alen)m(t)35 b(to)j(')p
-1152 894 28 4 v 1185 894 V 65 w(in)m(t64'.)60 b(If)36
-b(the)g(compiler)f(do)s(es)h(not)h(supp)s(ort)e(a)h(8-b)m(yte)i(in)m
-(teger)f(datat)m(yp)s(e)0 1007 y(then)32 b(LONGLONG)h(is)f(de\014ned)f
-(to)i(b)s(e)f(equiv)-5 b(alen)m(t)33 b(to)g('long'.)48
-b(Note)34 b(that)f(the)g(C)f(format)h(sp)s(eci\014er)e(to)i(prin)m(t)0
-1120 y(out)38 b(these)g(long)g(in)m(teger)g(v)-5 b(alues)37
-b(is)g("\045lld")g(on)h(most)g(unix)e(mac)m(hines,)k(except)e(on)g(OSF)
-g(platforms)e(where)0 1233 y("\045ld")29 b(m)m(ust)g(b)s(e)g(used.)39
-b(On)29 b(Windo)m(ws)f(platform)h(whic)m(h)f(ha)m(v)m(e)i(the)p
-2404 1233 V 2437 1233 V 95 w(in)m(t64)g(data)g(t)m(yp)s(e,)g(the)g
-(format)g(sp)s(eci\014er)0 1346 y(is)f("\045INT64d".)0
-1506 y(When)c(dealing)e(with)h(the)h(FITS)f(b)m(yte)h(datat)m(yp)s(e)h
-(it)f(is)e(imp)s(ortan)m(t)i(to)g(remem)m(b)s(er)f(that)i(the)f(ra)m(w)
-g(v)-5 b(alues)24 b(\(b)s(efore)0 1619 y(an)m(y)h(scaling)e(b)m(y)h
-(the)h(BSCALE)e(and)h(BZER)m(O,)g(or)h(TSCALn)d(and)i(TZER)m(On)f(k)m
-(eyw)m(ord)i(v)-5 b(alues\))24 b(in)f(b)m(yte)i(arra)m(ys)0
-1732 y(\(BITPIX)37 b(=)f(8\))h(or)f(b)m(yte)i(columns)d(\(TF)m(ORMn)i
-(=)f('B'\))h(are)g(in)m(terpreted)f(as)h(unsigned)d(b)m(ytes)j(with)f
-(v)-5 b(alues)0 1844 y(ranging)33 b(from)h(0)g(to)h(255.)53
+(INTEGERS)f(AND)h(SIGNED)f(BYTES)942 b Fj(19)0 555 y(4)31
+b(and)f(8)g(b)m(ytes)h(when)f(reading)f(or)h(writing)f(`long')h(in)m
+(tegers)h(on)f(Alpha/OSF)f(systems.)0 715 y(The)g(8-b)m(yte)j
+('LONGLONG')e(in)m(teger)h(datat)m(yp)s(e)f(is)f(supp)s(orted)g(on)g
+(most)i(platforms.)39 b(CFITSIO)29 b(de\014nes)g(the)0
+828 y(LONGLONG)i(datat)m(yp)s(e)h(to)f(b)s(e)f(equiv)-5
+b(alen)m(t)30 b(to)i('long)f(long')f(on)h(most)g(Unix)f(platforms)f
+(and)h(on)h(Mac)h(OS-X.)0 941 y(Since)39 b(most)i(Windo)m(ws)e
+(compilers)g(don't)h(supp)s(ort)e(the)j('long)f(long')g(datat)m(yp)s
+(e,)k(LONGLONG)c(is)f(de\014ned)0 1054 y(instead)d(to)h(b)s(e)f(equiv)
+-5 b(alen)m(t)35 b(to)j(')p 1152 1054 28 4 v 1185 1054
+V 65 w(in)m(t64'.)60 b(If)36 b(the)g(compiler)f(do)s(es)h(not)h(supp)s
+(ort)e(a)h(8-b)m(yte)i(in)m(teger)f(datat)m(yp)s(e)0
+1167 y(then)32 b(LONGLONG)h(is)f(de\014ned)f(to)i(b)s(e)f(equiv)-5
+b(alen)m(t)33 b(to)g('long'.)48 b(Note)34 b(that)f(the)g(C)f(format)h
+(sp)s(eci\014er)e(to)i(prin)m(t)0 1280 y(out)38 b(these)g(long)g(in)m
+(teger)g(v)-5 b(alues)37 b(is)g("\045lld")g(on)h(most)g(unix)e(mac)m
+(hines,)k(except)e(on)g(OSF)g(platforms)e(where)0 1393
+y("\045ld")29 b(m)m(ust)g(b)s(e)g(used.)39 b(On)29 b(Windo)m(ws)f
+(platform)h(whic)m(h)f(ha)m(v)m(e)i(the)p 2404 1393 V
+2437 1393 V 95 w(in)m(t64)g(data)g(t)m(yp)s(e,)g(the)g(format)g(sp)s
+(eci\014er)0 1506 y(is)f("\045INT64d".)0 1666 y(When)c(dealing)e(with)h
+(the)h(FITS)f(b)m(yte)h(datat)m(yp)s(e)h(it)f(is)e(imp)s(ortan)m(t)i
+(to)g(remem)m(b)s(er)f(that)i(the)f(ra)m(w)g(v)-5 b(alues)24
+b(\(b)s(efore)0 1779 y(an)m(y)h(scaling)e(b)m(y)h(the)h(BSCALE)e(and)h
+(BZER)m(O,)g(or)h(TSCALn)d(and)i(TZER)m(On)f(k)m(eyw)m(ord)i(v)-5
+b(alues\))24 b(in)f(b)m(yte)i(arra)m(ys)0 1892 y(\(BITPIX)37
+b(=)f(8\))h(or)f(b)m(yte)i(columns)d(\(TF)m(ORMn)i(=)f('B'\))h(are)g
+(in)m(terpreted)f(as)h(unsigned)d(b)m(ytes)j(with)f(v)-5
+b(alues)0 2005 y(ranging)33 b(from)h(0)g(to)h(255.)53
 b(Some)34 b(C)g(compilers)f(de\014ne)g(a)h('c)m(har')h(v)-5
 b(ariable)33 b(as)i(signed,)f(so)g(it)g(is)f(imp)s(ortan)m(t)g(to)0
-1957 y(explicitly)28 b(declare)i(a)h(n)m(umeric)e(c)m(har)i(v)-5
+2118 y(explicitly)28 b(declare)i(a)h(n)m(umeric)e(c)m(har)i(v)-5
 b(ariable)29 b(as)i('unsigned)d(c)m(har')j(to)g(a)m(v)m(oid)g(an)m(y)g
-(am)m(biguit)m(y)0 2118 y(One)22 b(feature)h(of)g(the)g(CFITSIO)e
+(am)m(biguit)m(y)0 2278 y(One)22 b(feature)h(of)g(the)g(CFITSIO)e
 (routines)h(is)f(that)j(they)f(can)g(op)s(erate)g(on)f(a)h(`X')h
-(\(bit\))e(column)g(in)f(a)i(binary)e(table)0 2230 y(as)35
+(\(bit\))e(column)g(in)f(a)i(binary)e(table)0 2391 y(as)35
 b(though)e(it)h(w)m(ere)h(a)g(`B')g(\(b)m(yte\))g(column.)52
 b(F)-8 b(or)35 b(example)f(a)g(`11X')i(datat)m(yp)s(e)f(column)e(can)i
-(b)s(e)f(in)m(terpreted)0 2343 y(the)28 b(same)h(as)f(a)g(`2B')i
+(b)s(e)f(in)m(terpreted)0 2503 y(the)28 b(same)h(as)f(a)g(`2B')i
 (column)d(\(i.e.,)i(2)f(unsigned)e(8-bit)i(b)m(ytes\).)41
 b(In)27 b(some)i(instances,)f(it)f(can)i(b)s(e)e(more)h(e\016cien)m(t)0
-2456 y(to)j(read)f(and)g(write)g(whole)f(b)m(ytes)i(at)g(a)g(time,)f
+2616 y(to)j(read)f(and)g(write)g(whole)f(b)m(ytes)i(at)g(a)g(time,)f
 (rather)h(than)f(reading)f(or)i(writing)d(eac)m(h)k(individual)25
-b(bit.)0 2616 y(The)39 b(complex)g(and)g(double)g(precision)e(complex)j
+b(bit.)0 2777 y(The)39 b(complex)g(and)g(double)g(precision)e(complex)j
 (datat)m(yp)s(es)g(are)g(not)g(directly)e(supp)s(orted)g(in)g(ANSI)i(C)
-f(so)0 2729 y(these)26 b(datat)m(yp)s(es)h(should)d(b)s(e)h(in)m
+f(so)0 2889 y(these)26 b(datat)m(yp)s(es)h(should)d(b)s(e)h(in)m
 (terpreted)g(as)i(pairs)d(of)i(\015oat)h(or)f(double)e(v)-5
 b(alues,)26 b(resp)s(ectiv)m(ely)-8 b(,)27 b(where)f(the)g(\014rst)0
-2842 y(v)-5 b(alue)30 b(in)f(eac)m(h)i(pair)f(is)f(the)i(real)f(part,)g
+3002 y(v)-5 b(alue)30 b(in)f(eac)m(h)i(pair)f(is)f(the)i(real)f(part,)g
 (and)g(the)g(second)h(is)e(the)i(imaginary)e(part.)0
-3206 y Ff(4.4)135 b(Supp)t(ort)44 b(for)h(Unsigned)h(In)l(tegers)0
-3462 y Fj(Although)34 b(FITS)h(do)s(es)g(not)g(directly)f(supp)s(ort)g
-(unsigned)f(in)m(tegers)j(as)f(one)h(of)f(its)g(fundamen)m(tal)f(datat)
-m(yp)s(es,)0 3575 y(FITS)27 b(can)h(still)e(b)s(e)h(used)g(to)i
-(e\016cien)m(tly)f(store)g(unsigned)e(in)m(teger)i(data)h(v)-5
-b(alues)27 b(in)g(images)h(and)f(binary)f(tables.)0 3688
-y(The)42 b(con)m(v)m(en)m(tion)i(used)e(in)f(FITS)h(\014les)g(is)f(to)j
-(store)f(the)g(unsigned)d(in)m(tegers)j(as)g(signed)f(in)m(tegers)h
-(with)e(an)0 3801 y(asso)s(ciated)33 b(o\013set)g(\(sp)s(eci\014ed)e(b)
-m(y)h(the)g(BZER)m(O)g(or)g(TZER)m(On)f(k)m(eyw)m(ord\).)47
-b(F)-8 b(or)33 b(example,)f(to)h(store)g(unsigned)0 3914
+3470 y Ff(4.4)135 b(Supp)t(ort)44 b(for)h(Unsigned)h(In)l(tegers)g(and)
+f(Signed)g(Bytes)0 3747 y Fj(Although)34 b(FITS)h(do)s(es)g(not)g
+(directly)f(supp)s(ort)g(unsigned)f(in)m(tegers)j(as)f(one)h(of)f(its)g
+(fundamen)m(tal)f(datat)m(yp)s(es,)0 3860 y(FITS)27 b(can)h(still)e(b)s
+(e)h(used)g(to)i(e\016cien)m(tly)f(store)g(unsigned)e(in)m(teger)i
+(data)h(v)-5 b(alues)27 b(in)g(images)h(and)f(binary)f(tables.)0
+3973 y(The)42 b(con)m(v)m(en)m(tion)i(used)e(in)f(FITS)h(\014les)g(is)f
+(to)j(store)f(the)g(unsigned)d(in)m(tegers)j(as)g(signed)f(in)m(tegers)
+h(with)e(an)0 4086 y(asso)s(ciated)33 b(o\013set)g(\(sp)s(eci\014ed)e
+(b)m(y)h(the)g(BZER)m(O)g(or)g(TZER)m(On)f(k)m(eyw)m(ord\).)47
+b(F)-8 b(or)33 b(example,)f(to)h(store)g(unsigned)0 4199
 y(16-bit)f(in)m(teger)g(v)-5 b(alues)31 b(in)f(a)i(FITS)f(image)h(the)f
 (image)h(w)m(ould)f(b)s(e)f(de\014ned)h(as)h(a)g(signed)e(16-bit)i(in)m
-(teger)g(\(with)0 4027 y(BITPIX)d(k)m(eyw)m(ord)g(=)g(SHOR)-8
-b(T)p 1132 4027 V 32 w(IMG)30 b(=)e(16\))j(with)c(the)j(k)m(eyw)m(ords)
-f(BSCALE)f(=)h(1.0)h(and)f(BZER)m(O)g(=)f(32768.)0 4139
+(teger)g(\(with)0 4312 y(BITPIX)d(k)m(eyw)m(ord)g(=)g(SHOR)-8
+b(T)p 1132 4312 V 32 w(IMG)30 b(=)e(16\))j(with)c(the)j(k)m(eyw)m(ords)
+f(BSCALE)f(=)h(1.0)h(and)f(BZER)m(O)g(=)f(32768.)0 4425
 y(Th)m(us)34 b(the)h(unsigned)e(v)-5 b(alues)34 b(of)h(0,)i(32768,)h
 (and)d(65535,)j(for)d(example,)h(are)f(ph)m(ysically)e(stored)i(in)f
-(the)h(FITS)0 4252 y(image)k(as)f(-32768,)43 b(0,)e(and)d(32767,)k
+(the)h(FITS)0 4538 y(image)k(as)f(-32768,)43 b(0,)e(and)d(32767,)k
 (resp)s(ectiv)m(ely;)g(CFITSIO)37 b(automatically)h(adds)f(the)i(BZER)m
-(O)f(o\013set)h(to)0 4365 y(these)g(v)-5 b(alues)38 b(when)g(they)g
+(O)f(o\013set)h(to)0 4650 y(these)g(v)-5 b(alues)38 b(when)g(they)g
 (are)h(read.)65 b(Similarly)-8 b(,)38 b(in)f(the)i(case)h(of)e
-(unsigned)f(32-bit)i(in)m(tegers)f(the)h(BITPIX)0 4478
+(unsigned)f(32-bit)i(in)m(tegers)f(the)h(BITPIX)0 4763
 y(k)m(eyw)m(ord)c(w)m(ould)e(b)s(e)h(equal)g(to)i(LONG)p
-1392 4478 V 32 w(IMG)f(=)g(32)g(and)f(BZER)m(O)g(w)m(ould)g(b)s(e)g
-(equal)g(to)h(2147483648)k(\(i.e.)54 b(2)0 4591 y(raised)29
-b(to)i(the)g(31st)g(p)s(o)m(w)m(er\).)0 4751 y(The)j(CFITSIO)g(in)m
+1392 4763 V 32 w(IMG)f(=)g(32)g(and)f(BZER)m(O)g(w)m(ould)g(b)s(e)g
+(equal)g(to)h(2147483648)k(\(i.e.)54 b(2)0 4876 y(raised)29
+b(to)i(the)g(31st)g(p)s(o)m(w)m(er\).)0 5036 y(The)j(CFITSIO)g(in)m
 (terface)h(routines)f(will)e(e\016cien)m(tly)j(and)f(transparen)m(tly)h
-(apply)e(the)i(appropriate)f(o\013set)i(in)0 4864 y(these)29
+(apply)e(the)i(appropriate)f(o\013set)i(in)0 5149 y(these)29
 b(cases)h(so)f(in)f(general)h(application)e(programs)i(do)g(not)g(need)
 f(to)i(b)s(e)e(concerned)h(with)f(ho)m(w)h(the)g(unsigned)0
-4977 y(v)-5 b(alues)43 b(are)i(actually)f(stored)g(in)e(the)j(FITS)e
+5262 y(v)-5 b(alues)43 b(are)i(actually)f(stored)g(in)e(the)j(FITS)e
 (\014le.)81 b(As)44 b(a)g(con)m(v)m(enience)i(for)d(users,)k(CFITSIO)c
-(has)h(sev)m(eral)0 5090 y(prede\014ned)19 b(constan)m(ts)j(for)f(the)g
+(has)h(sev)m(eral)0 5375 y(prede\014ned)19 b(constan)m(ts)j(for)f(the)g
 (v)-5 b(alue)20 b(of)h(BITPIX)g(\(USHOR)-8 b(T)p 2189
-5090 V 33 w(IMG,)21 b(ULONG)p 2790 5090 V 33 w(IMG\))h(and)e(for)h(the)
-g(TF)m(ORMn)0 5203 y(v)-5 b(alue)35 b(in)f(the)i(case)g(of)g(binary)e
+5375 V 33 w(IMG,)21 b(ULONG)p 2790 5375 V 33 w(IMG\))h(and)e(for)h(the)
+g(TF)m(ORMn)0 5488 y(v)-5 b(alue)35 b(in)f(the)i(case)g(of)g(binary)e
 (tables)h(\(`U')i(and)e(`V'\))h(whic)m(h)e(programmers)h(can)h(use)f
-(when)g(creating)h(FITS)0 5316 y(\014les)i(con)m(taining)g(unsigned)f
+(when)g(creating)h(FITS)0 5601 y(\014les)i(con)m(taining)g(unsigned)f
 (in)m(teger)i(v)-5 b(alues.)65 b(The)39 b(follo)m(wing)e(co)s(de)i
 (fragmen)m(t)g(illustrates)e(ho)m(w)i(to)h(write)e(a)0
-5429 y(FITS)30 b(1-D)h(primary)e(arra)m(y)h(of)h(unsigned)d(16-bit)j
-(in)m(tegers:)286 5714 y Fe(unsigned)46 b(short)g(uarray[100];)p
-eop
+5714 y(FITS)30 b(1-D)h(primary)e(arra)m(y)h(of)h(unsigned)d(16-bit)j
+(in)m(tegers:)p eop
 %%Page: 20 28
 20 27 bop 0 299 a Fj(20)1763 b Fh(CHAPTER)29 b(4.)112
-b(PR)m(OGRAMMING)32 b(GUIDELINES)286 555 y Fe(int)47
-b(naxis,)f(status;)286 668 y(long)h(naxes[10],)e(group,)h(firstelem,)f
-(nelements;)334 781 y(...)286 894 y(status)h(=)i(0;)286
-1007 y(naxis)f(=)g(1;)286 1120 y(naxes[0])f(=)h(100;)286
-1233 y(fits_create_img\(fptr,)42 b(USHORT_IMG,)j(naxis,)h(naxes,)g
-(&status\);)286 1458 y(firstelem)g(=)h(1;)286 1571 y(nelements)f(=)h
-(100;)286 1684 y(fits_write_img\(fptr,)c(TUSHORT,)i(firstelem,)g
-(nelements,)1241 1797 y(uarray,)h(&status\);)334 1910
-y(...)0 2151 y Fj(In)40 b(the)h(ab)s(o)m(v)m(e)i(example,)g(the)f(2nd)e
-(parameter)h(in)f(\014ts)p 1998 2151 28 4 v 33 w(create)p
-2267 2151 V 34 w(img)g(tells)g(CFITSIO)g(to)i(write)e(the)h(header)0
-2264 y(k)m(eyw)m(ords)34 b(appropriate)f(for)g(an)g(arra)m(y)i(of)e
+b(PR)m(OGRAMMING)32 b(GUIDELINES)286 555 y Fe(unsigned)46
+b(short)g(uarray[100];)286 668 y(int)h(naxis,)f(status;)286
+781 y(long)h(naxes[10],)e(group,)h(firstelem,)f(nelements;)334
+894 y(...)286 1007 y(status)h(=)i(0;)286 1120 y(naxis)f(=)g(1;)286
+1233 y(naxes[0])f(=)h(100;)286 1346 y(fits_create_img\(fptr,)42
+b(USHORT_IMG,)j(naxis,)h(naxes,)g(&status\);)286 1571
+y(firstelem)g(=)h(1;)286 1684 y(nelements)f(=)h(100;)286
+1797 y(fits_write_img\(fptr,)c(TUSHORT,)i(firstelem,)g(nelements,)1241
+1910 y(uarray,)h(&status\);)334 2023 y(...)0 2264 y Fj(In)40
+b(the)h(ab)s(o)m(v)m(e)i(example,)g(the)f(2nd)e(parameter)h(in)f
+(\014ts)p 1998 2264 28 4 v 33 w(create)p 2267 2264 V
+34 w(img)g(tells)g(CFITSIO)g(to)i(write)e(the)h(header)0
+2377 y(k)m(eyw)m(ords)34 b(appropriate)f(for)g(an)g(arra)m(y)i(of)e
 (16-bit)h(unsigned)e(in)m(tegers)i(\(i.e.,)h(BITPIX)e(=)g(16)i(and)e
-(BZER)m(O)g(=)0 2377 y(32768\).)41 b(Then)23 b(the)h(\014ts)p
-834 2377 V 32 w(write)p 1069 2377 V 32 w(img)g(routine)f(writes)f(the)j
+(BZER)m(O)g(=)0 2490 y(32768\).)41 b(Then)23 b(the)h(\014ts)p
+834 2490 V 32 w(write)p 1069 2490 V 32 w(img)g(routine)f(writes)f(the)j
 (arra)m(y)f(of)g(unsigned)e(short)h(in)m(tegers)h(\(uarra)m(y\))h(in)m
-(to)f(the)0 2490 y(primary)f(arra)m(y)i(of)g(the)g(FITS)f(\014le.)38
+(to)f(the)0 2603 y(primary)f(arra)m(y)i(of)g(the)g(FITS)f(\014le.)38
 b(Similarly)-8 b(,)23 b(a)i(32-bit)h(unsigned)c(in)m(teger)j(image)h
-(ma)m(y)f(b)s(e)f(created)i(b)m(y)f(setting)0 2603 y(the)34
-b(second)f(parameter)h(in)e(\014ts)p 1130 2603 V 33 w(create)p
-1399 2603 V 34 w(img)h(equal)g(to)h(`ULONG)p 2330 2603
+(ma)m(y)f(b)s(e)f(created)i(b)m(y)f(setting)0 2716 y(the)34
+b(second)f(parameter)h(in)e(\014ts)p 1130 2716 V 33 w(create)p
+1399 2716 V 34 w(img)h(equal)g(to)h(`ULONG)p 2330 2716
 V 33 w(IMG')g(and)f(b)m(y)h(calling)d(the)j(\014ts)p
-3491 2603 V 33 w(write)p 3727 2603 V 32 w(img)0 2716
+3491 2716 V 33 w(write)p 3727 2716 V 32 w(img)0 2829
 y(routine)i(with)f(the)i(second)f(parameter)h(=)f(TULONG)h(to)g(write)f
 (the)g(arra)m(y)h(of)g(unsigned)e(long)h(image)h(pixel)0
-2829 y(v)-5 b(alues.)0 2989 y(An)29 b(analogous)h(set)f(of)h(routines)e
-(are)i(a)m(v)-5 b(ailable)28 b(for)h(reading)g(or)g(writing)e(unsigned)
-h(in)m(teger)h(v)-5 b(alues)29 b(in)f(a)i(FITS)0 3102
-y(binary)f(table)h(extension.)42 b(When)30 b(sp)s(ecifying)e(the)j(TF)m
-(ORMn)g(k)m(eyw)m(ord)g(v)-5 b(alue)30 b(whic)m(h)f(de\014nes)h(the)h
-(format)g(of)0 3215 y(a)37 b(column,)g(CFITSIO)e(recognized)i(2)f
-(additional)f(datat)m(yp)s(e)i(co)s(des)g(b)s(esides)d(those)j(already)
-f(de\014ned)g(in)f(the)0 3328 y(FITS)24 b(standard:)37
-b(`U')25 b(meaning)f(a)h(16-bit)g(unsigned)e(in)m(teger)i(column,)g
-(and)f(`V')h(for)g(a)g(32-bit)g(unsigned)e(in)m(teger)0
-3440 y(column.)38 b(These)26 b(non-standard)g(datat)m(yp)s(e)h(co)s
-(des)f(are)h(not)g(actually)f(written)f(in)m(to)h(the)h(FITS)f(\014le)f
-(but)h(instead)0 3553 y(are)k(just)f(used)g(in)m(ternally)f(within)f
-(CFITSIO.)h(The)i(follo)m(wing)e(co)s(de)i(fragmen)m(t)g(illustrates)e
-(ho)m(w)i(to)g(use)f(these)0 3666 y(features:)286 3907
-y Fe(unsigned)46 b(short)g(uarray[100];)286 4020 y(unsigned)g(int)95
-b(varray[100];)286 4246 y(int)47 b(colnum,)f(tfields,)g(status;)286
-4359 y(long)h(nrows,)f(firstrow,)f(firstelem,)g(nelements,)g(pcount;)
-286 4585 y(char)i(extname[])e(=)j("Test_table";)521 b(/*)47
-b(extension)f(name)g(*/)286 4811 y(/*)i(define)e(the)h(name,)f
-(datatype,)f(and)i(physical)f(units)g(for)h(the)g(2)g(columns)f(*/)286
-4924 y(char)h(*ttype[])f(=)h({)g("Col_1",)f("Col_2")g(};)286
-5036 y(char)h(*tform[])f(=)h({)g("1U",)285 b("1V")143
-b(};)94 b(/*)48 b(special)d(CFITSIO)h(codes)h(*/)286
-5149 y(char)g(*tunit[])f(=)h({)g(")h(",)381 b(")48 b(")143
-b(};)334 5262 y(...)525 5488 y(/*)47 b(write)g(the)f(header)h(keywords)
-e(*/)286 5601 y(status)94 b(=)48 b(0;)286 5714 y(nrows)142
-b(=)48 b(1;)p eop
+2942 y(v)-5 b(alues.)0 3102 y(An)27 b(analogous)g(set)g(of)g(routines)f
+(are)h(a)m(v)-5 b(ailable)27 b(for)f(reading)g(or)h(writing)e(unsigned)
+g(in)m(teger)i(v)-5 b(alues)27 b(and)f(signed)0 3215
+y(b)m(yte)i(v)-5 b(alues)27 b(in)g(a)h(FITS)f(binary)f(table)i
+(extension.)39 b(When)28 b(sp)s(ecifying)d(the)j(TF)m(ORMn)g(k)m(eyw)m
+(ord)g(v)-5 b(alue)27 b(whic)m(h)0 3328 y(de\014nes)39
+b(the)h(format)g(of)f(a)h(column,)h(CFITSIO)e(recognized)h(3)g
+(additional)d(datat)m(yp)s(e)k(co)s(des)f(b)s(esides)d(those)0
+3440 y(already)29 b(de\014ned)g(in)f(the)i(FITS)f(standard:)40
+b(`U')30 b(meaning)f(a)h(16-bit)g(unsigned)e(in)m(teger)i(column,)f
+(`V')h(for)g(a)g(32-)0 3553 y(bit)d(unsigned)e(in)m(teger)j(column,)f
+(and)g('S')g(for)h(a)g(signed)e(b)m(yte)i(column.)39
+b(These)27 b(non-standard)f(datat)m(yp)s(e)j(co)s(des)0
+3666 y(are)36 b(not)g(actually)g(written)f(in)m(to)g(the)h(FITS)g
+(\014le)e(but)i(instead)f(are)h(just)f(used)g(in)m(ternally)f(within)f
+(CFITSIO.)0 3779 y(The)d(follo)m(wing)f(co)s(de)h(fragmen)m(t)h
+(illustrates)e(ho)m(w)h(to)h(use)f(these)h(features:)286
+4020 y Fe(unsigned)46 b(short)g(uarray[100];)286 4133
+y(unsigned)g(int)95 b(varray[100];)286 4359 y(int)47
+b(colnum,)f(tfields,)g(status;)286 4472 y(long)h(nrows,)f(firstrow,)f
+(firstelem,)g(nelements,)g(pcount;)286 4698 y(char)i(extname[])e(=)j
+("Test_table";)521 b(/*)47 b(extension)f(name)g(*/)286
+4924 y(/*)i(define)e(the)h(name,)f(datatype,)f(and)i(physical)f(units)g
+(for)h(the)g(2)g(columns)f(*/)286 5036 y(char)h(*ttype[])f(=)h({)g
+("Col_1",)f("Col_2",)g("Col_3")f(};)286 5149 y(char)i(*tform[])f(=)h({)
+g("1U",)285 b("1V",)190 b("1S"};)94 b(/*)47 b(special)f(CFITSIO)g
+(codes)g(*/)286 5262 y(char)h(*tunit[])f(=)h({)g(")h(",)381
+b(")48 b(",)190 b(")47 b(")h(};)334 5375 y(...)525 5601
+y(/*)f(write)g(the)f(header)h(keywords)e(*/)286 5714
+y(status)94 b(=)48 b(0;)p eop
 %%Page: 21 29
 21 28 bop 0 299 a Fh(4.5.)72 b(DEALING)31 b(WITH)f(CHARA)m(CTER)g
-(STRINGS)1816 b Fj(21)286 555 y Fe(tfields)46 b(=)i(2)286
-668 y(pcount)94 b(=)48 b(0;)286 781 y(fits_create_tbl\(fptr,)42
-b(BINARY_TBL,)j(nrows,)h(tfields,)g(ttype,)g(tform,)764
-894 y(tunit,)g(extname,)f(&status\);)525 1120 y(/*)i(write)g(the)f
-(unsigned)g(shorts)g(to)h(the)g(1st)g(column)f(*/)286
-1233 y(colnum)190 b(=)47 b(1;)286 1346 y(firstrow)94
-b(=)47 b(1;)286 1458 y(firstelem)f(=)h(1;)286 1571 y(nelements)f(=)h
-(100;)286 1684 y(fits_write_col\(fptr,)c(TUSHORT,)i(colnum,)h
-(firstrow,)f(firstelem,)668 1797 y(nelements,)g(uarray,)h(&status\);)
-525 2023 y(/*)h(now)g(write)f(the)h(unsigned)f(longs)g(to)h(the)g(2nd)g
-(column)f(*/)286 2136 y(colnum)190 b(=)47 b(2;)286 2249
+(STRINGS)1816 b Fj(21)286 555 y Fe(nrows)142 b(=)48 b(1;)286
+668 y(tfields)e(=)i(3)286 781 y(pcount)94 b(=)48 b(0;)286
+894 y(fits_create_tbl\(fptr,)42 b(BINARY_TBL,)j(nrows,)h(tfields,)g
+(ttype,)g(tform,)764 1007 y(tunit,)g(extname,)f(&status\);)525
+1233 y(/*)i(write)g(the)f(unsigned)g(shorts)g(to)h(the)g(1st)g(column)f
+(*/)286 1346 y(colnum)190 b(=)47 b(1;)286 1458 y(firstrow)94
+b(=)47 b(1;)286 1571 y(firstelem)f(=)h(1;)286 1684 y(nelements)f(=)h
+(100;)286 1797 y(fits_write_col\(fptr,)c(TUSHORT,)i(colnum,)h
+(firstrow,)f(firstelem,)668 1910 y(nelements,)g(uarray,)h(&status\);)
+525 2136 y(/*)h(now)g(write)f(the)h(unsigned)f(longs)g(to)h(the)g(2nd)g
+(column)f(*/)286 2249 y(colnum)190 b(=)47 b(2;)286 2362
 y(fits_write_col\(fptr,)c(TUINT,)j(colnum,)g(firstrow,)f(firstelem,)668
-2362 y(nelements,)g(varray,)h(&status\);)334 2475 y(...)0
-2752 y Fj(Note)22 b(that)g(the)f(non-standard)f(TF)m(ORM)h(v)-5
-b(alues)20 b(for)h(the)g(2)g(columns,)h(`U')f(and)g(`V',)h(tell)e
-(CFITSIO)f(to)j(write)e(the)0 2865 y(k)m(eyw)m(ords)27
+2475 y(nelements,)g(varray,)h(&status\);)334 2588 y(...)0
+2865 y Fj(Note)22 b(that)g(the)f(non-standard)f(TF)m(ORM)h(v)-5
+b(alues)20 b(for)h(the)g(3)g(columns,)h(`U')f(and)g(`V',)h(tell)e
+(CFITSIO)f(to)j(write)e(the)0 2978 y(k)m(eyw)m(ords)27
 b(appropriate)e(for)h(unsigned)e(16-bit)j(and)e(unsigned)g(32-bit)h(in)
 m(tegers,)i(resp)s(ectiv)m(ely)d(\(i.e.,)j(TF)m(ORMn)0
-2978 y(=)39 b('1I')i(and)e(TZER)m(On)f(=)h(32678)j(for)e(unsigned)d
+3091 y(=)39 b('1I')i(and)e(TZER)m(On)f(=)h(32678)j(for)e(unsigned)d
 (16-bit)j(in)m(tegers,)j(and)c(TF)m(ORMn)h(=)f('1J')h(and)f(TZER)m(On)0
-3091 y(=)g(2147483648)45 b(for)39 b(unsigned)f(32-bit)i(in)m(tegers\).)
-70 b(The)39 b(calls)g(to)i(\014ts)p 2506 3091 28 4 v
-32 w(write)p 2741 3091 V 32 w(col)f(then)g(write)f(the)h(arra)m(ys)g
-(of)0 3204 y(unsigned)28 b(in)m(teger)j(v)-5 b(alues)30
-b(to)h(the)f(columns.)0 3558 y Ff(4.5)135 b(Dealing)47
-b(with)e(Character)h(Strings)0 3813 y Fj(The)36 b(c)m(haracter)j
+3204 y(=)c(2147483648)40 b(for)35 b(unsigned)e(32-bit)i(in)m(tegers\).)
+56 b(The)35 b('S')g(TF)m(ORMn)g(v)-5 b(alue)35 b(tells)g(CFITSIO)e(to)j
+(write)f(the)0 3317 y(k)m(eyw)m(ords)30 b(appropriate)f(for)h(a)g
+(signed)f(8-bit)h(b)m(yte)g(column)f(with)f(TF)m(ORMn)i(=)g('1B')h(and)
+e(TZER)m(On)g(=)g(-128.)0 3430 y(The)h(calls)f(to)j(\014ts)p
+628 3430 28 4 v 32 w(write)p 863 3430 V 32 w(col)e(then)g(write)g(the)h
+(arra)m(ys)f(of)h(unsigned)d(in)m(teger)j(v)-5 b(alues)30
+b(to)h(the)f(columns.)0 3784 y Ff(4.5)135 b(Dealing)47
+b(with)e(Character)h(Strings)0 4039 y Fj(The)36 b(c)m(haracter)j
 (string)c(v)-5 b(alues)37 b(in)e(a)i(FITS)f(header)h(or)g(in)e(an)i
 (ASCI)s(I)e(column)h(in)f(a)j(FITS)e(table)g(extension)0
-3926 y(are)j(generally)g(padded)f(out)h(with)f(non-signi\014can)m(t)g
+4152 y(are)j(generally)g(padded)f(out)h(with)f(non-signi\014can)m(t)g
 (space)h(c)m(haracters)i(\(ASCI)s(I)d(32\))i(to)g(\014ll)d(up)h(the)h
-(header)0 4039 y(record)33 b(or)h(the)f(column)g(width.)48
+(header)0 4264 y(record)33 b(or)h(the)f(column)g(width.)48
 b(When)33 b(reading)g(a)h(FITS)e(string)h(v)-5 b(alue,)34
-b(the)f(CFITSIO)f(routines)h(will)d(strip)0 4152 y(o\013)38
+b(the)f(CFITSIO)f(routines)h(will)d(strip)0 4377 y(o\013)38
 b(these)f(non-signi\014can)m(t)f(trailing)f(spaces)i(and)g(will)d
 (return)i(a)i(n)m(ull-terminated)d(string)h(v)-5 b(alue)36
-b(con)m(taining)0 4264 y(only)d(the)h(signi\014can)m(t)e(c)m
+b(con)m(taining)0 4490 y(only)d(the)h(signi\014can)m(t)e(c)m
 (haracters.)52 b(Leading)33 b(spaces)h(in)f(a)h(FITS)f(string)f(are)i
-(considered)f(signi\014can)m(t.)50 b(If)33 b(the)0 4377
+(considered)f(signi\014can)m(t.)50 b(If)33 b(the)0 4603
 y(string)h(con)m(tains)h(all)f(blanks,)h(then)f(CFITSIO)g(will)e
 (return)i(a)h(single)e(blank)h(c)m(haracter,)k(i.e,)e(the)f(\014rst)f
-(blank)0 4490 y(is)29 b(considered)f(to)i(b)s(e)f(signi\014can)m(t,)g
+(blank)0 4716 y(is)29 b(considered)f(to)i(b)s(e)f(signi\014can)m(t,)g
 (since)g(it)g(distinquishes)d(the)k(string)e(from)h(a)h(n)m(ull)e(or)h
-(unde\014ned)f(string,)h(but)0 4603 y(the)i(remaining)d(trailing)g
-(spaces)j(are)g(not)g(signi\014can)m(t.)0 4763 y(Similarly)-8
+(unde\014ned)f(string,)h(but)0 4829 y(the)i(remaining)d(trailing)g
+(spaces)j(are)g(not)g(signi\014can)m(t.)0 4989 y(Similarly)-8
 b(,)37 b(when)g(writing)f(string)h(v)-5 b(alues)37 b(to)i(a)g(FITS)e
 (\014le)g(the)h(CFITSIO)f(routines)g(exp)s(ect)h(to)h(get)g(a)g(n)m
-(ull-)0 4876 y(terminated)32 b(string)g(as)h(input;)f(CFITSIO)f(will)f
+(ull-)0 5102 y(terminated)32 b(string)g(as)h(input;)f(CFITSIO)f(will)f
 (pad)i(the)h(string)f(with)f(blanks)g(if)h(necessary)h(when)f(writing)e
-(it)0 4989 y(to)h(the)g(FITS)e(\014le.)0 5149 y(When)j(calling)f
+(it)0 5215 y(to)h(the)g(FITS)e(\014le.)0 5375 y(When)j(calling)f
 (CFITSIO)g(routines)h(that)h(return)e(a)i(c)m(haracter)h(string)e(it)g
 (is)f(vital)h(that)h(the)g(size)f(of)h(the)g(c)m(har)0
-5262 y(arra)m(y)38 b(b)s(e)g(large)g(enough)f(to)i(hold)d(the)i(en)m
+5488 y(arra)m(y)38 b(b)s(e)g(large)g(enough)f(to)i(hold)d(the)i(en)m
 (tire)g(string)f(of)h(c)m(haracters,)k(otherwise)37 b(CFITSIO)f(will)f
-(o)m(v)m(erwrite)0 5375 y(whatev)m(er)g(memory)e(lo)s(cations)g(follo)m
+(o)m(v)m(erwrite)0 5601 y(whatev)m(er)g(memory)e(lo)s(cations)g(follo)m
 (w)g(the)h(c)m(har)h(arra)m(y)-8 b(,)35 b(p)s(ossibly)c(causing)i(the)h
-(program)g(to)g(execute)h(incor-)0 5488 y(rectly)-8 b(.)41
+(program)g(to)g(execute)h(incor-)0 5714 y(rectly)-8 b(.)41
 b(This)29 b(t)m(yp)s(e)h(of)h(error)f(can)h(b)s(e)f(di\016cult)e(to)j
 (debug,)f(so)h(programmers)f(should)e(alw)m(a)m(ys)j(ensure)f(that)h
-(the)0 5601 y(c)m(har)c(arra)m(ys)g(are)g(allo)s(cated)g(enough)f
-(space)i(to)f(hold)f(the)g(longest)h(p)s(ossible)e(string,)h
-Fi(including)i Fj(the)f(terminat-)0 5714 y(ing)j(NULL)h(c)m(haracter.)
-45 b(The)30 b(\014tsio.h)g(\014le)h(con)m(tains)g(the)g(follo)m(wing)f
-(de\014ned)g(constan)m(ts)i(whic)m(h)e(programmers)p
-eop
+(the)p eop
 %%Page: 22 30
 22 29 bop 0 299 a Fj(22)1763 b Fh(CHAPTER)29 b(4.)112
-b(PR)m(OGRAMMING)32 b(GUIDELINES)0 555 y Fj(are)f(strongly)f
-(encouraged)h(to)g(use)f(whenev)m(er)g(they)h(are)f(allo)s(cating)g
-(space)h(for)f(c)m(har)h(arra)m(ys:)0 817 y Fe(#define)46
-b(FLEN_FILENAME)e(1025)j(/*)g(max)g(length)f(of)h(a)g(filename)f(*/)0
-929 y(#define)g(FLEN_KEYWORD)140 b(72)95 b(/*)47 b(max)g(length)f(of)h
-(a)g(keyword)94 b(*/)0 1042 y(#define)46 b(FLEN_CARD)284
-b(81)95 b(/*)47 b(length)f(of)h(a)h(FITS)e(header)g(card)h(*/)0
-1155 y(#define)f(FLEN_VALUE)236 b(71)95 b(/*)47 b(max)g(length)f(of)h
-(a)g(keyword)f(value)h(string)f(*/)0 1268 y(#define)g(FLEN_COMMENT)140
+b(PR)m(OGRAMMING)32 b(GUIDELINES)0 555 y Fj(c)m(har)27
+b(arra)m(ys)g(are)g(allo)s(cated)g(enough)f(space)i(to)f(hold)f(the)g
+(longest)h(p)s(ossible)e(string,)h Fi(including)i Fj(the)f(terminat-)0
+668 y(ing)j(NULL)h(c)m(haracter.)45 b(The)30 b(\014tsio.h)g(\014le)h
+(con)m(tains)g(the)g(follo)m(wing)f(de\014ned)g(constan)m(ts)i(whic)m
+(h)e(programmers)0 781 y(are)h(strongly)f(encouraged)h(to)g(use)f
+(whenev)m(er)g(they)h(are)f(allo)s(cating)g(space)h(for)f(c)m(har)h
+(arra)m(ys:)0 1025 y Fe(#define)46 b(FLEN_FILENAME)e(1025)j(/*)g(max)g
+(length)f(of)h(a)g(filename)f(*/)0 1138 y(#define)g(FLEN_KEYWORD)140
+b(72)95 b(/*)47 b(max)g(length)f(of)h(a)g(keyword)94
+b(*/)0 1251 y(#define)46 b(FLEN_CARD)284 b(81)95 b(/*)47
+b(length)f(of)h(a)h(FITS)e(header)g(card)h(*/)0 1364
+y(#define)f(FLEN_VALUE)236 b(71)95 b(/*)47 b(max)g(length)f(of)h(a)g
+(keyword)f(value)h(string)f(*/)0 1477 y(#define)g(FLEN_COMMENT)140
 b(73)95 b(/*)47 b(max)g(length)f(of)h(a)g(keyword)f(comment)g(string)g
-(*/)0 1381 y(#define)g(FLEN_ERRMSG)188 b(81)95 b(/*)47
+(*/)0 1590 y(#define)g(FLEN_ERRMSG)188 b(81)95 b(/*)47
 b(max)g(length)f(of)h(a)g(CFITSIO)f(error)h(message)e(*/)0
-1494 y(#define)h(FLEN_STATUS)188 b(31)95 b(/*)47 b(max)g(length)f(of)h
-(a)g(CFITSIO)f(status)g(text)h(string)f(*/)0 1755 y Fj(F)-8
+1703 y(#define)h(FLEN_STATUS)188 b(31)95 b(/*)47 b(max)g(length)f(of)h
+(a)g(CFITSIO)f(status)g(text)h(string)f(*/)0 1947 y Fj(F)-8
 b(or)23 b(example,)g(when)e(declaring)g(a)h(c)m(har)g(arra)m(y)h(to)f
 (hold)f(the)h(v)-5 b(alue)21 b(string)g(of)h(FITS)f(k)m(eyw)m(ord,)k
-(use)c(the)h(follo)m(wing)0 1868 y(statemen)m(t:)191
-2130 y Fe(char)47 b(value[FLEN_VALUE];)0 2391 y Fj(Note)41
-b(that)f(FLEN)p 686 2391 28 4 v 33 w(KEYW)m(ORD)g(is)e(longer)h(than)g
+(use)c(the)h(follo)m(wing)0 2060 y(statemen)m(t:)191
+2304 y Fe(char)47 b(value[FLEN_VALUE];)0 2548 y Fj(Note)41
+b(that)f(FLEN)p 686 2548 28 4 v 33 w(KEYW)m(ORD)g(is)e(longer)h(than)g
 (needed)g(for)g(the)h(nominal)d(8-c)m(haracter)42 b(k)m(eyw)m(ord)e
-(name)0 2504 y(b)s(ecause)30 b(the)h(HIERAR)m(CH)f(con)m(v)m(en)m(tion)
-i(supp)s(orts)c(longer)i(k)m(eyw)m(ord)h(names.)0 2839
+(name)0 2661 y(b)s(ecause)30 b(the)h(HIERAR)m(CH)f(con)m(v)m(en)m(tion)
+i(supp)s(orts)c(longer)i(k)m(eyw)m(ord)h(names.)0 2992
 y Ff(4.6)135 b(Implicit)46 b(Data)g(T)l(yp)t(e)f(Con)l(v)l(ersion)0
-3090 y Fj(The)29 b(CFITSIO)e(routines)h(that)i(read)f(and)f(write)h(n)m
+3242 y Fj(The)29 b(CFITSIO)e(routines)h(that)i(read)f(and)f(write)h(n)m
 (umerical)e(data)j(can)g(p)s(erform)d(implicit)f(data)k(t)m(yp)s(e)f
-(con)m(v)m(er-)0 3203 y(sion.)38 b(This)24 b(means)i(that)g(the)g(data)
+(con)m(v)m(er-)0 3355 y(sion.)38 b(This)24 b(means)i(that)g(the)g(data)
 g(t)m(yp)s(e)g(of)g(the)g(v)-5 b(ariable)24 b(or)i(arra)m(y)g(in)e(the)
 i(program)g(do)s(es)f(not)h(need)f(to)i(b)s(e)e(the)0
-3316 y(same)g(as)f(the)h(data)g(t)m(yp)s(e)g(of)f(the)h(v)-5
+3468 y(same)g(as)f(the)h(data)g(t)m(yp)s(e)g(of)f(the)h(v)-5
 b(alue)24 b(in)f(the)h(FITS)g(\014le.)38 b(Data)26 b(t)m(yp)s(e)f(con)m
 (v)m(ersion)f(is)g(supp)s(orted)e(for)i(n)m(umerical)0
-3429 y(and)37 b(string)f(data)h(t)m(yp)s(es)h(\(if)e(the)h(string)f
+3581 y(and)37 b(string)f(data)h(t)m(yp)s(es)h(\(if)e(the)h(string)f
 (con)m(tains)i(a)f(v)-5 b(alid)36 b(n)m(um)m(b)s(er)g(enclosed)g(in)g
-(quotes\))i(when)e(reading)h(a)0 3542 y(FITS)30 b(header)h(k)m(eyw)m
+(quotes\))i(when)e(reading)h(a)0 3694 y(FITS)30 b(header)h(k)m(eyw)m
 (ord)g(v)-5 b(alue)30 b(and)g(for)h(n)m(umeric)f(v)-5
 b(alues)30 b(when)g(reading)g(or)g(writing)f(v)-5 b(alues)30
-b(in)g(the)h(primary)0 3655 y(arra)m(y)24 b(or)g(a)h(table)e(column.)38
-b(CFITSIO)22 b(returns)h(status)h(=)f(NUM)p 2267 3655
+b(in)g(the)h(primary)0 3807 y(arra)m(y)24 b(or)g(a)h(table)e(column.)38
+b(CFITSIO)22 b(returns)h(status)h(=)f(NUM)p 2267 3807
 V 34 w(O)m(VERFLO)m(W)i(if)d(the)i(con)m(v)m(erted)i(data)e(v)-5
-b(alue)0 3767 y(exceeds)33 b(the)g(range)g(of)g(the)f(output)g(data)i
+b(alue)0 3920 y(exceeds)33 b(the)g(range)g(of)g(the)f(output)g(data)i
 (t)m(yp)s(e.)47 b(Implicit)30 b(data)j(t)m(yp)s(e)g(con)m(v)m(ersion)g
-(is)e(not)i(supp)s(orted)d(within)0 3880 y(binary)f(tables)h(for)g
+(is)e(not)i(supp)s(orted)d(within)0 4032 y(binary)f(tables)h(for)g
 (string,)f(logical,)i(complex,)f(or)g(double)f(complex)h(data)h(t)m(yp)
-s(es.)0 4041 y(In)g(addition,)f(an)m(y)h(table)g(column)f(ma)m(y)i(b)s
+s(es.)0 4193 y(In)g(addition,)f(an)m(y)h(table)g(column)f(ma)m(y)i(b)s
 (e)f(read)g(as)h(if)e(it)h(con)m(tained)g(string)f(v)-5
 b(alues.)43 b(In)31 b(the)g(case)i(of)e(n)m(umeric)0
-4153 y(columns)e(the)i(returned)e(string)g(will)f(b)s(e)i(formated)g
+4306 y(columns)e(the)i(returned)e(string)g(will)f(b)s(e)i(formated)g
 (using)f(the)i(TDISPn)e(displa)m(y)f(format)j(if)e(it)h(exists.)0
-4489 y Ff(4.7)135 b(Data)46 b(Scaling)0 4740 y Fj(When)38
+4637 y Ff(4.7)135 b(Data)46 b(Scaling)0 4887 y Fj(When)38
 b(reading)e(n)m(umerical)h(data)h(v)-5 b(alues)37 b(in)f(the)i(primary)
 e(arra)m(y)i(or)g(a)g(table)g(column,)h(the)e(v)-5 b(alues)37
-b(will)f(b)s(e)0 4852 y(scaled)h(automatically)h(b)m(y)f(the)g(BSCALE)g
+b(will)f(b)s(e)0 5000 y(scaled)h(automatically)h(b)m(y)f(the)g(BSCALE)g
 (and)g(BZER)m(O)g(\(or)h(TSCALn)e(and)h(TZER)m(On\))f(header)h(v)-5
-b(alues)37 b(if)0 4965 y(they)31 b(are)f(presen)m(t)h(in)e(the)h
+b(alues)37 b(if)0 5113 y(they)31 b(are)f(presen)m(t)h(in)e(the)h
 (header.)41 b(The)30 b(scaled)g(data)h(that)g(is)e(returned)h(to)h(the)
-f(reading)g(program)g(will)e(ha)m(v)m(e)382 5227 y Fe(output)46
+f(reading)g(program)g(will)e(ha)m(v)m(e)382 5357 y Fe(output)46
 b(value)g(=)i(\(FITS)e(value\))g(*)i(BSCALE)e(+)h(BZERO)0
-5488 y Fj(\(a)30 b(corresp)s(onding)d(form)m(ula)h(using)g(TSCALn)f
+5601 y Fj(\(a)30 b(corresp)s(onding)d(form)m(ula)h(using)g(TSCALn)f
 (and)i(TZER)m(On)e(is)h(used)h(when)f(reading)g(from)h(table)g
-(columns\).)0 5601 y(In)i(the)i(case)g(of)f(in)m(teger)g(output)g(v)-5
+(columns\).)0 5714 y(In)i(the)i(case)g(of)f(in)m(teger)g(output)g(v)-5
 b(alues)31 b(the)i(\015oating)f(p)s(oin)m(t)f(scaled)g(v)-5
-b(alue)32 b(is)f(truncated)h(to)h(an)f(in)m(teger)g(\(not)0
-5714 y(rounded)j(to)j(the)f(nearest)h(in)m(teger\).)61
-b(The)36 b(\014ts)p 1673 5714 V 32 w(set)p 1816 5714
-V 34 w(bscale)h(and)f(\014ts)p 2430 5714 V 32 w(set)p
-2573 5714 V 34 w(tscale)h(routines)f(\(describ)s(ed)f(in)h(the)p
+b(alue)32 b(is)f(truncated)h(to)h(an)f(in)m(teger)g(\(not)p
 eop
 %%Page: 23 31
 23 30 bop 0 299 a Fh(4.8.)72 b(SUPPOR)-8 b(T)30 b(F)m(OR)g(IEEE)g
-(SPECIAL)f(V)-10 b(ALUES)1863 b Fj(23)0 555 y(`Adv)-5
-b(anced')29 b(c)m(hapter\))h(ma)m(y)g(b)s(e)e(used)h(to)g(o)m(v)m
-(erride)h(the)f(scaling)f(parameters)h(de\014ned)f(in)g(the)h(header)g
-(\(e.g.,)i(to)0 668 y(turn)e(o\013)i(the)g(scaling)e(so)i(that)g(the)f
-(program)g(can)h(read)f(the)h(ra)m(w)f(unscaled)g(v)-5
-b(alues)29 b(from)h(the)h(FITS)e(\014le\).)0 828 y(When)44
-b(writing)f(n)m(umerical)g(data)i(to)g(the)g(primary)e(arra)m(y)i(or)f
-(to)h(a)g(table)g(column)e(the)i(data)g(v)-5 b(alues)44
-b(will)0 941 y(generally)27 b(b)s(e)h(automatically)g(in)m(v)m(ersely)g
-(scaled)g(b)m(y)g(the)g(v)-5 b(alue)28 b(of)g(the)h(BSCALE)e(and)h
-(BZER)m(O)g(\(or)h(TSCALn)0 1054 y(and)35 b(TZER)m(On\))f(k)m(eyw)m
-(ord)i(v)-5 b(alues)34 b(if)h(they)g(they)g(exist)h(in)e(the)h(header.)
-55 b(These)35 b(k)m(eyw)m(ords)h(m)m(ust)f(ha)m(v)m(e)i(b)s(een)0
-1167 y(written)30 b(to)i(the)g(header)f(b)s(efore)g(an)m(y)g(data)h(is)
-f(written)f(for)h(them)g(to)h(ha)m(v)m(e)h(an)m(y)e(immediate)g
-(e\013ect.)45 b(One)30 b(ma)m(y)0 1280 y(also)g(use)h(the)f(\014ts)p
-623 1280 28 4 v 33 w(set)p 767 1280 V 33 w(bscale)h(and)e(\014ts)p
-1367 1280 V 33 w(set)p 1511 1280 V 33 w(tscale)i(routines)f(to)h
-(de\014ne)f(or)g(o)m(v)m(erride)h(the)g(scaling)e(k)m(eyw)m(ords)i(in)0
-1393 y(the)e(header)g(\(e.g.,)i(to)e(turn)f(o\013)h(the)g(scaling)f(so)
-h(that)h(the)f(program)f(can)h(write)f(the)h(ra)m(w)g(unscaled)f(v)-5
-b(alues)28 b(in)m(to)0 1506 y(the)e(FITS)g(\014le\).)39
+(SPECIAL)f(V)-10 b(ALUES)1863 b Fj(23)0 555 y(rounded)35
+b(to)j(the)f(nearest)h(in)m(teger\).)61 b(The)36 b(\014ts)p
+1673 555 28 4 v 32 w(set)p 1816 555 V 34 w(bscale)h(and)f(\014ts)p
+2430 555 V 32 w(set)p 2573 555 V 34 w(tscale)h(routines)f(\(describ)s
+(ed)f(in)h(the)0 668 y(`Adv)-5 b(anced')29 b(c)m(hapter\))h(ma)m(y)g(b)
+s(e)e(used)h(to)g(o)m(v)m(erride)h(the)f(scaling)f(parameters)h
+(de\014ned)f(in)g(the)h(header)g(\(e.g.,)i(to)0 781 y(turn)e(o\013)i
+(the)g(scaling)e(so)i(that)g(the)f(program)g(can)h(read)f(the)h(ra)m(w)
+f(unscaled)g(v)-5 b(alues)29 b(from)h(the)h(FITS)e(\014le\).)0
+941 y(When)44 b(writing)f(n)m(umerical)g(data)i(to)g(the)g(primary)e
+(arra)m(y)i(or)f(to)h(a)g(table)g(column)e(the)i(data)g(v)-5
+b(alues)44 b(will)0 1054 y(generally)27 b(b)s(e)h(automatically)g(in)m
+(v)m(ersely)g(scaled)g(b)m(y)g(the)g(v)-5 b(alue)28 b(of)g(the)h
+(BSCALE)e(and)h(BZER)m(O)g(\(or)h(TSCALn)0 1167 y(and)35
+b(TZER)m(On\))f(k)m(eyw)m(ord)i(v)-5 b(alues)34 b(if)h(they)g(they)g
+(exist)h(in)e(the)h(header.)55 b(These)35 b(k)m(eyw)m(ords)h(m)m(ust)f
+(ha)m(v)m(e)i(b)s(een)0 1280 y(written)30 b(to)i(the)g(header)f(b)s
+(efore)g(an)m(y)g(data)h(is)f(written)f(for)h(them)g(to)h(ha)m(v)m(e)h
+(an)m(y)e(immediate)g(e\013ect.)45 b(One)30 b(ma)m(y)0
+1393 y(also)g(use)h(the)f(\014ts)p 623 1393 V 33 w(set)p
+767 1393 V 33 w(bscale)h(and)e(\014ts)p 1367 1393 V 33
+w(set)p 1511 1393 V 33 w(tscale)i(routines)f(to)h(de\014ne)f(or)g(o)m
+(v)m(erride)h(the)g(scaling)e(k)m(eyw)m(ords)i(in)0 1506
+y(the)e(header)g(\(e.g.,)i(to)e(turn)f(o\013)h(the)g(scaling)f(so)h
+(that)h(the)f(program)f(can)h(write)f(the)h(ra)m(w)g(unscaled)f(v)-5
+b(alues)28 b(in)m(to)0 1619 y(the)e(FITS)g(\014le\).)39
 b(If)25 b(scaling)g(is)h(p)s(erformed,)f(the)i(in)m(v)m(erse)f(scaled)g
 (output)f(v)-5 b(alue)26 b(that)h(is)e(written)g(in)m(to)h(the)h(FITS)0
-1619 y(\014le)i(will)f(ha)m(v)m(e)430 1879 y Fe(FITS)46
+1732 y(\014le)i(will)f(ha)m(v)m(e)430 1992 y Fe(FITS)46
 b(value)h(=)g(\(\(input)f(value\))g(-)h(BZERO\))f(/)i(BSCALE)0
-2139 y Fj(\(a)39 b(corresp)s(onding)c(form)m(ula)i(using)g(TSCALn)f
+2252 y Fj(\(a)39 b(corresp)s(onding)c(form)m(ula)i(using)g(TSCALn)f
 (and)h(TZER)m(On)g(is)g(used)g(when)f(writing)g(to)j(table)f
-(columns\).)0 2252 y(Rounding)18 b(to)j(the)g(nearest)g(in)m(teger,)h
+(columns\).)0 2365 y(Rounding)18 b(to)j(the)g(nearest)g(in)m(teger,)h
 (rather)f(than)f(truncation,)i(is)d(p)s(erformed)g(when)g(writing)f(in)
-m(teger)j(datat)m(yp)s(es)0 2365 y(to)31 b(the)g(FITS)e(\014le.)0
-2699 y Ff(4.8)135 b(Supp)t(ort)44 b(for)h(IEEE)h(Sp)t(ecial)f(V)-11
-b(alues)0 2950 y Fj(The)26 b(ANSI/IEEE-754)h(\015oating-p)s(oin)m(t)f
+m(teger)j(datat)m(yp)s(es)0 2478 y(to)31 b(the)g(FITS)e(\014le.)0
+2812 y Ff(4.8)135 b(Supp)t(ort)44 b(for)h(IEEE)h(Sp)t(ecial)f(V)-11
+b(alues)0 3062 y Fj(The)26 b(ANSI/IEEE-754)h(\015oating-p)s(oin)m(t)f
 (n)m(um)m(b)s(er)f(standard)g(de\014nes)h(certain)g(sp)s(ecial)f(v)-5
-b(alues)25 b(that)i(are)g(used)e(to)0 3062 y(represen)m(t)j(suc)m(h)g
+b(alues)25 b(that)i(are)g(used)e(to)0 3175 y(represen)m(t)j(suc)m(h)g
 (quan)m(tities)f(as)h(Not-a-Num)m(b)s(er)h(\(NaN\),)h(denormalized,)d
 (under\015o)m(w,)g(o)m(v)m(er\015o)m(w,)j(and)d(in\014nit)m(y)-8
-b(.)0 3175 y(\(See)29 b(the)f(App)s(endix)d(in)i(the)h(NOST)g(FITS)f
+b(.)0 3288 y(\(See)29 b(the)f(App)s(endix)d(in)i(the)h(NOST)g(FITS)f
 (standard)g(or)h(the)g(NOST)g(FITS)f(User's)h(Guide)f(for)h(a)g(list)f
-(of)h(these)0 3288 y(v)-5 b(alues\).)54 b(The)34 b(CFITSIO)f(routines)h
+(of)h(these)0 3401 y(v)-5 b(alues\).)54 b(The)34 b(CFITSIO)f(routines)h
 (that)h(read)g(\015oating)f(p)s(oin)m(t)g(data)i(in)d(FITS)h(\014les)g
-(recognize)h(these)h(IEEE)0 3401 y(sp)s(ecial)22 b(v)-5
+(recognize)h(these)h(IEEE)0 3514 y(sp)s(ecial)22 b(v)-5
 b(alues)24 b(and)f(b)m(y)g(default)g(in)m(terpret)h(the)g(o)m(v)m
 (er\015o)m(w)h(and)e(in\014nit)m(y)e(v)-5 b(alues)24
 b(as)g(b)s(eing)e(equiv)-5 b(alen)m(t)23 b(to)i(a)f(NaN,)0
-3514 y(and)36 b(con)m(v)m(ert)i(the)e(under\015o)m(w)f(and)h
+3627 y(and)36 b(con)m(v)m(ert)i(the)e(under\015o)m(w)f(and)h
 (denormalized)f(v)-5 b(alues)35 b(in)m(to)i(zeros.)59
-b(In)36 b(some)g(cases)i(programmers)d(ma)m(y)0 3627
+b(In)36 b(some)g(cases)i(programmers)d(ma)m(y)0 3740
 y(w)m(an)m(t)d(access)h(to)g(the)e(ra)m(w)h(IEEE)f(v)-5
 b(alues,)31 b(without)g(an)m(y)h(mo)s(di\014cation)e(b)m(y)h(CFITSIO.)f
-(This)g(can)i(b)s(e)f(done)g(b)m(y)0 3740 y(calling)26
-b(the)j(\014ts)p 567 3740 V 32 w(read)p 771 3740 V 33
-w(img)e(or)h(\014ts)p 1209 3740 V 33 w(read)p 1414 3740
+(This)g(can)i(b)s(e)f(done)g(b)m(y)0 3853 y(calling)26
+b(the)j(\014ts)p 567 3853 V 32 w(read)p 771 3853 V 33
+w(img)e(or)h(\014ts)p 1209 3853 V 33 w(read)p 1414 3853
 V 32 w(col)g(routines)f(while)f(sp)s(ecifying)g(0.0)j(as)f(the)g(v)-5
-b(alue)28 b(of)g(the)g(NULL)-10 b(V)g(AL)0 3853 y(parameter.)59
+b(alue)28 b(of)g(the)g(NULL)-10 b(V)g(AL)0 3966 y(parameter.)59
 b(This)35 b(will)e(force)k(CFITSIO)e(to)i(simply)d(pass)i(the)h(IEEE)f
 (v)-5 b(alues)35 b(through)h(to)h(the)g(application)0
-3966 y(program)31 b(without)f(an)m(y)i(mo)s(di\014cation.)42
+4079 y(program)31 b(without)f(an)m(y)i(mo)s(di\014cation.)42
 b(This)29 b(is)i(not)g(fully)e(supp)s(orted)h(on)h(V)-10
-b(AX/VMS)32 b(mac)m(hines,)f(ho)m(w)m(ev)m(er,)0 4079
+b(AX/VMS)32 b(mac)m(hines,)f(ho)m(w)m(ev)m(er,)0 4192
 y(where)f(there)g(is)g(no)g(easy)h(w)m(a)m(y)g(to)h(b)m(ypass)e(the)g
 (default)g(in)m(terpretation)f(of)i(the)g(IEEE)e(sp)s(ecial)g(v)-5
-b(alues.)0 4413 y Ff(4.9)135 b(Error)46 b(Status)f(V)-11
+b(alues.)0 4526 y Ff(4.9)135 b(Error)46 b(Status)f(V)-11
 b(alues)45 b(and)g(the)g(Error)g(Message)h(Stac)l(k)0
-4663 y Fj(Nearly)35 b(all)f(the)i(CFITSIO)e(routines)g(return)g(an)h
+4776 y Fj(Nearly)35 b(all)f(the)i(CFITSIO)e(routines)g(return)g(an)h
 (error)g(status)h(v)-5 b(alue)34 b(in)g(2)i(w)m(a)m(ys:)51
-b(as)36 b(the)f(v)-5 b(alue)35 b(of)h(the)f(last)0 4776
+b(as)36 b(the)f(v)-5 b(alue)35 b(of)h(the)f(last)0 4889
 y(parameter)29 b(in)e(the)h(function)f(call,)i(and)f(as)g(the)h
 (returned)e(v)-5 b(alue)28 b(of)g(the)h(function)e(itself.)39
-b(This)26 b(pro)m(vides)i(some)0 4889 y(\015exibilit)m(y)33
+b(This)26 b(pro)m(vides)i(some)0 5002 y(\015exibilit)m(y)33
 b(in)h(the)i(w)m(a)m(y)h(programmers)e(can)h(test)h(if)e(an)g(error)h
 (o)s(ccurred,)g(as)g(illustrated)e(in)g(the)i(follo)m(wing)f(2)0
-5002 y(co)s(de)c(fragmen)m(ts:)191 5262 y Fe(if)47 b(\()h
+5115 y(co)s(de)c(fragmen)m(ts:)191 5375 y Fe(if)47 b(\()h
 (fits_write_record\(fptr,)41 b(card,)46 b(&status\))g(\))430
-5375 y(printf\(")f(Error)h(occurred)g(while)g(writing)g(keyword."\);)0
-5601 y(or,)p eop
+5488 y(printf\(")f(Error)h(occurred)g(while)g(writing)g(keyword."\);)0
+5714 y(or,)p eop
 %%Page: 24 32
 24 31 bop 0 299 a Fj(24)1763 b Fh(CHAPTER)29 b(4.)112
-b(PR)m(OGRAMMING)32 b(GUIDELINES)191 555 y Fe(fits_write_record\(fptr,)
-41 b(card,)47 b(&status\);)191 668 y(if)g(\()h(status)e(\))430
-781 y(printf\(")f(Error)h(occurred)g(while)g(writing)g(keyword."\);)0
-1066 y Fj(A)27 b(listing)e(of)j(all)e(the)h(CFITSIO)f(status)i(co)s(de)
+b(PR)m(OGRAMMING)32 b(GUIDELINES)191 668 y Fe(fits_write_record\(fptr,)
+41 b(card,)47 b(&status\);)191 781 y(if)g(\()h(status)e(\))430
+894 y(printf\(")f(Error)h(occurred)g(while)g(writing)g(keyword."\);)0
+1109 y Fj(A)27 b(listing)e(of)j(all)e(the)h(CFITSIO)f(status)i(co)s(de)
 f(v)-5 b(alues)27 b(is)f(giv)m(en)h(at)h(the)g(end)e(of)i(this)e(do)s
-(cumen)m(t.)39 b(Programmers)0 1179 y(are)33 b(encouraged)g(to)g(use)f
+(cumen)m(t.)39 b(Programmers)0 1222 y(are)33 b(encouraged)g(to)g(use)f
 (the)h(sym)m(b)s(olic)d(mnemonics)h(\(de\014ned)h(in)f(\014tsio.h\))h
-(rather)g(than)g(the)h(actual)g(in)m(teger)0 1292 y(status)e(v)-5
+(rather)g(than)g(the)h(actual)g(in)m(teger)0 1335 y(status)e(v)-5
 b(alues)29 b(to)j(impro)m(v)m(e)e(the)g(readabilit)m(y)f(of)i(their)e
-(co)s(de.)0 1452 y(The)j(CFITSIO)f(library)e(uses)j(an)g(`inherited)f
+(co)s(de.)0 1495 y(The)j(CFITSIO)f(library)e(uses)j(an)g(`inherited)f
 (status')i(con)m(v)m(en)m(tion)g(for)f(the)h(status)f(parameter)h(whic)
-m(h)e(means)0 1565 y(that)37 b(if)e(a)i(routine)e(is)h(called)f(with)g
+m(h)e(means)0 1608 y(that)37 b(if)e(a)i(routine)e(is)h(called)f(with)g
 (a)i(p)s(ositiv)m(e)e(input)g(v)-5 b(alue)36 b(of)g(the)h(status)f
-(parameter)h(as)g(input,)f(then)g(the)0 1678 y(routine)i(will)d(exit)k
+(parameter)h(as)g(input,)f(then)g(the)0 1721 y(routine)i(will)d(exit)k
 (immediately)e(without)g(c)m(hanging)i(the)f(v)-5 b(alue)38
 b(of)h(the)g(status)g(parameter.)65 b(Th)m(us,)40 b(if)e(one)0
-1791 y(passes)24 b(the)h(status)g(v)-5 b(alue)24 b(returned)g(from)g
+1834 y(passes)24 b(the)h(status)g(v)-5 b(alue)24 b(returned)g(from)g
 (eac)m(h)i(CFITSIO)d(routine)g(as)i(input)e(to)i(the)g(next)g(CFITSIO)e
-(routine,)0 1904 y(then)28 b(whenev)m(er)g(an)g(error)g(is)g(detected)h
+(routine,)0 1947 y(then)28 b(whenev)m(er)g(an)g(error)g(is)g(detected)h
 (all)f(further)f(CFITSIO)f(pro)s(cessing)h(will)f(cease.)42
-b(This)26 b(con)m(v)m(en)m(tion)k(can)0 2017 y(simplify)f(the)k(error)f
+b(This)26 b(con)m(v)m(en)m(tion)k(can)0 2060 y(simplify)f(the)k(error)f
 (c)m(hec)m(king)i(in)d(application)g(programs)h(b)s(ecause)h(it)f(is)g
 (not)h(necessary)g(to)g(c)m(hec)m(k)i(the)d(v)-5 b(alue)0
-2130 y(of)30 b(the)g(status)h(parameter)f(after)h(ev)m(ery)g(single)d
+2173 y(of)30 b(the)g(status)h(parameter)f(after)h(ev)m(ery)g(single)d
 (CFITSIO)h(routine)g(call.)40 b(If)30 b(a)g(program)g(con)m(tains)g(a)h
-(sequence)0 2243 y(of)d(sev)m(eral)h(CFITSIO)e(calls,)h(one)g(can)h
+(sequence)0 2285 y(of)d(sev)m(eral)h(CFITSIO)e(calls,)h(one)g(can)h
 (just)e(c)m(hec)m(k)j(the)f(status)f(v)-5 b(alue)28 b(after)h(the)f
-(last)g(call.)39 b(Since)28 b(the)g(returned)0 2355 y(status)33
+(last)g(call.)39 b(Since)28 b(the)g(returned)0 2398 y(status)33
 b(v)-5 b(alues)32 b(are)h(generally)f(distinctiv)m(e,)g(it)h(should)d
 (b)s(e)j(p)s(ossible)d(to)j(determine)f(whic)m(h)g(routine)g
-(originally)0 2468 y(returned)d(the)i(error)f(status.)0
-2629 y(CFITSIO)c(also)h(main)m(tains)g(an)g(in)m(ternal)f(stac)m(k)j
+(originally)0 2511 y(returned)d(the)i(error)f(status.)0
+2671 y(CFITSIO)c(also)h(main)m(tains)g(an)g(in)m(ternal)f(stac)m(k)j
 (of)f(error)f(messages)h(\(80-c)m(haracter)j(maxim)m(um)26
-b(length\))h(whic)m(h)0 2741 y(in)35 b(man)m(y)h(cases)h(pro)m(vide)e
+b(length\))h(whic)m(h)0 2784 y(in)35 b(man)m(y)h(cases)h(pro)m(vide)e
 (a)h(more)g(detailed)g(explanation)f(of)h(the)g(cause)h(of)f(the)g
-(error)g(than)f(is)g(pro)m(vided)g(b)m(y)0 2854 y(the)40
+(error)g(than)f(is)g(pro)m(vided)g(b)m(y)0 2897 y(the)40
 b(error)e(status)i(n)m(um)m(b)s(er)e(alone.)68 b(It)39
 b(is)g(recommended)g(that)g(the)h(error)f(message)h(stac)m(k)h(b)s(e)e
-(prin)m(ted)f(out)0 2967 y(whenev)m(er)h(a)g(program)g(detects)h(a)f
+(prin)m(ted)f(out)0 3010 y(whenev)m(er)h(a)g(program)g(detects)h(a)f
 (CFITSIO)e(error.)66 b(The)38 b(function)g(\014ts)p 2653
-2967 28 4 v 32 w(rep)s(ort)p 2931 2967 V 32 w(error)h(will)d(prin)m(t)i
-(out)h(the)0 3080 y(en)m(tire)30 b(error)f(message)h(stac)m(k,)i(or)d
+3010 28 4 v 32 w(rep)s(ort)p 2931 3010 V 32 w(error)h(will)d(prin)m(t)i
+(out)h(the)0 3123 y(en)m(tire)30 b(error)f(message)h(stac)m(k,)i(or)d
 (alternativ)m(ely)h(one)g(ma)m(y)g(call)f(\014ts)p 2376
-3080 V 32 w(read)p 2580 3080 V 33 w(errmsg)g(to)h(get)h(the)f(error)f
-(messages)0 3193 y(one)i(at)g(a)g(time.)0 3557 y Ff(4.10)136
+3123 V 32 w(read)p 2580 3123 V 33 w(errmsg)g(to)h(get)h(the)f(error)f
+(messages)0 3236 y(one)i(at)g(a)g(time.)0 3563 y Ff(4.10)136
 b(V)-11 b(ariable-Length)45 b(Arra)l(ys)g(in)g(Binary)g(T)-11
 b(ables)0 3813 y Fj(CFITSIO)33 b(pro)m(vides)h(easy-to-use)i(supp)s
 (ort)d(for)i(reading)f(and)g(writing)f(data)i(in)f(v)-5
@@ -4807,23 +4816,23 @@ b(instance)f(if)f(a)0 1869 y(FITS)28 b(image)h(has)f(NAXIS1)h(=)f(100)i
 (and)e(NAXIS2)h(=)f(50,)i(then)e(a)h(2-D)h(arra)m(y)f(just)f(large)h
 (enough)f(to)i(hold)d(the)0 1982 y(image)k(should)d(b)s(e)i(declared)g
 (as)g(arra)m(y[50][100])k(and)c(not)h(as)f(arra)m(y[100][50].)0
-2142 y(The)22 b(`datat)m(yp)s(e')h(parameter)f(sp)s(eci\014es)f(the)h
-(datat)m(yp)s(e)h(of)f(the)h(`n)m(ulv)-5 b(al')20 b(and)i(`arra)m(y')h
-(p)s(oin)m(ters)e(and)g(can)h(ha)m(v)m(e)i(one)0 2255
-y(of)k(the)f(follo)m(wing)f(v)-5 b(alues:)39 b(TBYTE,)27
-b(TSHOR)-8 b(T,)27 b(TUSHOR)-8 b(T,)27 b(TINT,)g(TUINT,)g(TLONG,)g
-(TLONGLONG,)0 2368 y(TULONG,)34 b(TFLO)m(A)-8 b(T,)35
-b(TDOUBLE.)f(Automatic)h(data)g(t)m(yp)s(e)f(con)m(v)m(ersion)h(is)e(p)
-s(erformed)f(if)i(the)g(data)h(t)m(yp)s(e)0 2481 y(of)g(the)g(FITS)f
-(arra)m(y)i(\(as)f(de\014ned)f(b)m(y)h(the)g(BITPIX)f(k)m(eyw)m(ord\))i
-(di\013ers)d(from)i(that)g(sp)s(eci\014ed)e(b)m(y)i('datat)m(yp)s(e'.)0
-2594 y(The)26 b(data)h(v)-5 b(alues)26 b(are)g(also)h(automatically)f
-(scaled)g(b)m(y)g(the)h(BSCALE)f(and)f(BZER)m(O)i(k)m(eyw)m(ord)f(v)-5
-b(alues)26 b(as)h(they)0 2706 y(are)k(b)s(eing)e(read)h(or)g(written)g
-(in)f(the)h(FITS)g(arra)m(y)-8 b(.)0 2950 y Fi(1)81 b
-Fj(Get)28 b(the)g(data)g(t)m(yp)s(e,)g(n)m(um)m(b)s(er)f(of)g
-(dimensions,)f(and/or)h(the)h(size)f(of)h(eac)m(h)g(dimension)d(in)h
-(the)i(image)g(.)39 b(The)227 3063 y(datat)m(yp)s(e)29
+2142 y(The)j(`datat)m(yp)s(e')i(parameter)e(sp)s(eci\014es)f(the)i
+(datat)m(yp)s(e)g(of)g(the)f(`n)m(ulv)-5 b(al')32 b(and)h(`arra)m(y')h
+(p)s(oin)m(ters)e(and)h(can)h(ha)m(v)m(e)0 2255 y(one)f(of)g(the)g
+(follo)m(wing)e(v)-5 b(alues:)45 b(TBYTE,)33 b(TSBYTE,)f(TSHOR)-8
+b(T,)32 b(TUSHOR)-8 b(T,)32 b(TINT,)h(TUINT,)f(TLONG,)0
+2368 y(TLONGLONG,)26 b(TULONG,)g(TFLO)m(A)-8 b(T,)27
+b(TDOUBLE.)f(Automatic)h(data)g(t)m(yp)s(e)g(con)m(v)m(ersion)f(is)f(p)
+s(erformed)g(if)0 2481 y(the)j(data)h(t)m(yp)s(e)f(of)f(the)i(FITS)e
+(arra)m(y)h(\(as)g(de\014ned)f(b)m(y)h(the)g(BITPIX)f(k)m(eyw)m(ord\))i
+(di\013ers)d(from)i(that)g(sp)s(eci\014ed)e(b)m(y)0 2594
+y('datat)m(yp)s(e'.)54 b(The)34 b(data)h(v)-5 b(alues)34
+b(are)g(also)h(automatically)f(scaled)g(b)m(y)g(the)h(BSCALE)f(and)f
+(BZER)m(O)h(k)m(eyw)m(ord)0 2706 y(v)-5 b(alues)30 b(as)g(they)h(are)g
+(b)s(eing)e(read)h(or)g(written)g(in)f(the)h(FITS)g(arra)m(y)-8
+b(.)0 2950 y Fi(1)81 b Fj(Get)28 b(the)g(data)g(t)m(yp)s(e,)g(n)m(um)m
+(b)s(er)f(of)g(dimensions,)f(and/or)h(the)h(size)f(of)h(eac)m(h)g
+(dimension)d(in)h(the)i(image)g(.)39 b(The)227 3063 y(datat)m(yp)s(e)29
 b(is)e(determined)g(b)m(y)h(the)g(bitpix)e(parameter)j(whic)m(h)e(has)h
 (allo)m(w)m(ed)g(v)-5 b(alues)27 b(of)h(BYTE)p 3515 3063
 28 4 v 33 w(IMG)h(\(8\),)227 3176 y(SHOR)-8 b(T)p 547
@@ -4958,36 +4967,36 @@ b(al)37 b(=)i(0)h(or)f(*n)m(ulv)-5 b(al)38 b(=)h(0,)j(in)c(whic)m(h)g
 1603 y(b)s(e)c(p)s(erformed.)51 b(The)34 b(second)g(routine)g(is)f
 (similar)f(except)j(that)g(an)m(y)g(unde\014ned)d(pixels)g(will)g(ha)m
 (v)m(e)k(the)227 1716 y(corresp)s(onding)29 b(n)m(ullarra)m(y)f(elemen)
-m(t)j(set)g(equal)f(to)h(TR)m(UE.)95 1943 y Fe(int)47
-b(fits_read_pix)e(/)i(ffgpxv)286 2056 y(\(fitsfile)f(*fptr,)g(int)94
-b(datatype,)46 b(long)g(*fpixel,)g(long)g(nelements,)334
-2169 y(DTYPE)g(*nulval,)g(>)h(DTYPE)g(*array,)f(int)h(*anynul,)e(int)i
-(*status\))95 2395 y(int)g(fits_read_pixnull)c(/)48 b(ffgpxf)286
-2508 y(\(fitsfile)e(*fptr,)g(int)94 b(datatype,)46 b(long)g(*fpixel,)g
-(long)g(nelements,)334 2621 y(>)i(DTYPE)e(*array,)g(char)g(*nullarray,)
-f(int)i(*anynul,)f(int)g(*status\))0 2949 y Ff(5.6)135
-b(Image)46 b(Compression)0 3200 y Fj(CFITSIO)29 b(no)m(w)h(transparen)m
-(tly)g(supp)s(orts)e(2)j(t)m(yp)s(es)f(of)h(image)g(compression:)0
-3360 y(1\))j(The)f(en)m(tire)h(FITS)e(\014le)h(ma)m(y)h(b)s(e)f
-(externally)g(compressed)g(with)f(the)i(gzip)f(or)g(Unix)f(compress)i
-(algorithm,)0 3473 y(pro)s(ducing)22 b(a)j(*.gz)h(or)f(*.Z)g(\014le,)g
-(resp)s(ectiv)m(ely)-8 b(.)38 b(When)25 b(reading)e(compressed)i
-(\014les)e(of)i(this)e(t)m(yp)s(e,)k(CFITSIO)c(\014rst)0
-3586 y(uncompresses)j(the)i(en)m(tire)f(\014le)f(in)m(to)h(memory)g(b)s
-(efore)g(p)s(erforming)e(the)i(requested)g(read)g(op)s(erations.)39
-b(Output)0 3699 y(\014les)30 b(can)h(b)s(e)f(directly)f(written)h(in)f
-(the)i(gzip)f(compressed)g(format)h(if)f(the)h(user-sp)s(eci\014ed)d
-(\014lename)i(ends)g(with)0 3811 y(`.gz'.)42 b(In)29
-b(this)f(case,)j(CFITSIO)d(initially)e(writes)j(the)h(uncompressed)e
-(\014le)h(in)f(memory)i(and)f(then)g(compresses)0 3924
-y(it)k(and)f(writes)g(it)h(to)g(disk)f(when)g(the)h(FITS)f(\014le)h(is)
-f(closed,)h(th)m(us)g(sa)m(ving)g(user)f(disk)g(space.)49
-b(Read)33 b(and)g(write)0 4037 y(access)c(to)g(these)f(compressed)f
-(FITS)g(\014les)g(is)g(generally)g(quite)g(fast;)i(the)f(main)e
-(limitation)g(is)h(that)h(there)g(m)m(ust)0 4150 y(b)s(e)i(enough)g(a)m
-(v)-5 b(ailable)30 b(memory)g(\(or)h(sw)m(ap)f(space\))h(to)g(hold)e
-(the)i(en)m(tire)f(uncompressed)f(FITS)h(\014le.)0 4310
-y(2\))36 b(CFITSIO)d(also)i(supp)s(orts)e(a)i(new)m(er)g(image)h
+m(t)j(set)g(equal)f(to)h(TR)m(UE)g(\(=)f(1\).)95 1943
+y Fe(int)47 b(fits_read_pix)e(/)i(ffgpxv)286 2056 y(\(fitsfile)f
+(*fptr,)g(int)94 b(datatype,)46 b(long)g(*fpixel,)g(long)g(nelements,)
+334 2169 y(DTYPE)g(*nulval,)g(>)h(DTYPE)g(*array,)f(int)h(*anynul,)e
+(int)i(*status\))95 2395 y(int)g(fits_read_pixnull)c(/)48
+b(ffgpxf)286 2508 y(\(fitsfile)e(*fptr,)g(int)94 b(datatype,)46
+b(long)g(*fpixel,)g(long)g(nelements,)334 2621 y(>)i(DTYPE)e(*array,)g
+(char)g(*nullarray,)f(int)i(*anynul,)f(int)g(*status\))0
+2949 y Ff(5.6)135 b(Image)46 b(Compression)0 3200 y Fj(CFITSIO)29
+b(no)m(w)h(transparen)m(tly)g(supp)s(orts)e(2)j(t)m(yp)s(es)f(of)h
+(image)g(compression:)0 3360 y(1\))j(The)f(en)m(tire)h(FITS)e(\014le)h
+(ma)m(y)h(b)s(e)f(externally)g(compressed)g(with)f(the)i(gzip)f(or)g
+(Unix)f(compress)i(algorithm,)0 3473 y(pro)s(ducing)22
+b(a)j(*.gz)h(or)f(*.Z)g(\014le,)g(resp)s(ectiv)m(ely)-8
+b(.)38 b(When)25 b(reading)e(compressed)i(\014les)e(of)i(this)e(t)m(yp)
+s(e,)k(CFITSIO)c(\014rst)0 3586 y(uncompresses)j(the)i(en)m(tire)f
+(\014le)f(in)m(to)h(memory)g(b)s(efore)g(p)s(erforming)e(the)i
+(requested)g(read)g(op)s(erations.)39 b(Output)0 3699
+y(\014les)30 b(can)h(b)s(e)f(directly)f(written)h(in)f(the)i(gzip)f
+(compressed)g(format)h(if)f(the)h(user-sp)s(eci\014ed)d(\014lename)i
+(ends)g(with)0 3811 y(`.gz'.)42 b(In)29 b(this)f(case,)j(CFITSIO)d
+(initially)e(writes)j(the)h(uncompressed)e(\014le)h(in)f(memory)i(and)f
+(then)g(compresses)0 3924 y(it)k(and)f(writes)g(it)h(to)g(disk)f(when)g
+(the)h(FITS)f(\014le)h(is)f(closed,)h(th)m(us)g(sa)m(ving)g(user)f
+(disk)g(space.)49 b(Read)33 b(and)g(write)0 4037 y(access)c(to)g(these)
+f(compressed)f(FITS)g(\014les)g(is)g(generally)g(quite)g(fast;)i(the)f
+(main)e(limitation)g(is)h(that)h(there)g(m)m(ust)0 4150
+y(b)s(e)i(enough)g(a)m(v)-5 b(ailable)30 b(memory)g(\(or)h(sw)m(ap)f
+(space\))h(to)g(hold)e(the)i(en)m(tire)f(uncompressed)f(FITS)h(\014le.)
+0 4310 y(2\))36 b(CFITSIO)d(also)i(supp)s(orts)e(a)i(new)m(er)g(image)h
 (compression)e(format)h(in)f(whic)m(h)f(the)i(image)h(is)e(divided)e
 (in)m(to)0 4423 y(a)43 b(grid)e(of)h(rectangular)g(tiles,)j(and)c(eac)m
 (h)j(tile)d(of)i(pixels)d(is)i(individually)36 b(compressed.)76
@@ -5481,15 +5490,16 @@ b(Column)i(Data)g(Routines)0 4876 y Fj(The)e(follo)m(wing)e(routines)i
 (NAXIS2)f(k)m(eyw)m(ord)h(v)-5 b(alue)34 b(will)d(b)s(e)j(up)s(dated.)
 51 b(A)m(ttempts)0 5215 y(to)31 b(read)f(b)s(ey)m(ond)g(the)h(end)e(of)
 i(the)f(table)h(will)c(result)j(in)f(an)h(error.)0 5375
-y(Automatic)36 b(data)f(t)m(yp)s(e)g(con)m(v)m(ersion)h(is)e(p)s
-(erformed)f(for)i(n)m(umerical)e(data)j(t)m(yp)s(es)f(\(only\))g(if)f
-(the)h(data)h(t)m(yp)s(e)f(of)0 5488 y(the)g(column)e(\(de\014ned)h(b)m
-(y)h(the)g(TF)m(ORMn)f(k)m(eyw)m(ord\))i(di\013ers)d(from)h(the)h(data)
-h(t)m(yp)s(e)f(of)g(the)f(calling)g(routine.)0 5601 y(ASCI)s(I)g(and)h
-(binary)f(tables)i(supp)s(ort)e(the)i(follo)m(wing)e(datat)m(yp)s(e)i
-(v)-5 b(alues:)51 b(TSTRING,)35 b(TBYTE,)h(TSHOR)-8 b(T,)0
-5714 y(TUSHOR)g(T,)22 b(TINT,)g(TUINT,)f(TLONG,)i(TLONGLONG,)f(TULONG,)
-g(TFLO)m(A)-8 b(T,)23 b(or)f(TDOUBLE.)h(Binary)p eop
+y(Automatic)c(data)f(t)m(yp)s(e)g(con)m(v)m(ersion)g(is)f(p)s(erformed)
+g(for)g(n)m(umerical)g(data)h(t)m(yp)s(es)g(\(only\))g(if)f(the)h(data)
+h(t)m(yp)s(e)f(of)g(the)0 5488 y(column)f(\(de\014ned)h(b)m(y)g(the)h
+(TF)m(ORMn)f(k)m(eyw)m(ord\))h(di\013ers)e(from)h(the)h(data)g(t)m(yp)s
+(e)f(of)h(the)f(calling)f(routine.)38 b(ASCI)s(I)0 5601
+y(and)22 b(binary)e(tables)i(supp)s(ort)f(the)h(follo)m(wing)f(datat)m
+(yp)s(e)i(v)-5 b(alues:)36 b(TSTRING,)22 b(TBYTE,)g(TSBYTE,)g(TSHOR)-8
+b(T,)0 5714 y(TUSHOR)g(T,)22 b(TINT,)g(TUINT,)f(TLONG,)i(TLONGLONG,)f
+(TULONG,)g(TFLO)m(A)-8 b(T,)23 b(or)f(TDOUBLE.)h(Binary)p
+eop
 %%Page: 49 57
 49 56 bop 0 299 a Fh(5.7.)72 b(ASCI)s(I)29 b(AND)i(BINAR)-8
 b(Y)31 b(T)-8 b(ABLE)31 b(R)m(OUTINES)1864 b Fj(49)0
@@ -5577,53 +5587,53 @@ b(al)30 b(=)g(0)h(or)g(*n)m(ulv)-5 b(al)29 b(=)i(0,)g(in)e(whic)m(h)h
 668 y(will)i(b)s(e)i(p)s(erformed.)48 b(The)33 b(second)g(routine)g(is)
 f(similar)f(except)j(that)g(an)m(y)g(unde\014ned)d(pixels)h(will)f(ha)m
 (v)m(e)227 781 y(the)g(corresp)s(onding)d(n)m(ullarra)m(y)h(elemen)m(t)
-i(set)g(equal)f(to)h(TR)m(UE.)227 936 y(An)m(y)d(column,)g(regardless)f
-(of)h(it's)g(in)m(trinsic)d(datat)m(yp)s(e,)30 b(ma)m(y)e(b)s(e)f(read)
-h(as)g(a)h(string.)39 b(It)28 b(should)d(b)s(e)j(noted)227
-1049 y(ho)m(w)m(ev)m(er)k(that)f(reading)e(a)i(n)m(umeric)e(column)g
-(as)i(a)g(string)e(is)g(10)j(-)e(100)i(times)e(slo)m(w)m(er)g(than)g
-(reading)g(the)227 1162 y(same)22 b(column)f(as)g(a)h(n)m(um)m(b)s(er)e
-(due)h(to)i(the)e(large)h(o)m(v)m(erhead)h(in)d(constructing)h(the)h
-(formatted)g(strings.)36 b(The)227 1275 y(displa)m(y)24
-b(format)i(of)f(the)h(returned)e(strings)g(will)f(b)s(e)i(determined)f
-(b)m(y)h(the)h(TDISPn)e(k)m(eyw)m(ord,)j(if)d(it)h(exists,)227
-1388 y(otherwise)33 b(b)m(y)g(the)g(datat)m(yp)s(e)h(of)f(the)g
-(column.)47 b(The)33 b(length)f(of)h(the)g(returned)f(strings)g(\(not)h
-(including)227 1501 y(the)26 b(n)m(ull)d(terminating)i(c)m(haracter\))i
-(can)f(b)s(e)f(determined)f(with)g(the)i(\014ts)p 2703
-1501 28 4 v 32 w(get)p 2855 1501 V 34 w(col)p 3000 1501
-V 33 w(displa)m(y)p 3313 1501 V 31 w(width)e(routine.)227
-1614 y(The)30 b(follo)m(wing)f(TDISPn)g(displa)m(y)g(formats)h(are)h
-(curren)m(tly)e(supp)s(orted:)418 1879 y Fe(Iw.m)142
-b(Integer)418 1992 y(Ow.m)g(Octal)47 b(integer)418 2105
-y(Zw.m)142 b(Hexadecimal)45 b(integer)418 2217 y(Fw.d)142
-b(Fixed)47 b(floating)e(point)418 2330 y(Ew.d)142 b(Exponential)45
-b(floating)h(point)418 2443 y(Dw.d)142 b(Exponential)45
-b(floating)h(point)418 2556 y(Gw.d)142 b(General;)46
-b(uses)g(Fw.d)h(if)g(significance)e(not)i(lost,)f(else)h(Ew.d)227
-2821 y Fj(where)24 b(w)h(is)e(the)i(width)e(in)g(c)m(haracters)j(of)f
-(the)g(displa)m(y)m(ed)e(v)-5 b(alues,)26 b(m)e(is)g(the)g(minim)m(um)e
-(n)m(um)m(b)s(er)i(of)g(digits)227 2934 y(displa)m(y)m(ed,)j(and)g(d)g
-(is)g(the)g(n)m(um)m(b)s(er)g(of)g(digits)g(to)h(the)g(righ)m(t)f(of)g
-(the)h(decimal.)39 b(The)27 b(.m)g(\014eld)f(is)h(optional.)95
-3204 y Fe(int)47 b(fits_read_col)e(/)i(ffgcv)286 3317
-y(\(fitsfile)f(*fptr,)g(int)h(datatype,)e(int)i(colnum,)f(long)g
-(firstrow,)g(long)g(firstelem,)334 3430 y(long)h(nelements,)e(DTYPE)h
-(*nulval,)g(DTYPE)g(*array,)g(int)h(*anynul,)e(int)i(*status\))95
-3656 y(int)g(fits_read_colnull)c(/)48 b(ffgcf)286 3768
-y(\(fitsfile)e(*fptr,)g(int)h(datatype,)e(int)i(colnum,)f(long)g
-(firstrow,)g(long)g(firstelem,)286 3881 y(long)h(nelements,)e(DTYPE)h
-(*array,)g(char)h(*nullarray,)e(int)h(*anynul,)g(int)h(*status\))0
-4184 y Fd(5.7.5)112 b(Ro)m(w)37 b(Selection)f(and)j(Calculator)d
-(Routines)0 4405 y Fj(These)21 b(routines)e(all)h(parse)h(and)f(ev)-5
-b(aluate)22 b(an)e(input)f(string)h(con)m(taining)h(a)g(user)f
-(de\014ned)g(arithmetic)g(expression.)0 4518 y(The)29
-b(\014rst)f(3)i(routines)e(select)i(ro)m(ws)f(in)f(a)i(FITS)e(table,)i
-(based)f(on)g(whether)g(the)g(expression)f(ev)-5 b(aluates)30
-b(to)g(true)0 4631 y(\(not)e(equal)e(to)i(zero\))g(or)f(false)g
-(\(zero\).)41 b(The)27 b(other)g(routines)f(ev)-5 b(aluate)28
-b(the)f(expression)f(and)g(calculate)i(a)f(v)-5 b(alue)0
-4744 y(for)26 b(eac)m(h)i(ro)m(w)f(of)g(the)g(table.)39
+i(set)g(equal)f(to)h(TR)m(UE)f(\(=)h(1\).)227 936 y(An)m(y)d(column,)g
+(regardless)f(of)h(it's)g(in)m(trinsic)d(datat)m(yp)s(e,)30
+b(ma)m(y)e(b)s(e)f(read)h(as)g(a)h(string.)39 b(It)28
+b(should)d(b)s(e)j(noted)227 1049 y(ho)m(w)m(ev)m(er)k(that)f(reading)e
+(a)i(n)m(umeric)e(column)g(as)i(a)g(string)e(is)g(10)j(-)e(100)i(times)
+e(slo)m(w)m(er)g(than)g(reading)g(the)227 1162 y(same)22
+b(column)f(as)g(a)h(n)m(um)m(b)s(er)e(due)h(to)i(the)e(large)h(o)m(v)m
+(erhead)h(in)d(constructing)h(the)h(formatted)g(strings.)36
+b(The)227 1275 y(displa)m(y)24 b(format)i(of)f(the)h(returned)e
+(strings)g(will)f(b)s(e)i(determined)f(b)m(y)h(the)h(TDISPn)e(k)m(eyw)m
+(ord,)j(if)d(it)h(exists,)227 1388 y(otherwise)33 b(b)m(y)g(the)g
+(datat)m(yp)s(e)h(of)f(the)g(column.)47 b(The)33 b(length)f(of)h(the)g
+(returned)f(strings)g(\(not)h(including)227 1501 y(the)26
+b(n)m(ull)d(terminating)i(c)m(haracter\))i(can)f(b)s(e)f(determined)f
+(with)g(the)i(\014ts)p 2703 1501 28 4 v 32 w(get)p 2855
+1501 V 34 w(col)p 3000 1501 V 33 w(displa)m(y)p 3313
+1501 V 31 w(width)e(routine.)227 1614 y(The)30 b(follo)m(wing)f(TDISPn)
+g(displa)m(y)g(formats)h(are)h(curren)m(tly)e(supp)s(orted:)418
+1879 y Fe(Iw.m)142 b(Integer)418 1992 y(Ow.m)g(Octal)47
+b(integer)418 2105 y(Zw.m)142 b(Hexadecimal)45 b(integer)418
+2217 y(Fw.d)142 b(Fixed)47 b(floating)e(point)418 2330
+y(Ew.d)142 b(Exponential)45 b(floating)h(point)418 2443
+y(Dw.d)142 b(Exponential)45 b(floating)h(point)418 2556
+y(Gw.d)142 b(General;)46 b(uses)g(Fw.d)h(if)g(significance)e(not)i
+(lost,)f(else)h(Ew.d)227 2821 y Fj(where)24 b(w)h(is)e(the)i(width)e
+(in)g(c)m(haracters)j(of)f(the)g(displa)m(y)m(ed)e(v)-5
+b(alues,)26 b(m)e(is)g(the)g(minim)m(um)e(n)m(um)m(b)s(er)i(of)g
+(digits)227 2934 y(displa)m(y)m(ed,)j(and)g(d)g(is)g(the)g(n)m(um)m(b)s
+(er)g(of)g(digits)g(to)h(the)g(righ)m(t)f(of)g(the)h(decimal.)39
+b(The)27 b(.m)g(\014eld)f(is)h(optional.)95 3204 y Fe(int)47
+b(fits_read_col)e(/)i(ffgcv)286 3317 y(\(fitsfile)f(*fptr,)g(int)h
+(datatype,)e(int)i(colnum,)f(long)g(firstrow,)g(long)g(firstelem,)334
+3430 y(long)h(nelements,)e(DTYPE)h(*nulval,)g(DTYPE)g(*array,)g(int)h
+(*anynul,)e(int)i(*status\))95 3656 y(int)g(fits_read_colnull)c(/)48
+b(ffgcf)286 3768 y(\(fitsfile)e(*fptr,)g(int)h(datatype,)e(int)i
+(colnum,)f(long)g(firstrow,)g(long)g(firstelem,)286 3881
+y(long)h(nelements,)e(DTYPE)h(*array,)g(char)h(*nullarray,)e(int)h
+(*anynul,)g(int)h(*status\))0 4184 y Fd(5.7.5)112 b(Ro)m(w)37
+b(Selection)f(and)j(Calculator)d(Routines)0 4405 y Fj(These)21
+b(routines)e(all)h(parse)h(and)f(ev)-5 b(aluate)22 b(an)e(input)f
+(string)h(con)m(taining)h(a)g(user)f(de\014ned)g(arithmetic)g
+(expression.)0 4518 y(The)29 b(\014rst)f(3)i(routines)e(select)i(ro)m
+(ws)f(in)f(a)i(FITS)e(table,)i(based)f(on)g(whether)g(the)g(expression)
+f(ev)-5 b(aluates)30 b(to)g(true)0 4631 y(\(not)e(equal)e(to)i(zero\))g
+(or)f(false)g(\(zero\).)41 b(The)27 b(other)g(routines)f(ev)-5
+b(aluate)28 b(the)f(expression)f(and)g(calculate)i(a)f(v)-5
+b(alue)0 4744 y(for)26 b(eac)m(h)i(ro)m(w)f(of)g(the)g(table.)39
 b(The)26 b(allo)m(w)m(ed)h(expression)e(syn)m(tax)j(is)d(describ)s(ed)g
 (in)g(the)i(ro)m(w)g(\014lter)f(section)g(in)g(the)0
 4857 y(`Extended)32 b(File)f(Name)i(Syn)m(tax')g(c)m(hapter)g(of)f
@@ -6504,19 +6514,19 @@ i(case)g(of)g(images.)227 2977 y(If)j(coln)m(um)g(equals)g(0,)h(then)g
 (\(TTYPEn)e(k)m(eyw)m(ord\))i(of)f(the)h(column.)39 b(This)28
 b(is)i(only)f(required)f(if)h(coln)m(um)h(=)g(0)227 3387
 y(and)g(is)f(ignored)h(for)g(images.)136 3572 y Fc(\017)46
-b Fj(datat)m(yp)s(e)24 b({)f(The)g(desired)e(datat)m(yp)s(e)j(of)f(the)
-g(arra)m(y)h(to)f(b)s(e)g(passed)f(to)i(the)f(w)m(ork)g(function.)37
-b(F)-8 b(or)23 b(n)m(umerical)227 3685 y(data)35 b(the)e(datat)m(yp)s
-(e)i(do)s(es)e(not)h(need)f(to)i(b)s(e)e(the)g(same)h(as)g(the)g
-(actual)g(datat)m(yp)s(e)h(in)d(the)i(FITS)e(\014le,)i(in)227
-3798 y(whic)m(h)i(case)h(CFITSIO)e(will)f(do)i(the)h(con)m(v)m(ersion.)
-60 b(Allo)m(w)m(ed)36 b(v)-5 b(alues)36 b(are:)53 b(TSTRING,)36
-b(TLOGICAL,)227 3911 y(TBYTE,)h(TSHOR)-8 b(T,)36 b(TUSHOR)-8
-b(T,)36 b(TINT,)h(TLONG,)f(TULONG,)h(TFLO)m(A)-8 b(T,)37
-b(TDOUBLE.)g(If)g(the)227 4024 y(input)31 b(v)-5 b(alue)32
-b(of)h(datat)m(yp)s(e)g(equals)f(0,)i(then)e(the)h(existing)e(datat)m
-(yp)s(e)j(of)e(the)h(column)e(or)i(image)g(will)d(b)s(e)227
-4137 y(used)g(without)f(an)m(y)i(con)m(v)m(ersion.)136
+b Fj(datat)m(yp)s(e)31 b({)f(The)g(desired)e(datat)m(yp)s(e)j(of)f(the)
+g(arra)m(y)g(to)h(b)s(e)e(passed)g(to)i(the)f(w)m(ork)g(function.)39
+b(F)-8 b(or)30 b(n)m(umer-)227 3685 y(ical)g(data)h(the)f(datat)m(yp)s
+(e)h(do)s(es)f(not)h(need)f(to)h(b)s(e)f(the)g(same)h(as)f(the)h
+(actual)f(datat)m(yp)s(e)i(in)d(the)h(FITS)g(\014le,)227
+3798 y(in)d(whic)m(h)h(case)h(CFITSIO)e(will)f(do)j(the)f(con)m(v)m
+(ersion.)41 b(Allo)m(w)m(ed)28 b(v)-5 b(alues)28 b(are:)40
+b(TSTRING,)28 b(TLOGICAL,)227 3911 y(TBYTE,)37 b(TSBYTE,)f(TSHOR)-8
+b(T,)36 b(TUSHOR)-8 b(T,)37 b(TINT,)f(TLONG,)h(TULONG,)f(TFLO)m(A)-8
+b(T,)38 b(TDOU-)227 4024 y(BLE.)f(If)g(the)g(input)e(v)-5
+b(alue)37 b(of)g(datat)m(yp)s(e)h(equals)e(0,)j(then)e(the)g(existing)f
+(datat)m(yp)s(e)i(of)f(the)g(column)f(or)227 4137 y(image)31
+b(will)d(b)s(e)h(used)h(without)f(an)m(y)i(con)m(v)m(ersion.)136
 4322 y Fc(\017)46 b Fj(iot)m(yp)s(e)27 b({)g(de\014nes)e(whether)h(the)
 h(data)g(arra)m(y)h(is)d(to)j(b)s(e)e(input)e(to)k(the)e(w)m(ork)h
 (function)e(\(i.e,)j(read)f(from)f(the)227 4435 y(FITS)i(\014le\),)h
@@ -8463,40 +8473,40 @@ h(n)m(ulv)-5 b(al)27 b(=)i(0,)h(then)e(no)h(c)m(hec)m(ks)h(for)f
 (unde\014ned)0 1957 y(pixels)23 b(will)f(b)s(e)j(p)s(erformed,)f(th)m
 (us)h(reducing)e(the)i(amoun)m(t)h(of)f(CPU)f(pro)s(cessing.)38
 b(The)24 b(second)h(t)m(yp)s(e)g(of)g(routines)0 2070
-y(\(e.g.,)37 b(\013gpf)p 414 2070 V 33 w(\))e(returns)e(the)h(data)h
-(elemen)m(t)g(arra)m(y)g(and,)g(in)e(addition,)h(a)h(c)m(har)g(arra)m
-(y)g(whic)m(h)e(de\014nes)h(whether)0 2183 y(the)26 b(corresp)s(onding)
-e(data)i(pixel)e(is)h(de\014ned)f(\(=)i(1\))g(or)g(not)g(\(=)g(0\).)40
-b(The)25 b(latter)h(t)m(yp)s(e)g(of)g(routines)e(ma)m(y)j(b)s(e)e(more)
-0 2296 y(con)m(v)m(enien)m(t)32 b(to)h(use)e(in)f(some)h
-(circumstances,)h(ho)m(w)m(ev)m(er,)h(it)e(requires)f(an)h(additional)e
-(arra)m(y)j(of)g(logical)f(v)-5 b(alues)0 2409 y(whic)m(h)29
-b(can)i(b)s(e)f(un)m(wieldy)d(when)j(w)m(orking)f(with)g(large)i(data)g
-(arra)m(ys.)0 2664 y Fi(1)81 b Fj(W)-8 b(rite)30 b(elemen)m(ts)h(in)m
-(to)f(the)h(FITS)f(data)h(arra)m(y)-8 b(.)95 2918 y Fe(int)47
-b(fits_write_img)d(/)k(ffppr)286 3031 y(\(fitsfile)e(*fptr,)g(int)h
-(datatype,)e(long)i(firstelem,)e(long)h(nelements,)334
-3144 y(DTYPE)g(*array,)g(int)h(*status\);)95 3370 y(int)g
-(fits_write_img_[byt,)c(sht,)j(usht,)h(int,)f(uint,)h(lng,)f(ulng,)h
-(lnglng,)e(flt,)i(dbl])g(/)286 3483 y(ffppr[b,i,ui,k,uk,j,uj,jj,)o(e,d)
-o(])286 3595 y(\(fitsfile)f(*fptr,)g(long)g(group,)g(long)h(firstelem,)
-e(long)i(nelements,)334 3708 y(DTYPE)f(*array,)g(>)i(int)f(*status\);)
-95 3934 y(int)g(fits_write_imgnull)c(/)48 b(ffppn)286
-4047 y(\(fitsfile)e(*fptr,)g(int)h(datatype,)e(long)i(firstelem,)e
-(long)h(nelements,)334 4160 y(DTYPE)g(*array,)g(DTYPE)h(*nulval,)e(>)j
-(int)f(*status\);)95 4386 y(int)g(fits_write_imgnull_[byt,)42
-b(sht,)k(usht,)h(int,)f(uint,)h(lng,)f(ulng,)h(lnglng,)e(flt,)i(dbl])g
-(/)286 4499 y(ffppn[b,i,ui,k,uk,j,uj,jj,)o(e,d)o(])286
-4612 y(\(fitsfile)f(*fptr,)g(long)g(group,)g(long)h(firstelem,)525
-4725 y(long)g(nelements,)e(DTYPE)h(*array,)g(DTYPE)g(nulval,)g(>)h(int)
-g(*status\);)0 4979 y Fi(2)81 b Fj(Set)30 b(data)h(arra)m(y)g(elemen)m
-(ts)g(as)f(unde\014ned.)95 5234 y Fe(int)47 b(fits_write_img_null)c(/)k
-(ffppru)286 5346 y(\(fitsfile)f(*fptr,)g(long)g(group,)g(long)h
-(firstelem,)e(long)i(nelements,)334 5459 y(>)h(int)e(*status\))0
-5714 y Fi(3)81 b Fj(W)-8 b(rite)31 b(v)-5 b(alues)29
-b(in)m(to)i(group)f(parameters.)42 b(This)29 b(routine)g(only)h
-(applies)f(to)i(the)g(`Random)f(Group)s(ed')g(FITS)p
-eop
+y(\(e.g.,)36 b(\013gpf)p 413 2070 V 32 w(\))e(returns)e(the)i(data)g
+(elemen)m(t)f(arra)m(y)h(and,)g(in)e(addition,)g(a)i(c)m(har)g(arra)m
+(y)f(that)h(indicates)f(whether)0 2183 y(the)h(v)-5 b(alue)33
+b(of)h(the)f(corresp)s(onding)f(data)i(pixel)e(is)h(unde\014ned)e(\(=)j
+(1\))g(or)g(de\014ned)e(\(=)i(0\).)51 b(The)33 b(latter)h(t)m(yp)s(e)g
+(of)0 2296 y(routines)c(ma)m(y)i(b)s(e)e(more)i(con)m(v)m(enien)m(t)g
+(to)g(use)f(in)f(some)h(circumstances,)h(ho)m(w)m(ev)m(er,)h(it)d
+(requires)g(an)h(additional)0 2409 y(arra)m(y)g(of)f(logical)g(v)-5
+b(alues)30 b(whic)m(h)f(can)i(b)s(e)e(un)m(wieldy)f(when)i(w)m(orking)f
+(with)g(large)i(data)g(arra)m(ys.)0 2664 y Fi(1)81 b
+Fj(W)-8 b(rite)30 b(elemen)m(ts)h(in)m(to)f(the)h(FITS)f(data)h(arra)m
+(y)-8 b(.)95 2918 y Fe(int)47 b(fits_write_img)d(/)k(ffppr)286
+3031 y(\(fitsfile)e(*fptr,)g(int)h(datatype,)e(long)i(firstelem,)e
+(long)h(nelements,)334 3144 y(DTYPE)g(*array,)g(int)h(*status\);)95
+3370 y(int)g(fits_write_img_[byt,)c(sht,)j(usht,)h(int,)f(uint,)h(lng,)
+f(ulng,)h(lnglng,)e(flt,)i(dbl])g(/)286 3483 y
+(ffppr[b,i,ui,k,uk,j,uj,jj,)o(e,d)o(])286 3595 y(\(fitsfile)f(*fptr,)g
+(long)g(group,)g(long)h(firstelem,)e(long)i(nelements,)334
+3708 y(DTYPE)f(*array,)g(>)i(int)f(*status\);)95 3934
+y(int)g(fits_write_imgnull)c(/)48 b(ffppn)286 4047 y(\(fitsfile)e
+(*fptr,)g(int)h(datatype,)e(long)i(firstelem,)e(long)h(nelements,)334
+4160 y(DTYPE)g(*array,)g(DTYPE)h(*nulval,)e(>)j(int)f(*status\);)95
+4386 y(int)g(fits_write_imgnull_[byt,)42 b(sht,)k(usht,)h(int,)f(uint,)
+h(lng,)f(ulng,)h(lnglng,)e(flt,)i(dbl])g(/)286 4499 y
+(ffppn[b,i,ui,k,uk,j,uj,jj,)o(e,d)o(])286 4612 y(\(fitsfile)f(*fptr,)g
+(long)g(group,)g(long)h(firstelem,)525 4725 y(long)g(nelements,)e
+(DTYPE)h(*array,)g(DTYPE)g(nulval,)g(>)h(int)g(*status\);)0
+4979 y Fi(2)81 b Fj(Set)30 b(data)h(arra)m(y)g(elemen)m(ts)g(as)f
+(unde\014ned.)95 5234 y Fe(int)47 b(fits_write_img_null)c(/)k(ffppru)
+286 5346 y(\(fitsfile)f(*fptr,)g(long)g(group,)g(long)h(firstelem,)e
+(long)i(nelements,)334 5459 y(>)h(int)e(*status\))0 5714
+y Fi(3)81 b Fj(W)-8 b(rite)31 b(v)-5 b(alues)29 b(in)m(to)i(group)f
+(parameters.)42 b(This)29 b(routine)g(only)h(applies)f(to)i(the)g
+(`Random)f(Group)s(ed')g(FITS)p eop
 %%Page: 95 103
 95 102 bop 0 299 a Fh(9.5.)72 b(SPECIALIZED)29 b(FITS)g(PRIMAR)-8
 b(Y)31 b(ARRA)-8 b(Y)32 b(OR)d(IMA)m(GE)j(EXTENSION)d(I/O)h(R)m
@@ -8544,8 +8554,8 @@ g(char)g(*nullarray,)f(int)i(*anynul,)f(int)g(*status\))95
 (uint,)h(lng,)f(ulng,)h(flt,)f(dbl])h(/)334 5488 y
 (ffgpf[b,i,ui,k,uk,j,uj,jj)o(,e,)o(d])334 5601 y(\(fitsfile)e(*fptr,)h
 (long)h(group,)f(long)h(firstelem,)e(long)h(nelements,)334
-5714 y(>)i(DTYPE)e(*array,)g(char)g(*nularray,)f(int)i(*anynul,)f(int)h
-(*status\))p eop
+5714 y(>)i(DTYPE)e(*array,)g(char)g(*nullarray,)f(int)i(*anynul,)f(int)
+g(*status\))p eop
 %%Page: 96 104
 96 103 bop 0 299 a Fj(96)1003 b Fh(CHAPTER)30 b(9.)112
 b(SPECIALIZED)28 b(CFITSIO)h(INTERF)-10 b(A)m(CE)30 b(R)m(OUTINES)0
@@ -8589,8 +8599,8 @@ b(sht,)k(usht,)h(int,)f(uint,)h(lng,)f(ulng,)h(lnglng,)f(flt,)g(dbl])h
 (/)334 4462 y(ffgsf[b,i,ui,k,uk,j,uj,jj)o(,e,)o(d])334
 4574 y(\(fitsfile)e(*fptr,)h(int)h(group,)f(int)h(naxis,)f(long)h
 (*naxes,)334 4687 y(long)g(*fpixel,)e(long)i(*lpixel,)e(long)i(*inc,)f
-(>)i(DTYPE)e(*array,)334 4800 y(char)h(*nularray,)e(int)i(*anynul,)e
-(int)i(*status\))0 5136 y Ff(9.6)135 b(Sp)t(ecialized)46
+(>)i(DTYPE)e(*array,)334 4800 y(char)h(*nullarray,)d(int)j(*anynul,)f
+(int)h(*status\))0 5136 y Ff(9.6)135 b(Sp)t(ecialized)46
 b(FITS)e(ASCI)t(I)g(and)g(Binary)h(T)-11 b(able)45 b(Routines)0
 5390 y Fd(9.6.1)112 b(General)38 b(Column)e(Routines)0
 5601 y Fi(1)81 b Fj(Get)31 b(information)d(ab)s(out)i(an)g(existing)f
@@ -8870,24 +8880,24 @@ g(*array,)f(int)g(*anynul,)334 5121 y(int)h(*status\))0
 (CHDU\).)g(These)227 5488 y(routines)28 b(return)f(the)i(v)-5
 b(alues)28 b(of)h(the)g(table)g(column)e(arra)m(y)j(elemen)m(ts.)40
 b(An)m(y)29 b(unde\014ned)d(arra)m(y)k(elemen)m(ts)227
-5601 y(will)j(ha)m(v)m(e)k(the)e(corresp)s(onding)f(n)m(ularra)m(y)h
-(elemen)m(t)h(set)g(equal)f(to)h(TR)m(UE.)f(The)g(an)m(yn)m(ul)g
-(parameter)h(is)227 5714 y(set)31 b(to)g(true)f(if)g(an)m(y)h(of)f(the)
-h(returned)e(elemen)m(ts)i(are)f(unde\014ned.)p eop
+5601 y(will)h(ha)m(v)m(e)k(the)f(corresp)s(onding)d(n)m(ullarra)m(y)h
+(elemen)m(t)i(set)g(equal)f(to)h(TR)m(UE.)g(The)f(an)m(yn)m(ul)g
+(parameter)h(is)227 5714 y(set)d(to)g(true)f(if)g(an)m(y)h(of)f(the)h
+(returned)e(elemen)m(ts)i(are)f(unde\014ned.)p eop
 %%Page: 101 109
 101 108 bop 0 299 a Fh(9.6.)72 b(SPECIALIZED)29 b(FITS)g(ASCI)s(I)g
 (AND)i(BINAR)-8 b(Y)32 b(T)-8 b(ABLE)30 b(R)m(OUTINES)933
 b Fj(101)95 555 y Fe(int)47 b(fits_read_colnull_str)42
 b(/)48 b(ffgcfs)286 668 y(\(fitsfile)e(*fptr,)g(int)h(colnum,)e(long)i
 (firstrow,)e(long)i(firstelem,)334 781 y(long)g(nelements,)e(>)i(char)g
-(**array,)e(char)i(*nularray,)e(int)i(*anynul,)334 894
+(**array,)e(char)i(*nullarray,)e(int)i(*anynul,)334 894
 y(int)g(*status\))95 1120 y(int)g(fits_read_colnull_[log,byt)o(,sh)o
 (t,us)o(ht,i)o(nt,)o(uint)o(,lng)o(,ul)o(ng,l)o(ngln)o(g,f)o(lt,d)o
 (bl,c)o(mp,)o(dblc)o(mp])41 b(/)286 1233 y(ffgcf[l,b,i,ui,k,uk,j,uj,j)o
 (j,e)o(,d,c)o(,m])286 1346 y(\(fitsfile)46 b(*fptr,)g(int)h(colnum,)e
 (long)i(firstrow,)334 1458 y(long)g(firstelem,)e(long)h(nelements,)f(>)
-j(DTYPE)e(*array,)334 1571 y(char)h(*nularray,)e(int)i(*anynul,)e(int)i
-(*status\))0 1835 y Fi(3)81 b Fj(Read)24 b(an)g(arbitrary)f(data)i
+j(DTYPE)e(*array,)334 1571 y(char)h(*nullarray,)d(int)j(*anynul,)f(int)
+h(*status\))0 1835 y Fi(3)81 b Fj(Read)24 b(an)g(arbitrary)f(data)i
 (subsection)e(from)h(an)g(N-dimensional)e(arra)m(y)j(in)e(a)h(binary)f
 (table)h(v)m(ector)i(column.)227 1948 y(Unde\014ned)21
 b(pixels)g(in)g(the)i(arra)m(y)g(will)d(b)s(e)i(set)h(equal)g(to)g(the)
@@ -8910,11 +8920,11 @@ y(\(fitsfile)g(*fptr,)g(int)h(colnum,)e(int)i(naxis,)f(long)h(*naxes,)f
 (nulval,)e(>)j(DTYPE)e(*array,)g(int)h(*anynul,)334 3115
 y(int)g(*status\))0 3379 y Fi(4)81 b Fj(Read)24 b(an)g(arbitrary)f
 (data)i(subsection)e(from)h(an)g(N-dimensional)e(arra)m(y)j(in)e(a)h
-(binary)f(table)h(v)m(ector)i(column.)227 3492 y(An)m(y)36
-b(Unde\014ned)e(pixels)g(in)g(the)i(arra)m(y)g(will)d(ha)m(v)m(e)k(the)
-f(corresp)s(onding)e('n)m(ularra)m(y')h(elemen)m(t)h(set)g(equal)227
-3605 y(to)k(TR)m(UE.)e(The)h(\014rst)e(and)h(last)h(ro)m(ws)f(in)g(the)
-g(table)h(to)g(b)s(e)f(read)h(are)g(sp)s(eci\014ed)d(b)m(y)j
+(binary)f(table)h(v)m(ector)i(column.)227 3492 y(An)m(y)34
+b(Unde\014ned)e(pixels)g(in)h(the)g(arra)m(y)i(will)c(ha)m(v)m(e)k(the)
+f(corresp)s(onding)d('n)m(ullarra)m(y')i(elemen)m(t)h(set)g(equal)227
+3605 y(to)40 b(TR)m(UE.)e(The)h(\014rst)e(and)h(last)h(ro)m(ws)f(in)g
+(the)g(table)h(to)g(b)s(e)f(read)h(are)g(sp)s(eci\014ed)d(b)m(y)j
 (fpixel\(naxis+1\))227 3718 y(and)i(lpixel\(naxis+1\),)i(and)e(hence)h
 (are)g(treated)g(as)g(the)g(next)g(higher)f(dimension)e(of)j(the)g
 (FITS)f(N-)227 3831 y(dimensional)f(arra)m(y)-8 b(.)78
@@ -8926,8 +8936,8 @@ b(sht,)47 b(usht,)f(int,)h(uint,)f(lng,)h(ulng,)f(lnglng,)g(flt,)g
 (dbl])h(/)286 4321 y(ffgsf[b,i,ui,k,uk,j,uj,jj,)o(e,d)o(])286
 4434 y(\(fitsfile)f(*fptr,)g(int)h(colnum,)e(int)i(naxis,)f(long)h
 (*naxes,)334 4547 y(long)g(*fpixel,)e(long)i(*lpixel,)e(long)i(*inc,)f
-(>)i(DTYPE)e(*array,)334 4660 y(char)h(*nularray,)e(int)i(*anynul,)e
-(int)i(*status\))0 4924 y Fi(5)81 b Fj(Read)35 b(bit)f(v)-5
+(>)i(DTYPE)e(*array,)334 4660 y(char)h(*nullarray,)d(int)j(*anynul,)f
+(int)h(*status\))0 4924 y Fi(5)81 b Fj(Read)35 b(bit)f(v)-5
 b(alues)34 b(from)h(a)g(b)m(yte)h(\('B'\))g(or)f(bit)f(\(`X`\))i(table)
 f(column)f(\(in)g(the)h(CDU\).)h(Larra)m(y)g(is)e(an)g(arra)m(y)227
 5036 y(of)g(logical)f(v)-5 b(alues)33 b(corresp)s(onding)f(to)i(the)g
@@ -12222,10 +12232,10 @@ b(32-bit)f(1's)h(complement)e(checksum)h(for)g(the)h(data)g(unit)0
 (of)g(the)g(HDU)0 1571 y(datastart-)e(address)h(\(in)h(bytes\))f(of)h
 (the)g(start)f(of)h(the)g(data)g(unit)0 1684 y(datatype)f(-)h
 (specifies)e(the)i(datatype)f(of)h(the)g(value.)94 b(Allowed)45
-b(value)i(are:)525 1797 y(TSTRING,)f(TLOGICAL,)f(TBYTE,)h(TSHORT,)g
-(TUSHORT,)f(TINT,)i(TUINT,)f(TLONG,)g(TULONG,)525 1910
-y(TFLOAT,)g(TDOUBLE,)f(TCOMPLEX,)h(and)h(TDBLCOMPLEX)0
-2023 y(datestr)94 b(-)47 b(FITS)g(date/time)e(string:)h
+b(value)i(are:)94 b(TSTRING,)525 1797 y(TLOGICAL,)45
+b(TBYTE,)h(TSBYTE,)g(TSHORT,)g(TUSHORT,)g(TINT,)g(TUINT,)g(TLONG,)g
+(TULONG,)525 1910 y(TFLOAT,)g(TDOUBLE,)f(TCOMPLEX,)h(and)h(TDBLCOMPLEX)
+0 2023 y(datestr)94 b(-)47 b(FITS)g(date/time)e(string:)h
 ('YYYY-MM-DDThh:mm:ss.dd)o(d',)41 b('YYYY-MM-dd',)525
 2136 y(or)47 b('dd/mm/yy')0 2249 y(day)286 b(-)47 b(calendar)f(day)g
 (\(UTC\))h(\(1-31\))0 2362 y(decimals)f(-)h(number)f(of)h(decimal)f
@@ -12371,7 +12381,7 @@ y(ninc)238 b(-)47 b(number)f(of)h(names)g(in)g(the)g(inclusion)e(list)0
 (compressing)e(floating)g(point)h(images)0 3265 y(nrows)190
 b(-)47 b(number)f(of)h(rows)g(in)g(the)g(table)0 3378
 y(nstart)142 b(-)47 b(first)f(integer)g(value)0 3491
-y(nularray)g(-)h(set)g(to)g(TRUE)g(\(=1\))f(if)i(corresponding)c(data)i
+y(nullarray-)f(set)i(to)g(TRUE)g(\(=1\))f(if)i(corresponding)c(data)i
 (element)g(is)h(undefined)0 3604 y(nulval)142 b(-)47
 b(numerical)e(value)i(to)g(represent)e(undefined)g(pixels)0
 3717 y(nulstr)142 b(-)47 b(character)e(string)h(used)h(to)g(represent)e

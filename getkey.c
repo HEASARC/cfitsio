@@ -300,6 +300,16 @@ int ffgky( fitsfile *fptr,     /* I - FITS file pointer        */
                 *(unsigned char *) value = longval;
         }
     }
+    else if (datatype == TSBYTE)
+    {
+        if (ffgkyj(fptr, keyname, &longval, comm, status) <= 0)
+        {
+            if (longval > 127 || longval < -128)
+                *status = NUM_OVERFLOW;
+            else
+                *(signed char *) value = longval;
+        }
+    }
     else if (datatype == TUSHORT)
     {
         if (ffgkyj(fptr, keyname, &longval, comm, status) <= 0)

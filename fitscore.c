@@ -60,11 +60,12 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.460;
+      *version = 2.47;
 
-/*     20 May 2003
+/*     18 Aug 2003
 
    Previous releases:
+      *version = 2.460   20 May 2003
       *version = 2.450   30 Apr 2003  (internal release only)
       *version = 2.440    8 Jan 2003
       *version = 2.430;   4 Nov 2002
@@ -1937,6 +1938,11 @@ int ffbnfm(char *tform,     /* I - format code from the TFORMn keyword */
     else if (form[0] == 'B')
     {
         datacode = TBYTE;
+        width = 1;
+    }
+    else if (form[0] == 'S') /* internal code to signify signed byte */
+    {
+        datacode = TSBYTE;
         width = 1;
     }
     else if (form[0] == 'C')
@@ -3910,7 +3916,16 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     else if (abs(*tcode) == TDOUBLE)
        *maxelem = DBUFFSIZE / sizeof(double);
     else if (abs(*tcode) == TSTRING)
+    {
        *maxelem = (DBUFFSIZE - 1)/ *twidth; /* leave room for final \0 */
+       if (*maxelem == 0) {
+            sprintf(message,
+        "ASCII string column is too wide: %ld; max supported width is %d",
+                   *twidth,  DBUFFSIZE - 1);
+            ffpmsg(message);
+            return(*status = COL_TOO_WIDE);
+        }
+    }
     else
        *maxelem = DBUFFSIZE / *twidth; 
 
@@ -3945,7 +3960,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
         if (writemode)
         {
             /* check if we are writing beyond the current end of table */
-            if (endrow > (fptr->Fptr)->numrows)
+            if ((endrow > (fptr->Fptr)->numrows) && (nelem > 0) )
             {
                 /* if there are more HDUs following the current one, or */
                 /* if there is a data heap, then we must insert space */

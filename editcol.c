@@ -877,7 +877,27 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
         ffupch(tfm);         /* make sure format is in upper case */
         ffkeyn("TFORM", colnum, keyname, status);
 
-        if (abs(datacode) == TUSHORT) 
+        if (abs(datacode) == TSBYTE) 
+        {
+           /* Replace the 'S' with an 'B' in the TFORMn code */
+           cptr = tfm;
+           while (*cptr != 'S') 
+              cptr++;
+
+           *cptr = 'B';
+           ffpkys(fptr, keyname, tfm, comm, status);
+
+           /* write the TZEROn and TSCALn keywords */
+           ffkeyn("TZERO", colnum, keyname, status);
+           strcpy(comm, "offset for signed bytes");
+
+           ffpkyg(fptr, keyname, -128., 0, comm, status);
+
+           ffkeyn("TSCAL", colnum, keyname, status);
+           strcpy(comm, "data are not scaled");
+           ffpkyg(fptr, keyname, 1., 0, comm, status);
+        }
+        else if (abs(datacode) == TUSHORT) 
         {
            /* Replace the 'U' with an 'I' in the TFORMn code */
            cptr = tfm;

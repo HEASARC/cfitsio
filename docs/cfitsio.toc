@@ -18,7 +18,7 @@
 \contentsline {section}{\numberline {4.1}CFITSIO Definitions}{15}
 \contentsline {section}{\numberline {4.2}Current Header Data Unit (CHDU)}{17}
 \contentsline {section}{\numberline {4.3}Function Names and Variable Datatypes}{18}
-\contentsline {section}{\numberline {4.4}Support for Unsigned Integers}{19}
+\contentsline {section}{\numberline {4.4}Support for Unsigned Integers and Signed Bytes}{19}
 \contentsline {section}{\numberline {4.5}Dealing with Character Strings}{21}
 \contentsline {section}{\numberline {4.6}Implicit Data Type Conversion}{22}
 \contentsline {section}{\numberline {4.7}Data Scaling}{22}

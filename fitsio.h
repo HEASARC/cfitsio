@@ -1,4 +1,4 @@
-/*  Version Info: This file is distributed with version 2.450 of CFITSIO   */
+/*  Version Info: This file is distributed with version 2.470 of CFITSIO   */
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
@@ -93,6 +93,7 @@ SERVICES PROVIDED HEREUNDER."
  
 #define TBIT          1  /* codes for FITS table data types */
 #define TBYTE        11
+#define TSBYTE       12
 #define TLOGICAL     14
 #define TSTRING      16
 #define TUSHORT      20
@@ -867,6 +868,8 @@ int ffgpf(fitsfile *fptr, int  datatype, long firstelem, long nelem,
           void *array, char *nullarray, int  *anynul, int  *status);
 int ffgpvb(fitsfile *fptr, long group, long firstelem, long nelem, unsigned
            char nulval, unsigned char *array, int *anynul, int *status);
+int ffgpvsb(fitsfile *fptr, long group, long firstelem, long nelem, signed
+           char nulval, signed char *array, int *anynul, int *status);
 int ffgpvui(fitsfile *fptr, long group, long firstelem, long nelem,
            unsigned short nulval, unsigned short *array, int *anynul, 
            int *status);
@@ -890,6 +893,8 @@ int ffgpvd(fitsfile *fptr, long group, long firstelem, long nelem,
  
 int ffgpfb(fitsfile *fptr, long group, long firstelem, long nelem,
            unsigned char *array, char *nularray, int *anynul, int *status);
+int ffgpfsb(fitsfile *fptr, long group, long firstelem, long nelem,
+           signed char *array, char *nularray, int *anynul, int *status);
 int ffgpfui(fitsfile *fptr, long group, long firstelem, long nelem,
            unsigned short *array, char *nularray, int *anynul, int *status);
 int ffgpfi(fitsfile *fptr, long group, long firstelem, long nelem,
@@ -911,6 +916,9 @@ int ffgpfd(fitsfile *fptr, long group, long firstelem, long nelem,
  
 int ffg2db(fitsfile *fptr, long group, unsigned char nulval, long ncols,
            long naxis1, long naxis2, unsigned char *array,
+           int *anynul, int *status);
+int ffg2dsb(fitsfile *fptr, long group, signed char nulval, long ncols,
+           long naxis1, long naxis2, signed char *array,
            int *anynul, int *status);
 int ffg2dui(fitsfile *fptr, long group, unsigned short nulval, long ncols,
            long naxis1, long naxis2, unsigned short *array,
@@ -943,6 +951,9 @@ int ffg2dd(fitsfile *fptr, long group, double nulval, long ncols,
 int ffg3db(fitsfile *fptr, long group, unsigned char nulval, long ncols,
            long nrows, long naxis1, long naxis2, long naxis3,
            unsigned char *array, int *anynul, int *status);
+int ffg3dsb(fitsfile *fptr, long group, signed char nulval, long ncols,
+           long nrows, long naxis1, long naxis2, long naxis3,
+           signed char *array, int *anynul, int *status);
 int ffg3dui(fitsfile *fptr, long group, unsigned short nulval, long ncols,
            long nrows, long naxis1, long naxis2, long naxis3,
            unsigned short *array, int *anynul, int *status);
@@ -974,6 +985,9 @@ int ffg3dd(fitsfile *fptr, long group, double nulval, long ncols,
 int ffgsvb(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc,
   long *trc, long *inc, unsigned char nulval, unsigned char *array,
   int *anynul, int *status);
+int ffgsvsb(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc,
+  long *trc, long *inc, signed char nulval, signed char *array,
+  int *anynul, int *status);
 int ffgsvui(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc,
   long *trc, long *inc, unsigned short nulval, unsigned short *array, 
   int *anynul, int *status);
@@ -1001,6 +1015,9 @@ int ffgsvd(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc,
 int ffgsfb(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc,
   long *trc, long *inc, unsigned char *array, char *flagval,
   int *anynul, int *status);
+int ffgsfsb(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc,
+  long *trc, long *inc, signed char *array, char *flagval,
+  int *anynul, int *status);
 int ffgsfui(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc,
   long *trc, long *inc, unsigned short *array, char *flagval, int *anynul, 
   int *status);
@@ -1027,6 +1044,8 @@ int ffgsfd(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc,
  
 int ffggpb(fitsfile *fptr, long group, long firstelem, long nelem,
            unsigned char *array, int *status);
+int ffggpsb(fitsfile *fptr, long group, long firstelem, long nelem,
+           signed char *array, int *status);
 int ffggpui(fitsfile *fptr, long group, long firstelem, long nelem,
            unsigned short *array, int *status);
 int ffggpi(fitsfile *fptr, long group, long firstelem, long nelem,
@@ -1061,6 +1080,9 @@ int ffgcvl (fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, char nulval, char *array, int *anynul, int  *status);
 int ffgcvb(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, unsigned char nulval, unsigned char *array,
+           int *anynul, int *status);
+int ffgcvsb(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+           long nelem, signed char nulval, signed char *array,
            int *anynul, int *status);
 int ffgcvui(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, unsigned short nulval, unsigned short *array, 
@@ -1101,6 +1123,8 @@ int ffgcfl(fitsfile *fptr, int colnum, long firstrow, long firstelem, long
           nelem, char *array, char *nularray, int *anynul, int *status);
 int ffgcfb(fitsfile *fptr, int colnum, long firstrow, long firstelem, long
       nelem, unsigned char *array, char *nularray, int *anynul, int *status);
+int ffgcfsb(fitsfile *fptr, int colnum, long firstrow, long firstelem, long
+      nelem, signed char *array, char *nularray, int *anynul, int *status);
 int ffgcfui(fitsfile *fptr, int colnum, long firstrow, long firstelem,
       long nelem, unsigned short *array, char *nularray, int *anynul, 
       int *status);
@@ -1149,6 +1173,8 @@ int ffppr(fitsfile *fptr, int datatype, long  firstelem, long nelem,
           void *array, int *status);
 int ffpprb(fitsfile *fptr, long group, long firstelem,
            long nelem, unsigned char *array, int *status);
+int ffpprsb(fitsfile *fptr, long group, long firstelem,
+           long nelem, signed char *array, int *status);
 int ffpprui(fitsfile *fptr, long group, long firstelem,
            long nelem, unsigned short *array, int *status);
 int ffppri(fitsfile *fptr, long group, long firstelem,
@@ -1176,6 +1202,8 @@ int ffppn(fitsfile *fptr, int datatype, long  firstelem, long  nelem,
           void  *array, void *nulval, int  *status);
 int ffppnb(fitsfile *fptr, long group, long firstelem, long nelem,
            unsigned char *array, unsigned char nulval, int *status);
+int ffppnsb(fitsfile *fptr, long group, long firstelem, long nelem,
+           signed char *array, signed char nulval, int *status);
 int ffppnui(fitsfile *fptr, long group, long firstelem,
            long nelem, unsigned short *array, unsigned short nulval,
            int *status);
@@ -1198,6 +1226,8 @@ int ffppnjj(fitsfile *fptr, long group, long firstelem,
 
 int ffp2db(fitsfile *fptr, long group, long ncols, long naxis1,
            long naxis2, unsigned char *array, int *status);
+int ffp2dsb(fitsfile *fptr, long group, long ncols, long naxis1,
+           long naxis2, signed char *array, int *status);
 int ffp2dui(fitsfile *fptr, long group, long ncols, long naxis1,
            long naxis2, unsigned short *array, int *status);
 int ffp2di(fitsfile *fptr, long group, long ncols, long naxis1,
@@ -1219,6 +1249,8 @@ int ffp2djj(fitsfile *fptr, long group, long ncols, long naxis1,
 
 int ffp3db(fitsfile *fptr, long group, long ncols, long nrows, long naxis1,
            long naxis2, long naxis3, unsigned char *array, int *status);
+int ffp3dsb(fitsfile *fptr, long group, long ncols, long nrows, long naxis1,
+           long naxis2, long naxis3, signed char *array, int *status);
 int ffp3dui(fitsfile *fptr, long group, long ncols, long nrows, long naxis1,
            long naxis2, long naxis3, unsigned short *array, int *status);
 int ffp3di(fitsfile *fptr, long group, long ncols, long nrows, long naxis1,
@@ -1242,6 +1274,8 @@ int ffpss(fitsfile *fptr, int datatype,
            long *fpixel, long *lpixel, void *array, int *status);
 int ffpssb(fitsfile *fptr, long group, long naxis, long *naxes,
            long *fpixel, long *lpixel, unsigned char *array, int *status);
+int ffpsssb(fitsfile *fptr, long group, long naxis, long *naxes,
+           long *fpixel, long *lpixel, signed char *array, int *status);
 int ffpssui(fitsfile *fptr, long group, long naxis, long *naxes,
            long *fpixel, long *lpixel, unsigned short *array, int *status);
 int ffpssi(fitsfile *fptr, long group, long naxis, long *naxes,
@@ -1263,6 +1297,8 @@ int ffpssjj(fitsfile *fptr, long group, long naxis, long *naxes,
 
 int ffpgpb(fitsfile *fptr, long group, long firstelem,
            long nelem, unsigned char *array, int *status);
+int ffpgpsb(fitsfile *fptr, long group, long firstelem,
+           long nelem, signed char *array, int *status);
 int ffpgpui(fitsfile *fptr, long group, long firstelem,
            long nelem, unsigned short *array, int *status);
 int ffpgpi(fitsfile *fptr, long group, long firstelem,
@@ -1319,6 +1355,8 @@ int ffpcll(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, char *array, int *status);
 int ffpclb(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, unsigned char *array, int *status);
+int ffpclsb(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+           long nelem, signed char *array, int *status);
 int ffpclui(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, unsigned short *array, int *status);
 int ffpcli(fitsfile *fptr, int colnum, long firstrow, long firstelem,
@@ -1354,6 +1392,9 @@ int ffpcnl( fitsfile *fptr, int  colnum, long  firstrow, long  firstelem,
             long  nelem, char *array, char  nulvalue,  int  *status);
 int ffpcnb(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, unsigned char *array, unsigned char nulvalue,
+           int *status);
+int ffpcnsb(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+           long nelem, signed char *array, signed char nulvalue,
            int *status);
 int ffpcnui(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, unsigned short *array, unsigned short nulvalue,

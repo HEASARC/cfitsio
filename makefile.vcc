@@ -59,6 +59,7 @@ CLEAN :
 	-@erase "$(INTDIR)\f77_wrap4.obj"
 	-@erase "$(INTDIR)\getcol.obj"
 	-@erase "$(INTDIR)\getcolb.obj"
+	-@erase "$(INTDIR)\getcolsb.obj"
 	-@erase "$(INTDIR)\getcold.obj"
 	-@erase "$(INTDIR)\getcole.obj"
 	-@erase "$(INTDIR)\getcoli.obj"
@@ -78,6 +79,7 @@ CLEAN :
 	-@erase "$(INTDIR)\modkey.obj"
 	-@erase "$(INTDIR)\putcol.obj"
 	-@erase "$(INTDIR)\putcolb.obj"
+	-@erase "$(INTDIR)\putcolsb.obj"
 	-@erase "$(INTDIR)\putcold.obj"
 	-@erase "$(INTDIR)\putcole.obj"
 	-@erase "$(INTDIR)\putcoli.obj"
@@ -137,6 +139,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\f77_wrap4.obj" \
 	"$(INTDIR)\getcol.obj" \
 	"$(INTDIR)\getcolb.obj" \
+	"$(INTDIR)\getcolsb.obj" \
 	"$(INTDIR)\getcold.obj" \
 	"$(INTDIR)\getcole.obj" \
 	"$(INTDIR)\getcoli.obj" \
@@ -156,6 +159,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\modkey.obj" \
 	"$(INTDIR)\putcol.obj" \
 	"$(INTDIR)\putcolb.obj" \
+	"$(INTDIR)\putcolsb.obj" \
 	"$(INTDIR)\putcold.obj" \
 	"$(INTDIR)\putcole.obj" \
 	"$(INTDIR)\putcoli.obj" \
@@ -213,6 +217,7 @@ CLEAN :
 	-@erase "$(INTDIR)\f77_wrap4.obj"
 	-@erase "$(INTDIR)\getcol.obj"
 	-@erase "$(INTDIR)\getcolb.obj"
+	-@erase "$(INTDIR)\getcolsb.obj"
 	-@erase "$(INTDIR)\getcold.obj"
 	-@erase "$(INTDIR)\getcole.obj"
 	-@erase "$(INTDIR)\getcoli.obj"
@@ -232,6 +237,7 @@ CLEAN :
 	-@erase "$(INTDIR)\modkey.obj"
 	-@erase "$(INTDIR)\putcol.obj"
 	-@erase "$(INTDIR)\putcolb.obj"
+	-@erase "$(INTDIR)\putcolsb.obj"
 	-@erase "$(INTDIR)\putcold.obj"
 	-@erase "$(INTDIR)\putcole.obj"
 	-@erase "$(INTDIR)\putcoli.obj"
@@ -294,6 +300,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\f77_wrap4.obj" \
 	"$(INTDIR)\getcol.obj" \
 	"$(INTDIR)\getcolb.obj" \
+	"$(INTDIR)\getcolsb.obj" \
 	"$(INTDIR)\getcold.obj" \
 	"$(INTDIR)\getcole.obj" \
 	"$(INTDIR)\getcoli.obj" \
@@ -313,6 +320,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\modkey.obj" \
 	"$(INTDIR)\putcol.obj" \
 	"$(INTDIR)\putcolb.obj" \
+	"$(INTDIR)\putcolsb.obj" \
 	"$(INTDIR)\putcold.obj" \
 	"$(INTDIR)\putcole.obj" \
 	"$(INTDIR)\putcoli.obj" \
@@ -474,6 +482,11 @@ SOURCE=.\getcolb.c
 "$(INTDIR)\getcolb.obj" : $(SOURCE) "$(INTDIR)"
 
 
+SOURCE=.\getcolsb.c
+
+"$(INTDIR)\getcolsb.obj" : $(SOURCE) "$(INTDIR)"
+
+
 SOURCE=.\getcold.c
 
 "$(INTDIR)\getcold.obj" : $(SOURCE) "$(INTDIR)"
@@ -567,6 +580,11 @@ SOURCE=.\putcol.c
 SOURCE=.\putcolb.c
 
 "$(INTDIR)\putcolb.obj" : $(SOURCE) "$(INTDIR)"
+
+
+SOURCE=.\putcolsb.c
+
+"$(INTDIR)\putcolsb.obj" : $(SOURCE) "$(INTDIR)"
 
 
 SOURCE=.\putcold.c

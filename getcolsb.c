@@ -1,5 +1,5 @@
-/*  This file, getcolb.c, contains routines that read data elements from   */
-/*  a FITS image or table, with unsigned char (unsigned byte) data type.   */
+/*  This file, getcolsb.c, contains routines that read data elements from   */
+/*  a FITS image or table, with signed char (signed byte) data type.        */
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
@@ -12,12 +12,12 @@
 #include "fitsio2.h"
 
 /*--------------------------------------------------------------------------*/
-int ffgpvb( fitsfile *fptr,   /* I - FITS file pointer                       */
+int ffgpvsb(fitsfile *fptr,   /* I - FITS file pointer                       */
             long  group,      /* I - group to read (1 = 1st group)           */
             long  firstelem,  /* I - first vector element to read (1 = 1st)  */
             long  nelem,      /* I - number of values to read                */
-            unsigned char nulval, /* I - value for undefined pixels          */
-            unsigned char *array, /* O - array of values that are returned   */
+            signed char nulval, /* I - value for undefined pixels            */
+            signed char *array, /* O - array of values that are returned     */
             int  *anynul,     /* O - set to 1 if any values are null; else 0 */
             int  *status)     /* IO - error status                           */
 /*
@@ -32,14 +32,14 @@ int ffgpvb( fitsfile *fptr,   /* I - FITS file pointer                       */
     long row;
     char cdummy;
     int nullcheck = 1;
-    unsigned char nullvalue;
+    signed char nullvalue;
 
     if (fits_is_compressed_image(fptr, status))
     {
         /* this is a compressed image in a binary table */
          nullvalue = nulval;  /* set local variable */
 
-        fits_read_compressed_pixels(fptr, TBYTE, firstelem, nelem,
+        fits_read_compressed_pixels(fptr, TSBYTE, firstelem, nelem,
             nullcheck, &nullvalue, array, NULL, anynul, status);
         return(*status);
     }
@@ -52,16 +52,16 @@ int ffgpvb( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     row=maxvalue(1,group);
 
-    ffgclb(fptr, 2, row, firstelem, nelem, 1, 1, nulval,
+    ffgclsb(fptr, 2, row, firstelem, nelem, 1, 1, nulval,
                array, &cdummy, anynul, status);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffgpfb( fitsfile *fptr,   /* I - FITS file pointer                       */
+int ffgpfsb(fitsfile *fptr,   /* I - FITS file pointer                       */
             long  group,      /* I - group to read (1 = 1st group)           */
             long  firstelem,  /* I - first vector element to read (1 = 1st)  */
             long  nelem,      /* I - number of values to read                */
-            unsigned char *array, /* O - array of values that are returned   */
+            signed char *array, /* O - array of values that are returned     */
             char *nularray,   /* O - array of null pixel flags               */
             int  *anynul,     /* O - set to 1 if any values are null; else 0 */
             int  *status)     /* IO - error status                           */
@@ -81,7 +81,7 @@ int ffgpfb( fitsfile *fptr,   /* I - FITS file pointer                       */
     {
         /* this is a compressed image in a binary table */
 
-        fits_read_compressed_pixels(fptr, TBYTE, firstelem, nelem,
+        fits_read_compressed_pixels(fptr, TSBYTE, firstelem, nelem,
             nullcheck, NULL, array, nularray, anynul, status);
         return(*status);
     }
@@ -95,18 +95,18 @@ int ffgpfb( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     row=maxvalue(1,group);
 
-    ffgclb(fptr, 2, row, firstelem, nelem, 1, 2, 0,
+    ffgclsb(fptr, 2, row, firstelem, nelem, 1, 2, 0,
                array, nularray, anynul, status);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffg2db(fitsfile *fptr,  /* I - FITS file pointer                       */
+int ffg2dsb(fitsfile *fptr, /* I - FITS file pointer                       */
            long  group,     /* I - group to read (1 = 1st group)           */
-           unsigned char nulval, /* set undefined pixels equal to this     */
+           signed char nulval,   /* set undefined pixels equal to this     */
            long  ncols,     /* I - number of pixels in each row of array   */
            long  naxis1,    /* I - FITS image NAXIS1 value                 */
            long  naxis2,    /* I - FITS image NAXIS2 value                 */
-           unsigned char *array, /* O - array to be filled and returned    */
+           signed char *array,   /* O - array to be filled and returned    */
            int  *anynul,    /* O - set to 1 if any values are null; else 0 */
            int  *status)    /* IO - error status                           */
 /*
@@ -119,21 +119,21 @@ int ffg2db(fitsfile *fptr,  /* I - FITS file pointer                       */
 {
     /* call the 3D reading routine, with the 3rd dimension = 1 */
 
-    ffg3db(fptr, group, nulval, ncols, naxis2, naxis1, naxis2, 1, array, 
+    ffg3dsb(fptr, group, nulval, ncols, naxis2, naxis1, naxis2, 1, array, 
            anynul, status);
 
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffg3db(fitsfile *fptr,  /* I - FITS file pointer                       */
+int ffg3dsb(fitsfile *fptr, /* I - FITS file pointer                       */
            long  group,     /* I - group to read (1 = 1st group)           */
-           unsigned char nulval, /* set undefined pixels equal to this     */
+           signed char nulval,   /* set undefined pixels equal to this     */
            long  ncols,     /* I - number of pixels in each row of array   */
            long  nrows,     /* I - number of rows in each plane of array   */
            long  naxis1,    /* I - FITS image NAXIS1 value                 */
            long  naxis2,    /* I - FITS image NAXIS2 value                 */
            long  naxis3,    /* I - FITS image NAXIS3 value                 */
-           unsigned char *array, /* O - array to be filled and returned    */
+           signed char *array,   /* O - array to be filled and returned    */
            int  *anynul,    /* O - set to 1 if any values are null; else 0 */
            int  *status)    /* IO - error status                           */
 /*
@@ -150,7 +150,7 @@ int ffg3db(fitsfile *fptr,  /* I - FITS file pointer                       */
     long inc[] = {1,1,1};
     long fpixel[] = {1,1,1};
     long lpixel[3];
-    unsigned char nullvalue;
+    signed char nullvalue;
 
     if (fits_is_compressed_image(fptr, status))
     {
@@ -161,7 +161,7 @@ int ffg3db(fitsfile *fptr,  /* I - FITS file pointer                       */
         lpixel[2] = naxis3;
         nullvalue = nulval;  /* set local variable */
 
-        fits_read_compressed_img(fptr, TBYTE, fpixel, lpixel, inc,
+        fits_read_compressed_img(fptr, TSBYTE, fpixel, lpixel, inc,
             nullcheck, &nullvalue, array, NULL, anynul, status);
         return(*status);
     }
@@ -177,7 +177,7 @@ int ffg3db(fitsfile *fptr,  /* I - FITS file pointer                       */
     if (ncols == naxis1 && nrows == naxis2)  /* arrays have same size? */
     {
        /* all the image pixels are contiguous, so read all at once */
-       ffgclb(fptr, 2, tablerow, 1, naxis1 * naxis2 * naxis3, 1, 1, nulval,
+       ffgclsb(fptr, 2, tablerow, 1, naxis1 * naxis2 * naxis3, 1, 1, nulval,
                array, &cdummy, anynul, status);
        return(*status);
     }
@@ -196,7 +196,7 @@ int ffg3db(fitsfile *fptr,  /* I - FITS file pointer                       */
 
       for (ii = 0; ii < naxis2; ii++)
       {
-       if (ffgclb(fptr, 2, tablerow, nfits, naxis1, 1, 1, nulval,
+       if (ffgclsb(fptr, 2, tablerow, nfits, naxis1, 1, 1, nulval,
           &array[narray], &cdummy, anynul, status) > 0)
           return(*status);
 
@@ -209,15 +209,15 @@ int ffg3db(fitsfile *fptr,  /* I - FITS file pointer                       */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffgsvb(fitsfile *fptr, /* I - FITS file pointer                         */
+int ffgsvsb(fitsfile *fptr, /* I - FITS file pointer                        */
            int  colnum,    /* I - number of the column to read (1 = 1st)    */
            int naxis,      /* I - number of dimensions in the FITS array    */
            long  *naxes,   /* I - size of each dimension                    */
            long  *blc,     /* I - 'bottom left corner' of the subsection    */
            long  *trc,     /* I - 'top right corner' of the subsection      */
            long  *inc,     /* I - increment to be applied in each dimension */
-           unsigned char nulval, /* I - value to set undefined pixels       */
-           unsigned char *array, /* O - array to be filled and returned     */
+           signed char nulval, /* I - value to set undefined pixels         */
+           signed char *array, /* O - array to be filled and returned       */
            int  *anynul,   /* O - set to 1 if any values are null; else 0   */
            int  *status)   /* IO - error status                             */
 /*
@@ -232,11 +232,11 @@ int ffgsvb(fitsfile *fptr, /* I - FITS file pointer                         */
     int hdutype, anyf;
     char ldummy, msg[FLEN_ERRMSG];
     int  nullcheck = 1;
-    unsigned char nullvalue;
+    signed char nullvalue;
 
     if (naxis < 1 || naxis > 9)
     {
-        sprintf(msg, "NAXIS = %d in call to ffgsvb is out of range", naxis);
+        sprintf(msg, "NAXIS = %d in call to ffgsvsb is out of range", naxis);
         ffpmsg(msg);
         return(*status = BAD_DIMEN);
     }
@@ -247,7 +247,7 @@ int ffgsvb(fitsfile *fptr, /* I - FITS file pointer                         */
 
         nullvalue = nulval;  /* set local variable */
 
-        fits_read_compressed_img(fptr, TBYTE, blc, trc, inc,
+        fits_read_compressed_img(fptr, TSBYTE, blc, trc, inc,
             nullcheck, &nullvalue, array, NULL, anynul, status);
         return(*status);
     }
@@ -309,7 +309,7 @@ int ffgsvb(fitsfile *fptr, /* I - FITS file pointer                         */
         }
         else
         {
-          sprintf(msg, "ffgsvb: illegal range specified for axis %ld", ii + 1);
+          sprintf(msg, "ffgsvsb: illegal range specified for axis %ld", ii + 1);
           ffpmsg(msg);
           return(*status = BAD_PIX_NUM);
         }
@@ -361,7 +361,7 @@ int ffgsvb(fitsfile *fptr, /* I - FITS file pointer                         */
                              (i5 - dir[5]) * dsize[5] + (i6 - dir[6]) * dsize[6] +
                              (i7 - dir[7]) * dsize[7] + (i8 - dir[8]) * dsize[8];
 
-              if ( ffgclb(fptr, numcol, row, felem, nelem, ninc, nultyp,
+              if ( ffgclsb(fptr, numcol, row, felem, nelem, ninc, nultyp,
                    nulval, &array[i0], &ldummy, &anyf, status) > 0)
                    return(*status);
 
@@ -381,14 +381,14 @@ int ffgsvb(fitsfile *fptr, /* I - FITS file pointer                         */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffgsfb(fitsfile *fptr, /* I - FITS file pointer                         */
+int ffgsfsb(fitsfile *fptr, /* I - FITS file pointer                        */
            int  colnum,    /* I - number of the column to read (1 = 1st)    */
            int naxis,      /* I - number of dimensions in the FITS array    */
            long  *naxes,   /* I - size of each dimension                    */
            long  *blc,     /* I - 'bottom left corner' of the subsection    */
            long  *trc,     /* I - 'top right corner' of the subsection      */
            long  *inc,     /* I - increment to be applied in each dimension */
-           unsigned char *array, /* O - array to be filled and returned     */
+           signed char *array,   /* O - array to be filled and returned     */
            char *flagval,  /* O - set to 1 if corresponding value is null   */
            int  *anynul,   /* O - set to 1 if any values are null; else 0   */
            int  *status)   /* IO - error status                             */
@@ -401,13 +401,13 @@ int ffgsfb(fitsfile *fptr, /* I - FITS file pointer                         */
     long str[9],stp[9],incr[9],dsize[10];
     long felem, nelem, nultyp, ninc, numcol;
     int hdutype, anyf;
-    unsigned char nulval = 0;
+    signed char nulval = 0;
     char msg[FLEN_ERRMSG];
     int  nullcheck = 2;
 
     if (naxis < 1 || naxis > 9)
     {
-        sprintf(msg, "NAXIS = %d in call to ffgsvb is out of range", naxis);
+        sprintf(msg, "NAXIS = %d in call to ffgsvsb is out of range", naxis);
         ffpmsg(msg);
         return(*status = BAD_DIMEN);
     }
@@ -416,7 +416,7 @@ int ffgsfb(fitsfile *fptr, /* I - FITS file pointer                         */
     {
         /* this is a compressed image in a binary table */
 
-        fits_read_compressed_img(fptr, TBYTE, blc, trc, inc,
+        fits_read_compressed_img(fptr, TSBYTE, blc, trc, inc,
             nullcheck, NULL, array, flagval, anynul, status);
         return(*status);
     }
@@ -471,7 +471,7 @@ int ffgsfb(fitsfile *fptr, /* I - FITS file pointer                         */
     {
       if (trc[ii] < blc[ii])
       {
-        sprintf(msg, "ffgsvb: illegal range specified for axis %ld", ii + 1);
+        sprintf(msg, "ffgsvsb: illegal range specified for axis %ld", ii + 1);
         ffpmsg(msg);
         return(*status = BAD_PIX_NUM);
       }
@@ -519,7 +519,7 @@ int ffgsfb(fitsfile *fptr, /* I - FITS file pointer                         */
                              (i5 - 1) * dsize[5] + (i6 - 1) * dsize[6] +
                              (i7 - 1) * dsize[7] + (i8 - 1) * dsize[8];
 
-              if ( ffgclb(fptr, numcol, row, felem, nelem, ninc, nultyp,
+              if ( ffgclsb(fptr, numcol, row, felem, nelem, ninc, nultyp,
                    nulval, &array[i0], &flagval[i0], &anyf, status) > 0)
                    return(*status);
 
@@ -539,11 +539,11 @@ int ffgsfb(fitsfile *fptr, /* I - FITS file pointer                         */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffggpb( fitsfile *fptr,   /* I - FITS file pointer                       */
+int ffggpsb( fitsfile *fptr,   /* I - FITS file pointer                       */
             long  group,      /* I - group to read (1 = 1st group)           */
             long  firstelem,  /* I - first vector element to read (1 = 1st)  */
             long  nelem,      /* I - number of values to read                */
-            unsigned char *array, /* O - array of values that are returned   */
+            signed char *array,   /* O - array of values that are returned   */
             int  *status)     /* IO - error status                           */
 /*
   Read an array of group parameters from the primary array. Data conversion
@@ -563,18 +563,18 @@ int ffggpb( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     row=maxvalue(1,group);
 
-    ffgclb(fptr, 1, row, firstelem, nelem, 1, 1, 0,
+    ffgclsb(fptr, 1, row, firstelem, nelem, 1, 1, 0,
                array, &cdummy, &idummy, status);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffgcvb(fitsfile *fptr,   /* I - FITS file pointer                       */
+int ffgcvsb(fitsfile *fptr,  /* I - FITS file pointer                       */
            int  colnum,      /* I - number of column to read (1 = 1st col)  */
            long  firstrow,   /* I - first row to read (1 = 1st row)         */
            long  firstelem,  /* I - first vector element to read (1 = 1st)  */
            long  nelem,      /* I - number of values to read                */
-           unsigned char nulval, /* I - value for null pixels               */
-           unsigned char *array, /* O - array of values that are read       */
+           signed char nulval,   /* I - value for null pixels               */
+           signed char *array,   /* O - array of values that are read       */
            int  *anynul,     /* O - set to 1 if any values are null; else 0 */
            int  *status)     /* IO - error status                           */
 /*
@@ -588,17 +588,17 @@ int ffgcvb(fitsfile *fptr,   /* I - FITS file pointer                       */
 {
     char cdummy;
 
-    ffgclb(fptr, colnum, firstrow, firstelem, nelem, 1, 1, nulval,
+    ffgclsb(fptr, colnum, firstrow, firstelem, nelem, 1, 1, nulval,
            array, &cdummy, anynul, status);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffgcfb(fitsfile *fptr,   /* I - FITS file pointer                       */
+int ffgcfsb(fitsfile *fptr,  /* I - FITS file pointer                       */
            int  colnum,      /* I - number of column to read (1 = 1st col)  */
            long  firstrow,   /* I - first row to read (1 = 1st row)         */
            long  firstelem,  /* I - first vector element to read (1 = 1st)  */
            long  nelem,      /* I - number of values to read                */
-           unsigned char *array, /* O - array of values that are read       */
+           signed char *array,   /* O - array of values that are read       */
            char *nularray,   /* O - array of flags: 1 if null pixel; else 0 */
            int  *anynul,     /* O - set to 1 if any values are null; else 0 */
            int  *status)     /* IO - error status                           */
@@ -611,14 +611,14 @@ int ffgcfb(fitsfile *fptr,   /* I - FITS file pointer                       */
   otherwise nularray will = 0.
 */
 {
-    unsigned char dummy = 0;
+    signed char dummy = 0;
 
-    ffgclb(fptr, colnum, firstrow, firstelem, nelem, 1, 2, dummy,
+    ffgclsb(fptr, colnum, firstrow, firstelem, nelem, 1, 2, dummy,
            array, nularray, anynul, status);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
+int ffgclsb(fitsfile *fptr,   /* I - FITS file pointer                       */
             int  colnum,      /* I - number of column to read (1 = 1st col)  */
             long  firstrow,   /* I - first row to read (1 = 1st row)         */
             OFF_T firstelem,  /* I - first vector element to read (1 = 1st)  */
@@ -627,8 +627,8 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
             int   nultyp,     /* I - null value handling code:               */
                               /*     1: set undefined pixels = nulval        */
                               /*     2: set nularray=1 for undefined pixels  */
-            unsigned char nulval, /* I - value for null pixels if nultyp = 1 */
-            unsigned char *array, /* O - array of values that are read       */
+            signed char nulval,   /* I - value for null pixels if nultyp = 1 */
+            signed char *array,   /* O - array of values that are read       */
             char *nularray,   /* O - array of flags = 1 if nultyp = 2        */
             int  *anynul,     /* O - set to 1 if any values are null; else 0 */
             int  *status)     /* IO - error status                           */
@@ -650,7 +650,7 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
     int tcode, maxelem, hdutype, xcode, decimals;
     long twidth, incre, rownum, remain, next, ntodo;
     long ii, rowincre, tnull, xwidth;
-    int convert, nulcheck, readcheck = 0;
+    int nulcheck, readcheck = 0;
     OFF_T repeat, startpos, elemnum, readptr, rowlen;
     char tform[20];
     char message[81];
@@ -661,7 +661,7 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     union u_tag {
        char charval;
-       unsigned char ucharval;
+       signed char scharval;
     } u;
 
     if (*status > 0 || nelem == 0)  /* inherit input status value if > 0 */
@@ -685,10 +685,10 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
          tform, &twidth, &tcode, &maxelem, &startpos, &elemnum, &incre,
          &repeat, &rowlen, &hdutype, &tnull, snull, status);
 
-    /* special case */
+    /* special case: read column of T/F logicals */
     if (tcode == TLOGICAL && elemincre == 1)
     {
-        u.ucharval = nulval;
+        u.scharval = nulval;
         ffgcll(fptr, colnum, firstrow, firstelem, nelem, nultyp,
                u.charval, (char *) array, nularray, anynul, status);
 
@@ -752,19 +752,6 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
     else if (tcode == TSTRING && snull[0] == ASCII_NULL_UNDEFINED)
          nulcheck = 0;
 
-    /*----------------------------------------------------------------------*/
-    /*  If FITS column and output data array have same datatype, then we do */
-    /*  not need to use a temporary buffer to store intermediate datatype.  */
-    /*----------------------------------------------------------------------*/
-    convert = 1;
-    if (tcode == TBYTE) /* Special Case:                        */
-    {                             /* no type convertion required, so read */
-        maxelem = nelem;          /* data directly into output buffer.    */
-
-        if (nulcheck == 0 && scale == 1. && zero == 0.)
-            convert = 0;  /* no need to scale data or find nulls */
-    }
-
     /*---------------------------------------------------------------------*/
     /*  Now read the pixels from the FITS column. If the column does not   */
     /*  have the same datatype as the output array, then we have to read   */
@@ -801,40 +788,39 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
         switch (tcode) 
         {
             case (TBYTE):
-                ffgi1b(fptr, readptr, ntodo, incre, &array[next], status);
-                if (convert)
-                    fffi1i1(&array[next], ntodo, scale, zero, nulcheck, 
-                    (unsigned char) tnull, nulval, &nularray[next], anynul, 
-                           &array[next], status);
+                ffgi1b(fptr, readptr, ntodo, incre, (unsigned char *) &array[next], status);
+                fffi1s1((unsigned char *)&array[next], ntodo, scale, zero,
+                        nulcheck, (unsigned char) tnull, nulval, &nularray[next], 
+                        anynul, &array[next], status);
                 break;
             case (TSHORT):
                 ffgi2b(fptr, readptr, ntodo, incre, (short *) buffer, status);
-                fffi2i1((short  *) buffer, ntodo, scale, zero, nulcheck, 
+                fffi2s1((short  *) buffer, ntodo, scale, zero, nulcheck, 
                        (short) tnull, nulval, &nularray[next], anynul, 
                        &array[next], status);
                 break;
             case (TLONG):
                 ffgi4b(fptr, readptr, ntodo, incre, (INT32BIT *) buffer,
                        status);
-                fffi4i1((INT32BIT *) buffer, ntodo, scale, zero, nulcheck, 
+                fffi4s1((INT32BIT *) buffer, ntodo, scale, zero, nulcheck, 
                        (INT32BIT) tnull, nulval, &nularray[next], anynul, 
                        &array[next], status);
                 break;
             case (TLONGLONG):
                 ffgi8b(fptr, readptr, ntodo, incre, (long *) buffer, status);
-                fffi8i1( (LONGLONG *) buffer, ntodo, scale, zero, 
+                fffi8s1( (LONGLONG *) buffer, ntodo, scale, zero, 
                            nulcheck, (long) tnull, nulval, &nularray[next], 
                             anynul, &array[next], status);
                 break;
             case (TFLOAT):
                 ffgr4b(fptr, readptr, ntodo, incre, (float  *) buffer, status);
-                fffr4i1((float  *) buffer, ntodo, scale, zero, nulcheck, 
+                fffr4s1((float  *) buffer, ntodo, scale, zero, nulcheck, 
                        nulval, &nularray[next], anynul, 
                        &array[next], status);
                 break;
             case (TDOUBLE):
                 ffgr8b(fptr, readptr, ntodo, incre, (double *) buffer, status);
-                fffr8i1((double *) buffer, ntodo, scale, zero, nulcheck, 
+                fffr8s1((double *) buffer, ntodo, scale, zero, nulcheck, 
                           nulval, &nularray[next], anynul, 
                           &array[next], status);
                 break;
@@ -848,7 +834,7 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
                                status);
 
                 /* interpret the string as an ASCII formated number */
-                fffstri1((char *) buffer, ntodo, scale, zero, twidth, power,
+                fffstrs1((char *) buffer, ntodo, scale, zero, twidth, power,
                       nulcheck, snull, nulval, &nularray[next], anynul,
                       &array[next], status);
                 break;
@@ -872,11 +858,11 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
         {
           if (hdutype > 0)
             sprintf(message,
-            "Error reading elements %ld thru %ld from column %d (ffgclb).",
+            "Error reading elements %ld thru %ld from column %d (ffgclsb).",
               next+1, next+ntodo, colnum);
           else
             sprintf(message,
-            "Error reading elements %ld thru %ld from image (ffgclb).",
+            "Error reading elements %ld thru %ld from image (ffgclsb).",
               next+1, next+ntodo);
 
          ffpmsg(message);
@@ -921,7 +907,7 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int fffi1i1(unsigned char *input, /* I - array of values to be converted     */
+int fffi1s1(unsigned char *input, /* I - array of values to be converted     */
             long ntodo,           /* I - number of elements in the array     */
             double scale,         /* I - FITS TSCALn or BSCALE value         */
             double zero,          /* I - FITS TZEROn or BZERO  value         */
@@ -929,10 +915,10 @@ int fffi1i1(unsigned char *input, /* I - array of values to be converted     */
                                   /*     1:set null pixels = nullval         */
                                   /*     2: if null pixel, set nullarray = 1 */
             unsigned char tnull,  /* I - value of FITS TNULLn keyword if any */
-            unsigned char nullval,/* I - set null pixels, if nullcheck = 1   */
+            signed char nullval,  /* I - set null pixels, if nullcheck = 1   */
             char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
             int  *anynull,        /* O - set to 1 if any pixels are null     */
-            unsigned char *output,/* O - array of converted pixels           */
+            signed char *output,  /* O - array of converted pixels           */
             int *status)          /* IO - error status                       */
 /*
   Copy input to output following reading of the input from a FITS file.
@@ -953,9 +939,26 @@ int fffi1i1(unsigned char *input, /* I - array of values to be converted     */
 
     if (nullcheck == 0)     /* no null checking required */
     {
-        if (scale == 1. && zero == 0.)      /* no scaling */
-        {              /* this routine is normally not called in this case */
-           memcpy(output, input, ntodo );
+        if (scale == 1. && zero == -128.)
+        {
+            /* Instead of subtracting 128, it is more efficient */
+            /* to just flip the sign bit with the XOR operator */
+
+            for (ii = 0; ii < ntodo; ii++)
+                 output[ii] =  ( *(signed char *) &input[ii] ) ^ 0x80;
+        }
+        else if (scale == 1. && zero == 0.)      /* no scaling */
+        { 
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] > 127)
+                {
+                    *status = OVERFLOW_ERR;
+                    output[ii] = 127;
+                }
+                else
+                    output[ii] = (signed char) input[ii]; /* copy input */
+            }
         }
         else             /* must scale the data */
         {                
@@ -963,24 +966,43 @@ int fffi1i1(unsigned char *input, /* I - array of values to be converted     */
             {
                 dvalue = input[ii] * scale + zero;
 
-                if (dvalue < DUCHAR_MIN)
+                if (dvalue < DSCHAR_MIN)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = 0;
+                    output[ii] = -128;
                 }
-                else if (dvalue > DUCHAR_MAX)
+                else if (dvalue > DSCHAR_MAX)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = UCHAR_MAX;
+                    output[ii] = 127;
                 }
                 else
-                    output[ii] = (unsigned char) dvalue;
+                    output[ii] = (signed char) dvalue;
             }
         }
     }
     else        /* must check for null values */
     {
-        if (scale == 1. && zero == 0.)  /* no scaling */
+        if (scale == 1. && zero == -128.)
+        {
+            /* Instead of subtracting 128, it is more efficient */
+            /* to just flip the sign bit with the XOR operator */
+
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] == tnull)
+                {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                }
+                else
+                    output[ii] =  ( *(signed char *) &input[ii] ) ^ 0x80;
+            }
+        }
+        else if (scale == 1. && zero == 0.)  /* no scaling */
         {       
             for (ii = 0; ii < ntodo; ii++)
             {
@@ -993,7 +1015,7 @@ int fffi1i1(unsigned char *input, /* I - array of values to be converted     */
                         nullarray[ii] = 1;
                 }
                 else
-                    output[ii] = input[ii];
+                    output[ii] = (signed char) input[ii];
             }
         }
         else                  /* must scale the data */
@@ -1012,18 +1034,18 @@ int fffi1i1(unsigned char *input, /* I - array of values to be converted     */
                 {
                     dvalue = input[ii] * scale + zero;
 
-                    if (dvalue < DUCHAR_MIN)
+                    if (dvalue < DSCHAR_MIN)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = 0;
+                        output[ii] = -128;
                     }
-                    else if (dvalue > DUCHAR_MAX)
+                    else if (dvalue > DSCHAR_MAX)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = UCHAR_MAX;
+                        output[ii] = 127;
                     }
                     else
-                        output[ii] = (unsigned char) dvalue;
+                        output[ii] = (signed char) dvalue;
                 }
             }
         }
@@ -1031,7 +1053,7 @@ int fffi1i1(unsigned char *input, /* I - array of values to be converted     */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int fffi2i1(short *input,         /* I - array of values to be converted     */
+int fffi2s1(short *input,         /* I - array of values to be converted     */
             long ntodo,           /* I - number of elements in the array     */
             double scale,         /* I - FITS TSCALn or BSCALE value         */
             double zero,          /* I - FITS TZEROn or BZERO  value         */
@@ -1039,10 +1061,10 @@ int fffi2i1(short *input,         /* I - array of values to be converted     */
                                   /*     1:set null pixels = nullval         */
                                   /*     2: if null pixel, set nullarray = 1 */
             short tnull,          /* I - value of FITS TNULLn keyword if any */
-            unsigned char nullval,/* I - set null pixels, if nullcheck = 1   */
+            signed char nullval,  /* I - set null pixels, if nullcheck = 1   */
             char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
             int  *anynull,        /* O - set to 1 if any pixels are null     */
-            unsigned char *output,/* O - array of converted pixels           */
+            signed char *output,  /* O - array of converted pixels           */
             int *status)          /* IO - error status                       */
 /*
   Copy input to output following reading of the input from a FITS file.
@@ -1067,18 +1089,18 @@ int fffi2i1(short *input,         /* I - array of values to be converted     */
         {       
             for (ii = 0; ii < ntodo; ii++)
             {
-                if (input[ii] < 0)
+                if (input[ii] < -128)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = 0;
+                    output[ii] = -128;
                 }
-                else if (input[ii] > UCHAR_MAX)
+                else if (input[ii] > 127)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = UCHAR_MAX;
+                    output[ii] = 127;
                 }
                 else
-                    output[ii] = (unsigned char) input[ii];
+                    output[ii] = (signed char) input[ii];
             }
         }
         else             /* must scale the data */
@@ -1087,18 +1109,18 @@ int fffi2i1(short *input,         /* I - array of values to be converted     */
             {
                 dvalue = input[ii] * scale + zero;
 
-                if (dvalue < DUCHAR_MIN)
+                if (dvalue < DSCHAR_MIN)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = 0;
+                    output[ii] = -128;
                 }
-                else if (dvalue > DUCHAR_MAX)
+                else if (dvalue > DSCHAR_MAX)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = UCHAR_MAX;
+                    output[ii] = 127;
                 }
                 else
-                    output[ii] = (unsigned char) dvalue;
+                    output[ii] = (signed char) dvalue;
             }
         }
     }
@@ -1119,18 +1141,18 @@ int fffi2i1(short *input,         /* I - array of values to be converted     */
 
                 else
                 {
-                    if (input[ii] < 0)
+                    if (input[ii] < -128)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = 0;
+                        output[ii] = -128;
                     }
-                    else if (input[ii] > UCHAR_MAX)
+                    else if (input[ii] > 127)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = UCHAR_MAX;
+                        output[ii] = 127;
                     }
                     else
-                        output[ii] = (unsigned char) input[ii];
+                        output[ii] = (signed char) input[ii];
                 }
             }
         }
@@ -1150,18 +1172,18 @@ int fffi2i1(short *input,         /* I - array of values to be converted     */
                 {
                     dvalue = input[ii] * scale + zero;
 
-                    if (dvalue < DUCHAR_MIN)
+                    if (dvalue < DSCHAR_MIN)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = 0;
+                        output[ii] = -128;
                     }
-                    else if (dvalue > DUCHAR_MAX)
+                    else if (dvalue > DSCHAR_MAX)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = UCHAR_MAX;
+                        output[ii] = 127;
                     }
                     else
-                        output[ii] = (unsigned char) dvalue;
+                        output[ii] = (signed char) dvalue;
                 }
             }
         }
@@ -1169,7 +1191,7 @@ int fffi2i1(short *input,         /* I - array of values to be converted     */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int fffi4i1(INT32BIT *input,          /* I - array of values to be converted     */
+int fffi4s1(INT32BIT *input,      /* I - array of values to be converted     */
             long ntodo,           /* I - number of elements in the array     */
             double scale,         /* I - FITS TSCALn or BSCALE value         */
             double zero,          /* I - FITS TZEROn or BZERO  value         */
@@ -1177,10 +1199,10 @@ int fffi4i1(INT32BIT *input,          /* I - array of values to be converted    
                                   /*     1:set null pixels = nullval         */
                                   /*     2: if null pixel, set nullarray = 1 */
             INT32BIT tnull,       /* I - value of FITS TNULLn keyword if any */
-            unsigned char nullval,/* I - set null pixels, if nullcheck = 1   */
+            signed char nullval,  /* I - set null pixels, if nullcheck = 1   */
             char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
             int  *anynull,        /* O - set to 1 if any pixels are null     */
-            unsigned char *output,/* O - array of converted pixels           */
+            signed char *output,  /* O - array of converted pixels           */
             int *status)          /* IO - error status                       */
 /*
   Copy input to output following reading of the input from a FITS file.
@@ -1205,18 +1227,18 @@ int fffi4i1(INT32BIT *input,          /* I - array of values to be converted    
         {       
             for (ii = 0; ii < ntodo; ii++)
             {
-                if (input[ii] < 0)
+                if (input[ii] < -128)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = 0;
+                    output[ii] = -128;
                 }
-                else if (input[ii] > UCHAR_MAX)
+                else if (input[ii] > 127)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = UCHAR_MAX;
+                    output[ii] = 127;
                 }
                 else
-                    output[ii] = (unsigned char) input[ii];
+                    output[ii] = (signed char) input[ii];
             }
         }
         else             /* must scale the data */
@@ -1225,18 +1247,18 @@ int fffi4i1(INT32BIT *input,          /* I - array of values to be converted    
             {
                 dvalue = input[ii] * scale + zero;
 
-                if (dvalue < DUCHAR_MIN)
+                if (dvalue < DSCHAR_MIN)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = 0;
+                    output[ii] = -128;
                 }
-                else if (dvalue > DUCHAR_MAX)
+                else if (dvalue > DSCHAR_MAX)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = UCHAR_MAX;
+                    output[ii] = 127;
                 }
                 else
-                    output[ii] = (unsigned char) dvalue;
+                    output[ii] = (signed char) dvalue;
             }
         }
     }
@@ -1256,18 +1278,18 @@ int fffi4i1(INT32BIT *input,          /* I - array of values to be converted    
                 }
                 else
                 {
-                    if (input[ii] < 0)
+                    if (input[ii] < -128)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = 0;
+                        output[ii] = -128;
                     }
-                    else if (input[ii] > UCHAR_MAX)
+                    else if (input[ii] > 127)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = UCHAR_MAX;
+                        output[ii] = 127;
                     }
                     else
-                        output[ii] = (unsigned char) input[ii];
+                        output[ii] = (signed char) input[ii];
                 }
             }
         }
@@ -1287,18 +1309,18 @@ int fffi4i1(INT32BIT *input,          /* I - array of values to be converted    
                 {
                     dvalue = input[ii] * scale + zero;
 
-                    if (dvalue < DUCHAR_MIN)
+                    if (dvalue < DSCHAR_MIN)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = 0;
+                        output[ii] = -128;
                     }
-                    else if (dvalue > DUCHAR_MAX)
+                    else if (dvalue > DSCHAR_MAX)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = UCHAR_MAX;
+                        output[ii] = 127;
                     }
                     else
-                        output[ii] = (unsigned char) dvalue;
+                        output[ii] = (signed char) dvalue;
                 }
             }
         }
@@ -1306,7 +1328,7 @@ int fffi4i1(INT32BIT *input,          /* I - array of values to be converted    
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int fffi8i1(LONGLONG *input,      /* I - array of values to be converted     */
+int fffi8s1(LONGLONG *input,      /* I - array of values to be converted     */
             long ntodo,           /* I - number of elements in the array     */
             double scale,         /* I - FITS TSCALn or BSCALE value         */
             double zero,          /* I - FITS TZEROn or BZERO  value         */
@@ -1314,10 +1336,10 @@ int fffi8i1(LONGLONG *input,      /* I - array of values to be converted     */
                                   /*     1:set null pixels = nullval         */
                                   /*     2: if null pixel, set nullarray = 1 */
             long tnull,           /* I - value of FITS TNULLn keyword if any */
-            unsigned char nullval,/* I - set null pixels, if nullcheck = 1   */
+            signed char nullval,  /* I - set null pixels, if nullcheck = 1   */
             char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
             int  *anynull,        /* O - set to 1 if any pixels are null     */
-            unsigned char *output,/* O - array of converted pixels           */
+            signed char *output,  /* O - array of converted pixels           */
             int *status)          /* IO - error status                       */
 /*
   Copy input to output following reading of the input from a FITS file.
@@ -1366,18 +1388,18 @@ int fffi8i1(LONGLONG *input,      /* I - array of values to be converted     */
                 else  /* positive number */
                   dvalue = uinput[jj] * 4294967296. + uinput[kk];
 
-                if (dvalue < DUCHAR_MIN )
+                if (dvalue < DSCHAR_MIN )
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = 0;
+                    output[ii] = -128;
                 }
-                else if (dvalue > DUCHAR_MAX)
+                else if (dvalue > DSCHAR_MAX)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = UCHAR_MAX;
+                    output[ii] = 127;
                 }
                 else
-                    output[ii] = (unsigned char) dvalue;
+                    output[ii] = (signed char) dvalue;
             }
         }
         else             /* must scale the data */
@@ -1391,18 +1413,18 @@ int fffi8i1(LONGLONG *input,      /* I - array of values to be converted     */
                   dvalue = (uinput[jj] * 4294967296. + uinput[kk]) 
                            * scale + zero;
 
-                if (dvalue < DUCHAR_MIN)
+                if (dvalue < DSCHAR_MIN)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = 0;
+                    output[ii] = -128;
                 }
-                else if (dvalue > DUCHAR_MAX)
+                else if (dvalue > DSCHAR_MAX)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = UCHAR_MAX;
+                    output[ii] = 127;
                 }
                 else
-                    output[ii] = (unsigned char) dvalue;
+                    output[ii] = (signed char) dvalue;
             }
         }
     }
@@ -1428,18 +1450,18 @@ int fffi8i1(LONGLONG *input,      /* I - array of values to be converted     */
                 }
                 else
                 {
-                  if (dvalue < DUCHAR_MIN)
+                  if (dvalue < DSCHAR_MIN)
                   {
                     *status = OVERFLOW_ERR;
-                    output[ii] = 0;
+                    output[ii] = -128;
                   }
-                  else if (dvalue > DUCHAR_MAX)
+                  else if (dvalue > DSCHAR_MAX)
                   {
                     *status = OVERFLOW_ERR;
-                    output[ii] = UCHAR_MAX;
+                    output[ii] = 127;
                   }
                   else
-                    output[ii] = (unsigned char) dvalue;
+                    output[ii] = (signed char) dvalue;
                 }
             }
         }
@@ -1465,18 +1487,18 @@ int fffi8i1(LONGLONG *input,      /* I - array of values to be converted     */
                 {
                     dvalue = dvalue * scale + zero;
 
-                    if (dvalue < DUCHAR_MIN)
+                    if (dvalue < DSCHAR_MIN)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = 0;
+                        output[ii] = -128;
                     }
-                    else if (dvalue > DUCHAR_MAX)
+                    else if (dvalue > DSCHAR_MAX)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = UCHAR_MAX;
+                        output[ii] = 127;
                     }
                     else
-                        output[ii] = (unsigned char) dvalue;
+                        output[ii] = (signed char) dvalue;
                 }
             }
         }
@@ -1495,18 +1517,18 @@ int fffi8i1(LONGLONG *input,      /* I - array of values to be converted     */
         {       
             for (ii = 0; ii < ntodo; ii++)
             {
-                if (input[ii] < 0)
+                if (input[ii] < -128)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = 0;
+                    output[ii] = -128;
                 }
-                else if (input[ii] > UCHAR_MAX)
+                else if (input[ii] > 127)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = UCHAR_MAX;
+                    output[ii] = 127;
                 }
                 else
-                    output[ii] = (unsigned char) input[ii];
+                    output[ii] = (signed char) input[ii];
             }
         }
         else             /* must scale the data */
@@ -1515,18 +1537,18 @@ int fffi8i1(LONGLONG *input,      /* I - array of values to be converted     */
             {
                 dvalue = input[ii] * scale + zero;
 
-                if (dvalue < DUCHAR_MIN)
+                if (dvalue < DSCHAR_MIN)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = 0;
+                    output[ii] = -128;
                 }
-                else if (dvalue > DUCHAR_MAX)
+                else if (dvalue > DSCHAR_MAX)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = UCHAR_MAX;
+                    output[ii] = 127;
                 }
                 else
-                    output[ii] = (unsigned char) dvalue;
+                    output[ii] = (signed char) dvalue;
             }
         }
     }
@@ -1546,18 +1568,18 @@ int fffi8i1(LONGLONG *input,      /* I - array of values to be converted     */
                 }
                 else
                 {
-                    if (input[ii] < 0)
+                    if (input[ii] < -128)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = 0;
+                        output[ii] = -128;
                     }
-                    else if (input[ii] > UCHAR_MAX)
+                    else if (input[ii] > 127)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = UCHAR_MAX;
+                        output[ii] = 127;
                     }
                     else
-                        output[ii] = (unsigned char) input[ii];
+                        output[ii] = (signed char) input[ii];
                 }
             }
         }
@@ -1577,18 +1599,18 @@ int fffi8i1(LONGLONG *input,      /* I - array of values to be converted     */
                 {
                     dvalue = input[ii] * scale + zero;
 
-                    if (dvalue < DUCHAR_MIN)
+                    if (dvalue < DSCHAR_MIN)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = 0;
+                        output[ii] = -128;
                     }
-                    else if (dvalue > DUCHAR_MAX)
+                    else if (dvalue > DSCHAR_MAX)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = UCHAR_MAX;
+                        output[ii] = 127;
                     }
                     else
-                        output[ii] = (unsigned char) dvalue;
+                        output[ii] = (signed char) dvalue;
                 }
             }
         }
@@ -1599,17 +1621,17 @@ int fffi8i1(LONGLONG *input,      /* I - array of values to be converted     */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int fffr4i1(float *input,         /* I - array of values to be converted     */
+int fffr4s1(float *input,         /* I - array of values to be converted     */
             long ntodo,           /* I - number of elements in the array     */
             double scale,         /* I - FITS TSCALn or BSCALE value         */
             double zero,          /* I - FITS TZEROn or BZERO  value         */
             int nullcheck,        /* I - null checking code; 0 = don't check */
                                   /*     1:set null pixels = nullval         */
                                   /*     2: if null pixel, set nullarray = 1 */
-            unsigned char nullval,/* I - set null pixels, if nullcheck = 1   */
+            signed char nullval,  /* I - set null pixels, if nullcheck = 1   */
             char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
             int  *anynull,        /* O - set to 1 if any pixels are null     */
-            unsigned char *output,/* O - array of converted pixels           */
+            signed char *output,  /* O - array of converted pixels           */
             int *status)          /* IO - error status                       */
 /*
   Copy input to output following reading of the input from a FITS file.
@@ -1635,18 +1657,18 @@ int fffr4i1(float *input,         /* I - array of values to be converted     */
         {       
             for (ii = 0; ii < ntodo; ii++)
             {
-                if (input[ii] < DUCHAR_MIN)
+                if (input[ii] < DSCHAR_MIN)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = 0;
+                    output[ii] = -128;
                 }
-                else if (input[ii] > DUCHAR_MAX)
+                else if (input[ii] > DSCHAR_MAX)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = UCHAR_MAX;
+                    output[ii] = 127;
                 }
                 else
-                    output[ii] = (unsigned char) input[ii];
+                    output[ii] = (signed char) input[ii];
             }
         }
         else             /* must scale the data */
@@ -1655,18 +1677,18 @@ int fffr4i1(float *input,         /* I - array of values to be converted     */
             {
                 dvalue = input[ii] * scale + zero;
 
-                if (dvalue < DUCHAR_MIN)
+                if (dvalue < DSCHAR_MIN)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = 0;
+                    output[ii] = -128;
                 }
-                else if (dvalue > DUCHAR_MAX)
+                else if (dvalue > DSCHAR_MAX)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = UCHAR_MAX;
+                    output[ii] = 127;
                 }
                 else
-                    output[ii] = (unsigned char) dvalue;
+                    output[ii] = (signed char) dvalue;
             }
         }
     }
@@ -1698,18 +1720,18 @@ int fffr4i1(float *input,         /* I - array of values to be converted     */
               }
               else
                 {
-                    if (input[ii] < DUCHAR_MIN)
+                    if (input[ii] < DSCHAR_MIN)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = 0;
+                        output[ii] = -128;
                     }
-                    else if (input[ii] > DUCHAR_MAX)
+                    else if (input[ii] > DSCHAR_MAX)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = UCHAR_MAX;
+                        output[ii] = 127;
                     }
                     else
-                        output[ii] = (unsigned char) input[ii];
+                        output[ii] = (signed char) input[ii];
                 }
             }
         }
@@ -1729,36 +1751,36 @@ int fffr4i1(float *input,         /* I - array of values to be converted     */
                   }
                   else            /* it's an underflow */
                   {
-                    if (zero < DUCHAR_MIN)
+                    if (zero < DSCHAR_MIN)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = 0;
+                        output[ii] = -128;
                     }
-                    else if (zero > DUCHAR_MAX)
+                    else if (zero > DSCHAR_MAX)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = UCHAR_MAX;
+                        output[ii] = 127;
                     }
                     else
-                        output[ii] = (unsigned char) zero;
+                        output[ii] = (signed char) zero;
                   }
               }
               else
                 {
                     dvalue = input[ii] * scale + zero;
 
-                    if (dvalue < DUCHAR_MIN)
+                    if (dvalue < DSCHAR_MIN)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = 0;
+                        output[ii] = -128;
                     }
-                    else if (dvalue > DUCHAR_MAX)
+                    else if (dvalue > DSCHAR_MAX)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = UCHAR_MAX;
+                        output[ii] = 127;
                     }
                     else
-                        output[ii] = (unsigned char) dvalue;
+                        output[ii] = (signed char) dvalue;
                 }
             }
         }
@@ -1766,17 +1788,17 @@ int fffr4i1(float *input,         /* I - array of values to be converted     */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int fffr8i1(double *input,        /* I - array of values to be converted     */
+int fffr8s1(double *input,        /* I - array of values to be converted     */
             long ntodo,           /* I - number of elements in the array     */
             double scale,         /* I - FITS TSCALn or BSCALE value         */
             double zero,          /* I - FITS TZEROn or BZERO  value         */
             int nullcheck,        /* I - null checking code; 0 = don't check */
                                   /*     1:set null pixels = nullval         */
                                   /*     2: if null pixel, set nullarray = 1 */
-            unsigned char nullval,/* I - set null pixels, if nullcheck = 1   */
+            signed char nullval,  /* I - set null pixels, if nullcheck = 1   */
             char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
             int  *anynull,        /* O - set to 1 if any pixels are null     */
-            unsigned char *output,/* O - array of converted pixels           */
+            signed char *output,  /* O - array of converted pixels           */
             int *status)          /* IO - error status                       */
 /*
   Copy input to output following reading of the input from a FITS file.
@@ -1802,18 +1824,18 @@ int fffr8i1(double *input,        /* I - array of values to be converted     */
         {       
             for (ii = 0; ii < ntodo; ii++)
             {
-                if (input[ii] < DUCHAR_MIN)
+                if (input[ii] < DSCHAR_MIN)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = 0;
+                    output[ii] = -128;
                 }
-                else if (input[ii] > DUCHAR_MAX)
+                else if (input[ii] > DSCHAR_MAX)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = UCHAR_MAX;
+                    output[ii] = 127;
                 }
                 else
-                    output[ii] = (unsigned char) input[ii];
+                    output[ii] = (signed char) input[ii];
             }
         }
         else             /* must scale the data */
@@ -1822,18 +1844,18 @@ int fffr8i1(double *input,        /* I - array of values to be converted     */
             {
                 dvalue = input[ii] * scale + zero;
 
-                if (dvalue < DUCHAR_MIN)
+                if (dvalue < DSCHAR_MIN)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = 0;
+                    output[ii] = -128;
                 }
-                else if (dvalue > DUCHAR_MAX)
+                else if (dvalue > DSCHAR_MAX)
                 {
                     *status = OVERFLOW_ERR;
-                    output[ii] = UCHAR_MAX;
+                    output[ii] = 127;
                 }
                 else
-                    output[ii] = (unsigned char) dvalue;
+                    output[ii] = (signed char) dvalue;
             }
         }
     }
@@ -1863,18 +1885,18 @@ int fffr8i1(double *input,        /* I - array of values to be converted     */
               }
               else
                 {
-                    if (input[ii] < DUCHAR_MIN)
+                    if (input[ii] < DSCHAR_MIN)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = 0;
+                        output[ii] = -128;
                     }
-                    else if (input[ii] > DUCHAR_MAX)
+                    else if (input[ii] > DSCHAR_MAX)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = UCHAR_MAX;
+                        output[ii] = 127;
                     }
                     else
-                        output[ii] = (unsigned char) input[ii];
+                        output[ii] = (signed char) input[ii];
                 }
             }
         }
@@ -1894,36 +1916,36 @@ int fffr8i1(double *input,        /* I - array of values to be converted     */
                   }
                   else            /* it's an underflow */
                   {
-                    if (zero < DUCHAR_MIN)
+                    if (zero < DSCHAR_MIN)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = 0;
+                        output[ii] = -128;
                     }
-                    else if (zero > DUCHAR_MAX)
+                    else if (zero > DSCHAR_MAX)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = UCHAR_MAX;
+                        output[ii] = 127;
                     }
                     else
-                        output[ii] = (unsigned char) zero;
+                        output[ii] = (signed char) zero;
                   }
               }
               else
                 {
                     dvalue = input[ii] * scale + zero;
 
-                    if (dvalue < DUCHAR_MIN)
+                    if (dvalue < DSCHAR_MIN)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = 0;
+                        output[ii] = -128;
                     }
-                    else if (dvalue > DUCHAR_MAX)
+                    else if (dvalue > DSCHAR_MAX)
                     {
                         *status = OVERFLOW_ERR;
-                        output[ii] = UCHAR_MAX;
+                        output[ii] = 127;
                     }
                     else
-                        output[ii] = (unsigned char) dvalue;
+                        output[ii] = (signed char) dvalue;
                 }
             }
         }
@@ -1931,7 +1953,7 @@ int fffr8i1(double *input,        /* I - array of values to be converted     */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int fffstri1(char *input,         /* I - array of values to be converted     */
+int fffstrs1(char *input,         /* I - array of values to be converted     */
             long ntodo,           /* I - number of elements in the array     */
             double scale,         /* I - FITS TSCALn or BSCALE value         */
             double zero,          /* I - FITS TZEROn or BZERO  value         */
@@ -1941,10 +1963,10 @@ int fffstri1(char *input,         /* I - array of values to be converted     */
                                   /*     1:set null pixels = nullval         */
                                   /*     2: if null pixel, set nullarray = 1 */
             char  *snull,         /* I - value of FITS null string, if any   */
-            unsigned char nullval, /* I - set null pixels, if nullcheck = 1  */
+            signed char nullval,  /* I - set null pixels, if nullcheck = 1   */
             char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
             int  *anynull,        /* O - set to 1 if any pixels are null     */
-            unsigned char *output, /* O - array of converted pixels          */
+            signed char *output,  /* O - array of converted pixels           */
             int *status)          /* IO - error status                       */
 /*
   Copy input to output following reading of the input from a FITS file. Check
@@ -2091,18 +2113,18 @@ int fffstri1(char *input,         /* I - array of values to be converted     */
 
         dvalue = dvalue * scale + zero;   /* apply the scaling */
 
-        if (dvalue < DUCHAR_MIN)
+        if (dvalue < DSCHAR_MIN)
         {
             *status = OVERFLOW_ERR;
-            output[ii] = 0;
+            output[ii] = -128;
         }
-        else if (dvalue > DUCHAR_MAX)
+        else if (dvalue > DSCHAR_MAX)
         {
             *status = OVERFLOW_ERR;
-            output[ii] = UCHAR_MAX;
+            output[ii] = 127;
         }
         else
-            output[ii] = (unsigned char) dvalue;
+            output[ii] = (signed char) dvalue;
       }
       /* restore the char that was overwritten by the null */
       *tpos = tempstore;

@@ -528,6 +528,7 @@ read or written.  The following symbolic constants are allowed for the
 value of {\tt datatype}:
 \begin{verbatim}
   TBYTE     unsigned char
+  TSBYTE    signed char
   TSHORT    signed short
   TUSHORT   unsigned short
   TINT      signed int
@@ -627,6 +628,7 @@ and in binary tables:
             rL  - logical
             rX  - bit
             rB  - unsigned byte
+            rS  - signed byte **
             rI  - signed 16-bit integer
             rU  - unsigned 16-bit integer **
             rJ  - signed 32-bit integer
@@ -637,9 +639,10 @@ and in binary tables:
             rC  - 32-bit complex pair
             rM  - 64-bit complex pair
 
-     ** The U and V format codes are not actual legal TFORMn values.
+     ** The S, U and V format codes are not actual legal TFORMn values.
         CFITSIO substitutes the somewhat more complicated set of
-        keywords that are used to represent unsigned integers.
+        keywords that are used to represent unsigned integers or
+        signed bytes.
 
     *** The 64-bit integer format is experimental and is not 
         officially recognized in the FITS Standard.
