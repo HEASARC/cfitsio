@@ -4352,7 +4352,7 @@ static void Do_Func( Node *this )
          case min1_fct:
 	    elem = row * theParams[0]->value.nelem;
 	    if( this->type==LONG ) {
-	       long minVal;
+	       long minVal=0;
 	       while( row-- ) {
 		  valInit = 1;
 		  this->value.undef[row] = 0;
@@ -4372,7 +4372,7 @@ static void Do_Func( Node *this )
 		  this->value.data.lngptr[row] = minVal;
 	       }		  
 	    } else if( this->type==DOUBLE ) {
-	       double minVal;
+	       double minVal=0.0;
 	       while( row-- ) {
 		  valInit = 1;
 		  this->value.undef[row] = 0;
@@ -4440,7 +4440,7 @@ static void Do_Func( Node *this )
          case max1_fct:
 	    elem = row * theParams[0]->value.nelem;
 	    if( this->type==LONG ) {
-	       long maxVal;
+	       long maxVal=0;
 	       while( row-- ) {
 		  valInit = 1;
 		  this->value.undef[row] = 0;
@@ -4460,7 +4460,7 @@ static void Do_Func( Node *this )
 		  this->value.data.lngptr[row] = maxVal;
 	       }		  
 	    } else if( this->type==DOUBLE ) {
-	       double maxVal;
+	       double maxVal=0.0;
 	       while( row-- ) {
 		  valInit = 1;
 		  this->value.undef[row] = 0;
