@@ -4190,6 +4190,7 @@ static void Do_Func( Node *this )
    double dval;
    int  i, valInit;
    long row, elem, nelem;
+   double rndVal;
 
    i = this->nSubNodes;
    allConst = 1;
@@ -4454,7 +4455,9 @@ static void Do_Func( Node *this )
 	    else
 	       dval = 2147483648.0;
 	    while( row-- ) {
-	       this->value.data.dblptr[row] = (double)rand() / dval;
+               rndVal = (double)rand();
+               while( rndVal > dval ) dval *= 2.0;
+	       this->value.data.dblptr[row] = rndVal/dval;
 	       this->value.undef[row] = 0;
 	    }
 	    break;
