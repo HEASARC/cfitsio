@@ -286,6 +286,7 @@ stream.  The {\tt stream} parameter is usually set equal to
 
 \begin{verbatim}
 int fits_open_file(fitsfile **fptr, char *filename, int mode, int *status)
+int fits_open_data(fitsfile **fptr, char *filename, int mode, int *status)
 int fits_create_file(fitsfile **fptr, char *filename, int *status)
 int fits_close_file(fitsfile *fptr, int *status)
 \end{verbatim}
@@ -302,6 +303,15 @@ The mode parameter in {\tt fits\_open\_file} can be set to either {\tt
 READONLY} or {\tt READWRITE} to select the type of file access that
 will be allowed. These symbolic constants are defined in {\tt
 fitsio.h}.
+
+The fits\_open\_data routine is similar to the fits\_open\_file routine
+except that it will move to the first HDU containing significant data,
+if a) an HDU name or number to open was not explicitly specified as
+part of the filename, and b) if the FITS file contains a null primary
+array (i.e., NAXIS = 0).  In this case, it will look for the first
+IMAGE HDU with NAXIS > 0, or the first table that does not contain the
+strings `GTI' (a Good Time Interval extension) or `OBSTABLE' in the
+EXTNAME keyword value.
 
 In {\tt fits\_create\_file},  the {\tt filename} is simply the root name of
 the file to be created.  You can overwrite an existing file by

@@ -137,6 +137,18 @@ void Cffnopn( fitsfile **fptr, const char *filename, int iomode, int *status )
 }
 FCALLSCSUB4(Cffnopn,FTNOPN,ftnopn,PFITSUNIT,STRING,INT,PINT)
 
+void Cffdopn( fitsfile **fptr, const char *filename, int iomode, int *status );
+void Cffdopn( fitsfile **fptr, const char *filename, int iomode, int *status )
+{
+   if( *fptr==NULL || *fptr==(fitsfile*)1 ) {
+      ffdopn( fptr, filename, iomode, status );
+   } else {
+      *status = FILE_NOT_OPENED;
+      ffpmsg("Cffdopn tried to use an already opened unit.");
+   }
+}
+FCALLSCSUB4(Cffdopn,FTDOPN,ftdopn,PFITSUNIT,STRING,INT,PINT)
+
 void Cffreopen( fitsfile *openfptr, fitsfile **newfptr, int *status );
 void Cffreopen( fitsfile *openfptr, fitsfile **newfptr, int *status )
 {
@@ -645,7 +657,8 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONG,PINT,PSTRINGV,PSTRINGV,PSTR
 
 #if defined(DECFortran) || (defined(__alpha) && defined(g77Fortran)) \
     || (defined(mipsFortran) && _MIPS_SZLONG==64) \
-    || (defined(IBMR2Fortran) && defined(__64BIT__))
+    || (defined(IBMR2Fortran) && defined(__64BIT__)) \
+    || (defined (g77Fortran) && defined(__ia64__))
     /*   If running under DECFortran, we also need to worry about the length */
     /*   of the long naxes array.  So read NAXIS manually. :(                */
 

@@ -245,6 +245,26 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffdopn(fitsfile **fptr,      /* O - FITS file pointer                   */ 
+           const char *name,     /* I - full name of file to open           */
+           int mode,             /* I - 0 = open readonly; 1 = read/write   */
+           int *status)          /* IO - error status                       */
+/*
+  Open an existing FITS file with either readonly or read/write access. ane
+  move to the first HDU that contains 'interesting' data, if the primary
+  array contains a null image (i.e., NAXIS = 0). 
+*/
+{
+    if (*status > 0)
+        return(*status);
+
+    *status = SKIP_NULL_PRIMARY;
+
+    ffopen(fptr, name, mode, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */ 
            const char *name,     /* I - full name of file to open           */
            int mode,             /* I - 0 = open readonly; 1 = read/write   */
@@ -256,10 +276,10 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     int  driver, hdutyp, hdunum, slen, writecopy, isopen;
     OFF_T filesize;
     long rownum, nrows, goodrows;
-    int extnum, extvers, handle, movetotype;
+    int extnum, extvers, handle, movetotype, tstatus = 0;
     char urltype[MAX_PREFIX_LEN], infile[FLEN_FILENAME], outfile[FLEN_FILENAME];
     char origurltype[MAX_PREFIX_LEN], extspec[FLEN_FILENAME];
-    char extname[FLEN_VALUE], rowfilter[FLEN_FILENAME];
+    char extname[FLEN_VALUE], rowfilter[FLEN_FILENAME], tblname[FLEN_VALUE];
     char imagecolname[FLEN_VALUE], rowexpress[FLEN_FILENAME];
     char binspec[FLEN_FILENAME], colspec[FLEN_FILENAME];
     char histfilename[FLEN_FILENAME];
@@ -271,7 +291,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
 
     char *url;
     double minin[4], maxin[4], binsizein[4], weight;
-    int imagetype, naxis = 1, haxis, recip;
+    int imagetype, naxis = 1, haxis, recip, skip_null = 0;
     char colname[4][FLEN_VALUE];
     char errmsg[FLEN_ERRMSG];
     char *hdtype[3] = {"IMAGE", "TABLE", "BINTABLE"};
@@ -279,6 +299,15 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
 
     if (*status > 0)
         return(*status);
+
+    if (*status == SKIP_NULL_PRIMARY)
+    {
+      /* this special status value is used as a flag by ffdopn to tell */
+      /* ffopen to skip over a null primary array when opening the file. */
+
+       skip_null = 1;
+       *status = 0;
+    }
 
     *fptr = 0;              /* initialize null file pointer */
     writecopy = 0;  /* have we made a write-able copy of the input file? */
@@ -564,11 +593,73 @@ move2hdu:
         return(*status);
       }
     }
+    else if (skip_null || (*imagecolname || *colspec || *rowfilter || *binspec))
+    {
+      /* ------------------------------------------------------------------
+
+      If no explicit extension specifier is given as part of the file name,
+      and, if a) skip_null is true (set if ffopen is called by ffdopn) or 
+      b) other file filters are specified, then CFITSIO will attempt to
+      move to the first 'interesting' HDU after opening an existing FITS
+      file.
+
+      An 'interesting' HDU is defined to be either an image with NAXIS
+      > 0 (i.e., not a null array) or a table which has an EXTNAME
+      value which does not contain any of the following strings:
+         'GTI'  - Good Time Interval extension
+         'OBSTABLE'  - used in Beppo SAX data files
+
+      The main purpose for this is to allow CFITSIO to skip over a null
+      primary and other non-interesting HDUs when opening an existing
+      file, and move directly to the first extension that contains
+      significant data.
+      ------------------------------------------------------------------ */
+
+      fits_get_hdu_num(*fptr, &hdunum);
+      if (hdunum == 1)
+        fits_get_img_dim(*fptr, &naxis, status);
+
+      if (hdunum == 1 && naxis == 0) /* we are at a null primary array */
+      {
+         while(1) 
+         {
+            /* see if the next HDU is 'interesting' */
+            if (fits_movrel_hdu(*fptr, 1, &hdutyp, status))
+            {
+               if (*status == END_OF_FILE)
+                  *status = 0;  /* reset expected error */
+
+               /* didn't find an interesting HDU so move back to beginning */
+               fits_movabs_hdu(*fptr, 1, &hdutyp, status);
+               break;
+            }
+
+            if (hdutyp == IMAGE_HDU)
+            {
+               fits_get_img_dim(*fptr, &naxis, status);
+               if (naxis > 0)
+                  break;  /* found a non-null image */
+            }
+            else 
+            {
+               tstatus = 0;
+               tblname[0] = '\0';
+               fits_read_key(*fptr, TSTRING, "EXTNAME", tblname, NULL,&tstatus);
+
+               if ( (!strstr(tblname, "GTI") && !strstr(tblname, "gti")) &&
+                    strncasecmp(tblname, "OBSTABLE", 8) )
+                  break;
+            }
+         }
+      }
+    }
 
     if (*imagecolname)
     {
-       /* we need to open an image contained in a single table cell */
-       /* First, determine which row of the table to use. */
+       /* ----------------------------------------------------------------- */
+       /* we need to open an image contained in a single table cell         */
+       /* First, determine which row of the table to use.                   */
+       /* ----------------------------------------------------------------- */
 
        if (isdigit((int) *rowexpress))  /* is the row specification a number? */
        {
@@ -682,25 +773,6 @@ move2hdu:
  
     if (*rowfilter)
     {
-     /* if the current HDU is a null primary array, attempt to move to */
-     /* the next extension, in the hope that it contains more data */
-     fits_get_hdu_num(*fptr, &hdunum);
-     if (hdunum == 1)
-       fits_get_img_dim(*fptr, &naxis, status);
-
-     if (hdunum == 1 && naxis == 0)
-     {
-         if (fits_movrel_hdu(*fptr, 1, &hdutyp, status) > 0)
-         {
-           ffpmsg("failed to move past null primary (ffopen)");
-           ffpmsg(" while trying to use the following filter:");
-           ffpmsg(rowfilter);
-           ffclos(*fptr, status);
-           *fptr = 0;              /* return null file pointer */
-           return(*status);
-         }
-     }
-
      fits_get_hdu_type(*fptr, &hdutyp, status);  /* get type of HDU */
      if (hdutyp == IMAGE_HDU)
      {
@@ -800,7 +872,9 @@ move2hdu:
         }
 
         /* write history records */
-        ffphis(*fptr, "CFITSIO used the following filtering expression to create this table:", status);
+        ffphis(*fptr, 
+        "CFITSIO used the following filtering expression to create this table:",
+        status);
         ffphis(*fptr, name, status);
 
       }   /* end of no binspec case */
@@ -845,7 +919,9 @@ move2hdu:
        }
 
         /* write history records */
-        ffphis(*fptr, "CFITSIO used the following expression to create this histogram:", status);
+        ffphis(*fptr,
+        "CFITSIO used the following expression to create this histogram:", 
+        status);
         ffphis(*fptr, name, status);
     }
 
@@ -3233,11 +3309,14 @@ int ffiurl(char *url,               /* input filename */
            int *status)
 /*
    parse the input URL into its basic components.
-   This routine is big and ugly!
+   This routine is big and ugly and should be redesigned someday!
 */
 { 
     int ii, jj, slen, infilelen, plus_ext = 0, collen;
     char *ptr1, *ptr2, *ptr3, *tmptr;
+    int hasAt, hasDot, hasOper, followingOper, spaceTerm, rowFilter;
+    int colStart, binStart;
+
 
     /* must have temporary variable for these, in case inputs are NULL */
     char *infile;
@@ -3247,38 +3326,27 @@ int ffiurl(char *url,               /* input filename */
     if (*status > 0)
         return(*status);
 
-    if (infilex)
-        *infilex  = '\0';
-    if (rowfilterx)
-        *rowfilterx = '\0';
-
-    if (urltype)
-        *urltype = '\0';
-    if (outfile)
-        *outfile = '\0';
-    if (extspec)
-        *extspec = '\0';
-    if (binspec)
-        *binspec = '\0';
-    if (colspec)
-        *colspec = '\0';
-
+    /* Initialize null strings */
+    if (infilex) *infilex  = '\0';
+    if (urltype) *urltype = '\0';
+    if (outfile) *outfile = '\0';
+    if (extspec) *extspec = '\0';
+    if (binspec) *binspec = '\0';
+    if (colspec) *colspec = '\0';
+    if (rowfilterx) *rowfilterx = '\0';
+ 
     slen = strlen(url);
 
     if (slen == 0)       /* blank filename ?? */
         return(*status);
 
     /* allocate memory for 3 strings, each as long as the input url */
-    infile = (char *) malloc(3 * (slen + 1) );
+    infile = (char *) calloc(3,  slen + 1);
     if (!infile)
        return(*status = MEMORY_ALLOCATION);
 
     rowfilter = &infile[slen + 1];
     tmpstr = &rowfilter[slen + 1];
-
-    *infile = '\0';
-    *rowfilter = '\0';
-    *tmpstr = '\0';
 
     ptr1 = url;
 
@@ -3286,20 +3354,18 @@ int ffiurl(char *url,               /* input filename */
     /*  get urltype (e.g., file://, ftp://, http://, etc.)  */
     /* --------------------------------------------------------- */
 
-    if (*ptr1 == '-' && 
-                     ( *(ptr1 +1) ==  0   || *(ptr1 +1) == ' ' || 
-                       *(ptr1 +1) == '['  || *(ptr1 +1) == '(' ) )
-
-         /* "-" means read file from stdin */
-         /* also support "- ", "-[extname]" and '-(outfile.fits)"    */
-         /* but exclude disk file names that begin with a minus sign */
-         /* e.g., "-55d33m.fits"   */
+    if (*ptr1 == '-' && ( *(ptr1 +1) ==  0   || *(ptr1 +1) == ' '  || 
+                          *(ptr1 +1) == '['  || *(ptr1 +1) == '(' ) )
     {
+        /* "-" means read file from stdin. Also support "- ",        */
+        /* "-[extname]" and '-(outfile.fits)" but exclude disk file  */
+        /* names that begin with a minus sign, e.g., "-55d33m.fits"  */
+
         if (urltype)
             strcat(urltype, "stdin://");
         ptr1++;
     }
-    else if (!strncmp(ptr1, "stdin", 5) || !strncmp(ptr1, "STDIN", 5))
+    else if (!strncasecmp(ptr1, "stdin", 5))
     {
         if (urltype)
             strcat(urltype, "stdin://");
@@ -3316,7 +3382,8 @@ int ffiurl(char *url,               /* input filename */
            /* to the output file, and is not the urltype of the input file */
            ptr2 = 0;   /* so reset pointer to zero */
         }
-        if (ptr2)                  /* copy the explicit urltype string */ 
+
+        if (ptr2)            /* copy the explicit urltype string */ 
         {
             if (urltype)
                  strncat(urltype, ptr1, ptr2 - ptr1 + 3);
@@ -3429,7 +3496,8 @@ int ffiurl(char *url,               /* input filename */
     {
         strcat(infile, ptr1);
     }
-    else if (!ptr3)     /* no bracket, so () enclose output file name */
+    else if (!ptr3 ||         /* no bracket, so () enclose output file name */
+         (ptr2 && (ptr2 < ptr3)) ) /* () enclose output name before bracket */
     {
         strncat(infile, ptr1, ptr2 - ptr1);
         ptr2++;
@@ -3443,21 +3511,12 @@ int ffiurl(char *url,               /* input filename */
 
         if (outfile)
             strncat(outfile, ptr2, ptr1 - ptr2);
-    }
-    else if (ptr2 && (ptr2 < ptr3)) /* () enclose output name before bracket */
-    {
-        strncat(infile, ptr1, ptr2 - ptr1);
-        ptr2++;
 
-        ptr1 = strchr(ptr2, ')' );   /* search for closing ) */
-        if (!ptr1)
-        {
-            free(infile);
-            return(*status = URL_PARSE_ERROR);  /* error, no closing ) */
-        }
+        /* the opening [ could have been part of output name,    */
+        /*      e.g., file(out[compress])[3][#row > 5]           */
+        /* so search again for opening bracket following the closing ) */
+        ptr3 = strchr(ptr1, '[');
 
-        if (outfile)
-            strncat(outfile, ptr2, ptr1 - ptr2);
     }
     else    /*   bracket comes first, so there is no output name */
     {
@@ -3465,25 +3524,16 @@ int ffiurl(char *url,               /* input filename */
     }
 
    /* strip off any trailing blanks in the names */
+
     slen = strlen(infile);
-    for (ii = slen - 1; ii > 0; ii--)   
-    {
-            if (infile[ii] == ' ')
-                infile[ii] = '\0';
-            else
-                break;
-    }
+    while ( (--slen) > 0  && infile[slen] == ' ') 
+         infile[slen] = '\0';
 
     if (outfile)
     {
         slen = strlen(outfile);
-        for (ii = slen - 1; ii > 0; ii--)   
-        {
-            if (outfile[ii] == ' ')
-                outfile[ii] = '\0';
-            else
-                break;
-        }
+        while ( (--slen) > 0  && outfile[slen] == ' ') 
+            outfile[slen] = '\0';
     }
 
     /* --------------------------------------------- */
@@ -3534,13 +3584,16 @@ int ffiurl(char *url,               /* input filename */
         }
     }
 
+    /* -------------------------------------------------------------------- */
     /* if '*' was given for the output name expand it to the root file name */
+    /* -------------------------------------------------------------------- */
+
     if (outfile && outfile[0] == '*')
     {
         /* scan input name backwards to the first '/' character */
         for (ii = jj - 1; ii >= 0; ii--)
         {
-            if (infile[ii] == '/')
+            if (infile[ii] == '/' || ii == 0)
             {
                 strcpy(outfile, &infile[ii + 1]);
                 break;
@@ -3548,11 +3601,16 @@ int ffiurl(char *url,               /* input filename */
         }
     }
 
+    /* ------------------------------------------ */
     /* copy strings from local copy to the output */
+    /* ------------------------------------------ */
     if (infilex)
         strcpy(infilex, infile);
 
-    if (!ptr3)     /* no [ character in the input string? Then we are done. */
+    /* ---------------------------------------------------------- */
+    /* if no '[' character in the input string, then we are done. */
+    /* ---------------------------------------------------------- */
+    if (!ptr3) 
     {
         free(infile);
         return(*status);
@@ -3566,6 +3624,9 @@ int ffiurl(char *url,               /* input filename */
                    /* first brackets must enclose extension name or # */
                    /* or it encloses a image subsection specification */
                    /* or a raw binary image specifier */
+
+                   /* Or, the extension specification may have been */
+                   /* omitted and we have to guess what the user intended */
     {
        ptr1 = ptr3 + 1;    /* pointer to first char after the [ */
 
@@ -3580,9 +3641,12 @@ int ffiurl(char *url,               /* input filename */
        /* ---------------------------------------------- */
        /* First, test if this is a rawfile specifier     */
        /* which looks something like: '[ib512,512:2880]' */
+       /* Test if first character is b,i,j,d,r,f, or u,  */
+       /* and optional second character is b or l,       */
+       /* followed by one or more digits,                */
+       /* finally followed by a ',', ':', or ']'         */
        /* ---------------------------------------------- */
 
-       /* first character must be b,i,j,d,r,f, or u  */
        if (*ptr1 == 'b' || *ptr1 == 'B' || *ptr1 == 'i' || *ptr1 == 'I' ||
            *ptr1 == 'j' || *ptr1 == 'J' || *ptr1 == 'd' || *ptr1 == 'D' ||
            *ptr1 == 'r' || *ptr1 == 'R' || *ptr1 == 'f' || *ptr1 == 'F' ||
@@ -3638,7 +3702,7 @@ int ffiurl(char *url,               /* input filename */
                return(*status);
              }
            }   
-       }
+       }        /* end of rawfile specifier test */
 
        /* -------------------------------------------------------- */
        /* Not a rawfile, so next, test if this is an image section */
@@ -3657,25 +3721,175 @@ int ffiurl(char *url,               /* input filename */
        if (*tmptr == ':' || *tmptr == '*' || *tmptr == '-')
        {
            /* this is an image section specifier */
-           if (extspec)
-              strcpy(extspec, "0"); /* the 0 extension number is implicit */
-
            strcat(rowfilter, ptr3);
+/*
+  don't want to assume 0 extension any more; may imply an image extension.
+           if (extspec)
+              strcpy(extspec, "0");
+*/
        }
        else
        {
-        /* -------------------------------------------------------------- */
-        /* not an image section or rawfile spec so must be extension spec */
-        /* -------------------------------------------------------------- */
+       /* ----------------------------------------------------------------- 
+         Not an image section or rawfile spec so may be an extension spec. 
 
-           /* copy the extension specification */
-           if (extspec)
-               strncat(extspec, ptr1, ptr2 - ptr1);
+         Examples of valid extension specifiers:
+            [3]                - 3rd extension; 0 = primary array
+            [events]           - events extension
+            [events, 2]        - events extension, with EXTVER = 2
+            [events,2]         - spaces are optional
+            [events, 3, b]     - same as above, plus XTENSION = 'BINTABLE'
+            [PICS; colName(12)] - an image in row 12 of the colName column
+                                      in the PICS table extension             
+            [PICS; colName(exposure > 1000)] - as above, but find image in
+                          first row with with exposure column value > 1000.
+            [Rate Table] - extension name can contain spaces!
+            [Rate Table;colName(exposure>1000)]
 
-           /* copy any remaining chars to filter spec string */
-           strcat(rowfilter, ptr2 + 1);
+         Examples of other types of specifiers (Not extension specifiers)
+
+            [bin]  !!! this is ambiguous, and can't be distinguished from
+                       a valid extension specifier
+            [bini X=1:512:16]  (also binb, binj, binr, and bind are allowed)
+            [binr (X,Y) = 5]
+            [bin @binfilter.txt]
+
+            [col Time;rate]
+            [col PI=PHA * 1.1]
+            [col -Time; status]
+
+            [X > 5]
+            [X>5]
+            [@filter.txt]
+            [StatusCol]  !!! this is ambiguous, and can't be distinguished
+                       from a valid extension specifier
+            [StatusCol==0]
+            [StatusCol || x>6]
+            [gtifilter()]
+            [regfilter("region.reg)]
+
+         There will always be some ambiguity between an extension name and 
+         a boolean row filtering expression, (as in a couple of the above
+         examples).  If there is any doubt, the expression should be treated
+         as an extension specification;  The user can always add an explicit
+         expression specifier to override this interpretation.
+
+         The following decision logic will be used:
+
+         1) locate the first token, terminated with a space, comma, 
+            semi-colon, or closing bracket.
+
+         2) the token is not part of an extension specifier if any of
+            the following is true:
+
+            - if the token begins with '@' and contains a '.'
+            - if the token contains an operator: = > < || && 
+            - if the token begins with "gtifilter(" or "regfilter(" 
+            - if the token is terminated by a space and is followed by
+               additional characters (not a ']')  AND any of the following:
+                 - the token is 'col'
+                 - the token is 3 or 4 chars long and begins with 'bin'
+                 - the second token begins with an operator:
+                     ! = < > | & + - * / %
+                 
+
+         3) otherwise, the string is assumed to be an extension specifier
+
+         ----------------------------------------------------------------- */
+
+           tmptr = ptr1;
+           while(*tmptr == ' ')
+               tmptr++;
+
+           hasAt = 0;
+           hasDot = 0;
+           hasOper = 0;
+           followingOper = 0;
+           spaceTerm = 0;
+           rowFilter = 0;
+           colStart = 0;
+           binStart = 0;
+
+           if (*tmptr == '@')  /* test for leading @ symbol */
+               hasAt = 1;
+
+           if ( !strncasecmp(tmptr, "col ", 4) )
+              colStart = 1;
+
+           if ( !strncasecmp(tmptr, "bin", 3) )
+              binStart = 1;
+
+           if ( !strncasecmp(tmptr, "gtifilter(", 10) ||
+                !strncasecmp(tmptr, "regfilter(", 10) )
+           {
+               rowFilter = 1;
+           }
+           else
+           {
+             /* parse the first token of the expression */
+             for (ii = 0; ii < ptr2 - ptr1 + 1; ii++, tmptr++)
+             {
+               if (*tmptr == '.')
+                   hasDot = 1;
+               else if (*tmptr == '=' || *tmptr == '>' || *tmptr == '<' ||
+                   (*tmptr == '|' && *(tmptr+1) == '|') ||
+                   (*tmptr == '&' && *(tmptr+1) == '&') )
+                   hasOper = 1;
+
+               else if (*tmptr == ',' || *tmptr == ';' || *tmptr == ']')
+               {
+                  break;
+               }
+               else if (*tmptr == ' ')   /* a space char? */
+               {
+                  while(*tmptr == ' ')  /* skip spaces */
+                    tmptr++;
+
+                  if (*tmptr == ']') /* is this the end? */
+                     break;  
+
+                  spaceTerm = 1; /* 1st token is terminated by space */
+
+                  /* test if this is a column or binning specifier */
+                  if (colStart || (ii <= 4 && binStart) )
+                     rowFilter = 1;
+                  else
+                  {
+  
+                    /* check if next character is an operator */
+                    if (*tmptr == '=' || *tmptr == '>' || *tmptr == '<' ||
+                      *tmptr == '|' || *tmptr == '&' || *tmptr == '!' ||
+                      *tmptr == '+' || *tmptr == '-' || *tmptr == '*' ||
+                      *tmptr == '/' || *tmptr == '%')
+                       followingOper = 1;
+                  }
+                  break;
+               }
+             }
+           }
+
+           /* test if this is NOT an extension specifier */
+           if ( rowFilter ||
+                (hasAt && hasDot) ||
+                hasOper ||
+                (spaceTerm && followingOper) )
+           {
+               /* this is (probably) not an extension specifier */
+               /* so copy all chars to filter spec string */
+               strcat(rowfilter, ptr3);
+           }
+           else
+           {
+               /* this appears to be a legit extension specifier */
+               /* copy the extension specification */
+               if (extspec)
+                   strncat(extspec, ptr1, ptr2 - ptr1);
+
+               /* copy any remaining chars to filter spec string */
+               strcat(rowfilter, ptr2 + 1);
+           }
        }
-    }
+    }      /* end of  if (!plus_ext)     */
     else   
     {
       /* ------------------------------------------------------------------ */
@@ -3687,13 +3901,8 @@ int ffiurl(char *url,               /* input filename */
 
     /* strip off any trailing blanks from filter */
     slen = strlen(rowfilter);
-    for (ii = slen - 1; ii > 0; ii--)   
-    {
-        if (rowfilter[ii] == ' ')
-            rowfilter[ii] = '\0';
-        else
-            break;
-    }
+    while ( (--slen) >= 0  && rowfilter[slen] == ' ') 
+         rowfilter[slen] = '\0';
 
     if (!rowfilter[0])
     {
@@ -3813,9 +4022,7 @@ int ffiurl(char *url,               /* input filename */
             colspec[collen] = '\0';
  
             while (colspec[--collen] == ' ')
-            {
                 colspec[collen] = '\0';  /* strip trailing blanks */
-            }
         }
 
         /* delete the column selection spec from the row filter string */

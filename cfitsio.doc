@@ -1285,7 +1285,7 @@ some extreme cases:
 
 1.  The maximum number of files that may be simultaneously opened is
 limited to the number of internal IO buffers allocated in CFITSIO
-(currently 25, as defined by NIOBUF in the file fitsio2.h), or by the
+(currently 40, as defined by NIOBUF in the file fitsio2.h), or by the
 limit of the underlying C compiler or machine operating system, which
 ever is smaller.  The C symbolic constant FOPEN\_MAX usually defines
 the total number of files that may open at once (this includes any
@@ -1403,6 +1403,9 @@ status value is also returned as the value of the function itself.
 -
 int fits_open_file / ffopen
     (fitsfile **fptr, char *filename, int iomode, > int *status)
+
+int fits_open_data / ffdopn
+    (fitsfile **fptr, char *filename, int iomode, > int *status)
 -
 
 The iomode parameter determines the read/write access allowed in the
@@ -1413,6 +1416,15 @@ within the FITS file that should be moved to and opened (e.g.,
 \verb-myfile.fits+3- or \verb-myfile.fits[3]- moves to the 3rd extension within
 the file, and \verb-myfile.fits[events]- moves to the extension with the
 keyword EXTNAME = 'EVENTS').
+
+The fits\_open\_data routine is similar to the fits\_open\_file routine
+except that it will move to the first HDU containing significant data,
+if a) an HDU name or number to open was not explicitly specified as
+part of the filename, and b) if the FITS file contains a null primary
+array (i.e., NAXIS = 0).  In this case, it will look for the first
+IMAGE HDU with NAXIS > 0, or the first table that does not contain the
+strings `GTI' (Good Time Interval extension) or `OBSTABLE' in the
+EXTNAME keyword value.
 
 IRAF images (.imh format files) and raw binary data arrays may also be
 opened with READONLY access.  CFITSIO will automatically test if the
@@ -2004,7 +2016,10 @@ operations.  Output files can be directly written in the gzip
 compressed format if the user-specified filename ends with `.gz'.  In
 this case, CFITSIO initially writes the uncompressed file in memory and
 then compresses it and writes it to disk when the FITS file is closed,
-thus saving user disk space.
+thus saving user disk space. Read and write access to these compressed
+FITS files is generally quite fast; the main limitation is that there
+must be enough available memory (or swap space) to hold the entire
+uncompressed FITS file.
 
 2) CFITSIO also supports a newer image compression format in which the
 image is divided into a grid of rectangular tiles, and each tile of
@@ -2051,7 +2066,7 @@ The 3 supported image compression algorithms are all 'loss-less' when
 applied to integer FITS images;  the pixel values are preserved exactly
 with no loss of information during the compression and uncompression
 process. Floating point FITS images (which have BITPIX = -32 or -64)
-are first be quantized into scaled integer pixel values before being
+are first quantized into scaled integer pixel values before being
 compressed.  This technique produces much higher compression factors
 than simply using GZIP to compress the image, but it also means that
 the original floating value pixel values may not be precisely returned
@@ -2154,13 +2169,13 @@ on existing FITS images as shown in these examples:
        uncompressed to the output file.  Otherwise, it simply copies
        the input image to the output image.
 
-6)  imcopy 'infile.fit+1[1001:1500,2001:2500]'  outfile.fit
+6)  imcopy 'infile.fit[1001:1500,2001:2500]'  outfile.fit
 
        This extracts a 500 X 500 pixel section of the much larger
        input image (which may be in tile-compressed format).  The
        output is a normal uncompressed FITS image.
 
-7)  imcopy 'infile.fit+1[1001:1500,2001:2500]'  outfile.fit.gz
+7)  imcopy 'infile.fit[1001:1500,2001:2500]'  outfile.fit.gz
 
        Same as above, except the output file is externally compressed
        using the gzip algorithm.
@@ -7023,7 +7038,7 @@ buffers in memory.  The next time CFITSIO needs to access bytes in the
 same block it can then go to the fast IO buffer rather than using a
 much slower system disk access routine.  The number of available IO
 buffers is determined by the NIOBUF parameter (in fitsio2.h) and is
-currently set to 25 by default.
+currently set to 40 by default.
 
 Whenever CFITSIO reads or writes data it first checks to see if that
 block of the FITS file is already loaded into one of the IO buffers.
@@ -7328,6 +7343,7 @@ fits\_movabs\_hdu     & \pageref{ffmahd} \\
 fits\_movnam\_hdu     & \pageref{ffmnhd} \\
 fits\_movrel\_hdu     & \pageref{ffmrhd} \\
 fits\_null\_check     & \pageref{ffnchk} \\
+fits\_open\_data      & \pageref{ffopen} \\
 fits\_open\_file      & \pageref{ffopen} \\
 fits\_open\_group    & \pageref{ffgtop} \\
 fits\_open\_member    & \pageref{ffgmop} \\
@@ -7368,9 +7384,9 @@ fits\_read\_keys\_TYP     & \pageref{ffgknx} \\
 fits\_read\_keyword      & \pageref{ffgkey} \\
 fits\_read\_pix  & \pageref{ffgpxv} \\
 fits\_read\_pixnull & \pageref{ffgpxf} \\
-fits\_read\_record       & \pageref{ffgrec} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_read\_record       & \pageref{ffgrec} \\
 fits\_read\_subset\_TYP  & \pageref{ffgsvx} \pageref{ffgsvx2}\\
 fits\_read\_subsetnull\_TYP & \pageref{ffgsfx} \pageref{ffgsfx2} \\
 fits\_read\_tbl\_coord & \pageref{ffgtcs} \\
@@ -7416,9 +7432,9 @@ fits\_write\_atblhdr      & \pageref{ffphtb} \\
 fits\_write\_btblhdr      & \pageref{ffphbn} \\
 fits\_write\_chksum   & \pageref{ffpcks} \\
 fits\_write\_col         & \pageref{ffpcl} \\
-fits\_write\_col\_bit     & \pageref{ffpclx} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_write\_col\_bit     & \pageref{ffpclx} \\
 fits\_write\_col\_TYP     & \pageref{ffpcls} \\
 fits\_write\_col\_null      & \pageref{ffpclu} \\
 fits\_write\_colnull      & \pageref{ffpcn} \\
@@ -7479,6 +7495,7 @@ ffdcol   & \pageref{ffdcol} \\
 ffdelt    & \pageref{ffdelt} \\
 ffdhdu     & \pageref{ffdhdu} \\
 ffdkey     & \pageref{ffdkey} \\
+ffdopn      & \pageref{ffopen} \\
 ffdrec  & \pageref{ffdrec} \\
 ffdrow  & \pageref{ffdrow} \\
 ffdrws & \pageref{ffdrws} \\
@@ -7503,9 +7520,9 @@ ffgcf    & \pageref{ffgcf} \\
 ffgcf\_    & \pageref{ffgcfx} \\
 ffgcks     & \pageref{ffgcks} \\
 ffgcnn    & \pageref{ffgcnn} \\
-ffgcno     & \pageref{ffgcno} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffgcno     & \pageref{ffgcno} \\
 ffgcrd         & \pageref{ffgcrd} \\
 ffgcv        & \pageref{ffgcv} \\
 ffgcv\_    & \pageref{ffgcvx} \\
@@ -7551,9 +7568,9 @@ ffgpf\_ & \pageref{ffgpfx} \\
 ffgpv         & \pageref{ffgpv} \\
 ffgpv\_     & \pageref{ffgpvx} \\
 ffgpxv   & \pageref{ffgpxv} \\
-ffgpxf  & \pageref{ffgpxf} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffgpxf  & \pageref{ffgpxf} \\
 ffgrec       & \pageref{ffgrec} \\
 ffgrsz    & \pageref{ffgrsz} \\
 ffgsdt        & \pageref{ffdt2s} \\
@@ -7599,9 +7616,9 @@ ffmcrd       & \pageref{ffmcrd} \\
 ffmkls    & \pageref{ffmkyx} \\
 ffmkyu   & \pageref{ffmkyu} \\
 ffmky\_    & \pageref{ffmkyx} \\
-ffmnam       & \pageref{ffmnam} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffmnam       & \pageref{ffmnam} \\
 ffmnhd     & \pageref{ffmnhd} \\
 ffmrec     & \pageref{ffmrec} \\
 ffmrhd     & \pageref{ffmrhd} \\
@@ -7647,9 +7664,9 @@ ffppr\_    & \pageref{ffpprx} \\
 ffppx & \pageref{ffppx} \\
 ffppxn & \pageref{ffppxn} \\
 ffprec       & \pageref{ffprec} \\
-ffpscl     & \pageref{ffpscl} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffpscl     & \pageref{ffpscl} \\
 ffpss    & \pageref{ffpss} \\
 ffpss\_  & \pageref{ffpssx} \\
 ffpsvc    & \pageref{ffpsvc} \\

@@ -10,8 +10,9 @@
 *************************************************************************/
 
 #if defined(DECFortran) || (defined(__alpha) && defined(g77Fortran)) \
-    || (defined(mipsFortran) && _MIPS_SZLONG==64) \
-    || (defined(IBMR2Fortran) && defined(__64BIT__))
+    || (defined(mipsFortran)  && _MIPS_SZLONG==64) \
+    || (defined(IBMR2Fortran) && defined(__64BIT__)) \
+    || (defined (g77Fortran)  && defined(__ia64__))
 #undef LONGV_cfSTR
 #undef PLONG_cfSTR
 #undef LONGVVVVVVV_cfTYPE

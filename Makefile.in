@@ -82,7 +82,7 @@ libcfitsio${SHLIB_SUFFIX}: ${OBJECTS}
 
 install:	libcfitsio.a
 		/bin/mv libcfitsio.a ${FTOOLS_LIB}
-		/bin/cp *.h ${FTOOLS_INCLUDE}/
+		/bin/cp fitsio.h fitsio2.h longnam.h drvrsmem.h ${FTOOLS_INCLUDE}/
 
 smem:		smem.o libcfitsio.a ${OBJECTS}
 		${CC} $(CFLAGS) $(DEFS) -o smem smem.o -L. -lcfitsio -lm

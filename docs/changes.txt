@@ -1,6 +1,36 @@
                    Log of Changes Made to CFITSIO
 
 
+Version 2.402
+
+  New Routines:
+
+  - fits_open_data behaves similarly to fits_open_file except that it
+    also will move to the first HDU containing significant data if
+    and an explicit HDU name or number to open was not specified.
+    This is useful for automatically skipping over a null primary
+    array when opening the file.
+
+  Enhancements:
+
+  - modified ffourl to support the [compress] qualifier when specifying
+    the optional output file name. E.g., file.fit(out.file[compress])[3]
+
+  - increased the number of internal 2880-byte I/O buffers allocated
+    by CFITSIO from 25 to 40, due to the larger amount
+    of memory available on typical machines today, compared with
+    a few years ago.  The number of buffers can be set by the user
+    with the NIOBUF parameter in fitsio2.h.  (Setting this too large
+    can actually hurt performace).
+
+  - modified the #if statments in fitsio2.h, f77_wrap.h and f77_wrap1.c
+    to support the new Itanium 64-bit Intel PC.
+
+  - modified imcomp_compress_tile to fully support implicit data type
+    conversion when writing to tile-compressed images.  Previously,
+    one could not write a floating point array to an integer compressed
+    image.
+
 Version 2.401 - 28 Jan 2002
 
   - added the imcopy example program to the release (and Makefile)

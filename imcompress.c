@@ -608,12 +608,12 @@ int imcomp_compress_tile (fitsfile *outfptr,
    are written to the output table.
 */
 {
-    int *idata;		/* quantized integer data */
+    int *idata = 0;		/* quantized integer data */
     short *cbuf;	/* compressed data */
     int clen;		/* size of cbuf */
     int flag = 1;		/* true if data were quantized */
     int iminval = 0, imaxval = 0;  /* min and max quantized integers */
-    double bscale[1], bzero[1];	/* scaling parameters */
+    double bscale[1] = {1.}, bzero[1] = {0.};	/* scaling parameters */
     int  nelem = 0;		/* number of bytes */
     size_t gzip_nelem = 0;
     long ii;
@@ -623,6 +623,8 @@ int imcomp_compress_tile (fitsfile *outfptr,
 
     if (datatype == TINT || datatype == TUINT) 
     {
+   /* POTENTIAL BUG??  When reading unsigned int values they will be  */
+   /* interpret them as signed integers? */
         idata = tiledata;
     }
     else
@@ -656,17 +658,39 @@ int imcomp_compress_tile (fitsfile *outfptr,
         }
         else if (datatype == TFLOAT)
         {
+          /* if the tile-compressed table contains zscale and zzero columns */
+          /* then scale and quantize the input floating point data.    */
+          /* Otherwise, just truncate the floats to integers.          */
+          if ((outfptr->Fptr)->cn_zscale > 0)
+          {
             /* quantize the float values into integers */
             flag = fits_quantize_float ((float *) tiledata, tilelen,
                FLOATNULLVALUE, (outfptr->Fptr)->rice_nbits, idata,
                bscale, bzero, &iminval, &imaxval);
+          }
+          else
+          {
+            for (ii = 0; ii < tilelen; ii++)
+              idata[ii] = ((float *)tiledata)[ii];
+          }
         }
         else if (datatype == TDOUBLE)
         {
+          /* if the tile-compressed table contains zscale and zzero columns */
+          /* then scale and quantize the input floating point data.    */
+          /* Otherwise, just truncate the floats to integers.          */
+          if ((outfptr->Fptr)->cn_zscale > 0)
+          {
             /* quantize the double values into integers */
             flag = fits_quantize_double ((double *) tiledata, tilelen,
                DOUBLENULLVALUE, (outfptr->Fptr)->rice_nbits, idata,
                bscale, bzero, &iminval, &imaxval);
+          }
+          else
+          {
+            for (ii = 0; ii < tilelen; ii++)
+              idata[ii] = ((double *)tiledata)[ii];
+          }
         }
         else
         {
@@ -684,7 +708,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
         if (cbuf == NULL)
         {
             ffpmsg("Out of memory. (imcomp_compress_tile)");
-            if (datatype >= TFLOAT)
+            if (datatype != TINT && datatype != TUINT) 
                 free(idata);
 	    return (*status = MEMORY_ALLOCATION);
         }
@@ -705,6 +729,8 @@ int imcomp_compress_tile (fitsfile *outfptr,
                 {
                    /* plio algorithn only supports positive 24 bit ints */
                    ffpmsg("data out of range for PLIO compression (0 - 2**24)");
+                   if (datatype != TINT && datatype != TUINT) 
+                      free(idata);
                    return(*status = DATA_DECOMPRESSION_ERR);
                 }
 
@@ -735,15 +761,15 @@ int imcomp_compress_tile (fitsfile *outfptr,
 
 	if (nelem < 0)  /* error condition */
         {
-            if (datatype > TFLOAT)
-               free(idata);
+            if (datatype != TINT && datatype != TUINT) 
+                free(idata);
 	    free (cbuf);
             ffpmsg
                 ("error compressing row of the image (imcomp_compress_tile)");
             return (*status = DATA_COMPRESSION_ERR);
         }
 
-        if (datatype >= TFLOAT)
+        if ((outfptr->Fptr)->cn_zscale > 0)
         {
               /* write the linear scaling parameters */
 	      ffpcld (outfptr, (outfptr->Fptr)->cn_zscale, row, 1, 1,
@@ -776,7 +802,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
 }
 /*---------------------------------------------------------------------------*/
 int fits_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer     */
-            int  datatype,   /* I - datatype of the array to be returned     */
+            int  datatype,   /* I - datatype of the array to be written      */
             long  *infpixel, /* I - 'bottom left corner' of the subsection   */
             long  *inlpixel, /* I - 'top right corner' of the subsection     */
             int  nullcheck,  /* I - 0 for no null checking                   */

@@ -768,13 +768,13 @@ local int get_method(in)
     if (memcmp(magic, GZIP_MAGIC, 2) == 0
         || memcmp(magic, OLD_GZIP_MAGIC, 2) == 0) {
 
-
 	method = (int)get_byte();
 	if (method != DEFLATED) {
 	    error("unknown compression method -- get newer version of gzip");
 	    exit_code = ERROR;
 	    return -1;
 	}
+
 	work = unzip;
 	flags  = (uch)get_byte();
 

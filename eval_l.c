@@ -2177,7 +2177,7 @@ static int find_variable(char *varName)
    return( -1 );
 }
 
-#if defined(vms) || defined(__vms) || defined(WIN32) || defined(__WIN32__) || defined(macintosh)
+#if defined(vms) || defined(__vms) || defined(WIN32) || defined(__WIN32__) || (defined(macintosh) && !defined(TARGET_API_MAC_CARBON))
 
 /* ================================================================== */
 /* A hack for nonunix machines, which lack strcasecmp and strncasecmp */

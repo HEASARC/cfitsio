@@ -2231,7 +2231,7 @@ some extreme cases:
 
 1.  The maximum number of files that may be simultaneously opened is
 limited to the number of internal IO buffers allocated in CFITSIO
-(currently 25, as defined by NIOBUF in the file fitsio2.h), or by the
+(currently 40, as defined by NIOBUF in the file fitsio2.h), or by the
 limit of the underlying C compiler or machine operating system, which
 ever is smaller.  The C symbolic constant FOPEN\_MAX usually defines
 the total number of files that may open at once (this includes any
@@ -2803,7 +2803,7 @@ buffers in memory.  The next time CFITSIO needs to access bytes in the
 same block it can then go to the fast IO buffer rather than using a
 much slower system disk access routine.  The number of available IO
 buffers is determined by the NIOBUF parameter (in fitsio2.h) and is
-currently set to 25.
+currently set to 40.
 
 Whenever CFITSIO reads or writes data it first checks to see if that
 block of the FITS file is already loaded into one of the IO buffers.
@@ -3142,21 +3142,31 @@ used by these interface routines.
 -
         FTNOPN(unit,filename,rwmode, > status)
 -
->3 Open and initialize a new empty FITS file.   A template file may also be
+>3 Open an existing FITS file with readonly or readwrite access
+   and then move to the first HDU containing significant data, if a) an HDU
+   name or number to open was not explicitly specified as part of the
+   filename, and b) if the FITS file contains a null primary array (i.e.,
+   NAXIS = 0).  In this case, it will look for the first IMAGE HDU with
+   NAXIS > 0, or the first table that does not contain the strings `GTI'
+>  (Good Time Interval) or `OBSTABLE' in the EXTNAME keyword value.
+-
+        FTDOPN(unit,filename,rwmode, > status)
+-
+>4 Open and initialize a new empty FITS file.   A template file may also be
 >   specified to define the structure of the new file (see secion 4.2.4).
 -
         FTINIT(unit,filename,blocksize, > status)
 -
->>4 Close a FITS file previously opened with ftopen or ftinit
+>>5 Close a FITS file previously opened with ftopen or ftinit
 -
         FTCLOS(unit, > status)
 -
->5  Move to a specified (absolute) HDU in the FITS file (nhdu = 1 for the
+>6  Move to a specified (absolute) HDU in the FITS file (nhdu = 1 for the
 >   FITS primary array)
 -
         FTMAHD(unit,nhdu, > hdutype,status)
 -
->6  Create a primary array (if none already exists), or insert a 
+>7  Create a primary array (if none already exists), or insert a 
     new IMAGE extension immediately following the CHDU, or
     insert a new Primary Array at the beginning of the file.  Any
     following extensions in the file will be shifted down to make room
@@ -3170,7 +3180,7 @@ used by these interface routines.
 -
         FTIIMG(unit,bitpix,naxis,naxes, > status) 
 -
->7  Insert a new ASCII TABLE extension immediately following the CHDU.
+>8  Insert a new ASCII TABLE extension immediately following the CHDU.
     Any following extensions will be shifted down to make room for
     the new extension.  If there are no other following extensions
     then the new table extension will simply be appended to the
@@ -3179,7 +3189,7 @@ used by these interface routines.
         FTITAB(unit,rowlen,nrows,tfields,ttype,tbcol,tform,tunit,extname, >
                status)
 -
->8  Insert a new binary table extension immediately following the CHDU.
+>9  Insert a new binary table extension immediately following the CHDU.
     Any following extensions will be shifted down to make room for
     the new extension.  If there are no other following extensions
     then the new bintable extension will simply be appended to the
@@ -3303,9 +3313,12 @@ rather than 'ft'.
 
 **A.  FITS File Open and Close Subroutines: \label{FTOPEN}
 
->>1 Open an existing FITS file with readonly or readwrite access
+>1 Open an existing FITS file with readonly or readwrite access. FTDOPN
+also moves to the first HDU containing significant data, if no specific
+>HDU was specified as part of the filename.
 -
         FTOPEN(unit,filename,rwmode, > blocksize,status)
+        FTDOPN(unit,filename,rwmode, > status)
 -
 >2 Open an existing FITS file with readonly or readwrite access
    and move to a following extension, if one was specified as
@@ -5229,6 +5242,7 @@ The following utility subroutines may be useful for certain applications:
 -
         FTOPEN(unit,filename,rwmode, > blocksize,status)
         FTNOPN(unit,filename,rwmode, > status)
+        FTDOPN(unit,filename,rwmode, > status)
         FTREOPEN(unit, > newunit, status)
         FTINIT(unit,filename,blocksize, > status)
         FTTPLT(unit, filename, tplfilename, > status)

@@ -3,13 +3,18 @@
  
 #include "fitsio.h"
 
+/* Setting SUPPORT_64_BIT_INTEGERS to 1 will enable CFITSIO to read */
+/* and write images with BITPIX = 64 and binary table columns with  */
+/* TFORMn = 'K'.  Otherwise, CFITSIO will not recognize these       */
+/* non-standard 64-bit FITS datatypes.                              */
+
 #define SUPPORT_64BIT_INTEGERS 1
 
 #define USE_LARGE_VALUE -99  /* flag used when writing images */
 
 #define DBUFFSIZE 28800 /* size of data buffer in bytes */
 
-#define NIOBUF  25       /* number of IO buffers to create */
+#define NIOBUF  40       /* number of IO buffers to create */
 #define IOBUFLEN 2880    /* size in bytes of each IO buffer */
 #define MINDIRECT 8640   /* minimum size for direct reads and writes */
                          /* MINDIRECT must have a value >= 8640 */
@@ -21,6 +26,7 @@
 #define ALPHAVMS           4
 #define IBMPC              5
 #define CRAY               6
+#define ITANIUM            7
 
 #define GFLOAT             1
 #define IEEEFLOAT          2
@@ -106,6 +112,13 @@
 /*  SUN Solaris7 in 64-bit mode */
 #define BYTESWAPPED FALSE
 #define MACHINE NATIVE
+#define LONGSIZE 64   
+
+#elif defined(__ia64__)
+
+/*  Intel itanium 64-bit PC */
+#define BYTESWAPPED TRUE
+#define MACHINE ITANIUM
 #define LONGSIZE 64   
 
 #else
@@ -1034,7 +1047,7 @@ int compress2file_from_mem(
 #endif
 
 
-#if defined(vms) || defined(__vms) || defined(WIN32) || defined(__WIN32__) || defined(macintosh)
+#if defined(vms) || defined(__vms) || defined(WIN32) || defined(__WIN32__) || (defined(macintosh) && !defined(TARGET_API_MAC_CARBON))
 
 /* ================================================================== */
 /* A hack for nonunix machines, which lack strcasecmp and strncasecmp */

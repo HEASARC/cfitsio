@@ -2416,13 +2416,13 @@ on existing FITS images as shown in these examples:
        uncompressed to the output file.  Otherwise, it simply copies
        the input image to the output image.
 
-6)  imcopy 'infile.fit+1[1001:1500,2001:2500]'  outfile.fit
+6)  imcopy 'infile.fit[1001:1500,2001:2500]'  outfile.fit
 
        This extracts a 500 X 500 pixel section of the much larger
        input image (which may be in tile-compressed format).  The
        output is a normal uncompressed FITS image.
 
-7)  imcopy 'infile.fit+1[1001:1500,2001:2500]'  outfile.fit.gz
+7)  imcopy 'infile.fit[1001:1500,2001:2500]'  outfile.fit.gz
 
        Same as above, except the output file is externally compressed
        using the gzip algorithm.
