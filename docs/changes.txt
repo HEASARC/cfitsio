@@ -1,5 +1,31 @@
                Log of Changes Made to CFITSIO
 
+Version 2.032 - 25 May 1999
+
+   - the distribution .tar file was changed so that all the files
+     will be untarred into a  subdirectory by default instead of
+     into the current directory.
+
+   - modified ffclos so that it always frees the space allocated by
+     the fptr pointer, even when another fptr points to the same file.
+
+   - plugged a potential (but rare in practice) memory leak in ffpinit
+
+   - fixed bug in all the ffp3d_ and ffg3d_ routines in cases where
+     the data cube that has been allocated in memory has more planes
+     than the data cube in the FITS file.
+
+   - modified drvrsmem.c so that it allocates a small shared
+     memory segment only if CFITSIO tries to read or write a
+     FITS file in shared memory.  Previously it always allocated
+     the segment whether it was needed or not.  Also, this small
+     segment is removed if 0 shared memory segments remain in 
+     the system.
+
+   - put "static" in front of 7 DECLARE macros in compress.c
+     because these global variables were causing conflicts with other
+     applications programs that had variables with the same names.
+
    - modified ffasfm to return datatype = TDOUBLE instead of TFLOAT
      if the ASCII table column has TFORMn = 'Ew.d' with d > 6.
 

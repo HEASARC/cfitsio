@@ -102,6 +102,9 @@ int ffp2db(fitsfile *fptr,   /* I - FITS file pointer                     */
         return(*status);
     }
 
+    if (ncols < naxis1)
+       return(*status = BAD_DIMEN);
+
     /* loop over the naxis2 rows in the FITS image, */
     /* writing naxis1 pixels to each row            */
 
@@ -152,6 +155,9 @@ int ffp3db(fitsfile *fptr,   /* I - FITS file pointer                     */
       return(*status);
     }
 
+    if (ncols < naxis1 || nrows < naxis2)
+       return(*status = BAD_DIMEN);
+
     nfits = 1;   /* next pixel in FITS image to write to */
     narray = 0;  /* next pixel in input array to be written */
 
@@ -169,6 +175,7 @@ int ffp3db(fitsfile *fptr,   /* I - FITS file pointer                     */
        nfits += naxis1;
        narray += ncols;
       }
+      narray += (nrows - naxis2) * ncols;
     }
     return(*status);
 }

@@ -24,8 +24,9 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.0312; /* 31 Mar 1999 */
- 
+      *version = 2.032; /* 25 May 1999 */
+
+ /*   *version = 2.031;  31 Mar 1999 */
  /*   *version = 2.030;  24 Feb 1999 */
  /*   *version = 2.029;  11 Feb 1999 */
  /*   *version = 2.028;  26 Jan 1999 */
@@ -2764,6 +2765,10 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
     {
         (fptr->Fptr)->rowlength = 0;    /* rows have zero length */
         (fptr->Fptr)->tfield = 0;       /* table has no fields   */
+
+        if ((fptr->Fptr)->tableptr)
+           free((fptr->Fptr)->tableptr); /* free memory for the old CHDU */
+
         (fptr->Fptr)->tableptr = 0;     /* set a null table structure pointer */
         (fptr->Fptr)->numrows = 0;
         (fptr->Fptr)->origrows = 0;

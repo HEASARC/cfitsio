@@ -45,7 +45,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large March 1999\\}
+{\Large April 1999\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -148,6 +148,33 @@ The CFITSIO code is contained in about 40 C source files (*.c) and header
 files (*.h). On VAX/VMS systems 2 assembly-code files (vmsieeed.mar and
 vmsieeer.mar) are also needed.
 
+CFITSIO has currently been tested on the following platforms:
+ 
+\begin{verbatim}
+  OPERATING SYSTEM           COMPILER
+   Sun OS                     gcc and cc (3.0.1)
+   Sun Solaris                gcc and cc
+   Silicon Graphics IRIX      gcc and cc
+   Dec Alpha OSF/1            gcc and cc
+   DECstation  Ultrix         gcc
+   Dec Alpha OpenVMS          cc
+   DEC VAX/VMS                gcc and cc
+   HP-UX                      gcc
+   IBM AIX                    gcc
+   Linux                      gcc
+   MkLinux                    DR3
+   Windows 95                 Borland C++ V4.5
+   Windows NT                 Microsoft Visual C++ v5.0, v6.0
+   OS/2                       gcc + EMX
+   MacOS 7.1 or greater       Metrowerks 10.+
+\end{verbatim}
+CFITSIO will probably run on most other Unix platforms.  Cray
+supercomputers and IBM mainframe computers are currently not
+supported.
+
+ 
+\subsection{ Unix Systems}
+
 The CFITSIO library is built on Unix systems by typing:
  
 \begin{verbatim}
@@ -189,14 +216,10 @@ Then to get the staticly linkable libcfitsio.a library file do another
 make clean, undefine HAVE\_NET\_SERVICES on the CFLAGS line and rebuild.
 It's unimportant whether or not you use -fPIC for static builds.
 
-An alternate makefile called Makefile.shared is included in the
-distribution that will build CFITSIO as a shared library.  It has only
-been tested under Solaris 2.5 but will likely also work on other
-systems, at least with gcc or cc.  When using the shared library the
-executable code is not copied into your program at link time and
-instead the program locates the necessary library code at run time,
-normally through LD\_LIBRARY\_PATH or some other method.  The
-advantages are:
+When using the shared library the executable code is not copied into
+your program at link time and instead the program locates the necessary
+library code at run time, normally through LD\_LIBRARY\_PATH or some
+other method.  The advantages are:
  
 \begin{verbatim}
    1.  Less disk space if you build more than 1 program
@@ -219,11 +242,16 @@ The disadvantages are:
       either really slow or really heavily loaded.
 \end{verbatim}
 
+ 
+\subsection{VMS}
 On VAX/VMS and ALPHA/VMS systems the make.com command file may be used
 to build the cfitsio.olb object library using the default G-floating
 point option for double variables.  The make\_dfloat.com and make\_ieee.com
 files may be used instead to build the library with the other floating
 point options.
+
+ 
+\subsection{Windows PCs}
 
 For Windows PC computers, the makepc.bat file gives an example of how
 to build CFITSIO with the Borland C++ v4.5 compiler.  This file will
@@ -232,6 +260,9 @@ if a different C compiler or linker is used.  The files cfitsio.dsp,
 cfitsio.dsw, and cookbook.dsp contain the Microsoft Developer
 workspace files for building CFITSIO and the cookbook example program on
 WindowsNT using Microsoft Visual C++ 5.0 or 6.0.
+
+ 
+\subsection{OS/2}
 
 On OS/2 systems, CFITSIO can be built by typing 'make -f
 makefile.os2'.  This makefile requires the GCC compiler and EMX
@@ -243,6 +274,9 @@ software, such as
      ftp.leo.org/pub/comp/os/os2/leo/devtools/emx+gcc.
 \end{verbatim}
 
+ 
+\subsection{Macintosh PCs}
+
 The MacOS version of the CFITSIO library can be built by (1) un binhex
 and unstuff cfitsio\_mac.sit.hqx, (2) put CFitsioPPC.mcp in the cfitsio
 directory, and (3) load CFitsioPPC.mcp into CodeWarrior Pro 2 and make.
@@ -253,29 +287,6 @@ To use the MacOS port you can add Cfitsio PPC.lib to your CodeWarrior
 Pro 2 project.  Note that this only has been tested for the PPC and
 probably won't work on 68k Macs.
 
-CFITSIO has currently been tested on the following platforms:
- 
-\begin{verbatim}
-  OPERATING SYSTEM           COMPILER
-   Sun OS                     gcc and cc (3.0.1)
-   Sun Solaris                gcc and cc
-   Silicon Graphics IRIX      gcc and cc
-   Dec Alpha OSF/1            gcc and cc
-   DECstation  Ultrix         gcc
-   Dec Alpha OpenVMS          cc
-   DEC VAX/VMS                gcc and cc
-   HP-UX                      gcc
-   IBM AIX                    gcc
-   Linux                      gcc
-   MkLinux                    DR3
-   Windows 95                 Borland C++ V4.5
-   Windows NT                 Microsoft Visual C++ v5.0, v6.0
-   OS/2                       gcc + EMX
-   MacOS 7.1 or greater       Metrowerks 10.+
-\end{verbatim}
-CFITSIO will probably run on most other Unix platforms.  Cray
-supercomputers and IBM mainframe computers are currently not
-supported.
 
  
 \section{Testing the Library}
@@ -1446,7 +1457,7 @@ syntax as described in the Row Filter Specifier section, below.
 \end{verbatim}
 
  
-\subsection{age Section}
+\subsection{Image Section}
 
 A subsection of an image can be opened by specifying the range of
 pixels (start:end), or with an optional pixel increment
@@ -3593,7 +3604,7 @@ status value is also returned as the value of the function itself.
 \end{description}
  
 \begin{verbatim}
-  void fits_report_error / ffrprt (FILE *stream, status)
+  void fits_report_error / ffrprt (FILE *stream, > status)
 \end{verbatim}
  
 \begin{description}
@@ -3681,7 +3692,7 @@ write data to the 2 extensions in any order.
   is null, then this routine behaves the same as fits\_create\_file.
   The currently supported format of the ASCII template file is described
   under the fits\_parse\_template routine (in the general Utilities
-  section), but this may change slightly in the full v2.0 release of
+  section), but this may change slightly in later releases of
   CFITSIO.
 \label{fftplt}
 \end{description}
@@ -4599,7 +4610,7 @@ the first 8 characters, and strongly recommended that the names be
  
 \begin{verbatim}
   int fits_modify_vector_len / ffmvec
-      (fitsfile *fptr, int colnum, long newveclen, int *status)
+      (fitsfile *fptr, int colnum, long newveclen, > int *status)
 \end{verbatim}
  
 \begin{description}
@@ -4626,7 +4637,7 @@ the first 8 characters, and strongly recommended that the names be
 \begin{verbatim}
 int fits_copy_col / ffcpcl
     (fitsfile *infptr, fitsfile *outfptr, int incolnum, int outcolnum,
-     int create_col, int *status);
+     int create_col, > int *status);
 \end{verbatim}
  
 \subsection{Read and Write Column Data Routines \label{FFPCLS}}
@@ -6308,7 +6319,7 @@ is not written more than once to the header.
 \begin{verbatim}
   int fits_copy_key / ffcpky
       (fitsfile *infptr, fitsfile *outfptr, int innum, int outnum,
-       char *keyroot, int *status)
+       char *keyroot, > int *status)
 \end{verbatim}
  
 \begin{description}
@@ -6334,7 +6345,7 @@ is not written more than once to the header.
  
 \begin{verbatim}
   int fits_write_key_template / ffpktp
-      (fitsfile *fptr, const char *filename, int *status)
+      (fitsfile *fptr, const char *filename, > int *status)
 \end{verbatim}
  
 \subsection{ Insert Keyword Routines}
@@ -8081,8 +8092,14 @@ improve the readability of their code.
  BAD_DATATYPE      410    illegal datatype code value
  BAD_DECIM         411    bad number of decimal places specified
  NUM_OVERFLOW      412    overflow during datatype conversion
+ BAD_DATE          420    error in date or time conversion
 
- PARSE_BAD_OUTPUT  436    output file not of proper type
+ PARSE_SYNTAX_ERR  431    syntax error in parser expression
+ PARSE_BAD_TYPE    432    expression did not evaluate to desired type
+ PARSE_LRG_VECTOR  433    vector result too large to return in array
+ PARSE_NO_OUTPUT   434    data parser failed not sent an out column
+ PARSE_BAD_COL     435    bad data encounter while parsing column
+ PARSE_BAD_OUTPUT  436    Output file not of proper type
 
  ANGLE_TOO_BIG     501    celestial angle too large for projection
  BAD_WCS_VAL       502    bad celestial coordinate or pixel value

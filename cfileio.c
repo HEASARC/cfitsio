@@ -3776,7 +3776,10 @@ int ffclos(fitsfile *fptr,      /* I - FITS file pointer */
         free(fptr);               /* free memory for the FITS file structure */
     }
     else
+    {
         ffflsh(fptr, FALSE, status); /* flush but don't disassociate buffers */
+        free(fptr);               /* free memory for the FITS file structure */
+    }
 
     return(*status);
 }
@@ -3809,7 +3812,6 @@ int ffdelt(fitsfile *fptr,      /* I - FITS file pointer */
             ffpmsg((fptr->Fptr)->filename);
         }
     }
-
 
     /* call driver function to actually delete the file */
     if ( (driverTable[(fptr->Fptr)->driver].remove) )

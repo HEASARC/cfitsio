@@ -1,11 +1,16 @@
 \contentsline {chapter}{\numberline {1}Introduction }{1}
 \contentsline {chapter}{\numberline {2} Creating the CFITSIO Library }{3}
 \contentsline {section}{\numberline {2.1}Building the Library}{3}
-\contentsline {section}{\numberline {2.2}Testing the Library}{5}
-\contentsline {section}{\numberline {2.3}Linking Programs with CFITSIO}{6}
+\contentsline {subsection}{\numberline {2.1.1} Unix Systems}{3}
+\contentsline {subsection}{\numberline {2.1.2}VMS}{5}
+\contentsline {subsection}{\numberline {2.1.3}Windows PCs}{5}
+\contentsline {subsection}{\numberline {2.1.4}OS/2}{5}
+\contentsline {subsection}{\numberline {2.1.5}Macintosh PCs}{5}
+\contentsline {section}{\numberline {2.2}Testing the Library}{6}
+\contentsline {section}{\numberline {2.3}Linking Programs with CFITSIO}{7}
 \contentsline {section}{\numberline {2.4}Getting Started with CFITSIO}{7}
 \contentsline {section}{\numberline {2.5}Example Program}{7}
-\contentsline {section}{\numberline {2.6}Acknowledgements}{8}
+\contentsline {section}{\numberline {2.6}Acknowledgements}{9}
 \contentsline {chapter}{\numberline {3} A FITS Primer }{11}
 \contentsline {chapter}{\numberline {4} Extended File Name Syntax }{13}
 \contentsline {section}{\numberline {4.1}Overview}{13}
@@ -22,7 +27,7 @@
 \contentsline {subsubsection}{Auto-indexing of Keywords}{24}
 \contentsline {subsubsection}{Errors}{25}
 \contentsline {subsection}{\numberline {4.2.5}HDU Location Specification}{25}
-\contentsline {subsection}{\numberline {4.2.6}age Section}{27}
+\contentsline {subsection}{\numberline {4.2.6}Image Section}{27}
 \contentsline {subsection}{\numberline {4.2.7}Column and Keyword Filtering Specification}{27}
 \contentsline {subsection}{\numberline {4.2.8}Row Filtering Specification}{29}
 \contentsline {subsection}{\numberline {4.2.9}Binning or Histogramming Specification}{35}

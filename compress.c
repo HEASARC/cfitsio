@@ -21,16 +21,16 @@ local void error         OF((char *m));
 
 		/* global buffers */
 
-DECLARE(uch, inbuf,  INBUFSIZ +INBUF_EXTRA);
-DECLARE(uch, outbuf, OUTBUFSIZ+OUTBUF_EXTRA);
-DECLARE(ush, d_buf,  DIST_BUFSIZE);
-DECLARE(uch, window, 2L*WSIZE);
+static DECLARE(uch, inbuf,  INBUFSIZ +INBUF_EXTRA);
+static DECLARE(uch, outbuf, OUTBUFSIZ+OUTBUF_EXTRA);
+static DECLARE(ush, d_buf,  DIST_BUFSIZE);
+static DECLARE(uch, window, 2L*WSIZE);
 
 #ifndef MAXSEG_64K
-    DECLARE(ush, tab_prefix, 1L<<BITS);
+    static DECLARE(ush, tab_prefix, 1L<<BITS);
 #else
-    DECLARE(ush, tab_prefix0, 1L<<(BITS-1));
-    DECLARE(ush, tab_prefix1, 1L<<(BITS-1));
+    static DECLARE(ush, tab_prefix0, 1L<<(BITS-1));
+    static DECLARE(ush, tab_prefix1, 1L<<(BITS-1));
 #endif
 
 static long header_bytes;   /* number of bytes in gzip header */
