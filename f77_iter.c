@@ -71,7 +71,8 @@ int Cwork_fn( long total_n, long offset,       long first_n,    long n_values,
 	      int n_cols,   iteratorCol *cols, void *FuserData )
 {
    int  *units, *colnum, *datatype, *iotype, *repeat;
-   char **ptrs,**sptr;
+   char **sptr;
+   void **ptrs;
    int  i,j,k,nstr,status=0;
    long *slen;
 
@@ -83,7 +84,7 @@ int Cwork_fn( long total_n, long offset,       long first_n,    long n_values,
    /*  Allocate memory for all the arrays.  Grab all the int's  */
    /*  at once and divide up among parameters                   */
 
-   ptrs  = (char**)malloc(2*n_cols*sizeof(char*));
+   ptrs  = (void**)malloc(2*n_cols*sizeof(void*));
    units = (int*)malloc(5*n_cols*sizeof(int));
    colnum   = units + 1 * n_cols;
    datatype = units + 2 * n_cols;
@@ -107,7 +108,7 @@ int Cwork_fn( long total_n, long offset,       long first_n,    long n_values,
 
       if( datatype[i]==TLOGICAL ) {
 	 /*  Don't forget first element is null value  */
-	 ptrs[i] = (char *)malloc( (n_values*repeat[i]+1)*4 );
+	 ptrs[i] = (void *)malloc( (n_values*repeat[i]+1)*4 );
 	 for( j=0;j<=n_values*repeat[i]; j++ )
 	    ((int*)ptrs[i])[j] = C2FLOGICAL( ((char*)cols[i].array)[j]);
       } else if ( datatype[i]==TSTRING ) {
@@ -123,13 +124,13 @@ int Cwork_fn( long total_n, long offset,       long first_n,    long n_values,
 	 vmsStrs[nstr].dsc$l_arsize          = slen[nstr] * (n_values+1);
 	 vmsStrs[nstr].dsc$bounds[0].dsc$l_u = n_values+1;
 	 vmsStrs[nstr].dsc$a_a0              = sptr[0] - slen[nstr];
-	 ptrs[i] = (char*)(vmsStrs+nstr);
+	 ptrs[i] = (void *)(vmsStrs+nstr);
 #else
-	 ptrs[i] = sptr[0];
+	 ptrs[i] = (void *)sptr[0];
 #endif
 	 nstr++;
       } else
-	 ptrs[i] = (char *)cols[i].array;
+	 ptrs[i] = (void *)cols[i].array;
    }
 
    if(!status) {
