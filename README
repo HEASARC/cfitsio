@@ -41,10 +41,12 @@ library on a Vax).
 On Unix systems the Makefile included in this release may be used to
 build the libcfitsio.a library file.  First, the name of the C compiler
 to be used should be defined using the setenv command.  Then type,
-'make' to build the CFITSIO library in the file libcfitsio.a.
+'configure' to create a Makefile. Finally type 'make' to build the 
+CFITSIO library in the file libcfitsio.a.
 For example,
 
 % setenv CC gcc
+% ./configure
 % make
 
 will build the CFITSIO library using the gcc compiler.
