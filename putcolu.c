@@ -76,7 +76,7 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
   images.
 */
 {
-    int tcode, maxelem, hdutype, lennull, nwrite = 0;
+    int tcode, maxelem, hdutype, lennull, nwrite = 0, writemode = 1;
     short i2null;
     INT32BIT i4null;
     long twidth, incre, repeat, rowlen, rownum, elemnum, remain, next, ntodo;
@@ -98,12 +98,16 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
     /* note that the 5th parameter = 1, not nelem, so that the returned */
     /* repeat and incre values will be the actual values for this column */
 
-    /* note that 6th parameter = 0 because if writing nulls to a variable   */
-    /* length column then dummy data values must have already been written  */
-    /* to the heap.  We now just have to overwrite the previous values with */
-    /* null values.                                                         */
+    /* If writing nulls to a variable length column then dummy data values  */
+    /* must have already been written to the heap. */
+    /* We just have to overwrite the previous values with null values. */
+    /* Set writemode = 0 in this case, to test that values have been written */
 
-    if (ffgcpr( fptr, colnum, firstrow, firstelem, 1, 0, &scale, &zero,
+    fits_get_coltype(fptr, colnum, &tcode, NULL, NULL, status);
+    if (tcode < 0)
+         writemode = 0;  /* this is a variable length column */
+
+    if (ffgcpr( fptr, colnum, firstrow, firstelem, 1, writemode, &scale, &zero,
         tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
