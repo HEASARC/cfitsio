@@ -46,6 +46,9 @@
 /*   Peter D Wilson   Aug 1998  regfilter(a,b,c,d) function added       */
 /*   Peter D Wilson   Jul 1999  Make parser fitsfile-independent,       */
 /*                              allowing a purely vector-based usage    */
+/*  Craig B Markwardt Jun 2004  Add MEDIAN() function                   */
+/*  Craig B Markwardt Jun 2004  Add SUM(), and MIN/MAX() for bit arrays */
+/*  Craig B Markwardt Jun 2004  Allow subscripting of nX bit arrays     */
 /*                                                                      */
 /************************************************************************/
 
@@ -332,6 +335,16 @@ bits:	 BITSTR
        | bits '+' bits
                 { $$ = New_BinOp( BITSTR, $1, '+', $3 ); TEST($$);
                   SIZE($$) = SIZE($1) + SIZE($3);                          }
+       | bits '[' expr ']'
+                { $$ = New_Deref( $1, 1, $3,  0,  0,  0,   0 ); TEST($$); }
+       | bits '[' expr ',' expr ']'
+                { $$ = New_Deref( $1, 2, $3, $5,  0,  0,   0 ); TEST($$); }
+       | bits '[' expr ',' expr ',' expr ']'
+                { $$ = New_Deref( $1, 3, $3, $5, $7,  0,   0 ); TEST($$); }
+       | bits '[' expr ',' expr ',' expr ',' expr ']'
+                { $$ = New_Deref( $1, 4, $3, $5, $7, $9,   0 ); TEST($$); }
+       | bits '[' expr ',' expr ',' expr ',' expr ',' expr ']'
+                { $$ = New_Deref( $1, 5, $3, $5, $7, $9, $11 ); TEST($$); }
        | NOT bits
                 { $$ = New_Unary( BITSTR, NOT, $2 ); TEST($$);     }
 
@@ -480,7 +493,18 @@ expr:    LONG
        | FUNCTION bits ')'
                 { if (FSTRCMP($1,"NELEM(") == 0) {
                      $$ = New_Const( LONG, &( SIZE($2) ), sizeof(long) );
-		  } else {
+		} else if (FSTRCMP($1,"SUM(") == 0) {
+		     $$ = New_Func( LONG, sum_fct, 1, $2,
+				    0, 0, 0, 0, 0, 0 );
+		} else if (FSTRCMP($1,"MIN(") == 0) {
+		     $$ = New_Func( TYPE($2),  /* Force 1D result */
+				    min1_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		     SIZE($$) = 1;
+		} else if (FSTRCMP($1,"MAX(") == 0) {
+		     $$ = New_Func( TYPE($2),  /* Force 1D result */
+				    max1_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		     SIZE($$) = 1;
+		} else {
                      yyerror("Function(bits) not supported");
 		     YYERROR;
 		  }
@@ -489,6 +513,9 @@ expr:    LONG
        | FUNCTION expr ')'
                 { if (FSTRCMP($1,"SUM(") == 0)
 		     $$ = New_Func( TYPE($2), sum_fct, 1, $2,
+				    0, 0, 0, 0, 0, 0 );
+		  else if (FSTRCMP($1,"MEDIAN(") == 0)
+		     $$ = New_Func( TYPE($2), median_fct, 1, $2,
 				    0, 0, 0, 0, 0, 0 );
 		  else if (FSTRCMP($1,"NELEM(") == 0)
                      $$ = New_Const( LONG, &( SIZE($2) ), sizeof(long) );
@@ -2726,6 +2753,157 @@ static void Do_BinOp_dbl( Node *this )
    }
 }
 
+/*
+ *  This Quickselect routine is based on the algorithm described in
+ *  "Numerical recipes in C", Second Edition,
+ *  Cambridge University Press, 1992, Section 8.5, ISBN 0-521-43108-5
+ *  This code by Nicolas Devillard - 1998. Public domain.
+ * http://ndevilla.free.fr/median/median/src/quickselect.c
+ */
+
+#define ELEM_SWAP(a,b) { register long t=(a);(a)=(b);(b)=t; }
+
+/* 
+ * qselect_median_lng - select the median value of a long array
+ *
+ * This routine selects the median value of the long integer array
+ * arr[].  If there are an even number of elements, the "lower median"
+ * is selected.
+ *
+ * The array arr[] is scrambled, so users must operate on a scratch
+ * array if they wish the values to be preserved.
+ *
+ * long arr[] - array of values
+ * int n - number of elements in arr
+ *
+ * RETURNS: the lower median value of arr[]
+ *
+ */
+long qselect_median_lng(long arr[], int n)
+{
+    int low, high ;
+    int median;
+    int middle, ll, hh;
+
+    low = 0 ; high = n-1 ; median = (low + high) / 2;
+    for (;;) {
+
+        if (high <= low) { /* One element only */
+	  return arr[median];	  
+	}
+
+        if (high == low + 1) {  /* Two elements only */
+            if (arr[low] > arr[high])
+                ELEM_SWAP(arr[low], arr[high]) ;
+	    return arr[median];
+        }
+
+    /* Find median of low, middle and high items; swap into position low */
+    middle = (low + high) / 2;
+    if (arr[middle] > arr[high])    ELEM_SWAP(arr[middle], arr[high]) ;
+    if (arr[low] > arr[high])       ELEM_SWAP(arr[low], arr[high]) ;
+    if (arr[middle] > arr[low])     ELEM_SWAP(arr[middle], arr[low]) ;
+
+    /* Swap low item (now in position middle) into position (low+1) */
+    ELEM_SWAP(arr[middle], arr[low+1]) ;
+
+    /* Nibble from each end towards middle, swapping items when stuck */
+    ll = low + 1;
+    hh = high;
+    for (;;) {
+        do ll++; while (arr[low] > arr[ll]) ;
+        do hh--; while (arr[hh]  > arr[low]) ;
+
+        if (hh < ll)
+        break;
+
+        ELEM_SWAP(arr[ll], arr[hh]) ;
+    }
+
+    /* Swap middle item (in position low) back into correct position */
+    ELEM_SWAP(arr[low], arr[hh]) ;
+
+    /* Re-set active partition */
+    if (hh <= median)
+        low = ll;
+        if (hh >= median)
+        high = hh - 1;
+    }
+}
+
+#undef ELEM_SWAP
+
+#define ELEM_SWAP(a,b) { register double t=(a);(a)=(b);(b)=t; }
+
+/* 
+ * qselect_median_dbl - select the median value of a double array
+ *
+ * This routine selects the median value of the double array
+ * arr[].  If there are an even number of elements, the "lower median"
+ * is selected.
+ *
+ * The array arr[] is scrambled, so users must operate on a scratch
+ * array if they wish the values to be preserved.
+ *
+ * double arr[] - array of values
+ * int n - number of elements in arr
+ *
+ * RETURNS: the lower median value of arr[]
+ *
+ */
+double qselect_median_dbl(double arr[], int n)
+{
+    int low, high ;
+    int median;
+    int middle, ll, hh;
+
+    low = 0 ; high = n-1 ; median = (low + high) / 2;
+    for (;;) {
+        if (high <= low) { /* One element only */
+            return arr[median] ;
+	}
+
+        if (high == low + 1) {  /* Two elements only */
+            if (arr[low] > arr[high])
+                ELEM_SWAP(arr[low], arr[high]) ;
+            return arr[median] ;
+        }
+
+    /* Find median of low, middle and high items; swap into position low */
+    middle = (low + high) / 2;
+    if (arr[middle] > arr[high])    ELEM_SWAP(arr[middle], arr[high]) ;
+    if (arr[low] > arr[high])       ELEM_SWAP(arr[low], arr[high]) ;
+    if (arr[middle] > arr[low])     ELEM_SWAP(arr[middle], arr[low]) ;
+
+    /* Swap low item (now in position middle) into position (low+1) */
+    ELEM_SWAP(arr[middle], arr[low+1]) ;
+
+    /* Nibble from each end towards middle, swapping items when stuck */
+    ll = low + 1;
+    hh = high;
+    for (;;) {
+        do ll++; while (arr[low] > arr[ll]) ;
+        do hh--; while (arr[hh]  > arr[low]) ;
+
+        if (hh < ll)
+        break;
+
+        ELEM_SWAP(arr[ll], arr[hh]) ;
+    }
+
+    /* Swap middle item (in position low) back into correct position */
+    ELEM_SWAP(arr[low], arr[hh]) ;
+
+    /* Re-set active partition */
+    if (hh <= median)
+        low = ll;
+        if (hh >= median)
+        high = hh - 1;
+    }
+}
+
+#undef ELEM_SWAP
+
 static void Do_Func( Node *this )
 {
    Node *theParams[MAXSUBS];
@@ -2768,6 +2946,16 @@ static void Do_Func( Node *this )
 	    /* Non-Trig single-argument functions */
 
 	 case sum_fct:
+	    if( theParams[0]->type==BOOLEAN )
+	       this->value.data.lng = ( pVals[0].data.log ? 1 : 0 );
+	    else if( theParams[0]->type==LONG )
+	       this->value.data.lng = pVals[0].data.lng;
+	    else if( theParams[0]->type==DOUBLE )
+	       this->value.data.dbl = pVals[0].data.dbl;
+	    else if( theParams[0]->type==BITSTR )
+	      strcpy(this->value.data.str, pVals[0].data.str);
+	    break;
+	 case median_fct:
 	    if( theParams[0]->type==BOOLEAN )
 	       this->value.data.lng = ( pVals[0].data.log ? 1 : 0 );
 	    else if( theParams[0]->type==LONG )
@@ -2887,6 +3075,8 @@ static void Do_Func( Node *this )
 	       this->value.data.dbl = pVals[0].data.dbl;
 	    else if( this->type == LONG )
 	       this->value.data.lng = pVals[0].data.lng;
+	    else if( this->type == BITSTR )
+	      strcpy(this->value.data.str, pVals[0].data.str);
 	    break;
          case min2_fct:
 	    if( this->type == DOUBLE )
@@ -2902,6 +3092,8 @@ static void Do_Func( Node *this )
 	       this->value.data.dbl = pVals[0].data.dbl;
 	    else if( this->type == LONG )
 	       this->value.data.lng = pVals[0].data.lng;
+	    else if( this->type == BITSTR )
+	      strcpy(this->value.data.str, pVals[0].data.str);
 	    break;
          case max2_fct:
 	    if( this->type == DOUBLE )
@@ -3038,7 +3230,7 @@ static void Do_Func( Node *this )
 			  theParams[0]->value.undef[elem];
 		  }
 	       }		  
-	    } else {
+	    } else if( theParams[0]->type==DOUBLE ){
 	       while( row-- ) {
 		  this->value.data.dblptr[row] = 0.0;
 		  this->value.undef[row] = 0;
@@ -3051,6 +3243,86 @@ static void Do_Func( Node *this )
 			  theParams[0]->value.undef[elem];
 		  }
 	       }		  
+	    } else { /* BITSTR */
+	       nelem = theParams[0]->value.nelem;
+	       while( row-- ) {
+		  char *sptr1 = theParams[0]->value.data.strptr[row];
+		  this->value.data.lngptr[row] = 0;
+		  this->value.undef[row] = 0;
+		  while (*sptr1) {
+		    if (*sptr1 == '1') this->value.data.lngptr[row] ++;
+		    sptr1++;
+		  }
+	       }		  
+	    }
+	    break;
+
+	 case median_fct:
+	   elem = row * theParams[0]->value.nelem;
+	   nelem = theParams[0]->value.nelem;
+	   if( theParams[0]->type==LONG ) {
+	       long *dptr = theParams[0]->value.data.lngptr;
+	       char *uptr = theParams[0]->value.undef;
+	       long *mptr = (long *) malloc(sizeof(long)*nelem);
+	       int irow;
+
+	       /* Allocate temporary storage for this row, since the
+                  quickselect function will scramble the contents */
+	       if (mptr == 0) {
+		 yyerror("Could not allocate temporary memory in median function");
+		 free( this->value.data.ptr );
+		 break;
+	       }
+
+	       for (irow=0; irow<row; irow++) {
+		  long *p = mptr;
+		  int nelem1 = nelem;
+
+		  this->value.undef[irow] = 0;
+		  while ( nelem1-- ) { 
+		    *p++ = *dptr++;
+		    if (*uptr++) {
+		      this->value.undef[irow] = 1;
+		      break;
+		    }
+		  }		    
+
+		  if (this->value.undef[irow] == 0) 
+		    this->value.data.lngptr[irow] = qselect_median_lng(mptr, nelem);
+	       }		  
+
+	       free(mptr);
+	    } else {
+	       double *dptr = theParams[0]->value.data.dblptr;
+	       char   *uptr = theParams[0]->value.undef;
+	       double *mptr = (double *) malloc(sizeof(double)*nelem);
+	       int irow;
+
+	       /* Allocate temporary storage for this row, since the
+                  quickselect function will scramble the contents */
+	       if (mptr == 0) {
+		 yyerror("Could not allocate temporary memory in median function");
+		 free( this->value.data.ptr );
+		 break;
+	       }
+
+	       for (irow=0; irow<row; irow++) {
+		  double *p = mptr;
+		  int nelem1 = nelem;
+
+		  this->value.undef[irow] = 0;
+		  while ( nelem1-- ) { 
+		    *p++ = *dptr++;
+		    if (*uptr++) {
+		      this->value.undef[irow] = 1;
+		      break;
+		    }
+		  }
+
+		  if (this->value.undef[irow] == 0) 
+		    this->value.data.dblptr[irow] = qselect_median_dbl(mptr, nelem);
+	       }		  
+	       free(mptr);
 	    }
 	    break;
 	 case abs_fct:
@@ -3381,6 +3653,18 @@ static void Do_Func( Node *this )
 		  }
 		  this->value.data.dblptr[row] = minVal;
 	       }		  
+	    } else if( this->type==BITSTR ) {
+	       char minVal;
+	       while( row-- ) {
+		  char *sptr1 = theParams[0]->value.data.strptr[row];
+		  minVal = '1';
+		  while (*sptr1) {
+		    if (*sptr1 == '0') minVal = '0';
+		    sptr1++;
+		  }
+		  this->value.data.strptr[row][0] = minVal;
+		  this->value.data.strptr[row][1] = 0;     /* Null terminate */
+	       }		  
 	    }
 	    break;
          case min2_fct:
@@ -3468,6 +3752,18 @@ static void Do_Func( Node *this )
 			theParams[0]->value.undef[elem];
 		  }
 		  this->value.data.dblptr[row] = maxVal;
+	       }		  
+	    } else if( this->type==BITSTR ) {
+	       char maxVal;
+	       while( row-- ) {
+		  char *sptr1 = theParams[0]->value.data.strptr[row];
+		  maxVal = '0';
+		  while (*sptr1) {
+		    if (*sptr1 == '1') maxVal = '1';
+		    sptr1++;
+		  }
+		  this->value.data.strptr[row][0] = maxVal;
+		  this->value.data.strptr[row][1] = 0;     /* Null terminate */
 	       }		  
 	    }
 	    break;
@@ -3781,16 +4077,31 @@ static void Do_Deref( Node *this )
 	 }
 	 if( i<0 ) {
 	    for( row=0; row<gParse.nRows; row++ ) {
-	       this->value.undef[row] = theVar->value.undef[elem];
+	       if( this->type==STRING )
+		 this->value.undef[row] = theVar->value.undef[row];
+	       else if( this->type==BITSTR ) 
+		 this->value.undef;  /* Dummy - BITSTRs do not have undefs */
+	       else 
+		 this->value.undef[row] = theVar->value.undef[elem];
+
 	       if( this->type==DOUBLE )
 		  this->value.data.dblptr[row] = 
 		     theVar->value.data.dblptr[elem];
 	       else if( this->type==LONG )
 		  this->value.data.lngptr[row] = 
 		     theVar->value.data.lngptr[elem];
-	       else
+	       else if( this->type==BOOLEAN )
 		  this->value.data.logptr[row] = 
 		     theVar->value.data.logptr[elem];
+	       else {
+		 /* XXX Note, the below expression uses knowledge of
+                    the layout of the string format, namely (nelem+1)
+                    characters per string, followed by (nelem+1)
+                    "undef" values. */
+		  this->value.data.strptr[row][0] = 
+		     theVar->value.data.strptr[0][elem+row];
+		  this->value.data.strptr[row][1] = 0;  /* Null terminate */
+	       }
 	       elem += theVar->value.nelem;
 	    }
 	 } else {
@@ -3806,6 +4117,19 @@ static void Do_Deref( Node *this )
 	     dimVals[0] > theVar->value.naxes[ theVar->value.naxis-1 ] ) {
 	    yyerror("Index out of range");
 	    free( this->value.data.ptr );
+	 } else if ( this->type == BITSTR || this->type == STRING ) {
+	    elem = this->value.nelem * (dimVals[0]-1);
+	    for( row=0; row<gParse.nRows; row++ ) {
+	      if (this->value.undef) 
+		this->value.undef[row] = theVar->value.undef[row];
+	      memcpy( (char*)this->value.data.strptr[0]
+		      + row*sizeof(char)*(this->value.nelem+1),
+		      (char*)theVar->value.data.strptr[0] + elem*sizeof(char),
+		      this->value.nelem * sizeof(char) );
+	      /* Null terminate */
+	      this->value.data.strptr[row][this->value.nelem] = 0;
+	      elem += theVar->value.nelem+1;
+	    }	       
 	 } else {
 	    elem = this->value.nelem * (dimVals[0]-1);
 	    for( row=0; row<gParse.nRows; row++ ) {
@@ -3846,16 +4170,32 @@ static void Do_Deref( Node *this )
 	    }
 	    if( i<0 ) {
 	       elem += row*theVar->value.nelem;
-	       this->value.undef[row] = theVar->value.undef[elem];
+
+	       if( this->type==STRING )
+		 this->value.undef[row] = theVar->value.undef[row];
+	       else if( this->type==BITSTR ) 
+		 this->value.undef;  /* Dummy - BITSTRs do not have undefs */
+	       else 
+		 this->value.undef[row] = theVar->value.undef[elem];
+
 	       if( this->type==DOUBLE )
 		  this->value.data.dblptr[row] = 
 		     theVar->value.data.dblptr[elem];
 	       else if( this->type==LONG )
 		  this->value.data.lngptr[row] = 
 		     theVar->value.data.lngptr[elem];
-	       else
+	       else if( this->type==BOOLEAN )
 		  this->value.data.logptr[row] = 
 		     theVar->value.data.logptr[elem];
+	       else {
+		 /* XXX Note, the below expression uses knowledge of
+                    the layout of the string format, namely (nelem+1)
+                    characters per string, followed by (nelem+1)
+                    "undef" values. */
+		  this->value.data.strptr[row][0] = 
+		     theVar->value.data.strptr[0][elem+row];
+		  this->value.data.strptr[row][1] = 0;  /* Null terminate */
+	       }
 	    } else {
 	       yyerror("Index out of range");
 	       free( this->value.data.ptr );
@@ -3881,6 +4221,17 @@ static void Do_Deref( Node *this )
 		dimVals[0] > theVar->value.naxes[ theVar->value.naxis-1 ] ) {
 	       yyerror("Index out of range");
 	       free( this->value.data.ptr );
+	    } else if ( this->type == BITSTR || this->type == STRING ) {
+	      elem = this->value.nelem * (dimVals[0]-1);
+	      elem += row*(theVar->value.nelem+1);
+	      if (this->value.undef) 
+		this->value.undef[row] = theVar->value.undef[row];
+	      memcpy( (char*)this->value.data.strptr[0]
+		      + row*sizeof(char)*(this->value.nelem+1),
+		      (char*)theVar->value.data.strptr[0] + elem*sizeof(char),
+		      this->value.nelem * sizeof(char) );
+	      /* Null terminate */
+	      this->value.data.strptr[row][this->value.nelem] = 0;
 	    } else {
 	       elem  = this->value.nelem * (dimVals[0]-1);
 	       elem += row*theVar->value.nelem;
@@ -3897,7 +4248,10 @@ static void Do_Deref( Node *this )
    }
 
    if( theVar->operation>0 ) {
-      free( theVar->value.data.ptr );
+     if (theVar->type == STRING || theVar->type == BITSTR) 
+       free(theVar->value.data.strptr[0] );
+     else 
+       free( theVar->value.data.ptr );
    }
    for( i=0; i<nDims; i++ )
       if( theDims[i]->operation>0 ) {

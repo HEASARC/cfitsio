@@ -125,7 +125,7 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
     if (!(*fptr))
     {
         (*driverTable[driver].close)(handle);  /* close the file */
-        ffpmsg("failed to allocate structure for following file: (ffopen)");
+        ffpmsg("failed to allocate structure for following file: (ffomem)");
         ffpmsg(url);
         return(*status = MEMORY_ALLOCATION);
     }
@@ -1588,7 +1588,6 @@ int ffedit_columns(
                 /*   cptr2 = the expression to be calculated */
                 /*   oldname = name of the column or keyword */
                 /*   colformat = column format, or keyword comment string */
-
 
                 fits_calculator(*fptr, cptr2, *fptr, oldname, colformat,
        	                        status);

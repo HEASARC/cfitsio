@@ -3,7 +3,36 @@
 
 Version 2.500 -   2004
 
+  Bug fixes:
+
+   - made small change to ffsrow in eval_f.c to avoid potential array 
+     bounds overflow.
+
+   - corrected a memory allocation error in the new fits_hdr2str routine
+     that was added in version 2.49
+
+   - The on-the-fly row-selection filtering would fail with a segfault
+     if the length of a table row (NAXIS1 value) was greater than
+     500000 bytes.  A small change to eval_f.c was required to fix this.
+
   Enhancements:
+
+   - added new 'median' vector function to the lexical parser in addition
+     to the existing min, max and sum functions (thanks to Craig Markwardt,
+     GSFC)
+
+   - modified configure to support AIX systems that have flock in a non-
+     standard location.
+
+   - modified ffrsim (resize an existing image) so that it supports changing
+     the datatype to an unsigned integer image using the USHORT_IMG and
+     ULONG_IMG definitions.
+
+   - modified the disk file driver (drvrfile.c) so that if an output
+     file is specified when opening an ordinary file (e.g. with the syntax
+     'myfile.fits(outputfile.fits)' then it will make a copy of the file,
+     close the original file and open the copy.  Previously, the
+     specified output file would be ignored unless the file was compressed.
 
    - modified f77_wrap.h and f77_wrap3.c to support the Fortran wrappers
      on 64-bit AMD Opteron machines

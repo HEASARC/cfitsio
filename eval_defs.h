@@ -129,7 +129,8 @@ typedef enum {
                   regfilt_fct,
                   ifthenelse_fct,
                   row_fct,
-                  null_fct
+                  null_fct,
+		  median_fct
                                 } funcOp;
 
 extern ParseData gParse;
