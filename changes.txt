@@ -13,12 +13,27 @@ Version 2.402
 
   Enhancements:
 
+  - included an alternate source file that can be used to replace
+    compress.c, which is distributed under the GNU General Public
+    Licence.  The alternate file contains non-functional stubs for
+    the compression routines, which can be used to make a version of
+    CFITSIO that does not have the GPL restrictions (and is also less
+    functional since it cannot read or write compressed FITS files).
+
+  - modifications to the iterator routine (ffiter) to support writing
+    tile compressed output images.
+
   - modified ffourl to support the [compress] qualifier when specifying
     the optional output file name. E.g., file.fit(out.file[compress])[3]
 
+  - modified imcomp_compress_tile to fully support implicit data type
+    conversion when writing to tile-compressed images.  Previously,
+    one could not write a floating point array to an integer compressed
+    image.
+
   - increased the number of internal 2880-byte I/O buffers allocated
-    by CFITSIO from 25 to 40, due to the larger amount
-    of memory available on typical machines today, compared with
+    by CFITSIO from 25 to 40, in recognition of the larger amount
+    of memory available on typical machines today compared with
     a few years ago.  The number of buffers can be set by the user
     with the NIOBUF parameter in fitsio2.h.  (Setting this too large
     can actually hurt performace).
@@ -26,10 +41,17 @@ Version 2.402
   - modified the #if statments in fitsio2.h, f77_wrap.h and f77_wrap1.c
     to support the new Itanium 64-bit Intel PC.
 
-  - modified imcomp_compress_tile to fully support implicit data type
-    conversion when writing to tile-compressed images.  Previously,
-    one could not write a floating point array to an integer compressed
-    image.
+  - a couple minor modifications to fitsio.h needed to support the off_t
+    datatype on debian linux systems.
+
+  Bug fixes:
+
+  - the region file reading routine (ffrrgn) did not work correctly if
+    the region file (created by POW and perhaps other programs) had an
+    'exclude' region (beginning with a '-' sign) as the first region 
+    in the file.  In this case all points outside the excluded region
+    should be accepted, but in fact no points were being accepted
+    in this case.
 
 Version 2.401 - 28 Jan 2002
 

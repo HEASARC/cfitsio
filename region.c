@@ -121,7 +121,7 @@ int ffrrgn( const char *filename,
       } else if( !strncasecmp( currLoc, "glob", 4 ) ) {
 		  /* skip lines that begin with the word 'global' */
 
-	  } else {
+      } else {
 
          while( *currLoc != '\0' ) {
 
@@ -185,6 +185,54 @@ int ffrrgn( const char *filename,
 
             if( ! *namePtr && ! paramPtr ) continue;
 
+
+            /*  Check for format code at beginning of the line */
+
+            if( !strncasecmp( namePtr, "image;", 6 ) ) {
+				namePtr += 6;
+				cFmt = pixel_fmt;
+            } else if( !strncasecmp( namePtr, "fk4;", 4 ) ) {
+				namePtr += 4;
+				cFmt = degree_fmt;
+            } else if( !strncasecmp( namePtr, "fk5;", 4 ) ) {
+				namePtr += 4;
+				cFmt = degree_fmt;
+            } else if( !strncasecmp( namePtr, "icrs;", 5 ) ) {
+				namePtr += 5;
+				cFmt = degree_fmt;
+
+            /* the following 4 cases support region files created by POW which
+               may have lines containing  only a format code, not followed
+               by a ';' (and with no region specifier on the line).  We use
+               the 'continue' statement to jump to the end of the loop and
+               then continue reading the next line of the region file. */
+
+            } else if( !strncasecmp( namePtr, "fk5", 3 ) ) {
+				cFmt = degree_fmt;
+                                continue;  /* supports POW region file format */
+            } else if( !strncasecmp( namePtr, "fk4", 3 ) ) {
+				cFmt = degree_fmt;
+                                continue;  /* supports POW region file format */
+            } else if( !strncasecmp( namePtr, "icrs", 4 ) ) {
+				cFmt = degree_fmt;
+                                continue;  /* supports POW region file format */
+            } else if( !strncasecmp( namePtr, "image", 5 ) ) {
+				cFmt = pixel_fmt;
+                                continue;  /* supports POW region file format */
+
+
+            } else if( !strncasecmp( namePtr, "galactic;", 9 ) ) {
+               ffpmsg( "Galactic region coordinates not supported" );
+               ffpmsg( namePtr );
+			   *status = PARSE_SYNTAX_ERR;
+               goto error;
+			} else if( !strncasecmp( namePtr, "ecliptic;", 9 ) ) {
+               ffpmsg( "ecliptic region coordinates not supported" );
+               ffpmsg( namePtr );
+			   *status = PARSE_SYNTAX_ERR;
+               goto error;
+            }
+
             /**************************************************/
             /*  We've apparently found a region... Set it up  */
             /**************************************************/
@@ -208,44 +256,6 @@ int ffrrgn( const char *filename,
             newShape        = &aRgn->Shapes[aRgn->nShapes++];
             newShape->sign  = 1;
             newShape->shape = point_rgn;
-
-            /*  Check for format code at beginning of the line */
-
-            if( !strncasecmp( namePtr, "image;", 6 ) ) {
-				namePtr += 6;
-				cFmt = pixel_fmt;
-            } else if( !strncasecmp( namePtr, "fk4;", 4 ) ) {
-				namePtr += 4;
-				cFmt = degree_fmt;
-            } else if( !strncasecmp( namePtr, "fk5;", 4 ) ) {
-				namePtr += 4;
-				cFmt = degree_fmt;
-            } else if( !strncasecmp( namePtr, "icrs;", 5 ) ) {
-				namePtr += 5;
-				cFmt = degree_fmt;
-            } else if( !strncasecmp( namePtr, "fk5", 3 ) ) {
-				cFmt = degree_fmt;
-                                continue;  /* supports POW region file format */
-            } else if( !strncasecmp( namePtr, "fk4", 3 ) ) {
-				cFmt = degree_fmt;
-                                continue;  /* supports POW region file format */
-            } else if( !strncasecmp( namePtr, "icrs", 4 ) ) {
-				cFmt = degree_fmt;
-                                continue;  /* supports POW region file format */
-            } else if( !strncasecmp( namePtr, "image", 5 ) ) {
-				cFmt = pixel_fmt;
-                                continue;  /* supports POW region file format */
-            } else if( !strncasecmp( namePtr, "galactic;", 9 ) ) {
-               ffpmsg( "Galactic region coordinates not supported" );
-               ffpmsg( namePtr );
-			   *status = PARSE_SYNTAX_ERR;
-               goto error;
-			} else if( !strncasecmp( namePtr, "ecliptic;", 9 ) ) {
-               ffpmsg( "ecliptic region coordinates not supported" );
-               ffpmsg( namePtr );
-			   *status = PARSE_SYNTAX_ERR;
-               goto error;
-            }
 
             while( *namePtr==' ' ) namePtr++;
             

@@ -829,10 +829,10 @@ int ffiter(int n_cols,
 
     void *dataptr, *defaultnull;
     colNulls *col;
-    int ii, jj, tstatus;
+    int ii, jj, tstatus, naxis, bitpix;
     int typecode, hdutype, jtype, type, anynul, nfiles, nbytes;
     long totaln, nleft, frow, felement, n_optimum, i_optimum, ntodo;
-    long rept, width, tnull;
+    long rept, width, tnull, naxes[9] = {1,1,1,1,1,1,1,1,1};
     double zeros = 0.;
     char message[FLEN_ERRMSG], keyname[FLEN_KEYWORD], nullstr[FLEN_VALUE];
     char **stringptr, *nullptr, *cptr;
@@ -891,8 +891,8 @@ int ffiter(int n_cols,
                 return(*status = NOT_IMAGE);
             }
 
-            /* images are stored in column 2; ignore the input value */
-            cols[jj].colnum = 2;
+            /* since this is an image, set a dummy column number = 0 */
+            cols[jj].colnum = 0;
             strcpy(cols[jj].colname, "IMAGE");  /* dummy name for images */
 
             tstatus = 0;
@@ -965,7 +965,13 @@ int ffiter(int n_cols,
 
     if (hdutype == IMAGE_HDU)   /* get total number of pixels in the image */
     {
-      ffgtcl(cols[0].fptr, cols[0].colnum, NULL, &totaln, &width, status);
+      fits_get_img_dim(cols[0].fptr, &naxis, status);
+      fits_get_img_size(cols[0].fptr, 9, naxes, status);
+
+      totaln = naxes[0];
+      for (ii = 1; ii < naxis; ii++)
+          totaln *= naxes[ii];
+
       frow = 1;
       felement = 1 + offset;
     }
@@ -1028,10 +1034,34 @@ int ffiter(int n_cols,
 
     for (jj = 0; jj < n_cols; jj++)
     {
-        /* get column datatype and vector length */
-        if (ffgtcl(cols[jj].fptr, cols[jj].colnum, &typecode, &rept,
+        /* get image or column datatype and vector length */
+        if (hdutype == IMAGE_HDU)   /* get total number of pixels in the image */
+        {
+           fits_get_img_type(cols[jj].fptr, &bitpix, status);
+           switch(bitpix) {
+             case BYTE_IMG:
+                 typecode = TBYTE;
+                 break;
+             case SHORT_IMG:
+                 typecode = TSHORT;
+                 break;
+             case LONG_IMG:
+                 typecode = TLONG;
+                 break;
+             case FLOAT_IMG:
+                 typecode = TFLOAT;
+                 break;
+             case DOUBLE_IMG:
+                 typecode = TDOUBLE;
+                 break;
+            }
+        }
+        else
+        {
+            if (ffgtcl(cols[jj].fptr, cols[jj].colnum, &typecode, &rept,
                   &width, status) > 0)
-            goto cleanup;
+                goto cleanup;
+        }
 
         /* special case where sizeof(long) = 8: use TINT instead of TLONG */
         if (typecode == TLONG && sizeof(long) == 8 && sizeof(int) == 4)
@@ -1181,7 +1211,7 @@ int ffiter(int n_cols,
           break;
 
          case TINT:
-          cols[jj].array = calloc(ntodo + 1, sizeof(int));
+          cols[jj].array = calloc(sizeof(int), ntodo + 1);
           col[jj].nullsize  = sizeof(int);  /* number of bytes per value */
 
           if (typecode == TBYTE || typecode == TSHORT || typecode == TLONG)
@@ -1349,7 +1379,7 @@ int ffiter(int n_cols,
             goto cleanup;
         }
     }
- 
+
     /*--------------------------------------------------*/
     /* main loop while there are values left to process */
     /*--------------------------------------------------*/
@@ -1376,11 +1406,24 @@ int ffiter(int n_cols,
             dataptr = (char *) cols[jj].array + col[jj].nullsize;
             defaultnull = &col[jj].null.charnull; /* ptr to the null value */
           }
-          if (ffgcv(cols[jj].fptr, cols[jj].datatype, cols[jj].colnum,
+
+          if (hdutype == IMAGE_HDU)   
+          {
+              if (ffgpv(cols[jj].fptr, cols[jj].datatype,
+                    felement, cols[jj].repeat * ntodo, defaultnull,
+                    dataptr,  &anynul, status) > 0)
+              {
+                 break;
+              }
+          }
+          else
+          {
+              if (ffgcv(cols[jj].fptr, cols[jj].datatype, cols[jj].colnum,
                     frow, felement, cols[jj].repeat * ntodo, defaultnull,
                     dataptr,  &anynul, status) > 0)
-          {
-            break;
+              {
+                 break;
+              }
           }
 
           /* copy the appropriate null value into first array element */
@@ -1450,18 +1493,38 @@ int ffiter(int n_cols,
           if (memcmp(nullptr, &zeros, nbytes) ) 
           {
             /* null value flag not zero; must check for and write nulls */
-            if (ffpcn(cols[jj].fptr, cols[jj].datatype, cols[jj].colnum, frow,
+            if (hdutype == IMAGE_HDU)   
+            {
+                if (ffppn(cols[jj].fptr, cols[jj].datatype, 
                       felement, cols[jj].repeat * ntodo, dataptr,
                       nullptr, &tstatus) > 0)
-              break;
+                break;
+            }
+            else
+            {
+                if (ffpcn(cols[jj].fptr, cols[jj].datatype, cols[jj].colnum, frow,
+                      felement, cols[jj].repeat * ntodo, dataptr,
+                      nullptr, &tstatus) > 0)
+                break;
+            }
           }
           else
           { 
             /* no null values; just write the array */
-            if (ffpcl(cols[jj].fptr, cols[jj].datatype, cols[jj].colnum, frow,
+            if (hdutype == IMAGE_HDU)   
+            {
+                if (ffppr(cols[jj].fptr, cols[jj].datatype,
                       felement, cols[jj].repeat * ntodo, dataptr,
                       &tstatus) > 0)
-              break;
+                break;
+            }
+            else
+            {
+                 if (ffpcl(cols[jj].fptr, cols[jj].datatype, cols[jj].colnum, frow,
+                      felement, cols[jj].repeat * ntodo, dataptr,
+                      &tstatus) > 0)
+                break;
+            }
           }
         }
       }

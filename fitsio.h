@@ -37,6 +37,11 @@ SERVICES PROVIDED HEREUNDER."
 #define _FITSIO_H
 
 #include <stdio.h>
+
+#if defined(linux)
+#  include <sys/types.h>  /* apparently needed on debian linux systems */
+#endif                    /* to define off_t                           */
+
 #include <stdlib.h>  /* apparently needed to define size_t with gcc 2.8.1 */
 #include <limits.h>  /* needed for LLONG_MAX and INT64_MAX definitions */
 
@@ -47,7 +52,9 @@ SERVICES PROVIDED HEREUNDER."
 /* on whether _LARGEFILE_SOURCE is defined in sys/feature_tests.h  */
 /* (at least on Solaris platforms using cc)  */
 
-#if defined(_OFF_T) || defined(_MIPS_SZLONG) || defined(__APPLE__)
+/*  Debian systems require the 2nd test, below,         */
+/*  i.e, "(defined(linux) && defined(__off_t_defined))" */
+#if defined(_OFF_T) || (defined(linux) && defined(__off_t_defined)) || defined(_MIPS_SZLONG) || defined(__APPLE__)
 #    define OFF_T off_t
 #else
 #    define OFF_T long
