@@ -43,6 +43,7 @@
 /*                              resulting in a speed increase of        */
 /*                              10-100 times.                           */
 /*   Peter D Wilson   Jul 1998  gtifilter(a,b,c,d) function added       */
+/*   Peter D Wilson   Aug 1998  regfilter(a,b,c,d) function added       */
 /*                                                                      */
 /************************************************************************/
 

@@ -43,6 +43,7 @@
 /*                              resulting in a speed increase of        */
 /*                              10-100 times.                           */
 /*   Peter D Wilson   Jul 1998  gtifilter(a,b,c,d) function added       */
+/*   Peter D Wilson   Aug 1998  regfilter(a,b,c,d) function added       */
 /*                                                                      */
 /************************************************************************/
 
@@ -339,12 +340,21 @@ expr:    LONG
 			$$ = New_Func( 0, cos_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"TAN(") == 0)
 			$$ = New_Func( 0, tan_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
-		     else if (FSTRCMP($1,"ARCSIN(") == 0)
+		     else if (FSTRCMP($1,"ARCSIN(") == 0
+			      || FSTRCMP($1,"ASIN(") == 0)
 			$$ = New_Func( 0, asin_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
-		     else if (FSTRCMP($1,"ARCCOS(") == 0)
+		     else if (FSTRCMP($1,"ARCCOS(") == 0
+			      || FSTRCMP($1,"ACOS(") == 0)
 			$$ = New_Func( 0, acos_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
-		     else if (FSTRCMP($1,"ARCTAN(") == 0)
+		     else if (FSTRCMP($1,"ARCTAN(") == 0
+			      || FSTRCMP($1,"ATAN(") == 0)
 			$$ = New_Func( 0, atan_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"SINH(") == 0)
+			$$ = New_Func( 0, sinh_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"COSH(") == 0)
+			$$ = New_Func( 0, cosh_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"TANH(") == 0)
+			$$ = New_Func( 0, tanh_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"EXP(") == 0)
 			$$ = New_Func( 0, exp_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"LOG(") == 0)
@@ -353,6 +363,12 @@ expr:    LONG
 			$$ = New_Func( 0, log10_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"SQRT(") == 0)
 			$$ = New_Func( 0, sqrt_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"FLOOR(") == 0)
+			$$ = New_Func( 0, floor_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"CEIL(") == 0)
+			$$ = New_Func( 0, ceil_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"ROUND(") == 0)
+			$$ = New_Func( 0, round_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else {
 			yyerror("Function(expr) not supported");
 			YYERROR;
@@ -2371,7 +2387,7 @@ static void Do_Func( Node *this )
 	       strcpy(this->value.data.str,pVals[0].data.str);
 	    break;
 
-	    /* Trig functions with 1 double argument */
+	    /* Math functions with 1 double argument */
 
 	 case sin_fct:
 	    this->value.data.dbl = sin( pVals[0].data.dbl );
@@ -2397,12 +2413,19 @@ static void Do_Func( Node *this )
 	       this->value.data.dbl = acos( dval );
 	    break;
 	 case atan_fct:
-	    dval = pVals[0].data.dbl;
-	    this->value.data.dbl = atan( dval );
+	    this->value.data.dbl = atan( pVals[0].data.dbl );
+	    break;
+	 case sinh_fct:
+	    this->value.data.dbl = sinh( pVals[0].data.dbl );
+	    break;
+	 case cosh_fct:
+	    this->value.data.dbl = cosh( pVals[0].data.dbl );
+	    break;
+	 case tanh_fct:
+	    this->value.data.dbl = tanh( pVals[0].data.dbl );
 	    break;
 	 case exp_fct:
-	    dval = pVals[0].data.dbl;
-	    this->value.data.dbl = exp( dval );
+	    this->value.data.dbl = exp( pVals[0].data.dbl );
 	    break;
 	 case log_fct:
 	    dval = pVals[0].data.dbl;
@@ -2424,6 +2447,15 @@ static void Do_Func( Node *this )
 	       yyerror("Out of range argument to sqrt");
 	    else
 	       this->value.data.dbl = sqrt( dval );
+	    break;
+	 case ceil_fct:
+	    this->value.data.dbl = ceil( pVals[0].data.dbl );
+	    break;
+	 case floor_fct:
+	    this->value.data.dbl = floor( pVals[0].data.dbl );
+	    break;
+	 case round_fct:
+	    this->value.data.dbl = floor( pVals[0].data.dbl + 0.5 );
 	    break;
 
 	    /* Two-argument Trig Functions */
@@ -2654,7 +2686,7 @@ static void Do_Func( Node *this )
 	    }
 	    break;
 
-	    /* Trig functions with 1 double argument */
+	    /* Math functions with 1 double argument */
 
 	 case sin_fct:
 	    while( elem-- )
@@ -2708,6 +2740,27 @@ static void Do_Func( Node *this )
 		  this->value.data.dblptr[elem] = atan( dval );
 	       }
 	    break;
+	 case sinh_fct:
+	    while( elem-- )
+	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
+		  this->value.data.dblptr[elem] = 
+		     sinh( theParams[0]->value.data.dblptr[elem] );
+	       }
+	    break;
+	 case cosh_fct:
+	    while( elem-- )
+	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
+		  this->value.data.dblptr[elem] = 
+		     cosh( theParams[0]->value.data.dblptr[elem] );
+	       }
+	    break;
+	 case tanh_fct:
+	    while( elem-- )
+	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
+		  this->value.data.dblptr[elem] = 
+		     tanh( theParams[0]->value.data.dblptr[elem] );
+	       }
+	    break;
 	 case exp_fct:
 	    while( elem-- )
 	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
@@ -2749,6 +2802,27 @@ static void Do_Func( Node *this )
 		     break;
 		  } else
 		     this->value.data.dblptr[elem] = sqrt( dval );
+	       }
+	    break;
+	 case ceil_fct:
+	    while( elem-- )
+	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
+		  this->value.data.dblptr[elem] = 
+		     ceil( theParams[0]->value.data.dblptr[elem] );
+	       }
+	    break;
+	 case floor_fct:
+	    while( elem-- )
+	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
+		  this->value.data.dblptr[elem] = 
+		     floor( theParams[0]->value.data.dblptr[elem] );
+	       }
+	    break;
+	 case round_fct:
+	    while( elem-- )
+	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
+		  this->value.data.dblptr[elem] = 
+		     floor( theParams[0]->value.data.dblptr[elem] + 0.5);
 	       }
 	    break;
 
