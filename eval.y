@@ -44,6 +44,8 @@
 /*                              10-100 times.                           */
 /*   Peter D Wilson   Jul 1998  gtifilter(a,b,c,d) function added       */
 /*   Peter D Wilson   Aug 1998  regfilter(a,b,c,d) function added       */
+/*   Peter D Wilson   Jul 1999  Make parser fitsfile-independent,       */
+/*                              allowing a purely vector-based usage    */
 /*                                                                      */
 /************************************************************************/
 
@@ -737,15 +739,15 @@ bexpr:   BOOLEAN
 
        | GTIFILTER ')'
                 { /* Use defaults for all elements */
-                  $$ = New_GTI( "", -99, "*START*", "*STOP*" );
-                  TEST($$);                                         }
+                   $$ = New_GTI( "", -99, "*START*", "*STOP*" );
+                   TEST($$);                                        }
        | GTIFILTER STRING ')'
                 { /* Use defaults for all except filename */
                    $$ = New_GTI( $2, -99, "*START*", "*STOP*" );
                    TEST($$);                                        }
        | GTIFILTER STRING ',' expr ')'
-                { $$ = New_GTI( $2, $4, "*START*", "*STOP*" );
-                  TEST($$);                                         }
+                {  $$ = New_GTI( $2, $4, "*START*", "*STOP*" );
+                   TEST($$);                                        }
        | GTIFILTER STRING ',' expr ',' STRING ',' STRING ')'
                 {  $$ = New_GTI( $2, $4, $6, $8 );
                    TEST($$);                                        }
@@ -868,11 +870,11 @@ static int New_Column( int ColNum )
       this->operation   = -ColNum;
       this->DoOp        = NULL;
       this->nSubNodes   = 0;
-      this->type        = gParse.colInfo[ColNum].type;
-      this->value.nelem = gParse.colInfo[ColNum].nelem;
-      this->value.naxis = gParse.colInfo[ColNum].naxis;
-      for( i=0; i<gParse.colInfo[ColNum].naxis; i++ )
-	 this->value.naxes[i] = gParse.colInfo[ColNum].naxes[i];
+      this->type        = gParse.varData[ColNum].type;
+      this->value.nelem = gParse.varData[ColNum].nelem;
+      this->value.naxis = gParse.varData[ColNum].naxis;
+      for( i=0; i<gParse.varData[ColNum].naxis; i++ )
+	 this->value.naxes[i] = gParse.varData[ColNum].naxes[i];
    }
    return(n);
 }
@@ -1076,17 +1078,20 @@ static int New_GTI( char *fname, int Node1, char *start, char *stop )
 {
    fitsfile *fptr;
    Node *this, *that0, *that1;
-   int  type,i,n, startCol, stopCol, Node0, colnum;
+   int  type,i,n, startCol, stopCol, Node0;
    int  hdutype, hdunum, evthdu, samefile, extvers, movetotype, tstat;
    char extname[100];
    long nrows;
    double timeZeroI[2], timeZeroF[2], dt, timeSpan;
    char xcol[20], xexpr[20];
+   YYSTYPE colVal;
+
+   extern int yyGetVariable( char *varName, YYSTYPE *varVal );
 
    if( Node1==-99 ) {
-      type = yybuildcolumn( "TIME", &colnum );
-      if( type==LONG || type==DOUBLE ) {
-	 Node1 = New_Column( colnum );
+      type = yyGetVariable( "TIME", &colVal );
+      if( type==COLUMN ) {
+	 Node1 = New_Column( (int)colVal.lng );
       } else {
 	 yyerror("Could not build TIME column for GTIFILTER");
 	 return(-1);
@@ -1286,24 +1291,27 @@ static int New_REG( char *fname, int NodeX, int NodeY, char *colNames )
 {
    Node *this, *that0;
    int  type, n, Node0;
-   int  colnum, Xcol, Ycol, tstat;
+   int  Xcol, Ycol, tstat;
    WCSdata wcs;
    SAORegion *Rgn;
    char *cX, *cY;
+   YYSTYPE colVal;
+
+   extern int yyGetVariable( char *varName, YYSTYPE *varVal );
 
    if( NodeX==-99 ) {
-      type = yybuildcolumn( "X", &colnum );
-      if( type==LONG || type==DOUBLE ) {
-	 NodeX = New_Column( colnum );
+      type = yyGetVariable( "X", &colVal );
+      if( type==COLUMN ) {
+	 NodeX = New_Column( (int)colVal.lng );
       } else {
 	 yyerror("Could not build X column for REGFILTER");
 	 return(-1);
       }
    }
    if( NodeY==-99 ) {
-      type = yybuildcolumn( "Y", &colnum );
-      if( type==LONG || type==DOUBLE ) {
-	 NodeY = New_Column( colnum );
+      type = yyGetVariable( "Y", &colVal );
+      if( type==COLUMN ) {
+	 NodeY = New_Column( (int)colVal.lng );
       } else {
 	 yyerror("Could not build Y column for REGFILTER");
 	 return(-1);
@@ -1541,8 +1549,8 @@ void Evaluate_Node( int thisNode )
 void Reset_Parser( long firstRow, long rowOffset, long nRows )
     /***********************************************************************/
     /*  Reset the parser for processing another batch of data...           */
-    /*    firstRow:  Row number of the first element of the iterCol.array  */
-    /*    rowOffset: How many rows of iterCol.array should be skipped      */
+    /*    firstRow:  Row number of the first element of the varData.data   */
+    /*    rowOffset: How many rows of varData.data should be skipped       */
     /*    nRows:     Number of rows to be processed                        */
     /*  Then, allocate and initialize the necessary UNDEF arrays for each  */
     /*  column used by the parser.  Finally, initialize each COLUMN node   */
@@ -1551,124 +1559,10 @@ void Reset_Parser( long firstRow, long rowOffset, long nRows )
     /***********************************************************************/
 {
    int     i, column;
-   long    nelem, len, row, offset, idx;
-   char  **bitStrs;
-   char  **sptr;
-   char   *barray;
-   long   *iarray;
-   double *rarray;
+   long    offset;
 
    gParse.nRows    = nRows;
    gParse.firstRow = firstRow + rowOffset;
-
-   /*  Resize and fill in UNDEF arrays for each column  */
-
-   for( i=0; i<gParse.nCols; i++ ) {
-      if( gParse.colData[i].iotype == OutputCol ) continue;
-
-      nelem  = gParse.colInfo[i].nelem;
-      len    = nelem * nRows;
-      offset = nelem * rowOffset + 1; /* Skip initial NULLVAL in [0] elem */
-
-      switch ( gParse.colInfo[i].type ) {
-      case BITSTR:
-      /* No need for UNDEF array, but must make string DATA array */
-	 len = (nelem+1)*nRows;   /* Count '\0' */
-	 bitStrs = ((char***)gParse.colNulls)[i];
-	 if( bitStrs ) free( bitStrs[0] );
-	 free( bitStrs );
-	 bitStrs = (char**)malloc( nRows*sizeof(char*) );
-	 if( bitStrs==NULL ) {
-	    gParse.status = MEMORY_ALLOCATION;
-	    break;
-	 }
-	 bitStrs[0] = (char*)malloc( len*sizeof(char) );
-	 if( bitStrs[0]==NULL ) {
-	    free( bitStrs );
-	    gParse.colNulls[i] = NULL;
-	    gParse.status = MEMORY_ALLOCATION;
-	    break;
-	 }
-
-	 for( row=0; row<gParse.nRows; row++ ) {
-	    bitStrs[row] = bitStrs[0] + row*(nelem+1);
-	    idx = (row+rowOffset)*( (nelem+7)/8 ) + 1;
-	    for(len=0; len<nelem; len++) {
-	       if( ((char*)gParse.colData[i].array)[idx] & (1<<(7-len%8)) )
-		  bitStrs[row][len] = '1';
-	       else
-		  bitStrs[row][len] = '0';
-	       if( len%8==7 ) idx++;
-	    }
-	    bitStrs[row][len] = '\0';
-	 }
-	 gParse.colNulls[i] = (char*)bitStrs;
-	 break;
-      case STRING:
-	 sptr = (char**)gParse.colData[i].array;
-	 free( gParse.colNulls[i] );
-	 gParse.colNulls[i] = (char*)malloc( nRows*sizeof(char) );
-	 if( gParse.colNulls[i]==NULL ) {
-	    gParse.status = MEMORY_ALLOCATION;
-	    break;
-	 }
-	 for( row=0; row<nRows; row++ ) {
-	    if( **sptr != '\0' && FSTRCMP( sptr[0], sptr[row+rowOffset+1] )==0 )
-	       gParse.colNulls[i][row] = 1;
-	    else
-	       gParse.colNulls[i][row] = 0;
-	 }
-	 break;
-      case BOOLEAN:
-	 barray = (char*)gParse.colData[i].array;
-	 free( gParse.colNulls[i] );
-	 gParse.colNulls[i] = (char*)malloc( len*sizeof(char) );
-	 if( gParse.colNulls[i]==NULL ) {
-	    gParse.status = MEMORY_ALLOCATION;
-	    break;
-	 }
-	 while( len-- ) {
-	    gParse.colNulls[i][len] = 
-	       ( barray[0]!=0 && barray[0]==barray[len+offset] );
-	 }
-	 break;
-      case LONG:
-	 iarray = (long*)gParse.colData[i].array;
-	 free( gParse.colNulls[i] );
-	 gParse.colNulls[i] = (char*)malloc( len*sizeof(char) );
-	 if( gParse.colNulls[i]==NULL ) {
-	    gParse.status = MEMORY_ALLOCATION;
-	    break;
-	 }
-	 while( len-- ) {
-	    gParse.colNulls[i][len] = 
-	       ( iarray[0]!=0L && iarray[0]==iarray[len+offset] );
-	 }
-	 break;
-      case DOUBLE:
-	 rarray = (double*)gParse.colData[i].array;
-	 free( gParse.colNulls[i] );
-	 gParse.colNulls[i] = (char*)malloc( len*sizeof(char) );
-	 if( gParse.colNulls[i]==NULL ) {
-	    gParse.status = MEMORY_ALLOCATION;
-	    break;
-	 }
-	 while( len-- ) {
-	    gParse.colNulls[i][len] = 
-	       ( rarray[0]!=0.0 && rarray[0]==rarray[len+offset]);
-	 }
-	 break;
-      }
-      if( gParse.status ) {  /*  Deallocate NULL arrays of previous columns */
-	 while( i-- ) {
-	    if( gParse.colInfo[i].type==BITSTR )
-	       free( ((char***)gParse.colNulls)[i][0] );
-	    free( gParse.colNulls[i] );
-	    gParse.colNulls[i] = NULL;
-	 }
-	 return;
-      }
-   }
 
    /*  Reset Column Nodes' pointers to point to right data and UNDEF arrays  */
 
@@ -1677,30 +1571,31 @@ void Reset_Parser( long firstRow, long rowOffset, long nRows )
 	  || gParse.Nodes[i].operation == CONST_OP ) continue;
 
       column = -gParse.Nodes[i].operation;
-      offset = gParse.colInfo[column].nelem * rowOffset + 1;
+      offset = gParse.varData[column].nelem * rowOffset;
 
-      gParse.Nodes[i].value.undef = gParse.colNulls[column];
+      gParse.Nodes[i].value.undef = gParse.varData[column].undef;
 
       switch( gParse.Nodes[i].type ) {
       case BITSTR:
-	 gParse.Nodes[i].value.data.strptr = ((char***)gParse.colNulls)[column];
+	 gParse.Nodes[i].value.data.strptr =
+	    (char**)gParse.varData[column].data + rowOffset;
 	 gParse.Nodes[i].value.undef       = NULL;
 	 break;
       case STRING:
 	 gParse.Nodes[i].value.data.strptr = 
-	    ((char**)gParse.colData[column].array)+rowOffset+1;
+	    (char**)gParse.varData[column].data + rowOffset;
 	 break;
       case BOOLEAN:
 	 gParse.Nodes[i].value.data.logptr = 
-	    ((char*)gParse.colData[column].array)+offset;
+	    (char*)gParse.varData[column].data + offset;
 	 break;
       case LONG:
 	 gParse.Nodes[i].value.data.lngptr = 
-	    ((long*)gParse.colData[column].array)+offset;
+	    (long*)gParse.varData[column].data + offset;
 	 break;
       case DOUBLE:
 	 gParse.Nodes[i].value.data.dblptr = 
-	    ((double*)gParse.colData[column].array)+offset;
+	    (double*)gParse.varData[column].data + offset;
 	 break;
       }
    }

@@ -10,15 +10,24 @@
 #endif
 #include "fitsio2.h"
 
-#define MAXDIMS      5
-#define MAXSUBS     10
-#define CONST_OP -1000
+#ifndef FFBISON
+#include "eval_tab.h"
+#endif
+
+#define MAXDIMS       5
+#define MAXSUBS      10
+#define MAXVARNAME   80
+#define CONST_OP  -1000
+#define pERROR       -1
 
 typedef struct {
-                  int  type;
-                  long nelem;
-                  int  naxis;
-                  long naxes[MAXDIMS];
+                  char   name[MAXVARNAME+1];
+                  int    type;
+                  long   nelem;
+                  int    naxis;
+                  long   naxes[MAXDIMS];
+                  char   *undef;
+                  void   *data;
                                 } DataInfo;
 
 typedef struct {
@@ -50,6 +59,7 @@ typedef struct Node {
 
 typedef struct {
                   fitsfile    *def_fptr;
+                  int         (*getData)( char *dataName, void *dataValue );
 
                   int         compressed;
                   int         timeCol;
@@ -70,8 +80,7 @@ typedef struct {
 
                   int         nCols;
                   iteratorCol *colData;
-                  DataInfo    *colInfo;
-                  char        **colNulls;
+                  DataInfo    *varData;
 
                   int         datatype;
 
@@ -124,8 +133,6 @@ extern "C" {
    int  ffparse(void);
    int  fflex(void);
    void ffrestart(FILE*);
-   int  ffbuildcolumn( char *ColName, int *ColNum );
-   int  ffallocatecol( int nCol, int *status );
 
    void Evaluate_Node( int thisNode );
    void Reset_Parser ( long firstRow, long rowOffset, long nRows );

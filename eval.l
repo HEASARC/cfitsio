@@ -44,6 +44,8 @@
 /*                              10-100 times.                           */
 /*   Peter D Wilson   Jul 1998  gtifilter(a,b,c,d) function added       */
 /*   Peter D Wilson   Aug 1998  regfilter(a,b,c,d) function added       */
+/*   Peter D Wilson   Jul 1999  Make parser fitsfile-independent,       */
+/*                              allowing a purely vector-based usage    */
 /*                                                                      */
 /************************************************************************/
 
@@ -56,13 +58,14 @@
 #include <stdlib.h>
 #endif
 #include "eval_defs.h"
-#include "eval_tab.h"
+
+ParseData gParse;     /* Global structure holding all parser information     */
 
 /*****  Internal functions  *****/
 
-static int find_keywd( char *key, YYSTYPE *thelval );
-static int build_column_array( char *colname, YYSTYPE *thelval );
-static int find_column( char *colname );
+       int yyGetVariable( char *varName, YYSTYPE *varVal );
+
+static int find_variable( char *varName );
 static int expr_read( char *buf, int nbytes );
 
 /*****  Definitions  *****/
@@ -72,7 +75,6 @@ static int expr_read( char *buf, int nbytes );
 
 #define MAXCHR 256
 #define MAXBIT 128
-#define ERROR  -1
 
 #define OCT_0 "000"
 #define OCT_1 "001"
@@ -119,8 +121,7 @@ hex		([hH][0123456789aAbBcCdDeEfFxX]+)
 integer		[0-9]+
 boolean         (t|f|T|F)
 real		([0-9]*"."[0-9]+)|([0-9]*"."*[0-9]+[eEdD][+-]?[0-9]+)|([0-9]*".")
-constant        ("#pi"|"#PI"|"#e"|"#E"|"#deg"|"#DEG"|"#row"|"#ROW")
-keyword		("#"[a-zA-Z0-9_]+)|("#""$"[^\n]*"$")
+constant        ("#"[a-zA-Z0-9_]+)|("#""$"[^\n]*"$")
 string		([\"][^\"\n]*[\"])|([\'][^\'\n]*[\'])
 variable	([a-zA-Z_][a-zA-Z0-9_]*)|("$"[^$\n]*"$")
 function	[a-zA-Z][a-zA-Z0-9]+"("
@@ -298,44 +299,28 @@ nl		\n
 		  return( DOUBLE );
 		}
 {constant}	{
-                  if ((strcmp(yytext,"#pi")==0)||(strcmp(yytext,"#PI")==0)) {
+                  if(        !strcasecmp(yytext,"#PI") ) {
 		     yylval.dbl = (double)(4) * atan((double)(1));
 		     return( DOUBLE );
-		  }
-                  else if ((strcmp(yytext,"#e")==0)||(strcmp(yytext,"#E")==0)) 
-		  {
+		  } else if( !strcasecmp(yytext,"#E") ) {
 		     yylval.dbl = exp((double)(1));
 		     return( DOUBLE );
-		  }
-                  else if ((strcmp(yytext,"#deg") == 0)||
-			   (strcmp(yytext,"#DEG") == 0))
-		  {
+		  } else if( !strcasecmp(yytext,"#DEG") ) {
 		     yylval.dbl = ((double)4)*atan((double)1)/((double)180);
 		     return( DOUBLE );
-		  }
-                  else if ((strcmp(yytext,"#row") == 0)||
-			   (strcmp(yytext,"#ROW") == 0))
-		  {
+		  } else if( !strcasecmp(yytext,"#ROW") ) {
 		     return( ROWREF );
-		  }
-		}
-{keyword}	{
-                 int len; 
-		 if (yytext[1] == '$')
-		   {
-		    len = strlen(yytext) - 3;
-		    strncpy(yylval.str,&yytext[2],len);
-		    yylval.str[len] = '\0';
-		    yytext = yylval.str;
-		   }
-		 else
-		   {
-		    len = strlen(yytext) - 1;
-		    strncpy(yylval.str,&yytext[1],len);
-		    yylval.str[len] = '\0';
-		    yytext = yylval.str;
-		   }
-		 return( find_keywd(yytext, &yylval) );
+		  } else {
+                     int len; 
+                     if (yytext[1] == '$') {
+                        len = strlen(yytext) - 3;
+                        yylval.str[0]     = '#';
+                        strncpy(yylval.str+1,&yytext[2],len);
+                        yylval.str[len+1] = '\0';
+                        yytext = yylval.str;
+		     }
+                     return( (*gParse.getData)(yytext, &yylval) );
+                  }
                 }
 {string}	{
                   int len;
@@ -345,7 +330,6 @@ nl		\n
 		  return( STRING );
 		}
 {variable}	{
-                 /* copy from FITS table based on type */
 		 int    len,type;
 
                  if (yytext[0] == '$') {
@@ -354,19 +338,8 @@ nl		\n
 		    yylval.str[len] = '\0';
 		    yytext = yylval.str;
 		 } 
-		 switch( build_column_array(yytext, &yylval) ) {
-		    case LONG:
-		    case DOUBLE:   type =  COLUMN;  break;
-		    case BOOLEAN:  type = BCOLUMN;  break;
-		    case STRING:   type = SCOLUMN;  break;
-		    case BITSTR:   type =  BITCOL;  break;
-                    default:
-                         type = find_keywd(yytext, &yylval);
-                         if( type!=ERROR )
-                            gParse.status = 0;
-                         break;
-		 }
-                 return( type );
+		 type = yyGetVariable(yytext, &yylval);
+		 return( type );
 		}
 {function}	{
                   char *fname;
@@ -443,191 +416,47 @@ static int expr_read(char *buf, int nbytes)
  return(n);
 }
 
-static int find_column(char *colname)
+int yyGetVariable( char *varName, YYSTYPE *thelval )
+{
+   int varNum, type;
+   char errMsg[MAXVARNAME+25];
+
+   varNum = find_variable( varName );
+   if( varNum<0 ) {
+      if( gParse.getData ) {
+	 type = (*gParse.getData)( varName, thelval );
+      } else {
+	 type = pERROR;
+	 strcpy (errMsg,"Unable to find data: ");
+	 strncat(errMsg, varName, MAXVARNAME);
+	 ffpmsg (errMsg);
+      }
+   } else {
+      /*  Convert variable type into expression type  */
+      switch( gParse.varData[ varNum ].type ) {
+      case LONG:
+      case DOUBLE:   type =  COLUMN;  break;
+      case BOOLEAN:  type = BCOLUMN;  break;
+      case STRING:   type = SCOLUMN;  break;
+      case BITSTR:   type =  BITCOL;  break;
+      default:       type =  pERROR;  break;
+      }
+      thelval->lng = varNum;
+   }
+   return( type );
+}
+
+static int find_variable(char *varName)
 {
    int i;
  
    if( gParse.nCols )
       for( i=0; i<gParse.nCols; i++ ) {
-         if( strcasecmp(gParse.colData[i].colname,colname) == 0 ) {
+         if( ! strncasecmp(gParse.varData[i].name,varName,MAXVARNAME) ) {
             return( i );
          }
       }
    return( -1 );
-}
-
-/* Public entry point for calls from eval.y */
-int yybuildcolumn( char *ColName, int *ColNum )
-{
-   YYSTYPE thelval;
-   int type;
-
-   type = build_column_array( ColName, &thelval );
-   *ColNum = (int)thelval.lng;
-   return( type );
-}
-
-int yyallocatecol( int nCol, int *status )
-{
-   if( (nCol%25)==0 ) {
-      if( nCol ) {
-	 gParse.colData  = (iteratorCol*) realloc( gParse.colData,
-                                              (nCol+25)*sizeof(iteratorCol) );
-	 gParse.colInfo  = (DataInfo   *) realloc( gParse.colInfo,
-                                              (nCol+25)*sizeof(DataInfo)    );
-	 gParse.colNulls = (char      **) realloc( gParse.colNulls,
-					      (nCol+25)*sizeof(char*)       );
-      } else {
-	 gParse.colData  = (iteratorCol*) malloc( 25*sizeof(iteratorCol) );
-	 gParse.colInfo  = (DataInfo   *) malloc( 25*sizeof(DataInfo)    );
-	 gParse.colNulls = (char      **) malloc( 25*sizeof(char*)       );
-      }
-      if(    gParse.colData  == NULL
-          || gParse.colInfo  == NULL
-          || gParse.colNulls == NULL    ) {
-	 if( gParse.colData  ) free(gParse.colData);
-	 if( gParse.colInfo  ) free(gParse.colInfo);
-	 if( gParse.colNulls ) free(gParse.colNulls);
-	 return( *status = MEMORY_ALLOCATION );
-      }
-   }
-   gParse.colNulls[nCol] = NULL;
-   return 0;
-}
-
-static int build_column_array( char *colname, YYSTYPE *thelval )
-{
-   int col_cnt, status;
-   int colnum, typecode;
-   long repeat, width;
-   fitsfile *fptr;
-
-   if( strlen(colname)>69 ) colname[69]='\0';
-
-   col_cnt = find_column(colname);
-   if( col_cnt<0 ) {
-
-      fptr = gParse.def_fptr;
-      col_cnt = gParse.nCols;
-      if( yyallocatecol( col_cnt, &gParse.status ) ) return ERROR;
-
-      status = 0;
-      if( gParse.compressed )
-         colnum = gParse.valCol;
-      else
-         if( fits_get_colnum( fptr, CASEINSEN, colname, &colnum, &status ) ) {
-	    gParse.status = status;
-	    return ERROR;
-         }
-
-      if( fits_get_coltype( fptr, colnum, &typecode,
-			    &repeat, &width, &status ) ) {
-	 gParse.status = status;
-	 return ERROR;
-      }
-
-      fits_iter_set_by_num( gParse.colData+col_cnt, fptr, colnum, 0, InputCol );
-      strcpy(gParse.colData[col_cnt].colname,colname);
-
-      switch( typecode ) {
-      case TBIT:
-	 gParse.colInfo[col_cnt].type = BITSTR;
-	 gParse.colData[col_cnt].datatype = TBYTE;
-         break;
-      case TBYTE:
-      case TSHORT:
-      case TLONG:
-	 gParse.colInfo[col_cnt].type = LONG;
-	 gParse.colData[col_cnt].datatype = TLONG;
-	 break;
-      case TFLOAT:
-      case TDOUBLE:
-	 gParse.colInfo[col_cnt].type = DOUBLE;
-	 gParse.colData[col_cnt].datatype = TDOUBLE;
-	 break;
-      case TLOGICAL:
-	 gParse.colInfo[col_cnt].type = BOOLEAN;
-	 gParse.colData[col_cnt].datatype = TLOGICAL;
-	 break;
-      case TSTRING:
-	 gParse.colInfo[col_cnt].type = STRING ;
-	 gParse.colData[col_cnt].datatype = TSTRING;
-	 break;
-      }
-      gParse.colInfo[col_cnt].nelem = repeat;
-      if( repeat>1 && typecode!=TSTRING ) {
-	 if( fits_read_tdim( fptr, colnum, MAXDIMS,
-			     &gParse.colInfo[col_cnt].naxis,
-			     &gParse.colInfo[col_cnt].naxes[0], &status )
-	     ) {
-	    gParse.status = status;
-	    return ERROR;
-	 }
-      } else {
-	 gParse.colInfo[col_cnt].naxis = 1;
-	 gParse.colInfo[col_cnt].naxes[0] = 1;
-      }
-      gParse.nCols++;
-   }
-   thelval->lng = col_cnt;
-   return( gParse.colInfo[col_cnt].type );
-}
-
-static int find_keywd(char *keyname, YYSTYPE *thelval )
-{
-   int status, type;
-   char keyvalue[71], dtype;
-   fitsfile *fptr;
-   double rval;
-   int bval;
-   long ival;
-
-   if( strlen(keyname)>8 ) keyname[8]='\0';
-
-   status = 0;
-   fptr = gParse.def_fptr;
-   if( fits_read_keyword( fptr, keyname, keyvalue, NULL, &status ) ) {
-      gParse.status = status;
-      return( ERROR );
-   }
-      
-   if( fits_get_keytype( keyvalue, &dtype, &status ) ) {
-      gParse.status = status;
-      return( ERROR );
-   }
-      
-   switch( dtype ) {
-   case 'C':
-      fits_read_key_str( fptr, keyname, keyvalue, NULL, &status );
-      type = STRING;
-      strcpy( thelval->str , keyvalue );
-      break;
-   case 'L':
-      fits_read_key_log( fptr, keyname, &bval, NULL, &status );
-      type = BOOLEAN;
-      thelval->log = bval;
-      break;
-   case 'I':
-      fits_read_key_lng( fptr, keyname, &ival, NULL, &status );
-      type = LONG;
-      thelval->lng = ival;
-      break;
-   case 'F':
-      fits_read_key_dbl( fptr, keyname, &rval, NULL, &status );
-      type = DOUBLE;
-      thelval->dbl = rval;
-      break;
-   default:
-      type = ERROR;
-      break;
-   }
-
-   if( status ) {
-      gParse.status=status;
-      return ERROR;
-   }
-
-   return( type );
 }
 
 #if defined(vms) || defined(__vms) || defined(WIN32) || defined(__WIN32__) || defined(macintosh)
