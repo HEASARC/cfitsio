@@ -106,12 +106,6 @@ case $system in
 	;;
     Linux*)
 	ARCH="linux"
-	if test `$CC -v 2>&1 | grep gcc | grep -c '2\.8'` != "0" ; then
-		AC_WARN(Removing optimization for gcc 2.8.x on Linux)
-		changequote(,)dnl JP 9Dec98
-		CFLAGS=`echo $CFLAGS | sed -e 's/-O[0-9]* *//g'`
-		changequote([,])dnl
-	fi
 	;;
     FREEBSD*|FreeBSD*)
 	ARCH="linux"
@@ -132,6 +126,13 @@ case $CC in
 		GCCVERSION="`gcc -v 2>&1 | grep version`"
 		echo "cfitsio: == Using $GCCVERSION"
 		AC_SUBST(GCCVERSION)
+                changequote(,)
+		if test `echo $GCCVERSION | grep -c 'version 2\.[45678]\.'` -gt 0
+		then
+		    CFLAGS=`echo $CFLAGS | sed 's:-O[^ ]* *::'`
+		    AC_MSG_WARN(This gcc is pretty old. Disabling optimization to be safe.)
+		fi
+                changequote([,])
 		;;
 	cc)
 		echo "cfitsio: Old CFLAGS is $CFLAGS"
