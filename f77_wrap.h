@@ -141,11 +141,21 @@ static char *f2cstrv2(char *fstr, char* cstr, int felem_len, int celem_len,
 #undef   BYTEV_cfT
 #undef   BYTE_cfINT
 #undef   BYTEV_cfINT
+#undef   BYTE_cfSTR
+#undef   BYTEV_cfSTR
 
 #define   BYTE_cfINT(N,A,B,X,Y,Z)      _(CFARGS,N)(A,BYTE,B,X,Y,Z,0)
 #define   BYTEV_cfINT(N,A,B,X,Y,Z)     _(CFARGS,N)(A,BYTEV,B,X,Y,Z,0)
+#define   BYTE_cfSTR(N,T,A,B,C,D,E)    _(CFARGS,N)(T,BYTE,A,B,C,D,E)
+#define   BYTEV_cfSTR(N,T,A,B,C,D,E)   _(CFARGS,N)(T,BYTEV,A,B,C,D,E)
 #define   BYTE_cfSEP(T,B)              INT_cfSEP(T,B)
 #define   BYTEV_cfSEP(T,B)             INT_cfSEP(T,B)
+#define   BYTE_cfH(S,U,B)              STRING_cfH(S,U,B)
+#define   BYTEV_cfH(S,U,B)             STRING_cfH(S,U,B)
+#define   BYTE_cfQ(B)
+#define   BYTEV_cfQ(B)
+#define   BYTE_cfR(A,B,D)
+#define   BYTEV_cfR(A,B,D)
 
 #ifdef vmsFortran
 #define   BYTE_cfN(T,A)           fstring * A
@@ -162,9 +172,7 @@ static char *f2cstrv2(char *fstr, char* cstr, int felem_len, int celem_len,
 #define   BYTE_cfN(T,A)           INTEGER_BYTE * A
 #define   BYTEV_cfN(T,A)          INTEGER_BYTE * A
 #define   BYTE_cfT(M,I,A,B,D)     A[0]
-#define   BYTE_cfH(S,U,B)         STRING_cfH(S,U,B)
 #define   BYTEV_cfT(M,I,A,B,D)    A
-#define   BYTEV_cfH(S,U,B)        STRING_cfH(S,U,B)
 #endif
 #endif
 

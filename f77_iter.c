@@ -29,7 +29,7 @@ void Cffiter( int n_cols, int *units, int *colnum, char *colname[],
    FtnUserData FuserData;
    extern Cwork_fn();
 
-   FuserData.Fwork_fn = Fwork_fn;
+   FuserData.Fwork_fn = (void(*)(PLONG_cfTYPE *,...))Fwork_fn;
    FuserData.userData = userData;
 
    cols = malloc( n_cols*sizeof(iteratorCol) );
