@@ -1110,7 +1110,8 @@ int ffgthd(char *tmplt, /* I - input header template string */
           len = strcspn(tok, " /"); /* length of value string */
 
           strncat(value, tok, len);
-          if (tok[0] != 'T' && tok[0] != 'F') /* not a logical value */
+          if (!( (tok[0] == 'T' || tok[0] == 'F') &&
+                 (tok[1] == ' ' || tok[1] == '/') ))  /* not a logical value */
           {
             dval = strtod(value, &suffix); /* try to read value as number */
 
