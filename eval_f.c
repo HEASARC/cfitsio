@@ -124,19 +124,20 @@ int fits_select_rows( fitsfile *infptr,  /* I - Input FITS file             */
                parse_data, (void*)&Info, status )  ) {
       /* Error... Do nothing */
    } else {
-      buffer  = (char *)malloc( 50000*sizeof(char) );
+      buffer  = (char *)malloc( 100000*sizeof(char) );
       if( buffer==NULL ) {
          ffcprs();
          return( *status=MEMORY_ALLOCATION );
       }
-      maxrows = 50000L/rdlen;
+      maxrows = 100000L/rdlen;
       nbuff = 0;
       row = 0;
       if( infptr==outfptr )
          while( ((char*)Info.dataPtr)[row] ) row++;
       inloc  =  (infptr->Fptr)->datastart + row*rdlen;
 
-      if( (outfptr->Fptr)->datastart<0 )  /* rescan header if data pointer undefined */
+      if( (outfptr->Fptr)->datastart<0 )
+         /* rescan header if data pointer undefined */
          ffrdef(outfptr, status);
       outloc = (outfptr->Fptr)->datastart + row*rdlen;
 
@@ -170,7 +171,7 @@ int fits_select_rows( fitsfile *infptr,  /* I - Input FITS file             */
          ntodo = (infptr->Fptr)->heapsize;
 
          while ( ntodo ) {
-            rdlen = (ntodo<50000 ? ntodo : 50000);
+            rdlen = (ntodo<100000 ? ntodo : 100000);
             ffmbyt( infptr,  inloc,  REPORT_EOF, status );
             ffgbyt( infptr,  rdlen,  buffer,     status );
             ffmbyt( outfptr, outloc, IGNORE_EOF, status );
@@ -284,14 +285,19 @@ int fits_calc_col( fitsfile *infptr,  /* I - Input FITS file                */
       gParse.colInfo =
          (DataInfo*)realloc( gParse.colInfo,
                              (col_cnt+25)*sizeof(DataInfo) );
-      if(    gParse.colData == NULL
-          || gParse.colInfo == NULL    ) {
-         if( gParse.colData ) free(gParse.colData);
-         if( gParse.colInfo ) free(gParse.colInfo);
+      gParse.colNulls = (char**)realloc( gParse.colNulls,
+                                         (col_cnt+25)*sizeof(char*) );
+      if(    gParse.colData  == NULL
+          || gParse.colInfo  == NULL
+          || gParse.colNulls == NULL    ) {
+         if( gParse.colData  ) free(gParse.colData);
+         if( gParse.colInfo  ) free(gParse.colInfo);
+         if( gParse.colNulls ) free(gParse.colNulls);
          ffcprs();
          return( *status = MEMORY_ALLOCATION );
       }
    }
+   gParse.colNulls[col_cnt]         = NULL;
    gParse.nCols++;
    gParse.colData[col_cnt].fptr     = outfptr;
    gParse.colData[col_cnt].colnum   = 0;
@@ -343,6 +349,7 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
 /*--------------------------------------------------------------------------*/
 {
    FILE *fexpr;
+   Node *result;
    char line[1024];
    int  i,lexpr,len,mlen,type;
 
@@ -350,18 +357,18 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
 
    /*  Initialize the Parser structure  */
 
-   gParse.init_flag  = 1;
    gParse.def_fptr   = fptr;
    gParse.compressed = compressed;
    gParse.nCols      = 0;
    gParse.colData    = NULL;
    gParse.colInfo    = NULL;
-   gParse.firstRow   = 1;
-   gParse.currRow    = 1;
-   gParse.currCol    = 0;
-   gParse.byteloc    = 0;
-   gParse.nbytes     = 0;
-   gParse.bytecodes  = NULL;
+   gParse.colNulls   = NULL;
+   gParse.Nodes      = (Node *)malloc(sizeof(Node)*100);
+   if( gParse.Nodes ) {
+      gParse.nNodesAlloc = 100;
+      gParse.nNodes      =   0;
+   } else
+      return( *status = MEMORY_ALLOCATION );
    gParse.status     = 0;
 
    /*  Copy expression into parser... read from file if necessary  */
@@ -394,49 +401,32 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
    gParse.index    = 0;
    gParse.is_eobuf = 0;
 
-   /*  Parse the expression with dummy data to locate all  */
-   /*  the needed keys and columns                         */
+   /*  Parse the expression, building the Nodes and determing  */
+   /*  which columns are neded and what data type is returned  */
 
-   gParse.undef = 0;
    ffrestart(NULL);
    ffparse();
-   gParse.init_flag = 0;
 
    /*  Check results  */
 
    *status = gParse.status;
    if( *status ) return(*status);
 
-   type = gParse.resultInfo.type;
-   if( type==BOOLEAN || type==INTEGER || type==REAL
-             || type==STRING ) {
-      *nelem = *naxis = naxes[0] = gParse.resultInfo.nelem = 
-         gParse.resultInfo.naxis = gParse.resultInfo.naxes[0] = 1;
-   } else if( type==BITSTR ) {
-      *naxis = gParse.resultInfo.naxis = 1;
-      *nelem = naxes[0] = gParse.resultInfo.nelem = 
-               gParse.resultInfo.naxes[0] = strlen(gParse.resultData.string);
-   } else {
-      *naxis = gParse.resultInfo.naxis = gParse.resultData.intvec.naxis;
-      *nelem = gParse.resultInfo.nelem = gParse.resultData.intvec.nelem;
-      for( i=0; i<*naxis && i<maxdim; i++ )
-         naxes[i] = gParse.resultInfo.naxes[i] =
-            gParse.resultData.intvec.naxes[i];
-      free(gParse.resultData.intvec.iptr);
-      free(gParse.resultData.intvec.undef);
-   }
+   result = gParse.Nodes + gParse.nNodes-1;
 
-   switch( type ) {
-   case BOOLEANV:
+   *naxis = result->value.naxis;
+   *nelem = result->value.nelem;
+   for( i=0; i<*naxis && i<maxdim; i++ )
+      naxes[i] = result->value.naxes[i];
+
+   switch( result->type ) {
    case BOOLEAN:
       *datatype = TLOGICAL;
       break;
-   case INTEGERV:
-   case INTEGER:
+   case LONG:
       *datatype = TLONG;
       break;
-   case REALV:
-   case REAL:
+   case DOUBLE:
       *datatype = TDOUBLE;
       break;
    case BITSTR:
@@ -453,6 +443,8 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
    }
 
    gParse.datatype = *datatype;
+   free(gParse.expr);
+
    return(*status);
 }
 
@@ -462,14 +454,20 @@ void ffcprs( void )  /*  No parameters                                      */
 /* Clear the parser, making it ready to accept a new expression.            */
 /*--------------------------------------------------------------------------*/
 {
+   int col;
+
    if( gParse.nCols > 0 ) {
-      free( gParse.colData );
-      free( gParse.colInfo );
+      free( gParse.colData  );
+      free( gParse.colInfo  );
+      if( gParse.colNulls[0] )
+         for( col=0; col<gParse.nCols; col++ ) {
+            if( gParse.colInfo[col].type == BITSTR )
+               free( ((char**)gParse.colNulls[col])[0] );
+            free( gParse.colNulls[col] );
+         }
+      free( gParse.colNulls );
       gParse.nCols = 0;
    }
-   free(gParse.expr);
-   free(gParse.bytecodes);
-   gParse.expr = NULL;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -486,12 +484,14 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
 /* structure.                                                                */
 /*---------------------------------------------------------------------------*/
 {
-    int ii, jj;
+    int status;
+    long jj, kk, idx, remain, rowOffset, ntodo;
+    Node *result;
 
     /* declare variables static to preserve their values between calls */
     static void *Data, *Null;
     static int  datasize;
-    static long lastRow;
+    static long lastRow, jnull;
     static parseInfo *userInfo;
     static long zeros[4] = {0,0,0,0};
 
@@ -501,7 +501,6 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
     if (firstrow == offset+1)
     {
        userInfo = (parseInfo*)userPtr;
-       userInfo->anyNull = 0;
 
        if( userInfo->maxRows>0 )
           userInfo->maxRows = minvalue(totalrows,userInfo->maxRows);
@@ -513,6 +512,7 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
        lastRow = firstrow + userInfo->maxRows - 1;
 
        if( userInfo->dataPtr==NULL ) {
+
           if( colData[nCols-1].iotype == InputCol ) {
              ffpmsg("Output column for parser results not found!");
              return( PARSE_NO_OUTPUT );
@@ -520,9 +520,19 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
           /* Data gets set later */
           Null = colData[nCols-1].array;
           userInfo->datatype = colData[nCols-1].datatype;
+
+	  /* Check for a TNULL keyword for output column */
+
+	  status = 0;
+	  jnull = 0L;
+	  ffgknj( colData[nCols-1].fptr, "TNULL", colData[nCols-1].colnum,
+		  1, &jnull, (int*)&jj, &status );
+
        } else {
+
           Data = userInfo->dataPtr;
           Null = (userInfo->nullPtr ? userInfo->nullPtr : zeros);
+
        }
 
        /* Determine the size of each element of the returned result */
@@ -530,11 +540,13 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
        switch( userInfo->datatype ) {
        case TBIT:       /*  Fall through to TBYTE  */
        case TLOGICAL:   /*  Fall through to TBYTE  */
-       case TBYTE:     datasize = sizeof(char);   break;
-       case TSHORT:    datasize = sizeof(short);  break;
-       case TLONG:     datasize = sizeof(long);   break;
-       case TDOUBLE:   datasize = sizeof(double); break;
-       case TSTRING:   datasize = sizeof(char*);  break;
+       case TBYTE:     datasize = sizeof(char);     break;
+       case TSHORT:    datasize = sizeof(short);    break;
+       case TINT:      datasize = sizeof(int);      break;
+       case TLONG:     datasize = sizeof(long);     break;
+       case TFLOAT:    datasize = sizeof(float);    break;
+       case TDOUBLE:   datasize = sizeof(double);   break;
+       case TSTRING:   datasize = sizeof(char*);    break;
        }
     }
 
@@ -542,88 +554,134 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
     /*  Main loop: process all the rows of data  */
     /*-------------------------------------------*/
 
-    /*  NOTE: 1st element of array is the null pixel value!  */
+    /*  If writing to output column, set first element to appropriate  */
+    /*  null value.  If no NULLs encounter, zero out before returning. */
 
-    gParse.firstRow = firstrow;
-    nrows = minvalue(nrows,lastRow-firstrow+1);
-    if( userInfo->dataPtr == NULL )
+    userInfo->anyNull = 0;
+    if( userInfo->dataPtr == NULL ) {
+       /* First, reset Data pointer to start of output array */
        Data = (char*)colData[nCols-1].array + datasize;
 
-    for (ii = 0; ii < nrows; ii++)
-    {
-       gParse.undef = 0;
-       gParse.currRow = firstrow + ii;
-       gParse.byteloc = 0;
-       ffparse();
+       switch( userInfo->datatype ) {
+       case TLOGICAL: *(char  *)Null = 'U';             break;
+       case TBYTE:    *(char  *)Null = (char )jnull;    break;
+       case TSHORT:   *(short *)Null = (short)jnull;    break;
+       case TINT:     *(int   *)Null = (int  )jnull;    break;
+       case TLONG:    *(long  *)Null = (long )jnull;    break;
+       case TFLOAT:   *(float *)Null = FLOATNULLVALUE;  break;
+       case TDOUBLE:  *(double*)Null = DOUBLENULLVALUE; break;
+       case TSTRING:  *(char  *)Null = '\0';            break;
+       }
+    }
 
+    /* Alter nrows in case calling routine didn't want to do all rows */
+
+    nrows     = minvalue(nrows,lastRow-firstrow+1);
+
+    /* Parser allocates arrays for each column and calculation it performs. */
+    /* Limit number of rows processed during each pass to reduce memory     */
+    /* requirements... In most cases, iterator will limit rows to less      */
+    /* than 2500 rows per iteration, so this is really only relevant for    */
+    /* hk-compressed files which must be decompressed in memory and sent    */
+    /* whole to parse_data in a single iteration.                           */
+
+    rowOffset = 0;
+    remain    = nrows;
+    while( remain ) {
+
+       ntodo = minvalue(remain,2500);
+       Reset_Parser ( firstrow, rowOffset, ntodo );
+       Evaluate_Node( gParse.nNodes-1 );
        if( gParse.status ) break;
+
+       rowOffset += ntodo;
+       remain    -= ntodo;
 
        /*  Copy results into data array  */
 
-       switch( gParse.resultInfo.type ) {
+       result = gParse.Nodes + gParse.nNodes-1;
+       switch( result->type ) {
+
        case BOOLEAN:
-       case INTEGER:
-       case REAL:
+       case LONG:
+       case DOUBLE:
           ffcvtn( gParse.datatype,
-                  &gParse.resultData,
-                  &gParse.undef,
-                  1,
+                  result->value.data.ptr,
+                  result->value.undef,
+                  result->value.nelem*ntodo,
                   userInfo->datatype, Null, Data,
                   &userInfo->anyNull, &gParse.status );
+          if( result->operation>0 ) {
+             free( result->value.data.ptr );
+             free( result->value.undef );
+          }
           break;
-       case BOOLEANV:
-       case INTEGERV:
-       case REALV:
-          if( gParse.undef ) memset( gParse.resultData.boolvec.undef, 1, 
-                                     gParse.resultInfo.nelem );
-          ffcvtn( gParse.datatype,
-                  gParse.resultData.boolvec.bptr,
-                  gParse.resultData.boolvec.undef,
-                  gParse.resultInfo.nelem,
-                  userInfo->datatype, Null, Data,
-                  &userInfo->anyNull, &gParse.status );
-          free( gParse.resultData.boolvec.bptr );
-          free( gParse.resultData.boolvec.undef );
-          break;
+
        case BITSTR:
           switch( userInfo->datatype ) {
           case TBYTE:
-             for( jj=0; jj<gParse.resultInfo.nelem; jj++ ) {
-                if( jj%8 == 0 ) ((char*)Data)[jj/8] = 0;
-                if( gParse.resultData.string[jj]=='1' )
-                   ((char*)Data)[jj/8] |= 128>>(jj%8);
-             }
+             for( kk=0; kk<ntodo; kk++ )
+                for( jj=0; jj<result->value.nelem; jj++ ) {
+                   idx = ( jj + kk * result->value.nelem ) / 8;
+                   if( jj%8 == 0 )
+                      ((char*)Data)[idx] = 0;
+                   if( result->value.data.strptr[kk][jj]=='1' )
+                      ((char*)Data)[idx] |= 128>>(jj%8);
+                }
              break;
           case TBIT:
           case TLOGICAL:
-             for( jj=0; jj<gParse.resultInfo.nelem; jj++ ) {
-                ((char*)Data)[jj] = (gParse.resultData.string[jj]=='1');
-             }
+             for( kk=0; kk<ntodo; kk++ )
+                for( jj=0; jj<result->value.nelem; jj++ ) {
+                   ((char*)Data)[ jj+kk*result->value.nelem ] =
+                      ( result->value.data.strptr[kk][jj]=='1' );
+                }
              break; 
           default:
              ffpmsg("Cannot convert bit expression to desired type.");
              gParse.status = PARSE_BAD_TYPE;
              break;
           }
+          if( result->operation>0 ) {
+             free( result->value.data.strptr[0] );
+             free( result->value.data.strptr );
+          }
           break;
+
        case STRING:
           if( userInfo->datatype==TSTRING ) {
-             strcpy( *(char**)Data, gParse.resultData.string );
+             for( jj=0; jj<ntodo; jj++ )
+                strcpy( ((char**)Data)[jj], result->value.data.strptr[jj] );
           } else {
              ffpmsg("Cannot convert string expression to desired type.");
              gParse.status = PARSE_BAD_TYPE;
           }
+          if( result->operation>0 ) {
+             free( result->value.data.strptr[0] );
+             free( result->value.data.strptr );
+             free( result->value.undef );
+          }
           break;
        }
+
        if( gParse.status ) break;
 
-       /*  Increment Data to point to where the next row should go  */
+       /*  Increment Data to point to where the next block should go  */
 
-       if( gParse.resultInfo.type==BITSTR && userInfo->datatype==TBYTE )
-          Data = (char*)Data + datasize*( (gParse.resultInfo.nelem+7)/8 );
+       if( result->type==BITSTR && userInfo->datatype==TBYTE )
+          Data = (char*)Data
+                    + datasize * ( (result->value.nelem+7)/8 ) * ntodo;
+       else if( result->type==STRING )
+          Data = (char*)Data + datasize * ntodo;
        else
-          Data = (char*)Data + datasize*gParse.resultInfo.nelem;
+          Data = (char*)Data + datasize * ntodo * result->value.nelem;
     }
+
+    /* If no NULLs encountered during this pass, set Null value to */
+    /* zero to make the writing of the output column data faster   */
+
+    if( userInfo->dataPtr == NULL && !userInfo->anyNull )
+       memcpy( Null, zeros, datasize );
 
     /*-------------------------------------------------------*/
     /*  Clean up procedures:  after processing all the rows  */
@@ -728,10 +786,12 @@ int ffcvtn( int   inputType,  /* I - Data type of input array               */
          }
          break;
       case TFLOAT:
-         fffr4i1((float*)input,ntodo,1.,0.,0,0,NULL,NULL,(unsigned char*)output,status);
+         fffr4i1((float*)input,ntodo,1.,0.,0,0,NULL,NULL,
+		 (unsigned char*)output,status);
          break;
       case TDOUBLE:
-         fffr8i1((double*)input,ntodo,1.,0.,0,0,NULL,NULL,(unsigned char*)output,status);
+         fffr8i1((double*)input,ntodo,1.,0.,0,0,NULL,NULL,
+		 (unsigned char*)output,status);
          break;
       default:
          *status = BAD_DATATYPE;
@@ -769,10 +829,12 @@ int ffcvtn( int   inputType,  /* I - Data type of input array               */
          }
          break;
       case TFLOAT:
-         fffr4i2((float*)input,ntodo,1.,0.,0,0,NULL,NULL,(short*)output,status);
+         fffr4i2((float*)input,ntodo,1.,0.,0,0,NULL,NULL,
+		 (short*)output,status);
          break;
       case TDOUBLE:
-         fffr8i2((double*)input,ntodo,1.,0.,0,0,NULL,NULL,(short*)output,status);
+         fffr8i2((double*)input,ntodo,1.,0.,0,0,NULL,NULL,
+		 (short*)output,status);
          break;
       default:
          *status = BAD_DATATYPE;
@@ -781,6 +843,41 @@ int ffcvtn( int   inputType,  /* I - Data type of input array               */
       for(i=0;i<ntodo;i++) {
          if( undef[i] ) {
             ((short*)output)[i] = *(short*)nulval;
+            *anynull = 1;
+         }
+      }
+      break;
+
+   case TINT:
+      switch( inputType ) {
+      case TLOGICAL:
+      case TBYTE:
+         for( i=0; i<ntodo; i++ )
+            ((int*)output)[i] = ((unsigned char*)input)[i];
+         break;
+      case TSHORT:
+         for( i=0; i<ntodo; i++ )
+            ((int*)output)[i] = ((short*)input)[i];
+         break;
+      case TLONG:
+         for( i=0; i<ntodo; i++ )
+            ((int*)output)[i] = ((long*)input)[i];
+         break;
+      case TFLOAT:
+         fffr4int((float*)input,ntodo,1.,0.,0,0,NULL,NULL,
+		  (int*)output,status);
+         break;
+      case TDOUBLE:
+         fffr8int((double*)input,ntodo,1.,0.,0,0,NULL,NULL,
+		  (int*)output,status);
+         break;
+      default:
+         *status = BAD_DATATYPE;
+         break;
+      }
+      for(i=0;i<ntodo;i++) {
+         if( undef[i] ) {
+            ((int*)output)[i] = *(int*)nulval;
             *anynull = 1;
          }
       }
@@ -802,10 +899,12 @@ int ffcvtn( int   inputType,  /* I - Data type of input array               */
             ((long*)output)[i] = ((long*)input)[i];
          break;
       case TFLOAT:
-         fffr4i4((float*)input,ntodo,1.,0.,0,0,NULL,NULL,(long*)output,status);
+         fffr4i4((float*)input,ntodo,1.,0.,0,0,NULL,NULL,
+		 (long*)output,status);
          break;
       case TDOUBLE:
-         fffr8i4((double*)input,ntodo,1.,0.,0,0,NULL,NULL,(long*)output,status);
+         fffr8i4((double*)input,ntodo,1.,0.,0,0,NULL,NULL,
+		 (long*)output,status);
          break;
       default:
          *status = BAD_DATATYPE;
@@ -839,7 +938,8 @@ int ffcvtn( int   inputType,  /* I - Data type of input array               */
             ((float*)output)[i] = ((float*)input)[i];
          break;
       case TDOUBLE:
-         fffr8r4((double*)input,ntodo,1.,0.,0,0,NULL,NULL,(float*)output,status);
+         fffr8r4((double*)input,ntodo,1.,0.,0,0,NULL,NULL,
+		 (float*)output,status);
          break;
       default:
          *status = BAD_DATATYPE;
@@ -1015,12 +1115,12 @@ int fits_find_rows_cmp(           /*                                         */
 }
 
 /*---------------------------------------------------------------------------*/
-int uncompress_hkdata( fitsfile *fptr,    /* I - FITS file pointer           */
-                       long     ntimes,   /* I - Number of time stampts      */
-                       double   *times,   /* O - Time stamps in file         */
-                       int      *status ) /* O - CFITSIO error status        */
+int uncompress_hkdata( fitsfile *fptr,
+                       long     ntimes,
+                       double   *times,
+                       int      *status )
 /*                                                                           */
-/* Search compressed hk file for the parameters referenced in gParse.expr    */
+/* description                                                               */
 /*---------------------------------------------------------------------------*/
 {
    char parName[256], *sPtr[1];
@@ -1040,12 +1140,10 @@ int uncompress_hkdata( fitsfile *fptr,    /* I - FITS file pointer           */
       if( newtime != currtime ) {
          /*  New time encountered... propogate parameters to next row  */
          if( newtime<currtime ) {
-            /* ERROR */
             ffpmsg("Time stamps out of order");
             return( *status = PARSE_BAD_COL );
          }
          if( currelem==ntimes ) {
-            /* ERROR */
             ffpmsg("Found more unique time stamps than caller indicated");
             return( *status = PARSE_BAD_COL );
          }
@@ -1100,7 +1198,6 @@ int uncompress_hkdata( fitsfile *fptr,    /* I - FITS file pointer           */
    }
 
    if( currelem<ntimes ) {
-      /* ERROR */
       ffpmsg("Found fewer unique time stamps than caller indicated");
       return( *status = PARSE_BAD_COL );
    }

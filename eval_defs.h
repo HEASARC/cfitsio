@@ -12,46 +12,40 @@
 #include "fitsio2.h"
 
 #define MAXDIMS 5
-#define MAXSEQ 10
-
-typedef struct {
-                  long nelem;
-                  int  naxis;
-                  long naxes[MAXDIMS];
-                  long *iptr;
-                  char *undef;
-                                } ivec;
-typedef struct {
-                  long nelem;
-                  int  naxis;
-                  long naxes[MAXDIMS];
-                  double *rptr;
-                  char   *undef;
-                                } rvec;
-typedef struct {
-                  long nelem;
-                  int  naxis;
-                  long naxes[MAXDIMS];
-                  char *bptr;
-                  char *undef;
-                                } bvec;
-
-typedef struct {
-                  int  nelem;
-                  long val[MAXSEQ];
-                                } iseq;
-
-typedef struct {
-                  int    nelem;
-                  double val[MAXSEQ];
-                                } rseq;
+#define MAXSUBS 10
 
 typedef struct {
                   int  type;
-                  int  nelem;
+                  long nelem;
                   int  naxis;
                   long naxes[MAXDIMS];
                                 } DataInfo;
+
+typedef struct {
+                  long   nelem;
+                  int    naxis;
+                  long   naxes[MAXDIMS];
+                  char   *undef;
+                  union {
+                         double dbl;
+                         long   lng;
+                         char   log;
+                         char   str[256];
+                         double *dblptr;
+                         long   *lngptr;
+                         char   *logptr;
+                         char   **strptr;
+                         void   *ptr;
+		  } data;
+                                } lval;
+
+typedef struct {
+                  int    operation;
+                  int    nSubNodes;
+                  int    SubNodes[MAXSUBS];
+                  int    type;
+                  lval   value;
+                                } Node;
 
 typedef struct {
                   fitsfile    *def_fptr;
@@ -65,40 +59,61 @@ typedef struct {
                   int         index;
                   int         is_eobuf;
 
-                  int         byteloc;
-                  int         nbytes;
-                  short       *bytecodes;
-
-                  int         init_flag;
+                  Node        *Nodes;
+                  int         nNodes;
+                  int         nNodesAlloc;
+                  
                   long        firstRow;
-                  long        currRow;
+                  long        nRows;
 
                   int         nCols;
-                  int         currCol;
                   iteratorCol *colData;
                   DataInfo    *colInfo;
+                  char        **colNulls;
 
-                  char        undef;
-                  DataInfo    resultInfo;
-                  union {
-                       double real;
-                       long   integer;
-                       char   boolean;
-                       bvec   boolvec;
-                       ivec   intvec;
-                       rvec   realvec;
-                       char   string[256];
-                        }     resultData;
                   int         datatype;
 
                   int         status;
                                 } ParseData;
 
+typedef enum {
+                  rnd_fct = 1001,
+                  sum_fct,
+                  nelem_fct,
+                  sin_fct,
+                  cos_fct,
+                  tan_fct,
+                  asin_fct,
+                  acos_fct,
+                  atan_fct,
+                  exp_fct,
+                  log_fct,
+                  log10_fct,
+                  sqrt_fct,
+                  abs_fct,
+                  atan2_fct,
+                  near_fct,
+                  circle_fct,
+                  box_fct,
+                  elps_fct,
+                  isnull_fct,
+                  defnull_fct,
+                  row_fct
+                                } funcOp;
 
 extern ParseData gParse;
 
-int  ffparse(void);
-int  fflex(void);
-int  fflex_real(void);
-void ffrestart(FILE*);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+   int  ffparse(void);
+   int  fflex(void);
+   void ffrestart(FILE*);
+
+   void Evaluate_Node( int thisNode );
+   void Reset_Parser ( long firstRow, long rowOffset, long nRows );
+
+#ifdef __cplusplus
+    }
+#endif

@@ -1,26 +1,22 @@
 typedef union {
-    double real;           /* real value */
-    long   integer;        /* integer value */
-    char   boolean;        /* logical value */
-    bvec   boolvec;        /* boolean array */
-    ivec   intvec;         /* integer array */
-    rvec   realvec;        /* real array */
-    iseq   intseq;         /* integer sequence */
-    rseq   realseq;        /* real sequence */
-    char   string[256];    /* string value */
+    int    Node;        /* Index of Node */
+    double dbl;         /* real value    */
+    long   lng;         /* integer value */
+    char   log;         /* logical value */
+    char   str[256];    /* string value  */
 } FFSTYPE;
-#define	REAL	258
-#define	REALV	259
-#define	INTEGER	260
-#define	INTEGERV	261
-#define	BOOLEAN	262
-#define	BOOLEANV	263
-#define	STRING	264
-#define	BITSTR	265
-#define	FUNCTION	266
-#define	IFUNCTION	267
-#define	RFUNCTION	268
-#define	BFUNCTION	269
+#define	BOOLEAN	258
+#define	LONG	259
+#define	DOUBLE	260
+#define	STRING	261
+#define	BITSTR	262
+#define	FUNCTION	263
+#define	BFUNCTION	264
+#define	COLUMN	265
+#define	BCOLUMN	266
+#define	SCOLUMN	267
+#define	BITCOL	268
+#define	ROWREF	269
 #define	OR	270
 #define	AND	271
 #define	EQ	272

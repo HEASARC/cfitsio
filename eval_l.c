@@ -529,16 +529,14 @@ char *fftext;
 
 /*****  Internal functions  *****/
 
-static int find_keywd(char *key, FFSTYPE *lval);
-static int build_column_array(char *column);
-static int find_column(char *column);
-static int expr_read(char *buf, int nbytes);
-static int add_bytecode( int code, void *data, long nbytes );
+static int find_keywd( char *key, FFSTYPE *lval );
+static int build_column_array( char *colname, FFSTYPE *lval );
+static int find_column( char *colname );
+static int expr_read( char *buf, int nbytes );
 
 /*****  Definitions  *****/
 
 #define FF_NO_UNPUT   /*  Don't include FFUNPUT function  */
-#define FF_DECL int fflex_real FF_PROTO((void))
 
 #define MAXCHR 256
 #define MAXBIT 128
@@ -732,7 +730,7 @@ FF_DECL
 	register char *ff_cp, *ff_bp;
 	register int ff_act;
 
-#line 94 "eval.l"
+#line 92 "eval.l"
 
 
 
@@ -819,26 +817,26 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 FF_RULE_SETUP
-#line 96 "eval.l"
+#line 94 "eval.l"
 ;
 	FF_BREAK
 case 2:
 FF_RULE_SETUP
-#line 97 "eval.l"
+#line 95 "eval.l"
 {
                   int len;
                   len = strlen(fftext);
 		  while (fftext[len] == ' ')
 			len--;
                   len = len - 1;
-		  strncpy(fflval.string,&fftext[1],len);
-		  fflval.string[len] = '\0';
-		  return( add_bytecode( BITSTR, fflval.string, len+1 ) );
+		  strncpy(fflval.str,&fftext[1],len);
+		  fflval.str[len] = '\0';
+		  return( BITSTR );
 		}
 	FF_BREAK
 case 3:
 FF_RULE_SETUP
-#line 107 "eval.l"
+#line 105 "eval.l"
 {
                   int len;
                   char tmpstring[256];
@@ -886,14 +884,13 @@ FF_RULE_SETUP
 			      }
 			len++;
                        }
-                  strcpy(fflval.string, bitstring);
-		  return( add_bytecode( BITSTR, fflval.string, 
-					strlen(fflval.string)+1 ) );
+                  strcpy( fflval.str, bitstring );
+		  return( BITSTR );
 		}
 	FF_BREAK
 case 4:
 FF_RULE_SETUP
-#line 158 "eval.l"
+#line 155 "eval.l"
 {
                   int len;
                   char tmpstring[256];
@@ -972,308 +969,216 @@ FF_RULE_SETUP
 			len++;
                        }
 
-                  strcpy(fflval.string, bitstring);
-		  return( add_bytecode( BITSTR, fflval.string, 
-					strlen(fflval.string)+1 ) );
+                  strcpy( fflval.str, bitstring );
+		  return( BITSTR );
 		}
 	FF_BREAK
 case 5:
 FF_RULE_SETUP
-#line 240 "eval.l"
+#line 236 "eval.l"
 {
-                  fflval.integer = atol(fftext);
-		  return( add_bytecode( INTEGER, &fflval.integer,
-					sizeof(long) ) );
+                  fflval.lng = atol(fftext);
+		  return( LONG );
 		}
 	FF_BREAK
 case 6:
 FF_RULE_SETUP
-#line 245 "eval.l"
+#line 240 "eval.l"
 {
                   if ((fftext[0] == 't') || (fftext[0] == 'T'))
-		    fflval.boolean = 1;
+		    fflval.log = 1;
 		  else
-		    fflval.boolean = 0;
-		  return( add_bytecode( BOOLEAN, &fflval.boolean, 1L ) );
+		    fflval.log = 0;
+		  return( BOOLEAN );
 		}
 	FF_BREAK
 case 7:
 FF_RULE_SETUP
-#line 252 "eval.l"
+#line 247 "eval.l"
 {
-                  fflval.real = atof(fftext);
-		  return( add_bytecode( REAL, &fflval.real,
-					sizeof(double) ) );
+                  fflval.dbl = atof(fftext);
+		  return( DOUBLE );
 		}
 	FF_BREAK
 case 8:
 FF_RULE_SETUP
-#line 257 "eval.l"
+#line 251 "eval.l"
 {
                   if ((strcmp(fftext,"#pi")==0)||(strcmp(fftext,"#PI")==0)) {
-		     fflval.real = (double)(4) * atan((double)(1));
-		     return( add_bytecode( REAL, &fflval.real,
-					   sizeof(double) ) );
+		     fflval.dbl = (double)(4) * atan((double)(1));
+		     return( DOUBLE );
 		  }
                   else if ((strcmp(fftext,"#e")==0)||(strcmp(fftext,"#E")==0)) 
 		  {
-		     fflval.real = exp((double)(1));
-		     return( add_bytecode( REAL, &fflval.real,
-					   sizeof(double) ) );
+		     fflval.dbl = exp((double)(1));
+		     return( DOUBLE );
 		  }
                   else if ((strcmp(fftext,"#deg") == 0)||
 			   (strcmp(fftext,"#DEG") == 0))
 		  {
-		     fflval.real = ((double)4)*atan((double)1)/((double)180);
-		     return( add_bytecode( REAL, &fflval.real, 
-					   sizeof(double) ) );
+		     fflval.dbl = ((double)4)*atan((double)1)/((double)180);
+		     return( DOUBLE );
 		  }
                   else if ((strcmp(fftext,"#row") == 0)||
 			   (strcmp(fftext,"#ROW") == 0))
 		  {
-		     fflval.integer = gParse.currRow;
-		     return( add_bytecode( INTEGER, &fflval.integer,
-					   sizeof(long) ) );
+		     return( ROWREF );
 		  }
 		}
 	FF_BREAK
 case 9:
 FF_RULE_SETUP
-#line 284 "eval.l"
+#line 273 "eval.l"
 {
                  int len; 
 		 if (fftext[1] == '$')
 		   {
 		    len = strlen(fftext) - 3;
-		    strncpy(fflval.string,&fftext[2],len);
-		    fflval.string[len] = '\0';
-		    fftext = fflval.string;
+		    strncpy(fflval.str,&fftext[2],len);
+		    fflval.str[len] = '\0';
+		    fftext = fflval.str;
 		   }
 		 else
 		   {
 		    len = strlen(fftext) - 1;
-		    strncpy(fflval.string,&fftext[1],len);
-		    fflval.string[len] = '\0';
-		    fftext = fflval.string;
+		    strncpy(fflval.str,&fftext[1],len);
+		    fflval.str[len] = '\0';
+		    fftext = fflval.str;
 		   }
-		 switch( find_keywd(fftext, &fflval) )
-		   {
-		   case BOOLEAN:
-		      return( add_bytecode( BOOLEAN,
-					    &fflval.boolean,
-					    1L ) );
-		   case INTEGER:
-		      return( add_bytecode( INTEGER,
-					    &fflval.integer,
-					    sizeof(long) ) );
-		   case REAL:
-		      return( add_bytecode( REAL,
-					    &fflval.real,
-					    sizeof(double) ) );
-		      return( REAL );
-		   case STRING:
-		      return( add_bytecode( STRING, fflval.string,
-					    strlen( fflval.string )+1 ) );
-		   case ERROR:
-		      return ERROR;
-		   }
+		 return( find_keywd(fftext, &fflval) );
                 }
 	FF_BREAK
 case 10:
 FF_RULE_SETUP
-#line 322 "eval.l"
+#line 291 "eval.l"
 {
                   int len;
                   len = strlen(fftext) - 2;
 		  while (fftext[len] == ' ')
 			len--;
-		  strncpy(fflval.string,&fftext[1],len);
-		  fflval.string[len] = '\0';
-		  return( add_bytecode( STRING, fflval.string, len+1 ) );
+		  strncpy(fflval.str,&fftext[1],len);
+		  fflval.str[len] = '\0';
+		  return( STRING );
 		}
 	FF_BREAK
 case 11:
 FF_RULE_SETUP
-#line 331 "eval.l"
+#line 300 "eval.l"
 {
                  /* copy from FITS table based on type */
-                 long   idx;
-		 int    len,type,col;
+		 int    len,type;
 
                  if (fftext[0] == '$') {
-		     len = strlen(fftext) - 2;
-		     strncpy(fflval.string,&fftext[1],len);
-		     fflval.string[len] = '\0';
-		     fftext = fflval.string;
+		    len = strlen(fftext) - 2;
+		    strncpy(fflval.str,&fftext[1],len);
+		    fflval.str[len] = '\0';
+		    fftext = fflval.str;
 		 } 
-		 type = build_column_array(fftext);
-		 col = gParse.currCol;
-		 switch( type ) {
-		 case BITSTR:
-		    len = gParse.colInfo[col].nelem;
-		    fflval.string[len]='\0';
-		    while(len) fflval.string[--len]='1';
-		    break;
-		 case INTEGER:
-		    fflval.integer = 3;
-		    break;
-		 case INTEGERV:
-		    len = gParse.colInfo[col].nelem;
-		    fflval.intvec.iptr  = (long*)calloc(len,sizeof(long));
-		    fflval.intvec.undef = (char*)calloc(len,sizeof(char));
-		    for(idx=0;idx<len;idx++)
-		       fflval.intvec.iptr[idx] = 1;
-		    fflval.intvec.nelem = len;
-		    fflval.intvec.naxis = gParse.colInfo[col].naxis;
-		    for(idx=0;idx<fflval.intvec.naxis;idx++)
-		       fflval.intvec.naxes[idx] =
-			  gParse.colInfo[col].naxes[idx];
-		    break;
-		 case REAL:
-		    fflval.real = 1.0;
-		    break;
-		 case REALV:
-		    len = gParse.colInfo[col].nelem;
-		    fflval.realvec.rptr  = (double*)calloc(len,sizeof(double));
-		    fflval.realvec.undef = (char*)calloc(len,sizeof(char));
-		    for(idx=0;idx<len;idx++)
-		       fflval.realvec.rptr[idx] = 1.0;
-		    fflval.realvec.nelem = len;
-		    fflval.realvec.naxis = gParse.colInfo[col].naxis;
-		    for(idx=0;idx<fflval.realvec.naxis;idx++)
-		       fflval.realvec.naxes[idx] =
-			  gParse.colInfo[col].naxes[idx];
-		    break;
-		 case STRING:
-		    strcpy(fflval.string, "abc");
-		    break;
-		 case BOOLEAN:
-		    fflval.boolean = 1;
-		    break;
-		 case BOOLEANV:
-		    len = gParse.colInfo[col].nelem;
-		    fflval.boolvec.bptr  = (char*)calloc(len,sizeof(char));
-		    fflval.boolvec.undef = (char*)calloc(len,sizeof(char));
-		    for(idx=0;idx<len;idx++)
-		       fflval.boolvec.bptr[idx] = 1;
-		    fflval.boolvec.nelem = len;
-		    fflval.boolvec.naxis = gParse.colInfo[col].naxis;
-		    for(idx=0;idx<fflval.boolvec.naxis;idx++)
-		       fflval.boolvec.naxes[idx] =
-			  gParse.colInfo[col].naxes[idx];
-		    break;
-		 case ERROR:
-		    return ERROR;
-		    break;
+		 switch( build_column_array(fftext, &fflval) ) {
+		    case LONG:
+		    case DOUBLE:   type =  COLUMN;  break;
+		    case BOOLEAN:  type = BCOLUMN;  break;
+		    case STRING:   type = SCOLUMN;  break;
+		    case BITSTR:   type =  BITCOL;  break;
+                    default:       type =   ERROR;  break;
 		 }
-		 if( add_bytecode( col+1000, NULL, 0L ) != col+1000 )
-		    return ERROR;
-		 else
-		    return( type );
+                 return( type );
 		}
 	FF_BREAK
 case 12:
 FF_RULE_SETUP
-#line 407 "eval.l"
+#line 320 "eval.l"
 {
                   char *fname;
 		  int len=0;
-                  fname = &fflval.string[0];
+                  fname = &fflval.str[0];
 		  while( (fname[len]=toupper(fftext[len])) ) len++;
 
-                  if(      strcmp(fname,"NELEM(")==0 
-                    )
-                     /* Return type is always integer  */
-		     return( add_bytecode( IFUNCTION, fname, len+1 ) );
-                  else if( strcmp(fname,"BOX(")==0 
-                        || strcmp(fname,"CIRCLE(")==0 
-                        || strcmp(fname,"ELLIPSE(")==0 
-                        || strcmp(fname,"NEAR(")==0 
+                  if(      FSTRCMP(fname,"BOX(")==0 
+                        || FSTRCMP(fname,"CIRCLE(")==0 
+                        || FSTRCMP(fname,"ELLIPSE(")==0 
+                        || FSTRCMP(fname,"NEAR(")==0 
+                        || FSTRCMP(fname,"ISNULL(")==0 
                          )
                      /* Return type is always boolean  */
-		     return( add_bytecode( BFUNCTION, fname, len+1 ) );
-                  else if( strcmp(fname,"SUM(")==0 
-                         )
-                     /* Return type determined by arguments */
-		     return( add_bytecode( FUNCTION, fname, len+1 ) );
-		  else /* All other functions */
-                     /* Return type is always real  */
-		     return( add_bytecode( RFUNCTION, fname, len+1 ) );
+		     return( BFUNCTION );
+                  else 
+		     return( FUNCTION  );
 		}
 	FF_BREAK
 case 13:
 FF_RULE_SETUP
-#line 432 "eval.l"
-{ return( add_bytecode( INTCAST, NULL, 0L ) ); }
+#line 337 "eval.l"
+{ return( INTCAST ); }
 	FF_BREAK
 case 14:
 FF_RULE_SETUP
-#line 433 "eval.l"
-{ return( add_bytecode( FLTCAST, NULL, 0L ) ); }
+#line 338 "eval.l"
+{ return( FLTCAST ); }
 	FF_BREAK
 case 15:
 FF_RULE_SETUP
-#line 434 "eval.l"
-{ return( add_bytecode( POWER,   NULL, 0L ) ); }
+#line 339 "eval.l"
+{ return( POWER   ); }
 	FF_BREAK
 case 16:
 FF_RULE_SETUP
-#line 435 "eval.l"
-{ return( add_bytecode( NOT,     NULL, 0L ) ); }
+#line 340 "eval.l"
+{ return( NOT     ); }
 	FF_BREAK
 case 17:
 FF_RULE_SETUP
-#line 436 "eval.l"
-{ return( add_bytecode( OR,      NULL, 0L ) ); }
+#line 341 "eval.l"
+{ return( OR      ); }
 	FF_BREAK
 case 18:
 FF_RULE_SETUP
-#line 437 "eval.l"
-{ return( add_bytecode( AND,     NULL, 0L ) ); }
+#line 342 "eval.l"
+{ return( AND     ); }
 	FF_BREAK
 case 19:
 FF_RULE_SETUP
-#line 438 "eval.l"
-{ return( add_bytecode( EQ,      NULL, 0L ) ); }
+#line 343 "eval.l"
+{ return( EQ      ); }
 	FF_BREAK
 case 20:
 FF_RULE_SETUP
-#line 439 "eval.l"
-{ return( add_bytecode( NE,      NULL, 0L ) ); }
+#line 344 "eval.l"
+{ return( NE      ); }
 	FF_BREAK
 case 21:
 FF_RULE_SETUP
-#line 440 "eval.l"
-{ return( add_bytecode( GT,      NULL, 0L ) ); }
+#line 345 "eval.l"
+{ return( GT      ); }
 	FF_BREAK
 case 22:
 FF_RULE_SETUP
-#line 441 "eval.l"
-{ return( add_bytecode( LT,      NULL, 0L ) ); }
+#line 346 "eval.l"
+{ return( LT      ); }
 	FF_BREAK
 case 23:
 FF_RULE_SETUP
-#line 442 "eval.l"
-{ return( add_bytecode( GTE,     NULL, 0L ) ); }
+#line 347 "eval.l"
+{ return( GTE     ); }
 	FF_BREAK
 case 24:
 FF_RULE_SETUP
-#line 443 "eval.l"
-{ return( add_bytecode( LTE,     NULL, 0L ) ); }
+#line 348 "eval.l"
+{ return( LTE     ); }
 	FF_BREAK
 case 25:
 FF_RULE_SETUP
-#line 444 "eval.l"
-{ return( add_bytecode( '\n',    NULL, 0L ) );}
+#line 349 "eval.l"
+{ return( '\n'    ); }
 	FF_BREAK
 case 26:
 FF_RULE_SETUP
-#line 445 "eval.l"
-{ return( add_bytecode( fftext[0], NULL, 0L ) ); }
+#line 350 "eval.l"
+{ return( fftext[0] ); }
 	FF_BREAK
 case 27:
 FF_RULE_SETUP
-#line 446 "eval.l"
+#line 351 "eval.l"
 ECHO;
 	FF_BREAK
 case FF_STATE_EOF(INITIAL):
@@ -2161,7 +2066,7 @@ int main()
 	return 0;
 	}
 #endif
-#line 446 "eval.l"
+#line 351 "eval.l"
 
 
 int ffwrap()
@@ -2189,10 +2094,7 @@ static int expr_read(char *buf, int nbytes)
  int n;
  
  n = 0;
- if( gParse.is_eobuf ) {  /* Reset buffer */
-     gParse.index=0;
-     gParse.is_eobuf=0;
- } else {
+ if( !gParse.is_eobuf ) {
      do {
         buf[n++] = gParse.expr[gParse.index++];
        } while ((n<nbytes)&&(gParse.expr[gParse.index] != '\0'));
@@ -2202,173 +2104,6 @@ static int expr_read(char *buf, int nbytes)
  return(n);
 }
 
-static int add_bytecode( int code, void *data, long nbytes )
-{
-   short *newblock;
-
-   if( gParse.byteloc+(nbytes+1)/sizeof(short)+1 >= gParse.nbytes ) {
-      gParse.nbytes += 1024;
-      newblock = (short *)realloc( gParse.bytecodes, gParse.nbytes );
-      if( newblock )
-	 gParse.bytecodes = newblock;
-      else {
-	 gParse.nbytes -= 1024;
-         gParse.status = MEMORY_ALLOCATION;
-	 ffpmsg("Could not allocate memory for expression bytecode.");
-	 return ERROR;
-      }
-   }
-   
-   gParse.bytecodes[ gParse.byteloc++ ] = code;
-   if( nbytes ) {
-      memcpy( gParse.bytecodes+gParse.byteloc, data, nbytes );
-      gParse.byteloc += (nbytes+1)/sizeof(short);
-   }
-   return code;
-}
-
-int fflex( void )
-{
-   long len, idx;
-   int code;
-   int column;
-
-   long   *iarray;
-   double *rarray;
-   char   *barray;
-
-   if( gParse.init_flag ) {
-      code=fflex_real();
-      if( !(code) )
-	 code = add_bytecode( 0, NULL, 0 );
-      return( code );
-   }
-
-   code = gParse.bytecodes[ gParse.byteloc++ ];
-   if( code<256 ) return( code );
-   else if( code<1000 ) {
-      switch( code ) {
-      case REAL:
-         memcpy( &fflval.real, gParse.bytecodes+gParse.byteloc,
-                 sizeof(double) );
-         gParse.byteloc += sizeof(double)/sizeof(short);
-         break;
-      case INTEGER:
-         memcpy( &fflval.integer, gParse.bytecodes+gParse.byteloc,
-                 sizeof(long) );
-         gParse.byteloc += sizeof(long)/sizeof(short);
-         break;
-      case BOOLEAN:
-         fflval.boolean = *((char*)(gParse.bytecodes+gParse.byteloc++));
-         break;
-      case STRING:
-      case BITSTR:
-      case FUNCTION:
-      case IFUNCTION:
-      case RFUNCTION:
-      case BFUNCTION:
-         len = strlen( (char*)(gParse.bytecodes + gParse.byteloc) );
-         memcpy( fflval.string, gParse.bytecodes + gParse.byteloc, len+1 );
-         gParse.byteloc += len/sizeof(short) + 1;
-         break;
-      default:  /*  All the standalone codes... EQ, AND, etc.  */
-         break;
-      }
-      return( code );
-   } else {
-      column = code - 1000;
-      code = gParse.colInfo[column].type;
-      len  = gParse.colInfo[column].nelem;
-      idx  = (gParse.currRow-gParse.firstRow) * len + 1;
-
-      switch ( code ) {
-      case BITSTR:
-	 idx = (gParse.currRow-gParse.firstRow) * (len+7)/8 + 1;
-	 for(len=0; len<gParse.colInfo[column].nelem; len++) {
-	    if( ((char*)gParse.colData[column].array)[idx] & (1<<(7-len%8)) )
-	       fflval.string[len] = '1';
-	    else
-	       fflval.string[len] = '0';
-	    if( len%8==7 ) idx++;
-	 }
-	 fflval.string[len]='\0';
-	 break;
-      case STRING:
-	 idx  = gParse.currRow-gParse.firstRow + 1;
-	 strcpy(fflval.string, ((char**)gParse.colData[column].array)[idx]);
-	 if( **((char**)gParse.colData[column].array)!='\0'
-	     && strcmp(((char**)gParse.colData[column].array)[0],
-                        fflval.string)==0 )
-	    gParse.undef = 1;
-	 break;
-      case INTEGER:
-	 fflval.integer = ((long*)gParse.colData[column].array)[idx];
-	 if( ((long*)gParse.colData[column].array)[0] != 0L
-	     && ((long*)gParse.colData[column].array)[0] == fflval.integer )
-	    gParse.undef = 1;
-	 break;
-      case INTEGERV:
-	 iarray = (long*)gParse.colData[column].array;
-	 fflval.intvec.iptr = 
-	    (long*)calloc(len,sizeof(long));
-	 fflval.intvec.undef = 
-	    (char*)calloc(len,sizeof(char));
-	 fflval.intvec.nelem = len;
-	 for(; len; len--) {
-	    fflval.intvec.iptr[len-1]  = iarray[idx+len-1];
-	    fflval.intvec.undef[len-1] = 
-	       ( iarray[0]!=0L && iarray[0]==iarray[idx+len-1] );
-	 }
-	 fflval.intvec.naxis = gParse.colInfo[column].naxis;
-	 for(idx=0;idx<fflval.intvec.naxis;idx++)
-	    fflval.intvec.naxes[idx] = gParse.colInfo[column].naxes[idx];
-	 break;
-      case REAL:
-	 fflval.real = 
-	    ((double*)gParse.colData[column].array)[idx];
-	 if( ((double*)gParse.colData[column].array)[0] != 0.0
-	     && ((double*)gParse.colData[column].array)[0] == fflval.real )
-	    gParse.undef = 1;
-	 break;
-      case REALV:
-	 rarray = (double*)gParse.colData[column].array;
-	 fflval.realvec.rptr  = (double*)calloc(len,sizeof(double));
-	 fflval.realvec.undef = (char*)calloc(len,sizeof(char));
-	 fflval.realvec.nelem = len;
-	 for(; len; len--) {
-	    fflval.realvec.rptr[len-1]  = rarray[idx+len-1];
-	    fflval.realvec.undef[len-1] = 
-	       ( rarray[0]!=0.0 && rarray[0]==rarray[idx+len-1]);
-	 }
-	 fflval.realvec.naxis = gParse.colInfo[column].naxis;
-	 for(idx=0;idx<fflval.realvec.naxis;idx++)
-	    fflval.realvec.naxes[idx] = gParse.colInfo[column].naxes[idx];
-	 break;
-      case BOOLEAN:
-	 fflval.boolean = ((char*)gParse.colData[column].array)[idx];
-	 if( ((char*)gParse.colData[column].array)[0] != 0
-	     && ((char*)gParse.colData[column].array)[0] == fflval.boolean )
-	    gParse.undef = 1;
-	 break;
-      case BOOLEANV:
-	 barray = (char*)gParse.colData[column].array;
-	 fflval.boolvec.bptr  = (char*)calloc(len,sizeof(char));
-	 fflval.boolvec.undef = (char*)calloc(len,sizeof(char));
-	 fflval.boolvec.nelem = len;
-	 for(; len; len--) {
-	    fflval.boolvec.bptr[len-1]  = barray[idx+len-1];
-	    fflval.boolvec.undef[len-1] = 
-	       ( barray[0]!=0 && barray[0]==barray[idx+len-1] );
-	 }
-	 fflval.boolvec.naxis = gParse.colInfo[column].naxis;
-	 for(idx=0;idx<fflval.boolvec.naxis;idx++)
-	    fflval.boolvec.naxes[idx] = gParse.colInfo[column].naxes[idx];
-	 break;
-      }
-      return( code );
-   }
-}
-
 static int find_column(char *colname)
 {
    int i;
@@ -2376,14 +2111,13 @@ static int find_column(char *colname)
    if( gParse.nCols )
       for( i=0; i<gParse.nCols; i++ ) {
          if( strcasecmp(gParse.colData[i].colname,colname) == 0 ) {
-            gParse.currCol = i;
-            return( gParse.colInfo[i].type );
+            return( i );
          }
       }
-   return( 0 );
+   return( -1 );
 }
 
-static int build_column_array(char *colname)
+static int build_column_array( char *colname, FFSTYPE *lval )
 {
    int col_cnt, status;
    int colnum, typecode;
@@ -2392,7 +2126,8 @@ static int build_column_array(char *colname)
 
    if( strlen(colname)>69 ) colname[69]='\0';
 
-   if( ! find_column(colname) ) {
+   col_cnt = find_column(colname);
+   if( col_cnt<0 ) {
 
       col_cnt = gParse.nCols;
       fptr = gParse.def_fptr;
@@ -2400,18 +2135,28 @@ static int build_column_array(char *colname)
       /*  Do we need to allocate more memory?  */
       
       if( (col_cnt%25)==0 ) {  /*  Yes  */
-	 gParse.colData = 
-	    (iteratorCol*)realloc( gParse.colData,
-				   (col_cnt+25)*sizeof(iteratorCol) );
-	 gParse.colInfo =
-	    (DataInfo*)realloc( gParse.colInfo,
-				(col_cnt+25)*sizeof(DataInfo) );
-	 if(    gParse.colData == NULL
-	     || gParse.colInfo == NULL    ) {
+         if( col_cnt ) {
+	    gParse.colData = 
+	       (iteratorCol*)realloc( gParse.colData,
+				      (col_cnt+25)*sizeof(iteratorCol) );
+	    gParse.colInfo =
+	       (DataInfo*)realloc( gParse.colInfo,
+				   (col_cnt+25)*sizeof(DataInfo) );
+	    gParse.colNulls = (char**)realloc( gParse.colNulls,
+					       (col_cnt+25)*sizeof(char*) );
+	 } else {
+	    gParse.colData  = (iteratorCol*)malloc( 25*sizeof(iteratorCol) );
+	    gParse.colInfo  = (DataInfo   *)malloc( 25*sizeof(DataInfo)    );
+	    gParse.colNulls = (char      **)malloc( 25*sizeof(char*)       );
+	 }
+	 if(    gParse.colData  == NULL
+	     || gParse.colInfo  == NULL
+	     || gParse.colNulls == NULL    ) {
 	    gParse.status = MEMORY_ALLOCATION;
 	    return ERROR;
 	 }
       }
+      gParse.colNulls[col_cnt] = NULL;
 
       status = 0;
       if( gParse.compressed )
@@ -2436,26 +2181,25 @@ static int build_column_array(char *colname)
       case TBYTE:
       case TSHORT:
       case TLONG:
-	 gParse.colInfo[col_cnt].type = (repeat==1) ? INTEGER : INTEGERV ;
+	 gParse.colInfo[col_cnt].type = LONG;
 	 gParse.colData[col_cnt].datatype = TLONG;
 	 break;
       case TFLOAT:
       case TDOUBLE:
-	 gParse.colInfo[col_cnt].type = (repeat==1) ? REAL : REALV ;
+	 gParse.colInfo[col_cnt].type = DOUBLE;
 	 gParse.colData[col_cnt].datatype = TDOUBLE;
 	 break;
       case TLOGICAL:
-	 gParse.colInfo[col_cnt].type = (repeat==1) ? BOOLEAN : BOOLEANV ;
+	 gParse.colInfo[col_cnt].type = BOOLEAN;
 	 gParse.colData[col_cnt].datatype = TLOGICAL;
 	 break;
       case TSTRING:
 	 gParse.colInfo[col_cnt].type = STRING ;
 	 gParse.colData[col_cnt].datatype = TSTRING;
-	 repeat = 1;
 	 break;
       }
       gParse.colInfo[col_cnt].nelem = repeat;
-      if( repeat>1 ) {
+      if( repeat>1 && typecode!=TSTRING ) {
 	 if( fits_read_tdim( fptr, colnum, MAXDIMS,
 			     &gParse.colInfo[col_cnt].naxis,
 			     &gParse.colInfo[col_cnt].naxes[0], &status )
@@ -2468,14 +2212,14 @@ static int build_column_array(char *colname)
 	 gParse.colInfo[col_cnt].naxes[0] = 1;
       }
 
-      gParse.currCol = col_cnt;
       gParse.colData[col_cnt].fptr   = fptr;
       gParse.colData[col_cnt].colnum = colnum;
       gParse.colData[col_cnt].iotype = InputCol;
       strcpy(gParse.colData[col_cnt].colname,colname);
       gParse.nCols++;
    }
-   return( gParse.colInfo[gParse.currCol].type );
+   lval->lng = col_cnt;
+   return( gParse.colInfo[col_cnt].type );
 }
 
 static int find_keywd(char *keyname, FFSTYPE *lval )
@@ -2505,22 +2249,22 @@ static int find_keywd(char *keyname, FFSTYPE *lval )
    case 'C':
       fits_read_key_str( fptr, keyname, keyvalue, NULL, &status );
       type = STRING;
-      strcpy( lval->string , keyvalue );
+      strcpy( lval->str , keyvalue );
       break;
    case 'L':
       fits_read_key_log( fptr, keyname, &bval, NULL, &status );
       type = BOOLEAN;
-      lval->boolean = bval;
+      lval->log = bval;
       break;
    case 'I':
       fits_read_key_lng( fptr, keyname, &ival, NULL, &status );
-      type = INTEGER;
-      lval->integer = ival;
+      type = LONG;
+      lval->lng = ival;
       break;
    case 'F':
       fits_read_key_dbl( fptr, keyname, &rval, NULL, &status );
-      type = REAL;
-      lval->real = rval;
+      type = DOUBLE;
+      lval->dbl = rval;
       break;
    default:
       type = ERROR;
