@@ -303,7 +303,7 @@ int ffwrite(FITSfile *fptr, long nbytes, void *buffer,
             int *status);
 int fftrun(fitsfile *fptr, OFF_T filesize, int *status);
 
-int ffgcll(fitsfile *fptr, int colnum, long firstrow, long firstelem, long
+int ffgcll(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem, long
            nelem, int nultyp, char nulval, char *array, char *nularray,
            int *anynul, int *status);
 int ffgcls(fitsfile *fptr, int colnum, long firstrow, long firstelem,
