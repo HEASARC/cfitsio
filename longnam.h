@@ -27,8 +27,10 @@
 #define fits_uppercase      ffupch
 #define fits_get_errstatus  ffgerr
 #define fits_write_errmsg   ffpmsg
+#define fits_write_errmark  ffpmrk
 #define fits_read_errmsg    ffgmsg
 #define fits_clear_errmsg   ffcmsg
+#define fits_clear_errmark  ffcmrk
 #define fits_report_error   ffrprt
 #define fits_compare_str    ffcmps
 #define fits_test_keyword   fftkey

@@ -43,6 +43,17 @@ SERVICES PROVIDED HEREUNDER."
 /* stddef.h is apparently needed to define size_t with some compilers ?? */
 #include <stddef.h>
 #include "fitsio2.h"
+
+#define errmsgsiz 25
+#define ESMARKER 27  /* Escape character is used as error stack marker */
+
+#define DelAll     1 /* delete all messages on the error stack */
+#define DelMark    2 /* delete newest messages back to and including marker */
+#define DelNewest  3 /* delete the newest message from the stack */
+#define GetMesg    4 /* pop and return oldest message, ignoring marks */
+#define PutMesg    5 /* add a new message to the stack */
+#define PutMark    6 /* add a marker to the stack */
+
 /*--------------------------------------------------------------------------*/
 float ffvers(float *version)  /* IO - version number */
 /*
@@ -581,19 +592,31 @@ void ffpmsg(const char *err_message)
   put message on to error stack
 */
 {
-    ffxmsg(1, (char *)err_message);
+    ffxmsg(PutMesg, (char *)err_message);
+    return;
+}
+/*--------------------------------------------------------------------------*/
+void ffpmrk(void)
+/*
+  write a marker to the stack.  It is then possible to pop only those
+  messages following the marker off of the stack, leaving the previous
+  messages unaffected.
 
-/* printf("%s\n", err_message); */
+  The marker is ignored by the ffgmsg routine.
+*/
+{
+    char *dummy = 0;
 
+    ffxmsg(PutMark, dummy);
     return;
 }
 /*--------------------------------------------------------------------------*/
 int ffgmsg(char *err_message)
 /*
-  get oldest message from error stack
+  get oldest message from error stack, ignoring markers
 */
 {
-    ffxmsg(-1, err_message);
+    ffxmsg(GetMesg, err_message);
     return(*err_message);
 }
 /*--------------------------------------------------------------------------*/
@@ -604,7 +627,19 @@ void ffcmsg(void)
 {
     char *dummy = 0;
 
-    ffxmsg(0, dummy);
+    ffxmsg(DelAll, dummy);
+    return;
+}
+/*--------------------------------------------------------------------------*/
+void ffcmrk(void)
+/*
+  erase newest messages in the error stack, stopping if a marker is found.
+  The marker is also erased in this case.
+*/
+{
+    char *dummy = 0;
+
+    ffxmsg(DelMark, dummy);
     return;
 }
 /*--------------------------------------------------------------------------*/
@@ -614,24 +649,43 @@ void ffxmsg( int action,
   general routine to get, put, or clear the error message stack.
   Use a static array rather than allocating memory as needed for
   the error messages because it is likely to be more efficient
-  and because it is trick ensuring that the allocated memory
-  is always freed correctly.
+  and simpler to implement.
 
   Action Code:
-       -2  - delete the newest message from the stack
-       -1  - return the oldest message and delete it from the stack
-        0  - delete all the messages on the stack
-        1  - add a new message to the stack (this overwrites the
-             oldest message if the stack is full)
+DelAll     1  delete all messages on the error stack 
+DelMark    2  delete messages back to and including the 1st marker 
+DelNewest  3  delete the newest message from the stack 
+GetMesg    4  pop and return oldest message, ignoring marks 
+PutMesg    5  add a new message to the stack 
+PutMark    6  add a marker to the stack 
+
 */
 {
     int ii;
-#define errmsgsiz 25
+    char markflag;
     static char *txtbuff[errmsgsiz], *tmpbuff, *msgptr;
     static char errbuff[errmsgsiz][81];  /* initialize all = \0 */
     static int nummsg = 0;
 
-    if (action == -2)  /* remove newest message from stack */ 
+    if (action == DelAll)  /* clear the whole message stack */
+    {
+      for (ii = 0; ii < nummsg; ii ++)
+        *txtbuff[ii] = '\0';
+
+      nummsg = 0;
+    }
+    else if (action == DelMark)  /* clear up to and including first marker */
+    {
+      while (nummsg > 0) {
+        nummsg--;  
+        markflag = *txtbuff[nummsg]; /* store possible marker character */
+        *txtbuff[nummsg] = '\0';  /* clear the buffer for this msg */
+
+        if (markflag == ESMARKER)
+           break;   /* found a marker, so quit */
+      }
+    }
+    else if (action == DelNewest)  /* remove newest message from stack */ 
     {
       if (nummsg > 0)
       {
@@ -639,22 +693,24 @@ void ffxmsg( int action,
         *txtbuff[nummsg] = '\0';  /* clear the buffer for this msg */
       }
     }
-    else if (action == -1)  /* return and remove oldest message from stack */ 
-    {
-      if (nummsg > 0)
+    else if (action == GetMesg)  /* pop and return oldest message from stack */ 
+    {                            /* ignoring markers */
+      while (nummsg > 0)
       {
-        strcpy(errmsg, txtbuff[0]);   /* copy oldest message to output */
+         strcpy(errmsg, txtbuff[0]);   /* copy oldest message to output */
 
-        *txtbuff[0] = '\0';  /* clear the buffer for this msg */
+         *txtbuff[0] = '\0';  /* clear the buffer for this msg */
            
-        nummsg--;  
-        for (ii = 0; ii < nummsg; ii++)
+         nummsg--;  
+         for (ii = 0; ii < nummsg; ii++)
              txtbuff[ii] = txtbuff[ii + 1]; /* shift remaining pointers */
-      }
-      else
-        errmsg[0] = '\0';  /*  no messages in the stack */
+
+         if (errmsg[0] != ESMARKER)   /* quit if this is not a marker */
+            return;
+       }
+       errmsg[0] = '\0';  /*  no messages in the stack */
     }
-    else if (action == 1)  /* add new message to stack */
+    else if (action == PutMesg)  /* add new message to stack */
     {
      msgptr = errmsg;
      while (strlen(msgptr))
@@ -688,12 +744,35 @@ void ffxmsg( int action,
       msgptr += minvalue(80, strlen(msgptr));
      }
     }
-    else if (action == 0)  /* clear the whole message stack */
+    else if (action == PutMark)  /* put a marker on the stack */
     {
-      for (ii = 0; ii < nummsg; ii ++)
-        *txtbuff[ii] = '\0';
+      if (nummsg == errmsgsiz)
+      {
+        tmpbuff = txtbuff[0];  /* buffers full; reuse oldest buffer */
+        *txtbuff[0] = '\0';  /* clear the buffer for this msg */
 
-      nummsg = 0;
+        nummsg--;
+        for (ii = 0; ii < nummsg; ii++)
+             txtbuff[ii] = txtbuff[ii + 1];   /* shift remaining pointers */
+
+        txtbuff[nummsg] = tmpbuff;  /* set pointer for the new message */
+      }
+      else
+      {
+        for (ii = 0; ii < errmsgsiz; ii++)
+        {
+          if (*errbuff[ii] == '\0') /* find first empty buffer */
+          {
+            txtbuff[nummsg] = errbuff[ii];
+            break;
+          }
+        }
+      }
+
+      *txtbuff[nummsg] = ESMARKER;      /* write the marker */
+      *(txtbuff[nummsg] + 1) = '\0';
+      nummsg++;
+
     }
     return;
 }

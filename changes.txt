@@ -5,6 +5,11 @@ Version 2.402
 
   New Routines:
 
+  - fits_write_errmark and fits_clear_errmark routines can be use
+    to write an invisible marker to the CFITSIO error stack, and
+    then clear any more recent messages on the stack, back to 
+    that mark.  This preserves any older messages on the stack.
+
   - fits_parse_range utility routines parses a row list string
     and returns integer arrays giving the min and max row in each
     range.
@@ -25,6 +30,10 @@ Version 2.402
     of routines (previously, it was a private routine)
 
   Enhancements:
+
+  - modified the routines that delete rows from a table to also 
+    update the variable length array heap, to remove any orphaned
+    data from the heap.
 
   - modified ffedit_columns so that wild card characters may be
     used when specifying column names in the 'col' file filter
@@ -74,6 +83,10 @@ Version 2.402
     datatype on debian linux systems.
 
   Bug fixes:
+
+  - ffrtnm, which returns the root filename, sometimes did not work 
+    properly when testing if the 'filename+n' convention was used for
+    specifying an extension number.
 
   - fixed minor problem in the keyword template parsing routine, ffgthd
     which in rare cases could cause an improperly terminated string to

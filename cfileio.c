@@ -4220,10 +4220,11 @@ int ffrtnm(char *url,
             break;
     }
 
-    if (ii != 0 && (jj - ii) < 5)  /* limit extension numbers to 4 digits */
+    if (ii > 0 && (jj - ii) < 5)  /* limit extension numbers to 4 digits */
     {
         infilelen = ii;
         ii++;
+
 
         for (; ii < jj; ii++)
         {

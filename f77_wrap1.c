@@ -220,6 +220,8 @@ FCALLSCSUB2(ffgerr,FTGERR,ftgerr,INT,PSTRING)
 FCALLSCSUB1(ffpmsg,FTPMSG,ftpmsg,STRING)
 FCALLSCSUB1(ffgmsg,FTGMSG,ftgmsg,PSTRING)
 FCALLSCSUB0(ffcmsg,FTCMSG,ftcmsg)
+FCALLSCSUB0(ffpmrk,FTPMRK,ftpmrk)
+FCALLSCSUB0(ffcmrk,FTCMRK,ftcmrk)
 
 void Cffrprt( char *fname, int status );
 void Cffrprt( char *fname, int status )

@@ -19,12 +19,12 @@
 \contentsline {section}{\numberline {4.6}HDU Location Specification}{22}
 \contentsline {section}{\numberline {4.7}Image Section}{23}
 \contentsline {section}{\numberline {4.8}Column and Keyword Filtering Specification}{24}
-\contentsline {section}{\numberline {4.9}Row Filtering Specification}{25}
+\contentsline {section}{\numberline {4.9}Row Filtering Specification}{26}
 \contentsline {subsection}{\numberline {4.9.1}General Syntax}{26}
 \contentsline {subsection}{\numberline {4.9.2}Vector Columns}{29}
 \contentsline {subsection}{\numberline {4.9.3}Good Time Interval Filtering}{30}
 \contentsline {subsection}{\numberline {4.9.4}Spatial Region Filtering}{31}
-\contentsline {subsection}{\numberline {4.9.5}Example Row Filters}{32}
+\contentsline {subsection}{\numberline {4.9.5}Example Row Filters}{33}
 \contentsline {section}{\numberline {4.10} Binning or Histogramming Specification}{34}
 \contentsline {chapter}{\numberline {5}Template Files }{37}
 \contentsline {section}{\numberline {5.1}Detailed Template Line Format}{37}
@@ -56,22 +56,22 @@
 \contentsline {chapter}{\numberline {8} Basic Interface Routines }{59}
 \contentsline {section}{\numberline {8.1}FITSIO Error Status Routines }{59}
 \contentsline {section}{\numberline {8.2}File I/O Routines}{60}
-\contentsline {section}{\numberline {8.3}Keyword I/O Routines}{61}
+\contentsline {section}{\numberline {8.3}Keyword I/O Routines}{62}
 \contentsline {section}{\numberline {8.4}Data I/O Routines}{62}
 \contentsline {chapter}{\numberline {9} Advanced Interface Subroutines }{65}
 \contentsline {section}{\numberline {9.1}FITS File Open and Close Subroutines: }{65}
 \contentsline {section}{\numberline {9.2}HDU-Level Operations }{68}
 \contentsline {section}{\numberline {9.3}Define or Redefine the structure of the CHDU }{70}
-\contentsline {section}{\numberline {9.4}FITS Header I/O Subroutines}{71}
-\contentsline {subsection}{\numberline {9.4.1}Header Space and Position Routines }{71}
+\contentsline {section}{\numberline {9.4}FITS Header I/O Subroutines}{72}
+\contentsline {subsection}{\numberline {9.4.1}Header Space and Position Routines }{72}
 \contentsline {subsection}{\numberline {9.4.2}Read or Write Standard Header Routines }{72}
-\contentsline {subsection}{\numberline {9.4.3}Write Keyword Subroutines }{73}
-\contentsline {subsection}{\numberline {9.4.4}Insert Keyword Subroutines }{75}
+\contentsline {subsection}{\numberline {9.4.3}Write Keyword Subroutines }{74}
+\contentsline {subsection}{\numberline {9.4.4}Insert Keyword Subroutines }{76}
 \contentsline {subsection}{\numberline {9.4.5}Read Keyword Subroutines }{76}
 \contentsline {subsection}{\numberline {9.4.6}Modify Keyword Subroutines }{78}
 \contentsline {subsection}{\numberline {9.4.7}Update Keyword Subroutines }{79}
 \contentsline {subsection}{\numberline {9.4.8}Delete Keyword Subroutines }{79}
-\contentsline {section}{\numberline {9.5}Data Scaling and Undefined Pixel Parameters }{79}
+\contentsline {section}{\numberline {9.5}Data Scaling and Undefined Pixel Parameters }{80}
 \contentsline {section}{\numberline {9.6}FITS Primary Array or IMAGE Extension I/O Subroutines }{81}
 \contentsline {section}{\numberline {9.7}FITS ASCII and Binary Table Data I/O Subroutines}{84}
 \contentsline {subsection}{\numberline {9.7.1}Column Information Subroutines }{84}

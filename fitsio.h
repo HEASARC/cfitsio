@@ -531,8 +531,10 @@ float ffvers(float *version);
 void ffupch(char *string);
 void ffgerr(int status, char *errtext);
 void ffpmsg(const char *err_message);
+void ffpmrk(void);
 int  ffgmsg(char *err_message);
 void ffcmsg(void);
+void ffcmrk(void);
 void ffrprt(FILE *stream, int status);
 void ffcmps(char *templt, char *colname, int  casesen, int *match,
            int *exact);

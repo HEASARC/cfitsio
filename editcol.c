@@ -388,6 +388,8 @@ and gives a list of rows or row ranges separated by commas.
     if (!minrow || !maxrow) {
         *status = MEMORY_ALLOCATION;
         ffpmsg("failed to allocate memory for row ranges (ffdrrg)");
+        if (maxrow) free(maxrow);
+        if (minrow) free(minrow);
         return(*status);
     }
 
