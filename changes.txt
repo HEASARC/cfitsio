@@ -1,5 +1,60 @@
                    Log of Changes Made to CFITSIO
 
+Version 2.034 - 2 Nov 1999
+
+   - enhanced support for the new 'CD' matrix world coordinate system
+     keywords in the ffigics routine.  This routine has been enhanced
+     to look for the new 'CD' keywords, if present, and convert them
+     back to the old CDELTn and CROTAn values, which are then returned.  
+     The routine will also swap the WCS parameters for the 2 axes if
+     the declination-like axis is the first WCS axis.
+
+   - fixed tiny memory leak in irafncmp in iraffits.c.  Only relevant when
+     reading IRAF .imh files.
+
+   - modified ffphbn in putkey.c to support the 'U' and 'V" TFORM characters
+     (which represent unsigned short and unsigned int columns) in variable
+     length array columns.  (previously only supported these types in
+     fixed length columns).
+
+   - added checks when reading gzipped files to detect unexpected EOF.
+     Previously, the 'inflate_codes' routine would just sit in an infinite 
+     loop if the file ended unexpectedly.
+
+   - fixed a bug (introduced in version 2.027) that caused the keyword
+     reading routines to sometimes not find a matching keyword if the
+     input name template used the '*' wildcard as the last character.
+     (e.g., if input name = 'COMMENT*' then it would not find the
+     'COMMMENT' keywords.  (It would have found longer keywords like
+     'COMMENTX' correctly). The fix required a minor change to ffgcrd
+     in getkey.c
+
+   - modified the routine (ffswap8) that does byteswapping of
+     double precision numbers.  Some linux systems have reported floating
+     point exceptions because they were trying to interprete the bytes
+     as a double before the bytes had been swapped.
+
+   - modified fits_verify_chksum/ffvcks so that checksum keywords with
+     a blank value string are treated as undefined, the same as
+     if the keyword did not exist at all.
+
+   - fixed bug in the calculation of the position of the last byte
+     in the string of bits to be read in ffgcxuk and ffgcxui.  This
+     bug generally caused no harm, but could cause the routine to
+     exit with an invalid error message about trying to read
+     beyond the size of the field.
+
+   - If a unix machine did not have '__unix__', 'unix', or  '__unix'
+     C preprocessor symbols defined, then CFITSIO would correctly open
+     one FITS file, but would not correctly open subsequent files. Instead
+     it would think that the same file was being opened multiple times.
+     This problem has only been seen on an IBM/AIX machine. The fits_path2url
+     and fits_url2path routines in group.c were modified to fix the problem.
+
+   - fixed bug in group.c, which affected WINDOWS platforms only, that 
+     caused programs to go into infinite loop when trying to open
+     certain files.
+
 Version 2.033 - 17 Sept 1999
 
    - New Feature: enhanced the row selection parser so that comparisons

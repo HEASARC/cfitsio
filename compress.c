@@ -113,7 +113,7 @@ int uncompress2mem(char *filename,  /* name of input file                 */
     method = get_method(ifd); 
     if (method < 0)
     {
-	return(*status = 1);       /* error message already emitted */
+	return(*status = 414);       /* error message already emitted */
     }
 
     /* Actually do the compression/decompression. Loop over zipped members.
@@ -121,6 +121,7 @@ int uncompress2mem(char *filename,  /* name of input file                 */
     for (;;) {
 	if ((*work)(ifd, ofd) != OK) {
 	    method = -1; /* force cleanup */
+            *status = 414;    /* report some sort of decompression error */
 	    break;
 	}
 	if (last_member || inptr == insize) break;
@@ -385,6 +386,10 @@ local int fill_inbuf(eof_ok)
  * Write the output buffer outbuf[0..outcnt-1] and update bytes_out.
  * (used for the compressed data only)
  */
+
+/*  'flush_outbuf' is defined as a macro, so this routine is not needed
+     (WDP) Nov 1999
+
 local void flush_outbuf()
 {
     if (outcnt == 0) return;
@@ -393,6 +398,8 @@ local void flush_outbuf()
     bytes_out += (ulg)outcnt;
     outcnt = 0;
 }
+
+*/
 
 /* ===========================================================================
  * Write the output window window[0..outcnt-1] and update crc and bytes_out.
@@ -2111,6 +2118,7 @@ int bl, bd;             /* number of bits decoded by tl[] and td[] */
   unsigned ml, md;      /* masks for bl and bd bits */
   register ulg b;       /* bit buffer */
   register unsigned k;  /* number of bits in bit buffer */
+  register int nloop = 0;
 
 
   /* make local copies of globals */
@@ -2123,6 +2131,23 @@ int bl, bd;             /* number of bits decoded by tl[] and td[] */
   md = mask_bits[bd];
   for (;;)                      /* do until end of block */
   {
+
+/* 
+The NEEDBITS macro (which calls NEXTBYTE, which calls get_byte, which
+finally calls fill_inbuf) has no way to return an error in the case of
+unexpected EOF.  The original gunzip program simply exits in this case,
+but that is not acceptable for CFITSIO.  Therefore, we will check how
+many times this loop is executed and if it looks like it is in an
+infinite loop then we will return with an error.
+WDP - Nov 1999.
+*/
+
+nloop++;               
+if (nloop > 500000)
+{
+  error("'inflate_codes' is in infinite loop; corrupt compressed file??");
+  return(1);
+}
     NEEDBITS((unsigned)bl)
     if ((e = (t = tl + ((unsigned)b & ml))->e) > 16)
       do {

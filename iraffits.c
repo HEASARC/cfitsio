@@ -746,7 +746,10 @@ int	nc)		/* Number of characters to compate */
 	return (0);
 	}
     else
+    {
+        free (line);
 	return (1);
+    }
 }
 
 /*--------------------------------------------------------------------------*/

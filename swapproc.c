@@ -76,26 +76,27 @@ void ffswap8(double *dvalues,  /* IO - pointer to doubles to be swapped     */
 {
     register char *cvalues;
     register long ii;
-
-    union u_tag {
-        char cvals[8];   /* equivalence an array of 8 bytes with */
-        double dval;      /* a double */
-    } u;
+    register char temp;
 
     cvalues = (char *) dvalues;      /* copy the pointer value */
 
-    for (ii = 0; ii < nvals;)
+    for (ii = 0; ii < nvals*8; ii += 8)
     {
-        u.dval = dvalues[ii++];  /* copy next double to buffer */
+        temp = cvalues[ii];
+        cvalues[ii] = cvalues[ii+7];
+        cvalues[ii+7] = temp;
 
-        *cvalues++ = u.cvals[7]; /* copy the 8 bytes in turn */
-        *cvalues++ = u.cvals[6];
-        *cvalues++ = u.cvals[5];
-        *cvalues++ = u.cvals[4];
-        *cvalues++ = u.cvals[3];
-        *cvalues++ = u.cvals[2];
-        *cvalues++ = u.cvals[1];
-        *cvalues++ = u.cvals[0];
+        temp = cvalues[ii+1];
+        cvalues[ii+1] = cvalues[ii+6];
+        cvalues[ii+6] = temp;
+
+        temp = cvalues[ii+2];
+        cvalues[ii+2] = cvalues[ii+5];
+        cvalues[ii+5] = temp;
+
+        temp = cvalues[ii+3];
+        cvalues[ii+3] = cvalues[ii+4];
+        cvalues[ii+4] = temp;
     }
     return;
 }

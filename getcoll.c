@@ -337,7 +337,7 @@ int ffgcxui(fitsfile *fptr,   /* I - FITS file pointer                       */
             unsigned short *array, /* O - array of integer values            */
             int  *status)     /* IO - error status                           */
 /*
-  Read a consecutive string of bits from and 'X' or 'B' column and
+  Read a consecutive string of bits from an 'X' or 'B' column and
   interprete them as an unsigned integer.  The number of bits must be
   less than or equal to 16 or the total number of bits in the column, 
   which ever is less.
@@ -412,10 +412,16 @@ int ffgcxui(fitsfile *fptr,   /* I - FITS file pointer                       */
     }
 
     firstbyte = (input_first_bit - 1              ) / 8 + 1;
-    lastbyte  = (input_first_bit - 1 + input_nbits) / 8 + 1;
+    lastbyte  = (input_first_bit + input_nbits - 2) / 8 + 1;
     nbytes = lastbyte - firstbyte + 1;
 
-    if (colptr->tdatatype > 0 && lastbyte > colptr->trepeat)
+    if (colptr->tdatatype == TBIT && 
+        input_first_bit + input_nbits - 1 > colptr->trepeat)
+    {
+        ffpmsg("Too many bits. Tried to read past width of column (ffgcxui)");
+        return(*status = BAD_ELEM_NUM);
+    }
+    else if (colptr->tdatatype == TBYTE && lastbyte > colptr->trepeat)
     {
         ffpmsg("Too many bits. Tried to read past width of column (ffgcxui)");
         return(*status = BAD_ELEM_NUM);
@@ -468,7 +474,7 @@ int ffgcxuk(fitsfile *fptr,   /* I - FITS file pointer                       */
             unsigned int *array,   /* O - array of integer values            */
             int  *status)     /* IO - error status                           */
 /*
-  Read a consecutive string of bits from and 'X' or 'B' column and
+  Read a consecutive string of bits from an 'X' or 'B' column and
   interprete them as an unsigned integer.  The number of bits must be
   less than or equal to 32 or the total number of bits in the column, 
   which ever is less.
@@ -543,10 +549,16 @@ int ffgcxuk(fitsfile *fptr,   /* I - FITS file pointer                       */
     }
 
     firstbyte = (input_first_bit - 1              ) / 8 + 1;
-    lastbyte  = (input_first_bit - 1 + input_nbits) / 8 + 1;
+    lastbyte  = (input_first_bit + input_nbits - 2) / 8 + 1;
     nbytes = lastbyte - firstbyte + 1;
 
-    if (colptr->tdatatype > 0 && lastbyte > colptr->trepeat)
+    if (colptr->tdatatype == TBIT && 
+        input_first_bit + input_nbits - 1 > colptr->trepeat)
+    {
+        ffpmsg("Too many bits. Tried to read past width of column (ffgcxuk)");
+        return(*status = BAD_ELEM_NUM);
+    }
+    else if (colptr->tdatatype == TBYTE && lastbyte > colptr->trepeat)
     {
         ffpmsg("Too many bits. Tried to read past width of column (ffgcxuk)");
         return(*status = BAD_ELEM_NUM);

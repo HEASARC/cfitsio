@@ -454,10 +454,10 @@ int ffgcrd( fitsfile *fptr,     /* I - FITS file pointer        */
   not automatically resume from the top of the header.
 */
 {
-    int nkeys, nextkey, ntodo, namelen, namelenminus1, cardlen;
+    int nkeys, nextkey, ntodo, namelen, namelen_limit, namelenminus1, cardlen;
     int ii = 0, jj, kk, wild, match, exact, hier = 0;
     char keyname[FLEN_KEYWORD], cardname[FLEN_KEYWORD];
-    char *ptr1, *ptr2;
+    char *ptr1, *ptr2, *gotstar;
 
     if (*status > 0)
         return(*status);
@@ -510,9 +510,22 @@ int ffgcrd( fitsfile *fptr,     /* I - FITS file pointer        */
 
     /* does input name contain wild card chars?  ('?',  '*', or '#') */
     /* wild cards are currently not supported with HIERARCH keywords */
+
+    namelen_limit = namelen;
+    gotstar = 0;
     if (namelen < 9 && 
-       (strchr(keyname,'?') || strchr(keyname,'*') || strchr(keyname,'#')) )
+       (strchr(keyname,'?') || (gotstar = strchr(keyname,'*')) || 
+        strchr(keyname,'#')) )
+    {
         wild = 1;
+
+        /* if we found a '*' wild card in the name, there might be */
+        /* more than one.  Support up to 2 '*' in the template. */
+        /* Thus we need to compare keywords whose names have at least */
+        /* namelen - 2 characters.                                   */
+        if (gotstar)
+           namelen_limit -= 2;           
+    }
     else
         wild = 0;
 
@@ -535,7 +548,7 @@ int ffgcrd( fitsfile *fptr,     /* I - FITS file pointer        */
         {
           ffgknm(card, cardname, &cardlen, status); /* get the keyword name */
 
-          if (cardlen >= namelen)  /* can't match if card < name */
+          if (cardlen >= namelen_limit)  /* can't match if card < name */
           { 
             /* if there are no wild cards, lengths must be the same */
             if (!( !wild && cardlen != namelen) )

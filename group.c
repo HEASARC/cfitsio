@@ -4667,19 +4667,6 @@ int fits_path2url(char *inpath,  /* input file path string                  */
 {
   char buff[FLEN_FILENAME];
 
-#if !defined(TEST) && ( defined(__unix__) || defined(unix) || defined(__unix)) 
-
-  /*
-     Unix case.
-
-     Nothing special to do here
-   */
-
-  if(*status > 0) return(*status);
-
-  strcpy(buff,inpath);
-
-#endif
 #if defined(WINNT) || defined(__WINNT__)
 
   /*
@@ -4707,9 +4694,7 @@ int fits_path2url(char *inpath,  /* input file path string                  */
       strcpy(buff,inpath);
     }
 
-#endif
-
-#if defined(MSDOS) || defined(__WIN32__) || defined(WIN32)
+#elif defined(MSDOS) || defined(__WIN32__) || defined(WIN32)
 
   /*
      MSDOS or Microsoft windows/NT case. The assumed form of the
@@ -4775,8 +4760,7 @@ int fits_path2url(char *inpath,  /* input file path string                  */
 	}
     }
 
-#endif
-#if defined(VMS) || defined(vms) || defined(__vms)
+#elif defined(VMS) || defined(vms) || defined(__vms)
 
   /*
      VMS case. Assumed format of the input path is:
@@ -4940,8 +4924,7 @@ int fits_path2url(char *inpath,  /* input file path string                  */
       ffpmsg("resulting path to URL conversion too big (fits_path2url)");
     }
 
-#endif
-#if defined(macintosh)
+#elif defined(macintosh)
 
   /*
      MacOS case. The assumed form of the input path is:
@@ -5003,6 +4986,18 @@ int fits_path2url(char *inpath,  /* input file path string                  */
 	}
     }
 
+#else 
+
+  /*
+     Default Unix case.
+
+     Nothing special to do here
+   */
+
+  if(*status > 0) return(*status);
+
+  strcpy(buff,inpath);
+
 #endif
 
   /*
@@ -5029,15 +5024,14 @@ int fits_url2path(char *inpath,  /* input file path string  */
   char buff[FLEN_FILENAME];
   int absolute;
 
-#if !defined(TEST) && (defined(__unix__) || defined(unix) || defined(__unix))
-#elif defined(WINNT) || defined(__WINNT__)
+#if defined(MSDOS) || defined(__WIN32__) || defined(WIN32)
+  char *tmpStr;
 #elif defined(VMS) || defined(vms) || defined(__vms)
   int i;
   char *tmpStr;
-#else
+#elif defined(macintosh)
   char *tmpStr;
 #endif
-
 
   if(*status != 0) return(*status);
 
@@ -5062,17 +5056,6 @@ int fits_url2path(char *inpath,  /* input file path string  */
   else
     absolute = 0;
 
-#if !defined(TEST) && (defined(__unix__) || defined(unix) || defined(__unix))
-
-  /*
-     Unix case.
-
-     Nothing special to do here
-   */
-
-  strcpy(outpath,buff);
-
-#endif
 #if defined(WINNT) || defined(__WINNT__)
 
   /*
@@ -5094,8 +5077,7 @@ int fits_url2path(char *inpath,  /* input file path string  */
       strcpy(outpath,buff);
     }
 
-#endif
-#if defined(MSDOS) || defined(__WIN32__) || defined(WIN32)
+#elif defined(MSDOS) || defined(__WIN32__) || defined(WIN32)
 
   /*
      MSDOS or Microsoft windows/NT case. The output path will be of the
@@ -5135,8 +5117,7 @@ int fits_url2path(char *inpath,  /* input file path string  */
 
   outpath[strlen(outpath)-1] = 0;
 
-#endif
-#if defined(VMS) || defined(vms) || defined(__vms)
+#elif defined(VMS) || defined(vms) || defined(__vms)
 
   /*
      VMS case. The output path will be of the form:
@@ -5234,8 +5215,7 @@ int fits_url2path(char *inpath,  /* input file path string  */
 	}
     }
 
-#endif
-#if defined(macintosh)
+#elif defined(macintosh)
 
   /*
      MacOS case. The output path will be of the form
@@ -5261,6 +5241,16 @@ int fits_url2path(char *inpath,  /* input file path string  */
   /* remove the last ":" from the outpath, it does not belong there */
 
   outpath[strlen(outpath)-1] = 0;
+
+#else
+
+  /*
+     Default Unix case.
+
+     Nothing special to do here
+   */
+
+  strcpy(outpath,buff);
 
 #endif
 

@@ -2277,7 +2277,7 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
         else if (datatype < 0)
            strcat(comm, ": variable length array");
 
-        if (datatype == TUSHORT) 
+        if (abs(datatype) == TUSHORT) 
         {
            /* Replace the 'U' with an 'I' in the TFORMn code */
            cptr = tfmt;
@@ -2297,7 +2297,7 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
            strcpy(comm, "data are not scaled");
            ffpkyg(fptr, name, 1., 0, comm, status);
         }
-        else if (datatype == TULONG) 
+        else if (abs(datatype) == TULONG) 
         {
            /* Replace the 'V' with an 'J' in the TFORMn code */
            cptr = tfmt;

@@ -429,12 +429,16 @@ int ffvcks(fitsfile *fptr,      /* I - FITS file pointer                  */
         *hdustatus = 0;             /* CHECKSUM keyword does not exist */
         *status = tstatus;
     }
+    if (chksum[0] == '\0')
+        *hdustatus = 0;    /* all blank checksum means it is undefined */
 
     if (ffgkys(fptr, "DATASUM", chksum, comm, status) == KEY_NO_EXIST)
     {
         *datastatus = 0;            /* DATASUM keyword does not exist */
         *status = tstatus;
     }
+    if (chksum[0] == '\0')
+        *datastatus = 0;    /* all blank checksum means it is undefined */
 
     if ( *status > 0 || (!(*hdustatus) && !(*datastatus)) )
         return(*status);            /* return if neither keywords exist */

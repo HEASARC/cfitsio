@@ -10,48 +10,120 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
            double *xinc,      /* O - X increment per pixel       */
            double *yinc,      /* O - Y increment per pixel       */
            double *rot,       /* O - rotation angle (degrees)    */
-           char *type,        /* O - type of projection ('-sin') */
+           char *type,        /* O - type of projection ('-tan') */
            int *status)       /* IO - error status               */
 /*
        read the values of the celestial coordinate system keywords.
        These values may be used as input to the subroutines that
        calculate celestial coordinates. (ffxypx, ffwldp)
 
-       This routine assumes that the CHDU contains an image
-       with the RA type coordinate running along the first axis
-       and the DEC type coordinate running along the 2nd axis.
+       Modified in Nov 1999 to convert the CD matrix keywords back
+       to the old CDELTn form, and to swap the axes if the dec-like
+       axis is given first, and to assume default values if any of the
+       keywords are not present.
 */
 {
-    int tstat = 0;
-    char comm[FLEN_COMMENT],ctype[FLEN_VALUE];
+    int tstat;
+    char ctype[FLEN_VALUE];
+    double cd11, cd21, cd22, cd12;
+    double rad = 57.2957795131;
+    double phia, phib, temp;
+    double toler = .001;  /* tolerance for angles to agree */
 
     if (*status > 0)
        return(*status);
 
-    ffgkyd(fptr, "CRVAL1", xrval, comm, status);
-    ffgkyd(fptr, "CRVAL2", yrval, comm, status);
+    tstat = 0;
+    if (ffgkyd(fptr, "CRVAL1", xrval, NULL, &tstat))
+       *xrval = 0.;
 
-    ffgkyd(fptr, "CRPIX1", xrpix, comm, status);
-    ffgkyd(fptr, "CRPIX2", yrpix, comm, status);
+    tstat = 0;
+    if (ffgkyd(fptr, "CRVAL2", yrval, NULL, &tstat))
+       *yrval = 0.;
 
-    ffgkyd(fptr, "CDELT1", xinc, comm, status);
-    ffgkyd(fptr, "CDELT2", yinc, comm, status);
+    tstat = 0;
+    if (ffgkyd(fptr, "CRPIX1", xrpix, NULL, &tstat))
+        *xrpix = 0.;
 
-    ffgkys(fptr, "CTYPE1", ctype, comm, status);
+    tstat = 0;
+    if (ffgkyd(fptr, "CRPIX2", yrpix, NULL, &tstat))
+        *yrpix = 0.;
 
-    if (*status > 0)
+    /* look for CDELTn first, then CDi_j keywords */
+    tstat = 0;
+    if (ffgkyd(fptr, "CDELT1", xinc, NULL, &tstat))
     {
-      ffpmsg
-      ("ffgics could not find all the celestial coordinate keywords");
-      return(*status = NO_WCS_KEY); 
+        /* no CDELTn keyword, so look for the CD matrix */
+        tstat = 0;
+        ffgkyd(fptr, "CD1_1", &cd11, NULL, &tstat);
+        ffgkyd(fptr, "CD2_1", &cd21, NULL, &tstat);
+        ffgkyd(fptr, "CD1_2", &cd12, NULL, &tstat);
+        ffgkyd(fptr, "CD2_2", &cd22, NULL, &tstat);
+
+        if (!tstat)  /* convert CDi_j back to CDELTn */
+        {
+            /* there are 2 ways to compute the angle: */
+            phia = atan2( cd21, cd11);
+            phib = atan2(-cd12, cd22);
+
+            if (fabs(phia - phib) > toler) 
+            {
+               /* angles don't agree, so looks like there is some skewness */
+               /* between the axes.  Return with an error to be safe. */
+               return(*status = NO_WCS_KEY);
+            }
+      
+
+            *xinc = cd11 / cos((phia + phib) /2.);
+            *yinc = cd22 / cos((phia + phib) /2.);
+            *rot = (((phia + phib) * rad) / 2.);
+        }
+        else   /* no CD matrix keywords either */
+        {
+            *xinc = 1.;
+
+            tstat = 0;
+            if (ffgkyd(fptr, "CDELT2", yinc, NULL, &tstat))
+                *yinc = 1.;
+
+            tstat = 0;
+            if (ffgkyd(fptr, "CROTA2", rot, NULL, &tstat))
+                *rot=0.;
+        }
+    }
+    else
+    {
+        if (ffgkyd(fptr, "CDELT2", yinc, NULL, &tstat))
+            *yinc = 1.;
+
+        tstat = 0;
+        if (ffgkyd(fptr, "CROTA2", rot, NULL, &tstat))
+            *rot=0.;
     }
 
-    /* copy the projection type string */
-    strncpy(type, &ctype[4], 4);
-    type[4] = '\0';
+    tstat = 0;
+    if (ffgkys(fptr, "CTYPE1", ctype, NULL, &tstat))
+         type[0] = '\0';
+    else
+    {
+        /* copy the projection type string */
+        strncpy(type, &ctype[4], 4);
+        type[4] = '\0';
 
-    *rot=0.;
-    ffgkyd(fptr, "CROTA2", rot, comm, &tstat); /* keyword may not exist */
+        /* check if RA and DEC are inverted */
+        if (!strncmp(ctype, "DEC-", 4) || !strncmp(ctype+1, "LAT", 3))
+        {
+            /* the latitudinal axis is given first, so swap them */
+            *rot = 90. - (*rot);
+            temp = *xinc;
+            *xinc = *yinc;
+            *yinc = -temp;
+
+            temp = *xrval;
+            *xrval = *yrval;
+            *yrval = temp;
+        }   
+    }
 
     return(*status);
 }
