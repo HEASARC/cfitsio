@@ -78,9 +78,11 @@ LIBPRE=""
 case $system in
     SunOS-4*)
 	ARCH="sun"
+	EXT="sun"
 	;;
     HP-UX-*)
 	ARCH="hp"
+	EXT="hpu"
 	if test "x$CFORTRANFLAGS" = x ; then
 		CFORTRANFLAGS="-Dappendus"
 	fi
@@ -89,29 +91,36 @@ case $system in
 	;;
     SunOS-5*)
 	ARCH="solaris"
+	EXT="sol"
 	if test "x$CFORTRANFLAGS" = x ; then
 		CFORTRANFLAGS="-Dsolaris"
 	fi
 	;;
     OSF1*)
 	ARCH="alpha"
+	EXT="osf"
 	;;
     IRIX*)
 	ARCH="sgi"
+	EXT="sgi"
 	CFLAGS="$CFLAGS -DHAVE_POSIX_SIGNALS"
 	RANLIB="touch"
 	;;
     ULTRIX*)
 	ARCH="dec"
+	EXT="dec"
 	;;
     Linux*)
 	ARCH="linux"
+	EXT="lnx"
 	;;
     FREEBSD*|FreeBSD*)
 	ARCH="linux"
+	EXT="lnx"
 	;;
     CYGWIN*)
 	ARCH="cygwin"
+	EXT="cygwin"
 	CFLAGS="$CFLAGS -DHAVE_POSIX_SIGNALS"
 	;;
     *)
@@ -152,12 +161,49 @@ case $CC in
 		;;
 esac
 		
+# Shared library section
+#-------------------------------------------------------------------------------
+SHLIB_LD=:
+SHLIB_SUFFIX=".so"
+lhea_shlib_cflags=
+case $EXT in
+  hpu)
+    SHLIB_LD="ld -b" 
+    SHLIB_SUFFIX=".sl"
+    ;;
+  lnx|cygwin)
+    SHLIB_LD=":"
+    ;;
+  osf)
+    SHLIB_LD="ld -shared -expect_unresolved '*'"
+    LD_FLAGS="-taso"
+    ;;
+  sol)
+    SHLIB_LD="/usr/ccs/bin/ld -G"
+    lhea_shlib_cflags="-KPIC"
+    ;;
+  sgi)
+    SHLIB_LD="ld -shared -rdata_shared"
+    ;;
+  *)
+    AC_MSG_WARN(Unable to determine how to make a shared library)
+    ;;
+esac
+if test "x$GCC" = xyes; then
+  SHLIB_LD="$CC -shared"
+  lhea_shlib_cflags='-fPIC'
+fi
+if test "x$lhea_shlib_cflags" != x; then
+  CFLAGS="$CFLAGS $lhea_shlib_cflags"
+fi
 
 AC_SUBST(ARCH)dnl
 AC_SUBST(CFLAGS)dnl
 AC_SUBST(CC)dnl
 AC_SUBST(FC)dnl
 AC_SUBST(LIBPRE)dnl
+AC_SUBST(SHLIB_LD)dnl
+AC_SUBST(SHLIB_SUFFIX)dnl
 
 # ================= test for the unix ftruncate function ================
 

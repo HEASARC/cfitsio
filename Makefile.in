@@ -29,6 +29,9 @@ LIBS =		@LIBS@
 FLEX =		flex
 BISON =		bison
 
+SHLIB_LD =	@SHLIB_LD@
+SHLIB_SUFFIX =	@SHLIB_SUFFIX@
+
 .c.o:
 		$(CC) -c $(CFLAGS) $(DEFS) $<
 
@@ -73,6 +76,11 @@ libcfitsio.a:	${OBJECTS}
 		ar rv libcfitsio.a ${OBJECTS}; \
 		${RANLIB} libcfitsio.a;
 
+shared: libcfitsio${SHLIB_SUFFIX}
+
+libcfitsio${SHLIB_SUFFIX}: ${OBJECTS}
+		${SHLIB_LD} -o $@ ${OBJECTS}
+
 install:	libcfitsio.a
 		/bin/mv libcfitsio.a ${FTOOLS_LIB}
 		/bin/cp *.h ${FTOOLS_INCLUDE}/
@@ -105,7 +113,8 @@ eval:		# Rebuild eval_* files from flex/bison source
 		/bin/rm -f y.tab.c y.tab.h
 
 clean:
-	-	/bin/rm -f *.o libcfitsio.a smem testprog y.output
+	-	/bin/rm -f *.o libcfitsio.a libcfitsio${SHLIB_SUFFIX} \
+			smem testprog y.output
 
 distclean:	clean
 	-	/bin/rm -f Makefile config.*
