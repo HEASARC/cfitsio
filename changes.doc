@@ -2,6 +2,10 @@
 
 Version 1.41 - 16 March 1998 (for the FTOOLS release)
 
+   - modified ffbinit and ffainit to ignore minor format
+     errors in header keywords so that cfitsio can at least
+     move to an extention that contains illegal keywords.
+
    - added ffdrws to delete a list of rows in a table
 
    - added ffcphd to copy the header keywords from one hdu to another

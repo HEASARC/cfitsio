@@ -790,13 +790,8 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
       /* the absence of a value string is legal, and simply indicates
          that the keyword value is undefined.  Don't write an error
          message in this case.
-
-        strcpy(errmsg,"The keyword ");
-        strncat(errmsg, card, 8);
-        strcat(errmsg, " has no value string after the equal sign:");
-        ffpmsg(errmsg);
-        ffpmsg(card);
       */
+
         value[0] = '\0';
         comm[0] = '\0';
         return(*status);
@@ -2320,6 +2315,17 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
     {
         ffgkyn(fptr, ii, name, value, comm, status);
 
+        /* try to ignore minor syntax errors */
+        if (*status == NO_QUOTE)
+        {
+            strcat(value, "'");
+            *status = 0;
+        }
+        else if (*status == BAD_KEYCHAR)
+        {
+            *status = 0;
+        }
+
         if (*status == END_OF_FILE)
         {
             ffpmsg("END keyword not found in ASCII table header (ffainit).");
@@ -2472,6 +2478,17 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     for (nspace = 0, ii = 8; 1; ii++)  /* infinite loop  */
     {
         ffgkyn(fptr, ii, name, value, comm, status);
+
+        /* try to ignore minor syntax errors */
+        if (*status == NO_QUOTE)
+        {
+            strcat(value, "'");
+            *status = 0;
+        }
+        else if (*status == BAD_KEYCHAR)
+        {
+            *status = 0;
+        }
 
         if (*status == END_OF_FILE)
         {
