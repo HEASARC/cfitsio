@@ -90,7 +90,7 @@ SERVICES PROVIDED HEREUNDER."
 /* some older compilers do not recognize this type, in which case we */
 /* use 'long' instead. */
 
-#if defined(_FILE_OFFSET_BITS)
+#if defined(_FILE_OFFSET_BITS) || defined(_MIPS_SZLONG)
 #    define OFF_T off_t
 #else
 #    define OFF_T long
