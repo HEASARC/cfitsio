@@ -15,8 +15,12 @@
 
 #define DBUFFSIZE 28800 /* size of data buffer in bytes */
 
-#define NIOBUF  40       /* number of IO buffers to create */
-#define IOBUFLEN 2880    /* size in bytes of each IO buffer */
+#define NIOBUF  40  /* number of IO buffers to create */
+         /* !! Significantly increasing NIOBUF may degrade performance !! */
+#define NMAXFILES  300   /* maximum number of FITS files that can be opened */
+        /* CFITSIO will allocate (NMAXFILES * 80) bytes of memory */
+
+#define IOBUFLEN 2880    /* size in bytes of each IO buffer (DONT CHANGE!) */
 #define MINDIRECT 8640   /* minimum size for direct reads and writes */
                          /* MINDIRECT must have a value >= 8640 */
 
@@ -295,7 +299,6 @@ int ffpbytoff(fitsfile *fptr, long gsize, long ngroups, long offset,
            void *buffer, int *status);
 int ffldrc(fitsfile *fptr, long record, int err_mode, int *status);
 int ffwhbf(fitsfile *fptr, int *nbuff);
-int ffcurbuf(int nbuff, FITSfile **Fptr);
 int ffbfeof(fitsfile *fptr, int *status);
 int ffbfwt(int nbuff, int *status);
 int fits_get_num_files(void);
@@ -306,6 +309,8 @@ int ffourl(char *url, char *urltype, char *outfile, char *tmplfile,
 int ffparsecompspec(fitsfile *fptr, char *compspec, int *status);
 int ffoptplt(fitsfile *fptr, const char *tempname, int *status);
 int fits_is_this_a_copy(char *urltype);
+int fits_store_Fptr(FITSfile *Fptr, int *status);
+int fits_clear_Fptr(FITSfile *Fptr, int *status);
 int fits_already_open(fitsfile **fptr, char *url, 
     char *urltype, char *infile, char *extspec, char *rowfilter,
     char *binspec, char *colspec, int  mode,int  *isopen, int  *status);

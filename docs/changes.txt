@@ -1,6 +1,38 @@
 
                    Log of Changes Made to CFITSIO
 
+Version 2.440 - 8 January 2003
+
+  Enhancements:
+
+  - modified the iterator function, ffiter, to operate on random
+    groups files.
+
+  - decoupled the NIOBUF (= 40) parameter from the limit on the number
+    FITS files that can be opened, so that more files may be opened
+    without the overhead of having to increase the number of NIOBUF
+    buffers.  A new NMAXFILES parameter is defined in fitsio2.h which sets
+    the maximum number of opened FITS files.  It is set = 300 by default.
+    Note however, that the underlying compiler or operating system may
+    not allow this many files to be opened at one time.
+
+  - updated the version of cfortran.h that is distributed with CFITSIO from 
+    version 3.9 to version 4.4.  This required changes to f77_wrap.h
+    and f77_wrap3.c.  The original cfortran.h v4.4 file was modified
+    slightly to support CFITSIO and ftools (see comments in the header
+    of cfortran.h).
+
+  - modified ffhist so that it copies all the non-structural keywords from
+    the original binary table header to the binned image header.
+
+  - modified fits_get_keyclass so that it recognizes EXTNAME =
+    COMPRESSED_IMAGE as a special tile compression keyword.
+
+  Bug fixes:
+
+  - in fits_decompress_img, needed to add a call to ffpscl to turn
+    off the BZERO and BSCALE scaline when reading the compressed image.
+
 Version 2.430 - 4 November 2002
 
   Enhancements:

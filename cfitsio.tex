@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large July 2002\\}
+{\Large January 2003\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -316,18 +316,26 @@ supercomputers are currently not supported.
 The CFITSIO library is built on Unix systems by typing:
  
 \begin{verbatim}
-   > ./configure
-   > make
-or
-   > ./configure
-   > make shared
+ >  ./configure [--prefix=/target/installation/path]
+ >  make          (or  'make shared')
+ >  make install  (this step is optional)
 \end{verbatim}
-at the operating system prompt.  Type ./configure and not simply
-`configure' to ensure that the configure script in the current
-directory is run and not some other system-wide configure script.  The
-configure command customizes the Makefile for the particular system,
-then the `make' command compiles the source files and builds the
-library.
+at the operating system prompt.  The configure command customizes the
+Makefile for the particular system, then the `make' command compiles the
+source files and builds the library.  Type `./configure' and not simply
+`configure' to ensure that the configure script in the current directory
+is run and not some other system-wide configure script.  The optional
+'prefix' argument to configure gives the path to the directory where
+the CFITSIO library and include files should be installed via the later
+'make install' command. For example,
+ 
+\begin{verbatim}
+   > ./configure --prefix=/usr1/local
+\end{verbatim}
+will cause the 'make install' command to copy the CFITSIO libcfitsio file
+to /usr1/local/lib and the necessary include files to /usr1/local/include
+(assuming of course that the  process has permission to write to these
+directories).
 
 The 'make shared' option builds a shared or dynamic version of the
 CFITSIO library.  When using the shared library the executable code is
@@ -362,14 +370,6 @@ UNIX platforms, but a .dylib file will be created instead of .so.  If
 installed in a nonstandard location, add its location to the
 DYLD\_LIBRARY\_PATH environment variable so that the library can be found
 at run time.
-
-The CFITSIO library file (libcfitsio.a or libcfitsio.so), and 2
-include files, fitsio.h and longnam.h, should then be copied to the
-appropriate directory(s) for use when compiling application programs.
-Alternatively, one could set 2 environment variables, FTOOLS\_LIB and
-FTOOLS\_INCLUDE, to specify the paths to the installation directories,
-(e.g., `setenv FTOOLS\_INCLUDE /usr/local/include') and then run `make
-install' to build and install the CFITSIO library.
 
 On HP/UX systems, the environment variable CFLAGS should be set
 to -Ae before running configure to enable "extended ANSI" features.
@@ -1396,13 +1396,23 @@ CFITSIO places very few restrictions on the size of FITS files that it
 reads or writes.  There are a few limits, however, which may affect
 some extreme cases:
 
-1.  The maximum number of files that may be simultaneously opened is
-limited to the number of internal IO buffers allocated in CFITSIO
-(currently 40, as defined by NIOBUF in the file fitsio2.h), or by the
-limit of the underlying C compiler or machine operating system, which
-ever is smaller.  The C symbolic constant FOPEN\_MAX usually defines
-the total number of files that may open at once (this includes any
-other text or binary files which may be open, not just FITS files).
+1.  The maximum number of FITS files that may be simultaneously opened
+by CFITSIO is set by NMAXFILES as defined in fitsio2.h.  It is currently
+set = 300 by default.  CFITSIO will allocate about 80 * NMAXFILES bytes
+of memory for internal use.  Note that the underlying C compiler or
+operating system, may have a smaller limit on the number of opened files.
+The C symbolic constant FOPEN\_MAX is intended to define the maximum
+number of files that may open at once (including any other text or
+binary files that may be open, not just FITS files).  On some systems it
+has been found that gcc supports a maximum of 255 opened files.
+
+Note that opening and operating on many FITS files simultaneously in
+parallel may be less efficient than operating on smaller groups of files
+in series.  CFITSIO only has NIOBUF number of internal buffers (set = 40
+by default) that are used for temporary storage of the most recent data
+records that have been read or written in the FITS files.  If the number
+of opened files is greater than NIOBUF, then CFITSIO may waste more time
+flushing and re-reading or re-writing the same records in the FITS files.
 
 2.  By default, CFITSIO can handle FITS files up to 2.1 GB in size
 (2**31 bytes).  This file size limit is often imposed by 32-bit
@@ -1765,46 +1775,7 @@ as a whole.
 \end{verbatim}
  
 \begin{description}
-\item[5 ]Create a new primary array or IMAGE extension with a specified
-   datatype and size.  If the FITS file is currently empty then a
-   primary array is created, otherwise a new IMAGE extension is
-  appended to the file. \label{ffcrim}
-\end{description}
- 
-\begin{verbatim}
-  int fits_create_img / ffcrim
-      ( fitsfile *fptr, int bitpix, int naxis, long *naxes, > int *status)
-\end{verbatim}
- 
-\begin{description}
-\item[6 ]Create a new ASCII or bintable table extension. If
-   the FITS file is currently empty then a dummy primary array will be
-   created before appending the table extension to it.  The tbltype
-   parameter defines the type of table and can have values of
-   ASCII\_TBL or BINARY\_TBL.  The naxis2 parameter gives the initial
-   number of rows to be created in the table, and should normally be
-   set = 0.  CFITSIO will automatically increase the size of the table
-   as additional rows are written.  A non-zero number of rows may be
-   specified to reserve space for that many rows, even if a fewer
-   number of rows will be written.  The tunit and extname parameters
-   are optional and a null pointer may be given if they are not
-   defined.  The FITS Standard recommends that only letters, digits,
-   and the underscore character be used in column names (the ttype
-   parameter) with no embedded spaces.  Trailing blank characters are
-   not significant.  It is recommended that all the column names in a
-   given table be unique within the first 8 characters, and strongly
-   recommended that the names be
-  unique within the first 16 characters. \label{ffcrtb}
-\end{description}
- 
-\begin{verbatim}
-  int fits_create_tbl / ffcrtb
-      (fitsfile *fptr, int tbltype, long naxis2, int tfields, char *ttype[],
-       char *tform[], char *tunit[], char *extname, int *status)
-\end{verbatim}
- 
-\begin{description}
-\item[7 ] Copy all or part of the HDUs in the FITS file associated with infptr
+\item[5 ] Copy all or part of the HDUs in the FITS file associated with infptr
     and append them to the end of the FITS file associated with
     outfptr.  If 'previous' is true (not 0), then any HDUs preceding
     the current HDU in the input file will be copied to the output
@@ -1823,7 +1794,7 @@ as a whole.
 \end{verbatim}
  
 \begin{description}
-\item[8 ] Copy the current HDU from the FITS file associated with infptr and append it
+\item[6 ] Copy the current HDU from the FITS file associated with infptr and append it
     to the end of the FITS file associated with outfptr.  Space may be
    reserved for MOREKEYS additional keywords in the output header. \label{ffcopy}
 \end{description}
@@ -1834,7 +1805,7 @@ as a whole.
 \end{verbatim}
  
 \begin{description}
-\item[9 ]  Copy the header (and not the data) from the CHDU associated with infptr
+\item[7 ]  Copy the header (and not the data) from the CHDU associated with infptr
     to the CHDU associated with outfptr.  If the current output HDU
     is not completely empty, then the CHDU will be closed and a new
     HDU will be appended to the output file.   An empty output data unit
@@ -1847,7 +1818,7 @@ as a whole.
 \end{verbatim}
  
 \begin{description}
-\item[10]  Delete the CHDU in the FITS file.  Any following HDUs will be shifted
+\item[8 ]  Delete the CHDU in the FITS file.  Any following HDUs will be shifted
     forward in the file, to fill in the gap created by the deleted
     HDU.  In the case of deleting the primary array (the first HDU in
     the file) then the current primary array will be replace by a null
@@ -2207,7 +2178,19 @@ written in the FITS array.
 \end{verbatim}
  
 \begin{description}
-\item[2 ] Write a rectangular subimage (or the whole image) to the FITS data
+\item[2 ]Create a new primary array or IMAGE extension with a specified
+   datatype and size.  If the FITS file is currently empty then a
+   primary array is created, otherwise a new IMAGE extension is
+  appended to the file. \label{ffcrim}
+\end{description}
+ 
+\begin{verbatim}
+  int fits_create_img / ffcrim
+      ( fitsfile *fptr, int bitpix, int naxis, long *naxes, > int *status)
+\end{verbatim}
+ 
+\begin{description}
+\item[3 ] Write a rectangular subimage (or the whole image) to the FITS data
     array.  The fpixel and lpixel arrays give the coordinates of the
     first (lower left corner) and last (upper right corner) pixels in
    FITS image to be written to.  \label{ffpss}
@@ -2220,7 +2203,7 @@ written in the FITS array.
 \end{verbatim}
  
 \begin{description}
-\item[3 ] Write pixels into the FITS data array.  'fpixel' is an array of
+\item[4 ] Write pixels into the FITS data array.  'fpixel' is an array of
    length NAXIS which gives the coordinate of the starting pixel to be
    written to, such that fpixel[0] is in the range 1 to NAXIS1,
    fpixel[1] is in the range 1 to NAXIS2, etc.  The first routine
@@ -2248,7 +2231,7 @@ written in the FITS array.
 \end{verbatim}
  
 \begin{description}
-\item[4 ] Set FITS data array elements equal to the appropriate null pixel
+\item[5 ] Set FITS data array elements equal to the appropriate null pixel
     value. For integer FITS arrays, the FITS null value is defined by
     the BLANK keyword  (an error is returned if the BLANK keyword
     doesn't exist). For floating point FITS arrays the special IEEE NaN
@@ -2263,7 +2246,7 @@ written in the FITS array.
 \end{verbatim}
  
 \begin{description}
-\item[5 ] Read a rectangular subimage (or the whole image) from the FITS
+\item[6 ] Read a rectangular subimage (or the whole image) from the FITS
     data array.  The fpixel and lpixel arrays give the coordinates of
     the first (lower left corner) and last (upper right corner) pixels
     to be read from the FITS image. Undefined FITS array elements will
@@ -2280,7 +2263,7 @@ written in the FITS array.
 \end{verbatim}
  
 \begin{description}
-\item[6 ] Read pixels from the FITS data array.  'fpixel' is the starting
+\item[7 ] Read pixels from the FITS data array.  'fpixel' is the starting
     pixel location and is an array of length NAXIS such that fpixel[0]
     is in the range 1 to NAXIS1, fpixel[1] is in the range 1 to NAXIS2,
     etc. The nelements parameter specifies the number of pixels to
@@ -2505,6 +2488,36 @@ code to perform the same operation, and the resulting program oftens
 runs faster because the FITS files are read and written using the most
 efficient block size.
 
+ 
+\subsection{Create New Table}
+
+ 
+\begin{description}
+\item[1 ]Create a new ASCII or bintable table extension. If
+   the FITS file is currently empty then a dummy primary array will be
+   created before appending the table extension to it.  The tbltype
+   parameter defines the type of table and can have values of
+   ASCII\_TBL or BINARY\_TBL.  The naxis2 parameter gives the initial
+   number of rows to be created in the table, and should normally be
+   set = 0.  CFITSIO will automatically increase the size of the table
+   as additional rows are written.  A non-zero number of rows may be
+   specified to reserve space for that many rows, even if a fewer
+   number of rows will be written.  The tunit and extname parameters
+   are optional and a null pointer may be given if they are not
+   defined.  The FITS Standard recommends that only letters, digits,
+   and the underscore character be used in column names (the ttype
+   parameter) with no embedded spaces.  Trailing blank characters are
+   not significant.  It is recommended that all the column names in a
+   given table be unique within the first 8 characters, and strongly
+   recommended that the names be
+  unique within the first 16 characters. \label{ffcrtb}
+\end{description}
+ 
+\begin{verbatim}
+  int fits_create_tbl / ffcrtb
+      (fitsfile *fptr, int tbltype, long naxis2, int tfields, char *ttype[],
+       char *tform[], char *tunit[], char *extname, int *status)
+\end{verbatim}
  
 \subsection{Column Information Routines}
 

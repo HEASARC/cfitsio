@@ -29,14 +29,14 @@ typedef struct    /* structure containing disk file structure */
     int last_io_op;
 } diskdriver;
 
-static diskdriver handleTable[NIOBUF];  /* allocate diskfile handle tables */
+static diskdriver handleTable[NMAXFILES]; /* allocate diskfile handle tables */
 
 /*--------------------------------------------------------------------------*/
 int file_init(void)
 {
     int ii;
 
-    for (ii = 0; ii < NIOBUF; ii++)  /* initialize all empty slots in table */
+    for (ii = 0; ii < NMAXFILES; ii++) /* initialize all empty slots in table */
     {
        handleTable[ii].fileptr = 0;
     }
@@ -118,7 +118,7 @@ int file_open(char *filename, int rwmode, int *handle)
     else
     {
       *handle = -1;
-      for (ii = 0; ii < NIOBUF; ii++)  /* find empty slot in table */
+      for (ii = 0; ii < NMAXFILES; ii++)  /* find empty slot in table */
       {
         if (handleTable[ii].fileptr == 0)
         {
@@ -236,7 +236,7 @@ int file_create(char *filename, int *handle)
     char mode[4];
 
     *handle = -1;
-    for (ii = 0; ii < NIOBUF; ii++)  /* find empty slot in table */
+    for (ii = 0; ii < NMAXFILES; ii++)  /* find empty slot in table */
     {
         if (handleTable[ii].fileptr == 0)
         {

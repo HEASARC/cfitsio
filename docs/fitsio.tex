@@ -163,18 +163,28 @@ for PC and Mac users (see further notes below).
 The CFITSIO library is built on Unix systems by typing:
 
 \begin{verbatim}
-   > ./configure
-   > make
-or
-   > ./configure
-   > make shared
+ >  ./configure [--prefix=/target/installation/path]
+ >  make          (or  'make shared')
+ >  make install  (this step is optional)
 \end{verbatim}
-at the operating system prompt.  Type ./configure and not simply
-`configure' to ensure that the configure script in the current
-directory and not some other system-wide configure script.  The
-configure command customizes the Makefile for the particular system,
-then the `make' command compiles the source files and builds the
-library. By default this also builds the set of Fortran-callable
+at the operating system prompt.  The configure command customizes the
+Makefile for the particular system, then the `make' command compiles the
+source files and builds the library.  Type `./configure' and not simply
+`configure' to ensure that the configure script in the current directory
+is run and not some other system-wide configure script.  The optional
+'prefix' argument to configure gives the path to the directory where
+the CFITSIO library and include files should be installed via the later
+'make install' command. For example,
+
+\begin{verbatim}
+   > ./configure --prefix=/usr1/local
+\end{verbatim}
+will cause the 'make install' command to copy the CFITSIO libcfitsio file
+to /usr1/local/lib and the necessary include file to /usr1/local/include
+(assuming of course that the process has permission to write to these
+directories).
+
+By default this also builds the set of Fortran-callable
 wrapper routines whose calling sequences are described later in this
 document.
 
@@ -205,14 +215,6 @@ The disadvantages are:
       reading the shared library and the program from and if your CPU is
       either really slow or really heavily loaded.
 \end{verbatim}
-
-The CFITSIO library file (libcfitsio.a or libcfitsio.so), and 2 include
-files, fitsio.h and longnam.h, should then be copied to the appropriate
-directory(s) for use when compiling application programs.
-Alternatively, one could set 2 environment variables, FTOOLS\_LIB and
-FTOOLS\_INCLUDE, to specify the paths to the installation directories,
-(e.g., `setenv FTOOLS\_INCLUDE /usr/local/include') and then run `make
-install' to build and install the CFITSIO library.
 
 On HP/UX systems, the environment variable CFLAGS should be set
 to -Ae before running configure to enable "extended ANSI" features.
@@ -2402,21 +2404,25 @@ CFITSIO places few restrictions on the size of FITS files that it
 reads or writes.  There are a few limits, however, which may affect
 some extreme cases:
 
-1.  The maximum number of files that may be simultaneously opened is
-limited to the number of internal IO buffers allocated in CFITSIO
-(currently 40, as defined by NIOBUF in the file fitsio2.h), or by the
-limit of the underlying C compiler or machine operating system, which
-ever is smaller.  The C symbolic constant FOPEN\_MAX usually defines
-the total number of files that may open at once (this includes any
-other text or binary files which may be open, not just FITS files).
+1.  The maximum number of FITS files that may be simultaneously opened
+by CFITSIO is set by NMAXFILES as defined in fitsio2.h.  It is currently
+set = 300 by default.  CFITSIO will allocate about 80 * NMAXFILES bytes
+of memory for internal use.  Note that the underlying C compiler or
+operating system, may have a smaller limit on the number of opened files.
+The C symbolic constant FOPEN\_MAX is intended to define the maximum
+number of files that may open at once (including any other text or
+binary files that may be open, not just FITS files).  On some systems it
+has been found that gcc supports a maximum of 255 opened files.
 
-2.  The maximum number of extensions (HDUs) that can be read or written
-in a single FITS file is currently set to 10000 as defined by MAXHDU in
-the fitsio.h file.  This value may be increased if necessary, but the
-access times to the later extensions in such files may become excessively
-long.
+Note that opening and operating on many FITS files simultaneously in
+parallel may be less efficient than operating on smaller groups of files
+in series.  CFITSIO only has NIOBUF number of internal buffers (set = 40
+by default) that are used for temporary storage of the most recent data
+records that have been read or written in the FITS files.  If the number
+of opened files is greater than NIOBUF, then CFITSIO may waste more time
+flushing and re-reading or re-writing the same records in the FITS files.
 
-3.  By default, CFITSIO can handle FITS files up to 2.1 GB in size
+2.  By default, CFITSIO can handle FITS files up to 2.1 GB in size
 (2**31 bytes).  This file size limit is often imposed by 32-bit
 operating systems.  More recently, as 64-bit operating systems become
 more common, an industry-wide standard (at least on Unix systems) has

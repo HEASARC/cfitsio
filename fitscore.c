@@ -60,11 +60,12 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.430;
+      *version = 2.440;
 
-/*     4 Nov 2002
+/*     8 Jan 2003
 
    Previous releases:
+      *version = 2.430;   4 Nov 2002
       *version = 2.420;  19 Jul 2002
       *version = 2.410;  22 Apr 2002 used in ftools v5.2
       *version = 2.401;  28 Jan 2002
@@ -2768,7 +2769,6 @@ int ffrhdu(fitsfile *fptr,    /* I - FITS file pointer */
         ffpmsg("Cannot read first keyword in header (ffrhdu).");
         return(*status);
     }
-
     strncpy(name,card,8);  /* first 8 characters = the keyword name */
     name[8] = '\0';
 
@@ -2789,7 +2789,9 @@ int ffrhdu(fitsfile *fptr,    /* I - FITS file pointer */
 
     if (!strcmp(name, "SIMPLE"))        /* this is the primary array */
     {
+
        ffpinit(fptr, status);           /* initialize the primary array */
+
        if (hdutype != NULL)
            *hdutype = 0;
     }
@@ -2880,7 +2882,6 @@ int ffrhdu(fitsfile *fptr,    /* I - FITS file pointer */
                status);
         }
     }
-
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -6033,7 +6034,7 @@ int ffgkcl(char *tcard)
 	if (FSTRNCMP (card1, "XTNAME ", 7) == 0)
 	{
             /* check for special compressed image value */
-            if (!FSTRNCMP(card, "EXTNAME = 'COMPRESSED_IMAGE'", 28))
+            if (FSTRNCMP(tcard, "EXTNAME = 'COMPRESSED_IMAGE'", 28) == 0)
 	      return (TYP_CMPRS_KEY);
             else
 	      return (TYP_HDUID_KEY);

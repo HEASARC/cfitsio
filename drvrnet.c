@@ -171,7 +171,6 @@ Baltimore MD 21218 USA              ¦ http://faxafloi.stsci.edu:4547/
 static jmp_buf env; /* holds the jump buffer for setjmp/longjmp pairs */
 static void signal_handler(int sig);
 
-
 /* Network routine error codes */
 #define NET_OK 0
 #define NOT_INET_ADDRESS -1000
@@ -210,7 +209,7 @@ typedef struct    /* structure containing disk file structure */
   OFF_T currentpos;
 } rootdriver;
 
-static rootdriver handleTable[NIOBUF];  /* allocate diskfile handle tables */
+static rootdriver handleTable[NMAXFILES];  /* allocate diskfile handle tables */
 
 /* static prototypes */
 
@@ -2109,7 +2108,7 @@ int root_init(void)
 {
     int ii;
 
-    for (ii = 0; ii < NIOBUF; ii++)  /* initialize all empty slots in table */
+    for (ii = 0; ii < NMAXFILES; ii++) /* initialize all empty slots in table */
     {
        handleTable[ii].sock = 0;
        handleTable[ii].currentpos = 0;
@@ -2147,7 +2146,7 @@ int root_open(char *url, int rwmode, int *handle)
     int sock;
 
     *handle = -1;
-    for (ii = 0; ii < NIOBUF; ii++)  /* find empty slot in table */
+    for (ii = 0; ii < NMAXFILES; ii++)  /* find empty slot in table */
     {
         if (handleTable[ii].sock == 0)
         {
@@ -2180,7 +2179,7 @@ int root_create(char *filename, int *handle)
     int sock;
 
     *handle = -1;
-    for (ii = 0; ii < NIOBUF; ii++)  /* find empty slot in table */
+    for (ii = 0; ii < NMAXFILES; ii++)  /* find empty slot in table */
     {
         if (handleTable[ii].sock == 0)
         {

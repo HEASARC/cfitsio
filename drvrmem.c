@@ -10,6 +10,7 @@
 #include "fitsio2.h"
 
 #define RECBUFLEN 1000
+
 static char stdin_outfile[FLEN_FILENAME];
 
 typedef struct    /* structure containing mem file structure */ 
@@ -29,14 +30,14 @@ typedef struct    /* structure containing mem file structure */
     FILE *fileptr;      /* pointer to compressed output disk file */
 } memdriver;
 
-static memdriver memTable[NIOBUF];  /* allocate mem file handle tables */
+static memdriver memTable[NMAXFILES];  /* allocate mem file handle tables */
 
 /*--------------------------------------------------------------------------*/
 int mem_init(void)
 {
     int ii;
 
-    for (ii = 0; ii < NIOBUF; ii++)  /* initialize all empty slots in table */
+    for (ii = 0; ii < NMAXFILES; ii++) /* initialize all empty slots in table */
     {
        memTable[ii].memaddrptr = 0;
        memTable[ii].memaddr = 0;
@@ -166,7 +167,7 @@ int mem_openmem(void **buffptr,   /* I - address of memory pointer          */
     int ii;
 
     *handle = -1;
-    for (ii = 0; ii < NIOBUF; ii++)  /* find empty slot in handle table */
+    for (ii = 0; ii < NMAXFILES; ii++)  /* find empty slot in handle table */
     {
         if (memTable[ii].memaddrptr == 0)
         {
@@ -194,7 +195,7 @@ int mem_createmem(size_t msize, int *handle)
     int ii;
 
     *handle = -1;
-    for (ii = 0; ii < NIOBUF; ii++)  /* find empty slot in handle table */
+    for (ii = 0; ii < NMAXFILES; ii++)  /* find empty slot in handle table */
     {
         if (memTable[ii].memaddrptr == 0)
         {

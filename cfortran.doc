@@ -1,12 +1,14 @@
-/* cfortran.doc 3.9 */         /* anonymous ftp@zebra.desy.de */
-/* Burkhard Burow  burow@desy.de                 1990 - 1997. */
+/* cfortran.doc 4.3 */
+/* www-zeus.desy.de/~burow   OR   anonymous ftp@zebra.desy.de */
+/* Burkhard Burow  burow@desy.de                 1990 - 1998. */
 
 
               cfortran.h :  Interfacing C or C++ and FORTRAN
 
 Supports: Alpha and VAX VMS, Alpha OSF, DECstation and VAX Ultrix, IBM RS/6000, 
           Silicon Graphics, Sun, CRAY, Apollo, HP9000, LynxOS, Convex, Absoft,
-          f2c, g77, NAG f90, PowerStation Fortran with Visual C++, NEC SX-4.
+          f2c, g77, NAG f90, PowerStation Fortran with Visual C++, NEC SX-4,
+          Portland Group.
 
 C and C++ are generally equivalent as far as cfortran.h is concerned.
 Unless explicitly noted otherwise, mention of C implicitly includes C++.
@@ -95,7 +97,8 @@ cfortran.doc, the engine cfortran.h, examples in cfortest.c and
 cfortex.f/or. [cfortex.for under VMS, cfortex.f on other machines.]
 
 The cfortran.h package continues to be developed. The most recent version is
-available via anonymous ftp at zebra.desy.de (131.169.2.244).
+available via www at http://www-zeus.desy.de/~burow
+or via anonymous ftp at zebra.desy.de (131.169.2.244).
 
 The examples may be run using one of the following sets of instructions:
 
@@ -122,6 +125,7 @@ N.B. If using a C main(), i.e. Fortran PROGRAM is not entry of the executable,
      
 
 RS/6000> # Users are strongly urged to use f77 -qextname and cc -Dextname
+RS/6000> # Use -Dextname=extname if extname is a symbol used in the C code.
 RS/6000> xlf -c -qextname cfortex.f
 RS/6000> cc  -c -Dextname cfortest.c
 RS/6000> xlf -o cfortest cfortest.o cfortex.o && cfortest 
@@ -184,6 +188,7 @@ HP9000> #    Depending on the compiler version, you may need to include the
 HP9000> #    option '-tp,/lib/cpp' or worse, you'll have to stick to the K&R C.
 HP9000> #    [See Section II o) Notes: HP9000]
 HP9000> # Users are strongly urged to use f77 +ppu and cc -Dextname
+HP9000> # Use -Dextname=extname if extname is a symbol used in the C code.
 HP9000> CC  -Dextname -c cfortest.c
 HP9000> f77 +ppu         cfortex.f  -o cfortest cfortest.o && cfortest
 HP9000> # Older f77 may need
@@ -193,11 +198,15 @@ HP9000> CC -o cfortest cfortest.c cfortex.o -lI77 -lF77 && cfortest
 HP0000> # If old-style f77 +800 compiled objects are required:
 HP9000> # #define hpuxFortran800
 HP9000> cc -c -Aa -DhpuxFortran800 cfortest.c
-HP9000> f77 +800 -o cfortest cfortex.f
+HP9000> f77 +800 -o cfortest cfortest.o cfortex.f
 
 f2c> # In the following, 'CC' is any C compiler.
 f2c> f2c -R cfortex.f
 f2c> CC -o cfortest -Df2cFortran cfortest.c cfortex.c -lf2c  &&  cfortest
+
+Portland Group $ # Presumably other C compilers also work.
+Portland Group $ pgcc -DpgiFortran -c cfortest.c
+Portland Group $ pgf77 -o cfortest cfortex.f cfortest.o && cfortest
 
 NAGf90> # cfortex.f is distributed with Fortran 77 style comments.
 NAGf90> # To convert to f90 style comments do the following once to cfortex.f: 
@@ -220,6 +229,9 @@ AbsoftUNIX> # e.g. Linux or Next on Intel or Motorola68000.
 AbsoftUNIX> # Absoft f77 -k allows Fortran routines to be safely called from C.
 AbsoftUNIX> gcc -ansi -Wall -O -c -DAbsoftUNIXFortran cfortest.c
 AbsoftUNIX> f77 -k -o cfortest cfortest.o cfortex.f && cfortest
+
+AbsoftPro> # Absoft Pro Fortran for MacOS
+AbsoftPro> # Use #define AbsoftProFortran
 
 CLIPPER> # INTERGRAPH CLIX using CLIPPER C and Fortran compilers.
 CLIPPER> # N.B. - User, not cfortran.h, is responsible for
@@ -397,16 +409,16 @@ o) Notes:
 o Specifying the Fortran compiler
   cfortran.h generates interfaces for the default Fortran compiler. The default
 can be overridden by defining, 
-     . in the code, e.g.           #define    NAGf90Fortran
+     . in the code,              e.g.: #define    NAGf90Fortran
   OR . in the compile directive, e.g.: unix> cc -DNAGf90Fortran
 one of the following before including cfortran.h:
  NAGf90Fortran   f2cFortran  hpuxFortran  apolloFortran  sunFortran
   IBMR2Fortran  CRAYFortran  mipsFortran     DECFortran  vmsFortran
  CONVEXFortran       PowerStationFortran          AbsoftUNIXFortran
-     SXFortran
+     SXFortran   pgiFortran                        AbsoftProFortran
 This also allows crosscompilation.
-If wanted, NAGf90Fortran, f2cFortran, DECFortran and AbsoftUNIXFortran
-must be requested by the user.
+If wanted, NAGf90Fortran, f2cFortran, DECFortran, AbsoftUNIXFortran,
+AbsoftProFortran and pgiFortran must be requested by the user.
 
 o /**/
   cfortran.h (ab)uses the comment kludge /**/ when the ANSI C preprocessor
@@ -580,6 +592,7 @@ o RS/6000
   Using "xlf -qextname ...", which appends an underscore, '_', to all FORTRAN
 external references, requires "cc -Dextname ..." so that cfortran.h also
 generates these underscores.
+Use -Dextname=extname if extname is a symbol used in the C code.
 The use of "xlf -qextname" is STRONGLY ENCOURAGED, since it allows for
 transparent naming schemes when mixing C and Fortran.
 
@@ -587,6 +600,7 @@ o HP9000
   Using "f77 +ppu      ...", which appends an underscore, '_', to all FORTRAN
 external references, requires "cc -Dextname ..." so that cfortran.h also
 generates these underscores.
+Use -Dextname=extname if extname is a symbol used in the C code.
 The use of "f77 +ppu"      is STRONGLY ENCOURAGED, since it allows for
 transparent naming schemes when mixing C and Fortran.
 
@@ -607,7 +621,7 @@ cfortran.h has to be informed that K&R C is to being used, e.g.
 HP9000> cc -D__CF__KnR -c source.c
 
 o AbsoftUNIXFortran
-By default, cfortran.h follows the default AbsoftUNIXFortran and prepends _C
+By default, cfortran.h follows the default AbsoftUNIX/ProFortran and prepends _C
 to each COMMON BLOCK name. To override the cfortran.h behavior
 #define COMMON_BLOCK(UN,LN) before #including cfortran.h.
 [Search for COMMON_BLOCK in cfortran.h for examples.]
@@ -757,7 +771,7 @@ CCALLSFFUNn(ROUTINE_NAME,routine_name,argtype_1,...,argtype_n, \
                          argname_1,..,argname_n) 
 
 Where:
-'n' = 0->14 [SUBROUTINE's ->20] (easily expanded in cfortran.h to > 14 [20]) is 
+'n' = 0->14 [SUBROUTINE's ->27] (easily expanded in cfortran.h to > 14 [27]) is 
     the number of arguments to the routine.
 Routine_name = C       name of the routine (IN UPPER CASE LETTERS).[see 2.below]
 ROUTINE_NAME = FORTRAN name of the routine (IN UPPER CASE LETTERS).
@@ -991,7 +1005,7 @@ See ii) 4. of this section for when and how to redefine fcallsc.
 ROUTINE was introduced with cfortran.h version 2.6. Earlier versions of
 cfortran.h used PVOID to pass external procedures as arguments. Using PVOID for
 this purpose is no longer recommended since it won't work 'as is' for
-apolloFortran, hpuxFortran800, AbsoftUNIXFortran.
+apolloFortran, hpuxFortran800, AbsoftUNIXFortran, AbsoftProFortran.
 
 7. CRAY only: 
 In a given piece of source code, where FFUNC is any FORTRAN routine,
@@ -1019,7 +1033,7 @@ for all other C functions:
 FCALLSCFUNn(routine_type,Routine_name,ROUTINE_NAME,routine_name,argtype_1,...,argtype_n)
 
 Where:
-'n' = 0->14 (easily expanded to > 14) stands for the number of arguments to the 
+'n' = 0->27 (easily expanded to > 27) stands for the number of arguments to the 
     routine.
 Routine_name = the C       name of the routine. [see 9. below]
 ROUTINE_NAME = the FORTRAN name of the routine (IN UPPER CASE LETTERS).
@@ -1218,7 +1232,7 @@ e.g. To create a Fortran wrapper for qsort(3C):
 FCALLSCSUB4(qsort,FQSORT,fqsort,PVOID,INT,INT,ROUTINE)
 
 In order to maintain backward compatibility, cfortran.h defines a generic cast
-for ROUTINE_1, ROUTINE_2, ..., ROUTINE_14. The user's definition is therefore
+for ROUTINE_1, ROUTINE_2, ..., ROUTINE_27. The user's definition is therefore
 strictly required only for DEC C, which at the moment is the only compiler
 which insists on the correct cast for pointers to functions.
 
@@ -1292,7 +1306,7 @@ element beginning with 2 blank, ' ', characters.
                 -------------     
    ROUTINE NAMES WHICH ARE UNDISTINGUISHABLE FROM C ROUTINE NAMES
    i.e. VAX VMS
-        AbsoftUNIXFortran
+        AbsoftUNIXFortran (AbsoftProFortran ok, since it uses Uppercase names.)
         HP9000      if not using the +ppu      option of f77
         IBM RS/6000 if not using the -qextname option of xlf
    Call them the same_namespace compilers.
@@ -1883,7 +1897,6 @@ Aside: The Visual C++ compiler is happy with UN, but barfs on (UN),
        so either (UN) causes nonstandard C/C++ or Visual C++ is broken.
 
 
-
 VII History and Acknowledgements
 --------------------------------
 
@@ -1969,6 +1982,17 @@ VII History and Acknowledgements
     - CRAY: Avoid bug of some versions of the C preprocessor.
     - CRAY T3E: FORTRAN_REAL introduced.
 
+4.0 - new/delete now used for C++. malloc/free still used for C.       Jan. '98
+    - FALSE no longer is defined by cfortran.h .
+    - Absoft Pro Fortran for MacOS supported.
+4.1 - COMMA and COLON no longer are defined by cfortran.h .            April'98
+    - Bug fixed when 10th arg. or beyond is a string.
+      [Rob Lucchesi of NASA-Goddard pointed out this bug.]
+    - CCALLSFSUB/FUN extended from 14 to 27 arguments.
+    - Workaround SunOS CC 4.2 cast bug. [Thanks to Savrak SAR of CERN.]
+4.2 - Portland Group needs -DpgiFortran . [Thank George Lai of NASA.]  June '98
+4.3 - (PROTO)CCALLSFSUB extended from 20 to 27 arguments.              July '98
+
 
 ['Support' implies these and more recent releases of the respective
  OS/compilers/linkers can be used with cfortran.h. 
@@ -1985,7 +2009,7 @@ Acknowledgements:
   to have C++ call Fortran. This was the starting point for full C++ in 3.4.
 - Glenn P.Davis of University Corp. for Atmospheric Research (UCAR) / Unidata
   supported the NEC SX-4 port and helped understand the CRAY.
-- Tony Goelz of Absoft Corporation ported cfortran.h to Absoft UNIX Fortran.
+- Tony Goelz of Absoft Corporation ported cfortran.h to Absoft.
 - Though cfortran.h has been created in my 'copious' free time, I thank 
   NSERC for their generous support of my grad. student and postdoc years.
 - Univ.Toronto, DESY, CERN and others have provided time on their computers.

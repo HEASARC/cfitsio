@@ -342,15 +342,15 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONG,PLONG,PINT,PSTRINGV,LONGV,P
    QCF(LONGV,7)
    QCF(PSTRINGV,8)
    QCF(PSTRINGV,9)
-   QCF(PSTRING,A)
-   QCF(PINT,B)
+   QCF(PSTRING,10)
+   QCF(PINT,11)
 
    fitsfile *fptr;
    long tfields;
    int maxdim,*status;
 
    fptr = TCF(ftghtb,FITSUNIT,1,0);
-   status =  TCF(ftghtb,PINT,B,0);
+   status =  TCF(ftghtb,PINT,11,0);
    maxdim =  TCF(ftghtb,INT,2,0);
    ffgkyj( fptr, "TFIELDS", &tfields, 0, status );
    maxdim = (maxdim<0) ? tfields : _cfMIN(tfields,maxdim);
@@ -363,7 +363,7 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONG,PLONG,PINT,PSTRINGV,LONGV,P
              TCF(ftghtb,LONGV,7,1)
              TCF(ftghtb,PSTRINGV,8,1)
              TCF(ftghtb,PSTRINGV,9,1)
-             TCF(ftghtb,PSTRING,A,1)
+             TCF(ftghtb,PSTRING,10,1)
              , status );
 
    RCF(FITSUNIT,1)
@@ -375,8 +375,8 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONG,PLONG,PINT,PSTRINGV,LONGV,P
    RCF(LONGV,7)
    RCF(PSTRINGV,8)
    RCF(PSTRINGV,9)
-   RCF(PSTRING,A)
-   RCF(PINT,B)
+   RCF(PSTRING,10)
+   RCF(PINT,11)
 }
 
 #define ftghbn_STRV_A5 NUM_ELEMS(maxdim)
@@ -396,14 +396,14 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONG,PINT,PSTRINGV,PSTRINGV,PSTR
    QCF(PSTRINGV,7)
    QCF(PSTRING,8)
    QCF(PLONG,9)
-   QCF(PINT,A)
+   QCF(PINT,10)
 
    fitsfile *fptr;
    long tfields;
    int maxdim,*status;
 
    fptr = TCF(ftghbn,FITSUNIT,1,0);
-   status =  TCF(ftghbn,PINT,A,0);
+   status =  TCF(ftghbn,PINT,10,0);
    maxdim =  TCF(ftghbn,INT,2,0);
    ffgkyj( fptr, "TFIELDS", &tfields, 0, status );
    maxdim = (maxdim<0) ? tfields : _cfMIN(tfields,maxdim);
@@ -427,7 +427,7 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONG,PINT,PSTRINGV,PSTRINGV,PSTR
    RCF(PSTRINGV,7)
    RCF(PSTRING,8)
    RCF(PLONG,9)
-   RCF(PINT,A)
+   RCF(PINT,10)
 }
 
     /*   The following 3 routines are obsolete and dangerous to use as       */
@@ -493,14 +493,14 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,PLONG,PLONG,PINT,PSTRINGV,PLONG,PSTRI
    QCF(PSTRINGV,7)
    QCF(PSTRINGV,8)
    QCF(PSTRING,9)
-   QCF(PINT,A)
+   QCF(PINT,10)
 
    fitsfile *fptr;
    long tfields;
    int *status;
 
    fptr = TCF(ftgtbh,FITSUNIT,1,0);
-   status =  TCF(ftgtbh,PINT,A,0);
+   status =  TCF(ftgtbh,PINT,10,0);
    ffgkyj( fptr, "TFIELDS", &tfields, 0, status );
 
    ffghtb(   fptr, (int)tfields
@@ -523,7 +523,7 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,PLONG,PLONG,PINT,PSTRINGV,PLONG,PSTRI
    RCF(PSTRINGV,7)
    RCF(PSTRINGV,8)
    RCF(PSTRING,9)
-   RCF(PINT,A)
+   RCF(PINT,10)
 }
 
 #define ftgbnh_STRV_A4 NUM_ELEMS(tfields)

@@ -14,7 +14,7 @@
 \author{William Pence \thanks{HEASARC, NASA Goddard Space Flight Center,
 {\it William.D.Pence@nasa.gov}}}
 
-\date{November 2002}
+\date{January 2003}
 
 \begin{document}
 
@@ -95,13 +95,28 @@ template and then modify it for your own purposes, rather than writing
 the new program completely from scratch.
 
 To build the CFITSIO library on Unix platforms, `untar' the source code
-distribution file and then execute the following 2 commands in the
+distribution file and then execute the following commands in the
 directory containing the source code:
 
 \begin{verbatim}
-> ./configure
->  make
+>  ./configure [--prefix=/target/installation/path]
+>  make           (or 'make shared')
+>  make install   (this step is optional)
 \end{verbatim}
+
+The optional
+'prefix' argument to configure gives the path to the directory where
+the CFITSIO library and include files should be installed via the later
+'make install' command. For example,
+
+\begin{verbatim}
+>  ./configure --prefix=/usr1/local
+\end{verbatim}
+
+will cause the 'make install' command to copy the CFITSIO libcfitsio file 
+to /usr1/local/lib and the necessary include files to /usr1/local/include
+(assuming of course that the  process has permission to write to these 
+directories).
 
 Pre-compiled versions of the CFITSIO DLL library are available for
 PCs.  On Macintosh machines, refer to the README.MacOS file for

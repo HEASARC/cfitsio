@@ -18,6 +18,9 @@
 # testprog targets. See also changes and comments in configure.in
 #
 
+CFITSIO_LIB =	@CFITSIO_PREFIX@/lib
+CFITSIO_INCLUDE =	@CFITSIO_PREFIX@/include
+
 SHELL =		/bin/sh
 RANLIB =	@RANLIB@
 CC =		@CC@
@@ -80,9 +83,14 @@ shared: libcfitsio${SHLIB_SUFFIX}
 libcfitsio${SHLIB_SUFFIX}: ${OBJECTS}
 		${SHLIB_LD} -o $@ ${OBJECTS}
 
-install:	libcfitsio.a
-		/bin/mv libcfitsio.a ${FTOOLS_LIB}
-		/bin/cp fitsio.h fitsio2.h longnam.h drvrsmem.h ${FTOOLS_INCLUDE}/
+install:	libcfitsio.a ${CFITSIO_LIB} ${CFITSIO_INCLUDE}
+		@if [ -f libcfitsio.a ]; then \
+			/bin/mv libcfitsio.a ${CFITSIO_LIB}; \
+		fi; \
+		if [ -f libcfitsio${SHLIB_SUFFIX} ]; then \
+			/bin/mv libcfitsio${SHLIB_SUFFIX} ${CFITSIO_LIB}; \
+		fi; \
+		/bin/cp fitsio.h fitsio2.h longnam.h drvrsmem.h ${CFITSIO_INCLUDE}/
 
 smem:		smem.o libcfitsio.a ${OBJECTS}
 		${CC} $(CFLAGS) $(DEFS) -o smem smem.o -L. -lcfitsio -lm
@@ -131,3 +139,6 @@ cfitsioLibObjs:
 # This target actually builds the objects needed for the lib in the above
 # case
 objs: ${CORE_OBJECTS}
+
+${CFITSIO_LIB} ${CFITSIO_INCLUDE}:
+	@if [ ! -d $@ ]; then mkdir $@; fi

@@ -10,6 +10,18 @@ dnl Process this file with autoconf to produce a configure script.
 AC_INIT(fitscore.c)
 
 #--------------------------------------------------------------------
+# Check for install location prefix
+#--------------------------------------------------------------------
+
+AC_PREFIX_DEFAULT(`pwd`)
+if test $prefix = NONE; then
+  CFITSIO_PREFIX=$ac_default_prefix
+else
+  CFITSIO_PREFIX=$prefix
+fi
+AC_SUBST(CFITSIO_PREFIX)
+
+#--------------------------------------------------------------------
 # Check "uname" to determine system type
 #--------------------------------------------------------------------
 AC_PROGRAM_CHECK(uname_found, uname, 1, 0)

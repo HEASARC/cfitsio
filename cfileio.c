@@ -37,6 +37,9 @@ typedef struct    /* structure containing pointers to I/O driver functions */
 
 fitsdriver driverTable[MAX_DRIVERS];  /* allocate driver tables */
 
+FITSfile *FptrTable[NMAXFILES];  /* this table of Fptr pointers is */
+                                 /* used by fits_already_open */
+
 int need_to_initialize = 1;    /* true if CFITSIO has not been initialized */
 int no_of_drivers = 0;         /* number of currently defined I/O drivers */
 
@@ -154,7 +157,6 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
         return(*status = MEMORY_ALLOCATION);
     }
 
-
     /* mem for headstart array */
     ((*fptr)->Fptr)->headstart = (OFF_T *) calloc(1001, sizeof(OFF_T)); 
 
@@ -184,6 +186,8 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
     ((*fptr)->Fptr)->validcode = VALIDSTRUC; /* flag denoting valid structure */
 
     ffldrc(*fptr, 0, REPORT_EOF, status);     /* load first record */
+
+    fits_store_Fptr( (*fptr)->Fptr, status);  /* store Fptr address */
 
     if (ffrhdu(*fptr, &hdutyp, status) > 0)  /* determine HDU structure */
     {
@@ -616,6 +620,8 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     ((*fptr)->Fptr)->validcode = VALIDSTRUC; /* flag denoting valid structure */
 
     ffldrc(*fptr, 0, REPORT_EOF, status);     /* load first record */
+
+    fits_store_Fptr( (*fptr)->Fptr, status);  /* store Fptr address */
 
     if (ffrhdu(*fptr, &hdutyp, status) > 0)  /* determine HDU structure */
     {
@@ -1070,6 +1076,46 @@ int ffreopen(fitsfile *openfptr, /* I - FITS file pointer to open file  */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int fits_store_Fptr(FITSfile *Fptr,  /* O - FITS file pointer               */ 
+           int *status)              /* IO - error status                   */
+/*
+   store the new Fptr address for future use by fits_already_open 
+*/
+{
+    int ii;
+
+    if (*status > 0)
+        return(*status);
+
+    for (ii = 0; ii < NMAXFILES; ii++) {
+        if (FptrTable[ii] == 0) {
+            FptrTable[ii] = Fptr;
+            break;
+        }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_clear_Fptr(FITSfile *Fptr,  /* O - FITS file pointer               */ 
+           int *status)              /* IO - error status                   */
+/*
+   clear the Fptr address from the Fptr Table  
+*/
+{
+    int ii;
+
+    if (*status > 0)
+        return(*status);
+
+    for (ii = 0; ii < NMAXFILES; ii++) {
+        if (FptrTable[ii] == Fptr) {
+            FptrTable[ii] = 0;
+            break;
+        }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */ 
            char *url, 
            char *urltype, 
@@ -1092,11 +1138,10 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
        was opened with another file path. For instance, if the CWD is
        /a/b/c and I open /a/b/c/foo.fits then open ./foo.fits the previous
        version of this function would not have reconized that the two files
-       were the same. This version does reconize that the two files are
+       were the same. This version does recognize that the two files are
        the same.
      */
 {
-
     FITSfile *oldFptr;
     int ii;
     char oldurltype[MAX_PREFIX_LEN], oldinfile[FLEN_FILENAME];
@@ -1124,11 +1169,12 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
     else
       strcpy(tmpinfile,infile);
 
-    for (ii = 0; ii < NIOBUF; ii++)   /* check every buffer */
+    for (ii = 0; ii < NMAXFILES; ii++)   /* check every buffer */
     {
-        ffcurbuf(ii, &oldFptr);  
-        if (oldFptr)            /* this is the current buffer of a file */
+        if (FptrTable[ii] != 0)
         {
+          oldFptr = FptrTable[ii];
+
           ffiurl(oldFptr->filename, oldurltype, 
                     oldinfile, oldoutfile, oldextspec, oldrowfilter, 
                     oldbinspec, oldcolspec, status);
@@ -2670,6 +2716,8 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
 
     ffldrc(*fptr, 0, IGNORE_EOF, status);     /* initialize first record */
 
+    fits_store_Fptr( (*fptr)->Fptr, status);  /* store Fptr address */
+
     /* if template file was given, use it to define structure of new file */
     if (tmplfile[0])
         ffoptplt(*fptr, tmplfile, status);
@@ -2792,6 +2840,7 @@ int ffimem(fitsfile **fptr,      /* O - FITS file pointer                   */
     ((*fptr)->Fptr)->validcode = VALIDSTRUC; /* flag denoting valid structure */
 
     ffldrc(*fptr, 0, IGNORE_EOF, status);     /* initialize first record */
+    fits_store_Fptr( (*fptr)->Fptr, status);  /* store Fptr address */
     return(*status); 
 }
 /*--------------------------------------------------------------------------*/
@@ -4971,7 +5020,6 @@ int ffclos(fitsfile *fptr,      /* I - FITS file pointer */
     else
        ffchdu(fptr, status);         
 
-
     ((fptr->Fptr)->open_count)--;           /* decrement usage counter */
 
     if ((fptr->Fptr)->open_count == 0)  /* if no other files use structure */
@@ -4991,6 +5039,7 @@ int ffclos(fitsfile *fptr,      /* I - FITS file pointer */
             }
         }
 
+        fits_clear_Fptr( fptr->Fptr, status);  /* clear Fptr address */
         free((fptr->Fptr)->headstart);    /* free memory for headstart array */
         free((fptr->Fptr)->filename);     /* free memory for the filename */
         (fptr->Fptr)->filename = 0;
@@ -5058,6 +5107,7 @@ int ffdelt(fitsfile *fptr,      /* I - FITS file pointer */
         free(basename);
     }
 
+    fits_clear_Fptr( fptr->Fptr, status);  /* clear Fptr address */
     free((fptr->Fptr)->headstart);    /* free memory for headstart array */
     free((fptr->Fptr)->filename);     /* free memory for the filename */
     (fptr->Fptr)->filename = 0;

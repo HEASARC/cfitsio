@@ -14,12 +14,25 @@ BUILDING CFITSIO
 The CFITSIO code is contained in about 40 *.c source files and several *.h
 header files.  The CFITSIO library is built on Unix systems by typing:
 
->  ./configure
->  make
+ >  ./configure [--prefix=/target/installation/path]
+ >  make          (or  'make shared')
+ >  make install  (this step is optional)
 
-at the operating system prompt.  The 'configure' command customizes
-the Makefile for your particular system, then the 'make' command
-builds the library.
+at the operating system prompt.  The configure command customizes the
+Makefile for the particular system, then the `make' command compiles the
+source files and builds the library.  Type `./configure' and not simply
+`configure' to ensure that the configure script in the current directory
+is run and not some other system-wide configure script.  The optional
+'prefix' argument to configure gives the path to the directory where
+the CFITSIO library and include files should be installed via the later
+'make install' command. For example,
+
+   > ./configure --prefix=/usr1/local
+
+will cause the 'make install' command to copy the CFITSIO libcfitsio file 
+to /usr1/local/lib and the necessary include files to /usr1/local/include
+(assuming of course that the  process has permission to write to these 
+directories).
 
 On VAX/VMS and ALPHA/VMS systems the make.com command file may be used
 to build the cfitsio.olb object library using the default G-floating

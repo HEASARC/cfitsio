@@ -273,8 +273,8 @@ extern fitsfile *gFitsFiles[];       /*    by Fortran unit numbers       */
   {                 CFARGT14S(QCF,T1,T2,T3,T4,T5,T6,T7,T8,T9,TA,TB,TC,TD,TE)   \
   _Icf(2,UU,T0,A0,0); _Icf(0,L,T0,0,0)      CN(  TCF(LN,T1,1,0) TCF(LN,T2,2,1) \
     TCF(LN,T3,3,1) TCF(LN,T4,4,1) TCF(LN,T5,5,1) TCF(LN,T6,6,1) TCF(LN,T7,7,1) \
-    TCF(LN,T8,8,1) TCF(LN,T9,9,1) TCF(LN,TA,A,1) TCF(LN,TB,B,1) TCF(LN,TC,C,1) \
-    TCF(LN,TD,D,1) TCF(LN,TE,E,1) );                          _Icf(0,K,T0,0,0) \
+    TCF(LN,T8,8,1) TCF(LN,T9,9,1) TCF(LN,TA,10,1) TCF(LN,TB,11,1) TCF(LN,TC,12,1) \
+    TCF(LN,TD,13,1) TCF(LN,TE,14,1) );                          _Icf(0,K,T0,0,0) \
     CFARGT14S(RCF,T1,T2,T3,T4,T5,T6,T7,T8,T9,TA,TB,TC,TD,TE)        _(T0,_cfI) \
   }
 

@@ -40,7 +40,8 @@ int ffmbyt(fitsfile *fptr,    /* I - FITS file pointer                */
     record = bytepos / IOBUFLEN;  /* zero-indexed record number */
 
     /* if this is not the current record, then load it */
-    if (record != bufrecnum[(fptr->Fptr)->curbuf]) 
+    if ( ((fptr->Fptr)->curbuf < 0) || 
+         (record != bufrecnum[(fptr->Fptr)->curbuf])) 
         ffldrc(fptr, record, err_mode, status);
 
     if (*status <= 0)
@@ -73,6 +74,11 @@ int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
 
     cptr = (char *)buffer;
     ntodo =  nbytes;
+
+    if ((fptr->Fptr)->curbuf < 0)  /* no current data buffer for this file */
+    {                              /* so reload the last one that was used */
+      ffldrc(fptr, ((fptr->Fptr)->bytepos) / IOBUFLEN, REPORT_EOF, status);
+    }
 
     if (nbytes >= MINDIRECT)
     {
@@ -198,6 +204,11 @@ int ffpbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
+    if ((fptr->Fptr)->curbuf < 0)  /* no current data buffer for this file */
+    {                              /* so reload the last one that was used */
+      ffldrc(fptr, ((fptr->Fptr)->bytepos) / IOBUFLEN, REPORT_EOF, status);
+    }
+
     cptr = (char *)buffer;
     bcurrent = (fptr->Fptr)->curbuf;     /* number of the current IO buffer */
     record = bufrecnum[bcurrent];  /* zero-indexed record number */
@@ -322,6 +333,11 @@ int ffgbyt(fitsfile *fptr,    /* I - FITS file pointer             */
     {
       /* read small chucks of data using the IO buffers for efficiency */
 
+      if ((fptr->Fptr)->curbuf < 0)  /* no current data buffer for this file */
+      {                              /* so reload the last one that was used */
+        ffldrc(fptr, ((fptr->Fptr)->bytepos) / IOBUFLEN, REPORT_EOF, status);
+      }
+
       /* bufpos is the starting position in IO buffer */
       bufpos = (fptr->Fptr)->bytepos - ((OFF_T)bufrecnum[(fptr->Fptr)->curbuf] *
                 IOBUFLEN);
@@ -371,6 +387,11 @@ int ffgbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
 
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+    if ((fptr->Fptr)->curbuf < 0)  /* no current data buffer for this file */
+    {                              /* so reload the last one that was used */
+      ffldrc(fptr, ((fptr->Fptr)->bytepos) / IOBUFLEN, REPORT_EOF, status);
+    }
 
     cptr = (char *)buffer;
     bcurrent = (fptr->Fptr)->curbuf;     /* number of the current IO buffer */
@@ -557,30 +578,16 @@ int ffwhbf(fitsfile *fptr,        /* I - FITS file pointer             */
     }
 
     /* all the buffers are locked, so we have to reuse the current one */
-    /* Returns -1 if there is no current buffer (i.e. too many open files) */
-    return(*nbuff = (fptr->Fptr)->curbuf);
-}
-/*--------------------------------------------------------------------------*/
-int ffcurbuf(int nbuff,             /* i - buffer index number           */
-             FITSfile **Fptr)       /* I - FITS file pointer             */
-{
-/*
-  returns pointer to the corresponding FITSfile structure if the input
-  buffer is the current I/O buffer for that FITSfile.  If it is not the
-  current buffer, then it returns a null pointer.
-*/
-    if (bufptr[nbuff] != NULL)
-    {
-        if ((bufptr[nbuff])->curbuf == nbuff)
-        {
-             /* this is the current buffer for this file */
-             *Fptr = bufptr[nbuff];
-            return(0);
-        }
-    }
+    /* If there is no current buffer (e.g., file has just been opened) */
+    /* then use the oldest buffer.                                     */
 
-    *Fptr = NULL;
-    return(0);
+    if ((fptr->Fptr)->curbuf < 0) {
+        bufptr[ageindex[0]]->curbuf = -1; /* this buffer no longer contains */
+                                      /* the current buffer of another file */
+        return(*nbuff = ageindex[0]);  /* return oldest buffer */
+    } else {
+        return(*nbuff = (fptr->Fptr)->curbuf);  /* return current buffer */
+    }
 }
 /*--------------------------------------------------------------------------*/
 int ffflus(fitsfile *fptr,   /* I - FITS file pointer                       */

@@ -832,7 +832,7 @@ int ffiter(int n_cols,
     int ii, jj, tstatus, naxis, bitpix;
     int typecode, hdutype, jtype, type, anynul, nfiles, nbytes;
     long totaln, nleft, frow, felement, n_optimum, i_optimum, ntodo;
-    long rept, width, tnull, naxes[9] = {1,1,1,1,1,1,1,1,1};
+    long rept, width, tnull, naxes[9] = {1,1,1,1,1,1,1,1,1}, groups;
     double zeros = 0.;
     char message[FLEN_ERRMSG], keyname[FLEN_KEYWORD], nullstr[FLEN_VALUE];
     char **stringptr, *nullptr, *cptr;
@@ -968,7 +968,19 @@ int ffiter(int n_cols,
       fits_get_img_dim(cols[0].fptr, &naxis, status);
       fits_get_img_size(cols[0].fptr, 9, naxes, status);
 
-      totaln = naxes[0];
+      tstatus = 0;
+      ffgkyj(cols[0].fptr, "GROUPS", &groups, NULL, &tstatus);
+      if (!tstatus && groups && (naxis > 1) && (naxes[0] == 0) )
+      {
+         /* this is a random groups file, with NAXIS1 = 0 */
+         /* Use GCOUNT, the number of groups, as the first multiplier  */
+         /* to calculate the total number of pixels in all the groups. */
+         ffgkyj(cols[0].fptr, "GCOUNT", &totaln, NULL, status);
+
+      }  else {
+         totaln = naxes[0];
+      }
+
       for (ii = 1; ii < naxis; ii++)
           totaln *= naxes[ii];
 

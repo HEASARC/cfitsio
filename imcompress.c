@@ -1322,6 +1322,7 @@ int fits_decompress_img (fitsfile *infptr, /* image (bintable) to uncompress */
     /* decompressed values won't be scaled when written to the output image */
     ffrdef(outfptr, status);
     ffpscl(outfptr, 1.0, 0.0, status);
+    ffpscl(infptr, 1.0, 0.0, status);
 
     /* initialize; no null checking is needed for integer images */
     nullcheck = 0;
@@ -1435,7 +1436,7 @@ int fits_read_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
 
     if (!fits_is_compressed_image(fptr, status) )
     {
-        ffpmsg("CHDU is not a compressed image (fits_decompress_img)");
+        ffpmsg("CHDU is not a compressed image (fits_read_compressed_img)");
         return(*status = DATA_DECOMPRESSION_ERR);
     }
 
@@ -2071,7 +2072,7 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
     if (ffgcno(infptr, CASEINSEN, "COMPRESSED_DATA",
          &(infptr->Fptr)->cn_compressed, status) > 0)
     {
-        ffpmsg("couldn't find COMPRESSED_DATA column (fits_decompress_img)");
+        ffpmsg("couldn't find COMPRESSED_DATA column (fits_get_compressed_img_par)");
         return(*status = DATA_DECOMPRESSION_ERR);
     }
 
