@@ -1131,6 +1131,7 @@ int ffgthd(char *tmplt, /* I - input header template string */
 
         /* copy the new name to card + 40;  This is awkward, */
         /* but is consistent with the way the Fortran FITSIO works */
+	strcat(card,"                                        ");
         strncpy(&card[40], tok, len);
         ffupch(&card[40]);
         fftkey(&card[40], status);
