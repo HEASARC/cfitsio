@@ -137,6 +137,9 @@ distclean:	clean
 cfitsioLibObjs:
 	@echo ${CORE_OBJECTS}
 
+cfitsioLibSrcs:
+	@echo ${SOURCES}
+
 # This target actually builds the objects needed for the lib in the above
 # case
 objs: ${CORE_OBJECTS}
