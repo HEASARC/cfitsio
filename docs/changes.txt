@@ -1,6 +1,13 @@
 
                    Log of Changes Made to CFITSIO
 
+Version 2.500 -   2004
+
+  Enhancements:
+
+   - modified f77_wrap.h and f77_wrap3.c to support the Fortran wrappers
+     on 64-bit AMD Opteron machines
+
 Version 2.490 -  11 February 2004
 
   Bug fixes:

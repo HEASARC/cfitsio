@@ -438,13 +438,10 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONG,PINT,PSTRINGV,PSTRINGV,PSTR
     /*   problem if ttype, tform, and tunit are declared with fewer          */
     /*   elements than the actual number of columns.                         */
 
-#if defined(DECFortran) || (defined(__alpha) && defined(g77Fortran)) \
-    || (defined(mipsFortran) && _MIPS_SZLONG==64) \
-    || (defined(IBMR2Fortran) && defined(__64BIT__)) \
-    || (defined (g77Fortran) && defined(__ia64__)) \
-    ||  defined (__sparcv9)
-    /*   If running under DECFortran, we also need to worry about the length */
-    /*   of the long naxes array.  So read NAXIS manually. :(                */
+#if defined(LONG8BYTES_INT4BYTES)
+
+    /*  On platforms with 8-byte longs, we also need to worry about the */
+    /*  length of the long naxes array.  So read NAXIS manually. :(     */
 
 void Cffgprh( fitsfile *fptr, int *simple, int *bitpix, int *naxis, int naxes[],
              long *pcount, long *gcount, int *extend, int *status );
