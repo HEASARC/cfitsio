@@ -36,6 +36,19 @@ int ffgpvk( fitsfile *fptr,   /* I - FITS file pointer                       */
 {
     long row;
     char cdummy;
+    int nullcheck = 1;
+    int nullvalue;
+
+    if (fits_is_compressed_image(fptr, status))
+    {
+        /* this is a compressed image in a binary table */
+         nullvalue = nulval;  /* set local variable */
+
+        fits_read_compressed_pixels(fptr, TINT, firstelem, nelem,
+            nullcheck, &nullvalue, array, NULL, anynul, status);
+        return(*status);
+    }
+
     /*
       the primary array is represented as a binary table:
       each group of the primary array is a row in the table,
@@ -68,6 +81,17 @@ int ffgpfk( fitsfile *fptr,   /* I - FITS file pointer                       */
 */
 {
     long row;
+    int nullcheck = 2;
+
+    if (fits_is_compressed_image(fptr, status))
+    {
+        /* this is a compressed image in a binary table */
+
+        fits_read_compressed_pixels(fptr, TINT, firstelem, nelem,
+            nullcheck, NULL, array, nularray, anynul, status);
+        return(*status);
+    }
+
     /*
       the primary array is represented as a binary table:
       each group of the primary array is a row in the table,
@@ -99,43 +123,10 @@ int ffg2dk(fitsfile *fptr,  /* I - FITS file pointer                       */
   nulval = 0 in which case no null checking will be performed.
 */
 {
-    long tablerow, nfits, narray, ii;
-    char cdummy;
+    /* call the 3D reading routine, with the 3rd dimension = 1 */
 
-    /*
-      the primary array is represented as a binary table:
-      each group of the primary array is a row in the table,
-      where the first column contains the group parameters
-      and the second column contains the image itself.
-    */
-    tablerow=maxvalue(1,group);
-
-    if (ncols == naxis1)  /* arrays have same row length? */
-    {
-       /* all the image pixels are contiguous, so read all at once */
-       ffgclk(fptr, 2, tablerow, 1, naxis1 * naxis2, 1, 1, nulval,
-               array, &cdummy, anynul, status);
-       return(*status);
-    }
-
-    if (ncols < naxis1)
-       return(*status = BAD_DIMEN);
-
-    /* loop over the naxis2 rows in the FITS image, */
-    /* reading naxis1 pixels to each row            */
-
-    nfits = 1;   /* next pixel in FITS image to read */
-    narray = 0;  /* next pixel in output array to be filled */
-
-    for (ii = 0; ii < naxis2; ii++)
-    {
-       if (ffgclk(fptr, 2, tablerow, nfits, naxis1, 1, 1, nulval,
-          &array[narray], &cdummy, anynul, status) > 0)
-          return(*status);
-
-       nfits += naxis1;
-       narray += ncols;
-    }
+    ffg3dk(fptr, group, nulval, ncols, naxis2, naxis1, naxis2, 1, array, 
+           anynul, status);
 
     return(*status);
 }
@@ -161,6 +152,25 @@ int ffg3dk(fitsfile *fptr,  /* I - FITS file pointer                       */
 {
     long tablerow, nfits, narray, ii, jj;
     char cdummy;
+    int nullcheck = 1;
+    long inc[] = {1,1,1};
+    long fpixel[] = {1,1,1};
+    long lpixel[3];
+    int nullvalue;
+
+    if (fits_is_compressed_image(fptr, status))
+    {
+        /* this is a compressed image in a binary table */
+
+        lpixel[0] = ncols;
+        lpixel[1] = nrows;
+        lpixel[2] = naxis3;
+        nullvalue = nulval;  /* set local variable */
+
+        fits_read_compressed_img(fptr, TINT, fpixel, lpixel, inc,
+            nullcheck, &nullvalue, array, NULL, anynul, status);
+        return(*status);
+    }
 
     /*
       the primary array is represented as a binary table:
@@ -226,12 +236,25 @@ int ffgsvk(fitsfile *fptr, /* I - FITS file pointer                         */
     long felem, nelem, nultyp, ninc, numcol;
     int hdutype, anyf;
     char ldummy, msg[FLEN_ERRMSG];
+    int nullcheck = 1;
+    int nullvalue;
 
     if (naxis < 1 || naxis > 9)
     {
         sprintf(msg, "NAXIS = %d in call to ffgsvj is out of range", naxis);
         ffpmsg(msg);
         return(*status = BAD_DIMEN);
+    }
+
+    if (fits_is_compressed_image(fptr, status))
+    {
+        /* this is a compressed image in a binary table */
+
+        nullvalue = nulval;  /* set local variable */
+
+        fits_read_compressed_img(fptr, TINT, blc, trc, inc,
+            nullcheck, &nullvalue, array, NULL, anynul, status);
+        return(*status);
     }
 
 /*
@@ -374,12 +397,22 @@ int ffgsfk(fitsfile *fptr, /* I - FITS file pointer                         */
     long nulval = 0;
     int hdutype, anyf;
     char msg[FLEN_ERRMSG];
+    int nullcheck = 2;
 
     if (naxis < 1 || naxis > 9)
     {
         sprintf(msg, "NAXIS = %d in call to ffgsvj is out of range", naxis);
         ffpmsg(msg);
         return(*status = BAD_DIMEN);
+    }
+
+    if (fits_is_compressed_image(fptr, status))
+    {
+        /* this is a compressed image in a binary table */
+
+        fits_read_compressed_img(fptr, TINT, blc, trc, inc,
+            nullcheck, NULL, array, flagval, anynul, status);
+        return(*status);
     }
 
 /*

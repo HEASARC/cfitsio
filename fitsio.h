@@ -66,6 +66,13 @@
 #define FLOATNULLVALUE -9.11912E-36F
 #define DOUBLENULLVALUE -9.1191291391491E-36
  
+/* Image compression algorithm types */
+#define MAX_COMPRESS_DIM     6
+#define RICE_1      11
+#define GZIP_1      21
+#define PLIO_1      31
+#define HCOMPRESS_1 41
+
 #ifndef TRUE
 #define TRUE 1
 #endif
@@ -137,7 +144,6 @@ typedef struct      /* structure used to store basic FITS file information */
     int curbuf;     /* number of I/O buffer currently in use */ 
     int curhdu;     /* current HDU number; 0 = primary array */
     int hdutype;    /* 0 = primary array, 1 = ASCII table, 2 = binary table */
-    int compressimg; /* 1 if HDU contains a compressed image, else 0 */
     int writemode;  /* 0 = readonly, 1 = readwrite */
     int maxhdu;     /* highest numbered HDU known to exist in the file */
     long headstart[MAXHDU + 1]; /* byte offset in file to start of each HDU */
@@ -151,6 +157,30 @@ typedef struct      /* structure used to store basic FITS file information */
     tcolumn *tableptr; /* pointer to the table structure */
     long heapstart; /* heap start byte relative to start of data unit */
     long heapsize;  /* size of the heap, in bytes */
+
+         /* the following elements are related to compress images */
+    int compressimg; /* 1 if HDU contains a compressed image, else 0 */
+    char zcmptype[12];      /* compression type string */
+    int compress_type;      /* type of compression algorithm */
+    int zbitpix;		/* FITS data type of image (BITPIX) */
+    int zndim;		/* dimension of image */
+    long znaxis[MAX_COMPRESS_DIM];  /* length of each axis */
+    long tilesize[MAX_COMPRESS_DIM]; /* size of compression tiles */
+    long maxtilelen;        /* max number of pixels in each image tile */
+    long maxelem;		/* maximum length of variable length arrays */
+
+    int cn_compressed;	    /* column number for COMPRESSED_DATA column */
+    int cn_uncompressed;    /* column number for UNCOMPRESSED_DATA column */
+    int cn_zscale;	    /* column number for ZSCALE column */
+    int cn_zzero;	    /* column number for ZZERO column */
+    int cn_zblank;          /* column number for the ZBLANK column */
+
+    double zscale;          /* scaling value, if same for all tiles */
+    double zzero;           /* zero pt, if same for all tiles */
+    int zblank;             /* value for null pixels, if not a column */
+
+    int rice_blocksize;     /* first compression parameter */
+    int rice_nbits;         /* second compression parameter */
 } FITSfile;
 
 typedef struct      /* structure used to store basic HDU information */
@@ -628,7 +658,7 @@ int ffghad(fitsfile *fptr, long *headstart, long *datastart, long *dataend,
            int *status);
 int ffgidt(fitsfile *fptr, int *imgtype, int *status);
 int ffgidm(fitsfile *fptr, int *naxis,  int *status);
-int ffgisz(fitsfile *fptr, long *naxes, int *status);
+int ffgisz(fitsfile *fptr, int nlen, long *naxes, int *status);
 
 /*--------------------- HDU operations -------------*/
 int ffmahd(fitsfile *fptr, int hdunum, int *exttype, int *status);
@@ -1262,18 +1292,26 @@ int	fits_execute_template(fitsfile *ff, char *ngp_template, int *status);
 
 /*--------------------- image compression routines ------------------*/
 
-int fits_comp_img(fitsfile *infptr, fitsfile *outfptr, long *tilesize,
-               int nbits, int blocksize, int *status);
+int fits_comp_img(fitsfile *infptr, fitsfile *outfptr, int compress_type,
+         long *tilesize, int parm1, int parm2, int *status);
+int fits_is_compressed_image(fitsfile *fptr, int *status);
 int fits_decomp_img (fitsfile *infptr, fitsfile *outfptr, int *status);
 int fits_read_compressed_img(fitsfile *fptr, 
             int  datatype, long  *fpixel,long  *lpixel,long *inc,   
             int nullcheck, void *nulval,  void *array, char *nullarray,
             int  *anynul, int  *status);
 
+int fits_read_compressed_pixels(fitsfile *fptr, 
+            int  datatype, long  fpixel, long npixels,   
+            int nullcheck, void *nulval,  void *array, char *nullarray,
+            int  *anynul, int  *status);
+
 int fits_quantize_float (float fdata[], int nx, float in_null_value,
-           int noise_bits, int idata[], double *bscale, double *bzero);
+           int noise_bits, int idata[], double *bscale, double *bzero,
+           int *iminval, int *imaxval);
 int fits_quantize_double (double fdata[], int nx, double in_null_value,
-           int noise_bits, int idata[], double *bscale, double *bzero);
+           int noise_bits, int idata[], double *bscale, double *bzero,
+           int *iminval, int *imaxval);
 int fits_rcomp(int a[], int nx, unsigned char *c, int clen,int nblock);
 int fits_rdecomp (unsigned char *c, int clen, unsigned int array[], int nx,
              int nblock);

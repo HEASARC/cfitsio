@@ -48,7 +48,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large September 1999\\}
+{\Large November 1999\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -4431,7 +4431,32 @@ contiguous rectangular subset of pixels within the n-dimensional array.
 
 
 \begin{description}
-\item[1 ]Put elements into the data array
+\item[1 ] Get the data type of the image (= BITPIX value).  Possible returned
+   values are: 8, 16, 32, -32, or -64.
+\end{description}
+
+\begin{verbatim}
+        FTGIDT(unit, > bitpix,status)
+\end{verbatim}
+
+\begin{description}
+\item[2 ] Get the dimension (number of axes = NAXIS) of the image
+\end{description}
+
+\begin{verbatim}
+        FTGIDM(unit, > naxis,status)
+\end{verbatim}
+
+\begin{description}
+\item[3 ] Get the size of all the dimensions of the image
+\end{description}
+
+\begin{verbatim}
+        FTGISZ(unit, maxdim, > naxes,status)
+\end{verbatim}
+
+\begin{description}
+\item[4 ]Put elements into the data array
 \end{description}
 
 \begin{verbatim}
@@ -4439,7 +4464,7 @@ contiguous rectangular subset of pixels within the n-dimensional array.
 \end{verbatim}
 
 \begin{description}
-\item[2 ]Put elements into the data array, substituting the appropriate FITS null
+\item[5 ]Put elements into the data array, substituting the appropriate FITS null
    value for all elements which are equal to the value of NULLVAL.  For
    integer FITS arrays, the null value defined by the previous call to FTPNUL
    will be substituted;  for floating point FITS arrays (BITPIX = -32
@@ -4452,7 +4477,7 @@ contiguous rectangular subset of pixels within the n-dimensional array.
 \end{verbatim}
 
 \begin{description}
-\item[3 ]Set data array elements as undefined
+\item[6 ]Set data array elements as undefined
 \end{description}
 
 \begin{verbatim}
@@ -4460,7 +4485,7 @@ contiguous rectangular subset of pixels within the n-dimensional array.
 \end{verbatim}
 
 \begin{description}
-\item[4 ] Get elements from the data array.  Undefined array elements will be
+\item[7 ] Get elements from the data array.  Undefined array elements will be
     returned with a value = nullval, unless nullval = 0 in which case no
    checks for undefined pixels will be performed.
 \end{description}
@@ -4470,7 +4495,7 @@ contiguous rectangular subset of pixels within the n-dimensional array.
 \end{verbatim}
 
 \begin{description}
-\item[5 ] Get elements and nullflags from data array.
+\item[8 ] Get elements and nullflags from data array.
     Any undefined array elements will have the corresponding flagvals element
    set equal to .TRUE.
 \end{description}
@@ -4480,7 +4505,7 @@ contiguous rectangular subset of pixels within the n-dimensional array.
 \end{verbatim}
 
 \begin{description}
-\item[6 ] Put values into group parameters
+\item[9 ] Put values into group parameters
 \end{description}
 
 \begin{verbatim}
@@ -4488,7 +4513,7 @@ contiguous rectangular subset of pixels within the n-dimensional array.
 \end{verbatim}
 
 \begin{description}
-\item[7 ] Get values from group parameters
+\item[10]  Get values from group parameters
 \end{description}
 
 \begin{verbatim}
@@ -4511,7 +4536,7 @@ in the program array).
 
 
 \begin{description}
-\item[8 ] Put 2-D image into the data array
+\item[11]  Put 2-D image into the data array
 \end{description}
 
 \begin{verbatim}
@@ -4519,7 +4544,7 @@ in the program array).
 \end{verbatim}
 
 \begin{description}
-\item[9 ] Put 3-D cube into the data array
+\item[12]  Put 3-D cube into the data array
 \end{description}
 
 \begin{verbatim}
@@ -4527,7 +4552,7 @@ in the program array).
 \end{verbatim}
 
 \begin{description}
-\item[10]  Get 2-D image from the data array.  Undefined
+\item[13]  Get 2-D image from the data array.  Undefined
      pixels in the array will be set equal to the value of 'nullval',
      unless nullval=0 in which case no testing for undefined pixels will
     be performed.
@@ -4538,7 +4563,7 @@ in the program array).
 \end{verbatim}
 
 \begin{description}
-\item[11] Get 3-D cube from the data array.   Undefined
+\item[14] Get 3-D cube from the data array.   Undefined
     pixels in the array will be set equal to the value of 'nullval',
     unless nullval=0 in which case no testing for undefined pixels will
    be performed.
@@ -4572,7 +4597,7 @@ by the more general FTGSVx family of routines.]
 
 
 \begin{description}
-\item[12]   Put an arbitrary data subsection into the data array.
+\item[15]   Put an arbitrary data subsection into the data array.
 \end{description}
 
 \begin{verbatim}
@@ -4580,7 +4605,7 @@ by the more general FTGSVx family of routines.]
 \end{verbatim}
 
 \begin{description}
-\item[13]    Get an arbitrary data subsection from the data array.  Undefined
+\item[16]    Get an arbitrary data subsection from the data array.  Undefined
        pixels in the array will be set equal to the value of 'nullval',
        unless nullval=0 in which case no testing for undefined pixels will
       be performed.
@@ -4592,7 +4617,7 @@ by the more general FTGSVx family of routines.]
 \end{verbatim}
 
 \begin{description}
-\item[14]    Get an arbitrary data subsection from the data array.  Any Undefined
+\item[17]    Get an arbitrary data subsection from the data array.  Any Undefined
        pixels in the array will have the corresponding 'flagvals'
       element set equal to .TRUE.
 \end{description}
@@ -5963,6 +5988,9 @@ The following utility subroutines may be useful for certain applications:
  FITS Primary Array or IMAGE Extension I/O Subroutines: page~\pageref{FTPPR}
 
 \begin{verbatim}
+        FTGIDT(unit, > bitpix,status)
+        FTGIDM(unit, > naxis,status)
+        FTGISZ(unit, maxdim, > naxes,status)
         FTPPR[BIJED](unit,group,fpixel,nelements,values, > status)
         FTPPN[BIJED](unit,group,fpixel,nelements,values,nullval > status)
         FTPPRU(unit,group,fpixel,nelements, > status)

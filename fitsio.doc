@@ -3808,11 +3808,24 @@ subroutines to directly read or write 2 and 3 dimensional arrays  have
 been provided, as well as a set of subroutines to read or write any
 contiguous rectangular subset of pixels within the n-dimensional array.
 
->>1 Put elements into the data array  
+>1  Get the data type of the image (= BITPIX value).  Possible returned 
+>   values are: 8, 16, 32, -32, or -64. 
+-
+        FTGIDT(unit, > bitpix,status)
+-
+>>2  Get the dimension (number of axes = NAXIS) of the image 
+-
+        FTGIDM(unit, > naxis,status)
+-
+>>3  Get the size of all the dimensions of the image 
+-
+        FTGISZ(unit, maxdim, > naxes,status)
+-
+>>4 Put elements into the data array  
 -
         FTPPR[BIJED](unit,group,fpixel,nelements,values, > status)
 -
->2 Put elements into the data array, substituting the appropriate FITS null
+>5 Put elements into the data array, substituting the appropriate FITS null
    value for all elements which are equal to the value of NULLVAL.  For 
    integer FITS arrays, the null value defined by the previous call to FTPNUL
    will be substituted;  for floating point FITS arrays (BITPIX = -32
@@ -3821,27 +3834,27 @@ contiguous rectangular subset of pixels within the n-dimensional array.
 -
         FTPPN[BIJED](unit,group,fpixel,nelements,values,nullval > status)
 -
->>3 Set data array elements as undefined 
+>>6 Set data array elements as undefined 
 -
         FTPPRU(unit,group,fpixel,nelements, > status)
 -
->4  Get elements from the data array.  Undefined array elements will be 
+>7  Get elements from the data array.  Undefined array elements will be 
     returned with a value = nullval, unless nullval = 0 in which case no 
 >   checks for undefined pixels will be performed.
 -
         FTGPV[BIJED](unit,group,fpixel,nelements,nullval, > values,anyf,status)
 -
->5  Get elements and nullflags from data array. 
+>8  Get elements and nullflags from data array. 
     Any undefined array elements will have the corresponding flagvals element 
 >   set equal to .TRUE.
 -
         FTGPF[BIJED](unit,group,fpixel,nelements, > values,flagvals,anyf,status)
 -
->>6  Put values into group parameters
+>>9  Put values into group parameters
 -
         FTPGP[BIJED](unit,group,fparm,nparm,values, > status)
 -
->>7  Get values from group parameters
+>>10  Get values from group parameters
 -
         FTGGP[BIJED](unit,group,fparm,nparm, > values,status)
 -
@@ -3860,22 +3873,22 @@ and writing them to a non-contiguous array in program memory
 (i.e., there are now some blank pixels around the edge of the image
 in the program array).
 
->>8  Put 2-D image into the data array
+>>11  Put 2-D image into the data array
 -
         FTP2D[BIJED](unit,group,dim1,naxis1,naxis2,image, > status)
 -
->>9  Put 3-D cube into the data array 
+>>12  Put 3-D cube into the data array 
 -
         FTP3D[BIJED](unit,group,dim1,dim2,naxis1,naxis2,naxis3,cube, > status)
 -
->10  Get 2-D image from the data array.  Undefined
+>13  Get 2-D image from the data array.  Undefined
      pixels in the array will be set equal to the value of 'nullval',
      unless nullval=0 in which case no testing for undefined pixels will
 >    be performed.
 -
         FTG2D[BIJED](unit,group,nullval,dim1,naxis1,naxis2, > image,anyf,status)
 -
->11 Get 3-D cube from the data array.   Undefined
+>14 Get 3-D cube from the data array.   Undefined
     pixels in the array will be set equal to the value of 'nullval',
     unless nullval=0 in which case no testing for undefined pixels will
 >   be performed.
@@ -3905,11 +3918,11 @@ the 'array' parameter. [Note: the FTGSSx family of routines which
 were present in previous versions of FITSIO have been superseded
 by the more general FTGSVx family of routines.]
 
->>12   Put an arbitrary data subsection into the data array.
+>>15   Put an arbitrary data subsection into the data array.
 -
         FTPSS[BIJED](unit,group,naxis,naxes,fpixels,lpixels,array, > status)
 -
->13    Get an arbitrary data subsection from the data array.  Undefined
+>16    Get an arbitrary data subsection from the data array.  Undefined
        pixels in the array will be set equal to the value of 'nullval',
        unless nullval=0 in which case no testing for undefined pixels will
 >      be performed.
@@ -3917,7 +3930,7 @@ by the more general FTGSVx family of routines.]
         FTGSV[BIJED](unit,group,naxis,naxes,fpixels,lpixels,incs,nullval, >
                      array,anyf,status)
 -
->14    Get an arbitrary data subsection from the data array.  Any Undefined
+>17    Get an arbitrary data subsection from the data array.  Any Undefined
        pixels in the array will have the corresponding 'flagvals'
 >      element set equal to .TRUE.
 -
@@ -4960,6 +4973,9 @@ The following utility subroutines may be useful for certain applications:
 -
  FITS Primary Array or IMAGE Extension I/O Subroutines: page~\pageref{FTPPR}
 -
+        FTGIDT(unit, > bitpix,status)
+        FTGIDM(unit, > naxis,status)
+        FTGISZ(unit, maxdim, > naxes,status)
         FTPPR[BIJED](unit,group,fpixel,nelements,values, > status)
         FTPPN[BIJED](unit,group,fpixel,nelements,values,nullval > status)
         FTPPRU(unit,group,fpixel,nelements, > status)

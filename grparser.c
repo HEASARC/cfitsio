@@ -68,8 +68,8 @@
 #include "fitsio.h"
 #include "grparser.h"
 
-NGP_RAW_LINE	ngp_curline = { NULL, NULL, NULL, NGP_TTYPE_UNKNOWN, NULL, NGP_FORMAT_OK };
-NGP_RAW_LINE	ngp_prevline = { NULL, NULL, NULL, NGP_TTYPE_UNKNOWN, NULL, NGP_FORMAT_OK };
+NGP_RAW_LINE	ngp_curline = { NULL, NULL, NULL, NGP_TTYPE_UNKNOWN, NULL, NGP_FORMAT_OK, 0 };
+NGP_RAW_LINE	ngp_prevline = { NULL, NULL, NULL, NGP_TTYPE_UNKNOWN, NULL, NGP_FORMAT_OK, 0 };
 
 int		ngp_inclevel = 0;		/* number of included files, 1 - means mean file */
 int		ngp_grplevel = 0;		/* group nesting level, 0 - means no grouping */

@@ -1,6 +1,6 @@
                    Log of Changes Made to CFITSIO
 
-Version 2.034 - 2 Nov 1999
+Version 2.034 - 23 Nov 1999
 
    - enhanced support for the new 'CD' matrix world coordinate system
      keywords in the ffigics routine.  This routine has been enhanced
@@ -8,9 +8,6 @@ Version 2.034 - 2 Nov 1999
      back to the old CDELTn and CROTAn values, which are then returned.  
      The routine will also swap the WCS parameters for the 2 axes if
      the declination-like axis is the first WCS axis.
-
-   - fixed tiny memory leak in irafncmp in iraffits.c.  Only relevant when
-     reading IRAF .imh files.
 
    - modified ffphbn in putkey.c to support the 'U' and 'V" TFORM characters
      (which represent unsigned short and unsigned int columns) in variable
@@ -20,6 +17,24 @@ Version 2.034 - 2 Nov 1999
    - added checks when reading gzipped files to detect unexpected EOF.
      Previously, the 'inflate_codes' routine would just sit in an infinite 
      loop if the file ended unexpectedly.
+
+   - modified fits_verify_chksum/ffvcks so that checksum keywords with
+     a blank value string are treated as undefined, the same as
+     if the keyword did not exist at all.
+
+   - fixed ffghtb and ffghbn so that they return the extname value 
+     in cases where there are no columns in the table.
+
+   - fixed bug in the ffgtwcs routine (this is a little utility 
+     routine to aid in interfacing to Doug Mink's WCS routines);
+     it was not correctly padding the length of string-valued keywords
+     in the returned string.
+
+   - fixed bug in 'iraffits.c' that prevented Type-2 IRAF images from
+     being correctly byte-swapped on PCs and DEC-OSF machines.
+
+   - fixed tiny memory leak in irafncmp in iraffits.c.  Only relevant when
+     reading IRAF .imh files.
 
    - fixed a bug (introduced in version 2.027) that caused the keyword
      reading routines to sometimes not find a matching keyword if the
@@ -33,10 +48,6 @@ Version 2.034 - 2 Nov 1999
      double precision numbers.  Some linux systems have reported floating
      point exceptions because they were trying to interprete the bytes
      as a double before the bytes had been swapped.
-
-   - modified fits_verify_chksum/ffvcks so that checksum keywords with
-     a blank value string are treated as undefined, the same as
-     if the keyword did not exist at all.
 
    - fixed bug in the calculation of the position of the last byte
      in the string of bits to be read in ffgcxuk and ffgcxui.  This
@@ -54,6 +65,10 @@ Version 2.034 - 2 Nov 1999
    - fixed bug in group.c, which affected WINDOWS platforms only, that 
      caused programs to go into infinite loop when trying to open
      certain files.
+
+   - the ftrsim Fortran wrapper routine to ffrsim was not defined
+     correctly, which caused the naxis(2) value to be passed incorrectly
+     on Dec OSF machines, where sizeof(long) != sizeof(int).
 
 Version 2.033 - 17 Sept 1999
 

@@ -62,7 +62,7 @@
 \contentsline {section}{\numberline {8.7}FITS ASCII and Binary Table Data I/O Subroutines}{67}
 \contentsline {subsection}{\numberline {8.7.1}Column Information Subroutines }{67}
 \contentsline {subsection}{\numberline {8.7.2}Low-Level Table Access Subroutines }{69}
-\contentsline {subsection}{\numberline {8.7.3}Edit Rows or Columns }{69}
+\contentsline {subsection}{\numberline {8.7.3}Edit Rows or Columns }{70}
 \contentsline {subsection}{\numberline {8.7.4}Read and Write Column Data Routines }{71}
 \contentsline {section}{\numberline {8.8}Row Selection and Calculator Routines }{74}
 \contentsline {section}{\numberline {8.9}Celestial Coordinate System Subroutines }{75}

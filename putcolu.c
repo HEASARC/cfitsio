@@ -32,6 +32,15 @@ int ffppru( fitsfile *fptr,  /* I - FITS file pointer                       */
       and the second column contains the image itself.
     */
 
+    if (fits_is_compressed_image(fptr, status))
+    {
+        /* this is a compressed image in a binary table */
+
+        ffpmsg("writing to compressed image is not supported");
+
+        return(*status = DATA_COMPRESSION_ERR);
+    }
+
     row=maxvalue(1,group);
 
     ffpclu(fptr, 2, row, firstelem, nelem, status);
@@ -54,6 +63,15 @@ int ffpprn( fitsfile *fptr,  /* I - FITS file pointer                       */
       where the first column contains the group parameters
       and the second column contains the image itself.
     */
+
+    if (fits_is_compressed_image(fptr, status))
+    {
+        /* this is a compressed image in a binary table */
+
+        ffpmsg("writing to compressed image is not supported");
+
+        return(*status = DATA_COMPRESSION_ERR);
+    }
 
     ffpclu(fptr, 2, row, firstelem, nelem, status);
     return(*status);

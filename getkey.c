@@ -1718,18 +1718,19 @@ int ffghtb(fitsfile *fptr,  /* I - FITS file pointer                        */
                 return(*status = NO_TFORM);
             }
         }
-
-        if (extnm)
-        {
-            extnm[0] = '\0';
-
-            tstatus = *status;
-            ffgkys(fptr, "EXTNAME", extnm, comm, status);
-
-            if (*status == KEY_NO_EXIST)
-                *status = tstatus;  /* keyword not required, so ignore error */
-        }
     }
+
+    if (extnm)
+    {
+        extnm[0] = '\0';
+
+        tstatus = *status;
+        ffgkys(fptr, "EXTNAME", extnm, comm, status);
+
+        if (*status == KEY_NO_EXIST)
+            *status = tstatus;  /* keyword not required, so ignore error */
+    }
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -1834,17 +1835,17 @@ int ffghbn(fitsfile *fptr,  /* I - FITS file pointer                        */
                 return(*status = NO_TFORM);
             }
         }
+    }
 
-        if (extnm)
-        {
-            extnm[0] = '\0';
+    if (extnm)
+    {
+        extnm[0] = '\0';
 
-            tstatus = *status;
-            ffgkys(fptr, "EXTNAME", extnm, comm, status);
+        tstatus = *status;
+        ffgkys(fptr, "EXTNAME", extnm, comm, status);
 
-            if (*status == KEY_NO_EXIST)
-              *status = tstatus;  /* keyword not required, so ignore error */
-        }
+        if (*status == KEY_NO_EXIST)
+          *status = tstatus;  /* keyword not required, so ignore error */
     }
     return(*status);
 }

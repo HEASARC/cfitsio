@@ -308,6 +308,10 @@ added.  The typical libraries that need to be added are -lm (the math
 library) and -lnsl and -lsocket (needed only for FTP and HTTP file access).
 These latter 2 libraries are not needed on VMS and Windows platforms, 
 because FTP file access is not currently supported on those platforms.
+
+Note that when upgrading to a newer version of CFITSIO it is usually
+necessay to recompile, as well as relink, the programs that use CFITSIO,
+because the definitions in fitsio.h often change.
  
 **D.  Getting Started with CFITSIO
 
@@ -4007,7 +4011,7 @@ the FITS array.
 >>3  Get the size of all the dimensions of the image \label{ffgisz}
 -
   int fits_get_img_size / ffgisz
-      (fitsfile *fptr, long *naxes, int *status)
+      (fitsfile *fptr, int maxdim, long *naxes, int *status)
 -
 >>4  Write elements into the FITS data array.  \label{ffppr}
 -
@@ -6554,6 +6558,7 @@ fits\_write\_chksum   & \pageref{ffpcks} \\
 fits\_write\_col         & \pageref{ffpcl} \\
 fits\_write\_col\_bit     & \pageref{ffpclx} \\
 fits\_write\_col\_TYP     & \pageref{ffpcls} \\
+fits\_write\_colnull      & \pageref{ffpcn} \\
 fits\_write\_colnull\_TYP & \pageref{ffpcnx} \\
 fits\_write\_comment      & \pageref{ffpcom} \\
 fits\_write\_date         & \pageref{ffpdat} \\
@@ -6568,9 +6573,9 @@ fits\_write\_img\_TYP    & \pageref{ffpprx} \\
 fits\_write\_imghdr       & \pageref{ffphps} \\
 fits\_write\_imgnull     & \pageref{ffppn} \\
 fits\_write\_imgnull\_TYP & \pageref{ffppnx} \\
-fits\_write\_key          & \pageref{ffpky} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_write\_key          & \pageref{ffpky} \\
 fits\_write\_key\_longstr  & \pageref{ffpkls} \\
 fits\_write\_key\_longwarn & \pageref{ffplsw} \\
 fits\_write\_key\_null     & \pageref{ffpkyu} \\
@@ -6736,6 +6741,7 @@ ffpcks   & \pageref{ffpcks} \\
 ffpcl         & \pageref{ffpcl} \\
 ffpcls     & \pageref{ffpcls} \\
 ffpcl\_     & \pageref{ffpclx} \\
+ffpcn    & \pageref{ffpcn} \\
 ffpcn\_ & \pageref{ffpcnx} \\
 ffpcom      & \pageref{ffpcom} \\
 ffpdat         & \pageref{ffpdat} \\
@@ -6778,9 +6784,9 @@ ffrtnm & \pageref{ffrtnm} \\
 ffs2dt  & \pageref{ffdt2s} \\
 ffs2tm  & \pageref{ffdt2s} \\
 ffsnul   & \pageref{ffsnul} \\
-ffsrow  & \pageref{ffsrow} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffsrow  & \pageref{ffsrow} \\
 fftexp    & \pageref{fftexp} \\
 ffthdu   & \pageref{ffthdu} \\
 fftkey   & \pageref{fftkey} \\

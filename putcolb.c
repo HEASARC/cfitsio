@@ -36,6 +36,15 @@ int ffpprb( fitsfile *fptr,  /* I - FITS file pointer                       */
       and the second column contains the image itself.
     */
 
+    if (fits_is_compressed_image(fptr, status))
+    {
+        /* this is a compressed image in a binary table */
+
+        ffpmsg("writing to compressed image is not supported");
+
+        return(*status = DATA_COMPRESSION_ERR);
+    }
+
     row=maxvalue(1,group);
 
     ffpclb(fptr, 2, row, firstelem, nelem, array, status);
@@ -66,6 +75,15 @@ int ffppnb( fitsfile *fptr,  /* I - FITS file pointer                       */
       and the second column contains the image itself.
     */
 
+    if (fits_is_compressed_image(fptr, status))
+    {
+        /* this is a compressed image in a binary table */
+
+        ffpmsg("writing to compressed image is not supported");
+
+        return(*status = DATA_COMPRESSION_ERR);
+    }
+
     row=maxvalue(1,group);
 
     ffpcnb(fptr, 2, row, firstelem, nelem, array, nulval, status);
@@ -85,40 +103,9 @@ int ffp2db(fitsfile *fptr,   /* I - FITS file pointer                     */
   FITS array is not the same as the array being written).
 */
 {
-    long tablerow, nfits, narray, ii;
+    /* call the 3D writing routine, with the 3rd dimension = 1 */
 
-    /*
-      the primary array is represented as a binary table:
-      each group of the primary array is a row in the table,
-      where the first column contains the group parameters
-      and the second column contains the image itself.
-    */
-    tablerow=maxvalue(1,group);
-
-    if (ncols == naxis1)  /* arrays have same row length? */
-    {
-       /* all the image pixels are contiguous, so write all at once */
-        ffpclb(fptr, 2, tablerow, 1L, naxis1 * naxis2, array, status);
-        return(*status);
-    }
-
-    if (ncols < naxis1)
-       return(*status = BAD_DIMEN);
-
-    /* loop over the naxis2 rows in the FITS image, */
-    /* writing naxis1 pixels to each row            */
-
-    nfits = 1;   /* next pixel in FITS image to write to */
-    narray = 0;  /* next pixel in input array to be written */
-
-    for (ii = 0; ii < naxis2; ii++)
-    {
-      if (ffpclb(fptr, 2, tablerow, nfits, naxis1, &array[narray], status) > 0)
-          return(*status);
-
-       nfits += naxis1;
-       narray += ncols;
-    }
+    ffp3db(fptr, group, ncols, naxis2, naxis1, naxis2, 1, array, status);
 
     return(*status);
 }
@@ -146,6 +133,16 @@ int ffp3db(fitsfile *fptr,   /* I - FITS file pointer                     */
       where the first column contains the group parameters
       and the second column contains the image itself.
     */
+
+    if (fits_is_compressed_image(fptr, status))
+    {
+        /* this is a compressed image in a binary table */
+
+        ffpmsg("writing to compressed image is not supported");
+
+        return(*status = DATA_COMPRESSION_ERR);
+    }
+
     tablerow=maxvalue(1,group);
 
     if (ncols == naxis1 && nrows == naxis2)  /* arrays have same size? */
@@ -206,6 +203,15 @@ int ffpssb(fitsfile *fptr,   /* I - FITS file pointer                       */
 
     if (*status > 0)
         return(*status);
+
+    if (fits_is_compressed_image(fptr, status))
+    {
+        /* this is a compressed image in a binary table */
+
+        ffpmsg("writing to compressed image is not supported");
+
+        return(*status = DATA_COMPRESSION_ERR);
+    }
 
     if (naxis < 1 || naxis > 7)
       return(*status = BAD_DIMEN);

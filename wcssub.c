@@ -35,11 +35,11 @@ int ffgiwcs(fitsfile *fptr,  /* I - FITS file pointer                    */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffgtwcs(fitsfile *fptr,  /* I - FITS file pointer                    */
+int ffgtwcs(fitsfile *fptr,  /* I - FITS file pointer              */
            int xcol,        /* I - column number for the X column  */
            int ycol,        /* I - column number for the Y column  */
            char **header,   /* O - string of all the WCS keywords  */
-           int *status)     /* IO - error status                        */
+           int *status)     /* IO - error status                   */
 /*
   int fits_get_table_wcs_keys
   Return string containing all the WCS keywords appropriate for the 
@@ -50,14 +50,16 @@ int ffgtwcs(fitsfile *fptr,  /* I - FITS file pointer                    */
   when it is no longer needed. 
 */
 {
-    int hdutype, ncols, tstatus;
+    int hdutype, ncols, tstatus, length;
     int naxis1 = 1, naxis2 = 1;
     long tlmin, tlmax;
     char keyname[FLEN_KEYWORD];
     char valstring[FLEN_VALUE];
     char comm[2];
     char *cptr;
-    char blanks[] = "                                                             ";
+    /*  construct a string of 80 blanks, for adding fill to the keywords */
+                 /*  12345678901234567890123456789012345678901234567890123456789012345678901234567890 */
+    char blanks[] = "                                                                                ";
 
     if (*status > 0)
         return(*status);
@@ -148,7 +150,8 @@ int ffgtwcs(fitsfile *fptr,  /* I - FITS file pointer                    */
     if (ffgkey(fptr, keyname, valstring, NULL, &tstatus) )
        valstring[0] =  '\0';
     ffmkky("CTYPE1", valstring, comm, cptr, status);  /* construct the keyword*/
-    strncat(cptr, blanks, 50);  /* pad with blanks */
+    length = strlen(cptr);
+    strncat(cptr, blanks, 80 - length);  /* pad with blanks */
     cptr += 80;
 
     /*  CTYPE2 keyword */
@@ -157,7 +160,8 @@ int ffgtwcs(fitsfile *fptr,  /* I - FITS file pointer                    */
     if (ffgkey(fptr, keyname, valstring, NULL, &tstatus) )
        valstring[0] =  '\0';
     ffmkky("CTYPE2", valstring, comm, cptr, status);  /* construct the keyword*/
-    strncat(cptr, blanks, 50);  /* pad with blanks */
+    length = strlen(cptr);
+    strncat(cptr, blanks, 80 - length);  /* pad with blanks */
     cptr += 80;
 
     /*  CRPIX1 keyword */
@@ -231,7 +235,8 @@ int ffgtwcs(fitsfile *fptr,  /* I - FITS file pointer                    */
     if (ffgkey(fptr, "EPOCH", valstring, NULL, &tstatus) == 0 )
     {
         ffmkky("EPOCH", valstring, comm, cptr, status);  /* construct keyword*/
-        strncat(cptr, blanks, 50);  /* pad with blanks */
+        length = strlen(cptr);
+        strncat(cptr, blanks, 80 - length);  /* pad with blanks */
         cptr += 80;
     }
 
@@ -240,7 +245,8 @@ int ffgtwcs(fitsfile *fptr,  /* I - FITS file pointer                    */
     if (ffgkey(fptr, "EQUINOX", valstring, NULL, &tstatus) == 0 )
     {
         ffmkky("EQUINOX", valstring, comm, cptr, status); /* construct keyword*/
-        strncat(cptr, blanks, 50);  /* pad with blanks */
+        length = strlen(cptr);
+        strncat(cptr, blanks, 80 - length);  /* pad with blanks */
         cptr += 80;
     }
 
@@ -249,7 +255,8 @@ int ffgtwcs(fitsfile *fptr,  /* I - FITS file pointer                    */
     if (ffgkey(fptr, "RADECSYS", valstring, NULL, &tstatus) == 0 )
     {
         ffmkky("RADECSYS", valstring, comm, cptr, status); /*construct keyword*/
-        strncat(cptr, blanks, 50);  /* pad with blanks */
+        length = strlen(cptr);
+        strncat(cptr, blanks, 80 - length);  /* pad with blanks */
         cptr += 80;
     }
 
@@ -258,7 +265,8 @@ int ffgtwcs(fitsfile *fptr,  /* I - FITS file pointer                    */
     if (ffgkey(fptr, "TELESCOP", valstring, NULL, &tstatus) == 0 )
     {
         ffmkky("TELESCOP", valstring, comm, cptr, status); 
-        strncat(cptr, blanks, 50);  /* pad with blanks */
+        length = strlen(cptr);
+        strncat(cptr, blanks, 80 - length);  /* pad with blanks */
         cptr += 80;
     }
 
@@ -267,7 +275,8 @@ int ffgtwcs(fitsfile *fptr,  /* I - FITS file pointer                    */
     if (ffgkey(fptr, "INSTRUME", valstring, NULL, &tstatus) == 0 )
     {
         ffmkky("INSTRUME", valstring, comm, cptr, status);  
-        strncat(cptr, blanks, 50);  /* pad with blanks */
+        length = strlen(cptr);
+        strncat(cptr, blanks, 80 - length);  /* pad with blanks */
         cptr += 80;
     }
 
@@ -276,7 +285,8 @@ int ffgtwcs(fitsfile *fptr,  /* I - FITS file pointer                    */
     if (ffgkey(fptr, "DETECTOR", valstring, NULL, &tstatus) == 0 )
     {
         ffmkky("DETECTOR", valstring, comm, cptr, status);  
-        strncat(cptr, blanks, 50);  /* pad with blanks */
+        length = strlen(cptr);
+        strncat(cptr, blanks, 80 - length);  /* pad with blanks */
         cptr += 80;
     }
 
@@ -285,7 +295,8 @@ int ffgtwcs(fitsfile *fptr,  /* I - FITS file pointer                    */
     if (ffgkey(fptr, "MJD-OBS", valstring, NULL, &tstatus) == 0 )
     {
         ffmkky("MJD-OBS", valstring, comm, cptr, status);  
-        strncat(cptr, blanks, 50);  /* pad with blanks */
+        length = strlen(cptr);
+        strncat(cptr, blanks, 80 - length);  /* pad with blanks */
         cptr += 80;
     }
 
@@ -294,7 +305,8 @@ int ffgtwcs(fitsfile *fptr,  /* I - FITS file pointer                    */
     if (ffgkey(fptr, "DATE-OBS", valstring, NULL, &tstatus) == 0 )
     {
         ffmkky("DATE-OBS", valstring, comm, cptr, status);  
-        strncat(cptr, blanks, 50);  /* pad with blanks */
+        length = strlen(cptr);
+        strncat(cptr, blanks, 80 - length);  /* pad with blanks */
         cptr += 80;
     }
 
@@ -303,13 +315,13 @@ int ffgtwcs(fitsfile *fptr,  /* I - FITS file pointer                    */
     if (ffgkey(fptr, "DATE", valstring, NULL, &tstatus) == 0 )
     {
         ffmkky("DATE", valstring, comm, cptr, status);  
-        strncat(cptr, blanks, 50);  /* pad with blanks */
+        length = strlen(cptr);
+        strncat(cptr, blanks, 80 - length);  /* pad with blanks */
         cptr += 80;
     }
 
     strcat(cptr, "END");
-    strncat(cptr, blanks, 37);
-    strncat(cptr, blanks, 40);
+    strncat(cptr, blanks, 77);
 
     return(*status);
 }

@@ -406,6 +406,7 @@
 #define fits_write_col_null    ffpclu
 #define fits_write_col_bit     ffpclx
 
+#define fits_write_colnull ffpcn
 #define fits_write_colnull_str ffpcns
 #define fits_write_colnull_log ffpcnl
 #define fits_write_colnull_byt ffpcnb

@@ -45,7 +45,8 @@ CORE_SOURCES = 	buffers.c cfileio.c checksum.c compress.c drvrfile.c drvrmem.c \
 		modkey.c putcol.c putcolb.c putcold.c putcole.c putcoli.c \
 		putcolj.c putcolk.c putcoluk.c putcoll.c putcols.c putcolu.c \
 		putcolui.c putcoluj.c putkey.c region.c scalnull.c swapproc.c \
-		wcsutil.c ${MY_SHMEM}
+		wcsutil.c imcompress.c quantize.c ricecomp.c pliocomp.c \
+		${MY_SHMEM} 
 
 SOURCES = ${CORE_SOURCES} wcssub.c ${FITSIO_SRC}
 
@@ -92,6 +93,12 @@ listhead:	listhead.o libcfitsio.a ${OBJECTS}
 
 cookbook:	cookbook.o libcfitsio.a ${OBJECTS}
 		${CC} $(CFLAGS) $(DEFS) -o cookbook cookbook.o -L. -lcfitsio -lm ${LIBS}
+
+compress_fits:	compress_fits.o libcfitsio.a ${OBJECTS}
+		${CC} $(CFLAGS) $(DEFS) -o compress_fits compress_fits.o -L. -lcfitsio -lm ${LIBS}
+
+uncompress_fits:	uncompress_fits.o libcfitsio.a ${OBJECTS}
+		${CC} $(CFLAGS) $(DEFS) -o uncompress_fits uncompress_fits.o -L. -lcfitsio -lm ${LIBS}
 
 eval:		# Rebuild eval_* files from flex/bison source
 		$(FLEX) -t eval.l > eval_l.c1

@@ -50,6 +50,10 @@ bcc32 -c scalnull.c
 bcc32 -c swapproc.c
 bcc32 -c wcsutil.c
 bcc32 -c wcssub.c
+bcc32 -c imcompress.c
+bcc32 -c quantize.c
+bcc32 -c ricecomp.c
+bcc32 -c pliocomp.c
 del cfitsio.lib
 tlib cfitsio +buffers +cfileio +checksum +compress +drvrfile +drvrmem 
 tlib cfitsio +editcol +edithdu +eval_l +eval_y +eval_f +fitscore
@@ -59,6 +63,7 @@ tlib cfitsio +getkey +group +grparser +histo +iraffits +modkey +putkey
 tlib cfitsio +putcol  +putcolb +putcoli +putcolj +putcolk +putcole +putcold
 tlib cfitsio +putcoll +putcols +putcolu +putcolui +putcoluj +putcoluk
 tlib cfitsio +region +scalnull +swapproc +wcsutil +wcssub
+tlib cfitsio +imcompress +quantize +ricecomp +pliocomp
 bcc32 -f testprog.c cfitsio.lib
 bcc32 -f cookbook.c cfitsio.lib
 

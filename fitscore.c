@@ -24,8 +24,9 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.033; /* 17 Sep 1999 */
+      *version = 2.034; /* 23 Nov 1999 */
 
+ /*   *version = 2.033;  17 Sep 1999 */
  /*   *version = 2.032;  25 May 1999 */
  /*   *version = 2.031;  31 Mar 1999 */
  /*   *version = 2.030;  24 Feb 1999 */
@@ -642,6 +643,35 @@ void ffxmsg( int action,
       nummsg = 0;
     }
     return;
+}
+/*--------------------------------------------------------------------------*/
+int ffpxsz(int datatype)
+/*
+   return the number of bytes per pixel associated with the datatype
+*/
+{
+    if (datatype == TBYTE)
+       return(sizeof(char));
+    else if (datatype == TUSHORT)
+       return(sizeof(short));
+    else if (datatype == TSHORT)
+       return(sizeof(short));
+    else if (datatype == TULONG)
+       return(sizeof(long));
+    else if (datatype == TLONG)
+       return(sizeof(long));
+    else if (datatype == TINT)
+       return(sizeof(int));
+    else if (datatype == TUINT)
+       return(sizeof(int));
+    else if (datatype == TFLOAT)
+       return(sizeof(float));
+    else if (datatype == TDOUBLE)
+       return(sizeof(double));
+    else if (datatype == TLOGICAL)
+       return(sizeof(char));
+    else
+       return(0);
 }
 /*--------------------------------------------------------------------------*/
 int fftkey(char *keyword,    /* I -  keyword name */
@@ -3131,7 +3161,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
         else if (name[0] == 'T')   /* keyword starts with 'T' ? */
             ffgtbp(fptr, name, value, status); /* test if column keyword */
 
-        else if (!FSTRCMP(name, "CMPRSSIMG"))
+        else if (!FSTRCMP(name, "ZIMAGE"))
         {
             if (value[0] == 'T')
                 (fptr->Fptr)->compressimg = 1; /* this is a compressed image */
@@ -3201,6 +3231,10 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
 
     /* reset next keyword pointer to the start of the header */
     (fptr->Fptr)->nextkey = (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu ];
+
+    if ( (fptr->Fptr)->compressimg == 1) /*  Is this a compressed image */
+        imcomp_get_compressed_image_parms(fptr, status);
+
 
     return(*status);
 }
@@ -4626,10 +4660,12 @@ int ffghdt(fitsfile *fptr,      /* I - FITS file pointer             */
     {
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
     }
-        /* rescan header if data structure is undefined */
     else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+    {
+        /* rescan header if data structure is undefined */
         if ( ffrdef(fptr, status) > 0)               
             return(*status);
+    }
 
     *exttype = (fptr->Fptr)->hdutype; /* return the type of HDU */
 
@@ -4640,12 +4676,40 @@ int ffghdt(fitsfile *fptr,      /* I - FITS file pointer             */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int fits_is_compressed_image(fitsfile *fptr,  /* I - FITS file pointer  */
+                 int *status)                 /* IO - error status      */
+/*
+   Returns TRUE if the CHDU is a compressed image, else returns zero.
+*/
+{
+    if (*status > 0)
+        return(*status);
+
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+    {
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    }
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+    {
+        /* rescan header if data structure is undefined */
+        if ( ffrdef(fptr, status) > 0)               
+            return(*status);
+    }
+
+    /*  check if this is a compressed image */
+    if ((fptr->Fptr)->compressimg)
+         return(1);
+
+    return(0);
+}
+/*--------------------------------------------------------------------------*/
 int ffgidt( fitsfile *fptr,  /* I - FITS file pointer                       */
             int  *imgtype,   /* O - image data type                         */
             int  *status)    /* IO - error status                           */
 /*
   Get the datatype of the image (= BITPIX keyword for normal image, or
-  CBITPIX for a compressed image)
+  ZBITPIX for a compressed image)
 */
 {
     if (*status > 0)
@@ -4665,7 +4729,7 @@ int ffgidt( fitsfile *fptr,  /* I - FITS file pointer                       */
     else if ((fptr->Fptr)->compressimg)
     {
         /* this is a binary table containing a compressed image */
-        ffgky(fptr, TINT, "CBITPIX", imgtype, NULL, status);
+        ffgky(fptr, TINT, "ZBITPIX", imgtype, NULL, status);
     }
     else
     {
@@ -4680,7 +4744,7 @@ int ffgidm( fitsfile *fptr,  /* I - FITS file pointer                       */
             int  *status)    /* IO - error status                           */
 /*
   Get the dimension of the image (= NAXIS keyword for normal image, or
-  CNAXIS for a compressed image)
+  ZNAXIS for a compressed image)
 */
 {
     if (*status > 0)
@@ -4700,7 +4764,7 @@ int ffgidm( fitsfile *fptr,  /* I - FITS file pointer                       */
     else if ((fptr->Fptr)->compressimg)
     {
         /* this is a binary table containing a compressed image */
-        ffgky(fptr, TINT, "CNAXIS", naxis, NULL, status);
+        ffgky(fptr, TINT, "ZNAXIS", naxis, NULL, status);
     }
     else
     {
@@ -4711,14 +4775,15 @@ int ffgidm( fitsfile *fptr,  /* I - FITS file pointer                       */
 }
 /*--------------------------------------------------------------------------*/
 int ffgisz( fitsfile *fptr,  /* I - FITS file pointer                       */
+            int nlen,        /* I - number of axes to return                */
             long  *naxes  ,  /* O - size of image dimensions                */
             int  *status)    /* IO - error status                           */
 /*
   Get the size of the image dimensions (= NAXISn keywords for normal image, or
-  CNAXISn for a compressed image)
+  ZNAXISn for a compressed image)
 */
 {
-    int naxis, ii;
+    int ii, naxis;
     char keyroot[FLEN_KEYWORD], keyname[FLEN_KEYWORD];
 
     if (*status > 0)
@@ -4738,15 +4803,20 @@ int ffgisz( fitsfile *fptr,  /* I - FITS file pointer                       */
     else if ((fptr->Fptr)->compressimg)
     {
         /* this is a binary table containing a compressed image */
-        strcpy(keyroot, "CNAXIS");
+        strcpy(keyroot, "ZNAXIS");
     }
     else
     {
         return(*status = NOT_IMAGE);
     }
 
+    /* initialize to 1 */
+    for (ii = 0; ii < nlen; ii++)
+        naxes[ii] = 1;
+
     /* get number of dimensions */
     fits_get_img_dim(fptr, &naxis, status);
+    naxis = minvalue(naxis, nlen);
 
     for (ii = 0; ii < naxis; ii++)
     {

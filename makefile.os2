@@ -15,7 +15,8 @@ OBJECTS = buffers.o cfileio.o checksum.o compress.o f77_wrap.o drvrfile.o fitsco
           getcolk.o getcoll.o getcols.o getcolui.o getcoluj.o editcol.o \
           edithdu.o getkey.o modkey.o putcol.o putcolb.o putcold.o putcole.o \
           putcoli.o putcolj.o putcolk.o putcoll.o putcols.o putcolui.o \
-          putcoluj.o putcolu.o putkey.o scalnull.o swapproc.o wcsutil.o
+          putcoluj.o putcolu.o putkey.o scalnull.o swapproc.o wcsutil.o \
+          imcompress.o quantize.o ricecomp.o pliocomp.o
 
 libcfitsio.a: $(OBJECTS)
 	ar rv libcfitsio.a $(OBJECTS)
