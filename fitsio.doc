@@ -161,31 +161,37 @@ The disadvantages are:
       either really slow or really heavily loaded.
 -
 
-On VAX/VMS and ALPHA/VMS systems the make.com command file may be used
-to build the cfitsio.olb object library using the default G-floating
-point option for double variables.  The make\_dfloat.com and
+On VAX/VMS and ALPHA/VMS systems the make\_gfloat.com command file may
+be executed to build the cfitsio.olb object library using the default
+G-floating point option for double variables.  The make\_dfloat.com and
 make\_ieee.com files may be used instead to build the library with the
 other floating point options. Note that the getcwd function that is
 used in the group.c module may require that programs using CFITSIO be
 linked with the ALPHA\$LIBRARY:VAXCRTL.OLB library.  See the example
 link line in the next section of this document.
 
-As of February 1999 this version of FITSIO has not yet been ported to work
-on DOS or Windows based PC computers or MacOS.  The main issue is how
-to call C routines from Fortran programs, given the great variety of
-different compilers that are available.  In principle, this should only
-require some relatively minor modifications to the cfortran.h file to
-recognize the particular combination of C and Fortran compilers that
-are being used.  The makepc.bat file gives an example of how to build
-the CFITSIO library in which the f77\_wrap1 and f77\_wrap2 files have
-been commented out.  Ambitious users are welcome to attempt to modify
-cfortran.h for their particular set of compilers and are encouraged to
-report their success (or failure) to the author.
-
-Until this version of FITSIO/CFITSIO is ported to run on Windows and
-Mac PCs, users should continue to use the older Fortran-77
-implementation of FITSIO that is still available from the FITSIO
-web-site.
+On Windows IBM-PC type platforms the situation is more complicated
+because of the wide variety of Fortran compilers that are available and
+because of the inherent complexities of calling the CFITSIO C routines
+from Fortran.  Two different versions of the CFITSIO dll library are
+available, compiled with the Borland C++ compiler and the Microsoft
+Visual C++ compiler, respectively, in the files
+cfitsiodll\_2xxx\_borland.zip and cfitsiodll\_2xxx\_vcc.zip, where
+'2xxx' represents the current release number.  Both these dll libraries
+contain a set of Fortran wrapper routines which may be compatible with
+some, but probably not all, available Fortran compilers.  To test if
+they are compatible, compile the program testf77.f and try linking to
+these dll libraries.  If these libraries do not work with a particular
+Fortran compiler, then there are 2 possible solutions.  The first
+solution would be to modify the file cfortran.h for that particular
+combination of C and Fortran compilers, and then rebuild the CFITSIO
+dll library.  This will require, however, a great deal of expertise in
+mixed language programming which the author of CFITSIO cannot provide.
+The other solution is to use the older v5.03 Fortran-77 implementation
+of FITSIO that is still available from the FITSIO web-site.  This
+version is no longer supported, but it does provide the basic functions
+for reading and writing FITS files and should be compatible with most
+Fortran compilers.
 
 CFITSIO has currently been tested on the following platforms:
 -
@@ -204,6 +210,7 @@ CFITSIO has currently been tested on the following platforms:
    MkLinux                    DR3
    Windows 95/98/NT           Borland C++ V4.5
    Windows 95/98/NT           Microsoft/Compaq Visual C++ v5.0, v6.0
+   Windows 95/98/NT           Cygwin gcc
    OS/2                       gcc + EMX
    MacOS 7.1 or greater       Metrowerks 10.+
 -
@@ -1999,12 +2006,9 @@ and each axis specification must still be comma-separated.
 
 **A.  CFITSIO Size Limitations
 
-In general, CFITSIO places no limits on the sizes of the FITS files
-that it reads or writes. There is no internal limit on
-the size of the dimensions of the primary array or IMAGE extension.
-Table extensions may have up to 999 columns (the maximum allowed by the
-FITS standard) and may have an arbitrarily large number of rows. There
-are a few other limits, however, which may affect some extreme cases:
+CFITSIO places few restrictions on the size of FITS files that it
+reads or writes.  There are a few limits, however, which may affect
+some extreme cases:
 
 1.  The maximum number of files that may be simultaneously opened is
 limited to the number of internal IO buffers allocated in CFITSIO
@@ -2014,16 +2018,41 @@ ever is smaller.  The C symbolic constant FOPEN\_MAX usually defines
 the total number of files that may open at once (this includes any
 other text or binary files which may be open, not just FITS files).
 
-2.  The maximum number of extensions that can be read or written in a
-single FITS file is currently set to 1000 as defined by MAXHDU in the
-fitsio.h file.  This value may be increased if necessary, but the
-access times to the later extensions in such files may become very
+2.  The maximum number of extensions (HDUs) that can be read or written
+in a single FITS file is currently set to 1000 as defined by MAXHDU in
+the fitsio.h file.  This value may be increased if necessary, but the
+access times to the later extensions in such files may become excessively
 long.
 
-3.  CFITSIO can handle FITS files up to about 2.1 GB in size which is
-the maximum value of a 32-bit signed long integer.  Some machines that
-use 8-byte words for a long integer may support larger files, but this
-has not been tested.
+3.  By default, CFITSIO can handle FITS files up to 2.1 GB in size
+(2**31 bytes).  This file size limit is often imposed by 32-bit
+operating systems.  More recently, as 64-bit operating systems become
+more common, an industry-wide standard (at least on Unix systems) has
+been developed to support larger sized files (see
+http://ftp.sas.com/standards/large.file/).  Starting with version 2.1
+of CFITSIO, larger FITS files up to 6 terabytes in size may be read and
+written on certain supported platforms.  In order to support these
+larger files, CFITSIO must be compiled with the
+`-D\_FILE\_OFFSET\_BITS=64' compiler flag.  All programs which link to
+the CFITSIO library must also be compiled with this flag or must
+include this preprocessor definition at the start of the source code
+file.  This causes the compiler to allocate 8-bytes instead of 4-bytes
+for the 'off\_t' datatype which is used to store file offset positions.
+
+If CFITSIO is compiled with the -D\_FILE\_OFFSET\_BITS=64 flag on a
+platform that supports large files, then it
+can read and write FITS files that contain up to 2**31 2880-byte FITS
+records, or approximately 6 terabytes in size.  There are a few other
+restrictions, however, in that all the dimensions of an image, and the
+number of rows in a table, must be less than 2,147,483,648.  Similarly
+the size of the variable-length array heap in binary tables must be
+less than this limit.  These limits are required so that the values of
+the NAXISn and PCOUNT keywords remain within the range of a signed
+4-byte integer.
+
+Currently, support for large files within CFITSIO has only been tested
+on the Solaris 2.6 operating system using the Sun cc compiler or gcc
+2.95.2.
 
 **B.  Multiple Access to the Same FITS File
 
@@ -3118,13 +3147,23 @@ rather than 'ft'.
         FTFIOU(iounit, > status)
 -
 >11  Parse the input filename and return the HDU number that would be
-    moved to if the file were opened with FTNOPN.  If the file name
-    just consists of a root name without any extension specifier then
-    this routine will return -99 for the value of nhdu.  Note that
-    if the filename is specified as 'filename.ext[n]' then nhdu will be
-    returned with a value of n+1 because of the difference in the way
-    the HDUs are counted in the user interface (starting with 0) and in 
->   the subroutine interface (starting with 1).
+moved to if the file were opened with FTNOPN.    The returned HDU
+number begins with 1 for the primary array, so for example, if the
+input filename = `myfile.fits[2]' then hdunum = 3 will be returned.
+FITSIO does not open the file to check if the extension actually exists
+if an extension number is specified. If an extension *name* is included
+in the file name specification (e.g.  `myfile.fits[EVENTS]' then this
+routine will have to open the FITS file and look for the position of
+the named extension, then close file again.  This is not possible if
+the file is being read from the stdin stream, and an error will be
+returned in this case.  If the filename does not specify an explicit
+extension (e.g. 'myfile.fits') then hdunum = -99 will be returned,
+which is functionally equivalent to hdunum = 1. This routine is mainly
+used for backward compatibility in the ftools software package and is
+not recommended for general use.  It is generally better and more
+efficient to first open the FITS file with FTNOPN, then use FTGHDN to
+determine which HDU in the file has been opened, rather than calling
+> FTEXTN followed by a call to FTNOPN.
 -
         FTEXTN(filename, > nhdu, status)
 -

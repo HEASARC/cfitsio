@@ -219,31 +219,37 @@ The disadvantages are:
       either really slow or really heavily loaded.
 \end{verbatim}
 
-On VAX/VMS and ALPHA/VMS systems the make.com command file may be used
-to build the cfitsio.olb object library using the default G-floating
-point option for double variables.  The make\_dfloat.com and
+On VAX/VMS and ALPHA/VMS systems the make\_gfloat.com command file may
+be executed to build the cfitsio.olb object library using the default
+G-floating point option for double variables.  The make\_dfloat.com and
 make\_ieee.com files may be used instead to build the library with the
 other floating point options. Note that the getcwd function that is
 used in the group.c module may require that programs using CFITSIO be
 linked with the ALPHA\$LIBRARY:VAXCRTL.OLB library.  See the example
 link line in the next section of this document.
 
-As of February 1999 this version of FITSIO has not yet been ported to work
-on DOS or Windows based PC computers or MacOS.  The main issue is how
-to call C routines from Fortran programs, given the great variety of
-different compilers that are available.  In principle, this should only
-require some relatively minor modifications to the cfortran.h file to
-recognize the particular combination of C and Fortran compilers that
-are being used.  The makepc.bat file gives an example of how to build
-the CFITSIO library in which the f77\_wrap1 and f77\_wrap2 files have
-been commented out.  Ambitious users are welcome to attempt to modify
-cfortran.h for their particular set of compilers and are encouraged to
-report their success (or failure) to the author.
-
-Until this version of FITSIO/CFITSIO is ported to run on Windows and
-Mac PCs, users should continue to use the older Fortran-77
-implementation of FITSIO that is still available from the FITSIO
-web-site.
+On Windows IBM-PC type platforms the situation is more complicated
+because of the wide variety of Fortran compilers that are available and
+because of the inherent complexities of calling the CFITSIO C routines
+from Fortran.  Two different versions of the CFITSIO dll library are
+available, compiled with the Borland C++ compiler and the Microsoft
+Visual C++ compiler, respectively, in the files
+cfitsiodll\_2xxx\_borland.zip and cfitsiodll\_2xxx\_vcc.zip, where
+'2xxx' represents the current release number.  Both these dll libraries
+contain a set of Fortran wrapper routines which may be compatible with
+some, but probably not all, available Fortran compilers.  To test if
+they are compatible, compile the program testf77.f and try linking to
+these dll libraries.  If these libraries do not work with a particular
+Fortran compiler, then there are 2 possible solutions.  The first
+solution would be to modify the file cfortran.h for that particular
+combination of C and Fortran compilers, and then rebuild the CFITSIO
+dll library.  This will require, however, a great deal of expertise in
+mixed language programming which the author of CFITSIO cannot provide.
+The other solution is to use the older v5.03 Fortran-77 implementation
+of FITSIO that is still available from the FITSIO web-site.  This
+version is no longer supported, but it does provide the basic functions
+for reading and writing FITS files and should be compatible with most
+Fortran compilers.
 
 CFITSIO has currently been tested on the following platforms:
 

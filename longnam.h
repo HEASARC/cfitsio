@@ -174,6 +174,7 @@
 #define fits_get_hdu_num    ffghdn
 #define fits_get_hdu_type   ffghdt
 #define fits_get_hduaddr    ffghad
+#define fits_get_hduoff     ffghof
 
 #define fits_get_img_param  ffgipr
 #define fits_get_img_type   ffgidt
@@ -275,6 +276,7 @@
 #define fits_read_3d_flt      ffg3de
 #define fits_read_3d_dbl      ffg3dd
 
+#define fits_read_subset      ffgsv
 #define fits_read_subset_byt  ffgsvb
 #define fits_read_subset_usht  ffgsvui
 #define fits_read_subset_ulng  ffgsvuj

@@ -3,12 +3,7 @@
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
-/*  Goddard Space Flight Center.  Users shall not, without prior written   */
-/*  permission of the U.S. Government,  establish a claim to statutory     */
-/*  copyright.  The Government and others acting on its behalf, shall have */
-/*  a royalty-free, non-exclusive, irrevocable,  worldwide license for     */
-/*  Government purposes to publish, distribute, translate, copy, exhibit,  */
-/*  and perform such material.                                             */
+/*  Goddard Space Flight Center.                                           */
 
 #include <string.h>
 #include <stdlib.h>
@@ -21,7 +16,7 @@ int dirty[NIOBUF], ageindex[NIOBUF];  /* ages get initialized in ffwhbf */
 
 /*--------------------------------------------------------------------------*/
 int ffmbyt(fitsfile *fptr,    /* I - FITS file pointer                */
-           long bytepos,      /* I - byte position in file to move to */
+           OFF_T bytepos,     /* I - byte position in file to move to */
            int err_mode,      /* I - 1=ignore error, 0 = return error */
            int *status)       /* IO - error status                    */
 {
@@ -65,7 +60,8 @@ int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
 */
 {
     int ii, nbuff;
-    long filepos, recstart, recend;
+    OFF_T filepos;
+    long recstart, recend;
     long ntodo, bufpos, nspace, nwrite;
     char *cptr;
 
@@ -89,7 +85,7 @@ int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
       recend = (filepos + nbytes - 1) / IOBUFLEN;  /* ending record   */
 
       /* bufpos is the starting position within the IO buffer */
-      bufpos = filepos - (recstart * IOBUFLEN);
+      bufpos = filepos - ((OFF_T)recstart * IOBUFLEN);
       nspace = IOBUFLEN - bufpos;   /* amount of space left in the buffer */
 
       if (nspace)
@@ -148,13 +144,13 @@ int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
       bufptr[nbuff] = fptr->Fptr;  /* file pointer associated with IO buffer */
 
       (fptr->Fptr)->logfilesize = maxvalue((fptr->Fptr)->logfilesize, 
-                                            (recend + 1) * IOBUFLEN);
+                                       (OFF_T)(recend + 1) * IOBUFLEN);
       (fptr->Fptr)->bytepos = filepos + nwrite + ntodo;
     }
     else
     {
       /* bufpos is the starting position in IO buffer */
-      bufpos = (fptr->Fptr)->bytepos - (bufrecnum[(fptr->Fptr)->curbuf] *
+      bufpos = (fptr->Fptr)->bytepos - ((OFF_T)bufrecnum[(fptr->Fptr)->curbuf] *
                IOBUFLEN);
       nspace = IOBUFLEN - bufpos;   /* amount of space left in the buffer */
 
@@ -205,7 +201,7 @@ int ffpbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
     cptr = (char *)buffer;
     bcurrent = (fptr->Fptr)->curbuf;     /* number of the current IO buffer */
     record = bufrecnum[bcurrent];  /* zero-indexed record number */
-    bufpos = (fptr->Fptr)->bytepos - (record * IOBUFLEN); /* starting pos. */
+    bufpos = (fptr->Fptr)->bytepos - ((OFF_T)record * IOBUFLEN); /* start pos */
     nspace = IOBUFLEN - bufpos;  /* amount of space left in buffer */
     ioptr = iobuffer[bcurrent] + bufpos;  
 
@@ -283,7 +279,8 @@ int ffgbyt(fitsfile *fptr,    /* I - FITS file pointer             */
 */
 {
     int ii;
-    long filepos, recstart, recend, ntodo, bufpos, nspace, nread;
+    OFF_T filepos;
+    long recstart, recend, ntodo, bufpos, nspace, nread;
     char *cptr;
 
     if (*status > 0)
@@ -322,7 +319,7 @@ int ffgbyt(fitsfile *fptr,    /* I - FITS file pointer             */
       /* read small chucks of data using the IO buffers for efficiency */
 
       /* bufpos is the starting position in IO buffer */
-      bufpos = (fptr->Fptr)->bytepos - (bufrecnum[(fptr->Fptr)->curbuf] *
+      bufpos = (fptr->Fptr)->bytepos - ((OFF_T)bufrecnum[(fptr->Fptr)->curbuf] *
                 IOBUFLEN);
       nspace = IOBUFLEN - bufpos;   /* amount of space left in the buffer */
 
@@ -374,7 +371,7 @@ int ffgbytoff(fitsfile *fptr, /* I - FITS file pointer                   */
     cptr = (char *)buffer;
     bcurrent = (fptr->Fptr)->curbuf;     /* number of the current IO buffer */
     record = bufrecnum[bcurrent];  /* zero-indexed record number */
-    bufpos = (fptr->Fptr)->bytepos - (record * IOBUFLEN); /* starting  pos. */
+    bufpos = (fptr->Fptr)->bytepos - ((OFF_T)record * IOBUFLEN); /* start pos */
     nspace = IOBUFLEN - bufpos;  /* amount of space left in buffer */
     ioptr = iobuffer[bcurrent] + bufpos;  
 
@@ -458,7 +455,7 @@ int ffldrc(fitsfile *fptr,        /* I - FITS file pointer             */
   Update ages of all the physical buffers.
 */
     int ibuff, nbuff;
-    long rstart;
+    OFF_T rstart;
 
     /* check if record is already loaded in one of the buffers */
     /* search from youngest to oldest buffer for efficiency */
@@ -474,7 +471,7 @@ int ffldrc(fitsfile *fptr,        /* I - FITS file pointer             */
     }
 
     /* record is not already loaded */
-    rstart = record * IOBUFLEN;
+    rstart = (OFF_T)record * IOBUFLEN;
 
     if ( !err_mode && (rstart >= (fptr->Fptr)->logfilesize) )  /* EOF? */
          return(*status = END_OF_FILE);
@@ -671,12 +668,13 @@ int ffbfwt(int nbuff,             /* I - which buffer to write          */
 */
     FITSfile *Fptr;
     int  ii,ibuff;
-    long jj, irec, minrec, nloop, filepos;
+    long jj, irec, minrec, nloop;
+    OFF_T filepos;
 
     static char zeros[IOBUFLEN];  /*  initialized to zero by default */
 
     Fptr = bufptr[nbuff];
-    filepos = bufrecnum[nbuff] * IOBUFLEN;
+    filepos = (OFF_T)bufrecnum[nbuff] * IOBUFLEN;
 
     if (filepos <= Fptr->filesize)
     {
@@ -722,16 +720,18 @@ int ffbfwt(int nbuff,             /* I - which buffer to write          */
           }
         }
 
-        filepos = irec * IOBUFLEN;    /* byte offset of record in file */
+        filepos = (OFF_T)irec * IOBUFLEN;  /* byte offset of record in file */
 
         /* append 1 or more fill records if necessary */
         if (filepos > Fptr->filesize)
         {                    
           nloop = (filepos - (Fptr->filesize)) / IOBUFLEN; 
-
           for (jj = 0; jj < nloop; jj++)
             ffwrite(Fptr, IOBUFLEN, zeros, status);
 
+/*
+ffseek(Fptr, filepos);
+*/
           Fptr->filesize = filepos;   /* increment the file size */
         } 
 
@@ -833,7 +833,8 @@ int ffgtbb(fitsfile *fptr,        /* I - FITS file pointer                 */
   greater than the length of a row.
 */
 {
-    long bytepos, endrow;
+    OFF_T bytepos;
+    long endrow;
 
     if (*status > 0 || nchars <= 0)
         return(*status);
@@ -856,8 +857,9 @@ int ffgtbb(fitsfile *fptr,        /* I - FITS file pointer                 */
     }
 
     /* move the i/o pointer to the start of the sequence of characters */
-    bytepos = (fptr->Fptr)->datastart + ( (firstrow - 1) *
-              (fptr->Fptr)->rowlength ) + firstchar - 1;
+    bytepos = (fptr->Fptr)->datastart +
+              ((fptr->Fptr)->rowlength * (firstrow - 1)) +
+              firstchar - 1;
 
     ffmbyt(fptr, bytepos, REPORT_EOF, status);
     ffgbyt(fptr, nchars, values, status);  /* read the bytes */
@@ -866,7 +868,7 @@ int ffgtbb(fitsfile *fptr,        /* I - FITS file pointer                 */
 }
 /*--------------------------------------------------------------------------*/
 int ffgi1b(fitsfile *fptr, /* I - FITS file pointer                         */
-           long byteloc,   /* I - position within file to start reading     */
+           OFF_T byteloc,  /* I - position within file to start reading     */
            long nvals,     /* I - number of pixels to read                  */
            long incre,     /* I - byte increment between pixels             */
            unsigned char *values, /* O - returned array of values           */
@@ -876,7 +878,7 @@ int ffgi1b(fitsfile *fptr, /* I - FITS file pointer                         */
   format conversion (e.g. byte-swapping) if necessary.
 */
 {
-    long postemp;
+    OFF_T postemp;
 
     if (incre == 1)      /* read all the values at once (contiguous bytes) */
     {
@@ -902,7 +904,7 @@ int ffgi1b(fitsfile *fptr, /* I - FITS file pointer                         */
 }
 /*--------------------------------------------------------------------------*/
 int ffgi2b(fitsfile *fptr,  /* I - FITS file pointer                        */
-           long byteloc,    /* I - position within file to start reading    */
+           OFF_T byteloc,   /* I - position within file to start reading    */
            long nvals,      /* I - number of pixels to read                 */
            long incre,      /* I - byte increment between pixels            */
            short *values,   /* O - returned array of values                 */
@@ -912,7 +914,7 @@ int ffgi2b(fitsfile *fptr,  /* I - FITS file pointer                        */
   format conversion (e.g. byte-swapping) if necessary.
 */
 {
-    long postemp;
+    OFF_T postemp;
 
     if (incre == 2)      /* read all the values at once (contiguous bytes) */
     {
@@ -943,7 +945,7 @@ int ffgi2b(fitsfile *fptr,  /* I - FITS file pointer                        */
 }
 /*--------------------------------------------------------------------------*/
 int ffgi4b(fitsfile *fptr,  /* I - FITS file pointer                        */
-           long byteloc,    /* I - position within file to start reading    */
+           OFF_T byteloc,   /* I - position within file to start reading    */
            long nvals,      /* I - number of pixels to read                 */
            long incre,      /* I - byte increment between pixels            */
            INT32BIT *values, /* O - returned array of values                */
@@ -953,7 +955,7 @@ int ffgi4b(fitsfile *fptr,  /* I - FITS file pointer                        */
   format conversion (e.g. byte-swapping) if necessary.
 */
 {
-    long postemp;
+    OFF_T postemp;
 
     if (incre == 4)      /* read all the values at once (contiguous bytes) */
     {
@@ -984,7 +986,7 @@ int ffgi4b(fitsfile *fptr,  /* I - FITS file pointer                        */
 }
 /*--------------------------------------------------------------------------*/
 int ffgr4b(fitsfile *fptr,  /* I - FITS file pointer                        */
-           long byteloc,    /* I - position within file to start reading    */
+           OFF_T byteloc,   /* I - position within file to start reading    */
            long nvals,      /* I - number of pixels to read                 */
            long incre,      /* I - byte increment between pixels            */
            float *values,   /* O - returned array of values                 */
@@ -994,7 +996,7 @@ int ffgr4b(fitsfile *fptr,  /* I - FITS file pointer                        */
   format conversion (e.g. byte-swapping) if necessary.
 */
 {
-    long postemp;
+    OFF_T postemp;
 
 #if MACHINE == VAXVMS
     long ii;
@@ -1015,10 +1017,10 @@ int ffgr4b(fitsfile *fptr,  /* I - FITS file pointer                        */
         }
         else            /* read directly from disk, bypassing IO buffers */
         {
-           postemp = (fptr->Fptr)->bytepos;       /* store current file position */
-           (fptr->Fptr)->bytepos = byteloc;       /* set to the desired position */
+           postemp = (fptr->Fptr)->bytepos;   /* store current file position */
+           (fptr->Fptr)->bytepos = byteloc;   /* set to the desired position */
            ffgbyt(fptr, nvals * 4, values, status);
-           (fptr->Fptr)->bytepos = postemp;       /* reset to original position */
+           (fptr->Fptr)->bytepos = postemp;   /* reset to original position */
         }
     }
     else         /* have to read each value individually (not contiguous ) */
@@ -1053,7 +1055,7 @@ int ffgr4b(fitsfile *fptr,  /* I - FITS file pointer                        */
 }
 /*--------------------------------------------------------------------------*/
 int ffgr8b(fitsfile *fptr,  /* I - FITS file pointer                        */
-           long byteloc,    /* I - position within file to start reading    */
+           OFF_T byteloc,   /* I - position within file to start reading    */
            long nvals,      /* I - number of pixels to read                 */
            long incre,      /* I - byte increment between pixels            */
            double *values,  /* O - returned array of values                 */
@@ -1063,7 +1065,7 @@ int ffgr8b(fitsfile *fptr,  /* I - FITS file pointer                        */
   format conversion (e.g. byte-swapping) if necessary.
 */
 {
-    long  postemp;
+    OFF_T  postemp;
 
 #if MACHINE == VAXVMS
     long ii;
@@ -1129,7 +1131,8 @@ int ffptbb(fitsfile *fptr,        /* I - FITS file pointer                 */
   greater than the length of a row.
 */
 {
-    long bytepos, endrow;
+    OFF_T bytepos;
+    long endrow;
 
     if (*status > 0 || nchars <= 0)
         return(*status);
@@ -1146,8 +1149,9 @@ int ffptbb(fitsfile *fptr,        /* I - FITS file pointer                 */
         ffrdef(fptr, status);
 
     /* move the i/o pointer to the start of the sequence of characters */
-    bytepos = (fptr->Fptr)->datastart + ( (firstrow - 1) * 
-              (fptr->Fptr)->rowlength ) + firstchar - 1;
+    bytepos = (fptr->Fptr)->datastart +
+              ((fptr->Fptr)->rowlength * (firstrow - 1)) +
+              firstchar - 1;
 
     ffmbyt(fptr, bytepos, IGNORE_EOF, status);
     ffpbyt(fptr, nchars, values, status);  /* write the bytes */

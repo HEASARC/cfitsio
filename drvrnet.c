@@ -3,12 +3,7 @@
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
-/*  Goddard Space Flight Center.  Users shall not, without prior written   */
-/*  permission of the U.S. Government,  establish a claim to statutory     */
-/*  copyright.  The Government and others acting on its behalf, shall have */
-/*  a royalty-free, non-exclusive, irrevocable,  worldwide license for     */
-/*  Government purposes to publish, distribute, translate, copy, exhibit,  */
-/*  and perform such material.                                             */
+/*  Goddard Space Flight Center.                                           */
 
 
 /* Notes on the drivers:
@@ -211,7 +206,7 @@ static char netoutfile[MAXLEN];
 typedef struct    /* structure containing disk file structure */ 
 {
   int sock;
-  long currentpos;
+  OFF_T currentpos;
 } rootdriver;
 
 static rootdriver handleTable[NIOBUF];  /* allocate diskfile handle tables */
@@ -2123,7 +2118,7 @@ int root_create(char *filename, int *handle)
     return(0);
 }
 /*--------------------------------------------------------------------------*/
-int root_size(int handle, long *filesize)
+int root_size(int handle, OFF_T *filesize)
 /*
   return the size of the file in bytes
 */
@@ -2138,7 +2133,7 @@ int root_size(int handle, long *filesize)
 
   status = root_send_buffer(sock,ROOTD_STAT,NULL,0);
   status = root_recv_buffer(sock,&op,(char *)&offset, 4);
-  *filesize = ntohl(offset);
+  *filesize = (OFF_T) ntohl(offset);
   
   return(0);
 }
@@ -2172,7 +2167,7 @@ int root_flush(int handle)
   return(0);
 }
 /*--------------------------------------------------------------------------*/
-int root_seek(int handle, long offset)
+int root_seek(int handle, OFF_T offset)
 /*
   seek to position relative to start of the file
 */
@@ -2191,7 +2186,8 @@ int root_read(int hdl, void *buffer, long nbytes)
   int status;
   int astat;
 
-  sprintf(msg,"%ld %ld ",handleTable[hdl].currentpos,nbytes);
+  /* we presume here that the file position will never be > 2**31 = 2.1GB */
+  sprintf(msg,"%ld %ld ",(long) handleTable[hdl].currentpos,nbytes);
   status = root_send_buffer(handleTable[hdl].sock,ROOTD_GET,msg,strlen(msg));
   if ((unsigned) status != strlen(msg)) {
     return (READ_ERROR);
@@ -2227,7 +2223,8 @@ int root_write(int hdl, void *buffer, long nbytes)
   int op;
 
   sock = handleTable[hdl].sock;
-  sprintf(msg,"%ld %ld ",handleTable[hdl].currentpos,nbytes);
+  /* we presume here that the file position will never be > 2**31 = 2.1GB */
+  sprintf(msg,"%ld %ld ",(long) handleTable[hdl].currentpos,nbytes);
 
   len = strlen(msg);
   status = root_send_buffer(sock,ROOTD_PUT,msg,len+1);

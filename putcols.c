@@ -26,8 +26,9 @@ int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     int tcode, maxelem, hdutype, nchar;
-    long twidth, incre, repeat, rowlen, rownum, elemnum, remain, next;
-    long ii, jj, ntodo, tnull, startpos, wrtptr;
+    long twidth, incre, rownum, remain, next;
+    long ii, jj, ntodo, tnull;
+    OFF_T repeat, startpos, elemnum, wrtptr, rowlen;
     double scale, zero;
     char tform[20], *blanks;
     char message[FLEN_ERRMSG];
@@ -119,7 +120,7 @@ int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
       ntodo = minvalue(remain, maxelem);      
       ntodo = minvalue(ntodo, (repeat - elemnum));
 
-      wrtptr = startpos + (rownum * rowlen) + (elemnum * incre);
+      wrtptr = startpos + ((OFF_T)rownum * rowlen) + (elemnum * incre);
       ffmbyt(fptr, wrtptr, IGNORE_EOF, status);  /* move to write position */
 
       buffer = (char *) cbuff;

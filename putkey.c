@@ -460,17 +460,17 @@ int ffplsw( fitsfile *fptr,     /* I - FITS file pointer  */
        "The HEASARC Long String Convention may be used.", status);
 
     ffpcom(fptr,
-    "This FITS file may contain long string keyword values that are", status);
+    "  This FITS file may contain long string keyword values that are", status);
 
     ffpcom(fptr,
-    "continued over multiple keywords.  The HEASARC convention uses the &",
+    "  continued over multiple keywords.  The HEASARC convention uses the &",
     status);
 
     ffpcom(fptr,
-    "character at the end of each substring which is then continued", status);
+    "  character at the end of each substring which is then continued", status);
 
     ffpcom(fptr,
-    "on the next keyword which has the name CONTINUE.", status);
+    "  on the next keyword which has the name CONTINUE.", status);
 
     return(*status);
 }
@@ -782,7 +782,7 @@ int ffpcom( fitsfile *fptr,      /* I - FITS file pointer   */
             int   *status)       /* IO - error status       */
 /*
   Write 1 or more COMMENT keywords.  If the comment string is too
-  long to fit on a single keyword (70 chars) then it will automatically
+  long to fit on a single keyword (72 chars) then it will automatically
   be continued on multiple CONTINUE keywords.
 */
 {
@@ -795,12 +795,12 @@ int ffpcom( fitsfile *fptr,      /* I - FITS file pointer   */
     len = strlen(comm);
     ii = 0;
 
-    for (; len > 0; len -= 70)
+    for (; len > 0; len -= 72)
     {
-        strcpy(card, "COMMENT   ");
-        strncat(card, &comm[ii], 70);
+        strcpy(card, "COMMENT ");
+        strncat(card, &comm[ii], 72);
         ffprec(fptr, card, status);
-        ii += 70;
+        ii += 72;
     }
 
     return(*status);
@@ -811,7 +811,7 @@ int ffphis( fitsfile *fptr,      /* I - FITS file pointer  */
             int   *status)       /* IO - error status      */
 /*
   Write 1 or more HISTORY keywords.  If the history string is too
-  long to fit on a single keyword (70 chars) then it will automatically
+  long to fit on a single keyword (72 chars) then it will automatically
   be continued on multiple HISTORY keywords.
 */
 {
@@ -824,12 +824,12 @@ int ffphis( fitsfile *fptr,      /* I - FITS file pointer  */
     len = strlen(history);
     ii = 0;
 
-    for (; len > 0; len -= 70)
+    for (; len > 0; len -= 72)
     {
-        strcpy(card, "HISTORY   ");
-        strncat(card, &history[ii], 70);
+        strcpy(card, "HISTORY ");
+        strncat(card, &history[ii], 72);
         ffprec(fptr, card, status);
-        ii += 70;
+        ii += 72;
     }
 
     return(*status);
@@ -1825,7 +1825,7 @@ int ffptdm( fitsfile *fptr, /* I - FITS file pointer                        */
     colptr = (fptr->Fptr)->tableptr;  /* point to first column structure */
     colptr += (colnum - 1);      /* point to the specified column number */
 
-    if (colptr->trepeat != totalpix)
+    if ((long) colptr->trepeat != totalpix)
     {
       /* There is an apparent inconsistency between TDIMn and TFORMn. */
       /* The colptr->trepeat value may be out of date, so re-read     */
@@ -1839,7 +1839,7 @@ int ffptdm( fitsfile *fptr, /* I - FITS file pointer                        */
       {
         sprintf(message,
         "column vector length, %ld, does not equal TDIMn array size, %ld",
-        colptr->trepeat, totalpix);
+        (long) colptr->trepeat, totalpix);
         ffpmsg(message);
         return(*status = BAD_TDIM);
       }
@@ -1997,19 +1997,19 @@ int ffphpr( fitsfile *fptr, /* I - FITS file pointer                        */
 
       /* write standard block of self-documentating comments */
       ffpcom(fptr,
-      "FITS (Flexible Image Transport System) format defined in Astronomy and",
+      "  FITS (Flexible Image Transport System) format defined in Astronomy and",
       status);
 
       ffpcom(fptr,
-      "Astrophysics Supplement Series v44/p363, v44/p371, v73/p359, v73/p365.",
+      "  Astrophysics Supplement Series v44/p363, v44/p371, v73/p359, v73/p365.",
       status);
 
       ffpcom(fptr,
-      "Contact the NASA Science Office of Standards and Technology for the",
+      "  Contact the NASA Science Office of Standards and Technology for the",
       status);
 
       ffpcom(fptr,
-      "FITS Definition document #100 and other FITS information.", status);
+      "  FITS Definition document #100 and other FITS information.", status);
     }
 
     else  /* an IMAGE extension */
@@ -2179,7 +2179,7 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
   Put required Header keywords into the Binary Table:
 */
 {
-    int ii, datatype;
+    int ii, datatype, iread = 0;
     long repeat, width, naxis1;
 
     char tfmt[30], name[FLEN_KEYWORD], comm[FLEN_COMMENT];
@@ -2252,7 +2252,28 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
         ffbnfm(tfmt, &datatype, &repeat, &width, status);
 
         if (datatype == TSTRING)
+        {
             strcat(comm, ": ASCII Character");
+
+            /* Do sanity check to see if an ASCII table format was used,  */
+            /* e.g., 'A8' instead of '8A', or a bad unit width eg '8A9'.  */
+            /* Don't want to return an error status, so write error into  */
+            /* the keyword comment.  */
+
+            cptr = strchr(tfmt,'A');
+            cptr++;
+
+            if (cptr)
+               iread = sscanf(cptr,"%ld", &width);
+
+            if (iread == 1 && (width > repeat)) 
+            {
+              if (repeat == 1)
+                strcpy(comm, "ERROR??  USING ASCII TABLE SYNTAX BY MISTAKE??");
+              else
+                strcpy(comm, "rAw FORMAT ERROR! UNIT WIDTH w > COLUMN WIDTH r");
+            }
+        }
         else if (datatype == TBIT)
            strcat(comm, ": BIT");
         else if (datatype == TBYTE)

@@ -104,7 +104,24 @@ int ffgtcr(fitsfile *fptr,      /* FITS file pointer                         */
 
   *status = fits_get_num_hdus(fptr,&hdunum,status);
 
-  *status = fits_movabs_hdu(fptr,hdunum,&hdutype,status);
+  /* If hdunum is 0 then we are at the beginning of the file and
+     we actually haven't closed the first header yet, so don't do
+     anything more */
+
+  if (0 != hdunum) {
+
+      *status = fits_movabs_hdu(fptr,hdunum,&hdutype,status);
+  }
+
+  /* Now, the whole point of the above two fits_ calls was to get to
+     the end of file.  Let's ignore errors at this point and keep
+     going since any error is likely to mean that we are already at the 
+     EOF, or the file is fatally corrupted.  If we are at the EOF then
+     the next fits_ call will be ok.  If it's corrupted then the
+     next call will fail, but that's not big deal at this point.
+  */
+
+  if (0 != *status ) *status = 0;
 
   *status = fits_insert_group(fptr,grpname,grouptype,status);
 

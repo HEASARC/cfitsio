@@ -1,3 +1,29 @@
+/*  The FITSIO software was written by William Pence at the High Energy    */
+/*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
+/*  Goddard Space Flight Center.                                           */
+/*
+Copyright (Unpublished--all rights reserved under the copyright laws of
+the United States), U.S. Government as represented by the Administrator
+of the National Aeronautics and Space Administration.
+
+DISCLAIMER:
+
+THE SOFTWARE IS PROVIDED 'AS IS' WITHOUT ANY WARRANTY OF ANY KIND, 
+EITHER EXPRESSED, IMPLIED, OR STATUTORY, INCLUDING, BUT NOT LIMITED 
+TO, ANY WARRANTY THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS, 
+ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR 
+PURPOSE, AND FREEDOM FROM INFRINGEMENT, AND ANY WARRANTY THAT THE 
+DOCUMENTATION WILL CONFORM TO THE SOFTWARE, OR ANY WARRANTY THAT THE 
+SOFTWARE WILL BE ERROR FREE.  IN NO EVENT SHALL NASA BE LIABLE FOR 
+ANY DAMAGES, INCLUDING, BUT NOT LIMITED TO, DIRECT, INDIRECT, SPECIAL 
+OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN ANY 
+WAY CONNECTED WITH THIS SOFTWARE, WHETHER OR NOT BASED UPON 
+WARRANTY, CONTRACT, TORT , OR OTHERWISE, WHETHER OR NOT INJURY WAS 
+SUSTAINED BY PERSONS OR PROPERTY OR OTHERWISE, AND WHETHER OR NOT 
+LOSS WAS SUSTAINED FROM, OR AROSE OUT OF THE RESULTS OF, OR USE OF, 
+THE SOFTWARE OR SERVICES PROVIDED HEREUNDER.
+*/
+
 #ifndef _FITSIO_H
 #define _FITSIO_H
  
@@ -30,6 +56,7 @@
 #define TINT         31
 #define TULONG       40
 #define TLONG        41
+#define TINT32BIT    41  /* used when returning datatype of a column */
 #define TFLOAT       42
 #define TDOUBLE      82
 #define TCOMPLEX     83
@@ -51,11 +78,23 @@
 #define TYP_CONT_KEY  140
 #define TYP_USER_KEY  150
 
+/* Define the datatype for variables which store file offset values. */
+/* The new 'off_t' datatype should be used for this purpose, but */
+/* some older compilers do not recognize this type, in which case we */
+/* use 'long' instead. */
+
+#if defined(_FILE_OFFSET_BITS)
+#    define OFF_T off_t
+#else
+#    define OFF_T long
+#endif
+ 
+
 #define INT32BIT int  /* 32-bit integer datatype.  Currently this       */
                       /* datatype is an 'int' on all useful platforms   */
                       /* however, it is possible that that are cases    */
                       /* where 'int' is a 2-byte integer, in which case */
-                      /* FITSINT would need to be defined as 'long'.    */
+                      /* INT32BIT would need to be defined as 'long'.   */
 
 #define BYTE_IMG      8  /* BITPIX code values for FITS image types */
 #define SHORT_IMG    16
@@ -152,34 +191,34 @@ typedef struct      /* structure used to store basic FITS file information */
     int open_count; /* number of opened 'fitsfiles' using this structure */
     char *filename; /* file name */
     int validcode;  /* magic value used to verify that structure is valid */
-    long filesize;  /* current size of the physical disk file in bytes */
-    long logfilesize; /* logical size of file, including unflushed buffers */
+    OFF_T filesize; /* current size of the physical disk file in bytes */
+    OFF_T logfilesize; /* logical size of file, including unflushed buffers */
     int lasthdu;    /* is this the last HDU in the file? 0 = no, else yes */
-    long bytepos;   /* current logical I/O pointer position in file */
-    long io_pos;    /* current I/O pointer position in the physical file */
+    OFF_T bytepos;  /* current logical I/O pointer position in file */
+    OFF_T io_pos;   /* current I/O pointer position in the physical file */
     int curbuf;     /* number of I/O buffer currently in use */ 
     int curhdu;     /* current HDU number; 0 = primary array */
     int hdutype;    /* 0 = primary array, 1 = ASCII table, 2 = binary table */
     int writemode;  /* 0 = readonly, 1 = readwrite */
     int maxhdu;     /* highest numbered HDU known to exist in the file */
-    long headstart[MAXHDU + 1]; /* byte offset in file to start of each HDU */
-    long headend;   /* byte offest in file to end of the current HDU header */
-    long nextkey;   /* byte offset in file to beginning of next keyword */
-    long datastart; /* byte offset in file to start of the current data unit */
+    OFF_T headstart[MAXHDU + 1]; /* byte offset in file to start of each HDU */
+    OFF_T headend;  /* byte offest in file to end of the current HDU header */
+    OFF_T nextkey;  /* byte offset in file to beginning of next keyword */
+    OFF_T datastart;/* byte offset in file to start of the current data unit */
     int tfield;     /* number of fields in the table (primary array has 2 */
     long origrows;  /* original number of rows (value of NAXIS2 keyword)  */
     long numrows;   /* number of rows in the table (dynamically updated) */
-    long rowlength; /* total length of a table row, in bytes */
+    OFF_T rowlength; /* length of a table row or image size (bytes) */
     tcolumn *tableptr; /* pointer to the table structure */
-    long heapstart; /* heap start byte relative to start of data unit */
-    long heapsize;  /* size of the heap, in bytes */
+    OFF_T heapstart; /* heap start byte relative to start of data unit */
+    long heapsize;   /* size of the heap, in bytes */
 
-         /* the following elements are related to compress images */
+         /* the following elements are related to compressed images */
     int compressimg; /* 1 if HDU contains a compressed image, else 0 */
     char zcmptype[12];      /* compression type string */
     int compress_type;      /* type of compression algorithm */
-    int zbitpix;		/* FITS data type of image (BITPIX) */
-    int zndim;		/* dimension of image */
+    int zbitpix;            /* FITS data type of image (BITPIX) */
+    int zndim;              /* dimension of image */
     long znaxis[MAX_COMPRESS_DIM];  /* length of each axis */
     long tilesize[MAX_COMPRESS_DIM]; /* size of compression tiles */
     long maxtilelen;        /* max number of pixels in each image tile */
@@ -218,7 +257,7 @@ typedef struct  /* structure for the iterator function column information */
     /* output elements that may be useful for the work function: */
 
     void     *array;    /* pointer to the array (and the null value) */
-    long     repeat;    /* binary table vector repeat value */
+    OFF_T    repeat;    /* binary table vector repeat value */
     long     tlmin;     /* legal minimum data value */
     long     tlmax;     /* legal maximum data value */
     char     tunit[70]; /* physical unit string */
@@ -681,6 +720,8 @@ int ffghdn(fitsfile *fptr, int *chdunum);
 int ffghdt(fitsfile *fptr, int *exttype, int *status);
 int ffghad(fitsfile *fptr, long *headstart, long *datastart, long *dataend,
            int *status);
+int ffghof(fitsfile *fptr, OFF_T *headstart, OFF_T *datastart, OFF_T *dataend,
+           int *status);
 int ffgipr(fitsfile *fptr, int maxaxis, int *imgtype, int *naxis,
            long *naxes, int *status);
 int ffgidt(fitsfile *fptr, int *imgtype, int *status);
@@ -750,6 +791,8 @@ int ffgrsz(fitsfile *fptr, long *nrows, int *status);
 int ffgcdw(fitsfile *fptr, int colnum, int *width, int *status);
 
 /*--------------------- read primary array or image elements -------------*/
+int ffgsv(fitsfile *fptr, int datatype, long *blc, long *trc, long *inc,
+          void *nulval, void *array, int *anynul, int  *status);
 int ffgpv(fitsfile *fptr, int  datatype, long firstelem, long nelem,
           void *nulval, void *array, int *anynul, int  *status);
 int ffgpf(fitsfile *fptr, int  datatype, long firstelem, long nelem,

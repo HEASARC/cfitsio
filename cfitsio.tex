@@ -162,6 +162,7 @@ CFITSIO has currently been tested on the following platforms:
    MkLinux                    DR3
    Windows 95/98/NT           Borland C++ V4.5
    Windows 95/98/NT           Microsoft/Compaq Visual C++ v5.0, v6.0
+   Windows 95/98/NT           Cygwin gcc
    OS/2                       gcc + EMX
    MacOS 7.1 or greater       Metrowerks 10.+
 \end{verbatim}
@@ -242,31 +243,29 @@ The disadvantages are:
 
  
 \subsection{VMS}
-On VAX/VMS and ALPHA/VMS systems the make.com command file may be used
-to build the cfitsio.olb object library using the default G-floating
-point option for double variables.  The make\_dfloat.com and
+On VAX/VMS and ALPHA/VMS systems the make\_gfloat.com command file may
+be executed to build the cfitsio.olb object library using the default
+G-floating point option for double variables.  The make\_dfloat.com and
 make\_ieee.com files may be used instead to build the library with the
 other floating point options. Note that the getcwd function that is
 used in the group.c module may require that programs using CFITSIO be
 linked with the ALPHA\$LIBRARY:VAXCRTL.OLB library.  See the example
 link line in the next section of this document.
 
-
  
 \subsection{Windows PCs}
 
-A precompiled DLL version of CFITSIO is available for IBM-PC users
-in the file cfitsio\_dll.zip.  This zip archive also contains other
-files and instructions on how to use the CFITSIO DLL library.
+A precompiled DLL version of CFITSIO is available for IBM-PC users of
+the Borland or Microsoft Visual C++ compilers in the files
+cfitsiodll\_2xxx\_borland.zip and cfitsiodll\_2xxx\_vcc.zip, where
+'2xxx' represents the current release number.  These zip archives also
+contains other files and instructions on how to use the CFITSIO DLL
+library.
 
-The CFITSIO library may be built using a suitable compiler.  The
-makepc.bat file gives an example of how to build CFITSIO with the
-Borland C++ v4.5 compiler.  This file will probably need to be  edited
-to include the appropriate command switches if a different C compiler
-or linker is used.  The files cfitsio.dsp, cfitsio.dsw, and
-cookbook.dsp contain the Microsoft Developer workspace files for
-building CFITSIO and the cookbook example program on WindowsNT using
-Microsoft Visual C++ 5.0 or 6.0.
+The CFITSIO library may also be built from the source code using the
+makefile.bc or makefile.vcc  files.  Finally, the makepc.bat file gives
+an example of  building CFITSIO with the Borland C++ v4.5 compiler
+using simpler DOS commands.
 
  
 \subsection{OS/2}
@@ -286,12 +285,12 @@ software, such as
 
 The MacOS version of the CFITSIO library can be built by (1) un binhex
 and unstuff cfitsio\_mac.sit.hqx, (2) put CFitsioPPC.mcp in the cfitsio
-directory, and (3) load CFitsioPPC.mcp into CodeWarrior Pro 2 and make.
+directory, and (3) load CFitsioPPC.mcp into CodeWarrior Pro 5 and make.
 This builds the cfitsio library for PPC.  There are also targets for
 both the test program and the speed test program.
 
 To use the MacOS port you can add Cfitsio PPC.lib to your CodeWarrior
-Pro 2 project.  Note that this only has been tested for the PPC and
+Pro 5 project.  Note that this only has been tested for the PPC and
 probably won't work on 68k Macs.
 
 
@@ -2215,7 +2214,8 @@ datatype of variables when reading or writing keywords or data:
                            /*  and char for table cols   'L' */
   #define TSTRING      16  /* ASCII string,              'A' */
   #define TSHORT       21  /* signed short,              'I' */
-  #define TLONG        41  /* signed long,               'J' */
+  #define TINT32BIT    41  /* signed 32-bit int,         'J' */
+  #define TLONG        41  /* signed long,                   */
   #define TFLOAT       42  /* single precision float,    'E' */
   #define TDOUBLE      82  /* double precision float,    'D' */
   #define TCOMPLEX     83  /* complex (pair of floats)   'C' */
@@ -2252,12 +2252,9 @@ Values to represent undefined floating point numbers:
  
 \section{CFITSIO Size Limitations}
 
-In general, CFITSIO places no limits on the sizes of the FITS files
-that it reads or writes. There is no internal limit on
-the size of the dimensions of the primary array or IMAGE extension.
-Table extensions may have up to 999 columns (the maximum allowed by the
-FITS standard) and may have an arbitrarily large number of rows. There
-are a few other limits, however, which may affect some extreme cases:
+CFITSIO places few restrictions on the size of FITS files that it
+reads or writes.  There are a few limits, however, which may affect
+some extreme cases:
 
 1.  The maximum number of files that may be simultaneously opened is
 limited to the number of internal IO buffers allocated in CFITSIO
@@ -2267,16 +2264,42 @@ ever is smaller.  The C symbolic constant FOPEN\_MAX usually defines
 the total number of files that may open at once (this includes any
 other text or binary files which may be open, not just FITS files).
 
-2.  The maximum number of extensions that can be read or written in a
-single FITS file is currently set to 1000 as defined by MAXHDU in the
-fitsio.h file.  This value may be increased if necessary, but the
-access times to the later extensions in such files may become very
+2.  The maximum number of extensions (HDUs) that can be read or written
+in a single FITS file is currently set to 1000 as defined by MAXHDU in
+the fitsio.h file.  This value may be increased if necessary, but the
+access times to the later extensions in such files may become excessively
 long.
 
-3.  CFITSIO can handle FITS files up to about 2.1 GB in size which is
-the maximum value of a 32-bit signed long integer.  Some machines that
-use 8-byte words for a long integer may support larger files, but this
-has not been tested.
+3.  By default, CFITSIO can handle FITS files up to 2.1 GB in size
+(2**31 bytes).  This file size limit is often imposed by 32-bit
+operating systems.  More recently, as 64-bit operating systems become
+more common, an industry-wide standard (at least on Unix systems) has
+been developed to support larger sized files (see
+http://ftp.sas.com/standards/large.file/).  Starting with version 2.1
+of CFITSIO, larger FITS files up to 6 terabytes in size may be read and
+written on certain supported platforms.  In order to support these
+larger files, CFITSIO must be compiled with the
+`-D\_FILE\_OFFSET\_BITS=64' compiler flag.  All programs which link to
+the CFITSIO library must also be compiled with this flag or must
+include this preprocessor definition at the start of the source code
+file.  This causes the compiler to allocate 8-bytes instead of 4-bytes
+for the 'off\_t' datatype which is used to store file offset
+positions.
+
+If CFITSIO is compiled with the -D\_FILE\_OFFSET\_BITS=64 flag on a
+platform that supports large files, then it can read and write FITS
+files that contain up to 2**31 2880-byte FITS records, or approximately
+6 terabytes in size.  It is also required that the value of the NAXISn
+and PCOUNT keywords in each extension be within the range of a signed
+4-byte integer (max value = 2,147,483,648).  Thus, each dimension of an
+image (given by the NAXISn keywords), the total width of a table
+(NAXIS1 keyword), the number of rows in a table (NAXIS2 keyword), and
+the total size of the variable-length array heap in binary tables
+(PCOUNT keyword) must be less than this limit.
+
+Currently, support for large files within CFITSIO has only been tested
+on the Solaris 2.6 operating system using the Sun cc compiler or gcc
+2.95.2.
 
  
 \section{Multiple Access to the Same FITS File}
@@ -3847,20 +3870,22 @@ in the input file name.
 \item[11]  Parse the input filename and return the HDU number that would be
 moved to if the file were opened with fits\_open\_file.  The returned
 HDU number begins with 1 for the primary array, so for example, if the
-input filename = `myfile.fits[2]' then hdunum = 3 will be returned.  If
-an extension name is included in the file name specification (e.g.
-`myfile.fits[EVENTS]' then this routine will have to open the FITS file
-and look for the position of the named extension, then close file.
-This is not possible if the file is being read from the stdin stream,
-and an error will be returned in this case.  If the filename does not
-specify an explicit extension (e.g. 'myfile.fits') then hdunum = -99
-will be returned, which is functionally equivalent to hdunum = 1. This
-routine is mainly used for backward compatibility in the ftools
-software package and is not recommended for general use.  It is
-generally better and more efficient to first open the FITS file with
-fits\_open\_file, then use fits\_get\_hdu\_num to determine which HDU
-in the file has been opened, rather than calling
-fits\_parse\_input\_url then calling fits\_open\_file.
+input filename = `myfile.fits[2]' then hdunum = 3 will be returned.
+CFITSIO does not open the file to check if the extension actually
+exists if an extension number is specified. If an extension *name* is
+included in the file name specification (e.g.  `myfile.fits[EVENTS]'
+then this routine will have to open the FITS file and look for the
+position of the named extension, then close file again.  This is not
+possible if the file is being read from the stdin stream, and an error
+will be returned in this case.  If the filename does not specify an
+explicit extension (e.g. 'myfile.fits') then hdunum = -99 will be
+returned, which is functionally equivalent to hdunum = 1. This routine
+is mainly used for backward compatibility in the ftools software
+package and is not recommended for general use.  It is generally better
+and more efficient to first open the FITS file with fits\_open\_file,
+then use fits\_get\_hdu\_num to determine which HDU in the file has
+been opened, rather than calling fits\_parse\_input\_url followed by a
+call to fits\_open\_file.
  \label{ffextn}
 \end{description}
  
@@ -4078,7 +4103,9 @@ these routines.
     CHU.  Note that the address to the value, and not the value itself, must
     be entered.    The datatype parameter specifies the datatype of the
     keyword value with one of the following values:  TSTRING, TLOGICAL (== int),
-    TBYTE, TSHORT, TUSHORT, TINT, TUINT, TLONG, TULONG, TFLOAT, TDOUBLE. A null
+    TBYTE, TSHORT, TUSHORT, TINT, TUINT, TLONG, TULONG, TFLOAT, TDOUBLE.
+    Within the context of this routine, TSTRING corresponds to a 'char*'
+    datatype, i.e., a pointer to a character array.  A null
     pointer may be entered for the comment parameter which will cause the
    comment field to be left blank.  \label{ffpky}
 \end{description}
@@ -4092,14 +4119,17 @@ these routines.
 \begin{description}
 \item[3 ] Write (update) a keyword of the appropriate datatype into the CHU.
     This routine will modify the value and comment field if the keyword
-    already exists in the header, otherwise it will append a new keyword at
-    the end of the header. Note that the address to the value, and not the
-    value itself, must be entered. The datatype parameter specifies the datatype
-    of the keyword value and can have one of the following values:  TSTRING,
-    TLOGICAL (== int), TBYTE, TSHORT, TUSHORT, TINT, TUINT, TLONG, TULONG,
-    TFLOAT,
-    TDOUBLE, TCOMPLEX, and TDBLCOMPLEX. A null pointer may be entered for the
-    comment parameter which will leave the comment field blank (or unmodified).
+    already exists in the header, otherwise it will append a new
+    keyword at the end of the header. Note that the address to the
+    value, and not the value itself, must be entered. The datatype
+    parameter specifies the datatype of the keyword value and can have
+    one of the following values:  TSTRING, TLOGICAL (== int), TBYTE,
+    TSHORT, TUSHORT, TINT, TUINT, TLONG, TULONG, TFLOAT, TDOUBLE,
+    TCOMPLEX, and TDBLCOMPLEX. Within the context of this routine,
+    TSTRING corresponds to a 'char*' datatype, i.e., a pointer to a
+    character array. A null pointer may be entered for the comment
+    parameter which will leave the comment field blank (or
+    unmodified).
  \label{ffuky}
 \end{description}
  
@@ -4244,13 +4274,15 @@ these routines.
 \item[15] Read a specified keyword value and comment.
     The datatype parameter specifies the returned datatype of the
     keyword value and can have one of the following symbolic constant
-    values:  TSTRING, TLOGICAL (== int), TBYTE, TSHORT, TUSHORT, TINT, TUINT,
-    TLONG, TULONG, TFLOAT, TDOUBLE, TCOMPLEX, and TDBLCOMPLEX.
-    Data type conversion will be performed for numeric values if
-    the keyword value does not have the same datatype.  If the value
-    of the keyword is undefined (i.e., the value
-    field is blank) then an error status = VALUE\_UNDEFINED
-    will be returned. If a NULL comment pointer is given on input
+    values:  TSTRING, TLOGICAL (== int), TBYTE, TSHORT, TUSHORT, TINT,
+    TUINT, TLONG, TULONG, TFLOAT, TDOUBLE, TCOMPLEX, and TDBLCOMPLEX.
+    Within the context of this routine, TSTRING corresponds to a
+    'char*' datatype, i.e., a pointer to a character array.  Data type
+    conversion will be performed for numeric values if the keyword
+    value does not have the same datatype.  If the value of the keyword
+    is undefined (i.e., the value field is blank) then an error status
+    = VALUE\_UNDEFINED will be returned. If a NULL comment pointer is
+    given on input
    then the comment string   will not be returned.   \label{ffgky}
 \end{description}
  
@@ -4487,7 +4519,22 @@ parameters used in these routines.
 \end{verbatim}
  
 \begin{description}
-\item[8 ] Read elements from the FITS data array.   Undefined FITS array
+\item[8 ] Read a rectangular subset from the FITS data array.   Undefined FITS array
+    elements will be returned with a value = *nullval, (note that this
+    parameter gives the address of the null value, not the null value
+    itself) unless nulval = 0 or *nulval = 0, in which case no checks for
+    undefined pixels will be performed.  This routine supports reading
+   Large images which may contain more than 2**31 = 2.1E9 pixels. \label{ffgsv}
+\end{description}
+ 
+\begin{verbatim}
+  int fits_read_subset / ffgsv
+      (fitsfile *fptr, int  datatype, long *fpixels, long *lpixels, long *inc,
+       DTYPE *nulval, > DTYPE *array, int *anynul, int *status)
+\end{verbatim}
+ 
+\begin{description}
+\item[9 ] Read elements from the FITS data array.   Undefined FITS array
     elements will be returned with a value = *nullval, (note that this
     parameter gives the address of the null value, not the null value
     itself) unless nulval = 0 or *nulval = 0, in which case no checks for
@@ -4501,7 +4548,7 @@ parameters used in these routines.
 \end{verbatim}
  
 \begin{description}
-\item[9 ] Read elements from the FITS data array.   Any undefined FITS array
+\item[10]  Read elements from the FITS data array.   Any undefined FITS array
     elements will have the corresponding nullarray element set
    to TRUE.  \label{ffgpf}
 \end{description}
@@ -4582,27 +4629,32 @@ the first 8 characters, and strongly recommended that the names be
 \end{verbatim}
  
 \begin{description}
-\item[3 ] Return the datatype and vector repeat value for a column in an ASCII or
-    binary table.  Allowed values for the datatype in ASCII tables are:
-    TSTRING, TSHORT, TLONG, TFLOAT, and TDOUBLE.  Binary tables also
-    support these types: TLOGICAL, TBIT, TBYTE, TCOMPLEX and
-    TDBLCOMPLEX.
-    Note that if the column is a 32-bit integer, then this routine will
-    return datatype = TLONG regardless of the length of a long integers on
-    that machine (i.e., even on DEC Alpha OSF machines in which long integers
-    are 8 bytes long).  The negative of the datatype code value is
-    returned if it is a variable length array column. The vector
-    repeat count  is always 1 for ASCII table columns. If the specified
-    column has an ASCII character datatype (code = TSTRING) then
-    the width of a unit string in the column is also returned.  Note that
+\item[3 ] Return the datatype, vector repeat value, and the width in bytes
+    of a column in an ASCII or binary table.  Allowed values for the
+    datatype in ASCII tables are:  TSTRING, TSHORT, TLONG, TFLOAT, and
+    TDOUBLE.  Binary tables also support these types: TLOGICAL, TBIT,
+    TBYTE, TCOMPLEX and TDBLCOMPLEX.  The negative of the datatype code
+    value is returned if it is a variable length array column.  Note
+    that in the case of a 'J' 32-bit integer binary table column, this
+    routine will return datatype = TINT32BIT (which in fact is
+    equivalent to TLONG).  With most current C compilers, a value in a
+    'J' column has the same size as an 'int' variable, and may not be
+    equivalent to a 'long' variable, which is 64-bits long on an
+    increasing number of compilers.
+
+    The 'repeat' parameter returns the vector repeat count on the binary
+    table TFORMn keyword value; ASCII table columns always have repeat
+    = 1.  The 'width' parameter returns the width in bytes of a single
+    column value (e.g., a '10D' binary table column will have width =
+    8; an ASCII table 'F12.2' column will have width = 12);  Note that
     this routine supports the local convention for specifying arrays of
-    fixed length strings within a binary table character column
-    using the syntax
-    TFORM = 'rAw' where 'r' is the total number of characters (= the width
-    of the column) and 'w' is the width of a unit string within the column.
-    Thus if the column has TFORM = '60A12' then this routine will return
-    typecode = TSTRING, repeat = 60, and width = 12.  A null pointer may
-   be given for any of the output parameters that are not needed. \label{ffgtcl}
+    fixed length strings within a binary table character column using
+    the syntax TFORM = 'rAw' where 'r' is the total number of
+    characters (= the width of the column) and 'w' is the width of a
+    unit string within the column.  Thus if the column has TFORM =
+    '60A12' then this routine will return typecode = TSTRING, repeat =
+    60, and width = 12.  A null pointer may be given for any of
+   the output parameters that are not needed. \label{ffgtcl}
 \end{description}
  
 \begin{verbatim}
@@ -4789,18 +4841,26 @@ TUSHORT, TINT, TUINT, TLONG, TULONG, TFLOAT, or TDOUBLE.  Binary tables
 also support TLOGICAL (internally mapped to the `char' datatype),
 TCOMPLEX, and TDBLCOMPLEX.
 
+Note that within the context of these routines, the TSTRING datatype
+corresponds to a C 'char**' datatype, i.e., a pointer to an array of
+pointers to an array of characters.  This is different from the keyword
+reading and writing routines where TSTRING corresponds to a C 'char*'
+datatype, i.e., a single pointer to an array of characters.  When
+reading strings from a table, the char arrays obviously must have been
+allocated long enough to hold the whole FITS table string.
+
 Numerical data values are automatically scaled by the TSCALn and TZEROn
 keyword values (if they exist).
 
 In the case of binary tables with vector elements, the 'felem'
-parameter defines the starting pixel within the cell (a cell is defined
-as the intersection of a row and a column and may contain a single
-value or a vector of values).  The felem parameter is ignored when
-dealing with ASCII tables. Similarly, in the case of binary tables the
-'nelements' parameter specifies the total number of vector values to be
-read or written (continuing on subsequent rows if required) and not the
-number of table cells.  See Appendix B for the definition of the
-parameters used in these routines.
+parameter defines the starting element (beginning with 1, not 0) within
+the cell (a cell is defined as the intersection of a row and a column
+and may contain a single value or a vector of values).  The felem
+parameter is ignored when dealing with ASCII tables. Similarly, in the
+case of binary tables the 'nelements' parameter specifies the total
+number of vector values to be read or written (continuing on subsequent
+rows if required) and not the number of table cells.  See Appendix B
+for the further definitions of the parameters used in these routines.
 
  
 \begin{description}
@@ -4825,7 +4885,7 @@ parameters used in these routines.
     (Not-a-Number) value will be written into the FITS column.
     If a null pointer is entered for nulval, then the null value is
     ignored and this routine behaves the same as fits\_write\_col.
-    This routine must not be used to write to variable length array columns.  \label{ffpcn}
+   This routine must not be used to write to variable length array columns.  \label{ffpcn}
 \end{description}
  
 \begin{verbatim}
@@ -4860,8 +4920,8 @@ parameters used in these routines.
 
     Any column, regardless of it's intrinsic datatype, may be read as a
     string.  It should be noted however that reading a numeric column
-    as a string is 10 - 100 times slower than reading the same column as
-    a number due to the large overhead in constructing the formatted
+    as a string is 10 - 100 times slower than reading the same column
+    as a number due to the large overhead in constructing the formatted
     strings.  The display format of the returned strings will be
     determined by the TDISPn keyword, if it exists, otherwise by the
     datatype of the column.  The length of the returned strings (not
@@ -5965,8 +6025,8 @@ routines.
 \item[12] Parse the 'TFORM' binary table column format string.
     This routine parses the input TFORM character string and returns the
     integer datatype code, the repeat count of the field, and, in the case
-    of character string fields, the length of the unit string.  See Chapter
-    9 for the allowed values for the returned typecode parameter.  A
+    of character string fields, the length of the unit string.  See Appendix
+    B for the allowed values for the returned typecode parameter.  A
    null pointer may be given for any output parameters that are not needed. \label{ffbnfm}
 \end{description}
  
@@ -6239,15 +6299,22 @@ and make the application program run
 \begin{description}
 \item[1 ] Get the byte offsets in the FITS file to the start of the header
     and the start and end of the data in the CHDU. The difference
-    between headstart and dataend is the size of the CHDU.
-    If the CHDU is the last HDU in the file, then dataend
-    is also equal to the size of the entire FITS file.
-    Null pointers may be input for any of the address parameters
-   if their values are not needed. \label{ffghad}
+    between headstart and dataend equals the size of the CHDU.  If the
+    CHDU is the last HDU in the file, then dataend is also equal to the
+    size of the entire FITS file.  Null pointers may be input for any
+    of the address parameters if their values are not needed.  The
+    fits\_get\_hduaddr routine is obsolete and should no longer be
+    used.  The newer fits\_get\_hduoff routine uses the 'off\_t'
+    datatype which can support offsets in large files greater than
+   2.1GB in size. \label{ffghad}
 \end{description}
  
 \begin{verbatim}
-  int fits_get_hduaddr / ffghad
+  int fits_get_hduoff / ffghof
+       (fitsfile *fptr, > off_t *headstart, off_t *datastart, off_t *dataend,
+        int *status)
+
+  int fits_get_hduaddr / ffghad  (OBSOLETE routine)
        (fitsfile *fptr, > long *headstart, long *datastart, long *dataend,
         int *status)
 \end{verbatim}
@@ -7458,17 +7525,23 @@ parameters used in these routines.
 \end{verbatim}
  
 \begin{description}
-\item[4 ] Write bit values into a binary byte ('B') or bit ('X') table column (in the
-    CDU).  Larray is an array of logical values corresponding to the sequence of
-    bits to be written.  If larray is true then the corresponding bit is
-    set to 1, otherwise the bit is set to 0.  Note that in the case of
-    'X' columns, CFITSIO can write to all 8 bits of each byte whether
-    they are formally valid or not.  Thus if the column is defined as
-    '4X', and one calls ffpclx with  firstbit=1 and nbits=8, then all 8 bits
-    will be written into the first byte (as opposed to writing the
-    first 4 bits into the first row and then the next 4 bits into the
-    next row), even though the last 4 bits of each byte are formally
-   not defined. \label{ffpclx}
+\item[4 ] Write bit values into a binary byte ('B') or bit ('X') table column (in
+    the CDU).  Larray is an array of logical values corresponding to the
+    sequence of bits to be written.  If larray is true then the
+    corresponding bit is set to 1, otherwise the bit is set to 0.  Note
+    that in the case of 'X' columns, CFITSIO can write to all 8 bits of
+    each byte whether they are formally valid or not.  Thus if the
+    column is defined as '4X', and one calls ffpclx with  firstbit=1
+    and nbits=8, then all 8 bits will be written into the first byte
+    (as opposed to writing the first 4 bits into the first row and then
+    the next 4 bits into the next row), even though the last 4 bits of
+    each byte are formally not defined.  It should also be noted that
+    it is more efficient to write 'X' columns an entire byte at a time,
+    instead of bit by bit.  Any of the CFITSIO routines that write to
+    columns (e.g. fits\_write\_col\_byt) may be used for this
+    purpose.  These routines will interpret 'X' columns as though they
+    were 'B' columns (e.g.,  '8X' is equivalent to '1B', and '16X' is
+   equivalent to '2B'). \label{ffpclx}
 \end{description}
  
 \begin{verbatim}
@@ -7622,7 +7695,13 @@ parameters used in these routines.
     nbits=8, then all 8 bits will be read from the first byte (as
     opposed to reading the first 4 bits from the first row and then the
     first 4 bits from the next row), even though the last 4 bits of
-   each byte are formally not defined. \label{ffgcx}
+    each byte are formally not defined.  It should also be noted that
+    it is more efficient to read 'X' columns an entire byte at a time,
+    instead of bit by bit.  Any of the CFITSIO routines that read
+    columns (e.g. fits\_read\_col\_byt) may be used for this
+    purpose.  These routines will interpret 'X' columns as though they
+    were 'B' columns (e.g.,  '8X' is equivalent to '1B', and '16X' is
+   equivalent to '2B').  \label{ffgcx}
 \end{description}
  
 \begin{verbatim}
@@ -7726,6 +7805,7 @@ fits\_get\_hdrspace      & \pageref{ffghsp} \\
 fits\_get\_hdu\_num    & \pageref{ffghdn} \\
 fits\_get\_hdu\_type   & \pageref{ffghdt} \\
 fits\_get\_hduaddr    & \pageref{ffghad} \\
+fits\_get\_hduoff    & \pageref{ffghad} \\
 fits\_get\_img\_dim & \pageref{ffgidm} \\
 fits\_get\_img\_param & \pageref{ffgipr} \\
 fits\_get\_img\_size & \pageref{ffgisz} \\
@@ -7734,9 +7814,9 @@ fits\_get\_keyclass    & \pageref{ffgkcl} \\
 fits\_get\_keyname    & \pageref{ffgknm} \\
 fits\_get\_keytype    & \pageref{ffdtyp} \\
 fits\_get\_num\_cols     & \pageref{ffgnrw} \\
-fits\_get\_num\_groups  & \pageref{ffgmng} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_get\_num\_groups  & \pageref{ffgmng} \\
 fits\_get\_num\_hdus   & \pageref{ffthdu} \\
 fits\_get\_num\_members  & \pageref{ffgtnm} \\
 fits\_get\_num\_rows     & \pageref{ffgnrw} \\
@@ -7768,10 +7848,10 @@ fits\_modify\_vector\_len  & \pageref{ffmvec} \\
 fits\_movabs\_hdu     & \pageref{ffmahd} \\
 fits\_movnam\_hdu     & \pageref{ffmnhd} \\
 fits\_movrel\_hdu     & \pageref{ffmrhd} \\
-fits\_null\_check     & \pageref{ffnchk} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_null\_check     & \pageref{ffnchk} \\
 fits\_open\_file      & \pageref{ffopen} \\
 fits\_open\_group    & \pageref{ffgtop} \\
 fits\_open\_member    & \pageref{ffgmop} \\
@@ -7817,9 +7897,9 @@ fits\_read\_tbl\_coord & \pageref{ffgtcs} \\
 fits\_read\_tblbytes    & \pageref{ffgtbb} \\
 fits\_read\_tdim         & \pageref{ffgtdm} \\
 fits\_remove\_group  & \pageref{ffgtrm} \\
-fits\_remove\_member   & \pageref{ffgmrm} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_remove\_member   & \pageref{ffgmrm} \\
 fits\_reopen\_file      & \pageref{ffreopen} \\
 fits\_report\_error   & \pageref{ffrprt} \\
 fits\_resize\_img     & \pageref{ffrsim} \\
@@ -7865,9 +7945,9 @@ fits\_write\_errmsg   & \pageref{ffpmsg} \\
 fits\_write\_grphdr       & \pageref{ffphpr} \\
 fits\_write\_grppar\_TYP & \pageref{ffpgpx} \\
 fits\_write\_history      & \pageref{ffphis} \\
-fits\_write\_img        & \pageref{ffppr} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_write\_img        & \pageref{ffppr} \\
 fits\_write\_img\_null & \pageref{ffppru} \\
 fits\_write\_img\_TYP    & \pageref{ffpprx} \\
 fits\_write\_imghdr       & \pageref{ffphps} \\
@@ -7951,6 +8031,7 @@ ffghad    & \pageref{ffghad} \\
 ffghbn      & \pageref{ffghbn} \\
 ffghdn    & \pageref{ffghdn} \\
 ffghdt   & \pageref{ffghdt} \\
+ffghof    & \pageref{ffghad} \\
 ffghpr       & \pageref{ffghpr} \\
 ffghps        & \pageref{ffghps} \\
 ffghsp      & \pageref{ffghsp} \\
@@ -7985,9 +8066,9 @@ ffgpv\_     & \pageref{ffgpvx} \\
 ffgrec       & \pageref{ffgrec} \\
 ffgrsz    & \pageref{ffgrsz} \\
 ffgsdt        & \pageref{ffdt2s} \\
-ffgsf\_ & \pageref{ffgsfx} \pageref{ffgsfx2} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffgsf\_ & \pageref{ffgsfx} \pageref{ffgsfx2} \\
 ffgstm        & \pageref{ffdt2s} \\
 ffgsv\_  & \pageref{ffgsvx} \pageref{ffgsvx2}\\
 ffgtam & \pageref{ffgtam} \\
@@ -8033,9 +8114,9 @@ ffmnam       & \pageref{ffmnam} \\
 ffmnhd     & \pageref{ffmnhd} \\
 ffmrec     & \pageref{ffmrec} \\
 ffmrhd     & \pageref{ffmrhd} \\
-ffmvec  & \pageref{ffmvec} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffmvec  & \pageref{ffmvec} \\
 ffnchk  & \pageref{ffnchk} \\
 ffnkey      & \pageref{ffnkey} \\
 ffomem   & \pageref{ffomem} \\
@@ -8081,9 +8162,9 @@ ffptbb  & \pageref{ffptbb} \\
 ffptdm         & \pageref{ffptdm} \\
 ffpthp    & \pageref{ffpthp} \\
 ffpunt     & \pageref{ffpunt} \\
-ffrdef   & \pageref{ffrdef} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffrdef   & \pageref{ffrdef} \\
 ffreopen      & \pageref{ffreopen} \\
 ffrprt   & \pageref{ffrprt} \\
 ffrsim     & \pageref{ffrsim} \\
@@ -8310,7 +8391,7 @@ typecode - datatype code of the table column.  The negative of
                 logical, L              14        TLOGICAL
                 ASCII character, A      16        TSTRING
                 short integer, I        21        TSHORT
-                integer, J              41        TLONG
+                integer, J              41        TINT32BIT
                 real, E                 42        TFLOAT
                 double precision, D     82        TDOUBLE
                 complex, C              83        TCOMPLEX

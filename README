@@ -27,13 +27,15 @@ point option for double variables.  The make\_dfloat.com and make\_ieee.com
 files may be used instead to build the library with the other floating
 point options.
 
-For Windows PC computers, the makepc.bat file gives an example of how
-to build CFITSIO with the Borland C++ v4.5 compiler.  This file will
-probably need to be  edited to include the appropriate command switches
-if a different C compiler or linker is used.  The files cfitsio.dsp,
-cfitsio.dsw, and cookbook.dsp contain the Microsoft Developer
-workspace files for building CFITSIO and the cookbook example program on
-WindowsNT using Microsoft Visual C++ 5.0 or 6.0.
+A precompiled DLL version of CFITSIO is available for IBM-PC users of
+the Borland or Microsoft Visual C++ compilers in the files
+cfitsiodll_2xxx_borland.zip and cfitsiodll_2xxx_vcc.zip, where '2xxx'
+represents the current release number.  These zip archives also
+contains other files and instructions on how to use the CFITSIO DLL
+library. The CFITSIO library may also be built from the source code
+using the makefile.bc or makefile.vcc  files.  Finally, the makepc.bat
+file gives an example of  building CFITSIO with the Borland C++ v4.5
+compiler using simpler DOS commands.
 
 On OS/2 systems, CFITSIO can be built using the supplied makefile by
 typing 'make -f makefile.os2'.  This makefile requires the GCC compiler
@@ -44,12 +46,12 @@ ftp.leo.org/pub/comp/os/os2/leo/devtools/emx+gcc.
 
 The MacOS version of the cfitsio library can be built by (1) un binhex
 and unstuff cfitsio_mac.sit.hqx, (2) put CFitsioPPC.mcp in the cfitsio
-directory, and (3) load CFitsioPPC.mcp into CodeWarrior Pro 2 and
+directory, and (3) load CFitsioPPC.mcp into CodeWarrior Pro 5 and
 make.  This builds the cfitsio library for PPC.  There are also targets
 for both the test program and the speed test program.
 
 To use the MacOS port you can add Cfitsio PPC.lib to your Codewarrior
-Pro 2 project.  Note that this only has been tested for the PPC and
+Pro 5 project.  Note that this only has been tested for the PPC and
 probably won't work
  on 68k macs.
 
@@ -116,6 +118,7 @@ CFITSIO has currently been tested on the following platforms:
    MkLinux                    DR3
    Windows 95/98/NT           Borland C++ V4.5
    Windows 95/98/NT           Microsoft/Compaq Visual C++ v5.0, v6.0
+   Windows 95/98/NT           Cygwin gcc
    OS/2                       gcc + EMX
    MacOS 7.1 or greater       Metrowerks 10.+
 

@@ -59,13 +59,21 @@ void writeimage( void )
     fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
     int status, ii, jj;
     long  fpixel, nelements, exposure;
-    unsigned short array[200][300];
+    unsigned short *array[200];
 
     /* initialize FITS image parameters */
     char filename[] = "atestfil.fit";             /* name for new FITS file */
     int bitpix   =  USHORT_IMG; /* 16-bit unsigned short pixel values       */
     long naxis    =   2;  /* 2-dimensional image                            */    
     long naxes[2] = { 300, 200 };   /* image is 300 pixels wide by 200 rows */
+
+    /* allocate memory for the whole image */ 
+    array[0] = (unsigned short *)malloc( naxes[0] * naxes[1]
+                                        * sizeof( unsigned short ) );
+
+    /* initialize pointers to the start of each row of the image */
+    for( ii=1; ii<naxes[1]; ii++ )
+      array[ii] = array[ii-1] + naxes[0];
 
     remove(filename);               /* Delete old file if it already exists */
 
@@ -98,7 +106,9 @@ void writeimage( void )
 
     /* write the array of unsigned integers to the FITS file */
     if ( fits_write_img(fptr, TUSHORT, fpixel, nelements, array[0], &status) )
-        printerror( status );            
+        printerror( status );
+      
+    free( array[0] );  /* free previously allocated memory */
 
     /* write another optional keyword to the header */
     /* Note that the ADDRESS of the value is passed in the routine */

@@ -167,9 +167,9 @@ int	smem_open(char *filename, int rwmode, int *driverhandle);
 int	smem_create(char *filename, int *driverhandle);
 int	smem_close(int driverhandle);
 int	smem_remove(char *filename);
-int	smem_size(int driverhandle, long *size);
+int	smem_size(int driverhandle, OFF_T *size);
 int	smem_flush(int driverhandle);
-int	smem_seek(int driverhandle, long offset);
+int	smem_seek(int driverhandle, OFF_T offset);
 int	smem_read(int driverhandle, void *buffer, long nbytes);
 int	smem_write(int driverhandle, void *buffer, long nbytes);
 

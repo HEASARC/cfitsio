@@ -349,8 +349,9 @@ int ffpcld( fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     int tcode, maxelem, hdutype, writeraw;
-    long twidth, incre, repeat, rowlen, rownum, elemnum, remain, next, ntodo;
-    long tnull, startpos, wrtptr;
+    long twidth, incre, rownum, remain, next, ntodo;
+    long tnull;
+    OFF_T repeat, startpos, elemnum, wrtptr, rowlen;
     double scale, zero;
     char tform[20], cform[20];
     char message[FLEN_ERRMSG];
@@ -411,7 +412,7 @@ int ffpcld( fitsfile *fptr,  /* I - FITS file pointer                       */
         ntodo = minvalue(remain, maxelem);      
         ntodo = minvalue(ntodo, (repeat - elemnum));
 
-        wrtptr = startpos + (rownum * rowlen) + (elemnum * incre);
+        wrtptr = startpos + ((OFF_T)rownum * rowlen) + (elemnum * incre);
 
         ffmbyt(fptr, wrtptr, IGNORE_EOF, status); /* move to write position */
 

@@ -2,12 +2,7 @@
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
-/*  Goddard Space Flight Center.  Users shall not, without prior written   */
-/*  permission of the U.S. Government,  establish a claim to statutory     */
-/*  copyright.  The Government and others acting on its behalf, shall have */
-/*  a royalty-free, non-exclusive, irrevocable,  worldwide license for     */
-/*  Government purposes to publish, distribute, translate, copy, exhibit,  */
-/*  and perform such material.                                             */
+/*  Goddard Space Flight Center.                                           */
 
 #include <string.h>
 #include <stdlib.h>
@@ -30,12 +25,12 @@ typedef struct    /* structure containing pointers to I/O driver functions */
     int (*checkfile)(char *urltype, char *infile, char *outfile);
     int (*open)(char *filename, int rwmode, int *driverhandle);
     int (*create)(char *filename, int *drivehandle);
-    int (*truncate)(int drivehandle, long size);
+    int (*truncate)(int drivehandle, OFF_T size);
     int (*close)(int drivehandle);
     int (*remove)(char *filename);
-    int (*size)(int drivehandle, long *size);
+    int (*size)(int drivehandle, OFF_T *size);
     int (*flush)(int drivehandle);
-    int (*seek)(int drivehandle, long offset);
+    int (*seek)(int drivehandle, OFF_T offset);
     int (*read)(int drivehandle, void *buffer, long nbytes);
     int (*write)(int drivehandle, void *buffer, long nbytes);
 } fitsdriver;
@@ -61,7 +56,7 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
 {
     int driver, handle, hdutyp, slen, movetotype, extvers, extnum;
     char extname[FLEN_VALUE];
-    long filesize;
+    OFF_T filesize;
     char urltype[MAX_PREFIX_LEN], infile[FLEN_FILENAME], outfile[FLEN_FILENAME];
     char extspec[FLEN_FILENAME], rowfilter[FLEN_FILENAME];
     char binspec[FLEN_FILENAME], colspec[FLEN_FILENAME];
@@ -259,7 +254,8 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
 */
 {
     int  driver, hdutyp, slen, writecopy, isopen;
-    long filesize, rownum, nrows, goodrows;
+    OFF_T filesize;
+    long rownum, nrows, goodrows;
     int extnum, extvers, handle, movetotype;
     char urltype[MAX_PREFIX_LEN], infile[FLEN_FILENAME], outfile[FLEN_FILENAME];
     char origurltype[MAX_PREFIX_LEN], extspec[FLEN_FILENAME];
@@ -1236,8 +1232,9 @@ int fits_copy_image_cell(
     fitsfile *newptr;
     unsigned char buffer[30000];
     int ii, hdutype, colnum, typecode, bitpix, naxis, maxelem, tstatus;
-    long repeat, naxes[9], nbytes, firstbyte, twidth;
-    long startpos, elemnum, incre, rowlen, tnull, ntodo;
+    long naxes[9], nbytes, firstbyte, twidth;
+    OFF_T repeat, startpos, elemnum, rowlen;
+    long incre, tnull, ntodo;
     double scale, zero;
     char tform[20];
     char keyname[FLEN_KEYWORD], card[FLEN_CARD];
@@ -1276,7 +1273,7 @@ int fits_copy_image_cell(
 
         /* variable length arrays are 1-dimensional by default */
         naxis = 1;
-        naxes[0] = repeat;
+        naxes[0] = (long) repeat;
     }
     else
     {
@@ -1294,27 +1291,27 @@ int fits_copy_image_cell(
     if (typecode == TBYTE)
     {
         bitpix = BYTE_IMG;
-        nbytes = repeat;
+        nbytes = (long) repeat;
     }
     else if (typecode == TSHORT)
     {
         bitpix = SHORT_IMG;
-        nbytes = repeat * 2;
+        nbytes = (long) repeat * 2;
     }
     else if (typecode == TLONG)
     {
         bitpix = LONG_IMG;
-        nbytes = repeat * 4;
+        nbytes = (long) repeat * 4;
     }
     else if (typecode == TFLOAT)
     {
         bitpix = FLOAT_IMG;
-        nbytes = repeat * 4;
+        nbytes = (long) repeat * 4;
     }
     else if (typecode == TDOUBLE)
     {
         bitpix = DOUBLE_IMG;
-        nbytes = repeat * 8;
+        nbytes = (long) repeat * 8;
     }
     else
     {
@@ -2791,12 +2788,12 @@ int fits_register_driver(char *prefix,
 	int (*checkfile) (char *urltype, char *infile, char *outfile),
 	int (*open)(char *filename, int rwmode, int *driverhandle),
 	int (*create)(char *filename, int *driverhandle),
-	int (*truncate)(int driverhandle, long filesize),
+	int (*truncate)(int driverhandle, OFF_T filesize),
 	int (*close)(int driverhandle),
 	int (*fremove)(char *filename),
-        int (*size)(int driverhandle, long *size),
+        int (*size)(int driverhandle, OFF_T *size),
 	int (*flush)(int driverhandle),
-	int (*seek)(int driverhandle, long offset),
+	int (*seek)(int driverhandle, OFF_T offset),
 	int (*read) (int driverhandle, void *buffer, long nbytes),
 	int (*write)(int driverhandle, void *buffer, long nbytes) )
 /*
@@ -3754,7 +3751,7 @@ int ffextn(char *url,           /* I - input filename/URL  */
     char colspec[FLEN_FILENAME];
     char imagecolname[FLEN_VALUE], rowexpress[FLEN_FILENAME];
     char *cptr;
-    int extnum, extvers, hdutype;
+    int extnum, extvers, hdutype, tstatus = 0;
 
     if (*status > 0)
         return(*status);
@@ -3808,7 +3805,10 @@ int ffextn(char *url,           /* I - input filename/URL  */
          }
 
          if (ffopen(&fptr, infile, READONLY, status) > 0) /* open the file */
+         {
+            ffclos(fptr, &tstatus);
             return(*status);
+         }
 
          ffghdn(fptr, &extnum);    /* where am I in the file? */
          *extension_num = extnum;
@@ -4073,7 +4073,7 @@ int ffdelt(fitsfile *fptr,      /* I - FITS file pointer */
 }
 /*--------------------------------------------------------------------------*/
 int fftrun( fitsfile *fptr,    /* I - FITS file pointer           */
-             long filesize,    /* I - size to truncate the file   */
+             OFF_T filesize,   /* I - size to truncate the file   */
              int *status)      /* O - error status                */
 /*
   low level routine to truncate a file to a new smaller size.
@@ -4106,7 +4106,7 @@ int ffflushx( FITSfile *fptr)     /* I - FITS file pointer                  */
 }
 /*--------------------------------------------------------------------------*/
 int ffseek( FITSfile *fptr,   /* I - FITS file pointer              */
-            long position)    /* I - byte position to seek to       */
+            OFF_T position)   /* I - byte position to seek to       */
 /*
   low level routine to seek to a position in a file.
 */

@@ -2,12 +2,7 @@
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
-/*  Goddard Space Flight Center.  Users shall not, without prior written   */
-/*  permission of the U.S. Government,  establish a claim to statutory     */
-/*  copyright.  The Government and others acting on its behalf, shall have */
-/*  a royalty-free, non-exclusive, irrevocable,  worldwide license for     */
-/*  Government purposes to publish, distribute, translate, copy, exhibit,  */
-/*  and perform such material.                                             */
+/*  Goddard Space Flight Center.                                           */
 
 #include <string.h>
 #include <stdlib.h>
@@ -29,8 +24,8 @@ typedef struct    /* structure containing mem file structure */
                          /* always be used, so use *memsizeptr instead. */
     size_t deltasize;    /* Suggested increment for reallocating memory */
     void *(*mem_realloc)(void *p, size_t newsize);  /* realloc function */
-    size_t currentpos;   /* current file position, relative to start */
-    size_t fitsfilesize; /* size of the FITS file (always <= *memsizeptr) */
+    OFF_T currentpos;   /* current file position, relative to start */
+    OFF_T fitsfilesize; /* size of the FITS file (always <= *memsizeptr) */
 } memdriver;
 
 static memdriver memTable[NIOBUF];  /* allocate mem file handle tables */
@@ -167,7 +162,7 @@ int mem_createmem(size_t msize, int *handle)
     return(0);
 }
 /*--------------------------------------------------------------------------*/
-int mem_truncate(int handle, long filesize)
+int mem_truncate(int handle, OFF_T filesize)
 /*
   truncate the file to a new smaller size
 */
@@ -283,7 +278,8 @@ int stdin2mem(int hd)  /* handle number */
   has already been allocated, then realloc more memory if necessary.
 */
 {
-    size_t nread, memsize, filesize, delta;
+    size_t nread, memsize, delta;
+    OFF_T filesize;
     char *memptr;
     char simple[] = "SIMPLE";
     int c, ii, jj;
@@ -628,7 +624,7 @@ int mem_uncompress2mem(char *filename, FILE *diskfile, int hdl)
   return status;
 }
 /*--------------------------------------------------------------------------*/
-int mem_size(int handle, long *filesize)
+int mem_size(int handle, OFF_T *filesize)
 /*
   return the size of the file; only called when the file is first opened
 */
@@ -660,12 +656,12 @@ int mem_close_keep(int handle)
     return(0);
 }
 /*--------------------------------------------------------------------------*/
-int mem_seek(int handle, long offset)
+int mem_seek(int handle, OFF_T offset)
 /*
   seek to position relative to start of the file.
 */
 {
-    if (offset > (long) memTable[handle].fitsfilesize )
+    if (offset > (OFF_T) memTable[handle].fitsfilesize )
         return(END_OF_FILE);
 
     memTable[handle].currentpos = offset;

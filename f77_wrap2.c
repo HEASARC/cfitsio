@@ -934,7 +934,17 @@ FCALLSCSUB3(ffc2l,FTC2L,ftc2l,STRING,PINT,PINT)
 /*                   (prototyped in fitsio2.h)                   */
 /*---------------------------------------------------------------*/
 
+/*
+  ffmbyt should not be called by any application programs, so
+  the wrapper should not need to be defined.  If it is needed then
+  the second parameter (LONG) will need to be changed to the
+  equivalent of the C 'off_t' type, which may be 32 or 64 bits long
+  depending on the compiler.
+  -W.Pence (7/21/00)
+  
 FCALLSCSUB4(ffmbyt,FTMBYT,ftmbyt,FITSUNIT,LONG,LOGICAL,PINT)
+*/
+
 FCALLSCSUB4(ffgbyt,FTGCBF,ftgcbf,FITSUNIT,LONG,PVOID,PINT)
 FCALLSCSUB4(ffgbyt,FTGBYT,ftgbyt,FITSUNIT,LONG,PVOID,PINT)
 

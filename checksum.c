@@ -3,12 +3,7 @@
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
-/*  Goddard Space Flight Center.  Users shall not, without prior written   */
-/*  permission of the U.S. Government,  establish a claim to statutory     */
-/*  copyright.  The Government and others acting on its behalf, shall have */
-/*  a royalty-free, non-exclusive, irrevocable,  worldwide license for     */
-/*  Government purposes to publish, distribute, translate, copy, exhibit,  */
-/*  and perform such material.                                             */
+/*  Goddard Space Flight Center.                                           */
 
 #include <string.h>
 #include <stdlib.h>
@@ -193,7 +188,8 @@ int ffpcks(fitsfile *fptr,      /* I - FITS file pointer                  */
     char datestr[20], checksum[FLEN_VALUE], datasum[FLEN_VALUE];
     char  comm[FLEN_COMMENT], chkcomm[FLEN_COMMENT], datacomm[FLEN_COMMENT];
     int tstatus;
-    long nrec, headstart, datastart, dataend;
+    long nrec;
+    OFF_T headstart, datastart, dataend;
     unsigned long dsum, olddsum, sum;
     double tdouble;
 
@@ -251,7 +247,7 @@ int ffpcks(fitsfile *fptr,      /* I - FITS file pointer                  */
         return(*status);
 
     /* calc size of data unit, in FITS 2880-byte blocks */
-    if (ffghad(fptr, &headstart, &datastart, &dataend, status) > 0)
+    if (ffghof(fptr, &headstart, &datastart, &dataend, status) > 0)
         return(*status);
 
     nrec = (dataend - datastart) / 2880;
@@ -325,7 +321,8 @@ int ffupck(fitsfile *fptr,      /* I - FITS file pointer                  */
     char datestr[20], chkcomm[FLEN_COMMENT], comm[FLEN_COMMENT];
     char checksum[FLEN_VALUE], datasum[FLEN_VALUE];
     int tstatus;
-    long nrec, headstart, datastart, dataend;
+    long nrec;
+    OFF_T headstart, datastart, dataend;
     unsigned long sum, dsum;
     double tdouble;
 
@@ -348,7 +345,7 @@ int ffupck(fitsfile *fptr,      /* I - FITS file pointer                  */
     dsum = tdouble;
 
     /* get size of the HDU */
-    if (ffghad(fptr, &headstart, &datastart, &dataend, status) > 0)
+    if (ffghof(fptr, &headstart, &datastart, &dataend, status) > 0)
         return(*status);
 
     /* get the checksum keyword, if it exists */
@@ -473,13 +470,14 @@ int ffgcks(fitsfile *fptr,           /* I - FITS file pointer             */
 
     /* calculate the checksums of the data unit and the total HDU */
 {
-    long nrec, headstart, datastart, dataend;
+    long nrec;
+    OFF_T headstart, datastart, dataend;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
     /* get size of the HDU */
-    if (ffghad(fptr, &headstart, &datastart, &dataend, status) > 0)
+    if (ffghof(fptr, &headstart, &datastart, &dataend, status) > 0)
         return(*status);
 
     nrec = (dataend - datastart) / 2880;

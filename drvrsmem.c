@@ -12,7 +12,7 @@
             no shmem segments remain, and last process terminates
 */
 
-#include "fitsio2.h"                            /* drvrsmem.h is included by it */
+#include "fitsio2.h"                         /* drvrsmem.h is included by it */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -889,11 +889,11 @@ int     smem_remove(char *filename)
    return(smem_close(h));                       /* detach segment (this will delete it) */
  }
 
-int     smem_size(int driverhandle, long *size)
+int     smem_size(int driverhandle, OFF_T *size)
  {
    if (NULL == size) return(SHARED_NULPTR);
    if (shared_check_locked_index(driverhandle)) return(SHARED_INVALID);
-   *size = shared_gt[driverhandle].size - sizeof(DAL_SHM_SEGHEAD);
+   *size = (OFF_T) (shared_gt[driverhandle].size - sizeof(DAL_SHM_SEGHEAD));
    return(0);
  }
 
@@ -903,7 +903,7 @@ int     smem_flush(int driverhandle)
    return(0);
  }
 
-int     smem_seek(int driverhandle, long offset)
+int     smem_seek(int driverhandle, OFF_T offset)
  {
    if (offset < 0) return(SHARED_BADARG);
    if (shared_check_locked_index(driverhandle)) return(SHARED_INVALID);

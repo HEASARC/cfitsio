@@ -26,8 +26,9 @@ int ffpcll( fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     int tcode, maxelem, hdutype;
-    long twidth, incre, repeat, rowlen, rownum, elemnum, remain, next;
-    long tnull, startpos, wrtptr;
+    long twidth, incre, rownum, remain, next;
+    long tnull;
+    OFF_T repeat, startpos, elemnum, wrtptr, rowlen;
     double scale, zero;
     char tform[20], ctrue = 'T', cfalse = 'F';
     char message[FLEN_ERRMSG];
@@ -56,7 +57,7 @@ int ffpcll( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     while (remain)
     {
-      wrtptr = startpos + (rownum * rowlen) + (elemnum * incre);
+      wrtptr = startpos + (rowlen * rownum) + (elemnum * incre);
 
       ffmbyt(fptr, wrtptr, IGNORE_EOF, status);  /* move to write position */
 
@@ -206,9 +207,12 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
   The binary table column being written to must have datatype 'B' or 'X'. 
 */
 {
-    long bstart, offset, fbyte, bitloc, ndone;
-    long ii, repeat, rstart, estart;
-    int tcode, descrp;
+    OFF_T bstart, repeat, rowlen, elemnum;
+    long offset, fbyte, lbyte, nbyte, bitloc, ndone;
+    long ii, rstart, estart, twidth, incre, tnull;
+    int tcode, descrp, maxelem, hdutype;
+    double dummyd;
+    char tform[12], snull[12];
     unsigned char cbuff;
     static unsigned char onbit[8] = {128,  64,  32,  16,   8,   4,   2,   1};
     static unsigned char offbit[8] = {127, 191, 223, 239, 247, 251, 253, 254};
@@ -229,7 +233,29 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
+    /* rescan header if data structure is undefined */
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               
+            return(*status);
+
     fbyte = (fbit + 7) / 8;
+    lbyte = (fbit + nbit + 6) / 8;
+    nbyte = lbyte - fbyte +1;
+
+    /* Save the current heapsize; ffgcpr will increment the value if */
+    /* we are writing to a variable length column. */
+    offset = (fptr->Fptr)->heapsize;
+
+    /* call ffgcpr in case we are writing beyond the current end of   */
+    /* the table; it will allocate more space and shift any following */
+    /* HDU's.  Otherwise, we have little use for most of the returned */
+    /* parameters, therefore just use dummy parameters.               */
+
+    if (ffgcpr( fptr, colnum, frow, fbyte, nbyte, 1, &dummyd, &dummyd,
+        tform, &twidth, &tcode, &maxelem, &bstart, &elemnum, &incre,
+        &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
+        return(*status);
+
     bitloc = fbit - 1 - ((fbit - 1) / 8 * 8);
     ndone = 0;
     rstart = frow - 1;
@@ -255,7 +281,7 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
             return(*status = BAD_ELEM_NUM);
 
         /* calc the i/o pointer location to start of sequence of pixels */
-        bstart = (fptr->Fptr)->datastart + (rstart * (fptr->Fptr)->rowlength) +
+        bstart = (fptr->Fptr)->datastart + ((fptr->Fptr)->rowlength * rstart) +
                colptr->tbcol + estart;
     }
     else
@@ -265,14 +291,21 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
         /* length arrays.  REPEAT is the number of BITS in the array. */
 
         repeat = fbit + nbit -1;
-        offset = (fptr->Fptr)->heapsize;
-        /* write the number of elements and the starting offset */
+
+        /* write the number of elements and the starting offset.    */
+        /* Note: ffgcpr previous wrote the descripter, but with the */
+        /* wrong repeat value  (gave bytes instead of bits).        */
+
         ffpdes(fptr, colnum, frow, repeat, offset, status);
-        /* calc the i/o pointer location to start of sequence of pixels */
-        bstart = (fptr->Fptr)->datastart + offset + (fptr->Fptr)->heapstart + estart;
-        /* increment the empty heap starting address (in bytes) */
-        repeat = (repeat + 7) / 8;  /* convert from bits to bytes */
-        (fptr->Fptr)->heapsize += repeat;
+
+        /* Calc the i/o pointer location to start of sequence of pixels.   */
+        /* ffgcpr has already calculated a value for bstart that           */
+        /* points to the first element of the vector; we just have to      */
+        /* increment it to point to the first element we want to write to. */
+        /* Note: ffgcpr also already updated the size of the heap, so we   */
+        /* don't have to do that again here.                               */
+
+        bstart += estart;
     }
 
     /* move the i/o pointer to the start of the pixel sequence */
@@ -314,7 +347,7 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
           /* move the i/o pointer to the next row of pixels */
           estart = 0;
           rstart = rstart + 1;
-          bstart = (fptr->Fptr)->datastart + (rstart * (fptr->Fptr)->rowlength) +
+          bstart = (fptr->Fptr)->datastart + ((fptr->Fptr)->rowlength * rstart) +
                colptr->tbcol;
 
           ffmbyt(fptr, bstart, IGNORE_EOF, status);

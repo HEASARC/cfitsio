@@ -2,7 +2,7 @@
 #define _FITSIO2_H
  
 #include "fitsio.h"
- 
+
 #define DBUFFSIZE 28800 /* size of data buffer in bytes */
 
 #define NIOBUF  25       /* number of IO buffers to create */
@@ -125,7 +125,8 @@
  
 #define maxvalue(A,B) ((A) > (B) ? (A) : (B))
 #define minvalue(A,B) ((A) < (B) ? (A) : (B))
- 
+
+/* faster string comparison macros */
 #define FSTRCMP(a,b)     ((a)[0]<(b)[0]? -1:(a)[0]>(b)[0]?1:strcmp((a),(b)))
 #define FSTRNCMP(a,b,n)  ((a)[0]<(b)[0]?-1:(a)[0]>(b)[0]?1:strncmp((a),(b),(n)))
 
@@ -236,7 +237,7 @@ int ffgttb(fitsfile *fptr, long *rowlen, long *nrows, long *pcount,
 int ffmkey(fitsfile *fptr, char *card, int *status);
 int ffikey(fitsfile *fptr, char *card, int *status);
  
-int ffmbyt(fitsfile *fptr, long bytpos, int ignore_err, int *status);
+int ffmbyt(fitsfile *fptr, OFF_T bytpos, int ignore_err, int *status);
 int ffgbyt(fitsfile *fptr, long nbytes, void *buffer, int *status);
 int ffpbyt(fitsfile *fptr, long nbytes, void *buffer, int *status);
 int ffgbytoff(fitsfile *fptr, long gsize, long ngroups, long offset, 
@@ -283,22 +284,22 @@ int ffgext(fitsfile *fptr, int moveto, int *exttype, int *status);
 int ffgtbc(fitsfile *fptr, long *totalwidth, int *status);
 int ffgtbp(fitsfile *fptr, char *name, char *value, int *status);
 int ffiblk(fitsfile *fptr, long nblock, int headdata, int *status);
-int ffshft(fitsfile *fptr, long firstbyte, long nbytes, long nshift,
+int ffshft(fitsfile *fptr, OFF_T firstbyte, OFF_T nbytes, OFF_T nshift,
     int *status);
  
-int ffgcpr(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+int ffgcpr(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
            long nelem, int writemode, double *scale, double *zero, char *tform,
-           long *twidth, int *tcode, int *maxelem, long *startpos,
-           long *elemnum, long *incre, long *repeat,long *rowlen,
+           long *twidth, int *tcode, int *maxelem, OFF_T *startpos,
+           OFF_T *elemnum, long *incre, OFF_T *repeat, OFF_T *rowlen,
            int *hdutype, long *tnull, char *snull, int *status);
  
 int ffflushx(FITSfile *fptr);
-int ffseek(FITSfile *fptr, long position);
+int ffseek(FITSfile *fptr, OFF_T position);
 int ffread(FITSfile *fptr, long nbytes, void *buffer,
             int *status);
 int ffwrite(FITSfile *fptr, long nbytes, void *buffer,
             int *status);
-int fftrun(fitsfile *fptr, long filesize, int *status);
+int fftrun(fitsfile *fptr, OFF_T filesize, int *status);
 
 int ffgcll(fitsfile *fptr, int colnum, long firstrow, long firstelem, long
            nelem, int nultyp, char nulval, char *array, char *nularray,
@@ -309,31 +310,31 @@ int ffgcls(fitsfile *fptr, int colnum, long firstrow, long firstelem,
 int ffgcls2(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, int nultyp, char *nulval,
            char **array, char *nularray, int *anynul, int  *status);
-int ffgclb(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+int ffgclb(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
            long nelem, long  elemincre, int nultyp, unsigned char nulval,
            unsigned char *array, char *nularray, int *anynul, int  *status);
-int ffgclui(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+int ffgclui(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
            long nelem, long  elemincre, int nultyp, unsigned short nulval,
            unsigned short *array, char *nularray, int *anynul, int  *status);
-int ffgcli(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+int ffgcli(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
            long nelem, long  elemincre, int nultyp, short nulval,
            short *array, char *nularray, int *anynul, int  *status);
-int ffgcluj(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+int ffgcluj(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
            long nelem, long elemincre, int nultyp, unsigned long nulval,
            unsigned long *array, char *nularray, int *anynul, int  *status);
-int ffgclj(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+int ffgclj(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
            long nelem, long elemincre, int nultyp, long nulval, long *array,
            char *nularray, int *anynul, int  *status);
-int ffgcluk(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+int ffgcluk(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
            long nelem, long elemincre, int nultyp, unsigned int nulval,
            unsigned int *array, char *nularray, int *anynul, int  *status);
-int ffgclk(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+int ffgclk(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
            long nelem, long elemincre, int nultyp, int nulval, int *array,
            char *nularray, int *anynul, int  *status);
-int ffgcle(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+int ffgcle(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
            long nelem, long elemincre, int nultyp,  float nulval, float *array,
            char *nularray, int *anynul, int  *status);
-int ffgcld(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+int ffgcld(fitsfile *fptr, int colnum, long firstrow, OFF_T firstelem,
            long nelem, long elemincre, int nultyp, double nulval,
            double *array, char *nularray, int *anynul, int  *status);
  
@@ -345,15 +346,15 @@ int ffpi4b(fitsfile *fptr, long nelem, long incre, INT32BIT *buffer,
 int ffpr4b(fitsfile *fptr, long nelem, long incre, float *buffer, int *status);
 int ffpr8b(fitsfile *fptr, long nelem, long incre, double *buffer, int *status);
  
-int ffgi1b(fitsfile *fptr, long pos, long nelem, long incre,
+int ffgi1b(fitsfile *fptr, OFF_T pos, long nelem, long incre,
           unsigned char *buffer, int *status);
-int ffgi2b(fitsfile *fptr, long pos, long nelem, long incre, short *buffer,
+int ffgi2b(fitsfile *fptr, OFF_T pos, long nelem, long incre, short *buffer,
           int *status);
-int ffgi4b(fitsfile *fptr, long pos, long nelem, long incre, INT32BIT *buffer,
+int ffgi4b(fitsfile *fptr, OFF_T pos, long nelem, long incre, INT32BIT *buffer,
           int *status);
-int ffgr4b(fitsfile *fptr, long pos, long nelem, long incre, float *buffer,
+int ffgr4b(fitsfile *fptr, OFF_T pos, long nelem, long incre, float *buffer,
           int *status);
-int ffgr8b(fitsfile *fptr, long pos, long nelem, long incre, double *buffer,
+int ffgr8b(fitsfile *fptr, OFF_T pos, long nelem, long incre, double *buffer,
           int *status);
  
 int ffcins(fitsfile *fptr, long naxis1, long naxis2, long nbytes,
@@ -727,12 +728,12 @@ int fits_register_driver( char *prefix,
 	int (*checkfile) (char *urltype, char *infile, char *outfile),
 	int (*fitsopen)(char *filename, int rwmode, int *driverhandle),
 	int (*fitscreate)(char *filename, int *driverhandle),
-	int (*fitstruncate)(int driverhandle, long filesize),
+	int (*fitstruncate)(int driverhandle, OFF_T filesize),
 	int (*fitsclose)(int driverhandle),
 	int (*fremove)(char *filename),
-        int (*size)(int driverhandle, long *size),
+        int (*size)(int driverhandle, OFF_T *size),
 	int (*flush)(int driverhandle),
-	int (*seek)(int driverhandle, long offset),
+	int (*seek)(int driverhandle, OFF_T offset),
 	int (*fitsread) (int driverhandle, void *buffer, long nbytes),
 	int (*fitswrite)(int driverhandle, void *buffer, long nbytes));
 
@@ -748,12 +749,12 @@ int file_open(char *filename, int rwmode, int *driverhandle);
 int file_compress_open(char *filename, int rwmode, int *hdl);
 int file_openfile(char *filename, int rwmode, FILE **diskfile);
 int file_create(char *filename, int *driverhandle);
-int file_truncate(int driverhandle, long filesize);
-int file_size(int driverhandle, long *filesize);
+int file_truncate(int driverhandle, OFF_T filesize);
+int file_size(int driverhandle, OFF_T *filesize);
 int file_close(int driverhandle);
 int file_remove(char *filename);
 int file_flush(int driverhandle);
-int file_seek(int driverhandle, long offset);
+int file_seek(int driverhandle, OFF_T offset);
 int file_read (int driverhandle, void *buffer, long nbytes);
 int file_write(int driverhandle, void *buffer, long nbytes);
 int file_is_compressed(char *filename);
@@ -776,11 +777,11 @@ int stdin2file(int hd);
 int stdout_close(int handle);
 int mem_compress_open(char *filename, int rwmode, int *hdl);
 int mem_iraf_open(char *filename, int rwmode, int *hdl);
-int mem_size(int handle, long *filesize);
-int mem_truncate(int handle, long filesize);
+int mem_size(int handle, OFF_T *filesize);
+int mem_truncate(int handle, OFF_T filesize);
 int mem_close_free(int handle);
 int mem_close_keep(int handle);
-int mem_seek(int handle, long offset);
+int mem_seek(int handle, OFF_T offset);
 int mem_read(int hdl, void *buffer, long nbytes);
 int mem_write(int hdl, void *buffer, long nbytes);
 int mem_uncompress2mem(char *filename, FILE *diskfile, int hdl);
@@ -799,10 +800,10 @@ int root_open(char *filename, int rwmode, int *driverhandle);
 int root_create(char *filename, int *driverhandle);
 int root_close(int driverhandle);
 int root_flush(int driverhandle);
-int root_seek(int driverhandle, long offset);
+int root_seek(int driverhandle, OFF_T offset);
 int root_read (int driverhandle, void *buffer, long nbytes);
 int root_write(int driverhandle, void *buffer, long nbytes);
-int root_size(int handle, long *filesize);
+int root_size(int handle, OFF_T *filesize);
 
 /* http driver I/O routines */
 

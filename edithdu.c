@@ -3,12 +3,7 @@
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
-/*  Goddard Space Flight Center.  Users shall not, without prior written   */
-/*  permission of the U.S. Government,  establish a claim to statutory     */
-/*  copyright.  The Government and others acting on its behalf, shall have */
-/*  a royalty-free, non-exclusive, irrevocable,  worldwide license for     */
-/*  Government purposes to publish, distribute, translate, copy, exhibit,  */
-/*  and perform such material.                                             */
+/*  Goddard Space Flight Center.                                           */
 
 #include <string.h>
 #include <stdlib.h>
@@ -192,7 +187,8 @@ int ffcpdt(fitsfile *infptr,    /* I - FITS file pointer to input file  */
   copy the data unit from the CHDU of infptr to the CHDU of outfptr. 
   This will overwrite any data already in the outfptr CHDU.
 */
-    long nb, ii, indatastart, indataend, outdatastart;
+    long nb, ii;
+    OFF_T indatastart, indataend, outdatastart;
     char buffer[2880];
 
     if (*status > 0)
@@ -201,10 +197,10 @@ int ffcpdt(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     if (infptr == outfptr)
         return(*status = SAME_FILE);
 
-    ffghad(infptr,  NULL, &indatastart, &indataend, status);
-    ffghad(outfptr, NULL, &outdatastart, NULL, status);
+    ffghof(infptr,  NULL, &indatastart, &indataend, status);
+    ffghof(outfptr, NULL, &outdatastart, NULL, status);
 
-    /* Calculate the number of bytes to be copied  */
+    /* Calculate the number of blocks to be copied  */
     nb = (indataend - indatastart) / 2880;
 
     if (nb > 0)
@@ -232,7 +228,8 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
 */
 {
     int bytlen, nexthdu, maxhdu, ii;
-    long npixels, datasize, newstart, nblocks;
+    long nblocks;
+    OFF_T npixels, newstart, datasize;
     char errmsg[81];
 
     if (*status > 0)
@@ -318,7 +315,7 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
 
     ((fptr->Fptr)->maxhdu)++;      /* increment known number of HDUs in the file */
     for (ii = (fptr->Fptr)->maxhdu; ii > (fptr->Fptr)->curhdu; ii--)
-        (fptr->Fptr)->headstart[ii + 1] = (fptr->Fptr)->headstart[ii];  /* incre start addr */
+        (fptr->Fptr)->headstart[ii + 1] = (fptr->Fptr)->headstart[ii]; /* incre start addr */
 
     (fptr->Fptr)->headstart[nexthdu] = newstart; /* set starting addr of HDU */
 
@@ -328,6 +325,7 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
     (fptr->Fptr)->nextkey = (fptr->Fptr)->headstart[nexthdu];  
     (fptr->Fptr)->headend = (fptr->Fptr)->headstart[nexthdu];
     (fptr->Fptr)->datastart = ((fptr->Fptr)->headstart[nexthdu]) + 2880;
+    (fptr->Fptr)->hdutype = IMAGE_HDU;  /* might need to be reset... */
 
     /* write the required header keywords */
     ffphpr(fptr, TRUE, bitpix, naxis, naxes, 0, 1, TRUE, status);
@@ -353,7 +351,8 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
 */
 {
     int nexthdu, maxhdu, ii, nunit, nhead, ncols, gotmem = 0;
-    long datasize, newstart, nblocks, rowlen;
+    long nblocks, rowlen;
+    OFF_T datasize, newstart;
     char errmsg[81];
 
     if (*status > 0)
@@ -419,7 +418,7 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
 
     nhead = (9 + (3 * tfields) + nunit + 35) / 36;  /* no. of header blocks */
-    datasize = rowlen * naxis2;          /* size of table in bytes */
+    datasize = (OFF_T)rowlen * naxis2;          /* size of table in bytes */
     nblocks = ((datasize + 2879) / 2880) + nhead;  /* size of HDU */
 
     if ((fptr->Fptr)->writemode == READWRITE) /* must have write access */
@@ -454,6 +453,7 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
     (fptr->Fptr)->nextkey = (fptr->Fptr)->headstart[nexthdu];  
     (fptr->Fptr)->headend = (fptr->Fptr)->headstart[nexthdu];
     (fptr->Fptr)->datastart = ((fptr->Fptr)->headstart[nexthdu]) + (nhead * 2880);
+    (fptr->Fptr)->hdutype = ASCII_TBL;  /* might need to be reset... */
 
     /* write the required header keywords */
 
@@ -483,7 +483,8 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
 */
 {
     int nexthdu, maxhdu, ii, nunit, nhead, datacode;
-    long naxis1, datasize, newstart, nblocks, repeat, width;
+    long naxis1, nblocks, repeat, width;
+    OFF_T datasize, newstart;
     char errmsg[81];
 
     if (*status > 0)
@@ -543,7 +544,7 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
             naxis1 = naxis1 + (repeat * width);
     }
 
-    datasize = (naxis1 * naxis2) + pcount;         /* size of table in bytes */
+    datasize = ((OFF_T)naxis1 * naxis2) + pcount;         /* size of table in bytes */
     nblocks = ((datasize + 2879) / 2880) + nhead;  /* size of HDU */
 
     if ((fptr->Fptr)->writemode == READWRITE) /* must have write access */
@@ -558,13 +559,14 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
     newstart = (fptr->Fptr)->headstart[nexthdu]; /* save starting addr of HDU */
 
     (fptr->Fptr)->hdutype = BINARY_TBL;  /* so that correct fill value is used */
+
     /* ffiblk also increments headstart for all following HDUs */
     if (ffiblk(fptr, nblocks, 1, status) > 0)  /* insert the blocks */
         return(*status);
 
     ((fptr->Fptr)->maxhdu)++;      /* increment known number of HDUs in the file */
     for (ii = (fptr->Fptr)->maxhdu; ii > (fptr->Fptr)->curhdu; ii--)
-        (fptr->Fptr)->headstart[ii + 1] = (fptr->Fptr)->headstart[ii];  /* incre start addr */
+        (fptr->Fptr)->headstart[ii + 1] = (fptr->Fptr)->headstart[ii]; /* incre start addr */
 
     (fptr->Fptr)->headstart[nexthdu] = newstart; /* set starting addr of HDU */
 
@@ -574,6 +576,7 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
     (fptr->Fptr)->nextkey = (fptr->Fptr)->headstart[nexthdu];  
     (fptr->Fptr)->headend = (fptr->Fptr)->headstart[nexthdu];
     (fptr->Fptr)->datastart = ((fptr->Fptr)->headstart[nexthdu]) + (nhead * 2880);
+    (fptr->Fptr)->hdutype = BINARY_TBL;  /* might need to be reset... */
 
     /* write the required header keywords. This will write PCOUNT = 0 */
     /* so that the variable length data will be written at the right place */

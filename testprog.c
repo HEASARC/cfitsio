@@ -224,10 +224,10 @@ int main()
     if (ffpkyt(fptr, "key_pkyt", otint, otfrac, "fxpkyt comment", &status) > 0)
         printf("ffpkyt status = %d\n", status);
 
-    if (ffpcom(fptr, "This keyword was written by fxpcom.", &status) > 0)
+    if (ffpcom(fptr, "  This keyword was written by fxpcom.", &status) > 0)
         printf("ffpcom status = %d\n", status);
 
-    if (ffphis(fptr, "  This keyword written by fxphis (w/ 2 leading spaces).",
+    if (ffphis(fptr, "    This keyword written by fxphis (w/ 2 leading spaces).",
         &status) > 0)
         printf("ffphis status = %d\n", status);
 

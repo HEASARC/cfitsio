@@ -1445,7 +1445,8 @@ int ffikey(fitsfile *fptr,    /* I - FITS file pointer  */
 */
 {
     int ii, len, nshift;
-    long nblocks, bytepos;
+    long nblocks;
+    OFF_T bytepos;
     char *inbuff, *outbuff, *tmpbuff, buff1[FLEN_CARD], buff2[FLEN_CARD];
 
     if (*status > 0)           /* inherit input status value if > 0 */
@@ -1558,7 +1559,7 @@ int ffdrec(fitsfile *fptr,   /* I - FITS file pointer  */
 */
 {
     int ii, nshift;
-    long bytepos;
+    OFF_T bytepos;
     char *inbuff, *outbuff, *tmpbuff, buff1[81], buff2[81];
 
     if (*status > 0)           /* inherit input status value if > 0 */

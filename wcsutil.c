@@ -371,6 +371,7 @@ int ffwldp(double xpix, double ypix, double xref, double yref,
   sins = l*l + m*m;
   cos0 = cos(dec0);
   sin0 = sin(dec0);
+
 /* process by case  */
   switch (itype) {
     case 0:   /* linear -CAR */

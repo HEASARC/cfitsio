@@ -3,12 +3,7 @@
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
-/*  Goddard Space Flight Center.  Users shall not, without prior written   */
-/*  permission of the U.S. Government,  establish a claim to statutory     */
-/*  copyright.  The Government and others acting on its behalf, shall have */
-/*  a royalty-free, non-exclusive, irrevocable,  worldwide license for     */
-/*  Government purposes to publish, distribute, translate, copy, exhibit,  */
-/*  and perform such material.                                             */
+/*  Goddard Space Flight Center.                                           */
 
 #include <string.h>
 #include <limits.h>
@@ -76,7 +71,8 @@ int ffnchk(fitsfile *fptr,  /* I - FITS file pointer                     */
   the null gets interpreted as a normal end of string character.
 */
 {
-    long ii, nblock, bytepos;
+    long ii, nblock;
+    OFF_T bytepos;
     int length, nullpos;
     char block[2881];
     
@@ -159,7 +155,7 @@ int ffgnky(fitsfile *fptr,  /* I - FITS file pointer     */
 */
 {
     int jj, nrec;
-    long bytepos, endhead;
+    OFF_T bytepos, endhead;
     char message[FLEN_ERRMSG];
 
     if (*status > 0)
@@ -182,10 +178,11 @@ int ffgnky(fitsfile *fptr,  /* I - FITS file pointer     */
     bytepos = (fptr->Fptr)->nextkey;
     endhead = maxvalue( ((fptr->Fptr)->headend), ((fptr->Fptr)->datastart - 2880) );
 
-    if (bytepos > endhead ||            /* nextkey must be < endhead and */
-        bytepos < (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] )    /* > than headstart */
+    /* nextkey must be < endhead and > than  headstart */
+    if (bytepos > endhead ||  
+        bytepos < (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] ) 
     {
-        nrec = (bytepos - (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu]) / 80 + 1;
+        nrec=(bytepos - (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu]) / 80 + 1;
         sprintf(message, "Cannot get keyword number %d.  It does not exist.",
                 nrec);
         ffpmsg(message);
@@ -1517,7 +1514,7 @@ int ffdtdm(fitsfile *fptr,  /* I - FITS file pointer                        */
     {
         *naxis = 1;                   /* default = 1 dimensional */
         if (maxdim > 0)
-            naxes[0] = colptr->trepeat;  /* default length = repeat count */
+            naxes[0] = (long) colptr->trepeat; /* default length = repeat */
     }
     else
     {
@@ -1557,11 +1554,11 @@ int ffdtdm(fitsfile *fptr,  /* I - FITS file pointer                        */
             return(*status = BAD_TDIM);
         }
 
-        if (colptr->trepeat != totalpix)
+        if ((long) colptr->trepeat != totalpix)
         {
           sprintf(message,
           "column vector length, %ld, does not equal TDIMn array size, %ld",
-          colptr->trepeat, totalpix);
+          (long) colptr->trepeat, totalpix);
           ffpmsg(message);
           ffpmsg(tdimstr);
           return(*status = BAD_TDIM);
@@ -2406,7 +2403,8 @@ int ffh2st(fitsfile *fptr,   /* I - FITS file pointer           */
 */
 {
     int nkeys;
-    long nrec, headstart;
+    long nrec;
+    OFF_T headstart;
 
     if (*status > 0)
         return(*status);
@@ -2426,7 +2424,7 @@ int ffh2st(fitsfile *fptr,   /* I - FITS file pointer           */
          return(*status);
     }
 
-    ffghad(fptr, &headstart, NULL, NULL, status); /* get header address */
+    ffghof(fptr, &headstart, NULL, NULL, status); /* get header address */
     ffmbyt(fptr, headstart, REPORT_EOF, status);   /* move to header */
     ffgbyt(fptr, nrec * 2880, *header, status);     /* copy header */
     *(*header + (nrec * 2880)) = '\0';

@@ -3,12 +3,7 @@
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
-/*  Goddard Space Flight Center.  Users shall not, without prior written   */
-/*  permission of the U.S. Government,  establish a claim to statutory     */
-/*  copyright.  The Government and others acting on its behalf, shall have */
-/*  a royalty-free, non-exclusive, irrevocable,  worldwide license for     */
-/*  Government purposes to publish, distribute, translate, copy, exhibit,  */
-/*  and perform such material.                                             */
+/*  Goddard Space Flight Center.                                           */
 
 #include <math.h>
 #include <stdlib.h>
@@ -230,8 +225,9 @@ int ffgsvi(fitsfile *fptr, /* I - FITS file pointer                         */
 */
 {
     long ii,i0, i1,i2,i3,i4,i5,i6,i7,i8,row,rstr,rstp,rinc;
-    long str[9],stp[9],incr[9],dsize[10],dir[9];
-    long felem, nelem, nultyp, ninc, numcol;
+    long str[9],stp[9],incr[9],dir[9];
+    long nelem, nultyp, ninc, numcol;
+    OFF_T felem, dsize[10];
     int hdutype, anyf;
     char ldummy, msg[FLEN_ERRMSG];
     int nullcheck = 1;
@@ -624,7 +620,7 @@ int ffgcfi(fitsfile *fptr,   /* I - FITS file pointer                       */
 int ffgcli( fitsfile *fptr,   /* I - FITS file pointer                       */
             int  colnum,      /* I - number of column to read (1 = 1st col)  */
             long  firstrow,   /* I - first row to read (1 = 1st row)         */
-            long  firstelem,  /* I - first vector element to read (1 = 1st)  */
+            OFF_T  firstelem, /* I - first vector element to read (1 = 1st)  */
             long  nelem,      /* I - number of values to read                */
             long  elemincre,  /* I - pixel increment; e.g., 2 = every other  */
             int   nultyp,     /* I - null value handling code:               */
@@ -651,10 +647,10 @@ int ffgcli( fitsfile *fptr,   /* I - FITS file pointer                       */
 {
     double scale, zero, power = 1.;
     int tcode, maxelem, hdutype, xcode, decimals;
-    long twidth, incre, repeat, rowlen, rownum, elemnum, remain, next, ntodo;
+    long twidth, incre, rownum, remain, next, ntodo;
     long ii, rowincre, tnull, xwidth;
     int convert, nulcheck, readcheck = 0;
-    long startpos, readptr;
+    OFF_T repeat, startpos, elemnum, readptr, rowlen;
     char tform[20];
     char message[81];
     char snull[20];   /*  the FITS null value if reading from ASCII table  */
@@ -758,7 +754,7 @@ int ffgcli( fitsfile *fptr,   /* I - FITS file pointer                       */
           ntodo = minvalue(ntodo, (elemnum/(-elemincre) +1));
         }
 
-        readptr = startpos + (rownum * rowlen) + (elemnum * (incre / elemincre));
+        readptr = startpos + ((OFF_T)rownum * rowlen) + (elemnum * (incre / elemincre));
 
         switch (tcode) 
         {
@@ -854,7 +850,7 @@ int ffgcli( fitsfile *fptr,   /* I - FITS file pointer                       */
                 rownum += rowincre;
                 elemnum = elemnum - (rowincre * repeat);
             }
-            else if (elemnum < 0)  /* completed a row; start on a previous row */
+            else if (elemnum < 0) /* completed a row; start on a previous row */
             {
                 rowincre = (-elemnum - 1) / repeat + 1;
                 rownum -= rowincre;

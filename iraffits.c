@@ -1393,9 +1393,13 @@ char *keyword;	/* character string containing the name of the variable
 	    }
 	}
 
-    /* Return NULL to calling program if keyword is not found */
+    /* Return NULL if keyword is found at start of FITS header string */
     if (pval == NULL)
 	return (pval);
+
+    /* Return NULL if  found the first keyword in the header */
+    if (pval == hstring)
+        return (NULL);
 
     /* Find last nonblank line before requested keyword */
     bval = pval - 80;

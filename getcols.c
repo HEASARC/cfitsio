@@ -3,12 +3,7 @@
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
-/*  Goddard Space Flight Center.  Users shall not, without prior written   */
-/*  permission of the U.S. Government,  establish a claim to statutory     */
-/*  copyright.  The Government and others acting on its behalf, shall have */
-/*  a royalty-free, non-exclusive, irrevocable,  worldwide license for     */
-/*  Government purposes to publish, distribute, translate, copy, exhibit,  */
-/*  and perform such material.                                             */
+/*  Goddard Space Flight Center.                                           */
 
 #include <stdlib.h>
 #include <string.h>
@@ -90,8 +85,14 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
     if (*status > 0 || nelem == 0)  /* inherit input status value if > 0 */
         return(*status);
 
+    /* reset position to the correct HDU if necessary */
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+    /* rescan header if data structure is undefined */
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               
+            return(*status);
 
     if (colnum < 1 || colnum > (fptr->Fptr)->tfield)
     {
@@ -513,8 +514,9 @@ int ffgcls2 ( fitsfile *fptr,   /* I - FITS file pointer                       *
 {
     long nullen; 
     int tcode, maxelem, hdutype, nulcheck;
-    long twidth, incre, repeat, rowlen, rownum, elemnum;
-    long ii, jj, ntodo, tnull, startpos, readptr, remain, next;
+    long twidth, incre, rownum;
+    long ii, jj, ntodo, tnull, remain, next;
+    OFF_T repeat, startpos, elemnum, readptr, rowlen;
     double scale, zero;
     char tform[20];
     char message[FLEN_ERRMSG];
@@ -609,7 +611,7 @@ int ffgcls2 ( fitsfile *fptr,   /* I - FITS file pointer                       *
       ntodo = minvalue(remain, maxelem);      
       ntodo = minvalue(ntodo, (repeat - elemnum));
 
-      readptr = startpos + (rownum * rowlen) + (elemnum * incre);
+      readptr = startpos + ((OFF_T)rownum * rowlen) + (elemnum * incre);
       ffmbyt(fptr, readptr, REPORT_EOF, status);  /* move to read position */
 
       /* read the array of strings from the FITS file into the buffer */

@@ -1,5 +1,65 @@
                    Log of Changes Made to CFITSIO
 
+Version 2.1
+
+  Enhancements
+
+   - made substantial modification to code to support large files,
+     i.e., files larger than 2**31 bytes = 2.1GB.  FITS files up to
+     6 terabytes in size may now be read and written on platforms
+     that support large files (currently only Solaris).
+
+   - modified ffpcom and ffphis, which write COMMENT and HISTORY 
+     keywords, respectively, so that they now use columns 9 - 80, 
+     instead of only columns 11 - 80.  Previously, these routines
+     avoided using columns 9 and 10, but this is not really
+     necessary.
+
+  New Routines
+
+   - fits_read_subset/ffgsv reads a rectangular subset of an image.
+     This routine supports reading from Large images, which have
+     more than 2.1e9 pixels.
+
+   - fits_get_hduoff returns the byte offset in the file to
+     the start and end of the current HDU.  This routine replaces the
+     now obsolete fits_get_hduaddr routine;  it uses 'off_t' instead of
+     'long' as the datatype of the arguments and can support offsets
+     in files greater than 2.1GB in size.
+
+  Bug fixes:
+
+   - fixed a bug in the  fits_write_col_bit/ffpclx routine which
+     could not write to a bit 'X' column if that was the first column
+     in the table to be written to.  This bug would not appear if
+     any other datatype column was written to first.
+
+   - nonsensible (but still formally legal) binary table TFORM values
+     such as '8A15', or '1A8' or 'A8' would confuse CFITSIO and cause it
+     to return a 308 error.  When parsing the TFORMn = 'rAw' value,
+     the ffbnfm routine has been modified to ignore the 'w' value in cases 
+     where w > r.
+
+   - fixed bug in the blsearch routine in iraffits.c which sometimes
+     caused an out-of-bounds string pointer to be returned when searching
+     for blank space in the header just before the 'END' keyword.
+
+   - fixed minor problem in ffgtcr in group.c, which sometimes failed
+     while trying to move to the end of file before appending a
+     grouping table.
+
+   - on Solaris, with Sun CC 5.0, one must check for '__unix' rather
+     than '__unix__' or 'unix' as it's symbol.  Needed to modify this
+     in drvrfile.c in 3 places.
+
+   - in ffextn, the FITS file would be left open if the named
+     extension doesn't exist, thus preventing the file from being
+     opened again later with write access.
+
+   - fixed bug in ffiimg that would cause attempts to insert a new
+     image extension following a table extension, and in front of any
+     other type of extension, to fail.
+
 Version 2.037 - 6 July 2000
 
   Enhancements

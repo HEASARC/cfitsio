@@ -164,11 +164,13 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
 {
    parseInfo Info;
    int naxis, constant;
-   long nelem, naxes[MAXDIMS], rdlen, maxrows, nbuff, nGood;
-   long inloc, outloc, ntodo, freespace;
+   long nelem, rdlen, naxes[MAXDIMS], maxrows, nbuff, nGood, inloc, outloc;
+   OFF_T inbyteloc, outbyteloc, hsize;
+   long ntodo, freespace;
    unsigned char *buffer, result;
    struct {
-      long rowLength, numRows, heapSize, heapStart, dataStart;
+      long rowLength, numRows, heapSize;
+      OFF_T dataStart, heapStart;
    } inExt, outExt;
 
    if( *status ) return( *status );
@@ -205,7 +207,7 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
       ffcprs();
       return( *status );
    }
-   inExt.rowLength = (infptr->Fptr)->rowlength;
+   inExt.rowLength = (long) (infptr->Fptr)->rowlength;
    inExt.numRows   = (infptr->Fptr)->numrows;
    inExt.heapSize  = (infptr->Fptr)->heapsize;
    if( inExt.numRows == 0 ) { /* Nothing to copy */
@@ -221,7 +223,7 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
       ffcprs();
       return( *status );
    }
-   outExt.rowLength = (outfptr->Fptr)->rowlength;
+   outExt.rowLength = (long) (outfptr->Fptr)->rowlength;
    outExt.numRows   = (outfptr->Fptr)->numrows;
    if( !outExt.numRows )
       (outfptr->Fptr)->heapsize = 0L;
@@ -323,8 +325,8 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
          /*  Insert more space into outfptr if necessary  */
          /*************************************************/
 
-         rdlen     = outExt.heapStart + outExt.heapSize;
-         freespace = ( ( (rdlen + 2879) / 2880) * 2880) - rdlen;
+         hsize     = outExt.heapStart + outExt.heapSize;
+         freespace = ( ( (hsize + 2879) / 2880) * 2880) - hsize;
          ntodo     = inExt.heapSize;
 
          if ( (freespace - ntodo) < 0) {       /* not enough existing space? */
@@ -348,17 +350,17 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
          /**********************************/
 
          ntodo  =  inExt.heapSize;
-         inloc  =  inExt.heapStart +  inExt.dataStart;
-         outloc = outExt.heapStart + outExt.dataStart + outExt.heapSize;
+         inbyteloc  =  inExt.heapStart +  inExt.dataStart;
+         outbyteloc = outExt.heapStart + outExt.dataStart + outExt.heapSize;
 
          while ( ntodo && !*status ) {
             rdlen = minvalue(ntodo,100000);
-            ffmbyt( infptr,  inloc,  REPORT_EOF, status );
+            ffmbyt( infptr,  inbyteloc,  REPORT_EOF, status );
             ffgbyt( infptr,  rdlen,  buffer,     status );
-            ffmbyt( outfptr, outloc, IGNORE_EOF, status );
+            ffmbyt( outfptr, outbyteloc, IGNORE_EOF, status );
             ffpbyt( outfptr, rdlen,  buffer,     status );
-            inloc  += rdlen;
-            outloc += rdlen;
+            inbyteloc  += rdlen;
+            outbyteloc += rdlen;
             ntodo  -= rdlen;
          }
 

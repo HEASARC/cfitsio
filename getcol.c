@@ -4,14 +4,132 @@
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
-/*  Goddard Space Flight Center.  Users shall not, without prior written   */
-/*  permission of the U.S. Government,  establish a claim to statutory     */
-/*  copyright.  The Government and others acting on its behalf, shall have */
-/*  a royalty-free, non-exclusive, irrevocable,  worldwide license for     */
-/*  Government purposes to publish, distribute, translate, copy, exhibit,  */
-/*  and perform such material.                                             */
+/*  Goddard Space Flight Center.                                           */
 
 #include "fitsio2.h"
+/*--------------------------------------------------------------------------*/
+int ffgsv(  fitsfile *fptr,   /* I - FITS file pointer                       */
+            int  datatype,    /* I - datatype of the value                   */
+            long *blc,        /* I - 'bottom left corner' of the subsection  */
+            long *trc ,       /* I - 'top right corner' of the subsection    */
+            long *inc,        /* I - increment to be applied in each dim.    */
+            void *nulval,     /* I - value for undefined pixels              */
+            void *array,      /* O - array of values that are returned       */
+            int  *anynul,     /* O - set to 1 if any values are null; else 0 */
+            int  *status)     /* IO - error status                           */
+/*
+  Read an section of values from the primary array. The datatype of the
+  input array is defined by the 2nd argument.  Data conversion
+  and scaling will be performed if necessary (e.g, if the datatype of
+  the FITS array is not the same as the array being read).
+  Undefined elements will be set equal to NULVAL, unless NULVAL=0
+  in which case no checking for undefined values will be performed.
+  ANYNUL is returned with a value of .true. if any pixels are undefined.
+*/
+{
+    int naxis;
+    long naxes[9];
+
+    if (*status > 0)   /* inherit input status value if > 0 */
+        return(*status);
+
+    /* get the size of the image */
+    ffgidm(fptr, &naxis, status);
+    ffgisz(fptr, 9, naxes, status);
+
+    /*
+      the primary array is represented as a binary table:
+      each group of the primary array is a row in the table,
+      where the first column contains the group parameters
+      and the second column contains the image itself.
+    */
+
+    if (datatype == TBYTE)
+    {
+      if (nulval == 0)
+        ffgsvb(fptr, 1, naxis, naxes, blc, trc, inc, 0,
+               (unsigned char *) array, anynul, status);
+      else
+        ffgsvb(fptr, 1, naxis, naxes, blc, trc, inc, *(unsigned char *) nulval,
+               (unsigned char *) array, anynul, status);
+    }
+    else if (datatype == TUSHORT)
+    {
+      if (nulval == 0)
+        ffgsvui(fptr, 1, naxis, naxes, blc, trc, inc, 0,
+               (unsigned short *) array, anynul, status);
+      else
+        ffgsvui(fptr, 1, naxis, naxes, blc, trc, inc, *(unsigned short *) nulval,
+               (unsigned short *) array, anynul, status);
+    }
+    else if (datatype == TSHORT)
+    {
+      if (nulval == 0)
+        ffgsvi(fptr, 1, naxis, naxes, blc, trc, inc, 0,
+               (short *) array, anynul, status);
+      else
+        ffgsvi(fptr, 1, naxis, naxes, blc, trc, inc, *(short *) nulval,
+               (short *) array, anynul, status);
+    }
+    else if (datatype == TUINT)
+    {
+      if (nulval == 0)
+        ffgsvuk(fptr, 1, naxis, naxes, blc, trc, inc, 0,
+               (unsigned int *) array, anynul, status);
+      else
+        ffgsvuk(fptr, 1, naxis, naxes, blc, trc, inc, *(unsigned int *) nulval,
+               (unsigned int *) array, anynul, status);
+    }
+    else if (datatype == TINT)
+    {
+      if (nulval == 0)
+        ffgsvk(fptr, 1, naxis, naxes, blc, trc, inc, 0,
+               (int *) array, anynul, status);
+      else
+        ffgsvk(fptr, 1, naxis, naxes, blc, trc, inc, *(int *) nulval,
+               (int *) array, anynul, status);
+    }
+    else if (datatype == TULONG)
+    {
+      if (nulval == 0)
+        ffgsvuj(fptr, 1, naxis, naxes, blc, trc, inc, 0,
+               (unsigned long *) array, anynul, status);
+      else
+        ffgsvuj(fptr, 1, naxis, naxes, blc, trc, inc, *(unsigned long *) nulval,
+               (unsigned long *) array, anynul, status);
+    }
+    else if (datatype == TLONG)
+    {
+      if (nulval == 0)
+        ffgsvj(fptr, 1, naxis, naxes, blc, trc, inc, 0,
+               (long *) array, anynul, status);
+      else
+        ffgsvj(fptr, 1, naxis, naxes, blc, trc, inc, *(long *) nulval,
+               (long *) array, anynul, status);
+    }
+    else if (datatype == TFLOAT)
+    {
+      if (nulval == 0)
+        ffgsve(fptr, 1, naxis, naxes, blc, trc, inc, 0,
+               (float *) array, anynul, status);
+      else
+        ffgsve(fptr, 1, naxis, naxes, blc, trc, inc, *(float *) nulval,
+               (float *) array, anynul, status);
+    }
+    else if (datatype == TDOUBLE)
+    {
+      if (nulval == 0)
+        ffgsvd(fptr, 1, naxis, naxes, blc, trc, inc, 0,
+               (double *) array, anynul, status);
+      else
+        ffgsvd(fptr, 1, naxis, naxes, blc, trc, inc, *(double *) nulval,
+               (double *) array, anynul, status);
+    }
+    else
+      *status = BAD_DATATYPE;
+
+    return(*status);
+}
 /*--------------------------------------------------------------------------*/
 int ffgpv(  fitsfile *fptr,   /* I - FITS file pointer                       */
             int  datatype,    /* I - datatype of the value                   */

@@ -2,18 +2,13 @@
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
-/*  Goddard Space Flight Center.  Users shall not, without prior written   */
-/*  permission of the U.S. Government,  establish a claim to statutory     */
-/*  copyright.  The Government and others acting on its behalf, shall have */
-/*  a royalty-free, non-exclusive, irrevocable,  worldwide license for     */
-/*  Government purposes to publish, distribute, translate, copy, exhibit,  */
-/*  and perform such material.                                             */
+/*  Goddard Space Flight Center.                                           */
 
 #include <string.h>
 #include <stdlib.h>
 #include "fitsio2.h"
 
-#if defined(unix) || defined(__unix__)
+#if defined(unix) || defined(__unix__)  || defined(__unix)
 #include <pwd.h>         /* needed in file_openfile */
 #endif
 
@@ -30,7 +25,7 @@ static char file_outfile[FLEN_FILENAME];
 typedef struct    /* structure containing disk file structure */ 
 {
     FILE *fileptr;
-    long currentpos;
+    OFF_T currentpos;
     int last_io_op;
 } diskdriver;
 
@@ -153,7 +148,7 @@ int file_openfile(char *filename, int rwmode, FILE **diskfile)
 {
     char mode[4];
 
-#if defined(unix) || defined(__unix__)
+#if defined(unix) || defined(__unix__) || defined(__unix)
     char tempname[512], *cptr, user[80];
     struct passwd *pwd;
     int ii = 0;
@@ -173,7 +168,7 @@ int file_openfile(char *filename, int rwmode, FILE **diskfile)
         /* but force stream mode access to enable random I/O access      */
     *diskfile = fopen(filename, mode, "rfm=fix", "mrs=2880", "ctx=stm"); 
 
-#elif defined(unix) || defined(__unix__)
+#elif defined(unix) || defined(__unix__) || defined(__unix)
 
     /* support the ~user/file.fits or ~/file.fits filenames in UNIX */
 
@@ -282,7 +277,7 @@ int file_create(char *filename, int *handle)
     return(0);
 }
 /*--------------------------------------------------------------------------*/
-int file_truncate(int handle, long filesize)
+int file_truncate(int handle, OFF_T filesize)
 /*
   truncate the diskfile to a new smaller size
 */
@@ -302,28 +297,36 @@ int file_truncate(int handle, long filesize)
     return(0);
 }
 /*--------------------------------------------------------------------------*/
-int file_size(int handle, long *filesize)
+int file_size(int handle, OFF_T *filesize)
 /*
   return the size of the file in bytes
 */
 {
-    long position;
+    OFF_T position;
     FILE *diskfile;
 
     diskfile = handleTable[handle].fileptr;
 
-    position = ftell(diskfile);      /* save current postion */
-    if (position < 0)
+    if (fgetpos(diskfile, &position) != 0)      /* save current postion */
         return(SEEK_ERROR);
 
-    if (fseek(diskfile, 0, 2) != 0)  /* move to end of the existing file */
+/* move to end of the existing file */
+
+/* call the newer fseeko routine, which supports Large Files (> 2GB) */
+/* if it is supported.  */
+
+#if _FILE_OFFSET_BITS - 0 == 64
+    if (fseeko(diskfile, 0, 2) != 0)
+        return(SEEK_ERROR);
+#else
+    if (fseek(diskfile, 0, 2) != 0)
+        return(SEEK_ERROR);
+#endif
+
+    if (fgetpos(diskfile, filesize) != 0)      /* position = size of file */
         return(SEEK_ERROR);
 
-    *filesize = ftell(diskfile);     /* position = size of file */
-    if (*filesize < 0)
-        return(SEEK_ERROR);
-
-    if (fseek(diskfile, position, 0) != 0) /* move back to orig. position */
+    if (fsetpos(diskfile, &position) != 0) /* move back to orig. position */
         return(SEEK_ERROR);
 
     return(0);
@@ -366,20 +369,23 @@ int file_flush(int handle)
 
 #if MACHINE == IBMPC
 
-    if (fseek(handleTable[handle].fileptr,
-        handleTable[handle].currentpos, 0 ) )
+    if (fsetpos(handleTable[handle].fileptr,
+        &(handleTable[handle].currentpos)) )
         return(SEEK_ERROR);
 #endif
 
     return(0);
 }
 /*--------------------------------------------------------------------------*/
-int file_seek(int handle, long offset)
+int file_seek(int handle, OFF_T offset)
 /*
   seek to position relative to start of the file
 */
 {
-    if (fseek(handleTable[handle].fileptr, offset, 0 ) )
+    OFF_T toff;
+
+    toff = offset;
+    if (fsetpos(handleTable[handle].fileptr, &toff) )
         return(SEEK_ERROR);
 
     handleTable[handle].currentpos = offset;
@@ -396,7 +402,7 @@ int file_read(int hdl, void *buffer, long nbytes)
 
     if (handleTable[hdl].last_io_op == IO_WRITE)
     {
-      if (fseek(handleTable[hdl].fileptr, handleTable[hdl].currentpos, 0 ))
+      if (fsetpos(handleTable[hdl].fileptr, &(handleTable[hdl].currentpos) ))
         return(READ_ERROR);
     }
   
@@ -430,7 +436,7 @@ int file_write(int hdl, void *buffer, long nbytes)
 {
     if (handleTable[hdl].last_io_op == IO_READ) 
     {
-      if (fseek(handleTable[hdl].fileptr, handleTable[hdl].currentpos, 0 ))
+      if (fsetpos(handleTable[hdl].fileptr, &(handleTable[hdl].currentpos) ))
          return(WRITE_ERROR);
     }
   

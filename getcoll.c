@@ -3,12 +3,7 @@
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
-/*  Goddard Space Flight Center.  Users shall not, without prior written   */
-/*  permission of the U.S. Government,  establish a claim to statutory     */
-/*  copyright.  The Government and others acting on its behalf, shall have */
-/*  a royalty-free, non-exclusive, irrevocable,  worldwide license for     */
-/*  Government purposes to publish, distribute, translate, copy, exhibit,  */
-/*  and perform such material.                                             */
+/*  Goddard Space Flight Center.                                           */
 
 #include <stdlib.h>
 #include <string.h>
@@ -99,8 +94,9 @@ int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
 */
 {
     int tcode, maxelem, hdutype, ii, nulcheck;
-    long twidth, incre, repeat, rowlen, rownum, elemnum;
-    long tnull, startpos, readptr, remain, next, ntodo;
+    long twidth, incre, rownum;
+    long tnull, remain, next, ntodo;
+    OFF_T repeat, startpos, elemnum, readptr, rowlen;
     double scale, zero;
     char tform[20];
     char message[FLEN_ERRMSG];
@@ -153,7 +149,7 @@ int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
       ntodo = minvalue(ntodo, maxelem);      
       ntodo = minvalue(ntodo, (repeat - elemnum));
 
-      readptr = startpos + (rownum * rowlen) + (elemnum * incre);
+      readptr = startpos + (rowlen * rownum) + (elemnum * incre);
 
       ffgi1b(fptr, readptr, ntodo, incre, buffer, status);
 
@@ -220,7 +216,8 @@ int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
   The binary table column being read to must have datatype 'B' or 'X'. 
 */
 {
-    long bstart, offset, fbyte, bitloc, ndone;
+    OFF_T bstart;
+    long offset, fbyte, bitloc, ndone;
     long ii, repeat, rstart, estart;
     int tcode, descrp;
     unsigned char cbuff;
@@ -242,6 +239,11 @@ int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
+    /* rescan header if data structure is undefined */
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               
+            return(*status);
+
     fbyte = (fbit + 7) / 8;
     bitloc = fbit - 1 - ((fbit - 1) / 8 * 8);
     ndone = 0;
@@ -260,7 +262,7 @@ int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
     {
         descrp = FALSE;  /* not a variable length descriptor column */
         /* N.B: REPEAT is the number of bytes, not number of bits */
-        repeat = colptr->trepeat;
+        repeat = (long) colptr->trepeat;
 
         if (tcode == TBIT)
             repeat = (repeat + 7) / 8;  /* convert from bits to bytes */
@@ -269,7 +271,7 @@ int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
             return(*status = BAD_ELEM_NUM);
 
         /* calc the i/o pointer location to start of sequence of pixels */
-        bstart = (fptr->Fptr)->datastart + (rstart * (fptr->Fptr)->rowlength) +
+        bstart = (fptr->Fptr)->datastart + ((fptr->Fptr)->rowlength * rstart) +
                colptr->tbcol + estart;
     }
     else
@@ -318,7 +320,7 @@ int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
           /* move the i/o pointer to the next row of pixels */
           estart = 0;
           rstart = rstart + 1;
-          bstart = (fptr->Fptr)->datastart + (rstart * (fptr->Fptr)->rowlength) +
+          bstart = (fptr->Fptr)->datastart + ((fptr->Fptr)->rowlength * rstart) +
                colptr->tbcol;
 
           ffmbyt(fptr, bstart, REPORT_EOF, status);
@@ -416,12 +418,12 @@ int ffgcxui(fitsfile *fptr,   /* I - FITS file pointer                       */
     nbytes = lastbyte - firstbyte + 1;
 
     if (colptr->tdatatype == TBIT && 
-        input_first_bit + input_nbits - 1 > colptr->trepeat)
+        input_first_bit + input_nbits - 1 > (long) colptr->trepeat)
     {
         ffpmsg("Too many bits. Tried to read past width of column (ffgcxui)");
         return(*status = BAD_ELEM_NUM);
     }
-    else if (colptr->tdatatype == TBYTE && lastbyte > colptr->trepeat)
+    else if (colptr->tdatatype == TBYTE && lastbyte > (long) colptr->trepeat)
     {
         ffpmsg("Too many bits. Tried to read past width of column (ffgcxui)");
         return(*status = BAD_ELEM_NUM);
@@ -553,12 +555,12 @@ int ffgcxuk(fitsfile *fptr,   /* I - FITS file pointer                       */
     nbytes = lastbyte - firstbyte + 1;
 
     if (colptr->tdatatype == TBIT && 
-        input_first_bit + input_nbits - 1 > colptr->trepeat)
+        input_first_bit + input_nbits - 1 > (long) colptr->trepeat)
     {
         ffpmsg("Too many bits. Tried to read past width of column (ffgcxuk)");
         return(*status = BAD_ELEM_NUM);
     }
-    else if (colptr->tdatatype == TBYTE && lastbyte > colptr->trepeat)
+    else if (colptr->tdatatype == TBYTE && lastbyte > (long) colptr->trepeat)
     {
         ffpmsg("Too many bits. Tried to read past width of column (ffgcxuk)");
         return(*status = BAD_ELEM_NUM);

@@ -97,8 +97,9 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
     int tcode, maxelem, hdutype, lennull, nwrite = 0, writemode = 2;
     short i2null;
     INT32BIT i4null;
-    long twidth, incre, repeat, rowlen, rownum, elemnum, remain, next, ntodo;
-    long tnull, startpos, wrtptr, ii;
+    long twidth, incre, rownum, remain, next, ntodo;
+    long tnull, ii;
+    OFF_T repeat, startpos, elemnum, wrtptr, rowlen;
     double scale, zero;
     unsigned char i1null, lognul = 0;
     char tform[20], cstring[50];
@@ -198,7 +199,7 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
            in the current vector, which ever is smaller.
         */
         ntodo = minvalue(ntodo, (repeat - elemnum));
-        wrtptr = startpos + (rownum * rowlen) + (elemnum * incre);
+        wrtptr = startpos + ((OFF_T)rownum * rowlen) + (elemnum * incre);
 
         ffmbyt(fptr, wrtptr, IGNORE_EOF, status); /* move to write position */
 
