@@ -139,9 +139,9 @@ int ffp3db(fitsfile *fptr,   /* I - FITS file pointer                     */
     if (fits_is_compressed_image(fptr, status))
     {
         /* this is a compressed image in a binary table */
-        lpixel[0] = ncols;
-        lpixel[1] = nrows;
-        lpixel[2] = naxis3;
+        lpixel[0] = (long) ncols;
+        lpixel[1] = (long) nrows;
+        lpixel[2] = (long) naxis3;
        
         fits_write_compressed_img(fptr, TBYTE, fpixel, lpixel,
             0,  array, NULL, status);
@@ -357,9 +357,9 @@ int ffpclb( fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     int tcode, maxelem, hdutype, writeraw;
-    long twidth, incre, rownum, remain, next, ntodo;
-    long tnull;
-    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen;
+    long twidth, incre;
+    long tnull, ntodo;
+    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen, rownum, remain, next;
     double scale, zero;
     char tform[20], cform[20];
     char message[FLEN_ERRMSG];
@@ -395,7 +395,7 @@ int ffpclb( fitsfile *fptr,  /* I - FITS file pointer                       */
     if (scale == 1. && zero == 0. && tcode == TBYTE)
     {
         writeraw = 1;
-        maxelem = nelem;  /* we can write the entire array at one time */
+        maxelem = (int) nelem;  /* we can write the entire array at one time */
     }
     else
         writeraw = 0;
@@ -416,8 +416,8 @@ int ffpclb( fitsfile *fptr,  /* I - FITS file pointer                       */
            will fit in the buffer space or to the number of pixels that remain
            in the current vector, which ever is smaller.
         */
-        ntodo = minvalue(remain, maxelem);      
-        ntodo = minvalue(ntodo, (repeat - elemnum));
+        ntodo = (long) minvalue(remain, maxelem);      
+        ntodo = (long) minvalue(ntodo, (repeat - elemnum));
 
         wrtptr = startpos + ((LONGLONG)rownum * rowlen) + (elemnum * incre);
         ffmbyt(fptr, wrtptr, IGNORE_EOF, status); /* move to write position */
@@ -970,7 +970,7 @@ int ffi1fr4(unsigned char *input,  /* I - array of values to be converted  */
     else
     {
         for (ii = 0; ii < ntodo; ii++)
-            output[ii] = (float) ( ( (double) input[ii] ) - zero) / scale;
+            output[ii] = (float) (( ( (double) input[ii] ) - zero) / scale);
     }
     return(*status);
 }

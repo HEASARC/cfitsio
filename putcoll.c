@@ -22,9 +22,9 @@ int ffpcll( fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     int tcode, maxelem, hdutype;
-    long twidth, incre, rownum, remain, next;
+    long twidth, incre;
     long tnull;
-    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen;
+    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen, rownum, remain, next;
     double scale, zero;
     char tform[20], ctrue = 'T', cfalse = 'F';
     char message[FLEN_ERRMSG];
@@ -217,9 +217,9 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
   The binary table column being written to must have datatype 'B' or 'X'. 
 */
 {
-    LONGLONG bstart, repeat, rowlen, elemnum;
-    long offset, fbyte, lbyte, nbyte, bitloc, ndone;
-    long ii, rstart, estart, twidth, incre, tnull;
+    LONGLONG offset, bstart, repeat, rowlen, elemnum, rstart, estart;
+    long fbyte, lbyte, nbyte, bitloc, ndone;
+    long ii, twidth, incre, tnull;
     int tcode, descrp, maxelem, hdutype;
     double dummyd;
     char tform[12], snull[12];

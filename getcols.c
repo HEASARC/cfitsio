@@ -116,7 +116,7 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
     else if (tcode == TLOGICAL)
     {
       /* allocate memory for the array of logical values */
-      carray = (char *) malloc(nelem);
+      carray = (char *) malloc((size_t) nelem);
 
       /*  call the logical column reading routine */
       ffgcll(fptr, colnum, firstrow, firstelem, nelem, nultyp, *nulval,
@@ -141,7 +141,7 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
     else if (tcode == TCOMPLEX)
     {
       /* allocate memory for the array of double values */
-      earray = (float *) calloc(nelem * 2, sizeof(float) );
+      earray = (float *) calloc((size_t) (nelem * 2), sizeof(float) );
       
       ffgcle(fptr, colnum, firstrow, (firstelem - 1) * 2 + 1, nelem * 2,
         1, 1, FLOATNULLVALUE, earray, nularray, anynul, status);
@@ -209,7 +209,7 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
     else if (tcode == TDBLCOMPLEX)
     {
       /* allocate memory for the array of double values */
-      darray = (double *) calloc(nelem * 2, sizeof(double) );
+      darray = (double *) calloc((size_t) (nelem * 2), sizeof(double) );
       
       ffgcld(fptr, colnum, firstrow, (firstelem - 1) * 2 + 1, nelem * 2,
         1, 1, DOUBLENULLVALUE, darray, nularray, anynul, status);
@@ -276,7 +276,7 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
     else
     {
       /* allocate memory for the array of double values */
-      darray = (double *) calloc(nelem, sizeof(double) );
+      darray = (double *) calloc((size_t) nelem, sizeof(double) );
       
       /* read all other numeric type columns as doubles */
       if (ffgcld(fptr, colnum, firstrow, firstelem, nelem, 1, nultyp, 
@@ -565,9 +565,9 @@ int ffgcls2 ( fitsfile *fptr,   /* I - FITS file pointer                       *
 {
     long nullen; 
     int tcode, maxelem, hdutype, nulcheck;
-    long twidth, incre, rownum;
-    long ii, jj, ntodo, tnull, remain, next;
-    LONGLONG repeat, startpos, elemnum, readptr, rowlen;
+    long twidth, incre;
+    long ii, jj, tnull, ntodo;
+    LONGLONG repeat, startpos, elemnum, readptr, rowlen, rownum, remain, next;
     double scale, zero;
     char tform[20];
     char message[FLEN_ERRMSG];
@@ -587,7 +587,7 @@ int ffgcls2 ( fitsfile *fptr,   /* I - FITS file pointer                       *
         *anynul = 0;
 
     if (nultyp == 2)
-        memset(nularray, 0, nelem);   /* initialize nullarray */
+        memset(nularray, 0, (size_t) nelem);   /* initialize nullarray */
 
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
@@ -614,7 +614,7 @@ int ffgcls2 ( fitsfile *fptr,   /* I - FITS file pointer                       *
         return(*status);
 
       remain = 1;
-      twidth = repeat;  
+      twidth = (long) repeat;  
     }
     else if (tcode == TSTRING)
     {
@@ -659,8 +659,8 @@ int ffgcls2 ( fitsfile *fptr,   /* I - FITS file pointer                       *
          will fit in the buffer space or to the number of pixels that remain
          in the current vector, which ever is smaller.
       */
-      ntodo = minvalue(remain, maxelem);      
-      ntodo = minvalue(ntodo, (repeat - elemnum));
+      ntodo = (long) minvalue(remain, maxelem);      
+      ntodo = (long) minvalue(ntodo, (repeat - elemnum));
 
       readptr = startpos + ((LONGLONG)rownum * rowlen) + (elemnum * incre);
       ffmbyt(fptr, readptr, REPORT_EOF, status);  /* move to read position */
@@ -677,7 +677,7 @@ int ffgcls2 ( fitsfile *fptr,   /* I - FITS file pointer                       *
 
       buffer = ((char *) cbuff) + (ntodo * twidth) - 1;
 
-      for (ii = next + ntodo - 1; ii >= next; ii--)
+      for (ii = (long) (next + ntodo - 1); ii >= next; ii--)
       {
          arrayptr = array[ii] + twidth - 1;
 

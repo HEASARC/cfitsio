@@ -165,11 +165,11 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
    parseInfo Info;
    int naxis, constant;
    long nelem, rdlen, naxes[MAXDIMS], maxrows, nbuff, nGood, inloc, outloc;
-   LONGLONG inbyteloc, outbyteloc, hsize;
-   long ntodo, freespace;
+   LONGLONG ntodo, inbyteloc, outbyteloc, hsize;
+   long freespace;
    unsigned char *buffer, result;
    struct {
-      long rowLength, numRows, heapSize;
+      LONGLONG rowLength, numRows, heapSize;
       LONGLONG dataStart, heapStart;
    } inExt, outExt;
 
@@ -238,9 +238,9 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
    /*  Fill out Info data for parser  */
    /***********************************/
 
-   Info.dataPtr = (char *)malloc( (inExt.numRows + 1) * sizeof(char) );
+   Info.dataPtr = (char *)malloc( (size_t) ((inExt.numRows + 1) * sizeof(char)) );
    Info.nullPtr = NULL;
-   Info.maxRows = inExt.numRows;
+   Info.maxRows = (long) inExt.numRows;
    if( !Info.dataPtr ) {
       ffpmsg("Unable to allocate memory for row selection");
       ffcprs();
@@ -255,7 +255,7 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
       result = gParse.Nodes[gParse.resultNode].value.data.log;
       for( ntodo = 0; ntodo<inExt.numRows; ntodo++ )
 	 ((char*)Info.dataPtr)[ntodo] = result;
-      nGood = (result ? inExt.numRows : 0);
+      nGood = (long) (result ? inExt.numRows : 0);
 
    } else {
 
@@ -270,7 +270,7 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
    if( *status ) {
       /* Error... Do nothing */
    } else {
-      rdlen  = inExt.rowLength;
+      rdlen  = (long) inExt.rowLength;
       buffer = (unsigned char *)malloc(maxvalue(500000,rdlen) * sizeof(char) );
       if( buffer==NULL ) {
          ffcprs();
@@ -283,7 +283,7 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
          while( ((char*)Info.dataPtr)[inloc-1] ) inloc++;
 	 outloc = inloc;
       } else {
-	 outloc = outExt.numRows + 1;
+	 outloc = (long) (outExt.numRows + 1);
 	 if (outloc > 1) 
             ffirow( outfptr, outExt.numRows, nGood, status );
       }
@@ -329,12 +329,12 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
          /*************************************************/
 
          hsize     = outExt.heapStart + outExt.heapSize;
-         freespace = ( ( (hsize + 2879) / 2880) * 2880) - hsize;
+         freespace = (long) (( ( (hsize + 2879) / 2880) * 2880) - hsize);
          ntodo     = inExt.heapSize;
 
          if ( (freespace - ntodo) < 0) {       /* not enough existing space? */
             ntodo = (ntodo - freespace + 2879) / 2880;  /* number of blocks  */
-            ffiblk(outfptr, ntodo, 1, status);          /* insert the blocks */
+            ffiblk(outfptr, (long) ntodo, 1, status);          /* insert the blocks */
          }
          ffukyj( outfptr, "PCOUNT", inExt.heapSize+outExt.heapSize,
                  NULL, status );
@@ -357,7 +357,7 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
          outbyteloc = outExt.heapStart + outExt.dataStart + outExt.heapSize;
 
          while ( ntodo && !*status ) {
-            rdlen = minvalue(ntodo,500000);
+            rdlen = (long) minvalue(ntodo,500000);
             ffmbyt( infptr,  inbyteloc,  REPORT_EOF, status );
             ffgbyt( infptr,  rdlen,  buffer,     status );
             ffmbyt( outfptr, outbyteloc, IGNORE_EOF, status );
@@ -373,12 +373,12 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
          /***********************************************************/
 
          if( outExt.heapSize ) {
-            long repeat, offset, j;
+            LONGLONG repeat, offset, j;
             int i;
             for( i=1; i<=(outfptr->Fptr)->tfield; i++ ) {
                if( (outfptr->Fptr)->tableptr[i-1].tdatatype<0 ) {
                   for( j=outExt.numRows+1; j<=outExt.numRows+nGood; j++ ) {
-                     ffgdes( outfptr, i, j, &repeat, &offset, status );
+                     ffgdesll( outfptr, i, j, &repeat, &offset, status );
                      offset += outExt.heapSize;
                      ffpdes( outfptr, i, j, repeat, offset, status );
                   }
@@ -1623,7 +1623,7 @@ int ffcvtn( int   inputType,  /* I - Data type of input array               */
          break;
       case TLONG:
          for( i=0; i<ntodo; i++ )
-            ((float*)output)[i] = ((long*)input)[i];
+            ((float*)output)[i] = (float) ((long*)input)[i];
          break;
       case TFLOAT:
          for( i=0; i<ntodo; i++ )

@@ -1719,7 +1719,7 @@ int ffdtdmll(fitsfile *fptr,  /* I - FITS file pointer                        */
   Check that the value is legal and consistent with the TFORM value.
 */
 {
-    long dimsize;
+    LONGLONG dimsize;
     LONGLONG totalpix = 1;
     char *loc, *lastloc, message[81];
     tcolumn *colptr;
@@ -1759,7 +1759,15 @@ int ffdtdmll(fitsfile *fptr,  /* I - FITS file pointer                        */
 	    
 /*  Microsoft Visual C++ Version 6.0 does not have the strtoll function */
 #if defined(_MSC_VER)
+
+#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
+    /* Microsoft Visual C++ 6.0 does not have the strtoll function */
+    /* this will fail if the integer is greater than 2**31 */
     dimsize = (LONGLONG) strtol(loc, &loc, 10);   
+#  else
+    dimsize = strtoll(loc, &loc, 10);  
+#  endif
+
 #elif (USE_LL_SUFFIX == 1)
     dimsize = strtoll(loc, &loc, 10);  
 #else
@@ -1829,10 +1837,10 @@ int ffghpr(fitsfile *fptr,  /* I - FITS file pointer                        */
 	  
     if (naxis && naxes) {
          for (ii = 0; (ii < *naxis) && (ii < maxdim); ii++)
-	     naxes[ii] = tnaxes[ii];
+	     naxes[ii] = (long) tnaxes[ii];
     } else if (naxes) {
          for (ii = 0; ii < maxdim; ii++)
-	     naxes[ii] = tnaxes[ii];
+	     naxes[ii] = (long) tnaxes[ii];
     }
 
     return(*status);

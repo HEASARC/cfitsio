@@ -702,7 +702,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
           else
           {
             for (ii = 0; ii < tilelen; ii++)
-              idata[ii] = ((float *)tiledata)[ii];
+              idata[ii] = (int) (((float *)tiledata)[ii]);
           }
         }
         else if (datatype == TDOUBLE)
@@ -720,7 +720,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
           else
           {
             for (ii = 0; ii < tilelen; ii++)
-              idata[ii] = ((double *)tiledata)[ii];
+              idata[ii] = (int) (((double *)tiledata)[ii]);
           }
         }
         else
@@ -1052,7 +1052,7 @@ int fits_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer     */
 int fits_write_compressed_pixels(fitsfile *fptr, /* I - FITS file pointer   */
             int  datatype,  /* I - datatype of the array to be written      */
             LONGLONG   fpixel,  /* I - 'first pixel to write          */
-            long   npixel,  /* I - number of pixels to write      */
+            LONGLONG   npixel,  /* I - number of pixels to write      */
             int  nullcheck,  /* I - 0 for no null checking                   */
                              /*     1: pixels that are = nullval will be     */
                              /*     written with the FITS null pixel value   */
@@ -1107,8 +1107,8 @@ int fits_write_compressed_pixels(fitsfile *fptr, /* I - FITS file pointer   */
     tlast = tfirst + npixel - 1;
     for (ii = naxis - 1; ii >= 0; ii--)
     {
-        firstcoord[ii] = tfirst / dimsize[ii];
-        lastcoord[ii] = tlast / dimsize[ii];
+        firstcoord[ii] = (long) (tfirst / dimsize[ii]);
+        lastcoord[ii]  = (long) (tlast / dimsize[ii]);
         tfirst = tfirst - firstcoord[ii] * dimsize[ii];
         tlast = tlast - lastcoord[ii] * dimsize[ii];
     }
@@ -1168,8 +1168,8 @@ int fits_write_compressed_pixels(fitsfile *fptr, /* I - FITS file pointer   */
         {
             if (nplane == lastcoord[2])
             {
-                lastcoord[0] = last0;
-                lastcoord[1] = last1;
+                lastcoord[0] = (long) last0;
+                lastcoord[1] = (long) last1;
             }
 
             fits_write_compressed_img_plane(fptr, datatype, bytesperpixel,
@@ -1319,7 +1319,7 @@ int fits_decompress_img (fitsfile *infptr, /* image (bintable) to uncompress */
     double *data;
     int ii, datatype = 0, byte_per_pix = 0;
     int nullcheck, anynul;
-    long fpixel[MAX_COMPRESS_DIM], lpixel[MAX_COMPRESS_DIM];
+    LONGLONG fpixel[MAX_COMPRESS_DIM], lpixel[MAX_COMPRESS_DIM];
     long inc[MAX_COMPRESS_DIM];
     long imgsize, memsize;
     float *nulladdr, fnulval;
@@ -1434,8 +1434,8 @@ int fits_decompress_img (fitsfile *infptr, /* image (bintable) to uncompress */
 /*---------------------------------------------------------------------------*/
 int fits_read_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
             int  datatype,  /* I - datatype of the array to be returned      */
-            long  *infpixel, /* I - 'bottom left corner' of the subsection    */
-            long  *inlpixel, /* I - 'top right corner' of the subsection      */
+            LONGLONG  *infpixel, /* I - 'bottom left corner' of the subsection    */
+            LONGLONG  *inlpixel, /* I - 'top right corner' of the subsection      */
             long  *ininc,    /* I - increment to be applied in each dimension */
             int  nullcheck,  /* I - 0 for no null checking                   */
                               /*     1: set undefined pixels = nullval       */
@@ -1559,14 +1559,14 @@ int fits_read_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
         /* support for mirror-reversed image sections */
         if (infpixel[ii] <= inlpixel[ii])
         {
-           fpixel[ii] = infpixel[ii];
-           lpixel[ii] = inlpixel[ii];
+           fpixel[ii] = (long) infpixel[ii];
+           lpixel[ii] = (long) inlpixel[ii];
            inc[ii]    = ininc[ii];
         }
         else
         {
-           fpixel[ii] = inlpixel[ii];
-           lpixel[ii] = infpixel[ii];
+           fpixel[ii] = (long) inlpixel[ii];
+           lpixel[ii] = (long) infpixel[ii];
            inc[ii]    = -ininc[ii];
         }
 
@@ -1683,7 +1683,7 @@ printf(" pixlen=%d, ndim=%d, %d %d %d, %d %d %d, %d %d %d\n",
 int fits_read_compressed_pixels(fitsfile *fptr, /* I - FITS file pointer    */
             int  datatype,  /* I - datatype of the array to be returned     */
             LONGLONG   fpixel, /* I - 'first pixel to read          */
-            long   npixel,  /* I - number of pixels to read      */
+            LONGLONG   npixel,  /* I - number of pixels to read      */
             int  nullcheck,  /* I - 0 for no null checking                   */
                               /*     1: set undefined pixels = nullval       */
                               /*     2: set nullarray=1 for undefined pixels */
@@ -1705,9 +1705,9 @@ int fits_read_compressed_pixels(fitsfile *fptr, /* I - FITS file pointer    */
 {
     int naxis, ii, bytesperpixel, planenul;
     long naxes[MAX_COMPRESS_DIM], nread;
-    long inc[MAX_COMPRESS_DIM];
+    long nplane, inc[MAX_COMPRESS_DIM];
     LONGLONG tfirst, tlast, last0, last1, dimsize[MAX_COMPRESS_DIM];
-    long nplane, firstcoord[MAX_COMPRESS_DIM], lastcoord[MAX_COMPRESS_DIM];
+    LONGLONG firstcoord[MAX_COMPRESS_DIM], lastcoord[MAX_COMPRESS_DIM];
     char *arrayptr, *nullarrayptr;
 
     if (*status > 0)
@@ -1743,7 +1743,7 @@ int fits_read_compressed_pixels(fitsfile *fptr, /* I - FITS file pointer    */
     for (ii = naxis - 1; ii >= 0; ii--)
     {
         firstcoord[ii] = tfirst / dimsize[ii];
-        lastcoord[ii] = tlast / dimsize[ii];
+        lastcoord[ii] =  tlast / dimsize[ii];
         tfirst = tfirst - firstcoord[ii] * dimsize[ii];
         tlast = tlast - lastcoord[ii] * dimsize[ii];
     }
@@ -1803,7 +1803,7 @@ int fits_read_compressed_pixels(fitsfile *fptr, /* I - FITS file pointer    */
         }
 
         /* read one plane of the cube at a time, for simplicity */
-        for (nplane = firstcoord[2]; nplane <= lastcoord[2]; nplane++)
+        for (nplane = (long) firstcoord[2]; nplane <= lastcoord[2]; nplane++)
         {
             if (nplane == lastcoord[2])
             {
@@ -1841,8 +1841,8 @@ int fits_read_compressed_img_plane(fitsfile *fptr, /* I - FITS file   */
             int  datatype,  /* I - datatype of the array to be returned      */
             int  bytesperpixel, /* I - number of bytes per pixel in array */
             long   nplane,  /* I - which plane of the cube to read      */
-            long *firstcoord,  /* coordinate of first pixel to read */
-            long *lastcoord,   /* coordinate of last pixel to read */
+            LONGLONG *firstcoord,  /* coordinate of first pixel to read */
+            LONGLONG *lastcoord,   /* coordinate of last pixel to read */
             long *inc,         /* increment of pixels to read */
             long *naxes,      /* size of each image dimension */
             int  nullcheck,  /* I - 0 for no null checking                   */
@@ -1863,7 +1863,7 @@ int fits_read_compressed_img_plane(fitsfile *fptr, /* I - FITS file   */
     */
 {
      /* bottom left coord. and top right coord. */
-    long blc[MAX_COMPRESS_DIM], trc[MAX_COMPRESS_DIM]; 
+    LONGLONG blc[MAX_COMPRESS_DIM], trc[MAX_COMPRESS_DIM]; 
     char *arrayptr, *nullarrayptr;
     int tnull;
 
@@ -1892,7 +1892,7 @@ int fits_read_compressed_img_plane(fitsfile *fptr, /* I - FITS file   */
             fits_read_compressed_img(fptr, datatype, blc, trc, inc,
                 nullcheck, nullval, arrayptr, nullarrayptr, &tnull, status);
 
-            *nread = *nread + trc[0] - blc[0] + 1;
+            *nread = *nread + (long) (trc[0] - blc[0] + 1);
 
             if (tnull && anynul)
                *anynul = 1;  /* there are null pixels */
@@ -1932,7 +1932,7 @@ int fits_read_compressed_img_plane(fitsfile *fptr, /* I - FITS file   */
         fits_read_compressed_img(fptr, datatype, blc, trc, inc,
                 nullcheck, nullval, arrayptr, nullarrayptr, &tnull, status);
 
-        *nread = *nread + (trc[1] - blc[1] + 1) * naxes[0];
+        *nread = *nread + (long) ((trc[1] - blc[1] + 1) * naxes[0]);
 
         if (tnull && anynul)
            *anynul = 1;
@@ -1961,7 +1961,7 @@ int fits_read_compressed_img_plane(fitsfile *fptr, /* I - FITS file   */
     if (tnull && anynul)
        *anynul = 1;
 
-    *nread = *nread + trc[0] - blc[0] + 1;
+    *nread = *nread + (long) (trc[0] - blc[0] + 1);
 
     return(*status);
 }
@@ -2350,7 +2350,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
     else
     {
         /* read the null value for this row */
-	ffgcvk (infptr, (infptr->Fptr)->cn_zblank, nrow, 1, 1, 0.,
+	ffgcvk (infptr, (infptr->Fptr)->cn_zblank, nrow, 1, 1, 0,
 				&tnull, NULL, status);
         if (*status > 0)
         {

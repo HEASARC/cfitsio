@@ -60,12 +60,13 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.0;
+      *version = (float) 3.001;
 
-/*     1 March 2005
+/*     15 March 2005
 
 
    Previous releases:
+      *version = 3.000  1 March 2005 (internal release only)
       *version = 2.51     2 Dec 2004
       *version = 2.50    28 Jul 2004
       *version = 2.49    11 Feb 2004
@@ -2044,8 +2045,14 @@ int ffbnfmll(char *tform,     /* I - format code from the TFORMn keyword */
        /* read repeat count */
 
 #if defined(_MSC_VER)
-    /* Microsoft Visual C++ uses a strange '%I64d' syntax  for 8-byte integers */
+
+#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
+    /* Microsoft Visual C++ 6.0 uses '%I64d' syntax  for 8-byte integers */
         sscanf(form,"%I64d", &repeat);
+#  else
+        sscanf(form,"%lld", &repeat);
+#  endif
+
 #elif (USE_LL_SUFFIX == 1)
         sscanf(form,"%lld", &repeat);
 #else
@@ -3801,8 +3808,8 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
   initialize the parameters defining the structure of a binary table 
 */
     int  ii, nspace;
-    long tfield, totalwidth;
-    LONGLONG pcount, rowlen, nrows;
+    long tfield;
+    LONGLONG pcount, rowlen, nrows, totalwidth;
     tcolumn *colptr = 0;
     char name[FLEN_KEYWORD], value[FLEN_VALUE], comm[FLEN_COMMENT];
     char message[FLEN_ERRMSG];
@@ -3940,7 +3947,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     /* the next HDU begins in the next logical block after the data  */
     (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] = 
          (fptr->Fptr)->datastart +
-         ( ((LONGLONG)rowlen * nrows + pcount + 2879) / 2880 * 2880 );
+         ( (rowlen * nrows + pcount + 2879) / 2880 * 2880 );
 
     /* determine the byte offset to the beginning of each column */
     ffgtbc(fptr, &totalwidth, status);
@@ -3949,7 +3956,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     {
         sprintf(message,
         "NAXIS1 = %ld is not equal to the sum of column widths: %ld", 
-        rowlen, totalwidth);
+        (long) rowlen, (long) totalwidth);
         ffpmsg(message);
         *status = BAD_ROW_WIDTH;
     }
@@ -4003,7 +4010,7 @@ int ffgabc(int tfields,     /* I - number of columns in the table           */
 }
 /*--------------------------------------------------------------------------*/
 int ffgtbc(fitsfile *fptr,    /* I - FITS file pointer          */
-           long *totalwidth,  /* O - total width of a table row */
+           LONGLONG *totalwidth,  /* O - total width of a table row */
            int *status)       /* IO - error status              */
 {
 /*
@@ -4012,7 +4019,7 @@ int ffgtbc(fitsfile *fptr,    /* I - FITS file pointer          */
   column structure. Return the total length of a row, in bytes.
 */
     int tfields, ii;
-    long nbytes;
+    LONGLONG nbytes;
     tcolumn *colptr;
 
     if (*status > 0)
@@ -4036,15 +4043,15 @@ int ffgtbc(fitsfile *fptr,    /* I - FITS file pointer          */
 
         if (colptr->tdatatype == TSTRING)
         {
-            nbytes = (long) colptr->trepeat;   /* one byte per char */
+            nbytes =  colptr->trepeat;   /* one byte per char */
         }
         else if (colptr->tdatatype == TBIT)
         {
-            nbytes = ((long) colptr->trepeat + 7) / 8;
+            nbytes = ( colptr->trepeat + 7) / 8;
         }
         else if (colptr->tdatatype > 0)
         {
-            nbytes = (long) colptr->trepeat * (colptr->tdatatype / 10);
+            nbytes =  colptr->trepeat * (colptr->tdatatype / 10);
         }
         else  if ((colptr->tform[0] == 'P') || (colptr->tform[1] == 'P')) 
 	   /* this is a 'P' variable length descriptor (neg. tdatatype) */
@@ -5419,8 +5426,14 @@ int ffuptf(fitsfile *fptr,      /* I - FITS file pointer */
           strcat(newform, tform);
 
 #if defined(_MSC_VER)
-    /* Microsoft Visual C++ uses a strange '%I64d' syntax  for 8-byte integers */
+
+#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
+    /* Microsoft Visual C++ 6.0 uses '%I64d' syntax  for 8-byte integers */
           sprintf(lenval, "(%I64d)", maxlen);
+#  else
+          sprintf(lenval, "(%lld)", maxlen);
+#  endif
+
 #elif (USE_LL_SUFFIX == 1)
           sprintf(lenval, "(%lld)", maxlen);
 #else
@@ -5488,8 +5501,14 @@ int ffrdef(fitsfile *fptr,      /* I - FITS file pointer */
               /* would force linking in all the modkey & putkey routines */
 
 #if defined(_MSC_VER)
-    /* Microsoft Visual C++ uses a strange '%I64d' syntax  for 8-byte integers */
+
+#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
+    /* Microsoft Visual C++ 6.0 uses '%I64d' syntax  for 8-byte integers */
               sprintf(valstring, "%I64d", (fptr->Fptr)->numrows);
+#  else
+              sprintf(valstring, "%lld", (fptr->Fptr)->numrows);
+#  endif
+
 #elif (USE_LL_SUFFIX == 1)
               sprintf(valstring, "%lld", (fptr->Fptr)->numrows);
 #else
@@ -7620,8 +7639,15 @@ int ffc2jj(char *cval,  /* I - string representation of the value */
     *ival = 0;
 
 #if defined(_MSC_VER)
-/*  Microsoft Visual C++ Version 6.0 does not have the strtoll function */
+
+#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
+    /* Microsoft Visual C++ 6.0 does not have the strtoll function */
+    /* this will fail if the integer is greater than 2**31 */
     *ival = (LONGLONG) strtol(cval, &loc, 10);  /* read the string as an integer */
+#  else
+    *ival = strtoll(cval, &loc, 10);  /* read the string as an integer */
+#  endif
+
 #elif (USE_LL_SUFFIX == 1)
     *ival = strtoll(cval, &loc, 10);  /* read the string as an integer */
 #else

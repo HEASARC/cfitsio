@@ -124,8 +124,9 @@ int ffp3dk(fitsfile *fptr,   /* I - FITS file pointer                     */
   FITS array is not the same as the array being written).
 */
 {
-    long tablerow, nfits, narray, ii, jj;
+    long tablerow, ii, jj;
     long fpixel[3]= {1,1,1}, lpixel[3];
+    LONGLONG nfits, narray;
     /*
       the primary array is represented as a binary table:
       each group of the primary array is a row in the table,
@@ -136,9 +137,9 @@ int ffp3dk(fitsfile *fptr,   /* I - FITS file pointer                     */
     if (fits_is_compressed_image(fptr, status))
     {
         /* this is a compressed image in a binary table */
-        lpixel[0] = ncols;
-        lpixel[1] = nrows;
-        lpixel[2] = naxis3;
+        lpixel[0] = (long) ncols;
+        lpixel[1] = (long) nrows;
+        lpixel[2] = (long) naxis3;
        
         fits_write_compressed_img(fptr, TINT, fpixel, lpixel,
             0,  array, NULL, status);
@@ -354,9 +355,9 @@ int ffpclk( fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     int tcode, maxelem, hdutype, writeraw;
-    long twidth, incre, rownum, remain, next, ntodo;
-    long tnull;
-    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen;
+    long twidth, incre;
+    long tnull, ntodo;
+    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen, rownum, remain, next;
     double scale, zero;
     char tform[20], cform[20];
     char message[FLEN_ERRMSG];
@@ -408,7 +409,7 @@ int ffpclk( fitsfile *fptr,  /* I - FITS file pointer                       */
        MACHINE == NATIVE && tcode == TLONG)
     {
         writeraw = 1;
-        maxelem = nelem;  /* we can write the entire array at one time */
+        maxelem = (int) nelem;  /* we can write the entire array at one time */
     }
     else
         writeraw = 0;
@@ -429,8 +430,8 @@ int ffpclk( fitsfile *fptr,  /* I - FITS file pointer                       */
            will fit in the buffer space or to the number of pixels that remain
            in the current vector, which ever is smaller.
         */
-        ntodo = minvalue(remain, maxelem);      
-        ntodo = minvalue(ntodo, (repeat - elemnum));
+        ntodo = (long) minvalue(remain, maxelem);      
+        ntodo = (long) minvalue(ntodo, (repeat - elemnum));
 
         wrtptr = startpos + ((LONGLONG)rownum * rowlen) + (elemnum * incre);
 
@@ -1004,7 +1005,7 @@ int ffintfr4(int *input,       /* I - array of values to be converted  */
     else
     {
         for (ii = 0; ii < ntodo; ii++)
-            output[ii] = (input[ii] - zero) / scale;
+            output[ii] = (float) ((input[ii] - zero) / scale);
     }
     return(*status);
 }

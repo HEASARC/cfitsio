@@ -7784,10 +7784,10 @@ fits\_read\_img         & \pageref{ffgpv} \\
 fits\_read\_img\_coord & \pageref{ffgics} \\
 fits\_read\_img\_TYP     & \pageref{ffgpvx} \\
 fits\_read\_imghdr       & \pageref{ffghpr} \\
+fits\_read\_imgnull & \pageref{ffgpf} \\
 
 \end{tabular}
 \begin{tabular}{lr}
-fits\_read\_imgnull & \pageref{ffgpf} \\
 fits\_read\_imgnull\_TYP & \pageref{ffgpfx} \\
 fits\_read\_key          & \pageref{ffgky} \\
 fits\_read\_key\_longstr  & \pageref{ffgkls} \\
@@ -7833,6 +7833,7 @@ fits\_transfer\_member  & \pageref{ffgmtf} \\
 fits\_update\_card       & \pageref{ffucrd} \\
 fits\_update\_chksum  & \pageref{ffupck} \\
 fits\_update\_key        & \pageref{ffuky} \\
+fits\_update\_key\_longstr   & \pageref{ffukyx} \\
 fits\_update\_key\_null   & \pageref{ffukyu} \\
 fits\_update\_key\_TYP    & \pageref{ffukyx} \\
 \end{tabular}

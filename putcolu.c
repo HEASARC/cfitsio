@@ -98,10 +98,10 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
     int tcode, maxelem, hdutype, writemode = 2, leng;
     short i2null;
     INT32BIT i4null, i8null[2];
-    long twidth, incre, rownum, remain, next, ntodo;
+    long twidth, incre;
     long tnull, ii;
     LONGLONG largeelem, nelem;
-    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen;
+    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen, rownum, remain, next, ntodo;
     double scale, zero;
     unsigned char i1null, lognul = 0;
     char tform[20], *cstring = 0;
@@ -183,10 +183,10 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
       }
 
       if (tcode == TBYTE)
-         i1null = tnull;
+         i1null = (unsigned char) tnull;
       else if (tcode == TSHORT)
       {
-         i2null = tnull;
+         i2null = (short) tnull;
 #if BYTESWAPPED
          ffswap2(&i2null, 1); /* reverse order of bytes */
 #endif
@@ -354,9 +354,9 @@ int ffpcluc( fitsfile *fptr,  /* I - FITS file pointer                       */
     int tcode, maxelem, hdutype, writemode = 2, leng;
     short i2null;
     INT32BIT i4null, i8null[2];
-    long twidth, incre, rownum, remain, next, ntodo;
+    long twidth, incre;
     long tnull, ii;
-    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen;
+    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen, rownum, remain, next, ntodo;
     double scale, zero;
     unsigned char i1null, lognul = 0;
     char tform[20], *cstring = 0;
@@ -429,10 +429,10 @@ int ffpcluc( fitsfile *fptr,  /* I - FITS file pointer                       */
       }
 
       if (tcode == TBYTE)
-         i1null = tnull;
+         i1null = (unsigned char) tnull;
       else if (tcode == TSHORT)
       {
-         i2null = tnull;
+         i2null = (short) tnull;
 #if BYTESWAPPED
          ffswap2(&i2null, 1); /* reverse order of bytes */
 #endif

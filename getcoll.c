@@ -94,9 +94,9 @@ int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
 */
 {
     int tcode, maxelem, hdutype, ii, nulcheck;
-    long twidth, incre, rownum;
-    long tnull, remain, next, ntodo;
-    LONGLONG repeat, startpos, elemnum, readptr, rowlen;
+    long twidth, incre;
+    long tnull, ntodo;
+    LONGLONG repeat, startpos, elemnum, readptr, rowlen, rownum, remain, next;
     double scale, zero;
     char tform[20];
     char message[FLEN_ERRMSG];
@@ -110,7 +110,7 @@ int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
        *anynul = 0;
 
     if (nultyp == 2)      
-       memset(nularray, 0, nelem);   /* initialize nullarray */
+       memset(nularray, 0, (size_t) nelem);   /* initialize nullarray */
 
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
@@ -138,7 +138,7 @@ int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
     remain = nelem;           /* remaining number of values to read */
     next = 0;                 /* next element in array to be read   */
     rownum = 0;               /* row number, relative to firstrow   */
-    ntodo = remain;           /* max number of elements to read at one time */
+    ntodo = (long) remain;           /* max number of elements to read at one time */
 
     while (ntodo)
     {
@@ -146,8 +146,8 @@ int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
          limit the number of pixels to read at one time to the number that
          remain in the current vector.    
       */
-      ntodo = minvalue(ntodo, maxelem);      
-      ntodo = minvalue(ntodo, (repeat - elemnum));
+      ntodo = (long) minvalue(ntodo, maxelem);      
+      ntodo = (long) minvalue(ntodo, (repeat - elemnum));
 
       readptr = startpos + (rowlen * rownum) + (elemnum * incre);
 
@@ -201,7 +201,7 @@ int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
             rownum++;
           }
       }
-      ntodo = remain;  /* this is the maximum number to do in next loop */
+      ntodo = (long) remain;  /* this is the maximum number to do in next loop */
 
     }  /*  End of main while Loop  */
 
@@ -223,8 +223,8 @@ int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     LONGLONG bstart;
-    long offset, fbyte, bitloc, ndone;
-    long ii, repeat, rstart, estart;
+    long offset, ndone, ii, repeat, bitloc, fbyte;
+    LONGLONG  rstart, estart;
     int tcode, descrp;
     unsigned char cbuff;
     static unsigned char onbit[8] = {128,  64,  32,  16,   8,   4,   2,   1};
@@ -250,8 +250,8 @@ int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
         if ( ffrdef(fptr, status) > 0)               
             return(*status);
 
-    fbyte = (fbit + 7) / 8;
-    bitloc = fbit - 1 - ((fbit - 1) / 8 * 8);
+    fbyte = (long) ((fbit + 7) / 8);
+    bitloc = (long) (fbit - 1 - ((fbit - 1) / 8 * 8));
     ndone = 0;
     rstart = frow - 1;
     estart = fbyte - 1;

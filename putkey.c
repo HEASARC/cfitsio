@@ -2044,8 +2044,13 @@ int ffptdmll( fitsfile *fptr, /* I - FITS file pointer                      */
 
 /* Microsoft Visual C++ uses a strange '%I64d' syntax */
 #if defined(_MSC_VER)
-    /* Microsoft Visual C++ uses a strange '%I64d' syntax  for 8-byte integers */
+
+#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
+    /* Microsoft Visual C++ 6.0 uses '%I64d' syntax  for 8-byte integers */
         sprintf(value, "%I64d", naxes[ii]);
+#  else
+        sprintf(value, "%lld", naxes[ii]);
+#  endif
 
 #elif (USE_LL_SUFFIX == 1)
         sprintf(value, "%lld", naxes[ii]);
@@ -2377,7 +2382,7 @@ int ffphtb(fitsfile *fptr,  /* I - FITS file pointer                        */
     else if (tfields < 0 || tfields > 999)
         return(*status = BAD_TFIELDS);
     
-    rowlen = naxis1;
+    rowlen = (long) naxis1;
 
     if (!tbcol || !tbcol[0] || (!naxis1 && tfields)) /* spacing not defined? */
     {
@@ -2701,26 +2706,22 @@ int ffi2c(LONGLONG ival,  /* I - value to be converted to a string */
 
 /* Microsoft Visual C++ uses a strange '%I64d' syntax */
 #if defined(_MSC_VER)
-    /* Microsoft Visual C++ uses a strange '%I64d' syntax  for 8-byte integers */
+#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
+    /* Microsoft Visual C++ 6.0 uses '%I64d' syntax  for 8-byte integers */
     if (sprintf(cval, "%I64d", ival) < 0)
-    {
-        ffpmsg("Error in ffi2c converting integer to string");
-        *status = BAD_I2C;
-    }
+#  else
+    if (sprintf(cval, "%lld", ival) < 0)
+#  endif
+
 #elif (USE_LL_SUFFIX == 1)
     if (sprintf(cval, "%lld", ival) < 0)
-    {
-        ffpmsg("Error in ffi2c converting integer to string");
-        *status = BAD_I2C;
-    }
 #else
     if (sprintf(cval, "%ld", ival) < 0)
+#endif
     {
         ffpmsg("Error in ffi2c converting integer to string");
         *status = BAD_I2C;
     }
-#endif
-
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

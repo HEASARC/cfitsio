@@ -658,7 +658,7 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
       colptr = ((*fptr)->Fptr)->tableptr;
       colptr += (histData.hcolnum[ii] - 1);
 
-      repeat = colptr->trepeat;  /* vector repeat factor of the column */
+      repeat = (int) colptr->trepeat;  /* vector repeat factor of the column */
       if (repeat > 1)
       {
         strcpy(errmsg, "Can't bin a vector column: ");
@@ -700,7 +700,7 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
       }
       else
       {
-        amin[ii] = minin[ii];
+        amin[ii] = (float) minin[ii];
       }
 
       if (maxin[ii] == DOUBLENULLVALUE)
@@ -730,7 +730,7 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
       }
       else
       {
-        amax[ii] = maxin[ii];
+        amax[ii] = (float) maxin[ii];
       }
 
       /* use TDBINn keyword or else 1 if bin size is not given */
@@ -750,13 +750,13 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
 
       if ( (amin[ii] > amax[ii] && binsizein[ii] > 0. ) ||
            (amin[ii] < amax[ii] && binsizein[ii] < 0. ) )
-          binsize[ii] = -binsizein[ii];  /* reverse the sign of binsize */
+          binsize[ii] = (float) -binsizein[ii];  /* reverse the sign of binsize */
       else
-          binsize[ii] =  binsizein[ii];  /* binsize has the correct sign */
+          binsize[ii] =  (float) binsizein[ii];  /* binsize has the correct sign */
 
-      ibin = binsize[ii];
-      imin = amin[ii];
-      imax = amax[ii];
+      ibin = (int) binsize[ii];
+      imin = (int) amin[ii];
+      imax = (int) amax[ii];
 
       /* Determine the range and number of bins in the histogram. This  */
       /* depends on whether the input columns are integer or floats, so */
@@ -772,17 +772,17 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
 
         haxes[ii] = (imax - imin) / ibin + 1;  /* last bin may only */
                                                /* be partially full */
-        maxbin[ii] = haxes[ii] + 1.;  /* add 1. instead of .5 to avoid roundoff */
+        maxbin[ii] = (float) (haxes[ii] + 1.);  /* add 1. instead of .5 to avoid roundoff */
 
         if (amin[ii] < amax[ii])
         {
-          amin[ii] = amin[ii] - 0.5;
-          amax[ii] = amax[ii] + 0.5;
+          amin[ii] = (float) (amin[ii] - 0.5);
+          amax[ii] = (float) (amax[ii] + 0.5);
         }
         else
         {
-          amin[ii] = amin[ii] + 0.5;
-          amax[ii] = amax[ii] - 0.5;
+          amin[ii] = (float) (amin[ii] + 0.5);
+          amax[ii] = (float) (amax[ii] - 0.5);
         }
       }
       else if (use_datamax)  
@@ -794,7 +794,7 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
         /* in the last partial bin are included.  */
 
         maxbin[ii] = (amax[ii] - amin[ii]) / binsize[ii]; 
-        haxes[ii] = maxbin[ii] + 1;
+        haxes[ii] = (long) (maxbin[ii] + 1);
       }
       else  
       {
@@ -802,7 +802,7 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
         /*  include in the histogram is specified by the calling program. */
         /*  The lower limit is inclusive, but upper limit is exclusive    */
         maxbin[ii] = (amax[ii] - amin[ii]) / binsize[ii];
-        haxes[ii] = maxbin[ii];
+        haxes[ii] = (long) maxbin[ii];
 
         if (amin[ii] < amax[ii])
         {
@@ -849,7 +849,7 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
 
     if (recip && histData.weight != FLOATNULLVALUE)
        /* take reciprocal of weight */
-       histData.weight = 1.0 / histData.weight;
+       histData.weight = (float) (1.0 / histData.weight);
 
     histData.wtrecip = recip;
         
@@ -1217,7 +1217,7 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
               continue;
 
           axisbin = (col2[ii] - histData.amin2) / histData.binsize2;
-          iaxisbin = axisbin;
+          iaxisbin = (long) axisbin;
 
           if (axisbin < 0. || iaxisbin >= histData.haxis2 || axisbin > histData.maxbin2)
               continue;
@@ -1230,7 +1230,7 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
                 continue;
 
             axisbin = (col3[ii] - histData.amin3) / histData.binsize3;
-            iaxisbin = axisbin;
+            iaxisbin = (long) axisbin;
             if (axisbin < 0. || iaxisbin >= histData.haxis3 || axisbin > histData.maxbin3)
                 continue;
 
@@ -1242,7 +1242,7 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
                   continue;
 
               axisbin = (col4[ii] - histData.amin4) / histData.binsize4;
-              iaxisbin = axisbin;
+              iaxisbin = (long) axisbin;
               if (axisbin < 0. || iaxisbin >= histData.haxis4 || axisbin > histData.maxbin4)
                   continue;
 
@@ -1256,41 +1256,41 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
         if (histData.weight != FLOATNULLVALUE) /* constant weight factor */
         {
             if (histData.himagetype == TINT)
-              histData.hist.j[ipix] += histData.weight;
+              histData.hist.j[ipix] += (int) histData.weight;
             else if (histData.himagetype == TSHORT)
-              histData.hist.i[ipix] += histData.weight;
+              histData.hist.i[ipix] += (short) histData.weight;
             else if (histData.himagetype == TFLOAT)
               histData.hist.r[ipix] += histData.weight;
             else if (histData.himagetype == TDOUBLE)
               histData.hist.d[ipix] += histData.weight;
             else if (histData.himagetype == TBYTE)
-              histData.hist.b[ipix] += histData.weight;
+              histData.hist.b[ipix] += (char) histData.weight;
         }
         else if (histData.wtrecip) /* use reciprocal of the weight */
         {
             if (histData.himagetype == TINT)
-              histData.hist.j[ipix] += 1./wtcol[ii];
+              histData.hist.j[ipix] += (int) (1./wtcol[ii]);
             else if (histData.himagetype == TSHORT)
-              histData.hist.i[ipix] += 1./wtcol[ii];
+              histData.hist.i[ipix] += (short) (1./wtcol[ii]);
             else if (histData.himagetype == TFLOAT)
-              histData.hist.r[ipix] += 1./wtcol[ii];
+              histData.hist.r[ipix] += (float) (1./wtcol[ii]);
             else if (histData.himagetype == TDOUBLE)
               histData.hist.d[ipix] += 1./wtcol[ii];
             else if (histData.himagetype == TBYTE)
-              histData.hist.b[ipix] += 1./wtcol[ii];
+              histData.hist.b[ipix] += (char) (1./wtcol[ii]);
         }
         else   /* no weights */
         {
             if (histData.himagetype == TINT)
-              histData.hist.j[ipix] += wtcol[ii];
+              histData.hist.j[ipix] += (int) wtcol[ii];
             else if (histData.himagetype == TSHORT)
-              histData.hist.i[ipix] += wtcol[ii];
+              histData.hist.i[ipix] += (short) wtcol[ii];
             else if (histData.himagetype == TFLOAT)
               histData.hist.r[ipix] += wtcol[ii];
             else if (histData.himagetype == TDOUBLE)
               histData.hist.d[ipix] += wtcol[ii];
             else if (histData.himagetype == TBYTE)
-              histData.hist.b[ipix] += wtcol[ii];
+              histData.hist.b[ipix] += (char) wtcol[ii];
         }
 
     }  /* end of main loop over all rows */

@@ -21,9 +21,9 @@ int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     int tcode, maxelem, hdutype, nchar;
-    long twidth, incre, rownum, remain, next;
-    long ii, jj, ntodo, tnull;
-    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen;
+    long twidth, incre;
+    long ii, jj, tnull, ntodo;
+    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen, rownum, remain, next;
     double scale, zero;
     char tform[20], *blanks;
     char message[FLEN_ERRMSG];
@@ -112,8 +112,8 @@ int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
          will fit in the buffer space or to the number of pixels that remain
          in the current vector, which ever is smaller.
       */
-      ntodo = minvalue(remain, maxelem);      
-      ntodo = minvalue(ntodo, (repeat - elemnum));
+      ntodo = (long) minvalue(remain, maxelem);      
+      ntodo = (long) minvalue(ntodo, (repeat - elemnum));
 
       wrtptr = startpos + ((LONGLONG)rownum * rowlen) + (elemnum * incre);
       ffmbyt(fptr, wrtptr, IGNORE_EOF, status);  /* move to write position */
@@ -200,7 +200,8 @@ int ffpcns( fitsfile *fptr,  /* I - FITS file pointer                       */
   null value in the output FITS file. 
 */
 {
-    long repeat, width, first, ngood = 0, nbad = 0, ii, fstelm, fstrow;
+    long repeat, width, ngood = 0, nbad = 0, ii;
+    LONGLONG first, fstelm, fstrow;
 
     if (*status > 0)
         return(*status);

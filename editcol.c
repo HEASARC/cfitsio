@@ -539,7 +539,7 @@ int ffdrws(fitsfile *fptr,  /* I - FITS file pointer                        */
         return(*status = BAD_ROW_NUM);
     }
 
-    buffer = (unsigned char *) malloc(naxis1);  /* buffer for one row */
+    buffer = (unsigned char *) malloc( (size_t) naxis1);  /* buffer for one row */
 
     if (!buffer)
     {
@@ -668,7 +668,7 @@ int ffdrwsll(fitsfile *fptr, /* I - FITS file pointer                        */
         return(*status = BAD_ROW_NUM);
     }
 
-    buffer = (unsigned char *) malloc(naxis1);  /* buffer for one row */
+    buffer = (unsigned char *) malloc( (size_t) naxis1);  /* buffer for one row */
 
     if (!buffer)
     {
@@ -926,8 +926,15 @@ int ffrwrgll(
       } else if ( isdigit((int) *next) ) {
 
 #if defined(_MSC_VER)
-/*  Microsoft Visual C++ Version 6.0 does not have the strtoll function */
-          minval = strtol(next, &next, 10);
+
+#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
+    /* Microsoft Visual C++ 6.0 does not have the strtoll function */
+    /* this will fail if the integer is greater than 2**31 */
+          minval = (LONGLONG) strtol(next, &next, 10);
+#  else
+          minval = strtoll(next, &next, 10);
+#  endif
+
 #elif (USE_LL_SUFFIX == 1)
           minval = strtoll(next, &next, 10);
 #else
@@ -951,12 +958,19 @@ int ffrwrgll(
           if ( isdigit((int) *next) ) {
 
 #if defined(_MSC_VER)
-/*  Microsoft Visual C++ Version 6.0 does not have the strtoll function */
-              minval = strtol(next, &next, 10);
+
+#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
+    /* Microsoft Visual C++ 6.0 does not have the strtoll function */
+    /* this will fail if the integer is greater than 2**31 */
+              maxval = (LONGLONG) strtol(next, &next, 10);
+#  else
+              maxval = strtoll(next, &next, 10);
+#  endif
+
 #elif (USE_LL_SUFFIX == 1)
-              minval = strtoll(next, &next, 10);
+              maxval = strtoll(next, &next, 10);
 #else
-              minval = strtol(next, &next, 10);
+              maxval = strtol(next, &next, 10);
 #endif
 
           } else if (*next == ',' || *next == '\0') {
@@ -1465,8 +1479,13 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
 
 
 #if defined(_MSC_VER)
-    /* Microsoft Visual C++ uses a strange '%I64d' syntax  for 8-byte integers */
+
+#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
+    /* Microsoft Visual C++ 6.0 uses '%I64d' syntax  for 8-byte integers */
     sprintf(tfm,"%I64d%s",newveclen,tcode); 
+#  else
+    sprintf(tfm,"%lld%s",newveclen,tcode); 
+#  endif
 
 #elif (USE_LL_SUFFIX == 1)
     sprintf(tfm,"%lld%s",newveclen,tcode); 
@@ -2105,7 +2124,7 @@ int ffcins(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         /* now write the fill values into the new column */
         nbytes = minvalue(ninsert, 10000);
-        memset(buffer, cfill, nbytes); /* initialize with fill value */
+        memset(buffer, cfill, (size_t) nbytes); /* initialize with fill value */
 
         nseg = (ninsert + 9999) / 10000;
         (fptr->Fptr)->rowlength =  newlen;  /* new row length */

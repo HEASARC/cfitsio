@@ -367,7 +367,7 @@ int ffuptf(fitsfile *fptr, int *status);
 
 int ffdblk(fitsfile *fptr, long nblocks, int *status);
 int ffgext(fitsfile *fptr, int moveto, int *exttype, int *status);
-int ffgtbc(fitsfile *fptr, long *totalwidth, int *status);
+int ffgtbc(fitsfile *fptr, LONGLONG *totalwidth, int *status);
 int ffgtbp(fitsfile *fptr, char *name, char *value, int *status);
 int ffiblk(fitsfile *fptr, long nblock, int headdata, int *status);
 int ffshft(fitsfile *fptr, LONGLONG firstbyte, LONGLONG nbytes, LONGLONG nshift,
@@ -908,7 +908,7 @@ int fits_write_compressed_img(fitsfile *fptr,
             int nullcheck, void *array,  void *nulval,
             int  *status);
 int fits_write_compressed_pixels(fitsfile *fptr, 
-            int  datatype, LONGLONG  fpixel, long npixels,   
+            int  datatype, LONGLONG  fpixel, LONGLONG npixels,   
             int nullcheck,  void *array, void *nulval,
             int  *status);
 int fits_write_compressed_img_plane(fitsfile *fptr, int  datatype, 
@@ -930,15 +930,15 @@ int imcomp_compress_tile (fitsfile *outfptr, long row,
 /*  image decompression routines */
 
 int fits_read_compressed_img(fitsfile *fptr, 
-            int  datatype, long  *fpixel,long  *lpixel,long *inc,   
+            int  datatype, LONGLONG  *fpixel,LONGLONG  *lpixel,long *inc,   
             int nullcheck, void *nulval,  void *array, char *nullarray,
             int  *anynul, int  *status);
 int fits_read_compressed_pixels(fitsfile *fptr, 
-            int  datatype, LONGLONG  fpixel, long npixels,   
+            int  datatype, LONGLONG  fpixel, LONGLONG npixels,   
             int nullcheck, void *nulval,  void *array, char *nullarray,
             int  *anynul, int  *status);
 int fits_read_compressed_img_plane(fitsfile *fptr, int  datatype, 
-      int  bytesperpixel,  long   nplane, long *firstcoord, long *lastcoord, 
+      int  bytesperpixel,  long   nplane, LONGLONG *firstcoord, LONGLONG *lastcoord, 
       long *inc,  long *naxes,  int  nullcheck,  void *nullval, 
       void *array, char *nullarray, int  *anynul, long *nread, int  *status);
 

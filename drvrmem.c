@@ -239,10 +239,10 @@ int mem_truncate(int handle, LONGLONG filesize)
 
     /* call the memory reallocation function, if defined */
     if ( memTable[handle].mem_realloc )
-    {
+    {    /* explicit LONGLONG->size_t cast */
         ptr = (memTable[handle].mem_realloc)(
                                 *(memTable[handle].memaddrptr),
-                                 filesize);
+                                 (size_t) filesize);
         if (!ptr)
         {
             ffpmsg("Failed to reallocate memory (mem_truncate)");
@@ -254,7 +254,7 @@ int mem_truncate(int handle, LONGLONG filesize)
         {
              memset(ptr + *(memTable[handle].memsizeptr),
                     0,
-                    filesize - *(memTable[handle].memsizeptr) );
+                ((size_t) filesize) - *(memTable[handle].memsizeptr) );
         }
 
         *(memTable[handle].memaddrptr) = ptr;
@@ -512,9 +512,9 @@ int stdout_close(int handle)
 {
     int status = 0;
 
-    /* copy from memory to standard out */
+    /* copy from memory to standard out.  explicit LONGLONG->size_t cast */
     if(fwrite(memTable[handle].memaddr, 1,
-              memTable[handle].fitsfilesize, stdout) !=
+              ((size_t) memTable[handle].fitsfilesize), stdout) !=
               (size_t) memTable[handle].fitsfilesize )
     {
                 ffpmsg("failed to copy memory file to stdout (stdout_close)");
@@ -659,7 +659,7 @@ int mem_compress_open(char *filename, int rwmode, int *hdl)
        (( (size_t) memTable[*hdl].fitsfilesize) + 256L) ) 
     {
         ptr = realloc(*(memTable[*hdl].memaddrptr), 
-                       memTable[*hdl].fitsfilesize);
+                     ((size_t) memTable[*hdl].fitsfilesize) );
         if (!ptr)
         {
             ffpmsg("Failed to reduce size of allocated memory (compress_open)");
@@ -713,7 +713,7 @@ int mem_compress_stdin_open(char *filename, int rwmode, int *hdl)
        (( (size_t) memTable[*hdl].fitsfilesize) + 256L) ) 
     {
         ptr = realloc(*(memTable[*hdl].memaddrptr), 
-                       memTable[*hdl].fitsfilesize);
+                      ((size_t) memTable[*hdl].fitsfilesize) );
         if (!ptr)
         {
             ffpmsg("Failed to reduce size of allocated memory (compress_stdin_open)");

@@ -125,8 +125,9 @@ int ffp3dj(fitsfile *fptr,   /* I - FITS file pointer                     */
   FITS array is not the same as the array being written).
 */
 {
-    long tablerow, nfits, narray, ii, jj;
+    long tablerow, ii, jj;
     long fpixel[3]= {1,1,1}, lpixel[3];
+    LONGLONG nfits, narray;
     /*
       the primary array is represented as a binary table:
       each group of the primary array is a row in the table,
@@ -137,9 +138,9 @@ int ffp3dj(fitsfile *fptr,   /* I - FITS file pointer                     */
     if (fits_is_compressed_image(fptr, status))
     {
         /* this is a compressed image in a binary table */
-        lpixel[0] = ncols;
-        lpixel[1] = nrows;
-        lpixel[2] = naxis3;
+        lpixel[0] = (long) ncols;
+        lpixel[1] = (long) nrows;
+        lpixel[2] = (long) naxis3;
        
         fits_write_compressed_img(fptr, TLONG, fpixel, lpixel,
             0,  array, NULL, status);
@@ -355,9 +356,9 @@ int ffpclj( fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     int tcode, maxelem, hdutype, writeraw;
-    long twidth, incre, rownum, remain, next, ntodo;
-    long tnull;
-    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen;
+    long twidth, incre;
+    long tnull, ntodo;
+    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen, rownum, remain, next;
     double scale, zero;
     char tform[20], cform[20];
     char message[FLEN_ERRMSG];
@@ -394,7 +395,7 @@ int ffpclj( fitsfile *fptr,  /* I - FITS file pointer                       */
        MACHINE == NATIVE && tcode == TLONG && LONGSIZE == 32)
     {
         writeraw = 1;
-        maxelem = nelem;  /* we can write the entire array at one time */
+        maxelem = (int) nelem;  /* we can write the entire array at one time */
     }
     else
         writeraw = 0;
@@ -415,8 +416,8 @@ int ffpclj( fitsfile *fptr,  /* I - FITS file pointer                       */
            will fit in the buffer space or to the number of pixels that remain
            in the current vector, which ever is smaller.
         */
-        ntodo = minvalue(remain, maxelem);      
-        ntodo = minvalue(ntodo, (repeat - elemnum));
+        ntodo = (long) minvalue(remain, maxelem);      
+        ntodo = (long) minvalue(ntodo, (repeat - elemnum));
 
         wrtptr = startpos + ((LONGLONG)rownum * rowlen) + (elemnum * incre);
 
@@ -713,7 +714,7 @@ int ffi4fi1(long *input,           /* I - array of values to be converted  */
                 output[ii] = UCHAR_MAX;
             }
             else
-                output[ii] = input[ii];
+                output[ii] = (unsigned char) input[ii];
         }
     }
     else
@@ -768,7 +769,7 @@ int ffi4fi2(long *input,       /* I - array of values to be converted  */
                 output[ii] = SHRT_MAX;
             }
             else
-                output[ii] = input[ii];
+                output[ii] = (short) input[ii];
         }
     }
     else
@@ -989,7 +990,7 @@ int ffi4fr4(long *input,       /* I - array of values to be converted  */
     else
     {
         for (ii = 0; ii < ntodo; ii++)
-            output[ii] = (input[ii] - zero) / scale;
+            output[ii] = (float) ((input[ii] - zero) / scale);
     }
     return(*status);
 }
@@ -1178,8 +1179,8 @@ int ffp3djj(fitsfile *fptr,  /* I - FITS file pointer                     */
   FITS array is not the same as the array being written).
 */
 {
-    long tablerow, nfits, narray, ii, jj;
-
+    long tablerow, ii, jj;
+    LONGLONG nfits, narray;
     /*
       the primary array is represented as a binary table:
       each group of the primary array is a row in the table,
@@ -1404,9 +1405,9 @@ int ffpcljj(fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     int tcode, maxelem, hdutype, writeraw;
-    long twidth, incre, rownum, remain, next, ntodo;
-    long tnull;
-    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen;
+    long twidth, incre;
+    long tnull, ntodo;
+    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen, rownum, remain, next;
     double scale, zero;
     char tform[20], cform[20];
     char message[FLEN_ERRMSG];
@@ -1443,7 +1444,7 @@ int ffpcljj(fitsfile *fptr,  /* I - FITS file pointer                       */
        MACHINE == NATIVE && tcode == TLONGLONG)
     {
         writeraw = 1;
-        maxelem = nelem;  /* we can write the entire array at one time */
+        maxelem = (int) nelem;  /* we can write the entire array at one time */
     }
     else
         writeraw = 0;
@@ -1464,8 +1465,8 @@ int ffpcljj(fitsfile *fptr,  /* I - FITS file pointer                       */
            will fit in the buffer space or to the number of pixels that remain
            in the current vector, which ever is smaller.
         */
-        ntodo = minvalue(remain, maxelem);      
-        ntodo = minvalue(ntodo, (repeat - elemnum));
+        ntodo = (long) minvalue(remain, maxelem);      
+        ntodo = (long) minvalue(ntodo, (repeat - elemnum));
 
         wrtptr = startpos + ((LONGLONG)rownum * rowlen) + (elemnum * incre);
 
@@ -1762,7 +1763,7 @@ int ffi8fi1(LONGLONG *input,       /* I - array of values to be converted  */
                 output[ii] = UCHAR_MAX;
             }
             else
-                output[ii] = input[ii];
+                output[ii] = (unsigned char) input[ii];
         }
     }
     else
@@ -1817,7 +1818,7 @@ int ffi8fi2(LONGLONG *input,   /* I - array of values to be converted  */
                 output[ii] = SHRT_MAX;
             }
             else
-                output[ii] = input[ii];
+                output[ii] = (short) input[ii];
         }
     }
     else
@@ -1976,7 +1977,7 @@ int ffi8fr4(LONGLONG *input,   /* I - array of values to be converted  */
     else
     {
         for (ii = 0; ii < ntodo; ii++)
-            output[ii] = (input[ii] - zero) / scale;
+            output[ii] = (float) ((input[ii] - zero) / scale);
     }
     return(*status);
 }

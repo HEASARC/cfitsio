@@ -145,12 +145,12 @@ int ffg3dj(fitsfile *fptr,  /* I - FITS file pointer                       */
   nulval = 0 in which case no null checking will be performed.
 */
 {
-    long tablerow, nfits, narray, ii, jj;
+    long tablerow, ii, jj;
     char cdummy;
     int nullcheck = 1;
     long inc[] = {1,1,1};
-    long fpixel[] = {1,1,1};
-    long lpixel[3], nullvalue;
+    LONGLONG fpixel[] = {1,1,1}, nfits, narray;
+    LONGLONG lpixel[3], nullvalue;
 
     if (fits_is_compressed_image(fptr, status))
     {
@@ -228,7 +228,7 @@ int ffgsvj(fitsfile *fptr, /* I - FITS file pointer                         */
     long ii,i0, i1,i2,i3,i4,i5,i6,i7,i8,row,rstr,rstp,rinc;
     long str[9],stp[9],incr[9],dir[9];
     long nelem, nultyp, ninc, numcol;
-    LONGLONG felem, dsize[10];
+    LONGLONG felem, dsize[10], blcll[9], trcll[9];
     int hdutype, anyf;
     char ldummy, msg[FLEN_ERRMSG];
     int nullcheck = 1;
@@ -245,9 +245,14 @@ int ffgsvj(fitsfile *fptr, /* I - FITS file pointer                         */
     {
         /* this is a compressed image in a binary table */
 
+        for (ii=0; ii < naxis; ii++) {
+	    blcll[ii] = blc[ii];
+	    trcll[ii] = trc[ii];
+	}
+
         nullvalue = nulval;  /* set local variable */
 
-        fits_read_compressed_img(fptr, TLONG, blc, trc, inc,
+        fits_read_compressed_img(fptr, TLONG, blcll, trcll, inc,
             nullcheck, &nullvalue, array, NULL, anynul, status);
         return(*status);
     }
@@ -399,6 +404,7 @@ int ffgsfj(fitsfile *fptr, /* I - FITS file pointer                         */
 {
     long ii,i0, i1,i2,i3,i4,i5,i6,i7,i8,row,rstr,rstp,rinc;
     long str[9],stp[9],incr[9],dsize[10];
+    LONGLONG blcll[9], trcll[9];
     long felem, nelem, nultyp, ninc, numcol;
     long nulval = 0;
     int hdutype, anyf;
@@ -416,7 +422,12 @@ int ffgsfj(fitsfile *fptr, /* I - FITS file pointer                         */
     {
         /* this is a compressed image in a binary table */
 
-        fits_read_compressed_img(fptr, TLONG, blc, trc, inc,
+        for (ii=0; ii < naxis; ii++) {
+	    blcll[ii] = blc[ii];
+	    trcll[ii] = trc[ii];
+	}
+
+        fits_read_compressed_img(fptr, TLONG, blcll, trcll, inc,
             nullcheck, NULL, array, flagval, anynul, status);
         return(*status);
     }
@@ -648,10 +659,10 @@ int ffgclj( fitsfile *fptr,   /* I - FITS file pointer                       */
 {
     double scale, zero, power = 1.;
     int tcode, maxelem, hdutype, xcode, decimals;
-    long twidth, incre, rownum, remain, next, ntodo;
-    long ii, rowincre, tnull, xwidth;
+    long twidth, incre;
+    long ii, tnull, xwidth, ntodo;
     int convert, nulcheck, readcheck = 0;
-    LONGLONG repeat, startpos, elemnum, readptr, rowlen;
+    LONGLONG repeat, startpos, elemnum, readptr, rowlen, rownum, remain, next, rowincre;
     char tform[20];
     char message[81];
     char snull[20];   /*  the FITS null value if reading from ASCII table  */
@@ -668,7 +679,7 @@ int ffgclj( fitsfile *fptr,   /* I - FITS file pointer                       */
         *anynul = 0;
 
     if (nultyp == 2)
-        memset(nularray, 0, nelem);   /* initialize nullarray */
+        memset(nularray, 0, (size_t) nelem);   /* initialize nullarray */
 
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
@@ -718,7 +729,7 @@ int ffgclj( fitsfile *fptr,   /* I - FITS file pointer                       */
     convert = 1;
     if (tcode == TLONG)  /* Special Case:                        */
     {                             /* no type convertion required, so read */
-        maxelem = nelem;          /* data directly into output buffer.    */
+        maxelem = (int) nelem;          /* data directly into output buffer.    */
 
         if (nulcheck == 0 && scale == 1. && zero == 0. && LONGSIZE == 32)
             convert = 0;  /* no need to scale data or find nulls */
@@ -745,14 +756,14 @@ int ffgclj( fitsfile *fptr,   /* I - FITS file pointer                       */
            will fit in the buffer or to the number of pixels that remain in
            the current vector, which ever is smaller.
         */
-        ntodo = minvalue(remain, maxelem);
+        ntodo = (long) minvalue(remain, maxelem);
         if (elemincre >= 0)
         {
-          ntodo = minvalue(ntodo, ((repeat - elemnum - 1)/elemincre +1));
+          ntodo = (long) minvalue(ntodo, ((repeat - elemnum - 1)/elemincre +1));
         }
         else
         {
-          ntodo = minvalue(ntodo, (elemnum/(-elemincre) +1));
+          ntodo = (long) minvalue(ntodo, (elemnum/(-elemincre) +1));
         }
 
         readptr = startpos + ((LONGLONG)rownum * rowlen) + (elemnum * (incre / elemincre));
@@ -2160,12 +2171,12 @@ int ffg3djj(fitsfile *fptr, /* I - FITS file pointer                       */
   nulval = 0 in which case no null checking will be performed.
 */
 {
-    long tablerow, nfits, narray, ii, jj;
+    long tablerow, ii, jj;
     char cdummy;
     int nullcheck = 1;
     long inc[] = {1,1,1};
-    long fpixel[] = {1,1,1};
-    long lpixel[3];
+    LONGLONG fpixel[] = {1,1,1}, nfits, narray;
+    LONGLONG lpixel[3];
     LONGLONG nullvalue;
 
     if (fits_is_compressed_image(fptr, status))
@@ -2244,7 +2255,7 @@ int ffgsvjj(fitsfile *fptr, /* I - FITS file pointer                         */
     long ii,i0, i1,i2,i3,i4,i5,i6,i7,i8,row,rstr,rstp,rinc;
     long str[9],stp[9],incr[9],dir[9];
     long nelem, nultyp, ninc, numcol;
-    LONGLONG felem, dsize[10];
+    LONGLONG felem, dsize[10], blcll[9], trcll[9];
     int hdutype, anyf;
     char ldummy, msg[FLEN_ERRMSG];
     int nullcheck = 1;
@@ -2261,9 +2272,14 @@ int ffgsvjj(fitsfile *fptr, /* I - FITS file pointer                         */
     {
         /* this is a compressed image in a binary table */
 
+        for (ii=0; ii < naxis; ii++) {
+	    blcll[ii] = blc[ii];
+	    trcll[ii] = trc[ii];
+	}
+
         nullvalue = nulval;  /* set local variable */
 
-        fits_read_compressed_img(fptr, TLONGLONG, blc, trc, inc,
+        fits_read_compressed_img(fptr, TLONGLONG, blcll, trcll, inc,
             nullcheck, &nullvalue, array, NULL, anynul, status);
         return(*status);
     }
@@ -2415,6 +2431,7 @@ int ffgsfjj(fitsfile *fptr, /* I - FITS file pointer                         */
 {
     long ii,i0, i1,i2,i3,i4,i5,i6,i7,i8,row,rstr,rstp,rinc;
     long str[9],stp[9],incr[9],dsize[10];
+    LONGLONG blcll[9], trcll[9];
     long felem, nelem, nultyp, ninc, numcol;
     LONGLONG nulval = 0;
     int hdutype, anyf;
@@ -2432,7 +2449,12 @@ int ffgsfjj(fitsfile *fptr, /* I - FITS file pointer                         */
     {
         /* this is a compressed image in a binary table */
 
-        fits_read_compressed_img(fptr, TLONGLONG, blc, trc, inc,
+        for (ii=0; ii < naxis; ii++) {
+	    blcll[ii] = blc[ii];
+	    trcll[ii] = trc[ii];
+	}
+
+         fits_read_compressed_img(fptr, TLONGLONG, blcll, trcll, inc,
             nullcheck, NULL, array, flagval, anynul, status);
         return(*status);
     }
@@ -2666,10 +2688,10 @@ int ffgcljj( fitsfile *fptr,   /* I - FITS file pointer                       */
 {
     double scale, zero, power = 1.;
     int tcode, maxelem, hdutype, xcode, decimals;
-    long twidth, incre, rownum, remain, next, ntodo;
-    long ii, rowincre, tnull, xwidth;
+    long twidth, incre;
+    long ii, tnull, xwidth, ntodo;
     int convert, nulcheck, readcheck = 0;
-    LONGLONG repeat, startpos, elemnum, readptr, rowlen;
+    LONGLONG repeat, startpos, elemnum, readptr, rowlen, rownum, remain, next, rowincre;
     char tform[20];
     char message[81];
     char snull[20];   /*  the FITS null value if reading from ASCII table  */
@@ -2686,7 +2708,7 @@ int ffgcljj( fitsfile *fptr,   /* I - FITS file pointer                       */
         *anynul = 0;
 
     if (nultyp == 2)
-        memset(nularray, 0, nelem);   /* initialize nullarray */
+        memset(nularray, 0, (size_t) nelem);   /* initialize nullarray */
 
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
@@ -2736,7 +2758,7 @@ int ffgcljj( fitsfile *fptr,   /* I - FITS file pointer                       */
     convert = 1;
     if (tcode == TLONGLONG)  /* Special Case:                        */
     {                             /* no type convertion required, so read */
-        maxelem = nelem;          /* data directly into output buffer.    */
+        maxelem = (int) nelem;          /* data directly into output buffer.    */
 
         if (nulcheck == 0 && scale == 1. && zero == 0.)
             convert = 0;  /* no need to scale data or find nulls */
@@ -2763,14 +2785,14 @@ int ffgcljj( fitsfile *fptr,   /* I - FITS file pointer                       */
            will fit in the buffer or to the number of pixels that remain in
            the current vector, which ever is smaller.
         */
-        ntodo = minvalue(remain, maxelem);
+        ntodo = (long) minvalue(remain, maxelem);
         if (elemincre >= 0)
         {
-          ntodo = minvalue(ntodo, ((repeat - elemnum - 1)/elemincre +1));
+          ntodo = (long) minvalue(ntodo, ((repeat - elemnum - 1)/elemincre +1));
         }
         else
         {
-          ntodo = minvalue(ntodo, (elemnum/(-elemincre) +1));
+          ntodo = (long) minvalue(ntodo, (elemnum/(-elemincre) +1));
         }
 
         readptr = startpos + ((LONGLONG)rownum * rowlen) + (elemnum * (incre / elemincre));

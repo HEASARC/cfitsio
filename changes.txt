@@ -1,6 +1,12 @@
                    Log of Changes Made to CFITSIO
 
-Version 3.000 - 1 March 2005
+Version 3.001 - 15 March 2005 
+
+  - numerous minor changes to the code to get rid of compiler warning
+    messages, mainly dealing with numerical data type casting and the
+    subsequent possible loss of precision in the result.
+
+Version 3.000 - 1 March 2005 (internal beta release)
 
   Enhancements:
 

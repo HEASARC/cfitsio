@@ -1,4 +1,4 @@
-/*  Version Info: This file is distributed with version 3.000 of CFITSIO   */
+/*  Version Info: This file is distributed with version 3.001 of CFITSIO   */
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
@@ -80,11 +80,17 @@ SERVICES PROVIDED HEREUNDER."
 #   endif
 
 #elif defined(_MSC_VER)   /* Windows PCs; Visual C++, but not Borland C++ */
-    typedef __int64 LONGLONG;
-#   ifndef HAVE_LONGLONG
+#  if _MSC_VER < 1300     /*  versions less than 7.0 don't have 'long long' */
+     typedef __int64 LONGLONG;
+#    ifndef HAVE_LONGLONG
 #      define HAVE_LONGLONG 1
-#   endif
-
+#    endif
+#  else
+     typedef long long LONGLONG;
+#    ifndef HAVE_LONGLONG
+#      define HAVE_LONGLONG 1
+#    endif
+#  endif
 #elif defined(_MIPS_SZLONG)
 #  if _MIPS_SZLONG == 32
     typedef long long LONGLONG;

@@ -152,7 +152,7 @@ If the function value is zero, the data were not copied to idata.
         ndiff = 0;
 	for (i = j + 1 ;  i < nx;  i++) {
             if (fdata[i] != in_null_value) {
- 	        diff[ndiff] = fabs (fdata[i] - fdata[j]);
+ 	        diff[ndiff] = (float) (fabs (fdata[i] - fdata[j]));
                 j = i;
                 ndiff++;
                 minval = minvalue(minval, fdata[i]);
@@ -372,7 +372,7 @@ If the function value is zero, the data were not copied to idata.
         ndiff = 0;
 	for (i = j + 1 ;  i < nx;  i++) {
             if (fdata[i] != in_null_value) {
- 	        diff[ndiff] = fabs (fdata[i] - fdata[j]);
+ 	        diff[ndiff] = (float) (fabs (fdata[i] - fdata[j]));
                 j = i;
                 ndiff++;
                 minval = minvalue(minval, fdata[i]);
@@ -398,7 +398,7 @@ If the function value is zero, the data were not copied to idata.
             ndiff = 0;
 	    for (i = j + 1 ;  i < nx;  i++) {
                 if (fdata[i] != in_null_value) {
- 	            diff[ndiff] = fdata[i] - fdata[j];
+ 	            diff[ndiff] = (float) (fdata[i] - fdata[j]);
                     j = i;
                     ndiff++;
                 }
@@ -526,7 +526,7 @@ int n         i: number of elements in x (modified locally)
 	if (n == 1)
 	    return (x[0]);
 	if (n == 2)
-	    return ((x[0] + x[1]) / 2.);
+	    return ((float) ((x[0] + x[1]) / 2.));
 
 	done = 0;
 	while (!done) {
@@ -534,7 +534,7 @@ int n         i: number of elements in x (modified locally)
 	    if (n < SORT_CUTOFF) {
 		qsort (x, n, sizeof (float), FqCompare);
 		if (n / 2 * 2 == n)
-		    median = (x[n/2-1] + x[n/2]) / 2.;
+		    median = (float) ((x[n/2-1] + x[n/2]) / 2.);
 		else
 		    median = x[n/2];
 		return (median);
@@ -555,13 +555,13 @@ int n         i: number of elements in x (modified locally)
 		    median = x[i];
 		    break;
 		case 2:
-		    median = (x[i] + x[i+1]) / 2.;
+		    median = (float) ((x[i] + x[i+1]) / 2.);
 		    break;
 		case 3:
 		    median = x[i+1];
 		    break;
 		case 4:
-		    median = (x[i+1] + x[i+2]) / 2.;
+		    median = (float) ((x[i+1] + x[i+2]) / 2.);
 		    break;
 		case 5:				/* NELEM = 5 */
 		    median = x[i+2];

@@ -551,7 +551,7 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (extnm && *extnm)
          nunit++;     /* add one for the EXTNAME keyword */
 
-    rowlen = naxis1;
+    rowlen = (long) naxis1;
 
     if (!tbcol || !tbcol[0] || (!naxis1 && tfields)) /* spacing not defined? */
     {
