@@ -102,9 +102,12 @@ only C calling FORTRAN subroutines will work using K&R style.*/
                            Support f2c or f77 with gcc, vcc with f2c. 
                            f77 with vcc works, missing link magic for f77 I/O.*/
 #endif
-#if defined(WIN32)            /*  04/13/00 DM: Add these lines for NT with */
+#if defined(WIN32) && !defined(__CYGWIN__) /*  04/13/00 DM: Add these lines for NT with */
 #define PowerStationFortran   /*    PowerStationFortran and and Visual C++ */
 #define VISUAL_CPLUSPLUS
+#endif
+#if        defined(__CYGWIN__) /* 04/11/02 LEB */
+#define       f2cFortran 
 #endif
 #if        defined(__GNUC__) && defined(linux) /* 06/21/00 PDW */
 #define       f2cFortran 
