@@ -189,6 +189,9 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
     /* move to desired extension, if specified as part of the URL */
     /* ---------------------------------------------------------- */
 
+    imagecolname[0] = '\0';
+    rowexpress[0] = '\0';
+
     if (*extspec)
     {
        /* parse the extension specifier into individual parameters */
@@ -308,6 +311,9 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
         ffpmsg(url);
         return(*status);
     }
+
+    imagecolname[0] = '\0';
+    rowexpress[0] = '\0';
 
     if (*extspec)
     {
@@ -1100,12 +1106,13 @@ int fits_copy_image_cell(
 {
     fitsfile *newptr;
     unsigned char buffer[50000];
-    int hdutype, colnum, typecode, bitpix, naxis, maxelem, tstatus;
+    int ii, hdutype, colnum, typecode, bitpix, naxis, maxelem, tstatus;
     long repeat, naxes[9], nbytes, firstbyte, twidth;
     long startpos, elemnum, incre, rowlen, tnull, ntodo;
     double scale, zero;
     char tform[20];
     char keyname[FLEN_KEYWORD], card[FLEN_CARD];
+    char axisnum[10], root[9];
 
     if (*status > 0)
         return(*status);
@@ -1229,6 +1236,77 @@ int fits_copy_image_cell(
         ffprec(newptr, card, status);
     }
 
+    /* convert the nominal WCS keywords, if present */
+    strcpy(axisnum,"123456789");
+    for (ii = 0; ii < naxis; ii++)
+    {
+      strcpy(root, "1CTYP");
+      root[0] = axisnum[ii];
+      ffkeyn(root, colnum, keyname, status);
+      tstatus = 0;
+      if (ffgcrd(*fptr, keyname, card, &tstatus) == 0)
+      {
+        strncpy(card, "CTYPE1  ", 8);
+        card[5] = axisnum[ii];
+        ffprec(newptr, card, status);
+      }
+
+      strcpy(root, "1CUNI");
+      root[0] = axisnum[ii];
+      ffkeyn(root, colnum, keyname, status);
+      tstatus = 0;
+      if (ffgcrd(*fptr, keyname, card, &tstatus) == 0)
+      {
+        strncpy(card, "CUNIT1  ", 8);
+        card[5] = axisnum[ii];
+        ffprec(newptr, card, status);
+      }
+
+      strcpy(root, "1CRPX");
+      root[0] = axisnum[ii];
+      ffkeyn(root, colnum, keyname, status);
+      tstatus = 0;
+      if (ffgcrd(*fptr, keyname, card, &tstatus) == 0)
+      {
+        strncpy(card, "CRPIX1  ", 8);
+        card[5] = axisnum[ii];
+        ffprec(newptr, card, status);
+      }
+
+      strcpy(root, "1CRVL");
+      root[0] = axisnum[ii];
+      ffkeyn(root, colnum, keyname, status);
+      tstatus = 0;
+      if (ffgcrd(*fptr, keyname, card, &tstatus) == 0)
+      {
+        strncpy(card, "CRVAL1  ", 8);
+        card[5] = axisnum[ii];
+        ffprec(newptr, card, status);
+      }
+
+      strcpy(root, "1CDLT");
+      root[0] = axisnum[ii];
+      ffkeyn(root, colnum, keyname, status);
+      tstatus = 0;
+      if (ffgcrd(*fptr, keyname, card, &tstatus) == 0)
+      {
+        strncpy(card, "CDELT1  ", 8);
+        card[5] = axisnum[ii];
+        ffprec(newptr, card, status);
+      }
+
+      strcpy(root, "1CROT");
+      root[0] = axisnum[ii];
+      ffkeyn(root, colnum, keyname, status);
+      tstatus = 0;
+      if (ffgcrd(*fptr, keyname, card, &tstatus) == 0)
+      {
+        strncpy(card, "CROTA1  ", 8);
+        card[5] = axisnum[ii];
+        ffprec(newptr, card, status);
+      }
+    }
+
     /* copy all other relevant keywords */
     fits_copy_image_keywords(*fptr, newptr, status);
 
@@ -1291,6 +1369,21 @@ int fits_copy_image_keywords(
                 !strncmp(root, "CROT", 4) || !strncmp(root, "CUNI", 4) ||
                 !strncmp(root, "UNIT", 4) || !strncmp(root, "NULL", 4) ||
                 !strncmp(root, "DIM" , 3) || !strncmp(root, "BCOL", 4) )
+
+                /* will have to deal with the WCS keywords separately */
+            {
+               continue;   /* ignore these keywords */
+            }
+            else
+            {
+               ffprec(outfptr, rec, status); /* copy the keyword */
+            }
+        }
+        else if (isdigit((int) *rec) )
+        {
+           if ( !strncmp(root, "CTYP", 4) || !strncmp(root, "CRPX", 4) ||
+                !strncmp(root, "CRVL", 4) || !strncmp(root, "CDLT", 4) ||
+                !strncmp(root, "CROT", 4) || !strncmp(root, "CUNI", 4) )
 
                 /* will have to deal with the WCS keywords separately */
             {
