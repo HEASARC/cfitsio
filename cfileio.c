@@ -1578,6 +1578,7 @@ int fits_select_image_section(
     cptr = expr;
     for (ii=0; ii < naxis; ii++)
     {
+
        if (fits_get_section_range(&cptr, &smin, &smax, &sinc, status) > 0)
        {
           ffpmsg("error parsing the following image section specifier:");
@@ -1585,6 +1586,9 @@ int fits_select_image_section(
           ffclos(newptr, status);
           return(*status);
        }
+
+       if (smax == 0)
+          smax = naxes[ii];   /* use whole axis  by default */
 
        if (smin > naxes[ii] || smax > naxes[ii])
        {
@@ -1786,20 +1790,28 @@ int fits_get_section_range(char **ptr,
 
     slen = fits_get_token(ptr, " ,:", token, &isanumber); /* get 1st token */
 
-    if (slen == 0 || !isanumber || **ptr != ':')
+    if (*token == '*')  /* wild card means to use the whole range */
+    {
+       *secmin = 1;
+       *secmax = 0;
+    }
+    else
+    {
+      if (slen == 0 || !isanumber || **ptr != ':')
         return(*status = URL_PARSE_ERROR);   
 
-    /* the token contains the min value */
-    *secmin = atol(token);
+      /* the token contains the min value */
+      *secmin = atol(token);
 
-    (*ptr)++;  /* skip the colon between the min and max values */
-    slen = fits_get_token(ptr, " ,:", token, &isanumber); /* get token */
+      (*ptr)++;  /* skip the colon between the min and max values */
+      slen = fits_get_token(ptr, " ,:", token, &isanumber); /* get token */
 
-    if (slen == 0 || !isanumber)
+      if (slen == 0 || !isanumber)
         return(*status = URL_PARSE_ERROR);   
 
-    /* the token contains the max value */
-    *secmax = atol(token);
+      /* the token contains the max value */
+      *secmax = atol(token);
+    }
 
     if (**ptr == ':')
     {
@@ -1820,7 +1832,7 @@ int fits_get_section_range(char **ptr,
     while (**ptr == ' ')   /* skip any trailing blanks */
          (*ptr)++;
 
-    if (*secmin < 1 || *secmax < 1 || *incre < 1)
+    if (*secmin < 1 || *secmax < 0 || *incre < 1)
         *status = URL_PARSE_ERROR;
 
     return(*status);

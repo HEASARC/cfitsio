@@ -24,8 +24,9 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.030; /* 24 Feb 1999 */
- /*   *version = 2.029;  11 Feb 1999 */
+      *version = 2.0301; /* 24 Feb 1999 */
+ 
+/*   *version = 2.029;  11 Feb 1999 */
  /*   *version = 2.028;  26 Jan 1999 */
  /*   *version = 2.027;  12 Jan 1999 */
  /*   *version = 2.026;  23 Dec 1998 */
@@ -2606,7 +2607,7 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
     (fptr->Fptr)->hdutype = IMAGE_HDU; /* primary array or IMAGE extension  */
-    (fptr->Fptr)->headend = 2000000000;  /* temporarily set huge header size  */
+    (fptr->Fptr)->headend = (fptr->Fptr)->logfilesize;  /* set max size */
 
     groups = 0;
     tstatus = *status;
@@ -2803,7 +2804,7 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
     (fptr->Fptr)->hdutype = ASCII_TBL;  /* set that this is an ASCII table */
-    (fptr->Fptr)->headend = 2000000000; /* temporarily set huge header size */
+    (fptr->Fptr)->headend = (fptr->Fptr)->logfilesize;  /* set max size */
 
     /* get table parameters and test that the header is a valid: */
     if (ffgttb(fptr, &rowlen, &nrows, &pcount, &tfield, status) > 0)  
@@ -2993,7 +2994,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
     (fptr->Fptr)->hdutype = BINARY_TBL;  /* set that this is a binary table */
-    (fptr->Fptr)->headend = 2000000000;  /* temporarily set huge header size  */
+    (fptr->Fptr)->headend = (fptr->Fptr)->logfilesize;  /* set max size */
 
     /* get table parameters and test that the header is valid: */
     if (ffgttb(fptr, &rowlen, &nrows, &pcount, &tfield, status) > 0)
@@ -3600,7 +3601,8 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
         error message in cases where the final image array size is not
         yet known or defined.
       */
-        *repeat = *elemnum + nelem; 
+        if (*repeat < *elemnum + nelem)
+            *repeat = *elemnum + nelem; 
     }
     else if (*tcode > 0)     /*  Fixed length table column  */
     {
@@ -4747,7 +4749,7 @@ int ffgext(fitsfile *fptr,      /* I - FITS file pointer                */
         (fptr->Fptr)->curhdu = hdunum;
         fptr->HDUposition    = hdunum;
         (fptr->Fptr)->maxhdu = maxvalue((fptr->Fptr)->maxhdu, hdunum);
-        (fptr->Fptr)->headend = 2000000000; /* set end to huge value for now */
+        (fptr->Fptr)->headend = (fptr->Fptr)->logfilesize; /* set max size */
 
         if (ffrhdu(fptr, exttype, status) > 0)
         {   /* failed to get the new HDU, so restore previous values */

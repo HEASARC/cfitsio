@@ -1,5 +1,33 @@
                Log of Changes Made to CFITSIO
 
+Version 2.031 - Mar 1999
+
+   - fixed bug (introduced in version 2.030) when writing null values
+     to a primary array or image extention.  If trying to set more
+     than 1 pixel to null at a time, then typically only 1 null would
+     be written.
+
+   - enhanced the extended filename parser to support '*' in image
+     section specifiers, to mean use the whole range of the axis.
+     myfile.fits[*,1:100] means use the whole range of the first
+     axis and pixels 1 to 100 in the second axis.  Also supports
+     an increment, as in myfile.fits[*:2, 1:100:2] to use just the
+     odd numbered rows and columns.
+
+   - modified fitscore.c to set the initial max size of the header, when
+     first reading it, to the size of the file, rather than to 2 x 10**9
+     to avoid rare cases where CFITSIO ends up writing a huge file
+     to disk.
+
+   - modified file_compress_open so that it will not allow a compressed
+     FITS file to be opened with write access.  Otherwise, a program
+     could write to the temporary copy of the uncompressed file, but
+     the modification would be lost when the program exits.
+
+   - fixed bug in ffpclu when trying to write a null value to a row
+     beyond the current size of the table (wouldn't append new rows
+     like it should).
+
 Version 2.030 - 24 Feb 1999
 
    - major new feature:  enhanced the routines that read ASCII string
