@@ -809,11 +809,37 @@ int ffiter(int n_cols,
             if (typecode == TBYTE || typecode == TSHORT || typecode == TLONG)
             {
                 tstatus = 0;
-                ffkeyn("TNULL", cols[jj].colnum, keyname, &tstatus);
-                ffgkyj(cols[jj].fptr, keyname, &tnull, 0, &tstatus);
-                if (tstatus)
+                if (hdutype == ASCII_TBL) /* TNULLn value is a string */
                 {
-                    tnull = 0L;  /* no null values */
+                    ffkeyn("TNULL", cols[jj].colnum, keyname, &tstatus);
+                    ffgkys(cols[jj].fptr, keyname, message, 0, &tstatus);
+                    if (tstatus)
+                    {
+                        tnull = 0L; /* keyword doesn't exist; no null values */
+                    }
+                    else
+                    {
+                        tnull = LONG_MIN;  /* choose smallest possible */
+                    }                      /* value to represent nulls */
+                }
+                else  /* Binary table; TNULLn value is an integer */
+                {
+                    ffkeyn("TNULL", cols[jj].colnum, keyname, &tstatus);
+                    ffgkyj(cols[jj].fptr, keyname, &tnull, 0, &tstatus);
+                    if (tstatus)
+                    {
+                        tnull = 0L; /* keyword doesn't exist; no null values */
+                    }
+                    else if (tnull == 0)
+                    {
+                        /* worst possible case: a value of 0 is used to   */
+                        /* represent nulls in the FITS file.  We have to  */
+                        /* use a non-zero null value here (zero is used to */
+                        /* mean there are no null values in the array) so we */
+                        /* will use the smallest possible integer instead. */
+
+                        tnull = LONG_MIN;  /* choose smallest possible value */
+                    }
                 }
             }
         }

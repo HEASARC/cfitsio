@@ -54,11 +54,13 @@
 #define BINARY_TBL 2  /* Binary table HDU */
 #define ANY_HDU   -1  /* matches any HDU type */
 
-#define READONLY  0    /* options when openning a file */
+#define READONLY  0    /* options when opening a file */
 #define READWRITE 1
 
-#define FLOATNULLVALUE -9.11E-36F
-#define DOUBLENULLVALUE -9.11E-36
+/* adopt a hopefully obscure number to use as a null value flag */
+/* could be problems if the FITS files contain data with these values */
+#define FLOATNULLVALUE -9.11912E-36F
+#define DOUBLENULLVALUE -9.1191291391491E-36
  
 #ifndef TRUE
 #define TRUE 1

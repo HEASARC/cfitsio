@@ -1,5 +1,11 @@
                Log of Changes Made to CFITSIO
 
+   - fixed bug in iterator to support null values in integer columns in
+     ASCII tables.
+
+   - changed the values for FLOATNULLVALUE and DOUBLENULLVALUE to make them
+     less likely to duplicate actual values in the data.
+
    - fixed major bug when freeing memory in the iterator function.  It caused
      mysterious crashes on a few platforms, but had no effect on most others.
 

@@ -104,6 +104,11 @@ then they may be omitted from the build by typing 'make all-nofitsio'
 instead of simply typing 'make'.  This will reduce the size
 of the CFITSIO library slightly.
 
+Note that starting with V2.0 of CFITSIO, it may no longer be possible 
+to build staticly linked executables on some system.  On SUN Solaris,
+for example the required nsl library is apparently only available as
+a shared library.
+
 An alternate makefile called Makefile.shared is included in the
 distribution that will build CFITSIO as a shared library.  It has only
 been tested under Solaris 2.5 but will likely also work on other
