@@ -154,7 +154,7 @@ int fits_select_rows( fitsfile *infptr,  /* I - Input FITS file             */
          }
          row++;
          inloc += rdlen;
-      } while( !*status && row<=nrows );
+      } while( !*status && row<nrows );
 
       if( nbuff ) {
          ffmbyt( outfptr, outloc,      IGNORE_EOF, status );
