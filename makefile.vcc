@@ -53,6 +53,8 @@ CLEAN :
 	-@erase "$(INTDIR)\eval_l.obj"
 	-@erase "$(INTDIR)\eval_y.obj"
 	-@erase "$(INTDIR)\fitscore.obj"
+	-@erase "$(INTDIR)\f77_wrap1.obj"
+	-@erase "$(INTDIR)\f77_wrap2.obj"
 	-@erase "$(INTDIR)\getcol.obj"
 	-@erase "$(INTDIR)\getcolb.obj"
 	-@erase "$(INTDIR)\getcold.obj"
@@ -127,6 +129,8 @@ LINK32_OBJS= \
 	"$(INTDIR)\eval_l.obj" \
 	"$(INTDIR)\eval_y.obj" \
 	"$(INTDIR)\fitscore.obj" \
+	"$(INTDIR)\f77_wrap1.obj" \
+	"$(INTDIR)\f77_wrap2.obj" \
 	"$(INTDIR)\getcol.obj" \
 	"$(INTDIR)\getcolb.obj" \
 	"$(INTDIR)\getcold.obj" \
@@ -199,6 +203,8 @@ CLEAN :
 	-@erase "$(INTDIR)\eval_l.obj"
 	-@erase "$(INTDIR)\eval_y.obj"
 	-@erase "$(INTDIR)\fitscore.obj"
+	-@erase "$(INTDIR)\f77_wrap1.obj"
+	-@erase "$(INTDIR)\f77_wrap2.obj"
 	-@erase "$(INTDIR)\getcol.obj"
 	-@erase "$(INTDIR)\getcolb.obj"
 	-@erase "$(INTDIR)\getcold.obj"
@@ -276,6 +282,8 @@ LINK32_OBJS= \
 	"$(INTDIR)\eval_l.obj" \
 	"$(INTDIR)\eval_y.obj" \
 	"$(INTDIR)\fitscore.obj" \
+	"$(INTDIR)\f77_wrap1.obj" \
+	"$(INTDIR)\f77_wrap2.obj" \
 	"$(INTDIR)\getcol.obj" \
 	"$(INTDIR)\getcolb.obj" \
 	"$(INTDIR)\getcold.obj" \
@@ -426,6 +434,16 @@ SOURCE=.\eval_y.c
 SOURCE=.\fitscore.c
 
 "$(INTDIR)\fitscore.obj" : $(SOURCE) "$(INTDIR)"
+
+
+SOURCE=.\f77_wrap1.c
+
+"$(INTDIR)\f77_wrap1.obj" : $(SOURCE) "$(INTDIR)"
+
+
+SOURCE=.\f77_wrap2.c
+
+"$(INTDIR)\f77_wrap2.obj" : $(SOURCE) "$(INTDIR)"
 
 
 SOURCE=.\getcol.c

@@ -90,6 +90,8 @@ Dep_cfitsioddll = \
    getcolb.obj\
    grparser.obj\
    fitscore.obj\
+   f77_wrap1.obj\
+   f77_wrap2.obj\
    eval_y.obj\
    eval_l.obj\
    eval_f.obj\
@@ -149,6 +151,8 @@ getcold.obj+
 getcolb.obj+
 grparser.obj+
 fitscore.obj+
+f77_wrap1.obj+
+f77_wrap2.obj+
 eval_y.obj+
 eval_l.obj+
 eval_f.obj+
@@ -348,6 +352,16 @@ grparser.obj :  grparser.c
 fitscore.obj :  fitscore.c
   $(BCC32) -P- -c @&&|
  $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ fitscore.c
+|
+
+f77_wrap1.obj :  f77_wrap1.c
+  $(BCC32) -P- -c @&&|
+ $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ f77_wrap1.c
+|
+
+f77_wrap2.obj :  f77_wrap2.c
+  $(BCC32) -P- -c @&&|
+ $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ f77_wrap2.c
 |
 
 eval_y.obj :  eval_y.c

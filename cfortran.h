@@ -85,7 +85,8 @@ only C calling FORTRAN subroutines will work using K&R style.*/
 
 /* Remainder of cfortran.h depends on the Fortran compiler. */
 
-#if defined(CLIPPERFortran) || defined(g77Fortran) /* 11/3/97 PDW */
+#if defined(CLIPPERFortran) || defined(g77Fortran) || defined(pgiFortran)
+                               /* 11/03/97 PDW */      /* 04/13/00 DM */
 #define f2cFortran
 #endif
 
@@ -100,7 +101,11 @@ only C calling FORTRAN subroutines will work using K&R style.*/
                            Support f2c or f77 with gcc, vcc with f2c. 
                            f77 with vcc works, missing link magic for f77 I/O.*/
 #endif
-#if defined(WIN32) || defined(macintosh)
+#if defined(WIN32)            /*  04/13/00 DM: Add these lines for NT with */
+#define PowerStationFortran   /*    PowerStationFortran and and Visual C++ */
+#define VISUAL_CPLUSPLUS
+#endif
+#if defined(macintosh)
 #define f2cFortran
 #endif
 #if defined(__hpux)             /* 921107: Use __hpux instead of __hp9000s300 */
