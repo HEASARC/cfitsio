@@ -516,6 +516,52 @@ char *fftext;
 #line 1 "eval.l"
 #define INITIAL 0
 #line 2 "eval.l"
+/************************************************************************/
+/*                                                                      */
+/*                       CFITSIO Lexical Parser                         */
+/*                                                                      */
+/* This file is one of 3 files containing code which parses an          */
+/* arithmetic expression and evaluates it in the context of an input    */
+/* FITS file table extension.  The CFITSIO lexical parser is divided    */
+/* into the following 3 parts/files: the CFITSIO "front-end",           */
+/* eval_f.c, contains the interface between the user/CFITSIO and the    */
+/* real core of the parser; the FLEX interpreter, eval_l.c, takes the   */
+/* input string and parses it into tokens and identifies the FITS       */
+/* information required to evaluate the expression (ie, keywords and    */
+/* columns); and, the BISON grammar and evaluation routines, eval_y.c,  */
+/* receives the FLEX output and determines and performs the actual      */
+/* operations.  The files eval_l.c and eval_y.c are produced from       */
+/* running flex and bison on the files eval.l and eval.y, respectively. */
+/* (flex and bison are available from any GNU archive: see www.gnu.org) */
+/*                                                                      */
+/* The grammar rules, rather than evaluating the expression in situ,    */
+/* builds a tree, or Nodal, structure mapping out the order of          */
+/* operations and expression dependencies.  This "compilation" process  */
+/* allows for much faster processing of multiple rows.  This technique  */
+/* was developed by Uwe Lammers of the XMM Science Analysis System,     */
+/* although the CFITSIO implementation is entirely code original.       */
+/*                                                                      */
+/*                                                                      */
+/* Modification History:                                                */
+/*                                                                      */
+/*   Kent Blackburn      c1992  Original parser code developed for the  */
+/*                              FTOOLS software package, in particular, */
+/*                              the fselect task.                       */
+/*   Kent Blackburn      c1995  BIT column support added                */
+/*   Peter D Wilson   Feb 1998  Vector column support added             */
+/*   Peter D Wilson   May 1998  Ported to CFITSIO library.  User        */
+/*                              interface routines written, in essence  */
+/*                              making fselect, fcalc, and maketime     */
+/*                              capabilities available to all tools     */
+/*                              via single function calls.              */
+/*   Peter D Wilson   Jun 1998  Major rewrite of parser core, so as to  */
+/*                              create a run-time evaluation tree,      */
+/*                              inspired by the work of Uwe Lammers,    */
+/*                              resulting in a speed increase of        */
+/*                              10-100 times.                           */
+/*                                                                      */
+/************************************************************************/
+
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
@@ -730,7 +776,7 @@ FF_DECL
 	register char *ff_cp, *ff_bp;
 	register int ff_act;
 
-#line 92 "eval.l"
+#line 138 "eval.l"
 
 
 
@@ -817,12 +863,12 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 FF_RULE_SETUP
-#line 94 "eval.l"
+#line 140 "eval.l"
 ;
 	FF_BREAK
 case 2:
 FF_RULE_SETUP
-#line 95 "eval.l"
+#line 141 "eval.l"
 {
                   int len;
                   len = strlen(fftext);
@@ -836,7 +882,7 @@ FF_RULE_SETUP
 	FF_BREAK
 case 3:
 FF_RULE_SETUP
-#line 105 "eval.l"
+#line 151 "eval.l"
 {
                   int len;
                   char tmpstring[256];
@@ -890,7 +936,7 @@ FF_RULE_SETUP
 	FF_BREAK
 case 4:
 FF_RULE_SETUP
-#line 155 "eval.l"
+#line 201 "eval.l"
 {
                   int len;
                   char tmpstring[256];
@@ -975,7 +1021,7 @@ FF_RULE_SETUP
 	FF_BREAK
 case 5:
 FF_RULE_SETUP
-#line 236 "eval.l"
+#line 282 "eval.l"
 {
                   fflval.lng = atol(fftext);
 		  return( LONG );
@@ -983,7 +1029,7 @@ FF_RULE_SETUP
 	FF_BREAK
 case 6:
 FF_RULE_SETUP
-#line 240 "eval.l"
+#line 286 "eval.l"
 {
                   if ((fftext[0] == 't') || (fftext[0] == 'T'))
 		    fflval.log = 1;
@@ -994,7 +1040,7 @@ FF_RULE_SETUP
 	FF_BREAK
 case 7:
 FF_RULE_SETUP
-#line 247 "eval.l"
+#line 293 "eval.l"
 {
                   fflval.dbl = atof(fftext);
 		  return( DOUBLE );
@@ -1002,7 +1048,7 @@ FF_RULE_SETUP
 	FF_BREAK
 case 8:
 FF_RULE_SETUP
-#line 251 "eval.l"
+#line 297 "eval.l"
 {
                   if ((strcmp(fftext,"#pi")==0)||(strcmp(fftext,"#PI")==0)) {
 		     fflval.dbl = (double)(4) * atan((double)(1));
@@ -1028,7 +1074,7 @@ FF_RULE_SETUP
 	FF_BREAK
 case 9:
 FF_RULE_SETUP
-#line 273 "eval.l"
+#line 319 "eval.l"
 {
                  int len; 
 		 if (fftext[1] == '$')
@@ -1050,7 +1096,7 @@ FF_RULE_SETUP
 	FF_BREAK
 case 10:
 FF_RULE_SETUP
-#line 291 "eval.l"
+#line 337 "eval.l"
 {
                   int len;
                   len = strlen(fftext) - 2;
@@ -1063,7 +1109,7 @@ FF_RULE_SETUP
 	FF_BREAK
 case 11:
 FF_RULE_SETUP
-#line 300 "eval.l"
+#line 346 "eval.l"
 {
                  /* copy from FITS table based on type */
 		 int    len,type;
@@ -1087,7 +1133,7 @@ FF_RULE_SETUP
 	FF_BREAK
 case 12:
 FF_RULE_SETUP
-#line 320 "eval.l"
+#line 366 "eval.l"
 {
                   char *fname;
 		  int len=0;
@@ -1108,77 +1154,77 @@ FF_RULE_SETUP
 	FF_BREAK
 case 13:
 FF_RULE_SETUP
-#line 337 "eval.l"
+#line 383 "eval.l"
 { return( INTCAST ); }
 	FF_BREAK
 case 14:
 FF_RULE_SETUP
-#line 338 "eval.l"
+#line 384 "eval.l"
 { return( FLTCAST ); }
 	FF_BREAK
 case 15:
 FF_RULE_SETUP
-#line 339 "eval.l"
+#line 385 "eval.l"
 { return( POWER   ); }
 	FF_BREAK
 case 16:
 FF_RULE_SETUP
-#line 340 "eval.l"
+#line 386 "eval.l"
 { return( NOT     ); }
 	FF_BREAK
 case 17:
 FF_RULE_SETUP
-#line 341 "eval.l"
+#line 387 "eval.l"
 { return( OR      ); }
 	FF_BREAK
 case 18:
 FF_RULE_SETUP
-#line 342 "eval.l"
+#line 388 "eval.l"
 { return( AND     ); }
 	FF_BREAK
 case 19:
 FF_RULE_SETUP
-#line 343 "eval.l"
+#line 389 "eval.l"
 { return( EQ      ); }
 	FF_BREAK
 case 20:
 FF_RULE_SETUP
-#line 344 "eval.l"
+#line 390 "eval.l"
 { return( NE      ); }
 	FF_BREAK
 case 21:
 FF_RULE_SETUP
-#line 345 "eval.l"
+#line 391 "eval.l"
 { return( GT      ); }
 	FF_BREAK
 case 22:
 FF_RULE_SETUP
-#line 346 "eval.l"
+#line 392 "eval.l"
 { return( LT      ); }
 	FF_BREAK
 case 23:
 FF_RULE_SETUP
-#line 347 "eval.l"
+#line 393 "eval.l"
 { return( GTE     ); }
 	FF_BREAK
 case 24:
 FF_RULE_SETUP
-#line 348 "eval.l"
+#line 394 "eval.l"
 { return( LTE     ); }
 	FF_BREAK
 case 25:
 FF_RULE_SETUP
-#line 349 "eval.l"
+#line 395 "eval.l"
 { return( '\n'    ); }
 	FF_BREAK
 case 26:
 FF_RULE_SETUP
-#line 350 "eval.l"
+#line 396 "eval.l"
 { return( fftext[0] ); }
 	FF_BREAK
 case 27:
 FF_RULE_SETUP
-#line 351 "eval.l"
+#line 397 "eval.l"
 ECHO;
 	FF_BREAK
 case FF_STATE_EOF(INITIAL):
@@ -2066,7 +2112,7 @@ int main()
 	return 0;
 	}
 #endif
-#line 351 "eval.l"
+#line 397 "eval.l"
 
 
 int ffwrap()

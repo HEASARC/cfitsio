@@ -1,38 +1,4 @@
-
-/*  A Bison parser, made from eval.y
- by  GNU Bison version 1.25
-  */
-
-#define FFBISON 1  /* Identify Bison output.  */
-
-#define	BOOLEAN	258
-#define	LONG	259
-#define	DOUBLE	260
-#define	STRING	261
-#define	BITSTR	262
-#define	FUNCTION	263
-#define	BFUNCTION	264
-#define	COLUMN	265
-#define	BCOLUMN	266
-#define	SCOLUMN	267
-#define	BITCOL	268
-#define	ROWREF	269
-#define	OR	270
-#define	AND	271
-#define	EQ	272
-#define	NE	273
-#define	GT	274
-#define	LT	275
-#define	LTE	276
-#define	GTE	277
-#define	POWER	278
-#define	NOT	279
-#define	INTCAST	280
-#define	FLTCAST	281
-#define	UMINUS	282
-
-#line 1 "eval.y"
-
+%{
 /************************************************************************/
 /*                                                                      */
 /*                       CFITSIO Lexical Parser                         */
@@ -88,25 +54,25 @@
 /*  popping multiple terms at one time.                        */
 /***************************************************************/
 
-#define FFNEWBACKUP(token, value)                               \
+#define YYNEWBACKUP(token, value)                               \
    do								\
-     if (ffchar == FFEMPTY )   					\
-       { ffchar = (token);                                      \
-         memcpy( &fflval, &(value), sizeof(value) );            \
-         ffchar1 = FFTRANSLATE (ffchar);			\
-         while (fflen--) FFPOPSTACK;				\
-         ffstate = *ffssp;					\
-         goto ffbackup;						\
+     if (yychar == YYEMPTY )   					\
+       { yychar = (token);                                      \
+         memcpy( &yylval, &(value), sizeof(value) );            \
+         yychar1 = YYTRANSLATE (yychar);			\
+         while (yylen--) YYPOPSTACK;				\
+         yystate = *yyssp;					\
+         goto yybackup;						\
        }							\
      else							\
-       { fferror ("syntax error: cannot back up"); FFERROR; }	\
+       { yyerror ("syntax error: cannot back up"); YYERROR; }	\
    while (0)
 
 /***************************************************************/
 /*  Useful macros for accessing/testing Nodes                  */
 /***************************************************************/
 
-#define TEST(a)        if( (a)<0 ) FFERROR
+#define TEST(a)        if( (a)<0 ) YYERROR
 #define SIZE(a)        gParse.Nodes[ a ].value.nelem
 #define TYPE(a)        gParse.Nodes[ a ].type
 #define PROMOTE(a,b)   if( TYPE(a) > TYPE(b) )                  \
@@ -158,1722 +124,498 @@ static void  bitand(char *result, char *bitstrm1, char *bitstrm2);
 static void  bitor (char *result, char *bitstrm1, char *bitstrm2);
 static void  bitnot(char *result, char *bits);
 
-static void  fferror(char *msg);
+static void  yyerror(char *msg);
 
 #ifdef __cplusplus
     }
 #endif
 
+%}
 
-#line 135 "eval.y"
-typedef union {
+%union {
     int    Node;        /* Index of Node */
     double dbl;         /* real value    */
     long   lng;         /* integer value */
     char   log;         /* logical value */
     char   str[256];    /* string value  */
-} FFSTYPE;
-#include <stdio.h>
-
-#ifndef __cplusplus
-#ifndef __STDC__
-#define const
-#endif
-#endif
-
-
-
-#define	FFFINAL		193
-#define	FFFLAG		-32768
-#define	FFNTBASE	44
-
-#define FFTRANSLATE(x) ((unsigned)(x) <= 282 ? fftranslate[x] : 50)
-
-static const char fftranslate[] = {     0,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,    40,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,    29,    33,     2,    41,
-    42,    30,    27,    15,    28,     2,    31,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,    17,     2,     2,
-    16,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-    39,     2,    43,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,    32,     2,    22,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     1,     2,     3,     4,     5,
-     6,     7,     8,     9,    10,    11,    12,    13,    14,    18,
-    19,    20,    21,    23,    24,    25,    26,    34,    35,    36,
-    37,    38
-};
-
-#if FFDEBUG != 0
-static const short ffprhs[] = {     0,
-     0,     1,     4,     6,     9,    12,    15,    18,    21,    23,
-    25,    29,    33,    37,    40,    44,    46,    48,    50,    52,
-    56,    60,    64,    68,    72,    76,    79,    83,    87,    91,
-    94,    98,   102,   106,   110,   116,   121,   128,   137,   148,
-   161,   164,   167,   170,   173,   175,   177,   181,   185,   189,
-   193,   197,   201,   205,   209,   213,   217,   221,   225,   229,
-   233,   237,   241,   245,   249,   253,   259,   263,   267,   271,
-   277,   285,   297,   313,   318,   325,   334,   345,   358,   361,
-   365,   367,   369,   373,   377
-};
-
-static const short ffrhs[] = {    -1,
-    44,    45,     0,    40,     0,    47,    40,     0,    48,    40,
-     0,    49,    40,     0,    46,    40,     0,     1,    40,     0,
-     7,     0,    13,     0,    46,    33,    46,     0,    46,    32,
-    46,     0,    46,    27,    46,     0,    35,    46,     0,    41,
-    46,    42,     0,     4,     0,     5,     0,    10,     0,    14,
-     0,    47,    29,    47,     0,    47,    27,    47,     0,    47,
-    28,    47,     0,    47,    30,    47,     0,    47,    31,    47,
-     0,    47,    34,    47,     0,    28,    47,     0,    41,    47,
-    42,     0,    47,    30,    48,     0,    48,    30,    47,     0,
-     8,    42,     0,     8,    48,    42,     0,     8,    49,    42,
-     0,     8,    46,    42,     0,     8,    47,    42,     0,     8,
-    47,    15,    47,    42,     0,    47,    39,    47,    43,     0,
-    47,    39,    47,    15,    47,    43,     0,    47,    39,    47,
-    15,    47,    15,    47,    43,     0,    47,    39,    47,    15,
-    47,    15,    47,    15,    47,    43,     0,    47,    39,    47,
-    15,    47,    15,    47,    15,    47,    15,    47,    43,     0,
-    36,    47,     0,    36,    48,     0,    37,    47,     0,    37,
-    48,     0,     3,     0,    11,     0,    46,    20,    46,     0,
-    46,    21,    46,     0,    46,    24,    46,     0,    46,    25,
-    46,     0,    46,    23,    46,     0,    46,    26,    46,     0,
-    47,    23,    47,     0,    47,    24,    47,     0,    47,    26,
-    47,     0,    47,    25,    47,     0,    47,    22,    47,     0,
-    47,    20,    47,     0,    47,    21,    47,     0,    49,    20,
-    49,     0,    49,    21,    49,     0,    48,    19,    48,     0,
-    48,    18,    48,     0,    48,    20,    48,     0,    48,    21,
-    48,     0,    47,    16,    47,    17,    47,     0,     9,    47,
-    42,     0,     9,    48,    42,     0,     9,    49,    42,     0,
-     8,    48,    15,    48,    42,     0,     9,    47,    15,    47,
-    15,    47,    42,     0,     9,    47,    15,    47,    15,    47,
-    15,    47,    15,    47,    42,     0,     9,    47,    15,    47,
-    15,    47,    15,    47,    15,    47,    15,    47,    15,    47,
-    42,     0,    48,    39,    47,    43,     0,    48,    39,    47,
-    15,    47,    43,     0,    48,    39,    47,    15,    47,    15,
-    47,    43,     0,    48,    39,    47,    15,    47,    15,    47,
-    15,    47,    43,     0,    48,    39,    47,    15,    47,    15,
-    47,    15,    47,    15,    47,    43,     0,    35,    48,     0,
-    41,    48,    42,     0,     6,     0,    12,     0,    41,    49,
-    42,     0,    49,    27,    49,     0,     8,    49,    15,    49,
-    42,     0
-};
-
-#endif
-
-#if FFDEBUG != 0
-static const short ffrline[] = { 0,
-   177,   178,   181,   182,   187,   192,   197,   202,   205,   210,
-   212,   215,   218,   221,   223,   227,   229,   231,   233,   235,
-   238,   241,   244,   247,   250,   253,   255,   257,   261,   265,
-   275,   286,   295,   304,   341,   378,   380,   382,   384,   386,
-   388,   390,   392,   394,   398,   400,   402,   405,   408,   411,
-   414,   417,   420,   423,   426,   429,   432,   435,   438,   441,
-   444,   447,   449,   451,   453,   456,   463,   476,   489,   500,
-   516,   534,   555,   581,   583,   585,   587,   589,   591,   593,
-   597,   600,   602,   604,   607
-};
-#endif
-
-
-#if FFDEBUG != 0 || defined (FFERROR_VERBOSE)
-
-static const char * const fftname[] = {   "$","error","$undefined.","BOOLEAN",
-"LONG","DOUBLE","STRING","BITSTR","FUNCTION","BFUNCTION","COLUMN","BCOLUMN",
-"SCOLUMN","BITCOL","ROWREF","','","'='","':'","OR","AND","EQ","NE","'~'","GT",
-"LT","LTE","GTE","'+'","'-'","'%'","'*'","'/'","'|'","'&'","POWER","NOT","INTCAST",
-"FLTCAST","UMINUS","'['","'\\n'","'('","')'","']'","lines","line","bits","expr",
-"bexpr","sexpr", NULL
-};
-#endif
-
-static const short ffr1[] = {     0,
-    44,    44,    45,    45,    45,    45,    45,    45,    46,    46,
-    46,    46,    46,    46,    46,    47,    47,    47,    47,    47,
-    47,    47,    47,    47,    47,    47,    47,    47,    47,    47,
-    47,    47,    47,    47,    47,    47,    47,    47,    47,    47,
-    47,    47,    47,    47,    48,    48,    48,    48,    48,    48,
-    48,    48,    48,    48,    48,    48,    48,    48,    48,    48,
-    48,    48,    48,    48,    48,    48,    48,    48,    48,    48,
-    48,    48,    48,    48,    48,    48,    48,    48,    48,    48,
-    49,    49,    49,    49,    49
-};
-
-static const short ffr2[] = {     0,
-     0,     2,     1,     2,     2,     2,     2,     2,     1,     1,
-     3,     3,     3,     2,     3,     1,     1,     1,     1,     3,
-     3,     3,     3,     3,     3,     2,     3,     3,     3,     2,
-     3,     3,     3,     3,     5,     4,     6,     8,    10,    12,
-     2,     2,     2,     2,     1,     1,     3,     3,     3,     3,
-     3,     3,     3,     3,     3,     3,     3,     3,     3,     3,
-     3,     3,     3,     3,     3,     5,     3,     3,     3,     5,
-     7,    11,    15,     4,     6,     8,    10,    12,     2,     3,
-     1,     1,     3,     3,     5
-};
-
-static const short ffdefact[] = {     1,
-     0,     0,    45,    16,    17,    81,     9,     0,     0,    18,
-    46,    82,    10,    19,     0,     0,     0,     0,     3,     0,
-     2,     0,     0,     0,     0,     8,    30,     0,     0,     0,
-     0,     0,     0,     0,     0,    26,     0,     0,    14,     0,
-    79,    41,    42,    43,    44,     0,     0,     0,     0,     0,
-     0,     0,     0,     0,     0,     0,     0,     0,     7,     0,
-     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-     0,     0,     0,     0,     4,     0,     0,     0,     0,     0,
-     0,     5,     0,     0,     0,     6,    33,     0,    34,     0,
-    31,     0,    32,     0,    67,    68,    69,    15,    27,    80,
-    83,     0,     0,    47,    48,    51,    49,    50,    52,    13,
-    12,    11,     0,    58,    59,    57,    53,    54,    56,    55,
-    21,    22,    20,    23,    28,    24,    25,     0,    63,    62,
-    64,    65,    29,     0,     0,     0,    60,    61,    84,     0,
-     0,     0,     0,    14,     0,     0,     0,    36,     0,    74,
-     0,     0,    35,    70,    85,     0,    66,     0,     0,     0,
-     0,    37,     0,    75,     0,    71,     0,     0,     0,     0,
-    38,     0,    76,     0,     0,     0,     0,     0,    39,     0,
-    77,     0,    72,     0,     0,     0,    40,    78,     0,     0,
-    73,     0,     0
-};
-
-static const short ffdefgoto[] = {     1,
-    21,    32,    40,    37,    38
-};
-
-static const short ffpact[] = {-32768,
-   186,   -28,-32768,-32768,-32768,-32768,-32768,   225,   237,-32768,
--32768,-32768,-32768,-32768,   237,   237,   237,   237,-32768,   237,
--32768,   854,   696,    64,   102,-32768,-32768,   183,   460,   600,
-    15,   909,   485,   133,    97,    -2,    56,     6,-32768,   823,
-     2,    -2,     2,    -2,     2,   840,   624,   774,    99,    11,
-    11,    11,    11,    11,    11,    11,    11,    11,-32768,   237,
-   237,   237,   237,   237,   237,   237,   237,   237,   237,   237,
-   237,   237,   237,   237,-32768,   237,   237,   237,   237,   237,
-   237,-32768,    -3,    -3,    -3,-32768,-32768,   237,-32768,   237,
--32768,    -3,-32768,   237,-32768,-32768,-32768,-32768,-32768,-32768,
--32768,    11,    11,    23,    23,    23,    23,    23,    23,    -4,
--32768,-32768,   803,   892,   892,   892,   916,   916,   916,   916,
-   224,   224,   224,    19,     2,    19,    19,   260,   137,   -19,
-   -26,   -26,    19,   285,    -3,    -3,    17,    17,-32768,   648,
-   779,   -21,   717,-32768,   596,   237,   237,-32768,   237,-32768,
-    16,   -17,-32768,-32768,-32768,   237,   875,   310,   335,   510,
-   237,-32768,   237,-32768,   237,-32768,   360,   385,   737,   237,
--32768,   237,-32768,   237,   410,   435,   535,   237,-32768,   237,
--32768,   237,-32768,   559,   583,   757,-32768,-32768,   237,   672,
--32768,    45,-32768
-};
-
-static const short ffpgoto[] = {-32768,
--32768,    80,    -1,    31,    14
-};
-
-
-#define	FFLAST		955
-
-
-static const short fftable[] = {    23,
-    78,    79,     6,    80,   135,    85,    29,    33,    12,    85,
-    80,    26,    81,    36,    25,    42,    44,     7,    47,    81,
-   155,    31,    35,    13,   101,    83,    84,    57,    58,    92,
-    92,    24,    85,    49,    83,    84,    74,   136,    30,    34,
-    81,    85,    85,    85,   193,   102,    41,    43,    45,    56,
-    48,   103,    73,     0,    57,    58,    93,    74,   113,   114,
-   115,   116,   117,   118,   119,   120,   121,   122,   123,   124,
-   126,   127,   128,    76,    77,    78,    79,     0,   133,   134,
-    22,    76,    77,    78,    79,    80,   140,    28,     0,     0,
-     0,     0,   143,    80,    81,    39,   137,   138,   139,    46,
-     0,   125,    81,    82,     0,   142,   129,   130,   131,   132,
-     0,     0,     0,     0,     0,     0,    83,    84,    83,    84,
-   141,    83,    84,    85,     0,    85,     0,     0,    85,   104,
-   105,   106,   107,   108,   109,   110,   111,   112,    97,     0,
-   101,    86,     0,     0,   157,   158,     0,   159,   151,   152,
-    76,    77,    78,    79,   160,    77,    78,    79,     0,   167,
-     0,   168,    80,   169,     0,     0,    80,     0,   175,     0,
-   176,    81,   177,     0,    96,    81,   184,     0,   185,     0,
-   186,   144,   145,     0,     0,   192,     2,   190,     3,     4,
-     5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
-     0,     0,    50,    51,     0,    52,    53,    54,    55,    56,
-     0,     0,     0,    15,    57,    58,     0,     0,     0,     0,
-    16,    17,    18,     0,    87,    19,    20,     3,     4,     5,
-     6,     7,     8,     9,    10,    11,    12,    13,    14,     3,
-     4,     5,     6,     7,     8,     9,    10,    11,    12,    13,
-    14,     0,    15,    71,    72,     0,     0,    73,     0,    16,
-    17,    18,    74,     0,    15,    20,    27,     0,     0,     0,
-     0,    16,    17,    18,   147,    60,     0,    20,     0,    61,
-    62,    63,    64,    65,    66,    67,    68,    69,    70,    71,
-    72,     0,     0,    73,     0,     0,     0,     0,    74,   149,
-    60,     0,   148,     0,    61,    62,    63,    64,    65,    66,
-    67,    68,    69,    70,    71,    72,     0,     0,    73,     0,
-     0,     0,     0,    74,   161,    60,     0,   150,     0,    61,
-    62,    63,    64,    65,    66,    67,    68,    69,    70,    71,
-    72,     0,     0,    73,     0,     0,     0,     0,    74,   163,
-    60,     0,   162,     0,    61,    62,    63,    64,    65,    66,
-    67,    68,    69,    70,    71,    72,     0,     0,    73,     0,
-     0,     0,     0,    74,   170,    60,     0,   164,     0,    61,
-    62,    63,    64,    65,    66,    67,    68,    69,    70,    71,
-    72,     0,     0,    73,     0,     0,     0,     0,    74,   172,
-    60,     0,   171,     0,    61,    62,    63,    64,    65,    66,
-    67,    68,    69,    70,    71,    72,     0,     0,    73,     0,
-     0,     0,     0,    74,   178,    60,     0,   173,     0,    61,
-    62,    63,    64,    65,    66,    67,    68,    69,    70,    71,
-    72,     0,     0,    73,     0,     0,     0,     0,    74,   180,
-    60,     0,   179,     0,    61,    62,    63,    64,    65,    66,
-    67,    68,    69,    70,    71,    72,     0,     0,    73,     0,
-     0,     0,     0,    74,    88,    60,     0,   181,     0,    61,
-    62,    63,    64,    65,    66,    67,    68,    69,    70,    71,
-    72,     0,     0,    73,     0,     0,     0,     0,    74,    94,
-    60,    89,     0,     0,    61,    62,    63,    64,    65,    66,
-    67,    68,    69,    70,    71,    72,     0,     0,    73,     0,
-     0,     0,     0,    74,   165,    60,    95,     0,     0,    61,
-    62,    63,    64,    65,    66,    67,    68,    69,    70,    71,
-    72,     0,     0,    73,     0,     0,     0,     0,    74,   182,
-    60,   166,     0,     0,    61,    62,    63,    64,    65,    66,
-    67,    68,    69,    70,    71,    72,     0,     0,    73,     0,
-     0,     0,     0,    74,    60,     0,   183,     0,    61,    62,
-    63,    64,    65,    66,    67,    68,    69,    70,    71,    72,
-     0,     0,    73,     0,     0,     0,     0,    74,    60,     0,
-     0,   187,    61,    62,    63,    64,    65,    66,    67,    68,
-    69,    70,    71,    72,    90,     0,    73,    76,    77,    78,
-    79,    74,    56,     0,     0,   188,     0,    57,    58,    80,
-     0,     0,     0,     0,     0,     0,     0,    98,    81,    60,
-     0,    91,     0,    61,    62,    63,    64,    65,    66,    67,
-    68,    69,    70,    71,    72,     0,     0,    73,     0,     0,
-     0,     0,    74,    60,     0,    99,     0,    61,    62,    63,
-    64,    65,    66,    67,    68,    69,    70,    71,    72,     0,
-     0,    73,     0,     0,     0,     0,    74,    60,     0,   153,
-     0,    61,    62,    63,    64,    65,    66,    67,    68,    69,
-    70,    71,    72,     0,     0,    73,     0,     0,     0,     0,
-    74,    60,     0,   191,     0,    61,    62,    63,    64,    65,
-    66,    67,    68,    69,    70,    71,    72,     0,     0,    73,
-     0,   156,    60,     0,    74,    75,    61,    62,    63,    64,
-    65,    66,    67,    68,    69,    70,    71,    72,     0,     0,
-    73,   174,    60,     0,     0,    74,    61,    62,    63,    64,
-    65,    66,    67,    68,    69,    70,    71,    72,     0,     0,
-    73,   189,    60,     0,     0,    74,    61,    62,    63,    64,
-    65,    66,    67,    68,    69,    70,    71,    72,     0,     0,
-    73,    76,    77,    78,    79,    74,    76,    77,    78,    79,
-     0,     0,     0,    80,     0,     0,     0,     0,    80,     0,
-     0,     0,    81,     0,     0,   100,     0,    81,    60,   146,
-   154,     0,    61,    62,    63,    64,    65,    66,    67,    68,
-    69,    70,    71,    72,     0,     0,    73,     0,    60,     0,
-     0,    74,    61,    62,    63,    64,    65,    66,    67,    68,
-    69,    70,    71,    72,     0,     0,    73,     0,     0,    50,
-    51,    74,    52,    53,    54,    55,    56,     0,     0,     0,
-     0,    57,    58,    50,    51,     0,    52,    53,    54,    55,
-    56,    98,     0,     0,     0,    57,    58,     0,     0,     0,
-     0,     0,     0,    59,    61,    62,    63,    64,    65,    66,
-    67,    68,    69,    70,    71,    72,     0,     0,    73,     0,
-     0,     0,     0,    74,    64,    65,    66,    67,    68,    69,
-    70,    71,    72,     0,     0,    73,     0,     0,    50,    51,
-    74,    52,    53,    54,    55,    56,     0,     0,     0,     0,
-    57,    58,    68,    69,    70,    71,    72,     0,     0,    73,
-     0,     0,     0,     0,    74
-};
-
-static const short ffcheck[] = {     1,
-    20,    21,     6,    30,     8,    27,     8,     9,    12,    27,
-    30,    40,    39,    15,     1,    17,    18,     7,    20,    39,
-    42,     8,     9,    13,    42,    20,    21,    32,    33,    15,
-    15,     1,    27,    20,    20,    21,    39,    41,     8,     9,
-    39,    27,    27,    27,     0,    35,    16,    17,    18,    27,
-    20,    41,    34,    -1,    32,    33,    42,    39,    60,    61,
-    62,    63,    64,    65,    66,    67,    68,    69,    70,    71,
-    72,    73,    74,    18,    19,    20,    21,    -1,    80,    81,
-     1,    18,    19,    20,    21,    30,    88,     8,    -1,    -1,
-    -1,    -1,    94,    30,    39,    16,    83,    84,    85,    20,
-    -1,    71,    39,    40,    -1,    92,    76,    77,    78,    79,
-    -1,    -1,    -1,    -1,    -1,    -1,    20,    21,    20,    21,
-    90,    20,    21,    27,    -1,    27,    -1,    -1,    27,    50,
-    51,    52,    53,    54,    55,    56,    57,    58,    42,    -1,
-    42,    40,    -1,    -1,   146,   147,    -1,   149,   135,   136,
-    18,    19,    20,    21,   156,    19,    20,    21,    -1,   161,
-    -1,   163,    30,   165,    -1,    -1,    30,    -1,   170,    -1,
-   172,    39,   174,    -1,    42,    39,   178,    -1,   180,    -1,
-   182,   102,   103,    -1,    -1,     0,     1,   189,     3,     4,
-     5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
-    -1,    -1,    20,    21,    -1,    23,    24,    25,    26,    27,
-    -1,    -1,    -1,    28,    32,    33,    -1,    -1,    -1,    -1,
-    35,    36,    37,    -1,    42,    40,    41,     3,     4,     5,
-     6,     7,     8,     9,    10,    11,    12,    13,    14,     3,
-     4,     5,     6,     7,     8,     9,    10,    11,    12,    13,
-    14,    -1,    28,    30,    31,    -1,    -1,    34,    -1,    35,
-    36,    37,    39,    -1,    28,    41,    42,    -1,    -1,    -1,
-    -1,    35,    36,    37,    15,    16,    -1,    41,    -1,    20,
-    21,    22,    23,    24,    25,    26,    27,    28,    29,    30,
-    31,    -1,    -1,    34,    -1,    -1,    -1,    -1,    39,    15,
-    16,    -1,    43,    -1,    20,    21,    22,    23,    24,    25,
-    26,    27,    28,    29,    30,    31,    -1,    -1,    34,    -1,
-    -1,    -1,    -1,    39,    15,    16,    -1,    43,    -1,    20,
-    21,    22,    23,    24,    25,    26,    27,    28,    29,    30,
-    31,    -1,    -1,    34,    -1,    -1,    -1,    -1,    39,    15,
-    16,    -1,    43,    -1,    20,    21,    22,    23,    24,    25,
-    26,    27,    28,    29,    30,    31,    -1,    -1,    34,    -1,
-    -1,    -1,    -1,    39,    15,    16,    -1,    43,    -1,    20,
-    21,    22,    23,    24,    25,    26,    27,    28,    29,    30,
-    31,    -1,    -1,    34,    -1,    -1,    -1,    -1,    39,    15,
-    16,    -1,    43,    -1,    20,    21,    22,    23,    24,    25,
-    26,    27,    28,    29,    30,    31,    -1,    -1,    34,    -1,
-    -1,    -1,    -1,    39,    15,    16,    -1,    43,    -1,    20,
-    21,    22,    23,    24,    25,    26,    27,    28,    29,    30,
-    31,    -1,    -1,    34,    -1,    -1,    -1,    -1,    39,    15,
-    16,    -1,    43,    -1,    20,    21,    22,    23,    24,    25,
-    26,    27,    28,    29,    30,    31,    -1,    -1,    34,    -1,
-    -1,    -1,    -1,    39,    15,    16,    -1,    43,    -1,    20,
-    21,    22,    23,    24,    25,    26,    27,    28,    29,    30,
-    31,    -1,    -1,    34,    -1,    -1,    -1,    -1,    39,    15,
-    16,    42,    -1,    -1,    20,    21,    22,    23,    24,    25,
-    26,    27,    28,    29,    30,    31,    -1,    -1,    34,    -1,
-    -1,    -1,    -1,    39,    15,    16,    42,    -1,    -1,    20,
-    21,    22,    23,    24,    25,    26,    27,    28,    29,    30,
-    31,    -1,    -1,    34,    -1,    -1,    -1,    -1,    39,    15,
-    16,    42,    -1,    -1,    20,    21,    22,    23,    24,    25,
-    26,    27,    28,    29,    30,    31,    -1,    -1,    34,    -1,
-    -1,    -1,    -1,    39,    16,    -1,    42,    -1,    20,    21,
-    22,    23,    24,    25,    26,    27,    28,    29,    30,    31,
-    -1,    -1,    34,    -1,    -1,    -1,    -1,    39,    16,    -1,
-    -1,    43,    20,    21,    22,    23,    24,    25,    26,    27,
-    28,    29,    30,    31,    15,    -1,    34,    18,    19,    20,
-    21,    39,    27,    -1,    -1,    43,    -1,    32,    33,    30,
-    -1,    -1,    -1,    -1,    -1,    -1,    -1,    42,    39,    16,
-    -1,    42,    -1,    20,    21,    22,    23,    24,    25,    26,
-    27,    28,    29,    30,    31,    -1,    -1,    34,    -1,    -1,
-    -1,    -1,    39,    16,    -1,    42,    -1,    20,    21,    22,
-    23,    24,    25,    26,    27,    28,    29,    30,    31,    -1,
-    -1,    34,    -1,    -1,    -1,    -1,    39,    16,    -1,    42,
-    -1,    20,    21,    22,    23,    24,    25,    26,    27,    28,
-    29,    30,    31,    -1,    -1,    34,    -1,    -1,    -1,    -1,
-    39,    16,    -1,    42,    -1,    20,    21,    22,    23,    24,
-    25,    26,    27,    28,    29,    30,    31,    -1,    -1,    34,
-    -1,    15,    16,    -1,    39,    40,    20,    21,    22,    23,
-    24,    25,    26,    27,    28,    29,    30,    31,    -1,    -1,
-    34,    15,    16,    -1,    -1,    39,    20,    21,    22,    23,
-    24,    25,    26,    27,    28,    29,    30,    31,    -1,    -1,
-    34,    15,    16,    -1,    -1,    39,    20,    21,    22,    23,
-    24,    25,    26,    27,    28,    29,    30,    31,    -1,    -1,
-    34,    18,    19,    20,    21,    39,    18,    19,    20,    21,
-    -1,    -1,    -1,    30,    -1,    -1,    -1,    -1,    30,    -1,
-    -1,    -1,    39,    -1,    -1,    42,    -1,    39,    16,    17,
-    42,    -1,    20,    21,    22,    23,    24,    25,    26,    27,
-    28,    29,    30,    31,    -1,    -1,    34,    -1,    16,    -1,
-    -1,    39,    20,    21,    22,    23,    24,    25,    26,    27,
-    28,    29,    30,    31,    -1,    -1,    34,    -1,    -1,    20,
-    21,    39,    23,    24,    25,    26,    27,    -1,    -1,    -1,
-    -1,    32,    33,    20,    21,    -1,    23,    24,    25,    26,
-    27,    42,    -1,    -1,    -1,    32,    33,    -1,    -1,    -1,
-    -1,    -1,    -1,    40,    20,    21,    22,    23,    24,    25,
-    26,    27,    28,    29,    30,    31,    -1,    -1,    34,    -1,
-    -1,    -1,    -1,    39,    23,    24,    25,    26,    27,    28,
-    29,    30,    31,    -1,    -1,    34,    -1,    -1,    20,    21,
-    39,    23,    24,    25,    26,    27,    -1,    -1,    -1,    -1,
-    32,    33,    27,    28,    29,    30,    31,    -1,    -1,    34,
-    -1,    -1,    -1,    -1,    39
-};
-/* -*-C-*-  Note some compilers choke on comments on `#line' lines.  */
-#line 3 "/usr/local/share/bison.simple"
-
-/* Skeleton output parser for bison,
-   Copyright (C) 1984, 1989, 1990 Free Software Foundation, Inc.
-
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
-   any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
-
-/* As a special exception, when this file is copied by Bison into a
-   Bison output file, you may use that output file without restriction.
-   This special exception was added by the Free Software Foundation
-   in version 1.24 of Bison.  */
-
-#ifndef alloca
-#ifdef __GNUC__
-#define alloca __builtin_alloca
-#else /* not GNU C.  */
-#if (!defined (__STDC__) && defined (sparc)) || defined (__sparc__) || defined (__sparc) || defined (__sgi)
-#include <alloca.h>
-#else /* not sparc */
-#if defined (MSDOS) && !defined (__TURBOC__)
-#include <malloc.h>
-#else /* not MSDOS, or __TURBOC__ */
-#if defined(_AIX)
-#include <malloc.h>
- #pragma alloca
-#else /* not MSDOS, __TURBOC__, or _AIX */
-#ifdef __hpux
-#ifdef __cplusplus
-extern "C" {
-void *alloca (unsigned int);
-};
-#else /* not __cplusplus */
-void *alloca ();
-#endif /* not __cplusplus */
-#endif /* __hpux */
-#endif /* not _AIX */
-#endif /* not MSDOS, or __TURBOC__ */
-#endif /* not sparc.  */
-#endif /* not GNU C.  */
-#endif /* alloca not defined.  */
-
-/* This is the parser code that is written into each bison parser
-  when the %semantic_parser declaration is not specified in the grammar.
-  It was written by Richard Stallman by simplifying the hairy parser
-  used when %semantic_parser is specified.  */
-
-/* Note: there must be only one dollar sign in this file.
-   It is replaced by the list of actions, each action
-   as one case of the switch.  */
-
-#define fferrok		(fferrstatus = 0)
-#define ffclearin	(ffchar = FFEMPTY)
-#define FFEMPTY		-2
-#define FFEOF		0
-#define FFACCEPT	return(0)
-#define FFABORT 	return(1)
-#define FFERROR		goto fferrlab1
-/* Like FFERROR except do call fferror.
-   This remains here temporarily to ease the
-   transition to the new meaning of FFERROR, for GCC.
-   Once GCC version 2 has supplanted version 1, this can go.  */
-#define FFFAIL		goto fferrlab
-#define FFRECOVERING()  (!!fferrstatus)
-#define FFBACKUP(token, value) \
-do								\
-  if (ffchar == FFEMPTY && fflen == 1)				\
-    { ffchar = (token), fflval = (value);			\
-      ffchar1 = FFTRANSLATE (ffchar);				\
-      FFPOPSTACK;						\
-      goto ffbackup;						\
-    }								\
-  else								\
-    { fferror ("syntax error: cannot back up"); FFERROR; }	\
-while (0)
-
-#define FFTERROR	1
-#define FFERRCODE	256
-
-#ifndef FFPURE
-#define FFLEX		fflex()
-#endif
-
-#ifdef FFPURE
-#ifdef FFLSP_NEEDED
-#ifdef FFLEX_PARAM
-#define FFLEX		fflex(&fflval, &fflloc, FFLEX_PARAM)
-#else
-#define FFLEX		fflex(&fflval, &fflloc)
-#endif
-#else /* not FFLSP_NEEDED */
-#ifdef FFLEX_PARAM
-#define FFLEX		fflex(&fflval, FFLEX_PARAM)
-#else
-#define FFLEX		fflex(&fflval)
-#endif
-#endif /* not FFLSP_NEEDED */
-#endif
-
-/* If nonreentrant, generate the variables here */
-
-#ifndef FFPURE
-
-int	ffchar;			/*  the lookahead symbol		*/
-FFSTYPE	fflval;			/*  the semantic value of the		*/
-				/*  lookahead symbol			*/
-
-#ifdef FFLSP_NEEDED
-FFLTYPE fflloc;			/*  location data for the lookahead	*/
-				/*  symbol				*/
-#endif
-
-int ffnerrs;			/*  number of parse errors so far       */
-#endif  /* not FFPURE */
-
-#if FFDEBUG != 0
-int ffdebug;			/*  nonzero means print parse trace	*/
-/* Since this is uninitialized, it does not stop multiple parsers
-   from coexisting.  */
-#endif
-
-/*  FFINITDEPTH indicates the initial size of the parser's stacks	*/
-
-#ifndef	FFINITDEPTH
-#define FFINITDEPTH 200
-#endif
-
-/*  FFMAXDEPTH is the maximum size the stacks can grow to
-    (effective only if the built-in stack extension method is used).  */
-
-#if FFMAXDEPTH == 0
-#undef FFMAXDEPTH
-#endif
-
-#ifndef FFMAXDEPTH
-#define FFMAXDEPTH 10000
-#endif
-
-/* Prevent warning if -Wstrict-prototypes.  */
-#ifdef __GNUC__
-int ffparse (void);
-#endif
-
-#if __GNUC__ > 1		/* GNU C and GNU C++ define this.  */
-#define __ff_memcpy(TO,FROM,COUNT)	__builtin_memcpy(TO,FROM,COUNT)
-#else				/* not GNU C or C++ */
-#ifndef __cplusplus
-
-/* This is the most reliable way to avoid incompatibilities
-   in available built-in functions on various systems.  */
-static void
-__ff_memcpy (to, from, count)
-     char *to;
-     char *from;
-     int count;
-{
-  register char *f = from;
-  register char *t = to;
-  register int i = count;
-
-  while (i-- > 0)
-    *t++ = *f++;
 }
 
-#else /* __cplusplus */
+%token <log>   BOOLEAN        /* First 3 must be in order of        */
+%token <lng>   LONG           /* increasing promotion for later use */
+%token <dbl>   DOUBLE
+%token <str>   STRING
+%token <str>   BITSTR
+%token <str>   FUNCTION
+%token <str>   BFUNCTION
+%token <lng>   COLUMN
+%token <lng>   BCOLUMN
+%token <lng>   SCOLUMN
+%token <lng>   BITCOL
+%token <lng>   ROWREF
 
-/* This is the most reliable way to avoid incompatibilities
-   in available built-in functions on various systems.  */
-static void
-__ff_memcpy (char *to, char *from, int count)
-{
-  register char *f = from;
-  register char *t = to;
-  register int i = count;
+%type <Node>  expr
+%type <Node>  bexpr
+%type <Node>  sexpr
+%type <Node>  bits
 
-  while (i-- > 0)
-    *t++ = *f++;
-}
+%left     ',' '=' ':'
+%left     OR
+%left     AND
+%left     EQ NE '~'
+%left     GT LT LTE GTE
+%left     '+' '-' '%'
+%left     '*' '/'
+%left     '|' '&'
+%right    POWER
+%left     NOT
+%left     INTCAST FLTCAST
+%left     UMINUS
+%left     '['
 
-#endif
-#endif
-
-#line 196 "/usr/local/share/bison.simple"
+%%
 
-/* The user can define FFPARSE_PARAM as the name of an argument to be passed
-   into ffparse.  The argument should have type void *.
-   It should actually point to an object.
-   Grammar actions can access the variable by casting it
-   to the proper pointer type.  */
+lines:   /* nothing ; was | lines line */
+       | lines line
+       ;
 
-#ifdef FFPARSE_PARAM
-#ifdef __cplusplus
-#define FFPARSE_PARAM_ARG void *FFPARSE_PARAM
-#define FFPARSE_PARAM_DECL
-#else /* not __cplusplus */
-#define FFPARSE_PARAM_ARG FFPARSE_PARAM
-#define FFPARSE_PARAM_DECL void *FFPARSE_PARAM;
-#endif /* not __cplusplus */
-#else /* not FFPARSE_PARAM */
-#define FFPARSE_PARAM_ARG
-#define FFPARSE_PARAM_DECL
-#endif /* not FFPARSE_PARAM */
+line:           '\n' {}
+       | expr   '\n'
+                { if( $1<0 ) {
+		     yyerror("Couldn't build node structure: out of memory?");
+		     YYERROR;  }
+		}
+       | bexpr  '\n'
+                { if( $1<0 ) {
+		     yyerror("Couldn't build node structure: out of memory?");
+		     YYERROR;  }
+		}
+       | sexpr  '\n'
+                { if( $1<0 ) {
+		     yyerror("Couldn't build node structure: out of memory?");
+		     YYERROR;  } 
+		}
+       | bits   '\n'
+                { if( $1<0 ) {
+		     yyerror("Couldn't build node structure: out of memory?");
+		     YYERROR;  }
+		}
+       | error  '\n' {  yyerrok;  }
+       ;
 
-int
-ffparse(FFPARSE_PARAM_ARG)
-     FFPARSE_PARAM_DECL
-{
-  register int ffstate;
-  register int ffn;
-  register short *ffssp;
-  register FFSTYPE *ffvsp;
-  int fferrstatus;	/*  number of tokens to shift before error messages enabled */
-  int ffchar1 = 0;		/*  lookahead token as an internal (translated) token number */
+bits:	 BITSTR
+                {
+                  $$ = New_Const( BITSTR, $1, strlen($1)+1 ); TEST($$);
+		  SIZE($$) = strlen($1);
+		}
+       | BITCOL
+                { $$ = New_Column( $1 ); TEST($$); }
+       | bits '&' bits
+                { $$ = New_BinOp( BITSTR, $1, '&', $3 ); TEST($$);
+                  SIZE($$) = ( SIZE($1)>SIZE($3) ? SIZE($1) : SIZE($3) );  }
+       | bits '|' bits
+                { $$ = New_BinOp( BITSTR, $1, '|', $3 ); TEST($$);
+                  SIZE($$) = ( SIZE($1)>SIZE($3) ? SIZE($1) : SIZE($3) );  }
+       | bits '+' bits
+                { $$ = New_BinOp( BITSTR, $1, '+', $3 ); TEST($$);
+                  SIZE($$) = SIZE($1) + SIZE($3);                          }
+       | NOT bits
+                { $$ = New_Unary( BITSTR, NOT, $2 ); TEST($$);     }
+       | '(' bits ')'
+                { $$ = $2; }
+       ;
 
-  short	ffssa[FFINITDEPTH];	/*  the state stack			*/
-  FFSTYPE ffvsa[FFINITDEPTH];	/*  the semantic value stack		*/
-
-  short *ffss = ffssa;		/*  refer to the stacks thru separate pointers */
-  FFSTYPE *ffvs = ffvsa;	/*  to allow ffoverflow to reallocate them elsewhere */
-
-#ifdef FFLSP_NEEDED
-  FFLTYPE fflsa[FFINITDEPTH];	/*  the location stack			*/
-  FFLTYPE *ffls = fflsa;
-  FFLTYPE *fflsp;
-
-#define FFPOPSTACK   (ffvsp--, ffssp--, fflsp--)
-#else
-#define FFPOPSTACK   (ffvsp--, ffssp--)
-#endif
-
-  int ffstacksize = FFINITDEPTH;
-
-#ifdef FFPURE
-  int ffchar;
-  FFSTYPE fflval;
-  int ffnerrs;
-#ifdef FFLSP_NEEDED
-  FFLTYPE fflloc;
-#endif
-#endif
-
-  FFSTYPE ffval;		/*  the variable used to return		*/
-				/*  semantic values from the action	*/
-				/*  routines				*/
-
-  int fflen;
-
-#if FFDEBUG != 0
-  if (ffdebug)
-    fprintf(stderr, "Starting parse\n");
-#endif
-
-  ffstate = 0;
-  fferrstatus = 0;
-  ffnerrs = 0;
-  ffchar = FFEMPTY;		/* Cause a token to be read.  */
-
-  /* Initialize stack pointers.
-     Waste one element of value and location stack
-     so that they stay on the same level as the state stack.
-     The wasted elements are never initialized.  */
-
-  ffssp = ffss - 1;
-  ffvsp = ffvs;
-#ifdef FFLSP_NEEDED
-  fflsp = ffls;
-#endif
-
-/* Push a new state, which is found in  ffstate  .  */
-/* In all cases, when you get here, the value and location stacks
-   have just been pushed. so pushing a state here evens the stacks.  */
-ffnewstate:
-
-  *++ffssp = ffstate;
-
-  if (ffssp >= ffss + ffstacksize - 1)
-    {
-      /* Give user a chance to reallocate the stack */
-      /* Use copies of these so that the &'s don't force the real ones into memory. */
-      FFSTYPE *ffvs1 = ffvs;
-      short *ffss1 = ffss;
-#ifdef FFLSP_NEEDED
-      FFLTYPE *ffls1 = ffls;
-#endif
-
-      /* Get the current used size of the three stacks, in elements.  */
-      int size = ffssp - ffss + 1;
-
-#ifdef ffoverflow
-      /* Each stack pointer address is followed by the size of
-	 the data in use in that stack, in bytes.  */
-#ifdef FFLSP_NEEDED
-      /* This used to be a conditional around just the two extra args,
-	 but that might be undefined if ffoverflow is a macro.  */
-      ffoverflow("parser stack overflow",
-		 &ffss1, size * sizeof (*ffssp),
-		 &ffvs1, size * sizeof (*ffvsp),
-		 &ffls1, size * sizeof (*fflsp),
-		 &ffstacksize);
-#else
-      ffoverflow("parser stack overflow",
-		 &ffss1, size * sizeof (*ffssp),
-		 &ffvs1, size * sizeof (*ffvsp),
-		 &ffstacksize);
-#endif
-
-      ffss = ffss1; ffvs = ffvs1;
-#ifdef FFLSP_NEEDED
-      ffls = ffls1;
-#endif
-#else /* no ffoverflow */
-      /* Extend the stack our own way.  */
-      if (ffstacksize >= FFMAXDEPTH)
-	{
-	  fferror("parser stack overflow");
-	  return 2;
-	}
-      ffstacksize *= 2;
-      if (ffstacksize > FFMAXDEPTH)
-	ffstacksize = FFMAXDEPTH;
-      ffss = (short *) alloca (ffstacksize * sizeof (*ffssp));
-      __ff_memcpy ((char *)ffss, (char *)ffss1, size * sizeof (*ffssp));
-      ffvs = (FFSTYPE *) alloca (ffstacksize * sizeof (*ffvsp));
-      __ff_memcpy ((char *)ffvs, (char *)ffvs1, size * sizeof (*ffvsp));
-#ifdef FFLSP_NEEDED
-      ffls = (FFLTYPE *) alloca (ffstacksize * sizeof (*fflsp));
-      __ff_memcpy ((char *)ffls, (char *)ffls1, size * sizeof (*fflsp));
-#endif
-#endif /* no ffoverflow */
-
-      ffssp = ffss + size - 1;
-      ffvsp = ffvs + size - 1;
-#ifdef FFLSP_NEEDED
-      fflsp = ffls + size - 1;
-#endif
-
-#if FFDEBUG != 0
-      if (ffdebug)
-	fprintf(stderr, "Stack size increased to %d\n", ffstacksize);
-#endif
-
-      if (ffssp >= ffss + ffstacksize - 1)
-	FFABORT;
-    }
-
-#if FFDEBUG != 0
-  if (ffdebug)
-    fprintf(stderr, "Entering state %d\n", ffstate);
-#endif
-
-  goto ffbackup;
- ffbackup:
-
-/* Do appropriate processing given the current state.  */
-/* Read a lookahead token if we need one and don't already have one.  */
-/* ffresume: */
-
-  /* First try to decide what to do without reference to lookahead token.  */
-
-  ffn = ffpact[ffstate];
-  if (ffn == FFFLAG)
-    goto ffdefault;
-
-  /* Not known => get a lookahead token if don't already have one.  */
-
-  /* ffchar is either FFEMPTY or FFEOF
-     or a valid token in external form.  */
-
-  if (ffchar == FFEMPTY)
-    {
-#if FFDEBUG != 0
-      if (ffdebug)
-	fprintf(stderr, "Reading a token: ");
-#endif
-      ffchar = FFLEX;
-    }
-
-  /* Convert token to internal form (in ffchar1) for indexing tables with */
-
-  if (ffchar <= 0)		/* This means end of input. */
-    {
-      ffchar1 = 0;
-      ffchar = FFEOF;		/* Don't call FFLEX any more */
-
-#if FFDEBUG != 0
-      if (ffdebug)
-	fprintf(stderr, "Now at end of input.\n");
-#endif
-    }
-  else
-    {
-      ffchar1 = FFTRANSLATE(ffchar);
-
-#if FFDEBUG != 0
-      if (ffdebug)
-	{
-	  fprintf (stderr, "Next token is %d (%s", ffchar, fftname[ffchar1]);
-	  /* Give the individual parser a way to print the precise meaning
-	     of a token, for further debugging info.  */
-#ifdef FFPRINT
-	  FFPRINT (stderr, ffchar, fflval);
-#endif
-	  fprintf (stderr, ")\n");
-	}
-#endif
-    }
-
-  ffn += ffchar1;
-  if (ffn < 0 || ffn > FFLAST || ffcheck[ffn] != ffchar1)
-    goto ffdefault;
-
-  ffn = fftable[ffn];
-
-  /* ffn is what to do for this token type in this state.
-     Negative => reduce, -ffn is rule number.
-     Positive => shift, ffn is new state.
-       New state is final state => don't bother to shift,
-       just return success.
-     0, or most negative number => error.  */
-
-  if (ffn < 0)
-    {
-      if (ffn == FFFLAG)
-	goto fferrlab;
-      ffn = -ffn;
-      goto ffreduce;
-    }
-  else if (ffn == 0)
-    goto fferrlab;
-
-  if (ffn == FFFINAL)
-    FFACCEPT;
-
-  /* Shift the lookahead token.  */
-
-#if FFDEBUG != 0
-  if (ffdebug)
-    fprintf(stderr, "Shifting token %d (%s), ", ffchar, fftname[ffchar1]);
-#endif
-
-  /* Discard the token being shifted unless it is eof.  */
-  if (ffchar != FFEOF)
-    ffchar = FFEMPTY;
-
-  *++ffvsp = fflval;
-#ifdef FFLSP_NEEDED
-  *++fflsp = fflloc;
-#endif
-
-  /* count tokens shifted since error; after three, turn off error status.  */
-  if (fferrstatus) fferrstatus--;
-
-  ffstate = ffn;
-  goto ffnewstate;
-
-/* Do the default action for the current state.  */
-ffdefault:
-
-  ffn = ffdefact[ffstate];
-  if (ffn == 0)
-    goto fferrlab;
-
-/* Do a reduction.  ffn is the number of a rule to reduce with.  */
-ffreduce:
-  fflen = ffr2[ffn];
-  if (fflen > 0)
-    ffval = ffvsp[1-fflen]; /* implement default value of the action */
-
-#if FFDEBUG != 0
-  if (ffdebug)
-    {
-      int i;
-
-      fprintf (stderr, "Reducing via rule %d (line %d), ",
-	       ffn, ffrline[ffn]);
-
-      /* Print the symbols being reduced, and their result.  */
-      for (i = ffprhs[ffn]; ffrhs[i] > 0; i++)
-	fprintf (stderr, "%s ", fftname[ffrhs[i]]);
-      fprintf (stderr, " -> %s\n", fftname[ffr1[ffn]]);
-    }
-#endif
-
-
-  switch (ffn) {
-
-case 3:
-#line 181 "eval.y"
-{;
-    break;}
-case 4:
-#line 183 "eval.y"
-{ if( ffvsp[-1].Node<0 ) {
-		     fferror("Couldn't build node structure: out of memory?");
-		     FFERROR;  }
-		;
-    break;}
-case 5:
-#line 188 "eval.y"
-{ if( ffvsp[-1].Node<0 ) {
-		     fferror("Couldn't build node structure: out of memory?");
-		     FFERROR;  }
-		;
-    break;}
-case 6:
-#line 193 "eval.y"
-{ if( ffvsp[-1].Node<0 ) {
-		     fferror("Couldn't build node structure: out of memory?");
-		     FFERROR;  } 
-		;
-    break;}
-case 7:
-#line 198 "eval.y"
-{ if( ffvsp[-1].Node<0 ) {
-		     fferror("Couldn't build node structure: out of memory?");
-		     FFERROR;  }
-		;
-    break;}
-case 8:
-#line 202 "eval.y"
-{  fferrok;  ;
-    break;}
-case 9:
-#line 206 "eval.y"
-{
-                  ffval.Node = New_Const( BITSTR, ffvsp[0].str, strlen(ffvsp[0].str)+1 ); TEST(ffval.Node);
-		  SIZE(ffval.Node) = strlen(ffvsp[0].str);
-		;
-    break;}
-case 10:
-#line 211 "eval.y"
-{ ffval.Node = New_Column( ffvsp[0].lng ); TEST(ffval.Node); ;
-    break;}
-case 11:
-#line 213 "eval.y"
-{ ffval.Node = New_BinOp( BITSTR, ffvsp[-2].Node, '&', ffvsp[0].Node ); TEST(ffval.Node);
-                  SIZE(ffval.Node) = ( SIZE(ffvsp[-2].Node)>SIZE(ffvsp[0].Node) ? SIZE(ffvsp[-2].Node) : SIZE(ffvsp[0].Node) );  ;
-    break;}
-case 12:
-#line 216 "eval.y"
-{ ffval.Node = New_BinOp( BITSTR, ffvsp[-2].Node, '|', ffvsp[0].Node ); TEST(ffval.Node);
-                  SIZE(ffval.Node) = ( SIZE(ffvsp[-2].Node)>SIZE(ffvsp[0].Node) ? SIZE(ffvsp[-2].Node) : SIZE(ffvsp[0].Node) );  ;
-    break;}
-case 13:
-#line 219 "eval.y"
-{ ffval.Node = New_BinOp( BITSTR, ffvsp[-2].Node, '+', ffvsp[0].Node ); TEST(ffval.Node);
-                  SIZE(ffval.Node) = SIZE(ffvsp[-2].Node) + SIZE(ffvsp[0].Node);                          ;
-    break;}
-case 14:
-#line 222 "eval.y"
-{ ffval.Node = New_Unary( BITSTR, NOT, ffvsp[0].Node ); TEST(ffval.Node);     ;
-    break;}
-case 15:
-#line 224 "eval.y"
-{ ffval.Node = ffvsp[-1].Node; ;
-    break;}
-case 16:
-#line 228 "eval.y"
-{ ffval.Node = New_Const( LONG,   &(ffvsp[0].lng), sizeof(long)   ); TEST(ffval.Node); ;
-    break;}
-case 17:
-#line 230 "eval.y"
-{ ffval.Node = New_Const( DOUBLE, &(ffvsp[0].dbl), sizeof(double) ); TEST(ffval.Node); ;
-    break;}
-case 18:
-#line 232 "eval.y"
-{ ffval.Node = New_Column( ffvsp[0].lng ); TEST(ffval.Node); ;
-    break;}
-case 19:
-#line 234 "eval.y"
-{ ffval.Node = New_Func( LONG, row_fct, 0, 0, 0, 0, 0, 0, 0, 0 ); ;
-    break;}
-case 20:
-#line 236 "eval.y"
-{ PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '%', ffvsp[0].Node );
-		  TEST(ffval.Node);                                                ;
-    break;}
-case 21:
-#line 239 "eval.y"
-{ PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '+', ffvsp[0].Node );
-		  TEST(ffval.Node);                                                ;
-    break;}
-case 22:
-#line 242 "eval.y"
-{ PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '-', ffvsp[0].Node ); 
-		  TEST(ffval.Node);                                                ;
-    break;}
-case 23:
-#line 245 "eval.y"
-{ PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '*', ffvsp[0].Node ); 
-		  TEST(ffval.Node);                                                ;
-    break;}
-case 24:
-#line 248 "eval.y"
-{ PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '/', ffvsp[0].Node ); 
-		  TEST(ffval.Node);                                                ;
-    break;}
-case 25:
-#line 251 "eval.y"
-{ PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, POWER, ffvsp[0].Node );
-		  TEST(ffval.Node);                                                ;
-    break;}
-case 26:
-#line 254 "eval.y"
-{ ffval.Node = New_Unary( TYPE(ffvsp[0].Node), UMINUS, ffvsp[0].Node ); TEST(ffval.Node); ;
-    break;}
-case 27:
-#line 256 "eval.y"
-{ ffval.Node = ffvsp[-1].Node; ;
-    break;}
-case 28:
-#line 258 "eval.y"
-{ ffvsp[0].Node = New_Unary( TYPE(ffvsp[-2].Node), 0, ffvsp[0].Node );
-                  ffval.Node = New_BinOp( TYPE(ffvsp[-2].Node), ffvsp[-2].Node, '*', ffvsp[0].Node ); 
-		  TEST(ffval.Node);                                ;
-    break;}
-case 29:
-#line 262 "eval.y"
-{ ffvsp[-2].Node = New_Unary( TYPE(ffvsp[0].Node), 0, ffvsp[-2].Node );
-                  ffval.Node = New_BinOp( TYPE(ffvsp[0].Node), ffvsp[-2].Node, '*', ffvsp[0].Node );
-                  TEST(ffval.Node);                                ;
-    break;}
-case 30:
-#line 266 "eval.y"
-{ if (FSTRCMP(ffvsp[-1].str,"RANDOM(") == 0)
-                    ffval.Node = New_Func( DOUBLE, rnd_fct, 0, 0, 0, 0, 0, 0, 0, 0 );
+expr:    LONG
+                { $$ = New_Const( LONG,   &($1), sizeof(long)   ); TEST($$); }
+       | DOUBLE
+                { $$ = New_Const( DOUBLE, &($1), sizeof(double) ); TEST($$); }
+       | COLUMN
+                { $$ = New_Column( $1 ); TEST($$); }
+       | ROWREF
+                { $$ = New_Func( LONG, row_fct, 0, 0, 0, 0, 0, 0, 0, 0 ); }
+       | expr '%' expr
+                { PROMOTE($1,$3); $$ = New_BinOp( TYPE($1), $1, '%', $3 );
+		  TEST($$);                                                }
+       | expr '+' expr
+                { PROMOTE($1,$3); $$ = New_BinOp( TYPE($1), $1, '+', $3 );
+		  TEST($$);                                                }
+       | expr '-' expr
+                { PROMOTE($1,$3); $$ = New_BinOp( TYPE($1), $1, '-', $3 ); 
+		  TEST($$);                                                }
+       | expr '*' expr
+                { PROMOTE($1,$3); $$ = New_BinOp( TYPE($1), $1, '*', $3 ); 
+		  TEST($$);                                                }
+       | expr '/' expr
+                { PROMOTE($1,$3); $$ = New_BinOp( TYPE($1), $1, '/', $3 ); 
+		  TEST($$);                                                }
+       | expr POWER expr
+                { PROMOTE($1,$3); $$ = New_BinOp( TYPE($1), $1, POWER, $3 );
+		  TEST($$);                                                }
+       | '-' expr %prec UMINUS
+                { $$ = New_Unary( TYPE($2), UMINUS, $2 ); TEST($$); }
+       |  '(' expr ')'
+                { $$ = $2; }
+       | expr '*' bexpr
+                { $3 = New_Unary( TYPE($1), 0, $3 );
+                  $$ = New_BinOp( TYPE($1), $1, '*', $3 ); 
+		  TEST($$);                                }
+       | bexpr '*' expr
+                { $1 = New_Unary( TYPE($3), 0, $1 );
+                  $$ = New_BinOp( TYPE($3), $1, '*', $3 );
+                  TEST($$);                                }
+       | FUNCTION ')'
+                { if (FSTRCMP($1,"RANDOM(") == 0)
+                    $$ = New_Func( DOUBLE, rnd_fct, 0, 0, 0, 0, 0, 0, 0, 0 );
                   else
 		    {
-                     fferror("Function() not supported");
-		     FFERROR;
+                     yyerror("Function() not supported");
+		     YYERROR;
 		    }
-                  TEST(ffval.Node); 
-                ;
-    break;}
-case 31:
-#line 276 "eval.y"
-{ if (FSTRCMP(ffvsp[-2].str,"SUM(") == 0) {
-		     ffval.Node = New_Func( LONG, sum_fct, 1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
-                  } else if (FSTRCMP(ffvsp[-2].str,"NELEM(") == 0) {
-                     ffval.Node = New_Const( LONG, &( SIZE(ffvsp[-1].Node) ), sizeof(long) );
+                  TEST($$); 
+                }
+       | FUNCTION bexpr ')'
+                { if (FSTRCMP($1,"SUM(") == 0) {
+		     $$ = New_Func( LONG, sum_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+                  } else if (FSTRCMP($1,"NELEM(") == 0) {
+                     $$ = New_Const( LONG, &( SIZE($2) ), sizeof(long) );
 		  } else {
-                     fferror("Function(bool) not supported");
-		     FFERROR;
+                     yyerror("Function(bool) not supported");
+		     YYERROR;
 		  }
-                  TEST(ffval.Node); 
-		;
-    break;}
-case 32:
-#line 287 "eval.y"
-{ if (FSTRCMP(ffvsp[-2].str,"NELEM(") == 0) {
-                     ffval.Node = New_Const( LONG, &( SIZE(ffvsp[-1].Node) ), sizeof(long) );
+                  TEST($$); 
+		}
+       | FUNCTION sexpr ')'
+                { if (FSTRCMP($1,"NELEM(") == 0) {
+                     $$ = New_Const( LONG, &( SIZE($2) ), sizeof(long) );
 		  } else {
-                     fferror("Function(str) not supported");
-		     FFERROR;
+                     yyerror("Function(str) not supported");
+		     YYERROR;
 		  }
-                  TEST(ffval.Node); 
-		;
-    break;}
-case 33:
-#line 296 "eval.y"
-{ if (FSTRCMP(ffvsp[-2].str,"NELEM(") == 0) {
-                     ffval.Node = New_Const( LONG, &( SIZE(ffvsp[-1].Node) ), sizeof(long) );
+                  TEST($$); 
+		}
+       | FUNCTION bits ')'
+                { if (FSTRCMP($1,"NELEM(") == 0) {
+                     $$ = New_Const( LONG, &( SIZE($2) ), sizeof(long) );
 		  } else {
-                     fferror("Function(bits) not supported");
-		     FFERROR;
+                     yyerror("Function(bits) not supported");
+		     YYERROR;
 		  }
-                  TEST(ffval.Node); 
-		;
-    break;}
-case 34:
-#line 305 "eval.y"
-{ if (FSTRCMP(ffvsp[-2].str,"SUM(") == 0)
-		     ffval.Node = New_Func( TYPE(ffvsp[-1].Node), sum_fct, 1, ffvsp[-1].Node,
+                  TEST($$); 
+		}
+       | FUNCTION expr ')'
+                { if (FSTRCMP($1,"SUM(") == 0)
+		     $$ = New_Func( TYPE($2), sum_fct, 1, $2,
 				    0, 0, 0, 0, 0, 0 );
-		  else if (FSTRCMP(ffvsp[-2].str,"NELEM(") == 0)
-                     ffval.Node = New_Const( LONG, &( SIZE(ffvsp[-1].Node) ), sizeof(long) );
-		  else if (FSTRCMP(ffvsp[-2].str,"ABS(") == 0)
-		     ffval.Node = New_Func( 0, abs_fct, 1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
+		  else if (FSTRCMP($1,"NELEM(") == 0)
+                     $$ = New_Const( LONG, &( SIZE($2) ), sizeof(long) );
+		  else if (FSTRCMP($1,"ABS(") == 0)
+		     $$ = New_Func( 0, abs_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
                   else {
-		     if( TYPE(ffvsp[-1].Node) != DOUBLE ) ffvsp[-1].Node = New_Unary( DOUBLE, 0, ffvsp[-1].Node );
-                     if (FSTRCMP(ffvsp[-2].str,"SIN(") == 0)
-			ffval.Node = New_Func( 0, sin_fct,  1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
-		     else if (FSTRCMP(ffvsp[-2].str,"COS(") == 0)
-			ffval.Node = New_Func( 0, cos_fct,  1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
-		     else if (FSTRCMP(ffvsp[-2].str,"TAN(") == 0)
-			ffval.Node = New_Func( 0, tan_fct,  1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
-		     else if (FSTRCMP(ffvsp[-2].str,"ARCSIN(") == 0)
-			ffval.Node = New_Func( 0, asin_fct, 1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
-		     else if (FSTRCMP(ffvsp[-2].str,"ARCCOS(") == 0)
-			ffval.Node = New_Func( 0, acos_fct, 1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
-		     else if (FSTRCMP(ffvsp[-2].str,"ARCTAN(") == 0)
-			ffval.Node = New_Func( 0, atan_fct, 1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
-		     else if (FSTRCMP(ffvsp[-2].str,"EXP(") == 0)
-			ffval.Node = New_Func( 0, exp_fct,  1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
-		     else if (FSTRCMP(ffvsp[-2].str,"LOG(") == 0)
-			ffval.Node = New_Func( 0, log_fct,  1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
-		     else if (FSTRCMP(ffvsp[-2].str,"LOG10(") == 0)
-			ffval.Node = New_Func( 0, log10_fct, 1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
-		     else if (FSTRCMP(ffvsp[-2].str,"SQRT(") == 0)
-			ffval.Node = New_Func( 0, sqrt_fct, 1, ffvsp[-1].Node, 0, 0, 0, 0, 0, 0 );
+		     if( TYPE($2) != DOUBLE ) $2 = New_Unary( DOUBLE, 0, $2 );
+                     if (FSTRCMP($1,"SIN(") == 0)
+			$$ = New_Func( 0, sin_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"COS(") == 0)
+			$$ = New_Func( 0, cos_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"TAN(") == 0)
+			$$ = New_Func( 0, tan_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"ARCSIN(") == 0)
+			$$ = New_Func( 0, asin_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"ARCCOS(") == 0)
+			$$ = New_Func( 0, acos_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"ARCTAN(") == 0)
+			$$ = New_Func( 0, atan_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"EXP(") == 0)
+			$$ = New_Func( 0, exp_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"LOG(") == 0)
+			$$ = New_Func( 0, log_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"LOG10(") == 0)
+			$$ = New_Func( 0, log10_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"SQRT(") == 0)
+			$$ = New_Func( 0, sqrt_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else {
-			fferror("Function(expr) not supported");
-			FFERROR;
+			yyerror("Function(expr) not supported");
+			YYERROR;
 		     }
 		  }
-                  TEST(ffval.Node); 
-                ;
-    break;}
-case 35:
-#line 342 "eval.y"
-{ 
-		   if (FSTRCMP(ffvsp[-4].str,"DEFNULL(") == 0) {
-		      if( SIZE(ffvsp[-3].Node)>=SIZE(ffvsp[-1].Node) && Test_Dims( ffvsp[-3].Node, ffvsp[-1].Node ) ) {
-			 PROMOTE(ffvsp[-3].Node,ffvsp[-1].Node);
-			 ffval.Node = New_Func( 0, defnull_fct, 2, ffvsp[-3].Node, ffvsp[-1].Node, 0,
+                  TEST($$); 
+                }
+       | FUNCTION expr ',' expr ')'
+                { 
+		   if (FSTRCMP($1,"DEFNULL(") == 0) {
+		      if( SIZE($2)>=SIZE($4) && Test_Dims( $2, $4 ) ) {
+			 PROMOTE($2,$4);
+			 $$ = New_Func( 0, defnull_fct, 2, $2, $4, 0,
 					0, 0, 0, 0 );
-			 TEST(ffval.Node); 
+			 TEST($$); 
 		      } else {
-			 fferror("Dimensions of DEFNULL arguments are not compatible");
-			 FFERROR;
+			 yyerror("Dimensions of DEFNULL arguments are not compatible");
+			 YYERROR;
 		      }
-		   } else if (FSTRCMP(ffvsp[-4].str,"ARCTAN2(") == 0) {
-		     if( TYPE(ffvsp[-3].Node) != DOUBLE ) ffvsp[-3].Node = New_Unary( DOUBLE, 0, ffvsp[-3].Node );
-		     if( TYPE(ffvsp[-1].Node) != DOUBLE ) ffvsp[-1].Node = New_Unary( DOUBLE, 0, ffvsp[-1].Node );
-		     if( Test_Dims( ffvsp[-3].Node, ffvsp[-1].Node ) ) {
-			ffval.Node = New_Func( 0, atan2_fct, 2, ffvsp[-3].Node, ffvsp[-1].Node, 0, 0, 0, 0, 0 );
-			TEST(ffval.Node); 
-			if( SIZE(ffvsp[-3].Node)<SIZE(ffvsp[-1].Node) ) {
+		   } else if (FSTRCMP($1,"ARCTAN2(") == 0) {
+		     if( TYPE($2) != DOUBLE ) $2 = New_Unary( DOUBLE, 0, $2 );
+		     if( TYPE($4) != DOUBLE ) $4 = New_Unary( DOUBLE, 0, $4 );
+		     if( Test_Dims( $2, $4 ) ) {
+			$$ = New_Func( 0, atan2_fct, 2, $2, $4, 0, 0, 0, 0, 0 );
+			TEST($$); 
+			if( SIZE($2)<SIZE($4) ) {
 			   int i;
-			   gParse.Nodes[ffval.Node].value.nelem =
-			      gParse.Nodes[ffvsp[-1].Node].value.nelem;
-			   gParse.Nodes[ffval.Node].value.naxis =
-			      gParse.Nodes[ffvsp[-1].Node].value.naxis;
-			   for( i=0; i<gParse.Nodes[ffvsp[-1].Node].value.naxis; i++ )
-			      gParse.Nodes[ffval.Node].value.naxes[i] =
-				 gParse.Nodes[ffvsp[-1].Node].value.naxes[i];
+			   gParse.Nodes[$$].value.nelem =
+			      gParse.Nodes[$4].value.nelem;
+			   gParse.Nodes[$$].value.naxis =
+			      gParse.Nodes[$4].value.naxis;
+			   for( i=0; i<gParse.Nodes[$4].value.naxis; i++ )
+			      gParse.Nodes[$$].value.naxes[i] =
+				 gParse.Nodes[$4].value.naxes[i];
 			}
 		     } else {
-			fferror("Dimensions of arctan2 arguments are not compatible");
-			FFERROR;
+			yyerror("Dimensions of arctan2 arguments are not compatible");
+			YYERROR;
 		     }
 		  } else {
-                     fferror("Function(expr,expr) not supported");
-		     FFERROR;
+                     yyerror("Function(expr,expr) not supported");
+		     YYERROR;
 		  }
-                ;
-    break;}
-case 36:
-#line 379 "eval.y"
-{ ffval.Node = New_Deref( ffvsp[-3].Node, 1, ffvsp[-1].Node,  0,  0,  0,   0 ); TEST(ffval.Node); ;
-    break;}
-case 37:
-#line 381 "eval.y"
-{ ffval.Node = New_Deref( ffvsp[-5].Node, 2, ffvsp[-3].Node, ffvsp[-1].Node,  0,  0,   0 ); TEST(ffval.Node); ;
-    break;}
-case 38:
-#line 383 "eval.y"
-{ ffval.Node = New_Deref( ffvsp[-7].Node, 3, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,  0,   0 ); TEST(ffval.Node); ;
-    break;}
-case 39:
-#line 385 "eval.y"
-{ ffval.Node = New_Deref( ffvsp[-9].Node, 4, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,   0 ); TEST(ffval.Node); ;
-    break;}
-case 40:
-#line 387 "eval.y"
-{ ffval.Node = New_Deref( ffvsp[-11].Node, 5, ffvsp[-9].Node, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node ); TEST(ffval.Node); ;
-    break;}
-case 41:
-#line 389 "eval.y"
-{ ffval.Node = New_Unary( LONG,   INTCAST, ffvsp[0].Node );  TEST(ffval.Node);  ;
-    break;}
-case 42:
-#line 391 "eval.y"
-{ ffval.Node = New_Unary( LONG,   INTCAST, ffvsp[0].Node );  TEST(ffval.Node);  ;
-    break;}
-case 43:
-#line 393 "eval.y"
-{ ffval.Node = New_Unary( DOUBLE, FLTCAST, ffvsp[0].Node );  TEST(ffval.Node);  ;
-    break;}
-case 44:
-#line 395 "eval.y"
-{ ffval.Node = New_Unary( DOUBLE, FLTCAST, ffvsp[0].Node );  TEST(ffval.Node);  ;
-    break;}
-case 45:
-#line 399 "eval.y"
-{ ffval.Node = New_Const( BOOLEAN, &(ffvsp[0].log), sizeof(char) ); TEST(ffval.Node); ;
-    break;}
-case 46:
-#line 401 "eval.y"
-{ ffval.Node = New_Column( ffvsp[0].lng ); TEST(ffval.Node); ;
-    break;}
-case 47:
-#line 403 "eval.y"
-{ ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node ); TEST(ffval.Node);
-		  SIZE(ffval.Node) = 1;                                     ;
-    break;}
-case 48:
-#line 406 "eval.y"
-{ ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node ); TEST(ffval.Node); 
-		  SIZE(ffval.Node) = 1;                                     ;
-    break;}
-case 49:
-#line 409 "eval.y"
-{ ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LT,  ffvsp[0].Node ); TEST(ffval.Node); 
-		  SIZE(ffval.Node) = 1;                                     ;
-    break;}
-case 50:
-#line 412 "eval.y"
-{ ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LTE, ffvsp[0].Node ); TEST(ffval.Node); 
-		  SIZE(ffval.Node) = 1;                                     ;
-    break;}
-case 51:
-#line 415 "eval.y"
-{ ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GT,  ffvsp[0].Node ); TEST(ffval.Node); 
-		  SIZE(ffval.Node) = 1;                                     ;
-    break;}
-case 52:
-#line 418 "eval.y"
-{ ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GTE, ffvsp[0].Node ); TEST(ffval.Node); 
-		  SIZE(ffval.Node) = 1;                                     ;
-    break;}
-case 53:
-#line 421 "eval.y"
-{ PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GT,  ffvsp[0].Node );
-                  TEST(ffval.Node);                                               ;
-    break;}
-case 54:
-#line 424 "eval.y"
-{ PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LT,  ffvsp[0].Node );
-                  TEST(ffval.Node);                                               ;
-    break;}
-case 55:
-#line 427 "eval.y"
-{ PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, GTE, ffvsp[0].Node );
-                  TEST(ffval.Node);                                               ;
-    break;}
-case 56:
-#line 430 "eval.y"
-{ PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LTE, ffvsp[0].Node );
-                  TEST(ffval.Node);                                               ;
-    break;}
-case 57:
-#line 433 "eval.y"
-{ PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, '~', ffvsp[0].Node );
-                  TEST(ffval.Node);                                               ;
-    break;}
-case 58:
-#line 436 "eval.y"
-{ PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node );
-                  TEST(ffval.Node);                                               ;
-    break;}
-case 59:
-#line 439 "eval.y"
-{ PROMOTE(ffvsp[-2].Node,ffvsp[0].Node); ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node );
-                  TEST(ffval.Node);                                               ;
-    break;}
-case 60:
-#line 442 "eval.y"
-{ ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node ); TEST(ffval.Node);
-                  SIZE(ffval.Node) = 1; ;
-    break;}
-case 61:
-#line 445 "eval.y"
-{ ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node ); TEST(ffval.Node);
-                  SIZE(ffval.Node) = 1; ;
-    break;}
-case 62:
-#line 448 "eval.y"
-{ ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, AND, ffvsp[0].Node ); TEST(ffval.Node); ;
-    break;}
-case 63:
-#line 450 "eval.y"
-{ ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, OR,  ffvsp[0].Node ); TEST(ffval.Node); ;
-    break;}
-case 64:
-#line 452 "eval.y"
-{ ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, EQ,  ffvsp[0].Node ); TEST(ffval.Node); ;
-    break;}
-case 65:
-#line 454 "eval.y"
-{ ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, NE,  ffvsp[0].Node ); TEST(ffval.Node); ;
-    break;}
-case 66:
-#line 457 "eval.y"
-{ PROMOTE(ffvsp[-4].Node,ffvsp[-2].Node); PROMOTE(ffvsp[-4].Node,ffvsp[0].Node); PROMOTE(ffvsp[-2].Node,ffvsp[0].Node);
-		  ffvsp[-2].Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, LTE, ffvsp[-4].Node );
-                  ffvsp[0].Node = New_BinOp( BOOLEAN, ffvsp[-4].Node, LTE, ffvsp[0].Node );
-                  ffval.Node = New_BinOp( BOOLEAN, ffvsp[-2].Node, AND, ffvsp[0].Node );
-                  TEST(ffval.Node);                                         ;
-    break;}
-case 67:
-#line 464 "eval.y"
-{
-		   if (FSTRCMP(ffvsp[-2].str,"ISNULL(") == 0) {
-		      ffval.Node = New_Func( 0, isnull_fct, 1, ffvsp[-1].Node, 0, 0,
+                }
+       | expr '[' expr ']'
+                { $$ = New_Deref( $1, 1, $3,  0,  0,  0,   0 ); TEST($$); }
+       | expr '[' expr ',' expr ']'
+                { $$ = New_Deref( $1, 2, $3, $5,  0,  0,   0 ); TEST($$); }
+       | expr '[' expr ',' expr ',' expr ']'
+                { $$ = New_Deref( $1, 3, $3, $5, $7,  0,   0 ); TEST($$); }
+       | expr '[' expr ',' expr ',' expr ',' expr ']'
+                { $$ = New_Deref( $1, 4, $3, $5, $7, $9,   0 ); TEST($$); }
+       | expr '[' expr ',' expr ',' expr ',' expr ',' expr ']'
+                { $$ = New_Deref( $1, 5, $3, $5, $7, $9, $11 ); TEST($$); }
+       | INTCAST expr
+		{ $$ = New_Unary( LONG,   INTCAST, $2 );  TEST($$);  }
+       | INTCAST bexpr
+                { $$ = New_Unary( LONG,   INTCAST, $2 );  TEST($$);  }
+       | FLTCAST expr
+		{ $$ = New_Unary( DOUBLE, FLTCAST, $2 );  TEST($$);  }
+       | FLTCAST bexpr
+                { $$ = New_Unary( DOUBLE, FLTCAST, $2 );  TEST($$);  }
+       ;
+
+bexpr:   BOOLEAN
+                { $$ = New_Const( BOOLEAN, &($1), sizeof(char) ); TEST($$); }
+       | BCOLUMN
+                { $$ = New_Column( $1 ); TEST($$); }
+       | bits EQ bits
+                { $$ = New_BinOp( BOOLEAN, $1, EQ,  $3 ); TEST($$);
+		  SIZE($$) = 1;                                     }
+       | bits NE bits
+                { $$ = New_BinOp( BOOLEAN, $1, NE,  $3 ); TEST($$); 
+		  SIZE($$) = 1;                                     }
+       | bits LT bits
+                { $$ = New_BinOp( BOOLEAN, $1, LT,  $3 ); TEST($$); 
+		  SIZE($$) = 1;                                     }
+       | bits LTE bits
+                { $$ = New_BinOp( BOOLEAN, $1, LTE, $3 ); TEST($$); 
+		  SIZE($$) = 1;                                     }
+       | bits GT bits
+                { $$ = New_BinOp( BOOLEAN, $1, GT,  $3 ); TEST($$); 
+		  SIZE($$) = 1;                                     }
+       | bits GTE bits
+                { $$ = New_BinOp( BOOLEAN, $1, GTE, $3 ); TEST($$); 
+		  SIZE($$) = 1;                                     }
+       | expr GT expr
+                { PROMOTE($1,$3); $$ = New_BinOp( BOOLEAN, $1, GT,  $3 );
+                  TEST($$);                                               }
+       | expr LT expr
+                { PROMOTE($1,$3); $$ = New_BinOp( BOOLEAN, $1, LT,  $3 );
+                  TEST($$);                                               }
+       | expr GTE expr
+                { PROMOTE($1,$3); $$ = New_BinOp( BOOLEAN, $1, GTE, $3 );
+                  TEST($$);                                               }
+       | expr LTE expr
+                { PROMOTE($1,$3); $$ = New_BinOp( BOOLEAN, $1, LTE, $3 );
+                  TEST($$);                                               }
+       | expr '~' expr
+                { PROMOTE($1,$3); $$ = New_BinOp( BOOLEAN, $1, '~', $3 );
+                  TEST($$);                                               }
+       | expr EQ expr
+                { PROMOTE($1,$3); $$ = New_BinOp( BOOLEAN, $1, EQ,  $3 );
+                  TEST($$);                                               }
+       | expr NE expr
+                { PROMOTE($1,$3); $$ = New_BinOp( BOOLEAN, $1, NE,  $3 );
+                  TEST($$);                                               }
+       | sexpr EQ sexpr
+                { $$ = New_BinOp( BOOLEAN, $1, EQ,  $3 ); TEST($$);
+                  SIZE($$) = 1; }
+       | sexpr NE sexpr
+                { $$ = New_BinOp( BOOLEAN, $1, NE,  $3 ); TEST($$);
+                  SIZE($$) = 1; }
+       | bexpr AND bexpr
+                { $$ = New_BinOp( BOOLEAN, $1, AND, $3 ); TEST($$); }
+       | bexpr OR bexpr
+                { $$ = New_BinOp( BOOLEAN, $1, OR,  $3 ); TEST($$); }
+       | bexpr EQ bexpr
+                { $$ = New_BinOp( BOOLEAN, $1, EQ,  $3 ); TEST($$); }
+       | bexpr NE bexpr
+                { $$ = New_BinOp( BOOLEAN, $1, NE,  $3 ); TEST($$); }
+
+       | expr '=' expr ':' expr
+                { PROMOTE($1,$3); PROMOTE($1,$5); PROMOTE($3,$5);
+		  $3 = New_BinOp( BOOLEAN, $3, LTE, $1 );
+                  $5 = New_BinOp( BOOLEAN, $1, LTE, $5 );
+                  $$ = New_BinOp( BOOLEAN, $3, AND, $5 );
+                  TEST($$);                                         }
+
+       | BFUNCTION expr ')'
+                {
+		   if (FSTRCMP($1,"ISNULL(") == 0) {
+		      $$ = New_Func( 0, isnull_fct, 1, $2, 0, 0,
 				     0, 0, 0, 0 );
-		      TEST(ffval.Node); 
+		      TEST($$); 
                       /* Use expression's size, but return BOOLEAN */
-		      TYPE(ffval.Node) = BOOLEAN;
+		      TYPE($$) = BOOLEAN;
 		   } else {
-		      fferror("Boolean Function(expr) not supported");
-		      FFERROR;
+		      yyerror("Boolean Function(expr) not supported");
+		      YYERROR;
 		   }
-		;
-    break;}
-case 68:
-#line 477 "eval.y"
-{
-		   if (FSTRCMP(ffvsp[-2].str,"ISNULL(") == 0) {
-		      ffval.Node = New_Func( 0, isnull_fct, 1, ffvsp[-1].Node, 0, 0,
-				     0, 0, 0, 0 );
-		      TEST(ffval.Node); 
-                      /* Use expression's size, but return BOOLEAN */
-		      TYPE(ffval.Node) = BOOLEAN;
-		   } else {
-		      fferror("Boolean Function(expr) not supported");
-		      FFERROR;
-		   }
-		;
-    break;}
-case 69:
-#line 490 "eval.y"
-{
-		   if (FSTRCMP(ffvsp[-2].str,"ISNULL(") == 0) {
-		      ffval.Node = New_Func( BOOLEAN, isnull_fct, 1, ffvsp[-1].Node, 0, 0,
-				     0, 0, 0, 0 );
-		      TEST(ffval.Node); 
-		   } else {
-		      fferror("Boolean Function(expr) not supported");
-		      FFERROR;
-		   }
-		;
-    break;}
-case 70:
-#line 501 "eval.y"
-{
-		   if (FSTRCMP(ffvsp[-4].str,"DEFNULL(") == 0) {
-		      if( SIZE(ffvsp[-3].Node)>=SIZE(ffvsp[-1].Node) && Test_Dims( ffvsp[-3].Node, ffvsp[-1].Node ) ) {
-			 ffval.Node = New_Func( 0, defnull_fct, 2, ffvsp[-3].Node, ffvsp[-1].Node, 0,
-					0, 0, 0, 0 );
-			 TEST(ffval.Node); 
-		      } else {
-			 fferror("Dimensions of DEFNULL arguments are not compatible");
-			 FFERROR;
-		      }
-		   } else {
-		      fferror("Boolean Function(expr,expr) not supported");
-		      FFERROR;
-		   }
-		;
-    break;}
-case 71:
-#line 517 "eval.y"
-{
-		   if( SIZE(ffvsp[-5].Node)>1 || SIZE(ffvsp[-3].Node)>1 || SIZE(ffvsp[-1].Node)>1 ) {
-		      fferror("Cannot use array as function argument");
-		      FFERROR;
-		   }
-		   if( TYPE(ffvsp[-5].Node) != DOUBLE ) ffvsp[-5].Node = New_Unary( DOUBLE, 0, ffvsp[-5].Node );
-		   if( TYPE(ffvsp[-3].Node) != DOUBLE ) ffvsp[-3].Node = New_Unary( DOUBLE, 0, ffvsp[-3].Node );
-		   if( TYPE(ffvsp[-1].Node) != DOUBLE ) ffvsp[-1].Node = New_Unary( DOUBLE, 0, ffvsp[-1].Node );
-		   if (FSTRCMP(ffvsp[-6].str,"NEAR(") == 0)
-		      ffval.Node = New_Func( BOOLEAN, near_fct, 3, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,
-				     0, 0, 0, 0 );
-		   else {
-		      fferror("Boolean Function not supported");
-		      FFERROR;
-		   }
-                   TEST(ffval.Node); 
-		;
-    break;}
-case 72:
-#line 535 "eval.y"
-{
-		   if( SIZE(ffvsp[-9].Node)>1 || SIZE(ffvsp[-7].Node)>1 || SIZE(ffvsp[-5].Node)>1 || SIZE(ffvsp[-3].Node)>1
-		       || SIZE(ffvsp[-1].Node)>1 ) {
-		      fferror("Cannot use array as function argument");
-		      FFERROR;
-		   }
-		   if( TYPE(ffvsp[-9].Node) != DOUBLE ) ffvsp[-9].Node = New_Unary( DOUBLE, 0, ffvsp[-9].Node );
-		   if( TYPE(ffvsp[-7].Node) != DOUBLE ) ffvsp[-7].Node = New_Unary( DOUBLE, 0, ffvsp[-7].Node );
-		   if( TYPE(ffvsp[-5].Node) != DOUBLE ) ffvsp[-5].Node = New_Unary( DOUBLE, 0, ffvsp[-5].Node );
-		   if( TYPE(ffvsp[-3].Node) != DOUBLE ) ffvsp[-3].Node = New_Unary( DOUBLE, 0, ffvsp[-3].Node );
-		   if( TYPE(ffvsp[-1].Node)!= DOUBLE ) ffvsp[-1].Node= New_Unary( DOUBLE, 0, ffvsp[-1].Node);
-                   if (FSTRCMP(ffvsp[-10].str,"CIRCLE(") == 0)
-		      ffval.Node = New_Func( BOOLEAN, circle_fct, 5, ffvsp[-9].Node, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node,
-				     ffvsp[-1].Node, 0, 0 );
-		   else {
-		      fferror("Boolean Function not supported");
-		      FFERROR;
-		   }
-                   TEST(ffval.Node); 
-		;
-    break;}
-case 73:
-#line 556 "eval.y"
-{
-		   if( SIZE(ffvsp[-13].Node)>1 || SIZE(ffvsp[-11].Node)>1 || SIZE(ffvsp[-9].Node)>1 || SIZE(ffvsp[-7].Node)>1
-		       || SIZE(ffvsp[-5].Node)>1 || SIZE(ffvsp[-3].Node)>1 || SIZE(ffvsp[-1].Node)>1 ) {
-		      fferror("Cannot use array as function argument");
-		      FFERROR;
-		   }
-		   if( TYPE(ffvsp[-13].Node) != DOUBLE ) ffvsp[-13].Node = New_Unary( DOUBLE, 0, ffvsp[-13].Node );
-		   if( TYPE(ffvsp[-11].Node) != DOUBLE ) ffvsp[-11].Node = New_Unary( DOUBLE, 0, ffvsp[-11].Node );
-		   if( TYPE(ffvsp[-9].Node) != DOUBLE ) ffvsp[-9].Node = New_Unary( DOUBLE, 0, ffvsp[-9].Node );
-		   if( TYPE(ffvsp[-7].Node) != DOUBLE ) ffvsp[-7].Node = New_Unary( DOUBLE, 0, ffvsp[-7].Node );
-		   if( TYPE(ffvsp[-5].Node)!= DOUBLE ) ffvsp[-5].Node= New_Unary( DOUBLE, 0, ffvsp[-5].Node);
-		   if( TYPE(ffvsp[-3].Node)!= DOUBLE ) ffvsp[-3].Node= New_Unary( DOUBLE, 0, ffvsp[-3].Node);
-		   if( TYPE(ffvsp[-1].Node)!= DOUBLE ) ffvsp[-1].Node= New_Unary( DOUBLE, 0, ffvsp[-1].Node);
-		   if (FSTRCMP(ffvsp[-14].str,"BOX(") == 0)
-		      ffval.Node = New_Func( BOOLEAN, box_fct, 7, ffvsp[-13].Node, ffvsp[-11].Node, ffvsp[-9].Node, ffvsp[-7].Node,
-				      ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node );
-		   else if (FSTRCMP(ffvsp[-14].str,"ELLIPSE(") == 0)
-		      ffval.Node = New_Func( BOOLEAN, elps_fct, 7, ffvsp[-13].Node, ffvsp[-11].Node, ffvsp[-9].Node, ffvsp[-7].Node,
-				      ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node );
-		   else {
-		      fferror("SAO Image Function not supported");
-		      FFERROR;
-		   }
-                   TEST(ffval.Node); 
-		;
-    break;}
-case 74:
-#line 582 "eval.y"
-{ ffval.Node = New_Deref( ffvsp[-3].Node, 1, ffvsp[-1].Node,  0,  0,  0,   0 ); TEST(ffval.Node); ;
-    break;}
-case 75:
-#line 584 "eval.y"
-{ ffval.Node = New_Deref( ffvsp[-5].Node, 2, ffvsp[-3].Node, ffvsp[-1].Node,  0,  0,   0 ); TEST(ffval.Node); ;
-    break;}
-case 76:
-#line 586 "eval.y"
-{ ffval.Node = New_Deref( ffvsp[-7].Node, 3, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,  0,   0 ); TEST(ffval.Node); ;
-    break;}
-case 77:
-#line 588 "eval.y"
-{ ffval.Node = New_Deref( ffvsp[-9].Node, 4, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node,   0 ); TEST(ffval.Node); ;
-    break;}
-case 78:
-#line 590 "eval.y"
-{ ffval.Node = New_Deref( ffvsp[-11].Node, 5, ffvsp[-9].Node, ffvsp[-7].Node, ffvsp[-5].Node, ffvsp[-3].Node, ffvsp[-1].Node ); TEST(ffval.Node); ;
-    break;}
-case 79:
-#line 592 "eval.y"
-{ ffval.Node = New_Unary( BOOLEAN, NOT, ffvsp[0].Node ); TEST(ffval.Node); ;
-    break;}
-case 80:
-#line 594 "eval.y"
-{ ffval.Node = ffvsp[-1].Node; ;
-    break;}
-case 81:
-#line 598 "eval.y"
-{ ffval.Node = New_Const( STRING, ffvsp[0].str, strlen(ffvsp[0].str)+1 ); TEST(ffval.Node);
-                  SIZE(ffval.Node) = strlen(ffvsp[0].str);                            ;
-    break;}
-case 82:
-#line 601 "eval.y"
-{ ffval.Node = New_Column( ffvsp[0].lng ); TEST(ffval.Node); ;
-    break;}
-case 83:
-#line 603 "eval.y"
-{ ffval.Node = ffvsp[-1].Node; ;
-    break;}
-case 84:
-#line 605 "eval.y"
-{ ffval.Node = New_BinOp( STRING, ffvsp[-2].Node, '+', ffvsp[0].Node );  TEST(ffval.Node);
-		  SIZE(ffval.Node) = SIZE(ffvsp[-2].Node) + SIZE(ffvsp[0].Node);                   ;
-    break;}
-case 85:
-#line 608 "eval.y"
-{ 
-		  if (FSTRCMP(ffvsp[-4].str,"DEFNULL(") == 0) {
-		     ffval.Node = New_Func( 0, defnull_fct, 2, ffvsp[-3].Node, ffvsp[-1].Node, 0,
-				    0, 0, 0, 0 );
-		     TEST(ffval.Node); 
-		     if( SIZE(ffvsp[-1].Node)>SIZE(ffvsp[-3].Node) ) SIZE(ffval.Node) = SIZE(ffvsp[-1].Node);
-		  }
-		;
-    break;}
-}
-   /* the action file gets copied in in place of this dollarsign */
-#line 498 "/usr/local/share/bison.simple"
-
-  ffvsp -= fflen;
-  ffssp -= fflen;
-#ifdef FFLSP_NEEDED
-  fflsp -= fflen;
-#endif
-
-#if FFDEBUG != 0
-  if (ffdebug)
-    {
-      short *ssp1 = ffss - 1;
-      fprintf (stderr, "state stack now");
-      while (ssp1 != ffssp)
-	fprintf (stderr, " %d", *++ssp1);
-      fprintf (stderr, "\n");
-    }
-#endif
-
-  *++ffvsp = ffval;
-
-#ifdef FFLSP_NEEDED
-  fflsp++;
-  if (fflen == 0)
-    {
-      fflsp->first_line = fflloc.first_line;
-      fflsp->first_column = fflloc.first_column;
-      fflsp->last_line = (fflsp-1)->last_line;
-      fflsp->last_column = (fflsp-1)->last_column;
-      fflsp->text = 0;
-    }
-  else
-    {
-      fflsp->last_line = (fflsp+fflen-1)->last_line;
-      fflsp->last_column = (fflsp+fflen-1)->last_column;
-    }
-#endif
-
-  /* Now "shift" the result of the reduction.
-     Determine what state that goes to,
-     based on the state we popped back to
-     and the rule number reduced by.  */
-
-  ffn = ffr1[ffn];
-
-  ffstate = ffpgoto[ffn - FFNTBASE] + *ffssp;
-  if (ffstate >= 0 && ffstate <= FFLAST && ffcheck[ffstate] == *ffssp)
-    ffstate = fftable[ffstate];
-  else
-    ffstate = ffdefgoto[ffn - FFNTBASE];
-
-  goto ffnewstate;
-
-fferrlab:   /* here on detecting error */
-
-  if (! fferrstatus)
-    /* If not already recovering from an error, report this error.  */
-    {
-      ++ffnerrs;
-
-#ifdef FFERROR_VERBOSE
-      ffn = ffpact[ffstate];
-
-      if (ffn > FFFLAG && ffn < FFLAST)
-	{
-	  int size = 0;
-	  char *msg;
-	  int x, count;
-
-	  count = 0;
-	  /* Start X at -ffn if nec to avoid negative indexes in ffcheck.  */
-	  for (x = (ffn < 0 ? -ffn : 0);
-	       x < (sizeof(fftname) / sizeof(char *)); x++)
-	    if (ffcheck[x + ffn] == x)
-	      size += strlen(fftname[x]) + 15, count++;
-	  msg = (char *) malloc(size + 15);
-	  if (msg != 0)
-	    {
-	      strcpy(msg, "parse error");
-
-	      if (count < 5)
-		{
-		  count = 0;
-		  for (x = (ffn < 0 ? -ffn : 0);
-		       x < (sizeof(fftname) / sizeof(char *)); x++)
-		    if (ffcheck[x + ffn] == x)
-		      {
-			strcat(msg, count == 0 ? ", expecting `" : " or `");
-			strcat(msg, fftname[x]);
-			strcat(msg, "'");
-			count++;
-		      }
 		}
-	      fferror(msg);
-	      free(msg);
-	    }
-	  else
-	    fferror ("parse error; also virtual memory exceeded");
-	}
-      else
-#endif /* FFERROR_VERBOSE */
-	fferror("parse error");
-    }
+       | BFUNCTION bexpr ')'
+                {
+		   if (FSTRCMP($1,"ISNULL(") == 0) {
+		      $$ = New_Func( 0, isnull_fct, 1, $2, 0, 0,
+				     0, 0, 0, 0 );
+		      TEST($$); 
+                      /* Use expression's size, but return BOOLEAN */
+		      TYPE($$) = BOOLEAN;
+		   } else {
+		      yyerror("Boolean Function(expr) not supported");
+		      YYERROR;
+		   }
+		}
+       | BFUNCTION sexpr ')'
+                {
+		   if (FSTRCMP($1,"ISNULL(") == 0) {
+		      $$ = New_Func( BOOLEAN, isnull_fct, 1, $2, 0, 0,
+				     0, 0, 0, 0 );
+		      TEST($$); 
+		   } else {
+		      yyerror("Boolean Function(expr) not supported");
+		      YYERROR;
+		   }
+		}
+       | FUNCTION bexpr ',' bexpr ')'
+                {
+		   if (FSTRCMP($1,"DEFNULL(") == 0) {
+		      if( SIZE($2)>=SIZE($4) && Test_Dims( $2, $4 ) ) {
+			 $$ = New_Func( 0, defnull_fct, 2, $2, $4, 0,
+					0, 0, 0, 0 );
+			 TEST($$); 
+		      } else {
+			 yyerror("Dimensions of DEFNULL arguments are not compatible");
+			 YYERROR;
+		      }
+		   } else {
+		      yyerror("Boolean Function(expr,expr) not supported");
+		      YYERROR;
+		   }
+		}
+       | BFUNCTION expr ',' expr ',' expr ')'
+		{
+		   if( SIZE($2)>1 || SIZE($4)>1 || SIZE($6)>1 ) {
+		      yyerror("Cannot use array as function argument");
+		      YYERROR;
+		   }
+		   if( TYPE($2) != DOUBLE ) $2 = New_Unary( DOUBLE, 0, $2 );
+		   if( TYPE($4) != DOUBLE ) $4 = New_Unary( DOUBLE, 0, $4 );
+		   if( TYPE($6) != DOUBLE ) $6 = New_Unary( DOUBLE, 0, $6 );
+		   if (FSTRCMP($1,"NEAR(") == 0)
+		      $$ = New_Func( BOOLEAN, near_fct, 3, $2, $4, $6,
+				     0, 0, 0, 0 );
+		   else {
+		      yyerror("Boolean Function not supported");
+		      YYERROR;
+		   }
+                   TEST($$); 
+		}
+       | BFUNCTION expr ',' expr ',' expr ',' expr ',' expr ')'
+	        {
+		   if( SIZE($2)>1 || SIZE($4)>1 || SIZE($6)>1 || SIZE($8)>1
+		       || SIZE($10)>1 ) {
+		      yyerror("Cannot use array as function argument");
+		      YYERROR;
+		   }
+		   if( TYPE($2) != DOUBLE ) $2 = New_Unary( DOUBLE, 0, $2 );
+		   if( TYPE($4) != DOUBLE ) $4 = New_Unary( DOUBLE, 0, $4 );
+		   if( TYPE($6) != DOUBLE ) $6 = New_Unary( DOUBLE, 0, $6 );
+		   if( TYPE($8) != DOUBLE ) $8 = New_Unary( DOUBLE, 0, $8 );
+		   if( TYPE($10)!= DOUBLE ) $10= New_Unary( DOUBLE, 0, $10);
+                   if (FSTRCMP($1,"CIRCLE(") == 0)
+		      $$ = New_Func( BOOLEAN, circle_fct, 5, $2, $4, $6, $8,
+				     $10, 0, 0 );
+		   else {
+		      yyerror("Boolean Function not supported");
+		      YYERROR;
+		   }
+                   TEST($$); 
+		}
+       | BFUNCTION expr ',' expr ',' expr ',' expr ',' expr ',' expr ',' expr ')'
+                {
+		   if( SIZE($2)>1 || SIZE($4)>1 || SIZE($6)>1 || SIZE($8)>1
+		       || SIZE($10)>1 || SIZE($12)>1 || SIZE($14)>1 ) {
+		      yyerror("Cannot use array as function argument");
+		      YYERROR;
+		   }
+		   if( TYPE($2) != DOUBLE ) $2 = New_Unary( DOUBLE, 0, $2 );
+		   if( TYPE($4) != DOUBLE ) $4 = New_Unary( DOUBLE, 0, $4 );
+		   if( TYPE($6) != DOUBLE ) $6 = New_Unary( DOUBLE, 0, $6 );
+		   if( TYPE($8) != DOUBLE ) $8 = New_Unary( DOUBLE, 0, $8 );
+		   if( TYPE($10)!= DOUBLE ) $10= New_Unary( DOUBLE, 0, $10);
+		   if( TYPE($12)!= DOUBLE ) $12= New_Unary( DOUBLE, 0, $12);
+		   if( TYPE($14)!= DOUBLE ) $14= New_Unary( DOUBLE, 0, $14);
+		   if (FSTRCMP($1,"BOX(") == 0)
+		      $$ = New_Func( BOOLEAN, box_fct, 7, $2, $4, $6, $8,
+				      $10, $12, $14 );
+		   else if (FSTRCMP($1,"ELLIPSE(") == 0)
+		      $$ = New_Func( BOOLEAN, elps_fct, 7, $2, $4, $6, $8,
+				      $10, $12, $14 );
+		   else {
+		      yyerror("SAO Image Function not supported");
+		      YYERROR;
+		   }
+                   TEST($$); 
+		}
+       | bexpr '[' expr ']'
+                { $$ = New_Deref( $1, 1, $3,  0,  0,  0,   0 ); TEST($$); }
+       | bexpr '[' expr ',' expr ']'
+                { $$ = New_Deref( $1, 2, $3, $5,  0,  0,   0 ); TEST($$); }
+       | bexpr '[' expr ',' expr ',' expr ']'
+                { $$ = New_Deref( $1, 3, $3, $5, $7,  0,   0 ); TEST($$); }
+       | bexpr '[' expr ',' expr ',' expr ',' expr ']'
+                { $$ = New_Deref( $1, 4, $3, $5, $7, $9,   0 ); TEST($$); }
+       | bexpr '[' expr ',' expr ',' expr ',' expr ',' expr ']'
+                { $$ = New_Deref( $1, 5, $3, $5, $7, $9, $11 ); TEST($$); }
+       | NOT bexpr
+                { $$ = New_Unary( BOOLEAN, NOT, $2 ); TEST($$); }
+       | '(' bexpr ')'
+                { $$ = $2; }
+       ;
 
-  goto fferrlab1;
-fferrlab1:   /* here on error raised explicitly by an action */
+sexpr:   STRING
+                { $$ = New_Const( STRING, $1, strlen($1)+1 ); TEST($$);
+                  SIZE($$) = strlen($1);                            }
+       | SCOLUMN
+                { $$ = New_Column( $1 ); TEST($$); }
+       | '(' sexpr ')'
+                { $$ = $2; }
+       | sexpr '+' sexpr
+                { $$ = New_BinOp( STRING, $1, '+', $3 );  TEST($$);
+		  SIZE($$) = SIZE($1) + SIZE($3);                   }
+       | FUNCTION sexpr ',' sexpr ')'
+                { 
+		  if (FSTRCMP($1,"DEFNULL(") == 0) {
+		     $$ = New_Func( 0, defnull_fct, 2, $2, $4, 0,
+				    0, 0, 0, 0 );
+		     TEST($$); 
+		     if( SIZE($4)>SIZE($2) ) SIZE($$) = SIZE($4);
+		  }
+		}
+	;
 
-  if (fferrstatus == 3)
-    {
-      /* if just tried and failed to reuse lookahead token after an error, discard it.  */
-
-      /* return failure if at end of input */
-      if (ffchar == FFEOF)
-	FFABORT;
-
-#if FFDEBUG != 0
-      if (ffdebug)
-	fprintf(stderr, "Discarding token %d (%s).\n", ffchar, fftname[ffchar1]);
-#endif
-
-      ffchar = FFEMPTY;
-    }
-
-  /* Else will try to reuse lookahead token
-     after shifting the error token.  */
-
-  fferrstatus = 3;		/* Each real token shifted decrements this */
-
-  goto fferrhandle;
-
-fferrdefault:  /* current state does not do anything special for the error token. */
-
-#if 0
-  /* This is wrong; only states that explicitly want error tokens
-     should shift them.  */
-  ffn = ffdefact[ffstate];  /* If its default is to accept any token, ok.  Otherwise pop it.*/
-  if (ffn) goto ffdefault;
-#endif
-
-fferrpop:   /* pop the current state because it cannot handle the error token */
-
-  if (ffssp == ffss) FFABORT;
-  ffvsp--;
-  ffstate = *--ffssp;
-#ifdef FFLSP_NEEDED
-  fflsp--;
-#endif
-
-#if FFDEBUG != 0
-  if (ffdebug)
-    {
-      short *ssp1 = ffss - 1;
-      fprintf (stderr, "Error: state stack now");
-      while (ssp1 != ffssp)
-	fprintf (stderr, " %d", *++ssp1);
-      fprintf (stderr, "\n");
-    }
-#endif
-
-fferrhandle:
-
-  ffn = ffpact[ffstate];
-  if (ffn == FFFLAG)
-    goto fferrdefault;
-
-  ffn += FFTERROR;
-  if (ffn < 0 || ffn > FFLAST || ffcheck[ffn] != FFTERROR)
-    goto fferrdefault;
-
-  ffn = fftable[ffn];
-  if (ffn < 0)
-    {
-      if (ffn == FFFLAG)
-	goto fferrpop;
-      ffn = -ffn;
-      goto ffreduce;
-    }
-  else if (ffn == 0)
-    goto fferrpop;
-
-  if (ffn == FFFINAL)
-    FFACCEPT;
-
-#if FFDEBUG != 0
-  if (ffdebug)
-    fprintf(stderr, "Shifting error token, ");
-#endif
-
-  *++ffvsp = fflval;
-#ifdef FFLSP_NEEDED
-  *++fflsp = fflloc;
-#endif
-
-  ffstate = ffn;
-  goto ffnewstate;
-}
-#line 618 "eval.y"
-
+%%
 
 /*************************************************************************/
 /*  Start of "New" routines which build the expression Nodal structure   */
@@ -2137,7 +879,7 @@ static int New_Deref( int Var,  int nDim,
 	    return(-1);
 	 } else if( theDim[idx]->type!=LONG ) {
 	    Free_Last_Node();
-	    fferror("Index value must be an integer type");
+	    yyerror("Index value must be an integer type");
 	    return(-1);
 	 }
 
@@ -2157,7 +899,7 @@ static int New_Deref( int Var,  int nDim,
 	 this->value.nelem = elem;
       } else {
 	 Free_Last_Node();
-	 fferror("Must specify just one or all indices for vector");
+	 yyerror("Must specify just one or all indices for vector");
 	 return(-1);
       }
    }
@@ -2268,7 +1010,7 @@ void Evaluate_Node( int thisNode )
 
       default:
 	 /* BAD Operator! */
-	 fferror("Unknown operator encountered during evaluation");
+	 yyerror("Unknown operator encountered during evaluation");
 	 break;
       }
    }
@@ -2967,11 +1709,11 @@ static void Do_BinOp_lng( Node *this )
 
       case '%':
 	 if( val2 ) this->value.data.lng = (val1 % val2);
-	 else       fferror("Divide by Zero");
+	 else       yyerror("Divide by Zero");
 	 break;
       case '/': 
 	 if( val2 ) this->value.data.lng = (val1 / val2); 
-	 else       fferror("Divide by Zero");
+	 else       yyerror("Divide by Zero");
 	 break;
       case POWER:
 	 this->value.data.lng = (long)pow((double)val1,(double)val2);
@@ -3024,7 +1766,7 @@ static void Do_BinOp_lng( Node *this )
 	    case '%':   
 	       if( val2 ) this->value.data.lngptr[elem] = (val1 % val2);
 	       else {
-		  fferror("Divide by Zero");
+		  yyerror("Divide by Zero");
 		  free( this->value.data.ptr );
 		  free( this->value.undef );
 	       }
@@ -3032,7 +1774,7 @@ static void Do_BinOp_lng( Node *this )
 	    case '/': 
 	       if( val2 ) this->value.data.lngptr[elem] = (val1 / val2); 
 	       else {
-		  fferror("Divide by Zero");
+		  yyerror("Divide by Zero");
 		  free( this->value.data.ptr );
 		  free( this->value.undef );
 	       }
@@ -3100,11 +1842,11 @@ static void Do_BinOp_dbl( Node *this )
 
       case '%':
 	 if( val2 ) this->value.data.dbl = val1 - val2*((int)(val1/val2));
-	 else       fferror("Divide by Zero");
+	 else       yyerror("Divide by Zero");
 	 break;
       case '/': 
 	 if( val2 ) this->value.data.dbl = (val1 / val2); 
-	 else       fferror("Divide by Zero");
+	 else       yyerror("Divide by Zero");
 	 break;
       case POWER:
 	 this->value.data.dbl = (double)pow(val1,val2);
@@ -3158,7 +1900,7 @@ static void Do_BinOp_dbl( Node *this )
 	       if( val2 ) this->value.data.dblptr[elem] =
                                 val1 - val2*((int)(val1/val2));
 	       else {
-		  fferror("Divide by Zero");
+		  yyerror("Divide by Zero");
 		  free( this->value.data.ptr );
 		  free( this->value.undef );
 	       }
@@ -3166,7 +1908,7 @@ static void Do_BinOp_dbl( Node *this )
 	    case '/': 
 	       if( val2 ) this->value.data.dblptr[elem] = (val1 / val2); 
 	       else {
-		  fferror("Divide by Zero");
+		  yyerror("Divide by Zero");
 		  free( this->value.data.ptr );
 		  free( this->value.undef );
 	       }
@@ -3279,14 +2021,14 @@ static void Do_Func( Node *this )
 	 case asin_fct:
 	    dval = pVals[0].data.dbl;
 	    if( dval<-1.0 || dval>1.0 )
-	       fferror("Out of range argument to arcsin");
+	       yyerror("Out of range argument to arcsin");
 	    else
 	       this->value.data.dbl = asin( dval );
 	    break;
 	 case acos_fct:
 	    dval = pVals[0].data.dbl;
 	    if( dval<-1.0 || dval>1.0 )
-	       fferror("Out of range argument to arccos");
+	       yyerror("Out of range argument to arccos");
 	    else
 	       this->value.data.dbl = acos( dval );
 	    break;
@@ -3301,21 +2043,21 @@ static void Do_Func( Node *this )
 	 case log_fct:
 	    dval = pVals[0].data.dbl;
 	    if( dval<=0.0 )
-	       fferror("Out of range argument to log");
+	       yyerror("Out of range argument to log");
 	    else
 	       this->value.data.dbl = log( dval );
 	    break;
 	 case log10_fct:
 	    dval = pVals[0].data.dbl;
 	    if( dval<=0.0 )
-	       fferror("Out of range argument to log10");
+	       yyerror("Out of range argument to log10");
 	    else
 	       this->value.data.dbl = log10( dval );
 	    break;
 	 case sqrt_fct:
 	    dval = pVals[0].data.dbl;
 	    if( dval<0.0 )
-	       fferror("Out of range argument to sqrt");
+	       yyerror("Out of range argument to sqrt");
 	    else
 	       this->value.data.dbl = sqrt( dval );
 	    break;
@@ -3573,7 +2315,7 @@ static void Do_Func( Node *this )
 	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<-1.0 || dval>1.0 ) {
-		     fferror("Out of range argument to arcsin");
+		     yyerror("Out of range argument to arcsin");
 		     break;
 		  } else
 		     this->value.data.dblptr[elem] = asin( dval );
@@ -3584,7 +2326,7 @@ static void Do_Func( Node *this )
 	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<-1.0 || dval>1.0 ) {
-		     fferror("Out of range argument to arccos");
+		     yyerror("Out of range argument to arccos");
 		     break;
 		  } else
 		     this->value.data.dblptr[elem] = acos( dval );
@@ -3609,7 +2351,7 @@ static void Do_Func( Node *this )
 	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<=0.0 ) {
-		     fferror("Out of range argument to log");
+		     yyerror("Out of range argument to log");
 		     break;
 		  } else
 		     this->value.data.dblptr[elem] = log( dval );
@@ -3620,7 +2362,7 @@ static void Do_Func( Node *this )
 	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<=0.0 ) {
-		     fferror("Out of range argument to log10");
+		     yyerror("Out of range argument to log10");
 		     break;
 		  } else
 		     this->value.data.dblptr[elem] = log10( dval );
@@ -3631,7 +2373,7 @@ static void Do_Func( Node *this )
 	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<0.0 ) {
-		     fferror("Out of range argument to sqrt");
+		     yyerror("Out of range argument to sqrt");
 		     break;
 		  } else
 		     this->value.data.dblptr[elem] = sqrt( dval );
@@ -3797,7 +2539,7 @@ static void Do_Deref( Node *this )
 	       elem += theVar->value.nelem;
 	    }
 	 } else {
-	    fferror("Index out of range");
+	    yyerror("Index out of range");
 	    free( this->value.undef );
 	    free( this->value.data.ptr );
 	 }
@@ -3808,7 +2550,7 @@ static void Do_Deref( Node *this )
 	 
 	 if( dimVals[0] < 1 ||
 	     dimVals[0] > theVar->value.naxes[ theVar->value.naxis-1 ] ) {
-	    fferror("Index out of range");
+	    yyerror("Index out of range");
 	    free( this->value.undef );
 	    free( this->value.data.ptr );
 	 } else {
@@ -3834,7 +2576,7 @@ static void Do_Deref( Node *this )
 	    for( i=0; i<nDims; i++ ) {
 	       if( !isConst[i] ) {
 		  if( theDims[i]->value.undef[row] ) {
-		     fferror("Null encountered as vector index");
+		     yyerror("Null encountered as vector index");
 		     free( this->value.undef );
 		     free( this->value.data.ptr );
 		     break;
@@ -3863,7 +2605,7 @@ static void Do_Deref( Node *this )
 		  this->value.data.logptr[row] = 
 		     theVar->value.data.logptr[elem];
 	    } else {
-	       fferror("Index out of range");
+	       yyerror("Index out of range");
 	       free( this->value.undef );
 	       free( this->value.data.ptr );
 	    }
@@ -3878,7 +2620,7 @@ static void Do_Deref( Node *this )
 	    /* Index cannot be a constant */
 
 	    if( theDims[0]->value.undef[row] ) {
-	       fferror("Null encountered as vector index");
+	       yyerror("Null encountered as vector index");
 	       free( this->value.undef );
 	       free( this->value.data.ptr );
 	       break;
@@ -3887,7 +2629,7 @@ static void Do_Deref( Node *this )
 
 	    if( dimVals[0] < 1 ||
 		dimVals[0] > theVar->value.naxes[ theVar->value.naxis-1 ] ) {
-	       fferror("Index out of range");
+	       yyerror("Index out of range");
 	       free( this->value.undef );
 	       free( this->value.data.ptr );
 	    } else {
@@ -4178,7 +2920,7 @@ static char ellipse(double xcen, double ycen, double xrad, double yrad,
    return ( 0 );
 }
 
-static void fferror(char *s)
+static void yyerror(char *s)
 {
     char msg[80];
 

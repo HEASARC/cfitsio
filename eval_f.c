@@ -1,3 +1,49 @@
+/************************************************************************/
+/*                                                                      */
+/*                       CFITSIO Lexical Parser                         */
+/*                                                                      */
+/* This file is one of 3 files containing code which parses an          */
+/* arithmetic expression and evaluates it in the context of an input    */
+/* FITS file table extension.  The CFITSIO lexical parser is divided    */
+/* into the following 3 parts/files: the CFITSIO "front-end",           */
+/* eval_f.c, contains the interface between the user/CFITSIO and the    */
+/* real core of the parser; the FLEX interpreter, eval_l.c, takes the   */
+/* input string and parses it into tokens and identifies the FITS       */
+/* information required to evaluate the expression (ie, keywords and    */
+/* columns); and, the BISON grammar and evaluation routines, eval_y.c,  */
+/* receives the FLEX output and determines and performs the actual      */
+/* operations.  The files eval_l.c and eval_y.c are produced from       */
+/* running flex and bison on the files eval.l and eval.y, respectively. */
+/* (flex and bison are available from any GNU archive: see www.gnu.org) */
+/*                                                                      */
+/* The grammar rules, rather than evaluating the expression in situ,    */
+/* builds a tree, or Nodal, structure mapping out the order of          */
+/* operations and expression dependencies.  This "compilation" process  */
+/* allows for much faster processing of multiple rows.  This technique  */
+/* was developed by Uwe Lammers of the XMM Science Analysis System,     */
+/* although the CFITSIO implementation is entirely code original.       */
+/*                                                                      */
+/*                                                                      */
+/* Modification History:                                                */
+/*                                                                      */
+/*   Kent Blackburn      c1992  Original parser code developed for the  */
+/*                              FTOOLS software package, in particular, */
+/*                              the fselect task.                       */
+/*   Kent Blackburn      c1995  BIT column support added                */
+/*   Peter D Wilson   Feb 1998  Vector column support added             */
+/*   Peter D Wilson   May 1998  Ported to CFITSIO library.  User        */
+/*                              interface routines written, in essence  */
+/*                              making fselect, fcalc, and maketime     */
+/*                              capabilities available to all tools     */
+/*                              via single function calls.              */
+/*   Peter D Wilson   Jun 1998  Major rewrite of parser core, so as to  */
+/*                              create a run-time evaluation tree,      */
+/*                              inspired by the work of Uwe Lammers,    */
+/*                              resulting in a speed increase of        */
+/*                              10-100 times.                           */
+/*                                                                      */
+/************************************************************************/
+
 #include <limits.h>
 #include "eval_defs.h"
 #include "eval_tab.h"
