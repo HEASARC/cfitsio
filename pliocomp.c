@@ -30,7 +30,6 @@ int pl_p2li (int *pxsrc, int xs, short *lldst, int npix)
 /* int npix;                        number of pixels to convert */
 {
     /* System generated locals */
-
     int ret_val, i__1, i__2, i__3;
 
     /* Local variables */
@@ -44,12 +43,16 @@ int pl_p2li (int *pxsrc, int xs, short *lldst, int npix)
     if (! (npix <= 0)) {
         goto L110;
     }
-
     ret_val = 0;
     goto L100;
 L110:
+    lldst[3] = -100;
+    lldst[2] = 7;
+    lldst[1] = 0;
+    lldst[6] = 0;
+    lldst[7] = 0;
     xe = xs + npix - 1;
-    op = 4;
+    op = 8;
     zero = 0;
 /* Computing MAX */
     i__1 = zero, i__2 = pxsrc[xs];
@@ -62,7 +65,6 @@ L110:
         if (! (ip < xe)) {
             goto L130;
         }
-
 /* Computing MAX */
         i__2 = zero, i__3 = pxsrc[ip + 1];
         nv = max(i__2,i__3);
@@ -77,7 +79,6 @@ L140:
         pv = nv;
         x1 = ip + 1;
         goto L120;
-
 L150:
         goto L131;
 L130:
@@ -119,7 +120,6 @@ L201:
             goto L210;
         }
         v = lldst[op - 1];
-
         lldst[op - 1] = (short) (v | 16384);
         goto L91;
 L210:
@@ -136,7 +136,6 @@ L230:
         lldst[op] = (short) min(4095,nz);
         ++op;
 /* L231: */
-
         nz += -4095;
         goto L230;
 L232:
@@ -165,7 +164,8 @@ L120:
         ;
     }
 /* L121: */
-    lldst[3] = (short) (op - 1);
+    lldst[4] = (short) ((op - 1) % 32768);
+    lldst[5] = (short) ((op - 1) / 32768);
     ret_val = op - 1;
     goto L100;
 L100:
@@ -191,7 +191,7 @@ int pl_l2pi (short *ll_src, int xs, int *px_dst, int npix)
 
     /* Local variables */
     static int data, sw0001, otop, i__, lllen, i1, i2, x1, x2, ip, xe, np,
-             op, pv, opcode;
+             op, pv, opcode, llfirt;
     static int skipwd;
 
     /* Parameter adjustments */
@@ -199,124 +199,133 @@ int pl_l2pi (short *ll_src, int xs, int *px_dst, int npix)
     --ll_src;
 
     /* Function Body */
-    lllen = ll_src[3];
-    if (! (npix <= 0 || lllen <= 0)) {
+    if (! (ll_src[3] > 0)) {
         goto L110;
+    }
+    lllen = ll_src[3];
+    llfirt = 4;
+    goto L111;
+L110:
+    lllen = (ll_src[5] << 15) + ll_src[4];
+    llfirt = ll_src[2] + 1;
+L111:
+    if (! (npix <= 0 || lllen <= 0)) {
+        goto L120;
     }
     ret_val = 0;
     goto L100;
-L110:
+L120:
     xe = xs + npix - 1;
     skipwd = 0;
     op = 1;
     x1 = 1;
     pv = 1;
     i__1 = lllen;
-    for (ip = 4; ip <= i__1; ++ip) {
+    for (ip = llfirt; ip <= i__1; ++ip) {
         if (! skipwd) {
-            goto L130;
+            goto L140;
         }
         skipwd = 0;
-        goto L120;
-L130:
+        goto L130;
+L140:
         opcode = ll_src[ip] / 4096;
         data = ll_src[ip] & 4095;
         sw0001 = opcode;
-
-        goto L140;
-L150:
+        goto L150;
+L160:
         x2 = x1 + data - 1;
         i1 = max(x1,xs);
         i2 = min(x2,xe);
         np = i2 - i1 + 1;
         if (! (np > 0)) {
-            goto L160;
+            goto L170;
         }
         otop = op + np - 1;
         if (! (opcode == 4)) {
-            goto L170;
+            goto L180;
         }
         i__2 = otop;
         for (i__ = op; i__ <= i__2; ++i__) {
             px_dst[i__] = pv;
-/* L180: */
-        }
-/* L181: */
-        goto L171;
-L170:
-        i__2 = otop;
-        for (i__ = op; i__ <= i__2; ++i__) {
-            px_dst[i__] = 0;
 /* L190: */
         }
 /* L191: */
+        goto L181;
+L180:
+        i__2 = otop;
+        for (i__ = op; i__ <= i__2; ++i__) {
+            px_dst[i__] = 0;
+/* L200: */
+        }
+/* L201: */
         if (! (opcode == 5 && i2 == x2)) {
-            goto L200;
+            goto L210;
         }
         px_dst[otop] = pv;
-L200:
-L171:
-        op = otop + 1;
-L160:
-        x1 = x2 + 1;
-        goto L141;
 L210:
+L181:
+        op = otop + 1;
+L170:
+        x1 = x2 + 1;
+        goto L151;
+L220:
         pv = (ll_src[ip + 1] << 12) + data;
         skipwd = 1;
-        goto L141;
-L220:
-        pv += data;
-        goto L141;
+        goto L151;
 L230:
-        pv -= data;
-        goto L141;
+        pv += data;
+        goto L151;
 L240:
+        pv -= data;
+        goto L151;
+L250:
         pv += data;
         goto L91;
-L250:
+L260:
         pv -= data;
 L91:
         if (! (x1 >= xs && x1 <= xe)) {
-            goto L260;
+            goto L270;
         }
         px_dst[op] = pv;
         ++op;
-L260:
+L270:
         ++x1;
-        goto L141;
-L140:
+        goto L151;
+L150:
         ++sw0001;
         if (sw0001 < 1 || sw0001 > 8) {
-            goto L141;
+            goto L151;
         }
         switch ((int)sw0001) {
-            case 1:  goto L150;
-            case 2:  goto L210;
-            case 3:  goto L220;
-            case 4:  goto L230;
-            case 5:  goto L150;
-            case 6:  goto L150;
-            case 7:  goto L240;
-            case 8:  goto L250;
+            case 1:  goto L160;
+            case 2:  goto L220;
+            case 3:  goto L230;
+            case 4:  goto L240;
+            case 5:  goto L160;
+            case 6:  goto L160;
+            case 7:  goto L250;
+            case 8:  goto L260;
         }
-L141:
+L151:
         if (! (x1 > xe)) {
-            goto L270;
+            goto L280;
         }
-        goto L121;
-L270:
-L120:
+        goto L131;
+L280:
+L130:
         ;
     }
-L121:
+L131:
     i__1 = npix;
     for (i__ = op; i__ <= i__1; ++i__) {
         px_dst[i__] = 0;
-/* L280: */
+/* L290: */
     }
-/* L281: */
+/* L291: */
     ret_val = npix;
     goto L100;
 L100:
     return ret_val;
 } /* pll2pi_ */
+

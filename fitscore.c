@@ -40,7 +40,7 @@ SERVICES PROVIDED HEREUNDER."
 #include <math.h>
 #include <ctype.h>
 #include <errno.h>
-/* stddef.h is apparently needed to define size_t */
+/* stddef.h is apparently needed to define size_t with some compilers ?? */
 #include <stddef.h>
 #include "fitsio2.h"
 /*--------------------------------------------------------------------------*/
@@ -49,10 +49,15 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.203;
+      *version = 2.401;
 
-/*  19 Jul 2001
+/*    28 Jan 2002
 
+      *version = 2.400;  18 Jan 2002
+      *version = 2.301;   7 Dec 2001
+      *version = 2.300;  23 Oct 2001
+      *version = 2.204;  26 Jul 2001
+      *version = 2.203;  19 Jul 2001 used in ftools v5.1
       *version = 2.202;  22 May 2001
       *version = 2.201;  15 Mar 2001
       *version = 2.200;  26 Jan 2001
@@ -360,6 +365,9 @@ void ffgerr(int status,     /* I - error status value */
        break;
     case 263:
        strcpy(errtext, "illegal TDIMn keyword value");
+       break;
+    case 264:
+       strcpy(errtext, "invalid BINTABLE heap pointer");
        break;
     default:
        strcpy(errtext, "unknown error status");
@@ -1790,6 +1798,11 @@ int ffbnfm(char *tform,     /* I - format code from the TFORMn keyword */
         datacode = TLONG;
         width = 4;
     }
+    else if (form[0] == 'K')
+    {
+        datacode = TLONGLONG;
+        width = 8;
+    }
     else if (form[0] == 'E')
     {
         datacode = TFLOAT;
@@ -1922,29 +1935,33 @@ void ffcdsp(char *tform,    /* value of an ASCII table TFORMn keyword */
          ii++;
 
     if (tform[ii] == 0)
+    {
+        cform[0] = '\0';
         return;    /* input format string was blank */
+    }
 
     cform[0] = '%';  /* start the format string */
 
     strcpy(&cform[1], &tform[ii + 1]); /* append the width and decimal code */
 
-
-    if (tform[ii] == 'A')
+    if      (tform[ii] == 'A' || tform[ii] == 'a')
         strcat(cform, "s");
-    else if (tform[ii] == 'I')
+    else if (tform[ii] == 'I' || tform[ii] == 'i')
         strcat(cform, "d");
-    else if (tform[ii] == 'O')
+    else if (tform[ii] == 'O' || tform[ii] == 'o')
         strcat(cform, "o");
-    else if (tform[ii] == 'Z')
+    else if (tform[ii] == 'Z' || tform[ii] == 'z')
         strcat(cform, "X");
-    else if (tform[ii] == 'F')
+    else if (tform[ii] == 'F' || tform[ii] == 'f')
         strcat(cform, "f");
-    else if (tform[ii] == 'E')
+    else if (tform[ii] == 'E' || tform[ii] == 'e')
         strcat(cform, "E");
-    else if (tform[ii] == 'D')
+    else if (tform[ii] == 'D' || tform[ii] == 'd')
         strcat(cform, "E");
-    else if (tform[ii] == 'G')
+    else if (tform[ii] == 'G' || tform[ii] == 'g')
         strcat(cform, "G");
+    else
+        cform[0] = '\0';  /* unrecognized tform code */
 
     return;
 }
@@ -2642,7 +2659,7 @@ int ffrhdu(fitsfile *fptr,    /* I - FITS file pointer */
     int ii, tstatus;
     char card[FLEN_CARD];
     char name[FLEN_KEYWORD], value[FLEN_VALUE], comm[FLEN_COMMENT];
-    char xname[FLEN_VALUE], *xtension;
+    char xname[FLEN_VALUE], *xtension, urltype[20];
 
     if (*status > 0)
         return(*status);
@@ -2750,6 +2767,19 @@ int ffrhdu(fitsfile *fptr,    /* I - FITS file pointer */
     else
     {
         (fptr->Fptr)->lasthdu = 1;  /* yes, this is the last HDU */
+
+        /* special code for mem:// type files (FITS file in memory) */
+        /* Allocate enough memory to hold the entire HDU. */
+        /* Without this code, CFITSIO would repeatedly realloc  memory */
+        /* to incrementally increase the size of the file by 2880 bytes */
+        /* at a time, until it reached the final size */
+ 
+        ffurlt(fptr, urltype, status);
+        if (!strcmp(urltype,"mem://") || !strcmp(urltype,"memkeep://"))
+        {
+            fftrun(fptr, (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1],
+               status);
+        }
     }
 
     return(*status);
@@ -2823,6 +2853,11 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
     {
         ttype=TLONG;
         bytlen=4;
+    }
+    else if (bitpix == LONGLONG_IMG)
+    {
+        ttype=TLONGLONG;
+        bytlen=8;
     }
     else if (bitpix == FLOAT_IMG)
     {
@@ -3601,7 +3636,7 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
 int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
         int colnum,     /* I - column number (1 = 1st column of table)      */
         long firstrow,  /* I - first row (1 = 1st row of table)             */
-        OFF_T firstelem, /* I - first element within vector (1 = 1st)        */
+        OFF_T firstelem, /* I - first element within vector (1 = 1st)       */
         long nelem,     /* I - number of elements to read or write          */
         int writemode,  /* I - = 1 if writing data, = 0 if reading data     */
                         /*     If = 2, then writing data, but don't modify  */
@@ -3629,7 +3664,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
   other routine that reads or writes to FITS files.
 */
 {
-    int nulpos, rangecheck = 1;
+    int nulpos, rangecheck = 1, tstatus = 0;
     OFF_T datastart, endpos;
     long tbcol, endrow, nrows, nblock, heapoffset, lrepeat;
     char message[81];
@@ -3705,6 +3740,17 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     *incre    = colptr->twidth;  /* increment between datums, in bytes     */
     *tcode    = colptr->tdatatype;
     *repeat   = colptr->trepeat;
+
+#if (!SUPPORT_64BIT_INTEGERS)
+    if (*tcode == TLONGLONG)
+    {
+       /* experimental 64-bit integer data type */
+       sprintf(message,
+       "BITPIX=64 or TTYPE = 'K' is not supported in this version of CFITSIO");
+       ffpmsg(message);
+       return(*status = BAD_BITPIX);
+    }
+#endif
 
     strcpy(tform, colptr->tform);    /* value of TFORMn keyword            */
     strcpy(snull, colptr->strnull);  /* null value for ASCII table columns */
@@ -3894,6 +3940,43 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
 
       if (writemode)    /* return next empty heap address for writing */
       {
+
+        *repeat = nelem + *elemnum; /* total no. of elements in the field */
+
+        /* first, check if we are overwriting an existing row, and */
+        /* if so, if the existing space is big enough for the new vector */
+
+        if ( firstrow <= (fptr->Fptr)->numrows )
+        {
+          ffgdes(fptr, colnum, firstrow, &lrepeat, &heapoffset, &tstatus);
+          if (!tstatus)
+          {
+            if (colptr->tdatatype <= -TCOMPLEX)
+              lrepeat = lrepeat * 2;  /* no. of float or double values */
+            else if (colptr->tdatatype == -TBIT)
+              lrepeat = (lrepeat + 7) / 8;  /* convert from bits to bytes */
+
+            if (lrepeat >= *repeat)  /* enough existing space? */
+            {
+              *startpos = datastart + heapoffset + (fptr->Fptr)->heapstart;
+
+              /*  write the descriptor into the fixed length part of table */
+              if (colptr->tdatatype <= -TCOMPLEX)
+              {
+                /* divide repeat count by 2 to get no. of complex values */
+                ffpdes(fptr, colnum, firstrow, (long) *repeat / 2, 
+                      heapoffset, status);
+              }
+              else
+              {
+                ffpdes(fptr, colnum, firstrow, (long) *repeat,
+                      heapoffset, status);
+              }
+              return(*status);
+            }
+          }
+        }
+
         /* Add more rows to the table, if writing beyond the end. */
         /* It is necessary to shift the heap down in this case */
         if ( firstrow > (fptr->Fptr)->numrows)
@@ -3908,8 +3991,6 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
                 return(*status);
             }
         }
-
-        *repeat = nelem + *elemnum; /* total no. of elements in the field */
 
         /*  calculate starting position (for writing new data) in the heap */
         *startpos = datastart + (fptr->Fptr)->heapstart + 
@@ -3928,16 +4009,13 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
                  status);
         }
 
-        /* increment the address to the next empty heap position */
-        (fptr->Fptr)->heapsize += ((long) *repeat * (*incre)); 
-
         /* If this is not the last HDU in the file, then check if */
         /* extending the heap would overwrite the following header. */
         /* If so, then have to insert more blocks. */
         if ( !((fptr->Fptr)->lasthdu) )
         {
             endpos = datastart + (fptr->Fptr)->heapstart + 
-                     (fptr->Fptr)->heapsize;
+                     (fptr->Fptr)->heapsize + ((long) *repeat * (*incre));
 
             if (endpos > (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1])
             {
@@ -3955,7 +4033,10 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
                    return(*status);
                 }
             }
-         }
+        }
+
+        /* increment the address to the next empty heap position */
+        (fptr->Fptr)->heapsize += ((long) *repeat * (*incre)); 
       }
       else    /*  get the read start position in the heap */
       {
@@ -3995,6 +4076,271 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int fftheap(fitsfile *fptr,  /* I - FITS file pointer                       */
+           long *heapsz,     /* O - current size of the heap                */
+           long *unused,     /* O - no. of unused bytes in the heap         */
+           long *overlap,    /* O - no. of bytes shared by > 1 descriptors  */
+           int  *valid,      /* O - are all the heap addresses valid?       */
+           int *status)     /* IO - error status                            */
+/*
+  Tests the contents of the binary table variable length array heap.
+  Returns the number of bytes that are currently not pointed to by any
+  of the descriptors, and also the number of bytes that are pointed to
+  by more than one descriptor.  It returns valid = FALSE if any of the
+  descriptors point to addresses that are out of the bounds of the
+  heap.
+*/
+{
+    int jj, typecode, pixsize;
+    long ii, kk, repeat, offset, nbytes, theapsz, tunused = 0, toverlap = 0;
+    char *buffer, message[81];
+
+    if (*status > 0)
+        return(*status);
+
+    /* reset position to the correct HDU if necessary */
+    if ( fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+    /* rescan header to make sure everything is up to date */
+    else if ( ffrdef(fptr, status) > 0)               
+        return(*status);
+
+    if (valid) *valid = TRUE;
+    if (heapsz) *heapsz = (fptr->Fptr)->heapsize;
+    if (unused) *unused = 0;
+    if (overlap) *overlap = 0;
+    
+    /* return if this is not a binary table HDU or if the heap is empty */
+    if ( (fptr->Fptr)->hdutype != BINARY_TBL || (fptr->Fptr)->heapsize == 0 )
+        return(*status);
+
+    theapsz = (fptr->Fptr)->heapsize;
+    buffer = calloc(1, theapsz);     /* allocate temp space */
+    if (!buffer)
+    {
+        sprintf(message,"Failed to allocate buffer to test the heap");
+        ffpmsg(message);
+        return(*status = MEMORY_ALLOCATION);
+    }
+
+    /* loop over all cols */
+    for (jj = 1; jj <= (fptr->Fptr)->tfield && *status <= 0; jj++)
+    {
+        ffgtcl(fptr, jj, &typecode, NULL, NULL, status);
+        if (typecode > 0)
+           continue;        /* ignore fixed length columns */
+
+        pixsize = -typecode / 10;
+
+        /* copy heap data, row by row */
+        for (ii = 1; ii <= (fptr->Fptr)->numrows; ii++)
+        {
+            ffgdes(fptr, jj, ii, &repeat, &offset, status);
+            if (typecode == -TBIT)
+                nbytes = (repeat + 7) / 8;
+            else
+                nbytes = repeat * pixsize;
+
+            if (offset < 0 || offset + nbytes > theapsz)
+            {
+                if (valid) *valid = FALSE;  /* address out of bounds */
+                sprintf(message,
+                "Descriptor in row %ld, column %d has invalid heap address",
+                ii, jj);
+                ffpmsg(message);
+            }
+            else
+            {
+                for (kk = 0; kk < nbytes; kk++)
+                    buffer[kk + offset]++;   /* increment every used byte */
+            }
+        }
+    }
+
+    for (kk = 0; kk < theapsz; kk++)
+    {
+        if (buffer[kk] == 0)
+            tunused++;
+        else if (buffer[kk] > 1)
+            toverlap++;
+    }
+
+    if (heapsz) *heapsz = theapsz;
+    if (unused) *unused = tunused;
+    if (overlap) *overlap = toverlap;
+
+    free(buffer);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffcmph(fitsfile *fptr,  /* I -FITS file pointer                         */
+           int *status)     /* IO - error status                            */
+/*
+  compress the binary table heap by reordering the contents heap and
+  recovering any unused space
+*/
+{
+    fitsfile *tptr;
+    int jj, typecode, pixsize, valid;
+    long ii, repeat, offset, buffsize = 10000, nblock, pcount, nbytes;
+    long unused, overlap;
+    char *buffer, *tbuff = 0, comm[FLEN_COMMENT], valstring[FLEN_CARD];
+    char message[81], card[FLEN_CARD];
+    OFF_T readheapstart, writeheapstart, endpos, t1heapsize, t2heapsize;
+
+    if (*status > 0)
+        return(*status);
+
+    /* get information about the current heap */
+    fftheap(fptr, NULL, &unused, &overlap, &valid, status);
+
+    if (!valid)
+       return(*status = BAD_HEAP_PTR);  /* bad heap pointers */
+
+    /* return if this is not a binary table HDU or if the heap is OK as is */
+    if ( (fptr->Fptr)->hdutype != BINARY_TBL || (fptr->Fptr)->heapsize == 0 ||
+         (unused == 0 && overlap == 0) || *status > 0 )
+        return(*status);
+
+    /* copy the current HDU to a temporary file in memory */
+    if (ffinit( &tptr, "mem://tempheapfile", status) )
+    {
+        sprintf(message,"Failed to create temporary file for the heap");
+        ffpmsg(message);
+        return(*status);
+    }
+    if ( ffcopy(fptr, tptr, 0, status) )
+    {
+        sprintf(message,"Failed to create copy of the heap");
+        ffpmsg(message);
+        ffclos(tptr, status);
+        return(*status);
+    }
+
+    buffer = malloc(buffsize);  /* allocate initial buffer */
+    if (!buffer)
+    {
+        sprintf(message,"Failed to allocate buffer to copy the heap");
+        ffpmsg(message);
+        ffclos(tptr, status);
+        return(*status = MEMORY_ALLOCATION);
+    }
+    
+    readheapstart  = (tptr->Fptr)->datastart + (tptr->Fptr)->heapstart;
+    writeheapstart = (fptr->Fptr)->datastart + (fptr->Fptr)->heapstart;
+
+    t1heapsize = (fptr->Fptr)->heapsize;  /* save original heap size */
+    (fptr->Fptr)->heapsize = 0;  /* reset heap to zero */
+
+    /* loop over all cols */
+    for (jj = 1; jj <= (fptr->Fptr)->tfield && *status <= 0; jj++)
+    {
+        ffgtcl(tptr, jj, &typecode, NULL, NULL, status);
+        if (typecode > 0)
+           continue;        /* ignore fixed length columns */
+
+        pixsize = -typecode / 10;
+
+        /* copy heap data, row by row */
+        for (ii = 1; ii <= (fptr->Fptr)->numrows; ii++)
+        {
+            ffgdes(tptr, jj, ii, &repeat, &offset, status);
+            if (typecode == -TBIT)
+                nbytes = (repeat + 7) / 8;
+            else
+                nbytes = repeat * pixsize;
+
+            /* increase size of buffer if necessary to read whole array */
+            if (nbytes > buffsize)
+            {
+                tbuff = realloc(buffer, nbytes);
+
+                if (tbuff)
+                {
+                    buffer = tbuff;
+                    buffsize = nbytes;
+                }
+                else
+                    *status = MEMORY_ALLOCATION;
+            }
+
+            /* If this is not the last HDU in the file, then check if */
+            /* extending the heap would overwrite the following header. */
+            /* If so, then have to insert more blocks. */
+            if ( !((fptr->Fptr)->lasthdu) )
+            {
+              endpos = writeheapstart + (fptr->Fptr)->heapsize + nbytes;
+
+              if (endpos > (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1])
+              {
+                /* calc the number of blocks that need to be added */
+                nblock = ((endpos - 1 - 
+                         (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] ) 
+                         / 2880) + 1;
+
+                if (ffiblk(fptr, nblock, 1, status) > 0) /* insert blocks */
+                {
+                  sprintf(message,
+       "Failed to extend the size of the variable length heap by %ld blocks.",
+                   nblock);
+                   ffpmsg(message);
+                }
+              }
+            }
+
+            /* read arrray of bytes from temporary copy */
+            ffmbyt(tptr, readheapstart + offset, REPORT_EOF, status);
+            ffgbyt(tptr, nbytes, buffer, status);
+
+            /* write arrray of bytes back to original file */
+            ffmbyt(fptr, writeheapstart + (fptr->Fptr)->heapsize, 
+                    IGNORE_EOF, status);
+            ffpbyt(fptr, nbytes, buffer, status);
+
+            /* write descriptor */
+            ffpdes(fptr, jj, ii, repeat, 
+                   (fptr->Fptr)->heapsize, status);
+
+            (fptr->Fptr)->heapsize += nbytes; /* update heapsize */
+
+            if (*status > 0)
+            {
+               free(buffer);
+               ffclos(tptr, status);
+               return(*status);
+            }
+        }
+    }
+
+    free(buffer);
+    ffclos(tptr, status);
+
+    /* delete any empty blocks at the end of the HDU */
+    nblock = ( (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] -
+             (writeheapstart + (fptr->Fptr)->heapsize) ) / 2880;
+
+    if (nblock > 0)
+    {
+       t2heapsize = (fptr->Fptr)->heapsize;  /* save new heap size */
+       (fptr->Fptr)->heapsize = t1heapsize;  /* restore  original heap size */
+
+       ffdblk(fptr, nblock, status);
+       (fptr->Fptr)->heapsize = t2heapsize;  /* reset correct heap size */
+    }
+
+    /* update the PCOUNT value (size of heap) */
+    ffgkyj(fptr, "PCOUNT", &pcount, comm, status);
+    if ((fptr->Fptr)->heapsize != pcount)
+    {
+        sprintf(valstring, "%ld", (fptr->Fptr)->heapsize);
+        ffmkky("PCOUNT", valstring, comm, card, status);
+        ffmkey(fptr, card, status);
+    }
+    ffrdef(fptr, status);  /* rescan new HDU structure */
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffgdes(fitsfile *fptr, /* I - FITS file pointer                         */
            int colnum,     /* I - column number (1 = 1st column of table)   */
            long rownum,    /* I - row number (1 = 1st row of table)         */
@@ -4006,7 +4352,7 @@ int ffgdes(fitsfile *fptr, /* I - FITS file pointer                         */
 */
 {
     OFF_T bytepos;
-    INT32BIT descript[2];
+    INT32BIT descript[2] = {0,0};
     tcolumn *colptr;
 
     /* reset position to the correct HDU if necessary */
@@ -4028,15 +4374,17 @@ int ffgdes(fitsfile *fptr, /* I - FITS file pointer                         */
                   ((fptr->Fptr)->rowlength * (rownum - 1)) +
                    colptr->tbcol;
 
-        ffgi4b(fptr, bytepos, 2, 4, descript, status); /* read descriptor */
-
-        *length = (long) descript[0];   /* 1st word is the length  */
-        *heapaddr = (long) descript[1]; /* 2nd word is the address */
+        /* read descriptor */
+        if (ffgi4b(fptr, bytepos, 2, 4, descript, status) <= 0) 
+        {
+            *length = (long) descript[0];   /* 1st word is the length  */
+            *heapaddr = (long) descript[1]; /* 2nd word is the address */
+        }
      }
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffgdess(fitsfile *fptr, /* I - FITS file pointer                         */
+int ffgdess(fitsfile *fptr, /* I - FITS file pointer                        */
            int colnum,     /* I - column number (1 = 1st column of table)   */
            long firstrow,  /* I - first row  (1 = 1st row of table)         */
            long nrows,     /* I - number or rows to read                    */
@@ -4152,6 +4500,8 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
     else if ((fptr->Fptr)->writemode == 1)
     {
         ffrdef(fptr, status);  /* scan header to redefine structure */
+        if ((fptr->Fptr)->heapsize > 0)
+          ffuptf(fptr, status);  /* update the variable length TFORM values */
         ffpdfl(fptr, status);  /* insure correct data file values */
     }
 
@@ -4165,7 +4515,7 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
         }
     }
 
-    if (*status > 0)
+    if (*status > 0 && *status != NO_CLOSE_ERROR)
     {
         sprintf(message,
         "Error while closing HDU number %d (ffchdu).", (fptr->Fptr)->curhdu);
@@ -4296,8 +4646,6 @@ int ffrdef(fitsfile *fptr,      /* I - FITS file pointer */
               ffmkky("PCOUNT", valstring, comm, card, status);
               ffmkey(fptr, card, status);
             }
-
-            ffuptf(fptr, status);  /* update the variable length TFORM values */
           }
         }
 
@@ -4659,10 +5007,7 @@ int ffcrhd(fitsfile *fptr,      /* I - FITS file pointer */
         *status = BAD_HDU_NUM;       /* too many HDUs in file */
         return(*status);
     }
-
     while (ffmrhd(fptr, 1, 0, &tstatus) == 0);  /* move to end of file */
-
-    ffxmsg(-2, NULL);  /* clear the end of file error message */
 
     if (ffchdu(fptr, status) <= 0)  /* close the current HDU */
     {
@@ -4675,6 +5020,7 @@ int ffcrhd(fitsfile *fptr,      /* I - FITS file pointer */
       (fptr->Fptr)->headend = bytepos;          /* end of header */
       (fptr->Fptr)->datastart = DATA_UNDEFINED; /* start data unit undefined */
     }
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -5007,15 +5353,23 @@ int ffmahd(fitsfile *fptr,      /* I - FITS file pointer             */
 
         if (*status > 0)
         {
-            sprintf(message,
-            "Failed to move to HDU number %d (ffmahd).", hdunum);
-            ffpmsg(message);
+            if (*status != END_OF_FILE)
+            {
+                /* don't clutter up the message stack in the common case of */
+                /* simply hitting the end of file (often an expected error) */
+
+                sprintf(message,
+                "Failed to move to HDU number %d (ffmahd).", hdunum);
+                ffpmsg(message);
+            }
             return(*status);
         }
     }
 
+    /* return the type of HDU; tile compressed images which are stored */
+    /* in a binary table will return exttype = IMAGE_HDU, not BINARY_TBL */
     if (exttype != NULL)
-        *exttype = (fptr->Fptr)->hdutype; /* return the type of HDU */
+        ffghdt(fptr, exttype, status);
 
     return(*status);
 }
@@ -5067,8 +5421,7 @@ int ffmnhd(fitsfile *fptr,      /* I - FITS file pointer                    */
         if (ffmahd(fptr, ii, &hdutype, &tstatus))  /* move to next HDU */
         {
            ffmahd(fptr, extnum, 0, status); /* restore file position */
-           ffxmsg(-2, extname);  /* clear the end of file error message */
-           return(*status = BAD_HDU_NUM);      /* couldn't find desired HDU */
+           return(*status = BAD_HDU_NUM);   /* couldn't find desired HDU */
         }
         
         if (exttype == ANY_HDU || hdutype == exttype)  /* matching type? */
@@ -5121,7 +5474,6 @@ int ffthdu(fitsfile *fptr,      /* I - FITS file pointer                    */
 */
 {
     int ii, extnum, tstatus;
-    char *errmsg = 0;
 
     if (*status > 0)
         return(*status);
@@ -5142,7 +5494,6 @@ int ffthdu(fitsfile *fptr,      /* I - FITS file pointer                    */
     }
 
     ffmahd(fptr, extnum, 0, status);       /* restore orig file position */
-    ffxmsg(-2, errmsg); /* clear the end of file error message */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -5200,7 +5551,7 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
     char charfill;
     char buff1[2880], buff2[2880];
     char *inbuff, *outbuff, *tmpbuff;
-    char errmsg[FLEN_ERRMSG], card[FLEN_CARD];
+    char card[FLEN_CARD];
 
     if (*status > 0 || nblock <= 0)
         return(*status);
@@ -5279,7 +5630,6 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
         if (*status == END_OF_FILE)
         {
             *status = tstatus;
-            ffxmsg(-2, errmsg); /* clear the end of file error message */
         }
 
         ffmahd(fptr, savehdu + 1, &typhdu, status);  /* move back to CHDU */
@@ -5340,7 +5690,8 @@ int ffgkcl(char *card)
    TYP_CMPRS_KEY:
             The experimental keywords used in the compressed image format
                   ZIMAGE, ZCMPTYPE, ZNAMEn, ZVALn, ZTILEn, 
-                  ZBITPIX, ZNAXISn, ZSCALE, ZZERO, ZBLANK
+                  ZBITPIX, ZNAXISn, ZSCALE, ZZERO, ZBLANK,
+                  EXTNAME = 'COMPRESSED_IMAGE'
 
    TYP_SCAL_KEY:  BSCALE, BZERO, TSCALn, TZEROn
 
@@ -5454,6 +5805,12 @@ int ffgkcl(char *card)
     {
 	if (FSTRNCMP (card1, "OMMENT",6) == 0)
 	{
+          /* new comment string starting Oct 2001 */
+	    if (FSTRNCMP (card1, "OMMENT   and Astrophysics', volume 376, page 3",
+              46) == 0)
+	        return (TYP_STRUC_KEY);
+
+         /* original COMMENT strings from 1993 - 2001 */
 	    if (FSTRNCMP (card1, "OMMENT   FITS (Flexible Image Transport System",
               46) == 0)
 	        return (TYP_STRUC_KEY);
@@ -5528,8 +5885,16 @@ int ffgkcl(char *card)
     {
 	if (FSTRNCMP (card1, "XTEND  ", 7) == 0)
 	    return (TYP_STRUC_KEY);
+	if (FSTRNCMP (card1, "ND     ", 7) == 0)
+	    return (TYP_STRUC_KEY);
 	if (FSTRNCMP (card1, "XTNAME ", 7) == 0)
-	    return (TYP_HDUID_KEY);
+	{
+            /* check for special compressed image value */
+            if (!FSTRNCMP(card, "EXTNAME = 'COMPRESSED_IMAGE'", 28))
+	      return (TYP_CMPRS_KEY);
+            else
+	      return (TYP_HDUID_KEY);
+	}
 	if (FSTRNCMP (card1, "XTVER  ", 7) == 0)
 	    return (TYP_HDUID_KEY);
 	if (FSTRNCMP (card1, "XTLEVEL", 7) == 0)

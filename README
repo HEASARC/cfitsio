@@ -44,11 +44,12 @@ containing OS/2 software, such as
 ftp-os2.nmsu.edu/pub/os2/dev/emx/v0.9c and
 ftp.leo.org/pub/comp/os/os2/leo/devtools/emx+gcc.
 
-The MacOS version of the cfitsio library can be built by (1) un binhex
-and unstuff cfitsio_mac.sit.hqx, (2) put CFitsioPPC.mcp in the cfitsio
-directory, and (3) load CFitsioPPC.mcp into CodeWarrior Pro 5 and
-make.  This builds the cfitsio library for PPC.  There are also targets
-for both the test program and the speed test program.
+When building on Mac OS-X, users should follow the Unix instructions,
+above. Previous MacOS versions of the cfitsio library can be built by
+(1) un binhex and unstuff cfitsio_mac.sit.hqx, (2) put CFitsioPPC.mcp
+in the cfitsio directory, and (3) load CFitsioPPC.mcp into CodeWarrior
+Pro 5 and make.  This builds the cfitsio library for PPC.  There are
+also targets for both the test program and the speed test program.
 
 To use the MacOS port you can add Cfitsio PPC.lib to your Codewarrior
 Pro 5 project.  Note that this only has been tested for the PPC and
@@ -121,6 +122,7 @@ CFITSIO has currently been tested on the following platforms:
    Windows 95/98/NT           Cygwin gcc
    OS/2                       gcc + EMX
    MacOS 7.1 or greater       Metrowerks 10.+
+   MacOS-X 10.1 or greater    cc (gcc)
 
 CFITSIO will probably run on most other Unix platforms without
 modification.  Cray supercomputers and IBM mainframe computers are

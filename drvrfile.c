@@ -625,8 +625,22 @@ int file_checkfile (char *urltype, char *infile, char *outfile)
       /* This is the name of the uncompressed file to be created on disk. */
       if (strlen(outfile))
       {
-        strcpy(urltype, "compressfile://");  /* use special driver */
-        strcpy(file_outfile, outfile); /* an output file is specified */
+        if (!strncmp(outfile, "mem:", 4) )
+        {
+           /* uncompress the file in memory, with READ and WRITE access */
+           strcpy(urltype, "compressmem://");  /* use special driver */
+           *file_outfile = '\0';  
+        }
+        else
+        {
+          strcpy(urltype, "compressfile://");  /* use special driver */
+
+          /* don't copy the "file://" prefix, if present.  */
+          if (!strncmp(outfile, "file://", 7) )
+             strcpy(file_outfile,outfile+7);
+          else
+             strcpy(file_outfile,outfile);
+        }
       }
       else
       {

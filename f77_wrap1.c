@@ -336,7 +336,8 @@ FCALLSCSUB9(Cffphpr,FTPHPR,ftphpr,FITSUNIT,LOGICAL,INT,INT,LONGV,LONG,LONG,LOGIC
 #define ftphtb_STRV_A5 NUM_ELEM_ARG(4)
 #define ftphtb_STRV_A7 NUM_ELEM_ARG(4)
 #define ftphtb_STRV_A8 NUM_ELEM_ARG(4)
-FCALLSCSUB10(ffphtb,FTPHTB,ftphtb,FITSUNIT,LONG,LONG,INT,STRINGV,PLONG,STRINGV,STRINGV,STRING,PINT)
+#define ftphtb_LONGV_A6 A4
+FCALLSCSUB10(ffphtb,FTPHTB,ftphtb,FITSUNIT,LONG,LONG,INT,STRINGV,LONGV,STRINGV,STRINGV,STRING,PINT)
 
 #define ftphbn_STRV_A4 NUM_ELEM_ARG(3)
 #define ftphbn_STRV_A5 NUM_ELEM_ARG(3)
@@ -643,7 +644,8 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONG,PINT,PSTRINGV,PSTRINGV,PSTR
     /*   elements than the actual number of columns.                         */
 
 #if defined(DECFortran) || (defined(__alpha) && defined(g77Fortran)) \
-    || (defined(mipsFortran) && _MIPS_SZLONG==64)
+    || (defined(mipsFortran) && _MIPS_SZLONG==64) \
+    || (defined(IBMR2Fortran) && defined(__64BIT__))
     /*   If running under DECFortran, we also need to worry about the length */
     /*   of the long naxes array.  So read NAXIS manually. :(                */
 

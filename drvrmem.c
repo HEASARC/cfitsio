@@ -26,6 +26,7 @@ typedef struct    /* structure containing mem file structure */
     void *(*mem_realloc)(void *p, size_t newsize);  /* realloc function */
     OFF_T currentpos;   /* current file position, relative to start */
     OFF_T fitsfilesize; /* size of the FITS file (always <= *memsizeptr) */
+    FILE *fileptr;      /* pointer to compressed output disk file */
 } memdriver;
 
 static memdriver memTable[NIOBUF];  /* allocate mem file handle tables */
@@ -83,6 +84,58 @@ int mem_create(char *filename, int *handle)
         ffpmsg("failed to create empty memory file (mem_create)");
         return(status);
     }
+
+    return(0);
+}
+/*--------------------------------------------------------------------------*/
+int mem_create_comp(char *filename, int *handle)
+/*
+  Create a new empty memory file for subsequent writes.
+  Also create an empty compressed .gz file.  The memory file
+  will be compressed and written to the disk file when the file is closed.
+*/
+{
+    FILE *diskfile;
+    char mode[4];
+    int  status;
+
+    /* first, create disk file for the compressed output */
+
+    strcpy(mode, "w+b");    /* open existing file with read-write */
+
+    diskfile = fopen(filename, "r"); /* does file already exist? */
+
+    if (diskfile)
+    {
+        fclose(diskfile);         /* close file and exit with error */
+        return(FILE_NOT_CREATED); 
+    }
+
+#if MACHINE == ALPHAVMS || MACHINE == VAXVMS
+        /* specify VMS record structure: fixed format, 2880 byte records */
+        /* but force stream mode access to enable random I/O access      */
+    diskfile = fopen(filename, mode, "rfm=fix", "mrs=2880", "ctx=stm"); 
+#else
+    diskfile = fopen(filename, mode); 
+#endif
+
+    if (!(diskfile))           /* couldn't create file */
+    {
+            return(FILE_NOT_CREATED); 
+    }
+
+    /* now create temporary memory file */
+
+    /* initially allocate 1 FITS block = 2880 bytes */
+    status = mem_createmem(2880L, handle);
+
+    if (status)
+    {
+        ffpmsg("failed to create empty memory file (mem_create_comp)");
+        return(status);
+    }
+
+    memTable[*handle].fileptr = diskfile;
 
     return(0);
 }
@@ -164,7 +217,7 @@ int mem_createmem(size_t msize, int *handle)
 /*--------------------------------------------------------------------------*/
 int mem_truncate(int handle, OFF_T filesize)
 /*
-  truncate the file to a new smaller size
+  truncate the file to a new size
 */
 {
     char *ptr;
@@ -179,6 +232,14 @@ int mem_truncate(int handle, OFF_T filesize)
         {
             ffpmsg("Failed to reallocate memory (mem_truncate)");
             return(MEMORY_ALLOCATION);
+        }
+
+        /* if allocated more memory, initialize it to zero */
+        if (filesize > *(memTable[handle].memsizeptr) )
+        {
+             memset(ptr + *(memTable[handle].memsizeptr),
+                    0,
+                    filesize - *(memTable[handle].memsizeptr) );
         }
 
         *(memTable[handle].memaddrptr) = ptr;
@@ -432,6 +493,16 @@ int stdout_close(int handle)
     memTable[handle].memaddrptr = 0;
     memTable[handle].memaddr = 0;
     return(status);
+}
+/*--------------------------------------------------------------------------*/
+int mem_compress_openrw(char *filename, int rwmode, int *hdl)
+/*
+  This routine opens the compressed diskfile and creates an empty memory
+  buffer with an appropriate size, then calls mem_uncompress2mem. It allows
+  the memory 'file' to be opened with READWRITE access.
+*/
+{
+   return(mem_compress_open(filename, READONLY, hdl));  
 }
 /*--------------------------------------------------------------------------*/
 int mem_compress_open(char *filename, int rwmode, int *hdl)
@@ -890,6 +961,35 @@ int mem_close_keep(int handle)
     memTable[handle].memaddrptr = 0;
     memTable[handle].memaddr = 0;
     return(0);
+}
+/*--------------------------------------------------------------------------*/
+int mem_close_comp(int handle)
+/*
+  copy the memory file to stdout, then free the memory
+*/
+{
+    int status = 0;
+    size_t compsize;
+
+    /* compress file in  memory to a .gz disk file */
+
+    if(compress2file_from_mem(memTable[handle].memaddr,
+              memTable[handle].fitsfilesize, 
+              memTable[handle].fileptr,
+              &compsize, &status ) )
+    {
+            ffpmsg("failed to copy memory file to file (mem_close_comp)");
+            status = WRITE_ERROR;
+    }
+
+    free( memTable[handle].memaddr );   /* free the memory */
+    memTable[handle].memaddrptr = 0;
+    memTable[handle].memaddr = 0;
+
+    /* close the compressed disk file */
+    fclose(memTable[handle].fileptr);
+
+    return(status);
 }
 /*--------------------------------------------------------------------------*/
 int mem_seek(int handle, OFF_T offset)

@@ -12,6 +12,7 @@
 /* stddef.h is apparently needed to define size_t */
 #include <stddef.h>
 #include "fitsio2.h"
+
 /*--------------------------------------------------------------------------*/
 int ffcrim(fitsfile *fptr,      /* I - FITS file pointer           */
            int bitpix,          /* I - bits per pixel              */
@@ -48,7 +49,7 @@ int ffcrtb(fitsfile *fptr,  /* I - FITS file pointer                        */
            char **ttype,    /* I - name of each column                      */
            char **tform,    /* I - value of TFORMn keyword for each column  */
            char **tunit,    /* I - value of TUNITn keyword for each column  */
-           char *extnm,   /* I - value of EXTNAME keyword, if any         */
+           char *extnm,     /* I - value of EXTNAME keyword, if any         */
            int *status)     /* IO - error status                            */
 /*
   Create a table extension in a FITS file. 
@@ -91,9 +92,9 @@ int ffcrtb(fitsfile *fptr,  /* I - FITS file pointer                        */
     return(*status);
 }
 /*-------------------------------------------------------------------------*/
-int ffpktp(fitsfile *fptr,      /* I - FITS file pointer       */
+int ffpktp(fitsfile *fptr,       /* I - FITS file pointer       */
            const char *filename, /* I - name of template file   */
-           int *status)         /* IO - error status           */
+           int *status)          /* IO - error status           */
 /*
   read keywords from template file and append to the FITS file
 */
@@ -253,7 +254,7 @@ int ffprec(fitsfile *fptr,     /* I - FITS file pointer        */
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
-    if ( ((fptr->Fptr)->datastart - (fptr->Fptr)->headend) == 80) /* only room for END card */
+    if ( ((fptr->Fptr)->datastart - (fptr->Fptr)->headend) == 80) /* no room */
     {
         nblocks = 1;
         if (ffiblk(fptr, nblocks, 0, status) > 0) /* insert 2880-byte block */
@@ -274,12 +275,12 @@ int ffprec(fitsfile *fptr,     /* I - FITS file pointer        */
 
     fftrec(tcard, status);          /* test rest of keyword for legal chars */
 
-    ffmbyt(fptr, (fptr->Fptr)->headend, IGNORE_EOF, status); /* move to end header */
+    ffmbyt(fptr, (fptr->Fptr)->headend, IGNORE_EOF, status); /* move to end */
 
     ffpbyt(fptr, 80, tcard, status);   /* write the 80 byte card */
 
     if (*status <= 0)
-       (fptr->Fptr)->headend += 80;           /* update end-of-header position */
+       (fptr->Fptr)->headend += 80;    /* update end-of-header position */
 
     return(*status);
 }
@@ -344,21 +345,20 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
   69 characters in length.
 */
 {
-    char valstring[FLEN_VALUE];
+    char valstring[FLEN_CARD];
     char card[FLEN_CARD];
-    char tstring[FLEN_VALUE], *cptr;
+    char tstring[FLEN_CARD], *cptr;
     int next, remain, vlen, nquote, nchar, namelen, contin, tstatus = -1;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
-    remain = strlen(value);    /* number of characters to write out */
-    next = 0;                  /* pointer to next character to write */
-    
+    remain = maxvalue(strlen(value), 1); /* no. of chars to write (at least 1) */    
     /* count the number of single quote characters are in the string */
+    tstring[0] = '\0';
+    strncat(tstring, value, 68); /* copy 1st part of string to temp buff */
     nquote = 0;
-    cptr = strchr(value, '\'');   /* search for quote character */
-
+    cptr = strchr(tstring, '\'');   /* search for quote character */
     while (cptr)  /* search for quote character */
     {
         nquote++;            /*  increment no. of quote characters  */
@@ -391,10 +391,12 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
     }
 
     contin = 0;
+    next = 0;                  /* pointer to next character to write */
+
     while (remain > 0)
     {
-        strncpy(tstring, &value[next], nchar); /* copy string to temp buff */
-        tstring[nchar] = '\0';
+        tstring[0] = '\0';
+        strncat(tstring, &value[next], nchar); /* copy string to temp buff */
         ffs2c(tstring, valstring, status);  /* put quotes around the string */
 
         if (remain > nchar)   /* if string is continued, put & as last char */
@@ -426,7 +428,19 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
         contin = 1;
         remain -= nchar;
         next  += nchar;
-        nchar = 68 - nquote;
+
+        /* count the number of single quote characters in next section */
+        tstring[0] = '\0';
+        strncat(tstring, &value[next], 68); /* copy next part of string */
+        nquote = 0;
+        cptr = strchr(tstring, '\'');   /* search for quote character */
+        while (cptr)  /* search for quote character */
+        {
+            nquote++;            /*  increment no. of quote characters  */
+            cptr++;              /*  increment pointer to next character */
+            cptr = strchr(cptr, '\'');  /* search for another quote char */
+        }
+        nchar = 68 - nquote;  /* max number of chars to write this time */
     }
     return(*status);
 }
@@ -846,9 +860,9 @@ int ffpdat( fitsfile *fptr,      /* I - FITS file pointer  */
     ffgstm(date, &timeref, status);
 
     if (timeref)           /* GMT not available on this machine */
-        tmzone[0] = '\0';
+        strcpy(tmzone, " Local");    
     else
-        strcpy(tmzone, " UTC");    
+        strcpy(tmzone, " UT");    
 
     strcpy(card, "DATE    = '");
     strcat(card, date);
@@ -1892,6 +1906,18 @@ int ffphpr( fitsfile *fptr, /* I - FITS file pointer                        */
     if ((fptr->Fptr)->headend != (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] )
         return(*status = HEADER_NOT_EMPTY);
 
+    if (naxis != 0)   /* never try to compress a null image */
+    {
+      if ( (fptr->Fptr)->request_compress_type )
+      {
+        /* write header for a compressed image */
+        imcomp_init_table(fptr, (fptr->Fptr)->request_compress_type, 
+        bitpix, naxis, naxes, (fptr->Fptr)->request_tilesize, 32,
+        (fptr->Fptr)->request_rice_nbits, status);
+        return(*status);
+      }
+    }  
+
     if ((fptr->Fptr)->curhdu == 0)
     {                /* write primary array header */
         if (simple)
@@ -1916,7 +1942,7 @@ int ffphpr( fitsfile *fptr, /* I - FITS file pointer                        */
         longbitpix = LONG_IMG;
 
     if (longbitpix != BYTE_IMG && longbitpix != SHORT_IMG && 
-        longbitpix != LONG_IMG &&
+        longbitpix != LONG_IMG && longbitpix != LONGLONG_IMG &&
         longbitpix != FLOAT_IMG && longbitpix != DOUBLE_IMG)
     {
         sprintf(message,
@@ -1991,20 +2017,12 @@ int ffphpr( fitsfile *fptr, /* I - FITS file pointer                        */
         }
 
       /* write standard block of self-documentating comments */
-      ffpcom(fptr,
-      "  FITS (Flexible Image Transport System) format defined in Astronomy and",
+      ffprec(fptr,
+      "COMMENT   FITS (Flexible Image Transport System) format is defined in 'Astronomy",
       status);
-
-      ffpcom(fptr,
-      "  Astrophysics Supplement Series v44/p363, v44/p371, v73/p359, v73/p365.",
+      ffprec(fptr,
+      "COMMENT   and Astrophysics', volume 376, page 359; bibcode: 2001A&A...376..359H",
       status);
-
-      ffpcom(fptr,
-      "  Contact the NASA Science Office of Standards and Technology for the",
-      status);
-
-      ffpcom(fptr,
-      "  FITS Definition document #100 and other FITS information.", status);
     }
 
     else  /* an IMAGE extension */
@@ -2281,6 +2299,8 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
            strcat(comm, ": 2-byte INTEGER");
         else if (datatype == TLONG)
            strcat(comm, ": 4-byte INTEGER");
+        else if (datatype == TLONGLONG)
+           strcat(comm, ": 8-byte INTEGER");
         else if (datatype == TULONG)
            strcat(comm, ": 4-byte INTEGER");
         else if (datatype == TFLOAT)

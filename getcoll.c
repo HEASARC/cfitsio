@@ -211,9 +211,9 @@ int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
             int  *status)    /* IO - error status                           */
 /*
   read an array of logical values from a specified bit or byte
-  column of the binary table.   If larray is TRUE, then the corresponding
-  bit is set to 1, otherwise it is set to 0.
-  The binary table column being read to must have datatype 'B' or 'X'. 
+  column of the binary table.    larray is set = TRUE, if the corresponding
+  bit = 1, otherwise it is set to FALSE.
+  The binary table column being read from must have datatype 'B' or 'X'. 
 */
 {
     OFF_T bstart;
@@ -281,7 +281,9 @@ int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
         /* length arrays.  REPEAT is the number of BITS in the array. */
 
         ffgdes(fptr, colnum, frow, &repeat, &offset, status);
-        repeat = (repeat + 7) / 8;
+
+        if (tcode == -TBIT)
+            repeat = (repeat + 7) / 8;
 
         if ((fbit + nbit + 6) / 8 > repeat)
             return(*status = BAD_ELEM_NUM);

@@ -847,6 +847,12 @@ int ffgcld( fitsfile *fptr,   /* I - FITS file pointer                       */
                        (INT32BIT) tnull, nulval, &nularray[next], anynul, 
                        &array[next], status);
                 break;
+            case (TLONGLONG):
+                ffgi8b(fptr, readptr, ntodo, incre, (long *) buffer, status);
+                fffi8r8( (LONGLONG *) buffer, ntodo, scale, zero, 
+                           nulcheck, (long) tnull, nulval, &nularray[next], 
+                            anynul, &array[next], status);
+                break;
             case (TFLOAT):
                 ffgr4b(fptr, readptr, ntodo, incre, (float  *) buffer, status);
                 fffr4r8((float  *) buffer, ntodo, scale, zero, nulcheck, 
@@ -1185,6 +1191,196 @@ int fffi4r8(INT32BIT *input,      /* I - array of values to be converted     */
             }
         }
     }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fffi8r8(LONGLONG *input,      /* I - array of values to be converted     */
+            long ntodo,           /* I - number of elements in the array     */
+            double scale,         /* I - FITS TSCALn or BSCALE value         */
+            double zero,          /* I - FITS TZEROn or BZERO  value         */
+            int nullcheck,        /* I - null checking code; 0 = don't check */
+                                  /*     1:set null pixels = nullval         */
+                                  /*     2: if null pixel, set nullarray = 1 */
+            long tnull,           /* I - value of FITS TNULLn keyword if any */
+            double nullval,       /* I - set null pixels, if nullcheck = 1   */
+            char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
+            int  *anynull,        /* O - set to 1 if any pixels are null     */
+            double *output,       /* O - array of converted pixels           */
+            int *status)          /* IO - error status                       */
+/*
+  Copy input to output following reading of the input from a FITS file.
+  Check for null values and do datatype conversion and scaling if required.
+  The nullcheck code value determines how any null values in the input array
+  are treated.  A null value is an input pixel that is equal to tnull.  If 
+  nullcheck = 0, then no checking for nulls is performed and any null values
+  will be transformed just like any other pixel.  If nullcheck = 1, then the
+  output pixel will be set = nullval if the corresponding input pixel is null.
+  If nullcheck = 2, then if the pixel is null then the corresponding value of
+  nullarray will be set to 1; the value of nullarray for non-null pixels 
+  will = 0.  The anynull parameter will be set = 1 if any of the returned
+  pixels are null, otherwise anynull will be returned with a value = 0;
+*/
+{
+#if (LONGSIZE == 32) && (! defined HAVE_LONGLONG)
+
+    /* This block of code is only used in cases where there is */
+    /* no native 8-byte integer support.  We have to interpret */
+    /* the corresponding  pair of 4-byte integers which are */
+    /* are equivalent to the 8-byte integer. */
+
+    unsigned long *uinput;
+    long ii,jj, kk;
+    double dvalue;
+
+    uinput = (unsigned long *) input;
+
+#if BYTESWAPPED  /* jj points to the most significant part of the 8-byte int */
+    jj = 1;
+    kk = 0;
+#else
+    jj = 0;
+    kk = 1;
+#endif
+
+    if (nullcheck == 0)     /* no null checking required */
+    {
+        if (scale == 1. && zero == 0.)      /* no scaling */
+        {       
+            for (ii = 0; ii < ntodo; ii++, jj += 2, kk += 2)
+            {
+                if (uinput[jj] & 0x80000000)  /* negative number */
+                  output[ii] = (uinput[jj] ^ 0xffffffff) * -4294967296. -
+                           (uinput[kk] ^ 0xffffffff) - 1.;
+                else  /* positive number */
+                  output[ii] = (double) uinput[jj] * 4294967296. + uinput[kk];
+            }
+        }
+        else             /* must scale the data */
+        {
+            for (ii = 0; ii < ntodo; ii++, jj += 2, kk += 2)
+            {
+                if (uinput[jj] & 0x80000000)  /* negative number */
+                  output[ii] = ((uinput[jj] ^ 0xffffffff) * -4294967296. -
+                           (uinput[kk] ^ 0xffffffff) - 1.) * scale + zero;
+                else  /* positive number */
+                  output[ii] = (uinput[jj] * 4294967296. + uinput[kk]) 
+                           * scale + zero;
+            }
+        }
+    }
+    else        /* must check for null values */
+    {
+        if (scale == 1. && zero == 0.)  /* no scaling */
+        {       
+            for (ii = 0; ii < ntodo; ii++, jj += 2, kk += 2)
+            {
+                if (uinput[jj] & 0x80000000)  /* negative number */
+                    dvalue = (uinput[jj] ^ 0xffffffff) * -4294967296. -
+                           (uinput[kk] ^ 0xffffffff) - 1.;
+                else  /* positive number */
+                    dvalue = uinput[jj] * 4294967296. + uinput[kk];
+
+                if (dvalue == (double) tnull)
+                {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                }
+                else
+                {
+                  output[ii] = dvalue;
+                }
+            }
+        }
+        else                  /* must scale the data */
+        {
+            for (ii = 0; ii < ntodo; ii++, jj += 2, kk += 2)
+            {
+                if (uinput[jj] & 0x80000000)  /* negative number */
+                    dvalue = (uinput[jj] ^ 0xffffffff) * -4294967296. -
+                           (uinput[kk] ^ 0xffffffff) - 1.;
+                else  /* positive number */
+                    dvalue = uinput[jj] * 4294967296. + uinput[kk];
+
+                if (dvalue == tnull)
+                {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                }
+                else
+                {
+                    output[ii] = dvalue * scale + zero;
+                }
+            }
+        }
+    }
+
+#else
+
+    /* this block works on machines which support an 8-byte integer type */
+
+    long ii;
+
+    if (nullcheck == 0)     /* no null checking required */
+    {
+        if (scale == 1. && zero == 0.)      /* no scaling */
+        {       
+            for (ii = 0; ii < ntodo; ii++)
+                output[ii] = (double) input[ii]; /* copy input to output */
+        }
+        else             /* must scale the data */
+        {
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                output[ii] = input[ii] * scale + zero;
+            }
+        }
+    }
+    else        /* must check for null values */
+    {
+        if (scale == 1. && zero == 0.)  /* no scaling */
+        {       
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] == tnull)
+                {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                }
+                else
+                    output[ii] = (double) input[ii];
+            }
+        }
+        else                  /* must scale the data */
+        {
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] == tnull)
+                {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                }
+                else
+                {
+                    output[ii] = input[ii] * scale + zero;
+                }
+            }
+        }
+    }
+
+#endif
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

@@ -29,7 +29,7 @@ int ffppx(  fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     int naxis, ii;
-    long naxes[9], firstelem, row = 1;
+    long naxes[9], firstelem, group = 1;
     OFF_T dimsize = 1;
 
     if (*status > 0)           /* inherit input status value if > 0 */
@@ -53,49 +53,46 @@ int ffppx(  fitsfile *fptr,  /* I - FITS file pointer                       */
 
     firstelem = USE_LARGE_VALUE; /* special flag value */
 
-    /*
-      the primary array is represented as a binary table:
-      each group of the primary array is a row in the table,
-      where the first column contains the group parameters
-      and the second column contains the image itself.
-    */
-
     if (datatype == TBYTE)
     {
-      ffpclb(fptr, 2, row, firstelem, nelem, (unsigned char *) array, status);
+      ffpprb(fptr, group, firstelem, nelem, (unsigned char *) array, status);
     }
     else if (datatype == TUSHORT)
     {
-      ffpclui(fptr, 2, row, firstelem, nelem, (unsigned short *) array,
+      ffpprui(fptr, group, firstelem, nelem, (unsigned short *) array,
               status);
     }
     else if (datatype == TSHORT)
     {
-      ffpcli(fptr, 2, row, firstelem, nelem, (short *) array, status);
+      ffppri(fptr, group, firstelem, nelem, (short *) array, status);
     }
     else if (datatype == TUINT)
     {
-      ffpcluk(fptr, 2, row, firstelem, nelem, (unsigned int *) array, status);
+      ffppruk(fptr, group, firstelem, nelem, (unsigned int *) array, status);
     }
     else if (datatype == TINT)
     {
-      ffpclk(fptr, 2, row, firstelem, nelem, (int *) array, status);
+      ffpprk(fptr, group, firstelem, nelem, (int *) array, status);
     }
     else if (datatype == TULONG)
     {
-      ffpcluj(fptr, 2, row, firstelem, nelem, (unsigned long *) array, status);
+      ffppruj(fptr, group, firstelem, nelem, (unsigned long *) array, status);
     }
     else if (datatype == TLONG)
     {
-      ffpclj(fptr, 2, row, firstelem, nelem, (long *) array, status);
+      ffpprj(fptr, group, firstelem, nelem, (long *) array, status);
+    }
+    else if (datatype == TLONGLONG)
+    {
+      ffpprjj(fptr, group, firstelem, nelem, (LONGLONG *) array, status);
     }
     else if (datatype == TFLOAT)
     {
-      ffpcle(fptr, 2, row, firstelem, nelem, (float *) array, status);
+      ffppre(fptr, group, firstelem, nelem, (float *) array, status);
     }
     else if (datatype == TDOUBLE)
     {
-      ffpcld(fptr, 2, row, firstelem, nelem, (double *) array, status);
+      ffpprd(fptr, group, firstelem, nelem, (double *) array, status);
     }
     else
       *status = BAD_DATATYPE;
@@ -118,7 +115,7 @@ int ffppxn(  fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     int naxis, ii;
-    long naxes[9], firstelem, row = 1;
+    long naxes[9], firstelem, group = 1;
     OFF_T dimsize = 1;
 
     if (*status > 0)           /* inherit input status value if > 0 */
@@ -148,56 +145,54 @@ int ffppxn(  fitsfile *fptr,  /* I - FITS file pointer                       */
 
     firstelem = USE_LARGE_VALUE; /* special flag value */
 
-    /*
-      the primary array is represented as a binary table:
-      each group of the primary array is a row in the table,
-      where the first column contains the group parameters
-      and the second column contains the image itself.
-    */
-
     if (datatype == TBYTE)
     {
-      ffpcnb(fptr, 2, row, firstelem, nelem, (unsigned char *) array, 
+      ffppnb(fptr, group, firstelem, nelem, (unsigned char *) array, 
              *(unsigned char *) nulval, status);
     }
     else if (datatype == TUSHORT)
     {
-      ffpcnui(fptr, 2, row, firstelem, nelem, (unsigned short *) array,
+      ffppnui(fptr, group, firstelem, nelem, (unsigned short *) array,
               *(unsigned short *) nulval,status);
     }
     else if (datatype == TSHORT)
     {
-      ffpcni(fptr, 2, row, firstelem, nelem, (short *) array,
+      ffppni(fptr, group, firstelem, nelem, (short *) array,
              *(short *) nulval, status);
     }
     else if (datatype == TUINT)
     {
-      ffpcnuk(fptr, 2, row, firstelem, nelem, (unsigned int *) array,
+      ffppnuk(fptr, group, firstelem, nelem, (unsigned int *) array,
              *(unsigned int *) nulval, status);
     }
     else if (datatype == TINT)
     {
-      ffpcnk(fptr, 2, row, firstelem, nelem, (int *) array,
+      ffppnk(fptr, group, firstelem, nelem, (int *) array,
              *(int *) nulval, status);
     }
     else if (datatype == TULONG)
     {
-      ffpcnuj(fptr, 2, row, firstelem, nelem, (unsigned long *) array,
+      ffppnuj(fptr, group, firstelem, nelem, (unsigned long *) array,
               *(unsigned long *) nulval,status);
     }
     else if (datatype == TLONG)
     {
-      ffpcnj(fptr, 2, row, firstelem, nelem, (long *) array,
+      ffppnj(fptr, group, firstelem, nelem, (long *) array,
              *(long *) nulval, status);
+    }
+    else if (datatype == TLONGLONG)
+    {
+      ffppnjj(fptr, group, firstelem, nelem, (LONGLONG *) array,
+             *(LONGLONG *) nulval, status);
     }
     else if (datatype == TFLOAT)
     {
-      ffpcne(fptr, 2, row, firstelem, nelem, (float *) array,
+      ffppne(fptr, group, firstelem, nelem, (float *) array,
              *(float *) nulval, status);
     }
     else if (datatype == TDOUBLE)
     {
-      ffpcnd(fptr, 2, row, firstelem, nelem, (double *) array,
+      ffppnd(fptr, group, firstelem, nelem, (double *) array,
              *(double *) nulval, status);
     }
     else
@@ -219,54 +214,51 @@ int ffppr(  fitsfile *fptr,  /* I - FITS file pointer                       */
   the FITS array is not the same as the array being written).
 */
 {
-    long row = 1;
+    long group = 1;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
-    /*
-      the primary array is represented as a binary table:
-      each group of the primary array is a row in the table,
-      where the first column contains the group parameters
-      and the second column contains the image itself.
-    */
-
     if (datatype == TBYTE)
     {
-      ffpclb(fptr, 2, row, firstelem, nelem, (unsigned char *) array, status);
+      ffpprb(fptr, group, firstelem, nelem, (unsigned char *) array, status);
     }
     else if (datatype == TUSHORT)
     {
-      ffpclui(fptr, 2, row, firstelem, nelem, (unsigned short *) array,
+      ffpprui(fptr, group, firstelem, nelem, (unsigned short *) array,
               status);
     }
     else if (datatype == TSHORT)
     {
-      ffpcli(fptr, 2, row, firstelem, nelem, (short *) array, status);
+      ffppri(fptr, group, firstelem, nelem, (short *) array, status);
     }
     else if (datatype == TUINT)
     {
-      ffpcluk(fptr, 2, row, firstelem, nelem, (unsigned int *) array, status);
+      ffppruk(fptr, group, firstelem, nelem, (unsigned int *) array, status);
     }
     else if (datatype == TINT)
     {
-      ffpclk(fptr, 2, row, firstelem, nelem, (int *) array, status);
+      ffpprk(fptr, group, firstelem, nelem, (int *) array, status);
     }
     else if (datatype == TULONG)
     {
-      ffpcluj(fptr, 2, row, firstelem, nelem, (unsigned long *) array, status);
+      ffppruj(fptr, group, firstelem, nelem, (unsigned long *) array, status);
     }
     else if (datatype == TLONG)
     {
-      ffpclj(fptr, 2, row, firstelem, nelem, (long *) array, status);
+      ffpprj(fptr, group, firstelem, nelem, (long *) array, status);
+    }
+    else if (datatype == TLONGLONG)
+    {
+      ffpprjj(fptr, group, firstelem, nelem, (LONGLONG *) array, status);
     }
     else if (datatype == TFLOAT)
     {
-      ffpcle(fptr, 2, row, firstelem, nelem, (float *) array, status);
+      ffppre(fptr, group, firstelem, nelem, (float *) array, status);
     }
     else if (datatype == TDOUBLE)
     {
-      ffpcld(fptr, 2, row, firstelem, nelem, (double *) array, status);
+      ffpprd(fptr, group, firstelem, nelem, (double *) array, status);
     }
     else
       *status = BAD_DATATYPE;
@@ -288,7 +280,7 @@ int ffppn(  fitsfile *fptr,  /* I - FITS file pointer                       */
   the FITS array is not the same as the array being written).
 */
 {
-    long row = 1;
+    long group = 1;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
@@ -299,57 +291,133 @@ int ffppn(  fitsfile *fptr,  /* I - FITS file pointer                       */
         return(*status);
     }
 
-    /*
-      the primary array is represented as a binary table:
-      each group of the primary array is a row in the table,
-      where the first column contains the group parameters
-      and the second column contains the image itself.
-    */
-
     if (datatype == TBYTE)
     {
-      ffpcnb(fptr, 2, row, firstelem, nelem, (unsigned char *) array, 
+      ffppnb(fptr, group, firstelem, nelem, (unsigned char *) array, 
              *(unsigned char *) nulval, status);
     }
     else if (datatype == TUSHORT)
     {
-      ffpcnui(fptr, 2, row, firstelem, nelem, (unsigned short *) array,
+      ffppnui(fptr, group, firstelem, nelem, (unsigned short *) array,
               *(unsigned short *) nulval,status);
     }
     else if (datatype == TSHORT)
     {
-      ffpcni(fptr, 2, row, firstelem, nelem, (short *) array,
+      ffppni(fptr, group, firstelem, nelem, (short *) array,
              *(short *) nulval, status);
     }
     else if (datatype == TUINT)
     {
-      ffpcnuk(fptr, 2, row, firstelem, nelem, (unsigned int *) array,
+      ffppnuk(fptr, group, firstelem, nelem, (unsigned int *) array,
              *(unsigned int *) nulval, status);
     }
     else if (datatype == TINT)
     {
-      ffpcnk(fptr, 2, row, firstelem, nelem, (int *) array,
+      ffppnk(fptr, group, firstelem, nelem, (int *) array,
              *(int *) nulval, status);
     }
     else if (datatype == TULONG)
     {
-      ffpcnuj(fptr, 2, row, firstelem, nelem, (unsigned long *) array,
+      ffppnuj(fptr, group, firstelem, nelem, (unsigned long *) array,
               *(unsigned long *) nulval,status);
     }
     else if (datatype == TLONG)
     {
-      ffpcnj(fptr, 2, row, firstelem, nelem, (long *) array,
+      ffppnj(fptr, group, firstelem, nelem, (long *) array,
              *(long *) nulval, status);
+    }
+    else if (datatype == TLONGLONG)
+    {
+      ffppnjj(fptr, group, firstelem, nelem, (LONGLONG *) array,
+             *(LONGLONG *) nulval, status);
     }
     else if (datatype == TFLOAT)
     {
-      ffpcne(fptr, 2, row, firstelem, nelem, (float *) array,
+      ffppne(fptr, group, firstelem, nelem, (float *) array,
              *(float *) nulval, status);
     }
     else if (datatype == TDOUBLE)
     {
-      ffpcnd(fptr, 2, row, firstelem, nelem, (double *) array,
+      ffppnd(fptr, group, firstelem, nelem, (double *) array,
              *(double *) nulval, status);
+    }
+    else
+      *status = BAD_DATATYPE;
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffpss(  fitsfile *fptr,   /* I - FITS file pointer                       */
+            int  datatype,    /* I - datatype of the value                   */
+            long *blc,        /* I - 'bottom left corner' of the subsection  */
+            long *trc ,       /* I - 'top right corner' of the subsection    */
+            void *array,      /* I - array of values that are written        */
+            int  *status)     /* IO - error status                           */
+/*
+  Write a section of values to the primary array. The datatype of the
+  input array is defined by the 2nd argument.  Data conversion
+  and scaling will be performed if necessary (e.g, if the datatype of
+  the FITS array is not the same as the array being written).
+*/
+{
+    int naxis;
+    long naxes[9];
+
+    if (*status > 0)   /* inherit input status value if > 0 */
+        return(*status);
+
+    /* get the size of the image */
+    ffgidm(fptr, &naxis, status);
+    ffgisz(fptr, 9, naxes, status);
+
+    if (datatype == TBYTE)
+    {
+        ffpssb(fptr, 1, naxis, naxes, blc, trc,
+               (unsigned char *) array, status);
+    }
+    else if (datatype == TUSHORT)
+    {
+        ffpssui(fptr, 1, naxis, naxes, blc, trc,
+               (unsigned short *) array, status);
+    }
+    else if (datatype == TSHORT)
+    {
+        ffpssi(fptr, 1, naxis, naxes, blc, trc,
+               (short *) array, status);
+    }
+    else if (datatype == TUINT)
+    {
+        ffpssuk(fptr, 1, naxis, naxes, blc, trc,
+               (unsigned int *) array, status);
+    }
+    else if (datatype == TINT)
+    {
+        ffpssk(fptr, 1, naxis, naxes, blc, trc,
+               (int *) array, status);
+    }
+    else if (datatype == TULONG)
+    {
+        ffpssuj(fptr, 1, naxis, naxes, blc, trc,
+               (unsigned long *) array, status);
+    }
+    else if (datatype == TLONG)
+    {
+        ffpssj(fptr, 1, naxis, naxes, blc, trc,
+               (long *) array, status);
+    }
+    else if (datatype == TLONGLONG)
+    {
+        ffpssjj(fptr, 1, naxis, naxes, blc, trc,
+               (LONGLONG *) array, status);
+    }    else if (datatype == TFLOAT)
+    {
+        ffpsse(fptr, 1, naxis, naxes, blc, trc,
+               (float *) array, status);
+    }
+    else if (datatype == TDOUBLE)
+    {
+        ffpssd(fptr, 1, naxis, naxes, blc, trc,
+               (double *) array, status);
     }
     else
       *status = BAD_DATATYPE;
@@ -413,6 +481,11 @@ int ffpcl(  fitsfile *fptr,  /* I - FITS file pointer                       */
     else if (datatype == TLONG)
     {
       ffpclj(fptr, colnum, firstrow, firstelem, nelem, (long *) array,
+             status);
+    }
+    else if (datatype == TLONGLONG)
+    {
+      ffpcljj(fptr, colnum, firstrow, firstelem, nelem, (LONGLONG *) array,
              status);
     }
     else if (datatype == TFLOAT)
@@ -511,6 +584,11 @@ int ffpcn(  fitsfile *fptr,  /* I - FITS file pointer                       */
     {
       ffpcnj(fptr, colnum, firstrow, firstelem, nelem, (long *) array,
              *(long *) nulval, status);
+    }
+    else if (datatype == TLONGLONG)
+    {
+      ffpcnjj(fptr, colnum, firstrow, firstelem, nelem, (LONGLONG *) array,
+             *(LONGLONG *) nulval, status);
     }
     else if (datatype == TFLOAT)
     {

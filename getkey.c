@@ -24,6 +24,9 @@ int ffghsp(fitsfile *fptr,  /* I - FITS file pointer                     */
   without having to insert more FITS blocks.
 */
 {
+    if (*status > 0)
+        return(*status);
+
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
@@ -54,6 +57,9 @@ int ffghps(fitsfile *fptr, /* I - FITS file pointer                     */
   keyword that will be read.
 */
 {
+    if (*status > 0)
+        return(*status);
+
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
@@ -2011,7 +2017,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
             return(*status = BAD_BITPIX);
         }
         else if (longbitpix != BYTE_IMG && longbitpix != SHORT_IMG &&
-             longbitpix != LONG_IMG &&
+             longbitpix != LONG_IMG && longbitpix != LONGLONG_IMG &&
              longbitpix != FLOAT_IMG && longbitpix != DOUBLE_IMG)
         {
             sprintf(message,

@@ -1,3 +1,5 @@
+/*  Version Info: This file is distributed with version 2.401 of CFITSIO   */
+
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
 /*  Goddard Space Flight Center.                                           */
@@ -35,6 +37,8 @@ SERVICES PROVIDED HEREUNDER."
 #define _FITSIO_H
 
 #include <stdio.h>
+#include <stdlib.h>  /* apparently needed to define size_t with gcc 2.8.1 */
+#include <limits.h>  /* needed for LLONG_MAX and INT64_MAX definitions */
 
 /* Define the datatype for variables which store file offset values. */
 /* The new 'off_t' datatype should be used for this purpose, but some */
@@ -43,12 +47,28 @@ SERVICES PROVIDED HEREUNDER."
 /* on whether _LARGEFILE_SOURCE is defined in sys/feature_tests.h  */
 /* (at least on Solaris platforms using cc)  */
 
-#if defined(_OFF_T) || defined(_MIPS_SZLONG)
+#if defined(_OFF_T) || defined(_MIPS_SZLONG) || defined(__APPLE__)
 #    define OFF_T off_t
 #else
 #    define OFF_T long
 #endif
- 
+
+/* typedef the 'LONGLONG' data type to the intrinsice 8-byte integer type */
+
+#if defined(HAVE_LONGLONG) || defined(__APPLE__)
+    typedef long long LONGLONG;
+#   ifndef HAVE_LONGLONG
+#      define HAVE_LONGLONG 1
+#   endif
+#elif defined(_MSC_VER) || defined(__BORLANDC__)  /* Windows PCs */
+    typedef __int64 LONGLONG;
+#   ifndef HAVE_LONGLONG
+#      define HAVE_LONGLONG 1
+#   endif
+#else
+    typedef long LONGLONG;  /* intrinsic 8-byte integer not supported */
+#endif
+
 /*  The following exclusion if __CINT__ is defined is needed for ROOT */
 #ifndef __CINT__
 #include "longnam.h"
@@ -76,6 +96,7 @@ SERVICES PROVIDED HEREUNDER."
 #define TLONG        41
 #define TINT32BIT    41  /* used when returning datatype of a column */
 #define TFLOAT       42
+#define TLONGLONG    81
 #define TDOUBLE      82
 #define TCOMPLEX     83
 #define TDBLCOMPLEX 163
@@ -106,6 +127,7 @@ SERVICES PROVIDED HEREUNDER."
 #define BYTE_IMG      8  /* BITPIX code values for FITS image types */
 #define SHORT_IMG    16
 #define LONG_IMG     32
+#define LONGLONG_IMG 64
 #define FLOAT_IMG   -32
 #define DOUBLE_IMG  -64
                          /* The following 2 codes are not true FITS         */
@@ -221,6 +243,10 @@ typedef struct      /* structure used to store basic FITS file information */
     long heapsize;   /* size of the heap, in bytes */
 
          /* the following elements are related to compressed images */
+    int request_compress_type;  /* requested image compression algorithm */
+    long request_tilesize[MAX_COMPRESS_DIM]; /* requested tiling size */
+    int request_rice_nbits;     /* requested noise bit parameter value */
+
     int compressimg; /* 1 if HDU contains a compressed image, else 0 */
     char zcmptype[12];      /* compression type string */
     int compress_type;      /* type of compression algorithm */
@@ -358,6 +384,7 @@ typedef struct  /* structure for the iterator function column information */
 #define BAD_TFORM         261  /* illegal TFORM format code */
 #define BAD_TFORM_DTYPE   262  /* unrecognizable TFORM datatype code */
 #define BAD_TDIM          263  /* illegal TDIMn keyword value */
+#define BAD_HEAP_PTR      264  /* invalid BINTABLE heap address */
  
 #define BAD_HDU_NUM       301  /* HDU number < 1 or > MAXHDU */
 #define BAD_COL_NUM       302  /* column number < 1 or > tfields */
@@ -403,6 +430,7 @@ typedef struct  /* structure for the iterator function column information */
 
 # define DATA_COMPRESSION_ERR 413  /* error in imcompress routines */
 # define DATA_DECOMPRESSION_ERR 414 /* error in imcompress routines */
+# define NO_COMPRESSED_TILE  415 /* compressed tile doesn't exist */
 
 #define BAD_DATE          420  /* error in date or time conversion */
 
@@ -419,6 +447,9 @@ typedef struct  /* structure for the iterator function column information */
 #define BAD_WCS_PROJ      504  /* unsupported type of celestial projection */
 #define NO_WCS_KEY        505  /* celestial coordinate keywords not found */
 #define APPROX_WCS_KEY    506  /* approximate WCS keywords were calculated */
+
+#define NO_CLOSE_ERROR    999  /* special value used internally to switch off */
+                               /* the error message from ffclos and ffchdu */
 
 /*------- following error codes are used in the grparser.c file -----------*/
 #define	NGP_ERRBASE		(360)			/* base chosen so not to interfere with CFITSIO */
@@ -448,8 +479,6 @@ int ffiurl(char *url,  char *urltype, char *infile,
                     char *outfile, char *extspec, char *rowfilter,
                     char *binspec, char *colspec, int *status);
 int ffrtnm(char *url, char *rootname, int *status);
-int ffourl(char *url, char *urltype, char *outfile, char *tmplfile,
-            int *status);
 int ffexts(char *extspec, int *extnum,  char *extname, int *extvers,
           int *hdutype, char *colname, char *rowexpress, int *status);
 int ffextn(char *url, int *extension_num, int *status);
@@ -823,6 +852,8 @@ int ffgpvuj(fitsfile *fptr, long group, long firstelem, long nelem,
            int *status);
 int ffgpvj(fitsfile *fptr, long group, long firstelem, long nelem,
            long nulval, long *array, int *anynul, int *status);
+int ffgpvjj(fitsfile *fptr, long group, long firstelem, long nelem,
+           LONGLONG nulval, LONGLONG *array, int *anynul, int *status);
 int ffgpvuk(fitsfile *fptr, long group, long firstelem, long nelem,
            unsigned int nulval, unsigned int *array, int *anynul, int *status);
 int ffgpvk(fitsfile *fptr, long group, long firstelem, long nelem,
@@ -842,6 +873,8 @@ int ffgpfuj(fitsfile *fptr, long group, long firstelem, long nelem,
            unsigned long *array, char *nularray, int *anynul, int *status);
 int ffgpfj(fitsfile *fptr, long group, long firstelem, long nelem,
            long *array, char *nularray, int *anynul, int *status);
+int ffgpfjj(fitsfile *fptr, long group, long firstelem, long nelem,
+           LONGLONG *array, char *nularray, int *anynul, int *status);
 int ffgpfuk(fitsfile *fptr, long group, long firstelem, long nelem,
            unsigned int *array, char *nularray, int *anynul, int *status);
 int ffgpfk(fitsfile *fptr, long group, long firstelem, long nelem,
@@ -865,6 +898,9 @@ int ffg2duj(fitsfile *fptr, long group, unsigned long nulval, long ncols,
            int *anynul, int *status);
 int ffg2dj(fitsfile *fptr, long group, long nulval, long ncols,
            long naxis1, long naxis2, long *array,
+           int *anynul, int *status);
+int ffg2djj(fitsfile *fptr, long group, LONGLONG nulval, long ncols,
+           long naxis1, long naxis2, LONGLONG *array,
            int *anynul, int *status);
 int ffg2duk(fitsfile *fptr, long group, unsigned int nulval, long ncols,
            long naxis1, long naxis2, unsigned int *array,
@@ -894,6 +930,9 @@ int ffg3duj(fitsfile *fptr, long group, unsigned long nulval, long ncols,
 int ffg3dj(fitsfile *fptr, long group, long nulval, long ncols,
            long nrows, long naxis1, long naxis2, long naxis3,
            long *array, int *anynul, int *status);
+int ffg3djj(fitsfile *fptr, long group, LONGLONG nulval, long ncols,
+           long nrows, long naxis1, long naxis2, long naxis3,
+           LONGLONG *array, int *anynul, int *status);
 int ffg3duk(fitsfile *fptr, long group, unsigned int nulval, long ncols,
            long nrows, long naxis1, long naxis2, long naxis3,
            unsigned int *array, int *anynul, int *status);
@@ -920,6 +959,9 @@ int ffgsvuj(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc,
   int *anynul, int *status);
 int ffgsvj(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc,
   long *trc, long *inc, long nulval, long *array, int *anynul, int *status);
+int ffgsvjj(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc,
+  long *trc, long *inc, LONGLONG nulval, LONGLONG *array, int *anynul,
+  int *status);
 int ffgsvuk(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc,
   long *trc, long *inc, unsigned int nulval, unsigned int *array,
   int *anynul, int *status);
@@ -944,6 +986,9 @@ int ffgsfuj(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc,
   int *status);
 int ffgsfj(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc,
   long  *trc, long *inc, long *array, char *flagval, int *anynul, int *status);
+int ffgsfjj(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc,
+  long  *trc, long *inc, LONGLONG *array, char *flagval, int *anynul,
+  int *status);
 int ffgsfuk(fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc,
   long  *trc, long *inc, unsigned int *array, char *flagval, int *anynul,
   int *status);
@@ -965,6 +1010,8 @@ int ffggpuj(fitsfile *fptr, long group, long firstelem, long nelem,
            unsigned long *array, int *status);
 int ffggpj(fitsfile *fptr, long group, long firstelem, long nelem,
            long *array, int *status);
+int ffggpjj(fitsfile *fptr, long group, long firstelem, long nelem,
+           LONGLONG *array, int *status);
 int ffggpuk(fitsfile *fptr, long group, long firstelem, long nelem,
            unsigned int *array, int *status);
 int ffggpk(fitsfile *fptr, long group, long firstelem, long nelem,
@@ -1000,6 +1047,9 @@ int ffgcvuj(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            int *status);
 int ffgcvj(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, long nulval, long *array, int *anynul, int *status);
+int ffgcvjj(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+           long nelem, LONGLONG nulval, LONGLONG *array, int *anynul,
+           int *status);
 int ffgcvuk(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, unsigned int nulval, unsigned int *array, int *anynul,
            int *status);
@@ -1036,6 +1086,8 @@ int ffgcfuj(fitsfile *fptr, int colnum, long firstrow, long firstelem,
       int *status);
 int ffgcfj(fitsfile *fptr, int colnum, long firstrow, long firstelem,
       long nelem, long *array, char *nularray, int *anynul, int *status);
+int ffgcfjj(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+      long nelem, LONGLONG *array, char *nularray, int *anynul, int *status);
 int ffgcfuk(fitsfile *fptr, int colnum, long firstrow, long firstelem,
       long nelem, unsigned int *array, char *nularray, int *anynul,
       int *status);
@@ -1056,6 +1108,10 @@ int ffgdes(fitsfile *fptr, int colnum, long rownum, long *length,
 int ffgdess(fitsfile *fptr, int colnum, long firstrow, long nrows, long *length,
            long *heapaddr, int *status);
  
+int fftheap(fitsfile *fptr, long *heapsize, long *unused, long *overlap,
+            int *valid, int *status);
+int ffcmph(fitsfile *fptr, int *status);
+
 int ffgtbb(fitsfile *fptr, long firstrow, long firstchar, long nchars,
            unsigned char *values, int *status);
  
@@ -1084,6 +1140,8 @@ int ffppre(fitsfile *fptr, long group, long firstelem,
            long nelem, float *array, int *status);
 int ffpprd(fitsfile *fptr, long group, long firstelem,
            long nelem, double *array, int *status);
+int ffpprjj(fitsfile *fptr, long group, long firstelem,
+           long nelem, LONGLONG *array, int *status);
 
 int ffppru(fitsfile *fptr, long group, long firstelem, long nelem,
            int *status);
@@ -1110,7 +1168,9 @@ int ffppne(fitsfile *fptr, long group, long firstelem,
            long nelem, float *array, float nulval, int *status);
 int ffppnd(fitsfile *fptr, long group, long firstelem,
            long nelem, double *array, double nulval, int *status);
- 
+int ffppnjj(fitsfile *fptr, long group, long firstelem,
+           long nelem, LONGLONG *array, long nulval, int *status);
+
 int ffp2db(fitsfile *fptr, long group, long ncols, long naxis1,
            long naxis2, unsigned char *array, int *status);
 int ffp2dui(fitsfile *fptr, long group, long ncols, long naxis1,
@@ -1129,7 +1189,9 @@ int ffp2de(fitsfile *fptr, long group, long ncols, long naxis1,
            long naxis2, float *array, int *status);
 int ffp2dd(fitsfile *fptr, long group, long ncols, long naxis1,
            long naxis2, double *array, int *status);
- 
+int ffp2djj(fitsfile *fptr, long group, long ncols, long naxis1,
+           long naxis2, LONGLONG *array, int *status);
+
 int ffp3db(fitsfile *fptr, long group, long ncols, long nrows, long naxis1,
            long naxis2, long naxis3, unsigned char *array, int *status);
 int ffp3dui(fitsfile *fptr, long group, long ncols, long nrows, long naxis1,
@@ -1148,7 +1210,11 @@ int ffp3de(fitsfile *fptr, long group, long ncols, long nrows, long naxis1,
            long naxis2, long naxis3, float *array, int *status);
 int ffp3dd(fitsfile *fptr, long group, long ncols, long nrows, long naxis1,
            long naxis2, long naxis3, double *array, int *status);
- 
+int ffp3djj(fitsfile *fptr, long group, long ncols, long nrows, long naxis1,
+           long naxis2, long naxis3, LONGLONG *array, int *status);
+
+int ffpss(fitsfile *fptr, int datatype,
+           long *fpixel, long *lpixel, void *array, int *status);
 int ffpssb(fitsfile *fptr, long group, long naxis, long *naxes,
            long *fpixel, long *lpixel, unsigned char *array, int *status);
 int ffpssui(fitsfile *fptr, long group, long naxis, long *naxes,
@@ -1167,7 +1233,9 @@ int ffpsse(fitsfile *fptr, long group, long naxis, long *naxes,
            long *fpixel, long *lpixel, float *array, int *status);
 int ffpssd(fitsfile *fptr, long group, long naxis, long *naxes,
            long *fpixel, long *lpixel, double *array, int *status);
- 
+int ffpssjj(fitsfile *fptr, long group, long naxis, long *naxes,
+           long *fpixel, long *lpixel, LONGLONG *array, int *status);
+
 int ffpgpb(fitsfile *fptr, long group, long firstelem,
            long nelem, unsigned char *array, int *status);
 int ffpgpui(fitsfile *fptr, long group, long firstelem,
@@ -1186,7 +1254,9 @@ int ffpgpe(fitsfile *fptr, long group, long firstelem,
            long nelem, float *array, int *status);
 int ffpgpd(fitsfile *fptr, long group, long firstelem,
            long nelem, double *array, int *status);
- 
+int ffpgpjj(fitsfile *fptr, long group, long firstelem,
+           long nelem, LONGLONG *array, int *status);
+
 /*--------------------- iterator functions -------------*/
 int fits_iter_set_by_name(iteratorCol *col, fitsfile *fptr, char *colname,
           int datatype,  int iotype);
@@ -1248,6 +1318,8 @@ int ffpclu(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, int *status);
 int ffpclx(fitsfile *fptr, int colnum, long frow, long fbit, long nbit,
             char *larray, int *status);
+int ffpcljj(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+           long nelem, LONGLONG *array, int *status);
 
 int ffpcn(fitsfile *fptr, int datatype, int colnum, long firstrow,
           long firstelem, long nelem, void *array, void *nulval, int *status);
@@ -1277,7 +1349,9 @@ int ffpcne(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, float *array, float nulvalue, int *status);
 int ffpcnd(fitsfile *fptr, int colnum, long firstrow, long firstelem,
            long nelem, double *array, double nulvalue, int *status);
- 
+int ffpcnjj(fitsfile *fptr, int colnum, long firstrow, long firstelem,
+           long nelem, LONGLONG *array, LONGLONG nulvalue, int *status);
+
 int ffpdes(fitsfile *fptr, int colnum, long rownum, long length,
            long heapaddr, int *status);
  
@@ -1385,29 +1459,18 @@ int	fits_execute_template(fitsfile *ff, char *ngp_template, int *status);
 
 /*--------------------- image compression routines ------------------*/
 
-int fits_comp_img(fitsfile *infptr, fitsfile *outfptr, int compress_type,
+int fits_set_compression_type(fitsfile *fptr, int ctype, int *status);
+int fits_set_tile_dim(fitsfile *fptr, int ndim, long *dims, int *status);
+int fits_set_noise_bits(fitsfile *fptr, int noisebits, int *status);
+
+int fits_get_compression_type(fitsfile *fptr, int *ctype, int *status);
+int fits_get_tile_dim(fitsfile *fptr, int ndim, long *dims, int *status);
+int fits_get_noise_bits(fitsfile *fptr, int *noisebits, int *status);
+
+int fits_compress_img(fitsfile *infptr, fitsfile *outfptr, int compress_type,
          long *tilesize, int parm1, int parm2, int *status);
 int fits_is_compressed_image(fitsfile *fptr, int *status);
-int fits_decomp_img (fitsfile *infptr, fitsfile *outfptr, int *status);
-int fits_read_compressed_img(fitsfile *fptr, 
-            int  datatype, long  *fpixel,long  *lpixel,long *inc,   
-            int nullcheck, void *nulval,  void *array, char *nullarray,
-            int  *anynul, int  *status);
-
-int fits_read_compressed_pixels(fitsfile *fptr, 
-            int  datatype, long  fpixel, long npixels,   
-            int nullcheck, void *nulval,  void *array, char *nullarray,
-            int  *anynul, int  *status);
-
-int fits_quantize_float (float fdata[], int nx, float in_null_value,
-           int noise_bits, int idata[], double *bscale, double *bzero,
-           int *iminval, int *imaxval);
-int fits_quantize_double (double fdata[], int nx, double in_null_value,
-           int noise_bits, int idata[], double *bscale, double *bzero,
-           int *iminval, int *imaxval);
-int fits_rcomp(int a[], int nx, unsigned char *c, int clen,int nblock);
-int fits_rdecomp (unsigned char *c, int clen, unsigned int array[], int nx,
-             int nblock);
+int fits_decompress_img (fitsfile *infptr, fitsfile *outfptr, int *status);
 
 /*  The following exclusion if __CINT__ is defined is needed for ROOT */
 #ifndef __CINT__

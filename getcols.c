@@ -156,12 +156,15 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
          /* use the TDISPn keyword if it exists */
          ffkeyn("TDISP", colnum, keyname, status);
          tstatus = 0;
+         cform[0] = '\0';
+
          if (ffgkys(fptr, keyname, dispfmt, NULL, &tstatus) == 0)
          {
              /* convert the Fortran style format to a C style format */
              ffcdsp(dispfmt, cform);
          }
-         else
+
+         if (!cform[0])
              strcpy(cform, "%14.6E");
 
          /* write the formated string for each value:  "(real,imag)" */
@@ -216,16 +219,19 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
 
          ffgcdw(fptr, colnum, &dwidth, status);
          dwidth = (dwidth - 3) / 2;
- 
+
          /* use the TDISPn keyword if it exists */
          ffkeyn("TDISP", colnum, keyname, status);
          tstatus = 0;
+         cform[0] = '\0';
+ 
          if (ffgkys(fptr, keyname, dispfmt, NULL, &tstatus) == 0)
          {
              /* convert the Fortran style format to a C style format */
              ffcdsp(dispfmt, cform);
          }
-         else
+
+         if (!cform[0])
             strcpy(cform, "%23.15E");
 
          /* write the formated string for each value:  "(real,imag)" */
@@ -299,14 +305,16 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
 
       /* use the TDISPn keyword if it exists */
       ffkeyn("TDISP", colnum, keyname, status);
-
       tstatus = 0;
+      cform[0] = '\0';
+
       if (ffgkys(fptr, keyname, dispfmt, NULL, &tstatus) == 0)
       {
            /* convert the Fortran style TDISPn to a C style format */
            ffcdsp(dispfmt, cform);
       }
-      else
+
+      if (!cform[0])
       {
             /* no TDISPn keyword; use TFORMn instead */
 
@@ -410,21 +418,37 @@ int ffgcdw( fitsfile *fptr,   /* I - FITS file pointer                       */
     /* use the TDISPn keyword if it exists */
     ffkeyn("TDISP", colnum, keyname, status);
 
+    *width = 0;
     tstatus = 0;
     if (ffgkys(fptr, keyname, dispfmt, NULL, &tstatus) == 0)
     {
           /* parse TDISPn get the display width */
           cptr = dispfmt;
-          while(!isdigit((int) *cptr) && *cptr != '\0') /* find first digit */
+          while(*cptr == ' ') /* skip leading blanks */
               cptr++;
 
-          *width = atoi(cptr);
-          if (tcode >= TCOMPLEX)
+          if (*cptr == 'A' || *cptr == 'a' ||
+              *cptr == 'I' || *cptr == 'i' ||
+              *cptr == 'O' || *cptr == 'o' ||
+              *cptr == 'Z' || *cptr == 'z' ||
+              *cptr == 'F' || *cptr == 'f' ||
+              *cptr == 'E' || *cptr == 'e' ||
+              *cptr == 'D' || *cptr == 'd' ||
+              *cptr == 'G' || *cptr == 'g')
+          {
+
+            while(!isdigit((int) *cptr) && *cptr != '\0') /* find 1st digit */
+              cptr++;
+
+            *width = atoi(cptr);
+            if (tcode >= TCOMPLEX)
               *width = (2 * (*width)) + 3;
+          }
     }
-    else
+
+    if (*width == 0)
     {
-        /* no TDISPn keyword; use TFORMn instead */
+        /* no valid TDISPn keyword; use TFORMn instead */
 
         ffkeyn("TFORM", colnum, keyname, status);
         ffgkys(fptr, keyname, dispfmt, NULL, status);

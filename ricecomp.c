@@ -103,6 +103,7 @@ unsigned int *diff;
     /* write out first int value to the first 4 bytes of the buffer */
     if (output_nbits(buffer, a[0], 32) == EOF) {
         ffpmsg("rice_encode: end of buffer");
+        free(diff);
         return(-1);
     }
 
@@ -148,11 +149,13 @@ unsigned int *diff;
 	     */
 	    if (output_nbits(buffer, fsmax+1, fsbits) == EOF) {
                 ffpmsg("rice_encode: end of buffer");
+                free(diff);
 		return(-1);
 	    }
 	    for (j=0; j<thisblock; j++) {
 		if (output_nbits(buffer, diff[j], bbits) == EOF) {
                     ffpmsg("rice_encode: end of buffer");
+                    free(diff);
 		    return(-1);
 		}
 	    }
@@ -164,12 +167,14 @@ unsigned int *diff;
 	     */
 	    if (output_nbits(buffer, 0, fsbits) == EOF) {
                 ffpmsg("rice_encode: end of buffer");
+                free(diff);
 		return(-1);
 	    }
 	} else {
 	    /* normal case: not either very high or very low entropy */
 	    if (output_nbits(buffer, fs+1, fsbits) == EOF) {
                 ffpmsg("rice_encode: end of buffer");
+                free(diff);
 		return(-1);
 	    }
 	    fsmask = (1<<fs) - 1;
@@ -192,11 +197,13 @@ unsigned int *diff;
 		    lbitbuffer <<= lbits_to_go;
 		    if (putcbuf(lbitbuffer & 0xff,buffer) == EOF) {
                         ffpmsg("rice_encode: end of buffer");
+                        free(diff);
 			return(-1);
 		    }
 		    for (top -= lbits_to_go; top>=8; top -= 8) {
 			if (putcbuf(0, buffer) == EOF) {
                             ffpmsg("rice_encode: end of buffer");
+                            free(diff);
 			    return(-1);
 			}
 		    }
@@ -216,6 +223,7 @@ unsigned int *diff;
 		    while (lbits_to_go <= 0) {
 			if (putcbuf((lbitbuffer>>(-lbits_to_go)) & 0xff,buffer)==EOF) {
                             ffpmsg("rice_encode: end of buffer");
+                            free(diff);
 			    return(-1);
 			}
 			lbits_to_go += 8;
@@ -378,6 +386,8 @@ static int *nonzero_count = (int *)NULL;
 	 * nonzero_count is lookup table giving number of bits
 	 * in 8-bit values not including leading zeros
 	 */
+
+        /*  NOTE!!!  This memory never gets freed  */
 	nonzero_count = (int *) malloc(256*sizeof(int));
 	if (nonzero_count == (int *) NULL) {
             ffpmsg("rdecomp: insufficient memory");

@@ -602,12 +602,12 @@ int main()
     printf("  pcount = %ld, gcount = %ld, extend = %d\n",
                pcount, gcount, extend);
 
-    ffgrec(fptr, 11, card, &status);
+    ffgrec(fptr, 9, card, &status);
     printf("%s\n", card);
     if (strncmp(card, "KEY_PREC= 'This", 15) )
        printf("ERROR in ffgrec\n");
 
-    ffgkyn(fptr, 11, keyword, value, comment, &status);
+    ffgkyn(fptr, 9, keyword, value, comment, &status);
     printf("%s : %s : %s :\n",keyword, value, comment);
     if (strncmp(keyword, "KEY_PREC", 8) )
        printf("ERROR in ffgkyn: %s\n", keyword);

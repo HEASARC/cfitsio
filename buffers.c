@@ -664,7 +664,7 @@ int ffbfwt(int nbuff,             /* I - which buffer to write          */
            int *status)           /* IO - error status                  */
 {
 /*
-  write contents of buffer to disk;  If the position of the buffer
+  write contents of buffer to file;  If the position of the buffer
   is beyond the current EOF, then the file may need to be extended
   with fill values, and/or with the contents of some of the other
   i/o buffers.
@@ -677,6 +677,14 @@ int ffbfwt(int nbuff,             /* I - which buffer to write          */
     static char zeros[IOBUFLEN];  /*  initialized to zero by default */
 
     Fptr = bufptr[nbuff];
+    if (!(Fptr->writemode) )
+    {
+        ffpmsg("Error: trying to write to READONLY file.");
+        dirty[nbuff] = FALSE;  /* reset buffer status to prevent later probs */
+        *status = WRITE_ERROR;
+        return(*status);
+    }
+
     filepos = (OFF_T)bufrecnum[nbuff] * IOBUFLEN;
 
     if (filepos <= Fptr->filesize)
@@ -729,7 +737,7 @@ int ffbfwt(int nbuff,             /* I - which buffer to write          */
         if (filepos > Fptr->filesize)
         {                    
           nloop = (filepos - (Fptr->filesize)) / IOBUFLEN; 
-          for (jj = 0; jj < nloop; jj++)
+          for (jj = 0; jj < nloop && !(*status); jj++)
             ffwrite(Fptr, IOBUFLEN, zeros, status);
 
 /*
@@ -747,6 +755,7 @@ ffseek(Fptr, filepos);
 
       Fptr->io_pos = Fptr->filesize;  /* currently positioned at EOF */
     }
+
     return(*status);       
 }
 /*--------------------------------------------------------------------------*/
@@ -983,6 +992,54 @@ int ffgi4b(fitsfile *fptr,  /* I - FITS file pointer                        */
 
 #if BYTESWAPPED
     ffswap4(values, nvals);    /* reverse order of bytes in each value */
+#endif
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgi8b(fitsfile *fptr,  /* I - FITS file pointer                        */
+           OFF_T byteloc,   /* I - position within file to start reading    */
+           long nvals,      /* I - number of pixels to read                 */
+           long incre,      /* I - byte increment between pixels            */
+           long *values,  /* O - returned array of values                 */
+           int *status)     /* IO - error status                            */
+/*
+  get (read) the array of values from the FITS file, doing machine dependent
+  format conversion (e.g. byte-swapping) if necessary.
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  This routine reads 'nvals' 8-byte integers into 'values'.
+  This works both on platforms that have sizeof(long) = 64, and 32,
+  as long as 'values' has been allocated to large enough to hold
+  8 * nvals bytes of data.
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+*/
+{
+    OFF_T  postemp;
+
+    if (incre == 8)      /* read all the values at once (contiguous bytes) */
+    {
+        if (nvals * 8 < MINDIRECT)  /* read normally via IO buffers */
+        {
+           ffmbyt(fptr, byteloc, REPORT_EOF, status);
+           ffgbyt(fptr, nvals * 8, values, status);
+        }
+        else            /* read directly from disk, bypassing IO buffers */
+        {
+           postemp = (fptr->Fptr)->bytepos;   /* store current file position */
+           (fptr->Fptr)->bytepos = byteloc;   /* set to the desired position */
+           ffgbyt(fptr, nvals * 8, values, status);
+           (fptr->Fptr)->bytepos = postemp;   /* reset to original position */
+        }
+    }
+    else         /* have to read each value individually (not contiguous ) */
+    {
+        ffmbyt(fptr, byteloc, REPORT_EOF, status);
+        ffgbytoff(fptr, 8, nvals, incre - 8, values, status);
+    }
+
+#if BYTESWAPPED
+    ffswap8((double *) values, nvals); /* reverse bytes in each value */
 #endif
 
     return(*status);
@@ -1263,6 +1320,38 @@ int ffpi4b(fitsfile *fptr, /* I - FITS file pointer                         */
     else         /* have to write each value individually (not contiguous ) */
 
         ffpbytoff(fptr, 4, nvals, incre - 4, values, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffpi8b(fitsfile *fptr, /* I - FITS file pointer                         */
+           long nvals,     /* I - number of pixels in the values array      */
+           long incre,     /* I - byte increment between pixels             */
+           long *values,   /* I - array of values to write                */
+           int *status)    /* IO - error status                             */
+/*
+  put (write) the array of values to the FITS file, doing machine dependent
+  format conversion (e.g. byte-swapping) if necessary.
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  This routine writes 'nvals' 8-byte integers from 'values'.
+  This works both on platforms that have sizeof(long) = 64, and 32,
+  as long as 'values' has been allocated to large enough to hold
+  8 * nvals bytes of data.
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+*/
+{
+#if BYTESWAPPED
+    ffswap8((double *) values, nvals);    /* reverse bytes in each value */
+#endif
+
+    if (incre == 8)      /* write all the values at once (contiguous bytes) */
+
+        ffpbyt(fptr, nvals * 8, values, status);
+
+    else         /* have to write each value individually (not contiguous ) */
+
+        ffpbytoff(fptr, 8, nvals, incre - 8, values, status);
 
     return(*status);
 }

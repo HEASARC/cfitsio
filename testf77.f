@@ -567,12 +567,12 @@ C        ############################
       write(*,'(1x,A,2I4,L4)')'  pcount, gcount, extend = ',
      &           pcount, gcount, extend
 
-      call ftgrec(iunit, 11, card, status)
+      call ftgrec(iunit, 9, card, status)
       write(*,'(1x,A)') card
       if (card(1:15) .ne. 'KEY_PREC= ''This')
      &    write(*,'(1x,A)') 'ERROR in ftgrec '
 
-      call ftgkyn(iunit, 11, keyword, value, comment, status)
+      call ftgkyn(iunit, 9, keyword, value, comment, status)
       write(*,'(1x,5A)') keyword,' ', value(1:35),' ', comment(1:20)
 
       if (keyword(1:8) .ne. 'KEY_PREC' )
@@ -729,7 +729,7 @@ C        ############################
       write(*,'(1x,A)')' '
       write(*,'(1x,A)')
      & 'Before deleting the HISTORY and DATE keywords...'
-      do ii = 31, 34      
+      do ii = 29, 32     
           call ftgrec(iunit, ii, card, status)
           write(*,'(1x,A)') card(1:8)
       end do
@@ -743,12 +743,12 @@ C        #  delete keywords         #
 C        ############################
       
 
-      call ftdrec(iunit, 32, status)
+      call ftdrec(iunit, 30, status)
       call ftdkey(iunit, 'DATE', status)
 
       write(*,'(1x,A)')' '
       write(*,'(1x,A)') 'After deleting the keywords... '
-      do ii = 31, 32            
+      do ii = 29, 30            
           call ftgrec(iunit, ii, card, status)
           write(*,'(1x,A)') card
       end do      
@@ -761,7 +761,7 @@ C        ############################
 C        #  insert keywords         #
 C        ############################
       
-      call ftirec(iunit,28,
+      call ftirec(iunit,26,
      & 'KY_IREC = ''This keyword inserted by fxirec''',
      &   status)
       call ftikys(iunit, 'KY_IKYS', 'insert_value_string',
@@ -779,7 +779,7 @@ C        ############################
 
       write(*,'(1x,A)')' '
       write(*,'(1x,A)') 'After inserting the keywords... '
-      do ii = 27, 36
+      do ii = 25, 34
           call ftgrec(iunit, ii, card, status)
           write(*,'(1x,A)') card
       end do
@@ -792,7 +792,7 @@ C        ############################
 C        #  modify keywords         #
 C        ############################
       
-      call ftmrec(iunit, 27,
+      call ftmrec(iunit, 25,
      & 'COMMENT   This keyword was modified by fxmrec', status)
       call ftmcrd(iunit, 'KY_IREC', 
      & 'KY_MREC = ''This keyword was modified by fxmcrd''', status)
@@ -813,7 +813,7 @@ C        ############################
 
       write(*,'(1x,A)')' '
       write(*,'(1x,A)') 'After modifying the keywords... '
-      do ii = 27, 36
+      do ii = 25, 34
           call ftgrec(iunit, ii, card, status)
           write(*,'(1x,A)') card
       end do
@@ -844,7 +844,7 @@ C        ############################
 
       write(*,'(1x,A)')' '
       write(*,'(1x,A)') 'After updating the keywords... '
-      do ii = 27, 36
+      do ii = 25, 34
           call ftgrec(iunit, ii, card, status)
           write(*,'(1x,A)') card
       end do

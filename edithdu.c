@@ -107,7 +107,6 @@ int ffcphd(fitsfile *infptr,    /* I - FITS file pointer to input file  */
         free(tmpbuff);
         return(*status);
     }
-
     if ( inPrim == 1 && outPrim == 0 )
     {
         /* copying from primary array to image extension */
@@ -128,11 +127,13 @@ int ffcphd(fitsfile *infptr,    /* I - FITS file pointer to input file  */
         ffpkyj(outfptr, "GCOUNT", 1, comm, status);
 
 
-        /* copy remaining keywords, excluding EXTEND */
+        /* copy remaining keywords, excluding EXTEND, and reference COMMENT keywords */
         for (ii = 3 + naxis ; ii < nkeys; ii++)
         {
             card = tmpbuff+(ii * FLEN_CARD);
-            if (FSTRNCMP(card, "EXTEND  ", 8))
+            if (FSTRNCMP(card, "EXTEND  ", 8) &&
+                FSTRNCMP(card, "COMMENT   FITS (Flexible Image Transport System) format is", 58) && 
+                FSTRNCMP(card, "COMMENT   and Astrophysics', volume 376, page 3", 47) )
             {
                  ffprec(outfptr, card, status);
             }
@@ -154,6 +155,14 @@ int ffcphd(fitsfile *infptr,    /* I - FITS file pointer to input file  */
         /* add the EXTEND keyword */
         strcpy(comm, "FITS dataset may contain extensions");
         ffpkyl(outfptr, "EXTEND", TRUE, comm, status);
+
+      /* write standard block of self-documentating comments */
+      ffprec(outfptr,
+      "COMMENT   FITS (Flexible Image Transport System) format is defined in 'Astronomy",
+      status);
+      ffprec(outfptr,
+      "COMMENT   and Astrophysics', volume 376, page 359; bibcode: 2001A&A...376..359H",
+      status);
 
         /* copy remaining keywords, excluding pcount, gcount */
         for (ii = 3 + naxis; ii < nkeys; ii++)
@@ -670,17 +679,16 @@ int ffdhdu(fitsfile *fptr,      /* I - FITS file pointer                   */
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
 
-    if ((fptr->Fptr)->curhdu == 0)
+    if ((fptr->Fptr)->curhdu == 0) /* replace primary array with null image */
     {
         /* ignore any existing keywords */
         (fptr->Fptr)->headend = 0;
         (fptr->Fptr)->nextkey = 0;
-        (fptr->Fptr)->datastart = DATA_UNDEFINED;
 
         /* write default primary array header */
         ffphpr(fptr,1,8,0,naxes,0,1,1,status);
 
-        /* calc number of blocks to delete */
+        /* calc number of blocks to delete (leave just 1 block) */
         nblocks = ( (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu + 1] - 
                 2880 ) / 2880;
 
@@ -690,6 +698,9 @@ int ffdhdu(fitsfile *fptr,      /* I - FITS file pointer                   */
             if (ffdblk(fptr, nblocks, status) > 0) /* delete the HDU */
                 return(*status);
         }
+
+        /* this might not be necessary, but is doesn't hurt */
+        (fptr->Fptr)->datastart = DATA_UNDEFINED;
 
         ffrdef(fptr, status);  /* reinitialize the primary array */
     }

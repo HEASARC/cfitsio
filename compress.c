@@ -395,6 +395,13 @@ int compress2mem_from_mem(
              void *(*mem_realloc)(void *p, size_t newsize), 
              size_t *filesize,  
              int *status);
+
+int compress2file_from_mem(                                                
+             char *inmemptr,     
+             size_t inmemsize, 
+             FILE *outdiskfile, 
+             size_t *filesize,   /* O - size of file, in bytes              */
+             int *status);
 /*--------------------------------------------------------------------------*/
 int uncompress2mem(char *filename,  /* name of input file                 */
              FILE *diskfile,     /* I - file pointer                        */
@@ -653,7 +660,81 @@ int compress2mem_from_mem(
     *filesize = bytes_out;
     return(*status);
 }
+/*--------------------------------------------------------------------------*/
+int compress2file_from_mem(                                                
+             char *inmemptr,     /* I - memory pointer to uncompressed bytes */
+             size_t inmemsize,   /* I - size of input uncompressed file      */
+             FILE *outdiskfile, 
+             size_t *filesize,   /* O - size of file, in bytes              */
+             int *status)
+/*
+  Compress the memory file into disk file. 
+*/
+{
+    uch  flags = 0;         /* general purpose bit flags */
+    ush  attr = 0;          /* ascii/binary flag */
+    ush  deflate_flags = 0; /* pkzip -es, -en or -ex equivalent */
 
+    if (*status > 0)
+        return(*status);
+
+    /*  save input parameters into global variables */
+    in_memptr =  inmemptr;
+    in_memsize = inmemsize;
+
+    ofd = outdiskfile;
+    realloc_fn = NULL; /* a null reallocation fn signals that the file is */
+                       /* to be compressed to a file on disk, not memory */
+
+
+    /* clear input and output buffers */
+
+    outcnt = 0;
+    insize = inptr = 0;
+    bytes_in = bytes_out = 0L;
+
+    part_nb = 0;
+
+    method = DEFLATED; 
+
+    /* write gzip header bytes */
+
+    put_byte(GZIP_MAGIC[0]); /* magic header */
+    put_byte(GZIP_MAGIC[1]);
+    put_byte(DEFLATED);      /* compression method */
+    put_byte(flags);         
+
+/* 
+ just write zero as dummy value for the timestamp
+    put_long(time_stamp);
+*/
+    put_long(0); /* dummy time stamp */
+
+    /* Write deflated file to zip file */
+    crc_value = updcrc(0, 0);
+
+    bi_init(NO_FILE);
+    ct_init(&attr, &method);
+    lm_init(level, &deflate_flags);
+
+    put_byte((uch)deflate_flags); /* extra flags */
+    put_byte(0);            /* OS identifier; 0 = default */
+
+    header_bytes = (long)outcnt;
+
+    (void)deflate();
+
+    /* Write the crc and uncompressed size */
+    put_long(crc_value);
+    put_long(isize);
+    header_bytes += 2*sizeof(long);
+
+    flush_outbuf();
+
+    *filesize = bytes_out;
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 /*   ******************************  */
 /*   The following came from gzip.c  */
 /*   ******************************  */

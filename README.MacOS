@@ -1,4 +1,8 @@
-To build the MacOS port:
+To build the CFITSIO library on Mac OS-X systems, follow the
+instructions for Unix platforms given in the CFITSIO User's Reference
+Guide (cfitsio.doc).
+
+To build the MacOS port on classic Mac OS-9 or earlier:
 
 1. Un binhex and unstuff cfitsio_mac.sit.hqx
 2. put CFitsioPPC.mcp in the cfitsio directory.

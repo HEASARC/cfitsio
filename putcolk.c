@@ -27,6 +27,7 @@ int ffpprk( fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     long row;
+    int nullvalue;
 
     /*
       the primary array is represented as a binary table:
@@ -39,9 +40,13 @@ int ffpprk( fitsfile *fptr,  /* I - FITS file pointer                       */
     {
         /* this is a compressed image in a binary table */
 
-        ffpmsg("writing to compressed image is not supported");
+        /* use the OFF_T variable to pass the first element value */
+        if (firstelem != USE_LARGE_VALUE)
+            large_first_elem_val = firstelem;
 
-        return(*status = DATA_COMPRESSION_ERR);
+        fits_write_compressed_pixels(fptr, TINT, large_first_elem_val, nelem,
+            0, array, &nullvalue, status);
+        return(*status);
     }
 
     row=maxvalue(1,group);
@@ -66,6 +71,7 @@ int ffppnk( fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     long row;
+    int nullvalue;
 
     /*
       the primary array is represented as a binary table:
@@ -78,9 +84,14 @@ int ffppnk( fitsfile *fptr,  /* I - FITS file pointer                       */
     {
         /* this is a compressed image in a binary table */
 
-        ffpmsg("writing to compressed image is not supported");
+        /* use the OFF_T variable to pass the first element value */
+        if (firstelem != USE_LARGE_VALUE)
+            large_first_elem_val = firstelem;
 
-        return(*status = DATA_COMPRESSION_ERR);
+        nullvalue = nulval;  /* set local variable */
+        fits_write_compressed_pixels(fptr, TINT, large_first_elem_val, nelem,
+            1, array, &nullvalue, status);
+        return(*status);
     }
 
     row=maxvalue(1,group);
@@ -125,21 +136,25 @@ int ffp3dk(fitsfile *fptr,   /* I - FITS file pointer                     */
 */
 {
     long tablerow, nfits, narray, ii, jj;
-
+    long fpixel[3]= {1,1,1}, lpixel[3];
     /*
       the primary array is represented as a binary table:
       each group of the primary array is a row in the table,
       where the first column contains the group parameters
       and the second column contains the image itself.
     */
-
+           
     if (fits_is_compressed_image(fptr, status))
     {
         /* this is a compressed image in a binary table */
-
-        ffpmsg("writing to compressed image is not supported");
-
-        return(*status = DATA_COMPRESSION_ERR);
+        lpixel[0] = ncols;
+        lpixel[1] = nrows;
+        lpixel[2] = naxis3;
+       
+        fits_write_compressed_img(fptr, TINT, fpixel, lpixel,
+            0,  array, NULL, status);
+    
+        return(*status);
     }
 
     tablerow=maxvalue(1,group);
@@ -206,10 +221,10 @@ int ffpssk(fitsfile *fptr,   /* I - FITS file pointer                       */
     if (fits_is_compressed_image(fptr, status))
     {
         /* this is a compressed image in a binary table */
-
-        ffpmsg("writing to compressed image is not supported");
-
-        return(*status = DATA_COMPRESSION_ERR);
+        fits_write_compressed_img(fptr, TINT, fpixel, lpixel,
+            0,  array, NULL, status);
+    
+        return(*status);
     }
 
     if (naxis < 1 || naxis > 7)
@@ -451,6 +466,13 @@ int ffpclk( fitsfile *fptr,  /* I - FITS file pointer                       */
                 ffpi4b(fptr, ntodo, incre, (INT32BIT *) buffer, status);
               }
 
+                break;
+
+            case (TLONGLONG):
+
+                ffintfi8(&array[next], ntodo, scale, zero,
+                        (LONGLONG *) buffer, status);
+                ffpi8b(fptr, ntodo, incre, (long *) buffer, status);
                 break;
 
             case (TBYTE):
@@ -825,6 +847,128 @@ int ffintfi4(int *input,       /* I - array of values to be converted  */
             }
         }
     }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffintfi8(int *input,  /* I - array of values to be converted  */
+            long ntodo,             /* I - number of elements in the array  */
+            double scale,           /* I - FITS TSCALn or BSCALE value      */
+            double zero,            /* I - FITS TZEROn or BZERO  value      */
+            LONGLONG *output,       /* O - output array of converted values */
+            int *status)            /* IO - error status                    */
+/*
+  Copy input to output prior to writing output to a FITS file.
+  Do datatype conversion and scaling if required
+*/
+{
+#if (LONGSIZE == 32) && (! defined HAVE_LONGLONG)
+
+/* don't have a native 8-byte integer, so have to construct the */
+/* 2 equivalent 4-byte integers have the same bit pattern */
+
+    unsigned long *uoutput;
+    long ii, jj, kk, temp;
+    double dvalue;
+
+    uoutput = (unsigned long *) output;
+
+#if BYTESWAPPED  /* jj points to the most significant part of the 8-byte int */
+    jj = 1;
+    kk = 0;
+#else
+    jj = 0;
+    kk = 1;
+#endif
+
+    if (scale == 1. && zero == 0.)
+    {       
+        for (ii = 0; ii < ntodo; ii++, jj += 2, kk += 2)
+        {
+                if (input[ii] < 0)
+                   output[jj] = -1;
+                else
+                   output[jj] = 0;
+         
+                output[kk] = input[ii];
+        }
+    }
+    else
+    {
+        for (ii = 0; ii < ntodo; ii++, jj += 2, kk += 2)
+        {
+            dvalue = (input[ii] - zero) / scale;
+
+            if (dvalue < DLONGLONG_MIN)
+            {
+                *status = OVERFLOW_ERR;
+                output[jj] = LONG_MIN;
+                output[kk] = 0;
+            }
+            else if (dvalue > DLONGLONG_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                output[jj] = LONG_MAX;
+                output[kk] = -1;
+            }
+            else
+            {
+                if (dvalue < 0)
+                {
+                   temp = (dvalue + 1.) / 4294967296. - 1.;
+                   output[jj] = temp;
+                   uoutput[kk] = 4294967296.  + 
+                      (dvalue - (double) (temp + 1) * 4294967296.);
+                }
+                else
+                {
+                   temp = dvalue / 4294967296.;
+                   output[jj] = temp;
+                   uoutput[kk] = dvalue - (double) temp * 4294967296.;
+                }
+            }
+        }
+    }
+
+#else
+
+/* this is the much simpler case where the native 8-byte integer exists */
+
+    long ii;
+    double dvalue;
+
+    if (scale == 1. && zero == 0.)
+    {       
+        for (ii = 0; ii < ntodo; ii++)
+                output[ii] = input[ii];
+    }
+    else
+    {
+        for (ii = 0; ii < ntodo; ii++)
+        {
+            dvalue = (input[ii] - zero) / scale;
+
+            if (dvalue < DLONGLONG_MIN)
+            {
+                *status = OVERFLOW_ERR;
+                output[ii] = LONGLONG_MIN;
+            }
+            else if (dvalue > DLONGLONG_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                output[ii] = LONGLONG_MAX;
+            }
+            else
+            {
+                if (dvalue >= 0)
+                    output[ii] = (LONGLONG) (dvalue + .5);
+                else
+                    output[ii] = (LONGLONG) (dvalue - .5);
+            }
+        }
+    }
+
+#endif
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

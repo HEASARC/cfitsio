@@ -146,6 +146,11 @@ further description of the AXAF Data Model.
 The file decompression code were taken directly from the gzip (GNU zip)
 program developed by Jean-loup Gailly and others.
 
+The new compressed image data format (where the image is tiled and
+the compressed byte stream from each tile is stored in a binary table)
+was implemented in collaboration with Richard White (STScI), Perry
+Greenfield (STScI) and Doug Tody (NOAO). 
+
 Doug Mink (SAO) provided the routines for converting IRAF format 
 images into FITS format.
 
@@ -227,10 +232,10 @@ CFITSIO has currently been tested on the following platforms:
    Windows 95/98/NT           Microsoft/Compaq Visual C++ v5.0, v6.0
    Windows 95/98/NT           Cygwin gcc
    MacOS 7.1 or greater       Metrowerks 10.+
+   MacOS-X 10.1 or greater    cc (gcc)
 -
 CFITSIO will probably run on most other Unix platforms.  Cray
-supercomputers and IBM mainframe computers are currently not
-supported.
+supercomputers are currently not supported.
 
 ***1.  Unix Systems
 
@@ -238,6 +243,9 @@ The CFITSIO library is built on Unix systems by typing:
 -
    > ./configure
    > make
+or
+   > ./configure
+   > make shared
 -
 at the operating system prompt.  Type ./configure and not simply
 `configure' to ensure that the configure script in the current
@@ -246,13 +254,45 @@ configure command customizes the Makefile for the particular system,
 then the `make' command compiles the source files and builds the
 library.
 
-The CFITSIO library file, libcfitsio.a, and 2 include files, fitsio.h
-and longnam.h, should then be copied to the appropriate directory(s)
-for use when compiling application programs.  Alternatively, one could
-set 2 environment variables, FTOOLS\_LIB and FTOOLS\_INCLUDE, to
-specify the paths to the installation directories, (e.g., `setenv
-FTOOLS\_INCLUDE /usr/local/include') and then run `make install' to
-build and install the CFITSIO library.
+The 'make shared' option builds a shared or dynamic version of the
+CFITSIO library.  When using the shared library the executable code is
+not copied into your program at link time and instead the program
+locates the necessary library code at run time, normally through
+LD\_LIBRARY\_PATH or some other method. The advantages of using a shared
+library are:
+-
+   1.  Less disk space if you build more than 1 program
+   2.  Less memory if more than one copy of a program using the shared
+       library is running at the same time since the system is smart
+       enough to share copies of the shared library at run time.
+   3.  Possibly easier maintenance since a new version of the shared
+       library can be installed without relinking all the software
+       that uses it (as long as the subroutine names and calling
+       sequences remain unchanged).
+   4.  No run-time penalty.
+-
+The disadvantages are:
+-
+   1. More hassle at runtime.  You have to either build the programs
+      specially or have LD_LIBRARY_PATH set right.
+   2. There may be a slight start up penalty, depending on where you are
+      reading the shared library and the program from and if your CPU is
+      either really slow or really heavily loaded.
+-
+
+On Mac OS X platforms the 'make shared' command works like on other
+UNIX platforms, but a .dylib file will be created instead of .so.  If
+installed in a nonstandard location, add its location to the
+DYLD\_LIBRARY\_PATH environment variable so that the library can be found
+at run time.
+
+The CFITSIO library file (libcfitsio.a or libcfitsio.so), and 2
+include files, fitsio.h and longnam.h, should then be copied to the
+appropriate directory(s) for use when compiling application programs.
+Alternatively, one could set 2 environment variables, FTOOLS\_LIB and
+FTOOLS\_INCLUDE, to specify the paths to the installation directories,
+(e.g., `setenv FTOOLS\_INCLUDE /usr/local/include') and then run `make
+install' to build and install the CFITSIO library.
 
 On HP/UX systems, the environment variable CFLAGS should be set
 to -Ae before running configure to enable "extended ANSI" features.
@@ -280,44 +320,10 @@ It may not be possible to staticly link programs that use CFITSIO on
 some platforms (namely, on Solaris 2.6) due to the network drivers
 (which provide FTP and HTTP access to FITS files).  It is possible to
 make both a dynamic and a static version of the CFITSIO library, but
-network file access will not be possible using the static version.  To
-build the dynamic libcfitsio.so library (on solaris), type 'make
-clean', then edit the Makefile to add -fPIC or -KPIC (gcc or cc) to the
-CFLAGS line, then rebuild the library with 'make'.  Finally, build the
-shared library with
--
- ld -G -z text -o libcfitsio.so *.o
--
-Then to get the staticly linkable libcfitsio.a library file do another
-make clean, undefine HAVE\_NET\_SERVICES on the CFLAGS line and
-rebuild.  It's unimportant whether or not -fPIC is used when building
-the static library.
-
-When using the shared library the executable code is not copied into
-your program at link time and instead the program locates the necessary
-library code at run time, normally through LD\_LIBRARY\_PATH or some
-other method.  The advantages are:
--
-   1.  Less disk space if you build more than 1 program
-   2.  Less memory if more than one copy of a program using the shared
-       library is running at the same time since the system is smart
-       enough to share copies of the shared library at run time.
-   3.  Possibly easier maintenance since a new version of the shared
-       library can be installed without relinking all the software
-       that uses it (as long as the subroutine names and calling
-       sequences remain unchanged).
-   4.  No run-time penalty.
--
-The disadvantages are:
--
-   1. More hassle at runtime.  You have to either build the programs
-      specially or have LD_LIBRARY_PATH set right.
-   2. There may be a slight start up penalty, depending on where you are
-      reading the shared library and the program from and if your CPU is
-      either really slow or really heavily loaded.
--
+network file access will not be possible using the static version. 
 
 ***2.  VMS
+
 On VAX/VMS and ALPHA/VMS systems the make\_gfloat.com command file may
 be executed to build the cfitsio.olb object library using the default
 G-floating point option for double variables.  The make\_dfloat.com and
@@ -343,11 +349,15 @@ using older DOS commands.
 
 ***4.  Macintosh PCs
 
-The MacOS version of the CFITSIO library can be built by (1) un binhex
-and unstuff cfitsio\_mac.sit.hqx, (2) put CFitsioPPC.mcp in the cfitsio
-directory, and (3) load CFitsioPPC.mcp into CodeWarrior Pro 5 and make.
-This builds the CFITSIO library for PPC.  There are also targets for
-both the test program and the speed test program.
+When building on Mac OS-X, users should follow the Unix instructions,
+above.
+
+The classic MacOS version (OS 9 or earlier) of the CFITSIO library can
+be built by (1) un binhex and unstuff cfitsio\_mac.sit.hqx, (2) put
+CFitsioPPC.mcp in the cfitsio directory, and (3) load CFitsioPPC.mcp
+into CodeWarrior Pro 5 and make.  This builds the CFITSIO library for
+PPC.  There are also targets for both the test program and the speed
+test program.
 
 To use the MacOS port you can add Cfitsio PPC.lib to your CodeWarrior
 Pro 5 project.  Note that this only has been tested for the PPC and
@@ -422,7 +432,7 @@ program\_name' where `program\_name' is the actual name of the program:
     cookbook - a sample program that peforms common read and
                  write operations on a FITS file.
 
-    iter_a, iter_b, iter_c - tests of the CFITSIO iterator routine
+    iter_a, iter_b, iter_c - examples of the CFITSIO iterator routine
 -
 
 **C.  Linking Programs with CFITSIO
@@ -444,7 +454,13 @@ because the definitions in fitsio.h often change.
 **D.  Getting Started with CFITSIO
 
 In order to effectively use the CFITSIO library it is recommended that
-new users follow these steps:
+new users begin by reading the ``CFITSIO Quick Start Guide''.  It
+contains all the basic information needed to write programs that
+perform most types of operations on FITS files.  The set of example
+FITS utility programs that are available from the CFITSIO web site are
+also very useful for learning how to use CFITSIO.  To learn even more
+about the capabilities of the CFITSIO library the following steps are
+recommended:
 
 1.  Read the following short `FITS Primer' chapter for an overview of
 the structure of FITS files.
@@ -593,10 +609,10 @@ previous Data Unit (or Header Unit if there is no Data Unit).
 The main required keywords in FITS primary arrays or image extensions are:
 \begin{itemize}
 \item
-BITPIX -- defines the datatype of the array: 8, 16, 32, -32, -64
-for unsigned 8--bit byte, 16--bit integer, 32--bit integer, 32--bit
-IEEE floating point, and 64--bit IEEE double precision floating point,
-respectively.
+BITPIX -- defines the datatype of the array: 8, 16, 32, -32, -64 for
+unsigned 8--bit byte, 16--bit signed integer, 32--bit signed integer,
+32--bit IEEE floating point, and 64--bit IEEE double precision floating
+point, respectively.
 \item
 NAXIS --  the number of dimensions in the array, usually 0, 1, 2, 3, or 4.
 \item
@@ -678,7 +694,8 @@ BITPIX data type code values for FITS images:
   #define FLOAT_IMG   -32  /* 32-bit single precision floating point */
   #define DOUBLE_IMG  -64  /* 64-bit double precision floating point */
 
-  The following 2 data type codes are also supported by CFITSIO:
+  The following 3 data type codes are also supported by CFITSIO:
+  #define LONGLONG_IMG 64 /* 64-bit long signed integers */
   #define USHORT_IMG  20  /* 16-bit unsigned integers, equivalent to */
                           /*  BITPIX = 16, BSCALE = 1, BZERO = 32768 */
   #define ULONG_IMG   40  /* 32-bit unsigned integers, equivalent to */
@@ -706,6 +723,7 @@ datatype of variables when reading or writing keywords or data:
   #define TUINT        30  /* unsigned int                   */
   #define TUSHORT      20  /* unsigned short                 */
   #define TULONG       40  /* unsigned long                  */
+  #define TLONGLONG    81  /* 64-bit long signed integer 'K' */
 
 HDU type code values (value returned when moving to new HDU):
 
@@ -728,6 +746,12 @@ Values to represent undefined floating point numbers:
 
   #define FLOATNULLVALUE -9.11912E-36F
   #define DOUBLENULLVALUE -9.1191291391491E-36
+
+Image compression algorithm definitions
+
+  #define RICE_1      11
+  #define GZIP_1      21
+  #define PLIO_1      31
 - 
 
 **B.  Current Header Data Unit (CHDU)
@@ -771,6 +795,7 @@ as shown in the following table:
     _byt        b    unsigned byte
     _sht        i    short integer
     _lng        j    long integer
+    _lnglng     jj   8-byte LONGLONG integer (see note below)
     _usht       ui   unsigned short integer
     _ulng       uj   unsigned long integer
     _uint       uk   unsigned int integer
@@ -803,6 +828,17 @@ and `long' integer datatypes to be 2, 4, and 8 bytes long,
 respectively.  The FITS standard only supports 2 and 4 byte integer
 data types, so CFITSIO internally converts between 4 and 8 bytes when
 reading or writing `long' integers on Alpha/OSF systems.
+
+The 8-byte 'LONGLONG' integer datatype is supported on most platforms.
+CFITSIO defines the LONGLONG datatype to be equivalent to 'long long'
+on most Unix platforms and on Mac OS-X.  Since most Windows compilers don't
+support the 'long long' datatype, LONGLONG is defined instead to be
+equivalent to '\_\_int64'.  If the compiler does not support a 8-byte
+integer datatype then LONGLONG is defined to be equivalent to 'long'.
+Note that the C format specifier to print out these long integer values
+is "\%lld" on most unix machines, except on OSF platforms where "\%ld"
+must be used.  On Windows platform which have the \_\_int64 data type,
+the format specifier is "\%INT64d".
 
 When dealing with the FITS byte datatype it is important to remember
 that the raw values (before any scaling by the BSCALE and BZERO, or
@@ -1063,9 +1099,9 @@ occurred, as illustrated in the following 2 code fragments:
 -
     if ( fits_write_record(fptr, card, &status) )
          printf(" Error occurred while writing keyword.");
--
+
 or,
--
+
     fits_write_record(fptr, card, &status);
     if ( status )
          printf(" Error occurred while writing keyword.");
@@ -1243,7 +1279,7 @@ actual smaller value just before closing the table.
 
 **M.  CFITSIO Size Limitations
 
-CFITSIO places few restrictions on the size of FITS files that it
+CFITSIO places very few restrictions on the size of FITS files that it
 reads or writes.  There are a few limits, however, which may affect
 some extreme cases:
 
@@ -1844,7 +1880,7 @@ not as array[100][50].
 
 The `datatype'  parameter specifies the datatype of the `nulval'  and
 `array' pointers and can have one of the following  values:  TBYTE,
-TSHORT, TUSHORT, TINT, TUINT, TLONG, TULONG, TFLOAT, TDOUBLE.
+TSHORT, TUSHORT, TINT, TUINT, TLONG, TLONGLONG, TULONG, TFLOAT, TDOUBLE.
 Automatic data type conversion is performed if the data type of the
 FITS array (as defined by the BITPIX keyword) differs from that
 specified by 'datatype'.  The data values are also automatically scaled
@@ -1873,7 +1909,16 @@ written in the FITS array.
       (fitsfile *fptr, int maxdim, > int *bitpix, int *naxis, long *naxes, 
        int *status)
 -
->2  Write pixels into the FITS data array.  'fpixel' is an array of
+>2  Write a rectangular subimage (or the whole image) to the FITS data
+    array.  The fpixel and lpixel arrays give the coordinates of the
+    first (lower left corner) and last (upper right corner) pixels in
+>   FITS image to be written to.  \label{ffpss}
+-
+  int fits_write_subset / ffpss
+      (fitsfile *fptr, int datatype, long *fpixel, long *lpixel,
+       DTYPE *array, > int *status)
+-
+>3  Write pixels into the FITS data array.  'fpixel' is an array of
    length NAXIS which gives the coordinate of the starting pixel to be
    written to, such that fpixel[0] is in the range 1 to NAXIS1,
    fpixel[1] is in the range 1 to NAXIS2, etc.  The first routine
@@ -1897,31 +1942,31 @@ written in the FITS array.
       (fitsfile *fptr, int datatype, long *fpixel, long nelements,
        DTYPE *array, DTYPE *nulval, > int *status);
 -
->3  Set FITS data array elements equal to the appropriate null pixel
+>4  Set FITS data array elements equal to the appropriate null pixel
     value. For integer FITS arrays, the FITS null value is defined by
     the BLANK keyword  (an error is returned if the BLANK keyword
     doesn't exist). For floating point FITS arrays the special IEEE NaN
     (Not-a-Number) value will be written into the FITS file.  Note that
     'firstelem' is a scalar giving the  offset to the first pixel to be
->   written in the equivalent 1-dimensional array of image pixels. \label{ffpprn}
+>    written in the equivalent 1-dimensional array of image pixels. \label{ffpprn}
 -
   int fits_write_null_img / ffpprn
       (fitsfile *fptr, long firstelem, long nelements, > int *status)
 -
->4  Read a rectangular subimage from the FITS data array.  The fpixel
-    and lpixel arrays give the coordinates of the first (lower left
-    corner) and last (upper right corner) pixels to be included in the
-    subimage Undefined FITS array elements will be returned with a
-    value = *nullval, (note that this parameter gives the address of
-    the null value, not the null value itself) unless nulval = 0 or
-    *nulval = 0, in which case no checks for
+>5  Read a rectangular subimage (or the whole image) from the FITS 
+    data array.  The fpixel and lpixel arrays give the coordinates of
+    the first (lower left corner) and last (upper right corner) pixels
+    to be read from the FITS image. Undefined FITS array elements will
+    be returned with a value = *nullval, (note that this parameter
+    gives the address of the null value, not the null value itself)
+    unless nulval = 0 or *nulval = 0, in which case no checks for
 >   undefined pixels will be performed.  \label{ffgsv}
 -
   int fits_read_subset / ffgsv
       (fitsfile *fptr, int  datatype, long *fpixel, long *lpixel, long *inc,
        DTYPE *nulval, > DTYPE *array, int *anynul, int *status)
 -
->5  Read pixels from the FITS data array.  'fpixel' is the starting
+>6  Read pixels from the FITS data array.  'fpixel' is the starting
     pixel location and is an array of length NAXIS such that fpixel[0]
     is in the range 1 to NAXIS1, fpixel[1] is in the range 1 to NAXIS2,
     etc. The nelements parameter specifies the number of pixels to
@@ -1947,8 +1992,181 @@ written in the FITS array.
       (fitsfile *fptr, int  datatype, long *fpixel, long nelements,
        > DTYPE *array, char *nullarray, int *anynul, int *status)
 -
+**F.  Image Compression  
 
-**F.  ASCII and Binary Table Routines
+CFITSIO now transparently supports 2 types of image compression:
+
+1)  The entire FITS file may be externally compressed with the gzip or
+Unix compress algorithm, producing a *.gz or *.Z file, respectively.
+When reading compressed files of this type, CFITSIO first uncompresses
+the entire file into memory before performing the requested read
+operations.  Output files can be directly written in the gzip
+compressed format if the user-specified filename ends with `.gz'.  In
+this case, CFITSIO initially writes the uncompressed file in memory and
+then compresses it and writes it to disk when the FITS file is closed,
+thus saving user disk space.
+
+2) CFITSIO also supports a newer image compression format in which the
+image is divided into a grid of rectangular tiles, and each tile of
+pixels is individually compressed.  The compressed tiles are stored in
+rows of a variable length array column in a FITS binary table, but
+CFITSIO recognizes that the binary table extension contains an image
+and treats it as if it were an IMAGE extension.  This tile-compressed
+format is especially well suited for compressing very large images
+because a) the FITS header keywords remain uncompressed for rapid read
+access, and because b) it is possible to extract and uncompress
+sections of the image without having to uncompress the entire image.
+This format is also much more effective in compressing floating point
+images (using a lossy compression algorithm) than simply compressing
+the image using gzip or compress.
+
+A detailed description of this format is available at:
+-
+http://heasarc.gsfc.nasa.gov/docs/software/fitsio/
+       compression/compress_image.html
+-
+
+The N-dimensional FITS image can be divided into any
+desired rectangular grid of compression tiles.  By default the tiles
+are chosen to correspond to the rows of the image, each containing
+NAXIS1 pixels.  For example, a 800 x 800 x 4 pixel data cube would be
+divided in to 3200 tiles containing 800 pixels each by default.
+Alternatively, this data cube could be divided into 256 tiles that are each
+100 X 100 X 1 pixels in size, or 4 tiles containing 800 x 800 X 1
+pixels, or a single tile containing the entire data cube.  Note that
+the image dimensions are not required to be an integer multiple of the
+tile dimensions, so, for example, this data cube could also be divided
+into 250 X 200 pixel tiles, in which case the last tile in each row
+would only contain 50 X 200 pixels.
+
+Currently, 3 image compression algorithms are supported:  Rice, GZIP,
+and PLIO.  Rice and GZIP are general purpose algorithms that can be
+used to compress almost any image.  The PLIO  algorithm, on the other
+hand, is more specialized and was developed for use in IRAF to store
+pixel data quality masks. It is designed to only work on images
+containing positive integers with values up to about 2**24.  Other
+image compression algorithms may be supported in the future.
+
+The 3 supported image compression algorithms are all 'loss-less' when
+applied to integer FITS images;  the pixel values are preserved exactly
+with no loss of information during the compression and uncompression
+process. Floating point FITS images (which have BITPIX = -32 or -64)
+are first be quantized into scaled integer pixel values before being
+compressed.  This technique produces much higher compression factors
+than simply using GZIP to compress the image, but it also means that
+the original floating value pixel values may not be precisely returned
+when the image is uncompressed.  When done properly, this only discards
+the 'noise' from the floating point values without losing any
+significant information.  The amount of noise that is discarded can be
+controlled by the 'noise\_bits' compression parameter.
+
+No special action is required to read tile-compressed images because
+all the CFITSIO routines that read normal uncompressed FITS images can
+also read images in the tile-compressed format;  CFITSIO essentially
+treats the binary table that contains the compressed tiles as if
+it were an IMAGE extension.
+
+When creating (writing) a new image with CFITSIO, a normal uncompressed
+FITS primary array or IMAGE extension will be written unless the
+tile-compressed format has been specified in 1 of 2 possible ways:
+
+1)  At run time, when specifying the name of the output FITS file to be
+created at run time, the user can indicate that images should be
+written in tile-compressed format by enclosing the compression
+parameters in square brackets following the root disk file name.   The
+`imcopy' example program that included with the CFITSIO distribution
+can be used for this purpose to compress or uncompress images.  Here
+are some examples of the extended file name syntax for specifying
+tile-compressed output images:
+-
+    myfile.fit[compress]    - use the default compression algorithm (Rice)
+                              and the default tile size (row by row)
+
+    myfile.fit[compress GZIP] - use the specified compression algorithm;
+    myfile.fit[compress Rice]     only the first letter of the algorithm 
+    myfile.fit[compress PLIO]     name is required.
+
+    myfile.fit[compress R 100,100]   - use Rice compression and 
+                                       100 x 100 pixel tile size
+
+    myfile.fit[compress R 100,100;2] - as above, and also use noisebits = 2
+-
+
+2)  Before calling the CFITSIO routine to write the image header
+keywords (e.g., fits\_create\_image) the programmer can call the
+routines described below to specify the compression algorithm and the
+tiling pattern that is to be used.  There are 3 routines for specifying
+the various compression parameters and 3 corresponding routines to
+return the current values of the parameters:
+\label{ffsetcomp}  \label{ffgetcomp}
+-
+  int fits_set_compression_type(fitsfile *fptr, int comptype, int *status)
+  int fits_set_tile_dim(fitsfile *fptr, int ndim, long *tilesize, int *status)
+  int fits_set_noise_bits(fitsfile *fptr, int noisebits, int *status)
+
+  int fits_get_compression_type(fitsfile *fptr, int *comptype, int *status)
+  int fits_get_tile_dim(fitsfile *fptr, int ndim, long *tilesize, int *status)
+  int fits_get_noise_bits(fitsfile *fptr, int *noisebits, int *status)
+-
+3 symbollic constants are defined for use as the value of the
+`comptype' parameter:  GZIP\_1, RICE\_1, or PLIO\_1.  Entering NULL for
+comptype will turn off the tile-compression and cause normal FITS
+images to be written.
+
+The 'noisebits' parameter is only used when compressing floating point
+images.   The default value is 4.  Decreasing the value of noisebits
+will improve the overall compression efficiency at the expense of
+losing more information.
+
+A small example program called 'imcopy' is included with CFITSIO that
+can be used to compress (or uncompress) any FITS image.  This
+program can be used to experiment with the various compression options
+on existing FITS images as shown in these examples:
+-
+1)  imcopy infile.fit 'outfile.fit[compress]' 
+
+       This will use the default compression algorithm (Rice) and the
+       default tile size (row by row)
+
+2)  imcopy infile.fit 'outfile.fit[compress GZIP]' 
+
+       This will use the GZIP compression algorithm and the default
+       tile size (row by row).  The allowed compression algorithms are
+       Rice, GZIP, and PLIO.  Only the first letter of the algorithm
+       name needs to be specified.
+
+3)  imcopy infile.fit 'outfile.fit[compress G 100,100]' 
+
+       This will use the GZIP compression algorithm and 100 X 100 pixel
+       tiles.
+
+4)  imcopy infile.fit 'outfile.fit[compress R 100,100; 4]' 
+
+       This will use the Rice compression algorithm, 100 X 100 pixel
+       tiles, and noise_bits = 4 (assuming the input image has a
+       floating point data type).  Decreasing the value of noisebits
+       will improve the overall compression efficiency at the expense
+       of losing more information.
+
+5)  imcopy infile.fit outfile.fit
+
+       If the input file is in tile-compressed format, then it will be
+       uncompressed to the output file.  Otherwise, it simply copies
+       the input image to the output image.
+
+6)  imcopy 'infile.fit+1[1001:1500,2001:2500]'  outfile.fit
+
+       This extracts a 500 X 500 pixel section of the much larger
+       input image (which may be in tile-compressed format).  The
+       output is a normal uncompressed FITS image.
+
+7)  imcopy 'infile.fit+1[1001:1500,2001:2500]'  outfile.fit.gz
+
+       Same as above, except the output file is externally compressed
+       using the gzip algorithm.
+
+-
+**G.  ASCII and Binary Table Routines
  
 These routines perform read and write operations on columns of data in
 FITS ASCII or Binary tables.  Note that in the following discussions,
@@ -2150,11 +2368,11 @@ an error.
 
 Automatic data type conversion is performed for numerical data types
 (only) if the data type of the column (defined by the TFORMn keyword)
-differs from the data type of the calling routine.  ASCII tables
-support the following datatype values:  TSTRING, TBYTE, TSHORT,
-TUSHORT, TINT, TUINT, TLONG, TULONG, TFLOAT, or TDOUBLE.  Binary tables
-also support TLOGICAL (internally mapped to the `char' datatype),
-TCOMPLEX, and TDBLCOMPLEX.
+differs from the data type of the calling routine.  ASCII and binary
+tables support the following datatype values:  TSTRING, TBYTE, TSHORT,
+TUSHORT, TINT, TUINT, TLONG, TLONGLONG, TULONG, TFLOAT, or TDOUBLE.
+Binary tables also support TLOGICAL (internally mapped to the `char'
+datatype), TCOMPLEX, and TDBLCOMPLEX.
 
 Note that within the context of these routines, the TSTRING datatype
 corresponds to a C 'char**' datatype, i.e., a pointer to an array of
@@ -3254,7 +3472,7 @@ AIPS.  All the angular quantities are given in units of degrees.
 -
 >2  Get the values of all the standard FITS celestial coordinate system
     keywords from the header of a FITS table where the X and Y (or RA and
-    DEC coordinates are stored in 2 separate columns of the table.
+    DEC) coordinates are stored in 2 separate columns of the table.
     These values may then be passed to the routines that perform the
 >   coordinate transformations. \label{ffgtcs}
 -
@@ -3766,7 +3984,7 @@ moved to if the file were opened with fits\_open\_file.  The returned
 HDU number begins with 1 for the primary array, so for example, if the
 input filename = `myfile.fits[2]' then hdunum = 3 will be returned.
 CFITSIO does not open the file to check if the extension actually
-exists if an extension number is specified. If an extension *name* is
+exists if an extension number is specified. If an extension name is
 included in the file name specification (e.g.  `myfile.fits[EVENTS]'
 then this routine will have to open the FITS file and look for the
 position of the named extension, then close file again.  This is not
@@ -4471,8 +4689,8 @@ working with large data arrays.
       (fitsfile *fptr, int datatype, long firstelem, long nelements,
        DTYPE *array, int *status);
 
-  int fits_write_img_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
-      ffppr[b,i,ui,k,uk,j,uj,e,d]
+  int fits_write_img_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
+      ffppr[b,i,ui,k,uk,j,uj,jj,e,d]
       (fitsfile *fptr, long group, long firstelem, long nelements,
        DTYPE *array, > int *status);
 
@@ -4480,8 +4698,8 @@ working with large data arrays.
       (fitsfile *fptr, int datatype, long firstelem, long nelements,
        DTYPE *array, DTYPE *nulval, > int *status);
 
-  int fits_write_imgnull_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
-      ffppn[b,i,ui,k,uk,j,uje,d]
+  int fits_write_imgnull_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
+      ffppn[b,i,ui,k,uk,j,uj,jj,e,d]
       (fitsfile *fptr, long group, long firstelem,
            long nelements, DTYPE *array, DTYPE nulval, > int *status);
 -
@@ -4496,27 +4714,27 @@ working with large data arrays.
     applications in radio interferometry, but is officially deprecated
 >   for future use.  \label{ffpgpx}
 -
-  int fits_write_grppar_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
-      ffpgp[b,i,ui,k,uk,j,uj,e,d]
+  int fits_write_grppar_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
+      ffpgp[b,i,ui,k,uk,j,uj,jj,e,d]
       (fitsfile *fptr, long group, long firstelem, long nelements,
        > DTYPE *array, int *status)
 -
 >>4  Write a 2-D or 3-D image into the data array. \label{ffp2dx} \label{ffp3dx}
 -
-  int fits_write_2d_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
-      ffp2d[b,i,ui,k,uk,j,uj,e,d]
+  int fits_write_2d_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
+      ffp2d[b,i,ui,k,uk,j,uj,jj,e,d]
       (fitsfile *fptr, long group, long dim1, long naxis1,
        long naxis2, DTYPE *array, > int *status)
 
-  int fits_write_3d_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
-      ffp3d[b,i,ui,k,uk,j,uj,e,d]
+  int fits_write_3d_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
+      ffp3d[b,i,ui,k,uk,j,uj,jj,e,d]
       (fitsfile *fptr, long group, long dim1, long dim2,
        long naxis1, long naxis2, long naxis3, DTYPE *array, > int *status)
 -
 >>5   Write an arbitrary data subsection into the data array. \label{ffpssx}
 -
-  int fits_write_subset_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
-      ffpss[b,i,ui,k,uk,j,uj,e,d]
+  int fits_write_subset_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
+      ffpss[b,i,ui,k,uk,j,uj,jj,e,d]
       (fitsfile *fptr, long group, long naxis, long *naxes,
        long *fpixel, long *lpixel, DTYPE *array, > int *status)
 -
@@ -4527,8 +4745,8 @@ working with large data arrays.
       (fitsfile *fptr, int  datatype, long firstelem, long nelements,
        DTYPE *nulval, > DTYPE *array, int *anynul, int *status)
 
-  int fits_read_img_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
-      ffgpv[b,i,ui,k,uk,j,uj,e,d]
+  int fits_read_img_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
+      ffgpv[b,i,ui,k,uk,j,uj,jj,e,d]
       (fitsfile *fptr, long group, long firstelem, long nelements,
        DTYPE nulval, > DTYPE *array, int *anynul, int *status)
 
@@ -4537,7 +4755,7 @@ working with large data arrays.
        > DTYPE *array, char *nullarray, int *anynul, int *status)
 
   int  fits_read_imgnull_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
-       ffgpf[b,i,ui,k,uk,j,uj,e,d]
+       ffgpf[b,i,ui,k,uk,j,uj,jj,e,d]
        (fitsfile *fptr, long group, long firstelem, long nelements,
        > DTYPE *array, char *nularray, int *anynul, int *status)
 -
@@ -4546,8 +4764,8 @@ working with large data arrays.
     applications in radio interferometry, but is officially deprecated
 >   for future use. \label{ffggpx}
 -
-  int  fits_read_grppar_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
-       ffggp[b,i,ui,k,uk,j,uj,e,d]
+  int  fits_read_grppar_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
+       ffggp[b,i,ui,k,uk,j,uj,jj,e,d]
        (fitsfile *fptr, long group, long firstelem, long nelements,
        > DTYPE *array, int *status)
 -
@@ -4556,13 +4774,13 @@ working with large data arrays.
      unless nulval=0 in which case no testing for undefined pixels will
 >    be performed. \label{ffg2dx} \label{ffg3dx}
 -
-  int  fits_read_2d_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
-       ffg2d[b,i,ui,k,uk,j,uj,e,d]
+  int  fits_read_2d_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
+       ffg2d[b,i,ui,k,uk,j,uj,jj,e,d]
        (fitsfile *fptr, long group, DTYPE nulval, long dim1, long naxis1,
        long naxis2, > DTYPE *array, int *anynul, int *status)
 
-  int  fits_read_3d_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
-       ffg3d[b,i,ui,k,uk,j,uj,e,d]
+  int  fits_read_3d_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
+       ffg3d[b,i,ui,k,uk,j,uj,jj,e,d]
        (fitsfile *fptr, long group, DTYPE nulval, long dim1,
        long dim2, long naxis1, long naxis2, long naxis3,
        > DTYPE *array, int *anynul, int *status)
@@ -4570,22 +4788,22 @@ working with large data arrays.
 >9    Read an arbitrary data subsection from the data array.
 >      \label{ffgsvx} \label{ffgsfx}
 -
-  int  fits_read_subset_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
-       ffgsv[b,i,ui,k,uk,j,uj,e,d]
+  int  fits_read_subset_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
+       ffgsv[b,i,ui,k,uk,j,uj,jj,e,d]
        (fitsfile *fptr, int group, int naxis, long *naxes, 
        long *fpixel, long *lpixel, long *inc, DTYPE nulval, 
        > DTYPE *array, int *anynul, int *status)
 
-  int  fits_read_subsetnull_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
-       ffgsf[b,i,ui,k,uk,j,uj,e,d]
+  int  fits_read_subsetnull_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
+       ffgsf[b,i,ui,k,uk,j,uj,jj,e,d]
        (fitsfile *fptr, int group, int naxis, long *naxes, 
        long *fpixel, long *lpixel, long *inc, > DTYPE *array, 
        char *nularray, int *anynul, int *status)
 -
 
-**G.  Specialized FITS ASCII and Binary Table Routines
+**F.  Specialized FITS ASCII and Binary Table Routines
 
-***1.  Column Information Routines
+***1.  General Column Routines
 
 >1  Get information about an existing ASCII or binary table column.   A null
     pointer may be given for any of the output parameters that are not
@@ -4630,6 +4848,30 @@ working with large data arrays.
   int fits_write_theap / ffpthp
       (fitsfile *fptr, long theap, > int *status)
 -
+>4  Test the contents of the binary table variable array heap, returning
+    the size of the heap, the number of unused bytes that are not currently
+    pointed to by any of the descriptors, and the number of bytes which are
+    pointed to by multiple descriptors.  It also returns valid = FALSE if
+    any of the descriptors point to invalid addresses  out of range of the
+>    heap. \label{fftheap}
+-
+  int fits_test_heap / fftheap
+      (fitsfile *fptr, > long *heapsize, long *unused, long *overlap, 
+       int *validheap, int *status)
+-
+>5  Re-pack the vectors in the binary table variable array heap to recover
+    any unused space.  Normally, when a vector in a variable length
+    array column is rewritten the previously written array remains in
+    the heap as wasted unused space.  This routine will repack the
+    arrays that are still in use, thus eliminating any bytes in the
+    heap that are no longer in use.  Note that if several vectors point
+    to the same bytes in the heap, then this routine will make
+    duplicate copies of the bytes for each vector, which will actually
+>   expand the size of the heap. \label{ffcmph}
+-
+  int fits_compress_heap / ffcmph
+      (fitsfile *fptr, > int *status)
+-
 
 ***2.  Low-Level Table Access Routines
  
@@ -4664,8 +4906,8 @@ parameters used in these routines.
       (fitsfile *fptr, int colnum, long firstrow, long firstelem,
        long nelements, char **array, > int *status)
  
-  int fits_write_col_[log,byt,sht,usht,int,uint,lng,ulng,flt,dbl,cmp,dblcmp] /
-      ffpcl[l,b,i,ui,k,uk,j,uj,e,d,c,m]
+  int fits_write_col_[log,byt,sht,usht,int,uint,lng,ulng,lnglng,flt,dbl,cmp,dblcmp] /
+      ffpcl[l,b,i,ui,k,uk,j,uj,jj,e,d,c,m]
       (fitsfile *fptr, int colnum, long firstrow,
            long firstelem, long nelements, DTYPE *array, > int *status)
 -
@@ -4674,8 +4916,8 @@ parameters used in these routines.
     are equal to the nulval parameter.  This routines must not be used to
 >   write to  variable length array columns.  \label{ffpcnx}
 -
-  int fits_write_colnull_[log, byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
-      ffpcn[l,b,i,ui,k,uk,j,uj,e,d]
+  int fits_write_colnull_[log, byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
+      ffpcn[l,b,i,ui,k,uk,j,uj,jj,e,d]
       (fitsfile *fptr, int colnum, long firstrow, long firstelem,
        long nelements, DTYPE *array, DTYPE nulval, > int *status)
 -
@@ -4767,8 +5009,8 @@ parameters used in these routines.
        long nelements, char *nulstr, > char **array, int *anynul,
        int *status)
  
-  int fits_read_col_[log,byt,sht,usht,int,uint,lng,ulng, flt, dbl, cmp, dblcmp] /
-      ffgcv[l,b,i,ui,k,uk,j,uj,e,d,c,m]
+  int fits_read_col_[log,byt,sht,usht,int,uint,lng,ulng, lnglng, flt, dbl, cmp, dblcmp] /
+      ffgcv[l,b,i,ui,k,uk,j,uj,jj,e,d,c,m]
       (fitsfile *fptr, int colnum, long firstrow, long firstelem,
        long nelements, DTYPE nulval, > DTYPE *array, int *anynul,
        int *status)
@@ -4784,8 +5026,8 @@ parameters used in these routines.
        long nelements, > char **array, char *nularray, int *anynul,
        int *status)
 
-  int fits_read_colnull_[log,byt,sht,usht,int,uint,lng,ulng,flt,dbl,cmp,dblcmp] /
-      ffgcf[l,b,i,ui,k,uk,j,uj,e,d,c,m]
+  int fits_read_colnull_[log,byt,sht,usht,int,uint,lng,ulng,lnglng,flt,dbl,cmp,dblcmp] /
+      ffgcf[l,b,i,ui,k,uk,j,uj,jj,e,d,c,m]
       (fitsfile *fptr, int colnum, long firstrow, 
        long firstelem, long nelements, > DTYPE *array,
        char *nularray, int *anynul, int *status)
@@ -4800,8 +5042,8 @@ parameters used in these routines.
     array.  The INC parameter specifies the sampling interval in
 >   each dimension between the data elements that will be returned. \label{ffgsvx2}
 -
-  int fits_read_subset_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
-      ffgsv[b,i,ui,k,uk,j,uj,e,d]
+  int fits_read_subset_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
+      ffgsv[b,i,ui,k,uk,j,uj,jj,e,d]
       (fitsfile *fptr, int colnum, int naxis, long *naxes, long *fpixel,
        long *lpixel, long *inc, DTYPE nulval, > DTYPE *array, int *anynul,
        int *status)
@@ -4816,8 +5058,8 @@ parameters used in these routines.
     interval in each dimension between the data elements that will be
 >   returned. \label{ffgsfx2}
 -
-  int fits_read_subsetnull_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
-      ffgsf[b,i,ui,k,uk,j,uj,e,d]
+  int fits_read_subsetnull_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
+      ffgsf[b,i,ui,k,uk,j,uj,jj,e,d]
       (fitsfile *fptr, int colnum, int naxis, long *naxes, 
        long *fpixel, long *lpixel, long *inc, > DTYPE *array, 
        char *nularray, int *anynul, int *status)
@@ -4906,6 +5148,10 @@ writing the same FITS files on magnetic disk.
 Compressed FITS files in gzip or Unix COMPRESS format can be directly read.
 
 \item
+Output FITS files can be written directly in compressed gzip format,
+thus saving disk space.
+
+\item
 FITS table columns can be created, modified, or deleted 'on-the-fly' as
 the table is opened by CFITSIO.  This creates a virtual FITS file containing
 the modifications that is then opened by the application program.
@@ -4956,6 +5202,11 @@ any other CFITSIO routine.
 short integer array in this case) and converts it on the fly into a
 temporary FITS format image in memory which can then be read with any
 other CFITSIO routine.
+
+\item
+{\tt myfile.fits.gz}: if this is the name of a new output file, the '.gz'
+suffix will cause it to be compressed in gzip format when it is written to 
+disk.
 
 \item
 {\tt myfile.fits.gz[events, 2]}:  opens and uncompresses the gzipped file
@@ -5049,7 +5300,7 @@ components depending on the context.  These components are described in
 the following sections:
 -
 When creating a new file:
-   filetype://BaseFilename(templateName)
+   filetype://BaseFilename(templateName)[compress]
 
 When opening an existing primary array or image HDU:
    filetype://BaseFilename(outName)[HDUlocation][ImageSection]
@@ -5229,12 +5480,19 @@ the base filename begins with an exclamation point (!) then any
 existing file with that same basename will be deleted prior to creating
 the new FITS file.  Otherwise if the file to be created already exists,
 then CFITSIO will return an error and will not overwrite the existing
-file.  Note  that the exclamation point,  '!', is a special UNIX character,
-so if it is used  on the command line rather than entered at a task
-prompt, it must be  preceded by a backslash to force the UNIX
+file.  Note  that the exclamation point,  '!', is a special UNIX
+character, so if it is used  on the command line rather than entered at
+a task prompt, it must be  preceded by a backslash to force the UNIX
 shell to pass it verbatim to the application program.
 
-The input file may be compressed with the gzip or Unix compress
+If the output disk file name ends with the suffix '.gz', then CFITSIO
+will compress the file using the gzip compression algorithm before
+writing it to disk.  This can reduce the amount of disk space used by
+the file.  Note that this feature requires that the uncompressed file
+be constructed in memory before it is compressed and written to disk,
+so it can fail if there is insufficient available memory.
+
+An input FITS file may be compressed with the gzip or Unix compress
 algorithms, in which case CFITSIO will uncompress the file on the fly
 into a temporary file (in memory or on disk).  Compressed files may
 only be opened with read-only permission.  When specifying the name of
@@ -5335,6 +5593,11 @@ then CFITSIO will uncompress `file1.fits.gz' into the local disk file
 the output file, so it will still exist after the application program
 exits.
 
+The output filename "mem://" is also allowed, which will write the 
+output file into memory, and also allow write access to the file.  This
+'file' will disappear when it is closed, but this may be useful for
+some applications which only need to modify a temporary copy of the file.
+
 In some cases, several different temporary FITS files will be created
 in sequence, for instance, if one opens a remote file using FTP, then
 filters rows in a binary table extension, then create an image by
@@ -5361,7 +5624,6 @@ compressed FITS file on local disk has been opened.
 \item
 otherwise, the output filename is ignored.
 \end{itemize}
-
 
 The output file specifier is useful when reading FTP or HTTP-type
 FITS files since it can be used to create a local disk copy of the file
@@ -5411,7 +5673,26 @@ template file may also be an ASCII text file, where each line (in
 general) describes one FITS keyword record.  The format of the ASCII
 template file is described in the following Template Files chapter.
 
-**E.  HDU Location Specification
+**E.  Image Tile-Compression Specification
+
+When specifying the name of the output FITS file to be created, the
+user can indicate that images should be written in tile-compressed
+format (see section 5.5, ``Primary Array or IMAGE Extension I/O
+Routines'') by enclosing the compression parameters in square brackets
+following the root disk file name.  Here are some examples of the
+syntax for specifying tile-compressed output images:
+-
+    myfile.fit[compress]    - use Rice algorithm and default tile size
+
+    myfile.fit[compress GZIP] - use the specified compression algorithm;
+    myfile.fit[compress Rice]     only the first letter of the algorithm 
+    myfile.fit[compress PLIO]     name is required.
+
+    myfile.fit[compress Rice 100,100]   - use 100 x 100 pixel tile size
+    myfile.fit[compress Rice 100,100;2] - as above, and use noisebits = 2
+-
+
+**F.  HDU Location Specification
 
 The optional HDU location specifier defines which HDU (Header-Data
 Unit, also known as an `extension') within the FITS file to initially
@@ -5473,7 +5754,7 @@ syntax as described in the Row Filter Specifier section, below.
                    greater than 100.
 -
 
-**F.  Image Section
+**G.  Image Section
 
 A virtual file containing a rectangular subsection of an image can be
 extracted and opened by specifying the range of pixels (start:end)
@@ -5524,7 +5805,7 @@ the world coordinate system keywords in the header of the image
 section, if they exist, so that the coordinate associated with each
 pixel in the image section will be computed correctly.
 
-**G.  Column and Keyword Filtering Specification
+**H.  Column and Keyword Filtering Specification
 
 The optional column/keyword filtering specifier is used to modify the
 column structure and/or the header keywords in the HDU that was
@@ -5545,15 +5826,19 @@ operations.  More than one operation may be specified by separating
 them with semi-colons.
 
 \begin{itemize}
+
+\item
+Copy only a specified list of columns columns to the filtered input file.
+The list of column name should be separated by semi-colons.
+
 \item
 Delete a column or keyword by listing the name preceded by a minus sign
-or an
-exclamation mark (!), e.g., '-TIME' will delete the TIME column if it
-exists, otherwise the TIME keyword.  An error is returned if neither a
-column nor keyword with this name exists.  Note  that the exclamation
-point,  '!', is a special UNIX character, so if it is used  on the
-command line rather than entered at a task prompt, it must be  preceded
-by a backslash to force the UNIX shell to ignore it.
+or an exclamation mark (!), e.g., '-TIME' will delete the TIME column
+if it exists, otherwise the TIME keyword.  An error is returned if
+neither a column nor keyword with this name exists.  Note  that the
+exclamation point,  '!', is a special UNIX character, so if it is used
+on the command line rather than entered at a task prompt, it must be
+preceded by a backslash to force the UNIX shell to ignore it.
 
 \item
 Rename an existing column or keyword with the syntax 'NewName ==
@@ -5593,14 +5878,24 @@ header keyword values and other columns (in the same row).  The full
 syntax and available functions for the expression are described below
 in the row filter specification section.
 
+If the expression contains both a list of columns to be included and
+columns to be deleted, then all the columns in the original table 
+except the explicitly deleted columns will appear in the filtered
+table.
+
 For  complex  or commonly used operations,  one  can also  place the
-operations into a text  file and  import it  into the  column filter
-using  the syntax '[col @filename.txt]'.   The operations can extend
-over multiple lines of the  file, but multiple operations must still
-be separated by semicolons.
+operations into an external text  file and import it  into the  column
+filter using  the syntax '[col @filename.txt]'.   The operations can
+extend over multiple lines of the  file, but multiple operations must
+still be separated by semicolons.   Any lines in the external text file
+that begin with 2 slash characters ('//') will be ignored and may be
+used to add comments into the file.
 
 Examples:
 -
+   [col Time;rate]               - only the Time and rate columns will
+                                   appear in the filtered input file.
+
    [col -TIME; Good == STATUS]   - deletes the TIME column and
                                    renames the status column to 'Good'
 
@@ -5610,7 +5905,7 @@ Examples:
                                    it by the EXPOSURE keyword value.
 -
 
-**H.  Row Filtering Specification
+**I.  Row Filtering Specification
 
     When entering the name of a FITS table that is to be opened by a
     program, an optional row filter may be specified to select a subset
@@ -5639,7 +5934,9 @@ Examples:
     For complex or commonly  used filters, one can place the expression
     into a text file and import it into the row filter using the syntax
     '[@filename.txt]'.  The expression can be  arbitrarily complex and
-    extend over multiple lines of the file.
+    extend over multiple lines of the file.  Any lines in the external
+    text file that begin with 2 slash characters ('//') will be ignored
+    and may be used to add comments into the file.
 
     Keyword and   column data  are referenced by   name.  Any  string of
     characters not surrounded by    quotes (ie, a constant  string)   or
@@ -5657,7 +5954,7 @@ Examples:
 
     To access a table entry in a row other  than the current one, follow
     the  column's name  with  a row  offset  within  curly  braces.  For
-    example, 'PHA{-3}' will evaluate to the value  of column PHA, 3 rows
+    example, 'PHA\{-3\}' will evaluate to the value  of column PHA, 3 rows
     above  the  row currently  being processed.   One  cannot specify an
     absolute row number, only a relative offset.  Rows that fall outside
     the table will be treated as undefined, or NULLs.
@@ -5886,8 +6183,8 @@ by a backslash to force the UNIX shell to ignore it.
     Variable-length vector columns are not supported.
     
     Vectors can  be manually constructed  within the expression  using a
-    comma-separated list of  elements surrounded by curly braces ('{}').
-    For example, '{1,3,6,1}' is a 4-element vector containing the values
+    comma-separated list of  elements surrounded by curly braces ('\{\}').
+    For example, '\{1,3,6,1\}' is a 4-element vector containing the values
     1, 3, 6, and 1.  The  vector can contain  only boolean, integer, and
     real values (or expressions).  The elements will  be promoted to the
     highest  datatype   present.  Any   elements   which  are themselves
@@ -6099,7 +6396,7 @@ by a backslash to force the UNIX shell to ignore it.
                                      row in the table.
 -
 
-**I.   Binning or Histogramming Specification
+**J.   Binning or Histogramming Specification
 
 The optional binning specifier is enclosed in square brackets and can
 be distinguished from a general row filter specification by the fact
@@ -6194,10 +6491,12 @@ reciprocal of the value when constructing the histogram.
 
 For  complex or commonly  used  histograms, one  can also  place its
 description  into  a  text  file and  import   it  into  the binning
-specification  using the  syntax [bin  @filename.txt].  The
-file's contents  can extend over   multiple lines, although  it must
-still conform to the  no-spaces rule  for the min:max:binsize syntax
-and each axis specification must still be comma-separated.
+specification  using the  syntax [bin  @filename.txt].  The file's
+contents  can extend over   multiple lines, although  it must still
+conform to the  no-spaces rule  for the min:max:binsize syntax and each
+axis specification must still be comma-separated.  Any lines in the
+external text file that begin with 2 slash characters ('//') will be
+ignored and may be used to add comments into the file.
 
  Examples:
 
@@ -6458,7 +6757,36 @@ Programmers should be cautious about using these features, especially
 if the FITS files that are produced are expected to be processed by
 other software systems which do not use the CFITSIO interface.  
 
-**A.  Long String Keyword Values.
+**A.  64-Bit Long Integers
+
+CFITSIO can read and write FITS images or table columns containing
+64-bit integer data values.  This data type is not recognized in the
+offical FITS Standard definition document, but it is likely that FITS
+will eventually support this data type, expecially as computers that
+run 64-bit operating systems become more common.  To enable support for
+64-bit integers in CFITSIO the \#define statement at the beginning of
+the fitsio2.h file must set SUPPORT\_64BIT\_INTEGERS to 1.  Currently
+it is set to 0 by default.
+
+The FITS 64-bit images have BITPIX = 64, and the 64-bit binary table
+columns have TFORMn = 'K'.  The use of these datatypes on platforms
+where the size of a 'long' integer = 8 is rather intuitive.  CFITSIO
+will write 'long' variable values to the FITS file and read them back
+into 'long' variables just as one would expect.  CFITSIO also supports
+implicit data type conversion between 64-bit integer images and columns
+and any other supported data type, although some loss of numerical
+precision or numerical overflow is likely in this case.
+
+The situation is more difficult on 32-bit computing platforms where the
+size of a 'long' variable = 32.  In this case there is no obvious way
+to return the full 64 precision of the FITS data values when reading
+the FITS file.  CFITSIO will convert the 64-bit integer values into any
+other supported data type;  the 64-bit double data type is probably
+the most useful in this case.  It only provides about 52-bits of
+precision in the mantissa, however, so some lose of precision is
+possible.
+
+**B.  Long String Keyword Values.
  
 The length of a standard FITS string keyword is limited to 68
 characters because it must fit entirely within a single FITS header
@@ -6522,7 +6850,7 @@ fits\_write\_key\_longstr routine must be called instead to write long
 strings.  This routine can also be used to write ordinary string values
 less than 68 characters in length.
 
-**B.  Arrays of Fixed-Length Strings in Binary Tables
+**C.  Arrays of Fixed-Length Strings in Binary Tables
  
 The definition of the FITS binary table extension format does not
 provide a simple way to specify that a character column contains an
@@ -6547,7 +6875,7 @@ character column (with the form 'rA:SSTRw/nnn)'.  This appendix was not
 officially voted on by the IAU and hence is still provisional.  CFITSIO
 does not currently support this proposal.
 
-**C.  Keyword Units Strings
+**D.  Keyword Units Strings
 
 One limitation of the current FITS Standard is that it does not define
 a specific convention for recording the physical units of a keyword
@@ -6579,7 +6907,7 @@ The fits\_read\_key\_unit and fits\_write\_key\_unit routines in
 CFITSIO read and write, respectively, the keyword unit strings in an
 existing keyword.
 
-**D.  HIERARCH Convention for Extended Keyword Names
+**E.  HIERARCH Convention for Extended Keyword Names
 
 CFITSIO supports the HIERARCH keyword convention which allows keyword
 names that are longer then 8 characters and may contain the full range
@@ -6630,6 +6958,29 @@ keyword.  The current implementation allows any ASCII text character
 (ASCII 32 to ASCII 126) in the keyword name except for the '='
 character.  A space is also required on either side of the equal sign.
 
+**F.  Tile-Compressed Image Format
+
+CFITSIO supports a convention for compressing n-dimensional images and
+storing the resulting byte stream in a variable-length column in a FITS
+binary table.  The general principle used in this convention is to
+first divide the n-dimensional image into a rectangular grid of
+subimages or `tiles'.  Each tile is then compressed as a continuous
+block of data, and the resulting compressed byte stream is stored in a
+row of a variable length column in a FITS binary table. By dividing the
+image into tiles it is generally possible to extract and uncompress
+subsections of the image without having to uncompress the whole image.
+The default tiling pattern treats each row of a 2-dimensional image (or
+higher dimensional cube) as a tile, such that each tile contains NAXIS1
+pixels. Any other rectangular tiling pattern may also be defined. In
+the case of relatively small images it may be sufficient to compress
+the entire image as a single tile, resulting in an output binary table
+with 1 row.  In the case of 3-dimensional data cubes, it may be
+advantageous to treat each plane of the cube as a separate tile if
+application software typically needs to access the cube on a plane by
+plane basis.
+
+See section 5.6 ``Image Compression''
+for more information on using this tile-compressed image format.
 
 *XII.  Optimizing Programs
  
@@ -6880,6 +7231,7 @@ fits\_clear\_errmsg   & \pageref{ffcmsg} \\
 fits\_close\_file     & \pageref{ffclos} \\
 fits\_compact\_group & \pageref{ffgtcm} \\
 fits\_compare\_str    & \pageref{ffcmps} \\
+fits\_compress\_heap & \pageref{ffcmph} \\
 fits\_copy\_col     & \pageref{ffcpcl} \\
 fits\_copy\_data      & \pageref{ffcpdt} \\
 fits\_copy\_group    & \pageref{ffgtcp} \\
@@ -6900,9 +7252,9 @@ fits\_decode\_tdim    & \pageref{ffdtdm} \\
 fits\_delete\_col   & \pageref{ffdcol} \\
 fits\_delete\_file    & \pageref{ffdelt} \\
 fits\_delete\_hdu     & \pageref{ffdhdu} \\
-fits\_delete\_key     & \pageref{ffdkey} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_delete\_key     & \pageref{ffdkey} \\
 fits\_delete\_record  & \pageref{ffdrec} \\
 fits\_delete\_rowlist & \pageref{ffdrws} \\
 fits\_delete\_rows  & \pageref{ffdrow} \\
@@ -6920,6 +7272,7 @@ fits\_get\_col\_display\_width    & \pageref{ffgcdw} \\
 fits\_get\_colname    & \pageref{ffgcnn} \\
 fits\_get\_colnum     & \pageref{ffgcno} \\
 fits\_get\_coltype    & \pageref{ffgtcl} \\
+fits\_get\_compression\_type & \pageref{ffgetcomp} \\
 fits\_get\_errstatus  & \pageref{ffgerr} \\
 fits\_get\_hdrpos        & \pageref{ffghps} \\
 fits\_get\_hdrspace      & \pageref{ffghsp} \\
@@ -6933,16 +7286,18 @@ fits\_get\_img\_size & \pageref{ffgisz} \\
 fits\_get\_img\_type & \pageref{ffgidt} \\
 fits\_get\_keyclass    & \pageref{ffgkcl} \\
 fits\_get\_keyname    & \pageref{ffgknm} \\
-fits\_get\_keytype    & \pageref{ffdtyp} \\
-fits\_get\_num\_cols     & \pageref{ffgnrw} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_get\_keytype    & \pageref{ffdtyp} \\
+fits\_get\_noise\_bits   & \pageref{ffgetcomp} \\
+fits\_get\_num\_cols     & \pageref{ffgnrw} \\
 fits\_get\_num\_groups  & \pageref{ffgmng} \\
 fits\_get\_num\_hdus   & \pageref{ffthdu} \\
 fits\_get\_num\_members  & \pageref{ffgtnm} \\
 fits\_get\_num\_rows     & \pageref{ffgnrw} \\
 fits\_get\_rowsize    & \pageref{ffgrsz} \\
 fits\_get\_system\_time  & \pageref{ffdt2s} \\
+fits\_get\_tile\_dim     & \pageref{ffgetcomp} \\
 fits\_get\_tbcol      & \pageref{ffgabc} \\
 fits\_get\_version    & \pageref{ffvers} \\
 fits\_insert\_atbl    & \pageref{ffitab} \\
@@ -6965,13 +7320,13 @@ fits\_modify\_key\_null   & \pageref{ffmkyu} \\
 fits\_modify\_key\_TYP    & \pageref{ffmkyx} \\
 fits\_modify\_name       & \pageref{ffmnam} \\
 fits\_modify\_record     & \pageref{ffmrec} \\
+\end{tabular}
+\newpage
+\begin{tabular}{lr}
 fits\_modify\_vector\_len  & \pageref{ffmvec} \\
 fits\_movabs\_hdu     & \pageref{ffmahd} \\
 fits\_movnam\_hdu     & \pageref{ffmnhd} \\
 fits\_movrel\_hdu     & \pageref{ffmrhd} \\
-\end{tabular}
-\newpage
-\begin{tabular}{lr}
 fits\_null\_check     & \pageref{ffnchk} \\
 fits\_open\_file      & \pageref{ffopen} \\
 fits\_open\_group    & \pageref{ffgtop} \\
@@ -7014,12 +7369,12 @@ fits\_read\_keyword      & \pageref{ffgkey} \\
 fits\_read\_pix  & \pageref{ffgpxv} \\
 fits\_read\_pixnull & \pageref{ffgpxf} \\
 fits\_read\_record       & \pageref{ffgrec} \\
+\end{tabular}
+\begin{tabular}{lr}
 fits\_read\_subset\_TYP  & \pageref{ffgsvx} \pageref{ffgsvx2}\\
 fits\_read\_subsetnull\_TYP & \pageref{ffgsfx} \pageref{ffgsfx2} \\
 fits\_read\_tbl\_coord & \pageref{ffgtcs} \\
 fits\_read\_tblbytes    & \pageref{ffgtbb} \\
-\end{tabular}
-\begin{tabular}{lr}
 fits\_read\_tdim         & \pageref{ffgtdm} \\
 fits\_remove\_group  & \pageref{ffgtrm} \\
 fits\_remove\_member   & \pageref{ffgmrm} \\
@@ -7030,13 +7385,17 @@ fits\_select\_rows  & \pageref{ffsrow} \\
 fits\_set\_atblnull   & \pageref{ffsnul} \\
 fits\_set\_bscale     & \pageref{ffpscl} \\
 fits\_set\_btblnull   & \pageref{fftnul} \\
+fits\_set\_compression\_type  & \pageref{ffsetcomp} \\
 fits\_set\_hdrsize    & \pageref{ffhdef} \\
 fits\_set\_hdustruc   & \pageref{ffrdef} \\
 fits\_set\_imgnull    & \pageref{ffpnul} \\
+fits\_set\_noise\_bits  & \pageref{ffsetcomp} \\
+fits\_set\_tile\_dim  & \pageref{ffsetcomp} \\
 fits\_set\_tscale     & \pageref{fftscl} \\
 fits\_str2date        & \pageref{ffdt2s} \\
 fits\_str2time        & \pageref{ffdt2s} \\
-fits\_test\_expr    & \pageref{fftexp} \\
+fits\_test\_expr      & \pageref{fftexp} \\
+fits\_test\_heap      & \pageref{fftheap} \\
 fits\_test\_keyword   & \pageref{fftkey} \\
 fits\_test\_record    & \pageref{fftrec} \\
 fits\_time2str  & \pageref{ffdt2s} \\
@@ -7058,6 +7417,8 @@ fits\_write\_btblhdr      & \pageref{ffphbn} \\
 fits\_write\_chksum   & \pageref{ffpcks} \\
 fits\_write\_col         & \pageref{ffpcl} \\
 fits\_write\_col\_bit     & \pageref{ffpclx} \\
+\end{tabular}
+\begin{tabular}{lr}
 fits\_write\_col\_TYP     & \pageref{ffpcls} \\
 fits\_write\_col\_null      & \pageref{ffpclu} \\
 fits\_write\_colnull      & \pageref{ffpcn} \\
@@ -7066,8 +7427,6 @@ fits\_write\_comment      & \pageref{ffpcom} \\
 fits\_write\_date         & \pageref{ffpdat} \\
 fits\_write\_descript  & \pageref{ffpdes} \\
 fits\_write\_errmsg   & \pageref{ffpmsg} \\
-\end{tabular}
-\begin{tabular}{lr}
 fits\_write\_grphdr       & \pageref{ffphpr} \\
 fits\_write\_grppar\_TYP & \pageref{ffpgpx} \\
 fits\_write\_history      & \pageref{ffphis} \\
@@ -7090,6 +7449,7 @@ fits\_write\_null\_img    & \pageref{ffpprn} \\
 fits\_write\_pix          & \pageref{ffppx} \\
 fits\_write\_pixnull      & \pageref{ffppxn} \\
 fits\_write\_record       & \pageref{ffprec} \\
+fits\_write\_subset       & \pageref{ffpss} \\
 fits\_write\_subset\_TYP  & \pageref{ffpssx} \\
 fits\_write\_tblbytes  & \pageref{ffptbb} \\
 fits\_write\_tdim         & \pageref{ffptdm} \\
@@ -7103,6 +7463,7 @@ ffbnfm   & \pageref{ffbnfm} \\
 ffcalc     & \pageref{ffcalc} \\
 ffcalc\_rng     & \pageref{ffcalcrng} \\
 ffclos     & \pageref{ffclos} \\
+ffcmph & \pageref{ffcmph} \\
 ffcmps    & \pageref{ffcmps} \\
 ffcmsg  & \pageref{ffcmsg} \\
 ffcopy     & \pageref{ffcopy} \\
@@ -7143,9 +7504,9 @@ ffgcf\_    & \pageref{ffgcfx} \\
 ffgcks     & \pageref{ffgcks} \\
 ffgcnn    & \pageref{ffgcnn} \\
 ffgcno     & \pageref{ffgcno} \\
-ffgcrd         & \pageref{ffgcrd} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffgcrd         & \pageref{ffgcrd} \\
 ffgcv        & \pageref{ffgcv} \\
 ffgcv\_    & \pageref{ffgcvx} \\
 ffgcx     & \pageref{ffgcx} \\
@@ -7191,9 +7552,9 @@ ffgpv         & \pageref{ffgpv} \\
 ffgpv\_     & \pageref{ffgpvx} \\
 ffgpxv   & \pageref{ffgpxv} \\
 ffgpxf  & \pageref{ffgpxf} \\
-ffgrec       & \pageref{ffgrec} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffgrec       & \pageref{ffgrec} \\
 ffgrsz    & \pageref{ffgrsz} \\
 ffgsdt        & \pageref{ffdt2s} \\
 ffgsf\_ & \pageref{ffgsfx} \pageref{ffgsfx2} \\
@@ -7239,9 +7600,9 @@ ffmkls    & \pageref{ffmkyx} \\
 ffmkyu   & \pageref{ffmkyu} \\
 ffmky\_    & \pageref{ffmkyx} \\
 ffmnam       & \pageref{ffmnam} \\
-ffmnhd     & \pageref{ffmnhd} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffmnhd     & \pageref{ffmnhd} \\
 ffmrec     & \pageref{ffmrec} \\
 ffmrhd     & \pageref{ffmrhd} \\
 ffmvec  & \pageref{ffmvec} \\
@@ -7287,9 +7648,10 @@ ffppx & \pageref{ffppx} \\
 ffppxn & \pageref{ffppxn} \\
 ffprec       & \pageref{ffprec} \\
 ffpscl     & \pageref{ffpscl} \\
-ffpss\_  & \pageref{ffpssx} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffpss    & \pageref{ffpss} \\
+ffpss\_  & \pageref{ffpssx} \\
 ffpsvc    & \pageref{ffpsvc} \\
 ffptbb  & \pageref{ffptbb} \\
 ffptdm         & \pageref{ffptdm} \\
@@ -7306,6 +7668,7 @@ ffsnul   & \pageref{ffsnul} \\
 ffsrow  & \pageref{ffsrow} \\
 fftexp    & \pageref{fftexp} \\
 ffthdu   & \pageref{ffthdu} \\
+fftheap  & \pageref{fftheap} \\
 fftkey   & \pageref{fftkey} \\
 fftm2s  & \pageref{ffdt2s} \\
 fftnul   & \pageref{fftnul} \\
@@ -7337,9 +7700,12 @@ binspec  - the input table binning specifier
 bitpix   - bits per pixel. The following symbolic mnemonics are predefined: 
                BYTE_IMG   =   8 (unsigned char)
                SHORT_IMG  =  16 (signed short integer)
-               LONG_IMG   =  32 (signed long integer)
+               LONG_IMG   =  32 (signed long integer)
+               LONGLONG_IMG =  64 (signed long 64-bit integer)
                FLOAT_IMG  = -32 (float)
                DOUBLE_IMG = -64 (double).
+           The LONGLONG_IMG type is experimental and is not officially
+           recognized in the FITS Standard document.
            Two additional values, USHORT_IMG and ULONG_IMG are also available
            for creating unsigned integer images.  These are equivalent to
            creating a signed integer image with BZERO offset keyword values
@@ -7355,6 +7721,7 @@ colspec  - the input file column specification; used to delete, create, or renam
            table columns
 comment  - the keyword comment field (72 char max, null-terminated)
 complm   - should the checksum be complemented?
+comptype - compression algorithm to use: GZIP_1, RICE_1, or PLIO_1
 coordtype- type of coordinate projection (-SIN, -TAN, -ARC, -NCP, 
            -GLS, -MER, or -AIT)
 cpopt    - grouping table copy option parameter. Allowed values are:
@@ -7422,6 +7789,7 @@ hduok    - was the HDU verification successful (=1) or
 hdusum   - 32 bit 1's complement checksum for the entire CHDU
 hdutype  - type of HDU: IMAGE_HDU (=0), ASCII_TBL (=1), or BINARY_TBL (=2)
 headstart- starting address (in bytes) of the CHDU
+heapsize - size of the binary table heap, in bytes
 history  - the HISTORY keyword comment string (70 char max, null-terminated)
 hour     - hour within day (UTC) (0 - 23)
 inc      - sampling interval for pixels in each FITS dimension
@@ -7470,6 +7838,7 @@ nkeys    - number of keywords in the sequence
 ninc     - number of names in the inclusion list
 nmembers - Number of grouping table members (NAXIS2 value).
 nmove    - number of HDUs to move (+ or -), relative to current position
+noisebits- number of bits to ignore when compressing floating point images
 nrows    - number of rows in the table
 nstart   - first integer value
 nularray - set to TRUE (=1) if corresponding data element is undefined
@@ -7478,6 +7847,8 @@ nulstr   - character string used to represent undefined values in ASCII table
 numval   - numerical data value, of the appropriate datatype
 offset   -  byte offset in the heap to the first element of the vector
 openfptr - pointer to a currently open FITS file
+overlap  - number of bytes in the binary table heap pointed to by more than 1
+           descriptor
 outcolnum- output column number; range = 1 to TFIELDS + 1
 outfile  - and optional output filename; the input file will be copied to this prior
            to opening the file
@@ -7516,6 +7887,8 @@ tform    - format of the column (null-terminated); allowed values are:
 
 theap    - zero indexed byte offset of starting address of the heap
            relative to the beginning of the binary table data
+tilesize - array of length NAXIS that specifies the dimensions of
+           the image compression tiles
 ttype    - label or name for table column (null-terminated)
 tunit    - physical unit for table column (null-terminated)
 typechar - symbolic code of the table column datatype
@@ -7528,12 +7901,18 @@ typecode - datatype code of the table column.  The negative of
                 ASCII character, A      16        TSTRING
                 short integer, I        21        TSHORT
                 integer, J              41        TINT32BIT
+                long long integer, K    81        TLONGLONG
                 real, E                 42        TFLOAT
                 double precision, D     82        TDOUBLE
                 complex, C              83        TCOMPLEX
                 double complex, M      163        TDBLCOMPLEX
+             The TLONGLONG column type is experimental and is not
+             recognized in the official FITS Standard document
 unit     - the physical unit string (e.g., 'km/s') for a keyword
+unused   - number of unused bytes in the binary table heap 
 urltype  - the file type of the FITS file (file://, ftp://, mem://, etc.)
+validheap- returned value = FALSE if any of the variable length array
+           address are outside the valid range of addresses in the heap 
 value    - the keyword value string (70 char max, null-terminated)
 version  - current version number of the CFITSIO library
 width    - width of the character string field
@@ -7640,7 +8019,8 @@ improve the readability of their code.
  BAD_TFORM         261    illegal TFORM format code
  BAD_TFORM_DTYPE   262    unrecognizable TFORM datatype code
  BAD_TDIM          263    illegal TDIMn keyword value
- 
+ BAD_HEAP_PTR      264    invalid BINTABLE heap pointer is out of range
+
  BAD_HDU_NUM       301    HDU number < 1 or > MAXHDU
  BAD_COL_NUM       302    column number < 1 or > tfields
  NEG_FILE_POS      304    tried to move to negative byte location in file

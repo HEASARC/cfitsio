@@ -1,4 +1,4 @@
- FITSIO TESTPROG, v  2.202
+ FITSIO TESTPROG, v  2.401
   
  Try opening then closing a nonexistent file: 
    ftopen iunit, status (expect an error) =  15 104
@@ -65,7 +65,7 @@
  keyword unit=feet/second/second
  KEY_PKLS long string value = This is a very long string value that is continued
   over more than one keyword.                                          
- header contains   63 keywords; located at keyword   25
+ header contains   61 keywords; located at keyword   23
  ftgkns: first string  second string               
  ftgknl:    T   F   T
  ftgknj:   11  12  13
@@ -79,7 +79,7 @@
  KY_PKNS1
   
  After deleting the keywords... 
- COMMENT   This keyword was written by fxpcom.                                 
+ COMMENT This keyword was written by fxpcom.                                   
  KY_PKNS1= 'first string'       / fxpkns comment                               
   
  After inserting the keywords... 

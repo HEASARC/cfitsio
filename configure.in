@@ -29,8 +29,10 @@ if test $FC = 'nope' ; then
    AC_MSG_WARN(cfitsio: == No acceptable f77 found in \$PATH)
    AC_MSG_WARN(cfitsio: == Cfitsio will be built without Fortran wrapper support)
    FC=
+   F77_WRAPPERS=
 else
   CFORTRANFLAGS=
+  F77_WRAPPERS="\${FITSIO_SRC}"
   echo $ac_n "checking whether we are using GNU Fortran""... $ac_c" 1>&6
   if test `$FC --version -c < /dev/null 2> /dev/null | grep -c GNU` -gt 0 -o \
           `$FC --version -c < /dev/null 2> /dev/null | grep -ic egcs` -gt 0
@@ -76,6 +78,12 @@ CFLAGS="$CFLAGS"
 LIBPRE=""
 
 case $system in
+    Darwin-*)
+	# Darwin can be powerpc or i386
+	ARCH=`uname -p`
+	EXT="darwin"
+	CFLAGS="$CFLAGS -D_FILE_OFFSET_BITS=64"
+	;;
     SunOS-4*)
 	ARCH="sun"
 	EXT="sun"
@@ -167,6 +175,11 @@ SHLIB_LD=:
 SHLIB_SUFFIX=".so"
 lhea_shlib_cflags=
 case $EXT in
+  darwin)
+    SHLIB_LD="cc -dynamiclib"
+    SHLIB_SUFFIX=".dylib"
+    lhea_shlib_cflags="-fPIC -fno-common"
+    ;;
   hpu)
     SHLIB_LD="ld -b" 
     SHLIB_SUFFIX=".sl"
@@ -189,7 +202,9 @@ case $EXT in
     AC_MSG_WARN(Unable to determine how to make a shared library)
     ;;
 esac
-if test "x$GCC" = xyes; then
+# Darwin uses gcc (=cc), but needs different flags (see above)
+# if test "x$GCC" = xyes; then
+if test "x$GCC" = xyes && test "x$EXT" != xdarwin; then
   SHLIB_LD="$CC -shared"
   lhea_shlib_cflags='-fPIC'
 fi
@@ -204,6 +219,7 @@ AC_SUBST(FC)dnl
 AC_SUBST(LIBPRE)dnl
 AC_SUBST(SHLIB_LD)dnl
 AC_SUBST(SHLIB_SUFFIX)dnl
+AC_SUBST(F77_WRAPPERS)
 
 # ================= test for the unix ftruncate function ================
 
@@ -213,6 +229,19 @@ AC_TRY_LINK([#include <unistd.h>
 ftruncate(0, 0);
 ], [
 AC_DEFINE(HAVE_FTRUNCATE)
+AC_MSG_RESULT("yes")
+], AC_MSG_RESULT("no") )
+
+# ---------------------------------------------------------
+# some systems define long long for 64-bit ints
+# ---------------------------------------------------------
+ 
+AC_MSG_CHECKING("whether long long is defined")
+AC_TRY_COMPILE([#include <stdlib.h>
+], [
+long long filler;
+], [
+AC_DEFINE(HAVE_LONGLONG)
 AC_MSG_RESULT("yes")
 ], AC_MSG_RESULT("no") )
 

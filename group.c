@@ -5736,7 +5736,7 @@ static grp_stack_item* grp_stack_append(
   grp_stack_item* last, grp_stack_data data
 );
 static grp_stack_data grp_stack_remove(grp_stack_item* last);
-static grp_stack* new_grp_stack();
+static grp_stack* new_grp_stack(void);
 static grp_stack_data pop_grp_stack(grp_stack* mystack);
 static void push_grp_stack(grp_stack* mystack, grp_stack_data data);
 static grp_stack_data shift_grp_stack(grp_stack* mystack);
@@ -5859,7 +5859,7 @@ static grp_stack_data grp_stack_remove(grp_stack_item* last) {
 }
 
 /* create new stack dynamically, and give it valid initial values */
-static grp_stack* new_grp_stack() {
+static grp_stack* new_grp_stack(void) {
   grp_stack* retval = (grp_stack*) malloc(sizeof(grp_stack));
   if(retval) {
     retval->stack_size = 0;

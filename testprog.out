@@ -1,4 +1,4 @@
-CFITSIO TESTPROG, v2.202
+CFITSIO TESTPROG, v2.401
 
 Try opening then closing a nonexistent file:
   ffopen fptr, status  = 0 104 (expect an error)
@@ -73,7 +73,7 @@ KEY_PKY J 11 [feet/second/second] fxpkyj comment 0
 KEY_PKY units = feet/second/second
 KEY_PKLS long string value = 
 This is a very long string value that is continued over more than one keyword.
-header contains 67 keywords; located at keyword 29 
+header contains 65 keywords; located at keyword 27 
 ffgkns:  first string, second string, 
 ffgknl:  1, 0, 1
 ffgknj:  11, 12, 13

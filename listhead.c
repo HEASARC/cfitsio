@@ -15,11 +15,11 @@ int main(int argc, char *argv[])
       printf("ext is not given, list the keywords in all the extensions. \n");
       printf("\n");
       printf("Examples: \n");
+      printf("   listhead file.fits      - list every header in the file \n");
       printf("   listhead file.fits[0]   - list primary array header \n");
       printf("   listhead file.fits[2]   - list header of 2nd extension \n");
       printf("   listhead file.fits+2    - same as above \n");
       printf("   listhead file.fits[GTI] - list header of GTI extension\n");
-      printf("   listhead file.fits      - list every header in the file \n");
       printf("\n");
       printf("Note that it may be necessary to enclose the input file\n");
       printf("name in single quote characters on the Unix command line.\n");
@@ -33,16 +33,14 @@ int main(int argc, char *argv[])
       /* List only a single header if a specific extension was given */ 
       if (hdupos != 1 || strchr(argv[1], '[')) single = 1;
 
-      /* Main loop to print header of each extension */
-      for (; !status; hdupos++) 
+      for (; !status; hdupos++)  /* Main loop through each extension */
       {
-        /* get no. of keywords */
-        fits_get_hdrspace(fptr, &nkeys, NULL, &status);
+        fits_get_hdrspace(fptr, &nkeys, NULL, &status); /* get # of keywords */
 
         printf("Header listing for HDU #%d:\n", hdupos);
 
-        /* Keep reading keywords until we get an end-of-header error */
-        for (ii = 1; ii <= nkeys; ii++) {
+        for (ii = 1; ii <= nkeys; ii++) { /* Read and print each keywords */
+
            if (fits_read_record(fptr, ii, card, &status))break;
            printf("%s\n", card);
         }
@@ -50,18 +48,15 @@ int main(int argc, char *argv[])
 
         if (single) break;  /* quit if only listing a single header */
 
-        /* Attempt to move to next extension */
-        fits_movrel_hdu(fptr, 1, NULL, &status);
+        fits_movrel_hdu(fptr, 1, NULL, &status);  /* try to move to next HDU */
       }
 
-      /* Reset status after normal error */
-      if (status == END_OF_FILE)  status = 0;
+      if (status == END_OF_FILE)  status = 0; /* Reset after normal error */
 
       fits_close_file(fptr, &status);
     }
 
-    /* if error occured, print out error message */
-    if (status) fits_report_error(stderr, status);
+    if (status) fits_report_error(stderr, status); /* print any error message */
     return(status);
 }
 

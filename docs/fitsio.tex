@@ -1,9 +1,9 @@
 \documentclass[11pt]{book}
-%\input{html.sty}
-%\htmladdtonavigation
-%   {\begin{rawhtml}
-% <A HREF="http://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html">FITSIO Home</A>
-%    \end{rawhtml}}
+\input{html.sty}
+\htmladdtonavigation
+   {\begin{rawhtml}
+ <A HREF="http://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html">FITSIO Home</A>
+    \end{rawhtml}}
 %\oddsidemargin=0.25in
 \oddsidemargin=0.00in
 \evensidemargin=0.00in
@@ -32,7 +32,7 @@
 \medskip
 \medskip
 \begin{center}
-{\Large Version 2.2\\}
+{\Large Version 2.3\\}
 \end{center}
 \bigskip
 \vskip 2.5cm
@@ -47,7 +47,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large May 2001\\}
+{\Large October 2001\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -165,6 +165,9 @@ The CFITSIO library is built on Unix systems by typing:
 \begin{verbatim}
    > ./configure
    > make
+or
+   > ./configure
+   > make shared
 \end{verbatim}
 at the operating system prompt.  Type ./configure and not simply
 `configure' to ensure that the configure script in the current
@@ -175,38 +178,12 @@ library. By default this also builds the set of Fortran-callable
 wrapper routines whose calling sequences are described later in this
 document.
 
-The CFITSIO library file, libcfitsio.a, and 2 include files, fitsio.h
-and longnam.h, should then be copied to the appropriate directory(s)
-for use when compiling application programs.  Alternatively, one could
-set 2 environment variables, FTOOLS\_LIB and FTOOLS\_INCLUDE, to
-specify the paths to the installation directories, (e.g., `setenv
-FTOOLS\_INCLUDE /usr/local/include') and then run `make install' to
-build and install the CFITSIO library.
-
-On HP/UX systems, the environment variable CFLAGS should be set
-to -Ae before running configure to enable "extended ANSI" features.
-
-It may not be possible to staticly link programs that use CFITSIO on
-some platforms (namely, on Solaris 2.6) due to the network drivers
-(which provide FTP and HTTP access to FITS files).  It is possible to
-make both a dynamic and a static version of the CFITSIO library, but
-network file access will not be possible using the static version.  To
-build the dynamic libcfitsio.so library (on solaris), type 'make
-clean', then edit the Makefile to add -fPIC or -KPIC (gcc or cc) to the
-CFLAGS line, then rebuild the library with 'make'.  Once you're done,
-build the shared library with
-
-\begin{verbatim}
- ld -G -z text -o libcfitsio.so *.o
-\end{verbatim}
-Then to get the staticly linkable libcfitsio.a library file do another
-make clean, undefine HAVE\_NET\_SERVICES on the CFLAGS line and rebuild.
-It's unimportant whether or not you use -fPIC for static builds.
-
-When using the shared library the executable code is not copied into
-your program at link time and instead the program locates the necessary
-library code at run time, normally through LD\_LIBRARY\_PATH or some
-other method.  The advantages are:
+The 'make shared' option builds a shared or dynamic version of the
+CFITSIO library.  When using the shared library the executable code is
+not copied into your program at link time and instead the program
+locates the necessary library code at run time, normally through
+LD\_LIBRARY\_PATH or some other method. The advantages of using a shared
+library are:
 
 \begin{verbatim}
    1.  Less disk space if you build more than 1 program
@@ -224,10 +201,27 @@ The disadvantages are:
 \begin{verbatim}
    1. More hassle at runtime.  You have to either build the programs
       specially or have LD_LIBRARY_PATH set right.
-   2. There may be a slight start up penality, depending on where you are
+   2. There may be a slight start up penalty, depending on where you are
       reading the shared library and the program from and if your CPU is
       either really slow or really heavily loaded.
 \end{verbatim}
+
+The CFITSIO library file (libcfitsio.a or libcfitsio.so), and 2 include
+files, fitsio.h and longnam.h, should then be copied to the appropriate
+directory(s) for use when compiling application programs.
+Alternatively, one could set 2 environment variables, FTOOLS\_LIB and
+FTOOLS\_INCLUDE, to specify the paths to the installation directories,
+(e.g., `setenv FTOOLS\_INCLUDE /usr/local/include') and then run `make
+install' to build and install the CFITSIO library.
+
+On HP/UX systems, the environment variable CFLAGS should be set
+to -Ae before running configure to enable "extended ANSI" features.
+
+It may not be possible to staticly link programs that use CFITSIO on
+some platforms (namely, on Solaris 2.6) due to the network drivers
+(which provide FTP and HTTP access to FITS files).  It is possible to
+make both a dynamic and a static version of the CFITSIO library, but
+network file access will not be possible using the static version.
 
 On VAX/VMS and ALPHA/VMS systems the make\_gfloat.com command file may
 be executed to build the cfitsio.olb object library using the default
@@ -284,8 +278,7 @@ CFITSIO has currently been tested on the following platforms:
    MacOS 7.1 or greater       Metrowerks 10.+
 \end{verbatim}
 CFITSIO will probably run on most other Unix platforms.  Cray
-supercomputers and IBM mainframe computers are currently not
-supported.
+supercomputers are currently not supported.
 
 
 \section{Testing the Library}
@@ -358,7 +351,7 @@ A few other utility  programs are included with CFITSIO:
     cookbook - a sample program that peforms common read and
                  write operations on a FITS file.
 
-    iter_a, iter_b, iter_c - tests of the CFITSIO iterator routine
+    iter_a, iter_b, iter_c - examples of the CFITSIO iterator routine
 \end{verbatim}
 
 The first 4 of these utility programs can be compiled and linked by typing
@@ -1386,14 +1379,19 @@ operations.  More than one operation may be specified by separating
 them with semi-colons.
 
 \begin{itemize}
+
 \item
-Delete a column or keyword by listing the name preceeded by a minus sign
-or an exclamation mark (!), e.g., '-TIME' will delete the TIME column if it
-exists, otherwise the TIME keyword.  An error is returned if neither a
-column nor keyword with this name exists.  Note  that the exclamation
-point,  '!', is a special UNIX character, so if it is used  on the
-command line rather than entered at a task prompt, it must be  preceded
-by a backslash to force the UNIX shell to ignore it.
+Copy only a specified list of columns columns to the filtered input file.
+The list of column name should be separated by semi-colons.
+
+\item
+Delete a column or keyword by listing the name preceeded by a minus
+sign or an exclamation mark (!), e.g., '-TIME' will delete the TIME
+column if it exists, otherwise the TIME keyword.  An error is returned
+if neither a column nor keyword with this name exists.  Note  that the
+exclamation point,  '!', is a special UNIX character, so if it is used
+on the command line rather than entered at a task prompt, it must be
+preceded by a backslash to force the UNIX shell to ignore it.
 
 \item
 Rename an existing column or keyword with the syntax 'NewName ==
@@ -1433,15 +1431,25 @@ header keyword values and other columns (in the same row).  The full
 syntax and available functions for the expression are described below
 in the row filter specification section.
 
+If the expression contains both a list of columns to be included and
+columns to be deleted, then all the columns in the original table
+except the explicitly deleted columns will appear in the filtered
+table.
+
 For  complex  or commonly used operations,  one  can also  place the
-operations into a text  file and  import it  into the  column filter
-using  the syntax '[col @filename.txt]'.   The operations can extend
-over multiple lines of the  file, but multiple operations must still
-be separated by semicolons.
+operations into an external text  file and import it  into the  column
+filter using  the syntax '[col @filename.txt]'.   The operations can
+extend over multiple lines of the  file, but multiple operations must
+still be separated by semicolons.   Any lines in the external text file
+that begin with 2 slash characters ('//') will be ignored and may be
+used to add comments into the file.
 
 Examples:
 
 \begin{verbatim}
+   [col Time;rate]               - only the Time and rate columns will
+                                   appear in the filtered input file.
+
    [col -TIME; Good == STATUS]   - deletes the TIME column and
                                    renames the status column to 'Good'
 
@@ -1482,7 +1490,9 @@ Examples:
     For complex or commonly  used filters, one can place the expression
     into a text file and import it into the row filter using the syntax
     '[@filename.txt]'.  The expression can be  arbitrarily complex and
-    extend over multiple lines of the file.
+    extend over multiple lines of the file.  Any lines in the external
+    text file that begin with 2 slash characters ('//') will be ignored
+    and may be used to add comments into the file.
 
     Keyword and   column data  are referenced by   name.  Any  string of
     characters not surrounded by    quotes (ie, a constant  string)   or
@@ -1500,7 +1510,7 @@ Examples:
 
     To access a table entry in a row other  than the current one, follow
     the  column's name  with  a row  offset  within  curly  braces.  For
-    example, 'PHA{-3}' will evaluate to the value  of column PHA, 3 rows
+    example, 'PHA\{-3\}' will evaluate to the value  of column PHA, 3 rows
     above  the  row currently  being processed.   One  cannot specify an
     absolute row number, only a relative offset.  Rows that fall outside
     the table will be treated as undefined, or NULLs.
@@ -1741,8 +1751,8 @@ by a backslash to force the UNIX shell to ignore it.
     Variable-length vector columns are not supported.
 
     Vectors can  be manually constructed  within the expression  using a
-    comma-separated list of  elements surrounded by curly braces ('{}').
-    For example, '{1,3,6,1}' is a 4-element vector containing the values
+    comma-separated list of  elements surrounded by curly braces ('\{\}').
+    For example, '\{1,3,6,1\}' is a 4-element vector containing the values
     1, 3, 6, and 1.  The  vector can contain  only boolean, integer, and
     real values (or expressions).  The elements will  be promoted to the
     highest  datatype   present.  Any   elements   which  are themselves
@@ -2063,10 +2073,12 @@ reciprocal of the value when constructing the histogram.
 
 For  complex or commonly  used  histograms, one  can also  place its
 description  into  a  text  file and  import   it  into  the binning
-specification  using the  syntax '[bin  @filename.txt]'.  The
-file's contents  can extend over   multiple lines, although  it must
-still conform to the  no-spaces rule  for the min:max:binsize syntax
-and each axis specification must still be comma-separated.
+specification  using the  syntax '[bin  @filename.txt]'.  The file's
+contents  can extend over   multiple lines, although  it must still
+conform to the  no-spaces rule  for the min:max:binsize syntax and each
+axis specification must still be comma-separated.  Any lines in the
+external text file that begin with 2 slash characters ('//') will be
+ignored and may be used to add comments into the file.
 
  Examples:
 

@@ -1,5 +1,310 @@
                    Log of Changes Made to CFITSIO
 
+
+Version 2.401 - 28 Jan 2002
+
+  - added the imcopy example program to the release (and Makefile)
+
+  Bug fixes:
+
+  - fixed typo in the imcompress code which affected compression
+    of 3D datacubes.
+
+  - made small change to fficls (insert column) to allow colums with
+    TFORMn = '1PU' and '1PV' to be inserted in a binary table.  The
+    'U' and 'V' are codes only used within CFITSIO to represent unsigned
+    16-bit and 32-bit integers; They get replaced by '1PI' and '1PJ'
+    respectively in the FITS table header, along with the appropriate
+    TZEROn keyword.
+
+Version 2.400 - 18 Jan 2002
+
+  (N.B.: Application programs must be recompiled, not just relinked 
+     with the new CFITSIO library because of changes made to fitsio.h)
+
+  New Routines:
+
+  - fits_write_subset/ffpss writes a rectangular subset (or the whole
+    image) to a FITS image.
+
+  - added a whole new family of routines to read and write arrays of 
+    'long long' integers (64-bit) to FITS images or table columns.  The
+    new routine names all end in 'jj':  ffpprjj, ffppnjj, ffp2djj,
+    ffp3djj, ffppssjj, ffpgpjj, ffpcljj, ffpcnjj. ffgpvjj, ffgpfjj,
+    ffg2djj, ffg3djj, ffgsvjj, ffgsfjj, ffggpjj, ffgcvjj, and ffgcfjj.
+
+  - added a set of helper routines that are used in conjunction with
+    the new support for tiled image compression.  3 routines set the
+    parameters that should be used when CFITSIO compresses an image:
+        fits_set_compression_type
+        fits_set_tile_dim
+        fits_set_noise_bits
+
+      3 corresponding routines report back the current settings:
+        fits_get_compression_type
+        fits_get_tile_dim
+        fits_get_noise_bits
+
+  Enhancements:
+
+  - major enhancement was made to support writing to tile-compressed
+    images.  In this format, the image is divided up into a rectangular
+    grid of tiles, and each tile of pixels is compressed individually
+    and stored in a row of a variable-length array columm in a binary
+    table.  CFITSIO has been able to transparently read this compressed
+    image format ever since version 2.1.  Now all the CFITSIO image
+    writing routines also transparently support this format.  There are
+    2 ways to force CFITSIO to write compressed images: 1) call the
+    fits_set_compression_type routine before writing the image header
+    keywords, or 2), specify that the image should be compressed when
+    entering the name of the output FITS file, using a new extended
+    filename syntax.  (examples: "myfile.fits[compress]" will use the
+    default compression parameters, and "myfile.fits[compress GZIP
+    100,100] will use the GZIP compression algorithm with 100 x 100
+    pixel tiles.
+
+  - added new driver to support creating output .gz compressed fits
+    files.  If the name of the output FITS file to be created ends with
+    '.gz' then CFITSIO will initially write the FITS file in memory and
+    then, when the FITS file is closed, CFITSIO will gzip the entire
+    file before writing it out to disk.
+
+  - when over-writing vectors in a variable length array in a binary
+    table, if the new vector to be written is less than or equal to
+    the length of the previously written vector, then CFITSIO will now
+    reuse the existing space in the heap, rather than always appending
+    the new array to the end of the heap.
+
+  - modified configure.in to support building cfitsio as a dynamic 
+    library on Mac OS X. Use 'make shared' like on other UNIX platforms,
+    but a .dylib file will be created instead of .so.  If installed in a 
+    nonstandard location, add its location to the DYLD_LIBRARY_PATH 
+    environment variable so that the library can be found at run time.
+
+  - made various modifications to better support the  8-byte long integer
+    datatype on more platforms.  The 'LONGLONG' datatype is typedef'ed
+    to equal 'long long' on most Unix platforms and MacOS, and equal
+    to '__int64' on Windows machines.
+
+  - modified configure.in and makefile.in to better support cases 
+    where the system has no Fortran compiler and thus the f77 wrapper
+    routines should not be compiled.
+
+  - made small modification to eval.y and eval_y.f to get rid of warning
+    on some platforms about redefinition of the 'alloca'.
+
+  Bug fixes:
+
+  - other recent bug fixes in ffdblk (delete blocks) caused ffdhdu (delete
+    HDU) to fail when trying to replace the primary array with a null
+    primary array.
+
+  - fixed bug that prevented inserting a new variable length column
+    into a table that already contained variable length data.
+
+  - modified fits_delete_file so that it will delete the file even if
+    the input status value is not equal to zero.
+
+  - in fits_resize_image, it was sometimes necessary to call ffrdef to
+    force the image structure to be defined.
+
+  - modified the filename parser to support input files with names like:
+    "myfile.fits.gz(mem://tmp)" in which the url type is specified for
+    the output file but not for the input file itself.  This required
+    modifications to ffiurl and ffrtnm.
+
+Version 2.301 -   7 Dec 2001
+
+  Enhancements:
+
+   - modified the http file driver so that if the filename to be opened
+     contains a '?' character (most likely a cgi related string) then it
+     will not attempt to append a .gz or .Z as it would normally do.
+
+   - added support for the '!' clobber character when specifying
+     the output disk file name in CFITSIO's extended filename syntax, e.g.,
+     'http://a.b.c.d/myfile.fits.gz(!outfile.fits)'
+
+   - added new device driver which is used when opening a compressed FITS
+     file on disk by uncompressing it into memory with READWRITE
+     access.  This happens when specifying an output filename
+     'mem://'.
+
+   - added 2 other device drivers to open http and ftp files in memory
+     with write access.
+
+   - improved the error trapping and reporting in cases where program
+     attempts to write to a READONLY file (especially in cases where the
+    'file' resides in memory, as is the case when opening an ftp or http
+     file.
+
+   - modified the extended filename parser so that it is does not confuse
+     the bracket character '[' which is sometimes used in the root name
+     of files of type 'http://', as the start of an extname or row filter
+     expression.  If the file is of type 'http://', the parser now
+     checks to see if the last character in the extended file name is
+     a ')' or ']'.  If not, it does not try to parse the file name
+     any further.
+
+   - improved the efficiency when writing FITS files in memory, by
+     initially allocating enough memory for the entire HDU when it is
+     created, rather than incrementally reallocing memory 2880 bytes
+     at a time (modified ffrhdu and mem_truncate).  This change also
+     means that the program will fail much sooner if it cannot allocate
+     enough memory to hold the entire FITS HDU.
+
+  Bug fixes:
+
+   - There was an error in the definition of the Fortran ftphtb wrapper
+     routine (writes required ASCII table header keywords) that caused
+     it to fail on DEC OSF and other platforms where sizeof(long) = 8.
+
+Version 2.300 - 23 Oct 2001
+
+  New Routines:
+
+   - fits_comp_img and fits_decomp_img are now fully supported and
+     documented.  These routine compress and decompress, respective,
+     a FITS image using a new algorithm in which the image is first
+     divided into a grid of rectangular tiles, then the compressed byte
+     stream from each tile is stored in a row of a binary table.
+     CFITSIO can transparently read FITS images stored in this
+     compressed format.  Compression ratios of 3 - 6 are typically
+     achieved.  Large compression ratios are achieved for floating
+     point images by throwing away non-significant noise bits in the
+     pixel values.
+
+   - fits_test_heap tests the integrity of the binary table heap and
+     returns statistics on the amount of unused space in the heap and
+     the amount of space that is pointed to by more than 1 descriptor.
+
+   - fits_compress_heap which will reorder the arrays in the binary
+     table heap, recovering any unused space.
+
+  Enhancements:
+
+   - made substantial internal changes to the code to support FITS
+     files containing 64-bit integer data values.  These files have
+     BITPIX = 64 or TFORMn = 'K'.  This new feature in CFITSIO is
+     currently only enabled if SUPPORT_64BIT_INTEGERS is defined = 1 in
+     the beginning of the fitsio2.h file.  By default support for
+     64-bit integers is not enabled.
+
+   - improved the ability to read and return a table column value as a
+     formatted string by supporting quasi-legal TDISPn values which
+     have a lowercase format code letter, and by completely ignoring
+     other unrecognizable TDISPn values.  Previously, unrecognized
+     TDISPn values could cause zero length strings to be returned.
+
+   - made fits_write_key_longstr more efficient when writing keywords
+     using the long string CONTINUE convention.  It previously did not
+     use all the available space on each card when the string to be
+     written contained many single quote characters.
+
+   - added a new "CFITSIO Quick Start Guide" which provides all the
+     basic information needed to write C programs using CFITSIO.
+
+   - updated the standard COMMENT keywords that are written at the 
+     beginning of every primary array to refer to the newly published
+     FITS Standard document in Astronomy and Astrophysics.
+     Note: because of this change, any FITS file created with this
+     version of CFITSIO will not be identical to the same file written
+     with a previous version of CFITSIO.
+
+   - replaced the 2 routines in pliocomp.c with new versions provided by
+     D Tody and N Zarate.  These routines compress/uncompress image pixels
+     using the IRAF pixel list compression algorithm.
+
+   - modified fits_copy_hdu so that when copying a Primary Array
+     to an Image extension, the COMMENT cards which give the reference
+     to the A&A journal article about FITS are not copied.  In the
+     inverse case the COMMENT keywords are inserted in the header.
+     
+   - modified configure and Makefile.in to add capability to build a
+     shared version of the CFITSIO library.  Type 'make shared' or 
+     'make libcfitsio.so' to invoke this option.
+
+   - disabled some uninformative error messages on the error stack:
+       1) when calling ffclos (and then ffchdu) with input status > 0
+       2) when ffmahd tries to move beyond the end of file.
+     The returned status value remains the same as before, but the
+     annoying error messages no longer get written to the error stack.
+
+   - The syntax for column filtering has been modified so that
+     if one only specifies a list of column names, then only those
+     columns will be copied into the output file.  This provides a simple
+     way to make a copy of a table containing only a specified list of
+     columns.  If the column specifier explicitly deletes a column, however,
+     than all the other columns will be copied to the filtered input
+     file, regardless of whether the columns were listed or not.
+     Similarly, if the expression specifies only a column to be modified
+     or created, then all the other columns in the table will be
+     copied.
+
+      mytable.fit[1][col Time;Rate]  - only the Time and Rate
+        columns will be copied to the filtered input file.
+
+      mytable.fit[1][col -Time ] - all but the Time column are copied
+        to the filtered input file.
+
+      mytable.fit[1][col Rate;-Time] - same as above.
+
+   - changed a '#if defined' statement in f77_wrap.h and f77_wrap1.c 
+     to support the fortran wrappers on 64-bit IBM/RS6000 systems
+
+   - modified group.c so that when attaching one group (the child) to 
+     another (the parent), check in each file for the existence of a 
+     pointer to the other before adding the link. This is to prevent
+     multiple links from forming under all circumstances.
+
+   - modified the filename parser to accept 'STDIN', 'stdin', 
+     'STDOUT' and 'stdout' in addition to '-' to mean read the
+     file from standard input or write to standard output.
+
+   - Added support for reversing an axis when reading a subsection
+     of a compressed image using the extended filename syntax, as in
+     myfile.fits+1[-*, *] or myfile.fits+1[600:501,501:600]
+
+   - When copying a compressed image to a uncompressed image, the
+     EXTNAME keyword is no longer copied if the value is equal to
+     'COMPRESSED_IMAGE'.
+
+   - slight change to the comment field of the DATE keyword to reflect
+     the fact that the Unix system date and time is not true UTC time.
+
+  Bug fixes:
+
+   - fits_write_key_longstr was not writing the keyword if a null
+     input string value was given.
+
+   - writing data to a variable length column, if that binary table is not
+     the last HDU in the FITS file, might overwrite the following HDU.
+     Fixed this by changing the order of a couple operations in ffgcpr.
+
+   - deleting a column from a table containing variable length columns
+     could cause the last few FITS blocks of the file to be reset = 0.
+     This bug occurred as a result of modifications to ffdblk in v2.202.
+     This mainly affects users of the 'compress_fits' utility
+     program.
+
+   - fixed obscure problem when writing bits to a variable length 'B' 
+     column.
+
+   - when reading a subsection of an image, the BSCALE and BZERO pixel
+     scaling may not have been applied when reading image pixel values
+     (even though the scaling keywords were properly written in the
+     header).
+
+   - fits_get_keyclass was not returning 'TYP_STRUCT_KEY' for the
+     END keyword.
+
+Version 2.204 - 26 July 2001 
+
+  Bug fixes:
+
+   - Re-write of fits_clean_url in group.c to solve various problems
+     with invalid bounds checking.
+
 Version 2.203 -  19 July 2001 (version in FTOOLS v5.1)
 
   Enhancements:
@@ -195,7 +500,7 @@ Version 2.200 - 26 Jan 2001
    - changed drvrsmem.c so it is compiled only when HAVE_SHMEM_SERVICES
      is defined in order to removed the conditional logic from the Makefile
 
-   - reorganized the CFITSIO User's guide to hopefully make it
+   - reorganized the CFITSIO User's guide to make it
      clearer and easier for new users to learn the basic routines.
 
    - fixed ffhdef (which reserves space for more header keywords) so
@@ -924,7 +1229,7 @@ Version 2.026 - 23 Dec 1998
 
    - modified grparser.c to compile correctly on Alpha/OSF machines
 
-   - modifed drvrnet.c to eliminate compiler warnings
+   - modified drvrnet.c to eliminate compiler warnings
 
    - Modified Makefile.in to include targets for building all the sample
      programs that are included with CFITSIO.
@@ -1327,7 +1632,7 @@ Version 1.30 - 11 September 1997
      in the ffgphd routine.
 
    - check status value in ffgkls to make sure the keyword exists
-     before allocating memeory for the value string.
+     before allocating memory for the value string.
 
    - fixed the support for writing and reading unsigned long integer
      keyword values in ffpky and ffgky by internally treating

@@ -95,7 +95,7 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
 {
     int tcode, maxelem, hdutype, writemode = 2, leng;
     short i2null;
-    INT32BIT i4null;
+    INT32BIT i4null, i8null[2];
     long twidth, incre, rownum, remain, next, ntodo;
     long tnull, ii;
     OFF_T repeat, startpos, elemnum, large_elem, wrtptr, rowlen;
@@ -165,7 +165,8 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
     }
     else if ( tcode == TBYTE  ||
               tcode == TSHORT ||
-              tcode == TLONG ) 
+              tcode == TLONG  ||
+              tcode == TLONGLONG) 
     {
       if (tnull == NULL_UNDEFINED)
       {
@@ -183,11 +184,23 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
          ffswap2(&i2null, 1); /* reverse order of bytes */
 #endif
       }
-      else
+      else if (tcode == TLONG)
       {
          i4null = tnull;
 #if BYTESWAPPED
          ffswap4(&i4null, 1); /* reverse order of bytes */
+#endif
+      }
+      else
+      {
+         if (tnull < 0)
+            i8null[0] = -1;
+         else
+            i8null[0] = 0;
+
+         i8null[1] = tnull;
+#if BYTESWAPPED
+         ffswap8( (double *) i8null, 1); /* reverse order of bytes */
 #endif
       }
     }
@@ -229,6 +242,12 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
 
                 for (ii = 0; ii < ntodo; ii++)
                   ffpbyt(fptr, 4, &i4null, status);
+                break;
+
+            case (TLONGLONG):
+
+                for (ii = 0; ii < ntodo; ii++)
+                  ffpbyt(fptr, 8, i8null, status);
                 break;
 
             case (TFLOAT):

@@ -291,7 +291,8 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
         /* Note: ffgcpr previous wrote the descripter, but with the */
         /* wrong repeat value  (gave bytes instead of bits).        */
 
-        ffpdes(fptr, colnum, frow, (long) repeat, offset, status);
+        if (tcode == -TBIT)
+            ffpdes(fptr, colnum, frow, (long) repeat, offset, status);
 
         /* Calc the i/o pointer location to start of sequence of pixels.   */
         /* ffgcpr has already calculated a value for bstart that           */

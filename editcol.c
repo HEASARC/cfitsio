@@ -26,6 +26,16 @@ int ffrsim(fitsfile *fptr,      /* I - FITS file pointer           */
     if (*status > 0)
         return(*status);
 
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+    {
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+    }
+         /* rescan header if data structure is undefined */
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               
+            return(*status);
+
     /* get current image size parameters */
     if (ffghpr(fptr, 99, &simple, &obitpix, &onaxis, onaxes, &pcount,
                &gcount, &extend, status) > 0)
@@ -296,7 +306,9 @@ int ffdrow(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
 
     nshift = (OFF_T)naxis1 * nrows;   /* no. of bytes to delete from table */
-    datasize = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize; /* cur size of data */
+    /* cur size of data */
+    datasize = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;
+
     firstbyte = (OFF_T)naxis1 * (firstrow + nrows - 1); /* relative del pos */
     nbytes = datasize - firstbyte;    /* no. of bytes to shift up */
     firstbyte += ((fptr->Fptr)->datastart);   /* absolute delete position */
@@ -554,7 +566,7 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
     /* current size of data */
     datasize = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;
     freespace = ( ( (datasize + 2879) / 2880) * 2880) - datasize;
-    nadd = (OFF_T)delbyte * naxis2;                /* no. of bytes to add to table */
+    nadd = (OFF_T)delbyte * naxis2;   /* no. of bytes to add to table */
 
     if ( (freespace - nadd) < 0)   /* not enough existing space? */
     {
@@ -573,14 +585,14 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         if (ffshft(fptr, firstbyte, nbytes, nadd, status) > 0) /* move heap */
             return(*status);
-
-        /* update the heap starting address */
-        (fptr->Fptr)->heapstart += nadd;
-
-        /* update the THEAP keyword if it exists */
-        tstatus = 0;
-        ffmkyj(fptr, "THEAP", (long)(fptr->Fptr)->heapstart, "&", &tstatus);
     }
+
+    /* update the heap starting address */
+    (fptr->Fptr)->heapstart += nadd;
+
+    /* update the THEAP keyword if it exists */
+    tstatus = 0;
+    ffmkyj(fptr, "THEAP", (long)(fptr->Fptr)->heapstart, "&", &tstatus);
 
     /* calculate byte position in the row where to insert the new column */
     if (colnum > tfields)
@@ -630,7 +642,7 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
         ffupch(tfm);         /* make sure format is in upper case */
         ffkeyn("TFORM", colnum, keyname, status);
 
-        if (datacode == TUSHORT) 
+        if (abs(datacode) == TUSHORT) 
         {
            /* Replace the 'U' with an 'I' in the TFORMn code */
            cptr = tfm;
@@ -650,7 +662,7 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
            strcpy(comm, "data are not scaled");
            ffpkyg(fptr, keyname, 1., 0, comm, status);
         }
-        else if (datacode == TULONG) 
+        else if (abs(datacode) == TULONG) 
         {
            /* Replace the 'V' with an 'J' in the TFORMn code */
            cptr = tfm;
@@ -691,7 +703,6 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
             firstcol += width + 1;  /*  add one space between the columns */
         }
     }
-
     ffrdef(fptr, status); /* initialize the new table structure */
     return(*status);
 }
@@ -771,7 +782,7 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
       datasize = (fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize;
       freespace = ( ( (datasize + 2879) / 2880) * 2880) - datasize;
 
-      nadd = (OFF_T)delbyte * naxis2;             /* no. of bytes to add to table */
+      nadd = (OFF_T)delbyte * naxis2;   /* no. of bytes to add to table */
 
       if ( (freespace - nadd) < 0)   /* not enough existing space? */
       {
@@ -790,14 +801,14 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         if (ffshft(fptr, firstbyte, nbytes, nadd, status) > 0) /* move heap */
             return(*status);
-
-        /* update the heap starting address */
-        (fptr->Fptr)->heapstart += nadd;
-
-        /* update the THEAP keyword if it exists */
-        tstatus = 0;
-        ffmkyj(fptr, "THEAP", (long)(fptr->Fptr)->heapstart, "&", &tstatus);
       }
+
+      /* update the heap starting address */
+      (fptr->Fptr)->heapstart += nadd;
+
+      /* update the THEAP keyword if it exists */
+      tstatus = 0;
+      ffmkyj(fptr, "THEAP", (long)(fptr->Fptr)->heapstart, "&", &tstatus);
 
       firstcol = colptr->tbcol + (repeat * width);  /* insert position */
 
@@ -815,28 +826,28 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
       /* delete elements from the vector */
       ffcdel(fptr, naxis1, naxis2, -delbyte, firstcol, status);
  
+      /* abs heap pos */
+      firstbyte = (fptr->Fptr)->datastart + (fptr->Fptr)->heapstart;
+      ndelete = (OFF_T)delbyte * naxis2; /* size of shift (negative) */
+
       /* shift heap up (if it exists) */
       if ((fptr->Fptr)->heapsize > 0)
       {
         nbytes = (fptr->Fptr)->heapsize;    /* no. of bytes to shift up */
-        /* abs heap pos */
-        firstbyte = (fptr->Fptr)->datastart + (fptr->Fptr)->heapstart;
-        ndelete = (OFF_T)delbyte * naxis2; /* size of shift (negative) */
-
         if (ffshft(fptr, firstbyte, nbytes, ndelete, status) > 0)
           return(*status);
-
-        /* update the heap starting address */
-        (fptr->Fptr)->heapstart += ndelete;  /* ndelete is negative */
-
-        /* update the THEAP keyword if it exists */
-        tstatus = 0;
-        ffmkyj(fptr, "THEAP", (long)(fptr->Fptr)->heapstart, "&", &tstatus);
       }
 
       /* delete the empty  blocks at the end of the HDU */
       if (nblock > 0)
         ffdblk(fptr, nblock, status);
+
+      /* update the heap starting address */
+      (fptr->Fptr)->heapstart += ndelete;  /* ndelete is negative */
+
+      /* update the THEAP keyword if it exists */
+      tstatus = 0;
+      ffmkyj(fptr, "THEAP", (long)(fptr->Fptr)->heapstart, "&", &tstatus);
     }
 
     /* construct the new TFORM keyword for the column */
@@ -1322,29 +1333,29 @@ int ffdcol(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     ffcdel(fptr, naxis1, naxis2, delbyte, firstcol, status); /* delete col */
 
+    /* absolute heap position */
+    firstbyte = (fptr->Fptr)->datastart + (fptr->Fptr)->heapstart;
+    ndelete = (OFF_T)delbyte * naxis2; /* size of shift */
+
     /* shift heap up (if it exists) */
     if ((fptr->Fptr)->heapsize > 0)
     {
       nbytes = (fptr->Fptr)->heapsize;    /* no. of bytes to shift up */
 
-      /* absolute heap pos */
-      firstbyte = (fptr->Fptr)->datastart + (fptr->Fptr)->heapstart;
-      ndelete = (OFF_T)delbyte * naxis2; /* size of shift */
-
       if (ffshft(fptr, firstbyte, nbytes, -ndelete, status) > 0) /* mv heap */
           return(*status);
-
-      /* update the heap starting address */
-      (fptr->Fptr)->heapstart -= ndelete;
-
-      /* update the THEAP keyword if it exists */
-      tstatus = 0;
-      ffmkyj(fptr, "THEAP", (long)(fptr->Fptr)->heapstart, "&", &tstatus);
     }
 
     /* delete the empty  blocks at the end of the HDU */
     if (nblock > 0)
         ffdblk(fptr, nblock, status);
+
+    /* update the heap starting address */
+    (fptr->Fptr)->heapstart -= ndelete;
+
+    /* update the THEAP keyword if it exists */
+    tstatus = 0;
+    ffmkyj(fptr, "THEAP", (long)(fptr->Fptr)->heapstart, "&", &tstatus);
 
     if ((fptr->Fptr)->hdutype == ASCII_TBL)
     {

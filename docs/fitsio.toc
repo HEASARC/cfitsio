@@ -20,12 +20,12 @@
 \contentsline {section}{\numberline {4.7}Image Section}{23}
 \contentsline {section}{\numberline {4.8}Column and Keyword Filtering Specification}{24}
 \contentsline {section}{\numberline {4.9}Row Filtering Specification}{25}
-\contentsline {subsection}{\numberline {4.9.1}General Syntax}{25}
+\contentsline {subsection}{\numberline {4.9.1}General Syntax}{26}
 \contentsline {subsection}{\numberline {4.9.2}Vector Columns}{29}
 \contentsline {subsection}{\numberline {4.9.3}Good Time Interval Filtering}{30}
-\contentsline {subsection}{\numberline {4.9.4}Spatial Region Filtering}{30}
+\contentsline {subsection}{\numberline {4.9.4}Spatial Region Filtering}{31}
 \contentsline {subsection}{\numberline {4.9.5}Example Row Filters}{32}
-\contentsline {section}{\numberline {4.10} Binning or Histogramming Specification}{33}
+\contentsline {section}{\numberline {4.10} Binning or Histogramming Specification}{34}
 \contentsline {chapter}{\numberline {5}Template Files }{37}
 \contentsline {section}{\numberline {5.1}Detailed Template Line Format}{37}
 \contentsline {section}{\numberline {5.2}Auto-indexing of Keywords}{38}

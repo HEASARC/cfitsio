@@ -55,7 +55,10 @@
 #include <time.h>
 
 #include <stdlib.h>
+
+#ifndef alloca
 #define alloca malloc
+#endif
 
    /*  Shrink the initial stack depth to keep local data <32K (mac limit)  */
    /*  yacc will allocate more space if needed, though.                    */
