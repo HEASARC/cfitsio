@@ -35,6 +35,7 @@ if test $ac_cv_header_stdc = no ; then
      echo "cfitsio: You need an ANSI C compiler and all ANSI trappings"
      echo "cfitsio:  to build cfitsio.   "
      echo " *******************************************************  "
+     exit 0;
 fi
 
 CFLAGS="$CFLAGS"
@@ -106,6 +107,8 @@ AC_SUBST(ARCH)dnl
 AC_SUBST(CFLAGS)dnl
 AC_SUBST(CC)dnl
 AC_SUBST(LIBPRE)dnl
-if test $ac_cv_header_stdc = yes ; then
-     AC_OUTPUT(Makefile);
-fi;
+
+
+
+AC_OUTPUT(Makefile)dnl
+
