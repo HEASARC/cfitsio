@@ -76,6 +76,12 @@ case $system in
     Linux*)
 	ARCH="linux"
 	CFLAGS="$CFLAGS -Dg77Fortran"
+	if test `$CC -v 2>&1 | grep gcc | grep -c '2\.8'` != "0" ; then
+		AC_WARN(Removing optimization for gcc 2.8.x on Linux)
+		changequote(,)dnl JP 9Dec98
+		CFLAGS=`echo $CFLAGS | sed -e 's/-O[0-9]* *//g'`
+		changequote([,])dnl
+	fi
 	;;
     FREEBSD*)
 	ARCH="linux"
