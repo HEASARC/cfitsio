@@ -319,7 +319,7 @@ AC_SUBST(my_shmem)
 # some systems define flock_t, for others we have to define it ourselves
 # -------------------------------------------------------------------------
 
-AC_MSG_CHECKING("do we have flock_t defined")
+AC_MSG_CHECKING("do we have flock_t defined in sys/fcntl.h")
 AC_TRY_COMPILE([#include <sys/fcntl.h>
 ], [
 flock_t filler;
@@ -328,8 +328,16 @@ AC_DEFINE(HAVE_FLOCK_T)
 AC_MSG_RESULT("yes") 
 ], AC_MSG_RESULT("no") )
 
-# some systems (AIX) have flock_t defined in the sys/flock.h header file
-AC_CHECK_HEADERS(sys/flock.h, AC_DEFINE(HAVE_FLOCK_T))
+if test "$HAVE_FLOCK_T" != 1; then
+   AC_MSG_CHECKING("do we have flock_t defined in sys/flock.h")
+   AC_TRY_COMPILE([#include <sys/flock.h>
+   ], [
+   flock_t filler;
+   ], [
+   AC_DEFINE(HAVE_FLOCK_T)
+   AC_MSG_RESULT("yes") 
+   ], AC_MSG_RESULT("no") )
+fi
 
 # -------------------------------------------------------------------------
 # there are some idiosyncrasies with semun defs (used in semxxx). Solaris
