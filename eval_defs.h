@@ -39,8 +39,9 @@ typedef struct {
 		  } data;
                                 } lval;
 
-typedef struct {
+typedef struct Node {
                   int    operation;
+                  void   (*DoOp)(struct Node *this);
                   int    nSubNodes;
                   int    SubNodes[MAXSUBS];
                   int    type;

@@ -659,7 +659,6 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
                   &userInfo->anyNull, &gParse.status );
           if( result->operation>0 ) {
              free( result->value.data.ptr );
-             free( result->value.undef );
           }
           break;
 
@@ -705,7 +704,6 @@ int parse_data( long        totalrows, /* I - Total rows to be processed     */
           if( result->operation>0 ) {
              free( result->value.data.strptr[0] );
              free( result->value.data.strptr );
-             free( result->value.undef );
           }
           break;
        }

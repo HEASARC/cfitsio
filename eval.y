@@ -662,6 +662,7 @@ static int New_Const( int returnType, void *value, long len )
    if( n>=0 ) {
       this             = gParse.Nodes + n;
       this->operation  = -1000;             /* Flag a constant */
+      this->DoOp       = NULL;
       this->nSubNodes  = 0;
       this->type       = returnType;
       memcpy( &(this->value.data), value, len );
@@ -682,6 +683,7 @@ static int New_Column( int ColNum )
    if( n>=0 ) {
       this              = gParse.Nodes + n;
       this->operation   = -ColNum;
+      this->DoOp        = NULL;
       this->nSubNodes   = 0;
       this->type        = gParse.colInfo[ColNum].type;
       this->value.nelem = gParse.colInfo[ColNum].nelem;
@@ -755,6 +757,7 @@ static int New_Unary( int returnType, int Op, int Node1 )
    if( n>=0 ) {
       this              = gParse.Nodes + n;
       this->operation   = Op;
+      this->DoOp        = Do_Unary;
       this->nSubNodes   = 1;
       this->SubNodes[0] = Node1;
       this->type        = returnType;
@@ -798,6 +801,15 @@ static int New_BinOp( int returnType, int Node1, int Op, int Node2 )
       this->value.naxis = that1->value.naxis;
       for( i=0; i<that1->value.naxis; i++ )
 	 this->value.naxes[i] = that1->value.naxes[i];
+
+	 /*  Both subnodes should be of same time  */
+      switch( that1->type ) {
+      case BITSTR:  this->DoOp = Do_BinOp_bit;  break;
+      case STRING:  this->DoOp = Do_BinOp_str;  break;
+      case BOOLEAN: this->DoOp = Do_BinOp_log;  break;
+      case LONG:    this->DoOp = Do_BinOp_lng;  break;
+      case DOUBLE:  this->DoOp = Do_BinOp_dbl;  break;
+      }
    }
    return( n );
 }
@@ -818,6 +830,7 @@ static int New_Func( int returnType, funcOp Op, int nNodes,
    if( n>=0 ) {
       this              = gParse.Nodes + n;
       this->operation   = (int)Op;
+      this->DoOp        = Do_Func;
       this->nSubNodes   = nNodes;
       this->SubNodes[0] = Node1;
       this->SubNodes[1] = Node2;
@@ -884,6 +897,7 @@ static int New_Deref( int Var,  int nDim,
 	 }
 
       this->operation   = '[';
+      this->DoOp        = Do_Deref;
       this->type        = theVar->type;
 
       if( theVar->value.naxis == nDim ) { /* All dimensions specified */
@@ -938,7 +952,7 @@ static int Test_Dims( int Node1, int Node2 )
 void Evaluate_Node( int thisNode )
     /**********************************************************************/
     /*  Recursively evaluate thisNode's subNodes, then call one of the    */
-    /*  Do_<Action> functions based on what operation is being performed. */
+    /*  Do_<Action> functions pointed to by thisNode's DoOp element.      */
     /**********************************************************************/
 {
    Node *this;
@@ -947,72 +961,13 @@ void Evaluate_Node( int thisNode )
    if( gParse.status ) return;
 
    this = gParse.Nodes + thisNode;
-   if( this->operation<=0 ) return;
-
-   i = this->nSubNodes;
-   while( i-- ) {
-      Evaluate_Node( this->SubNodes[i] );
-      if( gParse.status ) return;
-   }
-
-   if( this->operation>1000 )
-
-      Do_Func( this );
-
-   else {
-      switch( this->operation ) {
-
-	 /* Unary Operators */
-
-      case BOOLEAN:
-      case LONG:
-      case INTCAST:
-      case DOUBLE:
-      case FLTCAST:
-      case NOT:
-      case UMINUS:
-	 Do_Unary( this );
-	 break;
-
-         /* Binary Operators */
-
-      case OR:
-      case AND:
-      case EQ:
-      case NE:
-      case '~':
-      case GT:
-      case LT:
-      case LTE:
-      case GTE:
-      case '+': 
-      case '-': 
-      case '%': 
-      case '*': 
-      case '/': 
-      case '|': 
-      case '&': 
-      case POWER:
-	 /*  Both subnodes should be of same time  */
-	 switch( gParse.Nodes[ this->SubNodes[0] ].type ) {
-	 case BITSTR:  Do_BinOp_bit( this );  break;
-         case STRING:  Do_BinOp_str( this );  break;
-         case BOOLEAN: Do_BinOp_log( this );  break;
-         case LONG:    Do_BinOp_lng( this );  break;
-         case DOUBLE:  Do_BinOp_dbl( this );  break;
-	 }
-	 break;
-
-      case '[':
-	 /*  All subnodes should be LONGs and scalar/constant  */
-         Do_Deref( this );
-	 break;
-
-      default:
-	 /* BAD Operator! */
-	 yyerror("Unknown operator encountered during evaluation");
-	 break;
+   if( this->operation>0 ) {  /* <=0 indicate constants and columns */
+      i = this->nSubNodes;
+      while( i-- ) {
+	 Evaluate_Node( this->SubNodes[i] );
+	 if( gParse.status ) return;
       }
+      this->DoOp( this );
    }
 }
 
@@ -1186,7 +1141,7 @@ void Reset_Parser( long firstRow, long rowOffset, long nRows )
 
 static void Allocate_Ptrs( Node *this )
 {
-   long elem, row;
+   long elem, row, size;
 
    if( this->type==BITSTR || this->type==STRING ) {
 
@@ -1194,7 +1149,7 @@ static void Allocate_Ptrs( Node *this )
 						* sizeof(char*) );
       if( this->value.data.strptr ) {
 	 this->value.data.strptr[0] = (char*)malloc( gParse.nRows
-						     * (this->value.nelem+1)
+						     * (this->value.nelem+2)
 						     * sizeof(char) );
 	 if( this->value.data.strptr[0] ) {
 	    row = 0;
@@ -1203,12 +1158,8 @@ static void Allocate_Ptrs( Node *this )
 		  this->value.data.strptr[row-1] + this->value.nelem+1;
 	    }
 	    if( this->type==STRING ) {
-	       this->value.undef = (char*)malloc( gParse.nRows*sizeof(char) );
-	       if( this->value.undef==NULL ) {
-		  gParse.status = MEMORY_ALLOCATION;
-		  free( this->value.data.strptr[0] );
-		  free( this->value.data.strptr );
-	       }
+	       this->value.undef = this->value.data.strptr[row-1]
+                                   + this->value.nelem+1;
 	    } else {
 	       this->value.undef = NULL;  /* BITSTRs don't use undef array */
 	    }
@@ -1223,28 +1174,22 @@ static void Allocate_Ptrs( Node *this )
    } else {
 
       elem = this->value.nelem * gParse.nRows;
+      switch( this->type ) {
+      case DOUBLE:  size = sizeof( double ); break;
+      case LONG:    size = sizeof( long   ); break;
+      case BOOLEAN: size = sizeof( char   ); break;
+      }
 
-      this->value.undef = (char*)malloc( elem*sizeof(char) );
-      if( this->value.undef ) {
-
-	 if( this->type==DOUBLE ) {
-	    this->value.data.dblptr = (double*)malloc( elem*sizeof(double) );
-	 } else if( this->type==LONG ) {
-	    this->value.data.lngptr = (long  *)malloc( elem*sizeof(long  ) );
-	 } else if( this->type==BOOLEAN ) {
-	    this->value.data.logptr = (char  *)malloc( elem*sizeof(char  ) );
-	 }	 
+      this->value.data.ptr = malloc( elem*(size+1) );
       
-	 if( this->value.data.ptr==NULL ) {
-	    gParse.status = MEMORY_ALLOCATION;
-	    free( this->value.undef );
-	 }
-
-      } else {
+      if( this->value.data.ptr==NULL ) {
 	 gParse.status = MEMORY_ALLOCATION;
+      } else {
+	 this->value.undef = (char *)this->value.data.ptr + elem*size;
       }
    }
 }
+
 static void Do_Unary( Node *this )
 {
    Node *that;
@@ -1335,14 +1280,13 @@ static void Do_Unary( Node *this )
 
    if( that->operation>0 ) {
       free( that->value.data.ptr );
-      if( that->type!=BITSTR ) free( that->value.undef );
    }
 }
 
 static void Do_BinOp_bit( Node *this )
 {
    Node *that1, *that2;
-   char *sptr1, *sptr2, val;
+   char *sptr1, *sptr2;
    int  const1, const2;
    long rows;
 
@@ -1403,15 +1347,19 @@ static void Do_BinOp_bit( Node *this )
 	       if( !const2 )
 		  sptr2 = that2->value.data.strptr[rows];
 	       switch( this->operation ) {
-	       case NE:  val = !bitcmp( sptr1, sptr2 );  break;
-	       case EQ:  val =  bitcmp( sptr1, sptr2 );  break;
+	       case NE:  this->value.data.logptr[rows] = 
+                                                      !bitcmp( sptr1, sptr2 );
+                         break;
+	       case EQ:  this->value.data.logptr[rows] = 
+                                                       bitcmp( sptr1, sptr2 );
+                         break;
 	       case GT:
 	       case LT:
 	       case LTE:
-	       case GTE: val = bitlgte( sptr1, this->operation, sptr2 );
-		  break;
+	       case GTE: this->value.data.logptr[rows] = 
+                                     bitlgte( sptr1, this->operation, sptr2 );
+	                 break;
 	       }
-	       this->value.data.logptr[rows] = val;
 	       this->value.undef[rows] = 0;
 	    }
 	    break;
@@ -1540,12 +1488,10 @@ static void Do_BinOp_str( Node *this )
    if( that1->operation>0 ) {
       free( that1->value.data.strptr[0] );
       free( that1->value.data.strptr );
-      free( that1->value.undef );
    }
    if( that2->operation>0 ) {
       free( that2->value.data.strptr[0] );
       free( that2->value.data.strptr );
-      free( that2->value.undef );
    }
 }
 
@@ -1657,11 +1603,9 @@ static void Do_BinOp_log( Node *this )
 
    if( that1->operation>0 ) {
       free( that1->value.data.ptr );
-      free( that1->value.undef );
    }
    if( that2->operation>0 ) {
       free( that2->value.data.ptr );
-      free( that2->value.undef );
    }
 }
 
@@ -1768,7 +1712,6 @@ static void Do_BinOp_lng( Node *this )
 	       else {
 		  yyerror("Divide by Zero");
 		  free( this->value.data.ptr );
-		  free( this->value.undef );
 	       }
 	       break;
 	    case '/': 
@@ -1776,7 +1719,6 @@ static void Do_BinOp_lng( Node *this )
 	       else {
 		  yyerror("Divide by Zero");
 		  free( this->value.data.ptr );
-		  free( this->value.undef );
 	       }
 	       break;
 	    case POWER:
@@ -1790,11 +1732,9 @@ static void Do_BinOp_lng( Node *this )
 
    if( that1->operation>0 ) {
       free( that1->value.data.ptr );
-      free( that1->value.undef );
    }
    if( that2->operation>0 ) {
       free( that2->value.data.ptr );
-      free( that2->value.undef );
    }
 }
 
@@ -1884,7 +1824,8 @@ static void Do_BinOp_dbl( Node *this )
 
 	    this->value.undef[elem] = (null1 || null2);
 	    switch( this->operation ) {
-	    case '~':   /* Treat as == for LONGS */
+	    case '~':   this->value.data.logptr[elem] =
+                                          ( fabs(val1-val2) < APPROX );   break;
 	    case EQ:    this->value.data.logptr[elem] = (val1 == val2);   break;
 	    case NE:    this->value.data.logptr[elem] = (val1 != val2);   break;
 	    case GT:    this->value.data.logptr[elem] = (val1 >  val2);   break;
@@ -1902,7 +1843,6 @@ static void Do_BinOp_dbl( Node *this )
 	       else {
 		  yyerror("Divide by Zero");
 		  free( this->value.data.ptr );
-		  free( this->value.undef );
 	       }
 	       break;
 	    case '/': 
@@ -1910,7 +1850,6 @@ static void Do_BinOp_dbl( Node *this )
 	       else {
 		  yyerror("Divide by Zero");
 		  free( this->value.data.ptr );
-		  free( this->value.undef );
 	       }
 	       break;
 	    case POWER:
@@ -1924,11 +1863,9 @@ static void Do_BinOp_dbl( Node *this )
 
    if( that1->operation>0 ) {
       free( that1->value.data.ptr );
-      free( that1->value.undef );
    }
    if( that2->operation>0 ) {
       free( that2->value.data.ptr );
-      free( that2->value.undef );
    }
 }
 
@@ -1970,6 +1907,8 @@ static void Do_Func( Node *this )
 
       switch( this->operation ) {
 
+	    /* Non-Trig single-argument functions */
+
 	 case sum_fct:
 	    if( theParams[0]->type==BOOLEAN )
 	       this->value.data.lng = ( pVals[0].data.log ? 1 : 0 );
@@ -1978,9 +1917,6 @@ static void Do_Func( Node *this )
 	    else
 	       this->value.data.dbl = pVals[0].data.dbl;
 	    break;
-
-	    /* Non-Trig single-argument functions */
-
 	 case abs_fct:
 	    if( theParams[0]->type==DOUBLE ) {
 	       dval = pVals[0].data.dbl;
@@ -2121,6 +2057,8 @@ static void Do_Func( Node *this )
 	    }
 	    break;
 
+	    /* Non-Trig single-argument functions */
+	    
 	 case sum_fct:
 	    elem = row * theParams[0]->value.nelem;
 	    if( theParams[0]->type==BOOLEAN ) {
@@ -2164,9 +2102,6 @@ static void Do_Func( Node *this )
 	       }		  
 	    }
 	    break;
-
-	    /* Non-Trig single-argument functions */
-	    
 	 case abs_fct:
 	    if( theParams[0]->type==DOUBLE )
 	       while( elem-- ) {
@@ -2316,6 +2251,7 @@ static void Do_Func( Node *this )
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<-1.0 || dval>1.0 ) {
 		     yyerror("Out of range argument to arcsin");
+		     free( this->value.data.ptr );
 		     break;
 		  } else
 		     this->value.data.dblptr[elem] = asin( dval );
@@ -2327,6 +2263,7 @@ static void Do_Func( Node *this )
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<-1.0 || dval>1.0 ) {
 		     yyerror("Out of range argument to arccos");
+		     free( this->value.data.ptr );
 		     break;
 		  } else
 		     this->value.data.dblptr[elem] = acos( dval );
@@ -2352,6 +2289,7 @@ static void Do_Func( Node *this )
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<=0.0 ) {
 		     yyerror("Out of range argument to log");
+		     free( this->value.data.ptr );
 		     break;
 		  } else
 		     this->value.data.dblptr[elem] = log( dval );
@@ -2363,6 +2301,7 @@ static void Do_Func( Node *this )
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<=0.0 ) {
 		     yyerror("Out of range argument to log10");
+		     free( this->value.data.ptr );
 		     break;
 		  } else
 		     this->value.data.dblptr[elem] = log10( dval );
@@ -2374,6 +2313,7 @@ static void Do_Func( Node *this )
 		  dval = theParams[0]->value.data.dblptr[elem];
 		  if( dval<0.0 ) {
 		     yyerror("Out of range argument to sqrt");
+		     free( this->value.data.ptr );
 		     break;
 		  } else
 		     this->value.data.dblptr[elem] = sqrt( dval );
@@ -2474,8 +2414,8 @@ static void Do_Func( Node *this )
    i = this->nSubNodes;
    while( i-- ) {
       if( theParams[i]->operation>0 ) {
-	 free( theParams[i]->value.undef );    /* Currently only numeric */
-	 free( theParams[i]->value.data.ptr ); /* params allowed         */
+	 /*  Currently only numeric params allowed  */
+	 free( theParams[i]->value.data.ptr );
       }
    }
 }
@@ -2540,7 +2480,6 @@ static void Do_Deref( Node *this )
 	    }
 	 } else {
 	    yyerror("Index out of range");
-	    free( this->value.undef );
 	    free( this->value.data.ptr );
 	 }
 	 
@@ -2551,7 +2490,6 @@ static void Do_Deref( Node *this )
 	 if( dimVals[0] < 1 ||
 	     dimVals[0] > theVar->value.naxes[ theVar->value.naxis-1 ] ) {
 	    yyerror("Index out of range");
-	    free( this->value.undef );
 	    free( this->value.data.ptr );
 	 } else {
 	    elem = this->value.nelem * (dimVals[0]-1);
@@ -2577,7 +2515,6 @@ static void Do_Deref( Node *this )
 	       if( !isConst[i] ) {
 		  if( theDims[i]->value.undef[row] ) {
 		     yyerror("Null encountered as vector index");
-		     free( this->value.undef );
 		     free( this->value.data.ptr );
 		     break;
 		  } else
@@ -2606,7 +2543,6 @@ static void Do_Deref( Node *this )
 		     theVar->value.data.logptr[elem];
 	    } else {
 	       yyerror("Index out of range");
-	       free( this->value.undef );
 	       free( this->value.data.ptr );
 	    }
 	 }
@@ -2621,7 +2557,6 @@ static void Do_Deref( Node *this )
 
 	    if( theDims[0]->value.undef[row] ) {
 	       yyerror("Null encountered as vector index");
-	       free( this->value.undef );
 	       free( this->value.data.ptr );
 	       break;
 	    } else
@@ -2630,7 +2565,6 @@ static void Do_Deref( Node *this )
 	    if( dimVals[0] < 1 ||
 		dimVals[0] > theVar->value.naxes[ theVar->value.naxis-1 ] ) {
 	       yyerror("Index out of range");
-	       free( this->value.undef );
 	       free( this->value.data.ptr );
 	    } else {
 	       elem  = this->value.nelem * (dimVals[0]-1);
@@ -2648,12 +2582,10 @@ static void Do_Deref( Node *this )
    }
 
    if( theVar->operation>0 ) {
-      free( theVar->value.undef );
       free( theVar->value.data.ptr );
    }
    for( i=0; i<nDims; i++ )
       if( theDims[i]->operation>0 ) {
-	 free( theDims[i]->value.undef );
 	 free( theDims[i]->value.data.ptr );
       }
 }
