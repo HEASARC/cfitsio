@@ -3,17 +3,208 @@
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
-/*  Goddard Space Flight Center.  Users shall not, without prior written   */
-/*  permission of the U.S. Government,  establish a claim to statutory     */
-/*  copyright.  The Government and others acting on its behalf, shall have */
-/*  a royalty-free, non-exclusive, irrevocable,  worldwide license for     */
-/*  Government purposes to publish, distribute, translate, copy, exhibit,  */
-/*  and perform such material.                                             */
+/*  Goddard Space Flight Center.                                           */
 
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
 #include "fitsio2.h"
+
+OFF_T large_first_elem_val = 0;  /* used to pass large firstelem values */
+
+/*--------------------------------------------------------------------------*/
+int ffppx(  fitsfile *fptr,  /* I - FITS file pointer                       */
+            int  datatype,   /* I - datatype of the value                   */
+            long  *firstpix, /* I - coord of  first pixel to write(1 based) */
+            long  nelem,     /* I - number of values to write               */
+            void  *array,    /* I - array of values that are written        */
+            int  *status)    /* IO - error status                           */
+/*
+  Write an array of pixels to the primary array.  The datatype of the
+  input array is defined by the 2nd argument. Data conversion
+  and scaling will be performed if necessary (e.g, if the datatype of
+  the FITS array is not the same as the array being written). This routine
+  is simillar to ffppr, except it supports writing large images with
+  more than 2.1E9 pixels.
+*/
+{
+    int naxis, ii;
+    long naxes[9], firstelem, row = 1;
+    OFF_T dimsize = 1;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    /* get the size of the image */
+    ffgidm(fptr, &naxis, status);
+    ffgisz(fptr, 9, naxes, status);
+
+    /* store the actual first element value in a external variable      */
+    /* because we can't pass the value directly to the lower routine    */
+    /* because the parameter is declared as 'long' instead of 'off_t'.  */
+
+    large_first_elem_val = 0;
+    for (ii=0; ii < naxis; ii++)
+    {
+        large_first_elem_val += ((firstpix[ii] - 1) * dimsize);
+        dimsize *= naxes[ii];
+    }
+    large_first_elem_val++;
+
+    firstelem = USE_LARGE_VALUE; /* special flag value */
+
+    /*
+      the primary array is represented as a binary table:
+      each group of the primary array is a row in the table,
+      where the first column contains the group parameters
+      and the second column contains the image itself.
+    */
+
+    if (datatype == TBYTE)
+    {
+      ffpclb(fptr, 2, row, firstelem, nelem, (unsigned char *) array, status);
+    }
+    else if (datatype == TUSHORT)
+    {
+      ffpclui(fptr, 2, row, firstelem, nelem, (unsigned short *) array,
+              status);
+    }
+    else if (datatype == TSHORT)
+    {
+      ffpcli(fptr, 2, row, firstelem, nelem, (short *) array, status);
+    }
+    else if (datatype == TUINT)
+    {
+      ffpcluk(fptr, 2, row, firstelem, nelem, (unsigned int *) array, status);
+    }
+    else if (datatype == TINT)
+    {
+      ffpclk(fptr, 2, row, firstelem, nelem, (int *) array, status);
+    }
+    else if (datatype == TULONG)
+    {
+      ffpcluj(fptr, 2, row, firstelem, nelem, (unsigned long *) array, status);
+    }
+    else if (datatype == TLONG)
+    {
+      ffpclj(fptr, 2, row, firstelem, nelem, (long *) array, status);
+    }
+    else if (datatype == TFLOAT)
+    {
+      ffpcle(fptr, 2, row, firstelem, nelem, (float *) array, status);
+    }
+    else if (datatype == TDOUBLE)
+    {
+      ffpcld(fptr, 2, row, firstelem, nelem, (double *) array, status);
+    }
+    else
+      *status = BAD_DATATYPE;
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffppxn(  fitsfile *fptr,  /* I - FITS file pointer                       */
+            int  datatype,   /* I - datatype of the value                   */
+            long  *firstpix, /* I - first vector element to write(1 = 1st)  */
+            long  nelem,     /* I - number of values to write               */
+            void  *array,    /* I - array of values that are written        */
+            void  *nulval,   /* I - pointer to the null value               */
+            int  *status)    /* IO - error status                           */
+/*
+  Write an array of values to the primary array.  The datatype of the
+  input array is defined by the 2nd argument. Data conversion
+  and scaling will be performed if necessary (e.g, if the datatype of
+  the FITS array is not the same as the array being written).
+*/
+{
+    int naxis, ii;
+    long naxes[9], firstelem, row = 1;
+    OFF_T dimsize = 1;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (nulval == NULL)  /* null value not defined? */
+    {
+        ffppx(fptr, datatype, firstpix, nelem, array, status);
+        return(*status);
+    }
+
+    /* get the size of the image */
+    ffgidm(fptr, &naxis, status);
+    ffgisz(fptr, 9, naxes, status);
+
+    /* store the actual first element value in a external variable      */
+    /* because we can't pass the value directly to the lower routine    */
+    /* because the parameter is declared as 'long' instead of 'off_t'.  */
+
+    large_first_elem_val = 0;
+    for (ii=0; ii < naxis; ii++)
+    {
+        large_first_elem_val += ((firstpix[ii] - 1) * dimsize);
+        dimsize *= naxes[ii];
+    }
+    large_first_elem_val++;
+
+    firstelem = USE_LARGE_VALUE; /* special flag value */
+
+    /*
+      the primary array is represented as a binary table:
+      each group of the primary array is a row in the table,
+      where the first column contains the group parameters
+      and the second column contains the image itself.
+    */
+
+    if (datatype == TBYTE)
+    {
+      ffpcnb(fptr, 2, row, firstelem, nelem, (unsigned char *) array, 
+             *(unsigned char *) nulval, status);
+    }
+    else if (datatype == TUSHORT)
+    {
+      ffpcnui(fptr, 2, row, firstelem, nelem, (unsigned short *) array,
+              *(unsigned short *) nulval,status);
+    }
+    else if (datatype == TSHORT)
+    {
+      ffpcni(fptr, 2, row, firstelem, nelem, (short *) array,
+             *(short *) nulval, status);
+    }
+    else if (datatype == TUINT)
+    {
+      ffpcnuk(fptr, 2, row, firstelem, nelem, (unsigned int *) array,
+             *(unsigned int *) nulval, status);
+    }
+    else if (datatype == TINT)
+    {
+      ffpcnk(fptr, 2, row, firstelem, nelem, (int *) array,
+             *(int *) nulval, status);
+    }
+    else if (datatype == TULONG)
+    {
+      ffpcnuj(fptr, 2, row, firstelem, nelem, (unsigned long *) array,
+              *(unsigned long *) nulval,status);
+    }
+    else if (datatype == TLONG)
+    {
+      ffpcnj(fptr, 2, row, firstelem, nelem, (long *) array,
+             *(long *) nulval, status);
+    }
+    else if (datatype == TFLOAT)
+    {
+      ffpcne(fptr, 2, row, firstelem, nelem, (float *) array,
+             *(float *) nulval, status);
+    }
+    else if (datatype == TDOUBLE)
+    {
+      ffpcnd(fptr, 2, row, firstelem, nelem, (double *) array,
+             *(double *) nulval, status);
+    }
+    else
+      *status = BAD_DATATYPE;
+
+    return(*status);
+}
 /*--------------------------------------------------------------------------*/
 int ffppr(  fitsfile *fptr,  /* I - FITS file pointer                       */
             int  datatype,   /* I - datatype of the value                   */

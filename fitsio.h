@@ -2,26 +2,33 @@
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
 /*  Goddard Space Flight Center.                                           */
 /*
+
 Copyright (Unpublished--all rights reserved under the copyright laws of
 the United States), U.S. Government as represented by the Administrator
-of the National Aeronautics and Space Administration.
+of the National Aeronautics and Space Administration.  No copyright is
+claimed in the United States under Title 17, U.S. Code.
+
+Permission to freely use, copy, modify, and distribute this software
+and its documentation without fee is hereby granted, provided that this
+copyright notice and disclaimer of warranty appears in all copies.
 
 DISCLAIMER:
 
-THE SOFTWARE IS PROVIDED 'AS IS' WITHOUT ANY WARRANTY OF ANY KIND, 
-EITHER EXPRESSED, IMPLIED, OR STATUTORY, INCLUDING, BUT NOT LIMITED 
-TO, ANY WARRANTY THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS, 
-ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR 
-PURPOSE, AND FREEDOM FROM INFRINGEMENT, AND ANY WARRANTY THAT THE 
-DOCUMENTATION WILL CONFORM TO THE SOFTWARE, OR ANY WARRANTY THAT THE 
-SOFTWARE WILL BE ERROR FREE.  IN NO EVENT SHALL NASA BE LIABLE FOR 
-ANY DAMAGES, INCLUDING, BUT NOT LIMITED TO, DIRECT, INDIRECT, SPECIAL 
-OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN ANY 
-WAY CONNECTED WITH THIS SOFTWARE, WHETHER OR NOT BASED UPON 
-WARRANTY, CONTRACT, TORT , OR OTHERWISE, WHETHER OR NOT INJURY WAS 
-SUSTAINED BY PERSONS OR PROPERTY OR OTHERWISE, AND WHETHER OR NOT 
-LOSS WAS SUSTAINED FROM, OR AROSE OUT OF THE RESULTS OF, OR USE OF, 
-THE SOFTWARE OR SERVICES PROVIDED HEREUNDER.
+THE SOFTWARE IS PROVIDED 'AS IS' WITHOUT ANY WARRANTY OF ANY KIND,
+EITHER EXPRESSED, IMPLIED, OR STATUTORY, INCLUDING, BUT NOT LIMITED TO,
+ANY WARRANTY THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS, ANY
+IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, AND FREEDOM FROM INFRINGEMENT, AND ANY WARRANTY THAT THE
+DOCUMENTATION WILL CONFORM TO THE SOFTWARE, OR ANY WARRANTY THAT THE
+SOFTWARE WILL BE ERROR FREE.  IN NO EVENT SHALL NASA BE LIABLE FOR ANY
+DAMAGES, INCLUDING, BUT NOT LIMITED TO, DIRECT, INDIRECT, SPECIAL OR
+CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN ANY WAY
+CONNECTED WITH THIS SOFTWARE, WHETHER OR NOT BASED UPON WARRANTY,
+CONTRACT, TORT , OR OTHERWISE, WHETHER OR NOT INJURY WAS SUSTAINED BY
+PERSONS OR PROPERTY OR OTHERWISE, AND WHETHER OR NOT LOSS WAS SUSTAINED
+FROM, OR AROSE OUT OF THE RESULTS OF, OR USE OF, THE SOFTWARE OR
+SERVICES PROVIDED HEREUNDER."
+
 */
 
 #ifndef _FITSIO_H
@@ -173,7 +180,7 @@ typedef struct        /* structure used to store table column information */
     char ttype[70];   /* column name = FITS TTYPEn keyword; */
     long tbcol;       /* offset in row to first byte of each column */
     int  tdatatype;   /* datatype code of each column */
-    long  trepeat;     /* repeat count of column; number of elements */
+    OFF_T trepeat;    /* repeat count of column; number of elements */
     double tscale;    /* FITS TSCALn linear scaling factor */
     double tzero;     /* FITS TZEROn linear scaling zero point */
     long tnull;       /* FITS null value for int image or binary table cols */
@@ -257,7 +264,7 @@ typedef struct  /* structure for the iterator function column information */
     /* output elements that may be useful for the work function: */
 
     void     *array;    /* pointer to the array (and the null value) */
-    OFF_T    repeat;    /* binary table vector repeat value */
+    long     repeat;    /* binary table vector repeat value */
     long     tlmin;     /* legal minimum data value */
     long     tlmax;     /* legal maximum data value */
     char     tunit[70]; /* physical unit string */
@@ -791,6 +798,10 @@ int ffgrsz(fitsfile *fptr, long *nrows, int *status);
 int ffgcdw(fitsfile *fptr, int colnum, int *width, int *status);
 
 /*--------------------- read primary array or image elements -------------*/
+int ffgpxv(fitsfile *fptr, int  datatype, long *firstpix, long nelem,
+          void *nulval, void *array, int *anynul, int *status);
+int ffgpxf(fitsfile *fptr, int  datatype, long *firstpix, long nelem,
+           void *array, char *nullarray, int *anynul, int *status);
 int ffgsv(fitsfile *fptr, int datatype, long *blc, long *trc, long *inc,
           void *nulval, void *array, int *anynul, int  *status);
 int ffgpv(fitsfile *fptr, int  datatype, long firstelem, long nelem,
@@ -1046,8 +1057,12 @@ int ffgtbb(fitsfile *fptr, long firstrow, long firstchar, long nchars,
            unsigned char *values, int *status);
  
 /*------------ write primary array or image elements -------------*/
-int ffppr(fitsfile *fptr, int datatype, long  firstelem, long  nelem,
-          void  *array, int  *status);
+int ffppx(fitsfile *fptr, int datatype, long  *firstpix, long nelem,
+          void *array, int *status);
+int ffppxn(fitsfile *fptr, int datatype, long  *firstpix, long nelem,
+          void *array, void *nulval, int *status);
+int ffppr(fitsfile *fptr, int datatype, long  firstelem, long nelem,
+          void *array, int *status);
 int ffpprb(fitsfile *fptr, long group, long firstelem,
            long nelem, unsigned char *array, int *status);
 int ffpprui(fitsfile *fptr, long group, long firstelem,

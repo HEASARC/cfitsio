@@ -1,25 +1,31 @@
                    Log of Changes Made to CFITSIO
 
-Version 2.1
+Version 2.1 - 26 Sept 2000
 
   Enhancements
 
-   - made substantial modification to code to support large files,
+   - made substantial modification to the code to support Large files,
      i.e., files larger than 2**31 bytes = 2.1GB.  FITS files up to
      6 terabytes in size may now be read and written on platforms
-     that support large files (currently only Solaris).
+     that support Large files (currently only Solaris).
 
    - modified ffpcom and ffphis, which write COMMENT and HISTORY 
      keywords, respectively, so that they now use columns 9 - 80, 
      instead of only columns 11 - 80.  Previously, these routines
-     avoided using columns 9 and 10, but this is not really
-     necessary.
+     avoided using columns 9 and 10, but this is was unnecessarily
+     restrictive.
+
+   - modified ffdhdu so that instead of refusing to delete the 
+     primary array, it will replace the current primary array 
+     with a null primary array containing the bare minimum of
+     required keywords and no data.
 
   New Routines
 
-   - fits_read_subset/ffgsv reads a rectangular subset of an image.
-     This routine supports reading from Large images, which have
-     more than 2.1e9 pixels.
+   - fits_read_pix, fits_read_pixnull, fits_read_subset, and fits_write_pix
+     routines were added to enable reading and writing of Large images,
+     with more than 2.1e9 pixels.  These new routines are now recommended
+     as the basic routines for reading and writing all images.
 
    - fits_get_hduoff returns the byte offset in the file to
      the start and end of the current HDU.  This routine replaces the
@@ -28,6 +34,11 @@ Version 2.1
      in files greater than 2.1GB in size.
 
   Bug fixes:
+
+   - improved ffptbb, the low-level table writing routine, so that 
+     it will insert additional rows in the table if the table is
+     not already big enough.  Previously it would have just over-
+     written any HDUs following the table in the FITS file.
 
    - fixed a bug in the  fits_write_col_bit/ffpclx routine which
      could not write to a bit 'X' column if that was the first column

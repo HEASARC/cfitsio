@@ -8,6 +8,234 @@
 
 #include "fitsio2.h"
 /*--------------------------------------------------------------------------*/
+int ffgpxv( fitsfile *fptr,   /* I - FITS file pointer                       */
+            int  datatype,    /* I - datatype of the value                   */
+            long *firstpix,   /* I - coord of first pixel to read (1s based) */
+            long nelem,       /* I - number of values to read                */
+            void *nulval,     /* I - value for undefined pixels              */
+            void *array,      /* O - array of values that are returned       */
+            int  *anynul,     /* O - set to 1 if any values are null; else 0 */
+            int  *status)     /* IO - error status                           */
+/*
+  Read an array of values from the primary array. The datatype of the
+  input array is defined by the 2nd argument.  Data conversion
+  and scaling will be performed if necessary (e.g, if the datatype of
+  the FITS array is not the same as the array being read).
+  Undefined elements will be set equal to NULVAL, unless NULVAL=0
+  in which case no checking for undefined values will be performed.
+  ANYNUL is returned with a value of .true. if any pixels are undefined.
+*/
+{
+    int naxis, ii;
+    long naxes[9];
+    char cdummy;
+    OFF_T dimsize = 1, firstelem;
+
+    if (*status > 0 || nelem == 0)   /* inherit input status value if > 0 */
+        return(*status);
+
+    /* get the size of the image */
+    ffgidm(fptr, &naxis, status);
+    ffgisz(fptr, 9, naxes, status);
+
+    /* calculate the position of the first element in the array */
+    firstelem = 0;
+    for (ii=0; ii < naxis; ii++)
+    {
+        firstelem += ((firstpix[ii] - 1) * dimsize);
+        dimsize *= naxes[ii];
+    }
+    firstelem++;
+
+    /*
+      the primary array is represented as a binary table:
+      each group of the primary array is a row in the table,
+      where the first column contains the group parameters
+      and the second column contains the image itself.
+    */
+
+    if (datatype == TBYTE)
+    {
+      if (nulval == 0)
+        ffgclb(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (unsigned char *) array, &cdummy, anynul, status);
+      else
+        ffgclb(fptr, 2, 1, firstelem, nelem, 1, 1, *(unsigned char *) nulval,
+               (unsigned char *) array, &cdummy, anynul, status);
+    }
+    else if (datatype == TUSHORT)
+    {
+      if (nulval == 0)
+        ffgclui(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (unsigned short *) array, &cdummy, anynul, status);
+      else
+        ffgclui(fptr, 2, 1, firstelem, nelem, 1, 1, *(unsigned short *) nulval,
+               (unsigned short *) array, &cdummy, anynul, status);
+    }
+    else if (datatype == TSHORT)
+    {
+      if (nulval == 0)
+        ffgcli(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (short *) array, &cdummy, anynul, status);
+      else
+        ffgcli(fptr, 2, 1, firstelem, nelem, 1, 1, *(short *) nulval,
+               (short *) array, &cdummy, anynul, status);
+    }
+    else if (datatype == TUINT)
+    {
+      if (nulval == 0)
+        ffgcluk(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (unsigned int *) array, &cdummy, anynul, status);
+      else
+        ffgcluk(fptr, 2, 1, firstelem, nelem, 1, 1, *(unsigned int *) nulval,
+               (unsigned int *) array, &cdummy, anynul, status);
+    }
+    else if (datatype == TINT)
+    {
+      if (nulval == 0)
+        ffgclk(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (int *) array, &cdummy, anynul, status);
+      else
+        ffgclk(fptr, 2, 1, firstelem, nelem, 1, 1, *(int *) nulval,
+               (int *) array, &cdummy, anynul, status);
+    }
+    else if (datatype == TULONG)
+    {
+      if (nulval == 0)
+        ffgcluj(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (unsigned long *) array, &cdummy, anynul, status);
+      else
+        ffgcluj(fptr, 2, 1, firstelem, nelem, 1, 1, *(short *) nulval,
+               (unsigned long *) array, &cdummy, anynul, status);
+    }
+    else if (datatype == TLONG)
+    {
+      if (nulval == 0)
+        ffgclj(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (long *) array, &cdummy, anynul, status);
+      else
+        ffgclj(fptr, 2, 1, firstelem, nelem, 1, 1, *(long *) nulval,
+               (long *) array, &cdummy, anynul, status);
+    }
+    else if (datatype == TFLOAT)
+    {
+      if (nulval == 0)
+        ffgcle(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (float *) array, &cdummy, anynul, status);
+      else
+        ffgcle(fptr, 2, 1, firstelem, nelem, 1, 1, *(float *) nulval,
+               (float *) array, &cdummy, anynul, status);
+    }
+    else if (datatype == TDOUBLE)
+    {
+      if (nulval == 0)
+        ffgcld(fptr, 2, 1, firstelem, nelem, 1, 1, 0,
+               (double *) array, &cdummy, anynul, status);
+      else
+        ffgcld(fptr, 2, 1, firstelem, nelem, 1, 1, *(double *) nulval,
+               (double *) array, &cdummy, anynul, status);
+    }
+    else
+      *status = BAD_DATATYPE;
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgpxf( fitsfile *fptr,   /* I - FITS file pointer                       */
+            int  datatype,    /* I - datatype of the value                   */
+            long *firstpix,   /* I - coord of first pixel to read (1s based) */
+            long nelem,       /* I - number of values to read                */
+            void *array,      /* O - array of values that are returned       */
+            char *nullarray,  /* O - returned array of null value flags      */
+            int  *anynul,     /* O - set to 1 if any values are null; else 0 */
+            int  *status)     /* IO - error status                           */
+/*
+  Read an array of values from the primary array. The datatype of the
+  input array is defined by the 2nd argument.  Data conversion
+  and scaling will be performed if necessary (e.g, if the datatype of
+  the FITS array is not the same as the array being read).
+  The nullarray values will = 1 if the corresponding array value is null.
+  ANYNUL is returned with a value of .true. if any pixels are undefined.
+*/
+{
+    int naxis, ii;
+    long naxes[9];
+    OFF_T dimsize = 1, firstelem;
+
+    if (*status > 0 || nelem == 0)   /* inherit input status value if > 0 */
+        return(*status);
+
+    /* get the size of the image */
+    ffgidm(fptr, &naxis, status);
+    ffgisz(fptr, 9, naxes, status);
+
+    /* calculate the position of the first element in the array */
+    firstelem = 0;
+    for (ii=0; ii < naxis; ii++)
+    {
+        firstelem += ((firstpix[ii] - 1) * dimsize);
+        dimsize *= naxes[ii];
+    }
+    firstelem++;
+
+    /*
+      the primary array is represented as a binary table:
+      each group of the primary array is a row in the table,
+      where the first column contains the group parameters
+      and the second column contains the image itself.
+    */
+
+    if (datatype == TBYTE)
+    {
+        ffgclb(fptr, 2, 1, firstelem, nelem, 1, 2, 0,
+               (unsigned char *) array, nullarray, anynul, status);
+    }
+    else if (datatype == TUSHORT)
+    {
+        ffgclui(fptr, 2, 1, firstelem, nelem, 1, 2, 0,
+               (unsigned short *) array, nullarray, anynul, status);
+    }
+    else if (datatype == TSHORT)
+    {
+        ffgcli(fptr, 2, 1, firstelem, nelem, 1, 2, 0,
+               (short *) array, nullarray, anynul, status);
+    }
+    else if (datatype == TUINT)
+    {
+        ffgcluk(fptr, 2, 1, firstelem, nelem, 1, 2, 0,
+               (unsigned int *) array, nullarray, anynul, status);
+    }
+    else if (datatype == TINT)
+    {
+        ffgclk(fptr, 2, 1, firstelem, nelem, 1, 2, 0,
+               (int *) array, nullarray, anynul, status);
+    }
+    else if (datatype == TULONG)
+    {
+        ffgcluj(fptr, 2, 1, firstelem, nelem, 1, 2, 0,
+               (unsigned long *) array, nullarray, anynul, status);
+    }
+    else if (datatype == TLONG)
+    {
+        ffgclj(fptr, 2, 1, firstelem, nelem, 1, 2, 0,
+               (long *) array, nullarray, anynul, status);
+    }
+    else if (datatype == TFLOAT)
+    {
+        ffgcle(fptr, 2, 1, firstelem, nelem, 1, 2, 0.,
+               (float *) array, nullarray, anynul, status);
+    }
+    else if (datatype == TDOUBLE)
+    {
+        ffgcld(fptr, 2, 1, firstelem, nelem, 1, 2, 0.,
+               (double *) array, nullarray, anynul, status);
+    }
+    else
+      *status = BAD_DATATYPE;
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffgsv(  fitsfile *fptr,   /* I - FITS file pointer                       */
             int  datatype,    /* I - datatype of the value                   */
             long *blc,        /* I - 'bottom left corner' of the subsection  */

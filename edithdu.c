@@ -593,12 +593,13 @@ int ffdhdu(fitsfile *fptr,      /* I - FITS file pointer                   */
            int *hdutype,        /* O - type of the new CHDU after deletion */
            int *status)         /* IO - error status                       */
 /*
-  Delete the CHDU (as long as it is not the primary array).  Return the
+  Delete the CHDU.  If the CHDU is the primary array, then replace the HDU
+  with an empty primary array with no data.   Return the
   type of the new CHDU after the old CHDU is deleted.
 */
 {
-    int tmptype;
-    long nblocks, ii;
+    int tmptype = 0;
+    long nblocks, ii, naxes[1];
 
     if (*status > 0)
         return(*status);
@@ -608,33 +609,52 @@ int ffdhdu(fitsfile *fptr,      /* I - FITS file pointer                   */
 
     if ((fptr->Fptr)->curhdu == 0)
     {
-        ffpmsg("Cannot delete the primary array (ffdhdu)");
-        return(*status = BAD_HDU_NUM);  /* cannot delete the primary array */
+        /* ignore any existing keywords */
+        (fptr->Fptr)->headend = 0;
+        (fptr->Fptr)->nextkey = 0;
+        (fptr->Fptr)->datastart = DATA_UNDEFINED;
+
+        /* write default primary array header */
+        ffphpr(fptr,1,8,0,naxes,0,1,1,status);
+
+        /* calc number of blocks to delete */
+        nblocks = ( (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu + 1] - 
+                2880 ) / 2880;
+
+        /* ffdblk also updates the starting address of all following HDUs */
+        if (nblocks > 0)
+        {
+            if (ffdblk(fptr, nblocks, status) > 0) /* delete the HDU */
+                return(*status);
+        }
+
+        ffrdef(fptr, status);  /* reinitialize the primary array */
     }
+    else
+    {
 
-    ffchdu(fptr, status);  /* close the CHDU to free memeory */
-
-    /* calc number of blocks to delete */
-    nblocks = ( (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu + 1] - 
+        /* calc number of blocks to delete */
+        nblocks = ( (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu + 1] - 
                 (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] ) / 2880;
 
-    /* ffdblk also updates the starting address of all following HDUs */
-    if (ffdblk(fptr, nblocks, status) > 0) /* delete the HDU */
-        return(*status);
+        /* ffdblk also updates the starting address of all following HDUs */
+        if (ffdblk(fptr, nblocks, status) > 0) /* delete the HDU */
+            return(*status);
 
-    /* delete the CHDU from the list of HDUs */
-    for (ii = (fptr->Fptr)->curhdu + 1; ii <= (fptr->Fptr)->maxhdu; ii++)
-        (fptr->Fptr)->headstart[ii] = (fptr->Fptr)->headstart[ii + 1];
+        /* delete the CHDU from the list of HDUs */
+        for (ii = (fptr->Fptr)->curhdu + 1; ii <= (fptr->Fptr)->maxhdu; ii++)
+            (fptr->Fptr)->headstart[ii] = (fptr->Fptr)->headstart[ii + 1];
 
-    (fptr->Fptr)->headstart[(fptr->Fptr)->maxhdu + 1] = 0;
-    ((fptr->Fptr)->maxhdu)--; /* decrement the known number of HDUs */
+        (fptr->Fptr)->headstart[(fptr->Fptr)->maxhdu + 1] = 0;
+        ((fptr->Fptr)->maxhdu)--; /* decrement the known number of HDUs */
 
-    if (ffrhdu(fptr, &tmptype, status) > 0)  /* initialize next HDU as CHDU */
-    {
-        /* failed (end of file?), so move back one HDU */
-        *status = 0;
-        ffcmsg();       /* clear extraneous error messages */
-        ffgext(fptr, ((fptr->Fptr)->curhdu) - 1, &tmptype, status);
+        if (ffrhdu(fptr, &tmptype, status) > 0)  /* initialize next HDU */
+        {
+            /* failed (end of file?), so move back one HDU */
+            *status = 0;
+            ffcmsg();       /* clear extraneous error messages */
+            ffgext(fptr, ((fptr->Fptr)->curhdu) - 1, &tmptype, status);
+        }
     }
 
     if (hdutype)

@@ -647,7 +647,7 @@ int ffbfeof(fitsfile *fptr,        /* I - FITS file pointer           */
     {
       if (bufptr[ii] == fptr->Fptr)
       {
-        if (bufrecnum[ii] * IOBUFLEN >= fptr->Fptr->filesize)
+        if ( (OFF_T) bufrecnum[ii] * IOBUFLEN >= fptr->Fptr->filesize)
         {
             bufptr[ii] = NULL;  /* set contents of buffer as undefined */
         }
@@ -1132,7 +1132,8 @@ int ffptbb(fitsfile *fptr,        /* I - FITS file pointer                 */
 */
 {
     OFF_T bytepos;
-    long endrow;
+    long endrow, nrows;
+    char message[81];
 
     if (*status > 0 || nchars <= 0)
         return(*status);
@@ -1148,6 +1149,39 @@ int ffptbb(fitsfile *fptr,        /* I - FITS file pointer                 */
     else if ((fptr->Fptr)->datastart < 0) /* rescan header if data undefined */
         ffrdef(fptr, status);
 
+    endrow = ((firstchar + nchars - 2) / (fptr->Fptr)->rowlength) + firstrow;
+
+    /* check if we are writing beyond the current end of table */
+    if (endrow > (fptr->Fptr)->numrows)
+    {
+        /* if there are more HDUs following the current one, or */
+        /* if there is a data heap, then we must insert space */
+        /* for the new rows.  */
+        if ( !((fptr->Fptr)->lasthdu) || (fptr->Fptr)->heapsize > 0)
+        {
+            nrows = endrow - ((fptr->Fptr)->numrows);
+
+            /* ffirow also updates the heap address and numrows */
+            if (ffirow(fptr, (fptr->Fptr)->numrows, nrows, status) > 0)
+            {
+                 sprintf(message,
+                 "ffptbb failed to add space for %ld new rows in table.",
+                         nrows);
+                 ffpmsg(message);
+                 return(*status);
+            }
+        }
+        else
+        {
+            /* manally update heap starting address */
+            (fptr->Fptr)->heapstart += 
+            ((OFF_T)(endrow - (fptr->Fptr)->numrows) * 
+                    (fptr->Fptr)->rowlength );
+
+            (fptr->Fptr)->numrows = endrow; /* update number of rows */
+        }
+    }
+
     /* move the i/o pointer to the start of the sequence of characters */
     bytepos = (fptr->Fptr)->datastart +
               ((fptr->Fptr)->rowlength * (firstrow - 1)) +
@@ -1155,12 +1189,6 @@ int ffptbb(fitsfile *fptr,        /* I - FITS file pointer                 */
 
     ffmbyt(fptr, bytepos, IGNORE_EOF, status);
     ffpbyt(fptr, nchars, values, status);  /* write the bytes */
-
-    /* update number of rows in the table if necessary */
-
-    endrow = ((firstchar + nchars - 2) / (fptr->Fptr)->rowlength) + firstrow;
-    if (endrow > (fptr->Fptr)->numrows)
-        (fptr->Fptr)->numrows = endrow;
 
     return(*status);
 }

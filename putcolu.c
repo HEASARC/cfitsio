@@ -3,16 +3,15 @@
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
-/*  Goddard Space Flight Center.  Users shall not, without prior written   */
-/*  permission of the U.S. Government,  establish a claim to statutory     */
-/*  copyright.  The Government and others acting on its behalf, shall have */
-/*  a royalty-free, non-exclusive, irrevocable,  worldwide license for     */
-/*  Government purposes to publish, distribute, translate, copy, exhibit,  */
-/*  and perform such material.                                             */
+/*  Goddard Space Flight Center.                                           */
 
 #include <string.h>
 #include <stdlib.h>
 #include "fitsio2.h"
+
+/* declare variable for passing large firstelem values between routines */
+extern OFF_T large_first_elem_val;
+
 /*--------------------------------------------------------------------------*/
 int ffppru( fitsfile *fptr,  /* I - FITS file pointer                       */
             long  group,      /* I - group to write(1 = 1st group)          */
@@ -99,7 +98,7 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
     INT32BIT i4null;
     long twidth, incre, rownum, remain, next, ntodo;
     long tnull, ii;
-    OFF_T repeat, startpos, elemnum, wrtptr, rowlen;
+    OFF_T repeat, startpos, elemnum, large_elem, wrtptr, rowlen;
     double scale, zero;
     unsigned char i1null, lognul = 0;
     char tform[20], cstring[50];
@@ -109,6 +108,11 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
+
+    if (firstelem == USE_LARGE_VALUE)
+        large_elem = large_first_elem_val;
+    else
+        large_elem = firstelem;
 
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
@@ -126,7 +130,7 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
     if (tcode < 0)
          writemode = 0;  /* this is a variable length column */
 
-    if (ffgcpr( fptr, colnum, firstrow, firstelem, nelem, writemode, &scale,
+    if (ffgcpr( fptr, colnum, firstrow, large_elem, nelem, writemode, &scale,
        &zero, tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);

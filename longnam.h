@@ -234,6 +234,8 @@
 #define fits_read_grppar_flt  ffggpe
 #define fits_read_grppar_dbl  ffggpd
 
+#define fits_read_pix         ffgpxv
+#define fits_read_pixnull     ffgpxf
 #define fits_read_img         ffgpv
 #define fits_read_imgnull     ffgpf
 #define fits_read_img_byt     ffgpvb
@@ -344,6 +346,7 @@
 #define fits_write_grppar_flt ffpgpe
 #define fits_write_grppar_dbl ffpgpd
 
+#define fits_write_pix        ffppx
 #define fits_write_img        ffppr
 #define fits_write_img_byt    ffpprb
 #define fits_write_img_usht    ffpprui

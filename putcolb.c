@@ -3,17 +3,16 @@
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
-/*  Goddard Space Flight Center.  Users shall not, without prior written   */
-/*  permission of the U.S. Government,  establish a claim to statutory     */
-/*  copyright.  The Government and others acting on its behalf, shall have */
-/*  a royalty-free, non-exclusive, irrevocable,  worldwide license for     */
-/*  Government purposes to publish, distribute, translate, copy, exhibit,  */
-/*  and perform such material.                                             */
+/*  Goddard Space Flight Center.                                           */
 
 #include <limits.h>
 #include <string.h>
 #include <stdlib.h>
 #include "fitsio2.h"
+
+/* declare variable for passing large firstelem values between routines */
+extern OFF_T large_first_elem_val;
+
 /*--------------------------------------------------------------------------*/
 int ffpprb( fitsfile *fptr,  /* I - FITS file pointer                       */
             long  group,     /* I - group to write(1 = 1st group)           */
@@ -351,7 +350,7 @@ int ffpclb( fitsfile *fptr,  /* I - FITS file pointer                       */
     int tcode, maxelem, hdutype, writeraw;
     long twidth, incre, rownum, remain, next, ntodo;
     long tnull;
-    OFF_T repeat, startpos, elemnum, wrtptr, rowlen;
+    OFF_T repeat, startpos, elemnum, large_elem, wrtptr, rowlen;
     double scale, zero;
     char tform[20], cform[20];
     char message[FLEN_ERRMSG];
@@ -366,10 +365,15 @@ int ffpclb( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     buffer = cbuff;
 
+    if (firstelem == USE_LARGE_VALUE)
+        large_elem = large_first_elem_val;
+    else
+        large_elem = firstelem;
+
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
     /*---------------------------------------------------*/
-    if (ffgcpr( fptr, colnum, firstrow, firstelem, nelem, 1, &scale, &zero,
+    if (ffgcpr( fptr, colnum, firstrow, large_elem, nelem, 1, &scale, &zero,
         tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
@@ -560,7 +564,8 @@ int ffpcnb( fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     tcolumn *colptr;
-    long repeat, first, ngood = 0, nbad = 0, ii, fstelm, fstrow;
+    long  ngood = 0, nbad = 0, ii, fstrow;
+    OFF_T large_elem, repeat, first, fstelm;
 
     if (*status > 0)
         return(*status);
@@ -581,8 +586,16 @@ int ffpcnb( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     repeat = colptr->trepeat;  /* repeat count for this column */
 
+    if (firstelem == USE_LARGE_VALUE)
+        large_elem = large_first_elem_val;
+    else
+        large_elem = firstelem;
+
+    /* hereafter, pass first element parameter via global variable */
+    firstelem = USE_LARGE_VALUE;
+
     /* absolute element number in the column */
-    first = (firstrow - 1) * repeat + firstelem;
+    first = (firstrow - 1) * repeat + large_elem;
 
     for (ii = 0; ii < nelem; ii++)
     {
@@ -593,7 +606,9 @@ int ffpcnb( fitsfile *fptr,  /* I - FITS file pointer                       */
             fstelm = ii - nbad + first;  /* absolute element number */
             fstrow = (fstelm - 1) / repeat + 1;  /* starting row number */
             fstelm = fstelm - (fstrow - 1) * repeat;  /* relative number */
-            if (ffpclu(fptr, colnum, fstrow, fstelm, nbad, status) > 0)
+            large_first_elem_val = fstelm;
+
+            if (ffpclu(fptr, colnum, fstrow, firstelem, nbad, status) > 0)
                 return(*status);
 
             nbad=0;
@@ -608,8 +623,9 @@ int ffpcnb( fitsfile *fptr,  /* I - FITS file pointer                       */
             fstelm = ii - ngood + first;  /* absolute element number */
             fstrow = (fstelm - 1) / repeat + 1;  /* starting row number */
             fstelm = fstelm - (fstrow - 1) * repeat;  /* relative number */
+            large_first_elem_val = fstelm;
 
-            if (ffpclb(fptr, colnum, fstrow, fstelm, ngood, &array[ii-ngood],
+            if (ffpclb(fptr, colnum, fstrow, firstelem, ngood, &array[ii-ngood],
                 status) > 0)
                 return(*status);
 
@@ -627,16 +643,18 @@ int ffpcnb( fitsfile *fptr,  /* I - FITS file pointer                       */
       fstelm = ii - ngood + first;  /* absolute element number */
       fstrow = (fstelm - 1) / repeat + 1;  /* starting row number */
       fstelm = fstelm - (fstrow - 1) * repeat;  /* relative number */
+      large_first_elem_val = fstelm;
 
-      ffpclb(fptr, colnum, fstrow, fstelm, ngood, &array[ii-ngood], status);
+      ffpclb(fptr, colnum, fstrow, firstelem, ngood, &array[ii-ngood], status);
     }
     else  /* write last string of bad pixels */
     {
       fstelm = ii - nbad + first;  /* absolute element number */
       fstrow = (fstelm - 1) / repeat + 1;  /* starting row number */
       fstelm = fstelm - (fstrow - 1) * repeat;  /* relative number */
+      large_first_elem_val = fstelm;
 
-      ffpclu(fptr, colnum, fstrow, fstelm, nbad, status);
+      ffpclu(fptr, colnum, fstrow, firstelem, nbad, status);
     }
 
     return(*status);

@@ -3,6 +3,8 @@
  
 #include "fitsio.h"
 
+#define USE_LARGE_VALUE -99  /* flag used when writing images */
+
 #define DBUFFSIZE 28800 /* size of data buffer in bytes */
 
 #define NIOBUF  25       /* number of IO buffers to create */

@@ -3,12 +3,7 @@
 
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
-/*  Goddard Space Flight Center.  Users shall not, without prior written   */
-/*  permission of the U.S. Government,  establish a claim to statutory     */
-/*  copyright.  The Government and others acting on its behalf, shall have */
-/*  a royalty-free, non-exclusive, irrevocable,  worldwide license for     */
-/*  Government purposes to publish, distribute, translate, copy, exhibit,  */
-/*  and perform such material.                                             */
+/*  Goddard Space Flight Center.                                           */
 
 #include <string.h>
 #include <stdlib.h>
@@ -296,7 +291,7 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
         /* Note: ffgcpr previous wrote the descripter, but with the */
         /* wrong repeat value  (gave bytes instead of bits).        */
 
-        ffpdes(fptr, colnum, frow, repeat, offset, status);
+        ffpdes(fptr, colnum, frow, (long) repeat, offset, status);
 
         /* Calc the i/o pointer location to start of sequence of pixels.   */
         /* ffgcpr has already calculated a value for bstart that           */

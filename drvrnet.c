@@ -1,7 +1,8 @@
 /*  This file, drvrhttp.c contains driver routines for http, ftp and root 
     files. */
 
-/*  The FITSIO software was written by William Pence at the High Energy    */
+/* This file was written by Bruce O'Neel at the ISDC, Switzerland          */
+/*  The FITSIO software is maintained by William Pence at the High Energy  */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
 /*  Goddard Space Flight Center.                                           */
 

@@ -29,7 +29,7 @@ int main()
     float         einarray[21], eoutarray[21], enul, cinarray[42];
     double        dinarray[21], doutarray[21], dnul, minarray[42];
     double scale, zero;
-    long naxes[3], pcount, gcount, npixels, nrows, rowlen;
+    long naxes[3], pcount, gcount, npixels, nrows, rowlen, firstpix[3];
     int existkeys, morekeys, keynum;
 
     char larray[42], larray2[42], colname[70], tdisp[40], nulstr[40];
@@ -338,17 +338,56 @@ int main()
 
     /* write a few pixels with each datatype */
     /* set the last value in each group of 4 as undefined */
+
+/*
     ffpprb(fptr, 1,  1, 2, &boutarray[0],  &status);
     ffppri(fptr, 1,  5, 2, &ioutarray[4],  &status);
     ffpprj(fptr, 1,  9, 2, &joutarray[8],  &status);
     ffppre(fptr, 1, 13, 2, &eoutarray[12], &status);
     ffpprd(fptr, 1, 17, 2, &doutarray[16], &status);
+*/
+
+/*  test the newer ffpx routine, instead of the older ffppr_ routines */
+    firstpix[0]=1;
+    firstpix[1]=1;
+    ffppx(fptr, TBYTE, firstpix, 2, &boutarray[0],  &status);
+    firstpix[0]=5;
+    ffppx(fptr, TSHORT, firstpix, 2, &ioutarray[4],  &status);
+    firstpix[0]=9;
+    ffppx(fptr, TLONG, firstpix, 2, &joutarray[8],  &status);
+    firstpix[0]=3;
+    firstpix[1]=2;
+    ffppx(fptr, TFLOAT, firstpix, 2, &eoutarray[12],  &status);
+    firstpix[0]=7;
+    ffppx(fptr, TDOUBLE, firstpix, 2, &doutarray[16],  &status);
+
+/*
     ffppnb(fptr, 1,  3, 2, &boutarray[2],   4, &status);
     ffppni(fptr, 1,  7, 2, &ioutarray[6],   8, &status);
     ffppnj(fptr, 1, 11, 2, &joutarray[10],  12, &status);
     ffppne(fptr, 1, 15, 2, &eoutarray[14], 16., &status);
     ffppnd(fptr, 1, 19, 2, &doutarray[18], 20., &status);
+*/
+    firstpix[0]=3;
+    firstpix[1]=1;
+    bnul = 4;
+    ffppxn(fptr, TBYTE, firstpix, 2, &boutarray[2], &bnul,  &status);
+    firstpix[0]=7;
+    inul = 8;
+    ffppxn(fptr, TSHORT, firstpix, 2, &ioutarray[6], &inul, &status);
+    firstpix[0]=1;
+    firstpix[1]=2;
+    jnul = 12;
+    ffppxn(fptr, TLONG, firstpix, 2, &joutarray[10], &jnul, &status);
+    firstpix[0]=5;
+    enul = 16.;
+    ffppxn(fptr, TFLOAT, firstpix, 2, &eoutarray[14], &enul,  &status);
+    firstpix[0]=9;
+    dnul = 20.;
+    ffppxn(fptr, TDOUBLE, firstpix, 2, &doutarray[18], &dnul, &status);
+
     ffppru(fptr, 1, 1, 1, &status);
+
 
     if (status > 0)
     {
