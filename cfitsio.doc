@@ -301,6 +301,73 @@ main()
     return( status );           
 }
 -
+**E.  Acknowledgements
+
+The development of CFITSIO has only been possible through the help of
+dozens of people from around the world who have tested the library and
+have offered ideas for new features.  The following people in
+particular have made especially significant contributions:
+
+Jurek Borkowski, with help from Bruce O'Neel and Don Jennings (all at
+the Integral Science Data Center, Switzerland), provided the initial
+design for the plug-in I/O drivers that were introduced in CFITSIO
+2.0.  This 'driver' concept greatly simplified  the low-level I/O,
+which in turn made many of the other new features in CFITSIO much
+easier to implement.  Jurek Borkowski wrote the Shared Memory
+driver, and Bruce O'Neel wrote the drivers for accessing FITS files
+over the network using the FTP, HTTP, and ROOT protocols.
+
+Don Jennings designed and wrote the 'Hierarchical Grouping' routines.
+
+Uwe Lamers (XMM/ESA/ESTEC, The Netherlands) designed the
+high-performance lexical parsing algorithms that are used in the
+on-the-fly filtering of FITS tables.  These algorithms are orders of
+magnitude faster than previous implementations for selecting rows from
+a table, or for calculating  table column values, based on an arbitrary
+boolean or arithmetic expression.  Peter Wilson (RSTX, NASA/GSFC)
+provided the final implemention of these lexical parsing routines,
+based in part on earlier work by Kent Blackburn (NASA/GSFC),
+
+Peter Wilson also wrote the complete set of Fortran-callable wrappers
+for all the CFITSIO routines, which rely on the CFORTRAN macros
+developed by Burkhard Burow.
+
+The CFITSIO iterator function is loosely based on similar ideas
+developed for the XMM Data Access Layer.
+
+The syntax used by CFITSIO for filtering or binning input FITS files is
+based on ideas developed for the AXAF Science Center Data Model by
+Jonathan McDowell, Antonella Fruscione, Aneta Siemiginowska and Bill
+Joye.
+
+Doug Mink (CfA) wrote the WCSTools routines that are used by CFITSIO to
+calculate celestial coordinates.
+
+The file decompression code were taken directly from the gzip (GNU zip)
+program developed by Jean-loup Gailly and others.
+
+In addition, many other people have made valuable suggestions or have
+helped to test the FITSIO and CFITSIO libraries.  These include (with
+apologies to those that I have forgotten to mention):
+
+Steve Allen, Carl Akerlof, Keith Arnaud, Morten Krabbe Barfoed, Kent
+Blackburn, G Bodammer, Romke Bontekoe, Lucio Chiappetti, Keith Costorf,
+Robin Corbet, John Davis,  Richard Fink, Ning Gan, Emily Greene, Joe
+Harrington, Cheng Ho, Phil Hodge, Jim Ingham, Yoshitaka Ishisaki, Diab
+Jerius, Mark Levine, Todd Karakaskian, Edward King, Scott Koch,  Claire
+Larkin, Rob Managan, Eric Mandel, John Mattox, Carsten Meyer, Emi
+Miyata, Stefan Mochnacki, Mike Noble, Oliver Oberdorf, Clive Page,
+Arvind Parmar, Jeff Pedelty, Tim Pearson, Maren Purves, Scott Randall,
+Chris Rogers, Arnold Rots, Barry Schlesinger, Robin Stebbins, Andrew
+Szymkowiak, Allyn Tennant, Peter Teuben, James Theiler, Doug Tody,
+Shiro Ueno, Steve Walton, Archie Warnock, Alan Watson, Dan Whipple, Wim
+Wimmers, Peter Young, Jianjun Xu, and Nelson Zarate.
+
+Finally, special thanks go out to the members of the U.S. Congress who
+forced the Government offices to shutdown in January 1996 due to a lack
+of funding, thus giving the author sufficient free time to write the
+initial version of CFITSIO.
+
 
 *III.  A FITS Primer
 

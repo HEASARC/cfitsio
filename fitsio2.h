@@ -223,6 +223,7 @@ int ffldrc(fitsfile *fptr, long record, int err_mode, int *status);
 int ffwhbf(fitsfile *fptr, int *nbuff);
 int ffcurbuf(int nbuff, FITSfile **Fptr);
 int ffflsh(fitsfile *fptr, int clearbuf, int *status);
+int ffbfeof(fitsfile *fptr, int *status);
 int ffbfwt(int nbuff, int *status);
 int fits_get_num_files(void);
 

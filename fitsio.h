@@ -73,6 +73,33 @@
  
 #define MAXHDU 1000    /* maximum number of extensions allowed in a FITS file */
 
+#define GT_ID_ALL_URI  0   /* hierarchical grouping parameters */
+#define GT_ID_REF      1
+#define GT_ID_POS      2
+#define GT_ID_ALL      3
+#define GT_ID_REF_URI 11
+#define GT_ID_POS_URI 12
+
+#define OPT_RM_GPT      0
+#define OPT_RM_ENTRY    1
+#define OPT_RM_MBR      2
+#define OPT_RM_ALL      3
+
+#define OPT_GCP_GPT     0
+#define OPT_GCP_MBR     1
+#define OPT_GCP_ALL     2
+
+#define OPT_MCP_ADD     0
+#define OPT_MCP_NADD    1
+#define OPT_MCP_REPL    2
+#define OPT_MCP_MOV     3
+
+#define OPT_MRG_COPY    0
+#define OPT_MRG_MOV     1
+
+#define OPT_CMT_MBR      1
+#define OPT_CMT_MBR_DEL 11
+
 typedef struct        /* structure used to store table column information */
 {
     char ttype[70];   /* column name = FITS TTYPEn keyword; */

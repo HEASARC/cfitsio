@@ -2,7 +2,7 @@ This note describes the new input file filtering syntax that will be
 supported by the CFITSIO 2.0 data interface software being developed at
 the HEASARC.  Most of what is described here is currently being tested
 locally.  The first public beta release should be near the end of June,
-and  the fully tested final release will be by 1 Sept 1998.  Some of
+and  the fully tested final release will be in Sept 1998.  Some of
 the details decribed here will no doubt change by the time of the final
 version, but this should give a fairly good idea of the new
 capabilities.  We also plan to provide better support for filtering
@@ -15,7 +15,6 @@ welcome, especially now during the current development period.
 
 William Pence
 pence@tetra.gsfc.nasa.gov
-5 June 1998
 
 -----------------------------------------------------------------------
 

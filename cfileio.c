@@ -356,7 +356,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
                     */
 
                     ffpmsg(
-                   "cannot reopen file READWRITE when previously opened READONLY");
+                "cannot reopen file READWRITE when previously opened READONLY");
                     ffpmsg(url);
                     return(*status = FILE_NOT_OPENED);
                   }
@@ -365,7 +365,8 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
 
                   if (!(*fptr))
                   {
-          ffpmsg("failed to allocate structure for following file: (ffopen)");
+                     ffpmsg(
+                   "failed to allocate structure for following file: (ffopen)");
                      ffpmsg(url);
                      return(*status = MEMORY_ALLOCATION);
                   }
@@ -2599,12 +2600,12 @@ int ffclos(fitsfile *fptr,      /* I - FITS file pointer */
         return(*status = BAD_FILEPTR); 
 
     ffchdu(fptr, status);         /* close and flush the current HDU   */
-    ffflsh(fptr, TRUE, status);   /* flush and disassociate IO buffers */
-
     ((fptr->Fptr)->open_count)--;           /* decrement usage counter */
 
     if ((fptr->Fptr)->open_count == 0)  /* if no other files use structure */
     {
+        ffflsh(fptr, TRUE, status);   /* flush and disassociate IO buffers */
+
         /* call driver function to actually close the file */
         if (
    (*driverTable[(fptr->Fptr)->driver].close)((fptr->Fptr)->filehandle) )
@@ -2624,6 +2625,8 @@ int ffclos(fitsfile *fptr,      /* I - FITS file pointer */
         free(fptr->Fptr);         /* free memory for the FITS file structure */
         free(fptr);               /* free memory for the FITS file structure */
     }
+    else
+        ffflsh(fptr, FALSE, status); /* flush but don't disassociate buffers */
 
     return(*status);
 }
@@ -2703,7 +2706,7 @@ int fftrun( fitsfile *fptr,    /* I - FITS file pointer           */
     (fptr->Fptr)->logfilesize = filesize;
     (fptr->Fptr)->io_pos = filesize;
     (fptr->Fptr)->bytepos = filesize;
-
+    ffbfeof(fptr, status);   /* eliminate any buffers beyond current EOF */
     return (
      (*driverTable[(fptr->Fptr)->driver].truncate)((fptr->Fptr)->filehandle,
      filesize) );

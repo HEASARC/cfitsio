@@ -1,5 +1,8 @@
                Log of Changes Made to CFITSIO
 
+   - added new set of routines dealing with hierarchical groups of files.
+     These were provided by Don Jennings of the INTEGRAL Science Data Center.
+
    - added new URL parsing routines.
 
    - changed the calling sequence to ffghad (get HDU address) from

@@ -629,6 +629,28 @@ int ffflsh(fitsfile *fptr,        /* I - FITS file pointer           */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffbfeof(fitsfile *fptr,        /* I - FITS file pointer           */
+           int *status)           /* IO - error status               */
+{
+/*
+  clear any buffers beyond the end of file
+*/
+    int ii;
+
+    for (ii = 0; ii < NIOBUF; ii++)
+    {
+      if (bufptr[ii] == fptr->Fptr)
+      {
+        if (bufrecnum[ii] * IOBUFLEN >= fptr->Fptr->filesize)
+        {
+            bufptr[ii] = NULL;  /* set contents of buffer as undefined */
+        }
+      }
+    }
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffbfwt(int nbuff,             /* I - which buffer to write          */
            int *status)           /* IO - error status                  */
 {

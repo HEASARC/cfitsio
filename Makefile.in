@@ -42,7 +42,7 @@ SOURCES = 	buffers.c cfileio.c checksum.c drvrfile.c drvrmem.c drvrnet.c \
 		putcolj.c putcolk.c putcoluk.c putcoll.c putcols.c putcolu.c \
 		putcolui.c putcoluj.c putkey.c scalnull.c swapproc.c \
 		wcsutil.c compress.c ${FITSIO_SRC} ${MY_SHMEM} \
-		eval_l.c eval_y.c eval_f.c
+		eval_l.c eval_y.c eval_f.c group.c
 
 OBJECTS = 	${SOURCES:.c=.o}
 

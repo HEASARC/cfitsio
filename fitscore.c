@@ -22,7 +22,7 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.007;   /*  beta I/O driver release */
+      *version = 2.009;   /*  beta release */
 
  /*   *version = 1.40;    6 Feb 1998 */
  /*   *version = 1.33;   16 Dec 1997 (internal release only) */
@@ -3818,7 +3818,7 @@ int ffdblk(fitsfile *fptr,      /* I - FITS file pointer                    */
            int *status)         /* IO - error status                        */
 /*
   Delete the specified number of 2880-byte blocks from the end
-  of the CHDU by shifting all following extensions up this this
+  of the CHDU by shifting all following extensions up this 
   number of blocks.
 */
 {
@@ -3830,7 +3830,6 @@ int ffdblk(fitsfile *fptr,      /* I - FITS file pointer                    */
         return(*status);
 
     tstatus = 0;
-
     /* pointers to the read and write positions */
     readpos = (fptr->Fptr)->headstart[((fptr->Fptr)->curhdu) + 1];
     writepos = readpos - (nblocks * 2880);
@@ -3852,11 +3851,14 @@ int ffdblk(fitsfile *fptr,      /* I - FITS file pointer                    */
 
     /* now fill the last nblock blocks with zeros */
     memset(buffer, 0, 2880);
-
     ffmbyt(fptr, writepos, REPORT_EOF, status);
 
     for (ii = 0; ii < nblocks; ii++)
         ffpbyt(fptr, 2880L, buffer, status);
+
+    /* move back before the deleted blocks, since they may be deleted */
+    /*   and we do not want to delete the current active buffer */
+    ffmbyt(fptr, writepos - 1, REPORT_EOF, status);
 
     /* truncate the file to the new size, if supported on this device */
     fftrun(fptr, writepos, status);
