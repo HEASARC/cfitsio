@@ -752,7 +752,7 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
 /*--------------------------------------------------------------------------*/
 {
    Node *result;
-   int  i,lexpr;
+   int  i,lexpr, tstatus = 0;
    static iteratorCol dmyCol;
 
    if( *status ) return( *status );
@@ -771,8 +771,11 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
    gParse.nNodes     = 0;
    gParse.status     = 0;
 
-   if( ffgkyj(fptr, "NAXIS2", &gParse.totalRows, 0, status) ) return( *status );
-   
+   if( ffgkyj(fptr, "NAXIS2", &gParse.totalRows, 0, &tstatus) )
+   {
+      /* this might be a 1D or null image with no NAXIS2 keyword */
+      gParse.totalRows = 0;
+   }   
    /*  Copy expression into parser... read from file if necessary  */
 
    if( expr[0]=='@' ) {
