@@ -936,7 +936,7 @@ static int New_BinOp( int returnType, int Node1, int Op, int Node2 )
       if( that1->type!=STRING && that1->type!=BITSTR )
 	 if( !Test_Dims( Node1, Node2 ) ) {
 	    Free_Last_Node();
-	    ffpmsg("Array sizes/dims do not match for binary operator");
+	    yyerror("Array sizes/dims do not match for binary operator");
 	    return(-1);
 	 }
       if( that1->value.nelem == 1 ) that1 = that2;
@@ -1018,8 +1018,7 @@ static int New_Deref( int Var,  int nDim,
 
    theVar = gParse.Nodes + Var;
    if( theVar->operation==CONST_OP || theVar->value.nelem==1 ) {
-      ffpmsg("Cannot index a scalar value");
-      gParse.status = PARSE_SYNTAX_ERR;
+      yyerror("Cannot index a scalar value");
       return(-1);
    }
 
@@ -1040,8 +1039,7 @@ static int New_Deref( int Var,  int nDim,
       for( idx=0; idx<nDim; idx++ )
 	 if( theDim[idx]->value.nelem>1 ) {
 	    Free_Last_Node();
-	    ffpmsg("Cannot use an array as an index value");
-	    gParse.status = PARSE_SYNTAX_ERR;
+	    yyerror("Cannot use an array as an index value");
 	    return(-1);
 	 } else if( theDim[idx]->type!=LONG ) {
 	    Free_Last_Node();
