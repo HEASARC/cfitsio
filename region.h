@@ -60,15 +60,15 @@ typedef struct {
    int       nShapes;
    RgnShape  *Shapes;
    WCSdata   wcs;
-} Region;
+} SAORegion;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int  ffrrgn( const char *filename, WCSdata *wcs, Region **Rgn, int *status );
-int  fftrgn( double X, double Y, Region *Rgn );
-void fffrgn( Region *Rgn );
+int  ffrrgn( const char *filename, WCSdata *wcs, SAORegion **Rgn, int *status );
+int  fftrgn( double X, double Y, SAORegion *Rgn );
+void fffrgn( SAORegion *Rgn );
 
 #ifdef __cplusplus
     }

@@ -792,3 +792,14 @@ int uncompress2file(char *filename,
 
 #endif
 
+
+#if defined(vms) || defined(__vms) || defined(__WIN32__)
+
+/* ================================================================== */
+/* A hack for nonunix machines, which lack strcasecmp and strncasecmp */
+/* ================================================================== */
+
+int strcasecmp (char *s1, char *s2       );
+int strncasecmp(char *s1, char *s2, int n);
+
+#endif

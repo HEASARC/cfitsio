@@ -1149,7 +1149,7 @@ static int New_REG( char *fname, int NodeX, int NodeY, char *colNames )
    int  type, n, Node0;
    int  colnum, Xcol, Ycol, tstat;
    WCSdata wcs;
-   Region *Rgn;
+   SAORegion *Rgn;
    char *cX, *cY;
 
    if( NodeX==-99 ) {
@@ -3142,7 +3142,7 @@ static void Do_REG( Node *this )
    if( !Xvector && !Yvector ) {
 
       this->value.data.log =
-	 ( fits_in_region( Xval, Yval, (Region *)theRegion->value.data.ptr )
+	 ( fits_in_region( Xval, Yval, (SAORegion *)theRegion->value.data.ptr )
 	   != 0 );
       this->operation      = CONST_OP;
 
@@ -3182,7 +3182,7 @@ static void Do_REG( Node *this )
 
 	       this->value.data.logptr[elem] = 
 		  ( fits_in_region( Xval, Yval,
-				    (Region *)theRegion->value.data.ptr )
+				    (SAORegion *)theRegion->value.data.ptr )
 		    != 0 );
 	    }
 	    nelem = this->value.nelem;

@@ -629,20 +629,43 @@ static int find_keywd(char *keyname, YYSTYPE *thelval )
    return( type );
 }
 
-#if defined(vms) || defined(__vms)
+#if defined(vms) || defined(__vms) || defined(__WIN32__)
 
-/* A very dumb patch for VMS, which lacks a strcasecmp */
+/* ================================================================== */
+/* A hack for nonunix machines, which lack strcasecmp and strncasecmp */
+/* ================================================================== */
+
 int strcasecmp(char *s1, char *s2)
 {
- int i,l;
- char st1[1024],st2[1014];
+   char c1, c2;
 
- l = strlen(s1);
- for (i=0;i<=l;i++)
-    st1[i] = toupper(s1[i]);
- l = strlen(s2);
- for (i=0;i<=l;i++)
-    st2[i] = toupper(s2[i]);
- return ( strcmp(st1,st2) );
+   for (;;) {
+      c1 = toupper( *s1 );
+      c2 = toupper( *s2 );
+
+      if (c1 < c2) return(-1);
+      if (c1 > c2) return(1);
+      if (c1 == 0) return(0);
+      s1++;
+      s2++;
+   }
 }
+
+int strncasecmp(char *s1, char *s2, int n)
+{
+   char c1, c2;
+
+   for (; n-- ;) {
+      c1 = toupper( *s1 );
+      c2 = toupper( *s2 );
+
+      if (c1 < c2) return(-1);
+      if (c1 > c2) return(1);
+      if (c1 == 0) return(0);
+      s1++;
+      s2++;
+   }
+   return(0);
+}
+
 #endif

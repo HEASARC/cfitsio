@@ -10,10 +10,10 @@ static int Pt_in_Poly( double x, double y, int nPts, double *Pts );
 /*---------------------------------------------------------------------------*/
 int ffrrgn( const char *filename,
             WCSdata    *wcs,
-            Region    **Rgn,
+            SAORegion  **Rgn,
             int        *status )
 /*  Read regions from a SAO-style region file and return the information     */
-/*  in the "Region" structure.  If it is nonNULL, use wcs to convert the     */
+/*  in the "SAORegion" structure.  If it is nonNULL, use wcs to convert the  */
 /*  region coordinates to pixels.  Return an error if region is in degrees   */
 /*  but no WCS data is provided.                                             */
 /*---------------------------------------------------------------------------*/
@@ -27,12 +27,12 @@ int ffrrgn( const char *filename,
    int      i, done;
    FILE     *rgnFile;
    coordFmt cFmt;
-   Region   *aRgn;
+   SAORegion *aRgn;
    RgnShape *newShape, *tmpShape;
 
    if( *status ) return( *status );
 
-   aRgn = (Region *)malloc( sizeof(Region) );
+   aRgn = (SAORegion *)malloc( sizeof(SAORegion) );
    if( ! aRgn ) {
       ffpmsg("Couldn't allocate memory to hold Region file contents.");
       return(*status = MEMORY_ALLOCATION );
@@ -460,9 +460,9 @@ error:
 }
 
 /*---------------------------------------------------------------------------*/
-int fftrgn( double  X,
-            double  Y,
-            Region *Rgn )
+int fftrgn( double    X,
+            double    Y,
+            SAORegion *Rgn )
 /*  Test if the given point is within the region described by Rgn.  X and    */
 /*  Y are in pixel coordinates.                                              */
 /*---------------------------------------------------------------------------*/
@@ -649,7 +649,7 @@ int fftrgn( double  X,
 }
 
 /*---------------------------------------------------------------------------*/
-void fffrgn( Region *Rgn )
+void fffrgn( SAORegion *Rgn )
 /*   Free up memory allocated to hold the region data.                       */
 /*---------------------------------------------------------------------------*/
 {
@@ -732,21 +732,3 @@ static int Pt_in_Poly( double x,
    return( flag );
 }
 
-
-#if defined(vms) || defined(__vms)
-
-/* A very dumb patch for VMS, which lacks a strncasecmp */
-int strncasecmp(char *s1, char *s2, int n)
-{
- int i,l;
- char st1[1024],st2[1014];
-
- l = strlen(s1);
- for (i=0;i<=l && i<n;i++)
-    st1[i] = toupper(s1[i]);
- l = strlen(s2);
- for (i=0;i<=l && i<n;i++)
-    st2[i] = toupper(s2[i]);
- return ( strncmp(st1,st2,n) );
-}
-#endif

@@ -752,7 +752,7 @@ void ffcprs( void )  /*  No parameters                                      */
 	    free( gParse.Nodes[ i ].value.data.ptr );
 	 }
 	 else if( gParse.Nodes[node].operation==regfilt_fct ) {
-	    fits_free_region( (Region *)gParse.Nodes[ i ].value.data.ptr );
+	    fits_free_region( (SAORegion *)gParse.Nodes[ i ].value.data.ptr );
 	 }
       }
       gParse.nNodes = 0;
