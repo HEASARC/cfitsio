@@ -11,10 +11,7 @@
 /*  and perform such material.                                             */
 
 #include <string.h>
-#include <stdio.h>
-#ifndef _FITSIO2_H
 #include "fitsio2.h"
-#endif
 
 /*--------------------------------------------------------------------------*/
 int ffopenx(FILE **diskfile, /* O - pointer to  file descriptor             */

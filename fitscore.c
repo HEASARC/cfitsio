@@ -11,12 +11,11 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <math.h>
 #include <limits.h>
-#ifndef _FITSIO2_H
+#include <time.h>
 #include "fitsio2.h"
-#endif
+
 /*--------------------------------------------------------------------------*/
 int ffopen(fitsfile **fptr,  /* O - FITS file pointer                       */ 
            char *filename,   /* I - name of file to open                    */
@@ -26,6 +25,9 @@ int ffopen(fitsfile **fptr,  /* O - FITS file pointer                       */
     int ii, hdutype, slen, tstatus;
     long filesize;
     FILE *diskfile;
+
+    /* initialize a null file pointer */
+    *fptr = 0;
 
     if (*status > 0)
         return(*status);
@@ -95,6 +97,9 @@ int ffinit(fitsfile **fptr,  /* O - FITS file pointer                       */
     long dummy;
     FILE *diskfile;
 
+    /* initialize a null file pointer */
+    *fptr = 0;
+
     if (*status > 0)
         return(*status);
 
@@ -152,6 +157,10 @@ int ffclos(fitsfile *fptr,      /* I - FITS file pointer */
 */   
 {
     int tstatus;
+
+    /* if null pointer file is not opened, so just return */
+    if (!fptr)
+        return(*status);
 
     ffchdu(fptr, status);           /* close and flush the current HDU */
 
@@ -327,7 +336,7 @@ int ffpbyt(fitsfile *fptr,   /* I - FITS file pointer                    */
         }
 
 
-        if (fptr->hdutype == HDU_ATABLE)
+        if (fptr->hdutype == ASCII_TBL)
             cptr = blanks;  /* this HDU requires blank fill values */
         else
             cptr = zeros;   /* this HDU requires zero fill values */
@@ -488,7 +497,7 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
     if (*status > 0)
         return(*status);
 
-    fptr->hdutype = HDU_IMAGE; /* primary array or IMAGE extension  */
+    fptr->hdutype = IMAGE_HDU; /* primary array or IMAGE extension  */
     fptr->headend = 2000000000;  /* temporarily set huge header size  */
 
     groups = 0;
@@ -521,27 +530,27 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
 
     if (bitpix == 8)   /* test  bitpix and set the datatype code */
     {
-        ttype=FTYPE_BYTE;
+        ttype=TBYTE;
         bytlen=1;
     }
     else if (bitpix == 16)
     {
-        ttype=FTYPE_SHORT;
+        ttype=TSHORT;
         bytlen=2;
     }
     else if (bitpix == 32)
     {
-        ttype=FTYPE_LONG;
+        ttype=TLONG;
         bytlen=4;
     }
     else if (bitpix == -32)
     {
-        ttype=FTYPE_FLOAT;
+        ttype=TFLOAT;
         bytlen=4;
     }
     else if (bitpix == -64)
     {
-        ttype=FTYPE_DOUBLE;
+        ttype=TDOUBLE;
         bytlen=8;
     }
         
@@ -649,7 +658,7 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
     if (*status > 0)
         return(*status);
 
-    fptr->hdutype = HDU_ATABLE;  /* set that this is an ASCII table */
+    fptr->hdutype = ASCII_TBL;  /* set that this is an ASCII table */
     fptr->headend = 2000000000;       /* temporarily set huge header size  */
 
     /* get table parameters and test that the header is a valid: */
@@ -808,7 +817,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     if (*status > 0)
         return(*status);
 
-    fptr->hdutype = HDU_BTABLE;  /* set that this is a binary table */
+    fptr->hdutype = BINARY_TBL;  /* set that this is a binary table */
     fptr->headend = 2000000000;       /* temporarily set huge header size  */
 
     /* get table parameters and test that the header is valid: */
@@ -933,7 +942,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
 
     for (ii = 0; ii < tfield; ii++, colptr++)
     {
-        if (colptr->tdatatype == FTYPE_ASCII)
+        if (colptr->tdatatype == TSTRING)
         {
             strrepeat = colptr->trepeat / colptr->twidth;
             colptr->trepeat = maxvalue(strrepeat, 1);
@@ -1010,11 +1019,11 @@ int ffgtbc(fitsfile *fptr,    /* I - FITS file pointer          */
     {
         colptr->tbcol = *totalwidth;  /* byte offset in row to this column */
 
-        if (colptr->tdatatype == FTYPE_ASCII)
+        if (colptr->tdatatype == TSTRING)
         {
             nbytes = colptr->trepeat;   /* one byte per char */
         }
-        else if (colptr->tdatatype == FTYPE_BIT)
+        else if (colptr->tdatatype == TBIT)
         {
             nbytes = (colptr->trepeat + 7) / 8;
         }
@@ -1087,12 +1096,12 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
         strncpy(colptr->tform, tvalue, 9);  /* copy TFORM to structure */
         colptr->tform[9] = '\0';            /* make sure it is terminated */
 
-        if (fptr->hdutype == HDU_ATABLE)  /* ASCII table */
+        if (fptr->hdutype == ASCII_TBL)  /* ASCII table */
         {
           if (ffasfm(tvalue, &datacode, &width, &decimals, status) > 0)
               return(*status);  /* bad format code */
 
-          colptr->tdatatype = FTYPE_ASCII; /* store datatype code */
+          colptr->tdatatype = TSTRING; /* store datatype code */
           colptr->trepeat = 1;      /* field repeat count == 1 */
           colptr->twidth = width;   /* the width of the field, in bytes */
         }
@@ -1109,7 +1118,7 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
 
     else if (!strncmp(name, "TBCOL", 5))
     {
-        if (fptr->hdutype == HDU_BTABLE)
+        if (fptr->hdutype == BINARY_TBL)
             return(*status);  /* binary tables don't have TBCOL keywords */
 
         if (ffc2ii(value, &ivalue, status) > 0)
@@ -1145,7 +1154,7 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
     }
     else if (!strncmp(name, "TNULL", 5))
     {
-        if (fptr->hdutype == HDU_ATABLE)  /* ASCII table */
+        if (fptr->hdutype == ASCII_TBL)  /* ASCII table */
         {
             if (ffc2s(value, tvalue, &tstatus) > 0)  /* remove quotes */
                 return(*status);
@@ -1168,7 +1177,7 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
 
     else if (!strncmp(name, "THEAP", 5))
     {
-        if (fptr->hdutype == HDU_ATABLE)  /* ASCII table */
+        if (fptr->hdutype == ASCII_TBL)  /* ASCII table */
             return(*status);  /* ASCII tables don't have THEAPn keywords */ 
 
         if (ffc2ii(value, &ivalue, status) > 0) 
@@ -1257,10 +1266,10 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     *repeat   = colptr->trepeat;
     *tcode    = colptr->tdatatype;
 
-    if (abs(*tcode) == FTYPE_BIT)
+    if (abs(*tcode) == TBIT)
     {
         /* interprete 'X' column as 'B' */
-        *tcode = *tcode / FTYPE_BIT * FTYPE_BYTE;
+        *tcode = *tcode / TBIT * TBYTE;
         *repeat = (*repeat + 7) / 8;
     }
 
@@ -1274,14 +1283,14 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     /*---------------------------------*/
     /*   check starting element number */
     /*---------------------------------*/
-    if (*hdutype == HDU_ATABLE)
+    if (*hdutype == ASCII_TBL)
     {
         *elemnum = 0;   /* ASCII tables don't have vectors */
         *maxelem = 1;   /* just process one pixel at a time */
     }
     else
     {
-      if (abs(*tcode) >= FTYPE_COMPLEX)
+      if (abs(*tcode) >= TCOMPLEX)
       {
         /* interprete complex and dbl complex as pairs of floats or doubles */
         if (*tcode > 0)
@@ -1311,11 +1320,11 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
 
       /* calculate no. of pixels that fit in buffer */
       /* allow for case where longs or floats are 8 bytes long */
-      if (abs(*tcode) == FTYPE_LONG)
+      if (abs(*tcode) == TLONG)
       {
          *maxelem = DBUFFSIZE / sizeof(long);
       }
-      if (abs(*tcode) == FTYPE_FLOAT)
+      if (abs(*tcode) == TFLOAT)
       {
          *maxelem = DBUFFSIZE / sizeof(float);
       }
@@ -1332,7 +1341,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     /*---------------------------------*/
     /*   check repeat count            */
     /*---------------------------------*/
-    if (*hdutype == HDU_IMAGE && writemode) /*  Primary Array or IMAGE */
+    if (*hdutype == IMAGE_HDU && writemode) /*  Primary Array or IMAGE */
     { /*
         For primary arrays, set the repeat count greater than the total
         number of pixels to be written.  This prevents an out-of-range
@@ -1385,7 +1394,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
       {
         ffgdes(fptr, colnum, firstrow, repeat, startpos, status);
 
-        if (colptr->tdatatype == -FTYPE_BIT)
+        if (colptr->tdatatype == -TBIT)
             *repeat = (*repeat + 7) / 8;  /* convert from bits to bytes */
 
         if (*elemnum >= *repeat)
@@ -1641,7 +1650,7 @@ int ffpscl(fitsfile *fptr,      /* I - FITS file pointer               */
         if ( ffrdef(fptr, status) > 0)               /* rescan header */
             return(*status);
 
-    if (fptr->hdutype != HDU_IMAGE)
+    if (fptr->hdutype != IMAGE_HDU)
         return(*status = NOT_IMAGE);         /* not proper HDU type */
 
     /* set pointer to the first 'column' (contains group parameters if any) */
@@ -1678,7 +1687,7 @@ int ffpnul(fitsfile *fptr,      /* I - FITS file pointer                */
         if ( ffrdef(fptr, status) > 0)               /* rescan header */
             return(*status);
 
-    if (fptr->hdutype != HDU_IMAGE)
+    if (fptr->hdutype != IMAGE_HDU)
         return(*status = NOT_IMAGE);         /* not proper HDU type */
 
     /* set pointer to the first 'column' (contains group parameters if any) */
@@ -1718,7 +1727,7 @@ int fftscl(fitsfile *fptr,      /* I - FITS file pointer */
         if ( ffrdef(fptr, status) > 0)               /* rescan header */
             return(*status);
 
-    if (fptr->hdutype == HDU_IMAGE)
+    if (fptr->hdutype == IMAGE_HDU)
         return(*status = NOT_TABLE);         /* not proper HDU type */
 
     colptr = fptr->tableptr;   /* set pointer to the first column */
@@ -1754,7 +1763,7 @@ int fftnul(fitsfile *fptr,      /* I - FITS file pointer                  */
         if ( ffrdef(fptr, status) > 0)               /* rescan header */
             return(*status);
 
-    if (fptr->hdutype != HDU_BTABLE)
+    if (fptr->hdutype != BINARY_TBL)
         return(*status = NOT_BTABLE);         /* not proper HDU type */
 
  
@@ -1789,7 +1798,7 @@ int ffsnul(fitsfile *fptr,      /* I - FITS file pointer                  */
         if ( ffrdef(fptr, status) > 0)               /* rescan header */
             return(*status);
 
-    if (fptr->hdutype != HDU_ATABLE)
+    if (fptr->hdutype != ASCII_TBL)
         return(*status = NOT_ATABLE);         /* not proper HDU type */
 
  
@@ -1880,7 +1889,7 @@ int ffpdfl(fitsfile *fptr,      /* I - FITS file pointer */
     if (!nfill)
         return(*status);  /* return if there are no fill bytes to write */
 
-    if (fptr->hdutype == HDU_ATABLE)
+    if (fptr->hdutype == ASCII_TBL)
         chfill = 32;         /* ASCII tables are filled with spaces */
     else
         chfill = 0;          /* all other extensions are filled with zeros */
@@ -1945,6 +1954,86 @@ int ffcrhd(fitsfile *fptr,      /* I - FITS file pointer */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffcrim(fitsfile *fptr,      /* I - FITS file pointer           */
+           int bitpix,          /* I - bits per pixel              */
+           int naxis,           /* I - number of axes in the array */
+           long *naxes,         /* I - size of each axis           */
+           int *status)         /* IO - error status               */
+/*
+  create an IMAGE extension following the current HDU. If the
+  current HDU is empty (contains no header keywords), then simply
+  write the required image (or primary array) keywords to the current
+  HDU. 
+*/
+{
+    if (*status > 0)
+        return(*status);
+
+    /* create new extension if current header is not empty */
+    if (fptr->headend != fptr->headstart[fptr->curhdu] )
+        ffcrhd(fptr, status);
+
+    /* write the required header keywords */
+    ffphpr(fptr, TRUE, bitpix, naxis, naxes, 0, 1, TRUE, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffcrtb(fitsfile *fptr,  /* I - FITS file pointer                        */
+           int tbltype,     /* I - type of table to create                  */
+           long naxis2,     /* I - number of rows in the table              */
+           int tfields,     /* I - number of columns in the table           */
+           char **ttype,    /* I - name of each column                      */
+           char **tform,    /* I - value of TFORMn keyword for each column  */
+           char **tunit,    /* I - value of TUNITn keyword for each column  */
+           char *extname,   /* I - value of EXTNAME keyword, if any         */
+           int *status)     /* IO - error status                            */
+/*
+  Create a table extension in a FITS file. 
+*/
+{
+    long naxis1, ncols, *tbcol;
+
+    if (*status > 0)
+        return(*status);
+
+    /* create new extension if current header is not empty */
+    if (fptr->headend != fptr->headstart[fptr->curhdu] )
+        ffcrhd(fptr, status);
+
+    if (tbltype == BINARY_TBL)
+    {
+      /* write the required header keywords. This will write PCOUNT = 0 */
+      /* so variable length array columns are not supported             */
+      ffphbn(fptr, naxis2, tfields, ttype, tform, tunit, extname, 0, status);
+    }
+    else if (tbltype == ASCII_TBL)
+    {
+      /* allocate mem for tbcol; malloc can have problems allocating small */
+      /* arrays, so allocate at least 20 bytes */
+
+      ncols = maxvalue(5, tfields);
+      tbcol = (long *) calloc(ncols, sizeof(long));
+
+      if (tbcol)
+      {
+        /* calculate width of a row and starting position of each column. */
+        /* Each column will be separated by 1 blank space */
+        ffgabc(tfields, tform, 1, &naxis1, tbcol, status);
+
+        /* write the required header keywords */
+        ffphtb(fptr, naxis1, naxis2, tfields, ttype, tbcol, tform, tunit,
+               extname, status);
+
+        free(tbcol);
+      }
+    }
+    else
+      *status = NOT_TABLE;
+
+    return(*status);
+}    
+/*--------------------------------------------------------------------------*/
 int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
            int bitpix,          /* I - bits per pixel              */
            int naxis,           /* I - number of axes in the array */
@@ -1999,7 +2088,7 @@ int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
     nexthdu = (fptr->curhdu) + 1; /* number of the next (new) hdu */
     newstart = fptr->headstart[nexthdu]; /* save starting addr of HDU */
 
-    fptr->hdutype = HDU_IMAGE;  /* so that correct fill value is used */
+    fptr->hdutype = IMAGE_HDU;  /* so that correct fill value is used */
     if (ffiblk(fptr, nblocks, 1, status) > 0)  /* insert the blocks */
         return(*status);
 
@@ -2077,7 +2166,7 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
     nexthdu = (fptr->curhdu) + 1; /* number of the next (new) hdu */
     newstart = fptr->headstart[nexthdu]; /* save starting addr of HDU */
 
-    fptr->hdutype = HDU_ATABLE;  /* so that correct fill value is used */
+    fptr->hdutype = ASCII_TBL;  /* so that correct fill value is used */
     if (ffiblk(fptr, nblocks, 1, status) > 0)  /* insert the blocks */
     {
        return(*status);
@@ -2114,7 +2203,7 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
            long pcount,     /* I - size of special data area (heap)         */
            int *status)     /* IO - error status                            */
 /*
-  insert an ASCII table extension following the current HDU 
+  insert a Binary table extension following the current HDU 
 */
 {
     int nexthdu, ii, nunit, nhead, datacode;
@@ -2147,9 +2236,9 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
     {
         ffbnfm(tform[ii], &datacode, &repeat, &width, status);
 
-        if (datacode == FTYPE_BIT)
+        if (datacode == TBIT)
             naxis1 = naxis1 + ((repeat + 7) / 8);
-        else if (datacode == FTYPE_ASCII)
+        else if (datacode == TSTRING)
             naxis1 += repeat;
         else
             naxis1 = naxis1 + (repeat * width);
@@ -2169,7 +2258,7 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
     nexthdu = (fptr->curhdu) + 1; /* number of the next (new) hdu */
     newstart = fptr->headstart[nexthdu]; /* save starting addr of HDU */
 
-    fptr->hdutype = HDU_BTABLE;  /* so that correct fill value is used */
+    fptr->hdutype = BINARY_TBL;  /* so that correct fill value is used */
     if (ffiblk(fptr, nblocks, 1, status) > 0)  /* insert the blocks */
         return(*status);
 
@@ -2421,7 +2510,7 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
 
     tstatus = *status;
 
-    if (headdata == 0 || fptr->hdutype == HDU_ATABLE)
+    if (headdata == 0 || fptr->hdutype == ASCII_TBL)
         charfill = 32;  /* headers and ASCII tables have space (32) fill */
     else
         charfill = 0;   /* images and binary tables have zero fill */
@@ -2493,7 +2582,7 @@ int ffirow(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
-    if (fptr->hdutype == HDU_IMAGE)
+    if (fptr->hdutype == IMAGE_HDU)
     {
         ffpmsg("Can only add rows to TABLE or BINTABLE extension (ffirow)");
         return(*status = NOT_TABLE);
@@ -2564,7 +2653,7 @@ int ffdrow(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
-    if (fptr->hdutype == HDU_IMAGE)
+    if (fptr->hdutype == IMAGE_HDU)
     {
         ffpmsg("Can only add rows to TABLE or BINTABLE extension (ffirow)");
         return(*status = NOT_TABLE);
@@ -2632,6 +2721,27 @@ int fficol(fitsfile *fptr,  /* I - FITS file pointer                        */
  then the new column will be appended as the last column in the table.
 */
 {
+    char *name, *format;
+
+    name = ttype;
+    format = tform;
+
+    fficls(fptr, numcol, 1, &name, &format, status);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
+           int fstcol,      /* I - position for first new col. (1 = 1st)    */
+           int ncols,       /* I - number of columns to insert              */
+           char **ttype,    /* I - array of column names(TTYPE keywords)    */
+           char **tform,    /* I - array of formats of column (TFORM)       */
+           int *status)     /* IO - error status                            */
+/*
+ Insert 1 or more new columns into an existing table at position numcol.  If
+ fstcol is greater than the number of existing columns in the table
+ then the new column will be appended as the last column in the table.
+*/
+{
     int colnum, datacode, decims, tfields, tstatus, ii;
     long width, delbyte, repeat, naxis1, naxis2, datasize, freespace, nadd;
     long nblock, firstbyte, nbytes, tbcol;
@@ -2641,7 +2751,7 @@ int fficol(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
-    if (fptr->hdutype == HDU_IMAGE)
+    if (fptr->hdutype == IMAGE_HDU)
     {
        ffpmsg("Can only add columns to TABLE or BINTABLE extension (fficol)");
        return(*status = NOT_TABLE);
@@ -2649,33 +2759,37 @@ int fficol(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     /*  is the column number valid?  */
     tfields = fptr->tfield;
-    if (numcol < 1 )
+    if (fstcol < 1 )
         return(*status = BAD_COL_NUM);
-    else if (numcol > tfields)
+    else if (fstcol > tfields)
         colnum = tfields + 1;   /* append as last column */
     else
-        colnum = numcol;
+        colnum = fstcol;
 
     /* parse the tform value and calc number of bytes to add to each row */
-    strcpy(tfm, tform);
-    ffupch(tfm);         /* make sure format is in upper case */
-
-    if (fptr->hdutype == HDU_ATABLE)
+    delbyte = 0;
+    for (ii = 0; ii < ncols; ii++)
     {
-        ffasfm(tfm, &datacode, &width, &decims, status);
-        delbyte = width + 1;  /*  add one space between the columns */
-    }
-    else
-    {
-        ffbnfm(tfm, &datacode, &repeat, &width, status);
+        strcpy(tfm, tform[ii]);
+        ffupch(tfm);         /* make sure format is in upper case */
 
-        if (datacode == 1) /* bit column; round up to a multiple of 8 bits */
-            delbyte = (repeat + 7) / 8;
+        if (fptr->hdutype == ASCII_TBL)
+        {
+            ffasfm(tfm, &datacode, &width, &decims, status);
+            delbyte += width + 1;  /*  add one space between the columns */
+        }
+        else
+        {
+            ffbnfm(tfm, &datacode, &repeat, &width, status);
 
-        else if (datacode == 16)  /* ASCII string column */
-            delbyte = repeat;
-        else                      /* numerical data type */
-            delbyte = (datacode / 10) * repeat;
+            if (datacode == 1) /* bit column; round up to multiple of 8 bits */
+            delbyte += (repeat + 7) / 8;
+
+            else if (datacode == 16)  /* ASCII string column */
+                delbyte += repeat;
+            else                      /* numerical data type */
+                delbyte += (datacode / 10) * repeat;
+        }
     }
 
     if (*status > 0 || delbyte <= 0) /* also aborts on variable-length cols */
@@ -2725,7 +2839,7 @@ int fficol(fitsfile *fptr,  /* I - FITS file pointer                        */
     /* insert delbyte bytes in every row, at byte position firstbyte */
     ffcins(fptr, naxis1, naxis2, delbyte, firstbyte, status);
 
-    if (fptr->hdutype == HDU_ATABLE)
+    if (fptr->hdutype == ASCII_TBL)
     {
         /* adjust the TBCOL values of the existing columns */
         for(ii = 0; ii < tfields; ii++)
@@ -2741,31 +2855,40 @@ int fficol(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
 
     /* update the mandatory keywords */
-    ffmkyj(fptr, "TFIELDS", tfields + 1, "&", status);
+    ffmkyj(fptr, "TFIELDS", tfields + ncols, "&", status);
     ffmkyj(fptr, "NAXIS1", naxis1 + delbyte, "&", status);
 
     /* increment the index value on any existing column keywords */
-    ffkshf(fptr, colnum, tfields, 1, status);
+    ffkshf(fptr, colnum, tfields, ncols, status);
 
-    /* add the required keywords for the new column */
-    strcpy(comm, "label for field");
-    ffkeyn("TTYPE", colnum, keyname, status);
-    ffpkys(fptr, keyname, ttype, comm, status);
-
-    strcpy(comm, "format of field");
-    ffkeyn("TFORM", colnum, keyname, status);
-    ffpkys(fptr, keyname, tfm, comm, status);
-
-    if (fptr->hdutype == HDU_ATABLE)   /* write the TBCOL keyword */
+    /* add the required keywords for the new columns */
+    for (ii = 0; ii < ncols; ii++, colnum++)
     {
-        if (colnum == tfields + 1)
-            tbcol = firstbyte + 2;  /* allow space between preceding column */
-        else
-            tbcol = firstbyte + 1;
+        strcpy(comm, "label for field");
+        ffkeyn("TTYPE", colnum, keyname, status);
+        ffpkys(fptr, keyname, ttype[ii], comm, status);
 
-        strcpy(comm, "beginning column of field");
-        ffkeyn("TBCOL", colnum, keyname, status);
-        ffpkyj(fptr, keyname, tbcol, comm, status);
+        strcpy(comm, "format of field");
+        strcpy(tfm, tform[ii]);
+        ffupch(tfm);         /* make sure format is in upper case */
+        ffkeyn("TFORM", colnum, keyname, status);
+        ffpkys(fptr, keyname, tfm, comm, status);
+
+        if (fptr->hdutype == ASCII_TBL)   /* write the TBCOL keyword */
+        {
+            if (colnum == tfields + 1)
+                tbcol = firstbyte + 2;  /* allow space between preceding column */
+            else
+                tbcol = firstbyte + 1;
+
+            strcpy(comm, "beginning column of field");
+            ffkeyn("TBCOL", colnum, keyname, status);
+            ffpkyj(fptr, keyname, tbcol, comm, status);
+
+            /* increment the column starting position for the next column */
+            ffasfm(tfm, &datacode, &width, &decims, status);
+            firstbyte += width + 1;  /*  add one space between the columns */
+        }
     }
 
     ffrdef(fptr, status); /* initialize the new table structure */
@@ -2788,7 +2911,7 @@ int ffdcol(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (*status > 0)
         return(*status);
 
-    if (fptr->hdutype == HDU_IMAGE)
+    if (fptr->hdutype == IMAGE_HDU)
     {
        ffpmsg
        ("Can only delete column from TABLE or BINTABLE extension (ffdcol)");
@@ -2803,7 +2926,7 @@ int ffdcol(fitsfile *fptr,  /* I - FITS file pointer                        */
     firstbyte = colptr->tbcol;  /* starting byte position of the column */
 
     /* use column width to determine how many bytes to delete in each row */
-    if (fptr->hdutype == HDU_ATABLE)
+    if (fptr->hdutype == ASCII_TBL)
     {
       delbyte = colptr->twidth;  /* width of ASCII column */
 
@@ -2869,7 +2992,7 @@ int ffdcol(fitsfile *fptr,  /* I - FITS file pointer                        */
     if (nblock > 0)
         ffdblk(fptr, nblock, status);
 
-    if (fptr->hdutype == HDU_ATABLE)
+    if (fptr->hdutype == ASCII_TBL)
     {
       /* adjust the TBCOL values of the remaining columns */
       for (ii = 1; ii <= fptr->tfield; ii++)
@@ -2915,7 +3038,7 @@ int ffcins(fitsfile *fptr,  /* I - FITS file pointer                        */
         return(*status);
 
     /* select appropriate fill value */
-    if (fptr->hdutype == HDU_ATABLE)
+    if (fptr->hdutype == ASCII_TBL)
         cfill = 32;                     /* ASCII tables use blank fill */
     else
         cfill = 0;    /* primary array and binary tables use zero fill */
@@ -2934,23 +3057,23 @@ int ffcins(fitsfile *fptr,  /* I - FITS file pointer                        */
         /* first move the trailing bytes (if any) in the last row */
         fbyte = bytepos + 1;
         nbytes = naxis1 - bytepos;
-        ffgtbs(fptr, naxis2, fbyte, nbytes, &buffer[ninsert], status);
+        ffgtbb(fptr, naxis2, fbyte, nbytes, &buffer[ninsert], status);
         fptr->rowlength = newlen;  /* set row length to its new value */
 
         /* write the row (with leading fill bytes) in the new place */
         nbytes += ninsert;
-        ffptbs(fptr, naxis2, fbyte, nbytes, buffer, status);
+        ffptbb(fptr, naxis2, fbyte, nbytes, buffer, status);
         fptr->rowlength = naxis1;  /* reset row length to original value */
 
         /*  now move the rest of the rows */
         for (irow = naxis2 - 1; irow > 0; irow--)
         {
             /* read the row to be shifted (work backwards thru the table) */
-            ffgtbs(fptr, irow, fbyte, naxis1, &buffer[ninsert], status);
+            ffgtbb(fptr, irow, fbyte, naxis1, &buffer[ninsert], status);
             fptr->rowlength = newlen;  /* set row length to its new value */
 
             /* write the row (with the leading fill bytes) in the new place */
-            ffptbs(fptr, irow, fbyte, newlen, buffer, status);
+            ffptbb(fptr, irow, fbyte, newlen, buffer, status);
             fptr->rowlength = naxis1; /* reset row length to original value */
         }
     }
@@ -2969,10 +3092,10 @@ int ffcins(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         for (ii = 0; ii < nseg; ii++)
         {
-            ffgtbs(fptr, naxis2, fbyte, nbytes, buffer, status);
+            ffgtbb(fptr, naxis2, fbyte, nbytes, buffer, status);
             fptr->rowlength = newlen;  /* set row length to its new value */
 
-            ffptbs(fptr, naxis2, fbyte + ninsert, nbytes, buffer, status);
+            ffptbb(fptr, naxis2, fbyte + ninsert, nbytes, buffer, status);
             fptr->rowlength = naxis1; /* reset row length to original value */
 
             fbyte -= 10000;
@@ -2988,11 +3111,11 @@ int ffcins(fitsfile *fptr,  /* I - FITS file pointer                        */
           for (ii = 0; ii < nseg; ii++)
           { 
             /* read the row to be shifted (work backwards thru the table) */
-            ffgtbs(fptr, irow, fbyte, nbytes, buffer, status);
+            ffgtbb(fptr, irow, fbyte, nbytes, buffer, status);
             fptr->rowlength = newlen;  /* set row length to its new value */
 
             /* write the row in the new place */
-            ffptbs(fptr, irow, fbyte + ninsert, nbytes, buffer, status);
+            ffptbb(fptr, irow, fbyte + ninsert, nbytes, buffer, status);
             fptr->rowlength = naxis1; /* reset row length to original value */
 
             fbyte -= 10000;
@@ -3014,7 +3137,7 @@ int ffcins(fitsfile *fptr,  /* I - FITS file pointer                        */
           nbytes = ninsert - ((nseg - 1) * 10000);
           for (ii = 0; ii < nseg; ii++)
           {
-            ffptbs(fptr, irow, fbyte, nbytes, buffer, status);
+            ffptbb(fptr, irow, fbyte, nbytes, buffer, status);
             fbyte += nbytes;
             nbytes = 10000;
           }
@@ -3051,10 +3174,10 @@ int ffcdel(fitsfile *fptr,  /* I - FITS file pointer                        */
       i2 = i1 + ndelete;
       for (irow = 1; irow < naxis2; irow++)
       {
-        ffgtbs(fptr, irow, i2, newlen, buffer, status); /* read row */
+        ffgtbb(fptr, irow, i2, newlen, buffer, status); /* read row */
         fptr->rowlength = newlen;  /* set row length to its new value */
 
-        ffptbs(fptr, irow, i1, newlen, buffer, status); /* write row */
+        ffptbb(fptr, irow, i1, newlen, buffer, status); /* write row */
         fptr->rowlength = naxis1;  /* reset row length to original value */
       }
 
@@ -3063,10 +3186,10 @@ int ffcdel(fitsfile *fptr,  /* I - FITS file pointer                        */
 
       if (remain > 0)
       {
-        ffgtbs(fptr, naxis2, i2, remain, buffer, status); /* read row */
+        ffgtbb(fptr, naxis2, i2, remain, buffer, status); /* read row */
         fptr->rowlength = newlen;  /* set row length to its new value */
 
-        ffptbs(fptr, naxis2, i1, remain, buffer, status); /* write row */
+        ffptbb(fptr, naxis2, i1, remain, buffer, status); /* write row */
         fptr->rowlength = naxis1;  /* reset row length to original value */
       }
     }
@@ -3085,10 +3208,10 @@ int ffcdel(fitsfile *fptr,  /* I - FITS file pointer                        */
           nbytes = newlen - (nseg - 1) * 10000;
           for (ii = 0; ii < nseg; ii++)
           { 
-            ffgtbs(fptr, irow, i2, nbytes, buffer, status); /* read bytes */
+            ffgtbb(fptr, irow, i2, nbytes, buffer, status); /* read bytes */
             fptr->rowlength = newlen;  /* set row length to its new value */
 
-            ffptbs(fptr, irow, i1, nbytes, buffer, status); /* rewrite bytes */
+            ffptbb(fptr, irow, i1, nbytes, buffer, status); /* rewrite bytes */
             fptr->rowlength = naxis1; /* reset row length to original value */
 
             i1 += nbytes;
@@ -3108,10 +3231,10 @@ int ffcdel(fitsfile *fptr,  /* I - FITS file pointer                        */
           nbytes = remain - (nseg - 1) * 10000;
           for (ii = 0; ii < nseg; ii++)
           { 
-            ffgtbs(fptr, naxis2, i2, nbytes, buffer, status);
+            ffgtbb(fptr, naxis2, i2, nbytes, buffer, status);
             fptr->rowlength = newlen;  /* set row length to its new value */
 
-            ffptbs(fptr, naxis2, i1, nbytes, buffer, status); /* write row */
+            ffptbb(fptr, naxis2, i1, nbytes, buffer, status); /* write row */
             fptr->rowlength = naxis1;  /* reset row length to original value */
 
             i1 += nbytes;
@@ -3257,7 +3380,7 @@ int ffshft(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
 
     /* now overwrite the old data with fill */
-    if (fptr->hdutype == HDU_ATABLE)
+    if (fptr->hdutype == ASCII_TBL)
     {
         for (ii = 0; ii < 10000; ii++)
             buffer[ii] = ' ';    /* fill ASCII tables with spaces */
@@ -3306,9 +3429,8 @@ int ffcsum(fitsfile *fptr,      /* I - FITS file pointer                  */
     sampled evenly. 
 */
 {
-    long buf[720];
     long ii, jj;
-    unsigned short *sbuf;
+    unsigned short sbuf[1440];
     unsigned long hi, lo, hicarry, locarry;
 
     if (*status > 0)
@@ -3316,15 +3438,15 @@ int ffcsum(fitsfile *fptr,      /* I - FITS file pointer                  */
   /*
     Sum the specified number of FITS 2880-byte records.  This assumes that
     the FITSIO file pointer points to the start of the records to be summed.
-    Read each FITS block as 720 long int values (do byte swapping if needed).
+    Read each FITS block as 1440 short values (do byte swapping if needed).
   */
     for (jj = 0; jj < nrec; jj++)
     {
-      ffgi4b(fptr, 720, 4, buf, status);
 
-      sbuf = (unsigned short *) buf;
+      ffgi2b(fptr, 1440, 2, (short *) sbuf, status);
+
       hi = (*sum >> 16);
-      lo = (*sum << 16) >> 16;
+      lo = *sum & 0xFFFF;
 
       for (ii = 0; ii < 1440; ii += 2)
       {
@@ -3348,7 +3470,7 @@ int ffcsum(fitsfile *fptr,      /* I - FITS file pointer                  */
     return(*status);
 }
 /*-------------------------------------------------------------------------*/
-int ffesum(unsigned long sum,   /* I - accumulated checksum                */
+void ffesum(unsigned long sum,  /* I - accumulated checksum                */
            int complm,          /* I - = 1 to encode complement of the sum */
            char *ascii)         /* O - 16-char ASCII encoded checksum      */
 /*
@@ -3364,8 +3486,9 @@ int ffesum(unsigned long sum,   /* I - accumulated checksum                */
     published in the Astronomical Society of the Pacific Conference Series.
 */
 {
-    unsigned exclude[13] = { 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f, 0x40,
-                             0x5b, 0x5c, 0x5d, 0x5e, 0x5f, 0x60 };
+    unsigned int exclude[13] = { 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f, 0x40,
+                                       0x5b, 0x5c, 0x5d, 0x5e, 0x5f, 0x60 };
+    unsigned long mask[4] = { 0xff000000, 0xff0000, 0xff00, 0xff  };
 
     int offset = 0x30;     /* ASCII 0 (zero) */
 
@@ -3380,7 +3503,7 @@ int ffesum(unsigned long sum,   /* I - accumulated checksum                */
 
     for (ii = 0; ii < 4; ii++)
     {
-        byte = (value << (8 * ii)) >> 24;
+        byte = (value & mask[ii]) >> (24 - (8 * ii));
         quotient = byte / 4 + offset;
         remainder = byte % 4;
         for (jj = 0; jj < 4; jj++)
@@ -3406,7 +3529,6 @@ int ffesum(unsigned long sum,   /* I - accumulated checksum                */
         ascii[ii] = asc[(ii+15)%16];
 
     ascii[16] = '\0';
-    return(0);
 }
 /*-------------------------------------------------------------------------*/
 unsigned long ffdsum(char *ascii,  /* I - 16-char ASCII encoded checksum   */
@@ -3434,8 +3556,8 @@ unsigned long ffdsum(char *ascii,  /* I - 16-char ASCII encoded checksum   */
 
     for (ii = 0; ii < 16; ii += 4)
     {
-        hi += cbuf[ii]*256 + cbuf[ii+1];
-        lo += cbuf[ii+2]*256 + cbuf[ii+3];
+        hi += (cbuf[ii]   << 8) + cbuf[ii+1];
+        lo += (cbuf[ii+2] << 8) + cbuf[ii+3];
     }
 
     hicarry = hi >> 16;
@@ -3453,5 +3575,323 @@ unsigned long ffdsum(char *ascii,  /* I - 16-char ASCII encoded checksum   */
         *sum = 0xFFFFFFFF - *sum;   /* complement each bit of the value */
 
     return(*sum);
+}
+/*------------------------------------------------------------------------*/
+int ffpcks(fitsfile *fptr,      /* I - FITS file pointer                  */
+           int *status)         /* IO - error status                      */
+/*
+   Create or update the checksum keywords in the CHDU.  These keywords
+   provide a checksum verification of the FITS HDU based on the ASCII
+   coded 1's complement checksum algorithm developed by Rob Seaman at NOAO.
+*/
+{
+    char datestr[9], checksum[FLEN_VALUE], datasum[FLEN_VALUE];
+    char  comm[FLEN_COMMENT], chkcomm[FLEN_COMMENT], datacomm[FLEN_COMMENT];
+    time_t tp;
+    struct tm *ptr;
+    int tstatus, chutype;
+    long nrec;
+    unsigned long dsum, olddsum, sum;
+    double tdouble;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    /* generate current date string and construct the keyword comments */
+    time(&tp);
+    ptr = localtime(&tp);
+    strftime(datestr, 9, "%d/%m/%y", ptr);
+    strcpy(chkcomm, "encoded HDU checksum updated on ");
+    strcat(chkcomm, datestr);
+    strcpy(datacomm, "data unit checksum updated on ");
+    strcat(datacomm, datestr);
+
+    /* write the CHECKSUM keyword if it does not exist */
+    tstatus = *status;
+    if (ffgkys(fptr, "CHECKSUM", checksum, comm, status) == KEY_NO_EXIST)
+    {
+        *status = tstatus;
+        strcpy(checksum, "0000000000000000");
+        ffpkys(fptr, "CHECKSUM", checksum, chkcomm, status);
+    }
+
+    /* write the DATASUM keyword if it does not exist */
+    tstatus = *status;
+    if (ffgkys(fptr, "DATASUM", datasum, comm, status) == KEY_NO_EXIST)
+    {
+        *status = tstatus;
+        olddsum = 0;
+        ffpkys(fptr, "DATASUM", "         0", datacomm, status);
+
+        /* set the CHECKSUM keyword as undefined, if it isn't already */
+        if (strcmp(checksum, "0000000000000000") )
+        {
+            strcpy(checksum, "0000000000000000");
+            ffmkys(fptr, "CHECKSUM", checksum, chkcomm, status);
+        }
+    }
+    else
+    {
+        /* decode the datasum into an unsigned long variable */
+
+        /* olddsum = strtoul(datasum, 0, 10); doesn't work on SUN OS */
+
+        tdouble = atof(datasum);
+        olddsum = tdouble;
+    }
+
+    /* close header: rewrite END keyword and following blank fill */
+    if (ffwend(fptr, status) > 0)
+        return(*status);
+
+    /* now re-read the required keywords to determine the structure */
+    if (ffrhdu(fptr, &chutype, status) > 0)
+        return(*status);
+
+    /* write the correct data fill values, if they are not already correct */
+    if (ffpdfl(fptr, status) > 0)
+        return(*status);
+
+    /* calc size of data unit, in FITS 2880-byte blocks */
+    nrec = (fptr->headstart[fptr->curhdu + 1] - fptr->datastart) / 2880;
+    dsum = 0;
+
+    if (nrec > 0)
+    {
+        /* accumulate the 32-bit 1's complement checksum */
+        ffmbyt(fptr, fptr->datastart, REPORT_EOF, status);
+        if (ffcsum(fptr, nrec, &dsum, status) > 0)
+            return(*status);
+    }
+
+    if (dsum != olddsum)
+    {
+        /* update the DATASUM keyword with the correct value */ 
+        sprintf(datasum, "%u", dsum);
+        ffmkys(fptr, "DATASUM", datasum, datacomm, status);
+
+        /* set the CHECKSUM keyword as undefined, if it isn't already */
+        if (strcmp(checksum, "0000000000000000") )
+        {
+            strcpy(checksum, "0000000000000000");
+            ffmkys(fptr, "CHECKSUM", checksum, chkcomm, status);
+        }
+    }        
+
+    if (strcmp(checksum, "0000000000000000") )
+    {
+        /* check if CHECKSUM is still OK; move to the start of the header */
+        ffmbyt(fptr, fptr->headstart[fptr->curhdu], REPORT_EOF, status);
+
+        /* accumulate the header checksum into the previous data checksum */
+        nrec = (fptr->datastart - fptr->headstart[fptr->curhdu]) / 2880;
+        sum = dsum;
+        if (ffcsum(fptr, nrec, &sum, status) > 0)
+            return(*status);
+
+        if (sum == 0 || sum == 0xFFFFFFFF)
+           return(*status);            /* CHECKSUM is correct */
+
+        /* Zero the CHECKSUM and recompute the new value */
+        ffmkys(fptr, "CHECKSUM", "0000000000000000", chkcomm, status);
+    }
+
+    /* move to the start of the header */
+    ffmbyt(fptr, fptr->headstart[fptr->curhdu], REPORT_EOF, status);
+
+    /* accumulate the header checksum into the previous data checksum */
+    nrec = (fptr->datastart - fptr->headstart[fptr->curhdu]) / 2880;
+    sum = dsum;
+    if (ffcsum(fptr, nrec, &sum, status) > 0)
+           return(*status);
+
+    /* encode the COMPLEMENT of the checksum into a 16-character string */
+    ffesum(sum, TRUE, checksum);
+
+    /* update the CHECKSUM keyword value with the new string */
+    ffmkys(fptr, "CHECKSUM", checksum, "&", status);
+
+    return(*status);
+}
+/*------------------------------------------------------------------------*/
+int ffupck(fitsfile *fptr,      /* I - FITS file pointer                  */
+           int *status)         /* IO - error status                      */
+/*
+   Update the CHECKSUM keyword value.  This assumes that the DATASUM
+   keyword exists and has the correct value.
+*/
+{
+    char datestr[9], chkcomm[FLEN_COMMENT], comm[FLEN_COMMENT];
+    char checksum[FLEN_VALUE], datasum[FLEN_VALUE];
+    time_t tp;
+    struct tm *ptr;
+    int tstatus;
+    long nrec;
+    unsigned long sum, dsum;
+    double tdouble;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    /* generate current date string and construct the keyword comments */
+    time(&tp);
+    ptr = localtime(&tp);
+    strftime(datestr, 9, "%d/%m/%y", ptr);
+    strcpy(chkcomm, "encoded HDU checksum updated on ");
+    strcat(chkcomm, datestr);
+
+    /* get the DATASUM keyword and convert it to a unsigned long */
+    if (ffgkys(fptr, "DATASUM", datasum, comm, status) == KEY_NO_EXIST)
+    {
+        ffpmsg("DATASUM keyword not found (ffupck");
+        return(*status);
+    }
+
+    tdouble = atof(datasum); /* read as a double as a workaround */
+    dsum = tdouble;
+
+    /* get the checksum keyword, if it exists */
+    tstatus = *status;
+    if (ffgkys(fptr, "CHECKSUM", checksum, comm, status) == KEY_NO_EXIST)
+    {
+        *status = tstatus;
+        strcpy(checksum, "0000000000000000");
+        ffpkys(fptr, "CHECKSUM", checksum, chkcomm, status);
+    }
+    else
+    {
+        /* check if CHECKSUM is still OK */
+        /* rewrite END keyword and following blank fill */
+        if (ffwend(fptr, status) > 0)
+            return(*status);
+
+        /* move to the start of the header */
+        ffmbyt(fptr, fptr->headstart[fptr->curhdu], REPORT_EOF, status);
+
+        /* accumulate the header checksum into the previous data checksum */
+        nrec = (fptr->datastart - fptr->headstart[fptr->curhdu]) / 2880;
+        sum = dsum;
+        if (ffcsum(fptr, nrec, &sum, status) > 0)
+           return(*status);
+
+        if (sum == 0 || sum == 0xFFFFFFFF)
+           return(*status);    /* CHECKSUM is already correct */
+
+        /* Zero the CHECKSUM and recompute the new value */
+        ffmkys(fptr, "CHECKSUM", "0000000000000000", chkcomm, status);
+    }
+
+    /* move to the start of the header */
+    ffmbyt(fptr, fptr->headstart[fptr->curhdu], REPORT_EOF, status);
+
+    /* accumulate the header checksum into the previous data checksum */
+    nrec = (fptr->datastart - fptr->headstart[fptr->curhdu]) / 2880;
+    sum = dsum;
+    if (ffcsum(fptr, nrec, &sum, status) > 0)
+           return(*status);
+
+    /* encode the COMPLEMENT of the checksum into a 16-character string */
+    ffesum(sum, TRUE, checksum);
+
+    /* update the CHECKSUM keyword value with the new string */
+    ffmkys(fptr, "CHECKSUM", checksum, "&", status);
+
+    return(*status);
+}
+/*------------------------------------------------------------------------*/
+int ffvcks(fitsfile *fptr,      /* I - FITS file pointer                  */
+           int *datastatus,     /* O - data checksum status               */
+           int *hdustatus,      /* O - hdu checksum status                */
+                                /*     1  verification is correct         */
+                                /*     0  checksum keyword is not present */
+                                /*    -1 verification not correct         */
+           int *status)         /* IO - error status                      */
+/*
+    Verify the HDU by comparing the value of the computed checksums against
+    the values of the DATASUM and CHECKSUM keywords if they are present.
+*/
+{
+    int tstatus;
+    double tdouble;
+    unsigned long datasum, hdusum, olddatasum;
+    char chksum[FLEN_VALUE], comm[FLEN_COMMENT];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    *datastatus = -1;
+    *hdustatus  = -1;
+
+    tstatus = *status;
+    if (ffgkys(fptr, "CHECKSUM", chksum, comm, status) == KEY_NO_EXIST)
+    {
+        *hdustatus = 0;             /* CHECKSUM keyword does not exist */
+        *status = tstatus;
+    }
+
+    if (ffgkys(fptr, "DATASUM", chksum, comm, status) == KEY_NO_EXIST)
+    {
+        *datastatus = 0;            /* DATASUM keyword does not exist */
+        *status = tstatus;
+    }
+
+    if ( *status > 0 || (!(*hdustatus) && !(*datastatus)) )
+        return(*status);            /* return if neither keywords exist */
+
+    /* convert string to unsigned long */
+
+    /* olddatasum = strtoul(chksum, 0, 10);  doesn't work w/ gcc on SUN OS */
+    /* sscanf(chksum, "%u", &olddatasum);   doesn't work w/ cc on VAX/VMS */
+
+    tdouble = atof(chksum); /* read as a double as a workaround */
+    olddatasum = tdouble;
+
+    /*  calculate the data checksum and the HDU checksum */
+    if (ffgcks(fptr, &datasum, &hdusum, status) > 0)
+        return(*status);
+
+    if (*datastatus)
+        if (datasum == olddatasum)
+            *datastatus = 1;
+
+    if (*hdustatus)
+        if (hdusum == 0 || hdusum == 0xFFFFFFFF)
+            *hdustatus = 1;
+
+    return(*status);
+}
+/*------------------------------------------------------------------------*/
+int ffgcks(fitsfile *fptr,           /* I - FITS file pointer             */
+           unsigned long *datasum,   /* O - data checksum                 */
+           unsigned long *hdusum,    /* O - hdu checksum                  */
+           int *status)              /* IO - error status                 */
+
+    /* calculate the checksums of the data unit and the total HDU */
+{
+    long nrec;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    nrec = (fptr->headstart[fptr->curhdu + 1] - fptr->datastart) / 2880;
+    *datasum = 0;
+
+    if (nrec > 0)
+    {
+        /* accumulate the 32-bit 1's complement checksum */
+        ffmbyt(fptr, fptr->datastart, REPORT_EOF, status);
+        if (ffcsum(fptr, nrec, datasum, status) > 0)
+            return(*status);
+    }
+
+    /* move to the start of the header and calc. size of header */
+    ffmbyt(fptr, fptr->headstart[fptr->curhdu], REPORT_EOF, status);
+    nrec = (fptr->datastart - fptr->headstart[fptr->curhdu]) / 2880;
+
+    /* accumulate the header checksum into the previous data checksum */
+    *hdusum = *datasum;
+    ffcsum(fptr, nrec, hdusum, status);
+
+    return(*status);
 }
 

@@ -11,14 +11,63 @@
 /*  and perform such material.                                             */
 
 #include <string.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <time.h>
-#ifndef _FITSIO2_H
 #include "fitsio2.h"
-#endif
 
+/*--------------------------------------------------------------------------*/
+int ffpky( fitsfile *fptr,     /* I - FITS file pointer        */
+           int  datatype,      /* I - datatype of the value    */
+           char *keyname,      /* I - name of keyword to write */
+           void *value,        /* I - keyword value            */
+           char *comm,         /* I - keyword comment          */
+           int  *status)       /* IO - error status            */
+/*
+  Write (put) the keyword, value and comment into the FITS header.
+  Writes a keyword value with the datatype specified by the 2nd argument.
+*/
+{
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (datatype == TSTRING)
+    {
+        ffpkys(fptr, keyname, (char *) value, comm, status);
+    }
+    else if (datatype == TBYTE)
+    {
+        ffpkyj(fptr, keyname, (long) *(unsigned char *) value, comm, status);
+    }
+    else if (datatype == TSHORT)
+    {
+        ffpkyj(fptr, keyname, (long) *(short *) value, comm, status);
+    }
+    else if (datatype == TINT)
+    {
+        ffpkyj(fptr, keyname, (long) *(int *) value, comm, status);
+    }
+    else if (datatype == TLOGICAL)
+    {
+        ffpkyl(fptr, keyname, *(int *) value, comm, status);
+    }
+    else if (datatype == TLONG)
+    {
+        ffpkyj(fptr, keyname, *(long *) value, comm, status);
+    }
+    else if (datatype == TFLOAT)
+    {
+        ffpkye(fptr, keyname, *(float *) value, 6, comm, status);
+    }
+    else if (datatype == TDOUBLE)
+    {
+        ffpkyd(fptr, keyname, *(double *) value, 14, comm, status);
+    }
+    else
+        *status = BAD_DATATYPE;
+
+    return(*status);
+} 
 /*-------------------------------------------------------------------------*/
 int ffprec(fitsfile *fptr,     /* I - FITS file pointer        */
            char *card,         /* I - string to be written     */
@@ -455,9 +504,9 @@ int ffpdat( fitsfile *fptr,      /* I - FITS file pointer  */
     ptr = localtime(&tp);
     strftime(date, 9, "%d/%m/%y", ptr);
 
-    strcpy(card, "DATE    =           '");
+    strcpy(card, "DATE    = '");
     strcat(card, date);
-    strcat(card, "' / FITS file creation date (dd/mm/yy)");
+    strcat(card, "'           / FITS file creation date (dd/mm/yy)");
 
     ffucrd(fptr, "DATE", card, status);
 
@@ -878,7 +927,6 @@ int ffphps( fitsfile *fptr, /* I - FITS file pointer                        */
     ffphpr(fptr, simple, bitpix, naxis, naxes, pcount, gcount, extend, status);
     return(*status);
 }
-
 /*--------------------------------------------------------------------------*/
 int ffphpr( fitsfile *fptr, /* I - FITS file pointer                        */
             int simple,     /* I - does file conform to FITS standard? 1/0  */
@@ -1142,9 +1190,9 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
     {
         ffbnfm(tform[ii], &datatype, &repeat, &width, status);
 
-        if (datatype == FTYPE_ASCII)
+        if (datatype == TSTRING)
             naxis1 += repeat;   /* one byte per char */
-        else if (datatype == FTYPE_BIT)
+        else if (datatype == TBIT)
             naxis1 += (repeat + 7) / 8;
         else if (datatype > 0)
             naxis1 += repeat * (datatype / 10);
@@ -1183,25 +1231,25 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         ffbnfm(tfmt, &datatype, &repeat, &width, status);
 
-        if (datatype == FTYPE_ASCII)
+        if (datatype == TSTRING)
             strcat(comm, ": ASCII Character");
-        else if (datatype == FTYPE_BIT)
+        else if (datatype == TBIT)
            strcat(comm, ": BIT");
-        else if (datatype == FTYPE_BYTE)
+        else if (datatype == TBYTE)
            strcat(comm, ": BYTE");
-        else if (datatype == FTYPE_LOGICAL)
+        else if (datatype == TLOGICAL)
            strcat(comm, ": 1-byte LOGICAL");
-        else if (datatype == FTYPE_SHORT)
+        else if (datatype == TSHORT)
            strcat(comm, ": 2-byte INTEGER");
-        else if (datatype == FTYPE_LONG)
+        else if (datatype == TLONG)
            strcat(comm, ": 4-byte INTEGER");
-        else if (datatype == FTYPE_FLOAT)
+        else if (datatype == TFLOAT)
            strcat(comm, ": 4-byte REAL");
-        else if (datatype == FTYPE_DOUBLE)
+        else if (datatype == TDOUBLE)
            strcat(comm, ": 8-byte DOUBLE");
-        else if (datatype == FTYPE_COMPLEX)
+        else if (datatype == TCOMPLEX)
            strcat(comm, ": COMPLEX");
-        else if (datatype == FTYPE_DBLCOMPLEX)
+        else if (datatype == TDBLCOMPLEX)
            strcat(comm, ": DOUBLE COMPLEX");
         else if (datatype < 0)
            strcat(comm, ": variable length array");

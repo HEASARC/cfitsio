@@ -11,11 +11,8 @@
 /*  Government purposes to publish, distribute, translate, copy, exhibit,  */
 /*  and perform such material.                                             */
 
-#include <stdio.h>
 #include <limits.h>
-#ifndef _FITSIO2_H
 #include "fitsio2.h"
-#endif
 
 #if MACHINE == ALPHAVMS
   static float testfloat = TESTFLOAT;  /* use to test floating pt format */
@@ -2726,7 +2723,7 @@ int fffi4i4(long *input,          /* I - array of values to be converted     */
                 }
                 else
                 {
-                    dvalue =  (((double) input[ii]) * scale) + zero;
+                    dvalue = input[ii] * scale + zero;
 
                     if (dvalue < DLONG_MIN)
                     {

@@ -10,11 +10,8 @@
 /*  Government purposes to publish, distribute, translate, copy, exhibit,  */
 /*  and perform such material.                                             */
 
-#include <stdio.h>
 #include <string.h>
-#ifndef _FITSIO2_H
 #include "fitsio2.h"
-#endif
 
 /*--------------------------------------------------------------------------*/
 int ffukys(fitsfile *fptr,    /* I - FITS file pointer  */

@@ -1,4 +1,20 @@
-CFITSIO TESTPROG, v0.980
+CFITSIO TESTPROG, v0.990
+
+Try opening then closing a nonexistent file:
+  ffopen fptr, status  = 0 104 (expect an error)
+  ffclos status = 104
+
+ffinit create new file status = 0
+
+test writing of long string keywords:
+ 123456789012345678901234567890123456789012345678901234567890123456789012345
+'12345678901234567890123456789012345678901234567890123456789012345678'
+ 1234567890123456789012345678901234567890123456789012345678901234'6789012345
+'1234567890123456789012345678901234567890123456789012345678901234''67'
+ 1234567890123456789012345678901234567890123456789012345678901234''789012345
+'1234567890123456789012345678901234567890123456789012345678901234'''''
+ 1234567890123456789012345678901234567890123456789012345678901234567'9012345
+'1234567890123456789012345678901234567890123456789012345678901234567'
 ffflus status = 0
 
 Values read back from primary array (99 = null pixel)
@@ -28,6 +44,14 @@ KEY_PKYL 1 fxpkyl comment 0
 KEY_PKYJ 11 fxpkyj comment 0
 KEY_PKYJ 11.000000 fxpkyj comment 0
 KEY_PKYJ 11.000000 fxpkyj comment 0
+KEY_PKY S value_string fxpkys comment 0
+KEY_PKY L 1 fxpkyl comment 0
+KEY_PKY BYTE 11 fxpkyj comment 0
+KEY_PKY SHORT 11 fxpkyj comment 0
+KEY_PKY INT 11 fxpkyj comment 0
+KEY_PKY J 11 fxpkyj comment 0
+KEY_PKY E 13.131310 fxpkye comment 0
+KEY_PKY D 15.151515 fxpkyd comment 0
 KEY_PKYF 12.121210 fxpkyf comment 0
 KEY_PKYE 13.131310 fxpkye comment 0
 KEY_PKYG 14.14141414141414 fxpkyg comment 0
@@ -35,7 +59,7 @@ KEY_PKYD 15.15151515151520 fxpkyd comment 0
 KEY_PKYT 12345678 0.12345678901235 fxpkyt comment 0
 KEY_PKLS long string value = 
 This is a very long string value that is continued over more than one keyword.
-header contains 51 keywords; located at keyword 21 
+header contains 63 keywords; located at keyword 25 
 ffgkns:  first string, second string, 
 ffgknl:  1, 0, 1
 ffgknj:  11, 12, 13
@@ -43,17 +67,17 @@ ffgkne:  13.131310, 14.141410, 15.151520
 ffgknd:  15.151515, 16.161616, 17.171717
 
 Before deleting the HISTORY and DATE keywords...
-COMMENT   This keyword was written by fxpcom.
-HISTORY     This keyword written by fxphis (w/ 2 leading spaces).
-DATE    =           '19/04/96' / FITS file creation date (dd/mm/yy)
-KY_PKNS1= 'first string'       / fxpkns comment
+COMMENT 
+HISTORY 
+DATE    
+KY_PKNS1
 
 After deleting the keywords...
 COMMENT   This keyword was written by fxpcom.
 KY_PKNS1= 'first string'       / fxpkns comment
 
 After inserting the keywords...
-COMMENT   This keyword was written by fxpcom.
+COMMENT   continued over multiple keywords.  The HEASARC convention uses the &
 KY_IREC = 'This keyword inserted by fxirec'
 KY_IKYS = 'insert_value_string' / ikys comment
 KY_IKYJ =                   49 / ikyj comment
@@ -62,7 +86,7 @@ KY_IKYE =           1.2346E+01 / ikye comment
 KY_IKYD = 1.23456789012346E+01 / ikyd comment
 KY_IKYF =              12.3456 / ikyf comment
 KY_IKYG =    12.34567890123457 / ikyg comment
-KY_PKNS1= 'first string'       / fxpkns comment
+COMMENT   character at the end of each substring which is then continued
 
 After modifying the keywords...
 COMMENT   This keyword was modified by fxmrec
@@ -74,7 +98,7 @@ KY_IKYE =          -1.2346E+01 / ikye comment
 KY_IKYD = -1.23456789012346E+01 / modified comment
 KY_IKYF =             -12.3456 / ikyf comment
 KY_IKYG =   -12.34567890123457 / ikyg comment
-KY_PKNS1= 'first string'       / fxpkns comment
+COMMENT   character at the end of each substring which is then continued
 
 After updating the keywords...
 COMMENT   This keyword was modified by fxmrec
@@ -86,9 +110,9 @@ KY_IKYE =          -1.3346E+01 / ikye comment
 KY_IKYD = -1.33456789012346E+01 / modified comment
 KY_IKYF =             -13.3456 / ikyf comment
 KY_IKYG =   -13.34567890123457 / ikyg comment
-KY_PKNS1= 'first string'       / fxpkns comment
-ffcrhd status = 0
-ffphbn status = 0
+COMMENT   character at the end of each substring which is then continued
+
+ffcrtb status = 0
 header contains 33 keywords; located at keyword 1 
 header contains 33 keywords with room for 74 more
 TDIM3 = (1,2,8), 3, 1, 2, 8
@@ -232,6 +256,7 @@ Data values read from binary table:
 
 01001100 01110000 11110000 01111100 00000000 
 
+null string column value = -- (should be --)
 
 Read columns with ffgcv_:
    first string 0  76  1  1  1  1.0  1.0 ( 1.0, 2.0) ( 1.0, 2.0) 
@@ -336,14 +361,28 @@ Data values after inserting column 8:
     NOT DEFINED  9  9  9.0  9.0 0
     NOT DEFINED 10 10 10.0 10.0 0
     NOT DEFINED 98 98 98.0 98.0 0
-ffibin status = 0
-      0   1000  10000  32000  65000   -999 status = 0
-      0   1000  10000  32768  65535   -999 status = 0
-      0   1000  10000  32700  65500   -999 status = 0
 
-      0      1     10     32     65   -999 status = 0
- -32768 -31768 -22768      0  32767   -999 status = 0
-     -1      9     99    326    654   -999 status = 0
+Values after setting 1st 10 elements in column 8 = null:
+   first string  1  1  1.0  1.0 98
+  second string  2  2  2.0  2.0 98
+    NOT DEFINED  0  0  0.0  0.0 98
+    NOT DEFINED  0  0  0.0  0.0 98
+    NOT DEFINED  0  0  0.0  0.0 98
+                 3  3  3.0  3.0 98
+    NOT DEFINED  4  4  4.0  4.0 98
+    NOT DEFINED  5  5  5.0  5.0 98
+    NOT DEFINED  6  6  6.0  6.0 98
+    NOT DEFINED  9  9  9.0  9.0 98
+    NOT DEFINED 10 10 10.0 10.0 0
+    NOT DEFINED 98 98 98.0 98.0 0
+ffibin status = 0
+      0   1000  10000  32000  65000   -999
+      0   1000  10000  32768  65535   -999
+      0   1000  10000  32700  65500   -999
+
+      0      1     10     32     65   -999
+ -32768 -31768 -22768      0  32767   -999
+     -1      9     99    326    654   -999
 
 Create image extension: ffiimg status = 0
 
@@ -615,11 +654,37 @@ E  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 99 20 0
 D  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 99 20 0
 Column 8 repeat and offset = 20 4286
 
+ffcrim status = 0
+ffppr status = 0
+
+Image values written with ffppr and read with ffgpv:
+  0  2  4  6  8 10 12 14 16 18 20 22  0 (byte)
+  0  2  4  6  8 10 12 14 16 18 20 22  0 (short)
+  0  2  4  6  8 10 12 14 16 18 20 22  0 (long)
+  0  2  4  6  8 10 12 14 16 18 20 22  0 (float)
+  0  2  4  6  8 10 12 14 16 18 20 22  0 (double)
+
+ffcrtb status = 0
+ffpcl status = 0
+
+Column values written with ffpcl and read with ffgcl:
+  0  3  6  9 12 15 18 21 24 27  0 (byte)
+  0  3  6  9 12 15 18 21 24 27  0 (short)
+  0  3  6  9 12 15 18 21 24 27  0 (long)
+  0  3  6  9 12 15 18 21 24 27  0 (float)
+  0  3  6  9 12 15 18 21 24 27  0 (double)
+
 Repeatedly move to the 1st 4 HDUs of the file:
 12343123431234312343123431234312343123431234312343
 
-Encode checksum: 1426738146 -> hF4EjE2BhE2BhE2B
-Decode checksum: hF4EjE2BhE2BhE2B -> 1426738146
+Encode checksum: 1234567890 -> dCW2fBU0dBU0dBU0
+Decode checksum: dCW2fBU0dBU0dBU0 -> 1234567890
+DATASUM = '2338390162'        
+ffgcks data checksum, status = 2338390162, 0
+ffvcks datastatus, hdustatus, status = 1 1 0
+ffupck status = 0
+DATASUM = '2338390162'        
+ffvcks datastatus, hdustatus, status = 1 1 0
 ffclos status = 0
 
 Status = 0: OK - no error

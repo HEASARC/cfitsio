@@ -1,4 +1,6 @@
+#ifndef _FITSIO2_H
 #define _FITSIO2_H
+
 #include "fitsio.h"
 
 #define DBUFFSIZE 10000 /* size of data buffer in bytes */
@@ -377,3 +379,6 @@ int ffr8fr8(double *array, long ntodo, double scale, double zero,
 /*  the following 2 routines are VMS macros used on the VAX */
 void ieevpd(double *inarray, double *outarray, long *nvals);
 void ieevud(double *inarray, double *outarray, long *nvals);
+
+#endif
+

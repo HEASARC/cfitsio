@@ -12,11 +12,9 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <ctype.h>
-#ifndef _FITSIO2_H
 #include "fitsio2.h"
-#endif
+
 /*--------------------------------------------------------------------------*/
 int ffghsp(fitsfile *fptr,  /* I - FITS file pointer                     */
            int *nexist,     /* O - number of existing keywords in header */
@@ -142,6 +140,63 @@ int ffgnky(fitsfile *fptr,  /* I - FITS file pointer     */
     }
     return(*status);
 }
+/*--------------------------------------------------------------------------*/
+int ffgky( fitsfile *fptr,     /* I - FITS file pointer        */
+           int  datatype,      /* I - datatype of the value    */
+           char *keyname,      /* I - name of keyword to read  */
+           void *value,        /* O - keyword value            */
+           char *comm,         /* O - keyword comment          */
+           int  *status)       /* IO - error status            */
+/*
+  Read (gut) the keyword value and comment from the FITS header.
+  Reads a keyword value with the datatype specified by the 2nd argument.
+*/
+{
+    long longval;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (datatype == TSTRING)
+    {
+        ffgkys(fptr, keyname, (char *) value, comm, status);
+    }
+    else if (datatype == TBYTE)
+    {
+        ffgkyj(fptr, keyname, &longval, comm, status);
+        *(unsigned char *) value = longval;
+    }
+    else if (datatype == TSHORT)
+    {
+        ffgkyj(fptr, keyname, &longval, comm, status);
+        *(short *) value = longval;
+    }
+    else if (datatype == TINT)
+    {
+        ffgkyj(fptr, keyname, &longval, comm, status);
+        *(int *) value = longval;
+    }
+    else if (datatype == TLOGICAL)
+    {
+        ffgkyl(fptr, keyname, (int *) value, comm, status);
+    }
+    else if (datatype == TLONG)
+    {
+        ffgkyj(fptr, keyname, (long *) value, comm, status);
+    }
+    else if (datatype == TFLOAT)
+    {
+        ffgkye(fptr, keyname, (float *) value, comm, status);
+    }
+    else if (datatype == TDOUBLE)
+    {
+        ffgkyd(fptr, keyname, (double *) value, comm, status);
+    }
+    else
+        *status = BAD_DATATYPE;
+
+    return(*status);
+} 
 /*--------------------------------------------------------------------------*/
 int ffgkey( fitsfile *fptr,     /* I - FITS file pointer        */
             char *keyname,      /* I - name of keyword to read  */

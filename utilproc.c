@@ -11,13 +11,10 @@
 /*  and perform such material.                                             */
 
 #include <string.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <ctype.h>
-#ifndef _FITSIO2_H
 #include "fitsio2.h"
-#endif
 
 /*--------------------------------------------------------------------------*/
 float ffvers(float *version)  /* IO - version number */
@@ -25,7 +22,7 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-    *version = 0.98;  /* beta development version */
+    *version = 0.99;  /* beta development version */
 
     return(*version);
 }
@@ -214,7 +211,7 @@ void ffgerr(int status,     /* I - error status value */
        strcpy(errtext, "column number < 1 or > tfields");
        break;
     case 304:
-       strcpy(errtext, "keyword not found in header");
+       strcpy(errtext, "negative byte address");
        break;
     case 306:
        strcpy(errtext, "negative number of elements");
@@ -278,6 +275,9 @@ void ffgerr(int status,     /* I - error status value */
        break;
     case 409:
        strcpy(errtext, "bad string to double convert");
+       break;
+    case 410:
+       strcpy(errtext, "illegal datatype code value");
        break;
     case 411:
        strcpy(errtext, "illegal no. of decimals");
@@ -597,7 +597,7 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
 
     else   /*  an integer, floating point, or logical FITS value string  */
     {
-        nblank = strcspn(&card[ii], " ");  /* find the end of the token */
+        nblank = strcspn(&card[ii], " /");  /* find the end of the token */
         strncpy(value, &card[ii], nblank);
         value[nblank] = '\0';
         ii = ii + nblank;
@@ -863,15 +863,15 @@ int ffasfm(char *tform,    /* I - format code from the TFORMn keyword */
     /*       determine default datatype code         */
     /*-----------------------------------------------*/
     if (form[0] == 'A')
-        *datacode = FTYPE_ASCII;
+        *datacode = TSTRING;
     else if (form[0] == 'I')
-        *datacode = FTYPE_LONG;
+        *datacode = TLONG;
     else if (form[0] == 'F')
-        *datacode = FTYPE_FLOAT;
+        *datacode = TFLOAT;
     else if (form[0] == 'E')
-        *datacode = FTYPE_FLOAT;
+        *datacode = TFLOAT;
     else if (form[0] == 'D')
-        *datacode = FTYPE_DOUBLE;
+        *datacode = TDOUBLE;
     else
     {
         sprintf(message,
@@ -882,7 +882,7 @@ int ffasfm(char *tform,    /* I - format code from the TFORMn keyword */
 
     form++;  /* point to the start of field width */
 
-    if (*datacode == FTYPE_ASCII || *datacode == FTYPE_LONG)
+    if (*datacode == TSTRING || *datacode == TLONG)
     { 
         /*-----------------------------------------------*/
         /*              A or I data formats:             */
@@ -898,8 +898,8 @@ int ffasfm(char *tform,    /* I - format code from the TFORMn keyword */
             else
             {                
                 /* set to shorter precision if I4 or less */
-                if (*width <= 4 && *datacode == FTYPE_LONG)
-                    *datacode = FTYPE_SHORT;
+                if (*width <= 4 && *datacode == TLONG)
+                    *datacode = TSHORT;
             }
         }
     }
@@ -918,7 +918,7 @@ int ffasfm(char *tform,    /* I - format code from the TFORMn keyword */
             *width = (long) fwidth;  /* convert from float to long */
 
             if (*width > 7 && *(form-1) == 'F')
-                *datacode = FTYPE_DOUBLE;  /* type double if >7 digits */
+                *datacode = TDOUBLE;  /* type double if >7 digits */
 
             if (*width < 10)
                 form = form + 1; /* skip 1 digit  */
@@ -1019,27 +1019,27 @@ int ffbnfm(char *tform,     /* I - format code from the TFORMn keyword */
 
     if      (form[0] == 'I')
     {
-        *datacode = FTYPE_SHORT;
+        *datacode = TSHORT;
         *width = 2;
     }
     else if (form[0] == 'J')
     {
-        *datacode = FTYPE_LONG;
+        *datacode = TLONG;
         *width = 4;
     }
     else if (form[0] == 'E')
     {
-        *datacode = FTYPE_FLOAT;
+        *datacode = TFLOAT;
         *width = 4;
     }
     else if (form[0] == 'D')
     {
-        *datacode = FTYPE_DOUBLE;
+        *datacode = TDOUBLE;
         *width = 8;
     }
     else if (form[0] == 'A')
     {
-        *datacode = FTYPE_ASCII;
+        *datacode = TSTRING;
 
         /*
           the following code is used to support the non-standard
@@ -1055,27 +1055,27 @@ int ffbnfm(char *tform,     /* I - format code from the TFORMn keyword */
     }
     else if (form[0] == 'L')
     {
-        *datacode = FTYPE_LOGICAL;
+        *datacode = TLOGICAL;
         *width = 1;
     }
     else if (form[0] == 'X')
     {
-        *datacode = FTYPE_BIT;
+        *datacode = TBIT;
         *width = 1;
     }
     else if (form[0] == 'B')
     {
-        *datacode = FTYPE_BYTE;
+        *datacode = TBYTE;
         *width = 1;
     }
     else if (form[0] == 'C')
     {
-        *datacode = FTYPE_COMPLEX;
+        *datacode = TCOMPLEX;
         *width = 8;
     }
     else if (form[0] == 'M')
     {
-        *datacode = FTYPE_DBLCOMPLEX;
+        *datacode = TDBLCOMPLEX;
         *width = 16;
     }
     else
@@ -1213,10 +1213,10 @@ void ffunswaplong(long *lvalues, /* IO - pointer to longs to be swapped     */
 
 #if MACHINE == ALPHA_OSF
 
-        /* if the 4-byte long is stored in an 8 byte word, */
-        /* we must initialize the word with the sign bit   */
-
-        if (*(cvalues-3) >  127)
+        /* if the 4-byte long is stored in an 8 byte word, we must */
+        /* initialize the word with the sign bit which is in the   */
+        /* most sig. byte, i.e. at location *(cvalues-3)           */
+        if ( *(cvalues-3) >  127)
             lval = -1; 
         else
             lval = 0;
@@ -1359,10 +1359,10 @@ int ffs2c(char *instr,   /* I - null terminated input string  */
     outstr[0] = '\'';      /* start output string with a quote */
 
     len = strlen(instr);
-    if (len > 70)
-        len = 70;    /* limit input string to 70 chars */
+    if (len > 68)
+        len = 68;    /* limit input string to 68 chars */
 
-    for (ii=0, jj=1; ii < len; ii++, jj++)
+    for (ii=0, jj=1; ii < len && jj < 69; ii++, jj++)
     {
         outstr[jj] = instr[ii];  /* copy each char from input to output */
         if (instr[ii] == '\'')
@@ -1375,8 +1375,13 @@ int ffs2c(char *instr,   /* I - null terminated input string  */
     for (; jj < 9; jj++)       /* pad string so it is at least 8 chars long */
         outstr[jj] = ' ';
 
-    outstr[jj] = '\'';         /* append closing quote character */
-    outstr[jj+1] = '\0';          /* terminate the string */
+    if (jj == 70)   /* only occurs if the last char of string was a quote */
+        outstr[69] = '\0';
+    else
+    {
+        outstr[jj] = '\'';         /* append closing quote character */
+        outstr[jj+1] = '\0';          /* terminate the string */
+    }
 
     return(*status);
 }

@@ -10,17 +10,74 @@
 /*  Government purposes to publish, distribute, translate, copy, exhibit,  */
 /*  and perform such material.                                             */
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#ifndef _FITSIO2_H
 #include "fitsio2.h"
-#endif
 
 #if MACHINE == ALPHAVMS
   static float testfloat = TESTFLOAT;  /* use to test floating pt format */
 #endif
 
+/*--------------------------------------------------------------------------*/
+int ffppr(  fitsfile *fptr,  /* I - FITS file pointer                       */
+            int  datatype,   /* I - datatype of the value                   */
+            long  firstelem, /* I - first vector element to write(1 = 1st)  */
+            long  nelem,     /* I - number of values to write               */
+            void  *array,    /* I - array of values that are written        */
+            int  *status)    /* IO - error status                           */
+/*
+  Write an array of values to the primary array.  The datatype of the
+  input array is defined by the 2nd argument. Data conversion
+  and scaling will be performed if necessary (e.g, if the datatype of
+  the FITS array is not the same as the array being written).
+*/
+{
+    long row = 1;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    /*
+      the primary array is represented as a binary table:
+      each group of the primary array is a row in the table,
+      where the first column contains the group parameters
+      and the second column contains the image itself.
+    */
+
+    if (datatype == TBYTE)
+    {
+      ffpclb(fptr, 2, row, firstelem, nelem, (unsigned char *) array, status);
+    }
+    else if (datatype == TSHORT)
+    {
+      ffpcli(fptr, 2, row, firstelem, nelem, (short *) array, status);
+    }
+    else if (datatype == TINT)
+    {
+      if (sizeof(int) == sizeof(short) )
+        ffpcli(fptr, 2, row, firstelem, nelem, (short *) array, status);
+      else if (sizeof(int) == sizeof(long) )
+        ffpclj(fptr, 2, row, firstelem, nelem, (long *) array, status);
+      else
+        *status = BAD_DATATYPE;
+    }
+    else if (datatype == TLONG)
+    {
+      ffpclj(fptr, 2, row, firstelem, nelem, (long *) array, status);
+    }
+    else if (datatype == TFLOAT)
+    {
+      ffpcle(fptr, 2, row, firstelem, nelem, (float *) array, status);
+    }
+    else if (datatype == TDOUBLE)
+    {
+      ffpcld(fptr, 2, row, firstelem, nelem, (double *) array, status);
+    }
+    else
+      *status = BAD_DATATYPE;
+
+    return(*status);
+}
 /*--------------------------------------------------------------------------*/
 int ffpprb( fitsfile *fptr,  /* I - FITS file pointer                       */
             long  group,     /* I - group to write(1 = 1st group)           */
@@ -1382,7 +1439,7 @@ int ffpssd(fitsfile *fptr,   /* I - FITS file pointer                       */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffppgb( fitsfile *fptr,   /* I - FITS file pointer                      */
+int ffpgpb( fitsfile *fptr,   /* I - FITS file pointer                      */
             long  group,      /* I - group to write(1 = 1st group)          */
             long  firstelem,  /* I - first vector element to write(1 = 1st) */
             long  nelem,      /* I - number of values to write              */
@@ -1409,7 +1466,7 @@ int ffppgb( fitsfile *fptr,   /* I - FITS file pointer                      */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffppgi( fitsfile *fptr,   /* I - FITS file pointer                      */
+int ffpgpi( fitsfile *fptr,   /* I - FITS file pointer                      */
             long  group,      /* I - group to write(1 = 1st group)          */
             long  firstelem,  /* I - first vector element to write(1 = 1st) */
             long  nelem,      /* I - number of values to write              */
@@ -1436,7 +1493,7 @@ int ffppgi( fitsfile *fptr,   /* I - FITS file pointer                      */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffppgj( fitsfile *fptr,   /* I - FITS file pointer                      */
+int ffpgpj( fitsfile *fptr,   /* I - FITS file pointer                      */
             long  group,      /* I - group to write(1 = 1st group)          */
             long  firstelem,  /* I - first vector element to write(1 = 1st) */
             long  nelem,      /* I - number of values to write              */
@@ -1463,7 +1520,7 @@ int ffppgj( fitsfile *fptr,   /* I - FITS file pointer                      */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffppge( fitsfile *fptr,   /* I - FITS file pointer                      */
+int ffpgpe( fitsfile *fptr,   /* I - FITS file pointer                      */
             long  group,      /* I - group to write(1 = 1st group)          */
             long  firstelem,  /* I - first vector element to write(1 = 1st) */
             long  nelem,      /* I - number of values to write              */
@@ -1490,7 +1547,7 @@ int ffppge( fitsfile *fptr,   /* I - FITS file pointer                      */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffppgd( fitsfile *fptr,   /* I - FITS file pointer                      */
+int ffpgpd( fitsfile *fptr,   /* I - FITS file pointer                      */
             long  group,      /* I - group to write(1 = 1st group)          */
             long  firstelem,  /* I - first vector element to write(1 = 1st) */
             long  nelem,      /* I - number of values to write              */
@@ -1541,6 +1598,72 @@ int ffppru( fitsfile *fptr,  /* I - FITS file pointer                       */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffpcl(  fitsfile *fptr,  /* I - FITS file pointer                       */
+            int  datatype,   /* I - datatype of the value                   */
+            int  colnum,     /* I - number of column to write (1 = 1st col) */
+            long  firstrow,  /* I - first row to write (1 = 1st row)        */
+            long  firstelem, /* I - first vector element to write (1 = 1st) */
+            long  nelem,     /* I - number of elements to write             */
+            void  *array,    /* I - array of values that are written        */
+            int  *status)    /* IO - error status                           */
+/*
+  Write an array of values to a table column.  The datatype of the
+  input array is defined by the 2nd argument. Data conversion
+  and scaling will be performed if necessary (e.g, if the datatype of
+  the FITS column is not the same as the array being written).
+*/
+{
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (datatype == TBYTE)
+    {
+      ffpclb(fptr, colnum, firstrow, firstelem, nelem, (unsigned char *) array,
+             status);
+    }
+    else if (datatype == TSHORT)
+    {
+      ffpcli(fptr, colnum, firstrow, firstelem, nelem, (short *) array,
+             status);
+    }
+    else if (datatype == TINT)
+    {
+      if (sizeof(int) == sizeof(short) )
+        ffpcli(fptr, colnum, firstrow, firstelem, nelem, (short *) array,
+               status);
+      else if (sizeof(int) == sizeof(long) )
+        ffpclj(fptr, colnum, firstrow, firstelem, nelem, (long *) array,
+               status);
+      else
+        *status = BAD_DATATYPE;
+
+    }
+    else if (datatype == TLONG)
+    {
+      ffpclj(fptr, colnum, firstrow, firstelem, nelem, (long *) array,
+             status);
+    }
+    else if (datatype == TFLOAT)
+    {
+      ffpcle(fptr, colnum, firstrow, firstelem, nelem, (float *) array,
+             status);
+    }
+    else if (datatype == TDOUBLE)
+    {
+      ffpcld(fptr, colnum, firstrow, firstelem, nelem, (double *) array,
+             status);
+    }
+    else if (datatype == TSTRING)
+    {
+      ffpcls(fptr, colnum, firstrow, firstelem, nelem, (char **) array,
+             status);
+    }
+    else
+      *status = BAD_DATATYPE;
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
             int  colnum,     /* I - number of column to write (1 = 1st col) */
             long  firstrow,  /* I - first row to write (1 = 1st row)        */
@@ -1583,7 +1706,7 @@ int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
     colptr += (colnum - 1);     /* offset to correct column structure */
     tcode = colptr->tdatatype;
 
-    if (tcode == -FTYPE_ASCII) /* variable length column in a binary table? */
+    if (tcode == -TSTRING) /* variable length column in a binary table? */
     {
       /* only write a single string; ignore value of firstelem */
       nchar = strlen(array[0]); 
@@ -1596,7 +1719,7 @@ int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
       remain = 1;
       twidth = nchar;  
     }
-    else if (tcode == FTYPE_ASCII)
+    else if (tcode == TSTRING)
     {
       if (ffgcpr( fptr, colnum, firstrow, firstelem, nelem, 1, &scale, &zero,
         tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
@@ -1690,7 +1813,7 @@ int ffpcll( fitsfile *fptr,  /* I - FITS file pointer                       */
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
 
-    if (tcode != FTYPE_LOGICAL)   
+    if (tcode != TLOGICAL)   
         return(*status = NOT_LOGICAL_COL);
 
     /*---------------------------------------------------------------------*/
@@ -1786,7 +1909,7 @@ int ffpclb( fitsfile *fptr,  /* I - FITS file pointer                       */
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
 
-    if (tcode == FTYPE_ASCII)   
+    if (tcode == TSTRING)   
          ffcfmt(tform, cform);     /* derive C format for writing strings */
 
     /*
@@ -1797,7 +1920,7 @@ int ffpclb( fitsfile *fptr,  /* I - FITS file pointer                       */
       format in a temporary buffer that has been allocated for this purpose.
     */
     if (scale == 1. && zero == 0. && 
-       MACHINE == NATIVE && tcode == FTYPE_BYTE)
+       MACHINE == NATIVE && tcode == TBYTE)
     {
         writeraw = 1;
         maxelem = nelem;  /* we can write the entire array at one time */
@@ -1831,7 +1954,7 @@ int ffpclb( fitsfile *fptr,  /* I - FITS file pointer                       */
 
         switch (tcode) 
         {
-            case (FTYPE_BYTE):
+            case (TBYTE):
               if (writeraw)
               {
                 /* write raw input bytes without conversion */
@@ -1847,34 +1970,34 @@ int ffpclb( fitsfile *fptr,  /* I - FITS file pointer                       */
 
               break;
 
-            case (FTYPE_SHORT):
+            case (TSHORT):
  
                 ffi1fi2(&array[next], ntodo, scale, zero,
                         (short *) buffer, status);
                 ffpi2b(fptr, ntodo, incre, (short *) buffer, status);
                 break;
 
-            case (FTYPE_LONG):
+            case (TLONG):
 
                 ffi1fi4(&array[next], ntodo, scale, zero,
                         (long *) buffer, status);
                 ffpi4b(fptr, ntodo, incre, (long *) buffer, status);
                 break;
 
-            case (FTYPE_FLOAT):
+            case (TFLOAT):
 
                 ffi1fr4(&array[next], ntodo, scale, zero,
                         (float *)  buffer, status);
                 ffpr4b(fptr, ntodo, incre, (float *) buffer, status);
                 break;
 
-            case (FTYPE_DOUBLE):
+            case (TDOUBLE):
                 ffi1fr8(&array[next], ntodo, scale, zero,
                         (double *) buffer, status);
                 ffpr8b(fptr, ntodo, incre, (double *) buffer, status);
                 break;
 
-            case (FTYPE_ASCII):  /* numerical column in an ASCII table */
+            case (TSTRING):  /* numerical column in an ASCII table */
 
                 if (cform[1] != 's')  /*  "%s" format is a string */
                 {
@@ -1890,7 +2013,7 @@ int ffpclb( fitsfile *fptr,  /* I - FITS file pointer                       */
                        "Cannot write numbers to column %d which has format %s",
                         colnum,tform);
                 ffpmsg(message);
-                if (hdutype == HDU_ATABLE)
+                if (hdutype == ASCII_TBL)
                     return(*status = BAD_ATABLE_FORMAT);
                 else
                     return(*status = BAD_BTABLE_FORMAT);
@@ -1987,7 +2110,7 @@ int ffpcli( fitsfile *fptr,  /* I - FITS file pointer                       */
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
 
-    if (tcode == FTYPE_ASCII)   
+    if (tcode == TSTRING)   
          ffcfmt(tform, cform);     /* derive C format for writing strings */
 
     /*
@@ -1998,7 +2121,7 @@ int ffpcli( fitsfile *fptr,  /* I - FITS file pointer                       */
       format in a temporary buffer that has been allocated for this purpose.
     */
     if (scale == 1. && zero == 0. && 
-       MACHINE == NATIVE && tcode == FTYPE_SHORT)
+       MACHINE == NATIVE && tcode == TSHORT)
     {
         writeraw = 1;
         maxelem = nelem;  /* we can write the entire array at one time */
@@ -2032,7 +2155,7 @@ int ffpcli( fitsfile *fptr,  /* I - FITS file pointer                       */
 
         switch (tcode) 
         {
-            case (FTYPE_SHORT):
+            case (TSHORT):
               if (writeraw)
               {
                 /* write raw input bytes without conversion */
@@ -2048,34 +2171,34 @@ int ffpcli( fitsfile *fptr,  /* I - FITS file pointer                       */
 
               break;
 
-            case (FTYPE_BYTE):
+            case (TBYTE):
  
                 ffi2fi1(&array[next], ntodo, scale, zero,
                         (unsigned char *) buffer, status);
                 ffpi1b(fptr, ntodo, incre, (unsigned char *) buffer, status);
                 break;
 
-            case (FTYPE_LONG):
+            case (TLONG):
 
                 ffi2fi4(&array[next], ntodo, scale, zero,
                         (long *) buffer, status);
                 ffpi4b(fptr, ntodo, incre, (long *) buffer, status);
                 break;
 
-            case (FTYPE_FLOAT):
+            case (TFLOAT):
 
                 ffi2fr4(&array[next], ntodo, scale, zero,
                         (float *) buffer, status);
                 ffpr4b(fptr, ntodo, incre, (float *) buffer, status);
                 break;
 
-            case (FTYPE_DOUBLE):
+            case (TDOUBLE):
                 ffi2fr8(&array[next], ntodo, scale, zero,
                         (double *) buffer, status);
                 ffpr8b(fptr, ntodo, incre, (double *) buffer, status);
                 break;
 
-            case (FTYPE_ASCII):  /* numerical column in an ASCII table */
+            case (TSTRING):  /* numerical column in an ASCII table */
 
                 if (cform[1] != 's')  /*  "%s" format is a string */
                 {
@@ -2091,7 +2214,7 @@ int ffpcli( fitsfile *fptr,  /* I - FITS file pointer                       */
                     "Cannot write numbers to column %d which has format %s",
                       colnum,tform);
                 ffpmsg(message);
-                if (hdutype == HDU_ATABLE)
+                if (hdutype == ASCII_TBL)
                     return(*status = BAD_ATABLE_FORMAT);
                 else
                     return(*status = BAD_BTABLE_FORMAT);
@@ -2189,7 +2312,7 @@ int ffpclj( fitsfile *fptr,  /* I - FITS file pointer                       */
         return(*status);
 
 
-    if (tcode == FTYPE_ASCII)   
+    if (tcode == TSTRING)   
          ffcfmt(tform, cform);     /* derive C format for writing strings */
 
     /*
@@ -2200,7 +2323,7 @@ int ffpclj( fitsfile *fptr,  /* I - FITS file pointer                       */
        format in a temporary buffer that has been allocated for this purpose.
     */
     if (scale == 1. && zero == 0. && 
-       MACHINE == NATIVE && tcode == FTYPE_LONG)
+       MACHINE == NATIVE && tcode == TLONG)
     {
         writeraw = 1;
         maxelem = nelem;  /* we can write the entire array at one time */
@@ -2234,7 +2357,7 @@ int ffpclj( fitsfile *fptr,  /* I - FITS file pointer                       */
 
         switch (tcode) 
         {
-            case (FTYPE_LONG):
+            case (TLONG):
               if (writeraw)
               {
                 /* write raw input bytes without conversion */
@@ -2250,34 +2373,34 @@ int ffpclj( fitsfile *fptr,  /* I - FITS file pointer                       */
 
               break;
 
-            case (FTYPE_BYTE):
+            case (TBYTE):
  
                 ffi4fi1(&array[next], ntodo, scale, zero,
                         (unsigned char *) buffer, status);
                 ffpi1b(fptr, ntodo, incre, (unsigned char *) buffer, status);
                 break;
 
-            case (FTYPE_SHORT):
+            case (TSHORT):
 
                 ffi4fi2(&array[next], ntodo, scale, zero,
                         (short *) buffer, status);
                 ffpi2b(fptr, ntodo, incre, (short *) buffer, status);
                 break;
 
-            case (FTYPE_FLOAT):
+            case (TFLOAT):
 
                 ffi4fr4(&array[next], ntodo, scale, zero,
                         (float *) buffer, status);
                 ffpr4b(fptr, ntodo, incre, (float *) buffer, status);
                 break;
 
-            case (FTYPE_DOUBLE):
+            case (TDOUBLE):
                 ffi4fr8(&array[next], ntodo, scale, zero,
                        (double *) buffer, status);
                 ffpr8b(fptr, ntodo, incre, (double *) buffer, status);
                 break;
 
-            case (FTYPE_ASCII):  /* numerical column in an ASCII table */
+            case (TSTRING):  /* numerical column in an ASCII table */
 
                 if (cform[1] != 's')  /*  "%s" format is a string */
                 {
@@ -2293,7 +2416,7 @@ int ffpclj( fitsfile *fptr,  /* I - FITS file pointer                       */
                      "Cannot write numbers to column %d which has format %s",
                       colnum,tform);
                 ffpmsg(message);
-                if (hdutype == HDU_ATABLE)
+                if (hdutype == ASCII_TBL)
                     return(*status = BAD_ATABLE_FORMAT);
                 else
                     return(*status = BAD_BTABLE_FORMAT);
@@ -2391,7 +2514,7 @@ int ffpcle( fitsfile *fptr,  /* I - FITS file pointer                       */
         return(*status);
 
 
-    if (tcode == FTYPE_ASCII)   
+    if (tcode == TSTRING)   
          ffcfmt(tform, cform);     /* derive C format for writing strings */
 
     /*
@@ -2402,7 +2525,7 @@ int ffpcle( fitsfile *fptr,  /* I - FITS file pointer                       */
        format in a temporary buffer that has been allocated for this purpose.
     */
     if (scale == 1. && zero == 0. && 
-       MACHINE == NATIVE && tcode == FTYPE_FLOAT)
+       MACHINE == NATIVE && tcode == TFLOAT)
     {
         writeraw = 1;
         maxelem = nelem;  /* we can write the entire array at one time */
@@ -2436,7 +2559,7 @@ int ffpcle( fitsfile *fptr,  /* I - FITS file pointer                       */
 
         switch (tcode) 
         {
-            case (FTYPE_FLOAT):
+            case (TFLOAT):
               if (writeraw)
               {
                 /* write raw input bytes without conversion */
@@ -2452,34 +2575,34 @@ int ffpcle( fitsfile *fptr,  /* I - FITS file pointer                       */
 
               break;
 
-            case (FTYPE_BYTE):
+            case (TBYTE):
  
                 ffr4fi1(&array[next], ntodo, scale, zero, 
                         (unsigned char *) buffer, status);
                 ffpi1b(fptr, ntodo, incre, (unsigned char *) buffer, status);
                 break;
 
-            case (FTYPE_SHORT):
+            case (TSHORT):
 
                 ffr4fi2(&array[next], ntodo, scale, zero,
                         (short *) buffer, status);
                 ffpi2b(fptr, ntodo, incre, (short *) buffer, status);
                 break;
 
-            case (FTYPE_LONG):
+            case (TLONG):
 
                 ffr4fi4(&array[next], ntodo, scale, zero,
                         (long *) buffer, status);
                 ffpi4b(fptr, ntodo, incre, (long *) buffer, status);
                 break;
 
-            case (FTYPE_DOUBLE):
+            case (TDOUBLE):
                 ffr4fr8(&array[next], ntodo, scale, zero,
                        (double *) buffer, status);
                 ffpr8b(fptr, ntodo, incre, (double *) buffer, status);
                 break;
 
-            case (FTYPE_ASCII):  /* numerical column in an ASCII table */
+            case (TSTRING):  /* numerical column in an ASCII table */
 
                 if (cform[1] != 's')  /*  "%s" format is a string */
                 {
@@ -2495,7 +2618,7 @@ int ffpcle( fitsfile *fptr,  /* I - FITS file pointer                       */
                        "Cannot write numbers to column %d which has format %s",
                         colnum,tform);
                 ffpmsg(message);
-                if (hdutype == HDU_ATABLE)
+                if (hdutype == ASCII_TBL)
                     return(*status = BAD_ATABLE_FORMAT);
                 else
                     return(*status = BAD_BTABLE_FORMAT);
@@ -2592,7 +2715,7 @@ int ffpcld( fitsfile *fptr,  /* I - FITS file pointer                       */
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
 
-    if (tcode == FTYPE_ASCII)   
+    if (tcode == TSTRING)   
          ffcfmt(tform, cform);     /* derive C format for writing strings */
 
     /*
@@ -2603,7 +2726,7 @@ int ffpcld( fitsfile *fptr,  /* I - FITS file pointer                       */
       format in a temporary buffer that has been allocated for this purpose.
     */
     if (scale == 1. && zero == 0. && 
-       MACHINE == NATIVE && tcode == FTYPE_DOUBLE)
+       MACHINE == NATIVE && tcode == TDOUBLE)
     {
         writeraw = 1;
         maxelem = nelem;  /* we can write the entire array at one time */
@@ -2637,7 +2760,7 @@ int ffpcld( fitsfile *fptr,  /* I - FITS file pointer                       */
 
         switch (tcode) 
         {
-            case (FTYPE_DOUBLE):
+            case (TDOUBLE):
               if (writeraw)
               {
                 /* write raw input bytes without conversion */
@@ -2653,34 +2776,34 @@ int ffpcld( fitsfile *fptr,  /* I - FITS file pointer                       */
 
               break;
 
-            case (FTYPE_BYTE):
+            case (TBYTE):
  
                 ffr8fi1(&array[next], ntodo, scale, zero, 
                         (unsigned char *) buffer, status);
                 ffpi1b(fptr, ntodo, incre, (unsigned char *) buffer, status);
                 break;
 
-            case (FTYPE_SHORT):
+            case (TSHORT):
 
                 ffr8fi2(&array[next], ntodo, scale, zero, 
                        (short *) buffer, status);
                 ffpi2b(fptr, ntodo, incre, (short *) buffer, status);
                 break;
 
-            case (FTYPE_LONG):
+            case (TLONG):
 
                 ffr8fi4(&array[next], ntodo, scale, zero,
                         (long *) buffer, status);
                 ffpi4b(fptr, ntodo, incre, (long *) buffer, status);
                 break;
 
-            case (FTYPE_FLOAT):
+            case (TFLOAT):
                 ffr8fr4(&array[next], ntodo, scale, zero,
                         (float *) buffer, status);
                 ffpr4b(fptr, ntodo, incre, (float *) buffer, status);
                 break;
 
-            case (FTYPE_ASCII):  /* numerical column in an ASCII table */
+            case (TSTRING):  /* numerical column in an ASCII table */
 
                 if (cform[1] != 's')  /*  "%s" format is a string */
                 {
@@ -2696,7 +2819,7 @@ int ffpcld( fitsfile *fptr,  /* I - FITS file pointer                       */
                       "Cannot write numbers to column %d which has format %s",
                        colnum,tform);
                 ffpmsg(message);
-                if (hdutype == HDU_ATABLE)
+                if (hdutype == ASCII_TBL)
                     return(*status = BAD_ATABLE_FORMAT);
                 else
                     return(*status = BAD_BTABLE_FORMAT);
@@ -2782,16 +2905,19 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
     /*  Check input and get parameters about the column: */
     /*---------------------------------------------------*/
 
+    /* note that the 5th parameter = 1, not nelem, so that the returned */
+    /* repeat and incre values will be the actual values for this column */
+
     /* note that 6th parameter = 0 because if writing nulls to a variable   */
     /* length column then dummy data values must have already been written  */
     /* to the heap.  We now just have to overwrite the previous values with */
     /* null values.                                                         */
-    if (ffgcpr( fptr, colnum, firstrow, firstelem, nelem, 0, &scale, &zero,
+    if (ffgcpr( fptr, colnum, firstrow, firstelem, 1, 0, &scale, &zero,
         tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
 
-    if (tcode == FTYPE_ASCII)
+    if (tcode == TSTRING)
     {
       if (snull[0] == ASCII_NULL_UNDEFINED)
       {
@@ -2803,7 +2929,7 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
       strcpy(cstring, snull);          /* copy null string to temp buffer */
       lennull = strlen(cstring);
 
-      if (hdutype == HDU_BTABLE)
+      if (hdutype == BINARY_TBL)
       {  /* write up to and including null terminator into BINTABLE column */
          nwrite = minvalue(twidth, lennull + 1);
       }
@@ -2815,9 +2941,9 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
             cstring[ii] = ' ';  
       }
     }
-    else if ( tcode == FTYPE_BYTE ||
-              tcode == FTYPE_SHORT ||
-              tcode == FTYPE_LONG ) 
+    else if ( tcode == TBYTE ||
+              tcode == TSHORT ||
+              tcode == TLONG ) 
     {
       if (tnull == NULL_UNDEFINED)
       {
@@ -2825,10 +2951,22 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
         "Null value for integer table column is not defined (FTPCLU).");
         return(*status = NO_NULL);
       }
-      if (tcode == FTYPE_BYTE)
+
+      if (tcode == TBYTE)
          i1null = tnull;
-      else if (tcode == FTYPE_SHORT)
+      else if (tcode == TSHORT)
+      {
          i2null = tnull;
+#if BYTESWAPPED == TRUE
+         ffswap2(&i2null, 1); /* reverse order of bytes */
+#endif
+      }
+      else
+      {
+#if BYTESWAPPED == TRUE
+         ffswaplong(&tnull, 1); /* reverse order of bytes */
+#endif
+      }
     }
 
     /*---------------------------------------------------------------------*/
@@ -2846,49 +2984,49 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
            in the current vector, which ever is smaller.
         */
         ntodo = minvalue(ntodo, (repeat - elemnum));
-
         wrtptr = startpos + (rownum * rowlen) + (elemnum * incre);
 
         ffmbyt(fptr, wrtptr, IGNORE_EOF, status); /* move to write position */
 
         switch (tcode) 
         {
-            case (FTYPE_BYTE):
+            case (TBYTE):
  
                 for (ii = 0; ii < ntodo; ii++)
-                  ffpi1b(fptr, 1, 1, &i1null, status);
+                  ffpbyt(fptr, 1,  &i1null, status);
                 break;
 
-            case (FTYPE_SHORT):
+            case (TSHORT):
 
                 for (ii = 0; ii < ntodo; ii++)
-                  ffpi2b(fptr, 1, 2, &i2null, status);
+                  ffpbyt(fptr, 2, &i2null, status);
                 break;
 
-            case (FTYPE_LONG):
+            case (TLONG):
 
                 for (ii = 0; ii < ntodo; ii++)
-                  ffpi4b(fptr, 1, 4, &tnull, status);
+                  ffpbyt(fptr, 4, &tnull, status);
                 break;
 
-            case (FTYPE_FLOAT):
+            case (TFLOAT):
 
                 for (ii = 0; ii < ntodo; ii++)
                   ffpbyt(fptr, 4, jbuff, status);
                 break;
 
-            case (FTYPE_DOUBLE):
+            case (TDOUBLE):
+
                 for (ii = 0; ii < ntodo; ii++)
                   ffpbyt(fptr, 8, jbuff, status);
                 break;
 
-            case (FTYPE_LOGICAL):
+            case (TLOGICAL):
  
                 for (ii = 0; ii < ntodo; ii++)
-                  ffpi1b(fptr, 1, incre, &lognul, status);
+                  ffpbyt(fptr, 1, &lognul, status);
                 break;
 
-            case (FTYPE_ASCII):  /* an ASCII table column */
+            case (TSTRING):  /* an ASCII table column */
 
                 ffpbyt(fptr, nwrite, cstring, status);
                 break;
@@ -2979,7 +3117,7 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     tcode = colptr->tdatatype;
 
-    if (abs(tcode) > FTYPE_BYTE)
+    if (abs(tcode) > TBYTE)
         return(*status = NOT_LOGICAL_COL); /* not correct datatype column */
 
     if (tcode > 0)
@@ -2987,7 +3125,7 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
         descrp = FALSE;  /* not a variable length descriptor column */
         repeat = colptr->trepeat;
 
-        if (tcode == FTYPE_BIT)
+        if (tcode == TBIT)
             repeat = (repeat + 7) / 8; /* convert from bits to bytes */
 
         if (fbyte > repeat)
@@ -3634,20 +3772,6 @@ int ffpdes(fitsfile *fptr, /* I - FITS file pointer                         */
  
         ffpi4b(fptr, 2, 4, descript, status); /* write the descriptor */
     }
-    return(*status);
-}
-/*--------------------------------------------------------------------------*/
-int ffptbs(fitsfile *fptr,        /* I - FITS file pointer                 */
-           long firstrow,         /* I - starting row (1 = first row)      */
-           long firstchar,        /* I - starting byte in row (1=first)    */
-           long nchars,           /* I - number of bytes to write          */
-           unsigned char *values, /* I - array of bytes to write           */
-           int *status)           /* IO - error status                     */
-/*
-  This is routine is identical to ffptbb 
-*/
-{
-    ffptbb(fptr, firstrow, firstchar, nchars, values, status);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

@@ -1,6 +1,13 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+/*
+  Every program which uses the CFITSIO interface must include the
+  the fitsio.h header file.  This contains the prototypes for all
+  the routines and defines the error status values and other symbolic
+  constants used in the interface.  
+*/
 #include "fitsio.h"
 
 void writeimage( void );
@@ -48,30 +55,26 @@ void writeimage( void )
     /* Create a FITS primary array containing a 2-D image */
     /******************************************************/
 {
-    fitsfile *fptr;                               /* pointer to a FITS file */
+    fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
     int status, ii, jj;
-    long group, fpixel, nelements, array[200][300];
+    long  fpixel, nelements, array[200][300], exposure;
 
     /* initialize FITS image parameters */
-    char filename[] = "atestfil.fit";            /* name for new FITS file */
-    int simple   = TRUE;
+    char filename[] = "atestfil.fit";             /* name for new FITS file */
     int bitpix   =  16;   /* 16-bit short signed integer pixel values       */
     long naxis    =   2;  /* 2-dimensional image                            */    
     long naxes[2] = { 300, 200 };   /* image is 300 pixels wide by 200 rows */
-    long pcount   =   0;  /* no group parameters */
-    long gcount   =   1;  /* only a single image/group */
-    int extend   = TRUE;  /* there may be additional extension in the file  */
-    
+
     remove(filename);               /* Delete old file if it already exists */
 
     status = 0;         /* initialize status before calling fitsio routines */
 
-    if ( ffinit(&fptr, filename, &status) )     /* create the new FITS file */
+    if (fits_create_file(&fptr, filename, &status)) /* create new FITS file */
          printerror( status );           /* call printerror if error occurs */
 
-    if ( ffphpr(fptr, simple, bitpix, naxis, /* write the required keywords */
-         naxes, pcount, gcount, extend, &status) )
-         printerror( status );           /* call printerror if error occurs */
+    /* write the required keywords for the primary array image */
+    if ( fits_create_img(fptr,  bitpix, naxis, naxes, &status) )
+         printerror( status );          
 
     /* initialize the values in the image with a linear ramp function */
     for (jj = 0; jj < naxes[1]; jj++)
@@ -80,20 +83,23 @@ void writeimage( void )
             array[jj][ii] = ii + jj;
         }
     }
-    /* write the array to the FITS file */
-    group  = 0;                                /* group to write            */
-    fpixel = 1;                                /* first pixel to write      */
-    nelements = naxes[0] * naxes[1];           /* number of pixels to write */
 
-    if ( ffpprj(fptr, group, fpixel, nelements, array[0], &status) )
-        printerror( status );            /* call printerror if error occurs */
+    fpixel = 1;                               /* first pixel to write      */
+    nelements = naxes[0] * naxes[1];          /* number of pixels to write */
+
+    /* write the array of long integers to the FITS file */
+    if ( fits_write_img(fptr, TLONG, fpixel, nelements, array[0], &status) )
+        printerror( status );            
 
     /* write another optional keyword to the header */
-    if ( ffpkyj(fptr, "EXPOSURE", 1500, "Total Exposure Time", &status) )
-         printerror( status );           /* call printerror if error occurs */
+    /* Note that the ADDRESS of the value is passed in the routine */
+    exposure = 1500.;
+    if ( fits_write_key(fptr, TLONG, "EXPOSURE", &exposure,
+         "Total Exposure Time", &status) )
+         printerror( status );           
 
-    if ( ffclos(fptr, &status) )                          /* close the file */
-         printerror( status );           /* call printerror if error occurs */
+    if ( fits_close_file(fptr, &status) )                /* close the file */
+         printerror( status );           
 
     return;
 }
@@ -104,13 +110,12 @@ void writeascii ( void )
     /* Create an ASCII table extension containing 3 columns and 6 rows */
     /*******************************************************************/
 {
-    fitsfile *fptr;                            /* pointer to the FITS file */
+    fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
     int status;
-    long rowlen, tbcol[3], firstrow, firstelem;
+    long firstrow, firstelem;
 
     int tfields = 3;       /* table will have 3 columns */
     long nrows  = 6;       /* table will have 6 rows    */
-    int nspace  = 1;       /* leave 1 space between columns */
 
     char filename[] = "atestfil.fit";           /* name for new FITS file */
     char extname[] = "PLANETS_ASCII";             /* extension name */
@@ -127,21 +132,13 @@ void writeascii ( void )
 
     status=0;
 
-    /* open the FITS primary array */
-    if ( ffopen(&fptr, filename, READWRITE, &status) ) 
+    /* open with write access the FITS file containing a primary array */
+    if ( fits_open_file(&fptr, filename, READWRITE, &status) ) 
          printerror( status );
 
-    /* create new extension following primary array */
-    if ( ffcrhd(fptr, &status) )
-         printerror( status );
- 
-    /* calculate the starting position of each column, and the row length */
-    if ( ffgabc( tfields, tform, nspace, &rowlen, tbcol, &status) )
-         printerror( status );
-
-    /* write the required header parameters for the ASCII table */
-    if ( ffphtb( fptr, rowlen, nrows, tfields, ttype, tbcol, tform, tunit,
-                 extname, &status) )
+    /* append a new empty ASCII table onto the FITS file */
+    if ( fits_create_tbl( fptr, ASCII_TBL, nrows, tfields, ttype, tform,
+                tunit, extname, &status) )
          printerror( status );
 
     firstrow  = 1;  /* first row in table to write   */
@@ -151,11 +148,14 @@ void writeascii ( void )
     /* write diameters to the second column (longs) */
     /* write density to the third column (floats) */
 
-    ffpcls(fptr, 1, firstrow, firstelem, nrows, planet,   &status);
-    ffpclj(fptr, 2, firstrow, firstelem, nrows, diameter, &status);
-    ffpcle(fptr, 3, firstrow, firstelem, nrows, density,  &status);
+    fits_write_col(fptr, TSTRING, 1, firstrow, firstelem, nrows, planet,
+                   &status);
+    fits_write_col(fptr, TLONG, 2, firstrow, firstelem, nrows, diameter,
+                   &status);
+    fits_write_col(fptr, TFLOAT, 3, firstrow, firstelem, nrows, density,
+                   &status);
 
-    if ( ffclos(fptr, &status) )                /* close the FITS file */
+    if ( fits_close_file(fptr, &status) )       /* close the FITS file */
          printerror( status );
     return;
 }
@@ -166,13 +166,12 @@ void writebintable ( void )
     /* Create a binary table extension containing 3 columns and 6 rows */
     /*******************************************************************/
 {
-    fitsfile *fptr;                            /* pointer to the FITS file */
+    fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
     int status, hdutype;
     long firstrow, firstelem;
 
     int tfields   = 3;       /* table will have 3 columns */
     long nrows    = 6;       /* table will have 6 rows    */
-    long varidata = 0;       /* no variable length data; heap size = 0 */
 
     char filename[] = "atestfil.fit";           /* name for new FITS file */
     char extname[] = "PLANETS_Binary";           /* extension name */
@@ -189,19 +188,16 @@ void writebintable ( void )
 
     status=0;
 
-    /* open the FITS primary array */
-    if ( ffopen(&fptr, filename, READWRITE, &status) ) 
+    /* open the FITS file containing a primary array and an ASCII table */
+    if ( fits_open_file(&fptr, filename, READWRITE, &status) ) 
          printerror( status );
 
-    if ( ffmahd(fptr, 2, &hdutype, &status) )            /* move to 2nd HDU */
+    if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) ) /* move to 2nd HDU */
          printerror( status );
 
-    if ( ffcrhd(fptr, &status) )                    /* create new extension */
-         printerror( status );
- 
-    /* write the required header parameters for the ASCII table */
-    if ( ffphbn( fptr, nrows, tfields, ttype, tform, tunit,
-                 extname, varidata, &status) )
+    /* append a new empty binary table onto the FITS file */
+    if ( fits_create_tbl( fptr, BINARY_TBL, nrows, tfields, ttype, tform,
+                tunit, extname, &status) )
          printerror( status );
 
     firstrow  = 1;  /* first row in table to write   */
@@ -211,11 +207,14 @@ void writebintable ( void )
     /* write diameters to the second column (longs) */
     /* write density to the third column (floats) */
 
-    ffpcls(fptr, 1, firstrow, firstelem, nrows, planet,   &status);
-    ffpclj(fptr, 2, firstrow, firstelem, nrows, diameter, &status);
-    ffpcle(fptr, 3, firstrow, firstelem, nrows, density,  &status);
+    fits_write_col(fptr, TSTRING, 1, firstrow, firstelem, nrows, planet,
+                   &status);
+    fits_write_col(fptr, TLONG, 2, firstrow, firstelem, nrows, diameter,
+                   &status);
+    fits_write_col(fptr, TFLOAT, 3, firstrow, firstelem, nrows, density,
+                   &status);
 
-    if ( ffclos(fptr, &status) )                /* close the FITS file */
+    if ( fits_close_file(fptr, &status) )       /* close the FITS file */
          printerror( status );
     return;
 }
@@ -225,7 +224,7 @@ void copyhdu( void)
     /********************************************************************/
     /* copy the 1st and 3rd HDUs from the input file to a new FITS file */
     /********************************************************************/
-    fitsfile *infptr;                  /* pointer to the existing FITS file */
+    fitsfile *infptr;      /* pointer to the FITS file, defined in fitsio.h */
     fitsfile *outfptr;                 /* pointer to the new FITS file      */
 
     char infilename[]  = "atestfil.fit";  /* name for existing FITS file   */
@@ -238,28 +237,31 @@ void copyhdu( void)
     remove(outfilename);            /* Delete old file if it already exists */
 
     /* open the existing FITS file */
-    if ( ffopen(&infptr, infilename, READONLY, &status) ) 
+    if ( fits_open_file(&infptr, infilename, READONLY, &status) ) 
          printerror( status );
 
-    if ( ffinit(&outfptr, outfilename, &status) )   /* create new FITS file */
+    if (fits_create_file(&outfptr, outfilename, &status)) /*create FITS file*/
          printerror( status );           /* call printerror if error occurs */
 
     /* copy the primary array from the input file to the output file */
     morekeys = 0;     /* don't reserve space for additional keywords */
-    if ( ffcopy(infptr, outfptr, morekeys, &status) )
+    if ( fits_copy_hdu(infptr, outfptr, morekeys, &status) )
          printerror( status );
-    if ( ffcrhd(outfptr, &status) )  /* create new extension in output file */
+
+    /* move to the 3rd HDU in the input file */
+    if ( fits_movabs_hdu(infptr, 3, &hdutype, &status) )
+         printerror( status );
+
+    /* create new extension in output file */
+    if ( fits_create_hdu(outfptr, &status) )
          printerror( status );
  
-    /* move to the 3rd HDU in the input file */
-    if ( ffmahd(infptr, 3, &hdutype, &status) )
-         printerror( status );
-
     /* copy 3rd HDU from the input file to the output file (to 2nd HDU) */
-    if ( ffcopy(infptr, outfptr, morekeys, &status) )
+    if ( fits_copy_hdu(infptr, outfptr, morekeys, &status) )
          printerror( status );
 
-    if (ffclos(outfptr, &status) || ffclos(infptr, &status)) /* close files */
+    if (fits_close_file(outfptr, &status) ||
+        fits_close_file(infptr, &status)) /* close files */
          printerror( status );
 
     return;
@@ -270,7 +272,6 @@ void selectrows( void )
     /*********************************************************************/
     /* select rows from an input table and copy them to the output table */
     /*********************************************************************/
-
 {
     fitsfile *infptr, *outfptr;  /* pointer to input and output FITS files */
     unsigned char *buffer;
@@ -285,48 +286,50 @@ void selectrows( void )
     status = 0;
 
     /* open the existing FITS files */
-    if ( ffopen(&infptr,  infilename,  READONLY,  &status) ||
-         ffopen(&outfptr, outfilename, READWRITE, &status) ) 
+    if ( fits_open_file(&infptr,  infilename,  READONLY,  &status) ||
+         fits_open_file(&outfptr, outfilename, READWRITE, &status) ) 
          printerror( status );
 
     /* move to the 3rd HDU in the input file (a binary table in this case) */
-    if ( ffmahd(infptr, 3, &hdutype, &status) )
+    if ( fits_movabs_hdu(infptr, 3, &hdutype, &status) )
          printerror( status );
 
-    if (hdutype != HDU_BTABLE)  {
+    if (hdutype != BINARY_TBL)  {
         printf("Error: expected to find a binary table in this HDU\n");
         return;
     }
     /* move to the last (2rd) HDU in the output file */
-    if ( ffmahd(outfptr, 2, &hdutype, &status) )
+    if ( fits_movabs_hdu(outfptr, 2, &hdutype, &status) )
          printerror( status );
 
     /* create new extension in the output file */
-    if ( ffcrhd(outfptr, &status) )
+    if ( fits_create_hdu(outfptr, &status) )
          printerror( status );
 
-    if (ffghps(infptr, &nkeys, &keypos, &status) ) /* get no. of keywords */
-        printerror( status );
+    /* get number of keywords */
+    if ( fits_get_hdrpos(infptr, &nkeys, &keypos, &status) ) 
+         printerror( status );
 
     /* copy all the keywords from the input to the output extension */
     for (ii = 1; ii <= nkeys; ii++)  {
-        ffgrec(infptr, ii, card, &status);  /* read keyword from input */
-        ffprec(outfptr,    card, &status);  /* write keyword to output */
+        fits_read_record (infptr, ii, card, &status); 
+        fits_write_record(outfptr,    card, &status); 
     }
+
     /* read the NAXIS1 and NAXIS2 keyword to get table size */
-    if ( ffgknj(infptr, "NAXIS", 1, 2, naxes, &nfound, &status) )
+    if (fits_read_keys_lng(infptr, "NAXIS", 1, 2, naxes, &nfound, &status) )
          printerror( status );
 
     /* find which column contains the DENSITY values */
-    if ( ffgcno(infptr, CASEINSEN, "density", &colnum, &status) )
+    if ( fits_get_colnum(infptr, CASEINSEN, "density", &colnum, &status) )
          printerror( status );
 
     /* read the DENSITY column values */
     frow = 1;
     felem = 1;
     nullval = -99.;
-    if (ffgcve(infptr, colnum, frow, felem, naxes[1], nullval, density,
-               &anynulls, &status) )
+    if (fits_read_col(infptr, TFLOAT, colnum, frow, felem, naxes[1], 
+        &nullval, density, &anynulls, &status) )
         printerror( status );
 
     /* allocate buffer large enough for 1 row of the table */
@@ -335,16 +338,16 @@ void selectrows( void )
     /* If the density is less than 3.0, copy the row to the output table */
     for (noutrows = 0, irow = 1; irow <= naxes[1]; irow++)  {
       if (density[irow - 1] < 3.0)  {
-         noutrows++;
-         ffgtbb(infptr,  irow,     1, naxes[0], buffer, &status); 
-         ffptbb(outfptr, noutrows, 1, naxes[0], buffer, &status); 
+        noutrows++;
+        fits_read_tblbytes( infptr, irow,      1, naxes[0], buffer, &status); 
+        fits_write_tblbytes(outfptr, noutrows, 1, naxes[0], buffer, &status); 
     } }
 
     /* update the NAXIS2 keyword with the correct number of rows */
-    if ( ffmkyj(outfptr, "NAXIS2", noutrows, "&", &status) )
+    if ( fits_modify_key_lng(outfptr, "NAXIS2", noutrows, "&", &status) )
          printerror( status );
 
-    if (ffclos(outfptr, &status) || ffclos(infptr, &status)) /* close files */
+    if (fits_close_file(outfptr, &status) || fits_close_file(infptr, &status))
         printerror( status );
 
     return;
@@ -356,7 +359,7 @@ void readheader ( void )
     /* Print out all the header keywords in all extensions of a FITS file */
     /**********************************************************************/
 {
-    fitsfile *fptr;                             /* pointer to the FITS file */
+    fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
 
     int status, nkeys, keypos, hdutype, ii, jj;
     char filename[]  = "btestfil.fit";     /* name of existing FITS file   */
@@ -364,18 +367,19 @@ void readheader ( void )
 
     status = 0;
 
-    if ( ffopen(&fptr, filename, READONLY, &status) ) 
+    if ( fits_open_file(&fptr, filename, READONLY, &status) ) 
          printerror( status );
 
     /* attempt to move to next HDU, until we get an EOF error */
-    for (ii = 1; !(ffmahd(fptr, ii, &hdutype, &status) ); ii++) 
+    for (ii = 1; !(fits_movabs_hdu(fptr, ii, &hdutype, &status) ); ii++) 
     {
-        if (ffghps(fptr, &nkeys, &keypos, &status) ) /* get no. of keywords */
+        /* get no. of keywords */
+        if (fits_get_hdrpos(fptr, &nkeys, &keypos, &status) )
             printerror( status );
 
         printf("Header listing for HDU #%d:\n", ii);
         for (jj = 1; jj <= nkeys; jj++)  {
-            if ( ffgrec(fptr, jj, card, &status) )
+            if ( fits_read_record(fptr, jj, card, &status) )
                  printerror( status );
 
             printf("%s\n", card); /* print the keyword card */
@@ -388,7 +392,7 @@ void readheader ( void )
     else
        printerror( status );     /* got an unexpected error                */
 
-    if ( ffclos(fptr, &status) )                    /* close the FITS file */
+    if ( fits_close_file(fptr, &status) )
          printerror( status );
 
     return;
@@ -400,7 +404,7 @@ void readimage( void )
     /* Read a FITS image and determine the minimum and maximum pixel values */
     /************************************************************************/
 {
-    fitsfile *fptr;                             /* pointer to the FITS file */
+    fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
     int status,  nfound, anynull;
     long naxes[2], group, fpixel, nbuffer, npixels, ii;
 
@@ -410,11 +414,11 @@ void readimage( void )
 
     status = 0;
 
-    if ( ffopen(&fptr, filename, READONLY, &status) )     /* open the image */
+    if ( fits_open_file(&fptr, filename, READONLY, &status) )
          printerror( status );
 
     /* read the NAXIS1 and NAXIS2 keyword to get image size */
-    if ( ffgknj(fptr, "NAXIS", 1, 2, naxes, &nfound, &status) )
+    if ( fits_read_keys_lng(fptr, "NAXIS", 1, 2, naxes, &nfound, &status) )
          printerror( status );
 
     npixels  = naxes[0] * naxes[1];         /* number of pixels in the image */
@@ -430,7 +434,7 @@ void readimage( void )
       if (npixels > buffsize)
         nbuffer = buffsize;     /* read as many pixels as will fit in buffer */
 
-      if ( ffgpve(fptr, group, fpixel, nbuffer, nullval,
+      if ( fits_read_img(fptr, TFLOAT, fpixel, nbuffer, &nullval,
                   buffer, &anynull, &status) )
            printerror( status );
 
@@ -447,7 +451,7 @@ void readimage( void )
 
     printf("\nMin and max image pixels =  %.0f, %.0f\n", datamin, datamax);
 
-    if ( ffclos(fptr, &status) )                    /* close the FITS file */
+    if ( fits_close_file(fptr, &status) )
          printerror( status );
 
     return;
@@ -459,7 +463,7 @@ void readtable( void )
     /* read and print data values from an ASCII or binary table */
     /************************************************************/
 {
-    fitsfile *fptr;                             /* pointer to the FITS file */
+    fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
     int status, hdutype,  nfound, anynull, ii;
     long hdunum, frow, felem, nelem, longnull, dia[6];
     float floatnull, den[6];
@@ -469,7 +473,7 @@ void readtable( void )
 
     status = 0;
 
-    if ( ffopen(&fptr, filename, READONLY, &status) )     /* open the image */
+    if ( fits_open_file(&fptr, filename, READONLY, &status) )
          printerror( status );
 
     for (ii = 0; ii < 3; ii++)      /* allocate space for the column labels */
@@ -480,12 +484,13 @@ void readtable( void )
 
     for (hdunum = 2; hdunum <= 3; hdunum++) /*read ASCII, then binary table */
     {
-      if ( ffmahd(fptr, hdunum, &hdutype, &status) ) /* move to the HDU */
+      /* move to the HDU */
+      if ( fits_movabs_hdu(fptr, hdunum, &hdutype, &status) ) 
            printerror( status );
 
-      if (hdutype == HDU_ATABLE)
+      if (hdutype == ASCII_TBL)
           printf("\nReading ASCII table in HDU %d:\n",  hdunum);
-      else if (hdutype == HDU_BTABLE)
+      else if (hdutype == BINARY_TBL)
           printf("\nReading binary table in HDU %d:\n", hdunum);
       else
       {
@@ -494,7 +499,7 @@ void readtable( void )
       }
 
       /* read the column names from the TTYPEn keywords */
-      ffgkns(fptr, "TTYPE", 1, 3, ttype, &nfound, &status);
+      fits_read_keys_str(fptr, "TTYPE", 1, 3, ttype, &nfound, &status);
 
       printf(" Row  %10s %10s %10s\n", ttype[0], ttype[1], ttype[2]);
 
@@ -506,9 +511,12 @@ void readtable( void )
       floatnull = 0.;
 
       /*  read the columns */  
-      ffgcvs(fptr, 1, frow, felem, nelem, strnull,  name, &anynull, &status);
-      ffgcvj(fptr, 2, frow, felem, nelem, longnull,  dia, &anynull, &status);
-      ffgcve(fptr, 3, frow, felem, nelem, floatnull, den, &anynull, &status);
+      fits_read_col(fptr, TSTRING, 1, frow, felem, nelem, strnull,  name,
+                    &anynull, &status);
+      fits_read_col(fptr, TLONG, 2, frow, felem, nelem, &longnull,  dia,
+                    &anynull, &status);
+      fits_read_col(fptr, TFLOAT, 3, frow, felem, nelem, &floatnull, den,
+                    &anynull, &status);
 
       for (ii = 0; ii < 6; ii++)
         printf("%5d %10s %10d %10.2f\n", ii + 1, name[ii], dia[ii], den[ii]);
@@ -520,7 +528,7 @@ void readtable( void )
     for (ii = 0; ii < 6; ii++)      /* free the memory for the string column */
         free( name[ii] );
 
-    if ( ffclos(fptr, &status) )                    /* close the FITS file */
+    if ( fits_close_file(fptr, &status) ) 
          printerror( status );
 
     return;
@@ -537,15 +545,16 @@ void printerror( int status)
     if (status)
       fprintf(stderr, "\n*** Error occurred during program execution ***\n");
 
-    ffgerr(status, status_str);        /* get the error status description */
+    fits_get_errstatus(status, status_str);   /* get the error description */
     fprintf(stderr, "\nstatus = %d: %s\n", status, status_str);
 
-    if ( ffgmsg(errmsg) )  /* get first message; null if stack is empty */
+    /* get first message; null if stack is empty */
+    if ( fits_read_errmsg(errmsg) ) 
     {
          fprintf(stderr, "\nError message stack:\n");
          fprintf(stderr, " %s\n", errmsg);
 
-         while ( ffgmsg(errmsg) )  /* get remaining messages */
+         while ( fits_read_errmsg(errmsg) )  /* get remaining messages */
              fprintf(stderr, " %s\n", errmsg);
     }
 

@@ -1,5 +1,5 @@
                      CFITSIO - Beta Release
-                         April 19, 1996
+                         June 4, 1996
 
   Beta Software Disclaimer:  While this software has been extensively
   tested on many different machines, every single routine in the CFITSIO
@@ -10,8 +10,8 @@
   correct.
 
 CFITSIO is a library of ANSI C routines for reading and writing FITS
-format files.  These C routines have nearly the same calling sequences
-as the Fortran subroutines provided in the original fitsio library.
+format files.  The design of these C routines closely follows the
+Fortran subroutines provided in the original fitsio library.
 The CFITSIO User's Guide, in the file cfitsio.ps (postscript format)
 or cfitsio.doc (plain ASCII text) contains full instructions on
 building and using this library.
@@ -27,10 +27,10 @@ BUILDING CFITSIO
 
 The CFITSIO code is contained in the following 9 source files:
   cfileio.c, convert.c, fitscore.c, getcol.c, getkey.c, modkey.c,
-  putcol.c, putkey.c, and utilproc.c. The fitsio.h and fitsio2.h
-  header files are also needed.
+  putcol.c, putkey.c, and utilproc.c. The fitsio.h, fitsio2.h, and
+  longname.h header files are also needed.
 
-On VAX/VMS systems the following 2 macro-code files are needed:
+On VAX/VMS systems 2 additional macro-code files are needed:
    vmsieeed.mar and vmsieeer.mar
 
 On VAX/VMS and ALPHA/VMS systems, the makevaxvms.com and makealphavms.com
@@ -38,25 +38,24 @@ command files may be used to build the cfitsio.olb object library
 (e.g., type '@makevaxvms' at the Vax command line to build the CFITSIO
 library on a Vax).
 
-On Unix systems the Makefile included in this release may be used to
-build the libcfitsio.a library file.  First, the name of the C compiler
-to be used should be defined using the setenv command.  Then type,
-'configure' to create a Makefile. Finally type 'make' to build the 
-CFITSIO library in the file libcfitsio.a.
-For example,
+The CFITSIO library is built on Unix systems by typing:
 
-% setenv CC gcc
-% ./configure
-% make
+   % configure
+   % make
 
-will build the CFITSIO library using the gcc compiler.
+at the operating system prompt.  The 'configure' command customizes
+the Makefile for your particular system, then the 'make' command
+builds the library.  The build process splits each routine in the
+source files into a separate disk file in a scratch subdirectory.
+Depending on the speed of the CPU, it can anywhere from a couple
+minutes to an hour to create the libcfitsio.a library file.
 
 TESTING CFITSIO
 ---------------
 
 The CFITSIO library should be tested by building and running
-the testprog.c file included with the release.  On VMS systems,
-type (assuming cc is the name of the C compiler command), type:
+the testprog.c program that is included with the release.  On VMS systems,
+type (assuming cc is the name of the C compiler command):
 
 $ cc testprog.c
 $ link testprog, cfitsio/lib
@@ -65,14 +64,16 @@ $ run testprog
 On Unix systems (assuming the gcc compiler is being used), type:
 
 % gcc -o testprog testprog.c -L. -lcfitsio
-% testprog
+% testprog > testprog.lis
+% diff testprog.lis testprog.out
+% cmp testprog.fit testprog.std
 
 The testprog program should produce a FITS file called testprog.fit
 which is identical to the testprog.std FITS file included in this
-release.  The diagnotic messages that are sent to the user's terminal
-should be identical to the listing contained in the file testprog.out,
-except that the date on the DATE keyword may vary depending on when the
-programs is run.
+release.  The diagnotic messages (which were piped to the file
+testprog.lis) should be identical to the listing contained in the file
+testprog.out.  The 'diff' and 'cmp' commands shown above should not
+report any differences in the files.
 
 USING CFITSIO
 -------------
@@ -107,10 +108,11 @@ CFITSIO has currently been tested on the following platforms:
    Dec Alpha OpenVMS          cc with /float=gfloat or /float=ieee options
    DEC VAX/VMS                gcc
    IBM PC w/ Windows 95       Borland C++ V4.5
+   Linux running on IBM PC    gcc
+   Mac IIci                   Symantec C++
 
-CFITSIO will probably run on most other 32-bit Unix platforms without
-any modification.  CFITSIO should also run on a Mac PC, but this has
-not been tested.  Cray supercomputers and IBM mainframe computers are
+CFITSIO will probably run on most other Unix platforms without
+modification.  Cray supercomputers and IBM mainframe computers are
 currently not supported.
 
 Reports of any success or failure to run CFITSIO on other platforms
@@ -118,18 +120,13 @@ would be appreciated.  Any problem reports or suggestions for
 improvements are also welcome.  Please send any reports to the author
 at:   pence@tetra.gsfc.nasa.gov
 
-KNOWN BUGS:
------------
+KNOWN PROBLEMS:
+---------------
 
  - none
 
 NOT CURRENTLY IMPLEMENTED:
 --------------------------
-
- All the routines described in the Fortran FITSIO User's Guide are also 
- available in the CFITSIO library, except for:
-
- - the routines which write or check the checksum keyword value
 
  - the routines that deal with FITS world coordinate system keywords
 

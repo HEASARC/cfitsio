@@ -10,12 +10,9 @@
 /*  Government purposes to publish, distribute, translate, copy, exhibit,  */
 /*  and perform such material.                                             */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef _FITSIO2_H
 #include "fitsio2.h"
-#endif
 
 #if MACHINE == ALPHAVMS
   static float testfloat = TESTFLOAT;  /* use to test floating pt format */
@@ -394,25 +391,25 @@ int ffgbcl( fitsfile *fptr,   /* I - FITS file pointer                      */
     else
         dtype[0] = 0;
 
-    if      (abs(colptr->tdatatype) == FTYPE_BIT)
+    if      (abs(colptr->tdatatype) == TBIT)
         strcat(dtype, "X");
-    else if (abs(colptr->tdatatype) == FTYPE_BYTE)
+    else if (abs(colptr->tdatatype) == TBYTE)
         strcat(dtype, "B");
-    else if (abs(colptr->tdatatype) == FTYPE_LOGICAL)
+    else if (abs(colptr->tdatatype) == TLOGICAL)
         strcat(dtype, "L");
-    else if (abs(colptr->tdatatype) == FTYPE_ASCII)
+    else if (abs(colptr->tdatatype) == TSTRING)
         strcat(dtype, "A");
-    else if (abs(colptr->tdatatype) == FTYPE_SHORT)
+    else if (abs(colptr->tdatatype) == TSHORT)
         strcat(dtype, "I");
-    else if (abs(colptr->tdatatype) == FTYPE_LONG)
+    else if (abs(colptr->tdatatype) == TLONG)
         strcat(dtype, "J");
-    else if (abs(colptr->tdatatype) == FTYPE_FLOAT)
+    else if (abs(colptr->tdatatype) == TFLOAT)
         strcat(dtype, "E");
-    else if (abs(colptr->tdatatype) == FTYPE_DOUBLE)
+    else if (abs(colptr->tdatatype) == TDOUBLE)
         strcat(dtype, "D");
-    else if (abs(colptr->tdatatype) == FTYPE_COMPLEX)
+    else if (abs(colptr->tdatatype) == TCOMPLEX)
         strcat(dtype, "C");
-    else if (abs(colptr->tdatatype) == FTYPE_DBLCOMPLEX)
+    else if (abs(colptr->tdatatype) == TDBLCOMPLEX)
         strcat(dtype, "M");
 
     *repeat = colptr->trepeat;
@@ -431,6 +428,111 @@ int ffgbcl( fitsfile *fptr,   /* I - FITS file pointer                      */
     tstatus = 0;
     *tdisp = '\0';
     ffgkys(fptr, name, tdisp, comm, &tstatus);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgpv(  fitsfile *fptr,   /* I - FITS file pointer                       */
+            int  datatype,    /* I - datatype of the value                   */
+            long firstelem,   /* I - first vector element to read (1 = 1st)  */
+            long nelem,       /* I - number of values to read                */
+            void *nulval,     /* I - value for undefined pixels              */
+            void *array,      /* O - array of values that are returned       */
+            int  *anynul,     /* O - set to 1 if any values are null; else 0 */
+            int  *status)     /* IO - error status                           */
+/*
+  Read an array of values from the primary array. The datatype of the
+  input array is defined by the 2nd argument.  Data conversion
+  and scaling will be performed if necessary (e.g, if the datatype of
+  the FITS array is not the same as the array being read).
+  Undefined elements will be set equal to NULVAL, unless NULVAL=0
+  in which case no checking for undefined values will be performed.
+  ANYNUL is returned with a value of .true. if any pixels are undefined.
+*/
+{
+    long row = 1;
+    char *cdummy;
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    /*
+      the primary array is represented as a binary table:
+      each group of the primary array is a row in the table,
+      where the first column contains the group parameters
+      and the second column contains the image itself.
+    */
+
+    if (datatype == TBYTE)
+    {
+      if (nulval == 0)
+        ffgclb(fptr, 2, row, firstelem, nelem, 1, 1, 0,
+              (unsigned char *) array, cdummy, anynul, status);
+      else
+        ffgclb(fptr, 2, row, firstelem, nelem, 1, 1, *(unsigned char *) nulval,
+              (unsigned char *) array, cdummy, anynul, status);
+    }
+    else if (datatype == TSHORT)
+    {
+      if (nulval == 0)
+        ffgcli(fptr, 2, row, firstelem, nelem, 1, 1, 0,
+              (short *) array, cdummy, anynul, status);
+      else
+        ffgcli(fptr, 2, row, firstelem, nelem, 1, 1, *(short *) nulval,
+              (short *) array, cdummy, anynul, status);
+    }
+    else if (datatype == TINT)
+    {
+      if (sizeof(int) == sizeof(short) )
+      {
+        if (nulval == 0)
+          ffgcli(fptr, 2, row, firstelem, nelem, 1, 1, 0,
+                (short *) array, cdummy, anynul, status);
+        else
+          ffgcli(fptr, 2, row, firstelem, nelem, 1, 1, *(short *) nulval,
+                (short *) array, cdummy, anynul, status);
+      }
+      else if (sizeof(int) == sizeof(long) )
+      {
+        if (nulval == 0)
+          ffgclj(fptr, 2, row, firstelem, nelem, 1, 1, 0,
+                (long *) array, cdummy, anynul, status);
+        else
+          ffgclj(fptr, 2, row, firstelem, nelem, 1, 1, *(long *) nulval,
+                (long *) array, cdummy, anynul, status);
+      }
+      else
+         *status = BAD_DATATYPE;
+    }
+    else if (datatype == TLONG)
+    {
+      if (nulval == 0)
+        ffgclj(fptr, 2, row, firstelem, nelem, 1, 1, 0,
+              (long *) array, cdummy, anynul, status);
+      else
+        ffgclj(fptr, 2, row, firstelem, nelem, 1, 1, *(long *) nulval,
+              (long *) array, cdummy, anynul, status);
+    }
+    else if (datatype == TFLOAT)
+    {
+      if (nulval == 0)
+        ffgcle(fptr, 2, row, firstelem, nelem, 1, 1, 0.,
+              (float *) array, cdummy, anynul, status);
+      else
+        ffgcle(fptr, 2, row, firstelem, nelem, 1, 1, *(float *) nulval,
+              (float *) array, cdummy, anynul, status);
+    }
+    else if (datatype == TDOUBLE)
+    {
+      if (nulval == 0)
+        ffgcld(fptr, 2, row, firstelem, nelem, 1, 1, 0.,
+              (double *) array, cdummy, anynul, status);
+      else
+        ffgcld(fptr, 2, row, firstelem, nelem, 1, 1, *(double *) nulval,
+              (double *) array, cdummy, anynul, status);
+    }
+    else
+      *status = BAD_DATATYPE;
 
     return(*status);
 }
@@ -463,7 +565,7 @@ int ffgpvb( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     row=maxvalue(1,group);
 
-    ffgclb(fptr, 2, row, firstelem, nelem, 1L, 1, nulval,
+    ffgclb(fptr, 2, row, firstelem, nelem, 1, 1, nulval,
                array, cdummy, anynul, status);
     return(*status);
 }
@@ -496,7 +598,7 @@ int ffgpvi( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     row=maxvalue(1,group);
 
-    ffgcli(fptr, 2, row, firstelem, nelem, 1L, 1, nulval,
+    ffgcli(fptr, 2, row, firstelem, nelem, 1, 1, nulval,
                array, cdummy, anynul, status);
     return(*status);
 }
@@ -529,7 +631,7 @@ int ffgpvj( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     row=maxvalue(1,group);
 
-    ffgclj(fptr, 2, row, firstelem, nelem, 1L, 1, nulval,
+    ffgclj(fptr, 2, row, firstelem, nelem, 1, 1, nulval,
                array, cdummy, anynul, status);
     return(*status);
 }
@@ -562,7 +664,7 @@ int ffgpve( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     row=maxvalue(1,group);
 
-    ffgcle(fptr, 2, row, firstelem, nelem, 1L, 1, nulval,
+    ffgcle(fptr, 2, row, firstelem, nelem, 1, 1, nulval,
                array, cdummy, anynul, status);
     return(*status);
 }
@@ -595,7 +697,7 @@ int ffgpvd( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     row=maxvalue(1,group);
 
-    ffgcld(fptr, 2, row, firstelem, nelem, 1L, 1, nulval,
+    ffgcld(fptr, 2, row, firstelem, nelem, 1, 1, nulval,
                array, cdummy, anynul, status);
     return(*status);
 }
@@ -627,7 +729,7 @@ int ffgpfb( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     row=maxvalue(1,group);
 
-    ffgclb(fptr, 2, row, firstelem, nelem, 1L, 2, 0,
+    ffgclb(fptr, 2, row, firstelem, nelem, 1, 2, 0,
                array, nularray, anynul, status);
     return(*status);
 }
@@ -659,7 +761,7 @@ int ffgpfi( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     row=maxvalue(1,group);
 
-    ffgcli(fptr, 2, row, firstelem, nelem, 1L, 2, 0,
+    ffgcli(fptr, 2, row, firstelem, nelem, 1, 2, 0,
                array, nularray, anynul, status);
     return(*status);
 }
@@ -691,7 +793,7 @@ int ffgpfj( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     row=maxvalue(1,group);
 
-    ffgclj(fptr, 2, row, firstelem, nelem, 1L, 2, 0L,
+    ffgclj(fptr, 2, row, firstelem, nelem, 1, 2, 0L,
                array, nularray, anynul, status);
     return(*status);
 }
@@ -723,7 +825,7 @@ int ffgpfe( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     row=maxvalue(1,group);
 
-    ffgcle(fptr, 2, row, firstelem, nelem, 1L, 2, 0.F,
+    ffgcle(fptr, 2, row, firstelem, nelem, 1, 2, 0.F,
                array, nularray, anynul, status);
     return(*status);
 }
@@ -755,7 +857,7 @@ int ffgpfd( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     row=maxvalue(1,group);
 
-    ffgcld(fptr, 2, row, firstelem, nelem, 1L, 2, 0.,
+    ffgcld(fptr, 2, row, firstelem, nelem, 1, 2, 0.,
                array, nularray, anynul, status);
     return(*status);
 }
@@ -791,7 +893,7 @@ int ffg2db(fitsfile *fptr,  /* I - FITS file pointer                       */
     if (ncols == naxis1)  /* arrays have same row length? */
     {
        /* all the image pixels are contiguous, so read all at once */
-       ffgclb(fptr, 2, tablerow, 1L, naxis1 * naxis2, 1L, 1, nulval,
+       ffgclb(fptr, 2, tablerow, 1, naxis1 * naxis2, 1, 1, nulval,
                array, cdummy, anynul, status);
        return(*status);
     }
@@ -804,7 +906,7 @@ int ffg2db(fitsfile *fptr,  /* I - FITS file pointer                       */
 
     for (ii = 0; ii < naxis2; ii++)
     {
-       if (ffgclb(fptr, 2, tablerow, nfits, naxis1, 1L, 1, nulval,
+       if (ffgclb(fptr, 2, tablerow, nfits, naxis1, 1, 1, nulval,
           &array[narray], cdummy, anynul, status) > 0)
           return(*status);
 
@@ -846,7 +948,7 @@ int ffg2di(fitsfile *fptr,  /* I - FITS file pointer                       */
     if (ncols == naxis1)  /* arrays have same row length? */
     {
        /* all the image pixels are contiguous, so read all at once */
-       ffgcli(fptr, 2, tablerow, 1L, naxis1 * naxis2, 1L, 1, nulval,
+       ffgcli(fptr, 2, tablerow, 1, naxis1 * naxis2, 1, 1, nulval,
                array, cdummy, anynul, status);
        return(*status);
     }
@@ -859,7 +961,7 @@ int ffg2di(fitsfile *fptr,  /* I - FITS file pointer                       */
 
     for (ii = 0; ii < naxis2; ii++)
     {
-       if (ffgcli(fptr, 2, tablerow, nfits, naxis1, 1L, 1, nulval,
+       if (ffgcli(fptr, 2, tablerow, nfits, naxis1, 1, 1, nulval,
           &array[narray], cdummy, anynul, status) > 0)
           return(*status);
 
@@ -901,7 +1003,7 @@ int ffg2dj(fitsfile *fptr,  /* I - FITS file pointer                       */
     if (ncols == naxis1)  /* arrays have same row length? */
     {
        /* all the image pixels are contiguous, so read all at once */
-       ffgclj(fptr, 2, tablerow, 1L, naxis1 * naxis2, 1L, 1, nulval,
+       ffgclj(fptr, 2, tablerow, 1, naxis1 * naxis2, 1, 1, nulval,
                array, cdummy, anynul, status);
        return(*status);
     }
@@ -914,7 +1016,7 @@ int ffg2dj(fitsfile *fptr,  /* I - FITS file pointer                       */
 
     for (ii = 0; ii < naxis2; ii++)
     {
-       if (ffgclj(fptr, 2, tablerow, nfits, naxis1, 1L, 1, nulval,
+       if (ffgclj(fptr, 2, tablerow, nfits, naxis1, 1, 1, nulval,
           &array[narray], cdummy, anynul, status) > 0)
           return(*status);
 
@@ -956,7 +1058,7 @@ int ffg2de(fitsfile *fptr,  /* I - FITS file pointer                       */
     if (ncols == naxis1)  /* arrays have same row length? */
     {
        /* all the image pixels are contiguous, so read all at once */
-       ffgcle(fptr, 2, tablerow, 1L, naxis1 * naxis2, 1L, 1, nulval,
+       ffgcle(fptr, 2, tablerow, 1, naxis1 * naxis2, 1, 1, nulval,
                array, cdummy, anynul, status);
        return(*status);
     }
@@ -969,7 +1071,7 @@ int ffg2de(fitsfile *fptr,  /* I - FITS file pointer                       */
 
     for (ii = 0; ii < naxis2; ii++)
     {
-       if (ffgcle(fptr, 2, tablerow, nfits, naxis1, 1L, 1, nulval,
+       if (ffgcle(fptr, 2, tablerow, nfits, naxis1, 1, 1, nulval,
           &array[narray], cdummy, anynul, status) > 0)
           return(*status);
 
@@ -1011,7 +1113,7 @@ int ffg2dd(fitsfile *fptr,  /* I - FITS file pointer                       */
     if (ncols == naxis1)  /* arrays have same row length? */
     {
        /* all the image pixels are contiguous, so read all at once */
-       ffgcld(fptr, 2, tablerow, 1L, naxis1 * naxis2, 1L, 1, nulval,
+       ffgcld(fptr, 2, tablerow, 1, naxis1 * naxis2, 1, 1, nulval,
                array, cdummy, anynul, status);
        return(*status);
     }
@@ -1024,7 +1126,7 @@ int ffg2dd(fitsfile *fptr,  /* I - FITS file pointer                       */
 
     for (ii = 0; ii < naxis2; ii++)
     {
-       if (ffgcld(fptr, 2, tablerow, nfits, naxis1, 1L, 1, nulval,
+       if (ffgcld(fptr, 2, tablerow, nfits, naxis1, 1, 1, nulval,
           &array[narray], cdummy, anynul, status) > 0)
           return(*status);
 
@@ -1068,7 +1170,7 @@ int ffg3db(fitsfile *fptr,  /* I - FITS file pointer                       */
     if (ncols == naxis1 && nrows == naxis2)  /* arrays have same size? */
     {
        /* all the image pixels are contiguous, so read all at once */
-       ffgclb(fptr, 2, tablerow, 1L, naxis1 * naxis2 * naxis3, 1L, 1, nulval,
+       ffgclb(fptr, 2, tablerow, 1, naxis1 * naxis2 * naxis3, 1, 1, nulval,
                array, cdummy, anynul, status);
        return(*status);
     }
@@ -1084,7 +1186,7 @@ int ffg3db(fitsfile *fptr,  /* I - FITS file pointer                       */
 
       for (ii = 0; ii < naxis2; ii++)
       {
-       if (ffgclb(fptr, 2, tablerow, nfits, naxis1, 1L, 1, nulval,
+       if (ffgclb(fptr, 2, tablerow, nfits, naxis1, 1, 1, nulval,
           &array[narray], cdummy, anynul, status) > 0)
           return(*status);
 
@@ -1129,7 +1231,7 @@ int ffg3di(fitsfile *fptr,  /* I - FITS file pointer                       */
     if (ncols == naxis1 && nrows == naxis2)  /* arrays have same size? */
     {
        /* all the image pixels are contiguous, so read all at once */
-       ffgcli(fptr, 2, tablerow, 1L, naxis1 * naxis2 * naxis3, 1L, 1, nulval,
+       ffgcli(fptr, 2, tablerow, 1, naxis1 * naxis2 * naxis3, 1, 1, nulval,
                array, cdummy, anynul, status);
        return(*status);
     }
@@ -1145,7 +1247,7 @@ int ffg3di(fitsfile *fptr,  /* I - FITS file pointer                       */
 
       for (ii = 0; ii < naxis2; ii++)
       {
-       if (ffgcli(fptr, 2, tablerow, nfits, naxis1, 1L, 1, nulval,
+       if (ffgcli(fptr, 2, tablerow, nfits, naxis1, 1, 1, nulval,
           &array[narray], cdummy, anynul, status) > 0)
           return(*status);
 
@@ -1190,7 +1292,7 @@ int ffg3dj(fitsfile *fptr,  /* I - FITS file pointer                       */
     if (ncols == naxis1 && nrows == naxis2)  /* arrays have same size? */
     {
        /* all the image pixels are contiguous, so read all at once */
-       ffgclj(fptr, 2, tablerow, 1L, naxis1 * naxis2 * naxis3, 1L, 1, nulval,
+       ffgclj(fptr, 2, tablerow, 1, naxis1 * naxis2 * naxis3, 1, 1, nulval,
                array, cdummy, anynul, status);
        return(*status);
     }
@@ -1206,7 +1308,7 @@ int ffg3dj(fitsfile *fptr,  /* I - FITS file pointer                       */
 
       for (ii = 0; ii < naxis2; ii++)
       {
-       if (ffgclj(fptr, 2, tablerow, nfits, naxis1, 1L, 1, nulval,
+       if (ffgclj(fptr, 2, tablerow, nfits, naxis1, 1, 1, nulval,
           &array[narray], cdummy, anynul, status) > 0)
           return(*status);
 
@@ -1251,7 +1353,7 @@ int ffg3de(fitsfile *fptr,  /* I - FITS file pointer                       */
     if (ncols == naxis1 && nrows == naxis2)  /* arrays have same size? */
     {
        /* all the image pixels are contiguous, so read all at once */
-       ffgcle(fptr, 2, tablerow, 1L, naxis1 * naxis2 * naxis3, 1L, 1, nulval,
+       ffgcle(fptr, 2, tablerow, 1, naxis1 * naxis2 * naxis3, 1, 1, nulval,
                array, cdummy, anynul, status);
        return(*status);
     }
@@ -1267,7 +1369,7 @@ int ffg3de(fitsfile *fptr,  /* I - FITS file pointer                       */
 
       for (ii = 0; ii < naxis2; ii++)
       {
-       if (ffgcle(fptr, 2, tablerow, nfits, naxis1, 1L, 1, nulval,
+       if (ffgcle(fptr, 2, tablerow, nfits, naxis1, 1, 1, nulval,
           &array[narray], cdummy, anynul, status) > 0)
           return(*status);
 
@@ -1312,7 +1414,7 @@ int ffg3dd(fitsfile *fptr,  /* I - FITS file pointer                       */
     if (ncols == naxis1 && nrows == naxis2)  /* arrays have same size? */
     {
        /* all the image pixels are contiguous, so read all at once */
-       ffgcld(fptr, 2, tablerow, 1L, naxis1 * naxis2 * naxis3, 1L, 1, nulval,
+       ffgcld(fptr, 2, tablerow, 1, naxis1 * naxis2 * naxis3, 1, 1, nulval,
                array, cdummy, anynul, status);
        return(*status);
     }
@@ -1328,7 +1430,7 @@ int ffg3dd(fitsfile *fptr,  /* I - FITS file pointer                       */
 
       for (ii = 0; ii < naxis2; ii++)
       {
-       if (ffgcld(fptr, 2, tablerow, nfits, naxis1, 1L, 1, nulval,
+       if (ffgcld(fptr, 2, tablerow, nfits, naxis1, 1, 1, nulval,
           &array[narray], cdummy, anynul, status) > 0)
           return(*status);
 
@@ -2788,7 +2890,7 @@ int ffggpb( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     row=maxvalue(1,group);
 
-    ffgclb(fptr, 1, row, firstelem, nelem, 1L, 1, 0,
+    ffgclb(fptr, 1, row, firstelem, nelem, 1, 1, 0,
                array, cdummy, idummy, status);
     return(*status);
 }
@@ -2817,7 +2919,7 @@ int ffggpi( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     row=maxvalue(1,group);
 
-    ffgcli(fptr, 1, row, firstelem, nelem, 1L, 1, 0,
+    ffgcli(fptr, 1, row, firstelem, nelem, 1, 1, 0,
                array, cdummy, idummy, status);
     return(*status);
 }
@@ -2846,7 +2948,7 @@ int ffggpj( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     row=maxvalue(1,group);
 
-    ffgclj(fptr, 1, row, firstelem, nelem, 1L, 1, 0L,
+    ffgclj(fptr, 1, row, firstelem, nelem, 1, 1, 0L,
                array, cdummy, idummy, status);
     return(*status);
 }
@@ -2875,7 +2977,7 @@ int ffggpe( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     row=maxvalue(1,group);
 
-    ffgcle(fptr, 1, row, firstelem, nelem, 1L, 1, 0.F,
+    ffgcle(fptr, 1, row, firstelem, nelem, 1, 1, 0.F,
                array, cdummy, idummy, status);
     return(*status);
 }
@@ -2904,16 +3006,127 @@ int ffggpd( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     row=maxvalue(1,group);
 
-    ffgcld(fptr, 1, row, firstelem, nelem, 1L, 1, 0.,
+    ffgcld(fptr, 1, row, firstelem, nelem, 1, 1, 0.,
                array, cdummy, idummy, status);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffgcvs( fitsfile *fptr,   /* I - FITS file pointer                       */
+int ffgcv(  fitsfile *fptr,   /* I - FITS file pointer                       */
+            int  datatype,    /* I - datatype of the value                   */
             int  colnum,      /* I - number of column to write (1 = 1st col) */
             long  firstrow,   /* I - first row to write (1 = 1st row)        */
-            long  firstelem,  /* I - first vector element to write (1 = 1st) */
-            long  nelem,      /* I - number of strings to write              */
+            long  firstelem,  /* I - first vector element to read (1 = 1st)  */
+            long nelem,       /* I - number of values to read                */
+            void *nulval,     /* I - value for undefined pixels              */
+            void *array,      /* O - array of values that are returned       */
+            int  *anynul,     /* O - set to 1 if any values are null; else 0 */
+            int  *status)     /* IO - error status                           */
+/*
+  Read an array of values from a table column. The datatype of the
+  input array is defined by the 2nd argument.  Data conversion
+  and scaling will be performed if necessary (e.g, if the datatype of
+  the FITS array is not the same as the array being read).
+  Undefined elements will be set equal to NULVAL, unless NULVAL=0
+  in which case no checking for undefined values will be performed.
+  ANYNUL is returned with a value of true if any pixels are undefined.
+*/
+{
+    char cdummy[2];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (datatype == TBYTE)
+    {
+      if (nulval == 0)
+        ffgclb(fptr, colnum, firstrow, firstelem, nelem, 1, 1, 0,
+              (unsigned char *) array, cdummy, anynul, status);
+      else
+       ffgclb(fptr, colnum, firstrow, firstelem, nelem, 1, 1, *(unsigned char *)
+              nulval, (unsigned char *) array, cdummy, anynul, status);
+    }
+    else if (datatype == TSHORT)
+    {
+      if (nulval == 0)
+        ffgcli(fptr, colnum, firstrow, firstelem, nelem, 1, 1, 0,
+              (short *) array, cdummy, anynul, status);
+      else
+        ffgcli(fptr, colnum, firstrow, firstelem, nelem, 1, 1, *(short *)
+              nulval, (short *) array, cdummy, anynul, status);
+    }
+    else if (datatype == TINT)
+    {
+      if (sizeof(int) == sizeof(short) )
+      {
+        if (nulval == 0)
+          ffgcli(fptr, colnum, firstrow, firstelem, nelem, 1, 1, 0,
+                (short *) array, cdummy, anynul, status);
+        else
+          ffgcli(fptr, colnum, firstrow, firstelem, nelem, 1, 1, *(short *)
+                 nulval, (short *) array, cdummy, anynul, status);
+      }
+      else if (sizeof(int) == sizeof(long) )
+      {
+        if (nulval == 0)
+          ffgclj(fptr, colnum, firstrow, firstelem, nelem, 1, 1, 0,
+                (long *) array, cdummy, anynul, status);
+        else
+           ffgclj(fptr, colnum, firstrow, firstelem, nelem, 1, 1, *(long *)
+              nulval, (long *) array, cdummy, anynul, status);
+      }
+      else
+        *status = BAD_DATATYPE;
+    }
+    else if (datatype == TLONG)
+    {
+      if (nulval == 0)
+        ffgclj(fptr, colnum, firstrow, firstelem, nelem, 1, 1, 0,
+              (long *) array, cdummy, anynul, status);
+      else
+        ffgclj(fptr, colnum, firstrow, firstelem, nelem, 1, 1, *(long *)
+              nulval, (long *) array, cdummy, anynul, status);
+    }
+    else if (datatype == TFLOAT)
+    {
+      if (nulval == 0)
+        ffgcle(fptr, colnum, firstrow, firstelem, nelem, 1, 1, 0.,
+              (float *) array, cdummy, anynul, status);
+      else
+      ffgcle(fptr, colnum, firstrow, firstelem, nelem, 1, 1, *(float *)
+               nulval,(float *) array, cdummy, anynul, status);
+    }
+    else if (datatype == TDOUBLE)
+    {
+      if (nulval == 0)
+        ffgcld(fptr, colnum, firstrow, firstelem, nelem, 1, 1, 0.,
+              (double *) array, cdummy, anynul, status);
+      else
+        ffgcld(fptr, colnum, firstrow, firstelem, nelem, 1, 1, *(double *)
+              nulval, (double *) array, cdummy, anynul, status);
+    }
+    else if (datatype == TSTRING)
+    {
+      if (nulval == 0)
+      {
+        cdummy[0] = '\0';
+        ffgcls(fptr, colnum, firstrow, firstelem, nelem, 1, 
+             cdummy, (char **) array, cdummy, anynul, status);
+      }
+      else
+        ffgcls(fptr, colnum, firstrow, firstelem, nelem, 1, (char *)
+             nulval, (char **) array, cdummy, anynul, status);
+    }
+    else
+      *status = BAD_DATATYPE;
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffgcvs( fitsfile *fptr,   /* I - FITS file pointer                       */
+            int  colnum,      /* I - number of column to read (1 = 1st col)  */
+            long  firstrow,   /* I - first row to read (1 = 1st row)         */
+            long  firstelem,  /* I - first vector element to read (1 = 1st)  */
+            long  nelem,      /* I - number of strings to read               */
             char *nulval,     /* I - string for null pixels                  */
             char **array,     /* O - array of values that are read           */
             int  *anynul,     /* O - set to 1 if any values are null; else 0 */
@@ -2975,7 +3188,7 @@ int ffgcvb(fitsfile *fptr,   /* I - FITS file pointer                       */
 {
     char *cdummy;
 
-    ffgclb(fptr, colnum, firstrow, firstelem, nelem, 1L, 1, nulval,
+    ffgclb(fptr, colnum, firstrow, firstelem, nelem, 1, 1, nulval,
            array, cdummy, anynul, status);
     return(*status);
 }
@@ -3000,7 +3213,7 @@ int ffgcvi(fitsfile *fptr,   /* I - FITS file pointer                       */
 {
     char *cdummy;
 
-    ffgcli(fptr, colnum, firstrow, firstelem, nelem, 1L, 1, nulval,
+    ffgcli(fptr, colnum, firstrow, firstelem, nelem, 1, 1, nulval,
            array, cdummy, anynul, status);
     return(*status);
 }
@@ -3025,7 +3238,7 @@ int ffgcvj(fitsfile *fptr,   /* I - FITS file pointer                       */
 {
     char *cdummy;
 
-    ffgclj(fptr, colnum, firstrow, firstelem, nelem, 1L, 1, nulval,
+    ffgclj(fptr, colnum, firstrow, firstelem, nelem, 1, 1, nulval,
            array, cdummy, anynul, status);
     return(*status);
 }
@@ -3050,7 +3263,7 @@ int ffgcve(fitsfile *fptr,   /* I - FITS file pointer                       */
 {
     char *cdummy;
 
-    ffgcle(fptr, colnum, firstrow, firstelem, nelem, 1L, 1, nulval,
+    ffgcle(fptr, colnum, firstrow, firstelem, nelem, 1, 1, nulval,
            array, cdummy, anynul, status);
     return(*status);
 }
@@ -3075,7 +3288,7 @@ int ffgcvd(fitsfile *fptr,   /* I - FITS file pointer                       */
 {
     char *cdummy;
 
-    ffgcld(fptr, colnum, firstrow, firstelem, nelem, 1L, 1, nulval,
+    ffgcld(fptr, colnum, firstrow, firstelem, nelem, 1, 1, nulval,
            array, cdummy, anynul, status);
     return(*status);
 }
@@ -3109,7 +3322,7 @@ int ffgcvc(fitsfile *fptr,   /* I - FITS file pointer                       */
     firstvalue = (firstelem - 1) * 2 + 1;
     nvalue = nelem *2;
 
-    ffgcle(fptr, colnum, firstrow, firstvalue, nvalue, 1L, 1, nulval,
+    ffgcle(fptr, colnum, firstrow, firstvalue, nvalue, 1, 1, nulval,
            array, cdummy, anynul, status);
     return(*status);
 }
@@ -3143,7 +3356,7 @@ int ffgcvm(fitsfile *fptr,   /* I - FITS file pointer                       */
     firstvalue = (firstelem - 1) * 2 + 1;
     nvalue = nelem *2;
 
-    ffgcld(fptr, colnum, firstrow, firstvalue, nvalue, 1L, 1, nulval,
+    ffgcld(fptr, colnum, firstrow, firstvalue, nvalue, 1, 1, nulval,
            array, cdummy, anynul, status);
     return(*status);
 }
@@ -3415,9 +3628,9 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
     colptr += (colnum - 1);     /* offset to correct column structure */
     tcode = colptr->tdatatype;
 
-    if (tcode == -FTYPE_ASCII) /* variable length column in a binary table? */
+    if (tcode == -TSTRING) /* variable length column in a binary table? */
     {
-      /* only write a single string; ignore value of firstelem */
+      /* only read a single string; ignore value of firstelem */
 
       if (ffgcpr( fptr, colnum, firstrow, 1, 1, 0, &scale, &zero,
         tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
@@ -3427,7 +3640,7 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
       remain = 1;
       twidth = repeat;  
     }
-    else if (tcode == FTYPE_ASCII)
+    else if (tcode == TSTRING)
     {
       if (ffgcpr( fptr, colnum, firstrow, firstelem, nelem, 0, &scale, &zero,
         tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
@@ -3561,7 +3774,7 @@ int ffgcfl( fitsfile *fptr,   /* I - FITS file pointer                       */
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
 
-    if (tcode != FTYPE_LOGICAL)   
+    if (tcode != TLOGICAL)   
         return(*status = NOT_LOGICAL_COL);
  
     /*---------------------------------------------------------------------*/
@@ -3698,7 +3911,7 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     incre *= elemincre;   /* multiply incre to just get every nth pixel */
 
-    if (tcode == FTYPE_ASCII)    /* setup for ASCII tables */
+    if (tcode == TSTRING)    /* setup for ASCII tables */
     {
         nullen = strlen(snull);   /* length of the undefined pixel string */
         cform[0] = '%';           /* construct read format string */
@@ -3717,7 +3930,7 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
             tnull == NULL_UNDEFINED) /* if a null value is not defined,    */
             nulcheck = 0;            /* then do not check for null values. */
 
-    else if (tcode == FTYPE_ASCII && snull[0] == ASCII_NULL_UNDEFINED)
+    else if (tcode == TSTRING && snull[0] == ASCII_NULL_UNDEFINED)
          nulcheck = 0;
 
 
@@ -3725,7 +3938,7 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
     /*  If FITS column and output data array have same datatype, then we do */
     /*  not need to use a temporary buffer to store intermediate datatype.  */
     /*----------------------------------------------------------------------*/
-    if (tcode == FTYPE_BYTE) /* Special Case:                        */
+    if (tcode == TBYTE) /* Special Case:                        */
     {                             /* no type convertion required, so read */
         maxelem = nelem;          /* data directly into output buffer.    */
 
@@ -3765,38 +3978,38 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
         ffmbyt(fptr, readptr, 1, status);  /* move to read position in file */
         switch (tcode) 
         {
-            case (FTYPE_BYTE):
+            case (TBYTE):
                 ffgi1b(fptr, ntodo, incre, &array[next], status);
                 if (convert)
                     fffi1i1(&array[next], ntodo, scale, zero, nulcheck, 
                     (unsigned char) tnull, nulval, &nularray[next], anynul, 
                            &array[next], status);
                 break;
-            case (FTYPE_SHORT):
+            case (TSHORT):
                 ffgi2b(fptr, ntodo, incre, (short *) buffer, status);
                 fffi2i1((short  *) buffer, ntodo, scale, zero, nulcheck, 
                        (short) tnull, nulval, &nularray[next], anynul, 
                        &array[next], status);
                 break;
-            case (FTYPE_LONG):
+            case (TLONG):
                 ffgi4b(fptr, ntodo, incre, (long  *) buffer, status);
                 fffi4i1((long  *) buffer, ntodo, scale, zero, nulcheck, 
                        tnull, nulval, &nularray[next], anynul, 
                        &array[next], status);
                 break;
-            case (FTYPE_FLOAT):
+            case (TFLOAT):
                 ffgr4b(fptr, ntodo, incre, (float  *) buffer, status);
                 fffr4i1((float  *) buffer, ntodo, scale, zero, nulcheck, 
                        nulval, &nularray[next], anynul, 
                        &array[next], status);
                 break;
-            case (FTYPE_DOUBLE):
+            case (TDOUBLE):
                 ffgr8b(fptr, ntodo, incre, (double *) buffer, status);
                 fffr8i1((double *) buffer, ntodo, scale, zero, nulcheck, 
                           nulval, &nularray[next], anynul, 
                           &array[next], status);
                 break;
-            case (FTYPE_ASCII):
+            case (TSTRING):
                 if (ffgi1b(fptr, twidth, 1, cstring, status) <= 0)
                 {
 
@@ -3861,7 +4074,7 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
                    "Cannot read bytes from column %d which has format %s",
                     colnum, tform);
                 ffpmsg(message);
-                if (hdutype == HDU_ATABLE)
+                if (hdutype == ASCII_TBL)
                     return(*status = BAD_ATABLE_FORMAT);
                 else
                     return(*status = BAD_BTABLE_FORMAT);
@@ -3979,7 +4192,7 @@ int ffgcli( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     incre *= elemincre;   /* multiply incre to just get every nth pixel */
 
-    if (tcode == FTYPE_ASCII)    /* setup for ASCII tables */
+    if (tcode == TSTRING)    /* setup for ASCII tables */
     {
         nullen = strlen(snull);   /* length of the undefined pixel string */
         cform[0] = '%';           /* construct read format string */
@@ -3998,14 +4211,14 @@ int ffgcli( fitsfile *fptr,   /* I - FITS file pointer                       */
             tnull == NULL_UNDEFINED) /* if a null value is not defined,    */
             nulcheck = 0;            /* then do not check for null values. */
 
-    else if (tcode == FTYPE_ASCII && snull[0] == ASCII_NULL_UNDEFINED)
+    else if (tcode == TSTRING && snull[0] == ASCII_NULL_UNDEFINED)
          nulcheck = 0;
 
     /*----------------------------------------------------------------------*/
     /*  If FITS column and output data array have same datatype, then we do */
     /*  not need to use a temporary buffer to store intermediate datatype.  */
     /*----------------------------------------------------------------------*/
-    if (tcode == FTYPE_SHORT) /* Special Case:                        */
+    if (tcode == TSHORT) /* Special Case:                        */
     {                             /* no type convertion required, so read */
         maxelem = nelem;          /* data directly into output buffer.    */
 
@@ -4046,38 +4259,38 @@ int ffgcli( fitsfile *fptr,   /* I - FITS file pointer                       */
 
         switch (tcode) 
         {
-            case (FTYPE_SHORT):
+            case (TSHORT):
                 ffgi2b(fptr, ntodo, incre, &array[next], status);
                 if (convert)
                     fffi2i2(&array[next], ntodo, scale, zero, nulcheck, 
                            (short) tnull, nulval, &nularray[next], anynul, 
                            &array[next], status);
                 break;
-            case (FTYPE_BYTE):
+            case (TBYTE):
                 ffgi1b(fptr, ntodo, incre, (unsigned char *) buffer, status);
                 fffi1i2((unsigned char *) buffer, ntodo, scale, zero, nulcheck, 
                     (unsigned char) tnull, nulval, &nularray[next], anynul, 
                     &array[next], status);
                 break;
-            case (FTYPE_LONG):
+            case (TLONG):
                 ffgi4b(fptr, ntodo, incre, (long  *) buffer, status);
                 fffi4i2((long  *) buffer, ntodo, scale, zero, nulcheck, 
                        tnull, nulval, &nularray[next], anynul, 
                        &array[next], status);
                 break;
-            case (FTYPE_FLOAT):
+            case (TFLOAT):
                 ffgr4b(fptr, ntodo, incre, (float  *) buffer, status);
                 fffr4i2((float  *) buffer, ntodo, scale, zero, nulcheck, 
                        nulval, &nularray[next], anynul, 
                        &array[next], status);
                 break;
-            case (FTYPE_DOUBLE):
+            case (TDOUBLE):
                 ffgr8b(fptr, ntodo, incre, (double *) buffer, status);
                 fffr8i2((double *) buffer, ntodo, scale, zero, nulcheck, 
                           nulval, &nularray[next], anynul, 
                           &array[next], status);
                 break;
-            case (FTYPE_ASCII):
+            case (TSTRING):
                 if (ffgi1b(fptr, twidth, 1, cstring, status) <= 0)
                 {
                     /* read the ASCII column string successfully */
@@ -4141,7 +4354,7 @@ int ffgcli( fitsfile *fptr,   /* I - FITS file pointer                       */
                    "Cannot read numbers from column %d which has format %s",
                     colnum, tform);
                 ffpmsg(message);
-                if (hdutype == HDU_ATABLE)
+                if (hdutype == ASCII_TBL)
                     return(*status = BAD_ATABLE_FORMAT);
                 else
                     return(*status = BAD_BTABLE_FORMAT);
@@ -4259,7 +4472,7 @@ int ffgclj( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     incre *= elemincre;   /* multiply incre to just get every nth pixel */
 
-    if (tcode == FTYPE_ASCII)    /* setup for ASCII tables */
+    if (tcode == TSTRING)    /* setup for ASCII tables */
     {
         nullen = strlen(snull);   /* length of the undefined pixel string */
         cform[0] = '%';           /* construct read format string */
@@ -4278,14 +4491,14 @@ int ffgclj( fitsfile *fptr,   /* I - FITS file pointer                       */
             tnull == NULL_UNDEFINED) /* if a null value is not defined,    */
             nulcheck = 0;            /* then do not check for null values. */
 
-    else if (tcode == FTYPE_ASCII && snull[0] == ASCII_NULL_UNDEFINED)
+    else if (tcode == TSTRING && snull[0] == ASCII_NULL_UNDEFINED)
          nulcheck = 0;
 
     /*----------------------------------------------------------------------*/
     /*  If FITS column and output data array have same datatype, then we do */
     /*  not need to use a temporary buffer to store intermediate datatype.  */
     /*----------------------------------------------------------------------*/
-    if (tcode == FTYPE_LONG)  /* Special Case:                        */
+    if (tcode == TLONG)  /* Special Case:                        */
     {                             /* no type convertion required, so read */
         maxelem = nelem;          /* data directly into output buffer.    */
 
@@ -4326,38 +4539,38 @@ int ffgclj( fitsfile *fptr,   /* I - FITS file pointer                       */
 
         switch (tcode) 
         {
-            case (FTYPE_LONG):
+            case (TLONG):
                 ffgi4b(fptr, ntodo, incre, &array[next], status);
                 if (convert)
                     fffi4i4(&array[next], ntodo, scale, zero, nulcheck, 
                            tnull, nulval, &nularray[next], anynul, 
                            &array[next], status);
                 break;
-            case (FTYPE_BYTE):
+            case (TBYTE):
                 ffgi1b(fptr, ntodo, incre, (unsigned char *) buffer, status);
                 fffi1i4((unsigned char *) buffer, ntodo, scale, zero, nulcheck, 
                      (unsigned char) tnull, nulval, &nularray[next], anynul, 
                      &array[next], status);
                 break;
-            case (FTYPE_SHORT):
+            case (TSHORT):
                 ffgi2b(fptr, ntodo, incre, (short  *) buffer, status);
                 fffi2i4((short  *) buffer, ntodo, scale, zero, nulcheck, 
                       (short) tnull, nulval, &nularray[next], anynul, 
                       &array[next], status);
                 break;
-            case (FTYPE_FLOAT):
+            case (TFLOAT):
                 ffgr4b(fptr, ntodo, incre, (float  *) buffer, status);
                 fffr4i4((float  *) buffer, ntodo, scale, zero, nulcheck, 
                        nulval, &nularray[next], anynul, 
                        &array[next], status);
                 break;
-            case (FTYPE_DOUBLE):
+            case (TDOUBLE):
                 ffgr8b(fptr, ntodo, incre, (double *) buffer, status);
                 fffr8i4((double *) buffer, ntodo, scale, zero, nulcheck, 
                           nulval, &nularray[next], anynul, 
                           &array[next], status);
                 break;
-            case (FTYPE_ASCII):
+            case (TSTRING):
                 if (ffgi1b(fptr, twidth, 1, cstring, status) <= 0)
                 {
                     /* read the ASCII column string successfully */
@@ -4420,7 +4633,7 @@ int ffgclj( fitsfile *fptr,   /* I - FITS file pointer                       */
                    "Cannot read numbers from column %d which has format %s",
                     colnum, tform);
                 ffpmsg(message);
-                if (hdutype == HDU_ATABLE)
+                if (hdutype == ASCII_TBL)
                     return(*status = BAD_ATABLE_FORMAT);
                 else
                     return(*status = BAD_BTABLE_FORMAT);
@@ -4538,7 +4751,7 @@ int ffgcle( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     incre *= elemincre;   /* multiply incre to just get every nth pixel */
 
-    if (tcode == FTYPE_ASCII)    /* setup for ASCII tables */
+    if (tcode == TSTRING)    /* setup for ASCII tables */
     {
         nullen = strlen(snull);   /* length of the undefined pixel string */
         cform[0] = '%';           /* construct read format string */
@@ -4557,14 +4770,14 @@ int ffgcle( fitsfile *fptr,   /* I - FITS file pointer                       */
             tnull == NULL_UNDEFINED) /* if a null value is not defined,    */
             nulcheck = 0;            /* then do not check for null values. */
 
-    else if (tcode == FTYPE_ASCII && snull[0] == ASCII_NULL_UNDEFINED)
+    else if (tcode == TSTRING && snull[0] == ASCII_NULL_UNDEFINED)
          nulcheck = 0;
 
     /*----------------------------------------------------------------------*/
     /*  If FITS column and output data array have same datatype, then we do */
     /*  not need to use a temporary buffer to store intermediate datatype.  */
     /*----------------------------------------------------------------------*/
-    if (tcode == FTYPE_FLOAT) /* Special Case:                        */
+    if (tcode == TFLOAT) /* Special Case:                        */
     {                             /* no type convertion required, so read */
         maxelem = nelem;          /* data directly into output buffer.    */
 
@@ -4605,38 +4818,38 @@ int ffgcle( fitsfile *fptr,   /* I - FITS file pointer                       */
 
         switch (tcode) 
         {
-            case (FTYPE_FLOAT):
+            case (TFLOAT):
                 ffgr4b(fptr, ntodo, incre, &array[next], status);
                 if (convert)
                     fffr4r4(&array[next], ntodo, scale, zero, nulcheck, 
                            nulval, &nularray[next], anynul, 
                            &array[next], status);
                 break;
-            case (FTYPE_BYTE):
+            case (TBYTE):
                 ffgi1b(fptr, ntodo, incre, (unsigned char *) buffer, status);
                 fffi1r4((unsigned char *) buffer, ntodo, scale, zero, nulcheck, 
                     (unsigned char) tnull, nulval, &nularray[next], anynul, 
                      &array[next], status);
                 break;
-            case (FTYPE_SHORT):
+            case (TSHORT):
                 ffgi2b(fptr, ntodo, incre, (short  *) buffer, status);
                 fffi2r4((short  *) buffer, ntodo, scale, zero, nulcheck, 
                        (short) tnull, nulval, &nularray[next], anynul, 
                        &array[next], status);
                 break;
-            case (FTYPE_LONG):
+            case (TLONG):
                 ffgi4b(fptr, ntodo, incre, (long  *) buffer, status);
                 fffi4r4((long  *) buffer, ntodo, scale, zero, nulcheck, 
                        tnull, nulval, &nularray[next], anynul, 
                        &array[next], status);
                 break;
-            case (FTYPE_DOUBLE):
+            case (TDOUBLE):
                 ffgr8b(fptr, ntodo, incre, (double *) buffer, status);
                 fffr8r4((double *) buffer, ntodo, scale, zero, nulcheck, 
                           nulval, &nularray[next], anynul, 
                           &array[next], status);
                 break;
-            case (FTYPE_ASCII):
+            case (TSTRING):
                 if (ffgi1b(fptr, twidth, 1, cstring, status) <= 0)
                 {
                     /* read the ASCII column string successfully */
@@ -4700,7 +4913,7 @@ int ffgcle( fitsfile *fptr,   /* I - FITS file pointer                       */
                    "Cannot read numbers from column %d which has format %s",
                     colnum, tform);
                 ffpmsg(message);
-                if (hdutype == HDU_ATABLE)
+                if (hdutype == ASCII_TBL)
                     return(*status = BAD_ATABLE_FORMAT);
                 else
                     return(*status = BAD_BTABLE_FORMAT);
@@ -4818,7 +5031,7 @@ int ffgcld( fitsfile *fptr,   /* I - FITS file pointer                       */
 
     incre *= elemincre;   /* multiply incre to just get every nth pixel */
 
-    if (tcode == FTYPE_ASCII)    /* setup for ASCII tables */
+    if (tcode == TSTRING)    /* setup for ASCII tables */
     {
         nullen = strlen(snull);   /* length of the undefined pixel string */
         cform[0] = '%';           /* construct read format string */
@@ -4837,14 +5050,14 @@ int ffgcld( fitsfile *fptr,   /* I - FITS file pointer                       */
             tnull == NULL_UNDEFINED) /* if a null value is not defined,    */
             nulcheck = 0;            /* then do not check for null values. */
 
-    else if (tcode == FTYPE_ASCII && snull[0] == ASCII_NULL_UNDEFINED)
+    else if (tcode == TSTRING && snull[0] == ASCII_NULL_UNDEFINED)
          nulcheck = 0;
 
     /*----------------------------------------------------------------------*/
     /*  If FITS column and output data array have same datatype, then we do */
     /*  not need to use a temporary buffer to store intermediate datatype.  */
     /*----------------------------------------------------------------------*/
-    if (tcode == FTYPE_DOUBLE) /* Special Case:                        */
+    if (tcode == TDOUBLE) /* Special Case:                        */
     {                              /* no type convertion required, so read */
         maxelem = nelem;           /* data directly into output buffer.    */
 
@@ -4885,38 +5098,38 @@ int ffgcld( fitsfile *fptr,   /* I - FITS file pointer                       */
 
         switch (tcode) 
         {
-            case (FTYPE_DOUBLE):
+            case (TDOUBLE):
                 ffgr8b(fptr, ntodo, incre, &array[next], status);
                 if (convert)
                     fffr8r8(&array[next], ntodo, scale, zero, nulcheck, 
                            nulval, &nularray[next], anynul, 
                            &array[next], status);
                 break;
-            case (FTYPE_BYTE):
+            case (TBYTE):
                 ffgi1b(fptr, ntodo, incre, (unsigned char *) buffer, status);
                 fffi1r8((unsigned char *) buffer, ntodo, scale, zero, nulcheck, 
                    (unsigned char) tnull, nulval, &nularray[next], anynul, 
                    &array[next], status);
                 break;
-            case (FTYPE_SHORT):
+            case (TSHORT):
                 ffgi2b(fptr, ntodo, incre, (short  *) buffer, status);
                 fffi2r8((short  *) buffer, ntodo, scale, zero, nulcheck, 
                     (short) tnull, nulval, &nularray[next], anynul, 
                        &array[next], status);
                 break;
-            case (FTYPE_LONG):
+            case (TLONG):
                 ffgi4b(fptr, ntodo, incre, (long  *) buffer, status);
                 fffi4r8((long  *) buffer, ntodo, scale, zero, nulcheck, 
                        tnull, nulval, &nularray[next], anynul, 
                        &array[next], status);
                 break;
-            case (FTYPE_FLOAT):
+            case (TFLOAT):
                 ffgr4b(fptr, ntodo, incre, (float  *) buffer, status);
                 fffr4r8((float  *) buffer, ntodo, scale, zero, nulcheck, 
                           nulval, &nularray[next], anynul, 
                           &array[next], status);
                 break;
-            case (FTYPE_ASCII):
+            case (TSTRING):
                 if (ffgi1b(fptr, twidth, 1, cstring, status) <= 0)
                 {
                     /* read the ASCII column string successfully */
@@ -4980,7 +5193,7 @@ int ffgcld( fitsfile *fptr,   /* I - FITS file pointer                       */
                    "Cannot read numbers from column %d which has format %s",
                     colnum, tform);
                 ffpmsg(message);
-                if (hdutype == HDU_ATABLE)
+                if (hdutype == ASCII_TBL)
                     return(*status = BAD_ATABLE_FORMAT);
                 else
                     return(*status = BAD_BTABLE_FORMAT);
@@ -5075,7 +5288,7 @@ int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
 
     tcode = colptr->tdatatype;
 
-    if (abs(tcode) > FTYPE_BYTE)
+    if (abs(tcode) > TBYTE)
         return(*status = NOT_LOGICAL_COL); /* not correct datatype column */
 
     if (tcode > 0)
@@ -5084,7 +5297,7 @@ int ffgcx(  fitsfile *fptr,  /* I - FITS file pointer                       */
         /* N.B: REPEAT is the number of bytes, not number of bits */
         repeat = colptr->trepeat;
 
-        if (tcode == FTYPE_BIT)
+        if (tcode == TBIT)
             repeat = (repeat + 7) / 8;  /* convert from bits to bytes */
 
         if (fbyte > repeat)
@@ -5185,20 +5398,6 @@ int ffgdes(fitsfile *fptr, /* I - FITS file pointer                         */
         *length = descript[0];   /* 1st word of descriptor is the length  */
         *heapaddr = descript[1]; /* 2nd word of descriptor is the address */
      }
-    return(*status);
-}
-/*--------------------------------------------------------------------------*/
-int ffgtbs(fitsfile *fptr,        /* I - FITS file pointer                 */
-           long firstrow,         /* I - starting row (1 = first row)      */
-           long firstchar,        /* I - starting byte in row (1=first)    */
-           long nchars,           /* I - number of bytes to read           */
-           unsigned char *values, /* I - array of bytes to read            */
-           int *status)           /* IO - error status                     */
-/*
-  This is routine is identical to ffgtbb 
-*/
-{
-    ffgtbb(fptr, firstrow, firstchar, nchars, values, status);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
