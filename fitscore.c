@@ -1558,7 +1558,7 @@ void ffcmps(char *templt,   /* I - input template (may have wildcards)      */
   
 */
 {
-    int found, t1, s1;
+    int ii, found, t1, s1;
     char temp[FLEN_VALUE], col[FLEN_VALUE];
 
     *match = FALSE;
@@ -1566,9 +1566,18 @@ void ffcmps(char *templt,   /* I - input template (may have wildcards)      */
 
     strncpy(temp, templt, FLEN_VALUE); /* copy strings to work area */
     strncpy(col, colname, FLEN_VALUE);
-    temp[FLEN_VALUE -1] = '\0';  /* make sure strings are terminated */
-    col[FLEN_VALUE -1]  = '\0';
+    temp[FLEN_VALUE - 1] = '\0';  /* make sure strings are terminated */
+    col[FLEN_VALUE - 1]  = '\0';
 
+    /* truncate trailing non-significant blanks */
+    ii = strlen(temp) - 1;
+    while (ii >= 0 && temp[ii] == ' ')
+        temp[ii] = '\0';
+
+    ii = strlen(col) - 1;
+    while (ii >= 0 && col[ii] == ' ')
+        col[ii] = '\0';
+       
     if (!casesen)
     {             /* convert both strings to uppercase before comparison */
         ffupch(temp);
@@ -1588,10 +1597,15 @@ void ffcmps(char *templt,   /* I - input template (may have wildcards)      */
 
     while(1)  /* compare corresponding chars in each string */
     {
-      if (temp[t1] == '\0' || col[s1] == '\0')
+      if (temp[t1] == '\0' && col[s1] == '\0')
       { 
-         /* completely scanned one or both strings so they match */
+         /* completely scanned both strings so they match */
          *match = TRUE;
+         return;
+      }
+      else if (temp[t1] == '\0' || col[s1] == '\0')
+      { 
+         /* reached end of only one string so they don't match */
          return;
       }
 

@@ -159,7 +159,7 @@ int ffgnxk( fitsfile *fptr,     /* I - FITS file pointer              */
 {
     int casesn, match, exact;
     long ii, jj;
-    char keybuf[FLEN_CARD];
+    char keybuf[FLEN_CARD], keyname[FLEN_KEYWORD];
 
     card[0] = '\0';
     if (*status > 0)
@@ -170,16 +170,18 @@ int ffgnxk( fitsfile *fptr,     /* I - FITS file pointer              */
     /* get next card, and return with an error if hit end of header */
     while( ffgcrd(fptr, "*", keybuf, status) <= 0)
     {
+        strncpy(keyname, keybuf, 8);
+
         /* does keyword match any names in the include list? */
         for (ii = 0; ii < ninc; ii++)
         {
-            ffcmps(inclist[ii], keybuf, casesn, &match, &exact);
+            ffcmps(inclist[ii], keyname, casesn, &match, &exact);
             if (match)
             {
                 /* does keyword match any names in the exclusion list? */
                 for (jj = 0; jj < nexc; jj++)
                 {
-                    ffcmps(exclist[jj], keybuf, casesn, &match, &exact);
+                    ffcmps(exclist[jj], keyname, casesn, &match, &exact);
                     if (match)
                         break;
                 }
