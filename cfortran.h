@@ -18,6 +18,7 @@
       Nov 1997: Define MIN(A,B) as _cfMIN(A,B)
       Feb 1998: Let VMS see the NUM_ELEMS code. Lets programs treat
                 single strings as vectors with single elements
+      Jun 2000: Add linux/gcc environment detection
  *******/
 #define MIN(A,B) _cfMIN(A,B)
 
@@ -104,6 +105,9 @@ only C calling FORTRAN subroutines will work using K&R style.*/
 #if defined(WIN32)            /*  04/13/00 DM: Add these lines for NT with */
 #define PowerStationFortran   /*    PowerStationFortran and and Visual C++ */
 #define VISUAL_CPLUSPLUS
+#endif
+#if        defined(__GNUC__) && defined(linux) /* 06/21/00 PDW */
+#define       f2cFortran 
 #endif
 #if defined(macintosh)
 #define f2cFortran
