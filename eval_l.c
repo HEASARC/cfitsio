@@ -2355,7 +2355,7 @@ static int find_keywd(char *keyname, FFSTYPE *thelval )
 /* A hack for nonunix machines, which lack strcasecmp and strncasecmp */
 /* ================================================================== */
 
-int strcasecmp(char *s1, char *s2)
+int strcasecmp(const char *s1, const char *s2)
 {
    char c1, c2;
 
@@ -2371,7 +2371,7 @@ int strcasecmp(char *s1, char *s2)
    }
 }
 
-int strncasecmp(char *s1, char *s2, int n)
+int strncasecmp(const char *s1, const char *s2, size_t n)
 {
    char c1, c2;
 
