@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large May 2003\\}
+{\Large August 2003\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -3249,7 +3249,37 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
  
 \begin{description}
-\item[5 ] Test that the keyword name contains only legal characters (A-Z,0-9,
+\item[5 ]Split a string containing a list of names (typically file names or column
+   names) into individual name tokens by a sequence of calls to
+   fits\_split\_names.  The names in the list must be delimited by a comma
+   and/or spaces.  This routine ignores spaces and commas that occur
+   within parentheses, brackets, or curly brackets.  It also strips any
+   leading and trailing blanks from the returned name.
+
+   This routine is similar to the ANSI C 'strtok' function:
+
+   The first call to fits\_split\_names has a non-null input string.
+   It finds the first name in the string and terminates it by overwriting
+   the next character of the string with a null terminator and returns a
+   pointer to the name.  Each subsequent call, indicated by a NULL value
+   of the input string, returns the next name, searching from just past
+   the end of the previous name.  It returns NULL when no further names
+  are found.  \label{splitnames}
+\end{description}
+ 
+\begin{verbatim}
+   char *fits_split_names(char *namelist)
+\end{verbatim}
+   The following example shows how a string would be split into 3 names:
+ 
+\begin{verbatim}
+    myfile[1][bin (x,y)=4], file2.fits  file3.fits
+    ^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^  ^^^^^^^^^^
+        1st name             2nd name    3rd name
+\end{verbatim}
+ 
+\begin{description}
+\item[6 ] Test that the keyword name contains only legal characters (A-Z,0-9,
     hyphen, and underscore) or that the keyword record contains only legal
    printable ASCII characters  \label{fftkey} \label{fftrec}
 \end{description}
@@ -3261,7 +3291,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
  
 \begin{description}
-\item[6 ] Test whether the current header contains any NULL (ASCII 0) characters.
+\item[7 ] Test whether the current header contains any NULL (ASCII 0) characters.
     These characters are illegal in the header, but they will go undetected
     by most of the CFITSIO keyword header routines, because the null is
     interpreted as the normal end-of-string terminator.  This routine returns
@@ -3279,7 +3309,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
  
 \begin{description}
-\item[7 ] Parse a header keyword record and return the name of the keyword,
+\item[8 ] Parse a header keyword record and return the name of the keyword,
     and the length of the name.
     The keyword name normally occupies the first 8 characters of the
     record, except under the HIERARCH convention where the name can
@@ -3292,7 +3322,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
  
 \begin{description}
-\item[8 ] Parse a header keyword record, returning the value (as
+\item[9 ] Parse a header keyword record, returning the value (as
     a literal character string) and comment strings.  If the keyword has no
     value (columns 9-10 not equal to '= '), then a null value string is
     returned and the comment string is set equal to column 9 - 80 of the
@@ -3305,7 +3335,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
  
 \begin{description}
-\item[9 ] Construct an array indexed keyword name (ROOT + nnn).
+\item[10] Construct an array indexed keyword name (ROOT + nnn).
     This routine appends the sequence number to the root string to create
    a keyword name (e.g., 'NAXIS' + 2 = 'NAXIS2') \label{ffkeyn}
 \end{description}
@@ -3316,7 +3346,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
  
 \begin{description}
-\item[10]  Construct a sequence keyword name (n + ROOT).
+\item[11]  Construct a sequence keyword name (n + ROOT).
     This routine concatenates the sequence number to the front of the
    root string to create a keyword name (e.g., 1 + 'CTYP' = '1CTYP') \label{ffnkey}
 \end{description}
@@ -3327,7 +3357,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
  
 \begin{description}
-\item[11] Determine the datatype of a keyword value string. This routine
+\item[12] Determine the datatype of a keyword value string. This routine
     parses the keyword value string  to determine its datatype.
     Returns 'C', 'L', 'I', 'F' or 'X', for character string, logical,
    integer, floating point, or complex, respectively. \label{ffdtyp}
@@ -3339,7 +3369,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
  
 \begin{description}
-\item[12] Return the class of an input header record.  The record is classified
+\item[13] Return the class of an input header record.  The record is classified
     into one of the following categories (the class values are
     defined in fitsio.h).  Note that this is one of the few CFITSIO
    routines that does not return a status value. \label{ffgkcl}
@@ -3379,7 +3409,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
  
 \begin{description}
-\item[13] Parse the 'TFORM' binary table column format string.
+\item[14] Parse the 'TFORM' binary table column format string.
     This routine parses the input TFORM character string and returns the
     integer datatype code, the repeat count of the field, and, in the case
     of character string fields, the length of the unit string.  See Appendix
@@ -3394,7 +3424,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
  
 \begin{description}
-\item[14] Parse the 'TFORM' keyword value that defines the column format in
+\item[15] Parse the 'TFORM' keyword value that defines the column format in
     an ASCII table.  This routine parses the input TFORM character
     string and returns the datatype code, the width of the column,
     and (if it is a floating point column) the number of decimal places
@@ -3418,7 +3448,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
  
 \begin{description}
-\item[15] Calculate the starting column positions and total ASCII table width
+\item[16] Calculate the starting column positions and total ASCII table width
     based on the input array of ASCII table TFORM values.  The SPACE input
     parameter defines how many blank spaces to leave between each column
     (it is recommended to have one space between columns for better human
@@ -3432,7 +3462,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
  
 \begin{description}
-\item[16] Parse a template header record and return a formatted 80-character string
+\item[17] Parse a template header record and return a formatted 80-character string
     suitable for appending to (or deleting from) a FITS header file.
     This routine is useful for parsing lines from an ASCII template file
     and reformatting them into legal FITS header records.  The formatted
@@ -3538,7 +3568,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
  
 \begin{description}
-\item[17]  Parse the input string containing a list of rows or row ranges, and
+\item[18]  Parse the input string containing a list of rows or row ranges, and
      return integer arrays containing the first and last row in each
      range.  For example, if rowlist = "3-5, 6, 8-9" then it will
      return numranges = 3, rangemin = 3, 6, 8 and rangemax = 5, 6, 9.
@@ -3558,7 +3588,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
  
 \begin{description}
-\item[18]  Check that the Header fill bytes (if any) are all blank.  These are the bytes
+\item[19]  Check that the Header fill bytes (if any) are all blank.  These are the bytes
      that may follow END keyword and before the beginning of data unit,
      or the end of the HDU if there is no data unit.
    \label{ffchfl}
@@ -3569,7 +3599,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
  
 \begin{description}
-\item[19]  Check that the Data fill bytes (if any) are all zero (for IMAGE or
+\item[20]  Check that the Data fill bytes (if any) are all zero (for IMAGE or
      BINARY Table HDU) or all blanks (for ASCII table HDU).  These file
      bytes may be located after the last valid data byte in the HDU and
      before the physical end of the HDU.
@@ -4735,8 +4765,7 @@ name of the output file that the input file is to be copied to prior
 to opening, the HDU or extension specification, the filtering
 specifier, the binning specifier, and the column specifier.  Null
 strings will be returned for any components that are not present
-in the input file name.
- \label{ffiurl}
+ in the input file name. \label{ffiurl}
 \end{description}
  
 \begin{verbatim}
@@ -8597,6 +8626,7 @@ fits\_set\_imgnull    & \pageref{ffpnul} \\
 fits\_set\_noise\_bits  & \pageref{ffsetcomp} \\
 fits\_set\_tile\_dim  & \pageref{ffsetcomp} \\
 fits\_set\_tscale     & \pageref{fftscl} \\
+fits\_split\_names    & \pageref{splitnames} \\
 fits\_str2date        & \pageref{ffdt2s} \\
 fits\_str2time        & \pageref{ffdt2s} \\
 fits\_test\_expr      & \pageref{fftexp} \\
@@ -8613,9 +8643,9 @@ fits\_update\_key\_TYP    & \pageref{ffukyx} \\
 fits\_uppercase      & \pageref{ffupch} \\
 fits\_url\_type      & \pageref{ffurlt} \\
 fits\_verify\_chksum  & \pageref{ffvcks} \\
-fits\_verify\_group  & \pageref{ffgtvf} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_verify\_group  & \pageref{ffgtvf} \\
 fits\_world\_to\_pix & \pageref{ffxypx} \\
 fits\_write\_2d\_TYP   & \pageref{ffp2dx} \\
 fits\_write\_3d\_TYP   & \pageref{ffp3dx} \\
@@ -9041,6 +9071,7 @@ minute   - minute within hour (UTC) (0 - 59)
 month    - calendar month (UTC) (1 - 12)
 morekeys - space in the header for this many more keywords
 n_good_rows - number of rows evaluating to TRUE
+namelist - string containing a comma or space delimited list of names
 naxes    - size of each dimension in the FITS array
 naxis    - number of dimensions in the FITS array
 naxis1   - length of the X/first axis of the FITS array

@@ -1,5 +1,12 @@
 
                    Log of Changes Made to CFITSIO
+Version 2.480 -
+
+  New Routines:
+
+  - fits_split_names - splits an input string containing a comma or
+    space delimited list of names (typically file names or column
+    names) into individual name tokens.
 
 Version 2.470 - 18 August 2003
 

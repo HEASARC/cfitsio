@@ -5015,6 +5015,60 @@ int fits_get_token(char **ptr,
 
     return(slen);
 }
+/*---------------------------------------------------------------------------*/
+char *fits_split_names(
+   char *list)   /* I   - input list of names */
+{
+/*  
+   A sequence of calls to fits_split_names will split the input string
+   into name tokens.  The string typically contains a list of file or
+   column names.  The names must be delimited by a comma and/or spaces.
+   This routine ignores spaces and commas that occur within parentheses,
+   brackets, or curly brackets.  It also strips any leading and trailing
+   blanks from the returned name.
+
+   This routine is similar to the ANSI C 'strtok' function:
+
+   The first call to fits_split_names has a non-null input string.
+   It finds the first name in the string and terminates it by
+   overwriting the next character of the string with a '\0' and returns
+   a pointer to the name.  Each subsequent call, indicated by a NULL
+   value of the input string, returns the next name, searching from
+   just past the end of the previous name.  It returns NULL when no
+   further names are found.
+
+   The following line illustrates how a string would be split into 3 names:
+    myfile[1][bin (x,y)=4], file2.fits  file3.fits
+    ^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^  ^^^^^^^^^^
+      1st name               2nd name    3rd name
+
+*/
+    int depth = 0;
+    char *start;
+    static char *ptr;
+
+    if (list)  /* reset ptr if a string is given */
+        ptr = list;
+
+    while (*ptr == ' ')ptr++;  /* skip leading white space */
+
+    if (*ptr == '\0')return(0);  /* no remaining file names */
+
+    start = ptr;
+
+    while (*ptr != '\0') {
+       if ((*ptr == '[') || (*ptr == '(') || (*ptr == '{')) depth ++;
+       else if ((*ptr == '}') || (*ptr == ')') || (*ptr == ']')) depth --;
+       else if ((depth == 0) && (*ptr == ','  || *ptr == ' ')) {
+          *ptr = '\0';  /* terminate the filename here */
+          ptr++;  /* save pointer to start of next filename */
+          break;  
+       }
+       ptr++;
+    }
+    
+    return(start);
+}
 /*--------------------------------------------------------------------------*/
 int urltype2driver(char *urltype, int *driver)
 /*

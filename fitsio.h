@@ -488,6 +488,7 @@ extern "C" {
 
 /*----------------  FITS file URL parsing routines -------------*/
 int fits_get_token(char **ptr, char *delimiter, char *token, int *isanumber);
+char *fits_split_names(char *list);
 int ffiurl(char *url,  char *urltype, char *infile,
                     char *outfile, char *extspec, char *rowfilter,
                     char *binspec, char *colspec, int *status);
