@@ -98,7 +98,7 @@ extern unsigned long gMinStrLen;
             ((B=(char*)malloc(_cfMAX(D,gMinStrLen)+1))[D]='\0',memcpy(B,A,D), \
                kill_trailing(B,' '))
 #define  TTTTSTRV( A,B,D,E)  ( \
-            _(B,N)=_cfMAX(E,1), \
+            _(B,N)=E, \
             _(B,M)=_cfMAX(D,gMinStrLen)+1, \
             B=(char**)malloc(_(B,N)*sizeof(char*)), \
             B[0]=(char*)malloc(_(B,N)*_(B,M)), \
@@ -112,7 +112,8 @@ extern unsigned long gMinStrLen;
 static char **vindex(char **B, int elem_len, int nelem, char *B0)
 {
    int i;
-   for( i=0;i<nelem;i++ ) B[i] = B0+i*elem_len;
+   if( nelem )
+      for( i=0;i<nelem;i++ ) B[i] = B0+i*elem_len;
    return B;
 }
 
@@ -121,11 +122,12 @@ static char *c2fstrv2(char* cstr, char *fstr, int celem_len, int felem_len,
 {
    int i,j;
 
-   for (i=0; i<nelem; i++) {
-      for (j=0; j<felem_len && *cstr; j++) *fstr++ = *cstr++;
-      cstr += celem_len-j;
-      for (; j<felem_len; j++) *fstr++ = ' ';
-   }
+   if( nelem )
+      for (i=0; i<nelem; i++) {
+	 for (j=0; j<felem_len && *cstr; j++) *fstr++ = *cstr++;
+	 cstr += celem_len-j;
+	 for (; j<felem_len; j++) *fstr++ = ' ';
+      }
    return( fstr-felem_len*nelem );
 }
 
@@ -134,11 +136,12 @@ static char *f2cstrv2(char *fstr, char* cstr, int felem_len, int celem_len,
 {
    int i,j;
 
-   for (i=0; i<nelem; i++, cstr+=(celem_len-felem_len)) {
-      for (j=0; j<felem_len; j++) *cstr++ = *fstr++;
-      *cstr='\0';
-      kill_trailingn( cstr-felem_len, ' ', cstr );
-   }
+   if( nelem )
+      for (i=0; i<nelem; i++, cstr+=(celem_len-felem_len)) {
+	 for (j=0; j<felem_len; j++) *cstr++ = *fstr++;
+	 *cstr='\0';
+	 kill_trailingn( cstr-felem_len, ' ', cstr );
+      }
    return( cstr-celem_len*nelem );
 }
 

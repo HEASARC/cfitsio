@@ -381,8 +381,10 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,STRING,INT,INT,PSTRINGV,PINT,PINT,CF_
    if( *A6 )             /* Convert from CFITSIO to FITSIO definition */
        *A6 = *A6-*A3+1;
 
-   if ( ! *A7 && *A6 )   /*  Redefine number of array elements to  */
-      B5N = *A6;         /*  number found.                         */
+   if ( *A7 )       /*  Redefine number of array elements to  */
+      B5N = 0;      /*  number found, or none if error.       */
+   else
+      B5N = *A6;
 		      
    RCF(FITSUNIT,1)
    RCF(STRING,2)
