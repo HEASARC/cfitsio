@@ -74,7 +74,7 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
   Returns a formated string value, regardless of the datatype of the column
 */
 {
-    int tcode, hdutype, tstatus, scaled, intcol, dwidth;
+    int tcode, hdutype, tstatus, scaled, intcol, dwidth, nulwidth;
     long ii, jj;
     tcolumn *colptr;
     char message[FLEN_ERRMSG], *carray, keyname[FLEN_KEYWORD];
@@ -358,6 +358,7 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
       } 
 
       /* write the formated string for each value */
+      nulwidth = strlen(nulval);
       for (ii = 0; ii < nelem; ii++)
       {
            /* test for null value */
@@ -365,10 +366,10 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
                 (nultyp == 2 && nularray[ii]) )
            {
               *array[ii] = '\0';
-              if (dwidth < 5)
-                  strncat(array[ii], "NULL", dwidth);
+              if (dwidth < nulwidth)
+                  strncat(array[ii], nulval, dwidth);
               else
-                  sprintf(array[ii],"%*s",dwidth,"NULL");
+                  sprintf(array[ii],"%*s",dwidth,nulval);
            }
            else
            {
