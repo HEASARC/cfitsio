@@ -735,7 +735,8 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
       {
          tstatus = 0;
          ffkeyn("TDBIN", histData.hcolnum[ii], keyname, &tstatus);
-         if (ffgky(*fptr, TFLOAT, keyname, binsizein + ii, NULL, &tstatus) > 0)
+
+         if (ffgky(*fptr, TDOUBLE, keyname, binsizein + ii, NULL, &tstatus) > 0)
          {
 	    /* make at least 10 bins */
             binsizein[ii] = (amax[ii] - amin[ii]) / 10. ;
