@@ -141,10 +141,14 @@ int ffgics(fitsfile *fptr,    /* I - FITS file pointer           */
         {
             /* the latitudinal axis is given first, so swap them */
 
+/*
+ this case was removed on 12/9.  Apparently not correct.
+
             if ((*xinc / *yinc) < 0. )  
                 *rot = -90. - (*rot);
             else
-                *rot = 90. - (*rot);
+*/
+            *rot = 90. - (*rot);
 
             /* Empirical tests with ds9 show the y-axis sign must be negated */
             /* and the xinc and yinc values must NOT be swapped. */
