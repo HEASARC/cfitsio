@@ -1747,7 +1747,8 @@ wild card searches.
 -
         FTGKY[EDJLS](unit,keyword, > keyval,comment,status)
 -
->>7  Get a sequence of numbered keyword values 
+>7  Get a sequence of numbered keyword values.  These
+>   routines do not support wild card characters in the root name.
 -
         FTGKN[EDJLS](unit,keyroot,startno,max_keys, > keyvals,nfound,status)
 -

@@ -14,16 +14,16 @@
 \contentsline {subsubsection}{Notes about the shmem filetype:}{18}
 \contentsline {subsection}{\numberline {4.2.2}Base Filename}{18}
 \contentsline {subsection}{\numberline {4.2.3}Output File Name when Opening an Existing File}{19}
-\contentsline {subsection}{\numberline {4.2.4}Template File Name when Creating a New File}{20}
+\contentsline {subsection}{\numberline {4.2.4}Template File Name when Creating a New File}{21}
 \contentsline {subsubsection}{Detailed Template Line Format}{21}
 \contentsline {subsubsection}{Template Parser Directives}{22}
-\contentsline {subsubsection}{Formal Template Syntax}{22}
-\contentsline {subsubsection}{Auto-indexing of Keywords}{23}
+\contentsline {subsubsection}{Formal Template Syntax}{23}
+\contentsline {subsubsection}{Auto-indexing of Keywords}{24}
 \contentsline {subsubsection}{Errors}{24}
 \contentsline {subsection}{\numberline {4.2.5}HDU Location Specification}{25}
-\contentsline {subsection}{\numberline {4.2.6}Column and Keyword Filtering Specification}{25}
-\contentsline {subsection}{\numberline {4.2.7}Row Filtering Specification}{26}
-\contentsline {subsection}{\numberline {4.2.8}Binning or Histogramming Specification}{33}
+\contentsline {subsection}{\numberline {4.2.6}Column and Keyword Filtering Specification}{26}
+\contentsline {subsection}{\numberline {4.2.7}Row Filtering Specification}{27}
+\contentsline {subsection}{\numberline {4.2.8}Binning or Histogramming Specification}{34}
 \contentsline {chapter}{\numberline {5}CFITSIO Conventions and Guidelines }{37}
 \contentsline {section}{\numberline {5.1}CFITSIO Definitions}{37}
 \contentsline {section}{\numberline {5.2}CFITSIO Size Limitations}{39}

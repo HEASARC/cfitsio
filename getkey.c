@@ -178,7 +178,7 @@ int ffgnxk( fitsfile *fptr,     /* I - FITS file pointer              */
     Wild card characters may be used in the name lists ('*', '?' and '#').
 */
 {
-    int casesn, match, exact;
+    int casesn, match, exact, namelen;
     long ii, jj;
     char keybuf[FLEN_CARD], keyname[FLEN_KEYWORD];
 
@@ -191,8 +191,8 @@ int ffgnxk( fitsfile *fptr,     /* I - FITS file pointer              */
     /* get next card, and return with an error if hit end of header */
     while( ffgcrd(fptr, "*", keybuf, status) <= 0)
     {
-        keyname[0] = '\0';
-        strncat(keyname, keybuf, 8);
+        ffgknm(keybuf, keyname, &namelen, status); /* get the keyword name */
+        
         /* does keyword match any names in the include list? */
         for (ii = 0; ii < ninc; ii++)
         {
@@ -408,60 +408,161 @@ int ffgcrd( fitsfile *fptr,     /* I - FITS file pointer        */
   not automatically resume from the top of the header.
 */
 {
-    int nkeys, nextkey, ntodo, namelen, ii, jj, wild, match, exact;
-    char keyname[10], ctemp;
+    int nkeys, nextkey, ntodo, namelen, cardlen;
+    int ii = 0, jj, kk, wild, match, exact, hier = 0;
+    char keyname[FLEN_KEYWORD], cardname[FLEN_KEYWORD];
+    char *ptr1, *ptr2;
 
     if (*status > 0)
         return(*status);
 
+    *keyname = '\0';
+    
+    while (name[ii] == ' ')  /* skip leading blanks in name */
+        ii++;
+
+    strncat(keyname, &name[ii], FLEN_KEYWORD - 1);
+
+    namelen = strlen(keyname);
+
+    while (namelen > 0 && keyname[namelen - 1] == ' ')
+         namelen--;            /* ignore trailing blanks in name */
+
+    keyname[namelen] = '\0';  /* terminate the name */
+
+    for (ii=0; ii < namelen; ii++)       
+        keyname[ii] = toupper(keyname[ii]);    /*  make upper case  */
+
+    if (FSTRNCMP("HIERARCH", keyname, 8) == 0)
+    {
+        if (namelen == 8)
+        {
+            /* special case: just looking for any HIERARCH keyword */
+            hier = 1;
+        }
+        else
+        {
+            /* ignore the leading HIERARCH and look for the 'real' name */
+            /* starting with first non-blank character following HIERARCH */
+            ptr1 = keyname;
+            ptr2 = &keyname[8];
+
+            while(*ptr2 == ' ')
+                ptr2++;
+
+            namelen = 0;
+            while(*ptr2)
+            {
+                *ptr1 = *ptr2;
+                 ptr1++;
+                 ptr2++;
+                 namelen++;
+            }
+            *ptr1 = '\0';
+        }
+    }
+
     /* does input name contain wild card chars?  ('?',  '*', or '#') */
-    if (strchr(name,'?') || strchr(name,'*') || strchr(name,'#'))
+    /* wild cards are currently not supported with HIERARCH keywords */
+    if (namelen < 9 && 
+       (strchr(keyname,'?') || strchr(keyname,'*') || strchr(keyname,'#')) )
         wild = 1;
     else
         wild = 0;
-
-    strncpy(keyname, name, 8);
-    keyname[8] = '\0';  /* make sure string is terminated */
-
-    namelen=strlen(keyname);
-
-    for (ii=0; ii < namelen; ii++)       
-        keyname[ii] = toupper(name[ii]);    /*  make sure upper case  */
-
-    for (ii=namelen; ii < 8; ii++)
-        keyname[ii] = ' '; /*  pad name with blanks to 8 characters  */
 
     ffghps(fptr, &nkeys, &nextkey, status); /* get no. keywords and position */
 
     ntodo = nkeys - nextkey + 1;  /* first, read from next keyword to end */
     for (jj=0; jj < 2; jj++)
     {
-        for (ii = 0; ii < ntodo; ii++)
+      for (kk = 0; kk < ntodo; kk++)
+      {
+        ffgnky(fptr, card, status);     /* get next keyword */
+        if (hier)
         {
-            ffgnky(fptr, card, status);     /*  get next keyword */
-            if (wild)
-            {
-                ctemp = card[8];   /* save 9th char in temporary variable */
-                card[8] = '\0';    /* terminate the keyword name */
-                ffcmps(keyname, card, 1, &match, &exact);
-                if (match)
-                {
-                    card[8] = ctemp;  /* restore the 9th char */
-                    return(*status); /* found a matching keyword */
-                }
-            }
-            else if (FSTRNCMP(keyname, card, 8) == 0)
-                    return(*status);  /* found the matching keyword */
+           if (FSTRNCMP("HIERARCH", card, 8) == 0)
+                return(*status);  /* found a HIERARCH keyword */
         }
+        else
+        {
+          ffgknm(card, cardname, &cardlen, status); /* get the keyword name */
 
-        if (wild || jj == 1)
+          if (cardlen >= namelen)  /* can't match if card < name */
+          { 
+            /* if there are no wild cards, lengths must be the same */
+            if (!( !wild && cardlen != namelen) )
+            {
+              for (ii=0; ii < cardlen; ii++)       
+                cardname[ii] = toupper(cardname[ii]); /* make upper case */
+
+              if (wild)
+              {
+                ffcmps(keyname, cardname, 1, &match, &exact);
+                if (match)
+                    return(*status); /* found a matching keyword */
+              }
+              else if (FSTRNCMP(keyname, cardname, namelen) == 0)
+                return(*status);  /* found the matching keyword */
+            }
+          }
+        }
+      }
+
+      if (wild || jj == 1)
             break;  /* stop at end of header if template contains wildcards */
 
-        ffmaky(fptr, 1, status);  /* reset pointer to beginning of header */
-        ntodo = nextkey - 1;      /* number of keyword to read */ 
+      ffmaky(fptr, 1, status);  /* reset pointer to beginning of header */
+      ntodo = nextkey - 1;      /* number of keyword to read */ 
     }
 
     return(*status = KEY_NO_EXIST);  /* couldn't find the keyword */
+}
+/*--------------------------------------------------------------------------*/
+int ffgknm( char *card,         /* I - keyword card                   */
+            char *name,         /* O - name of the keyword            */
+            int *length,        /* O - length of the keyword name     */
+            int  *status)       /* IO - error status                  */
+{
+    char *ptr1, *ptr2;
+    int ii;
+
+    *name = '\0';
+    *length = 0;
+
+    /* support for ESO HIERARCH keywords; find the '=' */
+    if (FSTRNCMP(card, "HIERARCH ", 9) == 0)
+    {
+        ptr2 = strchr(card, '=');
+
+        if (!ptr2)   /* no value indicator ??? */
+        {
+            /* this probably indicates an error, so just return FITS name */
+            strcat(name, "HIERARCH");
+            *length = 8;
+            return(*status);
+        }
+
+        /* find the start and end of the HIERARCH name */
+        ptr1 = &card[9];
+        while (*ptr1 == ' ')   /* skip spaces */
+            ptr1++;
+
+        strncat(name, ptr1, ptr2 - ptr1);
+        ii = ptr2 - ptr1;
+    }
+    else
+    {
+        strncat(name, card, 8);
+        ii = 8;
+    }
+
+    while (ii > 0 && name[ii - 1] == ' ')  /* remove trailing spaces */
+        ii--;
+
+    name[ii] = '\0';
+    *length = ii;
+
+    return(*status);
 }
 /*--------------------------------------------------------------------------*/
 int ffgunt( fitsfile *fptr,     /* I - FITS file pointer         */
@@ -862,7 +963,7 @@ int ffgkyn( fitsfile *fptr,      /* I - FITS file pointer             */
 */
 {
     char card[FLEN_CARD], sbuff[FLEN_CARD];
-    int ii;
+    int namelen;
 
     keyname[0] = '\0';
     value[0] = '\0';
@@ -875,21 +976,12 @@ int ffgkyn( fitsfile *fptr,      /* I - FITS file pointer             */
     if (ffgrec(fptr, nkey, card, status) > 0 )  /* get the 80-byte card */
         return(*status);
 
-    strncpy(keyname,card,8);  /* first 8 characters = the keyword name */
-    keyname[8] = '\0';
-
-    for (ii=7; ii >= 0; ii--)  /* replace trailing blanks with nulls */
-    {
-        if (keyname[ii] == ' ')
-            keyname[ii] = '\0';
-        else
-            break;
-    }
+    ffgknm(card, keyname, &namelen, status); /* get the keyword name */
 
     if (ffpsvc(card, value, comm, status) > 0)   /* parse value and comment */
         return(*status);
 
-    if (fftkey(keyname, status) > 0)  /* test keyword name; catches no END */
+    if (fftrec(keyname, status) > 0)  /* test keyword name; catches no END */
     {
      sprintf(sbuff,"Name of keyword no. %d contains illegal character(s): %s",
               nkey, keyname);

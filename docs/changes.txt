@@ -1,5 +1,29 @@
                Log of Changes Made to CFITSIO
 
+   - modified the usage of the output filename specifier so that it,
+       a) gives the name of the binned image, if specified, else,
+       b) gives the name of column filtered and/or row filtered table, if 
+          specified, else
+       c) is the name for a local copy of the ftp or http file, else,
+       d) is the name for the local uncompressed version of the compressed
+          FITS file, else,
+       e) the output filename is ignored.
+
+   - fixed minor bug in ffcmps, when comparing 2 strings while using
+     a '*' wild card character.
+
+   - fixed bug in ftgthd that affected cases where the template string
+     started with a minus sign and contained 2 tokens (to rename a
+     keyword).
+
+   - added support for the HIERARCH keyword convention for reading 
+     and writing keywords longer than 8 characters or that contain
+     ASCII characters not allowed in normal FITS keywords.
+
+   - modified the extended filename syntax to support opening images
+     that are contained in a single cell of a binary table with syntax:
+     filename.fits[extname; col_name(row_expression)]
+
 Version 2.026 - 23 Dec 1998
 
    - modified the group parser to:

@@ -1016,9 +1016,9 @@ before it is opened and passed to the application program.  This
 happens by default when opening a network FTP or HTTP-type file, when
 reading a compressed FITS file on a local disk, when reading from the
 stdin stream, or when a column filter, row filter, or binning specifier
-is included as part of the input file specification.  The local machine
-must then be able to hold a copy of the whole FITS file in memory,
-otherwise CFITSIO will exit with an error.  If this is a problem (e.g.,
+is included as part of the input file specification.  If there is
+not enough memory to create the file copy, then CFITSIO will exit
+with an error.   If this is a problem (e.g.,
 on machines with a small amount of memory, or when reading very large
 files) then the output file specifier may be used to give the name of a
 local disk file that CFITSIO will create and use instead of trying to
@@ -1034,7 +1034,35 @@ then CFITSIO will uncompress `file1.fits.gz' into the local disk file
 the output file, so it will still exist after the application program
 exits.
 
-The output file specifier is also useful when reading FTP or HTTP-type
+In some cases, several different temporary FITS files will be created
+in sequence, for instance, if one opens a remote file using FTP, then
+filters rows in a binary table extension, then create an image by
+binning a pair of columns.  In this case, the remote file will be
+copied to a temporary local file, then a second temporary file will be
+created containing the filtered rows of the table, and finally a third
+temporary file containing the binned image will be created.  In cases
+like this where multiple files are created, the outfile specifier will
+be interpreted the name of the final file as follows, in descending
+priority:
+
+\begin{itemize}
+\item
+as the name of the final image file if an image within a single binary
+table cell is opened or if an image is created by binning a table column.
+\item
+as the name of the file containing the filtered table if a column filter
+and/or a row filter are specified.
+\item
+as the name of the local copy of the remote FTP or HTTP file.
+\item
+as the name of the uncompressed version of the FITS file, if a
+compressed FITS file on local disk has been opened.
+\item
+otherwise, the output filename is ignored.
+\end{itemize}
+
+
+The output file specifier is useful when reading FTP or HTTP-type
 FITS files since it can be used to create a local disk copy of the file
 that can be reused in the future.  If the output file name = `*' then a
 local file with the same name as the network file will be created.
@@ -1325,22 +1353,41 @@ the colFilter, rowFilter, or binSpec specifiers are present, because
 the primary array is not a valid HDU for these operations. The HDU may
 be specified either by absolute position number, starting with 0 for
 the primary array, or by reference to the HDU name, and optionally, the
-version number and the HDU type of the desired extension.  The absolute
-position is specified either by enclosed the number in square brackets
-(e.g., `[1]' = the first extension following the primary array) or by
-preceded the number with a plus sign (`+1').  To specify the HDU by
-name, give the name of the desired HDU (the value of the EXTNAME or
-HDUNAME keyword) and optionally the extension version number (value of
-the EXTVER keyword) and the extension type (value of the XTENSION
-keyword: IMAGE, ASCII or TABLE, or BINTABLE), separated by commas and
-all enclosed in square brackets.  If the value of EXTVER and XTENSION
-are not specified, then the first extension with the correct value of
-EXTNAME is opened. The extension name and type are not case sensitive,
-and the extension type may be abbreviated to a single letter (e.g., I =
-IMAGE extension or primary array, A or T = ASCII table extension, and B
-= binary table BINTABLE extension).   If the HDU location specifier is
-equal to `[PRIMARY]' or `[P]', then the primary array (the first HDU)
-will be opened.  Examples:
+version number and the HDU type of the desired extension.  The location
+of an image within a single cell of a binary table may also be
+specified, as described below.
+
+The absolute position of the extension is specified either by enclosed
+the number in square brackets (e.g., `[1]' = the first extension
+following the primary array) or by preceded the number with a plus sign
+(`+1').  To specify the HDU by name, give the name of the desired HDU
+(the value of the EXTNAME or HDUNAME keyword) and optionally the
+extension version number (value of the EXTVER keyword) and the
+extension type (value of the XTENSION keyword: IMAGE, ASCII or TABLE,
+or BINTABLE), separated by commas and all enclosed in square brackets.
+If the value of EXTVER and XTENSION are not specified, then the first
+extension with the correct value of EXTNAME is opened. The extension
+name and type are not case sensitive, and the extension type may be
+abbreviated to a single letter (e.g., I = IMAGE extension or primary
+array, A or T = ASCII table extension, and B = binary table BINTABLE
+extension).   If the HDU location specifier is equal to `[PRIMARY]' or
+`[P]', then the primary array (the first HDU) will be opened.
+
+Because an entire N-dimensional image can be stored in a single cell of
+a binary table (i.e. each row of the column contains a different
+image), the column name and the row number of the image to be opened
+may be given following the HDU specifier, separated by a semi-colon as
+shown in the following examples. In this case, the image is copied from
+the table cell into a temporary primary array before it is opened.  The
+application program then just sees the primary array, without any
+extensions.  The particular row to be opened may be specified either by
+giving an explicit  integer row number (starting with 1), or by
+specifying a boolean expression which evaluates to TRUE for the desired
+row.  The first row that satisfies the expression will be used.  The
+row selection expression has the same syntax as the Row Filter
+Specifier, described in section 4.2.7.
+
+ Examples:
  
 \begin{verbatim}
    myfile.fits[3] - open the 3rd HDU following the primary array
@@ -1348,6 +1395,11 @@ will be opened.  Examples:
    myfile.fits[EVENTS] - open the extension that has EXTNAME = 'EVENTS'
    myfile.fits[EVENTS, 2]  - same as above, but also requires EXTVER = 2
    myfile.fits[events,2,b] - same, but also requires XTENSION = 'BINTABLE'
+   myfile.fits[3; images(17)] - opens the image in row 17 of the 'images'
+                                column in the 3rd extension of the file.
+   myfile.fits[3; images(exposure > 100)] - as above, but opens the image
+                   in the first row that has an 'exposure' column value
+                   greater than 100.
 \end{verbatim}
 
  
@@ -6088,7 +6140,8 @@ Wild card characters may be used when specifying the name of the keyword to be r
     (nstart) must be greater than 0.   If the value of any of
     the keywords is not defined (i.e., the value field is blank) then an
     error status = VALUE\_UNDEFINED will be returned and the input
-   value for the undefined keyword(s) will not be changed. \label{ffgknx}
+    value for the undefined keyword(s) will not be changed.  These
+   routines do not support wild card characters in the root name.\label{ffgknx}
 \end{description}
  
 \begin{verbatim}

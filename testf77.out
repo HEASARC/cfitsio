@@ -1,4 +1,4 @@
- FITSIO TESTPROG, v  2.026
+ FITSIO TESTPROG, v  2.027
   
  Try opening then closing a nonexistent file: 
    ftopen iunit, status (expect an error) =  15 104

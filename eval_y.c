@@ -2262,6 +2262,7 @@ static int New_GTI( char *fname, int Node1, char *start, char *stop )
    char extname[100];
    long nrows;
    double timeZeroI[2], timeZeroF[2], dt, timeSpan;
+   char xcol[20], xexpr[20];
 
    if( Node1==-99 ) {
       type = ffbuildcolumn( "TIME", &colnum );
@@ -2310,7 +2311,7 @@ static int New_GTI( char *fname, int Node1, char *start, char *stop )
 	 fname[i] = '\0';
 	 fname++;
 	 ffexts( fname, &hdunum, extname, &extvers, &movetotype,
-		 &gParse.status );
+		 xcol, xexpr, &gParse.status );
          if( *extname ) {
 	    ffmnhd( fptr, movetotype, extname, extvers, &gParse.status );
 	    ffghdn( fptr, &hdunum );

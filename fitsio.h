@@ -9,7 +9,7 @@
 /* global variables */
  
 #define FLEN_FILENAME 257  /* max length of a filename  */
-#define FLEN_KEYWORD    9  /* max length of a keyword */
+#define FLEN_KEYWORD   72  /* max length of a keyword (HIERARCH convention) */
 #define FLEN_CARD      81  /* length of a FITS header card */
 #define FLEN_VALUE     71  /* max length of a keyword value string */
 #define FLEN_COMMENT   73  /* max length of a keyword comment string */
@@ -342,8 +342,8 @@ int ffiurl(char *url,  char *urltype, char *infile,
 int ffrtnm(char *url, char *rootname, int *status);
 int ffourl(char *url, char *urltype, char *outfile, char *tmplfile,
             int *status);
-int ffexts(char *extspec, int *extnum,  char *extname,
-                       int *extvers, int *hdutype, int *status);
+int ffexts(char *extspec, int *extnum,  char *extname, int *extvers,
+          int *hdutype, char *colname, char *rowexpress, int *status);
 int ffextn(char *url, int *extension_num, int *status);
 int ffurlt(fitsfile *fptr, char *urlType, int *status);
 int ffbins(char *binspec, int *imagetype, int *haxis, 
@@ -389,6 +389,7 @@ int ffkeyn(char *keyroot, int value, char *keyname, int *status);
 int ffnkey(int value, char *keyroot, char *keyname, int *status);
 int ffdtyp(char *cval, char *dtype, int *status);
 int ffpsvc(char *card, char *value, char *comm, int *status);
+int ffgknm(char *card, char *name, int *length, int *status);
 int ffgthd(char *tmplt, char *card, int *hdtype, int *status);
 int ffasfm(char *tform, int *datacode, long *width, int *decim, int *status);
 int ffbnfm(char *tform, int *datacode, long *repeat, long *width, int *status);
@@ -1180,7 +1181,7 @@ int fffrow( fitsfile *infptr, char *expr,
 	    long firstrow, long nrows,
             long *n_good_rows, char *row_status, int *status);
 
-int ffffrw( fitsfile *fptr, char *expr, long *rownum, int *status );
+int ffffrw( fitsfile *fptr, char *expr, long *rownum, int *status);
 
 int fffrwc( fitsfile *fptr, char *expr, char *timeCol,    
             char *parCol, char *valCol, long ntimes,      

@@ -24,8 +24,9 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = 2.026;   /* 23 Dec 1998 */
+      *version = 2.027; /* 12 jan 1999 */
 
+ /*   *version = 2.026;  23 Dec 1998 */
  /*   *version = 2.025;   1 Dec 1998 */
  /*   *version = 2.024;   9 Nov 1998 */
  /*   *version = 2.023;   1 Nov 1998 first full release of V2.0 */
@@ -636,12 +637,14 @@ int fftkey(char *keyword,    /* I -  keyword name */
 /*
   Test that the keyword name conforms to the FITS standard.  Must contain
   only capital letters, digits, minus or underscore chars.  Trailing spaces
-  are allowed.
+  are allowed.  If the input status value is less than zero, then the test
+  is modified so that upper or lower case letters are allowed, and no 
+  error messages are printed if the keyword is not legal.
 */
 {
     size_t maxchr, ii;
     int spaces=0;
-    char msg[81];
+    char msg[81], testchar;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
@@ -652,16 +655,26 @@ int fftkey(char *keyword,    /* I -  keyword name */
 
     for (ii = 0; ii < maxchr; ii++)
     {
-        if ( (keyword[ii] >= 'A' && keyword[ii] <= 'Z') ||
-             (keyword[ii] >= '0' && keyword[ii] <= '9') ||
-              keyword[ii] == '-' || keyword[ii] == '_'   )
+        if (*status == 0)
+            testchar = keyword[ii];
+        else
+            testchar = toupper(keyword[ii]);
+
+        if ( (testchar >= 'A' && testchar <= 'Z') ||
+             (testchar >= '0' && testchar <= '9') ||
+              testchar == '-' || testchar == '_'   )
               {
                 if (spaces)
                 {
-                 sprintf(msg, "Keyword name contains embedded space(s): %.8s",
+                  if (*status == 0)
+                  {
+                     /* don't print error message if status < 0  */
+                    sprintf(msg,
+                       "Keyword name contains embedded space(s): %.8s",
                         keyword);
-                    ffpmsg(msg);
-                    return(*status = BAD_KEYCHAR);        
+                     ffpmsg(msg);
+                  }
+                  return(*status = BAD_KEYCHAR);        
                 }
               }
         else if (keyword[ii] == ' ')
@@ -669,6 +682,9 @@ int fftkey(char *keyword,    /* I -  keyword name */
 
         else     
         {
+          if (*status == 0)
+          {
+            /* don't print error message if status < 0  */
             sprintf(msg, "Character %d in this keyword is illegal: %.8s",
                     ii+1, keyword);
             ffpmsg(msg);
@@ -677,10 +693,10 @@ int fftkey(char *keyword,    /* I -  keyword name */
             if (keyword[ii] == 0) 
                 ffpmsg(" (This a NULL (0) character).");                
             else if (keyword[ii] == 9)
-                ffpmsg(" (This an ASCII TAB (9) character).");                
+                ffpmsg(" (This an ASCII TAB (9) character).");   
+          }             
 
-            return(*status = BAD_KEYCHAR);        
-
+          return(*status = BAD_KEYCHAR);        
         }                
     }
     return(*status);        
@@ -732,54 +748,142 @@ void ffupch(char *string)
     return;
 }
 /*--------------------------------------------------------------------------*/
-void ffmkky(char *keyname,   /* I - keyword name    */
+int ffmkky(char *keyname,   /* I - keyword name    */
             char *value,     /* I - keyword value   */
             char *comm,      /* I - keyword comment */
-            char *card)      /* O - constructed keyword card */
+            char *card,      /* O - constructed keyword card */
+            int  *status)    /* IO - status value   */
 /*
   Make a complete FITS 80-byte keyword card from the input name, value and
   comment strings. Output card is null terminated without any trailing blanks.
 */
 {
-    size_t len, ii;
+    size_t namelen, len, ii;
+    char tmpname[FLEN_KEYWORD], *cptr;
+    int tstatus = -1;
 
-    strncpy(card, keyname, 8);   /* copy keyword name to buffer */
-    card[8] = '\0'; 
+    if (*status > 0)
+        return(*status);
+
+    *tmpname = '\0';
+    *card = '\0';
+
+    cptr = keyname;
+    while(*cptr == ' ')  /* skip leading blanks in the name */
+        cptr++;
+
+    strncat(tmpname, cptr, FLEN_KEYWORD - 1);
+
+    namelen = strlen(tmpname);
+    if (namelen)
+    {
+        cptr = tmpname + namelen - 1;
+
+        while(*cptr == ' ')  /* skip trailing blanks */
+        {
+            *cptr = '\0';
+            cptr--;
+        }
+
+        namelen = cptr - tmpname + 1;
+    }
+    
+    if (namelen <= 8  && (fftkey(keyname, &tstatus) <= 0) )
+    {
+        /* a normal FITS keyword */
+        strcat(card, tmpname);   /* copy keyword name to buffer */
    
-    len = strlen(card);
-    for (ii = len; ii < 8; ii++)
-        card[ii] = ' ';          /* pad keyword name with spaces */
+        for (ii = namelen; ii < 8; ii++)
+            card[ii] = ' ';      /* pad keyword name with spaces */
 
-    card[8] = '=';              /* append '= ' in columns 9-10 */
-    card[9] = ' ';
-    card[10] = '\0';                 /* terminate the partial string */
+        card[8]  = '=';          /* append '= ' in columns 9-10 */
+        card[9]  = ' ';
+        card[10] = '\0';        /* terminate the partial string */
+        namelen = 10;
+    }
+    else
+    {
+        /* use the ESO HIERARCH convention for longer keyword names */
+
+        /* check that the name does not contain an '=' (equals sign) */
+        if (strchr(tmpname, '=') )
+        {
+            ffpmsg("Illegal keyword name; contains an equals sign (=)");
+            ffpmsg(tmpname);
+            return(*status = BAD_KEYCHAR);
+        }
+
+        /* Don't repeat HIERARCH if the keyword already contains it */
+        if (FSTRNCMP(tmpname, "HIERARCH ", 9) && 
+            FSTRNCMP(tmpname, "hierarch ", 9))
+            strcat(card, "HIERARCH ");
+        else
+            namelen -= 9;  /* deleted the string 'HIERARCH ' */
+
+        strcat(card, tmpname);
+        strcat(card, " = ");
+        namelen += 12;
+    }
 
     len = strlen(value);        
     if (len > 0)
     {
         if (value[0] == '\'')  /* is this a quoted string value? */
         {
-            strncat(card, value, 70);       /* append the value string */
-            len = strlen(card);
+            if (namelen > 77)
+            {
+                ffpmsg(
+               "The following keyword + value is too long to fit on a card:");
+                ffpmsg(keyname);
+                ffpmsg(value);
+                return(*status = BAD_KEYCHAR);
+            }
+
+            strncat(card, value, 80 - namelen); /* append the value string */
+            len = minvalue(80, namelen + len);
+
+            /* restore the closing quote if it got truncated */
+            if (len == 80)
+            {
+                   card[79] = '\'';
+            }
 
             if (comm)
             {
               if (comm[0] != 0)
               {
-                for (ii = len; ii < 30; ii++)
-                  strcat(card, " "); /* add spaces so field ends in col 30 */
+                if (len < 30)
+                {
+                  for (ii = len; ii < 30; ii++)
+                    card[ii] = ' '; /* fill with spaces to col 30 */
+
+                  card[30] = '\0';
+                  len = 30;
+                }
               }
             }
         }
         else
         {
-            for (ii = len; ii < 20; ii++)
-                strcat(card, " ");  /* add spaces so field ends in col 30 */
+            if (namelen + len > 80)
+            {
+                ffpmsg(
+               "The following keyword + value is too long to fit on a card:");
+                ffpmsg(keyname);
+                ffpmsg(value);
+                return(*status = BAD_KEYCHAR);
+            }
+            else if (namelen + len < 30)
+            {
+                /* add spaces so field ends at least in col 30 */
+                strncat(card, "                    ", 30 - (namelen + len));
+            }
 
-            strncat(card, value, 70);       /* append the value string */
+            strncat(card, value, 80 - namelen); /* append the value string */
+            len = minvalue(80, namelen + len);
+            len = maxvalue(30, len);
         }
 
-        len = strlen(card);
         if (comm)
         {
           if ((len < 77) && ( strlen(comm) > 0) )  /* room for a comment? */
@@ -791,12 +895,16 @@ void ffmkky(char *keyname,   /* I - keyword name    */
     }
     else
     {
-        card[8] = ' ';   /* keywords with no value have no equal sign */ 
+      if (namelen == 10)  /* This case applies to normal keywords only */
+      {
+        card[8] = ' '; /* keywords with no value have no '=' */ 
         if (comm)
         {
-          strncat(card, comm, 70);   /* append comment (whatever fits) */
+          strncat(card, comm, 80 - namelen); /* append comment (what fits) */
         }
+      }
     }
+    return(*status);
 }
 /*--------------------------------------------------------------------------*/
 int ffmkey(fitsfile *fptr,    /* I - FITS file pointer  */
@@ -900,7 +1008,7 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
 */
 {
     int jj;
-    size_t ii, cardlen, nblank;
+    size_t ii, cardlen, nblank, valpos;
 
     if (*status > 0)
         return(*status);
@@ -911,51 +1019,81 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
 
     cardlen = strlen(card);
     
-    if (cardlen < 9  ||
+    /* support for ESO HIERARCH keywords; find the '=' */
+    if (FSTRNCMP(card, "HIERARCH ", 9) == 0)
+    {
+      valpos = strcspn(card, "=");
+
+      if (valpos == cardlen)   /* no value indicator ??? */
+      {
+        if (comm != NULL)
+        {
+          if (cardlen > 8)
+          {
+            strcpy(comm, &card[8]);
+
+            jj=cardlen - 8;
+            for (jj--; jj >= 0; jj--)  /* replace trailing blanks with nulls */
+            {
+               if (comm[jj] == ' ')
+                  comm[jj] = '\0';
+               else
+                  break;
+            }
+          }
+        }
+        return(*status);  /* no value indicator */
+      }
+      valpos++;  /* point to the position after the '=' */
+    }
+    else if (cardlen < 9  ||
         FSTRNCMP(card, "COMMENT ", 8) == 0 ||  /* keywords with no value */
         FSTRNCMP(card, "HISTORY ", 8) == 0 ||
         FSTRNCMP(card, "END     ", 8) == 0 ||
         FSTRNCMP(card, "        ", 8) == 0 ||
         FSTRNCMP(&card[8],      "= ", 2) != 0  ) /* no '= ' in cols 9-10 */
     {
-        /*  no value and the comment extends from cols 9 - 80  */
+        /*  no value, so the comment extends from cols 9 - 80  */
         if (comm != NULL)
         {
           if (cardlen > 8)
+          {
              strcpy(comm, &card[8]);
 
-          jj=strlen(comm);
-          for (jj--; jj >= 0; jj--)  /* replace trailing blanks with nulls */
-          {
-            if (comm[jj] == ' ')
-                comm[jj] = '\0';
-            else
-                break;
+             jj=cardlen - 8;
+             for (jj--; jj >= 0; jj--)  /* replace trailing blanks with nulls */
+             {
+               if (comm[jj] == ' ')
+                  comm[jj] = '\0';
+               else
+                  break;
+             }
           }
         }
         return(*status);
     }
+    else
+    {
+        valpos = 10;  /* starting position of the value field */
+    }
 
-    nblank = strspn(&card[10], " ");  /*  find number of leading blanks */
+    nblank = strspn(&card[valpos], " "); /* find number of leading blanks */
 
-    if (nblank + 10 == cardlen)
+    if (nblank + valpos == cardlen)
     {
       /* the absence of a value string is legal, and simply indicates
          that the keyword value is undefined.  Don't write an error
          message in this case.
       */
-        value[0] = '\0';
-        comm[0] = '\0';
         return(*status);
     }
 
-    ii = nblank + 10;
+    ii = valpos + nblank;
 
-    if (card[ii] == '/' )  /* is there no defined value? */
+    if (card[ii] == '/' )  /* slash indicates start of the comment */
     {
-         value[0] = '\0';
+         ii++;
     }
-
     else if (card[ii] == '\'' )  /* is this a quoted string value? */
     {
         value[0] = card[ii];
@@ -1017,8 +1155,6 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
     /*  now find the comment string, if any  */
     if (comm)
     {
-      comm[0] = '\0';
-
       nblank = strspn(&card[ii], " ");  /*  find next non-space character  */
       ii = ii + nblank;
 
@@ -1235,7 +1371,7 @@ int ffgthd(char *tmplt, /* I - input header template string */
       strncat(comment, tok, 70);
 
       /* construct the complete FITS header card */
-      ffmkky(keyname, value, comment, card);
+      ffmkky(keyname, value, comment, card, status);
     }
     return(*status);
 }
@@ -1762,7 +1898,7 @@ void ffcmps(char *templt,   /* I - input template (may have wildcards)      */
   
 */
 {
-    int ii, found, t1, s1;
+    int ii, found, t1, s1, wildsearch = 0, tsave = 0, ssave = 0;
     char temp[FLEN_VALUE], col[FLEN_VALUE];
 
     *match = FALSE;
@@ -1812,7 +1948,7 @@ void ffcmps(char *templt,   /* I - input template (may have wildcards)      */
       }
       else if (col[s1] == '\0')
       { 
-         /* reached end of other string; they match only if the next */
+         /* reached end of other string; they match if the next */
          /* character in the template string is a '*' wild card */
 
         if (temp[t1] == '*' && temp[t1 + 1] == '\0')
@@ -1838,7 +1974,13 @@ void ffcmps(char *templt,   /* I - input template (may have wildcards)      */
             s1++;        
       }
       else if (temp[t1] == '*')
-      {    
+      {
+
+        /* save current string locations, in case we need to restart */
+        wildsearch = 1;
+        tsave = t1;
+        ssave = s1;
+
         /* get next char from template and look for it in the col name */
         t1++;
         if (temp[t1] == '\0' || temp[t1] == ' ')
@@ -1868,7 +2010,20 @@ void ffcmps(char *templt,   /* I - input template (may have wildcards)      */
       }
       else
       {
-        return;   /* strings don't match */
+        if (wildsearch)
+        {
+            /* 
+               the previous wildcard search may have been going down
+               a blind alley.  Backtrack, and resume the wildcard
+               search with the next character in the string.
+            */
+            t1 = tsave;
+            s1 = ssave + 1;
+        }
+        else
+        {
+          return;   /* strings don't match */
+        }
       }
     }
 }
@@ -3723,7 +3878,7 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
               /* would be simpler to just call ffmkyj here, but this */
               /* would force linking in all the modkey & putkey routines */
               sprintf(valstring, "%ld", (fptr->Fptr)->numrows);
-              ffmkky("NAXIS2", valstring, comm, card);
+              ffmkky("NAXIS2", valstring, comm, card, status);
               ffmkey(fptr, card, status);
             }
           }
@@ -3738,7 +3893,7 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
               /* would be simpler to just call ffmkyj here, but this */
               /* would force linking in all the modkey & putkey routines */
               sprintf(valstring, "%ld", (fptr->Fptr)->heapsize);
-              ffmkky("PCOUNT", valstring, comm, card);
+              ffmkky("PCOUNT", valstring, comm, card, status);
               ffmkey(fptr, card, status);
             }
 
@@ -3822,7 +3977,7 @@ int ffuptf(fitsfile *fptr,      /* I - FITS file pointer */
 
           /* would be simpler to just call ffmkyj here, but this */
           /* would force linking in all the modkey & putkey routines */
-          ffmkky(keyname, newform, comment, card);  /* make new card */
+          ffmkky(keyname, newform, comment, card, status);  /* make new card */
           ffmkey(fptr, card, status);   /* replace last read keyword */
        }
       }

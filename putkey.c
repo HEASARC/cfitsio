@@ -300,9 +300,8 @@ int ffpkyu( fitsfile *fptr,     /* I - FITS file pointer        */
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
-    strcpy(valstring,"0");  /* create a dummy value string */
-    ffmkky(keyname, valstring, comm, card);  /* construct the keyword */
-    card[29] = ' ';        /* reset the dummy value string to a blank */
+    strcpy(valstring," ");  /* create a dummy value string */
+    ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword */
     ffprec(fptr, card, status);
 
     return(*status);
@@ -326,7 +325,7 @@ int ffpkys( fitsfile *fptr,     /* I - FITS file pointer        */
         return(*status);
 
     ffs2c(value, valstring, status);   /* put quotes around the string */
-    ffmkky(keyname, valstring, comm, card);  /* construct the keyword */
+    ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword */
     ffprec(fptr, card, status);
 
     return(*status);
@@ -350,7 +349,7 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
     char valstring[FLEN_VALUE];
     char card[FLEN_CARD];
     char tstring[FLEN_VALUE], *cptr;
-    int next, remain, vlen, nquote, nchar, contin;
+    int next, remain, vlen, nquote, nchar, namelen, contin, tstatus = -1;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
@@ -369,8 +368,29 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
         cptr = strchr(cptr, '\'');  /* search for another quote char */
     }
 
-    /* each quote character is expanded to 2 quotes, so leave enough space */
-    nchar = 68 - nquote;    /*  max of 68 chars fit in a FITS string value */
+    cptr = keyname;
+    while(*cptr == ' ')   /* skip over leading spaces in name */
+        cptr++;
+
+    /* determine the number of characters that will fit on the line */
+    /* Note: each quote character is expanded to 2 quotes */
+
+    namelen = strlen(cptr);
+    if (namelen <= 8 && (fftkey(cptr, &tstatus) <= 0) )
+    {
+        /* This a normal 8-character FITS keyword */
+        nchar = 68 - nquote; /*  max of 68 chars fit in a FITS string value */
+    }
+    else
+    {
+        /* This a HIERARCH keyword */
+        if (FSTRNCMP(cptr, "HIERARCH ", 9) && 
+            FSTRNCMP(cptr, "hierarch ", 9))
+            nchar = 66 - nquote - namelen;
+        else
+            nchar = 75 - nquote - namelen;  /* don't count 'HIERARCH' twice */
+
+    }
 
     contin = 0;
     while (remain > 0)
@@ -393,17 +413,22 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
             }
         }
 
-        ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
-
         if (contin)           /* This is a CONTINUEd keyword */
-            strncpy(card, "CONTINUE   ", 10);  /* overwrite the name and = */
- 
+        {
+           ffmkky("CONTINUE", valstring, comm, card, status); /* make keyword */
+           strncpy(&card[8], "   ",  2);  /* overwrite the '=' */
+        }
+        else
+        {
+           ffmkky(keyname, valstring, comm, card, status);  /* make keyword */
+        }
+
         ffprec(fptr, card, status);  /* write the keyword */
 
         contin = 1;
         remain -= nchar;
         next  += nchar;
-        nchar += 1;    /* this compensates for the earlier decrement */
+        nchar = 68 - nquote;
     }
     return(*status);
 }
@@ -465,7 +490,7 @@ int ffpkyl( fitsfile *fptr,     /* I - FITS file pointer        */
         return(*status);
 
     ffl2c(value, valstring, status);   /* convert to formatted string */
-    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword*/
     ffprec(fptr, card, status);  /* write the keyword*/
 
     return(*status);
@@ -488,7 +513,7 @@ int ffpkyj( fitsfile *fptr,     /* I - FITS file pointer        */
         return(*status);
 
     ffi2c(value, valstring, status);   /* convert to formatted string */
-    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword*/
     ffprec(fptr, card, status);  /* write the keyword*/
 
     return(*status);
@@ -512,7 +537,7 @@ int ffpkyf( fitsfile *fptr,      /* I - FITS file pointer                   */
         return(*status);
 
     ffr2f(value, decim, valstring, status);   /* convert to formatted string */
-    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword*/
     ffprec(fptr, card, status);  /* write the keyword*/
 
     return(*status);
@@ -536,7 +561,7 @@ int ffpkye( fitsfile *fptr,      /* I - FITS file pointer                   */
         return(*status);
 
     ffr2e(value, decim, valstring, status);   /* convert to formatted string */
-    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword*/
     ffprec(fptr, card, status);  /* write the keyword*/
 
     return(*status);
@@ -559,7 +584,7 @@ int ffpkyg( fitsfile *fptr,      /* I - FITS file pointer                   */
         return(*status);
 
     ffd2f(value, decim, valstring, status);  /* convert to formatted string */
-    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword*/
     ffprec(fptr, card, status);  /* write the keyword*/
 
     return(*status);
@@ -582,7 +607,7 @@ int ffpkyd( fitsfile *fptr,      /* I - FITS file pointer                   */
         return(*status);
 
     ffd2e(value, decim, valstring, status);  /* convert to formatted string */
-    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword*/
     ffprec(fptr, card, status);  /* write the keyword*/
 
     return(*status);
@@ -613,7 +638,7 @@ int ffpkyc( fitsfile *fptr,      /* I - FITS file pointer                   */
     strcat(valstring, tmpstring);
     strcat(valstring, ")");
 
-    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword*/
     ffprec(fptr, card, status);  /* write the keyword*/
 
     return(*status);
@@ -644,7 +669,7 @@ int ffpkym( fitsfile *fptr,      /* I - FITS file pointer                   */
     strcat(valstring, tmpstring);
     strcat(valstring, ")");
 
-    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword*/
     ffprec(fptr, card, status);  /* write the keyword*/
 
     return(*status);
@@ -675,7 +700,7 @@ int ffpkfc( fitsfile *fptr,      /* I - FITS file pointer                   */
     strcat(valstring, tmpstring);
     strcat(valstring, ")");
 
-    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword*/
     ffprec(fptr, card, status);  /* write the keyword*/
 
     return(*status);
@@ -706,7 +731,7 @@ int ffpkfm( fitsfile *fptr,      /* I - FITS file pointer                   */
     strcat(valstring, tmpstring);
     strcat(valstring, ")");
 
-    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword*/
     ffprec(fptr, card, status);  /* write the keyword*/
 
     return(*status);
@@ -743,7 +768,7 @@ int ffpkyt( fitsfile *fptr,      /* I - FITS file pointer        */
     cptr = strchr(fstring, '.');    /* find the decimal point */
     strcat(valstring, cptr);    /* append the fraction to the integer */
 
-    ffmkky(keyname, valstring, comm, card);  /* construct the keyword*/
+    ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword*/
     ffprec(fptr, card, status);  /* write the keyword*/
 
     return(*status);

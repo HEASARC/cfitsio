@@ -188,7 +188,7 @@
 #define INT32_MIN -2147483647 /* min 32-bit integer */
 #endif
 
-void ffmkky(char *keyname, char *keyval, char *comm, char *card);
+int ffmkky(char *keyname, char *keyval, char *comm, char *card, int *status);
 int ffgnky(fitsfile *fptr, char *card, int *status);
 void ffcfmt(char *tform, char *cform);
 void ffswap2(short *values, long nvalues);
@@ -259,7 +259,9 @@ int ffwritehisto(long totaln, long offset, long firstn, long nvalues,
              int narrays, iteratorCol *imagepars, void *userPointer);
 int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
              int ncols, iteratorCol *colpars, void *userPointer);
-
+int fits_copy_image_cell(fitsfile **fptr, char *outfile, char *colname,
+           long rownum, int *status);
+int fits_copy_image_keywords(fitsfile *infptr, fitsfile *outfptr, int *status);
 int ffrhdu(fitsfile *fptr, int *hdutype, int *status);
 int ffpinit(fitsfile *fptr, int *status);
 int ffainit(fitsfile *fptr, int *status);
@@ -649,7 +651,6 @@ int ffr8fstr(double *input, long ntodo, double scale, double zero,
 /*  the following 2 routines are VMS macros used on the VAX */
 void ieevpd(double *inarray, double *outarray, long *nvals);
 void ieevud(double *inarray, double *outarray, long *nvals);
-
 
 /*  routines related to the lexical parser  */
 int  ffselect_table(fitsfile **fptr, char *outfile, char *expr,  int *status);
