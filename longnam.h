@@ -12,6 +12,7 @@
 #define fits_open_memfile   ffomem
 #define fits_open_file      ffopen
 #define fits_open_data      ffdopn
+#define fits_open_table     fftopn
 #define fits_reopen_file    ffreopen
 #define fits_create_file    ffinit
 #define fits_create_memfile ffimem

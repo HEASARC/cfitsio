@@ -132,7 +132,7 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
     if (!((*fptr)->Fptr))
     {
         (*driverTable[driver].close)(handle);  /* close the file */
-        ffpmsg("failed to allocate structure for following file: (ffopen)");
+        ffpmsg("failed to allocate structure for following file: (ffomem)");
         ffpmsg(url);
         free(*fptr);
         *fptr = 0;       
@@ -146,7 +146,7 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
     if ( !(((*fptr)->Fptr)->filename) )
     {
         (*driverTable[driver].close)(handle);  /* close the file */
-        ffpmsg("failed to allocate memory for filename: (ffopen)");
+        ffpmsg("failed to allocate memory for filename: (ffomem)");
         ffpmsg(url);
         free((*fptr)->Fptr);
         free(*fptr);
@@ -171,7 +171,7 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
     if (ffrhdu(*fptr, &hdutyp, status) > 0)  /* determine HDU structure */
     {
         ffpmsg(
-          "ffopen could not interpret primary array header of file: (ffomem)");
+          "ffomem could not interpret primary array header of file: (ffomem)");
         ffpmsg(url);
 
         if (*status == UNKNOWN_REC)
@@ -209,7 +209,7 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
 
       if (*status > 0)
       {
-        ffpmsg("ffopen could not move to the specified extension:");
+        ffpmsg("ffomem could not move to the specified extension:");
         if (extnum > 0)
         {
           sprintf(errmsg,
@@ -2466,7 +2466,7 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
         *status = (*driverTable[driver].create)(outfile, &handle);
         if (*status)
         {
-            ffpmsg("failed to create the following file: (ffinit)");
+            ffpmsg("failed to create new file (already exists?):");
             ffpmsg(url);
             return(*status);
        }
@@ -4276,8 +4276,8 @@ int ffourl(char *url,             /* I - full input URL   */
            ptr1++;
 
     if ( ( (*ptr1 == '-') &&  ( *(ptr1 +1) ==  0   || *(ptr1 +1) == ' ' ) )
-         ||  !strncmp(ptr1, "stdout", 5)
-         ||  !strncmp(ptr1, "STDOUT", 5))
+         ||  !strcmp(ptr1, "stdout")
+         ||  !strcmp(ptr1, "STDOUT"))
 
          /* "-" means write to stdout;  also support "- "            */
          /* but exclude disk file names that begin with a minus sign */

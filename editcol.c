@@ -1943,9 +1943,10 @@ int ffshft(fitsfile *fptr,  /* I - FITS file pointer                        */
     negative value shifts the block towards the beginning of the file.
 */
 {
+#define shftbuffsize 100000
     long ntomov;
     OFF_T ptr, ntodo;
-    char buffer[10000];
+    char buffer[shftbuffsize];
 
     if (*status > 0)
         return(*status);
@@ -1962,7 +1963,7 @@ int ffshft(fitsfile *fptr,  /* I - FITS file pointer                        */
     while (ntodo)
     {
         /* number of bytes to move at one time */
-        ntomov = minvalue(ntodo, 10000);
+        ntomov = minvalue(ntodo, shftbuffsize);
 
         if (nshift > 0)     /* if moving block down ... */
             ptr -= ntomov;
@@ -1986,9 +1987,9 @@ int ffshft(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     /* now overwrite the old data with fill */
     if ((fptr->Fptr)->hdutype == ASCII_TBL)
-       memset(buffer, 32, 10000); /* fill ASCII tables with spaces */
+       memset(buffer, 32, shftbuffsize); /* fill ASCII tables with spaces */
     else
-       memset(buffer,  0, 10000); /* fill other HDUs with zeros */
+       memset(buffer,  0, shftbuffsize); /* fill other HDUs with zeros */
 
 
     if (nshift < 0)
@@ -2008,7 +2009,7 @@ int ffshft(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     while (ntodo)
     {
-        ntomov = minvalue(ntodo, 10000);
+        ntomov = minvalue(ntodo, shftbuffsize);
         ffpbyt(fptr, ntomov, buffer, status);
         ntodo -= ntomov;
     }

@@ -101,27 +101,41 @@ int mem_create_comp(char *filename, int *handle)
 
     /* first, create disk file for the compressed output */
 
-    strcpy(mode, "w+b");    /* open existing file with read-write */
 
-    diskfile = fopen(filename, "r"); /* does file already exist? */
-
-    if (diskfile)
+    if ( !strcmp(filename, "-.gz") || !strcmp(filename, "stdout.gz") ||
+         !strcmp(filename, "STDOUT.gz") )
     {
-        fclose(diskfile);         /* close file and exit with error */
-        return(FILE_NOT_CREATED); 
+       /* special case: create uncompressed FITS file in memory, then
+          compress it an write it out to 'stdout' when it is closed.  */
+
+       diskfile = stdout;
     }
+    else
+    {
+        /* normal case: create disk file for the compressed output */
+
+        strcpy(mode, "w+b");    /* create file with read-write */
+
+        diskfile = fopen(filename, "r"); /* does file already exist? */
+
+        if (diskfile)
+        {
+            fclose(diskfile);         /* close file and exit with error */
+            return(FILE_NOT_CREATED); 
+        }
 
 #if MACHINE == ALPHAVMS || MACHINE == VAXVMS
         /* specify VMS record structure: fixed format, 2880 byte records */
         /* but force stream mode access to enable random I/O access      */
-    diskfile = fopen(filename, mode, "rfm=fix", "mrs=2880", "ctx=stm"); 
+        diskfile = fopen(filename, mode, "rfm=fix", "mrs=2880", "ctx=stm"); 
 #else
-    diskfile = fopen(filename, mode); 
+        diskfile = fopen(filename, mode); 
 #endif
 
-    if (!(diskfile))           /* couldn't create file */
-    {
+        if (!(diskfile))           /* couldn't create file */
+        {
             return(FILE_NOT_CREATED); 
+        }
     }
 
     /* now create temporary memory file */
@@ -235,7 +249,7 @@ int mem_truncate(int handle, OFF_T filesize)
         }
 
         /* if allocated more memory, initialize it to zero */
-        if (filesize > *(memTable[handle].memsizeptr) )
+        if ( (size_t) filesize > *(memTable[handle].memsizeptr) )
         {
              memset(ptr + *(memTable[handle].memsizeptr),
                     0,
@@ -483,7 +497,7 @@ int stdout_close(int handle)
     /* copy from memory to standard out */
     if(fwrite(memTable[handle].memaddr, 1,
               memTable[handle].fitsfilesize, stdout) !=
-              memTable[handle].fitsfilesize )
+              (size_t) memTable[handle].fitsfilesize )
     {
                 ffpmsg("failed to copy memory file to stdout (stdout_close)");
                 status = WRITE_ERROR;
@@ -623,7 +637,8 @@ int mem_compress_open(char *filename, int rwmode, int *hdl)
     }
 
     /* if we allocated too much memory initially, then free it */
-    if (*(memTable[*hdl].memsizeptr) > (memTable[*hdl].fitsfilesize + 256L) ) 
+    if (*(memTable[*hdl].memsizeptr) > 
+       (( (size_t) memTable[*hdl].fitsfilesize) + 256L) ) 
     {
         ptr = realloc(*(memTable[*hdl].memaddrptr), 
                        memTable[*hdl].fitsfilesize);
@@ -965,7 +980,8 @@ int mem_close_keep(int handle)
 /*--------------------------------------------------------------------------*/
 int mem_close_comp(int handle)
 /*
-  copy the memory file to stdout, then free the memory
+  compress the memory file, writing it out to the fileptr (which might
+  be stdout)
 */
 {
     int status = 0;
@@ -986,8 +1002,9 @@ int mem_close_comp(int handle)
     memTable[handle].memaddrptr = 0;
     memTable[handle].memaddr = 0;
 
-    /* close the compressed disk file */
-    fclose(memTable[handle].fileptr);
+    /* close the compressed disk file (except if it is 'stdout' */
+    if (memTable[handle].fileptr != stdout)
+        fclose(memTable[handle].fileptr);
 
     return(status);
 }
@@ -1028,7 +1045,8 @@ int mem_write(int hdl, void *buffer, long nbytes)
     size_t newsize;
     char *ptr;
 
-    if (memTable[hdl].currentpos + nbytes > *(memTable[hdl].memsizeptr))
+    if ((size_t) (memTable[hdl].currentpos + nbytes) > 
+         *(memTable[hdl].memsizeptr) )
     {
                
         if (!(memTable[hdl].mem_realloc))
@@ -1044,7 +1062,7 @@ int mem_write(int hdl, void *buffer, long nbytes)
              the defined 'deltasize' parameter
          */
 
-        newsize = maxvalue(
+        newsize = maxvalue( (size_t)
             (((memTable[hdl].currentpos + nbytes - 1) / 2880) + 1) * 2880,
             *(memTable[hdl].memsizeptr) + memTable[hdl].deltasize);
 

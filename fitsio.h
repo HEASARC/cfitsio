@@ -311,6 +311,7 @@ typedef struct  /* structure for the iterator function column information */
 
 /* error status codes */
 
+#define SKIP_IMAGE       -103 /* move to 1st table when opening file */
 #define SKIP_NULL_PRIMARY -102 /* skip null primary array when opening file */
 #define USE_MEM_BUFF     -101  /* use memory buffer when opening file */
 #define OVERFLOW_ERR      -11  /* overflow during datatype conversion */
@@ -512,6 +513,7 @@ int ffomem(fitsfile **fptr, const char *name, int mode, void **buffptr,
            int *status);
 int ffopen(fitsfile **fptr, const char *filename, int iomode, int *status);
 int ffdopn(fitsfile **fptr, const char *filename, int iomode, int *status);
+int fftopn(fitsfile **fptr, const char *filename, int iomode, int *status);
 int ffreopen(fitsfile *openfptr, fitsfile **newfptr, int *status); 
 int ffinit(fitsfile **fptr, const char *filename, int *status);
 int ffimem(fitsfile **fptr,  void **buffptr,

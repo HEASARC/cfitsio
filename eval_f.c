@@ -196,7 +196,6 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
       return( *status = PARSE_BAD_TYPE );
    }
 
-
    /***********************************************************/
    /*  Extract various table information from each extension  */
    /***********************************************************/
@@ -269,12 +268,12 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
       /* Error... Do nothing */
    } else {
       rdlen  = inExt.rowLength;
-      buffer = (unsigned char *)malloc( maxvalue(100000,rdlen) * sizeof(char) );
+      buffer = (unsigned char *)malloc(maxvalue(500000,rdlen) * sizeof(char) );
       if( buffer==NULL ) {
          ffcprs();
          return( *status=MEMORY_ALLOCATION );
       }
-      maxrows = 100000L/rdlen;
+      maxrows = 500000L/rdlen;
       nbuff = 0;
       inloc = 1;
       if( infptr==outfptr ) { /* Skip initial good rows if input==output file */
@@ -282,7 +281,8 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
 	 outloc = inloc;
       } else {
 	 outloc = outExt.numRows + 1;
-	 ffirow( outfptr, outExt.numRows, nGood, status );
+	 if (outloc > 1) 
+            ffirow( outfptr, outExt.numRows, nGood, status );
       }
 
       do {
@@ -354,7 +354,7 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
          outbyteloc = outExt.heapStart + outExt.dataStart + outExt.heapSize;
 
          while ( ntodo && !*status ) {
-            rdlen = minvalue(ntodo,100000);
+            rdlen = minvalue(ntodo,500000);
             ffmbyt( infptr,  inbyteloc,  REPORT_EOF, status );
             ffgbyt( infptr,  rdlen,  buffer,     status );
             ffmbyt( outfptr, outbyteloc, IGNORE_EOF, status );
@@ -390,6 +390,8 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
 
    free(Info.dataPtr);
    ffcprs();
+
+   ffcmph(outfptr, status);  /* compress heap, deleting any orphaned data */
    return(*status);
 }
 
