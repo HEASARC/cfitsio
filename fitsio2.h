@@ -923,6 +923,7 @@ int file_shutdown(void);
 int file_checkfile(char *urltype, char *infile, char *outfile);
 int file_open(char *filename, int rwmode, int *driverhandle);
 int file_compress_open(char *filename, int rwmode, int *hdl);
+int file_compress_open_first_record(char *filename, int rwmode, int *hdl);
 int file_openfile(char *filename, int rwmode, FILE **diskfile);
 int file_create(char *filename, int *driverhandle);
 int file_truncate(int driverhandle, OFF_T filesize);

@@ -315,6 +315,8 @@ POSSIBILITY OF SUCH DAMAGES.
 
 		/* global buffers */
 
+#define MAX_BUFFER_SIZE 1024000
+
 static DECLARE(uch, inbuf,  INBUFSIZ +INBUF_EXTRA);
 static DECLARE(uch, outbuf, OUTBUFSIZ+OUTBUF_EXTRA);
 static DECLARE(ush, d_buf,  DIST_BUFSIZE);
@@ -334,6 +336,8 @@ static long header_bytes;   /* number of bytes in gzip header */
 
 /* 11/25/98: added 'static' to local variable definitions, to avoid */
 /* conflict with external source files */
+
+int byLength = 0;
 
 static int force = 0;        /* don't ask questions, compress links (-f) */
 static int maxbits = BITS;   /* max bits per code for LZW */
@@ -365,6 +369,10 @@ static unsigned inptr;      /* index of next byte to be processed in inbuf */
 static unsigned outcnt;     /* bytes in output buffer */
 
 /* prototype for the following functions */
+int uncompress2memByLength(char *filename, 
+                           FILE *diskfile, 
+                           int *status);
+
 int uncompress2mem(char *filename, 
              FILE *diskfile, 
              char **buffptr, 
@@ -402,6 +410,52 @@ int compress2file_from_mem(
              FILE *outdiskfile, 
              size_t *filesize,   /* O - size of file, in bytes              */
              int *status);
+/*----------------------------------------------------------------------------*/
+int uncompress2memByLength(char *filename,  /* name of input file             */
+                           FILE *diskfile,  /* I - file pointer               */
+                           int *status)     /* IO - error status              */
+
+/*
+  Uncompress the file into memory.  Fill whatever amount of memory has
+  already been allocated, then realloc more memory, using the supplied
+  input function, if necessary.
+*/
+{
+    /*  save input parameters into global variables */
+    char buffer[MAX_BUFFER_SIZE];
+    int buffersize = MAX_BUFFER_SIZE;
+
+    strcpy(ifname, filename);
+    ifd = diskfile;
+    memptr = (void **) buffer;
+    memsize = (int *)buffersize;
+    realloc_fn = NULL;
+    in_memptr = NULL;  /* signal that we are reading from file, not memory */
+
+    /* clear input and output buffers */
+    outcnt = 0;
+    insize = inptr = 0;
+    bytes_in = bytes_out = 0L;
+
+    part_nb = 0;
+    byLength = 1;
+
+    method = get_method(ifd); 
+    if (method < 0)
+    {
+	return(*status = 414);       /* error message already emitted */
+    }
+
+    /* Actually do the compression/decompression. Loop over zipped members.
+     */
+    if ((*work)(ifd, ofd) != OK) 
+    {
+       method = -1; /* force cleanup */
+       *status = 414;    /* report some sort of decompression error */
+    }
+
+    return(*status);
+}
 /*--------------------------------------------------------------------------*/
 int uncompress2mem(char *filename,  /* name of input file                 */
              FILE *diskfile,     /* I - file pointer                        */
@@ -426,6 +480,10 @@ int uncompress2mem(char *filename,  /* name of input file                 */
     memptr = (void **) buffptr;
     memsize = buffsize;
     realloc_fn = mem_realloc;
+    if ( (*buffsize) > 0) 
+    {
+       realloc_fn = NULL;
+    }
     in_memptr = NULL;  /* signal that we are reading from file, not memory */
 
     /* clear input and output buffers */
@@ -1019,38 +1077,51 @@ local void write_buf(buf, cnt)
     voidp     buf;
     unsigned  cnt;
 {
-    if (!realloc_fn)
-    {
-      /* append buffer to file */
-      /* added 'unsigned' to get rid of compiler warning (WDP 1/1/99) */
-      if ((unsigned long) fwrite(buf, 1, cnt, ofd) != cnt)
-      {
-          error
-          ("failed to write buffer to uncompressed output file (write_buf)");
-          exit_code = ERROR;
-          return;
-      }
+    FILE *outfp;
+
+    if (byLength == 1) {
+       outfp = fopen("first_fits_record.fits.tmp", "w");
+       fputs(buf, outfp);
+       fclose(outfp);
+       byLength++;
+       return;
     }
-    else
+
+    if (byLength == 0) 
     {
-      /* copy/append buffer into memory */
-
-      /* get more memory if current buffer is too small */
-      if (bytes_out + cnt > *memsize)
-      {
-        *memptr = realloc_fn(*memptr, bytes_out + cnt);
-        *memsize = bytes_out + cnt;  /* new memory buffer size */
-      }
-
-      if (!(*memptr))
-      {
-            error("malloc failed while uncompressing (write_buf)");
+       if (!realloc_fn)
+       {
+         /* append buffer to file */
+         /* added 'unsigned' to get rid of compiler warning (WDP 1/1/99) */
+         if ((unsigned long) fwrite(buf, 1, cnt, ofd) != cnt)
+         {
+            error
+            ("failed to write buffer to uncompressed output file (write_buf)");
             exit_code = ERROR;
             return;
-      }
-
-      /* copy  into memory buffer */
-      memcpy((char *) *memptr + bytes_out, (char *) buf, cnt);
+         }
+       }
+       else
+       {
+         /* copy/append buffer into memory */
+   
+         /* get more memory if current buffer is too small */
+         if (bytes_out + cnt > *memsize)
+         {
+           *memptr = realloc_fn(*memptr, bytes_out + cnt);
+           *memsize = bytes_out + cnt;  /* new memory buffer size */
+         }
+   
+         if (!(*memptr))
+         {
+               error("malloc failed while uncompressing (write_buf)");
+               exit_code = ERROR;
+               return;
+         }
+   
+         /* copy  into memory buffer */
+         memcpy((char *) *memptr + bytes_out, (char *) buf, cnt);
+       }
     }
 }
 
@@ -2097,7 +2168,6 @@ local int unpack(in, out)
 		literal[peek+lit_base[len]]));
 	skip_bits(len);
     } /* for (;;) */
-
     flush_window();
     Trace((stderr, "bytes_out %ld\n", bytes_out));
     if (orig_len != (ulg)bytes_out) {
@@ -2813,6 +2883,9 @@ if (nloop > 500000)
           } while (--e);
         if (w == WSIZE)
         {
+          if (byLength == 2) {
+             return 0;
+          }
           flush_output(w);
           w = 0;
         }
@@ -3131,6 +3204,11 @@ local int inflate()
   int e;                /* last block flag */
   int r;                /* result code */
   unsigned h;           /* maximum struct huft's malloc'ed */
+
+  if (byLength == 2) 
+  {
+     return 0;
+  }
 
   /* initialize window, bit buffer */
   wp = 0;
