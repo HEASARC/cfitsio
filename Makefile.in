@@ -74,14 +74,10 @@ smem:		smem.o libcfitsio.a ${OBJECTS}
 testprog:	testprog.o libcfitsio.a ${OBJECTS}
 		${CC} $(CFLAGS) $(DEFS) -o testprog testprog.o -L. -lcfitsio -lm ${LIBS}
 
-eval:		eval_y.c eval_l.c eval_tab.h
-
-eval_l.c:	eval.l
+eval:		# Rebuild eval_* files from flex/bison source
 		$(FLEX) -t eval.l > eval_l.c1
 		/bin/sed -e 's/yy/ff/g' -e 's/YY/FF/g' eval_l.c1 > eval_l.c
 		/bin/rm -f eval_l.c1
-
-eval_y.c eval_tab.h: eval.y
 		$(BISON) -d -v -y eval.y
 		/bin/sed -e 's/yy/ff/g' -e 's/YY/FF/g' y.tab.c > eval_y.c
 		/bin/sed -e 's/yy/ff/g' -e 's/YY/FF/g' y.tab.h > eval_tab.h
