@@ -631,21 +631,27 @@ int fftrgn( double    X,
 {
    double x, y, dx, dy, xprime, yprime, r;
    RgnShape *Shapes;
-   int i, in_included_region = 0, in_excluded_region = 0;
-   int result = 1;
+   int i;
+   int result = 0;
 
    Shapes = Rgn->Shapes;
-   for( i=0; i<Rgn->nShapes && !in_excluded_region; i++, Shapes++ ) {
 
-    /* only need to test if the point is not already in an included region, */
-    /* or if the current region is an excluded region */
+   /* if an excluded region is given first, then implicitly   */
+   /* assume a previous shape that includes the entire image. */
+   if (!Shapes->sign)
+      result = 1;
 
-    if (!in_included_region || !Shapes->sign ) { 
+   for( i=0; i<Rgn->nShapes; i++, Shapes++ ) {
+
+    /* only need to test if  */
+    /*   the point is not already included and this is an include region, */
+    /* or the point is included and this is an excluded region */
+
+    if ( (!result && Shapes->sign) || (result && !Shapes->sign) ) { 
 
       result = 1;
-      switch( Shapes->shape ) {
 
-         /* result is guaranteed to be 1 at start, so only test for failure */
+      switch( Shapes->shape ) {
 
       case box_rgn:
          /*  Shift origin to center of region  */
@@ -806,19 +812,9 @@ int fftrgn( double    X,
          break;
       }
 
-      if (Shapes->sign && result)
-          in_included_region = 1;  /* point is in an included region */
-      else if (!Shapes->sign && result)
-          in_excluded_region = 1;  /* point is in an excluded region */
+      if( !Shapes->sign ) result = !result;
 
-     } /* end !in_included_region || !Shapes->sign */
-
-   }
-
-   result = 0;
-   if (in_included_region) {
-      result = 1;
-      if (in_excluded_region) result = 0;
+     } 
    }
 
    return( result );
