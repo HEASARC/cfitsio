@@ -78,7 +78,7 @@ void Cffopen( fitsfile **fptr, const char *filename, int iomode, int *blocksize,
       *blocksize = 1;
    } else {
       *status = FILE_NOT_OPENED;
-      ffpmsg("Cffopen tried to open an already opened file.");
+      ffpmsg("Cffopen tried to use an already opened unit.");
    }
 }
 FCALLSCSUB5(Cffopen,FTOPEN,ftopen,PFITSUNIT,STRING,INT,PINT,PINT)
@@ -90,10 +90,22 @@ void Cffnopn( fitsfile **fptr, const char *filename, int iomode, int *status )
       ffopen( fptr, filename, iomode, status );
    } else {
       *status = FILE_NOT_OPENED;
-      ffpmsg("Cffnopn tried to open an already opened file.");
+      ffpmsg("Cffnopn tried to use an already opened unit.");
    }
 }
 FCALLSCSUB4(Cffnopn,FTNOPN,ftnopn,PFITSUNIT,STRING,INT,PINT)
+
+void Cffreopen( fitsfile *openfptr, fitsfile **newfptr, int *status );
+void Cffreopen( fitsfile *openfptr, fitsfile **newfptr, int *status )
+{
+   if( *newfptr==NULL || *newfptr==(fitsfile*)1 ) {
+      ffreopen( openfptr, newfptr, status );
+   } else {
+      *status = FILE_NOT_OPENED;
+      ffpmsg("Cffreopen tried to use an already opened unit.");
+   }
+}
+FCALLSCSUB3(Cffreopen,FTREOPEN,ftreopen,FITSUNIT,PFITSUNIT,PINT)
 
 void Cffinit( fitsfile **fptr, const char *filename, int blocksize, int *status );
 void Cffinit( fitsfile **fptr, const char *filename, int blocksize, int *status )
@@ -102,7 +114,7 @@ void Cffinit( fitsfile **fptr, const char *filename, int blocksize, int *status 
       ffinit( fptr, filename, status );
    } else {
       *status = FILE_NOT_CREATED;
-      ffpmsg("Cffinit tried to create an already opened file.");
+      ffpmsg("Cffinit tried to use an already opened unit.");
    }
 }
 FCALLSCSUB4(Cffinit,FTINIT,ftinit,PFITSUNIT,STRING,INT,PINT)
@@ -134,7 +146,6 @@ FCALLSCSUB3(ffflmd,FTFLMD,ftflmd,FITSUNIT,PINT,PINT)
 
 /*--------------- utility routines ---------------*/
 FCALLSCSUB1(ffvers,FTVERS,ftvers,PFLOAT)
-FCALLSCSUB4(ffgsdt,FTGSDT,ftgsdt,PINT,PINT,PINT,PINT)
 FCALLSCSUB1(ffupch,FTUPCH,ftupch,PSTRING)
 FCALLSCSUB2(ffgerr,FTGERR,ftgerr,INT,PSTRING)
 FCALLSCSUB1(ffpmsg,FTPMSG,ftpmsg,STRING)
@@ -183,6 +194,8 @@ FCALLSCSUB3(ffpcom,FTPCOM,ftpcom,FITSUNIT,STRING,PINT)
 FCALLSCSUB4(ffpunt,FTPUNT,ftpunt,FITSUNIT,STRING,STRING,PINT)
 FCALLSCSUB3(ffphis,FTPHIS,ftphis,FITSUNIT,STRING,PINT)
 FCALLSCSUB2(ffpdat,FTPDAT,ftpdat,FITSUNIT,PINT)
+FCALLSCSUB3(ffgstm,FTGSTM,ftgstm,PSTRING,PINT,PINT)
+FCALLSCSUB4(ffgsdt,FTGSDT,ftgsdt,PINT,PINT,PINT,PINT)
 FCALLSCSUB5(ffdt2s,FTDT2S,ftdt2s,INT,INT,INT,PSTRING,PINT)
 FCALLSCSUB9(fftm2s,FTTM2S,fttm2s,INT,INT,INT,INT,INT,DOUBLE,INT,PSTRING,PINT)
 FCALLSCSUB5(ffs2dt,FTS2DT,fts2dt,STRING,PINT,PINT,PINT,PINT)
