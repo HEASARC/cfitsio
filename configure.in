@@ -328,6 +328,8 @@ AC_DEFINE(HAVE_FLOCK_T)
 AC_MSG_RESULT("yes") 
 ], AC_MSG_RESULT("no") )
 
+# some systems (AIX) have flock_t defined in the sys/flock.h header file
+AC_CHECK_HEADERS(sys/flock.h, AC_DEFINE(HAVE_FLOCK_T))
 
 # -------------------------------------------------------------------------
 # there are some idiosyncrasies with semun defs (used in semxxx). Solaris
