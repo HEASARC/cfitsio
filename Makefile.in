@@ -18,8 +18,9 @@
 # testprog targets. See also changes and comments in configure.in
 #
 
-CFITSIO_LIB =	@CFITSIO_PREFIX@/lib
-CFITSIO_INCLUDE =	@CFITSIO_PREFIX@/include
+CFITSIO_PREFIX	= @CFITSIO_PREFIX@
+CFITSIO_LIB	= ${CFITSIO_PREFIX}/lib
+CFITSIO_INCLUDE	= ${CFITSIO_PREFIX}/include
 
 SHELL =		/bin/sh
 RANLIB =	@RANLIB@
@@ -84,7 +85,7 @@ shared: libcfitsio${SHLIB_SUFFIX}
 libcfitsio${SHLIB_SUFFIX}: ${OBJECTS}
 		${SHLIB_LD} -o $@ ${OBJECTS}
 
-install:	libcfitsio.a ${CFITSIO_LIB} ${CFITSIO_INCLUDE}
+install:	libcfitsio.a ${CFITSIO_PREFIX} ${CFITSIO_LIB} ${CFITSIO_INCLUDE}
 		@if [ -f libcfitsio.a ]; then \
 			/bin/mv libcfitsio.a ${CFITSIO_LIB}; \
 		fi; \
@@ -144,5 +145,5 @@ cfitsioLibSrcs:
 # case
 objs: ${CORE_OBJECTS}
 
-${CFITSIO_LIB} ${CFITSIO_INCLUDE}:
+${CFITSIO_PREFIX} ${CFITSIO_LIB} ${CFITSIO_INCLUDE}:
 	@if [ ! -d $@ ]; then mkdir $@; fi
