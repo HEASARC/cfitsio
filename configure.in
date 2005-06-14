@@ -112,11 +112,9 @@ case $system in
 	# Darwin can be powerpc or i386
 	ARCH=`uname -p`
 	EXT="darwin"
-	# the -D_FILE_OFFSET_BITS compiler flag is only
-	# needed to support Large FITS files greater than 2.1 GB.
-	# Using this flag caused the Fortran wrappers to break
-	# for at least one combination of C and Fortran compilers.
-	# CFLAGS="$CFLAGS -D_FILE_OFFSET_BITS=64"
+        # For large file support (but may break Absoft compilers):
+        AC_DEFINE(_LARGEFILE_SOURCE)
+        AC_DEFINE(_FILE_OFFSET_BITS,64)
 	;;
     SunOS-4*)
 	ARCH="sun"
