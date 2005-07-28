@@ -93,10 +93,11 @@ int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
   Read an array of logical values from a column in the current FITS HDU.
 */
 {
+    double dtemp;
     int tcode, maxelem, hdutype, ii, nulcheck;
     long twidth, incre;
-    long tnull, ntodo;
-    LONGLONG repeat, startpos, elemnum, readptr, rowlen, rownum, remain, next;
+    long ntodo;
+    LONGLONG repeat, startpos, elemnum, readptr, tnull, rowlen, rownum, remain, next;
     double scale, zero;
     char tform[20];
     char message[FLEN_ERRMSG];
@@ -115,7 +116,7 @@ int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
     /*---------------------------------------------------*/
-    if (ffgcpr( fptr, colnum, firstrow, firstelem, nelem, 0, &scale, &zero,
+    if (ffgcprll( fptr, colnum, firstrow, firstelem, nelem, 0, &scale, &zero,
         tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
@@ -180,9 +181,10 @@ int ffgcll( fitsfile *fptr,   /* I - FITS file pointer                       */
 
       if (*status > 0)  /* test for error during previous read operation */
       {
+	dtemp = (double) next;
         sprintf(message,
-          "Error reading elements %ld thruough %ld of logical array (ffgcl).",
-           next+1, next + ntodo);
+          "Error reading elements %.0f thruough %.0f of logical array (ffgcl).",
+           dtemp+1., dtemp + ntodo);
         ffpmsg(message);
         return(*status);
       }
@@ -366,7 +368,7 @@ int ffgcxui(fitsfile *fptr,   /* I - FITS file pointer                       */
     if (firstrow < 1)
     {
           sprintf(message, "Starting row number is less than 1: %ld (ffgcxui)",
-                firstrow);
+                (long) firstrow);
           ffpmsg(message);
           return(*status = BAD_ROW_NUM);
     }
@@ -503,7 +505,7 @@ int ffgcxuk(fitsfile *fptr,   /* I - FITS file pointer                       */
     if (firstrow < 1)
     {
           sprintf(message, "Starting row number is less than 1: %ld (ffgcxuk)",
-                firstrow);
+                (long) firstrow);
           ffpmsg(message);
           return(*status = BAD_ROW_NUM);
     }

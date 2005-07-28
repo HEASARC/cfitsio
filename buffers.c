@@ -1233,8 +1233,8 @@ int ffptbb(fitsfile *fptr,        /* I - FITS file pointer                 */
             if (ffirow(fptr, (fptr->Fptr)->numrows, nrows, status) > 0)
             {
                  sprintf(message,
-                 "ffptbb failed to add space for %ld new rows in table.",
-                         nrows);
+                 "ffptbb failed to add space for %.0f new rows in table.",
+                         (double) nrows);
                  ffpmsg(message);
                  return(*status);
             }

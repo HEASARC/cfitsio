@@ -368,6 +368,34 @@ int ffiopn(fitsfile **fptr,      /* O - FITS file pointer                   */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffopentest(double version,   /* I - CFITSIO version number, from the    */
+                                 /*     application program (fitsio.h file) */
+           fitsfile **fptr,      /* O - FITS file pointer                   */ 
+           const char *name,     /* I - full name of file to open           */
+           int mode,             /* I - 0 = open readonly; 1 = read/write   */
+           int *status)          /* IO - error status                       */
+/*
+  Open an existing FITS file with either readonly or read/write access.
+  First test that the version of fitsio.h used to build the CFITSIO library
+  is the same as the version used in building the application program that
+  links to the library.
+*/
+{
+    if (version != CFITSIO_VERSION)
+    {
+        printf("ERROR: Mismatch in the version of the fitsio.h include file used to build\n");
+	printf("the CFITSIO library, and the version included by the application program:\n");
+	printf("   Version used to build the CFITSIO library   = %f\n",CFITSIO_VERSION);
+	printf("   Version included by the application program = %f\n",version);
+	
+	return(FILE_NOT_OPENED);
+    }
+
+    /* now call the normal file open routine */
+    ffopen(fptr, name, mode, status);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */ 
            const char *name,     /* I - full name of file to open           */
            int mode,             /* I - 0 = open readonly; 1 = read/write   */
@@ -1711,8 +1739,8 @@ int fits_copy_image_cell(
     unsigned char buffer[30000];
     int ii, hdutype, colnum, typecode, bitpix, naxis, maxelem, tstatus;
     long naxes[9], nbytes, firstbyte, twidth;
-    LONGLONG repeat, startpos, elemnum, rowlen;
-    long incre, tnull, ntodo;
+    LONGLONG repeat, startpos, elemnum, rowlen, tnull;
+    long incre, ntodo;
     double scale, zero;
     char tform[20];
     char keyname[FLEN_KEYWORD], card[FLEN_CARD];
@@ -1732,7 +1760,7 @@ int fits_copy_image_cell(
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
     /*---------------------------------------------------*/
-    if ( ffgcpr(*fptr, colnum, rownum, 1L, 1L, 0, &scale, &zero,
+    if ( ffgcprll(*fptr, colnum, rownum, 1L, 1L, 0, &scale, &zero,
          tform, &twidth, &typecode, &maxelem, &startpos, &elemnum, &incre,
          &repeat, &rowlen, &hdutype, &tnull, (char *) buffer, status) > 0 )
          return(*status);
@@ -2501,7 +2529,7 @@ int ffselect_table(
         newptr = *fptr;  /* will delete rows in place in the table */
 
     /* copy rows which satisfy the selection expression to the output table */
-    /* or delete the nonqualifying rows if *fptr = newptr.                  */
+    /* or delete the nonqualifying rows if *fptr = newptr.   */
     if (fits_select_rows(*fptr, newptr, expr, status) > 0)
     {
         if (*outfile)
@@ -3041,6 +3069,20 @@ int fits_init_cfitsio(void)
       printf ("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
       printf(" Byteswapping is not being done correctly on this system.\n");
       printf(" Check the MACHINE and BYTESWAPPED definitions in fitsio2.h\n");
+      printf(" Please report this problem to the author at\n");
+      printf("     pence@tetra.gsfc.nasa.gov\n");
+      printf(  "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+      return(1);
+    }
+    
+    
+    /*  test that LONGLONG is an 8 byte integer */
+    
+    if (sizeof(LONGLONG) != 8)
+    {
+      printf ("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+      printf(" CFITSIO did not find an 8-byte long integer data type.\n");
+      printf("   sizeof(LONGLONG) = %d\n",sizeof(LONGLONG));
       printf(" Please report this problem to the author at\n");
       printf("     pence@tetra.gsfc.nasa.gov\n");
       printf(  "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
@@ -5508,8 +5550,12 @@ int ffwrite( FITSfile *fptr,   /* I - FITS file pointer              */
 */
 {
     if ( (*driverTable[fptr->driver].write)(fptr->filehandle, buffer, nbytes) )
-        *status = WRITE_ERROR;
+    {
+        ffpmsg("Error writing data buffer to file:");
+	ffpmsg(fptr->filename);
 
+        *status = WRITE_ERROR;
+    }
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -5529,7 +5575,12 @@ int ffread( FITSfile *fptr,   /* I - FITS file pointer              */
     if (readstatus == END_OF_FILE)
         *status = END_OF_FILE;
     else if (readstatus > 0)
+    {
+        ffpmsg("Error reading data buffer from file:");
+	ffpmsg(fptr->filename);
+
         *status = READ_ERROR;
+    }
 
     return(*status);
 }

@@ -1,5 +1,3 @@
-/*  Version Info: This file is distributed with version 3.001 of CFITSIO   */
-
 /*  The FITSIO software was written by William Pence at the High Energy    */
 /*  Astrophysic Science Archive Research Center (HEASARC) at the NASA      */
 /*  Goddard Space Flight Center.                                           */
@@ -36,6 +34,8 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
+#define CFITSIO_VERSION 3.003
+
 #include <stdio.h>
 
 #if defined(linux) || defined(__APPLE__) || defined(__sgi)
@@ -70,6 +70,10 @@ SERVICES PROVIDED HEREUNDER."
     typedef long LONGLONG;
 #   define USE_LL_SUFFIX 0
 #elif defined(__ia64__)  || defined(__x86_64__) /* Itanium and AMD Opteron */
+    typedef long LONGLONG;
+#   define USE_LL_SUFFIX 0
+
+#elif defined(_SX) /* Nec SuperUx */
     typedef long LONGLONG;
 #   define USE_LL_SUFFIX 0
 
@@ -562,6 +566,8 @@ int ffomem(fitsfile **fptr, const char *name, int mode, void **buffptr,
            void *(*mem_realloc)(void *p, size_t newsize),
            int *status);
 int ffopen(fitsfile **fptr, const char *filename, int iomode, int *status);
+int ffopentest(double version, fitsfile **fptr, const char *filename, int iomode, int *status);
+
 int ffdopn(fitsfile **fptr, const char *filename, int iomode, int *status);
 int fftopn(fitsfile **fptr, const char *filename, int iomode, int *status);
 int ffiopn(fitsfile **fptr, const char *filename, int iomode, int *status);

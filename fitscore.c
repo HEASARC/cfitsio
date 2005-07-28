@@ -60,12 +60,14 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.001;
+      *version = (float) 3.003;
 
-/*     15 March 2005
+/*     28 July 2005
 
 
    Previous releases:
+      *version = 3.002 15 April 2005 
+      *version = 3.001 15 March 2005 released with heasoft 6.0
       *version = 3.000  1 March 2005 (internal release only)
       *version = 2.51     2 Dec 2004
       *version = 2.50    28 Jul 2004
@@ -2593,12 +2595,15 @@ int ffgtcl( fitsfile *fptr,  /* I - FITS file pointer                       */
     
     ffgtclll(fptr, colnum, typecode, &trepeat, &twidth, status);
 
+    if (*status > 0)
+        return(*status);
+	
     if (repeat)
-      *repeat= (long) trepeat;
+        *repeat= (long) trepeat;
       
     if (width)
-      *width = (long) twidth;
-
+        *width = (long) twidth;
+    
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -3418,8 +3423,8 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
 {
     int groups, tstatus, simple, bitpix, naxis, extend, nspace;
     int ttype = 0, bytlen = 0, ii;
-    long  pcount, gcount, blank;
-    LONGLONG naxes[999], npix;
+    long  pcount, gcount;
+    LONGLONG naxes[999], npix, blank;
     double bscale, bzero;
     char comm[FLEN_COMMENT];
     tcolumn *colptr;
@@ -3751,7 +3756,7 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
                 (tbcoln < 0 || tbcoln >= (fptr->Fptr)->rowlength ) )
         {
             ffkeyn("TBCOL", ii+1, name, status);  /* construct keyword name */
-            sprintf(message,"Value of %s keyword out of range: %d (ffainit).",
+            sprintf(message,"Value of %s keyword out of range: %ld (ffainit).",
             name, (long) tbcoln);
             ffpmsg(message);
             return(*status = BAD_TBCOL);
@@ -4069,6 +4074,7 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
 */
     int tstatus, datacode, decimals;
     long width, repeat, nfield, ivalue;
+    LONGLONG jjvalue;
     double dvalue;
     char tvalue[FLEN_VALUE];
     char message[FLEN_ERRMSG];
@@ -4230,7 +4236,7 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
         }
         else  /* binary table */
         {
-            if (ffc2ii(value, &ivalue, &tstatus) > 0) 
+            if (ffc2jj(value, &jjvalue, &tstatus) > 0) 
             {
                 sprintf(message,
                 "Error reading value of %s as an integer: %s", name, value);
@@ -4239,7 +4245,7 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
                 /* ignore this error, so don't return error status */
                 return(*status);
             }
-            colptr->tnull = ivalue; /* null value for integer column */
+            colptr->tnull = jjvalue; /* null value for integer column */
         }
     }
     else if (!FSTRNCMP(name + 1, "HEAP", 4) )
@@ -4247,7 +4253,7 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
         if ((fptr->Fptr)->hdutype == ASCII_TBL)  /* ASCII table */
             return(*status);  /* ASCII tables don't have a heap */ 
 
-        if (ffc2ii(value, &ivalue, &tstatus) > 0) 
+        if (ffc2jj(value, &jjvalue, &tstatus) > 0) 
         {
             sprintf(message,
             "Error reading value of %s as an integer: %s", name, value);
@@ -4256,14 +4262,14 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
             /* ignore this error, so don't return error status */
             return(*status);
         }
-        (fptr->Fptr)->heapstart = (LONGLONG)ivalue; /* starting byte of the heap */
+        (fptr->Fptr)->heapstart = jjvalue; /* starting byte of the heap */
         return(*status);
     }
 
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
+int ffgcprll( fitsfile *fptr, /* I - FITS file pointer                        */
         int colnum,     /* I - column number (1 = 1st column of table)      */
         LONGLONG firstrow,  /* I - first row (1 = 1st row of table)             */
         LONGLONG firstelem, /* I - first element within vector (1 = 1st)       */
@@ -4285,7 +4291,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
         LONGLONG *repeat,  /* O - number of elements in a row (vector column)  */
         LONGLONG *rowlen,  /* O - length of a row, in bytes                    */
         int  *hdutype,  /* O - HDU type: 0, 1, 2 = primary, table, bintable */
-        long *tnull,    /* O - null value for integer columns               */
+        LONGLONG *tnull,    /* O - null value for integer columns               */
         char *snull,    /* O - null value for ASCII table columns           */
         int *status)    /* IO - error status                                */
 /*
@@ -4315,15 +4321,15 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     {
         if ((fptr->Fptr)->hdutype == IMAGE_HDU) /*  Primary Array or IMAGE */
         {
-          sprintf(message, "Image group number is less than 1: %ld",
-                firstrow);
+          sprintf(message, "Image group number is less than 1: %.0f",
+                (double) firstrow);
           ffpmsg(message);
           return(*status = BAD_ROW_NUM);
         }
         else
         {
-          sprintf(message, "Starting row number is less than 1: %ld",
-                firstrow);
+          sprintf(message, "Starting row number is less than 1: %.0f",
+                (double) firstrow);
           ffpmsg(message);
           return(*status = BAD_ROW_NUM);
         }
@@ -4337,8 +4343,8 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     }
     else if (nelem < 0)
     {
-        sprintf(message, "Tried to read or write less than 0 elements: %ld",
-                nelem);
+        sprintf(message, "Tried to read or write less than 0 elements: %.0f",
+            (double) nelem);
         ffpmsg(message);
         return(*status = NEG_BYTES);
     }
@@ -4369,19 +4375,9 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     tbcol     = colptr->tbcol;   /* offset to start of column within row   */
     *twidth   = colptr->twidth;  /* width of a single datum, in bytes      */
     *incre    = colptr->twidth;  /* increment between datums, in bytes     */
+
     *tcode    = colptr->tdatatype;
     *repeat   = colptr->trepeat;
-
-#if (!SUPPORT_64BIT_INTEGERS)
-    if (*tcode == TLONGLONG)
-    {
-       /* experimental 64-bit integer data type */
-       sprintf(message,
-       "BITPIX=64 or TTYPE = 'K' is not supported in this version of CFITSIO");
-       ffpmsg(message);
-       return(*status = BAD_BITPIX);
-    }
-#endif
 
     strcpy(tform, colptr->tform);    /* value of TFORMn keyword            */
     strcpy(snull, colptr->strnull);  /* null value for ASCII table columns */
@@ -4411,8 +4407,14 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
     }
 
     /* Special case: support the 'rAw' format in BINTABLEs */
-    if (*hdutype == BINARY_TBL && *tcode == TSTRING)
+    if (*hdutype == BINARY_TBL && *tcode == TSTRING) {
        *repeat = *repeat / *twidth;  /* repeat = # of unit strings in field */
+    }
+    else if (*hdutype == BINARY_TBL && *tcode == -TSTRING) {
+       /* variable length string */
+       *incre = 1;
+       *twidth = (long) nelem;
+    }
 
     if (*hdutype == ASCII_TBL)
         *elemnum = 0;   /* ASCII tables don't have vector elements */
@@ -4494,8 +4496,8 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
                     if (ffirow(fptr, (fptr->Fptr)->numrows, nrows, status) > 0)
                     {
                        sprintf(message,
-                       "Failed to add space for %ld new rows in table.",
-                       nrows);
+                       "Failed to add space for %.0f new rows in table.",
+                       (double) nrows);
                        ffpmsg(message);
                        return(*status);
                     }
@@ -4520,12 +4522,12 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
               if (firstrow > (fptr->Fptr)->numrows)
               {
                 sprintf(message, 
-                  "Attempted to read from group %ld of the HDU,", firstrow);
+                  "Attempted to read from group %ld of the HDU,", (long) firstrow);
                 ffpmsg(message);
 
                 sprintf(message, 
                   "however the HDU only contains %ld group(s).",
-                   (fptr->Fptr)->numrows );
+                   (long) ((fptr->Fptr)->numrows) );
                 ffpmsg(message);
               }
               else
@@ -4537,7 +4539,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
 
                 sprintf(message, 
                 "  Tried to read %ld elements starting at element %ld.",
-                nelem, (long) firstelem);
+                (long) nelem, (long) firstelem);
                 ffpmsg(message);
               }
             }
@@ -4545,13 +4547,13 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
             {
               ffpmsg("Attempt to read past end of table:");
               sprintf(message, 
-                "  Table has %ld rows with %ld elements per row;",
-                    (fptr->Fptr)->numrows, (long) *repeat);
+                "  Table has %.0f rows with %.0f elements per row;",
+                    (double) ((fptr->Fptr)->numrows), (double) *repeat);
               ffpmsg(message);
 
               sprintf(message, 
-              "  Tried to read %ld elements starting at row %ld, element %ld.",
-              nelem, firstrow, (long) ((*elemnum) + 1));
+              "  Tried to read %.0f elements starting at row %.0f, element %.0f.",
+              (double) nelem, (double) firstrow, (double) ((*elemnum) + 1));
               ffpmsg(message);
 
             }
@@ -4570,7 +4572,7 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
             If writemode == 2, then the calling program does not want to
             have this efficiency trick applied.
           */           
-            *incre = *rowlen;
+            *incre = (long) *rowlen;
             *repeat = nelem;
         }
     }
@@ -4625,8 +4627,8 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
             if (ffirow(fptr, (fptr->Fptr)->numrows, nrows, status) > 0)
             {
                 sprintf(message,
-                "Failed to add space for %ld new rows in table.",
-                       nrows);
+                "Failed to add space for %.0f new rows in table.",
+                       (double) nrows);
                 ffpmsg(message);
                 return(*status);
             }
@@ -4684,8 +4686,8 @@ int ffgcpr( fitsfile *fptr, /* I - FITS file pointer                        */
         {
             ffpmsg("Attempt to read past end of table");
             sprintf(message, 
-                "  Table has %ld rows and tried to read row %ld.",
-                (fptr->Fptr)->numrows, firstrow);
+                "  Table has %.0f rows and tried to read row %.0f.",
+                (double) ((fptr->Fptr)->numrows), (double) firstrow);
             ffpmsg(message);
             return(*status = BAD_ROW_NUM);
         }
@@ -6820,7 +6822,7 @@ int ffgkcl(char *tcard)
 
    TYP_WCS_KEY:
            Primary array:
-                  CTYPEn, CUNITn, CRVALn, CRPIXn, CROTAn, CDELTn
+                  WCAXES, CTYPEn, CUNITn, CRVALn, CRPIXn, CROTAn, CDELTn
                   CDj_is, PVj_ms, LONPOLEs, LATPOLEs
   
            Pixel list:
@@ -6975,6 +6977,16 @@ int ffgkcl(char *tcard)
             if (*card5 >= '0' && *card5 <= '9')
 	        return (TYP_WCS_KEY);
         }
+	else if (FSTRNCMP (card1, "RDER",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "SYER",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
 	else if (FSTRNCMP (card1, "DELT",4) == 0)
         {
             if (*card5 >= '0' && *card5 <= '9')
@@ -6994,7 +7006,8 @@ int ffgkcl(char *tcard)
 	    return (TYP_RANG_KEY);
 	if (FSTRNCMP (card1, "ATAMAX ", 7) == 0)
 	    return (TYP_RANG_KEY);
-    }
+	if (FSTRNCMP (card1, "ATE-OBS", 7) == 0)
+	    return (TYP_REFSYS_KEY);    }
     else if (*card == 'E')
     {
 	if (FSTRNCMP (card1, "XTEND  ", 7) == 0)
@@ -7016,6 +7029,11 @@ int ffgkcl(char *tcard)
 
 	if (FSTRNCMP (card1, "QUINOX", 6) == 0)
 	    return (TYP_REFSYS_KEY);
+	if (FSTRNCMP (card1, "QUI",3) == 0)
+        {
+            if (*(card+4) >= '0' && *(card+4) <= '9')
+	        return (TYP_REFSYS_KEY);
+        }
 	if (FSTRNCMP (card1, "POCH   ", 7) == 0)
 	    return (TYP_REFSYS_KEY);
     }
@@ -7049,11 +7067,26 @@ int ffgkcl(char *tcard)
 	    return (TYP_WCS_KEY);
 	if (FSTRNCMP (card1, "ATPOLE",6) == 0)
 	    return (TYP_WCS_KEY);
+	if (FSTRNCMP (card1, "ONP",3) == 0)
+        {
+            if (*(card+4) >= '0' && *(card+4) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "ATP",3) == 0)
+        {
+            if (*(card+4) >= '0' && *(card+4) <= '9')
+	        return (TYP_WCS_KEY);
+        }
     }
     else if (*card == 'M')
     {
-	if (FSTRNCMP (card1, "JD_OBS ", 7) == 0)
+	if (FSTRNCMP (card1, "JD-OBS ", 7) == 0)
 	    return (TYP_REFSYS_KEY);
+	if (FSTRNCMP (card1, "JDOB",4) == 0)
+        {
+            if (*(card+5) >= '0' && *(card+5) <= '9')
+	        return (TYP_REFSYS_KEY);
+        }
     }
     else if (*card == 'N')
     {
@@ -7068,6 +7101,21 @@ int ffgkcl(char *tcard)
     {
 	if (FSTRNCMP (card1, "COUNT  ", 7) == 0)
 	    return (TYP_STRUC_KEY);
+	if (*card1 == 'C')
+        {
+            if (*(card + 2) >= '0' && *(card + 2) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (*card1 == 'V')
+        {
+            if (*(card + 2) >= '0' && *(card + 2) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (*card1 == 'S')
+        {
+            if (*(card + 2) >= '0' && *(card + 2) <= '9')
+	        return (TYP_WCS_KEY);
+        }
     }
     else if (*card == 'R')
     {
@@ -7075,6 +7123,11 @@ int ffgkcl(char *tcard)
 	    return (TYP_REFSYS_KEY);
 	if (FSTRNCMP (card1, "ADESYS", 6) == 0)
 	    return (TYP_REFSYS_KEY);
+	if (FSTRNCMP (card1, "ADE",3) == 0)
+        {
+            if (*(card+4) >= '0' && *(card+4) <= '9')
+	        return (TYP_REFSYS_KEY);
+        }
     }
     else if (*card == 'S')
     {
@@ -7164,9 +7217,19 @@ int ffgkcl(char *tcard)
             if (*card5 >= '0' && *card5 <= '9')
 	        return (TYP_WCS_KEY);
         }
+	else if (FSTRNCMP (card1, "CTY",3) == 0)
+        {
+            if (*(card+4) >= '0' && *(card+4) <= '9')
+	        return (TYP_WCS_KEY);
+        }
 	else if (FSTRNCMP (card1, "CUNI",4) == 0)
         {
             if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CUN",3) == 0)
+        {
+            if (*(card+4) >= '0' && *(card+4) <= '9')
 	        return (TYP_WCS_KEY);
         }
 	else if (FSTRNCMP (card1, "CRVL",4) == 0)
@@ -7174,9 +7237,19 @@ int ffgkcl(char *tcard)
             if (*card5 >= '0' && *card5 <= '9')
 	        return (TYP_WCS_KEY);
         }
+	else if (FSTRNCMP (card1, "CRV",3) == 0)
+        {
+            if (*(card+4) >= '0' && *(card+4) <= '9')
+	        return (TYP_WCS_KEY);
+        }
 	else if (FSTRNCMP (card1, "CRPX",4) == 0)
         {
             if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CRP",3) == 0)
+        {
+            if (*(card+4) >= '0' && *(card+4) <= '9')
 	        return (TYP_WCS_KEY);
         }
 	else if (FSTRNCMP (card1, "CROT",4) == 0)
@@ -7189,9 +7262,44 @@ int ffgkcl(char *tcard)
             if (*card5 >= '0' && *card5 <= '9')
 	        return (TYP_WCS_KEY);
         }
-	else if (FSTRNCMP (card1, "CD",2) == 0)
+	else if (FSTRNCMP (card1, "CDE",3) == 0)
         {
-            if (*(card + 3) >= '0' && *(card + 3) <= '9')
+            if (*(card+4) >= '0' && *(card+4) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CRD",3) == 0)
+        {
+            if (*(card+4) >= '0' && *(card+4) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CSY",3) == 0)
+        {
+            if (*(card+4) >= '0' && *(card+4) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "WCS",3) == 0)
+        {
+            if (*(card+4) >= '0' && *(card+4) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "C",1) == 0)
+        {
+            if (*(card + 2) >= '0' && *(card + 2) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "P",1) == 0)
+        {
+            if (*(card + 2) >= '0' && *(card + 2) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "V",1) == 0)
+        {
+            if (*(card + 2) >= '0' && *(card + 2) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "S",1) == 0)
+        {
+            if (*(card + 2) >= '0' && *(card + 2) <= '9')
 	        return (TYP_WCS_KEY);
         }
     }
@@ -7200,7 +7308,121 @@ int ffgkcl(char *tcard)
 	if (FSTRNCMP (card1, "TENSION", 7) == 0)
 	    return (TYP_STRUC_KEY);
     }
-
+    else if (*card == 'W')
+    {
+	if (FSTRNCMP (card1, "CSAXES", 6) == 0)
+	    return (TYP_WCS_KEY);
+	if (FSTRNCMP (card1, "CSNAME", 6) == 0)
+	    return (TYP_WCS_KEY);
+	if (FSTRNCMP (card1, "CAX", 3) == 0)
+	{
+            if (*(card + 4) >= '0' && *(card + 4) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CSN", 3) == 0)
+	{
+            if (*(card + 4) >= '0' && *(card + 4) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+    }
+    
+    else if (*card >= '0' && *card <= '9')
+    {
+      if (*card1 == 'C')
+      {
+        if (FSTRNCMP (card1, "CTYP",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CTY",3) == 0)
+        {
+            if (*(card+4) >= '0' && *(card+4) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CUNI",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CUN",3) == 0)
+        {
+            if (*(card+4) >= '0' && *(card+4) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CRVL",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CRV",3) == 0)
+        {
+            if (*(card+4) >= '0' && *(card+4) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CRPX",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CRP",3) == 0)
+        {
+            if (*(card+4) >= '0' && *(card+4) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CROT",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CDLT",4) == 0)
+        {
+            if (*card5 >= '0' && *card5 <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CDE",3) == 0)
+        {
+            if (*(card+4) >= '0' && *(card+4) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CRD",3) == 0)
+        {
+            if (*(card+4) >= '0' && *(card+4) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+	else if (FSTRNCMP (card1, "CSY",3) == 0)
+        {
+            if (*(card+4) >= '0' && *(card+4) <= '9')
+	        return (TYP_WCS_KEY);
+        }
+      }
+      else if (FSTRNCMP (card1, "V",1) == 0)
+      {
+            if (*(card + 2) >= '0' && *(card + 2) <= '9')
+	        return (TYP_WCS_KEY);
+      }
+      else if (FSTRNCMP (card1, "S",1) == 0)
+      {
+            if (*(card + 2) >= '0' && *(card + 2) <= '9')
+	        return (TYP_WCS_KEY);
+      }
+      else if (*card1 >= '0' && *card1 <= '9')
+      {   /* 2 digits at beginning of keyword */
+	
+	    if ( (*(card + 2) == 'P') && (*(card + 3) == 'C') )
+	    {
+               if (*(card + 4) >= '0' && *(card + 4) <= '9')
+	        return (TYP_WCS_KEY);  /*  ijPCn keyword */
+            }
+	    else if ( (*(card + 2) == 'C') && (*(card + 3) == 'D') )
+	    {
+               if (*(card + 4) >= '0' && *(card + 4) <= '9')
+	        return (TYP_WCS_KEY);  /*  ijCDn keyword */
+            }
+      }
+      
+    }
+    
     return (TYP_USER_KEY);  /* by default all others are user keywords */
 }
 /*--------------------------------------------------------------------------*/

@@ -736,7 +736,7 @@ int     shared_list(int id)
  }
 
 int     shared_getaddr(int id, char **address)
- { int i, r;
+ { int i;
    char segname[10];
 
    if (NULL == shared_gt) return(SHARED_NOTINIT);       /* not initialized */

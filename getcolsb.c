@@ -658,12 +658,13 @@ int ffgclsb(fitsfile *fptr,   /* I - FITS file pointer                       */
   and will be scaled by the FITS TSCALn and TZEROn values if necessary.
 */
 {
-    double scale, zero, power = 1.;
+    double scale, zero, power = 1., dtemp;
     int tcode, maxelem, hdutype, xcode, decimals;
     long twidth, incre;
-    long ii, tnull, xwidth, ntodo;
+    long ii, xwidth, ntodo;
     int nulcheck, readcheck = 0;
-    LONGLONG repeat, startpos, elemnum, readptr, rowlen, rownum, remain, next, rowincre;
+    LONGLONG repeat, startpos, elemnum, readptr, tnull;
+    LONGLONG rowlen, rownum, remain, next, rowincre;
     char tform[20];
     char message[81];
     char snull[20];   /*  the FITS null value if reading from ASCII table  */
@@ -693,7 +694,7 @@ int ffgclsb(fitsfile *fptr,   /* I - FITS file pointer                       */
     if (elemincre < 0)
         readcheck = -1;  /* don't do range checking in this case */
 
-    ffgcpr( fptr, colnum, firstrow, firstelem, nelem, readcheck, &scale, &zero,
+    ffgcprll( fptr, colnum, firstrow, firstelem, nelem, readcheck, &scale, &zero,
          tform, &twidth, &tcode, &maxelem, &startpos, &elemnum, &incre,
          &repeat, &rowlen, &hdutype, &tnull, snull, status);
 
@@ -821,7 +822,7 @@ int ffgclsb(fitsfile *fptr,   /* I - FITS file pointer                       */
             case (TLONGLONG):
                 ffgi8b(fptr, readptr, ntodo, incre, (long *) buffer, status);
                 fffi8s1( (LONGLONG *) buffer, ntodo, scale, zero, 
-                           nulcheck, (long) tnull, nulval, &nularray[next], 
+                           nulcheck, tnull, nulval, &nularray[next], 
                             anynul, &array[next], status);
                 break;
             case (TFLOAT):
@@ -868,14 +869,15 @@ int ffgclsb(fitsfile *fptr,   /* I - FITS file pointer                       */
         /*-------------------------*/
         if (*status > 0)  /* test for error during previous read operation */
         {
+	  dtemp = (double) next;
           if (hdutype > 0)
             sprintf(message,
-            "Error reading elements %ld thru %ld from column %d (ffgclsb).",
-              next+1, next+ntodo, colnum);
+            "Error reading elements %.0f thru %.0f from column %d (ffgclsb).",
+              dtemp+1., dtemp+ntodo, colnum);
           else
             sprintf(message,
-            "Error reading elements %ld thru %ld from image (ffgclsb).",
-              next+1, next+ntodo);
+            "Error reading elements %.0f thru %.0f from image (ffgclsb).",
+              dtemp+1., dtemp+ntodo);
 
          ffpmsg(message);
          return(*status);
@@ -1347,7 +1349,7 @@ int fffi8s1(LONGLONG *input,      /* I - array of values to be converted     */
             int nullcheck,        /* I - null checking code; 0 = don't check */
                                   /*     1:set null pixels = nullval         */
                                   /*     2: if null pixel, set nullarray = 1 */
-            long tnull,           /* I - value of FITS TNULLn keyword if any */
+            LONGLONG tnull,       /* I - value of FITS TNULLn keyword if any */
             signed char nullval,  /* I - set null pixels, if nullcheck = 1   */
             char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
             int  *anynull,        /* O - set to 1 if any pixels are null     */
@@ -1367,159 +1369,6 @@ int fffi8s1(LONGLONG *input,      /* I - array of values to be converted     */
   pixels are null, otherwise anynull will be returned with a value = 0;
 */
 {
-#if (LONGSIZE == 32) && (! defined HAVE_LONGLONG)
-
-    /* This block of code is only used in cases where there is */
-    /* no native 8-byte integer support.  We have to interpret */
-    /* the corresponding  pair of 4-byte integers which are */
-    /* are equivalent to the 8-byte integer. */
-
-    long ii,jj, kk;
-    double dvalue;
-    unsigned long *uinput;
-
-    uinput = (unsigned long *) input;
-
-#if BYTESWAPPED  /* jj points to the most significant part of the 8-byte int */
-    jj = 1;
-    kk = 0;
-#else
-    jj = 0;
-    kk = 1;
-#endif
-
-    if (nullcheck == 0)     /* no null checking required */
-    {
-        if (scale == 1. && zero == 0.)      /* no scaling */
-        {       
-            for (ii = 0; ii < ntodo; ii++, jj += 2, kk += 2)
-            {
-                if (uinput[jj] & 0x80000000)  /* negative number */
-                  dvalue = (uinput[jj] ^ 0xffffffff) * -4294967296. -
-                           (uinput[kk] ^ 0xffffffff) - 1.;
-                else  /* positive number */
-                  dvalue = uinput[jj] * 4294967296. + uinput[kk];
-
-                if (dvalue < DSCHAR_MIN )
-                {
-                    *status = OVERFLOW_ERR;
-                    output[ii] = -128;
-                }
-                else if (dvalue > DSCHAR_MAX)
-                {
-                    *status = OVERFLOW_ERR;
-                    output[ii] = 127;
-                }
-                else
-                    output[ii] = (signed char) dvalue;
-            }
-        }
-        else             /* must scale the data */
-        {
-            for (ii = 0; ii < ntodo; ii++, jj += 2, kk += 2)
-            {
-                if (uinput[jj] & 0x80000000)  /* negative number */
-                  dvalue = ((uinput[jj] ^ 0xffffffff) * -4294967296. -
-                           (uinput[kk] ^ 0xffffffff) - 1.) * scale + zero;
-                else  /* positive number */
-                  dvalue = (uinput[jj] * 4294967296. + uinput[kk]) 
-                           * scale + zero;
-
-                if (dvalue < DSCHAR_MIN)
-                {
-                    *status = OVERFLOW_ERR;
-                    output[ii] = -128;
-                }
-                else if (dvalue > DSCHAR_MAX)
-                {
-                    *status = OVERFLOW_ERR;
-                    output[ii] = 127;
-                }
-                else
-                    output[ii] = (signed char) dvalue;
-            }
-        }
-    }
-    else        /* must check for null values */
-    {
-        if (scale == 1. && zero == 0.)  /* no scaling */
-        {       
-            for (ii = 0; ii < ntodo; ii++, jj += 2, kk += 2)
-            {
-                if (uinput[jj] & 0x80000000)  /* negative number */
-                    dvalue = (uinput[jj] ^ 0xffffffff) * -4294967296. -
-                           (uinput[kk] ^ 0xffffffff) - 1.;
-                else  /* positive number */
-                    dvalue = uinput[jj] * 4294967296. + uinput[kk];
-
-                if (dvalue == (double) tnull)
-                {
-                    *anynull = 1;
-                    if (nullcheck == 1)
-                        output[ii] = nullval;
-                    else
-                        nullarray[ii] = 1;
-                }
-                else
-                {
-                  if (dvalue < DSCHAR_MIN)
-                  {
-                    *status = OVERFLOW_ERR;
-                    output[ii] = -128;
-                  }
-                  else if (dvalue > DSCHAR_MAX)
-                  {
-                    *status = OVERFLOW_ERR;
-                    output[ii] = 127;
-                  }
-                  else
-                    output[ii] = (signed char) dvalue;
-                }
-            }
-        }
-        else                  /* must scale the data */
-        {
-            for (ii = 0; ii < ntodo; ii++, jj += 2, kk += 2)
-            {
-                if (uinput[jj] & 0x80000000)  /* negative number */
-                    dvalue = (uinput[jj] ^ 0xffffffff) * -4294967296. -
-                           (uinput[kk] ^ 0xffffffff) - 1.;
-                else  /* positive number */
-                    dvalue = uinput[jj] * 4294967296. + uinput[kk];
-
-                if (dvalue == tnull)
-                {
-                    *anynull = 1;
-                    if (nullcheck == 1)
-                        output[ii] = nullval;
-                    else
-                        nullarray[ii] = 1;
-                }
-                else
-                {
-                    dvalue = dvalue * scale + zero;
-
-                    if (dvalue < DSCHAR_MIN)
-                    {
-                        *status = OVERFLOW_ERR;
-                        output[ii] = -128;
-                    }
-                    else if (dvalue > DSCHAR_MAX)
-                    {
-                        *status = OVERFLOW_ERR;
-                        output[ii] = 127;
-                    }
-                    else
-                        output[ii] = (signed char) dvalue;
-                }
-            }
-        }
-    }
-
-#else
-
-    /* this block works on machines which support an 8-byte integer type */
-
     long ii;
     double dvalue;
 
@@ -1627,9 +1476,6 @@ int fffi8s1(LONGLONG *input,      /* I - array of values to be converted     */
             }
         }
     }
-
-#endif
-
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

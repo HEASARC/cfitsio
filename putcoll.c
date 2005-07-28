@@ -23,8 +23,7 @@ int ffpcll( fitsfile *fptr,  /* I - FITS file pointer                       */
 {
     int tcode, maxelem, hdutype;
     long twidth, incre;
-    long tnull;
-    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen, rownum, remain, next;
+    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen, rownum, remain, next, tnull;
     double scale, zero;
     char tform[20], ctrue = 'T', cfalse = 'F';
     char message[FLEN_ERRMSG];
@@ -36,7 +35,7 @@ int ffpcll( fitsfile *fptr,  /* I - FITS file pointer                       */
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
     /*---------------------------------------------------*/
-    if (ffgcpr( fptr, colnum, firstrow, firstelem, nelem, 1, &scale, &zero,
+    if (ffgcprll( fptr, colnum, firstrow, firstelem, nelem, 1, &scale, &zero,
         tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
@@ -65,8 +64,8 @@ int ffpcll( fitsfile *fptr,  /* I - FITS file pointer                       */
       if (*status > 0)  /* test for error during previous write operation */
       {
         sprintf(message,
-           "Error writing element %ld of input array of logicals (ffpcll).",
-            next+1);
+           "Error writing element %.0f of input array of logicals (ffpcll).",
+            (double) (next+1));
         ffpmsg(message);
         return(*status);
       }
@@ -217,9 +216,9 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
   The binary table column being written to must have datatype 'B' or 'X'. 
 */
 {
-    LONGLONG offset, bstart, repeat, rowlen, elemnum, rstart, estart;
+    LONGLONG offset, bstart, repeat, rowlen, elemnum, rstart, estart, tnull;
     long fbyte, lbyte, nbyte, bitloc, ndone;
-    long ii, twidth, incre, tnull;
+    long ii, twidth, incre;
     int tcode, descrp, maxelem, hdutype;
     double dummyd;
     char tform[12], snull[12];
@@ -252,16 +251,16 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
     lbyte = (fbit + nbit + 6) / 8;
     nbyte = lbyte - fbyte +1;
 
-    /* Save the current heapsize; ffgcpr will increment the value if */
+    /* Save the current heapsize; ffgcprll will increment the value if */
     /* we are writing to a variable length column. */
     offset = (fptr->Fptr)->heapsize;
 
-    /* call ffgcpr in case we are writing beyond the current end of   */
+    /* call ffgcprll in case we are writing beyond the current end of   */
     /* the table; it will allocate more space and shift any following */
     /* HDU's.  Otherwise, we have little use for most of the returned */
     /* parameters, therefore just use dummy parameters.               */
 
-    if (ffgcpr( fptr, colnum, frow, fbyte, nbyte, 1, &dummyd, &dummyd,
+    if (ffgcprll( fptr, colnum, frow, fbyte, nbyte, 1, &dummyd, &dummyd,
         tform, &twidth, &tcode, &maxelem, &bstart, &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
@@ -303,17 +302,17 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
         repeat = fbit + nbit -1;
 
         /* write the number of elements and the starting offset.    */
-        /* Note: ffgcpr previous wrote the descripter, but with the */
+        /* Note: ffgcprll previous wrote the descripter, but with the */
         /* wrong repeat value  (gave bytes instead of bits).        */
 
         if (tcode == -TBIT)
             ffpdes(fptr, colnum, frow, (long) repeat, offset, status);
 
         /* Calc the i/o pointer location to start of sequence of pixels.   */
-        /* ffgcpr has already calculated a value for bstart that           */
+        /* ffgcprll has already calculated a value for bstart that         */
         /* points to the first element of the vector; we just have to      */
         /* increment it to point to the first element we want to write to. */
-        /* Note: ffgcpr also already updated the size of the heap, so we   */
+        /* Note: ffgcprll also already updated the size of the heap, so we */
         /* don't have to do that again here.                               */
 
         bstart += estart;

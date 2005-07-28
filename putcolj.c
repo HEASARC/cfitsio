@@ -357,8 +357,8 @@ int ffpclj( fitsfile *fptr,  /* I - FITS file pointer                       */
 {
     int tcode, maxelem, hdutype, writeraw;
     long twidth, incre;
-    long tnull, ntodo;
-    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen, rownum, remain, next;
+    long ntodo;
+    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen, rownum, remain, next, tnull;
     double scale, zero;
     char tform[20], cform[20];
     char message[FLEN_ERRMSG];
@@ -376,7 +376,7 @@ int ffpclj( fitsfile *fptr,  /* I - FITS file pointer                       */
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
     /*---------------------------------------------------*/
-    if (ffgcpr( fptr, colnum, firstrow, firstelem, nelem, 1, &scale, &zero,
+    if (ffgcprll( fptr, colnum, firstrow, firstelem, nelem, 1, &scale, &zero,
         tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
@@ -510,8 +510,8 @@ int ffpclj( fitsfile *fptr,  /* I - FITS file pointer                       */
         if (*status > 0)  /* test for error during previous write operation */
         {
           sprintf(message,
-          "Error writing elements %ld thru %ld of input data array (ffpclj).",
-              next+1, next+ntodo);
+          "Error writing elements %.0f thru %.0f of input data array (ffpclj).",
+              (double) (next+1), (double) (next+ntodo));
           ffpmsg(message);
           return(*status);
         }
@@ -1406,8 +1406,8 @@ int ffpcljj(fitsfile *fptr,  /* I - FITS file pointer                       */
 {
     int tcode, maxelem, hdutype, writeraw;
     long twidth, incre;
-    long tnull, ntodo;
-    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen, rownum, remain, next;
+    long  ntodo;
+    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen, rownum, remain, next, tnull;
     double scale, zero;
     char tform[20], cform[20];
     char message[FLEN_ERRMSG];
@@ -1425,7 +1425,7 @@ int ffpcljj(fitsfile *fptr,  /* I - FITS file pointer                       */
     /*---------------------------------------------------*/
     /*  Check input and get parameters about the column: */
     /*---------------------------------------------------*/
-    if (ffgcpr( fptr, colnum, firstrow, firstelem, nelem, 1, &scale, &zero,
+    if (ffgcprll( fptr, colnum, firstrow, firstelem, nelem, 1, &scale, &zero,
         tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
@@ -1559,8 +1559,8 @@ int ffpcljj(fitsfile *fptr,  /* I - FITS file pointer                       */
         if (*status > 0)  /* test for error during previous write operation */
         {
           sprintf(message,
-          "Error writing elements %ld thru %ld of input data array (ffpclj).",
-              next+1, next+ntodo);
+          "Error writing elements %.0f thru %.0f of input data array (ffpclj).",
+              (double) (next+1), (double) (next+ntodo));
           ffpmsg(message);
           return(*status);
         }

@@ -90,7 +90,7 @@ int fffrow( fitsfile *fptr,         /* I - Input FITS file                   */
    int naxis, constant;
    long nelem, naxes[MAXDIMS], elem;
    char result;
-
+  
    if( *status ) return( *status );
 
    if( ffiprs( fptr, 0, expr, MAXDIMS, &Info.datatype, &nelem, &naxis,
@@ -120,7 +120,7 @@ int fffrow( fitsfile *fptr,         /* I - Input FITS file                   */
       Info.dataPtr = row_status;
       Info.nullPtr = NULL;
       Info.maxRows = nrows;
-   
+
       if( ffiter( gParse.nCols, gParse.colData, firstrow-1, 0,
 		  parse_data, (void*)&Info, status ) == -1 )
 	 *status = 0;  /* -1 indicates exitted without error before end... OK */
@@ -180,6 +180,7 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
       ffcprs();
       return( *status );
    }
+
    if( nelem<0 ) {
       constant = 1;
       nelem = -nelem;
@@ -809,7 +810,7 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
    gParse.is_eobuf = 0;
 
    /*  Parse the expression, building the Nodes and determing  */
-   /*  which columns are neded and what data type is returned  */
+   /*  which columns are needed and what data type is returned  */
 
    ffrestart(NULL);
    if( ffparse() ) {
@@ -888,11 +889,12 @@ void ffcprs( void )  /*  No parameters                                      */
    if( gParse.nNodes > 0 ) {
       node = gParse.nNodes;
       while( node-- ) {
-	 i = gParse.Nodes[node].SubNodes[0];
 	 if( gParse.Nodes[node].operation==gtifilt_fct ) {
+	    i = gParse.Nodes[node].SubNodes[0];
 	    free( gParse.Nodes[ i ].value.data.ptr );
 	 }
 	 else if( gParse.Nodes[node].operation==regfilt_fct ) {
+	    i = gParse.Nodes[node].SubNodes[0];
 	    fits_free_region( (SAORegion *)gParse.Nodes[ i ].value.data.ptr );
 	 }
       }
@@ -2094,15 +2096,26 @@ static int find_column( char *colName, void *itslval )
       if (tscale == 1.0 && (tzero == 0.0 || tzero == 32768.0 )) {
           gParse.varData[col_cnt].type     = LONG;
           gParse.colData[col_cnt].datatype = TLONG;
+
+/*    Reading an unsigned long column as a long can cause overflow errors.
+      Treat the column as a double instead.
       } else if (tscale == 1.0 &&  tzero == 2147483648.0 ) {
           gParse.varData[col_cnt].type     = LONG;
           gParse.colData[col_cnt].datatype = TULONG;
+*/
+
       } else {
           gParse.varData[col_cnt].type     = DOUBLE;
           gParse.colData[col_cnt].datatype = TDOUBLE;
       }
       type = COLUMN;
       break;
+/*
+   For now, treat 8-byte integer columns as type double.
+   This can lose precision, so the better long term solution
+   will be to add support for TLONGLONG as a separate datatype.
+*/
+   case TLONGLONG: 
    case TFLOAT:
    case TDOUBLE:
       gParse.varData[col_cnt].type     = DOUBLE;
@@ -2236,11 +2249,13 @@ static int load_column( int varNum, long fRow, long nRows,
 {
    iteratorCol *var = gParse.colData+varNum;
    long nelem,nbytes,row,len,idx;
-   char **bitStrs;
+   char **bitStrs, msg[80];
    unsigned char *bytes;
    int status = 0, anynul;
 
    nelem = nRows * var->repeat;
+
+/*  printf("var->datatype = %d\n",var->datatype); */
 
    switch( var->datatype ) {
    case TBYTE:
@@ -2282,6 +2297,9 @@ static int load_column( int varNum, long fRow, long nRows,
       ffgcfd(var->fptr, var->colnum, fRow, 1L, nelem,
 	     (double *)data, undef, &anynul, &status);
       break;
+   default:
+      sprintf(msg,"load_column: unexpected datatype %d", var->datatype);
+      ffpmsg(msg);
    }
 
    if( status ) {

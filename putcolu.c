@@ -97,10 +97,10 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
 {
     int tcode, maxelem, hdutype, writemode = 2, leng;
     short i2null;
-    INT32BIT i4null, i8null[2];
+    INT32BIT i4null;
     long twidth, incre;
-    long tnull, ii;
-    LONGLONG largeelem, nelem;
+    long ii;
+    LONGLONG largeelem, nelem, tnull, i8null;
     LONGLONG repeat, startpos, elemnum, wrtptr, rowlen, rownum, remain, next, ntodo;
     double scale, zero;
     unsigned char i1null, lognul = 0;
@@ -139,7 +139,7 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
       nelem *= 2;
     }
 
-    if (ffgcpr( fptr, colnum, firstrow, largeelem, nelem, writemode, &scale,
+    if (ffgcprll( fptr, colnum, firstrow, largeelem, nelem, writemode, &scale,
        &zero, tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
@@ -193,21 +193,16 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
       }
       else if (tcode == TLONG)
       {
-         i4null = tnull;
+         i4null = (INT32BIT) tnull;
 #if BYTESWAPPED
          ffswap4(&i4null, 1); /* reverse order of bytes */
 #endif
       }
       else
       {
-         if (tnull < 0)
-            i8null[0] = -1;
-         else
-            i8null[0] = 0;
-
-         i8null[1] = tnull;
+         i8null = tnull;
 #if BYTESWAPPED
-         ffswap4(i8null, 2); /* reverse order of bytes */
+         ffswap4( (INT32BIT*) (&i8null), 2); /* reverse order of bytes */
 #endif
       }
     }
@@ -254,7 +249,7 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
             case (TLONGLONG):
 
                 for (ii = 0; ii < ntodo; ii++)
-                  ffpbyt(fptr, 8, i8null, status);
+                  ffpbyt(fptr, 8, &i8null, status);
                 break;
 
             case (TFLOAT):
@@ -295,8 +290,8 @@ int ffpclu( fitsfile *fptr,  /* I - FITS file pointer                       */
         if (*status > 0)  /* test for error during previous write operation */
         {
            sprintf(message,
-             "Error writing %ld thru %ld of null values (ffpclu).",
-              next+1, next+ntodo);
+             "Error writing %.0f thru %.0f of null values (ffpclu).",
+              (double) (next+1), (double) (next+ntodo));
            ffpmsg(message);
 
            if (cstring)
@@ -353,9 +348,10 @@ int ffpcluc( fitsfile *fptr,  /* I - FITS file pointer                       */
 {
     int tcode, maxelem, hdutype, writemode = 2, leng;
     short i2null;
-    INT32BIT i4null, i8null[2];
+    INT32BIT i4null;
     long twidth, incre;
-    long tnull, ii;
+    long ii;
+    LONGLONG tnull, i8null;
     LONGLONG repeat, startpos, elemnum, wrtptr, rowlen, rownum, remain, next, ntodo;
     double scale, zero;
     unsigned char i1null, lognul = 0;
@@ -384,7 +380,7 @@ int ffpcluc( fitsfile *fptr,  /* I - FITS file pointer                       */
     if (tcode < 0)
          writemode = 0;  /* this is a variable length column */
     
-    if (ffgcpr( fptr, colnum, firstrow, firstelem, nelem, writemode, &scale,
+    if (ffgcprll( fptr, colnum, firstrow, firstelem, nelem, writemode, &scale,
        &zero, tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
@@ -439,21 +435,16 @@ int ffpcluc( fitsfile *fptr,  /* I - FITS file pointer                       */
       }
       else if (tcode == TLONG)
       {
-         i4null = tnull;
+         i4null = (INT32BIT) tnull;
 #if BYTESWAPPED
          ffswap4(&i4null, 1); /* reverse order of bytes */
 #endif
       }
       else
       {
-         if (tnull < 0)
-            i8null[0] = -1;
-         else
-            i8null[0] = 0;
-
-         i8null[1] = tnull;
+         i8null = tnull;
 #if BYTESWAPPED
-         ffswap4(i8null, 2); /* reverse order of bytes */
+         ffswap4( (INT32BIT*) &i8null, 2); /* reverse order of bytes */
 #endif
       }
     }
@@ -500,7 +491,7 @@ int ffpcluc( fitsfile *fptr,  /* I - FITS file pointer                       */
             case (TLONGLONG):
 
                 for (ii = 0; ii < ntodo; ii++)
-                  ffpbyt(fptr, 8, i8null, status);
+                  ffpbyt(fptr, 8, &i8null, status);
                 break;
 
             case (TFLOAT):
@@ -541,8 +532,8 @@ int ffpcluc( fitsfile *fptr,  /* I - FITS file pointer                       */
         if (*status > 0)  /* test for error during previous write operation */
         {
            sprintf(message,
-             "Error writing %ld thru %ld of null values (ffpclu).",
-              next+1, next+ntodo);
+             "Error writing %.0f thru %.0f of null values (ffpclu).",
+              (double) (next+1), (double) (next+ntodo));
            ffpmsg(message);
 
            if (cstring)

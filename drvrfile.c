@@ -91,15 +91,18 @@ int file_open(char *filename, int rwmode, int *handle)
     {
       /* open the original file, with readonly access */
       status = file_openfile(filename, READONLY, &diskfile);
-      if (status)
+      if (status) {
+        file_outfile[0] = '\0';
         return(status);
- 
+      }
+      
       /* create the output file */
       status =  file_create(file_outfile,handle);
       if (status)
       {
         ffpmsg("Unable to create output file for copy of input file:");
         ffpmsg(file_outfile);
+        file_outfile[0] = '\0';
         return(status);
       }
 
@@ -107,8 +110,10 @@ int file_open(char *filename, int rwmode, int *handle)
       while(0 != (nread = fread(recbuf,1,2880, diskfile)))
       {
         status = file_write(*handle, recbuf, nread);
-        if (status)
+        if (status) {
+	   file_outfile[0] = '\0';
            return(status);
+        }
       }
 
       /* close both files */
@@ -119,7 +124,7 @@ int file_open(char *filename, int rwmode, int *handle)
 
       /* reopen the new copy, with correct rwmode */
       status = file_openfile(file_outfile, rwmode, &diskfile);
-
+      file_outfile[0] = '\0';
     }
     else
     {
@@ -577,6 +582,7 @@ int file_compress_open(char *filename, int rwmode, int *hdl)
           ffpmsg("uncompressed file already exists: (file_compress_open)");
           ffpmsg(file_outfile);
           fclose(outdiskfile);         /* close file and exit with error */
+	  file_outfile[0] = '\0';
           return(FILE_NOT_CREATED); 
         }
     }
@@ -586,6 +592,7 @@ int file_compress_open(char *filename, int rwmode, int *hdl)
     {
         ffpmsg("could not create uncompressed file: (file_compress_open)");
         ffpmsg(file_outfile);
+	file_outfile[0] = '\0';
         return(FILE_NOT_CREATED); 
     }
 
@@ -600,6 +607,7 @@ int file_compress_open(char *filename, int rwmode, int *hdl)
         ffpmsg(filename);
         ffpmsg(" into new output file:");
         ffpmsg(file_outfile);
+	file_outfile[0] = '\0';
         return(status);
     }
 

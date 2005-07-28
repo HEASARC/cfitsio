@@ -1,6 +1,68 @@
                    Log of Changes Made to CFITSIO
 
-Version 3.001 - 15 March 2005 
+Version 3.003 - 28 July 2005 - 2nd public beta release (used in HEASOFT)
+
+  - enhanced the string column reading routing fits_get_col_str to 
+    support cases where the user enters a null pointer (rather than
+    a null string) as the nulval parameter.
+
+  - modified the low level ffread and ffwrite routines that physically
+    read and write data from the FITS file so that they write the name
+    of the file to the CFITSIO error stack if an error occurs.
+
+  - changed the definition of fits_open_file into a macro that will test
+    that the version of the fitsio.h include file that was used to 
+    build the CFITSIO library is the same version as included when
+    compiling the application program.
+
+  - made a simple modification to region.c to support regions files
+    of type "linear", for compatibility with ds9 and fv.
+    
+  - modified the internal ffgpr routine (and renamed it ffgprll) so
+    that it returns the TNULL value as a LONGLONG parameter instead
+    of 'long'.
+    
+  - in fits_get_col_display_width, added support for TFORM = 'k'
+  
+  - modified fitsio.h, fitsio2.h, and f77_wrap.h to add test for (_SX)
+    to identify NEC SX supercomputers.
+
+  - modified eval_f.c to treat table columns of TULONG  (unsigned long)
+    as a double.  Also added support for TLONGLONG (8-byte integers) as
+    a double, which is only a temporary fix, since doubles only have about
+    52 bits of precision.
+
+  - modified the standalone imcopy.c utility program to fix a memory allocation
+    bug when running on 64-bit platforms where sizeof(long) = 8 bytes.
+
+  - fixed a significant bug when writing character strings to a variable
+    length array column of a binary table. This bug would result in some
+    unused space in the variable length heap, making the heap somewhat
+    larger than necessary.  This in itself is usually a minor issue, since
+    the FITS files are perfectly valid, and other software should have
+    no problems reading back the characters strings. In some cases, however,
+    this problem could cause the program that is writing the table
+    to exit with a status = 108 disk read error.
+
+  - changed the 'blank' parameter in the internal ffgphd function to
+    to type LONGLONG to support integer*8 FITS images.
+
+  - when reading the TNULL keyword value, now use ffc2jj instead of
+    ffc2ii, to support integer*8 values.
+
+  - added an immediate 'return' statement to ffgtcl if the input status >0, 
+    to prevent a segfault on some platforms.
+
+Version 3.002 - 15 April 2005 - first public beta release
+
+  - in drvrfile.c, if it fails to open the file for some reason, then
+    it should reset file_outfile to a null string, to avoid errors on
+    a subsequent call to open a file.
+ 
+  - updated fits_get_keyclass to recognize most of the WCS keywords
+    defined in the WCS Papers I and II.
+
+Version 3.001 - 15 March 2005  - released with HEASOFT 6.0
 
   - numerous minor changes to the code to get rid of compiler warning
     messages, mainly dealing with numerical data type casting and the
@@ -77,7 +139,7 @@ Version 3.000 - 1 March 2005 (internal beta release)
      occurred only if the input template keyword value string was much
      longer than can fit in an 80-char header record.
      
-Version 2.501 - 2 December 2004
+Version 2.510 - 2 December 2004
 
   New Routines:
   

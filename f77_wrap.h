@@ -14,8 +14,9 @@
     || (defined(IBMR2Fortran) && defined(__64BIT__)) \
     || (defined (g77Fortran)  && defined(__ia64__)) \
     ||  defined (__sparcv9) \
-    ||  defined (__x86_64__)
-
+    ||  defined (__x86_64__) \
+    ||  defined (_SX)
+    
 #define   LONG8BYTES_INT4BYTES
 
 #undef LONGV_cfSTR

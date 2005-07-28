@@ -20,6 +20,10 @@
 #include <string.h>
 #include <stdlib.h>
 
+#if defined(WIN32) || defined(__WIN32__)
+#include <direct.h>   /* defines the getcwd function on Windows PCs */
+#endif
+
 #define HEX_ESCAPE '%'
 
 /*---------------------------------------------------------------------------

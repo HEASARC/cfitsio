@@ -12,7 +12,13 @@
 #define fits_parse_range    ffrwrg
 #define fits_parse_rangell    ffrwrgll
 #define fits_open_memfile   ffomem
-#define fits_open_file      ffopen
+
+/* 
+   use the following special macro to test that the fitsio.h include
+   file that was used to build the CFITSIO library is the same version
+   as included when compiling the application program
+*/
+#define fits_open_file(A, B, C, D)  ffopentest( CFITSIO_VERSION, A, B, C, D)
 #define fits_open_data      ffdopn
 #define fits_open_table     fftopn
 #define fits_open_image     ffiopn

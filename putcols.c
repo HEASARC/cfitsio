@@ -22,8 +22,8 @@ int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
 {
     int tcode, maxelem, hdutype, nchar;
     long twidth, incre;
-    long ii, jj, tnull, ntodo;
-    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen, rownum, remain, next;
+    long ii, jj, ntodo;
+    LONGLONG repeat, startpos, elemnum, wrtptr, rowlen, rownum, remain, next, tnull;
     double scale, zero;
     char tform[20], *blanks;
     char message[FLEN_ERRMSG];
@@ -68,18 +68,27 @@ int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
       nchar = maxvalue(1,strlen(array[0])); /* will write at least 1 char */
                                           /* even if input string is null */
 
-      if (ffgcpr( fptr, colnum, firstrow, 1, nchar, 1, &scale, &zero,
+      if (ffgcprll( fptr, colnum, firstrow, 1, nchar, 1, &scale, &zero,
         tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
+	
+      /* simply move to write position, then write the string */
+      ffmbyt(fptr, startpos, IGNORE_EOF, status); 
+      ffpbyt(fptr, nchar, array[0], status);
 
-      remain = 1;
-      twidth = nchar;
-      blanks = 0;          /* initialize null pointer */
+      if (*status > 0)  /* test for error during previous write operation */
+      {
+         sprintf(message,
+          "Error writing to variable length string column (ffpcls).");
+         ffpmsg(message);
+      }
+
+      return(*status);
     }
     else if (tcode == TSTRING)
     {
-      if (ffgcpr( fptr, colnum, firstrow, firstelem, nelem, 1, &scale, &zero,
+      if (ffgcprll( fptr, colnum, firstrow, firstelem, nelem, 1, &scale, &zero,
         tform, &twidth, &tcode, &maxelem, &startpos,  &elemnum, &incre,
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
@@ -115,7 +124,7 @@ int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
       ntodo = (long) minvalue(remain, maxelem);      
       ntodo = (long) minvalue(ntodo, (repeat - elemnum));
 
-      wrtptr = startpos + ((LONGLONG)rownum * rowlen) + (elemnum * incre);
+      wrtptr = startpos + (rownum * rowlen) + (elemnum * incre);
       ffmbyt(fptr, wrtptr, IGNORE_EOF, status);  /* move to write position */
 
       buffer = (char *) cbuff;
@@ -155,8 +164,8 @@ int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
       if (*status > 0)  /* test for error during previous write operation */
       {
          sprintf(message,
-          "Error writing elements %ld thru %ld of input data array (ffpcls).",
-             next+1, next+ntodo);
+          "Error writing elements %.0f thru %.0f of input data array (ffpcls).",
+             (double) (next+1), (double) (next+ntodo));
          ffpmsg(message);
 
          if (blanks)

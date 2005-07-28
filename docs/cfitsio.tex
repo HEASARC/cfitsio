@@ -380,19 +380,6 @@ then they may be omitted from the build by typing 'make all-nofitsio'
 instead of simply typing 'make'.  This will reduce the size
 of the CFITSIO library slightly.
 
-Most 32-bit operating systems have only supported disk files up to 2.1GB
-(2**31 bytes) in size.  Starting with version 2.1 of CFITSIO, FITS files
-larger than this limit (up to 6 terabytes) can be read and written on
-platforms that support large files (e.g., at least some LINUX platforms
-and Solaris).  To enable this
-feature, CFITSIO must be compiled with the '-D\_LARGEFILE\_SOURCE' and
-`-D\_FILE\_OFFSET\_BITS=64'
-compiler flags.  Some platforms may also require the `-D\_LARGE\_FILES'
-compiler flag.   It appears that in most cases it is not necessary to
-also include these compiler flags when compiling programs that link to
-the CFITSIO library. See the `CFITSIO Size Limitations'
-section in Chapter 4 for further details.
-
 It may not be possible to staticly link programs that use CFITSIO on
 some platforms (namely, on Solaris 2.6) due to the network drivers
 (which provide FTP and HTTP access to FITS files).  It is possible to
@@ -1298,7 +1285,10 @@ CFITSIO provides easy-to-use support for reading and writing data in
 variable length fields of a binary table. The variable length columns
 have TFORMn keyword values of the form `1Pt(len)' where `t' is the
 data type code (e.g., I, J, E, D, etc.) and `len' is an integer
-specifying the maximum length of the vector in the table.  If the value
+specifying the maximum length of the vector in the table.  (CFITSIO also
+supports the experimental 'Q' datatype, which is identical to the 'P' type
+except that is supports is a 64-bit address space and hence much larger
+data structures).  If the value
 of `len' is not specified when the table is created (e.g., if the TFORM
 keyword value is simply specified as '1PE' instead of '1PE(400) ), then
 CFITSIO will automatically scan the table when it is closed to
@@ -1330,20 +1320,22 @@ rows, but it is obviously be more efficient to initially
 create the table with the necessary number of blank rows, so that
 the heap does not needed to be constantly moved.
 
-When writing to a variable length field the entire array of values for
+When writing row of data to a variable length field the entire array of values for
 a given row of the table must be written with a single call to
-fits\_write\_col.  The total length of the array is given by nelements
+fits\_write\_col.
+The total length of the array is given by nelements
 + firstelem - 1.  Additional elements cannot be appended to an existing
 vector at a later time since any attempt to do so will simply overwrite
-all the previously written data.  Note also that the new data will be
-written to a new area of the heap and the heap space used by the
-previous write cannot be reclaimed.  For this reason each row of a
-variable length field should only be written once.  An exception to
+all the previously written data and the new data will be
+written to a new area of the heap.  The fits\_compress\_heap routine
+is provided to compress the heap and recover any unused space.
+To avoid having to deal with this issue, it is recommended
+that rows in a variable length field should only be written once.
+An exception to
 this general rule occurs when setting elements of an array as
-undefined.  One must first write a dummy value into the array with
+undefined.  It is allowed to first write a dummy value into the array with
 fits\_write\_col, and then call fits\_write\_col\_nul to flag the
-desired elements as undefined.  (Do not use the fits\_write\_colnull
-routines with variable length fields).  Note that the rows of a table,
+desired elements as undefined. Note that the rows of a table,
 whether fixed or variable length, do not have to be written
 consecutively and may be written in any order.
 
@@ -1461,36 +1453,58 @@ records that have been read or written in the FITS files.  If the number
 of opened files is greater than NIOBUF, then CFITSIO may waste more time
 flushing and re-reading or re-writing the same records in the FITS files.
 
-2.  By default, CFITSIO can handle FITS files up to 2.1 GB in size (2**31
-bytes).  This file size limit is often imposed by 32-bit operating
-systems.  More recently, as 64-bit operating systems become more common, an
-industry-wide standard (at least on Unix systems) has been developed to
-support larger sized files (see http://ftp.sas.com/standards/large.file/).
-Starting with version 2.1 of CFITSIO, larger FITS files up to 6 terabytes
-in size may be read and written on supported platforms.  In order
-to support these larger files, CFITSIO must be compiled with the
-'-D\_LARGEFILE\_SOURCE' and  `-D\_FILE\_OFFSET\_BITS=64' compiler flags.
-Some platforms may also require the `-D\_LARGE\_FILES' compiler flag.
- This causes the compiler to allocate 8-bytes instead of
-4-bytes for the `off\_t' data type that is used to store file offset
-positions.  It appears that in most cases it is not necessary to
-also include these compiler flags when compiling programs that link to
-the CFITSIO library.
+2.  It used to be common for computer systems to only support disk files up
+to 2**31 bytes = 2.1 GB in size, but this barrier is gradually being broken.
+CFITSIO can optionally read and write these so-called 'large files' that
+are greater than 2.1 GB on
+platforms where they are supported, but this
+usually requires that special compiler option flags be specified to turn
+on this  option.  On linux and solaris systems the compiler flags are
+'-D\_LARGEFILE\_SOURCE' and  `-D\_FILE\_OFFSET\_BITS=64'. These flags
+may also work on other platforms but this has not been tested.  Starting
+with version 3.0 of CFITSIO, the default Makefile that is distributed
+with CFITSIO will include these 2 compiler flags when building on Solaris
+and Linux PC systems.   Users on other platforms will need to add these
+compiler flags manually if they want to support large files.  In most
+cases it appears that it is not necessary to include these compiler
+flags when compiling application code that call the CFITSIO library
+routines.
 
-If CFITSIO is compiled with the -D\_LARGEFILE\_SOURCE
-and -D\_FILE\_OFFSET\_BITS=64 flags on a
-platform that supports large files, then it can read and write FITS
-files that contain up to 2**31 2880-byte FITS records, or approximately
-6 terabytes in size.  It is still required that the value of the NAXISn
-and PCOUNT keywords in each extension be within the range of a signed
-4-byte integer (max value = 2,147,483,648).  Thus, each dimension of an
-image (given by the NAXISn keywords), the total width of a table
-(NAXIS1 keyword), the number of rows in a table (NAXIS2 keyword), and
-the total size of the variable-length array heap in binary tables
-(PCOUNT keyword) must be less than this limit.
+When CFITSIO is built with large file support (e.g., on Solaris and
+Linux PC system by default) then it can read and write FITS data files
+on disk that have any of these conditions:
 
-Currently, support for large files within CFITSIO has been tested
-on the Linux, Solaris, and IBM AIX operating systems.
+\begin{itemize}
+\item
+FITS files larger than 2.1 GB in size
+\item
+FITS images containing greater than 2.1 G pixels
+\item
+FITS images that have one dimension with more than 2.1 G pixels
+(as given by one of the NAXISn keyword)
+\item
+FITS tables containing more than 2.1 G rows (given by the NAXIS2 keyword),
+or with rows that are more than 2.1 GB wide (given by the NAXIS1 keyword)
+\item
+FITS binary tables with a variable-length array heap that is larger
+than 2.1 GB (given by the PCOUNT keyword)
+\end{itemize}
+
+The current maximum FITS file size supported by  CFITSIO
+is about 6 terabytes (containing
+2**31 FITS blocks, each 2880 bytes in size). Currently, support for large
+files in CFITSIO has been tested on the Linux, Solaris, and IBM AIX
+operating systems.
+
+Note that when writing application programs that are intended to support
+large files it is important to use 64-bit integer variables
+to store quantities such as the dimensions of images, or the number of
+rows in a table.  These programs must also call the special versions
+of some of the CFITSIO routines that have been adapted to
+support 64-bit integers.  The names of these routines end in
+'ll' ('el' 'el') to distinquish them from the 32-bit integer
+version (e.g.,  fits\_get\_num\_rowsll).
+
 
 \chapter{Basic CFITSIO Interface Routines }
 
@@ -1563,7 +1577,7 @@ status value is also returned as the value of the function itself.
 \end{description}
 
 \begin{verbatim}
-  void fits_report_error / ffrprt (FILE *stream, > status)
+  void fits_report_error / ffrprt (FILE *stream, status)
 \end{verbatim}
 
 \begin{description}
@@ -1628,7 +1642,7 @@ The fits\_open\_data routine is similar to the fits\_open\_file routine
 except that it will move to the first HDU containing significant data,
 if a HDU name or number to open was not explicitly specified as
 part of the filename.  In this case, it will look for the first
-IMAGE HDU with NAXIS > 0, or the first table that does not contain the
+IMAGE HDU with NAXIS greater than 0, or the first table that does not contain the
 strings `GTI' (Good Time Interval extension) or `OBSTABLE' in the
 EXTNAME keyword value.
 
@@ -3572,14 +3586,15 @@ The following utility routines may be useful for certain applications.
   TYP_DISP_KEY   80  TDISPn
   TYP_HDUID_KEY  90  EXTNAME, EXTVER, EXTLEVEL, HDUNAME, HDUVER, HDULEVEL
   TYP_CKSUM_KEY 100  CHECKSUM, DATASUM
-  TYP_WCS_KEY   110  CTYPEn, CUNITn, CRVALn, CRPIXn, CROTAn, CDELTn
+  TYP_WCS_KEY   110  WCS keywords defined in the the WCS papers, including:
+                     CTYPEn, CUNITn, CRVALn, CRPIXn, CROTAn, CDELTn
                      CDj_is, PVj_ms, LONPOLEs, LATPOLEs
                      TCTYPn, TCTYns, TCUNIn, TCUNns, TCRVLn, TCRVns, TCRPXn,
                      TCRPks, TCDn_k, TCn_ks, TPVn_m, TPn_ms, TCDLTn, TCROTn
                      jCTYPn, jCTYns, jCUNIn, jCUNns, jCRVLn, jCRVns, iCRPXn,
                      iCRPns, jiCDn,  jiCDns, jPVn_m, jPn_ms, jCDLTn, jCROTn
                      (i,j,m,n are integers, s is any letter)
-  TYP_REFSYS_KEY 120 EQUINOXs, EPOCH, MJD-OBSs, RADECSYS, RADESYSs
+  TYP_REFSYS_KEY 120 EQUINOXs, EPOCH, MJD-OBSs, RADECSYS, RADESYSs, DATE-OBS
   TYP_COMM_KEY   130 COMMENT, HISTORY, (blank keyword)
   TYP_CONT_KEY   140 CONTINUE
   TYP_USER_KEY   150 all other keywords
@@ -4983,7 +4998,7 @@ the 'exists' parameter will have 1 of the 4 following values:
        (fitsfile *fptr, > long *headstart, long *datastart, long *dataend,
         int *status)
 
-  int fits_get_hduaddrll / ffghadjj  (supports large files)
+  int fits_get_hduaddrll / ffghadll  (supports large files)
        (fitsfile *fptr, > long *headstart, long *datastart, long *dataend,
         int *status)
 \end{verbatim}
@@ -6352,8 +6367,12 @@ parameters used in these routines.
 \item[7 ] Return the descriptor for a variable length column in a binary table.
     The descriptor consists of 2 integer parameters: the number of elements
     in the array and the starting offset relative to the start of the heap.
-    The first routine returns a single descriptor whereas the second routine
-    returns the descriptors for a range of rows in the table.
+    The first pair of routine returns a single descriptor whereas the second
+    pair of routine
+    returns the descriptors for a range of rows in the table.  The only
+    difference between the 2 routines in each pair is that one returns
+    the parameters as 'long' integers, whereas the other returns the values
+    as 64-bit 'LONGLONG' integers.
    \label{ffgdes}
 \end{description}
 
@@ -8174,33 +8193,34 @@ other software systems which do not use the CFITSIO interface.
 
 \section{64-Bit Long Integers}
 
-CFITSIO can read and write FITS images or table columns containing
-64-bit integer data values.  This data type is not recognized in the
-official FITS Standard definition document, but it is likely that FITS
-will eventually support this data type, especially as computers that
-run 64-bit operating systems become more common.  Support for reading
-and writing 64-bit integers in CFITSIO can be controlled with the
-\#define statement at the beginning of the fitsio2.h file by setting
-SUPPORT\_64BIT\_INTEGERS to 1 (enable) or 0 (disable).
+CFITSIO supports reading and writing FITS images or table columns containing
+non-standard 64-bit integer data values.
+Under this convention FITS 64-bit images have BITPIX =
+64, and the 64-bit binary table columns have TFORMn = 'K'.  CFITSIO also
+supports the non-standard 'Q' variable-length array table column format which is
+analogous to the 'P' column format except that the array descriptor
+is stored as a pair of 64-bit integers.
 
-Under the convention used by CFITSIO, FITS 64-bit images have BITPIX =
-64, and the 64-bit binary table columns have TFORMn = 'K'.  The use of
-these data types on platforms where the size of a 'long' (or 'longlong')
-integer = 8 bytes is rather intuitive.  CFITSIO will write 64-bit
-'long' variable values to the FITS file and read them back into 'long'
-variables just as one would expect.  CFITSIO also supports implicit
-data type conversion between 64-bit integer images and columns and any
-other supported data type, although some loss of numerical precision or
-numerical overflow is likely in this case.
+For the convenience of C programmers, the fitsio.h include file
+defines (with a typedef statement) the 'LONGLONG' datatype to be
+eqivalent to an appropriate 64-bit integer datatype on each platform.
+Since there is currently no universal standard
+for the name of the 64-bit integer datatype (it might be defined as
+'long long', 'long', or '\_\_int64' depending on the platform)
+C programmers may prefer to use the 'LONGLONG' datatype when
+declaring or allocating 64-bit integer quantities when writing
+code which needs to run on multiple platforms.
+Note that CFITSIO will implicitly convert the datatype when reading
+or writing FITS 64-bit integer images and columns with data arrays of
+a different integer or floating point datatype, but there is an
+increased risk of loss of numerical precision or
+numerical overflow  in this case.
 
-The situation is more difficult on 32-bit computing platforms that do
-not support an intrinsic 64-bit integer data type.  In this case it is
-not possible to return the full 64 precision of the FITS data values when
-reading the values into a program variable.  CFITSIO will still
-convert the 64-bit integer values into any other supported data type;
-the 64-bit double data type is probably the most useful in this case.
-It only provides about 52-bits of precision in the mantissa, however,
-so some lose of precision is possible.
+The Fortran interface to CFITSIO does not currently directly support
+reading or writing 64-bit integer values in FITS files (except
+by implicit conversion to a more standard datatype) because the
+conversion macros in the cfortran.h file which are used by
+CFITSIO do not support 64-bit integers.
 
 
 \section{Long String Keyword Values.}

@@ -1791,8 +1791,8 @@ int ffdtdmll(fitsfile *fptr,  /* I - FITS file pointer                        */
         if ((colptr->tdatatype > 0) && (colptr->trepeat != totalpix))
         {
           sprintf(message,
-          "column vector length, %ld, does not equal TDIMn array size, %ld",
-          (long) colptr->trepeat, totalpix);
+          "column vector length, %.0f, does not equal TDIMn array size, %.0f",
+          (double) (colptr->trepeat), (double) totalpix);
           ffpmsg(message);
           ffpmsg(tdimstr);
           return(*status = BAD_TDIM);
@@ -1819,12 +1819,12 @@ int ffghpr(fitsfile *fptr,  /* I - FITS file pointer                        */
 */
 {
     int idummy, ii;
-    long ldummy;
+    LONGLONG lldummy;
     double ddummy;
     LONGLONG tnaxes[99];
 
     ffgphd(fptr, maxdim, simple, bitpix, naxis, tnaxes, pcount, gcount, extend,
-          &ddummy, &ddummy, &ldummy, &idummy, status);
+          &ddummy, &ddummy, &lldummy, &idummy, status);
 	  
     if (naxis && naxes) {
          for (ii = 0; (ii < *naxis) && (ii < maxdim); ii++)
@@ -1855,11 +1855,11 @@ int ffghprll(fitsfile *fptr,  /* I - FITS file pointer                        */
 */
 {
     int idummy;
-    long ldummy;
+    LONGLONG lldummy;
     double ddummy;
 
     ffgphd(fptr, maxdim, simple, bitpix, naxis, naxes, pcount, gcount, extend,
-          &ddummy, &ddummy, &ldummy, &idummy, status);
+          &ddummy, &ddummy, &lldummy, &idummy, status);
 
     return(*status);
 }
@@ -1933,8 +1933,8 @@ int ffghtb(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     if (pcount != 0)
     {
-       sprintf(message, "PCOUNT = %ld is illegal in ASCII table; must = 0",
-               pcount);
+       sprintf(message, "PCOUNT = %.0f is illegal in ASCII table; must = 0",
+               (double) pcount);
        ffpmsg(message);
        return(*status = BAD_PCOUNT);
     }
@@ -2076,8 +2076,8 @@ int ffghtbll(fitsfile *fptr, /* I - FITS file pointer                        */
 
     if (pcount != 0)
     {
-       sprintf(message, "PCOUNT = %ld is illegal in ASCII table; must = 0",
-               pcount);
+       sprintf(message, "PCOUNT = %.0f is illegal in ASCII table; must = 0",
+             (double) pcount);
        ffpmsg(message);
        return(*status = BAD_PCOUNT);
     }
@@ -2407,7 +2407,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
            int *extend,     /* O - may FITS file haave extensions?          */
            double *bscale,  /* O - array pixel linear scaling factor        */
            double *bzero,   /* O - array pixel linear scaling zero point    */
-           long *blank,     /* O - value used to represent undefined pixels */
+           LONGLONG *blank, /* O - value used to represent undefined pixels */
            int *nspace,     /* O - number of blank keywords prior to END    */
            int *status)     /* IO - error status                            */
 {
@@ -2703,7 +2703,7 @@ int ffgphd(fitsfile *fptr,  /* I - FITS file pointer                        */
             *nspace = 0;  /* reset count of blank keywords */
             ffpsvc(card, value, comm, status); /* parse value and comment */
 
-            if (ffc2ii(value, blank, status) > 0) /* convert to long */
+            if (ffc2jj(value, blank, status) > 0) /* convert to LONGLONG */
             {
                 /* reset error status and continue, but still issue warning */
                 *status = tstatus;

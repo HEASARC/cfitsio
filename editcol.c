@@ -104,7 +104,7 @@ int ffrsimll(fitsfile *fptr,    /* I - FITS file pointer           */
         if (naxes[ii] < 0)
         {
             sprintf(message,
-            "Illegal value for NAXIS%d keyword: %ld", ii + 1,  naxes[ii]);
+            "Illegal value for NAXIS%d keyword: %.0f", ii + 1,  (double) (naxes[ii]));
             ffpmsg(message);
             return(*status = BAD_NAXES);
         }
@@ -2333,6 +2333,7 @@ int ffshft(fitsfile *fptr,  /* I - FITS file pointer                        */
             ptr -= ntomov;
 
         /* move to position and read the bytes to be moved */
+
         ffmbyt(fptr, ptr, REPORT_EOF, status);
         ffgbyt(fptr, ntomov, buffer, status);
 

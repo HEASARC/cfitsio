@@ -2068,8 +2068,8 @@ int ffptdmll( fitsfile *fptr, /* I - FITS file pointer                      */
       if (*status > 0 || repeat != totalpix)
       {
         sprintf(message,
-        "column vector length, %ld, does not equal TDIMn array size, %ld",
-        (long) colptr->trepeat, totalpix);
+        "column vector length, %.0f, does not equal TDIMn array size, %.0f",
+        (double) (colptr->trepeat), (double) totalpix);
         ffpmsg(message);
         return(*status = BAD_TDIM);
       }
@@ -2240,7 +2240,7 @@ int ffphprll( fitsfile *fptr, /* I - FITS file pointer                        */
         if (naxes[ii] < 0)
         {
             sprintf(message,
-            "Illegal value for NAXIS%d keyword: %ld", ii + 1,  naxes[ii]);
+            "Illegal negative value for NAXIS%d keyword: %.0f", ii + 1, (double) (naxes[ii]));
             ffpmsg(message);
             return(*status = BAD_NAXES);
         }
