@@ -831,74 +831,6 @@ int ffu2fi8(unsigned short *input,  /* I - array of values to be converted  */
   Do datatype conversion and scaling if required
 */
 {
-#if (LONGSIZE == 32) && (! defined HAVE_LONGLONG)
-
-/* don't have a native 8-byte integer, so have to construct the */
-/* 2 equivalent 4-byte integers have the same bit pattern */
-
-    unsigned long *uoutput;
-    long ii, jj, kk, temp;
-    double dvalue;
-
-    uoutput = (unsigned long *) output;
-
-#if BYTESWAPPED  /* jj points to the most significant part of the 8-byte int */
-    jj = 1;
-    kk = 0;
-#else
-    jj = 0;
-    kk = 1;
-#endif
-
-    if (scale == 1. && zero == 0.)
-    {       
-        for (ii = 0; ii < ntodo; ii++, jj += 2, kk += 2)
-        {
-                output[jj] = 0;
-                output[kk] = input[ii];
-        }
-    }
-    else
-    {
-        for (ii = 0; ii < ntodo; ii++, jj += 2, kk += 2)
-        {
-            dvalue = (input[ii] - zero) / scale;
-
-            if (dvalue < DLONGLONG_MIN)
-            {
-                *status = OVERFLOW_ERR;
-                output[jj] = LONG_MIN;
-                output[kk] = 0;
-            }
-            else if (dvalue > DLONGLONG_MAX)
-            {
-                *status = OVERFLOW_ERR;
-                output[jj] = LONG_MAX;
-                output[kk] = -1;
-            }
-            else
-            {
-                if (dvalue < 0)
-                {
-                   temp = (dvalue + 1.) / 4294967296. - 1.;
-                   output[jj] = temp;
-                   uoutput[kk] = 4294967296.  + 
-                      (dvalue - (double) (temp + 1) * 4294967296.);
-                }
-                else
-                {
-                   temp = dvalue / 4294967296.;
-                   output[jj] = temp;
-                   uoutput[kk] = dvalue - (double) temp * 4294967296.;
-                }
-            }
-        }
-    }
-
-#else
-
-/* this is the much simpler case where the native 8-byte integer exists */
-
     long ii;
     double dvalue;
 
@@ -932,9 +864,6 @@ int ffu2fi8(unsigned short *input,  /* I - array of values to be converted  */
             }
         }
     }
-
-#endif
-
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

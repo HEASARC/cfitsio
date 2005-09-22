@@ -9,10 +9,10 @@
 #include <stdlib.h>
 #include "fitsio2.h"
 
-char iobuffer[NIOBUF][IOBUFLEN];      /* initialize to zero by default  */
-FITSfile *bufptr[NIOBUF];             /* initialize to zero by default  */
-long bufrecnum[NIOBUF];               /* initialize to zero by default  */
-int dirty[NIOBUF], ageindex[NIOBUF];  /* ages get initialized in ffwhbf */
+static char iobuffer[NIOBUF][IOBUFLEN];      /* initialize to zero by default  */
+static FITSfile *bufptr[NIOBUF];             /* initialize to zero by default  */
+static long bufrecnum[NIOBUF];               /* initialize to zero by default  */
+static int dirty[NIOBUF], ageindex[NIOBUF];  /* ages get initialized in ffwhbf */
 
 /*--------------------------------------------------------------------------*/
 int ffmbyt(fitsfile *fptr,    /* I - FITS file pointer                */

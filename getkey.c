@@ -3126,7 +3126,8 @@ int ffhdr2str( fitsfile *fptr,  /* I - FITS file pointer                    */
     (*nkeys)++;
 
     *headptr = '\0';   /* terminate the header string */
-    realloc(*header, (*nkeys *80) + 1);  /* minimize the allocated memory */
+    /* minimize the allocated memory */
+    *header = (char *) realloc(*header, (*nkeys *80) + 1);  
 
     return(*status);
 }

@@ -56,6 +56,8 @@
 /*                              of throwing a parse error               */
 /*  Craig B Markwardt Oct 2004  Add ACCUM() and SEQDIFF() functions     */
 /*  Craig B Markwardt Feb 2005  Add ANGSEP() function                   */
+/*  Craig B Markwardt Aug 2005  CIRCLE, BOX, ELLIPSE, NEAR and REGFILTER*/
+/*                              functions now accept vector arguments   */
 /*                                                                      */
 /************************************************************************/
 
@@ -864,50 +866,58 @@ bexpr:   BOOLEAN
 		}
        | BFUNCTION expr ',' expr ',' expr ')'
 		{
-		   if( SIZE($2)>1 || SIZE($4)>1 || SIZE($6)>1 ) {
-		      yyerror("Cannot use array as function argument");
-		      YYERROR;
-		   }
 		   if( TYPE($2) != DOUBLE ) $2 = New_Unary( DOUBLE, 0, $2 );
 		   if( TYPE($4) != DOUBLE ) $4 = New_Unary( DOUBLE, 0, $4 );
 		   if( TYPE($6) != DOUBLE ) $6 = New_Unary( DOUBLE, 0, $6 );
-		   if (FSTRCMP($1,"NEAR(") == 0)
-		      $$ = New_Func( BOOLEAN, near_fct, 3, $2, $4, $6,
-				     0, 0, 0, 0 );
-		   else {
-		      yyerror("Boolean Function not supported");
-		      YYERROR;
+		   if( ! (Test_Dims( $2, $4 ) && Test_Dims( $4, $6 ) ) ) {
+		       yyerror("Dimensions of NEAR arguments "
+			       "are not compatible");
+		       YYERROR;
+		   } else {
+		     if (FSTRCMP($1,"NEAR(") == 0) {
+		       $$ = New_Func( BOOLEAN, near_fct, 3, $2, $4, $6,
+				      0, 0, 0, 0 );
+		     } else {
+		       yyerror("Boolean Function not supported");
+		       YYERROR;
+		     }
+		     TEST($$); 
+
+		     if( SIZE($$)<SIZE($2) )  Copy_Dims($$, $2);
+		     if( SIZE($2)<SIZE($4) )  Copy_Dims($$, $4);
+		     if( SIZE($4)<SIZE($6) )  Copy_Dims($$, $6);
 		   }
-                   TEST($$); 
 		}
        | BFUNCTION expr ',' expr ',' expr ',' expr ',' expr ')'
 	        {
-		   if( SIZE($2)>1 || SIZE($4)>1 || SIZE($6)>1 || SIZE($8)>1
-		       || SIZE($10)>1 ) {
-		      yyerror("Cannot use array as function argument");
-		      YYERROR;
-		   }
 		   if( TYPE($2) != DOUBLE ) $2 = New_Unary( DOUBLE, 0, $2 );
 		   if( TYPE($4) != DOUBLE ) $4 = New_Unary( DOUBLE, 0, $4 );
 		   if( TYPE($6) != DOUBLE ) $6 = New_Unary( DOUBLE, 0, $6 );
 		   if( TYPE($8) != DOUBLE ) $8 = New_Unary( DOUBLE, 0, $8 );
 		   if( TYPE($10)!= DOUBLE ) $10= New_Unary( DOUBLE, 0, $10);
-                   if (FSTRCMP($1,"CIRCLE(") == 0)
-		      $$ = New_Func( BOOLEAN, circle_fct, 5, $2, $4, $6, $8,
-				     $10, 0, 0 );
-		   else {
-		      yyerror("Boolean Function not supported");
-		      YYERROR;
+		   if( ! (Test_Dims( $2, $4 ) && Test_Dims( $4, $6 ) && 
+			  Test_Dims( $6, $8 ) && Test_Dims( $8, $10 )) ) {
+		     yyerror("Dimensions of CIRCLE arguments "
+			     "are not compatible");
+		     YYERROR;
+		   } else {
+		     if (FSTRCMP($1,"CIRCLE(") == 0) {
+		       $$ = New_Func( BOOLEAN, circle_fct, 5, $2, $4, $6, $8,
+				      $10, 0, 0 );
+		     } else {
+		       yyerror("Boolean Function not supported");
+		       YYERROR;
+		     }
+		     TEST($$); 
+		     if( SIZE($$)<SIZE($2) )  Copy_Dims($$, $2);
+		     if( SIZE($2)<SIZE($4) )  Copy_Dims($$, $4);
+		     if( SIZE($4)<SIZE($6) )  Copy_Dims($$, $6);
+		     if( SIZE($6)<SIZE($8) )  Copy_Dims($$, $8);
+		     if( SIZE($8)<SIZE($10) ) Copy_Dims($$, $10);
 		   }
-                   TEST($$); 
 		}
        | BFUNCTION expr ',' expr ',' expr ',' expr ',' expr ',' expr ',' expr ')'
                 {
-		   if( SIZE($2)>1 || SIZE($4)>1 || SIZE($6)>1 || SIZE($8)>1
-		       || SIZE($10)>1 || SIZE($12)>1 || SIZE($14)>1 ) {
-		      yyerror("Cannot use array as function argument");
-		      YYERROR;
-		   }
 		   if( TYPE($2) != DOUBLE ) $2 = New_Unary( DOUBLE, 0, $2 );
 		   if( TYPE($4) != DOUBLE ) $4 = New_Unary( DOUBLE, 0, $4 );
 		   if( TYPE($6) != DOUBLE ) $6 = New_Unary( DOUBLE, 0, $6 );
@@ -915,17 +925,32 @@ bexpr:   BOOLEAN
 		   if( TYPE($10)!= DOUBLE ) $10= New_Unary( DOUBLE, 0, $10);
 		   if( TYPE($12)!= DOUBLE ) $12= New_Unary( DOUBLE, 0, $12);
 		   if( TYPE($14)!= DOUBLE ) $14= New_Unary( DOUBLE, 0, $14);
-		   if (FSTRCMP($1,"BOX(") == 0)
-		      $$ = New_Func( BOOLEAN, box_fct, 7, $2, $4, $6, $8,
+		   if( ! (Test_Dims( $2, $4 ) && Test_Dims( $4, $6 ) && 
+			  Test_Dims( $6, $8 ) && Test_Dims( $8, $10 ) &&
+			  Test_Dims($10,$12 ) && Test_Dims($12, $14 ) ) ) {
+		     yyerror("Dimensions of BOX or ELLIPSE arguments "
+			     "are not compatible");
+		     YYERROR;
+		   } else {
+		     if (FSTRCMP($1,"BOX(") == 0) {
+		       $$ = New_Func( BOOLEAN, box_fct, 7, $2, $4, $6, $8,
 				      $10, $12, $14 );
-		   else if (FSTRCMP($1,"ELLIPSE(") == 0)
-		      $$ = New_Func( BOOLEAN, elps_fct, 7, $2, $4, $6, $8,
+		     } else if (FSTRCMP($1,"ELLIPSE(") == 0) {
+		       $$ = New_Func( BOOLEAN, elps_fct, 7, $2, $4, $6, $8,
 				      $10, $12, $14 );
-		   else {
-		      yyerror("SAO Image Function not supported");
-		      YYERROR;
+		     } else {
+		       yyerror("SAO Image Function not supported");
+		       YYERROR;
+		     }
+		     TEST($$); 
+		     if( SIZE($$)<SIZE($2) )  Copy_Dims($$, $2);
+		     if( SIZE($2)<SIZE($4) )  Copy_Dims($$, $4);
+		     if( SIZE($4)<SIZE($6) )  Copy_Dims($$, $6);
+		     if( SIZE($6)<SIZE($8) )  Copy_Dims($$, $8);
+		     if( SIZE($8)<SIZE($10) ) Copy_Dims($$, $10);
+		     if( SIZE($10)<SIZE($12) ) Copy_Dims($$, $12);
+		     if( SIZE($12)<SIZE($14) ) Copy_Dims($$, $14);
 		   }
-                   TEST($$); 
 		}
 
        | GTIFILTER ')'
@@ -1564,6 +1589,11 @@ static int New_REG( char *fname, int NodeX, int NodeY, char *colNames )
    Node0 = Alloc_Node(); /* This will hold the Region Data */
    if( NodeX<0 || NodeY<0 || Node0<0 ) return(-1);
 
+   if( ! (Test_Dims( NodeX, NodeY ) ) ) {
+     yyerror("Dimensions of REGFILTER arguments are not compatible");
+     return (-1);
+   }
+
    n = Alloc_Node();
    if( n >= 0 ) {
       this                 = gParse.Nodes + n;
@@ -1577,6 +1607,9 @@ static int New_REG( char *fname, int NodeX, int NodeY, char *colNames )
       this->value.nelem    = 1;
       this->value.naxis    = 1;
       this->value.naxes[0] = 1;
+      
+      Copy_Dims(n, NodeX);
+      if( SIZE(NodeX)<SIZE(NodeY) )  Copy_Dims(n, NodeY);
 
       /* Init Region node to be treated as a "constant" */
 
@@ -1907,8 +1940,8 @@ static void Allocate_Ptrs( Node *this )
       default:      size = 1;                break;
       }
 
-      this->value.data.ptr = malloc( elem*(size+1) );
-      
+      this->value.data.ptr = calloc(size+1, elem);
+
       if( this->value.data.ptr==NULL ) {
 	 gParse.status = MEMORY_ALLOCATION;
       } else {
@@ -3407,7 +3440,7 @@ static void Do_Func( Node *this )
 		  maxvalue( pVals[0].data.lng, pVals[1].data.lng );
 	    break;
 
-	    /* Boolean SAO region Functions... all arguments scalar dbls */
+	    /* Boolean SAO region Functions... scalar or vector dbls */
 
 	 case near_fct:
 	    this->value.data.log = bnear( pVals[0].data.dbl, pVals[1].data.dbl,
@@ -4344,67 +4377,111 @@ static void Do_Func( Node *this )
 	    }
 	    break;
 
-	    /* Boolean SAO region Functions... all arguments scalar dbls */
+	    /* Boolean SAO region Functions... scalar or vector dbls */
 
 	 case near_fct:
 	    while( row-- ) {
-	       this->value.undef[row] = 0;
-	       i=3; while( i-- )
-		  if( vector[i] ) {
-		     pVals[i].data.dbl = theParams[i]->value.data.dblptr[row];
-		     this->value.undef[row] |= theParams[i]->value.undef[row];
-		  }
-	       if( !(this->value.undef[row]) )
-		  this->value.data.logptr[row] =
-		     bnear( pVals[0].data.dbl, pVals[1].data.dbl,
-			    pVals[2].data.dbl );
+	       nelem = this->value.nelem;
+	       while( nelem-- ) {
+		  elem--;
+		  i=3; while( i-- )
+		     if( vector[i]>1 ) {
+			pVals[i].data.dbl =
+			   theParams[i]->value.data.dblptr[elem];
+			pNull[i] = theParams[i]->value.undef[elem];
+		     } else if( vector[i] ) {
+			pVals[i].data.dbl =
+			   theParams[i]->value.data.dblptr[row];
+			pNull[i] = theParams[i]->value.undef[row];
+		     }
+		  if( !(this->value.undef[elem] = (pNull[0] || pNull[1] ||
+						   pNull[2]) ) )
+		    this->value.data.logptr[elem] =
+		      bnear( pVals[0].data.dbl, pVals[1].data.dbl,
+			     pVals[2].data.dbl );
+	       }
 	    }
 	    break;
+
 	 case circle_fct:
 	    while( row-- ) {
-	       this->value.undef[row] = 0;
-	       i=5; while( i-- )
-		  if( vector[i] ) {
-		     pVals[i].data.dbl = theParams[i]->value.data.dblptr[row];
-		     this->value.undef[row] |= theParams[i]->value.undef[row];
-		  }
-	       if( !(this->value.undef[row]) )
-		  this->value.data.logptr[row] =
+	       nelem = this->value.nelem;
+	       while( nelem-- ) {
+		  elem--;
+		  i=5; while( i-- )
+		     if( vector[i]>1 ) {
+			pVals[i].data.dbl =
+			   theParams[i]->value.data.dblptr[elem];
+			pNull[i] = theParams[i]->value.undef[elem];
+		     } else if( vector[i] ) {
+			pVals[i].data.dbl =
+			   theParams[i]->value.data.dblptr[row];
+			pNull[i] = theParams[i]->value.undef[row];
+		     }
+		  if( !(this->value.undef[elem] = (pNull[0] || pNull[1] ||
+						   pNull[2] || pNull[3] ||
+						   pNull[4]) ) )
+		    this->value.data.logptr[elem] =
 		     circle( pVals[0].data.dbl, pVals[1].data.dbl,
 			     pVals[2].data.dbl, pVals[3].data.dbl,
 			     pVals[4].data.dbl );
+	       }
 	    }
 	    break;
+
 	 case box_fct:
 	    while( row-- ) {
-	       this->value.undef[row] = 0;
-	       i=7; while( i-- )
-		  if( vector[i] ) {
-		     pVals[i].data.dbl = theParams[i]->value.data.dblptr[row];
-		     this->value.undef[row] |= theParams[i]->value.undef[row];
-		  }
-	       if( !(this->value.undef[row]) )
-		  this->value.data.logptr[row] =
+	       nelem = this->value.nelem;
+	       while( nelem-- ) {
+		  elem--;
+		  i=7; while( i-- )
+		     if( vector[i]>1 ) {
+			pVals[i].data.dbl =
+			   theParams[i]->value.data.dblptr[elem];
+			pNull[i] = theParams[i]->value.undef[elem];
+		     } else if( vector[i] ) {
+			pVals[i].data.dbl =
+			   theParams[i]->value.data.dblptr[row];
+			pNull[i] = theParams[i]->value.undef[row];
+		     }
+		  if( !(this->value.undef[elem] = (pNull[0] || pNull[1] ||
+						   pNull[2] || pNull[3] ||
+						   pNull[4] || pNull[5] ||
+						   pNull[6] ) ) )
+		    this->value.data.logptr[elem] =
 		     saobox( pVals[0].data.dbl, pVals[1].data.dbl,
 			     pVals[2].data.dbl, pVals[3].data.dbl,
 			     pVals[4].data.dbl, pVals[5].data.dbl,
-			     pVals[6].data.dbl );
+			     pVals[6].data.dbl );	
+	       }
 	    }
 	    break;
+
 	 case elps_fct:
 	    while( row-- ) {
-	       this->value.undef[row] = 0;
-	       i=7; while( i-- )
-		  if( vector[i] ) {
-		     pVals[i].data.dbl = theParams[i]->value.data.dblptr[row];
-		     this->value.undef[row] |= theParams[i]->value.undef[row];
-		  }
-	       if( !(this->value.undef[row]) )
-		  this->value.data.logptr[row] =
+	       nelem = this->value.nelem;
+	       while( nelem-- ) {
+		  elem--;
+		  i=7; while( i-- )
+		     if( vector[i]>1 ) {
+			pVals[i].data.dbl =
+			   theParams[i]->value.data.dblptr[elem];
+			pNull[i] = theParams[i]->value.undef[elem];
+		     } else if( vector[i] ) {
+			pVals[i].data.dbl =
+			   theParams[i]->value.data.dblptr[row];
+			pNull[i] = theParams[i]->value.undef[row];
+		     }
+		  if( !(this->value.undef[elem] = (pNull[0] || pNull[1] ||
+						   pNull[2] || pNull[3] ||
+						   pNull[4] || pNull[5] ||
+						   pNull[6] ) ) )
+		    this->value.data.logptr[elem] =
 		     ellipse( pVals[0].data.dbl, pVals[1].data.dbl,
 			      pVals[2].data.dbl, pVals[3].data.dbl,
 			      pVals[4].data.dbl, pVals[5].data.dbl,
 			      pVals[6].data.dbl );
+	       }
 	    }
 	    break;
 

@@ -565,5 +565,65 @@ int ffpcluc( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     return(*status);
 }
+/*--------------------------------------------------------------------------*/
+int ffprwu(fitsfile *fptr,
+           LONGLONG firstrow,
+           LONGLONG nrows, 
+           int *status)
 
+/* 
+ * fits_write_nullrows / ffprwu - write TNULLs to all columns in one or more rows
+ *
+ * fitsfile *fptr - pointer to FITS HDU opened for read/write
+ * long int firstrow - first table row to set to null. (firstrow >= 1)
+ * long int nrows - total number or rows to set to null. (nrows >= 1)
+ * int *status - upon return, *status contains CFITSIO status code
+ *
+ * RETURNS: CFITSIO status code
+ *
+ * written by Craig Markwardt, GSFC 
+ */
+{
+  LONGLONG ntotrows;
+  int ncols, i;
+  int typecode = 0;
+  LONGLONG repeat = 0, width = 0;
+  int nullstatus;
+
+  if (*status > 0) return *status;
+
+  if ((firstrow <= 0) || (nrows <= 0)) return (*status = BAD_ROW_NUM);
+
+  fits_get_num_rowsll(fptr, &ntotrows, status);
+
+  if (firstrow + nrows - 1 > ntotrows) return (*status = BAD_ROW_NUM);
+  
+  fits_get_num_cols(fptr, &ncols, status);
+  if (*status) return *status;
+
+
+  /* Loop through each column and write nulls */
+  for (i=1; i <= ncols; i++) {
+    repeat = 0;  typecode = 0;  width = 0;
+    fits_get_coltypell(fptr, i, &typecode, &repeat, &width, status);
+    if (*status) break;
+
+    /* NOTE: data of TSTRING type must not write the total repeat
+       count, since the repeat count is the *character* count, not the
+       nstring count.  Divide by string width to get number of
+       strings. */
+    
+    if (typecode == TSTRING) repeat /= width;
+
+    /* Write NULLs */
+    nullstatus = 0;
+    fits_write_col_null(fptr, i, firstrow, 1, repeat*nrows, &nullstatus);
+
+    /* ignore error if no null value is defined for the column */
+    if (nullstatus && nullstatus != NO_NULL) return (*status = nullstatus);
+    
+  }
+    
+  return *status;
+}
 

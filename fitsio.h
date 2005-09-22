@@ -34,7 +34,7 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.003
+#define CFITSIO_VERSION 3.004
 
 #include <stdio.h>
 
@@ -46,7 +46,7 @@ SERVICES PROVIDED HEREUNDER."
 #include <limits.h>  /* needed for LLONG_MAX and INT64_MAX definitions */
 
 /* Define the datatype for variables which store file offset values. */
-/* The new 'off_t' datatype should be used for this purpose, but some */
+/* The newer 'off_t' datatype should be used for this purpose, but some */
 /* older compilers do not recognize this type, in which case we use 'long' */
 /* instead.  Note that _OFF_T is defined (or not) in stdio.h depending */
 /* on whether _LARGEFILE_SOURCE is defined in sys/feature_tests.h  */
@@ -60,63 +60,57 @@ SERVICES PROVIDED HEREUNDER."
 #    define OFF_T long
 #endif
 
-/* typedef the 'LONGLONG' data type to the intrinsice 8-byte integer type */
-/* and in particular, idenity all the platforms where sizeof(long) == 8 */
+/* typedef the 'LONGLONG' data type to an intrinsice 8-byte integer type */
 
-#if defined(__alpha) && ( defined(__unix__) || defined(__NetBSD__) )
-    typedef long LONGLONG;  
-#   define USE_LL_SUFFIX 0
-#elif defined(__sparcv9)/*  SUN Solaris7 in 64-bit mode */
+/* ================================================================= */
+/*   The following platforms have sizeof(long) == 8                  */
+/*   this block of code should match a similar block in fitsio2.h    */
+/*   and the block of code at the beginning of f77_wrap.h            */
+/*
+   __alpha       = old Dec Alpha running OSF (not VMS)
+   __sparcv9     = SUN Solaris7 in 64-bit mode 
+   __ia64__      = Itanium 
+   __x86_64__    = AMD Opteron 
+   __powerpc64__ = IBM 64-bit AIX powerpc (also has __64BIT__ defined)
+*/
+
+#if (defined(__alpha) && ( defined(__unix__) || defined(__NetBSD__) )) \
+    ||  defined(__sparcv9)  \
+    ||  defined(__ia64__)   \
+    ||  defined(__x86_64__) \
+    ||  defined(__powerpc64__) || defined(__64BIT__)
+
     typedef long LONGLONG;
 #   define USE_LL_SUFFIX 0
-#elif defined(__ia64__)  || defined(__x86_64__) /* Itanium and AMD Opteron */
-    typedef long LONGLONG;
-#   define USE_LL_SUFFIX 0
 
-#elif defined(_SX) /* Nec SuperUx */
-    typedef long LONGLONG;
-#   define USE_LL_SUFFIX 0
-
-#elif defined(__APPLE__)
-    typedef long long LONGLONG;
-#   ifndef HAVE_LONGLONG
-#      define HAVE_LONGLONG 1
-#   endif
-
-#elif defined(_MSC_VER)   /* Windows PCs; Visual C++, but not Borland C++ */
-     typedef __int64 LONGLONG;
-#    ifndef HAVE_LONGLONG
-#      define HAVE_LONGLONG 1
-#    endif
+/* ================================================================= */
+/*  Must distinguish between 32-bit and 64-bit MIPS (SGI) platforms  */
 
 #elif defined(_MIPS_SZLONG)
 #  if _MIPS_SZLONG == 32
     typedef long long LONGLONG;
-#    ifndef HAVE_LONGLONG
-#      define HAVE_LONGLONG 1
-#    endif
+#   define USE_LL_SUFFIX 1
+
 #  elif _MIPS_SZLONG == 64
      typedef long LONGLONG;  
 #    define USE_LL_SUFFIX 0
 #  endif
 
-#elif defined(HAVE_LONGLONG)
-    typedef long long LONGLONG;
-#   ifndef HAVE_LONGLONG
-#      define HAVE_LONGLONG 1
-#   endif
+/* ================================================================= */
 
+#elif defined(_MSC_VER)   /* Windows PCs; Visual C++, but not Borland C++ */
+     typedef __int64 LONGLONG;
+#    define USE_LL_SUFFIX 0
+
+/* ================================================================= */
+/*   Otherwise, assume that 'long long' datatype is supported */
 #else
-    typedef long long LONGLONG;  /* assume that 'long long' is supported */
-#   ifndef HAVE_LONGLONG
-#      define HAVE_LONGLONG 1
-#   endif
-#endif
+    typedef long long LONGLONG; 
+#   define USE_LL_SUFFIX 1
 
-/* by default use LL suffix when refering to type LONGLONG variables */
-#ifndef USE_LL_SUFFIX
-#  define USE_LL_SUFFIX 1
 #endif
+/* ================================================================= */
+
 
 /*  The following exclusion if __CINT__ is defined is needed for ROOT */
 #ifndef __CINT__
@@ -133,23 +127,25 @@ SERVICES PROVIDED HEREUNDER."
 #define FLEN_ERRMSG    81  /* max length of a FITSIO error message */
 #define FLEN_STATUS    31  /* max length of a FITSIO status text string */
  
-#define TBIT          1  /* codes for FITS table data types */
-#define TBYTE        11
-#define TSBYTE       12
-#define TLOGICAL     14
-#define TSTRING      16
-#define TUSHORT      20
-#define TSHORT       21
-#define TUINT        30
-#define TINT         31
-#define TULONG       40
-#define TLONG        41
-#define TINT32BIT    41  /* used when returning datatype of a column */
-#define TFLOAT       42
-#define TLONGLONG    81
-#define TDOUBLE      82
-#define TCOMPLEX     83
-#define TDBLCOMPLEX 163
+enum {
+TBIT        =   1,  /* codes for FITS table data types */
+TBYTE       =  11,
+TSBYTE      =  12,
+TLOGICAL    =  14,
+TSTRING     =  16,
+TUSHORT     =  20,
+TSHORT      =  21,
+TUINT       =  30,
+TINT        =  31,
+TULONG      =  40,
+TLONG       =  41,
+TINT32BIT   =  41 , /* used when returning datatype of a column */
+TFLOAT      =  42,
+TLONGLONG   =  81,
+TDOUBLE     =  82,
+TCOMPLEX    =  83,
+TDBLCOMPLEX = 163
+};
 
 #define TYP_STRUC_KEY 10
 #define TYP_CMPRS_KEY 20
@@ -264,32 +260,32 @@ typedef struct        /* structure used to store table column information */
 
 typedef struct      /* structure used to store basic FITS file information */
 {
-    int filehandle; /* handle returned by the file open function */
-    int driver;     /* defines which set of I/O drivers should be used */
-    int open_count; /* number of opened 'fitsfiles' using this structure */
-    char *filename; /* file name */
-    int validcode;  /* magic value used to verify that structure is valid */
+    int filehandle;   /* handle returned by the file open function */
+    int driver;       /* defines which set of I/O drivers should be used */
+    int open_count;   /* number of opened 'fitsfiles' using this structure */
+    char *filename;   /* file name */
+    int validcode;    /* magic value used to verify that structure is valid */
     LONGLONG filesize; /* current size of the physical disk file in bytes */
     LONGLONG logfilesize; /* logical size of file, including unflushed buffers */
-    int lasthdu;    /* is this the last HDU in the file? 0 = no, else yes */
-    LONGLONG bytepos;  /* current logical I/O pointer position in file */
-    LONGLONG io_pos;   /* current I/O pointer position in the physical file */
-    int curbuf;     /* number of I/O buffer currently in use */ 
-    int curhdu;     /* current HDU number; 0 = primary array */
-    int hdutype;    /* 0 = primary array, 1 = ASCII table, 2 = binary table */
-    int writemode;  /* 0 = readonly, 1 = readwrite */
-    int maxhdu;     /* highest numbered HDU known to exist in the file */
-    int MAXHDU;     /* dynamically allocated dimension of headstart array */
+    int lasthdu;      /* is this the last HDU in the file? 0 = no, else yes */
+    LONGLONG bytepos; /* current logical I/O pointer position in file */
+    LONGLONG io_pos;  /* current I/O pointer position in the physical file */
+    int curbuf;       /* number of I/O buffer currently in use */ 
+    int curhdu;       /* current HDU number; 0 = primary array */
+    int hdutype;      /* 0 = primary array, 1 = ASCII table, 2 = binary table */
+    int writemode;    /* 0 = readonly, 1 = readwrite */
+    int maxhdu;       /* highest numbered HDU known to exist in the file */
+    int MAXHDU;       /* dynamically allocated dimension of headstart array */
     LONGLONG *headstart; /* byte offset in file to start of each HDU */
-    LONGLONG headend;  /* byte offest in file to end of the current HDU header */
-    LONGLONG nextkey;  /* byte offset in file to beginning of next keyword */
-    LONGLONG datastart;/* byte offset in file to start of the current data unit */
-    int tfield;     /* number of fields in the table (primary array has 2 */
-    LONGLONG origrows;  /* original number of rows (value of NAXIS2 keyword)  */
-    LONGLONG numrows;   /* number of rows in the table (dynamically updated) */
-    LONGLONG rowlength; /* length of a table row or image size (bytes) */
-    tcolumn *tableptr; /* pointer to the table structure */
-    LONGLONG heapstart; /* heap start byte relative to start of data unit */
+    LONGLONG headend;   /* byte offest in file to end of the current HDU header */
+    LONGLONG nextkey;   /* byte offset in file to beginning of next keyword */
+    LONGLONG datastart; /* byte offset in file to start of the current data unit */
+    int tfield;          /* number of fields in the table (primary array has 2 */
+    LONGLONG origrows;   /* original number of rows (value of NAXIS2 keyword)  */
+    LONGLONG numrows;    /* number of rows in the table (dynamically updated) */
+    LONGLONG rowlength;  /* length of a table row or image size (bytes) */
+    tcolumn *tableptr;   /* pointer to the table structure */
+    LONGLONG heapstart;  /* heap start byte relative to start of data unit */
     LONGLONG heapsize;   /* size of the heap, in bytes */
 
          /* the following elements are related to compressed images */
@@ -323,7 +319,7 @@ typedef struct      /* structure used to store basic FITS file information */
     int rice_nbits;         /* second compression parameter */
 } FITSfile;
 
-typedef struct      /* structure used to store basic HDU information */
+typedef struct         /* structure used to store basic HDU information */
 {
     int HDUposition;  /* HDU position in file; 0 = first HDU */
     FITSfile *Fptr;   /* pointer to FITS file structure */
@@ -353,6 +349,61 @@ typedef struct  /* structure for the iterator function column information */
 #define InputCol         0  /* flag for input only iterator column       */
 #define InputOutputCol   1  /* flag for input and output iterator column */
 #define OutputCol        2  /* flag for output only iterator column      */
+
+/*=============================================================================
+*
+*       The following wtbarr typedef is used in the fits_read_wcstab() routine,
+*       which is intended for use with the WCSLIB library written by Mark
+*       Calabretta, http://www.atnf.csiro.au/~mcalabre/index.html
+*
+*       In order to maintain WCSLIB and CFITSIO as independent libraries it
+*       was not permissible for any CFITSIO library code to include WCSLIB
+*       header files, or vice versa.  However, the CFITSIO function
+*       fits_read_wcstab() accepts an array of structs defined by wcs.h within
+*       WCSLIB.  The problem then was to define this struct within fitsio.h
+*       without including wcs.h, especially noting that wcs.h will often (but
+*       not always) be included together with fitsio.h in an applications
+*       program that uses fits_read_wcstab().
+*
+*       Of the various possibilities, the solution adopted was for WCSLIB to
+*       define "struct wtbarr" while fitsio.h defines "typedef wtbarr", a
+*       untagged struct with identical members.  This allows both wcs.h and
+*       fitsio.h to define a wtbarr data type without conflict by virtue of
+*       the fact that structure tags and typedef names share different
+*       namespaces in C. Therefore, declarations within WCSLIB look like
+*
+*          struct wtbarr *w;
+*
+*       while within CFITSIO they are simply
+*
+*          wtbarr *w;
+*
+*       but as suggested by the commonality of the names, these are really the
+*       same aggregate data type.  However, in passing a (struct wtbarr *) to
+*       fits_read_wcstab() a cast to (wtbarr *) is formally required.
+*===========================================================================*/
+
+#ifndef WCSLIB_GETWCSTAB
+#define WCSLIB_GETWCSTAB
+
+typedef struct {
+   int  i;                      /* Image axis number.                       */
+   int  m;                      /* Array axis number for index vectors.     */
+   int  kind;                   /* Array type, 'c' (coord) or 'i' (index).  */
+   char extnam[72];             /* EXTNAME of binary table extension.       */
+   int  extver;                 /* EXTVER  of binary table extension.       */
+   int  extlev;                 /* EXTLEV  of binary table extension.       */
+   char ttype[72];              /* TTYPEn of column containing the array.   */
+   long row;                    /* Table row number.                        */
+   int  ndim;                   /* Expected array dimensionality.           */
+   int  *dimlen;                /* Where to write the array axis lengths.   */
+   double **arrayp;             /* Where to write the address of the array  */
+                                /* allocated to store the array.            */
+} wtbarr;
+
+int fits_read_wcstab(fitsfile *fptr, int nwtb, wtbarr *wtb, int *status);
+
+#endif /* WCSLIB_GETWCSTAB */
 
 /* error status codes */
 
@@ -537,9 +588,12 @@ fitsfile* CUnit2FITS(int unit);
 /*----------------  FITS file URL parsing routines -------------*/
 int fits_get_token(char **ptr, char *delimiter, char *token, int *isanumber);
 char *fits_split_names(char *list);
-int ffiurl(char *url,  char *urltype, char *infile,
+int ffiurl(  char *url,  char *urltype, char *infile,
                     char *outfile, char *extspec, char *rowfilter,
                     char *binspec, char *colspec, int *status);
+int ffifile (char *url,  char *urltype, char *infile,
+                    char *outfile, char *extspec, char *rowfilter,
+                    char *binspec, char *colspec, char *pixfilter, int *status);
 int ffrtnm(char *url, char *rootname, int *status);
 int ffexist(const char *infile, int *exists, int *status);
 int ffexts(char *extspec, int *extnum,  char *extname, int *extvers,
@@ -555,6 +609,10 @@ int ffbins(char *binspec, int *imagetype, int *haxis,
 int ffbinr(char **binspec, char *colname, double *minin, 
                         double *maxin, double *binsizein, char *minname,
                         char *maxname, char *binname, int *status);
+int fits_copy_cell2image(fitsfile *fptr, fitsfile *newptr, char *colname,
+                      long rownum, int *status);
+int fits_copy_image2cell(fitsfile *fptr, fitsfile *newptr, char *colname,
+                      long rownum, int copykeyflag, int *status);
 int ffimport_file( char *filename, char **contents, int *status );
 int ffrwrg( char *rowlist, LONGLONG maxrows, int maxranges, int *numranges,
       long *minrow, long *maxrow, int *status);
@@ -611,6 +669,12 @@ int ffdtyp(char *cval, char *dtype, int *status);
 int ffpsvc(char *card, char *value, char *comm, int *status);
 int ffgknm(char *card, char *name, int *length, int *status);
 int ffgthd(char *tmplt, char *card, int *hdtype, int *status);
+int fits_translate_keyword(char *inrec, char *outrec, char *patterns[][2],
+          int npat, int n_value, int n_offset, int n_range, int *pat_num,
+          int *i, int *j,  int *m, int *n, int *status);
+int fits_translate_keywords(fitsfile *infptr, fitsfile *outfptr,
+          int firstkey, char *patterns[][2],
+          int npat, int n_value, int n_offset, int n_range, int *status);    
 int ffasfm(char *tform, int *datacode, long *width, int *decim, int *status);
 int ffbnfm(char *tform, int *datacode, long *repeat, long *width, int *status);
 int ffbnfmll(char *tform, int *datacode, LONGLONG *repeat, long *width, int *status);
@@ -1617,6 +1681,28 @@ int fits_select_image_section(fitsfile **fptr, char *outfile,
            char *imagesection, int *status);
 int fits_select_section( fitsfile *infptr, fitsfile *outfptr,
            char *imagesection, int *status);
+
+typedef struct
+{
+	/* input(s) */
+	int count;
+	char ** path;
+	char ** tag;
+	fitsfile ** ifptr;
+
+	char * expression;
+
+	/* output control */
+	int bitpix;
+	long blank;
+	fitsfile * ofptr;
+	char keyword[FLEN_KEYWORD];
+	char comment[FLEN_COMMENT];
+} PixelFilter;
+
+
+int fits_pixel_filter (PixelFilter * filter, int * status);
+
 
 /*--------------------- grouping routines ------------------*/
 

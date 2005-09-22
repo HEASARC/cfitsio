@@ -2083,7 +2083,38 @@ in the FITS array.
   int fits_create_imgll / ffcrimll
       ( fitsfile *fptr, int bitpix, int naxis, LONGLONG *naxes, > int *status)
 -
->4  Write a rectangular subimage (or the whole image) to the FITS data
+>4  Copy an n-dimensional image in a particular row and column of a 
+    binary table (in a vector column) 
+    to or from a primary array or image extension.
+    
+    The 'cell2image' routine
+    will append a new image extension (or primary array) to the output file.
+    Any WCS keywords associated with the input column image will be tranlated
+    into the appropriate form for an image extension.  Any other keywords
+    in the table header that are not specifically related to defining the 
+    binary table structure or to other columns in the table 
+    will also be copied to the header of the output image.
+
+    The 'image2cell' routine will copy the input image into the specified row
+    and column of the current binary table in the output file.  The binary table
+    HDU must exist before calling this routine, but it
+    may be empty, with no rows or columns of data.  The specified column
+    (and row) will be created if it does not already exist.  The 'copykeyflag'
+    parameter controls which keywords are copied from the input
+    image to the header of the output table: 0 = no keywords will be copied,
+    1 = all keywords will be copied (except those keywords that would be invalid in 
+>   the table header), and 2 = copy only the WCS keywords. \label{copycell}
+-
+  int fits_copy_cell2image
+      (fitsfile *infptr, fitsfile *outfptr, char *colname, long rownum,  
+       > int *status)       
+
+  int fits_copy_image2cell
+      (fitsfile *infptr, fitsfile *outfptr, char *colname, long rownum,  
+       int copykeyflag > int *status)       
+-
+   
+>5  Write a rectangular subimage (or the whole image) to the FITS data
     array.  The fpixel and lpixel arrays give the coordinates of the
     first (lower left corner) and last (upper right corner) pixels in
 >   FITS image to be written to.  \label{ffpss}
@@ -2092,7 +2123,7 @@ in the FITS array.
       (fitsfile *fptr, int datatype, long *fpixel, long *lpixel,
        DTYPE *array, > int *status)
 -
->5  Write pixels into the FITS data array.  'fpixel' is an array of
+>6  Write pixels into the FITS data array.  'fpixel' is an array of
    length NAXIS which gives the coordinate of the starting pixel to be
    written to, such that fpixel[0] is in the range 1 to NAXIS1,
    fpixel[1] is in the range 1 to NAXIS2, etc.  The first pair of routines
@@ -2124,7 +2155,7 @@ in the FITS array.
       (fitsfile *fptr, int datatype, LONGLONG *fpixel, LONGLONG nelements,
        DTYPE *array, DTYPE *nulval, > int *status);
 -
->6  Set FITS data array elements equal to the appropriate null pixel
+>7  Set FITS data array elements equal to the appropriate null pixel
     value. For integer FITS arrays, the FITS null value is defined by
     the BLANK keyword  (an error is returned if the BLANK keyword
     doesn't exist). For floating point FITS arrays the special IEEE NaN
@@ -2135,7 +2166,7 @@ in the FITS array.
   int fits_write_null_img / ffpprn
       (fitsfile *fptr, LONGLONG firstelem, LONGLONG nelements, > int *status)
 -
->7  Read a rectangular subimage (or the whole image) from the FITS 
+>8  Read a rectangular subimage (or the whole image) from the FITS 
     data array.  The fpixel and lpixel arrays give the coordinates of
     the first (lower left corner) and last (upper right corner) pixels
     to be read from the FITS image. Undefined FITS array elements will
@@ -2148,7 +2179,7 @@ in the FITS array.
       (fitsfile *fptr, int  datatype, long *fpixel, long *lpixel, long *inc,
        DTYPE *nulval, > DTYPE *array, int *anynul, int *status)
 -
->8  Read pixels from the FITS data array.  'fpixel' is the starting
+>9  Read pixels from the FITS data array.  'fpixel' is the starting
     pixel location and is an array of length NAXIS such that fpixel[0]
     is in the range 1 to NAXIS1, fpixel[1] is in the range 1 to NAXIS2,
     etc. The nelements parameter specifies the number of pixels to
@@ -2679,7 +2710,9 @@ rows if required) and not the number of table cells.
    value will be written into the FITS file.  If a null pointer is
    entered for nulval, then the null value is ignored and this routine
    behaves the same as the first routine.  The third routine
-   simply writes undefined pixel values to the column.
+   simply writes undefined pixel values to the column.  The fourth routine
+   fills every column in the table with null values, in the specified
+   rows (ignoring any columns that do not have a defined null value).
    \label{ffpcl} \label{ffpcn} \label{ffpclu}
 -
   int fits_write_col / ffpcl
@@ -2694,6 +2727,9 @@ rows if required) and not the number of table cells.
    int fits_write_col_null / ffpclu
        (fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
         LONGLONG nelements, > int *status)
+
+   int fits_write_nullrows / ffprwu
+       (fitsfile *fptr, LONGLONG firstrow, LONGLONG nelements, > int *status)
 -
 >2  Read elements from an ASCII or binary table column.  The data type
     parameter specifies the data type of the `nulval' and `array'  pointers;
@@ -3263,7 +3299,131 @@ The following utility routines may be useful for certain applications.
       # the following template line modifies the NAME keyword to OBJECT
       - NAME OBJECT
 -
->18  Parse the input string containing a list of rows or row ranges, and
+>18  Translate a keyword name into a new name, based on a set of patterns.
+This routine is useful for translating keywords in cases such as 
+adding or deleting columns in
+a table, or copying a column from one table to another, or extracting
+an array from a cell in a binary table column into an image extension.  In 
+these cases, it is necessary to tranlate the names of the keywords associated
+with the original table column(s) into the appropriate keyword name in the final
+file.  For example, if column 2 is deleted from a table, 
+then the value of 'n' in all the
+TFORMn and TTYPEn keywords for columns 3 and higher must be decremented
+by 1.  Even more complex translations are sometines needed to convert the 
+WCS keywords when extracting an image out of a table column cell into
+a separate image extension.
+
+The user passes an array of patterns to be matched.  Input pattern
+number i is pattern[i][0], and output pattern number i is
+pattern[i][1].  Keywords are matched against the input patterns.  If a
+match is found then the keyword is re-written according to the output
+pattern.
+
+Order is important.  The first match is accepted.  The fastest match
+will be made when templates with the same first character are grouped
+together.
+
+Several characters have special meanings:
+-
+     i,j - single digits, preserved in output template
+     n - column number of one or more digits, preserved in output template
+     m - generic number of one or more digits, preserved in output template
+     a - coordinate designator, preserved in output template
+     # - number of one or more digits
+     ? - any character
+     * - only allowed in first character position, to match all
+         keywords; only useful as last pattern in the list
+-
+i, j, n, and m are returned by the routine.
+
+For example, the input pattern "iCTYPn" will match "1CTYP5" (if n\_value
+is 5); the output pattern "CTYPEi" will be re-written as "CTYPE1".
+Notice that "i" is preserved.
+
+The following output patterns are special:
+
+    "-" - do not copy a keyword that matches the corresponding input pattern
+
+    "+" - copy the input unchanged
+
+The inrec string could be just the 8-char keyword name, or the entire 
+80-char header record.  Characters 9 - 80 in the input string simply get
+appended to the translated keyword name.
+
+If n\_range = 0, then only keywords with 'n' equal to n\_value will be 
+considered as a pattern match.  If n\_range = +1, then all values of 
+'n' greater than or equal to n\_value will be a match, and if -1, 
+>then values of 'n' less than or equal to n\_value will match.\label{translatekey}
+-
+int fits_translate_keyword(
+      char *inrec,        /* I - input string */
+      char *outrec,       /* O - output converted string, or */
+                          /*     a null string if input does not  */
+                          /*     match any of the patterns */
+      char *patterns[][2],/* I - pointer to input / output string */
+                          /*     templates */
+      int npat,           /* I - number of templates passed */
+      int n_value,        /* I - base 'n' template value of interest */
+      int n_offset,       /* I - offset to be applied to the 'n' */
+                          /*     value in the output string */
+      int n_range,        /* I - controls range of 'n' template */
+                          /*     values of interest (-1,0, or +1) */
+      int *pat_num,       /* O - matched pattern number (0 based) or -1 */
+      int *i,             /* O - value of i, if any, else 0 */
+      int *j,             /* O - value of j, if any, else 0 */
+      int *m,             /* O - value of m, if any, else 0 */
+      int *n,             /* O - value of n, if any, else 0 */
+      int *status)        /* IO - error status */
+-
+>    Here is an example of some of the patterns used to convert the keywords associated
+with an image in a cell of a table column into the keywords appropriate for
+>an IMAGE extension:
+-
+    char *patterns[][2] = {{"TSCALn",  "BSCALE"  },  /* Standard FITS keywords */
+			   {"TZEROn",  "BZERO"   },
+			   {"TUNITn",  "BUNIT"   },
+			   {"TNULLn",  "BLANK"   },
+			   {"TDMINn",  "DATAMIN" },
+			   {"TDMAXn",  "DATAMAX" },
+			   {"iCTYPn",  "CTYPEi"  },  /* Coordinate labels */
+			   {"iCTYna",  "CTYPEia" },
+			   {"iCUNIn",  "CUNITi"  },  /* Coordinate units */
+			   {"iCUNna",  "CUNITia" },
+			   {"iCRVLn",  "CRVALi"  },  /* WCS keywords */
+			   {"iCRVna",  "CRVALia" },
+			   {"iCDLTn",  "CDELTi"  },
+			   {"iCDEna",  "CDELTia" },
+			   {"iCRPXn",  "CRPIXi"  },
+			   {"iCRPna",  "CRPIXia" },
+			   {"ijPCna",  "PCi_ja"  },
+			   {"ijCDna",  "CDi_ja"  },
+			   {"iVn_ma",  "PVi_ma"  },
+			   {"iSn_ma",  "PSi_ma"  },
+			   {"iCRDna",  "CRDERia" },
+			   {"iCSYna",  "CSYERia" },
+			   {"iCROTn",  "CROTAi"  },
+			   {"WCAXna",  "WCSAXESa"},
+			   {"WCSNna",  "WCSNAMEa"}};
+-
+>19  Translate the keywords in the input HDU into the keywords that are
+appropriate for the output HDU.  This is a driver routine that calls
+>the previously described routine.
+-
+int fits_translate_keywords(
+	   fitsfile *infptr,   /* I - pointer to input HDU */
+	   fitsfile *outfptr,  /* I - pointer to output HDU */
+	   int firstkey,       /* I - first HDU record number to start with */
+	   char *patterns[][2],/* I - pointer to input / output keyword templates */
+	   int npat,           /* I - number of templates passed */
+	   int n_value,        /* I - base 'n' template value of interest */
+	   int n_offset,       /* I - offset to be applied to the 'n' */
+ 	                       /*     value in the output string */
+	   int n_range,        /* I - controls range of 'n' template */
+	                       /*     values of interest (-1,0, or +1) */
+	   int *status)        /* IO - error status */
+-
+
+>20  Parse the input string containing a list of rows or row ranges, and
      return integer arrays containing the first and last row in each
      range.  For example, if rowlist = "3-5, 6, 8-9" then it will
      return numranges = 3, rangemin = 3, 6, 8 and rangemax = 5, 6, 9.
@@ -3282,14 +3442,14 @@ The following utility routines may be useful for certain applications.
     int fits_parse_rangell / ffrwrgll(char *rowlist, LONGLONG maxrows, int maxranges, >  
        int *numranges, LONGLONG *rangemin, LONGLONG *rangemax, int *status)
 -
->19  Check that the Header fill bytes (if any) are all blank.  These are the bytes
+>21  Check that the Header fill bytes (if any) are all blank.  These are the bytes
      that may follow END keyword and before the beginning of data unit,
      or the end of the HDU if there is no data unit.
 >   \label{ffchfl}
 -
     int ffchfl(fitsfile *fptr, > int *status)
 -
->20  Check that the Data fill bytes (if any) are all zero (for IMAGE or 
+>22  Check that the Data fill bytes (if any) are all zero (for IMAGE or 
      BINARY Table HDU) or all blanks (for ASCII table HDU).  These file
      bytes may be located after the last valid data byte in the HDU and
      before the physical end of the HDU.
@@ -3740,14 +3900,14 @@ do not have a corresponding short function name.
             int *status);
 -
 
-*IX.  Celestial Coordinate System Routines
+*IX.  World Coordinate System Routines
 
 The FITS community has adopted a set of keyword conventions that define
 the transformations needed to convert between pixel locations in an
 image and the corresponding celestial coordinates on the sky, or more
 generally, that define world coordinates that are to be associated with
 any pixel location in an n-dimensional FITS array. CFITSIO is distributed
-with a couple of self-contained World Coordinate System (WCS) routines,
+with a a few self-contained World Coordinate System (WCS) routines,
 however, these routines DO NOT support all the latest WCS conventions,
 so it is STRONGLY RECOMMENDED that software developers use a more robust
 external WCS library.  Several recommended libraries are:
@@ -3763,13 +3923,14 @@ these WCS libraries can be found on the FITS Support Office web site at
 http://fits.gsfc.nasa.gov under the WCS link.
 
 The functions provided in these external WCS libraries will need
-access to the  WCS information contained in the FITS file headers.
+access to the  WCS keywords contained in the FITS file headers.
 One convenient way to pass this information to the extermal library is
 to use the fits\_hdr2str routine in CFITSIO (defined below) to copy the
 header keywords into one long string, and then pass this string to an
 interface routine in the external library that will extract
-the necessary WCS information (e.g., see the astFitsChan and astPutCards
-routines in the Starlink AST library).
+the necessary WCS information (e.g., the 'wcspih' routine in the WCSLIB
+library and the 'astFitsChan' and 'astPutCards' functions in the AST 
+library).
   
 >1  Concatenate the header keywords in the CHDU into a single long
     string of characters. Each 80-character fixed-length keyword
@@ -3795,6 +3956,17 @@ routines in the Starlink AST library).
       > char **header, int *nkeys, int *status)
 -
 
+>2   The following CFITSIO routine is specifically designed for use
+in conjunction with the WCSLIB library.  It is not expected that
+applications programmers will call this routine directly, but it
+is documented here for completeness.  This routine extracts arrays
+from a binary table that contain WCS information using the -TAB table
+lookup convention.  See the documentation provided with the WCSLIB 
+> library for more information.  \label{wcstab}
+-
+  int fits_read_wcstab
+       (fitsfile *fptr, int nwtb, wtbarr *wtb, int *status);
+-
 **A.   Self-contained WCS Routines
 
 The following routines DO NOT support the more recent WCS conventions
@@ -4223,17 +4395,39 @@ and make the application program run
       (fitsfile **fptr, char *filename, char *tpltfile > int *status)
 -
 
->5  Parse the input filename or URL into its component parts: the file
-type (file://, ftp://, http://, etc), the base input file name, the
-name of the output file that the input file is to be copied to prior
-to opening, the HDU or extension specification, the filtering
-specifier, the binning specifier, and the column specifier.  Null
-strings will be returned for any components that are not present
-> in the input file name. \label{ffiurl}
+>5  Parse the input filename or URL into its component parts, namely:
+\begin{itemize}
+\item
+the file type (file://, ftp://, http://, etc),
+\item
+the base input file name, 
+\item
+the name of the output file that the input file is to be copied to prior
+to opening, 
+\item
+the HDU or extension specification, 
+\item
+the filtering specifier,
+\item
+the binning specifier, 
+\item
+the column specifier, 
+\item
+and the
+image pixel filtering specifier.
+\end{itemize}
+ Null strings will be returned for any components that are not present
+in the input file name.  These routines are mainly for interal use
+>by other CFITSIO routines. \label{ffiurl}
 -
   int fits_parse_input_url / ffiurl
       (char *filename, > char *filetype, char *infile, char *outfile, char
        *extspec, char *filter, char *binspec, char *colspec, int *status)
+
+  int fits_parse_input_filename / ffifile
+      (char *filename, > char *filetype, char *infile, char *outfile, char
+       *extspec, char *filter, char *binspec, char *colspec, char *pixspec,
+       int *status)
 -
 >6  Parse the input filename and return the HDU number that would be
 moved to if the file were opened with fits\_open\_file.  The returned
@@ -5659,12 +5853,12 @@ When creating a new file:
    filetype://BaseFilename(templateName)[compress]
 
 When opening an existing primary array or image HDU:
-   filetype://BaseFilename(outName)[HDUlocation][ImageSection]
+   filetype://BaseFilename(outName)[HDUlocation][ImageSection][pixFilter]
 
 When opening an existing table HDU:
    filetype://BaseFilename(outName)[HDUlocation][colFilter][rowFilter][binSpec]
 -
-The filetype, BaseFilename, outName, HDUlocation, and ImageSection
+The filetype, BaseFilename, outName, HDUlocation, ImageSection, and pixFilter
 components, if present, must be given in that order, but the colFilter,
 rowFilter, and binSpec specifiers may follow in any order.  Regardless
 of the order, however, the colFilter specifier, if present, will be
@@ -6178,7 +6372,94 @@ the world coordinate system keywords in the header of the image
 section, if they exist, so that the coordinate associated with each
 pixel in the image section will be computed correctly.
 
-**H.  Column and Keyword Filtering Specification
+**H.  Image Transform Filters
+
+CFITSIO can apply a user-specified mathematical function to the value
+of every pixel in a FITS image, thus creating a new virtual image
+in computer memory that is then opened and read by the application
+program.  The original FITS image is not modified by this process.
+
+The image tranformation specifier is appended to the input
+FITS file name and is enclosed in square brackets.  It begins with the 
+letters 'PIX' to distinguish it from other types of FITS file filters
+that are recognized by CFITSIO.  The image transforming function may
+use any of the mathmatical operators listed in the following 
+'Row Filtering Specification' section of this document.
+Some examples of  image transform filters are:
+-
+ [pix X * 2.0]               - multiply each pixel by 2.0
+ [pix sqrt(X)]               - take the square root of each pixel
+ [pix X + #ZEROPT            - add the value of the ZEROPT keyword
+ [pix X>0 ? log10(X) : -99.] - if the pixel value is greater
+                               than 0, compute the base 10 log,
+                               else set the pixel = -99.
+-
+Use the letter 'X' in the expression to represent the current pixel value
+in the image.  The expression is evaluated
+independently for each pixel in the image and may be a function of 1) the
+original pixel value, 2) the value of other pixels in the image at
+a given relative offset from the position of the pixel that is being
+evaluated, and 3) the value of 
+any header keywords.  Header keyword values are represented
+by the name of the keyword preceded by the '\#' sign.
+
+
+To access the the value of adjacent pixels in the image, 
+specify the (1-D) offset from the current pixel in curly brackets.  
+For example
+-
+ [pix  (x{-1} + x + x{+1}) / 3] 
+-
+will replace each pixel value with the running mean of the values of that
+pixel and it's 2 neighboring pixels.  Note that in this notation the image
+is treated as a 1-D array, where each row of the image (or higher dimensional
+cube) is appended one after another in one long array of pixels.  
+It is possible to refer to pixels
+in the rows above or below the current pixel by using the value of the
+NAXIS1 header keyword.  For example
+-
+ [pix (x{-#NAXIS1} + x + x{#NAXIS1}) / 3]
+-
+will compute the mean of each image pixel and the pixels immediately
+above and below it in the adjacent rows of the image.  If the pixel offset
+extends beyond the first or last pixel in the image, the function will
+evaluate to undefined, or NULL.
+
+For  complex  or commonly used image filtering operations,  
+one  can  write the expression into an external text  file and 
+then import it  into the  
+filter using  the syntax '[pix @filename.txt]'.   The mathematical
+expression can
+extend over multiple lines of text in the  file.   
+Any lines in the external text file
+that begin with 2 slash characters ('//') will be ignored and may be
+used to add comments into the file.
+
+By default, the datatype of the resulting image will be the same as
+the original image, but one may force a different datatype by appended
+a code letter to the 'pix' keyword:
+-
+      pixb  -  8-bit byte    image with BITPIX =   8
+      pixi  - 16-bit integer image with BITPIX =  16
+      pixj  - 32-bit integer image with BITPIX =  32
+      pixr  - 32-bit float   image with BITPIX = -32
+      pixd  - 64-bit float   image with BITPIX = -64
+-
+Also by default, any other HDUs in the input file will be copied without
+change to the 
+output virtual FITS file, but one may discard the other HDUs by adding 
+the number '1' to the 'pix' keyword (and following any optional datatype code
+letter).  For example:
+-
+     myfile.fits[3][pixr1  sqrt(X)]
+- 
+will create a virtual FITS file containing only a primary array image
+with 32-bit floating point pixels that have a value equal to the square 
+root of the pixels in the image that is in the 3rd extension 
+of the 'myfile.fits' file.
+
+
+**I.  Column and Keyword Filtering Specification
 
 The optional column/keyword filtering specifier is used to modify the
 column structure and/or the header keywords in the HDU that was
@@ -6257,8 +6538,7 @@ header keyword values and other columns (in the same row).  The full
 syntax and available functions for the expression are described below
 in the row filter specification section.
 
-
-For  complex  or commonly used operations,  one  can also  place the
+For  complex  or commonly used operations,  one  can  place the
 operations into an external text  file and import it  into the  column
 filter using  the syntax '[col @filename.txt]'.   The operations can
 extend over multiple lines of the  file, but multiple operations must
@@ -6283,7 +6563,7 @@ Examples:
                                    it by the EXPOSURE keyword value.
 -
 
-**I.  Row Filtering Specification
+**J.  Row Filtering Specification
 
     When entering the name of a FITS table that is to be opened by a
     program, an optional row filter may be specified to select a subset
@@ -6512,9 +6792,7 @@ by a backslash to force the UNIX shell to ignore it.
     constants in virtually all expressions.  The result will be  of  the
     same dimension as the vector.  Two vectors in an expression, though,
     need to  have  the  same  number  of  elements  and  have  the  same
-    dimensions.   The  only  places  a vector column cannot be used (for
-    now, anyway) are the SAO  region  functions  and  the  NEAR  boolean
-    function.
+    dimensions.
 
     Arithmetic and logical operations are all performed on an element by
     element basis.  Comparing two vector columns,  eg  "COL1  ==  COL2",
@@ -6748,10 +7026,11 @@ by a backslash to force the UNIX shell to ignore it.
     at examples of region file produced by fv/POW or ds9 for further
     details of the region file format.
 
-    There are three functions that are primarily for use with SAO region
-    files and the  FSAOI  task, but they  can  be  used  directly.  They
+    There are three low-level  functions that are primarily for use with 
+    regfilter function, but they  can  be  called  directly.  They
     return  a  boolean true   or  false  depending   on  whether a   two
-    dimensional point is in the region or not:
+    dimensional point is in the region or not.  The positional coordinates
+    must be given in pixel units:
 -
     "point in a circular region"
           circle(xcntr,ycntr,radius,Xcolumn,Ycolumn)
@@ -7666,12 +7945,14 @@ fits\_close\_file     & \pageref{ffclos} \\
 fits\_compact\_group & \pageref{ffgtcm} \\
 fits\_compare\_str    & \pageref{ffcmps} \\
 fits\_compress\_heap & \pageref{ffcmph} \\
+fits\_copy\_cell2image & \pageref{copycell} \\
 fits\_copy\_col     & \pageref{ffcpcl} \\
 fits\_copy\_data      & \pageref{ffcpdt} \\
 fits\_copy\_file      & \pageref{ffcpfl} \\
 fits\_copy\_group    & \pageref{ffgtcp} \\
 fits\_copy\_hdu       & \pageref{ffcopy} \\
 fits\_copy\_header    & \pageref{ffcphd} \\
+fits\_copy\_image2cell & \pageref{copycell} \\
 fits\_copy\_key           & \pageref{ffcpky} \\
 fits\_copy\_member    & \pageref{ffgmcp} \\
 fits\_create\_diskfile    & \pageref{ffinit} \\
@@ -7683,11 +7964,11 @@ fits\_create\_memfile    & \pageref{ffimem} \\
 fits\_create\_tbl     & \pageref{ffcrtb} \\
 fits\_create\_template & \pageref{fftplt} \\
 fits\_date2str  & \pageref{ffdt2s} \\
-fits\_decode\_chksum  & \pageref{ffdsum} \\
-fits\_decode\_tdim    & \pageref{ffdtdm} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+fits\_decode\_chksum  & \pageref{ffdsum} \\
+fits\_decode\_tdim    & \pageref{ffdtdm} \\
 fits\_delete\_col   & \pageref{ffdcol} \\
 fits\_delete\_file    & \pageref{ffdelt} \\
 fits\_delete\_hdu     & \pageref{ffdhdu} \\
@@ -7718,10 +7999,10 @@ fits\_get\_errstatus  & \pageref{ffgerr} \\
 fits\_get\_hdrpos        & \pageref{ffghps} \\
 fits\_get\_hdrspace      & \pageref{ffghsp} \\
 fits\_get\_hdu\_num    & \pageref{ffghdn} \\
-fits\_get\_hdu\_type   & \pageref{ffghdt} \\
-fits\_get\_hduaddr    & \pageref{ffghad} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_get\_hdu\_type   & \pageref{ffghdt} \\
+fits\_get\_hduaddr    & \pageref{ffghad} \\
 fits\_get\_hduaddrll    & \pageref{ffghad} \\
 fits\_get\_img\_dim & \pageref{ffgidm} \\
 fits\_get\_img\_equivtype & \pageref{ffgidt} \\
@@ -7752,11 +8033,11 @@ fits\_insert\_img     & \pageref{ffiimg} \\
 fits\_insert\_key\_null   & \pageref{ffikyu} \\
 fits\_insert\_key\_TYP    & \pageref{ffikyx} \\
 fits\_insert\_record     & \pageref{ffirec} \\
-fits\_insert\_rows  & \pageref{ffirow} \\
-fits\_iterate\_data   & \pageref{ffiter} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_insert\_rows  & \pageref{ffirow} \\
+fits\_iterate\_data   & \pageref{ffiter} \\
 fits\_make\_keyn      & \pageref{ffkeyn} \\
 fits\_make\_nkey      & \pageref{ffnkey} \\
 fits\_merge\_groups  & \pageref{ffgtmg} \\
@@ -7803,11 +8084,11 @@ fits\_read\_grppar\_TYP  & \pageref{ffggpx} \\
 fits\_read\_img         & \pageref{ffgpv} \\
 fits\_read\_img\_coord & \pageref{ffgics} \\
 fits\_read\_img\_TYP     & \pageref{ffgpvx} \\
-fits\_read\_imghdr       & \pageref{ffghpr} \\
-fits\_read\_imgnull & \pageref{ffgpf} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+fits\_read\_imghdr       & \pageref{ffghpr} \\
+fits\_read\_imgnull & \pageref{ffgpf} \\
 fits\_read\_imgnull\_TYP & \pageref{ffgpfx} \\
 fits\_read\_key          & \pageref{ffgky} \\
 fits\_read\_key\_longstr  & \pageref{ffgkls} \\
@@ -7825,6 +8106,7 @@ fits\_read\_subsetnull\_TYP & \pageref{ffgsfx} \pageref{ffgsfx2} \\
 fits\_read\_tbl\_coord & \pageref{ffgtcs} \\
 fits\_read\_tblbytes    & \pageref{ffgtbb} \\
 fits\_read\_tdim         & \pageref{ffgtdm} \\
+fits\_read\_wcstab       & \pageref{wcstab} \\
 fits\_remove\_group  & \pageref{ffgtrm} \\
 fits\_remove\_member   & \pageref{ffgmrm} \\
 fits\_reopen\_file      & \pageref{ffreopen} \\
@@ -7850,15 +8132,15 @@ fits\_test\_keyword   & \pageref{fftkey} \\
 fits\_test\_record    & \pageref{fftrec} \\
 fits\_time2str  & \pageref{ffdt2s} \\
 fits\_transfer\_member  & \pageref{ffgmtf} \\
+fits\_translate\_keyword & \pageref{translatekey} \\
 fits\_update\_card       & \pageref{ffucrd} \\
 fits\_update\_chksum  & \pageref{ffupck} \\
+\end{tabular}
+\begin{tabular}{lr}
 fits\_update\_key        & \pageref{ffuky} \\
 fits\_update\_key\_longstr   & \pageref{ffukyx} \\
 fits\_update\_key\_null   & \pageref{ffukyu} \\
 fits\_update\_key\_TYP    & \pageref{ffukyx} \\
-\end{tabular}
-\begin{tabular}{lr}
-
 fits\_uppercase      & \pageref{ffupch} \\
 fits\_url\_type      & \pageref{ffurlt} \\
 fits\_verify\_chksum  & \pageref{ffvcks} \\
@@ -7899,9 +8181,15 @@ fits\_write\_key\_unit     & \pageref{ffpunt} \\
 fits\_write\_key\_TYP      & \pageref{ffpkyx} \\
 fits\_write\_keys\_TYP     & \pageref{ffpknx} \\
 fits\_write\_null\_img    & \pageref{ffpprn} \\
+fits\_write\_nullrows      & \pageref{ffpclu} \\
 fits\_write\_pix          & \pageref{ffppx} \\
 fits\_write\_pixnull      & \pageref{ffppxn} \\
 fits\_write\_record       & \pageref{ffprec} \\
+
+\end{tabular}
+\newpage
+\begin{tabular}{lr}
+
 fits\_write\_subset       & \pageref{ffpss} \\
 fits\_write\_subset\_TYP  & \pageref{ffpssx} \\
 fits\_write\_tblbytes  & \pageref{ffptbb} \\
@@ -8116,6 +8404,7 @@ ffppr\_    & \pageref{ffpprx} \\
 ffppx & \pageref{ffppx} \\
 ffppxn & \pageref{ffppxn} \\
 ffprec       & \pageref{ffprec} \\
+ffprwu      & \pageref{ffpclu} \\
 ffpscl     & \pageref{ffpscl} \\
 ffpss    & \pageref{ffpss} \\
 ffpss\_  & \pageref{ffpssx} \\

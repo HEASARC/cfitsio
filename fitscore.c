@@ -60,12 +60,13 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.003;
+      *version = (float) 3.004;
 
-/*     28 July 2005
+/*     16 September 2005
 
 
    Previous releases:
+      *version = 3.003 28 July  2005 in heasoft swift release
       *version = 3.002 15 April 2005 
       *version = 3.001 15 March 2005 released with heasoft 6.0
       *version = 3.000  1 March 2005 (internal release only)
@@ -1656,6 +1657,304 @@ int ffgthd(char *tmplt, /* I - input header template string */
     }
     return(*status);
 }
+/*--------------------------------------------------------------------------*/
+int fits_translate_keyword(
+      char *inrec,        /* I - input string */
+      char *outrec,       /* O - output converted string, or */
+                          /*     a null string if input does not  */
+                          /*     match any of the patterns */
+      char *patterns[][2],/* I - pointer to input / output string */
+                          /*     templates */
+      int npat,           /* I - number of templates passed */
+      int n_value,        /* I - base 'n' template value of interest */
+      int n_offset,       /* I - offset to be applied to the 'n' */
+                          /*     value in the output string */
+      int n_range,        /* I - controls range of 'n' template */
+                          /*     values of interest (-1,0, or +1) */
+      int *pat_num,       /* O - matched pattern number (0 based) or -1 */
+      int *i,             /* O - value of i, if any, else 0 */
+      int *j,             /* O - value of j, if any, else 0 */
+      int *m,             /* O - value of m, if any, else 0 */
+      int *n,             /* O - value of n, if any, else 0 */
+
+      int *status)        /* IO - error status */
+
+/* 
+
+Translate a keyword name to a new name, based on a set of patterns.
+The user passes an array of patterns to be matched.  Input pattern
+number i is pattern[i][0], and output pattern number i is
+pattern[i][1].  Keywords are matched against the input patterns.  If a
+match is found then the keyword is re-written according to the output
+pattern.
+
+Order is important.  The first match is accepted.  The fastest match
+will be made when templates with the same first character are grouped
+together.
+
+Several characters have special meanings:
+
+     i,j - single digits, preserved in output template
+     n - column number of one or more digits, preserved in output template
+     m - generic number of one or more digits, preserved in output template
+     a - coordinate designator, preserved in output template
+     # - number of one or more digits
+     ? - any character
+     * - only allowed in first character position, to match all
+         keywords; only useful as last pattern in the list
+
+i, j, n, and m are returned by the routine.
+
+For example, the input pattern "iCTYPn" will match "1CTYP5" (if n_value
+is 5); the output pattern "CTYPEi" will be re-written as "CTYPE1".
+Notice that "i" is preserved.
+
+The following output patterns are special
+
+Special output pattern characters:
+
+    "-" - do not copy a keyword that matches the corresponding input pattern
+
+    "+" - copy the input unchanged
+
+The inrec string could be just the 8-char keyword name, or the entire 
+80-char header record.  Characters 9 = 80 in the input string simply get
+appended to the translated keyword name.
+
+If n_range = 0, then only keywords with 'n' equal to n_value will be 
+considered as a pattern match.  If n_range = +1, then all values of 
+'n' greater than or equal to n_value will be a match, and if -1, 
+then values of 'n' less than or equal to n_value will match.
+
+  This routine was written by Craig Markwardt, GSFC
+*/
+
+{
+    int i1 = 0, j1 = 0, n1 = 0, m1 = 0;
+    int fac;
+    char a = ' ';
+    char oldp = ' ';
+    char c, s;
+    int ip, ic, pat, pass = 0, firstfail = 0;
+    char *spat;
+
+    if (*status > 0)
+        return(*status);
+    if ((inrec == 0) || (outrec == 0)) 
+      return (*status = NULL_INPUT_PTR);
+
+    *outrec = '\0';
+    if (*inrec == '\0') return 0;
+
+    oldp = '\0';
+    firstfail = 0;
+
+    /* ===== Pattern match stage */
+    for (pat=0; pat < npat; pat++) {
+      spat = patterns[pat][0];
+      
+      i1 = 0; j1 = 0; m1 = -1; n1 = -1; a = ' ';  /* Initialize the place-holders */
+      pass = 0;
+      
+      /* Pass the wildcard pattern */
+      if (spat[0] == '*') { 
+	pass = 1;
+	break;
+      }
+      
+      /* Optimization: if we have seen this initial pattern character before,
+	 then it must have failed, and we can skip the pattern */
+      if (firstfail && spat[0] == oldp) continue;
+      oldp = spat[0];
+
+      /* 
+	 ip = index of pattern character being matched
+	 ic = index of keyname character being matched
+	 firstfail = 1 if we fail on the first characteor (0=not)
+      */
+      
+      for (ip=0, ic=0, firstfail=1;
+	   (spat[ip]) && (ic < 8);
+	   ip++, ic++, firstfail=0) {
+	c = inrec[ic];
+	s = spat[ip];
+	
+	if (s == 'i') {
+	  /* Special pattern: 'i' placeholder */
+	  if (isdigit(c)) { i1 = c - '0'; pass = 1;}
+	} else if (s == 'j') {
+	  /* Special pattern: 'j' placeholder */
+	  if (isdigit(c)) { j1 = c - '0'; pass = 1;}
+	} else if ((s == 'n')||(s == 'm')||(s == '#')) {
+	  /* Special patterns: multi-digit number */
+	  int val = 0;
+	  pass = 0;
+	  if (isdigit(c)) {
+	    pass = 1;  /* NOTE, could fail below */
+	    
+	    /* Parse decimal number */
+	    while (ic<8 && isdigit(c)) { 
+	      val = val*10 + (c - '0');
+	      ic++; c = inrec[ic];
+	    }
+	    ic--; c = inrec[ic];
+	    
+	    if (s == 'n') { 
+	      
+	      /* Is it a column number? */
+	      if ( val >= 1 && val <= 999 &&                    /* Row range check */
+		   (((n_range == 0) && (val == n_value)) ||     /* Strict equality */
+		    ((n_range == -1) && (val <= n_value)) ||    /* n <= n_value */
+		    ((n_range == +1) && (val >= n_value))) ) {  /* n >= n_value */
+		n1 = val;
+	      } else {
+		pass = 0;
+	      }
+	    } else if (s == 'm') {
+	      
+	      /* Generic number */
+	      m1 = val; 
+	    }
+	  }
+	} else if (s == 'a') {
+	  /* Special pattern: coordinate designator */
+	  if (isupper(c) || c == ' ') { a = c; pass = 1;} 
+	} else if (s == '?') {
+	  /* Match any individual character */
+	  pass = 1;
+	} else if (c == s) {
+	  /* Match a specific character */
+	  pass = 1;
+	} else {
+	  /* FAIL */
+	  pass = 0;
+	}
+	
+	if (!pass) break;
+      }
+      
+
+      /* Must pass to the end of the keyword.  No partial matches allowed */
+      if (pass && (ic >= 8 || inrec[ic] == ' ')) break;
+    }
+
+
+    /* Transfer the pattern-matched numbers to the output parameters */
+    if (i) { *i = i1; }
+    if (j) { *j = j1; }
+    if (n) { *n = n1; }
+    if (m) { *m = m1; }
+    if (pat_num) { *pat_num = pat; }
+
+    /* ===== Keyword rewriting and output stage */
+    spat = patterns[pat][1];
+
+    /* Return case: no match, or explicit deletion pattern */
+    if (pass == 0 || spat[0] == '\0' || spat[0] == '-') return 0;
+
+    /* A match: we start by copying the input record to the output */
+    strcpy(outrec, inrec);
+
+    /* Return case: return the input record unchanged */
+    if (spat[0] == '+') return 0;
+
+
+    /* Final case: a new output pattern */
+    for (ip=0, ic=0; spat[ip]; ip++, ic++) {
+      s = spat[ip];
+      if (s == 'i') {
+	outrec[ic] = (i1+'0');
+      } else if (s == 'j') {
+	outrec[ic] = (j1+'0');
+      } else if (s == 'n') {
+	if (n1 == -1) { n1 = n_value; }
+	if (n1 > 0) {
+	  n1 += n_offset;
+	  for (fac = 1; (n1/fac) > 0; fac *= 10);
+	  fac /= 10;
+	  while(fac > 0) {
+	    outrec[ic] = ((n1/fac) % 10) + '0';
+	    fac /= 10;
+	    ic ++;
+	  }
+	  ic--;
+	}
+      } else if (s == 'm' && m1 >= 0) {
+	for (fac = 1; (m1/fac) > 0; fac *= 10);
+	fac /= 10;
+	while(fac > 0) {
+	  outrec[ic] = ((m1/fac) % 10) + '0';
+	  fac /= 10;
+	  ic ++;
+	}
+	ic --;
+      } else if (s == 'a' && a != ' ') {
+	outrec[ic] = a;
+      } else {
+	outrec[ic] = s;
+      }
+    }
+
+    /* Pad the keyword name with spaces */
+    for ( ; ic<8; ic++) { outrec[ic] = ' '; }
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_translate_keywords(
+	   fitsfile *infptr,   /* I - pointer to input HDU */
+	   fitsfile *outfptr,  /* I - pointer to output HDU */
+	   int firstkey,       /* I - first HDU record number to start with */
+	   char *patterns[][2],/* I - pointer to input / output keyword templates */
+	   int npat,           /* I - number of templates passed */
+	   int n_value,        /* I - base 'n' template value of interest */
+	   int n_offset,       /* I - offset to be applied to the 'n' */
+ 	                       /*     value in the output string */
+	   int n_range,        /* I - controls range of 'n' template */
+	                       /*     values of interest (-1,0, or +1) */
+           int *status)        /* IO - error status */
+/*
+     Copy relevant keywords from the table header into the newly
+     created primary array header.  Convert names of keywords where
+     appropriate.  See fits_translate_keyword() for the definitions.
+
+     Translation begins at header record number 'firstkey', and
+     continues to the end of the header.
+
+  This routine was written by Craig Markwardt, GSFC
+*/
+{
+    int nrec, nkeys, nmore;
+    char rec[FLEN_CARD];
+    int i = 0, j = 0, n = 0, m = 0;
+    int pat_num = 0;
+    char outrec[FLEN_CARD];
+
+    if (*status > 0)
+        return(*status);
+
+    ffghsp(infptr, &nkeys, &nmore, status);  /* get number of keywords */
+
+    for (nrec = firstkey; nrec <= nkeys; nrec++) {
+      outrec[0] = '\0';
+
+      ffgrec(infptr, nrec, rec, status);
+
+      fits_translate_keyword(rec, outrec, patterns, npat, 
+			     n_value, n_offset, n_range, 
+			     &pat_num, &i, &j, &m, &n, status);
+      
+      if (outrec[0]) {
+	ffprec(outfptr, outrec, status); /* copy the keyword */
+	rec[8] = 0; outrec[8] = 0;
+      } else {
+	rec[8] = 0; outrec[8] = 0;
+      }
+    }	
+
+    return(*status);
+}
+
 /*--------------------------------------------------------------------------*/
 int ffasfm(char *tform,    /* I - format code from the TFORMn keyword */
            int *dtcode,    /* O - numerical datatype code */

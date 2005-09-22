@@ -539,6 +539,9 @@ int ffrrgn( const char *filename,
             }
 
             /* Perform some useful calculations now to speed up filter later */
+            /* Also, correct the position angle for any WCS rotation:  */
+            /*    If regions are specified in WCS coordintes, then the angles */
+            /*    are relative to the WCS system, not the pixel X,Y system */
 
             switch( newShape->shape ) {
             case circle_rgn:
@@ -549,26 +552,43 @@ int ffrrgn( const char *filename,
                newShape->param.gen.b = coords[3] * coords[3];
                break;
             case sector_rgn:
+               if( cFmt!=pixel_fmt ) {
+                 coords[2] += (wcs->rot);
+                 coords[3] += (wcs->rot);
+               }
                while( coords[2]> 180.0 ) coords[2] -= 360.0;
                while( coords[2]<=-180.0 ) coords[2] += 360.0;
                while( coords[3]> 180.0 ) coords[3] -= 360.0;
                while( coords[3]<=-180.0 ) coords[3] += 360.0;
                break;
             case ellipse_rgn:
+               if( cFmt!=pixel_fmt ) {
+                 coords[4] += (wcs->rot);
+               }
                newShape->param.gen.sinT = sin( myPI * (coords[4] / 180.0) );
                newShape->param.gen.cosT = cos( myPI * (coords[4] / 180.0) );
                break;
             case elliptannulus_rgn:
+               if( cFmt!=pixel_fmt ) {
+                 coords[6] += (wcs->rot);
+                 coords[7] += (wcs->rot);
+               }
                newShape->param.gen.a    = sin( myPI * (coords[6] / 180.0) );
                newShape->param.gen.b    = cos( myPI * (coords[6] / 180.0) );
                newShape->param.gen.sinT = sin( myPI * (coords[7] / 180.0) );
                newShape->param.gen.cosT = cos( myPI * (coords[7] / 180.0) );
                break;
             case box_rgn:
+               if( cFmt!=pixel_fmt ) {
+                 coords[4] += (wcs->rot);
+               }
                newShape->param.gen.sinT = sin( myPI * (coords[4] / 180.0) );
                newShape->param.gen.cosT = cos( myPI * (coords[4] / 180.0) );
                break;
             case rectangle_rgn:
+               if( cFmt!=pixel_fmt ) {
+                 coords[4] += (wcs->rot);
+               }
                newShape->param.gen.sinT = sin( myPI * (coords[4] / 180.0) );
                newShape->param.gen.cosT = cos( myPI * (coords[4] / 180.0) );
                X = 0.5 * ( coords[2]-coords[0] );
@@ -581,6 +601,9 @@ int ffrrgn( const char *filename,
                newShape->param.gen.p[6] = 0.5 * ( coords[3]+coords[1] );
                break;
             case diamond_rgn:
+               if( cFmt!=pixel_fmt ) {
+                 coords[4] += (wcs->rot);
+               }
                newShape->param.gen.sinT = sin( myPI * (coords[4] / 180.0) );
                newShape->param.gen.cosT = cos( myPI * (coords[4] / 180.0) );
                break;

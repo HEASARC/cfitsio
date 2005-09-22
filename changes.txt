@@ -1,7 +1,63 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.004 - 16 September 2005 (3rd public beta release)
+
+  - a major enhancement to the CFITSIO virtual file parser was made by 
+    Robert Wiegand (GSFC).  One can now specify filtering operations that
+    will be applied on the fly to the pixel values in a FITS image. 
+    For example [pix sqrt(X)] will create a virtual FITS image where the
+    pixel values are the square root of the input image pixels.
+
+  - modified region.c so that it interprets the position angles of regions
+    in a SAO style region file in the same way as DS9.  In particular, if
+    the region parameters are given in WCS units, then the position angle
+    should be relative to the WCS coordinates of the image (increasing CCW
+    from West) instead of relative to the X/Y pixel coordinate system.
+    This only affect rotated images (e.g. with non-zero CROTA2 keyword)
+    with elliptical or rectangular regions.
+
+  - cleaned up fitsio.h and fitsio2.h to make the definition of LONGLONG
+    and BYTESWAPPED and MACHINE more logical.
+    
+  - removed HAVE_LONGLONG everywhere since it is no longer needed (the 
+    compiler now must have an 8-byte integer datatype to build CFITSIO).
+    
+  - added support the 64-bit IBM AIX platform
+
+  - modifed eval.y so that the circle, ellipse, box, and near functions
+    can operate on vectors as well as scalars.  This allows region filtering
+    on images that are stored in a vector cell in a binary table. 
+    (provided by Craig Markwardt, GSFC)
+
+  New Routines
+  
+  - added new fits_write_nullrows routine, which writes null values into
+    every column of a specified range of rows in a FITS table.
+
+  - added the fits_translate_keyword and fits_translate_keywords utility
+    routines for converting the names of keywords when moving columns and
+    images around.
+    
+  - added fits_copy_cell2image and fits_copy_image2cell routines for
+    copying an image extension (or primary array) to or from a cell
+    in a binary table vector column. 
+  
+  Bug fixes
+  
+  - fixed a memory leak in eval.y;  was fixed by changing a call to malloc
+    to cmalloc instead.
+
+  - changed the definition of several global variables at the beginning
+    of buffers.c to make them 'static' and thus invisible to applications
+    programs.
+
+  - in fits_copy_image_cell, added a call to flush the internal buffers
+    before reading from the file, in case any records had been modified.
+
 Version 3.003 - 28 July 2005 - 2nd public beta release (used in HEASOFT)
 
+  Enhancements
+  
   - enhanced the string column reading routing fits_get_col_str to 
     support cases where the user enters a null pointer (rather than
     a null string) as the nulval parameter.
@@ -32,8 +88,13 @@ Version 3.003 - 28 July 2005 - 2nd public beta release (used in HEASOFT)
     a double, which is only a temporary fix, since doubles only have about
     52 bits of precision.
 
-  - modified the standalone imcopy.c utility program to fix a memory allocation
-    bug when running on 64-bit platforms where sizeof(long) = 8 bytes.
+  - changed the 'blank' parameter in the internal ffgphd function to
+    to type LONGLONG to support integer*8 FITS images.
+
+  - when reading the TNULL keyword value, now use ffc2jj instead of
+    ffc2ii, to support integer*8 values.
+
+  Bug fixes
 
   - fixed a significant bug when writing character strings to a variable
     length array column of a binary table. This bug would result in some
@@ -44,11 +105,8 @@ Version 3.003 - 28 July 2005 - 2nd public beta release (used in HEASOFT)
     this problem could cause the program that is writing the table
     to exit with a status = 108 disk read error.
 
-  - changed the 'blank' parameter in the internal ffgphd function to
-    to type LONGLONG to support integer*8 FITS images.
-
-  - when reading the TNULL keyword value, now use ffc2jj instead of
-    ffc2ii, to support integer*8 values.
+  - modified the standalone imcopy.c utility program to fix a memory allocation
+    bug when running on 64-bit platforms where sizeof(long) = 8 bytes.
 
   - added an immediate 'return' statement to ffgtcl if the input status >0, 
     to prevent a segfault on some platforms.

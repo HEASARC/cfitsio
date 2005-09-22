@@ -3,14 +3,6 @@
  
 #include "fitsio.h"
 
-/* Setting SUPPORT_64_BIT_INTEGERS to 1 will enable CFITSIO to read */
-/* and write images with BITPIX = 64 and binary table columns with  */
-/* TFORMn = 'K'.  Otherwise, setting SUPPORT_64_BIT_INTEGERS to 0   */
-/* will cause CFITSIO to not recognize these  non-standard 64-bit   */
-/* FITS datatypes.                                                  */
-
-#define SUPPORT_64BIT_INTEGERS 1
-
 /*
   If REPLACE_LINKS is defined, then whenever CFITSIO fails to open
   a file with write access because it is a soft link to a file that
@@ -36,22 +28,56 @@
 #define MINDIRECT 8640   /* minimum size for direct reads and writes */
                          /* MINDIRECT must have a value >= 8640 */
 
-#define NATIVE             0 /* a generic machine that uses IEEE formats */
-#define ULTRIX             1
-#define ALPHA_OSF          2
-#define VAXVMS             3
-#define ALPHAVMS           4
-#define IBMPC              5
-#define CRAY               6
-#define PC64BIT            7
+/*   it is useful to identify certain specific types of machines   */
+#define NATIVE             0 /* machine that uses non-byteswapped IEEE formats */
+#define OTHERTYPE          1  /* any other type of machine */
+#define VAXVMS             3  /* uses an odd floating point format */
+#define ALPHAVMS           4  /* uses an odd floating point format */
+#define IBMPC              5  /* used in drvrfile.c to work around a bug on PCs */
+#define CRAY               6  /* requires a special NaN test algorithm */
 
-#define GFLOAT             1
-#define IEEEFLOAT          2
+#define GFLOAT             1  /* used for VMS */
+#define IEEEFLOAT          2  /* used for VMS */
 
-/* the following are used to determine what type machine we are running on */
+/* ======================================================================= */
+/* The following logic is used to determine the type machine,              */
+/*  whether the bytes are swapped, and the number of bits in a long value  */
+/* ======================================================================= */
 
+/*   The following platforms have sizeof(long) == 8               */
+/*   This block of code should match a similar block in fitsio.h  */
+/*   and the block of code at the beginning of f77_wrap.h         */
+
+#if defined(__alpha) && ( defined(__unix__) || defined(__NetBSD__) )
+                                  /* old Dec Alpha platforms running OSF */
+#define BYTESWAPPED TRUE
+#define LONGSIZE 64
+
+#elif defined(__sparcv9)
+                               /*  SUN Solaris7 in 64-bit mode */
+#define BYTESWAPPED FALSE
+#define MACHINE NATIVE
+#define LONGSIZE 64   
+
+#elif defined(__ia64__)  || defined(__x86_64__)
+                  /*  Intel itanium 64-bit PC, or AMD opteron 64-bit PC */
+#define BYTESWAPPED TRUE
+#define LONGSIZE 64   
+
+#elif defined(_SX)             /* Nec SuperUx */
+
+#define BYTESWAPPED FALSE
+#define LONGSIZE 64
+
+#elif defined(__powerpc64__) || defined(__64BIT__) /* IBM 64-bit AIX powerpc*/
+                              /* could also test for __ppc64__ or __PPC64 */
+#define BYTESWAPPED FALSE
+#define LONGSIZE 64   
+
+/* ============================================================== */
 /* the following block determines the size of longs on SGI IRIX machines */
-#if defined(_MIPS_SZLONG)
+
+#elif defined(_MIPS_SZLONG)
 #  if _MIPS_SZLONG == 32
 #    define LONGSIZE 32
 #  elif _MIPS_SZLONG == 64
@@ -59,9 +85,11 @@
 #  else
 #    error "can't handle long size given by _MIPS_SZLONG"
 #  endif
-#endif
 
-#if defined(vax) && defined(VMS)
+/* ============================================================== */
+/*  the following are all 32-bit byteswapped platforms            */
+
+#elif defined(vax) && defined(VMS)
  
 #define MACHINE VAXVMS
 #define BYTESWAPPED TRUE
@@ -87,70 +115,43 @@
 #define BYTESWAPPED TRUE
 #define FLOATTYPE IEEEFLOAT
 
-#endif
-
-#elif defined(__alpha) && ( defined(__unix__) || defined(__NetBSD__) )
- 
-#define MACHINE ALPHA_OSF
-#define BYTESWAPPED TRUE
-#define LONGSIZE 64
+#endif  /* end of alpha VMS case */
 
 #elif defined(ultrix) && defined(unix)
- 
-#define MACHINE ULTRIX
+ /* old Dec ultrix machines */
 #define BYTESWAPPED TRUE
  
-#elif defined(__sparcv9)
+#elif defined(__i386) || defined(__i386__) || defined(__i486__) || defined(__i586__) \
+  || defined(_MSC_VER) || defined(__BORLANDC__) || defined(__TURBOC__) \
+  || defined(_NI_mswin_) || defined(__EMX__) /*  LabWindows/CVI, or PC runnin OS/2  */
 
-/*  SUN Solaris7 in 64-bit mode */
-#define BYTESWAPPED FALSE
-#define MACHINE NATIVE
-#define LONGSIZE 64   
-
-#elif defined(__i386) || defined(__i386__) || defined(__i486__) || defined(__i586__) 
-
-/*  IBM PC */
+/*  generic 32-bit IBM PC */
 #define MACHINE IBMPC
 #define BYTESWAPPED TRUE
 
-#elif defined(_MSC_VER) || defined(__BORLANDC__) || defined(__TURBOC__)
-
-/*  IBM PC running DOS or Windows */
-#define MACHINE IBMPC       
-#define BYTESWAPPED TRUE
-
-#elif defined(_NI_mswin_) || defined(__EMX__)
-
-/*  LabWindows/CVI with Windows, or PC runnin OS/2  */
-#define MACHINE IBMPC       
-#define BYTESWAPPED TRUE
-
-#elif defined(__ia64__)  || defined(__x86_64__)
-
-/*  Intel itanium 64-bit PC, or AMD opteron 64-bit PC */
-#define BYTESWAPPED TRUE
-#define MACHINE PC64BIT
-#define LONGSIZE 64   
-
-#elif defined(_SX) /* Nec SuperUx */
-
-#define BYTESWAPPED FALSE
-#define MACHINE PC64BIT
-#define LONGSIZE 64
-
 #else
 
-/*  assume machine uses the same IEEE formats as used in FITS files */
+/* ========================================================================== */
+/*  assume all other machine uses the same IEEE formats as used in FITS files */
+/*  e.g., Macs fall into this category  */
+
 #define MACHINE NATIVE
 #define BYTESWAPPED FALSE
  
+#endif
+
+#ifndef MACHINE
+#define MACHINE  OTHERTYPE
 #endif
 
 /*  assume longs are 4 bytes long, unless previously set otherwise */
 #ifndef LONGSIZE
 #define LONGSIZE 32
 #endif
-  
+
+/*       end of block that determine long size and byte swapping        */ 
+/* ==================================================================== */
+ 
 #define IGNORE_EOF 1
 #define REPORT_EOF 0
 #define DATA_UNDEFINED -1
@@ -269,20 +270,16 @@
 #define LONGLONG_MAX _I64_MAX
 #define LONGLONG_MIN _I64_MIN
 
-#elif defined(HAVE_LONGLONG)
-/* compiler has a 'long long' or equivalent type */
-#define LONGLONG_MAX  9223372036854775807LL /* max 64-bit integer */
-#define LONGLONG_MIN (-LONGLONG_MAX -1LL)   /* min 64-bit integer */
-
 #elif (LONGSIZE == 64)
-/* Compiler may not have a 'long long' type, but sizeof(long) = 64 */
+/* sizeof(long) = 64 */
 #define LONGLONG_MAX  9223372036854775807L /* max 64-bit integer */
 #define LONGLONG_MIN (-LONGLONG_MAX -1L)   /* min 64-bit integer */
 
 #else
 /*  define a default value, even if it is never used */
-#define LONGLONG_MAX  LONG_MAX 
-#define LONGLONG_MIN LONG_MIN 
+#define LONGLONG_MAX  9223372036854775807LL /* max 64-bit integer */
+#define LONGLONG_MIN (-LONGLONG_MAX -1LL)   /* min 64-bit integer */
+
 #endif
 #endif  /* end of ndef LONGLONG_MAX section */
 
@@ -359,9 +356,6 @@ int ffwritehisto(long totaln, long offset, long firstn, long nvalues,
              int narrays, iteratorCol *imagepars, void *userPointer);
 int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
              int ncols, iteratorCol *colpars, void *userPointer);
-int fits_copy_image_cell(fitsfile **fptr, char *outfile, char *colname,
-           long rownum, int *status);
-int fits_copy_image_keywords(fitsfile *infptr, fitsfile *outfptr, int *status);
 int ffrhdu(fitsfile *fptr, int *hdutype, int *status);
 int ffpinit(fitsfile *fptr, int *status);
 int ffainit(fitsfile *fptr, int *status);

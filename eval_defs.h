@@ -20,6 +20,7 @@
 #define CONST_OP  -1000
 #define pERROR       -1
 
+
 typedef struct {
                   char   name[MAXVARNAME+1];
                   int    type;
@@ -83,12 +84,14 @@ typedef struct {
                   int         nCols;
                   iteratorCol *colData;
                   DataInfo    *varData;
+                  PixelFilter *pixFilter;
 
                   long        firstDataRow;
                   long        nDataRows;
                   long        totalRows;
 
                   int         datatype;
+                  int         hdutype;
 
                   int         status;
                                 } ParseData;

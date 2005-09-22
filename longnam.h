@@ -2,6 +2,7 @@
 #define _LONGNAME_H
 
 #define fits_parse_input_url ffiurl
+#define fits_parse_input_filename ffifile
 #define fits_parse_rootname ffrtnm
 #define fits_file_exists    ffexist
 #define fits_parse_output_url ffourl
@@ -19,6 +20,7 @@
    as included when compiling the application program
 */
 #define fits_open_file(A, B, C, D)  ffopentest( CFITSIO_VERSION, A, B, C, D)
+
 #define fits_open_data      ffdopn
 #define fits_open_table     fftopn
 #define fits_open_image     ffiopn
@@ -504,6 +506,7 @@
 #define fits_write_col_dblcmp  ffpclm
 #define fits_write_col_null    ffpclu
 #define fits_write_col_bit     ffpclx
+#define fits_write_nulrows     ffprwu
 
 #define fits_write_colnull ffpcn
 #define fits_write_colnull_str ffpcns
