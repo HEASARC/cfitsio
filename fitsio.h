@@ -127,25 +127,23 @@ SERVICES PROVIDED HEREUNDER."
 #define FLEN_ERRMSG    81  /* max length of a FITSIO error message */
 #define FLEN_STATUS    31  /* max length of a FITSIO status text string */
  
-enum {
-TBIT        =   1,  /* codes for FITS table data types */
-TBYTE       =  11,
-TSBYTE      =  12,
-TLOGICAL    =  14,
-TSTRING     =  16,
-TUSHORT     =  20,
-TSHORT      =  21,
-TUINT       =  30,
-TINT        =  31,
-TULONG      =  40,
-TLONG       =  41,
-TINT32BIT   =  41 , /* used when returning datatype of a column */
-TFLOAT      =  42,
-TLONGLONG   =  81,
-TDOUBLE     =  82,
-TCOMPLEX    =  83,
-TDBLCOMPLEX = 163
-};
+#define TBIT          1  /* codes for FITS table data types */
+#define TBYTE        11
+#define TSBYTE       12
+#define TLOGICAL     14
+#define TSTRING      16
+#define TUSHORT      20
+#define TSHORT       21
+#define TUINT        30
+#define TINT         31
+#define TULONG       40
+#define TLONG        41
+#define TINT32BIT    41  /* used when returning datatype of a column */
+#define TFLOAT       42
+#define TLONGLONG    81
+#define TDOUBLE      82
+#define TCOMPLEX     83
+#define TDBLCOMPLEX 163
 
 #define TYP_STRUC_KEY 10
 #define TYP_CMPRS_KEY 20
