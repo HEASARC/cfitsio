@@ -4605,7 +4605,7 @@ int ffifile(char *url,       /* input filename */
            }
 
            /* test if this is NOT an extension specifier */
-           if ( rowFilter || pixStart ||
+           if ( rowFilter || (pixStart && spaceTerm) ||
                 (hasAt && hasDot) ||
                 hasOper ||
                 (spaceTerm && followingOper) )
