@@ -77,8 +77,15 @@ int fits_read_wcstab(
       }
 
       if (naxis != wtbp->ndim) {
-         *status = BAD_TDIM;
-         goto cleanup;
+         if (wtbp->kind == 'c' && wtbp->ndim == 2) {
+            /* Allow TDIMn to be omitted for degenerate coordinate arrays. */
+            naxis = 2;
+            naxes[1] = naxes[0];
+            naxes[0] = 1;
+         } else {
+            *status = BAD_TDIM;
+            goto cleanup;
+         }
       }
 
       if (wtbp->kind == 'c') {

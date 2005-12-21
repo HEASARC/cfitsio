@@ -34,7 +34,7 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.004
+#define CFITSIO_VERSION 3.005
 
 #include <stdio.h>
 
@@ -60,55 +60,30 @@ SERVICES PROVIDED HEREUNDER."
 #    define OFF_T long
 #endif
 
-/* typedef the 'LONGLONG' data type to an intrinsice 8-byte integer type */
-
-/* ================================================================= */
-/*   The following platforms have sizeof(long) == 8                  */
-/*   this block of code should match a similar block in fitsio2.h    */
-/*   and the block of code at the beginning of f77_wrap.h            */
-/*
-   __alpha       = old Dec Alpha running OSF (not VMS)
-   __sparcv9     = SUN Solaris7 in 64-bit mode 
-   __ia64__      = Itanium 
-   __x86_64__    = AMD Opteron 
-   __powerpc64__ = IBM 64-bit AIX powerpc (also has __64BIT__ defined)
-*/
-
+/* this block determines if the the string function name is 
+    strtol or strtoll, and whether to use %ld or %lld in printf statements */
 #if (defined(__alpha) && ( defined(__unix__) || defined(__NetBSD__) )) \
     ||  defined(__sparcv9)  \
     ||  defined(__ia64__)   \
     ||  defined(__x86_64__) \
-    ||  defined(__powerpc64__) || defined(__64BIT__)
-
-    typedef long LONGLONG;
+    ||  defined(__powerpc64__) || defined(__64BIT__) \
+    ||  (defined(_MIPS_SZLONG) &&  _MIPS_SZLONG == 64) \
+    ||  defined( _MSC_VER)
+    
 #   define USE_LL_SUFFIX 0
-
-/* ================================================================= */
-/*  Must distinguish between 32-bit and 64-bit MIPS (SGI) platforms  */
-
-#elif defined(_MIPS_SZLONG)
-#  if _MIPS_SZLONG == 32
-    typedef long long LONGLONG;
-#   define USE_LL_SUFFIX 1
-
-#  elif _MIPS_SZLONG == 64
-     typedef long LONGLONG;  
-#    define USE_LL_SUFFIX 0
-#  endif
-
-/* ================================================================= */
-
-#elif defined(_MSC_VER)   /* Windows PCs; Visual C++, but not Borland C++ */
-     typedef __int64 LONGLONG;
-#    define USE_LL_SUFFIX 0
-
-/* ================================================================= */
-/*   Otherwise, assume that 'long long' datatype is supported */
 #else
-    typedef long long LONGLONG; 
 #   define USE_LL_SUFFIX 1
-
 #endif
+
+/* previously, we had some complicated code here which would do
+         typedif long LONGLONG
+   if the sizeof(long) = 8.  This was changed on 20 Dec 2005 to
+   assume that the 'long long' datatype is supported.  This was
+   done for compatibility with the change to cfortran.h to support
+   8-byte integers in Fortran.
+*/
+    typedef long long LONGLONG; 
+
 /* ================================================================= */
 
 
@@ -1563,6 +1538,7 @@ int ffpclm(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
            LONGLONG nelem, double *array, int *status);
 int ffpclu(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
            LONGLONG nelem, int *status);
+int ffprwu(fitsfile *fptr, LONGLONG firstrow, LONGLONG nrows, int *status);
 int ffpcljj(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
            LONGLONG nelem, LONGLONG *array, int *status);
 int ffpclx(fitsfile *fptr, int colnum, LONGLONG frow, long fbit, long nbit,

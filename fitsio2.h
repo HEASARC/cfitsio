@@ -123,7 +123,8 @@
  
 #elif defined(__i386) || defined(__i386__) || defined(__i486__) || defined(__i586__) \
   || defined(_MSC_VER) || defined(__BORLANDC__) || defined(__TURBOC__) \
-  || defined(_NI_mswin_) || defined(__EMX__) /*  LabWindows/CVI, or PC runnin OS/2  */
+  || defined(_NI_mswin_) || defined(__EMX__) \
+  || defined(MIPSEL)     || defined(arm)
 
 /*  generic 32-bit IBM PC */
 #define MACHINE IBMPC

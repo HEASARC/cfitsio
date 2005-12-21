@@ -1,10 +1,34 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.005 - 20 December 2005  
+
+  - cfortran.h has been enhanced to support 64-bit integer parameters
+    when calling C routines from Fortran.  This modification was kindly 
+    provided by Martin Reinecke (MPE, Garching).  
+    
+  - Many new Fortran wrapper routines have been added to support reading
+    and writing 64-bit integer values in FITS files.  These new routines
+    are documented in the updated version of the 'FITSIO User's Guide' 
+    for Fortran programmers.
+
+  - fixed a problem in the fits_get_keyclass routine that caused it
+    to not recognize the special COMMENT keywords at the beginning
+    of most FITS files that defines the FITS format.
+
+  - added a new check to the ffifile routine that parses the 
+    input extended file name, to distinguish between a FITS extension
+    name that begins with 'pix', and a pixel filtering operator that 
+    begins with the 'pix' keyword.
+
+  - small change to the WCSLIB interface routine, fits_read_wcstab, to
+    be more permissive in allowing the TDIMn keyword to be omitted for
+    degenerate coordinate array.
+
 Version 3.004 - 16 September 2005 (3rd public beta release)
 
-  - a major enhancement to the CFITSIO virtual file parser was made by 
-    Robert Wiegand (GSFC).  One can now specify filtering operations that
-    will be applied on the fly to the pixel values in a FITS image. 
+  - a major enhancement to the CFITSIO virtual file parser was provided
+    by Robert Wiegand (GSFC).  One can now specify filtering operations
+    that will be applied on the fly to the pixel values in a FITS image. 
     For example [pix sqrt(X)] will create a virtual FITS image where the
     pixel values are the square root of the input image pixels.
 
@@ -13,7 +37,7 @@ Version 3.004 - 16 September 2005 (3rd public beta release)
     the region parameters are given in WCS units, then the position angle
     should be relative to the WCS coordinates of the image (increasing CCW
     from West) instead of relative to the X/Y pixel coordinate system.
-    This only affect rotated images (e.g. with non-zero CROTA2 keyword)
+    This only affects rotated images (e.g. with non-zero CROTA2 keyword)
     with elliptical or rectangular regions.
 
   - cleaned up fitsio.h and fitsio2.h to make the definition of LONGLONG
@@ -22,7 +46,7 @@ Version 3.004 - 16 September 2005 (3rd public beta release)
   - removed HAVE_LONGLONG everywhere since it is no longer needed (the 
     compiler now must have an 8-byte integer datatype to build CFITSIO).
     
-  - added support the 64-bit IBM AIX platform
+  - added support for the 64-bit IBM AIX platform
 
   - modifed eval.y so that the circle, ellipse, box, and near functions
     can operate on vectors as well as scalars.  This allows region filtering
@@ -31,6 +55,10 @@ Version 3.004 - 16 September 2005 (3rd public beta release)
 
   New Routines
   
+  - added new fits_read_wcstab routine that serves as an interface to
+    Mark Calabretta's wcslib library for reading WCS information when
+    the -TAB table lookup convention is used in the FITS file.
+
   - added new fits_write_nullrows routine, which writes null values into
     every column of a specified range of rows in a FITS table.
 

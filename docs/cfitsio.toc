@@ -2,7 +2,7 @@
 \contentsline {section}{\numberline {1.1} A Brief Overview}{1}
 \contentsline {section}{\numberline {1.2}Sources of FITS Software and Information}{1}
 \contentsline {section}{\numberline {1.3}Acknowledgements}{2}
-\contentsline {section}{\numberline {1.4}Legal Stuff}{3}
+\contentsline {section}{\numberline {1.4}Legal Stuff}{4}
 \contentsline {chapter}{\numberline {2} Creating the CFITSIO Library }{5}
 \contentsline {section}{\numberline {2.1}Building the Library}{5}
 \contentsline {subsection}{\numberline {2.1.1}Unix Systems}{5}

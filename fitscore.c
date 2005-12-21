@@ -60,16 +60,17 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.004;
+      *version = (float) 3.005;
 
-/*     16 September 2005
+/*     20 December 2005
 
 
    Previous releases:
-      *version = 3.003 28 July  2005 in heasoft swift release
-      *version = 3.002 15 April 2005 
-      *version = 3.001 15 March 2005 released with heasoft 6.0
-      *version = 3.000  1 March 2005 (internal release only)
+      *version = 3.004   16 Sep 2005 (beta, in heasoft swift release
+      *version = 3.003   28 Jul 2005 (beta, in heasoft swift release
+      *version = 3.002   15 Apr 2005 (beta)
+      *version = 3.001   15 Mar 2005 (beta) released with heasoft 6.0
+      *version = 3.000   1 Mar 2005 (internal release only)
       *version = 2.51     2 Dec 2004
       *version = 2.50    28 Jul 2004
       *version = 2.49    11 Feb 2004
@@ -7194,10 +7195,6 @@ int ffgkcl(char *tcard)
     {
 	return (TYP_COMM_KEY);
     }
-    else if (*card == '\0')
-    {
-	return (TYP_COMM_KEY);
-    }
     else if (*card == 'B')
     {
 	if (FSTRNCMP (card1, "ITPIX  ", 7) == 0)
@@ -7221,25 +7218,25 @@ int ffgkcl(char *tcard)
 	if (FSTRNCMP (card1, "OMMENT",6) == 0)
 	{
           /* new comment string starting Oct 2001 */
-	    if (FSTRNCMP (card1, "OMMENT   and Astrophysics', volume 376, page 3",
-              46) == 0)
+	    if (FSTRNCMP (tcard, "COMMENT   and Astrophysics', volume 376, page 3",
+              47) == 0)
 	        return (TYP_STRUC_KEY);
 
          /* original COMMENT strings from 1993 - 2001 */
-	    if (FSTRNCMP (card1, "OMMENT   FITS (Flexible Image Transport System",
-              46) == 0)
+	    if (FSTRNCMP (tcard, "COMMENT   FITS (Flexible Image Transport System",
+              47) == 0)
 	        return (TYP_STRUC_KEY);
-	    if (FSTRNCMP (card1, "OMMENT   Astrophysics Supplement Series v44/p3",
-              46) == 0)
+	    if (FSTRNCMP (tcard, "COMMENT   Astrophysics Supplement Series v44/p3",
+              47) == 0)
 	        return (TYP_STRUC_KEY);
-	    if (FSTRNCMP (card1, "OMMENT   Contact the NASA Science Office of St",
-              46) == 0)
+	    if (FSTRNCMP (tcard, "COMMENT   Contact the NASA Science Office of St",
+              47) == 0)
 	        return (TYP_STRUC_KEY);
-	    if (FSTRNCMP (card1, "OMMENT   FITS Definition document #100 and oth",
-              46) == 0)
+	    if (FSTRNCMP (tcard, "COMMENT   FITS Definition document #100 and oth",
+              47) == 0)
 	        return (TYP_STRUC_KEY);
 
-            if (*(card + 7) == ' ' || *(card + 7) == '\0')
+            if (*(card + 7) == ' ')
 	        return (TYP_COMM_KEY);
             else
                 return (TYP_USER_KEY);
@@ -7354,7 +7351,7 @@ int ffgkcl(char *tcard)
 
 	if (FSTRNCMP (card1, "ISTORY",6) == 0)
         {
-            if (*(card + 7) == ' ' || *(card + 7) == '\0')
+            if (*(card + 7) == ' ')
 	        return (TYP_COMM_KEY);
             else
                 return (TYP_USER_KEY);
