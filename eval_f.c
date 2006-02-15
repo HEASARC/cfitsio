@@ -1269,8 +1269,12 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
     /*  Clean up procedures:  after processing all the rows  */
     /*-------------------------------------------------------*/
 
+    /*  if the calling routine specified that only a limited number    */
+    /*  of rows in the table should be processed, return a value of -1 */
+    /*  once all the rows have been done, if no other error occurred.  */
+
     if (gParse.hdutype != IMAGE_HDU && firstrow - 1 == lastRow) {
-           if (gParse.status && userInfo->maxRows<totalrows) {
+           if (!gParse.status && userInfo->maxRows<totalrows) {
                   return (-1);
            }
     }
