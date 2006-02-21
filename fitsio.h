@@ -34,7 +34,7 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.005
+#define CFITSIO_VERSION 3.006
 
 #include <stdio.h>
 
@@ -62,10 +62,16 @@ SERVICES PROVIDED HEREUNDER."
 
 /* this block determines if the the string function name is 
     strtol or strtoll, and whether to use %ld or %lld in printf statements */
-#if (defined(__alpha) && ( defined(__unix__) || defined(__NetBSD__) )) \
-    ||  defined(__sparcv9)  \
+
+/* 
+   The following 2 cases for that Athon64 were removed on 4 Jan 2006;  
+   they appear to be incorrect now that LONGLONG is always typedef'ed 
+   to 'long long'
     ||  defined(__ia64__)   \
     ||  defined(__x86_64__) \
+*/
+#if (defined(__alpha) && ( defined(__unix__) || defined(__NetBSD__) )) \
+    ||  defined(__sparcv9)  \
     ||  defined(__powerpc64__) || defined(__64BIT__) \
     ||  (defined(_MIPS_SZLONG) &&  _MIPS_SZLONG == 64) \
     ||  defined( _MSC_VER)

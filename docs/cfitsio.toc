@@ -90,11 +90,11 @@
 \contentsline {section}{\numberline {10.9}Image Transform Filters}{121}
 \contentsline {section}{\numberline {10.10}Column and Keyword Filtering Specification}{122}
 \contentsline {section}{\numberline {10.11}Row Filtering Specification}{124}
-\contentsline {subsection}{\numberline {10.11.1}General Syntax}{124}
-\contentsline {subsection}{\numberline {10.11.2}Bit Masks}{126}
-\contentsline {subsection}{\numberline {10.11.3}Vector Columns}{127}
+\contentsline {subsection}{\numberline {10.11.1}General Syntax}{125}
+\contentsline {subsection}{\numberline {10.11.2}Bit Masks}{127}
+\contentsline {subsection}{\numberline {10.11.3}Vector Columns}{128}
 \contentsline {subsection}{\numberline {10.11.4}Good Time Interval Filtering}{129}
-\contentsline {subsection}{\numberline {10.11.5}Spatial Region Filtering}{129}
+\contentsline {subsection}{\numberline {10.11.5}Spatial Region Filtering}{130}
 \contentsline {subsection}{\numberline {10.11.6}Example Row Filters}{132}
 \contentsline {section}{\numberline {10.12} Binning or Histogramming Specification}{133}
 \contentsline {chapter}{\numberline {11}Template Files }{137}

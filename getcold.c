@@ -922,7 +922,7 @@ int ffgcld( fitsfile *fptr,   /* I - FITS file pointer                       */
 	  dtemp = (double) next;
           if (hdutype > 0)
             sprintf(message,
-            "Error reading elements %.0f thru %ld from column %.0f (ffgcld).",
+            "Error reading elements %.0f thru %.0f from column %d (ffgcld).",
               dtemp+1., dtemp+ntodo, colnum);
           else
             sprintf(message,

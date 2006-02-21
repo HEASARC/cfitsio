@@ -47,7 +47,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large December 2005\\}
+{\Large February 2006\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -5646,7 +5646,12 @@ pound sign '\#', and the expression must evaluate to a scalar
 (i.e., cannot have a column name in the expression).  The comment
 string for the keyword may be specified in parentheses immediately
 following the keyword name (instead of supplying a datatype as in
-the case of creating a new column).
+the case of creating a new column).  If the keyword name ends with a
+pound sign '\#', then cfitsio will substitute the number of the
+most recently referenced column for the \# character .
+This is especially useful when writing
+a column-related keyword like TUNITn for a newly created column,
+as shown in the following examples.
 
 \item
 Recompute (overwrite) the values in an existing column or keyword by
@@ -5663,7 +5668,10 @@ in the row filter specification section.
 If the expression contains both a list of columns to be included and
 columns to be deleted, then all the columns in the original table
 except the explicitly deleted columns will appear in the filtered
-table.
+table.  If no columns to be deleted are specified, then only the
+columns that are explicitely listed will be included in the filtered
+output table.  To include all the columns, add the '*' wildcard
+specifier at the end of the list, as shown in the examples.
 
 For  complex  or commonly used operations,  one  can also  place the
 operations into an external text  file and import it  into the  column
@@ -5685,10 +5693,27 @@ Examples:
    [col -TIME; Good == STATUS]   - deletes the TIME column and
                                    renames the status column to 'Good'
 
-   [col PI=PHA * 1.1 + 0.2]      - creates new PI column from PHA values
+   [col PI=PHA * 1.1 + 0.2; #TUNIT#(column units) = 'counts';*]
+                                 - creates new PI column from PHA values
+                                   and also writes the TUNITn keyword
+                                   for the new column.  The final '*'
+                                   expression means preserve all the
+                                   columns in the input table in the
+                                   virtual output table;  without the '*'
+                                   the output table would only contain
+                                   the single 'PI' column.
 
-   [col rate = rate/exposure]   - recomputes the rate column by dividing
-                                   it by the EXPOSURE keyword value.
+   [col rate = rate/exposure; TUNIT#(&) = 'counts/s';*]
+                                 - recomputes the rate column by dividing
+                                   it by the EXPOSURE keyword value. This
+                                   also modifies the value of the TUNITn
+                                   keyword for this column. The use of the
+                                   '&' character for the keyword comment
+                                   string means preserve the existing
+                                   comment string for that keyword. The
+                                   final '*' preserves all the columns
+                                   in the input table in the virtual
+                                   output table.
 \end{verbatim}
 
 
@@ -5778,13 +5803,13 @@ by a backslash to force the UNIX shell to ignore it.
     "absolute value"     abs(x)     "cosine"               cos(x)
     "sine"               sin(x)     "tangent"              tan(x)
     "arc cosine"         arccos(x)  "arc sine"             arcsin(x)
-    "arc tangent"        arctan(x)  "arc tangent"          arctan2(x,y)
+    "arc tangent"        arctan(x)  "arc tangent"          arctan2(y,x)
     "hyperbolic cos"     cosh(x)    "hyperbolic sin"       sinh(x)
     "hyperbolic tan"     tanh(x)    "round to nearest int" round(x)
     "round down to int"  floor(x)   "round up to int"      ceil(x)
     "exponential"        exp(x)     "square root"          sqrt(x)
     "natural log"        log(x)     "common log"           log10(x)
-    "modulus"            i % j      "random # [0.0,1.0)"   random()
+    "modulus"            x % y      "random # [0.0,1.0)"   random()
     "minimum"            min(x,y)   "maximum"              max(x,y)
     "cumulative sum"    accum(x)   "sequential difference" seqdiff(x)
     "if-then-else"       b?x:y

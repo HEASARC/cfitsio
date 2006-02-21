@@ -1453,11 +1453,11 @@ int ffedit_columns(
 */
 {
     fitsfile *newptr;
-    int ii, hdunum, slen, colnum, deletecol = 0, savecol = 0;
+    int ii, hdunum, slen, colnum = -1, testnum, deletecol = 0, savecol = 0;
     int numcols = 0, *colindex = 0, tstatus = 0;
     char *cptr, *cptr2, *cptr3, clause[FLEN_FILENAME], keyname[FLEN_KEYWORD];
     char colname[FLEN_VALUE], oldname[FLEN_VALUE], colformat[FLEN_VALUE];
-    char *file_expr = NULL;
+    char *file_expr = NULL, testname[FLEN_VALUE], card[FLEN_CARD];
 
     if (*outfile)
     {
@@ -1548,9 +1548,11 @@ int ffedit_columns(
                 }
                 deletecol = 1; /* set flag that at least one col was deleted */
                 numcols--;
+                colnum = -1;
             }
             else
             {
+	        ffcmsg();   /* clear previous error message from ffgcno */
                 /* try deleting a keyword with this name */
                 *status = 0;
                 if (ffdkey(*fptr, &clause[1], status) > 0)
@@ -1588,6 +1590,61 @@ int ffedit_columns(
                 return(*status= URL_PARSE_ERROR);
             }
 
+	    /* If this is a keyword of the form 
+	         #KEYWORD# 
+	       then transform to the form
+	         #KEYWORDn
+	       where n is the previously used column number 
+	    */
+	    if (colname[0] == '#' &&
+		strstr(colname+1, "#") == (colname + strlen(colname) - 1)) 
+	    {
+		if (colnum <= 0) 
+		  {
+		    ffpmsg("The keyword name:");
+		    ffpmsg(colname);
+		    ffpmsg("is invalid unless a column has been previously");
+		    ffpmsg("created or editted by a calculator command");
+		    return(*status = URL_PARSE_ERROR);
+		  }
+		colname[strlen(colname)-1] = '\0';
+		/* Make keyword name and put it in oldname */
+		ffkeyn(colname+1, colnum, oldname, status);
+		if (*status) return (*status);
+		/* Re-copy back into colname */
+		strcpy(colname+1,oldname);
+	    }
+            else if  (strstr(colname, "#") == (colname + strlen(colname) - 1)) 
+	    {
+	        /*  colname is of the form "NAME#";  if
+		      a) colnum is defined, and
+		      b) a column with literal name "NAME#" does not exist, and
+		      c) a keyword with name "NAMEn" (where n=colnum) exists, then
+		    transfrom the colname string to "NAMEn", otherwise
+		    do nothing.
+		*/
+		if (colnum > 0) {  /* colnum must be defined */
+		  tstatus = 0;
+                  ffgcno(*fptr, CASEINSEN, colname, &testnum, &tstatus);
+		  if (tstatus != 0 && tstatus != COL_NOT_UNIQUE) 
+		  {  
+		    /* OK, column doesn't exist, now see if keyword exists */
+		    ffcmsg();   /* clear previous error message from ffgcno */
+		    strcpy(testname, colname);
+ 		    testname[strlen(testname)-1] = '\0';
+		    /* Make keyword name and put it in oldname */
+		    ffkeyn(testname, colnum, oldname, status);
+		    if (*status) return (*status);
+
+		    tstatus = 0;
+		    if (!fits_read_card(*fptr, oldname, card, &tstatus)) {
+		      /* Keyword does exist; copy real name back into colname */
+		      strcpy(colname,oldname);
+		    }
+		  }
+                }
+	    }
+
             /* if we encountered an opening parenthesis, then we need to */
             /* find the closing parenthesis, and concatinate the 2 strings */
             /* This supports expressions like:
@@ -1611,12 +1668,14 @@ int ffedit_columns(
               /* ------------------------------------ */
 
               /* look for matching column */
-              ffgcno(*fptr, CASEINSEN, colname, &colnum, status);
+              ffgcno(*fptr, CASEINSEN, colname, &testnum, status);
 
               while (*status == COL_NOT_UNIQUE) 
               {
                  /* the column name contained wild cards, and it */
                  /* matches more than one column in the table. */
+		 
+		 colnum = testnum;
 
                  /* keep this column in the output file */
                  savecol = 1;
@@ -1627,7 +1686,7 @@ int ffedit_columns(
                  colindex[colnum - 1] = 1;  /* flag this column number */
 
                  /* look for other matching column names */
-                 ffgcno(*fptr, CASEINSEN, colname, &colnum, status);
+                 ffgcno(*fptr, CASEINSEN, colname, &testnum, status);
 
                  if (*status == COL_NOT_FOUND)
                     *status = 999;  /* temporary status flag value */
@@ -1635,6 +1694,8 @@ int ffedit_columns(
 
               if (*status <= 0)
               {
+	         colnum = testnum;
+		 
                  /* keep this column in the output file */
                  savecol = 1;
 
@@ -1705,6 +1766,7 @@ int ffedit_columns(
                 else
                 {
                     /* try renaming a keyword */
+		    ffcmsg();   /* clear error message stack */
                     *status = 0;
                     if (ffmnam(*fptr, oldname, colname, status) > 0)
                     {
@@ -1746,10 +1808,11 @@ int ffedit_columns(
 
                 /* test if this is a column and not a keyword */
                 tstatus = 0;
-                ffgcno(*fptr, CASEINSEN, oldname, &colnum, &tstatus);
+                ffgcno(*fptr, CASEINSEN, oldname, &testnum, &tstatus);
                 if (tstatus == 0)
                 {
                     /* keep this column in the output file */
+		    colnum = testnum;
                     savecol = 1;
 
                     if (!colindex)
@@ -1758,6 +1821,10 @@ int ffedit_columns(
                     colindex[colnum - 1] = 1;
                     if (colnum > numcols)numcols++;
                 }
+		else
+		{
+		  ffcmsg();  /* clear the error message stack */
+		}
               }
             }
         }
@@ -3327,7 +3394,7 @@ int fits_init_cfitsio(void)
     {
       printf ("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
       printf(" CFITSIO did not find an 8-byte long integer data type.\n");
-      printf("   sizeof(LONGLONG) = %d\n",sizeof(LONGLONG));
+      printf("   sizeof(LONGLONG) = %d\n",(int)sizeof(LONGLONG));
       printf(" Please report this problem to the author at\n");
       printf("     pence@tetra.gsfc.nasa.gov\n");
       printf(  "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");

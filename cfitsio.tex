@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large March 2005\\}
+{\Large February 2006\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -1831,8 +1831,11 @@ as a whole.
 \end{verbatim}
 
 \begin{description}
-\item[2 ] Return the total number of HDUs in the FITS file.
-   The current HDU remains unchanged. \label{ffthdu}
+\item[2 ] Return the total number of HDUs in the FITS file.  This returns the
+number of completely defined HDUs in the file.  If a new HDU has just been added to
+the FITS file, then that last HDU will only be counted if it has been closed,
+or if data has been written to the HDU.
+   The current HDU remains unchanged by this routine. \label{ffthdu}
 \end{description}
 
 \begin{verbatim}
@@ -3006,11 +3009,19 @@ an error.
 
 Automatic data type conversion is performed for numerical data types
 (only) if the data type of the column (defined by the TFORMn keyword)
-differs from the data type of the calling routine.  ASCII and binary
+differs from the data type of the array in the calling routine.  ASCII and binary
 tables support the following data type values:  TSTRING, TBYTE, TSBYTE, TSHORT,
 TUSHORT, TINT, TUINT, TLONG, TLONGLONG, TULONG, TFLOAT, or TDOUBLE.
 Binary tables also support TLOGICAL (internally mapped to the `char'
 data type), TCOMPLEX, and TDBLCOMPLEX.
+
+Individual bits in a binary table 'X' or 'B' column may be read/written
+to/from a *char array by specifying the TBIT datatype.  The *char
+array will be interpreted as an array of logical TRUE (1) or FALSE (0)
+values that correspond to the value of each bit in the FITS 'X' or 'B' column.
+Alternatively, the values in a binary table 'X' column may be read/written
+8 bits at a time to/from an array of 8-bit integers by specifying the
+TBYTE datatype.
 
 Note that within the context of these routines, the TSTRING data type
 corresponds to a C 'char**' data type, i.e., a pointer to an array of
@@ -4629,8 +4640,8 @@ given in units of degrees.
 
 These functions allow for the creation and manipulation of FITS HDU
 Groups, as defined in "A Hierarchical Grouping Convention for FITS" by
-Jennings, Pence, Folk and Schlesinger ( http:
-//adfwww.gsfc.nasa.gov/other/convert/group.html ). A group is a
+Jennings, Pence, Folk and Schlesinger
+(http://fits.gsfc.nasa.gov/group.html). A group is a
 collection of HDUs whose association is defined by a {\it grouping
 table}.  HDUs which are part of a group are referred to as {\it member
 HDUs} or simply as {\it members}. Grouping table member HDUs may
@@ -7510,7 +7521,12 @@ pound sign '\#', and the expression must evaluate to a scalar
 (i.e., cannot have a column name in the expression).  The comment
 string for the keyword may be specified in parentheses immediately
 following the keyword name (instead of supplying a data type as in
-the case of creating a new column).
+the case of creating a new column).  If the keyword name ends with a
+pound sign '\#', then cfitsio will substitute the number of the
+most recently referenced column for the \# character .
+This is especially useful when writing
+a column-related keyword like TUNITn for a newly created column,
+as shown in the following examples.
 
 \item
 Recompute (overwrite) the values in an existing column or keyword by
@@ -7523,6 +7539,14 @@ keywords can be arbitrarily complex and may be a function of other
 header keyword values and other columns (in the same row).  The full
 syntax and available functions for the expression are described below
 in the row filter specification section.
+
+If the expression contains both a list of columns to be included and
+columns to be deleted, then all the columns in the original table
+except the explicitly deleted columns will appear in the filtered
+table.  If no columns to be deleted are specified, then only the
+columns that are explicitely listed will be included in the filtered
+output table.  To include all the columns, add the '*' wildcard
+specifier at the end of the list, as shown in the examples.
 
 For  complex  or commonly used operations,  one  can  place the
 operations into an external text  file and import it  into the  column
@@ -7544,10 +7568,27 @@ Examples:
    [col -TIME; Good == STATUS]   - deletes the TIME column and
                                    renames the status column to 'Good'
 
-   [col PI=PHA * 1.1 + 0.2]      - creates new PI column from PHA values
+   [col PI=PHA * 1.1 + 0.2; #TUNIT#(column units) = 'counts';*]
+                                 - creates new PI column from PHA values
+                                   and also writes the TUNITn keyword
+                                   for the new column.  The final '*'
+                                   expression means preserve all the
+                                   columns in the input table in the
+                                   virtual output table;  without the '*'
+                                   the output table would only contain
+                                   the single 'PI' column.
 
-   [col rate = rate/exposure]   - recomputes the rate column by dividing
-                                   it by the EXPOSURE keyword value.
+   [col rate = rate/exposure; TUNIT#(&) = 'counts/s';*]
+                                 - recomputes the rate column by dividing
+                                   it by the EXPOSURE keyword value. This
+                                   also modifies the value of the TUNITn
+                                   keyword for this column. The use of the
+                                   '&' character for the keyword comment
+                                   string means preserve the existing
+                                   comment string for that keyword. The
+                                   final '*' preserves all the columns
+                                   in the input table in the virtual
+                                   output table.
 \end{verbatim}
 
 
@@ -7637,13 +7678,13 @@ by a backslash to force the UNIX shell to ignore it.
     "absolute value"    abs(x)     "cosine"                cos(x)
     "sine"              sin(x)     "tangent"               tan(x)
     "arc cosine"        arccos(x)  "arc sine"              arcsin(x)
-    "arc tangent"       arctan(x)  "arc tangent"           arctan2(x,y)
+    "arc tangent"       arctan(x)  "arc tangent"           arctan2(y,x)
     "hyperbolic cos"    cosh(x)    "hyperbolic sin"        sinh(x)
     "hyperbolic tan"    tanh(x)    "round to nearest int"  round(x)
     "round down to int" floor(x)   "round up to int"       ceil(x)
     "exponential"       exp(x)     "square root"           sqrt(x)
     "natural log"       log(x)     "common log"            log10(x)
-    "modulus"           i % j      "random # [0.0,1.0)"    random()
+    "modulus"           x % y      "random # [0.0,1.0)"    random()
     "minimum"           min(x,y)   "maximum"               max(x,y)
     "cumulative sum"    accum(x)   "sequential difference" seqdiff(x)
     "if-then-else"      b?x:y

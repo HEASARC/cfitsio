@@ -4212,7 +4212,7 @@ static void Do_BinOp_lng( Node *this )
 
    } else if ((this->operation == ACCUM) || (this->operation == DIFF)) {
       long i, previous, curr;
-      int undef;
+      long undef;
       rows  = gParse.nRows;
       nelem = this->value.nelem;
       elem  = this->value.nelem * rows;
@@ -4221,7 +4221,7 @@ static void Do_BinOp_lng( Node *this )
       
       if( !gParse.status ) {
 	previous = that2->value.data.lng;
-	undef    = (int) that2->value.undef;
+	undef    = (long) that2->value.undef;
 	
 	if (this->operation == ACCUM) {
 	  /* Cumulative sum of this chunk */
@@ -4392,7 +4392,7 @@ static void Do_BinOp_dbl( Node *this )
 
    } else if ((this->operation == ACCUM) || (this->operation == DIFF)) {
       long i;
-      int undef;
+      long undef;
       double previous, curr;
       rows  = gParse.nRows;
       nelem = this->value.nelem;
@@ -4402,7 +4402,7 @@ static void Do_BinOp_dbl( Node *this )
       
       if( !gParse.status ) {
 	previous = that2->value.data.dbl;
-	undef    = (int) that2->value.undef;
+	undef    = (long) that2->value.undef;
 	
 	if (this->operation == ACCUM) {
 	  /* Cumulative sum of this chunk */

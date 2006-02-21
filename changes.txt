@@ -1,6 +1,27 @@
                    Log of Changes Made to CFITSIO
 
-Version 3.005 - 20 December 2005  
+Version 3.006 - 20 February 2006  -(first full release of v3)
+
+  - enhanced the 'col' extended filename syntax to support keyword name
+    expressions like
+       [col error=sqrt(rate); #TUNIT# = 'counts/s'], 
+    in which the trailing '#' will be replaced by the column number
+    of the most recently referenced column.
+    
+  - fixed bug in the parse_data iterator work function that caused it
+    to fail to return a value of -1 in cases where only a selected
+    set of rows were to be processed. (affected Fv)
+
+  - made several small changes based on testing by Martin Reinecke:
+    o in  eval.y, change 'int undef' to 'long undef'
+    o in getcold.c and getcole.c, fixed a couple format conversion 
+      specifiers when displaying the value of long long variables.
+    o in fitsio.h, modified the definition of USE_LL_SUFFIX in the
+      case of Athon64 machines.
+    o in fitsio2.h,  defined BYTESWAPPED in the case of SGI machines.
+    o in group.c, added 'include unistd.h' to get rid of compiler warning.
+      
+Version 3.005 - 20 December 2005  (beta)
 
   - cfortran.h has been enhanced to support 64-bit integer parameters
     when calling C routines from Fortran.  This modification was kindly 

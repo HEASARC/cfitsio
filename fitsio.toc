@@ -71,9 +71,9 @@
 \contentsline {section}{\numberline {8.7}Image Section}{87}
 \contentsline {section}{\numberline {8.8}Column and Keyword Filtering Specification}{88}
 \contentsline {section}{\numberline {8.9}Row Filtering Specification}{90}
-\contentsline {subsection}{\numberline {8.9.1}General Syntax}{90}
+\contentsline {subsection}{\numberline {8.9.1}General Syntax}{91}
 \contentsline {subsection}{\numberline {8.9.2}Bit Masks}{93}
-\contentsline {subsection}{\numberline {8.9.3}Vector Columns}{93}
+\contentsline {subsection}{\numberline {8.9.3}Vector Columns}{94}
 \contentsline {subsection}{\numberline {8.9.4}Good Time Interval Filtering}{95}
 \contentsline {subsection}{\numberline {8.9.5}Spatial Region Filtering}{96}
 \contentsline {subsection}{\numberline {8.9.6}Example Row Filters}{98}

@@ -78,6 +78,8 @@
 /* the following block determines the size of longs on SGI IRIX machines */
 
 #elif defined(_MIPS_SZLONG)
+
+#define BYTESWAPPED FALSE
 #  if _MIPS_SZLONG == 32
 #    define LONGSIZE 32
 #  elif _MIPS_SZLONG == 64

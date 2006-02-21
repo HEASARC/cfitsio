@@ -60,12 +60,13 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.005;
+      *version = (float) 3.006;
 
-/*     20 December 2005
+/*     20 February 2006
 
 
    Previous releases:
+      *version = 3.005   20 Dec 2005 (beta, in heasoft swift release
       *version = 3.004   16 Sep 2005 (beta, in heasoft swift release
       *version = 3.003   28 Jul 2005 (beta, in heasoft swift release
       *version = 3.002   15 Apr 2005 (beta)
@@ -2350,7 +2351,7 @@ int ffbnfmll(char *tform,     /* I - format code from the TFORMn keyword */
         /* print as double, because the string-to-64-bit int conversion */
         /* character is platform dependent (%lld, %ld, %I64d)           */
 
-        sscanf(form,"%f", &drepeat);
+        sscanf(form,"%lf", &drepeat);
         repeat = (LONGLONG) (drepeat + 0.1);
     }
     /*-----------------------------------------------*/
