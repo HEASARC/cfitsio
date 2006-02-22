@@ -2090,7 +2090,7 @@ int fits_copy_cell2image(
     while (nbytes && (*status <= 0) )
     {
         ntodo = minvalue(30000, nbytes);
-        ffread((fptr)->Fptr, ntodo, buffer, status);
+        ffread((fptr)->Fptr, (long) ntodo, buffer, status);
         ffptbb(newptr, 1, firstbyte, ntodo, buffer, status);
         nbytes    -= ntodo;
         firstbyte += ntodo;
@@ -2357,7 +2357,7 @@ int fits_copy_image2cell(
     while (nbytes && (*status <= 0) )
     {
         ntodo = minvalue(30000L, nbytes);
-        ffread(fptr->Fptr, ntodo, buffer, status);
+        ffread(fptr->Fptr, (long) ntodo, buffer, status);
         ffptbb(newptr, rownum, firstbyte, ntodo, buffer, status);
         nbytes    -= ntodo;
         firstbyte += ntodo;

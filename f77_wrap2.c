@@ -185,8 +185,8 @@ FCALLSCSUB11(Cffgsfk,FTGSFJ,ftgsfj,FITSUNIT,INT,INT,LONGV,LONGV,LONGV,LONGV,INTV
 
 
 /*   Must handle LOGICALV conversion manually   */
-void Cffgsfjj( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, long *trc, long *inc, long long *array, int *flagval, int *anynul, int *status );
-void Cffgsfjj( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, long *trc, long *inc, long long *array, int *flagval, int *anynul, int *status )
+void Cffgsfjj( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, long *trc, long *inc, LONGLONG *array, int *flagval, int *anynul, int *status );
+void Cffgsfjj( fitsfile *fptr, int colnum, int naxis, long *naxes, long *blc, long *trc, long *inc, LONGLONG *array, int *flagval, int *anynul, int *status )
 {
    char *Cflagval;
    long nflagval;

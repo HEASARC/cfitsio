@@ -81,14 +81,24 @@ SERVICES PROVIDED HEREUNDER."
 #   define USE_LL_SUFFIX 1
 #endif
 
-/* previously, we had some complicated code here which would do
-         typedif long LONGLONG
-   if the sizeof(long) = 8.  This was changed on 20 Dec 2005 to
-   assume that the 'long long' datatype is supported.  This was
-   done for compatibility with the change to cfortran.h to support
-   8-byte integers in Fortran.
+/* 
+   Determine what 8-byte integer data type is available.
+  'long long' is now supported by most compilers, but
+  older MS Visual C++ compilers before V7.0 use '__int64' instead.
 */
+
+#if defined(_MSC_VER)   /* Microsoft Visual C++ */
+
+#if (_MSC_VER < 1300)   /* versions earlier than V7.0 do not have 'long long' */
+    typedef __int64 LONGLONG;
+#else                   /* newer versions do support 'long long' */
     typedef long long LONGLONG; 
+#endif
+
+#else
+    typedef long long LONGLONG; 
+#endif
+#define LONGLONG_TYPE
 
 /* ================================================================= */
 

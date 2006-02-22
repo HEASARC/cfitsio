@@ -48,6 +48,29 @@
 
  */
 
+/* 
+   Determine what 8-byte integer data type is available.
+  'long long' is now supported by most compilers, but
+  older MS Visual C++ compilers before V7.0 use '__int64' instead.
+  (added by William Pence, Feb 2006)
+*/
+
+#ifndef LONGLONG_TYPE   /* this may have been previously defined */
+#if defined(_MSC_VER)   /* Microsoft Visual C++ */
+
+#if (_MSC_VER < 1300)   /* versions earlier than V7.0 do not have 'long long' */
+    typedef __int64 LONGLONG;
+#else                   /* newer versions do support 'long long' */
+    typedef long long LONGLONG; 
+#endif
+
+#else
+    typedef long long LONGLONG; 
+#endif
+
+#define LONGLONG_TYPE
+#endif  
+
 
 /* First prepare for the C compiler. */
 
@@ -1380,7 +1403,7 @@ do{VVCF(T1,A1,B1)  VVCF(T2,A2,B2)  VVCF(T3,A3,B3)  VVCF(T4,A4,B4)  VVCF(T5,A5,B5
 #define     INTVVVVVVV_cfTYPE int
 #define LOGICALVVVVVVV_cfTYPE int
 #define    LONGVVVVVVV_cfTYPE long
-#define LONGLONGVVVVVVV_cfTYPE long long   /* added by MR December 2005 */
+#define LONGLONGVVVVVVV_cfTYPE LONGLONG   /* added by MR December 2005 */
 #define   SHORTVVVVVVV_cfTYPE short
 #define          PBYTE_cfTYPE INTEGER_BYTE
 #define        PDOUBLE_cfTYPE DOUBLE_PRECISION 
@@ -1388,7 +1411,7 @@ do{VVCF(T1,A1,B1)  VVCF(T2,A2,B2)  VVCF(T3,A3,B3)  VVCF(T4,A4,B4)  VVCF(T5,A5,B5
 #define           PINT_cfTYPE int
 #define       PLOGICAL_cfTYPE int
 #define          PLONG_cfTYPE long
-#define      PLONGLONG_cfTYPE long long  /* added by MR December 2005 */
+#define      PLONGLONG_cfTYPE LONGLONG  /* added by MR December 2005 */
 #define         PSHORT_cfTYPE short
 
 #define CFARGS0(A,T,V,W,X,Y,Z) _3(T,_cf,A)
@@ -2179,7 +2202,7 @@ static _Icf(2,U,F,CFFUN(UN),0)() {_(F,_cfE) _Icf(3,GZ,F,UN,LN) ABSOFT_cf1(F));_(
 #define     INT_cfFZ(UN,LN) int   FCALLSC_QUALIFIER fcallsc(UN,LN)(
 #define LOGICAL_cfFZ(UN,LN) int   FCALLSC_QUALIFIER fcallsc(UN,LN)(
 #define    LONG_cfFZ(UN,LN) long  FCALLSC_QUALIFIER fcallsc(UN,LN)(
-#define LONGLONG_cfFZ(UN,LN) long long FCALLSC_QUALIFIER fcallsc(UN,LN)( /* added by MR December 2005 */
+#define LONGLONG_cfFZ(UN,LN) LONGLONG FCALLSC_QUALIFIER fcallsc(UN,LN)( /* added by MR December 2005 */
 #define   SHORT_cfFZ(UN,LN) short FCALLSC_QUALIFIER fcallsc(UN,LN)(
 #define    VOID_cfFZ(UN,LN) void  FCALLSC_QUALIFIER fcallsc(UN,LN)(
 #ifndef __CF__KnR

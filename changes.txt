@@ -12,6 +12,11 @@ Version 3.006 - 20 February 2006  -(first full release of v3)
     to fail to return a value of -1 in cases where only a selected
     set of rows were to be processed. (affected Fv)
 
+  - added code to fitsio.h and cfortran.h to typedef LONGLONG to
+    the appropriate 8-byte integer data type.  Most compilers now
+    support the 'long long' data type, but older MS Visual C++
+    compilers used '__int64' instead.
+
   - made several small changes based on testing by Martin Reinecke:
     o in  eval.y, change 'int undef' to 'long undef'
     o in getcold.c and getcole.c, fixed a couple format conversion 
