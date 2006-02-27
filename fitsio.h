@@ -87,6 +87,7 @@ SERVICES PROVIDED HEREUNDER."
   older MS Visual C++ compilers before V7.0 use '__int64' instead.
 */
 
+#ifndef LONGLONG_TYPE   /* this may have been previously defined */
 #if defined(_MSC_VER)   /* Microsoft Visual C++ */
 
 #if (_MSC_VER < 1300)   /* versions earlier than V7.0 do not have 'long long' */
@@ -98,7 +99,10 @@ SERVICES PROVIDED HEREUNDER."
 #else
     typedef long long LONGLONG; 
 #endif
+
 #define LONGLONG_TYPE
+#endif  
+
 
 /* ================================================================= */
 
