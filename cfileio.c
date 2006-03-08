@@ -1919,8 +1919,10 @@ int fits_copy_cell2image(
 			   {"iCNAna",  "CNAMEia" },
 			   {"DAVGn",   "DATE-AVG"},
 
-			   {"T????#a", "-"       }, /* Delete table keywords */
-			   {"T???#a",  "-"       }, /* related to other columns */
+                           /* Delete table keywords related to other columns */
+			   {"T????#a", "-"       }, 
+ 			   {"TC??#a",  "-"       },
+ 			   {"TWCS#a",  "-"       },
 			   {"TDIM#",   "-"       }, 
 			   {"iCTYPm",  "-"       },
 			   {"iCUNIm",  "-"       },
