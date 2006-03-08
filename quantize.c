@@ -109,7 +109,14 @@ If the function value is zero, the data were not copied to idata.
             if (anynulls) {
                 /* Shift the range of values so they lie close to NULL_VALUE. */
                 /* This will make the compression more efficient.             */
-                nshift = *iminval - NULL_VALUE - N_RESERVED_VALUES;
+                /* Maximum allowed shift is 2^31 = 2147483647 */
+
+                if (*iminval >= 0) {
+		   nshift = -NULL_VALUE - N_RESERVED_VALUES;
+		} else {
+                  nshift = *iminval - NULL_VALUE - N_RESERVED_VALUES;
+                }
+
                 for (i = 0;  i < nx;  i++) {
                     if (idata[i] != NULL_VALUE) {
                         idata[i] -= nshift;
@@ -234,6 +241,7 @@ If the function value is zero, the data were not copied to idata.
             /* data contains null values; shift the range to be */
             /* close to the value used to represent null values */
             zeropt = minval - delta * (NULL_VALUE + N_RESERVED_VALUES);
+
 	    for (i = 0;  i < nx;  i++) {
                 if (fdata[i] != in_null_value) {
 	            temp = (fdata[i] - zeropt) / delta;
@@ -329,7 +337,14 @@ If the function value is zero, the data were not copied to idata.
             if (anynulls) {
                 /* Shift the range of values so they lie close to NULL_VALUE. */
                 /* This will make the compression more efficient.             */
-                nshift = *iminval - NULL_VALUE - N_RESERVED_VALUES;
+                /* Maximum allowed shift is 2^31 = 2147483647 */
+
+                if (*iminval >= 0) {
+		   nshift = -NULL_VALUE - N_RESERVED_VALUES;
+		} else {
+                  nshift = *iminval - NULL_VALUE - N_RESERVED_VALUES;
+                }
+
                 for (i = 0;  i < nx;  i++) {
                     if (idata[i] != NULL_VALUE) {
                         idata[i] -= nshift;

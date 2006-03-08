@@ -1890,7 +1890,7 @@ then values of 'n' less than or equal to n_value will match.
 	  ic ++;
 	}
 	ic --;
-      } else if (s == 'a' && a != ' ') {
+      } else if (s == 'a') {
 	outrec[ic] = a;
       } else {
 	outrec[ic] = s;

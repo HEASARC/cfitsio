@@ -1,5 +1,20 @@
                    Log of Changes Made to CFITSIO
 
+  - fixed a few issues in fits_copy_cell2image and fits_copy_image2cell
+    related to converting some WCS keyword between the image extension
+    form and the table cell form of the keyword. (cfileio.c)
+
+  - fixed bug in fits_translate_keyword (fitscore.c) that, e.g.,  caused 
+   'EQUINOX' to be translated to EQUINOXA' if the pattern is 'EQUINOXa'
+
+  - added test in fitsio.h so that LONGLONG cannot be multiply defined
+  
+  - fixed 2 bugs that could affect 'tile compressed' floating point
+    images that contain NaN pixels (null pixels).  First, the
+    ZBLANK keyword was not being written, and second, an integer
+    overflow could occur when computing the BZERO offset in the
+    compressed array.  (quantize.c and imcompress.c)
+
 Version 3.006 - 20 February 2006  -(first full release of v3)
 
   - enhanced the 'col' extended filename syntax to support keyword name

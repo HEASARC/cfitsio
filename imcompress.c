@@ -854,8 +854,12 @@ int fits_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer     */
     long rowdim[MAX_COMPRESS_DIM], offset[MAX_COMPRESS_DIM],ntemp;
     long fpixel[MAX_COMPRESS_DIM], lpixel[MAX_COMPRESS_DIM];
     int ii, i5, i4, i3, i2, i1, i0, ndim, irow, pixlen, tilenul;
+    int anynull, tstatus;
+    long totpix;
     void *buffer;
-    char *bnullarray = 0;
+    char *bnullarray = 0, card[FLEN_CARD];
+    float floatnull = 0.;
+    double doublenull = 0.;
 
     if (*status > 0) 
         return(*status);
@@ -1045,7 +1049,64 @@ int fits_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer     */
      }
     }
     free(buffer);
+    
+    /*
+      if the input array has a floating point datatype, and if *nullval
+      is not equal to zero, and if there are any pixels in the array that
+      are equal to the value of *nullval, then we need to make sure that the
+      ZBLANK keyword is present in the compressed image header.  If it is not
+      there then we need to insert the keyword.      
+    */
+    if (datatype >= TFLOAT && nullval != 0) { 
+     /* OK, this is a floating point data type, with a null value */
 
+      if (datatype == TFLOAT)
+	   floatnull = *((float *) nullval);
+      else if (datatype == TDOUBLE)
+	   doublenull = *((double *) nullval);
+      if (floatnull != 0. || doublenull != 0.) {
+        /*  OK, the null value is not = 0 */   
+	
+        /* calculate the size of the imput array */
+        totpix = 1;
+        for (ii = 0; ii < ndim; ii++)  {
+           totpix *= (inlpixel[ii] - infpixel[ii]);
+        }
+	      
+        if (totpix <= 0) return(*status);
+	
+        anynull = 0;
+        if (datatype == TFLOAT) {
+	  for (ii = 0; ii < totpix; ii++)  {
+	     if (((float *)array)[ii] == floatnull)  {
+	         anynull = 1;
+		 break;
+	     }
+	  }
+	} else if (datatype == TDOUBLE) {
+	  for (ii = 0; ii < totpix; ii++)  {
+	     if (((double *)array)[ii] == doublenull)  {
+	         anynull = 1;
+		 break;
+	     }
+	  }
+	}      
+
+        if (anynull) {  /* there are null values in the array */
+
+            tstatus = 0;
+            ffgcrd(fptr, "ZBLANK", card, &tstatus);
+	    if (tstatus)  {   /* have to insert the ZBLANK keyword */
+	    
+              ffgcrd(fptr, "ZCMPTYPE", card, status);
+              ffikyj(fptr, "ZBLANK", COMPRESS_NULL_VALUE, 
+                "null value in the compressed integer array", status);
+	    }
+
+	} /* there are null values in the array */
+      }  /* non-zero null value */
+    }  /* floating point data type */
+    
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

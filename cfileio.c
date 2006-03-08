@@ -1920,7 +1920,8 @@ int fits_copy_cell2image(
 			   {"DAVGn",   "DATE-AVG"},
 
 			   {"T????#a", "-"       }, /* Delete table keywords */
-			   {"TDIM#",   "-"       }, /* related to other columns */
+			   {"T???#a",  "-"       }, /* related to other columns */
+			   {"TDIM#",   "-"       }, 
 			   {"iCTYPm",  "-"       },
 			   {"iCUNIm",  "-"       },
 			   {"iCRVLm",  "-"       },
@@ -2172,21 +2173,21 @@ int fits_copy_image2cell(
 			   {"CSYERia", "iCSYna"  },
 			   {"CROTAi",  "iCROTn"  },
 
-			   {"LONPOLEa","LONPOLEa"},
-			   {"LATPOLEa","LATPOLEa"},
-			   {"EQUINOXa","EQUINOXa"},
-			   {"MJD-OBS", "MJD-OBS" },
-			   {"MJD-AVG", "MJD-AVG" },
-			   {"RADESYSa","RADESYSa"},
+			   {"LONPOLEa","LONPna"},
+			   {"LATPOLEa","LATPna"},
+			   {"EQUINOXa","EQUIna"},
+			   {"MJD-OBS", "MJDOBn" },
+			   {"MJD-AVG", "MJDAn" },
+			   {"RADESYSa","RADEna"},
 			   {"CNAMEia", "iCNAna"  },
-			   {"DATE-AVG","DATE-AVG"},
+			   {"DATE-AVG","DAVGn"},
 
 			   {"EXTNAME", "-"       },  /* Remove structural keywords*/
 			   {"EXTVER",  "-"       },
 			   {"EXTLEVEL","-"       },
 			   {"CHECKSUM","-"       },
 			   {"DATASUM", "-"       },
-			   {"*",       "+"       }};
+			   {"*",       "+"       }}; /* copy all other keywords */
 
     
     if (*status > 0)
