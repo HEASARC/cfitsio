@@ -109,10 +109,11 @@ If the function value is zero, the data were not copied to idata.
             if (anynulls) {
                 /* Shift the range of values so they lie close to NULL_VALUE. */
                 /* This will make the compression more efficient.             */
-                /* Maximum allowed shift is 2^31 = 2147483647 */
+                /* Maximum allowed shift is 2^31 - 1 = 2147483646 */
+                /* Can't use 2147483647 because OSF says this is not a legal number */
 
                 if (*iminval >= 0) {
-		   nshift = -NULL_VALUE - N_RESERVED_VALUES;
+		   nshift = -(NULL_VALUE + 1) - N_RESERVED_VALUES;
 		} else {
                   nshift = *iminval - NULL_VALUE - N_RESERVED_VALUES;
                 }
@@ -337,10 +338,11 @@ If the function value is zero, the data were not copied to idata.
             if (anynulls) {
                 /* Shift the range of values so they lie close to NULL_VALUE. */
                 /* This will make the compression more efficient.             */
-                /* Maximum allowed shift is 2^31 = 2147483647 */
+                /* Maximum allowed shift is 2^31 - 1 = 2147483646 */
+                /* Can't use 2147483647 because OSF says this is not a legal number */
 
                 if (*iminval >= 0) {
-		   nshift = -NULL_VALUE - N_RESERVED_VALUES;
+		   nshift = -(NULL_VALUE +1) - N_RESERVED_VALUES;
 		} else {
                   nshift = *iminval - NULL_VALUE - N_RESERVED_VALUES;
                 }
