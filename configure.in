@@ -182,12 +182,15 @@ case $CC in
 		echo "cfitsio: == Using gcc version $GCCVERSION"
 		AC_SUBST(GCCVERSION)
                 changequote(,)
-		if test `echo $GCCVERSION | grep -c '2\.[45678]'` -gt 0
+		gcc_test=`echo $GCCVERSION | grep -c '2\.[45678]'`
+		changequote([,])
+		if test $gcc_test -gt 0
 		then
+		    changequote(,)
 		    CFLAGS=`echo $CFLAGS | sed 's:-O[^ ]* *::'`
+		    changequote([,])
 		    AC_MSG_WARN(This gcc is pretty old. Disabling optimization to be safe.)
 		fi
-                changequote([,])
 		;;
 	cc)
 		echo "cfitsio: Old CFLAGS is $CFLAGS"
