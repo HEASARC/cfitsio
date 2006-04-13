@@ -1,8 +1,6 @@
 /* cfortran.h  4.4 */
 /* http://www-zeus.desy.de/~burow/cfortran/                   */
 /* Burkhard Burow  burow@desy.de                 1990 - 2002. */
-/* Modifications to support 8-byte integers by Martin Reinecke (MR), Dec 2005
-   USE AT YOUR OWN RISK! */
 
 #ifndef __CFORTRAN_LOADED
 #define __CFORTRAN_LOADED
@@ -14,11 +12,13 @@
 */
 
 /* The following modifications were made by the authors of CFITSIO or by me. 
- * I've flagged them below with "(CFITSIO)" or "(KMCCARTY)".
+ * They are flagged below with CFITSIO, the author's initials, or KMCCARTY.
  * PDW = Peter Wilson
  * DM  = Doug Mink
  * LEB = Lee E Brotzman
- * -- Kevin McCarty, for Debian (11/29/2003) */
+ * MR  = Martin Reinecke
+ * WDP = William D Pence
+ * -- Kevin McCarty, for Debian (19 Dec. 2005) */
 
 /*******
    Modifications:
@@ -40,19 +40,25 @@
       Dec 2005: If f2cFortran is defined, enforce REAL functions in FORTRAN
                 returning "double" in C.  This was one of the items on
 		Burkhard's TODO list. (KMCCARTY)
+      Dec 2005: Modifications to support 8-byte integers. (MR)
+		USE AT YOUR OWN RISK!
+      Feb 2006  Added logic to typedef the symbol 'LONGLONG' to an appropriate
+                intrinsic 8-byte integer datatype  (WDP)
+      Apr 2006: Modifications to support gfortran (and g77 with -fno-f2c flag)
+                since by default it returns "float" for FORTRAN REAL function.
+                (KMCCARTY)
  *******/
 
 /* 
   Avoid symbols already used by compilers and system *.h:
   __ - OSF1 zukal06 V3.0 347 alpha, cc -c -std1 cfortest.c
 
- */
+*/
 
 /* 
    Determine what 8-byte integer data type is available.
-  'long long' is now supported by most compilers, but
-  older MS Visual C++ compilers before V7.0 use '__int64' instead.
-  (added by William Pence, Feb 2006)
+  'long long' is now supported by most compilers, but older
+  MS Visual C++ compilers before V7.0 use '__int64' instead. (WDP)
 */
 
 #ifndef LONGLONG_TYPE   /* this may have been previously defined */
@@ -130,7 +136,8 @@ only C calling FORTRAN subroutines will work using K&R style.*/
 /* Remainder of cfortran.h depends on the Fortran compiler. */
 
 /* 11/29/2003 (KMCCARTY): add *INTEL_COMPILER symbols here */
-#if defined(CLIPPERFortran) || defined(pgiFortran) || defined(__INTEL_COMPILER) || defined(INTEL_COMPILER)
+/* 04/05/2006 (KMCCARTY): add gFortran symbol here */
+#if defined(CLIPPERFortran) || defined(pgiFortran) || defined(__INTEL_COMPILER) || defined(INTEL_COMPILER) || defined(gFortran)
 #define f2cFortran
 #endif
 
@@ -224,7 +231,9 @@ only C calling FORTRAN subroutines will work using K&R style.*/
     - VAXUltrix: vcc,cc or gcc with f2c. gcc or cc with f77.             \
     -            f77 with vcc works; but missing link magic for f77 I/O. \
     -            NO fort. None of gcc, cc or vcc generate required names.\
-    - f2c    : Use #define    f2cFortran, or cc -Df2cFortran             \
+    - f2c/g77:   Use #define    f2cFortran, or cc -Df2cFortran           \
+    - gfortran:  Use #define    gFortran,   or cc -DgFortran             \
+                 (also necessary for g77 with -fno-f2c option)           \
     - NAG f90: Use #define NAGf90Fortran, or cc -DNAGf90Fortran          \
     - Absoft UNIX F77: Use #define AbsoftUNIXFortran or cc -DAbsoftUNIXFortran \
     - Absoft Pro Fortran: Use #define AbsoftProFortran \
@@ -1547,7 +1556,7 @@ do{VVCF(T1,A1,B1)  VVCF(T2,A2,B2)  VVCF(T3,A3,B3)  VVCF(T4,A4,B4)  VVCF(T5,A5,B5
 #define      BYTE_cfPU(A)   CFextern INTEGER_BYTE      FCALLSC_QUALIFIER A
 #define    DOUBLE_cfPU(A)   CFextern DOUBLE_PRECISION  FCALLSC_QUALIFIER A
 #if ! (defined(FLOATFUNCTIONTYPE)&&defined(ASSIGNFLOAT)&&defined(RETURNFLOAT))
-#if defined (f2cFortran)
+#if defined (f2cFortran) && ! defined (gFortran)
 /* f2c/g77 return double from FORTRAN REAL functions. (KMCCARTY, 2005/12/09) */
 #define     FLOAT_cfPU(A)   CFextern DOUBLE_PRECISION  FCALLSC_QUALIFIER A
 #else
@@ -2208,7 +2217,7 @@ static _Icf(2,U,F,CFFUN(UN),0)() {_(F,_cfE) _Icf(3,GZ,F,UN,LN) ABSOFT_cf1(F));_(
 #ifndef __CF__KnR
 /* The void is req'd by the Apollo, to make this an ANSI function declaration.
    The Apollo promotes K&R float functions to double. */
-#if defined (f2cFortran)
+#if defined (f2cFortran) && ! defined (gFortran)
 /* f2c/g77 return double from FORTRAN REAL functions. (KMCCARTY, 2005/12/09) */
 #define FLOAT_cfFZ(UN,LN) DOUBLE_PRECISION FCALLSC_QUALIFIER fcallsc(UN,LN)(void
 #else
@@ -2229,7 +2238,7 @@ static _Icf(2,U,F,CFFUN(UN),0)() {_(F,_cfE) _Icf(3,GZ,F,UN,LN) ABSOFT_cf1(F));_(
 #endif
 #else
 #if ! (defined(FLOATFUNCTIONTYPE)&&defined(ASSIGNFLOAT)&&defined(RETURNFLOAT))
-#if defined (f2cFortran)
+#if defined (f2cFortran) && ! defined (gFortran)
 /* f2c/g77 return double from FORTRAN REAL functions. (KMCCARTY, 2005/12/09) */
 #define   FLOAT_cfFZ(UN,LN) DOUBLE_PRECISION  FCALLSC_QUALIFIER fcallsc(UN,LN)(
 #else
@@ -2248,7 +2257,7 @@ static _Icf(2,U,F,CFFUN(UN),0)() {_(F,_cfE) _Icf(3,GZ,F,UN,LN) ABSOFT_cf1(F));_(
 #define    BYTE_cfF(UN,LN)     BYTE_cfFZ(UN,LN)
 #define  DOUBLE_cfF(UN,LN)   DOUBLE_cfFZ(UN,LN)
 #ifndef __CF_KnR
-#if defined (f2cFortran)
+#if defined (f2cFortran) && ! defined (gFortran)
 /* f2c/g77 return double from FORTRAN REAL functions. (KMCCARTY, 2005/12/09) */
 #define   FLOAT_cfF(UN,LN)  DOUBLE_PRECISION FCALLSC_QUALIFIER fcallsc(UN,LN)(
 #else
