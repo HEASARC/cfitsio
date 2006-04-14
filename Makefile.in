@@ -18,9 +18,13 @@
 # testprog targets. See also changes and comments in configure.in
 #
 
-CFITSIO_PREFIX	= @CFITSIO_PREFIX@
-CFITSIO_LIB	= ${CFITSIO_PREFIX}/lib
-CFITSIO_INCLUDE	= ${CFITSIO_PREFIX}/include
+prefix		= @prefix@
+exec_prefix	= @exec_prefix@
+CFITSIO_PREFIX	= $(prefix)
+CFITSIO_LIB	= $(exec_prefix)/lib
+CFITSIO_INCLUDE	= $(prefix)/include
+INSTALL_DIRS	= @INSTALL_ROOT@ ${CFITSIO_LIB} ${CFITSIO_LIB}/pkgconfig ${CFITSIO_INCLUDE}
+
 
 SHELL =		/bin/sh
 RANLIB =	@RANLIB@
@@ -85,14 +89,15 @@ shared: libcfitsio${SHLIB_SUFFIX}
 libcfitsio${SHLIB_SUFFIX}: ${OBJECTS}
 		${SHLIB_LD} -o $@ ${OBJECTS}
 
-install:	libcfitsio.a ${CFITSIO_PREFIX} ${CFITSIO_LIB} ${CFITSIO_INCLUDE}
+install:	libcfitsio.a $(INSTALL_DIRS)
 		@if [ -f libcfitsio.a ]; then \
 			/bin/mv libcfitsio.a ${CFITSIO_LIB}; \
 		fi; \
 		if [ -f libcfitsio${SHLIB_SUFFIX} ]; then \
 			/bin/mv libcfitsio${SHLIB_SUFFIX} ${CFITSIO_LIB}; \
 		fi; \
-		/bin/cp fitsio.h fitsio2.h longnam.h drvrsmem.h ${CFITSIO_INCLUDE}/
+		/bin/cp fitsio.h fitsio2.h longnam.h drvrsmem.h ${CFITSIO_INCLUDE}/; \
+		/bin/cp cfitsio.pc ${CFITSIO_LIB}/pkgconfig
 
 smem:		smem.o libcfitsio.a ${OBJECTS}
 		${CC} $(CFLAGS) $(DEFS) -o smem smem.o -L. -lcfitsio -lm
@@ -129,7 +134,7 @@ clean:
 			smem testprog y.output
 
 distclean:	clean
-	-	/bin/rm -f Makefile config.*
+	-	/bin/rm -f Makefile cfitsio.pc config.*
 
 # Make target which outputs the list of the .o contained in the cfitsio lib
 # usefull to build a single big shared library containing Tcl/Tk and other
@@ -145,5 +150,5 @@ cfitsioLibSrcs:
 # case
 objs: ${CORE_OBJECTS}
 
-${CFITSIO_PREFIX} ${CFITSIO_LIB} ${CFITSIO_INCLUDE}:
+$(INSTALL_DIRS):
 	@if [ ! -d $@ ]; then mkdir $@; fi

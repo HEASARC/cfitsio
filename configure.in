@@ -27,12 +27,13 @@ fi
 #--------------------------------------------------------------------
 
 AC_PREFIX_DEFAULT(`pwd`)
-if test $prefix = NONE; then
-  CFITSIO_PREFIX=$ac_default_prefix
-else
-  CFITSIO_PREFIX=$prefix
-fi
-AC_SUBST(CFITSIO_PREFIX)
+
+# make will complain about duplicate targets for the install directories
+# if prefix == exec_prefix
+AC_SUBST(INSTALL_ROOT,'${prefix}')
+test "$exec_prefix" != NONE -a "$prefix" != "$exec_prefix" \
+  && INSTALL_ROOT="$INSTALL_ROOT "'${exec_prefix}'
+	
 
 #--------------------------------------------------------------------
 # Check "uname" to determine system type
@@ -405,6 +406,7 @@ AC_DEFINE(HAVE_NET_SERVICES)
 
 
 AC_OUTPUT(Makefile)dnl
+AC_OUTPUT(cfitsio.pc)dnl
 
 
 AC_MSG_RESULT([])
