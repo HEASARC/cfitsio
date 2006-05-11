@@ -137,7 +137,9 @@ typedef enum {
 		  average_fct,
 		  stddev_fct,
 		  nonnull_fct,
-		  angsep_fct
+		  angsep_fct,
+		  gasrnd_fct,
+		  poirnd_fct
                                 } funcOp;
 
 extern ParseData gParse;

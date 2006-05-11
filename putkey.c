@@ -2420,7 +2420,7 @@ int ffphtb(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         if (tunit)
         {
-         if (*tunit && *(tunit[ii]) )  /* optional TUNITn keyword */
+         if (tunit[ii] && *(tunit[ii]) )  /* optional TUNITn keyword */
          {
           ffkeyn("TUNIT", ii + 1, name, status);
           ffpkys(fptr, name, tunit[ii], "physical unit of field", status) ;
@@ -2654,7 +2654,7 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
 
         if (tunit)
         {
-         if (*tunit && *(tunit[ii]) ) /* optional TUNITn keyword */
+         if (tunit[ii] && *(tunit[ii]) ) /* optional TUNITn keyword */
          {
           ffkeyn("TUNIT", ii + 1, name, status);
           ffpkys(fptr, name, tunit[ii],

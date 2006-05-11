@@ -1,4 +1,19 @@
                    Log of Changes Made to CFITSIO
+		   
+Version 3.01 - 
+
+  - added 2 new random number functions to the CFITSIO parser
+    RANDOMN() - produces a normal deviate (mean=0, stddev=1)
+    RANDOMP(X) - produces a Poisson deviate for an expected # of counts X
+
+  - in f77_wrap.h, removed the restriction that "g77Fortran" must be 
+    defined on 64-bit Itanium machines before assuming that 
+    sizeof(long) = 8.  It appears that "long"s are always
+    8 bytes long on this machine, regardless of what compilers are used.
+
+  - fixed a potential null character string dereferencing error in the
+    the ffphtb and ffphbn routines that write the FITS table keywords.
+    This concerned the optional TUNITn keywords.
 
   - fixed a few issues in fits_copy_cell2image and fits_copy_image2cell
     related to converting some WCS keyword between the image extension
@@ -9,6 +24,11 @@
 
   - added test in fitsio.h so that LONGLONG cannot be multiply defined
   
+  - modified longnam.h so that both "fits_write_nulrows" and 
+    "fits_write_nullrows"  get replace by the string "ffprwu".  This
+    fixes a documentation error regarding the long name of this
+    routine.
+
   - fixed 2 bugs that could affect 'tile compressed' floating point
     images that contain NaN pixels (null pixels).  First, the
     ZBLANK keyword was not being written, and second, an integer
