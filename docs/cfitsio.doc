@@ -6437,7 +6437,16 @@ NAXIS1 header keyword.  For example
  [pix (x{-#NAXIS1} + x + x{#NAXIS1}) / 3]
 -
 will compute the mean of each image pixel and the pixels immediately
-above and below it in the adjacent rows of the image.  If the pixel offset
+above and below it in the adjacent rows of the image.  
+The following more complex example
+creates a smoothed virtual image where each pixel 
+is a 3 x 3 boxcar average of the input image pixels: 
+-
+  [pix (X + X{-1} + X{+1} 
+      + X{-#NAXIS1} + X{-#NAXIS1 - 1} + X{-#NAXIS1 + 1}
+      + X{#NAXIS1} + X{#NAXIS1 - 1} + X{#NAXIS1 + 1}) / 9.]
+-
+If the pixel offset
 extends beyond the first or last pixel in the image, the function will
 evaluate to undefined, or NULL.
 
@@ -6699,11 +6708,19 @@ by a backslash to force the UNIX shell to ignore it.
     "exponential"       exp(x)     "square root"           sqrt(x)
     "natural log"       log(x)     "common log"            log10(x)
     "modulus"           x % y      "random # [0.0,1.0)"    random()
+    "random Gausian"    randomn()  "random Poisson"        randomp(x)
     "minimum"           min(x,y)   "maximum"               max(x,y)
     "cumulative sum"    accum(x)   "sequential difference" seqdiff(x)
     "if-then-else"      b?x:y      
     "angular separation"  angsep(ra1,dec1,ra2,de2) (all in degrees)
 -
+Three different random number functions are provided:  random(), with
+no arguments, produces a uniform random deviate between 0 and 1;
+randomn(), also with no arguments, produces a normal (Gaussian) random
+deviate  with zero mean and unit standard deviation; randomp(x)
+produces a Poisson random deviate whose expected number of counts is
+X.  X may be any positive real number of expected counts, including
+fractional values, but the return value is an integer.
 
     An alternate syntax for the min and max functions  has only a single
     argument which  should be  a  vector value (see  below).  The result

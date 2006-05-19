@@ -609,6 +609,7 @@ expr:    LONG
 		     else if (FSTRCMP($1,"CEIL(") == 0)
 			$$ = New_Func( 0, ceil_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"RANDOMP(") == 0) {
+		       srand( (unsigned int) time(NULL) );
 		       $$ = New_Func( 0, poirnd_fct, 1, $2, 
 				      0, 0, 0, 0, 0, 0 );
 		       TYPE($$) = LONG;
@@ -3271,6 +3272,28 @@ static double gasdev()
 
 }
 
+/* lgamma function - from Numerical Recipes */
+
+float gammln(float xx)
+     /* Returns the value ln Gamma[(xx)] for xx > 0. */
+{
+  /* 
+     Internal arithmetic will be done in double precision, a nicety
+     that you can omit if five-figure accuracy is good enough. */
+  double x,y,tmp,ser;
+  static double cof[6]={76.18009172947146,-86.50532032941677,
+			24.01409824083091,-1.231739572450155,
+			0.1208650973866179e-2,-0.5395239384953e-5};
+  int j;
+  y=x=xx;
+  tmp=x+5.5;
+  tmp -= (x+0.5)*log(tmp);
+  ser=1.000000000190015;
+  for (j=0;j<=5;j++) ser += cof[j]/++y;
+  return -tmp+log(2.5066282746310005*ser/x);
+}
+
+/* Poisson deviate - derived from Numerical Recipes */
 static long poidev(double xm)
 {
   static double sq, alxm, g, oldm = -1.0;
@@ -3295,7 +3318,7 @@ static long poidev(double xm)
       oldm = xm;
       sq = sqrt(2.0*xm);
       alxm = log(xm);
-      g = xm*alxm-lgamma(xm+1.0);
+      g = xm*alxm-gammaln(xm+1.0);
     }
     do {
       do {
@@ -3303,7 +3326,7 @@ static long poidev(double xm)
 	em = sq*y+xm;
       } while (em < 0.0);
       em = floor(em);
-      t = 0.9*(1.0+y*y)*exp(em*alxm-lgamma(em+1.0)-g);
+      t = 0.9*(1.0+y*y)*exp(em*alxm-gammaln(em+1.0)-g);
     } while (ran1() > t);
   }
 

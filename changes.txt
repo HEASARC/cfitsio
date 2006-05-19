@@ -2,6 +2,25 @@
 		   
 Version 3.01 - 
 
+  - in eval.y, explicitly included the code for the lgamma function 
+    instead of assuming it is available in a system library (e.g., the
+    lgamma function is currently not included in MS Visual++ libraries)
+
+  - modified the logic in fits_pixel_filter so that the default data
+    type of the output image will be promoted to at least BITPIX = -32
+    (a single precision floating point) if the expression that is being
+    evaluated resolves to a floating point result.  If the expression 
+    resolves to an integer result, the output image will have the same
+    BITPIX as the input image.
+
+  - in fits_copy_cell2image, added 5 more WCS keywords to the list of
+    keywords related to other columns that should be deleted in the
+    output image header.
+
+  - disabled code in cfileio.c that would write HISTORY keywords to the
+    output file in fits_copy_image2cell and cell2image, because some tasks
+    would not want these extraneous HISTORY keywords.
+
   - added 2 new random number functions to the CFITSIO parser
     RANDOMN() - produces a normal deviate (mean=0, stddev=1)
     RANDOMP(X) - produces a Poisson deviate for an expected # of counts X

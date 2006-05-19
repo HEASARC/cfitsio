@@ -2556,6 +2556,13 @@ int fits_pixel_filter (PixelFilter * filter, int * status)
    if (DEBUG_PIXFILTER)
       printf("input bitpix %d\n", bitpix);
 
+   if (Info.datatype == TDOUBLE) {
+       /*  for floating point expressions, set the default output image to
+           bitpix = -32 (float) unless the default is already a double */
+       if (bitpix != DOUBLE_IMG)
+           bitpix = FLOAT_IMG;
+   }
+
    /* override output image bitpix if specified by caller */
    if (filter->bitpix)
       bitpix = filter->bitpix;

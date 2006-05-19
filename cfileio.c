@@ -1934,6 +1934,12 @@ int fits_copy_cell2image(
 			   {"iCRVma",  "-"       },
 			   {"iCDEma",  "-"       },
 			   {"iCRPma",  "-"       },
+			   {"ijPCma",  "-"       },
+			   {"ijCDma",  "-"       },
+			   {"iVm_ma",  "-"       },
+			   {"iSm_ma",  "-"       },
+			   {"iCRDma",  "-"       },
+			   {"iCSYma",  "-"       },
 			   {"iCROTm",  "-"       },
 			   {"WCAXma",  "-"       },
 			   {"WCSNma",  "-"       },
@@ -2068,8 +2074,9 @@ int fits_copy_cell2image(
     /* add some HISTORY  */
     sprintf(card,"HISTORY  This image was copied from row %ld of column '%s',",
             rownum, colname);
+/* disable this; leave it up to the caller to write history if needed.    
     ffprec(newptr, card, status);
-
+*/
     /* the use of ffread routine, below, requires that any 'dirty' */
     /* buffers in memory be flushed back to the file first */
     
@@ -2331,16 +2338,21 @@ int fits_copy_image2cell(
 
     sprintf(card, "HISTORY  Table column '%s' row %ld copied from image",
 	    colname, rownum);
+/*
+  Don't automatically write History keywords; leave this up to the caller. 
     ffprec(newptr, card, status);
+*/
 
     /* write HISTORY keyword with the file name */
+
     filename[0] = '\0'; hdunum = 0;
     strcpy(filename, "HISTORY   ");
     ffflnm(fptr, filename+strlen(filename), status);
     ffghdn(fptr, &hdunum);
     sprintf(filename+strlen(filename),"[%d]", hdunum-1);
+/*
     ffprec(newptr, filename, status);
-
+*/
     /* move to the first byte of the input image */
     ffmbyt(fptr, imgstart, TRUE, status);
 
