@@ -3274,7 +3274,7 @@ static double gasdev()
 
 /* lgamma function - from Numerical Recipes */
 
-float gammln(float xx)
+float gammaln(float xx)
      /* Returns the value ln Gamma[(xx)] for xx > 0. */
 {
   /* 
