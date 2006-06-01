@@ -2191,7 +2191,10 @@ int fits_copy_image2cell(
 			   {"CNAMEia", "iCNAna"  },
 			   {"DATE-AVG","DAVGn"},
 
-			   {"EXTNAME", "-"       },  /* Remove structural keywords*/
+			   {"NAXISi",  "-"       },  /* Remove structural keywords*/
+			   {"PCOUNT",  "-"       },
+			   {"GCOUNT",  "-"       },
+			   {"EXTNAME", "-"       },
 			   {"EXTVER",  "-"       },
 			   {"EXTLEVEL","-"       },
 			   {"CHECKSUM","-"       },
@@ -2314,7 +2317,8 @@ int fits_copy_image2cell(
 	patterns[npat-1][1] = "-";
       }
 
-      fits_translate_keywords(fptr, newptr, 9, patterns, npat,
+      /* The 3rd parameter value = 5 means skip the first 4 keywords in the image */
+      fits_translate_keywords(fptr, newptr, 5, patterns, npat,
 			      colnum, 0, 0, status);
     }
 
