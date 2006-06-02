@@ -2194,6 +2194,7 @@ int fits_copy_image2cell(
 			   {"NAXISi",  "-"       },  /* Remove structural keywords*/
 			   {"PCOUNT",  "-"       },
 			   {"GCOUNT",  "-"       },
+			   {"EXTEND",  "-"       },
 			   {"EXTNAME", "-"       },
 			   {"EXTVER",  "-"       },
 			   {"EXTLEVEL","-"       },
