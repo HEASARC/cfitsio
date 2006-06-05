@@ -1,6 +1,9 @@
                    Log of Changes Made to CFITSIO
 		   
-Version 3.01 - 
+Version 3.01 - (in FTOOLS 6.1 release)
+
+  - modified fits_copy_image2cell to correctly copy all the appropriate
+    header keywords when copying an image into a table cell
 
   - in eval.y, explicitly included the code for the lgamma function 
     instead of assuming it is available in a system library (e.g., the
@@ -30,6 +33,15 @@ Version 3.01 -
     sizeof(long) = 8.  It appears that "long"s are always
     8 bytes long on this machine, regardless of what compilers are used.
 
+  - added test in fitsio.h so that LONGLONG cannot be multiply defined
+  
+  - modified longnam.h so that both "fits_write_nulrows" and 
+    "fits_write_nullrows"  get replace by the string "ffprwu".  This
+    fixes a documentation error regarding the long name of this
+    routine.
+
+   Bug fixes
+
   - fixed a potential null character string dereferencing error in the
     the ffphtb and ffphbn routines that write the FITS table keywords.
     This concerned the optional TUNITn keywords.
@@ -40,13 +52,6 @@ Version 3.01 -
 
   - fixed bug in fits_translate_keyword (fitscore.c) that, e.g.,  caused 
    'EQUINOX' to be translated to EQUINOXA' if the pattern is 'EQUINOXa'
-
-  - added test in fitsio.h so that LONGLONG cannot be multiply defined
-  
-  - modified longnam.h so that both "fits_write_nulrows" and 
-    "fits_write_nullrows"  get replace by the string "ffprwu".  This
-    fixes a documentation error regarding the long name of this
-    routine.
 
   - fixed 2 bugs that could affect 'tile compressed' floating point
     images that contain NaN pixels (null pixels).  First, the
