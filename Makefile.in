@@ -134,7 +134,7 @@ clean:
 			smem testprog y.output
 
 distclean:	clean
-	-	/bin/rm -f Makefile cfitsio.pc config.*
+	-	/bin/rm -f Makefile cfitsio.pc config.* configure.lineno
 
 # Make target which outputs the list of the .o contained in the cfitsio lib
 # usefull to build a single big shared library containing Tcl/Tk and other
