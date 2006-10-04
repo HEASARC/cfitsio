@@ -1449,6 +1449,8 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
       strcpy(tcode,"I");
     else if (datacode == TLONG)
       strcpy(tcode,"J");
+    else if (datacode == TLONGLONG)
+      strcpy(tcode,"K");
     else if (datacode == TFLOAT)
       strcpy(tcode,"E");
     else if (datacode == TDOUBLE)

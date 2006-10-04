@@ -42,6 +42,10 @@
 #include "fitsio2.h"
 #include "f77_wrap.h"
 
+
+FCALLSCSUB5(ffgextn,FTGEXTN,ftgextn,FITSUNIT,LONG,LONG,BYTEV,PINT)
+FCALLSCSUB5(ffpextn,FTPEXTN,ftpextn,FITSUNIT,LONG,LONG,BYTEV,PINT)
+
 /*------------ read primary array or image elements -------------*/
 FCALLSCSUB8(ffgpvb,FTGPVB,ftgpvb,FITSUNIT,LONG,LONG,LONG,BYTE,BYTEV,PLOGICAL,PINT)
 FCALLSCSUB8(ffgpvi,FTGPVI,ftgpvi,FITSUNIT,LONG,LONG,LONG,SHORT,SHORTV,PLOGICAL,PINT)

@@ -108,6 +108,7 @@
 #define fits_write_grphdrll     ffphprll
 #define fits_write_atblhdr      ffphtb
 #define fits_write_btblhdr      ffphbn
+#define fits_write_exthdr       ffphext
 #define fits_write_key_template ffpktp
 
 #define fits_get_hdrspace      ffghsp
@@ -523,6 +524,9 @@
 #define fits_write_colnull_int ffpcnk
 #define fits_write_colnull_flt ffpcne
 #define fits_write_colnull_dbl ffpcnd
+
+#define fits_write_ext ffpextn
+#define fits_read_ext  ffgextn
 
 #define fits_write_descript  ffpdes
 #define fits_compress_heap   ffcmph

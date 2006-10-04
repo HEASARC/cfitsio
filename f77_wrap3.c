@@ -132,6 +132,9 @@ void Cffphpr( fitsfile *fptr, int simple, int bitpix, int naxis, long naxes[], l
 #define ftphpr_LONGV_A5 A4
 FCALLSCSUB9(Cffphpr,FTPHPR,ftphpr,FITSUNIT,LOGICAL,INT,INT,LONGV,LONG,LONG,LOGICAL,PINT)
 
+#define ftphext_LONGV_A5 A4
+FCALLSCSUB8(ffphext,FTPHEXT,ftphext,FITSUNIT,STRING,INT,INT,LONGV,LONG,LONG,PINT)
+
 
 #define ftphtb_STRV_A5 NUM_ELEM_ARG(4)
 #define ftphtb_STRV_A7 NUM_ELEM_ARG(4)

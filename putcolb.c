@@ -696,6 +696,38 @@ int ffpcnb( fitsfile *fptr,  /* I - FITS file pointer                       */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffpextn( fitsfile *fptr,        /* I - FITS file pointer                        */
+            LONGLONG  offset,      /* I - byte offset from start of extension data */
+            LONGLONG  nelem,       /* I - number of elements to write              */
+            void *buffer,          /* I - stream of bytes to write                 */
+            int  *status)          /* IO - error status                            */
+/*
+  Write a stream of bytes to the current FITS HDU.  This primative routine is mainly
+  for writing non-standard "conforming" extensions and should not be used
+  for standard IMAGE, TABLE or BINTABLE extensions.
+*/
+{
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    /* reset position to the correct HDU if necessary */
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+    /* rescan header if data structure is undefined */
+    else if ((fptr->Fptr)->datastart == DATA_UNDEFINED)
+        if ( ffrdef(fptr, status) > 0)               
+            return(*status);
+
+    /* move to write position */
+    ffmbyt(fptr, (fptr->Fptr)->datastart+ offset, IGNORE_EOF, status);
+    
+    /* write the buffer */
+    ffpbyt(fptr, nelem, buffer, status); 
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffi1fi1(unsigned char *input,  /* I - array of values to be converted  */
             long ntodo,            /* I - number of elements in the array  */
             double scale,          /* I - FITS TSCALn or BSCALE value      */

@@ -1,5 +1,58 @@
                    Log of Changes Made to CFITSIO
-		   
+
+
+Version 3.02 - 18 Sept 2006
+
+  - applied the security patch to the gzip code, available at
+    http://security.FreeBSD.org/patches/SA-06:21/gzip.patch
+    The insufficient bounds checks in buffer use can cause gzip to crash,
+    and may permit the execution of arbitrary code.  The NULL pointer
+    deference can cause gzip to crash.  The infinite loop can cause a
+    Denial-of-Service situation where gzip uses all available CPU time.
+
+  - added HCOMPRESS as one of the compression algorithm options in the
+    tiled image compression code.  (code provided by Richard White (STScI))
+    Made other improvements to preserve the exact header structure in the 
+    compressed image file so that the compressed-and-then-uncompressed FITS 
+    image will be as identical as possible to the original FITS image file.  
+
+  New Routines		   
+
+  - the following new routines were added to support reading and writing
+    non-standard extension types:
+     fits_write_exthdr - write required keywords for a conforming extension
+     fits_write_ext - write data to the extension
+     fits_read_ext  - read data from the extension
+     
+  - added new routines to compute the RMS noise in the background pixels
+    of an image: fits_rms_float and fits_rms_short  (take an input
+    array of floats or shorts, respectively).
+
+  Fixes
+
+  - added the missing 64-bit integer case to set of "if (datatype)" 
+    statements in the routine that returns information about a 
+    particular column (ffgbclll).
+    
+  - fixed a parsing error in ffexts in cases where an extension number
+    is followed by a semi-colon and then the column and row number of an
+    array in a binary table.  Also removed an extraneous HISTORY keyword
+    that was being written when specifying an input image in a table cel.
+  
+  - modified the routine that reads a table column returning a string
+    value (ffgcls) so that if the displayed numerical value is too
+    wide to fit in the specified length string, then it will return
+    a string of "*" characters instead of the number string.
+
+  - small change to fitsio.h to support a particular Fortran and C
+    compiler combination on a SGI Altix system
+    
+  - added a test in the gunzip code to prevent seg. fault when trying
+    to uncompress a corrupted file (at least in some cases).
+
+  - fixed a rarely-occurring bug in the routine that copies a table
+    cell into an image; had to call the ffflsh call a few lines earlier.
+
 Version 3.01 - (in FTOOLS 6.1 release)
 
   - modified fits_copy_image2cell to correctly copy all the appropriate
@@ -302,7 +355,7 @@ Version 3.000 - 1 March 2005 (internal beta release)
      the size of the TFORMn repeat value, is now not performed for variable
      length array columns (which always have repeat = 1).
 
-   - fixed byteswaping problem when writing null values to non-standard
+   - fixed byteswapping problem when writing null values to non-standard
      long integer FITS images with BITPIX = 64 and FITS table columns with
      TFORMn = 'K'.
 
@@ -552,7 +605,7 @@ Version 2.470 - 18 August 2003
     data to a FITS image or table.   This was implemented by adding 2
     new C source code files to the package: getcolsb.c and putcolsb.c.
 
-  - Defined a new '1S' shorthand data code for a signed byted column in
+  - Defined a new '1S' shorthand data code for a signed byte column in
     a binary table.  CFITSIO will write TFORMn = '1B' and
     TZEROn = -128 in this case, which is the convention used to
     store signed byte values in a 'B' type column.

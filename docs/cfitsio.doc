@@ -164,7 +164,7 @@ Scott Koch,  Claire Larkin, Rob Managan, Eric Mandel, Richard Mathar,
 John Mattox, Carsten Meyer, Emi Miyata, Stefan Mochnacki, Mike Noble,
 Oliver Oberdorf, Clive Page, Arvind Parmar, Jeff Pedelty, Tim Pearson,
 Philippe Prugniel, Maren Purves, Scott Randall, Chris Rogers, Arnold Rots,
-Barry Schlesinger, Robin Stebbins, Andrew Szymkowiak, Allyn Tennant,
+Rob Seaman, Barry Schlesinger, Robin Stebbins, Andrew Szymkowiak, Allyn Tennant,
 Peter Teuben, James Theiler, Doug Tody, Shiro Ueno, Steve Walton, Archie
 Warnock, Alan Watson, Dan Whipple, Wim Wimmers, Peter Young, Jianjun Xu,
 and Nelson Zarate.
@@ -756,14 +756,15 @@ Logical states (if TRUE and FALSE are not already defined):
 
 Values to represent undefined floating point numbers:
 
-  #define FLOATNULLVALUE -9.11912E-36F
+  #define FLOATNULLVALUE  -9.11912E-36F
   #define DOUBLENULLVALUE -9.1191291391491E-36
 
 Image compression algorithm definitions
 
-  #define RICE_1      11
-  #define GZIP_1      21
-  #define PLIO_1      31
+  #define RICE_1       11
+  #define GZIP_1       21
+  #define PLIO_1       31
+  #define HCOMPRESS_1  41
 - 
 
 **B.  Current Header Data Unit (CHDU)
@@ -2223,7 +2224,7 @@ in the FITS array.
 -
 **F.  Image Compression  
 
-CFITSIO now transparently supports 2 types of image compression:
+CFITSIO now transparently supports 2 methods of image compression:
 
 1)  The entire FITS file may be externally compressed with the gzip or
 Unix compress algorithm, producing a *.gz or *.Z file, respectively.
@@ -2261,7 +2262,9 @@ http://heasarc.gsfc.nasa.gov/docs/software/fitsio/
 The N-dimensional FITS image can be divided into any
 desired rectangular grid of compression tiles.  By default the tiles
 are chosen to correspond to the rows of the image, each containing
-NAXIS1 pixels.  For example, a 800 x 800 x 4 pixel data cube would be
+NAXIS1 pixels, (except when using HCOMPRESS, where the default is
+to compress the entire image as a single big tile).
+For example, a 800 x 800 x 4 pixel data cube would be
 divided in to 3200 tiles containing 800 pixels each by default.
 Alternatively, this data cube could be divided into 256 tiles that are each
 100 X 100 X 1 pixels in size, or 4 tiles containing 800 x 800 X 1
@@ -2271,21 +2274,31 @@ tile dimensions, so, for example, this data cube could also be divided
 into 250 X 200 pixel tiles, in which case the last tile in each row
 would only contain 50 X 200 pixels.
 
-Currently, 3 image compression algorithms are supported:  Rice, GZIP,
-and PLIO.  Rice and GZIP are general purpose algorithms that can be
-used to compress almost any image.  The PLIO  algorithm, on the other
-hand, is more specialized and was developed for use in IRAF to store
+Currently, 4 image compression algorithms are supported:  Rice, GZIP,
+HCOMPRESS, and PLIO.  Rice and GZIP are general purpose algorithms that can be
+used to compress almost any image.  HCOMPRESS is very effective for
+astronomical images.  The PLIO  algorithm is 
+more specialized and was developed for use in the IRAF data analysis
+system to store
 pixel data quality masks. It is designed to only work on images
 containing positive integers with values up to about 2**24.  Other
 image compression algorithms may be supported in the future.
 
-The 3 supported image compression algorithms are all 'loss-less' when
+The 4 supported image compression algorithms are all 'loss-less' when
 applied to integer FITS images;  the pixel values are preserved exactly
 with no loss of information during the compression and uncompression
-process. Floating point FITS images (which have BITPIX = -32 or -64)
+process.  The HCOMPRESS algorithm can also be used in a 'lossy' mode to achieve
+a greater degree of image compression (by specifying a 'scale' parameter
+value greater than 1).   To set the scale parameter effectively, one must
+know the RMS noise in the image pixel values;  The fits\_rms\_float
+and fits\_rms\_short routines in CFITSIO are provided to estimate
+the RMS value in an image.
+
+Floating point FITS images (which have BITPIX = -32 or -64)
 are first quantized into scaled integer pixel values before being
 compressed.  This technique produces much higher compression factors
-than simply using GZIP to compress the image, but it also means that
+than, for example, simply using GZIP to compress the whole FITS file
+image, but it also means that
 the original floating value pixel values may not be precisely returned
 when the image is uncompressed.  When done properly, this only discards
 the 'noise' from the floating point values without losing any
@@ -2317,39 +2330,81 @@ tile-compressed output images:
     myfile.fit[compress GZIP] - use the specified compression algorithm;
     myfile.fit[compress Rice]     only the first letter of the algorithm 
     myfile.fit[compress PLIO]     name is required.
+    myfile.fit[compress HCOMP]
+    
+    myfile.fit[compress R 100,100]   - use Rice, GZIP, or HCOMPRESS compression 
+    myfile.fit[compress G 100,100]     and 100 x 100 pixel tile size
+    myfile.fit[compress H 100,100]
 
-    myfile.fit[compress R 100,100]   - use Rice compression and 
-                                       100 x 100 pixel tile size
+    myfile.fit[compress R 100,100;2] - Rice or GZIP,  use noisebits = 2
+    myfile.fit[compress G 100,100;2]    when compressing floating point image
 
-    myfile.fit[compress R 100,100;2] - as above, and also use noisebits = 2
+    myfile.fit[compress H; 25 1]  -  HCOMPRESS, with scale = 25 and smooth = 1
 -
 
 2)  Before calling the CFITSIO routine to write the image header
 keywords (e.g., fits\_create\_image) the programmer can call the
 routines described below to specify the compression algorithm and the
-tiling pattern that is to be used.  There are 3 routines for specifying
-the various compression parameters and 3 corresponding routines to
+tiling pattern that is to be used.  There are routines for specifying
+the various compression parameters and similar routines to
 return the current values of the parameters:
 \label{ffsetcomp}  \label{ffgetcomp}
 -
   int fits_set_compression_type(fitsfile *fptr, int comptype, int *status)
   int fits_set_tile_dim(fitsfile *fptr, int ndim, long *tilesize, int *status)
   int fits_set_noise_bits(fitsfile *fptr, int noisebits, int *status)
+  int fits_set_hcomp_scale(fitsfile *fptr, int scale, int *status)
+  int fits_set_hcomp_smooth(fitsfile *fptr, int smooth, int *status)
 
   int fits_get_compression_type(fitsfile *fptr, int *comptype, int *status)
   int fits_get_tile_dim(fitsfile *fptr, int ndim, long *tilesize, int *status)
   int fits_get_noise_bits(fitsfile *fptr, int *noisebits, int *status)
+  int fits_get_hcomp_scale(fitsfile *fptr, int *scale, int *status)
+  int fits_get_hcomp_smooth(fitsfile *fptr, int *smooth, int *status)
 -
-3 symbolic constants are defined for use as the value of the
-`comptype' parameter:  GZIP\_1, RICE\_1, or PLIO\_1.  Entering NULL for
+4 symbolic constants are defined for use as the value of the
+`comptype' parameter:  GZIP\_1, RICE\_1, HCOMPRESS\_1 or PLIO\_1.  
+Entering NULL for
 comptype will turn off the tile-compression and cause normal FITS
 images to be written.
 
-The 'noisebits' parameter is only used when compressing floating point
-images.   The default value is 4.  Decreasing the value of noisebits
+The HCOMPRESS algorithm has 2 parameters.  The first is the scale
+factor that controls the amount of compression.  The default value
+of scale = 0 (or 1) results in lossless compression.  Values of scale greater
+than 1 will produce larger amounts of 'lossy' compression.  As a rule 
+of thumb setting scale to about 2 times the RMS noise in the
+sky background of typical astronomical image will compress the image
+by about a factor of 10, with minimal loss of significant information.
+Larger values of scale will produce greater compression, but with more
+loss of information. The fits\_rms\_float and fits\_rms\_short routines
+can be used to calculate the RMS value in an image.
+
+The second HCOMPRESS parameter controls whether to slightly smooth
+the image after decompressing it, if it was 'lossy' compressed 
+(with smooth > 1).  Smoothing helps to remove some of the 'blockiness'
+in the image, especially if it was highly compressed.  The default
+is to not smooth the image (smooth = 0), but setting smooth to 1 (or
+any non-zero value) will cause the image to be smoothed.
+
+The 'noisebits' parameter is only relevant when compressing floating point
+images (with BITPIX = 32 or 64).
+The default value is 4.  Decreasing the value of noisebits
 will improve the overall compression efficiency at the expense of
 losing more information.
 
+The following 2 routines are available for compressing or
+or decompressing an image:
+-
+  int fits_img_compress(fitsfile *infptr, fitsfile *outfptr, int *status);
+  int fits_img_decompress (fitsfile *infptr, fitsfile *outfptr, int *status);
+-
+Before calling the compression routine, the compression parameters must
+first be defined in one of the 2 way described in the previous paragraphs.
+There is also a routine to determine if the current HDU contains
+a tile compressed image (it returns 1 or 0):
+-
+  int fits_is_compressed_image(fitsfile *fptr, int *status);
+-
 A small example program called 'imcopy' is included with CFITSIO that
 can be used to compress (or uncompress) any FITS image.  This
 program can be used to experiment with the various compression options
@@ -3473,6 +3528,27 @@ int fits_translate_keywords(
 -
     int ffcdfl(fitsfile *fptr, > int *status)
 -
+>23  Estimate the root-mean-squared (RMS) noise in an image.
+These routines are mainly for use with the Hcompress image compression
+algorithm.  They return an estimate of the RMS noise in the background
+pixels of the image.  This robust algorithm (written by Richard 
+White, STScI) first attempts to estimate the RMS value
+as 1.68 times the median of the absolute differences between successive
+pixels in the image.  If the median = 0,  then the
+algorithm falls back to computing the RMS of the difference between successive
+pixels, after several N-sigma rejection cycles to remove 
+extreme values.  The input parameters are:  the array of image pixel values
+(either float or short values), the number of values in the array, 
+the value that is used to represent null pixels (enter a very 
+>large number if there are no null pixels). \label{imageRMS}
+-
+    int fits_rms_float (float fdata[], int npix, float in_null_value,
+                   > double *rms, int *status)
+    int fits_rms_short (short fdata[], int npix, short in_null_value,
+                   > double *rms, int *status)
+-
+
+
 
 *VII.  The CFITSIO Iterator Function
 
@@ -4631,7 +4707,18 @@ the 'exists' parameter will have 1 of the 4 following values:
   int fits_copy_data / ffcpdt
       (fitsfile *infptr, fitsfile *outfptr, > int *status)
 -
->7  This routine forces CFITSIO to rescan the current header keywords that
+>7  Read or write a specified number of bytes starting at the specified byte
+    offset from the start of the extension data unit.  These low
+    level routine are intended mainly for accessing the data in
+    non-standard, conforming extensions, and should not be used for standard
+>   IMAGE, TABLE, or BINTABLE extensions. \label{ffgextn}
+-
+  int fits_read_ext / ffgextn
+      (fitsfile *fptr, LONGLONG offset, LONGLONG nbytes, void *buffer)
+  int fits_write_ext / ffpextn
+      (fitsfile *fptr, LONGLONG offset, LONGLONG nbytes, void *buffer)
+-
+>8  This routine forces CFITSIO to rescan the current header keywords that
     define the structure of the HDU (such as the NAXIS and BITPIX
     keywords) so that it reinitializes the internal buffers that
     describe the HDU structure.  This routine is useful for
@@ -4670,7 +4757,11 @@ the 'exists' parameter will have 1 of the 4 following values:
 
 ***2.  Read and Write the Required Keywords
 
->1  Write the primary header or IMAGE extension keywords into the CHU.
+>1  Write the required extension header keywords into the CHU.
+  These routines are not required, and instead the appropriate
+  header may be constructed by writing each individual keyword in the
+  proper sequence.
+  
   The simpler fits\_write\_imghdr routine is equivalent to calling
   fits\_write\_grphdr with the default values of simple = TRUE, pcount
   = 0, gcount = 1, and extend = TRUE.  The PCOUNT, GCOUNT and EXTEND
@@ -4680,7 +4771,9 @@ the 'exists' parameter will have 1 of the 4 following values:
   extension, the SIMPLE and EXTEND parameters are ignored.  It is
   recommended that fits\_create\_image or fits\_create\_tbl be used
   instead of these routines to write the
-> required header keywords. \label{ffphpr} \label{ffphps}
+  required header keywords. The general fits\_write\_exthdr routine
+  may be used to write the header of any conforming FITS 
+> extension.  \label{ffphpr} \label{ffphps}
 -
   int fits_write_imghdr / ffphps
       (fitsfile *fptr, int bitpix, int naxis, long *naxes, > int *status)
@@ -4695,6 +4788,11 @@ the 'exists' parameter will have 1 of the 4 following values:
   int fits_write_grphdrll / ffphprll
       (fitsfile *fptr, int simple, int bitpix, int naxis, LONGLONG *naxes,
        LONGLONG pcount, LONGLONG gcount, int extend, > int *status)
+
+  int fits_write_exthdr /ffphext
+      (fitsfile *fptr, char *xtension, int bitpix, int naxis, long *naxes,
+       LONGLONG pcount, LONGLONG gcount, > int *status)
+
 -
 >2  Write the ASCII table header keywords into the CHU.  The optional
     TUNITn and EXTNAME keywords are written only if the input pointers
@@ -7746,7 +7844,9 @@ image into tiles it is generally possible to extract and uncompress
 subsections of the image without having to uncompress the whole image.
 The default tiling pattern treats each row of a 2-dimensional image (or
 higher dimensional cube) as a tile, such that each tile contains NAXIS1
-pixels. Any other rectangular tiling pattern may also be defined. In
+pixels (except the default with the HCOMPRESS algorithm is to
+compress the whole 2D image as a single tile). Any other rectangular 
+tiling pattern may also be defined. In
 the case of relatively small images it may be sufficient to compress
 the entire image as a single tile, resulting in an output binary table
 with 1 row.  In the case of 3-dimensional data cubes, it may be
@@ -8143,13 +8243,14 @@ fits\_read\_colnull\_TYP    & \pageref{ffgcfx} \\
 fits\_read\_descript & \pageref{ffgdes} \\
 fits\_read\_descripts & \pageref{ffgdes} \\
 fits\_read\_errmsg    & \pageref{ffgmsg} \\
+fits\_read\_ext        & \pageref{ffgextn} \\
 fits\_read\_grppar\_TYP  & \pageref{ffggpx} \\
 fits\_read\_img         & \pageref{ffgpv} \\
 fits\_read\_img\_coord & \pageref{ffgics} \\
-fits\_read\_img\_TYP     & \pageref{ffgpvx} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+fits\_read\_img\_TYP     & \pageref{ffgpvx} \\
 fits\_read\_imghdr       & \pageref{ffghpr} \\
 fits\_read\_imgnull & \pageref{ffgpf} \\
 fits\_read\_imgnull\_TYP & \pageref{ffgpfx} \\
@@ -8175,6 +8276,8 @@ fits\_remove\_member   & \pageref{ffgmrm} \\
 fits\_reopen\_file      & \pageref{ffreopen} \\
 fits\_report\_error   & \pageref{ffrprt} \\
 fits\_resize\_img     & \pageref{ffrsim} \\
+fits\_rms\_float      & \pageref{imageRMS} \\
+fits\_rms\_short      & \pageref{imageRMS} \\
 fits\_select\_rows  & \pageref{ffsrow} \\
 fits\_set\_atblnull   & \pageref{ffsnul} \\
 fits\_set\_bscale     & \pageref{ffpscl} \\
@@ -8195,11 +8298,12 @@ fits\_test\_keyword   & \pageref{fftkey} \\
 fits\_test\_record    & \pageref{fftrec} \\
 fits\_time2str  & \pageref{ffdt2s} \\
 fits\_transfer\_member  & \pageref{ffgmtf} \\
+
+\end{tabular}
+\begin{tabular}{lr}
 fits\_translate\_keyword & \pageref{translatekey} \\
 fits\_update\_card       & \pageref{ffucrd} \\
 fits\_update\_chksum  & \pageref{ffupck} \\
-\end{tabular}
-\begin{tabular}{lr}
 fits\_update\_key        & \pageref{ffuky} \\
 fits\_update\_key\_longstr   & \pageref{ffukyx} \\
 fits\_update\_key\_null   & \pageref{ffukyu} \\
@@ -8225,6 +8329,8 @@ fits\_write\_date         & \pageref{ffpdat} \\
 fits\_write\_descript  & \pageref{ffpdes} \\
 fits\_write\_errmark   & \pageref{ffpmrk} \\
 fits\_write\_errmsg   & \pageref{ffpmsg} \\
+fits\_write\_ext        & \pageref{ffgextn} \\
+fits\_write\_exthdr        & \pageref{ffphps} \\
 fits\_write\_grphdr       & \pageref{ffphpr} \\
 fits\_write\_grppar\_TYP & \pageref{ffpgpx} \\
 fits\_write\_history      & \pageref{ffphis} \\
@@ -8243,16 +8349,16 @@ fits\_write\_key\_triple   & \pageref{ffpkyt} \\
 fits\_write\_key\_unit     & \pageref{ffpunt} \\
 fits\_write\_key\_TYP      & \pageref{ffpkyx} \\
 fits\_write\_keys\_TYP     & \pageref{ffpknx} \\
-fits\_write\_null\_img    & \pageref{ffpprn} \\
-fits\_write\_nullrows      & \pageref{ffpclu} \\
-fits\_write\_pix          & \pageref{ffppx} \\
-fits\_write\_pixnull      & \pageref{ffppxn} \\
-fits\_write\_record       & \pageref{ffprec} \\
 
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
 
+fits\_write\_null\_img    & \pageref{ffpprn} \\
+fits\_write\_nullrows      & \pageref{ffpclu} \\
+fits\_write\_pix          & \pageref{ffppx} \\
+fits\_write\_pixnull      & \pageref{ffppxn} \\
+fits\_write\_record       & \pageref{ffprec} \\
 fits\_write\_subset       & \pageref{ffpss} \\
 fits\_write\_subset\_TYP  & \pageref{ffpssx} \\
 fits\_write\_tblbytes  & \pageref{ffptbb} \\
@@ -8326,6 +8432,7 @@ ffgcx     & \pageref{ffgcx} \\
 ffgdes & \pageref{ffgdes} \\
 ffgdess & \pageref{ffgdes} \\
 ffgerr  & \pageref{ffgerr} \\
+ffgextn        & \pageref{ffgextn} \\
 ffggp\_  & \pageref{ffggpx} \\
 ffghad    & \pageref{ffghad} \\
 ffghbn      & \pageref{ffghbn} \\
@@ -8357,10 +8464,10 @@ ffgmrm   & \pageref{ffgmrm} \\
 ffgmsg    & \pageref{ffgmsg} \\
 ffgmtf  & \pageref{ffgmtf} \\
 ffgncl     & \pageref{ffgnrw} \\
-ffgnrw     & \pageref{ffgnrw} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+ffgnrw     & \pageref{ffgnrw} \\
 ffgnxk      & \pageref{ffgnxk} \\
 ffgpf & \pageref{ffgpf} \\
 ffgpf\_ & \pageref{ffgpfx} \\
@@ -8411,6 +8518,7 @@ ffkeyn      & \pageref{ffkeyn} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+
 ffmahd     & \pageref{ffmahd} \\
 ffmcom    & \pageref{ffmcom} \\
 ffmcrd       & \pageref{ffmcrd} \\
@@ -8438,8 +8546,10 @@ ffpcn\_ & \pageref{ffpcnx} \\
 ffpcom      & \pageref{ffpcom} \\
 ffpdat         & \pageref{ffpdat} \\
 ffpdes  & \pageref{ffpdes} \\
+ffpextn        & \pageref{ffgextn} \\
 ffpgp\_ & \pageref{ffpgpx} \\
 ffphbn      & \pageref{ffphbn} \\
+ffphext       & \pageref{ffphpr} \\
 ffphis      & \pageref{ffphis} \\
 ffphpr       & \pageref{ffphpr} \\
 ffphps       & \pageref{ffphps} \\
@@ -8457,10 +8567,11 @@ ffpmsg   & \pageref{ffpmsg} \\
 ffpnul    & \pageref{ffpnul} \\
 ffppn     & \pageref{ffppn} \\
 ffppn\_ & \pageref{ffppnx} \\
-ffppr        & \pageref{ffppr} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+
+ffppr        & \pageref{ffppr} \\
 ffpprn & \pageref{ffpprn} \\
 ffppru & \pageref{ffppru} \\
 ffppr\_    & \pageref{ffpprx} \\
@@ -8542,7 +8653,7 @@ colspec  - the input file column specification; used to delete, create, or renam
            table columns
 comment  - the keyword comment field (72 char max, null-terminated)
 complm   - should the checksum be complemented?
-comptype - compression algorithm to use: GZIP_1, RICE_1, or PLIO_1
+comptype - compression algorithm to use: GZIP_1, RICE_1, HCOMPRESS_1, or PLIO_1
 coordtype- type of coordinate projection (-SIN, -TAN, -ARC, -NCP, 
            -GLS, -MER, or -AIT)
 cpopt    - grouping table copy option parameter. Allowed values are:
@@ -8654,6 +8765,7 @@ naxis    - number of dimensions in the FITS array
 naxis1   - length of the X/first axis of the FITS array
 naxis2   - length of the Y/second axis of the FITS array
 naxis3   - length of the Z/third axis of the FITS array
+nbytes   - number of bytes or characters to read or write
 nchars   - number of characters to read or write
 nelements- number of data elements to read or write
 newfptr  - returned pointer to the reopened file
@@ -8672,7 +8784,7 @@ nullarray- set to TRUE (=1) if corresponding data element is undefined
 nulval   - numerical value to represent undefined pixels
 nulstr   - character string used to represent undefined values in ASCII table
 numval   - numerical data value, of the appropriate data type
-offset   -  byte offset in the heap to the first element of the vector
+offset   - byte offset in the heap or data unit to the first element of the vector
 openfptr - pointer to a currently open FITS file
 overlap  - number of bytes in the binary table heap pointed to by more than 1
            descriptor

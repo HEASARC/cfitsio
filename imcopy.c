@@ -105,7 +105,11 @@ int main(int argc, char *argv[])
 
           /* Explicitly create new image, to support compression */
           fits_create_img(outfptr, bitpix, naxis, naxes, &status);
-
+          if (status) {
+                 fits_report_error(stderr, status);
+                 return(status);
+          }
+	  	    
           /* copy all the user keywords (not the structural keywords) */
           fits_get_hdrspace(infptr, &nkeys, NULL, &status); 
 

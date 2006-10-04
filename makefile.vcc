@@ -98,6 +98,8 @@ CLEAN :
 	-@erase "$(INTDIR)\ricecomp.obj"
 	-@erase "$(INTDIR)\quantize.obj"
 	-@erase "$(INTDIR)\pliocomp.obj"
+	-@erase "$(INTDIR)\fits_hcompress.obj"
+	-@erase "$(INTDIR)\fits_hdecompress.obj"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(INTDIR)\wcssub.obj"
 	-@erase "$(INTDIR)\wcsutil.obj"
@@ -178,6 +180,8 @@ LINK32_OBJS= \
 	"$(INTDIR)\ricecomp.obj" \
 	"$(INTDIR)\quantize.obj" \
 	"$(INTDIR)\pliocomp.obj" \
+	"$(INTDIR)\fits_hcompress.obj" \
+	"$(INTDIR)\fits_hdecompress.obj" \
 	"$(INTDIR)\wcssub.obj"  \
 	"$(INTDIR)\wcsutil.obj" 
 
@@ -260,6 +264,8 @@ CLEAN :
 	-@erase "$(INTDIR)\ricecomp.obj"
 	-@erase "$(INTDIR)\quantize.obj"
 	-@erase "$(INTDIR)\pliocomp.obj"
+	-@erase "$(INTDIR)\fits_hcompress.obj"
+	-@erase "$(INTDIR)\fits_hdecompress.obj"
 	-@erase "$(OUTDIR)\cfitsio.dll"
 	-@erase "$(OUTDIR)\cfitsio.exp"
 	-@erase "$(OUTDIR)\cfitsio.ilk"
@@ -341,7 +347,8 @@ LINK32_OBJS= \
 	"$(INTDIR)\ricecomp.obj" \
 	"$(INTDIR)\quantize.obj" \
 	"$(INTDIR)\pliocomp.obj" 
-
+	"$(INTDIR)\fits_hcompress.obj" \
+	"$(INTDIR)\fits_hdecompress.obj" \
 
 "$(OUTDIR)\cfitsio.dll" : $(LINK32_OBJS) WINDUMP
 	windumpexts -o $(DEF_FILE) cfitsio.dll $(LINK32_OBJS)    
@@ -680,6 +687,14 @@ SOURCE=quantize.c
 SOURCE=pliocomp.c
 
 "$(INTDIR)\pliocomp.obj" : $(SOURCE) "$(INTDIR)"
+
+SOURCE=fits_hcompress.c
+
+"$(INTDIR)\fits_hcompress.obj" : $(SOURCE) "$(INTDIR)"
+
+SOURCE=fits_hdecompress.c
+
+"$(INTDIR)\fits_hdecompress.obj" : $(SOURCE) "$(INTDIR)"
 
 !ENDIF 
 

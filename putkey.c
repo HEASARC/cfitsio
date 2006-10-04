@@ -2179,9 +2179,7 @@ int ffphprll( fitsfile *fptr, /* I - FITS file pointer                        */
            tnaxes[ii] = (long) naxes[ii];
 	   
         /* write header for a compressed image */
-        imcomp_init_table(fptr, (fptr->Fptr)->request_compress_type, 
-        bitpix, naxis, tnaxes, (fptr->Fptr)->request_tilesize, 32,
-        (fptr->Fptr)->request_rice_nbits, status);
+        imcomp_init_table(fptr, bitpix, naxis, tnaxes, 1, status);
         return(*status);
       }
     }  
@@ -2675,6 +2673,67 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     if (*status > 0)
         ffpmsg("Failed to write binary table header keywords (ffphbn)");
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int ffphext(fitsfile *fptr,  /* I - FITS file pointer                       */
+           char *xtension,   /* I - value for the XTENSION keyword          */
+           int bitpix,       /* I - value for the BIXPIX keyword            */
+           int naxis,        /* I - value for the NAXIS keyword             */
+           long naxes[],     /* I - value for the NAXISn keywords           */
+           LONGLONG pcount,  /* I - value for the PCOUNT keyword            */
+           LONGLONG gcount,  /* I - value for the GCOUNT keyword            */
+           int *status)      /* IO - error status                           */
+/*
+  Put required Header keywords into a conforming extension:
+*/
+{
+    char message[FLEN_ERRMSG],comm[81], name[20];
+    int ii;
+ 
+    if (fptr->HDUposition != (fptr->Fptr)->curhdu)
+        ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
+
+    if (*status > 0)
+        return(*status);
+    else if ((fptr->Fptr)->headend != (fptr->Fptr)->headstart[(fptr->Fptr)->curhdu] )
+        return(*status = HEADER_NOT_EMPTY);
+
+    if (naxis < 0 || naxis > 999)
+    {
+        sprintf(message,
+        "Illegal value for NAXIS keyword: %d", naxis);
+        ffpmsg(message);
+        return(*status = BAD_NAXIS);
+    }
+
+    ffpkys(fptr, "XTENSION", xtension, "extension type", status);
+    ffpkyj(fptr, "BITPIX",   bitpix,   "number of bits per data pixel", status);
+    ffpkyj(fptr, "NAXIS",    naxis,    "number of data axes", status);
+
+    strcpy(comm, "length of data axis ");
+    for (ii = 0; ii < naxis; ii++)
+    {
+        if (naxes[ii] < 0)
+        {
+            sprintf(message,
+            "Illegal negative value for NAXIS%d keyword: %.0f", ii + 1, (double) (naxes[ii]));
+            ffpmsg(message);
+            return(*status = BAD_NAXES);
+        }
+
+        sprintf(&comm[20], "%d", ii + 1);
+        ffkeyn("NAXIS", ii + 1, name, status);
+        ffpkyj(fptr, name, naxes[ii], comm, status);
+    }
+
+
+    ffpkyj(fptr, "PCOUNT", pcount, " ", status);
+    ffpkyj(fptr, "GCOUNT", gcount, " ", status);
+
+    if (*status > 0)
+        ffpmsg("Failed to write extension header keywords (ffphext)");
 
     return(*status);
 }

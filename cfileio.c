@@ -952,12 +952,14 @@ move2hdu:
 
        /* add some HISTORY; fits_copy_image_cell also wrote HISTORY keywords */
        
+/*  disable this; leave it up to calling routine to write any HISTORY keywords
        if (*extname)
         sprintf(card,"HISTORY  in HDU '%.16s' of file '%.36s'",extname,infile);
        else
         sprintf(card,"HISTORY  in HDU %d of file '%.45s'", extnum, infile);
 
        ffprec(*fptr, card, status);
+*/
     }
 
     /* --------------------------------------------------------------------- */
@@ -2348,7 +2350,7 @@ int fits_copy_image2cell(
     ffprec(newptr, card, status);
 */
 
-    /* write HISTORY keyword with the file name */
+    /* write HISTORY keyword with the file name (this is now disabled)*/
 
     filename[0] = '\0'; hdunum = 0;
     strcpy(filename, "HISTORY   ");
@@ -2358,6 +2360,12 @@ int fits_copy_image2cell(
 /*
     ffprec(newptr, filename, status);
 */
+
+    /* the use of ffread routine, below, requires that any 'dirty' */
+    /* buffers in memory be flushed back to the file first */
+    
+    ffflsh(fptr, FALSE, status);
+
     /* move to the first byte of the input image */
     ffmbyt(fptr, imgstart, TRUE, status);
 
@@ -2368,10 +2376,6 @@ int fits_copy_image2cell(
     nbytes    -= ntodo;
     firstbyte += ntodo;
 
-    /* the use of ffread routine, below, requires that any 'dirty' */
-    /* buffers in memory be flushed back to the file first */
-    
-    ffflsh(fptr, FALSE, status);
 
     /* read any additional bytes with low-level ffread routine, for speed */
     while (nbytes && (*status <= 0) )
@@ -2914,6 +2918,7 @@ int ffparsecompspec(fitsfile *fptr,  /* I - FITS file pointer               */
                                   compression algorithm:
                                    R = Rice
                                    G = GZIP
+                                   H = HCOMPRESS
                                    P = PLIO
 
     myfile.fits[compress TYPE 100,100] - the numbers give the dimensions
@@ -2933,7 +2938,7 @@ when writing FITS images.
     char *ptr1;
 
     /* initialize with default values */
-    int ii, compresstype = RICE_1, noisebits = 4;
+    int ii, compresstype = RICE_1, noisebits = 4, smooth = 0, scale = 1, intval;
     long tilesize[9] = {0,1,1,1,1,1,1,1,1};
 
     ptr1 = compspec;
@@ -2973,6 +2978,12 @@ when writing FITS images.
         while (*ptr1 != ' ' && *ptr1 != ';' && *ptr1 != '\0') 
            ptr1++;
     }
+    else if (*ptr1 == 'h' || *ptr1 == 'H')
+    {
+        compresstype = HCOMPRESS_1;
+        while (*ptr1 != ' ' && *ptr1 != ';' && *ptr1 != '\0') 
+           ptr1++;
+    }
 
     /* ======================== */
     /* look for tile dimensions */
@@ -2997,9 +3008,9 @@ when writing FITS images.
            ptr1++;
     }
 
-    /* ============================= */
-    /* look for noise bits parameter */
-    /* ============================= */
+    /* ========================================================= */
+    /* look for other parameters */
+    /* ========================================================= */
 
     if (*ptr1 == ';')
     {
@@ -3008,16 +3019,44 @@ when writing FITS images.
         while (*ptr1 == ' ')    /* ignore leading blanks */
            ptr1++;
 
+       /* get first integer parameter */
        if (!isdigit((int) *ptr1) )
            return(*status = URL_PARSE_ERROR);
 
-       noisebits = atol(ptr1);  /* read the integer value */
+       intval = atol(ptr1);  /* read the integer value */
+
+       if (compresstype == HCOMPRESS_1)
+           scale = intval;
+       else
+           noisebits = intval;
 
        while (isdigit((int) *ptr1))    /* skip over the integer */
            ptr1++;
+
+       if (*ptr1 == ',')
+       {
+           ptr1++;   /* skip over the comma */
+          
+           while (*ptr1 == ' ')    /* ignore leading blanks */
+               ptr1++;
+
+           /* get 2nd integer parameter */
+           if (!isdigit((int) *ptr1) )
+               return(*status = URL_PARSE_ERROR);
+
+           intval = atol(ptr1);  /* read the integer value */
+
+           if (compresstype == HCOMPRESS_1)
+               smooth = intval;
+           else
+               return(*status = URL_PARSE_ERROR);
+
+           while (isdigit((int) *ptr1))    /* skip over the integer */
+               ptr1++;
+       }
     }
 
-    while (*ptr1 == ' ')    /* ignore leading blanks */
+    while (*ptr1 == ' ')    /* ignore blanks */
          ptr1++;
 
     if (*ptr1 != 0)  /* remaining junk in the string?? */
@@ -3028,10 +3067,17 @@ when writing FITS images.
     /* ================================= */
 
     (fptr->Fptr)->request_compress_type = compresstype;
+
     for (ii = 0; ii < 9; ii++)
        (fptr->Fptr)->request_tilesize[ii] = tilesize[ii];
-    (fptr->Fptr)->request_rice_nbits = noisebits;
 
+    if (compresstype == HCOMPRESS_1) {
+       (fptr->Fptr)->request_hcomp_scale = scale;
+       (fptr->Fptr)->request_hcomp_smooth = smooth;
+    } else {
+       (fptr->Fptr)->request_noise_nbits = noisebits;
+    }
+    
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -5342,7 +5388,7 @@ int ffexts(char *extspec,
            loc++;
 
         /* check for read error, or junk following the integer */
-        if ((*loc != '\0'  ) || (errno == ERANGE) )
+        if ((*loc != '\0' && *loc != ';' ) || (errno == ERANGE) )
         {
            *extnum = 0;
            notint = 1;  /* no, extname was not a simple integer after all */

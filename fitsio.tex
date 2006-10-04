@@ -5464,6 +5464,27 @@ general) describes one FITS keyword record.  The format of the ASCII
 template file is described below.
 
 
+\section{Image Tile-Compression Specification}
+
+When specifying the name of the output FITS file to be created, the
+user can indicate that images should be written in tile-compressed
+format (see section 5.5, ``Primary Array or IMAGE Extension I/O
+Routines'') by enclosing the compression parameters in square brackets
+following the root disk file name.  Here are some examples of the
+syntax for specifying tile-compressed output images:
+
+\begin{verbatim}
+    myfile.fit[compress]    - use Rice algorithm and default tile size
+
+    myfile.fit[compress GZIP] - use the specified compression algorithm;
+    myfile.fit[compress Rice]     only the first letter of the algorithm
+    myfile.fit[compress PLIO]     name is required.
+
+    myfile.fit[compress Rice 100,100]   - use 100 x 100 pixel tile size
+    myfile.fit[compress Rice 100,100;2] - as above, and use noisebits = 2
+\end{verbatim}
+
+
 \section{HDU Location Specification}
 
 The optional HDU location specifier defines which HDU (Header-Data
@@ -5579,6 +5600,110 @@ specifying an image section.  Note that CFITSIO automatically updates
 the world coordinate system keywords in the header of the image
 section, if they exist, so that the coordinate associated with each
 pixel in the image section will be computed correctly.
+
+
+\section{Image Transform Filters}
+
+CFITSIO can apply a user-specified mathematical function to the value
+of every pixel in a FITS image, thus creating a new virtual image
+in computer memory that is then opened and read by the application
+program.  The original FITS image is not modified by this process.
+
+The image tranformation specifier is appended to the input
+FITS file name and is enclosed in square brackets.  It begins with the
+letters 'PIX' to distinguish it from other types of FITS file filters
+that are recognized by CFITSIO.  The image transforming function may
+use any of the mathmatical operators listed in the following
+'Row Filtering Specification' section of this document.
+Some examples of  image transform filters are:
+
+\begin{verbatim}
+ [pix X * 2.0]               - multiply each pixel by 2.0
+ [pix sqrt(X)]               - take the square root of each pixel
+ [pix X + #ZEROPT            - add the value of the ZEROPT keyword
+ [pix X>0 ? log10(X) : -99.] - if the pixel value is greater
+                               than 0, compute the base 10 log,
+                               else set the pixel = -99.
+\end{verbatim}
+Use the letter 'X' in the expression to represent the current pixel value
+in the image.  The expression is evaluated
+independently for each pixel in the image and may be a function of 1) the
+original pixel value, 2) the value of other pixels in the image at
+a given relative offset from the position of the pixel that is being
+evaluated, and 3) the value of
+any header keywords.  Header keyword values are represented
+by the name of the keyword preceded by the '\#' sign.
+
+
+To access the the value of adjacent pixels in the image,
+specify the (1-D) offset from the current pixel in curly brackets.
+For example
+
+\begin{verbatim}
+ [pix  (x{-1} + x + x{+1}) / 3]
+\end{verbatim}
+will replace each pixel value with the running mean of the values of that
+pixel and it's 2 neighboring pixels.  Note that in this notation the image
+is treated as a 1-D array, where each row of the image (or higher dimensional
+cube) is appended one after another in one long array of pixels.
+It is possible to refer to pixels
+in the rows above or below the current pixel by using the value of the
+NAXIS1 header keyword.  For example
+
+\begin{verbatim}
+ [pix (x{-#NAXIS1} + x + x{#NAXIS1}) / 3]
+\end{verbatim}
+will compute the mean of each image pixel and the pixels immediately
+above and below it in the adjacent rows of the image.
+The following more complex example
+creates a smoothed virtual image where each pixel
+is a 3 x 3 boxcar average of the input image pixels:
+
+\begin{verbatim}
+  [pix (X + X{-1} + X{+1}
+      + X{-#NAXIS1} + X{-#NAXIS1 - 1} + X{-#NAXIS1 + 1}
+      + X{#NAXIS1} + X{#NAXIS1 - 1} + X{#NAXIS1 + 1}) / 9.]
+\end{verbatim}
+If the pixel offset
+extends beyond the first or last pixel in the image, the function will
+evaluate to undefined, or NULL.
+
+For  complex  or commonly used image filtering operations,
+one  can  write the expression into an external text  file and
+then import it  into the
+filter using  the syntax '[pix @filename.txt]'.   The mathematical
+expression can
+extend over multiple lines of text in the  file.
+Any lines in the external text file
+that begin with 2 slash characters ('//') will be ignored and may be
+used to add comments into the file.
+
+By default, the datatype of the resulting image will be the same as
+the original image, but one may force a different datatype by appended
+a code letter to the 'pix' keyword:
+
+\begin{verbatim}
+      pixb  -  8-bit byte    image with BITPIX =   8
+      pixi  - 16-bit integer image with BITPIX =  16
+      pixj  - 32-bit integer image with BITPIX =  32
+      pixr  - 32-bit float   image with BITPIX = -32
+      pixd  - 64-bit float   image with BITPIX = -64
+\end{verbatim}
+Also by default, any other HDUs in the input file will be copied without
+change to the
+output virtual FITS file, but one may discard the other HDUs by adding
+the number '1' to the 'pix' keyword (and following any optional datatype code
+letter).  For example:
+
+\begin{verbatim}
+     myfile.fits[3][pixr1  sqrt(X)]
+\end{verbatim}
+will create a virtual FITS file containing only a primary array image
+with 32-bit floating point pixels that have a value equal to the square
+root of the pixels in the image that is in the 3rd extension
+of the 'myfile.fits' file.
+
+
 
 
 \section{Column and Keyword Filtering Specification}
@@ -5810,11 +5935,19 @@ by a backslash to force the UNIX shell to ignore it.
     "exponential"        exp(x)     "square root"          sqrt(x)
     "natural log"        log(x)     "common log"           log10(x)
     "modulus"            x % y      "random # [0.0,1.0)"   random()
+    "random Gausian"     randomn()  "random Poisson"       randomp(x)
     "minimum"            min(x,y)   "maximum"              max(x,y)
-    "cumulative sum"    accum(x)   "sequential difference" seqdiff(x)
+    "cumulative sum"     accum(x)  "sequential difference" seqdiff(x)
     "if-then-else"       b?x:y
     "angular separation"  angsep(ra1,dec1,ra2,de2) (all in degrees)
 \end{verbatim}
+Three different random number functions are provided:  random(), with no
+arguments, produces a uniform random deviate between 0 and 1; randomn(),
+also with no arguments, produces a normal (Gaussian) random deviate  with
+zero mean and unit standard deviation; randomp(x) produces a Poisson random
+deviate whose expected number of counts is X.  X may be any positive real
+number of expected counts, including fractional values, but the return value
+is an integer.
 
     An alternate syntax for the min and max functions  has only a single
     argument which  should be  a  vector value (see  below).  The result

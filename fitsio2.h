@@ -919,16 +919,18 @@ int fits_write_compressed_img_plane(fitsfile *fptr, int  datatype,
       long *naxes,  int  nullcheck, 
       void *array,  void *nullval, long *nread, int  *status);
 
-int imcomp_init_table(fitsfile *outfptr, int compress_type,
-        int bitpix, int naxis,long *naxes,long *tilesize, 
-        int rice_blocksize,int rice_nbits,int *status);
-int imcomp_calc_max_elem (int comptype, int nx, int blocksize);
+int imcomp_init_table(fitsfile *outfptr,
+        int bitpix, int naxis,long *naxes, int writebitpix, int *status);
+int imcomp_calc_max_elem (int comptype, int nx, int zbitpix, int blocksize);
 int imcomp_copy_imheader(fitsfile *infptr, fitsfile *outfptr,
                 int *status);
+int imcomp_copy_img2comp(fitsfile *infptr, fitsfile *outfptr, int *status);
+int imcomp_copy_comp2img(fitsfile *infptr, fitsfile *outfptr, 
+                          int norec, int *status);
 int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr,
                  int *status);
 int imcomp_compress_tile (fitsfile *outfptr, long row, 
-    int datatype,  void *tiledata, long tilelen, int *status);
+    int datatype,  void *tiledata, long tilelen, long nx, long ny, int *status);
 
 /*  image decompression routines */
 

@@ -74,11 +74,11 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
   Returns a formated string value, regardless of the datatype of the column
 */
 {
-    int tcode, hdutype, tstatus, scaled, intcol, dwidth, nulwidth, ll;
+    int tcode, hdutype, tstatus, scaled, intcol, dwidth, nulwidth, ll, dlen;
     long ii, jj;
     tcolumn *colptr;
     char message[FLEN_ERRMSG], *carray, keyname[FLEN_KEYWORD];
-    char cform[20], dispfmt[20], tmpstr[80], *flgarray, tmpnull[80];
+    char cform[20], dispfmt[20], tmpstr[400], *flgarray, tmpnull[80];
     unsigned char byteval;
     float *earray;
     double *darray, tscale = 1.0;
@@ -459,6 +459,12 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
                 sprintf(tmpstr, cform, (int) darray[ii]);
               else
                 sprintf(tmpstr, cform, darray[ii]);
+
+              /* fill field with '*' if number is too wide */
+              dlen = strlen(tmpstr);
+	      if (dlen > dwidth) {
+	         memset(tmpstr, '*', dwidth);
+              }
 
               *array[ii] = '\0';
               strncat(array[ii], tmpstr, dwidth);
