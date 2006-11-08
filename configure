@@ -843,6 +843,12 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
  --enable-hera Build for HERA project (for LHEA use only)
 
+Optional Packages:
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+ --with-gsiftp-flavour[=PATH] Enable Globus Toolkit gsiftp protocol support
+ --with-gsiftp[=PATH] Enable Globus Toolkit gsiftp protocol support
+
 Some influential environment variables:
   CC          C compiler command
   CFLAGS      C compiler flags
@@ -1308,6 +1314,46 @@ if test "x$BUILD_HERA" = xyes; then
 _ACEOF
 
 fi
+
+
+# Check whether --with-gsiftp-flavour or --without-gsiftp-flavour was given.
+if test "${with_gsiftp_flavour+set}" = set; then
+  withval="$with_gsiftp_flavour"
+   if test "x$withval" != "xno"; then
+
+        if test "x$withval" != "xyes" ; then
+            GSIFTP_FLAVOUR=${withval}
+        fi
+
+cat >>confdefs.h <<\_ACEOF
+#define GSIFTP_FLAVOUR 1
+_ACEOF
+
+    fi
+
+
+fi;
+
+
+# Check whether --with-gsiftp or --without-gsiftp was given.
+if test "${with_gsiftp+set}" = set; then
+  withval="$with_gsiftp"
+   if test "x$withval" != "xno"; then
+
+        if test "x$withval" != "xyes" ; then
+            CFLAGS="$CFLAGS -I${withval}/include/${GSIFTP_FLAVOUR}"
+            LDFLAGS="$LDFLAGS -L${withval}/lib -lglobus_ftp_client_${GSIFTP_FLAVOUR}"
+            HAVE_GSIFTP=yes
+        fi
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_GSIFTP 1
+_ACEOF
+
+    fi
+
+
+fi;
 
 #--------------------------------------------------------------------
 # Check for install location prefix

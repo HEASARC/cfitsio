@@ -23,6 +23,34 @@ if test "x$BUILD_HERA" = xyes; then
   AC_DEFINE(BUILD_HERA)
 fi
 
+AC_ARG_WITH(
+  gsiftp-flavour,
+  [ --with-gsiftp-flavour[[=PATH]] Enable Globus Toolkit gsiftp protocol support ],
+  [ if test "x$withval" != "xno"; then
+
+        if test "x$withval" != "xyes" ; then
+            GSIFTP_FLAVOUR=${withval}
+        fi
+        AC_DEFINE(GSIFTP_FLAVOUR,1,[Define Globus Toolkit architecture])
+    fi
+  ]
+)
+
+AC_ARG_WITH(
+  gsiftp,
+  [ --with-gsiftp[[=PATH]] Enable Globus Toolkit gsiftp protocol support ],
+  [ if test "x$withval" != "xno"; then
+
+        if test "x$withval" != "xyes" ; then
+            CFLAGS="$CFLAGS -I${withval}/include/${GSIFTP_FLAVOUR}"
+            LDFLAGS="$LDFLAGS -L${withval}/lib -lglobus_ftp_client_${GSIFTP_FLAVOUR}"
+            HAVE_GSIFTP=yes
+        fi
+        AC_DEFINE(HAVE_GSIFTP,1,[Define if you want Globus Toolkit gsiftp protocol support])
+    fi
+  ]
+)
+
 #--------------------------------------------------------------------
 # Check for install location prefix
 #--------------------------------------------------------------------
