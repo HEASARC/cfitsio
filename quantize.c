@@ -167,7 +167,7 @@ If the function value is zero, the data were not copied to idata.
 
         /* allocate temporary buffer for differences */
 	ndiff = nx - first_nonnull - 1;
-	if ((diff = malloc (ndiff * sizeof (float))) == NULL) {
+	if ((diff = (float *) malloc (ndiff * sizeof (float))) == NULL) {
             ffpmsg("Out of memory in 'fits_quantize_float'.");  
 	    return (0);
 	}
@@ -413,7 +413,7 @@ If the function value is zero, the data were not copied to idata.
 
         /* allocate temporary buffer for differences */
 	ndiff = nx - first_nonnull - 1;
-	if ((diff = malloc (ndiff * sizeof (float))) == NULL) {
+	if ((diff = (float *) malloc (ndiff * sizeof (float))) == NULL) {
             ffpmsg("Out of memory in 'fits_quantize_double'.");  
 	    return (0);
 	}
@@ -551,7 +551,7 @@ double rms          o: computed RMS value
 
         /* allocate temporary buffer for differences */
 	ndiff = nx - first_nonnull - 1;
-	if ((diff = malloc (ndiff * sizeof (float))) == NULL) {
+	if ((diff = (float *) malloc (ndiff * sizeof (float))) == NULL) {
             ffpmsg("Out of memory in 'fits_float_rms'."); 
 	    *status = 113;  /* memory allocation error */ 
 	    return (0);
@@ -647,7 +647,7 @@ double rms          o: computed RMS value
 
         /* allocate temporary buffer for differences */
 	ndiff = nx - first_nonnull - 1;
-	if ((diff = malloc (ndiff * sizeof (float))) == NULL) {
+	if ((diff = (float *) malloc (ndiff * sizeof (float))) == NULL) {
             ffpmsg("Out of memory in 'fits_float_rms'."); 
 	    *status = 113;  /* memory allocation error */ 
 	    return (0);
@@ -677,7 +677,7 @@ double rms          o: computed RMS value
             ndiff = 0;
 	    for (i = j + 1 ;  i < nx;  i++) {
                 if (fdata[i] != in_null_value) {
- 	            diff[ndiff] = fdata[i] - fdata[j];
+ 	            diff[ndiff] = (float) (fdata[i] - fdata[j]);
                     j = i;
                     ndiff++;
                 }

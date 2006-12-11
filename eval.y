@@ -604,6 +604,8 @@ expr:    LONG
 			$$ = New_Func( 0, log10_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"SQRT(") == 0)
 			$$ = New_Func( 0, sqrt_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"ROUND(") == 0)
+			$$ = New_Func( 0, round_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"FLOOR(") == 0)
 			$$ = New_Func( 0, floor_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"CEIL(") == 0)
@@ -3290,7 +3292,7 @@ float gammaln(float xx)
   tmp -= (x+0.5)*log(tmp);
   ser=1.000000000190015;
   for (j=0;j<=5;j++) ser += cof[j]/++y;
-  return -tmp+log(2.5066282746310005*ser/x);
+  return (float) -tmp+log(2.5066282746310005*ser/x);
 }
 
 /* Poisson deviate - derived from Numerical Recipes */
@@ -3318,7 +3320,7 @@ static long poidev(double xm)
       oldm = xm;
       sq = sqrt(2.0*xm);
       alxm = log(xm);
-      g = xm*alxm-gammaln(xm+1.0);
+      g = xm*alxm-gammaln( (float) (xm+1.0));
     }
     do {
       do {
@@ -3326,7 +3328,7 @@ static long poidev(double xm)
 	em = sq*y+xm;
       } while (em < 0.0);
       em = floor(em);
-      t = 0.9*(1.0+y*y)*exp(em*alxm-gammaln(em+1.0)-g);
+      t = 0.9*(1.0+y*y)*exp(em*alxm-gammaln( (float) (em+1.0) )-g);
     } while (ran1() > t);
   }
 
@@ -3344,7 +3346,6 @@ static void Do_Func( Node *this )
    double dval;
    int  i, valInit;
    long row, elem, nelem;
-   double rndVal;
 
    i = this->nSubNodes;
    allConst = 1;

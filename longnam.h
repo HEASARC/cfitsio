@@ -237,6 +237,7 @@
 #define fits_copy_file      ffcpfl
 #define fits_copy_header    ffcphd
 #define fits_copy_data      ffcpdt
+#define fits_write_hdu      ffwrhdu
 
 #define fits_set_hdustruc   ffrdef
 #define fits_set_hdrsize    ffhdef
@@ -361,6 +362,7 @@
 #define fits_read_subsetnull_flt ffgsfe
 #define fits_read_subsetnull_dbl ffgsfd
 
+#define ffcpimg fits_copy_image_section
 #define fits_compress_img fits_comp_img
 #define fits_decompress_img fits_decomp_img
 

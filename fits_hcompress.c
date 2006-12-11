@@ -31,6 +31,7 @@ The following modifications have been made to the original code:
  ############################################################################  */
  
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 #include <stdlib.h>
 #include "fitsio2.h"
@@ -185,7 +186,7 @@ int *tmp;
 	 * log2n is log2 of max(nx,ny) rounded up to next power of 2
 	 */
 	nmax = (nx>ny) ? nx : ny;
-	log2n = log((float) nmax)/log(2.0)+0.5;
+	log2n = (int) (log((float) nmax)/log(2.0)+0.5);
 	if ( nmax > (1<<log2n) ) {
 		log2n += 1;
 	}
@@ -321,7 +322,7 @@ LONGLONG *tmp;
 	 * log2n is log2 of max(nx,ny) rounded up to next power of 2
 	 */
 	nmax = (nx>ny) ? nx : ny;
-	log2n = log((float) nmax)/log(2.0)+0.5;
+	log2n = (int) (log((float) nmax)/log(2.0)+0.5);
 	if ( nmax > (1<<log2n) ) {
 		log2n += 1;
 	}
@@ -598,7 +599,7 @@ static int encode(char *outfile, long *nlength, int a[], int nx, int ny, int sca
   int nx,ny;								 size of H-transform array	
   int scale;								 scale factor for digitization
 */
-int nel, nx2, ny2, i, j, k, q, vmax[3], nsign, bits_to_go, nwrite;
+int nel, nx2, ny2, i, j, k, q, vmax[3], nsign, bits_to_go;
 unsigned char nbitplanes[3];
 unsigned char *signbits;
 int stat = 0;
@@ -696,7 +697,7 @@ int stat = 0;
 	 * now calculate number of bits for each quadrant
 	 */
 	for (q = 0; q < 3; q++) {
-		nbitplanes[q] = log((float) (vmax[q]+1))/log(2.0)+0.5;
+		nbitplanes[q] = (int) (log((float) (vmax[q]+1))/log(2.0)+0.5);
 		if ( (vmax[q]+1) > (1<<nbitplanes[q]) ) {
 			nbitplanes[q] += 1;
 		}
@@ -946,7 +947,7 @@ unsigned char b[8];
 	 * need for byte-swapping.
 	 */
 	for (i=7; i>=0; i--) {
-		b[i] = a & 0x000000ff;
+		b[i] = (unsigned char) (a & 0x000000ff);
 		a >>= 8;
 	}
 	for (i=0; i<8; i++) qwrite(outfile, (char *) &b[i],1);
@@ -1197,7 +1198,7 @@ unsigned char *scratch, *buffer;
 	 * log2n is log2 of max(nqx,nqy) rounded up to next power of 2
 	 */
 	nqmax = (nqx>nqy) ? nqx : nqy;
-	log2n = log((float) nqmax)/log(2.0)+0.5;
+	log2n = (int) (log((float) nqmax)/log(2.0)+0.5);
 	if (nqmax > (1<<log2n)) {
 		log2n += 1;
 	}
@@ -1319,7 +1320,7 @@ unsigned char *scratch, *buffer;
 	 * log2n is log2 of max(nqx,nqy) rounded up to next power of 2
 	 */
 	nqmax = (nqx>nqy) ? nqx : nqy;
-	log2n = log((float) nqmax)/log(2.0)+0.5;
+	log2n = (int) (log((float) nqmax)/log(2.0)+0.5);
 	if (nqmax > (1<<log2n)) {
 		log2n += 1;
 	}
@@ -1542,10 +1543,10 @@ int s10, s00;
 		s00 = n*i;					/* s00 is index of a[i,j]	*/
 		s10 = s00+n;				/* s10 is index of a[i+1,j]	*/
 		for (j = 0; j<ny-1; j += 2) {
-			b[k] = ( ( a[s10+1]     & b0)
+			b[k] = (unsigned char) (( ( a[s10+1]     & b0)
 				   | ((a[s10  ]<<1) & b1)
 				   | ((a[s00+1]<<2) & b2)
-				   | ((a[s00  ]<<3) & b3) ) >> bit;
+				   | ((a[s00  ]<<3) & b3) ) >> bit);
 			k += 1;
 			s00 += 2;
 			s10 += 2;
@@ -1555,8 +1556,8 @@ int s10, s00;
 			 * row size is odd, do last element in row
 			 * s00+1,s10+1 are off edge
 			 */
-			b[k] = ( ((a[s10  ]<<1) & b1)
-				   | ((a[s00  ]<<3) & b3) ) >> bit;
+			b[k] = (unsigned char) (( ((a[s10  ]<<1) & b1)
+				   | ((a[s00  ]<<3) & b3) ) >> bit);
 			k += 1;
 		}
 	}
@@ -1567,8 +1568,8 @@ int s10, s00;
 		 */
 		s00 = n*i;
 		for (j = 0; j<ny-1; j += 2) {
-			b[k] = ( ((a[s00+1]<<2) & b2)
-				   | ((a[s00  ]<<3) & b3) ) >> bit;
+			b[k] = (unsigned char) (( ((a[s00+1]<<2) & b2)
+				   | ((a[s00  ]<<3) & b3) ) >> bit);
 			k += 1;
 			s00 += 2;
 		}
@@ -1577,7 +1578,7 @@ int s10, s00;
 			 * both row and column size are odd, do corner element
 			 * s00+1, s10, s10+1 are off edge
 			 */
-			b[k] = ( ((a[s00  ]<<3) & b3) ) >> bit;
+			b[k] = (unsigned char) (( ((a[s00  ]<<3) & b3) ) >> bit);
 			k += 1;
 		}
 	}

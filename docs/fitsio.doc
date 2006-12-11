@@ -1924,8 +1924,8 @@ and so on.
 >3  Move to the (first) HDU which has the specified extension type and
     EXTNAME (or HDUNAME) and EXTVER keyword values.  The hdutype parameter
     may have
-    a value of IMAGE\_HDU, ASCII\_TBL, BINARY\_TBL, or ANY\_HDU where
-    ANY\_HDU means that only the extname and extver values will be
+    a value of IMAGE\_HDU (0), ASCII\_TBL (1), BINARY\_TBL (2), or ANY\_HDU (-1)
+    where ANY\_HDU means that only the extname and extver values will be
     used to locate the correct extension.  If the input value of
     extver is 0 then the EXTVER keyword is ignored and the first HDU
     with a matching EXTNAME (or HDUNAME) keyword will be found.  If no
@@ -6121,7 +6121,7 @@ hduok - (integer) was the HDU verification successful (=1) or
          not (= -1).  Equals zero if the CHECKSUM keyword is not present.      
 hdusum - (double precision) 32 bit 1's complement checksum for the entire CHDU
 hdutype - (integer) type of HDU: 0 = primary array or IMAGE, 1 = ASCII table,
-                   2 = binary table, -1 = unknown
+                   2 = binary table, -1 = any HDU type or unknown type
 history - (character) the HISTORY keyword comment string
 hour - (integer) hour from 0 - 23
 image - 2D image of the appropriate datatype
@@ -6280,6 +6280,7 @@ FITSIO use.
 203  specified header record number is out of bounds 
 204  keyword value field is blank
 205  keyword value string is missing the closing quote character 
+206  illegal indexed keyword name (e.g. 'TFORM1000')
 207  illegal character in keyword name or header record
 208  keyword does not have expected name. Keyword out of sequence? 
 209  keyword does not have expected integer value 

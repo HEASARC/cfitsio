@@ -14,7 +14,7 @@
 #include "group.h"
 
 #define MAX_PREFIX_LEN 20  /* max length of file type prefix (e.g. 'http://') */
-#define MAX_DRIVERS 22     /* max number of file I/O drivers */
+#define MAX_DRIVERS 23     /* max number of file I/O drivers */
 
 typedef struct    /* structure containing pointers to I/O driver functions */ 
 {   char prefix[MAX_PREFIX_LEN];
@@ -423,7 +423,6 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     char wtcol[FLEN_VALUE];
     char minname[4][FLEN_VALUE], maxname[4][FLEN_VALUE];
     char binname[4][FLEN_VALUE];
-    char card[FLEN_CARD];
 
     char *url;
     double minin[4], maxin[4], binsizein[4], weight;
@@ -592,7 +591,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
         deal with all those messy special cases which may require that
         a different driver be used:
             - is disk file compressed?
-            - are ftp: or http: files compressed?
+            - are ftp:, gsiftp:, or http: files compressed?
             - has user requested that a local copy be made of
               the ftp or http file?
       -------------------------------------------------------------------*/
@@ -1436,6 +1435,8 @@ int fits_is_this_a_copy(char *urltype) /* I - type of file */
      iscopy = 1;    /* copied file using http protocol */
   else if (!strncmp(urltype, "ftp", 3) )
      iscopy = 1;    /* copied file using ftp protocol */
+  else if (!strncmp(urltype, "gsiftp", 6) )
+     iscopy = 1;    /* copied file using gsiftp protocol */
   else if (!strncpy(urltype, "stdin", 5) )
      iscopy = 1;    /* piped stdin has been copied to memory */
   else
@@ -1683,7 +1684,7 @@ int ffedit_columns(
                  savecol = 1;
 
                  if (!colindex)
-                    colindex = calloc(999, sizeof(int));
+                    colindex = (int *) calloc(999, sizeof(int));
 
                  colindex[colnum - 1] = 1;  /* flag this column number */
 
@@ -1702,7 +1703,7 @@ int ffedit_columns(
                  savecol = 1;
 
                  if (!colindex)
-                    colindex = calloc(999, sizeof(int));
+                    colindex = (int *) calloc(999, sizeof(int));
 
                  colindex[colnum - 1] = 1;  /* flag this column number */
               }
@@ -1761,7 +1762,7 @@ int ffedit_columns(
                     /* keep this column in the output file */
                     savecol = 1;
                     if (!colindex)
-                       colindex = calloc(999, sizeof(int));
+                       colindex = (int *) calloc(999, sizeof(int));
 
                     colindex[colnum - 1] = 1;  /* flag this column number */
                 }
@@ -1804,9 +1805,12 @@ int ffedit_columns(
                 /*   cptr2 = the expression to be calculated */
                 /*   oldname = name of the column or keyword */
                 /*   colformat = column format, or keyword comment string */
-
-                fits_calculator(*fptr, cptr2, *fptr, oldname, colformat,
-       	                        status);
+                if (fits_calculator(*fptr, cptr2, *fptr, oldname, colformat,
+       	                        status) > 0) {
+				
+                        ffpmsg("Unable to calculate expression");
+                        return(*status);
+                }
 
                 /* test if this is a column and not a keyword */
                 tstatus = 0;
@@ -1818,14 +1822,14 @@ int ffedit_columns(
                     savecol = 1;
 
                     if (!colindex)
-                      colindex = calloc(999, sizeof(int));
+                      colindex = (int *) calloc(999, sizeof(int));
 
                     colindex[colnum - 1] = 1;
                     if (colnum > numcols)numcols++;
                 }
 		else
 		{
-		  ffcmsg();  /* clear the error message stack */
+		   ffcmsg();  /* clear the error message stack */
 		}
               }
             }
@@ -2401,7 +2405,9 @@ int fits_select_image_section(
            int *status)
 {
   /*
-     copies an image section from the input file to an output file
+     copies an image section from the input file to a new output file.
+     Any HDUs preceding or following the image are also copied to the
+     output file.
   */
 
     fitsfile *newptr;
@@ -2437,259 +2443,8 @@ int fits_select_image_section(
     /* move back to the original HDU position */
     fits_movabs_hdu(*fptr, hdunum, NULL, status);
 
-    /* get the size of the input image */
-    fits_get_img_type(*fptr, &bitpix, status);
-    fits_get_img_dim(*fptr, &naxis, status);
-    if (fits_get_img_size(*fptr, naxis, naxes, status) > 0)
+    if (fits_copy_image_section(*fptr, newptr, expr, status) > 0)
     {
-        ffclos(newptr, status);
-        return(*status);
-    }
-
-    if (naxis < 1 || naxis > 9)
-    {
-        ffpmsg(
-        "Input image either had NAXIS = 0 (NULL image) or has > 9 dimensions");
-        ffclos(newptr, status);
-        return(*status = BAD_NAXIS);
-    }
-
-    /* create output image with same size and type as the input image */
-    /*  Will update the size later */
-    fits_create_img(newptr, bitpix, naxis, naxes, status);
-
-    /* copy all other non-structural keywords from the input to output file */
-    fits_get_hdrspace(*fptr, &numkeys, NULL, status);
-
-    for (nkey = 4; nkey <= numkeys; nkey++) /* skip the first few keywords */
-    {
-        fits_read_record(*fptr, nkey, card, status);
-
-        if (fits_get_keyclass(card) > TYP_CMPRS_KEY)
-        {
-            /* write the record to the output file */
-            fits_write_record(newptr, card, status);
-        }
-    }
-
-    if (*status > 0)
-    {
-         ffpmsg("error copying header from input image to output image");
-         return(*status);
-    }
-
-    /* parse the section specifier to get min, max, and inc for each axis */
-    /* and the size of each output image axis */
-
-    outsize = 1;
-    cptr = expr;
-    for (ii=0; ii < naxis; ii++)
-    {
-
-       if (fits_get_section_range(&cptr, &smin, &smax, &sinc, status) > 0)
-       {
-          ffpmsg("error parsing the following image section specifier:");
-          ffpmsg(expr);
-          ffclos(newptr, status);
-          return(*status);
-       }
-
-       if (smax == 0)
-          smax = naxes[ii];   /* use whole axis  by default */
-       else if (smin == 0)
-          smin = naxes[ii];   /* use inverted whole axis */
-
-       if (smin > naxes[ii] || smax > naxes[ii])
-       {
-          ffpmsg("image section exceeds dimensions of input image:");
-          ffpmsg(expr);
-          ffclos(newptr, status);
-          return(*status = BAD_NAXIS);
-       }
-
-       fpixels[ii] = smin;
-       lpixels[ii] = smax;
-       incs[ii] = sinc;
-
-       if (smin <= smax)
-           outnaxes[ii] = (smax - smin + sinc) / sinc;
-       else
-           outnaxes[ii] = (smin - smax + sinc) / sinc;
-
-       outsize = outsize * outnaxes[ii];
-
-       /* modify the NAXISn keyword */
-       fits_make_keyn("NAXIS", ii + 1, keyname, status);
-       fits_modify_key_lng(newptr, keyname, outnaxes[ii], NULL, status);
-
-       /* modify the WCS keywords if necessary */
-
-       if (fpixels[ii] != 1 || incs[ii] != 1)
-       {
-        for (kk=-1;kk<26; kk++)  /* modify any alternate WCS keywords */
-	{
-         /* read the CRPIXn keyword if it exists in the input file */
-         fits_make_keyn("CRPIX", ii + 1, keyname, status);
-	 
-         if (kk != -1) {
-	   klen = strlen(keyname);
-	   keyname[klen]='A' + kk;
-	   keyname[klen + 1] = '\0';
-	 }
-
-         tstatus = 0;
-         if (fits_read_key(*fptr, TDOUBLE, keyname, 
-             &crpix, NULL, &tstatus) == 0)
-         {
-           /* calculate the new CRPIXn value */
-           if (fpixels[ii] <= lpixels[ii])
-             crpix = (crpix - (fpixels[ii] - 1.0) - .5) / incs[ii] + 0.5;
-           else
-             crpix = (fpixels[ii] - (crpix - 1.0) - .5) / incs[ii] + 0.5;
-            
-           /* modify the value in the output file */
-           fits_modify_key_dbl(newptr, keyname, crpix, 15, NULL, status);
-
-           if (incs[ii] != 1 || fpixels[ii] > lpixels[ii])
-           {
-             /* read the CDELTn keyword if it exists in the input file */
-             fits_make_keyn("CDELT", ii + 1, keyname, status);
-
-             if (kk != -1) {
-	       klen = strlen(keyname);
-	       keyname[klen]='A' + kk;
-	       keyname[klen + 1] = '\0';
-	     }
-
-             tstatus = 0;
-             if (fits_read_key(*fptr, TDOUBLE, keyname, 
-                 &cdelt, NULL, &tstatus) == 0)
-             {
-               /* calculate the new CDELTn value */
-               if (fpixels[ii] <= lpixels[ii])
-                 cdelt = cdelt * incs[ii];
-               else
-                 cdelt = cdelt * (-incs[ii]);
-              
-               /* modify the value in the output file */
-               fits_modify_key_dbl(newptr, keyname, cdelt, 15, NULL, status);
-             }
-
-             /* modify the CDi_j keywords if they exist in the input file */
-
-             fits_make_keyn("CD1_", ii + 1, keyname, status);
-
-             if (kk != -1) {
-	       klen = strlen(keyname);
-	       keyname[klen]='A' + kk;
-	       keyname[klen + 1] = '\0';
-	     }
-
-             for (jj=0; jj < 9; jj++)   /* look for up to 9 dimensions */
-	     {
-	       keyname[2] = '1' + jj;
-	       
-               tstatus = 0;
-               if (fits_read_key(*fptr, TDOUBLE, keyname, 
-                 &cdelt, NULL, &tstatus) == 0)
-               {
-                 /* calculate the new CDi_j value */
-                 if (fpixels[ii] <= lpixels[ii])
-                   cdelt = cdelt * incs[ii];
-                 else
-                   cdelt = cdelt * (-incs[ii]);
-              
-                 /* modify the value in the output file */
-                 fits_modify_key_dbl(newptr, keyname, cdelt, 15, NULL, status);
-               }
-	     }
-	     
-           } /* end of if (incs[ii]... loop */
-         }   /* end of fits_read_key loop */
-	}    /* end of for (kk  loop */
-       }
-    }  /* end of main NAXIS loop */
-
-    if (ffrdef(newptr, status) > 0)  /* force the header to be scanned */
-    {
-        ffclos(newptr, status);
-        return(*status);
-    }
-
-    /* write a dummy value to the last pixel in the output section */
-    /* This will force memory to be allocated for the FITS files if it */
-    /* is being written in memory, before we allocate some more memory */
-    /* below.  Hopefully this leads to better memory management and */
-    /* reduces the probability that the memory for the FITS file will have */
-    /* to be reallocated to a new location later. */
-
-    /* turn off any scaling of the pixel values */
-    fits_set_bscale(*fptr,  1.0, 0.0, status);
-    fits_set_bscale(newptr, 1.0, 0.0, status);
-
-    dummy[0] = 0;
-    if (fits_write_img(newptr, TLONG, outsize, 1, dummy, status) > 0)
-    {
-        ffpmsg("error trying to write dummy value to the last image pixel");
-        ffclos(newptr, status);
-        return(*status);
-    }
-
-    /* allocate memory for the entire image section */
-    buffsize = (abs(bitpix) / 8) * outsize;
-
-    buffer = (double *) malloc(buffsize);
-    if (!buffer)
-    {
-        ffpmsg("error allocating memory for image section");
-        ffclos(newptr, status);
-        return(*status = MEMORY_ALLOCATION);
-    }
-
-    /* read the image section then write it to the output file */
-
-    if (bitpix == 8)
-    {
-        ffgsvb(*fptr, 1, naxis, naxes, fpixels, lpixels, incs, 0,
-            (unsigned char *) buffer, &anynull, status);
-
-        ffpprb(newptr, 1, 1, outsize, (unsigned char *) buffer, status);
-    }
-    else if (bitpix == 16)
-    {
-        ffgsvi(*fptr, 1, naxis, naxes, fpixels, lpixels, incs, 0,
-            (short *) buffer, &anynull, status);
-
-        ffppri(newptr, 1, 1, outsize, (short *) buffer, status);
-    }
-    else if (bitpix == 32)
-    {
-        ffgsvk(*fptr, 1, naxis, naxes, fpixels, lpixels, incs, 0,
-            (int *) buffer, &anynull, status);
-
-        ffpprk(newptr, 1, 1, outsize, (int *) buffer, status);
-    }
-    else if (bitpix == -32)
-    {
-        ffgsve(*fptr, 1, naxis, naxes, fpixels, lpixels, incs, FLOATNULLVALUE,
-            (float *) buffer, &anynull, status);
-
-        ffppne(newptr, 1, 1, outsize, (float *) buffer, FLOATNULLVALUE, status);
-    }
-    else if (bitpix == -64)
-    {
-        ffgsvd(*fptr, 1, naxis, naxes, fpixels, lpixels, incs, DOUBLENULLVALUE,
-             buffer, &anynull, status);
-
-        ffppnd(newptr, 1, 1, outsize, buffer, DOUBLENULLVALUE,
-               status);
-    }
-
-    free(buffer);  /* finished with the memory */
-
-    if (*status > 0)
-    {
-        ffpmsg("error copying image section from input to output file");
         ffclos(newptr, status);
         return(*status);
     }
@@ -2731,6 +2486,283 @@ int fits_select_image_section(
             return(*status);
         }
 
+    }
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_copy_image_section(
+           fitsfile *fptr,  /* I - pointer to input image */
+           fitsfile *newptr,  /* I - pointer to output image */
+           char *expr,       /* I - Image section expression    */
+           int *status)
+{
+  /*
+     copies an image section from the input file to a new output HDU
+  */
+
+    int bitpix, naxis, numkeys, nkey;
+    long naxes[9], smin, smax, sinc, fpixels[9], lpixels[9], incs[9];
+    char *cptr, keyname[FLEN_KEYWORD], card[FLEN_CARD];
+    int ii, tstatus, anynull;
+    int klen, kk, jj;
+    long outnaxes[9], outsize, buffsize, dummy[2];
+    double *buffer = 0, crpix, cdelt;
+
+    if (*status > 0)
+        return(*status);
+
+    /* get the size of the input image */
+    fits_get_img_type(fptr, &bitpix, status);
+    fits_get_img_dim(fptr, &naxis, status);
+    if (fits_get_img_size(fptr, naxis, naxes, status) > 0)
+        return(*status);
+
+    if (naxis < 1 || naxis > 9)
+    {
+        ffpmsg(
+        "Input image either had NAXIS = 0 (NULL image) or has > 9 dimensions");
+        return(*status = BAD_NAXIS);
+    }
+
+    /* create output image with same size and type as the input image */
+    /*  Will update the size later */
+    fits_create_img(newptr, bitpix, naxis, naxes, status);
+
+    /* copy all other non-structural keywords from the input to output file */
+    fits_get_hdrspace(fptr, &numkeys, NULL, status);
+
+    for (nkey = 4; nkey <= numkeys; nkey++) /* skip the first few keywords */
+    {
+        fits_read_record(fptr, nkey, card, status);
+
+        if (fits_get_keyclass(card) > TYP_CMPRS_KEY)
+        {
+            /* write the record to the output file */
+            fits_write_record(newptr, card, status);
+        }
+    }
+
+    if (*status > 0)
+    {
+         ffpmsg("error copying header from input image to output image");
+         return(*status);
+    }
+
+    /* parse the section specifier to get min, max, and inc for each axis */
+    /* and the size of each output image axis */
+
+    outsize = 1;
+    cptr = expr;
+    for (ii=0; ii < naxis; ii++)
+    {
+       if (fits_get_section_range(&cptr, &smin, &smax, &sinc, status) > 0)
+       {
+          ffpmsg("error parsing the following image section specifier:");
+          ffpmsg(expr);
+          return(*status);
+       }
+
+       if (smax == 0)
+          smax = naxes[ii];   /* use whole axis  by default */
+       else if (smin == 0)
+          smin = naxes[ii];   /* use inverted whole axis */
+
+       if (smin > naxes[ii] || smax > naxes[ii])
+       {
+          ffpmsg("image section exceeds dimensions of input image:");
+          ffpmsg(expr);
+          return(*status = BAD_NAXIS);
+       }
+
+       fpixels[ii] = smin;
+       lpixels[ii] = smax;
+       incs[ii] = sinc;
+
+       if (smin <= smax)
+           outnaxes[ii] = (smax - smin + sinc) / sinc;
+       else
+           outnaxes[ii] = (smin - smax + sinc) / sinc;
+
+       outsize = outsize * outnaxes[ii];
+
+       /* modify the NAXISn keyword */
+       fits_make_keyn("NAXIS", ii + 1, keyname, status);
+       fits_modify_key_lng(newptr, keyname, outnaxes[ii], NULL, status);
+
+       /* modify the WCS keywords if necessary */
+
+       if (fpixels[ii] != 1 || incs[ii] != 1)
+       {
+        for (kk=-1;kk<26; kk++)  /* modify any alternate WCS keywords */
+	{
+         /* read the CRPIXn keyword if it exists in the input file */
+         fits_make_keyn("CRPIX", ii + 1, keyname, status);
+	 
+         if (kk != -1) {
+	   klen = strlen(keyname);
+	   keyname[klen]='A' + kk;
+	   keyname[klen + 1] = '\0';
+	 }
+
+         tstatus = 0;
+         if (fits_read_key(fptr, TDOUBLE, keyname, 
+             &crpix, NULL, &tstatus) == 0)
+         {
+           /* calculate the new CRPIXn value */
+           if (fpixels[ii] <= lpixels[ii])
+             crpix = (crpix - (fpixels[ii] - 1.0) - .5) / incs[ii] + 0.5;
+           else
+             crpix = (fpixels[ii] - (crpix - 1.0) - .5) / incs[ii] + 0.5;
+            
+           /* modify the value in the output file */
+           fits_modify_key_dbl(newptr, keyname, crpix, 15, NULL, status);
+
+           if (incs[ii] != 1 || fpixels[ii] > lpixels[ii])
+           {
+             /* read the CDELTn keyword if it exists in the input file */
+             fits_make_keyn("CDELT", ii + 1, keyname, status);
+
+             if (kk != -1) {
+	       klen = strlen(keyname);
+	       keyname[klen]='A' + kk;
+	       keyname[klen + 1] = '\0';
+	     }
+
+             tstatus = 0;
+             if (fits_read_key(fptr, TDOUBLE, keyname, 
+                 &cdelt, NULL, &tstatus) == 0)
+             {
+               /* calculate the new CDELTn value */
+               if (fpixels[ii] <= lpixels[ii])
+                 cdelt = cdelt * incs[ii];
+               else
+                 cdelt = cdelt * (-incs[ii]);
+              
+               /* modify the value in the output file */
+               fits_modify_key_dbl(newptr, keyname, cdelt, 15, NULL, status);
+             }
+
+             /* modify the CDi_j keywords if they exist in the input file */
+
+             fits_make_keyn("CD1_", ii + 1, keyname, status);
+
+             if (kk != -1) {
+	       klen = strlen(keyname);
+	       keyname[klen]='A' + kk;
+	       keyname[klen + 1] = '\0';
+	     }
+
+             for (jj=0; jj < 9; jj++)   /* look for up to 9 dimensions */
+	     {
+	       keyname[2] = '1' + jj;
+	       
+               tstatus = 0;
+               if (fits_read_key(fptr, TDOUBLE, keyname, 
+                 &cdelt, NULL, &tstatus) == 0)
+               {
+                 /* calculate the new CDi_j value */
+                 if (fpixels[ii] <= lpixels[ii])
+                   cdelt = cdelt * incs[ii];
+                 else
+                   cdelt = cdelt * (-incs[ii]);
+              
+                 /* modify the value in the output file */
+                 fits_modify_key_dbl(newptr, keyname, cdelt, 15, NULL, status);
+               }
+	     }
+	     
+           } /* end of if (incs[ii]... loop */
+         }   /* end of fits_read_key loop */
+	}    /* end of for (kk  loop */
+       }
+    }  /* end of main NAXIS loop */
+
+    if (ffrdef(newptr, status) > 0)  /* force the header to be scanned */
+    {
+        return(*status);
+    }
+
+    /* write a dummy value to the last pixel in the output section */
+    /* This will force memory to be allocated for the FITS files if it */
+    /* is being written in memory, before we allocate some more memory */
+    /* below.  Hopefully this leads to better memory management and */
+    /* reduces the probability that the memory for the FITS file will have */
+    /* to be reallocated to a new location later. */
+
+    /* turn off any scaling of the pixel values */
+    fits_set_bscale(fptr,  1.0, 0.0, status);
+    fits_set_bscale(newptr, 1.0, 0.0, status);
+
+    dummy[0] = 0;
+    if (fits_write_img(newptr, TLONG, outsize, 1, dummy, status) > 0)
+    {
+        ffpmsg("fits_copy_image_section: error writing to the last image pixel");
+        return(*status);
+    }
+
+    /* allocate memory for the entire image section */
+    buffsize = (abs(bitpix) / 8) * outsize;
+
+    buffer = (double *) malloc(buffsize);
+    if (!buffer)
+    {
+        ffpmsg("fits_copy_image_section: no memory for image section");
+        return(*status = MEMORY_ALLOCATION);
+    }
+
+    /* read the image section then write it to the output file */
+
+    if (bitpix == 8)
+    {
+        ffgsvb(fptr, 1, naxis, naxes, fpixels, lpixels, incs, 0,
+            (unsigned char *) buffer, &anynull, status);
+
+        ffpprb(newptr, 1, 1, outsize, (unsigned char *) buffer, status);
+    }
+    else if (bitpix == 16)
+    {
+        ffgsvi(fptr, 1, naxis, naxes, fpixels, lpixels, incs, 0,
+            (short *) buffer, &anynull, status);
+
+        ffppri(newptr, 1, 1, outsize, (short *) buffer, status);
+    }
+    else if (bitpix == 32)
+    {
+        ffgsvk(fptr, 1, naxis, naxes, fpixels, lpixels, incs, 0,
+            (int *) buffer, &anynull, status);
+
+        ffpprk(newptr, 1, 1, outsize, (int *) buffer, status);
+    }
+    else if (bitpix == -32)
+    {
+        ffgsve(fptr, 1, naxis, naxes, fpixels, lpixels, incs, FLOATNULLVALUE,
+            (float *) buffer, &anynull, status);
+
+        ffppne(newptr, 1, 1, outsize, (float *) buffer, FLOATNULLVALUE, status);
+    }
+    else if (bitpix == -64)
+    {
+        ffgsvd(fptr, 1, naxis, naxes, fpixels, lpixels, incs, DOUBLENULLVALUE,
+             buffer, &anynull, status);
+
+        ffppnd(newptr, 1, 1, outsize, buffer, DOUBLENULLVALUE,
+               status);
+    }
+    else if (bitpix == 64)
+    {
+        ffgsvjj(fptr, 1, naxis, naxes, fpixels, lpixels, incs, 0,
+            (LONGLONG *) buffer, &anynull, status);
+
+        ffpprjj(newptr, 1, 1, outsize, (LONGLONG *) buffer, status);
+    }
+
+    free(buffer);  /* finished with the memory */
+
+    if (*status > 0)
+    {
+        ffpmsg("fits_copy_image_section: error copying image section");
+        return(*status);
     }
 
     return(*status);
@@ -4067,8 +4099,40 @@ int fits_init_cfitsio(void)
     }
 
 #endif
-
 /* ==================== END OF SHARED MEMORY DRIVER SECTION ================ */
+
+
+#ifdef HAVE_GSIFTP
+    /* 23--------------------gsiftp driver-----------------------*/
+    status = fits_register_driver("gsiftp://",
+            gsiftp_init,
+            gsiftp_shutdown,
+            gsiftp_setoptions,
+            gsiftp_getoptions, 
+            gsiftp_getversion,
+            gsiftp_checkfile,
+            gsiftp_open,
+            gsiftp_create,
+#ifdef HAVE_FTRUNCATE
+            gsiftp_truncate,
+#else
+            NULL,
+#endif
+            gsiftp_close,
+            NULL,            /* remove function not yet implemented */
+            gsiftp_size,
+            gsiftp_flush,
+            gsiftp_seek,
+            gsiftp_read,
+            gsiftp_write);
+
+    if (status)
+    {
+        ffpmsg("failed to register the gsiftp:// driver (init_cfitsio)");
+        return(status);
+    }
+
+#endif
 
     return(status);
 }
@@ -4259,6 +4323,12 @@ int ffifile(char *url,       /* input filename */
             if (urltype)
                 strcat(urltype, "ftp://");
             ptr1 += 4;
+        }
+        else if (!strncmp(ptr1, "gsiftp:", 7) )
+        {                              /* the 2 //'s are optional */
+            if (urltype)
+                strcat(urltype, "gsiftp://");
+            ptr1 += 7;
         }
         else if (!strncmp(ptr1, "http:", 5) )
         {                              /* the 2 //'s are optional */
@@ -5005,7 +5075,7 @@ int ffexist(const char *infile, /* I - input filename or URL */
 	                        /*      1 = yes, disk file exists               */
 	                        /*      0 = no, disk file could not be found    */
 				/*     -1 = infile is not a disk file (could    */
-				/*       be a http, ftp, smem, or stdin file)   */
+				/*   be a http, ftp, gsiftp, smem, or stdin file) */
             int *status)        /* I/O  status  */
 
 /*
@@ -5111,6 +5181,11 @@ int ffrtnm(char *url,
         {                              /* the 2 //'s are optional */
             strcat(urltype, "ftp://");
             ptr1 += 4;
+        }
+        else if (!strncmp(ptr1, "gsiftp:", 7) )
+        {                              /* the 2 //'s are optional */
+            strcat(urltype, "gsiftp://");
+            ptr1 += 7;
         }
         else if (!strncmp(ptr1, "http:", 5) )
         {                              /* the 2 //'s are optional */

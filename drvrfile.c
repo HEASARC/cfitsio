@@ -19,7 +19,9 @@
 #endif
 
 #ifdef HAVE_FTRUNCATE
-#include <unistd.h>      /* contains prototype of UNIX file truncate fn  */
+#if defined(unix) || defined(__unix__)  || defined(__unix)
+#include <unistd.h>  /* needed for getcwd prototype on unix machines */
+#endif
 #endif
 
 #define IO_SEEK 0        /* last file I/O operation was a seek */

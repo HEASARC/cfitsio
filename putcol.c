@@ -1054,6 +1054,7 @@ int ffiter(int n_cols,
             unsigned long  ulongnull;
             float  floatnull;
             double doublenull;
+	    LONGLONG longlongnull;
         } null;
     } colNulls;
 
@@ -1103,7 +1104,8 @@ int ffiter(int n_cols,
             type != TSBYTE && type != TLOGICAL && type != TSTRING &&
             type != TSHORT && type != TINT     && type != TLONG && 
             type != TFLOAT && type != TDOUBLE  && type != TCOMPLEX &&
-            type != TULONG && type != TUSHORT  && type != TDBLCOMPLEX)
+            type != TULONG && type != TUSHORT  && type != TDBLCOMPLEX &&
+	    type != TLONGLONG )
         {
 	    if (type < 0) {
 	      sprintf(message,
@@ -1311,6 +1313,9 @@ int ffiter(int n_cols,
                  break;
              case DOUBLE_IMG:
                  typecode = TDOUBLE;
+                 break;
+             case LONGLONG_IMG:
+                 typecode = TLONGLONG;
                  break;
             }
         }
@@ -1666,6 +1671,21 @@ int ffiter(int n_cols,
 
           /* use value = 2 to flag null values in logical columns */
           col[jj].null.charnull = 2;
+          break;
+
+         case TLONGLONG:
+          cols[jj].array = calloc(ntodo + 1, sizeof(LONGLONG));
+          col[jj].nullsize  = sizeof(LONGLONG);  /* number of bytes per value */
+
+          if (abs(typecode) == TBYTE || abs(typecode) == TSHORT || abs(typecode) == TLONG ||
+	      abs(typecode) == TLONGLONG)
+          {
+              col[jj].null.longlongnull = tnull;
+          }
+          else
+          {
+              col[jj].null.longlongnull = LONGLONG_MIN;   /* use minimum as null */
+          }
           break;
 
          default:

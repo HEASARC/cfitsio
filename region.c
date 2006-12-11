@@ -207,7 +207,8 @@ int ffrrgn( const char *filename,
 				namePtr += 5;
 				cFmt = degree_fmt;
 
-            /* the following 4 cases support region files created by POW which
+            /* the following 5 cases support region files created by POW 
+	       (or ds9 Version 4.x) which
                may have lines containing  only a format code, not followed
                by a ';' (and with no region specifier on the line).  We use
                the 'continue' statement to jump to the end of the loop and
@@ -225,17 +226,20 @@ int ffrrgn( const char *filename,
             } else if( !strncasecmp( namePtr, "image", 5 ) ) {
 				cFmt = pixel_fmt;
                                 continue;  /* supports POW region file format */
+            } else if( !strncasecmp( namePtr, "physical", 8 ) ) {
+				cFmt = pixel_fmt;
+                                continue;  /* supports POW region file format */
 
 
             } else if( !strncasecmp( namePtr, "galactic;", 9 ) ) {
                ffpmsg( "Galactic region coordinates not supported" );
                ffpmsg( namePtr );
-			   *status = PARSE_SYNTAX_ERR;
+               *status = PARSE_SYNTAX_ERR;
                goto error;
-			} else if( !strncasecmp( namePtr, "ecliptic;", 9 ) ) {
+            } else if( !strncasecmp( namePtr, "ecliptic;", 9 ) ) {
                ffpmsg( "ecliptic region coordinates not supported" );
                ffpmsg( namePtr );
-			   *status = PARSE_SYNTAX_ERR;
+               *status = PARSE_SYNTAX_ERR;
                goto error;
             }
 

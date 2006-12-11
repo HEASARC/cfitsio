@@ -300,6 +300,39 @@ int ffcpdt(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffwrhdu(fitsfile *infptr,    /* I - FITS file pointer to input file  */
+            FILE *outstream,     /* I - stream to write HDU to */
+            int *status)         /* IO - error status     */
+{
+/*
+  write the data unit from the CHDU of infptr to the output file stream
+*/
+    long nb, ii;
+    LONGLONG hdustart, hduend;
+    char buffer[2880];
+
+    if (*status > 0)
+        return(*status);
+
+    ffghadll(infptr, &hdustart,  NULL, &hduend, status);
+
+    nb = (long) ((hduend - hdustart) / 2880);  /* number of blocks to copy */
+
+    if (nb > 0)
+    {
+
+        /* move to the start of the HDU */
+        ffmbyt(infptr,  hdustart,  REPORT_EOF, status);
+
+        for (ii = 0; ii < nb; ii++)
+        {
+            ffgbyt(infptr,  2880L, buffer, status); /* read input block */
+            fwrite(buffer, 1, 2880, outstream ); /* write to output stream */
+        }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffiimg(fitsfile *fptr,      /* I - FITS file pointer           */
            int bitpix,          /* I - bits per pixel              */
            int naxis,           /* I - number of axes in the array */

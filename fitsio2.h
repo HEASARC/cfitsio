@@ -67,19 +67,24 @@
 #elif defined(_SX)             /* Nec SuperUx */
 
 #define BYTESWAPPED FALSE
+#define MACHINE NATIVE
 #define LONGSIZE 64
 
 #elif defined(__powerpc64__) || defined(__64BIT__) /* IBM 64-bit AIX powerpc*/
                               /* could also test for __ppc64__ or __PPC64 */
 #define BYTESWAPPED FALSE
+#define MACHINE NATIVE
 #define LONGSIZE 64   
-
-/* ============================================================== */
-/* the following block determines the size of longs on SGI IRIX machines */
 
 #elif defined(_MIPS_SZLONG)
 
-#define BYTESWAPPED FALSE
+#  if defined(MIPSEL)
+#    define BYTESWAPPED TRUE
+#  else
+#    define BYTESWAPPED FALSE
+#    define MACHINE NATIVE
+#  endif
+
 #  if _MIPS_SZLONG == 32
 #    define LONGSIZE 32
 #  elif _MIPS_SZLONG == 64
@@ -125,16 +130,22 @@
  
 #elif defined(__i386) || defined(__i386__) || defined(__i486__) || defined(__i586__) \
   || defined(_MSC_VER) || defined(__BORLANDC__) || defined(__TURBOC__) \
-  || defined(_NI_mswin_) || defined(__EMX__) \
-  || defined(MIPSEL)     || defined(arm)
+  || defined(_NI_mswin_) || defined(__EMX__)
 
 /*  generic 32-bit IBM PC */
 #define MACHINE IBMPC
 #define BYTESWAPPED TRUE
 
+#elif defined(__arm__)
+
+/* This assumes all ARM are little endian.  In the future, it might be  */
+/* necessary to use  "if defined(__ARMEL__)"  to distinguish little from big. */
+/* (__ARMEL__ would be defined on little-endian, but not on big-endian). */
+
+#define BYTESWAPPED TRUE
+ 
 #else
 
-/* ========================================================================== */
 /*  assume all other machine uses the same IEEE formats as used in FITS files */
 /*  e.g., Macs fall into this category  */
 
@@ -230,8 +241,8 @@
 #endif
 
 #define DULONG_MIN -0.49   /* min double value that fits in an unsigned long */
-#define DLONGLONG_MAX  9.2233720368547752E18 /* max double value  longlong */
-#define DLONGLONG_MIN -9.2233720368547752E18 /* min double value  longlong */
+#define DLONGLONG_MAX  9.2233720368547755807E18 /* max double value  longlong */
+#define DLONGLONG_MIN -9.2233720368547755808E18 /* min double value  longlong */
 #define DUINT_MAX 4294967295.49 /* max dbl that fits in a unsigned 4-byte int */
 #define DUINT_MIN -0.49   /* min dbl that fits in an unsigned 4-byte int */
 #define DINT_MAX  2147483647.49 /* max double value that fits in a 4-byte int */
@@ -1083,7 +1094,6 @@ int ftp_open(char *filename, int rwmode, int *driverhandle);
 int ftp_file_open(char *filename, int rwmode, int *driverhandle);
 int ftp_compress_open(char *filename, int rwmode, int *driverhandle);
 
-
 int uncompress2mem(char *filename, FILE *diskfile,
              char **buffptr, size_t *buffsize,
              void *(*mem_realloc)(void *p, size_t newsize),
@@ -1119,24 +1129,22 @@ int compress2file_from_mem(
              size_t *filesize,   /* O - size of file, in bytes              */
              int *status);
 
-/* ==================== SHARED MEMORY DRIVER SECTION ======================= */
+
+#ifdef HAVE_GSIFTP
+/* prototypes for gsiftp driver I/O routines */
+#include "drvrgsiftp.h"
+#endif
 
 #ifdef HAVE_SHMEM_SERVICES
+/* prototypes for shared memory driver I/O routines  */
 #include "drvrsmem.h"
 #endif
 
-/* ==================== END OF SHARED MEMORY DRIVER SECTION ================ */
-
-#endif
-
-
 #if defined(vms) || defined(__vms) || defined(WIN32) || defined(__WIN32__) || (defined(macintosh) && !defined(TARGET_API_MAC_CARBON))
-
-/* ================================================================== */
 /* A hack for nonunix machines, which lack strcasecmp and strncasecmp */
-/* ================================================================== */
-
 int strcasecmp (const char *s1, const char *s2       );
 int strncasecmp(const char *s1, const char *s2, size_t n);
+#endif
 
+/* end of the entire "ifndef _FITSIO2_H" block */
 #endif

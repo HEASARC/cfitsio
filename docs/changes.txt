@@ -1,5 +1,61 @@
                    Log of Changes Made to CFITSIO
+		   
+Version 3.03 - 11 December 2006
 
+  New Routine
+  
+  - fits_write_hdu writes the current HDU to a FILE stream (e.g. stdout).
+  
+  Changes
+  
+  - modified the region parsing code to support region files where the
+    keyword "physical" is on a separate line preceeding the region shape
+    token. (However, "physical" coordinates are not fully supported, and
+    are treated identically to "image" coordinates).
+    
+  - enhanced the iterator routines to support calculations on 64-bit
+    integer columns and images.  Currently, the values are cast to
+    double precision when doing the calculations, which can cause a
+    loss of precision for integer values greater than about 2**52.
+
+  - added support for accessing FITS files on the computational grid.
+    Giuliano Taffoni and Andrea Barisani, at INAF, University of Trieste,
+    Italy, implemented the necessary I/O driver routines in drvrgsiftp.c.
+
+  - modified the tiled image compression/uncompression routines to 
+    preserve/restore the original CHECKSUM and DATASUM keywords if they
+    exist. (saved as ZHECKSUM and ZDATASUM in the compressed image)
+  
+  - split fits_select_image_section into 2 routines: a higher level routine
+    that creates the output file and copies other HDUs from the input file
+    to the output file, and a lower level routine that extracts the image
+    section from the input image into an output image HDU.
+    
+  - Improved the error messages that get generated if one tries to 
+    use the lexical parser to perform calculations on variable-length
+    array columns.
+
+  - added "#define MACHINE NATIVE" in fitsio2.h for all machies where
+    BYTESWAPPED == FALSE.  This may improve the file writing performance
+    by eliminating the need to allocate a temporary buffer in some cases.
+
+  - modified the configure.in and configure script to fix problems with
+    testing if network services are available, which affects the definition
+    of the HAVE_NET_SERIVES flag.
+
+  - added explicit type casting to all malloc statements, and deleted 
+    declarations of unreferenced variables in the image compression code 
+    to suppress compiler warnings.
+    
+  - fixed incorrect logic in fitsio2.h in the way it determined if numerical
+    values are byteswapped or not on MIPS and ARM architectures.
+
+  - added __BORLANDC__ to the list of environments in fitsio.h that don't
+    use %lld in printf for longlong integers
+    
+  - added "#if defined(unix)" around "#include <usistd.h>" statements in
+    several C source files, to make them compatible with Windows.
+    
 
 Version 3.02 - 18 Sept 2006
 

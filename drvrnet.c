@@ -122,6 +122,12 @@
 $Id$
 
 $Log$
+Revision 3.45  2005/12/21 18:18:01  pence
+New beta 3.005 release.  Contains new cfortran.h to support integer*8
+parameters when calling cfitsio from Fortran tasks.  Also has modified
+fitsio.h file that now assumes that the 'long long' data type is supported
+by the C compiler (which may not be the case for older compilers).
+
 Revision 1.56  2000/01/04 11:58:31  oneel
 Updates so that compressed network files are dealt with regardless of
 their file names and/or mime types.
@@ -163,7 +169,11 @@ Baltimore MD 21218 USA              ¦ http://faxafloi.stsci.edu:4547/
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
+
+#if defined(unix) || defined(__unix__)  || defined(__unix)
+#include <unistd.h>  
+#endif
+
 #include <signal.h>
 #include <setjmp.h>
 #include "fitsio2.h"

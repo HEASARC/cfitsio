@@ -22,7 +22,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
+
+#if defined(unix) || defined(__unix__)  || defined(__unix)
+#include <unistd.h> 
+#endif
 
 
 static int shared_kbase = 0;                    /* base for shared memory handles */

@@ -34,7 +34,7 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.02
+#define CFITSIO_VERSION 3.03
 
 #include <stdio.h>
 
@@ -83,7 +83,7 @@ SERVICES PROVIDED HEREUNDER."
     ||  defined(__sparcv9)  \
     ||  defined(__powerpc64__) || defined(__64BIT__) \
     ||  (defined(_MIPS_SZLONG) &&  _MIPS_SZLONG == 64) \
-    ||  defined( _MSC_VER)
+    ||  defined( _MSC_VER)|| defined(__BORLANDC__)
     
 #   define USE_LL_SUFFIX 0
 #else
@@ -460,6 +460,7 @@ int fits_read_wcstab(fitsfile *fptr, int nwtb, wtbarr *wtb, int *status);
 #define KEY_OUT_BOUNDS    203  /* keyword record number is out of bounds */
 #define VALUE_UNDEFINED   204  /* keyword value field is blank */
 #define NO_QUOTE          205  /* string is missing the closing quote */
+#define BAD_INDEX_KEY     206  /* illegal indexed keyword name */
 #define BAD_KEYCHAR       207  /* illegal character in keyword name or card */
 #define BAD_ORDER         208  /* required keywords out of order */
 #define NOT_POS_INT       209  /* keyword value is not a positive integer */
@@ -985,6 +986,7 @@ int ffcphd(fitsfile *infptr, fitsfile *outfptr, int *status);
 int ffcpdt(fitsfile *infptr, fitsfile *outfptr, int *status);
 int ffchfl(fitsfile *fptr, int *status);
 int ffcdfl(fitsfile *fptr, int *status);
+int ffwrhdu(fitsfile *fptr, FILE *outstream, int *status);
 
 int ffrdef(fitsfile *fptr, int *status);
 int ffhdef(fitsfile *fptr, int morekeys, int *status);
@@ -1691,7 +1693,7 @@ int ffhist(fitsfile **fptr, char *outfile, int imagetype, int naxis,
 
 int fits_select_image_section(fitsfile **fptr, char *outfile,
            char *imagesection, int *status);
-int fits_select_section( fitsfile *infptr, fitsfile *outfptr,
+int fits_copy_image_section(fitsfile *infptr, fitsfile *outfile,
            char *imagesection, int *status);
 
 typedef struct

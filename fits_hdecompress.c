@@ -201,7 +201,7 @@ int *tmp;
 	 * log2n is log2 of max(nx,ny) rounded up to next power of 2
 	 */
 	nmax = (nx>ny) ? nx : ny;
-	log2n = log((float) nmax)/log(2.0)+0.5;
+	log2n = (int) (log((float) nmax)/log(2.0)+0.5);
 	if ( nmax > (1<<log2n) ) {
 		log2n += 1;
 	}
@@ -393,7 +393,7 @@ LONGLONG *tmp;
 	 * log2n is log2 of max(nx,ny) rounded up to next power of 2
 	 */
 	nmax = (nx>ny) ? nx : ny;
-	log2n = log((float) nmax)/log(2.0)+0.5;
+	log2n = (int) (log((float) nmax)/log(2.0)+0.5);
 	if ( nmax > (1<<log2n) ) {
 		log2n += 1;
 	}
@@ -1294,7 +1294,7 @@ unsigned char *scratch;
 	 * log2n is log2 of max(nqx,nqy) rounded up to next power of 2
 	 */
 	nqmax = (nqx>nqy) ? nqx : nqy;
-	log2n = log((float) nqmax)/log(2.0)+0.5;
+	log2n = (int) (log((float) nqmax)/log(2.0)+0.5);
 	if (nqmax > (1<<log2n)) {
 		log2n += 1;
 	}
@@ -1384,7 +1384,7 @@ unsigned char *scratch;
 	 * log2n is log2 of max(nqx,nqy) rounded up to next power of 2
 	 */
 	nqmax = (nqx>nqy) ? nqx : nqy;
-	log2n = log((float) nqmax)/log(2.0)+0.5;
+	log2n = (int) (log((float) nqmax)/log(2.0)+0.5);
 	if (nqmax > (1<<log2n)) {
 		log2n += 1;
 	}

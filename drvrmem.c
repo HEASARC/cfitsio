@@ -213,7 +213,7 @@ int mem_createmem(size_t msize, int *handle)
     /* allocate initial block of memory for the file */
     if (msize > 0)
     {
-        memTable[ii].memaddr = malloc(msize); 
+        memTable[ii].memaddr = (char *) malloc(msize); 
         if ( !(memTable[ii].memaddr) )
         {
             ffpmsg("malloc of initial memory failed (mem_createmem)");

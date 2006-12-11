@@ -60,12 +60,13 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.02;
+      *version = (float) 3.03;
 
-/*     18 Sept 2006
+/*     11 Dec 2006
 
 
    Previous releases:
+      *version = 3.02    18 Sep 2006
       *version = 3.01       May 2006 included in FTOOLS 6.1 release
       *version = 3.006   20 Feb 2006 
       *version = 3.005   20 Dec 2005 (beta, in heasoft swift release
@@ -5173,7 +5174,7 @@ int ffcmph(fitsfile *fptr,  /* I -FITS file pointer                         */
         return(*status);
     }
 
-    buffer = malloc(buffsize);  /* allocate initial buffer */
+    buffer = (char *) malloc(buffsize);  /* allocate initial buffer */
     if (!buffer)
     {
         sprintf(message,"Failed to allocate buffer to copy the heap");

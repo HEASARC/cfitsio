@@ -509,9 +509,10 @@ int ffcalc_rng( fitsfile *infptr,   /* I - Input FITS file                  */
    char card[81], tform[16], nullKwd[9], tdimKwd[9];
 
    if( *status ) return( *status );
-   
+
    if( ffiprs( infptr, 0, expr, MAXDIMS, &Info.datatype, &nelem, &naxis,
                naxes, status ) ) {
+
       ffcprs();
       return( *status );
    }
@@ -570,6 +571,7 @@ int ffcalc_rng( fitsfile *infptr,   /* I - Input FITS file                  */
                case TDOUBLE:   strcat(tform,"D");  break;
                case TSTRING:   strcat(tform,"A");  break;
                case TBIT:      strcat(tform,"X");  break;
+               case TLONGLONG: strcat(tform,"K");  break;
                }
             } else {
                switch( Info.datatype ) {
@@ -601,7 +603,7 @@ int ffcalc_rng( fitsfile *infptr,   /* I - Input FITS file                  */
          if( ffgcrd( outfptr, nullKwd, card, status )==KEY_NO_EXIST ) {
             *status = 0;
             if( gParse.hdutype==BINARY_TBL ) {
-               long nullVal=0;
+	       LONGLONG nullVal=0;
                fits_binary_tform( parInfo, &typecode, &repeat, &width, status );
                if( typecode==TBYTE )
                   nullVal = UCHAR_MAX;
@@ -611,6 +613,9 @@ int ffcalc_rng( fitsfile *infptr,   /* I - Input FITS file                  */
                   nullVal = INT_MIN;
                else if( typecode==TLONG )
                   nullVal = LONG_MIN;
+               else if( typecode==TLONGLONG )
+                  nullVal = LONGLONG_MIN;
+		  
                if( nullVal ) {
                   ffpkyj( outfptr, nullKwd, nullVal, "Null value", status );
                   fits_set_btblnull( outfptr, colNo, nullVal, status );
@@ -952,7 +957,8 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
     /* declare variables static to preserve their values between calls */
     static void *Data, *Null;
     static int  datasize;
-    static long lastRow, jnull, repeat, resDataSize;
+    static long lastRow, repeat, resDataSize;
+    LONGLONG jnull;
     static parseInfo *userInfo;
     static long zeros[4] = {0,0,0,0};
 
@@ -990,21 +996,21 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
           /* Check for a TNULL/BLANK keyword for output column/image */
 
           status = 0;
-          jnull = 0L;
+          jnull = 0;
           if (gParse.hdutype == IMAGE_HDU) {
              if (gParse.pixFilter->blank)
-                jnull = gParse.pixFilter->blank;
+                jnull = (LONGLONG) gParse.pixFilter->blank;
           }
           else {
-             ffgknj( outcol->fptr, "TNULL", outcol->colnum,
+             ffgknjj( outcol->fptr, "TNULL", outcol->colnum,
                         1, &jnull, (int*)&jj, &status );
 
              if( status==BAD_INTKEY ) {
                 /*  Probably ASCII table with text TNULL keyword  */
                 switch( userInfo->datatype ) {
-                   case TSHORT:  jnull = SHRT_MIN;      break;
-                   case TINT:    jnull = INT_MIN;       break;
-                   case TLONG:   jnull = LONG_MIN;      break;
+                   case TSHORT:  jnull = (LONGLONG) SHRT_MIN;      break;
+                   case TINT:    jnull = (LONGLONG) INT_MIN;       break;
+                   case TLONG:   jnull = (LONGLONG) LONG_MIN;      break;
                 }
              }
           }
@@ -1028,6 +1034,7 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
        case TSHORT:    datasize = sizeof(short);    break;
        case TINT:      datasize = sizeof(int);      break;
        case TLONG:     datasize = sizeof(long);     break;
+       case TLONGLONG: datasize = sizeof(LONGLONG); break;
        case TFLOAT:    datasize = sizeof(float);    break;
        case TDOUBLE:   datasize = sizeof(double);   break;
        case TSTRING:   datasize = sizeof(char*);    break;
@@ -1060,6 +1067,7 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
        case TSHORT:   *(short *)Null = (short)jnull;    break;
        case TINT:     *(int   *)Null = (int  )jnull;    break;
        case TLONG:    *(long  *)Null = (long )jnull;    break;
+       case TLONGLONG: *(LONGLONG  *)Null = (LONGLONG )jnull;    break;
        case TFLOAT:   *(float *)Null = FLOATNULLVALUE;  break;
        case TDOUBLE:  *(double*)Null = DOUBLENULLVALUE; break;
        case TSTRING: (*(char **)Null)[0] = '\1';
@@ -1082,7 +1090,6 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
 
     remain = nrows;
     while( remain ) {
-
        ntodo = minvalue(remain,2500);
        Evaluate_Parser ( firstrow, ntodo );
        if( gParse.status ) break;
@@ -1667,6 +1674,42 @@ int ffcvtn( int   inputType,  /* I - Data type of input array               */
       for(i=0;i<ntodo;i++) {
          if( undef[i] ) {
             ((long*)output)[i] = *(long*)nulval;
+            *anynull = 1;
+         }
+      }
+      break;
+
+   case TLONGLONG:
+      switch( inputType ) {
+      case TLOGICAL:
+      case TBYTE:
+         for( i=0; i<ntodo; i++ )
+            ((LONGLONG*)output)[i] = ((unsigned char*)input)[i];
+         break;
+      case TSHORT:
+         for( i=0; i<ntodo; i++ )
+            ((LONGLONG*)output)[i] = ((short*)input)[i];
+         break;
+      case TLONG:
+         for( i=0; i<ntodo; i++ )
+            ((LONGLONG*)output)[i] = ((long*)input)[i];
+         break;
+      case TFLOAT:
+         fffr4i8((float*)input,ntodo,1.,0.,0,0,NULL,NULL,
+                 (LONGLONG*)output,status);
+         break;
+      case TDOUBLE:
+         fffr8i8((double*)input,ntodo,1.,0.,0,0,NULL,NULL,
+                 (LONGLONG*)output,status);
+
+         break;
+      default:
+         *status = BAD_DATATYPE;
+         break;
+      }
+      for(i=0;i<ntodo;i++) {
+         if( undef[i] ) {
+            ((LONGLONG*)output)[i] = *(LONGLONG*)nulval;
             *anynull = 1;
          }
       }
@@ -2295,6 +2338,10 @@ if (gParse.hdutype != IMAGE_HDU) {
       if( gParse.hdutype == ASCII_TBL ) repeat = width;
       break;
    default:
+      if (typecode < 0) {
+        sprintf(temp, "variable-length array columns are not supported. typecode = %d", typecode);
+        ffpmsg(temp);
+      }
       gParse.status = PARSE_BAD_TYPE;
       return pERROR;
    }

@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large September 2006\\}
+{\Large November 2006\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -142,7 +142,7 @@ Fv and FTOOLS are available from their respective Web sites at:
 
 \section{Acknowledgements}
 
-The development of the powerful features in CFITSIO was made
+The development of the many powerful features in CFITSIO was made
 possible through collaborations with many people or organizations from
 around the world.  The following in particular have made especially
 significant contributions:
@@ -161,6 +161,10 @@ The ISDC also provided the template parsing routines (written by Jurek
 Borkowski) and the hierarchical grouping routines (written by Don
 Jennings).  The ISDC DAL (Data Access Layer) routines are layered on
 top of CFITSIO and make extensive use of these features.
+
+Giuliano Taffoni and Andrea Barisani, at INAF, University of Trieste,
+Italy, implemented the I/O driver routines for accessing FITS files
+on the computational grids using the gridftp protocol.
 
 Uwe Lammers (XMM/ESA/ESTEC, The Netherlands) designed the
 high-performance lexical parsing algorithm that is used to do
@@ -799,7 +803,6 @@ data type of variables when reading or writing keywords or data:
                            /*  and char for table cols   'L' */
   #define TSTRING      16  /* ASCII string,              'A' */
   #define TSHORT       21  /* signed short,              'I' */
-  #define TINT32BIT    41  /* signed 32-bit int,         'J' */
   #define TLONG        41  /* signed long,                   */
   #define TFLOAT       42  /* single precision float,    'E' */
   #define TDOUBLE      82  /* double precision float,    'D' */
@@ -813,6 +816,10 @@ data type of variables when reading or writing keywords or data:
   #define TUSHORT      20  /* unsigned short             'U'  */
   #define TULONG       40  /* unsigned long                  */
   #define TLONGLONG    81  /* 64-bit long signed integer 'K' */
+
+  The following data type code is only for use with fits\_get\_coltype
+  #define TINT32BIT    41  /* signed 32-bit int,         'J' */
+
 
 HDU type code values (value returned when moving to new HDU):
 
@@ -1896,7 +1903,17 @@ or if data has been written to the HDU.
 \end{verbatim}
 
 \begin{description}
-\item[7 ]  Copy the header (and not the data) from the CHDU associated with infptr
+\item[7 ] Write the current HDU in the input FITS file to the
+   output FILE stream (e.g., to stdout). \label{ffwrhdu}
+\end{description}
+
+\begin{verbatim}
+  int fits_write_hdu / ffwrhdu
+      (fitsfile *infptr, FILE *stream, > int *status)
+\end{verbatim}
+
+\begin{description}
+\item[8 ]  Copy the header (and not the data) from the CHDU associated with infptr
     to the CHDU associated with outfptr.  If the current output HDU
     is not completely empty, then the CHDU will be closed and a new
     HDU will be appended to the output file.   An empty output data unit
@@ -1909,7 +1926,7 @@ or if data has been written to the HDU.
 \end{verbatim}
 
 \begin{description}
-\item[8 ]  Delete the CHDU in the FITS file.  Any following HDUs will be shifted
+\item[9 ]  Delete the CHDU in the FITS file.  Any following HDUs will be shifted
     forward in the file, to fill in the gap created by the deleted
     HDU.  In the case of deleting the primary array (the first HDU in
     the file) then the current primary array will be replace by a null
@@ -2493,6 +2510,25 @@ in the FITS array.
       (fitsfile *fptr, int  datatype, LONGLONG *fpixel, LONGLONG nelements,
        > DTYPE *array, char *nullarray, int *anynul, int *status)
 \end{verbatim}
+
+\begin{description}
+\item[10]  Copy a rectangular section of an image and write it to a new
+     FITS primary image or image extension.  The new image HDU is appended
+     to the end of the output file; all the keywords in the input image
+     will be copied to the output image.  The common WCS keywords will
+     be updated if necessary to correspond to the coordinates of the section.
+     The format of the section expression is
+     same as specifying an image section using the extended file name
+     syntax (see "Image Section" in Chapter 10).
+     (Examples:  "1:100,1:200", "1:100:2, 1:*:2", "*, -*").
+    \label{ffcpimg}
+\end{description}
+
+\begin{verbatim}
+  int fits_copy_image_section / ffcpimg
+      (fitsfile *infptr, fitsfile *outfptr, char *section, int *status)
+\end{verbatim}
+
 
 \section{Image Compression}
 
@@ -6953,6 +6989,8 @@ CFITSIO to read and/or write the file.  Currently supported types are
                    does not  support username:password like the ftp driver.
                    Proxy HTTP survers are supported using the http_proxy
                    environment variable.
+       gsiftp:// - to access files on a computational grid using the
+                   gridftp protocol in the Globus toolkit
         root://  - uses the CERN root protocol for writing as well as
                    reading files over the network.
         shmem:// - opens or creates a file which persists in the computer's
@@ -6977,6 +7015,45 @@ For example
 \end{verbatim}
 will cause CFITSIO to use port 3128 on the heasarc proxy server whenever
 reading a FITS file with HTTP.
+
+
+\subsection{Notes about the gsiftp filetype}
+
+DEPENDENCIES: Globus toolkit (2.4.3 or higher) (GT) should be installed.
+There are two different ways to install GT:
+
+1) goto the globus toolkit web page www.globus.org and follow the
+   download and compilation instructions;
+
+2) goto the Virtual Data Toolkit web page http://vdt.cs.wisc.edu/
+   and follow the instructions (STRONGLY SUGGESTED);
+
+Once a globus client has been installed in your system with a specific flavour
+it is possible to compile and install the CFITSIO libraries.
+Specific configuration flags must be used:
+
+1)  --with-gsiftp[[=PATH]] Enable Globus Toolkit gsiftp protocol support
+    PATH=GLOBUS\_LOCATION i.e. the location of your globus installation
+
+2)  --with-gsiftp-flavour[[=PATH] defines the specific Globus flavour
+        ex. gcc32
+
+Both the flags must be used and it is mandatory to set  both the PATH and the
+flavour.
+
+USAGE: To access files on a gridftp server it is necessary to use a gsiftp prefix:
+
+example: gsiftp://remote\_server\_fqhn/directory/filename
+
+The gridftp driver uses a local buffer on a temporary file the file is located
+in the /tmp directory. If you have special permissions on /tmp or you do not have a /tmp
+directory, it is possible to force another location setting the GSIFTP\_TMPFILE environment
+variable (ex. export GSIFTP\_TMPFILE=/your/location/yourtmpfile).
+
+Grid FTP supports multi channel transfer. By default a single channel transmission is
+available. However, it is possible to modify this behavior setting the GSIFTP\_STREAMS
+environment variable (ex. export GSIFTP\_STREAMS=8).
+
 
 
 \subsection{Notes about the root filetype}
@@ -8672,10 +8749,11 @@ other software systems which do not use the CFITSIO interface.
 \section{64-Bit Long Integers}
 
 CFITSIO supports reading and writing FITS images or table columns containing
-non-standard 64-bit integer data values.
-Under this convention FITS 64-bit images have BITPIX =
+64-bit integer data values. Support for 64-bit integers was added to the
+official FITS Standard in December 2005.
+ FITS 64-bit images have BITPIX =
 64, and the 64-bit binary table columns have TFORMn = 'K'.  CFITSIO also
-supports the non-standard 'Q' variable-length array table column format which is
+supports the 'Q' variable-length array table column format which is
 analogous to the 'P' column format except that the array descriptor
 is stored as a pair of 64-bit integers.
 
@@ -8693,12 +8771,6 @@ or writing FITS 64-bit integer images and columns with data arrays of
 a different integer or floating point datatype, but there is an
 increased risk of loss of numerical precision or
 numerical overflow  in this case.
-
-The Fortran interface to CFITSIO does not currently directly support
-reading or writing 64-bit integer values in FITS files (except
-by implicit conversion to a more standard datatype) because the
-conversion macros in the cfortran.h file which are used by
-CFITSIO do not support 64-bit integers.
 
 
 \section{Long String Keyword Values.}
@@ -9170,6 +9242,7 @@ fits\_copy\_group    & \pageref{ffgtcp} \\
 fits\_copy\_hdu       & \pageref{ffcopy} \\
 fits\_copy\_header    & \pageref{ffcphd} \\
 fits\_copy\_image2cell & \pageref{copycell} \\
+fits\_copy\_image\_section  & \pageref{ffcpimg} \\
 fits\_copy\_key           & \pageref{ffcpky} \\
 fits\_copy\_member    & \pageref{ffgmcp} \\
 fits\_create\_diskfile    & \pageref{ffinit} \\
@@ -9180,10 +9253,10 @@ fits\_create\_img     & \pageref{ffcrim} \\
 fits\_create\_memfile    & \pageref{ffimem} \\
 fits\_create\_tbl     & \pageref{ffcrtb} \\
 fits\_create\_template & \pageref{fftplt} \\
-fits\_date2str  & \pageref{ffdt2s} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+fits\_date2str  & \pageref{ffdt2s} \\
 fits\_decode\_chksum  & \pageref{ffdsum} \\
 fits\_decode\_tdim    & \pageref{ffdtdm} \\
 fits\_delete\_col   & \pageref{ffdcol} \\
@@ -9215,9 +9288,9 @@ fits\_get\_eqcoltype    & \pageref{ffgtcl} \\
 fits\_get\_errstatus  & \pageref{ffgerr} \\
 fits\_get\_hdrpos        & \pageref{ffghps} \\
 fits\_get\_hdrspace      & \pageref{ffghsp} \\
-fits\_get\_hdu\_num    & \pageref{ffghdn} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_get\_hdu\_num    & \pageref{ffghdn} \\
 fits\_get\_hdu\_type   & \pageref{ffghdt} \\
 fits\_get\_hduaddr    & \pageref{ffghad} \\
 fits\_get\_hduaddrll    & \pageref{ffghad} \\
@@ -9249,10 +9322,10 @@ fits\_insert\_group  & \pageref{ffgtis} \\
 fits\_insert\_img     & \pageref{ffiimg} \\
 fits\_insert\_key\_null   & \pageref{ffikyu} \\
 fits\_insert\_key\_TYP    & \pageref{ffikyx} \\
-fits\_insert\_record     & \pageref{ffirec} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_insert\_record     & \pageref{ffirec} \\
 fits\_insert\_rows  & \pageref{ffirow} \\
 fits\_iterate\_data   & \pageref{ffiter} \\
 fits\_make\_keyn      & \pageref{ffkeyn} \\
@@ -9300,10 +9373,10 @@ fits\_read\_errmsg    & \pageref{ffgmsg} \\
 fits\_read\_ext        & \pageref{ffgextn} \\
 fits\_read\_grppar\_TYP  & \pageref{ffggpx} \\
 fits\_read\_img         & \pageref{ffgpv} \\
-fits\_read\_img\_coord & \pageref{ffgics} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+fits\_read\_img\_coord & \pageref{ffgics} \\
 fits\_read\_img\_TYP     & \pageref{ffgpvx} \\
 fits\_read\_imghdr       & \pageref{ffghpr} \\
 fits\_read\_imgnull & \pageref{ffgpf} \\
@@ -9351,10 +9424,10 @@ fits\_test\_heap      & \pageref{fftheap} \\
 fits\_test\_keyword   & \pageref{fftkey} \\
 fits\_test\_record    & \pageref{fftrec} \\
 fits\_time2str  & \pageref{ffdt2s} \\
-fits\_transfer\_member  & \pageref{ffgmtf} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+fits\_transfer\_member  & \pageref{ffgmtf} \\
 fits\_translate\_keyword & \pageref{translatekey} \\
 fits\_update\_card       & \pageref{ffucrd} \\
 fits\_update\_chksum  & \pageref{ffupck} \\
@@ -9387,6 +9460,7 @@ fits\_write\_ext        & \pageref{ffgextn} \\
 fits\_write\_exthdr        & \pageref{ffphps} \\
 fits\_write\_grphdr       & \pageref{ffphpr} \\
 fits\_write\_grppar\_TYP & \pageref{ffpgpx} \\
+fits\_write\_hdu       & \pageref{ffwrhdu} \\
 fits\_write\_history      & \pageref{ffphis} \\
 fits\_write\_img        & \pageref{ffppr} \\
 fits\_write\_img\_null & \pageref{ffppru} \\
@@ -9401,13 +9475,13 @@ fits\_write\_key\_null     & \pageref{ffpkyu} \\
 fits\_write\_key\_template & \pageref{ffpktp} \\
 fits\_write\_key\_triple   & \pageref{ffpkyt} \\
 fits\_write\_key\_unit     & \pageref{ffpunt} \\
-fits\_write\_key\_TYP      & \pageref{ffpkyx} \\
-fits\_write\_keys\_TYP     & \pageref{ffpknx} \\
 
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
 
+fits\_write\_key\_TYP      & \pageref{ffpkyx} \\
+fits\_write\_keys\_TYP     & \pageref{ffpknx} \\
 fits\_write\_null\_img    & \pageref{ffpprn} \\
 fits\_write\_nullrows      & \pageref{ffpclu} \\
 fits\_write\_pix          & \pageref{ffppx} \\
@@ -9436,6 +9510,7 @@ ffcpcl     & \pageref{ffcpcl} \\
 ffcpdt      & \pageref{ffcpdt} \\
 ffcpfl      & \pageref{ffcpfl} \\
 ffcphd   & \pageref{ffcphd} \\
+ffcpimg  & \pageref{ffcpimg} \\
 ffcpky       & \pageref{ffcpky} \\
 ffcrhd     & \pageref{ffcrhd} \\
 ffcrim     & \pageref{ffcrim} \\
@@ -9518,10 +9593,10 @@ ffgmrm   & \pageref{ffgmrm} \\
 ffgmsg    & \pageref{ffgmsg} \\
 ffgmtf  & \pageref{ffgmtf} \\
 ffgncl     & \pageref{ffgnrw} \\
+ffgnrw     & \pageref{ffgnrw} \\
 
 \end{tabular}
 \begin{tabular}{lr}
-ffgnrw     & \pageref{ffgnrw} \\
 ffgnxk      & \pageref{ffgnxk} \\
 ffgpf & \pageref{ffgpf} \\
 ffgpf\_ & \pageref{ffgpfx} \\
@@ -9569,11 +9644,11 @@ ffitab    & \pageref{ffitab} \\
 ffiter   & \pageref{ffiter} \\
 ffiurl & \pageref{ffiurl} \\
 ffkeyn      & \pageref{ffkeyn} \\
+ffmahd     & \pageref{ffmahd} \\
 
 \end{tabular}
 \begin{tabular}{lr}
 
-ffmahd     & \pageref{ffmahd} \\
 ffmcom    & \pageref{ffmcom} \\
 ffmcrd       & \pageref{ffmcrd} \\
 ffmkls    & \pageref{ffmkyx} \\
@@ -9621,11 +9696,11 @@ ffpmsg   & \pageref{ffpmsg} \\
 ffpnul    & \pageref{ffpnul} \\
 ffppn     & \pageref{ffppn} \\
 ffppn\_ & \pageref{ffppnx} \\
+ffppr        & \pageref{ffppr} \\
 
 \end{tabular}
 \begin{tabular}{lr}
 
-ffppr        & \pageref{ffppr} \\
 ffpprn & \pageref{ffpprn} \\
 ffppru & \pageref{ffppru} \\
 ffppr\_    & \pageref{ffpprx} \\
@@ -9672,6 +9747,7 @@ ffurlt  & \pageref{ffurlt} \\
 ffvcks  & \pageref{ffvcks} \\
 ffvers    & \pageref{ffvers} \\
 ffwldp & \pageref{ffwldp} \\
+ffwrhdu  & \pageref{ffwrhdu} \\
 ffxypx & \pageref{ffxypx} \\
 \end{tabular}
 
@@ -9777,7 +9853,7 @@ hdunum   - sequence number of the HDU (Primary array = 1)
 hduok    - was the HDU verification successful (=1) or
            not (= -1).  Equals zero if the CHECKSUM keyword is not present.
 hdusum   - 32 bit 1's complement checksum for the entire CHDU
-hdutype  - type of HDU: IMAGE_HDU (=0), ASCII_TBL (=1), or BINARY_TBL (=2)
+hdutype  - HDU type: IMAGE_HDU (0), ASCII_TBL (1), BINARY_TBL (2), ANY_HDU (-1)
 header   - returned character string containing all the keyword records
 headstart- starting address (in bytes) of the CHDU
 heapsize - size of the binary table heap, in bytes
@@ -9861,6 +9937,7 @@ rowrange - list of rows or row ranges: '3,6-8,12,56-80' or '500-'
 row_status - array of True/False results for each row that was evaluated
 scale    - linear scaling factor; true value = (FITS value) * scale + zero
 second   - second within minute (0 - 60.9999999999) (leap second!)
+section  - section of image to be copied (e.g. 21:80,101:200)
 simple   - TRUE (=1) if FITS file conforms to the Standard, else FALSE (=0)
 space    - number of blank spaces to leave between ASCII table columns
 status   - returned error status code (0 = OK)
@@ -9896,14 +9973,12 @@ typecode - data type code of the table column.  The negative of
                 logical, L              14        TLOGICAL
                 ASCII character, A      16        TSTRING
                 short integer, I        21        TSHORT
-                integer, J              41        TINT32BIT
+                integer, J              41        TINT32BIT (same as TLONG)
                 long long integer, K    81        TLONGLONG
                 real, E                 42        TFLOAT
                 double precision, D     82        TDOUBLE
                 complex, C              83        TCOMPLEX
                 double complex, M      163        TDBLCOMPLEX
-             The TLONGLONG column type is experimental and is not
-             recognized in the official FITS Standard document
 unit     - the physical unit string (e.g., 'km/s') for a keyword
 unused   - number of unused bytes in the binary table heap
 urltype  - the file type of the FITS file (file://, ftp://, mem://, etc.)
@@ -9976,6 +10051,7 @@ improve the readability of their code.
  KEY_OUT_BOUNDS    203    keyword record number is out of bounds
  VALUE_UNDEFINED   204    keyword value field is blank
  NO_QUOTE          205    string is missing the closing quote
+ BAD_INDEX_KEY     206    illegal indexed keyword name (e.g. 'TFORM1000')
  BAD_KEYCHAR       207    illegal character in keyword name or card
  BAD_ORDER         208    required keywords out of order
  NOT_POS_INT       209    keyword value is not a positive integer

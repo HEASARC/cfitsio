@@ -31,7 +31,7 @@ RANLIB =	@RANLIB@
 CC =		@CC@
 CFLAGS =	@CFLAGS@
 FC =		@FC@
-LDFLAGS =	$(CFLAGS) @LDFLAGS@
+LDFLAGS =	$(CFLAGS)
 DEFS =		@DEFS@
 LIBS =		@LIBS@
 FLEX =		flex
@@ -45,8 +45,8 @@ SHLIB_SUFFIX =	@SHLIB_SUFFIX@
 
 
 CORE_SOURCES = 	buffers.c cfileio.c checksum.c compress.c drvrfile.c drvrmem.c \
-		drvrnet.c drvrsmem.c editcol.c edithdu.c eval_l.c eval_y.c \
-		eval_f.c fitscore.c getcol.c getcolb.c getcold.c getcole.c \
+		drvrnet.c drvrsmem.c drvrgsiftp.c editcol.c edithdu.c eval_l.c \
+		eval_y.c eval_f.c fitscore.c getcol.c getcolb.c getcold.c getcole.c \
 		getcoli.c getcolj.c getcolk.c getcoll.c getcols.c getcolsb.c \
 		getcoluk.c getcolui.c getcoluj.c getkey.c group.c grparser.c \
 		histo.c iraffits.c \
@@ -104,6 +104,12 @@ smem:		smem.o libcfitsio.a ${OBJECTS}
 
 testprog:	testprog.o libcfitsio.a ${OBJECTS}
 		${CC} $(CFLAGS) $(DEFS) -o testprog testprog.o -L. -lcfitsio -lm ${LIBS}
+
+fpack:		fpack.o fpackutil.o libcfitsio.a ${OBJECTS}
+		${CC} $(CFLAGS) $(DEFS) -o fpack fpack.o fpackutil.o -L. -lcfitsio -lm ${LIBS}
+
+funpack:	funpack.o fpackutil.o libcfitsio.a ${OBJECTS}
+		${CC} $(CFLAGS) $(DEFS) -o funpack funpack.o fpackutil.o -L. -lcfitsio -lm ${LIBS}
 
 fitscopy:	fitscopy.o libcfitsio.a ${OBJECTS}
 		${CC} $(CFLAGS) $(DEFS) -o fitscopy fitscopy.o -L. -lcfitsio -lm ${LIBS}

@@ -322,7 +322,7 @@ int imcomp_init_table(fitsfile *outfptr,
 {
     char keyname[FLEN_KEYWORD], zcmptype[12];
     int ii, jj, minspace, tempsize, remain, leftspace, ncols, bitpix;
-    long nrows, tsize;
+    long nrows;
     char *ttype[] = {"COMPRESSED_DATA", "UNCOMPRESSED_DATA", "ZSCALE", "ZZERO"};
     char *tform[4];
     char tf0[4], tf1[4], tf2[4], tf3[4];
@@ -571,9 +571,7 @@ int imcomp_calc_max_elem (int comptype, int nx, int zbitpix, int blocksize)
     nx = maximum number of pixels in a tile
     blocksize is only relevant for RICE compression
 */
-{
-    int buffsize;
-    
+{    
     if (comptype == RICE_1)
     {
         return (sizeof(float) * nx + nx / blocksize + 2 + 4);
@@ -596,9 +594,9 @@ int imcomp_calc_max_elem (int comptype, int nx, int zbitpix, int blocksize)
 
         if (zbitpix == 16 || zbitpix == 8)
 	
-            return(nx * 2.2 + 26);   /* will be compressing 16-bit int array */
+            return( (int) (nx * 2.2 + 26));   /* will be compressing 16-bit int array */
         else
-            return(nx * 4.4 + 26);   /* will be compressing 32-bit int array */
+            return( (int) (nx * 4.4 + 26));   /* will be compressing 32-bit int array */
     }
     else
         return(nx * sizeof(int));
@@ -920,7 +918,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
                bscale, bzero, &iminval, &imaxval);
 	       
             /* adjust the hcompress scale by the same scaling factor */
-            if (hcompscale > 1) hcompscale = hcompscale / bscale[0];
+            if (hcompscale > 1) hcompscale = (int) (hcompscale / bscale[0]);
 
           }
           else
@@ -942,7 +940,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
                bscale, bzero, &iminval, &imaxval);
 
             /* adjust the hcompress scale by the same scaling factor */
-            if (hcompscale > 1) hcompscale = hcompscale / bscale[0];
+            if (hcompscale > 1) hcompscale = (int) (hcompscale / bscale[0]);
 
           }
           else
@@ -1649,7 +1647,7 @@ int fits_img_decompress (fitsfile *infptr, /* image (bintable) to uncompress */
       /* header keywords and with no following extension in the FITS file. */
       
       if (hdupos == 1) {  /* are we positioned at the primary array? */
-	if (numkeys <= 7)  { /* is the header practically empty? */
+	if (numkeys <= 10)  { /* is the header practically empty? */
             if (numkeys == 0) { /* primary HDU is completely empty */
 
 	        nullprime = 1;
@@ -2775,8 +2773,8 @@ int imcomp_copy_img2comp(fitsfile *infptr, fitsfile *outfptr, int *status)
 			   {"PCOUNT",  "ZPCOUNT" },  
 			   {"GCOUNT",  "ZGCOUNT" },
 
-			   {"CHECKSUM","-"       },  /* delete checksums */
-			   {"DATASUM", "-"       },
+			   {"CHECKSUM","ZHECKSUM"},  /* save original checksums */
+			   {"DATASUM", "ZDATASUM"},
 			   
 			   {"*",       "+"       }}; /* copy all other keywords */
     int npat;
@@ -2830,7 +2828,9 @@ int imcomp_copy_comp2img(fitsfile *infptr, fitsfile *outfptr,
 			   {"ZEXTEND",   "EXTEND" },
 			   {"ZBLOCKED",  "BLOCKED"},
 			   {"ZPCOUNT",   "PCOUNT" },  
-			   {"ZGCOUNT",   "GCOUNT" }}; 
+			   {"ZGCOUNT",   "GCOUNT" },
+			   {"ZHECKSUM",  "CHECKSUM"},  /* restore original checksums */
+			   {"ZDATASUM",  "DATASUM"}}; 
 
     /* other special keywords */
     char *spkeys[][2] = {
