@@ -2411,12 +2411,7 @@ int fits_select_image_section(
   */
 
     fitsfile *newptr;
-    int ii, hdunum, naxis, bitpix, tstatus, anynull, nkey, numkeys;
-    int klen, kk, jj;
-    long naxes[9], smin, smax, sinc, fpixels[9], lpixels[9], incs[9];
-    long outnaxes[9], outsize, buffsize, dummy[2];
-    char *cptr, keyname[FLEN_KEYWORD], card[FLEN_CARD];
-    double *buffer = 0, crpix, cdelt;
+    int ii, hdunum;
 
     /* create new empty file to hold the image section */
     if (ffinit(&newptr, outfile, status) > 0)
