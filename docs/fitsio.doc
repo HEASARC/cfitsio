@@ -1108,9 +1108,14 @@ ordinary string values less than 68 characters in length.
 
 ***2.  Arrays of Fixed-Length Strings in Binary Tables
 
-The definition of the FITS binary table extension format does not
-provide a simple way to specify that a character column contains an
-array of fixed-length strings.  To support this feature, FITSIO uses a
+CFITSIO supports 2 ways to specify that a character column in a binary
+table contains an array of fixed-length strings.  The first way, which
+is offically supported by the FITS Standard document, uses the TDIMn keyword.
+For example, if TFORMn = '60A' and TDIMn = '(12,5)' then that 
+column will be interpreted as containing an array of 5 strings, each 12
+characters long.
+
+FITSIO also supports a 
 local convention for the format of the TFORMn keyword value of the form
 'rAw' where 'r' is an integer specifying the total width in characters
 of the column, and 'w' is an integer specifying the (fixed) length of
@@ -2885,7 +2890,10 @@ It is recommended that the column names in a given table be unique
     TFORM = 'rAw' where 'r' is the total number of characters (= the width 
     of the column) and 'w' is the width of a unit string within the column.  
     Thus if the column has TFORM = '60A12' then this routine will return 
-    datacode = 16, repeat = 60, and width = 12.
+    datacode = 16, repeat = 60, and width = 12.  (The TDIMn
+    keyword may also be used to specify the unit string length; The pair
+    of keywords TFORMn = '60A' and TDIMn = '(12,5)'  would have the
+    same effect as TFORMn = '60A12').
 
    The second routine, FTEQTY is similar except that in
    the case of scaled integer columns it returns the 'equivalent' data
@@ -4941,6 +4949,15 @@ zero mean and unit standard deviation; randomp(x) produces a Poisson random
 deviate whose expected number of counts is X.  X may be any positive real
 number of expected counts, including fractional values, but the return value
 is an integer.
+
+When the random functions are used in a vector expresion, by default
+the same random value will be used when evalutating each element of the vector.
+If different random numbers are desired, then the name of a vector 
+column should be supplied as the single argument to the random 
+function (e.g., "flux + 0.1 * random(flux)", where "flux' is the
+name of a vector column).  This will create a vector of 
+random numbers that will be used in sequence when evaluating each 
+element of the vector expression.
 
     An alternate syntax for the min and max functions  has only a single
     argument which  should be  a  vector value (see  below).  The result

@@ -785,6 +785,9 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
 
    if( *status ) return( *status );
 
+   /* make sure all internal structures for this HDU are current */
+   if ( ffrdef(fptr, status) ) return(*status);
+
    /*  Initialize the Parser structure  */
 
    gParse.def_fptr   = fptr;

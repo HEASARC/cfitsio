@@ -58,6 +58,9 @@
 /*  Craig B Markwardt Feb 2005  Add ANGSEP() function                   */
 /*  Craig B Markwardt Aug 2005  CIRCLE, BOX, ELLIPSE, NEAR and REGFILTER*/
 /*                              functions now accept vector arguments   */
+/*  Craig B Markwardt Sum 2006  Add RANDOMN() and RANDOMP() functions   */
+/*  Craig B Markwardt Mar 2007  Allow arguments to RANDOM and RANDOMN to*/
+/*                              determine the output dimensions         */
 /*                                                                      */
 /************************************************************************/
 
@@ -472,10 +475,10 @@ expr:    LONG
                   if( SIZE($$)<SIZE($1) )  Copy_Dims($$, $1);
                 }
        | FUNCTION ')'
-                { if (FSTRCMP($1,"RANDOM(") == 0) {
+                { if (FSTRCMP($1,"RANDOM(") == 0) {  /* Scalar RANDOM() */
                      srand( (unsigned int) time(NULL) );
                      $$ = New_Func( DOUBLE, rnd_fct, 0, 0, 0, 0, 0, 0, 0, 0 );
-		  } else if (FSTRCMP($1,"RANDOMN(") == 0) {
+		  } else if (FSTRCMP($1,"RANDOMN(") == 0) {/*Scalar RANDOMN()*/
 		     srand( (unsigned int) time(NULL) );
 		     $$ = New_Func( DOUBLE, gasrnd_fct, 0, 0, 0, 0, 0, 0, 0, 0 );
                   } else {
@@ -573,6 +576,15 @@ expr:    LONG
 		  else if (FSTRCMP($1,"MAX(") == 0)
 		     $$ = New_Func( TYPE($2),  /* Force 1D result */
 				    max1_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		  else if (FSTRCMP($1,"RANDOM(") == 0) { /* Vector RANDOM() */
+                     srand( (unsigned int) time(NULL) );
+                     $$ = New_Func( 0, rnd_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		     TYPE($$) = DOUBLE;
+		  } else if (FSTRCMP($1,"RANDOMN(") == 0) {
+		     srand( (unsigned int) time(NULL) ); /* Vector RANDOMN() */
+		     $$ = New_Func( 0, gasrnd_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		     TYPE($$) = DOUBLE;
+                  } 
   		  else {  /*  These all take DOUBLE arguments  */
 		     if( TYPE($2) != DOUBLE ) $2 = New_Unary( DOUBLE, 0, $2 );
                      if (FSTRCMP($1,"SIN(") == 0)
@@ -3370,6 +3382,8 @@ static void Do_Func( Node *this )
 
    if( this->nSubNodes==0 ) allConst = 0; /* These do produce scalars */
    if( this->operation == poirnd_fct ) allConst = 0;
+   if( this->operation == gasrnd_fct ) allConst = 0;
+   if( this->operation == rnd_fct ) allConst = 0;
 
    if( allConst ) {
 
@@ -3646,16 +3660,16 @@ static void Do_Func( Node *this )
             }
 	    break;
 	 case rnd_fct:
-	    while( row-- ) {
-	       this->value.data.dblptr[row] = ran1();
-	       this->value.undef[row] = 0;
+	   while( elem-- ) {
+	     this->value.data.dblptr[elem] = ran1();
+	     this->value.undef[elem] = 0;
 	    }
 	    break;
 
 	 case gasrnd_fct:
-	    while( row-- ) {
-	       this->value.data.dblptr[row] = gasdev();
-	       this->value.undef[row] = 0;
+	    while( elem-- ) {
+	       this->value.data.dblptr[elem] = gasdev();
+	       this->value.undef[elem] = 0;
 	    }
 	    break;
 

@@ -1653,7 +1653,7 @@ int fits_img_decompress (fitsfile *infptr, /* image (bintable) to uncompress */
 	        nullprime = 1;
 
             } else {
-                fits_get_img_param(outfptr, 9, &bitpix, &naxis, naxes, status);
+                fits_get_img_param(outfptr, MAX_COMPRESS_DIM, &bitpix, &naxis, naxes, status);
 	
 	        if (naxis == 0) /* is this a null image? */
                    nullprime = 1;

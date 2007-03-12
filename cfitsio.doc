@@ -1,7 +1,7 @@
          CFITSIO - An Interface to FITS Format Files for C Programmers
  
                     William D Pence, HEASARC, NASA/GSFC
-                               Version 2.4 
+                               Version 3.0 
  
  
 [Note: This file contains various formatting command symbols ('*', '-')
@@ -2592,14 +2592,17 @@ the first 8 characters, and strongly recommended that the names be
     column element (e.g., a '10D' binary table column will have width =
     8, an ASCII table 'F12.2' column will have width = 12, and a binary
     table'60A' character string  column will have width = 60);  Note that
-    this routine supports the local convention for specifying arrays of
+    CFITSIO supports the local convention for specifying arrays of
     fixed length strings within a binary table character column using
     the syntax TFORM = 'rAw' where 'r' is the total number of characters
     (= the width of the column) and 'w' is the width of a unit string
     within the column.  Thus if the column has TFORM = '60A12' then this
     means that each row of the table contains 5 12-character substrings
     within the 60-character field, and thus in this case this routine will
-    return typecode = TSTRING, repeat = 60, and width = 12.  The number
+    return typecode = TSTRING, repeat = 60, and width = 12.  (The TDIMn
+    keyword may also be used to specify the unit string length; The pair
+    of keywords TFORMn = '60A' and TDIMn = '(12,5)'  would have the
+    same effect as TFORMn = '60A12').  The number
     of substings in any binary table character string field can be
     calculated by (repeat/width).  A null pointer may be given for any of
     the output parameters that are not needed.
@@ -6888,6 +6891,15 @@ produces a Poisson random deviate whose expected number of counts is
 X.  X may be any positive real number of expected counts, including
 fractional values, but the return value is an integer.
 
+When the random functions are used in a vector expresion, by default
+the same random value will be used when evalutating each element of the vector.
+If different random numbers are desired, then the name of a vector 
+column should be supplied as the single argument to the random 
+function (e.g., "flux + 0.1 * random(flux)", where "flux' is the
+name of a vector column).  This will create a vector of 
+random numbers that will be used in sequence when evaluating each 
+element of the vector expression.
+
     An alternate syntax for the min and max functions  has only a single
     argument which  should be  a  vector value (see  below).  The result
     will be the minimum/maximum element contained within the vector.
@@ -7787,10 +7799,15 @@ strings.  This routine can also be used to write ordinary string values
 less than 68 characters in length.
 
 **C.  Arrays of Fixed-Length Strings in Binary Tables
- 
-The definition of the FITS binary table extension format does not
-provide a simple way to specify that a character column contains an
-array of fixed-length strings.  To support this feature, CFITSIO uses a
+
+CFITSIO supports 2 ways to specify that a character column in a binary
+table contains an array of fixed-length strings.  The first way, which
+is offically supported by the FITS Standard document, uses the TDIMn keyword.
+For example, if TFORMn = '60A' and TDIMn = '(12,5)' then that 
+column will be interpreted as containing an array of 5 strings, each 12
+characters long.
+
+CFITSIO also supports a 
 local convention for the format of the TFORMn keyword value of the form
 'rAw' where 'r' is an integer specifying the total width in characters
 of the column, and 'w' is an integer specifying the (fixed) length of
@@ -7803,7 +7820,7 @@ other optional characters may follow the data type code in the TFORM
 keyword, so this local convention is in compliance with the
 FITS standard although other FITS readers may not
 recognize this convention.
- 
+
 The Binary Table definition document that was approved by the IAU in
 1994 contains an appendix describing an alternate convention for
 specifying arrays of fixed or variable length strings in a binary table

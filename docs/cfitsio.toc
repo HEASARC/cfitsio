@@ -110,7 +110,7 @@
 \contentsline {section}{\numberline {12.2}Long String Keyword Values.}{147}
 \contentsline {section}{\numberline {12.3}Arrays of Fixed-Length Strings in Binary Tables}{149}
 \contentsline {section}{\numberline {12.4}Keyword Units Strings}{149}
-\contentsline {section}{\numberline {12.5}HIERARCH Convention for Extended Keyword Names}{149}
+\contentsline {section}{\numberline {12.5}HIERARCH Convention for Extended Keyword Names}{150}
 \contentsline {section}{\numberline {12.6}Tile-Compressed Image Format}{150}
 \contentsline {chapter}{\numberline {13} Optimizing Programs }{153}
 \contentsline {section}{\numberline {13.1}How CFITSIO Manages Data I/O}{153}

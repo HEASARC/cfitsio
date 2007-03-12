@@ -413,7 +413,8 @@ int ffmcrd(fitsfile *fptr,    /* I - FITS file pointer  */
            char *card,        /* I - card string value  */
            int *status)       /* IO - error status      */
 {
-    char tcard[FLEN_CARD];
+    char tcard[FLEN_CARD], valstring[FLEN_CARD], comm[FLEN_CARD], value[FLEN_CARD];
+    int keypos, len;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
@@ -422,6 +423,27 @@ int ffmcrd(fitsfile *fptr,    /* I - FITS file pointer  */
         return(*status);
 
     ffmkey(fptr, card, status);
+
+    /* calc position of keyword in header */
+    keypos = (int) ((((fptr->Fptr)->nextkey) - ((fptr->Fptr)->headstart[(fptr->Fptr)->curhdu])) / 80) + 1;
+
+    ffpsvc(tcard, valstring, comm, status);
+
+    /* check for string value which may be continued over multiple keywords */
+    ffc2s(valstring, value, status);   /* remove quotes and trailing spaces */
+    len = strlen(value);
+
+    while (len && value[len - 1] == '&')  /* ampersand used as continuation char */
+    {
+        ffgcnt(fptr, value, status);
+        if (*value)
+        {
+            ffdrec(fptr, keypos, status);  /* delete the keyword */
+            len = strlen(value);
+        }
+        else   /* a null valstring indicates no continuation */
+            len = 0;
+    }
 
     return(*status);
 }

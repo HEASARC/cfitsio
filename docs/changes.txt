@@ -1,5 +1,36 @@
                    Log of Changes Made to CFITSIO
 		   
+Version 3.04 - 12 March 2007
+
+   - The various table calculator routines (fits_select_rows, etc.) implicitly
+     assumed that the input table has not been modified immediately prior to
+     the call.   To cover cases where the table has been modified a call to 
+     ffrdef has been added to ffprs.
+     
+   - enhanced the random, randomn, and randomp functions in the lexical
+     parser to take a vector column name argument to specify the length
+     of the vector of random numbers that should be generated (provided by
+     Craig Markwardt, GSFC)
+
+   - enhanced the ffmcrd routine (to modify an existing header card) to
+     support long string keywords so that any CONTINUE keywords associated
+     with the previous keyword will be deleted.
+
+   - modified the ffgtbp routine to recognize the TDIMn keyword for 
+     ASCII string columns in a binary table.  The first dimension is
+     taken to be the size of a unit string.   (The TFORMn = 'rAw'
+     syntax may also be used to specify the unit string size).
+     
+   - in fits_img_decompress, the fits_get_img_param function was called
+     with an invalid dimension size, which caused a fatal error on at
+     least 1 platform.
+
+   - in ffopentest, set the status value before returning in case of error.
+   
+   - in the drvrnet.c file, the string terminators needed to be changed
+     from "\n" to "\r\n" to support the strict interpretation of the
+     http and ftp standard that is enforced by some newer web servers.
+
 Version 3.03 - 11 December 2006
 
   New Routine

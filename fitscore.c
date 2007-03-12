@@ -60,12 +60,13 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.03;
+      *version = (float) 3.04;
 
-/*     11 Dec 2006
+/*     12 March 2007
 
 
    Previous releases:
+      *version = 3.03    11 Dec 2006
       *version = 3.02    18 Sep 2006
       *version = 3.01       May 2006 included in FTOOLS 6.1 release
       *version = 3.006   20 Feb 2006 
@@ -4383,7 +4384,7 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
     long width, repeat, nfield, ivalue;
     LONGLONG jjvalue;
     double dvalue;
-    char tvalue[FLEN_VALUE];
+    char tvalue[FLEN_VALUE], *loc;
     char message[FLEN_ERRMSG];
     tcolumn *colptr;
 
@@ -4447,7 +4448,16 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
 
           colptr->tdatatype = datacode; /* store datatype code */
           colptr->trepeat = (LONGLONG) repeat;     /* field repeat count  */
-          colptr->twidth = width;   /*  width of a unit value in chars */
+
+          /* Don't overwrite the unit string width if it was previously */
+	  /* set by a TDIMn keyword and has a legal value */
+          if (datacode == TSTRING) {
+	    if (colptr->twidth == 0 || colptr->twidth > repeat)
+              colptr->twidth = width;   /*  width of a unit string */
+
+          } else {
+              colptr->twidth = width;   /*  width of a unit value in chars */
+          }
         }
     }
     else if(!FSTRNCMP(name + 1, "BCOL", 4) )
@@ -4555,6 +4565,36 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
             colptr->tnull = jjvalue; /* null value for integer column */
         }
     }
+    else if(!FSTRNCMP(name + 1, "DIM", 3) )
+    {
+        if ((fptr->Fptr)->hdutype == ASCII_TBL)  /* ASCII table */
+            return(*status);  /* ASCII tables don't support TDIMn keyword */ 
+
+        /* get the index number */
+        if( ffc2ii(name + 4, &nfield, &tstatus) > 0) /* read index no. */
+            return(*status);    /* must not be an indexed keyword */
+
+        if (nfield < 1 || nfield > (fptr->Fptr)->tfield )  /* out of range */
+            return(*status);
+
+        colptr = (fptr->Fptr)->tableptr;     /* get pointer to columns */
+        colptr = colptr + nfield - 1;   /* point to the correct column */
+
+        /* uninitialized columns have tdatatype set = -9999 */
+        if (colptr->tdatatype != -9999 && colptr->tdatatype != TSTRING)
+	    return(*status);     /* this is not an ASCII string column */
+	   
+        loc = strchr(value, '(' );  /* find the opening parenthesis */
+        if (!loc)
+            return(*status);   /* not a proper TDIM keyword */
+
+        loc++;
+        width = strtol(loc, &loc, 10);  /* read size of first dimension */
+        if (colptr->trepeat != 1 && colptr->trepeat < width)
+	    return(*status);  /* string length is greater than column width */
+
+        colptr->twidth = width;   /* set width of a unit string in chars */
+    }
     else if (!FSTRNCMP(name + 1, "HEAP", 4) )
     {
         if ((fptr->Fptr)->hdutype == ASCII_TBL)  /* ASCII table */
@@ -4576,11 +4616,11 @@ int ffgtbp(fitsfile *fptr,     /* I - FITS file pointer   */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffgcprll( fitsfile *fptr, /* I - FITS file pointer                        */
+int ffgcprll( fitsfile *fptr, /* I - FITS file pointer                      */
         int colnum,     /* I - column number (1 = 1st column of table)      */
-        LONGLONG firstrow,  /* I - first row (1 = 1st row of table)             */
-        LONGLONG firstelem, /* I - first element within vector (1 = 1st)       */
-        LONGLONG nelem,     /* I - number of elements to read or write          */
+        LONGLONG firstrow,  /* I - first row (1 = 1st row of table)         */
+        LONGLONG firstelem, /* I - first element within vector (1 = 1st)    */
+        LONGLONG nelem, /* I - number of elements to read or write          */
         int writemode,  /* I - = 1 if writing data, = 0 if reading data     */
                         /*     If = 2, then writing data, but don't modify  */
                         /*     the returned values of repeat and incre.     */

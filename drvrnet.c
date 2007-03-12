@@ -817,15 +817,15 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
      hosts) */
 
   if (proxy)
-    sprintf(tmpstr,"GET http://%s:%-d%s HTTP/1.0\n",host,port,fn);
+    sprintf(tmpstr,"GET http://%s:%-d%s HTTP/1.0\r\n",host,port,fn);
   else
-    sprintf(tmpstr,"GET %s HTTP/1.0\n",fn);
+    sprintf(tmpstr,"GET %s HTTP/1.0\r\n",fn);
 
-  sprintf(tmpstr1,"User-Agent: HEASARC/CFITSIO/%-8.3f\n",ffvers(&version));
+  sprintf(tmpstr1,"User-Agent: HEASARC/CFITSIO/%-8.3f\r\n",ffvers(&version));
   strcat(tmpstr,tmpstr1);
 
   /* HTTP 1.1 servers require the following 'Host: ' string */
-  sprintf(tmpstr1,"Host: %s:%-d\n\n",host,port);
+  sprintf(tmpstr1,"Host: %s:%-d\r\n\r\n",host,port);
   strcat(tmpstr,tmpstr1);
 
   status = NET_SendRaw(sock,tmpstr,strlen(tmpstr),NET_DEFAULT);

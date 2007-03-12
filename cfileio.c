@@ -392,7 +392,8 @@ int ffopentest(double version,   /* I - CFITSIO version number, from the    */
 	printf("   Version used to build the CFITSIO library   = %f\n",CFITSIO_VERSION);
 	printf("   Version included by the application program = %f\n",version);
 	
-	return(FILE_NOT_OPENED);
+        *status = FILE_NOT_OPENED;
+	return(*status);
     }
 
     /* now call the normal file open routine */
