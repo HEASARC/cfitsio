@@ -258,7 +258,7 @@ case $EXT in
     SHLIB_SUFFIX=".dll"
     ;;
   darwin)
-    SHLIB_LD="cc -dynamiclib"
+    SHLIB_LD="$CC -dynamiclib"
     SHLIB_SUFFIX=".dylib"
     lhea_shlib_cflags="-fPIC -fno-common"
     ;;
