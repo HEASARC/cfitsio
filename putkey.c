@@ -2201,11 +2201,13 @@ int ffphprll( fitsfile *fptr, /* I - FITS file pointer                        */
 
     longbitpix = bitpix;
 
-    /* test for the 2 special cases that represent unsigned integers */
+    /* test for the 3 special cases that represent unsigned integers */
     if (longbitpix == USHORT_IMG)
         longbitpix = SHORT_IMG;
     else if (longbitpix == ULONG_IMG)
         longbitpix = LONG_IMG;
+    else if (longbitpix == SBYTE_IMG)
+        longbitpix = BYTE_IMG;
 
     if (longbitpix != BYTE_IMG && longbitpix != SHORT_IMG && 
         longbitpix != LONG_IMG && longbitpix != LONGLONG_IMG &&
@@ -2331,7 +2333,13 @@ int ffphprll( fitsfile *fptr, /* I - FITS file pointer                        */
         strcpy(comm, "default scaling factor");
         ffpkyg(fptr, "BSCALE", 1.0, 0, comm, status);
     }
-
+    else if (bitpix == SBYTE_IMG)
+    {
+        strcpy(comm, "offset data range to that of signed byte");
+        ffpkyg(fptr, "BZERO", -128., 0, comm, status);
+        strcpy(comm, "default scaling factor");
+        ffpkyg(fptr, "BSCALE", 1.0, 0, comm, status);
+    }
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

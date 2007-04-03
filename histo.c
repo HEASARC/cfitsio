@@ -1033,6 +1033,81 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
        }
     }
 
+    /* convert any TPn_k keywords to PCi_j; the value remains unchanged */
+    /* also convert any TCn_k to CDi_j; the value is modified by n binning size */
+    /* This is a bit of a kludge, and only works for 2D WCS */
+
+    if (histData.haxis == 2) {
+
+      /* PC1_1 */
+      tstatus = 0;
+      ffkeyn("TP", histData.hcolnum[0], card, &tstatus);
+      strcat(card,"_");
+      ffkeyn(card, histData.hcolnum[0], keyname, &tstatus);
+      ffgky(*fptr, TDOUBLE, keyname, &dvalue, card, &tstatus);
+      if (!tstatus) 
+         ffpky(histptr, TDOUBLE, "PC1_1", &dvalue, card, &tstatus);
+
+      tstatus = 0;
+      keyname[1] = 'C';
+      ffgky(*fptr, TDOUBLE, keyname, &dvalue, card, &tstatus);
+      if (!tstatus) {
+         dvalue *=  binsize[0];
+         ffpky(histptr, TDOUBLE, "CD1_1", &dvalue, card, &tstatus);
+      }
+
+      /* PC1_2 */
+      tstatus = 0;
+      ffkeyn("TP", histData.hcolnum[0], card, &tstatus);
+      strcat(card,"_");
+      ffkeyn(card, histData.hcolnum[1], keyname, &tstatus);
+      ffgky(*fptr, TDOUBLE, keyname, &dvalue, card, &tstatus);
+      if (!tstatus) 
+         ffpky(histptr, TDOUBLE, "PC1_2", &dvalue, card, &tstatus);
+ 
+      tstatus = 0;
+      keyname[1] = 'C';
+      ffgky(*fptr, TDOUBLE, keyname, &dvalue, card, &tstatus);
+      if (!tstatus) {
+        dvalue *=  binsize[0];
+        ffpky(histptr, TDOUBLE, "CD1_2", &dvalue, card, &tstatus);
+      }
+       
+      /* PC2_1 */
+      tstatus = 0;
+      ffkeyn("TP", histData.hcolnum[1], card, &tstatus);
+      strcat(card,"_");
+      ffkeyn(card, histData.hcolnum[0], keyname, &tstatus);
+      ffgky(*fptr, TDOUBLE, keyname, &dvalue, card, &tstatus);
+      if (!tstatus) 
+         ffpky(histptr, TDOUBLE, "PC2_1", &dvalue, card, &tstatus);
+ 
+      tstatus = 0;
+      keyname[1] = 'C';
+      ffgky(*fptr, TDOUBLE, keyname, &dvalue, card, &tstatus);
+      if (!tstatus) {
+         dvalue *=  binsize[1];
+         ffpky(histptr, TDOUBLE, "CD2_1", &dvalue, card, &tstatus);
+      }
+       
+       /* PC2_2 */
+      tstatus = 0;
+      ffkeyn("TP", histData.hcolnum[1], card, &tstatus);
+      strcat(card,"_");
+      ffkeyn(card, histData.hcolnum[1], keyname, &tstatus);
+      ffgky(*fptr, TDOUBLE, keyname, &dvalue, card, &tstatus);
+      if (!tstatus) 
+         ffpky(histptr, TDOUBLE, "PC2_2", &dvalue, card, &tstatus);
+        
+      tstatus = 0;
+      keyname[1] = 'C';
+      ffgky(*fptr, TDOUBLE, keyname, &dvalue, card, &tstatus);
+      if (!tstatus) {
+         dvalue *=  binsize[1];
+         ffpky(histptr, TDOUBLE, "CD2_2", &dvalue, card, &tstatus);
+      }
+    }   
+       
     /* finally, close the original file and return ptr to the new image */
     ffclos(*fptr, status);
     *fptr = histptr;

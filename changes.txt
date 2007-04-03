@@ -2,6 +2,13 @@
 		   
 Version 3.04 - 12 March 2007
 
+   - modified putkey.c to support USHORT_IMG when calling fits_create_img
+     to create a signed byte datatype image.
+     
+   - enhanced the column histrogramming function to propagate any TCn_k and
+     TPn_k keywords in the table header to the corresponding CDi_j and PCi_j 
+     keywords in the image header.
+     
    - The various table calculator routines (fits_select_rows, etc.) implicitly
      assumed that the input table has not been modified immediately prior to
      the call.   To cover cases where the table has been modified a call to 
