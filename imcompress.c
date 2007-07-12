@@ -198,6 +198,9 @@ int fits_img_compress(fitsfile *infptr, /* pointer to image to be compressed */
    This routine initializes the output table, copies all the keywords,
    and  loops through the input image, compressing the data and
    writing the compressed tiles to the output table.
+   
+   This is a high level routine that is called by the fpack and funpack
+   FITS compression utilities.
 */
 {
     int bitpix, naxis;
@@ -233,6 +236,10 @@ int fits_img_compress(fitsfile *infptr, /* pointer to image to be compressed */
     /* the compression parameters will be copied to the internal */
     /* fitsfile structure used by CFITSIO */
     ffrdef(outfptr, status);
+
+    /* turn off any intensity scaling (defined by BSCALE and BZERO */
+    /* keywords) so that unscaled values will be written by CFITSIO */
+    ffpscl(outfptr, 1.0, 0.0, status);
 
     /* Read each image tile, compress, and write to a table row. */
     imcomp_compress_image (infptr, outfptr, status);
@@ -842,10 +849,13 @@ int imcomp_compress_tile (fitsfile *outfptr,
     short *cbuf;	/* compressed data */
     short *sbuff;
     unsigned short *usbuff;
+    int *intbuff;
+    unsigned int *uintbuff;
     int clen;		/* size of cbuf */
     int flag = 1; /* true by default; only = 0 if float data couldn't be quantized */
     int iminval = 0, imaxval = 0;  /* min and max quantized integers */
     double bscale[1] = {1.}, bzero[1] = {0.};	/* scaling parameters */
+    double scale, zero;
     int  nelem = 0;		/* number of bytes */
     size_t gzip_nelem = 0;
     long ii, hcomp_len;
@@ -866,50 +876,73 @@ int imcomp_compress_tile (fitsfile *outfptr,
     /*  Note that the calling routine must have allocated the array big enough */
     /* to be able to do this.  */
     
+    /* if the BSCALE and BZERO keywords exist, then the input values must */
+    /* be inverse scaled by this factor, before the values are compressed. */
+    /* (The program may have turned off scaling, which over rides the keywords) */
+    
+        scale = (outfptr->Fptr)->cn_bscale;
+        zero  = (outfptr->Fptr)->cn_bzero;
+	   
     if (datatype == TSHORT)
     {
        sbuff = (short *) tiledata;
        for (ii = tilelen; ii >= 0; ii--)
-            idata[ii] = (int) sbuff[ii];
+            idata[ii] = (int) ((sbuff[ii] - zero) / scale);
     }
     else if (datatype == TUSHORT)
     {
        usbuff = (unsigned short *) tiledata;
        for (ii = tilelen; ii >= 0; ii--)
-            idata[ii] = (int) usbuff[ii];
+            idata[ii] = (int) ((usbuff[ii] - zero) / scale);
+    }
+    else if (datatype == TINT)
+    {
+      if (zero != 0. || scale != 1. ) {
+       intbuff = (int *) tiledata;
+       for (ii = tilelen; ii >= 0; ii--)
+            intbuff[ii] = (int) ((intbuff[ii] - zero) / scale);
+      }
+    }
+    else if (datatype == TUINT)
+    {
+      if (zero != 0. || scale != 1. ) {
+       uintbuff = (unsigned int *) tiledata;
+       for (ii = tilelen; ii >= 0; ii--)
+            uintbuff[ii] = (unsigned int) ((uintbuff[ii] - zero) / scale);
+      }
     }
     else if (datatype == TBYTE)
     {
        usbbuff = (unsigned char *) tiledata;
        for (ii = tilelen; ii >= 0; ii--)
-            idata[ii] = (int) usbbuff[ii];
+            idata[ii] = (int) ((usbbuff[ii] - zero) / scale);
     }
     else if (datatype == TSBYTE)
     {
        sbbuff = (signed char *) tiledata;
        for (ii = tilelen; ii >= 0; ii--)
-            idata[ii] = (int) sbbuff[ii];
+            idata[ii] = (int) ((sbbuff[ii] - zero) / scale);
     }
     else if (datatype == TLONG && sizeof(long) == 8)
     {
        /* warning: potential for data overflow here */
        lbuff = (long *) tiledata;
        for (ii = 0; ii < tilelen; ii++)
-             idata[ii] = (int) lbuff[ii];
+             idata[ii] = (int) ((lbuff[ii] - zero) / scale);
     }
     else if (datatype == TULONG && sizeof(long) == 8)
     {
        /* warning: potential for data overflow here */
        ulbuff = (unsigned long *) tiledata;
        for (ii = 0; ii < tilelen; ii++)
-             idata[ii] = (int) ulbuff[ii];
+             idata[ii] = (int) ((ulbuff[ii] - zero) / scale);
     }
 
     else if (datatype == TFLOAT)
     {
           /* if the tile-compressed table contains zscale and zzero columns */
           /* then scale and quantize the input floating point data.    */
-          /* Otherwise, just truncate the floats to integers.          */
+          /* Otherwise, just truncate the floats to (scaled) integers.     */
           if ((outfptr->Fptr)->cn_zscale > 0)
           {
             /* quantize the float values into integers */
@@ -924,7 +957,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
           else
           {
             for (ii = 0; ii < tilelen; ii++)
-              idata[ii] = (int) (((float *)tiledata)[ii]);
+              idata[ii] = (int) (((( (float *) tiledata)[ii]) -zero) / scale);
           }
     }
     else if (datatype == TDOUBLE)
@@ -946,10 +979,10 @@ int imcomp_compress_tile (fitsfile *outfptr,
           else
           {
             for (ii = 0; ii < tilelen; ii++)
-              idata[ii] = (int) (((double *)tiledata)[ii]);
+              idata[ii] = (int) (((( (double *) tiledata)[ii]) -zero) / scale);
           }
     }
-    else if (datatype != TINT && datatype != TUINT)
+    else 
     {
           ffpmsg("unsupported datatype (imcomp_compress_tile)");
           return(*status = BAD_DATATYPE);
@@ -3225,7 +3258,6 @@ int imcomp_decompress_tile (fitsfile *infptr,
     /* ************************************************************* */
     /* copy the uncompressed tile data to the output buffer, doing */
     /* null checking, datatype conversion and linear scaling, if necessary */
-
 
     if (nulval == 0)
          nulval = &dummy;  /* set address to dummy value */

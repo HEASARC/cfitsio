@@ -34,7 +34,7 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.04
+#define CFITSIO_VERSION 3.05
 
 #include <stdio.h>
 
@@ -621,6 +621,8 @@ int fits_copy_cell2image(fitsfile *fptr, fitsfile *newptr, char *colname,
                       long rownum, int *status);
 int fits_copy_image2cell(fitsfile *fptr, fitsfile *newptr, char *colname,
                       long rownum, int copykeyflag, int *status);
+int fits_copy_pixlist2image(fitsfile *infptr, fitsfile *outfptr, int firstkey,       /* I - first HDU record number to start with */
+           int naxis, int *colnum, int *status);
 int ffimport_file( char *filename, char **contents, int *status );
 int ffrwrg( char *rowlist, LONGLONG maxrows, int maxranges, int *numranges,
       long *minrow, long *maxrow, int *status);
@@ -1682,8 +1684,16 @@ int ffcalc( fitsfile *infptr, char *expr, fitsfile *outfptr,
 
   /* ffhist is not really intended as a user-callable routine */
   /* but it may be useful for some specialized applications   */
+  /* ffhist2 is a newer version which is strongly recommended instead of ffhist */
 
 int ffhist(fitsfile **fptr, char *outfile, int imagetype, int naxis,
+           char colname[4][FLEN_VALUE],
+           double *minin, double *maxin, double *binsizein,
+           char minname[4][FLEN_VALUE], char maxname[4][FLEN_VALUE],
+           char binname[4][FLEN_VALUE], 
+           double weightin, char wtcol[FLEN_VALUE],
+           int recip, char *rowselect, int *status);
+int ffhist2(fitsfile **fptr, char *outfile, int imagetype, int naxis,
            char colname[4][FLEN_VALUE],
            double *minin, double *maxin, double *binsizein,
            char minname[4][FLEN_VALUE], char maxname[4][FLEN_VALUE],
@@ -1695,6 +1705,20 @@ int fits_select_image_section(fitsfile **fptr, char *outfile,
            char *imagesection, int *status);
 int fits_copy_image_section(fitsfile *infptr, fitsfile *outfile,
            char *imagesection, int *status);
+
+int fits_calc_binning(fitsfile *fptr, int naxis, char colname[4][FLEN_VALUE], 
+    double *minin, double *maxin,  double *binsizein,
+    char minname[4][FLEN_VALUE],  char maxname[4][FLEN_VALUE], 
+    char binname[4][FLEN_VALUE],  int *colnum,  long *haxes,  float *amin, 
+    float *amax, float *binsize,  int *status);
+
+int fits_write_keys_histo(fitsfile *fptr,  fitsfile *histptr, 
+      int naxis, int *colnum, int *status);  
+int fits_rebin_wcs( fitsfile *fptr, int naxis, float *amin,  float *binsize, 
+      int *status);      
+int fits_make_hist(fitsfile *fptr, fitsfile *histptr, int bitpix,int naxis,
+     long *naxes,  int *colnum,  float *amin,  float *amax, float *binsize,
+     float weight, int wtcolnum, int recip, char *selectrow, int *status);
 
 typedef struct
 {

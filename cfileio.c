@@ -1135,7 +1135,7 @@ move2hdu:
 
        /* Create the histogram primary array and open it as the current fptr */
        /* This will close the table that was used to create the histogram. */
-       ffhist(fptr, outfile, imagetype, haxis, colname, minin, maxin,
+       ffhist2(fptr, outfile, imagetype, haxis, colname, minin, maxin,
               binsizein, minname, maxname, binname,
               weight, wtcol, recip, rowselect, status);
 

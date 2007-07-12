@@ -2871,9 +2871,7 @@ returned.
 
 Note that the FITS Standard recommends that only letters, digits, and
 the underscore character be used in column names (with no embedded
-spaces in the name).  Trailing blank characters are not significant.
-It is recommended that the column names in a given table be unique
->within the first 8 characters.
+>spaces in the name).  Trailing blank characters are not significant.
 - 
         FTGCNO(unit,casesen,coltemplate, > colnum,status)
         FTGCNN(unit,casesen,coltemplate, > colname,colnum,status)

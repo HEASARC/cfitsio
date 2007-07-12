@@ -421,37 +421,43 @@ int ffgtcs(fitsfile *fptr,    /* I - FITS file pointer           */
 /*
        read the values of the celestial coordinate system keywords
        from a FITS table where the X and Y or RA and DEC coordinates
-       are stored in separate column.  
+       are stored in separate column.  Do this by converting the
+       table to a temporary FITS image, then reading the keywords
+       from the image file.
        These values may be used as input to the subroutines that
        calculate celestial coordinates. (ffxypx, ffwldp)
 */
 {
     char comm[FLEN_COMMENT],ctype[FLEN_VALUE],keynam[FLEN_KEYWORD];
-    int tstatus = 0;
+    int tstatus = 0, colnum[2];
+    long naxes[2];
+    fitsfile *tptr;
 
     if (*status > 0)
        return(*status);
 
-    ffkeyn("TCRVL",xcol,keynam,status);
-    ffgkyd(fptr,keynam,xrval,comm,status);
+    colnum[0] = xcol;
+    colnum[1] = ycol;
+    naxes[0] = 10;
+    naxes[1] = 10;
 
-    ffkeyn("TCRVL",ycol,keynam,status);
-    ffgkyd(fptr,keynam,yrval,comm,status);
+    /* create temporary  FITS file, in memory */
+    ffinit(&tptr, "mem://", status);
+    
+    /* create a temporary image; the datatype and size are not important */
+    ffcrim(tptr, 32, 2, naxes, status);
+    
+    /* now copy the relevant keywords from the table to the image */
+    fits_copy_pixlist2image(fptr, tptr, 9, 2, colnum, status);
 
-    ffkeyn("TCRPX",xcol,keynam,status);
-    ffgkyd(fptr,keynam,xrpix,comm,status);
+    /* write default WCS keywords, if they are not present */
+    fits_write_keys_histo(fptr, tptr, 2, colnum, status);
 
-    ffkeyn("TCRPX",ycol,keynam,status);
-    ffgkyd(fptr,keynam,yrpix,comm,status);
-
-    ffkeyn("TCDLT",xcol,keynam,status);
-    ffgkyd(fptr,keynam,xinc,comm,status);
-
-    ffkeyn("TCDLT",ycol,keynam,status);
-    ffgkyd(fptr,keynam,yinc,comm,status);
-
-    ffkeyn("TCTYP",xcol,keynam,status);
-    ffgkys(fptr,keynam,ctype,comm,status);
+    if (*status > 0)
+       return(*status);
+         
+    /* read the WCS keyword values from the temporary image */
+    ffgics(tptr, xrval, yrval, xrpix, yrpix, xinc, yinc, rot, type, status); 
 
     if (*status > 0)
     {
@@ -460,14 +466,9 @@ int ffgtcs(fitsfile *fptr,    /* I - FITS file pointer           */
       return(*status = NO_WCS_KEY); 
     }
 
-    /* copy the projection type string */
-    strncpy(type, &ctype[4], 4);
-    type[4] = '\0';
-
-    *rot=0.;   /* default rotation is 0  */
-    ffkeyn("TCROT",ycol,keynam,status);
-    ffgkyd(fptr,keynam,rot,comm,&tstatus);  /* keyword may not exist */
-
+    /* delete the temporary file */
+    fits_delete_file(tptr, status);
+    
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

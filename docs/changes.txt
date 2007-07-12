@@ -1,18 +1,43 @@
                    Log of Changes Made to CFITSIO
 		   
-Version 3.04 - 12 March 2007
 
+
+Version 3.05 - 12 July 2007
+
+   - rewrote the fits_read_tbl_coord routine in wcssub.c, that gets the 
+     standard set of WCS keywords appropriate to a pair of columns in a
+     table, to better support the full set of officially approved WCS keywords.  
+     
+   - made significant changes to histo.c, which creates an image by binning
+     columns of a table, to better translate the WCS keywords in the table
+     header into the WCS keywords that are appropriate for an image HDU.
+
+   - modified imcompress.c so that when pixels are written to a 
+     tile-compressed image, the appropriate BSCALE and BZERO values of
+     that image are applied.  This fixes a bug in which writing to
+     an unsigned integer datatype image (with BZERO = 32768) was not
+     done correctly.
+     
+Version 3.04 - 3 April 2007
+
+   - The various table calculator routines (fits_select_rows, etc.) implicitly
+     assumed that the input table has not been modified immediately prior to
+     the call.   To cover cases where the table has been modified a call to 
+     ffrdef has been added to ffprs.  IN UNUSUAL CASES THIS CHANGE COULD 
+     CAUSE CFITSIO TO BEHAVE DIFFERENTLY THAN IN PREVIOUS VERSIONS.  For
+     example, opening a FITS table with this column-editing virtual file
+     expression:
+         myfile.fits[3][col A==X; B = sqrt(X)]
+     no longer works, because the X column does not exist when the 
+     sqrt expression is evaluated.  The correct expression in this case is
+         myfile.fits[3][col A==X; B = sqrt(A)]
+     
    - modified putkey.c to support USHORT_IMG when calling fits_create_img
      to create a signed byte datatype image.
      
    - enhanced the column histrogramming function to propagate any TCn_k and
      TPn_k keywords in the table header to the corresponding CDi_j and PCi_j 
      keywords in the image header.
-     
-   - The various table calculator routines (fits_select_rows, etc.) implicitly
-     assumed that the input table has not been modified immediately prior to
-     the call.   To cover cases where the table has been modified a call to 
-     ffrdef has been added to ffprs.
      
    - enhanced the random, randomn, and randomp functions in the lexical
      parser to take a vector column name argument to specify the length

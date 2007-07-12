@@ -554,8 +554,8 @@ astronomical data analysis software packages.
 A FITS file consists of one or more Header + Data Units (HDUs), where
 the first HDU is called the `Primary HDU', or `Primary Array'.  The
 primary array contains an N-dimensional array of pixels, such as a 1-D
-spectrum, a 2-D image, or a 3-D data cube.  Five different primary
-data types are supported: Unsigned 8-bit bytes, 16 and 32-bit signed
+spectrum, a 2-D image, or a 3-D data cube.  Six different primary
+data types are supported: Unsigned 8-bit bytes, 16-bit, 32-bit, and 64-bit signed
 integers, and 32 and 64-bit floating point reals.  FITS also has a
 convention for storing 16 and 32-bit unsigned integers (see the later
 section entitled `Unsigned Integers' for more details). The primary HDU
@@ -621,7 +621,7 @@ previous Data Unit (or Header Unit if there is no Data Unit).
 The main required keywords in FITS primary arrays or image extensions are:
 \begin{itemize}
 \item
-BITPIX -- defines the data type of the array: 8, 16, 32, -32, -64 for
+BITPIX -- defines the data type of the array: 8, 16, 32, 64, -32, -64 for
 unsigned 8--bit byte, 16--bit signed integer, 32--bit signed integer,
 32--bit IEEE floating point, and 64--bit IEEE double precision floating
 point, respectively.
@@ -704,11 +704,11 @@ BITPIX data type code values for FITS images:
   #define BYTE_IMG      8  /*  8-bit unsigned integers */
   #define SHORT_IMG    16  /* 16-bit   signed integers */
   #define LONG_IMG     32  /* 32-bit   signed integers */
+  #define LONGLONG_IMG 64  /* 64-bit   signed integers */
   #define FLOAT_IMG   -32  /* 32-bit single precision floating point */
   #define DOUBLE_IMG  -64  /* 64-bit double precision floating point */
 
   The following 4 data type codes are also supported by CFITSIO:
-  #define LONGLONG_IMG 64 /* 64-bit long signed integers */
   #define SBYTE_IMG  10   /*  8-bit signed integers, equivalent to */
                           /*  BITPIX = 8, BSCALE = 1, BZERO = -128 */
   #define USHORT_IMG  20  /* 16-bit unsigned integers, equivalent to */
@@ -727,6 +727,7 @@ data type of variables when reading or writing keywords or data:
   #define TSTRING      16  /* ASCII string,              'A' */
   #define TSHORT       21  /* signed short,              'I' */
   #define TLONG        41  /* signed long,                   */
+  #define TLONGLONG    81  /* 64-bit long signed integer 'K' */
   #define TFLOAT       42  /* single precision float,    'E' */
   #define TDOUBLE      82  /* double precision float,    'D' */
   #define TCOMPLEX     83  /* complex (pair of floats)   'C' */
@@ -738,7 +739,6 @@ data type of variables when reading or writing keywords or data:
   #define TUINT        30  /* unsigned int               'V' */
   #define TUSHORT      20  /* unsigned short             'U'  */
   #define TULONG       40  /* unsigned long                  */
-  #define TLONGLONG    81  /* 64-bit long signed integer 'K' */
 
   The following data type code is only for use with fits\_get\_coltype
   #define TINT32BIT    41  /* signed 32-bit int,         'J' */
@@ -846,10 +846,7 @@ The `int' data type may be 2 bytes long on some old PC compilers,
 but otherwise it is nearly always 4 bytes long.   Some 64-bit
 machines, like the Alpha/OSF, define the `short', `int',
 and `long' integer data types to be 2, 4, and 8 bytes long,
-respectively.  The FITS standard only officially supports 2 and 4 byte integer
-data types, however CFITSIO also supports an experimental 8-byte
-integer datatype for FITS images (BITPIX = 64) and FITS table columns
-(TFORMn = 'K').
+respectively. 
 
 Because there is no universal C compiler standard for the name of the
 8-byte integer datatype, the fitsio.h include file typedef's 
@@ -2053,9 +2050,7 @@ in the FITS array.
     given by the BITPIX keyword, with allowed values of BYTE\_IMG (8),
     SHORT\_IMG (16), LONG\_IMG (32), LONGLONG\_IMG (64), 
     FLOAT\_IMG (-32), and DOUBLE\_IMG
-    (-64).  Note that BITPIX = 64 is an experimental 
-    data type that is not currently defined in the FITS standard 
-    document.  It is not recommended for general use.
+    (-64).  
     The second routine is similar, except that if the image pixel
     values are scaled, with non-default values for the BZERO and BSCALE
     keywords, then the routine will return the 'equivalent' data type
@@ -2511,10 +2506,7 @@ efficient block size.
    defined.  The FITS Standard recommends that only letters, digits,
    and the underscore character be used in column names (the ttype
    parameter) with no embedded spaces.  Trailing blank characters are
-   not significant.  It is recommended that all the column names in a
-   given table be unique within the first 8 characters, and strongly
-   recommended that the names be
->  unique within the first 16 characters. \label{ffcrtb}
+>   not significant.   \label{ffcrtb}
 -
   int fits_create_tbl / ffcrtb
       (fitsfile *fptr, int tbltype, LONGLONG naxis2, int tfields, char *ttype[],
@@ -2560,10 +2552,8 @@ COL\_NOT\_FOUND  is returned.
 
 The FITS Standard recommends that only letters, digits, and the
 underscore character be used in column names (with no embedded
-spaces).  Trailing blank characters are not significant.  It is
-recommended that all the column names in a given table be unique within
-the first 8 characters, and strongly recommended that the names be
-> unique within the first 16 characters. \label{ffgcno} \label{ffgcnn}
+spaces).  Trailing blank characters are not significant. 
+>  \label{ffgcno} \label{ffgcnn}
 -
   int fits_get_colnum / ffgcno
       (fitsfile *fptr, int casesen, char *templt, > int *colnum,
@@ -2958,6 +2948,125 @@ and lastrow give the starting and ending row number of each range.
   int fits_test_expr / fftexp
       (fitsfile *fptr, char *expr, > int *datatype, long *nelem, int *naxis,
        long *naxes, int *status)                 
+-
+
+***6.  Column Binning or Histogramming Routines
+
+The following routines may be useful when performing histogramming operations on 
+column(s) of a table to generate an image in a primary array or image extension.
+
+>1   Calculate the histogramming parameters (min, max, and bin size 
+for each axis of the histogram, based on a variety of possible input parameters.
+If the input names of the columns to be binned are null, then the routine will first
+look for the CPREF = "NAME1, NAME2, ..." keyword which lists the preferred
+columns.  If not present, then the routine will assume the column names X, Y, Z, and T
+for up to 4 axes (as specified by the NAXIS parameter).
+
+MININ and MAXIN are input arrays that give the minimum and maximum value for
+the histogram, along each axis.  Alternatively, the name of keywords that give
+the min, max, and binsize may be give with the MINNAME, MAXNAME, and BINNAME
+array parameters.  If the value = DOUBLENULLVALUE and no keyword names are
+given,  then the routine will use the TLMINn and TLMAXn keywords, if present, or the 
+actual min and/or max values in the column.
+
+BINSIZEIN is an array giving the binsize along each axis.  
+If the value =
+DOUBLENULLVALUE, and a keyword name is not specified with BINNAME, 
+then this routine will first look for the TDBINn keyword, or else will
+use a binsize = 1, or a binsize that produces 10 histogram bins, which ever
+is smaller.
+> \label{calcbinning}
+-
+  int fits_calc_binning
+   Input parameters:
+     (fitsfile *fptr,  /* IO - pointer to table to be binned              */
+      int naxis,       /* I - number of axes/columns in the binned image  */
+      char colname[4][FLEN_VALUE],   /* I - optional column names         */
+      double *minin,     /* I - optional lower bound value for each axis  */
+      double *maxin,     /* I - optional upper bound value, for each axis */
+      double *binsizein, /* I - optional bin size along each axis         */
+      char minname[4][FLEN_VALUE], /* I - optional keywords for min       */
+      char maxname[4][FLEN_VALUE], /* I - optional keywords for max       */
+      char binname[4][FLEN_VALUE], /* I - optional keywords for binsize   */
+   Output parameters:
+      int *colnum,     /* O - column numbers, to be binned */
+      long *naxes,     /* O - number of bins in each histogram axis */
+      float *amin,     /* O - lower bound of the histogram axes */
+      float *amax,     /* O - upper bound of the histogram axes */
+      float *binsize,  /* O - width of histogram bins/pixels on each axis */
+      int *status)
+-
+
+>2  Copy the relevant keywords from the header of the table that is being
+binned, to the the header of the output histogram image.  This will not
+copy the table structure keywords (e.g., NAXIS, TFORMn, TTYPEn, etc.) nor
+will it copy the keywords that apply to other columns of the table that are
+not used to create the histogram.  This routine will translate the names of
+the World Coordinate System (WCS) keywords for the binned columns into the
+form that is need for a FITS image (e.g., the TCTYPn table keyword will
+be translated to the CTYPEn image keyword).
+> \label{copypixlist2image}
+-
+  int fits_copy_pixlist2image
+      (fitsfile *infptr,   /* I - pointer to input HDU */
+       fitsfile *outfptr,  /* I - pointer to output HDU */
+       int firstkey,       /* I - first HDU keyword to start with */
+       int naxis,          /* I - number of axes in the image */
+       int *colnum,        /* I - numbers of the columns to be binned  */
+       int *status)        /* IO - error status */
+-
+
+>3  Write a set of default WCS keywords to the histogram header, IF the
+WCS keywords do not already exist.  This will create a linear WCS where
+the coordinate types are equal to the original column names.
+> \label{writekeyshisto}
+-
+  int fits_write_keys_histo
+     (fitsfile *fptr,     /* I - pointer to table to be binned              */
+      fitsfile *histptr,  /* I - pointer to output histogram image HDU      */
+      int naxis,          /* I - number of axes in the histogram image      */
+      int *colnum,        /* I - column numbers of the binned columns       */
+      int *status)     
+-
+
+>4  Update the WCS keywords in a histogram image header that give the location
+of the reference pixel (CRPIXn), and the pixel size (CDELTn), in the binned
+image.
+> \label{rebinwcs}
+-
+  int fits_rebin_wcs
+     (fitsfile *fptr,     /* I - pointer to table to be binned           */
+      int naxis,          /* I - number of axes in the histogram image   */
+      float *amin,        /* I - first pixel include in each axis        */
+      float *binsize,     /* I - binning factor for each axis            */
+      int *status)    
+-
+
+>5  Bin the values in the input table columns, and write the histogram
+array to the output FITS image (histptr).
+> \label{makehist}
+-
+  int fits_make_hist
+   (fitsfile *fptr,    /* I - pointer to table with X and Y cols;      */
+    fitsfile *histptr, /* I - pointer to output FITS image             */
+    int bitpix,        /* I - datatype for image: 16, 32, -32, etc     */
+    int naxis,         /* I - number of axes in the histogram image    */
+    long *naxes,       /* I - size of axes in the histogram image      */
+    int *colnum,       /* I - column numbers (array length = naxis)    */
+    float *amin,       /* I - minimum histogram value, for each axis   */
+    float *amax,       /* I - maximum histogram value, for each axis   */
+    float *binsize,    /* I - bin size along each axis                 */
+    float weight,      /* I - binning weighting factor (FLOATNULLVALUE */
+                       /*     for no weighting)                        */
+    int wtcolnum,      /* I - keyword or col for weight      (or NULL) */
+    int recip,         /* I - use reciprocal of the weight? 0 or 1     */
+    char *selectrow,   /* I - optional array (length = no. of          */
+                       /* rows in the table).  If the element is true  */
+                       /* then the corresponding row of the table will */
+                       /* be included in the histogram, otherwise the  */
+                       /* row will be skipped.  Ingnored if *selectrow */
+                       /* is equal to NULL.                            */
+    int *status)
 -
 
 
@@ -8180,6 +8289,7 @@ fits\_ascii\_tform    & \pageref{ffasfm} \\
 fits\_binary\_tform   & \pageref{ffbnfm} \\
 fits\_calculator     & \pageref{ffcalc} \\
 fits\_calculator\_rng     & \pageref{ffcalcrng} \\
+fits\_calc\_binning & \pageref{calcbinning} \\
 fits\_calc\_rows    & \pageref{ffcrow} \\
 fits\_change\_group  & \pageref{ffgtch} \\
 fits\_clear\_errmark  & \pageref{ffpmrk} \\
@@ -8199,17 +8309,18 @@ fits\_copy\_image2cell & \pageref{copycell} \\
 fits\_copy\_image\_section  & \pageref{ffcpimg} \\
 fits\_copy\_key           & \pageref{ffcpky} \\
 fits\_copy\_member    & \pageref{ffgmcp} \\
+fits\_copy\_pixlist2image & \pageref{copypixlist2image} \\
 fits\_create\_diskfile    & \pageref{ffinit} \\
 fits\_create\_file    & \pageref{ffinit} \\
 fits\_create\_group  & \pageref{ffgtcr} \\
 fits\_create\_hdu     & \pageref{ffcrhd} \\
 fits\_create\_img     & \pageref{ffcrim} \\
 fits\_create\_memfile    & \pageref{ffimem} \\
-fits\_create\_tbl     & \pageref{ffcrtb} \\
-fits\_create\_template & \pageref{fftplt} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+fits\_create\_tbl     & \pageref{ffcrtb} \\
+fits\_create\_template & \pageref{fftplt} \\
 fits\_date2str  & \pageref{ffdt2s} \\
 fits\_decode\_chksum  & \pageref{ffdsum} \\
 fits\_decode\_tdim    & \pageref{ffdtdm} \\
@@ -8240,10 +8351,10 @@ fits\_get\_coltype    & \pageref{ffgtcl} \\
 fits\_get\_compression\_type & \pageref{ffgetcomp} \\
 fits\_get\_eqcoltype    & \pageref{ffgtcl} \\
 fits\_get\_errstatus  & \pageref{ffgerr} \\
-fits\_get\_hdrpos        & \pageref{ffghps} \\
-fits\_get\_hdrspace      & \pageref{ffghsp} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_get\_hdrpos        & \pageref{ffghps} \\
+fits\_get\_hdrspace      & \pageref{ffghsp} \\
 fits\_get\_hdu\_num    & \pageref{ffghdn} \\
 fits\_get\_hdu\_type   & \pageref{ffghdt} \\
 fits\_get\_hduaddr    & \pageref{ffghad} \\
@@ -8274,14 +8385,15 @@ fits\_insert\_col   & \pageref{fficol} \\
 fits\_insert\_cols  & \pageref{fficls} \\
 fits\_insert\_group  & \pageref{ffgtis} \\
 fits\_insert\_img     & \pageref{ffiimg} \\
-fits\_insert\_key\_null   & \pageref{ffikyu} \\
-fits\_insert\_key\_TYP    & \pageref{ffikyx} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_insert\_key\_null   & \pageref{ffikyu} \\
+fits\_insert\_key\_TYP    & \pageref{ffikyx} \\
 fits\_insert\_record     & \pageref{ffirec} \\
 fits\_insert\_rows  & \pageref{ffirow} \\
 fits\_iterate\_data   & \pageref{ffiter} \\
+fits\_make\_hist  & \pageref{makehist} \\
 fits\_make\_keyn      & \pageref{ffkeyn} \\
 fits\_make\_nkey      & \pageref{ffnkey} \\
 fits\_merge\_groups  & \pageref{ffgtmg} \\
@@ -8324,12 +8436,12 @@ fits\_read\_colnull\_TYP    & \pageref{ffgcfx} \\
 fits\_read\_descript & \pageref{ffgdes} \\
 fits\_read\_descripts & \pageref{ffgdes} \\
 fits\_read\_errmsg    & \pageref{ffgmsg} \\
-fits\_read\_ext        & \pageref{ffgextn} \\
-fits\_read\_grppar\_TYP  & \pageref{ffggpx} \\
-fits\_read\_img         & \pageref{ffgpv} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+fits\_read\_ext        & \pageref{ffgextn} \\
+fits\_read\_grppar\_TYP  & \pageref{ffggpx} \\
+fits\_read\_img         & \pageref{ffgpv} \\
 fits\_read\_img\_coord & \pageref{ffgics} \\
 fits\_read\_img\_TYP     & \pageref{ffgpvx} \\
 fits\_read\_imghdr       & \pageref{ffghpr} \\
@@ -8352,6 +8464,7 @@ fits\_read\_tbl\_coord & \pageref{ffgtcs} \\
 fits\_read\_tblbytes    & \pageref{ffgtbb} \\
 fits\_read\_tdim         & \pageref{ffgtdm} \\
 fits\_read\_wcstab       & \pageref{wcstab} \\
+fits\_rebin\_wcs  &  \pageref{rebinwcs} \\
 fits\_remove\_group  & \pageref{ffgtrm} \\
 fits\_remove\_member   & \pageref{ffgmrm} \\
 fits\_reopen\_file      & \pageref{ffreopen} \\
@@ -8374,13 +8487,13 @@ fits\_split\_names    & \pageref{splitnames} \\
 fits\_str2date        & \pageref{ffdt2s} \\
 fits\_str2time        & \pageref{ffdt2s} \\
 fits\_test\_expr      & \pageref{fftexp} \\
+
+\end{tabular}
+\begin{tabular}{lr}
 fits\_test\_heap      & \pageref{fftheap} \\
 fits\_test\_keyword   & \pageref{fftkey} \\
 fits\_test\_record    & \pageref{fftrec} \\
 fits\_time2str  & \pageref{ffdt2s} \\
-
-\end{tabular}
-\begin{tabular}{lr}
 fits\_transfer\_member  & \pageref{ffgmtf} \\
 fits\_translate\_keyword & \pageref{translatekey} \\
 fits\_update\_card       & \pageref{ffucrd} \\
@@ -8425,17 +8538,18 @@ fits\_write\_imgnull\_TYP & \pageref{ffppnx} \\
 fits\_write\_key          & \pageref{ffpky} \\
 fits\_write\_key\_longstr  & \pageref{ffpkls} \\
 fits\_write\_key\_longwarn & \pageref{ffplsw} \\
-fits\_write\_key\_null     & \pageref{ffpkyu} \\
-fits\_write\_key\_template & \pageref{ffpktp} \\
-fits\_write\_key\_triple   & \pageref{ffpkyt} \\
-fits\_write\_key\_unit     & \pageref{ffpunt} \\
 
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
 
+fits\_write\_key\_null     & \pageref{ffpkyu} \\
+fits\_write\_key\_template & \pageref{ffpktp} \\
+fits\_write\_key\_triple   & \pageref{ffpkyt} \\
+fits\_write\_key\_unit     & \pageref{ffpunt} \\
 fits\_write\_key\_TYP      & \pageref{ffpkyx} \\
 fits\_write\_keys\_TYP     & \pageref{ffpknx} \\
+fits\_write\_keys\_histo   & \pageref{writekeyshisto} \\
 fits\_write\_null\_img    & \pageref{ffpprn} \\
 fits\_write\_nullrows      & \pageref{ffpclu} \\
 fits\_write\_pix          & \pageref{ffppx} \\
