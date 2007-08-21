@@ -2391,7 +2391,7 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
-for ac_prog in f77 xlf cf77 gf77 g77 af77 ncf f2c ifort g95
+for ac_prog in f77 g77 g95 gfortran ifort xlf cf77 gf77 af77 ncf f2c
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -3335,8 +3335,8 @@ esac
 
 CFLAGS="$CFLAGS $CFORTRANFLAGS"
 
-case $CC in
-	gcc)
+case $GCC in
+	yes)
 		GCCVERSION="`gcc -dumpversion 2>&1`"
 		echo "cfitsio: == Using gcc version $GCCVERSION"
 
@@ -3352,7 +3352,7 @@ case $CC in
 echo "$as_me: WARNING: This gcc is pretty old. Disabling optimization to be safe." >&2;}
 		fi
 		;;
-	cc)
+	no)
 		echo "cfitsio: Old CFLAGS is $CFLAGS"
 		CFLAGS=`echo $CFLAGS | sed -e "s/-g/-O/"`
 		case $system in
