@@ -4705,15 +4705,43 @@ double angsep_calc(double ra1, double dec1, double ra2, double dec2)
 {
   double cd;
   static double deg = 0;
+  double a, sdec, sra;
+  
   if (deg == 0) deg = ((double)4)*atan((double)1)/((double)180);
   /* deg = 1.0; **** UNCOMMENT IF YOU WANT RADIANS */
 
+
+  
+/*
+This (commented out) algorithm uses the Low of Cosines, which becomes
+ unstable for angles less than 0.1 arcsec. 
+ 
   cd = sin(dec1*deg)*sin(dec2*deg) 
     + cos(dec1*deg)*cos(dec2*deg)*cos((ra1-ra2)*deg);
   if (cd < (-1)) cd = -1;
   if (cd > (+1)) cd = +1;
   return acos(cd)/deg;
+*/
+
+  /* The algorithm is the law of Haversines.  This algorithm is
+     stable even when the points are close together.  The normal
+     Law of Cosines fails for angles around 0.1 arcsec. */
+
+  sra  = sin( (ra2 - ra1)*deg / 2 );
+  sdec = sin( (dec2 - dec1)*deg / 2);
+  a = sdec*sdec + cos(dec1*deg)*cos(dec2*deg)*sra*sra;
+
+  /* Sanity checking to avoid a range error in the sqrt()'s below */
+  if (a < 0) { a = 0; }
+  if (a > 1) { a = 1; }
+
+  return 2.0*atan2(sqrt(a), sqrt(1.0 - a)) / deg;
 }
+
+
+
+
+
 
 static double ran1()
 {

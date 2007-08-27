@@ -344,6 +344,8 @@ int imcomp_init_table(fitsfile *outfptr,
         bitpix = SHORT_IMG;
     else if (inbitpix == ULONG_IMG)
         bitpix = LONG_IMG;
+    else if (inbitpix == SBYTE_IMG)
+        bitpix = BYTE_IMG;
     else 
         bitpix = inbitpix;
 
@@ -559,6 +561,13 @@ int imcomp_init_table(fitsfile *outfptr,
         strcpy(comm, "default scaling factor");
         ffpkyg(outfptr, "BSCALE", 1.0, 0, comm, status);
     }
+    else if (inbitpix == SBYTE_IMG)
+    {
+        strcpy(comm, "offset data range to that of signed byte");
+        ffpkyg(outfptr, "BZERO", -128., 0, comm, status);
+        strcpy(comm, "default scaling factor");
+        ffpkyg(outfptr, "BSCALE", 1.0, 0, comm, status);
+    }
     else if (inbitpix == ULONG_IMG)
     {
         strcpy(comm, "offset data range to that of unsigned long");
@@ -626,6 +635,7 @@ int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr, int *status)
     int anynul, gotnulls = 0, datatype, tstatus, colnum;
     long ii, row, nelem, offset;
     int naxis;
+    double dummy = 0.;
     long maxtilelen, tilelen, incre[] = {1, 1, 1, 1, 1, 1};
     long naxes[MAX_COMPRESS_DIM], fpixel[MAX_COMPRESS_DIM];
     long lpixel[MAX_COMPRESS_DIM], tile[MAX_COMPRESS_DIM];
@@ -747,13 +757,14 @@ int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr, int *status)
           }
           else  /* read all integer data types as int */
           {
+
               ffgsvk(infptr, 1, naxis, naxes, fpixel, lpixel, incre, 
                   0, (int *) tiledata,  &anynul, status);
           }
 
           /* now compress the tile, and write to row of binary table */
           imcomp_compress_tile(outfptr, row, datatype, tiledata, tilelen,
-                               tile[0], tile[1], status);
+                               tile[0], tile[1], 0, &dummy, status);
 
           /* set flag if we found any null values */
           if (anynul)
@@ -777,7 +788,7 @@ int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr, int *status)
 
     free (tiledata);  /* finished with this buffer */
 
-    /* insert ZBLANK keyword if necessary */
+    /* insert ZBLANK keyword if necessary; only for TFLOAT or TDOUBLE images */
     if (gotnulls)
     {
           ffgcrd(outfptr, "ZCMPTYPE", card, status);
@@ -821,6 +832,8 @@ int imcomp_compress_tile (fitsfile *outfptr,
     long tilelen,
     long tilenx,
     long tileny,
+    int nullcheck,
+    void *nullflagval,
     int *status)
 
 /*
@@ -864,80 +877,117 @@ int imcomp_compress_tile (fitsfile *outfptr,
     unsigned char *usbbuff;
     long *lbuff;
     unsigned long *ulbuff;
-    int hcompscale;
-    
+    int hcompscale, cn_zblank, zbitpix, nullval, flagval = 0;
+    float floatnull;
+    double doublenull;
+
     if (*status > 0)
         return(*status);
-    
+
     idata = (int *) tiledata;
     hcompscale = (outfptr->Fptr)->hcomp_scale;
+    zbitpix = (outfptr->Fptr)->zbitpix;
 
-    /*  convert input tile array in place to 4-byte ints for compression */
-    /*  Note that the calling routine must have allocated the array big enough */
-    /* to be able to do this.  */
-    
+    /* if the tile/image has an integer datatype, see if a null value has */
+    /* been defined (with the BLANK keyword in a normal FITS image).  */
+    /* If so, and if the input tile array also contains null pixels, */
+    /* (represented by pixels that have a value = nullflagval) then  */
+    /* any pixels whose value = nullflagval, must be set to the value = nullval */
+    /* before the pixel array is compressed.  These null pixel values must */
+    /* not be inverse scaled by the BSCALE/BZERO values, if present. */
+
+    cn_zblank = (outfptr->Fptr)->cn_zblank;
+    nullval = (outfptr->Fptr)->zblank;
+
+    if (zbitpix > 0 && cn_zblank != -1)  /* If the integer image has no defined null */
+        nullcheck = 0;    /* value, then don't bother checking input array for nulls. */
+
     /* if the BSCALE and BZERO keywords exist, then the input values must */
     /* be inverse scaled by this factor, before the values are compressed. */
     /* (The program may have turned off scaling, which over rides the keywords) */
     
-        scale = (outfptr->Fptr)->cn_bscale;
-        zero  = (outfptr->Fptr)->cn_bzero;
+    scale = (outfptr->Fptr)->cn_bscale;
+    zero  = (outfptr->Fptr)->cn_bzero;
 	   
+
+    /*  convert input tile array in place to 4-byte ints for compression */
+    /*  Note that the calling routine must have allocated the array big enough */
+    /* to be able to do this.  */
+
     if (datatype == TSHORT)
     {
        sbuff = (short *) tiledata;
+       if (nullcheck == 1)
+           flagval = *(short *) (nullflagval);
+       
        for (ii = tilelen; ii >= 0; ii--)
-            idata[ii] = (int) ((sbuff[ii] - zero) / scale);
+	  idata[ii] = (int) (sbuff[ii]);
     }
     else if (datatype == TUSHORT)
     {
        usbuff = (unsigned short *) tiledata;
+       if (nullcheck == 1)
+           flagval = *(unsigned short *) (nullflagval);
+
        for (ii = tilelen; ii >= 0; ii--)
-            idata[ii] = (int) ((usbuff[ii] - zero) / scale);
+            idata[ii] = (int) (usbuff[ii]);
     }
     else if (datatype == TINT)
     {
-      if (zero != 0. || scale != 1. ) {
-       intbuff = (int *) tiledata;
-       for (ii = tilelen; ii >= 0; ii--)
-            intbuff[ii] = (int) ((intbuff[ii] - zero) / scale);
-      }
+       if (nullcheck == 1)
+           flagval = *(int *) (nullflagval);
+         /* no conversion necessary */
     }
     else if (datatype == TUINT)
     {
-      if (zero != 0. || scale != 1. ) {
-       uintbuff = (unsigned int *) tiledata;
-       for (ii = tilelen; ii >= 0; ii--)
-            uintbuff[ii] = (unsigned int) ((uintbuff[ii] - zero) / scale);
-      }
+       if (nullcheck == 1)
+           flagval = *(unsigned int *) (nullflagval);
     }
     else if (datatype == TBYTE)
     {
        usbbuff = (unsigned char *) tiledata;
+       if (nullcheck == 1)
+           flagval = *(unsigned char *) (nullflagval);
        for (ii = tilelen; ii >= 0; ii--)
-            idata[ii] = (int) ((usbbuff[ii] - zero) / scale);
+            idata[ii] = (int) (usbbuff[ii]);
     }
     else if (datatype == TSBYTE)
     {
        sbbuff = (signed char *) tiledata;
+       if (nullcheck == 1)
+           flagval = *(signed char *) (nullflagval);
        for (ii = tilelen; ii >= 0; ii--)
-            idata[ii] = (int) ((sbbuff[ii] - zero) / scale);
+            idata[ii] = (int) (sbbuff[ii]);
     }
     else if (datatype == TLONG && sizeof(long) == 8)
     {
        /* warning: potential for data overflow here */
+       if (nullcheck == 1)
+           flagval = *(long *) (nullflagval);
        lbuff = (long *) tiledata;
        for (ii = 0; ii < tilelen; ii++)
-             idata[ii] = (int) ((lbuff[ii] - zero) / scale);
+             idata[ii] = (int) (lbuff[ii]);
+    }
+    else if (datatype == TLONG)
+    {
+       if (nullcheck == 1)
+           flagval = *(long *) (nullflagval);
     }
     else if (datatype == TULONG && sizeof(long) == 8)
     {
        /* warning: potential for data overflow here */
+       if (nullcheck == 1)
+           flagval = *(unsigned long *) (nullflagval);
        ulbuff = (unsigned long *) tiledata;
        for (ii = 0; ii < tilelen; ii++)
-             idata[ii] = (int) ((ulbuff[ii] - zero) / scale);
+             idata[ii] = (int) (ulbuff[ii]);
     }
-
+    else if (datatype == TULONG)
+    {
+       if (nullcheck == 1)
+           flagval = *(unsigned long *) (nullflagval);
+    }
+    
     else if (datatype == TFLOAT)
     {
           /* if the tile-compressed table contains zscale and zzero columns */
@@ -945,19 +995,28 @@ int imcomp_compress_tile (fitsfile *outfptr,
           /* Otherwise, just truncate the floats to (scaled) integers.     */
           if ((outfptr->Fptr)->cn_zscale > 0)
           {
+            if (nullcheck == 1)
+	      floatnull = *(float *) (nullflagval);
+	    else
+	      floatnull = FLOATNULLVALUE;
+	      
             /* quantize the float values into integers */
             flag = fits_quantize_float ((float *) tiledata, tilelen,
-               FLOATNULLVALUE, (outfptr->Fptr)->noise_nbits, idata,
+               floatnull, (outfptr->Fptr)->noise_nbits, idata,
                bscale, bzero, &iminval, &imaxval);
 	       
             /* adjust the hcompress scale by the same scaling factor */
             if (hcompscale > 1) hcompscale = (int) (hcompscale / bscale[0]);
 
           }
-          else
+          else  /* input float data is implicitly converted to integer image */
           {
-            for (ii = 0; ii < tilelen; ii++)
-              idata[ii] = (int) (((( (float *) tiledata)[ii]) -zero) / scale);
+            if ((scale != 1. || zero != 0.))  /* must scale the values */
+	       imcomp_nullscalefloats((float *) tiledata, tilelen, idata, scale, zero,
+	           nullcheck, *(float *) (nullflagval), nullval, status);
+             else
+	       imcomp_nullfloats((float *) tiledata, tilelen, idata,
+	           nullcheck, *(float *) (nullflagval), nullval,  status);
           }
     }
     else if (datatype == TDOUBLE)
@@ -965,11 +1024,17 @@ int imcomp_compress_tile (fitsfile *outfptr,
           /* if the tile-compressed table contains zscale and zzero columns */
           /* then scale and quantize the input floating point data.    */
           /* Otherwise, just truncate the floats to integers.          */
+
           if ((outfptr->Fptr)->cn_zscale > 0)
           {
+            if (nullcheck == 1)
+	      doublenull = *(double *) (nullflagval);
+	    else
+	      doublenull = DOUBLENULLVALUE;
+	      
             /* quantize the double values into integers */
             flag = fits_quantize_double ((double *) tiledata, tilelen,
-               DOUBLENULLVALUE, (outfptr->Fptr)->noise_nbits, idata,
+               doublenull, (outfptr->Fptr)->noise_nbits, idata,
                bscale, bzero, &iminval, &imaxval);
 
             /* adjust the hcompress scale by the same scaling factor */
@@ -978,8 +1043,12 @@ int imcomp_compress_tile (fitsfile *outfptr,
           }
           else
           {
-            for (ii = 0; ii < tilelen; ii++)
-              idata[ii] = (int) (((( (double *) tiledata)[ii]) -zero) / scale);
+            if ((scale != 1. || zero != 0.))  /* must scale the values */
+	       imcomp_nullscaledoubles((double *) tiledata, tilelen, idata, scale, zero,
+	           nullcheck, *(double *) (nullflagval), nullval, status);
+             else
+	       imcomp_nulldoubles((double *) tiledata, tilelen, idata,
+	           nullcheck, *(double *) (nullflagval), nullval,  status);
           }
     }
     else 
@@ -987,6 +1056,26 @@ int imcomp_compress_tile (fitsfile *outfptr,
           ffpmsg("unsupported datatype (imcomp_compress_tile)");
           return(*status = BAD_DATATYPE);
     }
+
+    if (datatype < TFLOAT) {  /* see if we need to test for null values, or */
+                              /* scale the data values before compression */
+    
+        if (zbitpix < 0 )  /* If writing an integer input array to a float or double */
+             nullval = -2147483647;  /* choose an arbitrary value for null pixels.  */
+
+        if (nullval == flagval)  /* If the flag value is the same as the */
+            nullcheck = 0;          /*  null value, then no need to test nulls.  */
+
+        if ((nullcheck ==1)  && (scale != 1. || zero != 0.))  /* do both */
+	   imcomp_nullscale(idata, tilelen, flagval, nullval,
+	       scale, zero, status);
+
+        else if (nullcheck == 1)   /* just do null value substitution */
+	   imcomp_nullvalues(idata, tilelen, flagval, nullval, status);
+
+        else if (scale != 1. || zero != 0.)   /* just do scaling */
+	   imcomp_scalevalues(idata, tilelen, scale, zero, status);
+    }      
 
     if (flag)   /* we can now compress the int array */
     {
@@ -1103,6 +1192,416 @@ int imcomp_compress_tile (fitsfile *outfptr,
     return (*status);
 }
 /*---------------------------------------------------------------------------*/
+int imcomp_nullscale(
+     int *idata, 
+     long tilelen,
+     int nullflagval,
+     int nullval,
+     double scale,
+     double zero,
+     int *status)
+/*
+   do null value substitution AND scaling of the integer array.
+   If array value = nullflagval, then set the value to nullval.
+   Otherwise, inverse scale the integer value.
+*/
+{
+    long ii;
+    double dvalue;
+    
+    for (ii=0; ii < tilelen; ii++)
+    {
+        if (idata[ii] == nullflagval)
+	    idata[ii] = nullval;
+	else 
+	{
+            dvalue = (idata[ii] - zero) / scale;
+
+            if (dvalue < DINT_MIN)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MIN;
+            }
+            else if (dvalue > DINT_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MAX;
+            }
+            else
+            {
+                if (dvalue >= 0)
+                    idata[ii] = (int) (dvalue + .5);
+                else
+                    idata[ii] = (int) (dvalue - .5);
+            }
+        }
+    }
+    return(*status);
+}
+/*---------------------------------------------------------------------------*/
+int imcomp_nullvalues(
+     int *idata, 
+     long tilelen,
+     int nullflagval,
+     int nullval,
+     int *status)
+/*
+   do null value substitution.
+   If array value = nullflagval, then set the value to nullval.
+*/
+{
+    long ii;
+    
+    for (ii=0; ii < tilelen; ii++)
+    {
+        if (idata[ii] == nullflagval)
+	    idata[ii] = nullval;
+    }
+    return(*status);
+}
+/*---------------------------------------------------------------------------*/
+int imcomp_scalevalues(
+     int *idata, 
+     long tilelen,
+     double scale,
+     double zero,
+     int *status)
+/*
+   do inverse scaling the integer values.
+*/
+{
+    long ii;
+    double dvalue;
+    
+    for (ii=0; ii < tilelen; ii++)
+    {
+            dvalue = (idata[ii] - zero) / scale;
+
+            if (dvalue < DINT_MIN)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MIN;
+            }
+            else if (dvalue > DINT_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MAX;
+            }
+            else
+            {
+                if (dvalue >= 0)
+                    idata[ii] = (int) (dvalue + .5);
+                else
+                    idata[ii] = (int) (dvalue - .5);
+            }
+    }
+    return(*status);
+}
+/*---------------------------------------------------------------------------*/
+int imcomp_nullfloats(
+     float *fdata,
+     long tilelen,
+     int *idata, 
+     int nullcheck,
+     float nullflagval,
+     int nullval,
+     int *status)
+/*
+   do null value substitution  of the float array.
+   If array value = nullflagval, then set the output value to FLOATNULLVALUE.
+   Otherwise, inverse scale the integer value.
+*/
+{
+    long ii;
+    double dvalue;
+    
+    if (nullcheck == 1) /* must check for null values */
+    {
+      for (ii=0; ii < tilelen; ii++)
+      {
+        if (fdata[ii] == nullflagval)
+	    idata[ii] = nullval;
+	else 
+	{
+            dvalue = fdata[ii];
+
+            if (dvalue < DINT_MIN)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MIN;
+            }
+            else if (dvalue > DINT_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MAX;
+            }
+            else
+            {
+                if (dvalue >= 0)
+                    idata[ii] = (int) (dvalue + .5);
+                else
+                    idata[ii] = (int) (dvalue - .5);
+            }
+        }
+      }
+    }
+    else  /* don't have to worry about null values */
+    {
+      for (ii=0; ii < tilelen; ii++)
+      {
+            dvalue = fdata[ii];
+
+            if (dvalue < DINT_MIN)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MIN;
+            }
+            else if (dvalue > DINT_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MAX;
+            }
+            else
+            {
+                if (dvalue >= 0)
+                    idata[ii] = (int) (dvalue + .5);
+                else
+                    idata[ii] = (int) (dvalue - .5);
+            }
+      }
+    }
+    return(*status);
+}
+/*---------------------------------------------------------------------------*/
+int imcomp_nullscalefloats(
+     float *fdata,
+     long tilelen,
+     int *idata, 
+     double scale,
+     double zero,
+     int nullcheck,
+     float nullflagval,
+     int nullval,
+     int *status)
+/*
+   do null value substitution  of the float array.
+   If array value = nullflagval, then set the output value to FLOATNULLVALUE.
+   Otherwise, inverse scale the integer value.
+*/
+{
+    long ii;
+    double dvalue;
+    
+    if (nullcheck == 1) /* must check for null values */
+    {
+      for (ii=0; ii < tilelen; ii++)
+      {
+        if (fdata[ii] == nullflagval)
+	    idata[ii] = nullval;
+	else 
+	{
+            dvalue = (fdata[ii] - zero) / scale;
+
+            if (dvalue < DINT_MIN)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MIN;
+            }
+            else if (dvalue > DINT_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MAX;
+            }
+            else
+            {
+                if (dvalue >= 0)
+                    idata[ii] = (int) (dvalue + .5);
+                else
+                    idata[ii] = (int) (dvalue - .5);
+            }
+        }
+      }
+    }
+    else  /* don't have to worry about null values */
+    {
+      for (ii=0; ii < tilelen; ii++)
+      {
+            dvalue = (fdata[ii] - zero) / scale;
+
+            if (dvalue < DINT_MIN)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MIN;
+            }
+            else if (dvalue > DINT_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MAX;
+            }
+            else
+            {
+                if (dvalue >= 0)
+                    idata[ii] = (int) (dvalue + .5);
+                else
+                    idata[ii] = (int) (dvalue - .5);
+            }
+      }
+    }
+    return(*status);
+}
+/*---------------------------------------------------------------------------*/
+int imcomp_nulldoubles(
+     double *fdata,
+     long tilelen,
+     int *idata, 
+     int nullcheck,
+     double nullflagval,
+     int nullval,
+     int *status)
+/*
+   do null value substitution  of the float array.
+   If array value = nullflagval, then set the output value to FLOATNULLVALUE.
+   Otherwise, inverse scale the integer value.
+*/
+{
+    long ii;
+    double dvalue;
+    
+    if (nullcheck == 1) /* must check for null values */
+    {
+      for (ii=0; ii < tilelen; ii++)
+      {
+        if (fdata[ii] == nullflagval)
+	    idata[ii] = nullval;
+	else 
+	{
+            dvalue = fdata[ii];
+
+            if (dvalue < DINT_MIN)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MIN;
+            }
+            else if (dvalue > DINT_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MAX;
+            }
+            else
+            {
+                if (dvalue >= 0)
+                    idata[ii] = (int) (dvalue + .5);
+                else
+                    idata[ii] = (int) (dvalue - .5);
+            }
+        }
+      }
+    }
+    else  /* don't have to worry about null values */
+    {
+      for (ii=0; ii < tilelen; ii++)
+      {
+            dvalue = fdata[ii];
+
+            if (dvalue < DINT_MIN)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MIN;
+            }
+            else if (dvalue > DINT_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MAX;
+            }
+            else
+            {
+                if (dvalue >= 0)
+                    idata[ii] = (int) (dvalue + .5);
+                else
+                    idata[ii] = (int) (dvalue - .5);
+            }
+      }
+    }
+    return(*status);
+}
+/*---------------------------------------------------------------------------*/
+int imcomp_nullscaledoubles(
+     double *fdata,
+     long tilelen,
+     int *idata, 
+     double scale,
+     double zero,
+     int nullcheck,
+     double nullflagval,
+     int nullval,
+     int *status)
+/*
+   do null value substitution  of the float array.
+   If array value = nullflagval, then set the output value to FLOATNULLVALUE.
+   Otherwise, inverse scale the integer value.
+*/
+{
+    long ii;
+    double dvalue;
+    
+    if (nullcheck == 1) /* must check for null values */
+    {
+      for (ii=0; ii < tilelen; ii++)
+      {
+        if (fdata[ii] == nullflagval)
+	    idata[ii] = nullval;
+	else 
+	{
+            dvalue = (fdata[ii] - zero) / scale;
+
+            if (dvalue < DINT_MIN)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MIN;
+            }
+            else if (dvalue > DINT_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MAX;
+            }
+            else
+            {
+                if (dvalue >= 0)
+                    idata[ii] = (int) (dvalue + .5);
+                else
+                    idata[ii] = (int) (dvalue - .5);
+            }
+        }
+      }
+    }
+    else  /* don't have to worry about null values */
+    {
+      for (ii=0; ii < tilelen; ii++)
+      {
+            dvalue = (fdata[ii] - zero) / scale;
+
+            if (dvalue < DINT_MIN)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MIN;
+            }
+            else if (dvalue > DINT_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = INT32_MAX;
+            }
+            else
+            {
+                if (dvalue >= 0)
+                    idata[ii] = (int) (dvalue + .5);
+                else
+                    idata[ii] = (int) (dvalue - .5);
+            }
+      }
+    }
+    return(*status);
+}
+/*---------------------------------------------------------------------------*/
 int fits_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer     */
             int  datatype,   /* I - datatype of the array to be written      */
             long  *infpixel, /* I - 'bottom left corner' of the subsection   */
@@ -1112,7 +1611,7 @@ int fits_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer     */
                              /*     written with the FITS null pixel value   */
                              /*     (floating point arrays only)             */
             void *array,     /* I - array of values to be written            */
-            void *nullval,   /* I - undefined pixel value (floating pt only) */
+            void *nullval,   /* I - undefined pixel value                    */
             int  *status)    /* IO - error status                            */
 /*
    Write a section of a compressed image.
@@ -1288,7 +1787,6 @@ int fits_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer     */
               /* read and uncompress this row (tile) of the table */
               /* also do type conversion and undefined pixel substitution */
               /* at this point */
-
               imcomp_decompress_tile(fptr, irow, thistilesize[0],
                     datatype, nullcheck, nullval, buffer, bnullarray, &tilenul,
                      status);
@@ -1304,14 +1802,13 @@ int fits_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer     */
               imcomp_merge_overlap(buffer, pixlen, ndim, tfpixel, tlpixel, 
                      bnullarray, array, fpixel, lpixel, nullcheck, status);
 
-
               /* compress the tile again, and write it back to the FITS file */
               imcomp_compress_tile (fptr, irow, datatype, buffer, 
                                     thistilesize[0],
 				    tlpixel[0] - tfpixel[0] + 1,
 				    tlpixel[1] - tfpixel[1] + 1,
+				    nullcheck, nullval, 
 				    status);
-
             }
           }
         }
@@ -1320,62 +1817,30 @@ int fits_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer     */
     }
     free(buffer);
     
-    /*
-      if the input array has a floating point datatype, and if *nullval
-      is not equal to zero, and if there are any pixels in the array that
-      are equal to the value of *nullval, then we need to make sure that the
-      ZBLANK keyword is present in the compressed image header.  If it is not
-      there then we need to insert the keyword.      
-    */
-    if (datatype >= TFLOAT && nullval != 0) { 
-     /* OK, this is a floating point data type, with a null value */
 
-      if (datatype == TFLOAT)
-	   floatnull = *((float *) nullval);
-      else if (datatype == TDOUBLE)
-	   doublenull = *((double *) nullval);
-      if (floatnull != 0. || doublenull != 0.) {
-        /*  OK, the null value is not = 0 */   
-	
-        /* calculate the size of the imput array */
-        totpix = 1;
-        for (ii = 0; ii < ndim; ii++)  {
-           totpix *= (inlpixel[ii] - infpixel[ii]);
-        }
-	      
-        if (totpix <= 0) return(*status);
-	
-        anynull = 0;
-        if (datatype == TFLOAT) {
-	  for (ii = 0; ii < totpix; ii++)  {
-	     if (((float *)array)[ii] == floatnull)  {
-	         anynull = 1;
-		 break;
-	     }
-	  }
-	} else if (datatype == TDOUBLE) {
-	  for (ii = 0; ii < totpix; ii++)  {
-	     if (((double *)array)[ii] == doublenull)  {
-	         anynull = 1;
-		 break;
-	     }
-	  }
-	}      
+    if ((fptr->Fptr)->zbitpix < 0 && nullcheck != 0) { 
+/*
+     This is a floating point FITS image with possible null values.
+     It is too messy to test if any null values are actually written, so 
+     just assume so.  We need to make sure that the
+     ZBLANK keyword is present in the compressed image header.  If it is not
+     there then we need to insert the keyword. 
+*/   
+        tstatus = 0;
+        ffgcrd(fptr, "ZBLANK", card, &tstatus);
 
-        if (anynull) {  /* there are null values in the array */
-
-            tstatus = 0;
-            ffgcrd(fptr, "ZBLANK", card, &tstatus);
-	    if (tstatus)  {   /* have to insert the ZBLANK keyword */
-	    
-              ffgcrd(fptr, "ZCMPTYPE", card, status);
-              ffikyj(fptr, "ZBLANK", COMPRESS_NULL_VALUE, 
+	if (tstatus) {   /* have to insert the ZBLANK keyword */
+           ffgcrd(fptr, "ZCMPTYPE", card, status);
+           ffikyj(fptr, "ZBLANK", COMPRESS_NULL_VALUE, 
                 "null value in the compressed integer array", status);
-	    }
-
-	} /* there are null values in the array */
-      }  /* non-zero null value */
-    }  /* floating point data type */
+	
+           /* set this value into the internal structure; it is used if */
+	   /* the program reads back the values from the array */
+	 
+          (fptr->Fptr)->zblank = COMPRESS_NULL_VALUE;
+          (fptr->Fptr)->cn_zblank = -1;  /* flag for a constant ZBLANK */
+        }  
+    }  
     
     return(*status);
 }
@@ -1849,6 +2314,8 @@ int fits_decompress_img (fitsfile *infptr, /* image (bintable) to uncompress */
               int *status)         /* IO - error status               */
 
 /* 
+  THIS IS AN OBSOLETE ROUTINE.  USE fits_img_decompress instead!!!
+  
   This routine decompresses the whole image and writes it to the output file.
 */
 
@@ -2707,11 +3174,19 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
     if (ffgcno(infptr, CASEINSEN, "ZBLANK", &(infptr->Fptr)->cn_zblank,
                &tstatus) > 0)
     {
-        /* CMPZERO column doesn't exist; see if there is a keyword */
+        /* ZBLANK column doesn't exist; see if there is a keyword */
         tstatus = 0;
         if (ffgky(infptr, TINT, "ZBLANK", &(infptr->Fptr)->zblank, NULL,
-                  &tstatus) <= 0)
+                  &tstatus) <= 0)  {
             (infptr->Fptr)->cn_zblank = -1;  /* flag for a constant ZBLANK */
+
+        } else {
+           /* ZBLANK keyword doesn't exist; see if there is a BLANK keyword */
+           tstatus = 0;
+           if (ffgky(infptr, TINT, "BLANK", &(infptr->Fptr)->zblank, NULL,
+                  &tstatus) <= 0)  
+              (infptr->Fptr)->cn_zblank = -1;  /* flag for a constant ZBLANK */
+        }
     }
 
     /* read the conventional BSCALE and BZERO scaling keywords, if present */
@@ -3040,7 +3515,6 @@ int imcomp_decompress_tile (fitsfile *infptr,
     }
 
     /* ************************************************************* */
-
     /* get the value used to represent nulls in the int array */
     if ((infptr->Fptr)->cn_zblank == 0)
     {

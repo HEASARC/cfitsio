@@ -1,8 +1,23 @@
                    Log of Changes Made to CFITSIO
 		   
+Version 3.06 - 27 August 2007
 
+   - modified the imcopy.c utility program (to tile-compress images)
+     so that it writes the default EXTNAME = 'COMPRESSED_IMAGE'
+     keyword in the compressed images, to preserve the behavior of
+     earlier versions of imcopy.
 
-Version 3.05 - 12 July 2007
+   - modified the angsep function in the FITS calculator (in eval.y)
+     to use haversines, instead of the 'law of cosines', to provide
+     more precision at small angles (< 0.1 arcsec).
+
+Version 3.05 -  July 2007 (internal release only)
+
+   - extensive changes to imcompress.c to fully support implicit data
+     type conversion when reading and writing arrays of data to FITS
+     images, where the data type of the array is not the same as the
+     data type of the FITS image.  This includes support for null pixels,
+     and data scaling via the BSCALE and BZERO keywords.
 
    - rewrote the fits_read_tbl_coord routine in wcssub.c, that gets the 
      standard set of WCS keywords appropriate to a pair of columns in a

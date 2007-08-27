@@ -941,10 +941,27 @@ int imcomp_copy_comp2img(fitsfile *infptr, fitsfile *outfptr,
 int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr,
                  int *status);
 int imcomp_compress_tile (fitsfile *outfptr, long row, 
-    int datatype,  void *tiledata, long tilelen, long nx, long ny, int *status);
-
+    int datatype,  void *tiledata, long tilelen, long nx, long ny,
+    int nullcheck, void *nullval, int *status);
+int imcomp_nullscale(int *idata, long tilelen, int nullflagval, int nullval,
+     double scale, double zero, int * status);
+int imcomp_nullvalues(int *idata, long tilelen, int nullflagval, int nullval,
+     int * status);
+int imcomp_scalevalues(int *idata, long tilelen, double scale, double zero,
+     int * status);
+int imcomp_nullscalefloats(float *fdata, long tilelen, int *idata, 
+    double scale, double zero, int nullcheck, float nullflagval, int nullval,
+    int *status);
+int imcomp_nullfloats(float *fdata, long tilelen, int *idata, int nullcheck,
+    float nullflagval, int nullval, int *status);
+int imcomp_nullscaledoubles(double *fdata, long tilelen, int *idata, 
+    double scale, double zero, int nullcheck, double nullflagval, int nullval,
+    int *status);
+int imcomp_nulldoubles(double *fdata, long tilelen, int *idata, int nullcheck,
+    double nullflagval, int nullval, int *status);
+    
+ 
 /*  image decompression routines */
-
 int fits_read_compressed_img(fitsfile *fptr, 
             int  datatype, LONGLONG  *fpixel,LONGLONG  *lpixel,long *inc,   
             int nullcheck, void *nulval,  void *array, char *nullarray,
