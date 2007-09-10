@@ -84,7 +84,7 @@ if test "x$CC" = x; then
 fi
 AC_PROG_CC
 
-AC_CHECK_PROGS(FC, f77 g77 g95 gfortran ifort xlf cf77 gf77 af77 ncf f2c , nope)
+AC_CHECK_PROGS(FC, f77 g77 g95 gfortran ifort f95 f90 xlf cf77 gf77 af77 ncf f2c , nope)
 if test $FC = 'nope' ; then
    AC_MSG_WARN(cfitsio: == No acceptable f77 found in \$PATH)
    AC_MSG_WARN(cfitsio: == Cfitsio will be built without Fortran wrapper support)
