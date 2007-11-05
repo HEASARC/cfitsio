@@ -1360,7 +1360,7 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     delbyte = (newveclen - repeat) * width;    /* no. of bytes to insert */
     if (datacode == TBIT)  /* BIT column is a special case */
-       delbyte = ((newveclen + 1) / 8) - ((repeat + 1) / 8);
+       delbyte = ((newveclen + 7) / 8) - ((repeat + 7) / 8);
 
     if (delbyte > 0)  /* insert space for more elements */
     {

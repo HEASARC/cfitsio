@@ -1,6 +1,17 @@
                    Log of Changes Made to CFITSIO
-		   
-Version 3.06 - 27 August 2007
+
+Version 3.06 - 27 August 2007  (internal release)
+
+   - fixed a possible, but unlikely, memory overflow issue in iraffits.c.
+   
+   - added a clarification to the cfortran.doc file that cfortran.h
+     may be used and distributed under the terms of the GNU Library
+     General Public License.
+   
+   - fixed bug in the fits_modify_vector_len routine when modifying
+     the vector length of a 'X' bit column.
+	   
+Version 3.06 - 27 August 2007  
 
    - modified the imcopy.c utility program (to tile-compress images)
      so that it writes the default EXTNAME = 'COMPRESSED_IMAGE'

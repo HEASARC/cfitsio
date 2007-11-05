@@ -58,7 +58,7 @@ Any questions, bug reports, or suggested enhancements related to the CFITSIO
 package should be sent to the primary author:
 -
         Dr. William Pence                 Telephone:  (301) 286-4599
-        HEASARC, Code 662                 E-mail: pence@tetra.gsfc.nasa.gov
+        HEASARC, Code 662                 E-mail: William.D.Pence@nasa.gov
         NASA/Goddard Space Flight Center
         Greenbelt, MD 20771, USA
 -
@@ -362,19 +362,8 @@ using older DOS commands.
 ***4.  Macintosh PCs
 
 When building on Mac OS-X, users should follow the Unix instructions,
-above.
-
-The classic MacOS version (OS 9 or earlier) of the CFITSIO library can
-be built by (1) un binhex and unstuff cfitsio\_mac.sit.hqx, (2) put
-CFitsioPPC.mcp in the cfitsio directory, and (3) load CFitsioPPC.mcp
-into CodeWarrior Pro 5 and make.  This builds the CFITSIO library for
-PPC.  There are also targets for both the test program and the speed
-test program.
-
-To use the MacOS port you can add Cfitsio PPC.lib to your CodeWarrior
-Pro 5 project.  Note that this only has been tested for the PPC and
-probably won't work on 68k Macs.
-
+above.  See the README.MacOS file for instructions on building a Universal
+Binary that supports both Intel and PowerPC CPUs.
 
 **B.  Testing the Library
  

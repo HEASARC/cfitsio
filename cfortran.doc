@@ -2,6 +2,8 @@
 /* www-zeus.desy.de/~burow   OR   anonymous ftp@zebra.desy.de */
 /* Burkhard Burow  burow@desy.de                 1990 - 1998. */
 
+See Licensing information at the end of this file.
+
 
               cfortran.h :  Interfacing C or C++ and FORTRAN
 
@@ -2048,4 +2050,39 @@ Sun, CRAY, Convex, IBM RS/6000, Apollo DomainOS, HP, LynxOS, f2c, NAG, Absoft,
 NEC SX-4, PowerStation and Visual C++ are registered trademarks of their
 respective owners.
         
+============================================================================
+
+ADDITIONAL LICENSING INFORMATION  (added by W D Pence on 4 October 2007)
+
+The author of cfortran has subsequently stated that cfortran.h may optionally 
+be used and distributed under the GNU Library General Public License (LGPL).
+This statement was made in an email to Kevin McCarty, which is reproduced below:
+
+----------------------------------------
+Date: Tue, 22 Oct 2002 12:48:00 -0400
+From: Burkhard D Steinmacher-burow <steinmac@us.ibm.com>
+To: Kevin B. McCarty <kmccarty@Princeton.EDU>
+Subject: Re: CFortran licensing question
+
+Kevin,
+
+[Just noticed that I didn't send this yesterady.]
+
+I have no time right now to read through licenses.
+IIRC, library GPL is fairly unrestrictive, so I'll choose that. So.....
+
+You may consider this e-mail as a notice that as an alternative to any
+other cfortran licenses,
+I hereby relase all versions and all parts of cfortran under the
+the Library GPL license.
+From among these licenses, the user is free to choose
+the license or licenses under which cfortran is used.
+
+Contact me if you'd like to be able to choose another license.
+
+Burkhard
+
+steinmac@us.ibm.com, (914)945-3756, Fax 3684, Tieline 862
+------------------------------------------
+
 /* end: cfortran.doc */

@@ -3475,8 +3475,7 @@ int fits_init_cfitsio(void)
       printf ("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
       printf(" Byteswapping is not being done correctly on this system.\n");
       printf(" Check the MACHINE and BYTESWAPPED definitions in fitsio2.h\n");
-      printf(" Please report this problem to the author at\n");
-      printf("     pence@tetra.gsfc.nasa.gov\n");
+      printf(" Please report this problem to the CFITSIO developers.\n");
       printf(  "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
       return(1);
     }
@@ -3489,8 +3488,7 @@ int fits_init_cfitsio(void)
       printf ("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
       printf(" CFITSIO did not find an 8-byte long integer data type.\n");
       printf("   sizeof(LONGLONG) = %d\n",(int)sizeof(LONGLONG));
-      printf(" Please report this problem to the author at\n");
-      printf("     pence@tetra.gsfc.nasa.gov\n");
+      printf(" Please report this problem to the CFITSIO developers.\n");
       printf(  "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
       return(1);
     }

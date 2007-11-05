@@ -1,8 +1,42 @@
-To build the CFITSIO library on Mac OS-X systems, follow the
-instructions for Unix platforms given in the CFITSIO User's Reference
-Guide (cfitsio.doc).
+To build CFITSIO library on an Intel Mac as a Universal Binary
 
-To build the MacOS port on classic Mac OS-9 or earlier:
+Unzip the library:
+1) tar xzf cfitsio3060.tar.gz (or whatever version this is)
+2) cd cfitsio
+
+Configure and build (for your native CPU)
+3) ./configure
+4) make
+5) mv libcfitsio.a libcfitsio_i386.a
+
+Configure and build for the PPC
+6) setenv CFLAGS "-arch ppc" ; setenv LDFLAGS "-arch ppc"  (if using
+bash, set the
+   env. variables according to the bash syntax.  This is for tcsh).
+7) ./configure --target=powerpc-apple-darwin8.0.0
+8) make clean
+9) make
+10) mv libcfitsio.a libcfitsio_ppc.a
+
+At this point, you can verify that the two architectures have been built
+properly:
+lipo -detailed_info libcfitsio_ppc.a
+lipo -detailed_info libcfitsio_i386.a
+
+Each should report that these are not fat files and that one has a ppc
+architecture and the other an i386 one.
+
+Glue them into a Universal:
+11) lipo -create libcfitsio_i386.a libcfitsio_ppc.a -output libcfitsio.a
+
+To build on a PPC machine, the "-arch ppc" flags become "-arch i386" and the
+./configure for Intel CPUs on PPCs has
+"--target=i386-apple-darwin8.0.0" instead.
+
+-------------------------------------------------------
+
+Below, are the old (and now obsolete) instuctions for building CFITSIO
+on classic Mac OS-9 or earlier versions:
 
 1. Un binhex and unstuff cfitsio_mac.sit.hqx
 2. put CFitsioPPC.mcp in the cfitsio directory.
@@ -16,16 +50,4 @@ won't work on 68k macs.  Also note that the fortran bindings aren't
 included.  I haven't worked with the codewarrior f2c plugin so I don't know
 how these would work.  If one is interested, please write and I can look
 into this.
-
-bruce.oneel@obs.unige.ch
-
-Modifications...
-
-10/22/98:  pwilson@sewanee.gsfc.nasa.gov
-      New files added for project.  Converted to CodeWarrior Pro 3.
-      The speed test program does not run... complains about a missing library?
-11/09/98:  pwilson@sewanee.gsfc.nasa.gov
-      Fixed speed test problem thanks to Tom Andersen.
-07/17/00:  pwilson@milkyway.gsfc.nasa.gov
-      Updated to CodeWarrior Pro 5 and CFITSIO 2.037.
 

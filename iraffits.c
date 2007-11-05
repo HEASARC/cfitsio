@@ -698,13 +698,17 @@ static int iraftofits (
 	pixname = irafgetc2 (irafheader, IM_PIXFILE, SZ_IMPIXFILE);
     if (strncmp(pixname, "HDR", 3) == 0 ) {
 	newpixname = same_path (pixname, hdrname);
-	free (pixname);
-	pixname = newpixname;
+        if (newpixname) {
+          free (pixname);
+          pixname = newpixname;
+	  }
 	}
     if (strchr (pixname, '/') == NULL && strchr (pixname, '$') == NULL) {
 	newpixname = same_path (pixname, hdrname);
-	free (pixname);
-	pixname = newpixname;
+        if (newpixname) {
+          free (pixname);
+          pixname = newpixname;
+	  }
 	}
 	
     if ((bang = strchr (pixname, '!')) != NULL )
@@ -846,7 +850,14 @@ char	*hdrname)	/* IRAF image header file pathname */
     int len;
     char *newpixname;
 
-    newpixname = (char *) calloc (SZ_IM2PIXFILE, sizeof (char));
+/*  WDP - 10/16/2007 - increased allocation to avoid possible overflow */
+/*    newpixname = (char *) calloc (SZ_IM2PIXFILE, sizeof (char)); */
+
+    newpixname = (char *) calloc (2*SZ_IM2PIXFILE+1, sizeof (char));
+    if (newpixname == NULL) {
+            ffpmsg("iraffits same_path: Cannot alloc memory for newpixname");
+	    return (NULL);
+	}
 
     /* Pixel file is in same directory as header */
     if (strncmp(pixname, "HDR$", 4) == 0 ) {
