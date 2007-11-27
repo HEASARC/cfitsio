@@ -920,7 +920,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
        if (nullcheck == 1)
            flagval = *(short *) (nullflagval);
        
-       for (ii = tilelen; ii >= 0; ii--)
+       for (ii = tilelen - 1; ii >= 0; ii--)
 	  idata[ii] = (int) (sbuff[ii]);
     }
     else if (datatype == TUSHORT)
@@ -929,7 +929,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
        if (nullcheck == 1)
            flagval = *(unsigned short *) (nullflagval);
 
-       for (ii = tilelen; ii >= 0; ii--)
+       for (ii = tilelen - 1; ii >= 0; ii--)
             idata[ii] = (int) (usbuff[ii]);
     }
     else if (datatype == TINT)
@@ -948,7 +948,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
        usbbuff = (unsigned char *) tiledata;
        if (nullcheck == 1)
            flagval = *(unsigned char *) (nullflagval);
-       for (ii = tilelen; ii >= 0; ii--)
+       for (ii = tilelen - 1; ii >= 0; ii--)
             idata[ii] = (int) (usbbuff[ii]);
     }
     else if (datatype == TSBYTE)
@@ -956,7 +956,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
        sbbuff = (signed char *) tiledata;
        if (nullcheck == 1)
            flagval = *(signed char *) (nullflagval);
-       for (ii = tilelen; ii >= 0; ii--)
+       for (ii = tilelen - 1; ii >= 0; ii--)
             idata[ii] = (int) (sbbuff[ii]);
     }
     else if (datatype == TLONG && sizeof(long) == 8)
@@ -1100,12 +1100,14 @@ int imcomp_compress_tile (fitsfile *outfptr,
         }
         else if ( (outfptr->Fptr)->compress_type == PLIO_1)
         {
-                if (iminval < 0 || imaxval > 16777215)
+              for (ii = 0; ii < tilelen; ii++)  {
+                if (idata[ii] < 0 || idata[ii] > 16777215)
                 {
                    /* plio algorithn only supports positive 24 bit ints */
                    ffpmsg("data out of range for PLIO compression (0 - 2**24)");
                    return(*status = DATA_DECOMPRESSION_ERR);
                 }
+              }
 
   	        nelem = pl_p2li (idata, 1, cbuf, tilelen);
 
@@ -1142,7 +1144,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
                  /* idata must have been allocated large enough to do this */
                 lldata = (LONGLONG *) idata;
 		
-                for (ii = tilelen; ii >= 0; ii--) {
+                for (ii = tilelen - 1; ii >= 0; ii--) {
 		    lldata[ii] = idata[ii];;
 		}
 
