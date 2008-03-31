@@ -19,12 +19,13 @@
 
 #define DBUFFSIZE 28800 /* size of data buffer in bytes */
 
-#define NIOBUF  40  /* number of IO buffers to create */
+#define NIOBUF  40  /* number of IO buffers to create (default = 40) */
          /* !! Significantly increasing NIOBUF may degrade performance !! */
 #define NMAXFILES  300   /* maximum number of FITS files that can be opened */
         /* CFITSIO will allocate (NMAXFILES * 80) bytes of memory */
 
 #define IOBUFLEN 2880    /* size in bytes of each IO buffer (DONT CHANGE!) */
+
 #define MINDIRECT 8640   /* minimum size for direct reads and writes */
                          /* MINDIRECT must have a value >= 8640 */
 
@@ -258,44 +259,6 @@
 #define INT32_MIN (-INT32_MAX -1) /* min 32-bit integer */
 #endif
 
-#ifndef LONGLONG_MAX
-
-#ifdef LLONG_MAX
-/* Linux and Solaris definition */
-#define LONGLONG_MAX LLONG_MAX
-#define LONGLONG_MIN LLONG_MIN
-
-#elif defined(LONG_LONG_MAX)
-#define LONGLONG_MAX LONG_LONG_MAX
-#define LONGLONG_MIN LONG_LONG_MIN
-
-#elif defined(__LONG_LONG_MAX__)
-/* Mac OS X & CYGWIN defintion */
-#define LONGLONG_MAX __LONG_LONG_MAX__
-#define LONGLONG_MIN (-LONGLONG_MAX -1LL)
-
-#elif defined(INT64_MAX)
-/* windows definition */
-#define LONGLONG_MAX INT64_MAX
-#define LONGLONG_MIN INT64_MIN
-
-#elif defined(_I64_MAX)
-/* windows definition */
-#define LONGLONG_MAX _I64_MAX
-#define LONGLONG_MIN _I64_MIN
-
-#elif (LONGSIZE == 64)
-/* sizeof(long) = 64 */
-#define LONGLONG_MAX  9223372036854775807L /* max 64-bit integer */
-#define LONGLONG_MIN (-LONGLONG_MAX -1L)   /* min 64-bit integer */
-
-#else
-/*  define a default value, even if it is never used */
-#define LONGLONG_MAX  9223372036854775807LL /* max 64-bit integer */
-#define LONGLONG_MIN (-LONGLONG_MAX -1LL)   /* min 64-bit integer */
-
-#endif
-#endif  /* end of ndef LONGLONG_MAX section */
 
 #define COMPRESS_NULL_VALUE -2147483647
 
@@ -988,16 +951,20 @@ int imcomp_merge_overlap (char *tile, int pixlen, int ndim,
          long *tfpixel, long *tlpixel, char *bnullarray, char *image,
          long *fpixel, long *lpixel, int nullcheck, int *status);
 
-int fits_quantize_float (float fdata[], int nx, float in_null_value,
-           int noise_bits, int idata[], double *bscale, double *bzero,
+int fits_quantize_float (float fdata[], long nx, long ny, int nullcheck,
+         float in_null_value,
+           float quantize_level, int idata[], double *bscale, double *bzero,
            int *iminval, int *imaxval);
-int fits_quantize_double (double fdata[], int nx, double in_null_value,
-           int noise_bits, int idata[], double *bscale, double *bzero,
+int fits_quantize_double (double fdata[], long nx, long ny, int nullcheck,
+         double in_null_value,
+           float quantize_level, int idata[], double *bscale, double *bzero,
            int *iminval, int *imaxval);
 int fits_rcomp(int a[], int nx, unsigned char *c, int clen,int nblock);
+int fits_rcomp_short(short a[], int nx, unsigned char *c, int clen,int nblock);
 int fits_rdecomp (unsigned char *c, int clen, unsigned int array[], int nx,
              int nblock);
-
+int fits_rdecomp_short (unsigned char *c, int clen, unsigned short array[], int nx,
+             int nblock);
 int pl_p2li (int *pxsrc, int xs, short *lldst, int npix);
 int pl_l2pi (short *ll_src, int xs, int *px_dst, int npix);
 

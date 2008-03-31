@@ -66,7 +66,8 @@ int ffgpxvll( fitsfile *fptr, /* I - FITS file pointer                       */
     int naxis, ii;
     char cdummy;
     int nullcheck = 1;
-    LONGLONG naxes[9];
+    LONGLONG naxes[9], trc[9]= {1,1,1,1,1,1,1,1,1};
+    long inc[9]= {1,1,1,1,1,1,1,1,1};
     LONGLONG dimsize = 1, firstelem;
 
     if (*status > 0 || nelem == 0)   /* inherit input status value if > 0 */
@@ -74,7 +75,13 @@ int ffgpxvll( fitsfile *fptr, /* I - FITS file pointer                       */
 
     /* get the size of the image */
     ffgidm(fptr, &naxis, status);
+
     ffgiszll(fptr, 9, naxes, status);
+
+    if (naxis == 0 || naxes[0] == 0) {
+       *status = BAD_DIMEN;
+       return(*status);
+    }
 
     /* calculate the position of the first element in the array */
     firstelem = 0;
@@ -82,6 +89,7 @@ int ffgpxvll( fitsfile *fptr, /* I - FITS file pointer                       */
     {
         firstelem += ((firstpix[ii] - 1) * dimsize);
         dimsize *= naxes[ii];
+        trc[ii] = firstpix[ii];
     }
     firstelem++;
 
@@ -89,8 +97,29 @@ int ffgpxvll( fitsfile *fptr, /* I - FITS file pointer                       */
     {
         /* this is a compressed image in a binary table */
 
-        fits_read_compressed_pixels(fptr, datatype, firstelem, nelem,
-            nullcheck, nulval, array, NULL, anynul, status);
+        /* test for special case of reading an integral number of */
+        /* rows in a 2D or 3D image (which includes reading the whole image */
+
+	if (naxis > 1 && naxis < 4 && firstpix[0] == 1 &&
+            (nelem / naxes[0]) * naxes[0] == nelem) {
+
+                /* calculate coordinate of last pixel */
+		trc[0] = naxes[0];  /* reading whole rows */
+		trc[1] = firstpix[1] + (nelem / naxes[0] - 1);
+                while (trc[1] > naxes[1])  {
+		    trc[1] = trc[1] - naxes[1];
+		    trc[2] = trc[2] + 1;  /* increment to next plane of cube */
+                }
+
+                fits_read_compressed_img(fptr, datatype, firstpix, trc, inc,
+                   1, nulval, array, NULL, anynul, status);
+
+        } else {
+
+                fits_read_compressed_pixels(fptr, datatype, firstelem,
+                   nelem, nullcheck, nulval, array, NULL, anynul, status);
+        }
+
         return(*status);
     }
 
@@ -374,8 +403,9 @@ int ffgsv(  fitsfile *fptr,   /* I - FITS file pointer                       */
   ANYNUL is returned with a value of .true. if any pixels are undefined.
 */
 {
-    int naxis;
+    int naxis, ii;
     long naxes[9];
+    LONGLONG nelem = 1;
 
     if (*status > 0)   /* inherit input status value if > 0 */
         return(*status);
@@ -383,6 +413,23 @@ int ffgsv(  fitsfile *fptr,   /* I - FITS file pointer                       */
     /* get the size of the image */
     ffgidm(fptr, &naxis, status);
     ffgisz(fptr, 9, naxes, status);
+
+    /* test for the important special case where we are reading the whole image */
+    /* this is only useful for images that are not tile-compressed */
+    if (!fits_is_compressed_image(fptr, status)) {
+        for (ii = 0; ii < naxis; ii++) {
+            if (inc[ii] != 1 || blc[ii] !=1 || trc[ii] != naxes[ii])
+                break;
+
+            nelem = nelem * naxes[ii];
+        }
+
+        if (ii == naxis) {
+            /* read the whole image more efficiently */
+            ffgpxv(fptr, datatype, blc, nelem, nulval, array, anynul, status);
+            return(*status);
+        }
+    }
 
     if (datatype == TBYTE)
     {

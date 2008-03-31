@@ -444,7 +444,8 @@ int ffgrec( fitsfile *fptr,     /* I - FITS file pointer          */
     if (nrec == 0)
     {
         ffmaky(fptr, 1, status);  /* simply move to beginning of header */
-        card[0] = '\0';           /* and return null card */
+        if (card)
+            card[0] = '\0';           /* and return null card */
     }
     else if (nrec > 0)
     {

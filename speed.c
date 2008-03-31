@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/time.h>
 
 /*
   Every program which uses the CFITSIO interface must include the
@@ -39,6 +40,8 @@ static long sarray[ SHTSIZE ] = {SHTSIZE * 0};
 /* define variables for measuring elapsed time */
 clock_t scpu, ecpu;
 time_t start, finish;
+long startsec;   /* start of elapsed time interval */
+int startmilli;  /* start of elapsed time interval */
 
 int writeimage(fitsfile *fptr, int *status);
 int writebintable(fitsfile *fptr, int *status);
@@ -453,6 +456,8 @@ int marktime( int *status)
 {
     double telapse;
     time_t temp;
+    struct  timeval tv;
+    struct  timezone tz;
 
     temp = time(0);
 
@@ -462,21 +467,44 @@ int marktime( int *status)
     /* intervals all start on an integer seconds. */
 
     telapse = 0.;
+
+        scpu = clock();
+        start = time(0);
+/*
     while (telapse == 0.)
     {
         scpu = clock();
         start = time(0);
         telapse = difftime( start, temp );
     }
+*/
+        gettimeofday (&tv, &tz);
+
+	startsec = tv.tv_sec;
+        startmilli = tv.tv_usec/1000;
+
     return( *status );
 }
 /*--------------------------------------------------------------------------*/
 int gettime(double *elapse, float *elapscpu, int *status)
 {
+        struct  timeval tv;
+        struct  timezone tz;
+	int stopmilli;
+	long stopsec;
+
+
+        gettimeofday (&tv, &tz);
     ecpu = clock();
     finish = time(0);
 
-    *elapse = difftime(finish, start) + 0.5;
+        stopmilli = tv.tv_usec/1000;
+	stopsec = tv.tv_sec;
+	
+
+	*elapse = (stopsec - startsec) + (stopmilli - startmilli)/1000.;
+
+/*    *elapse = difftime(finish, start) + 0.5; */
     *elapscpu = (ecpu - scpu) * 1.0 / CLOCKTICKS;
 
     return( *status );

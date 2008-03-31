@@ -2947,16 +2947,19 @@ int ffparsecompspec(fitsfile *fptr,  /* I - FITS file pointer               */
                                    R = Rice
                                    G = GZIP
                                    H = HCOMPRESS
+                                   HS = HCOMPRESS (with smoothing)
                                    P = PLIO
 
     myfile.fits[compress TYPE 100,100] - the numbers give the dimensions
                                          of the compression tiles.  Default
                                          is NAXIS1, 1, 1, ...
 
-    myfile.fits[compress; 5]               The number following the semicolon
-    mufile.fits[compress TYPE; 5]          gives the value of the noisebits
-    myfile.fits[compress TYPE 100,100; 5]  parameter that is used when
-                                           quantizing floating point images.
+       other optional parameters may be specified following a semi-colon 
+       
+    myfile.fits[compress; q 16.0]          q specifies the floating point 
+    mufile.fits[compress TYPE; q -.0002]        quantization level;
+    myfile.fits[compress TYPE 100,100; q 10, s 25]  s specifies the HCOMPRESS
+                                                     integer scaling parameter
 
 The compression parameters are saved in the fptr->Fptr structure for use
 when writing FITS images.
@@ -2966,8 +2969,9 @@ when writing FITS images.
     char *ptr1;
 
     /* initialize with default values */
-    int ii, compresstype = RICE_1, noisebits = 4, smooth = 0, scale = 1, intval;
-    long tilesize[9] = {0,1,1,1,1,1,1,1,1};
+    int ii, compresstype = RICE_1, smooth = 0;
+    long tilesize[MAX_COMPRESS_DIM] = {0,1,1,1,1,1};
+    float qlevel = 0.0, scale = 0.;
 
     ptr1 = compspec;
     while (*ptr1 == ' ')    /* ignore leading blanks */
@@ -3009,6 +3013,10 @@ when writing FITS images.
     else if (*ptr1 == 'h' || *ptr1 == 'H')
     {
         compresstype = HCOMPRESS_1;
+        ptr1++;
+        if (*ptr1 == 's' || *ptr1 == 'S')
+           smooth = 1;  /* apply smoothing when uncompressing HCOMPRESSed image */
+
         while (*ptr1 != ' ' && *ptr1 != ';' && *ptr1 != '\0') 
            ptr1++;
     }
@@ -3037,74 +3045,60 @@ when writing FITS images.
     }
 
     /* ========================================================= */
-    /* look for other parameters */
+    /* look for semi-colon, followed by other optional parameters */
     /* ========================================================= */
 
-    if (*ptr1 == ';')
-    {
+    if (*ptr1 == ';') {
         ptr1++;
-
         while (*ptr1 == ' ')    /* ignore leading blanks */
            ptr1++;
 
-       /* get first integer parameter */
-       if (!isdigit((int) *ptr1) )
-           return(*status = URL_PARSE_ERROR);
+          while (*ptr1 != 0) {  /* haven't reached end of string yet */
 
-       intval = atol(ptr1);  /* read the integer value */
+              if (*ptr1 == 's' || *ptr1 == 'S') {
+                  /* this should be the HCOMPRESS "scale" parameter; default = 1 */
+	   
+                  ptr1++;
+                  while (*ptr1 == ' ')    /* ignore leading blanks */
+                      ptr1++;
 
-       if (compresstype == HCOMPRESS_1)
-           scale = intval;
-       else
-           noisebits = intval;
+                  scale = (float) strtod(ptr1, &ptr1);
 
-       while (isdigit((int) *ptr1))    /* skip over the integer */
-           ptr1++;
+                  while (*ptr1 == ' ' || *ptr1 == ',') /* skip over blanks or comma */
+                     ptr1++;
 
-       if (*ptr1 == ',')
-       {
-           ptr1++;   /* skip over the comma */
-          
-           while (*ptr1 == ' ')    /* ignore leading blanks */
-               ptr1++;
+            } else if (*ptr1 == 'q' || *ptr1 == 'Q') {
+                /* this should be the floating point quantization parameter */
 
-           /* get 2nd integer parameter */
-           if (!isdigit((int) *ptr1) )
-               return(*status = URL_PARSE_ERROR);
+                  ptr1++;
+                  while (*ptr1 == ' ')    /* ignore leading blanks */
+                      ptr1++;
 
-           intval = atol(ptr1);  /* read the integer value */
+                  qlevel = (float) strtod(ptr1, &ptr1);
 
-           if (compresstype == HCOMPRESS_1)
-               smooth = intval;
-           else
-               return(*status = URL_PARSE_ERROR);
+                  while (*ptr1 == ' ' || *ptr1 == ',') /* skip over blanks or comma */
+                     ptr1++;
 
-           while (isdigit((int) *ptr1))    /* skip over the integer */
-               ptr1++;
-       }
+            } else {
+                return(*status = URL_PARSE_ERROR);
+            }
+        }
     }
-
-    while (*ptr1 == ' ')    /* ignore blanks */
-         ptr1++;
-
-    if (*ptr1 != 0)  /* remaining junk in the string?? */
-       return(*status = URL_PARSE_ERROR);
 
     /* ================================= */
     /* finished parsing; save the values */
     /* ================================= */
 
-    (fptr->Fptr)->request_compress_type = compresstype;
-
-    for (ii = 0; ii < 9; ii++)
-       (fptr->Fptr)->request_tilesize[ii] = tilesize[ii];
-
+    fits_set_compression_type(fptr, compresstype, status);
+    fits_set_tile_dim(fptr, MAX_COMPRESS_DIM, tilesize, status);
+    
     if (compresstype == HCOMPRESS_1) {
-       (fptr->Fptr)->request_hcomp_scale = scale;
-       (fptr->Fptr)->request_hcomp_smooth = smooth;
-    } else {
-       (fptr->Fptr)->request_noise_nbits = noisebits;
+        fits_set_hcomp_scale (fptr, scale,  status);
+        fits_set_hcomp_smooth(fptr, smooth, status);
     }
+
+    if (qlevel != 0.0)
+        fits_set_quantize_level(fptr, qlevel, status);
     
     return(*status);
 }
@@ -5451,6 +5445,7 @@ int ffexts(char *extspec,
     if (isdigit((int) *ptr1))  /* is the extension specification a number? */
     {
         notint = 0;  /* looks like extname may actually be the ext. number */
+        errno = 0;  /* reset this prior to calling strtol */
         *extnum = strtol(ptr1, &loc, 10);  /* read the string as an integer */
 
         while (*loc == ' ')  /* skip over trailing blanks */
@@ -5461,6 +5456,7 @@ int ffexts(char *extspec,
         {
            *extnum = 0;
            notint = 1;  /* no, extname was not a simple integer after all */
+           errno = 0;  /* reset error condition flag if it was set */
         }
 
         if ( *extnum < 0 || *extnum > 99999)
@@ -6066,6 +6062,7 @@ int fftrun( fitsfile *fptr,    /* I - FITS file pointer           */
   {
     ffflsh(fptr, FALSE, status);  /* flush all the buffers first */
     (fptr->Fptr)->filesize = filesize;
+    (fptr->Fptr)->io_pos = filesize;
     (fptr->Fptr)->logfilesize = filesize;
     (fptr->Fptr)->bytepos = filesize;
     ffbfeof(fptr, status);   /* eliminate any buffers beyond current EOF */

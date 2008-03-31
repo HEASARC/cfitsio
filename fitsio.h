@@ -34,7 +34,7 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.07
+#define CFITSIO_VERSION 3.08
 
 #include <stdio.h>
 
@@ -111,6 +111,45 @@ SERVICES PROVIDED HEREUNDER."
 
 #define LONGLONG_TYPE
 #endif  
+
+#ifndef LONGLONG_MAX
+
+#ifdef LLONG_MAX
+/* Linux and Solaris definition */
+#define LONGLONG_MAX LLONG_MAX
+#define LONGLONG_MIN LLONG_MIN
+
+#elif defined(LONG_LONG_MAX)
+#define LONGLONG_MAX LONG_LONG_MAX
+#define LONGLONG_MIN LONG_LONG_MIN
+
+#elif defined(__LONG_LONG_MAX__)
+/* Mac OS X & CYGWIN defintion */
+#define LONGLONG_MAX __LONG_LONG_MAX__
+#define LONGLONG_MIN (-LONGLONG_MAX -1LL)
+
+#elif defined(INT64_MAX)
+/* windows definition */
+#define LONGLONG_MAX INT64_MAX
+#define LONGLONG_MIN INT64_MIN
+
+#elif defined(_I64_MAX)
+/* windows definition */
+#define LONGLONG_MAX _I64_MAX
+#define LONGLONG_MIN _I64_MIN
+
+#elif (LONGSIZE == 64)
+/* sizeof(long) = 64 */
+#define LONGLONG_MAX  9223372036854775807L /* max 64-bit integer */
+#define LONGLONG_MIN (-LONGLONG_MAX -1L)   /* min 64-bit integer */
+
+#else
+/*  define a default value, even if it is never used */
+#define LONGLONG_MAX  9223372036854775807LL /* max 64-bit integer */
+#define LONGLONG_MIN (-LONGLONG_MAX -1LL)   /* min 64-bit integer */
+
+#endif
+#endif  /* end of ndef LONGLONG_MAX section */
 
 
 /* ================================================================= */
@@ -205,6 +244,7 @@ SERVICES PROVIDED HEREUNDER."
 #define GZIP_1      21
 #define PLIO_1      31
 #define HCOMPRESS_1 41
+#define NOCOMPRESS  0
 
 #ifndef TRUE
 #define TRUE 1
@@ -293,9 +333,9 @@ typedef struct      /* structure used to store basic FITS file information */
          /* the following elements are related to compressed images */
     int request_compress_type;  /* requested image compression algorithm */
     long request_tilesize[MAX_COMPRESS_DIM]; /* requested tiling size */
-    int request_noise_nbits;     /* requested noise bit parameter value */
-    int request_hcomp_scale;    /* requested HCOMPRESS scale factor */
-    int request_hcomp_smooth;    /* requested HCOMPRESS smooth parameter */
+
+    float request_hcomp_scale;      /* requested HCOMPRESS scale factor */
+    int request_hcomp_smooth;     /* requested HCOMPRESS smooth parameter */
 
     int compressimg; /* 1 if HDU contains a compressed image, else 0 */
     char zcmptype[12];      /* compression type string */
@@ -320,10 +360,16 @@ typedef struct      /* structure used to store basic FITS file information */
     int zblank;             /* value for null pixels, if not a column */
 
     int rice_blocksize;     /* first compression parameter */
-    int noise_nbits;        /* floating point noise  parameter */
-    int hcomp_scale;        /* 1st hcompress compression parameter */
+    float quantize_level;   /* floating point quantization level */
+    float hcomp_scale;        /* 1st hcompress compression parameter */
     int hcomp_smooth;       /* 2nd hcompress compression parameter */
 
+    int  tilerow;           /* row number of the uncompressed tiledata */
+    long tiledatasize;       /* length of the tile data in bytes */
+    int tiletype;           /* datatype of the tile (TINT, TSHORT, etc) */
+    void *tiledata;         /* uncompressed tile of data, for row tilerow */
+    char *tilenullarray;    /* optional array of null value flags */
+    int tileanynull;        /* anynulls in this tile? */
 } FITSfile;
 
 typedef struct         /* structure used to store basic HDU information */
@@ -1767,18 +1813,30 @@ int ffgmrm(fitsfile *fptr, long member, int rmopt, int *status);
 
 int	fits_execute_template(fitsfile *ff, char *ngp_template, int *status);
 
+int fits_img_stats_short(short *array,long nx, long ny, int nullcheck,   
+    short nullvalue,long *ngoodpix, short *minvalue, short *maxvalue, double *mean,  
+    double *sigma, double *noise1, double *noise3, int *status);
+int fits_img_stats_int(int *array,long nx, long ny, int nullcheck,   
+    int nullvalue,long *ngoodpix, int *minvalue, int *maxvalue, double *mean,  
+    double *sigma, double *noise1, double *noise3, int *status);
+int fits_img_stats_float(float *array, long nx, long ny, int nullcheck,   
+    float nullvalue,long *ngoodpix, float *minvalue, float *maxvalue, double *mean,  
+    double *sigma, double *noise1, double *noise3, int *status);
+
 /*--------------------- image compression routines ------------------*/
 
 int fits_set_compression_type(fitsfile *fptr, int ctype, int *status);
 int fits_set_tile_dim(fitsfile *fptr, int ndim, long *dims, int *status);
 int fits_set_noise_bits(fitsfile *fptr, int noisebits, int *status);
-int fits_set_hcomp_scale(fitsfile *fptr, int scale, int *status);
+int fits_set_quantize_level(fitsfile *fptr, float qlevel, int *status);
+int fits_set_hcomp_scale(fitsfile *fptr, float scale, int *status);
 int fits_set_hcomp_smooth(fitsfile *fptr, int smooth, int *status);
 
 int fits_get_compression_type(fitsfile *fptr, int *ctype, int *status);
 int fits_get_tile_dim(fitsfile *fptr, int ndim, long *dims, int *status);
+int fits_get_quantize_level(fitsfile *fptr, float *qlevel, int *status);
 int fits_get_noise_bits(fitsfile *fptr, int *noisebits, int *status);
-int fits_get_hcomp_scale(fitsfile *fptr, int *scale, int *status);
+int fits_get_hcomp_scale(fitsfile *fptr, float *scale, int *status);
 int fits_get_hcomp_smooth(fitsfile *fptr, int *smooth, int *status);
 
 int fits_img_compress(fitsfile *infptr, fitsfile *outfptr, int *status);
@@ -1797,12 +1855,6 @@ int fits_hdecompress(unsigned char *input, int smooth, int *a, int *nx,
        int *ny, int *scale, int *status);
 int fits_hdecompress64(unsigned char *input, int smooth, LONGLONG *a, int *nx, 
        int *ny, int *scale, int *status);
-int fits_rms_float (float fdata[], int nx, float in_null_value,
-                   double *rms, int *status);
-		   
-int fits_rms_short (short fdata[], int nx, short in_null_value,
-                   double *rms, int *status);
-
  
 /*  The following exclusion if __CINT__ is defined is needed for ROOT */
 #ifndef __CINT__

@@ -9,10 +9,10 @@
 \contentsline {subsection}{\numberline {2.1.2}VMS}{7}
 \contentsline {subsection}{\numberline {2.1.3}Windows PCs}{7}
 \contentsline {subsection}{\numberline {2.1.4}Macintosh PCs}{7}
-\contentsline {section}{\numberline {2.2}Testing the Library}{8}
+\contentsline {section}{\numberline {2.2}Testing the Library}{7}
 \contentsline {section}{\numberline {2.3}Linking Programs with CFITSIO}{9}
 \contentsline {section}{\numberline {2.4}Getting Started with CFITSIO}{9}
-\contentsline {section}{\numberline {2.5}Example Program}{10}
+\contentsline {section}{\numberline {2.5}Example Program}{9}
 \contentsline {chapter}{\numberline {3} A FITS Primer }{11}
 \contentsline {chapter}{\numberline {4} Programming Guidelines }{13}
 \contentsline {section}{\numberline {4.1}CFITSIO Definitions}{13}

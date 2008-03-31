@@ -1,6 +1,89 @@
                    Log of Changes Made to CFITSIO
 
-Version 3.06 - 27 August 2007  (internal release)
+Version 3.08 - 31 March 2008 (internal release)
+
+   - added variants of the Rice compression and uncompression routines to
+     support short int images (inaddition to the routines that support int).
+
+   - moved the definition of LONGLONG_MIN and LONGLONG_MAX from fitsio2.h
+     to fitsio.h, to make it accessable to application programs.
+
+   - make efficiency improvements to fitscore.c, to avoid needless searches
+     through the entire header when reading the required keywords that must
+     be near the beginning of the header.
+     
+   - made several improvements to getcol.c to optimize reading of compressed
+     and uncompressed images.
+
+   - changed the compression level in the gzip code from 6 to 1.  In most
+     cases this will provide nearly the same amount of compression, but is
+     significantly faster in some cases.
+	   
+   - added new "helper routines' to imcompress.c to allow applications to
+     specified the "quantize level" and Hcompress scaling and smoothing 
+     parameters
+
+   - modified the extended filename syntax to support the "quantize level"
+     and Hcompress scaling and smoothing parameters.  The parser in 
+     cfileio.c was extensively modified.
+
+   - extensive changes to quantize.c:
+       - replace the "nbits" parameter with "quantize level"
+       - the quantize level is now relative to the RMS noise in the image
+       - the HCOMPRESS scale factor is now relative to the RMS noise
+       - added routines to calculate RMS noise in image 
+      (these changes require a change to the main file structure in fitsio.h)
+
+   - initialize errno = 0 before the call to strtol in ffext, in case errno
+     has previously been set by an unrelated error condition.
+
+   - added the corresponding long name for the ffgkyjj routine to longnam.h.		   
+
+   - changed imcomp_copy_comp2img (in imcompress.c) to not require the
+     presence of the EXTNAME keyword in the input compressed image header.
+
+   - modified imcompress.c to only write the UNCOMPRESSED_DATA column
+     in tile-compressed images if it is actually needed.  This eliminates
+     the need to subsequently delete the column if it is not used 
+     (which is almost always the case).
+
+   - found that it is necessay to seek to the EOF of a file after 
+     turncating the size of the file, to reestablish a definite
+     current location in the file.  The required small changes to 3
+     routines: file_truncate (to seek to EOF) and fftrun (to set io_pos) 
+     and the truncation routine in drvrmem.c.
+
+   - improved the efficiency when compressing integer images with
+     gzip.  Previously, the image was always represented using integer*4
+     pixels, which were then compressed.  Now, if the range of pixel
+     values can be represented with integer*2 pixels or integer*1 pixels, 
+     then that is used.  This change is backward compatible with any 
+     compressed images that used the previous method.
+
+   - changed the default tiling pattern when using Hcompress from 
+     large squares (200 to 600 pixels wide) to 16 rows of the image.
+     This generally requires less memory, compresses faster, and is more
+     consistent with the default row by row tiling when using the other
+     compression methods.
+
+   - modified imcomp_init_table in imcompress.c to enforce a restriction
+     when using the Hcompress algorithm that the 1st 2 dimensions of sll
+     image tiles must be at least 4 pixels long.  Hcompress becomes very
+     inefficient for smaller dimensions, and does not work at all with
+     1D images.
+     
+   - fixed bug in the Hcompress compression algorithm that could affect
+     compression of I*4 images, using non-square compression tiles
+     (in the encode64 routine).
+
+Version 3.07 - 6 December 2007  (internal release)
+
+   - fixed bug with the PLIO image compression routine which silently
+     produced a corrupted compressed image if the uncompressed image pixels
+     were not all in the range 0 to 2**24.  (fixed in November)
+     
+   - fixed several 'for' loops in imcompress.c which were exceeding the
+     bounds of an array by 1.  (fixed in November)
 
    - fixed a possible, but unlikely, memory overflow issue in iraffits.c.
    

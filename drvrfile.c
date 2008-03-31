@@ -358,9 +358,10 @@ int file_truncate(int handle, LONGLONG filesize)
 
     fdesc = fileno(handleTable[handle].fileptr);
     ftruncate(fdesc, (OFF_T) filesize);
+    file_seek(handle, filesize);
 
     handleTable[handle].currentpos = filesize;
-    handleTable[handle].last_io_op = IO_WRITE;
+    handleTable[handle].last_io_op = IO_SEEK;
 
 #endif
 

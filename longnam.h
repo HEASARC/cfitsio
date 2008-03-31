@@ -126,7 +126,7 @@
 #define fits_read_key_str      ffgkys
 #define fits_read_key_log      ffgkyl
 #define fits_read_key_lng      ffgkyj
-#define fits_read_key_lnglng      ffgkyjj
+#define fits_read_key_lnglng   ffgkyjj
 #define fits_read_key_flt      ffgkye
 #define fits_read_key_dbl      ffgkyd
 #define fits_read_key_cmp      ffgkyc
@@ -140,14 +140,15 @@
 #define fits_read_keys_str     ffgkns
 #define fits_read_keys_log     ffgknl
 #define fits_read_keys_lng     ffgknj
+#define fits_read_keys_lnglng  ffgknjj
 #define fits_read_keys_flt     ffgkne
 #define fits_read_keys_dbl     ffgknd
 #define fits_read_imghdr       ffghpr
 #define fits_read_imghdrll     ffghprll
 #define fits_read_atblhdr      ffghtb
 #define fits_read_btblhdr      ffghbn
-#define fits_read_atblhdrll      ffghtbll
-#define fits_read_btblhdrll      ffghbnll
+#define fits_read_atblhdrll    ffghtbll
+#define fits_read_btblhdrll    ffghbnll
 #define fits_hdr2str           ffhdr2str
 
 #define fits_update_card       ffucrd

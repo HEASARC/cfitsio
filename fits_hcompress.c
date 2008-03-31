@@ -216,6 +216,7 @@ int *tmp;
 	 */
 	nxtop = nx;
 	nytop = ny;
+
 	for (k = 0; k<log2n; k++) {
 		oddx = nxtop % 2;
 		oddy = nytop % 2;
@@ -230,6 +231,7 @@ int *tmp;
 				hx = (a[s10+1] + a[s10] - a[s00+1] - a[s00]) >> shift;
 				hy = (a[s10+1] - a[s10] + a[s00+1] - a[s00]) >> shift;
 				hc = (a[s10+1] - a[s10] - a[s00+1] + a[s00]) >> shift;
+
 				/*
 				 * Throw away the 2 bottom bits of h0, bottom bit of hx,hy.
 				 * To get rounding to be same for positive and negative
@@ -352,6 +354,7 @@ LONGLONG *tmp;
 	 */
 	nxtop = nx;
 	nytop = ny;
+
 	for (k = 0; k<log2n; k++) {
 		oddx = nxtop % 2;
 		oddy = nytop % 2;
@@ -366,6 +369,7 @@ LONGLONG *tmp;
 				hx = (a[s10+1] + a[s10] - a[s00+1] - a[s00]) >> shift;
 				hy = (a[s10+1] - a[s10] + a[s00+1] - a[s00]) >> shift;
 				hc = (a[s10+1] - a[s10] - a[s00+1] + a[s00]) >> shift;
+
 				/*
 				 * Throw away the 2 bottom bits of h0, bottom bit of hx,hy.
 				 * To get rounding to be same for positive and negative
@@ -669,7 +673,6 @@ int stat = 0;
 		signbits[nsign] <<= bits_to_go;
 		nsign += 1;
 	}
-
 	/*
 	 * calculate number of bit planes for 3 quadrants
 	 *
@@ -696,12 +699,24 @@ int stat = 0;
 	/*
 	 * now calculate number of bits for each quadrant
 	 */
+
+        /* this is a more efficient way to do this, */
+ 
+ 
+        for (q = 0; q < 3; q++) {
+            for (nbitplanes[q] = 0; vmax[q]>0; vmax[q] = vmax[q]>>1, nbitplanes[q]++) ; 
+        }
+
+
+/*
 	for (q = 0; q < 3; q++) {
 		nbitplanes[q] = (int) (log((float) (vmax[q]+1))/log(2.0)+0.5);
 		if ( (vmax[q]+1) > (1<<nbitplanes[q]) ) {
 			nbitplanes[q] += 1;
 		}
 	}
+*/
+
 	/*
 	 * write nbitplanes
 	 */
@@ -769,8 +784,8 @@ int stat = 0;
 	 * write first value of A (sum of all pixels -- the only value
 	 * which does not compress well)
 	 */
-
 	writelonglong(outfile, a[0]);
+
 	a[0] = 0;
 	/*
 	 * allocate array for sign bits and save values, 8 per byte
@@ -834,16 +849,16 @@ int stat = 0;
 	 */
 	nx2 = (nx+1)/2;
 	ny2 = (ny+1)/2;
-
-        i = 0;
-        for (k=0; k<ny; k++) {
-            for (j=0; j<nx; j++) {
-                q = (j>=ny2) + (k>=nx2);
-                vmax[q] |= a[i];
-                i++;
-            }
-        } 
-
+	j=0;	/* column counter	*/
+	k=0;	/* row counter		*/
+	for (i=0; i<nel; i++) {
+		q = (j>=ny2) + (k>=nx2);
+		if (vmax[q] < a[i]) vmax[q] = a[i];
+		if (++j >= ny) {
+			j = 0;
+			k += 1;
+		}
+	}
 	/*
 	 * now calculate number of bits for each quadrant
 	 */
@@ -894,7 +909,6 @@ int stat = 0;
 	} 
 
 	free(signbits);
-	
 	*nlength = noutchar;
 
         if (noutchar >= noutmax) {

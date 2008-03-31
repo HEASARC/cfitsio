@@ -338,7 +338,8 @@ static long header_bytes;   /* number of bytes in gzip header */
 static int force = 0;        /* don't ask questions, compress links (-f) */
 static int maxbits = BITS;   /* max bits per code for LZW */
 static int method = DEFLATED;/* compression method */
-static int level = 6;        /* compression level */
+/* static int level = 6;  level 1 works just as well and is faster */
+static int level = 1;        /* compression level */
 static int exit_code = OK;   /* program exit code */
 static int last_member;      /* set for .zip and .Z files */
 static int part_nb;          /* number of parts in .gz file */
@@ -1040,15 +1041,14 @@ local void write_buf(buf, cnt)
       {
         *memptr = realloc_fn(*memptr, bytes_out + cnt);
         *memsize = bytes_out + cnt;  /* new memory buffer size */
-      }
 
-      if (!(*memptr))
-      {
+        if (!(*memptr))
+        {
             error("malloc failed while uncompressing (write_buf)");
             exit_code = ERROR;
             return;
+        }  
       }
-
       /* copy  into memory buffer */
       memcpy((char *) *memptr + bytes_out, (char *) buf, cnt);
     }
@@ -2342,7 +2342,6 @@ local int unzip(in, out)
 	error("internal error, invalid method");
         return ERROR;
     }
-
     /* Get the crc and original length */
     if (!pkzip) {
         /* crc32  (see algorithm.doc)
@@ -2368,10 +2367,12 @@ local int unzip(in, out)
     }
 
     /* Validate decompression */
+
     if (orig_crc != updcrc(outbuf, 0)) {
 	error("invalid compressed data--crc error");
         return ERROR;
     }
+
     if (orig_len != (ulg)bytes_out) {
 	error("invalid compressed data--length error");
         return ERROR;
