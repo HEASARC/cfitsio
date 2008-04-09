@@ -714,15 +714,22 @@ int imcomp_calc_max_elem (int comptype, int nx, int zbitpix, int blocksize)
 {    
     if (comptype == RICE_1)
     {
-        return (sizeof(float) * nx + nx / blocksize + 2 + 4);
+        if (zbitpix == 16)
+            return (sizeof(short) * nx + nx / blocksize + 2 + 4);
+	else
+            return (sizeof(float) * nx + nx / blocksize + 2 + 4);
     }
     else if (comptype == GZIP_1)
     {
-        /* gzip usually compressed by at least a factor of 2 */
+        /* gzip usually compressed by at least a factor of 2 for I*4 images */
+        /* and somewhat less for I*2 images */
         /* If this size turns out to be too small, then the gzip */
         /* compression routine will allocate more space as required */
 
-        return(nx * sizeof(int) / 2);
+        if (zbitpix == 16 || zbitpix == 8)
+            return(nx * sizeof(short) / 1.3);
+	else
+            return(nx * sizeof(int) / 2);
     }
     else if (comptype == HCOMPRESS_1)
     {
@@ -794,8 +801,6 @@ int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr, int *status)
     }
     else if ((outfptr->Fptr)->zbitpix == SHORT_IMG)
     {
-
-/* EEEEE edits */
         if ( (outfptr->Fptr)->compress_type == RICE_1 ||
 	     (outfptr->Fptr)->compress_type == GZIP_1 ||
              (outfptr->Fptr)->compress_type == NOCOMPRESS) {
@@ -1124,7 +1129,6 @@ int imcomp_compress_tile (fitsfile *outfptr,
            flagval = *(short *) (nullflagval);
        
        /* don't have to convert to int if using gzip or Rice without modifications */
-/*   EEEEE edits */
        if (((outfptr->Fptr)->compress_type == RICE_1 || (outfptr->Fptr)->compress_type == GZIP_1) &&
           nullcheck == 0 && scale == 1.0 && zero == 0.0 && zbitpix == SHORT_IMG) 
        {
@@ -3818,8 +3822,6 @@ int imcomp_decompress_tile (fitsfile *infptr,
            /*  must allocate 8 bytes per pixel of scratch space */
            lldata = (LONGLONG*) malloc (tilelen * sizeof (LONGLONG));
 	   idata = (int *) lldata;
-
-/* EEEEE edits */
     } else if ( ( (infptr->Fptr)->compress_type == RICE_1 || 
                   (infptr->Fptr)->compress_type == GZIP_1) &&
                (infptr->Fptr)->zbitpix == SHORT_IMG ) {
@@ -3874,7 +3876,6 @@ int imcomp_decompress_tile (fitsfile *infptr,
         /* uncompress the data */
         blocksize = (infptr->Fptr)->rice_blocksize;
 
-/* EEEEE edits */
         if ((infptr->Fptr)->zbitpix == SHORT_IMG ) {
             if ((*status = fits_rdecomp_short (cbuf, nelem, (unsigned short *)idata,
                 tilelen, blocksize)))

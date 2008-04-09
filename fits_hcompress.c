@@ -51,10 +51,9 @@ static void shuffle64(LONGLONG a[], int n, int n2, LONGLONG tmp[]);
 
 static  void writeint(char *outfile, int a);
 static  void writelonglong(char *outfile, LONGLONG a);
-static  int qwrite(char *outfile, char *a, int n); 
 static  int doencode(char *outfile, int a[], int nx, int ny, unsigned char nbitplanes[3]);
 static  int doencode64(char *outfile, LONGLONG a[], int nx, int ny, unsigned char nbitplanes[3]);
-static int  mywrite(char *file, char buffer[], int n);
+static int  qwrite(char *file, char buffer[], int n);
 
 static int qtree_encode(char *outfile, int a[], int n, int nqx, int nqy, int nbitplanes);
 static int qtree_encode64(char *outfile, LONGLONG a[], int n, int nqx, int nqy, int nbitplanes);
@@ -69,7 +68,10 @@ static int  bufcopy(unsigned char a[], int n, unsigned char buffer[], int *b, in
 static void write_bdirect(char *outfile, int a[], int n,int nqx, int nqy, unsigned char scratch[], int bit);
 static void write_bdirect64(char *outfile, LONGLONG a[], int n,int nqx, int nqy, unsigned char scratch[], int bit);
 
-#define output_nybble(outfile,c)	output_nbits(outfile,c,4)
+/* #define output_nybble(outfile,c)	output_nbits(outfile,c,4) */
+static void output_nybble(char *outfile, int bits);
+static void output_nnybble(char *outfile, int n, unsigned char array[]);
+
 #define output_huffman(outfile,c)	output_nbits(outfile,code[c],ncode[c])
 
 /* ---------------------------------------------------------------------- */
@@ -195,8 +197,6 @@ int *tmp;
 	 */
 	tmp = (int *) malloc(((nmax+1)/2)*sizeof(int));
 	if(tmp == (int *) NULL) {
-	/*	fprintf(stderr, "htrans: insufficient memory\n"); 
-		exit(-1);  */
 	        ffpmsg("htrans: insufficient memory");
 		return(DATA_COMPRESSION_ERR);
 	}
@@ -333,8 +333,6 @@ LONGLONG *tmp;
 	 */
 	tmp = (LONGLONG *) malloc(((nmax+1)/2)*sizeof(LONGLONG));
 	if(tmp == (LONGLONG *) NULL) {
-	/*	fprintf(stderr, "htrans: insufficient memory\n"); 
-		exit(-1);  */
 	        ffpmsg("htrans64: insufficient memory");
 		return(DATA_COMPRESSION_ERR);
 	}
@@ -629,8 +627,6 @@ int stat = 0;
 	 */
 	signbits = (unsigned char *) malloc((nel+7)/8);
 	if (signbits == (unsigned char *) NULL) {
-/*		fprintf(stderr, "encode: insufficient memory\n"); 
-		exit(-1); */
 		ffpmsg("encode: insufficient memory");
 		return(DATA_COMPRESSION_ERR);
 	}
@@ -792,8 +788,6 @@ int stat = 0;
 	 */
 	signbits = (unsigned char *) malloc((nel+7)/8);
 	if (signbits == (unsigned char *) NULL) {
-/*		fprintf(stderr, "encode: insufficient memory\n"); 
-		exit(-1); */
 		ffpmsg("encode64: insufficient memory");
 		return(DATA_COMPRESSION_ERR);
 	}
@@ -966,20 +960,9 @@ unsigned char b[8];
 	}
 	for (i=0; i<8; i++) qwrite(outfile, (char *) &b[i],1);
 }
-
-/* ######################################################################### */
-static int qwrite(char *outfile, char *a, int n)
-{
-int nwrite;
-
-	nwrite = mywrite(outfile, a, n);	
-	return(nwrite);      /* added by WDP to prevent compiler warning */
-}
-
 /* ######################################################################### */
 static int
-mywrite(char *file, char buffer[], int n)
-{
+qwrite(char *file, char buffer[], int n){
     /*
      * write n bytes from buffer into file
      * returns number of bytes read (=n) if successful, <=0 if not
@@ -1117,17 +1100,19 @@ start_outputing_bits()
 static void
 output_nbits(char *outfile, int bits, int n)
 {
+    /* AND mask for the right-most n bits */
+    static int mask[9] = {0, 1, 3, 7, 15, 31, 63, 127, 255};
 	/*
 	 * insert bits at end of buffer
 	 */
 	buffer2 <<= n;
-	buffer2 |= ( bits & ((1<<n)-1) );
+/*	buffer2 |= ( bits & ((1<<n)-1) ); */
+	buffer2 |= ( bits & (*(mask+n)) );
 	bits_to_go2 -= n;
 	if (bits_to_go2 <= 0) {
 		/*
 		 * buffer2 full, put out top 8 bits
 		 */
-/*		putc((buffer2>>(-bits_to_go2)) & 0xff,outfile); */
 
 	        outfile[noutchar] = ((buffer2>>(-bits_to_go2)) & 0xff);
 
@@ -1136,6 +1121,98 @@ output_nbits(char *outfile, int bits, int n)
 		bits_to_go2 += 8;
 	}
 	bitcount += n;
+}
+/* ######################################################################### */
+/*  OUTPUT a 4 bit nybble */
+static void
+output_nybble(char *outfile, int bits)
+{
+	/*
+	 * insert 4 bits at end of buffer
+	 */
+	buffer2 = (buffer2<<4) | ( bits & 15 );
+	bits_to_go2 -= 4;
+	if (bits_to_go2 <= 0) {
+		/*
+		 * buffer2 full, put out top 8 bits
+		 */
+
+	        outfile[noutchar] = ((buffer2>>(-bits_to_go2)) & 0xff);
+
+		if (noutchar < noutmax) noutchar++;
+		
+		bits_to_go2 += 8;
+	}
+	bitcount += 4;
+}
+/*  ############################################################################  */
+/* OUTPUT array of 4 BITS  */
+
+static void output_nnybble(char *outfile, int n, unsigned char array[])
+{
+	/* pack the 4 lower bits in each element of the array into the outfile array */
+
+int ii, jj, kk = 0, shift;
+
+	if (n == 1) {
+		output_nybble(outfile, (int) array[0]);
+		return;
+	}
+/* forcing byte alignment doesn;t help, and even makes it go slightly slower
+if (bits_to_go2 != 8)
+   output_nbits(outfile, kk, bits_to_go2);
+*/
+	if (bits_to_go2 <= 4)
+	{
+		/* just room for 1 nybble; write it out separately */
+		output_nybble(outfile, array[0]);
+		kk++;  /* index to next array element */
+
+		if (n == 2)  /* only 1 more nybble to write out */
+		{
+			output_nybble(outfile, (int) array[1]);
+			return;
+		}
+	}
+
+
+        /* bits_to_go2 is now in the range 5 - 8 */
+	shift = 8 - bits_to_go2;  
+
+	/* now write out pairs of nybbles; this does not affect value of bits_to_go2 */
+	jj = (n - kk) / 2;
+	
+	if (bits_to_go2 == 8) {
+	    /* special case if nybbles are aligned on byte boundary */
+	    /* this actually seems to make very little differnece in speed */
+	    buffer2 = 0;
+	    for (ii = 0; ii < jj; ii++)
+	    {
+		outfile[noutchar] = ((array[kk] & 15)<<4) | (array[kk+1] & 15);
+		kk += 2;
+		noutchar++;
+	    }
+	} else {
+	    for (ii = 0; ii < jj; ii++)
+	    {
+		buffer2 = (buffer2<<8) | ((array[kk] & 15)<<4) | (array[kk+1] & 15);
+		kk += 2;
+
+		/*
+		 buffer2 full, put out top 8 bits
+		 */
+
+	        outfile[noutchar] = ((buffer2>>shift) & 0xff);
+		noutchar++;
+	    }
+	}
+
+	bitcount += (8 * (ii - 1));
+
+	/* write out last odd nybble, if present */
+	if (kk != n) output_nybble(outfile, (int) array[n - 1]); 
+
+	return; 
 }
 
 
@@ -1230,10 +1307,7 @@ unsigned char *scratch, *buffer;
 	scratch = (unsigned char *) malloc(2*bmax);
 	buffer = (unsigned char *) malloc(bmax);
 	if ((scratch == (unsigned char *) NULL) ||
-		(buffer  == (unsigned char *) NULL)) {
-/*		fprintf(stderr, "qtree_encode: insufficient memory\n");
-		exit(-1);  */
-		
+		(buffer  == (unsigned char *) NULL)) {		
 		ffpmsg("qtree_encode: insufficient memory");
 		return(DATA_COMPRESSION_ERR);
 	}
@@ -1353,9 +1427,6 @@ unsigned char *scratch, *buffer;
 	buffer = (unsigned char *) malloc(bmax);
 	if ((scratch == (unsigned char *) NULL) ||
 		(buffer  == (unsigned char *) NULL)) {
-/*		fprintf(stderr, "qtree_encode: insufficient memory\n");
-		exit(-1);  */
-		
 		ffpmsg("qtree_encode64: insufficient memory");
 		return(DATA_COMPRESSION_ERR);
 	}
@@ -1490,12 +1561,88 @@ int s10, s00;
 	k = 0;							/* k is index of b[i/2,j/2]	*/
 	for (i = 0; i<nx-1; i += 2) {
 		s00 = n*i;					/* s00 is index of a[i,j]	*/
+/* tried using s00+n directly in the statements, but this had no effect on performance */
 		s10 = s00+n;				/* s10 is index of a[i+1,j]	*/
 		for (j = 0; j<ny-1; j += 2) {
+
+/*
+ this was not any faster..
+ 
+         b[k] = (a[s00]  & b0) ? 
+	            (a[s00+1] & b0) ?
+	                (a[s10] & b0)   ?
+		            (a[s10+1] & b0) ? 15 : 14
+                         :  (a[s10+1] & b0) ? 13 : 12
+		      : (a[s10] & b0)   ?
+		            (a[s10+1] & b0) ? 11 : 10
+                         :  (a[s10+1] & b0) ?  9 :  8
+	          : (a[s00+1] & b0) ?
+	                (a[s10] & b0)   ?
+		            (a[s10+1] & b0) ? 7 : 6
+                         :  (a[s10+1] & b0) ? 5 : 4
+
+		      : (a[s10] & b0)   ?
+		            (a[s10+1] & b0) ? 3 : 2
+                         :  (a[s10+1] & b0) ? 1 : 0;
+*/
+
+/*
+this alternative way of calculating b[k] was slowwer than the original code
+		    if ( a[s00]     & b0)
+			if ( a[s00+1]     & b0)
+			    if ( a[s10]     & b0)
+				if ( a[s10+1]     & b0)
+					b[k] = 15;
+				else
+					b[k] = 14;
+			    else
+				if ( a[s10+1]     & b0)
+					b[k] = 13;
+				else
+					b[k] = 12;
+			else
+			    if ( a[s10]     & b0)
+				if ( a[s10+1]     & b0)
+					b[k] = 11;
+				else
+					b[k] = 10;
+			    else
+				if ( a[s10+1]     & b0)
+					b[k] = 9;
+				else
+					b[k] = 8;
+		    else
+			if ( a[s00+1]     & b0)
+			    if ( a[s10]     & b0)
+				if ( a[s10+1]     & b0)
+					b[k] = 7;
+				else
+					b[k] = 6;
+			    else
+				if ( a[s10+1]     & b0)
+					b[k] = 5;
+				else
+					b[k] = 4;
+			else
+			    if ( a[s10]     & b0)
+				if ( a[s10+1]     & b0)
+					b[k] = 3;
+				else
+					b[k] = 2;
+			    else
+				if ( a[s10+1]     & b0)
+					b[k] = 1;
+				else
+					b[k] = 0;
+*/
+			
+
+
 			b[k] = ( ( a[s10+1]     & b0)
 				   | ((a[s10  ]<<1) & b1)
 				   | ((a[s00+1]<<2) & b2)
 				   | ((a[s00  ]<<3) & b3) ) >> bit;
+
 			k += 1;
 			s00 += 2;
 			s10 += 2;
@@ -1672,9 +1819,13 @@ int i;
 	/*
 	 * write to outfile
 	 */
+/*
 	for (i = 0; i < ((nqx+1)/2) * ((nqy+1)/2); i++) {
 		output_nybble(outfile,scratch[i]);
 	}
+*/
+	output_nnybble(outfile, ((nqx+1)/2) * ((nqy+1)/2), scratch);
+
 }
 /* ######################################################################### */
 static void
@@ -1693,7 +1844,10 @@ int i;
 	/*
 	 * write to outfile
 	 */
+/*
 	for (i = 0; i < ((nqx+1)/2) * ((nqy+1)/2); i++) {
 		output_nybble(outfile,scratch[i]);
 	}
+*/
+	output_nnybble(outfile, ((nqx+1)/2) * ((nqy+1)/2), scratch);
 }

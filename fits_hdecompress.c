@@ -45,8 +45,6 @@ The following modifications have been made to the original code:
 #define max(a,b)        (((a)>(b))?(a):(b))
 #endif
 
-#define input_nybble(infile)	input_nbits(infile,4)
-
 static long nextchar;
 
 static int decode(unsigned char *infile, int *a, int *nx, int *ny, int *scale);
@@ -69,6 +67,10 @@ static int qtree_decode64(unsigned char *infile, LONGLONG a[], int n, int nqx, i
 static void start_inputing_bits();
 static int input_bit(unsigned char *infile);
 static int input_nbits(unsigned char *infile, int n);
+/*  make input_nybble a separate routine, for added effiency */
+/* #define input_nybble(infile)	input_nbits(infile,4) */
+static int input_nybble(unsigned char *infile);
+static int input_nnybble(unsigned char *infile, int n, unsigned char *array);
 
 static void qtree_expand(unsigned char *infile, unsigned char a[], int nx, int ny, unsigned char b[]);
 static void qtree_bitins(unsigned char a[], int nx, int ny, int b[], int n, int bit);
@@ -77,7 +79,6 @@ static void qtree_copy(unsigned char a[], int nx, int ny, unsigned char b[], int
 static void read_bdirect(unsigned char *infile, int a[], int n, int nqx, int nqy, unsigned char scratch[], int bit);
 static void read_bdirect64(unsigned char *infile, LONGLONG a[], int n, int nqx, int nqy, unsigned char scratch[], int bit);
 static int  input_huffman(unsigned char *infile);
-static int  myread(unsigned char *file, char buffer[], int n);
 
 /* ---------------------------------------------------------------------- */
 int fits_hdecompress(unsigned char *input, int smooth, int *a, int *ny, int *nx, 
@@ -1196,8 +1197,10 @@ int i, nel, nx2, ny2, stat;
 	 */
 	start_inputing_bits();
 	for (i=0; i<nel; i++) {
-		if (a[i] != 0) {
-			if (input_bit(infile) != 0) a[i] = -a[i];
+		if (a[i]) {
+			/* tried putting the input_bit code in-line here, instead of */
+			/* calling the function, but it made no difference in the speed */
+			if (input_bit(infile)) a[i] = -a[i];
 		}
 	}
 	return(0);
@@ -1253,7 +1256,7 @@ int i, nel, nx2, ny2, stat;
 	 */
 	start_inputing_bits();
 	for (i=0; i<nel; i++) {
-		if (a[i] != 0) {
+		if (a[i]) {
 			if (input_bit(infile) != 0) a[i] = -a[i];
 		}
 	}
@@ -1472,7 +1475,7 @@ int i;
 	 * now read new 4-bit values into b for each non-zero element
 	 */
 	for (i = nx*ny-1; i >= 0; i--) {
-		if (b[i] != 0) b[i] = input_huffman(infile);
+		if (b[i]) b[i] = input_huffman(infile);
 	}
 }
 
@@ -1495,7 +1498,7 @@ int s00, s10;
 	 */
 	nx2 = (nx+1)/2;
 	ny2 = (ny+1)/2;
-	k = ny2*(nx2-1)+ny2-1;			/* k   is index of a[i,j]			*/
+	k = ny2*(nx2-1)+ny2-1;			/* k   is index of a[i,j]		*/
 	for (i = nx2-1; i >= 0; i--) {
 		s00 = 2*(n*i+ny2-1);		/* s00 is index of b[2*i,2*j]		*/
 		for (j = ny2-1; j >= 0; j--) {
@@ -1508,21 +1511,147 @@ int s00, s10;
 	 * now expand each 2x2 block
 	 */
 	for (i = 0; i<nx-1; i += 2) {
-		s00 = n*i;					/* s00 is index of b[i,j]	*/
+
+  /* Note:
+     Unlike the case in qtree_bitins, this code runs faster on a 32-bit linux
+     machine using the s10 intermediate variable, rather that using s00+n. 
+     Go figure!
+  */
+		s00 = n*i;				/* s00 is index of b[i,j]	*/
 		s10 = s00+n;				/* s10 is index of b[i+1,j]	*/
+
 		for (j = 0; j<ny-1; j += 2) {
+
+		    switch (b[s00]) {
+		    case(0):
+			b[s10+1] = 0;
+			b[s10  ] = 0;
+			b[s00+1] = 0;
+			b[s00  ] = 0;
+
+			break;
+		    case(1):
+			b[s10+1] = 1;
+			b[s10  ] = 0;
+			b[s00+1] = 0;
+			b[s00  ] = 0;
+
+			break;
+		    case(2):
+			b[s10+1] = 0;
+			b[s10  ] = 1;
+			b[s00+1] = 0;
+			b[s00  ] = 0;
+
+			break;
+		    case(3):
+			b[s10+1] = 1;
+			b[s10  ] = 1;
+			b[s00+1] = 0;
+			b[s00  ] = 0;
+
+			break;
+		    case(4):
+			b[s10+1] = 0;
+			b[s10  ] = 0;
+			b[s00+1] = 1;
+			b[s00  ] = 0;
+
+			break;
+		    case(5):
+			b[s10+1] = 1;
+			b[s10  ] = 0;
+			b[s00+1] = 1;
+			b[s00  ] = 0;
+
+			break;
+		    case(6):
+			b[s10+1] = 0;
+			b[s10  ] = 1;
+			b[s00+1] = 1;
+			b[s00  ] = 0;
+
+			break;
+		    case(7):
+			b[s10+1] = 1;
+			b[s10  ] = 1;
+			b[s00+1] = 1;
+			b[s00  ] = 0;
+
+			break;
+		    case(8):
+			b[s10+1] = 0;
+			b[s10  ] = 0;
+			b[s00+1] = 0;
+			b[s00  ] = 1;
+
+			break;
+		    case(9):
+			b[s10+1] = 1;
+			b[s10  ] = 0;
+			b[s00+1] = 0;
+			b[s00  ] = 1;
+			break;
+		    case(10):
+			b[s10+1] = 0;
+			b[s10  ] = 1;
+			b[s00+1] = 0;
+			b[s00  ] = 1;
+
+			break;
+		    case(11):
+			b[s10+1] = 1;
+			b[s10  ] = 1;
+			b[s00+1] = 0;
+			b[s00  ] = 1;
+
+			break;
+		    case(12):
+			b[s10+1] = 0;
+			b[s10  ] = 0;
+			b[s00+1] = 1;
+			b[s00  ] = 1;
+
+			break;
+		    case(13):
+			b[s10+1] = 1;
+			b[s10  ] = 0;
+			b[s00+1] = 1;
+			b[s00  ] = 1;
+
+			break;
+		    case(14):
+			b[s10+1] = 0;
+			b[s10  ] = 1;
+			b[s00+1] = 1;
+			b[s00  ] = 1;
+
+			break;
+		    case(15):
+			b[s10+1] = 1;
+			b[s10  ] = 1;
+			b[s00+1] = 1;
+			b[s00  ] = 1;
+
+			break;
+		    }
+/*
 			b[s10+1] =  b[s00]     & 1;
 			b[s10  ] = (b[s00]>>1) & 1;
 			b[s00+1] = (b[s00]>>2) & 1;
 			b[s00  ] = (b[s00]>>3) & 1;
+*/
+
 			s00 += 2;
 			s10 += 2;
 		}
+
 		if (j < ny) {
 			/*
 			 * row size is odd, do last element in row
 			 * s00+1, s10+1 are off edge
 			 */
+                        /* not worth converting this to use 16 case statements */
 			b[s10  ] = (b[s00]>>1) & 1;
 			b[s00  ] = (b[s00]>>3) & 1;
 		}
@@ -1534,6 +1663,7 @@ int s00, s10;
 		 */
 		s00 = n*i;
 		for (j = 0; j<ny-1; j += 2) {
+                        /* not worth converting this to use 16 case statements */
 			b[s00+1] = (b[s00]>>2) & 1;
 			b[s00  ] = (b[s00]>>3) & 1;
 			s00 += 2;
@@ -1543,6 +1673,7 @@ int s00, s10;
 			 * both row and column size are odd, do corner element
 			 * s00+1, s10, s10+1 are off edge
 			 */
+                        /* not worth converting this to use 16 case statements */
 			b[s00  ] = (b[s00]>>3) & 1;
 		}
 	}
@@ -1562,22 +1693,100 @@ qtree_bitins(unsigned char a[], int nx, int ny, int b[], int n, int bit)
 */
 {
 int i, j, k;
-int s00, s10;
+int s00;
+int plane_val;
 
+	plane_val = 1 << bit;
+	
 	/*
 	 * expand each 2x2 block
 	 */
-	k = 0;							/* k   is index of a[i/2,j/2]	*/
+	k = 0;						/* k   is index of a[i/2,j/2]	*/
 	for (i = 0; i<nx-1; i += 2) {
-		s00 = n*i;					/* s00 is index of b[i,j]		*/
-		s10 = s00+n;				/* s10 is index of b[i+1,j]		*/
+		s00 = n*i;				/* s00 is index of b[i,j]	*/
+
+  /* Note:
+     this code appears to run very slightly faster on a 32-bit linux
+     machine using s00+n rather than the s10 intermediate variable
+  */
+  /*		s10 = s00+n;	*/			/* s10 is index of b[i+1,j]	*/
 		for (j = 0; j<ny-1; j += 2) {
+
+		    switch (a[k]) {
+		    case(0):
+			break;
+		    case(1):
+			b[s00+n+1] |= plane_val;
+			break;
+		    case(2):
+			b[s00+n  ] |= plane_val;
+			break;
+		    case(3):
+			b[s00+n+1] |= plane_val;
+			b[s00+n  ] |= plane_val;
+			break;
+		    case(4):
+			b[s00+1] |= plane_val;
+			break;
+		    case(5):
+			b[s00+n+1] |= plane_val;
+			b[s00+1] |= plane_val;
+			break;
+		    case(6):
+			b[s00+n  ] |= plane_val;
+			b[s00+1] |= plane_val;
+			break;
+		    case(7):
+			b[s00+n+1] |= plane_val;
+			b[s00+n  ] |= plane_val;
+			b[s00+1] |= plane_val;
+			break;
+		    case(8):
+			b[s00  ] |= plane_val;
+			break;
+		    case(9):
+			b[s00+n+1] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(10):
+			b[s00+n  ] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(11):
+			b[s00+n+1] |= plane_val;
+			b[s00+n  ] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(12):
+			b[s00+1] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(13):
+			b[s00+n+1] |= plane_val;
+			b[s00+1] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(14):
+			b[s00+n  ] |= plane_val;
+			b[s00+1] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(15):
+			b[s00+n+1] |= plane_val;
+			b[s00+n  ] |= plane_val;
+			b[s00+1] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    }
+
+/*
 			b[s10+1] |= ( a[k]     & 1) << bit;
 			b[s10  ] |= ((a[k]>>1) & 1) << bit;
 			b[s00+1] |= ((a[k]>>2) & 1) << bit;
 			b[s00  ] |= ((a[k]>>3) & 1) << bit;
+*/
 			s00 += 2;
-			s10 += 2;
+/*			s10 += 2; */
 			k += 1;
 		}
 		if (j < ny) {
@@ -1585,8 +1794,62 @@ int s00, s10;
 			 * row size is odd, do last element in row
 			 * s00+1, s10+1 are off edge
 			 */
+
+		    switch (a[k]) {
+		    case(0):
+			break;
+		    case(1):
+			break;
+		    case(2):
+			b[s00+n  ] |= plane_val;
+			break;
+		    case(3):
+			b[s00+n  ] |= plane_val;
+			break;
+		    case(4):
+			break;
+		    case(5):
+			break;
+		    case(6):
+			b[s00+n  ] |= plane_val;
+			break;
+		    case(7):
+			b[s00+n  ] |= plane_val;
+			break;
+		    case(8):
+			b[s00  ] |= plane_val;
+			break;
+		    case(9):
+			b[s00  ] |= plane_val;
+			break;
+		    case(10):
+			b[s00+n  ] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(11):
+			b[s00+n  ] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(12):
+			b[s00  ] |= plane_val;
+			break;
+		    case(13):
+			b[s00  ] |= plane_val;
+			break;
+		    case(14):
+			b[s00+n  ] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(15):
+			b[s00+n  ] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    }
+
+/*
 			b[s10  ] |= ((a[k]>>1) & 1) << bit;
 			b[s00  ] |= ((a[k]>>3) & 1) << bit;
+*/
 			k += 1;
 		}
 	}
@@ -1597,8 +1860,63 @@ int s00, s10;
 		 */
 		s00 = n*i;
 		for (j = 0; j<ny-1; j += 2) {
+
+		    switch (a[k]) {
+		    case(0):
+			break;
+		    case(1):
+			break;
+		    case(2):
+			break;
+		    case(3):
+			break;
+		    case(4):
+			b[s00+1] |= plane_val;
+			break;
+		    case(5):
+			b[s00+1] |= plane_val;
+			break;
+		    case(6):
+			b[s00+1] |= plane_val;
+			break;
+		    case(7):
+			b[s00+1] |= plane_val;
+			break;
+		    case(8):
+			b[s00  ] |= plane_val;
+			break;
+		    case(9):
+			b[s00  ] |= plane_val;
+			break;
+		    case(10):
+			b[s00  ] |= plane_val;
+			break;
+		    case(11):
+			b[s00  ] |= plane_val;
+			break;
+		    case(12):
+			b[s00+1] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(13):
+			b[s00+1] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(14):
+			b[s00+1] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(15):
+			b[s00+1] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    }
+
+/*
 			b[s00+1] |= ((a[k]>>2) & 1) << bit;
 			b[s00  ] |= ((a[k]>>3) & 1) << bit;
+*/
+
 			s00 += 2;
 			k += 1;
 		}
@@ -1607,7 +1925,53 @@ int s00, s10;
 			 * both row and column size are odd, do corner element
 			 * s00+1, s10, s10+1 are off edge
 			 */
+
+		    switch (a[k]) {
+		    case(0):
+			break;
+		    case(1):
+			break;
+		    case(2):
+			break;
+		    case(3):
+			break;
+		    case(4):
+			break;
+		    case(5):
+			break;
+		    case(6):
+			break;
+		    case(7):
+			break;
+		    case(8):
+			b[s00  ] |= plane_val;
+			break;
+		    case(9):
+			b[s00  ] |= plane_val;
+			break;
+		    case(10):
+			b[s00  ] |= plane_val;
+			break;
+		    case(11):
+			b[s00  ] |= plane_val;
+			break;
+		    case(12):
+			b[s00  ] |= plane_val;
+			break;
+		    case(13):
+			b[s00  ] |= plane_val;
+			break;
+		    case(14):
+			b[s00  ] |= plane_val;
+			break;
+		    case(15):
+			b[s00  ] |= plane_val;
+			break;
+		    }
+
+/*
 			b[s00  ] |= ((a[k]>>3) & 1) << bit;
+*/
 			k += 1;
 		}
 	}
@@ -1626,7 +1990,10 @@ qtree_bitins64(unsigned char a[], int nx, int ny, LONGLONG b[], int n, int bit)
 */
 {
 int i, j, k;
-int s00, s10;
+int s00;
+int plane_val;
+
+	plane_val = 1 << bit;
 
 	/*
 	 * expand each 2x2 block
@@ -1634,14 +2001,89 @@ int s00, s10;
 	k = 0;							/* k   is index of a[i/2,j/2]	*/
 	for (i = 0; i<nx-1; i += 2) {
 		s00 = n*i;					/* s00 is index of b[i,j]		*/
-		s10 = s00+n;				/* s10 is index of b[i+1,j]		*/
+
+  /* Note:
+     this code appears to run very slightly faster on a 32-bit linux
+     machine using s00+n rather than the s10 intermediate variable
+  */
+  /*		s10 = s00+n;	*/			/* s10 is index of b[i+1,j]	*/
 		for (j = 0; j<ny-1; j += 2) {
+
+		    switch (a[k]) {
+		    case(0):
+			break;
+		    case(1):
+			b[s00+n+1] |= plane_val;
+			break;
+		    case(2):
+			b[s00+n  ] |= plane_val;
+			break;
+		    case(3):
+			b[s00+n+1] |= plane_val;
+			b[s00+n  ] |= plane_val;
+			break;
+		    case(4):
+			b[s00+1] |= plane_val;
+			break;
+		    case(5):
+			b[s00+n+1] |= plane_val;
+			b[s00+1] |= plane_val;
+			break;
+		    case(6):
+			b[s00+n  ] |= plane_val;
+			b[s00+1] |= plane_val;
+			break;
+		    case(7):
+			b[s00+n+1] |= plane_val;
+			b[s00+n  ] |= plane_val;
+			b[s00+1] |= plane_val;
+			break;
+		    case(8):
+			b[s00  ] |= plane_val;
+			break;
+		    case(9):
+			b[s00+n+1] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(10):
+			b[s00+n  ] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(11):
+			b[s00+n+1] |= plane_val;
+			b[s00+n  ] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(12):
+			b[s00+1] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(13):
+			b[s00+n+1] |= plane_val;
+			b[s00+1] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(14):
+			b[s00+n  ] |= plane_val;
+			b[s00+1] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(15):
+			b[s00+n+1] |= plane_val;
+			b[s00+n  ] |= plane_val;
+			b[s00+1] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    }
+
+/*
 			b[s10+1] |= ((LONGLONG) ( a[k]     & 1)) << bit;
 			b[s10  ] |= ((((LONGLONG)a[k])>>1) & 1) << bit;
 			b[s00+1] |= ((((LONGLONG)a[k])>>2) & 1) << bit;
 			b[s00  ] |= ((((LONGLONG)a[k])>>3) & 1) << bit;
+*/
 			s00 += 2;
-			s10 += 2;
+/*			s10 += 2;  */
 			k += 1;
 		}
 		if (j < ny) {
@@ -1649,8 +2091,61 @@ int s00, s10;
 			 * row size is odd, do last element in row
 			 * s00+1, s10+1 are off edge
 			 */
+
+		    switch (a[k]) {
+		    case(0):
+			break;
+		    case(1):
+			break;
+		    case(2):
+			b[s00+n  ] |= plane_val;
+			break;
+		    case(3):
+			b[s00+n  ] |= plane_val;
+			break;
+		    case(4):
+			break;
+		    case(5):
+			break;
+		    case(6):
+			b[s00+n  ] |= plane_val;
+			break;
+		    case(7):
+			b[s00+n  ] |= plane_val;
+			break;
+		    case(8):
+			b[s00  ] |= plane_val;
+			break;
+		    case(9):
+			b[s00  ] |= plane_val;
+			break;
+		    case(10):
+			b[s00+n  ] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(11):
+			b[s00+n  ] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(12):
+			b[s00  ] |= plane_val;
+			break;
+		    case(13):
+			b[s00  ] |= plane_val;
+			break;
+		    case(14):
+			b[s00+n  ] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(15):
+			b[s00+n  ] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    }
+/*
 			b[s10  ] |= ((((LONGLONG)a[k])>>1) & 1) << bit;
 			b[s00  ] |= ((((LONGLONG)a[k])>>3) & 1) << bit;
+*/
 			k += 1;
 		}
 	}
@@ -1661,8 +2156,62 @@ int s00, s10;
 		 */
 		s00 = n*i;
 		for (j = 0; j<ny-1; j += 2) {
+
+		    switch (a[k]) {
+		    case(0):
+			break;
+		    case(1):
+			break;
+		    case(2):
+			break;
+		    case(3):
+			break;
+		    case(4):
+			b[s00+1] |= plane_val;
+			break;
+		    case(5):
+			b[s00+1] |= plane_val;
+			break;
+		    case(6):
+			b[s00+1] |= plane_val;
+			break;
+		    case(7):
+			b[s00+1] |= plane_val;
+			break;
+		    case(8):
+			b[s00  ] |= plane_val;
+			break;
+		    case(9):
+			b[s00  ] |= plane_val;
+			break;
+		    case(10):
+			b[s00  ] |= plane_val;
+			break;
+		    case(11):
+			b[s00  ] |= plane_val;
+			break;
+		    case(12):
+			b[s00+1] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(13):
+			b[s00+1] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(14):
+			b[s00+1] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    case(15):
+			b[s00+1] |= plane_val;
+			b[s00  ] |= plane_val;
+			break;
+		    }
+
+/*
 			b[s00+1] |= ((((LONGLONG)a[k])>>2) & 1) << bit;
 			b[s00  ] |= ((((LONGLONG)a[k])>>3) & 1) << bit;
+*/
 			s00 += 2;
 			k += 1;
 		}
@@ -1671,7 +2220,52 @@ int s00, s10;
 			 * both row and column size are odd, do corner element
 			 * s00+1, s10, s10+1 are off edge
 			 */
+
+		    switch (a[k]) {
+		    case(0):
+			break;
+		    case(1):
+			break;
+		    case(2):
+			break;
+		    case(3):
+			break;
+		    case(4):
+			break;
+		    case(5):
+			break;
+		    case(6):
+			break;
+		    case(7):
+			break;
+		    case(8):
+			b[s00  ] |= plane_val;
+			break;
+		    case(9):
+			b[s00  ] |= plane_val;
+			break;
+		    case(10):
+			b[s00  ] |= plane_val;
+			break;
+		    case(11):
+			b[s00  ] |= plane_val;
+			break;
+		    case(12):
+			b[s00  ] |= plane_val;
+			break;
+		    case(13):
+			b[s00  ] |= plane_val;
+			break;
+		    case(14):
+			b[s00  ] |= plane_val;
+			break;
+		    case(15):
+			b[s00  ] |= plane_val;
+			break;
+		    }
+/*
 			b[s00  ] |= ((((LONGLONG)a[k])>>3) & 1) << bit;
+*/
 			k += 1;
 		}
 	}
@@ -1686,9 +2280,13 @@ int i;
 	/*
 	 * read bit image packed 4 pixels/nybble
 	 */
+/*
 	for (i = 0; i < ((nqx+1)/2) * ((nqy+1)/2); i++) {
 		scratch[i] = input_nybble(infile);
 	}
+*/
+        input_nnybble(infile, ((nqx+1)/2) * ((nqy+1)/2), scratch);
+	
 	/*
 	 * insert in bitplane BIT of image A
 	 */
@@ -1703,9 +2301,13 @@ int i;
 	/*
 	 * read bit image packed 4 pixels/nybble
 	 */
+/*
 	for (i = 0; i < ((nqx+1)/2) * ((nqy+1)/2); i++) {
 		scratch[i] = input_nybble(infile);
 	}
+*/
+        input_nnybble(infile, ((nqx+1)/2) * ((nqy+1)/2), scratch);
+
 	/*
 	 * insert in bitplane BIT of image A
 	 */
@@ -1806,6 +2408,10 @@ unsigned char b[4];
 	 *
 	 * This is portable from Vax to Sun since it eliminates the
 	 * need for byte-swapping.
+	 *
+         *  This routine is only called to read the first 3 values
+	 *  in the compressed file, so it doesn't have to be 
+	 *  super-efficient
 	 */
 	for (i=0; i<4; i++) qread(infile,(char *) &b[i],1);
 	a = b[0];
@@ -1824,6 +2430,10 @@ unsigned char b[8];
 	 *
 	 * This is portable from Vax to Sun since it eliminates the
 	 * need for byte-swapping.
+	 *
+         *  This routine is only called to read the first 3 values
+	 *  in the compressed file, so it doesn't have to be 
+	 *  super-efficient
 	 */
 	for (i=0; i<8; i++) qread(infile,(char *) &b[i],1);
 	a = b[0];
@@ -1832,47 +2442,15 @@ unsigned char b[8];
 }
 
 /*  ############################################################################  */
-static void qread(unsigned char *infile,char *a, int n)
-{
-/*
-	if(myread(infile, a, n) != n) {
-		perror("qread");
-		exit(-1);
-
-	}
-*/
-	myread(infile, a, n);
-}
-
-/*  ############################################################################  */
-static int myread(unsigned char *file, char buffer[], int n)
+static void qread(unsigned char *file, char buffer[], int n)
 {
     /*
      * read n bytes from file into buffer
-     * returns number of bytes read (=n) if successful, <=0 if not
      *
-     * this version is for VMS C: each read may return
-     * fewer than n bytes, so multiple reads may be needed
-     * to fill the buffer.
-     *
-     * I think this is unnecessary for Sun Unix, but it won't hurt
-     * either, so I'll leave it in.
      */
-/*    int nread, total;  */
-
-    /* keep reading until we've read n bytes */
-/*
-    total = 0;
-    while ( (nread = fread(&buffer[total], 1, n-total, file)) > 0) {
-	total += nread;
-	if (total==n) return(total);
-    }
-*/
 
     memcpy(buffer, &file[nextchar], n);
     nextchar += n;
-    
-    return(n);
 }
 
 /*  ############################################################################  */
@@ -1889,7 +2467,6 @@ static int myread(unsigned char *file, char buffer[], int n)
 static int buffer2;			/* Bits waiting to be input	*/
 static int bits_to_go;			/* Number of bits still in buffer */
 
-
 /* INITIALIZE BIT INPUT */
 
 /*  ############################################################################  */
@@ -1901,27 +2478,16 @@ static void start_inputing_bits()
 	bits_to_go = 0;
 }
 
-
 /*  ############################################################################  */
 /* INPUT A BIT */
 
 static int input_bit(unsigned char *infile)
 {
 	if (bits_to_go == 0) {			/* Read the next byte if no	*/
-		/* buffer2 = getc(infile); */	/* bits are left in buffer	*/
 
 		buffer2 = infile[nextchar];
 		nextchar++;
 		
-	/*	if (buffer2 == EOF) {  */
-			/*
-			 * end of file is an error for this application
-			 */
-/*
-			fprintf(stderr, "input_bit: unexpected end-of-file\n");
-			exit(-1);
-		}
-*/
 		bits_to_go = 8;
 	}
 	/*
@@ -1931,40 +2497,118 @@ static int input_bit(unsigned char *infile)
 	return((buffer2>>bits_to_go) & 1);
 }
 
-
 /*  ############################################################################  */
 /* INPUT N BITS (N must be <= 8) */
 
 static int input_nbits(unsigned char *infile, int n)
 {
-int c;
+    /* AND mask for retreiving the right-most n bits */
+    static int mask[9] = {0, 1, 3, 7, 15, 31, 63, 127, 255};
 
 	if (bits_to_go < n) {
 		/*
 		 * need another byte's worth of bits
 		 */
-		buffer2 <<= 8;
 
-/*		c = getc(infile);  */
-
-		c = infile[nextchar];
+		buffer2 = (buffer2<<8) | (int) infile[nextchar];
 		nextchar++;
-		
-/*		if (c == EOF) { */
-			/*
-			 * end of file is an error for this application
-			 */
-/*
-			fprintf(stderr, "input_nbits: unexpected end-of-file\n");
-			exit(-1);
-		}
-*/
-		buffer2 |= c;
 		bits_to_go += 8;
 	}
 	/*
 	 * now pick off the first n bits
 	 */
 	bits_to_go -= n;
-	return( (buffer2>>bits_to_go) & ((1<<n)-1) );
+
+        /* there was a slight gain in speed by replacing the following line */
+/*	return( (buffer2>>bits_to_go) & ((1<<n)-1) ); */
+	return( (buffer2>>bits_to_go) & (*(mask+n)) ); 
+}
+/*  ############################################################################  */
+/* INPUT 4 BITS  */
+
+static int input_nybble(unsigned char *infile)
+{
+	if (bits_to_go < 4) {
+		/*
+		 * need another byte's worth of bits
+		 */
+
+		buffer2 = (buffer2<<8) | (int) infile[nextchar];
+		nextchar++;
+		bits_to_go += 8;
+	}
+	/*
+	 * now pick off the first 4 bits
+	 */
+	bits_to_go -= 4;
+
+	return( (buffer2>>bits_to_go) & 15 ); 
+}
+/*  ############################################################################  */
+/* INPUT array of 4 BITS  */
+
+static int input_nnybble(unsigned char *infile, int n, unsigned char array[])
+{
+	/* copy n 4-bit nybbles from infile to the lower 4 bits of array */
+
+int ii, kk, shift1, shift2;
+
+/*  forcing byte alignment doesn;t help, and even makes it go slightly slower
+if (bits_to_go != 8) input_nbits(infile, bits_to_go);
+*/
+	if (n == 1) {
+		array[0] = input_nybble(infile);
+		return(0);
+	}
+	
+	if (bits_to_go == 8) {
+		/*
+		   already have 2 full nybbles in buffer2, so 
+		   backspace the infile array to reuse last char
+		*/
+		nextchar--;
+		bits_to_go = 0;
+	}
+	
+	/* bits_to_go now has a value in the range 0 - 7.  After adding  */
+	/* another byte, bits_to_go effectively will be in range 8 - 15 */	
+
+	shift1 = bits_to_go + 4;   /* shift1 will be in range 4 - 11 */
+	shift2 = bits_to_go;	   /* shift2 will be in range 0 -  7 */
+	kk = 0;
+
+	/* special case */
+	if (bits_to_go == 0) 
+	{
+	    for (ii = 0; ii < n/2; ii++) {
+		/*
+		 * refill the buffer with next byte
+		 */
+		buffer2 = (buffer2<<8) | (int) infile[nextchar];
+		nextchar++;
+		array[kk]     = (int) ((buffer2>>4) & 15);
+		array[kk + 1] = (int) ((buffer2) & 15);    /* no shift required */
+		kk += 2;
+	    }
+	}
+	else
+	{
+	    for (ii = 0; ii < n/2; ii++) {
+		/*
+		 * refill the buffer with next byte
+		 */
+		buffer2 = (buffer2<<8) | (int) infile[nextchar];
+		nextchar++;
+		array[kk]     = (int) ((buffer2>>shift1) & 15);
+		array[kk + 1] = (int) ((buffer2>>shift2) & 15);
+		kk += 2;
+	    }
+	}
+
+
+	if (ii * 2 != n) {  /* have to read last odd byte */
+		array[n-1] = input_nybble(infile);
+	}
+
+	return( (buffer2>>bits_to_go) & 15 ); 
 }

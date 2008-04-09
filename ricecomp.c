@@ -219,21 +219,8 @@ unsigned int *diff;
 		    lbitbuffer <<= lbits_to_go;
 		    putcbuf(lbitbuffer & 0xff,buffer);
 
-/*		    if (putcbuf(lbitbuffer & 0xff,buffer) == EOF) {
-                        ffpmsg("rice_encode: end of buffer");
-                        free(diff);
-			return(-1);
-		    }
-*/
 		    for (top -= lbits_to_go; top>=8; top -= 8) {
 			putcbuf(0, buffer);
-/*
-			if (putcbuf(0, buffer) == EOF) {
-                            ffpmsg("rice_encode: end of buffer");
-                            free(diff);
-			    return(-1);
-			}
-*/
 		    }
 		    lbitbuffer = 1;
 		    lbits_to_go = 7-top;
@@ -250,16 +237,16 @@ unsigned int *diff;
 		    lbits_to_go -= fs;
 		    while (lbits_to_go <= 0) {
 			putcbuf((lbitbuffer>>(-lbits_to_go)) & 0xff,buffer);
-/*
-			if (putcbuf((lbitbuffer>>(-lbits_to_go)) & 0xff,buffer)==EOF) {
-                            ffpmsg("rice_encode: end of buffer");
-                            free(diff);
-			    return(-1);
-			}
-*/
 			lbits_to_go += 8;
 		    }
 		}
+	    }
+
+	    /* check if overflowed output buffer */
+	    if (buffer->current > buffer->end) {
+                 ffpmsg("rice_encode: end of buffer");
+                 free(diff);
+		 return(-1);
 	    }
 	    buffer->bitbuffer = lbitbuffer;
 	    buffer->bits_to_go = lbits_to_go;
@@ -457,22 +444,8 @@ unsigned int *diff;
 		} else {
 		    lbitbuffer <<= lbits_to_go;
 		    putcbuf(lbitbuffer & 0xff,buffer);
-/*
-		    if (putcbuf(lbitbuffer & 0xff,buffer) == EOF) {
-                        ffpmsg("rice_encode: end of buffer");
-                        free(diff);
-			return(-1);
-		    }
-*/
 		    for (top -= lbits_to_go; top>=8; top -= 8) {
 			putcbuf(0, buffer);
-/*
-			if (putcbuf(0, buffer) == EOF) {
-                            ffpmsg("rice_encode: end of buffer");
-                            free(diff);
-			    return(-1);
-			}
-*/
 		    }
 		    lbitbuffer = 1;
 		    lbits_to_go = 7-top;
@@ -489,16 +462,15 @@ unsigned int *diff;
 		    lbits_to_go -= fs;
 		    while (lbits_to_go <= 0) {
 			putcbuf((lbitbuffer>>(-lbits_to_go)) & 0xff,buffer);
-
-/*			if (putcbuf((lbitbuffer>>(-lbits_to_go)) & 0xff,buffer)==EOF) {
-                            ffpmsg("rice_encode: end of buffer");
-                            free(diff);
-			    return(-1);
-			}
-*/
 			lbits_to_go += 8;
 		    }
 		}
+	    }
+	    /* check if overflowed output buffer */
+	    if (buffer->current > buffer->end) {
+                 ffpmsg("rice_encode: end of buffer");
+                 free(diff);
+		 return(-1);
 	    }
 	    buffer->bitbuffer = lbitbuffer;
 	    buffer->bits_to_go = lbits_to_go;
@@ -539,6 +511,13 @@ static int output_nbits(Buffer *buffer, int bits, int n)
 /* local copies */
 int lbitbuffer;
 int lbits_to_go;
+    /* AND mask for the right-most n bits */
+    static unsigned int mask[33] = 
+         {0,
+	  0x1,       0x3,       0x7,       0xf,       0x1f,       0x3f,       0x7f,       0xff,
+	  0x1ff,     0x3ff,     0x7ff,     0xfff,     0x1fff,     0x3fff,     0x7fff,     0xffff,
+	  0x1ffff,   0x3ffff,   0x7ffff,   0xfffff,   0x1fffff,   0x3fffff,   0x7fffff,   0xffffff,
+	  0x1ffffff, 0x3ffffff, 0x7ffffff, 0xfffffff, 0x1fffffff, 0x3fffffff, 0x7fffffff, 0xffffffff};
 
     /*
      * insert bits at end of bitbuffer
@@ -551,23 +530,21 @@ int lbits_to_go;
 	 * note that 0 < lbits_to_go <= 8
 	 */
 	lbitbuffer <<= lbits_to_go;
-	lbitbuffer |= (bits>>(n-lbits_to_go)) & ((1<<lbits_to_go)-1);
+/*	lbitbuffer |= (bits>>(n-lbits_to_go)) & ((1<<lbits_to_go)-1); */
+	lbitbuffer |= (bits>>(n-lbits_to_go)) & *(mask+lbits_to_go);
 	putcbuf(lbitbuffer & 0xff,buffer);
-/*	if (putcbuf(lbitbuffer & 0xff,buffer) == EOF) return(EOF); */
 	n -= lbits_to_go;
 	lbits_to_go = 8;
     }
     lbitbuffer <<= n;
-    lbitbuffer |= ( bits & ((1<<n)-1) );
+/*    lbitbuffer |= ( bits & ((1<<n)-1) ); */
+    lbitbuffer |= ( bits & *(mask+n) );
     lbits_to_go -= n;
     while (lbits_to_go <= 0) {
 	/*
 	 * bitbuffer full, put out top 8 bits
 	 */
 	putcbuf((lbitbuffer>>(-lbits_to_go)) & 0xff,buffer);
-/*	if (putcbuf((lbitbuffer>>(-lbits_to_go)) & 0xff,buffer) == EOF)
-	    return(EOF);
-*/
 	lbits_to_go += 8;
     }
     buffer->bitbuffer = lbitbuffer;
