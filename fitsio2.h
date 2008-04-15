@@ -962,9 +962,12 @@ int fits_quantize_double (double fdata[], long nx, long ny, int nullcheck,
            int *iminval, int *imaxval);
 int fits_rcomp(int a[], int nx, unsigned char *c, int clen,int nblock);
 int fits_rcomp_short(short a[], int nx, unsigned char *c, int clen,int nblock);
+int fits_rcomp_byte(signed char a[], int nx, unsigned char *c, int clen,int nblock);
 int fits_rdecomp (unsigned char *c, int clen, unsigned int array[], int nx,
              int nblock);
 int fits_rdecomp_short (unsigned char *c, int clen, unsigned short array[], int nx,
+             int nblock);
+int fits_rdecomp_byte (unsigned char *c, int clen, unsigned char array[], int nx,
              int nblock);
 int pl_p2li (int *pxsrc, int xs, short *lldst, int npix);
 int pl_l2pi (short *ll_src, int xs, int *px_dst, int npix);

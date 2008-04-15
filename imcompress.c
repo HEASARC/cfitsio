@@ -666,7 +666,10 @@ tf1
         ffpkys (outfptr, "ZNAME2", "BYTEPIX",
             "bytes per pixel (1, 2, 4, or 8)", status);
 
-        if (bitpix == SHORT_IMG)
+        if (bitpix == BYTE_IMG)
+            ffpkyj (outfptr, "ZVAL2", 1,
+			"bytes per pixel (1, 2, 4, or 8)", status);
+        else if (bitpix == SHORT_IMG)
             ffpkyj (outfptr, "ZVAL2", 2,
 			"bytes per pixel (1, 2, 4, or 8)", status);
         else 
@@ -828,7 +831,8 @@ int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr, int *status)
     else if ((outfptr->Fptr)->zbitpix == BYTE_IMG)
     {
 
-        if ( (outfptr->Fptr)->compress_type == GZIP_1) {
+        if ( (outfptr->Fptr)->compress_type == RICE_1 ||
+	     (outfptr->Fptr)->compress_type == GZIP_1) {
 	    /* only need  buffer of I*1 pixels for gzip */
 
             datatype = TBYTE;
@@ -1175,8 +1179,8 @@ int imcomp_compress_tile (fitsfile *outfptr,
        if (nullcheck == 1)
            flagval = *(unsigned char *) (nullflagval);
 
-       /* don't have to convert to int if using gzip */
-       if ((outfptr->Fptr)->compress_type == GZIP_1 &&
+       /* don't have to convert to int if using gzip or Rice */
+       if (((outfptr->Fptr)->compress_type == RICE_1 || (outfptr->Fptr)->compress_type == GZIP_1) &&
           nullcheck == 0 && scale == 1.0 && zero == 0.0 && zbitpix == BYTE_IMG)
        {
           intlength = 1;
@@ -1327,11 +1331,15 @@ int imcomp_compress_tile (fitsfile *outfptr,
 	    return (*status = MEMORY_ALLOCATION);
         }
 
+
 	/* Compress the integer data, then write the compressed bytes */
         if ( (outfptr->Fptr)->compress_type == RICE_1)
         {
             if (intlength == 2) {
   	        nelem = fits_rcomp_short ((short *)idata, tilelen, (unsigned char *) cbuf,
+                       clen, (outfptr->Fptr)->rice_blocksize);
+            } else if (intlength == 1) {
+  	        nelem = fits_rcomp_byte ((signed char *)idata, tilelen, (unsigned char *) cbuf,
                        clen, (outfptr->Fptr)->rice_blocksize);
             } else {
   	        nelem = fits_rcomp (idata, tilelen, (unsigned char *) cbuf,
@@ -3901,7 +3909,16 @@ int imcomp_decompress_tile (fitsfile *infptr,
         /* uncompress the data */
         blocksize = (infptr->Fptr)->rice_blocksize;
 
-        if ((infptr->Fptr)->rice_bytepix == 2 ) {
+         if ((infptr->Fptr)->rice_bytepix == 1 ) {
+            if ((*status = fits_rdecomp_byte (cbuf, nelem, (unsigned char *)idata,
+                tilelen, blocksize)))
+            {
+                free (cbuf);
+                free(idata);
+                return (*status);
+            }
+            tiledatatype = TBYTE;
+        } else if ((infptr->Fptr)->rice_bytepix == 2 ) {
             if ((*status = fits_rdecomp_short (cbuf, nelem, (unsigned short *)idata,
                 tilelen, blocksize)))
             {
