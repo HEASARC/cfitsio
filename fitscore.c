@@ -62,7 +62,7 @@ float ffvers(float *version)  /* IO - version number */
 {
       *version = (float) 3.08;
 
-/*     5 March 2008 (internal release)
+/*     15 April 2008 (internal release)
 
    Previous releases:
       *version = 3.07     5 Nov 2007  (internal release)
@@ -4229,6 +4229,7 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
     }
         
     /*   calculate the size of the primary array  */
+    (fptr->Fptr)->imgdim = naxis;
     if (naxis == 0)
     {
         npix = 0;
@@ -4244,9 +4245,11 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
             npix = naxes[0];
         }
 
+        (fptr->Fptr)->imgnaxis[0] = naxes[0];
         for (ii=1; ii < naxis; ii++)
         {
             npix = npix*naxes[ii];   /* calc number of pixels in the array */
+            (fptr->Fptr)->imgnaxis[ii] = naxes[ii];
         }
     }
 
@@ -7112,6 +7115,7 @@ int ffgidm( fitsfile *fptr,  /* I - FITS file pointer                       */
 /*
   Get the dimension of the image (= NAXIS keyword for normal image, or
   ZNAXIS for a compressed image)
+  These values are cached for faster access.
 */
 {
     if (*status > 0)
@@ -7124,17 +7128,13 @@ int ffgidm( fitsfile *fptr,  /* I - FITS file pointer                       */
         if ( ffrdef(fptr, status) > 0)               /* rescan header */
             return(*status);
 
-    /* reset to beginning of header */
-    ffmaky(fptr, 2, status);  /* simply move to beginning of header */
-
     if ((fptr->Fptr)->hdutype == IMAGE_HDU)
     {
-        ffgky(fptr, TINT, "NAXIS", naxis, NULL, status);
+        *naxis = (fptr->Fptr)->imgdim;
     }
     else if ((fptr->Fptr)->compressimg)
     {
-        /* this is a binary table containing a compressed image */
-        ffgky(fptr, TINT, "ZNAXIS", naxis, NULL, status);
+        *naxis = (fptr->Fptr)->zndim;
     }
     else
     {
@@ -7151,10 +7151,11 @@ int ffgisz( fitsfile *fptr,  /* I - FITS file pointer                       */
 /*
   Get the size of the image dimensions (= NAXISn keywords for normal image, or
   ZNAXISn for a compressed image)
+  These values are cached for faster access.
+
 */
 {
     int ii, naxis;
-    char keyroot[FLEN_KEYWORD], keyname[FLEN_KEYWORD];
 
     if (*status > 0)
         return(*status);
@@ -7168,30 +7169,23 @@ int ffgisz( fitsfile *fptr,  /* I - FITS file pointer                       */
 
     if ((fptr->Fptr)->hdutype == IMAGE_HDU)
     {
-        strcpy(keyroot, "NAXIS");
+        naxis = minvalue((fptr->Fptr)->imgdim, nlen);
+        for (ii = 0; ii < naxis; ii++)
+        {
+            naxes[ii] = (long) (fptr->Fptr)->imgnaxis[ii];
+        }
     }
     else if ((fptr->Fptr)->compressimg)
     {
-        /* this is a binary table containing a compressed image */
-        strcpy(keyroot, "ZNAXIS");
+        naxis = minvalue( (fptr->Fptr)->zndim, nlen);
+        for (ii = 0; ii < naxis; ii++)
+        {
+            naxes[ii] = (long) (fptr->Fptr)->znaxis[ii];
+        }
     }
     else
     {
-        return(*status = NOT_IMAGE);
-    }
-
-    /* initialize to 1 */
-    for (ii = 0; ii < nlen; ii++)
-        naxes[ii] = 1;
-
-    /* get number of dimensions */
-    fits_get_img_dim(fptr, &naxis, status);
-    naxis = minvalue(naxis, nlen);
-
-    for (ii = 0; ii < naxis; ii++)
-    {
-        ffkeyn(keyroot, ii + 1, keyname, status);
-        ffgkyj(fptr, keyname, naxes + ii, NULL, status);
+        *status = NOT_IMAGE;
     }
 
     return(*status);
@@ -7207,7 +7201,6 @@ int ffgiszll( fitsfile *fptr,  /* I - FITS file pointer                     */
 */
 {
     int ii, naxis;
-    char keyroot[FLEN_KEYWORD], keyname[FLEN_KEYWORD];
 
     if (*status > 0)
         return(*status);
@@ -7221,30 +7214,23 @@ int ffgiszll( fitsfile *fptr,  /* I - FITS file pointer                     */
 
     if ((fptr->Fptr)->hdutype == IMAGE_HDU)
     {
-        strcpy(keyroot, "NAXIS");
+        naxis = minvalue((fptr->Fptr)->imgdim, nlen);
+        for (ii = 0; ii < naxis; ii++)
+        {
+            naxes[ii] = (fptr->Fptr)->imgnaxis[ii];
+        }
     }
     else if ((fptr->Fptr)->compressimg)
     {
-        /* this is a binary table containing a compressed image */
-        strcpy(keyroot, "ZNAXIS");
+        naxis = minvalue( (fptr->Fptr)->zndim, nlen);
+        for (ii = 0; ii < naxis; ii++)
+        {
+            naxes[ii] = (fptr->Fptr)->znaxis[ii];
+        }
     }
     else
     {
-        return(*status = NOT_IMAGE);
-    }
-
-    /* initialize to 1 */
-    for (ii = 0; ii < nlen; ii++)
-        naxes[ii] = 1;
-
-    /* get number of dimensions */
-    fits_get_img_dim(fptr, &naxis, status);
-    naxis = minvalue(naxis, nlen);
-
-    for (ii = 0; ii < naxis; ii++)
-    {
-        ffkeyn(keyroot, ii + 1, keyname, status);
-        ffgkyjj(fptr, keyname, naxes + ii, NULL, status);
+        *status = NOT_IMAGE;
     }
 
     return(*status);

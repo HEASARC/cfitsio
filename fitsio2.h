@@ -950,7 +950,8 @@ int imcomp_copy_overlap (char *tile, int pixlen, int ndim,
 int imcomp_merge_overlap (char *tile, int pixlen, int ndim,
          long *tfpixel, long *tlpixel, char *bnullarray, char *image,
          long *fpixel, long *lpixel, int nullcheck, int *status);
-
+int imcomp_decompress_img(fitsfile *infptr, fitsfile *outfptr, int datatype,
+         int  *status);
 int fits_quantize_float (float fdata[], long nx, long ny, int nullcheck,
          float in_null_value,
            float quantize_level, int idata[], double *bscale, double *bzero,

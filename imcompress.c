@@ -663,6 +663,16 @@ tf1
         ffpkyj (outfptr, "ZVAL1", 32,
 			"pixels per block", status);
 
+        ffpkys (outfptr, "ZNAME2", "BYTEPIX",
+            "bytes per pixel (1, 2, 4, or 8)", status);
+
+        if (bitpix == SHORT_IMG)
+            ffpkyj (outfptr, "ZVAL2", 2,
+			"bytes per pixel (1, 2, 4, or 8)", status);
+        else 
+            ffpkyj (outfptr, "ZVAL2", 4,
+			"bytes per pixel (1, 2, 4, or 8)", status);
+
     }
     else if ((outfptr->Fptr)->request_compress_type == HCOMPRESS_1)
     {
@@ -3375,6 +3385,21 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
             ffpmsg("required ZVAL1 compression keyword not found");
             return(*status);
         }
+
+        tstatus = 0;
+        if (ffgky(infptr, TINT,"ZVAL2", &(infptr->Fptr)->rice_bytepix,
+                  NULL, &tstatus) > 0)
+        {
+            (infptr->Fptr)->rice_bytepix = 4;  /* default value */
+        }
+
+        if ((infptr->Fptr)->rice_blocksize < 16 &&
+	    (infptr->Fptr)->rice_bytepix > 8) {
+	     /* values are reversed */
+	     tstatus = (infptr->Fptr)->rice_bytepix;
+	     (infptr->Fptr)->rice_bytepix = (infptr->Fptr)->rice_blocksize;
+	     (infptr->Fptr)->rice_blocksize = tstatus;
+        }
     } else if ((infptr->Fptr)->compress_type == HCOMPRESS_1 ) {
 
         if (ffgky(infptr, TFLOAT,"ZVAL1", &(infptr->Fptr)->hcomp_scale,
@@ -3876,7 +3901,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
         /* uncompress the data */
         blocksize = (infptr->Fptr)->rice_blocksize;
 
-        if ((infptr->Fptr)->zbitpix == SHORT_IMG ) {
+        if ((infptr->Fptr)->rice_bytepix == 2 ) {
             if ((*status = fits_rdecomp_short (cbuf, nelem, (unsigned short *)idata,
                 tilelen, blocksize)))
             {

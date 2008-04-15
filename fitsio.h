@@ -322,6 +322,8 @@ typedef struct      /* structure used to store basic FITS file information */
     LONGLONG headend;   /* byte offest in file to end of the current HDU header */
     LONGLONG nextkey;   /* byte offset in file to beginning of next keyword */
     LONGLONG datastart; /* byte offset in file to start of the current data unit */
+    int imgdim;         /* dimension of image; cached for fast access */
+    LONGLONG imgnaxis[99]; /* length of each axis; cached for fast access */
     int tfield;          /* number of fields in the table (primary array has 2 */
     LONGLONG origrows;   /* original number of rows (value of NAXIS2 keyword)  */
     LONGLONG numrows;    /* number of rows in the table (dynamically updated) */
@@ -359,7 +361,8 @@ typedef struct      /* structure used to store basic FITS file information */
     double cn_bzero;        /* value of the BZERO keyword in header */
     int zblank;             /* value for null pixels, if not a column */
 
-    int rice_blocksize;     /* first compression parameter */
+    int rice_blocksize;     /* first compression parameter: pixels/block */
+    int rice_bytepix;       /* 2nd compression parameter: bytes/pixel */
     float quantize_level;   /* floating point quantization level */
     float hcomp_scale;        /* 1st hcompress compression parameter */
     int hcomp_smooth;       /* 2nd hcompress compression parameter */

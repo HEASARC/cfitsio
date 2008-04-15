@@ -1,7 +1,13 @@
                    Log of Changes Made to CFITSIO
 
-Version 3.08 - 31 March 2008 (internal release)
+Version 3.08 - 15 April 2008 (internal release)
 
+   - added a new BYTEPIX compression parameter when tile-compressing 
+     images with the Rice algorithm.
+
+   - cached the NAXIS and NAXISn keyword values in the fitsio structure
+     for efficiency, to eliminate duplicates reads of these keywords.
+   
    - added variants of the Rice compression and uncompression routines to
      support short int images (inaddition to the routines that support int).
 
