@@ -2,6 +2,12 @@
 
 Version 3.08 - 15 April 2008 (internal release)
 
+   - relaxed the requirement that a string valued keyword must have a
+     closing quote character.  If the quote is missing, CFITSIO will silently
+     append a quote at the end of the keyword record.  This change was made
+     because otherwise it is very difficult to correct the keyword
+     because CFITSIO would exit with an error before making the fix.
+   
    - added a new BYTEPIX compression parameter when tile-compressing 
      images with the Rice algorithm.
 

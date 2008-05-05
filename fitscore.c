@@ -1318,10 +1318,13 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
 
         if (ii == cardlen)
         {
-            value[jj] = '\0';  /*  terminate the bad value string  */
+            jj = minvalue(jj, 69);  /* don't exceed 70 char string length */
+            value[jj] = '\'';  /*  close the bad value string  */
+            value[jj+1] = '\0';  /*  terminate the bad value string  */
             ffpmsg("This keyword string value has no closing quote:");
             ffpmsg(card);
-            return(*status = NO_QUOTE);
+	    /*  May 2008 - modified to not fail on this minor error  */
+/*            return(*status = NO_QUOTE);  */
         }
         else
         {
