@@ -2,6 +2,10 @@
 
 Version 3.08 - 15 April 2008 (internal release)
 
+   - small change to cfortran.h to add "extern" to the common block 
+     definition.  This was done for compatibility with the version
+     of cfortran.h that is distributed by the debian project.
+   
    - relaxed the requirement that a string valued keyword must have a
      closing quote character.  If the quote is missing, CFITSIO will silently
      append a quote at the end of the keyword record.  This change was made
