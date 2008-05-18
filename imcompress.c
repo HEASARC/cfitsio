@@ -3855,8 +3855,21 @@ int imcomp_decompress_tile (fitsfile *infptr,
            /*  must allocate 8 bytes per pixel of scratch space */
            lldata = (LONGLONG*) malloc (tilelen * sizeof (LONGLONG));
 	   idata = (int *) lldata;
-    } else if ( ( (infptr->Fptr)->compress_type == RICE_1 || 
-                  (infptr->Fptr)->compress_type == GZIP_1) &&
+    } else if ( (infptr->Fptr)->compress_type == RICE_1 &&
+               (infptr->Fptr)->zbitpix == BYTE_IMG && 
+	       (infptr->Fptr)->rice_bytepix == 1) {
+
+           /*  must allocate 1 byte per pixel of scratch space */
+           idatalen = tilelen;
+           idata = (int *) malloc (idatalen);
+    } else if ( (infptr->Fptr)->compress_type == RICE_1 &&
+               (infptr->Fptr)->zbitpix == SHORT_IMG && 
+	       (infptr->Fptr)->rice_bytepix == 2) {
+
+           /*  must allocate 2 bytes per pixel of scratch space */
+           idatalen = tilelen * sizeof(short);
+           idata = (int *) malloc (idatalen);
+     } else if ( (infptr->Fptr)->compress_type == GZIP_1 &&
                (infptr->Fptr)->zbitpix == SHORT_IMG ) {
 
            /*  must allocate 2 bytes per pixel of scratch space */

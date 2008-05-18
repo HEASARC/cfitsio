@@ -2,6 +2,10 @@
 
 Version 3.08 - 15 April 2008 (internal release)
 
+   - fixed backwards compatibility issue when uncompressing a Rice
+     compressed image that was created with previous versions of 
+     CFITSIO (this late fix was added on May 18).
+
    - small change to cfortran.h to add "extern" to the common block 
      definition.  This was done for compatibility with the version
      of cfortran.h that is distributed by the debian project.
