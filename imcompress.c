@@ -792,9 +792,15 @@ int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr, int *status)
 
     maxtilelen = (outfptr->Fptr)->maxtilelen;
 
-    /* allocate buffer to hold 1 tile of data */
-    /* if the hcompress algorithm is being used on BITPIX = 32, -32, or -64  */
-    /* image, then we need to allocate 8-bytes per pixel buffer */
+    /* 
+     Allocate buffer to hold 1 tile of data; size depends on which compression 
+     algorithm is used:
+
+      Rice and GZIP will compress byte, short, or int arrays without conversion.
+      PLIO requires 4-byte int values, so byte and short arrays must be converted to int.
+      HCompress internally converts byte or short values to ints, and
+         converts int values to 8-byte longlong integers.
+    */
     
     if ((outfptr->Fptr)->zbitpix == FLOAT_IMG)
     {
@@ -814,33 +820,29 @@ int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr, int *status)
     }
     else if ((outfptr->Fptr)->zbitpix == SHORT_IMG)
     {
+        datatype = TSHORT;
         if ( (outfptr->Fptr)->compress_type == RICE_1 ||
 	     (outfptr->Fptr)->compress_type == GZIP_1 ||
              (outfptr->Fptr)->compress_type == NOCOMPRESS) {
 	    /* only need  buffer of I*2 pixels for gzip and Rice */
 
-            datatype = TSHORT;
             tiledata = (double*) malloc (maxtilelen * sizeof (short));	
 	} else {
- 	    /*  need  buffer of I*4 pixels for Rice and Hcompress */
-
-            datatype = TINT;
+ 	    /*  need  buffer of I*4 pixels for Hcompress and PLIO */
             tiledata = (double*) malloc (maxtilelen * sizeof (int));
         }
     }
     else if ((outfptr->Fptr)->zbitpix == BYTE_IMG)
     {
 
+        datatype = TBYTE;
         if ( (outfptr->Fptr)->compress_type == RICE_1 ||
 	     (outfptr->Fptr)->compress_type == GZIP_1) {
-	    /* only need  buffer of I*1 pixels for gzip */
+	    /* only need  buffer of I*1 pixels for gzip and Rice */
 
-            datatype = TBYTE;
             tiledata = (double*) malloc (maxtilelen);	
 	} else {
- 	    /*  need  buffer of I*4 pixels for Rice and Hcompress */
-
-            datatype = TINT;
+ 	    /*  need  buffer of I*4 pixels for Hcompress and PLIO */
             tiledata = (double*) malloc (maxtilelen * sizeof (int));
         }
     }
@@ -852,7 +854,8 @@ int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr, int *status)
 
             tiledata = (double*) malloc (maxtilelen * 2 * sizeof (int));	
 	} else {
- 
+ 	    /* only need  buffer of I*4 pixels for gzip, Rice, and PLIO */
+
             tiledata = (double*) malloc (maxtilelen * sizeof (int));
         }
     }
@@ -958,6 +961,14 @@ int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr, int *status)
           }
 
           /* now compress the tile, and write to row of binary table */
+          /*   NOTE: we don't have to worry about the presence of null values in the
+	       array;  if it is an integer array, then the null value is simply encoded
+	       in the compressed array just like any other pixel value.  If it is a
+	       floating point array, then imcomp_comprsss_tile will by default assume
+	       that FLOATNULLVALUE or DOUBLENULLVALUE is used to represent null values
+	       and these will be converted to the value of COMPRESS_NULL_VALUE before 
+	       the array is compressed.
+	  */
           imcomp_compress_tile(outfptr, row, datatype, tiledata, tilelen,
                                tile[0], tile[1], 0, &dummy, status);
 
@@ -1015,16 +1026,15 @@ int imcomp_compress_tile (fitsfile *outfptr,
 
    If the tile cannot be quantized than the raw float or double values
    are written to the output table.
-
-
-   The input tiledata array must normally only be of type TINT, TFLOAT, or TDOUBLE.
-   Shorter integer types will be type converted to TINT, under the assumption
-   that the input array was allocated with enough scratch space to do this
-   in place in memory. (but this is not necessary when using gzip)
    
-   This array may be modified by this routine.  If the array is of type TINT
+   This input array may be modified by this routine.  If the array is of type TINT
    or TFLOAT, and the compression type is HCOMPRESS, then it must have been 
    allocated to be twice as large (8 bytes per pixel) to provide scratch space.
+
+  Note that this routine does not fully support the implicit datatype conversion that
+  is supported when writing to normal FITS images.  The datatype of the input array
+  must have the same datatype (either signed or unsigned) as the output (compressed)
+  FITS image in most cases.
 */
 {
     int *idata = 0;		/* quantized integer data */
@@ -1032,7 +1042,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
     short *sbuff;
     unsigned short *usbuff;
     int *intbuff;
-    unsigned int *uintbuff;
+    unsigned int *uintbuff, uintflagval;
     int clen;		/* size of cbuf */
     int flag = 1; /* true by default; only = 0 if float data couldn't be quantized */
     int iminval = 0, imaxval = 0;  /* min and max quantized integers */
@@ -1047,16 +1057,16 @@ int imcomp_compress_tile (fitsfile *outfptr,
     long *lbuff;
     unsigned long *ulbuff;
     int ihcompscale, cn_zblank, zbitpix, nullval, flagval = 0;
-    int intlength = 4;  /* used with GZIP & Rice, to define size of integers */
+    int intlength = 4;  /* size of integers to be compressed */
     float floatnull, hcompscale;
     double doublenull, noise3;
 
     if (*status > 0)
         return(*status);
 
+    /* =========================================================================== */
     /* free the previously saved tile if it is for the same row */
     if ((outfptr->Fptr)->tilerow == row) {
-
         if ((outfptr->Fptr)->tiledata) {
             free((outfptr->Fptr)->tiledata);
         }
@@ -1072,7 +1082,9 @@ int imcomp_compress_tile (fitsfile *outfptr,
         (outfptr->Fptr)->tiletype = 0;
     }
 
-    /* When using NOCOMPRESS (for diagnostic purposes) */ 
+    /* =========================================================================== */
+
+    /* Special case when using NOCOMPRESS (for diagnostic purposes in fpack) */ 
     if ( (outfptr->Fptr)->compress_type == NOCOMPRESS) {
 	 /* Write the original data. */
          if (datatype == TSHORT)
@@ -1106,8 +1118,13 @@ int imcomp_compress_tile (fitsfile *outfptr,
          return (*status);
     }
 
-    idata = (int *) tiledata;
-    hcompscale = (outfptr->Fptr)->hcomp_scale;
+    /* =========================================================================== */
+
+    /* initialize various parameters */
+    
+    idata = (int *) tiledata;   /* may overwrite the input tiledata in place */
+
+    /* zbitpix is the BITPIX keyword value in the uncompressed FITS image */
     zbitpix = (outfptr->Fptr)->zbitpix;
 
     /* if the tile/image has an integer datatype, see if a null value has */
@@ -1130,105 +1147,284 @@ int imcomp_compress_tile (fitsfile *outfptr,
     
     scale = (outfptr->Fptr)->cn_bscale;
     zero  = (outfptr->Fptr)->cn_bzero;
-	   
 
-    /*  convert input tile array in place to 4-byte ints for compression, if needed */
+    /* =========================================================================== */
+
+    /*  Convert input tile array in place to 4 or 8-byte ints for compression, */
+    /*   if needed.  Do null value substitution if needed */
     /*  Note that the calling routine must have allocated the array big enough */
     /* to be able to do this.  */
 
     if (datatype == TSHORT)
     {
+       /* datatype of input array is TSHORT.  We only support writing this datatype
+          to a FITS image with BITPIX = 16 and with BZERO = 0 and BSCALE = 1.  */
+	  
+       if (zbitpix != SHORT_IMG || scale != 1.0 || zero != 0.0) {
+           ffpmsg("Datatype conversion/scaling is not supported when writing to compressed images");
+           return(*status = DATA_COMPRESSION_ERR);
+       } 
+
        sbuff = (short *) tiledata;
-       if (nullcheck == 1)
-           flagval = *(short *) (nullflagval);
        
-       /* don't have to convert to int if using gzip or Rice without modifications */
-       if (((outfptr->Fptr)->compress_type == RICE_1 || (outfptr->Fptr)->compress_type == GZIP_1) &&
-          nullcheck == 0 && scale == 1.0 && zero == 0.0 && zbitpix == SHORT_IMG) 
+       if (((outfptr->Fptr)->compress_type == RICE_1 || (outfptr->Fptr)->compress_type == GZIP_1)) 
        {
+           /* don't have to convert to int if using gzip or Rice compression */
            intlength = 2;
-	
+             
+           if (nullcheck == 1) {
+               /* reset pixels equal to flagval to the FITS null value, prior to compression */
+               flagval = *(short *) (nullflagval);
+               if (flagval != nullval) {
+                  for (ii = tilelen - 1; ii >= 0; ii--) {
+	            if (sbuff[ii] == (short) flagval)
+		       sbuff[ii] = (short) nullval;
+                  }
+               }
+           }
        } else {
-         for (ii = tilelen - 1; ii >= 0; ii--)
-	    idata[ii] = (int) (sbuff[ii]);
+           /* have to convert to int if using HCOMPRESS or PLIO */
+           intlength = 4;
+
+           if (nullcheck == 1) {
+               /* reset pixels equal to flagval to the FITS null value, prior to compression */
+               flagval = *(short *) (nullflagval);
+               for (ii = tilelen - 1; ii >= 0; ii--) {
+	            if (sbuff[ii] == (short) flagval)
+		       idata[ii] = nullval;
+                    else
+                       idata[ii] = (int) sbuff[ii];
+               }
+           } else {  /* just do the data type conversion to int */
+               for (ii = tilelen - 1; ii >= 0; ii--) 
+                   idata[ii] = (int) sbuff[ii];
+           }
        }
     }
     else if (datatype == TUSHORT)
     {
-       usbuff = (unsigned short *) tiledata;
-       if (nullcheck == 1)
-           flagval = *(unsigned short *) (nullflagval);
 
-       for (ii = tilelen - 1; ii >= 0; ii--)
-            idata[ii] = (int) (usbuff[ii]);
+       /* datatype of input array is unsigned short.  We only support writing this datatype
+          to a FITS image with BITPIX = 16 and with BZERO = 0 and BSCALE = 32768.  */
+
+       if (zbitpix != SHORT_IMG || scale != 1.0 || zero != 32768.) {
+           ffpmsg("Implicit datatype conversion is not supported when writing to compressed images");
+           return(*status = DATA_COMPRESSION_ERR);
+       } 
+
+       usbuff = (unsigned short *) tiledata;
+       sbuff = (short *) tiledata;
+
+       if (((outfptr->Fptr)->compress_type == RICE_1 || (outfptr->Fptr)->compress_type == GZIP_1)) 
+       {
+           /* don't have to convert to int if using gzip or Rice compression */
+           intlength = 2;
+
+          /* offset the unsigned value by -32768 to a signed short value. */
+	  /* It is more efficient to do this by just flipping the most significant of the 16 bits */
+
+           if (nullcheck == 1) {
+               /* reset pixels equal to flagval to the FITS null value, prior to compression  */
+               flagval = *(unsigned short *) (nullflagval);
+               for (ii = tilelen - 1; ii >= 0; ii--) {
+	            if (usbuff[ii] == (unsigned short) flagval)
+		       sbuff[ii] = (short) nullval;
+                    else
+		       usbuff[ii] =  (usbuff[ii]) ^ 0x8000;
+               }
+           } else {
+               /* just offset the pixel values by 32768 (by flipping the MSB */
+               for (ii = tilelen - 1; ii >= 0; ii--)
+		       usbuff[ii] =  (usbuff[ii]) ^ 0x8000;
+           }
+       } else {
+           /* have to convert to int if using HCOMPRESS or PLIO */
+           intlength = 4;
+
+           if (nullcheck == 1) {
+               /* offset the pixel values by 32768, and */
+               /* reset pixels equal to flagval to nullval */
+               flagval = *(unsigned short *) (nullflagval);
+               for (ii = tilelen - 1; ii >= 0; ii--) {
+	            if (usbuff[ii] == (unsigned short) flagval)
+		       idata[ii] = nullval;
+                    else
+		       idata[ii] = ((int) usbuff[ii]) - 32768;
+               }
+           } else {  /* just do the data type conversion to int */
+               for (ii = tilelen - 1; ii >= 0; ii--)
+		       idata[ii] = ((int) usbuff[ii]) - 32768;
+           }
+        }
     }
-    else if (datatype == TINT)
-    {
-       if (nullcheck == 1)
-           flagval = *(int *) (nullflagval);
-         /* no conversion necessary */
+    else if (datatype == TINT || (datatype == TLONG && sizeof(long) == 4))
+    {       
+       /* datatype of input array is int.  We only support writing this datatype
+          to a FITS image with BITPIX = 32 and with BZERO = 0 and BSCALE = 1.  */
+
+       if (zbitpix != LONG_IMG || scale != 1.0 || zero != 0.) {
+           ffpmsg("Implicit datatype conversion is not supported when writing to compressed images");
+           return(*status = DATA_COMPRESSION_ERR);
+       } 
+
+       intlength = 4;
+
+       if (nullcheck == 1) {
+               /* no datatype conversion is required for any of the compression algorithms,
+	         except possibly for HCOMPRESS (to I*8), which is handled later.
+		 Just reset pixels equal to flagval to the FITS null value */
+               flagval = *(int *) (nullflagval);
+               if (flagval != nullval) {
+                  for (ii = tilelen - 1; ii >= 0; ii--) {
+	            if (idata[ii] == flagval)
+		       idata[ii] = nullval;
+                  }
+               }
+       }
     }
-    else if (datatype == TUINT)
+    else if (datatype == TUINT || (datatype == TULONG && sizeof(long) == 4) )
     {
-       if (nullcheck == 1)
-           flagval = *(unsigned int *) (nullflagval);
+       /* datatype of input array is unsigned int.  We only support writing this datatype
+          to a FITS image with BITPIX = 32 and with BZERO = 0 and BSCALE = 2147483648.  */
+
+       if (zbitpix != LONG_IMG || scale != 1.0 || zero != 2147483648.) {
+           ffpmsg("Implicit datatype conversion is not supported when writing to compressed images");
+           return(*status = DATA_COMPRESSION_ERR);
+       } 
+
+       intlength = 4;
+       uintbuff = (unsigned int *) tiledata;
+
+       /* offset the unsigned value by -2147483648 to a signed int value. */
+       /* It is more efficient to do this by just flipping the most significant of the 32 bits */
+
+       if (nullcheck == 1) {
+               /* reset pixels equal to flagval to nullval and */
+               /* offset the other pixel values (by flipping the MSB) */
+               uintflagval = *(unsigned int *) (nullflagval);
+               for (ii = tilelen - 1; ii >= 0; ii--) {
+	            if (uintbuff[ii] == uintflagval)
+		       idata[ii] = nullval;
+                    else
+		       uintbuff[ii] = (uintbuff[ii]) ^ 0x80000000;
+               }
+       } else {
+               /* just offset the pixel values (by flipping the MSB) */
+               for (ii = tilelen - 1; ii >= 0; ii--)
+		       uintbuff[ii] = (uintbuff[ii]) ^ 0x80000000;
+       }
     }
     else if (datatype == TBYTE)
     {
+       /* datatype of input array is unsigned byte.  We only support writing this datatype
+          to a FITS image with BITPIX = 8 and with BZERO = 0 and BSCALE = 1.  */
+
+       if (zbitpix != BYTE_IMG || scale != 1.0 || zero != 0.) {
+           ffpmsg("Implicit datatype conversion is not supported when writing to compressed images");
+           return(*status = DATA_COMPRESSION_ERR);
+       } 
+
        usbbuff = (unsigned char *) tiledata;
-       if (nullcheck == 1)
-           flagval = *(unsigned char *) (nullflagval);
 
-       /* don't have to convert to int if using gzip or Rice */
-       if (((outfptr->Fptr)->compress_type == RICE_1 || (outfptr->Fptr)->compress_type == GZIP_1) &&
-          nullcheck == 0 && scale == 1.0 && zero == 0.0 && zbitpix == BYTE_IMG)
+       if (((outfptr->Fptr)->compress_type == RICE_1 || (outfptr->Fptr)->compress_type == GZIP_1)) 
        {
-          intlength = 1;
-
+           /* don't have to convert to int if using gzip or Rice compression */
+           intlength = 1;
+             
+           if (nullcheck == 1) {
+               /* reset pixels equal to flagval to the FITS null value, prior to compression */
+               flagval = *(unsigned char *) (nullflagval);
+               if (flagval != nullval) {
+                  for (ii = tilelen - 1; ii >= 0; ii--) {
+	            if (usbbuff[ii] == (unsigned char) flagval)
+		       usbbuff[ii] = (unsigned char) nullval;
+                    }
+               }
+           }
        } else {
-         for (ii = tilelen - 1; ii >= 0; ii--)
-	    idata[ii] = (int) (usbbuff[ii]);
+           /* have to convert to int if using HCOMPRESS or PLIO */
+           intlength = 4;
+
+           if (nullcheck == 1) {
+               /* reset pixels equal to flagval to the FITS null value, prior to compression */
+               flagval = *(unsigned char *) (nullflagval);
+               for (ii = tilelen - 1; ii >= 0; ii--) {
+	            if (usbbuff[ii] == (unsigned char) flagval)
+		       idata[ii] = nullval;
+                    else
+                       idata[ii] = (int) usbbuff[ii];
+               }
+           } else {  /* just do the data type conversion to int */
+               for (ii = tilelen - 1; ii >= 0; ii--) 
+                   idata[ii] = (int) usbbuff[ii];
+           }
        }
     }
     else if (datatype == TSBYTE)
     {
+       /* datatype of input array is signed byte.  We only support writing this datatype
+          to a FITS image with BITPIX = 8 and with BZERO = 0 and BSCALE = -128.  */
+
+       if (zbitpix != BYTE_IMG|| scale != 1.0 || zero != -128.) {
+           ffpmsg("Implicit datatype conversion is not supported when writing to compressed images");
+           return(*status = DATA_COMPRESSION_ERR);
+       }
+
        sbbuff = (signed char *) tiledata;
-       if (nullcheck == 1)
-           flagval = *(signed char *) (nullflagval);
-       for (ii = tilelen - 1; ii >= 0; ii--)
-            idata[ii] = (int) (sbbuff[ii]);
+
+       if (((outfptr->Fptr)->compress_type == RICE_1 || (outfptr->Fptr)->compress_type == GZIP_1)) 
+       {
+           /* don't have to convert to int if using gzip or Rice compression */
+           intlength = 1;
+             
+           if (nullcheck == 1) {
+               /* reset pixels equal to flagval to the FITS null value, prior to compression */
+               /* offset the other pixel values (by flipping the MSB) */
+
+               flagval = *(signed char *) (nullflagval);
+               for (ii = tilelen - 1; ii >= 0; ii--) {
+	            if (sbbuff[ii] == (signed char) flagval)
+		       sbbuff[ii] = (signed char) nullval;
+                    else
+		       sbbuff[ii] = (sbbuff[ii]) ^ 0x80;               }
+           } else {  /* just offset the pixel values (by flipping the MSB) */
+               for (ii = tilelen - 1; ii >= 0; ii--) 
+		       sbbuff[ii] = (sbbuff[ii]) ^ 0x80;
+           }
+
+       } else {
+           /* have to convert to int if using HCOMPRESS or PLIO */
+           intlength = 4;
+
+           if (nullcheck == 1) {
+               /* reset pixels equal to flagval to the FITS null value, prior to compression */
+               flagval = *(signed char *) (nullflagval);
+               for (ii = tilelen - 1; ii >= 0; ii--) {
+	            if (usbbuff[ii] == (signed char) flagval)
+		       idata[ii] = nullval;
+                    else
+                       idata[ii] = ((int) sbbuff[ii]) + 128;
+               }
+           } else {  /* just do the data type conversion to int */
+               for (ii = tilelen - 1; ii >= 0; ii--) 
+                   idata[ii] = ((int) sbbuff[ii]) + 128;
+           }
+       }
     }
     else if (datatype == TLONG && sizeof(long) == 8)
     {
-       /* warning: potential for data overflow here */
-       if (nullcheck == 1)
-           flagval = *(long *) (nullflagval);
-       lbuff = (long *) tiledata;
-       for (ii = 0; ii < tilelen; ii++)
-             idata[ii] = (int) (lbuff[ii]);
-    }
-    else if (datatype == TLONG)
-    {
-       if (nullcheck == 1)
-           flagval = *(long *) (nullflagval);
+           ffpmsg("Integer*8 Long datatype is not supported when writing to compressed images");
+           return(*status = DATA_COMPRESSION_ERR);
     }
     else if (datatype == TULONG && sizeof(long) == 8)
     {
-       /* warning: potential for data overflow here */
-       if (nullcheck == 1)
-           flagval = *(unsigned long *) (nullflagval);
-       ulbuff = (unsigned long *) tiledata;
-       for (ii = 0; ii < tilelen; ii++)
-             idata[ii] = (int) (ulbuff[ii]);
+           ffpmsg("Unsigned integer*8 datatype is not supported when writing to compressed images");
+           return(*status = DATA_COMPRESSION_ERR);
     }
-    else if (datatype == TULONG)
-    {
-       if (nullcheck == 1)
-           flagval = *(unsigned long *) (nullflagval);
-    }
-    
     else if (datatype == TFLOAT)
     {
+           intlength = 4;
+
           /* if the tile-compressed table contains zscale and zzero columns */
           /* then scale and quantize the input floating point data.    */
           /* Otherwise, just truncate the floats to (scaled) integers.     */
@@ -1243,13 +1439,8 @@ int imcomp_compress_tile (fitsfile *outfptr,
             flag = fits_quantize_float ((float *) tiledata, tilenx, tileny,
                nullcheck, floatnull, (outfptr->Fptr)->quantize_level, idata,
                bscale, bzero, &iminval, &imaxval);
-	       
-            /* adjust the hcompress scale by the same scaling factor */
- /*
-            if (hcompscale != 0.) hcompscale = (hcompscale / bscale[0]);
-*/
           }
-          else  /* input float data is implicitly converted to integer image */
+          else  /* input float data is implicitly converted (truncated) to integers */
           {
             if ((scale != 1. || zero != 0.))  /* must scale the values */
 	       imcomp_nullscalefloats((float *) tiledata, tilelen, idata, scale, zero,
@@ -1261,6 +1452,8 @@ int imcomp_compress_tile (fitsfile *outfptr,
     }
     else if (datatype == TDOUBLE)
     {
+           intlength = 4;
+
           /* if the tile-compressed table contains zscale and zzero columns */
           /* then scale and quantize the input floating point data.    */
           /* Otherwise, just truncate the floats to integers.          */
@@ -1276,13 +1469,8 @@ int imcomp_compress_tile (fitsfile *outfptr,
             flag = fits_quantize_double ((double *) tiledata, tilenx, tileny,
                nullcheck, doublenull, (outfptr->Fptr)->quantize_level, idata,
                bscale, bzero, &iminval, &imaxval);
-
-            /* adjust the hcompress scale by the same scaling factor */
-/*
-            if (hcompscale != 0.) hcompscale =  (hcompscale / bscale[0]);
-*/
           }
-          else
+          else  /* input double data is implicitly converted (truncated) to integers */
           {
             if ((scale != 1. || zero != 0.))  /* must scale the values */
 	       imcomp_nullscaledoubles((double *) tiledata, tilelen, idata, scale, zero,
@@ -1298,29 +1486,11 @@ int imcomp_compress_tile (fitsfile *outfptr,
           return(*status = BAD_DATATYPE);
     }
 
-    if (datatype < TFLOAT) {  /* see if we need to test for null values, or */
-                              /* scale the data values before compression */
-    
-        if (zbitpix < 0 )  /* If writing an integer input array to a float or double */
-             nullval = -2147483647;  /* choose an arbitrary value for null pixels.  */
 
-        if (nullval == flagval)  /* If the flag value is the same as the */
-            nullcheck = 0;          /*  null value, then no need to test nulls.  */
-
-        if ((nullcheck ==1)  && (scale != 1. || zero != 0.)) { /* do both */
-	   imcomp_nullscale(idata, tilelen, flagval, nullval,
-	       scale, zero, status);
-        } else if (nullcheck == 1) {  /* just do null value substitution */
-	   imcomp_nullvalues(idata, tilelen, flagval, nullval, status);
-
-        } else if (scale != 1. || zero != 0.) {  /* just do scaling */
-	   imcomp_scalevalues(idata, tilelen, scale, zero, status);
-        }
-    }      
+    /* =========================================================================== */
 
     if (flag)   /* we can now compress the int array */
     {
-
         /* allocate buffer for the compressed tile bytes */
         clen = (outfptr->Fptr)->maxelem;
         cbuf = (short *) calloc (clen, sizeof (unsigned char));
@@ -1331,6 +1501,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
 	    return (*status = MEMORY_ALLOCATION);
         }
 
+    /* =========================================================================== */
 
 	/* Compress the integer data, then write the compressed bytes */
         if ( (outfptr->Fptr)->compress_type == RICE_1)
@@ -1350,6 +1521,9 @@ int imcomp_compress_tile (fitsfile *outfptr,
                 ffpclb(outfptr, (outfptr->Fptr)->cn_compressed, row, 1,
                      nelem, (unsigned char *) cbuf, status);
         }
+
+    /* =========================================================================== */
+
         else if ( (outfptr->Fptr)->compress_type == PLIO_1)
         {
               for (ii = 0; ii < tilelen; ii++)  {
@@ -1367,6 +1541,9 @@ int imcomp_compress_tile (fitsfile *outfptr,
                 ffpcli(outfptr, (outfptr->Fptr)->cn_compressed, row, 1,
                      nelem, cbuf, status);
         }
+
+    /* =========================================================================== */
+
         else if ( (outfptr->Fptr)->compress_type == GZIP_1)
         {
 
@@ -1395,6 +1572,9 @@ int imcomp_compress_tile (fitsfile *outfptr,
                 ffpclb(outfptr, (outfptr->Fptr)->cn_compressed, row, 1,
                      gzip_nelem, (unsigned char *) cbuf, status);
         }
+
+    /* =========================================================================== */
+
         else if ( (outfptr->Fptr)->compress_type == HCOMPRESS_1)
         {
 	    /*
@@ -1403,9 +1583,11 @@ int imcomp_compress_tile (fitsfile *outfptr,
 	      absolute scale value.  If negative, then it gives the
 	      absolute scale value directly.
 	    */
+            hcompscale = (outfptr->Fptr)->hcomp_scale;
+
 	    if (hcompscale > 0.) {
 	       fits_img_stats_int(idata, tilenx, tileny, nullcheck,
-	                flagval, 0,0,0,0,0,0,&noise3,status);
+	                nullval, 0,0,0,0,0,0,&noise3,status);
 
 		hcompscale = hcompscale * noise3;
 
@@ -1418,9 +1600,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
 
             hcomp_len = clen;  /* allocated size of the buffer */
 	    
-            if ((outfptr->Fptr)->zbitpix == BYTE_IMG ||
-	        (outfptr->Fptr)->zbitpix == SHORT_IMG) {
-
+            if (zbitpix == BYTE_IMG || zbitpix == SHORT_IMG) {
                 fits_hcompress(idata, tilenx, tileny, 
 		  ihcompscale, (char *) cbuf, &hcomp_len, status);
 
@@ -1442,6 +1622,8 @@ int imcomp_compress_tile (fitsfile *outfptr,
                      hcomp_len, (unsigned char *) cbuf, status);
         }
 
+    /* =========================================================================== */
+
 	if (nelem < 0)  /* error condition */
         {
 	    free (cbuf);
@@ -1461,6 +1643,9 @@ int imcomp_compress_tile (fitsfile *outfptr,
 
         free(cbuf);  /* finished with this buffer */
     } 
+
+    /* =========================================================================== */
+
     else     /* floating point data couldn't be quantized */
     {
 	 /* Write the original floating point data. */
@@ -1603,6 +1788,112 @@ int imcomp_scalevalues(
     return(*status);
 }
 /*---------------------------------------------------------------------------*/
+int imcomp_nullscalei2(
+     short *idata, 
+     long tilelen,
+     short nullflagval,
+     short nullval,
+     double scale,
+     double zero,
+     int *status)
+/*
+   do null value substitution AND scaling of the integer array.
+   If array value = nullflagval, then set the value to nullval.
+   Otherwise, inverse scale the integer value.
+*/
+{
+    long ii;
+    double dvalue;
+    
+    for (ii=0; ii < tilelen; ii++)
+    {
+        if (idata[ii] == nullflagval)
+	    idata[ii] = nullval;
+	else 
+	{
+            dvalue = (idata[ii] - zero) / scale;
+
+            if (dvalue < DSHRT_MIN)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = SHRT_MIN;
+            }
+            else if (dvalue > DSHRT_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = SHRT_MAX;
+            }
+            else
+            {
+                if (dvalue >= 0)
+                    idata[ii] = (int) (dvalue + .5);
+                else
+                    idata[ii] = (int) (dvalue - .5);
+            }
+        }
+    }
+    return(*status);
+}
+/*---------------------------------------------------------------------------*/
+int imcomp_nullvaluesi2(
+     short *idata, 
+     long tilelen,
+     short nullflagval,
+     short nullval,
+     int *status)
+/*
+   do null value substitution.
+   If array value = nullflagval, then set the value to nullval.
+*/
+{
+    long ii;
+    
+    for (ii=0; ii < tilelen; ii++)
+    {
+        if (idata[ii] == nullflagval)
+	    idata[ii] = nullval;
+    }
+    return(*status);
+}
+/*---------------------------------------------------------------------------*/
+int imcomp_scalevaluesi2(
+     short *idata, 
+     long tilelen,
+     double scale,
+     double zero,
+     int *status)
+/*
+   do inverse scaling the integer values.
+*/
+{
+    long ii;
+    double dvalue;
+    
+    for (ii=0; ii < tilelen; ii++)
+    {
+            dvalue = (idata[ii] - zero) / scale;
+
+            if (dvalue < DSHRT_MIN)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = SHRT_MIN;
+            }
+            else if (dvalue > DSHRT_MAX)
+            {
+                *status = OVERFLOW_ERR;
+                idata[ii] = SHRT_MAX;
+            }
+            else
+            {
+                if (dvalue >= 0)
+                    idata[ii] = (int) (dvalue + .5);
+                else
+                    idata[ii] = (int) (dvalue - .5);
+            }
+    }
+    return(*status);
+}
+/*---------------------------------------------------------------------------*/
 int imcomp_nullfloats(
      float *fdata,
      long tilelen,
@@ -1614,7 +1905,6 @@ int imcomp_nullfloats(
 /*
    do null value substitution  of the float array.
    If array value = nullflagval, then set the output value to FLOATNULLVALUE.
-   Otherwise, inverse scale the integer value.
 */
 {
     long ii;
@@ -1954,21 +2244,9 @@ int fits_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer     */
         if ( ffrdef(fptr, status) > 0)               
             return(*status);
 
-    /* get temporary space for uncompressing one image tile */
-    /*  Need at least 4-byte per pixel, and in some cases 8-bytes per pixel, */
-    
-    buffpixsiz = 4;
-    if ( (fptr->Fptr)->compress_type == HCOMPRESS_1 &&
-                ((fptr->Fptr)->zbitpix != BYTE_IMG &&
-	         (fptr->Fptr)->zbitpix != SHORT_IMG) ){
 
-              buffpixsiz = 8;
-    }
-    if (datatype == TDOUBLE)
-	 buffpixsiz = 8;
+    /* ===================================================================== */
 
-    /* cast to double to force alignment on 8-byte addresses */
-    buffer = (double *) calloc ((fptr->Fptr)->maxtilelen, buffpixsiz);
 
     if (datatype == TSHORT || datatype == TUSHORT)
     {
@@ -2000,11 +2278,46 @@ int fits_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer     */
         return(*status = BAD_DATATYPE);
     }
 
+    /* ===================================================================== */
+
+    /* allocate scratch space for processing one tile of the image */
+    buffpixsiz = pixlen;  /* this is the minimum pixel size */
+    
+    if ( (fptr->Fptr)->compress_type == HCOMPRESS_1) { /* need 4 or 8 bytes per pixel */
+        if ((fptr->Fptr)->zbitpix == BYTE_IMG ||
+	    (fptr->Fptr)->zbitpix == SHORT_IMG )
+                buffpixsiz = maxvalue(buffpixsiz, 4);
+        else
+	        buffpixsiz = 8;
+    }
+    else if ( (fptr->Fptr)->compress_type == PLIO_1) { /* need 4 bytes per pixel */
+                buffpixsiz = maxvalue(buffpixsiz, 4);
+    }
+    else if ( (fptr->Fptr)->compress_type == RICE_1  ||
+              (fptr->Fptr)->compress_type == GZIP_1) {  /* need 1, 2, or 4 bytes per pixel */
+        if ((fptr->Fptr)->zbitpix == BYTE_IMG)
+            buffpixsiz = maxvalue(buffpixsiz, 1);
+        else if ((fptr->Fptr)->zbitpix == SHORT_IMG)
+            buffpixsiz = maxvalue(buffpixsiz, 2);
+        else 
+            buffpixsiz = maxvalue(buffpixsiz, 4);
+    }
+    else
+    {
+        ffpmsg("unsupported image compression algorithm");
+        return(*status = BAD_DATATYPE);
+    }
+    
+    /* cast to double to force alignment on 8-byte addresses */
+    buffer = (double *) calloc ((fptr->Fptr)->maxtilelen, buffpixsiz);
+
     if (buffer == NULL)
     {
 	    ffpmsg("Out of memory (fits_write_compress_img)");
 	    return (*status = MEMORY_ALLOCATION);
     }
+
+    /* ===================================================================== */
 
     /* initialize all the arrays */
     for (ii = 0; ii < MAX_COMPRESS_DIM; ii++)
@@ -2193,7 +2506,7 @@ int fits_write_compressed_pixels(fitsfile *fptr, /* I - FITS file pointer   */
         lastcoord[ii] = 0;
     }
 
-    /*  determine the dimensions of the image to be read */
+    /*  determine the dimensions of the image to be written */
     ffgidm(fptr, &naxis, status);
     ffgisz(fptr, MAX_COMPRESS_DIM, naxes, status);
 
@@ -2770,6 +3083,7 @@ int fits_read_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
     int ii, i5, i4, i3, i2, i1, i0, ndim, irow, pixlen, tilenul;
     void *buffer;
     char *bnullarray = 0;
+    double testnullval = 0.;
 
     if (*status > 0) 
         return(*status);
@@ -2785,46 +3099,64 @@ int fits_read_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
     {
        buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (short)); 
        pixlen = sizeof(short);
+       if (nullval)
+           testnullval = *(short *) nullval;
     }
     else if (datatype == TINT)
     {
        buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (int));
        pixlen = sizeof(int);
+       if (nullval)
+           testnullval = *(int *) nullval;
     }
     else if (datatype == TLONG)
     {
        buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (long));
        pixlen = sizeof(long);
+       if (nullval)
+           testnullval = *(long *) nullval;
     }
     else if (datatype == TFLOAT)
     {
        buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (float));
        pixlen = sizeof(float);
+       if (nullval)
+           testnullval = *(float *) nullval;
     }
     else if (datatype == TDOUBLE)
     {
        buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (double));
        pixlen = sizeof(double);
+       if (nullval)
+           testnullval = *(double *) nullval;
     }
     else if (datatype == TUSHORT)
     {
        buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (unsigned short));
        pixlen = sizeof(short);
+       if (nullval)
+           testnullval = *(unsigned short *) nullval;
     }
     else if (datatype == TUINT)
     {
        buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (unsigned int));
        pixlen = sizeof(int);
+       if (nullval)
+           testnullval = *(unsigned int *) nullval;
     }
     else if (datatype == TULONG)
     {
        buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (unsigned long));
        pixlen = sizeof(long);
+       if (nullval)
+           testnullval = *(unsigned long *) nullval;
     }
     else if (datatype == TBYTE || datatype == TSBYTE)
     {
        buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (char));
        pixlen = 1;
+       if (nullval)
+           testnullval = *(unsigned char *) nullval;
     }
     else
     {
@@ -2832,11 +3164,17 @@ int fits_read_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
         return(*status = BAD_DATATYPE);
     }
 
+    /* If nullcheck ==1 and nullval == 0, then this means that the */
+    /* calling routine does not want to check for null pixels in the array */
+    if (nullcheck == 1 && testnullval == 0.)
+        nullcheck = 0;
+
     if (buffer == NULL)
     {
 	    ffpmsg("Out of memory (fits_read_compress_img)");
 	    return (*status = MEMORY_ALLOCATION);
     }
+	
     /* allocate memory for a null flag array, if needed */
     if (nullcheck == 2)
     {
@@ -3731,7 +4069,6 @@ int imcomp_decompress_tile (fitsfile *infptr,
     /* **************************************************************** */
     /* check if this tile was cached; if so, just copy it out */
     if (nrow == (infptr->Fptr)->tilerow && datatype == (infptr->Fptr)->tiletype ) {
-
          memcpy(buffer, (infptr->Fptr)->tiledata, (infptr->Fptr)->tiledatasize);
 	 
 	 if (nullcheck == 2)

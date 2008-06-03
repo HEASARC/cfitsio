@@ -1,5 +1,15 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.09 - 3 June 2008
+
+   - fixed imcomp_compress_tile in imcompress.c to properly support
+     writing unsigned integers, in place, to tile compressed images.
+
+   - modified fits_read_compressed_img so that if the calling routine
+     specifies nullval = 0, then it will not check for null-valued
+     pixels in the compressed FITS image.  This mimics the same
+     behavior when reading normal uncompressed FITS images.
+
 Version 3.08 - 15 April 2008 (internal release)
 
    - fixed backwards compatibility issue when uncompressing a Rice
