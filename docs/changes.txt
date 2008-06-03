@@ -2,6 +2,14 @@
 
 Version 3.09 - 3 June 2008
 
+   - fixed typo in imcomp_decompress_tile: call to fffi2r8 should have 
+     been to fffi4r8.
+     
+   - in the imcopy_copy_comp2img routine, moved the call to 
+     fits_translate_keywords outside of the 'if' statement.  This could 
+     affect reading compressed images that did not have a EXTNAME keyword
+     in the header.
+     
    - fixed imcomp_compress_tile in imcompress.c to properly support
      writing unsigned integers, in place, to tile compressed images.
 

@@ -4027,11 +4027,11 @@ int imcomp_copy_comp2img(fitsfile *infptr, fitsfile *outfptr,
     if (tstatus == 0) {
       if (!strncmp(card, "EXTNAME = 'COMPRESSED_IMAGE'", 28)) 
         patterns[npat-2][1] = negative;
-    
-      /* translate and copy the keywords from the input file to the output */
-      fits_translate_keywords(infptr, outfptr, 1, patterns, npat,
-			    0, 0, 0, status);
     }
+    
+    /* translate and copy the keywords from the input file to the output */
+    fits_translate_keywords(infptr, outfptr, 1, patterns, npat,
+			    0, 0, 0, status);
 
     return (*status);
 }
@@ -4518,7 +4518,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
     {
         pixlen = sizeof(double);
         if (tiledatatype == TINT)
-          fffi2r8((short *)idata, tilelen, bscale, bzero, nullcheck, tnull,
+          fffi4r8(idata, tilelen, bscale, bzero, nullcheck, tnull,
            *(double *) nulval, bnullarray, anynul,
             (double *) buffer, status);
         else if (tiledatatype == TSHORT)
