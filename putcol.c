@@ -1129,7 +1129,7 @@ int ffiter(int n_cols,
 
         ffghdt(cols[jj].fptr, &jtype, status);  /* get HDU type */
 
-        if (hdutype == IMAGE_HDU)
+        if (hdutype == IMAGE_HDU) /* operating on FITS images */
         {
             if (jtype != IMAGE_HDU)
             {
@@ -1146,7 +1146,7 @@ int ffiter(int n_cols,
             tstatus = 0;
             ffgkys(cols[jj].fptr, "BUNIT", cols[jj].tunit, 0, &tstatus);
         }
-        else
+        else  /* operating on FITS tables */
         {
             if (jtype == IMAGE_HDU)
             {
@@ -1170,6 +1170,7 @@ int ffiter(int n_cols,
                 }
             }
 
+            /* check that the column number is valid */
             if (cols[jj].colnum < 1 || 
                 cols[jj].colnum > ((cols[jj].fptr)->Fptr)->tfield)
             {
@@ -1203,7 +1204,7 @@ int ffiter(int n_cols,
             ffkeyn("TDISP", cols[jj].colnum, keyname, &tstatus);
             ffgkys(cols[jj].fptr, keyname, cols[jj].tdisp, 0, &tstatus);
         }
-    }
+    }  /* end of loop over all columns */
 
     /*-----------------------------------------------------------------*/
     /* use the first file to set the total number of values to process */
@@ -1275,6 +1276,7 @@ int ffiter(int n_cols,
             }
         }
 
+        /* divid n_optimum by the number of files that will be processed */
         n_optimum = n_optimum / nfiles;
         n_optimum = maxvalue(n_optimum, 1);
     }

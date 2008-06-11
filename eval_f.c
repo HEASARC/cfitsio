@@ -961,7 +961,7 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
     static void *Data, *Null;
     static int  datasize;
     static long lastRow, repeat, resDataSize;
-    LONGLONG jnull;
+    static LONGLONG jnull;
     static parseInfo *userInfo;
     static long zeros[4] = {0,0,0,0};
 
@@ -1019,7 +1019,7 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
           }
           repeat = outcol->repeat;
           if (DEBUG_PIXFILTER)
-            printf("using null value %ld\n", jnull);
+            printf("parse_data: using null value %ld\n", jnull);
        } else {
 
           Data = userInfo->dataPtr;
@@ -1059,6 +1059,9 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
 
     /*  If writing to output column, set first element to appropriate  */
     /*  null value.  If no NULLs encounter, zero out before returning. */
+          if (DEBUG_PIXFILTER)
+            printf("parse_data: using null value %ld\n", jnull);
+
 
     if( userInfo->dataPtr == NULL ) {
        /* First, reset Data pointer to start of output array */
