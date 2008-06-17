@@ -1,7 +1,15 @@
                    Log of Changes Made to CFITSIO
 
-Version 3.09 - 3 June 2008
+Version 3.09 - 12 June 2008
 
+   - fixed bug in the calculator function, parse_data, that evaluates 
+     expressions then selecting rows or modifying values in table columns.
+     This bug only appeared in unusual circumstances
+     where the calculated value has a null value (= TNULLn).  The bug
+     could cause elements to not be flagged as having a null value, or
+     in rare cases could cause valid elements to be flagged as null. This
+     only appears to have affected 64-bit platforms (where size(long) = 8).
+   
    - fixed typo in imcomp_decompress_tile: call to fffi2r8 should have 
      been to fffi4r8.
      
@@ -18,7 +26,7 @@ Version 3.09 - 3 June 2008
      pixels in the compressed FITS image.  This mimics the same
      behavior when reading normal uncompressed FITS images.
 
-Version 3.08 - 15 April 2008 (internal release)
+Version 3.08 - 15 April 2008 
 
    - fixed backwards compatibility issue when uncompressing a Rice
      compressed image that was created with previous versions of 
