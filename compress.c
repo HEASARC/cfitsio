@@ -422,7 +422,8 @@ int uncompress2mem(char *filename,  /* name of input file                 */
         return(*status);
 
     /*  save input parameters into global variables */
-    strcpy(ifname, filename);
+    ifname[0] = '\0';
+    strncat(ifname, filename, 127);
     ifd = diskfile;
     memptr = (void **) buffptr;
     memsize = buffsize;
@@ -545,7 +546,8 @@ int uncompress2file(char *filename,  /* name of input file                  */
         return(*status);
 
     /*  save input parameters into global variables */
-    strcpy(ifname, filename);
+    ifname[0] = '\0';
+    strncat(ifname, filename, 127);
     ifd = indiskfile;
     ofd = outdiskfile;
     realloc_fn = NULL; /* a null reallocation fn signals that the file is */

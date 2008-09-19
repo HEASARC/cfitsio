@@ -66,7 +66,6 @@ int ffpscl(fitsfile *fptr,      /* I - FITS file pointer               */
     {
         (fptr->Fptr)->cn_bscale = scale;
         (fptr->Fptr)->cn_bzero  = zero;
-
         return(*status);
     }
 

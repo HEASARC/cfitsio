@@ -5,13 +5,38 @@
 #include "fitsio2.h"
 #include "region.h"
 
-static int Pt_in_Poly( double x, double y, int nPts, double *Pts );
-
 /*---------------------------------------------------------------------------*/
-int ffrrgn( const char *filename,
+int fits_read_rgnfile( const char *filename,
             WCSdata    *wcs,
             SAORegion  **Rgn,
             int        *status )
+/*  Read regions from either a FITS or ASCII region file and return the information     */
+/*  in the "SAORegion" structure.  If it is nonNULL, use wcs to convert the  */
+/*  region coordinates to pixels.  Return an error if region is in degrees   */
+/*  but no WCS data is provided.                                             */
+/*---------------------------------------------------------------------------*/
+{
+  fitsfile *fptr;
+  int tstatus = 0;
+
+   if( *status ) return( *status );
+
+  /* try to open as a FITS file - if that doesn't work treat as an ASCII file */
+
+  if ( ffopen(&fptr, filename, READONLY, &tstatus) ) {
+    fits_read_ascii_region(filename, wcs, Rgn, status);
+  } else {
+    fits_read_fits_region(fptr, wcs, Rgn, status);
+  }
+
+  return(*status);
+
+}
+/*---------------------------------------------------------------------------*/
+int fits_read_ascii_region( const char *filename,
+			    WCSdata    *wcs,
+			    SAORegion  **Rgn,
+			    int        *status )
 /*  Read regions from a SAO-style region file and return the information     */
 /*  in the "SAORegion" structure.  If it is nonNULL, use wcs to convert the  */
 /*  region coordinates to pixels.  Return an error if region is in degrees   */
@@ -22,7 +47,7 @@ int ffrrgn( const char *filename,
    char     *namePtr, *paramPtr, *currLoc;
    char     *pX, *pY, *endp;
    long     allocLen, lineLen, hh, mm, dd;
-   double   *coords = 0, X, Y, R, x, y, ss, xsave= 0., ysave= 0.;
+   double   *coords = 0, X, Y, R, x, y, ss, div, xsave= 0., ysave= 0.;
    int      nParams, nCoords, negdec;
    int      i, done;
    FILE     *rgnFile;
@@ -266,6 +291,11 @@ int ffrrgn( const char *filename,
             newShape        = &aRgn->Shapes[aRgn->nShapes++];
             newShape->sign  = 1;
             newShape->shape = point_rgn;
+	    for (i=0; i<8; i++) newShape->param.gen.p[i] = 0.0;
+	    newShape->param.gen.a = 0.0;
+	    newShape->param.gen.b = 0.0;
+	    newShape->param.gen.sinT = 0.0;
+	    newShape->param.gen.cosT = 0.0;
 
             while( *namePtr==' ' ) namePtr++;
             
@@ -302,10 +332,16 @@ int ffrrgn( const char *filename,
                   *status = PARSE_SYNTAX_ERR;
                nCoords = 2;
             } else if( !strcasecmp( namePtr, "ellipse" ) ) {
-               newShape->shape = ellipse_rgn;
-               if( nParams < 4 || nParams > 5 )
+               if( nParams < 4 || nParams > 8 ) {
                   *status = PARSE_SYNTAX_ERR;
-               newShape->param.gen.p[4] = 0.0;
+	       } else if ( nParams < 6 ) {
+		 newShape->shape = ellipse_rgn;
+		 newShape->param.gen.p[4] = 0.0;
+	       } else {
+		 newShape->shape = elliptannulus_rgn;
+		 newShape->param.gen.p[6] = 0.0;
+		 newShape->param.gen.p[7] = 0.0;
+	       }
                nCoords = 2;
             } else if( !strcasecmp( namePtr, "elliptannulus" ) ) {
                newShape->shape = elliptannulus_rgn;
@@ -316,11 +352,17 @@ int ffrrgn( const char *filename,
                nCoords = 2;
             } else if( !strcasecmp( namePtr, "box"    ) 
                     || !strcasecmp( namePtr, "rotbox" ) ) {
-               newShape->shape = box_rgn;
-               if( nParams < 4 || nParams > 5 )
-                  *status = PARSE_SYNTAX_ERR;
-               newShape->param.gen.p[4] = 0.0;
-               nCoords = 2;
+	       if( nParams < 4 || nParams > 8 ) {
+		 *status = PARSE_SYNTAX_ERR;
+	       } else if ( nParams < 6 ) {
+		 newShape->shape = box_rgn;
+		 newShape->param.gen.p[4] = 0.0;
+	       } else {
+		  newShape->shape = boxannulus_rgn;
+		  newShape->param.gen.p[6] = 0.0;
+		  newShape->param.gen.p[7] = 0.0;
+	       }
+	       nCoords = 2;
             } else if( !strcasecmp( namePtr, "rectangle"    )
                     || !strcasecmp( namePtr, "rotrectangle" ) ) {
                newShape->shape = rectangle_rgn;
@@ -474,173 +516,69 @@ int ffrrgn( const char *filename,
                *(paramPtr++) = '\0';
                coords[i] = strtod( pX, &endp );
 
-               if (endp && *endp=='"') {
-                   /* parameter given in arcsec so convert to pixels. */
-                   /* Increment first Y coordinate by this amount then calc */
-                   /* the distance in pixels from the original coordinate. */
-                   /* NOTE: This assumes the pixels are square!! */
-                   if (ysave < 0.)
-                       Y = ysave + coords[i]/3600.;  /* don't exceed -90 */
-                   else
-                       Y = ysave - coords[i]/3600.;  /* don't exceed +90 */
+	       if (endp && (*endp=='"' || *endp=='\'' || *endp=='d') ) {
+		  div = 1.0;
+		  if ( *endp=='"' ) div = 3600.0;
+		  if ( *endp=='\'' ) div = 60.0;
+		  /* parameter given in arcsec so convert to pixels. */
+		  /* Increment first Y coordinate by this amount then calc */
+		  /* the distance in pixels from the original coordinate. */
+		  /* NOTE: This assumes the pixels are square!! */
+		  if (ysave < 0.)
+		     Y = ysave + coords[i]/div;  /* don't exceed -90 */
+		  else
+		     Y = ysave - coords[i]/div;  /* don't exceed +90 */
 
-                   X = xsave;
-                   if( ffxypx(  X,  Y, wcs->xrefval, wcs->yrefval,
-                                      wcs->xrefpix, wcs->yrefpix,
-                                      wcs->xinc,    wcs->yinc,
-                                      wcs->rot,     wcs->type,
-                              &x, &y, status ) ) {
-                     ffpmsg("Error converting region to pixel coordinates.");
-                     goto error;
-                   }
+		  X = xsave;
+		  if( ffxypx(  X,  Y, wcs->xrefval, wcs->yrefval,
+			       wcs->xrefpix, wcs->yrefpix,
+			       wcs->xinc,    wcs->yinc,
+			       wcs->rot,     wcs->type,
+                               &x, &y, status ) ) {
+		     ffpmsg("Error converting region to pixel coordinates.");
+		     goto error;
+		  }
+		 
+		  coords[i] = sqrt( pow(x-coords[0],2) + pow(y-coords[1],2) );
 
-                   coords[i] = sqrt( pow(x-coords[0],2) + pow(y-coords[1],2) );
-
-               } else if (endp && *endp=='\'') {
-                   /* parameter given in arcmin so convert to pixels. */
-                   /* Increment first Y coordinate by this amount, then calc */
-                   /* the distance in pixels from the original coordinate. */
-                   /* NOTE: This assumes the pixels are square!! */
-                   if (ysave < 0.)
-                       Y = ysave + coords[i]/60.;  /* don't exceed -90 */
-                   else
-                       Y = ysave - coords[i]/60.;  /* don't exceed +90 */
-
-                   X = xsave;
-                   if( ffxypx(  X,  Y, wcs->xrefval, wcs->yrefval,
-                                      wcs->xrefpix, wcs->yrefpix,
-                                      wcs->xinc,    wcs->yinc,
-                                      wcs->rot,     wcs->type,
-                              &x, &y, status ) ) {
-                     ffpmsg("Error converting region to pixel coordinates.");
-                     goto error;
-                   }
-
-                   coords[i] = sqrt( pow(x-coords[0],2) + pow(y-coords[1],2) );
-
-               } else if (endp && *endp=='d') {
-                   /* parameter given in degrees so convert to pixels. */
-                   /* Increment first Y coordinate by this amount, then calc */
-                   /* the distance in pixels from the original coordinate. */
-                   /* NOTE: This assumes the pixels are square!! */
-                   if (ysave < 0.)
-                       Y = ysave + coords[i];  /* don't exceed -90 */
-                   else
-                       Y = ysave - coords[i];  /* don't exceed +90 */
-
-                   X = xsave;
-                   if( ffxypx(  X,  Y, wcs->xrefval, wcs->yrefval,
-                                      wcs->xrefpix, wcs->yrefpix,
-                                      wcs->xinc,    wcs->yinc,
-                                      wcs->rot,     wcs->type,
-                              &x, &y, status ) ) {
-                     ffpmsg("Error converting region to pixel coordinates.");
-                     goto error;
-                   }
-
-                   coords[i] = sqrt( pow(x-coords[0],2) + pow(y-coords[1],2) );
                }
             }
 
-            /* Perform some useful calculations now to speed up filter later */
+	    /* special case for elliptannulus and boxannulus if only one angle
+	       was given */
+
+	    if ( (newShape->shape == elliptannulus_rgn || 
+		  newShape->shape == boxannulus_rgn ) && nParams == 7 ) {
+	      coords[7] = coords[6];
+	    }
+
             /* Also, correct the position angle for any WCS rotation:  */
             /*    If regions are specified in WCS coordintes, then the angles */
             /*    are relative to the WCS system, not the pixel X,Y system */
 
-            switch( newShape->shape ) {
-            case circle_rgn:
-               newShape->param.gen.a = coords[2] * coords[2];
-               break;
-            case annulus_rgn:
-               newShape->param.gen.a = coords[2] * coords[2];
-               newShape->param.gen.b = coords[3] * coords[3];
-               break;
-            case sector_rgn:
-               if( cFmt!=pixel_fmt ) {
-                 coords[2] += (wcs->rot);
-                 coords[3] += (wcs->rot);
-               }
-               while( coords[2]> 180.0 ) coords[2] -= 360.0;
-               while( coords[2]<=-180.0 ) coords[2] += 360.0;
-               while( coords[3]> 180.0 ) coords[3] -= 360.0;
-               while( coords[3]<=-180.0 ) coords[3] += 360.0;
-               break;
-            case ellipse_rgn:
-               if( cFmt!=pixel_fmt ) {
-                 coords[4] += (wcs->rot);
-               }
-               newShape->param.gen.sinT = sin( myPI * (coords[4] / 180.0) );
-               newShape->param.gen.cosT = cos( myPI * (coords[4] / 180.0) );
-               break;
-            case elliptannulus_rgn:
-               if( cFmt!=pixel_fmt ) {
-                 coords[6] += (wcs->rot);
-                 coords[7] += (wcs->rot);
-               }
-               newShape->param.gen.a    = sin( myPI * (coords[6] / 180.0) );
-               newShape->param.gen.b    = cos( myPI * (coords[6] / 180.0) );
-               newShape->param.gen.sinT = sin( myPI * (coords[7] / 180.0) );
-               newShape->param.gen.cosT = cos( myPI * (coords[7] / 180.0) );
-               break;
-            case box_rgn:
-               if( cFmt!=pixel_fmt ) {
-                 coords[4] += (wcs->rot);
-               }
-               newShape->param.gen.sinT = sin( myPI * (coords[4] / 180.0) );
-               newShape->param.gen.cosT = cos( myPI * (coords[4] / 180.0) );
-               break;
-            case rectangle_rgn:
-               if( cFmt!=pixel_fmt ) {
-                 coords[4] += (wcs->rot);
-               }
-               newShape->param.gen.sinT = sin( myPI * (coords[4] / 180.0) );
-               newShape->param.gen.cosT = cos( myPI * (coords[4] / 180.0) );
-               X = 0.5 * ( coords[2]-coords[0] );
-               Y = 0.5 * ( coords[3]-coords[1] );
-               newShape->param.gen.a = fabs( X * newShape->param.gen.cosT
-                                             + Y * newShape->param.gen.sinT );
-               newShape->param.gen.b = fabs( Y * newShape->param.gen.cosT
-                                             - X * newShape->param.gen.sinT );
-               newShape->param.gen.p[5] = 0.5 * ( coords[2]+coords[0] );
-               newShape->param.gen.p[6] = 0.5 * ( coords[3]+coords[1] );
-               break;
-            case diamond_rgn:
-               if( cFmt!=pixel_fmt ) {
-                 coords[4] += (wcs->rot);
-               }
-               newShape->param.gen.sinT = sin( myPI * (coords[4] / 180.0) );
-               newShape->param.gen.cosT = cos( myPI * (coords[4] / 180.0) );
-               break;
-            case line_rgn:
-               X = coords[2] - coords[0];
-               Y = coords[3] - coords[1];
-               R = sqrt( X*X + Y*Y );
-               newShape->param.gen.sinT = ( R ? Y/R : 0.0 );
-               newShape->param.gen.cosT = ( R ? X/R : 1.0 );
-               newShape->param.gen.a    = R + 0.5;
-               break;
-            case point_rgn:
-               break;
-            case poly_rgn:
-               /*  Find bounding box  */
-               newShape->param.poly.xmin = coords[0];
-               newShape->param.poly.xmax = coords[0];
-               newShape->param.poly.ymin = coords[1];
-               newShape->param.poly.ymax = coords[1];
-               for( i=2; i<nParams; ) {
-                  if( newShape->param.poly.xmin > coords[i] ) /* Min X */
-                      newShape->param.poly.xmin = coords[i];
-                  if( newShape->param.poly.xmax < coords[i] ) /* Max X */
-                      newShape->param.poly.xmax = coords[i];
-                  i++;
-                  if( newShape->param.poly.ymin > coords[i] ) /* Min Y */
-                      newShape->param.poly.ymin = coords[i];
-                  if( newShape->param.poly.ymax < coords[i] ) /* Max Y */
-                      newShape->param.poly.ymax = coords[i];
-                  i++;
-               }
-               break;
-            }
+	    if( cFmt!=pixel_fmt ) {	    
+	      switch( newShape->shape ) {
+	      case sector_rgn:
+		coords[2] += (wcs->rot);
+		coords[3] += (wcs->rot);
+		break;
+	      case box_rgn:
+	      case rectangle_rgn:
+	      case diamond_rgn:
+	      case ellipse_rgn:
+		coords[4] += (wcs->rot);
+		break;
+	      case boxannulus_rgn:
+	      case elliptannulus_rgn:
+		coords[6] += (wcs->rot);
+		coords[7] += (wcs->rot);
+		break;
+	      }
+	    }
+
+	    /* do some precalculations to speed up tests */
+
+	    fits_setup_shape(newShape);
 
          }  /* End of while( *currLoc ) */
 /*
@@ -650,6 +588,9 @@ int ffrrgn( const char *filename,
       }  /* End of if...else parse line */
    }   /* End of while( fgets(rgnFile) ) */
 
+   /* set up component numbers */
+
+   fits_set_region_components( aRgn );
 
 error:
 
@@ -665,7 +606,7 @@ error:
 }
 
 /*---------------------------------------------------------------------------*/
-int fftrgn( double    X,
+int fits_in_region( double    X,
             double    Y,
             SAORegion *Rgn )
 /*  Test if the given point is within the region described by Rgn.  X and    */
@@ -674,8 +615,8 @@ int fftrgn( double    X,
 {
    double x, y, dx, dy, xprime, yprime, r;
    RgnShape *Shapes;
-   int i;
-   int result = 0;
+   int i, cur_comp;
+   int result = 0, comp_result = 0;
 
    Shapes = Rgn->Shapes;
 
@@ -684,15 +625,29 @@ int fftrgn( double    X,
    if (!Shapes->sign)
       result = 1;
 
+   cur_comp = Rgn->Shapes[0].comp;
+   comp_result = result;
+
    for( i=0; i<Rgn->nShapes; i++, Shapes++ ) {
+
+     /* if this region has a different component number to the last one  */
+     /*	then replace the accumulated selection logical with the union of */
+     /*	the current logical and the total logical. Reinitialize the      */
+     /* temporary logical.                                               */
+
+     if ( Shapes->comp != cur_comp ) {
+       result = result || comp_result;
+       comp_result = !Shapes->sign;
+       cur_comp = Shapes->comp;
+     }
 
     /* only need to test if  */
     /*   the point is not already included and this is an include region, */
     /* or the point is included and this is an excluded region */
 
-    if ( (!result && Shapes->sign) || (result && !Shapes->sign) ) { 
+    if ( (!comp_result && Shapes->sign) || (comp_result && !Shapes->sign) ) { 
 
-      result = 1;
+      comp_result = 1;
 
       switch( Shapes->shape ) {
 
@@ -708,7 +663,32 @@ int fftrgn( double    X,
          dx = 0.5 * Shapes->param.gen.p[2];
          dy = 0.5 * Shapes->param.gen.p[3];
          if( (x < -dx) || (x > dx) || (y < -dy) || (y > dy) )
-            result = 0;
+            comp_result = 0;
+         break;
+
+      case boxannulus_rgn:
+         /*  Shift origin to center of region  */
+         xprime = X - Shapes->param.gen.p[0];
+         yprime = Y - Shapes->param.gen.p[1];
+
+         /*  Rotate point to region's orientation  */
+         x =  xprime * Shapes->param.gen.cosT + yprime * Shapes->param.gen.sinT;
+         y = -xprime * Shapes->param.gen.sinT + yprime * Shapes->param.gen.cosT;
+
+         dx = 0.5 * Shapes->param.gen.p[4];
+         dy = 0.5 * Shapes->param.gen.p[5];
+         if( (x < -dx) || (x > dx) || (y < -dy) || (y > dy) ) {
+	   comp_result = 0;
+	 } else {
+	   /* Repeat test for inner box */
+	   x =  xprime * Shapes->param.gen.b + yprime * Shapes->param.gen.a;
+	   y = -xprime * Shapes->param.gen.a + yprime * Shapes->param.gen.b;
+	   
+	   dx = 0.5 * Shapes->param.gen.p[2];
+	   dy = 0.5 * Shapes->param.gen.p[3];
+	   if( (x >= -dx) && (x <= dx) && (y >= -dy) && (y <= dy) )
+	     comp_result = 0;
+	 }
          break;
 
       case rectangle_rgn:
@@ -723,7 +703,7 @@ int fftrgn( double    X,
          dx = Shapes->param.gen.a;
          dy = Shapes->param.gen.b;
          if( (x < -dx) || (x > dx) || (y < -dy) || (y > dy) )
-            result = 0;
+            comp_result = 0;
          break;
 
       case diamond_rgn:
@@ -739,7 +719,7 @@ int fftrgn( double    X,
          dy = 0.5 * Shapes->param.gen.p[3];
          r  = fabs(x/dx) + fabs(y/dy);
          if( r > 1 )
-            result = 0;
+            comp_result = 0;
          break;
 
       case circle_rgn:
@@ -749,7 +729,7 @@ int fftrgn( double    X,
 
          r  = x*x + y*y;
          if ( r > Shapes->param.gen.a )
-            result = 0;
+            comp_result = 0;
          break;
 
       case annulus_rgn:
@@ -759,7 +739,7 @@ int fftrgn( double    X,
 
          r = x*x + y*y;
          if ( r < Shapes->param.gen.a || r > Shapes->param.gen.b )
-            result = 0;
+            comp_result = 0;
          break;
 
       case sector_rgn:
@@ -771,10 +751,10 @@ int fftrgn( double    X,
             r = atan2( y, x ) * 180.0 / myPI;
             if( Shapes->param.gen.p[2] <= Shapes->param.gen.p[3] ) {
                if( r < Shapes->param.gen.p[2] || r > Shapes->param.gen.p[3] )
-                  result = 0;
+                  comp_result = 0;
             } else {
                if( r < Shapes->param.gen.p[2] && r > Shapes->param.gen.p[3] )
-                  result = 0;
+                  comp_result = 0;
             }
          }
          break;
@@ -792,7 +772,7 @@ int fftrgn( double    X,
          y /= Shapes->param.gen.p[3];
          r = x*x + y*y;
          if( r>1.0 )
-            result = 0;
+            comp_result = 0;
          break;
 
       case elliptannulus_rgn:
@@ -808,7 +788,7 @@ int fftrgn( double    X,
          y /= Shapes->param.gen.p[5];
          r = x*x + y*y;
          if( r>1.0 )
-            result = 0;
+            comp_result = 0;
          else {
             /*  Repeat test for inner ellipse  */
             x =  xprime * Shapes->param.gen.b + yprime * Shapes->param.gen.a;
@@ -818,7 +798,7 @@ int fftrgn( double    X,
             y /= Shapes->param.gen.p[3];
             r = x*x + y*y;
             if( r<1.0 )
-               result = 0;
+               comp_result = 0;
          }
          break;
 
@@ -833,7 +813,7 @@ int fftrgn( double    X,
 
          if( (y < -0.5) || (y >= 0.5) || (x < -0.5)
              || (x >= Shapes->param.gen.a) )
-            result = 0;
+            comp_result = 0;
          break;
 
       case point_rgn:
@@ -842,29 +822,31 @@ int fftrgn( double    X,
          y = Y - Shapes->param.gen.p[1];
 
          if ( (x<-0.5) || (x>=0.5) || (y<-0.5) || (y>=0.5) )
-            result = 0;
+            comp_result = 0;
          break;
 
       case poly_rgn:
-         if( X<Shapes->param.poly.xmin || X>Shapes->param.poly.xmax
-             || Y<Shapes->param.poly.ymin || Y>Shapes->param.poly.ymax )
-            result = 0;
+         if( X<Shapes->xmin || X>Shapes->xmax
+             || Y<Shapes->ymin || Y>Shapes->ymax )
+            comp_result = 0;
          else
-            result = Pt_in_Poly( X, Y, Shapes->param.poly.nPts,
+            comp_result = Pt_in_Poly( X, Y, Shapes->param.poly.nPts,
                                        Shapes->param.poly.Pts );
          break;
       }
 
-      if( !Shapes->sign ) result = !result;
+      if( !Shapes->sign ) comp_result = !comp_result;
 
      } 
    }
+   
+   result = result || comp_result;
 
    return( result );
 }
 
 /*---------------------------------------------------------------------------*/
-void fffrgn( SAORegion *Rgn )
+void fits_free_region( SAORegion *Rgn )
 /*   Free up memory allocated to hold the region data.                       */
 /*---------------------------------------------------------------------------*/
 {
@@ -945,5 +927,655 @@ static int Pt_in_Poly( double x,
 
    }
    return( flag );
+}
+/*---------------------------------------------------------------------------*/
+void fits_set_region_components ( SAORegion *aRgn )
+{
+/* 
+   Internal routine to turn a collection of regions read from an ascii file into
+   the more complex structure that is allowed by the FITS REGION extension with
+   multiple components. Regions are anded within components and ored between them
+   ie for a pixel to be selected it must be selected by at least one component
+   and to be selected by a component it must be selected by all that component's
+   shapes.
+
+   The algorithm is to replicate every exclude region after every include
+   region before it in the list. eg reg1, reg2, -reg3, reg4, -reg5 becomes
+   (reg1, -reg3, -reg5), (reg2, -reg5, -reg3), (reg4, -reg5) where the
+   parentheses designate components.
+*/
+
+  int i, j, k, icomp;
+
+/* loop round shapes */
+
+  i = 0;
+  while ( i<aRgn->nShapes ) {
+
+    /* first do the case of an exclude region */
+
+    if ( !aRgn->Shapes[i].sign ) {
+
+      /* we need to run back through the list copying the current shape as
+	 required. start by findin the first include shape before this exclude */
+
+      j = i-1;
+      while ( j > 0 && !aRgn->Shapes[j].sign ) j--;
+
+      /* then go back one more shape */
+
+      j--;
+
+      /* and loop back through the regions */
+
+      while ( j >= 0 ) {
+
+	/* if this is an include region then insert a copy of the exclude
+	   region immediately after it */
+
+	if ( aRgn->Shapes[j].sign ) {
+
+	  aRgn->Shapes = (RgnShape *) realloc (aRgn->Shapes,(1+aRgn->nShapes)*sizeof(RgnShape));
+	  aRgn->nShapes++;
+	  for (k=aRgn->nShapes-1; k>j+1; k--) aRgn->Shapes[k] = aRgn->Shapes[k-1];
+
+	  i++;
+	  aRgn->Shapes[j+1] = aRgn->Shapes[i];
+
+	}
+
+	j--;
+
+      }
+
+    }
+
+    i++;
+
+  }
+
+  /* now set the component numbers */
+
+  icomp = 0;
+  for ( i=0; i<aRgn->nShapes; i++ ) {
+    if ( aRgn->Shapes[i].sign ) icomp++;
+    aRgn->Shapes[i].comp = icomp;
+
+    /*
+    printf("i = %d, shape = %d, sign = %d, comp = %d\n", i, aRgn->Shapes[i].shape, aRgn->Shapes[i].sign, aRgn->Shapes[i].comp);
+    */
+
+  }
+
+  return;
+
+}
+
+/*---------------------------------------------------------------------------*/
+void fits_setup_shape ( RgnShape *newShape)
+{
+/* Perform some useful calculations now to speed up filter later             */
+
+  double X, Y, R;
+  double *coords;
+  int i;
+
+  if ( newShape->shape == poly_rgn ) {
+    coords = newShape->param.poly.Pts;
+  } else {
+    coords = newShape->param.gen.p;
+  }
+
+  switch( newShape->shape ) {
+  case circle_rgn:
+    newShape->param.gen.a = coords[2] * coords[2];
+    break;
+  case annulus_rgn:
+    newShape->param.gen.a = coords[2] * coords[2];
+    newShape->param.gen.b = coords[3] * coords[3];
+    break;
+  case sector_rgn:
+    while( coords[2]> 180.0 ) coords[2] -= 360.0;
+    while( coords[2]<=-180.0 ) coords[2] += 360.0;
+    while( coords[3]> 180.0 ) coords[3] -= 360.0;
+    while( coords[3]<=-180.0 ) coords[3] += 360.0;
+    break;
+  case ellipse_rgn:
+    newShape->param.gen.sinT = sin( myPI * (coords[4] / 180.0) );
+    newShape->param.gen.cosT = cos( myPI * (coords[4] / 180.0) );
+    break;
+  case elliptannulus_rgn:
+    newShape->param.gen.a    = sin( myPI * (coords[6] / 180.0) );
+    newShape->param.gen.b    = cos( myPI * (coords[6] / 180.0) );
+    newShape->param.gen.sinT = sin( myPI * (coords[7] / 180.0) );
+    newShape->param.gen.cosT = cos( myPI * (coords[7] / 180.0) );
+    break;
+  case box_rgn:
+    newShape->param.gen.sinT = sin( myPI * (coords[4] / 180.0) );
+    newShape->param.gen.cosT = cos( myPI * (coords[4] / 180.0) );
+    break;
+  case boxannulus_rgn:
+    newShape->param.gen.a    = sin( myPI * (coords[6] / 180.0) );
+    newShape->param.gen.b    = cos( myPI * (coords[6] / 180.0) );
+    newShape->param.gen.sinT = sin( myPI * (coords[7] / 180.0) );
+    newShape->param.gen.cosT = cos( myPI * (coords[7] / 180.0) );
+    break;
+  case rectangle_rgn:
+    newShape->param.gen.sinT = sin( myPI * (coords[4] / 180.0) );
+    newShape->param.gen.cosT = cos( myPI * (coords[4] / 180.0) );
+    X = 0.5 * ( coords[2]-coords[0] );
+    Y = 0.5 * ( coords[3]-coords[1] );
+    newShape->param.gen.a = fabs( X * newShape->param.gen.cosT
+				  + Y * newShape->param.gen.sinT );
+    newShape->param.gen.b = fabs( Y * newShape->param.gen.cosT
+				  - X * newShape->param.gen.sinT );
+    newShape->param.gen.p[5] = 0.5 * ( coords[2]+coords[0] );
+    newShape->param.gen.p[6] = 0.5 * ( coords[3]+coords[1] );
+    break;
+  case diamond_rgn:
+    newShape->param.gen.sinT = sin( myPI * (coords[4] / 180.0) );
+    newShape->param.gen.cosT = cos( myPI * (coords[4] / 180.0) );
+    break;
+  case line_rgn:
+    X = coords[2] - coords[0];
+    Y = coords[3] - coords[1];
+    R = sqrt( X*X + Y*Y );
+    newShape->param.gen.sinT = ( R ? Y/R : 0.0 );
+    newShape->param.gen.cosT = ( R ? X/R : 1.0 );
+    newShape->param.gen.a    = R + 0.5;
+    break;
+  }
+
+  /*  Set the xmin, xmax, ymin, ymax elements of the RgnShape structure */
+
+  /* For everything which has first two parameters as center position just */
+  /* find a circle that encompasses the region and use it to set the       */
+  /* bounding box                                                          */
+
+  R = -1.0;
+
+  switch ( newShape->shape ) {
+
+  case circle_rgn:
+  case annulus_rgn:
+    R = coords[2];
+    break;
+
+  case ellipse_rgn:
+    if ( coords[2] > coords[3] ) {
+      R = coords[2];
+    } else {
+      R = coords[3];
+    }
+    break;
+
+  case elliptannulus_rgn:
+    if ( coords[4] > coords[5] ) {
+      R = coords[4];
+    } else {
+      R = coords[5];
+    }
+    break;
+
+  case box_rgn:
+    R = sqrt(coords[2]*coords[2]+
+	     coords[3]*coords[3])/2.0;
+    break;
+
+  case boxannulus_rgn:
+    R = sqrt(coords[4]*coords[5]+
+	     coords[4]*coords[5])/2.0;
+    break;
+
+  case diamond_rgn:
+    if ( coords[2] > coords[3] ) {
+      R = coords[2]/2.0;
+    } else {
+      R = coords[3]/2.0;
+    }
+    break;
+    
+  case point_rgn:
+    R = 1.0;
+    break;
+
+  }
+
+  if ( R > 0.0 ) {
+
+    newShape->xmin = coords[0] - R;
+    newShape->xmax = coords[0] + R;
+    newShape->ymin = coords[1] - R;
+    newShape->ymax = coords[1] + R;
+
+    return;
+
+  }
+
+  /* Now do the rest of the shapes that require individual methods */
+
+  switch ( newShape->shape ) {
+
+  case rectangle_rgn:
+    R = sqrt((coords[5]-coords[0])*(coords[5]-coords[0])+
+	     (coords[6]-coords[1])*(coords[6]-coords[1]));
+    newShape->xmin = coords[5] - R;
+    newShape->xmax = coords[5] + R;
+    newShape->ymin = coords[6] - R;
+    newShape->ymax = coords[6] + R;
+    break;
+
+  case poly_rgn:
+    newShape->xmin = coords[0];
+    newShape->xmax = coords[0];
+    newShape->ymin = coords[1];
+    newShape->ymax = coords[1];
+    for( i=2; i < newShape->param.poly.nPts; ) {
+      if( newShape->xmin > coords[i] ) /* Min X */
+	newShape->xmin = coords[i];
+      if( newShape->xmax < coords[i] ) /* Max X */
+	newShape->xmax = coords[i];
+      i++;
+      if( newShape->ymin > coords[i] ) /* Min Y */
+	newShape->ymin = coords[i];
+      if( newShape->ymax < coords[i] ) /* Max Y */
+	newShape->ymax = coords[i];
+      i++;
+    }
+    break;
+
+  case line_rgn:
+    if ( coords[0] > coords[2] ) {
+      newShape->xmin = coords[2];
+      newShape->xmax = coords[0];
+    } else {
+      newShape->xmin = coords[0];
+      newShape->xmax = coords[2];
+    }
+    if ( coords[1] > coords[3] ) {
+      newShape->ymin = coords[3];
+      newShape->ymax = coords[1];
+    } else {
+      newShape->ymin = coords[1];
+      newShape->ymax = coords[3];
+    }
+
+    break;
+
+    /* sector doesn't have min and max so indicate by setting max < min */
+
+  case sector_rgn:
+    newShape->xmin = 1.0;
+    newShape->xmax = -1.0;
+    newShape->ymin = 1.0;
+    newShape->ymax = -1.0;
+    break;
+
+  }
+
+  return;
+
+}
+
+/*---------------------------------------------------------------------------*/
+int fits_read_fits_region ( fitsfile *fptr, 
+			    WCSdata *wcs, 
+			    SAORegion **Rgn, 
+			    int *status)
+/*  Read regions from a FITS region extension and return the information     */
+/*  in the "SAORegion" structure.  If it is nonNULL, use wcs to convert the  */
+/*  region coordinates to pixels.  Return an error if region is in degrees   */
+/*  but no WCS data is provided.                                             */
+/*---------------------------------------------------------------------------*/
+{
+
+  int i, j, icol[6], idum, anynul, npos;
+  int dotransform, got_component = 1, tstatus;
+  long icsize[6];
+  double X, Y, R, Theta, Xsave, Ysave, Xpos, Ypos;
+  double *coords;
+  char *cvalue;
+  char comment[FLEN_COMMENT];
+  char colname[6][FLEN_VALUE] = {"X", "Y", "SHAPE", "R", "ROTANG", "COMPONENT"};
+  char shapename[17][FLEN_VALUE] = {"POINT","CIRCLE","ELLIPSE","ANNULUS",
+				    "ELLIPTANNULUS","BOX","ROTBOX","BOXANNULUS",
+				    "RECTANGLE","ROTRECTANGLE","POLYGON","PIE",
+				    "SECTOR","DIAMOND","RHOMBUS","ROTDIAMOND",
+				    "ROTRHOMBUS"};
+  int shapetype[17] = {point_rgn, circle_rgn, ellipse_rgn, annulus_rgn, 
+		       elliptannulus_rgn, box_rgn, box_rgn, boxannulus_rgn, 
+		       rectangle_rgn, rectangle_rgn, poly_rgn, sector_rgn, 
+		       sector_rgn, diamond_rgn, diamond_rgn, diamond_rgn, 
+		       diamond_rgn};
+  SAORegion *aRgn;
+  RgnShape *newShape;
+  WCSdata *regwcs;
+
+  if ( *status ) return( *status );
+
+  aRgn = (SAORegion *)malloc( sizeof(SAORegion) );
+  if( ! aRgn ) {
+    ffpmsg("Couldn't allocate memory to hold Region file contents.");
+    return(*status = MEMORY_ALLOCATION );
+  }
+  aRgn->nShapes    =    0;
+  aRgn->Shapes     = NULL;
+  if( wcs && wcs->exists )
+    aRgn->wcs = *wcs;
+  else
+    aRgn->wcs.exists = 0;
+
+  /* See if we are already positioned to a region extension, else */
+  /* move to the REGION extension (file is already open). */
+
+  tstatus = 0;
+  for (i=0; i<5; i++) {
+    ffgcno(fptr, CASEINSEN, colname[i], &icol[i], &tstatus);
+  }
+
+  if (tstatus) {
+    /* couldn't find the required columns, so search for "REGION" extension */
+    if ( ffmnhd(fptr, BINARY_TBL, "REGION", 1, status) ) {
+      ffpmsg("Could not move to REGION extension.");
+      goto error;
+    }
+  }
+
+  /* get the number of shapes and allocate memory */
+
+  if ( ffgky(fptr, TINT, "NAXIS2", &aRgn->nShapes, comment, status) ) {
+    ffpmsg("Could not read NAXIS2 keyword.");
+    goto error;
+  }
+
+  aRgn->Shapes = (RgnShape *) malloc(aRgn->nShapes * sizeof(RgnShape));
+  if ( !aRgn->Shapes ) {
+    ffpmsg( "Failed to allocate memory for Region data");
+    *status = MEMORY_ALLOCATION;
+    goto error;
+  }
+
+  /* get the required column numbers */
+
+  for (i=0; i<5; i++) {
+    if ( ffgcno(fptr, CASEINSEN, colname[i], &icol[i], status) ) {
+      ffpmsg("Could not find column.");
+      goto error;
+    }
+  }
+
+  /* try to get the optional column numbers */
+
+  if ( ffgcno(fptr, CASEINSEN, colname[5], &icol[5], status) ) {
+       got_component = 0;
+  }
+
+  /* if there was input WCS then read the WCS info for the region in case they */
+  /* are different and we have to transform */
+
+  dotransform = 0;
+  if ( aRgn->wcs.exists ) {
+    regwcs = (WCSdata *) malloc ( sizeof(WCSdata) );
+    if ( !regwcs ) {
+      ffpmsg( "Failed to allocate memory for Region WCS data");
+      *status = MEMORY_ALLOCATION;
+      goto error;
+    }
+
+    regwcs->exists = 1;
+    if ( ffgtcs(fptr, icol[0], icol[1], &regwcs->xrefval,  &regwcs->yrefval,
+		&regwcs->xrefpix, &regwcs->yrefpix, &regwcs->xinc, &regwcs->yinc,
+		&regwcs->rot, regwcs->type, status) ) {
+      regwcs->exists = 0;
+      *status = 0;
+    }
+
+    if ( regwcs->exists && wcs->exists ) {
+      if ( fabs(regwcs->xrefval-wcs->xrefval) > 1.0e-6 ||
+	   fabs(regwcs->yrefval-wcs->yrefval) > 1.0e-6 ||
+	   fabs(regwcs->xrefpix-wcs->xrefpix) > 1.0e-6 ||
+	   fabs(regwcs->yrefpix-wcs->yrefpix) > 1.0e-6 ||
+	   fabs(regwcs->xinc-wcs->xinc) > 1.0e-6 ||
+	   fabs(regwcs->yinc-wcs->yinc) > 1.0e-6 ||
+	   fabs(regwcs->rot-wcs->rot) > 1.0e-6 ||
+	   !strcmp(regwcs->type,wcs->type) ) dotransform = 1;
+    }
+  }
+
+  /* get the sizes of the X, Y, R, and ROTANG vectors */
+
+  for (i=0; i<6; i++) {
+    if ( ffgtdm(fptr, icol[i], 1, &idum, &icsize[i], status) ) {
+      ffpmsg("Could not find vector size of column.");
+      goto error;
+    }
+  }
+
+  cvalue = (char *) malloc ((FLEN_VALUE+1)*sizeof(char));
+
+  /* loop over the shapes - note 1-based counting for rows in FITS files */
+
+  for (i=1; i<=aRgn->nShapes; i++) {
+
+    newShape = &aRgn->Shapes[i-1];
+    for (j=0; j<8; j++) newShape->param.gen.p[j] = 0.0;
+    newShape->param.gen.a = 0.0;
+    newShape->param.gen.b = 0.0;
+    newShape->param.gen.sinT = 0.0;
+    newShape->param.gen.cosT = 0.0;
+
+    /* get the shape */
+
+    if ( ffgcvs(fptr, icol[2], i, 1, 1, " ", &cvalue, &anynul, status) ) {
+      ffpmsg("Could not read shape.");
+      goto error;
+    }
+
+    /* set include or exclude */
+
+    newShape->sign = 1;
+    if ( !strncmp(cvalue,"!",1) ) {
+      newShape->sign = 0;
+      cvalue++;
+    }
+
+    /* set the shape type */
+
+    for (j=0; j<9; j++) {
+      if ( !strcmp(cvalue, shapename[j]) ) newShape->shape = shapetype[j];
+    }
+
+    /* allocate memory for polygon case and set coords pointer */
+
+    if ( newShape->shape == poly_rgn ) {
+      newShape->param.poly.Pts = (double *) calloc (2*icsize[0], sizeof(double));
+      if ( !newShape->param.poly.Pts ) {
+	ffpmsg("Could not allocate memory to hold polygon parameters" );
+	*status = MEMORY_ALLOCATION;
+	goto error;
+      }
+      newShape->param.poly.nPts = 2*icsize[0];
+      coords = newShape->param.poly.Pts;
+    } else {
+      coords = newShape->param.gen.p;
+    }
+
+  /* read X and Y. Polygon and Rectangle require special cases */
+
+    npos = 1;
+    if ( newShape->shape == poly_rgn ) npos = newShape->param.poly.nPts/2;
+    if ( newShape->shape == rectangle_rgn ) npos = 2;
+
+    for (j=0; j<npos; j++) {
+      if ( ffgcvd(fptr, icol[0], i, j+1, 1, DOUBLENULLVALUE, coords, &anynul, status) ) {
+	ffpmsg("Failed to read X column for polygon region");
+	goto error;
+      }
+      if (*coords == DOUBLENULLVALUE) {  /* check for null value end of array marker */
+        npos = j;
+	newShape->param.poly.nPts = npos * 2;
+	break;
+      }
+      coords++;
+      
+      if ( ffgcvd(fptr, icol[1], i, j+1, 1, DOUBLENULLVALUE, coords, &anynul, status) ) {
+	ffpmsg("Failed to read Y column for polygon region");
+	goto error;
+      }
+      if (*coords == DOUBLENULLVALUE) { /* check for null value end of array marker */
+        npos = j;
+	newShape->param.poly.nPts = npos * 2;
+        coords--;
+	break;
+      }
+      coords++;
+ 
+      if (j == 0) {  /* save the first X and Y coordinate */
+        Xsave = *(coords - 2);
+	Ysave = *(coords - 1);
+      } else if ((Xsave == *(coords - 2)) && (Ysave == *(coords - 1)) ) {
+        /* if point has same coordinate as first point, this marks the end of the array */
+        npos = j + 1;
+	newShape->param.poly.nPts = npos * 2;
+	break;
+      }
+    }
+
+    /* transform positions if the region and input wcs differ */
+
+    if ( dotransform ) {
+
+      coords -= npos*2;
+      Xsave = coords[0];
+      Ysave = coords[1];
+      for (j=0; j<npos; j++) {
+	ffwldp(coords[2*j], coords[2*j+1], regwcs->xrefval, regwcs->yrefval, regwcs->xrefpix,
+	       regwcs->yrefpix, regwcs->xinc, regwcs->yinc, regwcs->rot,
+	       regwcs->type, &Xpos, &Ypos, status);
+	ffxypx(Xpos, Ypos, wcs->xrefval, wcs->yrefval, wcs->xrefpix,
+	       wcs->yrefpix, wcs->xinc, wcs->yinc, wcs->rot,
+	       wcs->type, &coords[2*j], &coords[2*j+1], status);
+	if ( *status ) {
+	  ffpmsg("Failed to transform coordinates");
+	  goto error;
+	}
+      }
+      coords += npos*2;
+    }
+
+  /* read R. Circle requires one number; Box, Diamond, Ellipse, Annulus, Sector 
+     and Panda two; Boxannulus and Elliptannulus four; Point, Rectangle and 
+     Polygon none. */
+
+    npos = 0;
+    switch ( newShape->shape ) {
+    case circle_rgn: 
+      npos = 1;
+      break;
+    case box_rgn:
+    case diamond_rgn:
+    case ellipse_rgn:
+    case annulus_rgn:
+    case sector_rgn:
+      npos = 2;
+      break;
+    case boxannulus_rgn:
+    case elliptannulus_rgn:
+      npos = 4;
+      break;
+    }
+
+    if ( npos > 0 ) {
+      if ( ffgcvd(fptr, icol[3], i, 1, npos, 0.0, coords, &anynul, status) ) {
+	ffpmsg("Failed to read R column for region");
+	goto error;
+      }
+
+    /* transform lengths if the region and input wcs differ */
+
+      if ( dotransform ) {
+	for (j=0; j<npos; j++) {
+	  Y = Ysave + (*coords);
+	  X = Xsave;
+	  ffwldp(X, Y, regwcs->xrefval, regwcs->yrefval, regwcs->xrefpix,
+		 regwcs->yrefpix, regwcs->xinc, regwcs->yinc, regwcs->rot,
+		 regwcs->type, &Xpos, &Ypos, status);
+	  ffxypx(Xpos, Ypos, wcs->xrefval, wcs->yrefval, wcs->xrefpix,
+		 wcs->yrefpix, wcs->xinc, wcs->yinc, wcs->rot,
+		 wcs->type, &X, &Y, status);
+	  if ( *status ) {
+	    ffpmsg("Failed to transform coordinates");
+	    goto error;
+	  }
+	  *(coords++) = sqrt(pow(X-newShape->param.gen.p[0],2)+pow(Y-newShape->param.gen.p[1],2));
+	}
+      } else {
+	coords += npos;
+      }
+    }
+
+  /* read ROTANG. Requires two values for Boxannulus, Elliptannulus, Sector, 
+     Panda; one for Box, Diamond, Ellipse; and none for Circle, Point, Annulus, 
+     Rectangle, Polygon */
+
+    npos = 0;
+    switch ( newShape->shape ) {
+    case box_rgn:
+    case diamond_rgn:
+    case ellipse_rgn:
+      npos = 1;
+      break;
+    case boxannulus_rgn:
+    case elliptannulus_rgn:
+    case sector_rgn:
+      npos = 2;
+      break;
+    }
+
+    if ( npos > 0 ) {
+      if ( ffgcvd(fptr, icol[4], i, 1, npos, 0.0, coords, &anynul, status) ) {
+	ffpmsg("Failed to read ROTANG column for region");
+	goto error;
+      }
+
+    /* transform angles if the region and input wcs differ */
+
+      if ( dotransform ) {
+	Theta = (wcs->rot) - (regwcs->rot);
+	for (j=0; j<npos; j++) *(coords++) += Theta;
+      } else {
+	coords += npos;
+      }
+    }
+
+  /* read the component number */
+
+    if (got_component) {
+      if ( ffgcv(fptr, TINT, icol[5], i, 1, 1, 0, &newShape->comp, &anynul, status) ) {
+        ffpmsg("Failed to read COMPONENT column for region");
+        goto error;
+      }
+    } else {
+      newShape->comp = 1;
+    }
+
+    /* do some precalculations to speed up tests */
+
+    fits_setup_shape(newShape);
+
+    /* end loop over shapes */
+
+  }
+
+error:
+
+   if( *status )
+      fits_free_region( aRgn );
+   else
+      *Rgn = aRgn;
+
+   ffclos(fptr, status);
+
+   return( *status );
 }
 

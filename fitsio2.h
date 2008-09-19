@@ -262,7 +262,7 @@
 
 #define COMPRESS_NULL_VALUE -2147483647
 
-int ffmkky(char *keyname, char *keyval, char *comm, char *card, int *status);
+int ffmkky(const char *keyname, char *keyval, const char *comm, char *card, int *status);
 int ffgnky(fitsfile *fptr, char *card, int *status);
 void ffcfmt(char *tform, char *cform);
 void ffcdsp(char *tform, char *cform);
@@ -878,6 +878,9 @@ int  ffffrw_work( long totalrows, long offset, long firstrow,
                   long nrows, int nCols, iteratorCol *colData,
                   void *userPtr );
 
+int fits_translate_pixkeyword(char *inrec, char *outrec,char *patterns[][2],
+    int npat, int naxis, int *colnum, int *pat_num, int *i,
+      int *j, int *n, int *m, int *l, int *status);
 
 /*  image compression routines */
 int fits_write_compressed_img(fitsfile *fptr, 

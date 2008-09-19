@@ -505,6 +505,11 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
       /* treat the input URL literally as the name of the file to open */
       /* and don't try to parse the URL using the extended filename syntax */
       
+        if (strlen(url) > FLEN_FILENAME - 1) {
+            ffpmsg("Name of file to open is too long. (ffopen)");
+            return(*status = FILE_NOT_OPENED);
+        }
+
         strcpy(infile,url);
         strcpy(urltype, "file://");
         outfile[0] = '\0';
@@ -517,6 +522,12 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     else
     {
         /* parse the input file specification */
+
+        /* NOTE: This routine tests that all the strings do not */
+	/* overflow the standard buffer sizes (FLEN_FILENAME, etc.) */
+	/* therefore in general we do not have to worry about buffer */
+	/* overflow of any of the returned strings. */
+	
         fits_parse_input_filename(url, urltype, infile, outfile, extspec,
               rowfilter, binspec, colspec, pixfilter, status);
     }
@@ -552,6 +563,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
         /* if binspec or imagecolumn are specified, then the  */
         /* output file name is intended for the final image,  */
         /* and not a copy of the input file.                  */
+
         strcpy(histfilename, outfile);
         outfile[0] = '\0';
     }
@@ -560,6 +572,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
         /* if rowfilter or colspece are specified, then the    */
         /* output file name is intended for the filtered file  */
         /* and not a copy of the input file.                   */
+
         strcpy(filtfilename, outfile);
         outfile[0] = '\0';
     }
@@ -1282,6 +1295,10 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
 /*
   Check if the file to be opened is already open.  If so, then attach to it.
 */
+
+   /* the input strings must not exceed the standard lengths */
+   /* of FLEN_FILENAME, MAX_PREFIX_LEN, etc. */
+
      /*
        this function was changed so that for files of access method FILE://
        the file paths are compared using standard URL syntax and absolute
@@ -1314,6 +1331,12 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
           {
             fits_get_cwd(cwd,status);
             strcat(cwd,"/");
+ 
+            if (strlen(cwd) + strlen(tmpinfile) > FLEN_FILENAME-1) {
+		  ffpmsg("File name is too long. (fits_already_open)");
+                  return(*status = FILE_NOT_OPENED);
+            }
+
             strcat(cwd,tmpinfile);
             fits_clean_url(cwd,tmpinfile,status);
           }
@@ -1346,6 +1369,8 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
                 {
                   fits_get_cwd(cwd,status);
                   strcat(cwd,"/");
+
+
                   strcat(cwd,tmpStr);
                   fits_clean_url(cwd,tmpStr,status);
                 }
@@ -3175,6 +3200,12 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
 
     if (create_disk_file)
     {
+       if (strlen(url) > FLEN_FILENAME - 1)
+       {
+           ffpmsg("Filename is too long. (ffinit)");
+           return(*status = FILE_NOT_CREATED);
+       }
+
        strcpy(outfile, url);
        strcpy(urltype, "file://");
        tmplfile[0] = '\0';
@@ -3193,6 +3224,7 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
           clobber = FALSE;
 
         /* parse the output file specification */
+	/* this routine checks that the strings will not overflow */
       ffourl(url, urltype, outfile, tmplfile, compspec, status);
 
       if (*status > 0)
@@ -4373,8 +4405,15 @@ int ffifile(char *url,       /* input filename */
             {
                 /* name doesn't end with a ']' or ')' so don't try */
                 /* to parse this unusual string (may be cgi string)  */
-                if (infilex)
+                if (infilex) {
+
+                    if (strlen(ptr1) > FLEN_FILENAME - 1) {
+                        ffpmsg("Name of file is too long.");
+                        return(*status = URL_PARSE_ERROR);
+                    }
+		    
                     strcpy(infilex, ptr1);
+                }
 
                 free(infile);
                 return(*status);
@@ -4432,9 +4471,17 @@ int ffifile(char *url,       /* input filename */
             return(*status = URL_PARSE_ERROR);  /* error, no closing ) */
         }
 
-        if (outfile)
-            strncat(outfile, ptr2, ptr1 - ptr2);
+        if (outfile) {
+	
+	    if (ptr1 - ptr2 > FLEN_FILENAME - 1)
+	    {
+                 free(infile);
+                 return(*status = URL_PARSE_ERROR);
+            }
 
+            strncat(outfile, ptr2, ptr1 - ptr2);
+        }
+	
         /* the opening [ could have been part of output name,    */
         /*      e.g., file(out[compress])[3][#row > 5]           */
         /* so search again for opening bracket following the closing ) */
@@ -4500,9 +4547,16 @@ int ffifile(char *url,       /* input filename */
              /* the digits to the output extspec string. */
              plus_ext = 1;
 
-             if (extspec)
-                 strncpy(extspec, ptr1, jj - infilelen);
+             if (extspec) {
+	         if (jj - infilelen > FLEN_FILENAME - 1)
+	         {
+                     free(infile);
+                     return(*status = URL_PARSE_ERROR);
+                 }
 
+                 strncpy(extspec, ptr1, jj - infilelen);
+             }
+	     
              infile[infilelen] = '\0'; /* delete the extension number */
         }
     }
@@ -4518,6 +4572,12 @@ int ffifile(char *url,       /* input filename */
         {
             if (infile[ii] == '/' || ii == 0)
             {
+	      if (strlen(&infile[ii + 1]) > FLEN_FILENAME - 1)
+	      {
+                 free(infile);
+                 return(*status = URL_PARSE_ERROR);
+              }
+
                 strcpy(outfile, &infile[ii + 1]);
                 break;
             }
@@ -4527,9 +4587,15 @@ int ffifile(char *url,       /* input filename */
     /* ------------------------------------------ */
     /* copy strings from local copy to the output */
     /* ------------------------------------------ */
-    if (infilex)
-        strcpy(infilex, infile);
+    if (infilex) {
+	if (strlen(infile) > FLEN_FILENAME - 1)
+	{
+                 free(infile);
+                 return(*status = URL_PARSE_ERROR);
+        }
 
+        strcpy(infilex, infile);
+    }
     /* ---------------------------------------------------------- */
     /* if no '[' character in the input string, then we are done. */
     /* ---------------------------------------------------------- */
@@ -4600,6 +4666,13 @@ int ffifile(char *url,       /* input filename */
                /* append the raw array specifier to infilex */
                if (infilex)
                {
+
+	         if (strlen(infilex) + strlen(ptr3) > FLEN_FILENAME - 1)
+	         {
+                    free(infile);
+                    return(*status = URL_PARSE_ERROR);
+                 }
+
                  strcat(infilex, ptr3);
                  ptr1 = strchr(infilex, ']'); /* find the closing ] char */
                  if (ptr1)
@@ -4614,6 +4687,14 @@ int ffifile(char *url,       /* input filename */
                /* copy any remaining characters into rowfilterx  */
                if (tmptr && rowfilterx)
                {
+
+
+	         if (strlen(rowfilterx) + strlen(tmptr + 1) > FLEN_FILENAME -1)
+	         {
+                    free(infile);
+                    return(*status = URL_PARSE_ERROR);
+                 }
+
                  strcat(rowfilterx, tmptr + 1);
 
                  tmptr = strchr(rowfilterx, ']' );   /* search for closing ] */
@@ -4809,8 +4890,13 @@ int ffifile(char *url,       /* input filename */
            {
                /* this appears to be a legit extension specifier */
                /* copy the extension specification */
-               if (extspec)
+               if (extspec) {
+                   if (ptr2 - ptr1 > FLEN_FILENAME - 1) {
+                       free(infile);
+                       return(*status = URL_PARSE_ERROR);
+		   }
                    strncat(extspec, ptr1, ptr2 - ptr1);
+               }
 
                /* copy any remaining chars to filter spec string */
                strcat(rowfilter, ptr2 + 1);
@@ -4864,6 +4950,12 @@ int ffifile(char *url,       /* input filename */
         /* found the binning string */
         if (binspec)
         {
+	    if (strlen(ptr1 +1) > FLEN_FILENAME - 1)
+	    {
+                    free(infile);
+                    return(*status = URL_PARSE_ERROR);
+            }
+
             strcpy(binspec, ptr1 + 1);       
             ptr2 = strchr(binspec, ']');
 
@@ -4945,6 +5037,11 @@ int ffifile(char *url,       /* input filename */
 
         if (colspec)    /* copy the column specifier to output string */
         {
+            if (collen > FLEN_FILENAME - 1) {
+                       free(infile);
+                       return(*status = URL_PARSE_ERROR);
+            }
+
             strncpy(colspec, ptr1 + 1, collen);       
             colspec[collen] = '\0';
  
@@ -5027,6 +5124,11 @@ int ffifile(char *url,       /* input filename */
 
         if (pixfilter)    /* copy the column specifier to output string */
         {
+            if (collen > FLEN_FILENAME - 1) {
+                       free(infile);
+                       return(*status = URL_PARSE_ERROR);
+            }
+
             strncpy(pixfilter, ptr1 + 1, collen);       
             pixfilter[collen] = '\0';
  
@@ -5047,6 +5149,13 @@ int ffifile(char *url,       /* input filename */
        ptr2 = rowfilter + strlen(rowfilter) - 1;
        if( rowfilter[0]=='[' && *ptr2==']' ) {
           *ptr2 = '\0';
+
+	   if (strlen(rowfilter + 1)  > FLEN_FILENAME - 1)
+	   {
+                    free(infile);
+                    return(*status = URL_PARSE_ERROR);
+           }
+
           strcpy(rowfilterx, rowfilter+1);
        } else {
           ffpmsg("input file URL lacks valid row filter expression");
@@ -5162,6 +5271,11 @@ int ffrtnm(char *url,
 
         if (ptr2)                  /* copy the explicit urltype string */ 
         {
+
+	   if (ptr2 - ptr1 + 3 > MAX_PREFIX_LEN - 1)
+	   {
+               return(*status = URL_PARSE_ERROR);
+           }
             strncat(urltype, ptr1, ptr2 - ptr1 + 3);
             ptr1 = ptr2 + 3;
         }
@@ -5204,10 +5318,22 @@ int ffrtnm(char *url,
 
     if (ptr2 == ptr3)  /* simple case: no [ or ( in the file name */
     {
+
+	if (strlen(ptr1) > FLEN_FILENAME - 1)
+        {
+            return(*status = URL_PARSE_ERROR);
+        }
+
         strcat(infile, ptr1);
     }
     else if (!ptr3)     /* no bracket, so () enclose output file name */
     {
+
+	if (ptr2 - ptr1 > FLEN_FILENAME - 1)
+        {
+            return(*status = URL_PARSE_ERROR);
+        }
+
         strncat(infile, ptr1, ptr2 - ptr1);
         ptr2++;
 
@@ -5218,6 +5344,12 @@ int ffrtnm(char *url,
     }
     else if (ptr2 && (ptr2 < ptr3)) /* () enclose output name before bracket */
     {
+
+	if (ptr2 - ptr1 > FLEN_FILENAME - 1)
+        {
+            return(*status = URL_PARSE_ERROR); 
+        }
+
         strncat(infile, ptr1, ptr2 - ptr1);
         ptr2++;
 
@@ -5227,6 +5359,11 @@ int ffrtnm(char *url,
     }
     else    /*   bracket comes first, so there is no output name */
     {
+	if (ptr3 - ptr1 > FLEN_FILENAME - 1)
+        {
+            return(*status = URL_PARSE_ERROR); 
+        }
+
         strncat(infile, ptr1, ptr3 - ptr1);
     }
 
@@ -5271,6 +5408,11 @@ int ffrtnm(char *url,
 
              infile[infilelen] = '\0'; /* delete the extension number */
         }
+    }
+
+    if (strlen(urltype) + strlen(infile) > FLEN_FILENAME - 1)
+    {
+            return(*status = URL_PARSE_ERROR); 
     }
 
     strcat(rootname, urltype);  /* construct the root name */
@@ -5327,10 +5469,16 @@ int ffourl(char *url,             /* I - full input URL   */
         ptr2 = strstr(ptr1, "://");
         if (ptr2)                  /* copy the explicit urltype string */ 
         {
-          if (urltype)
-            strncat(urltype, ptr1, ptr2 - ptr1 + 3);
+          if (urltype) {
+	    if (ptr2 - ptr1 + 3 > MAX_PREFIX_LEN - 1)
+	    {
+                return(*status = URL_PARSE_ERROR); 
+            }
 
-            ptr1 = ptr2 + 3;
+            strncat(urltype, ptr1, ptr2 - ptr1 + 3);
+          }
+
+          ptr1 = ptr2 + 3;
         }
         else                       /* assume file driver    */
         {
@@ -5346,14 +5494,27 @@ int ffourl(char *url,             /* I - full input URL   */
 
         if (outfile)
         {
-          if (ptr2)   /* template file was specified  */
+          if (ptr2) {  /* template file was specified  */
+	     if (ptr2 - ptr1 > FLEN_FILENAME - 1)
+	     {
+                return(*status = URL_PARSE_ERROR); 
+             }
+ 
              strncat(outfile, ptr1, ptr2 - ptr1);
-
-          else if (ptr3)   /* compression was specified  */
+          } else if (ptr3) {  /* compression was specified  */
+	     if (ptr3 - ptr1 > FLEN_FILENAME - 1)
+	     {
+                return(*status = URL_PARSE_ERROR); 
+             }
              strncat(outfile, ptr1, ptr3 - ptr1);
 
-          else  /* no template file or compression */
+          } else { /* no template file or compression */
+	     if (strlen(ptr1) > FLEN_FILENAME - 1)
+	     {
+                return(*status = URL_PARSE_ERROR); 
+             }
              strcpy(outfile, ptr1);
+          }
         }
 
 
@@ -5368,8 +5529,13 @@ int ffourl(char *url,             /* I - full input URL   */
                 return(*status = URL_PARSE_ERROR);  /* error, no closing ) */
             }
 
-            if (tpltfile)
-                strncat(tpltfile, ptr2, ptr1 - ptr2);
+            if (tpltfile) {
+	        if (ptr1 - ptr2 > FLEN_FILENAME - 1)
+	        {
+                   return(*status = URL_PARSE_ERROR); 
+                }
+                 strncat(tpltfile, ptr2, ptr1 - ptr2);
+            }
         }
         
         if (ptr3)   /* compression was specified  */
@@ -5383,8 +5549,15 @@ int ffourl(char *url,             /* I - full input URL   */
                 return(*status = URL_PARSE_ERROR);  /* error, no closing ] */
             }
 
-            if (compspec)
+            if (compspec) {
+
+	        if (ptr1 - ptr3 > FLEN_FILENAME - 1)
+	        {
+                   return(*status = URL_PARSE_ERROR); 
+                }
+ 
                 strncat(compspec, ptr3, ptr1 - ptr3);
+            }
         }
 
         /* check if a .gz compressed output file is to be created */
@@ -5493,6 +5666,12 @@ int ffexts(char *extspec,
            /* don't use space char as end indicator, because there */
            /* may be imbedded spaces in the EXTNAME value */
            slen = strcspn(ptr1, ",:;");   /* length of EXTNAME */
+
+	   if (slen > FLEN_VALUE - 1)
+	   {
+                return(*status = URL_PARSE_ERROR); 
+           }
+ 
            strncat(extname, ptr1, slen);  /* EXTNAME value */
 
            /* now remove any trailing blanks */
@@ -5568,6 +5747,11 @@ int ffexts(char *extspec,
             return(*status = URL_PARSE_ERROR);
         }
 
+	if (ptr2 - ptr1 > FLEN_FILENAME - 1)
+	{
+            return(*status = URL_PARSE_ERROR); 
+        }
+
         strncat(imagecolname, ptr1, ptr2 - ptr1); /* copy column name */
 
         ptr2++;  /* skip over the '(' delimiter */
@@ -5584,6 +5768,11 @@ int ffexts(char *extspec,
             return(*status = URL_PARSE_ERROR);
         }
 
+	if (ptr1 - ptr2 > FLEN_FILENAME - 1)
+        {
+                return(*status = URL_PARSE_ERROR); 
+        }
+ 
         strncat(rowexpress, ptr2, ptr1 - ptr2); /* row expression */
     }
 
@@ -5677,7 +5866,9 @@ int ffextn(char *url,           /* I - input filename/URL  */
             return(*status = URL_PARSE_ERROR); 
 
          /* First, strip off any filtering specification */
-         strcpy(infile, url);
+         infile[0] = '\0';
+	 strncat(infile, url, FLEN_FILENAME -1);
+	 
          cptr = strchr(infile, ']');  /* locate the closing bracket */
          if (!cptr)
          {

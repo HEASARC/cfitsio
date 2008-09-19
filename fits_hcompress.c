@@ -1806,7 +1806,6 @@ int s10, s00;
 static void
 write_bdirect(char *outfile, int a[], int n,int nqx, int nqy, unsigned char scratch[], int bit)
 {
-int i;
 
 	/*
 	 * Write the direct bitmap warning code
@@ -1820,6 +1819,7 @@ int i;
 	 * write to outfile
 	 */
 /*
+int i;
 	for (i = 0; i < ((nqx+1)/2) * ((nqy+1)/2); i++) {
 		output_nybble(outfile,scratch[i]);
 	}
@@ -1831,7 +1831,6 @@ int i;
 static void
 write_bdirect64(char *outfile, LONGLONG a[], int n,int nqx, int nqy, unsigned char scratch[], int bit)
 {
-int i;
 
 	/*
 	 * Write the direct bitmap warning code
@@ -1845,6 +1844,7 @@ int i;
 	 * write to outfile
 	 */
 /*
+int i;
 	for (i = 0; i < ((nqx+1)/2) * ((nqy+1)/2); i++) {
 		output_nybble(outfile,scratch[i]);
 	}

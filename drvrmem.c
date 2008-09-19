@@ -273,7 +273,8 @@ int stdin_checkfile(char *urltype, char *infile, char *outfile)
 {
     if (strlen(outfile))
     {
-        strcpy(stdin_outfile,outfile); /* an output file is specified */
+        stdin_outfile[0] = '\0';
+        strncat(stdin_outfile,outfile,FLEN_FILENAME-1); /* an output file is specified */
 	strcpy(urltype,"stdinfile://");
     }
     else

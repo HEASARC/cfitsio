@@ -60,11 +60,13 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.09;
+      *version = (float) 3.11;
 
-/*     3 June 2008 
+/*     19 Sept 2008 
 
    Previous releases:
+      *version = 3.10    20 Aug 2008 
+      *version = 3.09     3 Jun 2008 
       *version = 3.08    15 Apr 2007  (internal release)
       *version = 3.07     5 Nov 2007  (internal release)
       *version = 3.06    27 Aug 2007  
@@ -833,7 +835,7 @@ int ffpxsz(int datatype)
        return(0);
 }
 /*--------------------------------------------------------------------------*/
-int fftkey(char *keyword,    /* I -  keyword name */
+int fftkey(const char *keyword,    /* I -  keyword name */
            int *status)      /* IO - error status */
 /*
   Test that the keyword name conforms to the FITS standard.  Must contain
@@ -949,9 +951,9 @@ void ffupch(char *string)
     return;
 }
 /*--------------------------------------------------------------------------*/
-int ffmkky(char *keyname,   /* I - keyword name    */
+int ffmkky(const char *keyname,   /* I - keyword name    */
             char *value,     /* I - keyword value   */
-            char *comm,      /* I - keyword comment */
+            const char *comm,      /* I - keyword comment */
             char *card,      /* O - constructed keyword card */
             int  *status)    /* IO - status value   */
 /*
@@ -961,7 +963,7 @@ int ffmkky(char *keyname,   /* I - keyword name    */
 {
     size_t namelen, len, ii;
     char tmpname[FLEN_KEYWORD], *cptr;
-    int tstatus = -1;
+    int tstatus = -1, nblank = 0;
 
     if (*status > 0)
         return(*status);
@@ -969,11 +971,10 @@ int ffmkky(char *keyname,   /* I - keyword name    */
     *tmpname = '\0';
     *card = '\0';
 
-    cptr = keyname;
-    while(*cptr == ' ')  /* skip leading blanks in the name */
-        cptr++;
+    while(*(keyname + nblank) == ' ')  /* skip leading blanks in the name */
+        nblank++;
 
-    strncat(tmpname, cptr, FLEN_KEYWORD - 1);
+    strncat(tmpname, keyname + nblank, FLEN_KEYWORD - 1);
 
     namelen = strlen(tmpname);
     if (namelen)
@@ -1143,7 +1144,7 @@ int ffmkey(fitsfile *fptr,    /* I - FITS file pointer  */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffkeyn(char *keyroot,   /* I - root string for keyword name */
+int ffkeyn(const char *keyroot,   /* I - root string for keyword name */
            int value,       /* I - index number to be appended to root name */
            char *keyname,   /* O - output root + index keyword name */
            int *status)     /* IO - error status  */
@@ -1756,8 +1757,12 @@ then values of 'n' less than or equal to n_value will match.
       return (*status = NULL_INPUT_PTR);
 
     *outrec = '\0';
+/*
     if (*inrec == '\0') return 0;
-
+*/
+    if (*inrec == '\0')
+       strcpy(inrec, " ");
+       
     oldp = '\0';
     firstfail = 0;
 
@@ -2963,6 +2968,12 @@ void ffcdsp(char *tform,    /* value of an ASCII table TFORMn keyword */
     {
         cform[0] = '\0';
         return;    /* input format string was blank */
+    }
+
+    if (strchr(tform+ii, '%'))  /* is there a % character in the string?? */
+    {
+        cform[0] = '\0';
+        return;    /* illegal TFORM string (possibly even harmful) */
     }
 
     cform[0] = '%';  /* start the format string */

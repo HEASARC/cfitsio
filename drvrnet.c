@@ -122,6 +122,10 @@
 $Id$
 
 $Log$
+Revision 3.48  2007/08/27 18:47:42  pence
+new version 3.060 of CFITSIO;  includes better support for tile-compressed
+images and for the full set of WCS keywords in binary tables.
+
 Revision 3.45  2005/12/21 18:18:01  pence
 New beta 3.005 release.  Contains new cfortran.h to support integer*8
 parameters when calling cfitsio from Fortran tasks.  Also has modified
@@ -306,8 +310,15 @@ int http_open(char *filename, int rwmode, int *handle)
       goto error;
     } 
   } else {
+  
+    if (strlen(filename) >= MAXLEN - 4) {
+	  ffpmsg("http file name is too long (http_open)");
+          ffpmsg(filename);
+	  goto error;
+    }
+  
     alarm(NETTIMEOUT);
-    /* Try the .gz one */
+    /* Try the .gz one */    
     strcpy(newfilename,filename);
     strcat(newfilename,".gz");
     
@@ -768,7 +779,7 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
 
   /* Parse the URL apart again */
   strcpy(turl,"http://");
-  strcat(turl,url);
+  strncat(turl,url,MAXLEN - 8);
   if (NET_ParseUrl(turl,proto,host,&port,fn)) {
     sprintf(errorstr,"URL Parse Error (http_open) %s",url);
     ffpmsg(errorstr);
@@ -822,10 +833,18 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
     sprintf(tmpstr,"GET %s HTTP/1.0\r\n",fn);
 
   sprintf(tmpstr1,"User-Agent: HEASARC/CFITSIO/%-8.3f\r\n",ffvers(&version));
+
+  if (strlen(tmpstr) + strlen(tmpstr1) > MAXLEN - 1)
+        return (FILE_NOT_OPENED);
+
   strcat(tmpstr,tmpstr1);
 
   /* HTTP 1.1 servers require the following 'Host: ' string */
   sprintf(tmpstr1,"Host: %s:%-d\r\n\r\n",host,port);
+
+  if (strlen(tmpstr) + strlen(tmpstr1) > MAXLEN - 1)
+        return (FILE_NOT_OPENED);
+
   strcat(tmpstr,tmpstr1);
 
   status = NET_SendRaw(sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
@@ -948,6 +967,12 @@ int ftp_open(char *filename, int rwmode, int *handle)
   
   /* Open the ftp connetion.  ftpfile is connected to the file port, 
      command is connected to port 21.  sock is the socket on port 21 */
+
+  if (strlen(filename) > MAXLEN - 4) {
+      ffpmsg("filename too long (ftp_open)");
+      ffpmsg(filename);
+      goto error;
+  } 
 
   alarm(NETTIMEOUT);
   strcpy(newfilename,filename);
@@ -1419,6 +1444,11 @@ int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int *sock)
   int port;
 
   /* parse the URL */
+  if (strlen(filename) > MAXLEN - 7) {
+    ffpmsg("ftp filename is too long (ftp_open)");
+    return (FILE_NOT_OPENED);
+  }
+
   strcpy(turl,"ftp://");
   strcat(turl,filename);
   if (NET_ParseUrl(turl,proto,host,&port,fn)) {

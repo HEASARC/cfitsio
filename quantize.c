@@ -115,7 +115,7 @@ If the function value is zero, the data were not copied to idata.
 		break;
 	    }
             else {
-  	        itemp = (int)(fdata[i] + 0.5);
+  	        itemp = (int)(fdata[i] + 0.5f);
 
 	        if (itemp != fdata[i]) {
 		    intflag = 0;	/* not integer */
@@ -221,8 +221,7 @@ If the function value is zero, the data were not copied to idata.
             }
 
        	    for (i = 0;  i < nx;  i++) {
-	        temp = (fdata[i] - zeropt) / delta;
-	        idata[i] = NINT (temp);
+	        idata[i] = NINT ((fdata[i] - zeropt) / delta);
             }
         }
         else {
@@ -232,8 +231,7 @@ If the function value is zero, the data were not copied to idata.
 
 	    for (i = 0;  i < nx;  i++) {
                 if (fdata[i] != in_null_value) {
-	            temp = (fdata[i] - zeropt) / delta;
-	            idata[i] = NINT (temp);
+	            idata[i] = NINT ((fdata[i] - zeropt) / delta);
                 }
                 else
                     idata[i] = NULL_VALUE;

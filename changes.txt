@@ -1,5 +1,54 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.11 - 19 September 2008
+
+   - optimized the code when tile compressing real*4 images (which get
+     scaled to integers).  This produced a modest speed increase.  For 
+     best performance, one must specify the absolute q quantization 
+     parameter, rather than relative to the noise in the tile (which
+     is expensive to compute).
+
+   - modified the FITS region file reading code to check for NaN values,
+     which signify the end of the array of points in a polygon region.
+
+   - removed the test for LONGSIZE == 64 from fitsio.h, since it may 
+     not be defined.
+
+   - modified imcompress.c to support unconventional floating point FITS 
+     images that also have BSCALE and BZERO keywords.  The compressed
+     floating point images are linearly scaled twice in this case.
+
+Version 3.10 - 20 August 2008
+
+   - fixed a number of cases, mainly dealing with long input file names
+     (> 1024 char), where unsafe usage of strcat and strcpy could have caused
+     buffer overflows.  These buffer overflows could cause the application
+     to crash, and at least theoretically, could be exploited by a
+     malicious user to execute arbitrary code.  There are no known instances
+     of this type of malicious attack on CFITSIO applications, and the
+     likelihood of such an attack seems remote.  None the less, it would
+     be prudent for CFITSIO users to upgrade to this new version to guard
+     against this possibility.
+
+   - modified some of the routines to define input character string
+     parameters as "const char *" rather than just "char *" to eliminate
+     some compiler warnings when the calling routine passes a constant
+     string to the CFITSIO routine.  Most of the changes were to the
+     keyword name argument in the many routines that read or write keywords.
+
+   - fixed bug when tile-compressing a FITS image which caused all the 
+     completely blank keywords in the input header to be deleted from 
+     the output compressed image.  Also added a feature to preserve any
+     empty FITS blocks in the header (reserved space for future keywords)
+     when compressing or uncompressing an image.
+
+   - fixed small bug in the way the default tile size is set in imcompress.c.
+     (Fix sent in by Paul Price).
+
+   - added support for reading FITS format region files (in addition
+     to the ASCII format that was previously supported).  Thanks to
+     Keith Arnaud for modifying region.c to do this.
+
 Version 3.09 - 12 June 2008
 
    - fixed bug in the calculator function, parse_data, that evaluates 

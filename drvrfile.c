@@ -162,7 +162,7 @@ int file_openfile(char *filename, int rwmode, FILE **diskfile)
     char mode[4];
 
 #if defined(unix) || defined(__unix__) || defined(__unix)
-    char tempname[512], *cptr, user[80];
+    char tempname[1024], *cptr, user[80];
     struct passwd *pwd;
     int ii = 0;
 
@@ -201,11 +201,17 @@ int file_openfile(char *filename, int rwmode, FILE **diskfile)
             cptr = getenv("HOME");
             if (cptr)
             {
+                 if (strlen(cptr) + strlen(filename+1) > 1023)
+		      return(FILE_NOT_OPENED); 
+
                  strcpy(tempname, cptr);
                  strcat(tempname, filename+1);
             }
             else
             {
+                 if (strlen(filename) > 1023)
+		      return(FILE_NOT_OPENED); 
+
                  strcpy(tempname, filename);
             }
         }
@@ -225,6 +231,9 @@ int file_openfile(char *filename, int rwmode, FILE **diskfile)
             pwd = getpwnam(user);
 
             /* copy user's home directory */
+            if (strlen(pwd->pw_dir) + strlen(cptr) > 1023)
+		      return(FILE_NOT_OPENED); 
+
             strcpy(tempname, pwd->pw_dir);
             strcat(tempname, cptr);
         }
@@ -249,6 +258,10 @@ int file_openfile(char *filename, int rwmode, FILE **diskfile)
            {
               if ((f1 = fopen(filename, "rb")) != 0) /* try opening READONLY */
               {
+
+                 if (strlen(filename) + 7 > 1023)
+		      return(FILE_NOT_OPENED); 
+
                  strcpy(tempname, filename);
                  strcat(tempname, ".TmxFil");
                  if ((f2 = fopen(tempname, "wb")) != 0) /* create temp file */
@@ -635,6 +648,9 @@ int file_is_compressed(char *filename) /* I - FITS file name          */
     /* Open file.  Try various suffix combinations */  
     if (file_openfile(filename, 0, &diskfile))
     {
+      if (strlen(filename) > FLEN_FILENAME - 1)
+          return(0);
+
       strcpy(tmpfilename,filename);
       strcat(filename,".gz");
       if (file_openfile(filename, 0, &diskfile))
@@ -732,8 +748,10 @@ int file_checkfile (char *urltype, char *infile, char *outfile)
         /* and copied to this newly created output file.  The original file */
         /* will be closed, and the copy will be opened by CFITSIO for     */
         /* subsequent processing (possibly with READWRITE access).        */
-        if (strlen(outfile))
-            strcpy(file_outfile,outfile);
+        if (strlen(outfile)) {
+	    file_outfile[0] = '\0';
+            strncat(file_outfile,outfile,FLEN_FILENAME-1);
+        }
     }
 
     return 0;

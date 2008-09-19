@@ -77,7 +77,7 @@ int ffcrtb(fitsfile *fptr,  /* I - FITS file pointer                        */
            char **ttype,    /* I - name of each column                      */
            char **tform,    /* I - value of TFORMn keyword for each column  */
            char **tunit,    /* I - value of TUNITn keyword for each column  */
-           char *extnm,     /* I - value of EXTNAME keyword, if any         */
+           const char *extnm,     /* I - value of EXTNAME keyword, if any         */
            int *status)     /* IO - error status                            */
 /*
   Create a table extension in a FITS file. 
@@ -187,9 +187,9 @@ int ffpktp(fitsfile *fptr,       /* I - FITS file pointer       */
 /*--------------------------------------------------------------------------*/
 int ffpky( fitsfile *fptr,     /* I - FITS file pointer        */
            int  datatype,      /* I - datatype of the value    */
-           char *keyname,      /* I - name of keyword to write */
+           const char *keyname,      /* I - name of keyword to write */
            void *value,        /* I - keyword value            */
-           char *comm,         /* I - keyword comment          */
+           const char *comm,         /* I - keyword comment          */
            int  *status)       /* IO - error status            */
 /*
   Write (put) the keyword, value and comment into the FITS header.
@@ -322,8 +322,8 @@ int ffprec(fitsfile *fptr,     /* I - FITS file pointer        */
 }
 /*--------------------------------------------------------------------------*/
 int ffpkyu( fitsfile *fptr,     /* I - FITS file pointer        */
-            char *keyname,      /* I - name of keyword to write */
-            char *comm,         /* I - keyword comment          */
+            const char *keyname,      /* I - name of keyword to write */
+            const char *comm,         /* I - keyword comment          */
             int  *status)       /* IO - error status            */
 /*
   Write (put) a null-valued keyword and comment into the FITS header.  
@@ -343,9 +343,9 @@ int ffpkyu( fitsfile *fptr,     /* I - FITS file pointer        */
 }
 /*--------------------------------------------------------------------------*/
 int ffpkys( fitsfile *fptr,     /* I - FITS file pointer        */
-            char *keyname,      /* I - name of keyword to write */
+            const char *keyname,      /* I - name of keyword to write */
             char *value,        /* I - keyword value            */
-            char *comm,         /* I - keyword comment          */
+            const char *comm,         /* I - keyword comment          */
             int  *status)       /* IO - error status            */
 /*
   Write (put) the keyword, value and comment into the FITS header.
@@ -367,9 +367,9 @@ int ffpkys( fitsfile *fptr,     /* I - FITS file pointer        */
 }
 /*--------------------------------------------------------------------------*/
 int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
-            char *keyname,      /* I - name of keyword to write */
-            char *value,        /* I - keyword value            */
-            char *comm,         /* I - keyword comment          */
+            const char *keyname,      /* I - name of keyword to write */
+            const char *value,        /* I - keyword value            */
+            const char *comm,         /* I - keyword comment          */
             int  *status)       /* IO - error status            */
 /*
   Write (put) the keyword, value and comment into the FITS header.
@@ -382,9 +382,10 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
 */
 {
     char valstring[FLEN_CARD];
-    char card[FLEN_CARD];
+    char card[FLEN_CARD], tmpkeyname[FLEN_CARD];
     char tstring[FLEN_CARD], *cptr;
     int next, remain, vlen, nquote, nchar, namelen, contin, tstatus = -1;
+    int nblank = 0;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
@@ -402,7 +403,10 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
         cptr = strchr(cptr, '\'');  /* search for another quote char */
     }
 
-    cptr = keyname;
+    strncpy(tmpkeyname, keyname, 80);
+    tmpkeyname[80] = '\0';
+    
+    cptr = tmpkeyname;
     while(*cptr == ' ')   /* skip over leading spaces in name */
         cptr++;
 
@@ -524,9 +528,9 @@ int ffplsw( fitsfile *fptr,     /* I - FITS file pointer  */
 }
 /*--------------------------------------------------------------------------*/
 int ffpkyl( fitsfile *fptr,     /* I - FITS file pointer        */
-            char *keyname,      /* I - name of keyword to write */
+            const char *keyname,      /* I - name of keyword to write */
             int  value,         /* I - keyword value            */
-            char *comm,         /* I - keyword comment          */
+            const char *comm,         /* I - keyword comment          */
             int  *status)       /* IO - error status            */
 /*
   Write (put) the keyword, value and comment into the FITS header.
@@ -548,9 +552,9 @@ int ffpkyl( fitsfile *fptr,     /* I - FITS file pointer        */
 }
 /*--------------------------------------------------------------------------*/
 int ffpkyj( fitsfile *fptr,     /* I - FITS file pointer        */
-            char *keyname,      /* I - name of keyword to write */
+            const char *keyname,      /* I - name of keyword to write */
             LONGLONG value,     /* I - keyword value            */
-            char *comm,         /* I - keyword comment          */
+            const char *comm,         /* I - keyword comment          */
             int  *status)       /* IO - error status            */
 /*
   Write (put) the keyword, value and comment into the FITS header.
@@ -571,10 +575,10 @@ int ffpkyj( fitsfile *fptr,     /* I - FITS file pointer        */
 }
 /*--------------------------------------------------------------------------*/
 int ffpkyf( fitsfile *fptr,      /* I - FITS file pointer                   */
-            char  *keyname,      /* I - name of keyword to write            */
+            const char  *keyname,      /* I - name of keyword to write            */
             float value,         /* I - keyword value                       */
             int   decim,         /* I - number of decimal places to display */
-            char  *comm,         /* I - keyword comment                     */
+            const char  *comm,         /* I - keyword comment                     */
             int   *status)       /* IO - error status                       */
 /*
   Write (put) the keyword, value and comment into the FITS header.
@@ -595,10 +599,10 @@ int ffpkyf( fitsfile *fptr,      /* I - FITS file pointer                   */
 }
 /*--------------------------------------------------------------------------*/
 int ffpkye( fitsfile *fptr,      /* I - FITS file pointer                   */
-            char  *keyname,      /* I - name of keyword to write            */
+            const char  *keyname,      /* I - name of keyword to write            */
             float value,         /* I - keyword value                       */
             int   decim,         /* I - number of decimal places to display */
-            char  *comm,         /* I - keyword comment                     */
+            const char  *comm,         /* I - keyword comment                     */
             int   *status)       /* IO - error status                       */
 /*
   Write (put) the keyword, value and comment into the FITS header.
@@ -619,10 +623,10 @@ int ffpkye( fitsfile *fptr,      /* I - FITS file pointer                   */
 }
 /*--------------------------------------------------------------------------*/
 int ffpkyg( fitsfile *fptr,      /* I - FITS file pointer                   */
-            char  *keyname,      /* I - name of keyword to write            */
+            const char  *keyname,      /* I - name of keyword to write            */
             double value,        /* I - keyword value                       */
             int   decim,         /* I - number of decimal places to display */
-            char  *comm,         /* I - keyword comment                     */
+            const char  *comm,         /* I - keyword comment                     */
             int   *status)       /* IO - error status                       */
 /*
   Write (put) the keyword, value and comment into the FITS header.
@@ -642,10 +646,10 @@ int ffpkyg( fitsfile *fptr,      /* I - FITS file pointer                   */
 }
 /*--------------------------------------------------------------------------*/
 int ffpkyd( fitsfile *fptr,      /* I - FITS file pointer                   */
-            char  *keyname,      /* I - name of keyword to write            */
+            const char  *keyname,      /* I - name of keyword to write            */
             double value,        /* I - keyword value                       */
             int   decim,         /* I - number of decimal places to display */
-            char  *comm,         /* I - keyword comment                     */
+            const char  *comm,         /* I - keyword comment                     */
             int   *status)       /* IO - error status                       */
 /*
   Write (put) the keyword, value and comment into the FITS header.
@@ -665,10 +669,10 @@ int ffpkyd( fitsfile *fptr,      /* I - FITS file pointer                   */
 }
 /*--------------------------------------------------------------------------*/
 int ffpkyc( fitsfile *fptr,      /* I - FITS file pointer                   */
-            char  *keyname,      /* I - name of keyword to write            */
+            const char  *keyname,      /* I - name of keyword to write            */
             float *value,        /* I - keyword value (real, imaginary)     */
             int   decim,         /* I - number of decimal places to display */
-            char  *comm,         /* I - keyword comment                     */
+            const char  *comm,         /* I - keyword comment                     */
             int   *status)       /* IO - error status                       */
 /*
   Write (put) the keyword, value and comment into the FITS header.
@@ -696,10 +700,10 @@ int ffpkyc( fitsfile *fptr,      /* I - FITS file pointer                   */
 }
 /*--------------------------------------------------------------------------*/
 int ffpkym( fitsfile *fptr,      /* I - FITS file pointer                   */
-            char  *keyname,      /* I - name of keyword to write            */
+            const char  *keyname,      /* I - name of keyword to write            */
             double *value,       /* I - keyword value (real, imaginary)     */
             int   decim,         /* I - number of decimal places to display */
-            char  *comm,         /* I - keyword comment                     */
+            const char  *comm,         /* I - keyword comment                     */
             int   *status)       /* IO - error status                       */
 /*
   Write (put) the keyword, value and comment into the FITS header.
@@ -727,10 +731,10 @@ int ffpkym( fitsfile *fptr,      /* I - FITS file pointer                   */
 }
 /*--------------------------------------------------------------------------*/
 int ffpkfc( fitsfile *fptr,      /* I - FITS file pointer                   */
-            char  *keyname,      /* I - name of keyword to write            */
+            const char  *keyname,      /* I - name of keyword to write            */
             float *value,        /* I - keyword value (real, imaginary)     */
             int   decim,         /* I - number of decimal places to display */
-            char  *comm,         /* I - keyword comment                     */
+            const char  *comm,         /* I - keyword comment                     */
             int   *status)       /* IO - error status                       */
 /*
   Write (put) the keyword, value and comment into the FITS header.
@@ -758,10 +762,10 @@ int ffpkfc( fitsfile *fptr,      /* I - FITS file pointer                   */
 }
 /*--------------------------------------------------------------------------*/
 int ffpkfm( fitsfile *fptr,      /* I - FITS file pointer                   */
-            char  *keyname,      /* I - name of keyword to write            */
+            const char  *keyname,      /* I - name of keyword to write            */
             double *value,       /* I - keyword value (real, imaginary)     */
             int   decim,         /* I - number of decimal places to display */
-            char  *comm,         /* I - keyword comment                     */
+            const char  *comm,         /* I - keyword comment                     */
             int   *status)       /* IO - error status                       */
 /*
   Write (put) the keyword, value and comment into the FITS header.
@@ -789,10 +793,10 @@ int ffpkfm( fitsfile *fptr,      /* I - FITS file pointer                   */
 }
 /*--------------------------------------------------------------------------*/
 int ffpkyt( fitsfile *fptr,      /* I - FITS file pointer        */
-            char  *keyname,      /* I - name of keyword to write */
+            const char  *keyname,      /* I - name of keyword to write */
             long  intval,        /* I - integer part of value    */
             double fraction,     /* I - fractional part of value */
-            char  *comm,         /* I - keyword comment          */
+            const char  *comm,         /* I - keyword comment          */
             int   *status)       /* IO - error status            */
 /*
   Write (put) a 'triple' precision keyword where the integer and
@@ -1419,7 +1423,7 @@ int ffgsdt( int *day, int *month, int *year, int *status )
 }
 /*--------------------------------------------------------------------------*/
 int ffpkns( fitsfile *fptr,     /* I - FITS file pointer                    */
-            char *keyroot,      /* I - root name of keywords to write       */
+            const char *keyroot,      /* I - root name of keywords to write       */
             int  nstart,        /* I - starting index number                */
             int  nkey,          /* I - number of keywords to write          */
             char *value[],      /* I - array of pointers to keyword values  */
@@ -1479,7 +1483,7 @@ int ffpkns( fitsfile *fptr,     /* I - FITS file pointer                    */
 }
 /*--------------------------------------------------------------------------*/
 int ffpknl( fitsfile *fptr,     /* I - FITS file pointer                    */
-            char *keyroot,      /* I - root name of keywords to write       */
+            const char *keyroot,      /* I - root name of keywords to write       */
             int  nstart,        /* I - starting index number                */
             int  nkey,          /* I - number of keywords to write          */
             int  *value,        /* I - array of keyword values              */
@@ -1540,7 +1544,7 @@ int ffpknl( fitsfile *fptr,     /* I - FITS file pointer                    */
 }
 /*--------------------------------------------------------------------------*/
 int ffpknj( fitsfile *fptr,     /* I - FITS file pointer                    */
-            char *keyroot,      /* I - root name of keywords to write       */
+            const char *keyroot,      /* I - root name of keywords to write       */
             int  nstart,        /* I - starting index number                */
             int  nkey,          /* I - number of keywords to write          */
             long *value,        /* I - array of keyword values              */
@@ -1598,7 +1602,7 @@ int ffpknj( fitsfile *fptr,     /* I - FITS file pointer                    */
 }
 /*--------------------------------------------------------------------------*/
 int ffpknjj( fitsfile *fptr,    /* I - FITS file pointer                    */
-            char *keyroot,      /* I - root name of keywords to write       */
+            const char *keyroot,      /* I - root name of keywords to write       */
             int  nstart,        /* I - starting index number                */
             int  nkey,          /* I - number of keywords to write          */
             LONGLONG *value,    /* I - array of keyword values              */
@@ -1656,7 +1660,7 @@ int ffpknjj( fitsfile *fptr,    /* I - FITS file pointer                    */
 }
 /*--------------------------------------------------------------------------*/
 int ffpknf( fitsfile *fptr,     /* I - FITS file pointer                    */
-            char *keyroot,      /* I - root name of keywords to write       */
+            const char *keyroot,      /* I - root name of keywords to write       */
             int  nstart,        /* I - starting index number                */
             int  nkey,          /* I - number of keywords to write          */
             float *value,       /* I - array of keyword values              */
@@ -1715,7 +1719,7 @@ int ffpknf( fitsfile *fptr,     /* I - FITS file pointer                    */
 }
 /*--------------------------------------------------------------------------*/
 int ffpkne( fitsfile *fptr,     /* I - FITS file pointer                    */
-            char *keyroot,      /* I - root name of keywords to write       */
+            const char *keyroot,      /* I - root name of keywords to write       */
             int  nstart,        /* I - starting index number                */
             int  nkey,          /* I - number of keywords to write          */
             float *value,       /* I - array of keyword values              */
@@ -1774,7 +1778,7 @@ int ffpkne( fitsfile *fptr,     /* I - FITS file pointer                    */
 }
 /*--------------------------------------------------------------------------*/
 int ffpkng( fitsfile *fptr,     /* I - FITS file pointer                    */
-            char *keyroot,      /* I - root name of keywords to write       */
+            const char *keyroot,      /* I - root name of keywords to write       */
             int  nstart,        /* I - starting index number                */
             int  nkey,          /* I - number of keywords to write          */
             double *value,      /* I - array of keyword values              */
@@ -1833,7 +1837,7 @@ int ffpkng( fitsfile *fptr,     /* I - FITS file pointer                    */
 }
 /*--------------------------------------------------------------------------*/
 int ffpknd( fitsfile *fptr,     /* I - FITS file pointer                    */
-            char *keyroot,      /* I - root name of keywords to write       */
+            const char *keyroot,      /* I - root name of keywords to write       */
             int  nstart,        /* I - starting index number                */
             int  nkey,          /* I - number of keywords to write          */
             double *value,      /* I - array of keyword values              */
@@ -2351,7 +2355,7 @@ int ffphtb(fitsfile *fptr,  /* I - FITS file pointer                        */
            long *tbcol,     /* I - byte offset in row to each column        */
            char **tform,    /* I - value of TFORMn keyword for each column  */
            char **tunit,    /* I - value of TUNITn keyword for each column  */
-           char *extnm,   /* I - value of EXTNAME keyword, if any         */
+           const char *extnmx,   /* I - value of EXTNAME keyword, if any         */
            int *status)     /* IO - error status                            */
 /*
   Put required Header keywords into the ASCII TaBle:
@@ -2359,7 +2363,7 @@ int ffphtb(fitsfile *fptr,  /* I - FITS file pointer                        */
 {
     int ii, ncols, gotmem = 0;
     long rowlen; /* must be 'long' because it is passed to ffgabc */
-    char tfmt[30], name[FLEN_KEYWORD], comm[FLEN_COMMENT];
+    char tfmt[30], name[FLEN_KEYWORD], comm[FLEN_COMMENT], extnm[FLEN_VALUE];
 
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
@@ -2375,6 +2379,10 @@ int ffphtb(fitsfile *fptr,  /* I - FITS file pointer                        */
     else if (tfields < 0 || tfields > 999)
         return(*status = BAD_TFIELDS);
     
+    extnm[0] = '\0';
+    if (extnmx)
+        strncat(extnm, extnmx, FLEN_VALUE-1);
+
     rowlen = (long) naxis1;
 
     if (!tbcol || !tbcol[0] || (!naxis1 && tfields)) /* spacing not defined? */
@@ -2459,7 +2467,7 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
            char **ttype,    /* I - name of each column                      */
            char **tform,    /* I - value of TFORMn keyword for each column  */
            char **tunit,    /* I - value of TUNITn keyword for each column  */
-           char *extnm,   /* I - value of EXTNAME keyword, if any         */
+           const char *extnmx,   /* I - value of EXTNAME keyword, if any         */
            LONGLONG pcount,     /* I - size of the variable length heap area    */
            int *status)     /* IO - error status                            */
 /*
@@ -2470,7 +2478,7 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
     long repeat, width;
     LONGLONG naxis1;
 
-    char tfmt[30], name[FLEN_KEYWORD], comm[FLEN_COMMENT];
+    char tfmt[30], name[FLEN_KEYWORD], comm[FLEN_COMMENT], extnm[FLEN_VALUE];
     char *cptr;
 
     if (*status > 0)
@@ -2487,6 +2495,10 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
         return(*status = BAD_PCOUNT);
     else if (tfields < 0 || tfields > 999)
         return(*status = BAD_TFIELDS);
+
+    extnm[0] = '\0';
+    if (extnmx)
+        strncat(extnm, extnmx, FLEN_VALUE-1);
 
     ffpkys(fptr, "XTENSION", "BINTABLE", "binary table extension", status);
     ffpkyj(fptr, "BITPIX", 8, "8-bit bytes", status);
@@ -2686,7 +2698,7 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
 }
 /*--------------------------------------------------------------------------*/
 int ffphext(fitsfile *fptr,  /* I - FITS file pointer                       */
-           char *xtension,   /* I - value for the XTENSION keyword          */
+           const char *xtensionx,   /* I - value for the XTENSION keyword          */
            int bitpix,       /* I - value for the BIXPIX keyword            */
            int naxis,        /* I - value for the NAXIS keyword             */
            long naxes[],     /* I - value for the NAXISn keywords           */
@@ -2697,7 +2709,7 @@ int ffphext(fitsfile *fptr,  /* I - FITS file pointer                       */
   Put required Header keywords into a conforming extension:
 */
 {
-    char message[FLEN_ERRMSG],comm[81], name[20];
+    char message[FLEN_ERRMSG],comm[81], name[20], xtension[FLEN_VALUE];
     int ii;
  
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
@@ -2715,6 +2727,9 @@ int ffphext(fitsfile *fptr,  /* I - FITS file pointer                       */
         ffpmsg(message);
         return(*status = BAD_NAXIS);
     }
+
+    xtension[0] = '\0';
+    strncat(xtension, xtensionx, FLEN_VALUE-1);
 
     ffpkys(fptr, "XTENSION", xtension, "extension type", status);
     ffpkyj(fptr, "BITPIX",   bitpix,   "number of bits per data pixel", status);

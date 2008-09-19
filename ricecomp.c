@@ -324,6 +324,7 @@ unsigned int *diff;
     /* move these out of switch block to further tweak performance */
     fsbits = 4;
     fsmax = 14;
+    
     bbits = 1<<fsbits;
 
     /*
@@ -1194,7 +1195,7 @@ int fits_rdecomp_byte (unsigned char *c,		/* input buffer			*/
 int i, imax;
 int bsize, k;
 int nbits, nzero, fs;
-unsigned char *cend, bytevalue;
+unsigned char *cend;
 unsigned int b, diff, lastpix;
 int fsmax, fsbits, bbits;
 static int *nonzero_count = (int *)NULL;

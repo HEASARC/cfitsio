@@ -18,6 +18,8 @@ int ffcopy(fitsfile *infptr,    /* I - FITS file pointer to input file  */
   This will also allocate space in the output header for MOREKY keywords
 */
 {
+    int nspace;
+    
     if (*status > 0)
         return(*status);
 
@@ -27,8 +29,16 @@ int ffcopy(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     if (ffcphd(infptr, outfptr, status) )  /* copy the header keywords */
        return(*status);
 
-    if (morekeys > 0)
+    if (morekeys > 0) {
       ffhdef(outfptr, morekeys, status); /* reserve space for more keywords */
+
+    } else {
+        if (ffghsp(infptr, NULL, &nspace, status) > 0) /* get existing space */
+            return(*status);
+
+        if (nspace > 0) 
+            ffhdef(outfptr, nspace, status); /* preserve same amount of space */
+    }
 
     ffcpdt(infptr, outfptr, status);  /* now copy the data unit */
 
@@ -531,7 +541,7 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
            long *tbcol,     /* I - byte offset in row to each column        */
            char **tform,    /* I - value of TFORMn keyword for each column  */
            char **tunit,    /* I - value of TUNITn keyword for each column  */
-           char *extnm,   /* I - value of EXTNAME keyword, if any         */
+           const char *extnmx,   /* I - value of EXTNAME keyword, if any         */
            int *status)     /* IO - error status                            */
 /*
   insert an ASCII table extension following the current HDU 
@@ -540,10 +550,13 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
     int nexthdu, maxhdu, ii, nunit, nhead, ncols, gotmem = 0;
     long nblocks, rowlen;
     LONGLONG datasize, newstart;
-    char errmsg[81];
+    char errmsg[81], extnm[FLEN_VALUE];
 
     if (*status > 0)
         return(*status);
+
+    extnm[0] = '\0';
+    strncat(extnm, extnmx, FLEN_VALUE-1);
 
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
@@ -662,7 +675,7 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
            char **ttype,    /* I - name of each column                      */
            char **tform,    /* I - value of TFORMn keyword for each column  */
            char **tunit,    /* I - value of TUNITn keyword for each column  */
-           char *extnm,     /* I - value of EXTNAME keyword, if any         */
+           const char *extnmx,     /* I - value of EXTNAME keyword, if any         */
            LONGLONG pcount, /* I - size of special data area (heap)         */
            int *status)     /* IO - error status                            */
 /*
@@ -673,11 +686,13 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
     LONGLONG naxis1;
     long nblocks, repeat, width;
     LONGLONG datasize, newstart;
-    char errmsg[81];
+    char errmsg[81], extnm[FLEN_VALUE];
 
     if (*status > 0)
         return(*status);
 
+    extnm[0] = '\0';
+    strncat(extnm, extnmx, FLEN_VALUE-1);
 
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);

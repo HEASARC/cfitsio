@@ -34,7 +34,7 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.09
+#define CFITSIO_VERSION 3.11
 
 #include <stdio.h>
 
@@ -138,7 +138,13 @@ SERVICES PROVIDED HEREUNDER."
 #define LONGLONG_MAX _I64_MAX
 #define LONGLONG_MIN _I64_MIN
 
-#elif (LONGSIZE == 64)
+#elif (defined(__alpha) && ( defined(__unix__) || defined(__NetBSD__) )) \
+    ||  defined(__sparcv9)  \
+    ||  defined(__ia64__)   \
+    ||  defined(__x86_64__) \
+    ||  defined(_SX)        \
+    ||  defined(__powerpc64__) || defined(__64BIT__) \
+    ||  (defined(_MIPS_SZLONG) &&  _MIPS_SZLONG == 64)
 /* sizeof(long) = 64 */
 #define LONGLONG_MAX  9223372036854775807L /* max 64-bit integer */
 #define LONGLONG_MIN (-LONGLONG_MAX -1L)   /* min 64-bit integer */
@@ -718,10 +724,10 @@ void ffcmrk(void);
 void ffrprt(FILE *stream, int status);
 void ffcmps(char *templt, char *colname, int  casesen, int *match,
            int *exact);
-int fftkey(char *keyword, int *status);
+int fftkey(const char *keyword, int *status);
 int fftrec(char *card, int *status);
 int ffnchk(fitsfile *fptr, int *status);
-int ffkeyn(char *keyroot, int value, char *keyname, int *status);
+int ffkeyn(const char *keyroot, int value, char *keyname, int *status);
 int ffnkey(int value, char *keyroot, char *keyname, int *status);
 int ffgkcl(char *card);
 int ffdtyp(char *cval, char *dtype, int *status);
@@ -747,11 +753,11 @@ int fits_get_section_range(char **ptr,long *secmin,long *secmax,long *incre,
 */ 
 int ffmbyt(fitsfile *fptr, LONGLONG bytpos, int ignore_err, int *status);
 /*----------------- write single keywords --------------*/
-int ffpky(fitsfile *fptr, int datatype, char *keyname, void *value,
-          char *comm, int *status);
+int ffpky(fitsfile *fptr, int datatype, const char *keyname, void *value,
+          const char *comm, int *status);
 int ffprec(fitsfile *fptr, const char *card, int *status);
 int ffpcom(fitsfile *fptr, const char *comm, int *status);
-int ffpunt(fitsfile *fptr, char *keyname, char *unit, int *status);
+int ffpunt(fitsfile *fptr, const char *keyname, char *unit, int *status);
 int ffphis(fitsfile *fptr, const char *history, int *status);
 int ffpdat(fitsfile *fptr, int *status);
 int ffverifydate(int year, int month, int day, int *status);
@@ -763,49 +769,49 @@ int fftm2s(int year, int month, int day, int hour, int minute, double second,
 int ffs2dt(char *datestr, int *year, int *month, int *day, int *status);
 int ffs2tm(char *datestr, int *year, int *month, int *day, int *hour,
           int *minute, double *second, int *status);
-int ffpkyu(fitsfile *fptr, char *keyname, char *comm, int *status);
-int ffpkys(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
-int ffpkls(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
+int ffpkyu(fitsfile *fptr, const char *keyname, const char *comm, int *status);
+int ffpkys(fitsfile *fptr, const char *keyname, char *value, const char *comm,int *status);
+int ffpkls(fitsfile *fptr, const char *keyname, const char *value, const char *comm,int *status);
 int ffplsw(fitsfile *fptr, int *status);
-int ffpkyl(fitsfile *fptr, char *keyname, int  value, char *comm, int *status);
-int ffpkyj(fitsfile *fptr, char *keyname, LONGLONG value, char *comm, int *status);
-int ffpkyf(fitsfile *fptr, char *keyname, float value, int decim, char *comm,
+int ffpkyl(fitsfile *fptr, const char *keyname, int  value, const char *comm, int *status);
+int ffpkyj(fitsfile *fptr, const char *keyname, LONGLONG value, const char *comm, int *status);
+int ffpkyf(fitsfile *fptr, const char *keyname, float value, int decim, const char *comm,
           int *status);
-int ffpkye(fitsfile *fptr, char *keyname, float  value, int decim, char *comm,
+int ffpkye(fitsfile *fptr, const char *keyname, float  value, int decim, const char *comm,
           int *status);
-int ffpkyg(fitsfile *fptr, char *keyname, double value, int decim, char *comm,
+int ffpkyg(fitsfile *fptr, const char *keyname, double value, int decim, const char *comm,
           int *status);
-int ffpkyd(fitsfile *fptr, char *keyname, double value, int decim, char *comm,
+int ffpkyd(fitsfile *fptr, const char *keyname, double value, int decim, const char *comm,
           int *status);
-int ffpkyc(fitsfile *fptr, char *keyname, float *value, int decim, char *comm,
+int ffpkyc(fitsfile *fptr, const char *keyname, float *value, int decim, const char *comm,
           int *status);
-int ffpkym(fitsfile *fptr, char *keyname, double *value, int decim, char *comm,
+int ffpkym(fitsfile *fptr, const char *keyname, double *value, int decim, const char *comm,
           int *status);
-int ffpkfc(fitsfile *fptr, char *keyname, float *value, int decim, char *comm,
+int ffpkfc(fitsfile *fptr, const char *keyname, float *value, int decim, const char *comm,
           int *status);
-int ffpkfm(fitsfile *fptr, char *keyname, double *value, int decim, char *comm,
+int ffpkfm(fitsfile *fptr, const char *keyname, double *value, int decim, const char *comm,
           int *status);
-int ffpkyt(fitsfile *fptr, char *keyname, long intval, double frac, char *comm,
+int ffpkyt(fitsfile *fptr, const char *keyname, long intval, double frac, const char *comm,
           int *status);
 int ffptdm( fitsfile *fptr, int colnum, int naxis, long naxes[], int *status);
 int ffptdmll( fitsfile *fptr, int colnum, int naxis, LONGLONG naxes[], int *status);
 
 /*----------------- write array of keywords --------------*/
-int ffpkns(fitsfile *fptr, char *keyroot, int nstart, int nkey, char *value[],
+int ffpkns(fitsfile *fptr, const char *keyroot, int nstart, int nkey, char *value[],
            char *comm[], int *status);
-int ffpknl(fitsfile *fptr, char *keyroot, int nstart, int nkey, int *value,
+int ffpknl(fitsfile *fptr, const char *keyroot, int nstart, int nkey, int *value,
            char *comm[], int *status);
-int ffpknj(fitsfile *fptr, char *keyroot, int nstart, int nkey, long *value,
+int ffpknj(fitsfile *fptr, const char *keyroot, int nstart, int nkey, long *value,
            char *comm[], int *status);
-int ffpknjj(fitsfile *fptr, char *keyroot, int nstart, int nkey, LONGLONG *value,
+int ffpknjj(fitsfile *fptr, const char *keyroot, int nstart, int nkey, LONGLONG *value,
            char *comm[], int *status);
-int ffpknf(fitsfile *fptr, char *keyroot, int nstart, int nkey, float *value,
+int ffpknf(fitsfile *fptr, const char *keyroot, int nstart, int nkey, float *value,
            int decim, char *comm[], int *status);
-int ffpkne(fitsfile *fptr, char *keyroot, int nstart, int nkey, float *value,
+int ffpkne(fitsfile *fptr, const char *keyroot, int nstart, int nkey, float *value,
            int decim, char *comm[], int *status);
-int ffpkng(fitsfile *fptr, char *keyroot, int nstart, int nkey, double *value,
+int ffpkng(fitsfile *fptr, const char *keyroot, int nstart, int nkey, double *value,
            int decim, char *comm[], int *status);
-int ffpknd(fitsfile *fptr, char *keyroot, int nstart, int nkey, double *value,
+int ffpknd(fitsfile *fptr, const char *keyroot, int nstart, int nkey, double *value,
            int decim, char *comm[], int *status);
 int ffcpky(fitsfile *infptr,fitsfile *outfptr,int incol,int outcol,
            char *rootname, int *status); 
@@ -818,10 +824,10 @@ int ffphpr( fitsfile *fptr, int simple, int bitpix, int naxis, long naxes[],
 int ffphprll( fitsfile *fptr, int simple, int bitpix, int naxis, LONGLONG naxes[],
             LONGLONG pcount, LONGLONG gcount, int extend, int *status);
 int ffphtb(fitsfile *fptr, LONGLONG naxis1, LONGLONG naxis2, int tfields, char **ttype,
-          long *tbcol, char **tform, char **tunit, char *extname, int *status);
+          long *tbcol, char **tform, char **tunit, const char *extname, int *status);
 int ffphbn(fitsfile *fptr, LONGLONG naxis2, int tfields, char **ttype,
-          char **tform, char **tunit, char *extname, LONGLONG pcount, int *status);
-int ffphext( fitsfile *fptr, char *xtension, int bitpix, int naxis, long naxes[],
+          char **tform, char **tunit, const char *extname, LONGLONG pcount, int *status);
+int ffphext( fitsfile *fptr, const char *xtension, int bitpix, int naxis, long naxes[],
             LONGLONG pcount, LONGLONG gcount, int *status);
 /*----------------- write template keywords --------------*/
 int ffpktp(fitsfile *fptr, const char *filename, int *status);
@@ -838,26 +844,26 @@ int ffmrky(fitsfile *fptr, int nrec, int *status);
 int ffgnxk(fitsfile *fptr, char **inclist, int ninc, char **exclist,
            int nexc, char *card, int  *status);
 int ffgrec(fitsfile *fptr, int nrec,      char *card, int *status);
-int ffgcrd(fitsfile *fptr, char *keyname, char *card, int *status);
-int ffgunt(fitsfile *fptr, char *keyname, char *unit, int  *status);
+int ffgcrd(fitsfile *fptr, const char *keyname, char *card, int *status);
+int ffgunt(fitsfile *fptr, const char *keyname, char *unit, int  *status);
 int ffgkyn(fitsfile *fptr, int nkey, char *keyname, char *keyval, char *comm,
            int *status);
-int ffgkey(fitsfile *fptr, char *keyname, char *keyval, char *comm,
+int ffgkey(fitsfile *fptr, const char *keyname, char *keyval, char *comm,
            int *status);
  
-int ffgky( fitsfile *fptr, int datatype, char *keyname, void *value,
+int ffgky( fitsfile *fptr, int datatype, const char *keyname, void *value,
            char *comm, int *status);
-int ffgkys(fitsfile *fptr, char *keyname, char *value, char *comm, int *status);
-int ffgkls(fitsfile *fptr, char *keyname, char **value, char *comm, int *status)
+int ffgkys(fitsfile *fptr, const char *keyname, char *value, char *comm, int *status);
+int ffgkls(fitsfile *fptr, const char *keyname, char **value, char *comm, int *status)
 ;
-int ffgkyl(fitsfile *fptr, char *keyname, int *value, char *comm, int *status);
-int ffgkyj(fitsfile *fptr, char *keyname, long *value, char *comm, int *status);
-int ffgkyjj(fitsfile *fptr, char *keyname, LONGLONG *value, char *comm, int *status);
-int ffgkye(fitsfile *fptr, char *keyname, float *value, char *comm,int *status);
-int ffgkyd(fitsfile *fptr, char *keyname, double *value,char *comm,int *status);
-int ffgkyc(fitsfile *fptr, char *keyname, float *value, char *comm,int *status);
-int ffgkym(fitsfile *fptr, char *keyname, double *value,char *comm,int *status);
-int ffgkyt(fitsfile *fptr, char *keyname, long *ivalue, double *dvalue,
+int ffgkyl(fitsfile *fptr, const char *keyname, int *value, char *comm, int *status);
+int ffgkyj(fitsfile *fptr, const char *keyname, long *value, char *comm, int *status);
+int ffgkyjj(fitsfile *fptr, const char *keyname, LONGLONG *value, char *comm, int *status);
+int ffgkye(fitsfile *fptr, const char *keyname, float *value, char *comm,int *status);
+int ffgkyd(fitsfile *fptr, const char *keyname, double *value,char *comm,int *status);
+int ffgkyc(fitsfile *fptr, const char *keyname, float *value, char *comm,int *status);
+int ffgkym(fitsfile *fptr, const char *keyname, double *value,char *comm,int *status);
+int ffgkyt(fitsfile *fptr, const char *keyname, long *ivalue, double *dvalue,
            char *comm, int *status);
 int ffgtdm(fitsfile *fptr, int colnum, int maxdim, int *naxis, long naxes[],
            int *status);
@@ -869,17 +875,17 @@ int ffdtdmll(fitsfile *fptr, char *tdimstr, int colnum, int maxdim,
            int *naxis, LONGLONG naxes[], int *status);
 
 /*------------------ read array of keywords -----------------*/
-int ffgkns(fitsfile *fptr, char *keyname, int nstart, int nmax, char *value[],
+int ffgkns(fitsfile *fptr, const char *keyname, int nstart, int nmax, char *value[],
            int *nfound,  int *status);
-int ffgknl(fitsfile *fptr, char *keyname, int nstart, int nmax, int *value,
+int ffgknl(fitsfile *fptr, const char *keyname, int nstart, int nmax, int *value,
            int *nfound, int *status);
-int ffgknj(fitsfile *fptr, char *keyname, int nstart, int nmax, long *value,
+int ffgknj(fitsfile *fptr, const char *keyname, int nstart, int nmax, long *value,
            int *nfound, int *status);
-int ffgknjj(fitsfile *fptr, char *keyname, int nstart, int nmax, LONGLONG *value,
+int ffgknjj(fitsfile *fptr, const char *keyname, int nstart, int nmax, LONGLONG *value,
            int *nfound, int *status);
-int ffgkne(fitsfile *fptr, char *keyname, int nstart, int nmax, float *value,
+int ffgkne(fitsfile *fptr, const char *keyname, int nstart, int nmax, float *value,
            int *nfound, int *status);
-int ffgknd(fitsfile *fptr, char *keyname, int nstart, int nmax, double *value,
+int ffgknd(fitsfile *fptr, const char *keyname, int nstart, int nmax, double *value,
            int *nfound, int *status);
 int ffh2st(fitsfile *fptr, char **header, int  *status);
 int ffhdr2str( fitsfile *fptr,  int exclude_comm, char **exclist,
@@ -910,85 +916,85 @@ int ffghbnll(fitsfile *fptr, int maxfield, LONGLONG *naxis2, int *tfields,
            LONGLONG *pcount, int *status);
 
 /*--------------------- update keywords ---------------*/
-int ffuky(fitsfile *fptr, int datatype, char *keyname, void *value,
+int ffuky(fitsfile *fptr, int datatype, const char *keyname, void *value,
           char *comm, int *status);
-int ffucrd(fitsfile *fptr, char *keyname, char *card, int *status);
-int ffukyu(fitsfile *fptr, char *keyname, char *comm, int *status);
-int ffukys(fitsfile *fptr, char *keyname, char *value, char *comm, int *status);
-int ffukls(fitsfile *fptr, char *keyname, char *value, char *comm, int *status);
-int ffukyl(fitsfile *fptr, char *keyname, int value, char *comm, int *status);
-int ffukyj(fitsfile *fptr, char *keyname, LONGLONG value, char *comm, int *status);
-int ffukyf(fitsfile *fptr, char *keyname, float value, int decim, char *comm,
+int ffucrd(fitsfile *fptr, const char *keyname, char *card, int *status);
+int ffukyu(fitsfile *fptr, const char *keyname, char *comm, int *status);
+int ffukys(fitsfile *fptr, const char *keyname, char *value, char *comm, int *status);
+int ffukls(fitsfile *fptr, const char *keyname, char *value, char *comm, int *status);
+int ffukyl(fitsfile *fptr, const char *keyname, int value, char *comm, int *status);
+int ffukyj(fitsfile *fptr, const char *keyname, LONGLONG value, char *comm, int *status);
+int ffukyf(fitsfile *fptr, const char *keyname, float value, int decim, char *comm,
           int *status);
-int ffukye(fitsfile *fptr, char *keyname, float value, int decim, char *comm,
+int ffukye(fitsfile *fptr, const char *keyname, float value, int decim, char *comm,
           int *status);
-int ffukyg(fitsfile *fptr, char *keyname, double value, int decim, char *comm,
+int ffukyg(fitsfile *fptr, const char *keyname, double value, int decim, char *comm,
           int *status);
-int ffukyd(fitsfile *fptr, char *keyname, double value, int decim, char *comm,
+int ffukyd(fitsfile *fptr, const char *keyname, double value, int decim, char *comm,
           int *status);
-int ffukyc(fitsfile *fptr, char *keyname, float *value, int decim, char *comm,
+int ffukyc(fitsfile *fptr, const char *keyname, float *value, int decim, char *comm,
           int *status);
-int ffukym(fitsfile *fptr, char *keyname, double *value, int decim, char *comm,
+int ffukym(fitsfile *fptr, const char *keyname, double *value, int decim, char *comm,
           int *status);
-int ffukfc(fitsfile *fptr, char *keyname, float *value, int decim, char *comm,
+int ffukfc(fitsfile *fptr, const char *keyname, float *value, int decim, char *comm,
           int *status);
-int ffukfm(fitsfile *fptr, char *keyname, double *value, int decim, char *comm,
+int ffukfm(fitsfile *fptr, const char *keyname, double *value, int decim, char *comm,
           int *status);
 
 /*--------------------- modify keywords ---------------*/
 int ffmrec(fitsfile *fptr, int nkey, char *card, int *status);
-int ffmcrd(fitsfile *fptr, char *keyname, char *card, int *status);
-int ffmnam(fitsfile *fptr, char *oldname, char *newname, int *status);
-int ffmcom(fitsfile *fptr, char *keyname, char *comm, int *status);
-int ffmkyu(fitsfile *fptr, char *keyname, char *comm, int *status);
-int ffmkys(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
-int ffmkls(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
-int ffmkyl(fitsfile *fptr, char *keyname, int value, char *comm, int *status);
-int ffmkyj(fitsfile *fptr, char *keyname, LONGLONG value, char *comm, int *status);
-int ffmkyf(fitsfile *fptr, char *keyname, float value, int decim, char *comm,
+int ffmcrd(fitsfile *fptr, const char *keyname, char *card, int *status);
+int ffmnam(fitsfile *fptr, const char *oldname, const char *newname, int *status);
+int ffmcom(fitsfile *fptr, const char *keyname, char *comm, int *status);
+int ffmkyu(fitsfile *fptr, const char *keyname, char *comm, int *status);
+int ffmkys(fitsfile *fptr, const char *keyname, char *value, char *comm,int *status);
+int ffmkls(fitsfile *fptr, const char *keyname, char *value, char *comm,int *status);
+int ffmkyl(fitsfile *fptr, const char *keyname, int value, char *comm, int *status);
+int ffmkyj(fitsfile *fptr, const char *keyname, LONGLONG value, char *comm, int *status);
+int ffmkyf(fitsfile *fptr, const char *keyname, float value, int decim, char *comm,
           int *status);
-int ffmkye(fitsfile *fptr, char *keyname, float value, int decim, char *comm,
+int ffmkye(fitsfile *fptr, const char *keyname, float value, int decim, char *comm,
           int *status);
-int ffmkyg(fitsfile *fptr, char *keyname, double value, int decim, char *comm,
+int ffmkyg(fitsfile *fptr, const char *keyname, double value, int decim, char *comm,
           int *status);
-int ffmkyd(fitsfile *fptr, char *keyname, double value, int decim, char *comm,
+int ffmkyd(fitsfile *fptr, const char *keyname, double value, int decim, char *comm,
           int *status);
-int ffmkyc(fitsfile *fptr, char *keyname, float *value, int decim, char *comm,
+int ffmkyc(fitsfile *fptr, const char *keyname, float *value, int decim, char *comm,
           int *status);
-int ffmkym(fitsfile *fptr, char *keyname, double *value, int decim, char *comm,
+int ffmkym(fitsfile *fptr, const char *keyname, double *value, int decim, char *comm,
           int *status);
-int ffmkfc(fitsfile *fptr, char *keyname, float *value, int decim, char *comm,
+int ffmkfc(fitsfile *fptr, const char *keyname, float *value, int decim, char *comm,
           int *status);
-int ffmkfm(fitsfile *fptr, char *keyname, double *value, int decim, char *comm,
+int ffmkfm(fitsfile *fptr, const char *keyname, double *value, int decim, char *comm,
           int *status);
  
 /*--------------------- insert keywords ---------------*/
 int ffirec(fitsfile *fptr, int nkey, char *card, int *status);
 int ffikey(fitsfile *fptr, char *card, int *status);
-int ffikyu(fitsfile *fptr, char *keyname, char *comm, int *status);
-int ffikys(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
-int ffikls(fitsfile *fptr, char *keyname, char *value, char *comm,int *status);
-int ffikyl(fitsfile *fptr, char *keyname, int value, char *comm, int *status);
-int ffikyj(fitsfile *fptr, char *keyname, LONGLONG value, char *comm, int *status);
-int ffikyf(fitsfile *fptr, char *keyname, float value, int decim, char *comm,
+int ffikyu(fitsfile *fptr, const char *keyname, char *comm, int *status);
+int ffikys(fitsfile *fptr, const char *keyname, char *value, char *comm,int *status);
+int ffikls(fitsfile *fptr, const char *keyname, char *value, char *comm,int *status);
+int ffikyl(fitsfile *fptr, const char *keyname, int value, char *comm, int *status);
+int ffikyj(fitsfile *fptr, const char *keyname, LONGLONG value, char *comm, int *status);
+int ffikyf(fitsfile *fptr, const char *keyname, float value, int decim, char *comm,
           int *status);
-int ffikye(fitsfile *fptr, char *keyname, float value, int decim, char *comm,
+int ffikye(fitsfile *fptr, const char *keyname, float value, int decim, char *comm,
           int *status);
-int ffikyg(fitsfile *fptr, char *keyname, double value, int decim, char *comm,
+int ffikyg(fitsfile *fptr, const char *keyname, double value, int decim, char *comm,
           int *status);
-int ffikyd(fitsfile *fptr, char *keyname, double value, int decim, char *comm,
+int ffikyd(fitsfile *fptr, const char *keyname, double value, int decim, char *comm,
           int *status);
-int ffikyc(fitsfile *fptr, char *keyname, float *value, int decim, char *comm,
+int ffikyc(fitsfile *fptr, const char *keyname, float *value, int decim, char *comm,
           int *status);
-int ffikym(fitsfile *fptr, char *keyname, double *value, int decim, char *comm,
+int ffikym(fitsfile *fptr, const char *keyname, double *value, int decim, char *comm,
           int *status);
-int ffikfc(fitsfile *fptr, char *keyname, float *value, int decim, char *comm,
+int ffikfc(fitsfile *fptr, const char *keyname, float *value, int decim, char *comm,
           int *status);
-int ffikfm(fitsfile *fptr, char *keyname, double *value, int decim, char *comm,
+int ffikfm(fitsfile *fptr, const char *keyname, double *value, int decim, char *comm,
           int *status);
 
 /*--------------------- delete keywords ---------------*/
-int ffdkey(fitsfile *fptr, char *keyname, int *status);
+int ffdkey(fitsfile *fptr, const char *keyname, int *status);
 int ffdrec(fitsfile *fptr, int keypos, int *status);
  
 /*--------------------- get HDU information -------------*/
@@ -1020,13 +1026,13 @@ int ffcrhd(fitsfile *fptr, int *status);
 int ffcrim(fitsfile *fptr, int bitpix, int naxis, long *naxes, int *status);
 int ffcrimll(fitsfile *fptr, int bitpix, int naxis, LONGLONG *naxes, int *status);
 int ffcrtb(fitsfile *fptr, int tbltype, LONGLONG naxis2, int tfields, char **ttype,
-           char **tform, char **tunit, char *extname, int *status);
+           char **tform, char **tunit, const char *extname, int *status);
 int ffiimg(fitsfile *fptr, int bitpix, int naxis, long *naxes, int *status);
 int ffiimgll(fitsfile *fptr, int bitpix, int naxis, LONGLONG *naxes, int *status);
 int ffitab(fitsfile *fptr, LONGLONG naxis1, LONGLONG naxis2, int tfields, char **ttype,
-           long *tbcol, char **tform, char **tunit, char *extname, int *status);
+           long *tbcol, char **tform, char **tunit, const char *extname, int *status);
 int ffibin(fitsfile *fptr, LONGLONG naxis2, int tfields, char **ttype, char **tform,
-           char **tunit, char *extname, LONGLONG pcount, int *status);
+           char **tunit, const char *extname, LONGLONG pcount, int *status);
 int ffrsim(fitsfile *fptr, int bitpix, int naxis, long *naxes, int *status);
 int ffrsimll(fitsfile *fptr, int bitpix, int naxis, LONGLONG *naxes, int *status);
 int ffdhdu(fitsfile *fptr, int *hdutype, int *status);
