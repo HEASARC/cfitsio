@@ -556,7 +556,8 @@ int ffitab(fitsfile *fptr,  /* I - FITS file pointer                        */
         return(*status);
 
     extnm[0] = '\0';
-    strncat(extnm, extnmx, FLEN_VALUE-1);
+    if (extnmx)
+      strncat(extnm, extnmx, FLEN_VALUE-1);
 
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);
@@ -692,7 +693,8 @@ int ffibin(fitsfile *fptr,  /* I - FITS file pointer                        */
         return(*status);
 
     extnm[0] = '\0';
-    strncat(extnm, extnmx, FLEN_VALUE-1);
+    if (extnmx)
+      strncat(extnm, extnmx, FLEN_VALUE-1);
 
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
         ffmahd(fptr, (fptr->HDUposition) + 1, NULL, status);

@@ -1701,7 +1701,7 @@ int fits_rebin_wcs(
    /*  Update the  WCS keywords that define the location of the reference */
    /*  pixel, and the pixel size, along each axis.   */
 
-    int ii, jj, tstatus;
+    int ii, jj, tstatus, reset ;
     char keyname[FLEN_KEYWORD], svalue[FLEN_VALUE];
     double dvalue;
     
@@ -1710,6 +1710,14 @@ int fits_rebin_wcs(
   
     for (ii = 0; ii < naxis; ii++)
     {
+       reset = 0;  /* flag to reset the reference pixel */
+       tstatus = 0;
+       ffkeyn("CRVAL", ii + 1, keyname, &tstatus);
+       /* get previous (pre-binning) value */
+       ffgky(fptr, TDOUBLE, keyname, &dvalue, NULL, &tstatus); 
+       if (!tstatus && dvalue == 1.0)
+           reset = 1;
+
        tstatus = 0;
        /*  CRPIXn - update location of the ref. pix. in the binned image */
        ffkeyn("CRPIX", ii + 1, keyname, &tstatus);
@@ -1719,10 +1727,15 @@ int fits_rebin_wcs(
 
        if (!tstatus)
        {
+           if (dvalue != 1.0)
+	      reset = 0;
+
            /* updated value to give pixel location after binning */
            dvalue = (dvalue - amin[ii]) / ((double) binsize[ii]) + .5;  
 
            fits_modify_key_dbl(fptr, keyname, dvalue, -14, NULL, &tstatus);
+       } else {
+          reset = 0;
        }
 
        /*  CDELTn - update unit size of pixels  */
@@ -1734,6 +1747,9 @@ int fits_rebin_wcs(
 
        if (!tstatus)
        {
+           if (dvalue != 1.0)
+	      reset = 0;
+
            /* updated to give post-binning value */
            dvalue = dvalue * binsize[ii];  
 
@@ -1741,6 +1757,8 @@ int fits_rebin_wcs(
        }
        else
        {   /* no CDELTn keyword, so look for a CDij keywords */
+          reset = 0;
+
           for (jj = 0; jj < naxis; jj++)
 	  {
              tstatus = 0;
@@ -1760,6 +1778,21 @@ int fits_rebin_wcs(
              }
 	  }
        }
+
+       if (reset) {
+          /* the original CRPIX, CRVAL, and CDELT keywords were all = 1.0 */
+	  /* In this special case, reset the reference pixel to be the */
+	  /* first pixel in the array (instead of possibly far off the array) */
+ 
+           dvalue = 1.0;
+           ffkeyn("CRPIX", ii + 1, keyname, &tstatus);
+           fits_modify_key_dbl(fptr, keyname, dvalue, -14, NULL, &tstatus);
+
+           ffkeyn("CRVAL", ii + 1, keyname, &tstatus);
+	   dvalue = amin[ii] + (binsize[ii] / 2.0);	  
+           fits_modify_key_dbl(fptr, keyname, dvalue, -14, NULL, &tstatus);
+	}
+
     }
     return(*status);
 }

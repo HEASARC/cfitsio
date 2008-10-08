@@ -1,5 +1,14 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.12 - 8 October 2008
+
+   - modified the histogramming code so that the first pixel in the binned
+     array is chosen as the reference pixel by default, if no other
+     value is previously defined.
+
+   - modified ffitab and ffibin to allow a null pointer to the 
+     EXTNAME string, when inserting a table with no name.
+
 Version 3.11 - 19 September 2008
 
    - optimized the code when tile compressing real*4 images (which get
