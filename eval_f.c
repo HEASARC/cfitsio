@@ -922,7 +922,8 @@ void ffcprs( void )  /*  No parameters                                      */
       while( node-- ) {
          if( gParse.Nodes[node].operation==gtifilt_fct ) {
             i = gParse.Nodes[node].SubNodes[0];
-            FREE( gParse.Nodes[ i ].value.data.ptr );
+            if (gParse.Nodes[ i ].value.data.ptr)
+	        FREE( gParse.Nodes[ i ].value.data.ptr );
          }
          else if( gParse.Nodes[node].operation==regfilt_fct ) {
             i = gParse.Nodes[node].SubNodes[0];
