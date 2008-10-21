@@ -23,7 +23,9 @@ int fits_read_rgnfile( const char *filename,
 
   /* try to open as a FITS file - if that doesn't work treat as an ASCII file */
 
+  fits_write_errmark;
   if ( ffopen(&fptr, filename, READONLY, &tstatus) ) {
+    fits_clear_errmark;
     fits_read_ascii_region(filename, wcs, Rgn, status);
   } else {
     fits_read_fits_region(fptr, wcs, Rgn, status);
