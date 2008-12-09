@@ -1099,8 +1099,11 @@ void fits_setup_shape ( RgnShape *newShape)
   switch ( newShape->shape ) {
 
   case circle_rgn:
-  case annulus_rgn:
     R = coords[2];
+    break;
+
+  case annulus_rgn:
+    R = coords[3];
     break;
 
   case ellipse_rgn:
