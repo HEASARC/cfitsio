@@ -19,7 +19,7 @@ int fits_read_rgnfile( const char *filename,
   fitsfile *fptr;
   int tstatus = 0;
 
-   if( *status ) return( *status );
+  if( *status ) return( *status );
 
   /* try to open as a FITS file - if that doesn't work treat as an ASCII file */
 
@@ -596,10 +596,11 @@ int fits_read_ascii_region( const char *filename,
 
 error:
 
-   if( *status )
+   if( *status ) {
       fits_free_region( aRgn );
-   else
+   } else {
       *Rgn = aRgn;
+   }
 
    fclose( rgnFile );
    free( currLine );
@@ -622,13 +623,9 @@ int fits_in_region( double    X,
 
    Shapes = Rgn->Shapes;
 
-   /* if an excluded region is given first, then implicitly   */
-   /* assume a previous shape that includes the entire image. */
-   if (!Shapes->sign)
-      result = 1;
-
+   result = 0;
+   comp_result = 0;
    cur_comp = Rgn->Shapes[0].comp;
-   comp_result = result;
 
    for( i=0; i<Rgn->nShapes; i++, Shapes++ ) {
 
@@ -637,10 +634,12 @@ int fits_in_region( double    X,
      /*	the current logical and the total logical. Reinitialize the      */
      /* temporary logical.                                               */
 
-     if ( Shapes->comp != cur_comp ) {
+     if ( i==0 || Shapes->comp != cur_comp ) {
        result = result || comp_result;
-       comp_result = !Shapes->sign;
        cur_comp = Shapes->comp;
+       /* if an excluded region is given first, then implicitly   */
+       /* assume a previous shape that includes the entire image. */
+       comp_result = !Shapes->sign;
      }
 
     /* only need to test if  */
@@ -840,10 +839,11 @@ int fits_in_region( double    X,
       if( !Shapes->sign ) comp_result = !comp_result;
 
      } 
-   }
-   
-   result = result || comp_result;
 
+   }
+
+   result = result || comp_result;
+   
    return( result );
 }
 
