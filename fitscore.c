@@ -7617,7 +7617,7 @@ int ffiblk(fitsfile *fptr,      /* I - FITS file pointer               */
             ffgbyt(fptr, 2880, inbuff,status);  /* read one record */
 
             /* move forward to the write postion */
-            ffmbyt(fptr, jpoint + (nblock * 2880), IGNORE_EOF, status);
+            ffmbyt(fptr, jpoint + ((LONGLONG)nblock * 2880), IGNORE_EOF, status);
 
             ffpbyt(fptr, 2880, inbuff, status);  /* write the record */
 
