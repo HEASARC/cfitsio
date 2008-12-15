@@ -1239,7 +1239,7 @@ int fits_read_fits_region ( fitsfile *fptr,
   long icsize[6];
   double X, Y, R, Theta, Xsave, Ysave, Xpos, Ypos;
   double *coords;
-  char *cvalue;
+  char *cvalue, *cvalue2;
   char comment[FLEN_COMMENT];
   char colname[6][FLEN_VALUE] = {"X", "Y", "SHAPE", "R", "ROTANG", "COMPONENT"};
   char shapename[17][FLEN_VALUE] = {"POINT","CIRCLE","ELLIPSE","ANNULUS",
@@ -1379,15 +1379,16 @@ int fits_read_fits_region ( fitsfile *fptr,
     /* set include or exclude */
 
     newShape->sign = 1;
+    cvalue2 = cvalue;
     if ( !strncmp(cvalue,"!",1) ) {
       newShape->sign = 0;
-      cvalue++;
+      cvalue2++;
     }
 
     /* set the shape type */
 
     for (j=0; j<9; j++) {
-      if ( !strcmp(cvalue, shapename[j]) ) newShape->shape = shapetype[j];
+      if ( !strcmp(cvalue2, shapename[j]) ) newShape->shape = shapetype[j];
     }
 
     /* allocate memory for polygon case and set coords pointer */
@@ -1404,6 +1405,7 @@ int fits_read_fits_region ( fitsfile *fptr,
     } else {
       coords = newShape->param.gen.p;
     }
+
 
   /* read X and Y. Polygon and Rectangle require special cases */
 
@@ -1563,6 +1565,7 @@ int fits_read_fits_region ( fitsfile *fptr,
     } else {
       newShape->comp = 1;
     }
+
 
     /* do some precalculations to speed up tests */
 
