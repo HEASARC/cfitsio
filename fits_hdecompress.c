@@ -64,7 +64,7 @@ static int dodecode(unsigned char *infile, int a[], int nx, int ny, unsigned cha
 static int dodecode64(unsigned char *infile, LONGLONG a[], int nx, int ny, unsigned char nbitplanes[3]);
 static int qtree_decode(unsigned char *infile, int a[], int n, int nqx, int nqy, int nbitplanes);
 static int qtree_decode64(unsigned char *infile, LONGLONG a[], int n, int nqx, int nqy, int nbitplanes);
-static void start_inputing_bits();
+static void start_inputing_bits(void);
 static int input_bit(unsigned char *infile);
 static int input_nbits(unsigned char *infile, int n);
 /*  make input_nybble a separate routine, for added effiency */
@@ -2470,7 +2470,7 @@ static int bits_to_go;			/* Number of bits still in buffer */
 /* INITIALIZE BIT INPUT */
 
 /*  ############################################################################  */
-static void start_inputing_bits()
+static void start_inputing_bits(void)
 {
 	/*
 	 * Buffer starts out with no bits in it

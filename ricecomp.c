@@ -51,7 +51,8 @@ int fits_rcomp(int a[],		/* input array			*/
 	  int nblock)		/* coding block size		*/
 {
 Buffer bufmem, *buffer = &bufmem;
-int bsize, i, j, thisblock;
+/* int bsize;  */
+int i, j, thisblock;
 int lastpix, nextpix, pdiff;
 int v, fs, fsmask, top, fsmax, fsbits, bbits;
 int lbitbuffer, lbits_to_go;
@@ -65,7 +66,7 @@ unsigned int *diff;
      * Could make bsize a parameter to allow more efficient
      * compression of short & byte images.
      */
-    bsize = 4;
+/*    bsize = 4;   */
 
 /*    nblock = 32; now an input parameter*/
     /*
@@ -269,7 +270,8 @@ int fits_rcomp_short(
 	  int nblock)		/* coding block size		*/
 {
 Buffer bufmem, *buffer = &bufmem;
-int bsize, i, j, thisblock;
+/* int bsize;  */
+int i, j, thisblock;
 
 /* 
 NOTE: in principle, the following 2 variable could be declared as 'short'
@@ -291,7 +293,7 @@ unsigned int *diff;
      * Could make bsize a parameter to allow more efficient
      * compression of short & byte images.
      */
-    bsize = 2;
+/*    bsize = 2; */
 
 /*    nblock = 32; now an input parameter */
     /*
@@ -494,7 +496,8 @@ int fits_rcomp_byte(
 	  int nblock)		/* coding block size		*/
 {
 Buffer bufmem, *buffer = &bufmem;
-int bsize, i, j, thisblock;
+/* int bsize; */
+int i, j, thisblock;
 
 /* 
 NOTE: in principle, the following 2 variable could be declared as 'short'
@@ -516,7 +519,7 @@ unsigned int *diff;
      * Could make bsize a parameter to allow more efficient
      * compression of short & byte images.
      */
-    bsize = 1;
+/*    bsize = 1;  */
 
 /*    nblock = 32; now an input parameter */
     /*
@@ -819,7 +822,8 @@ int fits_rdecomp (unsigned char *c,		/* input buffer			*/
 	     int nx,			/* number of output pixels	*/
 	     int nblock)		/* coding block size		*/
 {
-int bsize, i, k, imax;
+/* int bsize;  */
+int i, k, imax;
 int nbits, nzero, fs;
 unsigned char *cend, bytevalue;
 unsigned int b, diff, lastpix;
@@ -832,7 +836,7 @@ static int *nonzero_count = (int *)NULL;
      * Could make bsize a parameter to allow more efficient
      * compression of short & byte images.
      */
-    bsize = 4;
+/*    bsize = 4; */
 
 /*    nblock = 32; now an input parameter */
     /*
@@ -1007,7 +1011,8 @@ int fits_rdecomp_short (unsigned char *c,		/* input buffer			*/
 	     int nblock)		/* coding block size		*/
 {
 int i, imax;
-int bsize, k;
+/* int bsize; */
+int k;
 int nbits, nzero, fs;
 unsigned char *cend, bytevalue;
 unsigned int b, diff, lastpix;
@@ -1021,7 +1026,7 @@ static int *nonzero_count = (int *)NULL;
      * compression of short & byte images.
      */
 
-    bsize = 2;
+/*    bsize = 2; */
     
 /*    nblock = 32; now an input parameter */
     /*
@@ -1193,7 +1198,8 @@ int fits_rdecomp_byte (unsigned char *c,		/* input buffer			*/
 	     int nblock)		/* coding block size		*/
 {
 int i, imax;
-int bsize, k;
+/* int bsize; */
+int k;
 int nbits, nzero, fs;
 unsigned char *cend;
 unsigned int b, diff, lastpix;
@@ -1207,7 +1213,7 @@ static int *nonzero_count = (int *)NULL;
      * compression of short & byte images.
      */
 
-    bsize = 1;
+/*    bsize = 1; */
     
 /*    nblock = 32; now an input parameter */
     /*

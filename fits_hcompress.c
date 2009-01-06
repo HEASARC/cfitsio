@@ -57,7 +57,7 @@ static int  qwrite(char *file, char buffer[], int n);
 
 static int qtree_encode(char *outfile, int a[], int n, int nqx, int nqy, int nbitplanes);
 static int qtree_encode64(char *outfile, LONGLONG a[], int n, int nqx, int nqy, int nbitplanes);
-static void start_outputing_bits();
+static void start_outputing_bits(void);
 static void done_outputing_bits(char *outfile);
 static void output_nbits(char *outfile, int bits, int n);
 
@@ -604,7 +604,7 @@ static int encode(char *outfile, long *nlength, int a[], int nx, int ny, int sca
 int nel, nx2, ny2, i, j, k, q, vmax[3], nsign, bits_to_go;
 unsigned char nbitplanes[3];
 unsigned char *signbits;
-int stat = 0;
+int stat;
 
         noutchar = 0;  /* initialize the number of compressed bytes that have been written */
 	nel = nx*ny;
@@ -765,7 +765,7 @@ int nel, nx2, ny2, i, j, k, q, nsign, bits_to_go;
 LONGLONG vmax[3];
 unsigned char nbitplanes[3];
 unsigned char *signbits;
-int stat = 0;
+int stat;
 
         noutchar = 0;  /* initialize the number of compressed bytes that have been written */
 	nel = nx*ny;
@@ -998,7 +998,7 @@ int nx,ny;							 Array dimensions [nx][ny]
 unsigned char nbitplanes[3];		 Number of bit planes in quadrants	
 */
 
-int nx2, ny2, stat = 0;
+int nx2, ny2, stat;
 
 	nx2 = (nx+1)/2;
 	ny2 = (ny+1)/2;
@@ -1037,7 +1037,7 @@ int nx,ny;							 Array dimensions [nx][ny]
 unsigned char nbitplanes[3];		 Number of bit planes in quadrants	
 */
 
-int nx2, ny2, stat = 0;
+int nx2, ny2, stat;
 
 	nx2 = (nx+1)/2;
 	ny2 = (ny+1)/2;
@@ -1087,7 +1087,7 @@ static int bits_to_go2;			/* Number of bits free in buffer */
 /* INITIALIZE FOR BIT OUTPUT */
 
 static void
-start_outputing_bits()
+start_outputing_bits(void)
 {
 	buffer2 = 0;			/* Buffer is empty to start	*/
 	bits_to_go2 = 8;		/* with				*/

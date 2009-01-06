@@ -315,7 +315,7 @@ int ffgky( fitsfile *fptr,     /* I - FITS file pointer        */
     {
         if (ffgkyj(fptr, keyname, &longval, comm, status) <= 0)
         {
-            if (longval > USHRT_MAX || longval < 0)
+            if (longval > (long) USHRT_MAX || longval < 0)
                 *status = NUM_OVERFLOW;
             else
                 *(unsigned short *) value = (unsigned short) longval;

@@ -1,5 +1,66 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.13 -  5 January 2009
+
+  Enhancements
+
+   - updated the typedef of LONGLONG in fitsio.h and cfortran.h to
+     support the Borland compiler which uses the  __int64 data type.
+     
+   - added new feature to the extended filename syntax so that when
+     performing a filtering operation on specified HDU, if you add
+     a '#' character after the name or number of the HDU, then ONLY
+     that HDU (and the primary array if the HDU is a table) will be
+     copied into the filtered version of the file in memory.  Otherwise,
+     by default CFITSIO copies all the HDUs from the input file into
+     memory.
+     
+   - when specifying a section, if the specified number of dimensions
+     is less than the number of dimensions in the image, then CFITSIO
+     will use the entire dimension, as if a '*' had been specified.
+     Thus [1:100] is equivalent to [1:100,*] when specifying a section
+     of 2 dimensional image.
+
+   - modified fits_copy_image_section to read/write the section 1 row
+     at a time, instead of the whole section, to reduce memory usage.
+
+   - added new stream:// drivers for reading/writing to stdin/stdout.
+     This driver is somewhat fragile, but for simple FITS read and
+     write operations this driver streams the FITS file on stdin
+     or stdout without first copying the entire file in memory, as is
+     done when specifying the file name as "-".
+   
+   - slight modification to ffcopy to make sure that the END keyword
+     is correctly written before copying the data.  This is required
+     by the new stream driver.
+     
+   - modified ffgcprll, so that when writing data to an HDU, it first
+     checks that the END keyword has been written to the correct place.
+     This is required by the new stream driver.
+
+  Fixes
+   
+   - updated the source files listed in makepc.bat so that it can be
+     used to build CFITSIO with the Borland C++ compiler.
+     
+   - fixed overflow error in ffiblk that could cause writing to Large Files
+     (> 2.1 GB) to fail with an error status.
+      
+   - fixed a bug in the spatial region code (region.c) with the annulus 
+     region.   This bug only affected specialized applications which
+     directly use the internal region structure; it does not affect
+     any CFITSIO functions directly.
+
+   - fixed memory corruption bug in region.c that was triggered if the
+     region file contained a large number of excluded regions.
+
+   - got rid of a harmless error message that would appear if filtering
+     a FITS table with a GTI file that has zero rows. (eval_f.c)
+
+   - modified fits_read_rgnfile so that it removes the error messages
+     from the error stack if it is unable to open the region file as
+     a FITS file. (region.c)
+     
 Version 3.12 - 8 October 2008
 
    - modified the histogramming code so that the first pixel in the binned

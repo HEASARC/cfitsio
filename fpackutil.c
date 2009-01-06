@@ -855,7 +855,11 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 		fits_set_compression_type (outfptr, GZIP_1, &stat);
 		fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
 		fp_test_hdu(infptr, outfptr, outfptr2, fpvar, &stat);
-
+/*
+		fits_set_compression_type (outfptr, PLIO_1, &stat);
+		fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
+		fp_test_hdu(infptr, outfptr, outfptr2, fpvar, &stat);
+*/
                 if (bitpix == SHORT_IMG || bitpix == LONG_IMG) {
 		  fits_set_compression_type (outfptr, NOCOMPRESS, &stat);
 		  fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);

@@ -1,5 +1,5 @@
 rem:  this batch file builds the cfitsio library 
-rem:  using the Borland C++ v4.5 compiler
+rem:  using the Borland C++ v4.5 or new free v5.5 compiler
 rem:
 bcc32 -c buffers.c
 bcc32 -c cfileio.c
@@ -56,6 +56,8 @@ bcc32 -c imcompress.c
 bcc32 -c quantize.c
 bcc32 -c ricecomp.c
 bcc32 -c pliocomp.c
+bcc32 -c fits_hcompress.c
+bcc32 -c fits_hdecompress.c
 del cfitsio.lib
 tlib cfitsio +buffers +cfileio +checksum +compress +drvrfile +drvrmem 
 tlib cfitsio +editcol +edithdu +eval_l +eval_y +eval_f +fitscore
@@ -66,6 +68,7 @@ tlib cfitsio +putcol  +putcolb +putcoli +putcolj +putcolk +putcole +putcold
 tlib cfitsio +putcoll +putcols +putcolu +putcolui +putcoluj +putcoluk
 tlib cfitsio +region +scalnull +swapproc +wcsutil +wcssub +putcolsb
 tlib cfitsio +imcompress +quantize +ricecomp +pliocomp
+tlib cfitsio +fits_hcompress +fits_hdecompress
 bcc32 -f testprog.c cfitsio.lib
 bcc32 -f cookbook.c cfitsio.lib
 

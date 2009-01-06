@@ -36,8 +36,19 @@ int ffcopy(fitsfile *infptr,    /* I - FITS file pointer to input file  */
         if (ffghsp(infptr, NULL, &nspace, status) > 0) /* get existing space */
             return(*status);
 
-        if (nspace > 0) 
+        if (nspace > 0) {
             ffhdef(outfptr, nspace, status); /* preserve same amount of space */
+            if (nspace >= 35) {  
+
+	        /* There is at least 1 full empty FITS block in the header. */
+	        /* Physically write the END keyword at the beginning of the */
+	        /* last block to preserve this extra space now rather than */
+		/* later.  This is needed by the stream: driver which cannot */
+		/* seek back to the header to write the END keyword later. */
+
+	        ffwend(outfptr, status);
+            }
+        }
     }
 
     ffcpdt(infptr, outfptr, status);  /* now copy the data unit */
@@ -109,7 +120,7 @@ int ffcphd(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     int nkeys, ii, inPrim = 0, outPrim = 0;
     long naxis, naxes[1];
     char *card, comm[FLEN_COMMENT];
-    char *tmpbuff = NULL;
+    char *tmpbuff;
 
     if (*status > 0)
         return(*status);

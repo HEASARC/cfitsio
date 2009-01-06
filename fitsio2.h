@@ -1020,6 +1020,17 @@ int file_read (int driverhandle, void *buffer, long nbytes);
 int file_write(int driverhandle, void *buffer, long nbytes);
 int file_is_compressed(char *filename);
 
+/* stream driver I/O routines */
+
+int stream_open(char *filename, int rwmode, int *driverhandle);
+int stream_create(char *filename, int *driverhandle);
+int stream_size(int driverhandle, LONGLONG *filesize);
+int stream_close(int driverhandle);
+int stream_flush(int driverhandle);
+int stream_seek(int driverhandle, LONGLONG offset);
+int stream_read (int driverhandle, void *buffer, long nbytes);
+int stream_write(int driverhandle, void *buffer, long nbytes);
+
 /* memory driver I/O routines */
 
 int mem_init(void);

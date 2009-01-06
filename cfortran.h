@@ -51,6 +51,7 @@
 		Add braces around do-nothing ";" in 3 empty while blocks to
 		get rid of compiler warnings.  Thanks to ROOT developers
 		Jacek Holeczek and Rene Brun for these suggestions. (KMCCARTY)
+      Dec 2008  Added typedef for LONGLONG to support Borland compiler (WDP)
  *******/
 
 /* 
@@ -74,6 +75,8 @@
     typedef long long LONGLONG; 
 #endif
 
+#elif defined( __BORLANDC__)  /* (WDP) for the free Borland compiler, in particular */
+    typedef __int64 LONGLONG;
 #else
     typedef long long LONGLONG; 
 #endif

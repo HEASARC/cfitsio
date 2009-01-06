@@ -784,7 +784,7 @@ int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr, int *status)
 
 */
 {
-    double *tiledata = 0;
+    double *tiledata;
     int anynul, gotnulls = 0, datatype;
     long ii, row;
     int naxis;
@@ -1046,7 +1046,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
   FITS image in most cases.
 */
 {
-    int *idata = 0, *itemp;		/* quantized integer data */
+    int *idata, *itemp;		/* quantized integer data */
     short *cbuf;	/* compressed data */
     short *sbuff;
     unsigned short *usbuff;
@@ -1062,8 +1062,8 @@ int imcomp_compress_tile (fitsfile *outfptr,
     LONGLONG *lldata;
     signed char *sbbuff;
     unsigned char *usbbuff;
-    int ihcompscale, cn_zblank, zbitpix, nullval, flagval = 0, gotnulls;
-    int intlength = 4;  /* size of integers to be compressed */
+    int ihcompscale, cn_zblank, zbitpix, nullval, flagval, gotnulls;
+    int intlength;  /* size of integers to be compressed */
     float floatnull, hcompscale;
     float fminval, fmaxval, delta, zeropt, *fdata, *ftemp;
     double doublenull, noise3;
@@ -2308,8 +2308,8 @@ int fits_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer     */
     int  tstatus, buffpixsiz;
     void *buffer;
     char *bnullarray = 0, card[FLEN_CARD];
-    float floatnull = 0.;
-    double doublenull = 0.;
+    float floatnull;
+    double doublenull;
 
     if (*status > 0) 
         return(*status);
@@ -4163,9 +4163,9 @@ int imcomp_decompress_tile (fitsfile *infptr,
     LONGLONG *lldata;
     size_t idatalen, tilebytesize;
     int ii, tnull;        /* value in the data which represents nulls */
-    unsigned char *cbuf = 0; /* compressed data */
+    unsigned char *cbuf; /* compressed data */
     unsigned char charnull = 0;
-    short *sbuf = 0;
+    short *sbuf;
     short snull = 0;
     int blocksize;
     double bscale, bzero, dummy = 0;    /* scaling parameters */

@@ -385,7 +385,6 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
     char card[FLEN_CARD], tmpkeyname[FLEN_CARD];
     char tstring[FLEN_CARD], *cptr;
     int next, remain, vlen, nquote, nchar, namelen, contin, tstatus = -1;
-    int nblank = 0;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);

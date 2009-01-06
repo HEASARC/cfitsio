@@ -349,14 +349,14 @@ link line in the next section of this document.
 
 A precompiled DLL version of CFITSIO is available for IBM-PC users of
 the Borland or Microsoft Visual C++ compilers in the files
-cfitsiodll\_2xxx\_borland.zip and cfitsiodll\_2xxx\_vcc.zip, where
-'2xxx' represents the current release number.  These zip archives also
+cfitsiodll\_3xxx\_borland.zip and cfitsiodll\_3xxx\_vcc.zip, where
+'3xxx' represents the current release number.  These zip archives also
 contains other files and instructions on how to use the CFITSIO DLL
 library.
 
 The CFITSIO library may also be built from the source code using the
 makefile.bc or makefile.vcc  files.  Finally, the makepc.bat file gives
-an example of  building CFITSIO with the Borland C++ v4.5 compiler
+an example of  building CFITSIO with the Borland C++ v4.5 or v5.5  compiler
 using older DOS commands.
 
 ***4.  Macintosh PCs
@@ -6029,7 +6029,9 @@ myfile.fits then moves to the extension with the keywords EXTNAME
 \item
 {\tt -}:  a dash (minus sign) signifies that the input file is to be read
 from the stdin file stream, or that the output file is to be written to
-the stdout stream. 
+the stdout stream.  See also the stream:// driver which provides a 
+more efficient, but more restricted method of reading or writing to 
+the stdin or stdout streams. 
 
 \item
 {\tt ftp://legacy.gsfc.nasa.gov/test/vela.fits}:  FITS files in any ftp
@@ -6135,20 +6137,24 @@ The type of file determines the medium on which the file is located
 CFITSIO to read and/or write the file.  Currently supported types are
 -
         file://  - file on local magnetic disk (default)
-        ftp://   - a readonly file accessed with the anonymous FTP protocol.
+         ftp://  - a readonly file accessed with the anonymous FTP protocol.
                    It also supports  ftp://username:password@hostname/...
                    for accessing password-protected ftp sites.
         http://  - a readonly file accessed with the HTTP protocol.  It
                    does not  support username:password like the ftp driver.
                    Proxy HTTP survers are supported using the http_proxy
-                   environment variable.
-       gsiftp:// - to access files on a computational grid using the 
-                   gridftp protocol in the Globus toolkit
+                   environment variable (see following note).
+      stream://  - special driver to read an input FITS file from the stdin
+                   stream, and/or write an output FITS file to the stdout
+		   stream.  This driver is fragile and has limited
+		   functionality (see the following note).
+      gsiftp://  - access files on a computational grid using the gridftp
+                   protocol in the Globus toolkit (see following note).
         root://  - uses the CERN root protocol for writing as well as
-                   reading files over the network.
-        shmem:// - opens or creates a file which persists in the computer's
-                   shared memory.
-        mem://   - opens a temporary file in core memory.  The file 
+                   reading files over the network (see following note).
+       shmem://  - opens or creates a file which persists in the computer's
+                   shared memory (see following note).
+         mem://  - opens a temporary file in core memory.  The file 
                    disappears when the program exits so this is mainly
                    useful for test purposes when a permanent output file
                    is not desired.
@@ -6167,7 +6173,62 @@ For example
 will cause CFITSIO to use port 3128 on the heasarc proxy server whenever
 reading a FITS file with HTTP.
 
-***2.  Notes about the gsiftp filetype
+***2.  Notes about the stream filetype driver
+
+The stream driver can be used to efficiently read a FITS file from the
+stdin file stream or write a FITS to the stdout file stream.  However, because
+these input and output streams must be accessed sequentially, the FITS
+file reading or writing application must also read and write the file sequentially,
+at least within the tolerances described below.  
+
+CFITSIO supports 2 different methods for accessing FITS files on the stdin and
+stdout streams.  The original method, which is invoked by specifying a dash
+character, "-", as the name of the file when opening or creating it, works by
+storing a complete copy of the entire FITS file in memory.  In this case, when
+reading from stdin, CFITSIO will copy the entire stream into memory before
+doing any processing of the file.  Similarly, when writing to stdout, CFITSIO
+will create a copy of the entire FITS file in memory, before finally flushing
+it out to  the stdout stream when the FITS file is closed.  Buffering the
+entire FITS file in this way allows the application to randomly access any
+part of the FITS file, in any order, but it also requires that the user have
+sufficient available memory (or virtual memory) to store the entire file,
+which may not be possible in the case of very large files.  
+
+The newer stream filetype provides a more memory-efficient method of accessing
+FITS files on the stdin or stdout streams.  Instead of storing a copy of the
+entire FITS file in memory, CFITSIO only uses a set of internal 
+buffer which by default
+can store  40 FITS blocks, or about  100K bytes of the FITS file.  The
+application program must process the FITS file sequentially from beginning
+to end, within this 100K buffer.  Generally speaking the application 
+program must conform to the following restrictions:
+
+\begin{itemize}
+\item
+The program must finish reading or writing the header keywords 
+before reading or writing any data in the HDU.
+\item
+The HDU can contain at most about 1400 header keywords.  This is the
+maximum that can fit in the nominal 40 FITS block buffer.  In principle,
+this limit could be increased by recompiling CFITSIO with a larger
+buffer limit, which is set by the NIOBUF parameter in fitsio2.h.
+\item
+The program must read or write the data in a sequential manner from the 
+beginning to the end of the HDU.  Note that CFITSIO's internal 
+100K buffer allows a little latitude in meeting this requirement.
+\item
+The program cannot move back to a previous HDU in the FITS file.
+\item
+Reading or writing of variable length array columns in binary
+tables is not supported, because this requires moving back and forth
+between the fixed-length portion of the binary table and the following
+heap area where the arrays are actually stored.
+\item
+Reading or writing of tile-compressed images is not supported on streams, 
+because the images are internally stored using variable length arrays.
+\end{itemize}
+
+***3.  Notes about the gsiftp filetype
 
 DEPENDENCIES: Globus toolkit (2.4.3 or higher) (GT) should be installed.
 There are two different ways to install GT:
@@ -6205,7 +6266,7 @@ available. However, it is possible to modify this behavior setting the GSIFTP\_S
 environment variable (ex. export GSIFTP\_STREAMS=8).
 
 
-***3.  Notes about the root filetype
+***4.  Notes about the root filetype
 
 The original rootd server can be obtained from: 
 \verb-ftp://root.cern.ch/root/rootd.tar.gz-
@@ -6284,7 +6345,7 @@ home directory, therefore only files below the home directory can be
 accessed.  Anonymous mode only works when the server is started via
 inetd.
                                                         
-***4.  Notes about the shmem filetype:
+***5.  Notes about the shmem filetype:
 
 Shared memory files are currently supported on most Unix platforms,
 where the shared memory segments are managed by the operating system
@@ -6593,6 +6654,19 @@ array, A or T = ASCII table extension, and B = binary table BINTABLE
 extension).   If the HDU location specifier is equal to `[PRIMARY]' or
 `[P]', then the primary array (the first HDU) will be opened.
 
+An optional pound sign character ("\#") may be appended to the extension
+name or number to signify that any other extensions in the file should
+be ignored during any subsequent file filtering operations.  For example,
+when doing row filtering operations on a table extension, CFITSIO normally
+creates a copy of the filtered table in memory, along with a verbatim
+copy of all the other extensions in the input FITS file.  If the pound
+sign is appended to the table extension name, then only that extension,
+and none of the other extensions in the file, will by copied to memory,
+as in the following example:
+-
+   myfile.fit[events#][TIME > 10000]
+-
+
 FITS images are most commonly stored in the primary array or an image
 extension, but images can also be stored as a vector in a single cell
 of a binary table (i.e. each row of the vector column contains a
@@ -6668,7 +6742,10 @@ be specified before the image section specifier.
 
 When CFITSIO opens an image section it first creates a temporary file
 containing the image section plus a copy of any other HDUs in the
-file.  This temporary file is then opened by the application program,
+file. (If a `\#' character is appended to the name or number of the 
+image HDU, as in  "myfile.fits[1\#][1:200,1:200]", then the other
+HDUs in the input file will not be copied into memory). 
+This temporary file is then opened by the application program,
 so it is not possible to write to or modify the input file when
 specifying an image section.  Note that CFITSIO automatically updates
 the world coordinate system keywords in the header of the image
@@ -6782,7 +6859,11 @@ it begins with the string 'col ' and is not immediately followed by an
 equals sign.  The original file is not changed by this filtering
 operation, and instead the modifications are made on a copy of the
 input FITS file (usually in memory), which also contains a copy of all
-the other HDUs in the file.  This temporary file is passed to the
+the other HDUs in the file.  (If a `\#' character is appended to the name 
+or number of the 
+table HDU then only the primary array, and none of the other
+HDUs in the input file will be copied into memory).
+This temporary file is passed to the
 application program and will persist only until the file is closed or
 until the program exits, unless the outfile specifier (see above) is
 also supplied.
@@ -6911,9 +6992,14 @@ Examples:
     program, an optional row filter may be specified to select a subset
     of the rows in the table.  A temporary new FITS file is created on
     the fly which contains only those rows for which the row filter
-    expression evaluates to true.  (The primary array and any other
+    expression evaluates to true.  The primary array and any other
     extensions in the input file are also copied to the temporary
-    file).  The original FITS file is closed and the new virtual file
+    file.  
+(If a `\#' character is appended to the name 
+or number of the 
+table HDU then only the primary array, and none of the other
+HDUs in the input file will be copied into the temporary file).
+    The original FITS file is closed and the new virtual file
     is opened by the application program.  The row filter expression is
     enclosed in square brackets following the file name and extension
     name (e.g., 'file.fits[events][GRADE==50]'  selects only those rows

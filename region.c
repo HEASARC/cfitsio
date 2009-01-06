@@ -23,9 +23,9 @@ int fits_read_rgnfile( const char *filename,
 
   /* try to open as a FITS file - if that doesn't work treat as an ASCII file */
 
-  fits_write_errmark;
+  fits_write_errmark();
   if ( ffopen(&fptr, filename, READONLY, &tstatus) ) {
-    fits_clear_errmark;
+    fits_clear_errmark();
     fits_read_ascii_region(filename, wcs, Rgn, status);
   } else {
     fits_read_fits_region(fptr, wcs, Rgn, status);
@@ -49,7 +49,7 @@ int fits_read_ascii_region( const char *filename,
    char     *namePtr, *paramPtr, *currLoc;
    char     *pX, *pY, *endp;
    long     allocLen, lineLen, hh, mm, dd;
-   double   *coords = 0, X, Y, R, x, y, ss, div, xsave= 0., ysave= 0.;
+   double   *coords, X, Y, R, x, y, ss, div, xsave= 0., ysave= 0.;
    int      nParams, nCoords, negdec;
    int      i, done;
    FILE     *rgnFile;
@@ -619,7 +619,7 @@ int fits_in_region( double    X,
    double x, y, dx, dy, xprime, yprime, r;
    RgnShape *Shapes;
    int i, cur_comp;
-   int result = 0, comp_result = 0;
+   int result, comp_result;
 
    Shapes = Rgn->Shapes;
 

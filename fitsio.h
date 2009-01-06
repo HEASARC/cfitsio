@@ -34,7 +34,7 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.12
+#define CFITSIO_VERSION 3.13
 
 #include <stdio.h>
 
@@ -105,6 +105,8 @@ SERVICES PROVIDED HEREUNDER."
     typedef long long LONGLONG; 
 #endif
 
+#elif defined( __BORLANDC__)  /* for the Borland 5.5 compiler, in particular */
+    typedef __int64 LONGLONG;
 #else
     typedef long long LONGLONG; 
 #endif
@@ -313,6 +315,7 @@ typedef struct      /* structure used to store basic FITS file information */
     int open_count;   /* number of opened 'fitsfiles' using this structure */
     char *filename;   /* file name */
     int validcode;    /* magic value used to verify that structure is valid */
+    int only_one;     /* flag meaning only copy the specified extension */
     LONGLONG filesize; /* current size of the physical disk file in bytes */
     LONGLONG logfilesize; /* logical size of file, including unflushed buffers */
     int lasthdu;      /* is this the last HDU in the file? 0 = no, else yes */
@@ -326,6 +329,7 @@ typedef struct      /* structure used to store basic FITS file information */
     int MAXHDU;       /* dynamically allocated dimension of headstart array */
     LONGLONG *headstart; /* byte offset in file to start of each HDU */
     LONGLONG headend;   /* byte offest in file to end of the current HDU header */
+    LONGLONG ENDpos;    /* byte offest to where the END keyword was last written */
     LONGLONG nextkey;   /* byte offset in file to beginning of next keyword */
     LONGLONG datastart; /* byte offset in file to start of the current data unit */
     int imgdim;         /* dimension of image; cached for fast access */

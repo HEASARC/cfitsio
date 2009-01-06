@@ -1514,7 +1514,7 @@ int ffiter(int n_cols,
 
           if (abs(typecode) == TBYTE || abs(typecode) == TSHORT || abs(typecode) == TLONG)
           {
-              tnull = minvalue(tnull, USHRT_MAX);
+              tnull = minvalue(tnull, (long) USHRT_MAX);
               tnull = maxvalue(tnull, 0);  /* don't allow negative value */
               col[jj].null.ushortnull = (unsigned short) tnull;
           }

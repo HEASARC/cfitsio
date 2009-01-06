@@ -80,25 +80,26 @@
 \contentsline {section}{\numberline {10.1}Overview}{113}
 \contentsline {section}{\numberline {10.2}Filetype}{116}
 \contentsline {subsection}{\numberline {10.2.1}Notes about HTTP proxy servers}{116}
-\contentsline {subsection}{\numberline {10.2.2}Notes about the gsiftp filetype}{117}
-\contentsline {subsection}{\numberline {10.2.3}Notes about the root filetype}{117}
-\contentsline {subsection}{\numberline {10.2.4}Notes about the shmem filetype:}{119}
-\contentsline {section}{\numberline {10.3}Base Filename}{119}
-\contentsline {section}{\numberline {10.4}Output File Name when Opening an Existing File}{121}
-\contentsline {section}{\numberline {10.5}Template File Name when Creating a New File}{123}
-\contentsline {section}{\numberline {10.6}Image Tile-Compression Specification}{123}
-\contentsline {section}{\numberline {10.7}HDU Location Specification}{123}
-\contentsline {section}{\numberline {10.8}Image Section}{124}
-\contentsline {section}{\numberline {10.9}Image Transform Filters}{125}
-\contentsline {section}{\numberline {10.10}Column and Keyword Filtering Specification}{127}
-\contentsline {section}{\numberline {10.11}Row Filtering Specification}{129}
-\contentsline {subsection}{\numberline {10.11.1}General Syntax}{129}
-\contentsline {subsection}{\numberline {10.11.2}Bit Masks}{132}
-\contentsline {subsection}{\numberline {10.11.3}Vector Columns}{133}
-\contentsline {subsection}{\numberline {10.11.4}Good Time Interval Filtering}{134}
-\contentsline {subsection}{\numberline {10.11.5}Spatial Region Filtering}{135}
-\contentsline {subsection}{\numberline {10.11.6}Example Row Filters}{137}
-\contentsline {section}{\numberline {10.12} Binning or Histogramming Specification}{138}
+\contentsline {subsection}{\numberline {10.2.2}Notes about the stream filetype driver}{117}
+\contentsline {subsection}{\numberline {10.2.3}Notes about the gsiftp filetype}{118}
+\contentsline {subsection}{\numberline {10.2.4}Notes about the root filetype}{118}
+\contentsline {subsection}{\numberline {10.2.5}Notes about the shmem filetype:}{120}
+\contentsline {section}{\numberline {10.3}Base Filename}{120}
+\contentsline {section}{\numberline {10.4}Output File Name when Opening an Existing File}{122}
+\contentsline {section}{\numberline {10.5}Template File Name when Creating a New File}{124}
+\contentsline {section}{\numberline {10.6}Image Tile-Compression Specification}{124}
+\contentsline {section}{\numberline {10.7}HDU Location Specification}{124}
+\contentsline {section}{\numberline {10.8}Image Section}{126}
+\contentsline {section}{\numberline {10.9}Image Transform Filters}{127}
+\contentsline {section}{\numberline {10.10}Column and Keyword Filtering Specification}{128}
+\contentsline {section}{\numberline {10.11}Row Filtering Specification}{130}
+\contentsline {subsection}{\numberline {10.11.1}General Syntax}{131}
+\contentsline {subsection}{\numberline {10.11.2}Bit Masks}{133}
+\contentsline {subsection}{\numberline {10.11.3}Vector Columns}{134}
+\contentsline {subsection}{\numberline {10.11.4}Good Time Interval Filtering}{136}
+\contentsline {subsection}{\numberline {10.11.5}Spatial Region Filtering}{136}
+\contentsline {subsection}{\numberline {10.11.6}Example Row Filters}{139}
+\contentsline {section}{\numberline {10.12} Binning or Histogramming Specification}{140}
 \contentsline {chapter}{\numberline {11}Template Files }{143}
 \contentsline {section}{\numberline {11.1}Detailed Template Line Format}{143}
 \contentsline {section}{\numberline {11.2}Auto-indexing of Keywords}{144}

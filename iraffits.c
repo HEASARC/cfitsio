@@ -290,7 +290,7 @@ static int irafrdimage (
     int nax = 1, naxis1 = 1, naxis2 = 1, naxis3 = 1, naxis4 = 1, npaxis1 = 1, npaxis2;
     int bitpix, bytepix, i;
     char *fitsheader, *image;
-    int nbr, nbimage, nbaxis, nbl, nbx, nbdiff;
+    int nbr, nbimage, nbaxis, nbl, nbdiff;
     char *pixheader;
     char *linebuff;
     int imhver, lpixhead = 0;
@@ -299,7 +299,6 @@ static int irafrdimage (
     size_t newfilesize;
  
     fitsheader = *buffptr;           /* pointer to start of header */
-    image = fitsheader + *filesize;  /* pointer to start of the data */
 
     /* Convert pixel file name to character string */
     hgets (fitsheader, "PIXFILE", SZ_IM2PIXFILE, pixname);
@@ -407,7 +406,7 @@ static int irafrdimage (
 	for (i = 0; i < naxis2; i++) {
 	    nbl = fread (linebuff, 1, nbaxis, fd);
 	    nbr = nbr + nbl;
-	    nbx = fseek (fd, nbdiff, 1);
+	    fseek (fd, nbdiff, 1);
 	    linebuff = linebuff + nbaxis;
 	    }
 	}
@@ -512,7 +511,8 @@ static int iraftofits (
     char irafchar;
     char fitsline[81];
     int pixtype;
-    int imhver, n, imu, pixoff, impixoff, immax, immin, imtime;
+    int imhver, n, imu, pixoff, impixoff;
+/*    int immax, immin, imtime;  */
     int imndim, imlen, imphyslen, impixtype;
     char errmsg[81];
 
@@ -536,9 +536,9 @@ static int iraftofits (
 	imphyslen = IM2_PHYSLEN;
 	impixtype = IM2_PIXTYPE;
 	impixoff = IM2_PIXOFF;
-	imtime = IM2_MTIME;
-	immax = IM2_MAX;
-	immin = IM2_MIN;
+/*	imtime = IM2_MTIME; */
+/*	immax = IM2_MAX;  */
+/*	immin = IM2_MIN; */
 	}
     else {
 	nlines = 24 + ((nbiraf - LEN_IMHDR) / 162);
@@ -547,9 +547,9 @@ static int iraftofits (
 	imphyslen = IM_PHYSLEN;
 	impixtype = IM_PIXTYPE;
 	impixoff = IM_PIXOFF;
-	imtime = IM_MTIME;
-	immax = IM_MAX;
-	immin = IM_MIN;
+/*	imtime = IM_MTIME; */
+/*	immax = IM_MAX; */
+/*	immin = IM_MIN; */
 	}
 
     /*  Initialize FITS header */

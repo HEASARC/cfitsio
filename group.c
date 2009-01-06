@@ -154,7 +154,7 @@ int ffgtis(fitsfile *fptr,      /* FITS file pointer                         */
   int tfields  = 0;
   int hdunum   = 0;
   int hdutype  = 0;
-  int extver   = 0;
+  int extver;
   int i;
   
   long pcount  = 0;
@@ -2913,9 +2913,9 @@ int ffgmrm(fitsfile *gfptr,  /* FITS file pointer to group table             */
 */
 
 {
-  int found     = 0;
+  int found;
   int hdutype   = 0;
-  int index     = 0;
+  int index;
   int iomode    = 0;
 
   long i;
@@ -3677,7 +3677,7 @@ int ffgmul(fitsfile *mfptr,   /* pointer to the grouping table member HDU    */
   int memberPosition = 0;
   int iomode;
 
-  long index        = 0;
+  long index;
   long ngroups      = 0;
   long memberExtver = 0;
   long memberID     = 0;

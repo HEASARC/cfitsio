@@ -14,7 +14,7 @@
 #include "group.h"
 
 #define MAX_PREFIX_LEN 20  /* max length of file type prefix (e.g. 'http://') */
-#define MAX_DRIVERS 23     /* max number of file I/O drivers */
+#define MAX_DRIVERS 24     /* max number of file I/O drivers */
 
 typedef struct    /* structure containing pointers to I/O driver functions */ 
 {   char prefix[MAX_PREFIX_LEN];
@@ -98,7 +98,7 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
         url++;
 
         /* parse the input file specification */
-    ffiurl(url, urltype, infile, outfile, extspec,
+    fits_parse_input_url(url, urltype, infile, outfile, extspec,
               rowfilter, binspec, colspec, status);
 
     strcpy(urltype, "memkeep://");   /* URL type for pre-existing memory file */
@@ -413,7 +413,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     int  driver, hdutyp, hdunum, slen, writecopy, isopen;
     LONGLONG filesize;
     long rownum, nrows, goodrows;
-    int extnum, extvers, handle, movetotype, tstatus = 0;
+    int extnum, extvers, handle, movetotype, tstatus = 0, only_one = 0;
     char urltype[MAX_PREFIX_LEN], infile[FLEN_FILENAME], outfile[FLEN_FILENAME];
     char origurltype[MAX_PREFIX_LEN], extspec[FLEN_FILENAME];
     char extname[FLEN_VALUE], rowfilter[FLEN_FILENAME], tblname[FLEN_VALUE];
@@ -544,6 +544,12 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
 
     if (*extspec)
     {
+       slen = strlen(extspec);
+       if (extspec[slen - 1] == '#') {  /* special symbol to mean only copy this extension */
+           extspec[slen - 1] = '\0';
+	   only_one = 1;
+       }
+
        /* parse the extension specifier into individual parameters */
        ffexts(extspec, &extnum, 
          extname, &extvers, &movetotype, imagecolname, rowexpress, status);
@@ -587,7 +593,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
         return(*status);
     }
 
-    if (isopen)
+    if (isopen) 
        goto move2hdu;  
 
     /* get the driver number corresponding to this urltype */
@@ -730,6 +736,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     ((*fptr)->Fptr)->curbuf = -1;            /* undefined current IO buffer */
     ((*fptr)->Fptr)->open_count = 1;      /* structure is currently used once */
     ((*fptr)->Fptr)->validcode = VALIDSTRUC; /* flag denoting valid structure */
+    ((*fptr)->Fptr)->only_one = only_one; /* flag denoting only copy single extension */
 
     ffldrc(*fptr, 0, REPORT_EOF, status);     /* load first record */
 
@@ -1044,7 +1051,6 @@ move2hdu:
            *fptr = 0;              /* return null file pointer */
            return(*status);
         }
-        writecopy = 1;
      }
      else
      {
@@ -1350,7 +1356,7 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
         {
           oldFptr = FptrTable[ii];
 
-          ffiurl(oldFptr->filename, oldurltype, 
+          fits_parse_input_url(oldFptr->filename, oldurltype, 
                     oldinfile, oldoutfile, oldextspec, oldrowfilter, 
                     oldbinspec, oldcolspec, status);
 
@@ -1499,25 +1505,41 @@ int ffedit_columns(
 
       fits_get_hdu_num(*fptr, &hdunum);  /* current HDU number in input file */
 
-      /* copy all HDUs to the output copy */
-
-      for (ii = 1; 1; ii++)
-      {
-        if (fits_movabs_hdu(*fptr, ii, NULL, status) > 0)
+      /* copy all HDUs to the output copy, if the 'only_one' flag is not set */
+      if (!((*fptr)->Fptr)->only_one) {
+        for (ii = 1; 1; ii++)
+        {
+          if (fits_movabs_hdu(*fptr, ii, NULL, status) > 0)
             break;
 
-        fits_copy_hdu(*fptr, newptr, 0, status);
-      }
+          fits_copy_hdu(*fptr, newptr, 0, status);
+        }
 
-      if (*status == END_OF_FILE)
-      {
-        *status = 0;              /* got the expected EOF error; reset = 0  */
-      }
-      else if (*status > 0)
-      {
-        ffclos(newptr, status);
-        ffpmsg("failed to copy all HDUs from input file (ffedit_columns)");
-        return(*status);
+        if (*status == END_OF_FILE)
+        {
+          *status = 0;              /* got the expected EOF error; reset = 0  */
+        }
+        else if (*status > 0)
+        {
+          ffclos(newptr, status);
+          ffpmsg("failed to copy all HDUs from input file (ffedit_columns)");
+          return(*status);
+        }
+
+
+      } else {
+        /* only copy the primary array and the designated table extension */
+	fits_movabs_hdu(*fptr, 1, NULL, status);
+	fits_copy_hdu(*fptr, newptr, 0, status);
+	fits_movabs_hdu(*fptr, hdunum, NULL, status);
+	fits_copy_hdu(*fptr, newptr, 0, status);
+        if (*status > 0)
+        {
+          ffclos(newptr, status);
+          ffpmsg("failed to copy all HDUs from input file (ffedit_columns)");
+          return(*status);
+        }
+        hdunum = 2;
       }
 
       /* close the original file and return ptr to the new image */
@@ -2450,19 +2472,21 @@ int fits_select_image_section(
 
     fits_get_hdu_num(*fptr, &hdunum);  /* current HDU number in input file */
 
-    /* copy all preceding extensions to the output file */
-    for (ii = 1; ii < hdunum; ii++)
-    {
+    /* copy all preceding extensions to the output file, if 'only_one' flag not set */
+    if (!(((*fptr)->Fptr)->only_one)) {
+      for (ii = 1; ii < hdunum; ii++)
+      {
         fits_movabs_hdu(*fptr, ii, NULL, status);
         if (fits_copy_hdu(*fptr, newptr, 0, status) > 0)
         {
             ffclos(newptr, status);
             return(*status);
         }
-    }
+      }
 
-    /* move back to the original HDU position */
-    fits_movabs_hdu(*fptr, hdunum, NULL, status);
+      /* move back to the original HDU position */
+      fits_movabs_hdu(*fptr, hdunum, NULL, status);
+    }
 
     if (fits_copy_image_section(*fptr, newptr, expr, status) > 0)
     {
@@ -2470,22 +2494,26 @@ int fits_select_image_section(
         return(*status);
     }
 
-    /* copy any remaining HDUs to the output file */
+    /* copy any remaining HDUs to the output file, if 'only_one' flag not set */
 
-    for (ii = hdunum + 1; 1; ii++)
-    {
+    if (!(((*fptr)->Fptr)->only_one)) {
+      for (ii = hdunum + 1; 1; ii++)
+      {
         if (fits_movabs_hdu(*fptr, ii, NULL, status) > 0)
             break;
 
         fits_copy_hdu(*fptr, newptr, 0, status);
-    }
+      }
 
-    if (*status == END_OF_FILE)   
+      if (*status == END_OF_FILE)   
         *status = 0;              /* got the expected EOF error; reset = 0  */
-    else if (*status > 0)
-    {
+      else if (*status > 0)
+      {
         ffclos(newptr, status);
         return(*status);
+      }
+    } else {
+      ii = hdunum + 1;  /* this value of ii is required below */
     }
 
     /* close the original file and return ptr to the new image */
@@ -2523,12 +2551,17 @@ int fits_copy_image_section(
   */
 
     int bitpix, naxis, numkeys, nkey;
-    long naxes[9], smin, smax, sinc, fpixels[9], lpixels[9], incs[9];
+    long naxes[] = {1,1,1,1,1,1,1,1,1}, smin, smax, sinc;
+    long fpixels[] = {1,1,1,1,1,1,1,1,1};
+    long lpixels[] = {1,1,1,1,1,1,1,1,1};
+    long incs[] = {1,1,1,1,1,1,1,1,1};;
     char *cptr, keyname[FLEN_KEYWORD], card[FLEN_CARD];
     int ii, tstatus, anynull;
+    long minrow, maxrow, minslice, maxslice, mincube, maxcube;
+    long iii, jjj, kkk, firstpix;
     int klen, kk, jj;
-    long outnaxes[9], outsize, buffsize, dummy[2];
-    double *buffer = 0, crpix, cdelt;
+    long outnaxes[9], outsize, buffsize;
+    double *buffer, crpix, cdelt;
 
     if (*status > 0)
         return(*status);
@@ -2539,10 +2572,10 @@ int fits_copy_image_section(
     if (fits_get_img_size(fptr, naxis, naxes, status) > 0)
         return(*status);
 
-    if (naxis < 1 || naxis > 9)
+    if (naxis < 1 || naxis > 4)
     {
         ffpmsg(
-        "Input image either had NAXIS = 0 (NULL image) or has > 9 dimensions");
+        "Input image either had NAXIS = 0 (NULL image) or has > 4 dimensions");
         return(*status = BAD_NAXIS);
     }
 
@@ -2573,7 +2606,6 @@ int fits_copy_image_section(
     /* parse the section specifier to get min, max, and inc for each axis */
     /* and the size of each output image axis */
 
-    outsize = 1;
     cptr = expr;
     for (ii=0; ii < naxis; ii++)
     {
@@ -2604,8 +2636,6 @@ int fits_copy_image_section(
            outnaxes[ii] = (smax - smin + sinc) / sinc;
        else
            outnaxes[ii] = (smin - smax + sinc) / sinc;
-
-       outsize = outsize * outnaxes[ii];
 
        /* modify the NAXISn keyword */
        fits_make_keyn("NAXIS", ii + 1, keyname, status);
@@ -2704,28 +2734,16 @@ int fits_copy_image_section(
         return(*status);
     }
 
-    /* write a dummy value to the last pixel in the output section */
-    /* This will force memory to be allocated for the FITS files if it */
-    /* is being written in memory, before we allocate some more memory */
-    /* below.  Hopefully this leads to better memory management and */
-    /* reduces the probability that the memory for the FITS file will have */
-    /* to be reallocated to a new location later. */
-
     /* turn off any scaling of the pixel values */
     fits_set_bscale(fptr,  1.0, 0.0, status);
     fits_set_bscale(newptr, 1.0, 0.0, status);
 
-    dummy[0] = 0;
-    if (fits_write_img(newptr, TLONG, outsize, 1, dummy, status) > 0)
-    {
-        ffpmsg("fits_copy_image_section: error writing to the last image pixel");
-        return(*status);
-    }
+    /* to reduce memory foot print, just read/write image 1 row at a time */
 
-    /* allocate memory for the entire image section */
+    outsize = outnaxes[0];
     buffsize = (abs(bitpix) / 8) * outsize;
 
-    buffer = (double *) malloc(buffsize);
+    buffer = (double *) malloc(buffsize); /* allocate memory for the image row */
     if (!buffer)
     {
         ffpmsg("fits_copy_image_section: no memory for image section");
@@ -2734,48 +2752,74 @@ int fits_copy_image_section(
 
     /* read the image section then write it to the output file */
 
-    if (bitpix == 8)
+    minrow = fpixels[1];
+    maxrow = lpixels[1];
+    minslice = fpixels[2];
+    maxslice = lpixels[2];
+    mincube = fpixels[3];
+    maxcube = lpixels[3];
+    
+    firstpix = 1;
+    for (kkk = mincube; kkk <= maxcube; kkk += incs[3])
     {
-        ffgsvb(fptr, 1, naxis, naxes, fpixels, lpixels, incs, 0,
-            (unsigned char *) buffer, &anynull, status);
+      fpixels[3] = kkk;
+      lpixels[3] = kkk;
+      for (jjj = minslice; jjj <= maxslice; jjj += incs[2])
+      {
+        fpixels[2] = jjj;
+	lpixels[2] = jjj;
+        for (iii = minrow; iii <= maxrow; iii += incs[1])
+        {
+            fpixels[1] = iii;
+	    lpixels[1] = iii;
 
-        ffpprb(newptr, 1, 1, outsize, (unsigned char *) buffer, status);
-    }
-    else if (bitpix == 16)
-    {
-        ffgsvi(fptr, 1, naxis, naxes, fpixels, lpixels, incs, 0,
-            (short *) buffer, &anynull, status);
+	    if (bitpix == 8)
+	    {
+	        ffgsvb(fptr, 1, naxis, naxes, fpixels, lpixels, incs, 0,
+	            (unsigned char *) buffer, &anynull, status);
 
-        ffppri(newptr, 1, 1, outsize, (short *) buffer, status);
-    }
-    else if (bitpix == 32)
-    {
-        ffgsvk(fptr, 1, naxis, naxes, fpixels, lpixels, incs, 0,
-            (int *) buffer, &anynull, status);
+	        ffpprb(newptr, 1, firstpix, outsize, (unsigned char *) buffer, status);
+	    }
+	    else if (bitpix == 16)
+	    {
+	        ffgsvi(fptr, 1, naxis, naxes, fpixels, lpixels, incs, 0,
+	            (short *) buffer, &anynull, status);
 
-        ffpprk(newptr, 1, 1, outsize, (int *) buffer, status);
-    }
-    else if (bitpix == -32)
-    {
-        ffgsve(fptr, 1, naxis, naxes, fpixels, lpixels, incs, FLOATNULLVALUE,
-            (float *) buffer, &anynull, status);
+	        ffppri(newptr, 1, firstpix, outsize, (short *) buffer, status);
+	    }
+	    else if (bitpix == 32)
+	    {
+	        ffgsvk(fptr, 1, naxis, naxes, fpixels, lpixels, incs, 0,
+	            (int *) buffer, &anynull, status);
 
-        ffppne(newptr, 1, 1, outsize, (float *) buffer, FLOATNULLVALUE, status);
-    }
-    else if (bitpix == -64)
-    {
-        ffgsvd(fptr, 1, naxis, naxes, fpixels, lpixels, incs, DOUBLENULLVALUE,
-             buffer, &anynull, status);
+	        ffpprk(newptr, 1, firstpix, outsize, (int *) buffer, status);
+	    }
+	    else if (bitpix == -32)
+	    {
+	        ffgsve(fptr, 1, naxis, naxes, fpixels, lpixels, incs, FLOATNULLVALUE,
+	            (float *) buffer, &anynull, status);
 
-        ffppnd(newptr, 1, 1, outsize, buffer, DOUBLENULLVALUE,
-               status);
-    }
-    else if (bitpix == 64)
-    {
-        ffgsvjj(fptr, 1, naxis, naxes, fpixels, lpixels, incs, 0,
-            (LONGLONG *) buffer, &anynull, status);
+	        ffppne(newptr, 1, firstpix, outsize, (float *) buffer, FLOATNULLVALUE, status);
+	    }
+	    else if (bitpix == -64)
+	    {
+	        ffgsvd(fptr, 1, naxis, naxes, fpixels, lpixels, incs, DOUBLENULLVALUE,
+	             buffer, &anynull, status);
 
-        ffpprjj(newptr, 1, 1, outsize, (LONGLONG *) buffer, status);
+	        ffppnd(newptr, 1, firstpix, outsize, buffer, DOUBLENULLVALUE,
+	               status);
+	    }
+	    else if (bitpix == 64)
+	    {
+	        ffgsvjj(fptr, 1, naxis, naxes, fpixels, lpixels, incs, 0,
+	            (LONGLONG *) buffer, &anynull, status);
+
+	        ffpprjj(newptr, 1, firstpix, outsize, (LONGLONG *) buffer, status);
+	    }
+
+            firstpix += outsize;
+        }
+      }
     }
 
     free(buffer);  /* finished with the memory */
@@ -2807,6 +2851,9 @@ int fits_get_section_range(char **ptr,
         return(*status);
 
     slen = fits_get_token(ptr, " ,:", token, &isanumber); /* get 1st token */
+
+    /* support [:2,:2] type syntax, where the leading * is implied */
+    if (slen==0) strcpy(token,"*");
 
     if (*token == '*')  /* wild card means to use the whole range */
     {
@@ -2884,19 +2931,30 @@ int ffselect_table(
 
       fits_get_hdu_num(*fptr, &hdunum);  /* current HDU number in input file */
 
-      /* copy all preceding extensions to the output file */
-      for (ii = 1; ii < hdunum; ii++)
-      {
-        fits_movabs_hdu(*fptr, ii, NULL, status);
-        if (fits_copy_hdu(*fptr, newptr, 0, status) > 0)
+      /* copy all preceding extensions to the output file, if the 'only_one' flag is not set */
+      if (!((*fptr)->Fptr)->only_one) {
+        for (ii = 1; ii < hdunum; ii++)
         {
+          fits_movabs_hdu(*fptr, ii, NULL, status);
+          if (fits_copy_hdu(*fptr, newptr, 0, status) > 0)
+          {
             ffclos(newptr, status);
             return(*status);
+          }
         }
+      } else {
+          /* just copy the primary array */
+          fits_movabs_hdu(*fptr, 1, NULL, status);
+          if (fits_copy_hdu(*fptr, newptr, 0, status) > 0)
+          {
+            ffclos(newptr, status);
+            return(*status);
+          }
       }
+      
+      fits_movabs_hdu(*fptr, hdunum, NULL, status);
 
       /* copy all the header keywords from the input to output file */
-      fits_movabs_hdu(*fptr, hdunum, NULL, status);
       if (fits_copy_header(*fptr, newptr, status) > 0)
       {
         ffclos(newptr, status);
@@ -2931,20 +2989,24 @@ int ffselect_table(
     {
       /* copy any remaining HDUs to the output copy */
 
-      for (ii = hdunum + 1; 1; ii++)
-      {
-        if (fits_movabs_hdu(*fptr, ii, NULL, status) > 0)
+      if (!((*fptr)->Fptr)->only_one) {
+        for (ii = hdunum + 1; 1; ii++)
+        {
+          if (fits_movabs_hdu(*fptr, ii, NULL, status) > 0)
             break;
 
-        fits_copy_hdu(*fptr, newptr, 0, status);
-      }
+          fits_copy_hdu(*fptr, newptr, 0, status);
+        }
 
-      if (*status == END_OF_FILE)   
-        *status = 0;              /* got the expected EOF error; reset = 0  */
-      else if (*status > 0)
-      {
-        ffclos(newptr, status);
-        return(*status);
+        if (*status == END_OF_FILE)   
+          *status = 0;              /* got the expected EOF error; reset = 0  */
+        else if (*status > 0)
+        {
+          ffclos(newptr, status);
+          return(*status);
+        }
+      } else {
+        hdunum = 2;
       }
 
       /* close the original file and return ptr to the new image */
@@ -4154,6 +4216,31 @@ int fits_init_cfitsio(void)
 
 #endif
 
+    /* 24---------------stdin and stdout stream driver-------------------*/
+    status = fits_register_driver("stream://", 
+            NULL,
+            NULL,
+            NULL,
+            NULL, 
+            NULL,
+	    NULL,
+            stream_open,
+            stream_create,
+            NULL,   /* no stream truncate function */
+            stream_close,
+            NULL,   /* no stream remove */
+            stream_size,
+            stream_flush,
+            stream_seek,
+            stream_read,
+            stream_write);
+
+    if (status)
+    {
+        ffpmsg("failed to register the stream:// driver (init_cfitsio)");
+        return(status);
+    }
+
     return(status);
 }
 /*--------------------------------------------------------------------------*/
@@ -4225,6 +4312,7 @@ int fits_register_driver(char *prefix,
     return(0);
  }
 /*--------------------------------------------------------------------------*/
+/* fits_parse_input_url */
 int ffiurl(char *url,               /* input filename */
            char *urltype,    /* e.g., 'file://', 'http://', 'mem://' */
            char *infilex,    /* root filename (may be complete path) */
@@ -4244,6 +4332,7 @@ int ffiurl(char *url,               /* input filename */
 }
 
 /*--------------------------------------------------------------------------*/
+/* fits_parse_input_file */
 int ffifile(char *url,       /* input filename */
            char *urltype,    /* e.g., 'file://', 'http://', 'mem://' */
            char *infilex,    /* root filename (may be complete path) */
@@ -5831,7 +5920,7 @@ int ffextn(char *url,           /* I - input filename/URL  */
         return(*status);
 
     /*  parse the input URL into its basic components  */
-    ffiurl(url, urltype, infile, outfile,
+    fits_parse_input_url(url, urltype, infile, outfile,
              extspec, rowfilter,binspec, colspec, status);
 
     if (*status > 0)
@@ -6218,7 +6307,7 @@ int ffdelt(fitsfile *fptr,      /* I - FITS file pointer */
         if (!basename)
             return(*status = MEMORY_ALLOCATION);
     
-        ffiurl((fptr->Fptr)->filename, NULL, basename, NULL, NULL, NULL, NULL,
+        fits_parse_input_url((fptr->Fptr)->filename, NULL, basename, NULL, NULL, NULL, NULL,
                NULL, &tstatus);
 
        if ((*driverTable[(fptr->Fptr)->driver].remove)(basename))
@@ -6466,10 +6555,15 @@ int pixel_filter_helper(
     }
     if (filter.bitpix) /* skip bitpix indicator */
        ++expr;
+
     if (*expr == '1') {
        ++expr;
        singleHDU = 1;
     }
+
+    if (((*fptr)->Fptr)->only_one)
+       singleHDU = 1;
+
     if (*expr != ' ') {
        ffpmsg("pixel filtering expression not space separated:");
        ffpmsg(expr);

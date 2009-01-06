@@ -106,7 +106,9 @@ Dep_cfitsioddll = \
    compress.obj\
    checksum.obj\
    cfileio.obj\
-   buffers.obj
+   buffers.obj\
+   fits_hcompress.obj\
+   fits_hdecompress.obj
 
 cfitsio.dll : $(Dep_cfitsioddll) cfitsio.def
   $(ILINK32) @&&|
@@ -171,7 +173,9 @@ drvrfile.obj+
 compress.obj+
 checksum.obj+
 cfileio.obj+
-buffers.obj
+buffers.obj+
+fits_hcompress.obj+
+fits_hdecompress.obj
 $<,$*
 D:\BC5\LIB\import32.lib+
 D:\BC5\LIB\cw32i.lib
@@ -469,6 +473,16 @@ pliocomp.obj :  pliocomp.c
 buffers.obj :  buffers.c
   $(BCC32) -P- -c @&&|
  $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ buffers.c
+|
+
+fits_hcompress.obj :  fits_hcompress.c
+  $(BCC32) -P- -c @&&|
+ $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ fits_hcompress.c
+|
+
+fits_hdecompress.obj :  fits_hdecompress.c
+  $(BCC32) -P- -c @&&|
+ $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ fits_hdecompress.c
 |
 
 windumpexts.exe :  windumpexts.c

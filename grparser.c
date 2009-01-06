@@ -757,7 +757,7 @@ int	ngp_read_line(int ignore_blank_lines)
 	/* check whether keyword can be written as is */
 
 int	ngp_keyword_is_write(NGP_TOKEN *ngp_tok)
- { int i, j, r, l, spc;
+ { int i, j, l, spc;
                         /* indexed variables not to write */
 
    static char *nm[] = { "NAXIS", "TFORM", "TTYPE", NULL } ;
@@ -769,7 +769,6 @@ int	ngp_keyword_is_write(NGP_TOKEN *ngp_tok)
                            NULL } ;
 
    if (NULL == ngp_tok) return(NGP_NUL_PTR);
-   r = NGP_OK;
 
    for (j = 0; ; j++)           /* first check non indexed */
     { if (NULL == nmni[j]) break;
