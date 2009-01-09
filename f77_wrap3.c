@@ -443,6 +443,59 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONG,PINT,PSTRINGV,PSTRINGV,PSTR
    RCF(PINT,10)
 }
 
+    /*  LONGLONG version of the ftghbn routine: */
+
+#define ftghbnll_STRV_A5 NUM_ELEMS(maxdim)
+#define ftghbnll_STRV_A6 NUM_ELEMS(maxdim)
+#define ftghbnll_STRV_A7 NUM_ELEMS(maxdim)
+CFextern VOID_cfF(FTGHBNLL,ftghbnll)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONGLONG,PINT,PSTRINGV,PSTRINGV,PSTRINGV,PSTRING,PLONGLONG,PINT,CF_0,CF_0,CF_0,CF_0));
+CFextern VOID_cfF(FTGHBNLL,ftghbnll)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONGLONG,PINT,PSTRINGV,PSTRINGV,PSTRINGV,PSTRING,PLONGLONG,PINT,CF_0,CF_0,CF_0,CF_0))
+{
+   QCF(FITSUNIT,1)
+   QCF(INT,2)
+   QCF(PLONGLONG,3)
+   QCF(PINT,4)
+   QCF(PSTRINGV,5)
+   QCF(PSTRINGV,6)
+   QCF(PSTRINGV,7)
+   QCF(PSTRING,8)
+   QCF(PLONGLONG,9)
+   QCF(PINT,10)
+
+   fitsfile *fptr;
+   LONGLONG tfields;
+   int maxdim,*status;
+
+   fptr = TCF(ftghbnll,FITSUNIT,1,0);
+   status =  TCF(ftghbnll,PINT,10,0);
+   maxdim =  TCF(ftghbnll,INT,2,0);
+   ffgkyjj( fptr, "TFIELDS", &tfields, 0, status );
+   maxdim = (maxdim<0) ? tfields : _cfMIN(tfields,maxdim);
+
+   ffghbnll( fptr, maxdim
+             TCF(ftghbnll,PLONGLONG,3,1)
+             TCF(ftghbnll,PINT,4,1)
+             TCF(ftghbnll,PSTRINGV,5,1)
+             TCF(ftghbnll,PSTRINGV,6,1)
+             TCF(ftghbnll,PSTRINGV,7,1)
+             TCF(ftghbnll,PSTRING,8,1)
+             TCF(ftghbnll,PLONGLONG,9,1)
+             , status );
+
+   RCF(FITSUNIT,1)
+   RCF(INT,2)
+   RCF(PLONGLONG,3)
+   RCF(PINT,4)
+   RCF(PSTRINGV,5)
+   RCF(PSTRINGV,6)
+   RCF(PSTRINGV,7)
+   RCF(PSTRING,8)
+   RCF(PLONGLONG,9)
+   RCF(PINT,10)
+}
+
     /*   The following 3 routines are obsolete and dangerous to use as       */
     /*   there is no bounds checking with the arrays.  Call ftghxx instead.  */
     /*   To get cfortran to work, ftgtbh and ftgbnh require information      */
