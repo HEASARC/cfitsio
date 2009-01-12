@@ -697,6 +697,15 @@ int ffgcls2 ( fitsfile *fptr,   /* I - FITS file pointer                       *
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
 
+      /* if string length is greater than a FITS block (2880 char) then must */
+      /* only read 1 string at a time, to force reading by ffgbyt instead of */
+      /* ffgbytoff (ffgbytoff can't handle this case) */
+      if (twidth > IOBUFLEN) {
+        maxelem = 1;
+        incre = twidth;
+        repeat = 1;
+      }   
+
       remain = nelem;
     }
     else
@@ -732,7 +741,7 @@ int ffgcls2 ( fitsfile *fptr,   /* I - FITS file pointer                       *
 
     while (remain)
     {
-      /* limit the number of pixels to process a one time to the number that
+      /* limit the number of pixels to process at one time to the number that
          will fit in the buffer space or to the number of pixels that remain
          in the current vector, which ever is smaller.
       */

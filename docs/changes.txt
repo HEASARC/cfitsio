@@ -40,6 +40,10 @@ Version 3.13 -  5 January 2009
 
   Fixes
    
+   - fixed bug in ffgcls2 when reading an ASCII string column in binary
+     tables in cases where the width of the column is greater than 2880 
+     characters and when reading more than 1 row at a time.  
+     
    - updated the source files listed in makepc.bat so that it can be
      used to build CFITSIO with the Borland C++ compiler.
      
