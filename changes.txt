@@ -42,7 +42,9 @@ Version 3.13 -  5 January 2009
    
    - fixed bug in ffgcls2 when reading an ASCII string column in binary
      tables in cases where the width of the column is greater than 2880 
-     characters and when reading more than 1 row at a time.  
+     characters and when reading more than 1 row at a time.  Similar 
+     change was made to ffpcls to fix same problem with writing to 
+     columns wider than 2880 characters.
      
    - updated the source files listed in makepc.bat so that it can be
      used to build CFITSIO with the Borland C++ compiler.

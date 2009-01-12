@@ -93,6 +93,15 @@ int ffpcls( fitsfile *fptr,  /* I - FITS file pointer                       */
         &repeat, &rowlen, &hdutype, &tnull, snull, status) > 0)
         return(*status);
 
+      /* if string length is greater than a FITS block (2880 char) then must */
+      /* only write 1 string at a time, to force writein by ffpbyt instead of */
+      /* ffpbytoff (ffpbytoff can't handle this case) */
+      if (twidth > IOBUFLEN) {
+        maxelem = 1;
+        incre = twidth;
+        repeat = 1;
+      }   
+
       blanks = (char *) malloc(twidth); /* string for blank fill values */
       if (!blanks)
       {
