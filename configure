@@ -841,6 +841,7 @@ if test -n "$ac_init_help"; then
 Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+ --enable-reentrant Enable reentrant multithreading
  --enable-hera Build for HERA project (for LHEA use only)
 
 Optional Packages:
@@ -1301,6 +1302,19 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 #--------------------------------------------------------------------
 # Command options
 #--------------------------------------------------------------------
+
+# Check whether --enable-reentrant or --disable-reentrant was given.
+if test "${enable_reentrant+set}" = set; then
+  enableval="$enable_reentrant"
+   if test $enableval = yes; then BUILD_REENTRANT=yes; fi
+
+fi;
+if test "x$BUILD_REENTRANT" = xyes; then
+  cat >>confdefs.h <<\_ACEOF
+#define _REENTRANT 1
+_ACEOF
+
+fi
 
 # Check whether --enable-hera or --disable-hera was given.
 if test "${enable_hera+set}" = set; then
