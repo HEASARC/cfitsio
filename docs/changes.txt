@@ -1,5 +1,80 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.18 (BETA) - 10 April 2009
+
+   - Made extensive changes to make CFITSIO thread safe.  Previously,
+     all opened FITS files shared a common pool of memory to store
+     the most recently read or written FITS records in the files.
+     In a multi-threaded environment different threads could 
+     simultaneously read or write to this common area causing
+     unpredictable results. This was changed so that every opened
+     FITS file has its own private memory area for buffering the
+     file. Most of the changes were in buffers.c, fitsio.h, and
+     fitsio2.h. Additional changes were made to cfileio.c, mainly
+     to put locks around small sections of code when setting up the
+     low-level drivers to read or write the FITS file.  Also, locks
+     were needed around the GZIP compression and uncompression code
+     in compress.c.,  the error message stack access routine in
+     fitscore.c, the encode and decode routines in fits_hcompress.c
+     and  fits_hdecompress.c, in ricecomp.c,  and  the table row
+     selection and table calculator functions. Also, removed the
+     'static' declaration of the local variables in pliocomp.c
+     which did not appeared to be required and prevented the
+     routines from being thread safe.
+
+     As a consequence of having a separate memory buffer for every
+     FITS file (by default, about 115 kB per file), CFITSIO may now
+     allocate more memory than previously when an application
+     program opens multiple FITS files at once.  The read and write
+     speed may also be slightly faster, since the buffers are not
+     shared between files.
+
+   - Added new families of Fortran wrapper routines to read and
+     write values to large tables that have more than 2**31 rows. 
+     The arguments that define the first row and first element to
+     read or write must be I*8 integers, not ordinary I*4
+     integers.  The names of these new routines have 'LL' appended
+     to them, so for example, ftgcvb becomes ftgcvbll.
+
+   Fixes
+   
+   - Corrected an obscure bug in imcompress.c that would have incorrectly 
+     written the null values only in the rare case of writing a signed 
+     byte array that is then tile compressed using the Hcompress or PLIO
+     algorithm.
+
+Version 3.14 - 18 March 2009
+
+  Enhancements
+
+   - modified the tiled-image compression and uncompression code to
+     support compressing unsigned 16-bit integer images with PLIO.
+     FITS unsigned integer arrays are offset by -32768, but the PLIO
+     algorithm does not work with negative integer values.  In this
+     case, an offset of 32768 is added to the array before compression,
+     and then subtracted again when reading the compressed array.
+     IMPORTANT NOTE:  This change is not backward compatible, so
+     these PLIO compressed unsigned 16-bit integer images will not be
+     read correctly by previous versions of CFITSIO; the pixel values
+     will have an offset of +32768.
+
+   - minor changes to the fpack utility to print out more complete
+     version information with the -V option, and format the report
+     produced by the -T option more compactly.
+
+  Fixes
+  
+   - Modified imcomp_compress_image (which is called by fpack) so that
+     it will preserve any null values (NaNs) if the input image has
+     a floating point datatype (BITPIX = -32 or -64).  Null values in
+     integer datatype images are handled correctly.
+
+   - Modified imcomp_copy_comp2img so that it does not copy the
+     ZBLANK keyword, if present, from the compressed image header
+     when uncompressing the image.
+     
+   - Fixed typo in the Fortran wrapper macro for the ftexist function.
+
 Version 3.13 -  5 January 2009
 
   Enhancements
@@ -174,10 +249,10 @@ Version 3.08 - 15 April 2008
      for efficiency, to eliminate duplicates reads of these keywords.
    
    - added variants of the Rice compression and uncompression routines to
-     support short int images (inaddition to the routines that support int).
+     support short int images (in addition to the routines that support int).
 
    - moved the definition of LONGLONG_MIN and LONGLONG_MAX from fitsio2.h
-     to fitsio.h, to make it accessable to application programs.
+     to fitsio.h, to make it accessible to application programs.
 
    - make efficiency improvements to fitscore.c, to avoid needless searches
      through the entire header when reading the required keywords that must
@@ -218,8 +293,8 @@ Version 3.08 - 15 April 2008
      the need to subsequently delete the column if it is not used 
      (which is almost always the case).
 
-   - found that it is necessay to seek to the EOF of a file after 
-     turncating the size of the file, to reestablish a definite
+   - found that it is necessary to seek to the EOF of a file after 
+     truncating the size of the file, to reestablish a definite
      current location in the file.  The required small changes to 3
      routines: file_truncate (to seek to EOF) and fftrun (to set io_pos) 
      and the truncation routine in drvrmem.c.
@@ -315,7 +390,7 @@ Version 3.04 - 3 April 2007
    - modified putkey.c to support USHORT_IMG when calling fits_create_img
      to create a signed byte datatype image.
      
-   - enhanced the column histrogramming function to propagate any TCn_k and
+   - enhanced the column histogramming function to propagate any TCn_k and
      TPn_k keywords in the table header to the corresponding CDi_j and PCi_j 
      keywords in the image header.
      
@@ -352,7 +427,7 @@ Version 3.03 - 11 December 2006
   Changes
   
   - modified the region parsing code to support region files where the
-    keyword "physical" is on a separate line preceeding the region shape
+    keyword "physical" is on a separate line preceding the region shape
     token. (However, "physical" coordinates are not fully supported, and
     are treated identically to "image" coordinates).
     
@@ -378,13 +453,13 @@ Version 3.03 - 11 December 2006
     use the lexical parser to perform calculations on variable-length
     array columns.
 
-  - added "#define MACHINE NATIVE" in fitsio2.h for all machies where
+  - added "#define MACHINE NATIVE" in fitsio2.h for all machines where
     BYTESWAPPED == FALSE.  This may improve the file writing performance
     by eliminating the need to allocate a temporary buffer in some cases.
 
   - modified the configure.in and configure script to fix problems with
     testing if network services are available, which affects the definition
-    of the HAVE_NET_SERIVES flag.
+    of the HAVE_NET_SERVICES flag.
 
   - added explicit type casting to all malloc statements, and deleted 
     declarations of unreferenced variables in the image compression code 
@@ -585,7 +660,7 @@ Version 3.004 - 16 September 2005 (3rd public beta release)
     
   - added support for the 64-bit IBM AIX platform
 
-  - modifed eval.y so that the circle, ellipse, box, and near functions
+  - modified eval.y so that the circle, ellipse, box, and near functions
     can operate on vectors as well as scalars.  This allows region filtering
     on images that are stored in a vector cell in a binary table. 
     (provided by Craig Markwardt, GSFC)
@@ -781,7 +856,7 @@ Version 2.510 - 2 December 2004
      stream.
   
    - Craig Markwardt (GSFC) provided 2 more lexical parser functions:
-     accum(x) and seqdiff(x) that compute the cummulative sum and the
+     accum(x) and seqdiff(x) that compute the cumulative sum and the
      sequential difference of the values of x.
   
    - modified putcole.c and putcold.c so that when writing arrays of
@@ -1178,7 +1253,7 @@ Version 2.420 - 19 July 2002
   Enhancements:
 
   - modified the virtual filename parser to support exponential notation
-    when specifing the min, max or binsize in a binning specifier, as in:
+    when specifying the min, max or binsize in a binning specifier, as in:
     myfile.fits[binr X=1:10:1.0E-01, Y=1:10:1.0E-01]
 
   - removed the limitation on the maximum number of HDUs in a FITS file 
@@ -1909,7 +1984,7 @@ Version 2.100 - 18 Oct 2000
      in the table to be written to.  This bug would not appear if
      any other datatype column was written to first.
 
-   - nonsensible (but still formally legal) binary table TFORM values
+   - non-sensible (but still formally legal) binary table TFORM values
      such as '8A15', or '1A8' or 'A8' would confuse CFITSIO and cause it
      to return a 308 error.  When parsing the TFORMn = 'rAw' value,
      the ffbnfm routine has been modified to ignore the 'w' value in cases 
@@ -2689,7 +2764,7 @@ Version 2.023 - 1 Nov 1998 - first full release of CFITSIO 2.0
 
    - added the ability to clobber/overwrite an existing file
      with the same name when creating a new output file.  Just
-     preceed the output file name with '!' (an exclamation mark)
+     precede the output file name with '!' (an exclamation mark)
 
    - changed the ffpdat routine which writes the DATE keyword
      to use the new 'YYYY-MM-DDThh:mm:ss' format.

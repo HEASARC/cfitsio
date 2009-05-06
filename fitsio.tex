@@ -47,7 +47,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large February 2006\\}
+{\Large April 2009\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -3872,11 +3872,17 @@ of flags which defines whether the corresponding data pixel is undefined.
 \item[1 ] Put elements into an ASCII or binary table column (in the CDU).
     (The SPP FSPCLS routine has an additional integer argument after
     the VALUES character string which specifies the size of the 1st
-   dimension of this 2-D CHAR array).
+    dimension of this 2-D CHAR array).
+
+    The alternate version of these routines, whose names end in 'LL'
+    after the datatype character, support large tables with more then
+    2*31 rows.  When calling these routines, the frow and felem parameters
+   *must* be 64-bit integer*8 variables, instead of normal 4-byte integers.
 \end{description}
 
 \begin{verbatim}
         FTPCL[SLBIJKEDCM](unit,colnum,frow,felem,nelements,values, > status)
+        FTPCL[LBIJKEDCM]LL(unit,colnum,frow,felem,nelements,values, > status)
 \end{verbatim}
 
 \begin{description}
@@ -3887,11 +3893,18 @@ of flags which defines whether the corresponding data pixel is undefined.
     For integer FITS columns, in a binary table  the null value
     defined by the previous call to FTTNUL will be substituted;
     For floating point FITS columns a special IEEE NaN (Not-a-Number)
-   value will be substituted.
+    value will be substituted.
+
+    The alternate version of these routines, whose names end in 'LL'
+    after the datatype character, support large tables with more then
+    2*31 rows.  When calling these routines, the frow and felem parameters
+   *must* be 64-bit integer*8 variables, instead of normal 4-byte integers.
 \end{description}
 
 \begin{verbatim}
-        FTPCN[BIJKED](unit,colnum,frow,felem,nelements,values,nullval > status)
+        FTPCN[SBIJKED](unit,colnum,frow,felem,nelements,values,nullval > status)
+        FTPCN[SBIJKED]LL(unit,colnum,(I*8) frow,(I*8) felem,nelements,values,
+	                nullval > status)
 \end{verbatim}
 
 \begin{description}
@@ -3931,13 +3944,20 @@ of flags which defines whether the corresponding data pixel is undefined.
     the ftgcfl routine to check for undefined logical elements).
     (The SPP FSGCVS routine has an additional integer argument after
     the VALUES character string which specifies the size of the 1st
-   dimension of this 2-D CHAR array).
+    dimension of this 2-D CHAR array).
+
+    The alternate version of these routines, whose names end in 'LL'
+    after the datatype character, support large tables with more then
+    2*31 rows.  When calling these routines, the frow and felem parameters
+   *must* be 64-bit integer*8 variables, instead of normal 4-byte integers.
 \end{description}
 
 \begin{verbatim}
         FTGCL(unit,colnum,frow,felem,nelements, > values,status)
         FTGCV[SBIJKEDCM](unit,colnum,frow,felem,nelements,nullval, >
                        values,anyf,status)
+        FTGCV[BIJKEDCM]LL(unit,colnum,(I*8) frow, (I*8) felem, nelements,
+	               nullval, > values,anyf,status)
 \end{verbatim}
 
 \begin{description}
@@ -3948,11 +3968,18 @@ of flags which defines whether the corresponding data pixel is undefined.
     returned elements are undefined.
     (The SPP FSGCFS routine has an additional integer argument after
     the VALUES character string which specifies the size of the 1st
-   dimension of this 2-D CHAR array).
+    dimension of this 2-D CHAR array).
+
+    The alternate version of these routines, whose names end in 'LL'
+    after the datatype character, support large tables with more then
+    2*31 rows.  When calling these routines, the frow and felem parameters
+   *must* be 64-bit integer*8 variables, instead of normal 4-byte integers.
 \end{description}
 
 \begin{verbatim}
         FTGCF[SLBIJKEDCM](unit,colnum,frow,felem,nelements, >
+                         values,flagvals,anyf,status)
+        FTGCF[BIJKED]LL(unit,colnum, (I*8) frow, (I*8) felem,nelements, >
                          values,flagvals,anyf,status)
 \end{verbatim}
 

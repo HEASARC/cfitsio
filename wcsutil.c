@@ -243,14 +243,14 @@ int ffwldp(double xpix, double ypix, double xref, double yref,
       dect = dec0;
       if ((l==0.0) && (m==0.0)) break;
       dz = 4.0 - l*l/(4.0*geo1*geo1) - ((m+geo3)/geo2)*((m+geo3)/geo2) ;
-      if ((dz>4.0) || (dz<2.0)) return(*status = 501);;
+      if ((dz>4.0) || (dz<2.0)) return(*status = 501);
       dz = 0.5 * sqrt (dz);
       dd = (m+geo3) * dz / geo2;
-      if (fabs(dd)>1.0) return(*status = 501);;
+      if (fabs(dd)>1.0) return(*status = 501);
       dd = asin (dd);
-      if (fabs(cos(dd))<deps) return(*status = 501);;
+      if (fabs(cos(dd))<deps) return(*status = 501);
       da = l * dz / (2.0 * geo1 * cos(dd));
-      if (fabs(da)>1.0) return(*status = 501);;
+      if (fabs(da)>1.0) return(*status = 501);
       da = asin (da);
       rat = ra0 + 2.0 * da;
       dect = dd;

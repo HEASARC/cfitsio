@@ -366,6 +366,20 @@ static unsigned inptr;      /* index of next byte to be processed in inbuf */
 static unsigned outcnt;     /* bytes in output buffer */
 
 /* prototype for the following functions */
+int uncompress_main(
+             int  uncompress_type,             
+             char *filename,  
+             FILE *indiskfile,  
+             FILE *outdiskfile, 
+
+             char *inmemptr,  
+             size_t inmemsize, 
+
+             char **buffptr, 
+             size_t *buffsize,  
+             void *(*mem_realloc)(void *p, size_t newsize),
+             size_t *filesize,  
+             int *status);
 int uncompress2mem(char *filename, 
              FILE *diskfile, 
              char **buffptr, 
@@ -388,6 +402,17 @@ int uncompress2file(char *filename,
              FILE *outdiskfile, 
              int *status);
 
+int compress_main(                                                
+             int compress_type,
+             char *inmemptr,
+             size_t inmemsize,
+             FILE *outdiskfile,   
+             char **buffptr, 
+             size_t *buffsize, 
+             void *(*mem_realloc)(void *p, size_t newsize), 
+             size_t *filesize,  
+             int *status);
+	     
 int compress2mem_from_mem(                                                
              char *inmemptr,     
              size_t inmemsize, 
@@ -403,6 +428,24 @@ int compress2file_from_mem(
              FILE *outdiskfile, 
              size_t *filesize,   /* O - size of file, in bytes              */
              int *status);
+
+
+#ifdef _REENTRANT
+#include <pthread.h>
+#include <assert.h>
+static pthread_mutex_t Fitsio_Lock;
+static int Fitsio_Pthread_Status = 0;
+
+#define FFLOCK1(lockname)   (assert(!(Fitsio_Pthread_Status = pthread_mutex_lock(&lockname))))
+#define FFUNLOCK1(lockname) (assert(!(Fitsio_Pthread_Status = pthread_mutex_unlock(&lockname))))
+#define FFLOCK   FFLOCK1(Fitsio_Lock)
+#define FFUNLOCK FFUNLOCK1(Fitsio_Lock)
+
+#else
+#define FFLOCK
+#define FFUNLOCK
+#endif
+
 /*--------------------------------------------------------------------------*/
 int uncompress2mem(char *filename,  /* name of input file                 */
              FILE *diskfile,     /* I - file pointer                        */
@@ -421,51 +464,9 @@ int uncompress2mem(char *filename,  /* name of input file                 */
     if (*status > 0)
         return(*status);
 
-    /*  save input parameters into global variables */
-    ifname[0] = '\0';
-    strncat(ifname, filename, 127);
-    ifd = diskfile;
-    memptr = (void **) buffptr;
-    memsize = buffsize;
-    realloc_fn = mem_realloc;
-    in_memptr = NULL;  /* signal that we are reading from file, not memory */
-
-    /* clear input and output buffers */
-
-    outcnt = 0;
-    insize = inptr = 0;
-    bytes_in = bytes_out = 0L;
-
-    part_nb = 0;
-
-    method = get_method(ifd); 
-    if (method < 0)
-    {
-	return(*status = 414);       /* error message already emitted */
-    }
-
-    /* Actually do the compression/decompression. Loop over zipped members.
-     */
-    for (;;) {
-	if ((*work)(ifd, ofd) != OK) {
-	    method = -1; /* force cleanup */
-            *status = 414;    /* report some sort of decompression error */
-	    break;
-	}
-	if (last_member || inptr == insize) break;
-	/* end of file */
-
-	method = get_method(ifd);
-	if (method < 0) break;    /* error message already emitted */
-	bytes_out = 0;            /* required for length check */
-    }
-
-/*
-    *buffptr = *memptr;
-    *buffsize = *memsize;
-*/
-    *filesize = bytes_out;
-
+    uncompress_main(1, filename, diskfile, NULL, NULL, (size_t) NULL, 
+        buffptr, buffsize, mem_realloc, filesize, status);
+    
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -484,16 +485,92 @@ int uncompress2mem_from_mem(
   input function, if necessary.
 */
 {
+
     if (*status > 0)
         return(*status);
 
-    /*  save input parameters into global variables */
-    in_memptr =  inmemptr;
-    in_memsize = inmemsize;
-    memptr = (void **) buffptr;
-    memsize = buffsize;
-    realloc_fn = mem_realloc;
+    uncompress_main(2, NULL, NULL, NULL, inmemptr, inmemsize,
+       buffptr, buffsize, mem_realloc, filesize, status);
 
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int uncompress2file(char *filename,  /* name of input file                  */
+             FILE *indiskfile,     /* I - input file pointer                */
+             FILE *outdiskfile,    /* I - output file pointer               */
+             int *status)        /* IO - error status                       */
+
+/*
+  Uncompress the file into file. 
+*/
+{
+    if (*status > 0)
+        return(*status);
+
+    uncompress_main(3, filename, indiskfile, outdiskfile, NULL, (size_t) NULL,
+       NULL, NULL, NULL, NULL, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int uncompress_main(
+             int  uncompress_type,             
+             char *filename,       /* name of input file                 */
+             FILE *indiskfile,     /* I - file pointer                        */
+             FILE *outdiskfile,    /* I - output file pointer               */
+
+             char *inmemptr,     /* I - memory pointer to compressed bytes */
+             size_t inmemsize,   /* I - size of input compressed file      */
+
+             
+             char **buffptr,   /* IO - memory pointer                     */
+             size_t *buffsize,   /* IO - size of buffer, in bytes           */
+             void *(*mem_realloc)(void *p, size_t newsize), /* function     */
+             size_t *filesize,   /* O - size of file, in bytes              */
+             int *status)        /* IO - error status                       */
+
+
+{
+    if (*status > 0)
+        return(*status);
+
+/*
+   main routine that actually does the gunzip uncompression
+*/
+    FFLOCK;
+
+    if (uncompress_type == 1) {   /* decompress disk FILE into memory */
+
+        /*  save input parameters into global variables */
+        ifname[0] = '\0';
+        strncat(ifname, filename, 127);
+        ifd = indiskfile;
+        memptr = (void **) buffptr;
+        memsize = buffsize;
+        realloc_fn = mem_realloc;
+        in_memptr = NULL;  /* signal that we are reading from file, not memory */
+
+    } else if (uncompress_type == 2) { /* decompress file in memory into memory */
+
+        /*  save input parameters into global variables */
+        in_memptr =  inmemptr;
+        in_memsize = inmemsize;
+        memptr = (void **) buffptr;
+        memsize = buffsize;
+        realloc_fn = mem_realloc;
+
+    } else if (uncompress_type == 3) { /* decompress disk FILE into disk FILE */
+
+        /*  save input parameters into global variables */
+        ifname[0] = '\0';
+        strncat(ifname, filename, 127);
+        ifd = indiskfile;
+        ofd = outdiskfile;
+        realloc_fn = NULL; /* a null reallocation fn signals that the file is */
+                       /* to be uncompressed to a file on disk, not memory */
+        in_memptr = NULL;  /* signal that we are reading from file, not memory */
+
+    }
     /* clear input and output buffers */
 
     outcnt = 0;
@@ -505,6 +582,7 @@ int uncompress2mem_from_mem(
     method = get_method(ifd); 
     if (method < 0)
     {
+        FFUNLOCK;
 	return(*status = 414);       /* error message already emitted */
     }
 
@@ -524,66 +602,13 @@ int uncompress2mem_from_mem(
 	bytes_out = 0;            /* required for length check */
     }
 
-/*
-    *buffptr = *memptr;
-    *buffsize = *memsize;
-*/
-    *filesize = bytes_out;
+    if (filesize)
+        *filesize = bytes_out;
 
+    FFUNLOCK;
     return(*status);
 }
-/*--------------------------------------------------------------------------*/
-int uncompress2file(char *filename,  /* name of input file                  */
-             FILE *indiskfile,     /* I - input file pointer                */
-             FILE *outdiskfile,    /* I - output file pointer               */
-             int *status)        /* IO - error status                       */
 
-/*
-  Uncompress the file into file. 
-*/
-{
-    if (*status > 0)
-        return(*status);
-
-    /*  save input parameters into global variables */
-    ifname[0] = '\0';
-    strncat(ifname, filename, 127);
-    ifd = indiskfile;
-    ofd = outdiskfile;
-    realloc_fn = NULL; /* a null reallocation fn signals that the file is */
-                       /* to be uncompressed to a file on disk, not memory */
-    in_memptr = NULL;  /* signal that we are reading from file, not memory */
-
-    /* clear input and output buffers */
-    outcnt = 0;
-    insize = inptr = 0;
-    bytes_in = bytes_out = 0L;
-
-    part_nb = 0;
-
-    method = get_method(ifd); 
-    if (method < 0)
-    {
-	return(*status = 1);       /* error message already emitted */
-    }
-
-    /* Actually do the compression/decompression. Loop over zipped members.
-     */
-    for (;;) {
-	if ((*work)(ifd, ofd) != OK) {
-	    method = -1; /* force cleanup */
-	    break;
-	}
-	if (last_member || inptr == insize) break;
-	/* end of file */
-
-	method = get_method(ifd);
-	if (method < 0) break;    /* error message already emitted */
-	bytes_out = 0;            /* required for length check */
-    }
-
-    return(*status);
-}
 /*--------------------------------------------------------------------------*/
 int compress2mem_from_mem(                                                
              char *inmemptr,     /* I - memory pointer to uncompressed bytes */
@@ -600,67 +625,12 @@ int compress2mem_from_mem(
   input function, if necessary.
 */
 {
-    uch  flags = 0;         /* general purpose bit flags */
-    ush  attr = 0;          /* ascii/binary flag */
-    ush  deflate_flags = 0; /* pkzip -es, -en or -ex equivalent */
-
     if (*status > 0)
         return(*status);
 
-    /*  save input parameters into global variables */
-    in_memptr =  inmemptr;
-    in_memsize = inmemsize;
-    memptr = (void **) buffptr;
-    memsize = buffsize;
-    realloc_fn = mem_realloc;
+    compress_main(1, inmemptr, inmemsize, NULL, buffptr, buffsize, mem_realloc,
+        filesize, status);
 
-    /* clear input and output buffers */
-
-    outcnt = 0;
-    insize = inptr = 0;
-    bytes_in = bytes_out = 0L;
-
-    part_nb = 0;
-
-    method = DEFLATED; 
-
-    /* write gzip header bytes */
-
-    put_byte(GZIP_MAGIC[0]); /* magic header */
-    put_byte(GZIP_MAGIC[1]);
-    put_byte(DEFLATED);      /* compression method */
-    put_byte(flags);         
-
-/* 
- just write zero as dummy value for the timestamp
-    put_long(time_stamp);
-*/
-    put_long(0); /* dummy time stamp */
-
-    /* Write deflated file to zip file */
-    crc_value = updcrc(0, 0);
-
-    bi_init(NO_FILE);
-    ct_init(&attr, &method);
-    lm_init(level, &deflate_flags);
-
-    put_byte((uch)deflate_flags); /* extra flags */
-    put_byte(0);            /* OS identifier; 0 = default */
-
-    header_bytes = (long)outcnt;
-
-    (void)deflate();
-
-    /* Write the crc and uncompressed size */
-    put_long(crc_value);
-    put_long(isize);
-    header_bytes += 2*sizeof(long);
-
-    flush_outbuf();
-
-    *buffptr = *memptr;
-    *buffsize = *memsize;
-    *filesize = bytes_out;
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -674,6 +644,33 @@ int compress2file_from_mem(
   Compress the memory file into disk file. 
 */
 {
+    if (*status > 0)
+        return(*status);
+
+    compress_main(2, inmemptr, inmemsize, outdiskfile, NULL, NULL, NULL,
+        filesize, status);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int compress_main(                                                
+             int compress_type,
+             char *inmemptr,     /* I - memory pointer to uncompressed bytes */
+             size_t inmemsize,   /* I - size of input uncompressed file      */
+
+             FILE *outdiskfile,   
+
+             char **buffptr,   /* IO - memory pointer for compressed file    */
+             size_t *buffsize,   /* IO - size of buffer, in bytes           */
+             void *(*mem_realloc)(void *p, size_t newsize), /* function     */
+
+             size_t *filesize,   /* O - size of file, in bytes              */
+             int *status)        /* IO - error status                       */
+
+/*
+  Compress the file into memory or to a File. 
+*/
+{
     uch  flags = 0;         /* general purpose bit flags */
     ush  attr = 0;          /* ascii/binary flag */
     ush  deflate_flags = 0; /* pkzip -es, -en or -ex equivalent */
@@ -681,15 +678,27 @@ int compress2file_from_mem(
     if (*status > 0)
         return(*status);
 
-    /*  save input parameters into global variables */
-    in_memptr =  inmemptr;
-    in_memsize = inmemsize;
+    FFLOCK;
 
-    ofd = outdiskfile;
+    if (compress_type == 1) {
 
-    realloc_fn = NULL; /* a null reallocation fn signals that the file is */
+        /*  save input parameters into global variables */
+        in_memptr =  inmemptr;
+        in_memsize = inmemsize;
+        memptr = (void **) buffptr;
+        memsize = buffsize;
+        realloc_fn = mem_realloc;
+    
+    } else if (compress_type == 2) {
+
+        in_memptr =  inmemptr;
+        in_memsize = inmemsize;
+
+        ofd = outdiskfile;
+
+        realloc_fn = NULL; /* a null reallocation fn signals that the file is */
                        /* to be compressed to a file on disk, not memory */
-
+    }
 
     /* clear input and output buffers */
 
@@ -735,7 +744,15 @@ int compress2file_from_mem(
 
     flush_outbuf();
 
+    if (buffptr)
+        *buffptr = *memptr;
+
+    if (buffsize)
+        *buffsize = *memsize;
+
     *filesize = bytes_out;
+
+    FFUNLOCK;
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

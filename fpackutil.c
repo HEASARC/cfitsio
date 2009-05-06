@@ -42,9 +42,29 @@ FILE *outreport;
 int XSAMPLE = 4100;
 int YSAMPLE = 4100;
     
-int fp_msg (char *msg) { printf ("%s", msg); }
-int fp_version (void) { fp_msg (FPACK_VERSION); fp_msg ("\n"); }
-int fp_noop (void) { fp_msg ("Input and output files are unchanged.\n"); }
+int fp_msg (char *msg)
+{
+	printf ("%s", msg);
+	return(0);
+}
+/*--------------------------------------------------------------------------*/
+int fp_noop (void)
+{ 
+	fp_msg ("Input and output files are unchanged.\n");
+	return(0);
+}
+/*--------------------------------------------------------------------------*/
+int fp_version (void) 
+{ 
+        float version;
+	char cfitsioversion[20];
+
+	fp_msg (FPACK_VERSION);
+	fits_get_version(&version);
+	sprintf(cfitsioversion, " CFITSIO version %6.3f", version);
+	fp_msg(cfitsioversion);
+	fp_msg ("\n");
+}
 
 /*--------------------------------------------------------------------------*/
 int fp_init (fpstate *fpptr)
@@ -702,11 +722,11 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 	long	naxes[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
 	long	tilesize[9] = {0,1,1,1,1,1,1,1,1};
 	int	stat=0, totpix=0, naxis=0, ii, hdutype, bitpix, extnum = 0, len;
-	int     tstatus = 0, hdunum, rescale_flag;
+	int     tstatus = 0, hdunum, rescale_flag, bpix;
 	char	dtype[8], dimen[100];
 	double  bscale, rescale;
 	long headstart, datastart, dataend;
-	float origdata = 0., whole_cpu, whole_elapse, row_elapse, row_cpu;
+	float origdata = 0., whole_cpu, whole_elapse, row_elapse, row_cpu, xbits;
 
 	fits_open_file (&inputfptr, infits, READONLY, &stat);
 	fits_create_file (&outfptr, outfits, &stat);
@@ -790,26 +810,34 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 
 		/* compute basic statistics about the input image */
                 if (bitpix == BYTE_IMG) {
-		   strcpy(dtype, "Int*1");
+		   bpix = 8;
+		   strcpy(dtype, "8  ");
 		   fp_i2stat(infptr, naxis, naxes, &stat);
 		} else if (bitpix == SHORT_IMG) {
-		   strcpy(dtype, "Int*2");
+		   bpix = 16;
+		   strcpy(dtype, "16 ");
 		   fp_i2stat(infptr, naxis, naxes, &stat);
 		} else if (bitpix == LONG_IMG) {
-		   strcpy(dtype, "Int*4");
+		   bpix = 32;
+		   strcpy(dtype, "32 ");
 		   fp_i4stat(infptr, naxis, naxes, &stat);
 		} else if (bitpix == LONGLONG_IMG) {
-		   strcpy(dtype, "Int*8");
+		   bpix = 64;
+		   strcpy(dtype, "64 ");
 		} else if (bitpix == FLOAT_IMG)   {
-		   strcpy(dtype, "Real*4");
+		   bpix = 32;
+		   strcpy(dtype, "-32");
 		   fp_r4stat(infptr, naxis, naxes, &stat);
 		} else if (bitpix == DOUBLE_IMG)  {
-		   strcpy(dtype, "REAL*8");
+		   bpix = 64;
+		   strcpy(dtype, "-64");
 		   fp_r4stat(infptr, naxis, naxes, &stat);
 		}
 
+                xbits = log10(imagestats.noise3)/.301 + 1.792;
+
 		printf("\n File: %s\n", infits);
-		printf("  Ext BITPIX Dimensions  Nulls    Min    Max     Mean    Sigma    Noise1    Noise3 TElpN TCPUN TElp1 TCPU1\n");
+		printf("  Ext BITPIX Dimens.   Nulls    Min    Max     Mean    Sigma  Noise3 Nbits   MaxR\n");
 
 		printf("  %3d  %s", extnum, dtype);
 		sprintf(dimen," (%d", naxes[0]);
@@ -826,13 +854,15 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 		fits_read_image_speed (infptr, &whole_elapse, &whole_cpu,
 		               &row_elapse, &row_cpu, &stat);
 
-		printf(" %5d %6.0f %6.0f %8.1f %#8.2g %#9.3g %#9.3g %5.3f %5.3f %5.3f %5.3f\n",
+		printf(" %5d %6.0f %6.0f %8.1f %#8.2g %#7.3g %#5.1f %#6.2f\n",
 		        imagestats.n_nulls, imagestats.minval, imagestats.maxval, 
-		      imagestats.mean, imagestats.sigma, imagestats.noise1, 
-		      imagestats.noise3, whole_elapse, whole_cpu, row_elapse, row_cpu);
+		      imagestats.mean, imagestats.sigma, 
+		      imagestats.noise3, xbits, bpix/xbits);
 
 		printf("\n       Type   Ratio       Size (MB)     Pk (Sec) UnPk Exact ElpN CPUN  Elp1  CPU1\n");
 
+		printf("       Native                                             %5.3f %5.3f %5.3f %5.3f\n",
+		        whole_elapse, whole_cpu, row_elapse, row_cpu);
 
 		if (fpvar.outfile[0]) {
 		    fprintf(outreport,

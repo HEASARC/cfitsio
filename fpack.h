@@ -1,5 +1,6 @@
 /* used by FPACK and FUNPACK
  * R. Seaman, NOAO
+ * W. Pence, NASA/GSFC
  */
 
 #include <string.h>
@@ -10,7 +11,16 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#define	FPACK_VERSION	"1.1.2 (September 2008)"
+#define	FPACK_VERSION	"1.1.3 (March 2009)"
+/*
+VERSION	History
+
+1.1.3 (March 2009)
+  minor modifications to the content and format of the -T report
+  
+1.1.2 (September 2008)
+*/
+
 #define	FP_INIT_MAGIC	42
 #define	FPACK		0
 #define	FUNPACK		1

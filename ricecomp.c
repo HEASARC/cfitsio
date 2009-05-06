@@ -37,6 +37,15 @@ typedef struct {
 
 #include "fitsio2.h"
 
+#ifdef _REENTRANT
+/*
+    Fitsio_Lock and Fitsio_Pthread_Status are declared in fitsio2.h. 
+*/
+static pthread_mutex_t Fitsio_Lock;
+static int Fitsio_Pthread_Status = 0;
+
+#endif
+
 static void start_outputing_bits(Buffer *buffer);
 static int done_outputing_bits(Buffer *buffer);
 static int output_nbits(Buffer *buffer, int bits, int n);
@@ -872,6 +881,7 @@ static int *nonzero_count = (int *)NULL;
 
     bbits = 1<<fsbits;
 
+    FFLOCK;
     if (nonzero_count == (int *) NULL) {
 	/*
 	 * nonzero_count is lookup table giving number of bits
@@ -882,6 +892,7 @@ static int *nonzero_count = (int *)NULL;
 	nonzero_count = (int *) malloc(256*sizeof(int));
 	if (nonzero_count == (int *) NULL) {
             ffpmsg("rdecomp: insufficient memory");
+            FFUNLOCK;
 	    return 1;
 	}
 	nzero = 8;
@@ -892,6 +903,8 @@ static int *nonzero_count = (int *)NULL;
 	    nzero--;
 	}
     }
+    FFUNLOCK;
+
     /*
      * Decode in blocks of nblock pixels
      */
@@ -1062,6 +1075,7 @@ static int *nonzero_count = (int *)NULL;
 
     bbits = 1<<fsbits;
 
+    FFLOCK;
     if (nonzero_count == (int *) NULL) {
 	/*
 	 * nonzero_count is lookup table giving number of bits
@@ -1072,6 +1086,7 @@ static int *nonzero_count = (int *)NULL;
 	nonzero_count = (int *) malloc(256*sizeof(int));
 	if (nonzero_count == (int *) NULL) {
             ffpmsg("rdecomp: insufficient memory");
+	    FFUNLOCK;
 	    return 1;
 	}
 	nzero = 8;
@@ -1082,6 +1097,7 @@ static int *nonzero_count = (int *)NULL;
 	    nzero--;
 	}
     }
+    FFUNLOCK;
     /*
      * Decode in blocks of nblock pixels
      */
@@ -1249,6 +1265,7 @@ static int *nonzero_count = (int *)NULL;
 
     bbits = 1<<fsbits;
 
+    FFLOCK;
     if (nonzero_count == (int *) NULL) {
 	/*
 	 * nonzero_count is lookup table giving number of bits
@@ -1259,6 +1276,7 @@ static int *nonzero_count = (int *)NULL;
 	nonzero_count = (int *) malloc(256*sizeof(int));
 	if (nonzero_count == (int *) NULL) {
             ffpmsg("rdecomp: insufficient memory");
+	    FFUNLOCK;
 	    return 1;
 	}
 	nzero = 8;
@@ -1269,6 +1287,7 @@ static int *nonzero_count = (int *)NULL;
 	    nzero--;
 	}
     }
+    FFUNLOCK;
     /*
      * Decode in blocks of nblock pixels
      */

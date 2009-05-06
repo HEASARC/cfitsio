@@ -3,6 +3,35 @@
  
 #include "fitsio.h"
 
+/* 
+    Threading support using POSIX threads programming interface
+    (supplied by Bruce O'Neel) 
+
+    All threaded programs MUST have the 
+
+    -D_REENTRANT
+
+    on the compile line and must link with -lpthread.  This means that
+    when one builds cfitsio for threads you must have -D_REENTRANT on the
+    gcc command line.
+*/
+
+#ifdef _REENTRANT
+#include <pthread.h>
+#include <assert.h>
+extern pthread_mutex_t Fitsio_Lock;
+extern int Fitsio_Pthread_Status;
+
+#define FFLOCK1(lockname)   (assert(!(Fitsio_Pthread_Status = pthread_mutex_lock(&lockname))))
+#define FFUNLOCK1(lockname) (assert(!(Fitsio_Pthread_Status = pthread_mutex_unlock(&lockname))))
+#define FFLOCK   FFLOCK1(Fitsio_Lock)
+#define FFUNLOCK FFUNLOCK1(Fitsio_Lock)
+
+#else
+#define FFLOCK
+#define FFUNLOCK
+#endif
+
 /*
   If REPLACE_LINKS is defined, then whenever CFITSIO fails to open
   a file with write access because it is a soft link to a file that
@@ -19,12 +48,8 @@
 
 #define DBUFFSIZE 28800 /* size of data buffer in bytes */
 
-#define NIOBUF  40  /* number of IO buffers to create (default = 40) */
-         /* !! Significantly increasing NIOBUF may degrade performance !! */
 #define NMAXFILES  300   /* maximum number of FITS files that can be opened */
         /* CFITSIO will allocate (NMAXFILES * 80) bytes of memory */
-
-#define IOBUFLEN 2880    /* size in bytes of each IO buffer (DONT CHANGE!) */
 
 #define MINDIRECT 8640   /* minimum size for direct reads and writes */
                          /* MINDIRECT must have a value >= 8640 */
@@ -312,8 +337,7 @@ int ffpbytoff(fitsfile *fptr, long gsize, long ngroups, long offset,
 int ffldrc(fitsfile *fptr, long record, int err_mode, int *status);
 int ffwhbf(fitsfile *fptr, int *nbuff);
 int ffbfeof(fitsfile *fptr, int *status);
-int ffbfwt(int nbuff, int *status);
-int fits_get_num_files(void);
+int ffbfwt(FITSfile *Fptr, int nbuff, int *status);
 int ffpxsz(int datatype);
 
 int ffourl(char *url, char *urltype, char *outfile, char *tmplfile,
@@ -978,7 +1002,6 @@ int pl_l2pi (short *ll_src, int xs, int *px_dst, int npix);
 /* general driver routines */
 
 int urltype2driver(char *urltype, int *driver);
-int fits_init_cfitsio(void);
 
 int fits_register_driver( char *prefix,
 	int (*init)(void),

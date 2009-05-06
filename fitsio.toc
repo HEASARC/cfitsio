@@ -52,11 +52,11 @@
 \contentsline {subsection}{\numberline {6.7.2}Low-Level Table Access Subroutines }{58}
 \contentsline {subsection}{\numberline {6.7.3}Edit Rows or Columns }{58}
 \contentsline {subsection}{\numberline {6.7.4}Read and Write Column Data Routines }{60}
-\contentsline {section}{\numberline {6.8}Row Selection and Calculator Routines }{63}
+\contentsline {section}{\numberline {6.8}Row Selection and Calculator Routines }{64}
 \contentsline {section}{\numberline {6.9}Celestial Coordinate System Subroutines }{65}
-\contentsline {section}{\numberline {6.10}File Checksum Subroutines }{66}
-\contentsline {section}{\numberline {6.11} Date and Time Utility Routines }{67}
-\contentsline {section}{\numberline {6.12}General Utility Subroutines }{68}
+\contentsline {section}{\numberline {6.10}File Checksum Subroutines }{67}
+\contentsline {section}{\numberline {6.11} Date and Time Utility Routines }{68}
+\contentsline {section}{\numberline {6.12}General Utility Subroutines }{69}
 \contentsline {chapter}{\numberline {7} The CFITSIO Iterator Function }{75}
 \contentsline {chapter}{\numberline {8} Extended File Name Syntax }{77}
 \contentsline {section}{\numberline {8.1}Overview}{77}

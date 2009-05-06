@@ -1367,7 +1367,7 @@ char *keyword0;	/* character string containing the name of the keyword
 
 /* Extract value and remove excess spaces */
 	if (q1 != NULL) {
-	    v1 = q1 + 1;;
+	    v1 = q1 + 1;
 	    v2 = q2;
 	    c1 = strsrch (q2,"/");
 	    }

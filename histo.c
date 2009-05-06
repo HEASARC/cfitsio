@@ -5,6 +5,15 @@
 #include <stdlib.h>
 #include "fitsio2.h"
 
+#ifdef _REENTRANT
+/*
+    Fitsio_Lock and Fitsio_Pthread_Status are declared in fitsio2.h. 
+*/
+static pthread_mutex_t Fitsio_Lock;
+static int Fitsio_Pthread_Status = 0;
+
+#endif
+
 typedef struct {  /*  Structure holding all the histogramming information   */
    union {        /*  the iterator work functions (ffwritehist, ffcalchist) */
       char   *b;  /*  need to do their job... passed via *userPointer.      */
@@ -1949,7 +1958,7 @@ int fits_make_hist(fitsfile *fptr, /* IO - pointer to table with X and Y cols; *
     fits_iter_set_iotype(imagepars, OutputCol);    /* image is output  */
 
     /* call the iterator function to write out the histogram image */
-   fits_iterate_data(n_cols, imagepars, offset, n_per_loop,
+    fits_iterate_data(n_cols, imagepars, offset, n_per_loop,
                           ffwritehisto, (void*)&histData, status);
        
     return(*status);
@@ -2044,8 +2053,14 @@ int ffwritehisto(long totaln, long pixoffset, long firstn, long nvalues,
     }
 
     /* call iterator function to calc the histogram pixel values */
+
+    /* must lock this call in multithreaded environoments because */
+    /* the ffcalchist work routine uses static vaiables that would */
+    /* get clobbered if multiple threads were running at the same time */
+    FFLOCK;
     fits_iterate_data(ncols, colpars, offset, rows_per_loop,
                           ffcalchist, (void*)histData, &status);
+    FFUNLOCK;
 
     return(status);
 }

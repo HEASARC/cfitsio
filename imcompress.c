@@ -749,7 +749,7 @@ int imcomp_calc_max_elem (int comptype, int nx, int zbitpix, int blocksize)
         /* compression routine will allocate more space as required */
 
         if (zbitpix == 16 || zbitpix == 8)
-            return(nx * sizeof(short) / 1.3);
+            return((int) (nx * sizeof(short) / 1.3));
 	else
             return(nx * sizeof(int) / 2);
     }
@@ -788,7 +788,8 @@ int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr, int *status)
     int anynul, gotnulls = 0, datatype;
     long ii, row;
     int naxis;
-    double dummy = 0.;
+    double dummy = 0., dblnull = DOUBLENULLVALUE;
+    float fltnull = FLOATNULLVALUE;
     long maxtilelen, tilelen, incre[] = {1, 1, 1, 1, 1, 1};
     long naxes[MAX_COMPRESS_DIM], fpixel[MAX_COMPRESS_DIM];
     long lpixel[MAX_COMPRESS_DIM], tile[MAX_COMPRESS_DIM];
@@ -937,6 +938,7 @@ int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr, int *status)
           }
 
           /* read next tile of data from image */
+	  anynul = 0;
           if (datatype == TFLOAT)
           {
               ffgsve(infptr, 1, naxis, naxes, fpixel, lpixel, incre, 
@@ -971,15 +973,22 @@ int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr, int *status)
 
           /* now compress the tile, and write to row of binary table */
           /*   NOTE: we don't have to worry about the presence of null values in the
-	       array;  if it is an integer array, then the null value is simply encoded
-	       in the compressed array just like any other pixel value.  If it is a
-	       floating point array, then imcomp_comprsss_tile will by default assume
-	       that FLOATNULLVALUE or DOUBLENULLVALUE is used to represent null values
-	       and these will be converted to the value of COMPRESS_NULL_VALUE before 
-	       the array is compressed.
+	       array if it is an integer array:  the null value is simply encoded
+	       in the compressed array just like any other pixel value.  
+	       
+	       If it is a floating point array, then we need to check for null
+	       only if the anynul parameter returned a true value when reading the tile
 	  */
-          imcomp_compress_tile(outfptr, row, datatype, tiledata, tilelen,
+          if (anynul && datatype == TFLOAT) {
+              imcomp_compress_tile(outfptr, row, datatype, tiledata, tilelen,
+                               tile[0], tile[1], 1, &fltnull, status);
+          } else if (anynul && datatype == TDOUBLE) {
+              imcomp_compress_tile(outfptr, row, datatype, tiledata, tilelen,
+                               tile[0], tile[1], 1, &dblnull, status);
+          } else {
+              imcomp_compress_tile(outfptr, row, datatype, tiledata, tilelen,
                                tile[0], tile[1], 0, &dummy, status);
+          }
 
           /* set flag if we found any null values */
           if (anynul)
@@ -1055,14 +1064,14 @@ int imcomp_compress_tile (fitsfile *outfptr,
     int flag = 1; /* true by default; only = 0 if float data couldn't be quantized */
     int iminval = 0, imaxval = 0;  /* min and max quantized integers */
     double bscale[1] = {1.}, bzero[1] = {0.};	/* scaling parameters */
-    double scale, zero;
+    double scale, zero, actual_bzero;
     int  nelem = 0;		/* number of bytes */
     size_t gzip_nelem = 0;
     long ii, hcomp_len;
     LONGLONG *lldata;
     signed char *sbbuff;
     unsigned char *usbbuff;
-    int ihcompscale, cn_zblank, zbitpix, nullval, flagval, gotnulls;
+    int ihcompscale, cn_zblank, zbitpix, nullval, flagval, gotnulls = 0;
     int intlength;  /* size of integers to be compressed */
     float floatnull, hcompscale;
     float fminval, fmaxval, delta, zeropt, *fdata, *ftemp;
@@ -1154,6 +1163,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
     
     scale = (outfptr->Fptr)->cn_bscale;
     zero  = (outfptr->Fptr)->cn_bzero;
+    actual_bzero = (outfptr->Fptr)->cn_actual_bzero;
 
     /* =========================================================================== */
 
@@ -1161,7 +1171,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
     /*   if needed.  Do null value substitution if needed */
     /*  Note that the calling routine must have allocated the array big enough */
     /* to be able to do this.  */
-
+    
     if (datatype == TSHORT)
     {
        /* datatype of input array is TSHORT.  We only support writing this datatype
@@ -1189,8 +1199,8 @@ int imcomp_compress_tile (fitsfile *outfptr,
                   }
                }
            }
-       } else {
-           /* have to convert to int if using HCOMPRESS or PLIO */
+       } else if ((outfptr->Fptr)->compress_type == HCOMPRESS_1) {
+           /* have to convert to int if using HCOMPRESS */
            intlength = 4;
 
            if (nullcheck == 1) {
@@ -1206,7 +1216,46 @@ int imcomp_compress_tile (fitsfile *outfptr,
                for (ii = tilelen - 1; ii >= 0; ii--) 
                    idata[ii] = (int) sbuff[ii];
            }
-       }
+       } else {
+           /* have to convert to int if using PLIO */
+           intlength = 4;
+           if (zero == 0. && actual_bzero == 32768.) {
+             /* Here we are compressing unsigned 16-bit integers that have */
+	     /* been offset by -32768 using the standard FITS convention. */
+	     /* Since PLIO cannot deal with negative values, we must apply */
+	     /* the shift of 32786 to the values to make them all positive. */
+	     /* The inverse negative shift will be applied in */
+	     /* imcomp_decompress_tile when reading the compressed tile. */
+             if (nullcheck == 1) {
+               /* reset pixels equal to flagval to the FITS null value, prior to compression */
+               flagval = *(short *) (nullflagval);
+               for (ii = tilelen - 1; ii >= 0; ii--) {
+	            if (sbuff[ii] == (short) flagval)
+		       idata[ii] = nullval;
+                    else
+                       idata[ii] = (int) sbuff[ii] + 32768;
+               }
+             } else {  /* just do the data type conversion to int */
+               for (ii = tilelen - 1; ii >= 0; ii--) 
+                   idata[ii] = (int) sbuff[ii] + 32768;
+             }
+           } else {
+	     /* This is not an unsigned 16-bit integer array, so process normally */
+             if (nullcheck == 1) {
+               /* reset pixels equal to flagval to the FITS null value, prior to compression */
+               flagval = *(short *) (nullflagval);
+               for (ii = tilelen - 1; ii >= 0; ii--) {
+	            if (sbuff[ii] == (short) flagval)
+		       idata[ii] = nullval;
+                    else
+                       idata[ii] = (int) sbuff[ii];
+               }
+             } else {  /* just do the data type conversion to int */
+               for (ii = tilelen - 1; ii >= 0; ii--) 
+                   idata[ii] = (int) sbuff[ii];
+             }
+           }
+        }
     }
     else if (datatype == TUSHORT)
     {
@@ -1407,7 +1456,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
                /* reset pixels equal to flagval to the FITS null value, prior to compression */
                flagval = *(signed char *) (nullflagval);
                for (ii = tilelen - 1; ii >= 0; ii--) {
-	            if (usbbuff[ii] == (signed char) flagval)
+	            if (sbbuff[ii] == (signed char) flagval)
 		       idata[ii] = nullval;
                     else
                        idata[ii] = ((int) sbbuff[ii]) + 128;
@@ -1521,6 +1570,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
 	    } else {
                 /* quantize level is positive, so we have to calculate the noise */
                 /* quantize the float values into integers */
+
                 flag = fits_quantize_float ((float *) tiledata, tilenx, tileny,
                    nullcheck, floatnull, (outfptr->Fptr)->quantize_level, idata,
                    bscale, bzero, &iminval, &imaxval);
@@ -1696,7 +1746,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
                 lldata = (LONGLONG *) idata;
 		
                 for (ii = tilelen - 1; ii >= 0; ii--) {
-		    lldata[ii] = idata[ii];;
+		    lldata[ii] = idata[ii];
 		}
 
                 fits_hcompress64(lldata, tilenx, tileny, 
@@ -2308,8 +2358,6 @@ int fits_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer     */
     int  tstatus, buffpixsiz;
     void *buffer;
     char *bnullarray = 0, card[FLEN_CARD];
-    float floatnull;
-    double doublenull;
 
     if (*status > 0) 
         return(*status);
@@ -3921,6 +3969,9 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
         NULL, &tstatus) > 0)
     {
         (infptr->Fptr)->cn_bzero = 0.0;
+        (infptr->Fptr)->cn_actual_bzero = 0.0;
+    } else {
+        (infptr->Fptr)->cn_actual_bzero = (infptr->Fptr)->cn_bzero;
     }
 
     ffcmrk();  /* clear any spurious error messages, back to the mark */
@@ -4084,6 +4135,7 @@ int imcomp_copy_comp2img(fitsfile *infptr, fitsfile *outfptr,
 			   {"ZIMAGE",  "-"       },
 			   {"ZTILEm",  "-"       },
 			   {"ZCMPTYPE", "-"      },
+			   {"ZBLANK",  "-"       },
 			   {"ZNAMEm",  "-"       },
 			   {"ZVALm",   "-"       },
 
@@ -4158,7 +4210,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
 
 /* This routine decompresses one tile of the image */
 {
-    static int *idata = 0;     /* this variable must persist */
+    int *idata = 0;
     int tiledatatype, pixlen;          /* uncompressed integer data */
     LONGLONG *lldata;
     size_t idatalen, tilebytesize;
@@ -4168,12 +4220,14 @@ int imcomp_decompress_tile (fitsfile *infptr,
     short *sbuf;
     short snull = 0;
     int blocksize;
-    double bscale, bzero, dummy = 0;    /* scaling parameters */
+    double bscale, bzero, actual_bzero, dummy = 0;    /* scaling parameters */
     long nelem = 0, offset = 0, tilesize;      /* number of bytes */
     int smooth, nx, ny, scale;  /* hcompress parameters */
 
     if (*status > 0)
        return(*status);
+
+
 
     /* **************************************************************** */
     /* check if this tile was cached; if so, just copy it out */
@@ -4224,7 +4278,6 @@ int imcomp_decompress_tile (fitsfile *infptr,
     }
    
     /* **************************************************************** */
-
     if (nullcheck == 2)
     {
         for (ii = 0; ii < tilelen; ii++)  /* initialize the null array */
@@ -4235,6 +4288,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
        *anynul = 0;
     
     /* get linear scaling and offset values, if they exist */
+    actual_bzero = (infptr->Fptr)->cn_actual_bzero;
     if ((infptr->Fptr)->cn_zscale == 0)
     {
          /* set default scaling, if scaling is not defined */
@@ -4578,9 +4632,18 @@ int imcomp_decompress_tile (fitsfile *infptr,
         pixlen = sizeof(short);
 
         if (tiledatatype == TINT)
-          fffi4i2(idata, tilelen, bscale, bzero, nullcheck, tnull,
-           *(short *) nulval, bnullarray, anynul,
-          (short *) buffer, status);
+          if ((infptr->Fptr)->compress_type == PLIO_1 &&
+	    bzero == 0. && actual_bzero == 32768.) {
+	    /* special case where unsigned 16-bit integers have been */
+	    /* offset by +32768 when using PLIO */
+            fffi4i2(idata, tilelen, bscale, -32768., nullcheck, tnull,
+             *(short *) nulval, bnullarray, anynul,
+            (short *) buffer, status);
+          } else {
+            fffi4i2(idata, tilelen, bscale, bzero, nullcheck, tnull,
+             *(short *) nulval, bnullarray, anynul,
+            (short *) buffer, status);
+          }
         else if (tiledatatype == TSHORT)
           fffi2i2((short *)idata, tilelen, bscale, bzero, nullcheck, tnull,
            *(short *) nulval, bnullarray, anynul,
@@ -4740,7 +4803,6 @@ int imcomp_decompress_tile (fitsfile *infptr,
     /* don't need the uncompressed tile any more */
     free(idata);
 
-
     /* **************************************************************** */
     /* cache the tile, in case the application wants it again  */
 
@@ -4749,7 +4811,6 @@ int imcomp_decompress_tile (fitsfile *infptr,
 	will be used in this cases, so it is not worth the time and the 
 	memory overheads.
     */
-
     if ((infptr->Fptr)->znaxis[0]   != (infptr->Fptr)->tilesize[0] ||
         (infptr->Fptr)->tilesize[1] != 1 )
     {

@@ -181,7 +181,7 @@ The disadvantages are:
 On HP/UX systems, the environment variable CFLAGS should be set
 to -Ae before running configure to enable "extended ANSI" features.
 
-It may not be possible to staticly link programs that use CFITSIO on
+It may not be possible to statically link programs that use CFITSIO on
 some platforms (namely, on Solaris 2.6) due to the network drivers
 (which provide FTP and HTTP access to FITS files).  It is possible to
 make both a dynamic and a static version of the CFITSIO library, but
@@ -289,7 +289,7 @@ may be called 'f77' or 'g77', depending on the system.
 -
 On machines running SUN O/S, Fortran programs must be compiled with the
 '-f' option to force double precision variables to be aligned on 8-byte
-boundarys to make the fortran-declared variables compatible with C.  A
+boundaries to make the fortran-declared variables compatible with C.  A
 similar compiler option may be required on other platforms.  Failing to
 use this option may cause the program to crash on FITSIO routines that
 read or write double precision variables.
@@ -331,7 +331,7 @@ These latter 2 libraries are not needed on VMS and Windows platforms,
 because FTP file access is not currently supported on those platforms.
  
 Note that when upgrading to a newer version of CFITSIO it is usually
-necessay to recompile, as well as relink, the programs that use CFITSIO,
+necessary to recompile, as well as relink, the programs that use CFITSIO,
 because the definitions in fitsio.h often change.
  
 **D.  Getting Started with FITSIO
@@ -475,7 +475,7 @@ writing compressed FITS files, or doing image coordinate transformations,
 but is otherwise identical to the standard version.  
 
 
-**G.  Acknowledgements
+**G.  Acknowledgments
 
 The development of many of the powerful features in CFITSIO was made
 possible through collaborations with many people or organizations from
@@ -662,7 +662,7 @@ TUNITn -- the physical units of the column (optional)
 \end{itemize}
 
 Users should refer to the FITS Support Office at {\tt http://fits.gsfc.nasa.gov}
-for futher information about the FITS format and related software 
+for further information about the FITS format and related software 
 packages.
 
 
@@ -684,14 +684,6 @@ The C symbolic constant FOPEN\_MAX is intended to define the maximum
 number of files that may open at once (including any other text or
 binary files that may be open, not just FITS files).  On some systems it
 has been found that gcc supports a maximum of 255 opened files.
-
-Note that opening and operating on many FITS files simultaneously in
-parallel may be less efficient than operating on smaller groups of files
-in series.  CFITSIO only has NIOBUF number of internal buffers (set = 40
-by default) that are used for temporary storage of the most recent data
-records that have been read or written in the FITS files.  If the number
-of opened files is greater than NIOBUF, then CFITSIO may waste more time
-flushing and re-reading or re-writing the same records in the FITS files.
 
 2.  By default, CFITSIO can handle FITS files up to 2.1 GB in size (2**31
 bytes).  This file size limit is often imposed by 32-bit operating
@@ -1110,7 +1102,7 @@ ordinary string values less than 68 characters in length.
 
 CFITSIO supports 2 ways to specify that a character column in a binary
 table contains an array of fixed-length strings.  The first way, which
-is offically supported by the FITS Standard document, uses the TDIMn keyword.
+is officially supported by the FITS Standard document, uses the TDIMn keyword.
 For example, if TFORMn = '60A' and TDIMn = '(12,5)' then that 
 column will be interpreted as containing an array of 5 strings, each 12
 characters long.
@@ -1344,20 +1336,11 @@ subroutine calls.
 
 The optimal number of rows returned by ftgrsz is valid only as long as
 the application program is only reading or writing data in the
-specified table.  Any other calls to access data in the table header or
-in any other FITS file would  cause additional blocks of data to be
+specified table.  Any other calls to access data in the table header 
+would  cause additional blocks of data to be
 loaded into the I/O buffers displacing data from the original table,
 and should be avoided during the critical period while the table is
 being read or written.
-
-Occasionally it is necessary to simultaneously access more than one
-FITS table, for example when transferring values from an input table to
-an output table.  In cases like this, one should call ftgrsz to get the
-optimal number of rows for each table separately, than reduce the
-number of rows proportionally.  For example, if the optimal number of
-rows in the input table is 3600 and is 1400 in the output table, then
-these values should be cut in half to 1800 and 700, respectively, if
-both tables are going to be accessed at the same time.
 
 3.  Use binary table extensions rather than ASCII table
 extensions for better efficiency  when dealing with tabular data.  The
@@ -1405,7 +1388,7 @@ position of each element to be read or written.
 8. Avoid the use of variable length vector columns in binary tables,
 since any reading or writing of these data requires that CFITSIO first
 look up or compute the starting address of each row of data in the
-heap.
+heap.  In practice, this is probably not a significant efficiency issue.
 
 9. When copying data from one FITS table to another, it is faster to
 transfer the raw bytes instead of reading then writing each column of
@@ -2937,7 +2920,7 @@ the underscore character be used in column names (with no embedded
                ttype,tunit,datatype,repeat,tscal,tzero,tnull,tdisp,status)
 -
 >7  Put (append) a TDIMn keyword whose value has the form '(l,m,n...)'
-    where l, m, n... are the dimensions of a multidimension array
+    where l, m, n... are the dimensions of a multidimensional array
 >   column in a binary table.
 -
         FTPTDM(unit,colnum,naxis,naxes, > status)
@@ -3136,9 +3119,15 @@ of flags which defines whether the corresponding data pixel is undefined.
 >1  Put elements into an ASCII or binary table column (in the CDU).
     (The SPP FSPCLS routine has an additional integer argument after 
     the VALUES character string which specifies the size of the 1st 
->   dimension of this 2-D CHAR array).
+    dimension of this 2-D CHAR array).
+
+    The alternate version of these routines, whose names end in 'LL'
+    after the datatype character, support large tables with more then
+    2*31 rows.  When calling these routines, the frow and felem parameters
+>   *must* be 64-bit integer*8 variables, instead of normal 4-byte integers. 
 -
         FTPCL[SLBIJKEDCM](unit,colnum,frow,felem,nelements,values, > status)
+        FTPCL[LBIJKEDCM]LL(unit,colnum,frow,felem,nelements,values, > status)
 -
 >2  Put elements into an ASCII or binary table column (in the CDU)
     substituting the appropriate FITS null value for any elements that
@@ -3147,9 +3136,16 @@ of flags which defines whether the corresponding data pixel is undefined.
     For integer FITS columns, in a binary table  the null value
     defined by the previous call to FTTNUL will be substituted;
     For floating point FITS columns a special IEEE NaN (Not-a-Number)
->   value will be substituted.
+    value will be substituted.
+
+    The alternate version of these routines, whose names end in 'LL'
+    after the datatype character, support large tables with more then
+    2*31 rows.  When calling these routines, the frow and felem parameters
+>   *must* be 64-bit integer*8 variables, instead of normal 4-byte integers. 
 -
-        FTPCN[BIJKED](unit,colnum,frow,felem,nelements,values,nullval > status)
+        FTPCN[SBIJKED](unit,colnum,frow,felem,nelements,values,nullval > status)
+        FTPCN[SBIJKED]LL(unit,colnum,(I*8) frow,(I*8) felem,nelements,values,
+	                nullval > status)
 -
 >3  Put bit values into a binary byte ('B') or bit ('X') table column (in the
     CDU).  LRAY is an array of logical values corresponding to the sequence of
@@ -3179,11 +3175,18 @@ of flags which defines whether the corresponding data pixel is undefined.
     the ftgcfl routine to check for undefined logical elements).
     (The SPP FSGCVS routine has an additional integer argument after 
     the VALUES character string which specifies the size of the 1st 
->   dimension of this 2-D CHAR array).
+    dimension of this 2-D CHAR array).
+
+    The alternate version of these routines, whose names end in 'LL'
+    after the datatype character, support large tables with more then
+    2*31 rows.  When calling these routines, the frow and felem parameters
+>   *must* be 64-bit integer*8 variables, instead of normal 4-byte integers. 
 -
         FTGCL(unit,colnum,frow,felem,nelements, > values,status)
         FTGCV[SBIJKEDCM](unit,colnum,frow,felem,nelements,nullval, > 
                        values,anyf,status)
+        FTGCV[BIJKEDCM]LL(unit,colnum,(I*8) frow, (I*8) felem, nelements,
+	               nullval, > values,anyf,status)
 -
 >6  Get elements and null flags from an ASCII or binary table column (in the
     CHDU).  These routines return the values of the table column array elements.
@@ -3192,9 +3195,16 @@ of flags which defines whether the corresponding data pixel is undefined.
     returned elements are undefined.
     (The SPP FSGCFS routine has an additional integer argument after 
     the VALUES character string which specifies the size of the 1st 
->   dimension of this 2-D CHAR array).
+    dimension of this 2-D CHAR array).
+
+    The alternate version of these routines, whose names end in 'LL'
+    after the datatype character, support large tables with more then
+    2*31 rows.  When calling these routines, the frow and felem parameters
+>   *must* be 64-bit integer*8 variables, instead of normal 4-byte integers. 
 -
         FTGCF[SLBIJKEDCM](unit,colnum,frow,felem,nelements, > 
+                         values,flagvals,anyf,status)
+        FTGCF[BIJKED]LL(unit,colnum, (I*8) frow, (I*8) felem,nelements, > 
                          values,flagvals,anyf,status)
 -
 >7  Get an arbitrary data subsection from an N-dimensional array
@@ -3370,7 +3380,7 @@ http://fits.gsfc.nasa.gov under the WCS link.
 
 The functions provided in these external WCS libraries will need access to
 the  WCS information contained in the FITS file headers.  One convenient
-way to pass this information to the extermal library is to use  FITSIO
+way to pass this information to the external library is to use  FITSIO
 to copy the header keywords into one long character string, and then
 pass this string to an interface routine in the external library that
 will extract the necessary WCS information (e.g., see the astFitsChan
@@ -3855,7 +3865,7 @@ file, passing them to the work function, and then writing any output
 data back to the FITS file after the work function exits.  Because
 it is often more efficient to process only a subset of the total table
 rows at one time, the iterator function can determine the optimum
-amount of data to pass in each iteration and repeatly call the work
+amount of data to pass in each iteration and repeatedly call the work
 function until the entire table been processed.
 
 For many applications this single CFITSIO iterator function can
@@ -3928,7 +3938,7 @@ read the image header or data.  Similarly, raw binary data arrays can
 be read by converting them on the fly into virtual FITS images.
 
 \item
-FITS files on the internet can be read (and sometimes written) using the FTP,
+FITS files on the Internet can be read (and sometimes written) using the FTP,
 HTTP, or ROOT protocols.
 
 \item
@@ -4015,7 +4025,7 @@ the stdout stream.
 
 \item
 {\tt 'ftp://legacy.gsfc.nasa.gov/test/vela.fits'}:  FITS files in any ftp
-archive site on the internet may be directly opened with read-only
+archive site on the Internet may be directly opened with read-only
 access.
 
 \item
@@ -4054,7 +4064,7 @@ in this case.
 a temporary file on the fly (in memory or on disk) that is identical to
 myfile.fits except that it will contain a new column in the EVENTS
 extension called 'Rad' whose value is computed using the indicated
-expresson which is a function of the values in the X and Y columns.
+expression which is a function of the values in the X and Y columns.
 
 \item
 {\tt 'myfile.fits[EVENTS][PHA > 5]'}:  creates and opens a temporary FITS
@@ -4238,7 +4248,7 @@ shared memory files in CFITSIO by calling:
    fit_create_file(&fitsfileptr, "shmem://h2", &status);
 -
 where the root `file' names are currently restricted to be 'h0', 'h1',
-'h2', 'h3', etc., up to a maximumn number defined by the the value of
+'h2', 'h3', etc., up to a maximum number defined by the the value of
 SHARED\_MAXSEG (equal to 16 by default).  This is a prototype
 implementation of the shared memory interface and a more robust
 interface, which will have fewer restrictions on the number of files
@@ -4620,11 +4630,11 @@ of every pixel in a FITS image, thus creating a new virtual image
 in computer memory that is then opened and read by the application
 program.  The original FITS image is not modified by this process.
 
-The image tranformation specifier is appended to the input
+The image transformation specifier is appended to the input
 FITS file name and is enclosed in square brackets.  It begins with the 
 letters 'PIX' to distinguish it from other types of FITS file filters
 that are recognized by CFITSIO.  The image transforming function may
-use any of the mathmatical operators listed in the following 
+use any of the mathematical operators listed in the following 
 'Row Filtering Specification' section of this document.
 Some examples of  image transform filters are:
 -
@@ -4798,7 +4808,7 @@ If the expression contains both a list of columns to be included and
 columns to be deleted, then all the columns in the original table 
 except the explicitly deleted columns will appear in the filtered
 table.  If no columns to be deleted are specified, then only the
-columns that are explicitely listed will be included in the filtered
+columns that are explicitly listed will be included in the filtered
 output table.  To include all the columns, add the '*' wildcard
 specifier at the end of the list, as shown in the examples.
 
@@ -4888,7 +4898,7 @@ Examples:
     keyword name with a single pound sign, '\#', as in '\#NAXIS2'.  Due to
     the generalities of FITS column and  keyword names, if the column or
     keyword name  contains a space or a  character which might appear as
-    an arithmetic  term then inclose  the  name in '\$'  characters as in
+    an arithmetic  term then enclose  the  name in '\$'  characters as in
     \$MAX PHA\$ or \#\$MAX-PHA\$.  Names are case insensitive.
 
     To access a table entry in a row other  than the current one, follow
@@ -4934,7 +4944,7 @@ by a backslash to force the UNIX shell to ignore it.
     "exponential"        exp(x)     "square root"          sqrt(x)
     "natural log"        log(x)     "common log"           log10(x)
     "modulus"            x % y      "random # [0.0,1.0)"   random()
-    "random Gausian"     randomn()  "random Poisson"       randomp(x)
+    "random Gaussian"    randomn()  "random Poisson"       randomp(x)
     "minimum"            min(x,y)   "maximum"              max(x,y)
     "cumulative sum"     accum(x)  "sequential difference" seqdiff(x)
     "if-then-else"       b?x:y
@@ -4948,8 +4958,8 @@ deviate whose expected number of counts is X.  X may be any positive real
 number of expected counts, including fractional values, but the return value
 is an integer.
 
-When the random functions are used in a vector expresion, by default
-the same random value will be used when evalutating each element of the vector.
+When the random functions are used in a vector expression, by default
+the same random value will be used when evaluating each element of the vector.
 If different random numbers are desired, then the name of a vector 
 column should be supplied as the single argument to the random 
 function (e.g., "flux + 0.1 * random(flux)", where "flux' is the
@@ -4977,7 +4987,7 @@ element of the vector expression.
     coordinates of the second position.
     
     The  following  type  casting  operators  are  available,  where the
-    inclosing parentheses are required and taken  from  the  C  language
+    enclosing parentheses are required and taken  from  the  C  language
     usage. Also, the integer to real casts values to double precision:
 -
                 "real to integer"    (int) x     (INT) x
@@ -5102,7 +5112,7 @@ element of the vector expression.
 -
     "minimum"      MIN(V)          "maximum"               MAX(V)
     "average"      AVERAGE(V)      "median"                MEDIAN(V)
-    "sumation"     SUM(V)          "standard deviation"    STDDEV(V)
+    "summation"    SUM(V)          "standard deviation"    STDDEV(V)
     "# of values"  NELEM(V)        "# of non-null values"  NVALID(V)
 -
     where V represents the name of a vector column or a manually 
@@ -5233,7 +5243,7 @@ element of the vector expression.
     provided with these programs for more details on the syntax used in
     the region files.
 
-    In its simpliest form, (e.g., regfilter("region.reg") ) the
+    In its simplest form, (e.g., regfilter("region.reg") ) the
     coordinates in the default 'X' and 'Y' columns will be used to
     determine if each row is inside or outside the area specified in
     the region file.  Alternate position column names, or expressions,
@@ -5298,7 +5308,7 @@ element of the vector expression.
 -
     where (Xc,Yc) is  the coordinate of  the shape's center; (X\#,Y\#) are
     the coordinates  of the shape's edges;  Rxxx are the shapes' various
-    Radii or semimajor/minor  axes; and Axxx  are the angles of rotation
+    Radii or semi-major/minor  axes; and Axxx  are the angles of rotation
     (or bounding angles for Sector) in degrees.  For rotated shapes, the
     rotation angle  can  be left  off, indicating  no rotation.   Common
     alternate  names for the regions  can also be  used: rotbox = box;

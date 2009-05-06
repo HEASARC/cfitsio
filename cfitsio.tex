@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large December 2008\\}
+{\Large April 2009\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -140,7 +140,7 @@ Fv and FTOOLS are available from their respective Web sites at:
 \end{verbatim}
 
 
-\section{Acknowledgements}
+\section{Acknowledgments}
 
 The development of the many powerful features in CFITSIO was made
 possible through collaborations with many people or organizations from
@@ -155,7 +155,8 @@ made other new features in CFITSIO (e.g., support for compressed FITS
 files and support for IRAF format image files) much easier to
 implement.  Jurek Borkowski wrote the Shared Memory driver, and Bruce
 O'Neel wrote the drivers for accessing FITS files over the network
-using the FTP, HTTP, and ROOT protocols.
+using the FTP, HTTP, and ROOT protocols.  Also, in 2009, Bruce O'Neel
+was the key developer of the thread-safe version of CFITSIO.
 
 The ISDC also provided the template parsing routines (written by Jurek
 Borkowski) and the hierarchical grouping routines (written by Don
@@ -389,7 +390,7 @@ then they may be omitted from the build by typing 'make all-nofitsio'
 instead of simply typing 'make'.  This will reduce the size
 of the CFITSIO library slightly.
 
-It may not be possible to staticly link programs that use CFITSIO on
+It may not be possible to statically link programs that use CFITSIO on
 some platforms (namely, on Solaris 2.6) due to the network drivers
 (which provide FTP and HTTP access to FITS files).  It is possible to
 make both a dynamic and a static version of the CFITSIO library, but
@@ -412,14 +413,14 @@ link line in the next section of this document.
 
 A precompiled DLL version of CFITSIO is available for IBM-PC users of
 the Borland or Microsoft Visual C++ compilers in the files
-cfitsiodll\_2xxx\_borland.zip and cfitsiodll\_2xxx\_vcc.zip, where
-'2xxx' represents the current release number.  These zip archives also
+cfitsiodll\_3xxx\_borland.zip and cfitsiodll\_3xxx\_vcc.zip, where
+'3xxx' represents the current release number.  These zip archives also
 contains other files and instructions on how to use the CFITSIO DLL
 library.
 
 The CFITSIO library may also be built from the source code using the
 makefile.bc or makefile.vcc  files.  Finally, the makepc.bat file gives
-an example of  building CFITSIO with the Borland C++ v4.5 compiler
+an example of  building CFITSIO with the Borland C++ v4.5 or v5.5  compiler
 using older DOS commands.
 
 
@@ -712,7 +713,7 @@ TUNITn -- the physical units of the column (optional)
 \end{itemize}
 
 Users should refer to the FITS Support Office at {\tt http://fits.gsfc.nasa.gov}
-for futher information about the FITS format and related software
+for further information about the FITS format and related software
 packages.
 
 
@@ -906,7 +907,7 @@ The logical data type corresponds to `int' for logical keyword values,
 and `byte' for logical binary table columns.  In other words, the value
 when writing a logical keyword must be stored in an `int' variable, and
 must be stored in a `char' array when reading or writing to `L' columns
-in a binary table.  Inplicit data type conversion is not supported for
+in a binary table.  Implicit data type conversion is not supported for
 logical table columns, but is for keywords, so a logical keyword may be
 read and cast to any numerical data type; a returned value = 0
 indicates false, and any other value = true.
@@ -1444,16 +1445,8 @@ number of files that may open at once (including any other text or
 binary files that may be open, not just FITS files).  On some systems it
 has been found that gcc supports a maximum of 255 opened files.
 
-Note that opening and operating on many FITS files simultaneously in
-parallel may be less efficient than operating on smaller groups of files
-in series.  CFITSIO only has NIOBUF number of internal buffers (set = 40
-by default) that are used for temporary storage of the most recent data
-records that have been read or written in the FITS files.  If the number
-of opened files is greater than NIOBUF, then CFITSIO may waste more time
-flushing and re-reading or re-writing the same records in the FITS files.
-
 2.  It used to be common for computer systems to only support disk files up
-to 2**31 bytes = 2.1 GB in size, but this barrier is gradually being broken.
+to 2**31 bytes = 2.1 GB in size, but most systems now support larger files.
 CFITSIO can optionally read and write these so-called 'large files' that
 are greater than 2.1 GB on
 platforms where they are supported, but this
@@ -1482,7 +1475,7 @@ FITS images containing greater than 2.1 G pixels
 FITS images that have one dimension with more than 2.1 G pixels
 (as given by one of the NAXISn keyword)
 \item
-FITS tables containing more than 2.1 G rows (given by the NAXIS2 keyword),
+FITS tables containing more than 2.1E09 rows (given by the NAXIS2 keyword),
 or with rows that are more than 2.1 GB wide (given by the NAXIS1 keyword)
 \item
 FITS binary tables with a variable-length array heap that is larger
@@ -1501,7 +1494,7 @@ to store quantities such as the dimensions of images, or the number of
 rows in a table.  These programs must also call the special versions
 of some of the CFITSIO routines that have been adapted to
 support 64-bit integers.  The names of these routines end in
-'ll' ('el' 'el') to distinquish them from the 32-bit integer
+'ll' ('el' 'el') to distinguish them from the 32-bit integer
 version (e.g.,  fits\_get\_num\_rowsll).
 
 
@@ -1944,7 +1937,7 @@ header position to the end of the header and will not resume the search
 from the top of the header back to the original header position as is
 done when no wildcards are included in the keyword name.  The
 fits\_read\_record routine may be used to set the starting position
-when doing wild card searchs.  A status value of KEY\_NO\_EXIST is
+when doing wild card searches.  A status value of KEY\_NO\_EXIST is
 returned if the specified keyword to be read is not found in the
 header.
 
@@ -2255,7 +2248,7 @@ Users should also read the following chapter on the CFITSIO iterator
 function which provides a more `object oriented' method of reading and
 writing images.  The iterator function is a little more complicated to
 use, but the advantages are that it usually takes less code to perform
-the same operation, and the resulting program oftens runs faster because
+the same operation, and the resulting program often runs faster because
 the FITS files are read and written using the most efficient block size.
 
 C programmers should note that the ordering of arrays in FITS files, and
@@ -2348,7 +2341,7 @@ in the FITS array.
 
     The 'cell2image' routine
     will append a new image extension (or primary array) to the output file.
-    Any WCS keywords associated with the input column image will be tranlated
+    Any WCS keywords associated with the input column image will be translated
     into the appropriate form for an image extension.  Any other keywords
     in the table header that are not specifically related to defining the
     binary table structure or to other columns in the table
@@ -2546,7 +2539,7 @@ read access, and because b) it is possible to extract and uncompress
 sections of the image without having to uncompress the entire image. This
 format is also much more effective in compressing floating point images
 than simply compressing the image using gzip or compress because it
-approximages the floating point values with scaled integers which can then
+approximates the floating point values with scaled integers which can then
 be compressed more efficiently.
 
 Currently CFITSIO supports 3 general purpose compression algorithms  plus
@@ -2580,13 +2573,13 @@ on the RMS noise in the image, it is usually more convention
 to specify the HCOMPRESS scale factor relative to the RMS noise.
 Setting s = 2.5 means use a scale factor that is 2.5 times the calculated RMS noise
 in the image tile.   In some cases
-it may be desireable to specify the exact scaling to be used,
+it may be desirable to specify the exact scaling to be used,
 instead of specifying it relative to the calculated noise value.  This may
 be done by specifying the negative of desired scale value (typically
 in the range -2 to -100).
 
 Very high compression factors (of 100 or more) can be
-achieved by using large HCOMPRESS scale values, however, this can produce undesireable
+achieved by using large HCOMPRESS scale values, however, this can produce undesirable
 ``blocky'' artifacts in the compressed image.  A variation of the HCOMPRESS
 algorithm (called HSCOMPRESS) can be used in this case to apply a small
 amount of smoothing of the image when it is uncompressed to help cover up
@@ -2622,12 +2615,12 @@ pixels of an  image = 32.0,  then the spacing between adjacent scaled
 integer pixel values  will equal 2.0 by default.  Note that the RMS noise is
 independently calculated for each tile of the image, so the resulting
 integer scaling factor may fluctuate slightly for each tile.   In some cases
-it may be desireable to specify the exact quantization level to be used,
+it may be desirable to specify the exact quantization level to be used,
 instead of specifying it relative to the calculated noise value.  This may
 be done by specifying the negative of desired quantization level for the
 value of q.  In the previous example, one could specify q = -2.0 so that the
 quantized integer levels differ by 2.0.  Larger negative values for q means
-that the levels are more coursely spaced, and will produce higher
+that the levels are more coarsely spaced, and will produce higher
 compression factors.
 
 There are 2 methods for specifying all the parameters needed to write a FITS
@@ -2649,7 +2642,7 @@ where
 
 \begin{verbatim}
     NAME   = algorithm name:  GZIP, Rice, HCOMPRESS, HSCOMPRSS or PLIO
-             may be abreviated to the first letter (or HS for HSCOMPRESS)
+             may be abbreviated to the first letter (or HS for HSCOMPRESS)
     T1,T2  = tile dimension (e.g. 100,100 for square tiles 100 pixels wide)
     QLEVEL = quantization level for floating point FITS images
     HSCALE = HCOMPRESS scale factor; default = 0 which is lossless.
@@ -2783,7 +2776,7 @@ Users should also read the following chapter on the CFITSIO iterator
 function which provides a more `object oriented' method of reading and
 writing table columns.  The iterator function is a little more
 complicated to use, but the advantages are that it usually takes less
-code to perform the same operation, and the resulting program oftens
+code to perform the same operation, and the resulting program often
 runs faster because the FITS files are read and written using the most
 efficient block size.
 
@@ -2906,7 +2899,7 @@ spaces).  Trailing blank characters are not significant.
     keyword may also be used to specify the unit string length; The pair
     of keywords TFORMn = '60A' and TDIMn = '(12,5)'  would have the
     same effect as TFORMn = '60A12').  The number
-    of substings in any binary table character string field can be
+    of substrings in any binary table character string field can be
     calculated by (repeat/width).  A null pointer may be given for any of
     the output parameters that are not needed.
 
@@ -2991,7 +2984,7 @@ spaces).  Trailing blank characters are not significant.
 
 \begin{description}
 \item[7 ] Write a TDIMn keyword whose value has the form '(l,m,n...)'
-    where l, m, n... are the dimensions of a multidimension array
+    where l, m, n... are the dimensions of a multidimensional array
    column in a binary table. \label{ffptdm}
 \end{description}
 
@@ -4063,12 +4056,12 @@ This routine is useful for translating keywords in cases such as
 adding or deleting columns in
 a table, or copying a column from one table to another, or extracting
 an array from a cell in a binary table column into an image extension.  In
-these cases, it is necessary to tranlate the names of the keywords associated
+these cases, it is necessary to translate the names of the keywords associated
 with the original table column(s) into the appropriate keyword name in the final
 file.  For example, if column 2 is deleted from a table,
 then the value of 'n' in all the
 TFORMn and TTYPEn keywords for columns 3 and higher must be decremented
-by 1.  Even more complex translations are sometines needed to convert the
+by 1.  Even more complex translations are sometimes needed to convert the
 WCS keywords when extracting an image out of a table column cell into
 a separate image extension.
 
@@ -4280,7 +4273,7 @@ file, passing them to the work function, and then writing any output
 data back to the FITS file after the work function exits.  Because
 it is often more efficient to process only a subset of the total table
 rows at one time, the iterator function can determine the optimum
-amount of data to pass in each iteration and repeatly call the work
+amount of data to pass in each iteration and repeatedly call the work
 function until the entire table been processed.
 
 For many applications this single CFITSIO iterator function can
@@ -4752,7 +4745,7 @@ http://fits.gsfc.nasa.gov under the WCS link.
 
 The functions provided in these external WCS libraries will need
 access to the  WCS keywords contained in the FITS file headers.
-One convenient way to pass this information to the extermal library is
+One convenient way to pass this information to the external library is
 to use the fits\_hdr2str routine in CFITSIO (defined below) to copy the
 header keywords into one long string, and then pass this string to an
 interface routine in the external library that will extract
@@ -5355,7 +5348,7 @@ and the
 image pixel filtering specifier.
 \end{itemize}
  Null strings will be returned for any components that are not present
-in the input file name.  These routines are mainly for interal use
+in the input file name.  These routines are mainly for internal use
 by other CFITSIO routines. \label{ffiurl}
 \end{description}
 
@@ -6291,7 +6284,7 @@ FITS image has NAXIS1 = 100 and NAXIS2 = 50, then a 2-D array just
 large enough to hold the image should be declared as array[50][100] and
 not as array[100][50].
 
-For convenience, higher-level routines are also provided to specificly
+For convenience, higher-level routines are also provided to specifically
 deal with 2D images (ffp2d\_ and ffg2d\_) and 3D data cubes (ffp3d\_
 and ffg3d\_).  The dimensionality of the FITS image is passed by the
 naxis1, naxis2, and naxis3 parameters and the declared dimensions of
@@ -6932,7 +6925,7 @@ read the image header or data.  Similarly, raw binary data arrays can
 be read by converting them on the fly into virtual FITS images.
 
 \item
-FITS files on the internet can be read (and sometimes written) using the FTP,
+FITS files on the Internet can be read (and sometimes written) using the FTP,
 HTTP, or ROOT protocols.
 
 \item
@@ -7021,7 +7014,7 @@ the stdin or stdout streams.
 
 \item
 {\tt ftp://legacy.gsfc.nasa.gov/test/vela.fits}:  FITS files in any ftp
-archive site on the internet may be directly opened with read-only
+archive site on the Internet may be directly opened with read-only
 access.
 
 \item
@@ -7132,7 +7125,7 @@ CFITSIO to read and/or write the file.  Currently supported types are
                    for accessing password-protected ftp sites.
         http://  - a readonly file accessed with the HTTP protocol.  It
                    does not  support username:password like the ftp driver.
-                   Proxy HTTP survers are supported using the http_proxy
+                   Proxy HTTP servers are supported using the http_proxy
                    environment variable (see following note).
       stream://  - special driver to read an input FITS file from the stdin
                    stream, and/or write an output FITS file to the stdout
@@ -7777,11 +7770,11 @@ of every pixel in a FITS image, thus creating a new virtual image
 in computer memory that is then opened and read by the application
 program.  The original FITS image is not modified by this process.
 
-The image tranformation specifier is appended to the input
+The image transformation specifier is appended to the input
 FITS file name and is enclosed in square brackets.  It begins with the
 letters 'PIX' to distinguish it from other types of FITS file filters
 that are recognized by CFITSIO.  The image transforming function may
-use any of the mathmatical operators listed in the following
+use any of the mathematical operators listed in the following
 'Row Filtering Specification' section of this document.
 Some examples of  image transform filters are:
 
@@ -7965,7 +7958,7 @@ If the expression contains both a list of columns to be included and
 columns to be deleted, then all the columns in the original table
 except the explicitly deleted columns will appear in the filtered
 table.  If no columns to be deleted are specified, then only the
-columns that are explicitely listed will be included in the filtered
+columns that are explicitly listed will be included in the filtered
 output table.  To include all the columns, add the '*' wildcard
 specifier at the end of the list, as shown in the examples.
 
@@ -8125,8 +8118,8 @@ produces a Poisson random deviate whose expected number of counts is
 X.  X may be any positive real number of expected counts, including
 fractional values, but the return value is an integer.
 
-When the random functions are used in a vector expresion, by default
-the same random value will be used when evalutating each element of the vector.
+When the random functions are used in a vector expression, by default
+the same random value will be used when evaluating each element of the vector.
 If different random numbers are desired, then the name of a vector
 column should be supplied as the single argument to the random
 function (e.g., "flux + 0.1 * random(flux)", where "flux' is the
@@ -8290,7 +8283,7 @@ element of the vector expression.
 \begin{verbatim}
     "minimum"      MIN(V)          "maximum"               MAX(V)
     "average"      AVERAGE(V)      "median"                MEDIAN(V)
-    "sumation"     SUM(V)          "standard deviation"    STDDEV(V)
+    "summation"    SUM(V)          "standard deviation"    STDDEV(V)
     "# of values"  NELEM(V)        "# of non-null values"  NVALID(V)
 \end{verbatim}
     where V represents the name of a vector column or a manually
@@ -8429,7 +8422,7 @@ element of the vector expression.
     provided with these programs for more details on the syntax used in
     the region files.
 
-    In its simpliest form, (e.g., regfilter("region.reg") ) the
+    In its simplest form, (e.g., regfilter("region.reg") ) the
     coordinates in the default 'X' and 'Y' columns will be used to
     determine if each row is inside or outside the area specified in
     the region file.  Alternate position column names, or expressions,
@@ -8999,7 +8992,7 @@ is stored as a pair of 64-bit integers.
 
 For the convenience of C programmers, the fitsio.h include file
 defines (with a typedef statement) the 'LONGLONG' datatype to be
-eqivalent to an appropriate 64-bit integer datatype on each platform.
+equivalent to an appropriate 64-bit integer datatype on each platform.
 Since there is currently no universal standard
 for the name of the 64-bit integer datatype (it might be defined as
 'long long', 'long', or '\_\_int64' depending on the platform)
@@ -9085,7 +9078,7 @@ less than 68 characters in length.
 
 CFITSIO supports 2 ways to specify that a character column in a binary
 table contains an array of fixed-length strings.  The first way, which
-is offically supported by the FITS Standard document, uses the TDIMn keyword.
+is officially supported by the FITS Standard document, uses the TDIMn keyword.
 For example, if TFORMn = '60A' and TDIMn = '(12,5)' then that
 column will be interpreted as containing an array of 5 strings, each 12
 characters long.
@@ -9343,10 +9336,8 @@ table in parallel rather than sequentially, each block of the FITS file
 will only be read or written once.
 
 The optimal number of rows to read or write at one time in a given
-table depends on the width of the table row, on the number of IO
-buffers that have been allocated in CFITSIO, and also on the number of
-other FITS files that are open at the same time (since one IO buffer is
-always reserved for each open FITS file).  The CFITSIO Iterator routine
+table depends on the width of the table row and on the number of IO
+buffers that have been allocated in CFITSIO.  The CFITSIO Iterator routine
 will automatically use the optimal-sized buffer, but there is also a
 CFITSIO routine that will return the optimal number of rows for a given
 table:  fits\_get\_rowsize.  It is not critical to use exactly the
@@ -9357,20 +9348,10 @@ because of the overhead from the larger number of subroutine calls.
 The optimal number of rows returned by fits\_get\_rowsize is valid only
 as long as the application program is only reading or writing data in
 the specified table.  Any other calls to access data in the table
-header or in any other FITS file would  cause additional blocks of data
+header would  cause additional blocks of data
 to be loaded into the IO buffers displacing data from the original
 table, and should be avoided during the critical period while the table
 is being read or written.
-
-Occasionally it is necessary to simultaneously access more than one
-FITS table, for example when transferring values from an input table to
-an output table.  In cases like this, one should call
-fits\_get\_rowsize to get the optimal number of rows for each table
-separately, than reduce the number of rows proportionally.  For
-example, if the optimal number of rows in the input table is 3600 and
-is 1400 in the output table, then these values should be cut in half to
-1800 and 700, respectively, if both tables are going to be accessed at
-the same time.
 
 3.  Use the CFITSIO Iterator routine.  This routine provides a
 more `object oriented' way of reading and writing FITS files
@@ -9423,7 +9404,7 @@ position of each element to be read or written.
 9. Avoid the use of variable length vector columns in binary tables,
 since any reading or writing of these data requires that CFITSIO first
 look up or compute the starting address of each row of data in the
-heap.
+heap.  In practice, this is probably not a significant efficiency issue.
 
 10. When copying data from one FITS table to another, it is faster to
 transfer the raw bytes instead of reading then writing each column of
@@ -9454,12 +9435,11 @@ difficult to understand and maintain, and it makes the code more system
 dependent (e.g., do the bytes need to be swapped before writing to the
 FITS file?).
 
-12.  Finally, external factors such as the type of magnetic disk
-controller (SCSI or IDE), the size of the disk cache, the average seek
-speed of the disk, the amount of disk fragmentation, and the amount of
+12.  Finally, external factors such as the speed of the magnetic disk,
+the size of the disk cache, the amount of disk fragmentation, and the amount of
 RAM available on the system can all have a significant impact on
-overall I/O efficiency.  For critical applications, a system
-administrator should review the proposed system hardware to identify any
+overall I/O efficiency.  For critical applications, the entire hardware
+and software system should be reviewed to identify any
 potential I/O bottlenecks.
 
 

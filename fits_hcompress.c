@@ -74,6 +74,14 @@ static void output_nnybble(char *outfile, int n, unsigned char array[]);
 
 #define output_huffman(outfile,c)	output_nbits(outfile,code[c],ncode[c])
 
+#ifdef _REENTRANT
+/*
+    Fitsio_Lock and Fitsio_Pthread_Status are declared in fitsio2.h. 
+*/
+static pthread_mutex_t Fitsio_Lock;
+static int Fitsio_Pthread_Status = 0;
+
+#endif
 /* ---------------------------------------------------------------------- */
 int fits_hcompress(int *a, int ny, int nx, int scale, char *output, 
                   long *nbytes, int *status)
@@ -112,11 +120,13 @@ int fits_hcompress(int *a, int ny, int nx, int scale, char *output,
 
   /* encode and write to output array */
 
+  FFLOCK;
   noutmax = *nbytes;  /* input value is the allocated size of the array */
   *nbytes = 0;  /* reset */
 
   stat = encode(output, nbytes, a, nx, ny, scale);
-
+  FFUNLOCK;
+  
   *status = stat;
   return(*status);
 }
@@ -156,10 +166,13 @@ int fits_hcompress64(LONGLONG *a, int ny, int nx, int scale, char *output,
   digitize64(a, nx, ny, scale);
 
   /* encode and write to output array */
+
+  FFLOCK;
   noutmax = *nbytes;  /* input value is the allocated size of the array */
   *nbytes = 0;  /* reset */
 
   stat = encode64(output, nbytes, a, nx, ny, scale);
+  FFUNLOCK;
 
   *status = stat;
   return(*status);

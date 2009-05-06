@@ -218,7 +218,7 @@ int fp_usage (void)
 fp_msg ("usage: fpack ");
 fp_msg (
 "[-r|-h|-g|-p] [-w|-t <axes>] [-q <level>] [-s <scale>] [-n <noise>] -v <FITS>\n");
-fp_msg ("more:   [-T] [-F] [-D] [-Y] [-S] [-L] [-C] [-H] [-V]\n");
+fp_msg ("more:   [-T] [-R] [-F] [-D] [-Y] [-S] [-L] [-C] [-H] [-V]\n");
 return(0);
 }
 
@@ -245,8 +245,9 @@ fp_msg ("   -d          tile the image without compression (debugging mode)\n");
 
 fp_msg ("   -w          compress the whole image,as a single large tile\n");
 fp_msg ("   -t <axes>   comma separated list of tile dimensions [default=row by row]\n");
-fp_msg ("   -q <level>  quantization level for floating point images [default=16]\n");
-fp_msg ("               (+values relative to RMS noise; -value is absolute)\n");
+fp_msg ("   -q <level>  quantization level for floating point images [default=16].\n");
+fp_msg ("               Larger values preserve more precision and give less compression.\n");
+fp_msg ("               (+value relative to RMS noise; -value is absolute)\n");
 
 fp_msg ("   -s <scale>  scale factor for lossy Hcompress [default = 0 = lossless]\n");
 fp_msg ("               (+values relative to RMS noise; -value is absolute)\n");

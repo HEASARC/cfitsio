@@ -80,6 +80,15 @@ static void read_bdirect(unsigned char *infile, int a[], int n, int nqx, int nqy
 static void read_bdirect64(unsigned char *infile, LONGLONG a[], int n, int nqx, int nqy, unsigned char scratch[], int bit);
 static int  input_huffman(unsigned char *infile);
 
+#ifdef _REENTRANT
+/*
+    Fitsio_Lock and Fitsio_Pthread_Status are declared in fitsio2.h. 
+*/
+static pthread_mutex_t Fitsio_Lock;
+static int Fitsio_Pthread_Status = 0;
+
+#endif
+
 /* ---------------------------------------------------------------------- */
 int fits_hdecompress(unsigned char *input, int smooth, int *a, int *ny, int *nx, 
                      int *scale, int *status)
@@ -103,7 +112,10 @@ int stat;
 
 	/* decode the input array */
 
+        FFLOCK;  /* decode uses the nextchar global variable */
 	stat = decode(input, a, nx, ny, scale);
+        FFUNLOCK;
+
         *status = stat;
 	if (stat) return(*status);
 	
@@ -143,7 +155,10 @@ int fits_hdecompress64(unsigned char *input, int smooth, LONGLONG *a, int *ny, i
 
 	/* decode the input array */
 
+        FFLOCK;  /* decode uses the nextchar global variable */
 	stat = decode64(input, a, nx, ny, scale);
+        FFUNLOCK;
+
         *status = stat;
 	if (stat) return(*status);
 	
@@ -2275,12 +2290,11 @@ int plane_val;
 static void
 read_bdirect(unsigned char *infile, int a[], int n, int nqx, int nqy, unsigned char scratch[], int bit)
 {
-int i;
-
 	/*
 	 * read bit image packed 4 pixels/nybble
 	 */
 /*
+int i;
 	for (i = 0; i < ((nqx+1)/2) * ((nqy+1)/2); i++) {
 		scratch[i] = input_nybble(infile);
 	}
@@ -2296,12 +2310,11 @@ int i;
 static void
 read_bdirect64(unsigned char *infile, LONGLONG a[], int n, int nqx, int nqy, unsigned char scratch[], int bit)
 {
-int i;
-
 	/*
 	 * read bit image packed 4 pixels/nybble
 	 */
 /*
+int i;
 	for (i = 0; i < ((nqx+1)/2) * ((nqy+1)/2); i++) {
 		scratch[i] = input_nybble(infile);
 	}
