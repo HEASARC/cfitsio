@@ -185,11 +185,11 @@ int fits_read_ascii_region( const char *filename,
                   break;
                case ':':  
                   currLoc++;
-                  cFmt = hhmmss_fmt;
+                  if ( paramPtr ) cFmt = hhmmss_fmt; /* set format if parameter has : */
                   break;
                case 'd':
                   currLoc++;
-                  cFmt = degree_fmt;
+                  if ( paramPtr ) cFmt = degree_fmt; /* set format if parameter has d */  
                   break;
                case ',':
                   nParams++;  /* Fall through to default */
@@ -211,7 +211,6 @@ int fits_read_ascii_region( const char *filename,
             /*  Was this a blank line? Or the end of the current one  */
 
             if( ! *namePtr && ! paramPtr ) continue;
-
 
             /*  Check for format code at beginning of the line */
 
@@ -402,6 +401,23 @@ int fits_read_ascii_region( const char *filename,
                if( nParams < 6 || (nParams&1) )
                   *status = PARSE_SYNTAX_ERR;
                nCoords = nParams;
+            } else if( !strcasecmp( namePtr, "panda" ) ) {
+               newShape->shape = panda_rgn;
+               if( nParams != 8 )
+                  *status = PARSE_SYNTAX_ERR;
+               nCoords = 2;
+            } else if( !strcasecmp( namePtr, "epanda" ) ) {
+               newShape->shape = epanda_rgn;
+               if( nParams < 10 || nParams > 11 )
+                  *status = PARSE_SYNTAX_ERR;
+               newShape->param.gen.p[10] = 0.0;
+               nCoords = 2;
+            } else if( !strcasecmp( namePtr, "bpanda" ) ) {
+               newShape->shape = bpanda_rgn;
+               if( nParams < 10 || nParams > 11 )
+                  *status = PARSE_SYNTAX_ERR;
+               newShape->param.gen.p[10] = 0.0;
+               nCoords = 2;
             } else {
                ffpmsg( "Unrecognized region found in region file:" );
                ffpmsg( namePtr );
@@ -432,6 +448,7 @@ int fits_read_ascii_region( const char *filename,
 
             /*  Parse the initial "WCS?" coordinates  */
             for( i=0; i<nCoords; i+=2 ) {
+
                pX = paramPtr;
                while( *paramPtr!=',' ) paramPtr++;
                *(paramPtr++) = '\0';
@@ -508,6 +525,7 @@ int fits_read_ascii_region( const char *filename,
                }
                coords[i]   = X;
                coords[i+1] = Y;
+
             }
 
             /*  Read in remaining parameters...  */
@@ -561,6 +579,7 @@ int fits_read_ascii_region( const char *filename,
 	    if( cFmt!=pixel_fmt ) {	    
 	      switch( newShape->shape ) {
 	      case sector_rgn:
+	      case panda_rgn:
 		coords[2] += (wcs->rot);
 		coords[3] += (wcs->rot);
 		break;
@@ -574,6 +593,12 @@ int fits_read_ascii_region( const char *filename,
 	      case elliptannulus_rgn:
 		coords[6] += (wcs->rot);
 		coords[7] += (wcs->rot);
+		break;
+	      case epanda_rgn:
+	      case bpanda_rgn:
+		coords[2] += (wcs->rot);
+		coords[3] += (wcs->rot);
+		coords[10] += (wcs->rot);
 		break;
 	      }
 	    }
@@ -616,7 +641,7 @@ int fits_in_region( double    X,
 /*  Y are in pixel coordinates.                                              */
 /*---------------------------------------------------------------------------*/
 {
-   double x, y, dx, dy, xprime, yprime, r;
+   double x, y, dx, dy, xprime, yprime, r, th;
    RgnShape *Shapes;
    int i, cur_comp;
    int result, comp_result;
@@ -749,7 +774,7 @@ int fits_in_region( double    X,
          y = Y - Shapes->param.gen.p[1];
 
          if( x || y ) {
-            r = atan2( y, x ) * 180.0 / myPI;
+            r = atan2( y, x ) * RadToDeg;
             if( Shapes->param.gen.p[2] <= Shapes->param.gen.p[3] ) {
                if( r < Shapes->param.gen.p[2] || r > Shapes->param.gen.p[3] )
                   comp_result = 0;
@@ -833,6 +858,104 @@ int fits_in_region( double    X,
          else
             comp_result = Pt_in_Poly( X, Y, Shapes->param.poly.nPts,
                                        Shapes->param.poly.Pts );
+         break;
+
+      case panda_rgn:
+         /*  Shift origin to center of region  */
+         x = X - Shapes->param.gen.p[0];
+         y = Y - Shapes->param.gen.p[1];
+
+         r = x*x + y*y;
+         if ( r < Shapes->param.gen.a || r > Shapes->param.gen.b ) {
+	   comp_result = 0;
+	 } else {
+	   if( x || y ) {
+	     th = atan2( y, x ) * RadToDeg;
+	     if( Shapes->param.gen.p[2] <= Shapes->param.gen.p[3] ) {
+               if( th < Shapes->param.gen.p[2] || th > Shapes->param.gen.p[3] )
+		 comp_result = 0;
+	     } else {
+               if( th < Shapes->param.gen.p[2] && th > Shapes->param.gen.p[3] )
+		 comp_result = 0;
+	     }
+	   }
+         }
+         break;
+
+      case epanda_rgn:
+         /*  Shift origin to center of region  */
+         xprime = X - Shapes->param.gen.p[0];
+         yprime = Y - Shapes->param.gen.p[1];
+
+         /*  Rotate point to region's orientation  */
+         x =  xprime * Shapes->param.gen.cosT + yprime * Shapes->param.gen.sinT;
+         y = -xprime * Shapes->param.gen.sinT + yprime * Shapes->param.gen.cosT;
+	 xprime = x;
+	 yprime = y;
+
+	 /* outer region test */
+         x = xprime/Shapes->param.gen.p[7];
+         y = yprime/Shapes->param.gen.p[8];
+         r = x*x + y*y;
+	 if ( r>1.0 )
+	   comp_result = 0;
+	 else {
+	   /* inner region test */
+	   x = xprime/Shapes->param.gen.p[5];
+	   y = yprime/Shapes->param.gen.p[6];
+	   r = x*x + y*y;
+	   if ( r<1.0 )
+	     comp_result = 0;
+	   else {
+	     /* angle test */
+	     if( xprime || yprime ) {
+	       th = atan2( yprime, xprime ) * RadToDeg;
+	       if( Shapes->param.gen.p[2] <= Shapes->param.gen.p[3] ) {
+		 if( th < Shapes->param.gen.p[2] || th > Shapes->param.gen.p[3] )
+		   comp_result = 0;
+	       } else {
+		 if( th < Shapes->param.gen.p[2] && th > Shapes->param.gen.p[3] )
+		   comp_result = 0;
+	       }
+	     }
+	   }
+	 }
+         break;
+
+      case bpanda_rgn:
+         /*  Shift origin to center of region  */
+         xprime = X - Shapes->param.gen.p[0];
+         yprime = Y - Shapes->param.gen.p[1];
+
+         /*  Rotate point to region's orientation  */
+         x =  xprime * Shapes->param.gen.cosT + yprime * Shapes->param.gen.sinT;
+         y = -xprime * Shapes->param.gen.sinT + yprime * Shapes->param.gen.cosT;
+
+	 /* outer box test */
+         dx = 0.5 * Shapes->param.gen.p[7];
+         dy = 0.5 * Shapes->param.gen.p[8];
+         if( (x < -dx) || (x > dx) || (y < -dy) || (y > dy) )
+	   comp_result = 0;
+	 else {
+	   /* inner box test */
+	   dx = 0.5 * Shapes->param.gen.p[5];
+	   dy = 0.5 * Shapes->param.gen.p[6];
+	   if( (x >= -dx) && (x <= dx) && (y >= -dy) && (y <= dy) )
+	     comp_result = 0;
+	   else {
+	     /* angle test */
+	     if( x || y ) {
+	       th = atan2( y, x ) * RadToDeg;
+	       if( Shapes->param.gen.p[2] <= Shapes->param.gen.p[3] ) {
+		 if( th < Shapes->param.gen.p[2] || th > Shapes->param.gen.p[3] )
+		   comp_result = 0;
+	       } else {
+		 if( th < Shapes->param.gen.p[2] && th > Shapes->param.gen.p[3] )
+		   comp_result = 0;
+	       }
+	     }
+	   }
+	 }
          break;
       }
 
@@ -1086,6 +1209,15 @@ void fits_setup_shape ( RgnShape *newShape)
     newShape->param.gen.cosT = ( R ? X/R : 1.0 );
     newShape->param.gen.a    = R + 0.5;
     break;
+  case panda_rgn:
+    newShape->param.gen.a = newShape->param.gen.p[5]*newShape->param.gen.p[5];
+    newShape->param.gen.b = newShape->param.gen.p[6]*newShape->param.gen.p[6];
+    break;
+  case epanda_rgn:
+  case bpanda_rgn:
+    newShape->param.gen.sinT = sin( myPI * (coords[10] / 180.0) );
+    newShape->param.gen.cosT = cos( myPI * (coords[10] / 180.0) );
+    break;
   }
 
   /*  Set the xmin, xmax, ymin, ymax elements of the RgnShape structure */
@@ -1142,6 +1274,23 @@ void fits_setup_shape ( RgnShape *newShape)
     
   case point_rgn:
     R = 1.0;
+    break;
+
+  case panda_rgn:
+    R = coords[6];
+    break;
+
+  case epanda_rgn:
+    if ( coords[7] > coords[8] ) {
+      R = coords[7];
+    } else {
+      R = coords[8];
+    }
+    break;
+
+  case bpanda_rgn:
+    R = sqrt(coords[7]*coords[8]+
+	     coords[7]*coords[8])/2.0;
     break;
 
   }

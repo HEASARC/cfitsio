@@ -4,6 +4,7 @@
 
 #include "fitsio.h"
 #define myPI  3.1415926535897932385
+#define RadToDeg 180.0/myPI
 
 typedef struct {
    int    exists;
@@ -26,7 +27,10 @@ typedef enum {
    rectangle_rgn,
    diamond_rgn,
    sector_rgn,
-   poly_rgn
+   poly_rgn,
+   panda_rgn,
+   epanda_rgn,
+   bpanda_rgn
 } shapeType;
 
 typedef enum { pixel_fmt, degree_fmt, hhmmss_fmt } coordFmt;
@@ -44,7 +48,7 @@ typedef struct {
       /****   Generic Shape Data   ****/
 
       struct {
-	 double p[8];        /*  Region parameters       */
+	 double p[11];       /*  Region parameters       */
 	 double sinT, cosT;  /*  For rotated shapes      */
 	 double a, b;        /*  Extra scratch area      */
       } gen;
