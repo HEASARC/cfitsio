@@ -70,7 +70,15 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 			fp_usage (); exit (-1);
 		    } else
 			gottype++;
-
+/*
+		} else if (argv[iarg][1] == 'b') {
+		    fpptr->comptype = BZIP2_1;
+		    if (gottype) {
+			fp_msg ("Error: multiple compression flags\n");
+			fp_usage (); exit (-1);
+		    } else
+			gottype++;
+*/
 		} else if (argv[iarg][1] == 'h') {
 		    fpptr->comptype = HCOMPRESS_1;
 		    if (gottype) {
@@ -240,6 +248,9 @@ fp_msg ("Flags must be separate and appear before filenames:\n");
 fp_msg ("   -r          Rice compression [default], or\n");
 fp_msg ("   -h          Hcompress compression, or\n");
 fp_msg ("   -g          GZIP (per-tile) compression, or\n");
+/*
+fp_msg ("   -b          BZIP2 (per-tile) compression, or\n");
+*/
 fp_msg ("   -p          PLIO compression (only for positive 8 or 16-bit integer images)\n");
 fp_msg ("   -d          tile the image without compression (debugging mode)\n");
 

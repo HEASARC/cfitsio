@@ -49,7 +49,7 @@ int fits_read_ascii_region( const char *filename,
    char     *namePtr, *paramPtr, *currLoc;
    char     *pX, *pY, *endp;
    long     allocLen, lineLen, hh, mm, dd;
-   double   *coords, X, Y, R, x, y, ss, div, xsave= 0., ysave= 0.;
+   double   *coords, X, Y, x, y, ss, div, xsave= 0., ysave= 0.;
    int      nParams, nCoords, negdec;
    int      i, done;
    FILE     *rgnFile;
@@ -1386,7 +1386,7 @@ int fits_read_fits_region ( fitsfile *fptr,
   int i, j, icol[6], idum, anynul, npos;
   int dotransform, got_component = 1, tstatus;
   long icsize[6];
-  double X, Y, R, Theta, Xsave, Ysave, Xpos, Ypos;
+  double X, Y, Theta, Xsave, Ysave, Xpos, Ypos;
   double *coords;
   char *cvalue, *cvalue2;
   char comment[FLEN_COMMENT];

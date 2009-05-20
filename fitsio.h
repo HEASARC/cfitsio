@@ -34,7 +34,7 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.18
+#define CFITSIO_VERSION 3.181
 
 #include <stdio.h>
 
@@ -257,6 +257,7 @@ SERVICES PROVIDED HEREUNDER."
 #define GZIP_1      21
 #define PLIO_1      31
 #define HCOMPRESS_1 41
+#define BZIP2_1     51  /* not publicly supported; only for test purposes */
 #define NOCOMPRESS  0
 
 #ifndef TRUE

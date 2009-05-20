@@ -1435,7 +1435,7 @@ row of the image.
 		    if (noise) {
 		        if (!(v1 == v2 && v2 == v3 && v3 == v4 && v4 == v5)) {
 
-		            differences[nvals] = fabs((2. * v3) - v1 - v5);
+		            differences[nvals] = (float) fabs((2. * v3) - v1 - v5);
 		            nvals++;  
 			}
 		    } else {

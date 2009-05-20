@@ -1,5 +1,15 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.181 (BETA) - 12 May 2009
+
+   - modified region.c and region.h to add support for additional
+     types of region shapes that are supported by ds9: panda, epanda,
+     and bpanda.
+
+   - fixed compiler error when using the new _REENTRANT flag, having to 
+     do with the an attempted static definition of Fitsio_Lock in 
+     several source files, after declaring it to be non-static in fitsio2.h.
+    
 Version 3.18 (BETA) - 10 April 2009
 
    - Made extensive changes to make CFITSIO thread safe.  Previously,

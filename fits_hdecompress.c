@@ -80,15 +80,6 @@ static void read_bdirect(unsigned char *infile, int a[], int n, int nqx, int nqy
 static void read_bdirect64(unsigned char *infile, LONGLONG a[], int n, int nqx, int nqy, unsigned char scratch[], int bit);
 static int  input_huffman(unsigned char *infile);
 
-#ifdef _REENTRANT
-/*
-    Fitsio_Lock and Fitsio_Pthread_Status are declared in fitsio2.h. 
-*/
-static pthread_mutex_t Fitsio_Lock;
-static int Fitsio_Pthread_Status = 0;
-
-#endif
-
 /* ---------------------------------------------------------------------- */
 int fits_hdecompress(unsigned char *input, int smooth, int *a, int *ny, int *nx, 
                      int *scale, int *status)

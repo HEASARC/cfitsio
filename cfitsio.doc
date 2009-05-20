@@ -453,7 +453,26 @@ Note that when upgrading to a newer version of CFITSIO it is usually
 necessary to recompile, as well as relink, the programs that use CFITSIO,
 because the definitions in fitsio.h often change.
  
-**D.  Getting Started with CFITSIO
+**D.  Using CFITSIO in Multi-threaded Environments
+
+CFITSIO can be used either with the
+POSIX pthreads interface or the OpenMP interface for multithreaded
+parallel programs.  When used in a multithreaded environment, 
+the CFITSIO library *must* be built using 
+the -D\_REENTRANT compiler directive.  This can be done using the following
+build commands:
+-
+  >./configure --enable-reentrant
+  > make
+-
+Multiple threads can then call any of the CFITSIO routines 
+to read or write separate 
+FITS files.  Multiple threads can also read data from
+the same FITS file simultaneously, 
+but different threads must never try to write to the same
+FITS file.
+
+**E.  Getting Started with CFITSIO
 
 In order to effectively use the CFITSIO library it is recommended that
 new users begin by reading the ``CFITSIO Quick Start Guide''.  It
@@ -482,7 +501,7 @@ Interface routines described in Chapter 5.
 the following chapters to become familiar with the functionality that
 they provide.
 
-**E.  Example Program
+**F.  Example Program
 
 The following listing shows an example of how to use the CFITSIO
 routines in a C program.    Refer to the cookbook.c program that is

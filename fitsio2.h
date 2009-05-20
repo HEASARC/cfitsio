@@ -13,7 +13,7 @@
 
     on the compile line and must link with -lpthread.  This means that
     when one builds cfitsio for threads you must have -D_REENTRANT on the
-    gcc command line.
+    gcc or cc command line.
 */
 
 #ifdef _REENTRANT

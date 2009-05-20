@@ -317,6 +317,59 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,LONG,LONG,LONG,STRING,PSTRINGV,PL
    RCF(PINT,9)
 }
 
+#define ftgcvsll_STRV_A7 NUM_ELEMS(velem)
+CFextern VOID_cfF(FTGCVSLL,ftgcvsll)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,LONGLONG,LONGLONG,LONG,STRING,PSTRINGV,PLOGICAL,PINT,CF_0,CF_0,CF_0,CF_0,CF_0));
+CFextern VOID_cfF(FTGCVSLL,ftgcvsll)
+CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,LONGLONG,LONGLONG,LONG,STRING,PSTRINGV,PLOGICAL,PINT,CF_0,CF_0,CF_0,CF_0,CF_0))
+{
+   QCF(FITSUNIT,1)
+   QCF(INT,2)
+   QCF(LONGLONG,3)
+   QCF(LONGLONG,4)
+   QCF(LONG,5)
+   QCF(STRING,6)
+   QCF(PSTRINGV,7)
+   QCF(PLOGICAL,8)
+   QCF(PINT,9)
+
+   fitsfile *fptr;
+   int colnum, *anynul, *status, velem, type;
+   LONGLONG firstrow, firstelem;
+   long nelem;
+   long repeat;
+   unsigned long gMinStrLen=80L;  /* gMin = width */
+   char *nulval, **array;
+
+   fptr =      TCF(ftgcvsll,FITSUNIT,1,0);
+   colnum =    TCF(ftgcvsll,INT,2,0);
+   firstrow =  TCF(ftgcvsll,LONGLONG,3,0);
+   firstelem = TCF(ftgcvsll,LONGLONG,4,0);
+   nelem =     TCF(ftgcvsll,LONG,5,0);
+   nulval =    TCF(ftgcvsll,STRING,6,0);
+   /*  put off variable 7 (array) until column type is learned  */
+   anynul =    TCF(ftgcvsll,PLOGICAL,8,0);
+   status =    TCF(ftgcvsll,PINT,9,0);
+   
+   ffgtcl( fptr, colnum, &type, &repeat, (long *)&gMinStrLen, status );
+   if( type<0 ) velem = 1;   /*  Variable length column  */
+   else velem = nelem;
+
+   array = TCF(ftgcvsll,PSTRINGV,7,0);
+
+   ffgcvs( fptr, colnum, firstrow, firstelem, nelem, nulval, array,
+           anynul, status );
+
+   RCF(FITSUNIT,1)
+   RCF(INT,2)
+   RCF(LONGLONG,3)
+   RCF(LONGLONG,4)
+   RCF(LONG,5)
+   RCF(STRING,6)
+   RCF(PSTRINGV,7)
+   RCF(PLOGICAL,8)
+   RCF(PINT,9)
+}
 
 
 #define ftgcl_LOGV_A6 A5
@@ -595,6 +648,9 @@ FCALLSCSUB7(ffpclc,FTPCLC,ftpclc,FITSUNIT,INT,LONG,LONG,LONG,FLOATV,PINT)
 FCALLSCSUB7(ffpclm,FTPCLM,ftpclm,FITSUNIT,INT,LONG,LONG,LONG,DOUBLEV,PINT)
 FCALLSCSUB6(ffpclu,FTPCLU,ftpclu,FITSUNIT,INT,LONG,LONG,LONG,PINT)
 FCALLSCSUB4(ffprwu,FTPRWU,ftprwu,FITSUNIT,LONG,LONG,PINT)
+
+#define ftpclsll_STRV_A6 NUM_ELEM_ARG(5)
+FCALLSCSUB7(ffpcls,FTPCLSLL,ftpclsll,FITSUNIT,INT,LONGLONG,LONGLONG,LONG,STRINGV,PINT)
 
 #define ftpcllll_LOGV_A6 A5
 FCALLSCSUB7(ffpcll,FTPCLLLL,ftpcllll,FITSUNIT,INT,LONGLONG,LONGLONG,LONG,LOGICALV,PINT)

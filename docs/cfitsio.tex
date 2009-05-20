@@ -524,6 +524,27 @@ necessary to recompile, as well as relink, the programs that use CFITSIO,
 because the definitions in fitsio.h often change.
 
 
+\section{Using CFITSIO in Multi-threaded Environments}
+
+CFITSIO can be used either with the
+POSIX pthreads interface or the OpenMP interface for multithreaded
+parallel programs.  When used in a multithreaded environment,
+the CFITSIO library *must* be built using
+the -D\_REENTRANT compiler directive.  This can be done using the following
+build commands:
+
+\begin{verbatim}
+  >./configure --enable-reentrant
+  > make
+\end{verbatim}
+Multiple threads can then call any of the CFITSIO routines
+to read or write separate
+FITS files.  Multiple threads can also read data from
+the same FITS file simultaneously,
+but different threads must never try to write to the same
+FITS file.
+
+
 \section{Getting Started with CFITSIO}
 
 In order to effectively use the CFITSIO library it is recommended that
@@ -8056,7 +8077,7 @@ HDUs in the input file will be copied into the temporary file).
     keyword name with a single pound sign, '\#', as in '\#NAXIS2'.  Due to
     the generalities of FITS column and  keyword names, if the column or
     keyword name  contains a space or a  character which might appear as
-    an arithmetic  term then inclose  the  name in '\$'  characters as in
+    an arithmetic  term then enclose  the  name in '\$'  characters as in
     \$MAX PHA\$ or \#\$MAX-PHA\$.  Names are case insensitive.
 
     To access a table entry in a row other  than the current one, follow
@@ -8104,7 +8125,7 @@ by a backslash to force the UNIX shell to ignore it.
     "exponential"       exp(x)     "square root"           sqrt(x)
     "natural log"       log(x)     "common log"            log10(x)
     "modulus"           x % y      "random # [0.0,1.0)"    random()
-    "random Gausian"    randomn()  "random Poisson"        randomp(x)
+    "random Gaussian"   randomn()  "random Poisson"        randomp(x)
     "minimum"           min(x,y)   "maximum"               max(x,y)
     "cumulative sum"    accum(x)   "sequential difference" seqdiff(x)
     "if-then-else"      b?x:y

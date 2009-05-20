@@ -37,15 +37,6 @@ typedef struct {
 
 #include "fitsio2.h"
 
-#ifdef _REENTRANT
-/*
-    Fitsio_Lock and Fitsio_Pthread_Status are declared in fitsio2.h. 
-*/
-static pthread_mutex_t Fitsio_Lock;
-static int Fitsio_Pthread_Status = 0;
-
-#endif
-
 static void start_outputing_bits(Buffer *buffer);
 static int done_outputing_bits(Buffer *buffer);
 static int output_nbits(Buffer *buffer, int bits, int n);

@@ -47,14 +47,6 @@ int no_of_drivers = 0;         /* number of currently defined I/O drivers */
 static int pixel_filter_helper(fitsfile **fptr, char *outfile,
 				char *expr,  int *status);
 
-#ifdef _REENTRANT
-/*
-    Fitsio_Lock and Fitsio_Pthread_Status are declared in fitsio2.h. 
-*/
-static pthread_mutex_t Fitsio_Lock;
-static int Fitsio_Pthread_Status = 0;
-
-#endif
 
 /*--------------------------------------------------------------------------*/
 int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */ 
@@ -3092,6 +3084,7 @@ int ffparsecompspec(fitsfile *fptr,  /* I - FITS file pointer               */
                                    G = GZIP
                                    H = HCOMPRESS
                                    HS = HCOMPRESS (with smoothing)
+				   B - BZIP2
                                    P = PLIO
 
     myfile.fits[compress TYPE 100,100] - the numbers give the dimensions
@@ -3148,6 +3141,15 @@ when writing FITS images.
            ptr1++;
 
     }
+/*
+    else if (*ptr1 == 'b' || *ptr1 == 'B')
+    {
+        compresstype = BZIP2_1;
+        while (*ptr1 != ' ' && *ptr1 != ';' && *ptr1 != '\0') 
+           ptr1++;
+
+    }
+*/
     else if (*ptr1 == 'p' || *ptr1 == 'P')
     {
         compresstype = PLIO_1;

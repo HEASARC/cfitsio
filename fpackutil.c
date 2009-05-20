@@ -415,7 +415,7 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 	if (fpvar.test_all && fpvar.outfile[0]) {
 	    outreport = fopen(fpvar.outfile, "w");
 		fprintf(outreport," Filename Extension BITPIX NAXIS1 NAXIS2 Size N_nulls Minval Maxval Mean Sigm Noise1 Noise3 T_whole T_rowbyrow ");
-		fprintf(outreport,"[Comp_ratio, Pack_cpu, Unpack_cpu, Lossless readtimes] (repeated for Rice, Hcompress and GZIP)\n");
+		fprintf(outreport,"[Comp_ratio, Pack_cpu, Unpack_cpu, Lossless readtimes] (repeated for Rice, Hcompress, and GZIP)\n");
 	}
 
 
@@ -885,6 +885,12 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 		fits_set_compression_type (outfptr, GZIP_1, &stat);
 		fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
 		fp_test_hdu(infptr, outfptr, outfptr2, fpvar, &stat);
+
+/*
+		fits_set_compression_type (outfptr, BZIP2_1, &stat);
+		fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
+		fp_test_hdu(infptr, outfptr, outfptr2, fpvar, &stat);
+*/
 /*
 		fits_set_compression_type (outfptr, PLIO_1, &stat);
 		fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
@@ -1068,6 +1074,10 @@ int fits_read_image_speed (fitsfile *infptr, float *whole_elapse,
         if (bitpix == BYTE_IMG) {
 		carray = calloc(naxes[1]*naxes[0], sizeof(char));
 
+                /* remove any cached uncompressed tile 
+		  (dangerous to directly modify the structure!) */
+                (infptr->Fptr)->tilerow = 0;
+
 		marktime(status);
 		fits_read_subset(infptr, TBYTE, fpixel, lpixel, inc, &cnull, 
 		      carray, &anynull, status);
@@ -1077,6 +1087,11 @@ int fits_read_image_speed (fitsfile *infptr, float *whole_elapse,
 
 		/* now read the image again, row by row */
 		if (row_elapse) {
+
+                  /* remove any cached uncompressed tile 
+	  	    (dangerous to directly modify the structure!) */
+                  (infptr->Fptr)->tilerow = 0;
+
 		  marktime(status);
 		  for (ii = 0; ii < naxes[1]; ii++) {
 		   fpixel[1] = ii+1;
@@ -1222,12 +1237,22 @@ int fp_test_hdu (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
 		strcpy(ctype, "RICE");
 	else if (comptype == GZIP_1)
 		strcpy(ctype, "GZIP");
+/*
+	else if (comptype == BZIP2_1)
+		strcpy(ctype, "BZIP2");
+*/
 	else if (comptype == PLIO_1)
 		strcpy(ctype, "PLIO");
 	else if (comptype == HCOMPRESS_1)
 		strcpy(ctype, "HCOMP");
 	else if (comptype == NOCOMPRESS)
 		strcpy(ctype, "NONE");
+	else {
+	      fp_msg ("Error: unsupported image compression type ");
+	      *status = DATA_COMPRESSION_ERR;
+	      return(0);
+	}
+
 	/* -------------- COMPRESS the image ------------------ */
 
 	marktime(&stat);
@@ -1238,20 +1263,27 @@ int fp_test_hdu (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
 	gettime(&elapse, &packcpu, &stat);
 
 	/* get elapsed and cpu times need to read the compressed image */
-/*
-	if (comptype == HCOMPRESS_1) {
+
+        /* if whole image is compressed as single tile, don't read row by row
+	   because it usually takes a very long time
+	*/
+        if (fpvar.ntile[1] == 0) {
 	  fits_read_image_speed (outfptr, &whole_elapse, &whole_cpu, 
 	   0, 0, &stat);
 	  row_elapse = 0; row_cpu = 0;
-	} else 
-*/
+	} else {
+
 	  fits_read_image_speed (outfptr, &whole_elapse, &whole_cpu, 
 	   &row_elapse, &row_cpu, &stat);
-	
+	}
 
         if (!stat) {
 
 		/* -------------- UNCOMPRESS the image ------------------ */
+
+                /* remove any cached uncompressed tile 
+		  (dangerous to directly modify the structure!) */
+                (outfptr->Fptr)->tilerow = 0;
 		marktime(&stat);
 
  	       fits_img_decompress (outfptr, outfptr2, &stat);

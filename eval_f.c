@@ -55,16 +55,6 @@
 #include "eval_defs.h"
 #include "region.h"
 
-#ifdef _REENTRANT
-/*
-    Fitsio_Lock and Fitsio_Pthread_Status are declared in fitsio2.h. 
-*/
-static pthread_mutex_t Fitsio_Lock;
-static int Fitsio_Pthread_Status = 0;
-
-#endif
-
-
 typedef struct {
      int  datatype;   /* Data type to cast parse results into for user       */
      void *dataPtr;   /* Pointer to array of results, NULL if to use iterCol */

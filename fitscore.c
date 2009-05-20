@@ -58,8 +58,8 @@ SERVICES PROVIDED HEREUNDER."
 /*
     Fitsio_Lock and Fitsio_Pthread_Status are declared in fitsio2.h. 
 */
-static pthread_mutex_t Fitsio_Lock;
-static int Fitsio_Pthread_Status = 0;
+pthread_mutex_t Fitsio_Lock;
+int Fitsio_Pthread_Status = 0;
 
 #endif
 
@@ -69,9 +69,9 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.18;
+      *version = (float) 3.181;
 
-/*     10 April (BETA release of thread-safe version)
+/*     12 May (BETA release of thread-safe version)
 
    Previous releases:
       *version = 3.14    18 Mar 2009 
@@ -6498,6 +6498,7 @@ int ffwend(fitsfile *fptr,       /* I - FITS file pointer */
     for (ii=0; ii < nspace; ii++)
     {
         ffgbyt(fptr, 80, keyrec, &tstatus);  /* get next keyword */
+        if (tstatus) break;
         if (strncmp(keyrec, blankkey, 80) && strncmp(keyrec, endkey, 80))
             break;
     }

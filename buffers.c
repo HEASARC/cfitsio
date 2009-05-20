@@ -739,7 +739,6 @@ int ffgrsz( fitsfile *fptr, /* I - FITS file pionter                        */
 */
 {
     int typecode, bytesperpixel;
-    long repeat, width;
 
     /* There are NIOBUF internal buffers available each IOBUFLEN bytes long. */
 
@@ -752,7 +751,7 @@ int ffgrsz( fitsfile *fptr, /* I - FITS file pionter                        */
     if ((fptr->Fptr)->hdutype == IMAGE_HDU ) /* calc pixels per buffer size */
     {
       /* image pixels are in column 2 of the 'table' */
-      ffgtcl(fptr, 2, &typecode, &repeat, &width, status);
+      ffgtcl(fptr, 2, &typecode, NULL, NULL, status);
       bytesperpixel = typecode / 10;
       *ndata = ((NIOBUF - 1) * IOBUFLEN) / bytesperpixel;
     }

@@ -74,14 +74,6 @@ static void output_nnybble(char *outfile, int n, unsigned char array[]);
 
 #define output_huffman(outfile,c)	output_nbits(outfile,code[c],ncode[c])
 
-#ifdef _REENTRANT
-/*
-    Fitsio_Lock and Fitsio_Pthread_Status are declared in fitsio2.h. 
-*/
-static pthread_mutex_t Fitsio_Lock;
-static int Fitsio_Pthread_Status = 0;
-
-#endif
 /* ---------------------------------------------------------------------- */
 int fits_hcompress(int *a, int ny, int nx, int scale, char *output, 
                   long *nbytes, int *status)
