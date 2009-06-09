@@ -6153,7 +6153,7 @@ CFITSIO to read and/or write the file.  Currently supported types are
                    It also supports  ftp://username:password@hostname/...
                    for accessing password-protected ftp sites.
         http://  - a readonly file accessed with the HTTP protocol.  It
-                   does not  support username:password like the ftp driver.
+                   supports username:password just like the ftp driver.
                    Proxy HTTP servers are supported using the http_proxy
                    environment variable (see following note).
       stream://  - special driver to read an input FITS file from the stdin
@@ -7267,7 +7267,9 @@ element of the vector expression.
     where V represents the name of a vector column or a manually 
     constructed vector using curly brackets as described below.  The
     first 6 of these functions ignore any null values in the vector when
-    computing the result.
+    computing the result.  The STDDEV() function computes the sample 
+    standard deviation, i.e. it is proportional to 1/SQRT(N-1) instead 
+    of 1/SQRT(N), where N is NVALID(V).
     
     The SUM function literally sums all  the elements in x,  returning a 
     scalar value.   If V  is  a  boolean  vector, SUM returns the number

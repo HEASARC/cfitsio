@@ -1,5 +1,14 @@
                    Log of Changes Made to CFITSIO
 
+
+
+
+   - modified the HTTP file access code in drvrnet.c to support basic
+     HTTP authentication, where the user supplies a user name and
+     password.  The CFITSIO filename format in this case is:
+     "http://username:password@hostname/..."
+     Thanks to Jochen Liske (ESO) for the suggestion and the code.
+
 Version 3.181 (BETA) - 12 May 2009
 
    - modified region.c and region.h to add support for additional

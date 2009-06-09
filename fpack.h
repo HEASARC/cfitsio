@@ -11,13 +11,12 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#define	FPACK_VERSION	"1.1.3 (March 2009)"
+#define	FPACK_VERSION	"1.1.4 (May 2009)"
 /*
 VERSION	History
 
-1.1.3 (March 2009)
-  minor modifications to the content and format of the -T report
-  
+1.1.4 (May 2009) added -E option to funpack to unpack a list of HDUs
+1.1.3 (March 2009)  minor modifications to the content and format of the -T report
 1.1.2 (September 2008)
 */
 
@@ -54,6 +53,7 @@ typedef struct
 	int	verbose;
 
 	char	prefix[SZ_STR];
+	char	extname[SZ_STR];
 	int	delete_suffix;
 	char	outfile[SZ_STR];
 	int	firstfile;

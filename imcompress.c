@@ -2923,6 +2923,7 @@ int fits_img_decompress (fitsfile *infptr, /* image (bintable) to uncompress */
     double *data;
     int ii, datatype = 0, byte_per_pix = 0, naxis, bitpix, numkeys;
     int nullcheck, anynul, tstatus, nullprime = 0, hdupos, norec = 0;
+    int writeprime = 0;
     LONGLONG fpixel[MAX_COMPRESS_DIM], lpixel[MAX_COMPRESS_DIM];
     long inc[MAX_COMPRESS_DIM], naxes[MAX_COMPRESS_DIM];
     long imgsize, memsize;
@@ -2932,6 +2933,10 @@ int fits_img_decompress (fitsfile *infptr, /* image (bintable) to uncompress */
 
     if (*status > 0)
         return(*status);
+    else if (*status == -1) {
+        *status = 0;
+	writeprime = 1;
+    }
 
     if (!fits_is_compressed_image(infptr, status) )
     {
@@ -2994,29 +2999,45 @@ int fits_img_decompress (fitsfile *infptr, /* image (bintable) to uncompress */
 
 	  norec = 1;  /* the required keywords have already been written */
 
-       } else {
+       } else {  /* the input compressed image does have ZTENSION keyword */
        
-          if (numkeys == 0) {  /* the output file is currently completely empty */
+          if (writeprime) {  /* convert the image extension to a primary array */
+	      /* have to write the required keywords manually */
+
+              /* create an empty output image with the correct dimensions */
+              if (ffcrim(outfptr, (infptr->Fptr)->zbitpix, (infptr->Fptr)->zndim, 
+                 (infptr->Fptr)->znaxis, status) > 0)
+              {
+                 ffpmsg("error creating output decompressed image HDU");
+    	         return (*status);
+              }
+
+	      norec = 1;  /* the required keywords have already been written */
+
+          } else {  /* write the input compressed image to an image extension */
+
+              if (numkeys == 0) {  /* the output file is currently completely empty */
 	  
-	     /* In this case, the input is a compressed IMAGE extension. */
-	     /* Since the uncompressed output file is currently completely empty, */
-	     /* we need to write a null primary array before uncompressing the */
-             /* image extension */
+	         /* In this case, the input is a compressed IMAGE extension. */
+	         /* Since the uncompressed output file is currently completely empty, */
+	         /* we need to write a null primary array before uncompressing the */
+                 /* image extension */
 	     
-             ffcrim(outfptr, 8, 0, naxes, status); /* naxes is not used */
+                 ffcrim(outfptr, 8, 0, naxes, status); /* naxes is not used */
 	     
-	     /* now create the empty extension to uncompress into */
-             if (fits_create_hdu(outfptr, status) > 0)
-             {
-                  ffpmsg("error creating output decompressed image HDU");
-    	          return (*status);
-             }
+	         /* now create the empty extension to uncompress into */
+                 if (fits_create_hdu(outfptr, status) > 0)
+                 {
+                      ffpmsg("error creating output decompressed image HDU");
+    	              return (*status);
+                 }
 	  
-	  } else {
-              /* just create a new empty extension, then copy all the required */
-	      /* keywords into it.  */
-             fits_create_hdu(outfptr, status);
-	  }
+	      } else {
+                  /* just create a new empty extension, then copy all the required */
+	          /* keywords into it.  */
+                 fits_create_hdu(outfptr, status);
+	      }
+           }
        }
 
     }
