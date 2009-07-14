@@ -79,7 +79,7 @@ extern int Fitsio_Pthread_Status;
 #define BYTESWAPPED TRUE
 #define LONGSIZE 64
 
-#elif defined(__sparcv9)
+#elif defined(__sparcv9) || (defined(__sparc__) && defined(__arch64__))
                                /*  SUN Solaris7 in 64-bit mode */
 #define BYTESWAPPED FALSE
 #define MACHINE NATIVE

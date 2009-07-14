@@ -80,7 +80,7 @@ SERVICES PROVIDED HEREUNDER."
     ||  defined(__x86_64__) \
 */
 #if (defined(__alpha) && ( defined(__unix__) || defined(__NetBSD__) )) \
-    ||  defined(__sparcv9)  \
+    ||  defined(__sparcv9) || (defined(__sparc__) && defined(__arch64__))  \
     ||  defined(__powerpc64__) || defined(__64BIT__) \
     ||  (defined(_MIPS_SZLONG) &&  _MIPS_SZLONG == 64) \
     ||  defined( _MSC_VER)|| defined(__BORLANDC__)

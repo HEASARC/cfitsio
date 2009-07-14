@@ -14,7 +14,7 @@
     || (defined(mipsFortran)  && _MIPS_SZLONG==64) \
     || (defined(IBMR2Fortran) && defined(__64BIT__)) \
     ||  defined(__ia64__)  \
-    ||  defined (__sparcv9) \
+    ||  defined (__sparcv9) || (defined(__sparc__) && defined(__arch64__)) \
     ||  defined (__x86_64__) \
     ||  defined (_SX) \
     ||  defined (__powerpc64__) /* this may be the same as IBMR2Fortran, above */
