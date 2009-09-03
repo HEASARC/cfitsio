@@ -93,29 +93,36 @@ if test "x$CC" = x; then
 fi
 AC_PROG_CC
 
-AC_CHECK_PROGS(FC, f77 g77 g95 gfortran ifort f95 f90 xlf cf77 gf77 af77 ncf f2c , nope)
-if test $FC = 'nope' ; then
-   AC_MSG_WARN(cfitsio: == No acceptable f77 found in \$PATH)
-   AC_MSG_WARN(cfitsio: == Cfitsio will be built without Fortran wrapper support)
-   FC=
-   F77_WRAPPERS=
+if test "x$FC" = "xnone" ; then
+  AC_MSG_NOTICE(cfitsio: == Fortran compiler search has been overridden)
+  AC_MSG_NOTICE(cfitsio: == Cfitsio will be built without Fortran wrapper support)
+  FC=
+  F77_WRAPPERS=
 else
-  CFORTRANFLAGS=
-  F77_WRAPPERS="\${FITSIO_SRC}"
-  echo $ac_n "checking whether we are using GNU Fortran""... $ac_c" 1>&6
-  if test `$FC --version -c < /dev/null 2> /dev/null | grep -c GNU` -gt 0 -o \
-          `$FC --version -c < /dev/null 2> /dev/null | grep -ic egcs` -gt 0
-  then
-    echo "$ac_t""yes" 1>&6
-    echo $ac_n "cfitsio: == Adding wrapper support for GNU Fortran""... $ac_c" 1>&6
+  AC_CHECK_PROGS(FC, gfortran g95 g77 f77 ifort f95 f90 xlf cf77 gf77 af77 ncf f2c, notfound)
+  if test $FC = 'notfound' ; then
+    AC_MSG_WARN(cfitsio: == No acceptable Fortran compiler found in \$PATH)
+    AC_MSG_NOTICE(cfitsio: == Adding wrapper support for GNU Fortran by default)
     CFORTRANFLAGS="-Dg77Fortran"
-    echo "$ac_t"" done" 1>&6
+    F77_WRAPPERS="\${FITSIO_SRC}"
   else
-    echo "$ac_t""no" 1>&6
-    if test $FC = 'f2c' ; then
-      echo $ac_n "cfitsio: == Adding wrapper support for f2c""... $ac_c" 1>&6
-      CFORTRANFLAGS="-Df2cFortran"
+    CFORTRANFLAGS=
+    F77_WRAPPERS="\${FITSIO_SRC}"
+    echo $ac_n "checking whether we are using GNU Fortran""... $ac_c" 1>&6
+    if test `$FC --version -c < /dev/null 2> /dev/null | grep -c GNU` -gt 0 -o \
+            `$FC --version -c < /dev/null 2> /dev/null | grep -ic egcs` -gt 0
+    then
+      echo "$ac_t""yes" 1>&6
+      echo $ac_n "cfitsio: == Adding wrapper support for GNU Fortran""... $ac_c" 1>&6
+      CFORTRANFLAGS="-Dg77Fortran"
       echo "$ac_t"" done" 1>&6
+    else
+      echo "$ac_t""no" 1>&6
+      if test $FC = 'f2c' ; then
+        echo $ac_n "cfitsio: == Adding wrapper support for f2c""... $ac_c" 1>&6
+        CFORTRANFLAGS="-Df2cFortran"
+        echo "$ac_t"" done" 1>&6
+      fi
     fi
   fi
 fi
