@@ -15,11 +15,16 @@
 # define NINT(x)  ((x >= 0.) ? (int) (x + 0.5) : (int) (x - 0.5))
 
 #define NULL_VALUE -2147483647 /* value used to represent undefined pixels */
-#define N_RESERVED_VALUES 1   /* number of reserved values, starting with */
+#define N_RESERVED_VALUES 10   /* number of reserved values, starting with */
                                /* and including NULL_VALUE.  These values */
                                /* may not be used to represent the quantized */
                                /* and scaled floating point pixel values */
-
+			       /* If lossy Hcompression is used, and the */
+			       /* array contains null values, then it is also */
+			       /* possible for the compressed values to slightly */
+			       /* exceed the range of the actual (lossless) values */
+			       /* so we must reserve a little more space */
+			       
 /* more than this many standard deviations from the mean is an outlier */
 # define SIGMA_CLIP     5.
 # define NITER          3	/* number of sigma-clipping iterations */
@@ -59,18 +64,21 @@ static float quick_select_float(float arr[], int n);
 static short quick_select_short(short arr[], int n);
 static int quick_select_int(int arr[], int n);
 static double quick_select_double(double arr[], int n);
+
 /*---------------------------------------------------------------------------*/
-int fits_quantize_float (float fdata[], long nxpix, long nypix, int nullcheck, 
+int fits_quantize_float (long row, float fdata[], long nxpix, long nypix, int nullcheck, 
 	float in_null_value, float qlevel, int idata[], double *bscale,
 	double *bzero, int *iminval, int *imaxval) {
 
 /* arguments:
+long row            i: if positive, tile number = row number in the binary table
+                       (this is only used when dithering the quantized values)
 float fdata[]       i: array of image pixels to be compressed
 long nxpix          i: number of pixels in each row of fdata
 long nypix          i: number of rows in fdata
 nullcheck           i: check for nullvalues in fdata?
 float in_null_value i: value used to represent undefined pixels in fdata
-int noise_bits      i: quantization level (number of bits)
+float qlevel        i: quantization level
 int idata[]         o: values of fdata after applying bzero and bscale
 double bscale       o: scale factor
 double bzero        o: zero offset
@@ -83,13 +91,16 @@ nearly the original floating point values:  fdata ~= idata * bscale + bzero.
 If the function value is zero, the data were not copied to idata.
 */
 
-	int status, intflag, nshift, itemp, anynulls = 0;
+	int status, nshift, anynulls = 0, iseed;
 	long i, nx, ngood = 0;
 	double stdev;	/* mean and RMS of differences */
 	float minval = 0., maxval = 0.;  /* min & max of fdata */
 	double delta;		/* bscale, 1 in idata = delta in fdata */
 	double zeropt;	        /* bzero */
 	double temp;
+	float fvalue;
+        int nextrand = 0;
+	extern float *fits_rand_value; /* this is defined in imcompress.c */
 
 	nx = nxpix * nypix;
 	if (nx <= 1) {
@@ -97,84 +108,6 @@ If the function value is zero, the data were not copied to idata.
 	    *bzero  = 0.;
 	    return (0);
 	}
-
-        *iminval = INT32_MAX;
-        *imaxval = INT32_MIN;
-
-	/* Check to see if data are "floating point integer." */
-        /* This also catches the case where all the pixels are null */
-
-        /* Since idata and fdata may point to the same memory location, */
-	/* we cannot write to idata unless we are sure we don't need   */
-	/* the corresponding float value any more */
-	
-	intflag = 1;		/* initial value */
-	for (i = 0;  i < nx;  i++) {
-            if (nullcheck && fdata[i] == in_null_value) {
-                anynulls = 1;
-            }
-	    else if (fdata[i] > INT32_MAX || 
-                     fdata[i] < NULL_VALUE + N_RESERVED_VALUES) {
-		intflag = 0;	/* not integer */
-		break;
-	    }
-            else {
-  	        itemp = (int)(fdata[i] + 0.5f);
-
-	        if (itemp != fdata[i]) {
-		    intflag = 0;	/* not integer */
-		    break;
-                }
-	    }
-	}
-
-        if (intflag) { /* data are "floating point integer" */
-	  for (i = 0;  i < nx;  i++) {
-            if (nullcheck && fdata[i] == in_null_value) {
-                idata[i] = NULL_VALUE;
-                anynulls = 1;
-            }
-            else {
-  	        idata[i] = (int)(fdata[i] + 0.5);
-                *iminval = minvalue(idata[i], *iminval);
-                *imaxval = maxvalue(idata[i], *imaxval);
-	    }
-	  }
-	}
-
-	if (intflag) {  /* data are "floating point integer" */
-            if (anynulls) {
-                /* Shift the range of values so they lie close to NULL_VALUE. */
-                /* This will make the compression more efficient.             */
-                /* Maximum allowed shift is 2^31 - 1 = 2147483646 */
-                /* Can't use 2147483647 because OSF says this is not a legal number */
-
-                if (*iminval >= 0) {
-		   nshift = -(NULL_VALUE + 1) - N_RESERVED_VALUES;
-		} else {
-                  nshift = *iminval - NULL_VALUE - N_RESERVED_VALUES;
-                }
-
-                for (i = 0;  i < nx;  i++) {
-                    if (idata[i] != NULL_VALUE) {
-                        idata[i] -= nshift;
-                    }
-                }
-                *iminval = *iminval - nshift;
-                *imaxval = *imaxval - nshift;
-  	        *bscale = 1.;
-	        *bzero = (double) nshift;
-            }
-            else {
-                /* there were no null values, so no need to shift the range */
-  	        *bscale = 1.;
-	        *bzero = 0.;
-            }
-	    return (1);
-	}
-
-	/* ************************************************************ */
-        /* data are not "floating point integer"; need to quantize them */
 
         if (qlevel >= 0.) {
 
@@ -210,10 +143,20 @@ If the function value is zero, the data were not copied to idata.
 	if ((maxval - minval) / delta > 2. * 2147483647. - N_RESERVED_VALUES )
 	    return (0);			/* don't quantize */
 
+        if (row > 0) { /* we need to dither the quantized values */
+            if (!fits_rand_value) 
+	        if (fits_init_randoms()) return(MEMORY_ALLOCATION);
+
+	    /* initialize the index to the next random number in the list */
+            iseed = (int) ((row - 1) % N_RANDOM);
+	    nextrand = (int) (fits_rand_value[iseed] * 500.);
+	}
+
         if (ngood == nx) {   /* don't have to check for nulls */
             /* return all positive values, if possible since some */
             /* compression algorithms either only work for positive integers, */
             /* or are more efficient.  */
+
             if ((maxval - minval) / delta < 2147483647. - N_RESERVED_VALUES )
             {
                 zeropt = minval;
@@ -224,21 +167,53 @@ If the function value is zero, the data were not copied to idata.
                 zeropt = (minval + maxval) / 2.;
             }
 
-       	    for (i = 0;  i < nx;  i++) {
-	        idata[i] = NINT ((fdata[i] - zeropt) / delta);
-            }
+            if (row > 0) {  /* dither the values when quantizing */
+              for (i = 0;  i < nx;  i++) {
+	    
+		idata[i] =  NINT(((fdata[i] - zeropt) / delta) + fits_rand_value[nextrand] - 0.5);
+
+                nextrand++;
+		if (nextrand == N_RANDOM) {
+                    iseed++;
+		    if (iseed == N_RANDOM) iseed = 0;
+	            nextrand = (int) (fits_rand_value[iseed] * 500);
+                }
+              }
+            } else {  /* do not dither the values */
+
+       	        for (i = 0;  i < nx;  i++) {
+	            idata[i] = NINT ((fdata[i] - zeropt) / delta);
+                }
+            } 
         }
         else {
             /* data contains null values; shift the range to be */
             /* close to the value used to represent null values */
             zeropt = minval - delta * (NULL_VALUE + N_RESERVED_VALUES);
 
-	    for (i = 0;  i < nx;  i++) {
+            if (row > 0) {  /* dither the values */
+	      for (i = 0;  i < nx;  i++) {
                 if (fdata[i] != in_null_value) {
-	            idata[i] = NINT ((fdata[i] - zeropt) / delta);
-                }
-                else
+		    idata[i] =  NINT(((fdata[i] - zeropt) / delta) + fits_rand_value[nextrand] - 0.5);
+                } else {
                     idata[i] = NULL_VALUE;
+                }
+
+                /* increment the random number index, regardless */
+                nextrand++;
+		if (nextrand == N_RANDOM) {
+                      iseed++;
+		      if (iseed == N_RANDOM) iseed = 0;
+	              nextrand = (int) (fits_rand_value[iseed] * 500);
+                }
+              }
+            } else {  /* do not dither the values */
+	       for (i = 0;  i < nx;  i++) {
+                 if (fdata[i] != in_null_value)
+		    idata[i] =  NINT((fdata[i] - zeropt) / delta);
+                 else 
+                    idata[i] = NULL_VALUE;
+               }
             }
 	}
 
@@ -254,12 +229,13 @@ If the function value is zero, the data were not copied to idata.
 	return (1);			/* yes, data have been quantized */
 }
 /*---------------------------------------------------------------------------*/
-int fits_quantize_double (double fdata[], long nxpix, long nypix, int nullcheck, 
+int fits_quantize_double (long row, double fdata[], long nxpix, long nypix, int nullcheck, 
 	double in_null_value, float qlevel, int idata[], double *bscale,
 	double *bzero, int *iminval, int *imaxval) {
 
 /* arguments:
-double fdata[]       i: array of image pixels to be compressed
+long row            i: tile number = row number in the binary table
+double fdata[]      i: array of image pixels to be compressed
 long nxpix          i: number of pixels in each row of fdata
 long nypix          i: number of rows in fdata
 nullcheck           i: check for nullvalues in fdata?
@@ -277,13 +253,16 @@ nearly the original floating point values:  fdata ~= idata * bscale + bzero.
 If the function value is zero, the data were not copied to idata.
 */
 
-	int status, intflag, nshift, itemp, anynulls = 0;
+	int status, nshift, anynulls = 0, iseed;
 	long i, nx, ngood = 0;
 	double stdev;	/* mean and RMS of differences */
 	double minval = 0., maxval = 0.;  /* min & max of fdata */
 	double delta;		/* bscale, 1 in idata = delta in fdata */
 	double zeropt;	        /* bzero */
 	double temp;
+	double fvalue;
+        int nextrand = 0;
+	extern float *fits_rand_value;
 
 	nx = nxpix * nypix;
 	if (nx <= 1) {
@@ -291,84 +270,6 @@ If the function value is zero, the data were not copied to idata.
 	    *bzero  = 0.;
 	    return (0);
 	}
-
-        *iminval = INT32_MAX;
-        *imaxval = INT32_MIN;
-
-	/* Check to see if data are "floating point integer." */
-        /* This also catches the case where all the pixels are null */
-
-        /* Since idata and fdata may point to the same memory location, */
-	/* we cannot write to idata unless we are sure we don't need   */
-	/* the corresponding float value any more */
-	
-	intflag = 1;		/* initial value */
-	for (i = 0;  i < nx;  i++) {
-            if (nullcheck && fdata[i] == in_null_value) {
-                anynulls = 1;
-            }
-	    else if (fdata[i] > INT32_MAX || 
-                     fdata[i] < NULL_VALUE + N_RESERVED_VALUES) {
-		intflag = 0;	/* not integer */
-		break;
-	    }
-            else {
-  	        itemp = (int)(fdata[i] + 0.5);
-
-	        if (itemp != fdata[i]) {
-		    intflag = 0;	/* not integer */
-		    break;
-                }
-	    }
-	}
-
-        if (intflag) { /* data are "floating point integer" */
-	  for (i = 0;  i < nx;  i++) {
-            if (nullcheck && fdata[i] == in_null_value) {
-                idata[i] = NULL_VALUE;
-                anynulls = 1;
-            }
-            else {
-  	        idata[i] = (int)(fdata[i] + 0.5);
-                *iminval = minvalue(idata[i], *iminval);
-                *imaxval = maxvalue(idata[i], *imaxval);
-	    }
-	  }
-	}
-
-	if (intflag) {  /* data are "floating point integer" */
-            if (anynulls) {
-                /* Shift the range of values so they lie close to NULL_VALUE. */
-                /* This will make the compression more efficient.             */
-                /* Maximum allowed shift is 2^31 - 1 = 2147483646 */
-                /* Can't use 2147483647 because OSF says this is not a legal number */
-
-                if (*iminval >= 0) {
-		   nshift = -(NULL_VALUE + 1) - N_RESERVED_VALUES;
-		} else {
-                  nshift = *iminval - NULL_VALUE - N_RESERVED_VALUES;
-                }
-
-                for (i = 0;  i < nx;  i++) {
-                    if (idata[i] != NULL_VALUE) {
-                        idata[i] -= nshift;
-                    }
-                }
-                *iminval = *iminval - nshift;
-                *imaxval = *imaxval - nshift;
-  	        *bscale = 1.;
-	        *bzero = (double) nshift;
-            }
-            else {
-                /* there were no null values, so no need to shift the range */
-  	        *bscale = 1.;
-	        *bzero = 0.;
-            }
-	    return (1);
-	}
-
-	/* ************************************************************ */
-        /* data are not "floating point integer"; need to quantize them */
 
         if (qlevel >= 0.) {
 
@@ -404,6 +305,15 @@ If the function value is zero, the data were not copied to idata.
 	if ((maxval - minval) / delta > 2. * 2147483647. - N_RESERVED_VALUES )
 	    return (0);			/* don't quantize */
 
+        if (row > 0) { /* we need to dither the quantized values */
+            if (!fits_rand_value) 
+	       if (fits_init_randoms()) return(MEMORY_ALLOCATION);
+
+	    /* initialize the index to the next random number in the list */
+            iseed = (int) ((row - 1) % N_RANDOM);
+	    nextrand = (int) (fits_rand_value[iseed] * 500);
+	}
+
         if (ngood == nx) {   /* don't have to check for nulls */
             /* return all positive values, if possible since some */
             /* compression algorithms either only work for positive integers, */
@@ -418,23 +328,51 @@ If the function value is zero, the data were not copied to idata.
                 zeropt = (minval + maxval) / 2.;
             }
 
-       	    for (i = 0;  i < nx;  i++) {
-	        temp = (fdata[i] - zeropt) / delta;
-	        idata[i] = NINT (temp);
-            }
+            if (row > 0) {  /* dither the values when quantizing */
+       	      for (i = 0;  i < nx;  i++) {
+
+		idata[i] =  NINT(((fdata[i] - zeropt) / delta) + fits_rand_value[nextrand] - 0.5);
+
+                nextrand++;
+		if (nextrand == N_RANDOM) {
+                    iseed++;
+	            nextrand = (int) (fits_rand_value[iseed] * 500);
+                }
+              }
+            } else {  /* do not dither the values */
+
+       	        for (i = 0;  i < nx;  i++) {
+	            idata[i] = NINT ((fdata[i] - zeropt) / delta);
+                }
+            } 
         }
         else {
             /* data contains null values; shift the range to be */
             /* close to the value used to represent null values */
             zeropt = minval - delta * (NULL_VALUE + N_RESERVED_VALUES);
 
-	    for (i = 0;  i < nx;  i++) {
+            if (row > 0) {  /* dither the values */
+	      for (i = 0;  i < nx;  i++) {
                 if (fdata[i] != in_null_value) {
-	            temp = (fdata[i] - zeropt) / delta;
-	            idata[i] = NINT (temp);
-                }
-                else
+		    idata[i] =  NINT(((fdata[i] - zeropt) / delta) + fits_rand_value[nextrand] - 0.5);
+                } else {
                     idata[i] = NULL_VALUE;
+                }
+
+                /* increment the random number index, regardless */
+                nextrand++;
+		if (nextrand == N_RANDOM) {
+                        iseed++;
+	                nextrand = (int) (fits_rand_value[iseed] * 500);
+                } 
+              }
+            } else {  /* do not dither the values */
+	       for (i = 0;  i < nx;  i++) {
+                 if (fdata[i] != in_null_value)
+		    idata[i] =  NINT((fdata[i] - zeropt) / delta);
+                 else 
+                    idata[i] = NULL_VALUE;
+               }
             }
 	}
 
@@ -1421,8 +1359,10 @@ row of the image.
 
 		    /* find the next valid pixel in row */
                     if (nullcheck)
-		        while (ii < nx && rowpix[ii] == nullvalue) ii++;
-		     
+		        while (ii < nx && rowpix[ii] == nullvalue) {
+			  ii++;
+		        }
+			
 		    if (ii == nx) break;  /* hit end of row */
 		    v5 = rowpix[ii];  /* store the good pixel value */
 
@@ -1437,10 +1377,10 @@ row of the image.
 
 		            differences[nvals] = (float) fabs((2. * v3) - v1 - v5);
 		            nvals++;  
-			}
-		    } else {
-		        /* ignore constant background regions */
-			ngoodpix++;
+		       } else {
+		            /* ignore constant background regions */
+			    ngoodpix++;
+		       }
 		    }
 
 		    /* shift over 1 pixel */
@@ -1647,10 +1587,10 @@ row of the image.
 
 		            differences[nvals] = fabs((2. * v3) - v1 - v5);
 		            nvals++;  
-			}
-		    } else {
-		        /* ignore constant background regions */
-			ngoodpix++;
+		        } else {
+		            /* ignore constant background regions */
+			    ngoodpix++;
+		        }
 		    }
 
 		    /* shift over 1 pixel */

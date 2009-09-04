@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <stdlib.h>
+#include <math.h>
 
 /* these filename buffer are used to delete temporary files */
 /* in case the program is aborted */
@@ -73,6 +74,7 @@ int fp_init (fpstate *fpptr)
 
 	fpptr->comptype = RICE_1;
 	fpptr->quantize_level = DEF_QLEVEL;
+        fpptr->no_dither = 0;
 	fpptr->scale = DEF_HCOMP_SCALE;
 	fpptr->smooth = DEF_HCOMP_SMOOTH;
 	fpptr->rescale_noise = DEF_RESCALE_NOISE;
@@ -181,15 +183,12 @@ int fp_info_hdu (fitsfile *infptr)
 
 	for (hdupos=1; ! stat; hdupos++) {
 	    fits_get_hdu_type (infptr, &hdutype, &stat);
-/*	    fits_read_keyword (infptr, FILE_KEY, val, com, &stat);
- */
+
 	    if (stat) { fits_report_error (stderr, stat); exit (stat); }
 
 	    if (hdutype == IMAGE_HDU) {
 		sprintf (msg, "  %d IMAGE", hdupos); fp_msg (msg);
 
-/*		sprintf (msg, "  %d IMAGE %s", hdupos, val); fp_msg (msg);
- */
 		fits_get_img_param (infptr, 9, &bitpix, &naxis, naxes, &stat);
 
 		if (naxis == 0) {
@@ -379,6 +378,13 @@ int fp_preflight (int argc, char *argv[], int unpack, fpstate *fpptr)
                         outfits[namelen - 3] = '\0';
 	      }
 	      
+	      /* remove .imh suffix (IRAF format image), and replace with .fits */
+              namelen = strlen(outfits);
+	      if ( !strcmp(".imh", outfits + namelen - 4) ) {
+                        outfits[namelen - 4] = '\0';
+                        strcat(outfits, ".fits");
+	      }
+
 	      /* If not clobbering the input file, add .fz suffix to output name */
 	      if (! fpptr->clobber)
 		        strcat(outfits, ".fz");
@@ -404,7 +410,7 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 {
 	char	infits[SZ_STR], outfits[SZ_STR];
 	char	temp[SZ_STR], answer[30], *cptr;
-	int	iarg, islossless, namelen;
+	int	iarg, islossless, namelen, iraf_infile = 0, status = 0;
         
 	if (fpvar.initialized != FP_INIT_MAGIC) {
 	    fp_msg ("Error: internal initialization error\n"); exit (-1);
@@ -502,6 +508,15 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
                         outfits[namelen - 3] = '\0';
 	          }
 	      
+	          /* remove .imh suffix (IRAF format image), and replace with .fits */
+                  namelen = strlen(outfits);
+	          if ( !strcmp(".imh", outfits + namelen - 4) ) {
+                        outfits[namelen - 4] = '\0';
+                        strcat(outfits, ".fits");
+                        iraf_infile = 1;  /* this is an IRAF format input file */
+			           /* change the output name to "NAME.fits.fz" */
+	          }
+
 	          /* If not clobbering the input file, add .fz suffix to output name */
 	          if (! fpvar.clobber)
 		        strcat(outfits, ".fz");
@@ -581,6 +596,14 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 		}
  
 	        /* rename clobbers input, may be unix/shell version dependent */
+
+		if (iraf_infile) {  /* special case of deleting an IRAF format header and pixel file */
+		   if (fits_delete_iraf_file(infits, &status)) {
+		        fp_msg("\nError deleting IRAF .imh and .pix files.\n");
+			fp_msg(infits); fp_msg ("\n"); exit (-1);
+		    }
+		}
+				
 		if (rename (outfits, temp) != 0) {
 		        fp_msg ("\nError renaming tmp file to ");
 		        fp_msg (temp); fp_msg ("\n"); exit (-1);
@@ -589,25 +612,38 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
                 strcpy(outfits, temp);
 
 	    } else if (fpvar.clobber || fpvar.delete_input) {      /* delete the input file */
-	         if (!islossless && !fpvar.do_not_prompt) {
+	         if (!islossless && !fpvar.do_not_prompt) {  /* user did not turn off delete prompt */
 		    fp_msg ("\nFile ");
 		    fp_msg (infits); 
 		    fp_msg ("\nwas compressed with a LOSSY method.  \n");
 		    fp_msg ("Delete the original file? (Y/N) ");
 		    fgets(answer, 29, stdin);
-		    if (answer[0] != 'Y' && answer[0] != 'y') {
+		    if (answer[0] != 'Y' && answer[0] != 'y') {  /* user abort */
 		        fp_msg ("\noriginal file NOT deleted!\n");
-		    } else if (remove(infits) != 0) {
-		        fp_msg ("\nError deleting input file ");
-		        fp_msg (infits); fp_msg ("\n"); exit (-1);
+		    } else {
+			if (iraf_infile) {  /* special case of deleting an IRAF format header and pixel file */
+		   	    if (fits_delete_iraf_file(infits, &status)) {
+		        	fp_msg("\nError deleting IRAF .imh and .pix files.\n");
+				fp_msg(infits); fp_msg ("\n"); exit (-1);
+			    }
+		        }  else if (remove(infits) != 0) {  /* normal case of deleting input FITS file */
+		            fp_msg ("\nError deleting input file ");
+		            fp_msg (infits); fp_msg ("\n"); exit (-1);
+		        }
 		    }
-		  } else {
-		     if (remove(infits) != 0) {
-		        fp_msg ("\nError deleting input file ");
-		        fp_msg (infits); fp_msg ("\n"); exit (-1);
-		     }
+		  } else {   /* user said don't prompt, so just delete the input file */
+			if (iraf_infile) {  /* special case of deleting an IRAF format header and pixel file */
+		   	    if (fits_delete_iraf_file(infits, &status)) {
+		        	fp_msg("\nError deleting IRAF .imh and .pix files.\n");
+				fp_msg(infits); fp_msg ("\n"); exit (-1);
+			    }
+		        }  else if (remove(infits) != 0) {  /* normal case of deleting input FITS file */
+		            fp_msg ("\nError deleting input file ");
+		            fp_msg (infits); fp_msg ("\n"); exit (-1);
+		        }
 		  }
 	    }
+            iraf_infile = 0; 
 
 	    if (fpvar.do_gzip_file) {       /* gzip the output file */
 		strcpy(temp, "gzip -1 ");
@@ -640,6 +676,10 @@ int fp_pack (char *infits, char *outfits, fpstate fpvar, int *islossless)
 	if (stat) { fits_report_error (stderr, stat); exit (stat); }
 
 	fits_set_compression_type (outfptr, fpvar.comptype, &stat);
+
+	if (fpvar.no_dither)
+	    fits_set_quantize_dither(outfptr, -1, &stat);
+	    
 	fits_set_quantize_level (outfptr, fpvar.quantize_level, &stat);
 	fits_set_hcomp_scale (outfptr, fpvar.scale, &stat);
 	fits_set_hcomp_smooth (outfptr, fpvar.smooth, &stat);
@@ -834,6 +874,9 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 	fits_create_file (&outfptr2, outfits2, &stat);
 
 	if (stat) { fits_report_error (stderr, stat); exit (stat); }
+
+	if (fpvar.no_dither)
+	    fits_set_quantize_dither(outfptr, -1, &stat);
 
 	fits_set_quantize_level (outfptr, fpvar.quantize_level, &stat);
 	fits_set_hcomp_scale (outfptr, fpvar.scale, &stat);

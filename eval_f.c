@@ -2373,6 +2373,13 @@ if (gParse.hdutype != IMAGE_HDU) {
       varInfo->type     = STRING;
       colIter->datatype = TSTRING;
       type = SCOLUMN;
+      if ( width >= MAX_STRLEN ) {
+	sprintf(temp, "column %d is wider than maximum %d characters",
+		colnum, MAX_STRLEN-1);
+        ffpmsg(temp);
+	gParse.status = PARSE_LRG_VECTOR;
+	return pERROR;
+      }
       if( gParse.hdutype == ASCII_TBL ) repeat = width;
       break;
    default:

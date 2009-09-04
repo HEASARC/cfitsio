@@ -147,11 +147,46 @@ static void hputs(char* hstring,char* keyword,char* cval);
 static void hputcom(char* hstring,char* keyword,char* comment);
 static void hputl(char* hstring,char* keyword,int lval);
 static void hputc(char* hstring,char* keyword,char* cval);
-
+static int getirafpixname (char *hdrname, char *irafheader, char *pixfilename, int *status);
 int iraf2mem(char *filename, char **buffptr, size_t *buffsize, 
       size_t *filesize, int *status);
 
 void ffpmsg(const char *err_message);
+
+/*--------------------------------------------------------------------------*/
+int fits_delete_iraf_file(char *filename,     /* name of input file                 */
+             int *status)        /* IO - error status                       */
+
+/*
+   Delete the iraf .imh header file and the associated .pix data file
+*/
+{
+    char *irafheader;
+    int lenirafhead;
+
+    char pixfilename[SZ_IM2PIXFILE+1];
+
+    /* read IRAF header into dynamically created char array (free it later!) */
+    irafheader = irafrdhead(filename, &lenirafhead);
+
+    if (!irafheader)
+    {
+	return(*status = FILE_NOT_OPENED);
+    }
+
+    getirafpixname (filename, irafheader, pixfilename, status);
+
+    /* don't need the IRAF header any more */
+    free(irafheader);
+
+    if (*status > 0)
+       return(*status);
+
+    remove(filename);
+    remove(pixfilename);
+    
+    return(*status);
+}
 
 /*--------------------------------------------------------------------------*/
 int iraf2mem(char *filename,     /* name of input file                 */
@@ -834,6 +869,58 @@ static int iraftofits (
     for (fp = fhead; fp < fhead1; fp = fp + 80) {
 	(void)strncpy (fp, endline,80);
 	}
+
+    return (*status);
+}
+/*--------------------------------------------------------------------------*/
+
+/* get the IRAF pixel file name */
+
+static int getirafpixname (
+    char    *hdrname,  /* IRAF header file name (may be path) */
+    char    *irafheader,  /* IRAF image header */
+    char    *pixfilename,     /* IRAF pixel file name */
+    int     *status)
+{
+    int imhver;
+    char *pixname, *newpixname, *bang;
+
+    /* Check header magic word */
+    imhver = head_version (irafheader);
+    if (imhver < 1) {
+	ffpmsg("File not valid IRAF image header");
+        ffpmsg(hdrname);
+	return(*status = FILE_NOT_OPENED);
+	}
+
+    /* get image pixel file pathname in header */
+    if (imhver == 2)
+	pixname = irafgetc (irafheader, IM2_PIXFILE, SZ_IM2PIXFILE);
+    else
+	pixname = irafgetc2 (irafheader, IM_PIXFILE, SZ_IMPIXFILE);
+
+    if (strncmp(pixname, "HDR", 3) == 0 ) {
+	newpixname = same_path (pixname, hdrname);
+        if (newpixname) {
+          free (pixname);
+          pixname = newpixname;
+	  }
+	}
+
+    if (strchr (pixname, '/') == NULL && strchr (pixname, '$') == NULL) {
+	newpixname = same_path (pixname, hdrname);
+        if (newpixname) {
+          free (pixname);
+          pixname = newpixname;
+	  }
+	}
+	
+    if ((bang = strchr (pixname, '!')) != NULL )
+	strcpy(pixfilename,bang+1);
+    else
+	strcpy(pixfilename,pixname);
+
+    free (pixname);
 
     return (*status);
 }

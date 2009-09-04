@@ -7098,6 +7098,7 @@ by a backslash to force the UNIX shell to ignore it.
     "cumulative sum"    accum(x)   "sequential difference" seqdiff(x)
     "if-then-else"      b?x:y      
     "angular separation"  angsep(ra1,dec1,ra2,de2) (all in degrees)
+    "substring"      strmid(s,p,n) "string search"         strstr(s,r)
 -
 Three different random number functions are provided:  random(), with
 no arguments, produces a uniform random deviate between 0 and 1;
@@ -7116,28 +7117,40 @@ name of a vector column).  This will create a vector of
 random numbers that will be used in sequence when evaluating each 
 element of the vector expression.
 
-    An alternate syntax for the min and max functions  has only a single
-    argument which  should be  a  vector value (see  below).  The result
-    will be the minimum/maximum element contained within the vector.
+An alternate syntax for the min and max functions  has only a single
+argument which  should be  a  vector value (see  below).  The result
+will be the minimum/maximum element contained within the vector.
+
+The accum(x) function forms the cumulative sum of x, element by element.
+Vector columns are supported simply by performing the summation process
+through all the values.  Null values are treated as 0.  The seqdiff(x) 
+function forms the sequential difference of x, element by element.  
+The first value of seqdiff is the first value of x.  A single null 
+value in x causes a pair of nulls in the output.  The seqdiff and 
+accum functions are functional inverses, i.e., seqdiff(accum(x)) == x
+as long as no null values are present.
+
+The angsep function computes the angular separation in degrees 
+between 2 celestial positions, where the first 2 parameters
+give the RA-like and Dec-like coordinates (in decimal degrees)
+of the first position, and the 3rd and 4th parameters give the
+coordinates of the second position.
     
-    The accum(x) function forms the cumulative sum of x, element by element.
-    Vector columns are supported simply by performing the summation process
-    through all the values.  Null values are treated as 0.  The seqdiff(x) 
-    function forms the sequential difference of x, element by element.  
-    The first value of seqdiff is the first value of x.  A single null 
-    value in x causes a pair of nulls in the output.  The seqdiff and 
-    accum functions are functional inverses, i.e., seqdiff(accum(x)) == x
-    as long as no null values are present.
-    
-    The angsep function computes the angular separation in degrees 
-    between 2 celestial positions, where the first 2 parameters
-    give the RA-like and Dec-like coordinates (in decimal degrees)
-    of the first position, and the 3rd and 4th parameters give the
-    coordinates of the second position.
-    
-    The  following  type  casting  operators  are  available,  where the
-    inclosing parentheses are required and taken  from  the  C  language
-    usage. Also, the integer to real casts values to double precision:
+The substring function strmid(S,P,N) extracts a substring from S, 
+starting at string position P, with a substring length N.  The first 
+character position in S is labeled as 1. If P is 0, or refers to a 
+position beyond the end of S, then the extracted substring will be 
+NULL.  S, P, and N may be functions of other columns.
+
+The string search function strstr(S,R) searches for the first occurrence 
+of the substring R in S.  The result is an integer, indicating the 
+character position of the first match (where 1 is the first character 
+position of S).  If no match is found, then strstr() returns a NULL
+value.
+
+The  following  type  casting  operators  are  available,  where the
+inclosing parentheses are required and taken  from  the  C  language
+usage. Also, the integer to real casts values to double precision:
 -
                 "real to integer"    (int) x     (INT) x
                 "integer to real"    (float) i   (FLOAT) i

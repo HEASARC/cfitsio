@@ -4475,7 +4475,7 @@ int ffifile(char *url,       /* input filename */
 */
 { 
     int ii, jj, slen, infilelen, plus_ext = 0, collen;
-    char *ptr1, *ptr2, *ptr3, *tmptr;
+    char *ptr1, *ptr2, *ptr3, *ptr4, *tmptr;
     int hasAt, hasDot, hasOper, followingOper, spaceTerm, rowFilter;
     int colStart, binStart, pixStart;
 
@@ -4724,7 +4724,10 @@ int ffifile(char *url,       /* input filename */
     /* check if this is an IRAF file (.imh extension */
     /* --------------------------------------------- */
 
-    if (strstr(infile, ".imh"))
+    ptr4 = strstr(infile, ".imh");
+
+    /* did the infile name end with ".imh" ? */
+    if (ptr4 && (*(ptr4 + 4) == '\0'))
     {
         if (urltype)
             strcpy(urltype, "irafmem://");

@@ -286,6 +286,7 @@ extern int Fitsio_Pthread_Status;
 
 
 #define COMPRESS_NULL_VALUE -2147483647
+#define N_RANDOM 10000  /* DO NOT CHANGE THIS;  used when quantizing real numbers */
 
 int ffmkky(const char *keyname, char *keyval, const char *comm, char *card, int *status);
 int ffgnky(fitsfile *fptr, char *card, int *status);
@@ -979,11 +980,11 @@ int imcomp_merge_overlap (char *tile, int pixlen, int ndim,
          long *fpixel, long *lpixel, int nullcheck, int *status);
 int imcomp_decompress_img(fitsfile *infptr, fitsfile *outfptr, int datatype,
          int  *status);
-int fits_quantize_float (float fdata[], long nx, long ny, int nullcheck,
+int fits_quantize_float (long row, float fdata[], long nx, long ny, int nullcheck,
          float in_null_value,
            float quantize_level, int idata[], double *bscale, double *bzero,
            int *iminval, int *imaxval);
-int fits_quantize_double (double fdata[], long nx, long ny, int nullcheck,
+int fits_quantize_double (long row, double fdata[], long nx, long ny, int nullcheck,
          double in_null_value,
            float quantize_level, int idata[], double *bscale, double *bzero,
            int *iminval, int *imaxval);
@@ -998,6 +999,7 @@ int fits_rdecomp_byte (unsigned char *c, int clen, unsigned char array[], int nx
              int nblock);
 int pl_p2li (int *pxsrc, int xs, short *lldst, int npix);
 int pl_l2pi (short *ll_src, int xs, int *px_dst, int npix);
+int fits_init_randoms(void);
 
 /* general driver routines */
 

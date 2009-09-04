@@ -3,7 +3,7 @@ typedef union {
     double dbl;         /* real value    */
     long   lng;         /* integer value */
     char   log;         /* logical value */
-    char   str[256];    /* string value  */
+    char   str[MAX_STRLEN];    /* string value  */
 } FFSTYPE;
 #define	BOOLEAN	258
 #define	LONG	259
@@ -12,30 +12,31 @@ typedef union {
 #define	BITSTR	262
 #define	FUNCTION	263
 #define	BFUNCTION	264
-#define	GTIFILTER	265
-#define	REGFILTER	266
-#define	COLUMN	267
-#define	BCOLUMN	268
-#define	SCOLUMN	269
-#define	BITCOL	270
-#define	ROWREF	271
-#define	NULLREF	272
-#define	SNULLREF	273
-#define	OR	274
-#define	AND	275
-#define	EQ	276
-#define	NE	277
-#define	GT	278
-#define	LT	279
-#define	LTE	280
-#define	GTE	281
-#define	POWER	282
-#define	NOT	283
-#define	INTCAST	284
-#define	FLTCAST	285
-#define	UMINUS	286
-#define	ACCUM	287
-#define	DIFF	288
+#define	IFUNCTION	265
+#define	GTIFILTER	266
+#define	REGFILTER	267
+#define	COLUMN	268
+#define	BCOLUMN	269
+#define	SCOLUMN	270
+#define	BITCOL	271
+#define	ROWREF	272
+#define	NULLREF	273
+#define	SNULLREF	274
+#define	OR	275
+#define	AND	276
+#define	EQ	277
+#define	NE	278
+#define	GT	279
+#define	LT	280
+#define	LTE	281
+#define	GTE	282
+#define	POWER	283
+#define	NOT	284
+#define	INTCAST	285
+#define	FLTCAST	286
+#define	UMINUS	287
+#define	ACCUM	288
+#define	DIFF	289
 
 
 extern FFSTYPE fflval;

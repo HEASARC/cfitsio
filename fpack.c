@@ -43,7 +43,9 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 	/* flags must come first and be separately specified
 	 */
 	for (iarg = 1; iarg < argc; iarg++) {
-	    if (argv[iarg][0] == '-' && strlen (argv[iarg]) == 2) {
+	    if ((argv[iarg][0] == '-' && strlen (argv[iarg]) == 2) ||
+	        !strcmp(argv[iarg], "-q0") )  /* 1 special case */
+	    {
 
 		/* Rice is the default, so -r is superfluous 
 		 */
@@ -96,6 +98,9 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 			gottype++;
 
 		} else if (argv[iarg][1] == 'q') {
+                    if (argv[iarg][2] == '0')
+		        fpptr->no_dither = 1;  /* don't dither the quantized values */
+
 		    if (++iarg >= argc) {
 			fp_usage (); exit (-1);
 		    } else {
@@ -259,6 +264,7 @@ fp_msg ("   -t <axes>   comma separated list of tile dimensions [default=row by 
 fp_msg ("   -q <level>  quantization level for floating point images [default=16].\n");
 fp_msg ("               Larger values preserve more precision and give less compression.\n");
 fp_msg ("               (+value relative to RMS noise; -value is absolute)\n");
+fp_msg ("               Use -q0 instead of -q to suppress random dithering during quantization.\n");
 
 fp_msg ("   -s <scale>  scale factor for lossy Hcompress [default = 0 = lossless]\n");
 fp_msg ("               (+values relative to RMS noise; -value is absolute)\n");

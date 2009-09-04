@@ -5,13 +5,151 @@
 # include "fitsio2.h"
 
 #define NULL_VALUE -2147483647 /* value used to represent undefined pixels */
-#define N_RESERVED_VALUES 1   /* number of reserved values, starting with */
-                               /* and including NULL_VALUE.  These values */
-                               /* may not be used to represent the quantized */
-                               /* and scaled floating point pixel values */
 
 /* nearest integer function */
 # define NINT(x)  ((x >= 0.) ? (int) (x + 0.5) : (int) (x - 0.5))
+
+float *fits_rand_value = 0;
+
+static int unquantize_i1r4(long row,
+            unsigned char *input,         /* I - array of values to be converted     */
+            long ntodo,           /* I - number of elements in the array     */
+            double scale,         /* I - FITS TSCALn or BSCALE value         */
+            double zero,          /* I - FITS TZEROn or BZERO  value         */
+            int nullcheck,        /* I - null checking code; 0 = don't check */
+                                  /*     1:set null pixels = nullval         */
+                                  /*     2: if null pixel, set nullarray = 1 */
+            unsigned char tnull,          /* I - value of FITS TNULLn keyword if any */
+            float nullval,        /* I - set null pixels, if nullcheck = 1   */
+            char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
+            int  *anynull,        /* O - set to 1 if any pixels are null     */
+            float *output,        /* O - array of converted pixels           */
+            int *status);          /* IO - error status                       */
+static int unquantize_i2r4(long row,
+            short *input,         /* I - array of values to be converted     */
+            long ntodo,           /* I - number of elements in the array     */
+            double scale,         /* I - FITS TSCALn or BSCALE value         */
+            double zero,          /* I - FITS TZEROn or BZERO  value         */
+            int nullcheck,        /* I - null checking code; 0 = don't check */
+                                  /*     1:set null pixels = nullval         */
+                                  /*     2: if null pixel, set nullarray = 1 */
+            short tnull,          /* I - value of FITS TNULLn keyword if any */
+            float nullval,        /* I - set null pixels, if nullcheck = 1   */
+            char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
+            int  *anynull,        /* O - set to 1 if any pixels are null     */
+            float *output,        /* O - array of converted pixels           */
+            int *status);          /* IO - error status                       */
+static int unquantize_i4r4(long row,
+            INT32BIT *input,      /* I - array of values to be converted     */
+            long ntodo,           /* I - number of elements in the array     */
+            double scale,         /* I - FITS TSCALn or BSCALE value         */
+            double zero,          /* I - FITS TZEROn or BZERO  value         */
+            int nullcheck,        /* I - null checking code; 0 = don't check */
+                                  /*     1:set null pixels = nullval         */
+                                  /*     2: if null pixel, set nullarray = 1 */
+            INT32BIT tnull,       /* I - value of FITS TNULLn keyword if any */
+            float nullval,        /* I - set null pixels, if nullcheck = 1   */
+            char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
+            int  *anynull,        /* O - set to 1 if any pixels are null     */
+            float *output,        /* O - array of converted pixels           */
+            int *status);          /* IO - error status                       */
+static int unquantize_i1r8(long row,
+            unsigned char *input,         /* I - array of values to be converted     */
+            long ntodo,           /* I - number of elements in the array     */
+            double scale,         /* I - FITS TSCALn or BSCALE value         */
+            double zero,          /* I - FITS TZEROn or BZERO  value         */
+            int nullcheck,        /* I - null checking code; 0 = don't check */
+                                  /*     1:set null pixels = nullval         */
+                                  /*     2: if null pixel, set nullarray = 1 */
+            unsigned char tnull,          /* I - value of FITS TNULLn keyword if any */
+            double nullval,        /* I - set null pixels, if nullcheck = 1   */
+            char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
+            int  *anynull,        /* O - set to 1 if any pixels are null     */
+            double *output,        /* O - array of converted pixels           */
+            int *status);          /* IO - error status                       */
+static int unquantize_i2r8(long row,
+            short *input,         /* I - array of values to be converted     */
+            long ntodo,           /* I - number of elements in the array     */
+            double scale,         /* I - FITS TSCALn or BSCALE value         */
+            double zero,          /* I - FITS TZEROn or BZERO  value         */
+            int nullcheck,        /* I - null checking code; 0 = don't check */
+                                  /*     1:set null pixels = nullval         */
+                                  /*     2: if null pixel, set nullarray = 1 */
+            short tnull,          /* I - value of FITS TNULLn keyword if any */
+            double nullval,        /* I - set null pixels, if nullcheck = 1   */
+            char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
+            int  *anynull,        /* O - set to 1 if any pixels are null     */
+            double *output,        /* O - array of converted pixels           */
+            int *status);          /* IO - error status                       */
+static int unquantize_i4r8(long row,
+            INT32BIT *input,      /* I - array of values to be converted     */
+            long ntodo,           /* I - number of elements in the array     */
+            double scale,         /* I - FITS TSCALn or BSCALE value         */
+            double zero,          /* I - FITS TZEROn or BZERO  value         */
+            int nullcheck,        /* I - null checking code; 0 = don't check */
+                                  /*     1:set null pixels = nullval         */
+                                  /*     2: if null pixel, set nullarray = 1 */
+            INT32BIT tnull,       /* I - value of FITS TNULLn keyword if any */
+            double nullval,        /* I - set null pixels, if nullcheck = 1   */
+            char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
+            int  *anynull,        /* O - set to 1 if any pixels are null     */
+            double *output,        /* O - array of converted pixels           */
+            int *status);          /* IO - error status                       */
+/*---------------------------------------------------------------------------*/
+int fits_init_randoms(void) {
+
+/* initialize an array of random numbers */
+
+    int ii;
+    double a = 16807.0;
+    double m = 2147483647.0;
+    double temp, seed;
+
+    FFLOCK;
+ 
+    if (fits_rand_value) {
+       FFUNLOCK;
+       return(0);  /* array is already initialized */
+    }
+
+    /* allocate array for the random number sequence */
+    /* THIS MEMORY IS NEVER FREED */
+    fits_rand_value = calloc(N_RANDOM, sizeof(float));
+
+    if (!fits_rand_value) {
+        FFUNLOCK;
+	return(MEMORY_ALLOCATION);
+    }
+		       
+    /*  We need a portable algorithm that anyone can use to generate this
+        exact same sequence of random number.  The C 'rand' function is not
+	suitable because it is not available to Fortran or Java programmers.
+	Instead, use a well known simple algorithm published here: 
+	"Random number generators: good ones are hard to find", Communications of the ACM,
+        Volume 31 ,  Issue 10  (October 1988) Pages: 1192 - 1201 
+    */  
+
+    /* initialize the random numbers */
+    seed = 1;
+    for (ii = 0; ii < N_RANDOM; ii++) {
+        temp = a * seed;
+	seed = temp -m * ((int) (temp / m) );
+	fits_rand_value[ii] = seed / m;
+    }
+
+    FFUNLOCK;
+
+    /* 
+    IMPORTANT NOTE: the 10000th seed value must have the value 1043618065 if the 
+       algorithm has been implemented correctly */
+    
+    if ( (int) seed != 1043618065) {
+        ffpmsg("fits_init_randoms generated incorrect random number sequence");
+	return(1);
+    } else {
+        return(0);
+    }
+}
 /*--------------------------------------------------------------------------*/
 void bz_internal_error(int errcode)
 {
@@ -155,6 +293,22 @@ int fits_set_hcomp_smooth(fitsfile *fptr,  /* I - FITS file pointer   */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int fits_set_quantize_dither(fitsfile *fptr,  /* I - FITS file pointer   */
+           int dither,        /* dither type      */
+           int *status)         /* IO - error status                */
+{
+/*
+   This routine specifies what type of dithering (randomization) should
+   be performed when quantizing floating point images to integer prior to
+   compression.   A value of -1 means do no dithering.  A value of 0 means
+   used the default  SUBTRACTIVE_DITHER_1 (which is equivalent to dither = 1).
+   A value of -1 means do not apply any dither.
+*/
+
+    (fptr->Fptr)->request_quantize_dither = dither;
+    return(*status);
+}
+//*--------------------------------------------------------------------------*/
 int fits_get_compression_type(fitsfile *fptr,  /* I - FITS file pointer     */
        int *ctype,   /* image compression type code;                        */
                      /* allowed values:                                     */
@@ -510,41 +664,6 @@ int imcomp_init_table(fitsfile *outfptr,
 		  }
 	      }
 
- 
-             /*  
-	        The following algorithm for finding a good default tile size is no longer used.
-		It looks for a rectangular tile with the X and Y dimensions in the range
-		200 to 600 (even values).
-	    */
-/* ****************
- 	     for (ii = 0; ii < 2 && ii < naxis; ii++) {  
-	         if (naxes[ii] <= 600) {
-                     actual_tilesize[ii] = naxes[ii];
-	         } else {
-                     minspace = naxes[ii];
-		     tempsize = naxes[ii];
-		     
-                     for (jj = 600; jj >= 200; jj -= 2) {
-		        remain = naxes[ii] % jj;
-		       
-		        if (!remain) {
-                          tempsize = jj;
-			  break;
-			  
-		        } else {
-tf1
-                           leftspace = jj - remain;
-			   if (leftspace < minspace) {
-			       minspace = leftspace;
-			       tempsize = jj;
-			   }
-		        }
-		    } 
-                    actual_tilesize[ii] = tempsize;
-	        }
-	    }	  
- ************  */   	    
-
         } else if (actual_tilesize[0] < 4 ||
                    actual_tilesize[1] < 4) {
 
@@ -648,8 +767,8 @@ tf1
 
     if (writebitpix) {
         /*  write the keywords defining the datatype and dimensions of */
-	/*  the uncompressed image.  These keywords may get created */
-        /*  later, copied from the input uncompressed image  */
+	/*  the uncompressed image.  If not, these keywords will be */
+        /*  copied later from the input uncompressed image  */
 	   
         ffpkyj (outfptr, "ZBITPIX", bitpix,
 			"data type of original image", status);
@@ -669,6 +788,14 @@ tf1
         sprintf (keyname, "ZTILE%d", ii+1);
         ffpkyj (outfptr, keyname, actual_tilesize[ii],
 			"size of tiles to be compressed", status);
+    }
+
+    if (bitpix < 0) {
+       if ( ((outfptr->Fptr)->request_quantize_dither == 0) ||
+            ((outfptr->Fptr)->request_quantize_dither == SUBTRACTIVE_DITHER_1)) {
+        ffpkys(outfptr, "ZQUANTIZ", "SUBTRACTIVE_DITHER_1", 
+	   "Pixel Quantization Algorithm", status);
+        }
     }
 
     ffpkys (outfptr, "ZCMPTYPE", zcmptype,
@@ -1045,7 +1172,7 @@ int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr, int *status)
 }
 /*--------------------------------------------------------------------------*/
 int imcomp_compress_tile (fitsfile *outfptr,
-    long row, 
+    long row,  /* tile number = row in the binary table that holds the compressed data */
     int datatype, 
     void *tiledata, 
     long tilelen,
@@ -1088,7 +1215,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
     double scale, zero, actual_bzero;
     int  nelem = 0;		/* number of bytes */
     size_t gzip_nelem = 0;
-    long ii, hcomp_len;
+    long ii, hcomp_len, irow;
     LONGLONG *lldata;
     signed char *sbbuff;
     unsigned char *usbbuff;
@@ -1509,97 +1636,25 @@ int imcomp_compress_tile (fitsfile *outfptr,
           /* if the tile-compressed table contains zscale and zzero columns */
           /* then scale and quantize the input floating point data.    */
           /* Otherwise, just truncate the floats to (scaled) integers.     */
+
           if ((outfptr->Fptr)->cn_zscale > 0) {
             if (nullcheck == 1)
 	      floatnull = *(float *) (nullflagval);
 	    else
 	      floatnull = FLOATNULLVALUE;  /* NaNs are represented by this, by default */
 
-	    if ((outfptr->Fptr)->quantize_level < 0)  {
+              /* quantize the float values into integers */
+              if ((outfptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_1)
+	          irow = row; /* dither the quantized values */
+	      else
+	          irow = 0;  /* do not dither the quantized values */
 
-	      /* negative value represents the absolute quantization level. */
-	      /* We don't have to calculate the noise in the image, so do */
-	      /* this simple linear scaling in line (here) for efficiency, */
-	      /* instead of calling fits_quantize_float */
-	    
-	      delta = ((outfptr->Fptr)->quantize_level) * -1.F;
-
-	      fdata = tiledata;
-	      gotnulls = 0;
-
-              /* set min and max value = first valid pixel value */
-	      ftemp = fdata;
-	      for (ii = 0; ii < tilelen; ftemp++, ii++) {
-	          if (*fdata != floatnull) {
-	              fminval = *ftemp;
-	              fmaxval = *ftemp;
-		      break;
-		  }
-	      }
-
-              /* find min and max values */
-	      ftemp = fdata;
-	      for (ii = 0; ii < tilelen; ftemp++, ii++) {
-	          if (*ftemp == floatnull) {
-		      gotnulls = 1;
-		  } else if (*ftemp < fminval) {
-		      fminval = *ftemp;
-		  } else if (*ftemp > fmaxval) {
-		      fmaxval = *ftemp;
-		  }
-	      }
-
-              /* check that the range of quantized levels is not > range of int */
-	      if ((fmaxval - fminval) / delta > 2. * 2147483647. - N_RESERVED_VALUES ) {
-	          flag = 0;			/* don't quantize */
-              } else {
-
-                  flag = 1;
-                  if (!gotnulls) {   /* don't have to check for nulls */
-                  /* return all positive values, if possible since some */
-                  /* compression algorithms either only work for positive integers, */
-                  /* or are more efficient.  */
-                      if ((fmaxval - fminval) / delta < 2147483647. - N_RESERVED_VALUES ) {
-                          zeropt = fminval;
-	                  ftemp = fdata;
-			  itemp = idata;
-       	                  for (ii = 0;  ii < tilelen;  ftemp++, itemp++, ii++) {
-	                      *itemp = (int) (((*ftemp - zeropt) / delta) +  0.5f);
-			  }
-                       } else {
-                          /* center the quantized levels around zero */
-                          zeropt = (fminval + fmaxval) / 2.F;
-       	                  for (ii = 0;  ii < tilelen;  ii++) {
-	                      idata[ii] = NINT((fdata[ii] - zeropt) / delta);
-			  }
-                      }
-		  } else {
-                      /* data contains null values; shift the range to be */
-                      /* close to the value used to represent null values */
-                     zeropt = fminval - delta * (NULL_VALUE + N_RESERVED_VALUES);
-
-	              for (ii = 0;  ii < tilelen;  ii++) {
-                          if (fdata[ii] != floatnull) {
-	                      idata[ii] = NINT ((fdata[ii] - zeropt) / delta);
-                          } else  {
-                              idata[ii] = NULL_VALUE;
-			  }
-                      }
-	         }
-
-                 /* calc min and max values of the integer array */
-
-	         bscale[0] = delta;
-	         bzero[0]  = zeropt;
-              }
-	    } else {
-                /* quantize level is positive, so we have to calculate the noise */
-                /* quantize the float values into integers */
-
-                flag = fits_quantize_float ((float *) tiledata, tilenx, tileny,
+              flag = fits_quantize_float (irow, (float *) tiledata, tilenx, tileny,
                    nullcheck, floatnull, (outfptr->Fptr)->quantize_level, idata,
                    bscale, bzero, &iminval, &imaxval);
-            }
+
+              if (flag > 1)
+		   return(*status = flag);
           }
           else  /* input float data is implicitly converted (truncated) to integers */
           {
@@ -1627,9 +1682,17 @@ int imcomp_compress_tile (fitsfile *outfptr,
 	      doublenull = DOUBLENULLVALUE;
 	      
             /* quantize the double values into integers */
-            flag = fits_quantize_double ((double *) tiledata, tilenx, tileny,
+              if ((outfptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_1)
+	          irow = row; /* dither the quantized values */
+	      else
+	          irow = 0;  /* do not dither the quantized values */
+
+            flag = fits_quantize_double (irow, (double *) tiledata, tilenx, tileny,
                nullcheck, doublenull, (outfptr->Fptr)->quantize_level, idata,
                bscale, bzero, &iminval, &imaxval);
+
+            if (flag > 1)
+		return(*status = flag);
           }
           else  /* input double data is implicitly converted (truncated) to integers */
           {
@@ -3871,6 +3934,19 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
 	return (*status = DATA_DECOMPRESSION_ERR);
     }
 
+    /* get the floating point to integer quantization type, if present. */
+    /* FITS files produced before 2009 will not have this keyword */
+    tstatus = 0;
+    if (ffgky(infptr, TSTRING, "ZQUANTIZ", value, NULL, &tstatus) > 0)
+    {
+        (infptr->Fptr)->quantize_dither = 0;
+    } else {
+        if (!FSTRCMP(value, "SUBTRACTIVE_DITHER_1") )
+            (infptr->Fptr)->quantize_dither = SUBTRACTIVE_DITHER_1;
+        else
+            (infptr->Fptr)->quantize_dither = 0;
+    }
+
     if (ffgky (infptr, TINT,  "ZBITPIX",  &(infptr->Fptr)->zbitpix,  
                NULL, status) > 0)
     {
@@ -4118,7 +4194,7 @@ int imcomp_copy_img2comp(fitsfile *infptr, fitsfile *outfptr, int *status)
 */
 {
     char card[FLEN_CARD];	/* a header record */
-    int nkeys, nmore, ii, jj;
+    int nkeys, nmore, ii, jj, tstatus;
 
     /* tile compressed image keyword translation table  */
     /*                        INPUT      OUTPUT  */
@@ -4157,6 +4233,25 @@ int imcomp_copy_img2comp(fitsfile *infptr, fitsfile *outfptr, int *status)
     npat = sizeof(patterns)/sizeof(patterns[0][0])/2;
     fits_translate_keywords(infptr, outfptr, 1, patterns, npat,
 			    0, 0, 0, status);
+
+   /*
+     For compatibility with software that uses an older version of CFITSIO,
+     we must make certain that the new ZQUANTIZ keyword, if it exists, must
+     occur after the other peudo-required keywords (e.g., ZSIMPLE, ZBITPIX,
+     etc.).  Do this by trying to delete the keyword.  If that succeeds (and
+     thus the keyword did exist) then rewrite the keyword at the end of header.
+     In principle this should not be necessary once all software has upgraded
+     to a newer version of CFITSIO (version number greater than 3.181, newer
+     than August 2009).
+   */
+
+   tstatus = 0;
+   if (fits_delete_key(outfptr, "ZQUANTIZ", &tstatus) == 0)
+   {
+        /* rewrite the deleted keyword at the end of the header */
+        ffpkys(outfptr, "ZQUANTIZ", "SUBTRACTIVE_DITHER_1", 
+	   "Pixel Quantization Algorithm", status);
+    }
 
     ffghsp(infptr, &nkeys, &nmore, status); /* get number of keywords in image */
 
@@ -4214,6 +4309,7 @@ int imcomp_copy_comp2img(fitsfile *infptr, fitsfile *outfptr,
 			   {"TTYPEm",  "-"       },
 			   {"TFORMm",  "-"       },
 			   {"ZIMAGE",  "-"       },
+			   {"ZQUANTIZ", "-"       },
 			   {"ZTILEm",  "-"       },
 			   {"ZCMPTYPE", "-"      },
 			   {"ZBLANK",  "-"       },
@@ -4825,34 +4921,74 @@ int imcomp_decompress_tile (fitsfile *infptr,
     else if (datatype == TFLOAT)
     {
         pixlen = sizeof(float);
-        if (tiledatatype == TINT)
-          fffi4r4(idata, tilelen, bscale, bzero, nullcheck, tnull,
+        if ((infptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_1) {
+
+         /* use the new dithering algorithm (introduced in July 2009) */
+         if (tiledatatype == TINT)
+          unquantize_i4r4(nrow, idata, tilelen, bscale, bzero, nullcheck, tnull,
            *(float *) nulval, bnullarray, anynul,
             (float *) buffer, status);
-        else if (tiledatatype == TSHORT)
-          fffi2r4((short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,
+         else if (tiledatatype == TSHORT)
+          unquantize_i2r4(nrow, (short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,
            *(float *) nulval, bnullarray, anynul,
             (float *) buffer, status);
-        else if (tiledatatype == TBYTE)
+         else if (tiledatatype == TBYTE)
+          unquantize_i1r4(nrow, (unsigned char *)idata, tilelen, bscale, bzero, nullcheck, (unsigned char) tnull,
+           *(float *) nulval, bnullarray, anynul,
+            (float *) buffer, status);
+
+        } else {  /* use the old "round to nearest level" quantization algorithm */
+
+         if (tiledatatype == TINT)
+          fffi4r4(idata, tilelen, bscale, bzero, nullcheck, tnull,  
+           *(float *) nulval, bnullarray, anynul,
+            (float *) buffer, status);
+         else if (tiledatatype == TSHORT)
+          fffi2r4((short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,  
+           *(float *) nulval, bnullarray, anynul,
+            (float *) buffer, status);
+         else if (tiledatatype == TBYTE)
           fffi1r4((unsigned char *)idata, tilelen, bscale, bzero, nullcheck, (unsigned char) tnull,
            *(float *) nulval, bnullarray, anynul,
             (float *) buffer, status);
+
+	}
+
     }
     else if (datatype == TDOUBLE)
     {
         pixlen = sizeof(double);
-        if (tiledatatype == TINT)
+        if ((infptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_1) {
+
+         /* use the new dithering algorithm (introduced in July 2009) */
+         if (tiledatatype == TINT)
+          unquantize_i4r8(nrow, idata, tilelen, bscale, bzero, nullcheck, tnull,
+           *(double *) nulval, bnullarray, anynul,
+            (double *) buffer, status);
+         else if (tiledatatype == TSHORT)
+          unquantize_i2r8(nrow, (short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,
+           *(double *) nulval, bnullarray, anynul,
+            (double *) buffer, status);
+         else if (tiledatatype == TBYTE)
+          unquantize_i1r8(nrow, (unsigned char *)idata, tilelen, bscale, bzero, nullcheck, (unsigned char) tnull,
+           *(double *) nulval, bnullarray, anynul,
+            (double *) buffer, status);
+
+        } else {  /* use the old "round to nearest level" quantization algorithm */
+
+         if (tiledatatype == TINT)
           fffi4r8(idata, tilelen, bscale, bzero, nullcheck, tnull,
            *(double *) nulval, bnullarray, anynul,
             (double *) buffer, status);
-        else if (tiledatatype == TSHORT)
+         else if (tiledatatype == TSHORT)
           fffi2r8((short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,
            *(double *) nulval, bnullarray, anynul,
             (double *) buffer, status);
-        else if (tiledatatype == TBYTE)
+         else if (tiledatatype == TBYTE)
           fffi1r8((unsigned char *)idata, tilelen, bscale, bzero, nullcheck, (unsigned char) tnull,
            *(double *) nulval, bnullarray, anynul,
             (double *) buffer, status);
+	}
     }
     else if (datatype == TBYTE)
     {
@@ -5243,7 +5379,6 @@ printf("  tilepix, tilepixbyte, imgpix, imgpixbyte= %d %d %d %d\n",
     }
     return(*status);
 }
-
 /*--------------------------------------------------------------------------*/
 int imcomp_merge_overlap (
     char *tile,         /* O - multi dimensional array of tile pixels */
@@ -5469,6 +5604,428 @@ printf("  tilepix, tilepixbyte, imgpix, imgpixbyte= %d %d %d %d\n",
           }
         }
       }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int unquantize_i1r4(long row, /* tile number = row number in table  */
+            unsigned char *input, /* I - array of values to be converted     */
+            long ntodo,           /* I - number of elements in the array     */
+            double scale,         /* I - FITS TSCALn or BSCALE value         */
+            double zero,          /* I - FITS TZEROn or BZERO  value         */
+            int nullcheck,        /* I - null checking code; 0 = don't check */
+                                  /*     1:set null pixels = nullval         */
+                                  /*     2: if null pixel, set nullarray = 1 */
+            unsigned char tnull,  /* I - value of FITS TNULLn keyword if any */
+            float nullval,        /* I - set null pixels, if nullcheck = 1   */
+            char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
+            int  *anynull,        /* O - set to 1 if any pixels are null     */
+            float *output,        /* O - array of converted pixels           */
+            int *status)          /* IO - error status                       */
+/*
+    Unquantize byte values into the scaled floating point values
+*/
+{
+    long ii;
+    int nextrand, iseed;
+
+    if (!fits_rand_value) 
+       if (fits_init_randoms()) return(MEMORY_ALLOCATION);
+
+    /* initialize the index to the next random number in the list */
+    iseed = (int) ((row - 1) % N_RANDOM);
+    nextrand = (int) (fits_rand_value[iseed] * 500);
+
+    if (nullcheck == 0)     /* no null checking required */
+    {
+           for (ii = 0; ii < ntodo; ii++)
+            {
+                output[ii] = (float) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                nextrand++;
+		if (nextrand == N_RANDOM) {
+                    iseed++;
+		    if (iseed == N_RANDOM) iseed = 0;
+	            nextrand = (int) (fits_rand_value[iseed] * 500);
+                }
+            }
+    }
+    else        /* must check for null values */
+    {
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] == tnull)
+                {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                }
+                else
+                {
+                    output[ii] = (float) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                }
+
+                nextrand++;
+		if (nextrand == N_RANDOM) {
+                    iseed++;
+		    if (iseed == N_RANDOM) iseed = 0;
+	            nextrand = (int) (fits_rand_value[iseed] * 500);
+                }
+ 
+            }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int unquantize_i2r4(long row, /* tile number = row number in table  */
+            short *input,         /* I - array of values to be converted     */
+            long ntodo,           /* I - number of elements in the array     */
+            double scale,         /* I - FITS TSCALn or BSCALE value         */
+            double zero,          /* I - FITS TZEROn or BZERO  value         */
+            int nullcheck,        /* I - null checking code; 0 = don't check */
+                                  /*     1:set null pixels = nullval         */
+                                  /*     2: if null pixel, set nullarray = 1 */
+            short tnull,          /* I - value of FITS TNULLn keyword if any */
+            float nullval,        /* I - set null pixels, if nullcheck = 1   */
+            char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
+            int  *anynull,        /* O - set to 1 if any pixels are null     */
+            float *output,        /* O - array of converted pixels           */
+            int *status)          /* IO - error status                       */
+/*
+    Unquantize short integer values into the scaled floating point values
+*/
+{
+    long ii;
+    int nextrand, iseed;
+
+    if (!fits_rand_value) 
+       if (fits_init_randoms()) return(MEMORY_ALLOCATION);
+
+    /* initialize the index to the next random number in the list */
+    iseed = (int) ((row - 1) % N_RANDOM);
+    nextrand = (int) (fits_rand_value[iseed] * 500);
+
+    if (nullcheck == 0)     /* no null checking required */
+    {
+           for (ii = 0; ii < ntodo; ii++)
+            {
+                output[ii] = (float) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                nextrand++;
+		if (nextrand == N_RANDOM) {
+                    iseed++;
+		    if (iseed == N_RANDOM) iseed = 0;
+	            nextrand = (int) (fits_rand_value[iseed] * 500);
+                }
+            }
+    }
+    else        /* must check for null values */
+    {
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] == tnull)
+                {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                }
+                else
+                {
+                    output[ii] = (float) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                }
+
+                nextrand++;
+		if (nextrand == N_RANDOM) {
+                    iseed++;
+		    if (iseed == N_RANDOM) iseed = 0;
+	            nextrand = (int) (fits_rand_value[iseed] * 500);
+                }
+ 
+            }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int unquantize_i4r4(long row, /* tile number = row number in table    */
+            INT32BIT *input,      /* I - array of values to be converted     */
+            long ntodo,           /* I - number of elements in the array     */
+            double scale,         /* I - FITS TSCALn or BSCALE value         */
+            double zero,          /* I - FITS TZEROn or BZERO  value         */
+            int nullcheck,        /* I - null checking code; 0 = don't check */
+                                  /*     1:set null pixels = nullval         */
+                                  /*     2: if null pixel, set nullarray = 1 */
+            INT32BIT tnull,       /* I - value of FITS TNULLn keyword if any */
+            float nullval,        /* I - set null pixels, if nullcheck = 1   */
+            char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
+            int  *anynull,        /* O - set to 1 if any pixels are null     */
+            float *output,        /* O - array of converted pixels           */
+            int *status)          /* IO - error status                       */
+/*
+    Unquantize int integer values into the scaled floating point values
+*/
+{
+    long ii;
+    int nextrand, iseed;
+
+    if (fits_rand_value == 0) 
+       if (fits_init_randoms()) return(MEMORY_ALLOCATION);
+
+    /* initialize the index to the next random number in the list */
+    iseed = (int) ((row - 1) % N_RANDOM);
+    nextrand = (int) (fits_rand_value[iseed] * 500);
+
+    if (nullcheck == 0)     /* no null checking required */
+    {
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                output[ii] = (float) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+
+                nextrand++;
+		if (nextrand == N_RANDOM) {
+                    iseed++;
+		    if (iseed == N_RANDOM) iseed = 0;
+	            nextrand = (int) (fits_rand_value[iseed] * 500);
+                }
+            }
+    }
+    else        /* must check for null values */
+    {
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] == tnull)
+                {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                }
+                else
+                {
+                    output[ii] = (float) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                }
+
+                nextrand++;
+		if (nextrand == N_RANDOM) {
+                    iseed++;
+		    if (iseed == N_RANDOM) iseed = 0;
+	            nextrand = (int) (fits_rand_value[iseed] * 500);
+                }
+
+            }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int unquantize_i1r8(long row, /* tile number = row number in table  */
+            unsigned char *input, /* I - array of values to be converted     */
+            long ntodo,           /* I - number of elements in the array     */
+            double scale,         /* I - FITS TSCALn or BSCALE value         */
+            double zero,          /* I - FITS TZEROn or BZERO  value         */
+            int nullcheck,        /* I - null checking code; 0 = don't check */
+                                  /*     1:set null pixels = nullval         */
+                                  /*     2: if null pixel, set nullarray = 1 */
+            unsigned char tnull,  /* I - value of FITS TNULLn keyword if any */
+            double nullval,        /* I - set null pixels, if nullcheck = 1   */
+            char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
+            int  *anynull,        /* O - set to 1 if any pixels are null     */
+            double *output,        /* O - array of converted pixels           */
+            int *status)          /* IO - error status                       */
+/*
+    Unquantize byte values into the scaled floating point values
+*/
+{
+    long ii;
+    int nextrand, iseed;
+
+    if (!fits_rand_value) 
+       if (fits_init_randoms()) return(MEMORY_ALLOCATION);
+
+    /* initialize the index to the next random number in the list */
+    iseed = (int) ((row - 1) % N_RANDOM);
+    nextrand = (int) (fits_rand_value[iseed] * 500);
+
+    if (nullcheck == 0)     /* no null checking required */
+    {
+           for (ii = 0; ii < ntodo; ii++)
+            {
+                output[ii] = (double) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                nextrand++;
+		if (nextrand == N_RANDOM) {
+                    iseed++;
+		    if (iseed == N_RANDOM) iseed = 0;
+	            nextrand = (int) (fits_rand_value[iseed] * 500);
+                }
+            }
+    }
+    else        /* must check for null values */
+    {
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] == tnull)
+                {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                }
+                else
+                {
+                    output[ii] = (double) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                }
+
+                nextrand++;
+		if (nextrand == N_RANDOM) {
+                    iseed++;
+		    if (iseed == N_RANDOM) iseed = 0;
+	            nextrand = (int) (fits_rand_value[iseed] * 500);
+                }
+ 
+            }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int unquantize_i2r8(long row, /* tile number = row number in table  */
+            short *input,         /* I - array of values to be converted     */
+            long ntodo,           /* I - number of elements in the array     */
+            double scale,         /* I - FITS TSCALn or BSCALE value         */
+            double zero,          /* I - FITS TZEROn or BZERO  value         */
+            int nullcheck,        /* I - null checking code; 0 = don't check */
+                                  /*     1:set null pixels = nullval         */
+                                  /*     2: if null pixel, set nullarray = 1 */
+            short tnull,          /* I - value of FITS TNULLn keyword if any */
+            double nullval,        /* I - set null pixels, if nullcheck = 1   */
+            char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
+            int  *anynull,        /* O - set to 1 if any pixels are null     */
+            double *output,        /* O - array of converted pixels           */
+            int *status)          /* IO - error status                       */
+/*
+    Unquantize short integer values into the scaled floating point values
+*/
+{
+    long ii;
+    int nextrand, iseed;
+
+    if (!fits_rand_value) 
+       if (fits_init_randoms()) return(MEMORY_ALLOCATION);
+
+    /* initialize the index to the next random number in the list */
+    iseed = (int) ((row - 1) % N_RANDOM);
+    nextrand = (int) (fits_rand_value[iseed] * 500);
+
+    if (nullcheck == 0)     /* no null checking required */
+    {
+           for (ii = 0; ii < ntodo; ii++)
+            {
+                output[ii] = (double) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                nextrand++;
+		if (nextrand == N_RANDOM) {
+                    iseed++;
+		    if (iseed == N_RANDOM) iseed = 0;
+	            nextrand = (int) (fits_rand_value[iseed] * 500);
+                }
+            }
+    }
+    else        /* must check for null values */
+    {
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] == tnull)
+                {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                }
+                else
+                {
+                    output[ii] = (double) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                }
+
+                nextrand++;
+		if (nextrand == N_RANDOM) {
+                    iseed++;
+		    if (iseed == N_RANDOM) iseed = 0;
+	            nextrand = (int) (fits_rand_value[iseed] * 500);
+                }
+ 
+            }
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int unquantize_i4r8(long row, /* tile number = row number in table    */
+            INT32BIT *input,      /* I - array of values to be converted     */
+            long ntodo,           /* I - number of elements in the array     */
+            double scale,         /* I - FITS TSCALn or BSCALE value         */
+            double zero,          /* I - FITS TZEROn or BZERO  value         */
+            int nullcheck,        /* I - null checking code; 0 = don't check */
+                                  /*     1:set null pixels = nullval         */
+                                  /*     2: if null pixel, set nullarray = 1 */
+            INT32BIT tnull,       /* I - value of FITS TNULLn keyword if any */
+            double nullval,        /* I - set null pixels, if nullcheck = 1   */
+            char *nullarray,      /* I - bad pixel array, if nullcheck = 2   */
+            int  *anynull,        /* O - set to 1 if any pixels are null     */
+            double *output,        /* O - array of converted pixels           */
+            int *status)          /* IO - error status                       */
+/*
+    Unquantize int integer values into the scaled floating point values
+*/
+{
+    long ii;
+    int nextrand, iseed;
+
+    if (fits_rand_value == 0) 
+       if (fits_init_randoms()) return(MEMORY_ALLOCATION);
+
+    /* initialize the index to the next random number in the list */
+    iseed = (int) ((row - 1) % N_RANDOM);
+    nextrand = (int) (fits_rand_value[iseed] * 500);
+
+    if (nullcheck == 0)     /* no null checking required */
+    {
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                output[ii] = (double) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+
+                nextrand++;
+		if (nextrand == N_RANDOM) {
+                    iseed++;
+		    if (iseed == N_RANDOM) iseed = 0;
+	            nextrand = (int) (fits_rand_value[iseed] * 500);
+                }
+            }
+    }
+    else        /* must check for null values */
+    {
+            for (ii = 0; ii < ntodo; ii++)
+            {
+                if (input[ii] == tnull)
+                {
+                    *anynull = 1;
+                    if (nullcheck == 1)
+                        output[ii] = nullval;
+                    else
+                        nullarray[ii] = 1;
+                }
+                else
+                {
+                    output[ii] = (double) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                }
+
+                nextrand++;
+		if (nextrand == N_RANDOM) {
+                    iseed++;
+		    if (iseed == N_RANDOM) iseed = 0;
+	            nextrand = (int) (fits_rand_value[iseed] * 500);
+                }
+
+            }
     }
     return(*status);
 }

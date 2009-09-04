@@ -69,11 +69,12 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.181;
+      *version = (float) 3.2;
 
-/*     12 May (BETA release of thread-safe version)
+/*     31 Aug 2009
 
    Previous releases:
+      *version = 3.18    12 May 2009 (beta version)
       *version = 3.14    18 Mar 2009 
       *version = 3.13     5 Jan 2009 
       *version = 3.12     8 Oct 2008 
@@ -6284,6 +6285,7 @@ int ffuptf(fitsfile *fptr,      /* I - FITS file pointer */
     char tform[FLEN_VALUE], newform[FLEN_VALUE], lenval[40];
     char card[FLEN_CARD];
     char message[FLEN_ERRMSG];
+    char *tmp;
 
     ffmaky(fptr, 2, status);         /* reset to beginning of header */
     ffgkyjj(fptr, "NAXIS2", &naxis2, comment, status);
@@ -6302,8 +6304,6 @@ int ffuptf(fitsfile *fptr,      /* I - FITS file pointer */
       /* is this a variable array length column ? */
       if (tform[0] == 'P' || tform[1] == 'P' || tform[0] == 'Q' || tform[1] == 'Q')
       {
-        if (strlen(tform) < 5)  /* is maxlen field missing? */
-        {
           /* get the max length */
           maxlen = 0;
           for (jj=1; jj <= naxis2; jj++)
@@ -6316,6 +6316,8 @@ int ffuptf(fitsfile *fptr,      /* I - FITS file pointer */
 
           /* construct the new keyword value */
           strcpy(newform, "'");
+          tmp = strchr(tform, '(');  /* truncate old length, if present */
+          if (tmp) *tmp = 0;       
           strcat(newform, tform);
 
           /* print as double, because the string-to-64-bit */
@@ -6331,7 +6333,6 @@ int ffuptf(fitsfile *fptr,      /* I - FITS file pointer */
           /* would force linking in all the modkey & putkey routines */
           ffmkky(keyname, newform, comment, card, status);  /* make new card */
           ffmkey(fptr, card, status);   /* replace last read keyword */
-       }
       }
     }
     return(*status);
@@ -6400,7 +6401,7 @@ int ffrdef(fitsfile *fptr,      /* I - FITS file pointer */
           {
             ffmaky(fptr, 2, status);
             ffgkyjj(fptr, "PCOUNT", &pcount, comm, status);
-            if ((fptr->Fptr)->heapsize > pcount)
+            if ((fptr->Fptr)->heapsize != pcount)
             {
               ffmkyj(fptr, "PCOUNT", (fptr->Fptr)->heapsize, comm, status);
             }

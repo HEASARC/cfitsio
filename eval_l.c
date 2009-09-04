@@ -884,10 +884,20 @@ FF_RULE_SETUP
                   char tmpstring[256];
                   char bitstring[256];
                   len = strlen(fftext);
-		  while (fftext[len] == ' ')
-			len--;
-                  len = len - 1;
-		  strncpy(tmpstring,&fftext[1],len);
+		  if (len >= 256) {
+		    char errMsg[100];
+		    gParse.status = PARSE_SYNTAX_ERR;
+		    strcpy (errMsg,"Bit string exceeds maximum length: '");
+		    strncat(errMsg, &(fftext[0]), 20);
+		    strcat (errMsg,"...'");
+		    ffpmsg (errMsg);
+		    len = 0;
+		  } else {
+		    while (fftext[len] == ' ')
+		      len--;
+		    len = len - 1;
+		    strncpy(tmpstring,&fftext[1],len);
+		  }
                   tmpstring[len] = '\0';
                   bitstring[0] = '\0';
 		  len = 0;
@@ -932,16 +942,26 @@ FF_RULE_SETUP
 	FF_BREAK
 case 4:
 FF_RULE_SETUP
-#line 205 "eval.l"
+#line 215 "eval.l"
 {
                   int len;
                   char tmpstring[256];
                   char bitstring[256];
                   len = strlen(fftext);
-		  while (fftext[len] == ' ')
-			len--;
-                  len = len - 1;
-		  strncpy(tmpstring,&fftext[1],len);
+		  if (len >= 256) {
+		    char errMsg[100];
+		    gParse.status = PARSE_SYNTAX_ERR;
+		    strcpy (errMsg,"Hex string exceeds maximum length: '");
+		    strncat(errMsg, &(fftext[0]), 20);
+		    strcat (errMsg,"...'");
+		    ffpmsg (errMsg);
+		    len = 0;
+		  } else {
+		    while (fftext[len] == ' ')
+		      len--;
+		    len = len - 1;
+		    strncpy(tmpstring,&fftext[1],len);
+		  }
                   tmpstring[len] = '\0';
                   bitstring[0] = '\0';
 		  len = 0;
@@ -1017,7 +1037,7 @@ FF_RULE_SETUP
 	FF_BREAK
 case 5:
 FF_RULE_SETUP
-#line 286 "eval.l"
+#line 306 "eval.l"
 {
                   fflval.lng = atol(fftext);
 		  return( LONG );
@@ -1025,7 +1045,7 @@ FF_RULE_SETUP
 	FF_BREAK
 case 6:
 FF_RULE_SETUP
-#line 290 "eval.l"
+#line 310 "eval.l"
 {
                   if ((fftext[0] == 't') || (fftext[0] == 'T'))
 		    fflval.log = 1;
@@ -1036,7 +1056,7 @@ FF_RULE_SETUP
 	FF_BREAK
 case 7:
 FF_RULE_SETUP
-#line 297 "eval.l"
+#line 317 "eval.l"
 {
                   fflval.dbl = atof(fftext);
 		  return( DOUBLE );
@@ -1044,7 +1064,7 @@ FF_RULE_SETUP
 	FF_BREAK
 case 8:
 FF_RULE_SETUP
-#line 301 "eval.l"
+#line 321 "eval.l"
 {
                   if(        !strcasecmp(fftext,"#PI") ) {
 		     fflval.dbl = (double)(4) * atan((double)(1));
@@ -1076,18 +1096,28 @@ FF_RULE_SETUP
 	FF_BREAK
 case 9:
 FF_RULE_SETUP
-#line 329 "eval.l"
+#line 349 "eval.l"
 {
                   int len;
                   len = strlen(fftext) - 2;
-		  strncpy(fflval.str,&fftext[1],len);
+		  if (len >= MAX_STRLEN) {
+		    char errMsg[100];
+		    gParse.status = PARSE_SYNTAX_ERR;
+		    strcpy (errMsg,"String exceeds maximum length: '");
+		    strncat(errMsg, &(fftext[1]), 20);
+		    strcat (errMsg,"...'");
+		    ffpmsg (errMsg);
+		    len = 0;
+		  } else {
+		    strncpy(fflval.str,&fftext[1],len);
+		  }
 		  fflval.str[len] = '\0';
 		  return( STRING );
 		}
 	FF_BREAK
 case 10:
 FF_RULE_SETUP
-#line 336 "eval.l"
+#line 366 "eval.l"
 {
 		 int    len,type;
 
@@ -1103,7 +1133,7 @@ FF_RULE_SETUP
 	FF_BREAK
 case 11:
 FF_RULE_SETUP
-#line 348 "eval.l"
+#line 378 "eval.l"
 {
                   char *fname;
 		  int len=0;
@@ -1125,83 +1155,86 @@ FF_RULE_SETUP
                   else if( FSTRCMP(fname,"REGFILTER(")==0 )
                      return( REGFILTER );
 
+                  else if( FSTRCMP(fname,"STRSTR(")==0 )
+                     return( IFUNCTION );  /* Returns integer */
+
                   else 
 		     return( FUNCTION  );
 		}
 	FF_BREAK
 case 12:
 FF_RULE_SETUP
-#line 372 "eval.l"
+#line 405 "eval.l"
 { return( INTCAST ); }
 	FF_BREAK
 case 13:
 FF_RULE_SETUP
-#line 373 "eval.l"
+#line 406 "eval.l"
 { return( FLTCAST ); }
 	FF_BREAK
 case 14:
 FF_RULE_SETUP
-#line 374 "eval.l"
+#line 407 "eval.l"
 { return( POWER   ); }
 	FF_BREAK
 case 15:
 FF_RULE_SETUP
-#line 375 "eval.l"
+#line 408 "eval.l"
 { return( NOT     ); }
 	FF_BREAK
 case 16:
 FF_RULE_SETUP
-#line 376 "eval.l"
+#line 409 "eval.l"
 { return( OR      ); }
 	FF_BREAK
 case 17:
 FF_RULE_SETUP
-#line 377 "eval.l"
+#line 410 "eval.l"
 { return( AND     ); }
 	FF_BREAK
 case 18:
 FF_RULE_SETUP
-#line 378 "eval.l"
+#line 411 "eval.l"
 { return( EQ      ); }
 	FF_BREAK
 case 19:
 FF_RULE_SETUP
-#line 379 "eval.l"
+#line 412 "eval.l"
 { return( NE      ); }
 	FF_BREAK
 case 20:
 FF_RULE_SETUP
-#line 380 "eval.l"
+#line 413 "eval.l"
 { return( GT      ); }
 	FF_BREAK
 case 21:
 FF_RULE_SETUP
-#line 381 "eval.l"
+#line 414 "eval.l"
 { return( LT      ); }
 	FF_BREAK
 case 22:
 FF_RULE_SETUP
-#line 382 "eval.l"
+#line 415 "eval.l"
 { return( GTE     ); }
 	FF_BREAK
 case 23:
 FF_RULE_SETUP
-#line 383 "eval.l"
+#line 416 "eval.l"
 { return( LTE     ); }
 	FF_BREAK
 case 24:
 FF_RULE_SETUP
-#line 384 "eval.l"
+#line 417 "eval.l"
 { return( '\n'    ); }
 	FF_BREAK
 case 25:
 FF_RULE_SETUP
-#line 385 "eval.l"
+#line 418 "eval.l"
 { return( fftext[0] ); }
 	FF_BREAK
 case 26:
 FF_RULE_SETUP
-#line 386 "eval.l"
+#line 419 "eval.l"
 ECHO;
 	FF_BREAK
 case FF_STATE_EOF(INITIAL):
@@ -2089,7 +2122,7 @@ int main()
 	return 0;
 	}
 #endif
-#line 386 "eval.l"
+#line 419 "eval.l"
 
 
 int ffwrap()

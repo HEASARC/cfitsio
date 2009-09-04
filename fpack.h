@@ -11,10 +11,13 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#define	FPACK_VERSION	"1.1.4 (May 2009)"
+#define	FPACK_VERSION	"1.2.0 (Sept 2009)"
 /*
 VERSION	History
-
+1.2.0 (Sept 2009) added subtractive dithering feature (in CFITSIO) when
+      quantizing floating point images; When packing an IRAF .imh + .pix image,
+      the file name is changed to FILE.fits.fz, and if the original file is
+      deleted, then both the .imh and .pix files are deleted.
 1.1.4 (May 2009) added -E option to funpack to unpack a list of HDUs
 1.1.3 (March 2009)  minor modifications to the content and format of the -T report
 1.1.2 (September 2008)
@@ -37,6 +40,7 @@ typedef struct
 {
 	int	comptype;
 	float	quantize_level;
+	int     no_dither;
 	float	scale;
 	float	rescale_noise;
 	int	smooth;

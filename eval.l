@@ -157,10 +157,20 @@ nl		\n
                   char tmpstring[256];
                   char bitstring[256];
                   len = strlen(yytext);
-		  while (yytext[len] == ' ')
-			len--;
-                  len = len - 1;
-		  strncpy(tmpstring,&yytext[1],len);
+		  if (len >= 256) {
+		    char errMsg[100];
+		    gParse.status = PARSE_SYNTAX_ERR;
+		    strcpy (errMsg,"Bit string exceeds maximum length: '");
+		    strncat(errMsg, &(yytext[0]), 20);
+		    strcat (errMsg,"...'");
+		    ffpmsg (errMsg);
+		    len = 0;
+		  } else {
+		    while (yytext[len] == ' ')
+		      len--;
+		    len = len - 1;
+		    strncpy(tmpstring,&yytext[1],len);
+		  }
                   tmpstring[len] = '\0';
                   bitstring[0] = '\0';
 		  len = 0;
@@ -207,10 +217,20 @@ nl		\n
                   char tmpstring[256];
                   char bitstring[256];
                   len = strlen(yytext);
-		  while (yytext[len] == ' ')
-			len--;
-                  len = len - 1;
-		  strncpy(tmpstring,&yytext[1],len);
+		  if (len >= 256) {
+		    char errMsg[100];
+		    gParse.status = PARSE_SYNTAX_ERR;
+		    strcpy (errMsg,"Hex string exceeds maximum length: '");
+		    strncat(errMsg, &(yytext[0]), 20);
+		    strcat (errMsg,"...'");
+		    ffpmsg (errMsg);
+		    len = 0;
+		  } else {
+		    while (yytext[len] == ' ')
+		      len--;
+		    len = len - 1;
+		    strncpy(tmpstring,&yytext[1],len);
+		  }
                   tmpstring[len] = '\0';
                   bitstring[0] = '\0';
 		  len = 0;
@@ -329,7 +349,17 @@ nl		\n
 {string}	{
                   int len;
                   len = strlen(yytext) - 2;
-		  strncpy(yylval.str,&yytext[1],len);
+		  if (len >= MAX_STRLEN) {
+		    char errMsg[100];
+		    gParse.status = PARSE_SYNTAX_ERR;
+		    strcpy (errMsg,"String exceeds maximum length: '");
+		    strncat(errMsg, &(yytext[1]), 20);
+		    strcat (errMsg,"...'");
+		    ffpmsg (errMsg);
+		    len = 0;
+		  } else {
+		    strncpy(yylval.str,&yytext[1],len);
+		  }
 		  yylval.str[len] = '\0';
 		  return( STRING );
 		}
@@ -365,6 +395,9 @@ nl		\n
 
                   else if( FSTRCMP(fname,"REGFILTER(")==0 )
                      return( REGFILTER );
+
+                  else if( FSTRCMP(fname,"STRSTR(")==0 )
+                     return( IFUNCTION );  /* Returns integer */
 
                   else 
 		     return( FUNCTION  );

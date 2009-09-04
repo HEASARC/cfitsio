@@ -1,7 +1,54 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.2 - 31 August 2009
 
+   - modified configure.in and configure so that it will build the Fortran
+     interface routines by default, even if no Fortran compiler is found
+     in the user's path. Building the interface routines may be disabled 
+     by specifying FC="none".  This was done at the request of users who
+     obtained CFITSIO from some other standard linux distributions, where
+     CFITSIO was apparently built in an environment that had no Fortran 
+     compiler and hence did not build the Fortran wrappers.
 
+   - modified ffchdu (close HDU) so that it calls the routine to update
+     the maximum length of variable length table columns in the TFORM
+     values in all cases  where the values may have changed.  Previously
+     it would not update the values if a value was already specified in
+     the TFORM value.
+
+   - added 2 new string manipulation functions to the CFITSIO parser 
+     (contributed by Craig Markwardt): strmid extracts a substring
+     from a string, and strstr searches for a substring within a string.
+
+   - removed the code in quantize.c that treated "floating-point integer" 
+     images as a special case (it would just do a datatype conversion from
+     float to int, and not otherwise quantize the pixel values).  This 
+     caused complications with the new subtractive dithering feature.
+
+   - enhanced the code for converting floating point images to quantized
+     scaled integer prior to tile-compressing them, to apply a random
+     subtractive dithering, which improves the photometric accuracy
+     of the compressed images.
+   
+   - added new internal routine, iraf_delete_file, for use by fpack to
+     delete a pair of IRAF format header and pixel files.
+
+   - small change in cfileio.c in the way it recognizes an IRAF format
+     .imh file.  Instead of just requiring that the filename contain the
+     ".imh" string, that string must occur at the end of the file name.
+
+   - fixed bug in the code that is used when tile-compressing real*4 FITS 
+     images, which quantizes the floating point pixel values into
+     integer levels.  The bug would only appear in the fairly rare
+     circumstance of tile compresssing a floating point image that contains
+     null pixels (NaNs) and only when using the lossy Hcompress algorithm
+     (with the s parameter not equal to 1).  This could cause underflow of
+     low valued pixels, causing them to appear as very large pixel values
+     (e.g., > 10**30)  in the compressed image
+
+   - changed the "if defined" blocks in fitsio.h, fitsio2.h and f77_wrap.h
+     to correctly set the length of long variables on sparc64 machines.
+     Patch contributed by Matthew Truch (U. Penn).
 
    - modified the HTTP file access code in drvrnet.c to support basic
      HTTP authentication, where the user supplies a user name and

@@ -10,15 +10,17 @@
 #endif
 #include "fitsio2.h"
 
-#ifndef FFBISON
-#include "eval_tab.h"
-#endif
-
 #define MAXDIMS       5
 #define MAXSUBS      10
 #define MAXVARNAME   80
 #define CONST_OP  -1000
 #define pERROR       -1
+#define MAX_STRLEN  256
+#define MAX_STRLEN_S "255"
+
+#ifndef FFBISON
+#include "eval_tab.h"
+#endif
 
 
 typedef struct {
@@ -40,7 +42,7 @@ typedef struct {
                          double dbl;
                          long   lng;
                          char   log;
-                         char   str[256];
+                         char   str[MAX_STRLEN];
                          double *dblptr;
                          long   *lngptr;
                          char   *logptr;
@@ -139,7 +141,9 @@ typedef enum {
 		  nonnull_fct,
 		  angsep_fct,
 		  gasrnd_fct,
-		  poirnd_fct
+		  poirnd_fct,
+		  strmid_fct,
+		  strpos_fct
                                 } funcOp;
 
 extern ParseData gParse;

@@ -34,7 +34,7 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.181
+#define CFITSIO_VERSION 3.2
 
 #include <stdio.h>
 
@@ -252,6 +252,7 @@ SERVICES PROVIDED HEREUNDER."
 #define DOUBLENULLVALUE -9.1191291391491E-36
  
 /* Image compression algorithm types */
+#define SUBTRACTIVE_DITHER_1 1
 #define MAX_COMPRESS_DIM     6
 #define RICE_1      11
 #define GZIP_1      21
@@ -354,8 +355,11 @@ typedef struct      /* structure used to store basic FITS file information */
 
     float request_hcomp_scale;      /* requested HCOMPRESS scale factor */
     int request_hcomp_smooth;     /* requested HCOMPRESS smooth parameter */
+    int request_quantize_dither ; /* requested dithering mode when quantizing */
+                                   /* floating point images to integer */
 
     int compressimg; /* 1 if HDU contains a compressed image, else 0 */
+    int quantize_dither;   /* floating point pixel quantization algorithm */
     char zcmptype[12];      /* compression type string */
     int compress_type;      /* type of compression algorithm */
     int zbitpix;            /* FITS data type of image (BITPIX) */
@@ -727,6 +731,7 @@ int ffclos(fitsfile *fptr, int *status);
 int ffdelt(fitsfile *fptr, int *status);
 int ffflnm(fitsfile *fptr, char *filename, int *status);
 int ffflmd(fitsfile *fptr, int *filemode, int *status);
+int fits_delete_iraf_file(char *filename, int *status);
 
 /*---------------- utility routines -------------*/
 
@@ -1857,6 +1862,7 @@ int fits_set_noise_bits(fitsfile *fptr, int noisebits, int *status);
 int fits_set_quantize_level(fitsfile *fptr, float qlevel, int *status);
 int fits_set_hcomp_scale(fitsfile *fptr, float scale, int *status);
 int fits_set_hcomp_smooth(fitsfile *fptr, int smooth, int *status);
+int fits_set_quantize_dither(fitsfile *fptr, int dither, int *status);
 
 int fits_get_compression_type(fitsfile *fptr, int *ctype, int *status);
 int fits_get_tile_dim(fitsfile *fptr, int ndim, long *dims, int *status);

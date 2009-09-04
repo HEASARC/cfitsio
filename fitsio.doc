@@ -4949,6 +4949,7 @@ by a backslash to force the UNIX shell to ignore it.
     "cumulative sum"     accum(x)  "sequential difference" seqdiff(x)
     "if-then-else"       b?x:y
     "angular separation"  angsep(ra1,dec1,ra2,de2) (all in degrees)
+    "substring"      strmid(s,p,n) "string search"         strstr(s,r)
 -
 Three different random number functions are provided:  random(), with no
 arguments, produces a uniform random deviate between 0 and 1; randomn(),
@@ -4985,6 +4986,18 @@ element of the vector expression.
     give the RA-like and Dec-like coordinates (in decimal degrees)
     of the first position, and the 3rd and 4th parameters give the
     coordinates of the second position.
+
+The substring function strmid(S,P,N) extracts a substring from S, 
+starting at string position P, with a substring length N.  The first 
+character position in S is labeled as 1. If P is 0, or refers to a 
+position beyond the end of S, then the extracted substring will be 
+NULL.   S, P, and N may be functions of other columns.
+
+The string search function strstr(S,R) searches for the first occurrence 
+of the substring R in S.  The result is an integer, indicating the 
+character position of the first match (where 1 is the first character 
+position of S).  If no match is found, then strstr() returns a NULL
+value.
     
     The  following  type  casting  operators  are  available,  where the
     enclosing parentheses are required and taken  from  the  C  language
