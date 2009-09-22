@@ -11,13 +11,15 @@ Unzip the library:
 
 - start Xcode and open cfitsio.xcodeproj
 
-- right-click on Targets -> Build PPC -> Build Build PPC
+- expand the "Targets" menu under "Groups & Files" 
+
+- right-click on Build PPC -> Build "Build PPC"
   when that finishes...:
 
-- right-click on Targets -> Build i386 -> Build Build i386
+- right-click on Build i386 -> Build "Build i386"
   when that finishes...:
 
-- right-click on Targets -> Build Universal -> Build Build Universal
+- right-click on Build Universal -> Build "Build Universal"
 
 (For some reason clicking on the menu "Build" icon doesn't seem to
 work correctly, but the right-click menus do).
@@ -28,9 +30,14 @@ Another way to build the universal binary:
 
 - unpack the cfitsio source code tar file
 - cd cfitsio
-- setenv CFLAGS "-arch ppc -arch i386 -g -O2"
 
- Then proceed with the standard cfitsio build, i.e.:
+Set the CFLAGS environment variable for building a Universal Binary:
+
+- setenv CFLAGS "-arch ppc -arch i386 -g -O2"   (C-Shell variants)
+  or
+- export CFLAGS="-arch ppc -arch i386 -g -O2"   (Bourne Shell variants)
+
+Then proceed with the standard cfitsio build, i.e.:
 
 - ./configure
 - make
