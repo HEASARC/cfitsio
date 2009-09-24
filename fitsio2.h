@@ -1001,6 +1001,8 @@ int pl_p2li (int *pxsrc, int xs, short *lldst, int npix);
 int pl_l2pi (short *ll_src, int xs, int *px_dst, int npix);
 int fits_init_randoms(void);
 
+int fitsio_init_lock(void);
+
 /* general driver routines */
 
 int urltype2driver(char *urltype, int *driver);

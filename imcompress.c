@@ -308,7 +308,7 @@ int fits_set_quantize_dither(fitsfile *fptr,  /* I - FITS file pointer   */
     (fptr->Fptr)->request_quantize_dither = dither;
     return(*status);
 }
-//*--------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------*/
 int fits_get_compression_type(fitsfile *fptr,  /* I - FITS file pointer     */
        int *ctype,   /* image compression type code;                        */
                      /* allowed values:                                     */

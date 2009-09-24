@@ -1,6 +1,26 @@
                    Log of Changes Made to CFITSIO
 
-Version 3.2 - 31 August 2009
+Version 3.21 - 24 September 2009
+
+   - fixed bug in cfileio.c  that caused CFITSIO to crash with a bus error
+     on Mac OS X if CFITSIO was compiled with multi-threaded support (with
+     the  --enable-reentrant configure option). The Mac requires an
+     additional thread initialization step that is not required on Linux
+     machines.  Even with this fix, occasional bus errors have been seen on
+     some Mac platforms, The bus errors are seen when running the
+     thread_test.c program.  The bus errors are very intermittent, and occur
+     less than about 1% of the time, on the affected platforms. 
+     These bus errors have not been seen on Linux platforms. 
+
+   - fixed invalid C comment delimiter ("//*" should have been "/*")
+     in imcompress.c.
+
+   - Increased the CFITSIO version number string length
+     in fpackutil.c, to fix problem on some platforms when running
+     fpack -V or funpack -V.   Also modified the output format of the
+     fpack -L command.
+
+Version 3.20 - 31 August 2009
 
    - modified configure.in and configure so that it will build the Fortran
      interface routines by default, even if no Fortran compiler is found

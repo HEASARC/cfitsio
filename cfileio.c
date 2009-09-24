@@ -48,6 +48,46 @@ static int pixel_filter_helper(fitsfile **fptr, char *outfile,
 				char *expr,  int *status);
 
 
+#ifdef _REENTRANT
+
+pthread_mutex_t Fitsio_InitLock = PTHREAD_MUTEX_INITIALIZER;
+
+#endif
+
+/*--------------------------------------------------------------------------*/
+int fitsio_init_lock(void)
+{
+  static int need_to_init = 1;
+  
+#ifdef _REENTRANT
+
+  pthread_mutexattr_t mutex_init;
+
+  FFLOCK1(Fitsio_InitLock);
+
+  if (need_to_init) {
+
+    /* Init the main fitsio lock here since we need a a recursive lock */
+
+    assert(!pthread_mutexattr_init(&mutex_init));
+#ifdef linux
+    assert(!pthread_mutexattr_settype(&mutex_init,
+				     PTHREAD_MUTEX_RECURSIVE_NP));
+#else
+    assert(!pthread_mutexattr_settype(&mutex_init,
+				     PTHREAD_MUTEX_RECURSIVE));
+#endif
+
+    assert(!pthread_mutex_init(&Fitsio_Lock,&mutex_init));
+    need_to_init = 0;
+  }
+
+  FFUNLOCK1(Fitsio_InitLock);
+
+#endif
+
+    return(0);
+}
 /*--------------------------------------------------------------------------*/
 int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */ 
            const char *name,     /* I - name of file to open                */
@@ -3642,8 +3682,11 @@ int fits_init_cfitsio(void)
       char cval[2];
     } u;
 
+    fitsio_init_lock();
+
     FFLOCK;   /* lockout other threads while executing this critical */
               /* section of code  */
+
     if (need_to_initialize == 0) { /* already initialized? */
       FFUNLOCK;
       return(0);

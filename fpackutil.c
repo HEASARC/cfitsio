@@ -1,6 +1,6 @@
 /* FPACK utility routines
- * R. Seaman, NOAO & W. Pence, NASA/GSFC
- */
+   R. Seaman, NOAO & W. Pence, NASA/GSFC
+*/
 
 #include <time.h>
 #include <float.h>
@@ -14,7 +14,7 @@
 
 /* these filename buffer are used to delete temporary files */
 /* in case the program is aborted */
-char tempfilename[SZ_STR];    
+char tempfilename[SZ_STR];
 char tempfilename2[SZ_STR];
 char tempfilename3[SZ_STR];
 
@@ -42,31 +42,30 @@ FILE *outreport;
 /* dimension of central image area to be sampled for test statistics */
 int XSAMPLE = 4100;
 int YSAMPLE = 4100;
-    
+
 int fp_msg (char *msg)
 {
-	printf ("%s", msg);
-	return(0);
+        printf ("%s", msg);
+        return(0);
 }
 /*--------------------------------------------------------------------------*/
 int fp_noop (void)
-{ 
-	fp_msg ("Input and output files are unchanged.\n");
-	return(0);
+{
+        fp_msg ("Input and output files are unchanged.\n");
+        return(0);
 }
 /*--------------------------------------------------------------------------*/
-int fp_version (void) 
-{ 
+int fp_version (void)
+{
         float version;
-	char cfitsioversion[20];
+        char cfitsioversion[40];
 
-	fp_msg (FPACK_VERSION);
-	fits_get_version(&version);
-	sprintf(cfitsioversion, " CFITSIO version %6.3f", version);
-	fp_msg(cfitsioversion);
-	fp_msg ("\n");
+        fp_msg (FPACK_VERSION);
+        fits_get_version(&version);
+        sprintf(cfitsioversion, " CFITSIO version %6.3f", version);
+        fp_msg(cfitsioversion);
+        fp_msg ("\n");
 }
-
 /*--------------------------------------------------------------------------*/
 int fp_init (fpstate *fpptr)
 {
@@ -166,7 +165,7 @@ int fp_info (char *infits)
             mode = (unsigned) sbuf.st_mode;
             nlink = (int) sbuf.st_nlink;
 
-	    sprintf (msg, "%s: %d bytes\n", infits, size); fp_msg (msg);
+            sprintf (msg, "# %s (%d bytes)\n", infits, size); fp_msg (msg);
 	}
 	return(0);
 }
@@ -176,7 +175,8 @@ int fp_info_hdu (fitsfile *infptr)
 {
 	long	naxes[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
 	char	msg[SZ_STR], val[SZ_CARD], com[SZ_CARD];
-	int	naxis=0, hdutype, bitpix, hdupos, stat=0, ii;
+        int     comptype, naxis=0, hdutype, bitpix, hdupos, stat=0, ii;
+        unsigned long   datasum, hdusum;
 
 	fits_movabs_hdu (infptr, 1, NULL, &stat);
 	if (stat) { fits_report_error (stderr, stat); exit (stat); }
@@ -186,13 +186,18 @@ int fp_info_hdu (fitsfile *infptr)
 
 	    if (stat) { fits_report_error (stderr, stat); exit (stat); }
 
+            fits_get_chksum(infptr, &datasum, &hdusum, &stat);
+
 	    if (hdutype == IMAGE_HDU) {
 		sprintf (msg, "  %d IMAGE", hdupos); fp_msg (msg);
+                sprintf (msg, " SUMS=%u/%u", ~hdusum, datasum); fp_msg (msg);
 
 		fits_get_img_param (infptr, 9, &bitpix, &naxis, naxes, &stat);
 
+                sprintf (msg, " BITPIX=%d", bitpix); fp_msg (msg);
+
 		if (naxis == 0) {
-		    sprintf (msg, " [no pixels]"); fp_msg (msg);
+                    sprintf (msg, " [no_pixels]"); fp_msg (msg);
 		} else if (naxis == 1) {
 		    sprintf (msg, " [%d]", naxes[1]); fp_msg (msg);
 		} else {
@@ -203,20 +208,36 @@ int fp_info_hdu (fitsfile *infptr)
 		    fp_msg ("]");
 		}
 
-		if (fits_is_compressed_image (infptr, &stat))
-		    fp_msg (" (compressed)\n");
-		else
-		    fp_msg ("\n");
+                if (fits_is_compressed_image (infptr, &stat)) {
+                    fits_read_keyword (infptr, "ZCMPTYPE", val, com, &stat);
 
-	    } else if (hdutype == ASCII_TBL) {
-		sprintf (msg, "  %d ASCII TABLE\n", hdupos); fp_msg (msg);
+                    /* allow for quote in keyword value */
+                    if (! strncmp (val+1, "RICE_1", 6))
+                        fp_msg (" tiled_rice\n");
+                    else if (! strncmp (val+1, "GZIP_1", 6))
+                        fp_msg (" tiled_gzip\n");
+                    else if (! strncmp (val+1, "PLIO_1", 6))
+                        fp_msg (" tiled_plio\n");
+                    else if (! strncmp (val+1, "HCOMPRESS_1", 11))
+                        fp_msg (" tiled_hcompress\n");
+                    else
+                        fp_msg (" unknown\n");
 
-	    } else if (hdutype == BINARY_TBL) {
-		sprintf (msg, "  %d BINARY TABLE\n", hdupos); fp_msg (msg);
+                } else
+                    fp_msg (" not_tiled\n");
 
-	    } else {
-		sprintf (msg, "  %d UNKNOWN EXTENSION\n", hdupos); fp_msg (msg);
-	    }
+            } else if (hdutype == ASCII_TBL) {
+                sprintf (msg, "  %d ASCII_TBL\n", hdupos); fp_msg (msg);
+                sprintf (msg, " SUMS=%u/%u", ~hdusum, datasum); fp_msg (msg);
+
+            } else if (hdutype == BINARY_TBL) {
+                sprintf (msg, "  %d BINARY_TBL\n", hdupos); fp_msg (msg);
+                sprintf (msg, " SUMS=%u/%u", ~hdusum, datasum); fp_msg (msg);
+
+            } else {
+                sprintf (msg, "  %d OTHER\n", hdupos); fp_msg (msg);
+                sprintf (msg, " SUMS=%u/%u", ~hdusum, datasum); fp_msg (msg);
+            }
 
 	    fits_movrel_hdu (infptr, 1, NULL, &stat);
 	}
@@ -1892,5 +1913,5 @@ void abort_fpack(int sig)
       if (tempfilename3[0]) {
          remove(tempfilename3);
       }
-      exit(-1); 
+      exit(-1);
 }
