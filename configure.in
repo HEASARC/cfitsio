@@ -16,16 +16,17 @@ AC_CONFIG_SRCDIR([fitscore.c])
 
 AC_ARG_ENABLE(
   reentrant,
-  [ --enable-reentrant Enable reentrant multithreading ],
+  [AS_HELP_STRING([--enable-reentrant],[Enable reentrant multithreading])],
   [ if test $enableval = yes; then BUILD_REENTRANT=yes; fi ]
 )
 if test "x$BUILD_REENTRANT" = xyes; then
   AC_DEFINE(_REENTRANT)
+  LIBS="$LIBS -lpthread"
 fi
 
 AC_ARG_ENABLE(
   hera,
-  [ --enable-hera Build for HERA project (for LHEA use only) ],
+  [AS_HELP_STRING([--enable-hera],[Build for HERA (ASD use only)])],
   [ if test $enableval = yes; then BUILD_HERA=yes; fi ]
 )
 if test "x$BUILD_HERA" = xyes; then
@@ -34,7 +35,7 @@ fi
 
 AC_ARG_WITH(
   gsiftp-flavour,
-  [ --with-gsiftp-flavour[[=PATH]] Enable Globus Toolkit gsiftp protocol support ],
+  [AS_HELP_STRING([--with-gsiftp-flavour[[=PATH]]],[Enable Globus Toolkit gsiftp protocol support])],
   [ if test "x$withval" != "xno"; then
 
         if test "x$withval" != "xyes" ; then
@@ -47,7 +48,7 @@ AC_ARG_WITH(
 
 AC_ARG_WITH(
   gsiftp,
-  [ --with-gsiftp[[=PATH]] Enable Globus Toolkit gsiftp protocol support ],
+  [AS_HELP_STRING([--with-gsiftp[[=PATH]]],[Enable Globus Toolkit gsiftp protocol support])],
   [ if test "x$withval" != "xno"; then
 
         if test "x$withval" != "xyes" ; then
