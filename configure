@@ -1332,14 +1332,15 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
- --enable-reentrant Enable reentrant multithreading
- --enable-hera Build for HERA project (for LHEA use only)
+  --enable-reentrant      Enable reentrant multithreading
+  --enable-hera           Build for HERA (ASD use only)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
- --with-gsiftp-flavour[=PATH] Enable Globus Toolkit gsiftp protocol support
- --with-gsiftp[=PATH] Enable Globus Toolkit gsiftp protocol support
+  --with-gsiftp-flavour[=PATH]
+                          Enable Globus Toolkit gsiftp protocol support
+  --with-gsiftp[=PATH]    Enable Globus Toolkit gsiftp protocol support
 
 Some influential environment variables:
   CC          C compiler command
@@ -1807,6 +1808,7 @@ if test "x$BUILD_REENTRANT" = xyes; then
 #define _REENTRANT 1
 _ACEOF
 
+  LIBS="$LIBS -lpthread"
 fi
 
 # Check whether --enable-hera was given.
