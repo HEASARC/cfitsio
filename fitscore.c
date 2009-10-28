@@ -63,17 +63,19 @@ int Fitsio_Pthread_Status = 0;
 
 #endif
 
+int STREAM_DRIVER = 0;
 /*--------------------------------------------------------------------------*/
 float ffvers(float *version)  /* IO - version number */
 /*
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.21;
+      *version = (float) 3.22;
 
-/*     24 Sep 2009
+/*     28 Oct 2009
 
    Previous releases:
+      *version = 3.21    24 Sep 2009
       *version = 3.20    31 Aug 2009
       *version = 3.18    12 May 2009 (beta version)
       *version = 3.14    18 Mar 2009 
@@ -5184,11 +5186,23 @@ int ffgcprll( fitsfile *fptr, /* I - FITS file pointer                      */
             return(*status);
 
     } else if (writemode > 0) {
-        /* (re)write END header keyword, if not done already */
-	if ((fptr->Fptr)->ENDpos != 
-	   maxvalue((fptr->Fptr)->headend , (fptr->Fptr)->datastart -2880)) {
-	      ffwend(fptr, status);
-        } 
+
+	/* Only terminate the header with the END card if */
+	/* writing to the stdout stream (don't have random access). */
+
+	/* Initialize STREAM_DRIVER to be the device number for */
+	/* writing FITS files directly out to the stdout stream. */
+	/* This only needs to be done once and is thread safe. */
+	if (STREAM_DRIVER <= 0 || STREAM_DRIVER > 40) {
+            urltype2driver("stream://", &STREAM_DRIVER);
+        }
+
+        if (((fptr->Fptr)->driver == STREAM_DRIVER)) {
+	    if ((fptr->Fptr)->ENDpos != 
+	       maxvalue((fptr->Fptr)->headend , (fptr->Fptr)->datastart -2880)) {
+	           ffwend(fptr, status);
+	    } 
+	}
     }
 
     /* Do sanity check of input parameters */
@@ -6235,7 +6249,7 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
           ffuptf(fptr, status);  /* update the variable length TFORM values */
         }
 	
-        ffpdfl(fptr, status);  /* insure correct data file values */
+        ffpdfl(fptr, status);  /* insure correct data fill values */
     }
 
     if ((fptr->Fptr)->open_count == 1)
@@ -6511,8 +6525,13 @@ int ffwend(fitsfile *fptr,       /* I - FITS file pointer */
         endpos=maxvalue( endpos, ( (fptr->Fptr)->datastart - 2880 ) );
         ffmbyt(fptr, endpos, REPORT_EOF, &tstatus);  /* move to END position */
         ffgbyt(fptr, 80, keyrec, &tstatus); /* read the END keyword */
-        if ( !strncmp(keyrec, endkey, 80) && !tstatus)
+        if ( !strncmp(keyrec, endkey, 80) && !tstatus) {
+
+            /* store this position, for later reference */
+            (fptr->Fptr)->ENDpos = endpos;
+
             return(*status);    /* END card was already correct */
+         }
     }
 
     /* header was not correctly terminated, so write the END and blank fill */
@@ -6800,6 +6819,12 @@ int ffcrhd(fitsfile *fptr,      /* I - FITS file pointer */
       (fptr->Fptr)->nextkey = bytepos;    /* next keyword = start of header */
       (fptr->Fptr)->headend = bytepos;          /* end of header */
       (fptr->Fptr)->datastart = DATA_UNDEFINED; /* start data unit undefined */
+
+       /* any other needed resets */
+       
+       /* reset the dithering offset that may have been calculated for the */
+       /* previous HDU back to the requested default value */
+       (fptr->Fptr)->dither_offset = (fptr->Fptr)->request_dither_offset;
     }
 
     return(*status);

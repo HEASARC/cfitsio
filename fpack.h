@@ -11,9 +11,13 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#define	FPACK_VERSION	"1.2.0 (Sept 2009)"
+#define	FPACK_VERSION	"1.3.0 (Oct 2009)"
 /*
 VERSION	History
+1.3.0 (Oct 2009) added randomization to the dithering pattern (so that
+      the same pattern is not used for every image; also added an option
+      for losslessly compressing floating point images for test purposes
+      (not recommended for general use).
 1.2.0 (Sept 2009) added subtractive dithering feature (in CFITSIO) when
       quantizing floating point images; When packing an IRAF .imh + .pix image,
       the file name is changed to FILE.fits.fz, and if the original file is
@@ -41,6 +45,7 @@ typedef struct
 	int	comptype;
 	float	quantize_level;
 	int     no_dither;
+	int     dither_offset;
 	float	scale;
 	float	rescale_noise;
 	int	smooth;

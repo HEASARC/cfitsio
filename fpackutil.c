@@ -74,6 +74,7 @@ int fp_init (fpstate *fpptr)
 	fpptr->comptype = RICE_1;
 	fpptr->quantize_level = DEF_QLEVEL;
         fpptr->no_dither = 0;
+        fpptr->dither_offset = 0;
 	fpptr->scale = DEF_HCOMP_SCALE;
 	fpptr->smooth = DEF_HCOMP_SMOOTH;
 	fpptr->rescale_noise = DEF_RESCALE_NOISE;
@@ -705,6 +706,7 @@ int fp_pack (char *infits, char *outfits, fpstate fpvar, int *islossless)
 	fits_set_hcomp_scale (outfptr, fpvar.scale, &stat);
 	fits_set_hcomp_smooth (outfptr, fpvar.smooth, &stat);
 	fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
+	fits_set_dither_offset(outfptr, fpvar.dither_offset, &stat);
 
 	if (stat) { fits_report_error (stderr, stat); exit (stat); }
 	
@@ -903,6 +905,7 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 	fits_set_hcomp_scale (outfptr, fpvar.scale, &stat);
 	fits_set_hcomp_smooth (outfptr, fpvar.smooth, &stat);
 	fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
+	fits_set_dither_offset(outfptr, fpvar.dither_offset, &stat);
 
 	while (! stat) {
 	

@@ -2,12 +2,17 @@
 # include <stdlib.h>
 # include <string.h>
 # include <math.h>
+#include <time.h>
 # include "fitsio2.h"
 
 #define NULL_VALUE -2147483647 /* value used to represent undefined pixels */
 
 /* nearest integer function */
 # define NINT(x)  ((x >= 0.) ? (int) (x + 0.5) : (int) (x - 0.5))
+
+/* special quantize level value indicates that floating point image pixels */
+/* should not be quantized and instead losslessly compressed (with GZIP) */
+#define NO_QUANTIZE 9999
 
 float *fits_rand_value = 0;
 
@@ -95,6 +100,12 @@ static int unquantize_i4r8(long row,
             int  *anynull,        /* O - set to 1 if any pixels are null     */
             double *output,        /* O - array of converted pixels           */
             int *status);          /* IO - error status                       */
+static int imcomp_float2nan(float *indata, 
+    long tilelen,
+    int *outdata,
+    float nullflagval, 
+    int *status);
+
 /*---------------------------------------------------------------------------*/
 int fits_init_randoms(void) {
 
@@ -208,18 +219,64 @@ int fits_set_quantize_level(fitsfile *fptr,  /* I - FITS file pointer   */
            int *status)         /* IO - error status                */
 {
 /*
-   This routine specifies the value of the quantization level that
+   This routine specifies the value of the quantization level, q,  that
    should be used when compressing floating point images.  The image is
    divided into tiles, and each tile is compressed and stored in a row
    of at variable length binary table column.
 */
     if (qlevel == 0.)
     {
-        *status = DATA_COMPRESSION_ERR;
-        return(*status);
-    }
+        /* this means don't quantize the floating point values. Instead, */
+	/* the floating point values will be losslessly compressed */
+       (fptr->Fptr)->quantize_level = NO_QUANTIZE;
+    } else {
 
-    (fptr->Fptr)->quantize_level = qlevel;
+        (fptr->Fptr)->quantize_level = qlevel;
+
+    }
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_set_quantize_dither(fitsfile *fptr,  /* I - FITS file pointer   */
+           int dither,        /* dither type      */
+           int *status)         /* IO - error status                */
+{
+/*
+   This routine specifies what type of dithering (randomization) should
+   be performed when quantizing floating point images to integer prior to
+   compression.   A value of -1 means do no dithering.  A value of 0 means
+   used the default  SUBTRACTIVE_DITHER_1 (which is equivalent to dither = 1).
+   A value of -1 means do not apply any dither.
+*/
+
+    if (dither == 0) dither = 1;
+    (fptr->Fptr)->request_quantize_dither = dither;
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_set_dither_offset(fitsfile *fptr,  /* I - FITS file pointer   */
+           int offset,        /* random dithering offset value (1 to 10000) */
+           int *status)         /* IO - error status                */
+{
+/*
+   This routine specifies the value of the offset that should be applied when
+   calculating the random dithering when quantizing floating point iamges.
+   A random offset should be applied to each image to avoid quantization 
+   effects when taking the difference of 2 images, or co-adding a set of
+   images.  Without this random offset, the corresponding pixel in every image
+   will have exactly the same dithering.
+   
+   offset = 0 means use the default random dithering based on system time
+   offset = negative means randomly chose dithering based on 1st tile checksum
+   offset = [1 - 10000] means use that particular dithering pattern
+
+*/
+    /* if positive, ensure that the value is in the range 1 to 10000 */
+    if (offset > 0)
+       (fptr->Fptr)->request_dither_offset = ((offset - 1) % 10000 ) + 1; 
+    else
+       (fptr->Fptr)->request_dither_offset = offset; 
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -290,22 +347,6 @@ int fits_set_hcomp_smooth(fitsfile *fptr,  /* I - FITS file pointer   */
 */
 
     (fptr->Fptr)->request_hcomp_smooth = smooth;
-    return(*status);
-}
-/*--------------------------------------------------------------------------*/
-int fits_set_quantize_dither(fitsfile *fptr,  /* I - FITS file pointer   */
-           int dither,        /* dither type      */
-           int *status)         /* IO - error status                */
-{
-/*
-   This routine specifies what type of dithering (randomization) should
-   be performed when quantizing floating point images to integer prior to
-   compression.   A value of -1 means do no dithering.  A value of 0 means
-   used the default  SUBTRACTIVE_DITHER_1 (which is equivalent to dither = 1).
-   A value of -1 means do not apply any dither.
-*/
-
-    (fptr->Fptr)->request_quantize_dither = dither;
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -403,10 +444,29 @@ int fits_get_quantize_level(fitsfile *fptr,  /* I - FITS file pointer   */
    of at variable length binary table column.
 */
 
-    *qlevel = (fptr->Fptr)->quantize_level;
+    if ((fptr->Fptr)->quantize_level == NO_QUANTIZE) {
+      *qlevel = 0;
+    } else {
+      *qlevel = (fptr->Fptr)->quantize_level;
+    }
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int fits_get_dither_offset(fitsfile *fptr,  /* I - FITS file pointer   */
+           int *offset,       /* dithering offset parameter value       */
+           int *status)         /* IO - error status                */
+{
+/*
+   This routine returns the value of the dithering offset parameter that
+   is used when compressing floating point images.  The image is
+   divided into tiles, and each tile is compressed and stored in a row
+   of at variable length binary table column.
+*/
+
+    *offset = (fptr->Fptr)->request_dither_offset;
+    return(*status);
+}/*--------------------------------------------------------------------------*/
 int fits_get_hcomp_scale(fitsfile *fptr,  /* I - FITS file pointer   */
            float *scale,          /* Hcompress scale parameter value       */
            int *status)         /* IO - error status                */
@@ -582,6 +642,15 @@ int imcomp_init_table(fitsfile *outfptr,
     if (*status > 0)
         return(*status);
 
+    /* check for special case of losslessly compressing floating point */
+    /* images.  Only compression algorithm that supports this is GZIP */
+    if ( (outfptr->Fptr)->quantize_level == NO_QUANTIZE) {
+       if ((outfptr->Fptr)->request_compress_type != GZIP_1) {
+         ffpmsg("Lossless compression of floating point images must use GZIP (imcomp_init_table)");
+         return(*status = DATA_COMPRESSION_ERR);
+       }
+    }
+    
     /* test for the 2 special cases that represent unsigned integers */
     if (inbitpix == USHORT_IMG)
         bitpix = SHORT_IMG;
@@ -720,8 +789,9 @@ int imcomp_init_table(fitsfile *outfptr,
         nrows = nrows * ((naxes[ii] - 1)/ (actual_tilesize[ii]) + 1);
     }
 
-    if (bitpix < 0 )  /* floating point image */
-        ncols = 3;
+    /* determine the default  number of columns in the output table */
+    if (bitpix < 0 && (outfptr->Fptr)->quantize_level != NO_QUANTIZE)  
+        ncols = 3;  /* quantized and scaled floating point image */
     else
         ncols = 1; /* default table has just one 'COMPRESSED_DATA' column */
 
@@ -791,11 +861,29 @@ int imcomp_init_table(fitsfile *outfptr,
     }
 
     if (bitpix < 0) {
-       if ( ((outfptr->Fptr)->request_quantize_dither == 0) ||
-            ((outfptr->Fptr)->request_quantize_dither == SUBTRACTIVE_DITHER_1)) {
-        ffpkys(outfptr, "ZQUANTIZ", "SUBTRACTIVE_DITHER_1", 
-	   "Pixel Quantization Algorithm", status);
-        }
+       
+	if ((outfptr->Fptr)->quantize_level == NO_QUANTIZE) {
+	    ffpkys(outfptr, "ZQUANTIZ", "NONE", 
+	      "Lossless compression without quantization", status);
+	} else {
+
+	    /* Unless dithering has been specifically turned off by setting */
+	    /* request_quantize_dither = -1, use dithering by default */
+	    /* when quantizing floating point images. */
+	
+	    if ( (outfptr->Fptr)->request_quantize_dither == 0) 
+              (outfptr->Fptr)->request_quantize_dither = SUBTRACTIVE_DITHER_1;
+       
+	    if ((outfptr->Fptr)->request_quantize_dither == SUBTRACTIVE_DITHER_1) {
+	      ffpkys(outfptr, "ZQUANTIZ", "SUBTRACTIVE_DITHER_1", 
+	        "Pixel Quantization Algorithm", status);
+
+	      /* also write the associated ZDITHER0 keyword with a default value */
+	      /* which may get updated later. */
+              ffpky(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->request_dither_offset), 
+	       "dithering offset when quantizing floats", status);
+            }
+	}
     }
 
     ffpkys (outfptr, "ZCMPTYPE", zcmptype,
@@ -1224,9 +1312,19 @@ int imcomp_compress_tile (fitsfile *outfptr,
     float floatnull, hcompscale;
     float fminval, fmaxval, delta, zeropt, *fdata, *ftemp;
     double doublenull, noise3;
+    unsigned long dithersum;
 
     if (*status > 0)
         return(*status);
+
+    /* check for special case of losslessly compressing floating point */
+    /* images.  Only compression algorithm that supports this is GZIP */
+    if ( (outfptr->Fptr)->quantize_level == NO_QUANTIZE) {
+       if ((outfptr->Fptr)->compress_type != GZIP_1) {
+         ffpmsg("Lossless compression of floating point images must use GZIP (imcomp_init_table)");
+         return(*status = DATA_COMPRESSION_ERR);
+       }
+    }
 
     /* =========================================================================== */
     /* free the previously saved tile if it is for the same row */
@@ -1635,20 +1733,65 @@ int imcomp_compress_tile (fitsfile *outfptr,
 
           /* if the tile-compressed table contains zscale and zzero columns */
           /* then scale and quantize the input floating point data.    */
-          /* Otherwise, just truncate the floats to (scaled) integers.     */
 
           if ((outfptr->Fptr)->cn_zscale > 0) {
+	    /* quantize the float values into integers */
+
             if (nullcheck == 1)
 	      floatnull = *(float *) (nullflagval);
 	    else
 	      floatnull = FLOATNULLVALUE;  /* NaNs are represented by this, by default */
 
-              /* quantize the float values into integers */
-              if ((outfptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_1)
-	          irow = row; /* dither the quantized values */
-	      else
-	          irow = 0;  /* do not dither the quantized values */
+              if ((outfptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_1) {
+	      
+	          /* see if the dithering offset value needs to be initialized */                  
+	          if ((outfptr->Fptr)->request_dither_offset == 0 && (outfptr->Fptr)->dither_offset == 0) {
 
+		     /* This means randomly choose the dithering offset based on the system time. */
+		     /* The offset will have a value between 1 and 10000, inclusive. */
+		     /* The time function returns an integer value that is incremented each second. */
+		     /* The clock function returns the elapsed CPU time, in integer CLOCKS_PER_SEC units. */
+		     /* The CPU time returned by clock is typically (on linux PC) only good to 0.01 sec */
+		     /* Summing the 2 quantities may help avoid cases where 2 executions of the program */
+		     /* (perhaps in a multithreaded environoment) end up with exactly the same dither_offset */
+		     /* value.  The sum is incremented by the current HDU number in the file to provide */
+		     /* further randomization.  This randomization is desireable if multiple compressed */
+		     /* images will be summed (or differenced). In such cases, the benefits of dithering */
+		     /* may be lost if all the images use exactly the same sequence of random numbers when */
+		     /* calculating the dithering offsets. */	     
+		     
+		     (outfptr->Fptr)->dither_offset = 
+		       (( (int)time(NULL) + ( (int) clock() / (CLOCKS_PER_SEC / 100)) + (outfptr->Fptr)->curhdu) % 10000) + 1;
+		     
+                     /* update the header keyword with this new value */
+		     fits_update_key(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->dither_offset), 
+	                        NULL, status);
+
+	          } else if ((outfptr->Fptr)->request_dither_offset < 0 && (outfptr->Fptr)->dither_offset < 0) {
+
+		     /* this means randomly choose the dithering offset based on some hash function */
+		     /* of the first input tile of data to be quantized and compressed.  This ensures that */
+                     /* the same offset value is used for a given image every time it is compressed. */
+
+		     usbbuff = (unsigned char *) tiledata;
+		     dithersum = 0;
+		     for (ii = 0; ii < 4 * tilelen; ii++) {
+		         dithersum += usbbuff[ii];  /* doesn't matter if there is an integer overflow */
+	             }
+		     (outfptr->Fptr)->dither_offset = ((int) (dithersum % 10000)) + 1;
+		
+                     /* update the header keyword with this new value */
+		     fits_update_key(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->dither_offset), 
+	                        NULL, status);
+		  }
+
+                  /* subtract 1 to convert from 1-based to 0-based element number */
+	          irow = row + (outfptr->Fptr)->dither_offset - 1; /* dither the quantized values */
+
+	      } else {
+	          irow = 0;  /* do not dither the quantized values */
+              }
+	      
               flag = fits_quantize_float (irow, (float *) tiledata, tilenx, tileny,
                    nullcheck, floatnull, (outfptr->Fptr)->quantize_level, idata,
                    bscale, bzero, &iminval, &imaxval);
@@ -1656,8 +1799,10 @@ int imcomp_compress_tile (fitsfile *outfptr,
               if (flag > 1)
 		   return(*status = flag);
           }
-          else  /* input float data is implicitly converted (truncated) to integers */
-          {
+          else if ((outfptr->Fptr)->quantize_level != NO_QUANTIZE)
+	  {
+	    /* if floating point pixels are not being losslessly compressed, then */
+	    /* input float data is implicitly converted (truncated) to integers */
             if ((scale != 1. || zero != 0.))  /* must scale the values */
 	       imcomp_nullscalefloats((float *) tiledata, tilelen, idata, scale, zero,
 	           nullcheck, *(float *) (nullflagval), nullval, status);
@@ -1665,7 +1810,15 @@ int imcomp_compress_tile (fitsfile *outfptr,
 	       imcomp_nullfloats((float *) tiledata, tilelen, idata,
 	           nullcheck, *(float *) (nullflagval), nullval,  status);
           }
-    }
+          else if ((outfptr->Fptr)->quantize_level == NO_QUANTIZE)
+	  {
+	    /* just convert null values to NaNs in place, if necessary */
+		if (nullcheck == 1) {
+	           imcomp_float2nan((float *) tiledata, tilelen, (int *) tiledata,
+	            *(float *) (nullflagval), status);
+		}
+          }
+     }
     else if (datatype == TDOUBLE)
     {
            intlength = 4;
@@ -1682,10 +1835,37 @@ int imcomp_compress_tile (fitsfile *outfptr,
 	      doublenull = DOUBLENULLVALUE;
 	      
             /* quantize the double values into integers */
-              if ((outfptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_1)
-	          irow = row; /* dither the quantized values */
-	      else
+              if ((outfptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_1) {
+
+	          /* see if the dithering offset value needs to be initialized (see above) */                  
+	          if ((outfptr->Fptr)->request_dither_offset == 0 && (outfptr->Fptr)->dither_offset == 0) {
+
+		     (outfptr->Fptr)->dither_offset = 
+		       (( (int)time(NULL) + ( (int) clock() / (CLOCKS_PER_SEC / 100)) + (outfptr->Fptr)->curhdu) % 10000) + 1;
+		     
+                     /* update the header keyword with this new value */
+		     fits_update_key(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->dither_offset), 
+	                        NULL, status);
+
+	          } else if ((outfptr->Fptr)->request_dither_offset < 0 && (outfptr->Fptr)->dither_offset < 0) {
+
+		     usbbuff = (unsigned char *) tiledata;
+		     dithersum = 0;
+		     for (ii = 0; ii < 8 * tilelen; ii++) {
+		         dithersum += usbbuff[ii];
+	             }
+		     (outfptr->Fptr)->dither_offset = ((int) (dithersum % 10000)) + 1;
+		
+                     /* update the header keyword with this new value */
+		     fits_update_key(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->dither_offset), 
+	                        NULL, status);
+		  }
+
+	          irow = row + (outfptr->Fptr)->dither_offset - 1; /* dither the quantized values */
+
+	      } else {
 	          irow = 0;  /* do not dither the quantized values */
+	      }
 
             flag = fits_quantize_double (irow, (double *) tiledata, tilenx, tileny,
                nullcheck, doublenull, (outfptr->Fptr)->quantize_level, idata,
@@ -1770,32 +1950,49 @@ int imcomp_compress_tile (fitsfile *outfptr,
 
         else if ( (outfptr->Fptr)->compress_type == GZIP_1)
         {
+	    if ((outfptr->Fptr)->quantize_level == NO_QUANTIZE) {
+	      /* losslessly compress the floating point pixels with GZIP */
+	      /* In this case we compress the input tile array directly */
 
 #if BYTESWAPPED
-	   if (intlength == 2)
-               ffswap2((short *) idata, tilelen); 
-	   else if (intlength == 4)
-               ffswap4(idata, tilelen); 
+               ffswap4((int*) tiledata, tilelen); 
 #endif
-
-           if (intlength == 2) {
-                 compress2mem_from_mem((char *) idata, tilelen * sizeof(short),
+                compress2mem_from_mem((char *) tiledata, tilelen * sizeof(int),
                  (char **) &cbuf, (size_t *) &clen, realloc, 
                  &gzip_nelem, status);
-           } else if (intlength == 1) {
-                compress2mem_from_mem((char *) idata, tilelen * sizeof(unsigned char),
-                 (char **) &cbuf, (size_t *) &clen, realloc, 
-                 &gzip_nelem, status);
-           } else {
-                compress2mem_from_mem((char *) idata, tilelen * sizeof(int),
-                 (char **) &cbuf, (size_t *) &clen, realloc, 
-                 &gzip_nelem, status);
-           }
 
 	        /* Write the compressed byte stream. */
                 ffpclb(outfptr, (outfptr->Fptr)->cn_compressed, row, 1,
                      gzip_nelem, (unsigned char *) cbuf, status);
-        }
+
+	    } else {
+	
+#if BYTESWAPPED
+	       if (intlength == 2)
+                 ffswap2((short *) idata, tilelen); 
+	       else if (intlength == 4)
+                 ffswap4(idata, tilelen); 
+#endif
+
+               if (intlength == 2) {
+                 compress2mem_from_mem((char *) idata, tilelen * sizeof(short),
+                 (char **) &cbuf, (size_t *) &clen, realloc, 
+                 &gzip_nelem, status);
+               } else if (intlength == 1) {
+                compress2mem_from_mem((char *) idata, tilelen * sizeof(unsigned char),
+                 (char **) &cbuf, (size_t *) &clen, realloc, 
+                 &gzip_nelem, status);
+               } else {
+                compress2mem_from_mem((char *) idata, tilelen * sizeof(int),
+                 (char **) &cbuf, (size_t *) &clen, realloc, 
+                 &gzip_nelem, status);
+               }
+
+	        /* Write the compressed byte stream. */
+                ffpclb(outfptr, (outfptr->Fptr)->cn_compressed, row, 1,
+                     gzip_nelem, (unsigned char *) cbuf, status);
+            }
+	}
 
     /* =========================================================================== */
 
@@ -3898,7 +4095,7 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
 {
     char keyword[FLEN_KEYWORD];
     char value[FLEN_VALUE];
-    int ii, tstatus;
+    int ii, tstatus, doffset;
     long expect_nrows, maxtilelen;
 
     if (*status > 0)
@@ -3941,10 +4138,23 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
     {
         (infptr->Fptr)->quantize_dither = 0;
     } else {
-        if (!FSTRCMP(value, "SUBTRACTIVE_DITHER_1") )
+        if (!FSTRCMP(value, "NONE") )
+            (infptr->Fptr)->quantize_level = NO_QUANTIZE;
+        else if (!FSTRCMP(value, "SUBTRACTIVE_DITHER_1") )
             (infptr->Fptr)->quantize_dither = SUBTRACTIVE_DITHER_1;
         else
             (infptr->Fptr)->quantize_dither = 0;
+    }
+
+    /* get the floating point quantization dithering offset, if present. */
+    /* FITS files produced before October 2009 will not have this keyword */
+    tstatus = 0;
+    if (ffgky(infptr, TINT, "ZDITHER0", &doffset, NULL, &tstatus) > 0)
+    {
+	/* by default start with 1st element of random sequence */
+        (infptr->Fptr)->dither_offset = 1;  
+    } else {
+        (infptr->Fptr)->dither_offset = doffset;
     }
 
     if (ffgky (infptr, TINT,  "ZBITPIX",  &(infptr->Fptr)->zbitpix,  
@@ -4243,15 +4453,27 @@ int imcomp_copy_img2comp(fitsfile *infptr, fitsfile *outfptr, int *status)
      In principle this should not be necessary once all software has upgraded
      to a newer version of CFITSIO (version number greater than 3.181, newer
      than August 2009).
+     
+     Do the same for the new ZDITHER0 keyword.
    */
 
    tstatus = 0;
-   if (fits_delete_key(outfptr, "ZQUANTIZ", &tstatus) == 0)
+   if (fits_read_card(outfptr, "ZQUANTIZ", card, &tstatus) == 0)
    {
+        fits_delete_key(outfptr, "ZQUANTIZ", status);
+
         /* rewrite the deleted keyword at the end of the header */
-        ffpkys(outfptr, "ZQUANTIZ", "SUBTRACTIVE_DITHER_1", 
-	   "Pixel Quantization Algorithm", status);
-    }
+        fits_write_record(outfptr, card, status);
+   }
+
+   tstatus = 0;
+   if (fits_read_card(outfptr, "ZDITHER0", card, &tstatus) == 0)
+   {
+        fits_delete_key(outfptr, "ZDITHER0", status);
+
+        /* rewrite the deleted keyword at the end of the header */
+        fits_write_record(outfptr, card, status);
+   }
 
     ffghsp(infptr, &nkeys, &nmore, status); /* get number of keywords in image */
 
@@ -4309,7 +4531,8 @@ int imcomp_copy_comp2img(fitsfile *infptr, fitsfile *outfptr,
 			   {"TTYPEm",  "-"       },
 			   {"TFORMm",  "-"       },
 			   {"ZIMAGE",  "-"       },
-			   {"ZQUANTIZ", "-"       },
+			   {"ZQUANTIZ", "-"      },
+			   {"ZDITHER0", "-"      },
 			   {"ZTILEm",  "-"       },
 			   {"ZCMPTYPE", "-"      },
 			   {"ZBLANK",  "-"       },
@@ -4771,7 +4994,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
 #endif
 
 	} else if (tilebytesize == (size_t) (tilelen * 4)) {
-	    /* this is a int I*4 array */
+	    /* this is a int I*4 array (or maybe R*4) */
             tiledatatype = TINT;
 
 #if BYTESWAPPED
@@ -4921,19 +5144,31 @@ int imcomp_decompress_tile (fitsfile *infptr,
     else if (datatype == TFLOAT)
     {
         pixlen = sizeof(float);
-        if ((infptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_1) {
+	if ((infptr->Fptr)->quantize_level == NO_QUANTIZE) {
+	 /* the floating point pixels were losselessly compressed with GZIP */
+	 /* Just have to copy the values to the output array */
+	 
+          fffr4r4((float *) idata, tilelen, bscale, bzero, nullcheck,   
+           *(float *) nulval, bnullarray, anynul,
+            (float *) buffer, status);
+	
+        } else if ((infptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_1) {
 
          /* use the new dithering algorithm (introduced in July 2009) */
+
          if (tiledatatype == TINT)
-          unquantize_i4r4(nrow, idata, tilelen, bscale, bzero, nullcheck, tnull,
+          unquantize_i4r4(nrow + (infptr->Fptr)->dither_offset - 1, idata, 
+	   tilelen, bscale, bzero, nullcheck, tnull,
            *(float *) nulval, bnullarray, anynul,
             (float *) buffer, status);
          else if (tiledatatype == TSHORT)
-          unquantize_i2r4(nrow, (short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,
+          unquantize_i2r4(nrow + (infptr->Fptr)->dither_offset - 1, (short *)idata, 
+	   tilelen, bscale, bzero, nullcheck, (short) tnull,
            *(float *) nulval, bnullarray, anynul,
             (float *) buffer, status);
          else if (tiledatatype == TBYTE)
-          unquantize_i1r4(nrow, (unsigned char *)idata, tilelen, bscale, bzero, nullcheck, (unsigned char) tnull,
+          unquantize_i1r4(nrow + (infptr->Fptr)->dither_offset - 1, (unsigned char *)idata, 
+	   tilelen, bscale, bzero, nullcheck, (unsigned char) tnull,
            *(float *) nulval, bnullarray, anynul,
             (float *) buffer, status);
 
@@ -4962,15 +5197,18 @@ int imcomp_decompress_tile (fitsfile *infptr,
 
          /* use the new dithering algorithm (introduced in July 2009) */
          if (tiledatatype == TINT)
-          unquantize_i4r8(nrow, idata, tilelen, bscale, bzero, nullcheck, tnull,
+          unquantize_i4r8(nrow + (infptr->Fptr)->dither_offset - 1, idata,
+	   tilelen, bscale, bzero, nullcheck, tnull,
            *(double *) nulval, bnullarray, anynul,
             (double *) buffer, status);
          else if (tiledatatype == TSHORT)
-          unquantize_i2r8(nrow, (short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,
+          unquantize_i2r8(nrow + (infptr->Fptr)->dither_offset - 1, (short *)idata,
+	   tilelen, bscale, bzero, nullcheck, (short) tnull,
            *(double *) nulval, bnullarray, anynul,
             (double *) buffer, status);
          else if (tiledatatype == TBYTE)
-          unquantize_i1r8(nrow, (unsigned char *)idata, tilelen, bscale, bzero, nullcheck, (unsigned char) tnull,
+          unquantize_i1r8(nrow + (infptr->Fptr)->dither_offset - 1, (unsigned char *)idata,
+	   tilelen, bscale, bzero, nullcheck, (unsigned char) tnull,
            *(double *) nulval, bnullarray, anynul,
             (double *) buffer, status);
 
@@ -5678,7 +5916,7 @@ static int unquantize_i1r4(long row, /* tile number = row number in table  */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-static int unquantize_i2r4(long row, /* tile number = row number in table  */
+static int unquantize_i2r4(long row, /* seed for random values  */
             short *input,         /* I - array of values to be converted     */
             long ntodo,           /* I - number of elements in the array     */
             double scale,         /* I - FITS TSCALn or BSCALE value         */
@@ -6029,4 +6267,25 @@ static int unquantize_i4r8(long row, /* tile number = row number in table    */
     }
     return(*status);
 }
+/*--------------------------------------------------------------------------*/
+static int imcomp_float2nan(float *indata, 
+    long tilelen,
+    int *outdata,
+    float nullflagval, 
+    int *status)
+/*
+  convert pixels that are equal to nullflag to NaNs.
+  Note that indata and outdata point to the same location.
+*/
+{
 
+    int ii;
+    
+    for (ii = 0; ii < tilelen; ii++) {
+
+      if (indata[ii] == nullflagval)
+        outdata[ii] = -1;  /* integer -1 has the same bit pattern as a real*4 NaN */
+    }
+
+    return(*status);
+}

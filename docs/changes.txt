@@ -1,5 +1,30 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.22 - 28 October 2009
+
+   - added an option (in imcompress.c) to losslessly compress floating
+     point images, rather than using the default integer scaling method.
+     This option is almost never useful in practice for astronomical 
+     images (because the amount of compression is so poor), but it has 
+     been added for test comparison purposes.
+
+   - enhanced the dithering option when quantizing and compressing
+     floating point images so that a random dithering starting point
+     is used, so that the same dithering pattern does not get used for
+     every image.
+
+   - modified the architecture setup section of fitsio2.h to support the
+     64-core 8x8-architecture Tile64 platform (thanks to Ken Mighell, NOAO)
+
+   Fixes
+
+   - fixed a problem that was introduced in version 3.13 of CFITSIO
+     in cases where a program writes it own END keyword to the header
+     instead of letting CFITSIO do it, as is strongly recommended.  In
+     one case this caused CFITSIO to rewrite the END keyword and any
+     blank fill keywords in the header many times, causing a 
+     noticeable slow-down in the FITS file writing speed.
+
 Version 3.21 - 24 September 2009
 
    - fixed bug in cfileio.c  that caused CFITSIO to crash with a bus error
@@ -60,7 +85,7 @@ Version 3.20 - 31 August 2009
    - fixed bug in the code that is used when tile-compressing real*4 FITS 
      images, which quantizes the floating point pixel values into
      integer levels.  The bug would only appear in the fairly rare
-     circumstance of tile compresssing a floating point image that contains
+     circumstance of tile compressing a floating point image that contains
      null pixels (NaNs) and only when using the lossy Hcompress algorithm
      (with the s parameter not equal to 1).  This could cause underflow of
      low valued pixels, causing them to appear as very large pixel values

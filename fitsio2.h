@@ -170,6 +170,12 @@ extern int Fitsio_Pthread_Status;
 
 #define BYTESWAPPED TRUE
  
+#elif defined(__tile__)
+
+/*  64-core 8x8-architecture Tile64 platform */
+
+#define BYTESWAPPED TRUE
+ 
 #else
 
 /*  assume all other machine uses the same IEEE formats as used in FITS files */

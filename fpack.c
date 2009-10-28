@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 /* ================================================================== */
 int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 {
-	int	gottype=0, gottile=0, wholetile=0, iarg, len, ndim, ii;
+	int	gottype=0, gottile=0, wholetile=0, iarg, len, ndim, ii, doffset;
 	char	tmp[SZ_STR], tile[SZ_STR];
 
         if (fpptr->initialized != FP_INIT_MAGIC) {
@@ -44,7 +44,7 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 	 */
 	for (iarg = 1; iarg < argc; iarg++) {
 	    if ((argv[iarg][0] == '-' && strlen (argv[iarg]) == 2) ||
-	        !strcmp(argv[iarg], "-q0") )  /* 1 special case */
+	        !strncmp(argv[iarg], "-q", 2) )  /* 1 special case */
 	    {
 
 		/* Rice is the default, so -r is superfluous 
@@ -98,8 +98,22 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 			gottype++;
 
 		} else if (argv[iarg][1] == 'q') {
-                    if (argv[iarg][2] == '0')
-		        fpptr->no_dither = 1;  /* don't dither the quantized values */
+		    /* test for modifiers following the 'q' */
+                    if (argv[iarg][2] == 't') {
+		        fpptr->dither_offset = -1;  /* dither based on tile checksum */
+
+                    } else if (isdigit(argv[iarg][2])) { /* is a number appended to q? */
+		       doffset = atoi(argv[iarg]+2);
+
+                       if (doffset == 0) {
+		          fpptr->no_dither = 1;  /* don't dither the quantized values */
+		       } else if (doffset > 0 && doffset <= 10000) {
+		          fpptr->dither_offset = doffset;
+		       } else {
+			  fp_msg ("Error: invalid q suffix\n");
+			  fp_usage (); exit (-1);
+		       }
+		    }
 
 		    if (++iarg >= argc) {
 			fp_usage (); exit (-1);
@@ -190,6 +204,11 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 	    fp_msg ("Error: `-s' requires `-h or -T'\n"); exit (-1);
 	}
 
+	if (fpptr->quantize_level == 0. && 
+	         fpptr->comptype != GZIP_1 ) {
+
+	    fp_msg ("Error: `-q 0' only allowed with GZIP\n"); exit (-1);
+	}
 
 	if (wholetile) {
 	    for (ndim=0; ndim < MAX_COMPRESS_DIM; ndim++)

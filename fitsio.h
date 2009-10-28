@@ -34,7 +34,7 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.21
+#define CFITSIO_VERSION 3.22
 
 #include <stdio.h>
 
@@ -353,10 +353,11 @@ typedef struct      /* structure used to store basic FITS file information */
     int request_compress_type;  /* requested image compression algorithm */
     long request_tilesize[MAX_COMPRESS_DIM]; /* requested tiling size */
 
-    float request_hcomp_scale;      /* requested HCOMPRESS scale factor */
+    float request_hcomp_scale;    /* requested HCOMPRESS scale factor */
     int request_hcomp_smooth;     /* requested HCOMPRESS smooth parameter */
     int request_quantize_dither ; /* requested dithering mode when quantizing */
-                                   /* floating point images to integer */
+                                  /* floating point images to integer */
+    int request_dither_offset;    /* starting offset into the array of random dithering */
 
     int compressimg; /* 1 if HDU contains a compressed image, else 0 */
     int quantize_dither;   /* floating point pixel quantization algorithm */
@@ -385,7 +386,8 @@ typedef struct      /* structure used to store basic FITS file information */
     int rice_blocksize;     /* first compression parameter: pixels/block */
     int rice_bytepix;       /* 2nd compression parameter: bytes/pixel */
     float quantize_level;   /* floating point quantization level */
-    float hcomp_scale;        /* 1st hcompress compression parameter */
+    int dither_offset;      /* starting offset into the array of random dithering */
+    float hcomp_scale;      /* 1st hcompress compression parameter */
     int hcomp_smooth;       /* 2nd hcompress compression parameter */
 
     int  tilerow;           /* row number of the uncompressed tiledata */
@@ -1863,6 +1865,7 @@ int fits_set_quantize_level(fitsfile *fptr, float qlevel, int *status);
 int fits_set_hcomp_scale(fitsfile *fptr, float scale, int *status);
 int fits_set_hcomp_smooth(fitsfile *fptr, int smooth, int *status);
 int fits_set_quantize_dither(fitsfile *fptr, int dither, int *status);
+int fits_set_dither_offset(fitsfile *fptr, int offset, int *status);
 
 int fits_get_compression_type(fitsfile *fptr, int *ctype, int *status);
 int fits_get_tile_dim(fitsfile *fptr, int ndim, long *dims, int *status);
@@ -1870,6 +1873,7 @@ int fits_get_quantize_level(fitsfile *fptr, float *qlevel, int *status);
 int fits_get_noise_bits(fitsfile *fptr, int *noisebits, int *status);
 int fits_get_hcomp_scale(fitsfile *fptr, float *scale, int *status);
 int fits_get_hcomp_smooth(fitsfile *fptr, int *smooth, int *status);
+int fits_get_dither_offset(fitsfile *fptr, int *offset, int *status);
 
 int fits_img_compress(fitsfile *infptr, fitsfile *outfptr, int *status);
 int fits_compress_img(fitsfile *infptr, fitsfile *outfptr, int compress_type,
