@@ -62,7 +62,7 @@ int fp_version (void)
 
         fp_msg (FPACK_VERSION);
         fits_get_version(&version);
-        sprintf(cfitsioversion, " CFITSIO version %6.3f", version);
+        sprintf(cfitsioversion, " CFITSIO version %5.3f", version);
         fp_msg(cfitsioversion);
         fp_msg ("\n");
 }
@@ -275,7 +275,8 @@ int fp_preflight (int argc, char *argv[], int unpack, fpstate *fpptr)
 	  	/* ********** This section applies to funpack ************ */
 
 	      /* check that input file  exists */
-	      if (access (infits, R_OK) != 0) {  /* if not, then check if */
+	      if (infits[0] != '-') {  /* if not reading from stdin stream */
+	         if (access (infits, R_OK) != 0) {  /* if not, then check if */
 		    strcat(infits, ".fz");       /* a .fz version exsits */
 	            if (access (infits, R_OK) != 0) {
                         namelen = strlen(infits);
@@ -283,7 +284,7 @@ int fp_preflight (int argc, char *argv[], int unpack, fpstate *fpptr)
 		        fp_msg ("Error: can't find or read input file "); fp_msg (infits);
 		        fp_msg ("\n"); fp_noop (); exit (-1);
                     }
-	      } else {   /* make sure a .fz version of the same file doesn't exist */
+	         } else {   /* make sure a .fz version of the same file doesn't exist */
                     namelen = strlen(infits);
 		    strcat(infits, ".fz");   
 	            if (access (infits, R_OK) == 0) {
@@ -295,6 +296,7 @@ int fp_preflight (int argc, char *argv[], int unpack, fpstate *fpptr)
                     } else {
                         infits[namelen] = '\0';  /* remove the .fz suffix */
 		    }
+	         }
 	      }
 
               /* if writing to stdout, then we are all done */
@@ -328,7 +330,12 @@ int fp_preflight (int argc, char *argv[], int unpack, fpstate *fpptr)
 	          strcat(outfits,fpptr->prefix);
 	      }
 
-	      strcat(outfits, infits);
+	      /* construct output file name */
+	      if (infits[0] == '-') {
+	        strcpy(outfits, "output.fits");
+	      } else {
+	        strcpy(outfits, infits);
+	      }
 
 	      /* remove .gz suffix, if present (output is not gzipped) */
               namelen = strlen(outfits);
@@ -338,13 +345,15 @@ int fp_preflight (int argc, char *argv[], int unpack, fpstate *fpptr)
 
 	      /* check for .fz suffix that is sometimes required */
 	      /* and remove it if present */
-              namelen = strlen(outfits);
-	      if ( !strcmp(".fz", outfits + namelen - 3) ) { /* suffix is present */
+	      if (infits[0] != '-') {  /* if not reading from stdin stream */
+                 namelen = strlen(outfits);
+	         if ( !strcmp(".fz", outfits + namelen - 3) ) { /* suffix is present */
                         outfits[namelen - 3] = '\0';
-	      } else if (fpptr->delete_suffix) {  /* required suffix is missing */
+	         } else if (fpptr->delete_suffix) {  /* required suffix is missing */
 		    fp_msg ("Error: input compressed file "); fp_msg (infits);
 		    fp_msg ("\n does not have the default .fz suffix.\n"); 
 		    fp_noop (); exit (-1);
+	         }
 	      }
 
 	      /* if infits != outfits, make sure outfits doesn't already exist */
@@ -369,7 +378,8 @@ int fp_preflight (int argc, char *argv[], int unpack, fpstate *fpptr)
 	  	/* ********** This section applies to fpack ************ */
 
 	      /* check that input file  exists */
-	      if (access (infits, R_OK) != 0) {  /* if not, then check if */
+	      if (infits[0] != '-') {  /* if not reading from stdin stream */
+	        if (access (infits, R_OK) != 0) {  /* if not, then check if */
 		    strcat(infits, ".gz");     /* a gzipped version exsits */
 	            if (access (infits, R_OK) != 0) {
                         namelen = strlen(infits);
@@ -377,6 +387,7 @@ int fp_preflight (int argc, char *argv[], int unpack, fpstate *fpptr)
 		        fp_msg ("Error: can't find or read input file "); fp_msg (infits);
 		        fp_msg ("\n"); fp_noop (); exit (-1);
                     }
+	        }
 	      }
 
               /* make sure the file to pack does not already have a .fz suffix */
@@ -392,8 +403,12 @@ int fp_preflight (int argc, char *argv[], int unpack, fpstate *fpptr)
 	      }
 
 	      /* construct output file name */
-	      strcpy(outfits, infits);
-	      
+	      if (infits[0] == '-') {
+	        strcpy(outfits, "input.fits");
+	      } else {
+	        strcpy(outfits, infits);
+	      }
+
 	      /* remove .gz suffix, if present (output is not gzipped) */
               namelen = strlen(outfits);
 	      if ( !strcmp(".gz", outfits + namelen - 3) ) {
@@ -483,8 +498,10 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 	  	/* ********** This section applies to funpack ************ */
 
 	      /* find input file */
-	      if (access (infits, R_OK) != 0) {  /* if not, then */
+	      if (infits[0] != '-') {  /* if not reading from stdin stream */
+	         if (access (infits, R_OK) != 0) {  /* if not, then */
 		    strcat(infits, ".fz");       /* a .fz version must exsit */
+	         }
 	      }
 
 	      if (fpvar.to_stdout) {
@@ -499,7 +516,12 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 	              strcat(outfits,fpvar.prefix);
 	          }
 
-	          strcat(outfits, infits);
+	          /* construct output file name */
+	          if (infits[0] == '-') {
+	            strcpy(outfits, "output.fits");
+	          } else {
+	            strcpy(outfits, infits);
+	          }
 
 	          /* remove .gz suffix, if present (output is not gzipped) */
                   namelen = strlen(outfits);
@@ -521,8 +543,13 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 	      if (fpvar.to_stdout) {
 		strcpy(outfits, "-");
 	      } else if (! fpvar.test_all) {
+
 	          /* construct output file name */
-	          strcpy(outfits, infits);
+	          if (infits[0] == '-') {
+	            strcpy(outfits, "input.fits");
+	          } else {
+	            strcpy(outfits, infits);
+	          }
 	      
 	          /* remove .gz suffix, if present (output is not gzipped) */
                   namelen = strlen(outfits);
@@ -547,7 +574,8 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 
           strncpy(temp, outfits, SZ_STR-1);
 
-          if (!strcmp(infits, outfits) ) {  /* are input and output names the same? */
+	  if (infits[0] != '-') {  /* if not reading from stdin stream */
+             if (!strcmp(infits, outfits) ) {  /* are input and output names the same? */
 
                 /* clobber the input file with the output file with the same name */
                 if (! fpvar.clobber) {
@@ -568,6 +596,7 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 		    }
 		}
                 strcpy(tempfilename, outfits);  /* store temp file name, in case of abort */
+	      }
 	    }
 
 

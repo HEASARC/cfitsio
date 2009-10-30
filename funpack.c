@@ -136,21 +136,22 @@ fu_usage ();
 fp_msg ("\n");
 
 fp_msg ("Flags must be separate and appear before filenames:\n");
-fp_msg ("   -E <HDUlist> unpack only the list of HDU names or numbers (0 based)\n");
-fp_msg ("   -P <pre>    prepend <pre> to create new output filenames\n");
-fp_msg ("   -O <name>   specify full output file name\n");
-fp_msg ("   -Z          recompress the output file with host GZIP program\n");
-fp_msg ("   -F          overwrite input file by output file with same name\n");
-fp_msg ("   -D          delete input file after writing output\n");
-fp_msg ("   -S          output uncompressed file to STDOUT\n");
-fp_msg ("   -L          list contents, files unchanged\n");
+fp_msg (" -E <HDUlist> Unpack only the list of HDU names or numbers in the file.\n");
+fp_msg (" -P <pre>    Prepend <pre> to create new output filenames.\n");
+fp_msg (" -O <name>   Specify full output file name.\n");
+fp_msg (" -Z          Recompress the output file with host GZIP program.\n");
+fp_msg (" -F          Overwrite input file by output file with same name.\n");
+fp_msg (" -D          Delete input file after writing output.\n");
+fp_msg (" -S          Output uncompressed file to STDOUT file stream.\n");
+fp_msg (" -L          List contents, files unchanged.\n");
 
-fp_msg ("   -C          don't update FITS checksum keywords\n");
+fp_msg (" -C          Don't update FITS checksum keywords.\n");
 
-fp_msg ("   -v          verbose mode; list each file as it is processed\n");
-fp_msg ("   -H          print this message\n");
-fp_msg ("   -V          print version number\n");
+fp_msg (" -v          Verbose mode; list each file as it is processed.\n");
+fp_msg (" -H          Show this message.\n");
+fp_msg (" -V          Show version number.\n");
 
-fp_msg (" <FITS>        FITS files to unpack\n");
+fp_msg (" \n<FITS>       FITS files to unpack; enter '-' (a hyphen) to read from stdin.\n");
+fp_msg (" Refer to the fpack User's Guide for more extensive help.\n");
 	return(0);
 }

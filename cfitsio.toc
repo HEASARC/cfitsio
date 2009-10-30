@@ -95,10 +95,10 @@
 \contentsline {section}{\numberline {10.10}Column and Keyword Filtering Specification}{130}
 \contentsline {section}{\numberline {10.11}Row Filtering Specification}{132}
 \contentsline {subsection}{\numberline {10.11.1}General Syntax}{133}
-\contentsline {subsection}{\numberline {10.11.2}Bit Masks}{135}
+\contentsline {subsection}{\numberline {10.11.2}Bit Masks}{136}
 \contentsline {subsection}{\numberline {10.11.3}Vector Columns}{136}
 \contentsline {subsection}{\numberline {10.11.4}Good Time Interval Filtering}{138}
-\contentsline {subsection}{\numberline {10.11.5}Spatial Region Filtering}{138}
+\contentsline {subsection}{\numberline {10.11.5}Spatial Region Filtering}{139}
 \contentsline {subsection}{\numberline {10.11.6}Example Row Filters}{141}
 \contentsline {section}{\numberline {10.12} Binning or Histogramming Specification}{142}
 \contentsline {chapter}{\numberline {11}Template Files }{145}

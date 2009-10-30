@@ -14,10 +14,11 @@
 #define	FPACK_VERSION	"1.3.0 (Oct 2009)"
 /*
 VERSION	History
-1.3.0 (Oct 2009) added randomization to the dithering pattern (so that
+1.3.0 (Oct 2009) added randomization to the dithering pattern so that
       the same pattern is not used for every image; also added an option
-      for losslessly compressing floating point images for test purposes
-      (not recommended for general use).
+      for losslessly compressing floating point images with GZIP for test 
+      purposes (not recommended for general use).  Also added support for
+      reading the input FITS file from the stdin file streams.
 1.2.0 (Sept 2009) added subtractive dithering feature (in CFITSIO) when
       quantizing floating point images; When packing an IRAF .imh + .pix image,
       the file name is changed to FILE.fits.fz, and if the original file is
