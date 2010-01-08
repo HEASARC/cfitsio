@@ -70,11 +70,12 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.22;
+      *version = (float) 3.23;
 
-/*     28 Oct 2009
+/*      7 Jan 2010
 
    Previous releases:
+      *version = 3.22    28 Oct 2009
       *version = 3.21    24 Sep 2009
       *version = 3.20    31 Aug 2009
       *version = 3.18    12 May 2009 (beta version)
@@ -1458,6 +1459,10 @@ int ffgthd(char *tmplt, /* I - input header template string */
 
     len = strspn(tok, " ");  /* no. of spaces before keyword */
     tok += len;
+
+    /* test for pecular case where token is a string of dashes */
+    if (strncmp(tok, "--------------------", 20) == 0)
+            return(*status = BAD_KEYCHAR);
 
     if (tok[0] == '-')  /* is there a leading minus sign? */
     {

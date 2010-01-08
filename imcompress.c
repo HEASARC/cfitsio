@@ -638,7 +638,7 @@ int imcomp_init_table(fitsfile *outfptr,
     char *tunit[] = {"\0",            "\0",            "\0"  };
     char comm[FLEN_COMMENT];
     long actual_tilesize[MAX_COMPRESS_DIM]; /* Actual size to use for tiles */
-
+    
     if (*status > 0)
         return(*status);
 
@@ -866,7 +866,7 @@ int imcomp_init_table(fitsfile *outfptr,
 	    ffpkys(outfptr, "ZQUANTIZ", "NONE", 
 	      "Lossless compression without quantization", status);
 	} else {
-
+	    
 	    /* Unless dithering has been specifically turned off by setting */
 	    /* request_quantize_dither = -1, use dithering by default */
 	    /* when quantizing floating point images. */
@@ -4403,7 +4403,7 @@ int imcomp_copy_img2comp(fitsfile *infptr, fitsfile *outfptr, int *status)
     and to the compressed image (in a binary table) 
 */
 {
-    char card[FLEN_CARD];	/* a header record */
+    char card[FLEN_CARD], card2[FLEN_CARD];	/* a header record */
     int nkeys, nmore, ii, jj, tstatus;
 
     /* tile compressed image keyword translation table  */
@@ -4437,8 +4437,6 @@ int imcomp_copy_img2comp(fitsfile *infptr, fitsfile *outfptr, int *status)
        fits_write_record(outfptr, card, status);
     }
 
-
-
     /* copy all the keywords from the input file to the output */
     npat = sizeof(patterns)/sizeof(patterns[0][0])/2;
     fits_translate_keywords(infptr, outfptr, 1, patterns, npat,
@@ -4464,6 +4462,13 @@ int imcomp_copy_img2comp(fitsfile *infptr, fitsfile *outfptr, int *status)
 
         /* rewrite the deleted keyword at the end of the header */
         fits_write_record(outfptr, card, status);
+
+	fits_write_history(outfptr, 
+	    "Image was compressed by CFITSIO using scaled integer quantization:", status);
+	sprintf(card2, "  q = %.3f / quantized level scaling parameter", 
+	    (outfptr->Fptr)->quantize_level);
+	fits_write_history(outfptr, card2, status); 
+	fits_write_history(outfptr, card+10, status); 
    }
 
    tstatus = 0;
@@ -4474,6 +4479,7 @@ int imcomp_copy_img2comp(fitsfile *infptr, fitsfile *outfptr, int *status)
         /* rewrite the deleted keyword at the end of the header */
         fits_write_record(outfptr, card, status);
    }
+
 
     ffghsp(infptr, &nkeys, &nmore, status); /* get number of keywords in image */
 

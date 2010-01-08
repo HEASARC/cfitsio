@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 #include "fitsio2.h"
 #include "region.h"
 
@@ -121,7 +122,7 @@ int fits_read_ascii_region( const char *filename,
          /*  if not skip line                                        */
 
          currLoc++;
-         while( *currLoc==' ' ) currLoc++;
+         while( isspace(*currLoc) ) currLoc++;
          if( !strncasecmp( currLoc, "format:", 7 ) ) {
             if( aRgn->nShapes ) {
                ffpmsg("Format code encountered after reading 1 or more shapes.");
@@ -129,7 +130,7 @@ int fits_read_ascii_region( const char *filename,
                goto error;
             }
             currLoc += 7;
-            while( *currLoc==' ' ) currLoc++;
+            while( isspace(*currLoc) ) currLoc++;
             if( !strncasecmp( currLoc, "pixel", 5 ) ) {
                cFmt = pixel_fmt;
             } else if( !strncasecmp( currLoc, "degree", 6 ) ) {
@@ -206,7 +207,7 @@ int fits_read_ascii_region( const char *filename,
 
             /*  Skip white space in region name  */
 
-            while( *namePtr==' ' ) namePtr++;
+            while( isspace(*namePtr) ) namePtr++;
 
             /*  Was this a blank line? Or the end of the current one  */
 
@@ -298,7 +299,7 @@ int fits_read_ascii_region( const char *filename,
 	    newShape->param.gen.sinT = 0.0;
 	    newShape->param.gen.cosT = 0.0;
 
-            while( *namePtr==' ' ) namePtr++;
+            while( isspace(*namePtr) ) namePtr++;
             
 			/*  Check for the shape's sign  */
 
@@ -311,14 +312,14 @@ int fits_read_ascii_region( const char *filename,
 
             /* Skip white space in region name */
 
-            while( *namePtr==' ' ) namePtr++;
+            while( isspace(*namePtr) ) namePtr++;
             if( *namePtr=='\0' ) {
                ffpmsg( "Error reading Region file" );
                *status = PARSE_SYNTAX_ERR;
                goto error;
             }
             lineLen = strlen( namePtr ) - 1;
-            while( namePtr[lineLen]==' ' ) namePtr[lineLen--] = '\0';
+            while( isspace(namePtr[lineLen]) ) namePtr[lineLen--] = '\0';
 
             /*  Now identify the region  */
 
@@ -477,7 +478,7 @@ int fits_read_ascii_region( const char *filename,
                   ss = 0.;
                   negdec = 0;
 
-                  while( *pY==' ' ) pY++;
+                  while( isspace(*pY) ) pY++;
                   if (*pY=='-') {
                       negdec = 1;
                       pY++;

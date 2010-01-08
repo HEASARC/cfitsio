@@ -649,6 +649,9 @@ int ffbfwt(FITSfile *Fptr,        /* I - FITS file pointer           */
     if (!(Fptr->writemode) )
     {
         ffpmsg("Error: trying to write to READONLY file.");
+        if (Fptr->driver == 8) {  /* gzip compressed file */
+	  ffpmsg("Cannot write to a GZIP or COMPRESS compressed file.");
+	}
         Fptr->dirty[nbuff] = FALSE;  /* reset buffer status to prevent later probs */
         *status = READONLY_FILE;
         return(*status);

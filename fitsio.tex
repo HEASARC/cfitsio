@@ -262,8 +262,8 @@ because of the inherent complexities of calling the CFITSIO C routines
 from Fortran.  Two different versions of the CFITSIO dll library are
 available, compiled with the Borland C++ compiler and the Microsoft
 Visual C++ compiler, respectively, in the files
-cfitsiodll\_2xxx\_borland.zip and cfitsiodll\_2xxx\_vcc.zip, where
-'2xxx' represents the current release number.  Both these dll libraries
+cfitsiodll\_2xxx\_borland.zip and cfitsiodll\_3xxx\_vcc.zip, where
+'3xxx' represents the current release number.  Both these dll libraries
 contain a set of Fortran wrapper routines which may be compatible with
 some, but probably not all, available Fortran compilers.  To test if
 they are compatible, compile the program testf77.f and try linking to
@@ -359,8 +359,16 @@ similar compiler option may be required on other platforms.  Failing to
 use this option may cause the program to crash on FITSIO routines that
 read or write double precision variables.
 
-Also note that on some systems, the output listing of the testf77
-program may differ slightly from the testf77.std template, if leading
+On Windows platforms, linking Fortran programs with a C library
+often depends on the particular compilers involved.  Some users have
+found the following command works when using the Intel Fortran compiler:
+
+\begin{verbatim}
+ifort /libs:dll cfitsio.lib /MD /fpp /extfpp:cfortran.h,fitsio.h
+    /iface:cvf testf77.f
+\end{verbatim}
+Also note that on some systems the output listing of the testf77
+program may differ slightly from the testf77.std template if leading
 zeros are not printed by default before the decimal point when using F
 format.
 

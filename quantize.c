@@ -123,7 +123,7 @@ If the function value is zero, the data were not copied to idata.
 	    }
 
 	    if (qlevel == 0.)
-	        delta = stdev / 16.;  /* default quantization */
+	        delta = stdev / 4.;  /* default quantization */
 	    else
 	        delta = stdev / qlevel;
 
@@ -285,7 +285,7 @@ If the function value is zero, the data were not copied to idata.
 	    }
 
 	    if (qlevel == 0.)
-	        delta = stdev / 16.;  /* default quantization */
+	        delta = stdev / 4.;  /* default quantization */
 	    else
 	        delta = stdev / qlevel;
 

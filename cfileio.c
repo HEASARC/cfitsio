@@ -3133,7 +3133,7 @@ int ffparsecompspec(fitsfile *fptr,  /* I - FITS file pointer               */
 
        other optional parameters may be specified following a semi-colon 
        
-    myfile.fits[compress; q 16.0]          q specifies the floating point 
+    myfile.fits[compress; q 8.0]          q specifies the floating point 
     mufile.fits[compress TYPE; q -.0002]        quantization level;
     myfile.fits[compress TYPE 100,100; q 10, s 25]  s specifies the HCOMPRESS
                                                      integer scaling parameter

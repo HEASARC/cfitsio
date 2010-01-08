@@ -144,6 +144,7 @@ int ffukls(fitsfile *fptr,    /* I - FITS file pointer  */
     /* update a long string keyword */
 
     int tstatus;
+    char junk[FLEN_ERRMSG];
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
@@ -152,6 +153,9 @@ int ffukls(fitsfile *fptr,    /* I - FITS file pointer  */
 
     if (ffmkls(fptr, keyname, value, comm, status) == KEY_NO_EXIST)
     {
+        /* since the ffmkls call failed, it wrote a bogus error message */
+        fits_read_errmsg(junk);  /* clear the error message */
+	
         *status = tstatus;
         ffpkls(fptr, keyname, value, comm, status);
     }

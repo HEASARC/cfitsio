@@ -8,6 +8,7 @@
 #include <signal.h>
 #include "fitsio.h"
 #include "fpack.h"
+
 /* ================================================================== */
 int main(int argc, char *argv[])
 {
@@ -283,10 +284,10 @@ fp_msg (" -t <axes>   Comma separated list of tile dimensions [default is row by
 
 fp_msg (" -q <level>  Quantized level spacing when converting floating point images to\n");
 fp_msg ("             scaled integers. (+value relative to sigma of background noise;\n");
-fp_msg ("             -value is absolute). Default q value of 16 gives a compression ratio\n");
-fp_msg ("             of about 4.5 with very high fidelity (likely more than necessary).\n");
-fp_msg ("             Using q values of 8, 4, 2, or 1 will give compression ratios of\n");
-fp_msg ("             about 5.5, 6.5, 8, or 11, respectively, with progressively less (but\n");
+fp_msg ("             -value is absolute). Default q value of 4 gives a compression ratio\n");
+fp_msg ("             of about 6 with very high fidelity (possibly more than necessary).\n");
+fp_msg ("             Using q values of  2, or 1 will give compression ratios of\n");
+fp_msg ("             about 8, or 10, respectively, with progressively less (but\n");
 fp_msg ("             still good) fidelity.  The scaled quantized values are randomly\n");
 fp_msg ("             dithered by default using a seed value determined from the system\n");
 fp_msg ("             clock at run time. Use -q0 instead of -q to suppress random dithering.\n");

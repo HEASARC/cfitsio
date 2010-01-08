@@ -1,5 +1,26 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.23 - 7 January 2010
+
+   - reduced the default value for the floating point image quantization
+     parameter (q) from 16 to 4.  This parameter is used when tile compressing
+     floating point images.  This change will increase the average compression
+     ratio for floating point images from about 4.6 to about 6.5 without lossing 
+     any significant information in the image.
+     
+   - enhanced the template keyword parsing routine to reject a header
+     template string that only contains a sequence of dashes.
+
+   - enhanced the ASCII region file reading routine to allow tabs as well
+     as spaces between fields in the file.
+
+   - got rid of bogus error message when calling fits_update_key_longstr
+
+   - Made the error message more explicit when CFITSIO tries to write
+     to a GZIP compressed file.  Instead of just stating "cannot write
+     to a READONLY file", it will say "cannot write to a GZIP compressed
+     file".
+
 Version 3.22 - 28 October 2009
 
    - added an option (in imcompress.c) to losslessly compress floating

@@ -2,11 +2,11 @@
 \contentsline {chapter}{\numberline {2} Creating FITSIO/CFITSIO }{3}
 \contentsline {section}{\numberline {2.1}Building the Library}{3}
 \contentsline {section}{\numberline {2.2}Testing the Library}{6}
-\contentsline {section}{\numberline {2.3}Linking Programs with FITSIO}{7}
+\contentsline {section}{\numberline {2.3}Linking Programs with FITSIO}{8}
 \contentsline {section}{\numberline {2.4}Getting Started with FITSIO}{8}
 \contentsline {section}{\numberline {2.5}Example Program}{8}
-\contentsline {section}{\numberline {2.6}Legal Stuff}{9}
-\contentsline {section}{\numberline {2.7}Acknowledgements}{10}
+\contentsline {section}{\numberline {2.6}Legal Stuff}{10}
+\contentsline {section}{\numberline {2.7}Acknowledgments}{11}
 \contentsline {chapter}{\numberline {3} A FITS Primer }{13}
 \contentsline {chapter}{\numberline {4}FITSIO Conventions and Guidelines }{15}
 \contentsline {section}{\numberline {4.1}CFITSIO Size Limitations}{15}
@@ -14,14 +14,14 @@
 \contentsline {section}{\numberline {4.3}Current Header Data Unit (CHDU)}{16}
 \contentsline {section}{\numberline {4.4}Subroutine Names}{16}
 \contentsline {section}{\numberline {4.5}Subroutine Families and Datatypes}{17}
-\contentsline {section}{\numberline {4.6}Implicit Data Type Conversion}{18}
+\contentsline {section}{\numberline {4.6}Implicit Data Type Conversion}{17}
 \contentsline {section}{\numberline {4.7}Data Scaling}{18}
-\contentsline {section}{\numberline {4.8}Error Status Values and the Error Message Stack}{19}
+\contentsline {section}{\numberline {4.8}Error Status Values and the Error Message Stack}{18}
 \contentsline {section}{\numberline {4.9}Variable-Length Array Facility in Binary Tables}{19}
 \contentsline {section}{\numberline {4.10}Support for IEEE Special Values}{20}
 \contentsline {section}{\numberline {4.11}When the Final Size of the FITS HDU is Unknown}{21}
 \contentsline {section}{\numberline {4.12}Local FITS Conventions supported by FITSIO}{21}
-\contentsline {subsection}{\numberline {4.12.1}Support for Long String Keyword Values.}{22}
+\contentsline {subsection}{\numberline {4.12.1}Support for Long String Keyword Values.}{21}
 \contentsline {subsection}{\numberline {4.12.2}Arrays of Fixed-Length Strings in Binary Tables}{22}
 \contentsline {subsection}{\numberline {4.12.3}Keyword Units Strings}{23}
 \contentsline {subsection}{\numberline {4.12.4}HIERARCH Convention for Extended Keyword Names}{23}
@@ -76,8 +76,8 @@
 \contentsline {subsection}{\numberline {8.11.1}General Syntax}{93}
 \contentsline {subsection}{\numberline {8.11.2}Bit Masks}{95}
 \contentsline {subsection}{\numberline {8.11.3}Vector Columns}{96}
-\contentsline {subsection}{\numberline {8.11.4}Good Time Interval Filtering}{97}
-\contentsline {subsection}{\numberline {8.11.5}Spatial Region Filtering}{98}
+\contentsline {subsection}{\numberline {8.11.4}Good Time Interval Filtering}{98}
+\contentsline {subsection}{\numberline {8.11.5}Spatial Region Filtering}{99}
 \contentsline {subsection}{\numberline {8.11.6}Example Row Filters}{101}
 \contentsline {section}{\numberline {8.12} Binning or Histogramming Specification}{102}
 \contentsline {chapter}{\numberline {9}Template Files }{105}
