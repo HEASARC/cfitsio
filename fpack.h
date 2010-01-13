@@ -12,7 +12,7 @@
 /* #include <sys/stat.h> */
 /* #include <sys/types.h> */
 
-#define	FPACK_VERSION	"1.4.0 (Jan 2010)"
+#define	FPACK_VERSION	"1.4.1 (Jan 2010)"
 /*
 VERSION	History
 1.4.0 (Jan 2010) Reduced the default value for the q floating point image 

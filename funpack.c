@@ -106,6 +106,16 @@ int fu_get_param (int argc, char *argv[], fpstate *fpptr)
 	    fu_usage (); exit (-1);
         }
 
+	if (fpptr->to_stdout && (fpptr->outfile[0] || fpptr->prefix) ) {
+	    fp_msg ("Error: -S option may not be used with -P or -O\n");
+	    fu_usage (); exit (-1);
+        }
+
+	if (fpptr->outfile[0] && fpptr->prefix ) {
+	    fp_msg ("Error: -P and -O options may not be used together\n");
+	    fu_usage (); exit (-1);
+        }
+
 	if (iarg >= argc) {
 	    fp_msg ("Error: no FITS files to uncompress\n");
 	    fu_usage (); exit (-1);

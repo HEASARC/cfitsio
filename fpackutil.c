@@ -81,28 +81,20 @@ int fp_access (char *filename)
 	}
 }
 /*--------------------------------------------------------------------------*/
-int fp_tmpnam(char *prefix, char *rootname, char *tmpnam)
+int fp_tmpnam(char *suffix, char *rootname, char *tmpnam)
 {
 	/* create temporary file name */
 
 	int maxtry = 30, len, i1 = 0, ii;
 
-	strcpy(tmpnam, prefix);  /*start with the prefix */
-	
-	len = strlen(rootname);
-	if (len > 64)
-	    i1 += (len - 64); 
-
-	/* append up to the last 64 characters of the rootname to the tmpnam */
-	strcat(tmpnam, rootname+i1);
-	
-	len = strlen(tmpnam);
-
-	/* replace all non-alphanumeric characters with 'x' (e.g. '/' or ':') */
-	for (ii = 0; ii < len; ii++) {
-	    if (!isalnum(tmpnam[ii]) )
-		tmpnam[ii] = 'x';
+	if (strlen(suffix) + strlen(rootname) > SZ_STR-5) {
+	    fp_msg ("Error: filename is too long to create tempory file\n"); exit (-1);
 	}
+
+	strcpy (tmpnam, rootname);  /* start with rootname */
+	strcat(tmpnam, suffix);     /* append the suffix */
+
+	maxtry = SZ_STR - strlen(tmpnam) - 1;
 
         for (ii = 0; ii < maxtry; ii++) {
 		if (fp_access(tmpnam)) break;  /* good, the file does not exist */
@@ -110,10 +102,6 @@ int fp_tmpnam(char *prefix, char *rootname, char *tmpnam)
 	}
 
 	if (ii == maxtry) {
-		len = strlen(tmpnam);
-		if (len > 75)
-		    tmpnam[75] = 0;  /* limit the length of the output string */
-
 		fp_msg ("\nCould not create temporary file name:\n");
 		fp_msg (tmpnam);
 		fp_msg ("\n");
@@ -489,7 +477,7 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 {
 	char	infits[SZ_STR], outfits[SZ_STR];
 	char	temp[SZ_STR], answer[30], *cptr;
-	int	ii, iarg, islossless, namelen, iraf_infile = 0, status = 0;
+	int	ii, iarg, islossless, namelen, iraf_infile = 0, status = 0, ifail;
 	FILE	*diskfile;
         
 	if (fpvar.initialized != FP_INIT_MAGIC) {
@@ -625,8 +613,8 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 		    exit (-1);
 		} 
 
-                /* create temporary file name */
-		fp_tmpnam("fpTmpfile1", infits, outfits);
+                /* create temporary file name in the output directory (same as input directory)*/
+		fp_tmpnam("Tmp1", infits, outfits);
 		
                 strcpy(tempfilename, outfits);  /* store temp file name, in case of abort */
 	      }
@@ -640,9 +628,9 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 		
 	    if (fpvar.test_all) {   /* compare all the algorithms */
 
-                /* create 2 temporary file names */
-		fp_tmpnam("fpTmpfile1", infits, tempfilename);
-		fp_tmpnam("fpTmpfile2", infits, tempfilename2);
+                /* create 2 temporary file names, in the CWD */
+		fp_tmpnam("Tmpfile1", "", tempfilename);
+		fp_tmpnam("Tmpfile2", "", tempfilename2);
 
 		fp_test (infits, tempfilename, tempfilename2, fpvar);
 
@@ -653,18 +641,32 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
                 continue;
 
 	    } else if (unpack) {
-		/* unpack to temporary file, so other tasks can't open it until it is renamed */
 
-                /* create  temporary file name */
-		fp_tmpnam("fpTmpfile2", infits, tempfilename2);
+		if (fpvar.to_stdout) {
+			/* unpack the input file to the stdout stream */
+			fp_unpack (infits, outfits, fpvar);
+		} else {
+			/* unpack to temporary file, so other tasks can't open it until it is renamed */
 
-		/* unpack the input file to the temporary file */
-		fp_unpack (infits, tempfilename2, fpvar);
+			/* create  temporary file name, in the output directory */
+			fp_tmpnam("Tmp2", outfits, tempfilename2);
 
-		/* rename the temporary file to it's real name */
-		rename(tempfilename2, outfits);
-		tempfilename2[0] = '\0';  /* clear temporary file name */
+			/* unpack the input file to the temporary file */
+			fp_unpack (infits, tempfilename2, fpvar);
 
+			/* rename the temporary file to it's real name */
+			ifail = rename(tempfilename2, outfits);
+			if (ifail) {
+			    fp_msg("Failed to rename temporary file name:\n  ");
+			    fp_msg(tempfilename2);
+			    fp_msg(" -> ");
+			    fp_msg(outfits);
+			    fp_msg("\n");
+			    exit (-1);
+			} else {
+			    tempfilename2[0] = '\0';  /* clear temporary file name */
+			}
+		}
 	    }  else {
 		fp_pack (infits, outfits, fpvar, &islossless);
 	    }
@@ -1013,10 +1015,10 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 			if (rescale > 1.0) {
 			  
 			  /* all the criteria are met, so create a temporary file that */
-			  /* contains a rescaled version of the image */
+			  /* contains a rescaled version of the image, in CWD */
 			  
                 	  /* create temporary file name */
-			  fp_tmpnam("fpTmpfile3", infits, tempfilename3);
+			  fp_tmpnam("Tmpfile3", "", tempfilename3);
 
 			  fits_create_file(&tempfile, tempfilename3, &stat);
 
@@ -1185,7 +1187,7 @@ int fp_pack_hdu (fitsfile *infptr, fitsfile *outfptr, fpstate fpvar,
 	int	tstatus, hdunum, rescale_flag = 0;
 	double  bscale, rescale;
 	FILE	*diskfile;
-	char	infits[SZ_STR];
+	char	outfits[SZ_STR];
 
 	if (*status) return(0);
 
@@ -1219,11 +1221,11 @@ int fp_pack_hdu (fitsfile *infptr, fitsfile *outfptr, fpstate fpvar,
 			if (rescale > 1.0) {
 			  
 			  /* all the criteria are met, so create a temporary file that */
-			  /* contains a rescaled version of the image */
+			  /* contains a rescaled version of the image, in output directory */
 			  
 			  /* create temporary file name */
-			  fits_file_name(infptr, infits, &stat);  /* get the input file name */
-			  fp_tmpnam("fpTmpfile3", infits, tempfilename3);
+			  fits_file_name(outfptr, outfits, &stat);  /* get the output file name */
+			  fp_tmpnam("Tmp3", outfits, tempfilename3);
 
 			  fits_create_file(&tempfile, tempfilename3, &stat);
 
