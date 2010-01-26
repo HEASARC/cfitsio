@@ -5112,6 +5112,12 @@ CFITSIO to read and/or write the file.  Currently supported types are
                    supports username:password just like the ftp driver.
                    Proxy HTTP servers are supported using the http_proxy
                    environment variable (see following note).
+      stream://  - special driver to read an input FITS file from the stdin
+                   stream, and/or write an output FITS file to the stdout
+		   stream.  This driver is fragile and has limited
+		   functionality (see the following note).
+      gsiftp://  - access files on a computational grid using the gridftp
+                   protocol in the Globus toolkit (see following note).
         root://  - uses the CERN root protocol for writing as well as
                    reading files over the network.
         shmem:// - opens or creates a file which persists in the computer's
@@ -5136,6 +5142,99 @@ For example
 \end{verbatim}
 will cause CFITSIO to use port 3128 on the heasarc proxy server whenever
 reading a FITS file with HTTP.
+
+
+\subsection{Notes about the stream filetype driver}
+
+The stream driver can be used to efficiently read a FITS file from the stdin
+file stream or write a FITS to the stdout file stream.  However, because these
+input and output streams must be accessed sequentially, the FITS file reading or
+writing application must also read and write the file sequentially, at least
+within the tolerances described below.
+
+CFITSIO supports 2 different methods for accessing FITS files on the stdin and
+stdout streams.  The original method, which is invoked by specifying a dash
+character, "-", as the name of the file when opening or creating it, works by
+storing a complete copy of the entire FITS file in memory.  In this case, when
+reading from stdin, CFITSIO will copy the entire stream into memory before doing
+any processing of the file.  Similarly, when writing to stdout, CFITSIO will
+create a copy of the entire FITS file in memory, before finally flushing it out
+to  the stdout stream when the FITS file is closed.  Buffering the entire FITS
+file in this way allows the application to randomly access any part of the FITS
+file, in any order, but it also requires that the user have sufficient available
+memory (or virtual memory) to store the entire file, which may not be possible
+in the case of very large files.
+
+The newer stream filetype provides a more memory-efficient method of accessing
+FITS files on the stdin or stdout streams.  Instead of storing a copy of the
+entire FITS file in memory, CFITSIO only uses a set of internal  buffer which by
+default can store  40 FITS blocks, or about  100K bytes of the FITS file.  The
+application program must process the FITS file sequentially from beginning to
+end, within this 100K buffer.  Generally speaking the application  program must
+conform to the following restrictions:
+
+\begin{itemize}
+\item
+The program must finish reading or writing the header keywords
+before reading or writing any data in the HDU.
+\item
+The HDU can contain at most about 1400 header keywords.  This is the
+maximum that can fit in the nominal 40 FITS block buffer.  In principle,
+this limit could be increased by recompiling CFITSIO with a larger
+buffer limit, which is set by the NIOBUF parameter in fitsio2.h.
+\item
+The program must read or write the data in a sequential manner from the
+beginning to the end of the HDU.  Note that CFITSIO's internal
+100K buffer allows a little latitude in meeting this requirement.
+\item
+The program cannot move back to a previous HDU in the FITS file.
+\item
+Reading or writing of variable length array columns in binary tables is not
+supported on streams, because this requires moving back and forth between the
+fixed-length portion of the binary table and the following heap area where the
+arrays are actually stored.
+\item
+Reading or writing of tile-compressed images is not supported on streams,
+because the images are internally stored using variable length arrays.
+\end{itemize}
+
+
+\subsection{Notes about the gsiftp filetype}
+
+DEPENDENCIES: Globus toolkit (2.4.3 or higher) (GT) should be installed.
+There are two different ways to install GT:
+
+1) goto the globus toolkit web page www.globus.org and follow the
+   download and compilation instructions;
+
+2) goto the Virtual Data Toolkit web page http://vdt.cs.wisc.edu/
+   and follow the instructions (STRONGLY SUGGESTED);
+
+Once a globus client has been installed in your system with a specific flavour
+it is possible to compile and install the CFITSIO libraries.
+Specific configuration flags must be used:
+
+1)  --with-gsiftp[[=PATH]] Enable Globus Toolkit gsiftp protocol support
+    PATH=GLOBUS\_LOCATION i.e. the location of your globus installation
+
+2)  --with-gsiftp-flavour[[=PATH] defines the specific Globus flavour
+        ex. gcc32
+
+Both the flags must be used and it is mandatory to set  both the PATH and the
+flavour.
+
+USAGE: To access files on a gridftp server it is necessary to use a gsiftp prefix:
+
+example: gsiftp://remote\_server\_fqhn/directory/filename
+
+The gridftp driver uses a local buffer on a temporary file the file is located
+in the /tmp directory. If you have special permissions on /tmp or you do not have a /tmp
+directory, it is possible to force another location setting the GSIFTP\_TMPFILE environment
+variable (ex. export GSIFTP\_TMPFILE=/your/location/yourtmpfile).
+
+Grid FTP supports multi channel transfer. By default a single channel transmission is
+available. However, it is possible to modify this behavior setting the GSIFTP\_STREAMS
+environment variable (ex. export GSIFTP\_STREAMS=8).
 
 
 \subsection{Notes about the root filetype}
@@ -5995,6 +6094,12 @@ element of the vector expression.
     value in x causes a pair of nulls in the output.  The seqdiff and
     accum functions are functional inverses, i.e., seqdiff(accum(x)) == x
     as long as no null values are present.
+
+In the if-then-else expression, "b?x:y", b is an explicit boolean
+value or expression.  There is no automatic type conversion from
+numeric to boolean values, so one needs to use "iVal!=0" instead of
+merely "iVal" as the boolean argument. x and y can be any scalar data
+type (including string).
 
     The angsep function computes the angular separation in degrees
     between 2 celestial positions, where the first 2 parameters

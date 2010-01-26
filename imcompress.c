@@ -1321,7 +1321,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
     /* images.  Only compression algorithm that supports this is GZIP */
     if ( (outfptr->Fptr)->quantize_level == NO_QUANTIZE) {
        if ((outfptr->Fptr)->compress_type != GZIP_1) {
-         ffpmsg("Lossless compression of floating point images must use GZIP (imcomp_init_table)");
+         ffpmsg("Lossless compression of floating point images must use GZIP (imcomp_compress_tile)");
          return(*status = DATA_COMPRESSION_ERR);
        }
     }
@@ -1377,6 +1377,27 @@ int imcomp_compress_tile (fitsfile *outfptr,
               ffpclk (outfptr, (outfptr->Fptr)->cn_uncompressed, row, 1,
                       tilelen, (int *)tiledata, status);
          }
+         else if (datatype == TFLOAT)
+         {
+              if ((outfptr->Fptr)->cn_uncompressed < 1) {
+              /* uncompressed data column doesn't exist, so append new column to table */
+                 fits_insert_col(outfptr, 999, "UNCOMPRESSED_DATA", "1PE", status);
+
+                 if (*status <= 0)  /* save the number of this column */
+                       ffgcno(outfptr, CASEINSEN, "UNCOMPRESSED_DATA",
+                                &(outfptr->Fptr)->cn_uncompressed, status);
+              }
+   
+              ffpcle (outfptr, (outfptr->Fptr)->cn_uncompressed, row, 1,
+                      tilelen, (float *)tiledata, status);
+         }
+	 else
+	 {
+	     ffpmsg("NOCOMPRESSION not supported for images with this datatype(imcomp_compress_tile)");
+             return(*status = DATA_COMPRESSION_ERR);
+         }
+
+
          return (*status);
     }
 
@@ -4465,7 +4486,7 @@ int imcomp_copy_img2comp(fitsfile *infptr, fitsfile *outfptr, int *status)
 
 	fits_write_history(outfptr, 
 	    "Image was compressed by CFITSIO using scaled integer quantization:", status);
-	sprintf(card2, "  q = %.3f / quantized level scaling parameter", 
+	sprintf(card2, "  q = %f / quantized level scaling parameter", 
 	    (outfptr->Fptr)->quantize_level);
 	fits_write_history(outfptr, card2, status); 
 	fits_write_history(outfptr, card+10, status); 

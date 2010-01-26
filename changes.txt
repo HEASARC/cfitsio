@@ -1,11 +1,26 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.24 - 26 January 2010
+
+   - modified fits_translate_keywords so that it silently ignores any
+     illegal ASCII characters in the value or comment fields of the input
+     FITS file. Otherwise, fpack would abort without compressing input
+     files that contained this minor violation of the FITS rules.
+
+   - added support for Super H cpu in fitsio2.h
+   
+   - updated funpack to correctly handle the -S option, and to use a
+     more robust algorithm for creating temporary output files.
+   
+   - modified the imcomp_compress_tile routine to support the NOCOMPRESS
+     debugging option for real*4 images.
+
 Version 3.23 - 7 January 2010
 
    - reduced the default value for the floating point image quantization
      parameter (q) from 16 to 4.  This parameter is used when tile compressing
      floating point images.  This change will increase the average compression
-     ratio for floating point images from about 4.6 to about 6.5 without lossing 
+     ratio for floating point images from about 4.6 to about 6.5 without losing 
      any significant information in the image.
      
    - enhanced the template keyword parsing routine to reject a header

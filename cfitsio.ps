@@ -11,7 +11,7 @@
 %DVIPSWebPage: (www.radicaleye.com)
 %DVIPSCommandLine: dvips -o cfitsio.ps cfitsio
 %DVIPSParameters: dpi=600
-%DVIPSSource:  TeX output 2009.09.03:1552
+%DVIPSSource:  TeX output 2010.01.15:1052
 %%BeginProcSet: tex.pro 0 0
 %!
 /TeXDict 300 dict def TeXDict begin/N{def}def/B{bind def}N/S{exch}N/X{S
@@ -9368,36 +9368,36 @@ h(to)h(2.1)f(GB)g(in)g(size\))334 668 y(\(fitsfile)e(*fptr,)h(>)i(long)
 f(*headstart,)d(long)j(*datastart,)e(long)h(*dataend,)382
 781 y(int)h(*status\))95 1007 y(int)g(fits_get_hduaddrll)c(/)48
 b(ffghadll)93 b(\(supports)45 b(large)i(files\))334 1120
-y(\(fitsfile)e(*fptr,)h(>)i(long)f(*headstart,)d(long)j(*datastart,)e
-(long)h(*dataend,)382 1233 y(int)h(*status\))0 1490 y
-Fi(2)81 b Fj(Create)31 b(\(app)s(end\))f(a)i(new)e(empt)m(y)i(HDU)f(at)
-h(the)f(end)f(of)i(the)f(FITS)f(\014le.)42 b(This)31
-b(is)g(no)m(w)g(the)g(CHDU)g(but)f(it)227 1603 y(is)i(completely)g
-(empt)m(y)g(and)f(has)g(no)g(header)g(k)m(eyw)m(ords.)43
-b(It)32 b(is)f(recommended)g(that)h(\014ts)p 3344 1603
-28 4 v 32 w(create)p 3612 1603 V 34 w(img)g(or)227 1716
-y(\014ts)p 354 1716 V 33 w(create)p 623 1716 V 34 w(tbl)e(b)s(e)g(used)
-g(instead)g(of)h(this)f(routine.)95 1974 y Fe(int)47
-b(fits_create_hdu)d(/)j(ffcrhd)286 2087 y(\(fitsfile)f(*fptr,)g(>)h
-(int)g(*status\))0 2344 y Fi(3)81 b Fj(Insert)22 b(a)h(new)g(IMA)m(GE)h
-(extension)f(immediately)i(follo)m(wing)f(the)f(CHDU,)h(or)f(insert)g
-(a)g(new)f(Primary)h(Arra)m(y)227 2457 y(at)30 b(the)e(b)s(eginning)g
-(of)h(the)g(\014le.)40 b(An)m(y)29 b(follo)m(wing)h(extensions)f(in)g
-(the)f(\014le)h(will)g(b)s(e)f(shifted)g(do)m(wn)h(to)g(mak)m(e)227
-2570 y(ro)s(om)36 b(for)h(the)f(new)g(extension.)59 b(If)36
-b(the)h(CHDU)g(is)f(the)h(last)g(HDU)g(in)f(the)h(\014le)f(then)g(the)h
-(new)f(image)227 2683 y(extension)31 b(will)g(simply)e(b)s(e)h(app)s
-(ended)e(to)j(the)f(end)g(of)g(the)g(\014le.)41 b(One)30
-b(can)g(force)h(a)g(new)e(primary)g(arra)m(y)227 2796
-y(to)35 b(b)s(e)d(inserted)i(at)g(the)g(b)s(eginning)f(of)g(the)h(FITS)
-f(\014le)g(b)m(y)h(setting)h(status)e(=)h(PREPEND)p 3432
-2796 V 32 w(PRIMAR)-8 b(Y)227 2909 y(prior)25 b(to)g(calling)i(the)e
-(routine.)38 b(In)25 b(this)f(case)i(the)f(old)g(primary)f(arra)m(y)i
-(will)f(b)s(e)f(con)m(v)m(erted)j(to)e(an)g(IMA)m(GE)227
-3022 y(extension.)49 b(The)32 b(new)g(extension)i(\(or)f(primary)f
-(arra)m(y\))h(will)h(b)s(ecome)f(the)g(CHDU.)g(Refer)g(to)h(Chapter)227
-3135 y(9)d(for)f(a)h(list)g(of)f(pre-de\014ned)f(bitpix)i(v)-5
-b(alues.)95 3392 y Fe(int)47 b(fits_insert_img)d(/)j(ffiimg)286
+y(\(fitsfile)e(*fptr,)h(>)i(LONGLONG)d(*headstart,)g(LONGLONG)h
+(*datastart,)382 1233 y(LONGLONG)f(*dataend,)h(int)h(*status\))0
+1490 y Fi(2)81 b Fj(Create)31 b(\(app)s(end\))f(a)i(new)e(empt)m(y)i
+(HDU)f(at)h(the)f(end)f(of)i(the)f(FITS)f(\014le.)42
+b(This)31 b(is)g(no)m(w)g(the)g(CHDU)g(but)f(it)227 1603
+y(is)i(completely)g(empt)m(y)g(and)f(has)g(no)g(header)g(k)m(eyw)m
+(ords.)43 b(It)32 b(is)f(recommended)g(that)h(\014ts)p
+3344 1603 28 4 v 32 w(create)p 3612 1603 V 34 w(img)g(or)227
+1716 y(\014ts)p 354 1716 V 33 w(create)p 623 1716 V 34
+w(tbl)e(b)s(e)g(used)g(instead)g(of)h(this)f(routine.)95
+1974 y Fe(int)47 b(fits_create_hdu)d(/)j(ffcrhd)286 2087
+y(\(fitsfile)f(*fptr,)g(>)h(int)g(*status\))0 2344 y
+Fi(3)81 b Fj(Insert)22 b(a)h(new)g(IMA)m(GE)h(extension)f(immediately)i
+(follo)m(wing)f(the)f(CHDU,)h(or)f(insert)g(a)g(new)f(Primary)h(Arra)m
+(y)227 2457 y(at)30 b(the)e(b)s(eginning)g(of)h(the)g(\014le.)40
+b(An)m(y)29 b(follo)m(wing)h(extensions)f(in)g(the)f(\014le)h(will)g(b)
+s(e)f(shifted)g(do)m(wn)h(to)g(mak)m(e)227 2570 y(ro)s(om)36
+b(for)h(the)f(new)g(extension.)59 b(If)36 b(the)h(CHDU)g(is)f(the)h
+(last)g(HDU)g(in)f(the)h(\014le)f(then)g(the)h(new)f(image)227
+2683 y(extension)31 b(will)g(simply)e(b)s(e)h(app)s(ended)e(to)j(the)f
+(end)g(of)g(the)g(\014le.)41 b(One)30 b(can)g(force)h(a)g(new)e
+(primary)g(arra)m(y)227 2796 y(to)35 b(b)s(e)d(inserted)i(at)g(the)g(b)
+s(eginning)f(of)g(the)h(FITS)f(\014le)g(b)m(y)h(setting)h(status)e(=)h
+(PREPEND)p 3432 2796 V 32 w(PRIMAR)-8 b(Y)227 2909 y(prior)25
+b(to)g(calling)i(the)e(routine.)38 b(In)25 b(this)f(case)i(the)f(old)g
+(primary)f(arra)m(y)i(will)f(b)s(e)f(con)m(v)m(erted)j(to)e(an)g(IMA)m
+(GE)227 3022 y(extension.)49 b(The)32 b(new)g(extension)i(\(or)f
+(primary)f(arra)m(y\))h(will)h(b)s(ecome)f(the)g(CHDU.)g(Refer)g(to)h
+(Chapter)227 3135 y(9)d(for)f(a)h(list)g(of)f(pre-de\014ned)f(bitpix)i
+(v)-5 b(alues.)95 3392 y Fe(int)47 b(fits_insert_img)d(/)j(ffiimg)286
 3505 y(\(fitsfile)f(*fptr,)g(int)h(bitpix,)e(int)i(naxis,)f(long)h
 (*naxes,)f(>)h(int)g(*status\))95 3731 y(int)g(fits_insert_imgll)c(/)48
 b(ffiimgll)286 3844 y(\(fitsfile)e(*fptr,)g(int)h(bitpix,)e(int)i
@@ -11130,13 +11130,13 @@ b(of)g(the)h(HDU.)g(Note)h(that)f(CFITSIO's)e(in)m(ternal)i(100K)g
 4816 y(this)31 b(requiremen)m(t.)136 4997 y Fc(\017)46
 b Fj(The)30 b(program)g(cannot)h(mo)m(v)m(e)h(bac)m(k)f(to)g(a)g
 (previous)f(HDU)h(in)f(the)h(FITS)e(\014le.)136 5177
-y Fc(\017)46 b Fj(Reading)25 b(or)f(writing)g(of)g(v)-5
-b(ariable)25 b(length)f(arra)m(y)h(columns)e(in)h(binary)f(tables)i(is)
-f(not)g(supp)s(orted,)g(b)s(ecause)227 5290 y(this)29
-b(requires)f(mo)m(ving)i(bac)m(k)f(and)f(forth)g(b)s(et)m(w)m(een)i
-(the)e(\014xed-length)h(p)s(ortion)f(of)h(the)g(binary)f(table)i(and)
-227 5403 y(the)h(follo)m(wing)h(heap)e(area)h(where)f(the)h(arra)m(ys)f
-(are)h(actually)h(stored.)136 5583 y Fc(\017)46 b Fj(Reading)25
+y Fc(\017)46 b Fj(Reading)c(or)f(writing)f(of)h(v)-5
+b(ariable)42 b(length)f(arra)m(y)h(columns)e(in)h(binary)f(tables)i(is)
+f(not)g(supp)s(orted)e(on)227 5290 y(streams,)29 b(b)s(ecause)f(this)g
+(requires)g(mo)m(ving)g(bac)m(k)h(and)f(forth)f(b)s(et)m(w)m(een)i(the)
+f(\014xed-length)g(p)s(ortion)g(of)g(the)227 5403 y(binary)i(table)h
+(and)f(the)g(follo)m(wing)i(heap)e(area)i(where)e(the)g(arra)m(ys)h
+(are)g(actually)h(stored.)136 5583 y Fc(\017)46 b Fj(Reading)25
 b(or)g(writing)f(of)h(tile-compressed)h(images)g(is)e(not)h(supp)s
 (orted)e(on)h(streams,)i(b)s(ecause)f(the)g(images)227
 5696 y(are)31 b(in)m(ternally)g(stored)g(using)f(v)-5
@@ -12272,66 +12272,74 @@ b(single)h(n)m(ull)f(v)-5 b(alue)38 b(in)e(x)h(causes)h(a)f(pair)g(of)g
 %%Page: 135 143
 TeXDict begin 135 142 bop 0 299 a Fh(10.11.)73 b(R)m(O)m(W)31
 b(FIL)-8 b(TERING)31 b(SPECIFICA)-8 b(TION)1936 b Fj(135)0
-555 y(The)22 b(angsep)g(function)f(computes)i(the)f(angular)g
-(separation)h(in)e(degrees)i(b)s(et)m(w)m(een)g(2)f(celestial)j(p)s
-(ositions,)e(where)0 668 y(the)36 b(\014rst)f(2)h(parameters)g(giv)m(e)
-h(the)f(RA-lik)m(e)i(and)d(Dec-lik)m(e)j(co)s(ordinates)f(\(in)f
-(decimal)g(degrees\))h(of)f(the)g(\014rst)0 781 y(p)s(osition,)31
-b(and)e(the)i(3rd)f(and)g(4th)g(parameters)h(giv)m(e)h(the)e(co)s
-(ordinates)i(of)e(the)h(second)f(p)s(osition.)0 941 y(The)38
-b(substring)f(function)i(strmid\(S,P)-8 b(,N\))39 b(extracts)g(a)g
-(substring)f(from)g(S,)g(starting)h(at)g(string)g(p)s(osition)f(P)-8
-b(,)0 1054 y(with)33 b(a)h(substring)f(length)h(N.)g(The)f(\014rst)g(c)
-m(haracter)j(p)s(osition)d(in)h(S)f(is)h(lab)s(eled)g(as)g(1.)51
-b(If)33 b(P)g(is)h(0,)h(or)f(refers)f(to)0 1167 y(a)i(p)s(osition)g(b)s
-(ey)m(ond)f(the)h(end)e(of)i(S,)g(then)f(the)h(extracted)h(substring)d
-(will)i(b)s(e)f(NULL.)h(S,)f(P)-8 b(,)36 b(and)e(N)g(ma)m(y)i(b)s(e)0
-1280 y(functions)30 b(of)g(other)h(columns.)0 1440 y(The)39
-b(string)h(searc)m(h)h(function)e(strstr\(S,R\))h(searc)m(hes)h(for)f
-(the)g(\014rst)f(o)s(ccurrence)h(of)g(the)g(substring)f(R)h(in)f(S.)0
-1553 y(The)c(result)h(is)f(an)h(in)m(teger,)i(indicating)f(the)e(c)m
+555 y(In)36 b(the)h(if-then-else)i(expression,)f("b?x:y",)i(b)c(is)h
+(an)g(explicit)h(b)s(o)s(olean)f(v)-5 b(alue)37 b(or)g(expression.)61
+b(There)36 b(is)h(no)0 668 y(automatic)d(t)m(yp)s(e)e(con)m(v)m(ersion)
+h(from)e(n)m(umeric)h(to)g(b)s(o)s(olean)g(v)-5 b(alues,)33
+b(so)f(one)g(needs)f(to)i(use)e("iV)-8 b(al!=0")35 b(instead)0
+781 y(of)30 b(merely)g("iV)-8 b(al")32 b(as)e(the)g(b)s(o)s(olean)g
+(argumen)m(t.)41 b(x)30 b(and)f(y)h(can)g(b)s(e)f(an)m(y)h(scalar)h
+(data)g(t)m(yp)s(e)f(\(including)f(string\).)0 941 y(The)22
+b(angsep)g(function)f(computes)i(the)f(angular)g(separation)h(in)e
+(degrees)i(b)s(et)m(w)m(een)g(2)f(celestial)j(p)s(ositions,)e(where)0
+1054 y(the)36 b(\014rst)f(2)h(parameters)g(giv)m(e)h(the)f(RA-lik)m(e)i
+(and)d(Dec-lik)m(e)j(co)s(ordinates)f(\(in)f(decimal)g(degrees\))h(of)f
+(the)g(\014rst)0 1167 y(p)s(osition,)31 b(and)e(the)i(3rd)f(and)g(4th)g
+(parameters)h(giv)m(e)h(the)e(co)s(ordinates)i(of)e(the)h(second)f(p)s
+(osition.)0 1327 y(The)38 b(substring)f(function)i(strmid\(S,P)-8
+b(,N\))39 b(extracts)g(a)g(substring)f(from)g(S,)g(starting)h(at)g
+(string)g(p)s(osition)f(P)-8 b(,)0 1440 y(with)33 b(a)h(substring)f
+(length)h(N.)g(The)f(\014rst)g(c)m(haracter)j(p)s(osition)d(in)h(S)f
+(is)h(lab)s(eled)g(as)g(1.)51 b(If)33 b(P)g(is)h(0,)h(or)f(refers)f(to)
+0 1553 y(a)i(p)s(osition)g(b)s(ey)m(ond)f(the)h(end)e(of)i(S,)g(then)f
+(the)h(extracted)h(substring)d(will)i(b)s(e)f(NULL.)h(S,)f(P)-8
+b(,)36 b(and)e(N)g(ma)m(y)i(b)s(e)0 1666 y(functions)30
+b(of)g(other)h(columns.)0 1826 y(The)39 b(string)h(searc)m(h)h
+(function)e(strstr\(S,R\))h(searc)m(hes)h(for)f(the)g(\014rst)f(o)s
+(ccurrence)h(of)g(the)g(substring)f(R)h(in)f(S.)0 1939
+y(The)c(result)h(is)f(an)h(in)m(teger,)i(indicating)f(the)e(c)m
 (haracter)i(p)s(osition)f(of)g(the)g(\014rst)e(matc)m(h)j(\(where)e(1)h
-(is)g(the)g(\014rst)0 1666 y(c)m(haracter)c(p)s(osition)e(of)h(S\).)f
+(is)g(the)g(\014rst)0 2052 y(c)m(haracter)c(p)s(osition)e(of)h(S\).)f
 (If)g(no)h(matc)m(h)g(is)f(found,)g(then)g(strstr\(\))g(returns)f(a)i
-(NULL)f(v)-5 b(alue.)0 1826 y(The)38 b(follo)m(wing)i(t)m(yp)s(e)f
+(NULL)f(v)-5 b(alue.)0 2212 y(The)38 b(follo)m(wing)i(t)m(yp)s(e)f
 (casting)h(op)s(erators)f(are)g(a)m(v)-5 b(ailable,)44
 b(where)38 b(the)h(inclosing)h(paren)m(theses)f(are)g(required)0
-1939 y(and)30 b(tak)m(en)h(from)f(the)h(C)f(language)h(usage.)42
+2325 y(and)30 b(tak)m(en)h(from)f(the)h(C)f(language)h(usage.)42
 b(Also,)31 b(the)g(in)m(teger)g(to)h(real)f(casts)g(v)-5
-b(alues)30 b(to)i(double)e(precision:)764 2207 y Fe("real)46
+b(alues)30 b(to)i(double)e(precision:)764 2545 y Fe("real)46
 b(to)h(integer")189 b(\(int\))46 b(x)239 b(\(INT\))46
-b(x)764 2320 y("integer)f(to)i(real")190 b(\(float\))46
-b(i)143 b(\(FLOAT\))45 b(i)0 2589 y Fj(In)30 b(addition,)g(sev)m(eral)i
+b(x)764 2658 y("integer)f(to)i(real")190 b(\(float\))46
+b(i)143 b(\(FLOAT\))45 b(i)0 2878 y Fj(In)30 b(addition,)g(sev)m(eral)i
 (constan)m(ts)g(are)f(built)f(in)g(for)g(use)g(in)g(n)m(umerical)h
-(expressions:)382 2857 y Fe(#pi)667 b(3.1415...)284 b(#e)620
-b(2.7182...)382 2970 y(#deg)f(#pi/180)380 b(#row)524
-b(current)46 b(row)h(number)382 3083 y(#null)428 b(undefined)45
-b(value)142 b(#snull)428 b(undefined)45 b(string)0 3351
+(expressions:)382 3098 y Fe(#pi)667 b(3.1415...)284 b(#e)620
+b(2.7182...)382 3211 y(#deg)f(#pi/180)380 b(#row)524
+b(current)46 b(row)h(number)382 3324 y(#null)428 b(undefined)45
+b(value)142 b(#snull)428 b(undefined)45 b(string)0 3544
 y Fj(A)40 b(string)f(constan)m(t)i(m)m(ust)e(b)s(e)g(enclosed)h(in)g
 (quotes)g(as)f(in)h('Crab'.)67 b(The)39 b("n)m(ull")i(constan)m(ts)f
-(are)g(useful)f(for)0 3464 y(conditionally)g(setting)g(table)g(v)-5
+(are)g(useful)f(for)0 3657 y(conditionally)g(setting)g(table)g(v)-5
 b(alues)38 b(to)g(a)g(NULL,)g(or)g(unde\014ned,)f(v)-5
 b(alue)39 b(\(eg.,)i("col1==-99)f(?)62 b(#NULL)38 b(:)0
-3577 y(col1"\).)0 3737 y(There)27 b(is)g(also)i(a)e(function)g(for)h
+3770 y(col1"\).)0 3930 y(There)27 b(is)g(also)i(a)e(function)g(for)h
 (testing)g(if)f(t)m(w)m(o)i(v)-5 b(alues)28 b(are)g(close)g(to)h(eac)m
 (h)f(other,)h(i.e.,)g(if)e(they)h(are)g("near")g(eac)m(h)0
-3850 y(other)c(to)h(within)e(a)h(user)g(sp)s(eci\014ed)f(tolerance.)40
-b(The)24 b(argumen)m(ts,)h(v)-5 b(alue)p 2502 3850 28
-4 v 34 w(1)24 b(and)f(v)-5 b(alue)p 2979 3850 V 33 w(2)25
-b(can)f(b)s(e)f(in)m(teger)i(or)f(real)0 3963 y(and)32
+4043 y(other)c(to)h(within)e(a)h(user)g(sp)s(eci\014ed)f(tolerance.)40
+b(The)24 b(argumen)m(ts,)h(v)-5 b(alue)p 2502 4043 28
+4 v 34 w(1)24 b(and)f(v)-5 b(alue)p 2979 4043 V 33 w(2)25
+b(can)f(b)s(e)f(in)m(teger)i(or)f(real)0 4156 y(and)32
 b(represen)m(t)h(the)g(t)m(w)m(o)h(v)-5 b(alues)33 b(who's)f(pro)m
 (ximit)m(y)i(is)f(b)s(eing)f(tested)h(to)h(b)s(e)e(within)g(the)h(sp)s
-(eci\014ed)f(tolerance,)0 4076 y(also)f(an)g(in)m(teger)g(or)g(real:)
-955 4344 y Fe(near\(value_1,)44 b(value_2,)h(tolerance\))0
-4613 y Fj(When)24 b(a)i(NULL,)e(or)h(unde\014ned,)f(v)-5
+(eci\014ed)f(tolerance,)0 4269 y(also)f(an)g(in)m(teger)g(or)g(real:)
+955 4489 y Fe(near\(value_1,)44 b(value_2,)h(tolerance\))0
+4709 y Fj(When)24 b(a)i(NULL,)e(or)h(unde\014ned,)f(v)-5
 b(alue)25 b(is)g(encoun)m(tered)g(in)g(the)f(FITS)g(table,)j(the)e
-(expression)g(will)g(ev)-5 b(aluate)26 b(to)0 4725 y(NULL)31
+(expression)g(will)g(ev)-5 b(aluate)26 b(to)0 4822 y(NULL)31
 b(unless)f(the)h(unde\014ned)e(v)-5 b(alue)31 b(is)g(not)g(actually)h
 (required)e(for)h(ev)-5 b(aluation,)33 b(e.g.)43 b("TR)m(UE)31
-b(.or.)43 b(NULL")0 4838 y(ev)-5 b(aluates)32 b(to)f(TR)m(UE.)g(The)f
+b(.or.)43 b(NULL")0 4935 y(ev)-5 b(aluates)32 b(to)f(TR)m(UE.)g(The)f
 (follo)m(wing)h(t)m(w)m(o)h(functions)e(allo)m(w)i(some)f(NULL)f
-(detection)i(and)e(handling:)430 5107 y Fe("a)47 b(null)f(value?")667
-b(ISNULL\(x\))430 5220 y("define)45 b(a)j(value)e(for)h(null")190
+(detection)i(and)e(handling:)430 5155 y Fe("a)47 b(null)f(value?")667
+b(ISNULL\(x\))430 5268 y("define)45 b(a)j(value)e(for)h(null")190
 b(DEFNULL\(x,y\))0 5488 y Fj(The)36 b(former)h(returns)e(a)i(b)s(o)s
 (olean)g(v)-5 b(alue)37 b(of)g(TR)m(UE)g(if)g(the)g(argumen)m(t)g(x)g
 (is)g(NULL.)g(The)f(later)i("de\014nes")f(a)0 5601 y(v)-5

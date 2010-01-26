@@ -62,31 +62,33 @@
 \contentsline {section}{\numberline {8.1}Overview}{77}
 \contentsline {section}{\numberline {8.2}Filetype}{80}
 \contentsline {subsection}{\numberline {8.2.1}Notes about HTTP proxy servers}{80}
-\contentsline {subsection}{\numberline {8.2.2}Notes about the root filetype}{80}
-\contentsline {subsection}{\numberline {8.2.3}Notes about the shmem filetype:}{82}
-\contentsline {section}{\numberline {8.3}Base Filename}{83}
-\contentsline {section}{\numberline {8.4}Output File Name when Opening an Existing File}{85}
-\contentsline {section}{\numberline {8.5}Template File Name when Creating a New File}{86}
-\contentsline {section}{\numberline {8.6}Image Tile-Compression Specification}{86}
-\contentsline {section}{\numberline {8.7}HDU Location Specification}{87}
-\contentsline {section}{\numberline {8.8}Image Section}{88}
-\contentsline {section}{\numberline {8.9}Image Transform Filters}{89}
-\contentsline {section}{\numberline {8.10}Column and Keyword Filtering Specification}{90}
-\contentsline {section}{\numberline {8.11}Row Filtering Specification}{92}
-\contentsline {subsection}{\numberline {8.11.1}General Syntax}{93}
-\contentsline {subsection}{\numberline {8.11.2}Bit Masks}{95}
-\contentsline {subsection}{\numberline {8.11.3}Vector Columns}{96}
-\contentsline {subsection}{\numberline {8.11.4}Good Time Interval Filtering}{98}
-\contentsline {subsection}{\numberline {8.11.5}Spatial Region Filtering}{99}
-\contentsline {subsection}{\numberline {8.11.6}Example Row Filters}{101}
-\contentsline {section}{\numberline {8.12} Binning or Histogramming Specification}{102}
-\contentsline {chapter}{\numberline {9}Template Files }{105}
-\contentsline {section}{\numberline {9.1}Detailed Template Line Format}{105}
-\contentsline {section}{\numberline {9.2}Auto-indexing of Keywords}{106}
-\contentsline {section}{\numberline {9.3}Template Parser Directives}{107}
-\contentsline {section}{\numberline {9.4}Formal Template Syntax}{107}
-\contentsline {section}{\numberline {9.5}Errors}{108}
-\contentsline {section}{\numberline {9.6}Examples}{108}
-\contentsline {chapter}{\numberline {10} Summary of all FITSIO User-Interface Subroutines }{111}
-\contentsline {chapter}{\numberline {11} Parameter Definitions }{119}
-\contentsline {chapter}{\numberline {12} FITSIO Error Status Codes }{125}
+\contentsline {subsection}{\numberline {8.2.2}Notes about the stream filetype driver}{81}
+\contentsline {subsection}{\numberline {8.2.3}Notes about the gsiftp filetype}{82}
+\contentsline {subsection}{\numberline {8.2.4}Notes about the root filetype}{82}
+\contentsline {subsection}{\numberline {8.2.5}Notes about the shmem filetype:}{84}
+\contentsline {section}{\numberline {8.3}Base Filename}{84}
+\contentsline {section}{\numberline {8.4}Output File Name when Opening an Existing File}{86}
+\contentsline {section}{\numberline {8.5}Template File Name when Creating a New File}{88}
+\contentsline {section}{\numberline {8.6}Image Tile-Compression Specification}{88}
+\contentsline {section}{\numberline {8.7}HDU Location Specification}{88}
+\contentsline {section}{\numberline {8.8}Image Section}{89}
+\contentsline {section}{\numberline {8.9}Image Transform Filters}{90}
+\contentsline {section}{\numberline {8.10}Column and Keyword Filtering Specification}{92}
+\contentsline {section}{\numberline {8.11}Row Filtering Specification}{94}
+\contentsline {subsection}{\numberline {8.11.1}General Syntax}{94}
+\contentsline {subsection}{\numberline {8.11.2}Bit Masks}{97}
+\contentsline {subsection}{\numberline {8.11.3}Vector Columns}{98}
+\contentsline {subsection}{\numberline {8.11.4}Good Time Interval Filtering}{99}
+\contentsline {subsection}{\numberline {8.11.5}Spatial Region Filtering}{100}
+\contentsline {subsection}{\numberline {8.11.6}Example Row Filters}{103}
+\contentsline {section}{\numberline {8.12} Binning or Histogramming Specification}{104}
+\contentsline {chapter}{\numberline {9}Template Files }{107}
+\contentsline {section}{\numberline {9.1}Detailed Template Line Format}{107}
+\contentsline {section}{\numberline {9.2}Auto-indexing of Keywords}{108}
+\contentsline {section}{\numberline {9.3}Template Parser Directives}{109}
+\contentsline {section}{\numberline {9.4}Formal Template Syntax}{109}
+\contentsline {section}{\numberline {9.5}Errors}{110}
+\contentsline {section}{\numberline {9.6}Examples}{110}
+\contentsline {chapter}{\numberline {10} Summary of all FITSIO User-Interface Subroutines }{113}
+\contentsline {chapter}{\numberline {11} Parameter Definitions }{121}
+\contentsline {chapter}{\numberline {12} FITSIO Error Status Codes }{127}

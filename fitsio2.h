@@ -175,6 +175,16 @@ extern int Fitsio_Pthread_Status;
 /*  64-core 8x8-architecture Tile64 platform */
 
 #define BYTESWAPPED TRUE
+
+#elif defined(__sh__)
+
+/* SuperH CPU can be used in both little and big endian modes */
+
+#if defined(__LITTLE_ENDIAN__)
+#define BYTESWAPPED TRUE
+#else
+#define BYTESWAPPED FALSE
+#endif
  
 #else
 

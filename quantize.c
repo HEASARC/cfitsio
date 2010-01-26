@@ -101,6 +101,7 @@ If the function value is zero, the data were not copied to idata.
 	float fvalue;
         int nextrand = 0;
 	extern float *fits_rand_value; /* this is defined in imcompress.c */
+	LONGLONG iqfactor;
 
 	nx = nxpix * nypix;
 	if (nx <= 1) {
@@ -135,7 +136,7 @@ If the function value is zero, the data were not copied to idata.
 	    delta = -qlevel;
 
 	    /* only nned to calculate the min and max values */
-	    FnNoise3_float(fdata, nxpix, nypix, nullcheck, in_null_value, 0,
+	    FnNoise3_float(fdata, nxpix, nypix, nullcheck, in_null_value, &ngood,
 	        &minval, &maxval, 0, &status);      
  	}
 
@@ -160,6 +161,11 @@ If the function value is zero, the data were not copied to idata.
             if ((maxval - minval) / delta < 2147483647. - N_RESERVED_VALUES )
             {
                 zeropt = minval;
+		/* fudge the zero point so it is an integer multiple of delta */
+		/* This helps to ensure the same scaling will be performed if the */
+		/* file undergoes multiple fpack/funpack cycles */
+		iqfactor = zeropt/delta  + 0.5;
+		zeropt = iqfactor * delta;               
             }
             else
             {
@@ -225,7 +231,6 @@ If the function value is zero, the data were not copied to idata.
 
 	*bscale = delta;
 	*bzero = zeropt;
-
 	return (1);			/* yes, data have been quantized */
 }
 /*---------------------------------------------------------------------------*/
@@ -263,6 +268,7 @@ If the function value is zero, the data were not copied to idata.
 	double fvalue;
         int nextrand = 0;
 	extern float *fits_rand_value;
+	LONGLONG iqfactor;
 
 	nx = nxpix * nypix;
 	if (nx <= 1) {
@@ -297,7 +303,7 @@ If the function value is zero, the data were not copied to idata.
 	    delta = -qlevel;
 
 	    /* only nned to calculate the min and max values */
-	    FnNoise3_double(fdata, nxpix, nypix, nullcheck, in_null_value, 0,
+	    FnNoise3_double(fdata, nxpix, nypix, nullcheck, in_null_value, &ngood,
 	        &minval, &maxval, 0, &status);      
  	}
 
@@ -321,6 +327,19 @@ If the function value is zero, the data were not copied to idata.
             if ((maxval - minval) / delta < 2147483647. - N_RESERVED_VALUES )
             {
                 zeropt = minval;
+		/* fudge the zero point so it is an integer multiple of delta */
+		/* This helps to ensure the same scaling will be performed if the */
+		/* file undergoes multiple fpack/funpack cycles */
+
+	/* ###### 
+		   This enhancement is not being implemented (yet),
+		   because it is difficult for users to envoke this feature,
+		   and because it removes some of the natural row-by-row 
+		   dithering that would otherwise take place
+		   
+		iqfactor = zeropt/delta  + 0.5;
+		zeropt = iqfactor * delta;               
+         ######  */
             }
             else
             {
@@ -1381,6 +1400,9 @@ row of the image.
 		            /* ignore constant background regions */
 			    ngoodpix++;
 		       }
+		    } else {
+		       /* just increment the number of non-null pixels */
+		       ngoodpix++;
 		    }
 
 		    /* shift over 1 pixel */
@@ -1591,6 +1613,9 @@ row of the image.
 		            /* ignore constant background regions */
 			    ngoodpix++;
 		        }
+		    } else {
+		       /* just increment the number of non-null pixels */
+		       ngoodpix++;
 		    }
 
 		    /* shift over 1 pixel */

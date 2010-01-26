@@ -70,11 +70,12 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.23;
+      *version = (float) 3.24;
 
-/*      7 Jan 2010
+/*      26 Jan 2010
 
    Previous releases:
+      *version = 3.23     7 Jan 2010
       *version = 3.22    28 Oct 2009
       *version = 3.21    24 Sep 2009
       *version = 3.20    31 Aug 2009
@@ -1973,7 +1974,7 @@ int fits_translate_keywords(
     int nrec, nkeys, nmore;
     char rec[FLEN_CARD];
     int i = 0, j = 0, n = 0, m = 0;
-    int pat_num = 0;
+    int pat_num = 0, maxchr, ii;
     char outrec[FLEN_CARD];
 
     if (*status > 0)
@@ -1985,6 +1986,18 @@ int fits_translate_keywords(
       outrec[0] = '\0';
 
       ffgrec(infptr, nrec, rec, status);
+
+      /* silently overlook any illegal ASCII characters in the value or */
+      /* comment fields of the record. It is usually not appropriate to */
+      /* abort the process because of this minor transgression of the FITS rules. */
+      /* Set the offending character to a blank */
+
+      maxchr = strlen(rec);
+      for (ii = 8; ii < maxchr; ii++)
+      {
+        if (rec[ii] < 32 || rec[ii] > 126)
+          rec[ii] = ' ';
+      }
 
       fits_translate_keyword(rec, outrec, patterns, npat, 
 			     n_value, n_offset, n_range, 

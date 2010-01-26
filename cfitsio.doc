@@ -4782,8 +4782,8 @@ the 'exists' parameter will have 1 of the 4 following values:
         int *status)
 
   int fits_get_hduaddrll / ffghadll  (supports large files)
-       (fitsfile *fptr, > long *headstart, long *datastart, long *dataend,
-        int *status)
+       (fitsfile *fptr, > LONGLONG *headstart, LONGLONG *datastart, 
+        LONGLONG *dataend, int *status)
 -
 >2  Create (append) a new empty HDU at the end of the FITS file.
     This is now  the CHDU but it is completely empty and has
@@ -6187,33 +6187,32 @@ reading a FITS file with HTTP.
 
 ***2.  Notes about the stream filetype driver
 
-The stream driver can be used to efficiently read a FITS file from the
-stdin file stream or write a FITS to the stdout file stream.  However, because
-these input and output streams must be accessed sequentially, the FITS
-file reading or writing application must also read and write the file sequentially,
-at least within the tolerances described below.  
+The stream driver can be used to efficiently read a FITS file from the stdin
+file stream or write a FITS to the stdout file stream.  However, because these
+input and output streams must be accessed sequentially, the FITS file reading or
+writing application must also read and write the file sequentially, at least
+within the tolerances described below.  
 
 CFITSIO supports 2 different methods for accessing FITS files on the stdin and
 stdout streams.  The original method, which is invoked by specifying a dash
 character, "-", as the name of the file when opening or creating it, works by
 storing a complete copy of the entire FITS file in memory.  In this case, when
-reading from stdin, CFITSIO will copy the entire stream into memory before
-doing any processing of the file.  Similarly, when writing to stdout, CFITSIO
-will create a copy of the entire FITS file in memory, before finally flushing
-it out to  the stdout stream when the FITS file is closed.  Buffering the
-entire FITS file in this way allows the application to randomly access any
-part of the FITS file, in any order, but it also requires that the user have
-sufficient available memory (or virtual memory) to store the entire file,
-which may not be possible in the case of very large files.  
+reading from stdin, CFITSIO will copy the entire stream into memory before doing
+any processing of the file.  Similarly, when writing to stdout, CFITSIO will
+create a copy of the entire FITS file in memory, before finally flushing it out
+to  the stdout stream when the FITS file is closed.  Buffering the entire FITS
+file in this way allows the application to randomly access any part of the FITS
+file, in any order, but it also requires that the user have sufficient available
+memory (or virtual memory) to store the entire file, which may not be possible
+in the case of very large files.  
 
 The newer stream filetype provides a more memory-efficient method of accessing
 FITS files on the stdin or stdout streams.  Instead of storing a copy of the
-entire FITS file in memory, CFITSIO only uses a set of internal 
-buffer which by default
-can store  40 FITS blocks, or about  100K bytes of the FITS file.  The
-application program must process the FITS file sequentially from beginning
-to end, within this 100K buffer.  Generally speaking the application 
-program must conform to the following restrictions:
+entire FITS file in memory, CFITSIO only uses a set of internal  buffer which by
+default can store  40 FITS blocks, or about  100K bytes of the FITS file.  The
+application program must process the FITS file sequentially from beginning to
+end, within this 100K buffer.  Generally speaking the application  program must
+conform to the following restrictions:
 
 \begin{itemize}
 \item
@@ -6231,10 +6230,10 @@ beginning to the end of the HDU.  Note that CFITSIO's internal
 \item
 The program cannot move back to a previous HDU in the FITS file.
 \item
-Reading or writing of variable length array columns in binary
-tables is not supported, because this requires moving back and forth
-between the fixed-length portion of the binary table and the following
-heap area where the arrays are actually stored.
+Reading or writing of variable length array columns in binary tables is not
+supported on streams, because this requires moving back and forth between the
+fixed-length portion of the binary table and the following heap area where the
+arrays are actually stored.
 \item
 Reading or writing of tile-compressed images is not supported on streams, 
 because the images are internally stored using variable length arrays.
@@ -7129,6 +7128,12 @@ The first value of seqdiff is the first value of x.  A single null
 value in x causes a pair of nulls in the output.  The seqdiff and 
 accum functions are functional inverses, i.e., seqdiff(accum(x)) == x
 as long as no null values are present.
+
+In the if-then-else expression, "b?x:y", b is an explicit boolean
+value or expression.  There is no automatic type conversion from
+numeric to boolean values, so one needs to use "iVal!=0" instead of
+merely "iVal" as the boolean argument. x and y can be any scalar data
+type (including string).
 
 The angsep function computes the angular separation in degrees 
 between 2 celestial positions, where the first 2 parameters

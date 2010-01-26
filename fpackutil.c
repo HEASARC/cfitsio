@@ -214,8 +214,28 @@ int fp_info_hdu (fitsfile *infptr)
 
 	for (hdupos=1; ! stat; hdupos++) {
 	    fits_get_hdu_type (infptr, &hdutype, &stat);
-
 	    if (stat) { fits_report_error (stderr, stat); exit (stat); }
+
+	    /* fits_get_hdu_type calls unknown extensions "IMAGE_HDU"
+	     * so consult XTENSION keyword itself
+	     */
+	    fits_read_keyword (infptr, "XTENSION", val, com, &stat);
+	    if (stat == KEY_NO_EXIST) {
+		/* in primary HDU which by definition is an "image" */
+		stat=0; /* clear for later error handling */
+
+	    } else if (stat) {
+		fits_report_error (stderr, stat); exit (stat);
+
+	    } else if (hdutype == IMAGE_HDU) {
+		/* that is, if XTENSION != "IMAGE" AND != "BINTABLE" */
+		if (strncmp (val+1, "IMAGE", 5) &&
+		    strncmp (val+1, "BINTABLE", 5)) {
+
+		     /* assign something other than any of these */
+		    hdutype = IMAGE_HDU + ASCII_TBL + BINARY_TBL;
+		}
+	    }
 
             fits_get_chksum(infptr, &datasum, &hdusum, &stat);
 
@@ -258,16 +278,17 @@ int fp_info_hdu (fitsfile *infptr)
                     fp_msg (" not_tiled\n");
 
             } else if (hdutype == ASCII_TBL) {
-                sprintf (msg, "  %d ASCII_TBL\n", hdupos); fp_msg (msg);
-                sprintf (msg, " SUMS=%u/%u", ~hdusum, datasum); fp_msg (msg);
+                sprintf (msg, "  %d ASCII_TBL", hdupos); fp_msg (msg);
+                sprintf (msg, " SUMS=%u/%u\n", ~hdusum, datasum); fp_msg (msg);
 
             } else if (hdutype == BINARY_TBL) {
-                sprintf (msg, "  %d BINARY_TBL\n", hdupos); fp_msg (msg);
-                sprintf (msg, " SUMS=%u/%u", ~hdusum, datasum); fp_msg (msg);
+                sprintf (msg, "  %d BINARY_TBL", hdupos); fp_msg (msg);
+                sprintf (msg, " SUMS=%u/%u\n", ~hdusum, datasum); fp_msg (msg);
 
             } else {
-                sprintf (msg, "  %d OTHER\n", hdupos); fp_msg (msg);
+                sprintf (msg, "  %d OTHER", hdupos); fp_msg (msg);
                 sprintf (msg, " SUMS=%u/%u", ~hdusum, datasum); fp_msg (msg);
+                sprintf (msg, " %s\n", val); fp_msg (msg);
             }
 
 	    fits_movrel_hdu (infptr, 1, NULL, &stat);
@@ -1088,8 +1109,10 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 		printf("  %3d  %s", extnum, dtype);
 		sprintf(dimen," (%d", naxes[0]);
 		len =strlen(dimen);
-		for (ii = 1; ii < naxis; ii++)
+		for (ii = 1; ii < naxis; ii++) {
 		    sprintf(dimen+len,",%d", naxes[ii]);
+		    len =strlen(dimen);
+		}
 		strcat(dimen, ")");
 		printf("%-12s",dimen);
 
