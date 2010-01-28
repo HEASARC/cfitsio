@@ -112,7 +112,7 @@ int fu_get_param (int argc, char *argv[], fpstate *fpptr)
 	    fu_usage (); exit (-1);
         }
 
-	if (fpptr->outfile[0] && fpptr->prefix ) {
+	if (fpptr->outfile[0] && fpptr->prefix[0] ) {
 	    fp_msg ("Error: -P and -O options may not be used together\n");
 	    fu_usage (); exit (-1);
         }
