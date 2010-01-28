@@ -106,7 +106,8 @@ int fu_get_param (int argc, char *argv[], fpstate *fpptr)
 	    fu_usage (); exit (-1);
         }
 
-	if (fpptr->to_stdout && (fpptr->outfile[0] || fpptr->prefix) ) {
+	if (fpptr->to_stdout && (fpptr->outfile[0] || fpptr->prefix[0]) ) {
+
 	    fp_msg ("Error: -S option may not be used with -P or -O\n");
 	    fu_usage (); exit (-1);
         }
