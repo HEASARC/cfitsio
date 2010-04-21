@@ -13,16 +13,20 @@ Unzip the library:
 
 - expand the "Targets" menu under "Groups & Files" 
 
-- right-click on Build PPC -> Build "Build PPC"
-  when that finishes...:
+- choose one of the following build options:
 
-- right-click on Build i386 -> Build "Build i386"
-  when that finishes...:
+  * right-click on Build PPC -> Build "Build PPC"
 
-- right-click on Build Universal -> Build "Build Universal"
+  * right-click on Build i386 -> Build "Build i386"
 
-(For some reason clicking on the menu "Build" icon doesn't seem to
-work correctly, but the right-click menus do).
+  * right-click on Build x86_64 -> Build "Build x86_64"
+
+  * right-click on Build Universal -> Build "Build Universal"
+    (Builds all three of the above options, i.e. a Universal Binary
+     usable on ppc, i386, and x86_64 architectures)
+
+  (For some reason clicking on the menu "Build" icon doesn't seem to
+   work correctly, but the right-click menus do).
 
 -------------------------------------------------------
 
@@ -33,9 +37,11 @@ Another way to build the universal binary:
 
 Set the CFLAGS environment variable for building a Universal Binary:
 
-- setenv CFLAGS "-arch ppc -arch i386 -g -O2"   (C-Shell variants)
-  or
-- export CFLAGS="-arch ppc -arch i386 -g -O2"   (Bourne Shell variants)
+  C-Shell variants:
+  setenv CFLAGS "-arch ppc -arch i386 -arch x86_64 -g -O2"
+
+  Bourne Shell variants:
+  export CFLAGS="-arch ppc -arch i386 -arch x86_64 -g -O2"
 
 Then proceed with the standard cfitsio build, i.e.:
 
