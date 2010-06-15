@@ -534,7 +534,7 @@ void Cffgprh( fitsfile *fptr, int *simple, int *bitpix, int *naxis, long naxes[]
    ffghpr( fptr, -1, simple, bitpix, naxis, naxes,
            pcount, gcount, extend, status );
 }
-#define ftghpr_LONGV_A5 NONE
+#define ftgprh_LONGV_A5 NONE
 FCALLSCSUB9(Cffgprh,FTGPRH,ftgprh,FITSUNIT,PLOGICAL,PINT,PINT,LONGV,PLONG,PLONG,PLOGICAL,PINT)
 
 #endif

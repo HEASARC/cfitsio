@@ -27,7 +27,7 @@
 \contentsline {section}{\numberline {4.9}Error Status Values and the Error Message Stack}{24}
 \contentsline {section}{\numberline {4.10}Variable-Length Arrays in Binary Tables}{25}
 \contentsline {section}{\numberline {4.11}Multiple Access to the Same FITS File}{26}
-\contentsline {section}{\numberline {4.12}When the Final Size of the FITS HDU is Unknown}{26}
+\contentsline {section}{\numberline {4.12}When the Final Size of the FITS HDU is Unknown}{27}
 \contentsline {section}{\numberline {4.13}CFITSIO Size Limitations}{27}
 \contentsline {chapter}{\numberline {5}Basic CFITSIO Interface Routines }{29}
 \contentsline {section}{\numberline {5.1}CFITSIO Error Status Routines}{29}

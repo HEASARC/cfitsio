@@ -1,5 +1,36 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.25 - 9 June 2010
+
+   - fixed bug that was introduced in version 3.13 that broke the ability
+     to reverse an image section along the y-axis with an image section
+     specifier like this: myimage.fits[*,-*].  This bug caused the output
+     image to be filled with zeros.
+
+   - fixed typo in the definition of the ftgprh Fortran wrapper routine
+     in f77_wrap3.c.
+
+   - modified the cfitsio.pc.in configuration file to make the lib path
+     a variable instead of hard coding the path.   The provides more
+     flexibility for projects such as suse and fedora when building CFITSIO.
+
+   - fixed bug in imcomp_compress_tile in imcompress.c which caused
+     null pixel values to be written incorrectly in the rare case where 
+     the floating-point tile of pixels could not be quantized into integers.
+
+   - modified imcompress.c to add a new specialized routine to uncompress
+     an input image and then write it to a output image on a tile by tile basis.
+     This appears to be faster than the old method of uncompressing the
+     whole image into memory before writing it out.  It also supports
+     large images with more than 2**31 pixels.
+
+   - made trivial changes to 2 statements in drvrfile.c to suppress 
+     nuisance compiler warnings.
+
+   - some compilers define CLOCKS_PER_SEC as a double instead of an integer,
+     so added an explicted integer type conversion to 2 statements in
+     imcompress.c that used this macro.
+
 Version 3.24 - 26 January 2010
 
    - modified fits_translate_keywords so that it silently ignores any

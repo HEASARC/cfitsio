@@ -100,11 +100,23 @@ static int unquantize_i4r8(long row,
             int  *anynull,        /* O - set to 1 if any pixels are null     */
             double *output,        /* O - array of converted pixels           */
             int *status);          /* IO - error status                       */
-static int imcomp_float2nan(float *indata, 
+static int imcomp_float2nan(float *indata,\
     long tilelen,
     int *outdata,
     float nullflagval, 
     int *status);
+    
+static int fits_read_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer */
+            int  datatype,  /* I - datatype of the array to be returned      */
+            LONGLONG  *infpixel, /* I - 'bottom left corner' of the subsection    */
+            LONGLONG  *inlpixel, /* I - 'top right corner' of the subsection      */
+            long  *ininc,    /* I - increment to be applied in each dimension */
+            int  nullcheck,  /* I - 0 for no null checking                   */
+                              /*     1: set undefined pixels = nullval       */
+            void *nullval,    /* I - value for undefined pixels              */
+            int  *anynul,     /* O - set to 1 if any values are null; else 0 */
+            fitsfile *outfptr,   /* I - FITS file pointer                    */
+            int  *status);
 
 /*---------------------------------------------------------------------------*/
 int fits_init_randoms(void) {
@@ -1782,7 +1794,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
 		     /* calculating the dithering offsets. */	     
 		     
 		     (outfptr->Fptr)->dither_offset = 
-		       (( (int)time(NULL) + ( (int) clock() / (CLOCKS_PER_SEC / 100)) + (outfptr->Fptr)->curhdu) % 10000) + 1;
+		       (( (int)time(NULL) + ( (int) clock() / (int) (CLOCKS_PER_SEC / 100)) + (outfptr->Fptr)->curhdu) % 10000) + 1;
 		     
                      /* update the header keyword with this new value */
 		     fits_update_key(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->dither_offset), 
@@ -1862,7 +1874,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
 	          if ((outfptr->Fptr)->request_dither_offset == 0 && (outfptr->Fptr)->dither_offset == 0) {
 
 		     (outfptr->Fptr)->dither_offset = 
-		       (( (int)time(NULL) + ( (int) clock() / (CLOCKS_PER_SEC / 100)) + (outfptr->Fptr)->curhdu) % 10000) + 1;
+		       (( (int)time(NULL) + ( (int) clock() / (int) (CLOCKS_PER_SEC / 100)) + (outfptr->Fptr)->curhdu) % 10000) + 1;
 		     
                      /* update the header keyword with this new value */
 		     fits_update_key(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->dither_offset), 
@@ -2134,8 +2146,8 @@ int imcomp_compress_tile (fitsfile *outfptr,
                                 &(outfptr->Fptr)->cn_uncompressed, status);
               }
    
-              ffpcle (outfptr, (outfptr->Fptr)->cn_uncompressed, row, 1,
-                      tilelen, (float *)tiledata, status);
+              ffpcne (outfptr, (outfptr->Fptr)->cn_uncompressed, row, 1,
+                      tilelen, (float *)tiledata, floatnull, status);
          }
          else if (datatype == TDOUBLE)
          {
@@ -2148,8 +2160,8 @@ int imcomp_compress_tile (fitsfile *outfptr,
                                 &(outfptr->Fptr)->cn_uncompressed, status);
               }
 
-              ffpcld (outfptr, (outfptr->Fptr)->cn_uncompressed, row, 1,
-                      tilelen, (double *)tiledata, status);
+              ffpcnd (outfptr, (outfptr->Fptr)->cn_uncompressed, row, 1,
+                      tilelen, (double *)tiledata, doublenull, status);
          }
     }
 
@@ -3201,13 +3213,12 @@ int fits_img_decompress (fitsfile *infptr, /* image (bintable) to uncompress */
 */
 
 {
-    double *data;
-    int ii, datatype = 0, byte_per_pix = 0, naxis, bitpix, numkeys;
+    int ii, datatype = 0, naxis, bitpix, numkeys;
     int nullcheck, anynul, tstatus, nullprime = 0, hdupos, norec = 0;
     int writeprime = 0;
     LONGLONG fpixel[MAX_COMPRESS_DIM], lpixel[MAX_COMPRESS_DIM];
     long inc[MAX_COMPRESS_DIM], naxes[MAX_COMPRESS_DIM];
-    long imgsize, memsize;
+    long imgsize;
     float *nulladdr, fnulval;
     double dnulval;
     char card[FLEN_CARD];
@@ -3351,17 +3362,14 @@ int fits_img_decompress (fitsfile *infptr, /* image (bintable) to uncompress */
     if ((infptr->Fptr)->zbitpix == BYTE_IMG)
     {
         datatype = TBYTE;
-        byte_per_pix = 1;
     }
     else if ((infptr->Fptr)->zbitpix == SHORT_IMG)
     {
         datatype = TSHORT;
-        byte_per_pix = sizeof(short);
     }
     else if ((infptr->Fptr)->zbitpix == LONG_IMG)
     {
         datatype = TINT;
-        byte_per_pix = sizeof(int);
     }
     else if ((infptr->Fptr)->zbitpix == FLOAT_IMG)
     {
@@ -3370,7 +3378,6 @@ int fits_img_decompress (fitsfile *infptr, /* image (bintable) to uncompress */
         fnulval = FLOATNULLVALUE;
         nulladdr =  &fnulval;
         datatype = TFLOAT;
-        byte_per_pix = sizeof(float);
     }
     else if ((infptr->Fptr)->zbitpix == DOUBLE_IMG)
     {
@@ -3379,7 +3386,6 @@ int fits_img_decompress (fitsfile *infptr, /* image (bintable) to uncompress */
         dnulval = DOUBLENULLVALUE;
         nulladdr = (float *) &dnulval;
         datatype = TDOUBLE;
-        byte_per_pix = sizeof(double);
     }
 
     /* calculate size of the image (in pixels) */
@@ -3391,32 +3397,12 @@ int fits_img_decompress (fitsfile *infptr, /* image (bintable) to uncompress */
         lpixel[ii] = (infptr->Fptr)->znaxis[ii]; /* include the entire image. */
         inc[ii] = 1;
     }
-    /* Calc equivalent number of double pixels same size as whole the image. */
-    /* We use double datatype to force the memory to be aligned properly */
-    memsize = ((imgsize * byte_per_pix) - 1) / sizeof(double) + 1;
 
-    /* allocate memory for the image */
-    data = (double*) calloc (memsize, sizeof(double));
-    if (!data)
-    { 
-        ffpmsg("Couldn't allocate memory for the uncompressed image");
-        return(*status = MEMORY_ALLOCATION);
-    }
+    /* uncompress the input image and write to output image, one tile at a time */
 
-    /* uncompress the entire image into memory */
-    /* This routine should be enhanced sometime to only need enough */
-    /* memory to uncompress one tile at a time.  */
-    fits_read_compressed_img(infptr, datatype, fpixel, lpixel, inc,  
-            nullcheck, nulladdr, data, NULL, &anynul, status);
+    fits_read_write_compressed_img(infptr, datatype, fpixel, lpixel, inc,  
+            nullcheck, nulladdr, &anynul, outfptr, status);
 
-    /* write the image to the output file */
-    if (anynul)
-        fits_write_imgnull(outfptr, datatype, 1, imgsize, data, nulladdr, 
-                          status);
-    else
-        fits_write_img(outfptr, datatype, 1, imgsize, data, status);
-
-    free(data);
     return (*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -3816,6 +3802,264 @@ printf(" pixlen=%d, ndim=%d, %d %d %d, %d %d %d, %d %d %d\n",
     {
         free(bnullarray);
     }
+    free(buffer);
+
+    return(*status);
+}
+/*---------------------------------------------------------------------------*/
+int fits_read_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
+            int  datatype,  /* I - datatype of the array to be returned      */
+            LONGLONG  *infpixel, /* I - 'bottom left corner' of the subsection    */
+            LONGLONG  *inlpixel, /* I - 'top right corner' of the subsection      */
+            long  *ininc,    /* I - increment to be applied in each dimension */
+            int  nullcheck,  /* I - 0 for no null checking                   */
+                              /*     1: set undefined pixels = nullval       */
+            void *nullval,    /* I - value for undefined pixels              */
+            int  *anynul,     /* O - set to 1 if any values are null; else 0 */
+            fitsfile *outfptr,   /* I - FITS file pointer                    */
+            int  *status)     /* IO - error status                           */
+/*
+   This is similar to fits_read_compressed_img, except that it writes
+   the pixels to the output image, on a tile by tile basis instead of returning
+   the array.
+*/
+{
+    int naxis[MAX_COMPRESS_DIM], tiledim[MAX_COMPRESS_DIM];
+    long tilesize[MAX_COMPRESS_DIM], thistilesize[MAX_COMPRESS_DIM];
+    long ftile[MAX_COMPRESS_DIM], ltile[MAX_COMPRESS_DIM];
+    long tfpixel[MAX_COMPRESS_DIM], tlpixel[MAX_COMPRESS_DIM];
+    long rowdim[MAX_COMPRESS_DIM], offset[MAX_COMPRESS_DIM],ntemp;
+    long fpixel[MAX_COMPRESS_DIM], lpixel[MAX_COMPRESS_DIM];
+    long inc[MAX_COMPRESS_DIM];
+    int ii, i5, i4, i3, i2, i1, i0, ndim, irow, pixlen, tilenul;
+    void *buffer;
+    char *bnullarray = 0;
+    double testnullval = 0.;
+    LONGLONG firstelem;
+
+    if (*status > 0) 
+        return(*status);
+
+    if (!fits_is_compressed_image(fptr, status) )
+    {
+        ffpmsg("CHDU is not a compressed image (fits_read_compressed_img)");
+        return(*status = DATA_DECOMPRESSION_ERR);
+    }
+
+    /* get temporary space for uncompressing one image tile */
+    if (datatype == TSHORT)
+    {
+       buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (short)); 
+       pixlen = sizeof(short);
+       if (nullval)
+           testnullval = *(short *) nullval;
+    }
+    else if (datatype == TINT)
+    {
+       buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (int));
+       pixlen = sizeof(int);
+       if (nullval)
+           testnullval = *(int *) nullval;
+    }
+    else if (datatype == TLONG)
+    {
+       buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (long));
+       pixlen = sizeof(long);
+       if (nullval)
+           testnullval = *(long *) nullval;
+    }
+    else if (datatype == TFLOAT)
+    {
+       buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (float));
+       pixlen = sizeof(float);
+       if (nullval)
+           testnullval = *(float *) nullval;
+    }
+    else if (datatype == TDOUBLE)
+    {
+       buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (double));
+       pixlen = sizeof(double);
+       if (nullval)
+           testnullval = *(double *) nullval;
+    }
+    else if (datatype == TUSHORT)
+    {
+       buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (unsigned short));
+       pixlen = sizeof(short);
+       if (nullval)
+           testnullval = *(unsigned short *) nullval;
+    }
+    else if (datatype == TUINT)
+    {
+       buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (unsigned int));
+       pixlen = sizeof(int);
+       if (nullval)
+           testnullval = *(unsigned int *) nullval;
+    }
+    else if (datatype == TULONG)
+    {
+       buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (unsigned long));
+       pixlen = sizeof(long);
+       if (nullval)
+           testnullval = *(unsigned long *) nullval;
+    }
+    else if (datatype == TBYTE || datatype == TSBYTE)
+    {
+       buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (char));
+       pixlen = 1;
+       if (nullval)
+           testnullval = *(unsigned char *) nullval;
+    }
+    else
+    {
+        ffpmsg("unsupported datatype for uncompressing image");
+        return(*status = BAD_DATATYPE);
+    }
+
+    /* If nullcheck ==1 and nullval == 0, then this means that the */
+    /* calling routine does not want to check for null pixels in the array */
+    if (nullcheck == 1 && testnullval == 0.)
+        nullcheck = 0;
+
+    if (buffer == NULL)
+    {
+	    ffpmsg("Out of memory (fits_read_compress_img)");
+	    return (*status = MEMORY_ALLOCATION);
+    }
+
+    /* initialize all the arrays */
+    for (ii = 0; ii < MAX_COMPRESS_DIM; ii++)
+    {
+        naxis[ii] = 1;
+        tiledim[ii] = 1;
+        tilesize[ii] = 1;
+        ftile[ii] = 1;
+        ltile[ii] = 1;
+        rowdim[ii] = 1;
+    }
+
+    ndim = (fptr->Fptr)->zndim;
+    ntemp = 1;
+    for (ii = 0; ii < ndim; ii++)
+    {
+        /* support for mirror-reversed image sections */
+        if (infpixel[ii] <= inlpixel[ii])
+        {
+           fpixel[ii] = (long) infpixel[ii];
+           lpixel[ii] = (long) inlpixel[ii];
+           inc[ii]    = ininc[ii];
+        }
+        else
+        {
+           fpixel[ii] = (long) inlpixel[ii];
+           lpixel[ii] = (long) infpixel[ii];
+           inc[ii]    = -ininc[ii];
+        }
+
+        /* calc number of tiles in each dimension, and tile containing */
+        /* the first and last pixel we want to read in each dimension  */
+        naxis[ii] = (fptr->Fptr)->znaxis[ii];
+        if (fpixel[ii] < 1)
+        {
+            free(buffer);
+            return(*status = BAD_PIX_NUM);
+        }
+
+        tilesize[ii] = (fptr->Fptr)->tilesize[ii];
+        tiledim[ii] = (naxis[ii] - 1) / tilesize[ii] + 1;
+        ftile[ii]   = (fpixel[ii] - 1)   / tilesize[ii] + 1;
+        ltile[ii]   = minvalue((lpixel[ii] - 1) / tilesize[ii] + 1, 
+                                tiledim[ii]);
+        rowdim[ii]  = ntemp;  /* total tiles in each dimension */
+        ntemp *= tiledim[ii];
+    }
+
+    if (anynul)
+       *anynul = 0;  /* initialize */
+
+    firstelem = 1;
+
+    /* support up to 6 dimensions for now */
+    /* tfpixel and tlpixel are the first and last image pixels */
+    /* along each dimension of the compression tile */
+    for (i5 = ftile[5]; i5 <= ltile[5]; i5++)
+    {
+     tfpixel[5] = (i5 - 1) * tilesize[5] + 1;
+     tlpixel[5] = minvalue(tfpixel[5] + tilesize[5] - 1, 
+                            naxis[5]);
+     thistilesize[5] = tlpixel[5] - tfpixel[5] + 1;
+     offset[5] = (i5 - 1) * rowdim[5];
+     for (i4 = ftile[4]; i4 <= ltile[4]; i4++)
+     {
+      tfpixel[4] = (i4 - 1) * tilesize[4] + 1;
+      tlpixel[4] = minvalue(tfpixel[4] + tilesize[4] - 1, 
+                            naxis[4]);
+      thistilesize[4] = thistilesize[5] * (tlpixel[4] - tfpixel[4] + 1);
+      offset[4] = (i4 - 1) * rowdim[4] + offset[5];
+      for (i3 = ftile[3]; i3 <= ltile[3]; i3++)
+      {
+        tfpixel[3] = (i3 - 1) * tilesize[3] + 1;
+        tlpixel[3] = minvalue(tfpixel[3] + tilesize[3] - 1, 
+                              naxis[3]);
+        thistilesize[3] = thistilesize[4] * (tlpixel[3] - tfpixel[3] + 1);
+        offset[3] = (i3 - 1) * rowdim[3] + offset[4];
+        for (i2 = ftile[2]; i2 <= ltile[2]; i2++)
+        {
+          tfpixel[2] = (i2 - 1) * tilesize[2] + 1;
+          tlpixel[2] = minvalue(tfpixel[2] + tilesize[2] - 1, 
+                                naxis[2]);
+          thistilesize[2] = thistilesize[3] * (tlpixel[2] - tfpixel[2] + 1);
+          offset[2] = (i2 - 1) * rowdim[2] + offset[3];
+          for (i1 = ftile[1]; i1 <= ltile[1]; i1++)
+          {
+            tfpixel[1] = (i1 - 1) * tilesize[1] + 1;
+            tlpixel[1] = minvalue(tfpixel[1] + tilesize[1] - 1, 
+                                  naxis[1]);
+            thistilesize[1] = thistilesize[2] * (tlpixel[1] - tfpixel[1] + 1);
+            offset[1] = (i1 - 1) * rowdim[1] + offset[2];
+            for (i0 = ftile[0]; i0 <= ltile[0]; i0++)
+            {
+              tfpixel[0] = (i0 - 1) * tilesize[0] + 1;
+              tlpixel[0] = minvalue(tfpixel[0] + tilesize[0] - 1, 
+                                    naxis[0]);
+              thistilesize[0] = thistilesize[1] * (tlpixel[0] - tfpixel[0] + 1);
+              /* calculate row of table containing this tile */
+              irow = i0 + offset[1];
+ 
+              /* read and uncompress this row (tile) of the table */
+              /* also do type conversion and undefined pixel substitution */
+              /* at this point */
+
+              imcomp_decompress_tile(fptr, irow, thistilesize[0],
+                    datatype, nullcheck, nullval, buffer, bnullarray, &tilenul,
+                     status);
+
+               /* write the image to the output file */
+
+              if (tilenul && anynul) {     
+                   /* this assumes that the tiled pixels are in the same order
+		      as in the uncompressed FITS image.  This is not necessarily
+		      the case, but it almost alway is in practice.  
+		      Note that null checking is not performed for integer images,
+		      so this could only be a problem for tile compressed floating
+		      point images that use an unconventional tiling pattern.
+		   */
+                   fits_write_imgnull(outfptr, datatype, firstelem, thistilesize[0],
+		      buffer, nullval, status);
+              } else {
+                  fits_write_subset(outfptr, datatype, tfpixel, tlpixel, 
+		      buffer, status);
+              }
+
+              firstelem += thistilesize[0];
+
+            }
+          }
+        }
+      }
+     }
+    }
+
     free(buffer);
 
     return(*status);

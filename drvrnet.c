@@ -996,6 +996,7 @@ int ftp_open(char *filename, int rwmode, int *handle)
     } 
   } else {
     /* Try the .gz one */
+/*
     strcpy(newfilename,filename);
     strcat(newfilename,".gz");
     alarm(NETTIMEOUT);
@@ -1006,7 +1007,7 @@ int ftp_open(char *filename, int rwmode, int *handle)
       strcat(newfilename,".Z");
       alarm(NETTIMEOUT);
       if (ftp_open_network(newfilename,&ftpfile,&command,&sock)) {
-	
+*/	
 	/* Now as given */
 	alarm(0);
 	strcpy(newfilename,filename);
@@ -1017,8 +1018,10 @@ int ftp_open(char *filename, int rwmode, int *handle)
           ffpmsg(newfilename);
 	  goto error;
 	}
+ /*
       }
     }
+*/
   }
 
   closeftpfile++;
@@ -1584,6 +1587,8 @@ int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int *sock)
     fclose(*command);
     return (FILE_NOT_OPENED);
   }
+
+printf("Return: %s",recbuf);
   
   /*  Passive mode response looks like
       227 Entering Passive Mode (129,194,67,8,210,80) */
@@ -1706,7 +1711,9 @@ static int NET_TcpConnect(char *hostname, int port)
    int sock;
    int stat;
    int val = 1;
- 
+
+printf("connecting to %s on port %d\n", hostname,port);
+
    CreateSocketAddress(&sockaddr,hostname,port);
    /* Create socket */
    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -1769,6 +1776,10 @@ static int NET_SendRaw(int sock, const void *buffer, int length, int opt)
 #ifdef DEBUG
    printf ("send raw end, sent %d bytes\n",n);
 #endif
+
+     printf ("sent:   %s", buf);
+
+
    return n;
 }
 
@@ -1792,6 +1803,7 @@ static int NET_RecvRaw(int sock, void *buffer, int length)
       else if (nrecv == 0)
 	break;        /*/ EOF */
    }
+     printf ("NET_RecvRaw received %d bytes: %s",length, buf);
 
    return n;
 }
@@ -2109,6 +2121,7 @@ static int ftp_status(FILE *ftp, char *statusstr)
 #ifdef DEBUG
     printf("ftp_status, return string was %s\n",recbuf);
 #endif
+    printf("Return: %s",recbuf);
 
     recbuf[len] = '\0'; /* make it short */
     if (!strcmp(recbuf,statusstr)) {

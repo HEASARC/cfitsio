@@ -1295,20 +1295,25 @@ be able to simultaneously (or in alternating succession) write to 2
 different locations in the file, CFITSIO recognizes when the file to be
 opened (in the call to fits\_open\_file) has already been opened and
 instead of actually opening the file again, just logically links the
-new file to the old file.  (This only applies if the file is opened
-more than once within the same program, and does not prevent the same
+new file to the old file.  (This of course does not prevent the same
 file from being simultaneously opened by more than one program).  Then
 before CFITSIO reads or writes to either (logical) file, it makes sure
 that any modifications made to the other file have been completely
 flushed from the internal buffers to the file.  Thus, in principle, one
 could open a file twice, in one case pointing to the first extension
 and in the other pointing to the 2nd extension and then write data to
-both extensions, in any order, without danger of corrupting the file,
+both extensions, in any order, without danger of corrupting the file.
 There may be some efficiency penalties in doing this however, since
 CFITSIO has to flush all the internal buffers related to one file
 before switching to the  other, so it would still be prudent to
 minimize the number of times one switches back and forth between doing
 I/O to different HDUs in the same file.
+
+Some restriction apply:  a FITS file cannot be opened the first time
+with READONLY access, and then opened a second time with READWRITE access,
+because this may be phyically impossible (e.g., if the file resides
+on read-only media such as a CDROM).  Also, in multi-threaded environoments,
+one should never open the same file with write access in different threads.
 
 **L.  When the Final Size of the FITS HDU is Unknown
 
@@ -2903,7 +2908,9 @@ with 2 slash characters ('//') will  be ignored and may be used to add
 comments to the file.
 
 >1  Evaluate a boolean expression over the indicated rows, returning an     
-> array of flags indicating which rows evaluated to TRUE/FALSE  \label{fffrow}
+ array of flags indicating which rows evaluated to TRUE/FALSE.
+ Upon return, 
+> *n\_good\_rows contains the number of rows that evaluate to TRUE. \label{fffrow}
 -
   int fits_find_rows / fffrow
       (fitsfile *fptr,  char *expr, long firstrow, long nrows,
@@ -2945,8 +2952,7 @@ then the result will be written to the keyword name given by the
 parName parameter, and the parInfo parameter may be used to supply an
 optional comment for the keyword.  If the keyword does not already
 exist, then the name of the keyword must be preceded with a '\#' character,
-otherwise the result will be written to a column with that name.
-> \label{ffcalc}        
+> otherwise the result will be written to a column with that name. \label{ffcalc}        
 -
   int fits_calculator / ffcalc
       (fitsfile *infptr, char *expr, fitsfile *outfptr, char *parName,
@@ -2955,8 +2961,7 @@ otherwise the result will be written to a column with that name.
 >6  This calculator routine is similar to the previous routine, except
 that the expression is only evaluated over the specified 
 row ranges.  nranges specifies the number of row ranges, and firstrow
-and lastrow give the starting and ending row number of each range.
-> \label{ffcalcrng}
+>and lastrow give the starting and ending row number of each range. \label{ffcalcrng}
 -
   int fits_calculator_rng / ffcalc_rng
       (fitsfile *infptr, char *expr, fitsfile *outfptr, char *parName,
@@ -3319,8 +3324,7 @@ The following utility routines may be useful for certain applications.
     the first NULL is located in the 30th character of the second keyword
     in the header (recall that each header record is 80 characters long).
     Note that this is one of the few CFITSIO routines in which the returned
-    value is not necessarily equal to the status value).
->   \label{ffnchk}
+>    value is not necessarily equal to the status value).   \label{ffnchk}
 -
   int fits_null_check / ffnchk (char *card, > int *status)
 -

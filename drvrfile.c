@@ -768,7 +768,9 @@ int stream_open(char *filename, int rwmode, int *handle)
     /*
         read from stdin
     */
-    rwmode = (int) filename;  /* suppress unused parameter compiler warning */
+    if (filename)
+      rwmode = 1;  /* dummy statement to suppress unused parameter compiler warning */
+
     *handle = 1;     /*  1 = stdin */   
 
     return(0);
@@ -780,8 +782,11 @@ int stream_create(char *filename, int *handle)
         write to stdout
     */
 
-    *handle = (int) filename;  /* suppress unused parameter compiler warning */
-    *handle = 2;         /*  2 = stdout */       
+    if (filename)  /* dummy statement to suppress unused parameter compiler warning */
+       *handle = 2;
+    else
+       *handle = 2;         /*  2 = stdout */       
+
     return(0);
 }
 /*--------------------------------------------------------------------------*/

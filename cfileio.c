@@ -2647,7 +2647,8 @@ int fits_copy_image_section(
     char *cptr, keyname[FLEN_KEYWORD], card[FLEN_CARD];
     int ii, tstatus, anynull;
     long minrow, maxrow, minslice, maxslice, mincube, maxcube;
-    long iii, jjj, kkk, firstpix;
+    long firstpix;
+    long ncubeiter, nsliceiter, nrowiter, kiter, jiter, iiter;
     int klen, kk, jj;
     long outnaxes[9], outsize, buffsize;
     double *buffer, crpix, cdelt;
@@ -2843,24 +2844,58 @@ int fits_copy_image_section(
 
     minrow = fpixels[1];
     maxrow = lpixels[1];
+    if (minrow > maxrow) {
+        nrowiter = (minrow - maxrow + incs[1]) / incs[1];
+    } else {
+        nrowiter = (maxrow - minrow + incs[1]) / incs[1];
+    }
+
     minslice = fpixels[2];
     maxslice = lpixels[2];
+    if (minslice > maxslice) {
+        nsliceiter = (minslice - maxslice + incs[2]) / incs[2];
+    } else {
+        nsliceiter = (maxslice - minslice + incs[2]) / incs[2];
+    }
+
     mincube = fpixels[3];
     maxcube = lpixels[3];
-    
+    if (mincube > maxcube) {
+        ncubeiter = (mincube - maxcube + incs[3]) / incs[3];
+    } else {
+        ncubeiter = (maxcube - mincube + incs[3]) / incs[3];
+    }
+
     firstpix = 1;
-    for (kkk = mincube; kkk <= maxcube; kkk += incs[3])
+    for (kiter = 0; kiter < ncubeiter; kiter++)
     {
-      fpixels[3] = kkk;
-      lpixels[3] = kkk;
-      for (jjj = minslice; jjj <= maxslice; jjj += incs[2])
+      if (mincube > maxcube) {
+	 fpixels[3] = mincube - (kiter * incs[3]);
+      } else {
+	 fpixels[3] = mincube + (kiter * incs[3]);
+      }
+      
+      lpixels[3] = fpixels[3];
+
+      for (jiter = 0; jiter < nsliceiter; jiter++)
       {
-        fpixels[2] = jjj;
-	lpixels[2] = jjj;
-        for (iii = minrow; iii <= maxrow; iii += incs[1])
+        if (minslice > maxslice) {
+	    fpixels[2] = minslice - (jiter * incs[2]);
+        } else {
+	    fpixels[2] = minslice + (jiter * incs[2]);
+        }
+
+	lpixels[2] = fpixels[2];
+
+        for (iiter = 0; iiter < nrowiter; iiter++)
         {
-            fpixels[1] = iii;
-	    lpixels[1] = iii;
+            if (minrow > maxrow) {
+	       fpixels[1] = minrow - (iiter * incs[1]);
+	    } else {
+	       fpixels[1] = minrow + (iiter * incs[1]);
+            }
+
+	    lpixels[1] = fpixels[1];
 
 	    if (bitpix == 8)
 	    {

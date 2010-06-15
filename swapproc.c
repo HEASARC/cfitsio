@@ -35,7 +35,7 @@ void ffswap2(short *svalues,  /* IO - pointer to shorts to be swapped       */
     return;
 }
 /*--------------------------------------------------------------------------*/
-void ffswap4(INT32BIT *ivalues,  /* IO - pointer to floats to be swapped    */
+void ffswap4(INT32BIT *ivalues,  /* IO - pointer to INT*4 to be swapped    */
                  long nvals)     /* I  - number of floats to be swapped     */
 /*
   swap the bytes in the input 4-byte integer: ( 0 1 2 3 -> 3 2 1 0 )
@@ -46,7 +46,7 @@ void ffswap4(INT32BIT *ivalues,  /* IO - pointer to floats to be swapped    */
 
     union u_tag {
         char cvals[4];      /* equivalence an array of 4 bytes with */
-        INT32BIT ival;      /* a float */
+        INT32BIT ival;      /* a I*4 */
     } u;
 
     cvalues = (char *) ivalues;   /* copy the initial pointer value */
