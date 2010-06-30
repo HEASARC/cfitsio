@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include "fitsio2.h"
 #include "region.h"
+static int Pt_in_Poly( double x, double y, int nPts, double *Pts );
 
 /*---------------------------------------------------------------------------*/
 int fits_read_rgnfile( const char *filename,

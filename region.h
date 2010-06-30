@@ -78,6 +78,5 @@ void fits_set_region_components ( SAORegion *Rgn );
 void fits_setup_shape ( RgnShape *shape);
 int fits_read_fits_region ( fitsfile *fptr, WCSdata * wcs, SAORegion **Rgn, int *status);
 int fits_read_ascii_region ( const char *filename, WCSdata * wcs, SAORegion **Rgn, int *status);
-static int Pt_in_Poly( double x, double y, int nPts, double *Pts );
 
 
