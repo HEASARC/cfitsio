@@ -6688,6 +6688,14 @@ int ffoptplt(fitsfile *fptr,      /* O - FITS file pointer                   */
            for (ii = 1; ii <= nkeys; ii++)   /* copy keywords */
            {
               ffgrec(tptr,  ii, card, status);
+
+              /* must reset the PCOUNT keyword to zero in the new output file */
+              if (strncmp(card, "PCOUNT  ",8) == 0) { /* the PCOUNT keyword? */
+	         if (strncmp(card+25, "    0", 5)) {  /* non-zero value? */
+		    strncpy(card, "PCOUNT  =                    0", 30);
+		 }
+	      }   
+ 
               ffprec(fptr, card, status);
            }
 
