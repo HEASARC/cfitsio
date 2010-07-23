@@ -264,6 +264,7 @@ int	ngp_line_from_file(FILE *fp, char **p)
 
    for (;;)
     { c = getc(fp);				/* get next character */
+      if ('\r' == c) continue;			/* carriage return character ?  Just ignore it */
       if (EOF == c)				/* EOF signalled ? */
         { 
           if (ferror(fp)) r = NGP_READ_ERR;	/* was it real error or simply EOF ? */

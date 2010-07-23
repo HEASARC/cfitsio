@@ -1,5 +1,15 @@
                    Log of Changes Made to CFITSIO
 
+
+   - modified the file template reading routine (ngp_line_from_file in 
+     grparser.c) so that it ignores any carriage return characters (\r)
+     in the line, that might be present, e.g. if the file was created on a 
+     Windows machine that uses \r\n as end of line characters.
+
+   - modified the ffoptplt routine in cfileio.c to check if the PCOUNT
+     keyword in the template file has a non-zero value, and if so, resets
+     it to zero in the newly created file.
+
 Version 3.25 - 9 June 2010
 
    - fixed bug that was introduced in version 3.13 that broke the ability
@@ -30,6 +40,8 @@ Version 3.25 - 9 June 2010
    - some compilers define CLOCKS_PER_SEC as a double instead of an integer,
      so added an explicted integer type conversion to 2 statements in
      imcompress.c that used this macro.
+     
+   - removed debugging printf statements in drvrnet.c (15 July)
 
 Version 3.24 - 26 January 2010
 

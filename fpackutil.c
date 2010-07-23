@@ -5,7 +5,11 @@
 #include <time.h>
 #include <float.h>
 #include <signal.h>
+
+#if defined(unix) || defined(__unix__)  || defined(__unix)
 #include <sys/time.h>
+#endif
+
 #include <math.h>
 #include "fitsio.h"
 #include "fpack.h"
@@ -63,6 +67,7 @@ int fp_version (void)
         sprintf(cfitsioversion, " CFITSIO version %5.3f", version);
         fp_msg(cfitsioversion);
         fp_msg ("\n");
+        return(0);
 }
 /*--------------------------------------------------------------------------*/
 int fp_access (char *filename)
@@ -137,10 +142,10 @@ int fp_init (fpstate *fpptr)
 	fpptr->test_all = 0;
 	fpptr->verbose = 0;
 
-	fpptr->prefix[0] = (char) NULL;
-	fpptr->extname[0] = (char) NULL;
+	fpptr->prefix[0] = 0;
+	fpptr->extname[0] = 0;
 	fpptr->delete_suffix = 0;
-	fpptr->outfile[0] = (char) NULL;
+	fpptr->outfile[0] = 0;
 
 	fpptr->firstfile = 1;
 
@@ -241,7 +246,7 @@ int fp_info_hdu (fitsfile *infptr)
 
 	    if (hdutype == IMAGE_HDU) {
 		sprintf (msg, "  %d IMAGE", hdupos); fp_msg (msg);
-                sprintf (msg, " SUMS=%u/%u", ~hdusum, datasum); fp_msg (msg);
+                sprintf (msg, " SUMS=%lu/%lu", ~hdusum, datasum); fp_msg (msg);
 
 		fits_get_img_param (infptr, 9, &bitpix, &naxis, naxes, &stat);
 
@@ -250,11 +255,11 @@ int fp_info_hdu (fitsfile *infptr)
 		if (naxis == 0) {
                     sprintf (msg, " [no_pixels]"); fp_msg (msg);
 		} else if (naxis == 1) {
-		    sprintf (msg, " [%d]", naxes[1]); fp_msg (msg);
+		    sprintf (msg, " [%ld]", naxes[1]); fp_msg (msg);
 		} else {
-		    sprintf (msg, " [%d", naxes[0]); fp_msg (msg);
+		    sprintf (msg, " [%ld", naxes[0]); fp_msg (msg);
 		    for (ii=1; ii < naxis; ii++) {
-			sprintf (msg, "x%d", naxes[ii]); fp_msg (msg);
+			sprintf (msg, "x%ld", naxes[ii]); fp_msg (msg);
 		    }
 		    fp_msg ("]");
 		}
@@ -279,15 +284,15 @@ int fp_info_hdu (fitsfile *infptr)
 
             } else if (hdutype == ASCII_TBL) {
                 sprintf (msg, "  %d ASCII_TBL", hdupos); fp_msg (msg);
-                sprintf (msg, " SUMS=%u/%u\n", ~hdusum, datasum); fp_msg (msg);
+                sprintf (msg, " SUMS=%lu/%lu\n", ~hdusum, datasum); fp_msg (msg);
 
             } else if (hdutype == BINARY_TBL) {
                 sprintf (msg, "  %d BINARY_TBL", hdupos); fp_msg (msg);
-                sprintf (msg, " SUMS=%u/%u\n", ~hdusum, datasum); fp_msg (msg);
+                sprintf (msg, " SUMS=%lu/%lu\n", ~hdusum, datasum); fp_msg (msg);
 
             } else {
                 sprintf (msg, "  %d OTHER", hdupos); fp_msg (msg);
-                sprintf (msg, " SUMS=%u/%u", ~hdusum, datasum); fp_msg (msg);
+                sprintf (msg, " SUMS=%lu/%lu", ~hdusum, datasum); fp_msg (msg);
                 sprintf (msg, " %s\n", val); fp_msg (msg);
             }
 
@@ -1107,10 +1112,10 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 		printf("  Ext BITPIX Dimens.   Nulls    Min    Max     Mean    Sigma  Noise3 Nbits   MaxR\n");
 
 		printf("  %3d  %s", extnum, dtype);
-		sprintf(dimen," (%d", naxes[0]);
+		sprintf(dimen," (%ld", naxes[0]);
 		len =strlen(dimen);
 		for (ii = 1; ii < naxis; ii++) {
-		    sprintf(dimen+len,",%d", naxes[ii]);
+		    sprintf(dimen+len,",%ld", naxes[ii]);
 		    len =strlen(dimen);
 		}
 		strcat(dimen, ")");
@@ -1135,7 +1140,7 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 
 		if (fpvar.outfile[0]) {
 		    fprintf(outreport,
-	" %s  %d %d %d %d %#10.4g %d %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g",
+	" %s  %d %d %ld %ld %#10.4g %d %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g",
 		      infits, extnum, bitpix, naxes[0], naxes[1], origdata, imagestats.n_nulls, imagestats.minval, 
 		      imagestats.maxval, imagestats.mean, imagestats.sigma, 
 		      imagestats.noise1, imagestats.noise3, whole_elapse, whole_cpu, row_elapse, row_cpu);
@@ -1618,6 +1623,7 @@ int fp_test_hdu (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
 /*--------------------------------------------------------------------------*/
 int marktime(int *status)
 {
+#if defined(unix) || defined(__unix__)  || defined(__unix)
         struct  timeval tv;
 /*        struct  timezone tz; */
 
@@ -1628,12 +1634,19 @@ int marktime(int *status)
         startmilli = tv.tv_usec/1000;
 
         scpu = clock();
+#else
+/* don't support high timing precision on Windows machines */
+     	startsec = 0.;
+        startmilli = 0.;
 
+        scpu = clock();
+#endif
 	return( *status );
 }
 /*--------------------------------------------------------------------------*/
 int gettime(float *elapse, float *elapscpu, int *status)
 {
+#if defined(unix) || defined(__unix__)  || defined(__unix)
         struct  timeval tv;
 /*        struct  timezone tz; */
 	int stopmilli;
@@ -1652,6 +1665,11 @@ int gettime(float *elapse, float *elapscpu, int *status)
 printf(" (start: %ld + %d), stop: (%ld + %d) elapse: %f\n ",
 startsec,startmilli,stopsec, stopmilli, *elapse);
 */
+#else
+/* set the elapsed time the same as the CPU time on Windows machines */
+	*elapscpu = (ecpu - scpu) * 1.0 / CLOCKTICKS;
+	*elapse = *elapscpu;  
+#endif
 	return( *status );
 }
 /*--------------------------------------------------------------------------*/

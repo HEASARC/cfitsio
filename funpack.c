@@ -35,7 +35,7 @@ int fu_get_param (int argc, char *argv[], fpstate *fpptr)
             fp_msg ("Error: internal initialization error\n"); exit (-1);
         }
 
-	tile[0] = (char) NULL;
+	tile[0] = 0;
 
         /* by default, .fz suffix characters to be deleted from compressed file */
 	fpptr->delete_suffix = 1;

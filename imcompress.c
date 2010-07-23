@@ -1322,7 +1322,6 @@ int imcomp_compress_tile (fitsfile *outfptr,
     int ihcompscale, cn_zblank, zbitpix, nullval, flagval, gotnulls = 0;
     int intlength;  /* size of integers to be compressed */
     float floatnull, hcompscale;
-    float fminval, fmaxval, delta, zeropt, *fdata, *ftemp;
     double doublenull, noise3;
     unsigned long dithersum;
 

@@ -5,7 +5,7 @@
  */
 
 #include <ctype.h>
-#include <signal.h>
+/* #include <signal.h> */
 #include "fitsio.h"
 #include "fpack.h"
 
@@ -39,7 +39,7 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
             fp_msg ("Error: internal initialization error\n"); exit (-1);
         }
 
-	tile[0] = (char) NULL;
+	tile[0] = 0;
 
 	/* flags must come first and be separately specified
 	 */
