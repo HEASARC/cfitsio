@@ -934,6 +934,9 @@ int ffu2fstr(unsigned short *input, /* I - array of values to be converted  */
 {
     long ii;
     double dvalue;
+    char *cptr;
+    
+    cptr = output;
 
     if (scale == 1. && zero == 0.)
     {       
@@ -958,5 +961,9 @@ int ffu2fstr(unsigned short *input, /* I - array of values to be converted  */
             *status = OVERFLOW_ERR;
         }
     }
+
+    /* replace any commas with periods (e.g., in French locale) */
+    while ((cptr = strchr(cptr, ','))) *cptr = '.';
+    
     return(*status);
 }

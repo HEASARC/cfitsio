@@ -44,7 +44,6 @@ CLEAN :
 	-@erase "$(INTDIR)\buffers.obj"
 	-@erase "$(INTDIR)\cfileio.obj"
 	-@erase "$(INTDIR)\checksum.obj"
-	-@erase "$(INTDIR)\compress.obj"
 	-@erase "$(INTDIR)\drvrfile.obj"
 	-@erase "$(INTDIR)\drvrmem.obj"
 	-@erase "$(INTDIR)\editcol.obj"
@@ -94,15 +93,27 @@ CLEAN :
 	-@erase "$(INTDIR)\region.obj"
 	-@erase "$(INTDIR)\scalnull.obj"
 	-@erase "$(INTDIR)\swapproc.obj"
+	-@erase "$(INTDIR)\wcssub.obj"
+	-@erase "$(INTDIR)\wcsutil.obj"
 	-@erase "$(INTDIR)\imcompress.obj"
 	-@erase "$(INTDIR)\ricecomp.obj"
 	-@erase "$(INTDIR)\quantize.obj"
 	-@erase "$(INTDIR)\pliocomp.obj"
 	-@erase "$(INTDIR)\fits_hcompress.obj"
 	-@erase "$(INTDIR)\fits_hdecompress.obj"
+	-@erase "$(INTDIR)\zuncompress.obj"
+	-@erase "$(INTDIR)\zcompress.obj"
+	-@erase "$(INTDIR)\adler32.obj"
+	-@erase "$(INTDIR)\crc32.obj"
+	-@erase "$(INTDIR)\inffast.obj"
+	-@erase "$(INTDIR)\inftrees.obj"
+	-@erase "$(INTDIR)\trees.obj"
+	-@erase "$(INTDIR)\zutil.obj"
+	-@erase "$(INTDIR)\deflate.obj"
+	-@erase "$(INTDIR)\infback.obj"
+	-@erase "$(INTDIR)\inflate.obj"
+	-@erase "$(INTDIR)\uncompr.obj"
 	-@erase "$(INTDIR)\vc60.idb"
-	-@erase "$(INTDIR)\wcssub.obj"
-	-@erase "$(INTDIR)\wcsutil.obj"
 	-@erase "$(OUTDIR)\cfitsio.dll"
 	-@erase "$(OUTDIR)\cfitsio.exp"
 	-@erase "$(OUTDIR)\cfitsio.lib"
@@ -126,7 +137,6 @@ LINK32_OBJS= \
 	"$(INTDIR)\buffers.obj" \
 	"$(INTDIR)\cfileio.obj" \
 	"$(INTDIR)\checksum.obj" \
-	"$(INTDIR)\compress.obj" \
 	"$(INTDIR)\drvrfile.obj" \
 	"$(INTDIR)\drvrmem.obj" \
 	"$(INTDIR)\editcol.obj" \
@@ -176,14 +186,26 @@ LINK32_OBJS= \
 	"$(INTDIR)\region.obj" \
 	"$(INTDIR)\scalnull.obj" \
 	"$(INTDIR)\swapproc.obj" \
+	"$(INTDIR)\wcssub.obj"  \
+	"$(INTDIR)\wcsutil.obj" \
 	"$(INTDIR)\imcompress.obj" \
 	"$(INTDIR)\ricecomp.obj" \
 	"$(INTDIR)\quantize.obj" \
 	"$(INTDIR)\pliocomp.obj" \
 	"$(INTDIR)\fits_hcompress.obj" \
 	"$(INTDIR)\fits_hdecompress.obj" \
-	"$(INTDIR)\wcssub.obj"  \
-	"$(INTDIR)\wcsutil.obj" 
+	"$(INTDIR)\zuncompress.obj" \
+	"$(INTDIR)\zcompress.obj" \
+	"$(INTDIR)\adler32.obj" \
+	"$(INTDIR)\crc32.obj" \
+	"$(INTDIR)\inffast.obj" \
+	"$(INTDIR)\inftrees.obj" \
+	"$(INTDIR)\trees.obj" \
+	"$(INTDIR)\zutil.obj" \
+	"$(INTDIR)\deflate.obj" \
+	"$(INTDIR)\infback.obj" \
+	"$(INTDIR)\inflate.obj" \
+	"$(INTDIR)\uncompr.obj" 
 
 "$(OUTDIR)\cfitsio.dll" : $(LINK32_OBJS) WINDUMP
 	windumpexts -o $(DEF_FILE) cfitsio.dll $(LINK32_OBJS)
@@ -206,7 +228,6 @@ CLEAN :
 	-@erase "$(INTDIR)\buffers.obj"
 	-@erase "$(INTDIR)\cfileio.obj"
 	-@erase "$(INTDIR)\checksum.obj"
-	-@erase "$(INTDIR)\compress.obj"
 	-@erase "$(INTDIR)\drvrfile.obj"
 	-@erase "$(INTDIR)\drvrmem.obj"
 	-@erase "$(INTDIR)\editcol.obj"
@@ -266,6 +287,18 @@ CLEAN :
 	-@erase "$(INTDIR)\pliocomp.obj"
 	-@erase "$(INTDIR)\fits_hcompress.obj"
 	-@erase "$(INTDIR)\fits_hdecompress.obj"
+	-@erase "$(INTDIR)\zuncompress.obj"
+	-@erase "$(INTDIR)\zcompress.obj"
+	-@erase "$(INTDIR)\adler32.obj"
+	-@erase "$(INTDIR)\crc32.obj"
+	-@erase "$(INTDIR)\inffast.obj"
+	-@erase "$(INTDIR)\inftrees.obj"
+	-@erase "$(INTDIR)\trees.obj"
+	-@erase "$(INTDIR)\zutil.obj"
+	-@erase "$(INTDIR)\deflate.obj"
+	-@erase "$(INTDIR)\infback.obj"
+	-@erase "$(INTDIR)\inflate.obj"
+	-@erase "$(INTDIR)\uncompr.obj"
 	-@erase "$(OUTDIR)\cfitsio.dll"
 	-@erase "$(OUTDIR)\cfitsio.exp"
 	-@erase "$(OUTDIR)\cfitsio.ilk"
@@ -291,7 +324,6 @@ LINK32_OBJS= \
 	"$(INTDIR)\buffers.obj" \
 	"$(INTDIR)\cfileio.obj" \
 	"$(INTDIR)\checksum.obj" \
-	"$(INTDIR)\compress.obj" \
 	"$(INTDIR)\drvrfile.obj" \
 	"$(INTDIR)\drvrmem.obj" \
 	"$(INTDIR)\editcol.obj" \
@@ -349,6 +381,18 @@ LINK32_OBJS= \
 	"$(INTDIR)\pliocomp.obj" \
 	"$(INTDIR)\fits_hcompress.obj" \
 	"$(INTDIR)\fits_hdecompress.obj" \
+	"$(INTDIR)\zuncompress.obj" \
+	"$(INTDIR)\zcompress.obj" \
+	"$(INTDIR)\adler32.obj" \
+	"$(INTDIR)\crc32.obj" \
+	"$(INTDIR)\inffast.obj" \
+	"$(INTDIR)\inftrees.obj" \
+	"$(INTDIR)\trees.obj" \
+	"$(INTDIR)\zutil.obj" \
+	"$(INTDIR)\deflate.obj" \
+	"$(INTDIR)\infback.obj" \
+	"$(INTDIR)\inflate.obj" \
+	"$(INTDIR)\uncompr.obj" 
 
 "$(OUTDIR)\cfitsio.dll" : $(LINK32_OBJS) WINDUMP
 	windumpexts -o $(DEF_FILE) cfitsio.dll $(LINK32_OBJS)    
@@ -412,11 +456,6 @@ SOURCE=.\cfileio.c
 SOURCE=.\checksum.c
 
 "$(INTDIR)\checksum.obj" : $(SOURCE) "$(INTDIR)"
-
-
-SOURCE=.\compress.c
-
-"$(INTDIR)\compress.obj" : $(SOURCE) "$(INTDIR)"
 
 
 SOURCE=.\drvrfile.c
@@ -695,6 +734,54 @@ SOURCE=fits_hcompress.c
 SOURCE=fits_hdecompress.c
 
 "$(INTDIR)\fits_hdecompress.obj" : $(SOURCE) "$(INTDIR)"
+
+SOURCE=zuncompress.c
+
+"$(INTDIR)\zuncompress.obj" : $(SOURCE) "$(INTDIR)"
+
+SOURCE=zcompress.c
+
+"$(INTDIR)\zcompress.obj" : $(SOURCE) "$(INTDIR)"
+
+SOURCE=adler32.c
+
+"$(INTDIR)\adler32.obj" : $(SOURCE) "$(INTDIR)"
+
+SOURCE=crc32.c
+
+"$(INTDIR)\crc32.obj" : $(SOURCE) "$(INTDIR)"
+
+SOURCE=inffast.c
+
+"$(INTDIR)\inffast.obj" : $(SOURCE) "$(INTDIR)"
+
+SOURCE=inftrees.c
+
+"$(INTDIR)\inftrees.obj" : $(SOURCE) "$(INTDIR)"
+
+SOURCE=trees.c
+
+"$(INTDIR)\trees.obj" : $(SOURCE) "$(INTDIR)"
+
+SOURCE=zutil.c
+
+"$(INTDIR)\zutil.obj" : $(SOURCE) "$(INTDIR)"
+
+SOURCE=deflate.c
+
+"$(INTDIR)\deflate.obj" : $(SOURCE) "$(INTDIR)"
+
+SOURCE=infback.c
+
+"$(INTDIR)\infback.obj" : $(SOURCE) "$(INTDIR)"
+
+SOURCE=inflate.c
+
+"$(INTDIR)\inflate.obj" : $(SOURCE) "$(INTDIR)"
+
+SOURCE=uncompr.c
+
+"$(INTDIR)\uncompr.obj" : $(SOURCE) "$(INTDIR)"
 
 !ENDIF 
 

@@ -12,9 +12,12 @@
 /* #include <sys/stat.h> */
 /* #include <sys/types.h> */
 
-#define	FPACK_VERSION	"1.4.1 (Jan 2010)"
+#define	FPACK_VERSION	"1.5.1 (Dec 2010)"
 /*
 VERSION	History
+1.5.1 (December 2010) Added prototype, mainly hidden, support for compressing 
+      binary tables.  
+1.5.0 (August 2010) Added the -i2f option to lossy compress integer images.
 1.4.0 (Jan 2010) Reduced the default value for the q floating point image 
       quantization parameter from 16 to 4.  This results in about 50% better
       compression (from about 4.6x to 6.4) with no lost of significant information 
@@ -62,6 +65,9 @@ typedef struct
 	float	scale;
 	float	rescale_noise;
 	int	smooth;
+	int	int_to_float;
+	float	n3ratio;
+	float	n3min;
 	long	ntile[MAX_COMPRESS_DIM];
 
 	int	to_stdout;
@@ -71,6 +77,7 @@ typedef struct
 	int	do_not_prompt;
 	int	do_checksums;
 	int	do_gzip_file;
+	int     do_tables;  
 	int	test_all;
 	int	verbose;
 
@@ -97,6 +104,7 @@ typedef struct
 
 int fp_get_param (int argc, char *argv[], fpstate *fpptr);
 void abort_fpack(int sig);
+void fp_abort_output (fitsfile *infptr, fitsfile *outfptr, int stat); 
 int fp_usage (void);
 int fp_help (void);
 int fp_hint (void); 
@@ -111,7 +119,7 @@ int fp_unpack (char *infits, char *outfits, fpstate fpvar);
 int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar);
 int fp_pack_hdu (fitsfile *infptr, fitsfile *outfptr, fpstate fpvar, 
     int *islossless, int *status);
-int fp_unpack_hdu (fitsfile *infptr, fitsfile *outfptr, int *status);
+int fp_unpack_hdu (fitsfile *infptr, fitsfile *outfptr, fpstate fpvar, int *status);
 int fits_read_image_speed (fitsfile *infptr, float *whole_elapse, 
     float *whole_cpu, float *row_elapse, float *row_cpu, int *status);
 int fp_test_hdu (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2, 
@@ -121,9 +129,9 @@ int gettime(float *elapse, float *elapscpu, int *status);
 int fits_read_image_speed (fitsfile *infptr, float *whole_elapse, 
     float *whole_cpu, float *row_elapse, float *row_cpu, int *status);
 
-int fp_i2stat(fitsfile *infptr, int naxis, long *naxes, int *status);
-int fp_i4stat(fitsfile *infptr, int naxis, long *naxes, int *status);
-int fp_r4stat(fitsfile *infptr, int naxis, long *naxes, int *status);
+int fp_i2stat(fitsfile *infptr, int naxis, long *naxes, imgstats *imagestats, int *status);
+int fp_i4stat(fitsfile *infptr, int naxis, long *naxes, imgstats *imagestats, int *status);
+int fp_r4stat(fitsfile *infptr, int naxis, long *naxes, imgstats *imagestats, int *status);
 int fp_i2rescale(fitsfile *infptr, int naxis, long *naxes, double rescale,
     fitsfile *outfptr, int *status);
 int fp_i4rescale(fitsfile *infptr, int naxis, long *naxes, double rescale,

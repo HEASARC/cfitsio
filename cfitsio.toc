@@ -36,88 +36,88 @@
 \contentsline {section}{\numberline {5.4}Header Keyword Read/Write Routines}{35}
 \contentsline {subsection}{\numberline {5.4.1}Keyword Reading Routines}{35}
 \contentsline {subsection}{\numberline {5.4.2}Keyword Writing Routines}{37}
-\contentsline {section}{\numberline {5.5}Primary Array or IMAGE Extension I/O Routines}{39}
-\contentsline {section}{\numberline {5.6}Image Compression}{43}
+\contentsline {section}{\numberline {5.5}Primary Array or IMAGE Extension I/O Routines}{40}
+\contentsline {section}{\numberline {5.6}Image Compression}{44}
 \contentsline {section}{\numberline {5.7}ASCII and Binary Table Routines}{48}
 \contentsline {subsection}{\numberline {5.7.1}Create New Table}{48}
-\contentsline {subsection}{\numberline {5.7.2}Column Information Routines}{48}
-\contentsline {subsection}{\numberline {5.7.3}Routines to Edit Rows or Columns}{51}
+\contentsline {subsection}{\numberline {5.7.2}Column Information Routines}{49}
+\contentsline {subsection}{\numberline {5.7.3}Routines to Edit Rows or Columns}{52}
 \contentsline {subsection}{\numberline {5.7.4}Read and Write Column Data Routines}{53}
 \contentsline {subsection}{\numberline {5.7.5}Row Selection and Calculator Routines}{55}
-\contentsline {subsection}{\numberline {5.7.6}Column Binning or Histogramming Routines}{56}
+\contentsline {subsection}{\numberline {5.7.6}Column Binning or Histogramming Routines}{57}
 \contentsline {section}{\numberline {5.8}Utility Routines}{59}
 \contentsline {subsection}{\numberline {5.8.1}File Checksum Routines}{59}
 \contentsline {subsection}{\numberline {5.8.2}Date and Time Utility Routines}{60}
-\contentsline {subsection}{\numberline {5.8.3}General Utility Routines}{61}
-\contentsline {chapter}{\numberline {6} The CFITSIO Iterator Function }{71}
-\contentsline {section}{\numberline {6.1}The Iterator Work Function}{72}
-\contentsline {section}{\numberline {6.2}The Iterator Driver Function}{74}
-\contentsline {section}{\numberline {6.3}Guidelines for Using the Iterator Function}{75}
-\contentsline {section}{\numberline {6.4}Complete List of Iterator Routines}{76}
-\contentsline {chapter}{\numberline {7} World Coordinate System Routines }{79}
-\contentsline {section}{\numberline {7.1} Self-contained WCS Routines}{80}
-\contentsline {chapter}{\numberline {8} Hierarchical Grouping Routines }{83}
-\contentsline {section}{\numberline {8.1}Grouping Table Routines}{84}
-\contentsline {section}{\numberline {8.2}Group Member Routines}{86}
-\contentsline {chapter}{\numberline {9} Specialized CFITSIO Interface Routines }{89}
-\contentsline {section}{\numberline {9.1}FITS File Access Routines}{89}
-\contentsline {section}{\numberline {9.2}HDU Access Routines}{92}
-\contentsline {section}{\numberline {9.3}Specialized Header Keyword Routines}{95}
-\contentsline {subsection}{\numberline {9.3.1}Header Information Routines}{95}
-\contentsline {subsection}{\numberline {9.3.2}Read and Write the Required Keywords}{95}
-\contentsline {subsection}{\numberline {9.3.3}Write Keyword Routines}{97}
-\contentsline {subsection}{\numberline {9.3.4}Insert Keyword Routines}{99}
-\contentsline {subsection}{\numberline {9.3.5}Read Keyword Routines}{100}
-\contentsline {subsection}{\numberline {9.3.6}Modify Keyword Routines}{102}
-\contentsline {subsection}{\numberline {9.3.7}Update Keyword Routines}{103}
-\contentsline {section}{\numberline {9.4}Define Data Scaling and Undefined Pixel Parameters}{103}
-\contentsline {section}{\numberline {9.5}Specialized FITS Primary Array or IMAGE Extension I/O Routines}{104}
-\contentsline {section}{\numberline {9.6}Specialized FITS ASCII and Binary Table Routines}{108}
-\contentsline {subsection}{\numberline {9.6.1}General Column Routines}{108}
-\contentsline {subsection}{\numberline {9.6.2}Low-Level Table Access Routines}{109}
-\contentsline {subsection}{\numberline {9.6.3}Write Column Data Routines}{110}
-\contentsline {subsection}{\numberline {9.6.4}Read Column Data Routines}{111}
-\contentsline {chapter}{\numberline {10} Extended File Name Syntax }{115}
-\contentsline {section}{\numberline {10.1}Overview}{115}
-\contentsline {section}{\numberline {10.2}Filetype}{118}
-\contentsline {subsection}{\numberline {10.2.1}Notes about HTTP proxy servers}{118}
-\contentsline {subsection}{\numberline {10.2.2}Notes about the stream filetype driver}{119}
-\contentsline {subsection}{\numberline {10.2.3}Notes about the gsiftp filetype}{120}
-\contentsline {subsection}{\numberline {10.2.4}Notes about the root filetype}{120}
-\contentsline {subsection}{\numberline {10.2.5}Notes about the shmem filetype:}{122}
-\contentsline {section}{\numberline {10.3}Base Filename}{122}
-\contentsline {section}{\numberline {10.4}Output File Name when Opening an Existing File}{124}
-\contentsline {section}{\numberline {10.5}Template File Name when Creating a New File}{126}
-\contentsline {section}{\numberline {10.6}Image Tile-Compression Specification}{126}
-\contentsline {section}{\numberline {10.7}HDU Location Specification}{126}
-\contentsline {section}{\numberline {10.8}Image Section}{128}
-\contentsline {section}{\numberline {10.9}Image Transform Filters}{129}
-\contentsline {section}{\numberline {10.10}Column and Keyword Filtering Specification}{130}
-\contentsline {section}{\numberline {10.11}Row Filtering Specification}{132}
-\contentsline {subsection}{\numberline {10.11.1}General Syntax}{133}
-\contentsline {subsection}{\numberline {10.11.2}Bit Masks}{136}
-\contentsline {subsection}{\numberline {10.11.3}Vector Columns}{136}
-\contentsline {subsection}{\numberline {10.11.4}Good Time Interval Filtering}{138}
-\contentsline {subsection}{\numberline {10.11.5}Spatial Region Filtering}{139}
-\contentsline {subsection}{\numberline {10.11.6}Example Row Filters}{141}
-\contentsline {section}{\numberline {10.12} Binning or Histogramming Specification}{142}
-\contentsline {chapter}{\numberline {11}Template Files }{145}
-\contentsline {section}{\numberline {11.1}Detailed Template Line Format}{145}
-\contentsline {section}{\numberline {11.2}Auto-indexing of Keywords}{146}
-\contentsline {section}{\numberline {11.3}Template Parser Directives}{147}
-\contentsline {section}{\numberline {11.4}Formal Template Syntax}{147}
-\contentsline {section}{\numberline {11.5}Errors}{148}
-\contentsline {section}{\numberline {11.6}Examples}{148}
-\contentsline {chapter}{\numberline {12} Local FITS Conventions }{151}
-\contentsline {section}{\numberline {12.1}64-Bit Long Integers}{151}
-\contentsline {section}{\numberline {12.2}Long String Keyword Values.}{151}
-\contentsline {section}{\numberline {12.3}Arrays of Fixed-Length Strings in Binary Tables}{153}
-\contentsline {section}{\numberline {12.4}Keyword Units Strings}{153}
-\contentsline {section}{\numberline {12.5}HIERARCH Convention for Extended Keyword Names}{154}
-\contentsline {section}{\numberline {12.6}Tile-Compressed Image Format}{154}
-\contentsline {chapter}{\numberline {13} Optimizing Programs }{157}
-\contentsline {section}{\numberline {13.1}How CFITSIO Manages Data I/O}{157}
-\contentsline {section}{\numberline {13.2}Optimization Strategies}{158}
-\contentsline {chapter}{\numberline {A}Index of Routines }{161}
-\contentsline {chapter}{\numberline {B}Parameter Definitions }{165}
-\contentsline {chapter}{\numberline {C}CFITSIO Error Status Codes }{171}
+\contentsline {subsection}{\numberline {5.8.3}General Utility Routines}{62}
+\contentsline {chapter}{\numberline {6} The CFITSIO Iterator Function }{73}
+\contentsline {section}{\numberline {6.1}The Iterator Work Function}{74}
+\contentsline {section}{\numberline {6.2}The Iterator Driver Function}{76}
+\contentsline {section}{\numberline {6.3}Guidelines for Using the Iterator Function}{77}
+\contentsline {section}{\numberline {6.4}Complete List of Iterator Routines}{78}
+\contentsline {chapter}{\numberline {7} World Coordinate System Routines }{81}
+\contentsline {section}{\numberline {7.1} Self-contained WCS Routines}{82}
+\contentsline {chapter}{\numberline {8} Hierarchical Grouping Routines }{85}
+\contentsline {section}{\numberline {8.1}Grouping Table Routines}{86}
+\contentsline {section}{\numberline {8.2}Group Member Routines}{88}
+\contentsline {chapter}{\numberline {9} Specialized CFITSIO Interface Routines }{91}
+\contentsline {section}{\numberline {9.1}FITS File Access Routines}{91}
+\contentsline {section}{\numberline {9.2}HDU Access Routines}{94}
+\contentsline {section}{\numberline {9.3}Specialized Header Keyword Routines}{97}
+\contentsline {subsection}{\numberline {9.3.1}Header Information Routines}{97}
+\contentsline {subsection}{\numberline {9.3.2}Read and Write the Required Keywords}{97}
+\contentsline {subsection}{\numberline {9.3.3}Write Keyword Routines}{99}
+\contentsline {subsection}{\numberline {9.3.4}Insert Keyword Routines}{101}
+\contentsline {subsection}{\numberline {9.3.5}Read Keyword Routines}{102}
+\contentsline {subsection}{\numberline {9.3.6}Modify Keyword Routines}{104}
+\contentsline {subsection}{\numberline {9.3.7}Update Keyword Routines}{105}
+\contentsline {section}{\numberline {9.4}Define Data Scaling and Undefined Pixel Parameters}{105}
+\contentsline {section}{\numberline {9.5}Specialized FITS Primary Array or IMAGE Extension I/O Routines}{106}
+\contentsline {section}{\numberline {9.6}Specialized FITS ASCII and Binary Table Routines}{110}
+\contentsline {subsection}{\numberline {9.6.1}General Column Routines}{110}
+\contentsline {subsection}{\numberline {9.6.2}Low-Level Table Access Routines}{111}
+\contentsline {subsection}{\numberline {9.6.3}Write Column Data Routines}{112}
+\contentsline {subsection}{\numberline {9.6.4}Read Column Data Routines}{113}
+\contentsline {chapter}{\numberline {10} Extended File Name Syntax }{117}
+\contentsline {section}{\numberline {10.1}Overview}{117}
+\contentsline {section}{\numberline {10.2}Filetype}{120}
+\contentsline {subsection}{\numberline {10.2.1}Notes about HTTP proxy servers}{120}
+\contentsline {subsection}{\numberline {10.2.2}Notes about the stream filetype driver}{121}
+\contentsline {subsection}{\numberline {10.2.3}Notes about the gsiftp filetype}{122}
+\contentsline {subsection}{\numberline {10.2.4}Notes about the root filetype}{122}
+\contentsline {subsection}{\numberline {10.2.5}Notes about the shmem filetype:}{124}
+\contentsline {section}{\numberline {10.3}Base Filename}{124}
+\contentsline {section}{\numberline {10.4}Output File Name when Opening an Existing File}{126}
+\contentsline {section}{\numberline {10.5}Template File Name when Creating a New File}{128}
+\contentsline {section}{\numberline {10.6}Image Tile-Compression Specification}{128}
+\contentsline {section}{\numberline {10.7}HDU Location Specification}{128}
+\contentsline {section}{\numberline {10.8}Image Section}{130}
+\contentsline {section}{\numberline {10.9}Image Transform Filters}{131}
+\contentsline {section}{\numberline {10.10}Column and Keyword Filtering Specification}{132}
+\contentsline {section}{\numberline {10.11}Row Filtering Specification}{134}
+\contentsline {subsection}{\numberline {10.11.1}General Syntax}{135}
+\contentsline {subsection}{\numberline {10.11.2}Bit Masks}{138}
+\contentsline {subsection}{\numberline {10.11.3}Vector Columns}{138}
+\contentsline {subsection}{\numberline {10.11.4}Good Time Interval Filtering}{140}
+\contentsline {subsection}{\numberline {10.11.5}Spatial Region Filtering}{141}
+\contentsline {subsection}{\numberline {10.11.6}Example Row Filters}{143}
+\contentsline {section}{\numberline {10.12} Binning or Histogramming Specification}{144}
+\contentsline {chapter}{\numberline {11}Template Files }{147}
+\contentsline {section}{\numberline {11.1}Detailed Template Line Format}{147}
+\contentsline {section}{\numberline {11.2}Auto-indexing of Keywords}{148}
+\contentsline {section}{\numberline {11.3}Template Parser Directives}{149}
+\contentsline {section}{\numberline {11.4}Formal Template Syntax}{149}
+\contentsline {section}{\numberline {11.5}Errors}{150}
+\contentsline {section}{\numberline {11.6}Examples}{150}
+\contentsline {chapter}{\numberline {12} Local FITS Conventions }{153}
+\contentsline {section}{\numberline {12.1}64-Bit Long Integers}{153}
+\contentsline {section}{\numberline {12.2}Long String Keyword Values.}{153}
+\contentsline {section}{\numberline {12.3}Arrays of Fixed-Length Strings in Binary Tables}{155}
+\contentsline {section}{\numberline {12.4}Keyword Units Strings}{155}
+\contentsline {section}{\numberline {12.5}HIERARCH Convention for Extended Keyword Names}{156}
+\contentsline {section}{\numberline {12.6}Tile-Compressed Image Format}{156}
+\contentsline {chapter}{\numberline {13} Optimizing Programs }{159}
+\contentsline {section}{\numberline {13.1}How CFITSIO Manages Data I/O}{159}
+\contentsline {section}{\numberline {13.2}Optimization Strategies}{160}
+\contentsline {chapter}{\numberline {A}Index of Routines }{163}
+\contentsline {chapter}{\numberline {B}Parameter Definitions }{169}
+\contentsline {chapter}{\numberline {C}CFITSIO Error Status Codes }{175}

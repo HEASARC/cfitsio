@@ -55,6 +55,7 @@
 #define fits_make_nkey      ffnkey
 #define fits_get_keyclass   ffgkcl
 #define fits_get_keytype    ffdtyp
+#define fits_get_inttype    ffinttyp
 #define fits_parse_value    ffpsvc
 #define fits_get_keyname    ffgknm
 #define fits_parse_template ffgthd
@@ -150,6 +151,7 @@
 #define fits_read_atblhdrll    ffghtbll
 #define fits_read_btblhdrll    ffghbnll
 #define fits_hdr2str           ffhdr2str
+#define fits_convert_hdr2str   ffcnvthdr2str
 
 #define fits_update_card       ffucrd
 #define fits_update_key        ffuky
@@ -545,6 +547,7 @@
 #define fits_insert_cols  fficls
 #define fits_delete_col   ffdcol
 #define fits_copy_col     ffcpcl
+#define fits_copy_rows    ffcprw
 #define fits_modify_vector_len  ffmvec
 
 #define fits_read_img_coord ffgics

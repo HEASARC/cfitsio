@@ -31,7 +31,7 @@
 \medskip
 \medskip
 \begin{center}
-{\Large Version 3.0 \\}
+{\Large Version 3.2 \\}
 \end{center}
 \bigskip
 \vskip 2.5cm
@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large April 2009\\}
+{\Large December 2010\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -238,8 +238,6 @@ claimed in the United States under Title 17, U.S. Code.
 Permission to freely use, copy, modify, and distribute this software
 and its documentation without fee is hereby granted, provided that this
 copyright notice and disclaimer of warranty appears in all copies.
-(However, see the restriction on the use of the gzip compression code,
-below).
 
 DISCLAIMER:
 
@@ -258,32 +256,6 @@ PERSONS OR PROPERTY OR OTHERWISE, AND WHETHER OR NOT LOSS WAS SUSTAINED
 FROM, OR AROSE OUT OF THE RESULTS OF, OR USE OF, THE SOFTWARE OR
 SERVICES PROVIDED HEREUNDER."
 
-The file compress.c contains (slightly modified) source code that
-originally came from gzip-1.2.4, copyright (C) 1992-1993 by Jean-loup
-Gailly.  This gzip code is distributed under the GNU General Public
-License and thus requires that any software that uses the CFITSIO
-library (which in turn uses the gzip code) must conform to the
-provisions in the GNU General Public License.  A copy of the GNU
-license is included at the beginning of compress.c file.
-
-Similarly, the file wcsutil.c contains 2 slightly modified routines
-from the Classic AIPS package that are also distributed under the GNU
-General Public License.
-
-Alternate versions of the compress.c and wcsutil.c files (called
-compress\_alternate.c and wcsutil\_alternate.c) are provided for users
-who want to use the CFITSIO
-library but are unwilling or unable to publicly release their software
-under the terms of the GNU General Public License.   These alternate
-versions contains non-functional stubs for the file compression and
-uncompression routines and the world coordinate transformation routines
-used by CFITSIO.  Replace the file `compress.c'
-with `compress\_alternate.c' and 'wcsutil.c' with 'wcsutil\_alternate.c
-before compiling the CFITSIO library.  This
-will produce a version of CFITSIO which does not support reading or
-writing compressed FITS files, or doing image coordinate transformations,
-but is otherwise identical to the standard version.
-
 \chapter{ Creating the CFITSIO Library }
 
 
@@ -293,7 +265,7 @@ The CFITSIO code is contained in about 40 C source files (*.c) and header
 files (*.h). On VAX/VMS systems 2 assembly-code files (vmsieeed.mar and
 vmsieeer.mar) are also needed.
 
-CFITSIO has currently been tested on the following platforms:
+CFITSIO has currently been tested on the following platforms (not up-to-date):
 
 \begin{verbatim}
   OPERATING SYSTEM           COMPILER
@@ -2089,9 +2061,15 @@ header.
     Each 80-character fixed-length keyword record is appended to the
     output character string, in order, with no intervening separator or
     terminating characters. The last header record is terminated with
-    a NULL character.  This routine allocates memory for the returned
+    a NULL character.  These routine allocates memory for the returned
     character array, so the calling program must free the memory when
     finished.
+
+    There are 2 related routines: fits\_hdr2str simply concatenates all
+    the existing keywords in the header; fits\_convert\_hdr2str is similar,
+    except that if the CHDU is a tile compressed image (stored in a binary
+    table) then it will first convert that header back to that of the corresponding
+    normal FITS image before concatenating the keywords.
 
     Selected keywords may be excluded from the returned character string.
     If the second parameter (nocomments) is TRUE (nonzero) then any
@@ -2102,11 +2080,15 @@ header.
     that are to be excluded from the output character string. Wild card
     characters (*, ?, and \#) may be used in the excluded keyword names.
     If no additional keywords are to be excluded, then set nexc = 0 and
-   specify NULL for the the **header  parameter.  \label{ffhdr2str}
+   specify NULL for the the **exclist  parameter.  \label{ffhdr2str}
 \end{description}
 
 \begin{verbatim}
-  int fits_hdr2str
+  int fits_hdr2str / ffhdr2str
+      (fitsfile *fptr, int nocomments, char **exclist, int nexc,
+      > char **header, int *nkeys, int *status)
+
+  int fits_convert_hdr2str / ffcnvthdr2str
       (fitsfile *fptr, int nocomments, char **exclist, int nexc,
       > char **header, int *nkeys, int *status)
 \end{verbatim}
@@ -3103,7 +3085,20 @@ spaces).  Trailing blank characters are not significant.
 \end{verbatim}
 
 \begin{description}
-\item[4 ] Modify the vector length of a binary table column (e.g.,
+\item[4 ] Copy 'nrows' consecutive rows from one table to another, beginning
+    with row 'firstrow'.  These rows will be appended to any existing
+    rows in the output table.
+   Note that the first row in a table is at row = 1. \label{ffcprw}
+\end{description}
+
+\begin{verbatim}
+  int fits_copy_rows / ffcprw
+      (fitsfile *infptr, fitsfile *outfptr, LONGLONG firstrow,
+       LONGLONG nrows, > int *status);
+\end{verbatim}
+
+\begin{description}
+\item[5 ] Modify the vector length of a binary table column (e.g.,
     change a column from TFORMn = '1E' to '20E').  The vector
    length may be increased or decreased from the current value. \label{ffmvec}
 \end{description}
@@ -3284,7 +3279,9 @@ comments to the file.
 
 \begin{description}
 \item[3 ]Evaluate an expression on all rows of a table.  If the input and output
-files are not the same, copy the TRUE rows to the output file.  If the
+files are not the same, copy the TRUE rows to the output file; if the output
+table is not empty, then this routine will append the new
+selected rows after the existing rows.   If the
 files are the same, delete the FALSE rows (preserve the TRUE rows). \label{ffsrow}
 \end{description}
 
@@ -3872,7 +3869,35 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
 
 \begin{description}
-\item[13] Return the class of an input header record.  The record is classified
+\item[13] Determine the integer data type of an integer keyword value string.
+   The returned datatype value is the minimum integer datatype (starting
+   from top of the following list and working down) required
+  to store the integer value:
+\end{description}
+
+\begin{verbatim}
+    Data Type      Range
+     TSBYTE:     -128 to 127
+     TBYTE:       128 to 255
+     TSHORT:     -32768 to 32767
+     TUSHORT:     32768 to 65535
+     TINT        -2147483648 to 2147483647
+     TUINT        2147483648 to 4294967295
+     TLONGLONG   -9223372036854775808 to 9223372036854775807
+\end{verbatim}
+
+\begin{description}
+\item[  ]  The *neg parameter returns 1 if the input value is
+    negative and returns 0 if it is non-negative.\label{ffinttyp}
+\end{description}
+
+\begin{verbatim}
+  int fits_get_inttype / ffinttyp
+      (char *value, > int *datatype, int *neg, int *status)
+\end{verbatim}
+
+\begin{description}
+\item[14] Return the class of an input header record.  The record is classified
     into one of the following categories (the class values are
     defined in fitsio.h).  Note that this is one of the few CFITSIO
    routines that does not return a status value. \label{ffgkcl}
@@ -3913,7 +3938,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
 
 \begin{description}
-\item[14] Parse the 'TFORM' binary table column format string.
+\item[15] Parse the 'TFORM' binary table column format string.
     This routine parses the input TFORM character string and returns the
     integer data type code, the repeat count of the field, and, in the case
     of character string fields, the length of the unit string.  See Appendix
@@ -3932,7 +3957,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
 
 \begin{description}
-\item[15] Parse the 'TFORM' keyword value that defines the column format in
+\item[16] Parse the 'TFORM' keyword value that defines the column format in
     an ASCII table.  This routine parses the input TFORM character
     string and returns the data type code, the width of the column,
     and (if it is a floating point column) the number of decimal places
@@ -3956,7 +3981,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
 
 \begin{description}
-\item[16] Calculate the starting column positions and total ASCII table width
+\item[17] Calculate the starting column positions and total ASCII table width
     based on the input array of ASCII table TFORM values.  The SPACE input
     parameter defines how many blank spaces to leave between each column
     (it is recommended to have one space between columns for better human
@@ -3970,7 +3995,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
 
 \begin{description}
-\item[17] Parse a template header record and return a formatted 80-character string
+\item[18] Parse a template header record and return a formatted 80-character string
     suitable for appending to (or deleting from) a FITS header file.
     This routine is useful for parsing lines from an ASCII template file
     and reformatting them into legal FITS header records.  The formatted
@@ -4076,7 +4101,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
 
 \begin{description}
-\item[18]  Translate a keyword name into a new name, based on a set of patterns.
+\item[19]  Translate a keyword name into a new name, based on a set of patterns.
 This routine is useful for translating keywords in cases such as
 adding or deleting columns in
 a table, or copying a column from one table to another, or extracting
@@ -4191,7 +4216,7 @@ an IMAGE extension:
 \end{verbatim}
 
 \begin{description}
-\item[19]  Translate the keywords in the input HDU into the keywords that are
+\item[20]  Translate the keywords in the input HDU into the keywords that are
 appropriate for the output HDU.  This is a driver routine that calls
 the previously described routine.
 \end{description}
@@ -4213,7 +4238,7 @@ int fits_translate_keywords(
 
 
 \begin{description}
-\item[20]  Parse the input string containing a list of rows or row ranges, and
+\item[21]  Parse the input string containing a list of rows or row ranges, and
      return integer arrays containing the first and last row in each
      range.  For example, if rowlist = "3-5, 6, 8-9" then it will
      return numranges = 3, rangemin = 3, 6, 8 and rangemax = 5, 6, 9.
@@ -4236,7 +4261,7 @@ int fits_translate_keywords(
 \end{verbatim}
 
 \begin{description}
-\item[21]  Check that the Header fill bytes (if any) are all blank.  These are the bytes
+\item[22]  Check that the Header fill bytes (if any) are all blank.  These are the bytes
      that may follow END keyword and before the beginning of data unit,
      or the end of the HDU if there is no data unit.
    \label{ffchfl}
@@ -4247,7 +4272,7 @@ int fits_translate_keywords(
 \end{verbatim}
 
 \begin{description}
-\item[22]  Check that the Data fill bytes (if any) are all zero (for IMAGE or
+\item[23]  Check that the Data fill bytes (if any) are all zero (for IMAGE or
      BINARY Table HDU) or all blanks (for ASCII table HDU).  These file
      bytes may be located after the last valid data byte in the HDU and
      before the physical end of the HDU.
@@ -4259,7 +4284,7 @@ int fits_translate_keywords(
 \end{verbatim}
 
 \begin{description}
-\item[23]  Estimate the root-mean-squared (RMS) noise in an image.
+\item[24]  Estimate the root-mean-squared (RMS) noise in an image.
 These routines are mainly for use with the Hcompress image compression
 algorithm.  They return an estimate of the RMS noise in the background
 pixels of the image.  This robust algorithm (written by Richard
@@ -4788,6 +4813,12 @@ library).
     memory for the returned character array, so the calling program must
     free the memory when finished.
 
+    There are 2 related routines: fits\_hdr2str simply concatenates all
+    the existing keywords in the header; fits\_convert\_hdr2str is similar,
+    except that if the CHDU is a tile compressed image (stored in a binary
+    table) then it will first convert that header back to that of a
+    normal FITS image before concatenating the keywords.
+
     Selected keywords may be excluded from the returned character string.
     If the second parameter (nocomments) is TRUE (nonzero) then any
     COMMENT, HISTORY, or blank keywords in the header will not be copied
@@ -4797,11 +4828,15 @@ library).
     that are to be excluded from the output character string. Wild card
     characters (*, ?, and \#) may be used in the excluded keyword names.
     If no additional keywords are to be excluded, then set nexc = 0 and
-   specify NULL for the the **header  parameter.  \label{hdr2str}
+   specify NULL for the the **exclist  parameter.  \label{hdr2str}
 \end{description}
 
 \begin{verbatim}
   int fits_hdr2str
+      (fitsfile *fptr, int nocomments, char **exclist, int nexc,
+      > char **header, int *nkeys, int *status)
+
+  int fits_convert_hdr2str / ffcnvthdr2str
       (fitsfile *fptr, int nocomments, char **exclist, int nexc,
       > char **header, int *nkeys, int *status)
 \end{verbatim}
@@ -4919,8 +4954,11 @@ given in units of degrees.
 
 These functions allow for the creation and manipulation of FITS HDU
 Groups, as defined in "A Hierarchical Grouping Convention for FITS" by
-Jennings, Pence, Folk and Schlesinger
-(http://fits.gsfc.nasa.gov/group.html). A group is a
+Jennings, Pence, Folk and Schlesinger:
+
+http://fits.gsfc.nasa.gov/group.html
+
+A group is a
 collection of HDUs whose association is defined by a {\it grouping
 table}.  HDUs which are part of a group are referred to as {\it member
 HDUs} or simply as {\it members}. Grouping table member HDUs may
@@ -5276,7 +5314,9 @@ than 2880 will be ignored.  Since the memory reallocation operation can
 be computationally expensive, allocating a larger initial block of
 memory, and/or specifying a larger deltasize value may help to reduce
 the number of reallocation calls and make the application program run
- faster. \label{ffomem}
+faster.  Note that values of the memptr and memsize pointers will be updated
+by CFITSIO if the location or size of the FITS file in memory
+should change as a result of allocating more memory. \label{ffomem}
 \end{description}
 
 \begin{verbatim}
@@ -5305,7 +5345,9 @@ memory reallocation operation can be computationally expensive,
 allocating a larger initial block of memory, and/or specifying a larger
 deltasize value may help to reduce the number of reallocation calls
 and make the application program run
- faster. \label{ffimem}
+faster. Note that values of the memptr and memsize pointers will be updated
+by CFITSIO if the location or size of the FITS file in memory
+should change as a result of allocating more memory. \label{ffimem}
 \end{description}
 
 \begin{verbatim}
@@ -9505,6 +9547,7 @@ fits\_close\_file     & \pageref{ffclos} \\
 fits\_compact\_group & \pageref{ffgtcm} \\
 fits\_compare\_str    & \pageref{ffcmps} \\
 fits\_compress\_heap & \pageref{ffcmph} \\
+fits\_convert\_hdr2str  & \pageref{ffhdr2str}, \pageref{hdr2str} \\
 fits\_copy\_cell2image & \pageref{copycell} \\
 fits\_copy\_col     & \pageref{ffcpcl} \\
 fits\_copy\_data      & \pageref{ffcpdt} \\
@@ -9517,15 +9560,16 @@ fits\_copy\_image\_section  & \pageref{ffcpimg} \\
 fits\_copy\_key           & \pageref{ffcpky} \\
 fits\_copy\_member    & \pageref{ffgmcp} \\
 fits\_copy\_pixlist2image & \pageref{copypixlist2image} \\
+fits\_copy\_rows &   \pageref{ffcprw} \\
 fits\_create\_diskfile    & \pageref{ffinit} \\
 fits\_create\_file    & \pageref{ffinit} \\
 fits\_create\_group  & \pageref{ffgtcr} \\
 fits\_create\_hdu     & \pageref{ffcrhd} \\
-fits\_create\_img     & \pageref{ffcrim} \\
-fits\_create\_memfile    & \pageref{ffimem} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+fits\_create\_img     & \pageref{ffcrim} \\
+fits\_create\_memfile    & \pageref{ffimem} \\
 fits\_create\_tbl     & \pageref{ffcrtb} \\
 fits\_create\_template & \pageref{fftplt} \\
 fits\_date2str  & \pageref{ffdt2s} \\
@@ -9556,10 +9600,10 @@ fits\_get\_colname    & \pageref{ffgcnn} \\
 fits\_get\_colnum     & \pageref{ffgcno} \\
 fits\_get\_coltype    & \pageref{ffgtcl} \\
 fits\_get\_compression\_type & \pageref{ffgetcomp} \\
-fits\_get\_eqcoltype    & \pageref{ffgtcl} \\
-fits\_get\_errstatus  & \pageref{ffgerr} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_get\_eqcoltype    & \pageref{ffgtcl} \\
+fits\_get\_errstatus  & \pageref{ffgerr} \\
 fits\_get\_hdrpos        & \pageref{ffghps} \\
 fits\_get\_hdrspace      & \pageref{ffghsp} \\
 fits\_get\_hdu\_num    & \pageref{ffghdn} \\
@@ -9571,6 +9615,7 @@ fits\_get\_img\_equivtype & \pageref{ffgidt} \\
 fits\_get\_img\_param & \pageref{ffgipr} \\
 fits\_get\_img\_size & \pageref{ffgisz} \\
 fits\_get\_img\_type & \pageref{ffgidt} \\
+fits\_get\_inttype    & \pageref{ffinttyp} \\
 fits\_get\_keyclass    & \pageref{ffgkcl} \\
 fits\_get\_keyname    & \pageref{ffgknm} \\
 fits\_get\_keytype    & \pageref{ffdtyp} \\
@@ -9589,12 +9634,12 @@ fits\_hdr2str         & \pageref{ffhdr2str}, \pageref{hdr2str} \\
 fits\_insert\_atbl    & \pageref{ffitab} \\
 fits\_insert\_btbl    & \pageref{ffibin} \\
 fits\_insert\_col   & \pageref{fficol} \\
-fits\_insert\_cols  & \pageref{fficls} \\
-fits\_insert\_group  & \pageref{ffgtis} \\
-fits\_insert\_img     & \pageref{ffiimg} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_insert\_cols  & \pageref{fficls} \\
+fits\_insert\_group  & \pageref{ffgtis} \\
+fits\_insert\_img     & \pageref{ffiimg} \\
 fits\_insert\_key\_null   & \pageref{ffikyu} \\
 fits\_insert\_key\_TYP    & \pageref{ffikyx} \\
 fits\_insert\_record     & \pageref{ffirec} \\
@@ -9624,6 +9669,7 @@ fits\_open\_group    & \pageref{ffgtop} \\
 fits\_open\_member    & \pageref{ffgmop} \\
 fits\_open\_memfile   & \pageref{ffomem} \\
 fits\_parse\_extnum   & \pageref{ffextn} \\
+fits\_parse\_input\_filename & \pageref{ffiurl} \\
 fits\_parse\_input\_url & \pageref{ffiurl} \\
 fits\_parse\_range    & \pageref{ffrwrg} \\
 fits\_parse\_rootname & \pageref{ffrtnm} \\
@@ -9639,13 +9685,13 @@ fits\_read\_col        & \pageref{ffgcv} \\
 fits\_read\_col\_bit\_ & \pageref{ffgcx} \\
 fits\_read\_col\_TYP    & \pageref{ffgcvx} \\
 fits\_read\_colnull    & \pageref{ffgcf} \\
+
+\end{tabular}
+\begin{tabular}{lr}
 fits\_read\_colnull\_TYP    & \pageref{ffgcfx} \\
 fits\_read\_descript & \pageref{ffgdes} \\
 fits\_read\_descripts & \pageref{ffgdes} \\
 fits\_read\_errmsg    & \pageref{ffgmsg} \\
-
-\end{tabular}
-\begin{tabular}{lr}
 fits\_read\_ext        & \pageref{ffgextn} \\
 fits\_read\_grppar\_TYP  & \pageref{ffggpx} \\
 fits\_read\_img         & \pageref{ffgpv} \\
@@ -9690,13 +9736,13 @@ fits\_set\_imgnull    & \pageref{ffpnul} \\
 fits\_set\_noise\_bits  & \pageref{ffsetcomp} \\
 fits\_set\_tile\_dim  & \pageref{ffsetcomp} \\
 fits\_set\_tscale     & \pageref{fftscl} \\
+
+\end{tabular}
+\begin{tabular}{lr}
 fits\_split\_names    & \pageref{splitnames} \\
 fits\_str2date        & \pageref{ffdt2s} \\
 fits\_str2time        & \pageref{ffdt2s} \\
 fits\_test\_expr      & \pageref{fftexp} \\
-
-\end{tabular}
-\begin{tabular}{lr}
 fits\_test\_heap      & \pageref{fftheap} \\
 fits\_test\_keyword   & \pageref{fftkey} \\
 fits\_test\_record    & \pageref{fftrec} \\
@@ -9741,15 +9787,15 @@ fits\_write\_img\_null & \pageref{ffppru} \\
 fits\_write\_img\_TYP    & \pageref{ffpprx} \\
 fits\_write\_imghdr       & \pageref{ffphps} \\
 fits\_write\_imgnull     & \pageref{ffppn} \\
-fits\_write\_imgnull\_TYP & \pageref{ffppnx} \\
-fits\_write\_key          & \pageref{ffpky} \\
-fits\_write\_key\_longstr  & \pageref{ffpkls} \\
-fits\_write\_key\_longwarn & \pageref{ffplsw} \\
 
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
 
+fits\_write\_imgnull\_TYP & \pageref{ffppnx} \\
+fits\_write\_key          & \pageref{ffpky} \\
+fits\_write\_key\_longstr  & \pageref{ffpkls} \\
+fits\_write\_key\_longwarn & \pageref{ffplsw} \\
 fits\_write\_key\_null     & \pageref{ffpkyu} \\
 fits\_write\_key\_template & \pageref{ffpktp} \\
 fits\_write\_key\_triple   & \pageref{ffpkyt} \\
@@ -9787,6 +9833,7 @@ ffcpfl      & \pageref{ffcpfl} \\
 ffcphd   & \pageref{ffcphd} \\
 ffcpimg  & \pageref{ffcpimg} \\
 ffcpky       & \pageref{ffcpky} \\
+ffcprw      &   \pageref{ffcprw} \\
 ffcrhd     & \pageref{ffcrhd} \\
 ffcrim     & \pageref{ffcrim} \\
 ffcrow    & \pageref{ffcrow} \\
@@ -9818,9 +9865,9 @@ ffflus     & \pageref{ffflus} \\
 fffrow    & \pageref{fffrow} \\
 ffg2d\_      & \pageref{ffg2dx} \\
 ffg3d\_      & \pageref{ffg3dx} \\
-ffgabc      & \pageref{ffgabc} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffgabc      & \pageref{ffgabc} \\
 ffgacl  & \pageref{ffgacl} \\
 ffgbcl  & \pageref{ffgbcl} \\
 ffgcdw  & \pageref{ffgcdw} \\
@@ -9868,10 +9915,10 @@ ffgmrm   & \pageref{ffgmrm} \\
 ffgmsg    & \pageref{ffgmsg} \\
 ffgmtf  & \pageref{ffgmtf} \\
 ffgncl     & \pageref{ffgnrw} \\
-ffgnrw     & \pageref{ffgnrw} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+ffgnrw     & \pageref{ffgnrw} \\
 ffgnxk      & \pageref{ffgnxk} \\
 ffgpf & \pageref{ffgpf} \\
 ffgpf\_ & \pageref{ffgpfx} \\
@@ -9906,24 +9953,26 @@ ffhdef    & \pageref{ffhdef} \\
 ffibin    & \pageref{ffibin} \\
 fficls  & \pageref{fficls} \\
 fficol   & \pageref{fficol} \\
+ffifile  & \pageref{ffiurl} \\
 ffiimg     & \pageref{ffiimg} \\
 ffikls    & \pageref{ffikyx} \\
 ffikyu   & \pageref{ffikyu} \\
 ffiky\_    & \pageref{ffikyx} \\
 ffimem  & \pageref{ffimem} \\
 ffinit  & \pageref{ffinit} \\
+ffinttyp    & \pageref{ffinttyp} \\
 ffiopn & \pageref{ffopen} \\
 ffirec     & \pageref{ffirec} \\
 ffirow  & \pageref{ffirow} \\
 ffitab    & \pageref{ffitab} \\
 ffiter   & \pageref{ffiter} \\
-ffiurl & \pageref{ffiurl} \\
-ffkeyn      & \pageref{ffkeyn} \\
-ffmahd     & \pageref{ffmahd} \\
 
 \end{tabular}
 \begin{tabular}{lr}
 
+ffiurl & \pageref{ffiurl} \\
+ffkeyn      & \pageref{ffkeyn} \\
+ffmahd     & \pageref{ffmahd} \\
 ffmcom    & \pageref{ffmcom} \\
 ffmcrd       & \pageref{ffmcrd} \\
 ffmkls    & \pageref{ffmkyx} \\
@@ -9969,13 +10018,13 @@ ffplsw & \pageref{ffplsw} \\
 ffpmrk   & \pageref{ffpmrk} \\
 ffpmsg   & \pageref{ffpmsg} \\
 ffpnul    & \pageref{ffpnul} \\
-ffppn     & \pageref{ffppn} \\
-ffppn\_ & \pageref{ffppnx} \\
-ffppr        & \pageref{ffppr} \\
 
 \end{tabular}
 \begin{tabular}{lr}
 
+ffppn     & \pageref{ffppn} \\
+ffppn\_ & \pageref{ffppnx} \\
+ffppr        & \pageref{ffppr} \\
 ffpprn & \pageref{ffpprn} \\
 ffppru & \pageref{ffppru} \\
 ffppr\_    & \pageref{ffpprx} \\
@@ -10021,11 +10070,16 @@ ffupck  & \pageref{ffupck} \\
 ffurlt  & \pageref{ffurlt} \\
 ffvcks  & \pageref{ffvcks} \\
 ffvers    & \pageref{ffvers} \\
+
+\end{tabular}
+\newpage
+\begin{tabular}{lr}
+
 ffwldp & \pageref{ffwldp} \\
 ffwrhdu  & \pageref{ffwrhdu} \\
 ffxypx & \pageref{ffxypx} \\
-\end{tabular}
 
+\end{tabular}
 
 
 \chapter{Parameter Definitions }

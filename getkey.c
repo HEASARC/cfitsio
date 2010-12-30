@@ -3135,3 +3135,45 @@ int ffhdr2str( fitsfile *fptr,  /* I - FITS file pointer                    */
 
     return(*status);
 }
+/*--------------------------------------------------------------------------*/
+int ffcnvthdr2str( fitsfile *fptr,  /* I - FITS file pointer                    */
+            int exclude_comm,   /* I - if TRUE, exclude commentary keywords */
+            char **exclist,     /* I - list of excluded keyword names       */
+            int nexc,           /* I - number of names in exclist           */
+            char **header,      /* O - returned header string               */
+            int *nkeys,         /* O - returned number of 80-char keywords  */
+            int  *status)       /* IO - error status                        */
+/*
+  Same as ffhdr2str, except that if the input HDU is a tile compressed image
+  (stored in a binary table) then it will first convert that header back
+  to that of a normal uncompressed FITS image before concatenating the header
+  keyword records.
+*/
+{
+    fitsfile *tempfptr;
+    
+    if (*status > 0)
+        return(*status);
+
+    if (fits_is_compressed_image(fptr, status) )
+    {
+        /* this is a tile compressed image, so need to make an uncompressed */
+	/* copy of the image header in memory before concatenating the keywords */
+        if (fits_create_file(&tempfptr, "mem://", status) > 0) {
+	    return(*status);
+	}
+
+	if (fits_img_decompress_header(fptr, tempfptr, status) > 0) {
+	    fits_delete_file(tempfptr, status);
+	    return(*status);
+	}
+
+	ffhdr2str(tempfptr, exclude_comm, exclist, nexc, header, nkeys, status);
+	fits_close_file(tempfptr, status);
+
+    } else {
+        ffhdr2str(fptr, exclude_comm, exclist, nexc, header, nkeys, status);
+    }
+
+    return(*status);
+}

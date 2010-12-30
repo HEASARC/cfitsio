@@ -4,7 +4,6 @@ rem:
 bcc32 -c buffers.c
 bcc32 -c cfileio.c
 bcc32 -c checksum.c
-bcc32 -c compress.c
 bcc32 -c drvrfile.c
 bcc32 -c drvrmem.c
 bcc32 -c editcol.c
@@ -58,8 +57,20 @@ bcc32 -c ricecomp.c
 bcc32 -c pliocomp.c
 bcc32 -c fits_hcompress.c
 bcc32 -c fits_hdecompress.c
+bcc32 -c zuncompress.c
+bcc32 -c zcompress.c
+bcc32 -c adler32.c
+bcc32 -c crc32.c
+bcc32 -c inffast.c
+bcc32 -c inftrees.c
+bcc32 -c trees.c
+bcc32 -c zutil.c
+bcc32 -c deflate.c
+bcc32 -c infback.c
+bcc32 -c inflate.c
+bcc32 -c uncompr.c
 del cfitsio.lib
-tlib cfitsio +buffers +cfileio +checksum +compress +drvrfile +drvrmem 
+tlib cfitsio +buffers +cfileio +checksum +drvrfile +drvrmem 
 tlib cfitsio +editcol +edithdu +eval_l +eval_y +eval_f +fitscore
 tlib cfitsio +getcol +getcolb +getcolsb +getcoli +getcolj +getcolk +getcoluk 
 tlib cfitsio +getcolui +getcoluj +getcole +getcold +getcoll +getcols
@@ -69,6 +80,8 @@ tlib cfitsio +putcoll +putcols +putcolu +putcolui +putcoluj +putcoluk
 tlib cfitsio +region +scalnull +swapproc +wcsutil +wcssub +putcolsb
 tlib cfitsio +imcompress +quantize +ricecomp +pliocomp
 tlib cfitsio +fits_hcompress +fits_hdecompress
+tlib cfitsio +zuncompress +zcompress +adler32 +crc32 +inffast
+tlib cfitsio +inftrees +trees +zutil +deflate +infback +inflate +uncompr
 bcc32 -f testprog.c cfitsio.lib
 bcc32 -f cookbook.c cfitsio.lib
 

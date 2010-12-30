@@ -629,7 +629,7 @@ int	ngp_include_file(char *fname)		/* try to open include file */
 */
 
 int	ngp_read_line(int ignore_blank_lines)
- { int r, nc;
+ { int r, nc, savec;
    unsigned k;
 
    if (ngp_inclevel <= 0)		/* do some sanity checking first */
@@ -711,10 +711,24 @@ int	ngp_read_line(int ignore_blank_lines)
             }
           if (NGP_TTYPE_UNKNOWN == ngp_linkey.type) /* real type test */
             { if (strchr(ngp_curline.value, '.') && (1 == sscanf(ngp_curline.value, "%lg%n", &(ngp_linkey.value.d), &nc)))
-                { if ((' ' == ngp_curline.value[nc]) || ('\t' == ngp_curline.value[nc])
+                {
+		 if ('D' == ngp_curline.value[nc]) {
+		   /* test if template used a 'D' rather than an 'E' as the exponent character (added by WDP in 12/2010) */
+                   savec = nc;
+		   ngp_curline.value[nc] = 'E';
+		   sscanf(ngp_curline.value, "%lg%n", &(ngp_linkey.value.d), &nc);
+		   if ((' ' == ngp_curline.value[nc]) || ('\t' == ngp_curline.value[nc])
+                    || ('\n' == ngp_curline.value[nc]) || (0 == ngp_curline.value[nc]))  {
+                       ngp_linkey.type = NGP_TTYPE_REAL;
+                     } else {  /* no, this is not a real value */
+		       ngp_curline.value[savec] = 'D';  /* restore the original D character */
+ 		     }
+		 } else {
+		  if ((' ' == ngp_curline.value[nc]) || ('\t' == ngp_curline.value[nc])
                    || ('\n' == ngp_curline.value[nc]) || (0 == ngp_curline.value[nc]))
                     { ngp_linkey.type = NGP_TTYPE_REAL;
                     }
+                 } 
                 }
             }
           if (NGP_TTYPE_UNKNOWN == ngp_linkey.type) /* integer type test */

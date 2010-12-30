@@ -45,7 +45,7 @@ SHLIB_SUFFIX =	@SHLIB_SUFFIX@
 		$(CC) -c $(CFLAGS) $(DEFS) $<
 
 
-CORE_SOURCES = 	buffers.c cfileio.c checksum.c compress.c drvrfile.c drvrmem.c \
+CORE_SOURCES = 	buffers.c cfileio.c checksum.c drvrfile.c drvrmem.c \
 		drvrnet.c drvrsmem.c drvrgsiftp.c editcol.c edithdu.c eval_l.c \
 		eval_y.c eval_f.c fitscore.c getcol.c getcolb.c getcold.c getcole.c \
 		getcoli.c getcolj.c getcolk.c getcoll.c getcols.c getcolsb.c \
@@ -55,7 +55,9 @@ CORE_SOURCES = 	buffers.c cfileio.c checksum.c compress.c drvrfile.c drvrmem.c \
 		putcolj.c putcolk.c putcoluk.c putcoll.c putcols.c putcolsb.c \
 		putcolu.c putcolui.c putcoluj.c putkey.c region.c scalnull.c \
 		swapproc.c wcssub.c wcsutil.c imcompress.c quantize.c ricecomp.c \
-		pliocomp.c fits_hcompress.c fits_hdecompress.c
+		pliocomp.c fits_hcompress.c fits_hdecompress.c zuncompress.c zcompress.c \
+		adler32.c crc32.c inffast.c inftrees.c trees.c zutil.c \
+		deflate.c infback.c inflate.c uncompr.c \
 
 SOURCES = ${CORE_SOURCES} @F77_WRAPPERS@
 

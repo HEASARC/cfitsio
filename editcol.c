@@ -1825,6 +1825,96 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffcprw(fitsfile *infptr,    /* I - FITS file pointer to input file  */
+           fitsfile *outfptr,   /* I - FITS file pointer to output file */
+           LONGLONG firstrow,   /* I - number of first row to copy (1 based)  */
+           LONGLONG nrows,      /* I - number of rows to copy  */
+           int *status)         /* IO - error status     */
+/*
+  copy consecutive set of rows from infptr and append it in the outfptr table.
+*/
+{
+    LONGLONG innaxis1, innaxis2, outnaxis1, outnaxis2, ii, jj;
+    unsigned char *buffer;
+
+    if (*status > 0)
+        return(*status);
+
+    if (infptr->HDUposition != (infptr->Fptr)->curhdu)
+    {
+        ffmahd(infptr, (infptr->HDUposition) + 1, NULL, status);
+    }
+    else if ((infptr->Fptr)->datastart == DATA_UNDEFINED)
+        ffrdef(infptr, status);                /* rescan header */
+
+    if (outfptr->HDUposition != (outfptr->Fptr)->curhdu)
+    {
+        ffmahd(outfptr, (outfptr->HDUposition) + 1, NULL, status);
+    }
+    else if ((outfptr->Fptr)->datastart == DATA_UNDEFINED)
+        ffrdef(outfptr, status);               /* rescan header */
+
+    if (*status > 0)
+        return(*status);
+
+    if ((infptr->Fptr)->hdutype == IMAGE_HDU || (outfptr->Fptr)->hdutype == IMAGE_HDU)
+    {
+       ffpmsg
+       ("Can not copy rows to or from IMAGE HDUs (ffcprw)");
+       return(*status = NOT_TABLE);
+    }
+
+    if ( ((infptr->Fptr)->hdutype == BINARY_TBL &&  (outfptr->Fptr)->hdutype == ASCII_TBL) ||
+         ((infptr->Fptr)->hdutype == ASCII_TBL &&  (outfptr->Fptr)->hdutype == BINARY_TBL) )
+    {
+       ffpmsg
+       ("Copying rows between Binary and ASCII tables is not supported (ffcprw)");
+       return(*status = NOT_BTABLE);
+    }
+
+    ffgkyjj(infptr,  "NAXIS1", &innaxis1,  0, status);  /* width of input rows */
+    ffgkyjj(infptr,  "NAXIS2", &innaxis2,  0, status);  /* no. of input rows */
+    ffgkyjj(outfptr, "NAXIS1", &outnaxis1, 0, status);  /* width of output rows */
+    ffgkyjj(outfptr, "NAXIS2", &outnaxis2, 0, status);  /* no. of output rows */
+
+    if (*status > 0)
+        return(*status);
+
+    if (outnaxis1 > innaxis1) {
+       ffpmsg
+       ("Input and output tables do not have same width (ffcprw)");
+       return(*status = BAD_ROW_WIDTH);
+    }    
+
+    if (firstrow + nrows - 1 > innaxis2) {
+       ffpmsg
+       ("Not enough rows in input table to copy (ffcprw)");
+       return(*status = BAD_ROW_NUM);
+    }
+
+    /* allocate buffer to hold 1 row of data */
+    buffer = malloc(innaxis1);
+    if (!buffer) {
+       ffpmsg
+       ("Unable to allocate memory (ffcprw)");
+       return(*status = MEMORY_ALLOCATION);
+    }
+ 
+    /* copy the rows, 1 at a time */
+    jj = outnaxis2 + 1;
+    for (ii = firstrow; ii < firstrow + nrows; ii++) {
+        fits_read_tblbytes (infptr,  ii, 1, innaxis1, buffer, status);
+        fits_write_tblbytes(outfptr, jj, 1, innaxis1, buffer, status);
+        jj++;
+    }
+
+    outnaxis2 += nrows;
+    fits_update_key(outfptr, TLONGLONG, "NAXIS2", &outnaxis2, 0, status);
+
+    free(buffer);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffcpky(fitsfile *infptr,    /* I - FITS file pointer to input file  */
            fitsfile *outfptr,   /* I - FITS file pointer to output file */
            int incol,           /* I - input index number   */

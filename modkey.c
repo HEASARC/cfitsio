@@ -680,8 +680,12 @@ int ffmkls( fitsfile *fptr,     /* I - FITS file pointer        */
         /* the right keyword in case there are more than one keyword */
         /* with this same name. */
         ffgrec(fptr, keypos - 1, card, status); 
+    } else {
+        /* copy the input comment string */
+        strncpy(comm, incomm, FLEN_COMMENT-1);
+        comm[FLEN_COMMENT-1] = '\0';
     }
-    else
+
         strcpy(comm, incomm);  /* copy the input comment string */
 
     /* delete the old keyword */
@@ -1506,6 +1510,11 @@ int ffikey(fitsfile *fptr,    /* I - FITS file pointer  */
     buff2[80] = '\0';
 
     len = strlen(buff2);
+
+    /* silently replace any illegal characters with a space */
+    for (ii=0; ii < len; ii++)   
+        if (buff2[ii] < ' ' || buff2[ii] > 126) buff2[ii] = ' ';
+
     for (ii=len; ii < 80; ii++)   /* fill buffer with spaces if necessary */
         buff2[ii] = ' ';
 
@@ -1513,7 +1522,9 @@ int ffikey(fitsfile *fptr,    /* I - FITS file pointer  */
         buff2[ii] = toupper(buff2[ii]);
 
     fftkey(buff2, status);        /* test keyword name contains legal chars */
-    fftrec(buff2, status);        /* test rest of keyword for legal chars   */
+
+/*  no need to do this any more, since any illegal characters have been removed
+    fftrec(buff2, status);  */      /* test rest of keyword for legal chars   */
 
     inbuff = buff1;
     outbuff = buff2;

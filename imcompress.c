@@ -14,6 +14,11 @@
 /* should not be quantized and instead losslessly compressed (with GZIP) */
 #define NO_QUANTIZE 9999
 
+
+/* string array for storing the individual column compression stats */
+char results[999][60];
+float trans_ratio[999];
+
 float *fits_rand_value = 0;
 
 static int unquantize_i1r4(long row,
@@ -117,6 +122,16 @@ static int fits_read_write_compressed_img(fitsfile *fptr,   /* I - FITS file poi
             int  *anynul,     /* O - set to 1 if any values are null; else 0 */
             fitsfile *outfptr,   /* I - FITS file pointer                    */
             int  *status);
+
+static int fits_copy_heap(fitsfile *infptr, fitsfile *outfptr, int *status);
+static int fits_shuffle_8bytes(char *heap, LONGLONG length, int *status);
+static int fits_shuffle_4bytes(char *heap, LONGLONG length, int *status);
+static int fits_shuffle_2bytes(char *heap, LONGLONG length, int *status);
+static int fits_shuffle_heap(fitsfile *infptr, fitsfile *outfptr, int *status);
+static int fits_unshuffle_8bytes(char *heap, LONGLONG length, int *status);
+static int fits_unshuffle_4bytes(char *heap, LONGLONG length, int *status);
+static int fits_unshuffle_2bytes(char *heap, LONGLONG length, int *status);
+static int fits_unshuffle_heap(fitsfile *infptr, fitsfile *outfptr, int *status);
 
 /*---------------------------------------------------------------------------*/
 int fits_init_randoms(void) {
@@ -362,6 +377,20 @@ int fits_set_hcomp_smooth(fitsfile *fptr,  /* I - FITS file pointer   */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int fits_set_lossy_int(fitsfile *fptr,  /* I - FITS file pointer   */
+           int lossy_int,       /* I - True (!= 0) or False (0) */
+           int *status)         /* IO - error status                */
+{
+/*
+   This routine specifies whether images with integer pixel values should
+   quantized and compressed the same way float images are compressed.
+   The default is to not do this, and instead apply a lossless compression
+   algorithm to integer images.
+*/
+
+    (fptr->Fptr)->request_lossy_int_compress = lossy_int;
+    return(*status);
+}/*--------------------------------------------------------------------------*/
 int fits_get_compression_type(fitsfile *fptr,  /* I - FITS file pointer     */
        int *ctype,   /* image compression type code;                        */
                      /* allowed values:                                     */
@@ -534,17 +563,26 @@ int fits_img_compress(fitsfile *infptr, /* pointer to image to be compressed */
         return(*status = BAD_NAXIS);
     }
 
+    /* if requested, treat integer images same as a float image. */
+    /* Then the pixels will be quantized (lossy algorithm) to achieve */
+    /* higher amounts of compression than with lossless algorithms */
+
+    if ( (outfptr->Fptr)->request_lossy_int_compress != 0  && bitpix > 0) 
+	bitpix = FLOAT_IMG;  /* compress integer images as if float */
+
     /* initialize output table */
     if (imcomp_init_table(outfptr, bitpix, naxis, naxes, 0, status) > 0)
-        return (*status);
-
+        return (*status);    
+    
     /* Copy the image header keywords to the table header. */
     if (imcomp_copy_img2comp(infptr, outfptr, status) > 0)
 	    return (*status);
 
     /* turn off any intensity scaling (defined by BSCALE and BZERO */
     /* keywords) so that unscaled values will be read by CFITSIO */
-    ffpscl(infptr, 1.0, 0.0, status);
+    /* (except if quantizing an int image, same as a float image) */
+    if ( (outfptr->Fptr)->request_lossy_int_compress == 0 && bitpix > 0) 
+        ffpscl(infptr, 1.0, 0.0, status);
 
     /* force a rescan of the output file keywords, so that */
     /* the compression parameters will be copied to the internal */
@@ -553,7 +591,9 @@ int fits_img_compress(fitsfile *infptr, /* pointer to image to be compressed */
 
     /* turn off any intensity scaling (defined by BSCALE and BZERO */
     /* keywords) so that unscaled values will be written by CFITSIO */
-    ffpscl(outfptr, 1.0, 0.0, status);
+    /* (except if quantizing an int image, same as a float image) */
+    if ( (outfptr->Fptr)->request_lossy_int_compress == 0 && bitpix > 0) 
+        ffpscl(outfptr, 1.0, 0.0, status);
 
     /* Read each image tile, compress, and write to a table row. */
     imcomp_compress_image (infptr, outfptr, status);
@@ -986,11 +1026,14 @@ int imcomp_calc_max_elem (int comptype, int nx, int zbitpix, int blocksize)
         /* and somewhat less for I*2 images */
         /* If this size turns out to be too small, then the gzip */
         /* compression routine will allocate more space as required */
-
-        if (zbitpix == 16 || zbitpix == 8)
-            return((int) (nx * sizeof(short) / 1.3));
+        /* to be on the safe size, allocate buffer same size as input */
+	
+        if (zbitpix == 16)
+            return(nx * 2);
+	else if (zbitpix == 8)
+            return(nx);
 	else
-            return(nx * sizeof(int) / 2);
+            return(nx * 4);
     }
     else if (comptype == BZIP2_1)
     {
@@ -1308,7 +1351,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
     short *sbuff;
     unsigned short *usbuff;
     unsigned int *uintbuff, uintflagval, bzlen;
-    int clen;		/* size of cbuf */
+    size_t clen;		/* size of cbuf */
     int flag = 1; /* true by default; only = 0 if float data couldn't be quantized */
     int iminval = 0, imaxval = 0;  /* min and max quantized integers */
     double bscale[1] = {1.}, bzero[1] = {0.};	/* scaling parameters */
@@ -1989,8 +2032,12 @@ int imcomp_compress_tile (fitsfile *outfptr,
 #if BYTESWAPPED
                ffswap4((int*) tiledata, tilelen); 
 #endif
+
+/* this is for experimental use only
+		fits_shuffle_4bytes((char *) tiledata, tilelen, status);
+*/
                 compress2mem_from_mem((char *) tiledata, tilelen * sizeof(int),
-                 (char **) &cbuf, (size_t *) &clen, realloc, 
+                 (char **) &cbuf,  &clen, realloc, 
                  &gzip_nelem, status);
 
 	        /* Write the compressed byte stream. */
@@ -1998,7 +2045,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
                      gzip_nelem, (unsigned char *) cbuf, status);
 
 	    } else {
-	
+
 #if BYTESWAPPED
 	       if (intlength == 2)
                  ffswap2((short *) idata, tilelen); 
@@ -2007,16 +2054,20 @@ int imcomp_compress_tile (fitsfile *outfptr,
 #endif
 
                if (intlength == 2) {
-                 compress2mem_from_mem((char *) idata, tilelen * sizeof(short),
-                 (char **) &cbuf, (size_t *) &clen, realloc, 
+
+/* this is for experimental use only
+		fits_shuffle_2bytes((char *) tiledata, tilelen, status);
+*/
+                compress2mem_from_mem((char *) idata, tilelen * sizeof(short),
+                 (char **) &cbuf,  &clen, realloc, 
                  &gzip_nelem, status);
                } else if (intlength == 1) {
                 compress2mem_from_mem((char *) idata, tilelen * sizeof(unsigned char),
-                 (char **) &cbuf, (size_t *) &clen, realloc, 
+                 (char **) &cbuf,  &clen, realloc, 
                  &gzip_nelem, status);
                } else {
                 compress2mem_from_mem((char *) idata, tilelen * sizeof(int),
-                 (char **) &cbuf, (size_t *) &clen, realloc, 
+                 (char **) &cbuf,  &clen, realloc, 
                  &gzip_nelem, status);
                }
 
@@ -2044,7 +2095,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
 
 /*  bzip2 is not supported in the public release.  This is only for test purposes.
            if (BZ2_bzBuffToBuffCompress( (char *) cbuf, &bzlen,
-	         (char *) idata, (unsigned int *) (tilelen * intlength), 9, 0, 0) ) 
+	         (char *) idata, (unsigned int) (tilelen * intlength), 9, 0, 0) ) 
 */
 	   {
 
@@ -3212,137 +3263,16 @@ int fits_img_decompress (fitsfile *infptr, /* image (bintable) to uncompress */
 */
 
 {
-    int ii, datatype = 0, naxis, bitpix, numkeys;
-    int nullcheck, anynul, tstatus, nullprime = 0, hdupos, norec = 0;
-    int writeprime = 0;
+    int ii, datatype = 0;
+    int nullcheck, anynul;
     LONGLONG fpixel[MAX_COMPRESS_DIM], lpixel[MAX_COMPRESS_DIM];
     long inc[MAX_COMPRESS_DIM], naxes[MAX_COMPRESS_DIM];
     long imgsize;
     float *nulladdr, fnulval;
     double dnulval;
-    char card[FLEN_CARD];
 
-    if (*status > 0)
-        return(*status);
-    else if (*status == -1) {
-        *status = 0;
-	writeprime = 1;
-    }
-
-    if (!fits_is_compressed_image(infptr, status) )
+    if (fits_img_decompress_header(infptr, outfptr, status) > 0)
     {
-        ffpmsg("CHDU is not a compressed image (fits_img_decompress)");
-        return(*status = DATA_DECOMPRESSION_ERR);
-    }
-
-    /* get information about the state of the output file; does it already */
-    /* contain any keywords and HDUs?  */
-    fits_get_hdu_num(outfptr, &hdupos);  /* Get the current output HDU position */
-    fits_get_hdrspace(outfptr, &numkeys, 0, status);
-
-    /* Was the input compressed HDU originally the primary array image? */
-    tstatus = 0;
-    if (!fits_read_card(infptr, "ZSIMPLE", card, &tstatus)) { 
-      /* yes, input HDU was a primary array (not an IMAGE extension) */
-      /* Now determine if we can uncompress it into the primary array of */
-      /* the output file.  This is only possible if the output file */
-      /* currently only contains a null primary array, with no addition */
-      /* header keywords and with no following extension in the FITS file. */
-      
-      if (hdupos == 1) {  /* are we positioned at the primary array? */
-	if (numkeys <= 10)  { /* is the header practically empty? */
-            if (numkeys == 0) { /* primary HDU is completely empty */
-
-	        nullprime = 1;
-
-            } else {
-                fits_get_img_param(outfptr, MAX_COMPRESS_DIM, &bitpix, &naxis, naxes, status);
-	
-	        if (naxis == 0) /* is this a null image? */
-                   nullprime = 1;
-		  
-           }
-	}
-      }
-    } 
-
-    if (nullprime) {  
-       /* We will delete the existing keywords in the null primary array
-          and uncompress the input image into the primary array of the output */
-
-       for (ii = numkeys; ii > 0; ii--)
-          fits_delete_record(outfptr, ii, status);
-
-    } else  {
-
-       /* if the ZTENSION keyword doesn't exist, then we have to 
-          write the required keywords manually */
-       tstatus = 0;
-       if (fits_read_card(infptr, "ZTENSION", card, &tstatus)) {
-
-          /* create an empty output image with the correct dimensions */
-          if (ffcrim(outfptr, (infptr->Fptr)->zbitpix, (infptr->Fptr)->zndim, 
-             (infptr->Fptr)->znaxis, status) > 0)
-          {
-             ffpmsg("error creating output decompressed image HDU");
-    	     return (*status);
-          }
-
-	  norec = 1;  /* the required keywords have already been written */
-
-       } else {  /* the input compressed image does have ZTENSION keyword */
-       
-          if (writeprime) {  /* convert the image extension to a primary array */
-	      /* have to write the required keywords manually */
-
-              /* create an empty output image with the correct dimensions */
-              if (ffcrim(outfptr, (infptr->Fptr)->zbitpix, (infptr->Fptr)->zndim, 
-                 (infptr->Fptr)->znaxis, status) > 0)
-              {
-                 ffpmsg("error creating output decompressed image HDU");
-    	         return (*status);
-              }
-
-	      norec = 1;  /* the required keywords have already been written */
-
-          } else {  /* write the input compressed image to an image extension */
-
-              if (numkeys == 0) {  /* the output file is currently completely empty */
-	  
-	         /* In this case, the input is a compressed IMAGE extension. */
-	         /* Since the uncompressed output file is currently completely empty, */
-	         /* we need to write a null primary array before uncompressing the */
-                 /* image extension */
-	     
-                 ffcrim(outfptr, 8, 0, naxes, status); /* naxes is not used */
-	     
-	         /* now create the empty extension to uncompress into */
-                 if (fits_create_hdu(outfptr, status) > 0)
-                 {
-                      ffpmsg("error creating output decompressed image HDU");
-    	              return (*status);
-                 }
-	  
-	      } else {
-                  /* just create a new empty extension, then copy all the required */
-	          /* keywords into it.  */
-                 fits_create_hdu(outfptr, status);
-	      }
-           }
-       }
-
-    }
-
-    if (*status > 0)  {
-        ffpmsg("error creating output decompressed image HDU");
-    	return (*status);
-    }
-
-    /* Copy the table header to the image header. */
-
-    if (imcomp_copy_comp2img(infptr, outfptr, norec, status) > 0)
-    {
-        ffpmsg("error copying header keywords from compressed image");
     	return (*status);
     }
 
@@ -3529,6 +3459,148 @@ int fits_decompress_img (fitsfile *infptr, /* image (bintable) to uncompress */
         fits_write_img(outfptr, datatype, 1, imgsize, data, status);
 
     free(data);
+    return (*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_img_decompress_header(fitsfile *infptr, /* image (bintable) to uncompress */
+              fitsfile *outfptr,   /* empty HDU for output uncompressed image */
+              int *status)         /* IO - error status               */
+
+/* 
+  This routine reads the header of the input tile compressed image and 
+  converts it to that of a standard uncompress FITS image.
+*/
+
+{
+    int writeprime = 0;
+    int hdupos, numkeys, nullprime = 0, norec = 0, tstatus;
+    char card[FLEN_CARD];
+    int ii, datatype = 0, naxis, bitpix;
+    long naxes[MAX_COMPRESS_DIM];
+
+    if (*status > 0)
+        return(*status);
+    else if (*status == -1) {
+        *status = 0;
+	writeprime = 1;
+    }
+
+    if (!fits_is_compressed_image(infptr, status) )
+    {
+        ffpmsg("CHDU is not a compressed image (fits_img_decompress)");
+        return(*status = DATA_DECOMPRESSION_ERR);
+    }
+
+    /* get information about the state of the output file; does it already */
+    /* contain any keywords and HDUs?  */
+    fits_get_hdu_num(outfptr, &hdupos);  /* Get the current output HDU position */
+    fits_get_hdrspace(outfptr, &numkeys, 0, status);
+
+    /* Was the input compressed HDU originally the primary array image? */
+    tstatus = 0;
+    if (!fits_read_card(infptr, "ZSIMPLE", card, &tstatus)) { 
+      /* yes, input HDU was a primary array (not an IMAGE extension) */
+      /* Now determine if we can uncompress it into the primary array of */
+      /* the output file.  This is only possible if the output file */
+      /* currently only contains a null primary array, with no addition */
+      /* header keywords and with no following extension in the FITS file. */
+      
+      if (hdupos == 1) {  /* are we positioned at the primary array? */
+	if (numkeys <= 10)  { /* is the header practically empty? */
+            if (numkeys == 0) { /* primary HDU is completely empty */
+
+	        nullprime = 1;
+
+            } else {
+                fits_get_img_param(outfptr, MAX_COMPRESS_DIM, &bitpix, &naxis, naxes, status);
+	
+	        if (naxis == 0) /* is this a null image? */
+                   nullprime = 1;
+		  
+           }
+	}
+      }
+    } 
+
+    if (nullprime) {  
+       /* We will delete the existing keywords in the null primary array
+          and uncompress the input image into the primary array of the output */
+
+       for (ii = numkeys; ii > 0; ii--)
+          fits_delete_record(outfptr, ii, status);
+
+    } else  {
+
+       /* if the ZTENSION keyword doesn't exist, then we have to 
+          write the required keywords manually */
+       tstatus = 0;
+       if (fits_read_card(infptr, "ZTENSION", card, &tstatus)) {
+
+          /* create an empty output image with the correct dimensions */
+          if (ffcrim(outfptr, (infptr->Fptr)->zbitpix, (infptr->Fptr)->zndim, 
+             (infptr->Fptr)->znaxis, status) > 0)
+          {
+             ffpmsg("error creating output decompressed image HDU");
+    	     return (*status);
+          }
+
+	  norec = 1;  /* the required keywords have already been written */
+
+       } else {  /* the input compressed image does have ZTENSION keyword */
+       
+          if (writeprime) {  /* convert the image extension to a primary array */
+	      /* have to write the required keywords manually */
+
+              /* create an empty output image with the correct dimensions */
+              if (ffcrim(outfptr, (infptr->Fptr)->zbitpix, (infptr->Fptr)->zndim, 
+                 (infptr->Fptr)->znaxis, status) > 0)
+              {
+                 ffpmsg("error creating output decompressed image HDU");
+    	         return (*status);
+              }
+
+	      norec = 1;  /* the required keywords have already been written */
+
+          } else {  /* write the input compressed image to an image extension */
+
+              if (numkeys == 0) {  /* the output file is currently completely empty */
+	  
+	         /* In this case, the input is a compressed IMAGE extension. */
+	         /* Since the uncompressed output file is currently completely empty, */
+	         /* we need to write a null primary array before uncompressing the */
+                 /* image extension */
+	     
+                 ffcrim(outfptr, 8, 0, naxes, status); /* naxes is not used */
+	     
+	         /* now create the empty extension to uncompress into */
+                 if (fits_create_hdu(outfptr, status) > 0)
+                 {
+                      ffpmsg("error creating output decompressed image HDU");
+    	              return (*status);
+                 }
+	  
+	      } else {
+                  /* just create a new empty extension, then copy all the required */
+	          /* keywords into it.  */
+                 fits_create_hdu(outfptr, status);
+	      }
+           }
+       }
+
+    }
+
+    if (*status > 0)  {
+        ffpmsg("error creating output decompressed image HDU");
+    	return (*status);
+    }
+
+    /* Copy the table header to the image header. */
+
+    if (imcomp_copy_comp2img(infptr, outfptr, norec, status) > 0)
+    {
+        ffpmsg("error copying header keywords from compressed image");
+    }
+
     return (*status);
 }
 /*---------------------------------------------------------------------------*/
@@ -4668,7 +4740,7 @@ int imcomp_copy_img2comp(fitsfile *infptr, fitsfile *outfptr, int *status)
 */
 {
     char card[FLEN_CARD], card2[FLEN_CARD];	/* a header record */
-    int nkeys, nmore, ii, jj, tstatus;
+    int nkeys, nmore, ii, jj, tstatus, bitpix;
 
     /* tile compressed image keyword translation table  */
     /*                        INPUT      OUTPUT  */
@@ -4705,6 +4777,28 @@ int imcomp_copy_img2comp(fitsfile *infptr, fitsfile *outfptr, int *status)
     npat = sizeof(patterns)/sizeof(patterns[0][0])/2;
     fits_translate_keywords(infptr, outfptr, 1, patterns, npat,
 			    0, 0, 0, status);
+
+
+    if ( (outfptr->Fptr)->request_lossy_int_compress != 0) { 
+
+	/* request was made to compress integer images as if they had float pixels. */
+	/* If input image has positive bitpix value, then reset the output ZBITPIX */
+	/* value to -32. */
+
+	fits_read_key(infptr, TINT, "BITPIX", &bitpix, NULL, status);
+
+	if (*status <= 0 && bitpix > 0) {
+	    fits_modify_key_lng(outfptr, "ZBITPIX", -32, NULL, status);
+
+	    /* also delete the BSCALE, BZERO, and BLANK keywords */
+	    tstatus = 0;
+	    fits_delete_key(outfptr, "BSCALE", &tstatus);
+	    tstatus = 0;
+	    fits_delete_key(outfptr, "BZERO", &tstatus);
+	    tstatus = 0;
+	    fits_delete_key(outfptr, "BLANK", &tstatus);
+	}
+    }
 
    /*
      For compatibility with software that uses an older version of CFITSIO,
@@ -6559,3 +6653,2778 @@ static int imcomp_float2nan(float *indata,
 
     return(*status);
 }
+/*--------------------------------------------------------------------------*/
+int fits_transpose_table(fitsfile *infptr, fitsfile *outfptr, int *status)
+
+/*
+  Transpose the elements in the input table columns from row-major order into
+  column-major order, and write to the output table (which may be the same as
+  the input table).   For example, a table with 10000 rows and 2 '1I' columns
+  will be transformed into a 1 row table with 2 '10000I' columns.
+*/
+{ 
+
+    LONGLONG nrows, repeat, width, colwidth[999], colstart[1000];
+    LONGLONG headstart, datastart, dataend, startbyte, jj;
+    long trepeat, twidth;
+    int ii, ncols, coltype, hdutype, ltrue = 1;
+    char *buffer, *cptr, keyname[9], tform[40], newtform[40], colcode[999];
+
+    if (*status > 0)
+        return(*status);
+    
+    fits_get_hdu_type(infptr, &hdutype, status);
+    if (hdutype != BINARY_TBL) {
+        *status = NOT_BTABLE;
+        return(*status);
+    }
+         
+    fits_get_num_rowsll(infptr, &nrows, status);
+    fits_get_num_cols(infptr, &ncols, status);
+
+    if (nrows <= 1  || (ncols <= 1)) {
+	/* just copy the HDU if the table has 0 or 1 columns or rows */
+	if (infptr != outfptr) { 
+		fits_copy_hdu (infptr, outfptr, 0, status);
+	}
+	return(*status);
+    }
+    
+    colstart[0] = 0;
+    for (ii = 0; ii < ncols; ii++) {
+        fits_get_coltypell(infptr, ii+1, &coltype, &repeat, &width, status);
+	if (coltype == TBIT) {
+	    repeat = (repeat + 7) / 8;  /* convert from bits to bytes */
+	} else if (coltype == TSTRING) {
+	    width = 1;
+	} else if (coltype < 0) {  /* pointer to variable length array */
+	    width = 8;
+	    if (colcode[ii] == 'Q') width = 16;  /* this is a 'Q' not a 'P' column */
+	    repeat = 1;
+	}
+	    	
+	colwidth[ii] = repeat * width;
+	colstart[ii + 1] = colstart[ii] + repeat * width * nrows;
+    }
+
+    buffer = calloc(colstart[ncols], 1);
+    if (!buffer) {
+        ffpmsg("Could not allocate buffer for transformed table");
+        *status = MEMORY_ALLOCATION;
+        return(*status);
+    }
+
+    fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status);
+    
+    ffmbyt(infptr, datastart, 0, status);
+
+    for (jj = 0; jj < nrows; jj++)   {    /* loop over rows */
+	for (ii = 0; ii < ncols; ii++) {  /* loop over columns */
+	    cptr = buffer + (colstart[ii] + jj * colwidth[ii]);   /* addr to copy to */
+	    startbyte = (infptr->Fptr)->bytepos;  /* save the starting byte location */
+
+	    ffgbyt(infptr, colwidth[ii], cptr, status);  /* copy all the bytes */
+
+	    if (colwidth[ii] >= MINDIRECT) { /* have to explicitly move to next byte */
+		ffmbyt(infptr, startbyte + colwidth[ii], 0, status);
+	    }
+
+	}
+    }
+
+    if (infptr != outfptr) {  /* copy input header to the output */
+	fits_copy_header(infptr, outfptr, status);
+    }
+    fits_set_hdustruc(outfptr, status);
+     
+    fits_get_hduaddrll(outfptr, &headstart, &datastart, &dataend, status);
+    ffmbyt(outfptr, datastart, 1, status);
+    ffpbyt(outfptr, colstart[ncols], buffer, status);
+ 	
+	/* update the TFORMn keywords with the new repeat count */
+        for (ii = 0; ii < ncols; ii++) {
+	    fits_make_keyn("TFORM", ii+1, keyname, status);
+	    
+	    fits_read_key(infptr, TSTRING, keyname, tform, NULL, status);
+            fits_binary_tform(tform, &coltype, &trepeat, &twidth, status);
+
+            sprintf(newtform, "%ld",  trepeat * (long) nrows);
+	    cptr = tform;
+	    while(isdigit(*cptr)) cptr++;
+	    strcat(newtform, cptr);
+	    fits_modify_key_str(outfptr, keyname, newtform, "&", status);
+	}
+
+	/* the transformed table has only 1 row */
+	fits_modify_key_lng(outfptr, "NAXIS1", (long) colstart[ncols], "&", status);
+	fits_modify_key_lng(outfptr, "NAXIS2", 1, "&", status);
+	fits_write_key(outfptr, TLONGLONG, "ZNAXIS2", &nrows, "original number of rows",
+	status);
+	fits_write_key(outfptr, TLOGICAL, "TVIRTUAL", &ltrue, 
+            "this is a virtual table", status);
+
+	fits_write_key(outfptr, TSTRING, "ZMETHOD", "TRANSPOSED_GZIP",
+	   "table compression method", status);
+	   
+    /* copy the heap from input to output file, verbatim */
+    fits_copy_heap(infptr, outfptr, status);
+  
+    /* now compress the data blocks */
+/*
+    fits_gzip_datablocks(outfptr, status); 
+*/
+    fits_set_hdustruc(outfptr, status);
+       	
+    free(buffer);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_transpose_table2(fitsfile *infptr, fitsfile *outfptr, int *status)
+
+/*
+  Transpose the elements in the input table columns from row-major order into
+  column-major order, and write to the output table (which may be the same as
+  the input table).   For example, a table with 10000 rows and 2 '1I' columns
+  will be transformed into a 1 row table with 2 '10000I' columns.
+  
+  In addition, compress each column of data and write as a 1-row variable length
+  array column.
+*/
+{ 
+    LONGLONG nrows, incolwidth[999], inrepeat[999], outcolstart[1000], outbytespan[999];
+    LONGLONG headstart, datastart, dataend, startbyte, jj, kk, naxis1;
+    long repeat, width, pcount;
+    int ii, ncols, coltype, hdutype, ltrue = 1;
+    char *buffer, *cptr, keyname[9], tform[40], colcode[999], colname[999][50];
+    char comm[FLEN_COMMENT], *compressed_data;
+    size_t dlen, datasize;
+    float cratio[999];
+    
+    if (*status > 0)
+        return(*status);
+    
+    fits_get_hdu_type(infptr, &hdutype, status);
+    if (hdutype != BINARY_TBL) {
+        *status = NOT_BTABLE;
+        return(*status);
+    }
+        
+    fits_get_num_rowsll(infptr, &nrows, status);
+    fits_get_num_cols(infptr, &ncols, status);
+    fits_read_key(infptr, TLONGLONG, "NAXIS1", &naxis1, NULL, status);
+    if (*status > 0)
+        return(*status);
+
+    if (nrows < 1  || ncols < 1) {
+	/* just copy the HDU if the table has 0 columns or rows */
+	if (infptr != outfptr) {  /* copy input header to the output */
+		fits_copy_hdu (infptr, outfptr, 0, status);
+	}
+	return(*status);
+    }
+ 
+    /* allocate space for the transposed table */
+    buffer = calloc(naxis1, nrows);
+    if (!buffer) {
+        ffpmsg("Could not allocate buffer for transformed table");
+        *status = MEMORY_ALLOCATION;
+        return(*status);
+    }
+
+    if (infptr != outfptr) {  /* copy input header to the output */
+	fits_copy_header(infptr, outfptr, status);
+    }
+
+    outcolstart[0] = 0;
+ 
+    /* do initial setup for each column */
+    for (ii = 0; ii < ncols; ii++) {
+
+	/* get the column name */
+	fits_make_keyn("TTYPE", ii+1, keyname, status);
+	fits_read_key(outfptr, TSTRING, keyname, colname[ii], comm, status);
+
+	/* get the column type, repeat count, and unit width */
+	fits_make_keyn("TFORM", ii+1, keyname, status);
+	fits_read_key(outfptr, TSTRING, keyname, tform, comm, status);
+
+	/* preserve the original TFORM value and comment string */
+	keyname[0] = 'Z';
+	fits_write_key(outfptr, TSTRING, keyname, tform, comm, status);
+	keyname[0] = 'T';
+ 
+        fits_binary_tform(tform, &coltype, &repeat, &width, status);
+
+   	/* BIT columns are a difficult case */
+	 /* round up to a multiple of 8 bits */
+/*
+	if (coltype == TBIT) {  
+	    repeat = (repeat + 7) / 8 * 8; 
+	}
+*/
+
+	cptr = tform;
+	while(isdigit(*cptr)) cptr++;
+	colcode[ii] = *cptr; /* save the column type code */
+
+        /* all columns are now VLAs */
+	fits_modify_key_str(outfptr, keyname, "1PB", "&", status);
+
+	if (coltype == TBIT) {
+	    repeat = (repeat + 7) / 8;  /* convert from bits to bytes */
+	} else if (coltype == TSTRING) {
+	    width = 1;  /* ignore the optional 'w' in 'rAw' format */
+	} else if (coltype < 0) {  /* pointer to variable length array */
+	    width = 8;
+	    if (colcode[ii] == 'Q') width = 16;  /* this is a 'Q' not a 'P' column */
+	    repeat = 1;
+	}
+
+	inrepeat[ii] = repeat;
+	
+	/* width (in bytes) of each element and field in the INPUT row-major table */
+	incolwidth[ii] = repeat * width;
+	
+	/* starting offset of each field in the OUTPUT column-major table */
+	outcolstart[ii + 1] = outcolstart[ii] + incolwidth[ii] * nrows;
+
+	/* length of each sequence of bytes, after sorting them in signicant order */
+	outbytespan[ii] = (incolwidth[ii] * nrows) / width;
+    }
+
+    /* the transformed table has only 1 row */
+    /* output table width 8 bytes per column */
+    fits_modify_key_lng(outfptr, "NAXIS2", 1, "&", status);
+    fits_modify_key_lng(outfptr, "NAXIS1", ncols * 8, "&", status);
+
+    /* move to the start of the input table */
+    fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status);
+    ffmbyt(infptr, datastart, 0, status);
+
+    /* now transpose the table into an array in memory */
+    for (jj = 0; jj < nrows; jj++)   {    /* loop over rows */
+      for (ii = 0; ii < ncols; ii++) {  /* loop over columns */
+      
+	kk = 0;	
+
+	    cptr = buffer + (outcolstart[ii] + (jj * incolwidth[ii]));   /* addr to copy to */
+
+	    startbyte = (infptr->Fptr)->bytepos;  /* save the starting byte location */
+
+	    ffgbyt(infptr, incolwidth[ii], cptr, status);  /* copy all the bytes */
+
+	    if (incolwidth[ii] >= MINDIRECT) { /* have to explicitly move to next byte */
+		ffmbyt(infptr, startbyte + incolwidth[ii], 0, status);
+	    }
+      }
+    }
+
+    fits_set_hdustruc(outfptr, status);
+    
+    /* now compress each column with GZIP and write out to output table */
+    for (ii = 0; ii < ncols; ii++) {  /* loop over columns */
+
+	datasize = outcolstart[ii + 1] - outcolstart[ii];
+
+	/* allocate memory for the compressed data */
+	compressed_data = malloc(datasize);
+	if (!compressed_data) {
+	    printf("data memory allocation error");
+	    return(-1);
+	}
+
+	/* gzip compress the data */
+	compress2mem_from_mem(buffer + outcolstart[ii], datasize,
+	    &compressed_data,  &datasize, realloc, 
+	    &dlen, status);        
+
+	/* write the compressed data to the output column */
+	fits_set_tscale(outfptr, ii + 1, 1.0, 0.0, status);  /* turn off any data scaling, first */
+	fits_write_col(outfptr, TBYTE, ii + 1, 1, 1, dlen, compressed_data, status);
+
+        cratio[ii] = (float) datasize / (float) dlen;	
+	free(compressed_data);   /* don't need the compressed data any more */
+	
+	sprintf(results[ii]," %3d %10.10s %4d %c  %5.2f", ii+1, colname[ii], (int) inrepeat[ii],colcode[ii],cratio[ii]);
+	trans_ratio[ii] = cratio[ii];
+    }
+
+    /* save the original PCOUNT value */
+    fits_read_key(infptr, TLONG, "PCOUNT", &pcount, comm, status);
+    fits_write_key(outfptr, TLONG, "ZPCOUNT", &pcount, comm, status);
+
+    fits_write_key(outfptr, TLONGLONG, "ZNAXIS1", &naxis1, "original rows width",
+	status);
+    fits_write_key(outfptr, TLONGLONG, "ZNAXIS2", &nrows, "original number of rows",
+	status);
+
+    fits_write_key(outfptr, TLOGICAL, "TVIRTUAL", &ltrue, 
+        "this is a virtual table", status);
+    fits_write_key(outfptr, TSTRING, "ZMETHOD", "TRANSPOSED_SHUFFLED_GZIP",
+	   "table compression method", status);
+
+    fits_set_hdustruc(outfptr, status);
+
+    /* copy the heap from input to output file */
+/*
+    fits_shuffle_heap(infptr, outfptr, status);
+*/
+       	
+    free(buffer);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_untranspose_table(fitsfile *infptr, fitsfile *outfptr, int *status)
+
+/*
+  Reverse the transformation done by fits_tranpose_table
+*/
+{ 
+
+    LONGLONG nrows, repeat, width, colwidth[999], colstart[1000];
+    LONGLONG headstart, datastart, dataend, startbyte, jj;
+    long trepeat, twidth;
+    int ii, ncols, coltype, hdutype;
+    char *buffer, *cptr, keyname[9], tform[40], newtform[40], colcode[999];
+
+    if (*status > 0)
+        return(*status);
+    
+    fits_get_hdu_type(infptr, &hdutype, status);
+    if (hdutype != BINARY_TBL) {
+        *status = NOT_BTABLE;
+        return(*status);
+    }
+         
+    fits_get_num_rowsll(infptr, &nrows, status);
+    fits_get_num_cols(infptr, &ncols, status);
+
+    if (nrows != 1  || (ncols <= 1)) {
+	/* just copy the HDU if the table does not have 1 row and 
+	   more than 1 column */
+	if (infptr != outfptr) { 
+		fits_copy_hdu (infptr, outfptr, 0, status);
+	}
+	return(*status);
+    }
+
+    fits_read_key(infptr, TLONGLONG, "ZNAXIS2", &nrows, NULL, status);
+    if (*status > 0) {
+        ffpmsg("Could not find the required ZNAXIS2 keyword");
+        *status = 1;
+        return(*status);
+    }
+    
+    colstart[0] = 0;
+    for (ii = 0; ii < ncols; ii++) {
+        fits_get_coltypell(infptr, ii+1, &coltype, &repeat, &width, status);
+
+	repeat = repeat/nrows;
+
+	if (coltype == TBIT) {
+	    repeat = (repeat + 7) / 8;  /* convert from bits to bytes */
+	} else if (coltype == TSTRING) {
+	    width = 1;
+	} else if (coltype < 0) {  /* pointer to variable length array */
+	    width = 8;
+	    if (colcode[ii] == 'Q') width = 16;  /* this is a 'Q' not a 'P' column */
+	    repeat = 1;
+	}
+		    	
+	colwidth[ii] =  repeat * width;
+	colstart[ii + 1] = colstart[ii] + width * repeat;
+    }
+
+    buffer = calloc(colstart[ncols] * nrows, 1);
+    if (!buffer) {
+        ffpmsg("Could not allocate buffer for untransformed table");
+        *status = MEMORY_ALLOCATION;
+        return(*status);
+    }
+
+    fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status);
+    
+    ffmbyt(infptr, datastart, 0, status);
+
+    for (ii = 0; ii < ncols; ii++) {  /* loop over columns */
+	for (jj = 0; jj < nrows; jj++) {
+	    cptr = buffer + (colstart[ii] + jj * colstart[ncols]);   /* addr to copy to */
+	    startbyte = (infptr->Fptr)->bytepos;  /* save the starting byte location */
+
+	    ffgbyt(infptr, colwidth[ii], cptr, status);  /* copy all the bytes */
+
+	    if (colwidth[ii] >= MINDIRECT) { /* have to explicitly move to next byte */
+		ffmbyt(infptr, startbyte + colwidth[ii], 0, status);
+	    }
+	}
+    }
+
+    if (infptr != outfptr) {  /* copy input header to the output */
+	fits_copy_header(infptr, outfptr, status);
+    }
+    fits_set_hdustruc(outfptr, status);
+ 
+    fits_get_hduaddrll(outfptr, &headstart, &datastart, &dataend, status);    
+    ffmbyt(outfptr, datastart, 0, status);
+    ffpbyt(outfptr, colstart[ncols] * nrows, buffer, status);
+	
+    /* update the TFORMn keywords with the new repeat count */
+    for (ii = 0; ii < ncols; ii++) {
+	    fits_make_keyn("TFORM", ii+1, keyname, status);
+	    
+	    fits_read_key(infptr, TSTRING, keyname, tform, NULL, status);
+            fits_binary_tform(tform, &coltype, &trepeat, &twidth, status);
+
+            sprintf(newtform, "%ld", (long) trepeat/nrows );
+	    cptr = tform;
+	    while(isdigit(*cptr)) cptr++;
+	    strcat(newtform, cptr);
+	    fits_modify_key_str(outfptr, keyname, newtform, "&", status);
+    }
+
+    fits_modify_key_lng(outfptr, "NAXIS1", (long) colstart[ncols], "&", status);
+    fits_modify_key_lng(outfptr, "NAXIS2", nrows, "&", status);
+    fits_delete_key(outfptr, "ZNAXIS2", status);
+    fits_delete_key(outfptr, "TVIRTUAL", status);
+    fits_delete_key(outfptr, "ZMETHOD", status);
+
+    fits_set_hdustruc(outfptr, status);
+       	
+    free(buffer);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_shuffle_table(fitsfile *infptr, fitsfile *outfptr, int *status)
+
+/*
+  Transpose the elements in the input table columns from row-major order into
+  column-major order, and write to the output table (which may be the same as
+  the input table).   For example, a table with 10000 rows and 2 '1I' columns
+  will be transformed into a 1 row table with 2 '10000I' columns.
+  
+  In addition, the bytes in the numeric data values (columns with TFORM 
+  = I, J, K, E, and D) are shuffled so that the most significant byte of every
+  element occurs first in the array, followed by the next most significant byte,
+  and so on to the least significant byte.   Thus, if you have 3 4-byte numeric
+  values, the bytes 012301230123 get shuffled to 000111222333
+*/
+{ 
+    LONGLONG nrows, incolwidth[999], inrepeat[999], outcolstart[1000], outbytespan[999];
+    LONGLONG headstart, datastart, dataend, startbyte, jj, kk, naxis1;
+    long repeat, width;
+    int ii, ncols, coltype, hdutype, ltrue = 1;
+    char *buffer, *cptr, keyname[9], tform[40], newtform[40], colcode[999];
+    char comm[FLEN_COMMENT];
+
+    if (*status > 0)
+        return(*status);
+    
+    fits_get_hdu_type(infptr, &hdutype, status);
+    if (hdutype != BINARY_TBL) {
+        *status = NOT_BTABLE;
+        return(*status);
+    }
+        
+    fits_get_num_rowsll(infptr, &nrows, status);
+    fits_get_num_cols(infptr, &ncols, status);
+    fits_read_key(infptr, TLONGLONG, "NAXIS1", &naxis1, NULL, status);
+    if (*status > 0)
+        return(*status);
+
+    if (nrows < 1  || ncols < 1) {
+	/* just copy the HDU if the table has 0 columns or rows */
+	if (infptr != outfptr) {  /* copy input header to the output */
+		fits_copy_hdu (infptr, outfptr, 0, status);
+	}
+	return(*status);
+    }
+   
+    /* allocate space for the transposed table */
+    buffer = calloc(naxis1, nrows);
+    if (!buffer) {
+        ffpmsg("Could not allocate buffer for transformed table");
+        *status = MEMORY_ALLOCATION;
+        return(*status);
+    }
+
+    if (infptr != outfptr) {  /* copy input header to the output */
+	fits_copy_header(infptr, outfptr, status);
+    }
+
+    outcolstart[0] = 0;
+    for (ii = 0; ii < ncols; ii++) {
+
+	/* get the column type, repeat count, and unit width */
+	fits_make_keyn("TFORM", ii+1, keyname, status);
+	fits_read_key(outfptr, TSTRING, keyname, tform, comm, status);
+
+	/* preserve the original TFORM value and comment string */
+	keyname[0] = 'Z';
+	fits_write_key(outfptr, TSTRING, keyname, tform, comm, status);
+	keyname[0] = 'T';
+ 
+        fits_binary_tform(tform, &coltype, &repeat, &width, status);
+	if (coltype == TBIT) {  /* BIT columns are a difficult case */
+	    repeat = (repeat + 7) / 8 * 8;  /* round up to a multiple of 8 bits */
+	}
+
+ 	/* modify the repeat count for each column in the transformed table */
+        sprintf(newtform, "%ld",  repeat * (long) nrows);
+	cptr = tform;
+	while(isdigit(*cptr)) cptr++;
+	colcode[ii] = *cptr; /* save the column type code */
+	strcat(newtform, cptr);
+	fits_modify_key_str(outfptr, keyname, newtform, "&", status);
+
+	if (coltype == TBIT) {
+	    repeat = (repeat + 7) / 8;  /* convert from bits to bytes */
+	} else if (coltype == TSTRING) {
+	    width = 1;  /* ignore the optional 'w' in 'rAw' format */
+	} else if (coltype < 0) {  /* pointer to variable length array */
+	    width = 8;
+	    if (colcode[ii] == 'Q') width = 16;  /* this is a 'Q' not a 'P' column */
+	    repeat = 1;
+	}
+
+	inrepeat[ii] = repeat;
+	
+	/* width (in bytes) of each element and field in the INPUT row-major table */
+	incolwidth[ii] = repeat * width;
+	
+	/* starting offset of each field in the OUTPUT column-major table */
+	outcolstart[ii + 1] = outcolstart[ii] + incolwidth[ii] * nrows;
+
+	/* length of each sequence of bytes, after sorting them in signicant order */
+	outbytespan[ii] = (incolwidth[ii] * nrows) / width;
+    }
+
+    /* the transformed table has only 1 row */
+    fits_modify_key_lng(outfptr, "NAXIS2", 1, "&", status);
+    /* output table width is the sum of the vector column widths */
+    fits_modify_key_lng(outfptr, "NAXIS1", (long) outcolstart[ncols], "&", status);
+
+    /* move to the start of the input table */
+    fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status);
+    ffmbyt(infptr, datastart, 0, status);
+
+    for (jj = 0; jj < nrows; jj++)   {    /* loop over rows */
+      for (ii = 0; ii < ncols; ii++) {  /* loop over columns */
+      
+	kk = 0;	
+
+	switch (colcode[ii]) {
+	/* separate the byte planes for the 2-byte, 4-byte, and 8-byte numeric columns */
+	case 'I':
+	  while(kk < incolwidth[ii]) {
+
+	    cptr = buffer + (outcolstart[ii] + (jj * inrepeat[ii]) + kk/2);  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1st byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 2nd byte */
+	    kk += 2;
+	  }
+	  break;
+	
+	case 'J':
+	case 'E':
+	  while(kk < incolwidth[ii]) {
+	    cptr = buffer + (outcolstart[ii] + (jj * inrepeat[ii]) + kk/4);  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    kk += 4;
+	  }
+	  break;
+
+	case 'D':
+	case 'K':
+	  while(kk < incolwidth[ii]) {
+	    cptr = buffer + (outcolstart[ii] + (jj * inrepeat[ii]) + kk/8);  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    kk += 8;
+	  }
+	  break;
+
+	default: /* don't bother separating the bytes for other column types */
+	    cptr = buffer + (outcolstart[ii] + (jj * incolwidth[ii]));   /* addr to copy to */
+	    startbyte = (infptr->Fptr)->bytepos;  /* save the starting byte location */
+
+	    ffgbyt(infptr, incolwidth[ii], cptr, status);  /* copy all the bytes */
+
+	    if (incolwidth[ii] >= MINDIRECT) { /* have to explicitly move to next byte */
+		ffmbyt(infptr, startbyte + incolwidth[ii], 0, status);
+	    }
+	}
+      }
+    }
+
+    fits_set_hdustruc(outfptr, status);
+    
+    /* copy the transformed table to the data records of the HDU */
+    fits_get_hduaddrll(outfptr, &headstart, &datastart, &dataend, status);
+    ffmbyt(outfptr, datastart, 1, status);
+    ffpbyt(outfptr, outcolstart[ncols], buffer, status);
+ 	
+    fits_write_key(outfptr, TLONGLONG, "ZNAXIS2", &nrows, "original number of rows",
+	status);
+
+    fits_write_key(outfptr, TLOGICAL, "TVIRTUAL", &ltrue, 
+        "this is a virtual table", status);
+    fits_write_key(outfptr, TSTRING, "ZMETHOD", "TRANSPOSED_SHUFFLED_GZIP",
+	   "table compression method", status);
+
+
+    /* copy the heap from input to output file */
+    fits_shuffle_heap(infptr, outfptr, status);
+    
+    /* now compress the data blocks */
+/*
+    fits_gzip_datablocks(outfptr, status);
+*/  	
+    fits_set_hdustruc(outfptr, status);
+       	
+    free(buffer);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_shuffle_table2(fitsfile *infptr, fitsfile *outfptr, int *status)
+
+/*
+  Transpose the elements in the input table columns from row-major order into
+  column-major order, and write to the output table (which may be the same as
+  the input table).   For example, a table with 10000 rows and 2 '1I' columns
+  will be transformed into a 1 row table with 2 '10000I' columns.
+  
+  In addition, the bytes in the numeric data values (columns with TFORM 
+  = I, J, K, E, and D) are shuffled so that the most significant byte of every
+  element occurs first in the array, followed by the next most significant byte,
+  and so on to the least significant byte.   Thus, if you have 3 4-byte numeric
+  values, the bytes 012301230123 get shuffled to 000111222333
+
+  Finally, compress each column with gzip and write out to output table.
+*/
+{ 
+    LONGLONG nrows, incolwidth[999], inrepeat[999], outcolstart[1000], outbytespan[999];
+    LONGLONG headstart, datastart, dataend, startbyte, jj, kk, naxis1;
+    long repeat, width, pcount;
+    int ii, ncols, coltype, hdutype, ltrue = 1;
+    char *buffer, *cptr, keyname[9], tform[40], colcode[999];
+    char comm[FLEN_COMMENT], *compressed_data, tempstring[20];
+    size_t dlen, datasize;
+    float cratio[999];
+    
+    if (*status > 0)
+        return(*status);
+    
+    fits_get_hdu_type(infptr, &hdutype, status);
+    if (hdutype != BINARY_TBL) {
+        *status = NOT_BTABLE;
+        return(*status);
+    }
+        
+    fits_get_num_rowsll(infptr, &nrows, status);
+    fits_get_num_cols(infptr, &ncols, status);
+    fits_read_key(infptr, TLONGLONG, "NAXIS1", &naxis1, NULL, status);
+    if (*status > 0)
+        return(*status);
+
+    if (nrows < 1  || ncols < 1) {
+	/* just copy the HDU if the table has 0 columns or rows */
+	if (infptr != outfptr) {  /* copy input header to the output */
+		fits_copy_hdu (infptr, outfptr, 0, status);
+	}
+	return(*status);
+    }
+ 
+    /* allocate space for the transposed table */
+    buffer = calloc(naxis1, nrows);
+    if (!buffer) {
+        ffpmsg("Could not allocate buffer for transformed table");
+        *status = MEMORY_ALLOCATION;
+        return(*status);
+    }
+
+    if (infptr != outfptr) {  /* copy input header to the output */
+	fits_copy_header(infptr, outfptr, status);
+    }
+
+    fits_write_key_log(outfptr, "ZTABLE", 1, 
+          "extension contains compressed binary table", status);
+
+    fits_write_key(outfptr, TLONGLONG, "ZTILELEN", &nrows,
+          "number of rows in each tile", status);
+
+    fits_write_key(outfptr, TLONGLONG, "ZNAXIS1", &naxis1, "original rows width",
+	status);
+    fits_write_key(outfptr, TLONGLONG, "ZNAXIS2", &nrows, "original number of rows",
+	status);
+
+    /* save the original PCOUNT value */
+    fits_read_key(infptr, TLONG, "PCOUNT", &pcount, comm, status);
+    fits_write_key(outfptr, TLONG, "ZPCOUNT", &pcount, comm, status);
+
+
+    outcolstart[0] = 0;
+    for (ii = 0; ii < ncols; ii++) {
+
+	/* get the column type, repeat count, and unit width */
+	fits_make_keyn("TFORM", ii+1, keyname, status);
+	fits_read_key(outfptr, TSTRING, keyname, tform, comm, status);
+
+	/* preserve the original TFORM value and comment string */
+	keyname[0] = 'Z';
+	fits_write_key(outfptr, TSTRING, keyname, tform, comm, status);
+	keyname[0] = 'T';
+ 
+       /* all columns are now VLAs */
+	fits_modify_key_str(outfptr, keyname, "1PB", "&", status);
+
+ 	fits_make_keyn("ZCTYP", ii+1, keyname, status);
+	fits_write_key(outfptr, TSTRING, keyname, "GZIP_2",
+	     "compression algorithm for column", status);
+
+        fits_binary_tform(tform, &coltype, &repeat, &width, status);
+
+   	/* BIT columns are a difficult case */
+	 /* round up to a multiple of 8 bits */
+/*
+	if (coltype == TBIT) {  
+	    repeat = (repeat + 7) / 8 * 8; 
+	}
+*/
+
+	cptr = tform;
+	while(isdigit(*cptr)) cptr++;
+	colcode[ii] = *cptr; /* save the column type code */
+
+
+	if (coltype == TBIT) {
+	    repeat = (repeat + 7) / 8;  /* convert from bits to bytes */
+	} else if (coltype == TSTRING) {
+	    width = 1;  /* ignore the optional 'w' in 'rAw' format */
+	} else if (coltype < 0) {  /* pointer to variable length array */
+	    width = 8;
+	    if (colcode[ii] == 'Q') width = 16;  /* this is a 'Q' not a 'P' column */
+	    repeat = 1;
+	}
+
+	inrepeat[ii] = repeat;
+	
+	/* width (in bytes) of each element and field in the INPUT row-major table */
+	incolwidth[ii] = repeat * width;
+	
+	/* starting offset of each field in the OUTPUT column-major table */
+	outcolstart[ii + 1] = outcolstart[ii] + incolwidth[ii] * nrows;
+
+	/* length of each sequence of bytes, after sorting them in signicant order */
+	outbytespan[ii] = (incolwidth[ii] * nrows) / width;
+
+    }
+
+    /* the transformed table has only 1 row */
+    /* output table width 8 bytes per column */
+
+    fits_modify_key_lng(outfptr, "NAXIS2", 1, "&", status);
+    fits_modify_key_lng(outfptr, "NAXIS1", ncols * 8, "&", status);
+
+    /* move to the start of the input table */
+    fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status);
+    ffmbyt(infptr, datastart, 0, status);
+
+    for (jj = 0; jj < nrows; jj++)   {    /* loop over rows */
+      for (ii = 0; ii < ncols; ii++) {  /* loop over columns */
+      
+	kk = 0;	
+
+	switch (colcode[ii]) {
+	/* separate the byte planes for the 2-byte, 4-byte, and 8-byte numeric columns */
+	case 'I':
+	  while(kk < incolwidth[ii]) {
+
+	    cptr = buffer + (outcolstart[ii] + (jj * inrepeat[ii]) + kk/2);  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1st byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 2nd byte */
+	    kk += 2;
+	  }
+	  break;
+	
+	case 'J':
+	case 'E':
+	  while(kk < incolwidth[ii]) {
+	    cptr = buffer + (outcolstart[ii] + (jj * inrepeat[ii]) + kk/4);  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    kk += 4;
+	  }
+	  break;
+
+	case 'D':
+	case 'K':
+	  while(kk < incolwidth[ii]) {
+	    cptr = buffer + (outcolstart[ii] + (jj * inrepeat[ii]) + kk/8);  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    kk += 8;
+	  }
+	  break;
+
+	default: /* don't bother separating the bytes for other column types */
+	    cptr = buffer + (outcolstart[ii] + (jj * incolwidth[ii]));   /* addr to copy to */
+
+	    startbyte = (infptr->Fptr)->bytepos;  /* save the starting byte location */
+
+	    ffgbyt(infptr, incolwidth[ii], cptr, status);  /* copy all the bytes */
+
+	    if (incolwidth[ii] >= MINDIRECT) { /* have to explicitly move to next byte */
+		ffmbyt(infptr, startbyte + incolwidth[ii], 0, status);
+	    }
+	}
+      }
+    }
+
+    fits_set_hdustruc(outfptr, status);
+    
+    /* now compress each column */
+    for (ii = 0; ii < ncols; ii++) {  /* loop over columns */
+
+	datasize = outcolstart[ii + 1] - outcolstart[ii];
+
+	/* allocate memory for the compressed data */
+	compressed_data = malloc(datasize);
+	if (!compressed_data) {
+	    printf("data memory allocation error");
+	    return(-1);
+	}
+
+	/* gzip compress the data */
+	compress2mem_from_mem(buffer + outcolstart[ii], datasize,
+	    &compressed_data,  &datasize, realloc, 
+	    &dlen, status);        
+
+	/* write the compressed data to the output column */
+	fits_set_tscale(outfptr, ii + 1, 1.0, 0.0, status);  /* turn off any data scaling, first */
+	fits_write_col(outfptr, TBYTE, ii + 1, 1, 1, dlen, compressed_data, status);
+
+        cratio[ii] = (float) datasize / (float) dlen;	
+	free(compressed_data);   /* don't need the compressed data any more */
+
+/*
+	if (trans_ratio[ii] > cratio[ii]) {
+	    sprintf(tempstring," >%5.2f",cratio[ii]);
+	} else  */ {
+	    sprintf(tempstring,"  %5.2f",cratio[ii]);
+	}
+
+	strcat(results[ii],tempstring);
+    }
+
+    fits_set_hdustruc(outfptr, status);
+
+    /* copy the heap from input to output file */
+/*
+    fits_shuffle_heap(infptr, outfptr, status);
+*/
+       	
+    free(buffer);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_shuffle_table3(fitsfile *infptr, fitsfile *outfptr, int *status)
+
+/*
+  Transpose the elements in the input table columns from row-major order into
+  column-major order, and write to the output table (which may be the same as
+  the input table).   For example, a table with 10000 rows and 2 '1I' columns
+  will be transformed into a 1 row table with 2 '10000I' columns.
+  
+  Integer columns are then compressed with Rice; all other columns compressed
+  with GZIP.  In addition, the bytes in the floating point numeric data values 
+  (columns with TFORM =  E, and D) are shuffled so that the most significant
+  byte of every element occurs first in the array, followed by the next most
+  significant byte, and so on to the least significant byte.   Thus, if you
+  have 3 4-byte numeric values, the bytes 012301230123 get shuffled to
+  000111222333
+*/
+{ 
+    LONGLONG nrows, incolwidth[999], inrepeat[999], outcolstart[1000], outbytespan[999];
+    LONGLONG headstart, datastart, dataend, startbyte, jj, kk, naxis1;
+    long repeat, width, pcount;
+    int ii, ncols, coltype, hdutype, ltrue = 1;
+    char *buffer, *cptr, keyname[9], tform[40], colcode[999], tempstring[20];
+    char comm[FLEN_COMMENT], *compressed_data;
+    float cratio[999];
+    int ll;
+    
+    size_t dlen, datasize;
+
+    if (*status > 0)
+        return(*status);
+    
+    fits_get_hdu_type(infptr, &hdutype, status);
+    if (hdutype != BINARY_TBL) {
+        *status = NOT_BTABLE;
+        return(*status);
+    }
+        
+    fits_get_num_rowsll(infptr, &nrows, status);
+    fits_get_num_cols(infptr, &ncols, status);
+    fits_read_key(infptr, TLONGLONG, "NAXIS1", &naxis1, NULL, status);
+    if (*status > 0)
+        return(*status);
+
+    if (nrows < 1  || ncols < 1) {
+	/* just copy the HDU if the table has 0 columns or rows */
+	if (infptr != outfptr) {  /* copy input header to the output */
+		fits_copy_hdu (infptr, outfptr, 0, status);
+	}
+	return(*status);
+    }
+   
+    /* allocate space for the transposed table */
+    buffer = calloc(naxis1, nrows);
+    if (!buffer) {
+        ffpmsg("Could not allocate buffer for transformed table");
+        *status = MEMORY_ALLOCATION;
+        return(*status);
+    }
+
+    if (infptr != outfptr) {  /* copy input header to the output */
+	fits_copy_header(infptr, outfptr, status);
+    }
+
+    outcolstart[0] = 0;
+    for (ii = 0; ii < ncols; ii++) {
+
+	/* get the column type, repeat count, and unit width */
+	fits_make_keyn("TFORM", ii+1, keyname, status);
+	fits_read_key(outfptr, TSTRING, keyname, tform, comm, status);
+
+	/* preserve the original TFORM value and comment string */
+	keyname[0] = 'Z';
+	fits_write_key(outfptr, TSTRING, keyname, tform, comm, status);
+	keyname[0] = 'T';
+ 
+        fits_binary_tform(tform, &coltype, &repeat, &width, status);
+
+   	/* BIT columns are a difficult case */
+	 /* round up to a multiple of 8 bits */
+/*
+	if (coltype == TBIT) {  
+	    repeat = (repeat + 7) / 8 * 8; 
+	}
+*/
+	cptr = tform;
+	while(isdigit(*cptr)) cptr++;
+	colcode[ii] = *cptr; /* save the column type code */
+
+/* all columns are now VLAs */
+	fits_modify_key_str(outfptr, keyname, "1PB", "&", status);
+
+	if (coltype == TBIT) {
+	    repeat = (repeat + 7) / 8;  /* convert from bits to bytes */
+	} else if (coltype == TSTRING) {
+	    width = 1;  /* ignore the optional 'w' in 'rAw' format */
+	} else if (coltype < 0) {  /* pointer to variable length array */
+	    width = 8;
+	    if (colcode[ii] == 'Q') width = 16;  /* this is a 'Q' not a 'P' column */
+	    repeat = 1;
+	}
+
+	inrepeat[ii] = repeat;
+	
+	/* width (in bytes) of each element and field in the INPUT row-major table */
+	incolwidth[ii] = repeat * width;
+	
+	/* starting offset of each field in the OUTPUT column-major table */
+	outcolstart[ii + 1] = outcolstart[ii] + incolwidth[ii] * nrows;
+
+	/* length of each sequence of bytes, after sorting them in signicant order */
+	outbytespan[ii] = (incolwidth[ii] * nrows) / width;
+    }
+
+    /* the transformed table has only 1 row */
+    /* output table width 8 bytes per column */
+
+    fits_modify_key_lng(outfptr, "NAXIS2", 1, "&", status);
+    fits_modify_key_lng(outfptr, "NAXIS1", ncols * 8, "&", status);
+
+    /* move to the start of the input table */
+    fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status);
+    ffmbyt(infptr, datastart, 0, status);
+
+    for (jj = 0; jj < nrows; jj++)   {    /* loop over rows */
+      for (ii = 0; ii < ncols; ii++) {  /* loop over columns */
+      
+	kk = 0;	
+
+	switch (colcode[ii]) {
+	/* separate the byte planes for the 2-byte, 4-byte, and 8-byte numeric columns */
+
+	case 'E':
+	  while(kk < incolwidth[ii]) {
+	    cptr = buffer + (outcolstart[ii] + (jj * inrepeat[ii]) + kk/4);  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    kk += 4;
+	  }
+	  break;
+
+	case 'D':
+	case 'K':
+	  while(kk < incolwidth[ii]) {
+	    cptr = buffer + (outcolstart[ii] + (jj * inrepeat[ii]) + kk/8);  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    cptr += outbytespan[ii];  
+	    ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	    kk += 8;
+	  }
+	  break;
+
+	default: /* don't bother separating the bytes for other column types */
+	    cptr = buffer + (outcolstart[ii] + (jj * incolwidth[ii]));   /* addr to copy to */
+	    startbyte = (infptr->Fptr)->bytepos;  /* save the starting byte location */
+
+	    ffgbyt(infptr, incolwidth[ii], cptr, status);  /* copy all the bytes */
+
+	    if (incolwidth[ii] >= MINDIRECT) { /* have to explicitly move to next byte */
+		ffmbyt(infptr, startbyte + incolwidth[ii], 0, status);
+	    }
+	}
+      }
+    }
+
+    fits_set_hdustruc(outfptr, status);
+    
+    for (ii = 0; ii < ncols; ii++) {  /* loop over columns */
+
+	datasize = outcolstart[ii + 1] - outcolstart[ii];
+	/* allocate memory for the compressed data */
+	compressed_data = malloc(datasize*2);
+	if (!compressed_data) {
+	    printf("data memory allocation error");
+	    return(-1);
+	}
+
+
+	switch (colcode[ii]) {
+
+
+	case 'I':
+#if BYTESWAPPED
+                ffswap2((short *) (buffer + outcolstart[ii]),  datasize / 2); 
+#endif
+  	        dlen = fits_rcomp_short ((short *)(buffer + outcolstart[ii]), datasize / 2, (unsigned char *) compressed_data,
+                       datasize * 2, 32);
+	  break;
+
+	case 'J':
+
+#if BYTESWAPPED
+                ffswap4((int *) (buffer + outcolstart[ii]),  datasize / 4); 
+#endif
+   	        dlen = fits_rcomp ((int *)(buffer + outcolstart[ii]), datasize / 4, (unsigned char *) compressed_data,
+                       datasize * 2, 32);
+	  break;
+
+	case 'B':
+  	        dlen = fits_rcomp_byte ((signed char *)(buffer + outcolstart[ii]), datasize, (unsigned char *) compressed_data,
+                       datasize * 2, 32);
+	  break;
+
+	default: 
+		/* gzip compress the data */
+		compress2mem_from_mem(buffer + outcolstart[ii], datasize,
+	    		&compressed_data,  &datasize, realloc, &dlen, status);        
+
+	} /* end of switch block */
+
+	if (dlen != 0)
+	cratio[ii] = (float) datasize / (float) dlen;  /* compression ratio of the column */
+
+	/* write the compressed data to the output column */
+	fits_set_tscale(outfptr, ii + 1, 1.0, 0.0, status);  /* turn off any data scaling, first */
+	fits_write_col(outfptr, TBYTE, ii + 1, 1, 1, dlen, compressed_data, status);
+	
+	free(compressed_data);   /* don't need the compressed data any more */
+/*	printf("   %c  %5.2f\n",colcode[ii],cratio[ii]); */
+
+
+	    sprintf(tempstring,"  %5.2f\n",cratio[ii]);
+/*
+        if (colcode[ii] == 'I' || colcode[ii] == 'J' || colcode[ii] == 'B') 
+	    sprintf(tempstring,"  %5.2f\n",cratio[ii]);
+	else
+	    sprintf(tempstring," \n");	
+*/
+	strcat(results[ii],tempstring);
+    }  /* end of loop over ncols */
+
+    printf("                       Trans   Shuf   Rice\n");
+    for (ii = 0; ii < ncols; ii++) {  /* loop over columns */
+      printf("%s", results[ii]);
+    }
+    
+    /* save the original PCOUNT value */
+    fits_read_key(infptr, TLONG, "PCOUNT", &pcount, comm, status);
+    fits_write_key(outfptr, TLONG, "ZPCOUNT", &pcount, comm, status);
+
+	
+    fits_write_key(outfptr, TLONGLONG, "ZNAXIS1", &naxis1, "original rows width",
+	status);
+    fits_write_key(outfptr, TLONGLONG, "ZNAXIS2", &nrows, "original number of rows",
+	status);
+
+    fits_write_key(outfptr, TLOGICAL, "TVIRTUAL", &ltrue, 
+        "this is a virtual table", status);
+    fits_write_key(outfptr, TSTRING, "ZMETHOD", "TRANSPOSED_SHUFFLED_GZIP",
+	   "table compression method", status);
+
+    fits_set_hdustruc(outfptr, status);
+
+    /* copy the heap from input to output file */
+/*
+    fits_shuffle_heap(infptr, outfptr, status);
+*/
+       	
+    free(buffer);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_unshuffle_table(fitsfile *infptr, fitsfile *outfptr, int *status)
+
+/*
+  Reverse the transformation done by fits_shuffle_table
+*/
+{ 
+
+    LONGLONG nrows, outcolwidth[999], outcolstart[1000], outrepeat[999], kk;
+    LONGLONG headstart, datastart, dataend, startbyte, jj, naxis1;
+    long repeat, width;
+    int ii, ncols, coltype, hdutype;
+    char *buffer, *cptr, keyname[9], tform[40], colcode[999];
+    char comm[FLEN_COMMENT];
+
+    if (*status > 0)
+        return(*status);
+    
+    fits_get_hdu_type(infptr, &hdutype, status);
+    if (hdutype != BINARY_TBL) {
+        *status = NOT_BTABLE;
+        return(*status);
+    }
+         
+    fits_get_num_rowsll(infptr, &nrows, status);
+    fits_get_num_cols(infptr, &ncols, status);
+
+    if (nrows != 1  || (ncols < 1)) {
+	/* just copy the HDU if the table does not have 1 row and 
+	   more than 0 columns */
+	if (infptr != outfptr) { 
+		fits_copy_hdu (infptr, outfptr, 0, status);
+	}
+	return(*status);
+    }
+
+    fits_read_key(infptr, TLONGLONG, "ZNAXIS2", &nrows, NULL, status);
+    if (*status > 0) {
+        ffpmsg("Could not find the required ZNAXIS2 keyword");
+        *status = 1;
+        return(*status);
+    }
+  
+    fits_read_key(infptr, TLONGLONG, "NAXIS1", &naxis1, NULL, status);
+
+    /* allocate space for the shuffled table */
+    buffer = calloc(naxis1, 1);
+    if (!buffer) {
+        ffpmsg("Could not allocate buffer for untransformed table");
+        *status = MEMORY_ALLOCATION;
+        return(*status);
+    }
+
+    if (infptr != outfptr) {  /* copy input header to the output */
+	fits_copy_header(infptr, outfptr, status);
+    }
+
+    outcolstart[0] = 0;
+    for (ii = 0; ii < ncols; ii++) {
+
+	/* get the original column type, repeat count, and unit width */
+	fits_make_keyn("ZFORM", ii+1, keyname, status);
+	fits_read_key(outfptr, TSTRING, keyname, tform, comm, status);
+
+	/* restore the original TFORM value and comment */
+        keyname[0] = 'T';
+	fits_modify_key_str(outfptr, keyname, tform, comm, status);
+
+	/* now delete the ZFORM keyword */
+        keyname[0] = 'Z';
+	fits_delete_key(outfptr, keyname, status);
+
+	cptr = tform;
+	while(isdigit(*cptr)) cptr++;
+	colcode[ii] = *cptr; /* save the column type code */
+
+        fits_binary_tform(tform, &coltype, &repeat, &width, status);
+
+	if (coltype == TBIT) {  /* BIT columns are a difficult case */
+	    repeat = (repeat + 7) / 8 ;   /* convert from bits to bytes */
+	}
+
+	outrepeat[ii] = repeat;   /* repeat count in the OUTPUT row-major table */
+
+	if (coltype == TSTRING) {
+	    width = 1;
+	} else if (coltype < 0) {  /* pointer to variable length array */
+	    width = 8;
+	    if (colcode[ii] == 'Q') width = 16;  /* this is a 'Q' not a 'P' column */
+	    outrepeat[ii] = 1;
+	}
+
+	/* width (in bytes) of each field in the OUTPUT row-major table */
+	outcolwidth[ii] = outrepeat[ii] * width;
+
+	/* starting offset of each field in the OUTPUT row-major table */
+	outcolstart[ii + 1] = outcolstart[ii] + outcolwidth[ii];
+
+    }
+ 	    	
+    /* reset the NAXISn keywords to what they were in the original uncompressed table */
+    fits_modify_key_lng(outfptr, "NAXIS1", (long) outcolstart[ncols], "&", status);
+    fits_modify_key_lng(outfptr, "NAXIS2", nrows, "&", status);
+
+    /* move to the start of the input table */
+    fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status);
+    ffmbyt(infptr, datastart, 0, status);
+
+    for (ii = 0; ii < ncols; ii++) {  /* loop over columns */
+                                      /* bytes in input table are in column major order */
+	switch (colcode[ii]) {
+	
+	/* recombine the byte planes for the 2-byte, 4-byte, and 8-byte numeric columns */
+	case 'I':
+
+	  /* get the 1st byte of each I*2 value */
+          for (jj = 0; jj < nrows; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (outcolstart[ii] + (jj * outcolstart[ncols]));  
+	    for (kk = 0; kk < outrepeat[ii]; kk++) {
+	      ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	      cptr += 2;  
+	    }
+	  }
+
+	  /* get the 2nd byte of each I*2 value */
+          for (jj = 0; jj < nrows; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (outcolstart[ii] + (jj * outcolstart[ncols]) + 1);  
+	    for (kk = 0; kk < outrepeat[ii]; kk++) {
+	      ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	      cptr += 2;  
+	    }
+	  }
+
+	  break;
+	
+	case 'J':
+	case 'E':
+
+	  /* get the 1st byte of each 4-byte value */
+          for (jj = 0; jj < nrows; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (outcolstart[ii] + (jj * outcolstart[ncols]));  
+	    for (kk = 0; kk < outrepeat[ii]; kk++) {
+	      ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	      cptr += 4;  
+	    }
+	  }
+
+	  /* get the 2nd byte  */
+          for (jj = 0; jj < nrows; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (outcolstart[ii] + (jj * outcolstart[ncols]) + 1);  
+	    for (kk = 0; kk < outrepeat[ii]; kk++) {
+	      ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	      cptr += 4;  
+	    }
+	  }
+
+	  /* get the 3rd byte  */
+          for (jj = 0; jj < nrows; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (outcolstart[ii] + (jj * outcolstart[ncols]) + 2);  
+	    for (kk = 0; kk < outrepeat[ii]; kk++) {
+	      ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	      cptr += 4;  
+	    }
+	  }
+
+	  /* get the 4th byte  */
+          for (jj = 0; jj < nrows; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (outcolstart[ii] + (jj * outcolstart[ncols]) + 3);  
+	    for (kk = 0; kk < outrepeat[ii]; kk++) {
+	      ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	      cptr += 4;  
+	    }
+	  }
+
+	  break;
+
+	case 'D':
+	case 'K':
+
+	  /* get the 1st byte of each 8-byte value */
+          for (jj = 0; jj < nrows; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (outcolstart[ii] + (jj * outcolstart[ncols]));  
+	    for (kk = 0; kk < outrepeat[ii]; kk++) {
+	      ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 2nd byte  */
+          for (jj = 0; jj < nrows; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (outcolstart[ii] + (jj * outcolstart[ncols]) + 1);  
+	    for (kk = 0; kk < outrepeat[ii]; kk++) {
+	      ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 3rd byte  */
+          for (jj = 0; jj < nrows; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (outcolstart[ii] + (jj * outcolstart[ncols]) + 2);  
+	    for (kk = 0; kk < outrepeat[ii]; kk++) {
+	      ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 4th byte  */
+          for (jj = 0; jj < nrows; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (outcolstart[ii] + (jj * outcolstart[ncols]) + 3);  
+	    for (kk = 0; kk < outrepeat[ii]; kk++) {
+	      ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 5th byte */
+          for (jj = 0; jj < nrows; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (outcolstart[ii] + (jj * outcolstart[ncols]) + 4);  
+	    for (kk = 0; kk < outrepeat[ii]; kk++) {
+	      ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 6th byte  */
+          for (jj = 0; jj < nrows; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (outcolstart[ii] + (jj * outcolstart[ncols]) + 5);  
+	    for (kk = 0; kk < outrepeat[ii]; kk++) {
+	      ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 7th byte  */
+          for (jj = 0; jj < nrows; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (outcolstart[ii] + (jj * outcolstart[ncols]) + 6);  
+	    for (kk = 0; kk < outrepeat[ii]; kk++) {
+	      ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 8th byte  */
+          for (jj = 0; jj < nrows; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (outcolstart[ii] + (jj * outcolstart[ncols]) + 7);  
+	    for (kk = 0; kk < outrepeat[ii]; kk++) {
+	      ffgbyt(infptr, 1, cptr, status);  /* copy 1 byte */
+	      cptr += 8;  
+	    }
+	  }
+
+	  break;
+
+	default: /*  the bytes for other column types are not separated */
+          for (jj = 0; jj < nrows; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (outcolstart[ii] + jj * outcolstart[ncols]);   /* addr to copy to */
+
+	    startbyte = (infptr->Fptr)->bytepos;  /* save the starting byte location */
+
+	    ffgbyt(infptr, outcolwidth[ii], cptr, status);  /* copy all the bytes */
+
+	    if (outcolwidth[ii] >= MINDIRECT) { /* have to explicitly move to next byte */
+		ffmbyt(infptr, startbyte + outcolwidth[ii], 0, status);
+	    }
+	  }
+      }  /* end of switch */
+    }  /* end of ncols loop */
+
+    /* copy the buffer of data to the output data unit */
+    fits_get_hduaddrll(outfptr, &headstart, &datastart, &dataend, status);        
+    ffmbyt(outfptr, datastart, 1, status);
+    ffpbyt(outfptr, naxis1, buffer, status);
+	
+    /* clean up header */
+    fits_delete_key(outfptr, "ZNAXIS2", status);
+    fits_delete_key(outfptr, "TVIRTUAL", status);
+    fits_delete_key(outfptr, "ZMETHOD", status);
+
+    /* reset internal table structure parameters */
+    fits_set_hdustruc(outfptr, status);
+
+    /* unshuffle the heap, if it exists */
+    fits_unshuffle_heap(outfptr, outfptr, status);
+           	
+    free(buffer);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_unshuffle_table2(fitsfile *infptr, fitsfile *outfptr, int *status)
+
+/*
+  Reverse the transformation done by fits_shuffle_table2
+*/
+{ 
+
+    LONGLONG nrows, rmajor_colwidth[999], rmajor_colstart[1000], cmajor_colstart[1000];
+    LONGLONG cmajor_repeat[999], rmajor_repeat[999], cmajor_bytespan[999], kk;
+    LONGLONG headstart, datastart, dataend;
+    long repeat, width, vla_repeat;
+    int  ncols, coltype, hdutype, anynull;
+    char *buffer, *shufbuffer, *cptr, keyname[9], tform[40], colcode[999];
+
+    long  pcount, naxis1, naxis2, fsize, ii, jj;
+    char *ptr, *iptr, comm[FLEN_COMMENT];
+    size_t dlen, datasize, fullsize;
+
+    if (*status > 0)
+        return(*status);
+     
+    fits_get_hdu_type(infptr, &hdutype, status);
+    if (hdutype != BINARY_TBL) {
+        *status = NOT_BTABLE;
+        return(*status);
+    }
+ 
+    fits_get_num_rowsll(infptr, &nrows, status);
+    fits_get_num_cols(infptr, &ncols, status);
+
+    if (nrows != 1  || (ncols < 1)) {
+	/* just copy the HDU if the table does not have 1 row and 
+	   more than 0 columns */
+	if (infptr != outfptr) { 
+		fits_copy_hdu (infptr, outfptr, 0, status);
+	}
+	return(*status);
+    }
+
+    fits_read_key(infptr, TLONG, "ZNAXIS1", &naxis1, comm, status);
+    if (*status > 0) {
+        ffpmsg("Could not find the required ZNAXIS1 keyword");
+        *status = 1;
+        return(*status);
+    }
+
+    fits_read_key(infptr, TLONG, "ZNAXIS2", &naxis2, comm, status);
+    if (*status > 0) {
+        ffpmsg("Could not find the required ZNAXIS2 keyword");
+        *status = 1;
+        return(*status);
+    }
+
+    fits_read_key(infptr, TLONG, "ZPCOUNT", &pcount, comm, status);
+    if (*status > 0) {
+        ffpmsg("Could not find the required ZPCOUNT keyword");
+        *status = 1;
+        return(*status);
+    }
+
+    fits_copy_header(infptr, outfptr, status);
+
+    /* reset the NAXISn keywords to what they were in the original uncompressed table */
+    fits_modify_key_lng(outfptr, "NAXIS1", naxis1, "&", status);
+    fits_modify_key_lng(outfptr, "NAXIS2", naxis2, "&", status);
+    fits_modify_key_lng(outfptr, "PCOUNT", pcount, "&", status);
+
+    fits_delete_key(outfptr, "ZPCOUNT", status);
+    fits_delete_key(outfptr, "ZNAXIS1", status);
+    fits_delete_key(outfptr, "ZNAXIS2", status);
+    fits_delete_key(outfptr, "TVIRTUAL", status);
+    fits_delete_key(outfptr, "ZMETHOD", status);
+
+    /* allocate space for the full shuffled table */
+    fullsize = naxis1 * naxis2;
+    shufbuffer = malloc(fullsize);
+    if (!shufbuffer) {
+        ffpmsg("Could not allocate buffer for shuffled table");
+        *status = MEMORY_ALLOCATION;
+        return(*status);
+    }
+
+    /* allocate space for the full unshuffled table */
+    buffer = malloc(fullsize);
+    if (!buffer) {
+        ffpmsg("Could not allocate buffer for unshuffled table");
+        *status = MEMORY_ALLOCATION;
+        return(*status);
+    }
+
+    /* loop over each column, to read the compressed bytes and uncompress them */
+    rmajor_colstart[0] = 0;
+    cmajor_colstart[0] = 0;
+    for (ii = 0; ii < ncols; ii++) {
+
+	/* get the original column type, repeat count, and unit width */
+	fits_make_keyn("ZFORM", ii+1, keyname, status);
+	fits_read_key(infptr, TSTRING, keyname, tform, comm, status);
+
+	/* restore the original TFORM value and comment */
+        keyname[0] = 'T';
+	fits_modify_key_str(outfptr, keyname, tform, comm, status);
+
+	/* now delete the ZFORM keyword */
+        keyname[0] = 'Z';
+	fits_delete_key(outfptr, keyname, status);
+
+	cptr = tform;
+	while(isdigit(*cptr)) cptr++;
+	colcode[ii] = *cptr; /* save the column type code */
+
+        fits_binary_tform(tform, &coltype, &repeat, &width, status);
+
+	if (coltype == TBIT) { 
+	    repeat = (repeat + 7) / 8 ;   /* convert from bits to bytes */
+	} else if (coltype == TSTRING) {
+	    width = 1;
+	} else if (coltype < 0) {  /* pointer to variable length array */
+	    if (colcode[ii] == 'P')
+	       width = 8;  /* this is a 'P' column */
+	    else
+	       width = 16;  /* this is a 'Q' not a 'P' column */
+	}
+
+	rmajor_repeat[ii] = repeat;
+	cmajor_repeat[ii] = repeat * naxis2;
+
+	/* width (in bytes) of each field in the row-major table */
+	rmajor_colwidth[ii] = rmajor_repeat[ii] * width;
+
+	/* starting offset of each field in the column-major table */
+	cmajor_colstart[ii + 1] = cmajor_colstart[ii] + rmajor_colwidth[ii] * naxis2;
+
+	/* length of each sequence of bytes, after sorting them in signicant order */
+	cmajor_bytespan[ii] = (rmajor_colwidth[ii] * naxis2) / width;
+
+
+	/* starting offset of each field in the  row-major table */
+	rmajor_colstart[ii + 1] = rmajor_colstart[ii] + rmajor_colwidth[ii];
+
+	/* read compressed bytes from input table */
+	fits_read_descript(infptr, ii + 1, 1, &vla_repeat, NULL, status);
+	
+	/* allocate memory and read in the compressed bytes */
+	ptr = malloc(vla_repeat);
+	if (!buffer) {
+            ffpmsg("Could not allocate buffer for compressed bytes");
+            *status = MEMORY_ALLOCATION;
+            return(*status);
+	}
+
+	fits_set_tscale(infptr, ii + 1, 1.0, 0.0, status);  /* turn off any data scaling, first */
+	fits_read_col_byt(infptr, ii + 1, 1, 1, vla_repeat, 0, ptr, &anynull, status);
+
+        cptr = shufbuffer + cmajor_colstart[ii];
+	
+	fullsize = (cmajor_colstart[ii+1] - cmajor_colstart[ii]);
+
+	/* gunzip the data into the correct location in the full table buffer */
+	uncompress2mem_from_mem(ptr, vla_repeat,
+	&cptr,  &fullsize, realloc, &dlen, status);        
+
+	if (dlen != (cmajor_colstart[ii+1] - cmajor_colstart[ii]))
+	  printf("gunzip error: got %ld bytes, expected %ld bytes\n",(long) dlen,
+	     (long) (cmajor_colstart[ii+1] - cmajor_colstart[ii]));
+
+	free(ptr);
+    }
+
+    /* now unshuffle the bytes */
+    ptr = shufbuffer;
+    for (ii = 0; ii < ncols; ii++) {  /* loop over columns */
+                                      /* bytes in input table are in column major order */
+	switch (colcode[ii]) {
+	
+	/* recombine the byte planes for the 2-byte, 4-byte, and 8-byte numeric columns */
+	case 'I':
+
+	  /* get the 1st byte of each I*2 value */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]));  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 2;  
+	    }
+	  }
+
+	  /* get the 2nd byte of each I*2 value */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 1);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 2;  
+	    }
+	  }
+
+	  break;
+	
+	case 'J':
+	case 'E':
+
+	  /* get the 1st byte of each 4-byte value */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]));  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 4;  
+	    }
+	  }
+
+	  /* get the 2nd byte  */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 1);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 4;  
+	    }
+	  }
+
+	  /* get the 3rd byte  */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 2);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 4;  
+	    }
+	  }
+
+	  /* get the 4th byte  */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 3);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 4;  
+	    }
+	  }
+
+	  break;
+
+	case 'D':
+	case 'K':
+
+	  /* get the 1st byte of each 8-byte value */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]));  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 2nd byte  */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 1);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 3rd byte  */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 2);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 4th byte  */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 3);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 5th byte */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 4);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 6th byte  */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 5);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 7th byte  */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 6);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 8th byte  */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 7);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 8;  
+	    }
+	  }
+
+	  break;
+
+	default: /*  the bytes for other column types are not separated */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + jj * rmajor_colstart[ncols]);   /* addr to copy to */
+	    memcpy(cptr, ptr, rmajor_colwidth[ii]);
+	    ptr += (rmajor_colwidth[ii]);
+	  }
+
+      }  /* end of switch */
+    }  /* end of ncols loop */
+
+    /* copy the buffer of data to the output data unit */
+    fits_get_hduaddrll(outfptr, &headstart, &datastart, &dataend, status);        
+    ffmbyt(outfptr, datastart, 1, status);
+    ffpbyt(outfptr, naxis1 * naxis2, buffer, status);
+	
+    /* reset internal table structure parameters */
+    fits_set_hdustruc(outfptr, status);
+
+    /* unshuffle the heap, if it exists */
+/*
+    fits_unshuffle_heap(outfptr, outfptr, status);
+*/         	
+    free(buffer);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_unshuffle_table3(fitsfile *infptr, fitsfile *outfptr, int *status)
+
+/*
+  Reverse the transformation done by fits_shuffle_table2
+  integer columns are Rice compressed; other columns are compressed with GZIP, 
+  and the non-integer numeric columns are byte-shuffled.
+
+*/
+{ 
+
+    LONGLONG nrows, rmajor_colwidth[999], rmajor_colstart[1000], cmajor_colstart[1000];
+    LONGLONG cmajor_repeat[999], rmajor_repeat[999], cmajor_bytespan[999], kk;
+    LONGLONG headstart, datastart, dataend;
+    long repeat, width, vla_repeat;
+    int  ncols, coltype, hdutype, anynull;
+    char *buffer, *shufbuffer, *cptr, keyname[9], tform[40], colcode[999];
+
+    long  pcount, naxis1, naxis2, fsize, ii, jj;
+    char *ptr, *iptr, comm[FLEN_COMMENT];
+    size_t dlen, datasize, fullsize;
+    
+    int ll;
+
+    if (*status > 0)
+        return(*status);
+     
+    fits_get_hdu_type(infptr, &hdutype, status);
+    if (hdutype != BINARY_TBL) {
+        *status = NOT_BTABLE;
+        return(*status);
+    }
+ 
+    fits_get_num_rowsll(infptr, &nrows, status);
+    fits_get_num_cols(infptr, &ncols, status);
+
+    if (nrows != 1  || (ncols < 1)) {
+	/* just copy the HDU if the table does not have 1 row and 
+	   more than 0 columns */
+	if (infptr != outfptr) { 
+		fits_copy_hdu (infptr, outfptr, 0, status);
+	}
+	return(*status);
+    }
+
+    fits_read_key(infptr, TLONG, "ZNAXIS1", &naxis1, comm, status);
+    if (*status > 0) {
+        ffpmsg("Could not find the required ZNAXIS1 keyword");
+        *status = 1;
+        return(*status);
+    }
+
+    fits_read_key(infptr, TLONG, "ZNAXIS2", &naxis2, comm, status);
+    if (*status > 0) {
+        ffpmsg("Could not find the required ZNAXIS2 keyword");
+        *status = 1;
+        return(*status);
+    }
+
+    fits_read_key(infptr, TLONG, "ZPCOUNT", &pcount, comm, status);
+    if (*status > 0) {
+        ffpmsg("Could not find the required ZPCOUNT keyword");
+        *status = 1;
+        return(*status);
+    }
+
+    fits_copy_header(infptr, outfptr, status);
+
+    /* reset the NAXISn keywords to what they were in the original uncompressed table */
+    fits_modify_key_lng(outfptr, "NAXIS1", naxis1, "&", status);
+    fits_modify_key_lng(outfptr, "NAXIS2", naxis2, "&", status);
+    fits_modify_key_lng(outfptr, "PCOUNT", pcount, "&", status);
+
+    fits_delete_key(outfptr, "ZPCOUNT", status);
+    fits_delete_key(outfptr, "ZNAXIS1", status);
+    fits_delete_key(outfptr, "ZNAXIS2", status);
+    fits_delete_key(outfptr, "TVIRTUAL", status);
+    fits_delete_key(outfptr, "ZMETHOD", status);
+
+    /* allocate space for the full shuffled table */
+    fullsize = naxis1 * naxis2;
+    shufbuffer = malloc(fullsize);
+    if (!shufbuffer) {
+        ffpmsg("Could not allocate buffer for shuffled table");
+        *status = MEMORY_ALLOCATION;
+        return(*status);
+    }
+
+    /* allocate space for the full unshuffled table */
+    buffer = malloc(fullsize);
+    if (!buffer) {
+        ffpmsg("Could not allocate buffer for unshuffled table");
+        *status = MEMORY_ALLOCATION;
+        return(*status);
+    }
+
+    /* loop over each column, to read the compressed bytes and uncompress them */
+    rmajor_colstart[0] = 0;
+    cmajor_colstart[0] = 0;
+    for (ii = 0; ii < ncols; ii++) {
+
+	/* get the original column type, repeat count, and unit width */
+	fits_make_keyn("ZFORM", ii+1, keyname, status);
+	fits_read_key(infptr, TSTRING, keyname, tform, comm, status);
+
+	/* restore the original TFORM value and comment */
+        keyname[0] = 'T';
+	fits_modify_key_str(outfptr, keyname, tform, comm, status);
+
+	/* now delete the ZFORM keyword */
+        keyname[0] = 'Z';
+	fits_delete_key(outfptr, keyname, status);
+
+	cptr = tform;
+	while(isdigit(*cptr)) cptr++;
+	colcode[ii] = *cptr; /* save the column type code */
+
+        fits_binary_tform(tform, &coltype, &repeat, &width, status);
+
+	if (coltype == TBIT) { 
+	    repeat = (repeat + 7) / 8 ;   /* convert from bits to bytes */
+	} else if (coltype == TSTRING) {
+	    width = 1;
+	} else if (coltype < 0) {  /* pointer to variable length array */
+	    if (colcode[ii] == 'P')
+	       width = 8;  /* this is a 'P' column */
+	    else
+	       width = 16;  /* this is a 'Q' not a 'P' column */
+	}
+
+	rmajor_repeat[ii] = repeat;
+	cmajor_repeat[ii] = repeat * naxis2;
+
+	/* width (in bytes) of each field in the row-major table */
+	rmajor_colwidth[ii] = rmajor_repeat[ii] * width;
+
+	/* starting offset of each field in the column-major table */
+	cmajor_colstart[ii + 1] = cmajor_colstart[ii] + rmajor_colwidth[ii] * naxis2;
+
+	/* length of each sequence of bytes, after sorting them in signicant order */
+	cmajor_bytespan[ii] = (rmajor_colwidth[ii] * naxis2) / width;
+
+
+	/* starting offset of each field in the  row-major table */
+	rmajor_colstart[ii + 1] = rmajor_colstart[ii] + rmajor_colwidth[ii];
+
+	/* read compressed bytes from input table */
+	fits_read_descript(infptr, ii + 1, 1, &vla_repeat, NULL, status);
+	
+	/* allocate memory and read in the compressed bytes */
+	ptr = malloc(vla_repeat);
+	if (!buffer) {
+            ffpmsg("Could not allocate buffer for compressed bytes");
+            *status = MEMORY_ALLOCATION;
+            return(*status);
+	}
+
+	fits_set_tscale(infptr, ii + 1, 1.0, 0.0, status);  /* turn off any data scaling, first */
+	fits_read_col_byt(infptr, ii + 1, 1, 1, vla_repeat, 0, ptr, &anynull, status);
+
+        cptr = shufbuffer + cmajor_colstart[ii];
+	
+	fullsize = (cmajor_colstart[ii+1] - cmajor_colstart[ii]);
+
+	switch (colcode[ii]) {
+	/* separate the byte planes for the 2-byte, 4-byte, and 8-byte numeric columns */
+
+
+	case 'I':
+   	        dlen = fits_rdecomp_short ((unsigned char *) ptr, vla_repeat, (unsigned short *)cptr, 
+		     fullsize / 2, 32);
+#if BYTESWAPPED
+                ffswap2((short *) cptr,  fullsize / 2); 
+#endif
+	  break;
+
+	case 'J':
+   	        dlen = fits_rdecomp ((unsigned char *) ptr, vla_repeat, (unsigned int *)cptr, 
+		     fullsize / 4, 32);
+#if BYTESWAPPED
+                ffswap4((int *) cptr,  fullsize / 4); 
+#endif
+	  break;
+
+	case 'B':
+   	        dlen = fits_rdecomp_byte ((unsigned char *) ptr, vla_repeat, (unsigned char *)cptr, 
+		     fullsize, 32);
+	  break;
+
+	default: 
+	    /* gunzip the data into the correct location in the full table buffer */
+	    uncompress2mem_from_mem(ptr, vla_repeat,
+	        &cptr,  &fullsize, realloc, &dlen, status);              
+	} /* end of switch block */
+
+	free(ptr);
+    }
+
+    /* now unshuffle the bytes */
+    ptr = shufbuffer;
+    for (ii = 0; ii < ncols; ii++) {  /* loop over columns */
+                                      /* bytes in input table are in column major order */
+	switch (colcode[ii]) {
+	
+	/* recombine the byte planes for the 2-byte, 4-byte, and 8-byte numeric columns */
+
+	case 'E':
+
+	  /* get the 1st byte of each 4-byte value */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]));  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 4;  
+	    }
+	  }
+
+	  /* get the 2nd byte  */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 1);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 4;  
+	    }
+	  }
+
+	  /* get the 3rd byte  */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 2);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 4;  
+	    }
+	  }
+
+	  /* get the 4th byte  */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 3);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 4;  
+	    }
+	  }
+
+	  break;
+
+	case 'D':
+	case 'K':
+
+	  /* get the 1st byte of each 8-byte value */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]));  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 2nd byte  */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 1);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 3rd byte  */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 2);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 4th byte  */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 3);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 5th byte */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 4);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 6th byte  */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 5);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 7th byte  */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 6);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 8;  
+	    }
+	  }
+
+	  /* get the 8th byte  */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + (jj * rmajor_colstart[ncols]) + 7);  
+	    for (kk = 0; kk < rmajor_repeat[ii]; kk++) {
+	      *cptr = *ptr;  /* copy 1 byte */
+	      ptr++;
+	      cptr += 8;  
+	    }
+	  }
+
+	  break;
+
+	default: /*  the bytes for other column types are not separated */
+          for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
+	    cptr = buffer + (rmajor_colstart[ii] + jj * rmajor_colstart[ncols]);   /* addr to copy to */
+	    memcpy(cptr, ptr, rmajor_colwidth[ii]);
+	 
+	    ptr += (rmajor_colwidth[ii]);
+	  }
+
+      }  /* end of switch */
+    }  /* end of ncols loop */
+
+    /* copy the buffer of data to the output data unit */
+    fits_get_hduaddrll(outfptr, &headstart, &datastart, &dataend, status);        
+    ffmbyt(outfptr, datastart, 1, status);
+    ffpbyt(outfptr, naxis1 * naxis2, buffer, status);
+	
+    /* reset internal table structure parameters */
+    fits_set_hdustruc(outfptr, status);
+
+    /* unshuffle the heap, if it exists */
+/*
+    fits_unshuffle_heap(outfptr, outfptr, status);
+*/         	
+    free(buffer);
+    free(shufbuffer);
+    return(*status);
+}
+
+/*--------------------------------------------------------------------------*/
+int fits_gzip_datablocks(fitsfile *outfptr, int *status)
+/*
+  GZIP compress all the data blocks in the binary table HDU.
+  Store the size of the compressed byte stream in the PCOUNT keyword.  
+  Save the original PCOUNT value in the ZPCOUNT keyword.  
+*/
+{ 
+    long headstart, datastart, dataend, pcount, ii;
+    char *ptr, *cptr, *iptr, comm[FLEN_COMMENT];
+    size_t dlen, datasize;
+
+    /* allocate memory for the data and the compressed data */
+    fits_get_hduaddr(outfptr, &headstart, &datastart, &dataend, status); 
+    datasize = dataend - datastart;
+    ptr = malloc(datasize);
+    cptr = malloc(datasize);
+    if (!ptr || !cptr) {
+	printf("data memory allocation error in fits_gzip_datablocks\n");
+	return(-1);
+    }
+
+    /* copy the data into memory */
+    ffmbyt(outfptr,datastart, REPORT_EOF, status);
+    iptr = ptr;
+    for (ii = 0; ii < datasize; ii+= 2880) {
+	ffgbyt(outfptr, 2880, iptr, status);
+	iptr += 2880;
+    }
+	
+    /* gzip compress the data */
+    compress2mem_from_mem(ptr, datasize,
+	&cptr,  &datasize, realloc, 
+	&dlen, status);        
+
+    free(ptr);  /* don't need the original data any more */
+    /* copy the compressed data back to the HDU */
+    ffmbyt(outfptr,datastart, REPORT_EOF, status);
+    ffpbyt(outfptr, dlen, cptr, status);
+    free(cptr);   /* don't need the compressed data any more */
+
+    /* update the header keywords */
+    fits_read_key(outfptr, TLONG, "PCOUNT", &pcount, comm, status);
+    fits_write_key(outfptr, TLONG, "ZPCOUNT", &pcount, comm, status);
+    pcount = dlen;
+    fits_update_key(outfptr, TLONG, "PCOUNT", &pcount, comm, status);
+
+    /* must also reset the internal heapsize parameter */
+    /* otherwise CFITSIO will reset PCOUNT back to the old value */
+    /* when closing the HDU */
+    (outfptr->Fptr)->heapsize = pcount;
+
+    pcount = 0;
+    fits_update_key(outfptr, TLONG, "NAXIS2", &pcount, comm, status);
+
+    fits_set_hdustruc(outfptr, status);
+    fits_read_key(outfptr, TLONG, "PCOUNT", &pcount, comm, status);
+
+    fits_get_hduaddr(outfptr, &headstart, &datastart, &dataend, status); 
+
+    /* truncate the file to the new size */
+
+    fftrun(outfptr, dataend, status);
+   
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_gunzip_datablocks(fitsfile *outfptr, int *status)
+/*
+  GUNZIP decompress all the data blocks in the binary table HDU.
+  Restore the original header keyword values.
+*/
+{ 
+    long headstart, datastart, dataend, pcount, naxis1, fsize, ii;
+    char *ptr, *cptr, *iptr, comm[FLEN_COMMENT];
+    size_t dlen, datasize, fullsize;
+
+    /* allocate memory for the data and the compressed data */
+    fits_get_hduaddr(outfptr, &headstart, &datastart, &dataend, status); 
+    datasize = dataend - datastart;
+
+    ptr = malloc(datasize);
+
+    fits_read_key(outfptr, TLONG, "NAXIS1", &naxis1, comm, status);
+    fits_read_key(outfptr, TLONG, "ZPCOUNT", &pcount, comm, status);
+
+    /* convert to integral of the 2880 FITS block size */
+    fullsize = (naxis1 + pcount + 2879) / 2880 * 2880;
+    fsize = fullsize;
+    cptr = malloc(fullsize);
+
+    if (!ptr || !cptr) {
+	printf("data memory allocation error\n");
+	return(-1);
+    }
+
+    /* copy the data into memory */
+    ffmbyt(outfptr,datastart, REPORT_EOF, status);
+    iptr = ptr;
+    for (ii = 0; ii < datasize; ii+= 2880) {
+	ffgbyt(outfptr, 2880, iptr, status);
+	iptr += 2880;
+    }
+	
+    /* gzip compress the data */
+    uncompress2mem_from_mem(ptr, datasize,
+	&cptr,  &fullsize, realloc, 
+	&dlen, status);        
+
+
+
+    free(ptr);  /* don't need the original data any more */
+
+    /* copy the uncompressed data back to the HDU */
+    ffmbyt(outfptr,datastart, REPORT_EOF, status);
+    ffpbyt(outfptr, dlen, cptr, status);
+    free(cptr);   /* don't need the compressed data any more */
+
+    /* update the header keywords */
+    fits_read_key(outfptr, TLONG, "ZPCOUNT", &pcount, comm, status);
+    fits_update_key(outfptr, TLONG, "PCOUNT", &pcount, comm, status);
+
+    /* must also reset CFITSIO's internal heapsize pointer */
+    (outfptr->Fptr)->heapsize = pcount;
+
+    fits_delete_key(outfptr, "ZPCOUNT", status);
+
+    /* the transposed table has 1 row */
+    pcount = 1;
+    fits_update_key(outfptr, TLONG, "NAXIS2", &pcount, comm, status);
+
+    fits_set_hdustruc(outfptr, status);
+    
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int fits_copy_heap(fitsfile *infptr, fitsfile *outfptr, int *status)
+
+/*
+  copy the binary table heap from the input file to the output file
+*/
+{ 
+    LONGLONG headstart, datastart, dataend, nrows, naxis1, datasize;
+    long pcount;
+    int tstatus;
+    char *buffer, *ptr;
+
+    if (*status > 0)
+        return(*status);
+    
+    if (infptr == outfptr)
+        return(*status);
+
+    tstatus = 0;
+    fits_read_key(infptr, TLONG, "PCOUNT", &pcount, NULL, &tstatus);
+
+    /* just return if there is no heap */
+    if (tstatus != 0 || pcount == 0)
+        return(*status);
+
+    /* allocate memory for the heap */
+    fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status); 
+         
+    fits_get_num_rowsll(infptr, &nrows, status);
+    fits_read_key(infptr, TLONGLONG, "NAXIS1", &naxis1, NULL, status);
+
+    /* size of the heap */
+    datasize = (dataend - datastart) - (nrows * naxis1);
+
+    if (datasize == 0)
+        return(*status);
+
+    ptr = malloc(datasize);
+
+    /* copy the heap into memory */
+    ffmbyt(infptr, datastart + (nrows * naxis1), REPORT_EOF, status);
+    ffgbyt(infptr, datasize , ptr, status);
+    
+    /* copy the heap back to the output file */
+    fits_get_hduaddrll(outfptr, &headstart, &datastart, &dataend, status); 
+
+    ffmbyt(outfptr, datastart + (nrows * naxis1), IGNORE_EOF, status);
+    ffpbyt(outfptr, datasize , ptr, status);
+
+    free(ptr);   
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int fits_shuffle_heap(fitsfile *infptr, fitsfile *outfptr, int *status)
+
+/*
+  copy the binary table heap from the input file to the output file
+  also shuffle the bytes for the numeric arrays in the heap, so that
+  the bytes are sorted in order of decreasing significance
+*/
+{ 
+    LONGLONG headstart, datastart, dataend, nrows, naxis1, datasize;
+    LONGLONG length, offset;
+    long pcount, jj;
+    int tstatus, coltype, ncols, ii;
+    char *buffer, *ptr;
+
+    if (*status > 0)
+        return(*status);
+    
+/*
+    if (infptr == outfptr)
+        return(*status);
+*/
+    tstatus = 0;
+    fits_read_key(infptr, TLONG, "PCOUNT", &pcount, NULL, &tstatus);
+
+    /* just return if there is no heap */
+    if (tstatus != 0 || pcount == 0)
+        return(*status);
+
+    /* allocate memory for the heap */
+    fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status); 
+         
+    fits_get_num_rowsll(infptr, &nrows, status);
+    fits_read_key(infptr, TLONGLONG, "NAXIS1", &naxis1, NULL, status);
+    fits_get_num_cols(infptr, &ncols, status);
+
+    /* size of the heap */
+    datasize = (dataend - datastart) - (nrows * naxis1);
+
+    if (datasize == 0)
+        return(*status);
+
+    ptr = malloc(datasize);
+
+    /* copy the heap into memory */
+    ffmbyt(infptr, datastart + (nrows * naxis1), REPORT_EOF, status);
+    ffgbyt(infptr, datasize , ptr, status);
+    
+    for (ii = 1; ii <= ncols; ii++) {
+
+        fits_get_coltype(infptr, ii, &coltype, NULL, NULL, status);
+
+	if (coltype >= 0) continue;   /* only interested in variable length columns */
+	
+	coltype = coltype * (-1);
+	
+	switch (coltype) {
+	/* separate the byte planes for the 2-byte, 4-byte, and 8-byte numeric columns */
+	case TSHORT:
+
+	  for (jj = 1; jj <= nrows; jj++) {
+	    fits_read_descriptll(infptr, ii, jj, &length, &offset, status);
+	    fits_shuffle_2bytes(ptr + offset, length, status);    
+	  }
+	  break;
+	
+	case TLONG:
+	case TFLOAT:
+	  for (jj = 1; jj <= nrows; jj++) {
+	    fits_read_descriptll(infptr, ii, jj, &length, &offset, status);
+	    fits_shuffle_4bytes(ptr + offset, length, status);    
+	  }
+	  break;
+
+	case TDOUBLE:
+	case TLONGLONG:
+	  for (jj = 1; jj <= nrows; jj++) {
+	    fits_read_descriptll(infptr, ii, jj, &length, &offset, status);
+	    fits_shuffle_8bytes(ptr + offset, length,  status);    
+	  }
+	  break;
+
+	default: /* don't bother separating the bytes for other column types */
+	  break;
+
+	}   /* end of switch block */
+    }
+
+    /* copy the shuffled heap back to the output file */
+    fits_get_hduaddrll(outfptr, &headstart, &datastart, &dataend, status); 
+
+    ffmbyt(outfptr, datastart + (nrows * naxis1), IGNORE_EOF, status);
+    ffpbyt(outfptr, datasize , ptr, status);
+
+    free(ptr);   
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int fits_shuffle_2bytes(char *heap, LONGLONG length, int *status)
+
+/* shuffle the bytes in an array of 2-byte integers in the heap */
+
+{
+    LONGLONG ii;
+    char *ptr, *cptr, *heapptr;
+    
+    ptr = malloc(length * 2);
+    heapptr = heap;
+    cptr = ptr;
+    
+    for (ii = 0; ii < length; ii++) {
+       *cptr = *heapptr;
+       heapptr++;
+       *(cptr + length) = *heapptr;
+       heapptr++;
+       cptr++;
+    }
+         
+    memcpy(heap, ptr, length * 2);
+    free(ptr);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int fits_shuffle_4bytes(char *heap, LONGLONG length, int *status)
+
+/* shuffle the bytes in an array of 4-byte integers or floats  */
+
+{
+    LONGLONG ii;
+    char *ptr, *cptr, *heapptr;
+    
+    ptr = malloc(length * 4);
+    if (!ptr) {
+      printf("malloc failed\n");
+      return(*status);
+    }
+
+    heapptr = heap;
+    cptr = ptr;
+ 
+    for (ii = 0; ii < length; ii++) {
+       *cptr = *heapptr;
+       heapptr++;
+       *(cptr + length) = *heapptr;
+       heapptr++;
+       *(cptr + (length * 2)) = *heapptr;
+       heapptr++;
+       *(cptr + (length * 3)) = *heapptr;
+       heapptr++;
+       cptr++;
+    }
+        
+    memcpy(heap, ptr, length * 4);
+    free(ptr);
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int fits_shuffle_8bytes(char *heap, LONGLONG length, int *status)
+
+/* shuffle the bytes in an array of 8-byte integers or doubles in the heap */
+
+{
+    LONGLONG ii;
+    char *ptr, *cptr, *heapptr;
+    
+    ptr = malloc(length * 8);
+    heapptr = heap;
+    cptr = ptr;
+    
+    for (ii = 0; ii < length; ii++) {
+       *cptr = *heapptr;
+       heapptr++;
+       *(cptr + length) = *heapptr;
+       heapptr++;
+       *(cptr + (length * 2)) = *heapptr;
+       heapptr++;
+       *(cptr + (length * 3)) = *heapptr;
+       heapptr++;
+       *(cptr + (length * 4)) = *heapptr;
+       heapptr++;
+       *(cptr + (length * 5)) = *heapptr;
+       heapptr++;
+       *(cptr + (length * 6)) = *heapptr;
+       heapptr++;
+       *(cptr + (length * 7)) = *heapptr;
+       heapptr++;
+       cptr++;
+     }
+        
+    memcpy(heap, ptr, length * 8
+   );
+    free(ptr);
+ 
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int fits_unshuffle_heap(fitsfile *infptr, fitsfile *outfptr, int *status)
+
+/*
+  copy the binary table heap from the input file to the output file
+  also shuffle the bytes for the numeric arrays in the heap, so that
+  the bytes are sorted in order of decreasing significance
+*/
+{ 
+    LONGLONG headstart, datastart, dataend, nrows, naxis1, datasize;
+    LONGLONG length, offset;
+    long pcount, jj;
+    int tstatus, coltype, ncols, ii;
+    char *buffer, *ptr;
+
+    if (*status > 0)
+        return(*status);
+    
+/*
+    if (infptr == outfptr)
+        return(*status);
+*/
+    tstatus = 0;
+    fits_read_key(infptr, TLONG, "PCOUNT", &pcount, NULL, &tstatus);
+
+    /* just return if there is no heap */
+    if (tstatus != 0 || pcount == 0)
+        return(*status);
+
+    /* get size of the heap */
+    fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status); 
+         
+    fits_get_num_rowsll(infptr, &nrows, status);
+    fits_read_key(infptr, TLONGLONG, "NAXIS1", &naxis1, NULL, status);
+    fits_get_num_cols(infptr, &ncols, status);
+
+    /* size of the heap */
+    datasize = (dataend - datastart) - (nrows * naxis1);
+    if (datasize == 0)
+        return(*status);
+
+    /* allocate memory for the heap */
+    ptr = malloc(datasize);
+
+    /* copy the heap into memory */
+    ffmbyt(infptr, datastart + (nrows * naxis1), REPORT_EOF, status);
+    ffgbyt(infptr, datasize , ptr, status);
+    
+    for (ii = ncols; ii > 0; ii--) {
+
+        fits_get_coltype(infptr, ii, &coltype, NULL, NULL, status);
+
+	if (coltype >= 0) continue;   /* only interested in variable length columns */
+	
+	coltype = coltype * (-1);
+	
+	switch (coltype) {
+	/* recombine the byte planes for the 2-byte, 4-byte, and 8-byte numeric columns */
+	case TSHORT:
+
+	  for (jj = nrows; jj > 0; jj--) {
+	    fits_read_descriptll(infptr, ii, jj, &length, &offset, status);
+	    fits_unshuffle_2bytes(ptr + offset, length, status);    
+	  }
+	  break;
+	
+	case TLONG:
+	case TFLOAT:
+	  for (jj = nrows; jj > 0; jj--) {
+	    fits_read_descriptll(infptr, ii, jj, &length, &offset, status);
+	    fits_unshuffle_4bytes(ptr + offset, length, status);    
+	  }
+	  break;
+
+	case TDOUBLE:
+	case TLONGLONG:
+	  for (jj = nrows; jj > 0; jj--) {
+	    fits_read_descriptll(infptr, ii, jj, &length, &offset, status);
+	    fits_unshuffle_8bytes(ptr + offset, length,  status);    
+	  }
+	  break;
+
+	default: /* don't need to recombine bytes for other column types */
+	  break;
+
+	}   /* end of switch block */
+    }
+
+    /* copy the heap back to the output file */
+    fits_get_hduaddrll(outfptr, &headstart, &datastart, &dataend, status); 
+
+    ffmbyt(outfptr, datastart + (nrows * naxis1), IGNORE_EOF, status);
+    ffpbyt(outfptr, datasize , ptr, status);
+
+    free(ptr);   
+
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int fits_unshuffle_2bytes(char *heap, LONGLONG length, int *status)
+
+/* unshuffle the bytes in an array of 2-byte integers */
+
+{
+    LONGLONG ii;
+    char *ptr, *cptr, *heapptr;
+    
+    ptr = malloc(length * 2);
+    heapptr = heap + (2 * length) - 1;
+    cptr = ptr + (2 * length) - 1;
+    
+    for (ii = 0; ii < length; ii++) {
+       *cptr = *heapptr;
+       cptr--;
+       *cptr = *(heapptr - length);
+       cptr--;
+       heapptr--;
+    }
+         
+    memcpy(heap, ptr, length * 2);
+    free(ptr);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int fits_unshuffle_4bytes(char *heap, LONGLONG length, int *status)
+
+/* unshuffle the bytes in an array of 4-byte integers or floats */
+
+{
+    LONGLONG ii;
+    char *ptr, *cptr, *heapptr;
+    
+    ptr = malloc(length * 4);
+    heapptr = heap + (4 * length) -1;
+    cptr = ptr + (4 * length) -1;
+ 
+    for (ii = 0; ii < length; ii++) {
+       *cptr = *heapptr;
+       cptr--;
+       *cptr = *(heapptr - length);
+       cptr--;
+       *cptr = *(heapptr - (2 * length));
+       cptr--;
+       *cptr = *(heapptr - (3 * length));
+       cptr--;
+       heapptr--;
+    }
+        
+    memcpy(heap, ptr, length * 4);
+    free(ptr);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int fits_unshuffle_8bytes(char *heap, LONGLONG length, int *status)
+
+/* unshuffle the bytes in an array of 8-byte integers or doubles */
+
+{
+    LONGLONG ii;
+    char *ptr, *cptr, *heapptr;
+    
+    ptr = malloc(length * 8) - 1;
+    heapptr = heap + (8 * length) - 1;
+    cptr = ptr + (8 * length);
+    
+    for (ii = 0; ii < length; ii++) {
+       *cptr = *heapptr;
+       cptr--;
+       *cptr = *(heapptr - length);
+       cptr--;
+       *cptr = *(heapptr - (2 * length));
+       cptr--;
+       *cptr = *(heapptr - (3 * length));
+       cptr--;
+       *cptr = *(heapptr - (4 * length));
+       cptr--;
+       *cptr = *(heapptr - (5 * length));
+       cptr--;
+       *cptr = *(heapptr - (6 * length));
+       cptr--;
+       *cptr = *(heapptr - (7 * length));
+       cptr--;
+       heapptr--;
+     }
+        
+    memcpy(heap, ptr, length * 8
+   );
+    free(ptr);
+ 
+    return(*status);
+}
+
+
+

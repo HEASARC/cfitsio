@@ -280,7 +280,7 @@ int ffprec(fitsfile *fptr,     /* I - FITS file pointer        */
   write a keyword record (80 bytes long) to the end of the header
 */
 {
-    char tcard[FLEN_CARD];
+    char tcard[FLEN_CARD], *cptr;
     size_t len, ii;
     long nblocks;
 
@@ -301,6 +301,11 @@ int ffprec(fitsfile *fptr,     /* I - FITS file pointer        */
     tcard[80] = '\0';
 
     len = strlen(tcard);
+
+    /* silently replace any illegal characters with a space */
+    for (ii=0; ii < len; ii++)   
+        if (tcard[ii] < ' ' || tcard[ii] > 126) tcard[ii] = ' ';
+
     for (ii=len; ii < 80; ii++)    /* fill card with spaces if necessary */
         tcard[ii] = ' ';
 
@@ -309,7 +314,8 @@ int ffprec(fitsfile *fptr,     /* I - FITS file pointer        */
 
     fftkey(tcard, status);        /* test keyword name contains legal chars */
 
-    fftrec(tcard, status);          /* test rest of keyword for legal chars */
+/*  no need to do this any more, since any illegal characters have been removed
+    fftrec(tcard, status);  */        /* test rest of keyword for legal chars */
 
     ffmbyt(fptr, (fptr->Fptr)->headend, IGNORE_EOF, status); /* move to end */
 
@@ -2869,6 +2875,8 @@ int ffr2f(float fval,   /* I - value to be converted to a string */
   convert float value to a null-terminated F format string
 */
 {
+    char *cptr;
+        
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
@@ -2885,6 +2893,9 @@ int ffr2f(float fval,   /* I - value to be converted to a string */
         ffpmsg("Error in ffr2f converting float to string");
         *status = BAD_F2C;
     }
+
+    /* replace comma with a period (e.g. in French locale) */
+    if ( (cptr = strchr(cval, ','))) *cptr = '.';
 
     /* test if output string is 'NaN', 'INDEF', or 'INF' */
     if (strchr(cval, 'N'))
@@ -2904,6 +2915,7 @@ int ffr2e(float fval,  /* I - value to be converted to a string */
   convert float value to a null-terminated exponential format string
 */
 {
+    char *cptr;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
@@ -2944,6 +2956,9 @@ int ffr2e(float fval,  /* I - value to be converted to a string */
 
     if (*status <= 0)
     {
+        /* replace comma with a period (e.g. in French locale) */
+        if ( (cptr = strchr(cval, ','))) *cptr = '.';
+
         /* test if output string is 'NaN', 'INDEF', or 'INF' */
         if (strchr(cval, 'N'))
         {
@@ -2968,6 +2983,8 @@ int ffd2f(double dval,  /* I - value to be converted to a string */
   convert double value to a null-terminated F format string
 */
 {
+    char *cptr;
+
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
@@ -2984,6 +3001,9 @@ int ffd2f(double dval,  /* I - value to be converted to a string */
         ffpmsg("Error in ffd2f converting double to string");
         *status = BAD_F2C;
     }
+
+    /* replace comma with a period (e.g. in French locale) */
+    if ( (cptr = strchr(cval, ','))) *cptr = '.';
 
     /* test if output string is 'NaN', 'INDEF', or 'INF' */
     if (strchr(cval, 'N'))
@@ -3003,6 +3023,8 @@ int ffd2e(double dval,  /* I - value to be converted to a string */
   convert double value to a null-terminated exponential format string.
 */
 {
+    char *cptr;
+
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
@@ -3042,6 +3064,9 @@ int ffd2e(double dval,  /* I - value to be converted to a string */
 
     if (*status <= 0)
     {
+        /* replace comma with a period (e.g. in French locale) */
+        if ( (cptr = strchr(cval, ','))) *cptr = '.';
+
         /* test if output string is 'NaN', 'INDEF', or 'INF' */
         if (strchr(cval, 'N'))
         {

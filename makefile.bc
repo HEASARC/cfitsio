@@ -103,12 +103,23 @@ Dep_cfitsioddll = \
    editcol.obj\
    drvrmem.obj\
    drvrfile.obj\
-   compress.obj\
    checksum.obj\
    cfileio.obj\
    buffers.obj\
    fits_hcompress.obj\
-   fits_hdecompress.obj
+   fits_hdecompress.obj\
+   zuncompress.obj\
+   zcompress.obj\
+   adler32.obj\
+   crc32.obj\
+   inffast.obj\
+   inftrees.obj\
+   trees.obj\
+   zutil.obj\
+   deflate.obj\
+   infback.obj\
+   inflate.obj\
+   uncompr.obj
 
 cfitsio.dll : $(Dep_cfitsioddll) cfitsio.def
   $(ILINK32) @&&|
@@ -170,12 +181,23 @@ edithdu.obj+
 editcol.obj+
 drvrmem.obj+
 drvrfile.obj+
-compress.obj+
 checksum.obj+
 cfileio.obj+
 buffers.obj+
 fits_hcompress.obj+
-fits_hdecompress.obj
+fits_hdecompress.obj+
+zuncompress.obj+
+zcompress.obj+
+adler32.obj+
+crc32.obj+
+inffast.obj+
+inftrees.obj+
+trees.obj+
+zutil.obj+
+deflate.obj+
+infback.obj+
+inflate.obj+
+uncompr.obj
 $<,$*
 D:\BC5\LIB\import32.lib+
 D:\BC5\LIB\cw32i.lib
@@ -430,11 +452,6 @@ drvrfile.obj :  drvrfile.c
  $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ drvrfile.c
 |
 
-compress.obj :  compress.c
-  $(BCC32) -P- -c @&&|
- $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ compress.c
-|
-
 checksum.obj :  checksum.c
   $(BCC32) -P- -c @&&|
  $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ checksum.c
@@ -484,6 +501,67 @@ fits_hdecompress.obj :  fits_hdecompress.c
   $(BCC32) -P- -c @&&|
  $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ fits_hdecompress.c
 |
+
+zuncompress.obj :  zuncompress.c
+  $(BCC32) -P- -c @&&|
+ $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ zuncompress.c
+|
+
+zcompress.obj :  zcompress.c
+  $(BCC32) -P- -c @&&|
+ $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ zcompress.c
+|
+
+adler32.obj :  adler32.c
+  $(BCC32) -P- -c @&&|
+ $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ adler32.c
+|
+
+crc32.obj :  crc32.c
+  $(BCC32) -P- -c @&&|
+ $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ crc32.c
+|
+
+inffast.obj :  inffast.c
+  $(BCC32) -P- -c @&&|
+ $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ inffast.c
+|
+
+inftrees.obj :  inftrees.c
+  $(BCC32) -P- -c @&&|
+ $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ inftrees.c
+|
+
+trees.obj :  trees.c
+  $(BCC32) -P- -c @&&|
+ $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ trees.c
+|
+
+zutil.obj :  zutil.c
+  $(BCC32) -P- -c @&&|
+ $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ zutil.c
+|
+
+deflate.obj :  deflate.c
+  $(BCC32) -P- -c @&&|
+ $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ deflate.c
+|
+
+infback.obj :  infback.c
+  $(BCC32) -P- -c @&&|
+ $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ infback.c
+|
+
+inflate.obj :  inflate.c
+  $(BCC32) -P- -c @&&|
+ $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ inflate.c
+|
+
+uncompr.obj :  uncompr.c
+  $(BCC32) -P- -c @&&|
+ $(CompOptsAt_cfitsiodlib) $(CompInheritOptsAt_cfitsiodlib) -o$@ uncompr.c
+|
+
 
 windumpexts.exe :  windumpexts.c
   bcc32 windumpexts.c

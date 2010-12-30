@@ -1009,11 +1009,21 @@ int mem_uncompress2mem(char *filename, FILE *diskfile, int hdl)
   int status;
   /* uncompress file into memory */
   status = 0;
-  uncompress2mem(filename, diskfile,
+
+    if (strstr(filename, ".Z")) {
+         zuncompress2mem(filename, diskfile,
 		 memTable[hdl].memaddrptr,   /* pointer to memory address */
 		 memTable[hdl].memsizeptr,   /* pointer to size of memory */
 		 realloc,                     /* reallocation function */
 		 &finalsize, &status);        /* returned file size nd status*/
+    } else {
+         uncompress2mem(filename, diskfile,
+		 memTable[hdl].memaddrptr,   /* pointer to memory address */
+		 memTable[hdl].memsizeptr,   /* pointer to size of memory */
+		 realloc,                     /* reallocation function */
+		 &finalsize, &status);        /* returned file size nd status*/
+    } 
+
   memTable[hdl].currentpos = 0;           /* save starting position */
   memTable[hdl].fitsfilesize=finalsize;   /* and initial file size  */
   return status;

@@ -1918,7 +1918,7 @@ int fffstri1(char *input,         /* I - array of values to be converted     */
             cptr++;
         }
 
-        if (*cptr == '.')              /* check for decimal point */
+        if (*cptr == '.' || *cptr == ',')       /* check for decimal point */
         {
           decpt = 1;
           cptr++;

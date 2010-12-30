@@ -52,7 +52,7 @@ Then proceed with the standard cfitsio build, i.e.:
 
 -------------------------------------------------------
 
-Below, are the old (and now obsolete) instuctions for building CFITSIO
+Below, are the old (and now obsolete) instructions for building CFITSIO
 on classic Mac OS-9 or earlier versions:
 
 1. Un binhex and unstuff cfitsio_mac.sit.hqx

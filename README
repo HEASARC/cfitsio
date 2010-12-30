@@ -5,7 +5,7 @@ format data files.  A set of Fortran-callable wrapper routines are also
 included for the convenience of Fortran programmers.  This README file
 gives a brief summary of how to build and test CFITSIO, but the CFITSIO
 User's Guide, found in the files cfitsio.doc (plain text), cfitsio.tex
-(LaTeX source file), or cfitsio.ps (postscript format), should be
+(LaTeX source file), cfitsio.ps, or cfitsio.pdf should be
 referenced for the latest and most complete information.
 
 BUILDING CFITSIO
@@ -42,20 +42,13 @@ point options.
 
 A precompiled DLL version of CFITSIO is available for IBM-PC users of
 the Borland or Microsoft Visual C++ compilers in the files
-cfitsiodll_2xxx_borland.zip and cfitsiodll_2xxx_vcc.zip, where '2xxx'
+cfitsiodll_xxxx_borland.zip and cfitsiodll_xxxx_vcc.zip, where 'xxxx'
 represents the current release number.  These zip archives also
 contains other files and instructions on how to use the CFITSIO DLL
 library. The CFITSIO library may also be built from the source code
 using the makefile.bc or makefile.vcc  files.  Finally, the makepc.bat
 file gives an example of  building CFITSIO with the Borland C++ v4.5
 compiler using simpler DOS commands.
-
-On OS/2 systems, CFITSIO can be built using the supplied makefile by
-typing 'make -f makefile.os2'.  This makefile requires the GCC compiler
-and EMX library, which are available from many Internet sites
-containing OS/2 software, such as
-ftp-os2.nmsu.edu/pub/os2/dev/emx/v0.9c and
-ftp.leo.org/pub/comp/os/os2/leo/devtools/emx+gcc.
 
 When building on Mac OS-X, users should follow the Unix instructions,
 above. Previous MacOS versions of the cfitsio library can be built by

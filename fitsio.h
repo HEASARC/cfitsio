@@ -34,7 +34,7 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.25
+#define CFITSIO_VERSION 3.26
 
 #include <stdio.h>
 
@@ -358,6 +358,7 @@ typedef struct      /* structure used to store basic FITS file information */
     int request_quantize_dither ; /* requested dithering mode when quantizing */
                                   /* floating point images to integer */
     int request_dither_offset;    /* starting offset into the array of random dithering */
+    int request_lossy_int_compress;  /* lossy compress integer image as if float image? */
 
     int compressimg; /* 1 if HDU contains a compressed image, else 0 */
     int quantize_dither;   /* floating point pixel quantization algorithm */
@@ -755,6 +756,7 @@ int ffkeyn(const char *keyroot, int value, char *keyname, int *status);
 int ffnkey(int value, char *keyroot, char *keyname, int *status);
 int ffgkcl(char *card);
 int ffdtyp(char *cval, char *dtype, int *status);
+int ffinttyp(char *cval, int *datatype, int *negative, int *status);
 int ffpsvc(char *card, char *value, char *comm, int *status);
 int ffgknm(char *card, char *name, int *length, int *status);
 int ffgthd(char *tmplt, char *card, int *hdtype, int *status);
@@ -913,6 +915,8 @@ int ffgknd(fitsfile *fptr, const char *keyname, int nstart, int nmax, double *va
            int *nfound, int *status);
 int ffh2st(fitsfile *fptr, char **header, int  *status);
 int ffhdr2str( fitsfile *fptr,  int exclude_comm, char **exclist,
+   int nexc, char **header, int *nkeys, int  *status);
+int ffcnvthdr2str( fitsfile *fptr,  int exclude_comm, char **exclist,
    int nexc, char **header, int *nkeys, int  *status);
 
 /*----------------- read required header keywords --------------*/
@@ -1713,6 +1717,8 @@ int ffmvec(fitsfile *fptr, int colnum, LONGLONG newveclen, int *status);
 int ffdcol(fitsfile *fptr, int numcol, int *status);
 int ffcpcl(fitsfile *infptr, fitsfile *outfptr, int incol, int outcol, 
            int create_col, int *status);
+int ffcprw(fitsfile *infptr, fitsfile *outfptr, LONGLONG firstrow, 
+           LONGLONG nrows, int *status);
 
 /*--------------------- WCS Utilities ------------------*/
 int ffgics(fitsfile *fptr, double *xrval, double *yrval, double *xrpix,
@@ -1866,6 +1872,7 @@ int fits_set_hcomp_scale(fitsfile *fptr, float scale, int *status);
 int fits_set_hcomp_smooth(fitsfile *fptr, int smooth, int *status);
 int fits_set_quantize_dither(fitsfile *fptr, int dither, int *status);
 int fits_set_dither_offset(fitsfile *fptr, int offset, int *status);
+int fits_set_lossy_int(fitsfile *fptr, int lossy_int, int *status);
 
 int fits_get_compression_type(fitsfile *fptr, int *ctype, int *status);
 int fits_get_tile_dim(fitsfile *fptr, int ndim, long *dims, int *status);
@@ -1891,7 +1898,19 @@ int fits_hdecompress(unsigned char *input, int smooth, int *a, int *nx,
        int *ny, int *scale, int *status);
 int fits_hdecompress64(unsigned char *input, int smooth, LONGLONG *a, int *nx, 
        int *ny, int *scale, int *status);
- 
+
+int fits_transpose_table(fitsfile *infptr, fitsfile *outfptr, int *status);
+int fits_transpose_table2(fitsfile *infptr, fitsfile *outfptr, int *status);
+int fits_untranspose_table(fitsfile *infptr, fitsfile *outfptr, int *status);
+int fits_shuffle_table(fitsfile *infptr, fitsfile *outfptr, int *status);
+int fits_shuffle_table2(fitsfile *infptr, fitsfile *outfptr, int *status);
+int fits_shuffle_table3(fitsfile *infptr, fitsfile *outfptr, int *status);
+int fits_unshuffle_table(fitsfile *infptr, fitsfile *outfptr, int *status);
+int fits_unshuffle_table2(fitsfile *infptr, fitsfile *outfptr, int *status);
+int fits_unshuffle_table3(fitsfile *infptr, fitsfile *outfptr, int *status);
+int fits_gzip_datablocks(fitsfile *outfptr, int *status);
+int fits_gunzip_datablocks(fitsfile *outfptr, int *status);
+
 /*  The following exclusion if __CINT__ is defined is needed for ROOT */
 #ifndef __CINT__
 #ifdef __cplusplus

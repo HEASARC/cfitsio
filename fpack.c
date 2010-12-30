@@ -45,7 +45,11 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 	 */
 	for (iarg = 1; iarg < argc; iarg++) {
 	    if ((argv[iarg][0] == '-' && strlen (argv[iarg]) == 2) ||
-	        !strncmp(argv[iarg], "-q", 2) )  /* 1 special case */
+	        !strncmp(argv[iarg], "-q", 2) ||   /*  special case */
+	        !strncmp(argv[iarg], "-i2f", 4) ||  /*  special case */
+	        !strncmp(argv[iarg], "-n3ratio", 8) ||  /*  special case */
+	        !strncmp(argv[iarg], "-n3min", 6) ||  /*  special case */
+	        !strncmp(argv[iarg], "-BETAtable", 10) )  /*  special case */
 	    {
 
 		/* Rice is the default, so -r is superfluous 
@@ -98,6 +102,32 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 		    } else
 			gottype++;
 
+		} else if (!strcmp(argv[iarg], "-i2f")) {
+		    /* this means convert integer images to float, and then */
+		    /* quantize and compress the float image.  This lossy */
+		    /* compression method may give higher compression than the */
+		    /* lossless compression method that is usually applied to */
+		    /* integer images. */
+		    
+		    fpptr->int_to_float = 1;
+
+		} else if (!strcmp(argv[iarg], "-n3ratio")) {
+		    /* this is the minimum ratio between the MAD noise sigma */
+		    /* and the q parameter value in the case where the integer */
+		    /* image is quantized and compressed like a float image. */
+		    if (++iarg >= argc) {
+			fp_usage (); exit (-1);
+		    } else {
+			fpptr->n3ratio = (float) atof (argv[iarg]);
+		    }
+		} else if (!strcmp(argv[iarg], "-n3min")) {
+		    /* this is the minimum  MAD noise sigma in the case where the */
+		    /* integer image is quantized and compressed like a float image. */
+		    if (++iarg >= argc) {
+			fp_usage (); exit (-1);
+		    } else {
+			fpptr->n3min = (float) atof (argv[iarg]);
+		    }
 		} else if (argv[iarg][1] == 'q') {
 		    /* test for modifiers following the 'q' */
                     if (argv[iarg][2] == 't') {
@@ -189,6 +219,9 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 		} else if (argv[iarg][1] == 'V') {
 		    fp_version (); exit (0);
 
+		} else if (!strcmp(argv[iarg], "-BETAtable")) {
+		    fpptr->do_tables = 1;
+
 		} else {
 		    fp_msg ("Error: unknown command line flag `");
 		    fp_msg (argv[iarg]); fp_msg ("'\n");
@@ -251,7 +284,7 @@ int fp_usage (void)
 fp_msg ("usage: fpack ");
 fp_msg (
 "[-r|-h|-g|-p] [-w|-t <axes>] [-q <level>] [-s <scale>] [-n <noise>] -v <FITS>\n");
-fp_msg ("more:   [-T] [-R] [-F] [-D] [-Y] [-S] [-L] [-C] [-H] [-V]\n");
+fp_msg ("more:   [-T] [-R] [-F] [-D] [-Y] [-S] [-L] [-C] [-H] [-V] [-i2f]\n");
 return(0);
 }
 
@@ -285,19 +318,29 @@ fp_msg (" -t <axes>   Comma separated list of tile dimensions [default is row by
 fp_msg (" -q <level>  Quantized level spacing when converting floating point images to\n");
 fp_msg ("             scaled integers. (+value relative to sigma of background noise;\n");
 fp_msg ("             -value is absolute). Default q value of 4 gives a compression ratio\n");
-fp_msg ("             of about 6 with very high fidelity (possibly more than necessary).\n");
+fp_msg ("             of about 6 with very high fidelity (only 0.26% increase in noise).\n");
 fp_msg ("             Using q values of  2, or 1 will give compression ratios of\n");
-fp_msg ("             about 8, or 10, respectively, with progressively less (but\n");
-fp_msg ("             still good) fidelity.  The scaled quantized values are randomly\n");
-fp_msg ("             dithered by default using a seed value determined from the system\n");
-fp_msg ("             clock at run time. Use -q0 instead of -q to suppress random dithering.\n");
+fp_msg ("             about 8, or 10, respectively (with 1.0% or 4.1% noise increase).\n");
+fp_msg ("             The scaled quantized values are randomly dithered using a seed \n");
+fp_msg ("             value determined from the system clock at run time.\n");
+fp_msg ("             Use -q0 instead of -q to suppress random dithering.\n");
 fp_msg ("             Use -qt to compute random dithering seed from first tile checksum.\n");
 fp_msg ("             Use -qN, (N in range 1 to 10000) to use a specific dithering seed.\n");
-
+fp_msg ("             Floating-point images can be losslessly compressed by selecting\n");
+fp_msg ("             the GZIP algorithm and specifying -q 0, but this is slower and often\n");
+fp_msg ("             produces much less compression than the default quantization method.\n");
+fp_msg (" -i2f        Convert integer images to floating point, then quantize and compress\n");
+fp_msg ("             using the specified q level.  When used appropriately, this lossy\n");
+fp_msg ("             compression method can give much better compression than the normal\n");
+fp_msg ("             lossless compression methods without significant loss of information.\n");
+fp_msg ("             The -n3ratio and -n3min flags control the minimum noise thresholds;\n");
+fp_msg ("             Images below these thresholds will be losslessly compressed.\n");
+fp_msg (" -n3ratio    Minimum ratio of background noise sigma divided by q.  Default = 1.2.\n");
+fp_msg (" -n3min      Minimum background noise sigma. Default = 6. The -i2f flag will be ignored\n");
+fp_msg ("             if the noise level in the image does not exceed both thresholds.\n");
 fp_msg (" -s <scale>  Scale factor for lossy Hcompress [default = 0 = lossless]\n");
 fp_msg ("             (+values relative to RMS noise; -value is absolute)\n");
 fp_msg (" -n <noise>  Rescale scaled-integer images to reduce noise and improve compression.\n");
-
 fp_msg (" -v          Verbose mode; list each file as it is processed.\n");
 fp_msg (" -T          Show compression algorithm comparison test statistics; files unchanged.\n");
 fp_msg (" -R <file>   Write the comparison test report (above) to a text file.\n");

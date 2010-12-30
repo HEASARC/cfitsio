@@ -1336,7 +1336,7 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
   char groupAccess2[FLEN_VALUE];
   char groupFileName[FLEN_FILENAME];
   char groupLocation[FLEN_FILENAME];
-
+  char tmprootname[FLEN_FILENAME], grootname[FLEN_FILENAME];
   char cwd[FLEN_FILENAME];
 
   char *keys[] = {"GRPNAME","EXTVER","EXTNAME","TFIELDS","GCOUNT","EXTEND"};
@@ -1609,8 +1609,16 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
 	 if useLocation is true then make the group EXTVER value negative
 	 for the subsequent GRPIDn/GRPLCn matching
       */
-      /* SPR 3463 change test */
-      if(tmpfptr->Fptr != gfptr->Fptr) groupExtver = -1*groupExtver;
+      /* SPR 3463 change test;  WDP added test for same filename */
+      /* Now, if either the Fptr values are the same, or the root filenames
+         are the same, then assume these refer to the same file.
+      */
+      fits_parse_rootname(tmpfptr->Fptr->filename, tmprootname, status);
+      fits_parse_rootname(gfptr->Fptr->filename, grootname, status);
+
+      if((tmpfptr->Fptr != gfptr->Fptr) && 
+          strncmp(tmprootname, grootname, FLEN_FILENAME))
+	   groupExtver = -1*groupExtver;
 
       /* retrieve the number of group members */
 
@@ -1681,7 +1689,14 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
       if(locationCol != 0)
 	{
 	  /* Change the test for SPR 3463 */
-	  if(tmpfptr->Fptr != gfptr->Fptr)
+	  /* Now, if either the Fptr values are the same, or the root filenames
+	     are the same, then assume these refer to the same file.
+	  */
+	  fits_parse_rootname(tmpfptr->Fptr->filename, tmprootname, status);
+	  fits_parse_rootname(gfptr->Fptr->filename, grootname, status);
+
+	  if((tmpfptr->Fptr != gfptr->Fptr) && 
+	          strncmp(tmprootname, grootname, FLEN_FILENAME))
 	    fits_write_col_str(gfptr,locationCol,nmembers,1,1,tmpPtr,status);
 	  else
 	    /* WILL THIS WORK FOR VAR LENTH CHAR COLS??????*/
@@ -1694,8 +1709,14 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
 	{
 
 	  /* Change the test for SPR 3463 */
+	  /* Now, if either the Fptr values are the same, or the root filenames
+	     are the same, then assume these refer to the same file.
+	  */
+	  fits_parse_rootname(tmpfptr->Fptr->filename, tmprootname, status);
+	  fits_parse_rootname(gfptr->Fptr->filename, grootname, status);
 
-	  if(tmpfptr->Fptr != gfptr->Fptr)
+	  if((tmpfptr->Fptr != gfptr->Fptr) && 
+	          strncmp(tmprootname, grootname, FLEN_FILENAME))
 	    fits_write_col_str(gfptr,uriCol,nmembers,1,1,tmpPtr,status);
 	  else
 	    /* WILL THIS WORK FOR VAR LENTH CHAR COLS??????*/
@@ -1867,7 +1888,14 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
 	 then there is no need to add a GRPLCn keyword
       */
       /* SPR 3463 change test */
-      if(tmpfptr->Fptr == gfptr->Fptr)
+      /* Now, if either the Fptr values are the same, or the root filenames
+	 are the same, then assume these refer to the same file.
+      */
+      fits_parse_rootname(tmpfptr->Fptr->filename, tmprootname, status);
+      fits_parse_rootname(gfptr->Fptr->filename, grootname, status);
+
+      if((tmpfptr->Fptr == gfptr->Fptr) || 
+	          strncmp(tmprootname, grootname, FLEN_FILENAME) == 0)
 	{
 	  /* add the GRPIDn keyword only */
 
@@ -2935,6 +2963,7 @@ int ffgmrm(fitsfile *gfptr,  /* FITS file pointer to group table             */
   char keyvalue[FLEN_VALUE];
   char card[FLEN_CARD];
   char *editLocation;
+  char mrootname[FLEN_FILENAME], grootname[FLEN_FILENAME];
 
   fitsfile *mfptr  = NULL;
 
@@ -3050,7 +3079,15 @@ int ffgmrm(fitsfile *gfptr,  /* FITS file pointer to group table             */
 	      
 	      *status = fits_read_key_lng(gfptr,"EXTVER",&groupExtver,card,
 					  status);
-	      if(mfptr->Fptr != gfptr->Fptr) groupExtver = -1*groupExtver;
+	      /* Now, if either the Fptr values are the same, or the root filenames
+	         are the same, then assume these refer to the same file.
+	      */
+	      fits_parse_rootname(mfptr->Fptr->filename, mrootname, status);
+	      fits_parse_rootname(gfptr->Fptr->filename, grootname, status);
+
+	      if((mfptr->Fptr != gfptr->Fptr) && 
+	          strncmp(mrootname, grootname, FLEN_FILENAME))
+                       groupExtver = -1*groupExtver;
 	      
 	      /*
 		retrieve the URLs for the grouping table; note that it is 
@@ -6027,6 +6064,9 @@ int fits_url2relurl(char     *refURL, /* I reference URL string             */
 
   if(*status != 0) return(*status);
 
+  /* initialize the relative URL string */
+  relURL[0] = 0;
+
   do
     {
       /*
@@ -6071,14 +6111,9 @@ int fits_url2relurl(char     *refURL, /* I reference URL string             */
 	      continue;
 	    }
 	  
-	  /* we found a difference in the paths in refURL and absURL */
-
-	  /* initialize the relative URL string */
-	  relURL[0] = 0;
-
-	  /* 
-	     for every path segment remaining in the refURL string, append
-	     a "../" path segment to the relataive URL relURL
+	  /* We found a difference in the paths in refURL and absURL.
+	     For every path segment remaining in the refURL string, append
+	     a "../" path segment to the relataive URL relURL.
 	  */
 
 	  for(j = refcount; j < refsize; ++j)

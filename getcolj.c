@@ -1796,7 +1796,7 @@ int fffstri4(char *input,         /* I - array of values to be converted     */
             cptr++;
         }
 
-        if (*cptr == '.')              /* check for decimal point */
+        if (*cptr == '.' || *cptr == ',')    /* check for decimal point */
         {
           decpt = 1;       /* set flag to show there was a decimal point */
           cptr++;
@@ -3643,7 +3643,7 @@ int fffstri8(char *input,         /* I - array of values to be converted     */
             cptr++;
         }
 
-        if (*cptr == '.')              /* check for decimal point */
+        if (*cptr == '.' || *cptr == ',')    /* check for decimal point */
         {
           decpt = 1;       /* set flag to show there was a decimal point */
           cptr++;

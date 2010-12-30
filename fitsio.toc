@@ -6,7 +6,7 @@
 \contentsline {section}{\numberline {2.4}Getting Started with FITSIO}{8}
 \contentsline {section}{\numberline {2.5}Example Program}{8}
 \contentsline {section}{\numberline {2.6}Legal Stuff}{10}
-\contentsline {section}{\numberline {2.7}Acknowledgments}{11}
+\contentsline {section}{\numberline {2.7}Acknowledgments}{10}
 \contentsline {chapter}{\numberline {3} A FITS Primer }{13}
 \contentsline {chapter}{\numberline {4}FITSIO Conventions and Guidelines }{15}
 \contentsline {section}{\numberline {4.1}CFITSIO Size Limitations}{15}

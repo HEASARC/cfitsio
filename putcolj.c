@@ -961,7 +961,10 @@ int ffi4fstr(long *input,      /* I - array of values to be converted  */
 {
     long ii;
     double dvalue;
+    char *cptr;
 
+    cptr = output;
+    
     if (scale == 1. && zero == 0.)
     {       
         for (ii = 0; ii < ntodo; ii++)
@@ -985,6 +988,10 @@ int ffi4fstr(long *input,      /* I - array of values to be converted  */
             *status = OVERFLOW_ERR;
         }
     }
+
+    /* replace any commas with periods (e.g., in French locale) */
+    while ((cptr = strchr(cptr, ','))) *cptr = '.';
+
     return(*status);
 }
 
@@ -1948,6 +1955,9 @@ int ffi8fstr(LONGLONG *input,  /* I - array of values to be converted  */
 {
     long ii;
     double dvalue;
+    char *cptr;
+    
+    cptr = output;
 
     if (scale == 1. && zero == 0.)
     {       
@@ -1972,5 +1982,9 @@ int ffi8fstr(LONGLONG *input,  /* I - array of values to be converted  */
             *status = OVERFLOW_ERR;
         }
     }
+
+    /* replace any commas with periods (e.g., in French locale) */
+    while ((cptr = strchr(cptr, ','))) *cptr = '.';
+    
     return(*status);
 }

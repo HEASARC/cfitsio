@@ -977,6 +977,9 @@ int ffi1fstr(unsigned char *input, /* I - array of values to be converted  */
 {
     long ii;
     double dvalue;
+    char *cptr;
+
+    cptr = output;
 
     if (scale == 1. && zero == 0.)
     {       
@@ -1001,5 +1004,9 @@ int ffi1fstr(unsigned char *input, /* I - array of values to be converted  */
             *status = OVERFLOW_ERR;
         }
     }
+
+    /* replace any commas with periods (e.g., in French locale) */
+    while ((cptr = strchr(cptr, ','))) *cptr = '.';
+    
     return(*status);
 }
