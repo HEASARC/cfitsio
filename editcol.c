@@ -1893,7 +1893,7 @@ int ffcprw(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     }
 
     /* allocate buffer to hold 1 row of data */
-    buffer = malloc(innaxis1);
+    buffer = malloc( (size_t) innaxis1);
     if (!buffer) {
        ffpmsg
        ("Unable to allocate memory (ffcprw)");

@@ -8609,9 +8609,9 @@ int ffinttyp(char *cval,  /* I - formatted string representation of the integer 
 	    }
 	}
       }
-
-      return(*status);
     }
+
+    return(*status);
 }
 /*--------------------------------------------------------------------------*/
 int ffc2x(char *cval,   /* I - formatted string representation of the value */

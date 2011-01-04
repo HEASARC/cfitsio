@@ -77,7 +77,7 @@ int uncompress2mem(char *filename,  /* name of input file                 */
     d_stream.zalloc = (alloc_func)0;
     d_stream.zfree = (free_func)0;
     d_stream.opaque = (voidpf)0;
-    d_stream.next_out = *buffptr;
+    d_stream.next_out = (unsigned char*) *buffptr;
     d_stream.avail_out = *buffsize;
 
     /* Initialize the decompression.  The argument (15+16) tells the
@@ -121,7 +121,7 @@ int uncompress2mem(char *filename,  /* name of input file                 */
                     }
 
                     d_stream.avail_out = BUFFINCR;
-                    d_stream.next_out = *buffptr + *buffsize;
+                    d_stream.next_out = (unsigned char*) (*buffptr + *buffsize);
                     *buffsize = *buffsize + BUFFINCR;
                 } else  { /* error: no realloc function available */
                     inflateEnd(&d_stream);
@@ -137,7 +137,7 @@ int uncompress2mem(char *filename,  /* name of input file                 */
 	
 	if (feof(diskfile))  break;
 
-        d_stream.next_out = *buffptr + d_stream.total_out;
+        d_stream.next_out = (unsigned char*) (*buffptr + d_stream.total_out);
         d_stream.avail_out = *buffsize - d_stream.total_out;
     }
 
@@ -185,7 +185,7 @@ int uncompress2mem_from_mem(
     d_stream.next_in = (unsigned char*)inmemptr;
     d_stream.avail_in = inmemsize;
 
-    d_stream.next_out = *buffptr;
+    d_stream.next_out = (unsigned char*) *buffptr;
     d_stream.avail_out = *buffsize;
 
     for (;;) {
@@ -204,7 +204,7 @@ int uncompress2mem_from_mem(
                 }
 
                 d_stream.avail_out = BUFFINCR;
-                d_stream.next_out = *buffptr + *buffsize;
+                d_stream.next_out = (unsigned char*) (*buffptr + *buffsize);
                 *buffsize = *buffsize + BUFFINCR;
 
             } else  { /* error: no realloc function available */
@@ -237,7 +237,7 @@ int uncompress2file(char *filename,  /* name of input file                  */
 */
 {
     int err, len;
-    long bytes_out = 0;
+    unsigned long bytes_out = 0;
     char *infilebuff, *outfilebuff;
     z_stream d_stream;   /* decompression stream */
 
@@ -255,7 +255,7 @@ int uncompress2file(char *filename,  /* name of input file                  */
     d_stream.zfree = (free_func)0;
     d_stream.opaque = (voidpf)0;
 
-    d_stream.next_out = outfilebuff;
+    d_stream.next_out = (unsigned char*) outfilebuff;
     d_stream.avail_out = GZBUFSIZE;
 
     /* Initialize the decompression.  The argument (15+16) tells the
@@ -298,7 +298,7 @@ int uncompress2file(char *filename,  /* name of input file                  */
                     return(*status = 414);
                 }
                 bytes_out += GZBUFSIZE;
-                d_stream.next_out = outfilebuff;
+                d_stream.next_out = (unsigned char*) outfilebuff;
                 d_stream.avail_out = GZBUFSIZE;
 
             } else {  /* some other error */
@@ -369,7 +369,7 @@ int compress2mem_from_mem(
     c_stream.next_in = (unsigned char*)inmemptr;
     c_stream.avail_in = inmemsize;
 
-    c_stream.next_out = *buffptr;
+    c_stream.next_out = (unsigned char*) *buffptr;
     c_stream.avail_out = *buffsize;
 
     for (;;) {
@@ -388,7 +388,7 @@ int compress2mem_from_mem(
                 }
 
                 c_stream.avail_out = BUFFINCR;
-                c_stream.next_out = *buffptr + *buffsize;
+                c_stream.next_out = (unsigned char*) (*buffptr + *buffsize);
                 *buffsize = *buffsize + BUFFINCR;
 
             } else  { /* error: no realloc function available */
@@ -424,7 +424,7 @@ int compress2file_from_mem(
 */
 {
     int err;
-    long bytes_out = 0;
+    unsigned long bytes_out = 0;
     char  *outfilebuff;
     z_stream c_stream;  /* compression stream */
 
@@ -451,7 +451,7 @@ int compress2file_from_mem(
     c_stream.next_in = (unsigned char*)inmemptr;
     c_stream.avail_in = inmemsize;
 
-    c_stream.next_out = outfilebuff;
+    c_stream.next_out = (unsigned char*) outfilebuff;
     c_stream.avail_out = GZBUFSIZE;
 
     for (;;) {
@@ -469,7 +469,7 @@ int compress2file_from_mem(
                 return(*status = 413);
             }
             bytes_out += GZBUFSIZE;
-            c_stream.next_out = outfilebuff;
+            c_stream.next_out = (unsigned char*) outfilebuff;
             c_stream.avail_out = GZBUFSIZE;
 
 

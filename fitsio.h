@@ -35,6 +35,8 @@ SERVICES PROVIDED HEREUNDER."
 #define _FITSIO_H
 
 #define CFITSIO_VERSION 3.26
+#define CFITSIO_MINOR 26
+#define CFITSIO_MAJOR 3
 
 #include <stdio.h>
 
@@ -1887,6 +1889,7 @@ int fits_compress_img(fitsfile *infptr, fitsfile *outfptr, int compress_type,
          long *tilesize, int parm1, int parm2, int *status);
 int fits_is_compressed_image(fitsfile *fptr, int *status);
 int fits_decompress_img (fitsfile *infptr, fitsfile *outfptr, int *status);
+int fits_img_decompress_header(fitsfile *infptr, fitsfile *outfptr, int *status);
 int fits_img_decompress (fitsfile *infptr, fitsfile *outfptr, int *status);
 
 /* H-compress routines */

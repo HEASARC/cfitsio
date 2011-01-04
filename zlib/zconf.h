@@ -3,8 +3,6 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-/* @(#) $Id$ */
-
 #ifndef ZCONF_H
 #define ZCONF_H
 
@@ -356,7 +354,7 @@ typedef uLong FAR uLongf;
    typedef Byte       *voidp;
 #endif
 
-#if 1    /* was set to #if 1 by ./configure */
+#if !defined(MSDOS) && !defined(WINDOWS) && !defined(WIN32)
 #  define Z_HAVE_UNISTD_H
 #endif
 

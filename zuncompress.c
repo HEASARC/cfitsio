@@ -133,6 +133,8 @@ int zuncompress2mem(char *filename,  /* name of input file                 */
   input function, if necessary.
 */
 {
+    char magic[2]; /* magic header */
+
     if (*status > 0)
         return(*status);
 
@@ -148,8 +150,6 @@ int zuncompress2mem(char *filename,  /* name of input file                 */
 
     insize = inptr = 0;
     bytes_in = bytes_out = 0L;
-
-    char magic[2]; /* magic header */
 
     magic[0] = (char)get_byte();
     magic[1] = (char)get_byte();

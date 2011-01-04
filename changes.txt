@@ -2,13 +2,17 @@
 
 Version 3.26 - 30 December 2010
 
+  Enhancements
+
+   - defined 2 new macros in fitsio.h:  
+       #define CFITSIO_MAJOR 3
+       #define CFITSIO_MINOR 26
+     These may be used within other macros to detect the CFITSIO
+     version number at compile time.
+     
    - modified group.c to initialize the output URL to a null string in 
      fits_url2relurl.  Also added more robust tests to see if 2 file
      pointers point to the same file.
-
-   - fixed a potential string buffer overflow error in the ffmkls routine
-     that modifies the value and comment strings in a keyword that uses
-     the HEASARC long string keyword convention. 
 
    - enhanced the template keyword parsing code in grparser.c to support
      the 'D' exponent character in the ASCII representation of floating
@@ -48,10 +52,6 @@ Version 3.26 - 30 December 2010
      print out the name of the offending character (e.g TAB or Line Feed) as
      well as the Hex value of the chracter.
      
-   - fixed a bug in imcompress.c that could cause programs to abort on 64-bit 
-     machines when using gzip to tile-compress images.  Changed the declaration
-     of clen in imcomp_compress_tile from int to size_t.
-
    - modified ffgtbc (in fitscore.c) to support nonstandard vector variable
      length array columns in binary tables (e.g. with TFORMn = 2000PE(500)').
      
@@ -76,6 +76,23 @@ Version 3.26 - 30 December 2010
    - modified the ffoptplt routine in cfileio.c to check if the PCOUNT
      keyword in the template file has a non-zero value, and if so, resets
      it to zero in the newly created file.
+
+   Bug Fixes
+   
+   - fixed a bug when updating the value of the CRPIXn world coordinate 
+     system keywords when extracting a subimage from larger FITS image, using the
+     extended CFITSIO syntax (e.g.  myimage[1:500:2, 1:500:2]).  This bug only 
+     affects casee where the pixel increment value is not equal to 1, and caused
+     the coordinate grid to be shifted by between 0.25 pixels (in the case of
+     a pixel increment of 2) and 0.5 pixels (for large pixel increment values).
+
+   - fixed a potential string buffer overflow error in the ffmkls routine
+     that modifies the value and comment strings in a keyword that uses
+     the HEASARC long string keyword convention. 
+
+   - fixed a bug in imcompress.c that could cause programs to abort on 64-bit 
+     machines when using gzip to tile-compress images.  Changed the declaration
+     of clen in imcomp_compress_tile from int to size_t.
 
 Version 3.25 - 9 June 2010
 

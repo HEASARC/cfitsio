@@ -428,7 +428,6 @@ int ffgtcs(fitsfile *fptr,    /* I - FITS file pointer           */
        calculate celestial coordinates. (ffxypx, ffwldp)
 */
 {
-    char comm[FLEN_COMMENT],ctype[FLEN_VALUE],keynam[FLEN_KEYWORD];
     int colnum[2];
     long naxes[2];
     fitsfile *tptr;

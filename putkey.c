@@ -280,7 +280,7 @@ int ffprec(fitsfile *fptr,     /* I - FITS file pointer        */
   write a keyword record (80 bytes long) to the end of the header
 */
 {
-    char tcard[FLEN_CARD], *cptr;
+    char tcard[FLEN_CARD];
     size_t len, ii;
     long nblocks;
 

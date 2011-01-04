@@ -9,6 +9,15 @@
 #include <stddef.h>  /* apparently needed to define size_t */
 #include "fitsio2.h"
 
+/* prototype for .Z file uncompression function in zuncompress.c */
+int zuncompress2mem(char *filename, 
+             FILE *diskfile, 
+             char **buffptr, 
+             size_t *buffsize, 
+             void *(*mem_realloc)(void *p, size_t newsize),
+             size_t *filesize,
+             int *status);
+
 #define RECBUFLEN 1000
 
 static char stdin_outfile[FLEN_FILENAME];

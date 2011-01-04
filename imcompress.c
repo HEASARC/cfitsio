@@ -2,7 +2,8 @@
 # include <stdlib.h>
 # include <string.h>
 # include <math.h>
-#include <time.h>
+# include <ctype.h>
+# include <time.h>
 # include "fitsio2.h"
 
 #define NULL_VALUE -2147483647 /* value used to represent undefined pixels */
@@ -172,7 +173,7 @@ int fits_init_randoms(void) {
     for (ii = 0; ii < N_RANDOM; ii++) {
         temp = a * seed;
 	seed = temp -m * ((int) (temp / m) );
-	fits_rand_value[ii] = seed / m;
+	fits_rand_value[ii] = (float) (seed / m);
     }
 
     FFUNLOCK;
@@ -1346,7 +1347,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
   FITS image in most cases.
 */
 {
-    int *idata, *itemp;		/* quantized integer data */
+    int *idata;		/* quantized integer data */
     short *cbuf;	/* compressed data */
     short *sbuff;
     unsigned short *usbuff;
@@ -2125,7 +2126,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
 	       fits_img_stats_int(idata, tilenx, tileny, nullcheck,
 	                nullval, 0,0,0,0,0,0,&noise3,status);
 
-		hcompscale = (float) hcompscale * noise3;
+		hcompscale = (float) (hcompscale * noise3);
 
 	    } else if (hcompscale < 0.) {
 
@@ -3266,7 +3267,7 @@ int fits_img_decompress (fitsfile *infptr, /* image (bintable) to uncompress */
     int ii, datatype = 0;
     int nullcheck, anynul;
     LONGLONG fpixel[MAX_COMPRESS_DIM], lpixel[MAX_COMPRESS_DIM];
-    long inc[MAX_COMPRESS_DIM], naxes[MAX_COMPRESS_DIM];
+    long inc[MAX_COMPRESS_DIM];
     long imgsize;
     float *nulladdr, fnulval;
     double dnulval;
@@ -6707,7 +6708,7 @@ int fits_transpose_table(fitsfile *infptr, fitsfile *outfptr, int *status)
 	colstart[ii + 1] = colstart[ii] + repeat * width * nrows;
     }
 
-    buffer = calloc(colstart[ncols], 1);
+    buffer = calloc((size_t) (colstart[ncols]), 1);
     if (!buffer) {
         ffpmsg("Could not allocate buffer for transformed table");
         *status = MEMORY_ALLOCATION;
@@ -6824,7 +6825,7 @@ int fits_transpose_table2(fitsfile *infptr, fitsfile *outfptr, int *status)
     }
  
     /* allocate space for the transposed table */
-    buffer = calloc(naxis1, nrows);
+    buffer = calloc((size_t) naxis1, (size_t) nrows);
     if (!buffer) {
         ffpmsg("Could not allocate buffer for transformed table");
         *status = MEMORY_ALLOCATION;
@@ -6924,7 +6925,7 @@ int fits_transpose_table2(fitsfile *infptr, fitsfile *outfptr, int *status)
     /* now compress each column with GZIP and write out to output table */
     for (ii = 0; ii < ncols; ii++) {  /* loop over columns */
 
-	datasize = outcolstart[ii + 1] - outcolstart[ii];
+	datasize = (size_t) (outcolstart[ii + 1] - outcolstart[ii]);
 
 	/* allocate memory for the compressed data */
 	compressed_data = malloc(datasize);
@@ -7035,7 +7036,7 @@ int fits_untranspose_table(fitsfile *infptr, fitsfile *outfptr, int *status)
 	colstart[ii + 1] = colstart[ii] + width * repeat;
     }
 
-    buffer = calloc(colstart[ncols] * nrows, 1);
+    buffer = calloc((size_t) (colstart[ncols] * nrows), 1);
     if (!buffer) {
         ffpmsg("Could not allocate buffer for untransformed table");
         *status = MEMORY_ALLOCATION;
@@ -7140,7 +7141,7 @@ int fits_shuffle_table(fitsfile *infptr, fitsfile *outfptr, int *status)
     }
    
     /* allocate space for the transposed table */
-    buffer = calloc(naxis1, nrows);
+    buffer = calloc((size_t) naxis1, (size_t) nrows);
     if (!buffer) {
         ffpmsg("Could not allocate buffer for transformed table");
         *status = MEMORY_ALLOCATION;
@@ -7355,7 +7356,7 @@ int fits_shuffle_table2(fitsfile *infptr, fitsfile *outfptr, int *status)
     }
  
     /* allocate space for the transposed table */
-    buffer = calloc(naxis1, nrows);
+    buffer = calloc((size_t) naxis1, (size_t) nrows);
     if (!buffer) {
         ffpmsg("Could not allocate buffer for transformed table");
         *status = MEMORY_ALLOCATION;
@@ -7524,7 +7525,7 @@ int fits_shuffle_table2(fitsfile *infptr, fitsfile *outfptr, int *status)
     /* now compress each column */
     for (ii = 0; ii < ncols; ii++) {  /* loop over columns */
 
-	datasize = outcolstart[ii + 1] - outcolstart[ii];
+	datasize = (size_t) (outcolstart[ii + 1] - outcolstart[ii]);
 
 	/* allocate memory for the compressed data */
 	compressed_data = malloc(datasize);
@@ -7590,7 +7591,6 @@ int fits_shuffle_table3(fitsfile *infptr, fitsfile *outfptr, int *status)
     char *buffer, *cptr, keyname[9], tform[40], colcode[999], tempstring[20];
     char comm[FLEN_COMMENT], *compressed_data;
     float cratio[999];
-    int ll;
     
     size_t dlen, datasize;
 
@@ -7618,7 +7618,7 @@ int fits_shuffle_table3(fitsfile *infptr, fitsfile *outfptr, int *status)
     }
    
     /* allocate space for the transposed table */
-    buffer = calloc(naxis1, nrows);
+    buffer = calloc((size_t) naxis1, (size_t) nrows);
     if (!buffer) {
         ffpmsg("Could not allocate buffer for transformed table");
         *status = MEMORY_ALLOCATION;
@@ -7751,7 +7751,7 @@ int fits_shuffle_table3(fitsfile *infptr, fitsfile *outfptr, int *status)
     
     for (ii = 0; ii < ncols; ii++) {  /* loop over columns */
 
-	datasize = outcolstart[ii + 1] - outcolstart[ii];
+	datasize = (size_t) (outcolstart[ii + 1] - outcolstart[ii]);
 	/* allocate memory for the compressed data */
 	compressed_data = malloc(datasize*2);
 	if (!compressed_data) {
@@ -7889,7 +7889,7 @@ int fits_unshuffle_table(fitsfile *infptr, fitsfile *outfptr, int *status)
     fits_read_key(infptr, TLONGLONG, "NAXIS1", &naxis1, NULL, status);
 
     /* allocate space for the shuffled table */
-    buffer = calloc(naxis1, 1);
+    buffer = calloc((size_t) naxis1, 1);
     if (!buffer) {
         ffpmsg("Could not allocate buffer for untransformed table");
         *status = MEMORY_ALLOCATION;
@@ -8145,9 +8145,9 @@ int fits_unshuffle_table2(fitsfile *infptr, fitsfile *outfptr, int *status)
     int  ncols, coltype, hdutype, anynull;
     char *buffer, *shufbuffer, *cptr, keyname[9], tform[40], colcode[999];
 
-    long  pcount, naxis1, naxis2, fsize, ii, jj;
-    char *ptr, *iptr, comm[FLEN_COMMENT];
-    size_t dlen, datasize, fullsize;
+    long  pcount, naxis1, naxis2, ii, jj;
+    char *ptr, comm[FLEN_COMMENT];
+    size_t dlen, fullsize;
 
     if (*status > 0)
         return(*status);
@@ -8283,11 +8283,11 @@ int fits_unshuffle_table2(fitsfile *infptr, fitsfile *outfptr, int *status)
 	}
 
 	fits_set_tscale(infptr, ii + 1, 1.0, 0.0, status);  /* turn off any data scaling, first */
-	fits_read_col_byt(infptr, ii + 1, 1, 1, vla_repeat, 0, ptr, &anynull, status);
+	fits_read_col_byt(infptr, ii + 1, 1, 1, vla_repeat, 0, (unsigned char *) ptr, &anynull, status);
 
         cptr = shufbuffer + cmajor_colstart[ii];
 	
-	fullsize = (cmajor_colstart[ii+1] - cmajor_colstart[ii]);
+	fullsize = (size_t) (cmajor_colstart[ii+1] - cmajor_colstart[ii]);
 
 	/* gunzip the data into the correct location in the full table buffer */
 	uncompress2mem_from_mem(ptr, vla_repeat,
@@ -8464,7 +8464,7 @@ int fits_unshuffle_table2(fitsfile *infptr, fitsfile *outfptr, int *status)
 	default: /*  the bytes for other column types are not separated */
           for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
 	    cptr = buffer + (rmajor_colstart[ii] + jj * rmajor_colstart[ncols]);   /* addr to copy to */
-	    memcpy(cptr, ptr, rmajor_colwidth[ii]);
+	    memcpy(cptr, ptr, (size_t) rmajor_colwidth[ii]);
 	    ptr += (rmajor_colwidth[ii]);
 	  }
 
@@ -8504,12 +8504,10 @@ int fits_unshuffle_table3(fitsfile *infptr, fitsfile *outfptr, int *status)
     int  ncols, coltype, hdutype, anynull;
     char *buffer, *shufbuffer, *cptr, keyname[9], tform[40], colcode[999];
 
-    long  pcount, naxis1, naxis2, fsize, ii, jj;
-    char *ptr, *iptr, comm[FLEN_COMMENT];
-    size_t dlen, datasize, fullsize;
+    long  pcount, naxis1, naxis2, ii, jj;
+    char *ptr, comm[FLEN_COMMENT];
+    size_t dlen, fullsize;
     
-    int ll;
-
     if (*status > 0)
         return(*status);
      
@@ -8644,11 +8642,11 @@ int fits_unshuffle_table3(fitsfile *infptr, fitsfile *outfptr, int *status)
 	}
 
 	fits_set_tscale(infptr, ii + 1, 1.0, 0.0, status);  /* turn off any data scaling, first */
-	fits_read_col_byt(infptr, ii + 1, 1, 1, vla_repeat, 0, ptr, &anynull, status);
+	fits_read_col_byt(infptr, ii + 1, 1, 1, vla_repeat, 0, (unsigned char *) ptr, &anynull, status);
 
         cptr = shufbuffer + cmajor_colstart[ii];
 	
-	fullsize = (cmajor_colstart[ii+1] - cmajor_colstart[ii]);
+	fullsize = (size_t) (cmajor_colstart[ii+1] - cmajor_colstart[ii]);
 
 	switch (colcode[ii]) {
 	/* separate the byte planes for the 2-byte, 4-byte, and 8-byte numeric columns */
@@ -8824,7 +8822,7 @@ int fits_unshuffle_table3(fitsfile *infptr, fitsfile *outfptr, int *status)
 	default: /*  the bytes for other column types are not separated */
           for (jj = 0; jj < naxis2; jj++) {  /* loop over number of rows in the output table */
 	    cptr = buffer + (rmajor_colstart[ii] + jj * rmajor_colstart[ncols]);   /* addr to copy to */
-	    memcpy(cptr, ptr, rmajor_colwidth[ii]);
+	    memcpy(cptr, ptr, (size_t) rmajor_colwidth[ii]);
 	 
 	    ptr += (rmajor_colwidth[ii]);
 	  }
@@ -8857,9 +8855,9 @@ int fits_gzip_datablocks(fitsfile *outfptr, int *status)
   Save the original PCOUNT value in the ZPCOUNT keyword.  
 */
 { 
-    long headstart, datastart, dataend, pcount, ii;
+    long headstart, datastart, dataend, pcount;
     char *ptr, *cptr, *iptr, comm[FLEN_COMMENT];
-    size_t dlen, datasize;
+    size_t dlen, datasize, ii;
 
     /* allocate memory for the data and the compressed data */
     fits_get_hduaddr(outfptr, &headstart, &datastart, &dataend, status); 
@@ -8922,9 +8920,9 @@ int fits_gunzip_datablocks(fitsfile *outfptr, int *status)
   Restore the original header keyword values.
 */
 { 
-    long headstart, datastart, dataend, pcount, naxis1, fsize, ii;
+    long headstart, datastart, dataend, pcount, naxis1, fsize;
     char *ptr, *cptr, *iptr, comm[FLEN_COMMENT];
-    size_t dlen, datasize, fullsize;
+    size_t dlen, datasize, fullsize, ii;
 
     /* allocate memory for the data and the compressed data */
     fits_get_hduaddr(outfptr, &headstart, &datastart, &dataend, status); 
@@ -8994,7 +8992,7 @@ static int fits_copy_heap(fitsfile *infptr, fitsfile *outfptr, int *status)
     LONGLONG headstart, datastart, dataend, nrows, naxis1, datasize;
     long pcount;
     int tstatus;
-    char *buffer, *ptr;
+    char *ptr;
 
     if (*status > 0)
         return(*status);
@@ -9021,7 +9019,7 @@ static int fits_copy_heap(fitsfile *infptr, fitsfile *outfptr, int *status)
     if (datasize == 0)
         return(*status);
 
-    ptr = malloc(datasize);
+    ptr = malloc((size_t) datasize);
 
     /* copy the heap into memory */
     ffmbyt(infptr, datastart + (nrows * naxis1), REPORT_EOF, status);
@@ -9050,7 +9048,7 @@ static int fits_shuffle_heap(fitsfile *infptr, fitsfile *outfptr, int *status)
     LONGLONG length, offset;
     long pcount, jj;
     int tstatus, coltype, ncols, ii;
-    char *buffer, *ptr;
+    char *ptr;
 
     if (*status > 0)
         return(*status);
@@ -9079,7 +9077,7 @@ static int fits_shuffle_heap(fitsfile *infptr, fitsfile *outfptr, int *status)
     if (datasize == 0)
         return(*status);
 
-    ptr = malloc(datasize);
+    ptr = malloc((size_t) datasize);
 
     /* copy the heap into memory */
     ffmbyt(infptr, datastart + (nrows * naxis1), REPORT_EOF, status);
@@ -9144,7 +9142,7 @@ static int fits_shuffle_2bytes(char *heap, LONGLONG length, int *status)
     LONGLONG ii;
     char *ptr, *cptr, *heapptr;
     
-    ptr = malloc(length * 2);
+    ptr = malloc((size_t) (length * 2));
     heapptr = heap;
     cptr = ptr;
     
@@ -9156,7 +9154,7 @@ static int fits_shuffle_2bytes(char *heap, LONGLONG length, int *status)
        cptr++;
     }
          
-    memcpy(heap, ptr, length * 2);
+    memcpy(heap, ptr, (size_t) (length * 2));
     free(ptr);
     return(*status);
 }
@@ -9169,7 +9167,7 @@ static int fits_shuffle_4bytes(char *heap, LONGLONG length, int *status)
     LONGLONG ii;
     char *ptr, *cptr, *heapptr;
     
-    ptr = malloc(length * 4);
+    ptr = malloc((size_t) (length * 4));
     if (!ptr) {
       printf("malloc failed\n");
       return(*status);
@@ -9190,7 +9188,7 @@ static int fits_shuffle_4bytes(char *heap, LONGLONG length, int *status)
        cptr++;
     }
         
-    memcpy(heap, ptr, length * 4);
+    memcpy(heap, ptr, (size_t) (length * 4));
     free(ptr);
 
     return(*status);
@@ -9204,7 +9202,7 @@ static int fits_shuffle_8bytes(char *heap, LONGLONG length, int *status)
     LONGLONG ii;
     char *ptr, *cptr, *heapptr;
     
-    ptr = malloc(length * 8);
+    ptr = malloc((size_t) (length * 8));
     heapptr = heap;
     cptr = ptr;
     
@@ -9228,8 +9226,7 @@ static int fits_shuffle_8bytes(char *heap, LONGLONG length, int *status)
        cptr++;
      }
         
-    memcpy(heap, ptr, length * 8
-   );
+    memcpy(heap, ptr, (size_t) (length * 8));
     free(ptr);
  
     return(*status);
@@ -9244,10 +9241,10 @@ static int fits_unshuffle_heap(fitsfile *infptr, fitsfile *outfptr, int *status)
 */
 { 
     LONGLONG headstart, datastart, dataend, nrows, naxis1, datasize;
-    LONGLONG length, offset;
-    long pcount, jj;
+    LONGLONG length, offset, jj;
+    long pcount;
     int tstatus, coltype, ncols, ii;
-    char *buffer, *ptr;
+    char *ptr;
 
     if (*status > 0)
         return(*status);
@@ -9276,7 +9273,7 @@ static int fits_unshuffle_heap(fitsfile *infptr, fitsfile *outfptr, int *status)
         return(*status);
 
     /* allocate memory for the heap */
-    ptr = malloc(datasize);
+    ptr = malloc((size_t) datasize);
 
     /* copy the heap into memory */
     ffmbyt(infptr, datastart + (nrows * naxis1), REPORT_EOF, status);
@@ -9341,7 +9338,7 @@ static int fits_unshuffle_2bytes(char *heap, LONGLONG length, int *status)
     LONGLONG ii;
     char *ptr, *cptr, *heapptr;
     
-    ptr = malloc(length * 2);
+    ptr = malloc((size_t) (length * 2));
     heapptr = heap + (2 * length) - 1;
     cptr = ptr + (2 * length) - 1;
     
@@ -9353,7 +9350,7 @@ static int fits_unshuffle_2bytes(char *heap, LONGLONG length, int *status)
        heapptr--;
     }
          
-    memcpy(heap, ptr, length * 2);
+    memcpy(heap, ptr, (size_t) (length * 2));
     free(ptr);
     return(*status);
 }
@@ -9366,7 +9363,7 @@ static int fits_unshuffle_4bytes(char *heap, LONGLONG length, int *status)
     LONGLONG ii;
     char *ptr, *cptr, *heapptr;
     
-    ptr = malloc(length * 4);
+    ptr = malloc((size_t) (length * 4));
     heapptr = heap + (4 * length) -1;
     cptr = ptr + (4 * length) -1;
  
@@ -9382,7 +9379,7 @@ static int fits_unshuffle_4bytes(char *heap, LONGLONG length, int *status)
        heapptr--;
     }
         
-    memcpy(heap, ptr, length * 4);
+    memcpy(heap, ptr, (size_t) (length * 4));
     free(ptr);
     return(*status);
 }
@@ -9395,9 +9392,9 @@ static int fits_unshuffle_8bytes(char *heap, LONGLONG length, int *status)
     LONGLONG ii;
     char *ptr, *cptr, *heapptr;
     
-    ptr = malloc(length * 8) - 1;
+    ptr = malloc((size_t) (length * 8));
     heapptr = heap + (8 * length) - 1;
-    cptr = ptr + (8 * length);
+    cptr = ptr + (8 * length)  -1;
     
     for (ii = 0; ii < length; ii++) {
        *cptr = *heapptr;
@@ -9417,14 +9414,9 @@ static int fits_unshuffle_8bytes(char *heap, LONGLONG length, int *status)
        *cptr = *(heapptr - (7 * length));
        cptr--;
        heapptr--;
-     }
-        
-    memcpy(heap, ptr, length * 8
-   );
+    }
+       
+    memcpy(heap, ptr, (size_t) (length * 8));
     free(ptr);
- 
     return(*status);
 }
-
-
-

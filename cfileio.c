@@ -2735,7 +2735,7 @@ int fits_copy_image_section(
 
        if (fpixels[ii] != 1 || incs[ii] != 1)
        {
-        for (kk=-1;kk<26; kk++)  /* modify any alternate WCS keywords */
+            for (kk=-1;kk<26; kk++)  /* modify any alternate WCS keywords */
 	{
          /* read the CRPIXn keyword if it exists in the input file */
          fits_make_keyn("CRPIX", ii + 1, keyname, status);
@@ -2751,11 +2751,14 @@ int fits_copy_image_section(
              &crpix, NULL, &tstatus) == 0)
          {
            /* calculate the new CRPIXn value */
-           if (fpixels[ii] <= lpixels[ii])
-             crpix = (crpix - (fpixels[ii] - 1.0) - .5) / incs[ii] + 0.5;
-           else
-             crpix = (fpixels[ii] - (crpix - 1.0) - .5) / incs[ii] + 0.5;
-            
+           if (fpixels[ii] <= lpixels[ii]) {
+             crpix = (crpix - (fpixels[ii])) / incs[ii] + 1.0;
+              /*  crpix = (crpix - (fpixels[ii] - 1.0) - .5) / incs[ii] + 0.5; */
+           } else {
+             crpix = (fpixels[ii] - crpix)  / incs[ii] + 1.0;
+             /* crpix = (fpixels[ii] - (crpix - 1.0) - .5) / incs[ii] + 0.5; */
+           }
+
            /* modify the value in the output file */
            fits_modify_key_dbl(newptr, keyname, crpix, 15, NULL, status);
 
