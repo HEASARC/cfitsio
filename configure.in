@@ -225,7 +225,7 @@ CFLAGS="$CFLAGS $CFORTRANFLAGS"
 
 case $GCC in
 	yes)
-		GCCVERSION="`gcc -dumpversion 2>&1`"
+		GCCVERSION="`$CC -dumpversion 2>&1`"
 		echo "cfitsio: == Using gcc version $GCCVERSION"
 		AC_SUBST(GCCVERSION)
                 changequote(,)
