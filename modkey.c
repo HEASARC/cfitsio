@@ -686,8 +686,6 @@ int ffmkls( fitsfile *fptr,     /* I - FITS file pointer        */
         comm[FLEN_COMMENT-1] = '\0';
     }
 
-        strcpy(comm, incomm);  /* copy the input comment string */
-
     /* delete the old keyword */
     if (ffdkey(fptr, keyname, status) > 0)
         return(*status);            /* keyword doesn't exist */
