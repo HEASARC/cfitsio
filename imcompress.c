@@ -6243,7 +6243,7 @@ static int unquantize_i1r4(long row, /* tile number = row number in table  */
     {
            for (ii = 0; ii < ntodo; ii++)
             {
-                output[ii] = (float) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                output[ii] = (float) (((double) input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
                 nextrand++;
 		if (nextrand == N_RANDOM) {
                     iseed++;
@@ -6266,7 +6266,7 @@ static int unquantize_i1r4(long row, /* tile number = row number in table  */
                 }
                 else
                 {
-                    output[ii] = (float) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                    output[ii] = (float) (((double) input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
                 }
 
                 nextrand++;
@@ -6313,7 +6313,7 @@ static int unquantize_i2r4(long row, /* seed for random values  */
     {
            for (ii = 0; ii < ntodo; ii++)
             {
-                output[ii] = (float) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                output[ii] = (float) (((double) input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
                 nextrand++;
 		if (nextrand == N_RANDOM) {
                     iseed++;
@@ -6336,7 +6336,7 @@ static int unquantize_i2r4(long row, /* seed for random values  */
                 }
                 else
                 {
-                    output[ii] = (float) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                    output[ii] = (float) (((double) input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
                 }
 
                 nextrand++;
@@ -6383,7 +6383,7 @@ static int unquantize_i4r4(long row, /* tile number = row number in table    */
     {
             for (ii = 0; ii < ntodo; ii++)
             {
-                output[ii] = (float) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                output[ii] = (float) (((double) input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
 
                 nextrand++;
 		if (nextrand == N_RANDOM) {
@@ -6407,7 +6407,7 @@ static int unquantize_i4r4(long row, /* tile number = row number in table    */
                 }
                 else
                 {
-                    output[ii] = (float) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                    output[ii] = (float) (((double) input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
                 }
 
                 nextrand++;
@@ -6454,7 +6454,7 @@ static int unquantize_i1r8(long row, /* tile number = row number in table  */
     {
            for (ii = 0; ii < ntodo; ii++)
             {
-                output[ii] = (double) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                output[ii] = (double) (((double) input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
                 nextrand++;
 		if (nextrand == N_RANDOM) {
                     iseed++;
@@ -6477,7 +6477,7 @@ static int unquantize_i1r8(long row, /* tile number = row number in table  */
                 }
                 else
                 {
-                    output[ii] = (double) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                    output[ii] = (double) (((double) input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
                 }
 
                 nextrand++;
@@ -6524,7 +6524,7 @@ static int unquantize_i2r8(long row, /* tile number = row number in table  */
     {
            for (ii = 0; ii < ntodo; ii++)
             {
-                output[ii] = (double) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                output[ii] = (double) (((double) input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
                 nextrand++;
 		if (nextrand == N_RANDOM) {
                     iseed++;
@@ -6547,7 +6547,7 @@ static int unquantize_i2r8(long row, /* tile number = row number in table  */
                 }
                 else
                 {
-                    output[ii] = (double) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                    output[ii] = (double) (((double) input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
                 }
 
                 nextrand++;
@@ -6594,7 +6594,7 @@ static int unquantize_i4r8(long row, /* tile number = row number in table    */
     {
             for (ii = 0; ii < ntodo; ii++)
             {
-                output[ii] = (double) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                output[ii] = (double) (((double) input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
 
                 nextrand++;
 		if (nextrand == N_RANDOM) {
@@ -6618,7 +6618,7 @@ static int unquantize_i4r8(long row, /* tile number = row number in table    */
                 }
                 else
                 {
-                    output[ii] = (double) ((input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
+                    output[ii] = (double) (((double) input[ii] - fits_rand_value[nextrand] + 0.5) * scale + zero);
                 }
 
                 nextrand++;

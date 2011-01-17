@@ -175,7 +175,7 @@ If the function value is zero, the data were not copied to idata.
             if (row > 0) {  /* dither the values when quantizing */
               for (i = 0;  i < nx;  i++) {
 	    
-		idata[i] =  NINT(((fdata[i] - zeropt) / delta) + fits_rand_value[nextrand] - 0.5);
+		idata[i] =  NINT((((double) fdata[i] - zeropt) / delta) + fits_rand_value[nextrand] - 0.5);
 
                 nextrand++;
 		if (nextrand == N_RANDOM) {
@@ -199,7 +199,7 @@ If the function value is zero, the data were not copied to idata.
             if (row > 0) {  /* dither the values */
 	      for (i = 0;  i < nx;  i++) {
                 if (fdata[i] != in_null_value) {
-		    idata[i] =  NINT(((fdata[i] - zeropt) / delta) + fits_rand_value[nextrand] - 0.5);
+		    idata[i] =  NINT((((double) fdata[i] - zeropt) / delta) + fits_rand_value[nextrand] - 0.5);
                 } else {
                     idata[i] = NULL_VALUE;
                 }
@@ -347,7 +347,7 @@ If the function value is zero, the data were not copied to idata.
             if (row > 0) {  /* dither the values when quantizing */
        	      for (i = 0;  i < nx;  i++) {
 
-		idata[i] =  NINT(((fdata[i] - zeropt) / delta) + fits_rand_value[nextrand] - 0.5);
+		idata[i] =  NINT((((double) fdata[i] - zeropt) / delta) + fits_rand_value[nextrand] - 0.5);
 
                 nextrand++;
 		if (nextrand == N_RANDOM) {
@@ -370,7 +370,7 @@ If the function value is zero, the data were not copied to idata.
             if (row > 0) {  /* dither the values */
 	      for (i = 0;  i < nx;  i++) {
                 if (fdata[i] != in_null_value) {
-		    idata[i] =  NINT(((fdata[i] - zeropt) / delta) + fits_rand_value[nextrand] - 0.5);
+		    idata[i] =  NINT((((double) fdata[i] - zeropt) / delta) + fits_rand_value[nextrand] - 0.5);
                 } else {
                     idata[i] = NULL_VALUE;
                 }
