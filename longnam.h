@@ -120,6 +120,7 @@
 
 #define fits_read_record       ffgrec
 #define fits_read_card         ffgcrd
+#define fits_read_str          ffgstr
 #define fits_read_key_unit     ffgunt
 #define fits_read_keyn         ffgkyn
 #define fits_read_key          ffgky
@@ -134,6 +135,7 @@
 #define fits_read_key_dblcmp   ffgkym
 #define fits_read_key_triple   ffgkyt
 #define fits_read_key_longstr  ffgkls
+#define fits_free_memory       fffree
 #define fits_read_tdim         ffgtdm
 #define fits_read_tdimll       ffgtdmll
 #define fits_decode_tdim       ffdtdm
@@ -204,6 +206,7 @@
 #define fits_insert_key_dblcmp ffikym
 
 #define fits_delete_key     ffdkey
+#define fits_delete_str     ffdstr
 #define fits_delete_record  ffdrec
 #define fits_get_hdu_num    ffghdn
 #define fits_get_hdu_type   ffghdt

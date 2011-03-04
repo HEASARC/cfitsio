@@ -34,8 +34,8 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.26
-#define CFITSIO_MINOR 26
+#define CFITSIO_VERSION 3.27
+#define CFITSIO_MINOR 27
 #define CFITSIO_MAJOR 3
 
 #include <stdio.h>
@@ -253,11 +253,12 @@ SERVICES PROVIDED HEREUNDER."
 #define FLOATNULLVALUE -9.11912E-36F
 #define DOUBLENULLVALUE -9.1191291391491E-36
  
-/* Image compression algorithm types */
+/* compression algorithm type codes */
 #define SUBTRACTIVE_DITHER_1 1
 #define MAX_COMPRESS_DIM     6
 #define RICE_1      11
 #define GZIP_1      21
+#define GZIP_2      22
 #define PLIO_1      31
 #define HCOMPRESS_1 41
 #define BZIP2_1     51  /* not publicly supported; only for test purposes */
@@ -873,6 +874,7 @@ int ffgnxk(fitsfile *fptr, char **inclist, int ninc, char **exclist,
            int nexc, char *card, int  *status);
 int ffgrec(fitsfile *fptr, int nrec,      char *card, int *status);
 int ffgcrd(fitsfile *fptr, const char *keyname, char *card, int *status);
+int ffgstr(fitsfile *fptr, const char *string, char *card, int *status);
 int ffgunt(fitsfile *fptr, const char *keyname, char *unit, int  *status);
 int ffgkyn(fitsfile *fptr, int nkey, char *keyname, char *keyval, char *comm,
            int *status);
@@ -882,8 +884,8 @@ int ffgkey(fitsfile *fptr, const char *keyname, char *keyval, char *comm,
 int ffgky( fitsfile *fptr, int datatype, const char *keyname, void *value,
            char *comm, int *status);
 int ffgkys(fitsfile *fptr, const char *keyname, char *value, char *comm, int *status);
-int ffgkls(fitsfile *fptr, const char *keyname, char **value, char *comm, int *status)
-;
+int ffgkls(fitsfile *fptr, const char *keyname, char **value, char *comm, int *status);
+int fffkls(char *value, int *status);
 int ffgkyl(fitsfile *fptr, const char *keyname, int *value, char *comm, int *status);
 int ffgkyj(fitsfile *fptr, const char *keyname, long *value, char *comm, int *status);
 int ffgkyjj(fitsfile *fptr, const char *keyname, LONGLONG *value, char *comm, int *status);
@@ -1025,6 +1027,7 @@ int ffikfm(fitsfile *fptr, const char *keyname, double *value, int decim, char *
 
 /*--------------------- delete keywords ---------------*/
 int ffdkey(fitsfile *fptr, const char *keyname, int *status);
+int ffdstr(fitsfile *fptr, const char *string, int *status);
 int ffdrec(fitsfile *fptr, int keypos, int *status);
  
 /*--------------------- get HDU information -------------*/
@@ -1856,13 +1859,13 @@ int	fits_execute_template(fitsfile *ff, char *ngp_template, int *status);
 
 int fits_img_stats_short(short *array,long nx, long ny, int nullcheck,   
     short nullvalue,long *ngoodpix, short *minvalue, short *maxvalue, double *mean,  
-    double *sigma, double *noise1, double *noise3, int *status);
+    double *sigma, double *noise1, double *noise2, double *noise3, double *noise5, int *status);
 int fits_img_stats_int(int *array,long nx, long ny, int nullcheck,   
     int nullvalue,long *ngoodpix, int *minvalue, int *maxvalue, double *mean,  
-    double *sigma, double *noise1, double *noise3, int *status);
+    double *sigma, double *noise1, double *noise2, double *noise3, double *noise5, int *status);
 int fits_img_stats_float(float *array, long nx, long ny, int nullcheck,   
     float nullvalue,long *ngoodpix, float *minvalue, float *maxvalue, double *mean,  
-    double *sigma, double *noise1, double *noise3, int *status);
+    double *sigma, double *noise1, double *noise2, double *noise3, double *noise5, int *status);
 
 /*--------------------- image compression routines ------------------*/
 
@@ -1903,16 +1906,11 @@ int fits_hdecompress64(unsigned char *input, int smooth, LONGLONG *a, int *nx,
        int *ny, int *scale, int *status);
 
 int fits_transpose_table(fitsfile *infptr, fitsfile *outfptr, int *status);
-int fits_transpose_table2(fitsfile *infptr, fitsfile *outfptr, int *status);
-int fits_untranspose_table(fitsfile *infptr, fitsfile *outfptr, int *status);
-int fits_shuffle_table(fitsfile *infptr, fitsfile *outfptr, int *status);
-int fits_shuffle_table2(fitsfile *infptr, fitsfile *outfptr, int *status);
-int fits_shuffle_table3(fitsfile *infptr, fitsfile *outfptr, int *status);
-int fits_unshuffle_table(fitsfile *infptr, fitsfile *outfptr, int *status);
-int fits_unshuffle_table2(fitsfile *infptr, fitsfile *outfptr, int *status);
-int fits_unshuffle_table3(fitsfile *infptr, fitsfile *outfptr, int *status);
-int fits_gzip_datablocks(fitsfile *outfptr, int *status);
-int fits_gunzip_datablocks(fitsfile *outfptr, int *status);
+int fits_compress_table_fast(fitsfile *infptr, fitsfile *outfptr, int *status);
+int fits_compress_table_best(fitsfile *infptr, fitsfile *outfptr, int *status);
+int fits_compress_table_rice(fitsfile *infptr, fitsfile *outfptr, int *status);
+int fits_uncompress_table(fitsfile *infptr, fitsfile *outfptr, int *status);
+int fits_gzip_datablocks(fitsfile *fptr, size_t *size, int *status);
 
 /*  The following exclusion if __CINT__ is defined is needed for ROOT */
 #ifndef __CINT__

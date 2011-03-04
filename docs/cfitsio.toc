@@ -35,7 +35,7 @@
 \contentsline {section}{\numberline {5.3}HDU Access Routines}{33}
 \contentsline {section}{\numberline {5.4}Header Keyword Read/Write Routines}{35}
 \contentsline {subsection}{\numberline {5.4.1}Keyword Reading Routines}{35}
-\contentsline {subsection}{\numberline {5.4.2}Keyword Writing Routines}{37}
+\contentsline {subsection}{\numberline {5.4.2}Keyword Writing Routines}{38}
 \contentsline {section}{\numberline {5.5}Primary Array or IMAGE Extension I/O Routines}{40}
 \contentsline {section}{\numberline {5.6}Image Compression}{44}
 \contentsline {section}{\numberline {5.7}ASCII and Binary Table Routines}{48}
@@ -47,7 +47,7 @@
 \contentsline {subsection}{\numberline {5.7.6}Column Binning or Histogramming Routines}{57}
 \contentsline {section}{\numberline {5.8}Utility Routines}{59}
 \contentsline {subsection}{\numberline {5.8.1}File Checksum Routines}{59}
-\contentsline {subsection}{\numberline {5.8.2}Date and Time Utility Routines}{60}
+\contentsline {subsection}{\numberline {5.8.2}Date and Time Utility Routines}{61}
 \contentsline {subsection}{\numberline {5.8.3}General Utility Routines}{62}
 \contentsline {chapter}{\numberline {6} The CFITSIO Iterator Function }{73}
 \contentsline {section}{\numberline {6.1}The Iterator Work Function}{74}

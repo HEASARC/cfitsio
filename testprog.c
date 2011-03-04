@@ -723,7 +723,7 @@ int main()
     printf("KEY_PKLS long string value = \n%s\n", lsptr);
 
     /* free the memory for the long string value */
-    free(lsptr);
+    fits_free_memory(lsptr, &status);
 
     /* get size and position in header */
     ffghps(fptr, &existkeys, &keynum, &status);

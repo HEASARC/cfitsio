@@ -73,11 +73,12 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.26;
+      *version = (float) 3.27;
 
-/*       30 Dec 2010
+/*       3 Mar 2011
 
    Previous releases:
+      *version = 3.26   30 Dec 2010
       *version = 3.25    9 June 2010
       *version = 3.24    26 Jan 2010
       *version = 3.23     7 Jan 2010
@@ -1024,7 +1025,9 @@ int ffmkky(const char *keyname,   /* I - keyword name    */
 
     strncat(tmpname, keyname + nblank, FLEN_KEYWORD - 1);
 
+    len = strlen(value);        
     namelen = strlen(tmpname);
+
     if (namelen)
     {
         cptr = tmpname + namelen - 1;
@@ -1071,11 +1074,17 @@ int ffmkky(const char *keyname,   /* I - keyword name    */
             namelen -= 9;  /* deleted the string 'HIERARCH ' */
 
         strcat(card, tmpname);
-        strcat(card, " = ");
-        namelen += 12;
+
+        if (namelen + 12 + len > 80) {
+            /* save 1 char by not putting a space before the equals sign */
+            strcat(card, "= ");
+            namelen += 11;
+        } else {
+            strcat(card, " = ");
+            namelen += 12;
+        }
     }
 
-    len = strlen(value);        
     if (len > 0)
     {
         if (value[0] == '\'')  /* is this a quoted string value? */
@@ -1819,15 +1828,15 @@ then values of 'n' less than or equal to n_value will match.
 /*
     if (*inrec == '\0') return 0;
 */
-    if (*inrec == '\0')
-       strcpy(inrec, " ");
+
+    if (*inrec == '\0')    /* expand to full 8 char blank keyword name */
+       strcpy(inrec, "        ");
        
     oldp = '\0';
     firstfail = 0;
 
     /* ===== Pattern match stage */
     for (pat=0; pat < npat; pat++) {
-
       spat = patterns[pat][0];
       
       i1 = 0; j1 = 0; m1 = -1; n1 = -1; a = ' ';  /* Initialize the place-holders */
@@ -1855,7 +1864,7 @@ then values of 'n' less than or equal to n_value will match.
 	   ip++, ic++, firstfail=0) {
 	c = inrec[ic];
 	s = spat[ip];
-	
+
 	if (s == 'i') {
 	  /* Special pattern: 'i' placeholder */
 	  if (isdigit(c)) { i1 = c - '0'; pass = 1;}
@@ -1906,15 +1915,12 @@ then values of 'n' less than or equal to n_value will match.
 	  /* FAIL */
 	  pass = 0;
 	}
-	
 	if (!pass) break;
       }
       
-
       /* Must pass to the end of the keyword.  No partial matches allowed */
       if (pass && (ic >= 8 || inrec[ic] == ' ')) break;
     }
-
 
     /* Transfer the pattern-matched numbers to the output parameters */
     if (i) { *i = i1; }
@@ -2028,7 +2034,7 @@ int fits_translate_keywords(
         if (rec[ii] < 32 || rec[ii] > 126)
           rec[ii] = ' ';
       }
-
+      
       fits_translate_keyword(rec, outrec, patterns, npat, 
 			     n_value, n_offset, n_range, 
 			     &pat_num, &i, &j, &m, &n, status);

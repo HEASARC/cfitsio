@@ -1,5 +1,43 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.27 - 3 March 2011
+
+  Enhancements
+
+    - added new routines fits_read_str and fits_delete_str which read or
+      delete, respectively, a header keyword record that contains a specified 
+      character string.
+
+    - added a new routine call fits_free_key_longstr which frees the memory
+      that fits_read_key_longstr allocated for the long string keyword value.
+
+    - enhanced the ffmkky routine in fitscore.c to not put a space before the
+      equals sign when writing long string-valued keywords using the ESO
+      HIERARCH keyword convension, if that extra character is needed to
+      fit the length of the keyword name + value string within the 80-character
+      FITS keyword record.
+
+    - made small change to fits_translate_keyword to support translation of
+      blank keywords (where the name = 8 blank chracters)
+
+    - modified fpack so that it uses the minimum of the 2nd, 3rd, and 5th order
+      MAD noise values when quantizing and compressing a floating point image.
+      This is more conservative than just using the 3rd order MAD value alone.
+
+    - added new routine imcomp_copy_prime2img to imcompress.c that is used by
+      funpack to copy any keywords that may have been added to the primary
+      array of the compressed image file (a null image) back into the header of 
+      the uncompressed image.
+
+    - enhanced the fits_quantize_float and fits_quantize_double routines in
+      quantize.c to also compress the tile if it is completely filled with
+      null values.  Previously, this type of tile would have been written 
+      to the output compressed image without any compression.
+
+    - enhanced imcomp_decompress_tile to support implicit datatype conversion
+      when reading a losslessly compressed (with gzip) real*4 image into an
+      array of real*8 values.  
+
 Version 3.26 - 30 December 2010
 
   Enhancements
@@ -79,6 +117,9 @@ Version 3.26 - 30 December 2010
 
    Bug Fixes
    
+   - fixed a bug when uncompressing floating-point images that contain Nan
+     values on some 64-bit platforms.
+     
    - fixed a bug when updating the value of the CRPIXn world coordinate 
      system keywords when extracting a subimage from larger FITS image, using the
      extended CFITSIO syntax (e.g.  myimage[1:500:2, 1:500:2]).  This bug only 

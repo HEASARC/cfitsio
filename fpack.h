@@ -12,9 +12,23 @@
 /* #include <sys/stat.h> */
 /* #include <sys/types.h> */
 
-#define	FPACK_VERSION	"1.5.1 (Dec 2010)"
+#define	FPACK_VERSION	"1.6.0 (Feb 2011)"
 /*
 VERSION	History
+1.6.0 (February 2011)
+    - Added full support for compressing and uncompressing FITS binary tables
+      using a newly proposed format convention.  This is intended only for
+      further feasibility studies, and is not recommended for use with publicly
+      distributed FITS files.
+    - Use the minimum of the MAD 2nd, 3rd, and 5th order values as a more
+      conservative extimate of the noise when quantizing floating point images.
+    - Enhanced the tile compression routines so that a tile that contains all
+      NaN pixel values will be compressed.
+    - When uncompressing an image that was originally in a FITS primary array,
+      funpack will also append any new keywords that were written into the 
+      primary array of the compressed FITS file after the file was compressed.
+    - Added support for the GZIP_2 algorithm, which shuffles the bytes in the
+      pixel values prior to compressing them with gzip.      
 1.5.1 (December 2010) Added prototype, mainly hidden, support for compressing 
       binary tables.  
 1.5.0 (August 2010) Added the -i2f option to lossy compress integer images.
@@ -78,6 +92,7 @@ typedef struct
 	int	do_checksums;
 	int	do_gzip_file;
 	int     do_tables;  
+	int     do_fast;
 	int	test_all;
 	int	verbose;
 
@@ -99,7 +114,9 @@ typedef struct
 	double	mean;
 	double	sigma;
 	double	noise1;
+	double	noise2;
 	double	noise3;
+	double	noise5;
 } imgstats;
 
 int fp_get_param (int argc, char *argv[], fpstate *fpptr);

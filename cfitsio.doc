@@ -1795,7 +1795,9 @@ header.
     (a literal copy of what is in the value field) regardless of the
     intrinsic data type of the keyword.  The third routine returns
     the entire 80-character header record of the keyword, with any
-    trailing blank characters stripped off.
+    trailing blank characters stripped off. The fourth routine returns
+    the (next) header record that contains the literal string of characters
+    specified by the 'string' argument.
 
     If a NULL comment pointer is supplied then the comment string
 >   will not be returned. \label{ffgky} \label{ffgkey} \label{ffgcrd}
@@ -1810,6 +1812,9 @@ header.
 
   int fits_read_card / ffgcrd
       (fitsfile *fptr, char *keyname, > char *card, int *status)
+
+  int fits_read_str / ffgstr
+      (fitsfile *fptr, char *string, > char *card, int *status)
 -
 >3  Return the nth header record in the CHU.  The first keyword
    in the header is at keynum = 1;  if keynum = 0 then these routines
@@ -1998,13 +2003,18 @@ header.
     specified position in the header (the first keyword is at position 1),
     whereas the second routine deletes a specifically named keyword.
     Wild card characters may be used when specifying the name of the keyword
->   to be deleted. \label{ffdrec} \label{ffdkey}
+    to be deleted. The third routine deletes the (next) keyword that contains
+    the literal character string specified by the 'string'
+>   argument.\label{ffdrec} \label{ffdkey}
 -
   int fits_delete_record / ffdrec
       (fitsfile *fptr, int   keynum,  > int *status)
 
   int fits_delete_key / ffdkey
       (fitsfile *fptr, char *keyname, > int *status)
+
+  int fits_delete_str / ffdstr
+      (fitsfile *fptr, char *string, > int *status)
 -
 **E.  Primary Array or IMAGE Extension I/O Routines 
  
@@ -2194,11 +2204,11 @@ in the FITS array.
     NAXIS1 * NAXIS2 then it would read an entire 2D image, or the first
     plane of a 3-D datacube.
 
-    The first routine will return any undefined pixels in the FITS array
+    The first 2 routines will return any undefined pixels in the FITS array
     equal to the value of *nullval (note that this parameter gives the
     address of the null value, not the null value itself) unless nulval
     = 0 or *nulval = 0, in which case no checks for undefined pixels
-    will be performed.  The second routine is similar except that any
+    will be performed.  The second 2 routines are similar except that any
     undefined pixels will have the corresponding nullarray element set
 >   equal to TRUE (= 1).  \label{ffgpxv}  \label{ffgpxf}
 -
@@ -5241,12 +5251,16 @@ keyword to be read.
        int *status);
  
   NOTE: after calling the following routine, programs must explicitly free
-        the memory allocated for 'longstr' after it is no longer needed.
+        the memory allocated for 'longstr' after it is no longer needed or
+        call fits_free_memory.
 
   int fits_read_key_longstr / ffgkls
       (fitsfile *fptr, char *keyname, > char **longstr, char *comment,
              int *status)
  
+  int fits_free_memory / fffree
+      (char *longstr, int *status);
+
   int fits_read_key_[log, lng, flt, dbl, cmp, dblcmp] / ffgky[ljedcm]
       (fitsfile *fptr, char *keyname, > DTYPE *numval, char *comment,
        int *status)
@@ -8482,6 +8496,7 @@ fits\_delete\_record  & \pageref{ffdrec} \\
 fits\_delete\_rowlist & \pageref{ffdrws} \\
 fits\_delete\_rowrange & \pageref{ffdrrg} \\
 fits\_delete\_rows  & \pageref{ffdrow} \\
+fits\_delete\_str  & \pageref{ffdkey} \\
 fits\_encode\_chksum  & \pageref{ffesum} \\
 fits\_file\_exists    & \pageref{ffexist} \\
 fits\_file\_mode      & \pageref{ffflmd} \\
@@ -8491,16 +8506,17 @@ fits\_find\_nextkey      & \pageref{ffgnxk} \\
 fits\_find\_rows    & \pageref{fffrow} \\
 fits\_flush\_buffer     & \pageref{ffflus} \\
 fits\_flush\_file     & \pageref{ffflus} \\
+fits\_free\_memory   & \pageref{ffgkls} \\
 fits\_get\_acolparms  & \pageref{ffgacl} \\
 fits\_get\_bcolparms  & \pageref{ffgbcl} \\
 fits\_get\_chksum     & \pageref{ffgcks} \\
 fits\_get\_col\_display\_width    & \pageref{ffgcdw} \\
 fits\_get\_colname    & \pageref{ffgcnn} \\
 fits\_get\_colnum     & \pageref{ffgcno} \\
-fits\_get\_coltype    & \pageref{ffgtcl} \\
-fits\_get\_compression\_type & \pageref{ffgetcomp} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_get\_coltype    & \pageref{ffgtcl} \\
+fits\_get\_compression\_type & \pageref{ffgetcomp} \\
 fits\_get\_eqcoltype    & \pageref{ffgtcl} \\
 fits\_get\_errstatus  & \pageref{ffgerr} \\
 fits\_get\_hdrpos        & \pageref{ffghps} \\
@@ -8531,11 +8547,11 @@ fits\_get\_tbcol      & \pageref{ffgabc} \\
 fits\_get\_version    & \pageref{ffvers} \\
 fits\_hdr2str         & \pageref{ffhdr2str}, \pageref{hdr2str} \\
 fits\_insert\_atbl    & \pageref{ffitab} \\
-fits\_insert\_btbl    & \pageref{ffibin} \\
-fits\_insert\_col   & \pageref{fficol} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_insert\_btbl    & \pageref{ffibin} \\
+fits\_insert\_col   & \pageref{fficol} \\
 fits\_insert\_cols  & \pageref{fficls} \\
 fits\_insert\_group  & \pageref{ffgtis} \\
 fits\_insert\_img     & \pageref{ffiimg} \\
@@ -8582,11 +8598,11 @@ fits\_read\_btblhdr      & \pageref{ffghbn} \\
 fits\_read\_card         & \pageref{ffgcrd} \\
 fits\_read\_col        & \pageref{ffgcv} \\
 fits\_read\_col\_bit\_ & \pageref{ffgcx} \\
-fits\_read\_col\_TYP    & \pageref{ffgcvx} \\
-fits\_read\_colnull    & \pageref{ffgcf} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+fits\_read\_col\_TYP    & \pageref{ffgcvx} \\
+fits\_read\_colnull    & \pageref{ffgcf} \\
 fits\_read\_colnull\_TYP    & \pageref{ffgcfx} \\
 fits\_read\_descript & \pageref{ffgdes} \\
 fits\_read\_descripts & \pageref{ffgdes} \\
@@ -8610,6 +8626,7 @@ fits\_read\_keyword      & \pageref{ffgkey} \\
 fits\_read\_pix  & \pageref{ffgpxv} \\
 fits\_read\_pixnull & \pageref{ffgpxf} \\
 fits\_read\_record       & \pageref{ffgrec} \\
+fits\_read\_str         & \pageref{ffgcrd} \\
 fits\_read\_subset\_TYP  & \pageref{ffgsvx} \pageref{ffgsvx2}\\
 fits\_read\_subsetnull\_TYP & \pageref{ffgsfx} \pageref{ffgsfx2} \\
 fits\_read\_tbl\_coord & \pageref{ffgtcs} \\
@@ -8632,12 +8649,12 @@ fits\_set\_compression\_type  & \pageref{ffsetcomp} \\
 fits\_set\_hdrsize    & \pageref{ffhdef} \\
 fits\_set\_hdustruc   & \pageref{ffrdef} \\
 fits\_set\_imgnull    & \pageref{ffpnul} \\
-fits\_set\_noise\_bits  & \pageref{ffsetcomp} \\
-fits\_set\_tile\_dim  & \pageref{ffsetcomp} \\
-fits\_set\_tscale     & \pageref{fftscl} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+fits\_set\_noise\_bits  & \pageref{ffsetcomp} \\
+fits\_set\_tile\_dim  & \pageref{ffsetcomp} \\
+fits\_set\_tscale     & \pageref{fftscl} \\
 fits\_split\_names    & \pageref{splitnames} \\
 fits\_str2date        & \pageref{ffdt2s} \\
 fits\_str2time        & \pageref{ffdt2s} \\
@@ -8683,14 +8700,14 @@ fits\_write\_hdu       & \pageref{ffwrhdu} \\
 fits\_write\_history      & \pageref{ffphis} \\
 fits\_write\_img        & \pageref{ffppr} \\
 fits\_write\_img\_null & \pageref{ffppru} \\
-fits\_write\_img\_TYP    & \pageref{ffpprx} \\
-fits\_write\_imghdr       & \pageref{ffphps} \\
-fits\_write\_imgnull     & \pageref{ffppn} \\
 
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
 
+fits\_write\_img\_TYP    & \pageref{ffpprx} \\
+fits\_write\_imghdr       & \pageref{ffphps} \\
+fits\_write\_imgnull     & \pageref{ffppn} \\
 fits\_write\_imgnull\_TYP & \pageref{ffppnx} \\
 fits\_write\_key          & \pageref{ffpky} \\
 fits\_write\_key\_longstr  & \pageref{ffpkls} \\
@@ -8748,6 +8765,7 @@ ffdrec  & \pageref{ffdrec} \\
 ffdrow  & \pageref{ffdrow} \\
 ffdrrg  & \pageref{ffdrrg} \\
 ffdrws & \pageref{ffdrws} \\
+ffdstr     & \pageref{ffdkey} \\
 ffdsum  & \pageref{ffdsum} \\
 ffdt2s  & \pageref{ffdt2s} \\
 ffdtdm   & \pageref{ffdtdm} \\
@@ -8761,11 +8779,12 @@ ffflmd      & \pageref{ffflmd} \\
 ffflnm      & \pageref{ffflnm} \\
 ffflsh     & \pageref{ffflus} \\
 ffflus     & \pageref{ffflus} \\
+fffree     & \pageref{ffgkls} \\
 fffrow    & \pageref{fffrow} \\
-ffg2d\_      & \pageref{ffg2dx} \\
-ffg3d\_      & \pageref{ffg3dx} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffg2d\_      & \pageref{ffg2dx} \\
+ffg3d\_      & \pageref{ffg3dx} \\
 ffgabc      & \pageref{ffgabc} \\
 ffgacl  & \pageref{ffgacl} \\
 ffgbcl  & \pageref{ffgbcl} \\
@@ -8812,11 +8831,11 @@ ffgmng  & \pageref{ffgmng} \\
 ffgmop    & \pageref{ffgmop} \\
 ffgmrm   & \pageref{ffgmrm} \\
 ffgmsg    & \pageref{ffgmsg} \\
-ffgmtf  & \pageref{ffgmtf} \\
-ffgncl     & \pageref{ffgnrw} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+ffgmtf  & \pageref{ffgmtf} \\
+ffgncl     & \pageref{ffgnrw} \\
 ffgnrw     & \pageref{ffgnrw} \\
 ffgnxk      & \pageref{ffgnxk} \\
 ffgpf & \pageref{ffgpf} \\
@@ -8830,6 +8849,7 @@ ffgrsz    & \pageref{ffgrsz} \\
 ffgsdt        & \pageref{ffdt2s} \\
 ffgsf\_ & \pageref{ffgsfx} \pageref{ffgsfx2} \\
 ffgstm        & \pageref{ffdt2s} \\
+ffgstr         & \pageref{ffgcrd} \\
 ffgsv\_  & \pageref{ffgsvx} \pageref{ffgsvx2}\\
 ffgtam & \pageref{ffgtam} \\
 ffgtbb    & \pageref{ffgtbb} \\
@@ -8862,13 +8882,13 @@ ffinit  & \pageref{ffinit} \\
 ffinttyp    & \pageref{ffinttyp} \\
 ffiopn & \pageref{ffopen} \\
 ffirec     & \pageref{ffirec} \\
-ffirow  & \pageref{ffirow} \\
-ffitab    & \pageref{ffitab} \\
-ffiter   & \pageref{ffiter} \\
 
 \end{tabular}
 \begin{tabular}{lr}
 
+ffirow  & \pageref{ffirow} \\
+ffitab    & \pageref{ffitab} \\
+ffiter   & \pageref{ffiter} \\
 ffiurl & \pageref{ffiurl} \\
 ffkeyn      & \pageref{ffkeyn} \\
 ffmahd     & \pageref{ffmahd} \\
@@ -8914,13 +8934,13 @@ ffpkyt   & \pageref{ffpkyt} \\
 ffpkyu     & \pageref{ffpkyu} \\
 ffpky\_      & \pageref{ffpkyx} \\
 ffplsw & \pageref{ffplsw} \\
-ffpmrk   & \pageref{ffpmrk} \\
-ffpmsg   & \pageref{ffpmsg} \\
-ffpnul    & \pageref{ffpnul} \\
 
 \end{tabular}
 \begin{tabular}{lr}
 
+ffpmrk   & \pageref{ffpmrk} \\
+ffpmsg   & \pageref{ffpmsg} \\
+ffpnul    & \pageref{ffpnul} \\
 ffppn     & \pageref{ffppn} \\
 ffppn\_ & \pageref{ffppnx} \\
 ffppr        & \pageref{ffppr} \\
@@ -8966,14 +8986,14 @@ ffukyu   & \pageref{ffukyu} \\
 ffuky\_    & \pageref{ffukyx} \\
 ffupch      & \pageref{ffupch} \\
 ffupck  & \pageref{ffupck} \\
-ffurlt  & \pageref{ffurlt} \\
-ffvcks  & \pageref{ffvcks} \\
-ffvers    & \pageref{ffvers} \\
 
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
 
+ffurlt  & \pageref{ffurlt} \\
+ffvcks  & \pageref{ffvcks} \\
+ffvers    & \pageref{ffvers} \\
 ffwldp & \pageref{ffwldp} \\
 ffwrhdu  & \pageref{ffwrhdu} \\
 ffxypx & \pageref{ffxypx} \\

@@ -46,7 +46,10 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 	for (iarg = 1; iarg < argc; iarg++) {
 	    if ((argv[iarg][0] == '-' && strlen (argv[iarg]) == 2) ||
 	        !strncmp(argv[iarg], "-q", 2) ||   /*  special case */
+	        !strncmp(argv[iarg], "-g1", 3) ||   /*  special case */
+	        !strncmp(argv[iarg], "-g2", 3) ||   /*  special case */
 	        !strncmp(argv[iarg], "-i2f", 4) ||  /*  special case */
+	        !strncmp(argv[iarg], "-fast", 5) ||  /*  special case */
 	        !strncmp(argv[iarg], "-n3ratio", 8) ||  /*  special case */
 	        !strncmp(argv[iarg], "-n3min", 6) ||  /*  special case */
 	        !strncmp(argv[iarg], "-BETAtable", 10) )  /*  special case */
@@ -71,7 +74,12 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 			gottype++;
 
 		} else if (argv[iarg][1] == 'g') {
-		    fpptr->comptype = GZIP_1;
+		    /* test for modifiers following the 'g' */
+                    if (argv[iarg][2] == '2')
+		        fpptr->comptype = GZIP_2;
+		    else
+		        fpptr->comptype = GZIP_1;
+
 		    if (gottype) {
 			fp_msg ("Error: multiple compression flags\n");
 			fp_usage (); exit (-1);
@@ -221,6 +229,10 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 
 		} else if (!strcmp(argv[iarg], "-BETAtable")) {
 		    fpptr->do_tables = 1;
+		    fp_msg ("Caution: -BETAtable is for feasibility studies, not general use.\n");
+
+		} else if (!strcmp(argv[iarg], "-fast")) {
+		    fpptr->do_fast = 1;
 
 		} else {
 		    fp_msg ("Error: unknown command line flag `");
@@ -238,10 +250,11 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 	    fp_msg ("Error: `-s' requires `-h or -T'\n"); exit (-1);
 	}
 
-	if (fpptr->quantize_level == 0. && 
-	         fpptr->comptype != GZIP_1 ) {
-
-	    fp_msg ("Error: `-q 0' only allowed with GZIP\n"); exit (-1);
+	if (fpptr->quantize_level == 0) {
+	
+	    if ((fpptr->comptype != GZIP_1) && (fpptr->comptype != GZIP_2)) {
+	        fp_msg ("Error: `-q 0' only allowed with GZIP\n"); exit (-1);
+	    }
 	}
 
 	if (wholetile) {
@@ -305,7 +318,8 @@ fp_msg ("\n");
 fp_msg ("Flags must be separate and appear before filenames:\n");
 fp_msg (" -r          Rice compression [default], or\n");
 fp_msg (" -h          Hcompress compression, or\n");
-fp_msg (" -g          GZIP (per-tile) compression, or\n");
+fp_msg (" -g  or -g1  GZIP_1 (per-tile) compression, or\n");
+fp_msg (" -g2         GZIP_2 (per-tile) compression (with byte shuffling), or\n");
 /*
 fp_msg (" -b          BZIP2 (per-tile) compression, or\n");
 */
@@ -344,6 +358,10 @@ fp_msg (" -n <noise>  Rescale scaled-integer images to reduce noise and improve 
 fp_msg (" -v          Verbose mode; list each file as it is processed.\n");
 fp_msg (" -T          Show compression algorithm comparison test statistics; files unchanged.\n");
 fp_msg (" -R <file>   Write the comparison test report (above) to a text file.\n");
+fp_msg (" -BETAtable  Compress FITS binary tables using prototype method.\n");
+fp_msg ("             This option is ONLY for experimental use!  Do NOT use\n");
+fp_msg ("             on FITS data files that are to be publicly distributed.\n");
+fp_msg (" -fast       Used with -BETAtable to favor speed over maximum compression.\n");
 
 fp_msg ("\nkeywords shared with funpack:\n");
 

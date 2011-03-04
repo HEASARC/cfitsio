@@ -945,6 +945,7 @@ int imcomp_copy_imheader(fitsfile *infptr, fitsfile *outfptr,
 int imcomp_copy_img2comp(fitsfile *infptr, fitsfile *outfptr, int *status);
 int imcomp_copy_comp2img(fitsfile *infptr, fitsfile *outfptr, 
                           int norec, int *status);
+int imcomp_copy_prime2img(fitsfile *infptr, fitsfile *outfptr, int *status);
 int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr,
                  int *status);
 int imcomp_compress_tile (fitsfile *outfptr, long row, 

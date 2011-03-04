@@ -171,6 +171,7 @@ int fp_init (fpstate *fpptr)
 	fpptr->do_checksums = 1;
 	fpptr->do_gzip_file = 0;
 	fpptr->do_tables = 0;  /* this is for beta testing purposes only */
+	fpptr->do_fast = 0;  /* this is for beta testing purposes only */
 	fpptr->test_all = 0;
 	fpptr->verbose = 0;
 
@@ -311,7 +312,9 @@ int fp_info_hdu (fitsfile *infptr)
                     if (! strncmp (val+1, "RICE_1", 6))
                         fp_msg (" tiled_rice\n");
                     else if (! strncmp (val+1, "GZIP_1", 6))
-                        fp_msg (" tiled_gzip\n");
+                        fp_msg (" tiled_gzip_1\n");
+                    else if (! strncmp (val+1, "GZIP_2", 6))
+                        fp_msg (" tiled_gzip_2\n");
                     else if (! strncmp (val+1, "PLIO_1", 6))
                         fp_msg (" tiled_plio\n");
                     else if (! strncmp (val+1, "HCOMPRESS_1", 11))
@@ -554,7 +557,7 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 
 	if (fpvar.test_all && fpvar.outfile[0]) {
 	    outreport = fopen(fpvar.outfile, "w");
-		fprintf(outreport," Filename Extension BITPIX NAXIS1 NAXIS2 Size N_nulls Minval Maxval Mean Sigm Noise1 Noise3 T_whole T_rowbyrow ");
+		fprintf(outreport," Filename Extension BITPIX NAXIS1 NAXIS2 Size N_nulls Minval Maxval Mean Sigm Noise1 Noise2 Noise3 Noise5 T_whole T_rowbyrow ");
 		fprintf(outreport,"[Comp_ratio, Pack_cpu, Unpack_cpu, Lossless readtimes] (repeated for Rice, Hcompress, and GZIP)\n");
 	}
 
@@ -707,7 +710,6 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
                 continue;
 
 	    } else if (unpack) {
-
 		if (fpvar.to_stdout) {
 			/* unpack the input file to the stdout stream */
 			fp_unpack (infits, outfits, fpvar);
@@ -1046,7 +1048,7 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 	int	stat=0, totpix=0, naxis=0, ii, hdutype, bitpix, extnum = 0, len;
 	int     tstatus = 0, hdunum, rescale_flag, bpix;
 	char	dtype[8], dimen[100];
-	double  bscale, rescale;
+	double  bscale, rescale, noisemin;
 	long headstart, datastart, dataend;
 	float origdata = 0., whole_cpu, whole_elapse, row_elapse, row_cpu, xbits;
 	FILE	*diskfile;
@@ -1096,7 +1098,12 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 			else
 			  fp_i2stat(inputfptr, naxis, naxes, &imagestats, &stat);
 
-			rescale = imagestats.noise3 / fpvar.rescale_noise;
+			/* use the minimum of the MAD 2nd, 3rd, and 5th order noise estimates */
+			noisemin = imagestats.noise3;
+			if (imagestats.noise2 != 0. && imagestats.noise2 < noisemin) noisemin = imagestats.noise2;
+			if (imagestats.noise5 != 0. && imagestats.noise5 < noisemin) noisemin = imagestats.noise5;
+
+			rescale = noisemin / fpvar.rescale_noise;
 			if (rescale > 1.0) {
 			  
 			  /* all the criteria are met, so create a temporary file that */
@@ -1165,10 +1172,15 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 		   fp_r4stat(infptr, naxis, naxes, &imagestats, &stat);
 		}
 
-                xbits = log10(imagestats.noise3)/.301 + 1.792;
+		/* use the minimum of the MAD 2nd, 3rd, and 5th order noise estimates */
+		noisemin = imagestats.noise3;
+		if (imagestats.noise2 != 0. && imagestats.noise2 < noisemin) noisemin = imagestats.noise2;
+		if (imagestats.noise5 != 0. && imagestats.noise5 < noisemin) noisemin = imagestats.noise5;
+
+                xbits = log10(noisemin)/.301 + 1.792;
 
 		printf("\n File: %s\n", infits);
-		printf("  Ext BITPIX Dimens.   Nulls    Min    Max     Mean    Sigma  Noise3 Nbits   MaxR\n");
+		printf("  Ext BITPIX Dimens.   Nulls    Min    Max     Mean    Sigma  Noise2  Noise3  Noise5  Nbits   MaxR\n");
 
 		printf("  %3d  %s", extnum, dtype);
 		sprintf(dimen," (%ld", naxes[0]);
@@ -1187,10 +1199,10 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 		fits_read_image_speed (infptr, &whole_elapse, &whole_cpu,
 		               &row_elapse, &row_cpu, &stat);
 
-		printf(" %5d %6.0f %6.0f %8.1f %#8.2g %#7.3g %#5.1f %#6.2f\n",
+		printf(" %5d %6.0f %6.0f %8.1f %#8.2g %#7.3g %#7.3g %#7.3g %#5.1f %#6.2f\n",
 		        imagestats.n_nulls, imagestats.minval, imagestats.maxval, 
 		      imagestats.mean, imagestats.sigma, 
-		      imagestats.noise3, xbits, bpix/xbits);
+		      imagestats.noise2, imagestats.noise3, imagestats.noise5, xbits, bpix/xbits);
 
 		printf("\n       Type   Ratio       Size (MB)     Pk (Sec) UnPk Exact ElpN CPUN  Elp1  CPU1\n");
 
@@ -1199,17 +1211,17 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 
 		if (fpvar.outfile[0]) {
 		    fprintf(outreport,
-	" %s  %d %d %ld %ld %#10.4g %d %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g",
+	" %s  %d %d %ld %ld %#10.4g %d %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g %#10.4g",
 		      infits, extnum, bitpix, naxes[0], naxes[1], origdata, imagestats.n_nulls, imagestats.minval, 
 		      imagestats.maxval, imagestats.mean, imagestats.sigma, 
-		      imagestats.noise1, imagestats.noise3, whole_elapse, whole_cpu, row_elapse, row_cpu);
+		      imagestats.noise1, imagestats.noise2, imagestats.noise3, imagestats.noise5, whole_elapse, whole_cpu, row_elapse, row_cpu);
 		}
 
 		fits_set_lossy_int (outfptr, fpvar.int_to_float, &stat);
 		if ( (bitpix > 0) && (fpvar.int_to_float != 0) ) {
 
-			if ( (imagestats.noise3 < (fpvar.n3ratio * fpvar.quantize_level) ) ||
-			    (imagestats.noise3 < fpvar.n3min)) {
+			if ( (noisemin < (fpvar.n3ratio * fpvar.quantize_level) ) ||
+			    (noisemin < fpvar.n3min)) {
 			
 			    /* image contains too little noise to quantize effectively */
 			    fits_set_lossy_int (outfptr, 0, &stat);
@@ -1220,15 +1232,24 @@ printf("    HDU %d does not meet noise criteria to be quantized, so losslessly c
 		}
 
 		/* test compression ratio and speed for each algorithm */
-		fits_set_compression_type (outfptr, RICE_1, &stat);
-		fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
-		fp_test_hdu(infptr, outfptr, outfptr2, fpvar, &stat);
 
-  		fits_set_compression_type (outfptr, HCOMPRESS_1, &stat);
-		fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
-		fp_test_hdu(infptr, outfptr, outfptr2, fpvar, &stat);
+		if (fpvar.quantize_level != 0) {
+		  fits_set_compression_type (outfptr, RICE_1, &stat);
+		  fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
+		  fp_test_hdu(infptr, outfptr, outfptr2, fpvar, &stat);
+		}
 
-		fits_set_compression_type (outfptr, GZIP_1, &stat);
+		if (fpvar.quantize_level != 0) {
+  		  fits_set_compression_type (outfptr, HCOMPRESS_1, &stat);
+		  fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
+		  fp_test_hdu(infptr, outfptr, outfptr2, fpvar, &stat);
+		}
+
+		if (fpvar.comptype == GZIP_2) {
+		    fits_set_compression_type (outfptr, GZIP_2, &stat);
+		} else {
+		    fits_set_compression_type (outfptr, GZIP_1, &stat);
+		}
 		fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
 		fp_test_hdu(infptr, outfptr, outfptr2, fpvar, &stat);
 
@@ -1242,12 +1263,13 @@ printf("    HDU %d does not meet noise criteria to be quantized, so losslessly c
 		fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
 		fp_test_hdu(infptr, outfptr, outfptr2, fpvar, &stat);
 */
+/*
                 if (bitpix == SHORT_IMG || bitpix == LONG_IMG) {
 		  fits_set_compression_type (outfptr, NOCOMPRESS, &stat);
 		  fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
 		  fp_test_hdu(infptr, outfptr, outfptr2, fpvar, &stat);	  
 		}
-
+*/
 		if (fpvar.outfile[0])
 		    fprintf(outreport,"\n");
 
@@ -1294,6 +1316,7 @@ int fp_pack_hdu (fitsfile *infptr, fitsfile *outfptr, fpstate fpvar,
 	FILE	*diskfile;
 	char	outfits[SZ_STR];
 	long 	headstart, datastart, dataend, datasize;
+	double  noisemin;
 	/* structure to hold image statistics (defined in fpack.h) */
 	imgstats imagestats;
 
@@ -1317,8 +1340,13 @@ int fp_pack_hdu (fitsfile *infptr, fitsfile *outfptr, fpstate fpvar,
 		/* data is less than 1 FITS block in size, so don't compress */
 	        fits_copy_hdu (infptr, outfptr, 0, &stat);
 	    } else {
-	        /* transpose the table and shuffle the bytes */
-		fits_shuffle_table2 (infptr, outfptr, &stat);
+
+	        /* transpose the table and compress each column */
+		if (fpvar.do_fast) {
+		    fits_compress_table_fast (infptr, outfptr, &stat);
+		} else {
+		    fits_compress_table_best (infptr, outfptr, &stat);
+		}
 	    }
 
 	    return(0);
@@ -1344,7 +1372,12 @@ int fp_pack_hdu (fitsfile *infptr, fitsfile *outfptr, fpstate fpvar,
 			else
 			  fp_i2stat(infptr, naxis, naxes, &imagestats, &stat);
 
-			rescale = imagestats.noise3 / fpvar.rescale_noise;
+			/* use the minimum of the MAD 2nd, 3rd, and 5th order noise estimates */
+			noisemin = imagestats.noise3;
+			if (imagestats.noise2 != 0. && imagestats.noise2 < noisemin) noisemin = imagestats.noise2;
+			if (imagestats.noise5 != 0. && imagestats.noise5 < noisemin) noisemin = imagestats.noise5;
+
+			rescale = noisemin / fpvar.rescale_noise;
 			if (rescale > 1.0) {
 			  
 			  /* all the criteria are met, so create a temporary file that */
@@ -1370,6 +1403,7 @@ int fp_pack_hdu (fitsfile *infptr, fitsfile *outfptr, fpstate fpvar,
 			    fp_i4rescale(infptr, naxis, naxes, rescale, tempfile, &stat);
 			  else
 			    fp_i2rescale(infptr, naxis, naxes, rescale, tempfile, &stat);
+
 
 			  /* scale the BSCALE keyword by the inverse factor */
 
@@ -1399,7 +1433,12 @@ int fp_pack_hdu (fitsfile *infptr, fitsfile *outfptr, fpstate fpvar,
 			else
 			  fp_i2stat(infptr, naxis, naxes, &imagestats, &stat);
 
-			if ( (imagestats.noise3 < (fpvar.n3ratio * fpvar.quantize_level) ) ||
+			/* use the minimum of the MAD 2nd, 3rd, and 5th order noise estimates */
+			noisemin = imagestats.noise3;
+			if (imagestats.noise2 != 0. && imagestats.noise2 < noisemin) noisemin = imagestats.noise2;
+			if (imagestats.noise5 != 0. && imagestats.noise5 < noisemin) noisemin = imagestats.noise5;
+
+			if ( (noisemin < (fpvar.n3ratio * fpvar.quantize_level) ) ||
 			    (imagestats.noise3 < fpvar.n3min)) {
 			
 			    /* image contains too little noise to quantize effectively */
@@ -1418,7 +1457,7 @@ printf("    HDU %d does not meet noise criteria to be quantized, so losslessly c
                 /* finally, do the actual image compression */
 		fits_img_compress (infptr, outfptr, &stat);
 
-		if (bitpix < 0  || 
+		if (bitpix < 0 || 
 		    (fpvar.comptype == HCOMPRESS_1 && fpvar.scale != 0.)) {
 
 		    /* compressed image is not identical to original */
@@ -1441,18 +1480,18 @@ int fp_unpack_hdu (fitsfile *infptr, fitsfile *outfptr, fpstate fpvar, int *stat
 
         /* =============================================================== */
         /* This block is only for beta testing of binary table compression */
-	if (hdutype == BINARY_TBL && fpvar.do_tables) { 
+	if (hdutype == BINARY_TBL) { 
 
-	    fits_read_key(infptr, TLOGICAL, "TVIRTUAL", &lval, NULL, status);
+	    fits_read_key(infptr, TLOGICAL, "ZTABLE", &lval, NULL, status);
 	    
-	    if (*status > 0) {
+	    if (*status == 0 && lval != 0) {
+	        /*  uncompress the table */
+	        fits_uncompress_table (infptr, outfptr, status);
+
+	    } else {
 	        if (*status == KEY_NO_EXIST)  /* table is not compressed */
 		    *status = 0;
                 fits_copy_hdu (infptr, outfptr, 0, status);
-	    } else {
-
-	        /*  uncompress the table */
-	        fits_unshuffle_table3 (infptr, outfptr, status);
             }
 
 	    return(0);
@@ -1665,8 +1704,9 @@ int fp_test_hdu (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
 	if (comptype == RICE_1)
 		strcpy(ctype, "RICE");
 	else if (comptype == GZIP_1)
-		strcpy(ctype, "GZIP");
-/*
+		strcpy(ctype, "GZIP1");
+	else if (comptype == GZIP_2)
+		strcpy(ctype, "GZIP2");/*
 	else if (comptype == BZIP2_1)
 		strcpy(ctype, "BZIP2");
 */
@@ -1785,9 +1825,10 @@ int fp_test_table (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
 	float origdata = 0., compressdata = 0.;
 	float compratio = 0., packcpu = 0., unpackcpu = 0., readcpu;
 	float elapse, whole_elapse, row_elapse, whole_cpu, row_cpu;
-	float gratio, tratio, sratio, pratio, grate, trate, srate, prate, filesize;
+	float gratio, tratio, sratio, pratio, bratio;
+	float grate, trate, srate, prate, brate, filesize;
 	float rratio, rrate;
-	size_t headsize, hlen, dlen ;
+	size_t headsize, hlen, dlen;
 	LONGLONG indatasize, outdatasize;
 	char *ptr, *cptr, *iptr, *cbuff;
 
@@ -1796,35 +1837,34 @@ int fp_test_table (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
         fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status); 
 	datasize = dataend - datastart;
 
+	/* can't compress small tables with less than 2880 bytes of data */
         if (datasize <= 2880) {
 		return(0);
 	}
 
      /* 1  gzip  raw table **********************************  */
  	marktime(&stat);
-	fits_copy_hdu (infptr, outfptr, 0, &stat);
-
- 	/* compress the data blocks */
-	fits_gzip_datablocks(outfptr, &stat);
+	
+ 	/* get compressed size of the data blocks */
+	fits_gzip_datablocks(infptr, &dlen, &stat);
 
 	/* get elapsped times */
 	gettime(&elapse, &packcpu, &stat);
 
-         fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status); 
+        fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status); 
 	indatasize = dataend - datastart;
 
-        fits_get_hduaddrll(outfptr, &headstart, &datastart, &dataend, status); 
-	outdatasize = dataend - datastart;
+	outdatasize = dlen;
 
 	gratio = (float) indatasize / (float) outdatasize;
 	grate = packcpu;
 	
 	fits_delete_hdu(outfptr, &hdutype, &stat);
 
-     /* 2  gzip transposed table **********************************  */
+     /* 2  transposed table and compress each column with gzip ***********  */
 
  	marktime(&stat);
-	fits_transpose_table2 (infptr, outfptr,  &stat);
+	fits_transpose_table (infptr, outfptr,  &stat);
 
 	/* get elapsped times */
 	gettime(&elapse, &packcpu, &stat);
@@ -1841,10 +1881,10 @@ int fp_test_table (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
 
 	fits_delete_hdu(outfptr, &hdutype, &stat);
 
-     /* 3  gzip transposed and shuffled (compresse 1 column at a time)*****************  */
+     /* 3  transpose table, shuffle numeric columns, and compress each column with gzip */
 
  	marktime(&stat);
-	fits_shuffle_table2 (infptr, outfptr, &stat);
+	fits_compress_table_fast (infptr, outfptr, &stat);
 
 	/* get elapsped times */
 	gettime(&elapse, &packcpu, &stat);
@@ -1864,7 +1904,7 @@ int fp_test_table (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
      /* 4  transposed, use Rice for integer columns, shuffled gzip for others  */
 
  	marktime(&stat);
-	fits_shuffle_table3 (infptr, outfptr, &stat);
+	fits_compress_table_rice (infptr, outfptr, &stat);
 
 	/* get elapsped times */
 	gettime(&elapse, &packcpu, &stat);
@@ -1882,11 +1922,32 @@ int fp_test_table (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
 	fits_delete_hdu(outfptr, &hdutype, &stat);
 
 
-	printf("\n  Size       Raw        Transposed     Shuffled        Rice\n");     
-	printf(" %5.2fMB %5.2f (%4.2fs) %5.2f (%4.2fs) %5.2f (%4.2fs) %5.2f (%4.2fs)\n",
-	    filesize, gratio, grate, sratio, srate, pratio, prate, rratio, rrate);
-	printf(" Disk savings ratio:    %5.2f         %5.2f\n",
-	 (1. - 1./sratio) / (1. - 1./gratio), (1. - 1./pratio) / (1. - 1./gratio));
+     /* 5  best  */
+
+ 	marktime(&stat);
+	fits_compress_table_best (infptr, outfptr, &stat);
+
+	/* get elapsped times */
+	gettime(&elapse, &packcpu, &stat);
+
+        fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status); 
+	indatasize = dataend - datastart;
+	filesize = (float) dataend / 1000000.;
+	
+        fits_get_hduaddrll(outfptr, &headstart, &datastart, &dataend, status); 
+	outdatasize = dataend - datastart;
+
+	bratio = (float) indatasize / (float) outdatasize;
+	brate = packcpu;
+
+	fits_delete_hdu(outfptr, &hdutype, &stat);
+
+	printf("\n  Size       Raw        Transposed     Shuffled        Rice        Best\n");     
+	printf(" %5.2fMB %5.2f (%4.2fs) %5.2f (%4.2fs) %5.2f (%4.2fs) %5.2f (%4.2fs)  %5.2f (%4.2fs)\n",
+	    filesize, gratio, grate, sratio, srate, pratio, prate, rratio, rrate, bratio, brate);
+	printf(" Disk savings ratio:    %5.2f         %5.2f      %5.2f\n",
+	 (1. - 1./sratio) / (1. - 1./gratio), (1. - 1./pratio) / (1. - 1./gratio), (1. - 1./bratio) / (1. - 1./gratio));
+
 
         return(0);
 }
@@ -1956,7 +2017,7 @@ int fp_i2stat(fitsfile *infptr, int naxis, long *naxes, imgstats *imagestats, in
 	long i1, i2, npix, ii, ngood, nx, ny;
 	short *intarray, minvalue, maxvalue, nullvalue;
 	int anynul, tstatus, checknull = 1;
-	double mean, sigma, noise1, noise3;
+	double mean, sigma, noise1, noise2, noise3, noise5;
 	
          /* select the middle XSAMPLE by YSAMPLE area of the image */
 	i1 = naxes[0]/2 - (XSAMPLE/2 - 1);
@@ -2008,7 +2069,7 @@ int fp_i2stat(fitsfile *infptr, int naxis, long *naxes, imgstats *imagestats, in
 	/* compute statistics of the image */
 
         fits_img_stats_short(intarray, nx, ny, checknull, nullvalue, 
-	&ngood, &minvalue, &maxvalue, &mean, &sigma, &noise1, &noise3, status);
+	&ngood, &minvalue, &maxvalue, &mean, &sigma, &noise1, &noise2, &noise3, &noise5, status);
 
 	imagestats->n_nulls = npix - ngood;
 	imagestats->minval = minvalue;
@@ -2016,7 +2077,9 @@ int fp_i2stat(fitsfile *infptr, int naxis, long *naxes, imgstats *imagestats, in
 	imagestats->mean = mean; 
 	imagestats->sigma = sigma; 
 	imagestats->noise1 = noise1; 
+	imagestats->noise2 = noise2; 
 	imagestats->noise3 = noise3; 
+	imagestats->noise5 = noise5; 
     
 	free(intarray);
 	return(*status);
@@ -2035,7 +2098,7 @@ int fp_i4stat(fitsfile *infptr, int naxis, long *naxes, imgstats *imagestats, in
 	long i1, i2, npix, ii, ngood, nx, ny;
 	int *intarray, minvalue, maxvalue, nullvalue;
 	int anynul, tstatus, checknull = 1;
-	double mean, sigma, noise1, noise3;
+	double mean, sigma, noise1, noise2, noise3, noise5;
 	
          /* select the middle XSAMPLE by YSAMPLE area of the image */
 	i1 = naxes[0]/2 - (XSAMPLE/2 - 1);
@@ -2087,7 +2150,7 @@ int fp_i4stat(fitsfile *infptr, int naxis, long *naxes, imgstats *imagestats, in
 	/* compute statistics of the image */
 
         fits_img_stats_int(intarray, nx, ny, checknull, nullvalue, 
-	&ngood, &minvalue, &maxvalue, &mean, &sigma, &noise1, &noise3, status);
+	&ngood, &minvalue, &maxvalue, &mean, &sigma, &noise1, &noise2, &noise3, &noise5, status);
 
 	imagestats->n_nulls = npix - ngood;
 	imagestats->minval = minvalue;
@@ -2095,7 +2158,9 @@ int fp_i4stat(fitsfile *infptr, int naxis, long *naxes, imgstats *imagestats, in
 	imagestats->mean = mean; 
 	imagestats->sigma = sigma; 
 	imagestats->noise1 = noise1; 
+	imagestats->noise2 = noise2; 
 	imagestats->noise3 = noise3; 
+	imagestats->noise5 = noise5; 
     
 	free(intarray);
 	return(*status);
@@ -2114,7 +2179,7 @@ int fp_r4stat(fitsfile *infptr, int naxis, long *naxes, imgstats *imagestats, in
 	long i1, i2, npix, ii, ngood, nx, ny;
 	float *array, minvalue, maxvalue, nullvalue = FLOATNULLVALUE;
 	int anynul,checknull = 1;
-	double mean, sigma, noise1, noise3;
+	double mean, sigma, noise1, noise2, noise3, noise5;
 	
          /* select the middle XSAMPLE by YSAMPLE area of the image */
 	i1 = naxes[0]/2 - (XSAMPLE/2 - 1);
@@ -2161,7 +2226,7 @@ int fp_r4stat(fitsfile *infptr, int naxis, long *naxes, imgstats *imagestats, in
 	/* compute statistics of the image */
 
         fits_img_stats_float(array, nx, ny, checknull, nullvalue, 
-	&ngood, &minvalue, &maxvalue, &mean, &sigma, &noise1, &noise3, status);
+	&ngood, &minvalue, &maxvalue, &mean, &sigma, &noise1, &noise2, &noise3, &noise5, status);
 
 	imagestats->n_nulls = npix - ngood;
 	imagestats->minval = minvalue;
@@ -2169,7 +2234,9 @@ int fp_r4stat(fitsfile *infptr, int naxis, long *naxes, imgstats *imagestats, in
 	imagestats->mean = mean; 
 	imagestats->sigma = sigma; 
 	imagestats->noise1 = noise1; 
+	imagestats->noise2 = noise2; 
 	imagestats->noise3 = noise3; 
+	imagestats->noise5 = noise5; 
     
 	free(array);
 	return(*status);

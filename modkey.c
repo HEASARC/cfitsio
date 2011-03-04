@@ -1597,6 +1597,51 @@ int ffdkey(fitsfile *fptr,    /* I - FITS file pointer  */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffdstr(fitsfile *fptr,    /* I - FITS file pointer  */
+           const char *string,     /* I - keyword name       */
+           int *status)       /* IO - error status      */
+/*
+  delete a specified header keyword containing the input string
+*/
+{
+    int keypos, len;
+    char valstring[FLEN_VALUE], comm[FLEN_COMMENT], value[FLEN_VALUE];
+    char card[FLEN_CARD], message[FLEN_ERRMSG];
+
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    if (ffgstr(fptr, string, card, status) > 0) /* read keyword */
+    {
+        sprintf(message, "Could not find the %s keyword to delete (ffdkey)",
+                string);
+        ffpmsg(message);
+        return(*status);
+    }
+
+    /* calc position of keyword in header */
+    keypos = (int) ((((fptr->Fptr)->nextkey) - ((fptr->Fptr)->headstart[(fptr->Fptr)->curhdu])) / 80);
+
+    ffdrec(fptr, keypos, status);  /* delete the keyword */
+
+        /* check for string value which may be continued over multiple keywords */
+    ffpsvc(card, valstring, comm, status);
+    ffc2s(valstring, value, status);   /* remove quotes and trailing spaces */
+    len = strlen(value);
+
+    while (len && value[len - 1] == '&')  /* ampersand used as continuation char */
+    {
+        ffgcnt(fptr, value, status);
+        if (*value)
+        {
+            ffdrec(fptr, keypos, status);  /* delete the keyword */
+            len = strlen(value);
+        }
+        else   /* a null valstring indicates no continuation */
+            len = 0;
+    }
+    return(*status);
+}/*--------------------------------------------------------------------------*/
 int ffdrec(fitsfile *fptr,   /* I - FITS file pointer  */
            int keypos,       /* I - position in header of keyword to delete */
            int *status)      /* IO - error status      */
