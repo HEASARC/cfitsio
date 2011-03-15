@@ -5007,16 +5007,7 @@ int imcomp_copy_prime2img(fitsfile *infptr, fitsfile *outfptr, int *status)
     (which is the primary array of the output file). 
 */
 {
-    char card[FLEN_CARD];	/* a header record */
-    char *patterns[40][2];
-    char negative[] = "-";
-    int ii,jj, npat, nreq, nsp, tstatus = 0;
-    int nkeys, nmore;
-    
-    /* tile compressed image keyword translation table  */
-    /*                        INPUT      OUTPUT  */
-    /*                       01234567   01234567 */
-
+    int  nsp;
 
     /* keywords that will not be copied */
     char *spkeys[][2] = {
@@ -7514,14 +7505,13 @@ int fits_compress_table_best(fitsfile *infptr, fitsfile *outfptr, int *status)
 */
 { 
     LONGLONG nrows, incolwidth[999], inrepeat[999], outcolstart[1000], outbytespan[999];
-    LONGLONG headstart, datastart, dataend, startbyte, jj, kk, naxis1;
+    LONGLONG headstart, datastart, dataend, startbyte, jj, naxis1;
     long repeat, width, pcount;
     int ii, ncols, coltype, hdutype, ltrue = 1;
     char *buffer, *cptr, keyname[9], tform[40], colcode[999];
-    char comm[FLEN_COMMENT], *compressed_data, tempstring[20];
+    char comm[FLEN_COMMENT];
     char *gzip1_data = 0, *gzip2_data = 0, *rice_data = 0;
     size_t gzip1_len, gzip2_len, rice_len, datasize, buffsize;
-    float cratio[999];
     
     if (*status > 0)
         return(*status);
@@ -7813,10 +7803,8 @@ int fits_compress_table_best(fitsfile *infptr, fitsfile *outfptr, int *status)
 	}
 
 	/* free the temporary memory */
-	if (compressed_data) free(compressed_data);   
 	if (gzip1_data) free(gzip1_data);   
 	if (gzip2_data) free(gzip2_data);   
-	compressed_data = 0;
 	gzip1_data = 0;
 	gzip2_data = 0;
     }
@@ -8281,8 +8269,8 @@ int fits_gzip_datablocks(fitsfile *fptr, size_t *size, int *status)
   Save the original PCOUNT value in the ZPCOUNT keyword.  
 */
 { 
-    long headstart, datastart, dataend, pcount;
-    char *ptr, *cptr, *iptr, comm[FLEN_COMMENT];
+    long headstart, datastart, dataend;
+    char *ptr, *cptr, *iptr;
     size_t dlen, datasize, ii;
 
     /* allocate memory for the data and the compressed data */
@@ -8557,7 +8545,7 @@ static int fits_gunzip_heap(fitsfile *infptr, fitsfile *outfptr, int *status)
    in the input file and write it to the output file
 */
 { 
-    LONGLONG datastart, dataend, nrows, naxis1, heapsize, length, offset, pcount, jj;
+    LONGLONG datastart, nrows, naxis1, length, offset, pcount, jj;
     LONGLONG zpcount, zheapptr, cheapsize;
     int coltype, ncols, ii;
     char *heap, *compheap;
@@ -8616,8 +8604,8 @@ static int fits_gunzip_heap(fitsfile *infptr, fitsfile *outfptr, int *status)
 
     /* uncompress the heap */
     theapsize = (size_t) zpcount;
-    uncompress2mem_from_mem(compheap, cheapsize, &heap,  &arraysize, realloc, 
-	&theapsize, status);        
+    uncompress2mem_from_mem(compheap, (size_t) cheapsize, &heap, &arraysize, 
+        realloc, &theapsize, status);        
 
     free(compheap);   /* don't need the compressed heap any more */
 

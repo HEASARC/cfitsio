@@ -1475,21 +1475,21 @@ row of the image.
 		    continue;  /* cannot compute medians on this row */
 		} else if (nvals == 1) {
 		    if (nvals2 == 1) {
-		        diffs2[nrows2] = differences2[0];
+		        diffs2[nrows2] = (double) differences2[0];
 			nrows2++;
 		    }
 		        
-		    diffs3[nrows] = differences3[0];
-		    diffs5[nrows] = differences5[0];
+		    diffs3[nrows] = (double) differences3[0];
+		    diffs5[nrows] = (double) differences5[0];
 		} else {
                     /* quick_select returns the median MUCH faster than using qsort */
 		    if (nvals2 > 1) {
-                        diffs2[nrows2] = quick_select_longlong(differences2, nvals);
+                        diffs2[nrows2] = (double) quick_select_longlong(differences2, nvals);
 			nrows2++;
 		    }
 
-                    diffs3[nrows] = quick_select_longlong(differences3, nvals);
-                    diffs5[nrows] = quick_select_longlong(differences5, nvals);
+                    diffs3[nrows] = (double) quick_select_longlong(differences3, nvals);
+                    diffs5[nrows] = (double) quick_select_longlong(differences5, nvals);
 		}
 
 		nrows++;
@@ -2241,7 +2241,6 @@ row of the image.
 	short *differences, *rowpix, v1, v2, v3, v4, v5;
 	short xminval = SHRT_MAX, xmaxval = SHRT_MIN, do_range = 0;
 	double *diffs, xnoise = 0, sigma;
-	double noise2, noise3, noise5;
 
 	if (nx < 5) {
 		/* treat entire array as an image with a single row */
@@ -2676,7 +2675,7 @@ row of the image.
 	float *differences, *rowpix, v1, v2, v3, v4, v5;
 	float xminval = FLT_MAX, xmaxval = FLT_MIN;
 	int do_range = 0;
-	double *diffs, xnoise = 0, noise2, noise3, noise5;
+	double *diffs, xnoise = 0;
 
 	if (nx < 5) {
 		/* treat entire array as an image with a single row */

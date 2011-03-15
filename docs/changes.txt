@@ -1,5 +1,7 @@
                    Log of Changes Made to CFITSIO
 
+   - in imcompress.c, removed attempt to free memory that had not been allocated.
+
 Version 3.27 - 3 March 2011
 
   Enhancements
