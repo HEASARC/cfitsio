@@ -3597,7 +3597,17 @@ LIBPRE=""
 
 case $system in
     Darwin-*)
-	# Darwin can be powerpc or i386
+        # Build for i386 & x86_64 architectures on Darwin 10.x or newer:
+
+        case $system in
+            Darwin-[56789]*)
+                ;;
+            *)
+                CFLAGS="$CFLAGS -arch i386 -arch x86_64"
+                ;;
+        esac
+
+        # Darwin can be powerpc, i386, or x86_64
 	ARCH=`uname -p`
 	EXT="darwin"
         # For large file support (but may break Absoft compilers):
@@ -3769,7 +3779,17 @@ case $EXT in
     SHLIB_SUFFIX=".dll"
     ;;
   darwin)
-    SHLIB_LD="$CC -dynamiclib"
+
+    case $system in
+        Darwin-[56789]*)
+            SHLIB_LD="$CC -dynamiclib"
+            ;;
+        *)
+            # Build for i386 & x86_64 architectures on Darwin 10.x or newer:
+            SHLIB_LD="$CC -dynamiclib -arch i386 -arch x86_64"
+            ;;
+    esac
+
     SHLIB_SUFFIX=".dylib"
     lhea_shlib_cflags="-fPIC -fno-common"
     ;;
