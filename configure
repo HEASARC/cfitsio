@@ -3603,10 +3603,52 @@ case $system in
             Darwin-[56789]*)
                 ;;
             *)
-                CFLAGS="$CFLAGS -arch i386 -arch x86_64"
+
+                # Test to see whether the C compiler accepts the "-arch"
+                # flags for building "universal" binaries (Apple XCode only):
+                C_UNIV_SWITCH="-arch i386 -arch x86_64"
+                SAVE_CFLAGS="$CFLAGS"
+                CFLAGS="$CFLAGS $C_UNIV_SWITCH"
+                { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CC accepts $C_UNIV_SWITCH" >&5
+$as_echo_n "checking whether $CC accepts $C_UNIV_SWITCH... " >&6; }
+                ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+                cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  c_has_option=yes
+else
+  c_has_option=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: $c_has_option" >&5
+$as_echo "$c_has_option" >&6; }
+                ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+                # Value of C_UNIV_SWITCH will be needed later for SHLIB_LD:
+                if test "$c_has_option" = no; then
+                   C_UNIV_SWITCH=""
+                fi
+                CFLAGS="$SAVE_CFLAGS $C_UNIV_SWITCH"
                 ;;
         esac
-
         # Darwin can be powerpc, i386, or x86_64
 	ARCH=`uname -p`
 	EXT="darwin"
@@ -3786,7 +3828,7 @@ case $EXT in
             ;;
         *)
             # Build for i386 & x86_64 architectures on Darwin 10.x or newer:
-            SHLIB_LD="$CC -dynamiclib -arch i386 -arch x86_64"
+            SHLIB_LD="$CC -dynamiclib $C_UNIV_SWITCH"
             ;;
     esac
 
