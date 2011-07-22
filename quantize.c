@@ -134,27 +134,21 @@ If the function value is zero, the data were not copied to idata.
 		minval = 0.;
 		maxval = 1.;
 		stdev = 1;
-	    }
-
-	    /* substitute sigma-clipping if median is zero */
-	    if (noise3 == 0.0) {
-
-		FnNoise1_float(fdata, nxpix, nypix, nullcheck, in_null_value, 
-		&stdev, &status);       
 	    } else {
-		/* use the minimum of noise2, noise3, and noise5 as the best noise value */
-	       stdev = noise3;
-	       if (noise2 != 0. && noise2 < stdev) stdev = noise2;
-	       if (noise5 != 0. && noise5 < stdev) stdev = noise5;
-	    }
+
+	        /* use the minimum of noise2, noise3, and noise5 as the best noise value */
+	        stdev = noise3;
+	        if (noise2 != 0. && noise2 < stdev) stdev = noise2;
+	        if (noise5 != 0. && noise5 < stdev) stdev = noise5;
+            }
 
 	    if (qlevel == 0.)
 	        delta = stdev / 4.;  /* default quantization */
 	    else
 	        delta = stdev / qlevel;
 
-	    if (delta == 0)
-	        return (0);   /* Zero variance in differences!  Don't quantize. */
+	    if (delta == 0.) 
+	        return (0);			/* don't quantize */
 
 	} else {
 	    /* negative value represents the absolute quantization level */
@@ -312,27 +306,21 @@ If the function value is zero, the data were not copied to idata.
 		minval = 0.;
 		maxval = 1.;
 		stdev = 1;
-	    }
-
-	    /* substitute sigma-clipping if median is zero */
-	    if (noise3 == 0.0) {
-
-		FnNoise1_double(fdata, nxpix, nypix, nullcheck, in_null_value, 
-		&stdev, &status);       
 	    } else {
-		/* use the minimum of noise2, noise3, and noise5 as the best noise value */
-	       stdev = noise3;
-	       if (noise2 != 0. && noise2 < stdev) stdev = noise2;
-	       if (noise5 != 0. && noise5 < stdev) stdev = noise5;
-	    }
+
+	        /* use the minimum of noise2, noise3, and noise5 as the best noise value */
+	        stdev = noise3;
+	        if (noise2 != 0. && noise2 < stdev) stdev = noise2;
+	        if (noise5 != 0. && noise5 < stdev) stdev = noise5;
+            }
 
 	    if (qlevel == 0.)
 	        delta = stdev / 4.;  /* default quantization */
 	    else
 	        delta = stdev / qlevel;
 
-	    if (delta == 0)
-	        return (0);   /* Zero variance in differences!  Don't quantize. */
+	    if (delta == 0.) 
+	        return (0);			/* don't quantize */
 
 	} else {
 	    /* negative value represents the absolute quantization level */
@@ -1567,7 +1555,7 @@ row of the image.
 	long ii, jj, nrows = 0, nrows2 = 0, nvals, nvals2, ngoodpix = 0;
 	float *differences2, *differences3, *differences5;
 	float *rowpix, v1, v2, v3, v4, v5, v6, v7, v8, v9;
-	float xminval = FLT_MAX, xmaxval = FLT_MIN;
+	float xminval = FLT_MAX, xmaxval = -FLT_MAX;
 	int do_range = 0;
 	double *diffs2, *diffs3, *diffs5; 
 	double xnoise2 = 0, xnoise3 = 0, xnoise5 = 0;
@@ -1905,7 +1893,7 @@ row of the image.
 	long ii, jj, nrows = 0, nrows2 = 0, nvals, nvals2, ngoodpix = 0;
 	double *differences2, *differences3, *differences5;
 	double *rowpix, v1, v2, v3, v4, v5, v6, v7, v8, v9;
-	double xminval = DBL_MAX, xmaxval = DBL_MIN;
+	double xminval = DBL_MAX, xmaxval = -DBL_MAX;
 	int do_range = 0;
 	double *diffs2, *diffs3, *diffs5; 
 	double xnoise2 = 0, xnoise3 = 0, xnoise5 = 0;
@@ -2673,7 +2661,7 @@ row of the image.
 {
 	long ii, jj, nrows = 0, nvals, ngoodpix = 0;
 	float *differences, *rowpix, v1, v2, v3, v4, v5;
-	float xminval = FLT_MAX, xmaxval = FLT_MIN;
+	float xminval = FLT_MAX, xmaxval = -FLT_MAX;
 	int do_range = 0;
 	double *diffs, xnoise = 0;
 
@@ -2888,7 +2876,7 @@ row of the image.
 {
 	long ii, jj, nrows = 0, nvals, ngoodpix = 0;
 	double *differences, *rowpix, v1, v2, v3, v4, v5;
-	double xminval = DBL_MAX, xmaxval = DBL_MIN;
+	double xminval = DBL_MAX, xmaxval = -DBL_MAX;
 	int do_range = 0;
 	double *diffs, xnoise = 0;
 	

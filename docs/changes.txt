@@ -1,6 +1,41 @@
                    Log of Changes Made to CFITSIO
 
-   - in imcompress.c, removed attempt to free memory that had not been allocated.
+   - modified the byte shuffling algorithm in fits_shuffle_8bytes to work
+     around a strange bug in the proprietary SunStudioExpress C compiler
+     under OpenSolaris.
+
+   - removed spurious messages on the CFITSIO error stack when opening a
+     FITS file with FTP (in drvrnet.c);
+
+   - made modifications to fitsio.h and drvrfile.c to support reading and
+     writing large FITS files (> 2.1 GB) when building CFITSIO using 
+     Microsoft Visual C++ on Windows platforms.
+
+   - added new WCS routine (ffgicsa) which returns the WCS keyword values
+     for a particular WCS version ('A' - 'Z').
+
+Version 3.28 - 12 May 2011
+
+   - added an enhancement to the tiled-image compression method when compressing
+     floating-point image using the standard (lossy) quantization method.  In 
+     cases where an image tile cannot be quantized,  The floating-point pixel values
+     will be losslessly compressed with gzip before writing them to the tile-
+     compressed file.  Previously, the uncompressed pixel values would have
+     been written to the file, which obviously requires more disk space. 
+
+   - made significant internal changes to the structure of the tile compression
+     and uncompression routines in imcompress.c to make them more modular and
+     easier to maintain.
+
+   - modified configure.in and configure to force it to build a Universal 
+     binary on Mac OS X.
+
+   - modified the ffiter function in putcol.c to properly clean up allocated
+     memory if an error occurs.
+     
+   - in quantize.c, when searching for the min and max values in a float array,
+     initialize the max value to -FLT_MAX instead of FLT_MIN (and similarly
+     for double array). 
 
 Version 3.27 - 3 March 2011
 
@@ -10,7 +45,7 @@ Version 3.27 - 3 March 2011
       delete, respectively, a header keyword record that contains a specified 
       character string.
 
-    - added a new routine call fits_free_key_longstr which frees the memory
+    - added a new routine called fits_free_memory which frees the memory
       that fits_read_key_longstr allocated for the long string keyword value.
 
     - enhanced the ffmkky routine in fitscore.c to not put a space before the
@@ -39,6 +74,10 @@ Version 3.27 - 3 March 2011
     - enhanced imcomp_decompress_tile to support implicit datatype conversion
       when reading a losslessly compressed (with gzip) real*4 image into an
       array of real*8 values.  
+
+    - in imcompress.c, removed possible attempt to free memory that had not 
+      been allocated.
+
 
 Version 3.26 - 30 December 2010
 

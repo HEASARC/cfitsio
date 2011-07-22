@@ -1077,8 +1077,6 @@ int ffiter(int n_cols,
         return(*status = BAD_COL_NUM);  /* negative number of columns */
     }
 
-    col = calloc(n_cols, sizeof(colNulls) ); /* memory for the null values */
-
     /*------------------------------------------------------------*/
     /* Make sure column numbers and datatypes are in legal range  */
     /* and column numbers and datatypes are legal.                */ 
@@ -1293,6 +1291,14 @@ int ffiter(int n_cols,
     /* allocate work arrays for each column */
     /* and determine the null pixel value   */
     /*--------------------------------------*/
+
+    col = calloc(n_cols, sizeof(colNulls) ); /* memory for the null values */
+    if (!col)
+    {
+        ffpmsg("ffiter failed to allocate memory for null values");
+        *status = MEMORY_ALLOCATION;  /* memory allocation failed */
+        return(*status);
+    }
 
     for (jj = 0; jj < n_cols; jj++)
     {
@@ -1914,7 +1920,8 @@ cleanup:
                 free(col[jj].null.stringnull); /* free the null string */
             }
         }
-        free(cols[jj].array); /* memory for the array of values from the col */
+        if (cols[jj].array)
+            free(cols[jj].array); /* memory for the array of values from the col */
     }
     free(col);   /* the structure containing the null values */
     return(*status);

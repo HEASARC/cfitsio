@@ -391,7 +391,26 @@ int file_size(int handle, LONGLONG *filesize)
 
     diskfile = handleTable[handle].fileptr;
 
-#if _FILE_OFFSET_BITS - 0 == 64
+#if defined(_MSC_VER) && (_MSC_VER >= 1400)
+ 
+/* call the VISUAL C++ version of the routines which support */
+/*  Large Files (> 2GB) if they are supported (since VC 8.0)  */
+
+    position1 = _ftelli64(diskfile);   /* save current postion */
+    if (position1 < 0)
+        return(SEEK_ERROR);
+
+    if (_fseeki64(diskfile, 0, 2) != 0)  /* seek to end of file */
+        return(SEEK_ERROR);
+
+    position2 = _ftelli64(diskfile);     /* get file size */
+    if (position2 < 0)
+        return(SEEK_ERROR);
+
+    if (_fseeki64(diskfile, position1, 0) != 0)  /* seek back to original pos */
+        return(SEEK_ERROR);
+
+#elif _FILE_OFFSET_BITS - 0 == 64
 
 /* call the newer ftello and fseeko routines , which support */
 /*  Large Files (> 2GB) if they are supported.  */
@@ -484,7 +503,15 @@ int file_seek(int handle, LONGLONG offset)
 */
 {
 
-#if _FILE_OFFSET_BITS - 0 == 64
+#if defined(_MSC_VER) && (_MSC_VER >= 1400)
+    
+     /* Microsoft visual studio C++ */
+     /* _fseeki64 supported beginning with version 8.0 */
+ 
+    if (_fseeki64(handleTable[handle].fileptr, (OFF_T) offset, 0) != 0)
+        return(SEEK_ERROR);
+	
+#elif _FILE_OFFSET_BITS - 0 == 64
 
     if (fseeko(handleTable[handle].fileptr, (OFF_T) offset, 0) != 0)
         return(SEEK_ERROR);

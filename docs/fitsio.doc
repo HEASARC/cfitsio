@@ -977,7 +977,13 @@ of the NULLVAL parameter.  This will force FITSIO to simply pass the
 IEEE values through to the application program, without any
 modification.  This does not work for double precision values on
 VAX/VMS machines, however, where there is no easy way to bypass the
-default interpretation of the IEEE special values.
+default interpretation of the IEEE special values. This is also not 
+supported when reading floating-point images that have been compressed
+with the FITS tiled image compression convention that is discussed in
+section 5.6;  the pixels values in tile compressed images are
+represented by scaled integers, and a reserved integer value 
+(not a NaN) is used to represent undefined pixels.
+
 
 **J.  When the Final Size of the FITS HDU is Unknown
 
