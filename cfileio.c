@@ -6301,8 +6301,10 @@ int fits_get_token(char **ptr,
    Returns the length of the token, not including the delimiter char;
 */
 {
-    int slen, ii;
-
+    char *loc, tval[73];
+    int slen;
+    double dval;
+    
     *token = '\0';
 
     while (**ptr == ' ')  /* skip over leading blanks */
@@ -6315,20 +6317,24 @@ int fits_get_token(char **ptr,
 
         (*ptr) += slen;                   /* skip over the token */
 
-        if (isanumber)
+        if (isanumber)  /* check if token is a number */
         {
             *isanumber = 1;
- 
-            for (ii = 0; ii < slen; ii++)
-            {
-                if ( !isdigit((int) token[ii]) && token[ii] != '.' && 
-                     token[ii] != '-' && token[ii] != '+' &&
-                     token[ii] != 'E' && token[ii] != 'e')
-                {
-                    *isanumber = 0;
-                    break;
-                }
-            }
+
+	    if (strchr(token, 'D'))  {
+	        strcpy(tval, token);
+
+	        /*  The C language does not support a 'D'; replace with 'E' */
+	        if (loc = strchr(tval, 'D')) *loc = 'E';
+
+	        dval =  strtod(tval, &loc);
+	    } else {
+	        dval =  strtod(token, &loc);
+ 	    }
+
+	    /* check for read error, or junk following the value */
+	    if (*loc != '\0' && *loc != ' ' ) *isanumber = 0;
+	    if (errno == ERANGE) *isanumber = 0;
         }
     }
 

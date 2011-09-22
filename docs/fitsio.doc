@@ -1569,7 +1569,9 @@ used by these interface routines.
     routine is identical
     to the FTITAB routine except that the 2nd and 3rd parameters (that give
     the size of the table) are 64-bit integers rather than 
->   32-bit integers.
+    32-bit integers.  Under normal circumstances, the nrows and nrowsll 
+    paramenters should have a value of 0; CFITSIO will automatically update
+>   the number of rows as data is written to the table.
 -
         FTITAB(unit,rowlen,nrows,tfields,ttype,tbcol,tform,tunit,extname, >
                status)
@@ -1584,7 +1586,9 @@ used by these interface routines.
     routine is identical
     to the FTIBIN routine except that the 2nd parameter (that gives
     the length of the table) is a 64-bit integer rather than 
->   a 32-bit integer.
+    a 32-bit integer. Under normal circumstances, the nrows and nrowsll 
+    paramenters should have a value of 0; CFITSIO will automatically update
+>   the number of rows as data is written to the table.
 -
         FTIBIN(unit,nrows,tfields,ttype,tform,tunit,extname,varidat > status)
         FTIBINLL(unit,nrowsll,tfields,ttype,tform,tunit,extname,varidat > status)
@@ -2990,7 +2994,10 @@ do not use ASCII character codes in the internal data representations
     All the rows FOLLOWING row FROW are shifted down by NROWS rows.  If
     FROW or FROWLL equals 0 then the blank rows are inserted at the beginning of the 
     table.  These routines modify the NAXIS2 keyword to reflect the new 
->   number of rows in the table.  
+    number of rows in the table.  Note that it is *not* necessary to insert rows in a table before
+    writing data to those rows (indeed, it would be inefficient to do so).
+    Instead, one may simply write data to any row of the table, whether that
+>   row of data already exists or not.
 -
         FTIROW(unit,frow,nrows, > status)
         FTIROWLL(unit,frowll,nrowsll, > status)
@@ -3063,8 +3070,11 @@ differs from the data type of the calling subroutine.  The data values are also
 scaled by the TSCALn and TZEROn header values as they are being written to
 or read from the FITS array.  The fttscl subroutine MUST be used to define the
 scaling parameters when writing data to the table or to override the default
-scaling values given in the header
-when reading from the table. 
+scaling values given in the header when reading from the table. 
+Note that it is *not* necessary to insert rows in a table before
+writing data to those rows (indeed, it would be inefficient to do so).
+Instead, one may simply write data to any row of the table, whether that
+row of data already exists or not.
 
     In the case of binary tables with vector elements, the 'felem'
 parameter defines the starting pixel within the element vector.  This
@@ -3341,9 +3351,13 @@ row ranges.  nranges specifies the number of row ranges, and firstrow
          FTCALC_RNG(inunit, expr, outunit, parName, parInfo,
             nranges, firstrow, lastrow, > status)
 -
->>7 Evaluate the given expression and return information on the result. 
+>7 Evaluate the given expression and return dimension and type information 
+on the result.  The returned dimensions correspond to a single row entry 
+of the requested expression, and are equivalent to the result of fits\_read\_tdim().
+Note that strings are considered to be one element regardless of string length.
+>If maxdim == 0, then naxes is optional.
 -
-         FTTEXP(unit, expr, > datatype, nelem, naxis, naxes, status)        
+         FTTEXP(unit, expr, maxdim > datatype, nelem, naxis, naxes, status)        
 -
  
 
@@ -5341,15 +5355,18 @@ value.
 -
     where each "[]" demarks optional parameters. The region file name
     is required and must be  enclosed in quotes.  The remaining
-    parameters are optional.  The region file is an ASCII text file
-    which contains a list of one or more geometric shapes (circle,
+    parameters are optional.  There are 2 supported formats for the
+    region file: ASCII file or FITS binary table.  The region file 
+    contains a list of one or more geometric shapes (circle,
     ellipse, box, etc.) which defines a region on the celestial sphere
     or an area within a particular 2D image.  The region file is
     typically generated using an image display program such as fv/POW
     (distribute by the HEASARC), or ds9 (distributed by the Smithsonian
     Astrophysical Observatory).  Users should refer to the documentation
     provided with these programs for more details on the syntax used in
-    the region files.
+    the region files.  The FITS region file format is defined in a document
+    available from the FITS Support Office at 
+    http://fits.gsfc.nasa.gov/ registry/ region.html
 
     In its simplest form, (e.g., regfilter("region.reg") ) the
     coordinates in the default 'X' and 'Y' columns will be used to

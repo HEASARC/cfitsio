@@ -1,11 +1,20 @@
                    Log of Changes Made to CFITSIO
+		   
+Version 3.29 - 22 September 2011
 
-   - modified the byte shuffling algorithm in fits_shuffle_8bytes to work
-     around a strange bug in the proprietary SunStudioExpress C compiler
-     under OpenSolaris.
+  Enhancements
 
-   - removed spurious messages on the CFITSIO error stack when opening a
-     FITS file with FTP (in drvrnet.c);
+   - added (or restored actually) support for tile compression of 1-byte integer 
+     images in imcomp_compress_tile.  Support for that data type was overlooked
+     during recent updates to this routine.
+
+   - modified the fits_get_token command-line parsing routine to perform more
+     rigorous checks to determine if the token can be interpreted as a number 
+     or not.
+
+   - made small modification to fpack.c to not allow the -i2f option (convert
+     image from integer to floating point) with the "-g -q 0" option (do lossless 
+     gzip compression).  It is more efficient to simply use the -g option alone.
 
    - made modifications to fitsio.h and drvrfile.c to support reading and
      writing large FITS files (> 2.1 GB) when building CFITSIO using 
@@ -13,6 +22,36 @@
 
    - added new WCS routine (ffgicsa) which returns the WCS keyword values
      for a particular WCS version ('A' - 'Z').
+
+   Bug Fixes
+
+   - fixed a bug when using the 'regfilter' function to select a subset of the
+     rows in a FITS table that have coordinates that lie within a specified
+     spatial region on the sky.  This bug only affects the rarely used panda
+     (and epanda and bpanda) region shapes in which the region is defined by
+     the intersection of an annulus  and a pie-shaped wedge.  The previous code
+     (starting with version 3.181 of CFITSIO where support for the panda region
+     was first introduced) only worked correctly if the 2 angles that define
+     the wedge have values between -180 and +180.  If not, then fewer rows than
+     expected may have been selected from the table.
+
+   - fixed the extended filename parser so that when creating a histogram by
+     binning 2 table columns, if a keyword or column name is given as the
+     weighting factor,  then the output histrogram image will have a floating
+     point datatype, not the default integer datatype as is the case when no
+     weigth is specified (e.g. with a filename like 
+     "myfile.fits[bin x,y; weight_column]"
+
+   - added fix to the code in imcompress.c to work around a problem with
+     dereferencing the value of a pointer, in cases where the address of 
+     that pointer has not been defined (e.g., the nulval variable).
+
+    - modified the byte shuffling algorithm in fits_shuffle_8bytes to work
+     around a strange bug in the proprietary SunStudioExpress C compiler
+     under OpenSolaris.
+
+   - removed spurious messages on the CFITSIO error stack when opening a
+     FITS file with FTP (in drvrnet.c);
 
 Version 3.28 - 12 May 2011
 

@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large December 2010\\}
+{\Large September 2011\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -3027,7 +3027,12 @@ spaces).  Trailing blank characters are not significant.
 \item[1 ] Insert or delete rows in an ASCII or binary table. When inserting rows
     all the rows following row FROW are shifted down by NROWS rows;  if
     FROW = 0 then the blank rows are inserted at the beginning of the
-    table.  The first delete routine deletes NROWS consecutive rows
+    table.  Note that it is *not* necessary to insert rows in a table before
+    writing data to those rows (indeed, it would be inefficient to do so).
+    Instead one may simply write data to any row of the table, whether that
+    row of data already exists or not.
+
+    The first delete routine deletes NROWS consecutive rows
     starting with row FIRSTROW.  The second delete routine takes an
     input string that lists the rows or row ranges (e.g.,
     '5-10,12,20-30'), whereas the third delete routine takes an input
@@ -3139,6 +3144,11 @@ tables support the following data type values:  TSTRING, TBYTE, TSBYTE, TSHORT,
 TUSHORT, TINT, TUINT, TLONG, TLONGLONG, TULONG, TFLOAT, or TDOUBLE.
 Binary tables also support TLOGICAL (internally mapped to the `char'
 data type), TCOMPLEX, and TDBLCOMPLEX.
+
+Note that it is *not* necessary to insert rows in a table before
+writing data to those rows (indeed, it would be inefficient to do so).
+Instead, one may simply write data to any row of the table, whether that
+row of data already exists or not.
 
 Individual bits in a binary table 'X' or 'B' column may be read/written
 to/from a *char array by specifying the TBIT datatype.  The *char
@@ -3357,14 +3367,17 @@ and lastrow give the starting and ending row number of each range. \label{ffcalc
        >  int *status)
 \end{verbatim}
 
-
 \begin{description}
-\item[7 ]Evaluate the given expression and return information on the result. \label{fftexp}
+\item[7 ]Evaluate the given expression and return dimension and type information
+on the result.  The returned dimensions correspond to a single row entry
+of the requested expression, and are equivalent to the result of fits\_read\_tdim().
+Note that strings are considered to be one element regardless of string length.
+If maxdim == 0, then naxes is optional. \label{fftexp}
 \end{description}
 
 \begin{verbatim}
   int fits_test_expr / fftexp
-      (fitsfile *fptr, char *expr, > int *datatype, long *nelem, int *naxis,
+      (fitsfile *fptr, char *expr, int maxdim > int *datatype, long *nelem, int *naxis,
        long *naxes, int *status)
 \end{verbatim}
 
@@ -4899,6 +4912,12 @@ given in units of degrees.
     this routine will swap them so that the longitudinal-like coordinate
     is returned as the first axis.
 
+    The first routine (ffgics) returns
+    the primary WCS, whereas the second routine returns the particular
+    version of the WCS specified by the 'version' parameter, which much
+    be a character ranging from 'A' to 'Z' (or a blank character, which is
+    equivalent to calling ffgics).
+
     If the file uses the newer 'CDj\_i' WCS transformation matrix
     keywords instead of old style 'CDELTn' and 'CROTA2' keywords, then
     this routine will calculate and return the values of the equivalent
@@ -4917,6 +4936,11 @@ given in units of degrees.
 \begin{verbatim}
   int fits_read_img_coord / ffgics
       (fitsfile *fptr, > double *xrefval, double *yrefval,
+       double *xrefpix, double *yrefpix, double *xinc, double *yinc,
+       double *rot, char *coordtype, int *status)
+
+  int fits_read_img_coord_version / ffgicsa
+      (fitsfile *fptr, char version, > double *xrefval, double *yrefval,
        double *xrefpix, double *yrefpix, double *xinc, double *yinc,
        double *rot, char *coordtype, int *status)
 \end{verbatim}
@@ -5429,8 +5453,12 @@ the column specifier,
 and the
 image pixel filtering specifier.
 \end{itemize}
- Null strings will be returned for any components that are not present
-in the input file name.  These routines are mainly for internal use
+A null pointer (0) may be be specified for any of the output string arguments
+that are not needed.  Null strings will be returned for any components that are not
+present in the input file name.  The calling routine must allocate sufficient
+memory to hold the returned character strings.  Allocating the string lengths
+equal to FLEN\_FILENAME is guaranteed to be safe.
+These routines are mainly for internal use
 by other CFITSIO routines. \label{ffiurl}
 \end{description}
 
@@ -5478,7 +5506,9 @@ call to fits\_open\_file.
 name includes the file type if specified, (e.g.  'ftp://' or 'http://')
 and the full path name, to the extent that it is specified in the input
 filename.  It does not include the HDU name or number, or any filtering
-specifications.
+specifications. The calling routine must allocate sufficient
+memory to hold the returned rootname character string.  Allocating the length
+equal to FLEN\_FILENAME is guaranteed to be safe.
  \label{ffrtnm}
 \end{description}
 
@@ -5618,7 +5648,10 @@ the 'exists' parameter will have 1 of the 4 following values:
     parameter in which case each column of the table will be separated
     by a single space character. Similarly, if the input value of
     rowlen is  0, then CFITSIO will calculate the default rowlength
-    based on the tbcol and ttype values.  When inserting a binary table
+    based on the tbcol and ttype values.  Under normal circumstances,
+    the nrows
+    paramenter should have a value of 0; CFITSIO will automatically update
+    the number of rows as data is written to the table.  When inserting a binary table
     with fits\_insert\_btbl, if there are following extensions in the
     file and if the table contains variable length array columns then
     pcount must specify the expected final size of the data heap,
@@ -8518,15 +8551,18 @@ usage. Also, the integer to real casts values to double precision:
 \end{verbatim}
     where each "[]" demarks optional parameters. The region file name
     is required and must be  enclosed in quotes.  The remaining
-    parameters are optional.  The region file is an ASCII text file
-    which contains a list of one or more geometric shapes (circle,
+    parameters are optional.  There are 2 supported formats for the
+    region file: ASCII file or FITS binary table.  The region file
+    contains a list of one or more geometric shapes (circle,
     ellipse, box, etc.) which defines a region on the celestial sphere
     or an area within a particular 2D image.  The region file is
     typically generated using an image display program such as fv/POW
     (distribute by the HEASARC), or ds9 (distributed by the Smithsonian
     Astrophysical Observatory).  Users should refer to the documentation
     provided with these programs for more details on the syntax used in
-    the region files.
+    the region files.  The FITS region file format is defined in a document
+    available from the FITS Support Office at
+    http://fits.gsfc.nasa.gov/ registry/ region.html
 
     In its simplest form, (e.g., regfilter("region.reg") ) the
     coordinates in the default 'X' and 'Y' columns will be used to

@@ -1472,6 +1472,12 @@ int imcomp_compress_tile (fitsfile *outfptr,
     } else if (datatype == TUSHORT) {
        imcomp_convert_tile_tushort(outfptr, tiledata, tilelen, nullcheck, nullflagval,
            nullval, zbitpix, scale, zero, &intlength, status);
+    } else if (datatype == TBYTE) {
+       imcomp_convert_tile_tbyte(outfptr, tiledata, tilelen, nullcheck, nullflagval,
+           nullval, zbitpix, scale, zero,  &intlength, status);
+    } else if (datatype == TSBYTE) {
+       imcomp_convert_tile_tsbyte(outfptr, tiledata, tilelen, nullcheck, nullflagval,
+           nullval, zbitpix, scale, zero,  &intlength, status);
     } else if (datatype == TINT) {
        imcomp_convert_tile_tint(outfptr, tiledata, tilelen, nullcheck, nullflagval,
            nullval, zbitpix, scale, zero, &intlength, status);
@@ -5347,6 +5353,8 @@ int imcomp_decompress_tile (fitsfile *infptr,
     unsigned char charnull = 0;
     short snull = 0;
     int blocksize;
+    float fnulval=0;
+    double dnulval=0;
     double bscale, bzero, actual_bzero, dummy = 0;    /* scaling parameters */
     long nelem = 0, offset = 0, tilesize;      /* number of bytes */
     int smooth, nx, ny, scale;  /* hcompress parameters */
@@ -5455,8 +5463,11 @@ int imcomp_decompress_tile (fitsfile *infptr,
 #if BYTESWAPPED
                 ffswap4((int *) buffer, tilelen);
 #endif
+                if (nulval) {
+		    fnulval = *(float *) nulval;
+		}
                 fffr4r4((float *) buffer, tilelen, 1., 0., nullcheck,   
-                        *(float *) nulval, bnullarray, anynul,
+                        fnulval, bnullarray, anynul,
                         (float *) buffer, status);
 
             } else if (tilebytesize == 8 * tilelen) { /* double pixels */
@@ -5464,8 +5475,11 @@ int imcomp_decompress_tile (fitsfile *infptr,
 #if BYTESWAPPED
                 ffswap8((double *) buffer, tilelen);
 #endif
+                if (nulval) {
+		    dnulval = *(double *) nulval;
+		}
                 fffr8r8((double *) buffer, tilelen, 1., 0., nullcheck,   
-                   *(double *) nulval, bnullarray, anynul,
+                   dnulval, bnullarray, anynul,
                     (double *) buffer, status);            
 
 	    } else {
@@ -5834,12 +5848,16 @@ int imcomp_decompress_tile (fitsfile *infptr,
     else if (datatype == TFLOAT)
     {
         pixlen = sizeof(float);
+        if (nulval) {
+	      fnulval = *(float *) nulval;
+	}
+ 
 	if ((infptr->Fptr)->quantize_level == NO_QUANTIZE) {
 	 /* the floating point pixels were losselessly compressed with GZIP */
 	 /* Just have to copy the values to the output array */
 	 
-          fffr4r4((float *) idata, tilelen, bscale, bzero, nullcheck,   
-           *(float *) nulval, bnullarray, anynul,
+         fffr4r4((float *) idata, tilelen, bscale, bzero, nullcheck,   
+           fnulval, bnullarray, anynul,
             (float *) buffer, status);
 	
         } else if ((infptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_1) {
@@ -5849,44 +5867,48 @@ int imcomp_decompress_tile (fitsfile *infptr,
          if (tiledatatype == TINT)
           unquantize_i4r4(nrow + (infptr->Fptr)->dither_offset - 1, idata, 
 	   tilelen, bscale, bzero, nullcheck, tnull,
-           *(float *) nulval, bnullarray, anynul,
+           fnulval, bnullarray, anynul,
             (float *) buffer, status);
          else if (tiledatatype == TSHORT)
           unquantize_i2r4(nrow + (infptr->Fptr)->dither_offset - 1, (short *)idata, 
 	   tilelen, bscale, bzero, nullcheck, (short) tnull,
-           *(float *) nulval, bnullarray, anynul,
+           fnulval, bnullarray, anynul,
             (float *) buffer, status);
          else if (tiledatatype == TBYTE)
           unquantize_i1r4(nrow + (infptr->Fptr)->dither_offset - 1, (unsigned char *)idata, 
 	   tilelen, bscale, bzero, nullcheck, (unsigned char) tnull,
-           *(float *) nulval, bnullarray, anynul,
+           fnulval, bnullarray, anynul,
             (float *) buffer, status);
 
         } else {  /* use the old "round to nearest level" quantization algorithm */
 
          if (tiledatatype == TINT)
           fffi4r4(idata, tilelen, bscale, bzero, nullcheck, tnull,  
-           *(float *) nulval, bnullarray, anynul,
+           fnulval, bnullarray, anynul,
             (float *) buffer, status);
          else if (tiledatatype == TSHORT)
           fffi2r4((short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,  
-           *(float *) nulval, bnullarray, anynul,
+           fnulval, bnullarray, anynul,
             (float *) buffer, status);
          else if (tiledatatype == TBYTE)
           fffi1r4((unsigned char *)idata, tilelen, bscale, bzero, nullcheck, (unsigned char) tnull,
-           *(float *) nulval, bnullarray, anynul,
+           fnulval, bnullarray, anynul,
             (float *) buffer, status);
 	}
     }
     else if (datatype == TDOUBLE)
     {
         pixlen = sizeof(double);
+        if (nulval) {
+	     dnulval = *(double *) nulval;
+	}
+
 	if ((infptr->Fptr)->quantize_level == NO_QUANTIZE) {
 	 /* the floating point pixels were losselessly compressed with GZIP */
 	 /* Just have to copy the values to the output array */
 	 
           fffr8r8((double *) idata, tilelen, bscale, bzero, nullcheck,   
-           *(double *) nulval, bnullarray, anynul,
+           dnulval, bnullarray, anynul,
             (double *) buffer, status);
 	
         } else if ((infptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_1) {
@@ -5895,32 +5917,32 @@ int imcomp_decompress_tile (fitsfile *infptr,
          if (tiledatatype == TINT)
           unquantize_i4r8(nrow + (infptr->Fptr)->dither_offset - 1, idata,
 	   tilelen, bscale, bzero, nullcheck, tnull,
-           *(double *) nulval, bnullarray, anynul,
+           dnulval, bnullarray, anynul,
             (double *) buffer, status);
          else if (tiledatatype == TSHORT)
           unquantize_i2r8(nrow + (infptr->Fptr)->dither_offset - 1, (short *)idata,
 	   tilelen, bscale, bzero, nullcheck, (short) tnull,
-           *(double *) nulval, bnullarray, anynul,
+           dnulval, bnullarray, anynul,
             (double *) buffer, status);
          else if (tiledatatype == TBYTE)
           unquantize_i1r8(nrow + (infptr->Fptr)->dither_offset - 1, (unsigned char *)idata,
 	   tilelen, bscale, bzero, nullcheck, (unsigned char) tnull,
-           *(double *) nulval, bnullarray, anynul,
+           dnulval, bnullarray, anynul,
             (double *) buffer, status);
 
         } else {  /* use the old "round to nearest level" quantization algorithm */
 
          if (tiledatatype == TINT)
           fffi4r8(idata, tilelen, bscale, bzero, nullcheck, tnull,
-           *(double *) nulval, bnullarray, anynul,
+           dnulval, bnullarray, anynul,
             (double *) buffer, status);
          else if (tiledatatype == TSHORT)
           fffi2r8((short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,
-           *(double *) nulval, bnullarray, anynul,
+           dnulval, bnullarray, anynul,
             (double *) buffer, status);
          else if (tiledatatype == TBYTE)
           fffi1r8((unsigned char *)idata, tilelen, bscale, bzero, nullcheck, (unsigned char) tnull,
-           *(double *) nulval, bnullarray, anynul,
+           dnulval, bnullarray, anynul,
             (double *) buffer, status);
 	}
     }
