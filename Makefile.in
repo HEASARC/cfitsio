@@ -21,10 +21,9 @@
 prefix		= @prefix@
 exec_prefix	= @exec_prefix@
 DESTDIR		= 
-CFITSIO_PREFIX	= $(prefix)
-CFITSIO_LIB	= $(DESTDIR)$(exec_prefix)/lib
-CFITSIO_INCLUDE	= $(DESTDIR)$(prefix)/include
-INSTALL_DIRS	= $(DESTDIR)@INSTALL_ROOT@ ${CFITSIO_LIB} ${CFITSIO_LIB}/pkgconfig ${CFITSIO_INCLUDE}
+CFITSIO_LIB	= ${DESTDIR}@libdir@
+CFITSIO_INCLUDE	= ${DESTDIR}@includedir@
+INSTALL_DIRS	= @INSTALL_ROOT@ ${CFITSIO_INCLUDE} ${CFITSIO_LIB} ${CFITSIO_LIB}/pkgconfig
 
 
 SHELL =		/bin/sh
