@@ -635,11 +635,14 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     /* check if this same file is already open, and if so, attach to it  */
     /*-------------------------------------------------------------------*/
 
+    FFLOCK;
     if (fits_already_open(fptr, url, urltype, infile, extspec, rowfilter,
             binspec, colspec, mode, &isopen, status) > 0)
     {
+        FFUNLOCK;
         return(*status);
     }
+    FFUNLOCK;
 
     if (isopen) {
        goto move2hdu;  
@@ -1355,12 +1358,14 @@ int fits_clear_Fptr(FITSfile *Fptr,  /* O - FITS file pointer               */
 {
     int ii;
 
+    FFLOCK;
     for (ii = 0; ii < NMAXFILES; ii++) {
         if (FptrTable[ii] == Fptr) {
             FptrTable[ii] = 0;
             break;
         }
     }
+    FFUNLOCK;
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

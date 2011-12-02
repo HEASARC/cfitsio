@@ -1,9 +1,13 @@
                    Log of Changes Made to CFITSIO
-		   
-Version 3.29 - 22 September 2011
+
+
+Version 3.29 - 2 December 2011
 
   Enhancements
 
+   - modified Makefile.in to allow configure to override the lib and include
+     destination directories.
+		   
    - added (or restored actually) support for tile compression of 1-byte integer 
      images in imcomp_compress_tile.  Support for that data type was overlooked
      during recent updates to this routine.
@@ -24,6 +28,10 @@ Version 3.29 - 22 September 2011
      for a particular WCS version ('A' - 'Z').
 
    Bug Fixes
+
+   - fixed a problem with multi-threaded apps that open/close FITS files
+     simultaneously by putting mutex locks around the call to
+     fits_already_open and in fits_clear_Fptr.
 
    - fixed a bug when using the 'regfilter' function to select a subset of the
      rows in a FITS table that have coordinates that lie within a specified
