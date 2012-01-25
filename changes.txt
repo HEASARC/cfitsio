@@ -1,6 +1,9 @@
                    Log of Changes Made to CFITSIO
 
 
+   - small change to ffgcrd in getkey.c so that it supports reading a blank
+     keyword (e.g., a keyword whose name simply contains 8 space chracters).
+
 Version 3.29 - 2 December 2011
 
   Enhancements

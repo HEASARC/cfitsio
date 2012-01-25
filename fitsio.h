@@ -68,7 +68,7 @@ SERVICES PROVIDED HEREUNDER."
 #if defined(_OFF_T) || (defined(linux) && defined(__off_t_defined)) || defined(_MIPS_SZLONG) || defined(__APPLE__) || defined(_AIX)
 #    define OFF_T off_t
 #elif defined(_MSC_VER) &&  (_MSC_VER>= 1400)
-#    define OFF_T long long> 
+#    define OFF_T long long
 #else
 #    define OFF_T long
 #endif

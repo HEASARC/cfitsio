@@ -603,6 +603,11 @@ int ffgcrd( fitsfile *fptr,     /* I - FITS file pointer        */
                   return(*status);   /* found the matching keyword */
                 }
               }
+	      else if (namelen == 0 && cardlen == 0)
+	      {
+	         /* matched a blank keyword */
+		 return(*status);
+	      }
             }
           }
         }
