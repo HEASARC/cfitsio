@@ -5354,6 +5354,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
     short snull = 0;
     int blocksize;
     float fnulval=0;
+    float *tempfloat = 0;
     double dnulval=0;
     double bscale, bzero, actual_bzero, dummy = 0;    /* scaling parameters */
     long nelem = 0, offset = 0, tilesize;      /* number of bytes */
@@ -5436,23 +5437,46 @@ int imcomp_decompress_tile (fitsfile *infptr,
                 return (*status);
             }
 
-            /* size of the returned data buffer, in bytes */
-            if (datatype == TFLOAT) {
+            /* size of the returned (uncompressed) data buffer, in bytes */
+            if ((infptr->Fptr)->zbitpix == FLOAT_IMG) {
 	         idatalen = tilelen * sizeof(float);
-            } else if (datatype == TDOUBLE) {
+            } else if ((infptr->Fptr)->zbitpix == DOUBLE_IMG) {
 	         idatalen = tilelen * sizeof(double);
             } else {
-                ffpmsg("implicit data type conversion is not supported in tile-compressed images");
+                /* this should never happen! */
+                ffpmsg("incompatible data type in gzipped floating-point tile-compressed image");
                 free (cbuf);
                 return (*status = DATA_DECOMPRESSION_ERR);
             }
 
-            /* uncompress the data */
-            if (uncompress2mem_from_mem ((char *)cbuf, nelem,
-                 (char **) &buffer, &idatalen, NULL, &tilebytesize, status)) {
-                ffpmsg("failed to gunzip the image tile");
-                free (cbuf);
-                return (*status);
+            if (datatype == TDOUBLE && (infptr->Fptr)->zbitpix == FLOAT_IMG) {  
+                /*  have to allocat a temporary buffer for the uncompressed data in the */
+                /*  case where a gzipped "float" tile is returned as a "double" array   */
+                tempfloat = (float*) malloc (idatalen); 
+
+                if (tempfloat == NULL) {
+	            ffpmsg("Memory allocation failure for tempfloat. (imcomp_decompress_tile)");
+                    free (cbuf);
+	            return (*status = MEMORY_ALLOCATION);
+                }
+
+                /* uncompress the data into temp buffer */
+                if (uncompress2mem_from_mem ((char *)cbuf, nelem,
+                     (char **) &tempfloat, &idatalen, NULL, &tilebytesize, status)) {
+                    ffpmsg("failed to gunzip the image tile");
+                    free (tempfloat);
+                    free (cbuf);
+                    return (*status);
+                }
+            } else {
+
+                /* uncompress the data directly into the output buffer in all other cases */
+                if (uncompress2mem_from_mem ((char *)cbuf, nelem,
+                  (char **) &buffer, &idatalen, NULL, &tilebytesize, status)) {
+                    ffpmsg("failed to gunzip the image tile");
+                    free (cbuf);
+                    return (*status);
+                }
             }
 
             free(cbuf);
@@ -5461,32 +5485,65 @@ int imcomp_decompress_tile (fitsfile *infptr,
             if (tilebytesize == 4 * tilelen) {  /* float pixels */
 
 #if BYTESWAPPED
-                ffswap4((int *) buffer, tilelen);
+                if (tempfloat)
+                    ffswap4((int *) tempfloat, tilelen);
+                else
+                    ffswap4((int *) buffer, tilelen);
 #endif
-                if (nulval) {
+               if (datatype == TFLOAT) {
+                  if (nulval) {
 		    fnulval = *(float *) nulval;
-		}
-                fffr4r4((float *) buffer, tilelen, 1., 0., nullcheck,   
+  		  }
+
+                  fffr4r4((float *) buffer, (long) tilelen, 1., 0., nullcheck,   
                         fnulval, bnullarray, anynul,
                         (float *) buffer, status);
+                } else if (datatype == TDOUBLE) {
+                  if (nulval) {
+		    dnulval = *(double *) nulval;
+		  }
 
+                  /* note that the R*4 data are in the tempfloat array in this case */
+                  fffr4r8((float *) tempfloat, (long) tilelen, 1., 0., nullcheck,   
+                   dnulval, bnullarray, anynul,
+                    (double *) buffer, status);            
+                  free(tempfloat);
+
+                } else {
+                  ffpmsg("implicit data type conversion is not supported for gzipped image tiles");
+                  return (*status = DATA_DECOMPRESSION_ERR);
+                }
             } else if (tilebytesize == 8 * tilelen) { /* double pixels */
 
 #if BYTESWAPPED
                 ffswap8((double *) buffer, tilelen);
 #endif
-                if (nulval) {
+                if (datatype == TFLOAT) {
+                  if (nulval) {
+		    fnulval = *(float *) nulval;
+  		  }
+
+                  fffr8r4((double *) buffer, (long) tilelen, 1., 0., nullcheck,   
+                        fnulval, bnullarray, anynul,
+                        (float *) buffer, status);
+                } else if (datatype == TDOUBLE) {
+                  if (nulval) {
 		    dnulval = *(double *) nulval;
-		}
-                fffr8r8((double *) buffer, tilelen, 1., 0., nullcheck,   
+		  }
+
+                  fffr8r8((double *) buffer, (long) tilelen, 1., 0., nullcheck,   
                    dnulval, bnullarray, anynul,
                     (double *) buffer, status);            
-
+                } else {
+                  ffpmsg("implicit data type conversion is not supported in tile-compressed images");
+                  return (*status = DATA_DECOMPRESSION_ERR);
+                }
 	    } else {
                 ffpmsg("error: uncompressed tile has wrong size");
                 return (*status = DATA_DECOMPRESSION_ERR);
             }
 
+          /* end of special case of losslessly gzipping a floating-point image tile */
         } else {  /* this should never happen */
 	   *status = NO_COMPRESSED_TILE;
         }
