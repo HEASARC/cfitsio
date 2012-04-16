@@ -287,7 +287,7 @@ int fp_info_hdu (fitsfile *infptr)
 
 	    if (hdutype == IMAGE_HDU) {
 		sprintf (msg, "  %d IMAGE", hdupos); fp_msg (msg);
-                sprintf (msg, " SUMS=%lu/%lu", ~((int) hdusum), datasum); fp_msg (msg);
+                sprintf (msg, " SUMS=%lu/%lu", (unsigned long) (~((int) hdusum)), datasum); fp_msg (msg);
 
 		fits_get_img_param (infptr, 9, &bitpix, &naxis, naxes, &stat);
 
@@ -327,15 +327,15 @@ int fp_info_hdu (fitsfile *infptr)
 
             } else if (hdutype == ASCII_TBL) {
                 sprintf (msg, "  %d ASCII_TBL", hdupos); fp_msg (msg);
-                sprintf (msg, " SUMS=%lu/%lu\n", ~((int) hdusum), datasum); fp_msg (msg);
+                sprintf (msg, " SUMS=%lu/%lu\n", (unsigned long) (~((int) hdusum)), datasum); fp_msg (msg);
 
             } else if (hdutype == BINARY_TBL) {
                 sprintf (msg, "  %d BINARY_TBL", hdupos); fp_msg (msg);
-                sprintf (msg, " SUMS=%lu/%lu\n", ~((int) hdusum), datasum); fp_msg (msg);
+                sprintf (msg, " SUMS=%lu/%lu\n", (unsigned long) (~((int) hdusum)), datasum); fp_msg (msg);
 
             } else {
                 sprintf (msg, "  %d OTHER", hdupos); fp_msg (msg);
-                sprintf (msg, " SUMS=%lu/%lu", ~((int) hdusum), datasum); fp_msg (msg);
+                sprintf (msg, " SUMS=%lu/%lu", (unsigned long) (~((int) hdusum), datasum)); fp_msg (msg);
                 sprintf (msg, " %s\n", val); fp_msg (msg);
             }
 

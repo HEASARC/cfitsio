@@ -1,8 +1,48 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.30 - 11 April 2012
+
+  Enhancements
+
+   - Implimented much faster byte swapping algorithms in swapproc.c based on code
+     provided by Julian Taylor at ESO, Garching.  These routines significantly 
+     improve the raw FITS image read and write speed (by more than a factor of 2 in 
+     some cases) on little-endian machines (e.g., Linux and Microsoft Windows running
+     on IBM PCs) where byte-swapping is required.  This has no effect on big-endian 
+     machines (e.g., Macs).  Even faster performance can be achieved in some cases
+     by invoking the new "--enable-mssse3" configure option when building CFITSIO on 
+     machines that have CPUs that support SSSE3 machine instructions (e.g., starting
+     with Intel Core 2 CPUs in 2007, and in AMD CPUs beginning in 2011).
+
+   - added additional support for implicit data type conversion in cases where
+     the floating point image has been losslessly compressed with gzip.  The
+     pixels in these compressed images can now be read back as arrays of short, 
+     int, and long integers as well as single and double precision floating-point.
+
+   - modified fitsio2.h and f77_wrap.h to recognize IBM System z mainframes by
+     testing if __s390x__ or __s390__ is defined.
 
    - small change to ffgcrd in getkey.c so that it supports reading a blank
      keyword (e.g., a keyword whose name simply contains 8 space chracters).
+
+   Bug Fixes
+
+   - fixed a bug in imcomp_decompress_tile that caused the tile-compressed image 
+     to be uncompressed incorrectly (even though the tile-compressed image itself
+     was written correctly) under the following specific conditions:
+      - the original FITS image has a "float" datatype (R*4) 
+      - one or more of the image tiles cannot be compressed using the standard
+        quantization method  and instead are losslessly compressed with gzip
+      - the pixels in these tiles are not all equal to zero (this bug does
+        affect tiles where all the pixels are equal to zero)
+      - the program that is reading the compressed image uses CFITSIO's
+        "implicit datatype conversion" feature to read the "float" image
+        back into an array of "double" pixel values.
+      If all these conditions are met, then the returned pixel values in the
+      affected image tiles will be garbage, with values often ranging 
+      up to 10**34.  Note that this bug does not affect the fpack/funpack
+      programs, because funpack does not use CFITSIO's implicit datatype
+      conversion feature when uncompressing the image.
 
 Version 3.29 - 2 December 2011
 

@@ -9,7 +9,7 @@
 \contentsline {subsection}{\numberline {2.1.2}VMS}{7}
 \contentsline {subsection}{\numberline {2.1.3}Windows PCs}{7}
 \contentsline {subsection}{\numberline {2.1.4}Macintosh PCs}{7}
-\contentsline {section}{\numberline {2.2}Testing the Library}{7}
+\contentsline {section}{\numberline {2.2}Testing the Library}{8}
 \contentsline {section}{\numberline {2.3}Linking Programs with CFITSIO}{9}
 \contentsline {section}{\numberline {2.4}Using CFITSIO in Multi-threaded Environments}{9}
 \contentsline {section}{\numberline {2.5}Getting Started with CFITSIO}{9}
@@ -118,6 +118,6 @@
 \contentsline {chapter}{\numberline {13} Optimizing Programs }{159}
 \contentsline {section}{\numberline {13.1}How CFITSIO Manages Data I/O}{159}
 \contentsline {section}{\numberline {13.2}Optimization Strategies}{160}
-\contentsline {chapter}{\numberline {A}Index of Routines }{163}
-\contentsline {chapter}{\numberline {B}Parameter Definitions }{169}
-\contentsline {chapter}{\numberline {C}CFITSIO Error Status Codes }{175}
+\contentsline {chapter}{\numberline {A}Index of Routines }{165}
+\contentsline {chapter}{\numberline {B}Parameter Definitions }{171}
+\contentsline {chapter}{\numberline {C}CFITSIO Error Status Codes }{177}

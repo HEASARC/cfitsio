@@ -34,8 +34,8 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.29
-#define CFITSIO_MINOR 29
+#define CFITSIO_VERSION 3.30
+#define CFITSIO_MINOR 30
 #define CFITSIO_MAJOR 3
 
 #include <stdio.h>
