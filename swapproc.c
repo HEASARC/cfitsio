@@ -109,7 +109,8 @@ static void ffswap4_slow(INT32BIT *ivalues, long nvals)
     {
         ivalues[ii] = __builtin_bswap32(ivalues[ii]);
     }
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) && (_MSC_VER >= 1400)
+    /* intrinsic byte swapping function in Microsoft Visual C++ 8.0 and later */
     unsigned int* uivalues = (unsigned int *) ivalues;
 
     /* intrinsic byte swapping function in Microsoft Visual C++ */
@@ -177,8 +178,8 @@ static void ffswap8_slow(double *dvalues, long nvals)
     for (ii = 0; ii < nvals; ii++) {
         llvalues[ii] = __builtin_bswap64(llvalues[ii]);
     }
-#elif defined (_MSC_VER)
-    /* intrinsic byte swapping function in Microsoft Visual C++ */
+#elif defined(_MSC_VER) && (_MSC_VER >= 1400)
+    /* intrinsic byte swapping function in Microsoft Visual C++ 8.0 and later */
     unsigned __int64 * llvalues = (unsigned __int64 *) dvalues;
 
     for (ii = 0; ii < nvals; ii++)

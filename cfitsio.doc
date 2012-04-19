@@ -440,8 +440,8 @@ because the definitions in fitsio.h often change.
 **D.  Using CFITSIO in Multi-threaded Environments
 
 CFITSIO can be used either with the
-POSIX pthreads interface or the OpenMP interface for multithreaded
-parallel programs.  When used in a multithreaded environment, 
+POSIX pthreads interface or the OpenMP interface for multi-threaded
+parallel programs.  When used in a multi-threaded environment, 
 the CFITSIO library *must* be built using 
 the -D\_REENTRANT compiler directive.  This can be done using the following
 build commands:
@@ -449,8 +449,11 @@ build commands:
   >./configure --enable-reentrant
   > make
 -
-Multiple threads can then call any of the CFITSIO routines 
-to read or write separate 
+A function called fits\_is\_reentrant is available to test 
+whether or not CFITSIO was compiled with the -D\_REENTRANT
+directive.  When this feature is enabled, multiple threads can 
+call any of the CFITSIO routines 
+to simultaneously read or write separate 
 FITS files.  Multiple threads can also read data from
 the same FITS file simultaneously, 
 but different threads must never try to write to the same
@@ -3765,8 +3768,15 @@ the value that is used to represent null pixels (enter a very
     int fits_rms_short (short fdata[], int npix, short in_null_value,
                    > double *rms, int *status)
 -
-
-
+>25  Was CFITSIO compiled with the -D\_REENTRANT directive  
+so that it may be safely used in multi-threaded environments?
+The following function returns 1 if yes, 0 if no.  Note, however,
+that even if the -D\_REENTRANT directive was specified, this does
+not guarantee that the CFITSIO routines are thread-safe, because
+>some compilers may not support this feature.\label{reentrant}
+-
+int fits_is_reentrant(void)
+-
 
 *VII.  The CFITSIO Iterator Function
 
@@ -8657,6 +8667,7 @@ fits\_insert\_key\_null   & \pageref{ffikyu} \\
 fits\_insert\_key\_TYP    & \pageref{ffikyx} \\
 fits\_insert\_record     & \pageref{ffirec} \\
 fits\_insert\_rows  & \pageref{ffirow} \\
+fits\_is\_reentrant  & \pageref{reentrant} \\
 fits\_iterate\_data   & \pageref{ffiter} \\
 fits\_make\_hist  & \pageref{makehist} \\
 fits\_make\_keyn      & \pageref{ffkeyn} \\
@@ -8695,10 +8706,9 @@ fits\_read\_atblhdr      & \pageref{ffghtb} \\
 fits\_read\_btblhdr      & \pageref{ffghbn} \\
 fits\_read\_card         & \pageref{ffgcrd} \\
 fits\_read\_col        & \pageref{ffgcv} \\
-fits\_read\_col\_bit\_ & \pageref{ffgcx} \\
-
 \end{tabular}
 \begin{tabular}{lr}
+fits\_read\_col\_bit\_ & \pageref{ffgcx} \\
 fits\_read\_col\_TYP    & \pageref{ffgcvx} \\
 fits\_read\_colnull    & \pageref{ffgcf} \\
 fits\_read\_colnull\_TYP    & \pageref{ffgcfx} \\
@@ -8746,10 +8756,9 @@ fits\_set\_btblnull   & \pageref{fftnul} \\
 fits\_set\_compression\_type  & \pageref{ffsetcomp} \\
 fits\_set\_hdrsize    & \pageref{ffhdef} \\
 fits\_set\_hdustruc   & \pageref{ffrdef} \\
-fits\_set\_imgnull    & \pageref{ffpnul} \\
-
 \end{tabular}
 \begin{tabular}{lr}
+fits\_set\_imgnull    & \pageref{ffpnul} \\
 fits\_set\_noise\_bits  & \pageref{ffsetcomp} \\
 fits\_set\_tile\_dim  & \pageref{ffsetcomp} \\
 fits\_set\_tscale     & \pageref{fftscl} \\
@@ -8797,12 +8806,10 @@ fits\_write\_grppar\_TYP & \pageref{ffpgpx} \\
 fits\_write\_hdu       & \pageref{ffwrhdu} \\
 fits\_write\_history      & \pageref{ffphis} \\
 fits\_write\_img        & \pageref{ffppr} \\
-fits\_write\_img\_null & \pageref{ffppru} \\
-
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
-
+fits\_write\_img\_null & \pageref{ffppru} \\
 fits\_write\_img\_TYP    & \pageref{ffpprx} \\
 fits\_write\_imghdr       & \pageref{ffphps} \\
 fits\_write\_imgnull     & \pageref{ffppn} \\
@@ -8829,7 +8836,6 @@ fits\_write\_tdim         & \pageref{ffptdm} \\
 fits\_write\_theap    & \pageref{ffpthp} \\
 \end{tabular}
 \newpage
-
 \begin{tabular}{lr}
 ffasfm    & \pageref{ffasfm} \\
 ffbnfm   & \pageref{ffbnfm} \\

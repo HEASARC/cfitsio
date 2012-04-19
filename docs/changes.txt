@@ -4,15 +4,19 @@ Version 3.30 - 11 April 2012
 
   Enhancements
 
-   - Implimented much faster byte swapping algorithms in swapproc.c based on code
+   - Added new routine called fits_is_reentrant which returns 1 or 0 depending on
+     whether or not CFITSIO was compiled with the -D_REENTRANT directive.  This can
+     be used to determine if it is safe to use CFITSIO in multi-threaded programs.
+
+   - Implimented much faster byte-swapping algorithms in swapproc.c based on code
      provided by Julian Taylor at ESO, Garching.  These routines significantly 
-     improve the raw FITS image read and write speed (by more than a factor of 2 in 
+     improve the FITS image read and write speed (by more than a factor of 2 in 
      some cases) on little-endian machines (e.g., Linux and Microsoft Windows running
-     on IBM PCs) where byte-swapping is required.  This has no effect on big-endian 
+     on x86 PCs) where byte-swapping is required.  This has no effect on big-endian 
      machines (e.g., Macs).  Even faster performance can be achieved in some cases
-     by invoking the new "--enable-mssse3" configure option when building CFITSIO on 
-     machines that have CPUs that support SSSE3 machine instructions (e.g., starting
-     with Intel Core 2 CPUs in 2007, and in AMD CPUs beginning in 2011).
+     by invoking the new "--enable-sse2" or "--enable-ssse3" configure options when
+     building CFITSIO on machines that have CPUs and compilers that support the SSE2
+     and SSSE3 machine instructions.
 
    - added additional support for implicit data type conversion in cases where
      the floating point image has been losslessly compressed with gzip.  The

@@ -2118,6 +2118,7 @@ int imcomp_convert_tile_tuint(
        } 
 
        *intlength = 4;
+       idata = (int *) tiledata;
        uintbuff = (unsigned int *) tiledata;
 
        /* offset the unsigned value by -2147483648 to a signed int value. */

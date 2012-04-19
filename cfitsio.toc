@@ -12,7 +12,7 @@
 \contentsline {section}{\numberline {2.2}Testing the Library}{8}
 \contentsline {section}{\numberline {2.3}Linking Programs with CFITSIO}{9}
 \contentsline {section}{\numberline {2.4}Using CFITSIO in Multi-threaded Environments}{9}
-\contentsline {section}{\numberline {2.5}Getting Started with CFITSIO}{9}
+\contentsline {section}{\numberline {2.5}Getting Started with CFITSIO}{10}
 \contentsline {section}{\numberline {2.6}Example Program}{10}
 \contentsline {chapter}{\numberline {3} A FITS Primer }{13}
 \contentsline {chapter}{\numberline {4} Programming Guidelines }{15}

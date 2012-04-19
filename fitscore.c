@@ -7011,6 +7011,21 @@ int ffghdt(fitsfile *fptr,      /* I - FITS file pointer             */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int fits_is_reentrant(void)
+/*
+   Was CFITSIO compiled with the -D_REENTRANT flag?  1 = yes, 0 = no.
+   Note that specifying the -D_REENTRANT flag is required, but may not be 
+   sufficient, to ensure that CFITSIO can be safely used in a multi-threaded 
+   environoment.
+*/
+{
+#ifdef _REENTRANT
+       return(1);
+#else
+       return(0);
+#endif
+}
+/*--------------------------------------------------------------------------*/
 int fits_is_compressed_image(fitsfile *fptr,  /* I - FITS file pointer  */
                  int *status)                 /* IO - error status      */
 /*
