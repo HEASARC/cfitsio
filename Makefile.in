@@ -87,7 +87,7 @@ libcfitsio.a:	${OBJECTS}
 shared: libcfitsio${SHLIB_SUFFIX}
 
 libcfitsio${SHLIB_SUFFIX}: ${OBJECTS}
-		${SHLIB_LD} ${LDFLAGS} -o $@ ${OBJECTS}
+		${SHLIB_LD} ${LDFLAGS} -o $@ ${OBJECTS} -lm ${LIBS}
 
 install:	libcfitsio.a $(INSTALL_DIRS)
 		@if [ -f libcfitsio.a ]; then \
