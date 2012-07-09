@@ -318,6 +318,70 @@ int file_create(char *filename, int *handle)
     int ii;
     char mode[4];
 
+#if defined(BUILD_HERA) 
+
+    /* special code to verify that the path to the file to be created */
+    /* is within the users data directory on Hera */
+ 
+    int status = 0, rootlen, slen;
+    char *cpos;
+    char cwd[FLEN_FILENAME], absURL[FLEN_FILENAME];
+    char rootstring[]="/heradata/users/", username[FLEN_FILENAME], userroot[FLEN_FILENAME];
+
+    /* Get the current working directory */
+    fits_get_cwd(cwd, &status);  
+    slen = strlen(cwd);
+    if (cwd[slen-1] != '/') strcat(cwd,"/"); /* make sure the CWD ends with slash */
+
+/*    printf("CWD = %s\n", cwd);  */
+
+    /* check that CWD string matches the rootstring */
+    rootlen = strlen(rootstring);
+    if (strncmp(rootstring, cwd, rootlen)) {
+       ffpmsg("invalid CWD: does not match Hera data diectory");
+/*       ffpmsg(rootstring);  */
+       return(FILE_NOT_CREATED); 
+    } else {
+
+       /* get the user name from CWD (it follows the root string) */
+       strcpy(username, cwd+rootlen);  
+       cpos=strchr(username, '/');
+       if (!cpos) {
+          ffpmsg("invalid CWD: not equal to Hera data diectory + username");
+/*          ffpmsg(cwd); */
+          return(FILE_NOT_CREATED); 
+       } else {
+          *(cpos+1) = '\0';   /* truncate user name string */
+
+          /* construct full user root name */
+          strcpy(userroot, rootstring);
+          strcat(userroot, username);
+          rootlen = strlen(userroot);
+
+          /* convert the input filename to absolute path relative to the CWD */
+          fits_relurl2url(cwd,  filename,  absURL, &status);
+/*
+          printf("username = %s\n", username);
+          printf("userroot = %s\n", userroot);
+          printf("filename = %s\n", filename);
+          printf("ABS = %s\n", absURL);
+*/
+          /* check that CWD string matches the rootstring */
+
+          if (strncmp(userroot, absURL, rootlen)) {
+             ffpmsg("invalid filename: path not within user directory");
+/*
+             ffpmsg(absURL);
+             ffpmsg(userroot);
+*/
+             return(FILE_NOT_CREATED); 
+          }
+       }
+    }
+    /* if we got here, then the input filename appears to be valid */
+
+#endif
+
     *handle = -1;
     for (ii = 0; ii < NMAXFILES; ii++)  /* find empty slot in table */
     {
