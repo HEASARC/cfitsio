@@ -326,7 +326,9 @@ int file_create(char *filename, int *handle)
     int status = 0, rootlen, slen;
     char *cpos;
     char cwd[FLEN_FILENAME], absURL[FLEN_FILENAME];
-    char rootstring[]="/heradata/users/", username[FLEN_FILENAME], userroot[FLEN_FILENAME];
+    /* note that "/heradata/users/" is actually "/.hera_mountpnt/hera_users/"  */
+    char rootstring[]="/.hera_mountpnt/hera_users/";
+    char username[FLEN_FILENAME], userroot[FLEN_FILENAME];
 
     /* Get the current working directory */
     fits_get_cwd(cwd, &status);  
@@ -338,7 +340,7 @@ int file_create(char *filename, int *handle)
     /* check that CWD string matches the rootstring */
     rootlen = strlen(rootstring);
     if (strncmp(rootstring, cwd, rootlen)) {
-       ffpmsg("invalid CWD: does not match Hera data diectory");
+       ffpmsg("invalid CWD: does not match Hera data directory");
 /*       ffpmsg(rootstring);  */
        return(FILE_NOT_CREATED); 
     } else {
@@ -347,7 +349,7 @@ int file_create(char *filename, int *handle)
        strcpy(username, cwd+rootlen);  
        cpos=strchr(username, '/');
        if (!cpos) {
-          ffpmsg("invalid CWD: not equal to Hera data diectory + username");
+          ffpmsg("invalid CWD: not equal to Hera data directory + username");
 /*          ffpmsg(cwd); */
           return(FILE_NOT_CREATED); 
        } else {
