@@ -759,8 +759,6 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
                         continue;
 		    }
 		}
- 
-	        /* rename clobbers input, may be unix/shell version dependent */
 
 		if (iraf_infile) {  /* special case of deleting an IRAF format header and pixel file */
 		   if (fits_delete_iraf_file(infits, &status)) {
@@ -769,10 +767,22 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 		    }
 		}
 				
+#if defined(unix) || defined(__unix__)  || defined(__unix)
+	        /* rename clobbers input on Unix platforms */
 		if (rename (outfits, temp) != 0) {
 		        fp_msg ("\nError renaming tmp file to ");
 		        fp_msg (temp); fp_msg ("\n"); exit (-1);
 		}
+#else
+	        /* rename DOES NOT clobber existing files on Windows platforms */
+                /* so explicitly remove any existing file before renaming the file */
+                remove(temp);
+		if (rename (outfits, temp) != 0) {
+		        fp_msg ("\nError renaming tmp file to ");
+		        fp_msg (temp); fp_msg ("\n"); exit (-1);
+		}
+#endif
+
 		tempfilename[0] = '\0';  /* clear temporary file name */
                 strcpy(outfits, temp);
 

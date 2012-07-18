@@ -4783,16 +4783,16 @@ The following utility subroutines may be useful for certain applications:
         (numeric, logical, or character string) is automatically determined
         and  the output CARD string is formatted accordingly.  The value
         token may be forced to be interpreted as a string (e.g. if it is a
-       string of numeric digits) by enclosing it in single quotes.
+        string of numeric digits) by enclosing it in single quotes.
+        If the value token is a character string that contains 1 or more
+        embedded blank space characters or slash ('/') characters then the
+       entire character string must be enclosed in single quotes.
 \end{description}
 
 
 \begin{description}
 \item[- ]     The COMMENT token is optional, but if present must be separated from
-        the VALUE token by at least one blank space.  A leading '/' character
-        may be used to mark the beginning of the comment field, otherwise the
-        comment field begins with the first non-blank character following the
-       value token.
+       the VALUE token by a blank space or a  '/' character.
 \end{description}
 
 
@@ -5903,7 +5903,7 @@ also supplied.
 
 The column/keyword filter can be used to perform the following
 operations.  More than one operation may be specified by separating
-them with semi-colons.
+them with commas or semi-colons.
 
 \begin{itemize}
 
@@ -5988,10 +5988,10 @@ used to add comments into the file.
 Examples:
 
 \begin{verbatim}
-   [col Time;rate]               - only the Time and rate columns will
+   [col Time; rate]              - only the Time and rate columns will
                                    appear in the filtered input file.
 
-   [col Time;*raw]               - include the Time column and any other
+   [col Time, *raw]              - include the Time column and any other
                                    columns whose name ends with 'raw'.
 
    [col -TIME; Good == STATUS]   - deletes the TIME column and

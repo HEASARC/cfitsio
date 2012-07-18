@@ -34,8 +34,8 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.30
-#define CFITSIO_MINOR 30
+#define CFITSIO_VERSION 3.31
+#define CFITSIO_MINOR 31
 #define CFITSIO_MAJOR 3
 
 #include <stdio.h>
@@ -686,6 +686,9 @@ int ffiurl(  char *url,  char *urltype, char *infile,
 int ffifile (char *url,  char *urltype, char *infile,
                     char *outfile, char *extspec, char *rowfilter,
                     char *binspec, char *colspec, char *pixfilter, int *status);
+int ffifile2 (char *url,  char *urltype, char *infile,
+                    char *outfile, char *extspec, char *rowfilter,
+                    char *binspec, char *colspec, char *pixfilter, char *compspec, int *status);
 int ffrtnm(char *url, char *rootname, int *status);
 int ffexist(const char *infile, int *exists, int *status);
 int ffexts(char *extspec, int *extnum,  char *extname, int *extvers,
@@ -888,6 +891,7 @@ int ffgky( fitsfile *fptr, int datatype, const char *keyname, void *value,
            char *comm, int *status);
 int ffgkys(fitsfile *fptr, const char *keyname, char *value, char *comm, int *status);
 int ffgkls(fitsfile *fptr, const char *keyname, char **value, char *comm, int *status);
+int fffree(void *value,  int  *status); 
 int fffkls(char *value, int *status);
 int ffgkyl(fitsfile *fptr, const char *keyname, int *value, char *comm, int *status);
 int ffgkyj(fitsfile *fptr, const char *keyname, long *value, char *comm, int *status);

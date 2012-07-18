@@ -455,8 +455,14 @@ directive.  When this feature is enabled, multiple threads can
 call any of the CFITSIO routines 
 to simultaneously read or write separate 
 FITS files.  Multiple threads can also read data from
-the same FITS file simultaneously, 
-but different threads must never try to write to the same
+the same FITS file simultaneously, as long as the file
+was opened independently by each thread.  This relies on
+the operating system to correctly deal with reading the
+same file by multiple processes.  Different threads should
+not share the same 'fitsfile' pointer to read an opened
+FITS file, unless locks are placed around the calls to 
+the CFITSIO reading routines.  
+Different threads should never try to write to the same
 FITS file.
 
 **E.  Getting Started with CFITSIO
@@ -1891,8 +1897,9 @@ header.
     terminating characters. The last header record is terminated with
     a NULL character.  These routine allocates memory for the returned
     character array, so the calling program must free the memory when
-    finished.
-    
+    finished.  The cleanest way to do this is to 
+    call the fits\_free\_memory routine.
+
     There are 2 related routines: fits\_hdr2str simply concatenates all
     the existing keywords in the header; fits\_convert\_hdr2str is similar,
     except that if the CHDU is a tile compressed image (stored in a binary
@@ -3535,10 +3542,13 @@ The following utility routines may be useful for certain applications.
         (numeric, logical, or character string) is automatically determined
         and  the output CARD string is formatted accordingly.  The value
         token may be forced to be interpreted as a string (e.g. if it is a
->       string of numeric digits) by enclosing it in single quotes.
+        string of numeric digits) by enclosing it in single quotes.
+        If the value token is a character string that contains 1 or more 
+        embedded blank space characters or slash ('/') characters then the 
+>       entire character string must be enclosed in single quotes.
  
 >-      The COMMENT token is optional, but if present must be separated from
->       the VALUE token by at least one blank space and a  '/' character.
+>       the VALUE token by a blank space or a  '/' character.
  
 >-      One exception to the above rules is that if the first non-blank
         character in the first 8 characters of the template string is a 
@@ -5268,7 +5278,7 @@ routines.
 >    depending on the magnitude of the value. \label{ffikyx}
 -
   int fits_insert_card / ffikey
-      (fitsfile *fptr, char *card, > &status)
+      (fitsfile *fptr, char *card, > int *status)
 
   int fits_insert_key_[str, longstr] / ffi[kys, kls]
       (fitsfile *fptr, char *keyname, char *value, char *comment,
@@ -6989,7 +6999,7 @@ also supplied.
 
 The column/keyword filter can be used to perform the following
 operations.  More than one operation may be specified by separating
-them with semi-colons.
+them with commas or semi-colons.
 
 \begin{itemize}
 
@@ -7073,10 +7083,10 @@ used to add comments into the file.
 
 Examples:
 -
-   [col Time;rate]               - only the Time and rate columns will
+   [col Time; rate]              - only the Time and rate columns will
                                    appear in the filtered input file.
 
-   [col Time;*raw]               - include the Time column and any other
+   [col Time, *raw]              - include the Time column and any other
                                    columns whose name ends with 'raw'.
 
    [col -TIME; Good == STATUS]   - deletes the TIME column and

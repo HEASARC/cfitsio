@@ -1,5 +1,41 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.31 - 18 July 2012
+
+   - enhanced the CFITSIO column filtering syntax to allow the comma, in addition
+     to the semi-colon, to be used to separate clauses, for example:
+     [col X,Y;Z = max(X,Y)].  This was done because users are not allowed to
+     enter the semi-colon character in the on-line Hera data processing
+     system due to computer security concerns.
+
+   - enhanced the CFITSIO extended filename syntax to allow specifying image
+     compression parameters (e.g. '[compress Rice]') when opening an existing
+     FITS file with write access.  The specified compression parameters will
+     be used by default if more images are appended to the existing file.
+
+   - modified drvrfile.c to do additional file secrity checks when CFITSIO
+     is running within the HEASARC's Hera software system.  In this case
+     CFITSIO will not allow FITS files to be created outside of the user's
+     individual Hera data directory area.
+
+   - fixed an issue in fpack and funpack on Windows machines, caused by
+     the fact that the 'rename' function behaves differently on Windows
+     in that it does not clobber an existing file, as it does on Unix
+     platforms.
+
+   - fixed bug in the way byte-swapping was being performed when writing 
+     integer*8 null values to an image or binary table column.  
+
+   - added the missing macro definition for fffree to fitsio.h.
+
+   - modified the low level table read and write functions in getcol*.c and 
+     putcol*.c to remove the 32-bit limitation on the number of elements. 
+     These routines now support reading and writing more than 2**31 elements
+     at one time. Thanks to Keh-Cheng Chu (Stanford U.) for the patch.
+
+   - modified Makefile.in so that the shared libcfitsio.so is linked against 
+     pthreads and libm.
+
 Version 3.30 - 11 April 2012
 
   Enhancements
@@ -11,12 +47,13 @@ Version 3.30 - 11 April 2012
    - Implimented much faster byte-swapping algorithms in swapproc.c based on code
      provided by Julian Taylor at ESO, Garching.  These routines significantly 
      improve the FITS image read and write speed (by more than a factor of 2 in 
-     some cases) on little-endian machines (e.g., Linux and Microsoft Windows running
-     on x86 PCs) where byte-swapping is required.  This has no effect on big-endian 
-     machines (e.g., Macs).  Even faster performance can be achieved in some cases
-     by invoking the new "--enable-sse2" or "--enable-ssse3" configure options when
-     building CFITSIO on machines that have CPUs and compilers that support the SSE2
-     and SSSE3 machine instructions.
+     some cases) on little-endian machines (e.g., Linux and Microsoft Windows and
+     Macs running on x86 CPUs) where byte-swapping is required when reading and 
+     writing data in FITS files.  This has no effect on big-endian machines 
+     (e.g. Motorola CPUs and some IBM systems).  Even faster byte-swapping
+     performance can be achieved in some cases by invoking the new "--enable-sse2" 
+     or "--enable-ssse3" configure options when building CFITSIO on machines that
+     have CPUs and compilers that support the SSE2 and SSSE3 machine instructions.
 
    - added additional support for implicit data type conversion in cases where
      the floating point image has been losslessly compressed with gzip.  The
