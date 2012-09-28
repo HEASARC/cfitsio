@@ -46,7 +46,12 @@ int no_of_drivers = 0;         /* number of currently defined I/O drivers */
 
 static int pixel_filter_helper(fitsfile **fptr, char *outfile,
 				char *expr,  int *status);
-
+static int find_quote(char **string);
+static int find_doublequote(char **string);
+static int find_paren(char **string);
+static int find_bracket(char **string);
+static int find_curlybracket(char **string);
+int comma2semicolon(char *string);
 
 #ifdef _REENTRANT
 
@@ -1578,6 +1583,195 @@ int fits_is_this_a_copy(char *urltype) /* I - type of file */
     return(iscopy);
 }
 /*--------------------------------------------------------------------------*/
+static int find_quote(char **string)
+
+/*  
+    look for the closing single quote character in the input string
+*/
+{
+    char *tstr;
+
+    tstr = *string;
+
+    while (*tstr) {
+        if (*tstr == '\'') { /* found the closing quote */
+           *string = tstr + 1;  /* set pointer to next char */
+           return(0); 
+        } else {  /* skip over any other character */
+           tstr++;
+        }
+    }
+    return(1);  /* opps, didn't find the closing character */
+}
+/*--------------------------------------------------------------------------*/
+static int find_doublequote(char **string)
+
+/*  
+    look for the closing double quote character in the input string
+*/
+{
+    char *tstr;
+
+    tstr = *string;
+
+    while (*tstr) {
+        if (*tstr == '"') { /* found the closing quote */
+           *string = tstr + 1;  /* set pointer to next char */
+           return(0); 
+        } else {  /* skip over any other character */
+           tstr++;
+        }
+    }
+    return(1);  /* opps, didn't find the closing character */
+}
+
+/*--------------------------------------------------------------------------*/
+static int find_paren(char **string)
+
+/*  
+    look for the closing parenthesis character in the input string
+*/
+{
+    char *tstr;
+
+    tstr = *string;
+
+    while (*tstr) {
+
+        if (*tstr == ')') { /* found the closing parens */
+           *string = tstr + 1;  /* set pointer to next char */
+           return(0); 
+        } else if (*tstr == '(') { /* found another level of parens */
+           tstr++;
+           if (find_paren(&tstr)) return(1); 
+        } else if (*tstr == '[') { 
+           tstr++;
+           if (find_bracket(&tstr)) return(1);
+        } else if (*tstr == '{') { 
+           tstr++;
+           if (find_curlybracket(&tstr)) return(1);
+        } else if (*tstr == '"') { 
+           tstr++;
+           if (find_doublequote(&tstr)) return(1);
+        } else if (*tstr == '\'') { 
+           tstr++;
+           if (find_quote(&tstr)) return(1);
+        } else { 
+           tstr++;
+        }
+    }
+    return(1);  /* opps, didn't find the closing character */
+}
+/*--------------------------------------------------------------------------*/
+static int find_bracket(char **string)
+
+/*  
+    look for the closing bracket character in the input string
+*/
+{
+    char *tstr;
+
+    tstr = *string;
+
+    while (*tstr) {
+        if (*tstr == ']') { /* found the closing bracket */
+           *string = tstr + 1;  /* set pointer to next char */
+           return(0); 
+        } else if (*tstr == '(') { /* found another level of parens */
+           tstr++;
+           if (find_paren(&tstr)) return(1); 
+        } else if (*tstr == '[') { 
+           tstr++;
+           if (find_bracket(&tstr)) return(1);
+        } else if (*tstr == '{') { 
+           tstr++;
+           if (find_curlybracket(&tstr)) return(1);
+        } else if (*tstr == '"') { 
+           tstr++;
+           if (find_doublequote(&tstr)) return(1);
+        } else if (*tstr == '\'') { 
+           tstr++;
+           if (find_quote(&tstr)) return(1);
+        } else { 
+           tstr++;
+        }
+    }
+    return(1);  /* opps, didn't find the closing character */
+}
+/*--------------------------------------------------------------------------*/
+static int find_curlybracket(char **string)
+
+/*  
+    look for the closing curly bracket character in the input string
+*/
+{
+    char *tstr;
+
+    tstr = *string;
+
+    while (*tstr) {
+        if (*tstr == '}') { /* found the closing curly bracket */
+           *string = tstr + 1;  /* set pointer to next char */
+           return(0); 
+        } else if (*tstr == '(') { /* found another level of parens */
+           tstr++;
+           if (find_paren(&tstr)) return(1); 
+        } else if (*tstr == '[') { 
+           tstr++;
+           if (find_bracket(&tstr)) return(1);
+        } else if (*tstr == '{') { 
+           tstr++;
+           if (find_curlybracket(&tstr)) return(1);
+        } else if (*tstr == '"') { 
+           tstr++;
+           if (find_doublequote(&tstr)) return(1);
+        } else if (*tstr == '\'') { 
+           tstr++;
+           if (find_quote(&tstr)) return(1);
+        } else { 
+           tstr++;
+        }
+    }
+    return(1);  /* opps, didn't find the closing character */
+}
+/*--------------------------------------------------------------------------*/
+int comma2semicolon(char *string)
+
+/*  
+    replace commas with semicolons, unless the comma is within a quoted or bracketed expression 
+*/
+{
+    char *tstr;
+
+    tstr = string;
+
+    while (*tstr) {
+
+        if (*tstr == ',') { /* found a comma */
+           *tstr = ';';
+           tstr++;
+        } else if (*tstr == '(') { /* found another level of parens */
+           tstr++;
+           if (find_paren(&tstr)) return(1); 
+        } else if (*tstr == '[') { 
+           tstr++;
+           if (find_bracket(&tstr)) return(1);
+        } else if (*tstr == '{') { 
+           tstr++;
+           if (find_curlybracket(&tstr)) return(1);
+        } else if (*tstr == '"') { 
+           tstr++;
+           if (find_doublequote(&tstr)) return(1);
+        } else if (*tstr == '\'') { 
+           tstr++;
+           if (find_quote(&tstr)) return(1);
+        } else { 
+           tstr++;
+        }
+    }
+    return(0);  /* reached end of string */
+}
+/*--------------------------------------------------------------------------*/
 int ffedit_columns(
            fitsfile **fptr,  /* IO - pointer to input table; on output it  */
                              /*      points to the new selected rows table */
@@ -1677,22 +1871,15 @@ int ffedit_columns(
     /* as of July 2012, the CFITSIO column filter syntax was modified */
     /* so that commas may be used to separate clauses, as well as semi-colons. */
     /* This was done because users cannot enter the semi-colon in the HEASARC's */
-    /* Hera on-line data processing system due for computer security reasons.  */
+    /* Hera on-line data processing system for computer security reasons.  */
     /* Therefore, we must convert those commas back to semi-colons here, but we */
     /* must not convert any columns that occur within parenthesies.  */
 
-    cptr2 = cptr;
-    inparen = 0;  /* flag to indicate we are within a parenthetical clause */
-
-    while (*cptr2) {
-       if (*cptr2 == '(') {
-           inparen++;    /* increment the nested-parenthesis counter */
-       } else if (*cptr2 == ')') {
-           inparen--;   /* decrement the nested-parenthesis counter */
-       } else if (*cptr2 == ',' && !inparen) {
-           *cptr2 = ';';   /* replace this comma with a semi-colon */
-       }
-       cptr2++;
+    if (comma2semicolon(cptr)) {
+         ffpmsg("parsing error in column filter expression");
+         ffpmsg(cptr);
+         *status = PARSE_SYNTAX_ERR;
+         return(*status);
     }
 
     /* parse expression and get first clause, if more than 1 */

@@ -559,7 +559,14 @@ int ffcalc_rng( fitsfile *infptr,   /* I - Input FITS file                  */
             FFUNLOCK;
             return( *status = PARSE_BAD_TYPE );
          }
-         parName++;
+         parName++;  /* Advance past '#' */
+	 if ( (strcasecmp(parName,"HISTORY") == 0 || strcasecmp(parName,"COMMENT") == 0) &&
+	      Info.datatype != TSTRING ) {
+            ffcprs();
+            ffpmsg( "HISTORY and COMMENT values must be strings (ffcalc)" );
+	    FFUNLOCK;
+	    return( *status = PARSE_BAD_TYPE );
+	 }
 
       } else if( constant ) {
 
@@ -761,7 +768,13 @@ int ffcalc_rng( fitsfile *infptr,   /* I - Input FITS file                  */
          break;
       case TBIT:
       case TSTRING:
-         ffukys( outfptr, parName, result->value.data.str, parInfo, status );
+	 if (strcasecmp(parName,"HISTORY") == 0) {
+	   ffphis( outfptr, result->value.data.str, status);
+	 } else if (strcasecmp(parName,"COMMENT") == 0) {
+	   ffpcom( outfptr, result->value.data.str, status);
+	 } else {
+	   ffukys( outfptr, parName, result->value.data.str, parInfo, status );
+	 }
          break;
       }
    }

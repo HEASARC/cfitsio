@@ -1,5 +1,22 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.32 - Oct 2012
+
+   - extended the column filtering syntax in the CFITSIO file name parser to
+     enable users and scripts to append new COMMENT or HISTORY keyword into the
+     header of the filtered file (provided by Craig Markwardt).  For example,
+     fcopy "infile.fits[col #HISTORY='Processed on 2012-10-05']" outfile.fits
+     will append this header keyword: "HISTORY Processed on 2012-10-05"
+
+   - small change to the code that opens and reads an ASCII region file to
+     return an error if the file is empty.
+
+   - fixed obscure sign propagation error when attempting to read the
+     uncompressed size of a gzipped FITS file.  This resulted in a memory
+     allocation error if the gzipped file had an uncompressed file
+     size between 2^31 and 2^32 bytes.  Fix supplied by Gudlaugur Johannesson 
+     (Stanford).
+
 Version 3.31 - 18 July 2012
 
    - enhanced the CFITSIO column filtering syntax to allow the comma, in addition

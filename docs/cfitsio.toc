@@ -93,31 +93,31 @@
 \contentsline {section}{\numberline {10.8}Image Section}{130}
 \contentsline {section}{\numberline {10.9}Image Transform Filters}{131}
 \contentsline {section}{\numberline {10.10}Column and Keyword Filtering Specification}{132}
-\contentsline {section}{\numberline {10.11}Row Filtering Specification}{134}
+\contentsline {section}{\numberline {10.11}Row Filtering Specification}{135}
 \contentsline {subsection}{\numberline {10.11.1}General Syntax}{135}
 \contentsline {subsection}{\numberline {10.11.2}Bit Masks}{138}
-\contentsline {subsection}{\numberline {10.11.3}Vector Columns}{138}
+\contentsline {subsection}{\numberline {10.11.3}Vector Columns}{139}
 \contentsline {subsection}{\numberline {10.11.4}Good Time Interval Filtering}{140}
 \contentsline {subsection}{\numberline {10.11.5}Spatial Region Filtering}{141}
 \contentsline {subsection}{\numberline {10.11.6}Example Row Filters}{143}
 \contentsline {section}{\numberline {10.12} Binning or Histogramming Specification}{144}
-\contentsline {chapter}{\numberline {11}Template Files }{147}
-\contentsline {section}{\numberline {11.1}Detailed Template Line Format}{147}
-\contentsline {section}{\numberline {11.2}Auto-indexing of Keywords}{148}
-\contentsline {section}{\numberline {11.3}Template Parser Directives}{149}
-\contentsline {section}{\numberline {11.4}Formal Template Syntax}{149}
-\contentsline {section}{\numberline {11.5}Errors}{150}
-\contentsline {section}{\numberline {11.6}Examples}{150}
-\contentsline {chapter}{\numberline {12} Local FITS Conventions }{153}
-\contentsline {section}{\numberline {12.1}64-Bit Long Integers}{153}
-\contentsline {section}{\numberline {12.2}Long String Keyword Values.}{153}
-\contentsline {section}{\numberline {12.3}Arrays of Fixed-Length Strings in Binary Tables}{155}
-\contentsline {section}{\numberline {12.4}Keyword Units Strings}{155}
-\contentsline {section}{\numberline {12.5}HIERARCH Convention for Extended Keyword Names}{156}
-\contentsline {section}{\numberline {12.6}Tile-Compressed Image Format}{156}
-\contentsline {chapter}{\numberline {13} Optimizing Programs }{159}
-\contentsline {section}{\numberline {13.1}How CFITSIO Manages Data I/O}{159}
-\contentsline {section}{\numberline {13.2}Optimization Strategies}{160}
-\contentsline {chapter}{\numberline {A}Index of Routines }{165}
-\contentsline {chapter}{\numberline {B}Parameter Definitions }{171}
-\contentsline {chapter}{\numberline {C}CFITSIO Error Status Codes }{177}
+\contentsline {chapter}{\numberline {11}Template Files }{149}
+\contentsline {section}{\numberline {11.1}Detailed Template Line Format}{149}
+\contentsline {section}{\numberline {11.2}Auto-indexing of Keywords}{150}
+\contentsline {section}{\numberline {11.3}Template Parser Directives}{151}
+\contentsline {section}{\numberline {11.4}Formal Template Syntax}{151}
+\contentsline {section}{\numberline {11.5}Errors}{152}
+\contentsline {section}{\numberline {11.6}Examples}{152}
+\contentsline {chapter}{\numberline {12} Local FITS Conventions }{155}
+\contentsline {section}{\numberline {12.1}64-Bit Long Integers}{155}
+\contentsline {section}{\numberline {12.2}Long String Keyword Values.}{155}
+\contentsline {section}{\numberline {12.3}Arrays of Fixed-Length Strings in Binary Tables}{157}
+\contentsline {section}{\numberline {12.4}Keyword Units Strings}{157}
+\contentsline {section}{\numberline {12.5}HIERARCH Convention for Extended Keyword Names}{158}
+\contentsline {section}{\numberline {12.6}Tile-Compressed Image Format}{158}
+\contentsline {chapter}{\numberline {13} Optimizing Programs }{161}
+\contentsline {section}{\numberline {13.1}How CFITSIO Manages Data I/O}{161}
+\contentsline {section}{\numberline {13.2}Optimization Strategies}{162}
+\contentsline {chapter}{\numberline {A}Index of Routines }{167}
+\contentsline {chapter}{\numberline {B}Parameter Definitions }{173}
+\contentsline {chapter}{\numberline {C}CFITSIO Error Status Codes }{179}

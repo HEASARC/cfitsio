@@ -8048,7 +8048,7 @@ them with commas or semi-colons.
 
 \item
 Copy only a specified list of columns columns to the filtered input file.
-The list of column name should be separated by semi-colons.  Wild card
+The list of column name should be separated by commas or semi-colons.  Wild card
 characters may be used in the column names to match multiple columns.
 If the expression contains both a list of columns to be included and
 columns to be deleted, then all the columns in the original table
@@ -8096,6 +8096,22 @@ This is especially useful when writing
 a column-related keyword like TUNITn for a newly created column,
 as shown in the following examples.
 
+COMMENT and HISTORY keywords may also be created with the following syntax:
+
+\begin{verbatim}
+   #COMMENT = 'This is a comment keyword'
+   #HISTORY = 'This is a history keyword'
+\end{verbatim}
+Note that the equal sign and the quote characters will be removed, so
+that the resulting header keywords in these cases will look like this:
+
+\begin{verbatim}
+   COMMENT This is a comment keyword
+   HISTORY This is a history keyword
+\end{verbatim}
+These two special keywords are always appended to the end of the header
+and will not affect any previously existing COMMENT or HISTORY keywords.
+
 \item
 Recompute (overwrite) the values in an existing column or keyword by
 giving the name followed by an equals sign and an arithmetic
@@ -8120,20 +8136,20 @@ For  complex  or commonly used operations,  one  can  place the
 operations into an external text  file and import it  into the  column
 filter using  the syntax '[col @filename.txt]'.   The operations can
 extend over multiple lines of the  file, but multiple operations must
-still be separated by semicolons.   Any lines in the external text file
+still be separated by commas or semi-colons.   Any lines in the external text file
 that begin with 2 slash characters ('//') will be ignored and may be
 used to add comments into the file.
 
 Examples:
 
 \begin{verbatim}
-   [col Time; rate]              - only the Time and rate columns will
+   [col Time, rate]              - only the Time and rate columns will
                                    appear in the filtered input file.
 
    [col Time, *raw]              - include the Time column and any other
                                    columns whose name ends with 'raw'.
 
-   [col -TIME; Good == STATUS]   - deletes the TIME column and
+   [col -TIME, Good == STATUS]   - deletes the TIME column and
                                    renames the status column to 'Good'
 
    [col PI=PHA * 1.1 + 0.2; #TUNIT#(column units) = 'counts';*]
@@ -8169,8 +8185,7 @@ Examples:
     expression evaluates to true.  The primary array and any other
     extensions in the input file are also copied to the temporary
     file.
-(If a `\#' character is appended to the name
-or number of the
+(If a `\#' character is appended to the name or number of the
 table HDU then only the primary array, and none of the other
 HDUs in the input file will be copied into the temporary file).
     The original FITS file is closed and the new virtual file

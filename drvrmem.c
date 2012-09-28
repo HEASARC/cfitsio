@@ -557,7 +557,8 @@ int mem_compress_open(char *filename, int rwmode, int *hdl)
     FILE *diskfile;
     int status, estimated = 1;
     unsigned char buffer[4];
-    size_t finalsize;
+    size_t finalsize, filesize;
+    unsigned int modulosize;
     char *ptr;
 
     if (rwmode != READONLY)
@@ -585,17 +586,28 @@ int mem_compress_open(char *filename, int rwmode, int *hdl)
 
     if (memcmp(buffer, "\037\213", 2) == 0)  /* GZIP */
     {
-        /* the uncompressed file size is give at the end of the file */
+        /* the uncompressed file size is give at the end */
+        /* of the file in the ISIZE field  (modulo 2^32) */
 
         fseek(diskfile, 0, 2);            /* move to end of file */
+        filesize = ftell(diskfile);       /* position = size of file */
         fseek(diskfile, -4L, 1);          /* move back 4 bytes */
         fread(buffer, 1, 4L, diskfile);   /* read 4 bytes */
 
         /* have to worry about integer byte order */
-	finalsize  = buffer[0];
-	finalsize |= buffer[1] << 8;
-	finalsize |= buffer[2] << 16;
-	finalsize |= buffer[3] << 24;
+	modulosize  = buffer[0];
+	modulosize |= buffer[1] << 8;
+	modulosize |= buffer[2] << 16;
+	modulosize |= buffer[3] << 24;
+
+/*
+  the field ISIZE in the compressed file only stores 4 bits and contains
+  the uncompressed file size modulo 2^32.  If the uncompressed file size
+  is less than the compressed file size (filesize), then add
+  2^32 = 4294967296 to the uncompressed file size.  
+*/
+        finalsize = modulosize;
+        while (finalsize <  filesize) finalsize += 4294967296;
 
         estimated = 0;  /* file size is known, not estimated */
     }
@@ -607,10 +619,11 @@ int mem_compress_open(char *filename, int rwmode, int *hdl)
         fread(buffer, 1, 4L, diskfile);   /* read 4 bytes */
 
         /* have to worry about integer byte order */
-	finalsize  = buffer[0];
-	finalsize |= buffer[1] << 8;
-	finalsize |= buffer[2] << 16;
-	finalsize |= buffer[3] << 24;
+	modulosize  = buffer[0];
+	modulosize |= buffer[1] << 8;
+	modulosize |= buffer[2] << 16;
+	modulosize |= buffer[3] << 24;
+        finalsize = modulosize;
 
         estimated = 0;  /* file size is known, not estimated */
     }

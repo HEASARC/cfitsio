@@ -76,11 +76,11 @@
 \contentsline {section}{\numberline {8.9}Image Transform Filters}{90}
 \contentsline {section}{\numberline {8.10}Column and Keyword Filtering Specification}{92}
 \contentsline {section}{\numberline {8.11}Row Filtering Specification}{94}
-\contentsline {subsection}{\numberline {8.11.1}General Syntax}{94}
+\contentsline {subsection}{\numberline {8.11.1}General Syntax}{95}
 \contentsline {subsection}{\numberline {8.11.2}Bit Masks}{97}
 \contentsline {subsection}{\numberline {8.11.3}Vector Columns}{98}
-\contentsline {subsection}{\numberline {8.11.4}Good Time Interval Filtering}{99}
-\contentsline {subsection}{\numberline {8.11.5}Spatial Region Filtering}{100}
+\contentsline {subsection}{\numberline {8.11.4}Good Time Interval Filtering}{100}
+\contentsline {subsection}{\numberline {8.11.5}Spatial Region Filtering}{101}
 \contentsline {subsection}{\numberline {8.11.6}Example Row Filters}{103}
 \contentsline {section}{\numberline {8.12} Binning or Histogramming Specification}{104}
 \contentsline {chapter}{\numberline {9}Template Files }{107}
