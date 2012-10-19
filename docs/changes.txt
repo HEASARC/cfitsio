@@ -2,6 +2,10 @@
 
 Version 3.32 - Oct 2012
 
+   - fixed flaw in the way logical columns (TFORM = 'L') in binary tables 
+     were read which caused an illegal value of 1 in the column to be interpreted
+     as a 'T' (TRUE) value.
+
    - extended the column filtering syntax in the CFITSIO file name parser to
      enable users and scripts to append new COMMENT or HISTORY keyword into the
      header of the filtered file (provided by Craig Markwardt).  For example,
