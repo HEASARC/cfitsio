@@ -323,12 +323,13 @@ int file_create(char *filename, int *handle)
     /* special code to verify that the path to the file to be created */
     /* is within the users data directory on Hera */
  
-    int status = 0, rootlen, slen;
+    int status = 0, rootlen, rootlen2 slen;
     char *cpos;
     char cwd[FLEN_FILENAME], absURL[FLEN_FILENAME];
     /* note that "/heradata/users/" is actually "/.hera_mountpnt/hera_users/"  */
     char rootstring[]="/.hera_mountpnt/hera_users/";
-    char username[FLEN_FILENAME], userroot[FLEN_FILENAME];
+    char rootstring2[]="/heradata/users/";
+    char username[FLEN_FILENAME], userroot[FLEN_FILENAME], userroot2[FLEN_FILENAME];
 
     /* Get the current working directory */
     fits_get_cwd(cwd, &status);  
@@ -360,6 +361,11 @@ int file_create(char *filename, int *handle)
           strcat(userroot, username);
           rootlen = strlen(userroot);
 
+          /* construct alternate full user root name */
+          strcpy(userroot2, rootstring2);
+          strcat(userroot2, username);
+          rootlen2 = strlen(userroot2);
+
           /* convert the input filename to absolute path relative to the CWD */
           fits_relurl2url(cwd,  filename,  absURL, &status);
 /*
@@ -368,9 +374,10 @@ int file_create(char *filename, int *handle)
           printf("filename = %s\n", filename);
           printf("ABS = %s\n", absURL);
 */
-          /* check that CWD string matches the rootstring */
+          /* check that CWD string matches the rootstring or alternate root string */
 
-          if (strncmp(userroot, absURL, rootlen)) {
+          if ( strncmp(userroot,  absURL, rootlen)  &&
+               strncmp(userroot2, absURL, rootlen2) {
              ffpmsg("invalid filename: path not within user directory");
 /*
              ffpmsg(absURL);
