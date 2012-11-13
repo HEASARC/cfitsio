@@ -323,7 +323,7 @@ int file_create(char *filename, int *handle)
     /* special code to verify that the path to the file to be created */
     /* is within the users data directory on Hera */
  
-    int status = 0, rootlen, rootlen2 slen;
+    int status = 0, rootlen, rootlen2, slen;
     char *cpos;
     char cwd[FLEN_FILENAME], absURL[FLEN_FILENAME];
     /* note that "/heradata/users/" is actually "/.hera_mountpnt/hera_users/"  */
@@ -377,7 +377,7 @@ int file_create(char *filename, int *handle)
           /* check that CWD string matches the rootstring or alternate root string */
 
           if ( strncmp(userroot,  absURL, rootlen)  &&
-               strncmp(userroot2, absURL, rootlen2) {
+               strncmp(userroot2, absURL, rootlen2) ) {
              ffpmsg("invalid filename: path not within user directory");
 /*
              ffpmsg(absURL);
