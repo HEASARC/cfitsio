@@ -601,13 +601,30 @@ int mem_compress_open(char *filename, int rwmode, int *hdl)
 	modulosize |= buffer[3] << 24;
 
 /*
-  the field ISIZE in the compressed file only stores 4 bits and contains
+  the field ISIZE in the gzipped file header only stores 4 bytes and contains
   the uncompressed file size modulo 2^32.  If the uncompressed file size
-  is less than the compressed file size (filesize), then add
-  2^32 = 4294967296 to the uncompressed file size.  
+  is less than the compressed file size (filesize), then one probably needs to
+  add 2^32 = 4294967296 to the uncompressed file size, assuming that the gzip
+  produces a compressed file that is smaller than the original file.
+
+  But one must allow for the case of very small files, where the
+  gzipped file may actually be larger then the original uncompressed file.
+  Therefore, only perform the modulo 2^32 correction test if the compressed 
+  file is greater than 10,000 bytes in size.  (Note: this threhold would
+  fail only if the original file was greater than 2^32 bytes in size AND gzip 
+  was able to compress it by more than a factor of 400,000 (!) which seems
+  highly unlikely.)
+  
+  Also, obviously, this 2^32 modulo correction cannot be performed if the
+  finalsize variable is only 32-bits long.  Typically, the 'size_t' integer
+  type must be 8 bytes or larger in size to support data files that are 
+  greater than 2 GB (2^31 bytes) in size.  
 */
         finalsize = modulosize;
-        while (finalsize <  filesize) finalsize += 4294967296;
+
+        if (sizeof(size_t) > 4 && filesize > 10000) {
+            while (finalsize <  filesize) finalsize += 4294967296;
+        }
 
         estimated = 0;  /* file size is known, not estimated */
     }
