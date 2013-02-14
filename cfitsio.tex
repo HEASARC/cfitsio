@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large April 2012\\}
+{\Large February 2013\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -67,7 +67,7 @@ arrays by converting them on the fly into a virtual FITS format file.
 This library is written in ANSI C and provides a powerful yet simple
 interface for accessing FITS files which will run on most commonly used
 computers and workstations.  CFITSIO supports all the features
-described in the official NOST definition of the FITS format and can
+described in the official definition of the FITS format and can
 read and write all the currently defined types of extensions, including
 ASCII tables (TABLE), Binary tables (BINTABLE) and IMAGE extensions.
 The CFITSIO routines insulate the programmer from having to deal with
@@ -96,7 +96,7 @@ in v2.0 of CFITSIO.
 \section{Sources of FITS Software and Information}
 
 The latest version of the CFITSIO source code,
-documentation, and example programs are available on the World-Wide
+documentation, and example programs are available on the
 Web or via anonymous ftp from:
 
 \begin{verbatim}
@@ -117,18 +117,15 @@ This User's Guide assumes that readers already have a general
 understanding of the definition and structure of FITS format files.
 Further information about FITS formats is available from the FITS Support
 Office at {\tt http://fits.gsfc.nasa.gov}.  In particular, the
-'NOST FITS Standard' gives the authoritative definition of the FITS data
-format, and the  `FITS User's Guide' provides additional historical background
+'FITS Standard' gives the authoritative definition of the FITS data
+format.  Other documents available at that Web site
+provide additional historical background
 and practical advice on using FITS files.
 
 The HEASARC also provides a very sophisticated FITS file analysis
 program called `Fv' which can be used to display and edit the contents
-of any FITS file as well as construct new FITS files from scratch. The
-display functions in Fv allow users to interactively adjust the
-brightness and contrast of images, pan, zoom, and blink images, and
-measure the positions and brightnesses of objects within images. FITS
-tables can be displayed like a spread sheet, and then modified using
-powerful calculator and sorting functions.  Fv is freely available for
+of any FITS file as well as construct new FITS files from scratch.
+Fv is freely available for
 most Unix platforms, Mac PCs, and Windows PCs.
 CFITSIO users may also be interested in the FTOOLS package of programs
 that can be used to manipulate and analyze FITS format files.
@@ -619,8 +616,8 @@ main()
 \chapter{  A FITS Primer }
 
 This section gives a brief overview of the structure of FITS files.
-Users should refer to the documentation available from the NOST, as
-described in the introduction, for more detailed information on FITS
+Users should refer to the documentation available from the FITS Support OFfice,
+as described in the introduction, for more detailed information on FITS
 formats.
 
 FITS was first developed in the late 1970's as a standard data
@@ -676,7 +673,7 @@ value if there is no specified value string, as in the second example, above
 
 The last keyword in the header is always the `END' keyword which has no
 value or comment fields. There are many rules governing the exact
-format of a keyword record (see the NOST FITS Standard) so it is better
+format of a keyword record (see the FITS Standard) so it is better
 to rely on standard interface software like CFITSIO to correctly
 construct or to parse the keyword records rather than try to deal
 directly with the raw FITS formats.
@@ -1230,7 +1227,7 @@ FITS file.
 The ANSI/IEEE-754 floating-point number standard defines certain
 special values that are used to represent such quantities as
 Not-a-Number (NaN), denormalized, underflow, overflow, and infinity.
-(See the Appendix in the NOST FITS standard or the NOST FITS User's
+(See the Appendix in the FITS standard or the FITS User's
 Guide for a list of these values).  The CFITSIO routines that read
 floating point data in FITS files recognize these IEEE special values
 and by default interpret the overflow and infinity values as being
@@ -2123,6 +2120,10 @@ header.
   int fits_convert_hdr2str / ffcnvthdr2str
       (fitsfile *fptr, int nocomments, char **exclist, int nexc,
       > char **header, int *nkeys, int *status)
+
+  int fits_free_memory / fffree
+      (char *header, > int *status);
+
 \end{verbatim}
 
 
@@ -3885,7 +3886,22 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
 
 \begin{description}
-\item[10] Construct an array indexed keyword name (ROOT + nnn).
+\item[10] Construct a properly formated 80-character header keyword record from the
+    input keyword name, keyword value, and keyword comment strings.
+    Hierarchical keyword names (e.g., "ESO TELE CAM") are supported.
+    The value string may contain an integer, floating point, logical, or
+    quoted character string (e.g., "12", "15.7", "T",
+    or "'NGC 1313'").  \label{ffmkky}
+\end{description}
+
+\begin{verbatim}
+   int fits_make_key / ffmkky
+       (const char *keyname, const char *value, const char *comment,
+         > char *card, int *status)
+\end{verbatim}
+
+\begin{description}
+\item[11] Construct an array indexed keyword name (ROOT + nnn).
     This routine appends the sequence number to the root string to create
    a keyword name (e.g., 'NAXIS' + 2 = 'NAXIS2') \label{ffkeyn}
 \end{description}
@@ -3896,7 +3912,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
 
 \begin{description}
-\item[11]  Construct a sequence keyword name (n + ROOT).
+\item[12]  Construct a sequence keyword name (n + ROOT).
     This routine concatenates the sequence number to the front of the
    root string to create a keyword name (e.g., 1 + 'CTYP' = '1CTYP') \label{ffnkey}
 \end{description}
@@ -3907,7 +3923,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
 
 \begin{description}
-\item[12] Determine the data type of a keyword value string. This routine
+\item[13] Determine the data type of a keyword value string. This routine
     parses the keyword value string  to determine its data type.
     Returns 'C', 'L', 'I', 'F' or 'X', for character string, logical,
    integer, floating point, or complex, respectively. \label{ffdtyp}
@@ -3919,7 +3935,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
 
 \begin{description}
-\item[13] Determine the integer data type of an integer keyword value string.
+\item[14] Determine the integer data type of an integer keyword value string.
    The returned datatype value is the minimum integer datatype (starting
    from top of the following list and working down) required
   to store the integer value:
@@ -3947,7 +3963,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
 
 \begin{description}
-\item[14] Return the class of an input header record.  The record is classified
+\item[15] Return the class of an input header record.  The record is classified
     into one of the following categories (the class values are
     defined in fitsio.h).  Note that this is one of the few CFITSIO
    routines that does not return a status value. \label{ffgkcl}
@@ -3988,7 +4004,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
 
 \begin{description}
-\item[15] Parse the 'TFORM' binary table column format string.
+\item[16] Parse the 'TFORM' binary table column format string.
     This routine parses the input TFORM character string and returns the
     integer data type code, the repeat count of the field, and, in the case
     of character string fields, the length of the unit string.  See Appendix
@@ -4007,7 +4023,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
 
 \begin{description}
-\item[16] Parse the 'TFORM' keyword value that defines the column format in
+\item[17] Parse the 'TFORM' keyword value that defines the column format in
     an ASCII table.  This routine parses the input TFORM character
     string and returns the data type code, the width of the column,
     and (if it is a floating point column) the number of decimal places
@@ -4031,7 +4047,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
 
 \begin{description}
-\item[17] Calculate the starting column positions and total ASCII table width
+\item[18] Calculate the starting column positions and total ASCII table width
     based on the input array of ASCII table TFORM values.  The SPACE input
     parameter defines how many blank spaces to leave between each column
     (it is recommended to have one space between columns for better human
@@ -4045,7 +4061,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
 
 \begin{description}
-\item[18] Parse a template header record and return a formatted 80-character string
+\item[19] Parse a template header record and return a formatted 80-character string
     suitable for appending to (or deleting from) a FITS header file.
     This routine is useful for parsing lines from an ASCII template file
     and reformatting them into legal FITS header records.  The formatted
@@ -4154,7 +4170,7 @@ The following utility routines may be useful for certain applications.
 \end{verbatim}
 
 \begin{description}
-\item[19]  Translate a keyword name into a new name, based on a set of patterns.
+\item[20]  Translate a keyword name into a new name, based on a set of patterns.
 This routine is useful for translating keywords in cases such as
 adding or deleting columns in
 a table, or copying a column from one table to another, or extracting
@@ -4269,7 +4285,7 @@ an IMAGE extension:
 \end{verbatim}
 
 \begin{description}
-\item[20]  Translate the keywords in the input HDU into the keywords that are
+\item[21]  Translate the keywords in the input HDU into the keywords that are
 appropriate for the output HDU.  This is a driver routine that calls
 the previously described routine.
 \end{description}
@@ -4291,7 +4307,7 @@ int fits_translate_keywords(
 
 
 \begin{description}
-\item[21]  Parse the input string containing a list of rows or row ranges, and
+\item[22]  Parse the input string containing a list of rows or row ranges, and
      return integer arrays containing the first and last row in each
      range.  For example, if rowlist = "3-5, 6, 8-9" then it will
      return numranges = 3, rangemin = 3, 6, 8 and rangemax = 5, 6, 9.
@@ -4314,7 +4330,7 @@ int fits_translate_keywords(
 \end{verbatim}
 
 \begin{description}
-\item[22]  Check that the Header fill bytes (if any) are all blank.  These are the bytes
+\item[23]  Check that the Header fill bytes (if any) are all blank.  These are the bytes
      that may follow END keyword and before the beginning of data unit,
      or the end of the HDU if there is no data unit.
    \label{ffchfl}
@@ -4325,7 +4341,7 @@ int fits_translate_keywords(
 \end{verbatim}
 
 \begin{description}
-\item[23]  Check that the Data fill bytes (if any) are all zero (for IMAGE or
+\item[24]  Check that the Data fill bytes (if any) are all zero (for IMAGE or
      BINARY Table HDU) or all blanks (for ASCII table HDU).  These file
      bytes may be located after the last valid data byte in the HDU and
      before the physical end of the HDU.
@@ -4337,7 +4353,7 @@ int fits_translate_keywords(
 \end{verbatim}
 
 \begin{description}
-\item[24]  Estimate the root-mean-squared (RMS) noise in an image.
+\item[25]  Estimate the root-mean-squared (RMS) noise in an image.
 These routines are mainly for use with the Hcompress image compression
 algorithm.  They return an estimate of the RMS noise in the background
 pixels of the image.  This robust algorithm (written by Richard
@@ -4360,7 +4376,7 @@ large number if there are no null pixels). \label{imageRMS}
 \end{verbatim}
 
 \begin{description}
-\item[25]  Was CFITSIO compiled with the -D\_REENTRANT directive
+\item[26]  Was CFITSIO compiled with the -D\_REENTRANT directive
 so that it may be safely used in multi-threaded environments?
 The following function returns 1 if yes, 0 if no.  Note, however,
 that even if the -D\_REENTRANT directive was specified, this does
@@ -6158,15 +6174,15 @@ keyword to be read.
        int *status);
 
   NOTE: after calling the following routine, programs must explicitly free
-        the memory allocated for 'longstr' after it is no longer needed or
-        call fits_free_memory.
+        the memory allocated for 'longstr' after it is no longer needed by
+        calling fits_free_memory.
 
   int fits_read_key_longstr / ffgkls
       (fitsfile *fptr, char *keyname, > char **longstr, char *comment,
              int *status)
 
   int fits_free_memory / fffree
-      (char *longstr, int *status);
+      (char *longstr, > int *status);
 
   int fits_read_key_[log, lng, flt, dbl, cmp, dblcmp] / ffgky[ljedcm]
       (fitsfile *fptr, char *keyname, > DTYPE *numval, char *comment,
@@ -9165,7 +9181,7 @@ do not need to be enclosed in quotes.
 \chapter{  Local FITS Conventions }
 
 CFITSIO supports several local FITS conventions which are not
-defined in the official NOST FITS standard and which are not
+defined in the official FITS standard and which are not
 necessarily recognized or supported by other FITS software packages.
 Programmers should be cautious about using these features, especially
 if the FITS files that are produced are expected to be processed by
@@ -9746,7 +9762,7 @@ fits\_find\_nextkey      & \pageref{ffgnxk} \\
 fits\_find\_rows    & \pageref{fffrow} \\
 fits\_flush\_buffer     & \pageref{ffflus} \\
 fits\_flush\_file     & \pageref{ffflus} \\
-fits\_free\_memory   & \pageref{ffgkls} \\
+fits\_free\_memory   & \pageref{ffgkls},  \pageref{ffhdr2str} \\
 fits\_get\_acolparms  & \pageref{ffgacl} \\
 fits\_get\_bcolparms  & \pageref{ffgbcl} \\
 fits\_get\_chksum     & \pageref{ffgcks} \\
@@ -9801,7 +9817,8 @@ fits\_insert\_record     & \pageref{ffirec} \\
 fits\_insert\_rows  & \pageref{ffirow} \\
 fits\_is\_reentrant  & \pageref{reentrant} \\
 fits\_iterate\_data   & \pageref{ffiter} \\
-fits\_make\_hist  & \pageref{makehist} \\
+fits\_make\_hist      & \pageref{makehist} \\
+fits\_make\_key       & \pageref{ffmkky} \\
 fits\_make\_keyn      & \pageref{ffkeyn} \\
 fits\_make\_nkey      & \pageref{ffnkey} \\
 fits\_merge\_groups  & \pageref{ffgtmg} \\
@@ -9837,9 +9854,9 @@ fits\_read\_3d\_TYP      & \pageref{ffg3dx} \\
 fits\_read\_atblhdr      & \pageref{ffghtb} \\
 fits\_read\_btblhdr      & \pageref{ffghbn} \\
 fits\_read\_card         & \pageref{ffgcrd} \\
-fits\_read\_col        & \pageref{ffgcv} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_read\_col        & \pageref{ffgcv} \\
 fits\_read\_col\_bit\_ & \pageref{ffgcx} \\
 fits\_read\_col\_TYP    & \pageref{ffgcvx} \\
 fits\_read\_colnull    & \pageref{ffgcf} \\
@@ -9887,9 +9904,9 @@ fits\_set\_bscale     & \pageref{ffpscl} \\
 fits\_set\_btblnull   & \pageref{fftnul} \\
 fits\_set\_compression\_type  & \pageref{ffsetcomp} \\
 fits\_set\_hdrsize    & \pageref{ffhdef} \\
-fits\_set\_hdustruc   & \pageref{ffrdef} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_set\_hdustruc   & \pageref{ffrdef} \\
 fits\_set\_imgnull    & \pageref{ffpnul} \\
 fits\_set\_noise\_bits  & \pageref{ffsetcomp} \\
 fits\_set\_tile\_dim  & \pageref{ffsetcomp} \\
@@ -9937,10 +9954,10 @@ fits\_write\_grphdr       & \pageref{ffphpr} \\
 fits\_write\_grppar\_TYP & \pageref{ffpgpx} \\
 fits\_write\_hdu       & \pageref{ffwrhdu} \\
 fits\_write\_history      & \pageref{ffphis} \\
-fits\_write\_img        & \pageref{ffppr} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_write\_img        & \pageref{ffppr} \\
 fits\_write\_img\_null & \pageref{ffppru} \\
 fits\_write\_img\_TYP    & \pageref{ffpprx} \\
 fits\_write\_imghdr       & \pageref{ffphps} \\
@@ -10015,7 +10032,7 @@ ffflmd      & \pageref{ffflmd} \\
 ffflnm      & \pageref{ffflnm} \\
 ffflsh     & \pageref{ffflus} \\
 ffflus     & \pageref{ffflus} \\
-fffree     & \pageref{ffgkls} \\
+fffree     & \pageref{ffgkls},  \pageref{ffhdr2str} \\
 fffrow    & \pageref{fffrow} \\
 \end{tabular}
 \begin{tabular}{lr}
@@ -10130,6 +10147,7 @@ ffkeyn      & \pageref{ffkeyn} \\
 ffmahd     & \pageref{ffmahd} \\
 ffmcom    & \pageref{ffmcom} \\
 ffmcrd       & \pageref{ffmcrd} \\
+ffmkky    & \pageref{ffmkky} \\
 ffmkls    & \pageref{ffmkyx} \\
 ffmkyu   & \pageref{ffmkyu} \\
 ffmky\_    & \pageref{ffmkyx} \\
@@ -10169,11 +10187,11 @@ ffpky          & \pageref{ffpky} \\
 ffpkyt   & \pageref{ffpkyt} \\
 ffpkyu     & \pageref{ffpkyu} \\
 ffpky\_      & \pageref{ffpkyx} \\
-ffplsw & \pageref{ffplsw} \\
 
 \end{tabular}
 \begin{tabular}{lr}
 
+ffplsw & \pageref{ffplsw} \\
 ffpmrk   & \pageref{ffpmrk} \\
 ffpmsg   & \pageref{ffpmsg} \\
 ffpnul    & \pageref{ffpnul} \\
@@ -10221,12 +10239,12 @@ ffuky        & \pageref{ffuky} \\
 ffukyu   & \pageref{ffukyu} \\
 ffuky\_    & \pageref{ffukyx} \\
 ffupch      & \pageref{ffupch} \\
-ffupck  & \pageref{ffupck} \\
 
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
 
+ffupck  & \pageref{ffupck} \\
 ffurlt  & \pageref{ffurlt} \\
 ffvcks  & \pageref{ffvcks} \\
 ffvers    & \pageref{ffvers} \\

@@ -73,11 +73,12 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.32;
+      *version = (float) 3.33;
 
-/*       Oct 2012
+/*       14 Feb 2013
 
    Previous releases:
+      *version = 3.32       Oct 2012
       *version = 3.31    18 Jul 2012
       *version = 3.30    11 Apr 2012
       *version = 3.29    22 Sep 2011
@@ -1172,7 +1173,7 @@ int ffmkky(const char *keyname,   /* I - keyword name    */
 }
 /*--------------------------------------------------------------------------*/
 int ffmkey(fitsfile *fptr,    /* I - FITS file pointer  */
-           char *card,        /* I - card string value  */
+           const char *card,  /* I - card string value  */
            int *status)       /* IO - error status      */
 /*
   replace the previously read card (i.e. starting 80 bytes before the
@@ -1242,7 +1243,7 @@ int ffkeyn(const char *keyroot,   /* I - root string for keyword name */
 }
 /*--------------------------------------------------------------------------*/
 int ffnkey(int value,       /* I - index number to be appended to root name */
-           char *keyroot,   /* I - root string for keyword name */
+           const char *keyroot,   /* I - root string for keyword name */
            char *keyname,   /* O - output root + index keyword name */
            int *status)     /* IO - error status  */
 /*
@@ -4246,7 +4247,7 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
 */
 {
     int groups, tstatus, simple, bitpix, naxis, extend, nspace;
-    int ttype = 0, bytlen = 0, ii;
+    int ttype = 0, bytlen = 0, ii, ntilebins;
     long  pcount, gcount;
     LONGLONG naxes[999], npix, blank;
     double bscale, bzero;
@@ -4375,17 +4376,33 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
         (fptr->Fptr)->tfield = 0;       /* table has no fields   */
 
         /* free the tile-compressed image cache, if it exists */
-        if ((fptr->Fptr)->tiledata) {
-	       free((fptr->Fptr)->tiledata);
-	       (fptr->Fptr)->tiledata = 0;
-	       (fptr->Fptr)->tilerow = 0;
-	       (fptr->Fptr)->tiledatasize = 0;
-	       (fptr->Fptr)->tiletype = 0;
-        }
+        if ((fptr->Fptr)->tilerow) {
+           ntilebins = 
+	    (((fptr->Fptr)->znaxis[0] - 1) / ((fptr->Fptr)->tilesize[0])) + 1;
 
-        if ((fptr->Fptr)->tilenullarray) {
-	       free((fptr->Fptr)->tilenullarray);
-	       (fptr->Fptr)->tilenullarray = 0;
+           for (ii = 0; ii < ntilebins; ii++) {
+             if ((fptr->Fptr)->tiledata[ii]) {
+	       free((fptr->Fptr)->tiledata[ii]);
+             }
+
+             if ((fptr->Fptr)->tilenullarray[ii]) {
+	       free((fptr->Fptr)->tilenullarray[ii]);
+             }
+            }
+	    
+	    free((fptr->Fptr)->tileanynull);
+	    free((fptr->Fptr)->tiletype);	   
+	    free((fptr->Fptr)->tiledatasize);
+	    free((fptr->Fptr)->tilenullarray);
+	    free((fptr->Fptr)->tiledata);
+	    free((fptr->Fptr)->tilerow);
+
+	    (fptr->Fptr)->tileanynull = 0;
+	    (fptr->Fptr)->tiletype = 0;	   
+	    (fptr->Fptr)->tiledatasize = 0;
+	    (fptr->Fptr)->tilenullarray = 0;
+	    (fptr->Fptr)->tiledata = 0;
+	    (fptr->Fptr)->tilerow = 0;
         }
 
         if ((fptr->Fptr)->tableptr)
@@ -4412,19 +4429,34 @@ int ffpinit(fitsfile *fptr,      /* I - FITS file pointer */
         (fptr->Fptr)->tfield = 2;  /* 2 fields: group params and the image */
 
         /* free the tile-compressed image cache, if it exists */
+        if ((fptr->Fptr)->tilerow) {
 
-        /* free the tile-compressed image cache, if it exists */
-        if ((fptr->Fptr)->tiledata) {
-	       free((fptr->Fptr)->tiledata);
-	       (fptr->Fptr)->tiledata = 0;
-	       (fptr->Fptr)->tilerow = 0;
-	       (fptr->Fptr)->tiledatasize = 0;
-	       (fptr->Fptr)->tiletype = 0;
-        }
+           ntilebins = 
+	    (((fptr->Fptr)->znaxis[0] - 1) / ((fptr->Fptr)->tilesize[0])) + 1;
 
-        if ((fptr->Fptr)->tilenullarray) {
-	       free((fptr->Fptr)->tilenullarray);
-	       (fptr->Fptr)->tilenullarray = 0;
+           for (ii = 0; ii < ntilebins; ii++) {
+             if ((fptr->Fptr)->tiledata[ii]) {
+	       free((fptr->Fptr)->tiledata[ii]);
+             }
+
+             if ((fptr->Fptr)->tilenullarray[ii]) {
+	       free((fptr->Fptr)->tilenullarray[ii]);
+             }
+            }
+	    
+	    free((fptr->Fptr)->tileanynull);
+	    free((fptr->Fptr)->tiletype);	   
+	    free((fptr->Fptr)->tiledatasize);
+	    free((fptr->Fptr)->tilenullarray);
+	    free((fptr->Fptr)->tiledata);
+	    free((fptr->Fptr)->tilerow);
+
+	    (fptr->Fptr)->tileanynull = 0;
+	    (fptr->Fptr)->tiletype = 0;	   
+	    (fptr->Fptr)->tiledatasize = 0;
+	    (fptr->Fptr)->tilenullarray = 0;
+	    (fptr->Fptr)->tiledata = 0;
+	    (fptr->Fptr)->tilerow = 0;
         }
 
         if ((fptr->Fptr)->tableptr)
@@ -4476,7 +4508,7 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
 /*
   initialize the parameters defining the structure of an ASCII table 
 */
-    int  ii, nspace;
+    int  ii, nspace, ntilebins;
     long tfield;
     LONGLONG pcount, rowlen, nrows, tbcoln;
     tcolumn *colptr = 0;
@@ -4509,19 +4541,35 @@ int ffainit(fitsfile *fptr,      /* I - FITS file pointer */
     (fptr->Fptr)->tfield = tfield; /* store number of table fields in row */
 
      /* free the tile-compressed image cache, if it exists */
-     if ((fptr->Fptr)->tiledata) {
-	       free((fptr->Fptr)->tiledata);
-	       (fptr->Fptr)->tiledata = 0;
-	       (fptr->Fptr)->tilerow = 0;
-	       (fptr->Fptr)->tiledatasize = 0;
-	       (fptr->Fptr)->tiletype = 0;
-     }
+     if ((fptr->Fptr)->tilerow) {
 
-     if ((fptr->Fptr)->tilenullarray) {
-	       free((fptr->Fptr)->tilenullarray);
-	       (fptr->Fptr)->tilenullarray = 0;
-     }
+           ntilebins = 
+	    (((fptr->Fptr)->znaxis[0] - 1) / ((fptr->Fptr)->tilesize[0])) + 1;
 
+           for (ii = 0; ii < ntilebins; ii++) {
+             if ((fptr->Fptr)->tiledata[ii]) {
+	       free((fptr->Fptr)->tiledata[ii]);
+             }
+
+             if ((fptr->Fptr)->tilenullarray[ii]) {
+	       free((fptr->Fptr)->tilenullarray[ii]);
+             }
+            }
+	    
+	    free((fptr->Fptr)->tileanynull);
+	    free((fptr->Fptr)->tiletype);	   
+	    free((fptr->Fptr)->tiledatasize);
+	    free((fptr->Fptr)->tilenullarray);
+	    free((fptr->Fptr)->tiledata);
+	    free((fptr->Fptr)->tilerow);
+
+	    (fptr->Fptr)->tileanynull = 0;
+	    (fptr->Fptr)->tiletype = 0;	   
+	    (fptr->Fptr)->tiledatasize = 0;
+	    (fptr->Fptr)->tilenullarray = 0;
+	    (fptr->Fptr)->tiledata = 0;
+	    (fptr->Fptr)->tilerow = 0;
+     }
 
     if ((fptr->Fptr)->tableptr)
        free((fptr->Fptr)->tableptr); /* free memory for the old CHDU */
@@ -4677,7 +4725,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
 /*
   initialize the parameters defining the structure of a binary table 
 */
-    int  ii, nspace;
+    int  ii, nspace, ntilebins;
     long tfield;
     LONGLONG pcount, rowlen, nrows, totalwidth;
     tcolumn *colptr = 0;
@@ -4701,20 +4749,36 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     (fptr->Fptr)->rowlength =  rowlen; /* store length of a row */
     (fptr->Fptr)->tfield = tfield; /* store number of table fields in row */
 
+     /* free the tile-compressed image cache, if it exists */
+     if ((fptr->Fptr)->tilerow) {
 
-    /* free the tile-compressed image cache, if it exists */
-    if ((fptr->Fptr)->tiledata) {
-	       free((fptr->Fptr)->tiledata);
-	       (fptr->Fptr)->tiledata = 0;
-	       (fptr->Fptr)->tilerow = 0;
-	       (fptr->Fptr)->tiledatasize = 0;
-	       (fptr->Fptr)->tiletype = 0;
-    }
+           ntilebins = 
+	    (((fptr->Fptr)->znaxis[0] - 1) / ((fptr->Fptr)->tilesize[0])) + 1;
 
-    if ((fptr->Fptr)->tilenullarray) {
-	       free((fptr->Fptr)->tilenullarray);
-	       (fptr->Fptr)->tilenullarray = 0;
-    }
+           for (ii = 0; ii < ntilebins; ii++) {
+             if ((fptr->Fptr)->tiledata[ii]) {
+	       free((fptr->Fptr)->tiledata[ii]);
+             }
+
+             if ((fptr->Fptr)->tilenullarray[ii]) {
+	       free((fptr->Fptr)->tilenullarray[ii]);
+             }
+            }
+	    
+	    free((fptr->Fptr)->tileanynull);
+	    free((fptr->Fptr)->tiletype);	   
+	    free((fptr->Fptr)->tiledatasize);
+	    free((fptr->Fptr)->tilenullarray);
+	    free((fptr->Fptr)->tiledata);
+	    free((fptr->Fptr)->tilerow);
+
+	    (fptr->Fptr)->tileanynull = 0;
+	    (fptr->Fptr)->tiletype = 0;	   
+	    (fptr->Fptr)->tiledatasize = 0;
+	    (fptr->Fptr)->tilenullarray = 0;
+	    (fptr->Fptr)->tiledata = 0;
+	    (fptr->Fptr)->tilerow = 0;
+     }
 
     if ((fptr->Fptr)->tableptr)
        free((fptr->Fptr)->tableptr); /* free memory for the old CHDU */
@@ -6303,7 +6367,7 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
     - check the data fill values, and rewrite them if not correct
 */
     char message[FLEN_ERRMSG];
-    int stdriver;
+    int ii, stdriver, ntilebins;
 
     /* reset position to the correct HDU if necessary */
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
@@ -6328,25 +6392,43 @@ int ffchdu(fitsfile *fptr,      /* I - FITS file pointer */
 
     if ((fptr->Fptr)->open_count == 1)
     {
+
     /* free memory for the CHDU structure only if no other files are using it */
         if ((fptr->Fptr)->tableptr)
         {
             free((fptr->Fptr)->tableptr);
            (fptr->Fptr)->tableptr = NULL;
 
-            /* free the tile-compressed image cache, if it exists */
-            if ((fptr->Fptr)->tiledata) {
-	       free((fptr->Fptr)->tiledata);
-	       (fptr->Fptr)->tiledata = 0;
-	       (fptr->Fptr)->tilerow = 0;
-	       (fptr->Fptr)->tiledatasize = 0;
-	       (fptr->Fptr)->tiletype = 0;
-            }
+          /* free the tile-compressed image cache, if it exists */
+          if ((fptr->Fptr)->tilerow) {
 
-            if ((fptr->Fptr)->tilenullarray) {
-	       free((fptr->Fptr)->tilenullarray);
-	       (fptr->Fptr)->tilenullarray = 0;
+           ntilebins = 
+	    (((fptr->Fptr)->znaxis[0] - 1) / ((fptr->Fptr)->tilesize[0])) + 1;
+
+           for (ii = 0; ii < ntilebins; ii++) {
+             if ((fptr->Fptr)->tiledata[ii]) {
+	       free((fptr->Fptr)->tiledata[ii]);
+             }
+
+             if ((fptr->Fptr)->tilenullarray[ii]) {
+	       free((fptr->Fptr)->tilenullarray[ii]);
+             }
             }
+	    
+	    free((fptr->Fptr)->tileanynull);
+	    free((fptr->Fptr)->tiletype);	   
+	    free((fptr->Fptr)->tiledatasize);
+	    free((fptr->Fptr)->tilenullarray);
+	    free((fptr->Fptr)->tiledata);
+	    free((fptr->Fptr)->tilerow);
+
+	    (fptr->Fptr)->tileanynull = 0;
+	    (fptr->Fptr)->tiletype = 0;	   
+	    (fptr->Fptr)->tiledatasize = 0;
+	    (fptr->Fptr)->tilenullarray = 0;
+	    (fptr->Fptr)->tiledata = 0;
+	    (fptr->Fptr)->tilerow = 0;
+          }
         }
     }
 
@@ -8486,7 +8568,7 @@ int ffgkcl(char *tcard)
     return (TYP_USER_KEY);  /* by default all others are user keywords */
 }
 /*--------------------------------------------------------------------------*/
-int ffdtyp(char *cval,  /* I - formatted string representation of the value */
+int ffdtyp(const char *cval,  /* I - formatted string representation of the value */
            char *dtype, /* O - datatype code: C, L, F, I, or X */
           int *status)  /* IO - error status */
 /*
@@ -8640,8 +8722,8 @@ int ffinttyp(char *cval,  /* I - formatted string representation of the integer 
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffc2x(char *cval,   /* I - formatted string representation of the value */
-          char *dtype,  /* O - datatype code: C, L, F, I or X  */
+int ffc2x(const char *cval,   /* I - formatted string representation of the value */
+          char *dtype,        /* O - datatype code: C, L, F, I or X  */
 
     /* Only one of the following will be defined, depending on datatype */
           long *ival,    /* O - integer value       */
@@ -8669,8 +8751,8 @@ int ffc2x(char *cval,   /* I - formatted string representation of the value */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffc2xx(char *cval,   /* I - formatted string representation of the value */
-          char *dtype,  /* O - datatype code: C, L, F, I or X  */
+int ffc2xx(const char *cval,   /* I - formatted string representation of the value */
+          char *dtype,         /* O - datatype code: C, L, F, I or X  */
 
     /* Only one of the following will be defined, depending on datatype */
           LONGLONG *ival, /* O - integer value       */
@@ -8698,9 +8780,9 @@ int ffc2xx(char *cval,   /* I - formatted string representation of the value */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffc2i(char *cval,   /* I - string representation of the value */
-          long *ival,   /* O - numerical value of the input string */
-          int *status)  /* IO - error status */
+int ffc2i(const char *cval,   /* I - string representation of the value */
+          long *ival,         /* O - numerical value of the input string */
+          int *status)        /* IO - error status */
 /*
   convert formatted string to an integer value, doing implicit
   datatype conversion if necessary.
@@ -8759,9 +8841,9 @@ int ffc2i(char *cval,   /* I - string representation of the value */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffc2j(char *cval,     /* I - string representation of the value */
-          LONGLONG *ival, /* O - numerical value of the input string */
-          int *status)    /* IO - error status */
+int ffc2j(const char *cval,     /* I - string representation of the value */
+          LONGLONG *ival,       /* O - numerical value of the input string */
+          int *status)          /* IO - error status */
 /*
   convert formatted string to a LONGLONG integer value, doing implicit
   datatype conversion if necessary.
@@ -8820,9 +8902,9 @@ int ffc2j(char *cval,     /* I - string representation of the value */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffc2l(char *cval,  /* I - string representation of the value */
-         int *lval,    /* O - numerical value of the input string */
-         int *status)  /* IO - error status */
+int ffc2l(const char *cval,  /* I - string representation of the value */
+         int *lval,          /* O - numerical value of the input string */
+         int *status)        /* IO - error status */
 /*
   convert formatted string to a logical value, doing implicit
   datatype conversion if necessary
@@ -8871,9 +8953,9 @@ int ffc2l(char *cval,  /* I - string representation of the value */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffc2r(char *cval,   /* I - string representation of the value */
-          float *fval,  /* O - numerical value of the input string */
-          int *status)  /* IO - error status */
+int ffc2r(const char *cval,   /* I - string representation of the value */
+          float *fval,        /* O - numerical value of the input string */
+          int *status)        /* IO - error status */
 /*
   convert formatted string to a real float value, doing implicit
   datatype conversion if necessary
@@ -8918,9 +9000,9 @@ int ffc2r(char *cval,   /* I - string representation of the value */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffc2d(char *cval,   /* I - string representation of the value */
-          double *dval, /* O - numerical value of the input string */
-          int *status)  /* IO - error status */
+int ffc2d(const char *cval,   /* I - string representation of the value */
+          double *dval,       /* O - numerical value of the input string */
+          int *status)        /* IO - error status */
 /*
   convert formatted string to a double value, doing implicit
   datatype conversion if necessary
@@ -8965,9 +9047,9 @@ int ffc2d(char *cval,   /* I - string representation of the value */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffc2ii(char *cval,  /* I - string representation of the value */
-          long *ival,   /* O - numerical value of the input string */
-          int *status)  /* IO - error status */
+int ffc2ii(const char *cval,  /* I - string representation of the value */
+          long *ival,         /* O - numerical value of the input string */
+          int *status)        /* IO - error status */
 /*
   convert null-terminated formatted string to an integer value
 */
@@ -8998,9 +9080,9 @@ int ffc2ii(char *cval,  /* I - string representation of the value */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffc2jj(char *cval,  /* I - string representation of the value */
-          LONGLONG *ival,   /* O - numerical value of the input string */
-          int *status)  /* IO - error status */
+int ffc2jj(const char *cval,  /* I - string representation of the value */
+          LONGLONG *ival,     /* O - numerical value of the input string */
+          int *status)        /* IO - error status */
 /*
   convert null-terminated formatted string to an long long integer value
 */
@@ -9046,9 +9128,9 @@ int ffc2jj(char *cval,  /* I - string representation of the value */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffc2ll(char *cval,  /* I - string representation of the value: T or F */
-           int *lval,   /* O - numerical value of the input string: 1 or 0 */
-           int *status) /* IO - error status */
+int ffc2ll(const char *cval,  /* I - string representation of the value: T or F */
+           int *lval,         /* O - numerical value of the input string: 1 or 0 */
+           int *status)       /* IO - error status */
 /*
   convert null-terminated formatted string to a logical value
 */
@@ -9064,9 +9146,9 @@ int ffc2ll(char *cval,  /* I - string representation of the value: T or F */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffc2s(char *instr,  /* I - null terminated quoted input string */
-          char *outstr, /* O - null terminated output string without quotes */
-          int *status)  /* IO - error status */
+int ffc2s(const char *instr,  /* I - null terminated quoted input string */
+          char *outstr,       /* O - null terminated output string without quotes */
+          int *status)        /* IO - error status */
 /*
     convert an input quoted string to an unquoted string by removing
     the leading and trailing quote character.  Also, replace any
@@ -9083,8 +9165,13 @@ int ffc2s(char *instr,  /* I - null terminated quoted input string */
 
     if (instr[0] != '\'')
     {
-        strcpy(outstr, instr);  /* no leading quote, so return input string */
-        return(*status);
+        if (instr[0] == '\0') {
+           outstr[0] = '\0';
+           return(*status = VALUE_UNDEFINED);  /* null value string */
+        } else {
+          strcpy(outstr, instr);  /* no leading quote, so return input string */
+          return(*status);
+        }
     }
 
     len = strlen(instr);
@@ -9117,12 +9204,13 @@ int ffc2s(char *instr,  /* I - null terminated quoted input string */
         else
             break;
     }
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffc2rr(char *cval,   /* I - string representation of the value */
-           float *fval,  /* O - numerical value of the input string */
-           int *status)  /* IO - error status */
+int ffc2rr(const char *cval,   /* I - string representation of the value */
+           float *fval,        /* O - numerical value of the input string */
+           int *status)        /* IO - error status */
 /*
   convert null-terminated formatted string to a float value
 */
@@ -9182,9 +9270,9 @@ int ffc2rr(char *cval,   /* I - string representation of the value */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffc2dd(char *cval,   /* I - string representation of the value */
-           double *dval, /* O - numerical value of the input string */
-           int *status)  /* IO - error status */
+int ffc2dd(const char *cval,   /* I - string representation of the value */
+           double *dval,       /* O - numerical value of the input string */
+           int *status)        /* IO - error status */
 /*
   convert null-terminated formatted string to a double value
 */

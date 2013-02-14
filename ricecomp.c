@@ -23,6 +23,32 @@
 #include <stdlib.h>
 #include <string.h>
 
+/*
+ * nonzero_count is lookup table giving number of bits in 8-bit values not including
+ * leading zeros used in fits_rdecomp, fits_rdecomp_short and fits_rdecomp_byte
+ */
+static const int nonzero_count[256] = {
+0, 
+1, 
+2, 2, 
+3, 3, 3, 3, 
+4, 4, 4, 4, 4, 4, 4, 4, 
+5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 
+6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 
+6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 
+7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 
+7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 
+7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 
+7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 
+8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 
+8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 
+8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 
+8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 
+8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 
+8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 
+8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 
+8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8};
+
 typedef unsigned char Buffer_t;
 
 typedef struct {
@@ -828,7 +854,7 @@ int nbits, nzero, fs;
 unsigned char *cend, bytevalue;
 unsigned int b, diff, lastpix;
 int fsmax, fsbits, bbits;
-static int *nonzero_count = (int *)NULL;
+extern const int nonzero_count[];
 
    /*
      * Original size of each pixel (bsize, bytes) and coding block
@@ -871,30 +897,6 @@ static int *nonzero_count = (int *)NULL;
     fsmax = 25;
 
     bbits = 1<<fsbits;
-
-    FFLOCK;
-    if (nonzero_count == (int *) NULL) {
-	/*
-	 * nonzero_count is lookup table giving number of bits
-	 * in 8-bit values not including leading zeros
-	 */
-
-        /*  NOTE!!!  This memory never gets freed  */
-	nonzero_count = (int *) malloc(256*sizeof(int));
-	if (nonzero_count == (int *) NULL) {
-            ffpmsg("rdecomp: insufficient memory");
-            FFUNLOCK;
-	    return 1;
-	}
-	nzero = 8;
-	k = 128;
-	for (i=255; i>=0; ) {
-	    for ( ; i>=k; i--) nonzero_count[i] = nzero;
-	    k = k/2;
-	    nzero--;
-	}
-    }
-    FFUNLOCK;
 
     /*
      * Decode in blocks of nblock pixels
@@ -1021,7 +1023,7 @@ int nbits, nzero, fs;
 unsigned char *cend, bytevalue;
 unsigned int b, diff, lastpix;
 int fsmax, fsbits, bbits;
-static int *nonzero_count = (int *)NULL;
+extern const int nonzero_count[];
 
    /*
      * Original size of each pixel (bsize, bytes) and coding block
@@ -1066,29 +1068,6 @@ static int *nonzero_count = (int *)NULL;
 
     bbits = 1<<fsbits;
 
-    FFLOCK;
-    if (nonzero_count == (int *) NULL) {
-	/*
-	 * nonzero_count is lookup table giving number of bits
-	 * in 8-bit values not including leading zeros
-	 */
-
-        /*  NOTE!!!  This memory never gets freed  */
-	nonzero_count = (int *) malloc(256*sizeof(int));
-	if (nonzero_count == (int *) NULL) {
-            ffpmsg("rdecomp: insufficient memory");
-	    FFUNLOCK;
-	    return 1;
-	}
-	nzero = 8;
-	k = 128;
-	for (i=255; i>=0; ) {
-	    for ( ; i>=k; i--) nonzero_count[i] = nzero;
-	    k = k/2;
-	    nzero--;
-	}
-    }
-    FFUNLOCK;
     /*
      * Decode in blocks of nblock pixels
      */
@@ -1211,7 +1190,7 @@ int nbits, nzero, fs;
 unsigned char *cend;
 unsigned int b, diff, lastpix;
 int fsmax, fsbits, bbits;
-static int *nonzero_count = (int *)NULL;
+extern const int nonzero_count[];
 
    /*
      * Original size of each pixel (bsize, bytes) and coding block
@@ -1256,29 +1235,6 @@ static int *nonzero_count = (int *)NULL;
 
     bbits = 1<<fsbits;
 
-    FFLOCK;
-    if (nonzero_count == (int *) NULL) {
-	/*
-	 * nonzero_count is lookup table giving number of bits
-	 * in 8-bit values not including leading zeros
-	 */
-
-        /*  NOTE!!!  This memory never gets freed  */
-	nonzero_count = (int *) malloc(256*sizeof(int));
-	if (nonzero_count == (int *) NULL) {
-            ffpmsg("rdecomp: insufficient memory");
-	    FFUNLOCK;
-	    return 1;
-	}
-	nzero = 8;
-	k = 128;
-	for (i=255; i>=0; ) {
-	    for ( ; i>=k; i--) nonzero_count[i] = nzero;
-	    k = k/2;
-	    nzero--;
-	}
-    }
-    FFUNLOCK;
     /*
      * Decode in blocks of nblock pixels
      */

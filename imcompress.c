@@ -1388,6 +1388,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
     size_t clen;		/* size of cbuf */
     short *cbuf;	/* compressed data */
     int  nelem = 0;		/* number of bytes */
+    int tilecol;
     size_t gzip_nelem = 0;
     unsigned int bzlen;
     int ihcompscale;
@@ -1411,20 +1412,27 @@ int imcomp_compress_tile (fitsfile *outfptr,
     }
 
     /* free the previously saved tile if the input tile is for the same row */
-    if ((outfptr->Fptr)->tilerow == row) {
-        if ((outfptr->Fptr)->tiledata) {
-            free((outfptr->Fptr)->tiledata);
+    if ((outfptr->Fptr)->tilerow) {  /* has the tile cache been allocated? */
+
+      /* calculate the column bin of the compressed tile */
+      tilecol = (row - 1) % ((long)(((outfptr->Fptr)->znaxis[0] - 1) / ((outfptr->Fptr)->tilesize[0])) + 1);
+      
+      if ((outfptr->Fptr)->tilerow[tilecol] == row) {
+        if (((outfptr->Fptr)->tiledata)[tilecol]) {
+            free(((outfptr->Fptr)->tiledata)[tilecol]);
         }
 	  
-        if ((outfptr->Fptr)->tilenullarray) {
-            free((outfptr->Fptr)->tilenullarray);
+        if (((outfptr->Fptr)->tilenullarray)[tilecol]) {
+            free(((outfptr->Fptr)->tilenullarray)[tilecol]);
         }
 
-        (outfptr->Fptr)->tiledata = 0;
-        (outfptr->Fptr)->tilenullarray = 0;
-        (outfptr->Fptr)->tilerow = 0;
-        (outfptr->Fptr)->tiledatasize = 0;
-        (outfptr->Fptr)->tiletype = 0;
+        ((outfptr->Fptr)->tiledata)[tilecol] = 0;
+        ((outfptr->Fptr)->tilenullarray)[tilecol] = 0;
+        (outfptr->Fptr)->tilerow[tilecol] = 0;
+        (outfptr->Fptr)->tiledatasize[tilecol] = 0;
+        (outfptr->Fptr)->tiletype[tilecol] = 0;
+        (outfptr->Fptr)->tileanynull[tilecol] = 0;
+      }
     }
 
     if ( (outfptr->Fptr)->compress_type == NOCOMPRESS) {
@@ -5356,7 +5364,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
     unsigned char *cbuf; /* compressed data */
     unsigned char charnull = 0;
     short snull = 0;
-    int blocksize;
+    int blocksize, ntilebins, tilecol;
     float fnulval=0;
     float *tempfloat = 0;
     double dnulval=0;
@@ -5368,16 +5376,41 @@ int imcomp_decompress_tile (fitsfile *infptr,
        return(*status);
 
     /* **************************************************************** */
-    /* check if this tile was cached; if so, just copy it out */
-    if (nrow == (infptr->Fptr)->tilerow && datatype == (infptr->Fptr)->tiletype ) {
+    /* allocate pointers to array of cached uncompressed tiles, if not already done */
+    if ((infptr->Fptr)->tilerow == 0)  {
 
-         memcpy(buffer, (infptr->Fptr)->tiledata, (infptr->Fptr)->tiledatasize);
+      /* calculate number of column bins of compressed tile */
+      ntilebins =  (((infptr->Fptr)->znaxis[0] - 1) / ((infptr->Fptr)->tilesize[0])) + 1;
+
+     if ((infptr->Fptr)->znaxis[0]   != (infptr->Fptr)->tilesize[0] ||
+        (infptr->Fptr)->tilesize[1] != 1 ) {   /* don't cache the tile if only single row of the image */
+
+        (infptr->Fptr)->tilerow = (int *) calloc (ntilebins, sizeof(int));
+        (infptr->Fptr)->tiledata = (void**) calloc (ntilebins, sizeof(void*));
+        (infptr->Fptr)->tilenullarray = (void **) calloc (ntilebins, sizeof(char*));
+        (infptr->Fptr)->tiledatasize = (long *) calloc (ntilebins, sizeof(long));
+        (infptr->Fptr)->tiletype = (int *) calloc (ntilebins, sizeof(int));
+        (infptr->Fptr)->tileanynull = (int *) calloc (ntilebins, sizeof(int));
+      }
+    }
+ 
+    /* **************************************************************** */
+    /* check if this tile was cached; if so, just copy it out */
+    if ((infptr->Fptr)->tilerow)  {
+      /* calculate the column bin of the compressed tile */
+      tilecol = (nrow - 1) % ((long)(((infptr->Fptr)->znaxis[0] - 1) / ((infptr->Fptr)->tilesize[0])) + 1);
+
+      if (nrow == (infptr->Fptr)->tilerow[tilecol] && datatype == (infptr->Fptr)->tiletype[tilecol] ) {
+
+         memcpy(buffer, ((infptr->Fptr)->tiledata)[tilecol], (infptr->Fptr)->tiledatasize[tilecol]);
 	 
 	 if (nullcheck == 2)
-             memcpy(bnullarray, (infptr->Fptr)->tilenullarray, tilelen);
+             memcpy(bnullarray, (infptr->Fptr)->tilenullarray[tilecol], tilelen);
 
-         *anynul = (infptr->Fptr)->tileanynull;
+         *anynul = (infptr->Fptr)->tileanynull[tilecol];
+
          return(*status);
+       }
     }
 
     /* **************************************************************** */
@@ -5554,7 +5587,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
 
         return(*status);
     }
-   
+
     /* **************************************************************** */
     /* deal with the normal case of a compressed tile of pixels */
     if (nullcheck == 2)  {
@@ -6194,59 +6227,60 @@ int imcomp_decompress_tile (fitsfile *infptr,
          it is less likely that the cache will be used in this cases,
 	 so it is not worth the time and the memory overheads.
     */
-    if ((infptr->Fptr)->znaxis[0]   != (infptr->Fptr)->tilesize[0] ||
+    
+    if ((infptr->Fptr)->tilerow)  {  /* make sure cache has been allocated */
+     if ((infptr->Fptr)->znaxis[0]   != (infptr->Fptr)->tilesize[0] ||
         (infptr->Fptr)->tilesize[1] != 1 )
-    {
+     {
       tilesize = pixlen * tilelen;
 
       /* check that tile size/type has not changed */
-      if (tilesize != (infptr->Fptr)->tiledatasize ||
-        datatype != (infptr->Fptr)->tiletype )  {
+      if (tilesize != (infptr->Fptr)->tiledatasize[tilecol] ||
+        datatype != (infptr->Fptr)->tiletype[tilecol] )  {
 
-        if ((infptr->Fptr)->tiledata) {
-            free((infptr->Fptr)->tiledata);	    
+        if (((infptr->Fptr)->tiledata)[tilecol]) {
+            free(((infptr->Fptr)->tiledata)[tilecol]);	    
         }
 	
-        (infptr->Fptr)->tiledata = 0;
-
-        if ((infptr->Fptr)->tilenullarray) {
-            free((infptr->Fptr)->tilenullarray);
+        if (((infptr->Fptr)->tilenullarray)[tilecol]) {
+            free(((infptr->Fptr)->tilenullarray)[tilecol]);
         }
 	
-        (infptr->Fptr)->tilenullarray = 0;
-        (infptr->Fptr)->tilerow = 0;
-        (infptr->Fptr)->tiledatasize = 0;
-        (infptr->Fptr)->tiletype = 0;
+        ((infptr->Fptr)->tilenullarray)[tilecol] = 0;
+        ((infptr->Fptr)->tilerow)[tilecol] = 0;
+        ((infptr->Fptr)->tiledatasize)[tilecol] = 0;
+        ((infptr->Fptr)->tiletype)[tilecol] = 0;
 
         /* allocate new array(s) */
-	(infptr->Fptr)->tiledata = malloc(tilesize);
-	if ((infptr->Fptr)->tiledata == 0)
+	((infptr->Fptr)->tiledata)[tilecol] = malloc(tilesize);
+
+	if (((infptr->Fptr)->tiledata)[tilecol] == 0)
 	   return (*status);
 
         if (nullcheck == 2) {  /* also need array of null pixel flags */
-	    (infptr->Fptr)->tilenullarray = malloc(tilelen);
-	    if ((infptr->Fptr)->tilenullarray == 0)
+	    (infptr->Fptr)->tilenullarray[tilecol] = malloc(tilelen);
+	    if ((infptr->Fptr)->tilenullarray[tilecol] == 0)
 	        return (*status);
         }
 
-        (infptr->Fptr)->tiledatasize = tilesize;
-        (infptr->Fptr)->tiletype = datatype;
+        (infptr->Fptr)->tiledatasize[tilecol] = tilesize;
+        (infptr->Fptr)->tiletype[tilecol] = datatype;
       }
 
       /* copy the tile array(s) into cache buffer */
-      memcpy((infptr->Fptr)->tiledata, buffer, tilesize);
+      memcpy((infptr->Fptr)->tiledata[tilecol], buffer, tilesize);
 
       if (nullcheck == 2) {
 	    if ((infptr->Fptr)->tilenullarray == 0)  {
-       	      (infptr->Fptr)->tilenullarray = malloc(tilelen);
+       	      (infptr->Fptr)->tilenullarray[tilecol] = malloc(tilelen);
             }
-            memcpy((infptr->Fptr)->tilenullarray, bnullarray, tilelen);
+            memcpy((infptr->Fptr)->tilenullarray[tilecol], bnullarray, tilelen);
       }
 
-      (infptr->Fptr)->tilerow = nrow;
-      (infptr->Fptr)->tileanynull = *anynul;
+      (infptr->Fptr)->tilerow[tilecol] = nrow;
+      (infptr->Fptr)->tileanynull[tilecol] = *anynul;
+     }
     }
-
     return (*status);
 }
 /*--------------------------------------------------------------------------*/

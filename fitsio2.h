@@ -313,7 +313,6 @@ extern int Fitsio_Pthread_Status;
 #define COMPRESS_NULL_VALUE -2147483647
 #define N_RANDOM 10000  /* DO NOT CHANGE THIS;  used when quantizing real numbers */
 
-int ffmkky(const char *keyname, char *keyval, const char *comm, char *card, int *status);
 int ffgnky(fitsfile *fptr, char *card, int *status);
 void ffcfmt(char *tform, char *cform);
 void ffcdsp(char *tform, char *cform);
@@ -322,24 +321,26 @@ void ffswap4(INT32BIT *values, long nvalues);
 void ffswap8(double *values, long nvalues);
 int ffi2c(LONGLONG ival, char *cval, int *status);
 int ffl2c(int lval, char *cval, int *status);
-int ffs2c(char *instr, char *outstr, int *status);
+int ffs2c(const char *instr, char *outstr, int *status);
 int ffr2f(float fval, int decim, char *cval, int *status);
 int ffr2e(float fval, int decim, char *cval, int *status);
 int ffd2f(double dval, int decim, char *cval, int *status);
 int ffd2e(double dval, int decim, char *cval, int *status);
-int ffc2ii(char *cval, long *ival, int *status);
-int ffc2jj(char *cval, LONGLONG *ival, int *status);
-int ffc2ll(char *cval, int *lval, int *status);
-int ffc2rr(char *cval, float *fval, int *status);
-int ffc2dd(char *cval, double *dval, int *status);
-int ffc2x(char *cval, char *dtype, long *ival, int *lval, char *sval,
+int ffc2ii(const char *cval, long *ival, int *status);
+int ffc2jj(const char *cval, LONGLONG *ival, int *status);
+int ffc2ll(const char *cval, int *lval, int *status);
+int ffc2rr(const char *cval, float *fval, int *status);
+int ffc2dd(const char *cval, double *dval, int *status);
+int ffc2x(const char *cval, char *dtype, long *ival, int *lval, char *sval,
           double *dval, int *status);
-int ffc2s(char *instr, char *outstr, int *status);
-int ffc2i(char *cval, long *ival, int *status);
-int ffc2j(char *cval, LONGLONG *ival, int *status);
-int ffc2r(char *cval, float *fval, int *status);
-int ffc2d(char *cval, double *dval, int *status);
-int ffc2l(char *cval, int *lval, int *status);
+int ffc2xx(const char *cval, char *dtype, LONGLONG *ival, int *lval, char *sval,
+          double *dval, int *status);
+int ffc2s(const char *instr, char *outstr, int *status);
+int ffc2i(const char *cval, long *ival, int *status);
+int ffc2j(const char *cval, LONGLONG *ival, int *status);
+int ffc2r(const char *cval, float *fval, int *status);
+int ffc2d(const char *cval, double *dval, int *status);
+int ffc2l(const char *cval, int *lval, int *status);
 void ffxmsg(int action, char *err_message);
 int ffgcnt(fitsfile *fptr, char *value, int *status);
 int ffgtkn(fitsfile *fptr, int numkey, char *keyname, long *value, int *status);
@@ -351,7 +352,7 @@ int ffgphd(fitsfile *fptr, int maxdim, int *simple, int *bitpix, int *naxis,
 int ffgttb(fitsfile *fptr, LONGLONG *rowlen, LONGLONG *nrows, LONGLONG *pcount,
           long *tfield, int *status);
  
-int ffmkey(fitsfile *fptr, char *card, int *status);
+int ffmkey(fitsfile *fptr, const char *card, int *status);
  
 /*  ffmbyt has been moved to fitsio.h */
 int ffgbyt(fitsfile *fptr, LONGLONG nbytes, void *buffer, int *status);

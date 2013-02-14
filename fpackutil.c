@@ -1552,7 +1552,7 @@ int fits_read_image_speed (fitsfile *infptr, float *whole_elapse,
 
                 /* remove any cached uncompressed tile 
 		  (dangerous to directly modify the structure!) */
-                (infptr->Fptr)->tilerow = 0;
+         /*       (infptr->Fptr)->tilerow = 0; */
 
 		marktime(status);
 		fits_read_subset(infptr, TBYTE, fpixel, lpixel, inc, &cnull, 
@@ -1566,7 +1566,7 @@ int fits_read_image_speed (fitsfile *infptr, float *whole_elapse,
 
                   /* remove any cached uncompressed tile 
 	  	    (dangerous to directly modify the structure!) */
-                  (infptr->Fptr)->tilerow = 0;
+          /*        (infptr->Fptr)->tilerow = 0; */
 
 		  marktime(status);
 		  for (ii = 0; ii < naxes[1]; ii++) {
@@ -1583,7 +1583,6 @@ int fits_read_image_speed (fitsfile *infptr, float *whole_elapse,
 		sarray = calloc(naxes[0]*naxes[1], sizeof(short));
 
 		marktime(status);
-
 		fits_read_subset(infptr, TSHORT, fpixel, lpixel, inc, &snull, 
 		      sarray, &anynull, status);
 
@@ -1593,6 +1592,7 @@ int fits_read_image_speed (fitsfile *infptr, float *whole_elapse,
 		if (row_elapse) {
 		  marktime(status);
 		  for (ii = 0; ii < naxes[1]; ii++) {
+
 		   fpixel[1] = ii+1;
 		   fits_read_pix(infptr, TSHORT, fpixel, naxes[0], &snull, 
 		      sarray, &anynull, status);
@@ -1742,19 +1742,8 @@ int fp_test_hdu (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
 	gettime(&elapse, &packcpu, &stat);
 
 	/* get elapsed and cpu times need to read the compressed image */
-
-        /* if whole image is compressed as single tile, don't read row by row
-	   because it usually takes a very long time
-	*/
-        if (fpvar.ntile[1] == 0) {
-	  fits_read_image_speed (outfptr, &whole_elapse, &whole_cpu, 
-	   0, 0, &stat);
-	  row_elapse = 0; row_cpu = 0;
-	} else {
-
-	  fits_read_image_speed (outfptr, &whole_elapse, &whole_cpu, 
+	fits_read_image_speed (outfptr, &whole_elapse, &whole_cpu, 
 	   &row_elapse, &row_cpu, &stat);
-	}
 
         if (!stat) {
 
@@ -1762,7 +1751,7 @@ int fp_test_hdu (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
 
                 /* remove any cached uncompressed tile 
 		  (dangerous to directly modify the structure!) */
-                (outfptr->Fptr)->tilerow = 0;
+        /*        (outfptr->Fptr)->tilerow = 0; */
 		marktime(&stat);
 
  	       fits_img_decompress (outfptr, outfptr2, &stat);

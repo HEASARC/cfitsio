@@ -17,8 +17,6 @@
 # (to bypass aliasing), cp changed to /bin/cp, add smem and
 # testprog targets. See also changes and comments in configure.in
 #
-MAJOR		= 3
-MINOR		= 32
 
 prefix		= @prefix@
 exec_prefix	= @exec_prefix@

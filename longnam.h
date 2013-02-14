@@ -53,6 +53,7 @@
 #define fits_null_check     ffnchk
 #define fits_make_keyn      ffkeyn
 #define fits_make_nkey      ffnkey
+#define fits_make_key       ffmkky
 #define fits_get_keyclass   ffgkcl
 #define fits_get_keytype    ffdtyp
 #define fits_get_inttype    ffinttyp

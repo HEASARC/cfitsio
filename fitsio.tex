@@ -47,7 +47,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large May 2011\\}
+{\Large February 2013\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -73,7 +73,7 @@ data arrays by converting them on the fly into a virtual FITS format
 file.  This library was written to provide a powerful yet simple
 interface for accessing FITS files which will run on most commonly used
 computers and workstations. FITSIO supports all the features described
-in the official NOST definition of the FITS format and can read and
+in the official definition of the FITS format and can read and
 write all the currently defined types of extensions, including ASCII
 tables (TABLE), Binary tables (BINTABLE) and IMAGE extensions. The
 FITSIO subroutines insulate the programmer from having to deal with the
@@ -114,19 +114,25 @@ This User's Guide assumes that readers already have a general
 understanding of the definition and structure of FITS format files.
 Further information about FITS formats is available from the FITS Support
 Office at {\tt http://fits.gsfc.nasa.gov}.  In particular, the
-'NOST FITS Standard' gives the authoritative definition of the FITS data
-format, and the  `FITS User's Guide' provides additional historical background
+'FITS Standard' gives the authoritative definition of the FITS data
+format.  Other documents available at that Web site
+provide additional historical background
 and practical advice on using FITS files.
 
+The HEASARC also provides a very sophisticated FITS file analysis
+program called `Fv' which can be used to display and edit the contents
+of any FITS file as well as construct new FITS files from scratch.
+Fv is freely available for
+most Unix platforms, Mac PCs, and Windows PCs.
 CFITSIO users may also be interested in the FTOOLS package of programs
 that can be used to manipulate and analyze FITS format files.
-Information about FTOOLS can be obtained on the Web or via anonymous
-ftp at:
+Fv and FTOOLS are available from their respective Web sites at:
 
 \begin{verbatim}
+        http://fv.gsfc.nasa.gov
         http://heasarc.gsfc.nasa.gov/ftools
-        ftp://legacy.gsfc.nasa.gov/software/ftools/release
 \end{verbatim}
+
 
 \chapter{ Creating FITSIO/CFITSIO }
 
@@ -620,7 +626,7 @@ Wimmers, Peter Young, Jianjun Xu, and Nelson Zarate.
 \chapter{  A FITS Primer }
 
 This section gives a brief overview of the structure of FITS files.
-Users should refer to the documentation available from the NOST, as
+Users should refer to the documentation available from the FITS Support Office, as
 described in the introduction, for more detailed information on FITS
 formats.
 
@@ -676,7 +682,7 @@ value if there is no specified value string, as in the second example.
 
 The last keyword in the header is always the `END' keyword which has no
 value or comment fields. There are many rules governing the exact
-format of a keyword record (see the NOST FITS Standard) so it is better
+format of a keyword record (see the FITS Standard) so it is better
 to rely on standard interface software like FITSIO to correctly
 construct or to parse the keyword records rather than try to deal
 directly with the raw FITS formats.
@@ -1062,7 +1068,7 @@ the FTGDES subroutine.
 The ANSI/IEEE-754 floating-point number standard defines certain
 special values that are used to represent such quantities as
 Not-a-Number (NaN), denormalized, underflow, overflow, and infinity.
-(See the Appendix in the NOST FITS standard or the NOST FITS User's
+(See the Appendix in the  FITS standard or the FITS User's
 Guide for a list of these values).  The FITSIO subroutines that read
 floating point data in FITS files recognize these IEEE special values
 and by default interpret the overflow and infinity values as being
@@ -1126,7 +1132,7 @@ actual smaller value just before closing the table.
 \section{Local FITS Conventions supported by FITSIO}
 
 CFITSIO supports several local FITS conventions which are not
-defined in the official NOST FITS standard and which are not
+defined in the official FITS standard and which are not
 necessarily recognized or supported by other FITS software packages.
 Programmers should be cautious about using these features, especially
 if the FITS files that are produced are expected to be processed by
@@ -1681,14 +1687,14 @@ used by these interface routines.
    open IRAF images (.imh format files) and raw binary data arrays
    with READONLY access by first converting them on the fly into
    virtual FITS images.  See the `Extended File Name Syntax' chapter
-   for more details.  The FTDKOPEN routine simply opens the specified
+   for more details.  The FTDKOPN routine simply opens the specified
    file without trying to interpret the filename using the extended
   filename syntax.
 \end{description}
 
 \begin{verbatim}
         FTOPEN(unit,filename,rwmode, > blocksize,status)
-        FTDKOPEN(unit,filename,rwmode, > blocksize,status)
+        FTDKOPN(unit,filename,rwmode, > blocksize,status)
 \end{verbatim}
 
 \begin{description}
@@ -1977,7 +1983,7 @@ parameters is given at the end of this section.
 
 \begin{description}
 \item[1 ]Open an existing FITS file with readonly or readwrite access. The
-FTDKOPEN routine simply opens the specified file without trying to
+FTDKOPN routine simply opens the specified file without trying to
 interpret the filename using the extended filename syntax. FTDOPN opens
 the file and
 also moves to the first HDU containing significant data, if no specific
@@ -1988,7 +1994,7 @@ if a HDU name or number is not specified as part of the filename.
 
 \begin{verbatim}
         FTOPEN(unit,filename,rwmode, > blocksize,status)
-        FTDKOPEN(unit,filename,rwmode, > blocksize,status)
+        FTDKOPN(unit,filename,rwmode, > blocksize,status)
 
         FTDOPN(unit,filename,rwmode, > status)
         FTTOPN(unit,filename,rwmode, > status)
@@ -4620,7 +4626,20 @@ The following utility subroutines may be useful for certain applications:
 \end{verbatim}
 
 \begin{description}
-\item[9 ] Construct a sequence keyword name (ROOT + nnn).
+\item[9 ] Construct a properly formated 80-character header keyword record from the
+    input keyword name, keyword value, and keyword comment strings.
+    Hierarchical keyword names (e.g., "ESO TELE CAM") are supported.
+    The value string may contain an integer, floating point, logical, or
+    quoted character string (e.g., "12", "15.7", "T",
+    or "'NGC 1313'").
+\end{description}
+
+\begin{verbatim}
+        FTMKKY(keyname, value, comment, > card, status)
+\end{verbatim}
+
+\begin{description}
+\item[10] Construct a sequence keyword name (ROOT + nnn).
     This subroutine appends the sequence number to the root string to create
    a keyword name (e.g., 'NAXIS' + 2 = 'NAXIS2')
 \end{description}
@@ -4630,7 +4649,7 @@ The following utility subroutines may be useful for certain applications:
 \end{verbatim}
 
 \begin{description}
-\item[10] Construct a sequence keyword name (n + ROOT).
+\item[11] Construct a sequence keyword name (n + ROOT).
     This subroutine concatenates the sequence number to the front of the
    root string to create a keyword name (e.g., 1 + 'CTYP' = '1CTYP')
 \end{description}
@@ -4640,7 +4659,7 @@ The following utility subroutines may be useful for certain applications:
 \end{verbatim}
 
 \begin{description}
-\item[11] Determine the datatype of a keyword value string.
+\item[12] Determine the datatype of a keyword value string.
     This subroutine parses the keyword value string (usually columns 11-30
    of the header record) to determine its datatype.
 \end{description}
@@ -4650,7 +4669,7 @@ The following utility subroutines may be useful for certain applications:
 \end{verbatim}
 
 \begin{description}
-\item[11] Return the class of input header record.  The record is classified
+\item[13] Return the class of input header record.  The record is classified
     into one of the following categories (the class values are
     defined in fitsio.h).  Note that this is one of the few FITSIO
    routines that does not return a status value.
@@ -4690,7 +4709,7 @@ The following utility subroutines may be useful for certain applications:
 \end{verbatim}
 
 \begin{description}
-\item[12] Parse the 'TFORM' binary table column format string.
+\item[14] Parse the 'TFORM' binary table column format string.
     This subroutine parses the input TFORM character string and returns the
     integer datatype code, the repeat count of the field, and, in the case
     of character string fields, the length of the unit string.  The following
@@ -4715,7 +4734,7 @@ The following utility subroutines may be useful for certain applications:
 \end{verbatim}
 
 \begin{description}
-\item[13] Parse the 'TFORM' keyword value that defines the column format in
+\item[15] Parse the 'TFORM' keyword value that defines the column format in
     an ASCII table.  This routine parses the input TFORM character
     string and returns the datatype code, the width of the column,
     and (if it is a floating point column) the number of decimal places
@@ -4736,7 +4755,7 @@ The following utility subroutines may be useful for certain applications:
 \end{verbatim}
 
 \begin{description}
-\item[14] Calculate the starting column positions and total ASCII table width
+\item[16] Calculate the starting column positions and total ASCII table width
     based on the input array of ASCII table TFORM values.  The SPACE input
     parameter defines how many blank spaces to leave between each column
     (it is recommended to have one space between columns for better human
@@ -4748,7 +4767,7 @@ The following utility subroutines may be useful for certain applications:
 \end{verbatim}
 
 \begin{description}
-\item[15] Parse a template string and return a formatted 80-character string
+\item[17] Parse a template string and return a formatted 80-character string
     suitable for appending to (or deleting from) a FITS header file.
     This subroutine is useful for parsing lines from an ASCII template file
     and reformatting them into legal FITS header records.  The formatted
@@ -4859,7 +4878,7 @@ The following utility subroutines may be useful for certain applications:
 \end{verbatim}
 
 \begin{description}
-\item[16]  Parse the input string containing a list of rows or row ranges, and
+\item[18]  Parse the input string containing a list of rows or row ranges, and
      return integer arrays containing the first and last row in each
      range.  For example, if rowlist = "3-5, 6, 8-9" then it will
      return numranges = 3, rangemin = 3, 6, 8 and rangemax = 5, 6, 9.
@@ -7037,7 +7056,7 @@ do not need to be enclosed in quotes.
 
 \begin{verbatim}
         FTOPEN(unit,filename,rwmode, > blocksize,status)
-        FTDKOPEN(unit,filename,rwmode, > blocksize,status)
+        FTDKOPN(unit,filename,rwmode, > blocksize,status)
         FTNOPN(unit,filename,rwmode, > status)
         FTDOPN(unit,filename,rwmode, > status)
         FTTOPN(unit,filename,rwmode, > status)
@@ -7336,6 +7355,7 @@ do not need to be enclosed in quotes.
         FTTREC(card, > status)
         FTNCHK(unit, > status)
         FTGKNM(unit, > keyword, keylength, status)
+        FTMKKY(keyword, value,comment, > card, status)
         FTPSVC(card, > value,comment,status)
         FTKEYN(keyroot,seq_no, > keyword,status)
         FTNKEY(seq_no,keyroot, > keyword,status)

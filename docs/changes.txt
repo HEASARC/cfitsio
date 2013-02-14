@@ -1,5 +1,48 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.33 - 14 Feb 2013
+
+   - modified ricecomp.c to define the nonzero_count lookup table as an 
+     external variable, rather then dynamically allocating it within the
+     3 routines that use it.  This simplifies the code and eliminates the
+     need for special thread locking and unlocking statements. (Thanks to
+     Lars Kr. Lundin for this suggestion). 
+
+   - modifed how the uncompressed size of a gzipped file is computed in the
+     mem_compress_open routine in drvrmem.c.  Since gzip only uses 4 bytes
+     in the compressed file header to store the original file size, one may
+     need to apply a modulo 2^32 byte correction in some cases.  The logic
+     here was modified to allow for corner cases (e.g., very small files, and 
+     when running on 32-bit platforms that do not support files larger than
+     2^31 bytes in size). 
+
+   - added new public routine to construct a 80 keyword record from the 3 input
+     component strings, i.e, the keyword name string, the value string, and
+     the comment string: fits_make_key/ffmkky.  (This was already an undocumented
+     internal routine in previous versions of CFITSIO).
+
+   - modified ffc2s so that if the input keyword value string is a null string,
+     then it will return a VALUE_UNDEFINED (204) status value.  This makes it
+     consistent with the behavior when attempting to read a null keyword 
+     (which has no value) as a logical or as a number (which also returns
+     the 204 error).  This should only affect cases where the header keyword
+     does not have an equal sign followed by a space character in columns 9
+     and 10 of the header record.
+
+   - Changed the "char *" parameter declarations to "const char *" in many 
+     of the routines (mainly the routines that modify or update keywords) to
+     avoid compiler warnings or errors from C++ programs that tend to be more
+     rigorous about using "const char *" when appropriate.
+
+   - added support for caching uncompressed image tiles, so that the tile does
+     not need to be uncompressed again if the application program wants 
+     to read more data from the same tile. This required changes to the
+     main FITS file structure that is defined in fitsio.h, as well as
+     changes to imcompress.c.
+
+   - enhanced the previous modification to drvrfile.c to handle additional user
+     cases when running in the HEASARC's Hera environment.
+
 Version 3.32 - Oct 2012
 
    - fixed flaw in the way logical columns (TFORM = 'L') in binary tables 
