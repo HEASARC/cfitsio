@@ -353,7 +353,7 @@ fp_msg ("             compression method can give much better compression than t
 fp_msg ("             lossless compression methods without significant loss of information.\n");
 fp_msg ("             The -n3ratio and -n3min flags control the minimum noise thresholds;\n");
 fp_msg ("             Images below these thresholds will be losslessly compressed.\n");
-fp_msg (" -n3ratio    Minimum ratio of background noise sigma divided by q.  Default = 1.2.\n");
+fp_msg (" -n3ratio    Minimum ratio of background noise sigma divided by q.  Default = 2.0.\n");
 fp_msg (" -n3min      Minimum background noise sigma. Default = 6. The -i2f flag will be ignored\n");
 fp_msg ("             if the noise level in the image does not exceed both thresholds.\n");
 fp_msg (" -s <scale>  Scale factor for lossy Hcompress [default = 0 = lossless]\n");

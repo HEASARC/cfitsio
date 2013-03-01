@@ -152,7 +152,7 @@ int fp_init (fpstate *fpptr)
         fpptr->int_to_float = 0;
 
 	/* thresholds when using the -i2f flag */
-        fpptr->n3ratio = 1.20;  /* minimum ratio of image noise sigma / q */
+        fpptr->n3ratio = 2.0;  /* minimum ratio of image noise sigma / q */
         fpptr->n3min = 6.;     /* minimum noise sigma. */
 
 	fpptr->scale = DEF_HCOMP_SCALE;

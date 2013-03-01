@@ -158,6 +158,8 @@ static int fits_unshuffle_4bytes(char *heap, LONGLONG length, int *status);
 static int fits_unshuffle_2bytes(char *heap, LONGLONG length, int *status);
 static int fits_gunzip_heap(fitsfile *infptr, fitsfile *outfptr, int *status);
 
+/* only used for diagnoitic purposes */
+/* int fits_get_case(int *c1, int*c2, int*c3); */ 
 /*---------------------------------------------------------------------------*/
 int fits_init_randoms(void) {
 
@@ -573,6 +575,7 @@ int fits_img_compress(fitsfile *infptr, /* pointer to image to be compressed */
 {
     int bitpix, naxis;
     long naxes[MAX_COMPRESS_DIM];
+/*    int c1, c2, c3; */
 
     if (*status > 0)
         return(*status);
@@ -626,6 +629,10 @@ int fits_img_compress(fitsfile *infptr, /* pointer to image to be compressed */
     /* force another rescan of the output file keywords, to */
     /* update PCOUNT and TFORMn = '1PB(iii)' keyword values. */
     ffrdef(outfptr, status);
+/*
+    fits_get_case(&c1, &c2, &c3);
+    printf("c1, c2, c3 = %d, %d, %d\n", c1, c2, c3); 
+*/
 
     return (*status);
 }
@@ -848,8 +855,12 @@ int imcomp_init_table(fitsfile *outfptr,
     
     for (ii = 0; ii < naxis; ii++) {
         if (actual_tilesize[ii] <= 0) {
-	    /* tile size of 0 means use the image size of that dimension */
+	    /* tile size of 0 means use the image size for the 1st axis, and 1 for higher axes */
+          if (ii == 0) {
             actual_tilesize[ii] = naxes[ii];
+          } else {
+            actual_tilesize[ii] = 1;
+          }
 	}
     }
 
@@ -1975,7 +1986,7 @@ int imcomp_convert_tile_tushort(
     int *status)
 {
     /*  Prepare the input  tile array of pixels for compression.
-    /*  Convert input integer*2 tile array in place to 4 or 8-byte ints for compression, */
+    /*  Convert input unsigned integer*2 tile array in place to 4 or 8-byte ints for compression, */
     /*  If needed, convert 4 or 8-byte ints and do null value substitution. */
     /*  Note that the calling routine must have allocated the input array big enough */
     /* to be able to do this.  */
@@ -2057,11 +2068,9 @@ int imcomp_convert_tile_tint(
     int *status)
 {
     /*  Prepare the input tile array of pixels for compression.
-    /*  Convert input integer*2 tile array in place to 4 or 8-byte ints for compression, */
-    /*  If needed, convert 4 or 8-byte ints and do null value substitution. */
-    /*  Note that the calling routine must have allocated the input array big enough */
-    /* to be able to do this.  */
-
+    /*  Convert input integer tile array in place to 4 or 8-byte ints for compression, */
+    /*  If needed, do null value substitution. */
+   
     int flagval, *idata;
     long ii;
     
@@ -2107,15 +2116,13 @@ int imcomp_convert_tile_tuint(
     int *status)
 {
     /*  Prepare the input tile array of pixels for compression.
-    /*  Convert input integer*2 tile array in place to 4 or 8-byte ints for compression, */
-    /*  If needed, convert 4 or 8-byte ints and do null value substitution. */
-    /*  Note that the calling routine must have allocated the input array big enough */
-    /* to be able to do this.  */
+    /*  Convert input unsigned integer tile array in place to 4 or 8-byte ints for compression, */
+    /*  If needed, do null value substitution. */
+
 
     int flagval, *idata;
     unsigned int *uintbuff, uintflagval;
     long ii;
-    
  
        /* datatype of input array is unsigned int.  We only support writing this datatype
           to a FITS image with BITPIX = 32 and with BZERO = 0 and BSCALE = 2147483648.  */
@@ -2165,7 +2172,7 @@ int imcomp_convert_tile_tbyte(
     int *status)
 {
     /*  Prepare the input tile array of pixels for compression.
-    /*  Convert input integer*2 tile array in place to 4 or 8-byte ints for compression, */
+    /*  Convert input unsigned integer*1 tile array in place to 4 or 8-byte ints for compression, */
     /*  If needed, convert 4 or 8-byte ints and do null value substitution. */
     /*  Note that the calling routine must have allocated the input array big enough */
     /* to be able to do this.  */
@@ -2237,7 +2244,7 @@ int imcomp_convert_tile_tsbyte(
     int *status)
 {
     /*  Prepare the input tile array of pixels for compression.
-    /*  Convert input integer*2 tile array in place to 4 or 8-byte ints for compression, */
+    /*  Convert input integer*1 tile array in place to 4 or 8-byte ints for compression, */
     /*  If needed, convert 4 or 8-byte ints and do null value substitution. */
     /*  Note that the calling routine must have allocated the input array big enough */
     /* to be able to do this.  */
@@ -2320,7 +2327,7 @@ int imcomp_convert_tile_tfloat(
     int *status)
 {
     /*  Prepare the input tile array of pixels for compression.
-    /*  Convert input integer*2 tile array in place to 4 or 8-byte ints for compression, */
+    /*  Convert input float tile array in place to 4 or 8-byte ints for compression, */
     /*  If needed, convert 4 or 8-byte ints and do null value substitution. */
     /*  Note that the calling routine must have allocated the input array big enough */
     /* to be able to do this.  */
@@ -2331,6 +2338,15 @@ int imcomp_convert_tile_tfloat(
     unsigned char *usbbuff;
     unsigned long dithersum;
     int iminval = 0, imaxval = 0;  /* min and max quantized integers */
+
+        /* datatype of input array is double.  We only support writing this datatype
+           to a FITS image with BITPIX = -64 or -32, except we also support the special case where
+	   BITPIX = 32 and BZERO = 0 and BSCALE = 1.  */
+
+       if ((zbitpix != LONG_IMG && zbitpix != DOUBLE_IMG && zbitpix != FLOAT_IMG) || scale != 1.0 || zero != 0.) {
+           ffpmsg("Implicit datatype conversion is not supported when writing to compressed images");
+           return(*status = DATA_COMPRESSION_ERR);
+       } 
 
            *intlength = 4;
            idata = (int *) tiledata;
@@ -2446,7 +2462,7 @@ int imcomp_convert_tile_tdouble(
     int *status)
 {
     /*  Prepare the input tile array of pixels for compression.
-    /*  Convert input integer*2 tile array in place to 4 or 8-byte ints for compression, */
+    /*  Convert input double tile array in place to 4-byte ints for compression, */
     /*  If needed, convert 4 or 8-byte ints and do null value substitution. */
     /*  Note that the calling routine must have allocated the input array big enough */
     /* to be able to do this.  */
@@ -2457,6 +2473,15 @@ int imcomp_convert_tile_tdouble(
     unsigned char *usbbuff;
     unsigned long dithersum;
     int iminval = 0, imaxval = 0;  /* min and max quantized integers */
+
+        /* datatype of input array is double.  We only support writing this datatype
+           to a FITS image with BITPIX = -64 or -32, except we also support the special case where
+	   BITPIX = 32 and BZERO = 0 and BSCALE = 1.  */
+
+       if ((zbitpix != LONG_IMG && zbitpix != DOUBLE_IMG && zbitpix != FLOAT_IMG) || scale != 1.0 || zero != 0.) {
+           ffpmsg("Implicit datatype conversion is not supported when writing to compressed images");
+           return(*status = DATA_COMPRESSION_ERR);
+       } 
 
            *intlength = 4;
            idata = (int *) tiledata;
@@ -2471,7 +2496,7 @@ int imcomp_convert_tile_tdouble(
 	      doublenull = *(double *) (nullflagval);
 	    else
 	      doublenull = DOUBLENULLVALUE;
-	      
+
             /* quantize the double values into integers */
               if ((outfptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_1) {
 
@@ -5910,6 +5935,19 @@ int imcomp_decompress_tile (fitsfile *infptr,
             fffi4i2(idata, tilelen, bscale, bzero, nullcheck, tnull,
              *(short *) nulval, bnullarray, anynul,
             (short *) buffer, status);
+
+            /*
+	       Hcompress is a special case:  ignore any numerical overflow
+	       errors that may have occurred during the integer*4 to integer*2
+	       convertion.  Overflows can happen when a lossy Hcompress algorithm
+	       is invoked (with a non-zero scale factor).  The fffi4i2 routine
+	       clips the returned values to be within the legal I*2 range, so
+	       all we need to is to reset the error status to zero.
+	    */
+	       
+            if ((infptr->Fptr)->compress_type == HCOMPRESS_1) {
+	        if (*status = NUM_OVERFLOW) *status = 0;
+	    }
           }
         else if (tiledatatype == TSHORT)
           fffi2i2((short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,
