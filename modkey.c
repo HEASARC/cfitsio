@@ -433,12 +433,22 @@ int ffmcrd(fitsfile *fptr,      /* I - FITS file pointer  */
 
     ffpsvc(tcard, valstring, comm, status);
 
-    /* check for string value which may be continued over multiple keywords */
-    ffc2s(valstring, value, status);   /* remove quotes and trailing spaces */
-    len = strlen(value);
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
 
-    while (len && value[len - 1] == '&')  /* ampersand used as continuation char */
-    {
+    /* check for string value which may be continued over multiple keywords */
+    ffpmrk(); /* put mark on message stack; erase any messages after this */
+    ffc2s(valstring, value, status);   /* remove quotes and trailing spaces */
+
+    if (*status == VALUE_UNDEFINED) {
+       ffcmrk();  /* clear any spurious error messages, back to the mark */
+       *status = 0;
+    } else {
+ 
+      len = strlen(value);
+
+      while (len && value[len - 1] == '&')  /* ampersand used as continuation char */
+      {
         ffgcnt(fptr, value, status);
         if (*value)
         {
@@ -447,6 +457,7 @@ int ffmcrd(fitsfile *fptr,      /* I - FITS file pointer  */
         }
         else   /* a null valstring indicates no continuation */
             len = 0;
+      }
     }
 
     return(*status);
@@ -621,12 +632,22 @@ int ffmkys(fitsfile *fptr,          /* I - FITS file pointer  */
 
     keypos = (int) (((((fptr->Fptr)->nextkey) - ((fptr->Fptr)->headstart[(fptr->Fptr)->curhdu])) / 80) + 1);
 
-    /* check if old string value was continued over multiple keywords */
-    ffc2s(oldval, valstring, status); /* remove quotes and trailing spaces */
-    len = strlen(valstring);
+    if (*status > 0)           
+        return(*status);
 
-    while (len && valstring[len - 1] == '&')  /* ampersand is continuation char */
-    {
+    /* check if old string value was continued over multiple keywords */
+    ffpmrk(); /* put mark on message stack; erase any messages after this */
+    ffc2s(oldval, valstring, status); /* remove quotes and trailing spaces */
+
+    if (*status == VALUE_UNDEFINED) {
+       ffcmrk();  /* clear any spurious error messages, back to the mark */
+       *status = 0;
+    } else {
+        
+      len = strlen(valstring);
+
+      while (len && valstring[len - 1] == '&')  /* ampersand is continuation char */
+      {
         ffgcnt(fptr, valstring, status);
         if (*valstring)
         {
@@ -635,7 +656,9 @@ int ffmkys(fitsfile *fptr,          /* I - FITS file pointer  */
         }
         else   /* a null valstring indicates no continuation */
             len = 0;
+      }
     }
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -1579,12 +1602,22 @@ int ffdkey(fitsfile *fptr,    /* I - FITS file pointer  */
 
     ffdrec(fptr, keypos, status);  /* delete the keyword */
 
-    /* check for string value which may be continued over multiple keywords */
-    ffc2s(valstring, value, status);   /* remove quotes and trailing spaces */
-    len = strlen(value);
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
 
-    while (len && value[len - 1] == '&')  /* ampersand used as continuation char */
-    {
+    /* check for string value which may be continued over multiple keywords */
+    ffpmrk(); /* put mark on message stack; erase any messages after this */
+    ffc2s(valstring, value, status);   /* remove quotes and trailing spaces */
+
+    if (*status == VALUE_UNDEFINED) {
+       ffcmrk();  /* clear any spurious error messages, back to the mark */
+       *status = 0;
+    } else {
+ 
+      len = strlen(value);
+
+      while (len && value[len - 1] == '&')  /* ampersand used as continuation char */
+      {
         ffgcnt(fptr, value, status);
         if (*value)
         {
@@ -1593,7 +1626,9 @@ int ffdkey(fitsfile *fptr,    /* I - FITS file pointer  */
         }
         else   /* a null valstring indicates no continuation */
             len = 0;
+      }
     }
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -1626,11 +1661,23 @@ int ffdstr(fitsfile *fptr,    /* I - FITS file pointer  */
 
         /* check for string value which may be continued over multiple keywords */
     ffpsvc(card, valstring, comm, status);
-    ffc2s(valstring, value, status);   /* remove quotes and trailing spaces */
-    len = strlen(value);
 
-    while (len && value[len - 1] == '&')  /* ampersand used as continuation char */
-    {
+    if (*status > 0)           /* inherit input status value if > 0 */
+        return(*status);
+
+    /* check for string value which may be continued over multiple keywords */
+    ffpmrk(); /* put mark on message stack; erase any messages after this */
+    ffc2s(valstring, value, status);   /* remove quotes and trailing spaces */
+
+    if (*status == VALUE_UNDEFINED) {
+       ffcmrk();  /* clear any spurious error messages, back to the mark */
+       *status = 0;
+    } else {
+ 
+      len = strlen(value);
+
+      while (len && value[len - 1] == '&')  /* ampersand used as continuation char */
+      {
         ffgcnt(fptr, value, status);
         if (*value)
         {
@@ -1639,7 +1686,9 @@ int ffdstr(fitsfile *fptr,    /* I - FITS file pointer  */
         }
         else   /* a null valstring indicates no continuation */
             len = 0;
+      }
     }
+
     return(*status);
 }/*--------------------------------------------------------------------------*/
 int ffdrec(fitsfile *fptr,   /* I - FITS file pointer  */

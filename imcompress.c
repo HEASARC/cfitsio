@@ -5946,7 +5946,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
 	    */
 	       
             if ((infptr->Fptr)->compress_type == HCOMPRESS_1) {
-	        if (*status = NUM_OVERFLOW) *status = 0;
+	        if (*status == NUM_OVERFLOW) *status = 0;
 	    }
           }
         else if (tiledatatype == TSHORT)

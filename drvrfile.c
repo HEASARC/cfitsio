@@ -483,7 +483,7 @@ int file_size(int handle, LONGLONG *filesize)
     if (_fseeki64(diskfile, position1, 0) != 0)  /* seek back to original pos */
         return(SEEK_ERROR);
 
-#elif _FILE_OFFSET_BITS - 0 == 64
+#elif _FILE_OFFSET_BITS - 0 == 64 && !defined(__MINGW32__)
 
 /* call the newer ftello and fseeko routines , which support */
 /*  Large Files (> 2GB) if they are supported.  */
@@ -584,7 +584,7 @@ int file_seek(int handle, LONGLONG offset)
     if (_fseeki64(handleTable[handle].fileptr, (OFF_T) offset, 0) != 0)
         return(SEEK_ERROR);
 	
-#elif _FILE_OFFSET_BITS - 0 == 64
+#elif _FILE_OFFSET_BITS - 0 == 64 && !defined(__MINGW32__)
 
     if (fseeko(handleTable[handle].fileptr, (OFF_T) offset, 0) != 0)
         return(SEEK_ERROR);

@@ -73,11 +73,12 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.33;
+      *version = (float) 3.34;
 
-/*       14 Feb 2013
+/*       20 Mar 2013
 
    Previous releases:
+      *version = 3.33    14 Feb 2013
       *version = 3.32       Oct 2012
       *version = 3.31    18 Jul 2012
       *version = 3.30    11 Apr 2012
@@ -3119,14 +3120,13 @@ int ffgcnn( fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     char errmsg[FLEN_ERRMSG];
-    static int startcol;
     int tstatus, ii, founde, foundw, match, exact, unique;
     long ivalue;
     tcolumn *colptr;
 
     if (*status <= 0)
     {
-        startcol = 0;   /* start search with first column */
+        (fptr->Fptr)->startcol = 0;   /* start search with first column */
         tstatus = 0;
     }
     else if (*status == COL_NOT_UNIQUE) /* start search from previous spot */
@@ -3148,13 +3148,13 @@ int ffgcnn( fitsfile *fptr,  /* I - FITS file pointer                       */
             return(*status);
 
     colptr = (fptr->Fptr)->tableptr;   /* pointer to first column */
-    colptr += (startcol);      /* offset to starting column */
+    colptr += ((fptr->Fptr)->startcol);      /* offset to starting column */
 
     founde = FALSE;   /* initialize 'found exact match' flag */
     foundw = FALSE;   /* initialize 'found wildcard match' flag */
     unique = FALSE;
 
-    for (ii = startcol; ii < (fptr->Fptr)->tfield; ii++, colptr++)
+    for (ii = (fptr->Fptr)->startcol; ii < (fptr->Fptr)->tfield; ii++, colptr++)
     {
         ffcmps(templt, colptr->ttype, casesen, &match, &exact);
         if (match)
@@ -3163,7 +3163,7 @@ int ffgcnn( fitsfile *fptr,  /* I - FITS file pointer                       */
             {
                 /* warning: this is the second exact match we've found     */
                 /*reset pointer to first match so next search starts there */
-               startcol = *colnum;
+               (fptr->Fptr)->startcol = *colnum;
                return(*status = COL_NOT_UNIQUE);
             }
             else if (founde)   /* a wildcard match */
@@ -3188,7 +3188,7 @@ int ffgcnn( fitsfile *fptr,  /* I - FITS file pointer                       */
                /* this is the first wild card match we've found. save it */
                strcpy(colname, colptr->ttype);
                *colnum = ii + 1;
-               startcol = *colnum;
+               (fptr->Fptr)->startcol = *colnum;
                foundw = TRUE;
                unique = TRUE;
             }
@@ -3230,7 +3230,7 @@ int ffgcnn( fitsfile *fptr,  /* I - FITS file pointer                       */
         }
     }
     
-    startcol = *colnum;  /* save pointer for next time */
+    (fptr->Fptr)->startcol = *colnum;  /* save pointer for next time */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

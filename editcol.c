@@ -1649,7 +1649,7 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     nrows = minvalue(nrows, outrows);
 
     if (typecode == TBIT)
-        repeat = (repeat - 1) / 8 + 1;  /* convert from bits to bytes */
+        repeat = (repeat + 7) / 8;  /* convert from bits to bytes */
     else if (typecode == TSTRING && (infptr->Fptr)->hdutype == BINARY_TBL)
         repeat = repeat / width;  /* convert from chars to unit strings */
 

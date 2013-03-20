@@ -34,8 +34,8 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.33
-#define CFITSIO_MINOR 33
+#define CFITSIO_VERSION 3.34
+#define CFITSIO_MINOR 34
 #define CFITSIO_MAJOR 3
 
 #include <stdio.h>
@@ -347,6 +347,7 @@ typedef struct      /* structure used to store basic FITS file information */
     int imgdim;         /* dimension of image; cached for fast access */
     LONGLONG imgnaxis[99]; /* length of each axis; cached for fast access */
     int tfield;          /* number of fields in the table (primary array has 2 */
+    int startcol;        /* used by ffgcnn to record starting column number */
     LONGLONG origrows;   /* original number of rows (value of NAXIS2 keyword)  */
     LONGLONG numrows;    /* number of rows in the table (dynamically updated) */
     LONGLONG rowlength;  /* length of a table row or image size (bytes) */
