@@ -2165,11 +2165,63 @@ else
     system=`uname -s`-`uname -r`
 fi
 
+case $system in
+    CYGWIN*)
+	ARCH="cygwin"
+	EXT="cygwin"
+	;;
+    Darwin-*)
+	# Darwin can be powerpc, i386, or x86_64
+	ARCH=`uname -p`
+	EXT="darwin"
+	;;
+    FREEBSD*|FreeBSD*)
+	ARCH="linux"
+	EXT="lnx"
+	;;
+    HP-UX-*)
+	ARCH="hp"
+	EXT="hpu"
+	;;
+    IRIX*)
+	ARCH="sgi"
+	EXT="sgi"
+	;;
+    Linux*)
+	ARCH="linux"
+	EXT="lnx"
+	;;
+    MINGW32*)
+	#ARCH=""
+	EXT="mingw32"
+	;;
+    OSF1*)
+	ARCH="alpha"
+	EXT="osf"
+	;;
+    SunOS-4*)
+	ARCH="sun"
+	EXT="sun"
+	;;
+    SunOS-5*)
+	ARCH="solaris"
+	EXT="sol"
+	;;
+    ULTRIX*)
+	ARCH="dec"
+	EXT="dec"
+	;;
+    *)
+	echo "cfitsio: == Don't know what do do with $system"
+	;;
+esac
+
 
 
 # Try first to find a proprietary C compiler, then gcc
-if test "x$CC" = x; then
-  for ac_prog in cc
+if test "x$EXT" != xcygwin && test "x$EXT" != xdarwin && test "x$EXT" != xlnx && test "x$EXT" != xmingw32; then
+  if test "x$CC" = x; then
+    for ac_prog in cc
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -2211,6 +2263,7 @@ fi
   test -n "$CC" && break
 done
 
+  fi
 fi
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -3666,6 +3719,9 @@ CFLAGS="$CFLAGS"
 LIBPRE=""
 
 case $system in
+    CYGWIN*)
+	CFLAGS="$CFLAGS -DHAVE_POSIX_SIGNALS"
+	;;
     Darwin-*)
         # Build for i386 & x86_64 architectures on Darwin 10.x or newer:
 
@@ -3717,34 +3773,34 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
                 CFLAGS="$SAVE_CFLAGS $C_UNIV_SWITCH"
                 ;;
         esac
-        # Darwin can be powerpc, i386, or x86_64
-	ARCH=`uname -p`
-	EXT="darwin"
         # For large file support (but may break Absoft compilers):
         $as_echo "#define _LARGEFILE_SOURCE 1" >>confdefs.h
 
         $as_echo "#define _FILE_OFFSET_BITS 64" >>confdefs.h
 
 	;;
-    SunOS-4*)
-	ARCH="sun"
-	EXT="sun"
-	;;
     HP-UX-*)
-	ARCH="hp"
-	EXT="hpu"
 	if test "x$CFORTRANFLAGS" = x ; then
 		CFORTRANFLAGS="-Dappendus"
 	fi
 	CFLAGS="$CFLAGS -DPG_PPU"
 	LIBPRE="-Wl,"
 	;;
+    IRIX*)
+	CFLAGS="$CFLAGS -DHAVE_POSIX_SIGNALS"
+	RANLIB="touch"
+	;;
+    Linux*)
+        # For large file support:
+        $as_echo "#define _LARGEFILE_SOURCE 1" >>confdefs.h
+
+        $as_echo "#define _FILE_OFFSET_BITS 64" >>confdefs.h
+
+	;;
     SunOS-5*)
-	ARCH="solaris"
-	EXT="sol"
-	if test "x$CFORTRANFLAGS" = x ; then
-		CFORTRANFLAGS="-Dsolaris"
-	fi
+        if test "x$CFORTRANFLAGS" = x ; then
+                CFORTRANFLAGS="-Dsolaris"
+        fi
         # We need libm on Solaris:
         { $as_echo "$as_me:${as_lineno-$LINENO}: checking for frexp in -lm" >&5
 $as_echo_n "checking for frexp in -lm... " >&6; }
@@ -3796,38 +3852,6 @@ fi
 
         $as_echo "#define _FILE_OFFSET_BITS 64" >>confdefs.h
 
-	;;
-    OSF1*)
-	ARCH="alpha"
-	EXT="osf"
-	;;
-    IRIX*)
-	ARCH="sgi"
-	EXT="sgi"
-	CFLAGS="$CFLAGS -DHAVE_POSIX_SIGNALS"
-	RANLIB="touch"
-	;;
-    ULTRIX*)
-	ARCH="dec"
-	EXT="dec"
-	;;
-    Linux*)
-	ARCH="linux"
-	EXT="lnx"
-        # For large file support:
-        $as_echo "#define _LARGEFILE_SOURCE 1" >>confdefs.h
-
-        $as_echo "#define _FILE_OFFSET_BITS 64" >>confdefs.h
-
-	;;
-    FREEBSD*|FreeBSD*)
-	ARCH="linux"
-	EXT="lnx"
-	;;
-    CYGWIN*)
-	ARCH="cygwin"
-	EXT="cygwin"
-	CFLAGS="$CFLAGS -DHAVE_POSIX_SIGNALS"
 	;;
     *)
 		echo "cfitsio: == Don't know what do do with $system"
@@ -3927,10 +3951,11 @@ $as_echo "$as_me: WARNING: Unable to determine how to make a shared library" >&2
     ;;
 esac
 # Darwin uses gcc (=cc), but needs different flags (see above)
-# if test "x$GCC" = xyes; then
-if test "x$GCC" = xyes && test "x$EXT" != xdarwin && test "x$EXT" != xcygwin; then
-  SHLIB_LD="$CC -shared"
-  lhea_shlib_cflags='-fPIC'
+if test "x$EXT" != xdarwin && test "x$EXT" != xcygwin && test "x$EXT" != xmingw32; then
+  if test "x$GCC" = xyes; then
+    SHLIB_LD="$CC -shared"
+    lhea_shlib_cflags='-fPIC'
+  fi
 fi
 if test "x$lhea_shlib_cflags" != x; then
   CFLAGS="$CFLAGS $lhea_shlib_cflags"
