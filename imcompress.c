@@ -855,12 +855,8 @@ int imcomp_init_table(fitsfile *outfptr,
     
     for (ii = 0; ii < naxis; ii++) {
         if (actual_tilesize[ii] <= 0) {
-	    /* tile size of 0 means use the image size for the 1st axis, and 1 for higher axes */
-          if (ii == 0) {
+	    /* tile size of 0 means use the image size of that dimension */
             actual_tilesize[ii] = naxes[ii];
-          } else {
-            actual_tilesize[ii] = 1;
-          }
 	}
     }
 

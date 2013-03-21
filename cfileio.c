@@ -495,6 +495,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     char errmsg[FLEN_ERRMSG];
     char *hdtype[3] = {"IMAGE", "TABLE", "BINTABLE"};
     char *rowselect = 0;
+    long tilesize[MAX_COMPRESS_DIM] = {0,1,1,1,1,1};
 
     if (*status > 0)
         return(*status);
@@ -1302,6 +1303,9 @@ move2hdu:
           return(*status);
        }
     }
+
+    /* set default image compression tile size */
+    fits_set_tile_dim(*fptr, MAX_COMPRESS_DIM, tilesize, status);
 
    /* parse and save image compression specification, if given */
    if (*compspec) {
@@ -3578,6 +3582,7 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
     char urltype[MAX_PREFIX_LEN], outfile[FLEN_FILENAME];
     char tmplfile[FLEN_FILENAME], compspec[80];
     int handle, create_disk_file = 0;
+    long tilesize[MAX_COMPRESS_DIM] = {0,1,1,1,1,1};
 
     if (*status > 0)
         return(*status);
@@ -3779,6 +3784,9 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
 
     if (tmplfile[0])
         ffoptplt(*fptr, tmplfile, status);
+
+    /* set default image compression tile size */
+    fits_set_tile_dim(*fptr, MAX_COMPRESS_DIM, tilesize, status);
 
     /* parse and save image compression specification, if given */
     if (compspec[0])
