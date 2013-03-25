@@ -192,6 +192,15 @@ else
   fi
 fi
 
+# ar & ranlib required
+#---------------------
+AC_CHECK_PROG(AR, ar, ar, noar)
+if test $AR = noar; then
+  AC_MSG_ERROR(ar not found in your \$PATH. See your sysdamin.)
+fi
+ARCHIVE="$AR rv"
+AC_SUBST(ARCHIVE)
+
 AC_PROG_RANLIB
 
 dnl Checks for ANSI stdlib.h.
