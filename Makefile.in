@@ -27,6 +27,7 @@ INSTALL_DIRS	= @INSTALL_ROOT@ ${CFITSIO_INCLUDE} ${CFITSIO_LIB} ${CFITSIO_LIB}/p
 
 
 SHELL =		/bin/sh
+ARCHIVE =	@ARCHIVE@
 RANLIB =	@RANLIB@
 CC =		@CC@
 CFLAGS =	@CFLAGS@
@@ -81,7 +82,7 @@ all-nofitsio:
 stand_alone:	libcfitsio.a
 
 libcfitsio.a:	${OBJECTS}
-		ar rv libcfitsio.a ${OBJECTS}; \
+		${ARCHIVE} libcfitsio.a ${OBJECTS}; \
 		${RANLIB} libcfitsio.a;
 
 shared: libcfitsio${SHLIB_SUFFIX}
