@@ -358,17 +358,17 @@ case $EXT in
     ;;
   darwin)
     changequote(,)
+    SHLIB_SUFFIX=".dylib"
     case $system in
         Darwin-[56789]*)
-            SHLIB_LD="$CC -dynamiclib"
+            SHLIB_LD="$CC -dynamiclib -current_version ${MAJOR}.${MINOR}.0 -compatibility_version ${MAJOR}.${MINOR}.0 -install_name libcfitsio.${MAJOR}${SHLIB_SUFFIX}"
             ;;
         *)
             # Build for i386 & x86_64 architectures on Darwin 10.x or newer:
-            SHLIB_LD="$CC -dynamiclib $C_UNIV_SWITCH" 
+            SHLIB_LD="$CC -dynamiclib $C_UNIV_SWITCH -current_version \${MAJOR}.\${MINOR}.0 -compatibility_version \${MAJOR}.\${MINOR}.0 -install_name libcfitsio.\${MAJOR}${SHLIB_SUFFIX}"
             ;;
     esac
     changequote([,])
-    SHLIB_SUFFIX=".dylib"
     lhea_shlib_cflags="-fPIC -fno-common"
     ;;
   hpu)
@@ -396,7 +396,7 @@ esac
 # Darwin uses gcc (=cc), but needs different flags (see above)
 if test "x$EXT" != xdarwin && test "x$EXT" != xcygwin && test "x$EXT" != xmingw32; then
   if test "x$GCC" = xyes; then
-    SHLIB_LD="$CC -shared"
+    SHLIB_LD="$CC -shared -Wl,-soname,libcfitsio.so.\${MAJOR}"
     lhea_shlib_cflags='-fPIC'
   fi
 fi
