@@ -16,7 +16,13 @@
 # and putcol* in SOURCES, modified OBJECTS, mv changed to /bin/mv
 # (to bypass aliasing), cp changed to /bin/cp, add smem and
 # testprog targets. See also changes and comments in configure.in
-#
+
+
+# Increment library version numbers for each release:
+CFITSIO_MAJOR	= 3
+CFITSIO_MINOR	= 34
+# Increment soname version whenever the interface changes:
+CFITSIO_SONAME	= 0
 
 prefix		= @prefix@
 exec_prefix	= @exec_prefix@
@@ -41,6 +47,8 @@ BISON =		bison
 
 SHLIB_LD =	@SHLIB_LD@
 SHLIB_SUFFIX =	@SHLIB_SUFFIX@
+CFITSIO_SHLIB =	@CFITSIO_SHLIB@
+CFITSIO_SHLIB_SONAME = @CFITSIO_SHLIB_SONAME@
 
 
 CORE_SOURCES = 	buffers.c cfileio.c checksum.c drvrfile.c drvrmem.c \
@@ -88,16 +96,17 @@ libcfitsio.a:	${OBJECTS}
 shared: libcfitsio${SHLIB_SUFFIX}
 
 libcfitsio${SHLIB_SUFFIX}: ${OBJECTS}
-		${SHLIB_LD} ${LDFLAGS} -o $@ ${OBJECTS} -lm ${LIBS}
+		${SHLIB_LD} ${LDFLAGS} -o ${CFITSIO_SHLIB} ${OBJECTS} -lm ${LIBS}
+		@if [ "x${CFITSIO_SHLIB}" != "x$@" ]; then \
+			ln -sf ${CFITSIO_SHLIB} $@; \
+		fi
+		@if [ "x${CFITSIO_SHLIB_SONAME}" != x ]; then \
+			ln -sf ${CFITSIO_SHLIB} ${CFITSIO_SHLIB_SONAME}; \
+		fi
 
 install:	libcfitsio.a $(INSTALL_DIRS)
-		@if [ -f libcfitsio.a ]; then \
-			/bin/mv libcfitsio.a ${CFITSIO_LIB}; \
-		fi; \
-		if [ -f libcfitsio${SHLIB_SUFFIX} ]; then \
-			/bin/mv libcfitsio${SHLIB_SUFFIX} ${CFITSIO_LIB}; \
-		fi; \
-		/bin/cp fitsio.h fitsio2.h longnam.h drvrsmem.h ${CFITSIO_INCLUDE}/; \
+		/bin/cp -a libcfitsio* ${CFITSIO_LIB}
+		/bin/cp fitsio.h fitsio2.h longnam.h drvrsmem.h ${CFITSIO_INCLUDE}
 		/bin/cp cfitsio.pc ${CFITSIO_LIB}/pkgconfig
 
 .c.o:
@@ -143,8 +152,8 @@ eval:		# Rebuild eval_* files from flex/bison source
 		/bin/rm -f y.tab.c y.tab.h
 
 clean:
-	-	/bin/rm -f *.o libcfitsio.a libcfitsio${SHLIB_SUFFIX} \
-			smem testprog y.output
+	-	/bin/rm -f *.o libcfitsio* fpack funpack \
+			smem testprog y.output so_locations
 
 distclean:	clean
 	-	/bin/rm -f Makefile cfitsio.pc config.* configure.lineno
