@@ -97,11 +97,9 @@ shared: libcfitsio${SHLIB_SUFFIX}
 
 libcfitsio${SHLIB_SUFFIX}: ${OBJECTS}
 		${SHLIB_LD} ${LDFLAGS} -o ${CFITSIO_SHLIB} ${OBJECTS} -lm ${LIBS}
-		@if [ "x${CFITSIO_SHLIB}" != "x$@" ]; then \
-			ln -sf ${CFITSIO_SHLIB} $@; \
-		fi
 		@if [ "x${CFITSIO_SHLIB_SONAME}" != x ]; then \
 			ln -sf ${CFITSIO_SHLIB} ${CFITSIO_SHLIB_SONAME}; \
+			ln -sf ${CFITSIO_SHLIB_SONAME} $@; \
 		fi
 
 install:	libcfitsio.a $(INSTALL_DIRS)
