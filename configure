@@ -604,6 +604,8 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 my_shmem
 F77_WRAPPERS
+CFITSIO_SHLIB_SONAME
+CFITSIO_SHLIB
 SHLIB_SUFFIX
 SHLIB_LD
 LIBPRE
@@ -3954,6 +3956,8 @@ esac
 #-------------------------------------------------------------------------------
 SHLIB_LD=:
 SHLIB_SUFFIX=".so"
+CFITSIO_SHLIB=""
+CFITSIO_SHLIB_SONAME=""
 lhea_shlib_cflags=
 case $EXT in
   cygwin)
@@ -3963,13 +3967,15 @@ case $EXT in
   darwin)
 
     SHLIB_SUFFIX=".dylib"
+    CFITSIO_SHLIB="libcfitsio.\${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}\${SHLIB_SUFFIX}"
+    CFITSIO_SHLIB_SONAME="libcfitsio.\${CFITSIO_SONAME}\${SHLIB_SUFFIX}"
     case $system in
         Darwin-[56789]*)
-            SHLIB_LD="$CC -dynamiclib -current_version ${MAJOR}.${MINOR}.0 -compatibility_version ${MAJOR}.${MINOR}.0 -install_name libcfitsio.${MAJOR}${SHLIB_SUFFIX}"
+            SHLIB_LD="$CC -dynamiclib -install_name libcfitsio.\${CFITSIO_SONAME}\${SHLIB_SUFFIX} -compatibility_version \${CFITSIO_SONAME} -current_version \${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}"
             ;;
         *)
             # Build for i386 & x86_64 architectures on Darwin 10.x or newer:
-            SHLIB_LD="$CC -dynamiclib $C_UNIV_SWITCH -current_version \${MAJOR}.\${MINOR}.0 -compatibility_version \${MAJOR}.\${MINOR}.0 -install_name libcfitsio.\${MAJOR}${SHLIB_SUFFIX}"
+            SHLIB_LD="$CC -dynamiclib $C_UNIV_SWITCH -install_name libcfitsio.\${CFITSIO_SONAME}\${SHLIB_SUFFIX} -compatibility_version \${CFITSIO_SONAME} -current_version \${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}"
             ;;
     esac
 
@@ -3981,6 +3987,8 @@ case $EXT in
     ;;
   lnx)
     SHLIB_LD=":"
+    CFITSIO_SHLIB="libcfitsio\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}"
+    CFITSIO_SHLIB_SONAME="libcfitsio\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}"
     ;;
   osf)
     SHLIB_LD="ld -shared -expect_unresolved '*'"
@@ -4001,13 +4009,15 @@ esac
 # Darwin uses gcc (=cc), but needs different flags (see above)
 if test "x$EXT" != xdarwin && test "x$EXT" != xcygwin && test "x$EXT" != xmingw32; then
   if test "x$GCC" = xyes; then
-    SHLIB_LD="$CC -shared -Wl,-soname,libcfitsio.so.\${MAJOR}"
+    SHLIB_LD="$CC -shared -Wl,-soname,libcfitsio\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}"
     lhea_shlib_cflags='-fPIC'
   fi
 fi
 if test "x$lhea_shlib_cflags" != x; then
   CFLAGS="$CFLAGS $lhea_shlib_cflags"
 fi
+# Set shared library name for cases in which we aren't setting a 'soname':
+if test "x$CFITSIO_SHLIB" = x; then CFITSIO_SHLIB="libcfitsio\${SHLIB_SUFFIX}"; fi
 
 
 
