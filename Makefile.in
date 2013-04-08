@@ -18,11 +18,10 @@
 # testprog targets. See also changes and comments in configure.in
 
 
-# Increment library version numbers for each release:
-CFITSIO_MAJOR	= 3
-CFITSIO_MINOR	= 34
-# Increment soname version whenever the interface changes:
-CFITSIO_SONAME	= 0
+# CFITSIO version numbers:
+CFITSIO_MAJOR	= @CFITSIO_MAJOR@
+CFITSIO_MINOR	= @CFITSIO_MINOR@
+CFITSIO_SONAME	= @CFITSIO_SONAME@
 
 prefix		= @prefix@
 exec_prefix	= @exec_prefix@
