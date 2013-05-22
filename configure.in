@@ -94,64 +94,53 @@ test "$exec_prefix" != NONE -a "$prefix" != "$exec_prefix" \
 	
 
 #--------------------------------------------------------------------
-# Check "uname" to determine system type
+# System type
 #--------------------------------------------------------------------
-AC_CHECK_PROG([uname_found],[uname],[1],[0])
-if test $uname_found -eq 0 ; then
-    echo "cfitsio: No uname found; setting system type to unknown."
-    system="unknown"
-else
-    system=`uname -s`-`uname -r`
-fi
 
-case $system in
-    CYGWIN*)
+case $host in
+    *pc-cygwin*)
 	ARCH="cygwin"
 	EXT="cygwin"
 	;;
-    Darwin-*)
+    *apple-darwin*)
 	# Darwin can be powerpc, i386, or x86_64
 	ARCH=`uname -p`
 	EXT="darwin"
 	;;
-    FREEBSD*|FreeBSD*)
+    *freebsd*)
 	ARCH="linux"
 	EXT="lnx"
 	;;
-    HP-UX-*)
+    *hpux*)
 	ARCH="hp"
 	EXT="hpu"
 	;;
-    IRIX*)
+    *irix*)
 	ARCH="sgi"
 	EXT="sgi"
 	;;
-    Linux*)
+    *linux*)
 	ARCH="linux"
 	EXT="lnx"
 	;;
-    MINGW32*)
+    *mingw32*)
 	#ARCH=""
 	EXT="mingw32"
 	;;
-    OSF1*)
+    *osf1*)
 	ARCH="alpha"
 	EXT="osf"
 	;;
-    SunOS-4*)
-	ARCH="sun"
-	EXT="sun"
-	;;
-    SunOS-5*)
+    *solaris*)
 	ARCH="solaris"
 	EXT="sol"
 	;;
-    ULTRIX*)
+    *ultrix*)
 	ARCH="dec"
 	EXT="dec"
 	;;
     *)
-	echo "cfitsio: == Don't know what do do with $system"
+	echo "cfitsio: == Don't know what do do with $host"
 	;;
 esac
 
@@ -249,15 +238,15 @@ AC_SUBST(SSE_FLAGS)
 CFLAGS="$CFLAGS"
 LIBPRE=""
 
-case $system in
-    CYGWIN*)
+case $host in
+    *pc-cygwin*)
 	CFLAGS="$CFLAGS -DHAVE_POSIX_SIGNALS"
 	;;
-    Darwin-*)
+    *apple-darwin*)
         # Build for i386 & x86_64 architectures on Darwin 10.x or newer:
         changequote(,)
-        case $system in
-            Darwin-[56789]*)
+        case $host in
+            *darwin[56789]*)
                 ;;
             *)
                 changequote([,])
@@ -280,23 +269,23 @@ case $system in
         AC_DEFINE(_LARGEFILE_SOURCE)
         AC_DEFINE(_FILE_OFFSET_BITS,64)
 	;;
-    HP-UX-*)
+    *hpux*)
 	if test "x$CFORTRANFLAGS" = x ; then
 		CFORTRANFLAGS="-Dappendus"
 	fi
 	CFLAGS="$CFLAGS -DPG_PPU" 
 	LIBPRE="-Wl,"
 	;;
-    IRIX*)
+    *irix*)
 	CFLAGS="$CFLAGS -DHAVE_POSIX_SIGNALS"
 	RANLIB="touch"
 	;;
-    Linux*)
+    *linux*)
         # For large file support:
         AC_DEFINE(_LARGEFILE_SOURCE)
         AC_DEFINE(_FILE_OFFSET_BITS,64)
 	;;
-    SunOS-5*)
+    *solaris*)
         if test "x$CFORTRANFLAGS" = x ; then
                 CFORTRANFLAGS="-Dsolaris"
         fi
@@ -307,7 +296,7 @@ case $system in
         AC_DEFINE(_FILE_OFFSET_BITS,64)
 	;;
     *)
-		echo "cfitsio: == Don't know what do do with $system"
+		echo "cfitsio: == Don't know what do do with $host"
 	;;
 esac
 
@@ -332,8 +321,8 @@ case $GCC in
 	no)
 		echo "cfitsio: Old CFLAGS is $CFLAGS"
 		CFLAGS=`echo $CFLAGS | sed -e "s/-g/-O/"`
-		case $system in
-		    SunOS-5*)
+		case $host in
+		    *solaris*)
 			changequote(,)
 			if test `echo $CFLAGS | grep -c fast` -gt 0
 			then
@@ -344,7 +333,7 @@ case $GCC in
          		CFLAGS="$CFLAGS -DHAVE_ALLOCA_H -DHAVE_POSIX_SIGNALS"
 			;;
 		    *)
-			echo "== No special changes for $system"
+			echo "== No special changes for $host"
 			;;
 		esac
 		echo "New CFLAGS is $CFLAGS"
@@ -371,8 +360,8 @@ case $EXT in
     SHLIB_SUFFIX=".dylib"
     CFITSIO_SHLIB="libcfitsio.\${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}\${SHLIB_SUFFIX}"
     CFITSIO_SHLIB_SONAME="libcfitsio.\${CFITSIO_SONAME}\${SHLIB_SUFFIX}"
-    case $system in
-        Darwin-[56789]*)
+    case $host in
+        *darwin[56789]*)
             SHLIB_LD="$CC -dynamiclib -install_name libcfitsio.\${CFITSIO_SONAME}\${SHLIB_SUFFIX} -compatibility_version \${CFITSIO_SONAME} -current_version \${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}"
             ;;
         *)

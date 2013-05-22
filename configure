@@ -626,7 +626,6 @@ CPPFLAGS
 LDFLAGS
 CFLAGS
 CC
-uname_found
 INSTALL_ROOT
 CFITSIO_SONAME
 CFITSIO_MINOR
@@ -2136,101 +2135,53 @@ test "$exec_prefix" != NONE -a "$prefix" != "$exec_prefix" \
 
 
 #--------------------------------------------------------------------
-# Check "uname" to determine system type
+# System type
 #--------------------------------------------------------------------
-# Extract the first word of "uname", so it can be a program name with args.
-set dummy uname; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_prog_uname_found+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test -n "$uname_found"; then
-  ac_cv_prog_uname_found="$uname_found" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_prog_uname_found="1"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
 
-  test -z "$ac_cv_prog_uname_found" && ac_cv_prog_uname_found="0"
-fi
-fi
-uname_found=$ac_cv_prog_uname_found
-if test -n "$uname_found"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $uname_found" >&5
-$as_echo "$uname_found" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-if test $uname_found -eq 0 ; then
-    echo "cfitsio: No uname found; setting system type to unknown."
-    system="unknown"
-else
-    system=`uname -s`-`uname -r`
-fi
-
-case $system in
-    CYGWIN*)
+case $host in
+    *pc-cygwin*)
 	ARCH="cygwin"
 	EXT="cygwin"
 	;;
-    Darwin-*)
+    *apple-darwin*)
 	# Darwin can be powerpc, i386, or x86_64
 	ARCH=`uname -p`
 	EXT="darwin"
 	;;
-    FREEBSD*|FreeBSD*)
+    *freebsd*)
 	ARCH="linux"
 	EXT="lnx"
 	;;
-    HP-UX-*)
+    *hpux*)
 	ARCH="hp"
 	EXT="hpu"
 	;;
-    IRIX*)
+    *irix*)
 	ARCH="sgi"
 	EXT="sgi"
 	;;
-    Linux*)
+    *linux*)
 	ARCH="linux"
 	EXT="lnx"
 	;;
-    MINGW32*)
+    *mingw32*)
 	#ARCH=""
 	EXT="mingw32"
 	;;
-    OSF1*)
+    *osf1*)
 	ARCH="alpha"
 	EXT="osf"
 	;;
-    SunOS-4*)
-	ARCH="sun"
-	EXT="sun"
-	;;
-    SunOS-5*)
+    *solaris*)
 	ARCH="solaris"
 	EXT="sol"
 	;;
-    ULTRIX*)
+    *ultrix*)
 	ARCH="dec"
 	EXT="dec"
 	;;
     *)
-	echo "cfitsio: == Don't know what do do with $system"
+	echo "cfitsio: == Don't know what do do with $host"
 	;;
 esac
 
@@ -3782,15 +3733,15 @@ fi
 CFLAGS="$CFLAGS"
 LIBPRE=""
 
-case $system in
-    CYGWIN*)
+case $host in
+    *pc-cygwin*)
 	CFLAGS="$CFLAGS -DHAVE_POSIX_SIGNALS"
 	;;
-    Darwin-*)
+    *apple-darwin*)
         # Build for i386 & x86_64 architectures on Darwin 10.x or newer:
 
-        case $system in
-            Darwin-[56789]*)
+        case $host in
+            *darwin[56789]*)
                 ;;
             *)
 
@@ -3843,25 +3794,25 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
         $as_echo "#define _FILE_OFFSET_BITS 64" >>confdefs.h
 
 	;;
-    HP-UX-*)
+    *hpux*)
 	if test "x$CFORTRANFLAGS" = x ; then
 		CFORTRANFLAGS="-Dappendus"
 	fi
 	CFLAGS="$CFLAGS -DPG_PPU"
 	LIBPRE="-Wl,"
 	;;
-    IRIX*)
+    *irix*)
 	CFLAGS="$CFLAGS -DHAVE_POSIX_SIGNALS"
 	RANLIB="touch"
 	;;
-    Linux*)
+    *linux*)
         # For large file support:
         $as_echo "#define _LARGEFILE_SOURCE 1" >>confdefs.h
 
         $as_echo "#define _FILE_OFFSET_BITS 64" >>confdefs.h
 
 	;;
-    SunOS-5*)
+    *solaris*)
         if test "x$CFORTRANFLAGS" = x ; then
                 CFORTRANFLAGS="-Dsolaris"
         fi
@@ -3918,7 +3869,7 @@ fi
 
 	;;
     *)
-		echo "cfitsio: == Don't know what do do with $system"
+		echo "cfitsio: == Don't know what do do with $host"
 	;;
 esac
 
@@ -3944,8 +3895,8 @@ $as_echo "$as_me: WARNING: This gcc is pretty old. Disabling optimization to be 
 	no)
 		echo "cfitsio: Old CFLAGS is $CFLAGS"
 		CFLAGS=`echo $CFLAGS | sed -e "s/-g/-O/"`
-		case $system in
-		    SunOS-5*)
+		case $host in
+		    *solaris*)
 
 			if test `echo $CFLAGS | grep -c fast` -gt 0
 			then
@@ -3956,7 +3907,7 @@ $as_echo "$as_me: WARNING: This gcc is pretty old. Disabling optimization to be 
          		CFLAGS="$CFLAGS -DHAVE_ALLOCA_H -DHAVE_POSIX_SIGNALS"
 			;;
 		    *)
-			echo "== No special changes for $system"
+			echo "== No special changes for $host"
 			;;
 		esac
 		echo "New CFLAGS is $CFLAGS"
@@ -3983,8 +3934,8 @@ case $EXT in
     SHLIB_SUFFIX=".dylib"
     CFITSIO_SHLIB="libcfitsio.\${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}\${SHLIB_SUFFIX}"
     CFITSIO_SHLIB_SONAME="libcfitsio.\${CFITSIO_SONAME}\${SHLIB_SUFFIX}"
-    case $system in
-        Darwin-[56789]*)
+    case $host in
+        *darwin[56789]*)
             SHLIB_LD="$CC -dynamiclib -install_name libcfitsio.\${CFITSIO_SONAME}\${SHLIB_SUFFIX} -compatibility_version \${CFITSIO_SONAME} -current_version \${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}"
             ;;
         *)
