@@ -14,9 +14,9 @@ AC_CONFIG_SRCDIR([fitscore.c])
 # CFITSIO Version Numbers:
 #--------------------------------------------------------------------
 AC_SUBST(CFITSIO_MAJOR,3)
-AC_SUBST(CFITSIO_MINOR,34)
+AC_SUBST(CFITSIO_MINOR,35)
 # Increment soname each time the interface changes:
-AC_SUBST(CFITSIO_SONAME,0)
+AC_SUBST(CFITSIO_SONAME,1)
 
 #--------------------------------------------------------------------
 # Command options

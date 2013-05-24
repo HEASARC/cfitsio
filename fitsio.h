@@ -34,9 +34,14 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.34
-#define CFITSIO_MINOR 34
+#define CFITSIO_VERSION 3.35
+#define CFITSIO_MINOR 35
 #define CFITSIO_MAJOR 3
+#define CFITSIO_SONAME 1
+
+/* the SONAME is incremented in a new release if the binary shared */
+/* library (on linux and Mac systems) is not backward compatible */
+/* with the previous release of CFITSIO */
 
 #include <stdio.h>
 
@@ -255,8 +260,10 @@ SERVICES PROVIDED HEREUNDER."
 #define FLOATNULLVALUE -9.11912E-36F
 #define DOUBLENULLVALUE -9.1191291391491E-36
  
-/* compression algorithm type codes */
+/* compression algorithm codes */
+#define NO_DITHER -1
 #define SUBTRACTIVE_DITHER_1 1
+#define SUBTRACTIVE_DITHER_2 2
 #define MAX_COMPRESS_DIM     6
 #define RICE_1      11
 #define GZIP_1      21
@@ -264,7 +271,7 @@ SERVICES PROVIDED HEREUNDER."
 #define PLIO_1      31
 #define HCOMPRESS_1 41
 #define BZIP2_1     51  /* not publicly supported; only for test purposes */
-#define NOCOMPRESS  0
+#define NOCOMPRESS  -1
 
 #ifndef TRUE
 #define TRUE 1
@@ -358,13 +365,14 @@ typedef struct      /* structure used to store basic FITS file information */
          /* the following elements are related to compressed images */
     int request_compress_type;  /* requested image compression algorithm */
     long request_tilesize[MAX_COMPRESS_DIM]; /* requested tiling size */
-
     float request_hcomp_scale;    /* requested HCOMPRESS scale factor */
     int request_hcomp_smooth;     /* requested HCOMPRESS smooth parameter */
+    float request_quantize_level;   /* requested quantize level */
     int request_quantize_dither ; /* requested dithering mode when quantizing */
                                   /* floating point images to integer */
     int request_dither_offset;    /* starting offset into the array of random dithering */
     int request_lossy_int_compress;  /* lossy compress integer image as if float image? */
+    int request_huge_hdu;  /* use '1Q' rather then '1P' variable length arrays */
 
     int compressimg; /* 1 if HDU contains a compressed image, else 0 */
     int quantize_dither;   /* floating point pixel quantization algorithm */
@@ -723,7 +731,7 @@ int ffomem(fitsfile **fptr, const char *name, int mode, void **buffptr,
            void *(*mem_realloc)(void *p, size_t newsize),
            int *status);
 int ffopen(fitsfile **fptr, const char *filename, int iomode, int *status);
-int ffopentest(double version, fitsfile **fptr, const char *filename, int iomode, int *status);
+int ffopentest(int soname, fitsfile **fptr, const char *filename, int iomode, int *status);
 
 int ffdopn(fitsfile **fptr, const char *filename, int iomode, int *status);
 int fftopn(fitsfile **fptr, const char *filename, int iomode, int *status);
@@ -1890,6 +1898,8 @@ int fits_set_hcomp_smooth(fitsfile *fptr, int smooth, int *status);
 int fits_set_quantize_dither(fitsfile *fptr, int dither, int *status);
 int fits_set_dither_offset(fitsfile *fptr, int offset, int *status);
 int fits_set_lossy_int(fitsfile *fptr, int lossy_int, int *status);
+int fits_set_huge_hdu(fitsfile *fptr, int huge, int *status);
+int fits_set_compression_pref(fitsfile *infptr, fitsfile *outfptr, int *status);
 
 int fits_get_compression_type(fitsfile *fptr, int *ctype, int *status);
 int fits_get_tile_dim(fitsfile *fptr, int ndim, long *dims, int *status);
@@ -1918,8 +1928,8 @@ int fits_hdecompress(unsigned char *input, int smooth, int *a, int *nx,
 int fits_hdecompress64(unsigned char *input, int smooth, LONGLONG *a, int *nx, 
        int *ny, int *scale, int *status);
 
-int fits_transpose_table(fitsfile *infptr, fitsfile *outfptr, int *status);
-int fits_compress_table_fast(fitsfile *infptr, fitsfile *outfptr, int *status);
+int fits_compress_table_gzip(fitsfile *infptr, fitsfile *outfptr, int *status);
+int fits_compress_table_shuffle(fitsfile *infptr, fitsfile *outfptr, int *status);
 int fits_compress_table_best(fitsfile *infptr, fitsfile *outfptr, int *status);
 int fits_compress_table_rice(fitsfile *infptr, fitsfile *outfptr, int *status);
 int fits_uncompress_table(fitsfile *infptr, fitsfile *outfptr, int *status);

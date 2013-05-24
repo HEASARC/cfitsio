@@ -1,5 +1,55 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.35 - 24 May 2013
+		   
+   - modified configure and Makefile.in so that when building CFITSIO
+     as a shared library on linux or Mac platforms, it will use the SONAME
+     convention to indicate whether each new release of the CFITSIO
+     library is binary-compatible with the previous version.  Application
+     programs that link with the shared library will not need to be
+     recompiled as long as the versions are compatible.  In practice,
+     this means that the shared library binary file that is created (on
+     Linux systems) will have a name like 'libcfitsio.so.I.J.K', where I is the
+     SONAME version number, J is the major CFITSIO version number (e.g. 3),
+     and K is the minor CFITSIO version number (e.g., 34).  Two link
+     files will also be created such that
+       libcfitsio.so -> libcfitsio.so.I, and
+       libcfitsio.so.I -> libcfitsio.I.J.K
+     Application programs will still run correctly with the new version of
+     CFITSIO as long as the 'I' version number remains the same, but the
+     applications will fail to run if the 'I' number changes, thus alerting
+     the user that the application must be rebuilt.
+
+   - modified the image compression routines so that the output compressed
+     image (stored in a FITS binary table) uses the '1Q' variable length
+     array format (instead of '1P') when the input file is larger than 4 GB.
+
+   - added support for "compression directive" keywords which indicate how
+     that HDU should be compressed (e.g., which compression algorithem to use,
+     what tiling pattern to use, etc.).  The values of these keywords will
+     override the compression parameters that were specified on the command 
+     line when running the fpack FITS file compression program.
+
+   - added support for a new subtractive dithering method when compressing
+     floating point images.  The only difference with the previous method
+     is that pixels with a value exactly equal to 0.0 will not be dithered,
+     and instead will be exactly preserved when the image is comprssed.
+
+   - made performance improvement to fits_read_compressed_img so that 
+     when reading a section of an compressed image that includes only 
+     every nth pixel in some dimension, it will only uncompressed a tile 
+     if there are actually any pixels of interest in that tile.
+
+   - fixed several issues with the beta FITS binary table compression code
+     that is used by fpack:  added support for zero-length vector columns,
+     made improvements to the output report when using the -T option in fpack,
+     changed the default table compression method to 'Rice' instead of 
+     'Best', and now writes the 'ZTILELEN' keyword to document the number
+     of table rows in each tile.
+
+   - fixed error in ffbinit in calculating the total length of the binary
+     table extension if the THEAP keyword was used to override the
+     default starting location of the heap.
 
 Version 3.34 - 20 March 2013
 
@@ -46,7 +96,7 @@ Version 3.33 - 14 Feb 2013
      as in the standalone fpack program.  The default tile size can
      be overridden by calling fits_set_tile_dim.
 
-   - fixed bug bug that resulted in a corrupted output FITS image when
+   - fixed bug that resulted in a corrupted output FITS image when
      attempting to write a float or double array of values to a 
      tile-compressed integer data type image.  CFITSIO does not support
      implicit data type conversion in this case and now correctly

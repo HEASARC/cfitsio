@@ -73,11 +73,12 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.34;
+      *version = (float) 3.35;
 
-/*       20 Mar 2013
+/*       23 May 2013
 
    Previous releases:
+      *version = 3.34    20 Mar 2013
       *version = 3.33    14 Feb 2013
       *version = 3.32       Oct 2012
       *version = 3.31    18 Jul 2012
@@ -4896,7 +4897,7 @@ int ffbinit(fitsfile *fptr,     /* I - FITS file pointer */
     /* the next HDU begins in the next logical block after the data  */
     (fptr->Fptr)->headstart[ (fptr->Fptr)->curhdu + 1] = 
          (fptr->Fptr)->datastart +
-         ( (rowlen * nrows + pcount + 2879) / 2880 * 2880 );
+	 ( ((fptr->Fptr)->heapstart + (fptr->Fptr)->heapsize + 2879) / 2880 * 2880 );
 
     /* determine the byte offset to the beginning of each column */
     ffgtbc(fptr, &totalwidth, status);

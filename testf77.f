@@ -107,7 +107,7 @@ C     library routines.
       status = 0
 
       call ftvers(vers)
-      write(*,'(1x,A,F7.3)') 'FITSIO TESTPROG, v', vers
+      write(*,'(1x,A)') 'FITSIO TESTPROG'
       write(*, '(1x,A)')' '
 
       iunit = 15

@@ -148,6 +148,7 @@ int fp_init (fpstate *fpptr)
 	fpptr->comptype = RICE_1;
 	fpptr->quantize_level = DEF_QLEVEL;
         fpptr->no_dither = 0;
+        fpptr->dither_method = 1;
         fpptr->dither_offset = 0;
         fpptr->int_to_float = 0;
 
@@ -171,7 +172,6 @@ int fp_init (fpstate *fpptr)
 	fpptr->do_checksums = 1;
 	fpptr->do_gzip_file = 0;
 	fpptr->do_tables = 0;  /* this is for beta testing purposes only */
-	fpptr->do_fast = 0;  /* this is for beta testing purposes only */
 	fpptr->test_all = 0;
 	fpptr->verbose = 0;
 
@@ -364,6 +364,11 @@ int fp_preflight (int argc, char *argv[], int unpack, fpstate *fpptr)
 	    }
 
 	    strncpy (infits, argv[iarg], SZ_STR);
+	    if (infits[0] == '-' && infits[1] != '\0') {  
+	         /* don't interpret this as intending to read input file from stdin */
+		    fp_msg ("Error: invalid input file name\n   "); fp_msg (argv[iarg]);
+		    fp_msg ("\n"); fp_noop (); exit (-1);
+	    }
 
 	    if (strchr (infits, '[') || strchr (infits, ']')) {
 		fp_msg ("Error: section/extension notation not supported: ");
@@ -853,27 +858,28 @@ int fp_pack (char *infits, char *outfits, fpstate fpvar, int *islossless)
 	    fp_abort_output(infptr, NULL, stat);
 	}
 
-	fits_set_compression_type (outfptr, fpvar.comptype, &stat);
-	fits_set_lossy_int (outfptr, fpvar.int_to_float, &stat);
-
-	if (fpvar.no_dither)
-	    fits_set_quantize_dither(outfptr, -1, &stat);
-	    
-	fits_set_quantize_level (outfptr, fpvar.quantize_level, &stat);
-	fits_set_hcomp_scale (outfptr, fpvar.scale, &stat);
-	fits_set_hcomp_smooth (outfptr, fpvar.smooth, &stat);
-	fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
-	fits_set_dither_offset(outfptr, fpvar.dither_offset, &stat);
 
 	if (stat) { 
 	    fp_abort_output(infptr, outfptr, stat);
 	}
 
-	
 	while (! stat) {
 
-	    /* the lossy_int value may have changed, so reset it for each HDU */
+	    /*  LOOP OVER EACH HDU */
+
 	    fits_set_lossy_int (outfptr, fpvar.int_to_float, &stat);
+	    fits_set_compression_type (outfptr, fpvar.comptype, &stat);
+	    fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
+
+	    if (fpvar.no_dither)
+	        fits_set_quantize_dither(outfptr, -1, &stat);
+	    else
+	        fits_set_quantize_dither(outfptr, fpvar.dither_method, &stat);
+
+	    fits_set_quantize_level (outfptr, fpvar.quantize_level, &stat);
+	    fits_set_dither_offset(outfptr, fpvar.dither_offset, &stat);
+	    fits_set_hcomp_scale (outfptr, fpvar.scale, &stat);
+	    fits_set_hcomp_smooth (outfptr, fpvar.smooth, &stat);
 
 	    fp_pack_hdu (infptr, outfptr, fpvar, islossless, &stat);
 
@@ -914,6 +920,10 @@ int fp_unpack (char *infits, char *outfits, fpstate fpvar)
 
         fits_open_file (&infptr, infits, READONLY, &stat);
         fits_create_file (&outfptr, outfits, &stat);
+
+	if (stat) { 
+	    fp_abort_output(infptr, outfptr, stat);
+	}
 
         if (fpvar.extname[0]) {  /* unpack a list of HDUs? */
 
@@ -1056,12 +1066,13 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 	long	naxes[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
 	long	tilesize[9] = {0,1,1,1,1,1,1,1,1};
 	int	stat=0, totpix=0, naxis=0, ii, hdutype, bitpix, extnum = 0, len;
-	int     tstatus = 0, hdunum, rescale_flag, bpix;
+	int     tstatus = 0, hdunum, rescale_flag, bpix, ncols;
 	char	dtype[8], dimen[100];
 	double  bscale, rescale, noisemin;
 	long headstart, datastart, dataend;
 	float origdata = 0., whole_cpu, whole_elapse, row_elapse, row_cpu, xbits;
 	FILE	*diskfile;
+	LONGLONG nrows;
 	/* structure to hold image statistics (defined in fpack.h) */
 	imgstats imagestats;
 
@@ -1071,20 +1082,10 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 
 	if (stat) { fits_report_error (stderr, stat); exit (stat); }
 
-	if (fpvar.no_dither)
-	    fits_set_quantize_dither(outfptr, -1, &stat);
-
-	fits_set_quantize_level (outfptr, fpvar.quantize_level, &stat);
-	fits_set_hcomp_scale (outfptr, fpvar.scale, &stat);
-	fits_set_hcomp_smooth (outfptr, fpvar.smooth, &stat);
-	fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
-	fits_set_dither_offset(outfptr, fpvar.dither_offset, &stat);
-
 	while (! stat) {
-	
-	    rescale_flag = 0;
 	    
 	    /*  LOOP OVER EACH HDU */
+	    rescale_flag = 0;
 	    fits_get_hdu_type (inputfptr, &hdutype, &stat);
 
 	    if (hdutype == IMAGE_HDU) {
@@ -1244,14 +1245,37 @@ printf("    HDU %d does not meet noise criteria to be quantized, so losslessly c
 		/* test compression ratio and speed for each algorithm */
 
 		if (fpvar.quantize_level != 0) {
+
 		  fits_set_compression_type (outfptr, RICE_1, &stat);
 		  fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
+		  if (fpvar.no_dither)
+	    	    fits_set_quantize_dither(outfptr, -1, &stat);
+		  else
+	    	    fits_set_quantize_dither(outfptr, fpvar.dither_method, &stat);
+
+		  fits_set_quantize_level (outfptr, fpvar.quantize_level, &stat);
+		  fits_set_dither_offset(outfptr, fpvar.dither_offset, &stat);
+		  fits_set_hcomp_scale (outfptr, fpvar.scale, &stat);
+		  fits_set_hcomp_smooth (outfptr, fpvar.smooth, &stat);
+
 		  fp_test_hdu(infptr, outfptr, outfptr2, fpvar, &stat);
 		}
 
 		if (fpvar.quantize_level != 0) {
+\
   		  fits_set_compression_type (outfptr, HCOMPRESS_1, &stat);
 		  fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
+
+		  if (fpvar.no_dither)
+	    	    fits_set_quantize_dither(outfptr, -1, &stat);
+		  else
+	    	    fits_set_quantize_dither(outfptr, fpvar.dither_method, &stat);
+
+		  fits_set_quantize_level (outfptr, fpvar.quantize_level, &stat);
+		  fits_set_dither_offset(outfptr, fpvar.dither_offset, &stat);
+		  fits_set_hcomp_scale (outfptr, fpvar.scale, &stat);
+		  fits_set_hcomp_smooth (outfptr, fpvar.smooth, &stat);
+
 		  fp_test_hdu(infptr, outfptr, outfptr2, fpvar, &stat);
 		}
 
@@ -1260,7 +1284,19 @@ printf("    HDU %d does not meet noise criteria to be quantized, so losslessly c
 		} else {
 		    fits_set_compression_type (outfptr, GZIP_1, &stat);
 		}
+
 		fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
+
+		if (fpvar.no_dither)
+	    	    fits_set_quantize_dither(outfptr, -1, &stat);
+		else
+	    	    fits_set_quantize_dither(outfptr, fpvar.dither_method, &stat);
+
+		fits_set_quantize_level (outfptr, fpvar.quantize_level, &stat);
+		fits_set_dither_offset(outfptr, fpvar.dither_offset, &stat);
+		fits_set_hcomp_scale (outfptr, fpvar.scale, &stat);
+		fits_set_hcomp_smooth (outfptr, fpvar.smooth, &stat);
+
 		fp_test_hdu(infptr, outfptr, outfptr2, fpvar, &stat);
 
 /*
@@ -1290,7 +1326,9 @@ printf("    HDU %d does not meet noise criteria to be quantized, so losslessly c
                 }
 	    } else if ( (hdutype == BINARY_TBL) && fpvar.do_tables) {
 
-		printf("\n File: %s\n", infits);
+    		fits_get_num_rowsll(inputfptr, &nrows, &stat);
+    		fits_get_num_cols(inputfptr, &ncols, &stat);
+ 		printf("\n File: %s, HDU %d,  %d cols X %ld rows\n", infits, extnum, ncols, nrows);
 		fp_test_table(inputfptr, outfptr, outfptr2, fpvar, &stat);	  
 
 	    } else {
@@ -1350,13 +1388,7 @@ int fp_pack_hdu (fitsfile *infptr, fitsfile *outfptr, fpstate fpvar,
 		/* data is less than 1 FITS block in size, so don't compress */
 	        fits_copy_hdu (infptr, outfptr, 0, &stat);
 	    } else {
-
-	        /* transpose the table and compress each column */
-		if (fpvar.do_fast) {
-		    fits_compress_table_fast (infptr, outfptr, &stat);
-		} else {
-		    fits_compress_table_best (infptr, outfptr, &stat);
-		}
+		    fits_compress_table_rice (infptr, outfptr, &stat);
 	    }
 
 	    return(0);
@@ -1497,7 +1529,6 @@ int fp_unpack_hdu (fitsfile *infptr, fitsfile *outfptr, fpstate fpvar, int *stat
 	    if (*status == 0 && lval != 0) {
 	        /*  uncompress the table */
 	        fits_uncompress_table (infptr, outfptr, status);
-
 	    } else {
 	        if (*status == KEY_NO_EXIST)  /* table is not compressed */
 		    *status = 0;
@@ -1818,7 +1849,6 @@ int fp_test_table (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
 /* this routine is for performance testing of the beta table compression methods */
 
 	int stat = 0, hdutype, comptype, noloss = 0, ii;
-	unsigned int idatasize;
         char ctype[20], lossless[4];
 	LONGLONG headstart, datastart, dataend, datasize;
 	float origdata = 0., compressdata = 0.;
@@ -1842,12 +1872,12 @@ int fp_test_table (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
 	}
 
      /* 1  gzip  raw table **********************************  */
+
+/*
  	marktime(&stat);
 	
- 	/* get compressed size of the data blocks */
 	fits_gzip_datablocks(infptr, &dlen, &stat);
 
-	/* get elapsped times */
 	gettime(&elapse, &packcpu, &stat);
 
         fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status); 
@@ -1859,11 +1889,31 @@ int fp_test_table (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
 	grate = packcpu;
 	
 	fits_delete_hdu(outfptr, &hdutype, &stat);
-
+*/
      /* 2  transposed table and compress each column with gzip ***********  */
 
  	marktime(&stat);
-	fits_transpose_table (infptr, outfptr,  &stat);
+	fits_compress_table_gzip (infptr, outfptr,  &stat);
+
+	/* get elapsped times */
+	gettime(&elapse, &packcpu, &stat);
+
+        fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status); 
+	indatasize = dataend - datastart;
+	filesize = (float) dataend / 1000000.;
+	
+        fits_get_hduaddrll(outfptr, &headstart, &datastart, &dataend, status); 
+	outdatasize = dataend - datastart;
+
+	gratio = (float) indatasize / (float) outdatasize;
+	grate = packcpu;
+
+	fits_delete_hdu(outfptr, &hdutype, &stat);
+
+     /* 3  transpose table, shuffle numeric columns, and compress each column with gzip */
+
+ 	marktime(&stat);
+	fits_compress_table_shuffle (infptr, outfptr, &stat);
 
 	/* get elapsped times */
 	gettime(&elapse, &packcpu, &stat);
@@ -1880,29 +1930,12 @@ int fp_test_table (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
 
 	fits_delete_hdu(outfptr, &hdutype, &stat);
 
-     /* 3  transpose table, shuffle numeric columns, and compress each column with gzip */
-
- 	marktime(&stat);
-	fits_compress_table_fast (infptr, outfptr, &stat);
-
-	/* get elapsped times */
-	gettime(&elapse, &packcpu, &stat);
-
-        fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status); 
-	indatasize = dataend - datastart;
-	filesize = (float) dataend / 1000000.;
-	
-        fits_get_hduaddrll(outfptr, &headstart, &datastart, &dataend, status); 
-	outdatasize = dataend - datastart;
-
-	pratio = (float) indatasize / (float) outdatasize;
-	prate = packcpu;
-
-	fits_delete_hdu(outfptr, &hdutype, &stat);
-
      /* 4  transposed, use Rice for integer columns, shuffled gzip for others  */
 
  	marktime(&stat);
+
+	/* set special flag to tell fits_compress_table_rice to print out diagnositics */
+        if (stat == 0) stat = -999;  
 	fits_compress_table_rice (infptr, outfptr, &stat);
 
 	/* get elapsped times */
@@ -1922,11 +1955,10 @@ int fp_test_table (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
 
 
      /* 5  best  */
-
+/*
  	marktime(&stat);
 	fits_compress_table_best (infptr, outfptr, &stat);
 
-	/* get elapsped times */
 	gettime(&elapse, &packcpu, &stat);
 
         fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status); 
@@ -1940,13 +1972,16 @@ int fp_test_table (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
 	brate = packcpu;
 
 	fits_delete_hdu(outfptr, &hdutype, &stat);
-
-	printf("\n  Size       Raw        Transposed     Shuffled        Rice        Best\n");     
-	printf(" %5.2fMB %5.2f (%4.2fs) %5.2f (%4.2fs) %5.2f (%4.2fs) %5.2f (%4.2fs)  %5.2f (%4.2fs)\n",
-	    filesize, gratio, grate, sratio, srate, pratio, prate, rratio, rrate, bratio, brate);
-	printf(" Disk savings ratio:    %5.2f         %5.2f      %5.2f\n",
-	 (1. - 1./sratio) / (1. - 1./gratio), (1. - 1./pratio) / (1. - 1./gratio), (1. - 1./bratio) / (1. - 1./gratio));
-
+*/
+	printf("\n\n                Compression Ratio (Time)\n");
+	printf("  Size       Gzip          Shuffled        Rice   \n");     
+	printf(" %5.2fMB  %5.2f (%4.2fs) %5.2f (%4.2fs) %5.2f (%4.2fs) \n",
+	    filesize, gratio, grate, sratio, srate,  rratio, rrate);
+/*
+	printf(" Disk savings ratio:     %5.2f           %5.2f    \n",
+	 (1. - 1./sratio) / (1. - 1./gratio), (1. - 1./rratio) / (1. - 1./gratio));
+*/
+	fits_report_error (stderr, stat);
 
         return(0);
 }

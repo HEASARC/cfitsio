@@ -1002,18 +1002,20 @@ int imcomp_copy_overlap (char *tile, int pixlen, int ndim,
          long *tfpixel, long *tlpixel, char *bnullarray, char *image,
          long *fpixel, long *lpixel, long *inc, int nullcheck, char *nullarray,
          int *status);
+int imcomp_test_overlap (int ndim, long *tfpixel, long *tlpixel, 
+         long *fpixel, long *lpixel, long *inc, int *status);
 int imcomp_merge_overlap (char *tile, int pixlen, int ndim,
          long *tfpixel, long *tlpixel, char *bnullarray, char *image,
          long *fpixel, long *lpixel, int nullcheck, int *status);
 int imcomp_decompress_img(fitsfile *infptr, fitsfile *outfptr, int datatype,
          int  *status);
 int fits_quantize_float (long row, float fdata[], long nx, long ny, int nullcheck,
-         float in_null_value,
-           float quantize_level, int idata[], double *bscale, double *bzero,
+         float in_null_value, float quantize_level, 
+           int dither_method, int idata[], double *bscale, double *bzero,
            int *iminval, int *imaxval);
 int fits_quantize_double (long row, double fdata[], long nx, long ny, int nullcheck,
-         double in_null_value,
-           float quantize_level, int idata[], double *bscale, double *bzero,
+         double in_null_value, float quantize_level,
+           int dither_method, int idata[], double *bscale, double *bzero,
            int *iminval, int *imaxval);
 int fits_rcomp(int a[], int nx, unsigned char *c, int clen,int nblock);
 int fits_rcomp_short(short a[], int nx, unsigned char *c, int clen,int nblock);
@@ -1027,7 +1029,8 @@ int fits_rdecomp_byte (unsigned char *c, int clen, unsigned char array[], int nx
 int pl_p2li (int *pxsrc, int xs, short *lldst, int npix);
 int pl_l2pi (short *ll_src, int xs, int *px_dst, int npix);
 int fits_init_randoms(void);
-
+int fits_unset_compression_param( fitsfile *fptr, int *status);
+int fits_unset_compression_request( fitsfile *fptr, int *status);
 int fitsio_init_lock(void);
 
 /* general driver routines */

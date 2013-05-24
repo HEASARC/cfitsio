@@ -1379,35 +1379,69 @@ the fits\_read\_descript routine.
 
 \section{Multiple Access to the Same FITS File}
 
-CFITSIO supports simultaneous read and write access to multiple HDUs in
-the same FITS file.  Thus, one can open the same FITS file twice within
-a single program and move to 2 different HDUs in the file, and then
-read and write data or keywords to the 2 extensions just as if one were
-accessing 2 completely separate FITS files.   Since in general it is
-not possible to physically open the same file twice and then expect to
-be able to simultaneously (or in alternating succession) write to 2
-different locations in the file, CFITSIO recognizes when the file to be
-opened (in the call to fits\_open\_file) has already been opened and
-instead of actually opening the file again, just logically links the
-new file to the old file.  (This of course does not prevent the same
-file from being simultaneously opened by more than one program).  Then
-before CFITSIO reads or writes to either (logical) file, it makes sure
-that any modifications made to the other file have been completely
-flushed from the internal buffers to the file.  Thus, in principle, one
-could open a file twice, in one case pointing to the first extension
-and in the other pointing to the 2nd extension and then write data to
-both extensions, in any order, without danger of corrupting the file.
-There may be some efficiency penalties in doing this however, since
-CFITSIO has to flush all the internal buffers related to one file
-before switching to the  other, so it would still be prudent to
-minimize the number of times one switches back and forth between doing
-I/O to different HDUs in the same file.
+CFITSIO supports simultaneous read and write access to different
+HDUs in the same FITS file in some circumstances, as described
+below:
 
-Some restriction apply:  a FITS file cannot be opened the first time
-with READONLY access, and then opened a second time with READWRITE access,
-because this may be phyically impossible (e.g., if the file resides
-on read-only media such as a CDROM).  Also, in multi-threaded environoments,
-one should never open the same file with write access in different threads.
+\begin{itemize}
+
+\item
+Multi-threaded programs
+
+When CFITSIO is compiled with the -D\_REENTRANT directive (as can be
+tested with the fits\_is\_reentrant function) different threads can
+call any of the CFITSIO routines  to simultaneously read or write
+separate  FITS files.  Multiple threads can also read data from the
+same FITS file simultaneously, as long as the file was opened
+independently by each thread.  This relies on the operating system
+to correctly deal with reading the same file by multiple processes.
+Different threads should not share the same 'fitsfile' pointer to
+read an opened FITS file, unless locks are placed around the calls
+to  the CFITSIO reading routines.  Different threads should  never
+try to write to the same FITS file.
+
+\item
+Multiple read access to the same FITS file within a single
+program/thread
+
+A single process may open the same FITS file with READONLY access
+multiple times, and thus create multiple 'fitsfile*' pointers to
+that same file within CFITSIO. This relies on the operating system's
+ability to open a single file multiple times and correctly manage
+the subsequent read requests directed to the different C 'file*'
+pointers, which actually all point to the same file.  CFITSIO simply
+executes the read requests to the differnet 'fitsfile*' pointers the
+same as if they were physically different files.
+
+\item
+Multiple write access to the same FITS file within a single
+program/thread
+
+CFITSIO supports opening the same FITS file multiple times with
+WRITE access, but it only physically opens the file (at the
+operating system level) once, on the first call to fits\_open\_file.
+If fits\_open\_file is subsequently called to open the same file
+again, CFITSIO will recognize that the file is already open, and
+will return a new 'fitsfile*' pointer that logically points to the
+first 'fitsfile*' pointer, without actually opening the file a
+second time. The application program can then treat the 2
+'fitsfile*' pointers as if they point to different files, and can
+seemingly move to and write data to 2 different  HDUs within the
+same file.  However, each time the application program switches
+which 'fitsfile*' pointer it is writing to, CFITSIO will flush  any
+internal buffers that contain data written to the first 'fitsfile*'
+pointer,  then move to the HDU that the other 'fitsfile*' pointer
+is writing to. Obviously, this may add a significant amount of
+computational overhead if the  application program uses this feature
+to frequently switch back and forth between writing to 2 (or more)
+HDUs in the same file, so this capability should be used
+judiciously.
+
+Note that CFITSIO will not allow a FITS file to be opened a second
+time with READWRITE access if it was opened previously with READONLY
+access.
+
+\end{itemize}
 
 
 \section{When the Final Size of the FITS HDU is Unknown}
@@ -9884,6 +9918,7 @@ fits\_read\_pix  & \pageref{ffgpxv} \\
 fits\_read\_pixnull & \pageref{ffgpxf} \\
 fits\_read\_record       & \pageref{ffgrec} \\
 fits\_read\_str         & \pageref{ffgcrd} \\
+fits\_read\_subset  & \pageref{ffgsv} \\
 fits\_read\_subset\_TYP  & \pageref{ffgsvx} \pageref{ffgsvx2}\\
 fits\_read\_subsetnull\_TYP & \pageref{ffgsfx} \pageref{ffgsfx2} \\
 fits\_read\_tbl\_coord & \pageref{ffgtcs} \\
@@ -9903,9 +9938,9 @@ fits\_set\_atblnull   & \pageref{ffsnul} \\
 fits\_set\_bscale     & \pageref{ffpscl} \\
 fits\_set\_btblnull   & \pageref{fftnul} \\
 fits\_set\_compression\_type  & \pageref{ffsetcomp} \\
-fits\_set\_hdrsize    & \pageref{ffhdef} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_set\_hdrsize    & \pageref{ffhdef} \\
 fits\_set\_hdustruc   & \pageref{ffrdef} \\
 fits\_set\_imgnull    & \pageref{ffpnul} \\
 fits\_set\_noise\_bits  & \pageref{ffsetcomp} \\
@@ -9953,10 +9988,10 @@ fits\_write\_exthdr        & \pageref{ffphps} \\
 fits\_write\_grphdr       & \pageref{ffphpr} \\
 fits\_write\_grppar\_TYP & \pageref{ffpgpx} \\
 fits\_write\_hdu       & \pageref{ffwrhdu} \\
-fits\_write\_history      & \pageref{ffphis} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_write\_history      & \pageref{ffphis} \\
 fits\_write\_img        & \pageref{ffppr} \\
 fits\_write\_img\_null & \pageref{ffppru} \\
 fits\_write\_img\_TYP    & \pageref{ffpprx} \\
@@ -10103,6 +10138,7 @@ ffgsdt        & \pageref{ffdt2s} \\
 ffgsf\_ & \pageref{ffgsfx} \pageref{ffgsfx2} \\
 ffgstm        & \pageref{ffdt2s} \\
 ffgstr         & \pageref{ffgcrd} \\
+ffgsv  & \pageref{ffgsv} \\
 ffgsv\_  & \pageref{ffgsvx} \pageref{ffgsvx2}\\
 ffgtam & \pageref{ffgtam} \\
 ffgtbb    & \pageref{ffgtbb} \\
@@ -10134,11 +10170,11 @@ ffimem  & \pageref{ffimem} \\
 ffinit  & \pageref{ffinit} \\
 ffinttyp    & \pageref{ffinttyp} \\
 ffiopn & \pageref{ffopen} \\
-ffirec     & \pageref{ffirec} \\
 
 \end{tabular}
 \begin{tabular}{lr}
 
+ffirec     & \pageref{ffirec} \\
 ffirow  & \pageref{ffirow} \\
 ffitab    & \pageref{ffitab} \\
 ffiter   & \pageref{ffiter} \\
@@ -10186,11 +10222,11 @@ ffpktp & \pageref{ffpktp} \\
 ffpky          & \pageref{ffpky} \\
 ffpkyt   & \pageref{ffpkyt} \\
 ffpkyu     & \pageref{ffpkyu} \\
-ffpky\_      & \pageref{ffpkyx} \\
 
 \end{tabular}
 \begin{tabular}{lr}
 
+ffpky\_      & \pageref{ffpkyx} \\
 ffplsw & \pageref{ffplsw} \\
 ffpmrk   & \pageref{ffpmrk} \\
 ffpmsg   & \pageref{ffpmsg} \\
@@ -10238,12 +10274,12 @@ ffukls    & \pageref{ffukyx} \\
 ffuky        & \pageref{ffuky} \\
 ffukyu   & \pageref{ffukyu} \\
 ffuky\_    & \pageref{ffukyx} \\
-ffupch      & \pageref{ffupch} \\
 
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
 
+ffupch      & \pageref{ffupch} \\
 ffupck  & \pageref{ffupck} \\
 ffurlt  & \pageref{ffurlt} \\
 ffvcks  & \pageref{ffvcks} \\

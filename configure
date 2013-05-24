@@ -2039,10 +2039,10 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 #--------------------------------------------------------------------
 CFITSIO_MAJOR=3
 
-CFITSIO_MINOR=34
+CFITSIO_MINOR=35
 
 # Increment soname each time the interface changes:
-CFITSIO_SONAME=0
+CFITSIO_SONAME=1
 
 
 #--------------------------------------------------------------------

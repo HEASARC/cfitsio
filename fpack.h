@@ -12,10 +12,18 @@
 /* #include <sys/stat.h> */
 /* #include <sys/types.h> */
 
-#define	FPACK_VERSION	"1.6.0 (Feb 2011)"
+#define	FPACK_VERSION	"1.6.1 (Mar 2013)"
 /*
 VERSION	History
 
+1.6.1 (Mar 2013)
+    - numerous changes to the BETAtable compression method used to compress
+      binary tables
+    - added support for compression 'steering' keywords that specify the
+      desired compression parameters that should be used when compressing
+      that particular HDU, thus overriding the fpack command line parameter
+      values.
+    
 1.6.0 (June 2012)
     - Fixed behavior of the "rename" function on Windows platforms so that
       it will clobber/delete an existing file before renaming a file to 
@@ -83,6 +91,7 @@ typedef struct
 	float	quantize_level;
 	int     no_dither;
 	int     dither_offset;
+	int     dither_method;
 	float	scale;
 	float	rescale_noise;
 	int	smooth;
@@ -99,7 +108,6 @@ typedef struct
 	int	do_checksums;
 	int	do_gzip_file;
 	int     do_tables;  
-	int     do_fast;
 	int	test_all;
 	int	verbose;
 

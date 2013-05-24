@@ -87,9 +87,10 @@ int main()
     status = 0;
     strcpy(tblname, "Test-ASCII");
 
-    ffvers(&vers);
+/*    ffvers(&vers); 
     printf("CFITSIO TESTPROG, v%.3f\n\n",vers);
-
+*/
+    printf("CFITSIO TESTPROG\n\n");
     printf("Try opening then closing a nonexistent file:\n");
     fits_open_file(&fptr, "tq123x.kjl", READWRITE, &status);
     printf("  ffopen fptr, status  = %lu %d (expect an error)\n", 
@@ -565,7 +566,7 @@ int main()
         goto errstatus;
       }
 
-      if (ffopen(&fptr, filename, READWRITE, &status) > 0)
+      if (fits_open_file(&fptr, filename, READWRITE, &status) > 0)
       {
         printf("ERROR: ffopen open file status = %d\n", status);
         goto errstatus;

@@ -434,7 +434,7 @@ int ffiopn(fitsfile **fptr,      /* O - FITS file pointer                   */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffopentest(double version,   /* I - CFITSIO version number, from the    */
+int ffopentest(int soname,       /* I - CFITSIO shared library version     */
                                  /*     application program (fitsio.h file) */
            fitsfile **fptr,      /* O - FITS file pointer                   */ 
            const char *name,     /* I - full name of file to open           */
@@ -442,18 +442,21 @@ int ffopentest(double version,   /* I - CFITSIO version number, from the    */
            int *status)          /* IO - error status                       */
 /*
   Open an existing FITS file with either readonly or read/write access.
-  First test that the version of fitsio.h used to build the CFITSIO library
-  is the same as the version used in building the application program that
+  First test that the SONAME of fitsio.h used to build the CFITSIO library
+  is the same as was used in compiling the application program that
   links to the library.
 */
-{
-    if (version != CFITSIO_VERSION)
+{ 
+    if (soname != CFITSIO_SONAME)
     {
-        printf("ERROR: Mismatch in the version of the fitsio.h include file used to build\n");
-	printf("the CFITSIO library, and the version included by the application program:\n");
-	printf("   Version used to build the CFITSIO library   = %f\n",CFITSIO_VERSION);
-	printf("   Version included by the application program = %f\n",version);
-	
+        printf("\nERROR: Mismatch in the CFITSIO_SONAME value in the fitsio.h include file\n");
+	printf("that was used to build the CFITSIO library, and the value in the include file\n");
+	printf("that was used when compiling the application program:\n");
+	printf("   Version used to build the CFITSIO library   = %d\n",CFITSIO_SONAME);
+	printf("   Version included by the application program = %d\n",soname);
+	printf("\nFix this by recompiling and then relinking this application program \n");
+	printf("with the CFITSIO library.\n");
+
         *status = FILE_NOT_OPENED;
 	return(*status);
     }
@@ -495,7 +498,6 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     char errmsg[FLEN_ERRMSG];
     char *hdtype[3] = {"IMAGE", "TABLE", "BINTABLE"};
     char *rowselect = 0;
-    long tilesize[MAX_COMPRESS_DIM] = {0,1,1,1,1,1};
 
     if (*status > 0)
         return(*status);
@@ -1303,9 +1305,6 @@ move2hdu:
           return(*status);
        }
     }
-
-    /* set default image compression tile size */
-    fits_set_tile_dim(*fptr, MAX_COMPRESS_DIM, tilesize, status);
 
    /* parse and save image compression specification, if given */
    if (*compspec) {
@@ -3408,7 +3407,7 @@ when writing FITS images.
 
     /* initialize with default values */
     int ii, compresstype = RICE_1, smooth = 0;
-    long tilesize[MAX_COMPRESS_DIM] = {0,1,1,1,1,1};
+    long tilesize[MAX_COMPRESS_DIM] = {0,0,0,0,0,0};
     float qlevel = 0.0, scale = 0.;
 
     ptr1 = compspec;
@@ -3582,7 +3581,6 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
     char urltype[MAX_PREFIX_LEN], outfile[FLEN_FILENAME];
     char tmplfile[FLEN_FILENAME], compspec[80];
     int handle, create_disk_file = 0;
-    long tilesize[MAX_COMPRESS_DIM] = {0,1,1,1,1,1};
 
     if (*status > 0)
         return(*status);
@@ -3784,9 +3782,6 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
 
     if (tmplfile[0])
         ffoptplt(*fptr, tmplfile, status);
-
-    /* set default image compression tile size */
-    fits_set_tile_dim(*fptr, MAX_COMPRESS_DIM, tilesize, status);
 
     /* parse and save image compression specification, if given */
     if (compspec[0])
