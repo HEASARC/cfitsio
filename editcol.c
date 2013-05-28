@@ -1109,9 +1109,12 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
         {
             ffbnfm(tfm, &datacode, &repeat, &width, status);
 
-            if (datacode < 0)         /* variable length array column */
-                delbyte += 8;
-            else if (datacode == 1)          /* bit column; round up  */
+            if (datacode < 0)  {       /* variable length array column */
+	        if (strchr(tfm, 'Q'))
+		  delbyte += 16;
+		else
+                  delbyte += 8;
+            } else if (datacode == 1)          /* bit column; round up  */
                 delbyte += (repeat + 7) / 8; /* to multiple of 8 bits */
             else if (datacode == 16)  /* ASCII string column */
                 delbyte += repeat;

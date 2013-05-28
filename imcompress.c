@@ -633,13 +633,11 @@ int fits_set_compression_pref(
                    tiledim[1] = -1;
                    tiledim[2] = -1;
                 } else {
-		   ffdtdm(infptr, value, 0,6, &naxis, tiledim, &tstatus);
+		   ffdtdm(infptr, value, 0,6, &naxis, tiledim, status);
                 }
 
 	        /* set the desired tile size */
-                if (!tstatus) {
-		   fits_set_tile_dim (outfptr, 6, tiledim, &tstatus);
-                }
+		fits_set_tile_dim (outfptr, 6, tiledim, status);
 
 	    } else if (!strncmp(card+2, "QVALUE", 6) ) {
 
@@ -660,7 +658,7 @@ int fits_set_compression_pref(
 		    } else if (!strncasecmp(value, "'subtractive_dither_2", 21) ) {
                         ivalue = SUBTRACTIVE_DITHER_2; /* dither, except preserve zero-valued pixels */
 		    } else {
-		        ffpmsg("Unknown value for FZQUANT keyword: (imcomp_init_table)");
+		        ffpmsg("Unknown value for FZQUANT keyword: (set_compression_pref)");
 			ffpmsg(value);
                         return(*status = DATA_COMPRESSION_ERR);
 		    }
@@ -678,6 +676,12 @@ int fits_set_compression_pref(
                         ivalue = (int) atol(value+1); /* allow for leading quote character */
                     else 
                         ivalue = (int) atol(value+1); 
+
+                    if (ivalue < 1 || ivalue > 10000) {
+		        ffpmsg("Unknown value for FZDTHRSD keyword: (set_compression_pref)");
+			ffpmsg(value);
+                        return(*status = DATA_COMPRESSION_ERR);
+                    }
 		}
 
 	        /* set the desired dithering */
@@ -688,9 +692,13 @@ int fits_set_compression_pref(
 	        /* set whether to convert integers to float then use lossy compression */
                 if (!strcasecmp(value, "t") ) {
 		    fits_set_lossy_int (outfptr, 1, status);
-		} else {
+		} else if (!strcasecmp(value, "f") ) {
 		    fits_set_lossy_int (outfptr, 0, status);
-		}
+		} else {
+		        ffpmsg("Unknown value for FZINT2F keyword: (set_compression_pref)");
+			ffpmsg(value);
+                        return(*status = DATA_COMPRESSION_ERR);
+                }
 
 	    } else if (!strncmp(card+2, "HSCALE ", 6) ) {
 
@@ -1225,6 +1233,15 @@ int imcomp_init_table(fitsfile *outfptr,
 	      /* which may get updated later. */
               ffpky(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->request_dither_offset), 
 	       "dithering offset when quantizing floats", status);
+
+	      if (!strcmp(zcmptype, "RICE_1"))  {
+	        /* when using this new dithering method, change the compression type */
+		/* to an alias, so that old versions of funpack will not be able to */
+		/* created a corrupted uncompressed image. */
+		/* ******* can remove this cludge after about June 2015, after most old versions of fpack are gone */
+        	strcpy(zcmptype, "RICE_ONE");
+	      }
+
             } else if ((outfptr->Fptr)->request_quantize_dither == NO_DITHER) {
 	      ffpkys(outfptr, "ZQUANTIZ", "NO_DITHER", 
 	        "No dithering during quantization", status);
@@ -2015,7 +2032,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
                        ffgcno(outfptr, CASEINSEN, "GZIP_COMPRESSED_DATA",
                                 &(outfptr->Fptr)->cn_gzip_data, status);
          }
- 
+
          if (datatype == TFLOAT)  {
                /* allocate buffer for the compressed tile bytes */
 	       /* make it 10% larger than the original uncompressed data */
@@ -5086,7 +5103,7 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
     (infptr->Fptr)->zcmptype[0] = '\0';
     strncat((infptr->Fptr)->zcmptype, value, 11);
 
-    if (!FSTRCMP(value, "RICE_1") )
+    if (!FSTRCMP(value, "RICE_1") || !FSTRCMP(value, "RICE_ONE") )
         (infptr->Fptr)->compress_type = RICE_1;
     else if (!FSTRCMP(value, "HCOMPRESS_1") )
         (infptr->Fptr)->compress_type = HCOMPRESS_1;

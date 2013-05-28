@@ -20,6 +20,16 @@ Version 3.35 - 24 May 2013
      applications will fail to run if the 'I' number changes, thus alerting
      the user that the application must be rebuilt.
 
+   - fixed bug in fits_insert_col when computing the new table row width
+     when inserting a '1Q' variable length array column.
+
+   - added support for an alias of "RICE_ONE" for "RICE_1" as the value
+     of the XCMPTYPE keyword, which gives the name of the image compression
+     algorithm.  This alias is used if the new SUBTRACTIVE_DITHER_2 option
+     is used, to prevent old versions of funpack from creating a corrupted
+     uncompressed image file.  Only newer versions of funpack will recognize
+     this alias and be able to uncompress the image. 
+   
    - modified the image compression routines so that the output compressed
      image (stored in a FITS binary table) uses the '1Q' variable length
      array format (instead of '1P') when the input file is larger than 4 GB.
