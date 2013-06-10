@@ -311,8 +311,8 @@ int fits_set_quantize_level(fitsfile *fptr,  /* I - FITS file pointer   */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int fits_set_quantize_dither(fitsfile *fptr,  /* I - FITS file pointer   */
-           int dither,        /* dither type      */
+int fits_set_quantize_method(fitsfile *fptr,  /* I - FITS file pointer   */
+           int method,          /* quantization method       */
            int *status)         /* IO - error status                */
 {
 /*
@@ -321,24 +321,36 @@ int fits_set_quantize_dither(fitsfile *fptr,  /* I - FITS file pointer   */
    compression.   A value of -1 means do no dithering.  A value of 0 means
    use the default SUBTRACTIVE_DITHER_1 (which is equivalent to dither = 1).
    A value of 2 means use SUBTRACTIVE_DITHER_2.
-   A value of -1 means do not apply any dithering.
 */
 
-    if (dither < -1 || dither > 2)
+    if (method < -1 || method > 2)
     {
-	ffpmsg("illegal dithering value (fits_set_quantize_dither)");
+	ffpmsg("illegal dithering value (fits_set_quantize_method)");
 	*status = DATA_COMPRESSION_ERR; 
     } else {
        
-        if (dither == 0) dither = 1;
-        (fptr->Fptr)->request_quantize_dither = dither;
+        if (method == 0) method = 1;
+        (fptr->Fptr)->request_quantize_method = method;
     }
 
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int fits_set_dither_offset(fitsfile *fptr,  /* I - FITS file pointer   */
-           int offset,        /* random dithering offset value (1 to 10000) */
+int fits_set_quantize_dither(fitsfile *fptr,  /* I - FITS file pointer   */
+           int dither,        /* dither type      */
+           int *status)         /* IO - error status                */
+{
+/*
+   the name of this routine has changed.  This is kept here only for backwards
+   compatibility for any software that may be calling the old routine.
+*/
+
+    fits_set_quantize_method(fptr, dither, status);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_set_dither_seed(fitsfile *fptr,  /* I - FITS file pointer   */
+           int seed,        /* random dithering seed value (1 to 10000) */
            int *status)         /* IO - error status                */
 {
 /*
@@ -355,11 +367,26 @@ int fits_set_dither_offset(fitsfile *fptr,  /* I - FITS file pointer   */
 
 */
     /* if positive, ensure that the value is in the range 1 to 10000 */
-    if (offset > 0)
-       (fptr->Fptr)->request_dither_offset = ((offset - 1) % 10000 ) + 1; 
-    else
-       (fptr->Fptr)->request_dither_offset = offset; 
+    if (seed > 10000) {
+	ffpmsg("illegal dithering seed value (fits_set_dither_seed)");
+	*status = DATA_COMPRESSION_ERR;
+    } else {
+       (fptr->Fptr)->request_dither_seed = seed; 
+    }
+    
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_set_dither_offset(fitsfile *fptr,  /* I - FITS file pointer   */
+           int offset,        /* random dithering offset value (1 to 10000) */
+           int *status)         /* IO - error status                */
+{
+/*
+    The name of this routine has changed.  This is kept just for
+    backwards compatibility with any software that calls the old name
+*/
 
+    fits_set_dither_seed(fptr, offset, status);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -524,8 +551,8 @@ int fits_unset_compression_param(
 
     (fptr->Fptr)->compress_type = 0;
     (fptr->Fptr)->quantize_level = 0;
-    (fptr->Fptr)->quantize_dither = 0;
-    (fptr->Fptr)->dither_offset = 0; 
+    (fptr->Fptr)->quantize_method = 0;
+    (fptr->Fptr)->dither_seed = 0; 
     (fptr->Fptr)->hcomp_scale = 0;
 
     for (ii = 0; ii < MAX_COMPRESS_DIM; ii++)
@@ -543,8 +570,8 @@ int fits_unset_compression_request(
 
     (fptr->Fptr)->request_compress_type = 0;
     (fptr->Fptr)->request_quantize_level = 0;
-    (fptr->Fptr)->request_quantize_dither = 0;
-    (fptr->Fptr)->request_dither_offset = 0; 
+    (fptr->Fptr)->request_quantize_method = 0;
+    (fptr->Fptr)->request_dither_seed = 0; 
     (fptr->Fptr)->request_hcomp_scale = 0;
     (fptr->Fptr)->request_lossy_int_compress = 0;
     (fptr->Fptr)->request_huge_hdu = 0;
@@ -647,10 +674,6 @@ int fits_set_compression_pref(
 
 	    } else if (!strncmp(card+2, "QMETHD", 6) ) {
 
-        	if (!strncasecmp(value, "'NONE",5) ) {
-		        /* no quantization; image will be losslessly compressed */
-			(outfptr->Fptr)->request_quantize_level = NO_QUANTIZE;
-		} else {
                     if (!strncasecmp(value, "'no_dither", 10) ) {
                         ivalue = -1; /* just quantize, with no dithering */
 		    } else if (!strncasecmp(value, "'subtractive_dither_1", 21) ) {
@@ -663,8 +686,8 @@ int fits_set_compression_pref(
                         return(*status = DATA_COMPRESSION_ERR);
 		    }
 
-		    fits_set_quantize_dither(outfptr, ivalue, status);
-		}
+		    fits_set_quantize_method(outfptr, ivalue, status);
+		    
 	    } else if (!strncmp(card+2, "DTHRSD", 6) ) {
 
                 if (!strncasecmp(value, "'checksum", 9) ) {
@@ -678,14 +701,14 @@ int fits_set_compression_pref(
                         ivalue = (int) atol(value+1); 
 
                     if (ivalue < 1 || ivalue > 10000) {
-		        ffpmsg("Unknown value for FZDTHRSD keyword: (set_compression_pref)");
+		        ffpmsg("Invalid value for FZDTHRSD keyword: (set_compression_pref)");
 			ffpmsg(value);
                         return(*status = DATA_COMPRESSION_ERR);
                     }
 		}
 
 	        /* set the desired dithering */
-		fits_set_dither_offset(outfptr, ivalue, status);
+		fits_set_dither_seed(outfptr, ivalue, status);
 
 	    } else if (!strncmp(card+2, "INT2F", 5) ) {
 
@@ -770,7 +793,7 @@ int fits_get_quantize_level(fitsfile *fptr,  /* I - FITS file pointer   */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int fits_get_dither_offset(fitsfile *fptr,  /* I - FITS file pointer   */
+int fits_get_dither_seed(fitsfile *fptr,  /* I - FITS file pointer   */
            int *offset,       /* dithering offset parameter value       */
            int *status)         /* IO - error status                */
 {
@@ -781,7 +804,7 @@ int fits_get_dither_offset(fitsfile *fptr,  /* I - FITS file pointer   */
    of at variable length binary table column.
 */
 
-    *offset = (fptr->Fptr)->request_dither_offset;
+    *offset = (fptr->Fptr)->request_dither_seed;
     return(*status);
 }/*--------------------------------------------------------------------------*/
 int fits_get_hcomp_scale(fitsfile *fptr,  /* I - FITS file pointer   */
@@ -959,13 +982,13 @@ int imcomp_init_table(fitsfile *outfptr,
 
     if (inbitpix < 0 && (outfptr->Fptr)->request_quantize_level != NO_QUANTIZE) {  
 	/* set defaults for quantizing floating point images */
-	if ( (outfptr->Fptr)->request_quantize_dither == 0) {
+	if ( (outfptr->Fptr)->request_quantize_method == 0) {
 	      /* set default dithering method */
-              (outfptr->Fptr)->request_quantize_dither = SUBTRACTIVE_DITHER_1;
+              (outfptr->Fptr)->request_quantize_method = SUBTRACTIVE_DITHER_1;
 	}
 
 	if ( (outfptr->Fptr)->request_quantize_level == 0) {
-	    if ((outfptr->Fptr)->request_quantize_dither == NO_DITHER) {
+	    if ((outfptr->Fptr)->request_quantize_method == NO_DITHER) {
 	        /* must use finer quantization if no dithering is done */
 	        (outfptr->Fptr)->request_quantize_level = 16; 
 	    } else {
@@ -1210,28 +1233,28 @@ int imcomp_init_table(fitsfile *outfptr,
 	} else {
 	    
 	    /* Unless dithering has been specifically turned off by setting */
-	    /* request_quantize_dither = -1, use dithering by default */
+	    /* request_quantize_method = -1, use dithering by default */
 	    /* when quantizing floating point images. */
 	
-	    if ( (outfptr->Fptr)->request_quantize_dither == 0) 
-              (outfptr->Fptr)->request_quantize_dither = SUBTRACTIVE_DITHER_1;
+	    if ( (outfptr->Fptr)->request_quantize_method == 0) 
+              (outfptr->Fptr)->request_quantize_method = SUBTRACTIVE_DITHER_1;
        
-	    if ((outfptr->Fptr)->request_quantize_dither == SUBTRACTIVE_DITHER_1) {
+	    if ((outfptr->Fptr)->request_quantize_method == SUBTRACTIVE_DITHER_1) {
 	      ffpkys(outfptr, "ZQUANTIZ", "SUBTRACTIVE_DITHER_1", 
 	        "Pixel Quantization Algorithm", status);
 
 	      /* also write the associated ZDITHER0 keyword with a default value */
 	      /* which may get updated later. */
-              ffpky(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->request_dither_offset), 
+              ffpky(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->request_dither_seed), 
 	       "dithering offset when quantizing floats", status);
  
-            } else if ((outfptr->Fptr)->request_quantize_dither == SUBTRACTIVE_DITHER_2) {
+            } else if ((outfptr->Fptr)->request_quantize_method == SUBTRACTIVE_DITHER_2) {
 	      ffpkys(outfptr, "ZQUANTIZ", "SUBTRACTIVE_DITHER_2", 
 	        "Pixel Quantization Algorithm", status);
 
 	      /* also write the associated ZDITHER0 keyword with a default value */
 	      /* which may get updated later. */
-              ffpky(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->request_dither_offset), 
+              ffpky(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->request_dither_seed), 
 	       "dithering offset when quantizing floats", status);
 
 	      if (!strcmp(zcmptype, "RICE_1"))  {
@@ -1242,7 +1265,7 @@ int imcomp_init_table(fitsfile *outfptr,
         	strcpy(zcmptype, "RICE_ONE");
 	      }
 
-            } else if ((outfptr->Fptr)->request_quantize_dither == NO_DITHER) {
+            } else if ((outfptr->Fptr)->request_quantize_method == NO_DITHER) {
 	      ffpkys(outfptr, "ZQUANTIZ", "NO_DITHER", 
 	        "No dithering during quantization", status);
 	    }
@@ -2635,11 +2658,11 @@ int imcomp_convert_tile_tfloat(
 	    else
 	      floatnull = FLOATNULLVALUE;  /* NaNs are represented by this, by default */
 
-            if ((outfptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_1  ||
-	        (outfptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_2) {
+            if ((outfptr->Fptr)->quantize_method == SUBTRACTIVE_DITHER_1  ||
+	        (outfptr->Fptr)->quantize_method == SUBTRACTIVE_DITHER_2) {
 	      
 	          /* see if the dithering offset value needs to be initialized */                  
-	          if ((outfptr->Fptr)->request_dither_offset == 0 && (outfptr->Fptr)->dither_offset == 0) {
+	          if ((outfptr->Fptr)->request_dither_seed == 0 && (outfptr->Fptr)->dither_seed == 0) {
 
 		     /* This means randomly choose the dithering offset based on the system time. */
 		     /* The offset will have a value between 1 and 10000, inclusive. */
@@ -2647,21 +2670,21 @@ int imcomp_convert_tile_tfloat(
 		     /* The clock function returns the elapsed CPU time, in integer CLOCKS_PER_SEC units. */
 		     /* The CPU time returned by clock is typically (on linux PC) only good to 0.01 sec */
 		     /* Summing the 2 quantities may help avoid cases where 2 executions of the program */
-		     /* (perhaps in a multithreaded environoment) end up with exactly the same dither_offset */
+		     /* (perhaps in a multithreaded environoment) end up with exactly the same dither seed */
 		     /* value.  The sum is incremented by the current HDU number in the file to provide */
 		     /* further randomization.  This randomization is desireable if multiple compressed */
 		     /* images will be summed (or differenced). In such cases, the benefits of dithering */
 		     /* may be lost if all the images use exactly the same sequence of random numbers when */
 		     /* calculating the dithering offsets. */	     
 		     
-		     (outfptr->Fptr)->dither_offset = 
+		     (outfptr->Fptr)->dither_seed = 
 		       (( (int)time(NULL) + ( (int) clock() / (int) (CLOCKS_PER_SEC / 100)) + (outfptr->Fptr)->curhdu) % 10000) + 1;
 		     
                      /* update the header keyword with this new value */
-		     fits_update_key(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->dither_offset), 
+		     fits_update_key(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->dither_seed), 
 	                        NULL, status);
 
-	          } else if ((outfptr->Fptr)->request_dither_offset < 0 && (outfptr->Fptr)->dither_offset < 0) {
+	          } else if ((outfptr->Fptr)->request_dither_seed < 0 && (outfptr->Fptr)->dither_seed < 0) {
 
 		     /* this means randomly choose the dithering offset based on some hash function */
 		     /* of the first input tile of data to be quantized and compressed.  This ensures that */
@@ -2672,17 +2695,17 @@ int imcomp_convert_tile_tfloat(
 		     for (ii = 0; ii < 4 * tilelen; ii++) {
 		         dithersum += usbbuff[ii];  /* doesn't matter if there is an integer overflow */
 	             }
-		     (outfptr->Fptr)->dither_offset = ((int) (dithersum % 10000)) + 1;
+		     (outfptr->Fptr)->dither_seed = ((int) (dithersum % 10000)) + 1;
 		
                      /* update the header keyword with this new value */
-		     fits_update_key(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->dither_offset), 
+		     fits_update_key(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->dither_seed), 
 	                        NULL, status);
 		  }
 
                   /* subtract 1 to convert from 1-based to 0-based element number */
-	          irow = row + (outfptr->Fptr)->dither_offset - 1; /* dither the quantized values */
+	          irow = row + (outfptr->Fptr)->dither_seed - 1; /* dither the quantized values */
 
-	      } else if ((outfptr->Fptr)->quantize_dither == -1) {
+	      } else if ((outfptr->Fptr)->quantize_method == -1) {
 	          irow = 0;  /* do not dither the quantized values */
               } else {
                   ffpmsg("Unknown dithering method.");
@@ -2692,7 +2715,7 @@ int imcomp_convert_tile_tfloat(
 	      
               *flag = fits_quantize_float (irow, (float *) tiledata, tilenx, tileny,
                    nullcheck, floatnull, (outfptr->Fptr)->quantize_level, 
-		   (outfptr->Fptr)->quantize_dither, idata, bscale, bzero, &iminval, &imaxval);
+		   (outfptr->Fptr)->quantize_method, idata, bscale, bzero, &iminval, &imaxval);
 
               if (*flag > 1)
 		   return(*status = *flag);
@@ -2776,36 +2799,36 @@ int imcomp_convert_tile_tdouble(
 	      doublenull = DOUBLENULLVALUE;
 
             /* quantize the double values into integers */
-              if ((outfptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_1 ||
-	          (outfptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_2) {
+              if ((outfptr->Fptr)->quantize_method == SUBTRACTIVE_DITHER_1 ||
+	          (outfptr->Fptr)->quantize_method == SUBTRACTIVE_DITHER_2) {
 
 	          /* see if the dithering offset value needs to be initialized (see above) */                  
-	          if ((outfptr->Fptr)->request_dither_offset == 0 && (outfptr->Fptr)->dither_offset == 0) {
+	          if ((outfptr->Fptr)->request_dither_seed == 0 && (outfptr->Fptr)->dither_seed == 0) {
 
-		     (outfptr->Fptr)->dither_offset = 
+		     (outfptr->Fptr)->dither_seed = 
 		       (( (int)time(NULL) + ( (int) clock() / (int) (CLOCKS_PER_SEC / 100)) + (outfptr->Fptr)->curhdu) % 10000) + 1;
 		     
                      /* update the header keyword with this new value */
-		     fits_update_key(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->dither_offset), 
+		     fits_update_key(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->dither_seed), 
 	                        NULL, status);
 
-	          } else if ((outfptr->Fptr)->request_dither_offset < 0 && (outfptr->Fptr)->dither_offset < 0) {
+	          } else if ((outfptr->Fptr)->request_dither_seed < 0 && (outfptr->Fptr)->dither_seed < 0) {
 
 		     usbbuff = (unsigned char *) tiledata;
 		     dithersum = 0;
 		     for (ii = 0; ii < 8 * tilelen; ii++) {
 		         dithersum += usbbuff[ii];
 	             }
-		     (outfptr->Fptr)->dither_offset = ((int) (dithersum % 10000)) + 1;
+		     (outfptr->Fptr)->dither_seed = ((int) (dithersum % 10000)) + 1;
 		
                      /* update the header keyword with this new value */
-		     fits_update_key(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->dither_offset), 
+		     fits_update_key(outfptr, TINT, "ZDITHER0", &((outfptr->Fptr)->dither_seed), 
 	                        NULL, status);
 		  }
 
-	          irow = row + (outfptr->Fptr)->dither_offset - 1; /* dither the quantized values */
+	          irow = row + (outfptr->Fptr)->dither_seed - 1; /* dither the quantized values */
 
-	      } else if ((outfptr->Fptr)->quantize_dither == -1) {
+	      } else if ((outfptr->Fptr)->quantize_method == -1) {
 	          irow = 0;  /* do not dither the quantized values */
               } else {
                   ffpmsg("Unknown subtractive dithering method.");
@@ -2815,7 +2838,7 @@ int imcomp_convert_tile_tdouble(
 
             *flag = fits_quantize_double (irow, (double *) tiledata, tilenx, tileny,
                nullcheck, doublenull, (outfptr->Fptr)->quantize_level, 
-	       (outfptr->Fptr)->quantize_dither, idata,
+	       (outfptr->Fptr)->quantize_method, idata,
                bscale, bzero, &iminval, &imaxval);
 
             if (*flag > 1)
@@ -5129,19 +5152,19 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
     tstatus = 0;
     if (ffgky(infptr, TSTRING, "ZQUANTIZ", value, NULL, &tstatus) > 0)
     {
-        (infptr->Fptr)->quantize_dither = 0;
+        (infptr->Fptr)->quantize_method = 0;
     } else {
 
         if (!FSTRCMP(value, "NONE") ) {
             (infptr->Fptr)->quantize_level = NO_QUANTIZE;
        } else if (!FSTRCMP(value, "SUBTRACTIVE_DITHER_1") )
-            (infptr->Fptr)->quantize_dither = SUBTRACTIVE_DITHER_1;
+            (infptr->Fptr)->quantize_method = SUBTRACTIVE_DITHER_1;
         else if (!FSTRCMP(value, "SUBTRACTIVE_DITHER_2") )
-            (infptr->Fptr)->quantize_dither = SUBTRACTIVE_DITHER_2;
+            (infptr->Fptr)->quantize_method = SUBTRACTIVE_DITHER_2;
         else if (!FSTRCMP(value, "NO_DITHER") )
-            (infptr->Fptr)->quantize_dither = NO_DITHER;
+            (infptr->Fptr)->quantize_method = NO_DITHER;
         else
-            (infptr->Fptr)->quantize_dither = 0;
+            (infptr->Fptr)->quantize_method = 0;
     }
 
     /* get the floating point quantization dithering offset, if present. */
@@ -5150,9 +5173,9 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
     if (ffgky(infptr, TINT, "ZDITHER0", &doffset, NULL, &tstatus) > 0)
     {
 	/* by default start with 1st element of random sequence */
-        (infptr->Fptr)->dither_offset = 1;  
+        (infptr->Fptr)->dither_seed = 1;  
     } else {
-        (infptr->Fptr)->dither_offset = doffset;
+        (infptr->Fptr)->dither_seed = doffset;
     }
 
     if (ffgky (infptr, TINT,  "ZBITPIX",  &(infptr->Fptr)->zbitpix,  
@@ -6337,24 +6360,24 @@ int imcomp_decompress_tile (fitsfile *infptr,
                 (float *) buffer, status);
           }
 	
-        } else if ((infptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_1 ||
-	           (infptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_2) {
+        } else if ((infptr->Fptr)->quantize_method == SUBTRACTIVE_DITHER_1 ||
+	           (infptr->Fptr)->quantize_method == SUBTRACTIVE_DITHER_2) {
 
          /* use the new dithering algorithm (introduced in July 2009) */
 
          if (tiledatatype == TINT)
-          unquantize_i4r4(nrow + (infptr->Fptr)->dither_offset - 1, idata, 
-	   tilelen, bscale, bzero, (infptr->Fptr)->quantize_dither, nullcheck, tnull,
+          unquantize_i4r4(nrow + (infptr->Fptr)->dither_seed - 1, idata, 
+	   tilelen, bscale, bzero, (infptr->Fptr)->quantize_method, nullcheck, tnull,
            fnulval, bnullarray, anynul,
             (float *) buffer, status);
          else if (tiledatatype == TSHORT)
-          unquantize_i2r4(nrow + (infptr->Fptr)->dither_offset - 1, (short *)idata, 
-	   tilelen, bscale, bzero, (infptr->Fptr)->quantize_dither, nullcheck, (short) tnull,
+          unquantize_i2r4(nrow + (infptr->Fptr)->dither_seed - 1, (short *)idata, 
+	   tilelen, bscale, bzero, (infptr->Fptr)->quantize_method, nullcheck, (short) tnull,
            fnulval, bnullarray, anynul,
             (float *) buffer, status);
          else if (tiledatatype == TBYTE)
-          unquantize_i1r4(nrow + (infptr->Fptr)->dither_offset - 1, (unsigned char *)idata, 
-	   tilelen, bscale, bzero, (infptr->Fptr)->quantize_dither, nullcheck, (unsigned char) tnull,
+          unquantize_i1r4(nrow + (infptr->Fptr)->dither_seed - 1, (unsigned char *)idata, 
+	   tilelen, bscale, bzero, (infptr->Fptr)->quantize_method, nullcheck, (unsigned char) tnull,
            fnulval, bnullarray, anynul,
             (float *) buffer, status);
 
@@ -6395,23 +6418,23 @@ int imcomp_decompress_tile (fitsfile *infptr,
                 (double *) buffer, status);
           }
 	
-	} else if ((infptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_1 ||
-	           (infptr->Fptr)->quantize_dither == SUBTRACTIVE_DITHER_2) {
+	} else if ((infptr->Fptr)->quantize_method == SUBTRACTIVE_DITHER_1 ||
+	           (infptr->Fptr)->quantize_method == SUBTRACTIVE_DITHER_2) {
 
          /* use the new dithering algorithm (introduced in July 2009) */
          if (tiledatatype == TINT)
-          unquantize_i4r8(nrow + (infptr->Fptr)->dither_offset - 1, idata,
-	   tilelen, bscale, bzero, (infptr->Fptr)->quantize_dither, nullcheck, tnull,
+          unquantize_i4r8(nrow + (infptr->Fptr)->dither_seed - 1, idata,
+	   tilelen, bscale, bzero, (infptr->Fptr)->quantize_method, nullcheck, tnull,
            dnulval, bnullarray, anynul,
             (double *) buffer, status);
          else if (tiledatatype == TSHORT)
-          unquantize_i2r8(nrow + (infptr->Fptr)->dither_offset - 1, (short *)idata,
-	   tilelen, bscale, bzero, (infptr->Fptr)->quantize_dither, nullcheck, (short) tnull,
+          unquantize_i2r8(nrow + (infptr->Fptr)->dither_seed - 1, (short *)idata,
+	   tilelen, bscale, bzero, (infptr->Fptr)->quantize_method, nullcheck, (short) tnull,
            dnulval, bnullarray, anynul,
             (double *) buffer, status);
          else if (tiledatatype == TBYTE)
-          unquantize_i1r8(nrow + (infptr->Fptr)->dither_offset - 1, (unsigned char *)idata,
-	   tilelen, bscale, bzero, (infptr->Fptr)->quantize_dither, nullcheck, (unsigned char) tnull,
+          unquantize_i1r8(nrow + (infptr->Fptr)->dither_seed - 1, (unsigned char *)idata,
+	   tilelen, bscale, bzero, (infptr->Fptr)->quantize_method, nullcheck, (unsigned char) tnull,
            dnulval, bnullarray, anynul,
             (double *) buffer, status);
 

@@ -363,25 +363,31 @@ typedef struct      /* structure used to store basic FITS file information */
     LONGLONG heapsize;   /* size of the heap, in bytes */
 
          /* the following elements are related to compressed images */
+
+    /* these record the 'requested' options to be used when the image is compressed */
     int request_compress_type;  /* requested image compression algorithm */
     long request_tilesize[MAX_COMPRESS_DIM]; /* requested tiling size */
-    float request_hcomp_scale;    /* requested HCOMPRESS scale factor */
-    int request_hcomp_smooth;     /* requested HCOMPRESS smooth parameter */
-    float request_quantize_level;   /* requested quantize level */
-    int request_quantize_dither ; /* requested dithering mode when quantizing */
-                                  /* floating point images to integer */
-    int request_dither_offset;    /* starting offset into the array of random dithering */
-    int request_lossy_int_compress;  /* lossy compress integer image as if float image? */
-    int request_huge_hdu;  /* use '1Q' rather then '1P' variable length arrays */
+    float request_quantize_level;  /* requested quantize level */
+    int request_quantize_method ;  /* requested  quantizing method */
+    int request_dither_seed;     /* starting offset into the array of random dithering */
+    int request_lossy_int_compress; /* lossy compress integer image as if float image? */
+    int request_huge_hdu;          /* use '1Q' rather then '1P' variable length arrays */
+    float request_hcomp_scale;     /* requested HCOMPRESS scale factor */
+    int request_hcomp_smooth;      /* requested HCOMPRESS smooth parameter */
 
-    int compressimg; /* 1 if HDU contains a compressed image, else 0 */
-    int quantize_dither;   /* floating point pixel quantization algorithm */
-    char zcmptype[12];      /* compression type string */
+    /* these record the actual options that were used when the image was compressed */
     int compress_type;      /* type of compression algorithm */
+    long tilesize[MAX_COMPRESS_DIM]; /* size of compression tiles */
+    float quantize_level;   /* floating point quantization level */
+    int quantize_method;   /* floating point pixel quantization algorithm */
+    int dither_seed;      /* starting offset into the array of random dithering */
+
+    /* other compression parameters */
+    int compressimg; /* 1 if HDU contains a compressed image, else 0 */
+    char zcmptype[12];      /* compression type string */
     int zbitpix;            /* FITS data type of image (BITPIX) */
     int zndim;              /* dimension of image */
     long znaxis[MAX_COMPRESS_DIM];  /* length of each axis */
-    long tilesize[MAX_COMPRESS_DIM]; /* size of compression tiles */
     long maxtilelen;        /* max number of pixels in each image tile */
     long maxelem;	    /* maximum byte length of tile compressed arrays */
 
@@ -399,10 +405,8 @@ typedef struct      /* structure used to store basic FITS file information */
     double cn_actual_bzero; /* actual value of the BZERO keyword  */
     int zblank;             /* value for null pixels, if not a column */
 
-    int rice_blocksize;     /* first compression parameter: pixels/block */
-    int rice_bytepix;       /* 2nd compression parameter: bytes/pixel */
-    float quantize_level;   /* floating point quantization level */
-    int dither_offset;      /* starting offset into the array of random dithering */
+    int rice_blocksize;     /* first compression parameter: Rice pixels/block */
+    int rice_bytepix;       /* 2nd compression parameter:   Rice bytes/pixel */
     float hcomp_scale;      /* 1st hcompress compression parameter */
     int hcomp_smooth;       /* 2nd hcompress compression parameter */
 
@@ -687,7 +691,8 @@ int CFITS2Unit( fitsfile *fptr );
 fitsfile* CUnit2FITS(int unit);
 
 /*----------------  FITS file URL parsing routines -------------*/
-int fits_get_token(char **ptr, char *delimiter, char *token, int *isanumber);
+int fits_get_token (char **ptr, char *delimiter, char *token, int *isanumber);
+int fits_get_token2(char **ptr, char *delimiter, char **token, int *isanumber, int *status);
 char *fits_split_names(char *list);
 int ffiurl(  char *url,  char *urltype, char *infile,
                     char *outfile, char *extspec, char *rowfilter,
@@ -1895,7 +1900,9 @@ int fits_set_noise_bits(fitsfile *fptr, int noisebits, int *status);
 int fits_set_quantize_level(fitsfile *fptr, float qlevel, int *status);
 int fits_set_hcomp_scale(fitsfile *fptr, float scale, int *status);
 int fits_set_hcomp_smooth(fitsfile *fptr, int smooth, int *status);
+int fits_set_quantize_method(fitsfile *fptr, int method, int *status);
 int fits_set_quantize_dither(fitsfile *fptr, int dither, int *status);
+int fits_set_dither_seed(fitsfile *fptr, int seed, int *status);
 int fits_set_dither_offset(fitsfile *fptr, int offset, int *status);
 int fits_set_lossy_int(fitsfile *fptr, int lossy_int, int *status);
 int fits_set_huge_hdu(fitsfile *fptr, int huge, int *status);
@@ -1907,7 +1914,7 @@ int fits_get_quantize_level(fitsfile *fptr, float *qlevel, int *status);
 int fits_get_noise_bits(fitsfile *fptr, int *noisebits, int *status);
 int fits_get_hcomp_scale(fitsfile *fptr, float *scale, int *status);
 int fits_get_hcomp_smooth(fitsfile *fptr, int *smooth, int *status);
-int fits_get_dither_offset(fitsfile *fptr, int *offset, int *status);
+int fits_get_dither_seed(fitsfile *fptr, int *seed, int *status);
 
 int fits_img_compress(fitsfile *infptr, fitsfile *outfptr, int *status);
 int fits_compress_img(fitsfile *infptr, fitsfile *outfptr, int compress_type,

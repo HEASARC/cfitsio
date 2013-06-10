@@ -872,9 +872,9 @@ int fp_pack (char *infits, char *outfits, fpstate fpvar, int *islossless)
 	    fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
 
 	    if (fpvar.no_dither)
-	        fits_set_quantize_dither(outfptr, -1, &stat);
+	        fits_set_quantize_method(outfptr, -1, &stat);
 	    else
-	        fits_set_quantize_dither(outfptr, fpvar.dither_method, &stat);
+	        fits_set_quantize_method(outfptr, fpvar.dither_method, &stat);
 
 	    fits_set_quantize_level (outfptr, fpvar.quantize_level, &stat);
 	    fits_set_dither_offset(outfptr, fpvar.dither_offset, &stat);
@@ -1249,9 +1249,9 @@ printf("    HDU %d does not meet noise criteria to be quantized, so losslessly c
 		  fits_set_compression_type (outfptr, RICE_1, &stat);
 		  fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
 		  if (fpvar.no_dither)
-	    	    fits_set_quantize_dither(outfptr, -1, &stat);
+	    	    fits_set_quantize_method(outfptr, -1, &stat);
 		  else
-	    	    fits_set_quantize_dither(outfptr, fpvar.dither_method, &stat);
+	    	    fits_set_quantize_method(outfptr, fpvar.dither_method, &stat);
 
 		  fits_set_quantize_level (outfptr, fpvar.quantize_level, &stat);
 		  fits_set_dither_offset(outfptr, fpvar.dither_offset, &stat);
@@ -1267,9 +1267,9 @@ printf("    HDU %d does not meet noise criteria to be quantized, so losslessly c
 		  fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
 
 		  if (fpvar.no_dither)
-	    	    fits_set_quantize_dither(outfptr, -1, &stat);
+	    	    fits_set_quantize_method(outfptr, -1, &stat);
 		  else
-	    	    fits_set_quantize_dither(outfptr, fpvar.dither_method, &stat);
+	    	    fits_set_quantize_method(outfptr, fpvar.dither_method, &stat);
 
 		  fits_set_quantize_level (outfptr, fpvar.quantize_level, &stat);
 		  fits_set_dither_offset(outfptr, fpvar.dither_offset, &stat);
@@ -1288,9 +1288,9 @@ printf("    HDU %d does not meet noise criteria to be quantized, so losslessly c
 		fits_set_tile_dim (outfptr, 6, fpvar.ntile, &stat);
 
 		if (fpvar.no_dither)
-	    	    fits_set_quantize_dither(outfptr, -1, &stat);
+	    	    fits_set_quantize_method(outfptr, -1, &stat);
 		else
-	    	    fits_set_quantize_dither(outfptr, fpvar.dither_method, &stat);
+	    	    fits_set_quantize_method(outfptr, fpvar.dither_method, &stat);
 
 		fits_set_quantize_level (outfptr, fpvar.quantize_level, &stat);
 		fits_set_dither_offset(outfptr, fpvar.dither_offset, &stat);

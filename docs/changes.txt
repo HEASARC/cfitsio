@@ -2,6 +2,22 @@
 
 Version 3.35 - 24 May 2013
 		   
+   - modified the routines that convert a string value to a float or double
+     to prevent them from returning a NaN or Inf value if the
+     string is "NaN" or "Inf" (as can happen with gcc implementation of the
+     strtod function).
+
+   - removed/replaced the use of the assert() functions when locking or
+     unlocking threads because they did not work correctly if NDEBUG is
+     defined.
+
+   - made modifications to the way the command-line file filters are parsed to
+     1) remove the 1024-character limit when specifying a column filter,
+     2) fixed a potential character buffer-overflow risk in fits_get_token, and
+     3) improved the parsing logic to remove any possible of confusing
+     2 slash characters ("//") in the string as the beginning of a 
+     comment string.
+
    - modified configure and Makefile.in so that when building CFITSIO
      as a shared library on linux or Mac platforms, it will use the SONAME
      convention to indicate whether each new release of the CFITSIO
@@ -23,6 +39,25 @@ Version 3.35 - 24 May 2013
    - fixed bug in fits_insert_col when computing the new table row width
      when inserting a '1Q' variable length array column.
 
+  - modified the image compression routines so that the output compressed
+     image (stored in a FITS binary table) uses the '1Q' variable length
+     array format (instead of '1P') when the input file is larger than 4 GB.
+
+   - added support for "compression directive" keywords which indicate how
+     that HDU should be compressed (e.g., which compression algorithm to use,
+     what tiling pattern to use, etc.).  The values of these keywords will
+     override the compression parameters that were specified on the command 
+     line when running the fpack FITS file compression program.
+
+   - globally changed the variable and/or subroutine name "dither_offset" 
+     to "dither_seed" and "quantize_dither" to "quantize_method" so
+     that the names more accurately reflects their purpose.
+
+   - added support for a new SUBTRACTIVE_DITHER_2 method when compressing
+     floating point images.  The only difference with the previous method
+     is that pixels with a value exactly equal to 0.0 will not be dithered,
+     and instead will be exactly preserved when the image is compressed.
+
    - added support for an alias of "RICE_ONE" for "RICE_1" as the value
      of the XCMPTYPE keyword, which gives the name of the image compression
      algorithm.  This alias is used if the new SUBTRACTIVE_DITHER_2 option
@@ -30,21 +65,6 @@ Version 3.35 - 24 May 2013
      uncompressed image file.  Only newer versions of funpack will recognize
      this alias and be able to uncompress the image. 
    
-   - modified the image compression routines so that the output compressed
-     image (stored in a FITS binary table) uses the '1Q' variable length
-     array format (instead of '1P') when the input file is larger than 4 GB.
-
-   - added support for "compression directive" keywords which indicate how
-     that HDU should be compressed (e.g., which compression algorithem to use,
-     what tiling pattern to use, etc.).  The values of these keywords will
-     override the compression parameters that were specified on the command 
-     line when running the fpack FITS file compression program.
-
-   - added support for a new subtractive dithering method when compressing
-     floating point images.  The only difference with the previous method
-     is that pixels with a value exactly equal to 0.0 will not be dithered,
-     and instead will be exactly preserved when the image is comprssed.
-
    - made performance improvement to fits_read_compressed_img so that 
      when reading a section of an compressed image that includes only 
      every nth pixel in some dimension, it will only uncompressed a tile 
@@ -99,7 +119,7 @@ Version 3.33 - 14 Feb 2013
      any overflows in this case and just clip the values to the legal range.
 
    - the default tiling pattern when writing a tile-compressed image
-     has been changed.  The old behaviour was to compress the whole image
+     has been changed.  The old behavior was to compress the whole image
      as one single large tile.  This is often not optimal when dealing
      with large images, so the new default behavior is to treat each
      row of the image as one tile.  This is the same default behavior
@@ -187,7 +207,7 @@ Version 3.31 - 18 July 2012
      FITS file with write access.  The specified compression parameters will
      be used by default if more images are appended to the existing file.
 
-   - modified drvrfile.c to do additional file secrity checks when CFITSIO
+   - modified drvrfile.c to do additional file security checks when CFITSIO
      is running within the HEASARC's Hera software system.  In this case
      CFITSIO will not allow FITS files to be created outside of the user's
      individual Hera data directory area.
@@ -218,7 +238,7 @@ Version 3.30 - 11 April 2012
      whether or not CFITSIO was compiled with the -D_REENTRANT directive.  This can
      be used to determine if it is safe to use CFITSIO in multi-threaded programs.
 
-   - Implimented much faster byte-swapping algorithms in swapproc.c based on code
+   - Implemented much faster byte-swapping algorithms in swapproc.c based on code
      provided by Julian Taylor at ESO, Garching.  These routines significantly 
      improve the FITS image read and write speed (by more than a factor of 2 in 
      some cases) on little-endian machines (e.g., Linux and Microsoft Windows and
@@ -238,7 +258,7 @@ Version 3.30 - 11 April 2012
      testing if __s390x__ or __s390__ is defined.
 
    - small change to ffgcrd in getkey.c so that it supports reading a blank
-     keyword (e.g., a keyword whose name simply contains 8 space chracters).
+     keyword (e.g., a keyword whose name simply contains 8 space characters).
 
    Bug Fixes
 
@@ -305,7 +325,7 @@ Version 3.29 - 2 December 2011
      binning 2 table columns, if a keyword or column name is given as the
      weighting factor,  then the output histrogram image will have a floating
      point datatype, not the default integer datatype as is the case when no
-     weigth is specified (e.g. with a filename like 
+     weight is specified (e.g. with a filename like 
      "myfile.fits[bin x,y; weight_column]"
 
    - added fix to the code in imcompress.c to work around a problem with
@@ -355,12 +375,12 @@ Version 3.27 - 3 March 2011
 
     - enhanced the ffmkky routine in fitscore.c to not put a space before the
       equals sign when writing long string-valued keywords using the ESO
-      HIERARCH keyword convension, if that extra character is needed to
+      HIERARCH keyword convention, if that extra character is needed to
       fit the length of the keyword name + value string within the 80-character
       FITS keyword record.
 
     - made small change to fits_translate_keyword to support translation of
-      blank keywords (where the name = 8 blank chracters)
+      blank keywords (where the name = 8 blank characters)
 
     - modified fpack so that it uses the minimum of the 2nd, 3rd, and 5th order
       MAD noise values when quantizing and compressing a floating point image.
@@ -401,7 +421,7 @@ Version 3.26 - 30 December 2010
    - enhanced the template keyword parsing code in grparser.c to support
      the 'D' exponent character in the ASCII representation of floating
      point keyword values (as in TVAL = 1.23D03).  Previously, the parser
-     would have writen this keyword with a string value (TVAL = '1.23D03').
+     would have written this keyword with a string value (TVAL = '1.23D03').
 
    - modified the low-level routines that write a keyword record to a FITS 
      header so that they silently replace any illegal characters (ASCII 
@@ -434,7 +454,7 @@ Version 3.26 - 30 December 2010
 
    - enhanced the test for illegal ASCII characters in a header (fftrec) to
      print out the name of the offending character (e.g TAB or Line Feed) as
-     well as the Hex value of the chracter.
+     well as the Hex value of the character.
      
    - modified ffgtbc (in fitscore.c) to support nonstandard vector variable
      length array columns in binary tables (e.g. with TFORMn = 2000PE(500)').
@@ -469,7 +489,7 @@ Version 3.26 - 30 December 2010
    - fixed a bug when updating the value of the CRPIXn world coordinate 
      system keywords when extracting a subimage from larger FITS image, using the
      extended CFITSIO syntax (e.g.  myimage[1:500:2, 1:500:2]).  This bug only 
-     affects casee where the pixel increment value is not equal to 1, and caused
+     affects cases where the pixel increment value is not equal to 1, and caused
      the coordinate grid to be shifted by between 0.25 pixels (in the case of
      a pixel increment of 2) and 0.5 pixels (for large pixel increment values).
 

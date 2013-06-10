@@ -18,12 +18,12 @@
 
 #ifdef _REENTRANT
 #include <pthread.h>
-#include <assert.h>
+/*  #include <assert.h>  not needed any more */
 extern pthread_mutex_t Fitsio_Lock;
 extern int Fitsio_Pthread_Status;
 
-#define FFLOCK1(lockname)   (assert(!(Fitsio_Pthread_Status = pthread_mutex_lock(&lockname))))
-#define FFUNLOCK1(lockname) (assert(!(Fitsio_Pthread_Status = pthread_mutex_unlock(&lockname))))
+#define FFLOCK1(lockname)   (Fitsio_Pthread_Status = pthread_mutex_lock(&lockname))
+#define FFUNLOCK1(lockname) (Fitsio_Pthread_Status = pthread_mutex_unlock(&lockname))
 #define FFLOCK   FFLOCK1(Fitsio_Lock)
 #define FFUNLOCK FFUNLOCK1(Fitsio_Lock)
 

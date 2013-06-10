@@ -848,8 +848,14 @@ Image compression algorithm definitions
 
   #define RICE_1       11
   #define GZIP_1       21
+  #define GZIP_2       22
   #define PLIO_1       31
   #define HCOMPRESS_1  41
+  #define NOCOMPRESS  -1
+
+  #define NO_DITHER -1
+  #define SUBTRACTIVE_DITHER_1 1
+  #define SUBTRACTIVE_DITHER_2 2
 \end{verbatim}
 
 
@@ -2609,7 +2615,8 @@ uncompressed FITS file.
 which the image is subdivided into a grid of rectangular tiles, and each
 tile of pixels is individually compressed.   The details of this FITS
 compression  convention are described at the FITS Support Office web site at
-http://fits.gsfc.nasa.gov/fits\_registry.html  Basically, the compressed
+http://fits.gsfc.nasa.gov/fits\_registry.html, and in the fpackguide pdf file
+that is included with the CFITSIO source file distributions Basically, the compressed
 image tiles are stored in rows of a variable length array column in a FITS
 binary table, however CFITSIO recognizes that this binary table extension
 contains an image and treats it as if it were an IMAGE extension.  This
@@ -2626,7 +2633,13 @@ Currently CFITSIO supports 3 general purpose compression algorithms  plus
 one other special-purpose compression technique that is designed for data
 masks with positive integer pixel values. The 3 general purpose algorithms
 are GZIP, Rice, and HCOMPRESS, and the special purpose  algorithm is the
-IRAF pixel list compression technique (PLIO). In principle, any number of
+IRAF pixel list compression technique (PLIO).  There are 2 variants of the GZIP
+algorithm: GZIP\_1 compresses the array of image pixel value normally with the
+GZIP algorithm, while GZIP\_2 first shuffles the bytes in all the pixel
+values so that the most-significant byte of every pixel appears first, followed
+by the less significant bytes in sequence.  GZIP\_2 may be more effective
+in cases where the most significant byte in most of the image pixel values
+contains the same bit pattern. In principle, any number of
 other compression algorithms could also be supported  by the FITS tiled
 image compression convention.
 
@@ -2686,28 +2699,40 @@ different values for  this parameter to determine the optimal value that
 preserves all the useful information in the image, without needlessly
 preserving all the ``noise'' which will hurt the compression efficiency.
 
-The default value for the quantization scale factor is 16., which means that
+The default value for the quantization scale factor is 4.0, which means that
 scaled integer pixel values will be quantized such that the difference
-between adjacent integer values will be 1/16th of the noise level in the
+between adjacent integer values will be 1/4th of the noise level in the
 image background. CFITSIO uses an optimized algorithm to accurately estimate
 the noise in the image.  As an example, if the RMS noise in the background
 pixels of an  image = 32.0,  then the spacing between adjacent scaled
-integer pixel values  will equal 2.0 by default.  Note that the RMS noise is
+integer pixel values  will equal 8.0 by default.  Note that the RMS noise is
 independently calculated for each tile of the image, so the resulting
 integer scaling factor may fluctuate slightly for each tile.   In some cases
 it may be desirable to specify the exact quantization level to be used,
 instead of specifying it relative to the calculated noise value.  This may
 be done by specifying the negative of desired quantization level for the
-value of q.  In the previous example, one could specify q = -2.0 so that the
-quantized integer levels differ by 2.0.  Larger negative values for q means
+value of q.  In the previous example, one could specify q = -8.0 so that the
+quantized integer levels differ by exactly 8.0.  Larger negative values for q means
 that the levels are more coarsely spaced, and will produce higher
 compression factors.
 
-There are 2 methods for specifying all the parameters needed to write a FITS
+When floating point images are being quantized, one must also specify what
+quantization method is to be used.  The default algorithm is called
+``SUBTRACTIVE\_DITHER\_1''.  A second variation called ``SUBTRACTIVE\_DITHER\_2''
+is also available, which does the same thing except that any pixels with a
+value of 0.0 are not dithered and instead the zero values are exactly
+preserved in the compressed image.  One may also turn off dithering
+completely with the ``NO\_DITHER'' option, but this is not recommended
+because it can cause larger systematic errors in measurements of the
+position or brightness of objects in the compressed image.
+
+There are 3 methods for specifying all the parameters needed to write a FITS
 image in the tile compressed format.  The parameters may either be specified
 at run time as part of the file name of the output compressed FITS file, or
 the writing program may call a set of helper CFITSIO subroutines that are provided
-for specifying the parameter values, as described below:
+for specifying the parameter values, or ``compression directive'' keywords
+may be added to the header of each image HDU to specify the compression parameters.
+These 3 methods are described below.
 
 1)  At run time, when specifying the name of the output FITS file to be
 created, the user can indicate that images should be
@@ -2716,7 +2741,7 @@ parameters in square brackets following the root disk file name
 in the following format:
 
 \begin{verbatim}
-    [compress NAME T1,T2; q QLEVEL, s HSCALE]
+    [compress NAME T1,T2; q[z] QLEVEL, s HSCALE]
 \end{verbatim}
 where
 
@@ -2735,14 +2760,16 @@ Here are a few examples of this extended syntax:
     myfile.fit[compress]    - use the default compression algorithm (Rice)
                               and the default tile size (row by row)
 
-    myfile.fit[compress GZIP] - use the specified compression algorithm;
-    myfile.fit[compress Rice]     only the first letter of the algorithm
-    myfile.fit[compress PLIO]     name is required.
-    myfile.fit[compress HCOMP]
+    myfile.fit[compress G] - use the specified compression algorithm;
+    myfile.fit[compress R]     only the first letter of the algorithm
+    myfile.fit[compress P]     should be given.
+    myfile.fit[compress H]
 
     myfile.fit[compress R 100,100]   - use Rice and 100 x 100 pixel tiles
 
     myfile.fit[compress R; q 10.0] - quantization level = (RMS-noise) / 10.
+    myfile.fit[compress R; qz 10.0] - quantization level = (RMS-noise) / 10.
+                      also use the SUBTRACTIVE_DITHER_2 quantization method
     myfile.fit[compress HS; s 2.0]  -  HSCOMPRESS (with smoothing)
                                           and scale = 2.0 * RMS-noise
 \end{verbatim}
@@ -2759,6 +2786,14 @@ return the current values of the parameters:
   int fits_set_compression_type(fitsfile *fptr, int comptype, int *status)
   int fits_set_tile_dim(fitsfile *fptr, int ndim, long *tilesize, int *status)
   int fits_set_quantize_level(fitsfile *fptr, float qlevel, int *status)
+  int fits_set_quantize_method(fitsfile *fptr, int method, int *status)
+  int fits_set_quantize_dither(fitsfile *fptr, int dither, int *status)
+  int fits_set_dither_seed(fitsfile *fptr, int seed, int *status)
+  int fits_set_dither_offset(fitsfile *fptr, int offset, int *status)
+  int fits_set_lossy_int(fitsfile *fptr, int lossy_int, int *status)
+      this forces integer image to be converted to floats, then quantized
+  int fits_set_huge_hdu(fitsfile *fptr, int huge, int *status);
+      this should be called when the compressed image size is more than 4 GB.
   int fits_set_hcomp_scale(fitsfile *fptr, float scale, int *status)
   int fits_set_hcomp_smooth(fitsfile *fptr, int smooth, int *status)
               Set smooth = 1 to apply smoothing when uncompressing the image
@@ -2767,14 +2802,29 @@ return the current values of the parameters:
   int fits_get_tile_dim(fitsfile *fptr, int ndim, long *tilesize, int *status)
   int fits_get_quantize_level(fitsfile *fptr, float *level, int *status)
   int fits_get_hcomp_scale(fitsfile *fptr, float *scale, int *status)
-  int fits_get_hcomp_smooth(fitsfile *fptr, int *smooth, int *status)
 \end{verbatim}
-4 symbolic constants are defined for use as the value of the
-`comptype' parameter:  GZIP\_1, RICE\_1, HCOMPRESS\_1 or PLIO\_1.
-Entering NULL for
-comptype will turn off the tile-compression and cause normal FITS
+Several symbolic constants are defined for use as the value of the
+`comptype' parameter:  GZIP\_1, GZIP\_2, RICE\_1, HCOMPRESS\_1 or PLIO\_1.
+Entering NULL for comptype will turn off the tile-compression and cause normal FITS
 images to be written.
 
+There are also defined symbolic constants for the quantization method:
+``SUBTRACTIVE\_DITHER\_1'', ``SUBTRACTIVE\_DITHER\_2'', and ``NO\_DITHER''.
+
+3) CFITSIO will uses the values of the following keywords, if they are present
+in the header of the image HDU,
+to determine how to compress that HDU.  These keywords override any compression parameters
+that were specified with the previous 2 methods.
+
+\begin{verbatim}
+  FZALGOR  - 'RICE_1' , 'GZIP_1', 'GZIP_2', 'HCOMPRESS_1', 'PLIO_1', 'NONE'
+  FZTILE   - 'ROW', 'WHOLE', or '(n,m)'
+  FZQVALUE - float value (default = 4.0)
+  FZQMETHD - 'SUBTRACTIVE_DITHER_1', 'SUBTRACTIVE_DITHER_2', 'NO_DITHER'
+  FZDTHRSD - 'CLOCK', 'CHECKSUM', 1 - 10000
+  FZINT2F  -  T, or F:  Convert integers to floats, then quantize?
+  FZHSCALE - float value (default = 0).  Hcompress scale value.
+\end{verbatim}
 
 No special action is required by software when read tile-compressed images because
 all the CFITSIO routines that read normal uncompressed FITS images also
@@ -2791,7 +2841,7 @@ or decompressing an image:
   int fits_img_decompress (fitsfile *infptr, fitsfile *outfptr, int *status);
 \end{verbatim}
 Before calling the compression routine, the compression parameters must
-first be defined in one of the 2 way described in the previous paragraphs.
+first be defined in one of the 3 way described in the previous paragraphs.
 There is also a routine to determine if the current HDU contains
 a tile compressed image (it returns 1 or 0):
 
@@ -2821,11 +2871,13 @@ on existing FITS images as shown in these examples:
        This will use the GZIP compression algorithm and 100 X 100 pixel
        tiles.
 
-4)  imcopy infile.fit 'outfile.fit[compress R 100,100; q 10.0]'
+4)  imcopy infile.fit 'outfile.fit[compress R 100,100; qz 10.0]'
 
        This will use the Rice compression algorithm, 100 X 100 pixel
        tiles, and quantization level = RMSnoise / 10.0 (assuming the
-       input image has a floating point data type).
+       input image has a floating point data type). By specifying
+       qz instead of q, this means use the subtractive dither2
+       quantization method.
 
 5)  imcopy infile.fit outfile.fit
 
