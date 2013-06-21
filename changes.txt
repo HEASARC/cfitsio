@@ -2,6 +2,10 @@
 
 Version 3.35 - 24 May 2013
 		   
+   - in imcompress.c, declared some arrays that are used to store the dimensions
+     of the image from 'int' to 'long', to support very large images (at least
+     on systems where sizeof(long) = 8),
+
    - modified the routines that convert a string value to a float or double
      to prevent them from returning a NaN or Inf value if the
      string is "NaN" or "Inf" (as can happen with gcc implementation of the
@@ -59,7 +63,7 @@ Version 3.35 - 24 May 2013
      and instead will be exactly preserved when the image is compressed.
 
    - added support for an alias of "RICE_ONE" for "RICE_1" as the value
-     of the XCMPTYPE keyword, which gives the name of the image compression
+     of the ZCMPTYPE keyword, which gives the name of the image compression
      algorithm.  This alias is used if the new SUBTRACTIVE_DITHER_2 option
      is used, to prevent old versions of funpack from creating a corrupted
      uncompressed image file.  Only newer versions of funpack will recognize

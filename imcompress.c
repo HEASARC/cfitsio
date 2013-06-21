@@ -3397,13 +3397,15 @@ int fits_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer     */
    Write a section of a compressed image.
 */
 {
-    int naxis[MAX_COMPRESS_DIM], tiledim[MAX_COMPRESS_DIM];
+    int  tiledim[MAX_COMPRESS_DIM];
+    long naxis[MAX_COMPRESS_DIM];
     long tilesize[MAX_COMPRESS_DIM], thistilesize[MAX_COMPRESS_DIM];
     long ftile[MAX_COMPRESS_DIM], ltile[MAX_COMPRESS_DIM];
     long tfpixel[MAX_COMPRESS_DIM], tlpixel[MAX_COMPRESS_DIM];
     long rowdim[MAX_COMPRESS_DIM], offset[MAX_COMPRESS_DIM],ntemp;
     long fpixel[MAX_COMPRESS_DIM], lpixel[MAX_COMPRESS_DIM];
-    int ii, i5, i4, i3, i2, i1, i0, ndim, irow, pixlen, tilenul;
+    long i5, i4, i3, i2, i1, i0, irow;
+    int ii, ndim, pixlen, tilenul;
     int  tstatus, buffpixsiz;
     void *buffer;
     char *bnullarray = 0, card[FLEN_CARD];
@@ -4297,14 +4299,15 @@ int fits_read_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
    returned.
 */
 {
-    int naxis[MAX_COMPRESS_DIM], tiledim[MAX_COMPRESS_DIM];
+    long naxis[MAX_COMPRESS_DIM], tiledim[MAX_COMPRESS_DIM];
     long tilesize[MAX_COMPRESS_DIM], thistilesize[MAX_COMPRESS_DIM];
     long ftile[MAX_COMPRESS_DIM], ltile[MAX_COMPRESS_DIM];
     long tfpixel[MAX_COMPRESS_DIM], tlpixel[MAX_COMPRESS_DIM];
     long rowdim[MAX_COMPRESS_DIM], offset[MAX_COMPRESS_DIM],ntemp;
     long fpixel[MAX_COMPRESS_DIM], lpixel[MAX_COMPRESS_DIM];
     long inc[MAX_COMPRESS_DIM];
-    int ii, i5, i4, i3, i2, i1, i0, ndim, irow, pixlen, tilenul;
+    long i5, i4, i3, i2, i1, i0, irow;
+    int ii, ndim, pixlen, tilenul;
     void *buffer;
     char *bnullarray = 0;
     double testnullval = 0.;
@@ -4573,14 +4576,15 @@ int fits_read_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer   
    the array.
 */
 {
-    int naxis[MAX_COMPRESS_DIM], tiledim[MAX_COMPRESS_DIM];
+    long naxis[MAX_COMPRESS_DIM], tiledim[MAX_COMPRESS_DIM];
     long tilesize[MAX_COMPRESS_DIM], thistilesize[MAX_COMPRESS_DIM];
     long ftile[MAX_COMPRESS_DIM], ltile[MAX_COMPRESS_DIM];
     long tfpixel[MAX_COMPRESS_DIM], tlpixel[MAX_COMPRESS_DIM];
     long rowdim[MAX_COMPRESS_DIM], offset[MAX_COMPRESS_DIM],ntemp;
     long fpixel[MAX_COMPRESS_DIM], lpixel[MAX_COMPRESS_DIM];
     long inc[MAX_COMPRESS_DIM];
-    int ii, i5, i4, i3, i2, i1, i0, ndim, irow, pixlen, tilenul;
+    long i5, i4, i3, i2, i1, i0, irow;
+    int ii, ndim, pixlen, tilenul;
     void *buffer;
     char *bnullarray = 0;
     double testnullval = 0.;
@@ -5720,6 +5724,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
 
     if (*status > 0)
        return(*status);
+
 
     /* **************************************************************** */
     /* allocate pointers to array of cached uncompressed tiles, if not already done */
