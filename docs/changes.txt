@@ -1,6 +1,6 @@
                    Log of Changes Made to CFITSIO
 
-Version 3.35 - 24 May 2013
+Version 3.35 - 24 May 2013  (actual public release on 26 June)
 		   
    - in imcompress.c, declared some arrays that are used to store the dimensions
      of the image from 'int' to 'long', to support very large images (at least
