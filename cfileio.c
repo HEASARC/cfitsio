@@ -96,7 +96,7 @@ int fitsio_init_lock(void)
     status = pthread_mutex_init(&Fitsio_Lock,&mutex_init);
     if (status) {
         ffpmsg("pthread_mutex_init failed (fitsio_init_lock)");
-        return(*status);
+        return(status);
     }
 
     need_to_init = 0;
