@@ -159,7 +159,7 @@ int fp_init (fpstate *fpptr)
 	fpptr->scale = DEF_HCOMP_SCALE;
 	fpptr->smooth = DEF_HCOMP_SMOOTH;
 	fpptr->rescale_noise = DEF_RESCALE_NOISE;
-	fpptr->ntile[0] = (long) 0;	/* 0 means extent of axis */
+	fpptr->ntile[0] = (long) -1;	/* -1 means extent of axis */
 
 	for (ii=1; ii < MAX_COMPRESS_DIM; ii++)
 	    fpptr->ntile[ii] = (long) 1;

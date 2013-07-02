@@ -1021,7 +1021,7 @@ int imcomp_init_table(fitsfile *outfptr,
             return(*status = DATA_COMPRESSION_ERR);
          }
 
-         if ((actual_tilesize[0] == -1) &&
+         if ((actual_tilesize[0] <= 0) &&
              (actual_tilesize[1] == -1) ){
 	     
 	    /* compress the whole image as a single tile */
@@ -1033,8 +1033,8 @@ int imcomp_init_table(fitsfile *outfptr,
                      actual_tilesize[ii] = 1;
 	      }
 
-         } else if ((actual_tilesize[0] == -1) &&
-             (actual_tilesize[1] == 1) ){
+         } else if ((actual_tilesize[0] <= 0) &&
+             (actual_tilesize[1] == 0 || actual_tilesize[1] == 1) ){
 	     
              /*
               The Hcompress algorithm is inherently 2D in nature, so the row by row

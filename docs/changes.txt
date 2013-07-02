@@ -1,7 +1,13 @@
                    Log of Changes Made to CFITSIO
 
-Version 3.35 - 24 May 2013  (actual public release on 26 June)
+
+Version 3.35 - 26 June 2013  (1st beta release on 24 May)
 		   
+   - fixed problem with the default tile size when compressing images with
+     fpack using the Hcompress algorithm.
+
+   - fixed returned value ("status" instead of "*status") 
+
    - in imcompress.c, declared some arrays that are used to store the dimensions
      of the image from 'int' to 'long', to support very large images (at least
      on systems where sizeof(long) = 8),

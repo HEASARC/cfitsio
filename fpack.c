@@ -281,7 +281,7 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 
 	if (wholetile) {
 	    for (ndim=0; ndim < MAX_COMPRESS_DIM; ndim++)
-		fpptr->ntile[ndim] = (long) 0;
+		fpptr->ntile[ndim] = (long) -1;
 
 	} else if (gottile) {
 	    len = strlen (tile);
