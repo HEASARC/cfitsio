@@ -249,7 +249,8 @@ int fits_set_compression_type(fitsfile *fptr,  /* I - FITS file pointer     */
         ctype != PLIO_1 && 
         ctype != HCOMPRESS_1 && 
         ctype != BZIP2_1 && 
-        ctype != NOCOMPRESS)
+        ctype != NOCOMPRESS &&
+	ctype != 0)
     {
 	ffpmsg("unknown compression algorithm (fits_set_compression_type)");
 	*status = DATA_COMPRESSION_ERR; 
@@ -505,7 +506,8 @@ int fits_get_compression_type(fitsfile *fptr,  /* I - FITS file pointer     */
         *ctype != PLIO_1 && 
         *ctype != HCOMPRESS_1 && 
         *ctype != BZIP2_1 && 
-        *ctype != NOCOMPRESS)
+        *ctype != NOCOMPRESS &&
+	*ctype != 0   )
     {
 	ffpmsg("unknown compression algorithm (fits_get_compression_type)");
 	*status = DATA_COMPRESSION_ERR; 
