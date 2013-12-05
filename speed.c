@@ -91,7 +91,7 @@ int main()
     cpufrac = elapcpu / elapse * 100.;
     size = 2880. * rawloop / 1000000.;
     rate = size / elapse;
-    printf(" %4.1fMB/%4.1fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
+    printf(" %4.1fMB/%6.3fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
 
     /* read back the binary records */
     fseek(diskfile, 0, 0);
@@ -108,7 +108,7 @@ int main()
     cpufrac = elapcpu / elapse * 100.;
     size = 2880. * rawloop / 1000000.;
     rate = size / elapse;
-    printf(" %4.1fMB/%4.1fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
+    printf(" %4.1fMB/%6.3fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
 
     fclose(diskfile);
     remove(filename);
@@ -142,7 +142,7 @@ int main()
 
     tend = time(0);
     elapse = difftime(tend, tbegin) + 0.5;
-    printf("Total elapsed time = %.1fs, status = %d\n",elapse, status);
+    printf("Total elapsed time = %.3fs, status = %d\n",elapse, status);
     return(0);
 }
 /*--------------------------------------------------------------------------*/
@@ -181,7 +181,7 @@ int writeimage(fitsfile *fptr, int *status)
     cpufrac = elapcpu / elapse * 100.;
     size = XSIZE * 4. * YSIZE / 1000000.;
     rate = size / elapse;
-    printf(" %4.1fMB/%4.1fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
+    printf(" %4.1fMB/%6.3fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
 
     return( *status );
 }
@@ -235,7 +235,7 @@ int writebintable (fitsfile *fptr, int *status)
     cpufrac = elapcpu / elapse * 100.;
     size = BROWS * 8. / 1000000.;
     rate = size / elapse;
-    printf(" %4.1fMB/%4.1fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
+    printf(" %4.1fMB/%6.3fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
 
     return( *status );
 }
@@ -289,7 +289,7 @@ int writeasctable (fitsfile *fptr, int *status)
     cpufrac = elapcpu / elapse * 100.;
     size = AROWS * 13. / 1000000.;
     rate = size / elapse;
-    printf(" %4.1fMB/%4.1fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
+    printf(" %4.1fMB/%6.3fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
 
     return( *status );
 }
@@ -324,7 +324,7 @@ int readimage( fitsfile *fptr, int *status )
     cpufrac = elapcpu / elapse * 100.;
     size = XSIZE * 4. * YSIZE / 1000000.;
     rate = size / elapse;
-    printf(" %4.1fMB/%4.1fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
+    printf(" %4.1fMB/%6.3fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
 
     return( *status );
 }
@@ -372,7 +372,7 @@ int readbtable( fitsfile *fptr, int *status )
     cpufrac = elapcpu / elapse * 100.;
     size = BROWS * 8. / 1000000.;
     rate = size / elapse;
-    printf(" %4.1fMB/%4.1fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
+    printf(" %4.1fMB/%6.3fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
 
     return( *status );
 }
@@ -420,7 +420,7 @@ int readatable( fitsfile *fptr, int *status )
     cpufrac = elapcpu / elapse * 100.;
     size = AROWS * 13. / 1000000.;
     rate = size / elapse;
-    printf(" %4.1fMB/%4.1fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
+    printf(" %4.1fMB/%6.3fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
 
     return( *status );
 }

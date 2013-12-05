@@ -12,10 +12,17 @@
 /* #include <sys/stat.h> */
 /* #include <sys/types.h> */
 
-#define	FPACK_VERSION	"1.6.1 (Mar 2013)"
+#define	FPACK_VERSION	"1.7.0 (Dec 2013)"
 /*
 VERSION	History
 
+1.7.0 (Dec 2013)
+    - extensive changes to the binary table compression method.  All types
+      of binary table columns, including variable length array columns are
+      now supported.  The command line table compression flag has been changed
+      to "-table" instead of "-BETAtable", and a new "-tableonly" flag has
+      been introduced to only compress the binary tables in the input files(s)
+      and not the image HDUs.
 1.6.1 (Mar 2013)
     - numerous changes to the BETAtable compression method used to compress
       binary tables
@@ -107,6 +114,7 @@ typedef struct
 	int	do_not_prompt;
 	int	do_checksums;
 	int	do_gzip_file;
+	int     do_images;  
 	int     do_tables;  
 	int	test_all;
 	int	verbose;
@@ -155,6 +163,8 @@ int fp_unpack_hdu (fitsfile *infptr, fitsfile *outfptr, fpstate fpvar, int *stat
 int fits_read_image_speed (fitsfile *infptr, float *whole_elapse, 
     float *whole_cpu, float *row_elapse, float *row_cpu, int *status);
 int fp_test_hdu (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2, 
+	fpstate fpvar, int *status);
+int fp_test_table (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2, 
 	fpstate fpvar, int *status);
 int marktime(int *status);
 int gettime(float *elapse, float *elapscpu, int *status);

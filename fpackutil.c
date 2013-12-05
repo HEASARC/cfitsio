@@ -5,6 +5,7 @@
 #include <time.h>
 #include <float.h>
 #include <signal.h>
+#include <ctype.h>
 
 /* #include  "bzlib.h"  only for experimental purposes */
 
@@ -115,7 +116,7 @@ int fp_tmpnam(char *suffix, char *rootname, char *tmpnam)
 {
 	/* create temporary file name */
 
-	int maxtry = 30, len, i1 = 0, ii;
+	int maxtry = 30, i1 = 0, ii;
 
 	if (strlen(suffix) + strlen(rootname) > SZ_STR-5) {
 	    fp_msg ("Error: filename is too long to create tempory file\n"); exit (-1);
@@ -171,7 +172,8 @@ int fp_init (fpstate *fpptr)
 	fpptr->do_not_prompt = 0;
 	fpptr->do_checksums = 1;
 	fpptr->do_gzip_file = 0;
-	fpptr->do_tables = 0;  /* this is for beta testing purposes only */
+	fpptr->do_tables = 0;  /* this is intended for testing purposes  */
+	fpptr->do_images = 1;  /* can be turned off with -tableonly switch */
 	fpptr->test_all = 0;
 	fpptr->verbose = 0;
 
@@ -248,7 +250,7 @@ int fp_info_hdu (fitsfile *infptr)
 {
 	long	naxes[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
 	char	msg[SZ_STR], val[SZ_CARD], com[SZ_CARD];
-        int     comptype, naxis=0, hdutype, bitpix, hdupos, stat=0, ii;
+        int     naxis=0, hdutype, bitpix, hdupos, stat=0, ii;
         unsigned long   datasum, hdusum;
 
 	fits_movabs_hdu (infptr, 1, NULL, &stat);
@@ -347,8 +349,8 @@ int fp_info_hdu (fitsfile *infptr)
 /*--------------------------------------------------------------------------*/
 int fp_preflight (int argc, char *argv[], int unpack, fpstate *fpptr)
 {
-	char	infits[SZ_STR], outfits[SZ_STR], temp[SZ_STR], *cptr;
-	int	iarg, suflen, namelen, nfiles = 0;
+	char	infits[SZ_STR], outfits[SZ_STR];
+	int	iarg, namelen, nfiles = 0;
 
 	if (fpptr->initialized != FP_INIT_MAGIC) {
 	    fp_msg ("Error: internal initialization error\n"); exit (-1);
@@ -550,9 +552,8 @@ int fp_preflight (int argc, char *argv[], int unpack, fpstate *fpptr)
 int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 {
 	char	infits[SZ_STR], outfits[SZ_STR];
-	char	temp[SZ_STR], answer[30], *cptr;
-	int	ii, iarg, islossless, namelen, iraf_infile = 0, status = 0, ifail;
-	FILE	*diskfile;
+	char	temp[SZ_STR], answer[30];
+	int	iarg, islossless, namelen, iraf_infile = 0, status = 0, ifail;
         
 	if (fpvar.initialized != FP_INIT_MAGIC) {
 	    fp_msg ("Error: internal initialization error\n"); exit (-1);
@@ -892,8 +893,8 @@ int fp_pack (char *infits, char *outfits, fpstate fpvar, int *islossless)
 
 	if (stat == END_OF_FILE) stat = 0;
 
-	/* set checksum for case of newly created primary HDU
-	 */
+	/* set checksum for case of newly created primary HDU	 */
+
 	if (fpvar.do_checksums) {
 	    fits_movabs_hdu (outfptr, 1, NULL, &stat);
 	    fits_write_chksum (outfptr, &stat);
@@ -1065,13 +1066,13 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 
 	long	naxes[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
 	long	tilesize[9] = {0,1,1,1,1,1,1,1,1};
-	int	stat=0, totpix=0, naxis=0, ii, hdutype, bitpix, extnum = 0, len;
+	int	stat=0, totpix=0, naxis=0, ii, hdutype, bitpix = 0, extnum = 0, len;
 	int     tstatus = 0, hdunum, rescale_flag, bpix, ncols;
 	char	dtype[8], dimen[100];
 	double  bscale, rescale, noisemin;
 	long headstart, datastart, dataend;
 	float origdata = 0., whole_cpu, whole_elapse, row_elapse, row_cpu, xbits;
-	FILE	*diskfile;
+
 	LONGLONG nrows;
 	/* structure to hold image statistics (defined in fpack.h) */
 	imgstats imagestats;
@@ -1093,8 +1094,8 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 	        for (totpix=1, ii=0; ii < 9; ii++) totpix *= naxes[ii];
 	    }
 
-	    if ( !fits_is_compressed_image (inputfptr,  &stat) &&
-		hdutype == IMAGE_HDU && naxis != 0 && totpix != 0) {
+	    if (!fits_is_compressed_image (inputfptr,  &stat) && hdutype == IMAGE_HDU &&
+		naxis != 0 && totpix != 0 && fpvar.do_images) {
 
 		/* rescale a scaled integer image to reduce noise? */
 		if (fpvar.rescale_noise != 0. && bitpix > 0 && bitpix < LONGLONG_IMG) {
@@ -1188,7 +1189,7 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 		if (imagestats.noise2 != 0. && imagestats.noise2 < noisemin) noisemin = imagestats.noise2;
 		if (imagestats.noise5 != 0. && imagestats.noise5 < noisemin) noisemin = imagestats.noise5;
 
-                xbits = log10(noisemin)/.301 + 1.792;
+                xbits = (float) (log10(noisemin)/.301 + 1.792);
 
 		printf("\n File: %s\n", infits);
 		printf("  Ext BITPIX Dimens.   Nulls    Min    Max     Mean    Sigma  Noise2  Noise3  Noise5  Nbits   MaxR\n");
@@ -1204,7 +1205,7 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 		printf("%-12s",dimen);
 
 		fits_get_hduaddr(inputfptr, &headstart, &datastart, &dataend, &stat);
-		origdata = (dataend - datastart)/1000000.;
+		origdata = (float) ((dataend - datastart)/1000000.);
 
 		/* get elapsed and cpu times need to read the uncompressed image */
 		fits_read_image_speed (infptr, &whole_elapse, &whole_cpu,
@@ -1361,8 +1362,8 @@ int fp_pack_hdu (fitsfile *infptr, fitsfile *outfptr, fpstate fpvar,
 	int	stat=0, totpix=0, naxis=0, ii, hdutype, bitpix;
 	int	tstatus, hdunum, rescale_flag = 0;
 	double  bscale, rescale;
-	FILE	*diskfile;
-	char	outfits[SZ_STR];
+
+	char	outfits[SZ_STR], fzalgor[FLEN_VALUE];
 	long 	headstart, datastart, dataend, datasize;
 	double  noisemin;
 	/* structure to hold image statistics (defined in fpack.h) */
@@ -1377,8 +1378,18 @@ int fp_pack_hdu (fitsfile *infptr, fitsfile *outfptr, fpstate fpvar,
 	    for (totpix=1, ii=0; ii < 9; ii++) totpix *= naxes[ii];
 	}
 
+	/* check directive keyword to see if this HDU should not be compressed */
+        tstatus = 0;
+        if (!fits_read_key(infptr, TSTRING, "FZALGOR", fzalgor, NULL, &tstatus) ) {
+	    if (!strcmp(fzalgor, "NONE") || !strcmp(fzalgor, "none") ) {
+ 	        fits_copy_hdu (infptr, outfptr, 0, &stat);
+            }
+	    *status = stat;
+	    return(0);
+	}
+
         /* =============================================================== */
-        /* This block is only for beta testing of binary table compression */
+        /* This block is only for  binary table compression */
 	if (hdutype == BINARY_TBL && fpvar.do_tables) { 
 
 	    fits_get_hduaddr(infptr, &headstart, &datastart, &dataend, status); 
@@ -1388,17 +1399,18 @@ int fp_pack_hdu (fitsfile *infptr, fitsfile *outfptr, fpstate fpvar,
 		/* data is less than 1 FITS block in size, so don't compress */
 	        fits_copy_hdu (infptr, outfptr, 0, &stat);
 	    } else {
-		    fits_compress_table_rice (infptr, outfptr, &stat);
+		    fits_compress_table (infptr, outfptr, &stat);
 	    }
 
+	    *status = stat;
 	    return(0);
 	}
         /* =============================================================== */
 
         /* If this is not a non-null image HDU, just copy it verbatim */
-	if (fits_is_compressed_image (infptr,  &stat) ||
-	    hdutype != IMAGE_HDU || naxis == 0 || totpix == 0) {
-	    fits_copy_hdu (infptr, outfptr, 0, &stat);
+	if (fits_is_compressed_image (infptr,  &stat) || hdutype != IMAGE_HDU ||
+	    naxis == 0 || totpix == 0 || !fpvar.do_images) {
+	        fits_copy_hdu (infptr, outfptr, 0, &stat);
 
 	} else {  /* remaining code deals only with IMAGE HDUs */
 
@@ -1559,7 +1571,6 @@ int fits_read_image_speed (fitsfile *infptr, float *whole_elapse,
 	long inc[9]={1,1,1,1,1,1,1,1,1} ;
 	float *earray, enull = 0, filesize;
 	double *darray, dnull = 0;
-	LONGLONG fpixelll[9];
 	
 	if (*status) return(*status);
 
@@ -1571,7 +1582,7 @@ int fits_read_image_speed (fitsfile *infptr, float *whole_elapse,
 	lpixel[1] = naxes[1];
 	
         /* filesize in MB */
-	filesize = naxes[0] * abs(bitpix) / 8000000. * naxes[1];
+	filesize = (float) (naxes[0] * abs(bitpix) / 8000000. * naxes[1]);
 
 	/* measure time required to read the raw image */
 	fits_set_bscale(infptr, 1.0, 0.0, status);
@@ -1730,7 +1741,7 @@ int fp_test_hdu (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
         char ctype[20], lossless[4];
 	long headstart, datastart, dataend;
 	float origdata = 0., compressdata = 0.;
-	float compratio = 0., packcpu = 0., unpackcpu = 0., readcpu;
+	float compratio = 0., packcpu = 0., unpackcpu = 0.;
 	float elapse, whole_elapse, row_elapse, whole_cpu, row_cpu;
 	unsigned long datasum1, datasum2, hdusum;
 
@@ -1792,13 +1803,14 @@ int fp_test_hdu (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
 
 		/* ----------------------------------------------------- */
 
+
 		/* get sizes of original and compressed images */
 
 		fits_get_hduaddr(infptr, &headstart, &datastart, &dataend, &stat);
-		origdata = (dataend - datastart)/1000000.;
+		origdata = (float) ((dataend - datastart)/1000000.);
 		
 		fits_get_hduaddr(outfptr, &headstart, &datastart, &dataend, &stat);
-		compressdata = (dataend - datastart)/1000000.;
+		compressdata = (float) ((dataend - datastart)/1000000.);
 
 		if (compressdata != 0)
 			compratio = (float) origdata / (float) compressdata;
@@ -1848,139 +1860,38 @@ int fp_test_table (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
 {
 /* this routine is for performance testing of the beta table compression methods */
 
-	int stat = 0, hdutype, comptype, noloss = 0, ii;
-        char ctype[20], lossless[4];
-	LONGLONG headstart, datastart, dataend, datasize;
-	float origdata = 0., compressdata = 0.;
-	float compratio = 0., packcpu = 0., unpackcpu = 0., readcpu;
-	float elapse, whole_elapse, row_elapse, whole_cpu, row_cpu;
-	float gratio, tratio, sratio, pratio, bratio;
-	float grate, trate, srate, prate, brate, filesize;
-	float rratio, rrate;
-	size_t headsize, hlen, dlen;
-	LONGLONG indatasize, outdatasize;
-	char *ptr, *cptr, *iptr, *cbuff;
+	int stat = 0, hdutype, tstatus = 0;
+        char fzalgor[FLEN_VALUE];
+	LONGLONG headstart, datastart, dataend;
+	float elapse, cpu;
 
 	if (*status) return(0);
 
+	/* check directive keyword to see if this HDU should not be compressed */
+        if (!fits_read_key(infptr, TSTRING, "FZALGOR", fzalgor, NULL, &tstatus) ) {
+	    if (!strcmp(fzalgor, "NONE")  || !strcmp(fzalgor, "none")) {
+		return(0);
+            }
+	}
+
         fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status); 
-	datasize = dataend - datastart;
 
 	/* can't compress small tables with less than 2880 bytes of data */
-        if (datasize <= 2880) {
+        if (dataend - datastart <= 2880) {
 		return(0);
 	}
 
-     /* 1  gzip  raw table **********************************  */
-
-/*
  	marktime(&stat);
-	
-	fits_gzip_datablocks(infptr, &dlen, &stat);
-
-	gettime(&elapse, &packcpu, &stat);
-
-        fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status); 
-	indatasize = dataend - datastart;
-
-	outdatasize = dlen;
-
-	gratio = (float) indatasize / (float) outdatasize;
-	grate = packcpu;
-	
-	fits_delete_hdu(outfptr, &hdutype, &stat);
-*/
-     /* 2  transposed table and compress each column with gzip ***********  */
-
- 	marktime(&stat);
-	fits_compress_table_gzip (infptr, outfptr,  &stat);
+        stat= -999;  /* set special flag value */
+	fits_compress_table (infptr, outfptr,  &stat);
 
 	/* get elapsped times */
-	gettime(&elapse, &packcpu, &stat);
-
-        fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status); 
-	indatasize = dataend - datastart;
-	filesize = (float) dataend / 1000000.;
-	
-        fits_get_hduaddrll(outfptr, &headstart, &datastart, &dataend, status); 
-	outdatasize = dataend - datastart;
-
-	gratio = (float) indatasize / (float) outdatasize;
-	grate = packcpu;
+	gettime(&elapse, &cpu, &stat);
 
 	fits_delete_hdu(outfptr, &hdutype, &stat);
 
-     /* 3  transpose table, shuffle numeric columns, and compress each column with gzip */
+	printf("\nElapsed time = %f, cpu = %f\n", elapse, cpu);
 
- 	marktime(&stat);
-	fits_compress_table_shuffle (infptr, outfptr, &stat);
-
-	/* get elapsped times */
-	gettime(&elapse, &packcpu, &stat);
-
-        fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status); 
-	indatasize = dataend - datastart;
-	filesize = (float) dataend / 1000000.;
-	
-        fits_get_hduaddrll(outfptr, &headstart, &datastart, &dataend, status); 
-	outdatasize = dataend - datastart;
-
-	sratio = (float) indatasize / (float) outdatasize;
-	srate = packcpu;
-
-	fits_delete_hdu(outfptr, &hdutype, &stat);
-
-     /* 4  transposed, use Rice for integer columns, shuffled gzip for others  */
-
- 	marktime(&stat);
-
-	/* set special flag to tell fits_compress_table_rice to print out diagnositics */
-        if (stat == 0) stat = -999;  
-	fits_compress_table_rice (infptr, outfptr, &stat);
-
-	/* get elapsped times */
-	gettime(&elapse, &packcpu, &stat);
-
-        fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status); 
-	indatasize = dataend - datastart;
-	filesize = (float) dataend / 1000000.;
-	
-        fits_get_hduaddrll(outfptr, &headstart, &datastart, &dataend, status); 
-	outdatasize = dataend - datastart;
-
-	rratio = (float) indatasize / (float) outdatasize;
-	rrate = packcpu;
-
-	fits_delete_hdu(outfptr, &hdutype, &stat);
-
-
-     /* 5  best  */
-/*
- 	marktime(&stat);
-	fits_compress_table_best (infptr, outfptr, &stat);
-
-	gettime(&elapse, &packcpu, &stat);
-
-        fits_get_hduaddrll(infptr, &headstart, &datastart, &dataend, status); 
-	indatasize = dataend - datastart;
-	filesize = (float) dataend / 1000000.;
-	
-        fits_get_hduaddrll(outfptr, &headstart, &datastart, &dataend, status); 
-	outdatasize = dataend - datastart;
-
-	bratio = (float) indatasize / (float) outdatasize;
-	brate = packcpu;
-
-	fits_delete_hdu(outfptr, &hdutype, &stat);
-*/
-	printf("\n\n                Compression Ratio (Time)\n");
-	printf("  Size       Gzip          Shuffled        Rice   \n");     
-	printf(" %5.2fMB  %5.2f (%4.2fs) %5.2f (%4.2fs) %5.2f (%4.2fs) \n",
-	    filesize, gratio, grate, sratio, srate,  rratio, rrate);
-/*
-	printf(" Disk savings ratio:     %5.2f           %5.2f    \n",
-	 (1. - 1./sratio) / (1. - 1./gratio), (1. - 1./rratio) / (1. - 1./gratio));
-*/
 	fits_report_error (stderr, stat);
 
         return(0);
@@ -2001,8 +1912,8 @@ int marktime(int *status)
         scpu = clock();
 #else
 /* don't support high timing precision on Windows machines */
-     	startsec = 0.;
-        startmilli = 0.;
+     	startsec = 0;
+        startmilli = 0;
 
         scpu = clock();
 #endif
@@ -2032,7 +1943,7 @@ startsec,startmilli,stopsec, stopmilli, *elapse);
 */
 #else
 /* set the elapsed time the same as the CPU time on Windows machines */
-	*elapscpu = (ecpu - scpu) * 1.0 / CLOCKTICKS;
+	*elapscpu = (float) ((ecpu - scpu) * 1.0 / CLOCKTICKS);
 	*elapse = *elapscpu;  
 #endif
 	return( *status );
@@ -2048,7 +1959,7 @@ int fp_i2stat(fitsfile *infptr, int naxis, long *naxes, imgstats *imagestats, in
 	long fpixel[9] = {1,1,1,1,1,1,1,1,1};
 	long lpixel[9] = {1,1,1,1,1,1,1,1,1};
 	long inc[9]    = {1,1,1,1,1,1,1,1,1};
-	long i1, i2, npix, ii, ngood, nx, ny;
+	long i1, i2, npix, ngood, nx, ny;
 	short *intarray, minvalue, maxvalue, nullvalue;
 	int anynul, tstatus, checknull = 1;
 	double mean, sigma, noise1, noise2, noise3, noise5;
@@ -2129,7 +2040,7 @@ int fp_i4stat(fitsfile *infptr, int naxis, long *naxes, imgstats *imagestats, in
 	long fpixel[9] = {1,1,1,1,1,1,1,1,1};
 	long lpixel[9] = {1,1,1,1,1,1,1,1,1};
 	long inc[9]    = {1,1,1,1,1,1,1,1,1};
-	long i1, i2, npix, ii, ngood, nx, ny;
+	long i1, i2, npix, ngood, nx, ny;
 	int *intarray, minvalue, maxvalue, nullvalue;
 	int anynul, tstatus, checknull = 1;
 	double mean, sigma, noise1, noise2, noise3, noise5;
@@ -2210,7 +2121,7 @@ int fp_r4stat(fitsfile *infptr, int naxis, long *naxes, imgstats *imagestats, in
 	long fpixel[9] = {1,1,1,1,1,1,1,1,1};
 	long lpixel[9] = {1,1,1,1,1,1,1,1,1};
 	long inc[9]    = {1,1,1,1,1,1,1,1,1};
-	long i1, i2, npix, ii, ngood, nx, ny;
+	long i1, i2, npix, ngood, nx, ny;
 	float *array, minvalue, maxvalue, nullvalue = FLOATNULLVALUE;
 	int anynul,checknull = 1;
 	double mean, sigma, noise1, noise2, noise3, noise5;

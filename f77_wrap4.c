@@ -154,7 +154,7 @@ int Cwork_fn( long total_n, long offset,       long first_n,    long n_values,
 #endif
 
    for(i=0;i<n_cols;i++) {
-      for(j=0;j<MAXFITSFILES;j++)
+      for(j=0;j<NMAXFILES;j++)
 	 if( cols[i].fptr==gFitsFiles[j] )
 	    units[i] = j;
       colnum[i]   = cols[i].colnum;

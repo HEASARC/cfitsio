@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large February 2013\\}
+{\Large December 2013\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -1496,15 +1496,14 @@ CFITSIO places very few restrictions on the size of FITS files that it
 reads or writes.  There are a few limits, however, that may affect
 some extreme cases:
 
-1.  The maximum number of FITS files that may be simultaneously opened
-by CFITSIO is set by NMAXFILES as defined in fitsio2.h.  It is currently
-set = 300 by default.  CFITSIO will allocate about 80 * NMAXFILES bytes
-of memory for internal use.  Note that the underlying C compiler or
-operating system, may have a smaller limit on the number of opened files.
-The C symbolic constant FOPEN\_MAX is intended to define the maximum
-number of files that may open at once (including any other text or
-binary files that may be open, not just FITS files).  On some systems it
-has been found that gcc supports a maximum of 255 opened files.
+1.  The maximum number of FITS files that may be simultaneously opened by
+CFITSIO is set by NMAXFILES, as defined in fitsio2.h.  The current default
+value is 1000, but this may be increased if necessary. Note that CFITSIO
+allocates NIOBUF * 2880 bytes of I/O buffer space for each file that is
+opened.  The default value of NIOBUF is 40 (defined in fitsio.h), so this
+amounts to  more than 115K of memory  for each opened file (or 115 MB for
+1000 opened files).  Note that the underlying  operating system, may have a
+lower limit on the number of files that can be opened simultaneously.
 
 2.  It used to be common for computer systems to only support disk files up
 to 2**31 bytes = 2.1 GB in size, but most systems now support larger files.
@@ -1816,9 +1815,14 @@ filename (or directory path) contains square or curly bracket characters
 
 \begin{description}
 \item[3 ] Close a previously opened FITS file.  The first routine simply
-closes the file, whereas the second one also DELETES THE FILE, which
+closes the file, whereas the second one also DELETES the file, which
 can be useful in cases where a FITS file has been partially created,
 but then an error occurs which prevents it from being completed.
+Note that these routines behave differently than most other CFITSIO routines
+if the input value of the `status' parameter is not zero:  Instead of
+simply returning to the calling program without doing anything, these
+routines effectively ignore the input status value and still attempt
+to close or delete the file.
  \label{ffclos} \label{ffdelt}
 \end{description}
 
@@ -7006,7 +7010,7 @@ parameters used in these routines.
     routines return the values of the table column array elements.  Undefined
     array elements will be returned with a value = nulval, unless nulval = 0
     (or = ' ' for ffgcvs) in which case no checking for undefined values will
-    be performed. The ANYF parameter is set to true if any of the returned
+    be performed. The anynul parameter is set to true if any of the returned
    elements are undefined. \label{ffgcvx}
 \end{description}
 
@@ -9524,17 +9528,11 @@ inappropriate usage of CFITSIO routines can greatly slow down the
 execution speed of a program.
 
 The maximum possible I/O speed of CFITSIO depends of course on the type
-of computer system that it is running on.  As a rough guide, the
-current generation of workstations can achieve speeds of 2 -- 10 MB/s
-when reading or writing FITS images and similar, or slightly slower
-speeds with FITS binary tables.  Reading of FITS files can occur at
-even higher rates (30MB/s or more) if the FITS file is still cached in
-system memory following a previous read or write operation on the same
-file.  To more accurately predict the best performance that is possible
-on any particular system, a diagnostic program called ``speed.c'' is
-included with the CFITSIO distribution which can be run to
-approximately measure the maximum possible speed of writing and reading
-a test FITS file.
+of computer system that it is running on.  To get a general idea of what
+data I/O speeds are possible on a particular machine, build the speed.c
+program that is distributed with CFITSIO (type 'make speed' in the CFITSIO
+directory).  This diagnostic program measures the speed of writing and reading
+back a test FITS image, a binary table, and an ASCII table.
 
 The following 2 sections provide some background on how CFITSIO
 internally manages the data I/O and describes some strategies that may
@@ -9575,8 +9573,7 @@ disk file with a single call to a low-level file read or write
 routine.  The minimum threshold for the number of bytes to read or
 write this way is set by the MINDIRECT parameter and is currently set
 to 3 FITS blocks = 8640 bytes.  This is the most efficient way to read
-or write large chunks of data and can achieve IO transfer rates of
-5 -- 10MB/s or greater.  Note that this fast direct IO process is not
+or write large chunks of data.  Note that this fast direct IO process is not
 applicable when accessing columns of data in a FITS table because the
 bytes are generally not contiguous since they are interleaved by the
 other columns of data in the table.  This explains why the speed for
@@ -9605,11 +9602,11 @@ last byte contains the least significant bits, CFITSIO must swap the order of th
 when reading or writing FITS files when running on little-endian machines (e.g.,
 Linux and Microsoft Windows operating systems running on PCs with x86 CPUs).
 
-On fairly new CPUs that support "SSSE3" machine instructions
+On relatively new CPUs that support "SSSE3" machine instructions
 (e.g., starting with Intel Core 2 CPUs in 2007, and in AMD CPUs
 beginning in 2011) significantly faster 4-byte and 8-byte swapping
 algorithms are available. These faster byte swapping functions are
-not used by default in CFITSIO (because of the potential code
+not used by default in CFITSIO (because of potential code
 portablility issues), but users can enable them on supported
 platforms by adding the appropriate compiler flags (-mssse3 with gcc
 or icc on linux) when compiling the swapproc.c source file, which will
@@ -9622,8 +9619,7 @@ with the following command:
 \end{verbatim}
 Note, however, that a binary executable file that is
 created using these faster functions will only run on
-machines that support the SSSE3 machine instructions. It will
-crash on machines that do not support them.
+machines that support the SSSE3 machine instructions.
 
 For faster 2-byte swaps on virtually all x86-64 CPUs (even those that
 do not support SSSE3), a variant using only SSE2 instructions exists.

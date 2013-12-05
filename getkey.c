@@ -1702,7 +1702,7 @@ int ffdtdm(fitsfile *fptr,  /* I - FITS file pointer                        */
 {
     long dimsize, totalpix = 1;
     char *loc, *lastloc, message[81];
-    tcolumn *colptr;
+    tcolumn *colptr = 0;
 
     if (*status > 0)
         return(*status);

@@ -45,18 +45,14 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 	 */
 	for (iarg = 1; iarg < argc; iarg++) {
 	    if ((argv[iarg][0] == '-' && strlen (argv[iarg]) == 2) ||
-	        !strncmp(argv[iarg], "-q", 2) ||   /*  special case */
-	        !strncmp(argv[iarg], "-qz", 3) ||   /*  special case */
-	        !strncmp(argv[iarg], "-g1", 3) ||   /*  special case */
-	        !strncmp(argv[iarg], "-g2", 3) ||   /*  special case */
-	        !strncmp(argv[iarg], "-i2f", 4) ||  /*  special case */
-	        !strncmp(argv[iarg], "-n3ratio", 8) ||  /*  special case */
-	        !strncmp(argv[iarg], "-n3min", 6) ||  /*  special case */
-	        !strncmp(argv[iarg], "-BETAtable", 10) )  /*  special case */
+	        !strncmp(argv[iarg], "-q", 2) || !strncmp(argv[iarg], "-qz", 3) ||
+	        !strncmp(argv[iarg], "-g1", 3) || !strncmp(argv[iarg], "-g2", 3) ||
+	        !strncmp(argv[iarg], "-i2f", 4) ||
+	        !strncmp(argv[iarg], "-n3ratio", 8) || !strncmp(argv[iarg], "-n3min", 6) ||
+	        !strncmp(argv[iarg], "-tableonly", 10) || !strncmp(argv[iarg], "-table", 6) )  
 	    {
 
-		/* Rice is the default, so -r is superfluous 
-		 */
+		/* Rice is the default, so -r is superfluous  */
 		if (       argv[iarg][1] == 'r') {
 		    fpptr->comptype = RICE_1;
 		    if (gottype) {
@@ -192,6 +188,15 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 		    } else {
 			fpptr->scale = (float) atof (argv[iarg]);
 		    }
+		} else if (!strcmp(argv[iarg], "-tableonly")) {
+		    fpptr->do_tables = 1;
+		    fpptr->do_images = 0;
+		    fp_msg ("Note: -tableonly is intended for feasibility studies, not general use.\n");
+
+		} else if (!strcmp(argv[iarg], "-table")) {
+		    fpptr->do_tables = 1;
+		    fp_msg ("Note: -table is intended for feasibility studies, not general use.\n");
+
 		} else if (argv[iarg][1] == 't') {
 		    if (gottile) {
 			fp_msg ("Error: multiple tile specifications\n");
@@ -247,10 +252,6 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 
 		} else if (argv[iarg][1] == 'V') {
 		    fp_version (); exit (0);
-
-		} else if (!strcmp(argv[iarg], "-BETAtable")) {
-		    fpptr->do_tables = 1;
-		    fp_msg ("Caution: -BETAtable is for feasibility studies, not general use.\n");
 
 		} else {
 		    fp_msg ("Error: unknown command line flag `");
@@ -385,9 +386,10 @@ fp_msg (" -n <noise>  Rescale scaled-integer images to reduce noise and improve 
 fp_msg (" -v          Verbose mode; list each file as it is processed.\n");
 fp_msg (" -T          Show compression algorithm comparison test statistics; files unchanged.\n");
 fp_msg (" -R <file>   Write the comparison test report (above) to a text file.\n");
-fp_msg (" -BETAtable  Compress FITS binary tables using prototype method.\n");
-fp_msg ("             This option is only for experimental use.  Do not use\n");
-fp_msg ("             on FITS data files that are to be publicly distributed.\n");
+fp_msg (" -table      Compress FITS binary tables using prototype method, as well as compress\n");
+fp_msg ("             any image HDUs. This option is intended for experimental use.\n");
+fp_msg (" -tableonly  Compress only FITS binary tables using prototype method; do not compress\n");
+fp_msg ("             any image HDUs. This option is intended for experimental use.\n");
 
 fp_msg ("\nkeywords shared with funpack:\n");
 

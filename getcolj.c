@@ -731,7 +731,14 @@ int ffgclj( fitsfile *fptr,   /* I - FITS file pointer                       */
     convert = 1;
     if (tcode == TLONG)  /* Special Case:                        */
     {                             /* no type convertion required, so read */
-        maxelem = nelem;          /* data directly into output buffer.    */
+                                  /* data directly into output buffer.    */
+
+        if (nelem < (LONGLONG)INT32_MAX/8) {
+            maxelem = nelem;
+        } else {
+        /* divide by 8 instead of 4 in case sizeof(long) = 8 */
+            maxelem = INT32_MAX/8;   
+        }
 
         if (nulcheck == 0 && scale == 1. && zero == 0. && LONGSIZE == 32)
             convert = 0;  /* no need to scale data or find nulls */
@@ -2607,7 +2614,13 @@ int ffgcljj( fitsfile *fptr,   /* I - FITS file pointer                       */
     convert = 1;
     if (tcode == TLONGLONG)  /* Special Case:                        */
     {                             /* no type convertion required, so read */
-        maxelem = nelem;          /* data directly into output buffer.    */
+                                  /* data directly into output buffer.    */
+
+        if (nelem < (LONGLONG)INT32_MAX/8) {
+            maxelem = nelem;
+        } else {
+            maxelem = INT32_MAX/8;
+        }
 
         if (nulcheck == 0 && scale == 1. && zero == 0.)
             convert = 0;  /* no need to scale data or find nulls */

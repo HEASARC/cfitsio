@@ -42,7 +42,7 @@
 \contentsline {subsection}{\numberline {5.7.1}Create New Table}{52}
 \contentsline {subsection}{\numberline {5.7.2}Column Information Routines}{52}
 \contentsline {subsection}{\numberline {5.7.3}Routines to Edit Rows or Columns}{55}
-\contentsline {subsection}{\numberline {5.7.4}Read and Write Column Data Routines}{56}
+\contentsline {subsection}{\numberline {5.7.4}Read and Write Column Data Routines}{57}
 \contentsline {subsection}{\numberline {5.7.5}Row Selection and Calculator Routines}{59}
 \contentsline {subsection}{\numberline {5.7.6}Column Binning or Histogramming Routines}{60}
 \contentsline {section}{\numberline {5.8}Utility Routines}{63}

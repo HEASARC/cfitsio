@@ -112,7 +112,7 @@ void writeimage( void )
 
     /* write another optional keyword to the header */
     /* Note that the ADDRESS of the value is passed in the routine */
-    exposure = 1500.;
+    exposure = 1500;
     if ( fits_update_key(fptr, TLONG, "EXPOSURE", &exposure,
          "Total Exposure Time", &status) )
          printerror( status );           
@@ -147,7 +147,7 @@ void writeascii ( void )
     /* define the name diameter, and density of each planet */
     char *planet[] = {"Mercury", "Venus", "Earth", "Mars","Jupiter","Saturn"};
     long  diameter[] = {4880,    12112,    12742,   6800,  143000,   121000};
-    float density[]  = { 5.1,     5.3,      5.52,   3.94,    1.33,    0.69};
+    float density[]  = { 5.1f,     5.3f,      5.52f,   3.94f,    1.33f,    0.69f};
 
     status=0;
 
@@ -203,7 +203,7 @@ void writebintable ( void )
     /* define the name diameter, and density of each planet */
     char *planet[] = {"Mercury", "Venus", "Earth", "Mars","Jupiter","Saturn"};
     long  diameter[] = {4880,     12112,   12742,   6800,  143000,   121000};
-    float density[]  = { 5.1,      5.3,     5.52,   3.94,   1.33,     0.69};
+    float density[]  = { 5.1f,      5.3f,     5.52f,   3.94f,   1.33f,     0.69f};
 
     status=0;
 
@@ -439,8 +439,8 @@ void readimage( void )
     npixels  = naxes[0] * naxes[1];         /* number of pixels in the image */
     fpixel   = 1;
     nullval  = 0;                /* don't check for null values in the image */
-    datamin  = 1.0E30;
-    datamax  = -1.0E30;
+    datamin  = 1.0E30f;
+    datamax  = -1.0E30f;
 
     while (npixels > 0)
     {

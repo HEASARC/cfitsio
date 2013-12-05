@@ -802,7 +802,7 @@ int	ngp_keyword_is_write(NGP_TOKEN *ngp_tok)
    for (i = l + 1; i < 8; i++)
     { if (spc) { if (' ' != ngp_tok->name[i]) return(NGP_OK); }
       else
-       { if ((ngp_tok->name[i] >= '0') || (ngp_tok->name[i] <= '9')) continue;
+       { if ((ngp_tok->name[i] >= '0') && (ngp_tok->name[i] <= '9')) continue;
          if (' ' == ngp_tok->name[i]) { spc = 1; continue; }
          if (0 == ngp_tok->name[i]) break;
          return(NGP_OK);

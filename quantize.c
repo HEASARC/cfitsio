@@ -107,7 +107,7 @@ nearly the original floating point values:  fdata ~= idata * bscale + bzero.
 If the function value is zero, the data were not copied to idata.
 */
 
-	int status, anynulls = 0, iseed;
+	int status, iseed = 0;
 	long i, nx, ngood = 0;
 	double stdev, noise2, noise3, noise5;	/* MAD 2nd, 3rd, and 5th order noise values */
 	float minval = 0., maxval = 0.;  /* min & max of fdata */
@@ -295,9 +295,9 @@ nearly the original floating point values:  fdata ~= idata * bscale + bzero.
 If the function value is zero, the data were not copied to idata.
 */
 
-	int status, anynulls = 0, iseed;
+	int status, iseed = 0;
 	long i, nx, ngood = 0;
-	double stdev, noise2, noise3, noise5;	/* MAD 2nd, 3rd, and 5th order noise values */
+	double stdev, noise2 = 0., noise3 = 0., noise5 = 0.;	/* MAD 2nd, 3rd, and 5th order noise values */
 	double minval = 0., maxval = 0.;  /* min & max of fdata */
 	double delta;		/* bscale, 1 in idata = delta in fdata */
 	double zeropt;	        /* bzero */
@@ -480,7 +480,7 @@ int fits_img_stats_short(short *array, /*  2 dimensional array of image pixels *
 */
 {
 	long ngood;
-	short minval, maxval;
+	short minval = 0, maxval = 0;
 	double xmean = 0., xsigma = 0., xnoise = 0., xnoise2 = 0., xnoise3 = 0., xnoise5 = 0.;
 
 	/* need to calculate mean and/or sigma and/or limits? */
@@ -539,7 +539,7 @@ int fits_img_stats_int(int *array, /*  2 dimensional array of image pixels */
 */
 {
 	long ngood;
-	int minval, maxval;
+	int minval = 0, maxval = 0;
 	double xmean = 0., xsigma = 0., xnoise = 0., xnoise2 = 0., xnoise3 = 0., xnoise5 = 0.;
 
 	/* need to calculate mean and/or sigma and/or limits? */

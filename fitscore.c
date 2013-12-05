@@ -2285,7 +2285,7 @@ then values of 'n' less than or equal to n_value will match.
 
 {
     int i1 = 0, j1 = 0, val;
-    int fac, nval, mval, lval;
+    int fac, nval = 0, mval = 0, lval = 0;
     char a = ' ';
     char oldp;
     char c, s;
@@ -5600,8 +5600,10 @@ int ffgcprll( fitsfile *fptr, /* I - FITS file pointer                      */
             If writemode == 2, then the calling program does not want to
             have this efficiency trick applied.
           */           
-            *incre = (long) *rowlen;
-            *repeat = nelem;
+            if (*rowlen <= LONG_MAX) {
+                *incre = (long) *rowlen;
+                *repeat = nelem;
+            }
         }
     }
     else    /*  Variable length Binary Table column */
@@ -9100,7 +9102,7 @@ int ffc2jj(const char *cval,  /* I - string representation of the value */
 
     /* Microsoft Visual C++ 6.0 does not have the strtoll function */
     *ival =  _atoi64(cval);
-    loc = cval;
+    loc = (char *) cval;
     while (*loc == ' ') loc++;     /* skip spaces */
     if    (*loc == '-') loc++;     /* skip minus sign */
     if    (*loc == '+') loc++;     /* skip plus sign */
@@ -9237,11 +9239,11 @@ int ffc2rr(const char *cval,   /* I - string representation of the value */
         strcpy(tval, cval);
 
         /*  The C language does not support a 'D'; replace with 'E' */
-        if (loc = strchr(tval, 'D')) *loc = 'E';
+        if ((loc = strchr(tval, 'D'))) *loc = 'E';
 
         if (decimalpt == ',')  {
             /* strtod expects a comma, not a period, as the decimal point */
-            if (loc = strchr(tval, '.'))  *loc = ',';   
+            if ((loc = strchr(tval, '.')))  *loc = ',';   
         }
 
         *fval = (float) strtod(tval, &loc);  /* read the string as an float */
@@ -9306,11 +9308,11 @@ int ffc2dd(const char *cval,   /* I - string representation of the value */
         /* need to modify a temporary copy of the string before parsing it */
         strcpy(tval, cval);
         /*  The C language does not support a 'D'; replace with 'E' */
-        if (loc = strchr(tval, 'D')) *loc = 'E';
+        if ((loc = strchr(tval, 'D'))) *loc = 'E';
 
         if (decimalpt == ',')  {
             /* strtod expects a comma, not a period, as the decimal point */
-            if (loc = strchr(tval, '.'))  *loc = ',';   
+            if ((loc = strchr(tval, '.')))  *loc = ',';   
         }
     
         *dval = strtod(tval, &loc);  /* read the string as an double */

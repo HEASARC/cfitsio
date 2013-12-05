@@ -2450,12 +2450,9 @@ int ffphtb(fitsfile *fptr,  /* I - FITS file pointer                        */
             break;       /* abort loop on error */
     }
 
-    if (extnm)
-    {
-      if (extnm[0])       /* optional EXTNAME keyword */
+    if (extnm[0])       /* optional EXTNAME keyword */
         ffpkys(fptr, "EXTNAME", extnm,
                "name of this ASCII table extension", status);
-    }
 
     if (*status > 0)
         ffpmsg("Failed to write ASCII table header keywords (ffphtb)");
@@ -2689,12 +2686,9 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
             break;       /* abort loop on error */
     }
 
-    if (extnm)
-    {
-      if (extnm[0])       /* optional EXTNAME keyword */
+    if (extnm[0])       /* optional EXTNAME keyword */
         ffpkys(fptr, "EXTNAME", extnm,
                "name of this binary table extension", status);
-    }
 
     if (*status > 0)
         ffpmsg("Failed to write binary table header keywords (ffphbn)");

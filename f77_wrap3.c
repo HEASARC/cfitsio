@@ -465,13 +465,13 @@ CFARGT14(NCF,DCF,ABSOFT_cf2(VOID),FITSUNIT,INT,PLONGLONG,PINT,PSTRINGV,PSTRINGV,
    QCF(PINT,10)
 
    fitsfile *fptr;
-   LONGLONG tfields;
+   long tfields;
    int maxdim,*status;
 
    fptr = TCF(ftghbnll,FITSUNIT,1,0);
    status =  TCF(ftghbnll,PINT,10,0);
    maxdim =  TCF(ftghbnll,INT,2,0);
-   ffgkyjj( fptr, "TFIELDS", &tfields, 0, status );
+   ffgkyj( fptr, "TFIELDS", &tfields, 0, status );
    maxdim = (maxdim<0) ? tfields : _cfMIN(tfields,maxdim);
 
    ffghbnll( fptr, maxdim

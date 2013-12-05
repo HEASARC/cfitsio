@@ -606,6 +606,8 @@ int fits_read_ascii_region( const char *filename,
 		coords[2] += (wcs->rot);
 		coords[3] += (wcs->rot);
 		coords[10] += (wcs->rot);
+              default:
+                break;
 	      }
 	    }
 
@@ -1232,6 +1234,8 @@ void fits_setup_shape ( RgnShape *newShape)
     newShape->param.gen.sinT = sin( myPI * (coords[10] / 180.0) );
     newShape->param.gen.cosT = cos( myPI * (coords[10] / 180.0) );
     break;
+  default:
+    break;
   }
 
   /*  Set the xmin, xmax, ymin, ymax elements of the RgnShape structure */
@@ -1307,6 +1311,8 @@ void fits_setup_shape ( RgnShape *newShape)
 	     coords[7]*coords[8])/2.0;
     break;
 
+  default:
+    break;
   }
 
   if ( R > 0.0 ) {
@@ -1379,6 +1385,8 @@ void fits_setup_shape ( RgnShape *newShape)
     newShape->ymax = -1.0;
     break;
 
+  default:
+    break;
   }
 
   return;
@@ -1400,7 +1408,7 @@ int fits_read_fits_region ( fitsfile *fptr,
   int i, j, icol[6], idum, anynul, npos;
   int dotransform, got_component = 1, tstatus;
   long icsize[6];
-  double X, Y, Theta, Xsave, Ysave, Xpos, Ypos;
+  double X, Y, Theta, Xsave = 0, Ysave = 0, Xpos, Ypos;
   double *coords;
   char *cvalue, *cvalue2;
   char comment[FLEN_COMMENT];
@@ -1417,7 +1425,7 @@ int fits_read_fits_region ( fitsfile *fptr,
 		       diamond_rgn};
   SAORegion *aRgn;
   RgnShape *newShape;
-  WCSdata *regwcs;
+  WCSdata *regwcs = 0;
 
   if ( *status ) return( *status );
 
@@ -1653,6 +1661,8 @@ int fits_read_fits_region ( fitsfile *fptr,
     case elliptannulus_rgn:
       npos = 4;
       break;
+    default:
+      break;
     }
 
     if ( npos > 0 ) {
@@ -1700,6 +1710,8 @@ int fits_read_fits_region ( fitsfile *fptr,
     case sector_rgn:
       npos = 2;
       break;
+    default:
+     break;
     }
 
     if ( npos > 0 ) {

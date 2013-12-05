@@ -1,7 +1,58 @@
                    Log of Changes Made to CFITSIO
 
+   - increased the number of FITS files that can be opened as one
+     time to 1000, as defined by NMAXFILES in fitsio2.h.
 
-Version 3.35 - 26 June 2013  (1st beta release on 24 May)
+   - made small configuration changes to configure.in, configure,
+     fitsio.h, and drvrfile.c to support large files (64-bit file 
+     offsets} when using the mingw-w64 compiler (provided by 
+     Benjamin Gilbert).
+
+   - made small change to fits_delete_file to more completely ignore
+     any non-zeor input status value.
+
+   - fixed a logic error in a 'if' test when parsing a keyword name
+     in the ngp_keyword_is_write function in grparser.c
+
+   - when specifying the image compression parameters as part of the
+     compressed image file name (using the "[compress]" qualifier
+     after the name of the file), the quantization level value, if
+     specified, was not being recognized by the CFITSIO compression
+     routines. The image would always be compressed with the default
+     quantization level of 4.0, regardless of what was specified.  This
+     affected the imcopy program, and potentially other user-generated
+     application programs that used this method to specify the
+     compression parameters.  This bug did not affect fpack or
+     funpack.   This was fixed in the imcomp_get_compressed_image_par
+     routine in the imcompress.c file.
+
+   - defined a new CFITS_API macro in fitsio.h which is used to export
+     the public symbols when building CFITSIO on Windows systems. This
+     works in conjuntion with the new Windows CMake build procedure that
+     is described in the README.win32 file. This complete revamping of the
+     way CFITSIO is built under Windows now supports building 64-bit
+     versions of the library.  Thanks to Daniel Kaneider (Luminance HDR
+     Team) for providing these new  CMake build procedures.
+
+   - modified the way that the low-level file_create routine works when
+     running in the Hera environment to ensure that the FITS file that is 
+     created is within the allow user data disk area.
+
+   - modified fits_get_compression_type so that it does not return an error
+     if the HDU is a normal FITS IMAGE extension, and is not a tile-compressed
+     image.
+
+   - modified the low-level ffgcl* and ffpcl* routines to ensure that they
+     never try ro read or write more than 2**31 bytes from disk at one time,
+     as might happen with very large images, to avoid integer overflow errors.
+     
+   - modified Makefile.in so that doing 'make distclean' does not delete
+     new config.sub and config.guess files that were recently added.
+
+   - adopted a patch from Debian in zcompress.c to "define" the values of
+     GZBUFSIZE and BUFFINCR, instead of exporting the symbols as 'int's.
+
+Version 3.35 - 26 June 2013  (1st beta release was on 24 May)
 		   
    - fixed problem with the default tile size when compressing images with
      fpack using the Hcompress algorithm.

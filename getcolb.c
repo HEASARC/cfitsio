@@ -773,7 +773,13 @@ int ffgclb( fitsfile *fptr,   /* I - FITS file pointer                       */
     convert = 1;
     if (tcode == TBYTE) /* Special Case:                        */
     {                             /* no type convertion required, so read */
-        maxelem = nelem;          /* data directly into output buffer.    */
+                                  /* data directly into output buffer.    */
+
+        if (nelem < (LONGLONG)INT32_MAX) {
+            maxelem = nelem;
+        } else {
+            maxelem = INT32_MAX;
+        }
 
         if (nulcheck == 0 && scale == 1. && zero == 0.)
             convert = 0;  /* no need to scale data or find nulls */

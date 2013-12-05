@@ -21,7 +21,7 @@ int main()
     char cval, cvalstr[2];
     long repeat, offset, width, jnulval;
     int anynull;
-    float vers;
+/*    float vers;   */
     unsigned char xinarray[21], binarray[21], boutarray[21], bnul;
     short         iinarray[21], ioutarray[21], inul;
     int           kinarray[21], koutarray[21], knul;
@@ -40,8 +40,8 @@ int main()
     short oshtkey, ishtkey;
     long ojkey = 11, ijkey;
     long otint = 12345678;
-    float ofkey = 12.121212;
-    float oekey = 13.131313, iekey;
+    float ofkey = 12.121212f;
+    float oekey = 13.131313f, iekey;
     double ogkey = 14.1414141414141414;
     double odkey = 15.1515151515151515, idkey;
     double otfrac = .1234567890123456;
@@ -61,8 +61,8 @@ int main()
 
     int   onlkey[3] = {1, 0, 1}, inlkey[3];
     long  onjkey[3] = {11, 12, 13}, injkey[3];
-    float onfkey[3] = {12.121212, 13.131313, 14.141414};
-    float onekey[3] = {13.131313, 14.141414, 15.151515}, inekey[3];
+    float onfkey[3] = {12.121212f, 13.131313f, 14.141414f};
+    float onekey[3] = {13.131313f, 14.141414f, 15.151515f}, inekey[3];
     double ongkey[3] = {14.1414141414141414, 15.1515151515151515,
            16.1616161616161616};
     double ondkey[3] = {15.1515151515151515, 16.1616161616161616,
@@ -330,10 +330,10 @@ int main()
     /* initialize arrays of values to write to primary array */
     for (ii = 0; ii < npixels; ii++)
     {
-        boutarray[ii] = ii + 1;
-        ioutarray[ii] = ii + 1;
+        boutarray[ii] = (unsigned char) (ii + 1);
+        ioutarray[ii] = (short) (ii + 1);
         joutarray[ii] = ii + 1;
-        eoutarray[ii] = ii + 1;
+        eoutarray[ii] = (float) (ii + 1);
         doutarray[ii] = ii + 1;
     }
 
@@ -801,9 +801,9 @@ int main()
     ffikys(fptr, "KY_IKYS", "insert_value_string", "ikys comment", &status);
     ffikyj(fptr, "KY_IKYJ", 49, "ikyj comment", &status);
     ffikyl(fptr, "KY_IKYL", 1, "ikyl comment", &status);
-    ffikye(fptr, "KY_IKYE", 12.3456, 4, "ikye comment", &status);
+    ffikye(fptr, "KY_IKYE", 12.3456f, 4, "ikye comment", &status);
     ffikyd(fptr, "KY_IKYD", 12.345678901234567, 14, "ikyd comment", &status);
-    ffikyf(fptr, "KY_IKYF", 12.3456, 4, "ikyf comment", &status);
+    ffikyf(fptr, "KY_IKYF", 12.3456f, 4, "ikyf comment", &status);
     ffikyg(fptr, "KY_IKYG", 12.345678901234567, 13, "ikyg comment", &status);
 
     printf("\nAfter inserting the keywords...\n");
@@ -829,10 +829,10 @@ int main()
     ffmkyj(fptr, "KY_IKYJ", 50, "&", &status);
     ffmkyl(fptr, "KY_IKYL", 0, "&", &status);
     ffmkys(fptr, "NEWIKYS", "modified_string", "&", &status);
-    ffmkye(fptr, "KY_IKYE", -12.3456, 4, "&", &status);
+    ffmkye(fptr, "KY_IKYE", -12.3456f, 4, "&", &status);
     ffmkyd(fptr, "KY_IKYD", -12.345678901234567, 14, "modified comment",
             &status);
-    ffmkyf(fptr, "KY_IKYF", -12.3456, 4, "&", &status);
+    ffmkyf(fptr, "KY_IKYF", -12.3456f, 4, "&", &status);
     ffmkyg(fptr, "KY_IKYG", -12.345678901234567, 13, "&", &status);
 
     printf("\nAfter modifying the keywords...\n");
@@ -855,10 +855,10 @@ int main()
     ffukyj(fptr, "KY_IKYJ", 51, "&", &status);
     ffukyl(fptr, "KY_IKYL", 1, "&", &status);
     ffukys(fptr, "NEWIKYS", "updated_string", "&", &status);
-    ffukye(fptr, "KY_IKYE", -13.3456, 4, "&", &status);
+    ffukye(fptr, "KY_IKYE", -13.3456f, 4, "&", &status);
     ffukyd(fptr, "KY_IKYD", -13.345678901234567, 14, "modified comment",
             &status);
-    ffukyf(fptr, "KY_IKYF", -13.3456, 4, "&", &status);
+    ffukyf(fptr, "KY_IKYF", -13.3456f, 4, "&", &status);
     ffukyg(fptr, "KY_IKYG", -13.345678901234567, 13, "&", &status);
 
     printf("\nAfter updating the keywords...\n");
@@ -1020,11 +1020,11 @@ int main()
     for (ii = 0; ii < 21; ii++)
     {
         signval *= -1;
-        boutarray[ii] = (ii + 1);
-        ioutarray[ii] = (ii + 1) * signval;
+        boutarray[ii] = (unsigned char) (ii + 1);
+        ioutarray[ii] = (short) ((ii + 1) * signval);
         joutarray[ii] = (ii + 1) * signval;
         koutarray[ii] = (ii + 1) * signval;
-        eoutarray[ii] = (ii + 1) * signval;
+        eoutarray[ii] = (float) ((ii + 1) * signval);
         doutarray[ii] = (ii + 1) * signval;
     }
 
@@ -1217,10 +1217,10 @@ int main()
     /* initialize arrays of values to write to table */
     for (ii = 0; ii < 21; ii++)
     {
-        boutarray[ii] = ii + 1;
-        ioutarray[ii] = ii + 1;
+        boutarray[ii] = (unsigned char) (ii + 1);
+        ioutarray[ii] = (short) (ii + 1);
         joutarray[ii] = ii + 1;
-        eoutarray[ii] = ii + 1;
+        eoutarray[ii] = (float) (ii + 1);
         doutarray[ii] = ii + 1;
     }
 
@@ -1861,7 +1861,7 @@ int main()
     {
       for (ii = 0; ii < 19; ii++)
       {
-        imgarray[jj][ii] = (jj * 10) + ii;
+        imgarray[jj][ii] = (short) ((jj * 10) + ii);
       }
     }
 
@@ -1901,7 +1901,7 @@ int main()
     {
       for (ii = 0; ii < 10; ii++)
       {
-        imgarray2[jj][ii] = (jj * -10) - ii;
+        imgarray2[jj][ii] = (short) ((jj * -10) - ii);
       }
     }
 
@@ -2064,10 +2064,10 @@ int main()
 
     for (ii = 0; ii < 20; ii++)
     {
-        boutarray[ii] = ii + 1;
-        ioutarray[ii] = ii + 1;
+        boutarray[ii] = (unsigned char) (ii + 1);
+        ioutarray[ii] = (short) (ii + 1);
         joutarray[ii] = ii + 1;
-        eoutarray[ii] = ii + 1;
+        eoutarray[ii] = (float) (ii + 1);
         doutarray[ii] = ii + 1;
     }
 
@@ -2230,11 +2230,11 @@ int main()
     /* initialize arrays of values to write to primary array */
     for (ii = 0; ii < npixels; ii++)
     {
-        boutarray[ii] = ii * 2;
-        ioutarray[ii] = ii * 2;
+        boutarray[ii] = (unsigned char) (ii * 2);
+        ioutarray[ii] = (short) (ii * 2);
         joutarray[ii] = ii * 2;
         koutarray[ii] = ii * 2;
-        eoutarray[ii] = ii * 2;
+        eoutarray[ii] = (float) (ii * 2);
         doutarray[ii] = ii * 2;
     }
 
@@ -2381,11 +2381,11 @@ int main()
     
     for (ii = 0; ii < npixels; ii++)
     {
-        boutarray[ii] = ii * 3;
-        ioutarray[ii] = ii * 3;
+        boutarray[ii] = (unsigned char) (ii * 3);
+        ioutarray[ii] = (short) (ii * 3);
         joutarray[ii] = ii * 3;
         koutarray[ii] = ii * 3;
-        eoutarray[ii] = ii * 3;
+        eoutarray[ii] = (float) (ii * 3);
         doutarray[ii] = ii * 3;
     }
 
@@ -2584,6 +2584,6 @@ int main()
       free(tunit[ii]);
     }
 
-    return(0);
+    return(status);
 }
 

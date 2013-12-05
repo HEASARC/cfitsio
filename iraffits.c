@@ -153,6 +153,26 @@ int iraf2mem(char *filename, char **buffptr, size_t *buffsize,
 
 void ffpmsg(const char *err_message);
 
+/* CFITS_API is defined below for use on Windows systems.  */
+/* It is used to identify the public functions which should be exported. */
+/* This has no effect on non-windows platforms where "WIN32" is not defined */
+
+/* this is only needed to export the "fits_delete_iraf_file" symbol, which */
+/* is called in fpackutil.c (and perhaps in other applications programs) */
+
+#if defined (WIN32)
+  #if defined(cfitsio_EXPORTS)
+    #define CFITS_API __declspec(dllexport)
+  #else
+    #define CFITS_API //__declspec(dllimport)
+  #endif /* CFITS_API */
+#else /* defined (WIN32) */
+ #define CFITS_API
+#endif
+
+int CFITS_API fits_delete_iraf_file(const char *filename, int *status);
+
+
 /*--------------------------------------------------------------------------*/
 int fits_delete_iraf_file(const char *filename,  /* name of input file      */
              int *status)                        /* IO - error status       */

@@ -558,6 +558,7 @@ int mem_compress_open(char *filename, int rwmode, int *hdl)
     int status, estimated = 1;
     unsigned char buffer[4];
     size_t finalsize, filesize;
+    LONGLONG llsize = 0;
     unsigned int modulosize;
     char *ptr;
 
@@ -623,7 +624,11 @@ int mem_compress_open(char *filename, int rwmode, int *hdl)
         finalsize = modulosize;
 
         if (sizeof(size_t) > 4 && filesize > 10000) {
-            while (finalsize <  filesize) finalsize += 4294967296;
+	    llsize = (LONGLONG) finalsize;  
+	    /* use LONGLONG variable to suppress compiler warning */
+            while (llsize <  (LONGLONG) filesize) llsize += 4294967296;
+
+            finalsize = (size_t) llsize;
         }
 
         estimated = 0;  /* file size is known, not estimated */

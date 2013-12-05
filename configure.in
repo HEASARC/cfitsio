@@ -286,6 +286,15 @@ case $host in
         AC_DEFINE(_LARGEFILE_SOURCE)
         AC_DEFINE(_FILE_OFFSET_BITS,64)
 	;;
+    *mingw32*)
+        AC_MSG_CHECKING([for large file support])
+        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([#include <stdio.h>],
+            [_FILE_OFFSET_BITS_SET_FSEEKO])],[
+            AC_DEFINE(_LARGEFILE_SOURCE)
+            AC_DEFINE(_FILE_OFFSET_BITS,64)
+            AC_MSG_RESULT(yes)
+        ],[AC_MSG_RESULT(no)])
+        ;;
     *solaris*)
         if test "x$CFORTRANFLAGS" = x ; then
                 CFORTRANFLAGS="-Dsolaris"

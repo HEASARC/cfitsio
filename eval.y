@@ -3333,7 +3333,7 @@ double qselect_median_dbl(double arr[], int n)
  */
 double angsep_calc(double ra1, double dec1, double ra2, double dec2)
 {
-  double cd;
+/*  double cd;  */
   static double deg = 0;
   double a, sdec, sra;
   
@@ -3432,7 +3432,7 @@ float gammaln(float xx)
   tmp -= (x+0.5)*log(tmp);
   ser=1.000000000190015;
   for (j=0;j<=5;j++) ser += cof[j]/++y;
-  return (float) -tmp+log(2.5066282746310005*ser/x);
+  return (float) (-tmp+log(2.5066282746310005*ser/x));
 }
 
 /* Poisson deviate - derived from Numerical Recipes */
@@ -4071,7 +4071,7 @@ static void Do_Func( Node *this )
 	       for (irow=0; irow<row; irow++) {
 		  long *p = mptr;
 		  int nelem1 = nelem;
-		  int count = 0;
+
 
 		  while ( nelem1-- ) { 
 		    if (*uptr == 0) {

@@ -63,7 +63,7 @@ pthread_mutex_t Fitsio_InitLock = PTHREAD_MUTEX_INITIALIZER;
 int fitsio_init_lock(void)
 {
   static int need_to_init = 1;
-  int status;
+  int status = 0;
   
 #ifdef _REENTRANT
 
@@ -106,7 +106,7 @@ int fitsio_init_lock(void)
 
 #endif
 
-    return(0);
+    return(status);
 }
 /*--------------------------------------------------------------------------*/
 int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */ 
@@ -1801,7 +1801,7 @@ int ffedit_columns(
 {
     fitsfile *newptr;
     int ii, hdunum, slen, colnum = -1, testnum, deletecol = 0, savecol = 0;
-    int numcols = 0, *colindex = 0, tstatus = 0, inparen;
+    int numcols = 0, *colindex = 0, tstatus = 0;
     char *cptr, *cptr2, *cptr3, *clause = NULL, keyname[FLEN_KEYWORD];
     char colname[FLEN_VALUE], oldname[FLEN_VALUE], colformat[FLEN_VALUE];
     char *file_expr = NULL, testname[FLEN_VALUE], card[FLEN_CARD];
@@ -6676,7 +6676,7 @@ int fits_get_token(char **ptr,
 		tval[72] = '\0';
 
 	        /*  The C language does not support a 'D'; replace with 'E' */
-	        if (loc = strchr(tval, 'D')) *loc = 'E';
+	        if ((loc = strchr(tval, 'D'))) *loc = 'E';
 
 	        dval =  strtod(tval, &loc);
 	    } else {
@@ -6738,7 +6738,7 @@ int fits_get_token2(char **ptr,
 		tval[72] = '\0';
 
 	        /*  The C language does not support a 'D'; replace with 'E' */
-	        if (loc = strchr(tval, 'D')) *loc = 'E';
+	        if ((loc = strchr(tval, 'D'))) *loc = 'E';
 
 	        dval =  strtod(tval, &loc);
 	    } else {
@@ -6909,14 +6909,18 @@ int ffdelt(fitsfile *fptr,      /* I - FITS file pointer */
 */
 {
     char *basename;
-    int slen, tstatus = 0;
+    int slen, tstatus = NO_CLOSE_ERROR, zerostatus = 0;
 
     if (!fptr)
         return(*status = NULL_INPUT_PTR);
     else if ((fptr->Fptr)->validcode != VALIDSTRUC) /* check for magic value */
         return(*status = BAD_FILEPTR); 
 
-    ffchdu(fptr, status);    /* close the current HDU, ignore any errors */
+    if (*status > 0)
+       ffchdu(fptr, &tstatus);  /* turn off the error message from ffchdu */
+    else
+        ffchdu(fptr, status);  
+
     ffflsh(fptr, TRUE, status);     /* flush and disassociate IO buffers */
 
         /* call driver function to actually close the file */
@@ -6941,7 +6945,7 @@ int ffdelt(fitsfile *fptr,      /* I - FITS file pointer */
             return(*status = MEMORY_ALLOCATION);
     
         fits_parse_input_url((fptr->Fptr)->filename, NULL, basename, NULL, NULL, NULL, NULL,
-               NULL, &tstatus);
+               NULL, &zerostatus);
 
        if ((*driverTable[(fptr->Fptr)->driver].remove)(basename))
         {

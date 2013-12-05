@@ -28,8 +28,8 @@ int main (int argc, char *argv[])
 
 int fu_get_param (int argc, char *argv[], fpstate *fpptr)
 {
-	int	gottype=0, gottile=0, wholetile=0, iarg, len, ndim, ii;
-	char	tmp[SZ_STR], tile[SZ_STR];
+	int	gottype=0, gottile=0, wholetile=0, iarg;
+	char	tile[SZ_STR];
 
         if (fpptr->initialized != FP_INIT_MAGIC) {
             fp_msg ("Error: internal initialization error\n"); exit (-1);

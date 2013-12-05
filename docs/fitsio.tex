@@ -748,15 +748,14 @@ CFITSIO places few restrictions on the size of FITS files that it
 reads or writes.  There are a few limits, however, which may affect
 some extreme cases:
 
-1.  The maximum number of FITS files that may be simultaneously opened
-by CFITSIO is set by NMAXFILES as defined in fitsio2.h.  It is currently
-set = 300 by default.  CFITSIO will allocate about 80 * NMAXFILES bytes
-of memory for internal use.  Note that the underlying C compiler or
-operating system, may have a smaller limit on the number of opened files.
-The C symbolic constant FOPEN\_MAX is intended to define the maximum
-number of files that may open at once (including any other text or
-binary files that may be open, not just FITS files).  On some systems it
-has been found that gcc supports a maximum of 255 opened files.
+1.  The maximum number of FITS files that may be simultaneously opened by
+CFITSIO is set by NMAXFILES, as defined in fitsio2.h.  The current default
+value is 1000, but this may be increased if necessary. Note that CFITSIO
+allocates NIOBUF * 2880 bytes of I/O buffer space for each file that is
+opened.  The default value of NIOBUF is 40 (defined in fitsio.h), so this
+amounts to  more than 115K of memory  for each opened file (or 115 MB for
+1000 opened files).  Note that the underlying  operating system, may have a
+lower limit on the number of files that can be opened simultaneously.
 
 2.  By default, CFITSIO can handle FITS files up to 2.1 GB in size (2**31
 bytes).  This file size limit is often imposed by 32-bit operating
@@ -1323,17 +1322,11 @@ inappropriate usage of CFITSIO routines can greatly slow down the
 execution speed of a program.
 
 The maximum possible I/O speed of CFITSIO depends of course on the type
-of computer system that it is running on.  As a rough guide, the
-current generation of workstations can achieve speeds of 2 -- 10 MB/s
-when reading or writing FITS images and similar, or slightly slower
-speeds with FITS binary tables.  Reading of FITS files can occur at
-even higher rates (30MB/s or more) if the FITS file is still cached in
-system memory following a previous read or write operation on the same
-file.  To more accurately predict the best performance that is possible
-on any particular system, a diagnostic program called ``speed.c'' is
-included with the CFITSIO distribution which can be run to
-approximately measure the maximum possible speed of writing and reading
-a test FITS file.
+of computer system that it is running on.  To get a general idea of what
+data I/O speeds are possible on a particular machine, build the speed.c
+program that is distributed with CFITSIO (type 'make speed' in the CFITSIO
+directory).  This diagnostic program measures the speed of writing and reading
+back a test FITS image, a binary table, and an ASCII table.
 
 The following 2 sections provide some background on how CFITSIO
 internally manages the data I/O and describes some strategies that may
@@ -1374,8 +1367,7 @@ disk file with a single call to a low-level file read or write
 routine.  The minimum threshold for the number of bytes to read or
 write this way is set by the MINDIRECT parameter and is currently set
 to 3 FITS blocks = 8640 bytes.  This is the most efficient way to read
-or write large chunks of data and can achieve IO transfer rates of
-5 -- 10MB/s or greater.  Note that this fast direct IO process is not
+or write large chunks of data.  Note that this fast direct IO process is not
 applicable when accessing columns of data in a FITS table because the
 bytes are generally not contiguous since they are interleaved by the
 other columns of data in the table.  This explains why the speed for
@@ -2301,15 +2293,10 @@ and so on.
 \end{verbatim}
 
 \begin{description}
-\item[7 ]Create (append) a new empty HDU following the last extension that
-    has been previously accessed by the program.   This will overwrite
-    any extensions in an existing FITS file if the program has not already
-    moved to that (or a later) extension using the FTMAHD or FTMRHD routines.
-    For example, if an existing FITS file contains a primary array and 5
-    extensions and a program (1) opens the FITS file, (2) moves to
-    extension 4, (3) moves back to the primary array, and (4) then calls
-    FTCRHD, then the new extension will be written following the 4th
-   extension, overwriting the existing 5th extension.
+\item[7 ]Create (append) a new empty HDU at the end of the FITS file.  This
+    new HDU becomes the Current HDU, but it is completely empty and contains
+    no header keywords or data.  It is recommended that FTIIMG, FTITAB or
+   FTIBIN be used instead of this routine.
 \end{description}
 
 \begin{verbatim}
@@ -7451,7 +7438,7 @@ inclist  (character array) list of names to be included in search
 incs - (integer array) sampling interval for pixels in each FITS dimension
 intval - (integer) integer part of the keyword value
 iounit - (integer) value of an unused I/O unit number
-iunit - (integer) logical unit number associated with the input FITS file, 1-199
+iunit - (integer) logical unit number associated with the input FITS file, 1-300
 key_no - (integer) sequence number (starting with 1) of the keyword record
 keylength - (integer) length of the keyword name
 keyroot - (character) root string for the keyword name
@@ -7493,7 +7480,7 @@ nextaddr - (integer) starting address (in bytes) of the HDU following the CHDU
 offset - (integer) byte offset in the heap to the first element of the array
 offsetll - (integer*8) byte offset in the heap to the first element of the array
 oldkey - (character) old name of keyword to be modified
-ounit - (integer) logical unit number associated with the output FITS file 1-199
+ounit - (integer) logical unit number associated with the output FITS file 1-300
 pcount - (integer) value of the PCOUNT keyword (usually = 0)
 previous - (integer) if not equal to 0, copy all previous HDUs in the input file
 repeat - (integer) length of element vector (e.g. 12J); ignored for ASCII table
@@ -7535,7 +7522,7 @@ ttype - (character array) label for table column(s)
 tscal - (double precision) scaling factor for table column
 tunit - (character array) physical unit for table column(s)
 tzero - (double precision) scaling zero point for table column
-unit  - (integer) logical unit number associated with the FITS file (1-199)
+unit  - (integer) logical unit number associated with the FITS file (1-300)
 units - (character) the keyword units string (e.g., 'km/s')
 value - (character) the keyword value string
 values - array of data values of the appropriate datatype
@@ -7576,7 +7563,7 @@ FITSIO use.
 111  internal array dimensions exceeded
 112  Cannot modify file with readonly access
 113  Could not allocate memory
-114  illegal logical unit number; must be between 1 - 199, inclusive
+114  illegal logical unit number; must be between 1 - 300, inclusive
 115  NULL input pointer to routine
 116  error seeking position in file
 
@@ -7663,7 +7650,7 @@ FITSIO use.
 323  illegal axis length less than 1
 
 340 NOT_GROUP_TABLE 340   Grouping function error
-341  HDU_ALREADY_MEMBER
+341 HDU_ALREADY_MEMBER
 342 MEMBER_NOT_FOUND
 343 GROUP_NOT_FOUND
 344 BAD_GROUP_ID

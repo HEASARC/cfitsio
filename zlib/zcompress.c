@@ -4,8 +4,8 @@
 #include <string.h>
 #include "zlib.h"  
 
-unsigned int GZBUFSIZE = 115200;  /* 40 FITS blocks */
-int BUFFINCR = 28800;  /* 10 FITS blocks */
+#define GZBUFSIZE 115200    /* 40 FITS blocks */
+#define BUFFINCR   28800    /* 10 FITS blocks */
 
 /* prototype for the following functions */
 int uncompress2mem(char *filename, 
