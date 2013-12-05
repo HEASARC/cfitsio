@@ -60,15 +60,17 @@ CORE_SOURCES = 	buffers.c cfileio.c checksum.c drvrfile.c drvrmem.c \
 		putcolj.c putcolk.c putcoluk.c putcoll.c putcols.c putcolsb.c \
 		putcolu.c putcolui.c putcoluj.c putkey.c region.c scalnull.c \
 		swapproc.c wcssub.c wcsutil.c imcompress.c quantize.c ricecomp.c \
-		pliocomp.c fits_hcompress.c fits_hdecompress.c zuncompress.c zcompress.c \
-		adler32.c crc32.c inffast.c inftrees.c trees.c zutil.c \
-		deflate.c infback.c inflate.c uncompr.c \
+		pliocomp.c fits_hcompress.c fits_hdecompress.c
 
-SOURCES = ${CORE_SOURCES} @F77_WRAPPERS@
+ZLIB_SOURCES =	zlib/adler32.c zlib/crc32.c zlib/deflate.c zlib/infback.c \
+		zlib/inffast.c zlib/inflate.c zlib/inftrees.c zlib/trees.c \
+		zlib/uncompr.c zlib/zcompress.c zlib/zuncompress.c zlib/zutil.c
+
+SOURCES = ${CORE_SOURCES} ${ZLIB_SOURCES} @F77_WRAPPERS@
 
 OBJECTS = 	${SOURCES:.c=.o}
 
-CORE_OBJECTS = 	${CORE_SOURCES:.c=.o}
+CORE_OBJECTS = 	${CORE_SOURCES:.c=.o} ${ZLIB_SOURCES:.c=.o}
 
 
 FITSIO_SRC =	f77_wrap1.c f77_wrap2.c f77_wrap3.c f77_wrap4.c
@@ -107,7 +109,7 @@ install:	libcfitsio.a $(INSTALL_DIRS)
 		/bin/cp cfitsio.pc ${CFITSIO_LIB}/pkgconfig
 
 .c.o:
-		$(CC) -c $(CFLAGS) $(DEFS) $<
+		$(CC) -c -o ${<D}/${@F} $(CFLAGS) $(DEFS) $<
 
 swapproc.o:	swapproc.c
 		$(CC) -c $(CFLAGS) $(SSE_FLAGS) $(DEFS) $<
@@ -149,7 +151,7 @@ eval:		# Rebuild eval_* files from flex/bison source
 		/bin/rm -f y.tab.c y.tab.h
 
 clean:
-	-	/bin/rm -f *.o libcfitsio* fpack funpack \
+	-	/bin/rm -f *.o zlib/*.o libcfitsio* fpack funpack \
 			smem testprog y.output so_locations
 
 distclean:	clean
