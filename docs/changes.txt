@@ -1,5 +1,15 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.36 - 6 December 2013
+
+   - reorganized the CFITSIO code directory structure; added a 'docs'
+     subdirectory for all the documentation, and a 'zlib' directory
+     for the zlib/gzip file compression code.
+
+   - made major changes to the compression code for FITS binary table
+     to support all types of columns, including variable-length arrays.
+     This code is mainly used via the fpack and funpack programs.
+
    - increased the number of FITS files that can be opened as one
      time to 1000, as defined by NMAXFILES in fitsio2.h.
 
@@ -9,7 +19,7 @@
      Benjamin Gilbert).
 
    - made small change to fits_delete_file to more completely ignore
-     any non-zeor input status value.
+     any non-zero input status value.
 
    - fixed a logic error in a 'if' test when parsing a keyword name
      in the ngp_keyword_is_write function in grparser.c
@@ -26,9 +36,9 @@
      funpack.   This was fixed in the imcomp_get_compressed_image_par
      routine in the imcompress.c file.
 
-   - defined a new CFITS_API macro in fitsio.h which is used to export
-     the public symbols when building CFITSIO on Windows systems. This
-     works in conjuntion with the new Windows CMake build procedure that
+   - defined a new CFITS_API macro in fitsio.h which is used to export the
+     public symbols when building CFITSIO on Windows systems with CMake. This
+     works in conjunction with the new Windows CMake build procedure that
      is described in the README.win32 file. This complete revamping of the
      way CFITSIO is built under Windows now supports building 64-bit
      versions of the library.  Thanks to Daniel Kaneider (Luminance HDR
@@ -199,7 +209,7 @@ Version 3.33 - 14 Feb 2013
      need for special thread locking and unlocking statements. (Thanks to
      Lars Kr. Lundin for this suggestion). 
 
-   - modifed how the uncompressed size of a gzipped file is computed in the
+   - modified how the uncompressed size of a gzipped file is computed in the
      mem_compress_open routine in drvrmem.c.  Since gzip only uses 4 bytes
      in the compressed file header to store the original file size, one may
      need to apply a modulo 2^32 byte correction in some cases.  The logic
@@ -590,7 +600,7 @@ Version 3.25 - 9 June 2010
      nuisance compiler warnings.
 
    - some compilers define CLOCKS_PER_SEC as a double instead of an integer,
-     so added an explicted integer type conversion to 2 statements in
+     so added an explict integer type conversion to 2 statements in
      imcompress.c that used this macro.
      
    - removed debugging printf statements in drvrnet.c (15 July)
