@@ -2,6 +2,9 @@
 
 Version 3.36 - 6 December 2013
 
+   - added 9 Dec: small change to the fileseek function in drvrfile.c to
+     support large files > 2 GB when building CFITSIO with MinGW on Windows
+
    - reorganized the CFITSIO code directory structure; added a 'docs'
      subdirectory for all the documentation, and a 'zlib' directory
      for the zlib/gzip file compression code.

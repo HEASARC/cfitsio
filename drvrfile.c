@@ -602,7 +602,7 @@ int file_seek(int handle, LONGLONG offset)
     if (_fseeki64(handleTable[handle].fileptr, (OFF_T) offset, 0) != 0)
         return(SEEK_ERROR);
 	
-#elif _FILE_OFFSET_BITS - 0 == 64 && !defined(__MINGW32__)
+#elif _FILE_OFFSET_BITS - 0 == 64
 
     if (fseeko(handleTable[handle].fileptr, (OFF_T) offset, 0) != 0)
         return(SEEK_ERROR);
