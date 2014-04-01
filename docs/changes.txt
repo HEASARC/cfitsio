@@ -1,5 +1,8 @@
                    Log of Changes Made to CFITSIO
 
+   - fixed bug in fpackutil.c that caused fpack to exit prematurely if
+     the FZALGOR directive keyword was present in the HDU header.
+
 Version 3.36 - 6 December 2013
 
    - added 9 Dec: small change to the fileseek function in drvrfile.c to
@@ -25,7 +28,8 @@ Version 3.36 - 6 December 2013
      any non-zero input status value.
 
    - fixed a logic error in a 'if' test when parsing a keyword name
-     in the ngp_keyword_is_write function in grparser.c
+     in the ngp_keyword_is_write function in grparser.c (provided
+     by David Binderman).
 
    - when specifying the image compression parameters as part of the
      compressed image file name (using the "[compress]" qualifier
@@ -37,7 +41,7 @@ Version 3.36 - 6 December 2013
      application programs that used this method to specify the
      compression parameters.  This bug did not affect fpack or
      funpack.   This was fixed in the imcomp_get_compressed_image_par
-     routine in the imcompress.c file.
+     routine in the imcompress.c file. (reported by Sean Peters)
 
    - defined a new CFITS_API macro in fitsio.h which is used to export the
      public symbols when building CFITSIO on Windows systems with CMake. This
@@ -58,6 +62,7 @@ Version 3.36 - 6 December 2013
    - modified the low-level ffgcl* and ffpcl* routines to ensure that they
      never try ro read or write more than 2**31 bytes from disk at one time,
      as might happen with very large images, to avoid integer overflow errors.
+     Fix kindly provided by Fred Gutsche at NanoFocus AG (www.nanofocus.de).
      
    - modified Makefile.in so that doing 'make distclean' does not delete
      new config.sub and config.guess files that were recently added.

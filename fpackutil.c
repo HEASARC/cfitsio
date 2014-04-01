@@ -1383,9 +1383,10 @@ int fp_pack_hdu (fitsfile *infptr, fitsfile *outfptr, fpstate fpvar,
         if (!fits_read_key(infptr, TSTRING, "FZALGOR", fzalgor, NULL, &tstatus) ) {
 	    if (!strcmp(fzalgor, "NONE") || !strcmp(fzalgor, "none") ) {
  	        fits_copy_hdu (infptr, outfptr, 0, &stat);
+
+	        *status = stat;
+	        return(0);
             }
-	    *status = stat;
-	    return(0);
 	}
 
         /* =============================================================== */

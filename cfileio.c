@@ -89,7 +89,7 @@ int fitsio_init_lock(void)
 				     PTHREAD_MUTEX_RECURSIVE);
 #endif
     if (status) {
-        ffpmsg("pthread_mutexattr_settu[e failed (fitsio_init_lock)");
+        ffpmsg("pthread_mutexattr_settype failed (fitsio_init_lock)");
         return(status);
     }
 
