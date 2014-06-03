@@ -96,7 +96,7 @@ extern int Fitsio_Pthread_Status;
 #define BYTESWAPPED FALSE
 #define LONGSIZE 32
 
-#elif defined(__ia64__)  || defined(__x86_64__)
+#elif defined(__ia64__)  || defined(__x86_64__) || defined(__AARCH64EL__)
                   /*  Intel itanium 64-bit PC, or AMD opteron 64-bit PC */
 #define BYTESWAPPED TRUE
 #define LONGSIZE 64   
@@ -107,11 +107,16 @@ extern int Fitsio_Pthread_Status;
 #define MACHINE NATIVE
 #define LONGSIZE 64
 
-#elif defined(__powerpc64__) || defined(__64BIT__) /* IBM 64-bit AIX powerpc*/
+#elif defined(__powerpc64__) || defined(__64BIT__) || defined(__AARCH64EB__)  /* IBM 64-bit AIX powerpc*/
                               /* could also test for __ppc64__ or __PPC64 */
-#define BYTESWAPPED FALSE
-#define MACHINE NATIVE
-#define LONGSIZE 64   
+
+#  if defined(__LITTLE_ENDIAN__)
+#   define BYTESWAPPED TRUE
+#  else
+#   define BYTESWAPPED FALSE
+#   define MACHINE NATIVE
+#  endif
+#  define LONGSIZE 64
 
 #elif defined(_MIPS_SZLONG)
 

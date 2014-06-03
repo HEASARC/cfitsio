@@ -102,14 +102,12 @@ ftp from:
 \end{verbatim}
 \newpage
 Any questions, bug reports, or suggested enhancements related to the CFITSIO
-package should be sent to the primary author:
+package should be sent to the FTOOLS Help Desk at the HEASARC:
 
 \begin{verbatim}
-        Dr. William Pence                 Telephone:  (301) 286-4599
-        HEASARC, Code 662                 E-mail: William.D.Pence@nasa.gov
-        NASA/Goddard Space Flight Center
-        Greenbelt, MD 20771, USA
+        http://heasarc.gsfc.nasa.gov/cgi-bin/ftoolshelp
 \end{verbatim}
+
 This User's Guide assumes that readers already have a general
 understanding of the definition and structure of FITS format files.
 Further information about FITS formats is available from the FITS Support
@@ -3676,7 +3674,7 @@ spaces in the name).  Trailing blank characters are not significant.
 
 
 \begin{verbatim}
-        FFGRSZ(unit, > nrows,status)
+        FTGRSZ(unit, > nrows,status)
 \end{verbatim}
 
 
@@ -4101,8 +4099,8 @@ of flags which defines whether the corresponding data pixel is undefined.
         FTGDES(unit,colnum,rownum, > nelements,offset,status)
         FTGDESLL(unit,colnum,rownum, > nelementsll,offsetll,status)
 
-        FFGDESS(unit,colnum,firstrow,nrows > nelements,offset, status)
-        FFGDESSLL(unit,colnum,firstrow,nrows > nelementsll,offsetll, status)
+        FTGDESS(unit,colnum,firstrow,nrows > nelements,offset, status)
+        FTGDESSLL(unit,colnum,firstrow,nrows > nelementsll,offsetll, status)
 \end{verbatim}
 
 \begin{description}
@@ -7062,7 +7060,7 @@ do not need to be enclosed in quotes.
         FTEXTN(filename, > nhdu, status)
         FTFLNM(unit, > filename, status)
         FTFLMD(unit, > iomode, status)
-        FFURLT(unit, > urltype, status)
+        FTURLT(unit, > urltype, status)
         FTIURL(filename, > filetype, infile, outfile, extspec, filter,
                binspec, colspec, status)
         FTRTNM(filename, > rootname, status)
@@ -7242,7 +7240,7 @@ do not need to be enclosed in quotes.
         FTPTDM(unit,colnum,naxis,naxes, > status)
         FTGTDM(unit,colnum,maxdim, > naxis,naxes,status)
         FTDTDM(unit,tdimstr,colnum,maxdim, > naxis,naxes, status)
-        FFGRSZ(unit, > nrows,status)
+        FTGRSZ(unit, > nrows,status)
 \end{verbatim}
  Low-Level Table Access Subroutines: page~\pageref{FTGTBS}
 

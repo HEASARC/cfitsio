@@ -51,13 +51,11 @@ ftp from:
 -
 \newpage
 Any questions, bug reports, or suggested enhancements related to the CFITSIO
-package should be sent to the primary author:
+package should be sent to the FTOOLS Help Desk at the HEASARC:
 -
-        Dr. William Pence                 Telephone:  (301) 286-4599
-        HEASARC, Code 662                 E-mail: William.D.Pence@nasa.gov
-        NASA/Goddard Space Flight Center
-        Greenbelt, MD 20771, USA
+        http://heasarc.gsfc.nasa.gov/cgi-bin/ftoolshelp
 -
+
 This User's Guide assumes that readers already have a general
 understanding of the definition and structure of FITS format files.
 Further information about FITS formats is available from the FITS Support
@@ -2986,7 +2984,7 @@ the underscore character be used in column names (with no embedded
 >   in Chapter 5 for more discussion on how to use this routine.
 
 -
-        FFGRSZ(unit, > nrows,status)
+        FTGRSZ(unit, > nrows,status)
 -
 
 ***2.  Low-Level Table Access Subroutines \label{FTGTBS}
@@ -3319,8 +3317,8 @@ of flags which defines whether the corresponding data pixel is undefined.
         FTGDES(unit,colnum,rownum, > nelements,offset,status) 
         FTGDESLL(unit,colnum,rownum, > nelementsll,offsetll,status) 
 
-        FFGDESS(unit,colnum,firstrow,nrows > nelements,offset, status)
-        FFGDESSLL(unit,colnum,firstrow,nrows > nelementsll,offsetll, status)
+        FTGDESS(unit,colnum,firstrow,nrows > nelements,offset, status)
+        FTGDESSLL(unit,colnum,firstrow,nrows > nelementsll,offsetll, status)
 -
 >12  Write the descriptor for a variable length column in a binary table. 
     These subroutines can be used in conjunction with FTGDES to enable
@@ -5998,7 +5996,7 @@ do not need to be enclosed in quotes.
         FTEXTN(filename, > nhdu, status)
         FTFLNM(unit, > filename, status)
         FTFLMD(unit, > iomode, status)
-        FFURLT(unit, > urltype, status)
+        FTURLT(unit, > urltype, status)
         FTIURL(filename, > filetype, infile, outfile, extspec, filter, 
                binspec, colspec, status)
         FTRTNM(filename, > rootname, status)
@@ -6165,7 +6163,7 @@ do not need to be enclosed in quotes.
         FTPTDM(unit,colnum,naxis,naxes, > status)
         FTGTDM(unit,colnum,maxdim, > naxis,naxes,status)
         FTDTDM(unit,tdimstr,colnum,maxdim, > naxis,naxes, status)
-        FFGRSZ(unit, > nrows,status)
+        FTGRSZ(unit, > nrows,status)
 -
  Low-Level Table Access Subroutines: page~\pageref{FTGTBS}
 -

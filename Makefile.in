@@ -60,7 +60,8 @@ CORE_SOURCES = 	buffers.c cfileio.c checksum.c drvrfile.c drvrmem.c \
 		putcolj.c putcolk.c putcoluk.c putcoll.c putcols.c putcolsb.c \
 		putcolu.c putcolui.c putcoluj.c putkey.c region.c scalnull.c \
 		swapproc.c wcssub.c wcsutil.c imcompress.c quantize.c ricecomp.c \
-		pliocomp.c fits_hcompress.c fits_hdecompress.c
+		pliocomp.c fits_hcompress.c fits_hdecompress.c \
+		simplerng.c
 
 ZLIB_SOURCES =	zlib/adler32.c zlib/crc32.c zlib/deflate.c zlib/infback.c \
 		zlib/inffast.c zlib/inflate.c zlib/inftrees.c zlib/trees.c \
@@ -143,7 +144,8 @@ cookbook:	cookbook.o libcfitsio.a ${OBJECTS}
 
 eval:		# Rebuild eval_* files from flex/bison source
 		$(FLEX) -t eval.l > eval_l.c1
-		/bin/sed -e 's/yy/ff/g' -e 's/YY/FF/g' eval_l.c1 > eval_l.c
+		# Note workaround for yyfree=fffree conflict
+		/bin/sed -e 's/yy/ff/g' -e 's/YY/FF/g' eval_l.c1 -e 's/fffree/yyfffree/g' > eval_l.c
 		/bin/rm -f eval_l.c1
 		$(BISON) -d -v -y eval.y
 		/bin/sed -e 's/yy/ff/g' -e 's/YY/FF/g' y.tab.c > eval_y.c

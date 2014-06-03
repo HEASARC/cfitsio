@@ -11,8 +11,7 @@
 \textheight=21.5truecm
 
 \title{CFITSIO Quick Start Guide}
-\author{William Pence \thanks{HEASARC, NASA Goddard Space Flight Center,
-{\it William.D.Pence@nasa.gov}}}
+\author{William Pence \thanks{HEASARC, NASA Goddard Space Flight Center}}
 
 \date{January 2003}
 
@@ -453,11 +452,12 @@ Get information about the currently opened image HDU. The first routine
 returns the datatype of the image as (defined by the {\tt BITPIX}
 keyword), which can have the following symbolic constant values: 
 \begin{verbatim}
-    BYTE_IMG   =   8   ( 8-bit byte pixels, 0 - 255)
-    SHORT_IMG  =  16   (16 bit integer pixels)
-    LONG_IMG   =  32   (32-bit integer pixels)
-    FLOAT_IMG  = -32   (32-bit floating point pixels)
-    DOUBLE_IMG = -64   (64-bit floating point pixels)
+    BYTE_IMG      =   8   ( 8-bit byte pixels, 0 - 255)
+    SHORT_IMG     =  16   (16 bit integer pixels)
+    LONG_IMG      =  32   (32-bit integer pixels)
+    LONGLONG_IMG  =  64   (64-bit integer pixels)
+    FLOAT_IMG     = -32   (32-bit floating point pixels)
+    DOUBLE_IMG    = -64   (64-bit floating point pixels)
 \end{verbatim}
 
 The second and third routines return the number of dimensions in the
@@ -634,7 +634,7 @@ and in binary tables:
             rU  - unsigned 16-bit integer **
             rJ  - signed 32-bit integer
             rV  - unsigned 32-bit integer **
-            rK  - 64-bit integer ***
+            rK  - signed 64-bit integer
             rE  - 32-bit floating point
             rD  - 64-bit floating point
             rC  - 32-bit complex pair
@@ -645,8 +645,6 @@ and in binary tables:
         keywords that are used to represent unsigned integers or
         signed bytes.
 
-    *** The 64-bit integer format is experimental and is not 
-        officially recognized in the FITS Standard.
 \end{verbatim}
   
 The {\tt tunit} and {\tt extname} parameters are optional and

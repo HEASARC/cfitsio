@@ -1,5 +1,20 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.37 - 3 June 2014
+
+   - added configure options to support reading bzip2 compressed FITS files.
+     This depends on having the bzlib library installed on the local machine.
+     Patch submitted by Dustin Lang.
+     
+   - replaced the random Gaussian and Poissonian distribution functions with
+     new code written by Craig Markwardt derived from public domain C++ functions 
+     written by John D Cook.
+
+   - patched fitsio2.h to support CFITSIO on AArch64 (64-bit ARM)
+     architecture (both big and little endian).  Supplied by
+     Marcin Juszkiewicz and Sergio Pascual Ramirez, with further update
+     by Michel Normand.
+     
    - fixed bug in fpackutil.c that caused fpack to exit prematurely if
      the FZALGOR directive keyword was present in the HDU header.
 
