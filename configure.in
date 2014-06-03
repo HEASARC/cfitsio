@@ -81,6 +81,24 @@ AC_ARG_WITH(
   ]
 )
 
+AC_ARG_WITH(
+  bzip2,
+  [AS_HELP_STRING([--with-bzip2[[=PATH]]],[Enable bzip2. Optional path to the header file bzlib.h])],
+  [ if test "x$withval" != "xno"; then
+        if test "x$withval" != "xyes" ; then
+            CFLAGS="$CFLAGS -I${withval}"
+        fi
+        AC_CHECK_HEADERS(bzlib.h)
+        HAVE_BZIP2=yes
+        AC_DEFINE(HAVE_BZIP2,1,[Define if you want bzip2 read support])
+    fi
+  ],
+  [AC_CHECK_HEADERS(bzlib.h)
+   HAVE_BZIP2=yes
+   AC_DEFINE(HAVE_BZIP2,1,[Define if you want bzip2 read support])
+  ]
+)
+
 #--------------------------------------------------------------------
 # Check for install location prefix
 #--------------------------------------------------------------------
