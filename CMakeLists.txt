@@ -53,7 +53,7 @@ SET(SRC_FILES
     pliocomp.c fits_hcompress.c fits_hdecompress.c zlib/zuncompress.c
     zlib/zcompress.c zlib/adler32.c zlib/crc32.c zlib/inffast.c
     zlib/inftrees.c zlib/trees.c zlib/zutil.c zlib/deflate.c
-    zlib/infback.c zlib/inflate.c zlib/uncompr.c
+    zlib/infback.c zlib/inflate.c zlib/uncompr.c simplerng.c
     f77_wrap1.c f77_wrap2.c f77_wrap3.c f77_wrap4.c
 )
 

@@ -106,7 +106,7 @@ purposes.
 SUPPORTED PLATFORMS
 -------------------
 
-CFITSIO has currently been tested on the following platforms:
+CFITSIO has currently been tested on the following platforms (not up-to-date):
 
    Operating System          Compiler
    ----------------          --------
@@ -131,14 +131,13 @@ CFITSIO has currently been tested on the following platforms:
    Mac OS-X 10.1 or greater   cc (gcc)
 
 CFITSIO will probably run on most other Unix platforms without
-modification.  Cray supercomputers and IBM mainframe computers are
+modification.  Cray supercomputers computers are
 currently not supported.
 
 Reports of any success or failure to run CFITSIO on other platforms
 would be appreciated.  Any problem reports or suggestions for
-improvements are also welcome and should be sent to the primary author.
+improvements are also welcome and should be sent to the HEASARC.
 
 -------------------------------------------------------------------------
 William D. Pence
 HEASARC, NASA/GSFC
-email: William.D.Pence@nasa.gov
