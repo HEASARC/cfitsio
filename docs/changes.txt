@@ -1,5 +1,17 @@
                    Log of Changes Made to CFITSIO
 
+   - added test to see if HAVE_UNISTD_H is defined, as a condition for 
+     including unistd.h in drvrfile.c drvrnet.c, drvrsmem.c, and group.c.
+
+   - modified the CMakelist.txt file to fix several issues (primarily for
+     building CFITSIO on Windows machines)..
+
+   - fixed bug when reading tile-compressed images that were compressed with
+     the IRAF PLIO algorithm.  This bug did not affect fpack or funpack, but
+     other software that reads the compressed image could be affected.  The 
+     bug would cause the data values to be offset by 32768 from the actual 
+     pixel values.
+
 Version 3.37 - 3 June 2014
 
    - added configure options to support reading bzip2 compressed FITS files.

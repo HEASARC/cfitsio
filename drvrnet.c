@@ -162,7 +162,7 @@ Baltimore MD 21218 USA              ¦ http://faxafloi.stsci.edu:4547/
 #include <string.h>
 #include <stdlib.h>
 
-#if defined(unix) || defined(__unix__)  || defined(__unix)
+#if defined(unix) || defined(__unix__)  || defined(__unix) || defined(HAVE_UNISTD_H)
 #include <unistd.h>  
 #endif
 

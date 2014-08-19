@@ -2091,7 +2091,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
                compress2mem_from_mem((char *) tiledata, tilelen * sizeof(float),
                     (char **) &cbuf,  &clen, realloc, &gzip_nelem, status);
 
-         } else if (datatype == TDOUBLE) {
+         } else {  /* datatype == TDOUBLE */
 
                /* allocate buffer for the compressed tile bytes */
 	       /* make it 10% larger than the original uncompressed data */
@@ -6292,12 +6292,11 @@ int imcomp_decompress_tile (fitsfile *infptr,
                 *(short *) nulval, bnullarray, anynul,
                 (short *) buffer, status);
           }
-        } else if (tiledatatype == TINT)
-          if ((infptr->Fptr)->compress_type == PLIO_1 &&
-	    bzero == 0. && actual_bzero == 32768.) {
+        } else if (tiledatatype == TINT) {
+          if ((infptr->Fptr)->compress_type == PLIO_1 && actual_bzero == 32768.) {
 	    /* special case where unsigned 16-bit integers have been */
 	    /* offset by +32768 when using PLIO */
-            fffi4i2(idata, tilelen, bscale, -32768., nullcheck, tnull,
+            fffi4i2(idata, tilelen, bscale, bzero - 32768., nullcheck, tnull,
              *(short *) nulval, bnullarray, anynul,
             (short *) buffer, status);
           } else {
@@ -6318,14 +6317,15 @@ int imcomp_decompress_tile (fitsfile *infptr,
 	        if (*status == NUM_OVERFLOW) *status = 0;
 	    }
           }
-        else if (tiledatatype == TSHORT)
+        } else if (tiledatatype == TSHORT) {
           fffi2i2((short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,
            *(short *) nulval, bnullarray, anynul,
           (short *) buffer, status);
-        else if (tiledatatype == TBYTE)
+        } else if (tiledatatype == TBYTE) {
           fffi1i2((unsigned char *)idata, tilelen, bscale, bzero, nullcheck, (unsigned char) tnull,
            *(short *) nulval, bnullarray, anynul,
           (short *) buffer, status);
+        }
     }
     else if (datatype == TINT)
     {
@@ -6345,9 +6345,17 @@ int imcomp_decompress_tile (fitsfile *infptr,
                 (int *) buffer, status);
           }
         } else if (tiledatatype == TINT)
-          fffi4int(idata, (long) tilelen, bscale, bzero, nullcheck, tnull,
-           *(int *) nulval, bnullarray, anynul,
-           (int *) buffer, status);
+          if ((infptr->Fptr)->compress_type == PLIO_1 && actual_bzero == 32768.) {
+	    /* special case where unsigned 16-bit integers have been */
+	    /* offset by +32768 when using PLIO */
+            fffi4int(idata, (long) tilelen, bscale, bzero - 32768., nullcheck, tnull,
+             *(int *) nulval, bnullarray, anynul,
+            (int *) buffer, status);
+          } else {
+            fffi4int(idata, (long) tilelen, bscale, bzero, nullcheck, tnull,
+             *(int *) nulval, bnullarray, anynul,
+            (int *) buffer, status);
+          } 
         else if (tiledatatype == TSHORT)
           fffi2int((short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,
            *(int *) nulval, bnullarray, anynul,
@@ -6375,9 +6383,17 @@ int imcomp_decompress_tile (fitsfile *infptr,
                 (long *) buffer, status);
           }
         } else if (tiledatatype == TINT)
-          fffi4i4(idata, tilelen, bscale, bzero, nullcheck, tnull,
-           *(long *) nulval, bnullarray, anynul,
-            (long *) buffer, status);
+          if ((infptr->Fptr)->compress_type == PLIO_1 && actual_bzero == 32768.) {
+	    /* special case where unsigned 16-bit integers have been */
+	    /* offset by +32768 when using PLIO */
+            fffi4i4(idata, tilelen, bscale, bzero - 32768., nullcheck, tnull,
+             *(long *) nulval, bnullarray, anynul,
+             (long *) buffer, status);
+          } else {
+            fffi4i4(idata, tilelen, bscale, bzero, nullcheck, tnull,
+             *(long *) nulval, bnullarray, anynul,
+              (long *) buffer, status);
+          }
         else if (tiledatatype == TSHORT)
           fffi2i4((short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,
            *(long *) nulval, bnullarray, anynul,
@@ -6432,9 +6448,17 @@ int imcomp_decompress_tile (fitsfile *infptr,
         } else {  /* use the old "round to nearest level" quantization algorithm */
 
          if (tiledatatype == TINT)
-          fffi4r4(idata, tilelen, bscale, bzero, nullcheck, tnull,  
-           fnulval, bnullarray, anynul,
-            (float *) buffer, status);
+          if ((infptr->Fptr)->compress_type == PLIO_1 && actual_bzero == 32768.) {
+	    /* special case where unsigned 16-bit integers have been */
+	    /* offset by +32768 when using PLIO */
+            fffi4r4(idata, tilelen, bscale, bzero - 32768., nullcheck, tnull,
+             fnulval, bnullarray, anynul,
+             (float *) buffer, status);
+          } else {
+            fffi4r4(idata, tilelen, bscale, bzero, nullcheck, tnull,  
+             fnulval, bnullarray, anynul,
+              (float *) buffer, status);
+          }
          else if (tiledatatype == TSHORT)
           fffi2r4((short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,  
            fnulval, bnullarray, anynul,
@@ -6488,15 +6512,23 @@ int imcomp_decompress_tile (fitsfile *infptr,
 
         } else {  /* use the old "round to nearest level" quantization algorithm */
 
-         if (tiledatatype == TINT)
-          fffi4r8(idata, tilelen, bscale, bzero, nullcheck, tnull,
-           dnulval, bnullarray, anynul,
-            (double *) buffer, status);
-         else if (tiledatatype == TSHORT)
+         if (tiledatatype == TINT) {
+          if ((infptr->Fptr)->compress_type == PLIO_1 && actual_bzero == 32768.) {
+	    /* special case where unsigned 16-bit integers have been */
+	    /* offset by +32768 when using PLIO */
+            fffi4r8(idata, tilelen, bscale, bzero - 32768., nullcheck, tnull,
+             dnulval, bnullarray, anynul,
+             (double *) buffer, status);
+          } else {
+            fffi4r8(idata, tilelen, bscale, bzero, nullcheck, tnull,
+             dnulval, bnullarray, anynul,
+              (double *) buffer, status);
+          }
+         } else if (tiledatatype == TSHORT) {
           fffi2r8((short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,
            dnulval, bnullarray, anynul,
             (double *) buffer, status);
-         else if (tiledatatype == TBYTE)
+         } else if (tiledatatype == TBYTE)
           fffi1r8((unsigned char *)idata, tilelen, bscale, bzero, nullcheck, (unsigned char) tnull,
            dnulval, bnullarray, anynul,
             (double *) buffer, status);
@@ -6552,9 +6584,17 @@ int imcomp_decompress_tile (fitsfile *infptr,
                 (unsigned short *) buffer, status);
           }
         } else if (tiledatatype == TINT)
-          fffi4u2(idata, tilelen, bscale, bzero, nullcheck, tnull,
-           *(unsigned short *) nulval, bnullarray, anynul,
+          if ((infptr->Fptr)->compress_type == PLIO_1 && actual_bzero == 32768.) {
+	    /* special case where unsigned 16-bit integers have been */
+	    /* offset by +32768 when using PLIO */
+            fffi4u2(idata, tilelen, bscale, bzero - 32768., nullcheck, tnull,
+             *(unsigned short *) nulval, bnullarray, anynul,
             (unsigned short *) buffer, status);
+          } else {
+            fffi4u2(idata, tilelen, bscale, bzero, nullcheck, tnull,
+             *(unsigned short *) nulval, bnullarray, anynul,
+              (unsigned short *) buffer, status);
+          }
         else if (tiledatatype == TSHORT)
           fffi2u2((short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,
            *(unsigned short *) nulval, bnullarray, anynul,
@@ -6581,10 +6621,19 @@ int imcomp_decompress_tile (fitsfile *infptr,
                 *(unsigned int *) nulval, bnullarray, anynul,
                 (unsigned int *) buffer, status);
           }
-        } else         if (tiledatatype == TINT)
-          fffi4uint(idata, tilelen, bscale, bzero, nullcheck, tnull,
-           *(unsigned int *) nulval, bnullarray, anynul,
-            (unsigned int *) buffer, status);
+        } else
+         if (tiledatatype == TINT)
+          if ((infptr->Fptr)->compress_type == PLIO_1 && actual_bzero == 32768.) {
+	    /* special case where unsigned 16-bit integers have been */
+	    /* offset by +32768 when using PLIO */
+            fffi4uint(idata, tilelen, bscale, bzero - 32768., nullcheck, tnull,
+             *(unsigned int *) nulval, bnullarray, anynul,
+              (unsigned int *) buffer, status);
+          } else {
+            fffi4uint(idata, tilelen, bscale, bzero, nullcheck, tnull,
+             *(unsigned int *) nulval, bnullarray, anynul,
+              (unsigned int *) buffer, status);
+          }
         else if (tiledatatype == TSHORT)
           fffi2uint((short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,
            *(unsigned int *) nulval, bnullarray, anynul,
@@ -6612,9 +6661,17 @@ int imcomp_decompress_tile (fitsfile *infptr,
                 (unsigned long *) buffer, status);
           }
         } else if (tiledatatype == TINT)
-          fffi4u4(idata, tilelen, bscale, bzero, nullcheck, tnull,
-           *(unsigned long *) nulval, bnullarray, anynul, 
-            (unsigned long *) buffer, status);
+          if ((infptr->Fptr)->compress_type == PLIO_1 && actual_bzero == 32768.) {
+	    /* special case where unsigned 16-bit integers have been */
+	    /* offset by +32768 when using PLIO */
+            fffi4u4(idata, tilelen, bscale, bzero - 32768., nullcheck, tnull,
+             *(unsigned long *) nulval, bnullarray, anynul,
+              (unsigned long *) buffer, status);
+          } else {
+            fffi4u4(idata, tilelen, bscale, bzero, nullcheck, tnull,
+             *(unsigned long *) nulval, bnullarray, anynul, 
+              (unsigned long *) buffer, status);
+          }
         else if (tiledatatype == TSHORT)
           fffi2u4((short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,
            *(unsigned long *) nulval, bnullarray, anynul, 

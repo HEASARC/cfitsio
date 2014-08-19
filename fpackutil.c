@@ -337,7 +337,7 @@ int fp_info_hdu (fitsfile *infptr)
 
             } else {
                 sprintf (msg, "  %d OTHER", hdupos); fp_msg (msg);
-                sprintf (msg, " SUMS=%lu/%lu", (unsigned long) (~((int) hdusum), datasum)); fp_msg (msg);
+                sprintf (msg, " SUMS=%lu/%lu",   (unsigned long) (~((int) hdusum)), datasum); fp_msg (msg);
                 sprintf (msg, " %s\n", val); fp_msg (msg);
             }
 
