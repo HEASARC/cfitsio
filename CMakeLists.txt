@@ -36,6 +36,12 @@ IF (USE_PTHREADS)
     ADD_DEFINITIONS(-D_REENTRANT)
 ENDIF()
 
+# Math library (not available in MSVC)
+SET(M_LIB "")
+IF (NOT MSVC)
+    FIND_LIBRARY(M_LIB m)
+ENDIF()
+
 SET(SRC_FILES
     buffers.c cfileio.c checksum.c drvrfile.c drvrmem.c
     drvrnet.c drvrsmem.c drvrgsiftp.c editcol.c edithdu.c eval_l.c
@@ -55,8 +61,7 @@ SET(SRC_FILES
 )
 
 ADD_LIBRARY(${LIB_NAME} ${LIB_TYPE} ${H_FILES} ${SRC_FILES})
-TARGET_LINK_LIBRARIES(${LIB_NAME} m ${PTHREADS_LIBRARY}
-)
+TARGET_LINK_LIBRARIES(${LIB_NAME} ${PTHREADS_LIBRARY} ${M_LIB})
 
 SET_TARGET_PROPERTIES(${LIB_NAME} PROPERTIES VERSION ${${PROJECT_NAME}_VERSION} SOVERSION ${${PROJECT_NAME}_MAJOR_VERSION})
 install(TARGETS ${LIB_NAME} DESTINATION ${LIB_DESTINATION})
@@ -77,6 +82,9 @@ TARGET_LINK_LIBRARIES(FPack ${LIB_NAME})
 
 ADD_EXECUTABLE(Funpack funpack.c fpackutil.c)
 TARGET_LINK_LIBRARIES(Funpack ${LIB_NAME})
+
+ADD_EXECUTABLE(Fitscopy fitscopy.c)
+TARGET_LINK_LIBRARIES(Fitscopy ${LIB_NAME})
 
 # To expands the command line arguments in Windows, see:
 # http://msdn.microsoft.com/en-us/library/8bch7bkk.aspx
