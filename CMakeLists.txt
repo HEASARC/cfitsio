@@ -16,12 +16,21 @@ SET(${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_MAJOR_VERSION}.${${PROJECT_NAME}_M
 SET(LIB_NAME cfitsio)
 
 # Microsoft Visual Studio:
-IF(MSVC)
+IF(MSVC OR BORLAND)
     # Define
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE)
     # Need an empty unistd.h in MSVC for flex-generated eval_l.c:
     FILE(WRITE ${CMAKE_SOURCE_DIR}/unistd.h "")
     INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR})
+ENDIF()
+
+IF(BORLAND)
+    # Suppress spurious Borland compiler warnings about "Suspicious
+    # pointer arithmetic", "Possibly incorrect assignment", and
+    # "Comparing signed and unsigned values".
+    ADD_DEFINITIONS(-w-spa)
+    ADD_DEFINITIONS(-w-pia)
+    ADD_DEFINITIONS(-w-csu)
 ENDIF()
 
 #add_subdirectory (src)
