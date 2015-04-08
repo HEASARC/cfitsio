@@ -5338,7 +5338,7 @@ int ffgcprll( fitsfile *fptr, /* I - FITS file pointer                      */
             urltype2driver("stream://", &STREAM_DRIVER);
         }
 
-        if (((fptr->Fptr)->driver == STREAM_DRIVER)) {
+        if ((fptr->Fptr)->driver == STREAM_DRIVER) {
 	    if ((fptr->Fptr)->ENDpos != 
 	       maxvalue((fptr->Fptr)->headend , (fptr->Fptr)->datastart -2880)) {
 	           ffwend(fptr, status);

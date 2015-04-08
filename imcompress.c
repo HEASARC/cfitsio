@@ -8865,7 +8865,7 @@ int fits_uncompress_table(fitsfile *infptr, fitsfile *outfptr, int *status)
 	 ptr = (char *) (cm_buffer + cmajor_colstart[ii]);  /* initialize ptr to start of the column in the cm_buffer */
          if (rmajor_repeat[ii] > 0) {  /* skip columns with zero elements */
              if (coltype[ii] > 0) {  /* normal fixed length array columns */
-                 if ((zctype[ii] == GZIP_2)) {  /*  need to unshuffle the bytes */
+                 if (zctype[ii] == GZIP_2) {  /*  need to unshuffle the bytes */
 
 	             /* recombine the byte planes for the 2-byte, 4-byte, and 8-byte numeric columns */
 	             switch (colcode[ii]) {
