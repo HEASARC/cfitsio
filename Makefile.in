@@ -38,7 +38,7 @@ CC =		@CC@
 CFLAGS =	@CFLAGS@
 SSE_FLAGS =	@SSE_FLAGS@
 FC =		@FC@
-LDFLAGS =	${CFLAGS}
+LDFLAGS =	@LDFLAGS@
 DEFS =		@DEFS@
 LIBS =		@LIBS@
 FLEX =		flex
@@ -116,31 +116,31 @@ swapproc.o:	swapproc.c
 		${CC} -c ${CFLAGS} ${SSE_FLAGS} ${DEFS} $<
 
 smem:		smem.o libcfitsio.a ${OBJECTS}
-		${CC} ${CFLAGS} ${DEFS} -o smem smem.o -L. -lcfitsio -lm
+		${CC} ${LDFLAGS} ${DEFS} -o smem smem.o -L. -lcfitsio -lm
 
 testprog:	testprog.o libcfitsio.a ${OBJECTS}
-		${CC} ${CFLAGS} ${DEFS} -o testprog testprog.o -L. -lcfitsio -lm ${LIBS}
+		${CC} ${LDFLAGS} ${DEFS} -o testprog testprog.o -L. -lcfitsio -lm ${LIBS}
 
 fpack:		fpack.o fpackutil.o libcfitsio.a ${OBJECTS}
-		${CC} ${CFLAGS} ${DEFS} -o fpack fpack.o fpackutil.o libcfitsio.a -lm ${LIBS}
+		${CC} ${LDFLAGS} ${DEFS} -o fpack fpack.o fpackutil.o libcfitsio.a -lm ${LIBS}
 
 funpack:	funpack.o fpackutil.o libcfitsio.a ${OBJECTS}
-		${CC} ${CFLAGS} ${DEFS} -o funpack funpack.o fpackutil.o libcfitsio.a -lm ${LIBS}
+		${CC} ${LDFLAGS} ${DEFS} -o funpack funpack.o fpackutil.o libcfitsio.a -lm ${LIBS}
 
 fitscopy:	fitscopy.o libcfitsio.a ${OBJECTS}
-		${CC} ${CFLAGS} ${DEFS} -o fitscopy fitscopy.o -L. -lcfitsio -lm ${LIBS}
+		${CC} ${LDFLAGS} ${DEFS} -o fitscopy fitscopy.o -L. -lcfitsio -lm ${LIBS}
 
 speed:		speed.o libcfitsio.a ${OBJECTS}
-		${CC} ${CFLAGS} ${DEFS} -o speed speed.o -L. -lcfitsio -lm ${LIBS}
+		${CC} ${LDFLAGS} ${DEFS} -o speed speed.o -L. -lcfitsio -lm ${LIBS}
 
 imcopy:		imcopy.o libcfitsio.a ${OBJECTS}
-		${CC} ${CFLAGS} ${DEFS} -o imcopy imcopy.o -L. -lcfitsio -lm ${LIBS}
+		${CC} ${LDFLAGS} ${DEFS} -o imcopy imcopy.o -L. -lcfitsio -lm ${LIBS}
 
 listhead:	listhead.o libcfitsio.a ${OBJECTS}
-		${CC} ${CFLAGS} ${DEFS} -o listhead listhead.o -L. -lcfitsio -lm ${LIBS}
+		${CC} ${LDFLAGS} ${DEFS} -o listhead listhead.o -L. -lcfitsio -lm ${LIBS}
 
 cookbook:	cookbook.o libcfitsio.a ${OBJECTS}
-		${CC} ${CFLAGS} ${DEFS} -o cookbook cookbook.o -L. -lcfitsio -lm ${LIBS}
+		${CC} ${LDFLAGS} ${DEFS} -o cookbook cookbook.o -L. -lcfitsio -lm ${LIBS}
 
 eval:		# Rebuild eval_* files from flex/bison source
 		${FLEX} -t eval.l > eval_l.c1
