@@ -38,7 +38,7 @@ CC =		@CC@
 CFLAGS =	@CFLAGS@
 SSE_FLAGS =	@SSE_FLAGS@
 FC =		@FC@
-LDFLAGS =	$(CFLAGS)
+LDFLAGS =	${CFLAGS}
 DEFS =		@DEFS@
 LIBS =		@LIBS@
 FLEX =		flex
@@ -104,50 +104,50 @@ libcfitsio${SHLIB_SUFFIX}: ${OBJECTS}
 			ln -sf ${CFITSIO_SHLIB_SONAME} $@; \
 		fi
 
-install:	libcfitsio.a $(INSTALL_DIRS)
+install:	libcfitsio.a ${INSTALL_DIRS}
 		/bin/cp -a libcfitsio* ${CFITSIO_LIB}
 		/bin/cp fitsio.h fitsio2.h longnam.h drvrsmem.h ${CFITSIO_INCLUDE}
 		/bin/cp cfitsio.pc ${CFITSIO_LIB}/pkgconfig
 
 .c.o:
-		$(CC) -c -o ${<D}/${@F} $(CFLAGS) $(DEFS) $<
+		${CC} -c -o ${<D}/${@F} ${CFLAGS} ${DEFS} $<
 
 swapproc.o:	swapproc.c
-		$(CC) -c $(CFLAGS) $(SSE_FLAGS) $(DEFS) $<
+		${CC} -c ${CFLAGS} ${SSE_FLAGS} ${DEFS} $<
 
 smem:		smem.o libcfitsio.a ${OBJECTS}
-		${CC} $(CFLAGS) $(DEFS) -o smem smem.o -L. -lcfitsio -lm
+		${CC} ${CFLAGS} ${DEFS} -o smem smem.o -L. -lcfitsio -lm
 
 testprog:	testprog.o libcfitsio.a ${OBJECTS}
-		${CC} $(CFLAGS) $(DEFS) -o testprog testprog.o -L. -lcfitsio -lm ${LIBS}
+		${CC} ${CFLAGS} ${DEFS} -o testprog testprog.o -L. -lcfitsio -lm ${LIBS}
 
 fpack:		fpack.o fpackutil.o libcfitsio.a ${OBJECTS}
-		${CC} $(CFLAGS) $(DEFS) -o fpack fpack.o fpackutil.o libcfitsio.a -lm ${LIBS}
+		${CC} ${CFLAGS} ${DEFS} -o fpack fpack.o fpackutil.o libcfitsio.a -lm ${LIBS}
 
 funpack:	funpack.o fpackutil.o libcfitsio.a ${OBJECTS}
-		${CC} $(CFLAGS) $(DEFS) -o funpack funpack.o fpackutil.o libcfitsio.a -lm ${LIBS}
+		${CC} ${CFLAGS} ${DEFS} -o funpack funpack.o fpackutil.o libcfitsio.a -lm ${LIBS}
 
 fitscopy:	fitscopy.o libcfitsio.a ${OBJECTS}
-		${CC} $(CFLAGS) $(DEFS) -o fitscopy fitscopy.o -L. -lcfitsio -lm ${LIBS}
+		${CC} ${CFLAGS} ${DEFS} -o fitscopy fitscopy.o -L. -lcfitsio -lm ${LIBS}
 
 speed:		speed.o libcfitsio.a ${OBJECTS}
-		${CC} $(CFLAGS) $(DEFS) -o speed speed.o -L. -lcfitsio -lm ${LIBS}
+		${CC} ${CFLAGS} ${DEFS} -o speed speed.o -L. -lcfitsio -lm ${LIBS}
 
 imcopy:		imcopy.o libcfitsio.a ${OBJECTS}
-		${CC} $(CFLAGS) $(DEFS) -o imcopy imcopy.o -L. -lcfitsio -lm ${LIBS}
+		${CC} ${CFLAGS} ${DEFS} -o imcopy imcopy.o -L. -lcfitsio -lm ${LIBS}
 
 listhead:	listhead.o libcfitsio.a ${OBJECTS}
-		${CC} $(CFLAGS) $(DEFS) -o listhead listhead.o -L. -lcfitsio -lm ${LIBS}
+		${CC} ${CFLAGS} ${DEFS} -o listhead listhead.o -L. -lcfitsio -lm ${LIBS}
 
 cookbook:	cookbook.o libcfitsio.a ${OBJECTS}
-		${CC} $(CFLAGS) $(DEFS) -o cookbook cookbook.o -L. -lcfitsio -lm ${LIBS}
+		${CC} ${CFLAGS} ${DEFS} -o cookbook cookbook.o -L. -lcfitsio -lm ${LIBS}
 
 eval:		# Rebuild eval_* files from flex/bison source
-		$(FLEX) -t eval.l > eval_l.c1
+		${FLEX} -t eval.l > eval_l.c1
 		# Note workaround for yyfree=fffree conflict
 		/bin/sed -e 's/yy/ff/g' -e 's/YY/FF/g' eval_l.c1 -e 's/fffree/yyfffree/g' > eval_l.c
 		/bin/rm -f eval_l.c1
-		$(BISON) -d -v -y eval.y
+		${BISON} -d -v -y eval.y
 		/bin/sed -e 's/yy/ff/g' -e 's/YY/FF/g' y.tab.c > eval_y.c
 		/bin/sed -e 's/yy/ff/g' -e 's/YY/FF/g' y.tab.h > eval_tab.h
 		/bin/rm -f y.tab.c y.tab.h
@@ -173,5 +173,5 @@ cfitsioLibSrcs:
 # case
 objs: ${CORE_OBJECTS}
 
-$(INSTALL_DIRS):
+${INSTALL_DIRS}:
 	@if [ ! -d $@ ]; then mkdir -p $@; fi
