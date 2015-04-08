@@ -1,6 +1,5 @@
 #
 # Makefile for cfitsio library:
-#       libcfits.a
 #
 # Oct-96 : original version by 
 #
@@ -17,6 +16,9 @@
 # (to bypass aliasing), cp changed to /bin/cp, add smem and
 # testprog targets. See also changes and comments in configure.in
 
+
+# Default library name:
+PACKAGE		= cfitsio
 
 # CFITSIO version numbers:
 CFITSIO_MAJOR	= @CFITSIO_MAJOR@
@@ -89,23 +91,23 @@ all:
 all-nofitsio:
 		${MAKE} stand_alone "FITSIO_SRC="
 
-stand_alone:	libcfitsio.a
+stand_alone:	lib${PACKAGE}.a
 
-libcfitsio.a:	${OBJECTS}
-		${ARCHIVE} libcfitsio.a ${OBJECTS}; \
-		${RANLIB} libcfitsio.a;
+lib${PACKAGE}.a:	${OBJECTS}
+		${ARCHIVE} $@ ${OBJECTS}; \
+		${RANLIB} $@;
 
-shared: libcfitsio${SHLIB_SUFFIX}
+shared: lib${PACKAGE}${SHLIB_SUFFIX}
 
-libcfitsio${SHLIB_SUFFIX}: ${OBJECTS}
+lib${PACKAGE}${SHLIB_SUFFIX}: ${OBJECTS}
 		${SHLIB_LD} ${LDFLAGS} -o ${CFITSIO_SHLIB} ${OBJECTS} -lm ${LIBS}
 		@if [ "x${CFITSIO_SHLIB_SONAME}" != x ]; then \
 			ln -sf ${CFITSIO_SHLIB} ${CFITSIO_SHLIB_SONAME}; \
 			ln -sf ${CFITSIO_SHLIB_SONAME} $@; \
 		fi
 
-install:	libcfitsio.a ${INSTALL_DIRS}
-		/bin/cp -a libcfitsio* ${CFITSIO_LIB}
+install:	lib${PACKAGE}.a ${INSTALL_DIRS}
+		/bin/cp -a lib${PACKAGE}* ${CFITSIO_LIB}
 		/bin/cp fitsio.h fitsio2.h longnam.h drvrsmem.h ${CFITSIO_INCLUDE}
 		/bin/cp cfitsio.pc ${CFITSIO_LIB}/pkgconfig
 
@@ -115,32 +117,32 @@ install:	libcfitsio.a ${INSTALL_DIRS}
 swapproc.o:	swapproc.c
 		${CC} -c ${CFLAGS} ${SSE_FLAGS} ${DEFS} $<
 
-smem:		smem.o libcfitsio.a ${OBJECTS}
-		${CC} ${LDFLAGS} ${DEFS} -o smem smem.o -L. -lcfitsio -lm
+smem:		smem.o lib${PACKAGE}.a ${OBJECTS}
+		${CC} ${LDFLAGS} ${DEFS} -o smem smem.o -L. -l${PACKAGE} -lm
 
-testprog:	testprog.o libcfitsio.a ${OBJECTS}
-		${CC} ${LDFLAGS} ${DEFS} -o testprog testprog.o -L. -lcfitsio -lm ${LIBS}
+testprog:	testprog.o lib${PACKAGE}.a ${OBJECTS}
+		${CC} ${LDFLAGS} ${DEFS} -o testprog testprog.o -L. -l${PACKAGE} -lm ${LIBS}
 
-fpack:		fpack.o fpackutil.o libcfitsio.a ${OBJECTS}
-		${CC} ${LDFLAGS} ${DEFS} -o fpack fpack.o fpackutil.o libcfitsio.a -lm ${LIBS}
+fpack:		fpack.o fpackutil.o lib${PACKAGE}.a ${OBJECTS}
+		${CC} ${LDFLAGS} ${DEFS} -o fpack fpack.o fpackutil.o -L. -l${PACKAGE} -lm ${LIBS}
 
-funpack:	funpack.o fpackutil.o libcfitsio.a ${OBJECTS}
-		${CC} ${LDFLAGS} ${DEFS} -o funpack funpack.o fpackutil.o libcfitsio.a -lm ${LIBS}
+funpack:	funpack.o fpackutil.o lib${PACKAGE}.a ${OBJECTS}
+		${CC} ${LDFLAGS} ${DEFS} -o funpack funpack.o fpackutil.o -L. -l${PACKAGE} -lm ${LIBS}
 
-fitscopy:	fitscopy.o libcfitsio.a ${OBJECTS}
-		${CC} ${LDFLAGS} ${DEFS} -o fitscopy fitscopy.o -L. -lcfitsio -lm ${LIBS}
+fitscopy:	fitscopy.o lib${PACKAGE}.a ${OBJECTS}
+		${CC} ${LDFLAGS} ${DEFS} -o fitscopy fitscopy.o -L. -l${PACKAGE} -lm ${LIBS}
 
-speed:		speed.o libcfitsio.a ${OBJECTS}
-		${CC} ${LDFLAGS} ${DEFS} -o speed speed.o -L. -lcfitsio -lm ${LIBS}
+speed:		speed.o lib${PACKAGE}.a ${OBJECTS}
+		${CC} ${LDFLAGS} ${DEFS} -o speed speed.o -L. -l${PACKAGE} -lm ${LIBS}
 
-imcopy:		imcopy.o libcfitsio.a ${OBJECTS}
-		${CC} ${LDFLAGS} ${DEFS} -o imcopy imcopy.o -L. -lcfitsio -lm ${LIBS}
+imcopy:		imcopy.o lib${PACKAGE}.a ${OBJECTS}
+		${CC} ${LDFLAGS} ${DEFS} -o imcopy imcopy.o -L. -l${PACKAGE} -lm ${LIBS}
 
-listhead:	listhead.o libcfitsio.a ${OBJECTS}
-		${CC} ${LDFLAGS} ${DEFS} -o listhead listhead.o -L. -lcfitsio -lm ${LIBS}
+listhead:	listhead.o lib${PACKAGE}.a ${OBJECTS}
+		${CC} ${LDFLAGS} ${DEFS} -o listhead listhead.o -L. -l${PACKAGE} -lm ${LIBS}
 
-cookbook:	cookbook.o libcfitsio.a ${OBJECTS}
-		${CC} ${LDFLAGS} ${DEFS} -o cookbook cookbook.o -L. -lcfitsio -lm ${LIBS}
+cookbook:	cookbook.o lib${PACKAGE}.a ${OBJECTS}
+		${CC} ${LDFLAGS} ${DEFS} -o cookbook cookbook.o -L. -l${PACKAGE} -lm ${LIBS}
 
 eval:		# Rebuild eval_* files from flex/bison source
 		${FLEX} -t eval.l > eval_l.c1
@@ -153,8 +155,8 @@ eval:		# Rebuild eval_* files from flex/bison source
 		/bin/rm -f y.tab.c y.tab.h
 
 clean:
-	-	/bin/rm -f *.o zlib/*.o libcfitsio* fpack funpack \
-			smem testprog y.output so_locations
+	-	/bin/rm -f *.o zlib/*.o lib${PACKAGE}* fpack funpack \
+			smem testprog testprog.fit y.output so_locations
 
 distclean:	clean
 	-	/bin/rm -f Makefile cfitsio.pc config.log config.status configure.lineno
