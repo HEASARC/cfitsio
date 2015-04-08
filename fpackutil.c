@@ -1329,7 +1329,14 @@ printf("    HDU %d does not meet noise criteria to be quantized, so losslessly c
 
     		fits_get_num_rowsll(inputfptr, &nrows, &stat);
     		fits_get_num_cols(inputfptr, &ncols, &stat);
+#if defined(_MSC_VER)
+                /* Microsoft Visual C++ 6.0 uses '%I64d' syntax  for 8-byte integers */
+ 		printf("\n File: %s, HDU %d,  %d cols X %I64d rows\n", infits, extnum, ncols, nrows);
+#elif (USE_LL_SUFFIX == 1)
+ 		printf("\n File: %s, HDU %d,  %d cols X %lld rows\n", infits, extnum, ncols, nrows);
+#else
  		printf("\n File: %s, HDU %d,  %d cols X %ld rows\n", infits, extnum, ncols, nrows);
+#endif
 		fp_test_table(inputfptr, outfptr, outfptr2, fpvar, &stat);	  
 
 	    } else {
