@@ -114,35 +114,39 @@ install:	lib${PACKAGE}.a ${INSTALL_DIRS}
 .c.o:
 		${CC} -c -o ${<D}/${@F} ${CFLAGS} ${DEFS} $<
 
+UTILS		= cookbook fitscopy imcopy listhead smem speed testprog
+
+FPACK_UTILS	= fpack funpack
+
 swapproc.o:	swapproc.c
 		${CC} -c ${CFLAGS} ${SSE_FLAGS} ${DEFS} $<
 
 smem:		smem.o lib${PACKAGE}.a ${OBJECTS}
-		${CC} ${LDFLAGS} ${DEFS} -o smem smem.o -L. -l${PACKAGE} -lm
+		${CC} ${LDFLAGS} ${DEFS} -o $@ ${@}.o -L. -l${PACKAGE} -lm
 
 testprog:	testprog.o lib${PACKAGE}.a ${OBJECTS}
-		${CC} ${LDFLAGS} ${DEFS} -o testprog testprog.o -L. -l${PACKAGE} -lm ${LIBS}
+		${CC} ${LDFLAGS} ${DEFS} -o $@ ${@}.o -L. -l${PACKAGE} -lm ${LIBS}
 
 fpack:		fpack.o fpackutil.o lib${PACKAGE}.a ${OBJECTS}
-		${CC} ${LDFLAGS} ${DEFS} -o fpack fpack.o fpackutil.o -L. -l${PACKAGE} -lm ${LIBS}
+		${CC} ${LDFLAGS} ${DEFS} -o $@ ${@}.o fpackutil.o -L. -l${PACKAGE} -lm ${LIBS}
 
 funpack:	funpack.o fpackutil.o lib${PACKAGE}.a ${OBJECTS}
-		${CC} ${LDFLAGS} ${DEFS} -o funpack funpack.o fpackutil.o -L. -l${PACKAGE} -lm ${LIBS}
+		${CC} ${LDFLAGS} ${DEFS} -o $@ ${@}.o fpackutil.o -L. -l${PACKAGE} -lm ${LIBS}
 
 fitscopy:	fitscopy.o lib${PACKAGE}.a ${OBJECTS}
-		${CC} ${LDFLAGS} ${DEFS} -o fitscopy fitscopy.o -L. -l${PACKAGE} -lm ${LIBS}
+		${CC} ${LDFLAGS} ${DEFS} -o $@ ${@}.o -L. -l${PACKAGE} -lm ${LIBS}
 
 speed:		speed.o lib${PACKAGE}.a ${OBJECTS}
-		${CC} ${LDFLAGS} ${DEFS} -o speed speed.o -L. -l${PACKAGE} -lm ${LIBS}
+		${CC} ${LDFLAGS} ${DEFS} -o $@ ${@}.o -L. -l${PACKAGE} -lm ${LIBS}
 
 imcopy:		imcopy.o lib${PACKAGE}.a ${OBJECTS}
-		${CC} ${LDFLAGS} ${DEFS} -o imcopy imcopy.o -L. -l${PACKAGE} -lm ${LIBS}
+		${CC} ${LDFLAGS} ${DEFS} -o $@ ${@}.o -L. -l${PACKAGE} -lm ${LIBS}
 
 listhead:	listhead.o lib${PACKAGE}.a ${OBJECTS}
-		${CC} ${LDFLAGS} ${DEFS} -o listhead listhead.o -L. -l${PACKAGE} -lm ${LIBS}
+		${CC} ${LDFLAGS} ${DEFS} -o $@ ${@}.o -L. -l${PACKAGE} -lm ${LIBS}
 
 cookbook:	cookbook.o lib${PACKAGE}.a ${OBJECTS}
-		${CC} ${LDFLAGS} ${DEFS} -o cookbook cookbook.o -L. -l${PACKAGE} -lm ${LIBS}
+		${CC} ${LDFLAGS} ${DEFS} -o $@ ${@}.o -L. -l${PACKAGE} -lm ${LIBS}
 
 eval:		# Rebuild eval_* files from flex/bison source
 		${FLEX} -t eval.l > eval_l.c1
@@ -155,8 +159,8 @@ eval:		# Rebuild eval_* files from flex/bison source
 		/bin/rm -f y.tab.c y.tab.h
 
 clean:
-	-	/bin/rm -f *.o zlib/*.o lib${PACKAGE}* fpack funpack \
-			smem testprog testprog.fit y.output so_locations
+	-	/bin/rm -f *.o zlib/*.o lib${PACKAGE}* y.output so_locations \
+		${UTILS} ${FPACK_UTILS} testprog.fit
 
 distclean:	clean
 	-	/bin/rm -f Makefile cfitsio.pc config.log config.status configure.lineno
