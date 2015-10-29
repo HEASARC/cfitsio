@@ -73,11 +73,12 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.37;
+      *version = (float) 3.38;
 
-/*       3 Jun 2014
+/*       Oct 2015
 
    Previous releases:
+      *version = 3.37     3 Jun 2014
       *version = 3.36     6 Dec 2013
       *version = 3.35    23 May 2013
       *version = 3.34    20 Mar 2013
@@ -1021,16 +1022,18 @@ int ffmkky(const char *keyname,   /* I - keyword name    */
 */
 {
     size_t namelen, len, ii;
-    char tmpname[FLEN_KEYWORD], *cptr;
-    int tstatus = -1, nblank = 0;
+    char tmpname[FLEN_KEYWORD], tmpname2[FLEN_KEYWORD],*cptr;
+    int tstatus = -1, nblank = 0, ntoken = 0;
 
     if (*status > 0)
         return(*status);
 
     *tmpname = '\0';
+    *tmpname2 = '\0';
     *card = '\0';
 
-    while(*(keyname + nblank) == ' ')  /* skip leading blanks in the name */
+    /* skip leading blanks in the name */
+    while(*(keyname + nblank) == ' ')
         nblank++;
 
     strncat(tmpname, keyname + nblank, FLEN_KEYWORD - 1);
@@ -1038,12 +1041,11 @@ int ffmkky(const char *keyname,   /* I - keyword name    */
     len = strlen(value);        
     namelen = strlen(tmpname);
 
-    if (namelen)
-    {
+    /* delete non-significant trailing blanks in the name */
+    if (namelen) {
         cptr = tmpname + namelen - 1;
 
-        while(*cptr == ' ')  /* skip trailing blanks */
-        {
+        while(*cptr == ' ') {
             *cptr = '\0';
             cptr--;
         }
@@ -1051,9 +1053,18 @@ int ffmkky(const char *keyname,   /* I - keyword name    */
         namelen = cptr - tmpname + 1;
     }
     
-    if (namelen <= 8  && (fftkey(keyname, &tstatus) <= 0) )
-    {
-        /* a normal FITS keyword */
+    /* check that the name does not contain an '=' (equals sign) */
+    if (strchr(tmpname, '=') ) {
+        ffpmsg("Illegal keyword name; contains an equals sign (=)");
+        ffpmsg(tmpname);
+        return(*status = BAD_KEYCHAR);
+    }
+
+    if (namelen <= 8) { /* a normal 8-char (or less) FITS keyword. */
+
+        /* Test that it contains only legal characters */
+        if (fftkey(tmpname, &tstatus) > 0) return(*status);
+
         strcat(card, tmpname);   /* copy keyword name to buffer */
    
         for (ii = namelen; ii < 8; ii++)
@@ -1063,35 +1074,64 @@ int ffmkky(const char *keyname,   /* I - keyword name    */
         card[9]  = ' ';
         card[10] = '\0';        /* terminate the partial string */
         namelen = 10;
-    }
-    else
-    {
-        /* use the ESO HIERARCH convention for longer keyword names */
+    } else if ((FSTRNCMP(tmpname, "HIERARCH ", 9) == 0) || 
+               (FSTRNCMP(tmpname, "hierarch ", 9) == 0) ) {
 
-        /* check that the name does not contain an '=' (equals sign) */
-        if (strchr(tmpname, '=') )
-        {
-            ffpmsg("Illegal keyword name; contains an equals sign (=)");
-            ffpmsg(tmpname);
-            return(*status = BAD_KEYCHAR);
-        }
+        /* this is an explicit ESO HIERARCH keyword */
 
-        /* Don't repeat HIERARCH if the keyword already contains it */
-        if (FSTRNCMP(tmpname, "HIERARCH ", 9) && 
-            FSTRNCMP(tmpname, "hierarch ", 9))
-            strcat(card, "HIERARCH ");
-        else
-            namelen -= 9;  /* deleted the string 'HIERARCH ' */
+        strcat(card, tmpname);  /* copy keyword name to buffer */
 
-        strcat(card, tmpname);
-
-        if (namelen + 12 + len > 80) {
+        if (namelen + 3 + len > 80) {
             /* save 1 char by not putting a space before the equals sign */
             strcat(card, "= ");
-            namelen += 11;
+            namelen += 2;
         } else {
             strcat(card, " = ");
-            namelen += 12;
+            namelen += 3;
+        }
+    } else {
+
+        /* is this an implicit ESO HIERARCH keyword, consisting of 2 or more
+	      tokens each of which is at most 8 characters long?  */
+	
+        /* does name consist of a series of 8-char (or less) legal tokens? */
+      	strncat(tmpname2, tmpname, FLEN_KEYWORD - 1);
+        cptr = strtok(tmpname2, " ");
+	while (cptr) {
+	    if ((strlen(cptr) <= 8) && (fftkey(cptr, &tstatus) <= 0)) {
+	        cptr = strtok(NULL, " ");
+		ntoken++;
+	    } else {
+	        cptr = 0;
+		ntoken = 0;
+	    }
+	}
+
+        if (ntoken > 1) {  /* this is an implicit ESO HIERARCH keyword */
+
+            strcat(card, "HIERARCH ");
+            strcat(card, tmpname);
+	    namelen += 9;
+
+            if (namelen + 3 + len > 80) {
+                /* save 1 char by not putting a space before the equals sign */
+                strcat(card, "= ");
+                namelen += 2;
+            } else {
+                strcat(card, " = ");
+                namelen += 3;
+            }
+
+	} else if ((fftkey(tmpname, &tstatus) <= 0)) {
+            /* allow keyword names longer than 8 characters */
+
+            strncat(card, tmpname, FLEN_KEYWORD - 1);
+            strcat(card, "= ");
+            namelen += 2;
+        } else {
+            ffpmsg("Illegal keyword name:");
+            ffpmsg(tmpname);
+            return(*status = BAD_KEYCHAR);
         }
     }
 
@@ -1186,6 +1226,7 @@ int ffmkey(fitsfile *fptr,    /* I - FITS file pointer  */
 {
     char tcard[81];
     size_t len, ii;
+    int keylength = 8;
 
     /* reset position to the correct HDU if necessary */
     if (fptr->HDUposition != (fptr->Fptr)->curhdu)
@@ -1203,7 +1244,10 @@ int ffmkey(fitsfile *fptr,    /* I - FITS file pointer  */
     for (ii=len; ii < 80; ii++)    /* fill card with spaces if necessary */
         tcard[ii] = ' ';
 
-    for (ii=0; ii < 8; ii++)       /* make sure keyword name is uppercase */
+    keylength = strcspn(tcard, "=");
+    if (keylength == 80) keylength = 8;
+
+    for (ii=0; ii < keylength; ii++)       /* make sure keyword name is uppercase */
         tcard[ii] = toupper(tcard[ii]);
 
     fftkey(tcard, status);        /* test keyword name contains legal chars */
@@ -1225,6 +1269,7 @@ int ffkeyn(const char *keyroot,   /* I - root string for keyword name */
 /*
   Construct a keyword name string by appending the index number to the root.
   e.g., if root = "TTYPE" and value = 12 then keyname = "TTYPE12".
+  Note: this allows keyword names longer than 8 characters.
 */
 {
     char suffix[16];
@@ -1233,15 +1278,17 @@ int ffkeyn(const char *keyroot,   /* I - root string for keyword name */
     keyname[0] = '\0';            /* initialize output name to null */
     rootlen = strlen(keyroot);
 
-    if (rootlen == 0 || rootlen > 7 || value < 0 )
+    if (rootlen == 0 || value < 0 )
        return(*status = 206);
 
     sprintf(suffix, "%d", value); /* construct keyword suffix */
 
-    if ( strlen(suffix) + rootlen > 8)
-       return(*status = 206);
-
     strcpy(keyname, keyroot);   /* copy root string to name string */
+    while (rootlen > 0 && keyname[rootlen - 1] == ' ') {
+        rootlen--;                 /* remove trailing spaces in root name */
+        keyname[rootlen] = '\0';
+    }
+
     strcat(keyname, suffix);    /* append suffix to the root */
     return(*status);
 }
@@ -1326,8 +1373,7 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
         FSTRNCMP(card, "COMMENT ", 8) == 0 ||  /* keywords with no value */
         FSTRNCMP(card, "HISTORY ", 8) == 0 ||
         FSTRNCMP(card, "END     ", 8) == 0 ||
-        FSTRNCMP(card, "        ", 8) == 0 ||
-        FSTRNCMP(&card[8],      "= ", 2) != 0  ) /* no '= ' in cols 9-10 */
+        FSTRNCMP(card, "        ", 8) == 0 )
     {
         /*  no value, so the comment extends from cols 9 - 80  */
         if (comm != NULL)
@@ -1348,9 +1394,36 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
         }
         return(*status);
     }
+    else if (FSTRNCMP(&card[8], "= ", 2) == 0  )
+    {
+        /* normal keyword with '= ' in cols 9-10 */
+        valpos = 10;  /* starting position of the value field */
+    }
     else
     {
-        valpos = 10;  /* starting position of the value field */
+      valpos = strcspn(card, "=");
+
+      if (valpos == cardlen)   /* no value indicator ??? */
+      {
+        if (comm != NULL)
+        {
+          if (cardlen > 8)
+          {
+            strcpy(comm, &card[8]);
+
+            jj=cardlen - 8;
+            for (jj--; jj >= 0; jj--)  /* replace trailing blanks with nulls */
+            {
+               if (comm[jj] == ' ')
+                  comm[jj] = '\0';
+               else
+                  break;
+            }
+          }
+        }
+        return(*status);  /* no value indicator */
+      }
+      valpos++;  /* point to the position after the '=' */
     }
 
     nblank = strspn(&card[valpos], " "); /* find number of leading blanks */
@@ -3580,7 +3653,8 @@ int ffeqtyll( fitsfile *fptr,  /* I - FITS file pointer                       */
     if (hdutype == ASCII_TBL)
     {
       ffasfm(colptr->tform, typecode, &tmpwidth, &decims, status);
-      *width = tmpwidth;
+      if (width)
+          *width = tmpwidth;
 
       if (repeat)
            *repeat = 1;
@@ -3630,6 +3704,12 @@ int ffeqtyll( fitsfile *fptr,  /* I - FITS file pointer                       */
         max_val =  2147483647.0;
         break;
         
+      case TLONGLONG:
+        /*  simply reuse the TLONG values */
+        min_val = -2147483648.0;
+        max_val =  2147483647.0;
+        break;
+	
       default:  /* don't have to deal with other data types */
         return(*status);
     }
@@ -7937,11 +8017,12 @@ int ffgkcl(char *tcard)
                    that define the FITS format.
 
    TYP_CMPRS_KEY:
-            The experimental keywords used in the compressed image format
+            The keywords used in the compressed image format
                   ZIMAGE, ZCMPTYPE, ZNAMEn, ZVALn, ZTILEn, 
                   ZBITPIX, ZNAXISn, ZSCALE, ZZERO, ZBLANK,
                   EXTNAME = 'COMPRESSED_IMAGE'
 		  ZSIMPLE, ZTENSION, ZEXTEND, ZBLOCKED, ZPCOUNT, ZGCOUNT
+		  ZQUANTIZ, ZDITHER0
 
    TYP_SCAL_KEY:  BSCALE, BZERO, TSCALn, TZEROn
 
@@ -8040,6 +8121,10 @@ int ffgkcl(char *tcard)
 	else if (FSTRNCMP (card1, "PCOUNT ", 7) == 0)
 	    return (TYP_CMPRS_KEY);
 	else if (FSTRNCMP (card1, "GCOUNT ", 7) == 0)
+	    return (TYP_CMPRS_KEY);
+	else if (FSTRNCMP (card1, "QUANTIZ", 7) == 0)
+	    return (TYP_CMPRS_KEY);
+	else if (FSTRNCMP (card1, "DITHER0", 7) == 0)
 	    return (TYP_CMPRS_KEY);
     }
     else if (*card == ' ')

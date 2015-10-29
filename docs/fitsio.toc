@@ -2,10 +2,10 @@
 \contentsline {chapter}{\numberline {2} Creating FITSIO/CFITSIO }{3}
 \contentsline {section}{\numberline {2.1}Building the Library}{3}
 \contentsline {section}{\numberline {2.2}Testing the Library}{6}
-\contentsline {section}{\numberline {2.3}Linking Programs with FITSIO}{8}
-\contentsline {section}{\numberline {2.4}Getting Started with FITSIO}{8}
+\contentsline {section}{\numberline {2.3}Linking Programs with FITSIO}{7}
+\contentsline {section}{\numberline {2.4}Getting Started with FITSIO}{7}
 \contentsline {section}{\numberline {2.5}Example Program}{8}
-\contentsline {section}{\numberline {2.6}Legal Stuff}{10}
+\contentsline {section}{\numberline {2.6}Legal Stuff}{9}
 \contentsline {section}{\numberline {2.7}Acknowledgments}{10}
 \contentsline {chapter}{\numberline {3} A FITS Primer }{13}
 \contentsline {chapter}{\numberline {4}FITSIO Conventions and Guidelines }{15}
@@ -87,7 +87,7 @@
 \contentsline {section}{\numberline {9.1}Detailed Template Line Format}{107}
 \contentsline {section}{\numberline {9.2}Auto-indexing of Keywords}{108}
 \contentsline {section}{\numberline {9.3}Template Parser Directives}{109}
-\contentsline {section}{\numberline {9.4}Formal Template Syntax}{109}
+\contentsline {section}{\numberline {9.4}Formal Template Syntax}{110}
 \contentsline {section}{\numberline {9.5}Errors}{110}
 \contentsline {section}{\numberline {9.6}Examples}{110}
 \contentsline {chapter}{\numberline {10} Summary of all FITSIO User-Interface Subroutines }{113}

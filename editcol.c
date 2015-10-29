@@ -1487,8 +1487,8 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
   copy a column from infptr and insert it in the outfptr table.
 */
 {
-    int tstatus, colnum, typecode, anynull;
-    long tfields, repeat, width, nrows, outrows;
+    int tstatus, colnum, typecode, otypecode, anynull;
+    long tfields, repeat, orepeat, width, owidth, nrows, outrows;
     long inloop, outloop, maxloop, ndone, ntodo, npixels;
     long firstrow, firstelem, ii;
     char keyname[FLEN_KEYWORD], ttype[FLEN_VALUE], tform[FLEN_VALUE];
@@ -1591,6 +1591,9 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
            return(*status);
         }
 
+        if ((infptr == outfptr) && (colnum <= incol)) 
+	    incol++;  /* the input column has been shifted over */
+
         /* copy the comment strings from the input file for TTYPE and TFORM */
         tstatus = 0;
         ffkeyn("TTYPE", colnum, keyname, &tstatus);
@@ -1645,6 +1648,13 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     else
     {
         colnum = outcol;
+        /* get the datatype and vector repeat length of the output column */
+        ffgtcl(outfptr, outcol, &otypecode, &orepeat, &owidth, status);
+
+        if (orepeat != repeat) {
+            ffpmsg("Input and output vector columns must have same length (ffcpcl)");
+            return(*status = BAD_TFORM);
+        }
     }
 
     ffgkyj(infptr,  "NAXIS2", &nrows,   0, status);  /* no. of input rows */

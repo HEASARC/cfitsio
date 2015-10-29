@@ -81,7 +81,7 @@ int fitsio_init_lock(void)
         return(status);
     }
 
-#ifdef linux
+#ifdef __GLIBC__
     status = pthread_mutexattr_settype(&mutex_init,
 				     PTHREAD_MUTEX_RECURSIVE_NP);
 #else
@@ -3606,6 +3606,8 @@ int ffdkinit(fitsfile **fptr,      /* O - FITS file pointer                   */
   extended filename syntax.
 */
 {
+    *fptr = 0;              /* initialize null file pointer, */
+                            /* regardless of the value of *status */
     if (*status > 0)
         return(*status);
 
@@ -3629,6 +3631,8 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
     char tmplfile[FLEN_FILENAME], compspec[80];
     int handle, create_disk_file = 0;
 
+    *fptr = 0;              /* initialize null file pointer, */
+                            /* regardless of the value of *status */
     if (*status > 0)
         return(*status);
 
@@ -3637,8 +3641,6 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
        create_disk_file = 1;
        *status = 0;
     }
-
-    *fptr = 0;              /* initialize null file pointer */
 
     if (need_to_initialize)  {          /* this is called only once */
         *status = fits_init_cfitsio();
@@ -7065,6 +7067,8 @@ int fftplt(fitsfile **fptr,      /* O - FITS file pointer                   */
   Uses C fopen and fgets functions.
 */
 {
+    *fptr = 0;              /* initialize null file pointer, */
+                            /* regardless of the value of *status */
     if (*status > 0)
         return(*status);
 

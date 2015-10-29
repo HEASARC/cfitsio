@@ -283,6 +283,7 @@ int ffprec(fitsfile *fptr,     /* I - FITS file pointer        */
     char tcard[FLEN_CARD];
     size_t len, ii;
     long nblocks;
+    int keylength;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
@@ -309,7 +310,10 @@ int ffprec(fitsfile *fptr,     /* I - FITS file pointer        */
     for (ii=len; ii < 80; ii++)    /* fill card with spaces if necessary */
         tcard[ii] = ' ';
 
-    for (ii=0; ii < 8; ii++)       /* make sure keyword name is uppercase */
+    keylength = strcspn(tcard, "=");
+    if (keylength == 80) keylength = 8;
+    
+    for (ii=0; ii < keylength; ii++)       /* make sure keyword name is uppercase */
         tcard[ii] = toupper(tcard[ii]);
 
     fftkey(tcard, status);        /* test keyword name contains legal chars */
@@ -366,6 +370,7 @@ int ffpkys( fitsfile *fptr,     /* I - FITS file pointer        */
         return(*status);
 
     ffs2c(value, valstring, status);   /* put quotes around the string */
+
     ffmkky(keyname, valstring, comm, card, status);  /* construct the keyword */
     ffprec(fptr, card, status);
 
@@ -391,11 +396,14 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
     char card[FLEN_CARD], tmpkeyname[FLEN_CARD];
     char tstring[FLEN_CARD], *cptr;
     int next, remain, vlen, nquote, nchar, namelen, contin, tstatus = -1;
+    int commlen, nocomment = 0;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
     remain = maxvalue(strlen(value), 1); /* no. of chars to write (at least 1) */    
+    commlen = strlen(comm);
+
     /* count the number of single quote characters are in the string */
     tstring[0] = '\0';
     strncat(tstring, value, 68); /* copy 1st part of string to temp buff */
@@ -426,13 +434,7 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
     }
     else
     {
-        /* This a HIERARCH keyword */
-        if (FSTRNCMP(cptr, "HIERARCH ", 9) && 
-            FSTRNCMP(cptr, "hierarch ", 9))
-            nchar = 66 - nquote - namelen;
-        else
-            nchar = 75 - nquote - namelen;  /* don't count 'HIERARCH' twice */
-
+	   nchar = 80 - nquote - namelen - 5;
     }
 
     contin = 0;
@@ -442,7 +444,7 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
     {
         tstring[0] = '\0';
         strncat(tstring, &value[next], nchar); /* copy string to temp buff */
-        ffs2c(tstring, valstring, status);  /* put quotes around the string */
+        ffs2c(tstring, valstring, status);  /* expand quotes, and put quotes around the string */
 
         if (remain > nchar)   /* if string is continued, put & as last char */
         {
@@ -460,7 +462,11 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
 
         if (contin)           /* This is a CONTINUEd keyword */
         {
-           ffmkky("CONTINUE", valstring, comm, card, status); /* make keyword */
+           if (nocomment) {
+               ffmkky("CONTINUE", valstring, NULL, card, status); /* make keyword w/o comment */
+           } else {
+               ffmkky("CONTINUE", valstring, comm, card, status); /* make keyword */
+	   }
            strncpy(&card[8], "   ",  2);  /* overwrite the '=' */
         }
         else
@@ -473,6 +479,7 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
         contin = 1;
         remain -= nchar;
         next  += nchar;
+        nocomment = 0;
 
         if (remain > 0) 
         {
@@ -489,6 +496,17 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
            }
            nchar = 68 - nquote;  /* max number of chars to write this time */
         }
+
+        /* make adjustment if necessary to allow reasonable room for a comment */
+		if ((remain + nquote + commlen + 3) > 68)  /* not enough room for whole comment? */
+	{
+	    if (remain + nquote > 18 && nquote < 18)  /* not enough room for a standard comment? */
+	    {
+	        nchar = 18 - nquote;  /* force continuation onto another card, so that */
+		                      /* there is room for a comment up to 47 chara long */
+                nocomment = 1;  /* don't write the comment string this time */
+	    }
+	}
     }
     return(*status);
 }

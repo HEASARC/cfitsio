@@ -676,8 +676,9 @@ int ffgknm( char *card,         /* I - keyword card                   */
 */
 {
     char *ptr1, *ptr2;
-    int ii;
+    int ii, namelength;
 
+    namelength = FLEN_KEYWORD - 1;
     *name = '\0';
     *length = 0;
 
@@ -710,10 +711,10 @@ int ffgknm( char *card,         /* I - keyword card                   */
     }
     else
     {
-        for (ii = 0; ii < 8; ii++)
+        for (ii = 0; ii < namelength; ii++)
         {
            /* look for string terminator, or a blank */
-           if (*(card+ii) != ' ' && *(card+ii) !='\0')
+           if (*(card+ii) != ' ' && *(card+ii) != '=' && *(card+ii) !='\0')
            {
                *(name+ii) = *(card+ii);
            }
@@ -725,9 +726,9 @@ int ffgknm( char *card,         /* I - keyword card                   */
            }
         }
 
-        /* if we got here, keyword is 8 characters long */
-        name[8] = '\0';
-        *length = 8;
+        /* if we got here, keyword is namelength characters long */
+        name[namelength] = '\0';
+        *length = namelength;
     }
 
     return(*status);
@@ -811,8 +812,8 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer         */
   characters long.
 */
 {
-    char valstring[FLEN_VALUE];
-    int contin;
+    char valstring[FLEN_VALUE], nextcomm[FLEN_COMMENT];
+    int contin, commspace;
     size_t len;
 
     if (*status > 0)
@@ -825,6 +826,8 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer         */
     if (*status > 0)
         return(*status);
 
+    commspace = FLEN_COMMENT - strlen(comm) - 2;  /* remaining space in comment string */
+    
     if (!valstring[0])   /* null value string? */
     {
       *value = (char *) malloc(1);  /* allocate and return a null string */
@@ -844,7 +847,7 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer         */
       {
         if (len && *(*value+len-1) == '&')  /*  is last char an anpersand?  */
         {
-            ffgcnt(fptr, valstring, status);
+            ffgcnt(fptr, valstring, nextcomm, status);
             if (*valstring)    /* a null valstring indicates no continuation */
             {
                *(*value+len-1) = '\0';         /* erase the trailing & char */
@@ -853,10 +856,22 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer         */
                strcat(*value, valstring);     /* append the continued chars */
             }
             else
+	    {
                 contin = 0;
+            }
+
+            /* concantenate comment strings (if any) */
+	    if ((commspace > 0) && (*nextcomm != 0)) 
+	    {
+                strncat(comm, " ", 1);
+		strncat(comm, nextcomm, commspace);
+                commspace = FLEN_COMMENT - strlen(comm) - 2;
+            }
         }
         else
+	{
             contin = 0;
+	}
       }
     }
     return(*status);
@@ -880,6 +895,7 @@ int fffree( void *value,       /* I - pointer to keyword value  */
  /*--------------------------------------------------------------------------*/
 int ffgcnt( fitsfile *fptr,     /* I - FITS file pointer         */
             char *value,        /* O - continued string value    */
+            char *comm,         /* O - continued comment string  */
             int  *status)       /* IO - error status             */
 /*
   Attempt to read the next keyword, returning the string value
@@ -893,7 +909,7 @@ int ffgcnt( fitsfile *fptr,     /* I - FITS file pointer         */
 */
 {
     int tstatus;
-    char card[FLEN_CARD], strval[FLEN_VALUE], comm[FLEN_COMMENT];
+    char card[FLEN_CARD], strval[FLEN_VALUE];
 
     if (*status > 0)
         return(*status);
@@ -907,7 +923,7 @@ int ffgcnt( fitsfile *fptr,     /* I - FITS file pointer         */
     if (strncmp(card, "CONTINUE  ", 10) == 0)  /* a continuation card? */
     {
         strncpy(card, "D2345678=  ", 10); /* overwrite a dummy keyword name */
-        ffpsvc(card, strval, comm, &tstatus);  /*  get the string value  */
+        ffpsvc(card, strval, comm, &tstatus);  /*  get the string value & comment */
         ffc2s(strval, value, &tstatus);    /* remove the surrounding quotes */
 
         if (tstatus)       /*  return null if error status was returned  */
@@ -1215,7 +1231,7 @@ int ffgkns( fitsfile *fptr,     /* I - FITS file pointer                    */
     int nend, lenroot, ii, nkeys, mkeys, tstatus, undefinedval;
     long ival;
     char keyroot[FLEN_KEYWORD], keyindex[8], card[FLEN_CARD];
-    char svalue[FLEN_VALUE], comm[FLEN_COMMENT];
+    char svalue[FLEN_VALUE], comm[FLEN_COMMENT], *equalssign;
 
     if (*status > 0)
         return(*status);
@@ -1224,10 +1240,11 @@ int ffgkns( fitsfile *fptr,     /* I - FITS file pointer                    */
     nend = nstart + nmax - 1;
 
     keyroot[0] = '\0';
-    strncat(keyroot, keyname, 8);
+    strncat(keyroot, keyname, FLEN_KEYWORD - 1);
      
     lenroot = strlen(keyroot);
-    if (lenroot == 0 || lenroot > 7)     /*  root must be 1 - 7 chars long  */
+    
+    if (lenroot == 0)     /*  root must be at least 1 char long  */
         return(*status);
 
     for (ii=0; ii < lenroot; ii++)           /*  make sure upper case  */
@@ -1244,8 +1261,10 @@ int ffgkns( fitsfile *fptr,     /* I - FITS file pointer                    */
        if (strncmp(keyroot, card, lenroot) == 0)  /* see if keyword matches */
        {
           keyindex[0] = '\0';
-          strncat(keyindex, &card[lenroot], 8-lenroot);  /*  copy suffix */
+          equalssign = strchr(card, '=');
+	  if (equalssign == 0) continue;  /* keyword has no value */
 
+          strncat(keyindex, &card[lenroot], equalssign - card  - lenroot);  /*  copy suffix  */
           tstatus = 0;
           if (ffc2ii(keyindex, &ival, &tstatus) <= 0)     /*  test suffix  */
           {
@@ -1287,7 +1306,7 @@ int ffgknl( fitsfile *fptr,     /* I - FITS file pointer                    */
     int nend, lenroot, ii, nkeys, mkeys, tstatus, undefinedval;
     long ival;
     char keyroot[FLEN_KEYWORD], keyindex[8], card[FLEN_CARD];
-    char svalue[FLEN_VALUE], comm[FLEN_COMMENT];
+    char svalue[FLEN_VALUE], comm[FLEN_COMMENT], *equalssign;
 
     if (*status > 0)
         return(*status);
@@ -1296,12 +1315,13 @@ int ffgknl( fitsfile *fptr,     /* I - FITS file pointer                    */
     nend = nstart + nmax - 1;
 
     keyroot[0] = '\0';
-    strncat(keyroot, keyname, 8);
+    strncat(keyroot, keyname, FLEN_KEYWORD - 1);
 
     lenroot = strlen(keyroot);
-    if (lenroot == 0 || lenroot > 7)     /*  root must be 1 - 7 chars long  */
+    
+    if (lenroot == 0)     /*  root must be at least 1 char long  */
         return(*status);
-
+ 
     for (ii=0; ii < lenroot; ii++)           /*  make sure upper case  */
         keyroot[ii] = toupper(keyroot[ii]);
 
@@ -1318,7 +1338,10 @@ int ffgknl( fitsfile *fptr,     /* I - FITS file pointer                    */
        if (strncmp(keyroot, card, lenroot) == 0)  /* see if keyword matches */
        {
           keyindex[0] = '\0';
-          strncat(keyindex, &card[lenroot], 8-lenroot);  /*  copy suffix */
+          equalssign = strchr(card, '=');
+	  if (equalssign == 0) continue;  /* keyword has no value */
+
+          strncat(keyindex, &card[lenroot], equalssign - card  - lenroot);  /*  copy suffix  */
 
           tstatus = 0;
           if (ffc2ii(keyindex, &ival, &tstatus) <= 0)    /*  test suffix  */
@@ -1360,7 +1383,7 @@ int ffgknj( fitsfile *fptr,     /* I - FITS file pointer                    */
     int nend, lenroot, ii, nkeys, mkeys, tstatus, undefinedval;
     long ival;
     char keyroot[FLEN_KEYWORD], keyindex[8], card[FLEN_CARD];
-    char svalue[FLEN_VALUE], comm[FLEN_COMMENT];
+    char svalue[FLEN_VALUE], comm[FLEN_COMMENT], *equalssign;
 
     if (*status > 0)
         return(*status);
@@ -1369,12 +1392,13 @@ int ffgknj( fitsfile *fptr,     /* I - FITS file pointer                    */
     nend = nstart + nmax - 1;
 
     keyroot[0] = '\0';
-    strncat(keyroot, keyname, 8);
+    strncat(keyroot, keyname, FLEN_KEYWORD - 1);
 
     lenroot = strlen(keyroot);
-    if (lenroot == 0 || lenroot > 7)     /* root must be 1 - 7 chars long */
+    
+    if (lenroot == 0)     /*  root must be at least 1 char long  */
         return(*status);
-
+ 
     for (ii=0; ii < lenroot; ii++)           /*  make sure upper case  */
         keyroot[ii] = toupper(keyroot[ii]);
 
@@ -1391,7 +1415,10 @@ int ffgknj( fitsfile *fptr,     /* I - FITS file pointer                    */
        if (strncmp(keyroot, card, lenroot) == 0)  /* see if keyword matches */
        {
           keyindex[0] = '\0';
-          strncat(keyindex, &card[lenroot], 8-lenroot);  /*  copy suffix */
+          equalssign = strchr(card, '=');
+	  if (equalssign == 0) continue;  /* keyword has no value */
+
+          strncat(keyindex, &card[lenroot], equalssign - card  - lenroot);  /*  copy suffix  */
 
           tstatus = 0;
           if (ffc2ii(keyindex, &ival, &tstatus) <= 0)     /*  test suffix  */
@@ -1433,7 +1460,7 @@ int ffgknjj( fitsfile *fptr,    /* I - FITS file pointer                    */
     int nend, lenroot, ii, nkeys, mkeys, tstatus, undefinedval;
     long ival;
     char keyroot[FLEN_KEYWORD], keyindex[8], card[FLEN_CARD];
-    char svalue[FLEN_VALUE], comm[FLEN_COMMENT];
+    char svalue[FLEN_VALUE], comm[FLEN_COMMENT], *equalssign;
 
     if (*status > 0)
         return(*status);
@@ -1442,10 +1469,11 @@ int ffgknjj( fitsfile *fptr,    /* I - FITS file pointer                    */
     nend = nstart + nmax - 1;
 
     keyroot[0] = '\0';
-    strncat(keyroot, keyname, 8);
+    strncat(keyroot, keyname, FLEN_KEYWORD - 1);
 
     lenroot = strlen(keyroot);
-    if (lenroot == 0 || lenroot > 7)     /* root must be 1 - 7 chars long */
+    
+    if (lenroot == 0)     /*  root must be at least 1 char long  */
         return(*status);
 
     for (ii=0; ii < lenroot; ii++)           /*  make sure upper case  */
@@ -1464,7 +1492,10 @@ int ffgknjj( fitsfile *fptr,    /* I - FITS file pointer                    */
        if (strncmp(keyroot, card, lenroot) == 0)  /* see if keyword matches */
        {
           keyindex[0] = '\0';
-          strncat(keyindex, &card[lenroot], 8-lenroot);  /*  copy suffix */
+          equalssign = strchr(card, '=');
+	  if (equalssign == 0) continue;  /* keyword has no value */
+
+          strncat(keyindex, &card[lenroot], equalssign - card  - lenroot);  /*  copy suffix  */
 
           tstatus = 0;
           if (ffc2ii(keyindex, &ival, &tstatus) <= 0)     /*  test suffix  */
@@ -1506,7 +1537,7 @@ int ffgkne( fitsfile *fptr,     /* I - FITS file pointer                    */
     int nend, lenroot, ii, nkeys, mkeys, tstatus, undefinedval;
     long ival;
     char keyroot[FLEN_KEYWORD], keyindex[8], card[FLEN_CARD];
-    char svalue[FLEN_VALUE], comm[FLEN_COMMENT];
+    char svalue[FLEN_VALUE], comm[FLEN_COMMENT], *equalssign;
 
     if (*status > 0)
         return(*status);
@@ -1515,10 +1546,11 @@ int ffgkne( fitsfile *fptr,     /* I - FITS file pointer                    */
     nend = nstart + nmax - 1;
 
     keyroot[0] = '\0';
-    strncat(keyroot, keyname, 8);
+    strncat(keyroot, keyname, FLEN_KEYWORD - 1);
 
     lenroot = strlen(keyroot);
-    if (lenroot == 0 || lenroot > 7)     /*  root must be 1 - 7 chars long  */
+    
+    if (lenroot == 0)     /*  root must be at least 1 char long  */
         return(*status);
 
     for (ii=0; ii < lenroot; ii++)           /*  make sure upper case  */
@@ -1537,7 +1569,10 @@ int ffgkne( fitsfile *fptr,     /* I - FITS file pointer                    */
        if (strncmp(keyroot, card, lenroot) == 0)  /* see if keyword matches */
        {
           keyindex[0] = '\0';
-          strncat(keyindex, &card[lenroot], 8-lenroot);  /*  copy suffix */
+          equalssign = strchr(card, '=');
+	  if (equalssign == 0) continue;  /* keyword has no value */
+
+          strncat(keyindex, &card[lenroot], equalssign - card  - lenroot);  /*  copy suffix  */
 
           tstatus = 0;
           if (ffc2ii(keyindex, &ival, &tstatus) <= 0)     /*  test suffix  */
@@ -1579,7 +1614,7 @@ int ffgknd( fitsfile *fptr,     /* I - FITS file pointer                    */
     int nend, lenroot, ii, nkeys, mkeys, tstatus, undefinedval;
     long ival;
     char keyroot[FLEN_KEYWORD], keyindex[8], card[FLEN_CARD];
-    char svalue[FLEN_VALUE], comm[FLEN_COMMENT];
+    char svalue[FLEN_VALUE], comm[FLEN_COMMENT], *equalssign;
 
     if (*status > 0)
         return(*status);
@@ -1588,10 +1623,11 @@ int ffgknd( fitsfile *fptr,     /* I - FITS file pointer                    */
     nend = nstart + nmax - 1;
 
     keyroot[0] = '\0';
-    strncat(keyroot, keyname, 8);
+    strncat(keyroot, keyname, FLEN_KEYWORD - 1);
 
     lenroot = strlen(keyroot);
-    if (lenroot == 0 || lenroot > 7)     /*  root must be 1 - 7 chars long  */
+
+    if (lenroot == 0)     /*  root must be at least 1 char long  */
         return(*status);
 
     for (ii=0; ii < lenroot; ii++)           /*  make sure upper case  */
@@ -1606,12 +1642,13 @@ int ffgknd( fitsfile *fptr,     /* I - FITS file pointer                    */
     {
        if (ffgnky(fptr, card, status) > 0)     /*  get next keyword  */
            return(*status);
-
        if (strncmp(keyroot, card, lenroot) == 0)   /* see if keyword matches */
        {
           keyindex[0] = '\0';
-          strncat(keyindex, &card[lenroot], 8-lenroot);  /*  copy suffix */
+          equalssign = strchr(card, '=');
+	  if (equalssign == 0) continue;  /* keyword has no value */
 
+          strncat(keyindex, &card[lenroot], equalssign - card  - lenroot);  /*  copy suffix  */
           tstatus = 0;
           if (ffc2ii(keyindex, &ival, &tstatus) <= 0)      /*  test suffix */
           {

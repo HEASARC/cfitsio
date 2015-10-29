@@ -34,10 +34,10 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.37
-#define CFITSIO_MINOR 37
+#define CFITSIO_VERSION 3.38
+#define CFITSIO_MINOR 38
 #define CFITSIO_MAJOR 3
-#define CFITSIO_SONAME 2
+#define CFITSIO_SONAME 4
 
 /* the SONAME is incremented in a new release if the binary shared */
 /* library (on linux and Mac systems) is not backward compatible */
@@ -90,7 +90,7 @@ SERVICES PROVIDED HEREUNDER."
     || (defined(__MINGW32__) && defined(_OFF_T_DEFINED)) \
     || defined(_MIPS_SZLONG) || defined(__APPLE__) || defined(_AIX)
 #    define OFF_T off_t
-#elif defined(_MSC_VER) && (_MSC_VER>= 1400)
+#elif defined(__BORLANDC__) || (_MSC_VER) && (_MSC_VER>= 1400)
 #    define OFF_T long long
 #else
 #    define OFF_T long
@@ -203,7 +203,7 @@ SERVICES PROVIDED HEREUNDER."
 /* global variables */
  
 #define FLEN_FILENAME 1025 /* max length of a filename  */
-#define FLEN_KEYWORD   72  /* max length of a keyword (HIERARCH convention) */
+#define FLEN_KEYWORD   75  /* max length of a keyword (HIERARCH convention) */
 #define FLEN_CARD      81  /* length of a FITS header card */
 #define FLEN_VALUE     71  /* max length of a keyword value string */
 #define FLEN_COMMENT   73  /* max length of a keyword comment string */
@@ -523,7 +523,22 @@ typedef struct {
                                 /* allocated to store the array.            */
 } wtbarr;
 
+/*  The following exclusion if __CINT__ is defined is needed for ROOT */
+#ifndef __CINT__
+/*  the following 3 lines are needed to support C++ compilers */
+#ifdef __cplusplus
+extern "C" {
+#endif
+#endif
+
 int CFITS_API fits_read_wcstab(fitsfile *fptr, int nwtb, wtbarr *wtb, int *status);
+
+/*  The following exclusion if __CINT__ is defined is needed for ROOT */
+#ifndef __CINT__
+#ifdef __cplusplus
+}
+#endif
+#endif
 
 #endif /* WCSLIB_GETWCSTAB */
 
@@ -1132,9 +1147,9 @@ int CFITS_API ffgcks(fitsfile *fptr, unsigned long *datasum, unsigned long *hdus
     int *status);
  
 /*--------------------- define scaling or null values -------------*/
-int CFITS_API ffpscl(fitsfile *fptr, double scale, double zero, int *status);
+int CFITS_API ffpscl(fitsfile *fptr, double scale, double zeroval, int *status);
 int CFITS_API ffpnul(fitsfile *fptr, LONGLONG nulvalue, int *status);
-int CFITS_API fftscl(fitsfile *fptr, int colnum, double scale, double zero, int *status);
+int CFITS_API fftscl(fitsfile *fptr, int colnum, double scale, double zeroval, int *status);
 int CFITS_API fftnul(fitsfile *fptr, int colnum, LONGLONG nulvalue, int *status);
 int CFITS_API ffsnul(fitsfile *fptr, int colnum, char *nulstring, int *status);
  

@@ -598,7 +598,7 @@ int fits_set_compression_pref(
 */
 
     int ii, naxis, nkeys, comptype;
-    int  ivalue, tstatus;
+    int  ivalue;
     long tiledim[6]= {1,1,1,1,1,1};
     char card[FLEN_CARD], value[FLEN_VALUE];
     double  qvalue;
@@ -655,7 +655,6 @@ int fits_set_compression_pref(
 
 	    } else if (!strncmp(card+2, "TILE  ", 6) ) {
 
-		tstatus = 0;
                 if (!strncasecmp(value, "'row", 4) ) {
                    tiledim[0] = -1;
 		} else if (!strncasecmp(value, "'whole", 6) ) {
@@ -4595,7 +4594,7 @@ int fits_read_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer   
     long fpixel[MAX_COMPRESS_DIM], lpixel[MAX_COMPRESS_DIM];
     long inc[MAX_COMPRESS_DIM];
     long i5, i4, i3, i2, i1, i0, irow;
-    int ii, ndim, pixlen, tilenul;
+    int ii, ndim, tilenul;
     void *buffer;
     char *bnullarray = 0, *cnull;
     LONGLONG firstelem;
@@ -4617,7 +4616,6 @@ int fits_read_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer   
     if (datatype == TSHORT)
     {
        buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (short)); 
-       pixlen = sizeof(short);
        if (cnull) {
          if (cnull[0] == 0 && cnull[1] == 0 ) {
            nullcheck = 0;
@@ -4627,7 +4625,6 @@ int fits_read_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer   
     else if (datatype == TINT)
     {
        buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (int));
-       pixlen = sizeof(int);
        if (cnull) {
          if (cnull[0] == 0 && cnull[1] == 0 && cnull[2] == 0 && cnull[3] == 0 ) {
            nullcheck = 0;
@@ -4637,7 +4634,6 @@ int fits_read_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer   
     else if (datatype == TLONG)
     {
        buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (long));
-       pixlen = sizeof(long);
        if (cnull) {
          if (cnull[0] == 0 && cnull[1] == 0 && cnull[2] == 0 && cnull[3] == 0 ) {
            nullcheck = 0;
@@ -4647,7 +4643,6 @@ int fits_read_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer   
     else if (datatype == TFLOAT)
     {
        buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (float));
-       pixlen = sizeof(float);
        if (cnull) {
          if (cnull[0] == 0 && cnull[1] == 0 && cnull[2] == 0 && cnull[3] == 0  ) {
            nullcheck = 0;
@@ -4657,7 +4652,6 @@ int fits_read_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer   
     else if (datatype == TDOUBLE)
     {
        buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (double));
-       pixlen = sizeof(double);
        if (cnull) {
          if (cnull[0] == 0 && cnull[1] == 0 && cnull[2] == 0 && cnull[3] == 0 &&
 	     cnull[4] == 0 && cnull[5] == 0 && cnull[6] == 0 && cnull[7] == 0 ) {
@@ -4668,7 +4662,6 @@ int fits_read_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer   
     else if (datatype == TUSHORT)
     {
        buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (unsigned short));
-       pixlen = sizeof(short);
        if (cnull) {
          if (cnull[0] == 0 && cnull[1] == 0 ){
            nullcheck = 0;
@@ -4678,7 +4671,6 @@ int fits_read_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer   
     else if (datatype == TUINT)
     {
        buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (unsigned int));
-       pixlen = sizeof(int);
        if (cnull) {
          if (cnull[0] == 0 && cnull[1] == 0 && cnull[2] == 0 && cnull[3] == 0 ){
            nullcheck = 0;
@@ -4688,7 +4680,6 @@ int fits_read_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer   
     else if (datatype == TULONG)
     {
        buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (unsigned long));
-       pixlen = sizeof(long);
        if (cnull) {
          if (cnull[0] == 0 && cnull[1] == 0 && cnull[2] == 0 && cnull[3] == 0 ){
            nullcheck = 0;
@@ -4698,7 +4689,6 @@ int fits_read_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer   
     else if (datatype == TBYTE || datatype == TSBYTE)
     {
        buffer =  malloc ((fptr->Fptr)->maxtilelen * sizeof (char));
-       pixlen = 1;
        if (cnull) {
          if (cnull[0] == 0){
            nullcheck = 0;
@@ -5762,8 +5752,9 @@ int imcomp_decompress_tile (fitsfile *infptr,
     float *tempfloat = 0;
     double dnulval=0;
     double bscale, bzero, actual_bzero, dummy = 0;    /* scaling parameters */
-    long nelem = 0, offset = 0, tilesize;      /* number of bytes */
+    long tilesize;      /* number of bytes */
     int smooth, nx, ny, scale;  /* hcompress parameters */
+    LONGLONG nelemll = 0, offset = 0;
 
     if (*status > 0)
        return(*status);
@@ -5809,7 +5800,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
 
     /* **************************************************************** */
     /* get length of the compressed byte stream */
-    ffgdes (infptr, (infptr->Fptr)->cn_compressed, nrow, &nelem, &offset, 
+    ffgdesll (infptr, (infptr->Fptr)->cn_compressed, nrow, &nelemll, &offset, 
             status);
 
     /* EOF error here indicates that this tile has not yet been written */
@@ -5817,7 +5808,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
            return(*status = NO_COMPRESSED_TILE);
       
     /* **************************************************************** */
-    if (nelem == 0)  /* special case: tile was not compressed normally */
+    if (nelemll == 0)  /* special case: tile was not compressed normally */
     {
         if ((infptr->Fptr)->cn_uncompressed >= 1 ) {
 
@@ -5828,18 +5819,18 @@ int imcomp_decompress_tile (fitsfile *infptr,
 	    
             /* no compressed data, so simply read the uncompressed data */
             /* directly from the UNCOMPRESSED_DATA column */   
-            ffgdes (infptr, (infptr->Fptr)->cn_uncompressed, nrow, &nelem,
+            ffgdesll (infptr, (infptr->Fptr)->cn_uncompressed, nrow, &nelemll,
                &offset, status);
 
-            if (nelem == 0 && offset == 0)  /* this should never happen */
+            if (nelemll == 0 && offset == 0)  /* this should never happen */
 	        return (*status = NO_COMPRESSED_TILE);
 
             if (nullcheck <= 1) { /* set any null values in the array = nulval */
                 fits_read_col(infptr, datatype, (infptr->Fptr)->cn_uncompressed,
-                  nrow, 1, nelem, nulval, buffer, anynul, status);
+                  nrow, 1, (long) nelemll, nulval, buffer, anynul, status);
             } else  { /* set the bnullarray = 1 for any null values in the array */
                 fits_read_colnull(infptr, datatype, (infptr->Fptr)->cn_uncompressed,
-                  nrow, 1, nelem, buffer, bnullarray, anynul, status);
+                  nrow, 1, (long) nelemll, buffer, bnullarray, anynul, status);
             }
         } else if ((infptr->Fptr)->cn_gzip_data >= 1) {
 
@@ -5847,14 +5838,14 @@ int imcomp_decompress_tile (fitsfile *infptr,
             /* floating point data was not quantized,  so read the losslessly */
 	    /* compressed data from the GZIP_COMPRESSED_DATA column */   
 
-            ffgdes (infptr, (infptr->Fptr)->cn_gzip_data, nrow, &nelem,
+            ffgdesll (infptr, (infptr->Fptr)->cn_gzip_data, nrow, &nelemll,
                &offset, status);
 
-            if (nelem == 0 && offset == 0) /* this should never happen */
+            if (nelemll == 0 && offset == 0) /* this should never happen */
 	        return (*status = NO_COMPRESSED_TILE);
 
 	    /* allocate memory for the compressed tile of data */
-            cbuf = (unsigned char *) malloc (nelem);  
+            cbuf = (unsigned char *) malloc ((long) nelemll);  
             if (cbuf == NULL) {
 	        ffpmsg("error allocating memory for gzipped tile (imcomp_decompress_tile)");
 	        return (*status = MEMORY_ALLOCATION);
@@ -5862,7 +5853,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
 
             /* read array of compressed bytes */
             if (fits_read_col(infptr, TBYTE, (infptr->Fptr)->cn_gzip_data, nrow,
-                 1, nelem, &charnull, cbuf, NULL, status) > 0) {
+                 1, (long) nelemll, &charnull, cbuf, NULL, status) > 0) {
                 ffpmsg("error reading compressed byte stream from binary table");
 	        free (cbuf);
                 return (*status);
@@ -5892,7 +5883,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
                 }
 
                 /* uncompress the data into temp buffer */
-                if (uncompress2mem_from_mem ((char *)cbuf, nelem,
+                if (uncompress2mem_from_mem ((char *)cbuf, (long) nelemll,
                      (char **) &tempfloat, &idatalen, NULL, &tilebytesize, status)) {
                     ffpmsg("failed to gunzip the image tile");
                     free (tempfloat);
@@ -5902,7 +5893,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
             } else {
 
                 /* uncompress the data directly into the output buffer in all other cases */
-                if (uncompress2mem_from_mem ((char *)cbuf, nelem,
+                if (uncompress2mem_from_mem ((char *)cbuf, (long) nelemll,
                   (char **) &buffer, &idatalen, NULL, &tilebytesize, status)) {
                     ffpmsg("failed to gunzip the image tile");
                     free (cbuf);
@@ -6103,9 +6094,9 @@ int imcomp_decompress_tile (fitsfile *infptr,
     /* allocate memory for the compressed bytes */
 
     if ((infptr->Fptr)->compress_type == PLIO_1) {
-        cbuf = (unsigned char *) malloc (nelem * sizeof (short));
+        cbuf = (unsigned char *) malloc ((long) nelemll * sizeof (short));
     } else {
-        cbuf = (unsigned char *) malloc (nelem);
+        cbuf = (unsigned char *) malloc ((long) nelemll);
     }
     if (cbuf == NULL) {
 	ffpmsg("Out of memory for cbuf. (imcomp_decompress_tile)");
@@ -6118,10 +6109,10 @@ int imcomp_decompress_tile (fitsfile *infptr,
 
     if ((infptr->Fptr)->compress_type == PLIO_1) {
         fits_read_col(infptr, TSHORT, (infptr->Fptr)->cn_compressed, nrow,
-             1, nelem, &snull, (short *) cbuf, NULL, status);
+             1, (long) nelemll, &snull, (short *) cbuf, NULL, status);
     } else {
        fits_read_col(infptr, TBYTE, (infptr->Fptr)->cn_compressed, nrow,
-             1, nelem, &charnull, cbuf, NULL, status);
+             1, (long) nelemll, &charnull, cbuf, NULL, status);
     }
 
     if (*status > 0) {
@@ -6139,15 +6130,15 @@ int imcomp_decompress_tile (fitsfile *infptr,
         blocksize = (infptr->Fptr)->rice_blocksize;
 
         if ((infptr->Fptr)->rice_bytepix == 1 ) {
-            *status = fits_rdecomp_byte (cbuf, nelem, (unsigned char *)idata,
+            *status = fits_rdecomp_byte (cbuf, (long) nelemll, (unsigned char *)idata,
                         tilelen, blocksize);
             tiledatatype = TBYTE;
         } else if ((infptr->Fptr)->rice_bytepix == 2 ) {
-            *status = fits_rdecomp_short (cbuf, nelem, (unsigned short *)idata,
+            *status = fits_rdecomp_short (cbuf, (long) nelemll, (unsigned short *)idata,
                         tilelen, blocksize);
             tiledatatype = TSHORT;
         } else {
-            *status = fits_rdecomp (cbuf, nelem, (unsigned int *)idata,
+            *status = fits_rdecomp (cbuf, (long) nelemll, (unsigned int *)idata,
                          tilelen, blocksize);
             tiledatatype = TINT;
         }
@@ -6178,7 +6169,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
     } else if ( ((infptr->Fptr)->compress_type == GZIP_1) ||
                 ((infptr->Fptr)->compress_type == GZIP_2) ) {
 
-        uncompress2mem_from_mem ((char *)cbuf, nelem,
+        uncompress2mem_from_mem ((char *)cbuf, (long) nelemll,
              (char **) &idata, &idatalen, realloc, &tilebytesize, status);
 
         /* determine the data type of the uncompressed array, and */
@@ -6232,7 +6223,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
 /*  BZIP2 is not supported in the public release; this is only for test purposes 
 
         if (BZ2_bzBuffToBuffDecompress ((char *) idata, &idatalen, 
-		(char *)cbuf, (unsigned int) nelem, 0, 0) )
+		(char *)cbuf, (unsigned int) nelemll, 0, 0) )
 */
         {
             ffpmsg("bzip2 decompression error");

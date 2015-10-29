@@ -349,7 +349,7 @@ int ffc2r(const char *cval, float *fval, int *status);
 int ffc2d(const char *cval, double *dval, int *status);
 int ffc2l(const char *cval, int *lval, int *status);
 void ffxmsg(int action, char *err_message);
-int ffgcnt(fitsfile *fptr, char *value, int *status);
+int ffgcnt(fitsfile *fptr, char *value, char *comm, int *status);
 int ffgtkn(fitsfile *fptr, int numkey, char *keyname, long *value, int *status);
 int ffgtknjj(fitsfile *fptr, int numkey, char *keyname, LONGLONG *value, int *status);
 int fftkyn(fitsfile *fptr, int numkey, char *keyname, char *value, int *status);

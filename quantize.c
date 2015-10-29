@@ -210,7 +210,7 @@ If the function value is zero, the data were not copied to idata.
 
                 nextrand++;
 		if (nextrand == N_RANDOM) {
-                    iseed++;
+		    iseed++;
 		    if (iseed == N_RANDOM) iseed = 0;
 	            nextrand = (int) (fits_rand_value[iseed] * 500);
                 }
@@ -242,9 +242,9 @@ If the function value is zero, the data were not copied to idata.
                 /* increment the random number index, regardless */
                 nextrand++;
 		if (nextrand == N_RANDOM) {
-                      iseed++;
-		      if (iseed == N_RANDOM) iseed = 0;
-	              nextrand = (int) (fits_rand_value[iseed] * 500);
+		    iseed++;
+		    if (iseed == N_RANDOM) iseed = 0;
+	            nextrand = (int) (fits_rand_value[iseed] * 500);
                 }
               }
             } else {  /* do not dither the values */
@@ -276,6 +276,7 @@ int fits_quantize_double (long row, double fdata[], long nxpix, long nypix, int 
 
 /* arguments:
 long row            i: tile number = row number in the binary table
+                       (this is only used when dithering the quantized values)
 double fdata[]      i: array of image pixels to be compressed
 long nxpix          i: number of pixels in each row of fdata
 long nypix          i: number of rows in fdata
@@ -399,6 +400,7 @@ If the function value is zero, the data were not copied to idata.
                 nextrand++;
 		if (nextrand == N_RANDOM) {
                     iseed++;
+		    if (iseed == N_RANDOM) iseed = 0;
 	            nextrand = (int) (fits_rand_value[iseed] * 500);
                 }
               }
@@ -429,9 +431,10 @@ If the function value is zero, the data were not copied to idata.
                 /* increment the random number index, regardless */
                 nextrand++;
 		if (nextrand == N_RANDOM) {
-                        iseed++;
-	                nextrand = (int) (fits_rand_value[iseed] * 500);
-                } 
+		    iseed++;
+		    if (iseed == N_RANDOM) iseed = 0;
+	            nextrand = (int) (fits_rand_value[iseed] * 500);
+                }
               }
             } else {  /* do not dither the values */
 	       for (i = 0;  i < nx;  i++) {
@@ -901,7 +904,7 @@ row of the image.
 	double *diffs2, *diffs3, *diffs5; 
 	double xnoise2 = 0, xnoise3 = 0, xnoise5 = 0;
 	
-	if (nx < 5) {
+	if (nx < 9) {
 		/* treat entire array as an image with a single row */
 		nx = nx * ny;
 		ny = 1;
@@ -1239,7 +1242,7 @@ row of the image.
 	double *diffs2, *diffs3, *diffs5; 
 	double xnoise2 = 0, xnoise3 = 0, xnoise5 = 0;
 	
-	if (nx < 5) {
+	if (nx < 9) {
 		/* treat entire array as an image with a single row */
 		nx = nx * ny;
 		ny = 1;
@@ -1592,7 +1595,7 @@ row of the image.
 	double *diffs2, *diffs3, *diffs5; 
 	double xnoise2 = 0, xnoise3 = 0, xnoise5 = 0;
 	
-	if (nx < 5) {
+	if (nx < 9) {
 		/* treat entire array as an image with a single row */
 		nx = nx * ny;
 		ny = 1;
@@ -1930,7 +1933,7 @@ row of the image.
 	double *diffs2, *diffs3, *diffs5; 
 	double xnoise2 = 0, xnoise3 = 0, xnoise5 = 0;
 	
-	if (nx < 5) {
+	if (nx < 9) {
 		/* treat entire array as an image with a single row */
 		nx = nx * ny;
 		ny = 1;

@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large December 2013\\}
+{\Large October 2015\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -263,30 +263,8 @@ The CFITSIO code is contained in about 40 C source files (*.c) and header
 files (*.h). On VAX/VMS systems 2 assembly-code files (vmsieeed.mar and
 vmsieeer.mar) are also needed.
 
-CFITSIO has currently been tested on the following platforms (not up-to-date):
-
-\begin{verbatim}
-  OPERATING SYSTEM           COMPILER
-   Sun OS                     gcc and cc (3.0.1)
-   Sun Solaris                gcc and cc
-   Silicon Graphics IRIX      gcc and cc
-   Silicon Graphics IRIX64    MIPS
-   Dec Alpha OSF/1            gcc and cc
-   DECstation  Ultrix         gcc
-   Dec Alpha OpenVMS          cc
-   DEC VAX/VMS                gcc and cc
-   HP-UX                      gcc
-   IBM AIX                    gcc
-   Linux                      gcc
-   MkLinux                    DR3
-   Windows 95/98/NT           Borland C++ V4.5
-   Windows 95/98/NT/ME/XP     Microsoft/Compaq Visual C++ v5.0, v6.0
-   Windows 95/98/NT           Cygwin gcc
-   MacOS 7.1 or greater       Metrowerks 10.+
-   MacOS-X 10.1 or greater    cc (gcc)
-\end{verbatim}
-CFITSIO will probably run on most other Unix platforms.  Cray
-supercomputers are currently not supported.
+CFITSIO is written in ANCI C and should be compatible with most existing C and C++
+compilers. Cray supercomputers are currently not supported.
 
 
 \subsection{Unix Systems}
@@ -316,13 +294,30 @@ to /usr1/local/lib and the necessary include files to /usr1/local/include
 (assuming of course that the  process has permission to write to these
 directories).
 
-The optional --enable-reentrant flag will attempt to configure CFITSIO
-so that it can be used in multi-threaded programs.  See the "Using CFITSIO in Multi-threaded Environments" section, below, for more
+All the available configure options can be seen by entering the command
 
-The optional --enable-sse2 and --enable-ssse3 flags will cause configure to
+\begin{verbatim}
+   > ./configure --help
+\end{verbatim}
+Some of the more useful options are described below:
+
+The --enable-reentrant option will attempt to configure CFITSIO
+so that it can be used in multi-threaded programs.  See the
+"Using CFITSIO in Multi-threaded Environments" section, below, for more details.
+
+The --enable-sse2 and --enable-ssse3 options will cause configure to
 attempt to build CFITSIO using faster byte-swapping algorithms.
 See the "Optimizing Programs" chapter of this manual for
 more information about these options.
+
+The --with-gsiftp-flavour and --with-gsiftp options enable support for the Globus
+Toolkit gsiftp protocal.  See the "Extended File Name Syntax" chapter for more
+information.
+
+The --with-bzip2 option enables support for reading FITS files that have been
+externally compressed by the bzip2 algorithm.  This requires that the CFITSIO
+library, and all applications program that use CFITSIO, to be linked to include
+the libbz2 library.
 
 The 'make shared' option builds a shared or dynamic version of the
 CFITSIO library.  When using the shared library the executable code is
@@ -390,17 +385,11 @@ link line in the next section of this document.
 
 \subsection{Windows PCs}
 
-A precompiled DLL version of CFITSIO is available for IBM-PC users of
-the Borland or Microsoft Visual C++ compilers in the files
-cfitsiodll\_3xxx\_borland.zip and cfitsiodll\_3xxx\_vcc.zip, where
-'3xxx' represents the current release number.  These zip archives also
-contains other files and instructions on how to use the CFITSIO DLL
-library.
-
+A precompiled DLL version of CFITSIO (not necessarily the latest version)
+is available on the CFITSIO web site.
 The CFITSIO library may also be built from the source code using the
-makefile.bc or makefile.vcc  files.  Finally, the makepc.bat file gives
-an example of  building CFITSIO with the Borland C++ v4.5 or v5.5  compiler
-using older DOS commands.
+CMake build system.  See the "README.win" file in the CFITSIO source distribution
+for more information.
 
 
 \subsection{Macintosh PCs}
@@ -9069,8 +9058,13 @@ the entire line is treated as a FITS comment keyword (with a blank
 keyword name) and is copied verbatim into the FITS header.
 
 The KEYVALUE field may have any allowed  FITS  data type: character
-string, logical, integer, real, complex integer, or complex real.  The
-character string values need not be enclosed in single quote characters
+string, logical, integer, real, complex integer, or complex real.  Integer
+values must be within the allowed range of a 'signed long' variable;
+some C compilers only suppport 4-byte long integers with a range
+from -2147483648 to +2147483647, whereas other C compilers support 8-byte
+integers with a range of plus or minus 2**63.
+
+The character string values need not be enclosed in single quote characters
 unless they are necessary to distinguish the string from a different
 data type (e.g.  2.0 is a real but '2.0' is a string).  The keyword has
 an undefined (null) value if the template record only contains blanks
@@ -9454,8 +9448,10 @@ contain any printable ASCII text characters, including spaces.  The
 equals sign marks the end of the keyword name and is followed by the
 usual value and comment fields just as in standard FITS keywords.
 Further details of this convention are described at
-http://arcdev.hq.eso.org/dicb/dicd/dic-1-1.4.html (search for
-HIERARCH).
+http://fits.gsfc.nasa.gov/registry/hierarch\_keyword.html
+and in Section 4.4 of the ESO Data Interface Control Document that
+is linked to from
+http://archive.eso.org/cms/tools-documentation/eso-data-interface-control.html.
 
 This convention allows a much broader range of keyword names
 than is allowed by the FITS Standard.  Here are more examples
