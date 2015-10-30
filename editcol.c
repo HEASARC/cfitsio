@@ -1591,7 +1591,9 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
            return(*status);
         }
 
-        if (((infptr->Fptr) == (outfptr->Fptr)) && (colnum <= incol)) 
+        if (((infptr->Fptr) == (outfptr->Fptr)) 
+           && (infptr->HDUposition == outfptr->HDUposition)
+           && (colnum <= incol)) 
 	    incol++;  /* the input column has been shifted over */
 
         /* copy the comment strings from the input file for TTYPE and TFORM */
