@@ -796,11 +796,11 @@ int ffgkys( fitsfile *fptr,     /* I - FITS file pointer         */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int ffgkls( fitsfile *fptr,     /* I - FITS file pointer         */
-            const char *keyname,      /* I - name of keyword to read   */
-            char **value,       /* O - pointer to keyword value  */
-            char *comm,         /* O - keyword comment           */
-            int  *status)       /* IO - error status             */
+int ffgkls( fitsfile *fptr,     /* I - FITS file pointer             */
+           const char *keyname, /* I - name of keyword to read       */
+           char **value,        /* O - pointer to keyword value      */
+           char *comm,          /* O - keyword comment (may be NULL) */
+           int  *status)        /* IO - error status                 */
 /*
   Get Keyword with possible Long String value:
   Read (get) the named keyword, returning the value and comment.
@@ -813,7 +813,7 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer         */
 */
 {
     char valstring[FLEN_VALUE], nextcomm[FLEN_COMMENT];
-    int contin, commspace;
+    int contin, commspace = 0;
     size_t len;
 
     if (*status > 0)
@@ -826,7 +826,11 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer         */
     if (*status > 0)
         return(*status);
 
-    commspace = FLEN_COMMENT - strlen(comm) - 2;  /* remaining space in comment string */
+    if (comm)
+    {
+        /* remaining space in comment string */
+        commspace = FLEN_COMMENT - strlen(comm) - 2;
+    }
     
     if (!valstring[0])   /* null value string? */
     {
