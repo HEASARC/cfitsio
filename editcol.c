@@ -1488,6 +1488,7 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
 */
 {
     int tstatus, colnum, typecode, otypecode, anynull;
+    int inHduType, outHduType;
     long tfields, repeat, orepeat, width, owidth, nrows, outrows;
     long inloop, outloop, maxloop, ndone, ntodo, npixels;
     long firstrow, firstelem, ii;
@@ -1507,25 +1508,27 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     }
     else if ((infptr->Fptr)->datastart == DATA_UNDEFINED)
         ffrdef(infptr, status);                /* rescan header */
-
+    inHduType = (infptr->Fptr)->hdutype;
+    
     if (outfptr->HDUposition != (outfptr->Fptr)->curhdu)
     {
         ffmahd(outfptr, (outfptr->HDUposition) + 1, NULL, status);
     }
     else if ((outfptr->Fptr)->datastart == DATA_UNDEFINED)
         ffrdef(outfptr, status);               /* rescan header */
-
+    outHduType = (outfptr->Fptr)->hdutype;
+    
     if (*status > 0)
         return(*status);
 
-    if ((infptr->Fptr)->hdutype == IMAGE_HDU || (outfptr->Fptr)->hdutype == IMAGE_HDU)
+    if (inHduType == IMAGE_HDU || outHduType == IMAGE_HDU)
     {
        ffpmsg
        ("Can not copy columns to or from IMAGE HDUs (ffcpcl)");
        return(*status = NOT_TABLE);
     }
 
-    if ( (infptr->Fptr)->hdutype == BINARY_TBL &&  (outfptr->Fptr)->hdutype == ASCII_TBL)
+    if ( inHduType == BINARY_TBL &&  outHduType == ASCII_TBL)
     {
        ffpmsg
        ("Copying from Binary table to ASCII table is not supported (ffcpcl)");
@@ -1555,7 +1558,7 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
           return(*status = NO_TFORM);
         }
 
-        if ((infptr->Fptr)->hdutype == ASCII_TBL && (outfptr->Fptr)->hdutype == BINARY_TBL)
+        if (inHduType == ASCII_TBL && outHduType == BINARY_TBL)
         {
             /* convert from ASCII table to BINARY table format string */
             if (typecode == TSTRING)
@@ -1622,7 +1625,7 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
         ffcpky(infptr, outfptr, incol, colnum, "TCDLT", status);
         ffcpky(infptr, outfptr, incol, colnum, "TCROT", status);
 
-        if ((infptr->Fptr)->hdutype == ASCII_TBL && (outfptr->Fptr)->hdutype == BINARY_TBL)
+        if (inHduType == ASCII_TBL && outHduType == BINARY_TBL)
         {
             /* binary tables only have TNULLn keyword for integer columns */
             if (typecode == TLONG || typecode == TSHORT)
@@ -1666,7 +1669,7 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
 
     if (typecode == TBIT)
         repeat = (repeat + 7) / 8;  /* convert from bits to bytes */
-    else if (typecode == TSTRING && (infptr->Fptr)->hdutype == BINARY_TBL)
+    else if (typecode == TSTRING && inHduType == BINARY_TBL)
         repeat = repeat / width;  /* convert from chars to unit strings */
 
     /* get optimum number of rows to copy at one time */
