@@ -378,7 +378,7 @@ CFITSIO_SHLIB=""
 CFITSIO_SHLIB_SONAME=""
 lhea_shlib_cflags=
 case $EXT in
-  cygwin)
+  cygwin|mingw32)
     SHLIB_LD="$CC -shared"
     SHLIB_SUFFIX=".dll"
     ;;
