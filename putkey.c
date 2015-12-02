@@ -396,13 +396,14 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
     char card[FLEN_CARD], tmpkeyname[FLEN_CARD];
     char tstring[FLEN_CARD], *cptr;
     int next, remain, vlen, nquote, nchar, namelen, contin, tstatus = -1;
-    int commlen, nocomment = 0;
+    int commlen=0, nocomment = 0;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
-    remain = maxvalue(strlen(value), 1); /* no. of chars to write (at least 1) */    
-    commlen = strlen(comm);
+    remain = maxvalue(strlen(value), 1); /* no. of chars to write (at least 1) */  
+    if (comm)  
+       commlen = strlen(comm);
 
     /* count the number of single quote characters are in the string */
     tstring[0] = '\0';
