@@ -50,9 +50,10 @@ IF (USE_PTHREADS)
 ENDIF()
 
 # Math library (not available in MSVC)
-SET(M_LIB "")
 IF (NOT MSVC)
     FIND_LIBRARY(M_LIB m)
+ELSE()
+    SET(M_LIB "")
 ENDIF()
 
 SET(SRC_FILES
