@@ -1,7 +1,53 @@
                    Log of Changes Made to CFITSIO
 
-Version 3.38 - October 2015
+Version 3.38 - December 2015
 
+   - CRITICAL BUG FIX:
+     Discovered that the Intel 15 and 16 compilers (and potentially other
+     compilers) may silently produce incorrect code when compiling CFITSIO with
+     the -O2 (or higher) optimization flag. In particular, this problem could cause 
+     CFITSIO to incorrectly read the values of arrays of 32-bit integers in a 
+     FITS file (i.e., images with BITPIX = 32 or table columns with TFORM = 'J') 
+     when the array is being read into a 'long' integer array (and where the 
+     long array elements are 8 bytes long). 
+     
+     One way to test if a particular system is affected by this problem
+     is to compile CFITSIO V3.37 (or earlier) with optimization enabled,
+     and then compare the output of the testprog.c program with the 
+     testprog.out file that is distributed with CFITSIO. If there are any 
+     differences in the files, then further tests should be performed to 
+     determine the exact cause.
+     
+     The root cause of this problem was traced to the fact that CFITSIO 
+     was aliasing an array of 32-bit integers and an array of 64-bit integers 
+     to the same memory location.in order to obtain better data I/O efficiency.
+     when reading FITS files.  When CFITSIO modified the values in these
+     arrays, it was essential that the processing be done in strict sequential
+     order from one end of the array to the other end, as was implicit in the
+     C code algorithm. In this case, however, the compiler adopted certain 
+     loop optimization techniques that produced assembly code that violated 
+     this assumption.  Technically, the CFITSIO code violates the "strict aliasing"
+     assumption in ANSI C99, therefore the affected CFITSIO routines were
+     modified so that the aliasing of different data types to the same memory
+     location no longer occurs.
+ 
+   - in imcompress.c, implemented a new set of routines that safely convert
+     shorter integer arrays into a longer integer arrays (e.g. short to int)
+     where both arrays are aliased to the same memory location.  These
+     special routines were needed to guard against certain compiler optimization
+     techniques that could produce incorrect code.
+ 
+   - modified the 4 FnNoise5_(type) routines in quantize.c to correctly 
+     count the number of non-null pixels in the input array.  Previously the
+     count could be inaccurate if the image mainly consisted of null pixels.
+     This could have caused certain floating point image tiles to be 
+     quantized during the image compression process, when in fact the tile
+     did not satisfy all the criteria to be safely quantized.
+     
+   - in imcomp_copy_comp2img, added THEAP to the list of binary table 
+     keywords that may be present in the header of a compressed image 
+     and should not be copied to the uncompressed image header.
+ 
    - modified fits_copy_col to check that when copying a vector column, the
      vector length in the output column is the same as in the input column.
      Also modified the code to support the case where a column is being copied
@@ -105,7 +151,6 @@ Version 3.38 - October 2015
      bug would cause the data values to be offset by 32768 from the actual 
      pixel values.
 
-     
 Version 3.37 - 3 June 2014
 
    - replaced the random Gaussian and Poissonian distribution functions with

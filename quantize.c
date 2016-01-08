@@ -996,6 +996,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v1 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v1 < xminval) xminval = v1;
@@ -1009,6 +1010,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v2 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 		
 		if (do_range) {
 			if (v2 < xminval) xminval = v2;
@@ -1022,6 +1024,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v3 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v3 < xminval) xminval = v3;
@@ -1035,6 +1038,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v4 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v4 < xminval) xminval = v4;
@@ -1048,6 +1052,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v5 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v5 < xminval) xminval = v5;
@@ -1061,6 +1066,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v6 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v6 < xminval) xminval = v6;
@@ -1074,6 +1080,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v7 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v7 < xminval) xminval = v7;
@@ -1087,6 +1094,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v8 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v8 < xminval) xminval = v8;
@@ -1139,7 +1147,7 @@ row of the image.
 
 		/* compute the median diffs */
 		/* Note that there are 8 more pixel values than there are diffs values. */
-		ngoodpix += (nvals + 8);
+		ngoodpix += nvals;
 
 		if (nvals == 0) {
 		    continue;  /* cannot compute medians on this row */
@@ -1334,6 +1342,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v1 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v1 < xminval) xminval = v1;
@@ -1347,6 +1356,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v2 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 		
 		if (do_range) {
 			if (v2 < xminval) xminval = v2;
@@ -1360,6 +1370,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v3 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v3 < xminval) xminval = v3;
@@ -1373,6 +1384,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v4 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v4 < xminval) xminval = v4;
@@ -1386,6 +1398,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v5 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v5 < xminval) xminval = v5;
@@ -1399,6 +1412,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v6 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v6 < xminval) xminval = v6;
@@ -1412,6 +1426,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v7 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v7 < xminval) xminval = v7;
@@ -1425,6 +1440,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v8 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v8 < xminval) xminval = v8;
@@ -1492,7 +1508,7 @@ row of the image.
 
 		/* compute the median diffs */
 		/* Note that there are 8 more pixel values than there are diffs values. */
-		ngoodpix += (nvals + 8);
+		ngoodpix += nvals;
 
 		if (nvals == 0) {
 		    continue;  /* cannot compute medians on this row */
@@ -1687,6 +1703,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v1 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v1 < xminval) xminval = v1;
@@ -1700,6 +1717,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v2 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 		
 		if (do_range) {
 			if (v2 < xminval) xminval = v2;
@@ -1713,6 +1731,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v3 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v3 < xminval) xminval = v3;
@@ -1726,6 +1745,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v4 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v4 < xminval) xminval = v4;
@@ -1739,6 +1759,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v5 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v5 < xminval) xminval = v5;
@@ -1752,6 +1773,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v6 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v6 < xminval) xminval = v6;
@@ -1765,6 +1787,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v7 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v7 < xminval) xminval = v7;
@@ -1778,6 +1801,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v8 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v8 < xminval) xminval = v8;
@@ -1830,7 +1854,7 @@ row of the image.
 
 		/* compute the median diffs */
 		/* Note that there are 8 more pixel values than there are diffs values. */
-		ngoodpix += (nvals + 8);
+		ngoodpix += nvals;
 
 		if (nvals == 0) {
 		    continue;  /* cannot compute medians on this row */
@@ -2025,6 +2049,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v1 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v1 < xminval) xminval = v1;
@@ -2038,6 +2063,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v2 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 		
 		if (do_range) {
 			if (v2 < xminval) xminval = v2;
@@ -2051,6 +2077,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v3 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v3 < xminval) xminval = v3;
@@ -2064,6 +2091,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v4 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v4 < xminval) xminval = v4;
@@ -2077,6 +2105,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v5 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v5 < xminval) xminval = v5;
@@ -2090,6 +2119,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v6 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v6 < xminval) xminval = v6;
@@ -2103,6 +2133,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v7 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v7 < xminval) xminval = v7;
@@ -2116,6 +2147,7 @@ row of the image.
 
 		if (ii == nx) continue;  /* hit end of row */
 		v8 = rowpix[ii];  /* store the good pixel value */
+		ngoodpix++;
 
 		if (do_range) {
 			if (v8 < xminval) xminval = v8;
@@ -2168,7 +2200,7 @@ row of the image.
 
 		/* compute the median diffs */
 		/* Note that there are 8 more pixel values than there are diffs values. */
-		ngoodpix += (nvals + 8);
+		ngoodpix += nvals;
 
 		if (nvals == 0) {
 		    continue;  /* cannot compute medians on this row */

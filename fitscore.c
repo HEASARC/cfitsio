@@ -75,7 +75,7 @@ float ffvers(float *version)  /* IO - version number */
 {
       *version = (float) 3.38;
 
-/*       Oct 2015
+/*       Dec 2015
 
    Previous releases:
       *version = 3.37     3 Jun 2014
@@ -1023,7 +1023,7 @@ int ffmkky(const char *keyname,   /* I - keyword name    */
 {
     size_t namelen, len, ii;
     char tmpname[FLEN_KEYWORD], tmpname2[FLEN_KEYWORD],*cptr;
-    int tstatus = -1, nblank = 0, ntoken = 0;
+    int tstatus = -1, nblank = 0, ntoken = 0, maxlen = 0, specialchar = 0;
 
     if (*status > 0)
         return(*status);
@@ -1091,24 +1091,26 @@ int ffmkky(const char *keyname,   /* I - keyword name    */
         }
     } else {
 
-        /* is this an implicit ESO HIERARCH keyword, consisting of 2 or more
-	      tokens each of which is at most 8 characters long?  */
+	/* scan the keyword name to determine the number and max length of the tokens */
+	/* and test if any of the tokens contain nonstandard characters */
 	
-        /* does name consist of a series of 8-char (or less) legal tokens? */
       	strncat(tmpname2, tmpname, FLEN_KEYWORD - 1);
         cptr = strtok(tmpname2, " ");
 	while (cptr) {
-	    if ((strlen(cptr) <= 8) && (fftkey(cptr, &tstatus) <= 0)) {
-	        cptr = strtok(NULL, " ");
-		ntoken++;
-	    } else {
-	        cptr = 0;
-		ntoken = 0;
-	    }
+	    if (strlen(cptr) > maxlen) maxlen = strlen(cptr); /* find longest token */
+
+	    /* name contains special characters? */
+	    if (fftkey(cptr, &tstatus) > 0) specialchar = 1; 
+	    
+	    cptr = strtok(NULL, " ");
+	    ntoken++;
 	}
 
-        if (ntoken > 1) {  /* this is an implicit ESO HIERARCH keyword */
-
+/*      if (ntoken > 1) { */
+        if (ntoken > 0) {  /*  temporarily change so that this case should always be true  */
+	    /* for now at least, treat all cases as an implicit ESO HIERARCH keyword. */
+	    /* This could  change if FITS is ever expanded to directly support longer keywords. */
+	    
             strcat(card, "HIERARCH ");
             strcat(card, tmpname);
 	    namelen += 9;
@@ -1123,19 +1125,21 @@ int ffmkky(const char *keyname,   /* I - keyword name    */
             }
 
 	} else if ((fftkey(tmpname, &tstatus) <= 0)) {
+          /* should never get here (at least for now) */
             /* allow keyword names longer than 8 characters */
 
             strncat(card, tmpname, FLEN_KEYWORD - 1);
             strcat(card, "= ");
             namelen += 2;
         } else {
+          /* should never get here (at least for now) */
             ffpmsg("Illegal keyword name:");
             ffpmsg(tmpname);
             return(*status = BAD_KEYCHAR);
         }
     }
 
-    if (len > 0)
+    if (len > 0)  /* now process the value string */
     {
         if (value[0] == '\'')  /* is this a quoted string value? */
         {
@@ -1213,6 +1217,19 @@ int ffmkky(const char *keyname,   /* I - keyword name    */
         }
       }
     }
+
+    /* issue a warning if this keyword does not strictly conform to the standard
+	       HIERARCH convention, which requires,
+	         1) at least 2 tokens in the name,
+		 2) no tokens longer than 8 characters, and
+		 3) no special characters in any of the tokens */
+
+            if (ntoken == 1 || specialchar == 1) {
+	       ffpmsg("Warning: the following keyword does not conform to the HIERARCH convention");
+	     /*  ffpmsg(" (e.g., name is not hierarchical or contains non-standard characters)."); */
+	       ffpmsg(card);
+	    }
+
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

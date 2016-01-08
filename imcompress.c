@@ -161,6 +161,12 @@ static int fits_unshuffle_8bytes(char *heap, LONGLONG length, int *status);
 static int fits_unshuffle_4bytes(char *heap, LONGLONG length, int *status);
 static int fits_unshuffle_2bytes(char *heap, LONGLONG length, int *status);
 
+static int fits_int_to_longlong_inplace(int *intarray, long length, int *status);
+static int fits_short_to_int_inplace(short *intarray, long length, int *status);
+static int fits_ushort_to_int_inplace(unsigned short *intarray, long length, int *status);
+static int fits_sbyte_to_int_inplace(signed char *intarray, long length, int *status);
+static int fits_ubyte_to_int_inplace(unsigned char *intarray, long length, int *status);
+
 /* only used for diagnoitic purposes */
 /* int fits_get_case(int *c1, int*c2, int*c3); */ 
 /*---------------------------------------------------------------------------*/
@@ -2021,11 +2027,9 @@ int imcomp_compress_tile (fitsfile *outfptr,
             } else {
                  /* have to convert idata to an I*8 array, in place */
                  /* idata must have been allocated large enough to do this */
-                lldata = (LONGLONG *) idata;
-		
-                for (ii = tilelen - 1; ii >= 0; ii--) {
-		    lldata[ii] = idata[ii];
-		}
+
+                fits_int_to_longlong_inplace(idata, tilelen, status);
+                lldata = (LONGLONG *) idata;		
 
                 fits_hcompress64(lldata, tilenx, tileny, 
 		  ihcompscale, (char *) cbuf, &hcomp_len, status);
@@ -2228,12 +2232,13 @@ int imcomp_convert_tile_tshort(
                for (ii = tilelen - 1; ii >= 0; ii--) {
 	            if (sbuff[ii] == (short) flagval)
 		       idata[ii] = nullval;
-                    else
+                    else 
                        idata[ii] = (int) sbuff[ii];
                }
            } else {  /* just do the data type conversion to int */
-               for (ii = tilelen - 1; ii >= 0; ii--) 
-                   idata[ii] = (int) sbuff[ii];
+                 /* have to convert sbuff to an I*4 array, in place */
+                 /* sbuff must have been allocated large enough to do this */
+                 fits_short_to_int_inplace(sbuff, tilelen, status);
            }
        } else {
            /* have to convert to int if using PLIO */
@@ -2255,8 +2260,9 @@ int imcomp_convert_tile_tshort(
                        idata[ii] = (int) sbuff[ii] + 32768;
                }
              } else {  /* just do the data type conversion to int */
-               for (ii = tilelen - 1; ii >= 0; ii--) 
-                   idata[ii] = (int) sbuff[ii] + 32768;
+                 /* have to convert sbuff to an I*4 array, in place */
+                 /* sbuff must have been allocated large enough to do this */
+                 fits_short_to_int_inplace(sbuff, tilelen, status);
              }
            } else {
 	     /* This is not an unsigned 16-bit integer array, so process normally */
@@ -2270,8 +2276,9 @@ int imcomp_convert_tile_tshort(
                        idata[ii] = (int) sbuff[ii];
                }
              } else {  /* just do the data type conversion to int */
-               for (ii = tilelen - 1; ii >= 0; ii--) 
-                   idata[ii] = (int) sbuff[ii];
+                 /* have to convert sbuff to an I*4 array, in place */
+                 /* sbuff must have been allocated large enough to do this */
+                 fits_short_to_int_inplace(sbuff, tilelen, status);
              }
            }
         }
@@ -2352,8 +2359,9 @@ int imcomp_convert_tile_tushort(
 		       idata[ii] = ((int) usbuff[ii]) - 32768;
                }
            } else {  /* just do the data type conversion to int */
-               for (ii = tilelen - 1; ii >= 0; ii--)
-		       idata[ii] = ((int) usbuff[ii]) - 32768;
+                 /* have to convert usbuff to an I*4 array, in place */
+                 /* usbuff must have been allocated large enough to do this */
+                 fits_ushort_to_int_inplace(usbuff, tilelen, status);
            }
         }
 
@@ -2528,8 +2536,9 @@ int imcomp_convert_tile_tbyte(
                        idata[ii] = (int) usbbuff[ii];
                }
            } else {  /* just do the data type conversion to int */
-               for (ii = tilelen - 1; ii >= 0; ii--) 
-                   idata[ii] = (int) usbbuff[ii];
+                 /* have to convert usbbuff to an I*4 array, in place */
+                 /* usbbuff must have been allocated large enough to do this */
+                 fits_ubyte_to_int_inplace(usbbuff, tilelen, status);
            }
        }
 
@@ -2558,7 +2567,7 @@ int imcomp_convert_tile_tsbyte(
     int flagval, *idata;
     long ii;
     signed char *sbbuff;
- 
+
        /* datatype of input array is signed byte.  We only support writing this datatype
           to a FITS image with BITPIX = 8 and with BZERO = 0 and BSCALE = -128.  */
 
@@ -2605,8 +2614,9 @@ int imcomp_convert_tile_tsbyte(
                        idata[ii] = ((int) sbbuff[ii]) + 128;
                }
            } else {  /* just do the data type conversion to int */
-               for (ii = tilelen - 1; ii >= 0; ii--) 
-                   idata[ii] = ((int) sbbuff[ii]) + 128;
+                 /* have to convert sbbuff to an I*4 array, in place */
+                 /* sbbuff must have been allocated large enough to do this */
+                 fits_sbyte_to_int_inplace(sbbuff, tilelen, status);
            }
        }
  
@@ -5625,6 +5635,7 @@ int imcomp_copy_comp2img(fitsfile *infptr, fitsfile *outfptr,
 			   {"TFIELDS", "-"       },
 			   {"TTYPEm",  "-"       },
 			   {"TFORMm",  "-"       },
+			   {"THEAP",   "-"       },
 			   {"ZIMAGE",  "-"       },
 			   {"ZQUANTIZ", "-"      },
 			   {"ZDITHER0", "-"      },
@@ -9412,5 +9423,329 @@ static int fits_unshuffle_8bytes(char *heap, LONGLONG length, int *status)
        
     memcpy(heap, ptr, (size_t) (length * 8));
     free(ptr);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int fits_int_to_longlong_inplace(int *intarray, long length, int *status)
+
+/* convert the input array of 32-bit integers into an array of 64-bit integers,
+in place. This will overwrite the input array with the new longer array starting
+at the same memory location.  
+
+Note that aliasing the same memory location with pointers of different datatypes is
+not allowed in strict ANSI C99, however it is  used here for efficency. In principle,
+one could simply copy the input array in reverse order to the output array,
+but this only works if the compiler performs the operation in strict order.  Certain
+compiler optimization techniques may vioate this assumption.  Therefore, we first
+copy a section of the input array to a temporary intermediate array, before copying
+the longer datatype values back to the original array.
+*/
+
+{
+    LONGLONG *longlongarray, *aliasarray;
+    long ii, ntodo, firstelem, nmax = 10000;
+    
+    if (*status > 0) 
+        return(*status);
+
+    ntodo = nmax;
+    if (length < nmax) ntodo = length;
+    
+    firstelem = length - ntodo;  /* first element to be converted */
+    
+    longlongarray = (LONGLONG *) malloc(ntodo * sizeof(LONGLONG));
+    
+    if (longlongarray == NULL)
+    {
+	ffpmsg("Out of memory. (fits_int_to_longlong_inplace)");
+	return (*status = MEMORY_ALLOCATION);
+    }
+
+    aliasarray = (LONGLONG *) intarray; /* alias pointer to the input array */
+
+    while (ntodo > 0) {
+    
+	/* do datatype conversion into temp array */
+        for (ii = 0; ii < ntodo; ii++) { 
+	    longlongarray[ii] = intarray[ii + firstelem];
+        }
+
+        /* copy temp array back to alias */
+        memcpy(&(aliasarray[firstelem]), longlongarray, ntodo * 8);
+	
+        if (firstelem == 0) {  /* we are all done */
+	    ntodo = 0;   
+	} else {  /* recalculate ntodo and firstelem for next loop */
+	    if (firstelem > nmax) {
+	        firstelem -= nmax;
+	    } else {
+	        ntodo = firstelem;
+	        firstelem = 0;
+	    }
+	}
+    }
+
+    free(longlongarray);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int fits_short_to_int_inplace(short *shortarray, long length, int *status)
+
+/* convert the input array of 16-bit integers into an array of 32-bit integers,
+in place. This will overwrite the input array with the new longer array starting
+at the same memory location.  
+
+Note that aliasing the same memory location with pointers of different datatypes is
+not allowed in strict ANSI C99, however it is  used here for efficency. In principle,
+one could simply copy the input array in reverse order to the output array,
+but this only works if the compiler performs the operation in strict order.  Certain
+compiler optimization techniques may vioate this assumption.  Therefore, we first
+copy a section of the input array to a temporary intermediate array, before copying
+the longer datatype values back to the original array.
+*/
+
+{
+    int *intarray, *aliasarray;
+    long ii, ntodo, firstelem, nmax = 10000;
+    
+    if (*status > 0) 
+        return(*status);
+
+    ntodo = nmax;
+    if (length < nmax) ntodo = length;
+    
+    firstelem = length - ntodo;  /* first element to be converted */
+    
+    intarray = (int *) malloc(ntodo * sizeof(int));
+    
+    if (intarray == NULL)
+    {
+	ffpmsg("Out of memory. (fits_short_to_int_inplace)");
+	return (*status = MEMORY_ALLOCATION);
+    }
+
+    aliasarray = (int *) shortarray; /* alias pointer to the input array */
+
+    while (ntodo > 0) {
+    
+	/* do datatype conversion into temp array */
+        for (ii = 0; ii < ntodo; ii++) { 
+	    intarray[ii] = shortarray[ii + firstelem];
+        }
+
+        /* copy temp array back to alias */
+        memcpy(&(aliasarray[firstelem]), intarray, ntodo * 4);
+	
+        if (firstelem == 0) {  /* we are all done */
+	    ntodo = 0;   
+	} else {  /* recalculate ntodo and firstelem for next loop */
+	    if (firstelem > nmax) {
+	        firstelem -= nmax;
+	    } else {
+	        ntodo = firstelem;
+	        firstelem = 0;
+	    }
+	}
+    }
+
+    free(intarray);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int fits_ushort_to_int_inplace(unsigned short *ushortarray, long length, 
+                                      int *status)
+
+/* convert the input array of 16-bit unsigned integers into an array of 32-bit integers,
+in place. This will overwrite the input array with the new longer array starting
+at the same memory location.  
+
+Note that aliasing the same memory location with pointers of different datatypes is
+not allowed in strict ANSI C99, however it is  used here for efficency. In principle,
+one could simply copy the input array in reverse order to the output array,
+but this only works if the compiler performs the operation in strict order.  Certain
+compiler optimization techniques may vioate this assumption.  Therefore, we first
+copy a section of the input array to a temporary intermediate array, before copying
+the longer datatype values back to the original array.
+*/
+
+{
+    int *intarray, *aliasarray;
+    long ii, ntodo, firstelem, nmax = 10000;
+    
+    if (*status > 0) 
+        return(*status);
+
+    ntodo = nmax;
+    if (length < nmax) ntodo = length;
+    
+    firstelem = length - ntodo;  /* first element to be converted */
+    
+    intarray = (int *) malloc(ntodo * sizeof(int));
+    
+    if (intarray == NULL)
+    {
+	ffpmsg("Out of memory. (fits_ushort_to_int_inplace)");
+	return (*status = MEMORY_ALLOCATION);
+    }
+
+    aliasarray = (int *) ushortarray; /* alias pointer to the input array */
+
+    while (ntodo > 0) {
+    
+	/* do datatype conversion into temp array */
+        for (ii = 0; ii < ntodo; ii++) { 
+	    intarray[ii] = ushortarray[ii + firstelem];
+        }
+
+        /* copy temp array back to alias */
+        memcpy(&(aliasarray[firstelem]), intarray, ntodo * 4);
+	
+        if (firstelem == 0) {  /* we are all done */
+	    ntodo = 0;   
+	} else {  /* recalculate ntodo and firstelem for next loop */
+	    if (firstelem > nmax) {
+	        firstelem -= nmax;
+	    } else {
+	        ntodo = firstelem;
+	        firstelem = 0;
+	    }
+	}
+    }
+
+    free(intarray);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int fits_ubyte_to_int_inplace(unsigned char *ubytearray, long length, 
+                                      int *status)
+
+/* convert the input array of 8-bit unsigned integers into an array of 32-bit integers,
+in place. This will overwrite the input array with the new longer array starting
+at the same memory location.  
+
+Note that aliasing the same memory location with pointers of different datatypes is
+not allowed in strict ANSI C99, however it is  used here for efficency. In principle,
+one could simply copy the input array in reverse order to the output array,
+but this only works if the compiler performs the operation in strict order.  Certain
+compiler optimization techniques may vioate this assumption.  Therefore, we first
+copy a section of the input array to a temporary intermediate array, before copying
+the longer datatype values back to the original array.
+*/
+
+{
+    int *intarray, *aliasarray;
+    long ii, ntodo, firstelem, nmax = 10000;
+    
+    if (*status > 0) 
+        return(*status);
+
+    ntodo = nmax;
+    if (length < nmax) ntodo = length;
+    
+    firstelem = length - ntodo;  /* first element to be converted */
+    
+    intarray = (int *) malloc(ntodo * sizeof(int));
+    
+    if (intarray == NULL)
+    {
+	ffpmsg("Out of memory. (fits_ubyte_to_int_inplace)");
+	return (*status = MEMORY_ALLOCATION);
+    }
+
+    aliasarray = (int *) ubytearray; /* alias pointer to the input array */
+
+    while (ntodo > 0) {
+    
+	/* do datatype conversion into temp array */
+        for (ii = 0; ii < ntodo; ii++) { 
+	    intarray[ii] = ubytearray[ii + firstelem];
+        }
+
+        /* copy temp array back to alias */
+        memcpy(&(aliasarray[firstelem]), intarray, ntodo * 4);
+	
+        if (firstelem == 0) {  /* we are all done */
+	    ntodo = 0;   
+	} else {  /* recalculate ntodo and firstelem for next loop */
+	    if (firstelem > nmax) {
+	        firstelem -= nmax;
+	    } else {
+	        ntodo = firstelem;
+	        firstelem = 0;
+	    }
+	}
+    }
+
+    free(intarray);
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
+static int fits_sbyte_to_int_inplace(signed char *sbytearray, long length, 
+                                      int *status)
+
+/* convert the input array of 8-bit signed integers into an array of 32-bit integers,
+in place. This will overwrite the input array with the new longer array starting
+at the same memory location.  
+
+Note that aliasing the same memory location with pointers of different datatypes is
+not allowed in strict ANSI C99, however it is  used here for efficency. In principle,
+one could simply copy the input array in reverse order to the output array,
+but this only works if the compiler performs the operation in strict order.  Certain
+compiler optimization techniques may vioate this assumption.  Therefore, we first
+copy a section of the input array to a temporary intermediate array, before copying
+the longer datatype values back to the original array.
+*/
+
+/*
+!!!!!!!!!!!!!!!!!
+NOTE THAT THIS IS A SPECIALIZED ROUTINE THAT ADDS AN OFFSET OF 128 TO THE ARRAY VALUES
+!!!!!!!!!!!!!!!!!
+*/
+
+{
+    int *intarray, *aliasarray;
+    long ii, ntodo, firstelem, nmax = 10000;
+    
+    if (*status > 0) 
+        return(*status);
+
+    ntodo = nmax;
+    if (length < nmax) ntodo = length;
+    
+    firstelem = length - ntodo;  /* first element to be converted */
+    
+    intarray = (int *) malloc(ntodo * sizeof(int));
+    
+    if (intarray == NULL)
+    {
+	ffpmsg("Out of memory. (fits_sbyte_to_int_inplace)");
+	return (*status = MEMORY_ALLOCATION);
+    }
+
+    aliasarray = (int *) sbytearray; /* alias pointer to the input array */
+
+    while (ntodo > 0) {
+    
+	/* do datatype conversion into temp array */
+        for (ii = 0; ii < ntodo; ii++) { 
+	    intarray[ii] = sbytearray[ii + firstelem] + 128;  /* !! Note the offset !! */
+        }
+
+        /* copy temp array back to alias */
+        memcpy(&(aliasarray[firstelem]), intarray, ntodo * 4);
+	
+        if (firstelem == 0) {  /* we are all done */
+	    ntodo = 0;   
+	} else {  /* recalculate ntodo and firstelem for next loop */
+	    if (firstelem > nmax) {
+	        firstelem -= nmax;
+	    } else {
+	        ntodo = firstelem;
+	        firstelem = 0;
+	    }
+	}
+    }
+
+    free(intarray);
     return(*status);
 }
