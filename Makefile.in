@@ -38,6 +38,7 @@ ARCHIVE =	@ARCHIVE@
 RANLIB =	@RANLIB@
 CC =		@CC@
 CFLAGS =	@CFLAGS@
+CPPFLAGS =	@CPPFLAGS@
 SSE_FLAGS =	@SSE_FLAGS@
 FC =		@FC@
 LDFLAGS =	@LDFLAGS@
@@ -112,14 +113,14 @@ install:	lib${PACKAGE}.a ${INSTALL_DIRS}
 		/bin/cp cfitsio.pc ${CFITSIO_LIB}/pkgconfig
 
 .c.o:
-		${CC} -c -o ${<D}/${@F} ${CFLAGS} ${DEFS} $<
+		${CC} -c -o ${<D}/${@F} ${CFLAGS} ${CPPFLAGS} ${DEFS} $<
 
 UTILS		= cookbook fitscopy imcopy listhead smem speed testprog
 
 FPACK_UTILS	= fpack funpack
 
 swapproc.o:	swapproc.c
-		${CC} -c ${CFLAGS} ${SSE_FLAGS} ${DEFS} $<
+		${CC} -c ${CFLAGS} ${CPPFLAGS} ${SSE_FLAGS} ${DEFS} $<
 
 smem:		smem.o lib${PACKAGE}.a ${OBJECTS}
 		${CC} ${LDFLAGS} ${DEFS} -o $@ ${@}.o -L. -l${PACKAGE} -lm
