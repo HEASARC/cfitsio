@@ -755,11 +755,21 @@ int ffgcluj(fitsfile *fptr,   /* I - FITS file pointer                       */
         switch (tcode) 
         {
             case (TLONG):
+	      if (LONGSIZE == 32) {
                 ffgi4b(fptr, readptr, ntodo, incre, (INT32BIT *) &array[next],
                        status);
                 fffi4u4((INT32BIT *) &array[next], ntodo, scale, zero,
                          nulcheck, (INT32BIT) tnull, nulval, &nularray[next],
                          anynul, &array[next], status);
+	      } else { /* case where sizeof(long) = 8 */
+                ffgi4b(fptr, readptr, ntodo, incre, (INT32BIT *) buffer,
+                       status);
+                fffi4u4((INT32BIT *) buffer, ntodo, scale, zero,
+                         nulcheck, (INT32BIT) tnull, nulval, &nularray[next],
+                         anynul, &array[next], status);
+	      }
+
+
                 break;
             case (TLONGLONG):
 

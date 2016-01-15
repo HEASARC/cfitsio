@@ -20,7 +20,7 @@ Version 3.38 - December 2015
      
      The root cause of this problem was traced to the fact that CFITSIO 
      was aliasing an array of 32-bit integers and an array of 64-bit integers 
-     to the same memory location.in order to obtain better data I/O efficiency.
+     to the same memory location.in order to obtain better data I/O efficiency
      when reading FITS files.  When CFITSIO modified the values in these
      arrays, it was essential that the processing be done in strict sequential
      order from one end of the array to the other end, as was implicit in the

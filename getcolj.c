@@ -733,11 +733,10 @@ int ffgclj( fitsfile *fptr,   /* I - FITS file pointer                       */
     {                             /* no type convertion required, so read */
                                   /* data directly into output buffer.    */
 
-        if (nelem < (LONGLONG)INT32_MAX/8) {
+        if (nelem < (LONGLONG)INT32_MAX/4) {
             maxelem = nelem;
         } else {
-        /* divide by 8 instead of 4 in case sizeof(long) = 8 */
-            maxelem = INT32_MAX/8;   
+            maxelem = INT32_MAX/4;   
         }
 
         if (nulcheck == 0 && scale == 1. && zero == 0. )
