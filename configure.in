@@ -57,7 +57,6 @@ AC_ARG_WITH(
   gsiftp-flavour,
   [AS_HELP_STRING([--with-gsiftp-flavour[[=PATH]]],[Enable Globus Toolkit gsiftp protocol support])],
   [ if test "x$withval" != "xno"; then
-
         if test "x$withval" != "xyes" ; then
             GSIFTP_FLAVOUR=${withval}
         fi
@@ -70,10 +69,8 @@ AC_ARG_WITH(
   gsiftp,
   [AS_HELP_STRING([--with-gsiftp[[=PATH]]],[Enable Globus Toolkit gsiftp protocol support])],
   [ if test "x$withval" != "xno"; then
-
         if test "x$withval" != "xyes" ; then
-            CFLAGS="$CFLAGS -I${withval}/include/${GSIFTP_FLAVOUR}"
-            LDFLAGS="$LDFLAGS -L${withval}/lib -lglobus_ftp_client_${GSIFTP_FLAVOUR}"
+            GSIFTP_PATH=${withval}
             HAVE_GSIFTP=yes
         fi
         AC_DEFINE(HAVE_GSIFTP,1,[Define if you want Globus Toolkit gsiftp protocol support])
@@ -91,8 +88,7 @@ AC_ARG_WITH(
               [AC_DEFINE(HAVE_BZIP2,1,[Define if you want bzip2 read support])]
             )
         else
-            CFLAGS="$CFLAGS -I${withval}/include"
-            LDFLAGS="$LDFLAGS -L${withval}/lib -lbz2"
+            BZIP2_PATH=${withval}
         fi
     fi
   ]
@@ -172,6 +168,7 @@ if test "x$EXT" != xcygwin && test "x$EXT" != xdarwin && test "x$EXT" != xlnx &&
   fi
 fi
 AC_PROG_CC
+LDFLAGS="$CFLAGS"
 
 if test "x$FC" = "xnone" ; then
   AC_MSG_NOTICE(cfitsio: == Fortran compiler search has been overridden)
@@ -369,6 +366,18 @@ case $GCC in
 		# Don't do anything now
 		;;
 esac
+
+# GSIFTP flags:
+if test "x$GSIFTP_PATH" != x -a "x$GSIFTP_FLAVOUR" != x; then
+   CFLAGS="$CFLAGS -I${GSIFTP_PATH}/include/${GSIFTP_FLAVOUR}"
+   LDFLAGS="$LDFLAGS -L${GSIFTP_PATH}/lib -lglobus_ftp_client_${GSIFTP_FLAVOUR}"
+fi
+
+# BZIP2 flags:
+if test "x$BZIP2_PATH" != x; then
+   CFLAGS="$CFLAGS -I${BZIP2_PATH}/include"
+   LDFLAGS="$LDFLAGS -L${BZIP2_PATH}/lib -lbz2"
+fi
 		
 # Shared library section
 #-------------------------------------------------------------------------------

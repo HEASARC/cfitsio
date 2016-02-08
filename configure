@@ -2265,7 +2265,6 @@ fi
 # Check whether --with-gsiftp-flavour was given.
 if test "${with_gsiftp_flavour+set}" = set; then :
   withval=$with_gsiftp_flavour;  if test "x$withval" != "xno"; then
-
         if test "x$withval" != "xyes" ; then
             GSIFTP_FLAVOUR=${withval}
         fi
@@ -2282,10 +2281,8 @@ fi
 # Check whether --with-gsiftp was given.
 if test "${with_gsiftp+set}" = set; then :
   withval=$with_gsiftp;  if test "x$withval" != "xno"; then
-
         if test "x$withval" != "xyes" ; then
-            CFLAGS="$CFLAGS -I${withval}/include/${GSIFTP_FLAVOUR}"
-            LDFLAGS="$LDFLAGS -L${withval}/lib -lglobus_ftp_client_${GSIFTP_FLAVOUR}"
+            GSIFTP_PATH=${withval}
             HAVE_GSIFTP=yes
         fi
 
@@ -3506,8 +3503,7 @@ fi
 done
 
         else
-            CFLAGS="$CFLAGS -I${withval}/include"
-            LDFLAGS="$LDFLAGS -L${withval}/lib -lbz2"
+            BZIP2_PATH=${withval}
         fi
     fi
 
@@ -4168,6 +4164,7 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
+LDFLAGS="$CFLAGS"
 
 if test "x$FC" = "xnone" ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: cfitsio: == Fortran compiler search has been overridden" >&5
@@ -4691,6 +4688,18 @@ $as_echo "$as_me: WARNING: This gcc is pretty old. Disabling optimization to be 
 		# Don't do anything now
 		;;
 esac
+
+# GSIFTP flags:
+if test "x$GSIFTP_PATH" != x -a "x$GSIFTP_FLAVOUR" != x; then
+   CFLAGS="$CFLAGS -I${GSIFTP_PATH}/include/${GSIFTP_FLAVOUR}"
+   LDFLAGS="$LDFLAGS -L${GSIFTP_PATH}/lib -lglobus_ftp_client_${GSIFTP_FLAVOUR}"
+fi
+
+# BZIP2 flags:
+if test "x$BZIP2_PATH" != x; then
+   CFLAGS="$CFLAGS -I${BZIP2_PATH}/include"
+   LDFLAGS="$LDFLAGS -L${BZIP2_PATH}/lib -lbz2"
+fi
 
 # Shared library section
 #-------------------------------------------------------------------------------
