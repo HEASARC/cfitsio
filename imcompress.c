@@ -8004,7 +8004,7 @@ int fits_compress_table(fitsfile *infptr, fitsfile *outfptr, int *status)
     fits_copy_header(infptr, outfptr, status);  /* start with verbatim copy of the input header */
 
     fits_write_key(outfptr, TLOGICAL, "ZTABLE", &ltrue, "this is a compressed table", status);
-    fits_write_key(outfptr, TLONGLONG, "ZTILELEN", &rowspertile, "number of rows in each tile", status);
+    fits_write_key(outfptr, TLONG, "ZTILELEN", &rowspertile, "number of rows in each tile", status);
 
     fits_read_card(outfptr, "NAXIS1", card, status); /* copy NAXIS1 to ZNAXIS1 */
     strncpy(card, "ZNAXIS1", 7);

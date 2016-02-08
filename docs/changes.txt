@@ -1,36 +1,46 @@
                    Log of Changes Made to CFITSIO
 
-Version 3.38 - December 2015
+Version 3.38 - February 2015
 
    - CRITICAL BUG FIX:
-     Discovered that the Intel 15 and 16 compilers (and potentially other
-     compilers) may silently produce incorrect code when compiling CFITSIO with
-     the -O2 (or higher) optimization flag. In particular, this problem could cause 
-     CFITSIO to incorrectly read the values of arrays of 32-bit integers in a 
-     FITS file (i.e., images with BITPIX = 32 or table columns with TFORM = 'J') 
-     when the array is being read into a 'long' integer array (and where the 
-     long array elements are 8 bytes long). 
-     
-     One way to test if a particular system is affected by this problem
-     is to compile CFITSIO V3.37 (or earlier) with optimization enabled,
-     and then compare the output of the testprog.c program with the 
-     testprog.out file that is distributed with CFITSIO. If there are any 
-     differences in the files, then further tests should be performed to 
-     determine the exact cause.
-     
-     The root cause of this problem was traced to the fact that CFITSIO 
-     was aliasing an array of 32-bit integers and an array of 64-bit integers 
-     to the same memory location.in order to obtain better data I/O efficiency
-     when reading FITS files.  When CFITSIO modified the values in these
-     arrays, it was essential that the processing be done in strict sequential
-     order from one end of the array to the other end, as was implicit in the
-     C code algorithm. In this case, however, the compiler adopted certain 
-     loop optimization techniques that produced assembly code that violated 
-     this assumption.  Technically, the CFITSIO code violates the "strict aliasing"
-     assumption in ANSI C99, therefore the affected CFITSIO routines were
+     The Intel 15 and 16 compilers (and potentially other compilers) may silently
+     produce incorrect assembly code when compiling CFITSIO with the -O2 (or
+     higher) optimization flag. In particular, this problem could cause  CFITSIO
+     to incorrectly read the values of arrays of 32-bit integers in a  FITS file
+     (i.e., images with BITPIX = 32 or table columns with TFORM = 'J')  when the
+     array is being read into a 'long' integer array in cases where the long
+     array elements are 8 bytes long. 
+
+     One way to test if a particular system is affected by this problem is to
+     compile CFITSIO V3.37 (or earlier) with optimization enabled, and then
+     compare the output of the testprog.c program with the testprog.out file
+     that is distributed with CFITSIO. If there are any  differences in the
+     files, then this system might be affected by this bug. Further tests 
+     should be performed to determine the exact cause.
+
+     The root cause of this problem was traced to the fact that CFITSIO was
+     aliasing an array of 32-bit integers and an array of 64-bit integers to the
+     same memory location in order to obtain better data I/O efficiency when
+     reading FITS files.  When CFITSIO modified the values in these arrays, it
+     was essential that the processing be done in strict sequential order from
+     one end of the array to the other end, as was implicit in the C code
+     algorithm. In this case, however, the compiler adopted certain  loop
+     optimization techniques that produced assembly code that violated  this
+     assumption.  Technically, the CFITSIO code violates the "strict aliasing"
+     assumption in ANSI C99, therefore the affected CFITSIO routines have been
      modified so that the aliasing of different data types to the same memory
      location no longer occurs.
- 
+
+   - fixed problem in configure and configure.in which caused the programs that
+     are distributed with CFITSIO (most notably, fack and funpack) to be build
+     without using any compiler optimization options, which could make them
+     run more slowly than expected.
+
+   - in imcompress.c, fixed bug where the rowspertile variable (declared as 'long')
+     was mistakenly declared as a TLONGLONG variable in a call to fits_write_key.
+     This could have caused the ZTILELEN keyword to be written incorrectly in
+     the header of tile-compressed FITS tables on systems where sizeof(long) = 4.
+
    - in imcompress.c, implemented a new set of routines that safely convert
      shorter integer arrays into a longer integer arrays (e.g. short to int)
      where both arrays are aliased to the same memory location.  These
@@ -63,9 +73,9 @@ Version 3.38 - December 2015
      getcole.c, and getcoli.c to support cases where the 2 memory areas 
      overlap. (submitted by Aurelien Jarno)
 
-   - modified the FITS keyword reading and writing routines to transparently
+   - modified the FITS keyword reading and writing routines to potentially
      support keywords with names longer than 8-characters.  This was implemented
-     to help test a new experimental FITS convention which allows longer 
+     in anticipation of a new experimental FITS convention which allows longer 
      keyword names.
 
    - in fits_quantize_double in quantize.c, test if iseed == N_RANDOM,
@@ -104,7 +114,7 @@ Version 3.38 - December 2015
    - fixed bug in ffeqtyll when it is called with 4th and 5th arguments 
      set to NULL.
 
-   - in fitsio.h, added the standard c++ guard around the declaration of the
+   - in fitsio.h, added the standard C++ guard around the declaration of the
      function fits_read_wcstab.  (reported by Tammo Jan Dijkema, Astron.)
 
    - in fitsio.h, changed the prototype variable name "zero" to "zeroval" to
