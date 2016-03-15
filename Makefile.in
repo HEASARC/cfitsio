@@ -123,9 +123,11 @@ install:	lib${PACKAGE}.a ${INSTALL_DIRS}
 .c.o:
 		${CC} -c -o ${<D}/${@F} ${CFLAGS} ${CPPFLAGS} ${DEFS} $<
 
-UTILS		= cookbook fitscopy imcopy listhead smem speed testprog
+UTILS		= cookbook fitscopy imcopy smem speed testprog
 
 FPACK_UTILS	= fpack funpack
+
+utils:		${FPACK_UTILS} ${UTILS}
 
 swapproc.o:	swapproc.c
 		${CC} -c ${CFLAGS} ${CPPFLAGS} ${SSE_FLAGS} ${DEFS} $<
@@ -149,9 +151,6 @@ speed:		speed.o lib${PACKAGE}.a ${OBJECTS}
 		${CC} ${LDFLAGS} ${DEFS} -o $@ ${@}.o -L. -l${PACKAGE} -lm ${LIBS}
 
 imcopy:		imcopy.o lib${PACKAGE}.a ${OBJECTS}
-		${CC} ${LDFLAGS} ${DEFS} -o $@ ${@}.o -L. -l${PACKAGE} -lm ${LIBS}
-
-listhead:	listhead.o lib${PACKAGE}.a ${OBJECTS}
 		${CC} ${LDFLAGS} ${DEFS} -o $@ ${@}.o -L. -l${PACKAGE} -lm ${LIBS}
 
 cookbook:	cookbook.o lib${PACKAGE}.a ${OBJECTS}
