@@ -169,6 +169,7 @@ if test "x$EXT" != xcygwin && test "x$EXT" != xdarwin && test "x$EXT" != xlnx &&
 fi
 AC_PROG_CC
 LDFLAGS="$CFLAGS"
+LDFLAGS_BIN="$LDFLAGS"
 
 if test "x$FC" = "xnone" ; then
   AC_MSG_NOTICE(cfitsio: == Fortran compiler search has been overridden)
@@ -278,6 +279,8 @@ case $host in
                 # Value of C_UNIV_SWITCH will be needed later for SHLIB_LD:
                 if test "$c_has_option" = no; then C_UNIV_SWITCH=""; fi
                 CFLAGS="$SAVE_CFLAGS $C_UNIV_SWITCH"
+                # Set LDFLAGS used by utilities:
+                LDFLAGS_BIN="$LDFLAGS_BIN -rpath \${CFITSIO_LIB}"
                 ;;
         esac
         # For large file support (but may break Absoft compilers):
@@ -455,6 +458,7 @@ AC_SUBST(SHLIB_SUFFIX)dnl
 AC_SUBST(CFITSIO_SHLIB)dnl
 AC_SUBST(CFITSIO_SHLIB_SONAME)dnl
 AC_SUBST(F77_WRAPPERS)
+AC_SUBST(LDFLAGS_BIN)
 
 # ================= test for the unix ftruncate function ================
 

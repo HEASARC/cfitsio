@@ -623,6 +623,7 @@ ac_default_prefix=`pwd`
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 my_shmem
+LDFLAGS_BIN
 F77_WRAPPERS
 CFITSIO_SHLIB_SONAME
 CFITSIO_SHLIB
@@ -4165,6 +4166,7 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 LDFLAGS="$CFLAGS"
+LDFLAGS_BIN="$LDFLAGS"
 
 if test "x$FC" = "xnone" ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: cfitsio: == Fortran compiler search has been overridden" >&5
@@ -4529,6 +4531,8 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
                 # Value of C_UNIV_SWITCH will be needed later for SHLIB_LD:
                 if test "$c_has_option" = no; then C_UNIV_SWITCH=""; fi
                 CFLAGS="$SAVE_CFLAGS $C_UNIV_SWITCH"
+                # Set LDFLAGS used by utilities:
+                LDFLAGS_BIN="$LDFLAGS_BIN -rpath \${CFITSIO_LIB}"
                 ;;
         esac
         # For large file support (but may break Absoft compilers):
@@ -4767,6 +4771,7 @@ if test "x$lhea_shlib_cflags" != x; then
 fi
 # Set shared library name for cases in which we aren't setting a 'soname':
 if test "x$CFITSIO_SHLIB" = x; then CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX}"; fi
+
 
 
 
