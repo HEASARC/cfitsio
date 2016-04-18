@@ -8723,6 +8723,7 @@ int ffinttyp(char *cval,  /* I - formatted string representation of the integer 
         return(*status);
 
     *dtype = 0;  /* initialize to NULL */
+    *negative = 0;
     p = cval;
 
     if (*p == '+') {
