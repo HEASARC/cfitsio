@@ -2452,19 +2452,36 @@ wild card searches.
 -
         FTGKY[EDJKLS](unit,keyword, > keyval,comment,status)
 -
->7  Get a sequence of numbered keyword values.  These
+>7  Read a string-valued keyword and return the string length, the value string, 
+    and/or the comment field. The first routine, FTGKSL, simply
+    returns the length of the character string value of the specified keyword.
+    The second routine, FTGSKY, also returns up to maxchar characters 
+    of the keyword value string, starting with the firstchar character, 
+    and the keyword comment string.
+    The length argument returns the total length of the keyword value string
+    regardless of how much of the string is actually returned (which 
+    depends on the value of the firstchar and maxchar arguments).  These 
+    routines support string keywords that use the CONTINUE convention to
+    continue long string values over multiple FITS header records.  Normally,
+    string-valued keywords have a maximum length of 68 characters, however,
+>   CONTINUE'd string keywords may be arbitrarily long. 
+-
+       FTGKSL(unit,keyword, > length,status)
+       FTGSKY(unit,keyword,firstchar,maxchar,> keyval,length,comment,status)
+-
+>8  Get a sequence of numbered keyword values.  These
 >   routines do not support wild card characters in the root name.
 -
         FTGKN[EDJKLS](unit,keyroot,startno,max_keys, > keyvals,nfound,status)
 -
->8  Get the value of a floating point keyword, returning the integer and
+>9  Get the value of a floating point keyword, returning the integer and
     fractional parts of the value in separate subroutine arguments.
     This subroutine may be used to read any keyword but is especially
 >   useful for reading the 'triple precision' keywords written by FTPKYT.
 -
         FTGKYT(unit,keyword, > intval,dblval,comment,status)
 -
->9  Get the physical units string in an existing keyword.  This
+>10  Get the physical units string in an existing keyword.  This
     routine uses a local convention, shown in the following example,
     in which the keyword units are
     enclosed in square brackets in the beginning of the keyword comment
@@ -6067,6 +6084,8 @@ do not need to be enclosed in quotes.
         FTGNXK(unit,inclist,ninc,exclist,nexc, > card,status)
         FTGKEY(unit,keyword, > value,comment,status) 
         FTGKY[EDJKLS](unit,keyword, > keyval,comment,status)
+        FTGKSL(unit,keyword, > length,status)
+        FTGSKY(unit,keyword,firstchar,maxchar,> keyval,length,comment,status)
         FTGKN[EDJKLS](unit,keyroot,startno,max_keys, > keyvals,nfound,status)
         FTGKYT(unit,keyword, > intval,dblval,comment,status)
         FTGUNT(unit,keyword, > units,status)

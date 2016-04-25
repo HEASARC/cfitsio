@@ -1870,7 +1870,30 @@ header.
   int fits_read_str / ffgstr
       (fitsfile *fptr, char *string, > char *card, int *status)
 -
->3  Return the nth header record in the CHU.  The first keyword
+>3  Read a string-valued keyword and return the string length, the value string, 
+    and/or the comment field.   The first routine, ffgksl, simply
+    returns the length of the character string value of the specified keyword.
+    The second routine, ffgsky, also returns up to maxchar characters 
+    of the keyword value string, starting with the firstchar character, 
+    and the keyword comment string (unless the input value of comm = NULL).
+    The valuelen argument returns the total length of the keyword value string
+    regardless of how much of the string is actually returned (which 
+    depends on the value of the firstchar and maxchar arguments).
+    Note that the value character string argument must be allocated large enough to
+    also hold the null terminator at the end of the returned string.  These 
+    routines support string keywords that use the CONTINUE convention to
+    continue long string values over multiple FITS header records.  Normally,
+    string-valued keywords have a maximum length of 68 characters, however,
+>   CONTINUE'd string keywords may be arbitrarily long. \label{ffgksl} \label{ffgsky}
+-
+  int fits_get_key_strlen / ffgksl
+      (fitsfile *fptr, const char *keyname, int *length, int *status);
+
+  int fits_read_string_key / ffgsky
+       (fitsfile *fptr, const char *keyname, int firstchar, int maxchar,
+       char *value, int *valuelen, char *comm, int *status);
+-
+>4  Return the nth header record in the CHU.  The first keyword
    in the header is at keynum = 1;  if keynum = 0 then these routines
    simply reset the internal CFITSIO pointer to the beginning of the header
    so that subsequent keyword operations will start at the top of the
@@ -1890,7 +1913,7 @@ header.
       (fitsfile *fptr, int keynum, > char *keyname, char *value,
        char *comment, int *status)
 -
->4  Return the next keyword whose name matches one of the strings in
+>5  Return the next keyword whose name matches one of the strings in
     'inclist' but does not match any of the strings in 'exclist'.
     The strings in inclist and exclist may contain wild card characters
     (*, ?, and \#) as described at the beginning of this section.
@@ -1906,7 +1929,7 @@ header.
       (fitsfile *fptr, char **inclist, int ninc, char **exclist,
        int nexc, > char *card, int  *status)
 -
->5  Return the physical units string from an existing keyword.  This
+>6  Return the physical units string from an existing keyword.  This
     routine uses a local convention, shown in the following example,
     in which the keyword units are enclosed in square brackets in the
     beginning of the keyword comment field.  A null string is returned
@@ -1917,7 +1940,7 @@ header.
   int fits_read_key_unit / ffgunt
       (fitsfile *fptr, char *keyname, > char *unit, int *status)
 -
->6  Concatenate the header keywords in the CHDU into a single long
+>7  Concatenate the header keywords in the CHDU into a single long
     string of characters.  This provides a convenient way of passing
     all or part of the header information in a FITS HDU to other subroutines.
     Each 80-character fixed-length keyword record is appended to the
@@ -8749,6 +8772,7 @@ fits\_get\_img\_param & \pageref{ffgipr} \\
 fits\_get\_img\_size & \pageref{ffgisz} \\
 fits\_get\_img\_type & \pageref{ffgidt} \\
 fits\_get\_inttype    & \pageref{ffinttyp} \\
+fits\_get\_key\_strlen & \pageref{ffgksl} \\
 fits\_get\_keyclass    & \pageref{ffgkcl} \\
 fits\_get\_keyname    & \pageref{ffgknm} \\
 fits\_get\_keytype    & \pageref{ffdtyp} \\
@@ -8764,10 +8788,10 @@ fits\_get\_tile\_dim     & \pageref{ffgetcomp} \\
 fits\_get\_tbcol      & \pageref{ffgabc} \\
 fits\_get\_version    & \pageref{ffvers} \\
 fits\_hdr2str         & \pageref{ffhdr2str}, \pageref{hdr2str} \\
-fits\_insert\_atbl    & \pageref{ffitab} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_insert\_atbl    & \pageref{ffitab} \\
 fits\_insert\_btbl    & \pageref{ffibin} \\
 fits\_insert\_col   & \pageref{fficol} \\
 fits\_insert\_cols  & \pageref{fficls} \\
@@ -8815,9 +8839,9 @@ fits\_read\_2d\_TYP      & \pageref{ffg2dx} \\
 fits\_read\_3d\_TYP      & \pageref{ffg3dx} \\
 fits\_read\_atblhdr      & \pageref{ffghtb} \\
 fits\_read\_btblhdr      & \pageref{ffghbn} \\
-fits\_read\_card         & \pageref{ffgcrd} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_read\_card         & \pageref{ffgcrd} \\
 fits\_read\_col        & \pageref{ffgcv} \\
 fits\_read\_col\_bit\_ & \pageref{ffgcx} \\
 fits\_read\_col\_TYP    & \pageref{ffgcvx} \\
@@ -8846,6 +8870,7 @@ fits\_read\_pix  & \pageref{ffgpxv} \\
 fits\_read\_pixnull & \pageref{ffgpxf} \\
 fits\_read\_record       & \pageref{ffgrec} \\
 fits\_read\_str         & \pageref{ffgcrd} \\
+fits\_read\_string\_key & \pageref{ffgsky} \\
 fits\_read\_subset  & \pageref{ffgsv} \\
 fits\_read\_subset\_TYP  & \pageref{ffgsvx} \pageref{ffgsvx2}\\
 fits\_read\_subsetnull\_TYP & \pageref{ffgsfx} \pageref{ffgsfx2} \\
@@ -8864,10 +8889,10 @@ fits\_rms\_short      & \pageref{imageRMS} \\
 fits\_select\_rows  & \pageref{ffsrow} \\
 fits\_set\_atblnull   & \pageref{ffsnul} \\
 fits\_set\_bscale     & \pageref{ffpscl} \\
-fits\_set\_btblnull   & \pageref{fftnul} \\
-fits\_set\_compression\_type  & \pageref{ffsetcomp} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_set\_btblnull   & \pageref{fftnul} \\
+fits\_set\_compression\_type  & \pageref{ffsetcomp} \\
 fits\_set\_hdrsize    & \pageref{ffhdef} \\
 fits\_set\_hdustruc   & \pageref{ffrdef} \\
 fits\_set\_imgnull    & \pageref{ffpnul} \\
@@ -8914,11 +8939,11 @@ fits\_write\_errmsg   & \pageref{ffpmsg} \\
 fits\_write\_ext        & \pageref{ffgextn} \\
 fits\_write\_exthdr        & \pageref{ffphps} \\
 fits\_write\_grphdr       & \pageref{ffphpr} \\
-fits\_write\_grppar\_TYP & \pageref{ffpgpx} \\
-fits\_write\_hdu       & \pageref{ffwrhdu} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_write\_grppar\_TYP & \pageref{ffpgpx} \\
+fits\_write\_hdu       & \pageref{ffwrhdu} \\
 fits\_write\_history      & \pageref{ffphis} \\
 fits\_write\_img        & \pageref{ffppr} \\
 fits\_write\_img\_null & \pageref{ffppru} \\
@@ -9036,6 +9061,7 @@ ffgisz & \pageref{ffgisz} \\
 ffgkcl      & \pageref{ffgkcl} \\
 ffgkey      & \pageref{ffgkey} \\
 ffgkls  & \pageref{ffgkls} \\
+ffgksl  & \pageref{ffgksl} \\
 ffgkn\_     & \pageref{ffgknx} \\
 ffgknm    & \pageref{ffgknm} \\
 ffgky          & \pageref{ffgky} \\
@@ -9046,10 +9072,10 @@ ffgmcp   & \pageref{ffgmcp} \\
 ffgmng  & \pageref{ffgmng} \\
 ffgmop    & \pageref{ffgmop} \\
 ffgmrm   & \pageref{ffgmrm} \\
-ffgmsg    & \pageref{ffgmsg} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+ffgmsg    & \pageref{ffgmsg} \\
 ffgmtf  & \pageref{ffgmtf} \\
 ffgncl     & \pageref{ffgnrw} \\
 ffgnrw     & \pageref{ffgnrw} \\
@@ -9063,7 +9089,8 @@ ffgpxf  & \pageref{ffgpxf} \\
 ffgrec       & \pageref{ffgrec} \\
 ffgrsz    & \pageref{ffgrsz} \\
 ffgsdt        & \pageref{ffdt2s} \\
-ffgsf\_ & \pageref{ffgsfx} \pageref{ffgsfx2} \\
+ffgsf\_ &  \pageref{ffgsfx} \pageref{ffgsfx2} \\
+ffgsky  &  \pageref{ffgsky} \\
 ffgstm        & \pageref{ffdt2s} \\
 ffgstr         & \pageref{ffgcrd} \\
 ffgsv  & \pageref{ffgsv} \\
@@ -9096,12 +9123,12 @@ ffikyu   & \pageref{ffikyu} \\
 ffiky\_    & \pageref{ffikyx} \\
 ffimem  & \pageref{ffimem} \\
 ffinit  & \pageref{ffinit} \\
-ffinttyp    & \pageref{ffinttyp} \\
-ffiopn & \pageref{ffopen} \\
 
 \end{tabular}
 \begin{tabular}{lr}
 
+ffinttyp    & \pageref{ffinttyp} \\
+ffiopn & \pageref{ffopen} \\
 ffirec     & \pageref{ffirec} \\
 ffirow  & \pageref{ffirow} \\
 ffitab    & \pageref{ffitab} \\
@@ -9148,12 +9175,12 @@ ffpkls  & \pageref{ffpkls} \\
 ffpkn\_     & \pageref{ffpknx} \\
 ffpktp & \pageref{ffpktp} \\
 ffpky          & \pageref{ffpky} \\
-ffpkyt   & \pageref{ffpkyt} \\
-ffpkyu     & \pageref{ffpkyu} \\
 
 \end{tabular}
 \begin{tabular}{lr}
 
+ffpkyt   & \pageref{ffpkyt} \\
+ffpkyu     & \pageref{ffpkyu} \\
 ffpky\_      & \pageref{ffpkyx} \\
 ffplsw & \pageref{ffplsw} \\
 ffpmrk   & \pageref{ffpmrk} \\
@@ -9200,13 +9227,14 @@ fftscl     & \pageref{fftscl} \\
 ffucrd       & \pageref{ffucrd} \\
 ffukls    & \pageref{ffukyx} \\
 ffuky        & \pageref{ffuky} \\
-ffukyu   & \pageref{ffukyu} \\
-ffuky\_    & \pageref{ffukyx} \\
+
 
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
 
+ffukyu   & \pageref{ffukyu} \\
+ffuky\_    & \pageref{ffukyx} \\
 ffupch      & \pageref{ffupch} \\
 ffupck  & \pageref{ffupck} \\
 ffurlt  & \pageref{ffurlt} \\

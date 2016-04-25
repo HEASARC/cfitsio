@@ -62,10 +62,11 @@ pthread_mutex_t Fitsio_InitLock = PTHREAD_MUTEX_INITIALIZER;
 /*--------------------------------------------------------------------------*/
 int fitsio_init_lock(void)
 {
-  static int need_to_init = 1;
   int status = 0;
   
 #ifdef _REENTRANT
+
+  static int need_to_init = 1;
 
   pthread_mutexattr_t mutex_init;
 
@@ -4735,7 +4736,7 @@ int fits_register_driver(char *prefix,
 	int (*truncate)(int driverhandle, LONGLONG filesize),
 	int (*close)(int driverhandle),
 	int (*fremove)(char *filename),
-        int (*size)(int driverhandle, LONGLONG *size),
+        int (*size)(int driverhandle, LONGLONG *sizex),
 	int (*flush)(int driverhandle),
 	int (*seek)(int driverhandle, LONGLONG offset),
 	int (*read) (int driverhandle, void *buffer, long nbytes),

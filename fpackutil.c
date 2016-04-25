@@ -1864,7 +1864,7 @@ int fp_test_hdu (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
 int fp_test_table (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2, 
 	fpstate fpvar, int *status)
 {
-/* this routine is for performance testing of the beta table compression methods */
+/* this routine is for performance testing of the table compression methods */
 
 	int stat = 0, hdutype, tstatus = 0;
         char fzalgor[FLEN_VALUE];

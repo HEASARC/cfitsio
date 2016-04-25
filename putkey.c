@@ -310,9 +310,14 @@ int ffprec(fitsfile *fptr,     /* I - FITS file pointer        */
     for (ii=len; ii < 80; ii++)    /* fill card with spaces if necessary */
         tcard[ii] = ' ';
 
-    keylength = strcspn(tcard, "=");
+    keylength = strcspn(tcard, "=");   /* support for free-format keywords */
     if (keylength == 80) keylength = 8;
     
+    /* test for the common commentary keywords which by definition have 8-char names */
+    if ( !strncasecmp( "COMMENT ", tcard, 8) || !strncasecmp( "HISTORY ", tcard, 8) ||
+         !strncasecmp( "        ", tcard, 8) || !strncasecmp( "CONTINUE", tcard, 8) )
+	 keylength = 8;
+
     for (ii=0; ii < keylength; ii++)       /* make sure keyword name is uppercase */
         tcard[ii] = toupper(tcard[ii]);
 

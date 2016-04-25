@@ -34,10 +34,10 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.38
-#define CFITSIO_MINOR 38
+#define CFITSIO_VERSION 3.39
+#define CFITSIO_MINOR 39
 #define CFITSIO_MAJOR 3
-#define CFITSIO_SONAME 4
+#define CFITSIO_SONAME 5
 
 /* the SONAME is incremented in a new release if the binary shared */
 /* library (on linux and Mac systems) is not backward compatible */
@@ -938,7 +938,10 @@ int CFITS_API ffgkey(fitsfile *fptr, const char *keyname, char *keyval, char *co
 int CFITS_API ffgky( fitsfile *fptr, int datatype, const char *keyname, void *value,
            char *comm, int *status);
 int CFITS_API ffgkys(fitsfile *fptr, const char *keyname, char *value, char *comm, int *status);
+int CFITS_API ffgksl(fitsfile *fptr, const char *keyname, int *length, int *status);
 int CFITS_API ffgkls(fitsfile *fptr, const char *keyname, char **value, char *comm, int *status);
+int CFITS_API ffgsky(fitsfile *fptr, const char *keyname, int firstchar, int maxchar,
+               char *value, int *valuelen, char *comm, int *status);
 int CFITS_API fffree(void *value,  int  *status); 
 int CFITS_API fffkls(char *value, int *status);
 int CFITS_API ffgkyl(fitsfile *fptr, const char *keyname, int *value, char *comm, int *status);

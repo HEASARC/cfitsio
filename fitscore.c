@@ -73,11 +73,12 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.38;
+      *version = (float) 3.39;
 
-/*       Dec 2015
+/*       April 2016
 
    Previous releases:
+      *version = 3.38       Feb 2016
       *version = 3.37     3 Jun 2014
       *version = 3.36     6 Dec 2013
       *version = 3.35    23 May 2013
@@ -1060,11 +1061,9 @@ int ffmkky(const char *keyname,   /* I - keyword name    */
         return(*status = BAD_KEYCHAR);
     }
 
-    if (namelen <= 8) { /* a normal 8-char (or less) FITS keyword. */
-
-        /* Test that it contains only legal characters */
-        if (fftkey(tmpname, &tstatus) > 0) return(*status);
-
+    if (namelen <= 8 && fftkey(tmpname, &tstatus) <= 0 ) { 
+    
+        /* a normal 8-char (or less) FITS keyword. */
         strcat(card, tmpname);   /* copy keyword name to buffer */
    
         for (ii = namelen; ii < 8; ii++)
@@ -1100,11 +1099,14 @@ int ffmkky(const char *keyname,   /* I - keyword name    */
 	    if (strlen(cptr) > maxlen) maxlen = strlen(cptr); /* find longest token */
 
 	    /* name contains special characters? */
+            tstatus = -1;  /* suppress any error message */
 	    if (fftkey(cptr, &tstatus) > 0) specialchar = 1; 
 	    
 	    cptr = strtok(NULL, " ");
 	    ntoken++;
 	}
+
+        tstatus = -1;  /* suppress any error message */
 
 /*      if (ntoken > 1) { */
         if (ntoken > 0) {  /*  temporarily change so that this case should always be true  */
@@ -1358,7 +1360,7 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
         comm[0] = '\0';
 
     cardlen = strlen(card);
-    
+
     /* support for ESO HIERARCH keywords; find the '=' */
     if (FSTRNCMP(card, "HIERARCH ", 9) == 0)
     {
@@ -1390,6 +1392,7 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
         FSTRNCMP(card, "COMMENT ", 8) == 0 ||  /* keywords with no value */
         FSTRNCMP(card, "HISTORY ", 8) == 0 ||
         FSTRNCMP(card, "END     ", 8) == 0 ||
+        FSTRNCMP(card, "CONTINUE", 8) == 0 ||
         FSTRNCMP(card, "        ", 8) == 0 )
     {
         /*  no value, so the comment extends from cols 9 - 80  */
