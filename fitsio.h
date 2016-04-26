@@ -772,6 +772,8 @@ int CFITS_API ffopen(fitsfile **fptr, const char *filename, int iomode, int *sta
 int CFITS_API ffopentest(int soname, fitsfile **fptr, const char *filename, int iomode, int *status);
 
 int CFITS_API ffdopn(fitsfile **fptr, const char *filename, int iomode, int *status);
+int CFITS_API ffeopn(fitsfile **fptr, const char *filename, int iomode, 
+     char *extlist, int *hdutype, int *status);
 int CFITS_API fftopn(fitsfile **fptr, const char *filename, int iomode, int *status);
 int CFITS_API ffiopn(fitsfile **fptr, const char *filename, int iomode, int *status);
 int CFITS_API ffdkopn(fitsfile **fptr, const char *filename, int iomode, int *status);
@@ -1851,7 +1853,20 @@ int CFITS_API ffhist2(fitsfile **fptr, char *outfile, int imagetype, int naxis,
            char binname[4][FLEN_VALUE], 
            double weightin, char wtcol[FLEN_VALUE],
            int recip, char *rowselect, int *status);
-
+CFITS_API fitsfile *ffhist3(fitsfile *fptr, 
+           char *outfile, int imagetype,  int naxis,     
+           char colname[4][FLEN_VALUE],  
+           double *minin,     
+           double *maxin,     
+           double *binsizein, 
+           char minname[4][FLEN_VALUE], 
+           char maxname[4][FLEN_VALUE], 
+           char binname[4][FLEN_VALUE], 
+           double weightin,        
+           char wtcol[FLEN_VALUE], 
+           int recip,              
+           char *selectrow,        
+           int *status);
 int CFITS_API fits_select_image_section(fitsfile **fptr, char *outfile,
            char *imagesection, int *status);
 int CFITS_API fits_copy_image_section(fitsfile *infptr, fitsfile *outfile,

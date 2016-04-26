@@ -1537,6 +1537,10 @@ int fits_open_table / fftopn
 
 int fits_open_image / ffiopn
     (fitsfile **fptr, char *filename, int iomode, > int *status)
+
+int fits_open_extlist / ffeopn
+    (fitsfile **fptr, char *filename, int iomode, char *extlist,
+    >  int *hdutype, int *status)
 -
 
 The iomode parameter determines the read/write access allowed in the
@@ -1567,6 +1571,13 @@ The fits\_open\_table and fits\_open\_image routines are similar to
 fits\_open\_data except they will move to the first significant table
 HDU or image HDU in the file, respectively, if a HDU name or
 number is not specified as part of the filename.
+
+The fits\_open\_extname routine opens the file and attempts to move to a 'useful'
+HDU. If after opening the file CFITSIO is pointing to null primary array,
+then CFITSIO will attempt to move to the first extension that has an EXTNAME or
+HDUNAME keyword value that matches one of the names in the input extlist 
+space-delimited list of names.  If that fails, then CFITSIO simply moves to the 
+2nd HDU in the file.
 
 IRAF images (.imh format files) and raw binary data arrays may also be
 opened with READONLY access.  CFITSIO will automatically test if the
@@ -8821,6 +8832,7 @@ fits\_movrel\_hdu     & \pageref{ffmrhd} \\
 fits\_null\_check     & \pageref{ffnchk} \\
 fits\_open\_data      & \pageref{ffopen} \\
 fits\_open\_diskfile    & \pageref{ffopen} \\
+fits\_open\_extlist      & \pageref{ffopen} \\
 fits\_open\_file      & \pageref{ffopen} \\
 fits\_open\_image      & \pageref{ffopen} \\
 fits\_open\_table      & \pageref{ffopen} \\
@@ -8838,9 +8850,9 @@ fits\_pix\_to\_world & \pageref{ffwldp} \\
 fits\_read\_2d\_TYP      & \pageref{ffg2dx} \\
 fits\_read\_3d\_TYP      & \pageref{ffg3dx} \\
 fits\_read\_atblhdr      & \pageref{ffghtb} \\
-fits\_read\_btblhdr      & \pageref{ffghbn} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_read\_btblhdr      & \pageref{ffghbn} \\
 fits\_read\_card         & \pageref{ffgcrd} \\
 fits\_read\_col        & \pageref{ffgcv} \\
 fits\_read\_col\_bit\_ & \pageref{ffgcx} \\
@@ -8888,9 +8900,9 @@ fits\_rms\_float      & \pageref{imageRMS} \\
 fits\_rms\_short      & \pageref{imageRMS} \\
 fits\_select\_rows  & \pageref{ffsrow} \\
 fits\_set\_atblnull   & \pageref{ffsnul} \\
-fits\_set\_bscale     & \pageref{ffpscl} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_set\_bscale     & \pageref{ffpscl} \\
 fits\_set\_btblnull   & \pageref{fftnul} \\
 fits\_set\_compression\_type  & \pageref{ffsetcomp} \\
 fits\_set\_hdrsize    & \pageref{ffhdef} \\
@@ -8938,10 +8950,10 @@ fits\_write\_errmark   & \pageref{ffpmrk} \\
 fits\_write\_errmsg   & \pageref{ffpmsg} \\
 fits\_write\_ext        & \pageref{ffgextn} \\
 fits\_write\_exthdr        & \pageref{ffphps} \\
-fits\_write\_grphdr       & \pageref{ffphpr} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_write\_grphdr       & \pageref{ffphpr} \\
 fits\_write\_grppar\_TYP & \pageref{ffpgpx} \\
 fits\_write\_hdu       & \pageref{ffwrhdu} \\
 fits\_write\_history      & \pageref{ffphis} \\
@@ -9011,6 +9023,7 @@ ffdsum  & \pageref{ffdsum} \\
 ffdt2s  & \pageref{ffdt2s} \\
 ffdtdm   & \pageref{ffdtdm} \\
 ffdtyp    & \pageref{ffdtyp} \\
+ffeopn    & \pageref{ffopen} \\
 ffeqty    & \pageref{ffgtcl} \\
 ffesum  & \pageref{ffesum} \\
 ffexest  & \pageref{ffexist} \\
@@ -9021,9 +9034,9 @@ ffflnm      & \pageref{ffflnm} \\
 ffflsh     & \pageref{ffflus} \\
 ffflus     & \pageref{ffflus} \\
 fffree     & \pageref{ffgkls},  \pageref{ffhdr2str} \\
-fffrow    & \pageref{fffrow} \\
 \end{tabular}
 \begin{tabular}{lr}
+fffrow    & \pageref{fffrow} \\
 ffg2d\_      & \pageref{ffg2dx} \\
 ffg3d\_      & \pageref{ffg3dx} \\
 ffgabc      & \pageref{ffgabc} \\
@@ -9071,10 +9084,10 @@ ffgky\_      & \pageref{ffgkyx} \\
 ffgmcp   & \pageref{ffgmcp} \\
 ffgmng  & \pageref{ffgmng} \\
 ffgmop    & \pageref{ffgmop} \\
-ffgmrm   & \pageref{ffgmrm} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+ffgmrm   & \pageref{ffgmrm} \\
 ffgmsg    & \pageref{ffgmsg} \\
 ffgmtf  & \pageref{ffgmtf} \\
 ffgncl     & \pageref{ffgnrw} \\
@@ -9122,11 +9135,11 @@ ffikls    & \pageref{ffikyx} \\
 ffikyu   & \pageref{ffikyu} \\
 ffiky\_    & \pageref{ffikyx} \\
 ffimem  & \pageref{ffimem} \\
-ffinit  & \pageref{ffinit} \\
 
 \end{tabular}
 \begin{tabular}{lr}
 
+ffinit  & \pageref{ffinit} \\
 ffinttyp    & \pageref{ffinttyp} \\
 ffiopn & \pageref{ffopen} \\
 ffirec     & \pageref{ffirec} \\
@@ -9174,11 +9187,11 @@ ffphtb      & \pageref{ffphtb} \\
 ffpkls  & \pageref{ffpkls} \\
 ffpkn\_     & \pageref{ffpknx} \\
 ffpktp & \pageref{ffpktp} \\
-ffpky          & \pageref{ffpky} \\
 
 \end{tabular}
 \begin{tabular}{lr}
 
+ffpky          & \pageref{ffpky} \\
 ffpkyt   & \pageref{ffpkyt} \\
 ffpkyu     & \pageref{ffpkyu} \\
 ffpky\_      & \pageref{ffpkyx} \\
@@ -9226,13 +9239,13 @@ fftrec    & \pageref{fftrec} \\
 fftscl     & \pageref{fftscl} \\
 ffucrd       & \pageref{ffucrd} \\
 ffukls    & \pageref{ffukyx} \\
-ffuky        & \pageref{ffuky} \\
 
 
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
 
+ffuky        & \pageref{ffuky} \\
 ffukyu   & \pageref{ffukyu} \\
 ffuky\_    & \pageref{ffukyx} \\
 ffupch      & \pageref{ffupch} \\
