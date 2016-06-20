@@ -49,11 +49,11 @@ IF (USE_PTHREADS)
     ADD_DEFINITIONS(-D_REENTRANT)
 ENDIF()
 
-# Math library (not available in MSVC)
-IF (NOT MSVC)
-    FIND_LIBRARY(M_LIB m)
-ELSE()
+# Math library (not available in MSVC or MINGW)
+IF (MSVC OR MINGW)
     SET(M_LIB "")
+ELSE()
+    FIND_LIBRARY(M_LIB m)
 ENDIF()
 
 SET(SRC_FILES
