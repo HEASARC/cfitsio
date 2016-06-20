@@ -1206,7 +1206,7 @@ int compress2file_from_mem(
 #include "drvrsmem.h"
 #endif
 
-#if defined(vms) || defined(__vms) || defined(WIN32) || defined(__WIN32__) || (defined(macintosh) && !defined(TARGET_API_MAC_CARBON))
+#if defined(vms) || defined(__vms) || (defined(WIN32) && !defined(__MINGW64__)) || (defined(__WIN32__) && !defined(__MINGW64__)) || (defined(macintosh) && !defined(TARGET_API_MAC_CARBON))
 /* A hack for nonunix machines, which lack strcasecmp and strncasecmp */
 int strcasecmp (const char *s1, const char *s2       );
 int strncasecmp(const char *s1, const char *s2, size_t n);
