@@ -1566,7 +1566,7 @@ int ffiter(int n_cols,
           }
           else
           {
-              col[jj].null.intnull = UINT_MAX;  /* use maximum as null */
+              col[jj].null.uintnull = UINT_MAX;  /* use maximum as null */
           }
           break;
 
