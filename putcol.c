@@ -1383,7 +1383,7 @@ int ffiter(int n_cols,
 
             /* get the BLANK keyword value, if it exists */
             if (abs(typecode) == TBYTE || abs(typecode) == TSHORT || abs(typecode) == TLONG
-                || abs(typecode) == TINT)
+                || abs(typecode) == TINT || abs(typecode) == TLONGLONG)
             {
                 tstatus = 0;
                 ffgkyj(cols[jj].fptr, "BLANK", &tnull, 0, &tstatus);
@@ -1412,7 +1412,7 @@ int ffiter(int n_cols,
 
             /* get the TNULL keyword value, if it exists */
             if (abs(typecode) == TBYTE || abs(typecode) == TSHORT || abs(typecode) == TLONG
-                || abs(typecode) == TINT)
+                || abs(typecode) == TINT || abs(typecode) == TLONGLONG)
             {
                 tstatus = 0;
                 if (hdutype == ASCII_TBL) /* TNULLn value is a string */
@@ -1473,7 +1473,7 @@ int ffiter(int n_cols,
           col[jj].nullsize  = sizeof(char);  /* number of bytes per value */
 
           if (abs(typecode) == TBYTE || abs(typecode) == TSHORT || abs(typecode) == TLONG
-              || abs(typecode) == TINT)
+              || abs(typecode) == TINT || abs(typecode) == TLONGLONG)
           {
               tnull = minvalue(tnull, 255);
               tnull = maxvalue(tnull, 0);
@@ -1490,7 +1490,7 @@ int ffiter(int n_cols,
           col[jj].nullsize  = sizeof(char);  /* number of bytes per value */
 
           if (abs(typecode) == TBYTE || abs(typecode) == TSHORT || abs(typecode) == TLONG
-              || abs(typecode) == TINT)
+              || abs(typecode) == TINT || abs(typecode) == TLONGLONG)
           {
               tnull = minvalue(tnull, 127);
               tnull = maxvalue(tnull, -128);
@@ -1507,7 +1507,7 @@ int ffiter(int n_cols,
           col[jj].nullsize  = sizeof(short);  /* number of bytes per value */
 
           if (abs(typecode) == TBYTE || abs(typecode) == TSHORT || abs(typecode) == TLONG
-              || abs(typecode) == TINT)
+              || abs(typecode) == TINT || abs(typecode) == TLONGLONG)
           {
               tnull = minvalue(tnull, SHRT_MAX);
               tnull = maxvalue(tnull, SHRT_MIN);
@@ -1524,7 +1524,7 @@ int ffiter(int n_cols,
           col[jj].nullsize  = sizeof(unsigned short);  /* bytes per value */
 
           if (abs(typecode) == TBYTE || abs(typecode) == TSHORT || abs(typecode) == TLONG
-               || abs(typecode) == TINT)
+               || abs(typecode) == TINT || abs(typecode) == TLONGLONG)
           {
               tnull = minvalue(tnull, (long) USHRT_MAX);
               tnull = maxvalue(tnull, 0);  /* don't allow negative value */
@@ -1541,7 +1541,7 @@ int ffiter(int n_cols,
           col[jj].nullsize  = sizeof(int);  /* number of bytes per value */
 
           if (abs(typecode) == TBYTE || abs(typecode) == TSHORT || abs(typecode) == TLONG
-               || abs(typecode) == TINT)
+               || abs(typecode) == TINT || abs(typecode) == TLONGLONG)
           {
               tnull = minvalue(tnull, INT_MAX);
               tnull = maxvalue(tnull, INT_MIN);
@@ -1558,7 +1558,7 @@ int ffiter(int n_cols,
           col[jj].nullsize  = sizeof(unsigned int);  /* bytes per value */
 
           if (abs(typecode) == TBYTE || abs(typecode) == TSHORT || abs(typecode) == TLONG
-               || abs(typecode) == TINT)
+               || abs(typecode) == TINT || abs(typecode) == TLONGLONG)
           {
               tnull = minvalue(tnull, INT32_MAX);
               tnull = maxvalue(tnull, 0);
@@ -1575,7 +1575,7 @@ int ffiter(int n_cols,
           col[jj].nullsize  = sizeof(long);  /* number of bytes per value */
 
           if (abs(typecode) == TBYTE || abs(typecode) == TSHORT || abs(typecode) == TLONG
-               || abs(typecode) == TINT)
+               || abs(typecode) == TINT || abs(typecode) == TLONGLONG)
           {
               col[jj].null.longnull = tnull;
           }
@@ -1590,7 +1590,7 @@ int ffiter(int n_cols,
           col[jj].nullsize  = sizeof(unsigned long);  /* bytes per value */
 
           if (abs(typecode) == TBYTE || abs(typecode) == TSHORT || abs(typecode) == TLONG
-               || abs(typecode) == TINT)
+               || abs(typecode) == TINT || abs(typecode) == TLONGLONG)
           {
               if (tnull < 0)  /* can't use a negative null value */
                   col[jj].null.ulongnull = LONG_MAX;
@@ -1608,7 +1608,7 @@ int ffiter(int n_cols,
           col[jj].nullsize  = sizeof(float);  /* number of bytes per value */
 
           if (abs(typecode) == TBYTE || abs(typecode) == TSHORT || abs(typecode) == TLONG
-               || abs(typecode) == TINT)
+               || abs(typecode) == TINT || abs(typecode) == TLONGLONG)
           {
               col[jj].null.floatnull = (float) tnull;
           }
@@ -1629,7 +1629,7 @@ int ffiter(int n_cols,
           col[jj].nullsize  = sizeof(double);  /* number of bytes per value */
 
           if (abs(typecode) == TBYTE || abs(typecode) == TSHORT || abs(typecode) == TLONG
-               || abs(typecode) == TINT)
+               || abs(typecode) == TINT || abs(typecode) == TLONGLONG)
           {
               col[jj].null.doublenull = (double) tnull;
           }
