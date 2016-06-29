@@ -8222,11 +8222,13 @@ static void bitnot(char *result,char *bits)
 static char bitcmp(char *bitstrm1, char *bitstrm2)
 {
  int i, l1, l2, ldiff;
- char stream[256];
+ char *stream=0;
  char chr1, chr2;
 
  l1 = strlen(bitstrm1);
  l2 = strlen(bitstrm2);
+ int largestStream = (l1 > l2) ? l1 : l2;
+ stream = (char *)malloc(sizeof(char)*(largestStream+1));
  if (l1 < l2)
    {
     ldiff = l2 - l1;
@@ -8250,8 +8252,12 @@ static char bitcmp(char *bitstrm1, char *bitstrm2)
        chr2 = *(bitstrm2++);
        if ( ((chr1 == '0') && (chr2 == '1'))
 	    || ((chr1 == '1') && (chr2 == '0')) )
+       {
+          free(stream);
 	  return( 0 );
+       }
     }
+ free(stream);
  return( 1 );
 }
 
