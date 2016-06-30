@@ -168,7 +168,7 @@ eval:		# Rebuild eval_* files from flex/bison source
 		/bin/rm -f y.tab.c y.tab.h
 
 clean:
-	-	/bin/rm -f *.o zlib/*.o lib${PACKAGE}* y.output so_locations \
+	-	/bin/rm -rf *.o zlib/*.o *.dSYM lib${PACKAGE}* y.output so_locations \
 		${UTILS} ${FPACK_UTILS} testprog.fit
 
 distclean:	clean
