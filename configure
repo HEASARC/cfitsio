@@ -4490,6 +4490,9 @@ case $host in
                 ;;
             *)
 
+                echo "int main(){return(0);}" > /tmp/$$.c
+                $CC -v -o /tmp/$$.out /tmp/$$.c 2> /tmp/$$.log
+                if test `cat /tmp/$$.log | grep -ci 'LLVM'` -ne 0; then APPLEXCODE="yes"; fi
                 # Test to see whether the C compiler accepts the "-arch"
                 # flags for building "universal" binaries (Apple XCode only):
                 SAVE_CFLAGS="$CFLAGS"
@@ -4532,7 +4535,13 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
                 if test "$c_has_option" = no; then C_UNIV_SWITCH=""; fi
                 CFLAGS="$SAVE_CFLAGS $C_UNIV_SWITCH"
                 # Set LDFLAGS used by utilities:
-                LDFLAGS_BIN="$LDFLAGS_BIN -rpath \${CFITSIO_LIB}"
+                if test "$APPLEXCODE" = yes; then
+                  # Apple XCode LLVM:
+                  LDFLAGS_BIN="$LDFLAGS_BIN -rpath \${CFITSIO_LIB}"
+                else
+                  # Non-Xcode GCC:
+                  LDFLAGS_BIN="$LDFLAGS_BIN -Wl,-rpath \${CFITSIO_LIB}"
+                fi
                 ;;
         esac
         # For large file support (but may break Absoft compilers):
@@ -4728,7 +4737,13 @@ case $EXT in
             ;;
         *)
             # Build for i386 & x86_64 architectures on Darwin 10.x or newer:
-            SHLIB_LD="$CC -dynamiclib $C_UNIV_SWITCH -headerpad_max_install_names -install_name @rpath/lib\${PACKAGE}.\${CFITSIO_SONAME}\${SHLIB_SUFFIX} -compatibility_version \${CFITSIO_SONAME} -current_version \${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}"
+            if test "$APPLEXCODE" = yes; then
+              # Apple XCode LLVM:
+              SHLIB_LD="$CC -dynamiclib $C_UNIV_SWITCH -headerpad_max_install_names -install_name @rpath/lib\${PACKAGE}.\${CFITSIO_SONAME}\${SHLIB_SUFFIX} -compatibility_version \${CFITSIO_SONAME} -current_version \${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}"
+            else
+              # Non-Xcode GCC:
+              SHLIB_LD="$CC -dynamiclib $C_UNIV_SWITCH -headerpad_max_install_names -install_name lib\${PACKAGE}.\${CFITSIO_SONAME}\${SHLIB_SUFFIX} -compatibility_version \${CFITSIO_SONAME} -current_version \${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}"
+            fi
             ;;
     esac
 
