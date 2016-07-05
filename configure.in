@@ -288,7 +288,7 @@ case $host in
                   LDFLAGS_BIN="$LDFLAGS_BIN -rpath \${CFITSIO_LIB}"
                 else
                   # Non-Xcode GCC:
-                  LDFLAGS_BIN="$LDFLAGS_BIN -Wl,-rpath \${CFITSIO_LIB}"
+                  LDFLAGS_BIN="$LDFLAGS_BIN -Wl,-rpath,\${CFITSIO_LIB}"
                 fi
                 ;;
         esac
