@@ -2541,7 +2541,8 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
             naxis1 += (repeat + 7) / 8;
         else if (datatype > 0)
             naxis1 += repeat * (datatype / 10);
-        else if (tform[ii][0] == 'P' || tform[ii][1] == 'P')
+        else if (tform[ii][0] == 'P' || tform[ii][1] == 'P'||
+                 tform[ii][0] == 'p' || tform[ii][1] == 'p')
            /* this is a 'P' variable length descriptor (neg. datatype) */
             naxis1 += 8;
         else
