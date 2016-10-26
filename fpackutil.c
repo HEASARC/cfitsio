@@ -1494,6 +1494,9 @@ int fp_pack_hdu (fitsfile *infptr, fitsfile *outfptr, fpstate fpvar,
 			else
 			  fp_i2stat(infptr, naxis, naxes, &imagestats, &stat);
 
+			/* rescan the image header to reset scaling values (changed by fp_iNstat) */
+			ffrhdu(infptr, &hdutype, &stat);
+
 			/* use the minimum of the MAD 2nd, 3rd, and 5th order noise estimates */
 			noisemin = imagestats.noise3;
 			if (imagestats.noise2 != 0. && imagestats.noise2 < noisemin) noisemin = imagestats.noise2;

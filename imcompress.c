@@ -8617,6 +8617,9 @@ int fits_uncompress_table(fitsfile *infptr, fitsfile *outfptr, int *status)
         return(*status);
     }
 
+    /* silently ignore illegal ZTILELEN value if too large */
+    if (rowspertile > naxis2) rowspertile = naxis2;
+
     fits_read_key(infptr, TLONG, "ZPCOUNT", &pcount, comm, status);
     if (*status > 0) {
         ffpmsg("Could not find the required ZPCOUNT keyword");

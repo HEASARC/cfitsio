@@ -1194,12 +1194,19 @@ error messages one at a time.
  
 CFITSIO provides easy-to-use support for reading and writing data in
 variable length fields of a binary table. The variable length columns
-have TFORMn keyword values of the form `1Pt(len)' where `t' is the
-data type code (e.g., I, J, E, D, etc.) and `len' is an integer
-specifying the maximum length of the vector in the table.  (CFITSIO also
-supports the experimental 'Q' datatype, which is identical to the 'P' type
-except that is supports is a 64-bit address space and hence much larger
-data structures).  If the value
+have TFORMn keyword values of the form `1Pt(len)' or `1Qt(len)' where `t' 
+is the data type code (e.g., I, J, E, D, etc.) and `len' is an integer
+specifying the maximum length of the vector in the table.  The 'P' type 
+variable length columns use 32-bit array length and byte offset values, whereas
+the 'Q' type columns use 64-bit values, which may be required when dealing
+with large arrays.  CFITSIO supports a local convention that interprets
+the 'P' type descriptors as unsigned 32-bit integers, which provides 
+a factor of 2 greater range for the array length or heap address than 
+is possible with 32-bit 'signed' integers.  Note, however, that other software
+packages may not support this convention, and may be unable to read thees
+extended range variable length records.
+ 
+If the value
 of `len' is not specified when the table is created (e.g., if the TFORM
 keyword value is simply specified as '1PE' instead of '1PE(400) ), then
 CFITSIO will automatically scan the table when it is closed to
@@ -3564,8 +3571,8 @@ The following utility routines may be useful for certain applications.
                      XTENSION, TFIELDS, TTYPEn, TBCOLn, TFORMn, THEAP,
                      and the first 4 COMMENT keywords in the primary array
                      that define the FITS format.
-  TYP_CMPRS_KEY  20  The experimental keywords used in the compressed 
-                     image format ZIMAGE, ZCMPTYPE, ZNAMEn, ZVALn,
+  TYP_CMPRS_KEY  20  The keywords used in the compressed image or table
+                     format, including ZIMAGE, ZCMPTYPE, ZNAMEn, ZVALn,
                      ZTILEn, ZBITPIX, ZNAXISn, ZSCALE, ZZERO, ZBLANK
   TYP_SCAL_KEY   30  BSCALE, BZERO, TSCALn, TZEROn
   TYP_NULL_KEY   40  BLANK, TNULLn
@@ -8318,12 +8325,6 @@ keyword, so this local convention is in compliance with the
 FITS standard although other FITS readers may not
 recognize this convention.
 
-The Binary Table definition document that was approved by the IAU in
-1994 contains an appendix describing an alternate convention for
-specifying arrays of fixed or variable length strings in a binary table
-character column (with the form 'rA:SSTRw/nnn)'.  This appendix was not
-officially voted on by the IAU and hence is still provisional.  CFITSIO
-does not currently support this proposal.
 
 **D.  Keyword Units Strings
 
@@ -9273,8 +9274,6 @@ bitpix   - bits per pixel. The following symbolic mnemonics are predefined:
                LONGLONG_IMG =  64 (signed long 64-bit integer)
                FLOAT_IMG  = -32 (float)
                DOUBLE_IMG = -64 (double).
-           The LONGLONG_IMG type is experimental and is not officially
-           recognized in the FITS Standard document.
            Two additional values, USHORT_IMG and ULONG_IMG are also available
            for creating unsigned integer images.  These are equivalent to
            creating a signed integer image with BZERO offset keyword values
