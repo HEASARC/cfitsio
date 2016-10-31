@@ -3531,7 +3531,7 @@ test "$exec_prefix" != NONE -a "$prefix" != "$exec_prefix" \
 #--------------------------------------------------------------------
 
 case $host in
-    *pc-cygwin*)
+    *cygwin*)
 	ARCH="cygwin"
 	EXT="cygwin"
 	;;
@@ -4479,7 +4479,7 @@ CFLAGS="$CFLAGS"
 LIBPRE=""
 
 case $host in
-    *pc-cygwin*)
+    *cygwin*)
 	CFLAGS="$CFLAGS -DHAVE_POSIX_SIGNALS"
 	;;
     *apple-darwin*)
