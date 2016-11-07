@@ -1025,6 +1025,7 @@ int ffmkky(const char *keyname,   /* I - keyword name    */
 {
     size_t namelen, len, ii;
     char tmpname[FLEN_KEYWORD], tmpname2[FLEN_KEYWORD],*cptr;
+    char *saveptr;
     int tstatus = -1, nblank = 0, ntoken = 0, maxlen = 0, specialchar = 0;
 
     if (*status > 0)
@@ -1095,7 +1096,7 @@ int ffmkky(const char *keyname,   /* I - keyword name    */
 	/* and test if any of the tokens contain nonstandard characters */
 	
       	strncat(tmpname2, tmpname, FLEN_KEYWORD - 1);
-        cptr = strtok(tmpname2, " ");
+        cptr = ffstrtok(tmpname2, " ",&saveptr);
 	while (cptr) {
 	    if (strlen(cptr) > maxlen) maxlen = strlen(cptr); /* find longest token */
 
@@ -1103,7 +1104,7 @@ int ffmkky(const char *keyname,   /* I - keyword name    */
             tstatus = -1;  /* suppress any error message */
 	    if (fftkey(cptr, &tstatus) > 0) specialchar = 1; 
 	    
-	    cptr = strtok(NULL, " ");
+	    cptr = ffstrtok(NULL, " ",&saveptr);
 	    ntoken++;
 	}
 

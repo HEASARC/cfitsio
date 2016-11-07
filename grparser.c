@@ -76,6 +76,7 @@
 #endif
 
 #include <string.h>
+#include <strings.h>
 #include "fitsio2.h"
 #include "grparser.h"
 
@@ -558,6 +559,7 @@ int	ngp_extract_tokens(NGP_RAW_LINE *cl)
 
 int	ngp_include_file(char *fname)		/* try to open include file */
  { char *p, *p2, *cp, *envar, envfiles[NGP_MAX_ENVFILES];
+   char *saveptr;
 
    if (NULL == fname) return(NGP_NUL_PTR);
 
@@ -572,7 +574,7 @@ int	ngp_include_file(char *fname)		/* try to open include file */
          { strncpy(envfiles, envar, NGP_MAX_ENVFILES - 1);
            envfiles[NGP_MAX_ENVFILES - 1] = 0;	/* copy search path to local variable, env. is fragile */
 
-           for (p2 = strtok(envfiles, ":"); NULL != p2; p2 = strtok(NULL, ":"))
+           for (p2 = ffstrtok(envfiles, ":",&saveptr); NULL != p2; p2 = ffstrtok(NULL, ":",&saveptr))
             {
 	      cp = (char *)ngp_alloc(strlen(fname) + strlen(p2) + 2);
 	      if (NULL == cp) return(NGP_NO_MEMORY);

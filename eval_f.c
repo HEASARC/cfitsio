@@ -54,6 +54,7 @@
 #include <ctype.h>
 #include "eval_defs.h"
 #include "region.h"
+#include <strings.h>
 
 typedef struct {
      int  datatype;   /* Data type to cast parse results into for user       */

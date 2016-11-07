@@ -18,6 +18,7 @@
 /* begin standard C headers. */
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #include <errno.h>
 #include <stdlib.h>
 

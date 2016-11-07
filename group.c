@@ -18,6 +18,7 @@
 #include "group.h"
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #include <stdlib.h>
 
 #if defined(WIN32) || defined(__WIN32__)
@@ -5208,12 +5209,12 @@ int fits_url2path(char *inpath,  /* input file path string  */
   int absolute;
 
 #if defined(MSDOS) || defined(__WIN32__) || defined(WIN32)
-  char *tmpStr;
+  char *tmpStr, *saveptr;
 #elif defined(VMS) || defined(vms) || defined(__vms)
   int i;
-  char *tmpStr;
+  char *tmpStr, *saveptr;
 #elif defined(macintosh)
-  char *tmpStr;
+  char *tmpStr, *saveptr;
 #endif
 
   if(*status != 0) return(*status);
@@ -5277,8 +5278,8 @@ int fits_url2path(char *inpath,  /* input file path string  */
     all tokens have been examined
   */
 
-  for(tmpStr = strtok(buff,"/"), outpath[0] = 0;
-                                 tmpStr != NULL; tmpStr = strtok(NULL,"/"))
+  for(tmpStr = ffstrtok(buff,"/",&saveptr), outpath[0] = 0;
+                                 tmpStr != NULL; tmpStr = ffstrtok(NULL,"/",&saveptr))
     {
       strcat(outpath,tmpStr);
 
@@ -5321,15 +5322,15 @@ int fits_url2path(char *inpath,  /* input file path string  */
     all tokens have been examined
   */
 
-  for(tmpStr = strtok(buff,"/"), outpath[0] = 0; 
-                                 tmpStr != NULL; tmpStr = strtok(NULL,"/"))
+  for(tmpStr = ffstrtok(buff,"/",&saveptr), outpath[0] = 0; 
+                                 tmpStr != NULL; tmpStr = ffstrtok(NULL,"/",&saveptr))
     {
 
       if(strcasecmp(tmpStr,"FILE:") == 0)
 	{
 	  /* the next token should contain the DECnet machine name */
 
-	  tmpStr = strtok(NULL,"/");
+	  tmpStr = ffstrtok(NULL,"/",&saveptr);
 	  if(tmpStr == NULL) continue;
 
 	  strcat(outpath,tmpStr);
@@ -5414,8 +5415,8 @@ int fits_url2path(char *inpath,  /* input file path string  */
     all tokens have been examined
   */
 
-  for(tmpStr = strtok(buff,"/"), outpath[0] = 0;
-                                 tmpStr != NULL; tmpStr = strtok(NULL,"/"))
+  for(tmpStr = ffstrtok(buff,"/",&saveptr), outpath[0] = 0;
+                                 tmpStr != NULL; tmpStr = ffstrtok(NULL,"/",&saveptr))
     {
       strcat(outpath,tmpStr);
       strcat(outpath,":");
@@ -5869,6 +5870,7 @@ int fits_clean_url(char *inURL,  /* I input URL string                      */
 {
   grp_stack* mystack; /* stack to hold pieces of URL */
   char* tmp;
+  char *saveptr;
 
   if(*status) return *status;
 
@@ -5903,7 +5905,7 @@ int fits_clean_url(char *inURL,  /* I input URL string                      */
 
     /* now clean the remainder of the inURL. push URL segments onto
      * stack, dealing with .. and . as we go */
-    tmp = strtok(inURL, "/"); /* finds first / */
+    tmp = ffstrtok(inURL, "/",&saveptr); /* finds first / */
     while(tmp) {
       if(!strcmp(tmp, "..")) {
         /* discard previous URL segment, if there was one. if not,
@@ -5915,7 +5917,7 @@ int fits_clean_url(char *inURL,  /* I input URL string                      */
         /* always just skip ., but otherwise add segment to stack */
         if(strcmp(tmp, ".")) push_grp_stack(mystack, tmp);
       }
-      tmp = strtok(NULL, "/"); /* get the next segment */
+      tmp = ffstrtok(NULL, "/",&saveptr); /* get the next segment */
     }
 
     /* stack now has pieces of cleaned URL, so just catenate them

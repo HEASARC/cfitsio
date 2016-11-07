@@ -5,6 +5,7 @@
 /*  Goddard Space Flight Center.                                           */
 
 #include <string.h>
+#include <strings.h>
 #include <stdlib.h>
 #include <math.h>
 #include <ctype.h>
@@ -413,6 +414,7 @@ int ffeopn(fitsfile **fptr,      /* O - FITS file pointer                   */
 {
     int hdunum, naxis, thdutype, gotext=0;
     char *ext, *textlist;
+    char *saveptr;
   
     if (*status > 0)
         return(*status);
@@ -434,8 +436,8 @@ int ffeopn(fitsfile **fptr,      /* O - FITS file pointer                   */
 	}
 
         strcpy(textlist, extlist);
-        for(ext=(char *)strtok(textlist, " "); ext != NULL; 
-	    ext=(char *)strtok(NULL," ")){
+        for(ext=(char *)ffstrtok(textlist, " ",&saveptr); ext != NULL; 
+	    ext=(char *)ffstrtok(NULL," ",&saveptr)){
 	    fits_movnam_hdu(*fptr, ANY_HDU, ext, 0, status);
 	    if( *status == 0 ){
 	      gotext = 1;
