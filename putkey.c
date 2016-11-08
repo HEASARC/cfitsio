@@ -408,8 +408,10 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
         return(*status);
 
     remain = maxvalue(strlen(value), 1); /* no. of chars to write (at least 1) */  
-    if (comm)  
+    if (comm) { 
        commlen = strlen(comm);
+       if (commlen > 47) commlen = 47;  /* only guarantee preserving the first 47 characters */
+    }
 
     /* count the number of single quote characters are in the string */
     tstring[0] = '\0';
@@ -504,15 +506,21 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
            nchar = 68 - nquote;  /* max number of chars to write this time */
         }
 
-        /* make adjustment if necessary to allow reasonable room for a comment */
-		if ((remain + nquote + commlen + 3) > 68)  /* not enough room for whole comment? */
+        /* make adjustment if necessary to allow reasonable room for a comment on last CONTINUE card 
+	   only need to do this if 
+	     a) there is a comment string, and
+	     b) the remaining value string characters could all fit on the next CONTINUE card, and
+	     c) there is not enough room on the next CONTINUE card for both the remaining value
+	        characters, and at least 47 characters of the comment string.
+	*/
+	
+        if (commlen > 0 && remain + nquote < 69 && remain + nquote + commlen > 65) 
 	{
-	    if (remain + nquote > 18 && nquote < 18)  /* not enough room for a standard comment? */
-	    {
-	        nchar = 18 - nquote;  /* force continuation onto another card, so that */
+            if (nchar > 18) { /* only false if there are a rediculous number of quotes in the string */
+	        nchar = remain - 15;  /* force continuation onto another card, so that */
 		                      /* there is room for a comment up to 47 chara long */
                 nocomment = 1;  /* don't write the comment string this time */
-	    }
+            }
 	}
     }
     return(*status);

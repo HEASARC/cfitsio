@@ -2,6 +2,17 @@
 
 Version 3.40 - October 2016
 
+   - fixed a bug when writing long string keywords with the CONTINUE convention
+     which caused the CONTINUE'd strings to only be 16 characters long, instead
+     of using up all the available space in the 80-character header record.
+
+   - fixed a missing 'defined' keyword in fitsio.h.
+
+   - replaced all calls to strtok (which is not threadsafe) with a new ffstrtok
+     function which internally calls the threadsafe strtok_r function.  One 
+     byproduct of this change is that <strings.h> must also be included
+     in several of the C source code files.
+
    - modified the ffphbn function in putkey.c to support TFORM specifiers that
      use lowercase 'p' (instead of uppercase) when referring to a variable-length
      array column.
