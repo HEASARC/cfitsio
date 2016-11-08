@@ -572,6 +572,7 @@ fi
 # ------------------------------------------------------------------------------
 if test "x$BUILD_REENTRANT" = xyes; then
   AC_DEFINE(_REENTRANT)
+  AC_DEFINE([_XOPEN_SOURCE], [700])
   AC_CHECK_LIB([pthread],[main],[],[AC_MSG_ERROR(Unable to locate pthread library needed when enabling reentrant multithreading)])
 fi
 # ------------------------------------------------------------------------------

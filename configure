@@ -5096,6 +5096,8 @@ fi
 if test "x$BUILD_REENTRANT" = xyes; then
   $as_echo "#define _REENTRANT 1" >>confdefs.h
 
+  $as_echo "#define _XOPEN_SOURCE 700" >>confdefs.h
+
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lpthread" >&5
 $as_echo_n "checking for main in -lpthread... " >&6; }
 if ${ac_cv_lib_pthread_main+:} false; then :
