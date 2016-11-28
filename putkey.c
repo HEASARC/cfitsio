@@ -314,8 +314,8 @@ int ffprec(fitsfile *fptr,     /* I - FITS file pointer        */
     if (keylength == 80) keylength = 8;
     
     /* test for the common commentary keywords which by definition have 8-char names */
-    if ( !strncasecmp( "COMMENT ", tcard, 8) || !strncasecmp( "HISTORY ", tcard, 8) ||
-         !strncasecmp( "        ", tcard, 8) || !strncasecmp( "CONTINUE", tcard, 8) )
+    if ( !fits_strncasecmp( "COMMENT ", tcard, 8) || !fits_strncasecmp( "HISTORY ", tcard, 8) ||
+         !fits_strncasecmp( "        ", tcard, 8) || !fits_strncasecmp( "CONTINUE", tcard, 8) )
 	 keylength = 8;
 
     for (ii=0; ii < keylength; ii++)       /* make sure keyword name is uppercase */
