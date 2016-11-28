@@ -6,7 +6,6 @@
 /*  Goddard Space Flight Center.                                           */
 
 #include <string.h>
-#include <strings.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <time.h>

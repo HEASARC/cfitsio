@@ -1,5 +1,20 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.41 - November 2016
+
+   - The change made in version 3.40 to include strings.h caused problems on
+     Windows (and other) platforms, so this change was backed out. The reason
+     for including it was to define the strcasecmp and strcasencmp functions, so
+     as an alternative, new equivalent functions called fits_strcasecmp and
+     fits_strncasecmp have been added to CFITSIO.as a substitute. All the
+     previous calls to the str[n]casecmp functions have been changed to
+     now call fits_str[n]casecmp. In addition, the previously defined 
+     ngp_strcasecmp function (in grparser.c) has been removed and the calls to
+     it have been changed to fits_strcasecmp.
+     
+   - The speed.c utility program was changed to correctly call 
+     the gettimeofday function with a NULL second arguement. 
+
 Version 3.40 - October 2016
 
    - fixed a bug when writing long string keywords with the CONTINUE convention

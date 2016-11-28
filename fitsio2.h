@@ -1208,11 +1208,10 @@ int compress2file_from_mem(
 #include "drvrsmem.h"
 #endif
 
-#if defined(vms) || defined(__vms) || (defined(WIN32) && !defined(__MINGW64__)) || (defined(__WIN32__) && !defined(__MINGW64__)) || (defined(macintosh) && !defined(TARGET_API_MAC_CARBON))
 /* A hack for nonunix machines, which lack strcasecmp and strncasecmp */
-int strcasecmp (const char *s1, const char *s2       );
-int strncasecmp(const char *s1, const char *s2, size_t n);
-#endif
+/* these functions are in fitscore.c */
+int fits_strcasecmp (const char *s1, const char *s2       );
+int fits_strncasecmp(const char *s1, const char *s2, size_t n);
 
 /* end of the entire "ifndef _FITSIO2_H" block */
 #endif

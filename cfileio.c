@@ -5,7 +5,6 @@
 /*  Goddard Space Flight Center.                                           */
 
 #include <string.h>
-#include <strings.h>
 #include <stdlib.h>
 #include <math.h>
 #include <ctype.h>
@@ -1048,7 +1047,7 @@ move2hdu:
                fits_read_key(*fptr, TSTRING, "EXTNAME", tblname, NULL,&tstatus);
 
                if ( (!strstr(tblname, "GTI") && !strstr(tblname, "gti")) &&
-                    strncasecmp(tblname, "OBSTABLE", 8) )
+                    fits_strncasecmp(tblname, "OBSTABLE", 8) )
                   break;  /* found an interesting table */
             }
           }  /* end while */
@@ -1512,7 +1511,7 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
     if (mode == 0)
         return(*status);
 
-    if(strcasecmp(urltype,"FILE://") == 0)
+    if(fits_strcasecmp(urltype,"FILE://") == 0)
       {
         fits_path2url(infile,tmpinfile,status);
 
@@ -1550,7 +1549,7 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
             return(*status);
           }
 
-          if(strcasecmp(oldurltype,"FILE://") == 0)
+          if(fits_strcasecmp(oldurltype,"FILE://") == 0)
             {
               fits_path2url(oldinfile,tmpStr,status);
               
@@ -4963,7 +4962,7 @@ int ffifile2(char *url,       /* input filename */
             strcat(urltype, "stdin://");
         ptr1++;
     }
-    else if (!strncasecmp(ptr1, "stdin", 5))
+    else if (!fits_strncasecmp(ptr1, "stdin", 5))
     {
         if (urltype)
             strcat(urltype, "stdin://");
@@ -5474,21 +5473,21 @@ int ffifile2(char *url,       /* input filename */
            if (*tmptr == '@')  /* test for leading @ symbol */
                hasAt = 1;
 
-           if ( !strncasecmp(tmptr, "col ", 4) )
+           if ( !fits_strncasecmp(tmptr, "col ", 4) )
               colStart = 1;
 
-           if ( !strncasecmp(tmptr, "bin", 3) )
+           if ( !fits_strncasecmp(tmptr, "bin", 3) )
               binStart = 1;
 
-           if ( !strncasecmp(tmptr, "pix", 3) )
+           if ( !fits_strncasecmp(tmptr, "pix", 3) )
               pixStart = 1;
 
-           if ( !strncasecmp(tmptr, "compress ", 9) ||
-                !strncasecmp(tmptr, "compress]", 9) )
+           if ( !fits_strncasecmp(tmptr, "compress ", 9) ||
+                !fits_strncasecmp(tmptr, "compress]", 9) )
               compStart = 1;
 
-           if ( !strncasecmp(tmptr, "gtifilter(", 10) ||
-                !strncasecmp(tmptr, "regfilter(", 10) )
+           if ( !fits_strncasecmp(tmptr, "gtifilter(", 10) ||
+                !fits_strncasecmp(tmptr, "regfilter(", 10) )
            {
                rowFilter = 1;
            }

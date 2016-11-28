@@ -1,7 +1,6 @@
 # include <stdio.h>
 # include <stdlib.h>
 # include <string.h>
-# include <strings.h>
 # include <math.h>
 # include <ctype.h>
 # include <time.h>
@@ -640,17 +639,17 @@ int fits_set_compression_pref(
                 /* allowed values: RICE_1, GZIP_1, GZIP_2, PLIO_1,     */
                 /*  HCOMPRESS_1, BZIP2_1, and NOCOMPRESS               */
 
-                if        (!strncasecmp(value, "'RICE_1", 7) ) {
+                if        (!fits_strncasecmp(value, "'RICE_1", 7) ) {
 		    comptype = RICE_1;
-                } else if (!strncasecmp(value, "'GZIP_1", 7) ) {
+                } else if (!fits_strncasecmp(value, "'GZIP_1", 7) ) {
 		    comptype = GZIP_1;
-                } else if (!strncasecmp(value, "'GZIP_2", 7) ) {
+                } else if (!fits_strncasecmp(value, "'GZIP_2", 7) ) {
 		    comptype = GZIP_2;
-                } else if (!strncasecmp(value, "'PLIO_1", 7) ) {
+                } else if (!fits_strncasecmp(value, "'PLIO_1", 7) ) {
 		    comptype = PLIO_1;
-                } else if (!strncasecmp(value, "'HCOMPRESS_1", 12) ) {
+                } else if (!fits_strncasecmp(value, "'HCOMPRESS_1", 12) ) {
 		    comptype = HCOMPRESS_1;
-                } else if (!strncasecmp(value, "'NONE", 5) ) {
+                } else if (!fits_strncasecmp(value, "'NONE", 5) ) {
 		    comptype = NOCOMPRESS;
 		} else {
 			ffpmsg("Unknown FZALGOR keyword compression algorithm:");
@@ -662,9 +661,9 @@ int fits_set_compression_pref(
 
 	    } else if (!strncmp(card+2, "TILE  ", 6) ) {
 
-                if (!strncasecmp(value, "'row", 4) ) {
+                if (!fits_strncasecmp(value, "'row", 4) ) {
                    tiledim[0] = -1;
-		} else if (!strncasecmp(value, "'whole", 6) ) {
+		} else if (!fits_strncasecmp(value, "'whole", 6) ) {
                    tiledim[0] = -1;
                    tiledim[1] = -1;
                    tiledim[2] = -1;
@@ -683,11 +682,11 @@ int fits_set_compression_pref(
 
 	    } else if (!strncmp(card+2, "QMETHD", 6) ) {
 
-                    if (!strncasecmp(value, "'no_dither", 10) ) {
+                    if (!fits_strncasecmp(value, "'no_dither", 10) ) {
                         ivalue = -1; /* just quantize, with no dithering */
-		    } else if (!strncasecmp(value, "'subtractive_dither_1", 21) ) {
+		    } else if (!fits_strncasecmp(value, "'subtractive_dither_1", 21) ) {
                         ivalue = SUBTRACTIVE_DITHER_1; /* use subtractive dithering */
-		    } else if (!strncasecmp(value, "'subtractive_dither_2", 21) ) {
+		    } else if (!fits_strncasecmp(value, "'subtractive_dither_2", 21) ) {
                         ivalue = SUBTRACTIVE_DITHER_2; /* dither, except preserve zero-valued pixels */
 		    } else {
 		        ffpmsg("Unknown value for FZQUANT keyword: (set_compression_pref)");
@@ -699,9 +698,9 @@ int fits_set_compression_pref(
 		    
 	    } else if (!strncmp(card+2, "DTHRSD", 6) ) {
 
-                if (!strncasecmp(value, "'checksum", 9) ) {
+                if (!fits_strncasecmp(value, "'checksum", 9) ) {
                     ivalue = -1; /* use checksum of first tile */
-		} else if (!strncasecmp(value, "'clock", 6) ) {
+		} else if (!fits_strncasecmp(value, "'clock", 6) ) {
                     ivalue = 0; /* set dithering seed based on system clock */
 		} else {  /* read integer value */
 		    if (*value == '\'')
@@ -722,9 +721,9 @@ int fits_set_compression_pref(
 	    } else if (!strncmp(card+2, "I2F", 3) ) {
 
 	        /* set whether to convert integers to float then use lossy compression */
-                if (!strcasecmp(value, "t") ) {
+                if (!fits_strcasecmp(value, "t") ) {
 		    fits_set_lossy_int (outfptr, 1, status);
-		} else if (!strcasecmp(value, "f") ) {
+		} else if (!fits_strcasecmp(value, "f") ) {
 		    fits_set_lossy_int (outfptr, 0, status);
 		} else {
 		        ffpmsg("Unknown value for FZI2F keyword: (set_compression_pref)");
@@ -5560,7 +5559,7 @@ int imcomp_copy_img2comp(fitsfile *infptr, fitsfile *outfptr, int *status)
 
 	/* write some associated HISTORY keywords */
         fits_parse_value(card, card2, NULL, status);
-	if (strncasecmp(card2, "'NONE", 5) ) {
+	if (fits_strncasecmp(card2, "'NONE", 5) ) {
 	    /* the value is not 'NONE' */	
 	    fits_write_history(outfptr, 
 	        "Image was compressed by CFITSIO using scaled integer quantization:", status);
@@ -7954,13 +7953,13 @@ int fits_compress_table(fitsfile *infptr, fitsfile *outfptr, int *status)
     tstatus = 0;
     if (!fits_read_key(infptr, TSTRING, "FZALGOR", tempstring, NULL, &tstatus)) {
 
-	    if (!strcasecmp(tempstring, "NONE")) {
+	    if (!fits_strcasecmp(tempstring, "NONE")) {
 	            default_algor = NOCOMPRESS;
-	    } else if (!strcasecmp(tempstring, "GZIP") || !strcasecmp(tempstring, "GZIP_1")) {
+	    } else if (!fits_strcasecmp(tempstring, "GZIP") || !fits_strcasecmp(tempstring, "GZIP_1")) {
 	            default_algor = GZIP_1;
-	    } else if (!strcasecmp(tempstring, "GZIP_2")) {
+	    } else if (!fits_strcasecmp(tempstring, "GZIP_2")) {
 	            default_algor = GZIP_2;
- 	    } else if (!strcasecmp(tempstring, "RICE_1")) {
+ 	    } else if (!fits_strcasecmp(tempstring, "RICE_1")) {
 	            default_algor = RICE_1;
  	    } else {
  	        ffpmsg("FZALGOR specifies unsupported table compression algorithm:");
@@ -8081,11 +8080,11 @@ int fits_compress_table(fitsfile *infptr, fitsfile *outfptr, int *status)
 	tstatus = 0;
 	if (!fits_read_key(outfptr, TSTRING, keyname, tempstring, NULL, &tstatus)) {
 
-	    if (!strcasecmp(tempstring, "GZIP") || !strcasecmp(tempstring, "GZIP_1")) {
+	    if (!fits_strcasecmp(tempstring, "GZIP") || !fits_strcasecmp(tempstring, "GZIP_1")) {
 	            compalgor[ii] = GZIP_1;
-	    } else if (!strcasecmp(tempstring, "GZIP_2")) {
+	    } else if (!fits_strcasecmp(tempstring, "GZIP_2")) {
 	            compalgor[ii] = GZIP_2;
-	    } else if (!strcasecmp(tempstring, "RICE_1")) {
+	    } else if (!fits_strcasecmp(tempstring, "RICE_1")) {
 	            compalgor[ii] = RICE_1;
 	    } else {
 	        ffpmsg("Unsupported table compression algorithm specification.");

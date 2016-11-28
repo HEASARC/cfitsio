@@ -73,11 +73,12 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.40;
+      *version = (float) 3.41;
 
-/*       Oct 2016
+/*       Nov 2016
 
    Previous releases:
+      *version = 3.40       Oct 2016
       *version = 3.39       Apr 2016
       *version = 3.38       Feb 2016
       *version = 3.37     3 Jun 2014
@@ -9458,4 +9459,41 @@ int ffc2dd(const char *cval,   /* I - string representation of the value */
     }
 
     return(*status);
+}
+
+/* ================================================================== */
+/* A hack for nonunix machines, which lack strcasecmp and strncasecmp */
+/* ================================================================== */
+
+int fits_strcasecmp(const char *s1, const char *s2)
+{
+   char c1, c2;
+
+   for (;;) {
+      c1 = toupper( *s1 );
+      c2 = toupper( *s2 );
+
+      if (c1 < c2) return(-1);
+      if (c1 > c2) return(1);
+      if (c1 == 0) return(0);
+      s1++;
+      s2++;
+   }
+}
+
+int fits_strncasecmp(const char *s1, const char *s2, size_t n)
+{
+   char c1, c2;
+
+   for (; n-- ;) {
+      c1 = toupper( *s1 );
+      c2 = toupper( *s2 );
+
+      if (c1 < c2) return(-1);
+      if (c1 > c2) return(1);
+      if (c1 == 0) return(0);
+      s1++;
+      s2++;
+   }
+   return(0);
 }
