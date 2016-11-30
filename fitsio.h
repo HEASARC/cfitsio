@@ -1139,6 +1139,7 @@ int CFITS_API ffcdfl(fitsfile *fptr, int *status);
 int CFITS_API ffwrhdu(fitsfile *fptr, FILE *outstream, int *status);
 
 int CFITS_API ffrdef(fitsfile *fptr, int *status);
+int CFITS_API ffrhdu(fitsfile *fptr, int *hdutype, int *status);
 int CFITS_API ffhdef(fitsfile *fptr, int morekeys, int *status);
 int CFITS_API ffpthp(fitsfile *fptr, long theap, int *status);
  
