@@ -1,5 +1,16 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.42 - March 2017
+
+   - modified the code in ftp_open_network to send "\r\n" as end-of-line
+     characters instead of just "\n".  Some ftp servers (in particular,
+     at heasarc.gsfc.nasa.gov) now require both characters, otherwise the
+     network connection simply hangs.
+     
+   - modified the http_open_network routine to handle HTTP 301 or 302 redirects
+     to a FTP url.  This is needed to support the new configuration on
+     the heasarc HTTP server which sometimes redirects http URLS to a ftp URL.
+
 Version 3.41 - November 2016
 
    - The change made in version 3.40 to include strings.h caused problems on
