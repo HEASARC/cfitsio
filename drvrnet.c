@@ -265,7 +265,6 @@ int http_open(char *filename, int rwmode, int *handle)
 
   FILE *httpfile;
   char contentencoding[SHORTLEN];
-  char newfilename[MAXLEN];
   char errorstr[MAXLEN];
   char recbuf[MAXLEN];
   long len;
@@ -848,13 +847,15 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
   if (status != 200){
     if (status == 301 || status == 302) {
       /* got a redirect */
+
+/*
       if (status == 302) {
 	ffpmsg("Note: Web server replied with a temporary redirect from");
       } else {
 	ffpmsg("Note: Web server replied with a redirect from");
       }
       ffpmsg(turl);
-
+*/
       /* now, let's not write the most sophisticated parser here */
 
       while (fgets(recbuf,MAXLEN,*httpfile)) {
@@ -862,12 +863,23 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
 	scratchstr = strstr(recbuf,"Location: ");
 	if (scratchstr != NULL) {
 
-	  ffpmsg("to:");
-	  ffpmsg(recbuf);
 	  /* Ok, we found the Location line which gives the redirected URL */
           /* skip the "Location: "  charactrers */
 	  scratchstr += 10; 
+             
+	  /* strip off any end-of-line characters */
+          tmpint = strlen(scratchstr);
+	  if (scratchstr[tmpint-1] == '\r') scratchstr[tmpint-1] = '\0';
+          tmpint = strlen(scratchstr);
+          if (scratchstr[tmpint-1] == '\n') scratchstr[tmpint-1] = '\0';
+          tmpint = strlen(scratchstr);
+	  if (scratchstr[tmpint-1] == '\r') scratchstr[tmpint-1] = '\0';
 
+/*
+	  ffpmsg("to:");
+	  ffpmsg(scratchstr);
+	  ffpmsg(" ");
+*/
 	  scratchstr2 = strstr(scratchstr,"http://");
           if (scratchstr2 != NULL) {
 	     /* Ok, we found the HTTP redirection is to another HTTP URL. */
@@ -875,17 +887,9 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
 	     /* skip the "http://" characters */
 	     scratchstr2 += 7;
 	     strcpy(turl, scratchstr2);
-             /* strip off any end-of-line characters */
-             tmpint = strlen(turl);
-	     if (turl[tmpint-1] == '\r') turl[tmpint-1] = '\0';
-             tmpint = strlen(turl);
-	     if (turl[tmpint-1] == '\n') turl[tmpint-1] = '\0';
-             tmpint = strlen(turl);
-	     if (turl[tmpint-1] == '\r') turl[tmpint-1] = '\0';
-
-	     sprintf(errorstr,"to %s\n",turl);
-	     ffpmsg(errorstr);
 	     fclose (*httpfile);
+
+             /* note the recursive call to itself */
 	     return 
 	        http_open_network(turl,httpfile,contentencoding,contentlength);
           }
@@ -901,42 +905,12 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
 	        a flag to the http_checkfile routine
 	     */
 	     strcpy(url, scratchstr2);
-             /* strip off any end-of-line characters */
-             tmpint = strlen(url);
-	     if (url[tmpint-1] == '\r') url[tmpint-1] = '\0';
-             tmpint = strlen(url);
-	     if (url[tmpint-1] == '\n') url[tmpint-1] = '\0';
-             tmpint = strlen(url);
-	     if (url[tmpint-1] == '\r') url[tmpint-1] = '\0';
-
              strcpy(contentencoding,"ftp://");
-	     sprintf(errorstr,"to ftp://%s\n",url);
-	     ffpmsg(errorstr);
 	     fclose (*httpfile); 
 	     return 0;
           }
 	}
       }
-
-/* For reference, this was the old paser code that Bruce O'Neel wrote */
-/*
-	scratchstr = strstr(recbuf,"<A HREF=\"");
-	if (scratchstr != NULL) {
-*/
-	  /* Ok, we found the beginning of the anchor */
-          /* skip the <A HREF=" bits and */
-          /* skip http://, we die if it's really ftp:// */
-/*
-	  scratchstr += 9; 
-	  scratchstr += 7; 
-	  strcpy(turl,ffstrtok(scratchstr,"\"",&saveptr));
-	  sprintf(errorstr,"to %s\n",turl);
-	  ffpmsg(errorstr);
-	  fclose (*httpfile);
-	  return 
-	    http_open_network(turl,httpfile,contentencoding,contentlength);
-*/
-
 
       /* if we get here then we couldnt' decide the redirect */
       ffpmsg("but we were unable to find the redirected url in the servers response");
@@ -981,11 +955,9 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
 
 int ftp_open(char *filename, int rwmode, int *handle)
 {
-
   FILE *ftpfile;
   FILE *command;
   int sock;
-  char newfilename[MAXLEN];
   char recbuf[MAXLEN];
   long len;
   int status;
@@ -1025,7 +997,7 @@ int ftp_open(char *filename, int rwmode, int *handle)
   if (ftp_open_network(filename,&ftpfile,&command,&sock)) {
 
       alarm(0);
-      ffpmsg("Unable to open ftp file (ftp_open)");
+      ffpmsg("Unable to open following ftp file (ftp_open):");
       ffpmsg(filename);
       goto error;
   } 
@@ -1047,8 +1019,8 @@ int ftp_open(char *filename, int rwmode, int *handle)
   firstchar = fgetc(ftpfile);
   ungetc(firstchar,ftpfile);
 
-  if (strstr(newfilename,".gz") || 
-      strstr(newfilename,".Z") ||
+  if (strstr(filename,".gz") || 
+      strstr(filename,".Z") ||
       ('\037' == firstchar)) {
     
     status = 0;
@@ -1080,8 +1052,8 @@ int ftp_open(char *filename, int rwmode, int *handle)
   fclose(ftpfile);
   closeftpfile--;
 
-  NET_SendRaw(sock,"QUIT\n",5,NET_DEFAULT);
   fclose(command);
+  NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
   closecommandfile--;
 
   signal(SIGALRM, SIG_DFL);
@@ -1093,6 +1065,7 @@ int ftp_open(char *filename, int rwmode, int *handle)
   alarm(0); /* clear it */
   if (closecommandfile) {
     fclose(command);
+    NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
   }
   if (closeftpfile) {
     fclose(ftpfile);
@@ -1241,8 +1214,8 @@ int ftp_file_open(char *url, int rwmode, int *handle)
   fclose(ftpfile);
   closeftpfile--;
   
-  NET_SendRaw(sock,"QUIT\n",5,NET_DEFAULT);
   fclose(command);
+  NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
   closecommandfile--;
 
   signal(SIGALRM, SIG_DFL);
@@ -1257,6 +1230,7 @@ int ftp_file_open(char *url, int rwmode, int *handle)
   }
   if (closecommandfile) {
     fclose(command);
+    NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
   }
   if (closeoutfile) {
     fclose(outfile);
@@ -1371,8 +1345,8 @@ int ftp_compress_open(char *url, int rwmode, int *handle)
     fclose(ftpfile);
     closeftpfile--;
     /* Close down the ftp connection */
-    NET_SendRaw(sock,"QUIT\n",5,NET_DEFAULT);
     fclose(command);
+    NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
     closecommandfile--;
 
     /* File is on disk, let's uncompress it into memory */
@@ -1419,6 +1393,7 @@ int ftp_compress_open(char *url, int rwmode, int *handle)
   }
   if (closecommandfile) {
     fclose(command);
+    NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
   }
   if (closefdiskfile) {
     fclose(diskfile);
@@ -1460,10 +1435,11 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
   char ip[SHORTLEN];
   char turl[MAXLEN];
   int port;
+  int ii,tryingtologin = 1;
 
   /* parse the URL */
   if (strlen(filename) > MAXLEN - 7) {
-    ffpmsg("ftp filename is too long (ftp_open)");
+    ffpmsg("ftp filename is too long (ftp_open_network)");
     return (FILE_NOT_OPENED);
   }
 
@@ -1495,29 +1471,45 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
     newhost = host;
   }
 
-  /* Connect to the host on the required port */
-  *sock = NET_TcpConnect(newhost,port);
-  /* convert it to a stdio file */
-  if (NULL == (*command = fdopen(*sock,"r"))) {
-    ffpmsg ("fdopen failed to convert socket to stdio file (ftp_open)");
-    return (FILE_NOT_OPENED);
+  for (ii = 0; ii < 10; ii++) {  /* make up to 10 attempts to log in */
+  
+    /* Connect to the host on the required port */
+    *sock = NET_TcpConnect(newhost,port);
+    /* convert it to a stdio file */
+    if (NULL == (*command = fdopen(*sock,"r"))) {
+      ffpmsg ("fdopen failed to convert socket to stdio file (ftp_open_netowrk)");
+      return (FILE_NOT_OPENED);
+    }
+
+    /* Wait for the 220 response */
+    if (ftp_status(*command,"220 ")) {
+      fclose(*command);
+      NET_SendRaw(*sock,"QUIT\r\n",6,NET_DEFAULT);
+
+/*      ffpmsg("sleeping for 5 in ftp_open_network, then try again"); */
+
+      sleep (5);  /* take a nap and hope ftp server sorts itself out in the meantime */
+
+    } else {
+      tryingtologin = 0;
+      break;
+    }
   }
 
-  /* Wait for the 220 response */
-  if (ftp_status(*command,"220 ")) {
-    ffpmsg ("error connecting to remote server, no 220 seen (ftp_open)");
-    fclose(*command);
-    return (FILE_NOT_OPENED);
+  if (tryingtologin) { /* the 10 attempts were not successful */
+     ffpmsg ("error connecting to remote server, no 220 seen (ftp_open_network)");
+     return (FILE_NOT_OPENED);
   }
-  
+
   /* Send the user name and wait for the right response */
   sprintf(tmpstr,"USER %s\r\n",username);
 
   status = NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
 
   if (ftp_status(*command,"331 ")) {
-    ffpmsg ("USER error no 331 seen (ftp_open)");
+    ffpmsg ("USER error no 331 seen (ftp_open_network)");
     fclose(*command);
+    NET_SendRaw(*sock,"QUIT\r\n",6,NET_DEFAULT);
     return (FILE_NOT_OPENED);
   }
   
@@ -1526,21 +1518,22 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
   status = NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
   
   if (ftp_status(*command,"230 ")) {
-    ffpmsg ("PASS error, no 230 seen (ftp_open)");
+    ffpmsg ("PASS error, no 230 seen (ftp_open_network)");
     fclose(*command);
+    NET_SendRaw(*sock,"QUIT\r\n",6,NET_DEFAULT);
     return (FILE_NOT_OPENED);
   }
 
   /* now do the cwd command */
   newfn = strrchr(fn,'/');
   if (newfn == NULL) {
-    strcpy(tmpstr,"CWD /\n");
+    strcpy(tmpstr,"CWD /\r\n");
     newfn = fn;
   } else {
     *newfn = '\0';
     newfn++;
     if (strlen(fn) == 0) {
-      strcpy(tmpstr,"CWD /\n");
+      strcpy(tmpstr,"CWD /\r\n");
     } else {
       /* remove the leading slash */
       if (fn[0] == '/') {
@@ -1554,14 +1547,16 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
   status = NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
   
   if (ftp_status(*command,"250 ")) {
-    ffpmsg ("CWD error, no 250 seen (ftp_open)");
+    ffpmsg ("CWD error, no 250 seen (ftp_open_network)");
     fclose(*command);
+    NET_SendRaw(*sock,"QUIT\r\n",6,NET_DEFAULT);
     return (FILE_NOT_OPENED);
   }
   
   if (!strlen(newfn)) {
     ffpmsg("Null file name (ftp_open)");
     fclose(*command);
+    NET_SendRaw(*sock,"QUIT\r\n",6,NET_DEFAULT);
     return (FILE_NOT_OPENED);
   }
 
@@ -1570,8 +1565,9 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
   status = NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
   
   if (ftp_status(*command,"200 ")) {
-    ffpmsg ("TYPE I error, 200 not seen (ftp_open)");
+    ffpmsg ("TYPE I error, 200 not seen (ftp_open_network)");
     fclose(*command);
+    NET_SendRaw(*sock,"QUIT\r\n",6,NET_DEFAULT);
     return (FILE_NOT_OPENED);
   }
  
@@ -1580,6 +1576,7 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
   if (!(fgets(recbuf,MAXLEN,*command))) {
     ffpmsg ("PASV error (ftp_open)");
     fclose(*command);
+    NET_SendRaw(*sock,"QUIT\r\n",6,NET_DEFAULT);
     return (FILE_NOT_OPENED);
   }
   
@@ -1589,8 +1586,9 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
     /* got a good passive mode response, find the opening ( */
     
     if (!(passive = strchr(recbuf,'('))) {
-      ffpmsg ("PASV error (ftp_open)");
+      ffpmsg ("PASV error (ftp_open_network)");
       fclose(*command);
+      NET_SendRaw(*sock,"QUIT\r\n",6,NET_DEFAULT);
       return (FILE_NOT_OPENED);
     }
     
@@ -1601,92 +1599,99 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
     /* Messy parsing of response from PASV *command */
     
     if (!(tstr = ffstrtok(passive,",)",&saveptr))) {
-      ffpmsg ("PASV error (ftp_open)");
+      ffpmsg ("PASV error (ftp_open_network)");
       fclose(*command);
+      NET_SendRaw(*sock,"QUIT\r\n",6,NET_DEFAULT);
       return (FILE_NOT_OPENED);
     }
     strcpy(ip,tstr);
     strcat(ip,".");
     
     if (!(tstr = ffstrtok(NULL,",)",&saveptr))) {
-      ffpmsg ("PASV error (ftp_open)");
+      ffpmsg ("PASV error (ftp_open_network)");
       fclose(*command);
+      NET_SendRaw(*sock,"QUIT\r\n",6,NET_DEFAULT);
       return (FILE_NOT_OPENED);
     }
     strcat(ip,tstr);
     strcat(ip,".");
     
     if (!(tstr = ffstrtok(NULL,",)",&saveptr))) {
-      ffpmsg ("PASV error (ftp_open)");
+      ffpmsg ("PASV error (ftp_open_network)");
       fclose(*command);
+      NET_SendRaw(*sock,"QUIT\r\n",6,NET_DEFAULT);
       return (FILE_NOT_OPENED);
     }
     strcat(ip,tstr);
     strcat(ip,".");
     
     if (!(tstr = ffstrtok(NULL,",)",&saveptr))) {
-      ffpmsg ("PASV error (ftp_open)");
+      ffpmsg ("PASV error (ftp_open_network)");
       fclose(*command);
+      NET_SendRaw(*sock,"QUIT\r\n",6,NET_DEFAULT);
       return (FILE_NOT_OPENED);
     }
     strcat(ip,tstr);
     
     /* Done the ip number, now do the port # */
     if (!(tstr = ffstrtok(NULL,",)",&saveptr))) {
-      ffpmsg ("PASV error (ftp_open)");
+      ffpmsg ("PASV error (ftp_open_network)");
       fclose(*command);
+      NET_SendRaw(*sock,"QUIT\r\n",6,NET_DEFAULT);
       return (FILE_NOT_OPENED);
     }
     sscanf(tstr,"%d",&port);
     port *= 256;
     
     if (!(tstr = ffstrtok(NULL,",)",&saveptr))) {
-      ffpmsg ("PASV error (ftp_open)");
+      ffpmsg ("PASV error (ftp_open_network)");
       fclose(*command);
+      NET_SendRaw(*sock,"QUIT\r\n",6,NET_DEFAULT);
       return (FILE_NOT_OPENED);
     }
     sscanf(tstr,"%d",&tmpint);
     port += tmpint;
 
     if (!strlen(newfn)) {
-      ffpmsg("Null file name (ftp_open)");
+      ffpmsg("Null file name (ftp_open_network)");
       fclose(*command);
+      NET_SendRaw(*sock,"QUIT\r\n",6,NET_DEFAULT);
       return (FILE_NOT_OPENED);
     }
     
     /* Connect to the data port */
     sock1 = NET_TcpConnect(ip,port);
     if (NULL == (*ftpfile = fdopen(sock1,"r"))) {
-      ffpmsg ("Could not connect to passive port (ftp_open)");
+      ffpmsg ("Could not connect to passive port (ftp_open_network)");
       fclose(*command);
+      NET_SendRaw(*sock,"QUIT\r\n",6,NET_DEFAULT);
       return (FILE_NOT_OPENED);
     }
-
-    /* now we return */
 
     /* Send the retrieve command */
     sprintf(tmpstr,"RETR %s\r\n",newfn);
     status = NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
 
     if (ftp_status(*command,"150 ")) {
-    /*  ffpmsg ("RETR error, most likely file is not there (ftp_open)"); */
+      fclose(*ftpfile);
+      NET_SendRaw(sock1,"QUIT\r\n",6,NET_DEFAULT);
       fclose(*command);
-
+      NET_SendRaw(*sock,"QUIT\r\n",6,NET_DEFAULT);
       return (FILE_NOT_OPENED);
     }
-    return 0;
+    return 0;    /* successfully opened the ftp file */
   }
   
   /* no passive mode */
 
-  NET_SendRaw(*sock,"QUIT\n",5,NET_DEFAULT);
   fclose(*command);
+  NET_SendRaw(*sock,"QUIT\r\n",6,NET_DEFAULT);
   return (FILE_NOT_OPENED);
 }
 /*--------------------------------------------------------------------------*/
 /* Open a ftp connection to see if the file exists (return 1) or not (return 0) */
 
-static int ftp_file_exist(char *filename)
+int ftp_file_exist(char *filename)
 {
   FILE *ftpfile;
   FILE *command;
@@ -1710,10 +1715,11 @@ static int ftp_file_exist(char *filename)
   char ip[SHORTLEN];
   char turl[MAXLEN];
   int port;
+  int ii, tryingtologin = 1;
 
   /* parse the URL */
   if (strlen(filename) > MAXLEN - 7) {
-    ffpmsg("ftp filename is too long (ftp_open)");
+    ffpmsg("ftp filename is too long (ftp_file_exist)");
     return 0;
   }
 
@@ -1724,7 +1730,7 @@ static int ftp_file_exist(char *filename)
     ffpmsg(errorstr);
     return 0;
   }
-  
+
   port = 21;
   /* we might have a user name */
   username = "anonymous";
@@ -1745,29 +1751,47 @@ static int ftp_file_exist(char *filename)
     newhost = host;
   }
 
+  for (ii = 0; ii < 10; ii++) {  /* make up to 10 attempts to log in */
+  
   /* Connect to the host on the required port */
   sock = NET_TcpConnect(newhost,port);
   /* convert it to a stdio file */
   if (NULL == (command = fdopen(sock,"r"))) {
-    ffpmsg ("fdopen failed to convert socket to stdio file (ftp_open)");
+    ffpmsg ("Failed to convert socket to stdio file (ftp_file_exist)");
     return 0;
   }
 
   /* Wait for the 220 response */
   if (ftp_status(command,"220 ")) {
-    ffpmsg ("error connecting to remote server, no 220 seen (ftp_open)");
+    ffpmsg ("error connecting to remote server, no 220 seen (ftp_file_exist)");
     fclose(command);
-    return 0;
+    NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
+
+/*    ffpmsg("sleeping for 5 in ftp_file_exist, then try again"); */
+
+    sleep (5);  /* take a nap and hope ftp server sorts itself out in the meantime */
+
+  } else {
+    tryingtologin = 0;
+    break;
   }
   
+  }  
+
+  if (tryingtologin) { /* the 10 attempts were not successful */
+     ffpmsg ("error connecting to remote server, no 220 seen (ftp_open_network)");
+     return (0);
+  }
+ 
   /* Send the user name and wait for the right response */
   sprintf(tmpstr,"USER %s\r\n",username);
 
   status = NET_SendRaw(sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
 
   if (ftp_status(command,"331 ")) {
-    ffpmsg ("USER error no 331 seen (ftp_open)");
+    ffpmsg ("USER error no 331 seen (ftp_file_exist)");
     fclose(command);
+    NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
     return 0;
   }
   
@@ -1776,21 +1800,22 @@ static int ftp_file_exist(char *filename)
   status = NET_SendRaw(sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
   
   if (ftp_status(command,"230 ")) {
-    ffpmsg ("PASS error, no 230 seen (ftp_open)");
+    ffpmsg ("PASS error, no 230 seen (ftp_file_exist)");
     fclose(command);
+    NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
     return 0;
   }
 
   /* now do the cwd command */
   newfn = strrchr(fn,'/');
   if (newfn == NULL) {
-    strcpy(tmpstr,"CWD /\n");
+    strcpy(tmpstr,"CWD /\r\n");
     newfn = fn;
   } else {
     *newfn = '\0';
     newfn++;
     if (strlen(fn) == 0) {
-      strcpy(tmpstr,"CWD /\n");
+      strcpy(tmpstr,"CWD /\r\n");
     } else {
       /* remove the leading slash */
       if (fn[0] == '/') {
@@ -1800,18 +1825,20 @@ static int ftp_file_exist(char *filename)
       } 
     }
   }
-  
+
   status = NET_SendRaw(sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
   
   if (ftp_status(command,"250 ")) {
-    ffpmsg ("CWD error, no 250 seen (ftp_open)");
+    ffpmsg ("CWD error, no 250 seen (ftp_file_exist)");
     fclose(command);
+    NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
     return 0;
   }
   
   if (!strlen(newfn)) {
-    ffpmsg("Null file name (ftp_open)");
+    ffpmsg("Null file name (ftp_file_exist)");
     fclose(command);
+    NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
     return 0;
   }
 
@@ -1820,16 +1847,18 @@ static int ftp_file_exist(char *filename)
   status = NET_SendRaw(sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
   
   if (ftp_status(command,"200 ")) {
-    ffpmsg ("TYPE I error, 200 not seen (ftp_open)");
+    ffpmsg ("TYPE I error, 200 not seen (ftp_file_exist)");
     fclose(command);
+    NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
     return 0;
   }
- 
+
   status = NET_SendRaw(sock,"PASV\r\n",6,NET_DEFAULT);
 
   if (!(fgets(recbuf,MAXLEN,command))) {
-    ffpmsg ("PASV error (ftp_open)");
+    ffpmsg ("PASV error (ftp_file_exist)");
     fclose(command);
+    NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
     return 0;
   }
   
@@ -1839,8 +1868,9 @@ static int ftp_file_exist(char *filename)
     /* got a good passive mode response, find the opening ( */
     
     if (!(passive = strchr(recbuf,'('))) {
-      ffpmsg ("PASV error (ftp_open)");
+      ffpmsg ("PASV error (ftp_file_exist)");
       fclose(command);
+      NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
       return 0;
     }
     
@@ -1851,93 +1881,106 @@ static int ftp_file_exist(char *filename)
     /* Messy parsing of response from PASV command */
     
     if (!(tstr = ffstrtok(passive,",)",&saveptr))) {
-      ffpmsg ("PASV error (ftp_open)");
+      ffpmsg ("PASV error (ftp_file_exist)");
       fclose(command);
+      NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
       return 0;
     }
     strcpy(ip,tstr);
     strcat(ip,".");
     
     if (!(tstr = ffstrtok(NULL,",)",&saveptr))) {
-      ffpmsg ("PASV error (ftp_open)");
+      ffpmsg ("PASV error (ftp_file_exist)");
       fclose(command);
+      NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
       return 0;
     }
     strcat(ip,tstr);
     strcat(ip,".");
     
     if (!(tstr = ffstrtok(NULL,",)",&saveptr))) {
-      ffpmsg ("PASV error (ftp_open)");
+      ffpmsg ("PASV error (ftp_file_exist)");
       fclose(command);
+      NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
       return 0;
     }
     strcat(ip,tstr);
     strcat(ip,".");
     
     if (!(tstr = ffstrtok(NULL,",)",&saveptr))) {
-      ffpmsg ("PASV error (ftp_open)");
+      ffpmsg ("PASV error (ftp_file_exist)");
       fclose(command);
+      NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
       return 0;
     }
     strcat(ip,tstr);
     
     /* Done the ip number, now do the port # */
     if (!(tstr = ffstrtok(NULL,",)",&saveptr))) {
-      ffpmsg ("PASV error (ftp_open)");
+      ffpmsg ("PASV error (ftp_file_exist)");
       fclose(command);
+      NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
       return 0;
     }
     sscanf(tstr,"%d",&port);
     port *= 256;
     
     if (!(tstr = ffstrtok(NULL,",)",&saveptr))) {
-      ffpmsg ("PASV error (ftp_open)");
+      ffpmsg ("PASV error (ftp_file_exist)");
       fclose(command);
+      NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
       return 0;
     }
     sscanf(tstr,"%d",&tmpint);
     port += tmpint;
 
     if (!strlen(newfn)) {
-      ffpmsg("Null file name (ftp_open)");
+      ffpmsg("Null file name (ftp_file_exist)");
       fclose(command);
-      return 0;
-    }
-    
-    /* Connect to the data port */
-    sock1 = NET_TcpConnect(ip,port);
-    if (NULL == (ftpfile = fdopen(sock1,"r"))) {
-      ffpmsg ("Could not connect to passive port (ftp_open)");
-      fclose(command);
+      NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
       return 0;
     }
 
-    /* now we return */
+    /* Connect to the data port */
+    sock1 = NET_TcpConnect(ip,port);
+    if (NULL == (ftpfile = fdopen(sock1,"r"))) {
+      ffpmsg ("Could not connect to passive port (ftp_file_exist)");
+      fclose(command);
+      NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
+      return 0;
+    }
 
     /* Send the retrieve command */
     sprintf(tmpstr,"RETR %s\r\n",newfn);
     status = NET_SendRaw(sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
 
     if (ftp_status(command,"150 ")) {
+      fclose(ftpfile); 
+      NET_SendRaw(sock1,"QUIT\r\n",6,NET_DEFAULT);
       fclose(command);
+      NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
       return 0;
     }
     
     /* if we got here then the file probably exists */
-    fclose(command);
+
+    fclose(ftpfile); 
+    NET_SendRaw(sock1,"QUIT\r\n",6,NET_DEFAULT);
+    fclose(command); 
+    NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
     return 1;
   }
   
   /* no passive mode */
 
-  NET_SendRaw(sock,"QUIT\n",5,NET_DEFAULT);
   fclose(command);
+  NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
   return 0;
 }
 
 /*--------------------------------------------------------------------------*/
 /* return a socket which results from connection to hostname on port port */
-static int NET_TcpConnect(char *hostname, int port)
+int NET_TcpConnect(char *hostname, int port)
 {
   /* Connect to hostname on port */
  
@@ -1949,7 +1992,7 @@ static int NET_TcpConnect(char *hostname, int port)
    CreateSocketAddress(&sockaddr,hostname,port);
    /* Create socket */
    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-     ffpmsg("Can't create socket");
+     ffpmsg("ERROR: NET_TcpConnect can't create socket");
      return CONNECTION_ERROR;
    }
  
@@ -2390,7 +2433,7 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile1)
   /* default to ftp://  if no outfile specified */
   strcpy(urltype,"ftp://"); 
 
- if (!strstr(infile,".gz") && (!strstr(infile,".Z"))) {
+ if (!strstr(infile,".gz") && (!strstr(infile,".Z"))  && 0) {
     /* The infile string does not contain the name of a compressed file.  */
     /* Fisrt, look for a .gz compressed version of the file. */
       
@@ -2398,9 +2441,7 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile1)
     strcat(newinfile,".gz");
  
     /* look for .gz version of the file */
-    if (!ftp_open_network(newinfile,&ftpfile,&command,&sock)) {
-      fclose(ftpfile);
-      fclose(command);
+    if (ftp_file_exist(newinfile)) {
       foundfile = 1;
       strcpy(infile,newinfile);
     }
@@ -2410,9 +2451,7 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile1)
       strcat(newinfile,".Z");
  
     /* look for .Z version of the file */
-      if (!ftp_open_network(newinfile,&ftpfile,&command,&sock)) {
-        fclose(ftpfile);
-        fclose(command);
+      if (ftp_file_exist(newinfile)) {
         foundfile = 1;
         strcpy(infile,newinfile);
       }
@@ -2423,9 +2462,7 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile1)
       strcpy(newinfile,infile);
  
       /* look for the base file */
-      if (!ftp_open_network(newinfile,&ftpfile,&command,&sock)) {
-        fclose(ftpfile);
-        fclose(command);
+      if (ftp_file_exist(newinfile)) {
         foundfile = 1;
         strcpy(infile,newinfile);
       }
@@ -2474,24 +2511,30 @@ static int ftp_status(FILE *ftp, char *statusstr)
   /* read through until we find a string beginning with statusstr */
   /* This needs a timeout */
 
-  char recbuf[MAXLEN];
+  char recbuf[MAXLEN], errorstr[SHORTLEN];
   int len;
 
   len = strlen(statusstr);
   while (1) {
 
     if (!(fgets(recbuf,MAXLEN,ftp))) {
+      sprintf(errorstr,"ERROR: ftp_status wants %s but fgets returned 0",statusstr);
+      ffpmsg(errorstr);
       return 1; /* error reading */
     }
-    
+
     recbuf[len] = '\0'; /* make it short */
     if (!strcmp(recbuf,statusstr)) {
       return 0; /* we're ok */
     }
     if (recbuf[0] > '3') {
       /* oh well, some sort of error */
-      return 1; 
+      sprintf(errorstr,"ERROR ftp_status wants %s but got %s", statusstr, recbuf);
+      ffpmsg(errorstr);
+     return 1; 
     }
+    sprintf(errorstr,"ERROR ftp_status wants %s but got unexpected %s", statusstr, recbuf);
+    ffpmsg(errorstr);
   }
 }
 
@@ -2839,7 +2882,7 @@ int root_openfile(char *url, char *rwmode, int *sock)
   /* Connect to the remote host */
   *sock = NET_TcpConnect(host,port);
   if (*sock < 0) {
-    ffpmsg("Couldn't connect to host (http_open_network)");
+    ffpmsg("Couldn't connect to host (root_openfile)");
     return (FILE_NOT_OPENED);
   }
   

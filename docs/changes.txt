@@ -2,6 +2,19 @@
 
 Version 3.42 - March 2017
 
+   - in ftp_open_network and in ftp_file_exist, added code to repeatedly
+     attempt to make a ftp connection if the ftp server does not respond
+     to the first request. (some ftp servers don't appear to be 100% reliable).
+
+   - in drvrnet.c added many calls to 'fclose' to close unneeded files,
+     to avoid exceeding the maximum allowed number of files that can be 
+     open at once.
+     
+   - made substantial changes to the ftp_checkfile and http_checkfile routines
+     to streamline the process of checking for the existence of a .gz or .Z
+     compressed version of the file before opening the uncompressed file
+     (when using http or ftp to open the file). 
+
    - modified the code in ftp_open_network to send "\r\n" as end-of-line
      characters instead of just "\n".  Some ftp servers (in particular,
      at heasarc.gsfc.nasa.gov) now require both characters, otherwise the
