@@ -1,4 +1,8 @@
                    Log of Changes Made to CFITSIO
+                   
+   - made fix to imcomp_init_table function in imcompress.c.  It now writes
+     ZSIMPLE keyword only to a compressed image that will be placed in the
+     primary header.  
 
 Version 3.42 - March 2017
 
