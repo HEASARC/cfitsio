@@ -968,6 +968,7 @@ int imcomp_init_table(fitsfile *outfptr,
     char *tunit[] = {"\0",            "\0",            "\0"  };
     char comm[FLEN_COMMENT];
     long actual_tilesize[MAX_COMPRESS_DIM]; /* Actual size to use for tiles */
+    int is_primary=0; /* Is this attempting to write to the primary? */
     
     if (*status > 0)
         return(*status);
@@ -1206,6 +1207,10 @@ int imcomp_init_table(fitsfile *outfptr,
         return(*status = DATA_COMPRESSION_ERR);
     }
 
+    /* If attempting to write compressed image to primary, the
+       call to ffcrtb will increment Fptr->curhdu to 1.  Therefore
+       we need to test now for setting is_primary */
+    is_primary = (outfptr->Fptr->curhdu == 0);
     /* create the bintable extension to contain the compressed image */
     ffcrtb(outfptr, BINARY_TBL, nrows, ncols, ttype, 
                 tform, tunit, 0, status);
@@ -1218,8 +1223,9 @@ int imcomp_init_table(fitsfile *outfptr,
         /*  write the keywords defining the datatype and dimensions of */
 	/*  the uncompressed image.  If not, these keywords will be */
         /*  copied later from the input uncompressed image  */
-	   
-        ffpkyl (outfptr, "ZSIMPLE", 1,
+	
+        if (is_primary)   
+            ffpkyl (outfptr, "ZSIMPLE", 1,
 			"file does conform to FITS standard", status);
         ffpkyj (outfptr, "ZBITPIX", bitpix,
 			"data type of original image", status);
