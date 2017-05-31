@@ -5098,6 +5098,12 @@ if test "x$BUILD_REENTRANT" = xyes; then
 
   $as_echo "#define _XOPEN_SOURCE 700" >>confdefs.h
 
+  # Additional definition needed to get 'union semun' when using
+  # _XOPEN_SOURCE on a Mac:
+  if test "x$EXT" = xdarwin; then
+    $as_echo "#define _DARWIN_C_SOURCE 1" >>confdefs.h
+
+  fi
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lpthread" >&5
 $as_echo_n "checking for main in -lpthread... " >&6; }
 if ${ac_cv_lib_pthread_main+:} false; then :
