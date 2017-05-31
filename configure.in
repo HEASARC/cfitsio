@@ -573,6 +573,11 @@ fi
 if test "x$BUILD_REENTRANT" = xyes; then
   AC_DEFINE(_REENTRANT)
   AC_DEFINE([_XOPEN_SOURCE], [700])
+  # Additional definition needed to get 'union semun' when using
+  # _XOPEN_SOURCE on a Mac:
+  if test "x$EXT" = xdarwin; then
+    AC_DEFINE([_DARWIN_C_SOURCE])
+  fi
   AC_CHECK_LIB([pthread],[main],[],[AC_MSG_ERROR(Unable to locate pthread library needed when enabling reentrant multithreading)])
 fi
 # ------------------------------------------------------------------------------
