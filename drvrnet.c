@@ -2433,7 +2433,7 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile1)
   /* default to ftp://  if no outfile specified */
   strcpy(urltype,"ftp://"); 
 
- if (!strstr(infile,".gz") && (!strstr(infile,".Z"))  && 0) {
+ if (!strstr(infile,".gz") && (!strstr(infile,".Z"))) {
     /* The infile string does not contain the name of a compressed file.  */
     /* Fisrt, look for a .gz compressed version of the file. */
       
