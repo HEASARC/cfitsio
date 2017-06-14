@@ -631,6 +631,7 @@ SHLIB_SUFFIX
 SHLIB_LD
 LIBPRE
 ARCH
+CURLCONFIG
 GCCVERSION
 SSE_FLAGS
 RANLIB
@@ -4744,6 +4745,65 @@ if test "x$lhea_shlib_cflags" != x; then
 fi
 # Set shared library name for cases in which we aren't setting a 'soname':
 if test "x$CFITSIO_SHLIB" = x; then CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX}"; fi
+
+# Curl library (will be pulled in to the shared CFITSIO library):
+# ---------------------------------------------------------------
+CURL_LIB=""
+CURL_INC=""
+# Use curl-config to get compiler & linker flags, if available:
+# Extract the first word of "curl-config", so it can be a program name with args.
+set dummy curl-config; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_CURLCONFIG+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$CURLCONFIG"; then
+  ac_cv_prog_CURLCONFIG="$CURLCONFIG" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_CURLCONFIG="curl-config"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+CURLCONFIG=$ac_cv_prog_CURLCONFIG
+if test -n "$CURLCONFIG"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $CURLCONFIG" >&5
+$as_echo "$CURLCONFIG" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+if test "x$CURLCONFIG" != x; then
+  CURL_LIB=`$CURLCONFIG --libs`
+  LIBS="$CURL_LIB $LIBS"
+  CURL_INC=`$CURLCONFIG --cflags`
+  if test "x$CURL_INC" != x; then
+    CFLAGS="$CURL_INC $CFLAGS"
+  fi
+# No curl-config:
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: curl-config not found. Disabling HTTPS support for CFITSIO." >&5
+$as_echo "$as_me: WARNING: curl-config not found. Disabling HTTPS support for CFITSIO." >&2;}
+# Incomplete stubs for possible future use:
+#  AC_CHECK_LIB([curl],[main],[],
+#       [AC_MSG_WARN(Not building curl support for CFITSIO)])
+#  AC_CHECK_HEADER(curl.h,[])
+fi
 
 
 
