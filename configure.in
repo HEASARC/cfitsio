@@ -462,6 +462,7 @@ if test "x$CURLCONFIG" != x; then
   if test "x$CURL_INC" != x; then
     CFLAGS="$CURL_INC $CFLAGS"
   fi
+  AC_DEFINE(CFITSIO_HAVE_CURL)
 # No curl-config:
 else
   AC_MSG_WARN(curl-config not found. Disabling HTTPS support for CFITSIO.)
