@@ -149,10 +149,10 @@ generated.  Fixes the signal handling.
 
 Revision 1.38  1998/11/23 10:03:24  oneel
 Added in a useragent string, as suggested by:
-Tim Kimball · Data Systems Division ¦ kimball@stsci.edu · 410-338-4417
-Space Telescope Science Institute   ¦ http://www.stsci.edu/~kimball/
-3700 San Martin Drive               ¦ http://archive.stsci.edu/
-Baltimore MD 21218 USA              ¦ http://faxafloi.stsci.edu:4547/
+Tim Kimball   Data Systems Division   kimball@stsci.edu   410-338-4417
+Space Telescope Science Institute     http://www.stsci.edu/~kimball/
+3700 San Martin Drive                 http://archive.stsci.edu/
+Baltimore MD 21218 USA                http://faxafloi.stsci.edu:4547/
 
    
  */
@@ -170,6 +170,10 @@ Baltimore MD 21218 USA              ¦ http://faxafloi.stsci.edu:4547/
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+
+#ifdef CFITSIO_HAVE_CURL
+#include <curl/curl.h>
+#endif
 
 #if defined(unix) || defined(__unix__)  || defined(__unix) || defined(HAVE_UNISTD_H)
 #include <unistd.h>  
@@ -220,6 +224,12 @@ typedef struct    /* structure containing disk file structure */
   LONGLONG currentpos;
 } rootdriver;
 
+typedef struct  /* simple mem struct for receiving files from curl */
+{
+   char *memory;
+   size_t size;
+} curlmembuf;
+
 static rootdriver handleTable[NMAXFILES];  /* allocate diskfile handle tables */
 
 /* static prototypes */
@@ -234,6 +244,7 @@ static int CreateSocketAddress(struct sockaddr_in *sockaddrPtr,
 static int ftp_status(FILE *ftp, char *statusstr);
 static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
 			  int *contentlength);
+static int https_open_network(char *filename, curlmembuf* buffer);
 static int ftp_open_network(char *url, FILE **ftpfile, FILE **command, 
 			    int *sock);
 static int ftp_file_exist(char *url);
@@ -241,6 +252,7 @@ static int root_send_buffer(int sock, int op, char *buffer, int buflen);
 static int root_recv_buffer(int sock, int *op, char *buffer,int buflen);
 static int root_openfile(char *filename, char *rwmode, int *sock);
 static int encode64(unsigned s_len, char *src, unsigned d_len, char *dst);
+static size_t curlToMemCallback(void *buffer, size_t size, size_t nmemb, void *userp);
 
 /***************************/
 /* Static variables */
@@ -255,6 +267,7 @@ static int closecommandfile;
 static int closeftpfile;
 static FILE *diskfile;
 static FILE *outfile;
+static int curl_verbose=0;
 
 /*--------------------------------------------------------------------------*/
 /* This creates a memory file handle with a copy of the URL in filename. The 
@@ -378,6 +391,7 @@ int http_open(char *filename, int rwmode, int *handle)
   signal(SIGALRM, SIG_DFL);
   return (FILE_NOT_OPENED);
 }
+
 /*--------------------------------------------------------------------------*/
 /* This creates a memory file handle with a copy of the URL in filename.  The
    file must be compressed and is copied (still compressed) to disk first. 
@@ -949,6 +963,296 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
   /* we're done, so return */
   return 0;
 }
+
+/*--------------------------------------------------------------------------*/
+/* This creates a memory file handle with a copy of the URL in filename. The 
+   curl library called from https_open_network will perform file uncompression
+   if necessary. */
+int https_open(char *filename, int rwmode, int *handle)
+{
+  curlmembuf inmem;
+  char errStr[MAXLEN];
+  int status=0;
+    
+  /* don't do r/w files */
+  if (rwmode != 0) {
+    ffpmsg("Can't open https:// type file with READWRITE access");
+    ffpmsg("  Specify an outfile for r/w access (https_open)");
+    return (FILE_NOT_OPENED);
+  }
+
+  inmem.memory=0;
+  inmem.size=0;
+  if (setjmp(env) != 0)
+  {
+    alarm(0);
+    signal(SIGALRM, SIG_DFL);
+    ffpmsg("Timeout (https_open)");
+    free(inmem.memory);
+    return (FILE_NOT_OPENED);
+  }
+
+  signal(SIGALRM, signal_handler);
+  alarm(NETTIMEOUT);
+
+  if (https_open_network(filename, &inmem))
+  {
+     alarm(0);
+     signal(SIGALRM, SIG_DFL);
+     ffpmsg("Unable to read https file into memory (https_open)");
+     free(inmem.memory);
+     return (FILE_NOT_OPENED);  
+  }
+  alarm(0);
+  signal(SIGALRM, SIG_DFL);
+  /* We now have the file transfered from the https server into the
+     inmem.memory buffer.  Now transfer that into a FITS memory file. */
+  if ((status = mem_create(filename, handle)))
+  {
+     ffpmsg("Unable to create memory file (https_open)");
+     free(inmem.memory);
+     return (FILE_NOT_OPENED);
+  }
+  
+  if (inmem.size % 2880)
+  {
+     sprintf(errStr,"Content-Length not a multiple of 2880 (https_open) %u",
+         inmem.size);
+     ffpmsg(errStr);
+  }
+  status = mem_write(*handle, inmem.memory, inmem.size);
+  if (status)
+  {
+     ffpmsg("Error copying https file into memory (https_open)");
+     ffpmsg(filename);
+     free(inmem.memory);
+     mem_close_free(*handle);
+     return (FILE_NOT_OPENED);
+  }
+  free(inmem.memory);
+  return mem_seek(*handle, 0);
+   
+}
+
+/*--------------------------------------------------------------------------*/
+int https_file_open(char *filename, int rwmode, int *handle)
+{
+  int ii, flen;
+  char errStr[MAXLEN];
+  curlmembuf inmem;
+  
+  /* Check if output file is actually a memory file */
+  if (!strncmp(netoutfile, "mem:", 4) )
+  {
+     /* allow the memory file to be opened with write access */
+     return( https_open(filename, READONLY, handle) );
+  }     
+
+  flen = strlen(netoutfile);
+  if (!flen)
+  {
+      /* cfileio made a mistake, we need to know where to write the file */
+      ffpmsg("Output file not set, shouldn't have happened (https_file_open)");
+      return (FILE_NOT_OPENED);
+  }
+  
+  inmem.memory=0;
+  inmem.size=0;
+  if (setjmp(env) != 0)
+  {
+     alarm(0);
+     signal(SIGALRM, SIG_DFL);
+     ffpmsg("Timeout (https_file_open)");
+     free(inmem.memory);
+     return (FILE_NOT_OPENED);
+  }
+  signal(SIGALRM, signal_handler);
+  alarm(NETTIMEOUT);
+  if (https_open_network(filename, &inmem))
+  {
+     alarm(0);
+     signal(SIGALRM, SIG_DFL);
+     ffpmsg("Unable to read https file into memory (https_file_open)");
+     free(inmem.memory);
+     return (FILE_NOT_OPENED);  
+  }
+  alarm(0);
+  signal(SIGALRM, SIG_DFL);
+  
+  if (*netoutfile == '!')
+  {
+     /* user wants to clobber disk file, if it already exists */
+     for (ii = 0; ii < flen; ii++)
+         netoutfile[ii] = netoutfile[ii + 1];  /* remove '!' */
+
+     file_remove(netoutfile);
+  }
+
+  /* Create the output file */
+  if (file_create(netoutfile,handle)) 
+  {
+    ffpmsg("Unable to create output file (https_file_open)");
+    ffpmsg(netoutfile);
+    free(inmem.memory);
+    return (FILE_NOT_OPENED);
+  }
+    
+  if (inmem.size % 2880)
+  {
+    sprintf(errStr,
+	    "Content-Length not a multiple of 2880 (https_file_open) %d",
+	    inmem.size);
+    ffpmsg(errStr);
+  }
+   
+  if (file_write(*handle, inmem.memory, inmem.size))
+  {
+     ffpmsg("Error copying https file to disk file (https_file_open)");
+     ffpmsg(filename);
+     ffpmsg(netoutfile);
+     free(inmem.memory);
+     file_close(*handle);
+     return (FILE_NOT_OPENED);
+  }
+  free(inmem.memory); 
+  file_close(*handle);
+     
+  return file_open(netoutfile, rwmode, handle);
+}
+
+/*--------------------------------------------------------------------------*/
+/* Callback function curl library uses during https connection to transfer
+   server file into memory */
+size_t curlToMemCallback(void *buffer, size_t size, size_t nmemb, void *userp)
+{
+   curlmembuf* inmem = (curlmembuf* )userp;
+   size_t transferSize = size*nmemb;
+   if (!inmem->size)
+   {
+      /* First time through - initialize with malloc */
+      inmem->memory = (char *)malloc(transferSize); 
+   }
+   else
+      inmem->memory = realloc(inmem->memory, inmem->size+transferSize);
+   if (inmem->memory == NULL)
+   {
+      ffpmsg("realloc error - not enough memory (curlToMemCallback)\n");
+      return 0;
+   }
+   memcpy(&(inmem->memory[inmem->size]), buffer, transferSize);
+   inmem->size += transferSize;
+   
+   return transferSize;
+}
+
+/*--------------------------------------------------------------------------*/
+int https_open_network(char *filename, curlmembuf* buffer)
+{
+  char *urlname=0;
+  char errStr[MAXLEN];
+#ifdef CFITSIO_HAVE_CURL
+  CURL *curl=0;
+  CURLcode res;
+  char curlErrBuf[CURL_ERROR_SIZE];
+  
+  if (strstr(filename,".Z"))
+  {
+     ffpmsg("x-compress .Z format not currently supported with https transfers");
+     return(FILE_NOT_OPENED);
+  }
+
+  
+  /* Will ASSUME curl_global_init has been called by this point.
+     It is not thread-safe to call it here. */
+  curl = curl_easy_init();
+  /* curl should be setting these by default, but let's make sure. */
+  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
+  
+  curl_easy_setopt(curl, CURLOPT_VERBOSE, (long)curl_verbose);
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlToMemCallback);
+  /* curl_easy_setopt(curl, CURLOPT_USERAGENT,""); */
+  
+  buffer->memory = 0; /* malloc/realloc will grow this in the callback function */
+  buffer->size = 0;
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)buffer);
+  curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, curlErrBuf);
+  curlErrBuf[0]=0;
+  /* This is needed for easy_perform to return an error whenever http server
+      returns an error >= 400, ie. if it can't find the requested file. */
+  curl_easy_setopt(curl, CURLOPT_FAILONERROR,  1L);
+  /* This turns on automatic decompression for all recognized types. */
+  curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
+  
+  /* urlname should be large enough to accomodate "https://"+filename+".gz". */
+  urlname = (char *)malloc(strlen(filename)+12);
+  strcpy(urlname, "https://");
+  strcat(urlname, filename);
+  
+  /* Does the file have a .gz in it */
+  /* Also, if file has a '?' in it (probably cgi script) */
+  if (strstr(filename,".gz") || strstr(filename,"?"))
+  {
+     /* Send filename as is. */
+     curl_easy_setopt(curl, CURLOPT_URL, urlname);
+     res = curl_easy_perform(curl);
+     if (res != CURLE_OK)
+     {
+        sprintf(errStr,"libcurl error: %d",res);
+        ffpmsg(errStr);
+        if (strlen(curlErrBuf))
+           ffpmsg(curlErrBuf);     
+        curl_easy_cleanup(curl);  
+        free(urlname);
+        return (FILE_NOT_OPENED);
+     }
+  }
+  else
+  {
+     /* First try appending .gz */
+     strcat(urlname, ".gz");
+     curl_easy_setopt(curl, CURLOPT_URL, urlname);
+     res = curl_easy_perform(curl);
+     if (res != CURLE_OK)
+     {
+        /* Now try the unmodified/uncompressed filename */
+        strcpy(urlname, "https://");
+        strcat(urlname, filename);
+        curl_easy_setopt(curl, CURLOPT_URL, urlname);
+        res = curl_easy_perform(curl);
+        if (res != CURLE_OK)
+        {
+           sprintf(errStr,"libcurl error: %d",res);
+           ffpmsg(errStr);
+           if (strlen(curlErrBuf))
+              ffpmsg(curlErrBuf);     
+           curl_easy_cleanup(curl);  
+           free(urlname);
+           return (FILE_NOT_OPENED);
+        }                      
+     }
+  }
+  free(urlname);
+  curl_easy_cleanup(curl);  
+  
+   return 0;
+
+#else
+   printf("\nERROR: This CFITSIO build was not compiled with the libcurl library package\n");
+   printf("and therefore it cannot perform HTTPS connections.\n");   
+#endif
+  
+  return (FILE_NOT_OPENED);
+}
+
+void https_set_verbose(int flag)
+{
+   if (!flag)
+      curl_verbose = 0;
+   else
+      curl_verbose = 1;
+}
+
 /*--------------------------------------------------------------------------*/
 /* This creates a memory file handle with a copy of the URL in filename. The 
    file is uncompressed if necessary */
@@ -2419,6 +2723,31 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
   } 
   return 0;
 }
+
+/*--------------------------------------------------------------------------*/
+int https_checkfile (char *urltype, char *infile, char *outfile1)
+{
+  /* set default  */
+  strcpy(urltype,"https://");
+  
+  if (strlen(outfile1))
+  {
+    /* don't copy the "file://" prefix, if present.  */
+    if (!strncmp(outfile1, "file://", 7) ) {
+      strcpy(netoutfile,outfile1+7);
+    } else {
+      strcpy(netoutfile,outfile1);
+    }
+    
+    if (!strncmp(outfile1, "mem:", 4))
+       strcpy(urltype,"httpsmem://");
+    else       
+       strcpy(urltype,"httpsfile://");
+  }
+
+   return 0;
+}
+
 /*--------------------------------------------------------------------------*/
 int ftp_checkfile (char *urltype, char *infile, char *outfile1)
 {

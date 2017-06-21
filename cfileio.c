@@ -12,9 +12,12 @@
 #include <stddef.h>  /* apparently needed to define size_t */
 #include "fitsio2.h"
 #include "group.h"
+#ifdef CFITSIO_HAVE_CURL
+  #include <curl/curl.h>
+#endif
 
 #define MAX_PREFIX_LEN 20  /* max length of file type prefix (e.g. 'http://') */
-#define MAX_DRIVERS 24     /* max number of file I/O drivers */
+#define MAX_DRIVERS 27     /* max number of file I/O drivers */
 
 typedef struct    /* structure containing pointers to I/O driver functions */ 
 {   char prefix[MAX_PREFIX_LEN];
@@ -4775,6 +4778,91 @@ int fits_init_cfitsio(void)
         return(status);
     }
 
+    /* 25--------------------https  driver-----------------------*/
+    status = fits_register_driver("https://",
+            NULL,
+            mem_shutdown,
+            mem_setoptions,
+            mem_getoptions, 
+            mem_getversion,
+            https_checkfile,
+            https_open,
+            NULL,            /* create function not required */
+            mem_truncate,
+            mem_close_free,
+            NULL,            /* remove function not required */
+            mem_size,
+            NULL,            /* flush function not required */
+            mem_seek,
+            mem_read,
+            mem_write);
+
+    if (status)
+    {
+        ffpmsg("failed to register the https:// driver (init_cfitsio)");
+        FFUNLOCK;
+        return(status);
+    }
+
+    /* 26--------------------https file driver-----------------------*/
+
+    status = fits_register_driver("httpsfile://",
+            NULL,
+            file_shutdown,
+            file_setoptions,
+            file_getoptions, 
+            file_getversion,
+            NULL,            /* checkfile not needed */ 
+            https_file_open,
+            file_create,
+#ifdef HAVE_FTRUNCATE
+            file_truncate,
+#else
+            NULL,   /* no file truncate function */
+#endif
+            file_close,
+            file_remove,
+            file_size,
+            file_flush,
+            file_seek,
+            file_read,
+            file_write);
+
+    if (status)
+    {
+        ffpmsg("failed to register the httpsfile:// driver (init_cfitsio)");
+        FFUNLOCK;
+        return(status);
+    }
+
+    /* 27--------------------https memory driver-----------------------*/
+    /*  same as https:// driver, except memory file can be opened READWRITE */
+    status = fits_register_driver("httpsmem://",
+            NULL,
+            mem_shutdown,
+            mem_setoptions,
+            mem_getoptions, 
+            mem_getversion,
+            https_checkfile,
+            https_file_open,  /* this will simply call https_open */
+            NULL,            /* create function not required */
+            mem_truncate,
+            mem_close_free,
+            NULL,            /* remove function not required */
+            mem_size,
+            NULL,            /* flush function not required */
+            mem_seek,
+            mem_read,
+            mem_write);
+
+    if (status)
+    {
+        ffpmsg("failed to register the httpsmem:// driver (init_cfitsio)");
+        FFUNLOCK;
+        return(status);
+    }
+
+
     /* reset flag.  Any other threads will now not need to call this routine */
     need_to_initialize = 0;
 
@@ -7331,4 +7419,37 @@ int pixel_filter_helper(
         fits_movabs_hdu(*fptr, hdunum, NULL, status);
 
     return(*status);
+}
+
+/*-------------------------------------------------------------------*/
+int ffihtps()
+{
+   /* Wrapper function for global initialization of curl library.
+      This is NOT THREAD-SAFE */
+   int status=0;
+#ifdef CFITSIO_HAVE_CURL
+   if (curl_global_init(CURL_GLOBAL_ALL))
+      /* Do we want to define a new CFITSIO error code for this? */
+      status = -1;
+#endif
+   return status;
+}
+
+/*-------------------------------------------------------------------*/
+int ffchtps()
+{
+   /* Wrapper function for global cleanup of curl library.
+      This is NOT THREAD-SAFE */
+#ifdef CFITSIO_HAVE_CURL
+   curl_global_cleanup();
+#endif
+   return 0;
+}
+
+/*-------------------------------------------------------------------*/
+void ffvhtps(int flag)
+{
+   /* Turn libcurl's verbose output on (1) or off (0). 
+      This is NOT THREAD-SAFE */
+   https_set_verbose(flag);
 }

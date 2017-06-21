@@ -1990,6 +1990,11 @@ int CFITS_API fits_hdecompress64(unsigned char *input, int smooth, LONGLONG *a, 
 int CFITS_API fits_compress_table  (fitsfile *infptr, fitsfile *outfptr, int *status);
 int CFITS_API fits_uncompress_table(fitsfile *infptr, fitsfile *outfptr, int *status);
 
+/* curl library wrapper routines (for https access) */
+int CFITS_API fits_init_https();
+int CFITS_API fits_cleanup_https();
+void CFITS_API fits_verbose_https(int flag);
+
 /*  The following exclusion if __CINT__ is defined is needed for ROOT */
 #ifndef __CINT__
 #ifdef __cplusplus
