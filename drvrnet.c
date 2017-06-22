@@ -1150,6 +1150,8 @@ int https_open_network(char *filename, curlmembuf* buffer)
 {
   char *urlname=0;
   char errStr[MAXLEN];
+  char agentStr[MAXLEN];
+  float version=0.0;
 #ifdef CFITSIO_HAVE_CURL
   CURL *curl=0;
   CURLcode res;
@@ -1171,7 +1173,8 @@ int https_open_network(char *filename, curlmembuf* buffer)
   
   curl_easy_setopt(curl, CURLOPT_VERBOSE, (long)curl_verbose);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlToMemCallback);
-  /* curl_easy_setopt(curl, CURLOPT_USERAGENT,""); */
+  sprintf(agentStr,"User-Agent: CFITSIO/HEASARC/%-8.3f\r\n",ffvers(&version)); 
+  curl_easy_setopt(curl, CURLOPT_USERAGENT,agentStr);
   
   buffer->memory = 0; /* malloc/realloc will grow this in the callback function */
   buffer->size = 0;
