@@ -1185,7 +1185,7 @@ int https_open_network(char *filename, curlmembuf* buffer)
       returns an error >= 400, ie. if it can't find the requested file. */
   curl_easy_setopt(curl, CURLOPT_FAILONERROR,  1L);
   /* This turns on automatic decompression for all recognized types. */
-  curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
+  curl_easy_setopt(curl, CURLOPT_ENCODING, "");
   
   /* urlname should be large enough to accomodate "https://"+filename+".gz". */
   urlname = (char *)malloc(strlen(filename)+12);
