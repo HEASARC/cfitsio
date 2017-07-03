@@ -449,6 +449,29 @@ fi
 # Set shared library name for cases in which we aren't setting a 'soname':
 if test "x$CFITSIO_SHLIB" = x; then CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX}"; fi
 
+# Curl library (will be pulled in to the shared CFITSIO library):
+# ---------------------------------------------------------------
+CURL_LIB=""
+CURL_INC=""
+# Use curl-config to get compiler & linker flags, if available:
+AC_CHECK_PROG(CURLCONFIG, curl-config, curl-config)
+if test "x$CURLCONFIG" != x; then
+  CURL_LIB=`$CURLCONFIG --libs`
+  LIBS="$CURL_LIB $LIBS"
+  CURL_INC=`$CURLCONFIG --cflags`
+  if test "x$CURL_INC" != x; then
+    CFLAGS="$CURL_INC $CFLAGS"
+  fi
+  AC_DEFINE(CFITSIO_HAVE_CURL)
+# No curl-config:
+else
+  AC_MSG_WARN(curl-config not found. Disabling HTTPS support for CFITSIO.)
+# Incomplete stubs for possible future use:
+#  AC_CHECK_LIB([curl],[main],[],
+#       [AC_MSG_WARN(Not building curl support for CFITSIO)])
+#  AC_CHECK_HEADER(curl.h,[])
+fi
+
 AC_SUBST(ARCH)dnl
 AC_SUBST(CFLAGS)dnl
 AC_SUBST(CC)dnl
@@ -573,6 +596,11 @@ fi
 if test "x$BUILD_REENTRANT" = xyes; then
   AC_DEFINE(_REENTRANT)
   AC_DEFINE([_XOPEN_SOURCE], [700])
+  # Additional definition needed to get 'union semun' when using
+  # _XOPEN_SOURCE on a Mac:
+  if test "x$EXT" = xdarwin; then
+    AC_DEFINE([_DARWIN_C_SOURCE])
+  fi
   AC_CHECK_LIB([pthread],[main],[],[AC_MSG_ERROR(Unable to locate pthread library needed when enabling reentrant multithreading)])
 fi
 # ------------------------------------------------------------------------------
