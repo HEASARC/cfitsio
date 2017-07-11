@@ -1173,7 +1173,7 @@ int https_open_network(char *filename, curlmembuf* buffer)
   
   curl_easy_setopt(curl, CURLOPT_VERBOSE, (long)curl_verbose);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlToMemCallback);
-  sprintf(agentStr,"User-Agent: CFITSIO/HEASARC/%-8.3f\r\n",ffvers(&version)); 
+  sprintf(agentStr,"User-Agent: CFITSIO/HEASARC/%-8.3f",ffvers(&version)); 
   curl_easy_setopt(curl, CURLOPT_USERAGENT,agentStr);
   
   buffer->memory = 0; /* malloc/realloc will grow this in the callback function */
