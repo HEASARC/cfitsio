@@ -596,5 +596,6 @@
 #define fits_init_https         ffihtps
 #define fits_cleanup_https      ffchtps
 #define fits_verbose_https      ffvhtps
+#define fits_verify_https_server  ffvserv
 
 #endif

@@ -267,7 +267,10 @@ static int closecommandfile;
 static int closeftpfile;
 static FILE *diskfile;
 static FILE *outfile;
+
 static int curl_verbose=0;
+static long curl_verify_host=0;
+static long curl_verify_peer=0;
 
 /*--------------------------------------------------------------------------*/
 /* This creates a memory file handle with a copy of the URL in filename. The 
@@ -1167,9 +1170,8 @@ int https_open_network(char *filename, curlmembuf* buffer)
   /* Will ASSUME curl_global_init has been called by this point.
      It is not thread-safe to call it here. */
   curl = curl_easy_init();
-  /* curl should be setting these by default, but let's make sure. */
-  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
-  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
+  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, curl_verify_peer);
+  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, curl_verify_host);
   
   curl_easy_setopt(curl, CURLOPT_VERBOSE, (long)curl_verbose);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlToMemCallback);
@@ -1254,6 +1256,20 @@ void https_set_verbose(int flag)
       curl_verbose = 0;
    else
       curl_verbose = 1;
+}
+
+void https_verify_server(int flag)
+{
+   if (!flag)
+   {
+      curl_verify_host=0;
+      curl_verify_peer=0;
+   }
+   else
+   {
+      curl_verify_host=2;
+      curl_verify_peer=1;
+   }
 }
 
 /*--------------------------------------------------------------------------*/

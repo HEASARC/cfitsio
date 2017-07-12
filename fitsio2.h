@@ -1159,6 +1159,7 @@ int https_checkfile(char* urltype, char *infile, char *outfile);
 int https_open(char *filename, int rwmode, int *driverhandle);
 int https_file_open(char *filename, int rwmode, int *driverhandle);
 void https_set_verbose(int flag);
+void https_verify_server(int flag);
 
 /* ftp driver I/O routines */
 
