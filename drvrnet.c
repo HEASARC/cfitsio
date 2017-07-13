@@ -1172,6 +1172,10 @@ int https_open_network(char *filename, curlmembuf* buffer)
   curl = curl_easy_init();
   curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, curl_verify_peer);
   curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, curl_verify_host);
+  if (!curl_verify_peer || !curl_verify_host)
+  {
+     printf("WARNING: Verification of https security is currently turned off.\n");
+  }
   
   curl_easy_setopt(curl, CURLOPT_VERBOSE, (long)curl_verbose);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlToMemCallback);
