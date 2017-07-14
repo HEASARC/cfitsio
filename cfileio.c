@@ -7454,9 +7454,3 @@ void ffvhtps(int flag)
    https_set_verbose(flag);
 }
 
-/*-------------------------------------------------------------------*/
-void ffvserv(int flag)
-{
-   /* Turn on(1) or off(0) https certificate verification. */
-   https_verify_server(flag);
-}

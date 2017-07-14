@@ -269,8 +269,6 @@ static FILE *diskfile;
 static FILE *outfile;
 
 static int curl_verbose=0;
-static long curl_verify_host=0;
-static long curl_verify_peer=0;
 
 /*--------------------------------------------------------------------------*/
 /* This creates a memory file handle with a copy of the URL in filename. The 
@@ -1155,6 +1153,9 @@ int https_open_network(char *filename, curlmembuf* buffer)
   char errStr[MAXLEN];
   char agentStr[MAXLEN];
   float version=0.0;
+  char *verify=0;
+  long verifyPeer = 1;
+  long verifyHost = 2;
 #ifdef CFITSIO_HAVE_CURL
   CURL *curl=0;
   CURLcode res;
@@ -1170,12 +1171,20 @@ int https_open_network(char *filename, curlmembuf* buffer)
   /* Will ASSUME curl_global_init has been called by this point.
      It is not thread-safe to call it here. */
   curl = curl_easy_init();
-  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, curl_verify_peer);
-  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, curl_verify_host);
-  if (!curl_verify_peer || !curl_verify_host)
+    
+  verify = getenv("CFITSIO_VERIFY_HTTPS");
+  if (verify)
   {
-     printf("WARNING: Verification of https security is currently turned off.\n");
+     if (verify[0] == 'F' || verify[0] == 'f')
+     {
+        verifyPeer = 0;
+        verifyHost = 1;
+        printf("WARNING: Verification of https security is currently turned off.\n");
+     }
   }
+   
+  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, verifyPeer);
+  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, verifyHost);
   
   curl_easy_setopt(curl, CURLOPT_VERBOSE, (long)curl_verbose);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlToMemCallback);
@@ -1260,20 +1269,6 @@ void https_set_verbose(int flag)
       curl_verbose = 0;
    else
       curl_verbose = 1;
-}
-
-void https_verify_server(int flag)
-{
-   if (!flag)
-   {
-      curl_verify_host=0;
-      curl_verify_peer=0;
-   }
-   else
-   {
-      curl_verify_host=2;
-      curl_verify_peer=1;
-   }
 }
 
 /*--------------------------------------------------------------------------*/

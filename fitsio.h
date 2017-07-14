@@ -1994,7 +1994,6 @@ int CFITS_API fits_uncompress_table(fitsfile *infptr, fitsfile *outfptr, int *st
 int CFITS_API fits_init_https();
 int CFITS_API fits_cleanup_https();
 void CFITS_API fits_verbose_https(int flag);
-void CFITS_API fits_verify_https_server(int flag);
 
 /*  The following exclusion if __CINT__ is defined is needed for ROOT */
 #ifndef __CINT__
