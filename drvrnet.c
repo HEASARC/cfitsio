@@ -267,6 +267,7 @@ static int closecommandfile;
 static int closeftpfile;
 static FILE *diskfile;
 static FILE *outfile;
+
 static int curl_verbose=0;
 
 /*--------------------------------------------------------------------------*/
@@ -1152,6 +1153,9 @@ int https_open_network(char *filename, curlmembuf* buffer)
   char errStr[MAXLEN];
   char agentStr[MAXLEN];
   float version=0.0;
+  char *verify=0;
+  long verifyPeer = 1;
+  long verifyHost = 2;
 #ifdef CFITSIO_HAVE_CURL
   CURL *curl=0;
   CURLcode res;
@@ -1167,13 +1171,30 @@ int https_open_network(char *filename, curlmembuf* buffer)
   /* Will ASSUME curl_global_init has been called by this point.
      It is not thread-safe to call it here. */
   curl = curl_easy_init();
-  /* curl should be setting these by default, but let's make sure. */
-  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
-  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
+    
+  verify = getenv("CFITSIO_VERIFY_HTTPS");
+  if (verify)
+  {
+     if (verify[0] == 'F' || verify[0] == 'f')
+     {
+        verifyPeer = 0;
+        verifyHost = 0;
+        printf("WARNING: Verification of https security is currently turned off.\n");
+     }
+  }
+   
+  res = curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, verifyPeer);
+  if (res != CURLE_OK)
+  {
+     ffpmsg("ERROR: CFITSIO was built with a libcurl library that ");
+     ffpmsg("does not have SSL support, and therefore can't perform https transfers.");
+     return (FILE_NOT_OPENED);    
+  }
+  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, verifyHost);
   
   curl_easy_setopt(curl, CURLOPT_VERBOSE, (long)curl_verbose);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlToMemCallback);
-  sprintf(agentStr,"User-Agent: CFITSIO/HEASARC/%-8.3f\r\n",ffvers(&version)); 
+  sprintf(agentStr,"User-Agent: CFITSIO/HEASARC/%-8.3f",ffvers(&version)); 
   curl_easy_setopt(curl, CURLOPT_USERAGENT,agentStr);
   
   buffer->memory = 0; /* malloc/realloc will grow this in the callback function */
