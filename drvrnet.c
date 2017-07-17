@@ -1178,7 +1178,7 @@ int https_open_network(char *filename, curlmembuf* buffer)
      if (verify[0] == 'F' || verify[0] == 'f')
      {
         verifyPeer = 0;
-        verifyHost = 1;
+        verifyHost = 0;
         printf("WARNING: Verification of https security is currently turned off.\n");
      }
   }
