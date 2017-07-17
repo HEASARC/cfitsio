@@ -1183,7 +1183,13 @@ int https_open_network(char *filename, curlmembuf* buffer)
      }
   }
    
-  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, verifyPeer);
+  res = curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, verifyPeer);
+  if (res != CURLE_OK)
+  {
+     ffpmsg("ERROR: CFITSIO was built with a libcurl library that ");
+     ffpmsg("does not have SSL support, and therefore can't perform https transfers.");
+     return (FILE_NOT_OPENED);    
+  }
   curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, verifyHost);
   
   curl_easy_setopt(curl, CURLOPT_VERBOSE, (long)curl_verbose);
