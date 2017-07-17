@@ -5381,7 +5381,7 @@ twice.
 
 \begin{verbatim}
   int fits_open_group / ffgtop
-      (fitsfile *mfptr, int group, > fitsfile **gfptr, int *status)
+      (fitsfile *mfptr, int grpid, > fitsfile **gfptr, int *status)
 \end{verbatim}
 
 \begin{description}
@@ -5406,7 +5406,7 @@ twice.
 
 \begin{description}
 \item[1 ] Return the number of member HDUs in a grouping table gfptr. The number
-    member HDUs is just the NAXIS2 value (number of rows) of the grouping
+    of member HDUs is just the NAXIS2 value (number of rows) of the grouping
    table. \label{ffgtnm}
 \end{description}
 
@@ -5488,7 +5488,7 @@ twice.
 
 \begin{verbatim}
   int fits_remove_member / ffgmrm
-      (fitsfile *fptr, long member, int rmopt, > int *status)
+      (fitsfile *gfptr, long member, int rmopt, > int *status)
 \end{verbatim}
 
 \chapter{ Specialized CFITSIO Interface Routines }
