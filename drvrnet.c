@@ -1154,6 +1154,10 @@ int https_open_network(char *filename, curlmembuf* buffer)
   char agentStr[MAXLEN];
   float version=0.0;
   char *verify=0;
+  /* These settings will force libcurl to perform host and peer authentication.
+     If it fails, this routine will try again without authentication (unless
+     user forbids this via CFITSIO_VERIFY_HTTPS environment variable).
+  */
   long verifyPeer = 1;
   long verifyHost = 2;
 #ifdef CFITSIO_HAVE_CURL
@@ -1171,17 +1175,6 @@ int https_open_network(char *filename, curlmembuf* buffer)
   /* Will ASSUME curl_global_init has been called by this point.
      It is not thread-safe to call it here. */
   curl = curl_easy_init();
-    
-  verify = getenv("CFITSIO_VERIFY_HTTPS");
-  if (verify)
-  {
-     if (verify[0] == 'F' || verify[0] == 'f')
-     {
-        verifyPeer = 0;
-        verifyHost = 0;
-        printf("WARNING: Verification of https security is currently turned off.\n");
-     }
-  }
    
   res = curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, verifyPeer);
   if (res != CURLE_OK)
@@ -1213,36 +1206,83 @@ int https_open_network(char *filename, curlmembuf* buffer)
   strcpy(urlname, "https://");
   strcat(urlname, filename);
   
-  /* Does the file have a .gz in it */
-  /* Also, if file has a '?' in it (probably cgi script) */
-  if (strstr(filename,".gz") || strstr(filename,"?"))
+  /* First attempt: verification on, filename unmodified. */
+  curl_easy_setopt(curl, CURLOPT_URL, urlname);
+  res = curl_easy_perform(curl);
+  if (res != CURLE_OK && res != CURLE_HTTP_RETURNED_ERROR)
   {
-     /* Send filename as is. */
-     curl_easy_setopt(curl, CURLOPT_URL, urlname);
-     res = curl_easy_perform(curl);
-     if (res != CURLE_OK)
+     /*   CURLE_HTTP_RETURNED_ERROR is what gets returned if HTTP server
+        returns an error code >= 400. If that's not causing this error, assume
+        it is a verification issue. 
+          Try again with verification removed, unless user disallowed it
+        via environment variable. */
+     verify = getenv("CFITSIO_VERIFY_HTTPS");
+     if (verify)
      {
-        sprintf(errStr,"libcurl error: %d",res);
-        ffpmsg(errStr);
-        if (strlen(curlErrBuf))
-           ffpmsg(curlErrBuf);     
-        curl_easy_cleanup(curl);  
-        free(urlname);
-        return (FILE_NOT_OPENED);
+        if (verify[0] == 'T' || verify[0] == 't')
+        {
+           sprintf(errStr,"libcurl error: %d",res);
+           ffpmsg(errStr);
+           if (strlen(curlErrBuf))
+              ffpmsg(curlErrBuf);     
+           curl_easy_cleanup(curl);  
+           free(urlname);
+           return (FILE_NOT_OPENED);
+        }
      }
-  }
-  else
-  {
-     /* First try appending .gz */
-     strcat(urlname, ".gz");
-     curl_easy_setopt(curl, CURLOPT_URL, urlname);
+     verifyPeer = 0;
+     verifyHost = 0;
+     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, verifyPeer);
+     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, verifyHost);
      res = curl_easy_perform(curl);
      if (res != CURLE_OK)
      {
-        /* Now try the unmodified/uncompressed filename */
-        strcpy(urlname, "https://");
-        strcat(urlname, filename);
-        curl_easy_setopt(curl, CURLOPT_URL, urlname);
+        /* Unless filename already contains a .gz or '?' (probably from a cgi script),
+           try again with .gz appended. */
+        if (!strstr(filename,".gz") && !strstr(filename,"?"))
+        {
+           strcat(urlname, ".gz");
+           curl_easy_setopt(curl, CURLOPT_URL, urlname); 
+           res = curl_easy_perform(curl);
+           if (res != CURLE_OK)
+           {
+              sprintf(errStr,"libcurl error: %d",res);
+              ffpmsg(errStr);
+              if (strlen(curlErrBuf))
+                 ffpmsg(curlErrBuf);     
+              curl_easy_cleanup(curl);  
+              free(urlname);
+              return (FILE_NOT_OPENED);
+           }
+           else
+              fprintf(stderr, "Warning: Unable to perform SSL verification on https transfer from: %s\n",
+                   urlname);           
+        }
+        else
+        {
+           sprintf(errStr,"libcurl error: %d",res);
+           ffpmsg(errStr);
+           if (strlen(curlErrBuf))
+              ffpmsg(curlErrBuf);     
+           curl_easy_cleanup(curl);  
+           free(urlname);
+           return (FILE_NOT_OPENED);
+        }        
+     }
+     else
+        fprintf(stderr, "Warning: Unable to perform SSL verification on https transfer from: %s\n",
+             urlname);
+
+  }
+  else if (res == CURLE_HTTP_RETURNED_ERROR)
+  {
+     /* Verification isn't the problem.  No need to relax peer/host checking */
+     /* Unless filename already contains a .gz or '?' (probably from a cgi script),
+        try again with .gz appended. */
+     if (!strstr(filename,".gz") && !strstr(filename,"?"))
+     {
+        strcat(urlname, ".gz");
+        curl_easy_setopt(curl, CURLOPT_URL, urlname); 
         res = curl_easy_perform(curl);
         if (res != CURLE_OK)
         {
@@ -1253,17 +1293,28 @@ int https_open_network(char *filename, curlmembuf* buffer)
            curl_easy_cleanup(curl);  
            free(urlname);
            return (FILE_NOT_OPENED);
-        }                      
+        }
+     }
+     else
+     {
+        sprintf(errStr,"libcurl error: %d",res);
+        ffpmsg(errStr);
+        if (strlen(curlErrBuf))
+           ffpmsg(curlErrBuf);     
+        curl_easy_cleanup(curl);  
+        free(urlname);
+        return (FILE_NOT_OPENED);
      }
   }
+  
   free(urlname);
   curl_easy_cleanup(curl);  
   
    return 0;
 
 #else
-   printf("\nERROR: This CFITSIO build was not compiled with the libcurl library package\n");
-   printf("and therefore it cannot perform HTTPS connections.\n");   
+   ffpmsg("ERROR: This CFITSIO build was not compiled with the libcurl library package ");
+   ffpmsg("and therefore it cannot perform HTTPS connections.");   
 #endif
   
   return (FILE_NOT_OPENED);
