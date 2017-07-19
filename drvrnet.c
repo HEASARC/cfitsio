@@ -924,6 +924,22 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
 	     fclose (*httpfile); 
 	     return 0;
           }
+          
+          /* Now check for HTTP to HTTPS redirection. */
+	  scratchstr2 = strstr(scratchstr,"https://");
+          if (scratchstr2 != NULL) {
+             /* skip the "https://" characters */
+             scratchstr2 += 8;
+             
+             /* return the new URL string, and set contentencoding to "https" as
+	        a flag to the http_checkfile routine
+	     */
+             strcpy(url, scratchstr2);
+             strcpy(contentencoding,"https://");
+             fclose(*httpfile);
+             return 0;
+          }
+          
 	}
       }
 
@@ -2660,7 +2676,14 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
               return 0;   /* found the .gz compressed ftp file */
 	    }
             /* fall through to here if ftp redirect does not exist */
-      }  else {
+      } else if (!strcmp(contentencoding, "https://")) {
+          /* the http server returned a 301 or 302 redirect to an HTTPS URL. */
+          https_checkfile(urltype, infile, outfile1);
+          /* For https we're not testing for compressed extensions at 
+             this stage.  It will all be done in https_open_network.  Therefore
+             leave infile alone and do immediate return. */
+          return 0;
+      } else {
           /* found the http .gz compressed file */
           fclose(httpfile);
           foundfile = 1;
@@ -2753,6 +2776,13 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
               return 0;   /* found the ftp file */
             }
             /* fall through to here if ftp redirect does not exist */
+      } else if (!strcmp(contentencoding, "https://")) {
+          /* the http server returned a 301 or 302 redirect to an HTTPS URL. */
+          https_checkfile(urltype, infile, outfile1);
+          /* For https we're not testing for compressed extensions at 
+             this stage.  It will all be done in https_open_network.  Therefore
+             leave infile alone and do immediate return. */
+          return 0;
       }  else {
           /* found the http .Z compressed file */
           fclose(httpfile);
