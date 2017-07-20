@@ -1221,8 +1221,12 @@ int https_open_network(char *filename, curlmembuf* buffer)
   urlname = (char *)malloc(strlen(filename)+12);
   strcpy(urlname, "https://");
   strcat(urlname, filename);
+  /* Unless filename already contains a .gz or '?' (probably from a cgi script),
+     first try with .gz appended. */
+  if (!strstr(filename,".gz") && !strstr(filename,"?"))
+     strcat(urlname, ".gz");
   
-  /* First attempt: verification on, filename unmodified. */
+  /* First attempt: verification on */
   curl_easy_setopt(curl, CURLOPT_URL, urlname);
   res = curl_easy_perform(curl);
   if (res != CURLE_OK && res != CURLE_HTTP_RETURNED_ERROR)
@@ -1253,11 +1257,12 @@ int https_open_network(char *filename, curlmembuf* buffer)
      res = curl_easy_perform(curl);
      if (res != CURLE_OK)
      {
-        /* Unless filename already contains a .gz or '?' (probably from a cgi script),
-           try again with .gz appended. */
+        /* Unless original filename already contains a .gz or '?' (probably from a cgi script),
+           try again without.gz appended. */
         if (!strstr(filename,".gz") && !strstr(filename,"?"))
         {
-           strcat(urlname, ".gz");
+           strcpy(urlname, "https://");
+           strcat(urlname, filename);        
            curl_easy_setopt(curl, CURLOPT_URL, urlname); 
            res = curl_easy_perform(curl);
            if (res != CURLE_OK)
@@ -1294,10 +1299,11 @@ int https_open_network(char *filename, curlmembuf* buffer)
   {
      /* Verification isn't the problem.  No need to relax peer/host checking */
      /* Unless filename already contains a .gz or '?' (probably from a cgi script),
-        try again with .gz appended. */
+        try again with original filename unappended */
      if (!strstr(filename,".gz") && !strstr(filename,"?"))
      {
-        strcat(urlname, ".gz");
+        strcpy(urlname, "https://");
+        strcat(urlname, filename);        
         curl_easy_setopt(curl, CURLOPT_URL, urlname); 
         res = curl_easy_perform(curl);
         if (res != CURLE_OK)
