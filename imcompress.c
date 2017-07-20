@@ -6321,9 +6321,10 @@ int imcomp_decompress_tile (fitsfile *infptr,
 	       all we need to is to reset the error status to zero.
 	    */
 	       
-            if ((infptr->Fptr)->compress_type == HCOMPRESS_1) {
-	        if (*status == NUM_OVERFLOW) *status = 0;
-	    }
+             if ((infptr->Fptr)->compress_type == HCOMPRESS_1) {
+                if ((*status == NUM_OVERFLOW) || (*status == OVERFLOW_ERR))
+                        *status = 0;
+             }
           }
         } else if (tiledatatype == TSHORT) {
           fffi2i2((short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,
