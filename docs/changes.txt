@@ -1,10 +1,18 @@
                    Log of Changes Made to CFITSIO
                    
+Version 3.42 - August 2017 (Stand-alone release)
+                   
+   - added https support to the collection of drivers handled in cfileio.c
+     and drvrnet.c.  This also handles the case where http transfers are 
+     rerouted to https.  Note that this enhancement introduces a dependency
+     on the libcurl development package.  If this package is absent, CFITSIO
+     will still build but will not have https capability.
+                   
    - made fix to imcomp_init_table function in imcompress.c.  It now writes
      ZSIMPLE keyword only to a compressed image that will be placed in the
      primary header.  
 
-Version 3.42 - March 2017
+Version 3.42 - March 2017 (Ftools release only)
 
    - in ftp_open_network and in ftp_file_exist, added code to repeatedly
      attempt to make a ftp connection if the ftp server does not respond
