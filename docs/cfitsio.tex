@@ -5751,6 +5751,47 @@ the 'exists' parameter will have 1 of the 4 following values:
       (Note:  The second argument must be 0).
 \end{verbatim}
 
+\begin{description}
+\item[10 ] Wrapper function for global initialization of the libcurl library used
+   when accessing files with the HTTPS protocol.  If an HTTPS file transfer is to
+   be performed, it is recommended that you call this once near the start of your program
+   before any file\_open calls, and before creating any threads.  This is NOT THREAD-SAFE.
+   Returns 0 if initialization succeeded.
+   A corresponding call to fits\_cleanup\_https should be made later.
+  \label{ffihtps}
+\end{description}
+
+\begin{verbatim}
+  int fits_init_https / ffihtps
+      ()
+\end{verbatim}
+
+\begin{description}
+\item[11 ] Wrapper function for global cleanup of the libcurl library used when
+   accessing files with the HTTPS protocol.  This is meant to be used in combination 
+   with fits\_init\_https, and should be called after all HTTPS file accessing is completed,
+   and after all threads are completed.  This is NOT THREAD-SAFE.  Returns 0 upon successful
+   cleanup.
+  \label{ffchtps}
+\end{description}
+
+\begin{verbatim}
+   int fits_cleanup_https / ffchtps
+       ()
+\end{verbatim}
+
+\begin{description}
+\item[12 ] Toggle the verbosity of the libcurl library diagnostic output when
+   accessing files with the HTTPS protocol.  'flag' = 1 turns the output
+   on, 0 turns it off (the default).  This is NOT THREAD-SAFE.
+  \label{ffvhtps}
+\end{description}
+
+\begin{verbatim}
+   void fits_verbose_https / ffvhtps
+        (int flag)
+\end{verbatim}
+
 
 \section{HDU Access Routines}
 
@@ -9825,6 +9866,7 @@ fits\_calculator\_rng     & \pageref{ffcalcrng} \\
 fits\_calc\_binning & \pageref{calcbinning} \\
 fits\_calc\_rows    & \pageref{ffcrow} \\
 fits\_change\_group  & \pageref{ffgtch} \\
+fits\_cleanup\_https & \pageref{ffchtps} \\
 fits\_clear\_errmark  & \pageref{ffpmrk} \\
 fits\_clear\_errmsg   & \pageref{ffcmsg} \\
 fits\_close\_file     & \pageref{ffclos} \\
@@ -9848,10 +9890,10 @@ fits\_copy\_rows &   \pageref{ffcprw} \\
 fits\_create\_diskfile    & \pageref{ffinit} \\
 fits\_create\_file    & \pageref{ffinit} \\
 fits\_create\_group  & \pageref{ffgtcr} \\
-fits\_create\_hdu     & \pageref{ffcrhd} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+fits\_create\_hdu     & \pageref{ffcrhd} \\
 fits\_create\_img     & \pageref{ffcrim} \\
 fits\_create\_memfile    & \pageref{ffimem} \\
 fits\_create\_tbl     & \pageref{ffcrtb} \\
@@ -9883,9 +9925,9 @@ fits\_get\_bcolparms  & \pageref{ffgbcl} \\
 fits\_get\_chksum     & \pageref{ffgcks} \\
 fits\_get\_col\_display\_width    & \pageref{ffgcdw} \\
 fits\_get\_colname    & \pageref{ffgcnn} \\
-fits\_get\_colnum     & \pageref{ffgcno} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_get\_colnum     & \pageref{ffgcno} \\
 fits\_get\_coltype    & \pageref{ffgtcl} \\
 fits\_get\_compression\_type & \pageref{ffgetcomp} \\
 fits\_get\_eqcoltype    & \pageref{ffgtcl} \\
@@ -9917,10 +9959,11 @@ fits\_get\_system\_time  & \pageref{ffdt2s} \\
 fits\_get\_tile\_dim     & \pageref{ffgetcomp} \\
 fits\_get\_tbcol      & \pageref{ffgabc} \\
 fits\_get\_version    & \pageref{ffvers} \\
-fits\_hdr2str         & \pageref{ffhdr2str}, \pageref{hdr2str} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_hdr2str         & \pageref{ffhdr2str}, \pageref{hdr2str} \\
+fits\_init\_https  & \pageref{ffihtps} \\
 fits\_insert\_atbl    & \pageref{ffitab} \\
 fits\_insert\_btbl    & \pageref{ffibin} \\
 fits\_insert\_col   & \pageref{fficol} \\
@@ -9967,10 +10010,10 @@ fits\_parse\_template & \pageref{ffgthd} \\
 fits\_parse\_value    & \pageref{ffpsvc} \\
 fits\_pix\_to\_world & \pageref{ffwldp} \\
 fits\_read\_2d\_TYP      & \pageref{ffg2dx} \\
-fits\_read\_3d\_TYP      & \pageref{ffg3dx} \\
-fits\_read\_atblhdr      & \pageref{ffghtb} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_read\_3d\_TYP      & \pageref{ffg3dx} \\
+fits\_read\_atblhdr      & \pageref{ffghtb} \\
 fits\_read\_btblhdr      & \pageref{ffghbn} \\
 fits\_read\_card         & \pageref{ffgcrd} \\
 fits\_read\_col        & \pageref{ffgcv} \\
@@ -10017,10 +10060,10 @@ fits\_report\_error   & \pageref{ffrprt} \\
 fits\_resize\_img     & \pageref{ffrsim} \\
 fits\_rms\_float      & \pageref{imageRMS} \\
 fits\_rms\_short      & \pageref{imageRMS} \\
-fits\_select\_rows  & \pageref{ffsrow} \\
-fits\_set\_atblnull   & \pageref{ffsnul} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_select\_rows  & \pageref{ffsrow} \\
+fits\_set\_atblnull   & \pageref{ffsnul} \\
 fits\_set\_bscale     & \pageref{ffpscl} \\
 fits\_set\_btblnull   & \pageref{fftnul} \\
 fits\_set\_compression\_type  & \pageref{ffsetcomp} \\
@@ -10048,6 +10091,7 @@ fits\_update\_key\_null   & \pageref{ffukyu} \\
 fits\_update\_key\_TYP    & \pageref{ffukyx} \\
 fits\_uppercase      & \pageref{ffupch} \\
 fits\_url\_type      & \pageref{ffurlt} \\
+fits\_verbose\_https  & \pageref{ffvhtps} \\
 fits\_verify\_chksum  & \pageref{ffvcks} \\
 fits\_verify\_group  & \pageref{ffgtvf} \\
 fits\_world\_to\_pix & \pageref{ffxypx} \\
@@ -10066,12 +10110,12 @@ fits\_write\_comment      & \pageref{ffpcom} \\
 fits\_write\_date         & \pageref{ffpdat} \\
 fits\_write\_descript  & \pageref{ffpdes} \\
 fits\_write\_errmark   & \pageref{ffpmrk} \\
-fits\_write\_errmsg   & \pageref{ffpmsg} \\
-fits\_write\_ext        & \pageref{ffgextn} \\
-fits\_write\_exthdr        & \pageref{ffphps} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_write\_errmsg   & \pageref{ffpmsg} \\
+fits\_write\_ext        & \pageref{ffgextn} \\
+fits\_write\_exthdr        & \pageref{ffphps} \\
 fits\_write\_grphdr       & \pageref{ffphpr} \\
 fits\_write\_grppar\_TYP & \pageref{ffpgpx} \\
 fits\_write\_hdu       & \pageref{ffwrhdu} \\
@@ -10109,6 +10153,7 @@ ffasfm    & \pageref{ffasfm} \\
 ffbnfm   & \pageref{ffbnfm} \\
 ffcalc     & \pageref{ffcalc} \\
 ffcalc\_rng     & \pageref{ffcalcrng} \\
+ffchtps    & \pageref{ffchtps} \\
 ffclos     & \pageref{ffclos} \\
 ffcmph & \pageref{ffcmph} \\
 ffcmps    & \pageref{ffcmps} \\
@@ -10152,9 +10197,9 @@ ffflmd      & \pageref{ffflmd} \\
 ffflnm      & \pageref{ffflnm} \\
 ffflsh     & \pageref{ffflus} \\
 ffflus     & \pageref{ffflus} \\
-fffree     & \pageref{ffgkls},  \pageref{ffhdr2str} \\
 \end{tabular}
 \begin{tabular}{lr}
+fffree     & \pageref{ffgkls},  \pageref{ffhdr2str} \\
 fffrow    & \pageref{fffrow} \\
 ffg2d\_      & \pageref{ffg2dx} \\
 ffg3d\_      & \pageref{ffg3dx} \\
@@ -10202,10 +10247,10 @@ ffgkyt   & \pageref{ffgkyt} \\
 ffgky\_      & \pageref{ffgkyx} \\
 ffgmcp   & \pageref{ffgmcp} \\
 ffgmng  & \pageref{ffgmng} \\
-ffgmop    & \pageref{ffgmop} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+ffgmop    & \pageref{ffgmop} \\
 ffgmrm   & \pageref{ffgmrm} \\
 ffgmsg    & \pageref{ffgmsg} \\
 ffgmtf  & \pageref{ffgmtf} \\
@@ -10249,15 +10294,16 @@ ffibin    & \pageref{ffibin} \\
 fficls  & \pageref{fficls} \\
 fficol   & \pageref{fficol} \\
 ffifile  & \pageref{ffiurl} \\
+ffihtps  & \pageref{ffihtps} \\
 ffiimg     & \pageref{ffiimg} \\
 ffikls    & \pageref{ffikyx} \\
 ffikyu   & \pageref{ffikyu} \\
-ffiky\_    & \pageref{ffikyx} \\
-ffimem  & \pageref{ffimem} \\
 
 \end{tabular}
 \begin{tabular}{lr}
 
+ffiky\_    & \pageref{ffikyx} \\
+ffimem  & \pageref{ffimem} \\
 ffinit  & \pageref{ffinit} \\
 ffinttyp    & \pageref{ffinttyp} \\
 ffiopn & \pageref{ffopen} \\
@@ -10304,12 +10350,12 @@ ffphpr       & \pageref{ffphpr} \\
 ffphps       & \pageref{ffphps} \\
 ffphtb      & \pageref{ffphtb} \\
 ffpkls  & \pageref{ffpkls} \\
-ffpkn\_     & \pageref{ffpknx} \\
-ffpktp & \pageref{ffpktp} \\
 
 \end{tabular}
 \begin{tabular}{lr}
 
+ffpkn\_     & \pageref{ffpknx} \\
+ffpktp & \pageref{ffpktp} \\
 ffpky          & \pageref{ffpky} \\
 ffpkyt   & \pageref{ffpkyt} \\
 ffpkyu     & \pageref{ffpkyu} \\
@@ -10356,14 +10402,14 @@ fftopn & \pageref{ffopen} \\
 fftplt & \pageref{fftplt} \\
 fftrec    & \pageref{fftrec} \\
 fftscl     & \pageref{fftscl} \\
-ffucrd       & \pageref{ffucrd} \\
-ffukls    & \pageref{ffukyx} \\
 
 
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
 
+ffucrd       & \pageref{ffucrd} \\
+ffukls    & \pageref{ffukyx} \\
 ffuky        & \pageref{ffuky} \\
 ffukyu   & \pageref{ffukyu} \\
 ffuky\_    & \pageref{ffukyx} \\
@@ -10372,6 +10418,7 @@ ffupck  & \pageref{ffupck} \\
 ffurlt  & \pageref{ffurlt} \\
 ffvcks  & \pageref{ffvcks} \\
 ffvers    & \pageref{ffvers} \\
+ffvhtps  & \pageref{ffvhtps} \\
 ffwldp & \pageref{ffwldp} \\
 ffwrhdu  & \pageref{ffwrhdu} \\
 ffxypx & \pageref{ffxypx} \\
