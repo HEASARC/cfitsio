@@ -31,7 +31,7 @@
 \medskip
 \medskip
 \begin{center}
-{\Large Version 3.3 \\}
+{\Large Version 3.4 \\}
 \end{center}
 \bigskip
 \vskip 2.5cm
@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large April 2016\\}
+{\Large August 2017\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -1723,7 +1723,10 @@ is then opened by the application program with READONLY access.
 Programs can read the input file from the 'stdin' file stream if a dash
 character ('-') is given as the filename. Files can also be opened over
 the network using FTP or HTTP protocols by supplying the appropriate URL
-as the filename.
+as the filename.  The HTTPS protocol is also supported if the CFITSIO
+build includes the libcurl library.  (If the CFITSIO 'configure' script
+finds a usable libcurl library on your system, it will automatically be 
+included in the build.)
 
 The input file can be modified in various ways to create a virtual file
 (usually stored in memory) that is then opened by the application
@@ -7260,7 +7263,7 @@ be read by converting them on the fly into virtual FITS images.
 
 \item
 FITS files on the Internet can be read (and sometimes written) using the FTP,
-HTTP, or ROOT protocols.
+HTTP, HTTPS, or ROOT protocols.
 
 \item
 FITS files can be piped between tasks on the stdin and stdout streams.
@@ -7461,6 +7464,9 @@ CFITSIO to read and/or write the file.  Currently supported types are
                    supports username:password just like the ftp driver.
                    Proxy HTTP servers are supported using the http_proxy
                    environment variable (see following note).
+       https://  - a readonly file accessed with the HTTPS protocol.  This
+                   is available only if CFITSIO was built with the libcurl
+                   library (see the following note).
       stream://  - special driver to read an input FITS file from the stdin
                    stream, and/or write an output FITS file to the stdout
 		   stream.  This driver is fragile and has limited
@@ -7492,6 +7498,35 @@ For example
 will cause CFITSIO to use port 3128 on the heasarc proxy server whenever
 reading a FITS file with HTTP.
 
+\subsection{Notes about HTTPS file access}
+
+CFITSIO depends upon the availability of the libcurl library (with development
+files) in order to perform HTTPS file access.  The CFITSIO 'configure' script will search
+for this library on your system, and if it finds it it will automatically be incorporated
+into the build.  You can tell if it was found by the the presence of '-DCFITSIO\_HAVE\_CURL=1' 
+in the CFITSIO Makefile and in the compilation output.  If 'configure' is unable to find a usable libcurl, CFITSIO will still
+successfully build but won't have HTTPS capability.
+
+The libcurl package is normally included as part of Xcode on Macs.  However on Linux platforms you 
+may need to manually install it. This can be easily done on Ubuntu Linux using
+the 'apt get' command to retrieve the libcurl4-openssl-dev or the libcurl4-gnutls-dev packages.
+
+When accessing a file with HTTPS, the default CFITSIO behavior is to attempt
+to verify both the host name and the SSL certificate.  If it cannot, it will still 
+perform the file access but will issue a warning to the terminal window.
+
+The user can override this behavior to force CFITSIO to only allow file transfers
+when the host name and SSL certificate have been successfully verified.  This is
+done by setting the CFITSIO\_VERIFY\_HTTPS environment variable to 'True'. ie. in a
+csh shell:
+
+setenv CFITSIO\_VERIFY\_HTTPS True
+
+the default setting for this is 'False'.
+
+CFITSIO has 3 functions which specifically apply to HTTPS access:  fits\_init\_https, 
+fits\_cleanup\_https, and fits\_verbose\_https.  These are described in the 'FITS File Access Routines'
+section of the 'Specialized CFITSIO Interface Routines' chapter. 
 
 \subsection{Notes about the stream filetype driver}
 
