@@ -7500,12 +7500,20 @@ reading a FITS file with HTTP.
 
 \subsection{Notes about HTTPS file access}
 
-CFITSIO depends upon the availability of the libcurl library (with development
-files) in order to perform HTTPS file access.  The CFITSIO 'configure' script will search
-for this library on your system, and if it finds it it will automatically be incorporated
-into the build.  You can tell if it was found by the the presence of '-DCFITSIO\_HAVE\_CURL=1' 
-in the CFITSIO Makefile and in the compilation output.  If 'configure' is unable to find a usable libcurl, CFITSIO will still
-successfully build but won't have HTTPS capability.
+CFITSIO depends upon the availability of the libcurl library in order to perform 
+HTTPS file access.  (This should be the development version of the library, as
+it contains the curl.h header file required by the CFITSIO code.)   The CFITSIO
+'configure' script will search for this library on your system, and if it finds it 
+it will automatically be incorporated into the build.  
+
+Note that if you have this library package on your system, you will also have the 'curl-config'
+executable.  You can run the 'curl-config' executable with various options to learn
+more about the features of your libcurl installation.
+
+If the CFITSIO 'configure' succeeded in finding a usable libcurl, you will see the flag
+'-DCFITSIO\_HAVE\_CURL=1' in the CFITSIO Makefile and in the compilation output.  
+If 'configure' is unable to find a usable libcurl, CFITSIO will still build 
+but it won't have HTTPS capability.
 
 The libcurl package is normally included as part of Xcode on Macs.  However on Linux platforms you 
 may need to manually install it. This can be easily done on Ubuntu Linux using
@@ -7524,9 +7532,11 @@ setenv CFITSIO\_VERIFY\_HTTPS True
 
 the default setting for this is 'False'.
 
-CFITSIO has 3 functions which specifically apply to HTTPS access:  fits\_init\_https, 
-fits\_cleanup\_https, and fits\_verbose\_https.  These are described in the 'FITS File Access Routines'
-section of the 'Specialized CFITSIO Interface Routines' chapter. 
+CFITSIO has 3 functions which apply specifically to HTTPS access:  fits\_init\_https, 
+fits\_cleanup\_https, and fits\_verbose\_https. It is recommended that you call the 
+init and cleanup functions near the beginning and end of your program respectively. 
+For more information about these functions, please see the 'FITS File Access Routines'
+section in the preceding chapter ('Specialized CFITSIO Interface Routines'). 
 
 \subsection{Notes about the stream filetype driver}
 
