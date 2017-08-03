@@ -5200,6 +5200,7 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
     if (ffgky(infptr, TSTRING, "ZQUANTIZ", value, NULL, &tstatus) > 0)
     {
         (infptr->Fptr)->quantize_method = 0;
+        (infptr->Fptr)->quantize_level = 0;
     } else {
 
         if (!FSTRCMP(value, "NONE") ) {
