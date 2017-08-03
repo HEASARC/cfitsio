@@ -453,8 +453,9 @@ if test "x$CFITSIO_SHLIB" = x; then CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX
 # ---------------------------------------------------------------
 CURL_LIB=""
 CURL_INC=""
-# Use curl-config to get compiler & linker flags, if available:
-AC_CHECK_PROG(CURLCONFIG, curl-config, curl-config)
+# Use curl-config to get compiler & linker flags, if available
+# (reject MacPorts curl-config to prevent build errors):
+AC_CHECK_PROG([CURLCONFIG], [curl-config], [curl-config], [], [], [/opt/local/bin/curl-config])
 if test "x$CURLCONFIG" != x; then
   CURL_LIB=`$CURLCONFIG --libs`
   LIBS="$CURL_LIB $LIBS"

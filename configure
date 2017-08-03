@@ -4750,7 +4750,8 @@ if test "x$CFITSIO_SHLIB" = x; then CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX
 # ---------------------------------------------------------------
 CURL_LIB=""
 CURL_INC=""
-# Use curl-config to get compiler & linker flags, if available:
+# Use curl-config to get compiler & linker flags, if available
+# (reject MacPorts curl-config to prevent build errors):
 # Extract the first word of "curl-config", so it can be a program name with args.
 set dummy curl-config; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -4761,6 +4762,7 @@ else
   if test -n "$CURLCONFIG"; then
   ac_cv_prog_CURLCONFIG="$CURLCONFIG" # Let the user override the test.
 else
+  ac_prog_rejected=no
 as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
 for as_dir in $PATH
 do
@@ -4768,6 +4770,10 @@ do
   test -z "$as_dir" && as_dir=.
     for ac_exec_ext in '' $ac_executable_extensions; do
   if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    if test "$as_dir/$ac_word$ac_exec_ext" = "/opt/local/bin/curl-config"; then
+       ac_prog_rejected=yes
+       continue
+     fi
     ac_cv_prog_CURLCONFIG="curl-config"
     $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
     break 2
@@ -4776,6 +4782,18 @@ done
   done
 IFS=$as_save_IFS
 
+if test $ac_prog_rejected = yes; then
+  # We found a bogon in the path, so make sure we never use it.
+  set dummy $ac_cv_prog_CURLCONFIG
+  shift
+  if test $# != 0; then
+    # We chose a different compiler from the bogus one.
+    # However, it has the same basename, so the bogon will be chosen
+    # first if we set CURLCONFIG to just the basename; use the full file name.
+    shift
+    ac_cv_prog_CURLCONFIG="$as_dir/$ac_word${1+' '}$@"
+  fi
+fi
 fi
 fi
 CURLCONFIG=$ac_cv_prog_CURLCONFIG
