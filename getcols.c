@@ -629,7 +629,7 @@ int ffgcdw( fitsfile *fptr,   /* I - FITS file pointer                       */
 		       the TFORM=rAw keyword */
 		    if (ffgtcl(fptr, colnum, &typecode, &repeat, &rwidth, &gstatus) == 0 &&
 			rwidth >= 1 && rwidth < repeat) {
-		      *width = (repeat/rwidth);
+		      *width = rwidth;
 
 		    } else {
 		      
