@@ -10,7 +10,10 @@ Version 3.42 - August 2017 (Stand-alone release)
                    
    - made fix to imcomp_init_table function in imcompress.c.  It now writes
      ZSIMPLE keyword only to a compressed image that will be placed in the
-     primary header.  
+     primary header.
+     
+   - fix made to fits_get_col_display_width for case of a vector column
+     of strings. 
 
 Version 3.42 - March 2017 (Ftools release only)
 
