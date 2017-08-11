@@ -1558,7 +1558,7 @@ int fits_read_fits_region ( fitsfile *fptr,
 
     /* set the shape type */
 
-    for (j=0; j<9; j++) {
+    for (j=0; j<17; j++) {
       if ( !strcmp(cvalue2, shapename[j]) ) newShape->shape = shapetype[j];
     }
 
