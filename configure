@@ -5007,6 +5007,63 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
 
+# ------------------------------------------------------------------------------
+# Define _REENTRANT & add -lpthread to LIBS if reentrant multithreading enabled:
+# ------------------------------------------------------------------------------
+if test "x$BUILD_REENTRANT" = xyes; then
+  $as_echo "#define _REENTRANT 1" >>confdefs.h
+
+  $as_echo "#define _XOPEN_SOURCE 700" >>confdefs.h
+
+  # Additional definition needed to get 'union semun' when using
+  # _XOPEN_SOURCE on a Mac:
+  if test "x$EXT" = xdarwin; then
+    $as_echo "#define _DARWIN_C_SOURCE 1" >>confdefs.h
+
+  fi
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lpthread" >&5
+$as_echo_n "checking for main in -lpthread... " >&6; }
+if ${ac_cv_lib_pthread_main+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpthread  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+return main ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_pthread_main=yes
+else
+  ac_cv_lib_pthread_main=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pthread_main" >&5
+$as_echo "$ac_cv_lib_pthread_main" >&6; }
+if test "x$ac_cv_lib_pthread_main" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBPTHREAD 1
+_ACEOF
+
+  LIBS="-lpthread $LIBS"
+
+else
+  as_fn_error $? "Unable to locate pthread library needed when enabling reentrant multithreading" "$LINENO" 5
+fi
+
+fi
+
 # -------------------------------------------------------------------------
 # there are some idiosyncrasies with semun defs (used in semxxx). Solaris
 # does not define it at all
@@ -5169,64 +5226,6 @@ if test "$cfitsio_have_nsl" = 1 -a "$cfitsio_have_socket" = 1; then
 fi
 
 # ==================== END OF unix networking SECTION ================
-
-# ------------------------------------------------------------------------------
-# Define _REENTRANT & add -lpthread to LIBS if reentrant multithreading enabled:
-# ------------------------------------------------------------------------------
-if test "x$BUILD_REENTRANT" = xyes; then
-  $as_echo "#define _REENTRANT 1" >>confdefs.h
-
-  $as_echo "#define _XOPEN_SOURCE 700" >>confdefs.h
-
-  # Additional definition needed to get 'union semun' when using
-  # _XOPEN_SOURCE on a Mac:
-  if test "x$EXT" = xdarwin; then
-    $as_echo "#define _DARWIN_C_SOURCE 1" >>confdefs.h
-
-  fi
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lpthread" >&5
-$as_echo_n "checking for main in -lpthread... " >&6; }
-if ${ac_cv_lib_pthread_main+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lpthread  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-int
-main ()
-{
-return main ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_pthread_main=yes
-else
-  ac_cv_lib_pthread_main=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pthread_main" >&5
-$as_echo "$ac_cv_lib_pthread_main" >&6; }
-if test "x$ac_cv_lib_pthread_main" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBPTHREAD 1
-_ACEOF
-
-  LIBS="-lpthread $LIBS"
-
-else
-  as_fn_error $? "Unable to locate pthread library needed when enabling reentrant multithreading" "$LINENO" 5
-fi
-
-fi
-# ------------------------------------------------------------------------------
 
 ac_config_files="$ac_config_files Makefile"
 
