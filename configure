@@ -4808,13 +4808,19 @@ fi
 
 if test "x$CURLCONFIG" != x; then
   CURL_LIB=`$CURLCONFIG --libs`
-  LIBS="$CURL_LIB $LIBS"
   CURL_INC=`$CURLCONFIG --cflags`
-  if test "x$CURL_INC" != x; then
-    CFLAGS="$CURL_INC $CFLAGS"
-  fi
-  $as_echo "#define CFITSIO_HAVE_CURL 1" >>confdefs.h
+  # Reject anaconda curl:
+  if test `echo $CURL_LIB $CURL_INC | grep -ci anaconda` -gt 0; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Rejecting Anaconda curl. Disabling HTTPS support for CFITSIO." >&5
+$as_echo "$as_me: WARNING: Rejecting Anaconda curl. Disabling HTTPS support for CFITSIO." >&2;}
+  else
+    LIBS="$CURL_LIB $LIBS"
+    if test "x$CURL_INC" != x; then
+      CFLAGS="$CURL_INC $CFLAGS"
+    fi
+    $as_echo "#define CFITSIO_HAVE_CURL 1" >>confdefs.h
 
+  fi
 # No curl-config:
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: curl-config not found. Disabling HTTPS support for CFITSIO." >&5
