@@ -1399,6 +1399,11 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
       tstatus = 0;
       ffmkyj(fptr, "THEAP", (fptr->Fptr)->heapstart, "&", &tstatus);
 
+      /* Must reset colptr before using it again.  (fptr->Fptr)->tableptr
+         may have been reallocated down in ffbinit via the call to ffiblk above.*/
+      colptr = (fptr->Fptr)->tableptr;
+      colptr += (colnum - 1);
+
       firstcol = colptr->tbcol + (repeat * width);  /* insert position */
 
       /* insert delbyte bytes in every row, at byte position firstcol */
