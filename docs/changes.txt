@@ -1,5 +1,9 @@
                    Log of Changes Made to CFITSIO
                    
+   - Bug fix to ffmvec function.  Should be resetting a local colptr
+     variable after making a call to ffiblk (which can reallocate Ftpr->
+     tableptr).  Originally reported by Willem van Straten.
+                   
 Version 3.42 - August 2017 (Stand-alone release)
                    
    - added https support to the collection of drivers handled in cfileio.c
