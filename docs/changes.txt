@@ -1,5 +1,10 @@
                    Log of Changes Made to CFITSIO
                    
+   - Calls to https driver functions in cfileio.c need to be macro-
+     protected by the HAVE_NET_SERVICES variable (as are the http and
+     ftp driver function calls).  Otherwise CMake builds on native
+     Windows will fail since drvrnet.o is left empty.
+                   
    - Bug fix to ffmvec function.  Should be resetting a local colptr
      variable after making a call to ffiblk (which can reallocate Ftpr->
      tableptr).  Originally reported by Willem van Straten.
