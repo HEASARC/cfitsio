@@ -4750,9 +4750,15 @@ if test "x$CFITSIO_SHLIB" = x; then CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX
 # ---------------------------------------------------------------
 CURL_LIB=""
 CURL_INC=""
-# Use curl-config to get compiler & linker flags, if available
-# (reject MacPorts curl-config to prevent build errors):
-# Extract the first word of "curl-config", so it can be a program name with args.
+# Use curl-config to get compiler & linker flags, if available.
+# On Macs, prefer XCode curl-config, and reject MacPorts version
+# until further notice to prevent build errors:
+if test "x$EXT" = xdarwin -a -x /usr/bin/curl-config; then
+  CURLCONFIG="/usr/bin/curl-config"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: checking for curl-config... choosing /usr/bin/curl-config on Mac" >&5
+$as_echo "checking for curl-config... choosing /usr/bin/curl-config on Mac" >&6; }
+else
+  # Extract the first word of "curl-config", so it can be a program name with args.
 set dummy curl-config; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
@@ -4806,13 +4812,14 @@ $as_echo "no" >&6; }
 fi
 
 
+fi
 if test "x$CURLCONFIG" != x; then
   CURL_LIB=`$CURLCONFIG --libs`
   CURL_INC=`$CURLCONFIG --cflags`
-  # Reject anaconda curl:
-  if test `echo $CURL_LIB $CURL_INC | grep -ci anaconda` -gt 0; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Rejecting Anaconda curl. Disabling HTTPS support for CFITSIO." >&5
-$as_echo "$as_me: WARNING: Rejecting Anaconda curl. Disabling HTTPS support for CFITSIO." >&2;}
+  # Also reject anaconda curl on Macs until further notice:
+  if test "x$EXT" = xdarwin -a `echo $CURL_LIB $CURL_INC | grep -ci anaconda` -gt 0; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Rejecting Anaconda curl. Disabling HTTPS support." >&5
+$as_echo "$as_me: WARNING: Rejecting Anaconda curl. Disabling HTTPS support." >&2;}
   else
     LIBS="$CURL_LIB $LIBS"
     if test "x$CURL_INC" != x; then
@@ -4823,8 +4830,8 @@ $as_echo "$as_me: WARNING: Rejecting Anaconda curl. Disabling HTTPS support for 
   fi
 # No curl-config:
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: curl-config not found. Disabling HTTPS support for CFITSIO." >&5
-$as_echo "$as_me: WARNING: curl-config not found. Disabling HTTPS support for CFITSIO." >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: curl-config not found. Disabling HTTPS support." >&5
+$as_echo "$as_me: WARNING: curl-config not found. Disabling HTTPS support." >&2;}
 # Incomplete stubs for possible future use:
 #  AC_CHECK_LIB([curl],[main],[],
 #       [AC_MSG_WARN(Not building curl support for CFITSIO)])
@@ -4836,8 +4843,8 @@ fi
 
 # ================= test for the unix ftruncate function ================
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking \"whether ftruncate works\"" >&5
-$as_echo_n "checking \"whether ftruncate works\"... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ftruncate works" >&5
+$as_echo_n "checking whether ftruncate works... " >&6; }
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <unistd.h>
@@ -4856,12 +4863,12 @@ if ac_fn_c_try_link "$LINENO"; then :
 
 $as_echo "#define HAVE_FTRUNCATE 1" >>confdefs.h
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: \"yes\"" >&5
-$as_echo "\"yes\"" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
 
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"no\"" >&5
-$as_echo "\"no\"" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
@@ -4870,8 +4877,8 @@ rm -f core conftest.err conftest.$ac_objext \
 # some systems define long long for 64-bit ints
 # ---------------------------------------------------------
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking \"whether long long is defined\"" >&5
-$as_echo_n "checking \"whether long long is defined\"... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether long long is defined" >&5
+$as_echo_n "checking whether long long is defined... " >&6; }
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <stdlib.h>
@@ -4890,12 +4897,12 @@ if ac_fn_c_try_compile "$LINENO"; then :
 
 $as_echo "#define HAVE_LONGLONG 1" >>confdefs.h
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: \"yes\"" >&5
-$as_echo "\"yes\"" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
 
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"no\"" >&5
-$as_echo "\"no\"" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
@@ -4911,8 +4918,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 # check is System V IPC is supported on this machine
 # -------------------------------------------------------------------------
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking \"whether system V style IPC services are supported\"" >&5
-$as_echo_n "checking \"whether system V style IPC services are supported\"... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether system V style IPC services are supported" >&5
+$as_echo_n "checking whether system V style IPC services are supported... " >&6; }
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <sys/ipc.h>
@@ -4937,12 +4944,12 @@ if ac_fn_c_try_link "$LINENO"; then :
 $as_echo "#define HAVE_SHMEM_SERVICES 1" >>confdefs.h
 
 my_shmem=\${SOURCES_SHMEM}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: \"yes\"" >&5
-$as_echo "\"yes\"" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
 
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"no\"" >&5
-$as_echo "\"no\"" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
@@ -4953,8 +4960,8 @@ rm -f core conftest.err conftest.$ac_objext \
 # some systems define flock_t, for others we have to define it ourselves
 # -------------------------------------------------------------------------
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking \"do we have flock_t defined in sys/fcntl.h\"" >&5
-$as_echo_n "checking \"do we have flock_t defined in sys/fcntl.h\"... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking do we have flock_t defined in sys/fcntl.h" >&5
+$as_echo_n "checking do we have flock_t defined in sys/fcntl.h... " >&6; }
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <sys/fcntl.h>
@@ -4973,18 +4980,18 @@ if ac_fn_c_try_compile "$LINENO"; then :
 
 $as_echo "#define HAVE_FLOCK_T 1" >>confdefs.h
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: \"yes\"" >&5
-$as_echo "\"yes\"" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
 
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"no\"" >&5
-$as_echo "\"no\"" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 if test "$HAVE_FLOCK_T" != 1; then
-   { $as_echo "$as_me:${as_lineno-$LINENO}: checking \"do we have flock_t defined in sys/flock.h\"" >&5
-$as_echo_n "checking \"do we have flock_t defined in sys/flock.h\"... " >&6; }
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking do we have flock_t defined in sys/flock.h" >&5
+$as_echo_n "checking do we have flock_t defined in sys/flock.h... " >&6; }
    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <sys/flock.h>
@@ -5003,12 +5010,12 @@ if ac_fn_c_try_compile "$LINENO"; then :
 
    $as_echo "#define HAVE_FLOCK_T 1" >>confdefs.h
 
-   { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"yes\"" >&5
-$as_echo "\"yes\"" >&6; }
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
 
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"no\"" >&5
-$as_echo "\"no\"" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
@@ -5075,8 +5082,8 @@ fi
 # does not define it at all
 # -------------------------------------------------------------------------
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking \"do we have union semun defined\"" >&5
-$as_echo_n "checking \"do we have union semun defined\"... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking do we have union semun defined" >&5
+$as_echo_n "checking do we have union semun defined... " >&6; }
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <sys/ipc.h>
@@ -5097,12 +5104,12 @@ if ac_fn_c_try_compile "$LINENO"; then :
 
 $as_echo "#define HAVE_UNION_SEMUN 1" >>confdefs.h
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: \"yes\"" >&5
-$as_echo "\"yes\"" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
 
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"no\"" >&5
-$as_echo "\"no\"" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
