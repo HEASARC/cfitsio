@@ -4778,6 +4778,8 @@ int fits_init_cfitsio(void)
         return(status);
     }
 
+#ifdef HAVE_NET_SERVICES
+
     /* 25--------------------https  driver-----------------------*/
     status = fits_register_driver("https://",
             NULL,
@@ -4861,6 +4863,8 @@ int fits_init_cfitsio(void)
         FFUNLOCK;
         return(status);
     }
+      /* === End of https net drivers section === */  
+#endif
 
 
     /* reset flag.  Any other threads will now not need to call this routine */
@@ -7451,6 +7455,9 @@ void ffvhtps(int flag)
 {
    /* Turn libcurl's verbose output on (1) or off (0). 
       This is NOT THREAD-SAFE */
+#ifdef HAVE_NET_SERVICES
+
    https_set_verbose(flag);
+#endif
 }
 
