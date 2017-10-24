@@ -1,5 +1,19 @@
+# CFITSIO CMakeLists.txt
+
+# Suppress warning about WIN32 no longer being defined on Cygwin:
+SET(CMAKE_LEGACY_CYGWIN_WIN32 0)
+
 PROJECT(CFITSIO)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.0)
+
+# Allow @rpath token in target install name on Macs.
+# See "cmake --help-policy CMP0042" for more information.
+IF(POLICY CMP0042)
+  CMAKE_POLICY(SET CMP0042 NEW)
+ENDIF()
+
+INCLUDE (${CMAKE_ROOT}/Modules/CheckLibraryExists.cmake)
+INCLUDE (${CMAKE_ROOT}/Modules/CheckFunctionExists.cmake)
 
 # Allow the developer to select if Dynamic or Static libraries are built
 OPTION (BUILD_SHARED_LIBS "Build Shared Libraries" ON)
@@ -56,6 +70,33 @@ ELSE()
     FIND_LIBRARY(M_LIB m)
 ENDIF()
 
+# Support for remote file drivers is not implemented for native Windows:
+IF (NOT MSVC)
+    # Find library needed for gethostbyname:
+    CHECK_FUNCTION_EXISTS("gethostbyname" CMAKE_HAVE_GETHOSTBYNAME)
+    IF(NOT CMAKE_HAVE_GETHOSTBYNAME)
+       CHECK_LIBRARY_EXISTS("nsl" "gethostbyname" "" CMAKE_HAVE_GETHOSTBYNAME)
+    ENDIF()
+
+    # Find library needed for connect:
+    CHECK_FUNCTION_EXISTS("connect" CMAKE_HAVE_CONNECT)
+    IF(NOT CMAKE_HAVE_CONNECT)
+       CHECK_LIBRARY_EXISTS("socket" "connect" "" CMAKE_HAVE_CONNECT)
+    ENDIF()
+
+    # Define HAVE_NET_SERVICES if gethostbyname & connect were found:
+    IF (CMAKE_HAVE_GETHOSTBYNAME AND CMAKE_HAVE_CONNECT)
+        ADD_DEFINITIONS(-DHAVE_NET_SERVICES)
+    ENDIF ()
+
+    # Find curl library, for HTTPS support:
+    FIND_PACKAGE(CURL)
+    IF (CURL_FOUND)
+        INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
+        ADD_DEFINITIONS(-DCFITSIO_HAVE_CURL)
+    ENDIF()
+ENDIF()
+
 SET(SRC_FILES
     buffers.c cfileio.c checksum.c drvrfile.c drvrmem.c
     drvrnet.c drvrsmem.c drvrgsiftp.c editcol.c edithdu.c eval_l.c
@@ -75,7 +116,7 @@ SET(SRC_FILES
 )
 
 ADD_LIBRARY(${LIB_NAME} ${LIB_TYPE} ${H_FILES} ${SRC_FILES})
-TARGET_LINK_LIBRARIES(${LIB_NAME} ${PTHREADS_LIBRARY} ${M_LIB})
+TARGET_LINK_LIBRARIES(${LIB_NAME} ${PTHREADS_LIBRARY} ${M_LIB} ${CURL_LIBRARIES})
 
 SET_TARGET_PROPERTIES(${LIB_NAME} PROPERTIES VERSION ${${PROJECT_NAME}_VERSION} SOVERSION ${${PROJECT_NAME}_MAJOR_VERSION})
 install(TARGETS ${LIB_NAME} DESTINATION ${LIB_DESTINATION})
