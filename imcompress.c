@@ -975,7 +975,7 @@ int imcomp_init_table(fitsfile *outfptr,
 
     /* check for special case of losslessly compressing floating point */
     /* images.  Only compression algorithm that supports this is GZIP */
-    if ( (outfptr->Fptr)->request_quantize_level == NO_QUANTIZE) {
+    if ( (inbitpix < 0) && ((outfptr->Fptr)->request_quantize_level == NO_QUANTIZE) ) {
        if (((outfptr->Fptr)->request_compress_type != GZIP_1) &&
            ((outfptr->Fptr)->request_compress_type != GZIP_2)) {
          ffpmsg("Lossless compression of floating point images must use GZIP (imcomp_init_table)");
@@ -1731,8 +1731,16 @@ int imcomp_compress_tile (fitsfile *outfptr,
     if ( (outfptr->Fptr)->quantize_level == NO_QUANTIZE) {
        if (((outfptr->Fptr)->compress_type != GZIP_1) &&
            ((outfptr->Fptr)->compress_type != GZIP_2)) {
-         ffpmsg("Lossless compression of floating point images must use GZIP (imcomp_compress_tile)");
-         return(*status = DATA_COMPRESSION_ERR);
+           switch (datatype) {
+            case TFLOAT:
+            case TDOUBLE:
+            case TCOMPLEX:
+            case TDBLCOMPLEX:
+              ffpmsg("Lossless compression of floating point images must use GZIP (imcomp_compress_tile)");
+              return(*status = DATA_COMPRESSION_ERR);
+            default:
+              break;
+          }
        }
     }
 
