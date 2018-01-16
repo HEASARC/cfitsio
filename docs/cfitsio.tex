@@ -9558,18 +9558,18 @@ existing keyword.
 \section{HIERARCH Convention for Extended Keyword Names}
 
 CFITSIO supports the HIERARCH keyword convention which allows keyword
-names that are longer then 8 characters and may contain the full range
-of printable ASCII text characters.  This convention
-was developed at the European Southern Observatory (ESO)  to support
-hierarchical FITS keyword such as:
+names that are longer than 8 characters.  This convention
+was developed at the European Southern Observatory (ESO) and allows characters
+consisting of digits 0-9, upper case letters A-Z, the dash '-' and the underscore '_'.
+The components of hierarchical keywords are separated by a single ASCII space charater.
+For instance:
 
 \begin{verbatim}
 HIERARCH ESO INS FOCU POS = -0.00002500 / Focus position
 \end{verbatim}
 Basically, this convention uses the FITS keyword 'HIERARCH' to indicate
 that this convention is being used, then the actual keyword name
-({\tt'ESO INS FOCU POS'} in this example) begins in column 10 and can
-contain any printable ASCII text characters, including spaces.  The
+({\tt'ESO INS FOCU POS'} in this example) begins in column 10.  The
 equals sign marks the end of the keyword name and is followed by the
 usual value and comment fields just as in standard FITS keywords.
 Further details of this convention are described at
@@ -9578,14 +9578,14 @@ and in Section 4.4 of the ESO Data Interface Control Document that
 is linked to from
 http://archive.eso.org/cms/tools-documentation/eso-data-interface-control.html.
 
-This convention allows a much broader range of keyword names
+This convention allows a broader range of keyword names
 than is allowed by the FITS Standard.  Here are more examples
 of such keywords:
 
 \begin{verbatim}
-HIERARCH LongKeyword = 47.5 / Keyword has > 8 characters, and mixed case
-HIERARCH XTE$TEMP = 98.6 / Keyword contains the '$' character
-HIERARCH Earth is a star = F / Keyword contains embedded spaces
+HIERARCH LONGKEYWORD = 47.5 / Keyword has > 8 characters
+HIERARCH LONG-KEY_WORD2 = 52.3 / Long keyword with hyphen, underscore and digit
+HIERARCH EARTH IS A STAR = F / Keyword contains embedded spaces
 \end{verbatim}
 CFITSIO will transparently read and write these keywords, so application
 programs do not in general need to know anything about the specific
@@ -9603,12 +9603,8 @@ about 40 characters, which leaves enough room for most keyword values.
 CFITSIO returns an error if there is not enough room for both the
 keyword name and the keyword value on the 80-character card, except for
 string-valued keywords which are simply truncated so that the closing
-quote character falls in column 80.  In the current implementation,
-CFITSIO preserves the case of the letters when writing the keyword
-name, but it is case-insensitive when reading or searching for a
-keyword.  The current implementation allows any ASCII text character
-(ASCII 32 to ASCII 126) in the keyword name except for the '='
-character.  A space is also required on either side of the equal sign.
+quote character falls in column 80. A space is also required on either 
+side of the equal sign.
 
 
 \section{Tile-Compressed Image Format}
