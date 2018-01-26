@@ -270,17 +270,12 @@ case $host in
                 $CC -v -o /tmp/$$.out /tmp/$$.c 2> /tmp/$$.log
                 if test `cat /tmp/$$.log | grep -ci 'LLVM'` -ne 0; then APPLEXCODE="yes"; fi
                 if test "x$APPLEXCODE" = xyes; then
-                # Apple XCode LLVM:
                   # Flags for building Universal binaries:
                   C_UNIV_SWITCH="-arch i386 -arch x86_64"
                   CFLAGS="$CFLAGS $C_UNIV_SWITCH"
-                  # Set LDFLAGS used by utilities:
-                  LDFLAGS_BIN="$LDFLAGS_BIN -rpath \${CFITSIO_LIB}"
-                else
-                # Non-Xcode GCC:
-                  # Set LDFLAGS used by utilities:
-                  LDFLAGS_BIN="$LDFLAGS_BIN -Wl,-rpath,\${CFITSIO_LIB}"
                 fi
+                # LDFLAGS used by utilities:
+                LDFLAGS_BIN="$LDFLAGS_BIN -Wl,-rpath,\${CFITSIO_LIB}"
                 ;;
         esac
         # For large file support (but may break Absoft compilers):
