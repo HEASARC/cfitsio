@@ -27,7 +27,6 @@ CFITSIO_SONAME	= @CFITSIO_SONAME@
 
 prefix		= @prefix@
 exec_prefix	= @exec_prefix@
-DESTDIR		= 
 CFITSIO_BIN	= ${DESTDIR}@bindir@
 CFITSIO_LIB	= ${DESTDIR}@libdir@
 CFITSIO_INCLUDE	= ${DESTDIR}@includedir@
