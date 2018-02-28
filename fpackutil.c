@@ -293,7 +293,7 @@ int fp_info_hdu (fitsfile *infptr)
 
 		fits_get_img_param (infptr, 9, &bitpix, &naxis, naxes, &stat);
 
-                snprintf (msg, SZ_STR" BITPIX=%d", bitpix); fp_msg (msg);
+                snprintf (msg, SZ_STR," BITPIX=%d", bitpix); fp_msg (msg);
 
 		if (naxis == 0) {
                     snprintf (msg, SZ_STR," [no_pixels]"); fp_msg (msg);
