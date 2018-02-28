@@ -1,5 +1,7 @@
                    Log of Changes Made to CFITSIO
                    
+Version 3.43 - March 2018
+                   
    - Calls to https driver functions in cfileio.c need to be macro-
      protected by the HAVE_NET_SERVICES variable (as are the http and
      ftp driver function calls).  Otherwise CMake builds on native
@@ -9,7 +11,7 @@
      variable after making a call to ffiblk (which can reallocate Ftpr->
      tableptr).  Originally reported by Willem van Straten.
      
-   - Improved error message construction throughout getkey.c.
+   - Improved error message construction throughout CFITSIO.
                    
 Version 3.42 - August 2017 (Stand-alone release)
                    
