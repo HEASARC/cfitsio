@@ -88,7 +88,7 @@ int fits_read_ascii_region( const char *filename,
    /*  Open Region File  */
 
    if( (rgnFile = fopen( filename, "r" ))==NULL ) {
-      sprintf(currLine,"Could not open Region file %s.",filename);
+      snprintf(currLine,allocLen,"Could not open Region file %s.",filename);
       ffpmsg( currLine );
       free( currLine );
       free( aRgn );

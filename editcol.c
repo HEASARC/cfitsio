@@ -80,7 +80,7 @@ int ffrsimll(fitsfile *fptr,    /* I - FITS file pointer           */
         longbitpix != LONG_IMG && longbitpix != LONGLONG_IMG &&
         longbitpix != FLOAT_IMG && longbitpix != DOUBLE_IMG)
     {
-        sprintf(message,
+        snprintf(message, FLEN_ERRMSG,
         "Illegal value for BITPIX keyword: %d", bitpix);
         ffpmsg(message);
         return(*status = BAD_BITPIX);
@@ -88,7 +88,7 @@ int ffrsimll(fitsfile *fptr,    /* I - FITS file pointer           */
 
     if (naxis < 0 || naxis > 999)
     {
-        sprintf(message,
+        snprintf(message, FLEN_ERRMSG,
         "Illegal value for NAXIS keyword: %d", naxis);
         ffpmsg(message);
         return(*status = BAD_NAXIS);
@@ -103,7 +103,7 @@ int ffrsimll(fitsfile *fptr,    /* I - FITS file pointer           */
     {
         if (naxes[ii] < 0)
         {
-            sprintf(message,
+            snprintf(message, FLEN_ERRMSG,
             "Illegal value for NAXIS%d keyword: %.0f", ii + 1,  (double) (naxes[ii]));
             ffpmsg(message);
             return(*status = BAD_NAXES);
@@ -1469,9 +1469,9 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
       strcpy(tcode,"M");
 
     /* write as a double value because the LONGLONG conversion */
-    /* character in sprintf is platform dependent ( %lld, %ld, %I64d ) */
+    /* character in snprintf is platform dependent ( %lld, %ld, %I64d ) */
 
-    sprintf(tfm,"%.0f%s",(double) newveclen, tcode); 
+    snprintf(tfm,FLEN_VALUE,"%.0f%s",(double) newveclen, tcode); 
 
     ffkeyn("TFORM", colnum, keyname, status);  /* Keyword name */
     ffmkys(fptr, keyname, tfm, "&", status);   /* modify TFORM keyword */

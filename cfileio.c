@@ -327,26 +327,26 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
         ffpmsg("ffomem could not move to the specified extension:");
         if (extnum > 0)
         {
-          sprintf(errmsg,
+          snprintf(errmsg, FLEN_ERRMSG,
           " extension number %d doesn't exist or couldn't be opened.",extnum);
           ffpmsg(errmsg);
         }
         else
         {
-          sprintf(errmsg,
+          snprintf(errmsg, FLEN_ERRMSG,
           " extension with EXTNAME = %s,", extname);
           ffpmsg(errmsg);
 
           if (extvers)
           {
-             sprintf(errmsg,
+             snprintf(errmsg, FLEN_ERRMSG,
              "           and with EXTVERS = %d,", extvers);
              ffpmsg(errmsg);
           }
 
           if (movetotype != ANY_HDU)
           {
-             sprintf(errmsg,
+             snprintf(errmsg, FLEN_ERRMSG,
              "           and with XTENSION = %s,", hdtype[movetotype]);
              ffpmsg(errmsg);
           }
@@ -952,26 +952,26 @@ move2hdu:
         ffpmsg("ffopen could not move to the specified extension:");
         if (extnum > 0)
         {
-          sprintf(errmsg,
+          snprintf(errmsg, FLEN_ERRMSG,
           " extension number %d doesn't exist or couldn't be opened.",extnum);
           ffpmsg(errmsg);
         }
         else
         {
-          sprintf(errmsg,
+          snprintf(errmsg, FLEN_ERRMSG,
           " extension with EXTNAME = %s,", extname);
           ffpmsg(errmsg);
 
           if (extvers)
           {
-             sprintf(errmsg,
+             snprintf(errmsg, FLEN_ERRMSG,
              "           and with EXTVERS = %d,", extvers);
              ffpmsg(errmsg);
           }
 
           if (movetotype != ANY_HDU)
           {
-             sprintf(errmsg,
+             snprintf(errmsg, FLEN_ERRMSG,
              "           and with XTENSION = %s,", hdtype[movetotype]);
              ffpmsg(errmsg);
           }
@@ -1135,16 +1135,8 @@ move2hdu:
 
        writecopy = 1;  /* we are now dealing with a copy of the original file */
 
-       /* add some HISTORY; fits_copy_image_cell also wrote HISTORY keywords */
        
-/*  disable this; leave it up to calling routine to write any HISTORY keywords
-       if (*extname)
-        sprintf(card,"HISTORY  in HDU '%.16s' of file '%.36s'",extname,infile);
-       else
-        sprintf(card,"HISTORY  in HDU %d of file '%.45s'", extnum, infile);
-
-       ffprec(*fptr, card, status);
-*/
+       /*  leave it up to calling routine to write any HISTORY keywords */
     }
 
     /* --------------------------------------------------------------------- */
@@ -2533,7 +2525,7 @@ int fits_copy_cell2image(
 			    colnum, 0, 0, status);
 
     /* add some HISTORY  */
-    sprintf(card,"HISTORY  This image was copied from row %ld of column '%s',",
+    snprintf(card,FLEN_CARD,"HISTORY  This image was copied from row %ld of column '%s',",
             rownum, colname);
 /* disable this; leave it up to the caller to write history if needed.    
     ffprec(newptr, card, status);
@@ -2739,7 +2731,7 @@ int fits_copy_image2cell(
     if (*status) {
 
       *status = 0;
-      sprintf(tform, "%.0f%c", (double) repeat, tformchar);
+      snprintf(tform, 20, "%.0f%c", (double) repeat, tformchar);
       ffgncl(newptr, &ncols, status);
       colnum = ncols+1;
       fficol(newptr, colnum, colname, tform, status);
@@ -2802,7 +2794,7 @@ int fits_copy_image2cell(
     ffghadll(fptr, &headstart, &datastart, &dataend, status);
     imgstart = datastart;
 
-    sprintf(card, "HISTORY  Table column '%s' row %ld copied from image",
+    snprintf(card, FLEN_CARD, "HISTORY  Table column '%s' row %ld copied from image",
 	    colname, rownum);
 /*
   Don't automatically write History keywords; leave this up to the caller. 
@@ -2815,7 +2807,7 @@ int fits_copy_image2cell(
     strcpy(filename, "HISTORY   ");
     ffflnm(fptr, filename+strlen(filename), status);
     ffghdn(fptr, &hdunum);
-    sprintf(filename+strlen(filename),"[%d]", hdunum-1);
+    snprintf(filename+strlen(filename),FLEN_FILENAME+20-strlen(filename),"[%d]", hdunum-1);
 /*
     ffprec(newptr, filename, status);
 */
@@ -6747,7 +6739,7 @@ int ffimport_file( char *filename,   /* Text file to read                   */
    lines[0] = '\0';
 
    if( (aFile = fopen( filename, "r" ))==NULL ) {
-      sprintf(line,"Could not open ASCII file %s.",filename);
+      snprintf(line,256,"Could not open ASCII file %s.",filename);
       ffpmsg(line);
       free( lines );
       return(*status = FILE_NOT_OPENED);

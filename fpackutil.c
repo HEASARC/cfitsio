@@ -68,9 +68,9 @@ void fp_abort_output (fitsfile *infptr, fitsfile *outfptr, int stat)
 	
         fits_close_file (infptr, &status);
 
-	sprintf(msg, "Error processing file: %s\n", tempfilename);
+	snprintf(msg, SZ_STR,"Error processing file: %s\n", tempfilename);
 	fp_msg (msg);
-	sprintf(msg, "  in HDU number %d\n", hdunum);
+	snprintf(msg, SZ_STR,"  in HDU number %d\n", hdunum);
 	fp_msg (msg);
 
 	fits_report_error (stderr, stat);
@@ -90,7 +90,7 @@ int fp_version (void)
 
         fp_msg (FPACK_VERSION);
         fits_get_version(&version);
-        sprintf(cfitsioversion, " CFITSIO version %5.3f", version);
+        snprintf(cfitsioversion, 40," CFITSIO version %5.3f", version);
         fp_msg(cfitsioversion);
         fp_msg ("\n");
         return(0);
@@ -228,15 +228,15 @@ int fp_list (int argc, char *argv[], fpstate fpvar)
 	        fp_abort_output(infptr, NULL, stat);
 	    }
 
-            sprintf (msg, "# %s (", infits); fp_msg (msg);
+            snprintf (msg, SZ_STR,"# %s (", infits); fp_msg (msg);
 
 #if defined(_MSC_VER)
     /* Microsoft Visual C++ 6.0 uses '%I64d' syntax  for 8-byte integers */
-        sprintf(msg, "%I64d bytes)\n", sizell); fp_msg (msg);
+        snprintf(msg, SZ_STR,"%I64d bytes)\n", sizell); fp_msg (msg);
 #elif (USE_LL_SUFFIX == 1)
-        sprintf(msg, "%lld bytes)\n", sizell); fp_msg (msg);
+        snprintf(msg, SZ_STR,"%lld bytes)\n", sizell); fp_msg (msg);
 #else
-        sprintf(msg, "%ld bytes)\n", sizell); fp_msg (msg);
+        snprintf(msg, SZ_STR,"%ld bytes)\n", sizell); fp_msg (msg);
 #endif
 	    fp_info_hdu (infptr);
 
@@ -288,21 +288,21 @@ int fp_info_hdu (fitsfile *infptr)
             fits_get_chksum(infptr, &datasum, &hdusum, &stat);
 
 	    if (hdutype == IMAGE_HDU) {
-		sprintf (msg, "  %d IMAGE", hdupos); fp_msg (msg);
-                sprintf (msg, " SUMS=%lu/%lu", (unsigned long) (~((int) hdusum)), datasum); fp_msg (msg);
+		snprintf (msg, SZ_STR,"  %d IMAGE", hdupos); fp_msg (msg);
+                snprintf (msg, SZ_STR," SUMS=%lu/%lu", (unsigned long) (~((int) hdusum)), datasum); fp_msg (msg);
 
 		fits_get_img_param (infptr, 9, &bitpix, &naxis, naxes, &stat);
 
-                sprintf (msg, " BITPIX=%d", bitpix); fp_msg (msg);
+                snprintf (msg, SZ_STR" BITPIX=%d", bitpix); fp_msg (msg);
 
 		if (naxis == 0) {
-                    sprintf (msg, " [no_pixels]"); fp_msg (msg);
+                    snprintf (msg, SZ_STR," [no_pixels]"); fp_msg (msg);
 		} else if (naxis == 1) {
-		    sprintf (msg, " [%ld]", naxes[1]); fp_msg (msg);
+		    snprintf (msg, SZ_STR," [%ld]", naxes[1]); fp_msg (msg);
 		} else {
-		    sprintf (msg, " [%ld", naxes[0]); fp_msg (msg);
+		    snprintf (msg, SZ_STR," [%ld", naxes[0]); fp_msg (msg);
 		    for (ii=1; ii < naxis; ii++) {
-			sprintf (msg, "x%ld", naxes[ii]); fp_msg (msg);
+			snprintf (msg, SZ_STR,"x%ld", naxes[ii]); fp_msg (msg);
 		    }
 		    fp_msg ("]");
 		}
@@ -328,17 +328,17 @@ int fp_info_hdu (fitsfile *infptr)
                     fp_msg (" not_tiled\n");
 
             } else if (hdutype == ASCII_TBL) {
-                sprintf (msg, "  %d ASCII_TBL", hdupos); fp_msg (msg);
-                sprintf (msg, " SUMS=%lu/%lu\n", (unsigned long) (~((int) hdusum)), datasum); fp_msg (msg);
+                snprintf (msg, SZ_STR,"  %d ASCII_TBL", hdupos); fp_msg (msg);
+                snprintf (msg, SZ_STR," SUMS=%lu/%lu\n", (unsigned long) (~((int) hdusum)), datasum); fp_msg (msg);
 
             } else if (hdutype == BINARY_TBL) {
-                sprintf (msg, "  %d BINARY_TBL", hdupos); fp_msg (msg);
-                sprintf (msg, " SUMS=%lu/%lu\n", (unsigned long) (~((int) hdusum)), datasum); fp_msg (msg);
+                snprintf (msg, SZ_STR,"  %d BINARY_TBL", hdupos); fp_msg (msg);
+                snprintf (msg, SZ_STR," SUMS=%lu/%lu\n", (unsigned long) (~((int) hdusum)), datasum); fp_msg (msg);
 
             } else {
-                sprintf (msg, "  %d OTHER", hdupos); fp_msg (msg);
-                sprintf (msg, " SUMS=%lu/%lu",   (unsigned long) (~((int) hdusum)), datasum); fp_msg (msg);
-                sprintf (msg, " %s\n", val); fp_msg (msg);
+                snprintf (msg, SZ_STR,"  %d OTHER", hdupos); fp_msg (msg);
+                snprintf (msg, SZ_STR," SUMS=%lu/%lu",   (unsigned long) (~((int) hdusum)), datasum); fp_msg (msg);
+                snprintf (msg, SZ_STR," %s\n", val); fp_msg (msg);
             }
 
 	    fits_movrel_hdu (infptr, 1, NULL, &stat);
@@ -1194,10 +1194,11 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 		printf("  Ext BITPIX Dimens.   Nulls    Min    Max     Mean    Sigma  Noise2  Noise3  Noise5  Nbits   MaxR\n");
 
 		printf("  %3d  %s", extnum, dtype);
-		sprintf(dimen," (%ld", naxes[0]);
+		snprintf(dimen,100," (%ld", naxes[0]);
 		len =strlen(dimen);
 		for (ii = 1; ii < naxis; ii++) {
-		    sprintf(dimen+len,",%ld", naxes[ii]);
+                    if (len < 100)
+		       snprintf(dimen+len,100-len,",%ld", naxes[ii]);
 		    len =strlen(dimen);
 		}
 		strcat(dimen, ")");

@@ -355,7 +355,7 @@ int http_open(char *filename, int rwmode, int *handle)
   } else {
     /* It's not compressed, bad choice, but we'll copy it anyway */
     if (contentlength % 2880) {
-      sprintf(errorstr,"Content-Length not a multiple of 2880 (http_open) %d",
+      snprintf(errorstr,MAXLEN,"Content-Length not a multiple of 2880 (http_open) %d",
 	      contentlength);
       ffpmsg(errorstr);
     }
@@ -668,7 +668,7 @@ int http_file_open(char *url, int rwmode, int *handle)
     closefile++;
     
     if (contentlength % 2880) {
-      sprintf(errorstr,
+      snprintf(errorstr, MAXLEN,
 	      "Content-Length not a multiple of 2880 (http_file_open) %d",
 	      contentlength);
       ffpmsg(errorstr);
@@ -757,7 +757,7 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
   strcpy(turl,"http://");
   strncat(turl,url,MAXLEN - 8);
   if (NET_ParseUrl(turl,proto,host,&port,fn)) {
-    sprintf(errorstr,"URL Parse Error (http_open) %s",url);
+    snprintf(errorstr,MAXLEN,"URL Parse Error (http_open) %s",url);
     ffpmsg(errorstr);
     return (FILE_NOT_OPENED);
   }
@@ -782,7 +782,7 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
   /* Connect to the remote host */
   if (proxy) {
     if (NET_ParseUrl(proxy,pproto,phost,&pport,pfn)) {
-      sprintf(errorstr,"URL Parse Error (http_open) %s",proxy);
+      snprintf(errorstr,MAXLEN,"URL Parse Error (http_open) %s",proxy);
       ffpmsg(errorstr);
       return (FILE_NOT_OPENED);
     }
@@ -812,14 +812,14 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
      hosts) */
 
   if (proxy) {
-    sprintf(tmpstr,"GET http://%s:%-d%s HTTP/1.0\r\n",host,port,fn);
+    snprintf(tmpstr,MAXLEN,"GET http://%s:%-d%s HTTP/1.0\r\n",host,port,fn);
   } else {
-    sprintf(tmpstr,"GET %s HTTP/1.0\r\n",fn);
+    snprintf(tmpstr,MAXLEN,"GET %s HTTP/1.0\r\n",fn);
   }
 
   if (strcmp(userpass, "")) {
     encode64(strlen(userpass), userpass, MAXLEN, tmpstr2);
-    sprintf(tmpstr1, "Authorization: Basic %s\r\n", tmpstr2);
+    snprintf(tmpstr1, SHORTLEN,"Authorization: Basic %s\r\n", tmpstr2);
 
     if (strlen(tmpstr) + strlen(tmpstr1) > MAXLEN - 1)
         return (FILE_NOT_OPENED);
@@ -827,10 +827,10 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
     strcat(tmpstr,tmpstr1);
   }
 
-/*  sprintf(tmpstr1,"User-Agent: HEASARC/CFITSIO/%-8.3f\r\n",ffvers(&version)); */
+/*  snprintf(tmpstr1,SHORTLEN,"User-Agent: HEASARC/CFITSIO/%-8.3f\r\n",ffvers(&version)); */
 
-/*  sprintf(tmpstr1,"User-Agent: CFITSIO/HEASARC/%-8.3f\r\n",ffvers(&version)); */
-  sprintf(tmpstr1,"User-Agent: FITSIO/HEASARC/%-8.3f\r\n",ffvers(&version)); 
+/*  snprintf(tmpstr1,SHORTLEN,"User-Agent: CFITSIO/HEASARC/%-8.3f\r\n",ffvers(&version)); */
+  snprintf(tmpstr1,SHORTLEN,"User-Agent: FITSIO/HEASARC/%-8.3f\r\n",ffvers(&version)); 
  
   if (strlen(tmpstr) + strlen(tmpstr1) > MAXLEN - 1)
         return (FILE_NOT_OPENED);
@@ -838,7 +838,7 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
   strcat(tmpstr,tmpstr1);
 
   /* HTTP 1.1 servers require the following 'Host: ' string */
-  sprintf(tmpstr1,"Host: %s:%-d\r\n\r\n",host,port);
+  snprintf(tmpstr1,SHORTLEN,"Host: %s:%-d\r\n\r\n",host,port);
 
   if (strlen(tmpstr) + strlen(tmpstr1) > MAXLEN - 1)
         return (FILE_NOT_OPENED);
@@ -849,7 +849,7 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
 
   /* read the header */
   if (!(fgets(recbuf,MAXLEN,*httpfile))) {
-    sprintf (errorstr,"http header short (http_open_network) %s",recbuf);
+    snprintf (errorstr,MAXLEN,"http header short (http_open_network) %s",recbuf);
     ffpmsg(errorstr);
     fclose(*httpfile);
     return (FILE_NOT_OPENED);
@@ -1034,7 +1034,7 @@ int https_open(char *filename, int rwmode, int *handle)
   
   if (inmem.size % 2880)
   {
-     sprintf(errStr,"Content-Length not a multiple of 2880 (https_open) %u",
+     snprintf(errStr,MAXLEN,"Content-Length not a multiple of 2880 (https_open) %u",
          inmem.size);
      ffpmsg(errStr);
   }
@@ -1117,7 +1117,7 @@ int https_file_open(char *filename, int rwmode, int *handle)
     
   if (inmem.size % 2880)
   {
-    sprintf(errStr,
+    snprintf(errStr, MAXLEN,
 	    "Content-Length not a multiple of 2880 (https_file_open) %d",
 	    inmem.size);
     ffpmsg(errStr);
@@ -1204,7 +1204,7 @@ int https_open_network(char *filename, curlmembuf* buffer)
   
   curl_easy_setopt(curl, CURLOPT_VERBOSE, (long)curl_verbose);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlToMemCallback);
-  sprintf(agentStr,"User-Agent: FITSIO/HEASARC/%-8.3f",ffvers(&version)); 
+  snprintf(agentStr,MAXLEN,"User-Agent: FITSIO/HEASARC/%-8.3f",ffvers(&version)); 
   curl_easy_setopt(curl, CURLOPT_USERAGENT,agentStr);
   
   buffer->memory = 0; /* malloc/realloc will grow this in the callback function */
@@ -1242,7 +1242,7 @@ int https_open_network(char *filename, curlmembuf* buffer)
      {
         if (verify[0] == 'T' || verify[0] == 't')
         {
-           sprintf(errStr,"libcurl error: %d",res);
+           snprintf(errStr,MAXLEN,"libcurl error: %d",res);
            ffpmsg(errStr);
            if (strlen(curlErrBuf))
               ffpmsg(curlErrBuf);     
@@ -1268,7 +1268,7 @@ int https_open_network(char *filename, curlmembuf* buffer)
            res = curl_easy_perform(curl);
            if (res != CURLE_OK)
            {
-              sprintf(errStr,"libcurl error: %d",res);
+              snprintf(errStr,MAXLEN,"libcurl error: %d",res);
               ffpmsg(errStr);
               if (strlen(curlErrBuf))
                  ffpmsg(curlErrBuf);     
@@ -1282,7 +1282,7 @@ int https_open_network(char *filename, curlmembuf* buffer)
         }
         else
         {
-           sprintf(errStr,"libcurl error: %d",res);
+           snprintf(errStr,MAXLEN,"libcurl error: %d",res);
            ffpmsg(errStr);
            if (strlen(curlErrBuf))
               ffpmsg(curlErrBuf);     
@@ -1309,7 +1309,7 @@ int https_open_network(char *filename, curlmembuf* buffer)
         res = curl_easy_perform(curl);
         if (res != CURLE_OK)
         {
-           sprintf(errStr,"libcurl error: %d",res);
+           snprintf(errStr,MAXLEN,"libcurl error: %d",res);
            ffpmsg(errStr);
            if (strlen(curlErrBuf))
               ffpmsg(curlErrBuf);     
@@ -1320,7 +1320,7 @@ int https_open_network(char *filename, curlmembuf* buffer)
      }
      else
      {
-        sprintf(errStr,"libcurl error: %d",res);
+        snprintf(errStr,MAXLEN,"libcurl error: %d",res);
         ffpmsg(errStr);
         if (strlen(curlErrBuf))
            ffpmsg(curlErrBuf);     
@@ -1848,7 +1848,7 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
   strcpy(turl,"ftp://");
   strcat(turl,filename);
   if (NET_ParseUrl(turl,proto,host,&port,fn)) {
-    sprintf(errorstr,"URL Parse Error (ftp_open) %s",filename);
+    snprintf(errorstr,MAXLEN,"URL Parse Error (ftp_open) %s",filename);
     ffpmsg(errorstr);
     return (FILE_NOT_OPENED);
   }
@@ -1904,7 +1904,7 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
   }
 
   /* Send the user name and wait for the right response */
-  sprintf(tmpstr,"USER %s\r\n",username);
+  snprintf(tmpstr,MAXLEN,"USER %s\r\n",username);
 
   status = NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
 
@@ -1916,7 +1916,7 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
   }
   
   /* Send the password and wait for the right response */
-  sprintf(tmpstr,"PASS %s\r\n",password);
+  snprintf(tmpstr,MAXLEN,"PASS %s\r\n",password);
   status = NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
   
   if (ftp_status(*command,"230 ")) {
@@ -1939,9 +1939,9 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
     } else {
       /* remove the leading slash */
       if (fn[0] == '/') {
-	sprintf(tmpstr,"CWD %s\r\n",&fn[1]);
+	snprintf(tmpstr,MAXLEN,"CWD %s\r\n",&fn[1]);
       } else {
-	sprintf(tmpstr,"CWD %s\r\n",fn);
+	snprintf(tmpstr,MAXLEN,"CWD %s\r\n",fn);
       } 
     }
   }
@@ -1963,7 +1963,7 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
   }
 
   /* Always use binary mode */
-  sprintf(tmpstr,"TYPE I\r\n");
+  snprintf(tmpstr,MAXLEN,"TYPE I\r\n");
   status = NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
   
   if (ftp_status(*command,"200 ")) {
@@ -2071,7 +2071,7 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
     }
 
     /* Send the retrieve command */
-    sprintf(tmpstr,"RETR %s\r\n",newfn);
+    snprintf(tmpstr,MAXLEN,"RETR %s\r\n",newfn);
     status = NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
 
     if (ftp_status(*command,"150 ")) {
@@ -2128,7 +2128,7 @@ int ftp_file_exist(char *filename)
   strcpy(turl,"ftp://");
   strcat(turl,filename);
   if (NET_ParseUrl(turl,proto,host,&port,fn)) {
-    sprintf(errorstr,"URL Parse Error (ftp_file_exist) %s",filename);
+    snprintf(errorstr,MAXLEN,"URL Parse Error (ftp_file_exist) %s",filename);
     ffpmsg(errorstr);
     return 0;
   }
@@ -2186,7 +2186,7 @@ int ftp_file_exist(char *filename)
   }
  
   /* Send the user name and wait for the right response */
-  sprintf(tmpstr,"USER %s\r\n",username);
+  snprintf(tmpstr,MAXLEN,"USER %s\r\n",username);
 
   status = NET_SendRaw(sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
 
@@ -2198,7 +2198,7 @@ int ftp_file_exist(char *filename)
   }
   
   /* Send the password and wait for the right response */
-  sprintf(tmpstr,"PASS %s\r\n",password);
+  snprintf(tmpstr,MAXLEN,"PASS %s\r\n",password);
   status = NET_SendRaw(sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
   
   if (ftp_status(command,"230 ")) {
@@ -2221,9 +2221,9 @@ int ftp_file_exist(char *filename)
     } else {
       /* remove the leading slash */
       if (fn[0] == '/') {
-	sprintf(tmpstr,"CWD %s\r\n",&fn[1]);
+	snprintf(tmpstr,MAXLEN,"CWD %s\r\n",&fn[1]);
       } else {
-	sprintf(tmpstr,"CWD %s\r\n",fn);
+	snprintf(tmpstr,MAXLEN,"CWD %s\r\n",fn);
       } 
     }
   }
@@ -2245,7 +2245,7 @@ int ftp_file_exist(char *filename)
   }
 
   /* Always use binary mode */
-  sprintf(tmpstr,"TYPE I\r\n");
+  snprintf(tmpstr,MAXLEN,"TYPE I\r\n");
   status = NET_SendRaw(sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
   
   if (ftp_status(command,"200 ")) {
@@ -2353,7 +2353,7 @@ int ftp_file_exist(char *filename)
     }
 
     /* Send the retrieve command */
-    sprintf(tmpstr,"RETR %s\r\n",newfn);
+    snprintf(tmpstr,MAXLEN,"RETR %s\r\n",newfn);
     status = NET_SendRaw(sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
 
     if (ftp_status(command,"150 ")) {
@@ -2959,7 +2959,7 @@ static int ftp_status(FILE *ftp, char *statusstr)
   while (1) {
 
     if (!(fgets(recbuf,MAXLEN,ftp))) {
-      sprintf(errorstr,"ERROR: ftp_status wants %s but fgets returned 0",statusstr);
+      snprintf(errorstr,SHORTLEN,"ERROR: ftp_status wants %s but fgets returned 0",statusstr);
       ffpmsg(errorstr);
       return 1; /* error reading */
     }
@@ -2970,11 +2970,11 @@ static int ftp_status(FILE *ftp, char *statusstr)
     }
     if (recbuf[0] > '3') {
       /* oh well, some sort of error */
-      sprintf(errorstr,"ERROR ftp_status wants %s but got %s", statusstr, recbuf);
+      snprintf(errorstr,SHORTLEN,"ERROR ftp_status wants %s but got %s", statusstr, recbuf);
       ffpmsg(errorstr);
      return 1; 
     }
-    sprintf(errorstr,"ERROR ftp_status wants %s but got unexpected %s", statusstr, recbuf);
+    snprintf(errorstr,SHORTLEN,"ERROR ftp_status wants %s but got unexpected %s", statusstr, recbuf);
     ffpmsg(errorstr);
   }
 }
@@ -3235,7 +3235,7 @@ int root_read(int hdl, void *buffer, long nbytes)
   int astat;
 
   /* we presume here that the file position will never be > 2**31 = 2.1GB */
-  sprintf(msg,"%ld %ld ",(long) handleTable[hdl].currentpos,nbytes);
+  snprintf(msg,SHORTLEN,"%ld %ld ",(long) handleTable[hdl].currentpos,nbytes);
   status = root_send_buffer(handleTable[hdl].sock,ROOTD_GET,msg,strlen(msg));
   if ((unsigned) status != strlen(msg)) {
     return (READ_ERROR);
@@ -3270,7 +3270,7 @@ int root_write(int hdl, void *buffer, long nbytes)
 
   sock = handleTable[hdl].sock;
   /* we presume here that the file position will never be > 2**31 = 2.1GB */
-  sprintf(msg,"%ld %ld ",(long) handleTable[hdl].currentpos,nbytes);
+  snprintf(msg,SHORTLEN,"%ld %ld ",(long) handleTable[hdl].currentpos,nbytes);
 
   len = strlen(msg);
   status = root_send_buffer(sock,ROOTD_PUT,msg,len+1);
@@ -3315,7 +3315,7 @@ int root_openfile(char *url, char *rwmode, int *sock)
   strcpy(turl,"root://");
   strcat(turl,url);
   if (NET_ParseUrl(turl,proto,host,&port,fn)) {
-    sprintf(errorstr,"URL Parse Error (root_open) %s",url);
+    snprintf(errorstr,MAXLEN,"URL Parse Error (root_open) %s",url);
     ffpmsg(errorstr);
     return (FILE_NOT_OPENED);
   }

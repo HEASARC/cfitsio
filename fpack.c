@@ -299,7 +299,7 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 
 		if (++ndim > MAX_COMPRESS_DIM) {
 		    fp_msg ("Error: too many dimensions for `-t', max=");
-		    sprintf (tmp, "%d\n", MAX_COMPRESS_DIM); fp_msg (tmp);
+		    snprintf (tmp, SZ_STR,"%d\n", MAX_COMPRESS_DIM); fp_msg (tmp);
 		    exit (-1);
 		}
 	    }
