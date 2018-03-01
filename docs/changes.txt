@@ -11,6 +11,9 @@ Version 3.43 - March 2018
      variable after making a call to ffiblk (which can reallocate Ftpr->
      tableptr).  Originally reported by Willem van Straten.
      
+   - Ignore any attempted request to not quantize an image before
+     compressing it if the image has integer datatype pixels.
+     
    - Improved error message construction throughout CFITSIO.
                    
 Version 3.42 - August 2017 (Stand-alone release)
