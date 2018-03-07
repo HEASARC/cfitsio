@@ -2,7 +2,24 @@
                    
 Version 3.43 - March 2018
                    
-   - Calls to https driver functions in cfileio.c need to be macro-
+The NASA security team requires the following warning to all users of 
+CFITSIO:
+
+   =====
+   The CFITSIO open source software project contains vulnerabilities 
+   that could allow a remote, unauthenticated attacker to take control
+   of a server running the CFITSIO software.  These vulnerabilities 
+   affect all servers and products running the CFITSIO software.
+
+   The CFITSIO team has released software updates to address these 
+   vulnerabilities.  There are no workarounds to address these 
+   vulnerabilities.  In all cases, the CFITSIO team is recommending an 
+   immediate update to resolve the issues.
+   =====
+
+  - Fixed security vulnerabilities.   
+ 
+  - Calls to https driver functions in cfileio.c need to be macro-
      protected by the HAVE_NET_SERVICES variable (as are the http and
      ftp driver function calls).  Otherwise CMake builds on native
      Windows will fail since drvrnet.o is left empty.
