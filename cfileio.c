@@ -5063,9 +5063,14 @@ int ffifile2(char *url,       /* input filename */
            /* to the output file, and is not the urltype of the input file */
            ptr2 = 0;   /* so reset pointer to zero */
         }
-
+        
         if (ptr2)            /* copy the explicit urltype string */ 
         {
+            if (ptr2-ptr1+3 >= MAX_PREFIX_LEN)
+            {
+               ffpmsg("Name of urltype is too long.");
+               return(*status = URL_PARSE_ERROR);
+            }
             if (urltype)
                  strncat(urltype, ptr1, ptr2 - ptr1 + 3);
             ptr1 = ptr2 + 3;
