@@ -709,9 +709,9 @@ enable_reentrant
 enable_sse2
 enable_ssse3
 enable_hera
-with_gsiftp_flavour
-with_gsiftp
 with_bzip2
+with_gsiftp
+with_gsiftp_flavour
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1344,11 +1344,11 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-gsiftp-flavour[=PATH]
-                          Enable Globus Toolkit gsiftp protocol support
-  --with-gsiftp[=PATH]    Enable Globus Toolkit gsiftp protocol support
   --with-bzip2[=PATH]     Enable bzip2 support. Optional path to the location
                           of include/bzlib.h and lib/libbz2
+  --with-gsiftp[=PATH]    Enable Globus Toolkit gsiftp protocol support
+  --with-gsiftp-flavour[=PATH]
+                          Define Globus Toolkit gsiftp protocol flavour
 
 Some influential environment variables:
   CC          C compiler command
@@ -2262,39 +2262,6 @@ if test "x$BUILD_HERA" = xyes; then
   $as_echo "#define BUILD_HERA 1" >>confdefs.h
 
 fi
-
-
-# Check whether --with-gsiftp-flavour was given.
-if test "${with_gsiftp_flavour+set}" = set; then :
-  withval=$with_gsiftp_flavour;  if test "x$withval" != "xno"; then
-        if test "x$withval" != "xyes" ; then
-            GSIFTP_FLAVOUR=${withval}
-        fi
-
-$as_echo "#define GSIFTP_FLAVOUR 1" >>confdefs.h
-
-    fi
-
-
-fi
-
-
-
-# Check whether --with-gsiftp was given.
-if test "${with_gsiftp+set}" = set; then :
-  withval=$with_gsiftp;  if test "x$withval" != "xno"; then
-        if test "x$withval" != "xyes" ; then
-            GSIFTP_PATH=${withval}
-            HAVE_GSIFTP=yes
-        fi
-
-$as_echo "#define HAVE_GSIFTP 1" >>confdefs.h
-
-    fi
-
-
-fi
-
 
 # Enable support for bzip2 compression (disabled by default):
 ac_ext=c
@@ -3513,6 +3480,40 @@ done
 fi
 
 
+# Optional Globus Toolkit support:
+
+# Check whether --with-gsiftp was given.
+if test "${with_gsiftp+set}" = set; then :
+  withval=$with_gsiftp;  if test "x$withval" != "xno"; then
+        if test "x$withval" != "xyes" ; then
+            GSIFTP_PATH=${withval}
+            HAVE_GSIFTP=yes
+        fi
+
+$as_echo "#define HAVE_GSIFTP 1" >>confdefs.h
+
+    fi
+
+
+fi
+
+
+
+# Check whether --with-gsiftp-flavour was given.
+if test "${with_gsiftp_flavour+set}" = set; then :
+  withval=$with_gsiftp_flavour;  if test "x$withval" != "xno"; then
+        if test "x$withval" != "xyes" ; then
+            GSIFTP_FLAVOUR=${withval}
+        fi
+
+$as_echo "#define GSIFTP_FLAVOUR 1" >>confdefs.h
+
+    fi
+
+
+fi
+
+
 #--------------------------------------------------------------------
 # Check for install location prefix
 #--------------------------------------------------------------------
@@ -4661,18 +4662,6 @@ $as_echo "$as_me: WARNING: This gcc is pretty old. Disabling optimization to be 
 		;;
 esac
 
-# GSIFTP flags:
-if test "x$GSIFTP_PATH" != x -a "x$GSIFTP_FLAVOUR" != x; then
-   CFLAGS="$CFLAGS -I${GSIFTP_PATH}/include/${GSIFTP_FLAVOUR}"
-   LDFLAGS="$LDFLAGS -L${GSIFTP_PATH}/lib -lglobus_ftp_client_${GSIFTP_FLAVOUR}"
-fi
-
-# BZIP2 flags:
-if test "x$BZIP2_PATH" != x; then
-   CFLAGS="$CFLAGS -I${BZIP2_PATH}/include"
-   LDFLAGS="$LDFLAGS -L${BZIP2_PATH}/lib -lbz2"
-fi
-
 # Shared library section
 #-------------------------------------------------------------------------------
 SHLIB_LD=:
@@ -4831,6 +4820,18 @@ $as_echo "$as_me: WARNING: curl-config not found. Disabling HTTPS support." >&2;
 #  AC_CHECK_LIB([curl],[main],[],
 #       [AC_MSG_WARN(Not building curl support for CFITSIO)])
 #  AC_CHECK_HEADER(curl.h,[])
+fi
+
+# GSIFTP flags:
+if test "x$GSIFTP_PATH" != x -a "x$GSIFTP_FLAVOUR" != x; then
+   CFLAGS="$CFLAGS -I${GSIFTP_PATH}/include/${GSIFTP_FLAVOUR}"
+   LDFLAGS="$LDFLAGS -L${GSIFTP_PATH}/lib -lglobus_ftp_client_${GSIFTP_FLAVOUR}"
+fi
+
+# BZIP2 flags:
+if test "x$BZIP2_PATH" != x; then
+   CFLAGS="$CFLAGS -I${BZIP2_PATH}/include"
+   LDFLAGS="$LDFLAGS -L${BZIP2_PATH}/lib -lbz2"
 fi
 
 
