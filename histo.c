@@ -2222,8 +2222,8 @@ int fits_get_col_minmax(fitsfile *fptr, int colnum, double *datamin,
 
     firstrow = 1;
     nulval = DOUBLENULLVALUE;
-    *datamin =  9.0E36D;
-    *datamax = -9.0E36D;
+    *datamin =  9.0E36;
+    *datamax = -9.0E36;
 
     while(nrows)
     {
