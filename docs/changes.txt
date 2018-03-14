@@ -5,7 +5,7 @@ Version NEWNEWNEW - SOMETIME_IN_THE_FUTURE
   - histo.c uses double precision internally for all floating point
     binning; new double-precision subroutines fits_calc_binningd(),
     fits_rebin_wcsd(), and fits_make_histd(); existing
-    single-precision histogram functions still work but are converted
+    single-precision histogram functions still work but convert values
     to double-precision internally.
 
   - new subroutine fits_copy_cols() / ffccls() to copy multiple columns
