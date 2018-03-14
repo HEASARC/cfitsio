@@ -3235,21 +3235,33 @@ spaces).  Trailing blank characters are not significant.
 \end{verbatim}
 
 \begin{description}
-\item[3 ] Copy a column from one HDU to another (or to the same HDU).  If
-    create\_col = TRUE, then a new column will be inserted in the output
-    table, at position `outcolumn', otherwise the existing output column will
-    be overwritten (in which case it must have a compatible data type).
-    If outcolnum is greater than the number of column in the table, then
-    the new column will be appended to the end of the table.
+\item[3 ] Copy column(s) between HDUs.  If create\_col = TRUE, then
+    new column(s) will be inserted in the output table, starting at
+    position `outcolumn', otherwise the existing output column(s) will
+    be overwritten (in which case they must have a compatible data
+    type).
+
+    The first form copies a single column incolnum to outcolnum.
+    Copying within the same HDU is permitted.  The second form copies
+    ncols columns from the input, starting at column incolnum to the
+    output, starting at outcolnum.  For the second form, the input and
+    output must be different HDUs.
+
+    If outcolnum is greater than the number of column in the output table, then
+    the new column(s) will be appended to the end of the table.
     Note that the first column in a table is at colnum = 1.
-    The standard indexed keywords that related to the column (e.g., TDISPn,
-   TUNITn, TCRPXn, TCDLTn, etc.) will also be copied. \label{ffcpcl}
+    The standard indexed keywords that related to the columns (e.g., TDISPn,
+    TUNITn, TCRPXn, TCDLTn, etc.) will also be copied. \label{ffcpcl} \label{ffccls}
 \end{description}
 
 \begin{verbatim}
   int fits_copy_col / ffcpcl
       (fitsfile *infptr, fitsfile *outfptr, int incolnum, int outcolnum,
        int create_col, > int *status);
+
+  int fits_copy_cols / ffccls(fitsfile *infptr, fitsfile *outfptr, 
+           int incolnum, int outcolnum, 
+	   int ncols, int create_col, > int *status);
 \end{verbatim}
 
 \begin{description}
