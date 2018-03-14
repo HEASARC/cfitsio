@@ -3551,6 +3551,10 @@ array parameters.  If the value = DOUBLENULLVALUE and no keyword names are
 given,  then the routine will use the TLMINn and TLMAXn keywords, if present, or the
 actual min and/or max values in the column.
 
+The ``d'' version has double precision floating point outputs as noted
+in the calling signature.  The version without ``d'' has single
+precision floating point outputs.
+
 BINSIZEIN is an array giving the binsize along each axis.
 If the value =
 DOUBLENULLVALUE, and a keyword name is not specified with BINNAME,
@@ -3561,7 +3565,7 @@ is smaller.
 \end{description}
 
 \begin{verbatim}
-  int fits_calc_binning
+  int fits_calc_binning[d]
    Input parameters:
      (fitsfile *fptr,  /* IO - pointer to table to be binned              */
       int naxis,       /* I - number of axes/columns in the binned image  */
@@ -3575,9 +3579,9 @@ is smaller.
    Output parameters:
       int *colnum,     /* O - column numbers, to be binned */
       long *naxes,     /* O - number of bins in each histogram axis */
-      float *amin,     /* O - lower bound of the histogram axes */
-      float *amax,     /* O - upper bound of the histogram axes */
-      float *binsize,  /* O - width of histogram bins/pixels on each axis */
+      float[double] *amin,     /* O - lower bound of the histogram axes */
+      float[double] *amax,     /* O - upper bound of the histogram axes */
+      float[double] *binsize,  /* O - width of histogram bins/pixels on each axis */
       int *status)
 \end{verbatim}
 
@@ -3626,15 +3630,20 @@ the coordinate types are equal to the original column names.
 \item[4 ] Update the WCS keywords in a histogram image header that give the location
 of the reference pixel (CRPIXn), and the pixel size (CDELTn), in the binned
 image.
+
+The ``d'' version has double precision floating point inputs as noted
+in the calling signature.  The version without ``d'' has single
+precision floating point inputs.
+
  \label{rebinwcs}
 \end{description}
 
 \begin{verbatim}
-  int fits_rebin_wcs
+  int fits_rebin_wcs[d]
      (fitsfile *fptr,     /* I - pointer to table to be binned           */
       int naxis,          /* I - number of axes in the histogram image   */
-      float *amin,        /* I - first pixel include in each axis        */
-      float *binsize,     /* I - binning factor for each axis            */
+      float[double] *amin,        /* I - first pixel include in each axis        */
+      float[double] *binsize,     /* I - binning factor for each axis            */
       int *status)
 \end{verbatim}
 
@@ -3642,21 +3651,25 @@ image.
 \begin{description}
 \item[5 ] Bin the values in the input table columns, and write the histogram
 array to the output FITS image (histptr).
+
+The ``d'' version has double precision floating point inputs as noted
+in the calling signature.  The version without ``d'' has single
+precision floating point inputs.
  \label{makehist}
 \end{description}
 
 \begin{verbatim}
-  int fits_make_hist
+  int fits_make_hist[d]
    (fitsfile *fptr,    /* I - pointer to table with X and Y cols;      */
     fitsfile *histptr, /* I - pointer to output FITS image             */
     int bitpix,        /* I - datatype for image: 16, 32, -32, etc     */
     int naxis,         /* I - number of axes in the histogram image    */
     long *naxes,       /* I - size of axes in the histogram image      */
     int *colnum,       /* I - column numbers (array length = naxis)    */
-    float *amin,       /* I - minimum histogram value, for each axis   */
-    float *amax,       /* I - maximum histogram value, for each axis   */
-    float *binsize,    /* I - bin size along each axis                 */
-    float weight,      /* I - binning weighting factor (FLOATNULLVALUE */
+    float[double] *amin,       /* I - minimum histogram value, for each axis   */
+    float[double] *amax,       /* I - maximum histogram value, for each axis   */
+    float[double] *binsize,    /* I - bin size along each axis                 */
+    float[double] weight,      /* I - binning weighting factor (FLOATNULLVALUE */
                        /*     for no weighting)                        */
     int wtcolnum,      /* I - keyword or col for weight      (or NULL) */
     int recip,         /* I - use reciprocal of the weight? 0 or 1     */
