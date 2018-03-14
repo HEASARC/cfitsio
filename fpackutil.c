@@ -553,7 +553,8 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 {
 	char	infits[SZ_STR], outfits[SZ_STR];
 	char	temp[SZ_STR], answer[30];
-	int	iarg, islossless, namelen, iraf_infile = 0, status = 0, ifail;
+        char    valchar[]="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .!#'()+,-_@[]/^~{}";
+	int	ichar=0, outlen=0, iarg, islossless, namelen, iraf_infile = 0, status = 0, ifail;
         
 	if (fpvar.initialized != FP_INIT_MAGIC) {
 	    fp_msg ("Error: internal initialization error\n"); exit (-1);
@@ -828,6 +829,20 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 
 	    if (fpvar.do_gzip_file) {       /* gzip the output file */
 		strcpy(temp, "gzip -1 ");
+                outlen = strlen(outfits);
+                if (outlen + 8 > SZ_STR-1)
+                {
+                   fp_msg("\nError: Output file name is too long.\n");
+                   exit(-1);
+                }
+                for (ichar=0; ichar < outlen; ++ichar)
+                {
+                   if (!strchr(valchar, outfits[ichar]))
+                   {
+                      fp_msg("\n Error: Invalid characters in output file name.\n");
+                      exit(-1);
+                   }
+                }                
 		strcat(temp,outfits);
                 system(temp);
 	        strcat(outfits, ".gz");    /* only possibible with funpack */
