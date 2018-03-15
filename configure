@@ -639,6 +639,7 @@ ARCHIVE
 AR
 FC
 INSTALL_ROOT
+GSIFTP_SRC
 EGREP
 GREP
 CPP
@@ -1478,6 +1479,52 @@ fi
 
 } # ac_fn_c_try_compile
 
+# ac_fn_c_try_link LINENO
+# -----------------------
+# Try to link conftest.$ac_ext, and return whether this succeeded.
+ac_fn_c_try_link ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  rm -f conftest.$ac_objext conftest$ac_exeext
+  if { { ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
+$as_echo "$ac_try_echo"; } >&5
+  (eval "$ac_link") 2>conftest.err
+  ac_status=$?
+  if test -s conftest.err; then
+    grep -v '^ *+' conftest.err >conftest.er1
+    cat conftest.er1 >&5
+    mv -f conftest.er1 conftest.err
+  fi
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext && {
+	 test "$cross_compiling" = yes ||
+	 test -x conftest$ac_exeext
+       }; then :
+  ac_retval=0
+else
+  $as_echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_retval=1
+fi
+  # Delete the IPA/IPO (Inter Procedural Analysis/Optimization) information
+  # created by the PGI compiler (conftest_ipa8_conftest.oo), as it would
+  # interfere with the next link command; also delete a directory that is
+  # left behind by Apple's compiler.  We do this before executing the actions.
+  rm -rf conftest.dSYM conftest_ipa8_conftest.oo
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+  as_fn_set_status $ac_retval
+
+} # ac_fn_c_try_link
+
 # ac_fn_c_try_cpp LINENO
 # ----------------------
 # Try to preprocess conftest.$ac_ext, and return whether this succeeded.
@@ -1674,52 +1721,6 @@ $as_echo "$ac_res" >&6; }
   eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
 
 } # ac_fn_c_check_header_compile
-
-# ac_fn_c_try_link LINENO
-# -----------------------
-# Try to link conftest.$ac_ext, and return whether this succeeded.
-ac_fn_c_try_link ()
-{
-  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
-  rm -f conftest.$ac_objext conftest$ac_exeext
-  if { { ac_try="$ac_link"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
-$as_echo "$ac_try_echo"; } >&5
-  (eval "$ac_link") 2>conftest.err
-  ac_status=$?
-  if test -s conftest.err; then
-    grep -v '^ *+' conftest.err >conftest.er1
-    cat conftest.er1 >&5
-    mv -f conftest.er1 conftest.err
-  fi
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } && {
-	 test -z "$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       } && test -s conftest$ac_exeext && {
-	 test "$cross_compiling" = yes ||
-	 test -x conftest$ac_exeext
-       }; then :
-  ac_retval=0
-else
-  $as_echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-	ac_retval=1
-fi
-  # Delete the IPA/IPO (Inter Procedural Analysis/Optimization) information
-  # created by the PGI compiler (conftest_ipa8_conftest.oo), as it would
-  # interfere with the next link command; also delete a directory that is
-  # left behind by Apple's compiler.  We do this before executing the actions.
-  rm -rf conftest.dSYM conftest_ipa8_conftest.oo
-  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
-  as_fn_set_status $ac_retval
-
-} # ac_fn_c_try_link
 cat >config.log <<_ACEOF
 This file contains any messages produced by compilers while
 running configure, to aid debugging if configure makes a mistake.
@@ -2263,7 +2264,7 @@ if test "x$BUILD_HERA" = xyes; then
 
 fi
 
-# Enable support for bzip2 compression (disabled by default):
+# Optional support for bzip2 compression:
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -3456,7 +3457,51 @@ done
 if test "${with_bzip2+set}" = set; then :
   withval=$with_bzip2;  if test "x$withval" != "xno"; then
         if test "x$withval" = "xyes" ; then
-            for ac_header in bzlib.h
+            { $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lbz2" >&5
+$as_echo_n "checking for main in -lbz2... " >&6; }
+if ${ac_cv_lib_bz2_main+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lbz2  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+return main ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_bz2_main=yes
+else
+  ac_cv_lib_bz2_main=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bz2_main" >&5
+$as_echo "$ac_cv_lib_bz2_main" >&6; }
+if test "x$ac_cv_lib_bz2_main" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBBZ2 1
+_ACEOF
+
+  LIBS="-lbz2 $LIBS"
+
+else
+  as_fn_error $? "Unable to locate bz2 library needed when enabling bzip2 support; try specifying the path" "$LINENO" 5
+fi
+
+        else
+            BZIP2_PATH="${withval}"
+        fi
+        for ac_header in bzlib.h
 do :
   ac_fn_c_check_header_mongrel "$LINENO" "bzlib.h" "ac_cv_header_bzlib_h" "$ac_includes_default"
 if test "x$ac_cv_header_bzlib_h" = xyes; then :
@@ -3466,14 +3511,10 @@ _ACEOF
 
 $as_echo "#define HAVE_BZIP2 1" >>confdefs.h
 
-
 fi
 
 done
 
-        else
-            BZIP2_PATH=${withval}
-        fi
     fi
 
 
@@ -3486,15 +3527,22 @@ fi
 if test "${with_gsiftp+set}" = set; then :
   withval=$with_gsiftp;  if test "x$withval" != "xno"; then
         if test "x$withval" != "xyes" ; then
-            GSIFTP_PATH=${withval}
-            HAVE_GSIFTP=yes
+            GSIFTP_PATH="${withval}"
         fi
 
 $as_echo "#define HAVE_GSIFTP 1" >>confdefs.h
 
+        USE_GSIFTP=yes
     fi
 
 
+fi
+
+# GSIFTP source code (optional):
+if test "x$USE_GSIFTP" = xyes; then
+   GSIFTP_SRC="drvrgsiftp.c"
+else
+   GSIFTP_SRC=""
 fi
 
 
@@ -3503,7 +3551,7 @@ fi
 if test "${with_gsiftp_flavour+set}" = set; then :
   withval=$with_gsiftp_flavour;  if test "x$withval" != "xno"; then
         if test "x$withval" != "xyes" ; then
-            GSIFTP_FLAVOUR=${withval}
+            GSIFTP_FLAVOUR="${withval}"
         fi
 
 $as_echo "#define GSIFTP_FLAVOUR 1" >>confdefs.h
@@ -4825,13 +4873,13 @@ fi
 # GSIFTP flags:
 if test "x$GSIFTP_PATH" != x -a "x$GSIFTP_FLAVOUR" != x; then
    CFLAGS="$CFLAGS -I${GSIFTP_PATH}/include/${GSIFTP_FLAVOUR}"
-   LDFLAGS="$LDFLAGS -L${GSIFTP_PATH}/lib -lglobus_ftp_client_${GSIFTP_FLAVOUR}"
+   LIBS="$LIBS -L${GSIFTP_PATH}/lib -lglobus_ftp_client_${GSIFTP_FLAVOUR}"
 fi
 
 # BZIP2 flags:
 if test "x$BZIP2_PATH" != x; then
    CFLAGS="$CFLAGS -I${BZIP2_PATH}/include"
-   LDFLAGS="$LDFLAGS -L${BZIP2_PATH}/lib -lbz2"
+   LIBS="$LIBS -L${BZIP2_PATH}/lib -lbz2"
 fi
 
 

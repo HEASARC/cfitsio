@@ -53,18 +53,17 @@ if test "x$BUILD_HERA" = xyes; then
   AC_DEFINE(BUILD_HERA)
 fi
 
-# Enable support for bzip2 compression (disabled by default):
+# Optional support for bzip2 compression:
 AC_ARG_WITH(
   bzip2,
   [AS_HELP_STRING([--with-bzip2[[=PATH]]],[Enable bzip2 support. Optional path to the location of include/bzlib.h and lib/libbz2])],
   [ if test "x$withval" != "xno"; then
         if test "x$withval" = "xyes" ; then
-            AC_CHECK_HEADERS(bzlib.h,
-              [AC_DEFINE(HAVE_BZIP2,1,[Define if you want bzip2 read support])]
-            )
+            AC_CHECK_LIB([bz2],[main],[],[AC_MSG_ERROR(Unable to locate bz2 library needed when enabling bzip2 support; try specifying the path)])
         else
-            BZIP2_PATH=${withval}
+            BZIP2_PATH="${withval}"
         fi
+        AC_CHECK_HEADERS(bzlib.h,[AC_DEFINE(HAVE_BZIP2,1,[Define if you want bzip2 read support])])
     fi
   ]
 )
@@ -75,20 +74,27 @@ AC_ARG_WITH(
   [AS_HELP_STRING([--with-gsiftp[[=PATH]]],[Enable Globus Toolkit gsiftp protocol support])],
   [ if test "x$withval" != "xno"; then
         if test "x$withval" != "xyes" ; then
-            GSIFTP_PATH=${withval}
-            HAVE_GSIFTP=yes
+            GSIFTP_PATH="${withval}"
         fi
         AC_DEFINE(HAVE_GSIFTP,1,[Define if you want Globus Toolkit gsiftp protocol support])
+        USE_GSIFTP=yes
     fi
   ]
 )
+# GSIFTP source code (optional):
+if test "x$USE_GSIFTP" = xyes; then
+   GSIFTP_SRC="drvrgsiftp.c"
+else
+   GSIFTP_SRC=""
+fi
+AC_SUBST(GSIFTP_SRC)
 
 AC_ARG_WITH(
   gsiftp-flavour,
   [AS_HELP_STRING([--with-gsiftp-flavour[[=PATH]]],[Define Globus Toolkit gsiftp protocol flavour])],
   [ if test "x$withval" != "xno"; then
         if test "x$withval" != "xyes" ; then
-            GSIFTP_FLAVOUR=${withval}
+            GSIFTP_FLAVOUR="${withval}"
         fi
         AC_DEFINE(GSIFTP_FLAVOUR,1,[Define Globus Toolkit architecture])
     fi
@@ -471,13 +477,13 @@ fi
 # GSIFTP flags:
 if test "x$GSIFTP_PATH" != x -a "x$GSIFTP_FLAVOUR" != x; then
    CFLAGS="$CFLAGS -I${GSIFTP_PATH}/include/${GSIFTP_FLAVOUR}"
-   LDFLAGS="$LDFLAGS -L${GSIFTP_PATH}/lib -lglobus_ftp_client_${GSIFTP_FLAVOUR}"
+   LIBS="$LIBS -L${GSIFTP_PATH}/lib -lglobus_ftp_client_${GSIFTP_FLAVOUR}"
 fi
 
 # BZIP2 flags:
 if test "x$BZIP2_PATH" != x; then
    CFLAGS="$CFLAGS -I${BZIP2_PATH}/include"
-   LDFLAGS="$LDFLAGS -L${BZIP2_PATH}/lib -lbz2"
+   LIBS="$LIBS -L${BZIP2_PATH}/lib -lbz2"
 fi
 
 AC_SUBST(ARCH)dnl
