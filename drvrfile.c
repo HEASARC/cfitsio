@@ -765,7 +765,7 @@ int file_is_compressed(char *filename) /* I - FITS file name          */
     /* Open file.  Try various suffix combinations */  
     if (file_openfile(filename, 0, &diskfile))
     {
-      if (strlen(filename) > FLEN_FILENAME - 1)
+      if (strlen(filename) > FLEN_FILENAME - 5)
           return(0);
 
       strcpy(tmpfilename,filename);
@@ -773,7 +773,7 @@ int file_is_compressed(char *filename) /* I - FITS file name          */
       if (file_openfile(filename, 0, &diskfile))
       {
 #if HAVE_BZIP2
-        strcpy(tmpfilename,filename);
+        strcpy(filename,tmpfilename);
         strcat(filename,".bz2");
         if (file_openfile(filename, 0, &diskfile))
         {
