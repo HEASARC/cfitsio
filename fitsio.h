@@ -1783,6 +1783,8 @@ int CFITS_API ffmvec(fitsfile *fptr, int colnum, LONGLONG newveclen, int *status
 int CFITS_API ffdcol(fitsfile *fptr, int numcol, int *status);
 int CFITS_API ffcpcl(fitsfile *infptr, fitsfile *outfptr, int incol, int outcol, 
            int create_col, int *status);
+int CFITS_API ffccls(fitsfile *infptr, fitsfile *outfptr, int incol, int outcol, 
+	   int ncols, int create_col, int *status);
 int CFITS_API ffcprw(fitsfile *infptr, fitsfile *outfptr, LONGLONG firstrow, 
            LONGLONG nrows, int *status);
 
