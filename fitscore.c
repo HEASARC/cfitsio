@@ -1118,6 +1118,13 @@ int ffmkky(const char *keyname,   /* I - keyword name    */
 	    /* for now at least, treat all cases as an implicit ESO HIERARCH keyword. */
 	    /* This could  change if FITS is ever expanded to directly support longer keywords. */
 	    
+            if (namelen + 11 > FLEN_CARD-1)
+            {
+                ffpmsg(
+               "The following keyword is too long to fit on a card:");
+                ffpmsg(keyname);
+                return(*status = BAD_KEYCHAR);
+            }
             strcat(card, "HIERARCH ");
             strcat(card, tmpname);
 	    namelen += 9;
