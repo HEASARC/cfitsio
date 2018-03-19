@@ -1590,7 +1590,7 @@ int ffgthd(char *tmplt, /* I - input header template string */
 {
     char keyname[FLEN_KEYWORD], value[140], comment[140];
     char *tok, *suffix, *loc, tvalue[140];
-    int len, vlen, more, tstatus;
+    int len, vlen, more, tstatus, lentok1=0;
     double dval;
 
     if (*status > 0)
@@ -1627,35 +1627,35 @@ int ffgthd(char *tmplt, /* I - input header template string */
         tok++;
         len = strspn(tok, " ");  /* no. of spaces before keyword */
         tok += len;
-        if (len < 8)  /* not a blank name? */
+        
+        len = strcspn(tok, " =");  /* length of name */
+        if (len >= FLEN_KEYWORD)
+          return(*status = BAD_KEYCHAR);
+
+        lentok1 = len;
+        strncat(card, tok, len);
+
+        /*
+          The HIERARCH convention supports non-standard characters
+          in the keyword name, so don't always convert to upper case or
+          abort if there are illegal characters in the name or if the
+          name is greater than 8 characters long.
+        */
+
+        if (len < 9)  /* this is possibly a normal FITS keyword name */
         {
-          len = strcspn(tok, " =");  /* length of name */
-          if (len >= FLEN_KEYWORD)
-            return(*status = BAD_KEYCHAR);
-
-          strncat(card, tok, len);
-
-          /*
-            The HIERARCH convention supports non-standard characters
-            in the keyword name, so don't always convert to upper case or
-            abort if there are illegal characters in the name or if the
-            name is greater than 8 characters long.
-          */
-
-          if (len < 9)  /* this is possibly a normal FITS keyword name */
+          ffupch(card);
+          tstatus = 0;
+          if (fftkey(card, &tstatus) > 0)
           {
-            ffupch(card);
-            tstatus = 0;
-            if (fftkey(card, &tstatus) > 0)
-            {
-               /* name contained non-standard characters, so reset */
-               card[0] = '\0';
-               strncat(card, tok, len);
-            }
+             /* name contained non-standard characters, so reset */
+             card[0] = '\0';
+             strncat(card, tok, len);
           }
-
-          tok += len;
         }
+
+        tok += len;
+
 
         /* second token, if present, is the new name for the keyword */
 
@@ -1667,13 +1667,24 @@ int ffgthd(char *tmplt, /* I - input header template string */
 
         *hdtype = -2;
         len = strcspn(tok, " ");  /* length of new name */
-        if (len > 40)  /* name has to fit on columns 41-80 of card */
-          return(*status = BAD_KEYCHAR);
+        /* this name has to fit on columns 41-80 of card,
+           and first name must now fit in 1-40 */
+        if (lentok1 > 40)
+        {
+           card[0] = '\0';
+           return (*status = BAD_KEYCHAR);
+        }
+        if (len > 40)
+        {
+           card[0] = '\0'; 
+           return(*status = BAD_KEYCHAR);
+        }
 
         /* copy the new name to card + 40;  This is awkward, */
         /* but is consistent with the way the Fortran FITSIO works */
 	strcat(card,"                                        ");
-        strncpy(&card[40], tok, len+1); /* copy len+1 to get terminator */
+        strncpy(&card[40], tok, len);
+        card[80] = '\0'; /* necessary to add terminator in case len = 40 */
 
         /*
             The HIERARCH convention supports non-standard characters
