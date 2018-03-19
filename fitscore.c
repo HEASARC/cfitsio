@@ -1300,7 +1300,6 @@ int ffkeyn(const char *keyroot,   /* I - root string for keyword name */
 /*
   Construct a keyword name string by appending the index number to the root.
   e.g., if root = "TTYPE" and value = 12 then keyname = "TTYPE12".
-  Note: this allows keyword names longer than 8 characters.
 */
 {
     char suffix[16];
@@ -1319,7 +1318,9 @@ int ffkeyn(const char *keyroot,   /* I - root string for keyword name */
         rootlen--;                 /* remove trailing spaces in root name */
         keyname[rootlen] = '\0';
     }
-
+    if (strlen(suffix) + strlen(keyname) > 8)
+       return (*status=206);
+       
     strcat(keyname, suffix);    /* append suffix to the root */
     return(*status);
 }
