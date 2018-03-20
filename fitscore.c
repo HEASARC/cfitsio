@@ -2790,6 +2790,11 @@ int ffbnfm(char *tform,     /* I - format code from the TFORMn keyword */
         return(*status = BAD_TFORM);
     }
 
+    if (nchar-ii > FLEN_VALUE-1)
+    {
+        ffpmsg("Error: binary table TFORM code is too long (ffbnfm).");
+        return (*status = BAD_TFORM);
+    }
     strcpy(temp, &tform[ii]); /* copy format string */
     ffupch(temp);     /* make sure it is in upper case */
     form = temp;      /* point to start of format string */
@@ -2805,7 +2810,13 @@ int ffbnfm(char *tform,     /* I - format code from the TFORMn keyword */
     if (ii == 0)
         repeat = 1;  /* no explicit repeat count */
     else
-        sscanf(form,"%ld", &repeat);  /* read repeat count */
+    {
+        if (sscanf(form,"%ld", &repeat) != 1) /* read repeat count */
+        {
+           ffpmsg("Error: Bad repeat format in TFORM (ffbnfm).");
+           return(*status = BAD_TFORM);
+        }  
+    }
 
     /*-----------------------------------------------*/
     /*             determine datatype code           */
