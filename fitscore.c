@@ -1590,7 +1590,7 @@ int ffgthd(char *tmplt, /* I - input header template string */
 {
     char keyname[FLEN_KEYWORD], value[140], comment[140];
     char *tok, *suffix, *loc, tvalue[140];
-    int len, vlen, more, tstatus, lentok1=0;
+    int len, vlen, more, tstatus, lentok1=0, remainlen=0;
     double dval;
 
     if (*status > 0)
@@ -1747,7 +1747,7 @@ int ffgthd(char *tmplt, /* I - input header template string */
       {
         *hdtype = 1;   /* simply append COMMENT and HISTORY keywords */
         strcpy(card, keyname);
-        strncat(card, tok, 73);
+        strncat(card, tok, 72);
         return(*status);
       }
 
@@ -1758,12 +1758,16 @@ int ffgthd(char *tmplt, /* I - input header template string */
       if (*tok == '\'') /* is value enclosed in quotes? */
       {
           more = TRUE;
+          remainlen = 139;
           while (more)
           {
             tok++;  /* temporarily move past the quote char */
             len = strcspn(tok, "'");  /* length of quoted string */
             tok--;
-            strncat(value, tok, len + 2); 
+            if (len+2 > remainlen)
+               return (*status=BAD_KEYCHAR);
+            strncat(value, tok, len + 2);
+            remainlen -= (len+2); 
  
             tok += len + 1;
             if (tok[0] != '\'')   /* check there is a closing quote */
@@ -1781,7 +1785,8 @@ int ffgthd(char *tmplt, /* I - input header template string */
       else   /* not a quoted string value */
       {
           len = strcspn(tok, " /"); /* length of value string */
-
+          if (len > 139)
+             return (*status=BAD_KEYCHAR);
           strncat(value, tok, len);
           if (!( (tok[0] == 'T' || tok[0] == 'F') &&
                  (tok[1] == ' ' || tok[1] == '/' || tok[1] == '\0') )) 
@@ -1815,6 +1820,8 @@ int ffgthd(char *tmplt, /* I - input header template string */
             if (*suffix != '\0' && *suffix != ' ' && *suffix != '/')
             { 
               /* value is not a number; must enclose it in quotes */
+              if (len > 137)
+                return (*status=BAD_KEYCHAR);              
               strcpy(value, "'");
               strncat(value, tok, len);
               strcat(value, "'");
