@@ -6596,7 +6596,7 @@ int ffuptf(fitsfile *fptr,      /* I - FITS file pointer */
   'len' is the maximum length of the vector in the table (e.g., '1PE(400)')
 */
 {
-    int ii;
+    int ii, lenform=0;
     long tflds;
     LONGLONG length, addr, maxlen, naxis2, jj;
     char comment[FLEN_COMMENT], keyname[FLEN_KEYWORD];
@@ -6635,13 +6635,20 @@ int ffuptf(fitsfile *fptr,      /* I - FITS file pointer */
           /* construct the new keyword value */
           strcpy(newform, "'");
           tmp = strchr(tform, '(');  /* truncate old length, if present */
-          if (tmp) *tmp = 0;       
-          strcat(newform, tform);
+          if (tmp) *tmp = 0;
+          lenform = strlen(tform);
 
           /* print as double, because the string-to-64-bit */
           /* conversion is platform dependent (%lld, %ld, %I64d) */
 
           snprintf(lenval,40, "(%.0f)", (double) maxlen);
+          
+          if (lenform+strlen(lenval)+2 > FLEN_VALUE-1)
+          {
+             ffpmsg("Error assembling TFORMn string (ffuptf).");
+             return(*status = BAD_TFORM);
+          }
+          strcat(newform, tform);
 
           strcat(newform,lenval);
           while(strlen(newform) < 9)
@@ -9271,7 +9278,7 @@ int ffc2jj(const char *cval,  /* I - string representation of the value */
     if (errno == ERANGE)
     {
         strcpy(msg,"Range Error in ffc2jj converting string to longlong int: ");
-        strncat(msg,cval,25);
+        strncat(msg,cval,23);
         ffpmsg(msg);
 
         *status = NUM_OVERFLOW;
@@ -9386,6 +9393,12 @@ int ffc2rr(const char *cval,   /* I - string representation of the value */
 
     if (strchr(cval, 'D') || decimalpt == ',')  {
         /* strtod expects a comma, not a period, as the decimal point */
+        if (strlen(cval) > 72)
+        {
+           strcpy(msg,"Error: Invalid string to float in ffc2rr");
+           ffpmsg(msg);
+           return (*status=BAD_C2F);
+        }
         strcpy(tval, cval);
 
         /*  The C language does not support a 'D'; replace with 'E' */
@@ -9456,6 +9469,12 @@ int ffc2dd(const char *cval,   /* I - string representation of the value */
 
     if (strchr(cval, 'D') || decimalpt == ',') {
         /* need to modify a temporary copy of the string before parsing it */
+        if (strlen(cval) > 72)
+        {
+           strcpy(msg,"Error: Invalid string to double in ffc2dd");
+           ffpmsg(msg);
+           return (*status=BAD_C2D);
+        }
         strcpy(tval, cval);
         /*  The C language does not support a 'D'; replace with 'E' */
         if ((loc = strchr(tval, 'D'))) *loc = 'E';
