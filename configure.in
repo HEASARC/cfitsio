@@ -266,21 +266,21 @@ case $host in
 	CFLAGS="$CFLAGS -DHAVE_POSIX_SIGNALS"
 	;;
     *apple-darwin*)
-        # Build for i386 & x86_64 architectures on Darwin 10.x or newer:
         changequote(,)
         case $host in
             *darwin[56789]*)
                 ;;
             *)
                 changequote([,])
-                echo "int main(){return(0);}" > /tmp/$$.c
-                $CC -v -o /tmp/$$.out /tmp/$$.c 2> /tmp/$$.log
-                if test `cat /tmp/$$.log | grep -ci 'LLVM'` -ne 0; then APPLEXCODE="yes"; fi
-                if test "x$APPLEXCODE" = xyes; then
-                  # Flags for building Universal binaries:
-                  C_UNIV_SWITCH="-arch i386 -arch x86_64"
-                  CFLAGS="$CFLAGS $C_UNIV_SWITCH"
-                fi
+#                # Build for i386 & x86_64 architectures on Darwin 10.x or newer:
+#                echo "int main(){return(0);}" > /tmp/$$.c
+#                $CC -v -o /tmp/$$.out /tmp/$$.c 2> /tmp/$$.log
+#                if test `cat /tmp/$$.log | grep -ci 'LLVM'` -ne 0; then APPLEXCODE="yes"; fi
+#                if test "x$APPLEXCODE" = xyes; then
+#                  # Flags for building Universal binaries:
+#                  C_UNIV_SWITCH="-arch i386 -arch x86_64"
+#                  CFLAGS="$CFLAGS $C_UNIV_SWITCH"
+#                fi
                 # LDFLAGS used by utilities:
                 LDFLAGS_BIN="$LDFLAGS_BIN -Wl,-rpath,\${CFITSIO_LIB}"
                 ;;
