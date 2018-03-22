@@ -63,16 +63,23 @@ void fp_abort_output (fitsfile *infptr, fitsfile *outfptr, int stat)
 	int status = 0, hdunum;
 	char  msg[SZ_STR];
 
-	fits_file_name(infptr, tempfilename, &status);
-	fits_get_hdu_num(infptr, &hdunum);
-	
-        fits_close_file (infptr, &status);
+        if (infptr)
+        {
+	   fits_file_name(infptr, tempfilename, &status);
+	   fits_get_hdu_num(infptr, &hdunum);
 
-	snprintf(msg, SZ_STR,"Error processing file: %s\n", tempfilename);
-	fp_msg (msg);
-	snprintf(msg, SZ_STR,"  in HDU number %d\n", hdunum);
-	fp_msg (msg);
+           fits_close_file (infptr, &status);
 
+	   snprintf(msg, SZ_STR,"Error processing file: %s\n", tempfilename);
+	   fp_msg (msg);
+	   snprintf(msg, SZ_STR,"  in HDU number %d\n", hdunum);
+	   fp_msg (msg);
+        }
+        else
+        {
+           snprintf(msg, SZ_STR,"Error: Unable to process input file\n");
+           fp_msg(msg);
+        }
 	fits_report_error (stderr, stat);
 
 	if (outfptr) {
