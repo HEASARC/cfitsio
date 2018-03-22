@@ -9,6 +9,9 @@ Version NEWNEWNEW - SOMETIME_IN_THE_FUTURE
     to double-precision internally.
 
   - new subroutine fits_copy_cols() / ffccls() to copy multiple columns
+  
+  - Fix in imcompress.c for HCOMPRESS and PLIO compression of unsigned
+    short integers.
 
                    
 Version 3.43 - March 2018
