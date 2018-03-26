@@ -1490,7 +1490,8 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
     char oldbinspec[FLEN_FILENAME], oldcolspec[FLEN_FILENAME];
     char cwd[FLEN_FILENAME];
     char tmpStr[FLEN_FILENAME];
-    char tmpinfile[FLEN_FILENAME];
+    char tmpinfile[3*FLEN_FILENAME]; /* fits_encode_url can expand 
+                 this string beyond length of infile */
 
     *isopen = 0;
 
