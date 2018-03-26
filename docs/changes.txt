@@ -12,7 +12,9 @@ Version NEWNEWNEW - SOMETIME_IN_THE_FUTURE
   
   - Fix in imcompress.c for HCOMPRESS and PLIO compression of unsigned
     short integers.
-
+  
+  - Fix to fits_insert_card(ffikey).  It had wrongly been capitalizing
+    letters that appeared before an '=' sign on a CONTINUE line.
                    
 Version 3.43 - March 2018
                    
