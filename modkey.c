@@ -1531,6 +1531,11 @@ int ffikey(fitsfile *fptr,    /* I - FITS file pointer  */
     keylength = strcspn(buff2, "=");
     if (keylength == 80) keylength = 8;
     
+    /* test for the common commentary keywords which by definition have 8-char names */
+    if ( !fits_strncasecmp( "COMMENT ", buff2, 8) || !fits_strncasecmp( "HISTORY ", buff2, 8) ||
+         !fits_strncasecmp( "        ", buff2, 8) || !fits_strncasecmp( "CONTINUE", buff2, 8) )
+	 keylength = 8;
+
     for (ii=0; ii < keylength; ii++)       /* make sure keyword name is uppercase */
         buff2[ii] = toupper(buff2[ii]);
 
