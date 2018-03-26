@@ -162,8 +162,8 @@ static int fits_unshuffle_4bytes(char *heap, LONGLONG length, int *status);
 static int fits_unshuffle_2bytes(char *heap, LONGLONG length, int *status);
 
 static int fits_int_to_longlong_inplace(int *intarray, long length, int *status);
-static int fits_short_to_int_inplace(short *intarray, long length, int *status);
-static int fits_ushort_to_int_inplace(unsigned short *intarray, long length, int *status);
+static int fits_short_to_int_inplace(short *intarray, long length, int shift, int *status);
+static int fits_ushort_to_int_inplace(unsigned short *intarray, long length, int shift, int *status);
 static int fits_sbyte_to_int_inplace(signed char *intarray, long length, int *status);
 static int fits_ubyte_to_int_inplace(unsigned char *intarray, long length, int *status);
 
@@ -2252,7 +2252,7 @@ int imcomp_convert_tile_tshort(
            } else {  /* just do the data type conversion to int */
                  /* have to convert sbuff to an I*4 array, in place */
                  /* sbuff must have been allocated large enough to do this */
-                 fits_short_to_int_inplace(sbuff, tilelen, status);
+                 fits_short_to_int_inplace(sbuff, tilelen, 0, status);
            }
        } else {
            /* have to convert to int if using PLIO */
@@ -2274,10 +2274,9 @@ int imcomp_convert_tile_tshort(
                        idata[ii] = (int) sbuff[ii] + 32768;
                }
              } else {  
+                 /* have to convert sbuff to an I*4 array, in place */
                  /* sbuff must have been allocated large enough to do this */
-               for (ii = tilelen - 1; ii >= 0; ii--) {
-                       idata[ii] = (int) sbuff[ii] + 32768;
-               }
+                 fits_short_to_int_inplace(sbuff, tilelen, 32768, status);
              }
            } else {
 	     /* This is not an unsigned 16-bit integer array, so process normally */
@@ -2293,7 +2292,7 @@ int imcomp_convert_tile_tshort(
              } else {  /* just do the data type conversion to int */
                  /* have to convert sbuff to an I*4 array, in place */
                  /* sbuff must have been allocated large enough to do this */
-                 fits_short_to_int_inplace(sbuff, tilelen, status);
+                 fits_short_to_int_inplace(sbuff, tilelen, 0, status);
              }
            }
         }
@@ -2379,10 +2378,9 @@ int imcomp_convert_tile_tushort(
                /* usbuff must have been allocated large enough to do this */
 
                if ((outfptr->Fptr)->compress_type == HCOMPRESS_1) {
-                    for (ii = tilelen - 1; ii >= 0; ii--)
-                       idata[ii] = ((int) usbuff[ii]) - 32768;
+                    fits_ushort_to_int_inplace(usbuff, tilelen, -32768, status);
                } else {
-                    fits_ushort_to_int_inplace(usbuff, tilelen, status);
+                    fits_ushort_to_int_inplace(usbuff, tilelen, 0, status);
                }
            }
         }
@@ -9516,7 +9514,7 @@ the longer datatype values back to the original array.
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
-static int fits_short_to_int_inplace(short *shortarray, long length, int *status)
+static int fits_short_to_int_inplace(short *shortarray, long length, int shift, int *status)
 
 /* convert the input array of 16-bit integers into an array of 32-bit integers,
 in place. This will overwrite the input array with the new longer array starting
@@ -9557,7 +9555,7 @@ the longer datatype values back to the original array.
     
 	/* do datatype conversion into temp array */
         for (ii = 0; ii < ntodo; ii++) { 
-	    intarray[ii] = shortarray[ii + firstelem];
+	    intarray[ii] = (int)(shortarray[ii + firstelem]) + shift;
         }
 
         /* copy temp array back to alias */
@@ -9580,7 +9578,7 @@ the longer datatype values back to the original array.
 }
 /*--------------------------------------------------------------------------*/
 static int fits_ushort_to_int_inplace(unsigned short *ushortarray, long length, 
-                                      int *status)
+                                      int shift, int *status)
 
 /* convert the input array of 16-bit unsigned integers into an array of 32-bit integers,
 in place. This will overwrite the input array with the new longer array starting
@@ -9621,7 +9619,7 @@ the longer datatype values back to the original array.
     
 	/* do datatype conversion into temp array */
         for (ii = 0; ii < ntodo; ii++) { 
-	    intarray[ii] = ushortarray[ii + firstelem];
+	    intarray[ii] = (int)(ushortarray[ii + firstelem]) + shift;
         }
 
         /* copy temp array back to alias */
