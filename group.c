@@ -5475,7 +5475,11 @@ int fits_get_cwd(char *cwd,  /* IO current working directory string */
     Good old getcwd() seems to work with all other platforms
   */
 
-  getcwd(buff,FLEN_FILENAME);
+  if (!getcwd(buff,FLEN_FILENAME))
+  {
+     ffpmsg("Path and file name too long (fits_get_cwd)");
+     return (*status=URL_PARSE_ERROR);
+  }
 
 #endif
 
