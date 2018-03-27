@@ -1490,8 +1490,7 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
     char oldbinspec[FLEN_FILENAME], oldcolspec[FLEN_FILENAME];
     char cwd[FLEN_FILENAME];
     char tmpStr[FLEN_FILENAME];
-    char tmpinfile[3*FLEN_FILENAME]; /* fits_encode_url can expand 
-                 this string beyond length of infile */
+    char tmpinfile[FLEN_FILENAME]; 
 
     *isopen = 0;
 
@@ -1509,7 +1508,8 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
 
     if(fits_strcasecmp(urltype,"FILE://") == 0)
       {
-        fits_path2url(infile,tmpinfile,status);
+        if (fits_path2url(infile,FLEN_FILENAME,tmpinfile,status))
+           return (*status);
 
         if(tmpinfile[0] != '/')
           {
@@ -1547,7 +1547,8 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
 
           if(fits_strcasecmp(oldurltype,"FILE://") == 0)
             {
-              fits_path2url(oldinfile,tmpStr,status);
+              if(fits_path2url(oldinfile,FLEN_FILENAME,tmpStr,status))
+                 return(*status);
               
               if(tmpStr[0] != '/')
                 {

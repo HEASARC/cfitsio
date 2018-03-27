@@ -1782,7 +1782,7 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
 
                     /* make grplc absolute if necessary */
                     if(!fits_is_url_absolute(grplc)) {
-		      fits_path2url(grplc,groupLocation,status);
+		      fits_path2url(grplc,FLEN_FILENAME,groupLocation,status);
 
 		      if(groupLocation[0] != '/')
 			{
@@ -1795,7 +1795,7 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
 
                     /* make groupFileName absolute if necessary */
                     if(!fits_is_url_absolute(groupFileName)) {
-		      fits_path2url(groupFileName,groupLocation,status);
+		      fits_path2url(groupFileName,FLEN_FILENAME,groupLocation,status);
 
 		      if(groupLocation[0] != '/')
 			{
@@ -3977,7 +3977,7 @@ int ffgmf(fitsfile *gfptr, /* pointer to grouping table HDU to search       */
 
   else if(!fits_is_url_absolute(location))
     {
-      fits_path2url(location,tmpLocation,status);
+      fits_path2url(location,FLEN_FILENAME,tmpLocation,status);
 
       if(*tmpLocation != '/')
 	{
@@ -4823,6 +4823,8 @@ void prepare_keyvalue(char *keyvalue) /* string containing keyword value     */
         Host dependent directory path to/from URL functions
   --------------------------------------------------------------------------*/
 int fits_path2url(char *inpath,  /* input file path string                  */
+                  int maxlength, /* I max number of chars that can be written
+                             to output, including terminating NULL */
 		  char *outpath, /* output file path string                 */
 		  int  *status)
   /*
@@ -5187,7 +5189,7 @@ int fits_path2url(char *inpath,  /* input file path string                  */
     encode all "unsafe" and "reserved" URL characters
   */
 
-  *status = fits_encode_url(buff,outpath,status);
+  *status = fits_encode_url(buff,maxlength,outpath,status);
 
   return(*status);
 }
@@ -5481,7 +5483,7 @@ int fits_get_cwd(char *cwd,  /* IO current working directory string */
     convert the cwd string to a URL standard path string
   */
 
-  fits_path2url(buff,cwd,status);
+  fits_path2url(buff,FLEN_FILENAME,cwd,status);
 
   return(*status);
 }
@@ -5788,7 +5790,7 @@ int  fits_get_url(fitsfile *fptr,       /* I ptr to FITS file to evaluate    */
 		  i = 0;
 		}
 
-	      *status = fits_path2url(tmpPtr,realURL+i,status);
+	      *status = fits_path2url(tmpPtr,FLEN_FILENAME-i,realURL+i,status);
 	    }
 	}
 
@@ -5810,7 +5812,7 @@ int  fits_get_url(fitsfile *fptr,       /* I ptr to FITS file to evaluate    */
 		  i = 0;
 		}
 
-	      *status = fits_path2url(tmpPtr,startURL+i,status);
+	      *status = fits_path2url(tmpPtr,FLEN_FILENAME-i,startURL+i,status);
 	    }
 	}
 
@@ -6280,7 +6282,9 @@ int fits_relurl2url(char     *refURL, /* I reference URL string             */
   return(*status);
 }
 /*--------------------------------------------------------------------------*/
-int fits_encode_url(char *inpath,  /* I URL  to be encoded                  */ 
+int fits_encode_url(char *inpath,  /* I URL  to be encoded                  */
+                    int maxlength, /* I max number of chars that may be copied
+                               to outpath, including terminating NULL. */ 
 		    char *outpath, /* O output encoded URL                  */
 		    int *status)
      /*
@@ -6288,12 +6292,12 @@ int fits_encode_url(char *inpath,  /* I URL  to be encoded                  */
        convention, where XX stand for the two hexidecimal digits of the
        encode character's ASCII code.
 
-       Note that the output path is at least as large as, if not larger than
-       the input path, so that OUTPATH should be passed to this function
-       with room for growth. If not a runtime error could result. It is
-       assumed that OUTPATH has been allocated with enough room to hold
-       the resulting encoded URL.
-
+       Note that the outpath length, as specified by the maxlength argument,
+       should be at least as large as inpath and preferably larger (to hold
+       any characters that need encoding).  If more than maxlength chars are 
+       required for outpath, including the terminating NULL, outpath will
+       be set to size 0 and an error status will be returned.
+       
        This function was adopted from code in the libwww.a library available
        via the W3 consortium <URL: http://www.w3.org>
      */
@@ -6303,6 +6307,7 @@ int fits_encode_url(char *inpath,  /* I URL  to be encoded                  */
   char *p;
   char *q;
   char *hex = "0123456789ABCDEF";
+  int iout=0;
   
 unsigned const char isAcceptable[96] =
 {/* 0x0 0x1 0x2 0x3 0x4 0x5 0x6 0x7 0x8 0x9 0xA 0xB 0xC 0xD 0xE 0xF */
@@ -6325,7 +6330,7 @@ unsigned const char isAcceptable[96] =
   
   /* loop over all characters in inpath until '\0' is encountered */
 
-  for(q = outpath, p = inpath; *p; p++)
+  for(q = outpath, p = inpath; *p && (iout < maxlength-1) ; p++)
     {
       a = (unsigned char)*p;
 
@@ -6333,19 +6338,41 @@ unsigned const char isAcceptable[96] =
 
       if(!( a>=32 && a<128 && (isAcceptable[a-32])))
 	{
-	  /* add a '%' character to the outpath */
-	  *q++ = HEX_ESCAPE;
-	  /* add the most significant ASCII code hex value */
-	  *q++ = hex[a >> 4];
-	  /* add the least significant ASCII code hex value */
-	  *q++ = hex[a & 15];
+           if (iout+2 < maxlength-1)
+           {
+	     /* add a '%' character to the outpath */
+	     *q++ = HEX_ESCAPE;
+	     /* add the most significant ASCII code hex value */
+	     *q++ = hex[a >> 4];
+	     /* add the least significant ASCII code hex value */
+	     *q++ = hex[a & 15];
+             iout += 3;
+           }
+           else
+           {
+              ffpmsg("URL input is too long to encode (fits_encode_url)");
+              *status = URL_PARSE_ERROR;
+              outpath[0] = 0;
+              return (*status);
+           }
 	}
       /* else just copy the character as is */
-      else *q++ = *p;
+      else 
+      {
+         *q++ = *p;
+         iout++;
+      }
     }
 
   /* null terminate the outpath string */
 
+  if (*p && (iout == maxlength-1))
+  {
+     ffpmsg("URL input is too long to encode (fits_encode_url)");
+     *status = URL_PARSE_ERROR;
+     outpath[0] = 0;
+     return (*status);
+  }
   *q++ = 0; 
   
   return(*status);
