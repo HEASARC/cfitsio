@@ -1927,6 +1927,7 @@ int ffccls(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     }
 
     /* Retrieve the number of columns in output file */
+    tstatus=0;
     if (ffgkyj(outfptr, "TFIELDS", &tfields, 0, &tstatus))
     {
       ffpmsg
