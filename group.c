@@ -6175,6 +6175,13 @@ int fits_relurl2url(char     *refURL, /* I reference URL string             */
 	make a copy of the reference URL string refURL for parsing purposes
       */
 
+      if (strlen(refURL) > FLEN_FILENAME-1)
+      {
+         absURL[0]=0;
+         ffpmsg("ref URL is too long (fits_relurl2url)");
+         *status = URL_PARSE_ERROR;
+         continue;
+      }
       strcpy(tmpStr,refURL);
 
       /*
@@ -6206,6 +6213,13 @@ int fits_relurl2url(char     *refURL, /* I reference URL string             */
 	  if(tmpStr1 != NULL) tmpStr1[1] = 0;
 	  else                tmpStr[0]  = 0;
 	  
+          if (strlen(tmpStr)+strlen(relURL) > FLEN_FILENAME-1)
+          {
+              absURL[0]=0;
+              ffpmsg("rel + ref URL is too long (fits_relurl2url)");
+              *status = URL_PARSE_ERROR;
+              continue;
+          }
 	  strcat(tmpStr,relURL);
 	}
       else
@@ -6272,6 +6286,13 @@ int fits_relurl2url(char     *refURL, /* I reference URL string             */
 	    the absURL
 	   */
 
+          if (strlen(tmpStr)+strlen(relURL) > FLEN_FILENAME-1)
+          {
+              absURL[0]=0;
+              ffpmsg("rel + ref URL is too long (fits_relurl2url)");
+              *status = URL_PARSE_ERROR;
+              continue;
+          }
 	  strcat(tmpStr,relURL);
 	}
 
