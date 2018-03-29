@@ -2990,7 +2990,12 @@ int ffbnfmll(char *tform,     /* I - format code from the TFORMn keyword */
         ffpmsg("Error: binary table TFORM code is blank (ffbnfmll).");
         return(*status = BAD_TFORM);
     }
-
+    
+    if (strlen(&tform[ii]) > FLEN_VALUE-1)
+    {
+       ffpmsg("Error: binary table TFORM code is too long (ffbnfmll).");
+       return(*status = BAD_TFORM);
+    }
     strcpy(temp, &tform[ii]); /* copy format string */
     ffupch(temp);     /* make sure it is in upper case */
     form = temp;      /* point to start of format string */
