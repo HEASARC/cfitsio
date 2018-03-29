@@ -2174,7 +2174,14 @@ int ffgmop(fitsfile *gfptr,  /* FITS file pointer to grouping table          */
 		       &locationCol,&uriCol,&grptype,status);
 
       if(*status != 0) continue;
+      
+      /* verify the column formats */
+      
+      *status = ffvcfm(gfptr,xtensionCol,extnameCol,extverCol,positionCol,
+		       locationCol,uriCol,status);
 
+      if(*status != 0) continue;
+      
       /*
 	 extract the member information from grouping table
       */
@@ -3528,6 +3535,87 @@ int ffgtgc(fitsfile *gfptr,  /* pointer to the grouping table                */
 
   return(*status);
 }
+
+/*****************************************************************************/
+int ffvcfm(fitsfile *gfptr, int xtensionCol, int extnameCol, int extverCol,
+	   int positionCol, int locationCol, int uriCol, int *status)
+{
+/*
+   Perform validation on column formats to ensure this matches the grouping
+   format the get functions expect.  Particularly want to check widths of
+   string columns.
+*/
+
+   int typecode=0;
+   long repeat=0, width=0;
+   
+   if (*status != 0) return (*status);
+   
+   do {
+       if (xtensionCol)
+       {
+          fits_get_coltype(gfptr, xtensionCol, &typecode, &repeat, &width, status);
+          if (*status || typecode != TSTRING || repeat != width || repeat > 8)
+          {
+             if (*status==0) *status=NOT_GROUP_TABLE;
+             ffpmsg("Wrong format for Grouping xtension col. (ffvcfm)");
+             continue;
+          }          
+       }
+       if (extnameCol)
+       {
+          fits_get_coltype(gfptr, extnameCol, &typecode, &repeat, &width, status);
+          if (*status || typecode != TSTRING || repeat != width || repeat > 32)
+          {
+             if (*status==0) *status=NOT_GROUP_TABLE;
+             ffpmsg("Wrong format for Grouping name col. (ffvcfm)");
+             continue;
+          }          
+       }
+       if (extverCol)
+       {
+          fits_get_coltype(gfptr, extverCol, &typecode, &repeat, &width, status);
+          if (*status || typecode != TINT32BIT ||  repeat > 1)
+          {
+             if (*status==0) *status=NOT_GROUP_TABLE;
+             ffpmsg("Wrong format for Grouping version col. (ffvcfm)");
+             continue;
+          }          
+       }
+       if (positionCol)
+       {
+          fits_get_coltype(gfptr, positionCol, &typecode, &repeat, &width, status);
+          if (*status || typecode != TINT32BIT ||  repeat > 1)
+          {
+             if (*status==0) *status=NOT_GROUP_TABLE;
+             ffpmsg("Wrong format for Grouping position col. (ffvcfm)");
+             continue;
+          }          
+       }
+       if (locationCol)
+       {
+          fits_get_coltype(gfptr, locationCol, &typecode, &repeat, &width, status);
+          if (*status || typecode != TSTRING || repeat != width || repeat > 256)
+          {
+             if (*status==0) *status=NOT_GROUP_TABLE;
+             ffpmsg("Wrong format for Grouping location col. (ffvcfm)");
+             continue;
+          }          
+       }
+       if (uriCol)
+       {
+          fits_get_coltype(gfptr, uriCol, &typecode, &repeat, &width, status);
+          if (*status || typecode != TSTRING || repeat != width || repeat > 3)
+          {
+             if (*status==0) *status=NOT_GROUP_TABLE;
+             ffpmsg("Wrong format for Grouping URI col. (ffvcfm)");
+             continue;
+          }          
+       }
+   } while (0);
+   return (*status);
+}
+
 
 /*****************************************************************************/
 int ffgtdc(int   grouptype,     /* code specifying the type of

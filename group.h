@@ -23,6 +23,9 @@ int ffgtgc(fitsfile *gfptr, int *xtensionCol, int *extnameCol, int *extverCol,
 	   int *positionCol, int *locationCol, int *uriCol, int *grptype,
 	   int *status);
 
+int ffvcfm(fitsfile *gfptr, int xtensionCol, int extnameCol, int extverCol,
+	   int positionCol, int locationCol, int uriCol, int *status);
+
 int ffgmul(fitsfile *mfptr, int rmopt, int *status);
 
 int ffgmf(fitsfile *gfptr, char *xtension, char *extname, int extver,	   
