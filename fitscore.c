@@ -2633,6 +2633,11 @@ int ffasfm(char *tform,    /* I - format code from the TFORMn keyword */
     while (tform[ii] != 0 && tform[ii] == ' ') /* find first non-blank char */
          ii++;
 
+    if (strlen(&tform[ii]) > FLEN_VALUE-1)
+    {
+       ffpmsg("Error: ASCII table TFORM code is too long (ffasfm)");
+       return(*status = BAD_TFORM);
+    }
     strcpy(temp, &tform[ii]); /* copy format string */
     ffupch(temp);     /* make sure it is in upper case */
     form = temp;      /* point to start of format string */
