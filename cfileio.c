@@ -1858,7 +1858,7 @@ int ffedit_columns(
     fitsfile *newptr;
     int ii, hdunum, slen, colnum = -1, testnum, deletecol = 0, savecol = 0;
     int numcols = 0, *colindex = 0, tstatus = 0;
-    char *cptr, *cptr2, *cptr3, *clause = NULL, keyname[FLEN_KEYWORD];
+    char *tstbuff=0, *cptr, *cptr2, *cptr3, *clause = NULL, keyname[FLEN_KEYWORD];
     char colname[FLEN_VALUE], oldname[FLEN_VALUE], colformat[FLEN_VALUE];
     char *file_expr = NULL, testname[FLEN_VALUE], card[FLEN_CARD];
 
@@ -2013,17 +2013,30 @@ int ffedit_columns(
 	       calculation expression (case 2B) */
             /* ===================================================== */
             cptr2 = clause;
-            slen = fits_get_token(&cptr2, "( =", colname, NULL);
+            slen = fits_get_token2(&cptr2, "( =", &tstbuff, NULL, status);
 
-            if (slen == 0)
+            if (slen == 0 || *status)
             {
-                ffpmsg("error: column or keyword name is blank:");
+                ffpmsg("error: column or keyword name is blank (ffedit_columns):");
                 ffpmsg(clause);
                 if( colindex ) free( colindex );
                 if( file_expr ) free( file_expr );
 		if (clause) free(clause);
                 return(*status= URL_PARSE_ERROR);
             }
+            if (strlen(tstbuff) > FLEN_VALUE-1)
+            {
+                ffpmsg("error: column or keyword name is too long (ffedit_columns):");
+                ffpmsg(clause);
+                if( colindex ) free( colindex );
+                if( file_expr ) free( file_expr );
+		if (clause) free(clause);
+                free(tstbuff);
+                return(*status= URL_PARSE_ERROR);
+            }
+            strcpy(colname, tstbuff);
+            free(tstbuff);
+            tstbuff=0;
 
 	    /* If this is a keyword of the form 
 	         #KEYWORD# 
@@ -2093,9 +2106,20 @@ int ffedit_columns(
             */
             if (*cptr2  == '(')
             {
-                fits_get_token(&cptr2, ")", oldname, NULL);
-                strcat(colname, oldname);
+                fits_get_token2(&cptr2, ")", &tstbuff, NULL, status);
+                if (*status || (strlen(tstbuff) + strlen(colname) + 1) >
+                     FLEN_VALUE-1)
+                {
+                   ffpmsg("error: column name is too long (ffedit_columns):");
+                   if( file_expr ) free( file_expr );
+		   if (clause) free(clause);
+                   free(tstbuff);
+		   return (*status);
+                }
+                strcat(colname, tstbuff);
                 strcat(colname, ")");
+                free(tstbuff);
+                tstbuff=0;
                 cptr2++;
             }
 
@@ -2179,7 +2203,18 @@ int ffedit_columns(
                 while (*cptr2 == ' ')
                       cptr2++;       /* skip white space */
 
-                fits_get_token(&cptr2, " ", oldname, NULL);
+                fits_get_token2(&cptr2, " ", &tstbuff, NULL, status);
+                if (*status || strlen(tstbuff) > FLEN_VALUE-1)
+                {
+                   ffpmsg("error: column name syntax is too long (ffedit_columns):");
+                   if( file_expr ) free( file_expr );
+		   if (clause) free(clause);
+                   free(tstbuff);
+		   return (*status);
+                }
+                strcpy(oldname, tstbuff);
+                free(tstbuff);
+                tstbuff=0;
 
                 /* get column number of the existing column */
                 if (ffgcno(*fptr, CASEINSEN, oldname, &colnum, status) <= 0)
@@ -2234,12 +2269,36 @@ int ffedit_columns(
                 colformat[0] = '\0';
                 cptr3 = colname;
 
-                fits_get_token(&cptr3, "(", oldname, NULL);
+                fits_get_token2(&cptr3, "(", &tstbuff, NULL, status);
+                if (*status || strlen(tstbuff) > FLEN_VALUE-1)
+                {
+                      ffpmsg("column expression is too long (ffedit_columns)");
+                      if( colindex ) free( colindex );
+                      if( file_expr ) free( file_expr );
+		      if (clause) free(clause);
+                      free(tstbuff);
+                      return(*status);
+                }
+                strcpy(oldname, tstbuff);
+                free(tstbuff);
+                tstbuff=0;
 
                 if (cptr3[0] == '(' )
                 {
                    cptr3++;  /* skip the '(' */
-                   fits_get_token(&cptr3, ")", colformat, NULL);
+                   fits_get_token2(&cptr3, ")", &tstbuff, NULL, status);
+                   if (*status || strlen(tstbuff) > FLEN_VALUE-1)
+                   {
+                         ffpmsg("column expression is too long (ffedit_columns)");
+                         if( colindex ) free( colindex );
+                         if( file_expr ) free( file_expr );
+		         if (clause) free(clause);
+                         free(tstbuff);
+                         return(*status);
+                   }
+                   strcpy(colformat, tstbuff);
+                   free(tstbuff);
+                   tstbuff=0;
                 }
 
                 /* calculate values for the column or keyword */
