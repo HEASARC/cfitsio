@@ -58,7 +58,7 @@ int ffbins(char *binspec,   /* I - binning specification */
    most other reasonable combinations are supported.        
 */
     int ii, slen, defaulttype;
-    char *ptr, tmpname[30], *file_expr = NULL;
+    char *ptr, tmpname[FLEN_VALUE], *file_expr = NULL;
     double  dummy;
 
     if (*status > 0)
@@ -369,52 +369,78 @@ int ffbinr(char **ptr,
    the column name, histogram min and max values, and bin size.
 */
 {
-    int slen, isanumber;
-    char token[FLEN_VALUE];
+    int slen, isanumber=0;
+    char *token=0;
 
     if (*status > 0)
         return(*status);
 
-    slen = fits_get_token(ptr, " ,=:;", token, &isanumber); /* get 1st token */
+    slen = fits_get_token2(ptr, " ,=:;", &token, &isanumber, status); /* get 1st token */
 
-    if (slen == 0 && (**ptr == '\0' || **ptr == ',' || **ptr == ';') )
+    if ((*status) || (slen == 0 && (**ptr == '\0' || **ptr == ',' || **ptr == ';')) )
         return(*status);   /* a null range string */
-
+        
     if (!isanumber && **ptr != ':')
     {
         /* this looks like the column name */
-
-        if (token[0] == '#' && isdigit((int) token[1]) )
+        
+        /* Check for case where col name string is empty but '='
+           is still there (indicating a following specification string).
+           Musn't enter this block as token would not have been allocated. */
+        if (slen != 0 || (**ptr != '='))
         {
-            /* omit the leading '#' in the column number */
-            strcpy(colname, token+1);
+           if (strlen(token) > FLEN_VALUE-1)
+           {
+              ffpmsg("column name too long (ffbinr)");
+              free(token);
+              return(*status=PARSE_SYNTAX_ERR);
+           }
+           if (token[0] == '#' && isdigit((int) token[1]) )
+           {
+               /* omit the leading '#' in the column number */
+               strcpy(colname, token+1);
+           }
+           else
+               strcpy(colname, token);
+           free(token);
+           token=0;
+           while (**ptr == ' ')  /* skip over blanks */
+                (*ptr)++;
+
+           if (**ptr != '=')
+               return(*status);  /* reached the end */
+
         }
-        else
-            strcpy(colname, token);
-
-        while (**ptr == ' ')  /* skip over blanks */
-             (*ptr)++;
-
-        if (**ptr != '=')
-            return(*status);  /* reached the end */
-
         (*ptr)++;   /* skip over the = sign */
 
         while (**ptr == ' ')  /* skip over blanks */
              (*ptr)++;
 
-        slen = fits_get_token(ptr, " ,:;", token, &isanumber); /* get token */
+        /* get specification info */
+        slen = fits_get_token2(ptr, " ,:;", &token, &isanumber, status);
+        if (*status)
+           return(*status);
     }
 
     if (**ptr != ':')
     {
-        /* this is the first token, and since it is not followed by */
-        /* a ':' this must be the binsize token */
+        /* This is the first token, and since it is not followed by 
+         a ':' this must be the binsize token. Or it could be empty
+         in which case none of the following operations will do anything */
         if (!isanumber)
+        {
+            if (strlen(token) > FLEN_VALUE-1)
+            {
+               ffpmsg("binname too long (ffbinr)");
+               free(token);
+               return(*status=PARSE_SYNTAX_ERR);
+            }
             strcpy(binname, token);
+        }
         else
             *binsizein =  strtod(token, NULL);
-
+        
+        free(token);
         return(*status);  /* reached the end */
     }
     else
@@ -423,37 +449,73 @@ int ffbinr(char **ptr,
         if (slen)
         {
             if (!isanumber)
+            {
+                if (strlen(token) > FLEN_VALUE-1)
+                {
+                   ffpmsg("minname too long (ffbinr)");
+                   free(token);
+                   return(*status=PARSE_SYNTAX_ERR);
+                }
                 strcpy(minname, token);
+            }
             else
                 *minin = strtod(token, NULL);
+            free(token);
+            token=0;
         }
     }
 
     (*ptr)++;  /* skip the colon between the min and max values */
-    slen = fits_get_token(ptr, " ,:;", token, &isanumber); /* get token */
+    slen = fits_get_token2(ptr, " ,:;", token, &isanumber, status); /* get token */
+    if (*status)
+       return(*status);
 
     /* the token contains the max value */
     if (slen)
     {
         if (!isanumber)
+        {
+            if (strlen(token) > FLEN_VALUE-1)
+            {
+               ffpmsg("maxname too long (ffbinr)");
+               free(token);
+               return(*status=PARSE_SYNTAX_ERR);
+            }
             strcpy(maxname, token);
+        }
         else
             *maxin = strtod(token, NULL);
+        free(token);
+        token=0;
     }
 
     if (**ptr != ':')
+    {
+        free(token);
         return(*status);  /* reached the end; no binsize token */
+    }
 
     (*ptr)++;  /* skip the colon between the max and binsize values */
-    slen = fits_get_token(ptr, " ,:;", token, &isanumber); /* get token */
+    slen = fits_get_token2(ptr, " ,:;", token, &isanumber, status); /* get token */
+    if (*status)
+       return(*status);
 
     /* the token contains the binsize value */
     if (slen)
     {
         if (!isanumber)
+        {
+            if (strlen(token) > FLEN_VALUE-1)
+            {
+               ffpmsg("binname too long (ffbinr)");
+               free(token);
+               return(*status=PARSE_SYNTAX_ERR);
+            }
             strcpy(binname, token);
+        }
         else
             *binsizein = strtod(token, NULL);
+        free(token);
     }
 
     return(*status);
