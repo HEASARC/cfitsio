@@ -466,7 +466,7 @@ int ffbinr(char **ptr,
     }
 
     (*ptr)++;  /* skip the colon between the min and max values */
-    slen = fits_get_token2(ptr, " ,:;", token, &isanumber, status); /* get token */
+    slen = fits_get_token2(ptr, " ,:;", &token, &isanumber, status); /* get token */
     if (*status)
        return(*status);
 
@@ -496,7 +496,7 @@ int ffbinr(char **ptr,
     }
 
     (*ptr)++;  /* skip the colon between the max and binsize values */
-    slen = fits_get_token2(ptr, " ,:;", token, &isanumber, status); /* get token */
+    slen = fits_get_token2(ptr, " ,:;", &token, &isanumber, status); /* get token */
     if (*status)
        return(*status);
 
