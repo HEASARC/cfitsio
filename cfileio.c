@@ -2022,7 +2022,9 @@ int ffedit_columns(
                 if( colindex ) free( colindex );
                 if( file_expr ) free( file_expr );
 		if (clause) free(clause);
-                return(*status= URL_PARSE_ERROR);
+                if (*status==0)
+                   *status=URL_PARSE_ERROR;
+                return(*status);
             }
             if (strlen(tstbuff) > FLEN_VALUE-1)
             {
@@ -2114,6 +2116,8 @@ int ffedit_columns(
                    if( file_expr ) free( file_expr );
 		   if (clause) free(clause);
                    free(tstbuff);
+                   if (*status==0)
+                      *status=URL_PARSE_ERROR;
 		   return (*status);
                 }
                 strcat(colname, tstbuff);
@@ -2210,6 +2214,8 @@ int ffedit_columns(
                    if( file_expr ) free( file_expr );
 		   if (clause) free(clause);
                    free(tstbuff);
+                   if (*status==0)
+                      *status=URL_PARSE_ERROR;
 		   return (*status);
                 }
                 strcpy(oldname, tstbuff);
@@ -2277,6 +2283,8 @@ int ffedit_columns(
                       if( file_expr ) free( file_expr );
 		      if (clause) free(clause);
                       free(tstbuff);
+                      if (*status==0)
+                         *status=URL_PARSE_ERROR;
                       return(*status);
                 }
                 strcpy(oldname, tstbuff);
@@ -2294,6 +2302,8 @@ int ffedit_columns(
                          if( file_expr ) free( file_expr );
 		         if (clause) free(clause);
                          free(tstbuff);
+                         if (*status==0)
+                            *status=URL_PARSE_ERROR;
                          return(*status);
                    }
                    strcpy(colformat, tstbuff);
@@ -3343,13 +3353,24 @@ int fits_get_section_range(char **ptr,
 */
 {
     int slen, isanumber;
-    char token[FLEN_VALUE];
+    char token[FLEN_VALUE], *tstbuff=0;
 
     if (*status > 0)
         return(*status);
 
-    slen = fits_get_token(ptr, " ,:", token, &isanumber); /* get 1st token */
-
+    slen = fits_get_token2(ptr, " ,:", &tstbuff, &isanumber, status); /* get 1st token */
+    if (*status || strlen(tstbuff) > FLEN_VALUE-1)
+    {
+       ffpmsg("Error: image section string too long (fits_get_section_range)");
+       free(tstbuff);
+       if (*status==0)
+          *status = URL_PARSE_ERROR;
+       return(*status);
+    }
+    strcpy(token, tstbuff);
+    free(tstbuff);
+    tstbuff=0;
+    
     /* support [:2,:2] type syntax, where the leading * is implied */
     if (slen==0) strcpy(token,"*");
 
@@ -3372,8 +3393,18 @@ int fits_get_section_range(char **ptr,
       *secmin = atol(token);
 
       (*ptr)++;  /* skip the colon between the min and max values */
-      slen = fits_get_token(ptr, " ,:", token, &isanumber); /* get token */
-
+      slen = fits_get_token2(ptr, " ,:", &tstbuff, &isanumber, status); /* get token */
+      if (*status || strlen(tstbuff) > FLEN_VALUE-1)
+      {
+         ffpmsg("Error: image section string too long (fits_get_section_range)");
+         free(tstbuff);
+         if (*status==0)
+            *status = URL_PARSE_ERROR;
+         return(*status);
+      }
+      strcpy(token, tstbuff);
+      free(tstbuff);
+      tstbuff=0;
       if (slen == 0 || !isanumber)
         return(*status = URL_PARSE_ERROR);   
 
@@ -3384,7 +3415,18 @@ int fits_get_section_range(char **ptr,
     if (**ptr == ':')
     {
         (*ptr)++;  /* skip the colon between the max and incre values */
-        slen = fits_get_token(ptr, " ,", token, &isanumber); /* get token */
+        slen = fits_get_token2(ptr, " ,", &tstbuff, &isanumber, status); /* get token */
+        if (*status || strlen(tstbuff) > FLEN_VALUE-1)
+        {
+           ffpmsg("Error: image section string too long (fits_get_section_range)");
+           free(tstbuff);
+           if (*status==0)
+              *status = URL_PARSE_ERROR;
+           return(*status);
+        }
+        strcpy(token, tstbuff);
+        free(tstbuff);
+        tstbuff=0;
 
         if (slen == 0 || !isanumber)
             return(*status = URL_PARSE_ERROR);   
