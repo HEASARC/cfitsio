@@ -1080,7 +1080,7 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     if ((fptr->Fptr)->hdutype == IMAGE_HDU)
     {
-       ffpmsg("Can only add columns to TABLE or BINTABLE extension (fficol)");
+       ffpmsg("Can only add columns to TABLE or BINTABLE extension (fficls)");
        return(*status = NOT_TABLE);
     }
 
@@ -1097,6 +1097,11 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
     delbyte = 0;
     for (ii = 0; ii < ncols; ii++)
     {
+        if (strlen(tform[ii]) > FLEN_VALUE-1)
+        {
+           ffpmsg("Column format string too long (fficls)");
+           return (*status=BAD_TFORM);
+        }
         strcpy(tfm, tform[ii]);
         ffupch(tfm);         /* make sure format is in upper case */
 
