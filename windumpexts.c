@@ -232,7 +232,8 @@ DumpExternals(PIMAGE_SYMBOL pSymbolTable, FILE *fout, unsigned cSymbols)
 		    symbol[8] = 0;
 		} else {
 		    s = stringTable + pSymbolTable->N.Name.Long;
-		    strcpy(symbol, s);
+		    strncpy(symbol, s, 1023);
+                    symbol[1023]=0;
 		}
 		s = symbol;
 		f = strchr(s, '@');
@@ -485,7 +486,8 @@ main(int argc, char **argv)
 	    }
 	    pos = 0;
 	    for (i = 0; i < arg; i++) {
-		strcpy(&cmdline[pos], argv[i]);
+		strncpy(&cmdline[pos], argv[i], 9999-pos);
+                cmdline[9999]=0;
 		pos += strlen(&cmdline[pos]) + 1;
 		fargv[i] = argv[i];
 	    }
