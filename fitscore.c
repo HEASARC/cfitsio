@@ -1628,7 +1628,7 @@ int ffgthd(char *tmplt, /* I - input header template string */
         len = strspn(tok, " ");  /* no. of spaces before keyword */
         tok += len;
         
-        len = strcspn(tok, " =");  /* length of name */
+        len = strcspn(tok, " =+");  /* length of name */
         if (len >= FLEN_KEYWORD)
           return(*status = BAD_KEYCHAR);
 
@@ -1656,6 +1656,11 @@ int ffgthd(char *tmplt, /* I - input header template string */
 
         tok += len;
 
+	/* Check optional "+" indicator to delete multiple keywords */
+	if (tok[0] == '+' && len < FLEN_KEYWORD) {
+	  strcat(card, "+");
+	  return (*status);
+	}
 
         /* second token, if present, is the new name for the keyword */
 

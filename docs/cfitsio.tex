@@ -8361,6 +8361,36 @@ that the resulting header keywords in these cases will look like this:
 These two special keywords are always appended to the end of the header
 and will not affect any previously existing COMMENT or HISTORY keywords.
 
+It is possible to delete an existing keyword using a preceding \verb+'-'+.
+Either of these examples will delete the keyword named \verb+VEL+.
+\begin{verbatim}
+  -VEL;
+  -#VEL;
+\end{verbatim}
+It is also possible to use wildcard expressions to remove any keyword
+that matches a pattern.  Wildcard patterns are: \verb+'*'+, which matches any
+string of characters; \verb+'?'+, which matches any single character; and \verb+'#'+
+which matches any numerical string.  For example these
+statements:
+\begin{verbatim}
+  -#DEC_*;     # remove single keyword beginning with DEC_
+  -#TUNIT#;    # remove single keyword TUNIT ending w. number
+\end{verbatim}
+will remove any keyword beginning with 'DEC_' and any
+keyword beginning with 'TUNIT' and ending with a number.
+
+However, the above expressions will only delete the {\it first}
+keyword which matches the pattern.  If multiple keywords later
+in the same CHDU match the pattern, they will not be deleted.
+To delete {\it zero or more} keywords that match the pattern, add a
+trailing \verb|'+'|.
+\begin{verbatim}
+  -#DEC_*+;     # remove all keywords beginning with DEC_
+  -#TUNIT#+;    # remove all keywords TUNIT ending w. number
+\end{verbatim}
+Note that this form will succeed if the requested keyword is not
+present.
+
 \item
 Recompute (overwrite) the values in an existing column or keyword by
 giving the name followed by an equals sign and an arithmetic
@@ -8783,6 +8813,23 @@ usage. Also, the integer to real casts values to double precision:
     vectors, will be expanded out with  each of its elements becoming an
     element in the constructed vector.
 
+\subsection{Row Access}
+
+    To access a table entry in a row other  than the current one, follow
+    the  column's name  with  a row  offset  within  curly  braces.  For
+    example, \verb+PHA{-3}+ will evaluate to the value  of column PHA, 3 rows
+    above  the  row currently  being processed.   One  cannot specify an
+    absolute row number, only a relative offset.  Rows that fall outside
+    the table will be treated as undefined, or NULLs.
+
+    Using the same column name on the left and right side of the equals
+    sign while using the \verb+COLUMN{-N}+ notation will not produce the desired
+    result.  For example,
+\begin{verbatim}
+              COUNT = COUNT{-1} + 1;   # BAD - do not use
+\end{verbatim}
+    will not produce an increasing counter.  Such recursive
+    calculations are often not possible with the calculator syntax.   
 
 \subsection{Good Time Interval Filtering}
 

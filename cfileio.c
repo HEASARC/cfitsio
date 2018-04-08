@@ -1964,11 +1964,15 @@ int ffedit_columns(
 
         if (clause[0] == '!' || clause[0] == '-')
         {
+	    char *clause1 = clause+1;
             /* ===================================== */
             /* Case I. delete this column or keyword */
             /* ===================================== */
 
-            if (ffgcno(*fptr, CASEINSEN, &clause[1], &colnum, status) <= 0)
+	    /* Check that clause does not have leading '#' and
+	       that column name exists */
+            if (clause1[0] && clause1[0] != '#' &&
+		ffgcno(*fptr, CASEINSEN, clause1, &colnum, status) <= 0)
             {
                 /* a column with this name exists, so try to delete it */
                 if (ffdcol(*fptr, colnum, status) > 0)
@@ -1986,18 +1990,41 @@ int ffedit_columns(
             }
             else
             {
+	      int delall = 0, clen = 0;
 	        ffcmsg();   /* clear previous error message from ffgcno */
                 /* try deleting a keyword with this name */
                 *status = 0;
-                if (ffdkey(*fptr, &clause[1], status) > 0)
-                {
-                    ffpmsg("column or keyword to be deleted does not exist:");
-                    ffpmsg(clause);
-                    if( colindex ) free( colindex );
-                    if( file_expr ) free( file_expr );
-		    if( clause ) free(clause);
-                    return(*status);
-                }
+		/* skip past leading '#' if any */
+		if (clause1[0] == '#') clause1++;
+		clen = strlen(clause1);
+
+		/* Repeat deletion of keyword if requested with trailing '+' */
+		if (clen > 1 && clause1[clen-1] == '+') {
+		  delall = 1;
+		  clause1[clen-1] = 0;
+		}
+		/* Single or repeated deletions until done */
+		do {
+		  if (ffdkey(*fptr, clause1, status) > 0)
+		    {
+		      if (delall && *status == KEY_NO_EXIST &&
+			  (strchr(clause1,'*') || strchr(clause1,'?')) ) {
+			/* Found last wildcard item. Stop deleting */
+			ffcmsg();
+			*status = 0;
+			delall = 0; /* Force end of this loop */
+		      } else {
+			/* This was not a wildcard deletion, or it resulted in
+			   another kind of error */
+			ffpmsg("column or keyword to be deleted does not exist:");
+			ffpmsg(clause1);
+			if( colindex ) free( colindex );
+			if( file_expr ) free( file_expr );
+			if( clause ) free(clause);
+			return(*status);
+		      }
+		    }
+		} while(delall); /* end do{} */
             }
         }
         else
