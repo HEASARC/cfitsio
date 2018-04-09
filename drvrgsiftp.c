@@ -2,7 +2,7 @@
 /*  This file, drvrgsiftp.c contains driver routines for gsiftp files. */
 /*  Andrea Barisani <lcars@si.inaf.it>                                 */
 /* Taffoni Giuliano <taffoni@oats.inaf.it>                             */
-#ifdef HAVE_NET_SERVICES
+#ifdef HAVE_NET_SERVICES 
 #ifdef HAVE_GSIFTP
 
 #include <sys/types.h>
@@ -21,6 +21,7 @@
 
 static int gsiftpopen = 0;
 static int global_offset = 0;
+static int free_gsiftp_tmp=0;
 static int gsiftp_get(char *filename, FILE **gsiftpfile, int num_streams);
 
 static globus_mutex_t lock;
@@ -45,7 +46,9 @@ int gsiftp_init(void)
         ffpmsg("Cannot create temporary directory!");
         return (FILE_NOT_OPENED);
     }
-    gsiftp_tmpfile = malloc(strlen(gsiftp_tmpdir) + strlen("/gsiftp_buffer.tmp"));
+    gsiftp_tmpfile = malloc(strlen(gsiftp_tmpdir) + strlen("/gsiftp_buffer.tmp")+1);
+    gsiftp_tmpfile[0]=0;
+    free_gsiftp_tmp=1;
     strcat(gsiftp_tmpfile, gsiftp_tmpdir);
     strcat(gsiftp_tmpfile, "/gsiftp_buffer.tmp");
   }
@@ -56,8 +59,8 @@ int gsiftp_init(void)
 int gsiftp_shutdown(void)
 {
   free(gsiftpurl);
-  free(gsiftp_tmpfile);
-  free(gsiftp_tmpdir);
+  if (free_gsiftp_tmp)
+     free(gsiftp_tmpfile);
 
   return file_shutdown();
 }
@@ -356,6 +359,11 @@ int gsiftp_get(char *filename, FILE **gsiftpfile, int num_streams)
     done = GLOBUS_FALSE;
 
     strcpy(gsiurl,"gsiftp://");
+    if (strlen(gsiurl)+strlen(filename) > MAXLEN-1)
+    {
+       ffpmsg("file name too long (gsiftp_get)");
+       return (FILE_NOT_OPENED);
+    }
     strcat(gsiurl,filename);
 
     *gsiftpfile = fopen(gsiftp_tmpfile,"w+");
@@ -448,6 +456,11 @@ int gsiftp_put(char *filename, FILE **gsiftpfile, int num_streams)
     done = GLOBUS_FALSE;
     
     strcpy(gsiurl,"gsiftp://");
+    if (strlen(gsiurl)+strlen(filename) > MAXLEN-1)
+    {
+       ffpmsg("file name too long (gsiftp_put)");
+       return (FILE_NOT_OPENED);
+    }
     strcat(gsiurl,filename);
 
     *gsiftpfile = fopen(gsiftp_tmpfile,"r");
