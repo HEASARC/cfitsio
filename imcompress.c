@@ -8403,7 +8403,7 @@ int fits_compress_table(fitsfile *infptr, fitsfile *outfptr, int *status)
 		    cratio[ii] = uncompressed_size / compressed_size;
 
 		snprintf(tempstring,FLEN_VALUE," r=%6.2f",cratio[ii]);
-		strcat(results[ii],tempstring);
+		strncat(results[ii],tempstring, 29-strlen(results[ii]));
 
 		/* now we just have to compress the array of descriptors (both input and output) */
 		/* and write them to the output table. */
@@ -8530,7 +8530,7 @@ int fits_compress_table(fitsfile *infptr, fitsfile *outfptr, int *status)
 	       cratio[ii] = (float) datasize / (float) dlen;  /* compression ratio of the column */
 
 	    snprintf(tempstring,FLEN_VALUE," r=%6.2f",cratio[ii]);
-	    strcat(results[ii],tempstring);
+	    strncat(results[ii],tempstring,29-strlen(results[ii]));
  
           }  /* end of not a virtual column */
         }  /* end of loop over columns */
