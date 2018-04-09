@@ -997,7 +997,7 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
               > 0)
       {
         strcpy(errmsg, "column for histogram axis doesn't exist: ");
-        strcat(errmsg, colname[ii]);
+        strncat(errmsg, colname[ii], FLEN_ERRMSG-strlen(errmsg)-1);
         ffpmsg(errmsg);
         return(*status);
       }
@@ -1009,7 +1009,7 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
       if (repeat > 1)
       {
         strcpy(errmsg, "Can't bin a vector column: ");
-        strcat(errmsg, colname[ii]);
+        strncat(errmsg, colname[ii],FLEN_ERRMSG-strlen(errmsg)-1);
         ffpmsg(errmsg);
         return(*status = BAD_DATATYPE);
       }
@@ -1021,7 +1021,7 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
       if (datatype < 0 || datatype == TSTRING)
       {
         strcpy(errmsg, "Inappropriate datatype; can't bin this column: ");
-        strcat(errmsg, colname[ii]);
+        strncat(errmsg, colname[ii],FLEN_ERRMSG-strlen(errmsg)-1);
         ffpmsg(errmsg);
         return(*status = BAD_DATATYPE);
       }
@@ -1039,7 +1039,7 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
             if (fits_get_col_minmax(*fptr, histData.hcolnum[ii], amin+ii, &datamax, status) > 0)
             {
                 strcpy(errmsg, "Error calculating datamin and datamax for column: ");
-                strcat(errmsg, colname[ii]);
+                strncat(errmsg, colname[ii],FLEN_ERRMSG-strlen(errmsg)-1);
                 ffpmsg(errmsg);
                 return(*status);
             }
@@ -1066,7 +1066,7 @@ int ffhist(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
              if (fits_get_col_minmax(*fptr, histData.hcolnum[ii], &datamin, &amax[ii], status) > 0)
              {
                  strcpy(errmsg, "Error calculating datamin and datamax for column: ");
-                 strcat(errmsg, colname[ii]);
+                 strncat(errmsg, colname[ii],FLEN_ERRMSG-strlen(errmsg)-1);
                  ffpmsg(errmsg);
                  return(*status);
              }
@@ -1646,7 +1646,7 @@ int fits_calc_binningd(
               > 0)
       {
           strcpy(errmsg, "column for histogram axis doesn't exist: ");
-          strcat(errmsg, colname[ii]);
+          strncat(errmsg, colname[ii],FLEN_ERRMSG-strlen(errmsg)-1);
           ffpmsg(errmsg);
           return(*status);
       }
@@ -1661,7 +1661,7 @@ int fits_calc_binningd(
       if (repeat > 1)
       {
         strcpy(errmsg, "Can't bin a vector column: ");
-        strcat(errmsg, colname[ii]);
+        strncat(errmsg, colname[ii],FLEN_ERRMSG-strlen(errmsg)-1);
         ffpmsg(errmsg);
         return(*status = BAD_DATATYPE);
       }
@@ -1673,7 +1673,7 @@ int fits_calc_binningd(
       if (datatype < 0 || datatype == TSTRING)
       {
         strcpy(errmsg, "Inappropriate datatype; can't bin this column: ");
-        strcat(errmsg, colname[ii]);
+        strncat(errmsg, colname[ii],FLEN_ERRMSG-strlen(errmsg)-1);
         ffpmsg(errmsg);
         return(*status = BAD_DATATYPE);
       }
@@ -1708,7 +1708,7 @@ int fits_calc_binningd(
             if (fits_get_col_minmax(fptr, colnum[ii], amin+ii, &datamax, status) > 0)
             {
                 strcpy(errmsg, "Error calculating datamin and datamax for column: ");
-                strcat(errmsg, colname[ii]);
+                strncat(errmsg, colname[ii],FLEN_ERRMSG-strlen(errmsg)-1);
                 ffpmsg(errmsg);
                 return(*status);
             }
@@ -1748,7 +1748,7 @@ int fits_calc_binningd(
              if (fits_get_col_minmax(fptr, colnum[ii], &datamin, &amax[ii], status) > 0)
              {
                  strcpy(errmsg, "Error calculating datamin and datamax for column: ");
-                 strcat(errmsg, colname[ii]);
+                 strncat(errmsg, colname[ii],FLEN_ERRMSG-strlen(errmsg)-1);
                  ffpmsg(errmsg);
                  return(*status);
              }
