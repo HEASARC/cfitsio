@@ -976,21 +976,21 @@ int fftrec(char *card,       /* I -  keyword card to test */
               (int) (ii+1), (int) card[ii] );
 
             if (card[ii] == 0)
-	        strcat(msg, " (NULL char.)");
+	        strncat(msg, " (NULL char.)",FLEN_ERRMSG-strlen(msg)-1);
             else if (card[ii] == 9)
-	        strcat(msg, " (TAB char.)");
+	        strncat(msg, " (TAB char.)",FLEN_ERRMSG-strlen(msg)-1);
             else if (card[ii] == 10)
-	        strcat(msg, " (Line Feed char.)");
+	        strncat(msg, " (Line Feed char.)",FLEN_ERRMSG-strlen(msg)-1);
             else if (card[ii] == 11)
-	        strcat(msg, " (Vertical Tab)");
+	        strncat(msg, " (Vertical Tab)",FLEN_ERRMSG-strlen(msg)-1);
             else if (card[ii] == 12)
-	        strcat(msg, " (Form Feed char.)");
+	        strncat(msg, " (Form Feed char.)",FLEN_ERRMSG-strlen(msg)-1);
             else if (card[ii] == 13)
-	        strcat(msg, " (Carriage Return)");
+	        strncat(msg, " (Carriage Return)",FLEN_ERRMSG-strlen(msg)-1);
             else if (card[ii] == 27)
-	        strcat(msg, " (Escape char.)");
+	        strncat(msg, " (Escape char.)",FLEN_ERRMSG-strlen(msg)-1);
             else if (card[ii] == 127)
-	        strcat(msg, " (Delete char.)");
+	        strncat(msg, " (Delete char.)",FLEN_ERRMSG-strlen(msg)-1);
 
             ffpmsg(msg);
 
