@@ -136,6 +136,13 @@ int fp_tmpnam(char *suffix, char *rootname, char *tmpnam)
 
         for (ii = 0; ii < maxtry; ii++) {
 		if (fp_access(tmpnam)) break;  /* good, the file does not exist */
+                if (strlen(tmpnam) > SZ_STR-2)
+                {
+		   fp_msg ("\nCould not create temporary file name:\n");
+		   fp_msg (tmpnam);
+		   fp_msg ("\n");
+		   exit (-1);
+                }
 		strcat(tmpnam, "x");  /* append an x to the name, and try again */
 	}
 
@@ -210,7 +217,8 @@ int fp_list (int argc, char *argv[], fpstate fpvar)
 	}
 
 	for (iarg=fpvar.firstfile; iarg < argc; iarg++) {
-	    strncpy (infits, argv[iarg], SZ_STR);
+	    strncpy (infits, argv[iarg], SZ_STR-1);
+            infits[SZ_STR-1]=0;
 
 	    if (strchr (infits, '[') || strchr (infits, ']')) {
 		fp_msg ("Error: section/extension notation not supported: ");
@@ -479,6 +487,11 @@ int fp_preflight (int argc, char *argv[], int unpack, fpstate *fpptr)
 
 	      /* if gzipping the output, make sure .gz file doesn't exist */
 	      if (fpptr->do_gzip_file) {
+                        if (strlen(outfits)+3 > SZ_STR-1)
+                        {
+		            fp_msg ("Error: output file name too long:\n "); fp_msg (outfits);
+		            fp_msg ("\n "); fp_noop (); exit (-1);
+                        }
 	                strcat(outfits, ".gz");
 	                if (fp_access (outfits) == 0) {
 		            fp_msg ("Error: output file already exists:\n "); fp_msg (outfits);
@@ -493,6 +506,11 @@ int fp_preflight (int argc, char *argv[], int unpack, fpstate *fpptr)
 	      /* check that input file  exists */
 	      if (infits[0] != '-') {  /* if not reading from stdin stream */
 	        if (fp_access (infits) != 0) {  /* if not, then check if */
+                    if (strlen(infits)+3 > SZ_STR-1)
+                    {
+		        fp_msg ("Error: input file name too long:\n "); fp_msg (infits);
+		        fp_msg ("\n "); fp_noop (); exit (-1);
+                    }
 		    strcat(infits, ".gz");     /* a gzipped version exsits */
 	            if (fp_access (infits) != 0) {
                         namelen = strlen(infits);
@@ -606,6 +624,7 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
           islossless = 1;
 
 	  strncpy (infits, argv[iarg], SZ_STR - 1);
+          infits[SZ_STR-1]=0;
 
           if (unpack) {
 	  	/* ********** This section applies to funpack ************ */
@@ -686,6 +705,7 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 	  }
 
           strncpy(temp, outfits, SZ_STR-1);
+          temp[SZ_STR-1]=0;
 
 	  if (infits[0] != '-') {  /* if not reading from stdin stream */
              if (!strcmp(infits, outfits) ) {  /* are input and output names the same? */
@@ -1219,11 +1239,12 @@ int fp_test (char *infits, char *outfits, char *outfits2, fpstate fpvar)
 		snprintf(dimen,100," (%ld", naxes[0]);
 		len =strlen(dimen);
 		for (ii = 1; ii < naxis; ii++) {
-                    if (len < 100)
+                    if (len < 99)
 		       snprintf(dimen+len,100-len,",%ld", naxes[ii]);
 		    len =strlen(dimen);
 		}
-		strcat(dimen, ")");
+                if (strlen(dimen)<99)
+		   strcat(dimen, ")");
 		printf("%-12s",dimen);
 
 		fits_get_hduaddr(inputfptr, &headstart, &datastart, &dataend, &stat);
