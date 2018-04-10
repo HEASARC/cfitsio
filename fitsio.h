@@ -34,10 +34,10 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 3.43
-#define CFITSIO_MINOR 43
+#define CFITSIO_VERSION 3.44
+#define CFITSIO_MINOR 44
 #define CFITSIO_MAJOR 3
-#define CFITSIO_SONAME 5
+#define CFITSIO_SONAME 6
 
 /* the SONAME is incremented in a new release if the binary shared */
 /* library (on linux and Mac systems) is not backward compatible */
