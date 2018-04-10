@@ -8,11 +8,11 @@ Version 3.44 - April 2018
     
     In addition, the following enhancements and fixes were made: 
 
-  - New feature to 'template' and 'colfilter' function for wildcard
-    deletion.  template -PAT*+ will delete zero or more keywords 
-    matching PAT*. colfilter -#PAT is now fixed. colfilter 
-    -#PAT*+ will delete zero or more keywords matching PAT*
-
+  - Enhancement to 'template' and 'colfilter' functionality.  It is now
+    possible to delete multiple keywords using wildcard syntax. See
+    "Column and Keyword Filtering Specification" section of manual for
+    details.
+  
   - histo.c uses double precision internally for all floating point
     binning; new double-precision subroutines fits_calc_binningd(),
     fits_rebin_wcsd(), and fits_make_histd(); existing
