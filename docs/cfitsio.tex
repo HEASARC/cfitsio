@@ -3259,9 +3259,9 @@ spaces).  Trailing blank characters are not significant.
       (fitsfile *infptr, fitsfile *outfptr, int incolnum, int outcolnum,
        int create_col, > int *status);
 
-  int fits_copy_cols / ffccls(fitsfile *infptr, fitsfile *outfptr, 
-           int incolnum, int outcolnum, 
-	   int ncols, int create_col, > int *status);
+  int fits_copy_cols / ffccls
+      (fitsfile *infptr, fitsfile *outfptr, int incolnum, int outcolnum, 
+       int ncols, int create_col, > int *status);
 \end{verbatim}
 
 \begin{description}
@@ -8376,7 +8376,7 @@ statements:
   -#DEC_*;     # remove single keyword beginning with DEC_
   -#TUNIT#;    # remove single keyword TUNIT ending w. number
 \end{verbatim}
-will remove any keyword beginning with 'DEC_' and any
+will remove any keyword beginning with 'DEC\_' and any
 keyword beginning with 'TUNIT' and ending with a number.
 
 However, the above expressions will only delete the {\it first}
@@ -9632,7 +9632,7 @@ existing keyword.
 CFITSIO supports the HIERARCH keyword convention which allows keyword
 names that are longer than 8 characters.  This convention
 was developed at the European Southern Observatory (ESO) and allows characters
-consisting of digits 0-9, upper case letters A-Z, the dash '-' and the underscore '_'.
+consisting of digits 0-9, upper case letters A-Z, the dash '-' and the underscore '\_'.
 The components of hierarchical keywords are separated by a single ASCII space charater.
 For instance:
 
@@ -9976,7 +9976,7 @@ fits\_ascii\_tform    & \pageref{ffasfm} \\
 fits\_binary\_tform   & \pageref{ffbnfm} \\
 fits\_calculator     & \pageref{ffcalc} \\
 fits\_calculator\_rng     & \pageref{ffcalcrng} \\
-fits\_calc\_binning & \pageref{calcbinning} \\
+fits\_calc\_binning[d] & \pageref{calcbinning} \\
 fits\_calc\_rows    & \pageref{ffcrow} \\
 fits\_change\_group  & \pageref{ffgtch} \\
 fits\_cleanup\_https & \pageref{ffchtps} \\
@@ -9989,6 +9989,7 @@ fits\_compress\_heap & \pageref{ffcmph} \\
 fits\_convert\_hdr2str  & \pageref{ffhdr2str}, \pageref{hdr2str} \\
 fits\_copy\_cell2image & \pageref{copycell} \\
 fits\_copy\_col     & \pageref{ffcpcl} \\
+fits\_copy\_cols    & \pageref{ffccls} \\
 fits\_copy\_data      & \pageref{ffcpdt} \\
 fits\_copy\_file      & \pageref{ffcpfl} \\
 fits\_copy\_group    & \pageref{ffgtcp} \\
@@ -10002,10 +10003,10 @@ fits\_copy\_pixlist2image & \pageref{copypixlist2image} \\
 fits\_copy\_rows &   \pageref{ffcprw} \\
 fits\_create\_diskfile    & \pageref{ffinit} \\
 fits\_create\_file    & \pageref{ffinit} \\
-fits\_create\_group  & \pageref{ffgtcr} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+fits\_create\_group  & \pageref{ffgtcr} \\
 fits\_create\_hdu     & \pageref{ffcrhd} \\
 fits\_create\_img     & \pageref{ffcrim} \\
 fits\_create\_memfile    & \pageref{ffimem} \\
@@ -10037,9 +10038,9 @@ fits\_get\_acolparms  & \pageref{ffgacl} \\
 fits\_get\_bcolparms  & \pageref{ffgbcl} \\
 fits\_get\_chksum     & \pageref{ffgcks} \\
 fits\_get\_col\_display\_width    & \pageref{ffgcdw} \\
-fits\_get\_colname    & \pageref{ffgcnn} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_get\_colname    & \pageref{ffgcnn} \\
 fits\_get\_colnum     & \pageref{ffgcno} \\
 fits\_get\_coltype    & \pageref{ffgtcl} \\
 fits\_get\_compression\_type & \pageref{ffgetcomp} \\
@@ -10071,10 +10072,10 @@ fits\_get\_rowsize    & \pageref{ffgrsz} \\
 fits\_get\_system\_time  & \pageref{ffdt2s} \\
 fits\_get\_tile\_dim     & \pageref{ffgetcomp} \\
 fits\_get\_tbcol      & \pageref{ffgabc} \\
-fits\_get\_version    & \pageref{ffvers} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_get\_version    & \pageref{ffvers} \\
 fits\_hdr2str         & \pageref{ffhdr2str}, \pageref{hdr2str} \\
 fits\_init\_https  & \pageref{ffihtps} \\
 fits\_insert\_atbl    & \pageref{ffitab} \\
@@ -10089,7 +10090,7 @@ fits\_insert\_record     & \pageref{ffirec} \\
 fits\_insert\_rows  & \pageref{ffirow} \\
 fits\_is\_reentrant  & \pageref{reentrant} \\
 fits\_iterate\_data   & \pageref{ffiter} \\
-fits\_make\_hist      & \pageref{makehist} \\
+fits\_make\_hist[d]      & \pageref{makehist} \\
 fits\_make\_key       & \pageref{ffmkky} \\
 fits\_make\_keyn      & \pageref{ffkeyn} \\
 fits\_make\_nkey      & \pageref{ffnkey} \\
@@ -10122,9 +10123,9 @@ fits\_parse\_rootname & \pageref{ffrtnm} \\
 fits\_parse\_template & \pageref{ffgthd} \\
 fits\_parse\_value    & \pageref{ffpsvc} \\
 fits\_pix\_to\_world & \pageref{ffwldp} \\
-fits\_read\_2d\_TYP      & \pageref{ffg2dx} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_read\_2d\_TYP      & \pageref{ffg2dx} \\
 fits\_read\_3d\_TYP      & \pageref{ffg3dx} \\
 fits\_read\_atblhdr      & \pageref{ffghtb} \\
 fits\_read\_btblhdr      & \pageref{ffghbn} \\
@@ -10165,16 +10166,16 @@ fits\_read\_tbl\_coord & \pageref{ffgtcs} \\
 fits\_read\_tblbytes    & \pageref{ffgtbb} \\
 fits\_read\_tdim         & \pageref{ffgtdm} \\
 fits\_read\_wcstab       & \pageref{wcstab} \\
-fits\_rebin\_wcs  &  \pageref{rebinwcs} \\
+fits\_rebin\_wcs[d]  &  \pageref{rebinwcs} \\
 fits\_remove\_group  & \pageref{ffgtrm} \\
 fits\_remove\_member   & \pageref{ffgmrm} \\
 fits\_reopen\_file      & \pageref{ffreopen} \\
 fits\_report\_error   & \pageref{ffrprt} \\
 fits\_resize\_img     & \pageref{ffrsim} \\
 fits\_rms\_float      & \pageref{imageRMS} \\
-fits\_rms\_short      & \pageref{imageRMS} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_rms\_short      & \pageref{imageRMS} \\
 fits\_select\_rows  & \pageref{ffsrow} \\
 fits\_set\_atblnull   & \pageref{ffsnul} \\
 fits\_set\_bscale     & \pageref{ffpscl} \\
@@ -10222,10 +10223,10 @@ fits\_write\_colnull\_TYP & \pageref{ffpcnx} \\
 fits\_write\_comment      & \pageref{ffpcom} \\
 fits\_write\_date         & \pageref{ffpdat} \\
 fits\_write\_descript  & \pageref{ffpdes} \\
-fits\_write\_errmark   & \pageref{ffpmrk} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_write\_errmark   & \pageref{ffpmrk} \\
 fits\_write\_errmsg   & \pageref{ffpmsg} \\
 fits\_write\_ext        & \pageref{ffgextn} \\
 fits\_write\_exthdr        & \pageref{ffphps} \\
@@ -10266,6 +10267,7 @@ ffasfm    & \pageref{ffasfm} \\
 ffbnfm   & \pageref{ffbnfm} \\
 ffcalc     & \pageref{ffcalc} \\
 ffcalc\_rng     & \pageref{ffcalcrng} \\
+ffccls     & \pageref{ffccls} \\
 ffchtps    & \pageref{ffchtps} \\
 ffclos     & \pageref{ffclos} \\
 ffcmph & \pageref{ffcmph} \\
@@ -10309,9 +10311,9 @@ ffffrw    & \pageref{ffffrw} \\
 ffflmd      & \pageref{ffflmd} \\
 ffflnm      & \pageref{ffflnm} \\
 ffflsh     & \pageref{ffflus} \\
-ffflus     & \pageref{ffflus} \\
 \end{tabular}
 \begin{tabular}{lr}
+ffflus     & \pageref{ffflus} \\
 fffree     & \pageref{ffgkls},  \pageref{ffhdr2str} \\
 fffrow    & \pageref{fffrow} \\
 ffg2d\_      & \pageref{ffg2dx} \\
@@ -10359,10 +10361,10 @@ ffgkyn         & \pageref{ffgkyn} \\
 ffgkyt   & \pageref{ffgkyt} \\
 ffgky\_      & \pageref{ffgkyx} \\
 ffgmcp   & \pageref{ffgmcp} \\
-ffgmng  & \pageref{ffgmng} \\
 
 \end{tabular}
 \begin{tabular}{lr}
+ffgmng  & \pageref{ffgmng} \\
 ffgmop    & \pageref{ffgmop} \\
 ffgmrm   & \pageref{ffgmrm} \\
 ffgmsg    & \pageref{ffgmsg} \\
@@ -10410,11 +10412,11 @@ ffifile  & \pageref{ffiurl} \\
 ffihtps  & \pageref{ffihtps} \\
 ffiimg     & \pageref{ffiimg} \\
 ffikls    & \pageref{ffikyx} \\
-ffikyu   & \pageref{ffikyu} \\
 
 \end{tabular}
 \begin{tabular}{lr}
 
+ffikyu   & \pageref{ffikyu} \\
 ffiky\_    & \pageref{ffikyx} \\
 ffimem  & \pageref{ffimem} \\
 ffinit  & \pageref{ffinit} \\
@@ -10462,11 +10464,11 @@ ffphis      & \pageref{ffphis} \\
 ffphpr       & \pageref{ffphpr} \\
 ffphps       & \pageref{ffphps} \\
 ffphtb      & \pageref{ffphtb} \\
-ffpkls  & \pageref{ffpkls} \\
 
 \end{tabular}
 \begin{tabular}{lr}
 
+ffpkls  & \pageref{ffpkls} \\
 ffpkn\_     & \pageref{ffpknx} \\
 ffpktp & \pageref{ffpktp} \\
 ffpky          & \pageref{ffpky} \\
@@ -10514,13 +10516,13 @@ fftnul   & \pageref{fftnul} \\
 fftopn & \pageref{ffopen} \\
 fftplt & \pageref{fftplt} \\
 fftrec    & \pageref{fftrec} \\
-fftscl     & \pageref{fftscl} \\
 
 
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
 
+fftscl     & \pageref{fftscl} \\
 ffucrd       & \pageref{ffucrd} \\
 ffukls    & \pageref{ffukyx} \\
 ffuky        & \pageref{ffuky} \\
