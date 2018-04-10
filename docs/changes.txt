@@ -1,6 +1,17 @@
                    Log of Changes Made to CFITSIO
 
-Version NEWNEWNEW - SOMETIME_IN_THE_FUTURE
+Version 3.44 - April 2018
+
+  - This release primarily patches security vulnerabilities.  We
+    particularly encourage this upgrade for those running CFITSIO in
+    web accessible applications.
+    
+    In addition, the following enhancements and fixes were made: 
+
+  - New feature to 'template' and 'colfilter' function for wildcard
+    deletion.  template -PAT*+ will delete zero or more keywords 
+    matching PAT*. colfilter -#PAT is now fixed. colfilter 
+    -#PAT*+ will delete zero or more keywords matching PAT*
 
   - histo.c uses double precision internally for all floating point
     binning; new double-precision subroutines fits_calc_binningd(),
