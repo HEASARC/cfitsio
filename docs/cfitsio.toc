@@ -45,8 +45,8 @@
 \contentsline {subsection}{\numberline {5.7.4}Read and Write Column Data Routines}{57}{subsection.5.7.4}
 \contentsline {subsection}{\numberline {5.7.5}Row Selection and Calculator Routines}{59}{subsection.5.7.5}
 \contentsline {subsection}{\numberline {5.7.6}Column Binning or Histogramming Routines}{61}{subsection.5.7.6}
-\contentsline {section}{\numberline {5.8}Utility Routines}{63}{section.5.8}
-\contentsline {subsection}{\numberline {5.8.1}File Checksum Routines}{63}{subsection.5.8.1}
+\contentsline {section}{\numberline {5.8}Utility Routines}{64}{section.5.8}
+\contentsline {subsection}{\numberline {5.8.1}File Checksum Routines}{64}{subsection.5.8.1}
 \contentsline {subsection}{\numberline {5.8.2}Date and Time Utility Routines}{65}{subsection.5.8.2}
 \contentsline {subsection}{\numberline {5.8.3}General Utility Routines}{66}{subsection.5.8.3}
 \contentsline {chapter}{\numberline {6} The CFITSIO Iterator Function }{77}{chapter.6}
@@ -98,10 +98,11 @@
 \contentsline {subsection}{\numberline {10.11.1}General Syntax}{142}{subsection.10.11.1}
 \contentsline {subsection}{\numberline {10.11.2}Bit Masks}{145}{subsection.10.11.2}
 \contentsline {subsection}{\numberline {10.11.3}Vector Columns}{146}{subsection.10.11.3}
-\contentsline {subsection}{\numberline {10.11.4}Good Time Interval Filtering}{147}{subsection.10.11.4}
-\contentsline {subsection}{\numberline {10.11.5}Spatial Region Filtering}{148}{subsection.10.11.5}
-\contentsline {subsection}{\numberline {10.11.6}Example Row Filters}{150}{subsection.10.11.6}
-\contentsline {section}{\numberline {10.12} Binning or Histogramming Specification}{151}{section.10.12}
+\contentsline {subsection}{\numberline {10.11.4}Row Access}{148}{subsection.10.11.4}
+\contentsline {subsection}{\numberline {10.11.5}Good Time Interval Filtering}{148}{subsection.10.11.5}
+\contentsline {subsection}{\numberline {10.11.6}Spatial Region Filtering}{149}{subsection.10.11.6}
+\contentsline {subsection}{\numberline {10.11.7}Example Row Filters}{151}{subsection.10.11.7}
+\contentsline {section}{\numberline {10.12} Binning or Histogramming Specification}{152}{section.10.12}
 \contentsline {chapter}{\numberline {11}Template Files }{155}{chapter.11}
 \contentsline {section}{\numberline {11.1}Detailed Template Line Format}{155}{section.11.1}
 \contentsline {section}{\numberline {11.2}Auto-indexing of Keywords}{156}{section.11.2}
