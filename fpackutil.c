@@ -578,7 +578,7 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 {
 	char	infits[SZ_STR], outfits[SZ_STR];
 	char	temp[SZ_STR], answer[30];
-        char    valchar[]="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .!#'()+,-_@[]/^~{}";
+        char    valchar[]="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.#()+,-_@[]/^{}";
 	int	ichar=0, outlen=0, iarg, islossless, namelen, iraf_infile = 0, status = 0, ifail;
         
 	if (fpvar.initialized != FP_INIT_MAGIC) {
