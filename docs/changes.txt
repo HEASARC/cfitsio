@@ -3,8 +3,8 @@
 Version 3.44 - April 2018
 
   - This release primarily patches security vulnerabilities.  We
-    particularly encourage this upgrade for those running CFITSIO in
-    web accessible applications.
+    strongly encourage this upgrade, particularly for those running 
+    CFITSIO in web accessible applications.
     
     In addition, the following enhancements and fixes were made: 
 
