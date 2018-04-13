@@ -1,4 +1,7 @@
                    Log of Changes Made to CFITSIO
+                   
+  - Bug fix to fits_calc_binning wrapper function, which wasn't filling
+    in the returned float variables.
 
 Version 3.44 - April 2018
 
