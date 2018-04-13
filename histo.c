@@ -1493,9 +1493,9 @@ int fits_calc_binning(
     int i, naxis1 = 4;
     if (naxis < naxis1) naxis1 = naxis;
     for (i=0; i<naxis1; i++) {
-      amind[i] = (float) amin[i];
-      amaxd[i] = (float) amax[i];
-      binsized[i] = (float) binsize[i];
+      amin[i] = (float) amind[i];
+      amax[i] = (float) amaxd[i];
+      binsize[i] = (float) binsized[i];
     }
   }
 
@@ -1946,13 +1946,13 @@ int fits_rebin_wcs(
 {
   double amind[4], binsized[4];
 
-  /* Copy double precision values into single precision */
+  /* Copy single precision values into double precision */
   if (*status == 0) {
     int i, naxis1 = 4;
     if (naxis < naxis1) naxis1 = naxis;
     for (i=0; i<naxis1; i++) {
-      amind[i] = (float) amin[i];
-      binsized[i] = (float) binsize[i];
+      amind[i] = (double) amin[i];
+      binsized[i] = (double) binsize[i];
     }
 
     fits_rebin_wcsd(fptr, naxis, amind, binsized, status);
@@ -2092,17 +2092,17 @@ int fits_make_hist(fitsfile *fptr, /* IO - pointer to table with X and Y cols; *
 {		  
   double amind[4], amaxd[4], binsized[4], weightd;
 
-  /* Copy double precision values into single precision */
+  /* Copy single precision values into double precision */
   if (*status == 0) {
     int i, naxis1 = 4;
     if (naxis < naxis1) naxis1 = naxis;
     for (i=0; i<naxis1; i++) {
-      amind[i] = (float) amin[i];
-      amaxd[i] = (float) amax[i];
-      binsized[i] = (float) binsize[i];
+      amind[i] = (double) amin[i];
+      amaxd[i] = (double) amax[i];
+      binsized[i] = (double) binsize[i];
     }
 
-    weightd = (float) weight;
+    weightd = (double) weight;
 
     fits_make_histd(fptr, histptr, bitpix, naxis, naxes, colnum,
 		    amind, amaxd, binsized, weight, wtcolnum, recip,
