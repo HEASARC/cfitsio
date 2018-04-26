@@ -7553,7 +7553,7 @@ int pixel_filter_helper(
 }
 
 /*-------------------------------------------------------------------*/
-int ffihtps()
+int ffihtps(void)
 {
    /* Wrapper function for global initialization of curl library.
       This is NOT THREAD-SAFE */
@@ -7567,7 +7567,7 @@ int ffihtps()
 }
 
 /*-------------------------------------------------------------------*/
-int ffchtps()
+int ffchtps(void)
 {
    /* Wrapper function for global cleanup of curl library.
       This is NOT THREAD-SAFE */

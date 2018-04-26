@@ -2052,8 +2052,8 @@ int CFITS_API fits_compress_table  (fitsfile *infptr, fitsfile *outfptr, int *st
 int CFITS_API fits_uncompress_table(fitsfile *infptr, fitsfile *outfptr, int *status);
 
 /* curl library wrapper routines (for https access) */
-int CFITS_API fits_init_https();
-int CFITS_API fits_cleanup_https();
+int CFITS_API fits_init_https(void);
+int CFITS_API fits_cleanup_https(void);
 void CFITS_API fits_verbose_https(int flag);
 
 /*  The following exclusion if __CINT__ is defined is needed for ROOT */
