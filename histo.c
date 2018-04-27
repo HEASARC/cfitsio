@@ -387,7 +387,7 @@ int ffbinr(char **ptr,
         /* Check for case where col name string is empty but '='
            is still there (indicating a following specification string).
            Musn't enter this block as token would not have been allocated. */
-        if (slen != 0 || (**ptr != '='))
+        if (token)
         {
            if (strlen(token) > FLEN_VALUE-1)
            {
@@ -404,13 +404,13 @@ int ffbinr(char **ptr,
                strcpy(colname, token);
            free(token);
            token=0;
-           while (**ptr == ' ')  /* skip over blanks */
-                (*ptr)++;
-
-           if (**ptr != '=')
-               return(*status);  /* reached the end */
-
         }
+        while (**ptr == ' ')  /* skip over blanks */
+             (*ptr)++;
+
+        if (**ptr != '=')
+            return(*status);  /* reached the end */
+            
         (*ptr)++;   /* skip over the = sign */
 
         while (**ptr == ' ')  /* skip over blanks */
@@ -425,22 +425,25 @@ int ffbinr(char **ptr,
     if (**ptr != ':')
     {
         /* This is the first token, and since it is not followed by 
-         a ':' this must be the binsize token. Or it could be empty
-         in which case none of the following operations will do anything */
-        if (!isanumber)
+         a ':' this must be the binsize token. Or it could be empty. */
+        if (token)
         {
-            if (strlen(token) > FLEN_VALUE-1)
-            {
-               ffpmsg("binname too long (ffbinr)");
-               free(token);
-               return(*status=PARSE_SYNTAX_ERR);
-            }
-            strcpy(binname, token);
+           if (!isanumber)
+           {
+               if (strlen(token) > FLEN_VALUE-1)
+               {
+                  ffpmsg("binname too long (ffbinr)");
+                  free(token);
+                  return(*status=PARSE_SYNTAX_ERR);
+               }
+               strcpy(binname, token);
+           }
+           else
+               *binsizein =  strtod(token, NULL);
+
+           free(token);
         }
-        else
-            *binsizein =  strtod(token, NULL);
-        
-        free(token);
+           
         return(*status);  /* reached the end */
     }
     else
