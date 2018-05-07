@@ -3061,6 +3061,11 @@ int ffbnfmll(char *tform,     /* I - format code from the TFORMn keyword */
         datacode = TULONG;
         width = 4;
     }
+    else if (form[0] == 'W') /* internal code to signify unsigned long long integer */
+    {
+        datacode = TULONGLONG;
+        width = 8;
+    }
     else if (form[0] == 'J')
     {
         datacode = TLONG;
