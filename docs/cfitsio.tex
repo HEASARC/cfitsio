@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large April 2018\\}
+{\Large May 2018\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -618,7 +618,7 @@ primary array contains an N-dimensional array of pixels, such as a 1-D
 spectrum, a 2-D image, or a 3-D data cube.  Six different primary
 data types are supported: Unsigned 8-bit bytes, 16-bit, 32-bit, and 64-bit signed
 integers, and 32 and 64-bit floating point reals.  FITS also has a
-convention for storing 16 and 32-bit unsigned integers (see the later
+convention for storing 16, 32-bit, and 64-bit unsigned integers (see the later
 section entitled `Unsigned Integers' for more details). The primary HDU
 may also consist of only a header with a null array containing no
 data pixels.
@@ -774,12 +774,14 @@ BITPIX data type code values for FITS images:
   #define DOUBLE_IMG  -64  /* 64-bit double precision floating point */
 
   The following 4 data type codes are also supported by CFITSIO:
-  #define SBYTE_IMG  10   /*  8-bit signed integers, equivalent to */
-                          /*  BITPIX = 8, BSCALE = 1, BZERO = -128 */
-  #define USHORT_IMG  20  /* 16-bit unsigned integers, equivalent to */
-                          /*  BITPIX = 16, BSCALE = 1, BZERO = 32768 */
-  #define ULONG_IMG   40  /* 32-bit unsigned integers, equivalent to */
-                          /*  BITPIX = 32, BSCALE = 1, BZERO = 2147483648 */
+  #define SBYTE_IMG  10      /*  8-bit signed integers, equivalent to */
+                             /*  BITPIX = 8, BSCALE = 1, BZERO = -128 */
+  #define USHORT_IMG  20     /* 16-bit unsigned integers, equivalent to */
+                             /*  BITPIX = 16, BSCALE = 1, BZERO = 32768 */
+  #define ULONG_IMG   40     /* 32-bit unsigned integers, equivalent to */
+                             /*  BITPIX = 32, BSCALE = 1, BZERO = 2147483648 */
+  #define ULONGLONG_IMG  80  /* 64-bit unsigned integers, equivalent to */
+                             /*  BITPIX = 64, BSCALE = 1, BZERO = 9223372036854775808*/
 
 Codes for the data type of binary table columns and/or for the
 data type of variables when reading or writing keywords or data:
@@ -802,8 +804,9 @@ data type of variables when reading or writing keywords or data:
   #define TINT         31  /* int                            */
   #define TSBYTE       12  /* 8-bit signed byte,         'S' */
   #define TUINT        30  /* unsigned int               'V' */
-  #define TUSHORT      20  /* unsigned short             'U'  */
+  #define TUSHORT      20  /* unsigned short             'U' */
   #define TULONG       40  /* unsigned long                  */
+  #define TULONGLONG   80  /* unsigned long long         'W' */
 
   The following data type code is only for use with fits\_get\_coltype
   #define TINT32BIT    41  /* signed 32-bit int,         'J' */
@@ -893,6 +896,7 @@ as shown in the following table:
     _lnglng     jj   8-byte LONGLONG integer (see note below)
     _usht       ui   unsigned short integer
     _ulng       uj   unsigned long integer
+    _ulnglng    ujj  unsigned long long integer
     _uint       uk   unsigned int integer
     _int        k    int integer
     _flt        e    real exponential floating point (float)
@@ -1015,8 +1019,8 @@ the appropriate offset in these cases so in general application
 programs do not need to be concerned with how the unsigned values are
 actually stored in the FITS file.  As a convenience for users, CFITSIO
 has several predefined constants for the value of BITPIX  (USHORT\_IMG,
-ULONG\_IMG) and for the TFORMn value in the case of binary tables (`U'
-and `V') which programmers can use when creating FITS files containing
+ULONG\_IMG, ULONGLONG\_IMG) and for the TFORMn value in the case of binary tables (`U',
+`V', and `W') which programmers can use when creating FITS files containing
 unsigned integer values.  The following code fragment illustrates how
 to write a FITS 1-D primary array of unsigned 16-bit integers:
 
@@ -1049,9 +1053,10 @@ the array of unsigned long image pixel values.
 An analogous set of routines are available for reading or writing unsigned
 integer values and signed byte values in a FITS binary table extension.
 When specifying the TFORMn keyword value which defines the format of a
-column, CFITSIO recognized 3 additional data type codes besides those
+column, CFITSIO recognizes 4 additional data type codes besides those
 already defined in the FITS standard: `U' meaning a 16-bit unsigned
-integer column, `V' for a 32-bit unsigned integer column, and 'S'
+integer column, `V' for a 32-bit unsigned integer column, `W' for a 64-bit
+unsigned integer column, and 'S'
 for a signed byte column.  These non-standard data type codes are not
 actually written into the FITS file but instead are just used internally
 within CFITSIO.  The following code fragment illustrates how to use
@@ -1066,10 +1071,10 @@ these features:
 
       char extname[] = "Test_table";           /* extension name */
 
-      /* define the name, data type, and physical units for the 2 columns */
-      char *ttype[] = { "Col_1", "Col_2", "Col_3" };
-      char *tform[] = { "1U",      "1V",    "1S"};  /* special CFITSIO codes */
-      char *tunit[] = { " ",        " ",    " " };
+      /* define the name, data type, and physical units for 4 columns */
+      char *ttype[] = { "Col_1", "Col_2", "Col_3", "Col_4" };
+      char *tform[] = { "1U",      "1V",    "1W",    "1S"};  /* special CFITSIO codes */
+      char *tunit[] = { " ",        " ",    " ",    " " };
        ...
 
            /* write the header keywords */
@@ -1094,11 +1099,12 @@ these features:
               nelements, varray, &status);
        ...
 \end{verbatim}
-Note that the non-standard TFORM values for the 3 columns, `U' and `V',
-tell CFITSIO to write the keywords appropriate for unsigned 16-bit and
-unsigned 32-bit integers, respectively (i.e., TFORMn = '1I' and TZEROn
-= 32768 for unsigned 16-bit integers, and TFORMn = '1J' and TZEROn =
-2147483648 for unsigned 32-bit integers).  The 'S' TFORMn value tells
+Note that the non-standard TFORM values for the 3 columns, `U', `V', and `W'
+tell CFITSIO to write the keywords appropriate for unsigned 16-bit, unsigned 32-bit and
+unsigned 64-bit integers, respectively (i.e., TFORMn = '1I' and TZEROn
+= 32768 for unsigned 16-bit integers, TFORMn = '1J' and TZEROn =
+2147483648 for unsigned 32-bit integers, and TFORMn = '1K' and TZEROn =
+9223372036854775808 for unsigned 64-bit integers).  The 'S' TFORMn value tells
 CFITSIO to write the keywords appropriate for a signed 8-bit byte column
 with TFORMn = '1B' and TZEROn = -128.  The calls to fits\_write\_col
 then write the arrays of unsigned integer values to the columns.
@@ -2384,7 +2390,7 @@ the image should be declared as array[50][100] and not as array[100][50].
 
 The `datatype'  parameter specifies the data type of the `nulval'  and
 `array' pointers and can have one of the following  values:  TBYTE,
-TSBYTE, TSHORT, TUSHORT, TINT, TUINT, TLONG, TLONGLONG, TULONG, TFLOAT,
+TSBYTE, TSHORT, TUSHORT, TINT, TUINT, TLONG, TLONGLONG, TULONG, TULONGLONG, TFLOAT,
 TDOUBLE.  Automatic data type conversion is performed if the data type
 of the FITS array (as defined by the BITPIX keyword) differs from that
 specified by 'datatype'.  The data values are also automatically scaled
@@ -3044,7 +3050,7 @@ spaces).  Trailing blank characters are not significant.
     of a column in an ASCII or binary table.  Allowed values for the
     data type in ASCII tables are:  TSTRING, TSHORT, TLONG, TFLOAT, and
     TDOUBLE.  Binary tables also support these types: TLOGICAL, TBIT,
-    TBYTE, TCOMPLEX and TDBLCOMPLEX.  The negative of the data type code
+    TBYTE, TLONGLONG, TCOMPLEX and TDBLCOMPLEX.  The negative of the data type code
     value is returned if it is a variable length array column.  Note
     that in the case of a 'J' 32-bit integer binary table column, this
     routine will return data type = TINT32BIT (which in fact is
@@ -3301,7 +3307,7 @@ Automatic data type conversion is performed for numerical data types
 (only) if the data type of the column (defined by the TFORMn keyword)
 differs from the data type of the array in the calling routine.  ASCII and binary
 tables support the following data type values:  TSTRING, TBYTE, TSBYTE, TSHORT,
-TUSHORT, TINT, TUINT, TLONG, TLONGLONG, TULONG, TFLOAT, or TDOUBLE.
+TUSHORT, TINT, TUINT, TLONG, TLONGLONG, TULONG, TULONGLONG, TFLOAT, or TDOUBLE.
 Binary tables also support TLOGICAL (internally mapped to the `char'
 data type), TCOMPLEX, and TDBLCOMPLEX.
 
@@ -6706,8 +6712,8 @@ with large data arrays.
       (fitsfile *fptr, int datatype, LONGLONG firstelem, LONGLONG nelements,
        DTYPE *array, int *status);
 
-  int fits_write_img_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
-      ffppr[b,i,ui,k,uk,j,uj,jj,e,d]
+  int fits_write_img_[byt, sht, usht, int, uint, lng, ulng, lnglng, ulnglng, flt, dbl] /
+      ffppr[b,i,ui,k,uk,j,uj,jj,ujj,e,d]
       (fitsfile *fptr, long group, LONGLONG firstelem, LONGLONG nelements,
        DTYPE *array, > int *status);
 
@@ -6715,8 +6721,8 @@ with large data arrays.
       (fitsfile *fptr, int datatype, LONGLONG firstelem, LONGLONG nelements,
        DTYPE *array, DTYPE *nulval, > int *status);
 
-  int fits_write_imgnull_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
-      ffppn[b,i,ui,k,uk,j,uj,jj,e,d]
+  int fits_write_imgnull_[byt, sht, usht, int, uint, lng, ulng, lnglng, ulnglng, flt, dbl] /
+      ffppn[b,i,ui,k,uk,j,uj,jj,ujj,e,d]
       (fitsfile *fptr, long group, LONGLONG firstelem,
            LONGLONG nelements, DTYPE *array, DTYPE nulval, > int *status);
 \end{verbatim}
@@ -6739,8 +6745,8 @@ with large data arrays.
 \end{description}
 
 \begin{verbatim}
-  int fits_write_grppar_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
-      ffpgp[b,i,ui,k,uk,j,uj,jj,e,d]
+  int fits_write_grppar_[byt, sht, usht, int, uint, lng, ulng, lnglng, ulnglng, flt, dbl] /
+      ffpgp[b,i,ui,k,uk,j,uj,jj,ujj,e,d]
       (fitsfile *fptr, long group, long firstelem, long nelements,
        > DTYPE *array, int *status)
 \end{verbatim}
@@ -6750,13 +6756,13 @@ with large data arrays.
 \end{description}
 
 \begin{verbatim}
-  int fits_write_2d_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
-      ffp2d[b,i,ui,k,uk,j,uj,jj,e,d]
+  int fits_write_2d_[byt, sht, usht, int, uint, lng, ulng, lnglng, ulnglng, flt, dbl] /
+      ffp2d[b,i,ui,k,uk,j,uj,jj,ujj,e,d]
       (fitsfile *fptr, long group, LONGLONG dim1, LONGLONG naxis1,
        LONGLONG naxis2, DTYPE *array, > int *status)
 
-  int fits_write_3d_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
-      ffp3d[b,i,ui,k,uk,j,uj,jj,e,d]
+  int fits_write_3d_[byt, sht, usht, int, uint, lng, ulng, lnglng, ulnglng, flt, dbl] /
+      ffp3d[b,i,ui,k,uk,j,uj,jj,ujj,e,d]
       (fitsfile *fptr, long group, LONGLONG dim1, LONGLONG dim2, LONGLONG naxis1,
        LONGLONG naxis2, LONGLONG naxis3, DTYPE *array, > int *status)
 \end{verbatim}
@@ -6766,8 +6772,8 @@ with large data arrays.
 \end{description}
 
 \begin{verbatim}
-  int fits_write_subset_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
-      ffpss[b,i,ui,k,uk,j,uj,jj,e,d]
+  int fits_write_subset_[byt, sht, usht, int, uint, lng, ulng, lnglng, ulnglng, flt, dbl] /
+      ffpss[b,i,ui,k,uk,j,uj,jj,ujj,e,d]
       (fitsfile *fptr, long group, long naxis, long *naxes,
        long *fpixel, long *lpixel, DTYPE *array, > int *status)
 \end{verbatim}
@@ -6782,8 +6788,8 @@ with large data arrays.
       (fitsfile *fptr, int  datatype, long firstelem, long nelements,
        DTYPE *nulval, > DTYPE *array, int *anynul, int *status)
 
-  int fits_read_img_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
-      ffgpv[b,i,ui,k,uk,j,uj,jj,e,d]
+  int fits_read_img_[byt, sht, usht, int, uint, lng, ulng, lnglng, ulnglng, flt, dbl] /
+      ffgpv[b,i,ui,k,uk,j,uj,jj,ujj,e,d]
       (fitsfile *fptr, long group, long firstelem, long nelements,
        DTYPE nulval, > DTYPE *array, int *anynul, int *status)
 
@@ -6791,8 +6797,8 @@ with large data arrays.
       (fitsfile *fptr, int  datatype, long firstelem, long nelements,
        > DTYPE *array, char *nullarray, int *anynul, int *status)
 
-  int  fits_read_imgnull_[byt, sht, usht, int, uint, lng, ulng, flt, dbl] /
-       ffgpf[b,i,ui,k,uk,j,uj,jj,e,d]
+  int  fits_read_imgnull_[byt, sht, usht, int, uint, lng, ulng, lnglng, ulnglng, flt, dbl] /
+       ffgpf[b,i,ui,k,uk,j,uj,jj,ujj,e,d]
        (fitsfile *fptr, long group, long firstelem, long nelements,
        > DTYPE *array, char *nullarray, int *anynul, int *status)
 \end{verbatim}
@@ -6805,8 +6811,8 @@ with large data arrays.
 \end{description}
 
 \begin{verbatim}
-  int  fits_read_grppar_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
-       ffggp[b,i,ui,k,uk,j,uj,jj,e,d]
+  int  fits_read_grppar_[byt, sht, usht, int, uint, lng, ulng, lnglng, ulnglng, flt, dbl] /
+       ffggp[b,i,ui,k,uk,j,uj,jj,ujj,e,d]
        (fitsfile *fptr, long group, long firstelem, long nelements,
        > DTYPE *array, int *status)
 \end{verbatim}
@@ -6819,13 +6825,13 @@ with large data arrays.
 \end{description}
 
 \begin{verbatim}
-  int  fits_read_2d_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
-       ffg2d[b,i,ui,k,uk,j,uj,jj,e,d]
+  int  fits_read_2d_[byt, sht, usht, int, uint, lng, ulng, lnglng, ulnglng, flt, dbl] /
+       ffg2d[b,i,ui,k,uk,j,uj,jj,ujj,e,d]
        (fitsfile *fptr, long group, DTYPE nulval, LONGLONG dim1, LONGLONG naxis1,
        LONGLONG naxis2, > DTYPE *array, int *anynul, int *status)
 
-  int  fits_read_3d_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
-       ffg3d[b,i,ui,k,uk,j,uj,jj,e,d]
+  int  fits_read_3d_[byt, sht, usht, int, uint, lng, ulng, lnglng, ulnglng, flt, dbl] /
+       ffg3d[b,i,ui,k,uk,j,uj,jj,ujj,e,d]
        (fitsfile *fptr, long group, DTYPE nulval, LONGLONG dim1,
        LONGLONG dim2, LONGLONG naxis1, LONGLONG naxis2, LONGLONG naxis3,
        > DTYPE *array, int *anynul, int *status)
@@ -6837,14 +6843,14 @@ with large data arrays.
 \end{description}
 
 \begin{verbatim}
-  int  fits_read_subset_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
-       ffgsv[b,i,ui,k,uk,j,uj,jj,e,d]
+  int  fits_read_subset_[byt, sht, usht, int, uint, lng, ulng, lnglng, ulnglng, flt, dbl] /
+       ffgsv[b,i,ui,k,uk,j,uj,jj,ujj,e,d]
        (fitsfile *fptr, int group, int naxis, long *naxes,
        long *fpixel, long *lpixel, long *inc, DTYPE nulval,
        > DTYPE *array, int *anynul, int *status)
 
-  int  fits_read_subsetnull_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
-       ffgsf[b,i,ui,k,uk,j,uj,jj,e,d]
+  int  fits_read_subsetnull_[byt, sht, usht, int, uint, lng, ulng, lnglng, ulnglng, flt, dbl] /
+       ffgsf[b,i,ui,k,uk,j,uj,jj,ujj,e,d]
        (fitsfile *fptr, int group, int naxis, long *naxes,
        long *fpixel, long *lpixel, long *inc, > DTYPE *array,
        char *nullarray, int *anynul, int *status)
@@ -6992,8 +6998,8 @@ parameters used in these routines.
       (fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
        LONGLONG nelements, char **array, > int *status)
 
-  int fits_write_col_[log,byt,sht,usht,int,uint,lng,ulng,lnglng,flt,dbl,cmp,dblcmp] /
-      ffpcl[l,b,i,ui,k,uk,j,uj,jj,e,d,c,m]
+  int fits_write_col_[log,byt,sht,usht,int,uint,lng,ulng,lnglng,ulnglng,flt,dbl,cmp,dblcmp] /
+      ffpcl[l,b,i,ui,k,uk,j,uj,jj,ujj,e,d,c,m]
       (fitsfile *fptr, int colnum, LONGLONG firstrow,
            LONGLONG firstelem, LONGLONG nelements, DTYPE *array, > int *status)
 \end{verbatim}
@@ -7005,8 +7011,8 @@ parameters used in these routines.
 \end{description}
 
 \begin{verbatim}
-  int fits_write_colnull_[log, byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
-      ffpcn[l,b,i,ui,k,uk,j,uj,jj,e,d]
+  int fits_write_colnull_[log, byt, sht, usht, int, uint, lng, ulng, lnglng, ulnglng, flt, dbl] /
+      ffpcn[l,b,i,ui,k,uk,j,uj,jj,ujj,e,d]
       (fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
        LONGLONG nelements, DTYPE *array, DTYPE nulval, > int *status)
 \end{verbatim}
@@ -7121,8 +7127,8 @@ parameters used in these routines.
        LONGLONG nelements, char *nulstr, > char **array, int *anynul,
        int *status)
 
-  int fits_read_col_[log,byt,sht,usht,int,uint,lng,ulng, lnglng, flt, dbl, cmp, dblcmp] /
-      ffgcv[l,b,i,ui,k,uk,j,uj,jj,e,d,c,m]
+  int fits_read_col_[log,byt,sht,usht,int,uint,lng,ulng, lnglng, ulnglng, flt, dbl, cmp, dblcmp] /
+      ffgcv[l,b,i,ui,k,uk,j,uj,jj,ujj,e,d,c,m]
       (fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
        LONGLONG nelements, DTYPE nulval, > DTYPE *array, int *anynul,
        int *status)
@@ -7142,8 +7148,8 @@ parameters used in these routines.
        LONGLONG nelements, > char **array, char *nullarray, int *anynul,
        int *status)
 
-  int fits_read_colnull_[log,byt,sht,usht,int,uint,lng,ulng,lnglng,flt,dbl,cmp,dblcmp] /
-      ffgcf[l,b,i,ui,k,uk,j,uj,jj,e,d,c,m]
+  int fits_read_colnull_[log,byt,sht,usht,int,uint,lng,ulng,lnglng,ulnglng,flt,dbl,cmp,dblcmp] /
+      ffgcf[l,b,i,ui,k,uk,j,uj,jj,ujj,e,d,c,m]
       (fitsfile *fptr, int colnum, LONGLONG firstrow,
        LONGLONG firstelem, LONGLONG nelements, > DTYPE *array,
        char *nullarray, int *anynul, int *status)
@@ -7162,8 +7168,8 @@ parameters used in these routines.
 \end{description}
 
 \begin{verbatim}
-  int fits_read_subset_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
-      ffgsv[b,i,ui,k,uk,j,uj,jj,e,d]
+  int fits_read_subset_[byt, sht, usht, int, uint, lng, ulng, lnglng, ulnglng, flt, dbl] /
+      ffgsv[b,i,ui,k,uk,j,uj,jj,ull,e,d]
       (fitsfile *fptr, int colnum, int naxis, long *naxes, long *fpixel,
        long *lpixel, long *inc, DTYPE nulval, > DTYPE *array, int *anynul,
        int *status)
@@ -7182,8 +7188,8 @@ parameters used in these routines.
 \end{description}
 
 \begin{verbatim}
-  int fits_read_subsetnull_[byt, sht, usht, int, uint, lng, ulng, lnglng, flt, dbl] /
-      ffgsf[b,i,ui,k,uk,j,uj,jj,e,d]
+  int fits_read_subsetnull_[byt, sht, usht, int, uint, lng, ulng, lnglng, ulnglng, flt, dbl] /
+      ffgsf[b,i,ui,k,uk,j,uj,jj,ujj,e,d]
       (fitsfile *fptr, int colnum, int naxis, long *naxes,
        long *fpixel, long *lpixel, long *inc, > DTYPE *array,
        char *nullarray, int *anynul, int *status)
