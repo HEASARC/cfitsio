@@ -75,7 +75,7 @@ float ffvers(float *version)  /* IO - version number */
 {
       *version = (float) 3.45;
 
-/*       Apr 2018
+/*       May 2018
 
    Previous releases:
       *version = 3.44       Apr 2018
