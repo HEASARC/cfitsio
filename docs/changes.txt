@@ -1,5 +1,10 @@
                    Log of Changes Made to CFITSIO
 
+  - For the fpack '-table' cases, warning message is now sent to stderr 
+    instead of stdout.  This is to allow users to pipe the results from
+    stdout in valid FITS format.  (The warning message is otherwise placed
+    at the start of the FITS file and therefore corrupts it.)
+
 Version 3.45 - May 2018
                    
   - New support for reading and writing unsigned long long datatypes.
