@@ -55,14 +55,18 @@ int fu_get_param (int argc, char *argv[], fpstate *fpptr)
 		} else if (argv[iarg][1] == 'P') {
 		    if (++iarg >= argc) {
 			fu_usage (); fu_hint (); exit (-1);
-		    } else
-			strncpy (fpptr->prefix, argv[iarg], SZ_STR);
+		    } else {
+			strncpy (fpptr->prefix, argv[iarg], SZ_STR-1);
+                        fpptr->prefix[SZ_STR-1] = 0;
+                    }
 
 		} else if (argv[iarg][1] == 'E') {
 		    if (++iarg >= argc) {
 			fu_usage (); fu_hint (); exit (-1);
-		    } else
-			strncpy (fpptr->extname, argv[iarg], SZ_STR);
+		    } else {
+			strncpy (fpptr->extname, argv[iarg], SZ_STR-1);
+                        fpptr->extname[SZ_STR-1]=0;
+                    }
 
 		} else if (argv[iarg][1] == 'S') {
 		    fpptr->to_stdout++;
@@ -88,8 +92,10 @@ int fu_get_param (int argc, char *argv[], fpstate *fpptr)
 		} else if (argv[iarg][1] == 'O') {
 		    if (++iarg >= argc) {
 			fu_usage (); fu_hint (); exit (-1);
-		    } else
-			strncpy (fpptr->outfile, argv[iarg], SZ_STR);
+		    } else {
+			strncpy (fpptr->outfile, argv[iarg], SZ_STR-1);
+                        fpptr->outfile[SZ_STR-1]=0;
+                    }
 
 		} else {
 		    fp_msg ("Error: unknown command line flag `");
