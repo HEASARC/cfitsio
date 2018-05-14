@@ -191,11 +191,13 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 		} else if (!strcmp(argv[iarg], "-tableonly")) {
 		    fpptr->do_tables = 1;
 		    fpptr->do_images = 0;
-		    fp_msg ("Note: -tableonly is intended for feasibility studies, not general use.\n");
+                    /* Do not write this to stdout via fp_msg.  Otherwise it will be placed at start of piped FITS
+                       file, which will then be corrupted. */
+                    fprintf(stderr,"Note: -tableonly is intended for feasibility studies, not general use.\n");
 
 		} else if (!strcmp(argv[iarg], "-table")) {
 		    fpptr->do_tables = 1;
-		    fp_msg ("Note: -table is intended for feasibility studies, not general use.\n");
+                    fprintf(stderr, "Note: -table is intended for feasibility studies, not general use.\n");
 
 		} else if (argv[iarg][1] == 't') {
 		    if (gottile) {
