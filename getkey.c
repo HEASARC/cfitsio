@@ -947,7 +947,7 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer             */
             /* concantenate comment strings (if any) */
 	    if ((commspace > 0) && (*nextcomm != 0)) 
 	    {
-                strncat(comm, " ", 1);
+                strcat(comm, " ");
 		strncat(comm, nextcomm, commspace);
                 commspace = FLEN_COMMENT - strlen(comm) - 2;
             }
@@ -1051,7 +1051,7 @@ int ffgsky( fitsfile *fptr,     /* I - FITS file pointer             */
             /* concantenate comment strings (if any) */
 	    if ((commspace > 0) && (*nextcomm != 0)) 
 	    {
-                strncat(comm, " ", 1);
+                strcat(comm, " ");
 		strncat(comm, nextcomm, commspace);
                 commspace = FLEN_COMMENT - strlen(comm) - 2;
             }
