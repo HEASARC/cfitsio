@@ -448,14 +448,14 @@ int fp_preflight (int argc, char *argv[], int unpack, fpstate *fpptr)
 		      fp_msg ("Error: output file name for\n   "); fp_msg (infits);
 		      fp_msg ("\n   is too long with the prefix\n"); fp_noop (); exit (-1);
 	          }
-	          strcat(outfits,fpptr->prefix);
+	          strcpy(outfits,fpptr->prefix);
 	      }
 
 	      /* construct output file name */
 	      if (infits[0] == '-') {
 	        strcpy(outfits, "output.fits");
 	      } else {
-	        strcpy(outfits, infits);
+	        strcat(outfits, infits);
 	      }
 
 	      /* remove .gz suffix, if present (output is not gzipped) */
@@ -550,12 +550,23 @@ int fp_preflight (int argc, char *argv[], int unpack, fpstate *fpptr)
               namelen = strlen(outfits);
 	      if ( !strcmp(".imh", outfits + namelen - 4) ) {
                         outfits[namelen - 4] = '\0';
-                        strcat(outfits, ".fits");
+                        if (strlen(outfits) == SZ_STR-5)
+                           strcat(outfits, ".fit");
+                        else
+                           strcat(outfits, ".fits");
 	      }
 
 	      /* If not clobbering the input file, add .fz suffix to output name */
 	      if (! fpptr->clobber)
-		        strcat(outfits, ".fz");
+              {
+                 if (strlen(outfits) > SZ_STR-4)
+                 {
+		    fp_msg ("Error: output file name too long:\n "); fp_msg (outfits);
+		    fp_msg ("\n "); fp_noop (); exit (-1);
+                 }
+                 else
+		     strcat(outfits, ".fz");
+              }
 			
 	      /* if infits != outfits, make sure outfits doesn't already exist */
               if (strcmp(infits, outfits)) {
@@ -633,6 +644,7 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 	      if (infits[0] != '-') {  /* if not reading from stdin stream */
 	         if (fp_access (infits) != 0) {  /* if not, then */
 		    strcat(infits, ".fz");       /* a .fz version must exsit */
+                    /* fp_preflight already checked for enough size to add '.fz' */
 	         }
 	      }
 
@@ -645,14 +657,15 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 	      } else {
 	          /* construct output file name */
 	          if (fpvar.prefix[0]) {
-	              strcat(outfits,fpvar.prefix);
+                      /* fp_preflight already checked this */
+	              strcpy(outfits,fpvar.prefix);
 	          }
 
 	          /* construct output file name */
 	          if (infits[0] == '-') {
 	            strcpy(outfits, "output.fits");
 	          } else {
-	            strcpy(outfits, infits);
+	            strcat(outfits, infits);
 	          }
 
 	          /* remove .gz suffix, if present (output is not gzipped) */
@@ -693,7 +706,10 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
                   namelen = strlen(outfits);
 	          if ( !strcmp(".imh", outfits + namelen - 4) ) {
                         outfits[namelen - 4] = '\0';
-                        strcat(outfits, ".fits");
+                        if (strlen(outfits) == SZ_STR-5)
+                           strcat(outfits, ".fit");
+                        else
+                           strcat(outfits, ".fits");
                         iraf_infile = 1;  /* this is an IRAF format input file */
 			           /* change the output name to "NAME.fits.fz" */
 	          }
