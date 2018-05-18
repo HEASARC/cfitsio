@@ -929,7 +929,7 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer             */
       contin = 1;
       while (contin)  
       {
-        if (len && *(*value+len-1) == '&')  /*  is last char an anpersand?  */
+        if (len && *(*value+len-1) == '&')  /*  is last char an ampersand?  */
         {
             ffgcnt(fptr, valstring, nextcomm, status);
             if (*valstring)    /* a null valstring indicates no continuation */

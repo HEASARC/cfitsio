@@ -2607,8 +2607,11 @@ int ffkshf(fitsfile *fptr,  /* I - FITS file pointer                        */
                   strncat(q, rec, i1);
      
                   ffkeyn(q, ivalue, newkey, status);
-                  strcpy(rec, "        ");    /* erase old keyword name */
-                  strcpy(rec, newkey);   /* overwrite new keyword name */
+		  /* NOTE: because of null termination, it is not 
+		     equivalent to use strcpy() for the same calls */
+                  strncpy(rec, "        ", 8);    /* erase old keyword name */
+                  i1 = strlen(newkey);
+                  strncpy(rec, newkey, i1);   /* overwrite new keyword name */
                   ffmrec(fptr, nrec, rec, status);  /* modify the record */
                 }
               }
