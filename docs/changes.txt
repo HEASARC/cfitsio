@@ -5,6 +5,8 @@
     stdout in valid FITS format.  (The warning message is otherwise placed
     at the start of the FITS file and therefore corrupts it.)
 
+  - Fix made to the '-P' file prefix option in funpack.
+
 Version 3.45 - May 2018
                    
   - New support for reading and writing unsigned long long datatypes.
