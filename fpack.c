@@ -33,6 +33,7 @@ int main(int argc, char *argv[])
 int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 {
 	int	gottype=0, gottile=0, wholetile=0, iarg, len, ndim, ii, doffset;
+        int     gotR=0, gotO=0;
 	char	tmp[SZ_STR], tile[SZ_STR];
 
         if (fpptr->initialized != FP_INIT_MAGIC) {
@@ -246,11 +247,15 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 		    fpptr->test_all = 1;
 
 		} else if (argv[iarg][1] == 'R') {
-		    if (++iarg >= argc) {
+                    if (gotO) {
+                        fp_msg("Error: -R option is not allowed with -O\n");
+                        exit(-1);
+		    } else if (++iarg >= argc) {
 			fp_usage (); fp_hint (); exit (-1);
 		    } else {
 			strncpy (fpptr->outfile, argv[iarg], SZ_STR-1);
                         fpptr->outfile[SZ_STR-1]=0;
+                        gotR=1;
                     }
 
 		} else if (argv[iarg][1] == 'H') {
@@ -258,7 +263,19 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 
 		} else if (argv[iarg][1] == 'V') {
 		    fp_version (); exit (0);
-
+                    
+                } else if (argv[iarg][1] == 'O') {
+                    if (gotR) {
+                        fp_msg("Error: -O option is not allowed with -R\n");
+                        exit(-1);
+		    } else if (++iarg >= argc) {
+			fp_usage (); fp_hint (); exit (-1);
+		    } else {
+			strncpy (fpptr->outfile, argv[iarg], SZ_STR-1);
+                        fpptr->outfile[SZ_STR-1]=0;
+                        gotO=1;
+                    }
+                
 		} else {
 		    fp_msg ("Error: unknown command line flag `");
 		    fp_msg (argv[iarg]); fp_msg ("'\n");
@@ -269,6 +286,18 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 		break;
 	}
 
+        /* In earlier loop, already made sure both -O and -R are not being used.
+           This is essential, as each must store info in the same 'outfile' array. 
+           Now do additional tests of -O and -R with other flags. */
+        
+        if (gotR && !fpptr->test_all) {
+            fp_msg("Error: -R option may only be used with -T\n"); exit(-1);
+        }
+        
+        if (gotO && (fpptr->test_all || fpptr->to_stdout)) {
+            fp_msg("Error: -O option may not be used with -S or -T\n"); exit(-1);
+        }
+        
 	if (fpptr->scale != 0. && 
 	         fpptr->comptype != HCOMPRESS_1 && fpptr->test_all != 1) {
 
@@ -326,7 +355,7 @@ int fp_usage (void)
 fp_msg ("usage: fpack ");
 fp_msg (
 "[-r|-h|-g|-p] [-w|-t <axes>] [-q <level>] [-s <scale>] [-n <noise>] -v <FITS>\n");
-fp_msg ("more:   [-T] [-R] [-F] [-D] [-Y] [-S] [-L] [-C] [-H] [-V] [-i2f]\n");
+fp_msg ("more:   [-T] [-R] [-F] [-D] [-Y] [-O <file>] [-S] [-L] [-C] [-H] [-V] [-i2f]\n");
 return(0);
 }
 
@@ -402,6 +431,8 @@ fp_msg (" -F          Overwrite input file by output file with same name.\n");
 fp_msg (" -D          Delete input file after writing output.\n");
 fp_msg (" -Y          Suppress prompts to confirm -F or -D options.\n");
 
+fp_msg (" -O <file>   Specify full output file name. This may be used only when fpack\n");
+fp_msg ("               is run on a single input file.\n");
 fp_msg (" -S          Output compressed FITS files to STDOUT.\n");
 fp_msg (" -L          List contents; files unchanged.\n");
 

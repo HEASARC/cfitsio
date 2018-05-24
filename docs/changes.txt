@@ -1,5 +1,8 @@
                    Log of Changes Made to CFITSIO
 
+  - Added the '-O <file>' option to fpack, which previously existed only
+    for funpack.
+
   - For the fpack '-table' cases, warning message is now sent to stderr 
     instead of stdout.  This is to allow users to pipe the results from
     stdout in valid FITS format.  (The warning message is otherwise placed
