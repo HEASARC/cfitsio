@@ -458,17 +458,20 @@ int fp_preflight (int argc, char *argv[], int unpack, fpstate *fpptr)
 	        strcat(outfits, infits);
 	      }
 
-	      /* remove .gz suffix, if present (output is not gzipped) */
+	      /* remove .gz or .bz2 suffix, if present (output is not gzipped) */
               namelen = strlen(outfits);
-	      if ( !strcmp(".gz", outfits + namelen - 3) ) {
+	      if (namelen >= 3 && !strcmp(".gz", outfits + namelen - 3) ) {
                         outfits[namelen - 3] = '\0';
 	      }
+              else if (namelen >= 4 && !strcmp(".bz2", outfits + namelen - 4)) {
+                        outfits[namelen - 4] = '\0';
+              }
 
 	      /* check for .fz suffix that is sometimes required */
 	      /* and remove it if present */
 	      if (infits[0] != '-') {  /* if not reading from stdin stream */
                  namelen = strlen(outfits);
-	         if ( !strcmp(".fz", outfits + namelen - 3) ) { /* suffix is present */
+	         if (namelen>=3 && !strcmp(".fz", outfits + namelen - 3) ) { /* suffix is present */
                         outfits[namelen - 3] = '\0';
 	         } else if (fpptr->delete_suffix) {  /* required suffix is missing */
 		    fp_msg ("Error: input compressed file "); fp_msg (infits);
@@ -523,7 +526,7 @@ int fp_preflight (int argc, char *argv[], int unpack, fpstate *fpptr)
 
               /* make sure the file to pack does not already have a .fz suffix */
               namelen = strlen(infits);
-	      if ( !strcmp(".fz", infits + namelen - 3) ) {
+	      if (namelen>=3 && !strcmp(".fz", infits + namelen - 3) ) {
 		        fp_msg ("Error: fpack input file already has '.fz' suffix\n" ); fp_msg (infits);
 		        fp_msg ("\n"); fp_noop (); exit (-1);
 	      }
@@ -558,14 +561,19 @@ int fp_preflight (int argc, char *argv[], int unpack, fpstate *fpptr)
 	      }
 
 	      /* remove .gz suffix, if present (output is not gzipped) */
+              /* do the same if compression suffix is bz2 */
               namelen = strlen(outfits);
-	      if ( !strcmp(".gz", outfits + namelen - 3) ) {
+	      if (namelen >=3 && !strcmp(".gz", outfits + namelen - 3) ) {
                         outfits[namelen - 3] = '\0';
 	      }
+              else if (namelen >= 4 && !strcmp(".bz2", outfits + namelen - 4)) {
+                        outfits[namelen - 4] = '\0';
+              }
+              
 	      
 	      /* remove .imh suffix (IRAF format image), and replace with .fits */
               namelen = strlen(outfits);
-	      if ( !strcmp(".imh", outfits + namelen - 4) ) {
+	      if (namelen >=4 && !strcmp(".imh", outfits + namelen - 4) ) {
                         outfits[namelen - 4] = '\0';
                         if (strlen(outfits) == SZ_STR-5)
                            strcat(outfits, ".fit");
@@ -687,14 +695,17 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 
 	          /* remove .gz suffix, if present (output is not gzipped) */
                   namelen = strlen(outfits);
-	          if ( !strcmp(".gz", outfits + namelen - 3) ) {
+	          if (namelen >= 3 &&  !strcmp(".gz", outfits + namelen - 3) ) {
                         outfits[namelen - 3] = '\0';
 	          }
+                  else if (namelen >= 4 && !strcmp(".bz2", outfits + namelen - 4)) {
+                            outfits[namelen - 4] = '\0';
+                  }
 
 	          /* check for .fz suffix that is sometimes required */
 	          /* and remove it if present */
                   namelen = strlen(outfits);
-	          if ( !strcmp(".fz", outfits + namelen - 3) ) { /* suffix is present */
+	          if (namelen >= 3 && !strcmp(".fz", outfits + namelen - 3) ) { /* suffix is present */
                         outfits[namelen - 3] = '\0';
 	          }
 	      }
@@ -716,15 +727,19 @@ int fp_loop (int argc, char *argv[], int unpack, fpstate fpvar)
 	             } else {
 	               strcpy(outfits, infits);
 	             }
-	             /* remove .gz suffix, if present (output is not gzipped) */
+	             /* Remove .gz suffix, if present (output is not gzipped). 
+                        Do the same for .bz2 */
                      namelen = strlen(outfits);
-	             if ( !strcmp(".gz", outfits + namelen - 3) ) {
+	             if (namelen >= 3 && !strcmp(".gz", outfits + namelen - 3) ) {
                            outfits[namelen - 3] = '\0';
 	             }
+                     else if (namelen >= 4 && !strcmp(".bz2", outfits + namelen - 4)) {
+                           outfits[namelen - 4] = '\0';
+                     }
 
 	             /* remove .imh suffix (IRAF format image), and replace with .fits */
                      namelen = strlen(outfits);
-	             if ( !strcmp(".imh", outfits + namelen - 4) ) {
+	             if (namelen >= 4 && !strcmp(".imh", outfits + namelen - 4) ) {
                            outfits[namelen - 4] = '\0';
                            if (strlen(outfits) == SZ_STR-5)
                               strcat(outfits, ".fit");
