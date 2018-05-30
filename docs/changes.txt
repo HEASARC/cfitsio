@@ -1,7 +1,8 @@
                    Log of Changes Made to CFITSIO
 
   - Added the '-O <file>' option to fpack, which previously existed only
-    for funpack.
+    for funpack.  Also added fpack/funpack auto-removal of .bz2 suffix 
+    equivalent to what existed for .gz.
 
   - For the fpack '-table' cases, warning message is now sent to stderr 
     instead of stdout.  This is to allow users to pipe the results from
