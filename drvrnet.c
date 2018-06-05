@@ -170,6 +170,7 @@ Baltimore MD 21218 USA                http://faxafloi.stsci.edu:4547/
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 
 #ifdef CFITSIO_HAVE_CURL
 #include <curl/curl.h>
@@ -1188,23 +1189,37 @@ size_t curlToMemCallback(void *buffer, size_t size, size_t nmemb, void *userp)
 int curlProgressCallback(void *clientp, double dltotal, double dlnow,
       double ultotal, double ulnow)
 {
-   int i, fullBar = 50;
-   int nToDisplay = 0;
+   int i, fullBar = 50, nToDisplay = 0;
+   int percent = 0;
    double fracCompleted = 0.0;
+   static int isComplete = 0;
    
    if (dltotal == 0.0)
+   {
+      isComplete = 0;
       return 0;
+   }
 
    fracCompleted = dlnow/dltotal;
-   nToDisplay = (int)(fracCompleted*fullBar);
-   printf("%3d%% [",(int)(fracCompleted*100));
-   for (i=0; i<nToDisplay; ++i)
-      printf("=");
-   /* print remaining spaces */
-   for (i=nToDisplay; i<fullBar; ++i)
-      printf(" ");
-   printf("]\r");
-   fflush(stdout);
+   percent = (int)ceil(fracCompleted*100.0 - 0.5);
+   if (!isComplete || percent < 100)
+   {
+      isComplete = (percent >= 100) ? 1 : 0;
+      nToDisplay = (int)ceil(fracCompleted*fullBar - 0.5);
+      /* Can dlnow ever be > dltotal?  Just in case... */
+      if (nToDisplay > fullBar)
+         nToDisplay = fullBar;
+      printf("%3d%% [",percent);
+      for (i=0; i<nToDisplay; ++i)
+         printf("=");
+      /* print remaining spaces */
+      for (i=nToDisplay; i<fullBar; ++i)
+         printf(" ");
+      printf("]\r");
+      if (isComplete)
+         printf("\n");
+      fflush(stdout);
+   }
    return 0;
 }
 
