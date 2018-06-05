@@ -253,6 +253,8 @@ static int root_recv_buffer(int sock, int *op, char *buffer,int buflen);
 static int root_openfile(char *filename, char *rwmode, int *sock);
 static int encode64(unsigned s_len, char *src, unsigned d_len, char *dst);
 static size_t curlToMemCallback(void *buffer, size_t size, size_t nmemb, void *userp);
+static int curlProgressCallback(void *clientp, double dltotal, double dlnow,
+                           double ultotal, double ulnow);
 
 /***************************/
 /* Static variables */
@@ -1182,6 +1184,31 @@ size_t curlToMemCallback(void *buffer, size_t size, size_t nmemb, void *userp)
 }
 
 /*--------------------------------------------------------------------------*/
+/* Callback function for displaying status bar during download */
+int curlProgressCallback(void *clientp, double dltotal, double dlnow,
+      double ultotal, double ulnow)
+{
+   int i, fullBar = 50;
+   int nToDisplay = 0;
+   double fracCompleted = 0.0;
+   
+   if (dltotal == 0.0)
+      return 0;
+
+   fracCompleted = dlnow/dltotal;
+   nToDisplay = (int)(fracCompleted*fullBar);
+   printf("%3d%% [",(int)(fracCompleted*100));
+   for (i=0; i<nToDisplay; ++i)
+      printf("=");
+   /* print remaining spaces */
+   for (i=nToDisplay; i<fullBar; ++i)
+      printf(" ");
+   printf("]\r");
+   fflush(stdout);
+   return 0;
+}
+
+/*--------------------------------------------------------------------------*/
 int https_open_network(char *filename, curlmembuf* buffer)
 {
   char *urlname=0;
@@ -1236,6 +1263,9 @@ int https_open_network(char *filename, curlmembuf* buffer)
   /* This turns on automatic decompression for all recognized types. */
   curl_easy_setopt(curl, CURLOPT_ENCODING, "");
   
+/*  curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, curlProgressCallback);
+  curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
+*/  
   /* urlname should be large enough to accomodate "https://"+filename+".gz". */
   urlname = (char *)malloc(strlen(filename)+12);
   strcpy(urlname, "https://");
