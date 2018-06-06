@@ -272,7 +272,7 @@ static FILE *diskfile;
 static FILE *outfile;
 
 static int curl_verbose=0;
-static int show_download_progress=0;
+static int show_fits_download_progress=0;
 
 /*--------------------------------------------------------------------------*/
 /* This creates a memory file handle with a copy of the URL in filename. The 
@@ -1279,7 +1279,7 @@ int https_open_network(char *filename, curlmembuf* buffer)
   /* This turns on automatic decompression for all recognized types. */
   curl_easy_setopt(curl, CURLOPT_ENCODING, "");
   
-  if (show_download_progress)
+  if (show_fits_download_progress)
   {
      curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, curlProgressCallback);
      curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
@@ -1418,6 +1418,14 @@ void https_set_verbose(int flag)
       curl_verbose = 0;
    else
       curl_verbose = 1;
+}
+
+void fits_dwnld_prog_bar(int flag)
+{
+   if (!flag)
+      show_fits_download_progress = 0;
+   else
+      show_fits_download_progress = 1;
 }
 
 /*--------------------------------------------------------------------------*/

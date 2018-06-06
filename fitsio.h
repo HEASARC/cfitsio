@@ -2056,6 +2056,8 @@ int CFITS_API fits_init_https(void);
 int CFITS_API fits_cleanup_https(void);
 void CFITS_API fits_verbose_https(int flag);
 
+void CFITS_API ffshdwn(int flag);
+
 /*  The following exclusion if __CINT__ is defined is needed for ROOT */
 #ifndef __CINT__
 #ifdef __cplusplus

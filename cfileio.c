@@ -7616,3 +7616,10 @@ void ffvhtps(int flag)
 #endif
 }
 
+/*-------------------------------------------------------------------*/
+void ffshdwn(int flag)
+{
+   /* Display download status bar (to stderr), where applicable.
+      This is NOT THREAD-SAFE */
+   fits_dwnld_prog_bar(flag);
+}

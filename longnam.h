@@ -617,4 +617,6 @@
 #define fits_cleanup_https      ffchtps
 #define fits_verbose_https      ffvhtps
 
+#define fits_show_download_progress  ffshdwn
+
 #endif

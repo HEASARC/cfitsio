@@ -1096,6 +1096,8 @@ int fitsio_init_lock(void);
 
 int urltype2driver(char *urltype, int *driver);
 
+void fits_dwnld_prog_bar(int flag);
+
 int fits_register_driver( char *prefix,
 	int (*init)(void),
 	int (*fitsshutdown)(void),
