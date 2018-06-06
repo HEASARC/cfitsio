@@ -272,6 +272,7 @@ static FILE *diskfile;
 static FILE *outfile;
 
 static int curl_verbose=0;
+static int show_download_progress=0;
 
 /*--------------------------------------------------------------------------*/
 /* This creates a memory file handle with a copy of the URL in filename. The 
@@ -1209,16 +1210,16 @@ int curlProgressCallback(void *clientp, double dltotal, double dlnow,
       /* Can dlnow ever be > dltotal?  Just in case... */
       if (nToDisplay > fullBar)
          nToDisplay = fullBar;
-      printf("%3d%% [",percent);
+      fprintf(stderr,"%3d%% [",percent);
       for (i=0; i<nToDisplay; ++i)
-         printf("=");
+         fprintf(stderr,"=");
       /* print remaining spaces */
       for (i=nToDisplay; i<fullBar; ++i)
-         printf(" ");
-      printf("]\r");
+         fprintf(stderr," ");
+      fprintf(stderr,"]\r");
       if (isComplete)
-         printf("\n");
-      fflush(stdout);
+         fprintf(stderr,"\n");
+      fflush(stderr);
    }
    return 0;
 }
@@ -1278,9 +1279,14 @@ int https_open_network(char *filename, curlmembuf* buffer)
   /* This turns on automatic decompression for all recognized types. */
   curl_easy_setopt(curl, CURLOPT_ENCODING, "");
   
-/*  curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, curlProgressCallback);
-  curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
-*/  
+  if (show_download_progress)
+  {
+     curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, curlProgressCallback);
+     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
+  }
+  else
+     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
+  
   /* urlname should be large enough to accomodate "https://"+filename+".gz". */
   urlname = (char *)malloc(strlen(filename)+12);
   strcpy(urlname, "https://");
