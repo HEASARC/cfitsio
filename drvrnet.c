@@ -271,7 +271,7 @@ static FILE *outfile;
 
 static int curl_verbose=0;
 static int show_fits_download_progress=0;
-static int net_timeout = 360; /* in seconds */
+static unsigned int net_timeout = 360; /* in seconds */
 
 /*--------------------------------------------------------------------------*/
 /* This creates a memory file handle with a copy of the URL in filename. The 
@@ -1429,10 +1429,10 @@ void fits_dwnld_prog_bar(int flag)
 
 int fits_net_timeout(int sec)
 {
-   /* If sec is negative, treat this as a 'get' call. */
-   if (sec >= 0)
-      net_timeout = sec;
-   return net_timeout;
+   /* If sec is 0 or negative, treat this as a 'get' call. */
+   if (sec > 0)
+      net_timeout = (unsigned int)sec;
+   return (int)net_timeout;
 }
 
 /*--------------------------------------------------------------------------*/

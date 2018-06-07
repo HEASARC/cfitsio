@@ -7636,7 +7636,7 @@ int ffstmo(int sec, int *status)
    if (*status > 0)
       return (*status);
 
-   if (sec < 0)
+   if (sec <= 0)
    {
       *status = BAD_NETTIMEOUT;
       ffpmsg("Bad value for net timeout setting (fits_set_timeout).");
