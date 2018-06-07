@@ -198,8 +198,6 @@ static void signal_handler(int sig);
 #define NET_OOB 1
 #define NET_PEEK 2
 
-#define NETTIMEOUT 180 /* in secs */
-
 /* local defines and variables */
 #define MAXLEN 1200
 #define SHORTLEN 100
@@ -273,6 +271,7 @@ static FILE *outfile;
 
 static int curl_verbose=0;
 static int show_fits_download_progress=0;
+static int net_timeout = 360; /* in seconds */
 
 /*--------------------------------------------------------------------------*/
 /* This creates a memory file handle with a copy of the URL in filename. The 
@@ -343,11 +342,11 @@ int http_open(char *filename, int rwmode, int *handle)
     /* Using the cfitsio routine */
 
     status = 0;
-    /* Ok, this is a tough case, let's be arbritary and say 10*NETTIMEOUT,
+    /* Ok, this is a tough case, let's be arbritary and say 10*net_timeout,
        Given the choices for nettimeout above they'll probaby ^C before, but
        it's always worth a shot*/
     
-    alarm(NETTIMEOUT*10);
+    alarm(net_timeout*10);
     status = mem_uncompress2mem(filename, httpfile, *handle);
     alarm(0);
     if (status) {
@@ -365,7 +364,7 @@ int http_open(char *filename, int rwmode, int *handle)
     }
 
     /* write a memory file */
-    alarm(NETTIMEOUT);
+    alarm(net_timeout);
     while(0 != (len = fread(recbuf,1,MAXLEN,httpfile))) {
       alarm(0); /* cancel alarm */
       status = mem_write(*handle,recbuf,len);
@@ -374,7 +373,7 @@ int http_open(char *filename, int rwmode, int *handle)
         ffpmsg(filename);
 	goto error;
       }
-      alarm(NETTIMEOUT); /* rearm the alarm */
+      alarm(net_timeout); /* rearm the alarm */
     }
   }
   
@@ -443,7 +442,7 @@ int http_compress_open(char *url, int rwmode, int *handle)
   signal(SIGALRM, signal_handler);
   
   /* Open the http connectin */
-  alarm(NETTIMEOUT);
+  alarm(net_timeout);
   if ((status = http_open_network(url,&httpfile,contentencoding,
 			       &contentlength))) {
     alarm(0);
@@ -481,7 +480,7 @@ int http_compress_open(char *url, int rwmode, int *handle)
     closediskfile++;
 
     /* write a file */
-    alarm(NETTIMEOUT);
+    alarm(net_timeout);
     while(0 != (len = fread(recbuf,1,MAXLEN,httpfile))) {
       alarm(0);
       status = file_write(*handle,recbuf,len);
@@ -490,7 +489,7 @@ int http_compress_open(char *url, int rwmode, int *handle)
         ffpmsg(netoutfile);
 	goto error;
       }
-      alarm(NETTIMEOUT);
+      alarm(net_timeout);
     }
     file_close(*handle);
     fclose(httpfile);
@@ -598,7 +597,7 @@ int http_file_open(char *url, int rwmode, int *handle)
   signal(SIGALRM, signal_handler);
   
   /* Open the network connection */
-  alarm(NETTIMEOUT);
+  alarm(net_timeout);
   if ((status = http_open_network(url,&httpfile,contentencoding,
 			       &contentlength))) {
     alarm(0);
@@ -643,11 +642,11 @@ int http_file_open(char *url, int rwmode, int *handle)
     closeoutfile++;
     status = 0;
 
-    /* Ok, this is a tough case, let's be arbritary and say 10*NETTIMEOUT,
+    /* Ok, this is a tough case, let's be arbritary and say 10*net_timeout,
        Given the choices for nettimeout above they'll probaby ^C before, but
        it's always worth a shot*/
 
-    alarm(NETTIMEOUT*10);
+    alarm(net_timeout*10);
     status = uncompress2file(url,httpfile,outfile,&status);
     alarm(0);
     if (status) {
@@ -679,7 +678,7 @@ int http_file_open(char *url, int rwmode, int *handle)
     }
     
     /* write a file */
-    alarm(NETTIMEOUT);
+    alarm(net_timeout);
     while(0 != (len = fread(recbuf,1,MAXLEN,httpfile))) {
       alarm(0);
       status = file_write(*handle,recbuf,len);
@@ -1033,7 +1032,7 @@ int https_open(char *filename, int rwmode, int *handle)
   }
 
   signal(SIGALRM, signal_handler);
-  alarm(NETTIMEOUT);
+  alarm(net_timeout);
 
   if (https_open_network(filename, &inmem))
   {
@@ -1107,7 +1106,7 @@ int https_file_open(char *filename, int rwmode, int *handle)
      return (FILE_NOT_OPENED);
   }
   signal(SIGALRM, signal_handler);
-  alarm(NETTIMEOUT);
+  alarm(net_timeout);
   if (https_open_network(filename, &inmem))
   {
      alarm(0);
@@ -1428,6 +1427,14 @@ void fits_dwnld_prog_bar(int flag)
       show_fits_download_progress = 1;
 }
 
+int fits_net_timeout(int sec)
+{
+   /* If sec is negative, treat this as a 'get' call. */
+   if (sec >= 0)
+      net_timeout = sec;
+   return net_timeout;
+}
+
 /*--------------------------------------------------------------------------*/
 /* This creates a memory file handle with a copy of the URL in filename. The 
    file is uncompressed if necessary */
@@ -1472,7 +1479,7 @@ int ftp_open(char *filename, int rwmode, int *handle)
       goto error;
   } 
 
-  alarm(NETTIMEOUT);
+  alarm(net_timeout);
   if (ftp_open_network(filename,&ftpfile,&command,&sock)) {
 
       alarm(0);
@@ -1504,7 +1511,7 @@ int ftp_open(char *filename, int rwmode, int *handle)
     
     status = 0;
     /* A bit arbritary really, the user will probably hit ^C */
-    alarm(NETTIMEOUT*10);
+    alarm(net_timeout*10);
     status = mem_uncompress2mem(filename, ftpfile, *handle);
     alarm(0);
     if (status) {
@@ -1514,7 +1521,7 @@ int ftp_open(char *filename, int rwmode, int *handle)
     }
   } else {
     /* write a memory file */
-    alarm(NETTIMEOUT);
+    alarm(net_timeout);
     while(0 != (len = fread(recbuf,1,MAXLEN,ftpfile))) {
       alarm(0);
       status = mem_write(*handle,recbuf,len);
@@ -1523,7 +1530,7 @@ int ftp_open(char *filename, int rwmode, int *handle)
         ffpmsg(filename);
 	goto error;
       }
-      alarm(NETTIMEOUT);
+      alarm(net_timeout);
     }
   }
 
@@ -1604,7 +1611,7 @@ int ftp_file_open(char *url, int rwmode, int *handle)
      the input file, command holds the connection to port 21, and sock is 
      the socket connected to port 21 */
 
-  alarm(NETTIMEOUT);
+  alarm(net_timeout);
   if ((status = ftp_open_network(url,&ftpfile,&command,&sock))) {
     alarm(0);
     ffpmsg("Unable to open http file (ftp_file_open)");
@@ -1649,11 +1656,11 @@ int ftp_file_open(char *url, int rwmode, int *handle)
     closeoutfile++;
     status = 0;
 
-    /* Ok, this is a tough case, let's be arbritary and say 10*NETTIMEOUT,
+    /* Ok, this is a tough case, let's be arbritary and say 10*net_timeout,
        Given the choices for nettimeout above they'll probaby ^C before, but
        it's always worth a shot*/
 
-    alarm(NETTIMEOUT*10);
+    alarm(net_timeout*10);
     status = uncompress2file(url,ftpfile,outfile,&status);
     alarm(0);
     if (status) {
@@ -1676,7 +1683,7 @@ int ftp_file_open(char *url, int rwmode, int *handle)
     closefile++;
     
     /* write a file */
-    alarm(NETTIMEOUT);
+    alarm(net_timeout);
     while(0 != (len = fread(recbuf,1,MAXLEN,ftpfile))) {
       alarm(0);
       status = file_write(*handle,recbuf,len);
@@ -1686,7 +1693,7 @@ int ftp_file_open(char *url, int rwmode, int *handle)
         ffpmsg(netoutfile);
 	goto error;
       }
-      alarm(NETTIMEOUT);
+      alarm(net_timeout);
     }
     file_close(*handle);
   }
@@ -1769,7 +1776,7 @@ int ftp_compress_open(char *url, int rwmode, int *handle)
   
   /* Open the network connection to url, ftpfile is connected to the file 
      port, command is connected to port 21.  sock is for writing to port 21 */
-  alarm(NETTIMEOUT);
+  alarm(net_timeout);
 
   if ((status = ftp_open_network(url,&ftpfile,&command,&sock))) {
     alarm(0);
@@ -1806,7 +1813,7 @@ int ftp_compress_open(char *url, int rwmode, int *handle)
     closediskfile++;
     
     /* write a file */
-    alarm(NETTIMEOUT);
+    alarm(net_timeout);
     while(0 != (len = fread(recbuf,1,MAXLEN,ftpfile))) {
       alarm(0);
       status = file_write(*handle,recbuf,len);
@@ -1816,7 +1823,7 @@ int ftp_compress_open(char *url, int rwmode, int *handle)
         ffpmsg(netoutfile);
 	goto error;
       }
-      alarm(NETTIMEOUT);
+      alarm(net_timeout);
     }
 
     file_close(*handle);

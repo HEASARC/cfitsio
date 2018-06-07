@@ -618,5 +618,7 @@
 #define fits_verbose_https      ffvhtps
 
 #define fits_show_download_progress  ffshdwn
+#define fits_get_timeout        ffgtmo
+#define fits_set_timeout        ffstmo
 
 #endif

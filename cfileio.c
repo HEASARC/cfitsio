@@ -7623,3 +7623,25 @@ void ffshdwn(int flag)
       This is NOT THREAD-SAFE */
    fits_dwnld_prog_bar(flag);
 }
+
+/*-------------------------------------------------------------------*/
+int ffgtmo(void)
+{
+   return fits_net_timeout(-1);
+}
+
+/*-------------------------------------------------------------------*/
+int ffstmo(int sec, int *status)
+{
+   if (*status > 0)
+      return (*status);
+
+   if (sec < 0)
+   {
+      *status = BAD_NETTIMEOUT;
+      ffpmsg("Bad value for net timeout setting (fits_set_timeout).");
+      return(*status);
+   }
+   fits_net_timeout(sec);
+   return(*status);   
+}
