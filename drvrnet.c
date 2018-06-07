@@ -304,6 +304,10 @@ int http_open(char *filename, int rwmode, int *handle)
     /* feels like the second time */
     /* this means something bad happened */
     ffpmsg("Timeout (http_open)");
+    snprintf(errorstr, MAXLEN, "Download timeout exceeded: %d seconds",net_timeout);
+    ffpmsg(errorstr);
+    ffpmsg("   (multiplied x10 for files requiring uncompression)");
+    ffpmsg("   Timeout may be adjusted with fits_set_timeout");
     goto error;
   }
 
@@ -406,6 +410,7 @@ int http_compress_open(char *url, int rwmode, int *handle)
 {
   FILE *httpfile;
   char contentencoding[SHORTLEN];
+  char errorstr[MAXLEN];
   char recbuf[MAXLEN];
   long len;
   int contentlength;
@@ -436,6 +441,9 @@ int http_compress_open(char *url, int rwmode, int *handle)
     /* feels like the second time */
     /* this means something bad happened */
     ffpmsg("Timeout (http_open)");
+    snprintf(errorstr, MAXLEN, "Download timeout exceeded: %d seconds",net_timeout);
+    ffpmsg(errorstr);
+    ffpmsg("   Timeout may be adjusted with fits_set_timeout");
     goto error;
   }
 
@@ -591,6 +599,10 @@ int http_file_open(char *url, int rwmode, int *handle)
     /* feels like the second time */
     /* this means something bad happened */
     ffpmsg("Timeout (http_open)");
+    snprintf(errorstr, MAXLEN, "Download timeout exceeded: %d seconds",net_timeout);
+    ffpmsg(errorstr);
+    ffpmsg("   (multiplied x10 for files requiring uncompression)");
+    ffpmsg("   Timeout may be adjusted with fits_set_timeout");
     goto error;
   }
 
@@ -1027,6 +1039,9 @@ int https_open(char *filename, int rwmode, int *handle)
     alarm(0);
     signal(SIGALRM, SIG_DFL);
     ffpmsg("Timeout (https_open)");
+    snprintf(errStr, MAXLEN, "Download timeout exceeded: %d seconds",net_timeout);
+    ffpmsg(errStr);
+    ffpmsg("   Timeout may be adjusted with fits_set_timeout");
     free(inmem.memory);
     return (FILE_NOT_OPENED);
   }
@@ -1102,6 +1117,9 @@ int https_file_open(char *filename, int rwmode, int *handle)
      alarm(0);
      signal(SIGALRM, SIG_DFL);
      ffpmsg("Timeout (https_file_open)");
+     snprintf(errStr, MAXLEN, "Download timeout exceeded: %d seconds",net_timeout);
+     ffpmsg(errStr);
+     ffpmsg("   Timeout may be adjusted with fits_set_timeout");
      free(inmem.memory);
      return (FILE_NOT_OPENED);
   }
@@ -1444,6 +1462,7 @@ int ftp_open(char *filename, int rwmode, int *handle)
   FILE *ftpfile;
   FILE *command;
   int sock;
+  char errorstr[MAXLEN];
   char recbuf[MAXLEN];
   long len;
   int status;
@@ -1464,7 +1483,11 @@ int ftp_open(char *filename, int rwmode, int *handle)
   if (setjmp(env) != 0) {
     /* feels like the second time */
     /* this means something bad happened */
-    ffpmsg("Timeout (http_open)");
+    ffpmsg("Timeout (ftp_open)");
+    snprintf(errorstr, MAXLEN, "Download timeout exceeded: %d seconds",net_timeout);
+    ffpmsg(errorstr);
+    ffpmsg("   (multiplied x10 for files requiring uncompression)");
+    ffpmsg("   Timeout may be adjusted with fits_set_timeout");
     goto error;
   }
 
@@ -1571,6 +1594,7 @@ int ftp_file_open(char *url, int rwmode, int *handle)
 {
   FILE *ftpfile;
   FILE *command;
+  char errorstr[MAXLEN];
   char recbuf[MAXLEN];
   long len;
   int sock;
@@ -1601,7 +1625,11 @@ int ftp_file_open(char *url, int rwmode, int *handle)
   if (setjmp(env) != 0) {
     /* feels like the second time */
     /* this means something bad happened */
-    ffpmsg("Timeout (http_open)");
+    ffpmsg("Timeout (ftp_file_open)");
+    snprintf(errorstr, MAXLEN, "Download timeout exceeded: %d seconds",net_timeout);
+    ffpmsg(errorstr);
+    ffpmsg("   (multiplied x10 for files requiring uncompression)");
+    ffpmsg("   Timeout may be adjusted with fits_set_timeout");
     goto error;
   }
 
@@ -1737,6 +1765,7 @@ int ftp_compress_open(char *url, int rwmode, int *handle)
 {
   FILE *ftpfile;
   FILE *command;
+  char errorstr[MAXLEN];
   char recbuf[MAXLEN];
   long len;
   int ii, flen, status;
@@ -1768,7 +1797,10 @@ int ftp_compress_open(char *url, int rwmode, int *handle)
   if (setjmp(env) != 0) {
     /* feels like the second time */
     /* this means something bad happened */
-    ffpmsg("Timeout (http_open)");
+    ffpmsg("Timeout (ftp_compress_open)");
+    snprintf(errorstr, MAXLEN, "Download timeout exceeded: %d seconds",net_timeout);
+    ffpmsg(errorstr);
+    ffpmsg("   Timeout may be adjusted with fits_set_timeout");
     goto error;
   }
   
