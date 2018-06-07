@@ -269,6 +269,9 @@ void ffgerr(int status,     /* I - error status value */
     case 116:
        strcpy(errtext, "error seeking file position");
        break;
+    case 117:
+       strcpy(errtext, "bad value for file download timeout setting");
+       break;
     case 121:
        strcpy(errtext, "invalid URL prefix");
        break;
