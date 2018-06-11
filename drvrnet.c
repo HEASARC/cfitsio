@@ -1210,18 +1210,38 @@ int curlProgressCallback(void *clientp, double dltotal, double dlnow,
    int i, fullBar = 50, nToDisplay = 0;
    int percent = 0;
    double fracCompleted = 0.0;
+   char *urlname=0;
    static int isComplete = 0;
+   static int isFirst = 1;
    
+   /* isFirst is true the very first time this is entered. Afterwards it
+      should get reset to true when isComplete is first detected to have 
+      toggled from true to false. */
    if (dltotal == 0.0)
    {
+      if (isComplete)
+         isFirst = 1;
       isComplete = 0;
       return 0;
    }
 
    fracCompleted = dlnow/dltotal;
    percent = (int)ceil(fracCompleted*100.0 - 0.5);
+   if (isComplete && percent < 100)
+      isFirst = 1;
    if (!isComplete || percent < 100)
    {
+      if (isFirst)
+      {
+         urlname = (char *)clientp;
+         if (urlname)
+         {
+            fprintf(stderr,"Downloading ");
+            fprintf(stderr,urlname);
+            fprintf(stderr,"...\n");
+         }
+         isFirst = 0;
+      }
       isComplete = (percent >= 100) ? 1 : 0;
       nToDisplay = (int)ceil(fracCompleted*fullBar - 0.5);
       /* Can dlnow ever be > dltotal?  Just in case... */
@@ -1296,16 +1316,17 @@ int https_open_network(char *filename, curlmembuf* buffer)
   /* This turns on automatic decompression for all recognized types. */
   curl_easy_setopt(curl, CURLOPT_ENCODING, "");
   
+  /* urlname should be large enough to accomodate "https://"+filename+".gz". */
+  urlname = (char *)malloc(strlen(filename)+12);
   if (show_fits_download_progress)
   {
      curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, curlProgressCallback);
+     curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, urlname);
      curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
   }
   else
      curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
   
-  /* urlname should be large enough to accomodate "https://"+filename+".gz". */
-  urlname = (char *)malloc(strlen(filename)+12);
   strcpy(urlname, "https://");
   strcat(urlname, filename);
   /* Unless filename already contains a .gz or '?' (probably from a cgi script),
