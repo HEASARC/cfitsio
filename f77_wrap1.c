@@ -347,7 +347,12 @@ FCALLSCSUB6(ffgabc,FTGABC,ftgabc,INT,STRINGV,INT,PLONG,LONGV,PINT)
 /* File download diagnostic functions */
 FCALLSCSUB1(ffvhtps,FTVHTPS,ftvhtps,INT)
 FCALLSCSUB1(ffshdwn,FTSHDWN,ftshdwn,INT)
-FCALLSCFUN0(INT,ffgtmo,FTGTMO,ftgtmo)
-FCALLSCFUN2(INT,ffstmo,FTSTMO,ftstmo,INT,PINT)
+void Cffgtmo(int *secs);
+void Cffgtmo(int *secs)
+{
+   *secs = ffgtmo();
+}
+FCALLSCSUB1(Cffgtmo,FTGTMO,ftgtmo,PINT)
+FCALLSCSUB2(ffstmo,FTSTMO,ftstmo,INT,PINT)
 
 
