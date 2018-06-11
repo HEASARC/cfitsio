@@ -344,3 +344,10 @@ FCALLSCSUB5(ffbnfm,FTBNFM,ftbnfm,STRING,PINT,PLONG,PLONG,PINT)
 #define ftgabc_LONGV_A5 A1
 FCALLSCSUB6(ffgabc,FTGABC,ftgabc,INT,STRINGV,INT,PLONG,LONGV,PINT)
 
+/* File download diagnostic functions */
+FCALLSCSUB1(ffvhtps,FTVHTPS,ftvhtps,INT)
+FCALLSCSUB1(ffshdwn,FTSHDWN,ftshdwn,INT)
+FCALLSCFUN0(INT,ffgtmo,FTGTMO,ftgtmo)
+FCALLSCFUN2(INT,ffstmo,FTSTMO,ftstmo,INT,PINT)
+
+
