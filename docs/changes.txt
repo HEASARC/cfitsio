@@ -1,4 +1,8 @@
                    Log of Changes Made to CFITSIO
+                   
+  - Added new functions intended to assist in diagnosing (primarily 
+    https) download issues: fits_show_download_progress,
+    fits_get_timeout, fits_set_timeout.
 
   - Added the '-O <file>' option to fpack, which previously existed only
     for funpack.  Also added fpack/funpack auto-removal of .bz2 suffix 
