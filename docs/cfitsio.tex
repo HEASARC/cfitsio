@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large May 2018\\}
+{\Large June 2018\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -5538,6 +5538,7 @@ See Appendix B for the definition of each function parameter.
 
 \section{FITS File Access Routines}
 
+\subsection{File Access}
 
 \begin{description}
 \item[1 ] Open an existing FITS file residing in core computer memory.  This
@@ -5786,38 +5787,34 @@ the 'exists' parameter will have 1 of the 4 following values:
 \end{verbatim}
 
 \begin{description}
-\item[10 ] Wrapper function for global initialization of the libcurl library used
+\item[10 ] Wrapper functions for global initialization and cleanup of the libcurl library used
    when accessing files with the HTTPS protocol.  If an HTTPS file transfer is to
-   be performed, it is recommended that you call this once near the start of your program
-   before any file\_open calls, and before creating any threads.  This is NOT THREAD-SAFE.
-   Returns 0 if initialization succeeded.
-   A corresponding call to fits\_cleanup\_https should be made later.
+   be performed, it is recommended that you call the init function once near the start of your 
+   program before any file\_open calls, and before creating any threads. The cleanup function
+   should be called after all HTTPS file accessing is completed, and after all threads are 
+   completed.  The functions return 0 upon successful initialization and cleanup.  These
+   are NOT THREAD-SAFE.    
   \label{ffihtps}
 \end{description}
 
 \begin{verbatim}
   int fits_init_https / ffihtps
       ()
+      
+  int fits_cleanup_https / ffchtps
+      ()
 \end{verbatim}
 
-\begin{description}
-\item[11 ] Wrapper function for global cleanup of the libcurl library used when
-   accessing files with the HTTPS protocol.  This is meant to be used in combination 
-   with fits\_init\_https, and should be called after all HTTPS file accessing is completed,
-   and after all threads are completed.  This is NOT THREAD-SAFE.  Returns 0 upon successful
-   cleanup.
-  \label{ffchtps}
-\end{description}
+\subsection{Download Utility Functions}
 
-\begin{verbatim}
-   int fits_cleanup_https / ffchtps
-       ()
-\end{verbatim}
+These routines do not need to be called for normal file accessing. They are
+primarily intended to help with debugging and diagnosing issues which occur 
+during file downloads.  These routines are NOT THREAD-SAFE.
 
 \begin{description}
-\item[12 ] Toggle the verbosity of the libcurl library diagnostic output when
-   accessing files with the HTTPS protocol.  'flag' = 1 turns the output
-   on, 0 turns it off (the default).  This is NOT THREAD-SAFE.
+\item[1 ] Toggle the verbosity of the libcurl library diagnostic output when
+   accessing files with the HTTPS protocol.  `flag' = 1 turns the output
+   on, 0 turns it off (the default).
   \label{ffvhtps}
 \end{description}
 
@@ -5826,6 +5823,36 @@ the 'exists' parameter will have 1 of the 4 following values:
         (int flag)
 \end{verbatim}
 
+\begin{description}
+\item[2] If `flag' is set to 1, this will display (to stderr) a progress 
+  bar during an https file download.  (This is not yet implemented
+  for other file transfer protocols.)  `flag' = 0 by default.
+ \label{ffshdwn}
+\end{description}
+
+\begin{verbatim}
+   void fits_show_download_progress / ffshdwn
+        (int flag)
+\end{verbatim}
+
+\begin{description}
+\item[3] The timeout setting (in seconds) determines the maximum time
+  allowed for a net download to complete.  If a download has not finished within
+  the allowed time, the file transfer will terminate and the CFITSIO calling
+  function will return with an error.  Use fits\_get\_timeout will see the 
+  current timeout setting and fits\_set\_timeout to change the setting.  This
+  adjustmant may be particularly useful when having trouble downloading large 
+  files over slow connections.
+ \label{ffgtmo}
+\end{description}
+
+\begin{verbatim}
+   int fits_get_timeout / ffgtmo
+       ()
+       
+   int fits_set_timeout / ffstmo
+       (int seconds, > int *status)
+\end{verbatim}
 
 \section{HDU Access Routines}
 
@@ -9985,7 +10012,7 @@ fits\_calculator\_rng     & \pageref{ffcalcrng} \\
 fits\_calc\_binning[d] & \pageref{calcbinning} \\
 fits\_calc\_rows    & \pageref{ffcrow} \\
 fits\_change\_group  & \pageref{ffgtch} \\
-fits\_cleanup\_https & \pageref{ffchtps} \\
+fits\_cleanup\_https & \pageref{ffihtps} \\
 fits\_clear\_errmark  & \pageref{ffpmrk} \\
 fits\_clear\_errmsg   & \pageref{ffcmsg} \\
 fits\_close\_file     & \pageref{ffclos} \\
@@ -10076,11 +10103,12 @@ fits\_get\_num\_members  & \pageref{ffgtnm} \\
 fits\_get\_num\_rows     & \pageref{ffgnrw} \\
 fits\_get\_rowsize    & \pageref{ffgrsz} \\
 fits\_get\_system\_time  & \pageref{ffdt2s} \\
-fits\_get\_tile\_dim     & \pageref{ffgetcomp} \\
 fits\_get\_tbcol      & \pageref{ffgabc} \\
+fits\_get\_tile\_dim     & \pageref{ffgetcomp} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_get\_timeout    & \pageref{ffgtmo} \\
 fits\_get\_version    & \pageref{ffvers} \\
 fits\_hdr2str         & \pageref{ffhdr2str}, \pageref{hdr2str} \\
 fits\_init\_https  & \pageref{ffihtps} \\
@@ -10128,9 +10156,9 @@ fits\_parse\_range    & \pageref{ffrwrg} \\
 fits\_parse\_rootname & \pageref{ffrtnm} \\
 fits\_parse\_template & \pageref{ffgthd} \\
 fits\_parse\_value    & \pageref{ffpsvc} \\
-fits\_pix\_to\_world & \pageref{ffwldp} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_pix\_to\_world & \pageref{ffwldp} \\
 fits\_read\_2d\_TYP      & \pageref{ffg2dx} \\
 fits\_read\_3d\_TYP      & \pageref{ffg3dx} \\
 fits\_read\_atblhdr      & \pageref{ffghtb} \\
@@ -10178,9 +10206,9 @@ fits\_remove\_member   & \pageref{ffgmrm} \\
 fits\_reopen\_file      & \pageref{ffreopen} \\
 fits\_report\_error   & \pageref{ffrprt} \\
 fits\_resize\_img     & \pageref{ffrsim} \\
-fits\_rms\_float      & \pageref{imageRMS} \\
 \end{tabular}
 \begin{tabular}{lr}
+fits\_rms\_float      & \pageref{imageRMS} \\
 fits\_rms\_short      & \pageref{imageRMS} \\
 fits\_select\_rows  & \pageref{ffsrow} \\
 fits\_set\_atblnull   & \pageref{ffsnul} \\
@@ -10192,7 +10220,9 @@ fits\_set\_hdustruc   & \pageref{ffrdef} \\
 fits\_set\_imgnull    & \pageref{ffpnul} \\
 fits\_set\_noise\_bits  & \pageref{ffsetcomp} \\
 fits\_set\_tile\_dim  & \pageref{ffsetcomp} \\
+fits\_set\_timeout    & \pageref{ffgtmo} \\
 fits\_set\_tscale     & \pageref{fftscl} \\
+fits\_show\_download\_progress  & \pageref{ffshdwn} \\
 fits\_split\_names    & \pageref{splitnames} \\
 fits\_str2date        & \pageref{ffdt2s} \\
 fits\_str2time        & \pageref{ffdt2s} \\
@@ -10226,12 +10256,12 @@ fits\_write\_col\_TYP     & \pageref{ffpcls} \\
 fits\_write\_col\_null      & \pageref{ffpclu} \\
 fits\_write\_colnull      & \pageref{ffpcn} \\
 fits\_write\_colnull\_TYP & \pageref{ffpcnx} \\
-fits\_write\_comment      & \pageref{ffpcom} \\
-fits\_write\_date         & \pageref{ffpdat} \\
-fits\_write\_descript  & \pageref{ffpdes} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
+fits\_write\_comment      & \pageref{ffpcom} \\
+fits\_write\_date         & \pageref{ffpdat} \\
+fits\_write\_descript  & \pageref{ffpdes} \\
 fits\_write\_errmark   & \pageref{ffpmrk} \\
 fits\_write\_errmsg   & \pageref{ffpmsg} \\
 fits\_write\_ext        & \pageref{ffgextn} \\
@@ -10405,6 +10435,7 @@ ffgtdm         & \pageref{ffgtdm} \\
 ffgthd & \pageref{ffgthd} \\
 ffgtis  & \pageref{ffgtis} \\
 ffgtmg  & \pageref{ffgtmg} \\
+ffgtmo  & \pageref{ffgtmo} \\
 ffgtnm  & \pageref{ffgtnm} \\
 ffgtop    & \pageref{ffgtop} \\
 ffgtrm  & \pageref{ffgtrm} \\
@@ -10417,11 +10448,11 @@ fficol   & \pageref{fficol} \\
 ffifile  & \pageref{ffiurl} \\
 ffihtps  & \pageref{ffihtps} \\
 ffiimg     & \pageref{ffiimg} \\
-ffikls    & \pageref{ffikyx} \\
 
 \end{tabular}
 \begin{tabular}{lr}
 
+ffikls    & \pageref{ffikyx} \\
 ffikyu   & \pageref{ffikyu} \\
 ffiky\_    & \pageref{ffikyx} \\
 ffimem  & \pageref{ffimem} \\
@@ -10469,11 +10500,11 @@ ffphext       & \pageref{ffphpr} \\
 ffphis      & \pageref{ffphis} \\
 ffphpr       & \pageref{ffphpr} \\
 ffphps       & \pageref{ffphps} \\
-ffphtb      & \pageref{ffphtb} \\
 
 \end{tabular}
 \begin{tabular}{lr}
 
+ffphtb      & \pageref{ffphtb} \\
 ffpkls  & \pageref{ffpkls} \\
 ffpkn\_     & \pageref{ffpknx} \\
 ffpktp & \pageref{ffpktp} \\
@@ -10511,23 +10542,25 @@ ffrtnm & \pageref{ffrtnm} \\
 ffrwrg    & \pageref{ffrwrg} \\
 ffs2dt  & \pageref{ffdt2s} \\
 ffs2tm  & \pageref{ffdt2s} \\
+ffshdwn  & \pageref{ffshdwn} \\
 ffsnul   & \pageref{ffsnul} \\
 ffsrow  & \pageref{ffsrow} \\
+ffstmo  & \pageref{ffgtmo} \\
 fftexp    & \pageref{fftexp} \\
 ffthdu   & \pageref{ffthdu} \\
 fftheap  & \pageref{fftheap} \\
 fftkey   & \pageref{fftkey} \\
 fftm2s  & \pageref{ffdt2s} \\
 fftnul   & \pageref{fftnul} \\
-fftopn & \pageref{ffopen} \\
-fftplt & \pageref{fftplt} \\
-fftrec    & \pageref{fftrec} \\
 
 
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
 
+fftopn & \pageref{ffopen} \\
+fftplt & \pageref{fftplt} \\
+fftrec    & \pageref{fftrec} \\
 fftscl     & \pageref{fftscl} \\
 ffucrd       & \pageref{ffucrd} \\
 ffukls    & \pageref{ffukyx} \\
