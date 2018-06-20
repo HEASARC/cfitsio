@@ -1475,6 +1475,78 @@ int fits_net_timeout(int sec)
 }
 
 /*--------------------------------------------------------------------------*/
+int ftps_open(char *filename, int rwmode, int *handle)
+{
+  curlmembuf inmem;
+  char errStr[MAXLEN];
+  int status=0;
+    
+  /* don't do r/w files */
+  if (rwmode != 0) {
+    ffpmsg("Can't open ftps:// type file with READWRITE access");
+    ffpmsg("  Specify an outfile for r/w access (ftps_open)");
+    return (FILE_NOT_OPENED);
+  }
+
+  inmem.memory=0;
+  inmem.size=0;
+  if (setjmp(env) != 0)
+  {
+    alarm(0);
+    signal(SIGALRM, SIG_DFL);
+    ffpmsg("Timeout (ftps_open)");
+    snprintf(errStr, MAXLEN, "Download timeout exceeded: %d seconds",net_timeout);
+    ffpmsg(errStr);
+    ffpmsg("   Timeout may be adjusted with fits_set_timeout");
+    free(inmem.memory);
+    return (FILE_NOT_OPENED);
+  }
+
+  signal(SIGALRM, signal_handler);
+  alarm(net_timeout);
+
+ /* if (https_open_network(filename, &inmem))
+  {
+     alarm(0);
+     signal(SIGALRM, SIG_DFL);
+     ffpmsg("Unable to read ftps file into memory (ftps_open)");
+     free(inmem.memory);
+     return (FILE_NOT_OPENED);  
+  }
+*/  
+  alarm(0);
+  signal(SIGALRM, SIG_DFL);
+  /* We now have the file transfered from the ftps server into the
+     inmem.memory buffer.  Now transfer that into a FITS memory file. */
+  if ((status = mem_create(filename, handle)))
+  {
+     ffpmsg("Unable to create memory file (ftps_open)");
+     free(inmem.memory);
+     return (FILE_NOT_OPENED);
+  }
+  
+  if (inmem.size % 2880)
+  {
+     snprintf(errStr,MAXLEN,"Content-Length not a multiple of 2880 (ftps_open) %u",
+         inmem.size);
+     ffpmsg(errStr);
+  }
+  status = mem_write(*handle, inmem.memory, inmem.size);
+  if (status)
+  {
+     ffpmsg("Error copying https file into memory (ftps_open)");
+     ffpmsg(filename);
+     free(inmem.memory);
+     mem_close_free(*handle);
+     return (FILE_NOT_OPENED);
+  }
+  free(inmem.memory);
+  return mem_seek(*handle, 0);
+   
+  return 0;
+}
+
+/*--------------------------------------------------------------------------*/
 /* This creates a memory file handle with a copy of the URL in filename. The 
    file is uncompressed if necessary */
 
@@ -3017,6 +3089,27 @@ int https_checkfile (char *urltype, char *infile, char *outfile1)
        strcpy(urltype,"httpsfile://");
   }
 
+   return 0;
+}
+
+/*--------------------------------------------------------------------------*/
+int ftps_checkfile (char *urltype, char *infile, char *outfile1)
+{
+   strcpy(urltype,"ftps://");
+   if (strlen(outfile1))
+   {
+     /* don't copy the "file://" prefix, if present.  */
+     if (!strncmp(outfile1, "file://", 7) ) {
+       strcpy(netoutfile,outfile1+7);
+     } else {
+       strcpy(netoutfile,outfile1);
+     }
+
+     if (!strncmp(outfile1, "mem:", 4))
+        strcpy(urltype,"httpsmem://");
+     else       
+        strcpy(urltype,"ftpsfile://");
+   }
    return 0;
 }
 

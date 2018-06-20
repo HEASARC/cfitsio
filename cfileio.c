@@ -5014,6 +5014,33 @@ int fits_init_cfitsio(void)
         return(status);
     }
       /* === End of https net drivers section === */  
+
+    /* 28--------------------ftps  driver-----------------------*/
+ /*   status = fits_register_driver("ftps://",
+            NULL,
+            mem_shutdown,
+            mem_setoptions,
+            mem_getoptions, 
+            mem_getversion,
+            ftps_checkfile,
+            ftps_open,
+            NULL,            
+            mem_truncate,
+            mem_close_free,
+            NULL,            
+            mem_size,
+            NULL,            
+            mem_seek,
+            mem_read,
+            mem_write);
+
+    if (status)
+    {
+        ffpmsg("failed to register the ftps:// driver (init_cfitsio)");
+        FFUNLOCK;
+        return(status);
+    }
+*/
 #endif
 
 

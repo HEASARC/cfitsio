@@ -1214,6 +1214,10 @@ int https_open(char *filename, int rwmode, int *driverhandle);
 int https_file_open(char *filename, int rwmode, int *driverhandle);
 void https_set_verbose(int flag);
 
+/* ftps driver I/O routines */
+int ftps_checkfile(char* urltype, char *infile, char *outfile);
+int ftps_open(char *filename, int rwmode, int *handle);
+
 /* ftp driver I/O routines */
 
 int ftp_checkfile(char *urltype, char *infile, char *outfile);
