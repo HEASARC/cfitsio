@@ -2035,6 +2035,7 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
   char tmpstr[MAXLEN];
   char proto[SHORTLEN];
   char host[SHORTLEN];
+  char agentStr[SHORTLEN];
   char *newhost;
   char *username;
   char *password;
@@ -2047,6 +2048,7 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
   char turl[MAXLEN];
   int port;
   int ii,tryingtologin = 1;
+  float version=0.0;
 
   /* parse the URL */
   if (strlen(filename) > MAXLEN - 7) {
@@ -2063,9 +2065,10 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
   }
   
   port = 21;
-  /* we might have a user name */
+  /* We might have a user name.  If not, set defaults for username and password */
   username = "anonymous";
-  password = "user@host.com";
+  snprintf(agentStr,SHORTLEN,"User-Agent: FITSIO/HEASARC/%-8.3f",ffvers(&version));
+  password = agentStr;
   /* is there an @ sign */
   if (NULL != (newhost = strrchr(host,'@'))) {
     *newhost = '\0'; /* make it a null, */
