@@ -1550,6 +1550,7 @@ int ftps_open(char *filename, int rwmode, int *handle)
 /*--------------------------------------------------------------------------*/
 int ftps_open_network(char *filename, curlmembuf* buffer)
 {
+  char errStr[MAXLEN];
   char agentStr[SHORTLEN];
   char url[MAXLEN];
   char tmphost[SHORTLEN]; /* work array for separating user/pass/host names */
@@ -1558,9 +1559,17 @@ int ftps_open_network(char *filename, curlmembuf* buffer)
   char *hostname=0;
   char *dirpath=0;
   float version=0.0;
-  int iDirpath=0, len=0;
-  
+  int iDirpath=0, len=0;  
 #ifdef CFITSIO_HAVE_CURL
+  CURL *curl=0;
+  CURLcode res;
+  char curlErrBuf[CURL_ERROR_SIZE];
+  
+  if (strstr(filename,".Z"))
+  {
+     ffpmsg("x-compress .Z format not currently supported with ftps transfers");
+     return(FILE_NOT_OPENED);
+  }
 
   strcpy(url,"ftp://");
 
@@ -1624,6 +1633,43 @@ int ftps_open_network(char *filename, curlmembuf* buffer)
   printf("hostname = %s\n",hostname);
 */
   
+  /* Will ASSUME curl_global_init has been called by this point.
+     It is not thread-safe to call it here. */
+  curl = curl_easy_init();
+   
+  res = curl_easy_setopt(curl, CURLOPT_USERNAME, username);
+  if (res != CURLE_OK)
+  {
+     ffpmsg("ERROR: CFITSIO was built with a libcurl library that ");
+     ffpmsg("does not have SSL support, and therefore can't perform ftps transfers.");
+     return (FILE_NOT_OPENED);    
+  }
+  curl_easy_setopt(curl, CURLOPT_PASSWORD, password);
+  curl_easy_setopt(curl, CURLOPT_URL, url);
+  curl_easy_setopt(curl, CURLOPT_USE_SSL, CURLUSESSL_ALL);
+  curl_easy_setopt(curl, CURLOPT_VERBOSE, (long)curl_verbose);
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlToMemCallback);
+  buffer->memory = 0; /* malloc/realloc will grow this in the callback function */
+  buffer->size = 0;
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)buffer);
+  curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, curlErrBuf);
+  curlErrBuf[0]=0;
+  /* This turns on automatic decompression for all recognized types. */
+  curl_easy_setopt(curl, CURLOPT_ENCODING, "");
+  
+  res = curl_easy_perform(curl);
+  if (res != CURLE_OK)
+  {
+     snprintf(errStr,MAXLEN,"libcurl error: %d",res);
+     ffpmsg(errStr);
+     if (strlen(curlErrBuf))
+        ffpmsg(curlErrBuf);     
+     curl_easy_cleanup(curl);
+     return (FILE_NOT_OPENED);
+  }
+  
+  curl_easy_cleanup(curl); 
+   
 #else
    ffpmsg("ERROR: This CFITSIO build was not compiled with the libcurl library package ");
    ffpmsg("and therefore it cannot perform HTTPS connections."); 
