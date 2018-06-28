@@ -246,6 +246,7 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
 static int https_open_network(char *filename, curlmembuf* buffer);
 static int ftp_open_network(char *url, FILE **ftpfile, FILE **command, 
 			    int *sock);
+static int ftps_open_network(char *filename, curlmembuf* buffer);
 static int ftp_file_exist(char *url);
 static int root_send_buffer(int sock, int op, char *buffer, int buflen);
 static int root_recv_buffer(int sock, int *op, char *buffer,int buflen);
@@ -1505,7 +1506,7 @@ int ftps_open(char *filename, int rwmode, int *handle)
   signal(SIGALRM, signal_handler);
   alarm(net_timeout);
 
- /* if (https_open_network(filename, &inmem))
+  if (ftps_open_network(filename, &inmem))
   {
      alarm(0);
      signal(SIGALRM, SIG_DFL);
@@ -1513,7 +1514,7 @@ int ftps_open(char *filename, int rwmode, int *handle)
      free(inmem.memory);
      return (FILE_NOT_OPENED);  
   }
-*/  
+  
   alarm(0);
   signal(SIGALRM, SIG_DFL);
   /* We now have the file transfered from the ftps server into the
@@ -1544,6 +1545,92 @@ int ftps_open(char *filename, int rwmode, int *handle)
   return mem_seek(*handle, 0);
    
   return 0;
+}
+
+/*--------------------------------------------------------------------------*/
+int ftps_open_network(char *filename, curlmembuf* buffer)
+{
+  char agentStr[SHORTLEN];
+  char url[MAXLEN];
+  char tmphost[SHORTLEN]; /* work array for separating user/pass/host names */
+  char *username=0;
+  char *password=0;
+  char *hostname=0;
+  char *dirpath=0;
+  float version=0.0;
+  int iDirpath=0, len=0;
+  
+#ifdef CFITSIO_HAVE_CURL
+
+  strcpy(url,"ftp://");
+
+  /* The filename may already contain a username and password, as indicated 
+     by a '@' within the host part of the name (which we'll define as the substring
+     before the first '/').  If not, we'll set a default username:password  */
+  len = strlen(filename);
+  for (iDirpath=0; iDirpath<len; ++iDirpath)
+  {
+     if (filename[iDirpath] == '/')
+        break;
+  }
+  if (iDirpath > SHORTLEN-1)
+  {
+     ffpmsg("Host name is too long in URL (ftps_open_network)");
+     return (FILE_NOT_OPENED);
+  }
+  strncpy(tmphost, filename, iDirpath);
+  dirpath = &filename[iDirpath];
+  tmphost[iDirpath]='\0';
+  
+  /* There could be more than one '@' since they can also exist in the
+     username or password.  Find the right-most '@' and assume that it
+     delimits the host name. */
+  hostname = strrchr(tmphost, '@');
+  if (hostname)
+  {
+     *hostname = '\0';
+     ++hostname;
+     /* Assume first occurrence of ':' is indicative of password delimiter. */
+     password = strchr(tmphost, ':');
+     if (password)
+     {
+        *password = '\0';
+        ++password;
+     }
+     username = tmphost;
+  }
+  else
+     hostname = tmphost;
+  
+  if (!username || strlen(username)==0)
+     username = "anonymous";
+  if (!password || strlen(password)==0)
+  {
+     snprintf(agentStr,SHORTLEN,"User-Agent: FITSIO/HEASARC/%-8.3f",ffvers(&version));
+     password = agentStr;
+  }
+  
+  if (strlen(url) + strlen(hostname) + strlen(dirpath) > MAXLEN-1)
+  {
+     ffpmsg("Full URL name is too long (ftps_open_network)");
+     return (FILE_NOT_OPENED);
+  }
+  strcat(url, hostname);
+  strcat(url, dirpath);
+  
+/*  printf("url = %s\n",url);
+  printf("username = %s\n",username);
+  printf("password = %s\n",password);
+  printf("hostname = %s\n",hostname);
+*/
+  
+#else
+   ffpmsg("ERROR: This CFITSIO build was not compiled with the libcurl library package ");
+   ffpmsg("and therefore it cannot perform HTTPS connections."); 
+   return (FILE_NOT_OPENED);  
+#endif
+  
+   return 0;
 }
 
 /*--------------------------------------------------------------------------*/
