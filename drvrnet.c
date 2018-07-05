@@ -252,6 +252,8 @@ static int root_send_buffer(int sock, int op, char *buffer, int buflen);
 static int root_recv_buffer(int sock, int *op, char *buffer,int buflen);
 static int root_openfile(char *filename, char *rwmode, int *sock);
 static int encode64(unsigned s_len, char *src, unsigned d_len, char *dst);
+static int ssl_get_with_curl(const char *url, curlmembuf* buffer, 
+                char* username, char* password);
 static size_t curlToMemCallback(void *buffer, size_t size, size_t nmemb, void *userp);
 static int curlProgressCallback(void *clientp, double dltotal, double dlnow,
                            double ultotal, double ulnow);
@@ -1265,190 +1267,15 @@ int curlProgressCallback(void *clientp, double dltotal, double dlnow,
 /*--------------------------------------------------------------------------*/
 int https_open_network(char *filename, curlmembuf* buffer)
 {
+  int status=0;
   char *urlname=0;
-  char errStr[MAXLEN];
-  char agentStr[MAXLEN];
-  float version=0.0;
-  char *verify=0;
-  /* These settings will force libcurl to perform host and peer authentication.
-     If it fails, this routine will try again without authentication (unless
-     user forbids this via CFITSIO_VERIFY_HTTPS environment variable).
-  */
-  long verifyPeer = 1;
-  long verifyHost = 2;
-#ifdef CFITSIO_HAVE_CURL
-  CURL *curl=0;
-  CURLcode res;
-  char curlErrBuf[CURL_ERROR_SIZE];
   
-  if (strstr(filename,".Z"))
-  {
-     ffpmsg("x-compress .Z format not currently supported with https transfers");
-     return(FILE_NOT_OPENED);
-  }
-
-  
-  /* Will ASSUME curl_global_init has been called by this point.
-     It is not thread-safe to call it here. */
-  curl = curl_easy_init();
-   
-  res = curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, verifyPeer);
-  if (res != CURLE_OK)
-  {
-     ffpmsg("ERROR: CFITSIO was built with a libcurl library that ");
-     ffpmsg("does not have SSL support, and therefore can't perform https transfers.");
-     return (FILE_NOT_OPENED);    
-  }
-  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, verifyHost);
-  
-  curl_easy_setopt(curl, CURLOPT_VERBOSE, (long)curl_verbose);
-  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlToMemCallback);
-  snprintf(agentStr,MAXLEN,"User-Agent: FITSIO/HEASARC/%-8.3f",ffvers(&version)); 
-  curl_easy_setopt(curl, CURLOPT_USERAGENT,agentStr);
-  
-  buffer->memory = 0; /* malloc/realloc will grow this in the callback function */
-  buffer->size = 0;
-  curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)buffer);
-  curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, curlErrBuf);
-  curlErrBuf[0]=0;
-  /* This is needed for easy_perform to return an error whenever http server
-      returns an error >= 400, ie. if it can't find the requested file. */
-  curl_easy_setopt(curl, CURLOPT_FAILONERROR,  1L);
-  /* This turns on automatic decompression for all recognized types. */
-  curl_easy_setopt(curl, CURLOPT_ENCODING, "");
-  
-  /* urlname should be large enough to accomodate "https://"+filename+".gz". */
-  urlname = (char *)malloc(strlen(filename)+12);
-  if (show_fits_download_progress)
-  {
-     curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, curlProgressCallback);
-     curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, urlname);
-     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
-  }
-  else
-     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
-  
-  strcpy(urlname, "https://");
-  strcat(urlname, filename);
-  /* Unless filename already contains a .gz or '?' (probably from a cgi script),
-     first try with .gz appended. */
-  if (!strstr(filename,".gz") && !strstr(filename,"?"))
-     strcat(urlname, ".gz");
-  
-  /* First attempt: verification on */
-  curl_easy_setopt(curl, CURLOPT_URL, urlname);
-  res = curl_easy_perform(curl);
-  if (res != CURLE_OK && res != CURLE_HTTP_RETURNED_ERROR)
-  {
-     /*   CURLE_HTTP_RETURNED_ERROR is what gets returned if HTTP server
-        returns an error code >= 400. If that's not causing this error, assume
-        it is a verification issue. 
-          Try again with verification removed, unless user disallowed it
-        via environment variable. */
-     verify = getenv("CFITSIO_VERIFY_HTTPS");
-     if (verify)
-     {
-        if (verify[0] == 'T' || verify[0] == 't')
-        {
-           snprintf(errStr,MAXLEN,"libcurl error: %d",res);
-           ffpmsg(errStr);
-           if (strlen(curlErrBuf))
-              ffpmsg(curlErrBuf);     
-           curl_easy_cleanup(curl);  
-           free(urlname);
-           return (FILE_NOT_OPENED);
-        }
-     }
-     verifyPeer = 0;
-     verifyHost = 0;
-     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, verifyPeer);
-     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, verifyHost);
-     res = curl_easy_perform(curl);
-     if (res != CURLE_OK)
-     {
-        /* Unless original filename already contains a .gz or '?' (probably from a cgi script),
-           try again without.gz appended. */
-        if (!strstr(filename,".gz") && !strstr(filename,"?"))
-        {
-           strcpy(urlname, "https://");
-           strcat(urlname, filename);        
-           curl_easy_setopt(curl, CURLOPT_URL, urlname); 
-           res = curl_easy_perform(curl);
-           if (res != CURLE_OK)
-           {
-              snprintf(errStr,MAXLEN,"libcurl error: %d",res);
-              ffpmsg(errStr);
-              if (strlen(curlErrBuf))
-                 ffpmsg(curlErrBuf);     
-              curl_easy_cleanup(curl);  
-              free(urlname);
-              return (FILE_NOT_OPENED);
-           }
-           else
-              fprintf(stderr, "Warning: Unable to perform SSL verification on https transfer from: %s\n",
-                   urlname);           
-        }
-        else
-        {
-           snprintf(errStr,MAXLEN,"libcurl error: %d",res);
-           ffpmsg(errStr);
-           if (strlen(curlErrBuf))
-              ffpmsg(curlErrBuf);     
-           curl_easy_cleanup(curl);  
-           free(urlname);
-           return (FILE_NOT_OPENED);
-        }        
-     }
-     else
-        fprintf(stderr, "Warning: Unable to perform SSL verification on https transfer from: %s\n",
-             urlname);
-
-  }
-  else if (res == CURLE_HTTP_RETURNED_ERROR)
-  {
-     /* Verification isn't the problem.  No need to relax peer/host checking */
-     /* Unless filename already contains a .gz or '?' (probably from a cgi script),
-        try again with original filename unappended */
-     if (!strstr(filename,".gz") && !strstr(filename,"?"))
-     {
-        strcpy(urlname, "https://");
-        strcat(urlname, filename);        
-        curl_easy_setopt(curl, CURLOPT_URL, urlname); 
-        res = curl_easy_perform(curl);
-        if (res != CURLE_OK)
-        {
-           snprintf(errStr,MAXLEN,"libcurl error: %d",res);
-           ffpmsg(errStr);
-           if (strlen(curlErrBuf))
-              ffpmsg(curlErrBuf);     
-           curl_easy_cleanup(curl);  
-           free(urlname);
-           return (FILE_NOT_OPENED);
-        }
-     }
-     else
-     {
-        snprintf(errStr,MAXLEN,"libcurl error: %d",res);
-        ffpmsg(errStr);
-        if (strlen(curlErrBuf))
-           ffpmsg(curlErrBuf);     
-        curl_easy_cleanup(curl);  
-        free(urlname);
-        return (FILE_NOT_OPENED);
-     }
-  }
-  
+  urlname = (char *)malloc(strlen(filename)+9);
+  strcpy(urlname,"https://");
+  strcat(urlname,filename);
+  status = ssl_get_with_curl(urlname, buffer, 0, 0);
   free(urlname);
-  curl_easy_cleanup(curl);  
-  
-   return 0;
-
-#else
-   ffpmsg("ERROR: This CFITSIO build was not compiled with the libcurl library package ");
-   ffpmsg("and therefore it cannot perform HTTPS connections.");   
-#endif
-  
-  return (FILE_NOT_OPENED);
+  return(status);
 }
 
 void https_set_verbose(int flag)
@@ -1550,7 +1377,6 @@ int ftps_open(char *filename, int rwmode, int *handle)
 /*--------------------------------------------------------------------------*/
 int ftps_open_network(char *filename, curlmembuf* buffer)
 {
-  char errStr[MAXLEN];
   char agentStr[SHORTLEN];
   char url[MAXLEN];
   char tmphost[SHORTLEN]; /* work array for separating user/pass/host names */
@@ -1560,10 +1386,6 @@ int ftps_open_network(char *filename, curlmembuf* buffer)
   char *dirpath=0;
   float version=0.0;
   int iDirpath=0, len=0;  
-#ifdef CFITSIO_HAVE_CURL
-  CURL *curl=0;
-  CURLcode res;
-  char curlErrBuf[CURL_ERROR_SIZE];
   
   if (strstr(filename,".Z"))
   {
@@ -1632,51 +1454,212 @@ int ftps_open_network(char *filename, curlmembuf* buffer)
   printf("password = %s\n",password);
   printf("hostname = %s\n",hostname);
 */
+
+  return (ssl_get_with_curl(url, buffer, username, password));
   
+ }
+
+/*--------------------------------------------------------------------------*/
+/* Function to perform common curl interfacing for https or ftps transfers */
+
+int ssl_get_with_curl(const char *url, curlmembuf* buffer, char* username,
+                        char* password)
+{
+  /* These settings will force libcurl to perform host and peer authentication.
+     If it fails, this routine will try again without authentication (unless
+     user forbids this via CFITSIO_VERIFY_HTTPS environment variable).
+  */
+  long verifyPeer = 1;
+  long verifyHost = 2;
+  char errStr[MAXLEN];
+  char agentStr[MAXLEN];
+  float version=0.0;
+  char *tmpUrl=0;
+  char *verify=0;
+  #ifdef CFITSIO_HAVE_CURL
+  CURL *curl=0;
+  CURLcode res;
+  char curlErrBuf[CURL_ERROR_SIZE];
+  
+  if (strstr(url,".Z"))
+  {
+     ffpmsg("x-compress .Z format not currently supported with curl https/ftps transfers");
+     return(FILE_NOT_OPENED);
+  }
+
   /* Will ASSUME curl_global_init has been called by this point.
      It is not thread-safe to call it here. */
   curl = curl_easy_init();
    
-  res = curl_easy_setopt(curl, CURLOPT_USERNAME, username);
+  res = curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, verifyPeer);
   if (res != CURLE_OK)
   {
      ffpmsg("ERROR: CFITSIO was built with a libcurl library that ");
-     ffpmsg("does not have SSL support, and therefore can't perform ftps transfers.");
+     ffpmsg("does not have SSL support, and therefore can't perform https or ftps transfers.");
      return (FILE_NOT_OPENED);    
   }
-  curl_easy_setopt(curl, CURLOPT_PASSWORD, password);
-  curl_easy_setopt(curl, CURLOPT_URL, url);
-  curl_easy_setopt(curl, CURLOPT_USE_SSL, CURLUSESSL_ALL);
+  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, verifyHost);
+  
   curl_easy_setopt(curl, CURLOPT_VERBOSE, (long)curl_verbose);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlToMemCallback);
+  snprintf(agentStr,MAXLEN,"User-Agent: FITSIO/HEASARC/%-8.3f",ffvers(&version)); 
+  curl_easy_setopt(curl, CURLOPT_USERAGENT,agentStr);
+  
   buffer->memory = 0; /* malloc/realloc will grow this in the callback function */
   buffer->size = 0;
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)buffer);
   curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, curlErrBuf);
   curlErrBuf[0]=0;
+  /* This is needed for easy_perform to return an error whenever http server
+      returns an error >= 400, ie. if it can't find the requested file. */
+  curl_easy_setopt(curl, CURLOPT_FAILONERROR,  1L);
   /* This turns on automatic decompression for all recognized types. */
   curl_easy_setopt(curl, CURLOPT_ENCODING, "");
   
-  res = curl_easy_perform(curl);
-  if (res != CURLE_OK)
+  /* tmpUrl should be large enough to accomodate original url + ".gz" */
+  tmpUrl = (char *)malloc(strlen(url)+4);
+  strcpy(tmpUrl, url);
+  if (show_fits_download_progress)
   {
-     snprintf(errStr,MAXLEN,"libcurl error: %d",res);
-     ffpmsg(errStr);
-     if (strlen(curlErrBuf))
-        ffpmsg(curlErrBuf);     
-     curl_easy_cleanup(curl);
-     return (FILE_NOT_OPENED);
+     curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, curlProgressCallback);
+     curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, tmpUrl);
+     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
+  }
+  else
+     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
+  
+  /* USESSL only necessary for ftps, though it may not hurt anything
+     if it were also set for https. */
+  if (strstr(tmpUrl, "ftp://"))
+  {
+     curl_easy_setopt(curl, CURLOPT_USE_SSL, CURLUSESSL_ALL);
+     if (username)
+        curl_easy_setopt(curl, CURLOPT_USERNAME, username);
+     if (password)
+        curl_easy_setopt(curl, CURLOPT_PASSWORD, password);
   }
   
-  curl_easy_cleanup(curl); 
-   
-#else
-   ffpmsg("ERROR: This CFITSIO build was not compiled with the libcurl library package ");
-   ffpmsg("and therefore it cannot perform HTTPS connections."); 
-   return (FILE_NOT_OPENED);  
-#endif
+  /* Unless url already contains a .gz or '?' (probably from a cgi script),
+     first try with .gz appended. */
+  if (!strstr(url,".gz") && !strstr(url,"?"))
+     strcat(tmpUrl, ".gz");
+
+  /* First attempt: verification on */
+  curl_easy_setopt(curl, CURLOPT_URL, tmpUrl);
+  res = curl_easy_perform(curl);
+  if (res != CURLE_OK && res != CURLE_HTTP_RETURNED_ERROR)
+  {
+     /*   CURLE_HTTP_RETURNED_ERROR is what gets returned if HTTP server
+        returns an error code >= 400. If that's not causing this error, assume
+        it is a verification issue. 
+          Try again with verification removed, unless user disallowed it
+        via environment variable. */
+     verify = getenv("CFITSIO_VERIFY_HTTPS");
+     if (verify)
+     {
+        if (verify[0] == 'T' || verify[0] == 't')
+        {
+           snprintf(errStr,MAXLEN,"libcurl error: %d",res);
+           ffpmsg(errStr);
+           if (strlen(curlErrBuf))
+              ffpmsg(curlErrBuf);     
+           curl_easy_cleanup(curl);  
+           free(tmpUrl);
+           return (FILE_NOT_OPENED);
+        }
+     }
+     verifyPeer = 0;
+     verifyHost = 0;
+     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, verifyPeer);
+     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, verifyHost);
+     /* Second attempt: no verification, .gz appended */
+     res = curl_easy_perform(curl);
+     if (res != CURLE_OK)
+     {
+        /* Unless original url already contains a .gz or '?' (probably from a cgi script),
+           try again without.gz appended. */
+        if (!strstr(url,".gz") && !strstr(url,"?"))
+        {
+           strcpy(tmpUrl, url);
+           curl_easy_setopt(curl, CURLOPT_URL, tmpUrl);
+           /* Third attempt: no verification, no .gz appended */ 
+           res = curl_easy_perform(curl);
+           if (res != CURLE_OK)
+           {
+              snprintf(errStr,MAXLEN,"libcurl error: %d",res);
+              ffpmsg(errStr);
+              if (strlen(curlErrBuf))
+                 ffpmsg(curlErrBuf);     
+              curl_easy_cleanup(curl);  
+              free(tmpUrl);
+              return (FILE_NOT_OPENED);
+           }
+           else
+              /* Success, but should still warn */
+              fprintf(stderr, "Warning: Unable to perform SSL verification on https transfer from: %s\n",
+                   tmpUrl);           
+        }
+        else
+        {
+           snprintf(errStr,MAXLEN,"libcurl error: %d",res);
+           ffpmsg(errStr);
+           if (strlen(curlErrBuf))
+              ffpmsg(curlErrBuf);     
+           curl_easy_cleanup(curl);  
+           free(tmpUrl);
+           return (FILE_NOT_OPENED);
+        }        
+     }
+     else
+        /* Success, but still issue warning */
+        fprintf(stderr, "Warning: Unable to perform SSL verification on https transfer from: %s\n",
+             tmpUrl);
+
+  }
+  else if (res == CURLE_HTTP_RETURNED_ERROR)
+  {
+     /* Verification isn't the problem.  No need to relax peer/host checking */
+     /* Unless url already contains a .gz or '?' (probably from a cgi script),
+        try again with original url unappended */
+     if (!strstr(url,".gz") && !strstr(url,"?"))
+     {
+        strcpy(tmpUrl, url);
+        curl_easy_setopt(curl, CURLOPT_URL, tmpUrl); 
+        res = curl_easy_perform(curl);
+        if (res != CURLE_OK)
+        {
+           snprintf(errStr,MAXLEN,"libcurl error: %d",res);
+           ffpmsg(errStr);
+           if (strlen(curlErrBuf))
+              ffpmsg(curlErrBuf);     
+           curl_easy_cleanup(curl);  
+           free(tmpUrl);
+           return (FILE_NOT_OPENED);
+        }
+     }
+     else
+     {
+        snprintf(errStr,MAXLEN,"libcurl error: %d",res);
+        ffpmsg(errStr);
+        if (strlen(curlErrBuf))
+           ffpmsg(curlErrBuf);     
+        curl_easy_cleanup(curl);  
+        free(tmpUrl);
+        return (FILE_NOT_OPENED);
+     }
+  }
   
-   return 0;
+  
+  free(tmpUrl);
+  curl_easy_cleanup(curl);
+  
+  #else
+   ffpmsg("ERROR: This CFITSIO build was not compiled with the libcurl library package ");
+   ffpmsg("and therefore it cannot perform HTTPS or FTPS connections."); 
+   return (FILE_NOT_OPENED);  
+  
+  #endif
+  return 0;
 }
 
 /*--------------------------------------------------------------------------*/
