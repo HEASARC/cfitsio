@@ -1547,11 +1547,13 @@ int ssl_get_with_curl(const char *url, curlmembuf* buffer, char* username,
   /* First attempt: verification on */
   curl_easy_setopt(curl, CURLOPT_URL, tmpUrl);
   res = curl_easy_perform(curl);
-  if (res != CURLE_OK && res != CURLE_HTTP_RETURNED_ERROR)
+  if (res != CURLE_OK && res != CURLE_HTTP_RETURNED_ERROR && 
+                res != CURLE_REMOTE_FILE_NOT_FOUND)
   {
      /*   CURLE_HTTP_RETURNED_ERROR is what gets returned if HTTP server
-        returns an error code >= 400. If that's not causing this error, assume
-        it is a verification issue. 
+        returns an error code >= 400. CURLE_REMOTE_FILE_NOT_FOUND may
+        be returned by an ftp server. If these are not causing this error, 
+        assume it is a verification issue. 
           Try again with verification removed, unless user disallowed it
         via environment variable. */
      verify = getenv("CFITSIO_VERIFY_HTTPS");
@@ -1616,7 +1618,7 @@ int ssl_get_with_curl(const char *url, curlmembuf* buffer, char* username,
              tmpUrl);
 
   }
-  else if (res == CURLE_HTTP_RETURNED_ERROR)
+  else if (res == CURLE_HTTP_RETURNED_ERROR || res == CURLE_REMOTE_FILE_NOT_FOUND)
   {
      /* Verification isn't the problem.  No need to relax peer/host checking */
      /* Unless url already contains a .gz or '?' (probably from a cgi script),
