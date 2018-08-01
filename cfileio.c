@@ -1965,13 +1965,63 @@ int ffedit_columns(
         if (clause[0] == '!' || clause[0] == '-')
         {
 	    char *clause1 = clause+1;
+	    int clen = clause1[0] ? strlen(clause1) : 0;
             /* ===================================== */
             /* Case I. delete this column or keyword */
             /* ===================================== */
 
-	    /* Check that clause does not have leading '#' and
-	       that column name exists */
-            if (clause1[0] && clause1[0] != '#' &&
+	    /* Case Ia. delete column names with 0-or-more wildcard
+	            -COLNAME+ - delete repeated columns with exact name
+		    -COLNAM*+ - delete columns matching patterns
+	    */
+	    if (*status == 0 &&
+		clen > 1 && clause1[0] != '#' &&
+		clause1[clen-1] == '+') {
+
+	      clause1[clen-1] = 0; clen--;
+
+	      /* Note that this is a delete 0 or more specification,
+		 which means that no matching columns is not an error. */
+	      do {
+		int status_del = 0;
+
+		/* Have to set status=0 so we can reset the search at
+		   start column.  Because we are deleting columns on
+		   the fly here, we have to reset the search every
+		   time. The only penalty here is execution time
+		   because leaving *status == COL_NOT_UNIQUE is merely
+		   an optimization for tables assuming the tables do
+		   not change from one call to the next. (an
+		   assumption broken in this loop) */
+		*status = 0; 
+		ffgcno(*fptr, CASEINSEN, clause1, &colnum, status);
+		/* ffgcno returns COL_NOT_UNIQUE if there are multiple columns,
+		   and COL_NOT_FOUND after the last column is found, and 
+		   COL_NOT_FOUND if no matches were found */
+		if (*status != 0 && *status != COL_NOT_UNIQUE) break;
+		
+                if (ffdcol(*fptr, colnum, &status_del) > 0) {
+		  ffpmsg("failed to delete column in input file:");
+		  ffpmsg(clause);
+		  if( colindex ) free( colindex );
+		  if( file_expr ) free( file_expr );
+		  if( clause ) free(clause);
+		  return (*status = status_del);
+		}
+                deletecol = 1; /* set flag that at least one col was deleted */
+                numcols--;
+		if (colnum > 0) colnum--;
+	      } while (*status == COL_NOT_UNIQUE);
+
+	      *status = 0; /* No matches are still successful */
+	      colnum = -1; /* Ignore the column we found */
+
+	    /* Case Ib. delete column names with wildcard or not
+	            -COLNAME  - deleted exact column
+		    -COLNAM*  - delete first column that matches pattern
+	       Note no leading '#'
+	    */
+	    } else if (clause1[0] && clause1[0] != '#' &&
 		ffgcno(*fptr, CASEINSEN, clause1, &colnum, status) <= 0)
             {
                 /* a column with this name exists, so try to delete it */
@@ -1988,9 +2038,18 @@ int ffedit_columns(
                 numcols--;
                 colnum = -1;
             }
+	    /* Case Ic. delete keyword(s)
+	            -KEYNAME,#KEYNAME  - delete exact keyword (first match)
+		    -KEYNAM*,#KEYNAM*  - delete first matching keyword
+		    -KEYNAME+,-#KEYNAME+ - delete 0-or-more exact matches of exact keyword
+		    -KEYNAM*+,-#KEYNAM*+ - delete 0-or-more wildcard matches 
+	       Note the preceding # is optional if no conflicting column name exists
+	       and that wildcard patterns are described in "colfilter" section of
+	       documentation.
+	    */
             else
             {
-	      int delall = 0, clen = 0;
+	      int delall = 0;
 	        ffcmsg();   /* clear previous error message from ffgcno */
                 /* try deleting a keyword with this name */
                 *status = 0;

@@ -8400,29 +8400,6 @@ Either of these examples will delete the keyword named \verb+VEL+.
   -VEL;
   -#VEL;
 \end{verbatim}
-It is also possible to use wildcard expressions to remove any keyword
-that matches a pattern.  Wildcard patterns are: \verb+'*'+, which matches any
-string of characters; \verb+'?'+, which matches any single character; and \verb+'#'+
-which matches any numerical string.  For example these
-statements:
-\begin{verbatim}
-  -#DEC_*;     # remove single keyword beginning with DEC_
-  -#TUNIT#;    # remove single keyword TUNIT ending w. number
-\end{verbatim}
-will remove any keyword beginning with 'DEC\_' and any
-keyword beginning with 'TUNIT' and ending with a number.
-
-However, the above expressions will only delete the {\it first}
-keyword which matches the pattern.  If multiple keywords later
-in the same CHDU match the pattern, they will not be deleted.
-To delete {\it zero or more} keywords that match the pattern, add a
-trailing \verb|'+'|.
-\begin{verbatim}
-  -#DEC_*+;     # remove all keywords beginning with DEC_
-  -#TUNIT#+;    # remove all keywords TUNIT ending w. number
-\end{verbatim}
-Note that this form will succeed if the requested keyword is not
-present.
 
 \item
 Recompute (overwrite) the values in an existing column or keyword by
@@ -8451,6 +8428,39 @@ extend over multiple lines of the  file, but multiple operations must
 still be separated by commas or semi-colons.   Any lines in the external text file
 that begin with 2 slash characters ('//') will be ignored and may be
 used to add comments into the file.
+
+It is possible to use wildcard syntax to delete either keywords or
+columns that match a pattern.  Recall that to delete either a keyword
+or a column, precede its name with a \verb+'-'+ character.
+
+Wildcard patterns are: \verb+'*'+, which matches any
+string of characters; \verb+'?'+, which matches any single character; and \verb+'#'+
+which matches any numerical string.  For example these
+statements:
+\begin{verbatim}
+  -VEL*;       # remove single column (or keyword) beginning with VEL
+  -VEL_?;      # remove single column (or keyword) VEL_? where ? is any character
+  -#DEC_*;     # remove single keyword beginning with DEC_
+  -#TUNIT#;    # remove single keyword TUNIT ending w. number
+\end{verbatim}
+will remove the columns or keywords as noted.  Be aware that if a
+\verb+'#'+ is not present, the CFITSIO engine will check for columns
+with the given name first, followed by keywords.
+
+The above expressions will only delete the {\it first}
+item which matches the pattern.  If following columns or keywords
+in the same CHDU match the pattern, they will not be deleted.
+To delete {\it zero or more} keywords that match the pattern, add a
+trailing \verb|'+'|.
+\begin{verbatim}
+  -VEL*;        # remove all columns (or keywords) beginning with VEL
+  -VEL_?;       # remove all columns (or keyword) VEL_? where ? is any character
+  -#DEC_*+;     # remove all keywords beginning with DEC_
+  -#TUNIT#+;    # remove all keywords TUNIT ending w. number
+\end{verbatim}
+Note that, as a 0-or-more matching pattern, this form will succeed if
+the requested column or keyword is not present.  In that case, the
+deletion expression will silently proceed as if no deletion was requested.
 
 Examples:
 
