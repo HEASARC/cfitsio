@@ -706,6 +706,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+enable_curl
 enable_reentrant
 enable_sse2
 enable_ssse3
@@ -1335,6 +1336,8 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --disable-curl          Disable linking with the curl library. Disables
+                          remote file i/o support
   --enable-reentrant      Enable reentrant multithreading
   --enable-sse2           Enable use of instructions in the SSE2 extended
                           instruction set
@@ -2228,6 +2231,18 @@ CFITSIO_SONAME=7
 #--------------------------------------------------------------------
 # Command options
 #--------------------------------------------------------------------
+
+ADD_CURL=yes
+# Check whether --enable-curl was given.
+if test "${enable_curl+set}" = set; then :
+  enableval=$enable_curl;  if test $enableval = no; then ADD_CURL=no; fi
+
+fi
+
+if test "x$ADD_CURL" = xno; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not linking with curl for remote file i/o support" >&5
+$as_echo "$as_me: WARNING: Not linking with curl for remote file i/o support" >&2;}
+fi
 
 # Check whether --enable-reentrant was given.
 if test "${enable_reentrant+set}" = set; then :
@@ -4782,15 +4797,16 @@ if test "x$CFITSIO_SHLIB" = x; then CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX
 # ---------------------------------------------------------------
 CURL_LIB=""
 CURL_INC=""
-# Use curl-config to get compiler & linker flags, if available.
-# On Macs, prefer XCode curl-config, and reject MacPorts version
-# until further notice to prevent build errors:
-if test "x$EXT" = xdarwin -a -x /usr/bin/curl-config; then
-  CURLCONFIG="/usr/bin/curl-config"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: checking for curl-config... choosing /usr/bin/curl-config on Mac" >&5
+if test "x$ADD_CURL" = xyes; then
+  # Use curl-config to get compiler & linker flags, if available.
+  # On Macs, prefer XCode curl-config, and reject MacPorts version
+  # until further notice to prevent build errors:
+  if test "x$EXT" = xdarwin -a -x /usr/bin/curl-config; then
+    CURLCONFIG="/usr/bin/curl-config"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: checking for curl-config... choosing /usr/bin/curl-config on Mac" >&5
 $as_echo "checking for curl-config... choosing /usr/bin/curl-config on Mac" >&6; }
-else
-  # Extract the first word of "curl-config", so it can be a program name with args.
+  else
+    # Extract the first word of "curl-config", so it can be a program name with args.
 set dummy curl-config; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
@@ -4844,30 +4860,31 @@ $as_echo "no" >&6; }
 fi
 
 
-fi
-if test "x$CURLCONFIG" != x; then
-  CURL_LIB=`$CURLCONFIG --libs`
-  CURL_INC=`$CURLCONFIG --cflags`
-  # Also reject anaconda curl on Macs until further notice:
-  if test "x$EXT" = xdarwin -a `echo $CURL_LIB $CURL_INC | grep -ci anaconda` -gt 0; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Rejecting Anaconda curl. Disabling HTTPS support." >&5
-$as_echo "$as_me: WARNING: Rejecting Anaconda curl. Disabling HTTPS support." >&2;}
-  else
-    LIBS="$CURL_LIB $LIBS"
-    if test "x$CURL_INC" != x; then
-      CFLAGS="$CURL_INC $CFLAGS"
-    fi
-    $as_echo "#define CFITSIO_HAVE_CURL 1" >>confdefs.h
-
   fi
-# No curl-config:
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: curl-config not found. Disabling HTTPS support." >&5
-$as_echo "$as_me: WARNING: curl-config not found. Disabling HTTPS support." >&2;}
-# Incomplete stubs for possible future use:
-#  AC_CHECK_LIB([curl],[main],[],
-#       [AC_MSG_WARN(Not building curl support for CFITSIO)])
-#  AC_CHECK_HEADER(curl.h,[])
+  if test "x$CURLCONFIG" != x; then
+    CURL_LIB=`$CURLCONFIG --libs`
+    CURL_INC=`$CURLCONFIG --cflags`
+    # Also reject anaconda curl on Macs until further notice:
+    if test "x$EXT" = xdarwin -a `echo $CURL_LIB $CURL_INC | grep -ci anaconda` -gt 0; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Rejecting Anaconda curl. Disabling curl support." >&5
+$as_echo "$as_me: WARNING: Rejecting Anaconda curl. Disabling curl support." >&2;}
+    else
+      LIBS="$CURL_LIB $LIBS"
+      if test "x$CURL_INC" != x; then
+        CFLAGS="$CURL_INC $CFLAGS"
+      fi
+      $as_echo "#define CFITSIO_HAVE_CURL 1" >>confdefs.h
+
+    fi
+  # No curl-config:
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: curl-config not found. Disabling curl support." >&5
+$as_echo "$as_me: WARNING: curl-config not found. Disabling curl support." >&2;}
+  # Incomplete stubs for possible future use:
+  #  AC_CHECK_LIB([curl],[main],[],
+  #       [AC_MSG_WARN(Not building curl support for CFITSIO)])
+  #  AC_CHECK_HEADER(curl.h,[])
+  fi
 fi
 
 # GSIFTP flags:
