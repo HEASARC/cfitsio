@@ -1370,8 +1370,6 @@ int ftps_open(char *filename, int rwmode, int *handle)
   }
   free(inmem.memory);
   return mem_seek(*handle, 0);
-   
-  return 0;
 }
 
 /*--------------------------------------------------------------------------*/
