@@ -7707,13 +7707,19 @@ void ffshdwn(int flag)
 {
    /* Display download status bar (to stderr), where applicable.
       This is NOT THREAD-SAFE */
+#ifdef HAVE_NET_SERVICES
    fits_dwnld_prog_bar(flag);
+#endif
 }
 
 /*-------------------------------------------------------------------*/
 int ffgtmo(void)
 {
-   return fits_net_timeout(-1);
+   int timeout=0;
+#ifdef HAVE_NET_SERVICES
+   timeout = fits_net_timeout(-1);
+#endif
+   return timeout;
 }
 
 /*-------------------------------------------------------------------*/
@@ -7722,6 +7728,7 @@ int ffstmo(int sec, int *status)
    if (*status > 0)
       return (*status);
 
+#ifdef HAVE_NET_SERVICES
    if (sec <= 0)
    {
       *status = BAD_NETTIMEOUT;
@@ -7729,5 +7736,6 @@ int ffstmo(int sec, int *status)
       return(*status);
    }
    fits_net_timeout(sec);
+#endif
    return(*status);   
 }
