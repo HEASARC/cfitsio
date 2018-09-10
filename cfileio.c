@@ -2010,7 +2010,6 @@ int ffedit_columns(
 		}
                 deletecol = 1; /* set flag that at least one col was deleted */
                 numcols--;
-		if (colnum > 0) colnum--;
 	      } while (*status == COL_NOT_UNIQUE);
 
 	      *status = 0; /* No matches are still successful */
