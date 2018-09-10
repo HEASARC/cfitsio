@@ -5099,6 +5099,64 @@ int fits_init_cfitsio(void)
         return(status);
     }
 */
+    /* 29--------------------ftps file driver-----------------------*/
+
+/*    status = fits_register_driver("ftpsfile://",
+            NULL,
+            file_shutdown,
+            file_setoptions,
+            file_getoptions, 
+            file_getversion,
+            NULL,             
+            ftps_file_open,
+            file_create,
+#ifdef HAVE_FTRUNCATE
+            file_truncate,
+#else
+            NULL,   
+#endif
+            file_close,
+            file_remove,
+            file_size,
+            file_flush,
+            file_seek,
+            file_read,
+            file_write);
+
+    if (status)
+    {
+        ffpmsg("failed to register the ftpsfile:// driver (init_cfitsio)");
+        FFUNLOCK;
+        return(status);
+    }
+*/
+    /* 30--------------------ftps memory driver-----------------------*/
+    /*  same as ftps:// driver, except memory file can be opened READWRITE */
+/*    status = fits_register_driver("ftpsmem://",
+            NULL,
+            mem_shutdown,
+            mem_setoptions,
+            mem_getoptions, 
+            mem_getversion,
+            ftps_checkfile,
+            ftps_file_open,  
+            NULL,            
+            mem_truncate,
+            mem_close_free,
+            NULL,           
+            mem_size,
+            NULL,            
+            mem_seek,
+            mem_read,
+            mem_write);
+
+    if (status)
+    {
+        ffpmsg("failed to register the ftpsmem:// driver (init_cfitsio)");
+        FFUNLOCK;
+        return(status);
+    }
+*/
 #endif
 
 
@@ -7706,13 +7764,19 @@ void ffshdwn(int flag)
 {
    /* Display download status bar (to stderr), where applicable.
       This is NOT THREAD-SAFE */
+#ifdef HAVE_NET_SERVICES
    fits_dwnld_prog_bar(flag);
+#endif
 }
 
 /*-------------------------------------------------------------------*/
 int ffgtmo(void)
 {
-   return fits_net_timeout(-1);
+   int timeout=0;
+#ifdef HAVE_NET_SERVICES
+   timeout = fits_net_timeout(-1);
+#endif
+   return timeout;
 }
 
 /*-------------------------------------------------------------------*/
@@ -7721,6 +7785,7 @@ int ffstmo(int sec, int *status)
    if (*status > 0)
       return (*status);
 
+#ifdef HAVE_NET_SERVICES
    if (sec <= 0)
    {
       *status = BAD_NETTIMEOUT;
@@ -7728,5 +7793,6 @@ int ffstmo(int sec, int *status)
       return(*status);
    }
    fits_net_timeout(sec);
+#endif
    return(*status);   
 }

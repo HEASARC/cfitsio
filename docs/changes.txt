@@ -1,5 +1,8 @@
                    Log of Changes Made to CFITSIO
                    
+  - Improved the algorithm for ensuring no tile dimensions are smaller 
+    than 4 pixels for HCOMPRESS compression.
+                   
   - Added new functions intended to assist in diagnosing (primarily 
     https) download issues: fits_show_download_progress,
     fits_get_timeout, fits_set_timeout.

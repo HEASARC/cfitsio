@@ -960,7 +960,7 @@ int imcomp_init_table(fitsfile *outfptr,
 */
 {
     char keyname[FLEN_KEYWORD], zcmptype[12];
-    int ii,  remain,  ncols, bitpix;
+    int ii,  remain,  ndiv, addToDim, ncols, bitpix;
     long nrows;
     char *ttype[] = {"COMPRESSED_DATA", "ZSCALE", "ZZERO"};
     char *tform[3];
@@ -1105,7 +1105,9 @@ int imcomp_init_table(fitsfile *outfptr,
         /* check if requested tile size causes the last tile to to have less than 4 pixels */
         remain = naxes[0] % (actual_tilesize[0]);  /* 1st dimension */
         if (remain > 0 && remain < 4) {
-            (actual_tilesize[0])++; /* try increasing tile size by 1 */
+            ndiv = naxes[0]/actual_tilesize[0]; /* integer truncation is intentional */
+            addToDim = ceil((double)remain/ndiv);
+            (actual_tilesize[0]) += addToDim; /* increase tile size */
 	   
             remain = naxes[0] % (actual_tilesize[0]);
             if (remain > 0 && remain < 4) {
@@ -1116,7 +1118,9 @@ int imcomp_init_table(fitsfile *outfptr,
 
         remain = naxes[1] % (actual_tilesize[1]);  /* 2nd dimension */
         if (remain > 0 && remain < 4) {
-            (actual_tilesize[1])++; /* try increasing tile size by 1 */
+            ndiv = naxes[1]/actual_tilesize[1]; /* integer truncation is intentional */
+            addToDim = ceil((double)remain/ndiv);
+            (actual_tilesize[1]) += addToDim; /* increase tile size */
 	   
             remain = naxes[1] % (actual_tilesize[1]);
             if (remain > 0 && remain < 4) {
