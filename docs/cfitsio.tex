@@ -3274,7 +3274,9 @@ spaces).  Trailing blank characters are not significant.
 \item[4 ] Copy 'nrows' consecutive rows from one table to another, beginning
     with row 'firstrow'.  These rows will be appended to any existing
     rows in the output table.
-   Note that the first row in a table is at row = 1. \label{ffcprw}
+   Note that the first row in a table is at row = 1. 
+   This subroutine does not support tables with variable-length columns.
+   \label{ffcprw}
 \end{description}
 
 \begin{verbatim}
