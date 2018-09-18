@@ -2111,7 +2111,7 @@ int ffcprw(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     if (*status > 0)
         return(*status);
 
-    if (outnaxis1 > innaxis1) {
+    if (outnaxis1 != innaxis1) {
        ffpmsg
        ("Input and output tables do not have same width (ffcprw)");
        return(*status = BAD_ROW_WIDTH);
