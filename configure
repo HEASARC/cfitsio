@@ -2222,10 +2222,10 @@ test -n "$target_alias" &&
 #--------------------------------------------------------------------
 CFITSIO_MAJOR=3
 
-CFITSIO_MINOR=45
+CFITSIO_MINOR=46
 
 # Increment soname each time the interface changes:
-CFITSIO_SONAME=7
+CFITSIO_SONAME=8
 
 
 #--------------------------------------------------------------------

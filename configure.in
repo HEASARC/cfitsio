@@ -15,9 +15,9 @@ AC_CANONICAL_TARGET([])
 # CFITSIO Version Numbers:
 #--------------------------------------------------------------------
 AC_SUBST(CFITSIO_MAJOR,3)
-AC_SUBST(CFITSIO_MINOR,45)
+AC_SUBST(CFITSIO_MINOR,46)
 # Increment soname each time the interface changes:
-AC_SUBST(CFITSIO_SONAME,7)
+AC_SUBST(CFITSIO_SONAME,8)
 
 #--------------------------------------------------------------------
 # Command options

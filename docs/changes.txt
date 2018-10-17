@@ -1,5 +1,7 @@
                    Log of Changes Made to CFITSIO
                    
+Version 3.46 - Oct 2018 (Ftools release)
+                   
   - Improved the algorithm for ensuring no tile dimensions are smaller 
     than 4 pixels for HCOMPRESS compression.
                    
