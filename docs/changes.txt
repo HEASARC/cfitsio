@@ -20,6 +20,10 @@ Version 3.46 - Oct 2018 (Ftools release)
 
   - Fix made to the '-P' file prefix option in funpack.
 
+  - Added wildcard deletion syntax for columns, i.e. -COLNAM* will delete
+    the first matching column as always; -COLNAM*+ will delete all matching
+    columns (or none); exact symmetry with the keyword deletion syntax.
+
 Version 3.45 - May 2018
                    
   - New support for reading and writing unsigned long long datatypes.
