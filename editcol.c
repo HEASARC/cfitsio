@@ -2621,6 +2621,48 @@ int ffkshf(fitsfile *fptr,  /* I - FITS file pointer                        */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int fffvcl(fitsfile *fptr,   /* I - FITS file pointer                       */
+           int *nvarcols,    /* O - Number of variable length columns found */
+           int *colnums,     /* O - 1-based variable column positions       */
+           int *status)      /* IO - error status                           */
+{
+/*
+   Internal function to identify which columns in a binary table are variable length.
+   The colnums array will be filled with nvarcols elements - the 1-based numbers
+   of all variable length columns in the table.  This ASSUMES calling function
+   has passed in a colnums array large enough to hold these.
+*/
+   int tfields=0,icol;
+   tcolumn *colptr=0;
+   
+   *nvarcols = 0;
+   if (*status > 0)
+       return(*status);
+       
+   if ((fptr->Fptr)->hdutype != BINARY_TBL)
+   {
+      ffpmsg("Var-length column search can only be performed on Binary tables (fffvcl)");
+      return(*status = NOT_BTABLE);
+   }
+   
+   if ((fptr->Fptr)->tableptr)
+   {
+      colptr = (fptr->Fptr)->tableptr;
+      tfields = (fptr->Fptr)->tfield;
+      for (icol=0; icol<tfields; ++icol, ++colptr)
+      {
+         /* Condition for variable length column: negative tdatatype */
+         if (colptr->tdatatype < 0)
+         {
+            colnums[*nvarcols] = icol + 1;
+            *nvarcols += 1;            
+         }
+      }      
+   }   
+   return(*status);
+}
+
+/*--------------------------------------------------------------------------*/
 int ffshft(fitsfile *fptr,  /* I - FITS file pointer                        */
            LONGLONG firstbyte, /* I - position of first byte in block to shift */
            LONGLONG nbytes,    /* I - size of block of bytes to shift          */

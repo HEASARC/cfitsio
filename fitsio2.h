@@ -509,6 +509,7 @@ int ffcins(fitsfile *fptr, LONGLONG naxis1, LONGLONG naxis2, LONGLONG nbytes,
 int ffcdel(fitsfile *fptr, LONGLONG naxis1, LONGLONG naxis2, LONGLONG nbytes,
            LONGLONG bytepos, int *status);
 int ffkshf(fitsfile *fptr, int firstcol, int tfields, int nshift, int *status);
+int fffvcl(fitsfile *fptr, int *nvarcols, int *colnums, int *status);
  
 int fffi1i1(unsigned char *input, long ntodo, double scale, double zero,
             int nullcheck, unsigned char tnull, unsigned char nullval, char
