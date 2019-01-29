@@ -1,5 +1,8 @@
                    Log of Changes Made to CFITSIO
                    
+  - fits_copy_rows (ffcprw) can now handle 'P'-type variable-length 
+    columns.
+                   
   - Added internal fffvcl() function.
                    
 Version 3.46 - Oct 2018 (Ftools release)
