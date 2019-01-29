@@ -2065,9 +2065,15 @@ int ffcprw(fitsfile *infptr,    /* I - FITS file pointer to input file  */
   copy consecutive set of rows from infptr and append it in the outfptr table.
 */
 {
-    LONGLONG innaxis1, innaxis2, outnaxis1, outnaxis2, ii, jj;
-    unsigned char *buffer;
-
+    LONGLONG innaxis1, innaxis2, outnaxis1, outnaxis2, ii, jj, icol;
+    LONGLONG iVarCol, inPos, outPos, nVarBytes;
+    unsigned char *buffer, *varColBuff=0;
+    int nInVarCols=0, nOutVarCols=0, varColDiff=0;
+    int *inVarCols=0, *outVarCols=0;
+    long nNewBlocks;
+    LONGLONG hrepeat=0, hoffset=0;
+    tcolumn *colptr=0;
+    
     if (*status > 0)
         return(*status);
 
@@ -2122,7 +2128,14 @@ int ffcprw(fitsfile *infptr,    /* I - FITS file pointer to input file  */
        ("Not enough rows in input table to copy (ffcprw)");
        return(*status = BAD_ROW_NUM);
     }
-
+    
+    if ((infptr->Fptr)->tfield != (outfptr->Fptr)->tfield)
+    {
+       ffpmsg
+       ("Input and output tables do not have same number of columns (ffcprw)");
+       return(*status = BAD_COL_NUM);
+    }
+    
     /* allocate buffer to hold 1 row of data */
     buffer = malloc( (size_t) innaxis1);
     if (!buffer) {
@@ -2131,18 +2144,126 @@ int ffcprw(fitsfile *infptr,    /* I - FITS file pointer to input file  */
        return(*status = MEMORY_ALLOCATION);
     }
  
-    /* copy the rows, 1 at a time */
-    jj = outnaxis2 + 1;
-    for (ii = firstrow; ii < firstrow + nrows; ii++) {
-        fits_read_tblbytes (infptr,  ii, 1, innaxis1, buffer, status);
-        fits_write_tblbytes(outfptr, jj, 1, innaxis1, buffer, status);
-        jj++;
+    inVarCols = malloc(infptr->Fptr->tfield*sizeof(int));
+    outVarCols = malloc(outfptr->Fptr->tfield*sizeof(int));
+    fffvcl(infptr, &nInVarCols, inVarCols, status);
+    fffvcl(outfptr, &nOutVarCols, outVarCols, status);
+    if (nInVarCols != nOutVarCols)
+       varColDiff=1;
+    else
+    {
+       for (ii=0; ii<nInVarCols; ++ii)
+       {
+          if (inVarCols[ii] != outVarCols[ii])
+          {
+             varColDiff=1;
+             break;
+          }
+       }
     }
+    
+    if (varColDiff)
+    {
+       ffpmsg("Input and output tables have different variable columns (ffcprw)");
+       free(buffer);
+       free(inVarCols);
+       free(outVarCols);
+       return(*status = BAD_COL_NUM);
+    }
+    
+    jj = outnaxis2 + 1;
+    if (nInVarCols)
+    {
+       ffirow(outfptr, outnaxis2, nrows, status);
+       for (ii = firstrow; ii < firstrow + nrows; ii++)
+       {
+          fits_read_tblbytes (infptr, ii, 1, innaxis1, buffer, status);
+          fits_write_tblbytes(outfptr, jj, 1, innaxis1, buffer, status);
+          /* Now make corrections for variable length columns */
+          iVarCol=0;
+          colptr = (infptr->Fptr)->tableptr;
+          for (icol=0; icol<(infptr->Fptr)->tfield; ++icol)
+          {
+             if (iVarCol < nInVarCols && inVarCols[iVarCol] == icol+1)
+             {
+                /* Copy from a variable length column */
+                
+                ffgdesll(infptr, icol+1, ii, &hrepeat, &hoffset, status);
+                /* If this is a bit column, hrepeat will be number of
+                   bits, not bytes. If it is a string column, hrepeat
+		   is the number of bytes, twidth is the max col width 			   and can be ignored.*/
+                if (colptr->tdatatype == -TBIT)
+		{
+		   nVarBytes = (hrepeat+7)/8;
+		}
+		else if (colptr->tdatatype == -TSTRING)
+		{
+		   nVarBytes = hrepeat;
+		}
+		else
+		{
+		   nVarBytes = hrepeat*colptr->twidth*sizeof(char);
+		}
+                inPos = (infptr->Fptr)->datastart + (infptr->Fptr)->heapstart
+				+ hoffset;
+		outPos = (outfptr->Fptr)->datastart + (outfptr->Fptr)->heapstart
+				+ (outfptr->Fptr)->heapsize;
+                ffmbyt(infptr, inPos, REPORT_EOF, status);
+        /* If this is not the last HDU in the file, then check if */
+        /* extending the heap would overwrite the following header. */
+        /* If so, then have to insert more blocks. */
+                if ( !((outfptr->Fptr)->lasthdu) )
+                {
+		   if (outPos+nVarBytes > 
+		      (outfptr->Fptr)->headstart[(outfptr->Fptr)->curhdu+1])
+		   {
+		      nNewBlocks = (long)(((outPos+nVarBytes - 1 -
+                        (outfptr->Fptr)->headstart[(outfptr->Fptr)->
+                        curhdu+1]) / 2880) + 1);
+                      if (ffiblk(outfptr, nNewBlocks, 1, status) > 0)
+                      {
+                         ffpmsg("Failed to extend the size of the variable length heap (ffcprw)");
+                         free(buffer);
+                         free(inVarCols);
+                         free(outVarCols);
+                         return(*status);
+                      }
 
+		   }
+                }
+                if (nVarBytes)
+		{
+		   varColBuff = (unsigned char *)malloc(nVarBytes);
+                   ffgbyt(infptr, nVarBytes, varColBuff, status);
+		   ffmbyt(outfptr, outPos, REPORT_EOF, status);
+                   ffpbyt(outfptr, nVarBytes, varColBuff, status);
+                   free(varColBuff);
+                   varColBuff=0;
+		}
+		ffpdes(outfptr, icol+1, jj, hrepeat, (outfptr->Fptr)->heapsize, status);
+                (outfptr->Fptr)->heapsize += nVarBytes;
+                ++iVarCol;
+             }
+             ++colptr;
+          }
+          ++jj;
+       }
+    }
+    else
+    {    
+       /* copy the rows, 1 at a time */
+       for (ii = firstrow; ii < firstrow + nrows; ii++) {
+           fits_read_tblbytes (infptr,  ii, 1, innaxis1, buffer, status);
+           fits_write_tblbytes(outfptr, jj, 1, innaxis1, buffer, status);
+           jj++;
+       }
+    }
     outnaxis2 += nrows;
     fits_update_key(outfptr, TLONGLONG, "NAXIS2", &outnaxis2, 0, status);
 
     free(buffer);
+    free(inVarCols);
+    free(outVarCols);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
