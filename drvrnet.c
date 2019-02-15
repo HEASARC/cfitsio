@@ -3331,9 +3331,12 @@ static int ftp_status(FILE *ftp, char *statusstr)
 {
   /* read through until we find a string beginning with statusstr */
   /* This needs a timeout */
+  
+  /* Modified 2/19 to return the numerical value of the returned status when
+     it differs from the requested status. */
 
   char recbuf[MAXLEN], errorstr[SHORTLEN];
-  int len;
+  int len, ftpcode=0;
 
   len = strlen(statusstr);
   while (1) {
@@ -3349,10 +3352,13 @@ static int ftp_status(FILE *ftp, char *statusstr)
       return 0; /* we're ok */
     }
     if (recbuf[0] > '3') {
-      /* oh well, some sort of error */
+      /* oh well, some sort of error. */
       snprintf(errorstr,SHORTLEN,"ERROR ftp_status wants %s but got %s", statusstr, recbuf);
       ffpmsg(errorstr);
-     return 1; 
+      /* Return the numerical code, if string can be converted to int.
+         But must not return 0 from here. */
+      ftpcode = atoi(recbuf);
+      return ftpcode ? ftpcode : 1; 
     }
     snprintf(errorstr,SHORTLEN,"ERROR ftp_status wants %s but got unexpected %s", statusstr, recbuf);
     ffpmsg(errorstr);
