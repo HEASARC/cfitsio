@@ -2517,8 +2517,20 @@ int ftp_file_exist(char *filename)
   snprintf(tmpstr,MAXLEN,"USER %s\r\n",username);
 
   status = NET_SendRaw(sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
-
-  if (ftp_status(command,"331 ")) {
+  
+  /* If command is refused due to the connection requiring SSL (ie. an
+     fpts connection), this is where it will first be detected by way
+     of a 550 error code. */
+     
+  status = ftp_status(command,"331 ");
+  if (status == 550)
+  {
+    ffpmsg ("Server is requesting SSL, will switch to ftps (ftp_file_exist)");
+    fclose(command);
+    NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
+    return -1;
+  }
+  else if (status) {
     ffpmsg ("USER error no 331 seen (ftp_file_exist)");
     fclose(command);
     NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
@@ -3003,7 +3015,7 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
           /* the http server returned a 301 or 302 redirect to a FTP URL. */
           /* Check that the file exists, because redirect many not be reliable */
 	   
-          if (ftp_file_exist(newinfile)) { 
+          if (ftp_file_exist(newinfile)>0) { 
               /* The ftp .gz compressed file is there, all is good!  */
               strcpy(urltype, "ftp://");
               strcpy(infile,newinfile);
@@ -3062,7 +3074,7 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
           /* the http server returned a 301 or 302 redirect to a FTP URL. */
           /* Check that the file exists, because redirect many not be reliable */
 	   
-          if (ftp_file_exist(newinfile)) { 
+          if (ftp_file_exist(newinfile)>0) { 
               /* The ftp .Z compressed file is there, all is good!  */
               strcpy(urltype, "ftp://");
               strcpy(infile,newinfile);
@@ -3110,7 +3122,7 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
           /* the http server returned a 301 or 302 redirect to a FTP URL. */
           /* Check that the file exists, because redirect many not be reliable */
 	   
-          if (ftp_file_exist(newinfile)) { 
+          if (ftp_file_exist(newinfile)>0) { 
               /* The ftp file is there, all is good!  */
               strcpy(urltype, "ftp://");
               strcpy(infile,newinfile);
@@ -3240,6 +3252,7 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile1)
   FILE *command;
   int sock;
   int foundfile = 0;
+  int status=0;
 
  /* Small helper functions to set the netoutfile static string */
 
@@ -3258,9 +3271,17 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile1)
     strcat(newinfile,".gz");
  
     /* look for .gz version of the file */
-    if (ftp_file_exist(newinfile)) {
+    status = ftp_file_exist(newinfile);
+    if (status > 0) {
       foundfile = 1;
       strcpy(infile,newinfile);
+    }
+    else if (status < 0)
+    {
+       /* Server is demanding an SSL connection. 
+          Change urltype and exit. */
+       strcpy(urltype, "ftps://");
+       return 0;
     }
 
     if (!foundfile) {
@@ -3283,9 +3304,17 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile1)
       strcpy(newinfile,infile);
  
       /* look for the base file */
-      if (ftp_file_exist(newinfile)) {
+      status = ftp_file_exist(newinfile);
+      if (status > 0) {
         foundfile = 1;
         strcpy(infile,newinfile);
+      }
+      else if (status < 0)
+      {
+         /* Server is demanding an SSL connection. 
+            Change urltype and exit. */
+         strcpy(urltype, "ftps://");
+         return 0;
       }
   }
 
