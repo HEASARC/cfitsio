@@ -2468,6 +2468,18 @@ int ffcins(fitsfile *fptr,  /* I - FITS file pointer                        */
         /* first move the trailing bytes (if any) in the last row */
         fbyte = bytepos + 1;
         nbytes = naxis1 - bytepos;
+        /* If the last row hasn't yet been accessed in full, it's possible
+           that logfilesize hasn't been updated to account for it (by way
+           of an ffldrc call).  This could cause ffgtbb to return with an
+           EOF error.  To prevent this, we must increase logfilesize here. 
+        */
+        if ((fptr->Fptr)->logfilesize < (fptr->Fptr)->datastart + 
+                 (fptr->Fptr)->heapstart)
+        {
+            (fptr->Fptr)->logfilesize = (((fptr->Fptr)->datastart +
+                 (fptr->Fptr)->heapstart + 2879)/2880)*2880;
+        }
+        
         ffgtbb(fptr, naxis2, fbyte, nbytes, &buffer[ninsert], status);
         (fptr->Fptr)->rowlength = newlen; /*  new row length */
 
