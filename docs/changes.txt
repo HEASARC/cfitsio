@@ -2,6 +2,9 @@
                    
   - fits_copy_rows (ffcprw) can now handle 'P'-type variable-length 
     columns.
+    
+  - Fix made to an obscure case in fits_modify_vector_len, where a 
+    wrongly issued EOF error may occur.
                    
   - Added internal fffvcl() function.
                    
