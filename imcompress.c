@@ -167,6 +167,8 @@ static int fits_ushort_to_int_inplace(unsigned short *intarray, long length, int
 static int fits_sbyte_to_int_inplace(signed char *intarray, long length, int *status);
 static int fits_ubyte_to_int_inplace(unsigned char *intarray, long length, int *status);
 
+static int fits_calc_tile_rows(long *tlpixel, long *tfpixel, int ndim, long *trowsize, long *ntrows, int *status); 
+
 /* only used for diagnoitic purposes */
 /* int fits_get_case(int *c1, int*c2, int*c3); */ 
 /*---------------------------------------------------------------------------*/
@@ -9777,4 +9779,45 @@ NOTE THAT THIS IS A SPECIALIZED ROUTINE THAT ADDS AN OFFSET OF 128 TO THE ARRAY 
 
     free(intarray);
     return(*status);
+}
+
+int fits_calc_tile_rows(long *tlpixel, long *tfpixel, int ndim, long *trowsize, long *ntrows, int *status)
+{
+
+   /*  The quantizing algorithms treat all N-dimensional tiles as if they
+       were 2 dimensions (trowsize * ntrows).  This sets trowsize to the
+       first dimensional size encountered that's > 1 (typically the X dimension).
+       ntrows will then be the product of the remaining dimensional sizes.
+       
+       Examples:  Tile = (5,4,1,3):  trowsize=5, ntrows=12
+                  Tile = (1,1,5):  trowsize=5, ntrows=1
+   */
+
+   int ii;
+   long np;
+   
+   if (*status)
+      return (*status);
+    
+   *trowsize = 0; 
+   *ntrows = 1;  
+   for (ii=0; ii<ndim; ++ii)
+   {
+      np = tlpixel[ii] - tfpixel[ii] + 1;
+      if (np > 1)
+      {
+         if (!(*trowsize))
+            *trowsize = np;
+         else
+            *ntrows *= np;
+      }
+   }
+   if (!(*trowsize))
+   {
+      /* Should only get here for the unusual case of all tile dimensions 
+         having size = 1  */
+      *trowsize = 1;
+   }  
+      
+   return (*status);
 }
