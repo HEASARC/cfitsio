@@ -470,11 +470,13 @@ if test "x$ADD_CURL" = xyes; then
     if test "x$EXT" = xdarwin -a `echo $CURL_LIB $CURL_INC | grep -ci anaconda` -gt 0; then
       AC_MSG_WARN(Rejecting Anaconda curl. Disabling curl support.)
     else
-      LIBS="$CURL_LIB $LIBS"
+      if test "x$CURL_LIB" != x; then
+        LIBS="$CURL_LIB $LIBS"
+        AC_DEFINE(CFITSIO_HAVE_CURL)
+      fi
       if test "x$CURL_INC" != x; then
         CFLAGS="$CURL_INC $CFLAGS"
       fi
-      AC_DEFINE(CFITSIO_HAVE_CURL)
     fi
   # No curl-config:
   else
