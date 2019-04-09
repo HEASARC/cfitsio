@@ -2067,7 +2067,7 @@ int ffedit_columns(
 		  haswild = 1;
 		}
 
-		if (delall && haswild) {
+		if (haswild) {
 		  /* ffdkey() behaves differently if the pattern has a wildcard:
 		     it only checks from the "current" header position to the end, and doesn't
 		     check before the "current" header position.  Therefore, for the
