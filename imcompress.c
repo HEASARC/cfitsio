@@ -167,6 +167,8 @@ static int fits_ushort_to_int_inplace(unsigned short *intarray, long length, int
 static int fits_sbyte_to_int_inplace(signed char *intarray, long length, int *status);
 static int fits_ubyte_to_int_inplace(unsigned char *intarray, long length, int *status);
 
+static int fits_calc_tile_rows(long *tlpixel, long *tfpixel, int ndim, long *trowsize, long *ntrows, int *status); 
+
 /* only used for diagnoitic purposes */
 /* int fits_get_case(int *c1, int*c2, int*c3); */ 
 /*---------------------------------------------------------------------------*/
@@ -1443,7 +1445,7 @@ int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr, int *status)
     long naxes[MAX_COMPRESS_DIM], fpixel[MAX_COMPRESS_DIM];
     long lpixel[MAX_COMPRESS_DIM], tile[MAX_COMPRESS_DIM];
     long tilesize[MAX_COMPRESS_DIM];
-    long i0, i1, i2, i3, i4, i5;
+    long i0, i1, i2, i3, i4, i5, trowsize, ntrows;
     char card[FLEN_CARD];
 
     if (*status > 0)
@@ -1632,15 +1634,22 @@ int imcomp_compress_image (fitsfile *infptr, fitsfile *outfptr, int *status)
 	       If it is a floating point array, then we need to check for null
 	       only if the anynul parameter returned a true value when reading the tile
 	  */
+          
+          /* Collapse sizes of higher dimension tiles into 2 dimensional
+             equivalents needed by the quantizing algorithms for
+             floating point types */
+          fits_calc_tile_rows(lpixel, fpixel, naxis, &trowsize,
+                            &ntrows, status);
+
           if (anynul && datatype == TFLOAT) {
               imcomp_compress_tile(outfptr, row, datatype, tiledata, tilelen,
-                               tile[0], tile[1], 1, &fltnull, status);
+                               trowsize, ntrows, 1, &fltnull, status);
           } else if (anynul && datatype == TDOUBLE) {
               imcomp_compress_tile(outfptr, row, datatype, tiledata, tilelen,
-                               tile[0], tile[1], 1, &dblnull, status);
+                               trowsize, ntrows, 1, &dblnull, status);
           } else {
               imcomp_compress_tile(outfptr, row, datatype, tiledata, tilelen,
-                               tile[0], tile[1], 0, &dummy, status);
+                               trowsize, ntrows, 0, &dummy, status);
           }
 
           /* set flag if we found any null values */
@@ -3448,7 +3457,7 @@ int fits_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer     */
     long tfpixel[MAX_COMPRESS_DIM], tlpixel[MAX_COMPRESS_DIM];
     long rowdim[MAX_COMPRESS_DIM], offset[MAX_COMPRESS_DIM],ntemp;
     long fpixel[MAX_COMPRESS_DIM], lpixel[MAX_COMPRESS_DIM];
-    long i5, i4, i3, i2, i1, i0, irow;
+    long i5, i4, i3, i2, i1, i0, irow, trowsize, ntrows;
     int ii, ndim, pixlen, tilenul;
     int  tstatus, buffpixsiz;
     void *buffer;
@@ -3649,12 +3658,18 @@ int fits_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer     */
               /* copy the intersecting pixels to this tile from the input */
               imcomp_merge_overlap(buffer, pixlen, ndim, tfpixel, tlpixel, 
                      bnullarray, array, fpixel, lpixel, nullcheck, status);
+                     
+             /* Collapse sizes of higher dimension tiles into 2 dimensional
+                equivalents needed by the quantizing algorithms for
+                floating point types */
+              fits_calc_tile_rows(tlpixel, tfpixel, ndim, &trowsize,
+                              &ntrows, status);
 
               /* compress the tile again, and write it back to the FITS file */
               imcomp_compress_tile (fptr, irow, datatype, buffer, 
                                     thistilesize[0],
-				    tlpixel[0] - tfpixel[0] + 1,
-				    tlpixel[1] - tfpixel[1] + 1,
+				    trowsize,
+				    ntrows,
 				    nullcheck, nullval, 
 				    status);
             }
@@ -9777,4 +9792,45 @@ NOTE THAT THIS IS A SPECIALIZED ROUTINE THAT ADDS AN OFFSET OF 128 TO THE ARRAY 
 
     free(intarray);
     return(*status);
+}
+
+int fits_calc_tile_rows(long *tlpixel, long *tfpixel, int ndim, long *trowsize, long *ntrows, int *status)
+{
+
+   /*  The quantizing algorithms treat all N-dimensional tiles as if they
+       were 2 dimensions (trowsize * ntrows).  This sets trowsize to the
+       first dimensional size encountered that's > 1 (typically the X dimension).
+       ntrows will then be the product of the remaining dimensional sizes.
+       
+       Examples:  Tile = (5,4,1,3):  trowsize=5, ntrows=12
+                  Tile = (1,1,5):  trowsize=5, ntrows=1
+   */
+
+   int ii;
+   long np;
+   
+   if (*status)
+      return (*status);
+    
+   *trowsize = 0; 
+   *ntrows = 1;  
+   for (ii=0; ii<ndim; ++ii)
+   {
+      np = tlpixel[ii] - tfpixel[ii] + 1;
+      if (np > 1)
+      {
+         if (!(*trowsize))
+            *trowsize = np;
+         else
+            *ntrows *= np;
+      }
+   }
+   if (!(*trowsize))
+   {
+      /* Should only get here for the unusual case of all tile dimensions 
+         having size = 1  */
+      *trowsize = 1;
+   }  
+      
+   return (*status);
 }
