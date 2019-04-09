@@ -2049,6 +2049,7 @@ int ffedit_columns(
             else
             {
 	      int delall = 0;
+	      int haswild = 0;
 	        ffcmsg();   /* clear previous error message from ffgcno */
                 /* try deleting a keyword with this name */
                 *status = 0;
@@ -2061,12 +2062,24 @@ int ffedit_columns(
 		  delall = 1;
 		  clause1[clen-1] = 0;
 		}
+		/* Determine if this pattern has wildcards */
+		if (strchr(clause1,'?') || strchr(clause1,'*') || strchr(clause1,'#')) {
+		  haswild = 1;
+		}
+
+		if (delall && haswild) {
+		  /* ffdkey() behaves differently if the pattern has a wildcard:
+		     it only checks from the "current" header position to the end, and doesn't
+		     check before the "current" header position.  Therefore, for the
+		     case of wildcards we will have to reset to the beginning. */
+		  ffmaky(*fptr, 1, status);  /* reset pointer to beginning of header */
+		}
+
 		/* Single or repeated deletions until done */
 		do {
 		  if (ffdkey(*fptr, clause1, status) > 0)
 		    {
-		      if (delall && *status == KEY_NO_EXIST &&
-			  (strchr(clause1,'*') || strchr(clause1,'?')) ) {
+		      if (delall && *status == KEY_NO_EXIST) {
 			/* Found last wildcard item. Stop deleting */
 			ffcmsg();
 			*status = 0;
