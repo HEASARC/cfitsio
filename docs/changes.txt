@@ -1,5 +1,8 @@
                    Log of Changes Made to CFITSIO
-                   
+  
+  - Fix made to ffedit_columns() for case of multiple col filters
+    containing wildcards.  Only the first filter was being searched.
+                     
   - fits_copy_rows (ffcprw) can now handle 'P'-type variable-length 
     columns.
     
