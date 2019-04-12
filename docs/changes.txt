@@ -1,5 +1,10 @@
                    Log of Changes Made to CFITSIO
-  
+
+  - Fix to ffgsky and ffgkls functions for case of keyword with long
+    string values where the final CONTINUE statement ended with '&'.
+    If the final CONTINUE also contained a comment, it was being 
+    repeated twice when passed back through the 'comm' argument.
+      
   - Fix made to ffedit_columns() for case of multiple col filters
     containing wildcards.  Only the first filter was being searched.
                      
