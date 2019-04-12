@@ -942,6 +942,11 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer             */
             else
 	    {
                 contin = 0;
+                /* Without this, for case of a last CONTINUE statement ending
+                   with a '&', nextcomm would retain the same string from 
+                   from the previous loop iteration and the comment
+                   would get concantenated twice. */
+                nextcomm[0] = 0;
             }
 
             /* concantenate comment strings (if any) */
@@ -1046,6 +1051,11 @@ int ffgsky( fitsfile *fptr,     /* I - FITS file pointer             */
             else
 	    {
                 contin = 0;
+                /* Without this, for case of a last CONTINUE statement ending
+                   with a '&', nextcomm would retain the same string from 
+                   from the previous loop iteration and the comment
+                   would get concantenated twice. */
+                nextcomm[0] = 0;
             }
 
             /* concantenate comment strings (if any) */
