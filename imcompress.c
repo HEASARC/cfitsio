@@ -971,6 +971,10 @@ int imcomp_init_table(fitsfile *outfptr,
     char comm[FLEN_COMMENT];
     long actual_tilesize[MAX_COMPRESS_DIM]; /* Actual size to use for tiles */
     int is_primary=0; /* Is this attempting to write to the primary? */
+    int nQualifyDims=0; /* For Hcompress, number of image dimensions with required pixels. */
+    int noHigherDims=1; /* Set to true if all tile dims other than x are size 1. */
+    int firstDim=-1, secondDim=-1; /* Indices of first and second tiles dimensions
+                                with width > 1 */
     
     if (*status > 0)
         return(*status);
@@ -1030,15 +1034,37 @@ int imcomp_init_table(fitsfile *outfptr,
     memcpy(actual_tilesize, outfptr->Fptr->request_tilesize, MAX_COMPRESS_DIM * sizeof(long));
 
     if ((outfptr->Fptr)->request_compress_type == HCOMPRESS_1) {
-
+         
+         /* Tiles must ultimately have 2 (and only 2) dimensions, each with
+             at least 4 pixels. First catch the case where the image
+             itself won't allow this. */
          if (naxis < 2 ) {
             ffpmsg("Hcompress cannot be used with 1-dimensional images (imcomp_init_table)");
             return(*status = DATA_COMPRESSION_ERR);
-
-	 } else if  (naxes[0] < 4 || naxes[1] < 4) {
-            ffpmsg("Hcompress minimum image dimension is 4 pixels (imcomp_init_table)");
-            return(*status = DATA_COMPRESSION_ERR);
+	 }
+         for (ii=0; ii<naxis; ii++)
+         {
+            if (naxes[ii] >= 4)
+               ++nQualifyDims;
          }
+         if (nQualifyDims < 2)
+         {
+            ffpmsg("Hcompress minimum image dimension is 4 pixels (imcomp_init_table)");
+            return(*status = DATA_COMPRESSION_ERR);            
+         }
+
+         /* Handle 2 special cases for backwards compatibility.
+            1) If both X and Y tile dims are set to full size, ignore
+               any other requested dimensions and just set their sizes to 1. 
+            2) If X is full size and all the rest are size 1, attempt to
+               find a reasonable size for Y. All other 1-D tile specifications
+               will be rejected. */
+         for (ii=1; ii<naxis; ++ii)
+            if (actual_tilesize[ii] != 0 && actual_tilesize[ii] != 1)
+            {
+               noHigherDims = 0;
+               break;
+            }
 
          if ((actual_tilesize[0] <= 0) &&
              (actual_tilesize[1] == -1) ){
@@ -1052,8 +1078,7 @@ int imcomp_init_table(fitsfile *outfptr,
                      actual_tilesize[ii] = 1;
 	      }
 
-         } else if ((actual_tilesize[0] <= 0) &&
-             (actual_tilesize[1] == 0 || actual_tilesize[1] == 1) ){
+         } else if ((actual_tilesize[0] <= 0) && noHigherDims) {
 	     
              /*
               The Hcompress algorithm is inherently 2D in nature, so the row by row
@@ -1096,35 +1121,66 @@ int imcomp_init_table(fitsfile *outfptr,
                       actual_tilesize[1] = 17;
 		  }
 	      }
-        } else if (actual_tilesize[0] < 4 ||
-                   actual_tilesize[1] < 4) {
-
-            /* user-specified tile size is too small */
-            ffpmsg("Hcompress minimum tile dimension is 4 pixels (imcomp_init_table)");
+        } else {
+           if (actual_tilesize[0] <= 0)
+              actual_tilesize[0] = naxes[0];
+           for (ii=1; ii<naxis; ++ii)
+           {
+              if (actual_tilesize[ii] < 0)
+                 actual_tilesize[ii] = naxes[ii];
+              else if (actual_tilesize[ii] == 0)
+                 actual_tilesize[ii] = 1;
+           }
+        }
+        
+        for (ii=0; ii<naxis; ++ii)
+        {
+           if (actual_tilesize[ii] > 1)
+           {
+              if (firstDim < 0)
+                 firstDim = ii;
+              else if (secondDim < 0)
+                 secondDim = ii;
+              else
+              {
+                 ffpmsg("Hcompress tiles can only have 2 dimensions (imcomp_init_table)");
+                 return(*status = DATA_COMPRESSION_ERR);
+              }
+           }
+        }
+        if (firstDim < 0 || secondDim < 0)
+        {
+            ffpmsg("Hcompress tiles must have 2 dimensions (imcomp_init_table)");
             return(*status = DATA_COMPRESSION_ERR);
-	}
+        }
+        
+        if (actual_tilesize[firstDim] < 4 || actual_tilesize[secondDim] < 4)
+        {
+           ffpmsg("Hcompress minimum tile dimension is 4 pixels (imcomp_init_table)");
+           return (*status = DATA_COMPRESSION_ERR);
+        }
 	
         /* check if requested tile size causes the last tile to to have less than 4 pixels */
-        remain = naxes[0] % (actual_tilesize[0]);  /* 1st dimension */
+        remain = naxes[firstDim] % (actual_tilesize[firstDim]);  /* 1st dimension */
         if (remain > 0 && remain < 4) {
-            ndiv = naxes[0]/actual_tilesize[0]; /* integer truncation is intentional */
+            ndiv = naxes[firstDim]/actual_tilesize[firstDim]; /* integer truncation is intentional */
             addToDim = ceil((double)remain/ndiv);
-            (actual_tilesize[0]) += addToDim; /* increase tile size */
+            (actual_tilesize[firstDim]) += addToDim; /* increase tile size */
 	   
-            remain = naxes[0] % (actual_tilesize[0]);
+            remain = naxes[firstDim] % (actual_tilesize[firstDim]);
             if (remain > 0 && remain < 4) {
                 ffpmsg("Last tile along 1st dimension has less than 4 pixels (imcomp_init_table)");
                 return(*status = DATA_COMPRESSION_ERR);	
             }        
         }
 
-        remain = naxes[1] % (actual_tilesize[1]);  /* 2nd dimension */
+        remain = naxes[secondDim] % (actual_tilesize[secondDim]);  /* 2nd dimension */
         if (remain > 0 && remain < 4) {
-            ndiv = naxes[1]/actual_tilesize[1]; /* integer truncation is intentional */
+            ndiv = naxes[secondDim]/actual_tilesize[secondDim]; /* integer truncation is intentional */
             addToDim = ceil((double)remain/ndiv);
-            (actual_tilesize[1]) += addToDim; /* increase tile size */
+            (actual_tilesize[secondDim]) += addToDim; /* increase tile size */
 	   
-            remain = naxes[1] % (actual_tilesize[1]);
+            remain = naxes[secondDim] % (actual_tilesize[secondDim]);
             if (remain > 0 && remain < 4) {
                 ffpmsg("Last tile along 2nd dimension has less than 4 pixels (imcomp_init_table)");
                 return(*status = DATA_COMPRESSION_ERR);	
