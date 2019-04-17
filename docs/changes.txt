@@ -1,5 +1,8 @@
                    Log of Changes Made to CFITSIO
 
+  - Tile sizes for compression may now be specified for any pair of
+    axes, where previously 2D tiles where limited to just X and y.
+    
   - Fix to ffgsky and ffgkls functions for case of keyword with long
     string values where the final CONTINUE statement ended with '&'.
     If the final CONTINUE also contained a comment, it was being 
