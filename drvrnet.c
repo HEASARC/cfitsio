@@ -3403,7 +3403,7 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile1)
       {
          /* Server is demanding an SSL connection. 
             Change urltype and exit. */
-         strcpy(urltype, "ftps://");
+         ftps_checkfile(urltype, infile, outfile1);
          return 0;
       }
   }
