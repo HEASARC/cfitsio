@@ -17,7 +17,7 @@
 #endif
 
 #define MAX_PREFIX_LEN 20  /* max length of file type prefix (e.g. 'http://') */
-#define MAX_DRIVERS 28     /* max number of file I/O drivers */
+#define MAX_DRIVERS 30     /* max number of file I/O drivers */
 
 typedef struct    /* structure containing pointers to I/O driver functions */ 
 {   char prefix[MAX_PREFIX_LEN];
@@ -5114,7 +5114,7 @@ int fits_init_cfitsio(void)
 
     /* 29--------------------ftps file driver-----------------------*/
 
-/*    status = fits_register_driver("ftpsfile://",
+    status = fits_register_driver("ftpsfile://",
             NULL,
             file_shutdown,
             file_setoptions,
@@ -5142,10 +5142,10 @@ int fits_init_cfitsio(void)
         FFUNLOCK;
         return(status);
     }
-*/
+
     /* 30--------------------ftps memory driver-----------------------*/
     /*  same as ftps:// driver, except memory file can be opened READWRITE */
-/*    status = fits_register_driver("ftpsmem://",
+    status = fits_register_driver("ftpsmem://",
             NULL,
             mem_shutdown,
             mem_setoptions,
@@ -5169,7 +5169,7 @@ int fits_init_cfitsio(void)
         FFUNLOCK;
         return(status);
     }
-*/
+
 #endif
 
 

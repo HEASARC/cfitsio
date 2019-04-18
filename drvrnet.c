@@ -1373,6 +1373,96 @@ int ftps_open(char *filename, int rwmode, int *handle)
 }
 
 /*--------------------------------------------------------------------------*/
+int ftps_file_open(char *filename, int rwmode, int *handle)
+{
+  int ii, flen;
+  char errStr[MAXLEN];
+  curlmembuf inmem;
+  
+  /* Check if output file is actually a memory file */
+  if (!strncmp(netoutfile, "mem:", 4) )
+  {
+     /* allow the memory file to be opened with write access */
+     return( ftps_open(filename, READONLY, handle) );
+  }     
+
+  flen = strlen(netoutfile);
+  if (!flen)
+  {
+      /* cfileio made a mistake, we need to know where to write the file */
+      ffpmsg("Output file not set, shouldn't have happened (ftps_file_open)");
+      return (FILE_NOT_OPENED);
+  }
+  
+  inmem.memory=0;
+  inmem.size=0;
+  if (setjmp(env) != 0)
+  {
+     alarm(0);
+     signal(SIGALRM, SIG_DFL);
+     ffpmsg("Timeout (ftps_file_open)");
+     snprintf(errStr, MAXLEN, "Download timeout exceeded: %d seconds",net_timeout);
+     ffpmsg(errStr);
+     ffpmsg("   Timeout may be adjusted with fits_set_timeout");
+     free(inmem.memory);
+     return (FILE_NOT_OPENED);
+  }
+  signal(SIGALRM, signal_handler);
+  alarm(net_timeout);
+  if (ftps_open_network(filename, &inmem))
+  {
+     alarm(0);
+     signal(SIGALRM, SIG_DFL);
+     ffpmsg("Unable to read ftps file into memory (ftps_file_open)");
+     free(inmem.memory);
+     return (FILE_NOT_OPENED);  
+  }
+  alarm(0);
+  signal(SIGALRM, SIG_DFL);
+  
+  if (*netoutfile == '!')
+  {
+     /* user wants to clobber disk file, if it already exists */
+     for (ii = 0; ii < flen; ii++)
+         netoutfile[ii] = netoutfile[ii + 1];  /* remove '!' */
+
+     file_remove(netoutfile);
+  }
+
+  /* Create the output file */
+  if (file_create(netoutfile,handle)) 
+  {
+    ffpmsg("Unable to create output file (ftps_file_open)");
+    ffpmsg(netoutfile);
+    free(inmem.memory);
+    return (FILE_NOT_OPENED);
+  }
+    
+  if (inmem.size % 2880)
+  {
+    snprintf(errStr, MAXLEN,
+	    "Content-Length not a multiple of 2880 (ftps_file_open) %d",
+	    inmem.size);
+    ffpmsg(errStr);
+  }
+   
+  if (file_write(*handle, inmem.memory, inmem.size))
+  {
+     ffpmsg("Error copying ftps file to disk file (ftps_file_open)");
+     ffpmsg(filename);
+     ffpmsg(netoutfile);
+     free(inmem.memory);
+     file_close(*handle);
+     return (FILE_NOT_OPENED);
+  }
+  free(inmem.memory); 
+  file_close(*handle);
+  
+  return file_open(netoutfile, rwmode, handle);
+  
+}
+
+/*--------------------------------------------------------------------------*/
 int ftps_open_network(char *filename, curlmembuf* buffer)
 {
   char agentStr[SHORTLEN];
@@ -3237,7 +3327,7 @@ int ftps_checkfile (char *urltype, char *infile, char *outfile1)
      }
 
      if (!strncmp(outfile1, "mem:", 4))
-        strcpy(urltype,"httpsmem://");
+        strcpy(urltype,"ftpsmem://");
      else       
         strcpy(urltype,"ftpsfile://");
    }
@@ -3280,7 +3370,7 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile1)
     {
        /* Server is demanding an SSL connection. 
           Change urltype and exit. */
-       strcpy(urltype, "ftps://");
+       ftps_checkfile(urltype, infile, outfile1);
        return 0;
     }
 
