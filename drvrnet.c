@@ -1307,7 +1307,9 @@ int ftps_open(char *filename, int rwmode, int *handle)
 {
   curlmembuf inmem;
   char errStr[MAXLEN];
+  unsigned char firstByte=0,secondByte=0;
   int status=0;
+  FILE *compressedFile=0;
     
   /* don't do r/w files */
   if (rwmode != 0) {
@@ -1344,6 +1346,7 @@ int ftps_open(char *filename, int rwmode, int *handle)
   
   alarm(0);
   signal(SIGALRM, SIG_DFL);
+
   /* We now have the file transfered from the ftps server into the
      inmem.memory buffer.  Now transfer that into a FITS memory file. */
   if ((status = mem_create(filename, handle)))
@@ -1352,21 +1355,47 @@ int ftps_open(char *filename, int rwmode, int *handle)
      free(inmem.memory);
      return (FILE_NOT_OPENED);
   }
-  
-  if (inmem.size % 2880)
+  if (inmem.size > 1)
   {
-     snprintf(errStr,MAXLEN,"Content-Length not a multiple of 2880 (ftps_open) %u",
-         inmem.size);
-     ffpmsg(errStr);
+     firstByte = (unsigned char)inmem.memory[0];
+     secondByte = (unsigned char)inmem.memory[1];
   }
-  status = mem_write(*handle, inmem.memory, inmem.size);
-  if (status)
+  if (firstByte == 0x1f && secondByte == 0x8b)
   {
-     ffpmsg("Error copying https file into memory (ftps_open)");
-     ffpmsg(filename);
-     free(inmem.memory);
-     mem_close_free(*handle);
-     return (FILE_NOT_OPENED);
+     compressedFile = fmemopen(inmem.memory, inmem.size, "r");
+     if (!compressedFile)
+     {
+        ffpmsg("Error creating file in memory (ftps_open)");
+        free(inmem.memory);
+        return(FILE_NOT_OPENED);
+     }
+     if(mem_uncompress2mem(filename,compressedFile,*handle))
+     {
+        ffpmsg("Error writing compressed memory file (ftps_open)");
+        ffpmsg(filename);
+        fclose(compressedFile);
+        free(inmem.memory);
+        return(FILE_NOT_OPENED);
+     }
+     fclose(compressedFile);
+  }
+  else
+  {
+     if (inmem.size % 2880)
+     {
+        snprintf(errStr,MAXLEN,"Content-Length not a multiple of 2880 (ftps_open) %u",
+            inmem.size);
+        ffpmsg(errStr);
+     }
+     status = mem_write(*handle, inmem.memory, inmem.size);
+     if (status)
+     {
+        ffpmsg("Error copying https file into memory (ftps_open)");
+        ffpmsg(filename);
+        free(inmem.memory);
+        mem_close_free(*handle);
+        return (FILE_NOT_OPENED);
+     }
   }
   free(inmem.memory);
   return mem_seek(*handle, 0);
@@ -1375,9 +1404,11 @@ int ftps_open(char *filename, int rwmode, int *handle)
 /*--------------------------------------------------------------------------*/
 int ftps_file_open(char *filename, int rwmode, int *handle)
 {
-  int ii, flen;
+  int ii, flen, status=0;
   char errStr[MAXLEN];
+  unsigned char firstByte=0,secondByte=0;
   curlmembuf inmem;
+  FILE *compressedInFile=0;
   
   /* Check if output file is actually a memory file */
   if (!strncmp(netoutfile, "mem:", 4) )
@@ -1437,26 +1468,71 @@ int ftps_file_open(char *filename, int rwmode, int *handle)
     free(inmem.memory);
     return (FILE_NOT_OPENED);
   }
-    
-  if (inmem.size % 2880)
-  {
-    snprintf(errStr, MAXLEN,
-	    "Content-Length not a multiple of 2880 (ftps_file_open) %d",
-	    inmem.size);
-    ffpmsg(errStr);
+  
+  if (inmem.size > 1)
+  {  
+     firstByte = (unsigned char)inmem.memory[0];
+     secondByte = (unsigned char)inmem.memory[1];
   }
-   
-  if (file_write(*handle, inmem.memory, inmem.size))
+  if (firstByte == 0x1f && secondByte == 0x8b)
   {
-     ffpmsg("Error copying ftps file to disk file (ftps_file_open)");
-     ffpmsg(filename);
-     ffpmsg(netoutfile);
-     free(inmem.memory);
+     /* Doing a file create/close/reopen to mimic the procedure in
+        ftp_file_open.  The earlier call to file_create ensures that 
+        checking is performed for the Hera case. */
      file_close(*handle);
-     return (FILE_NOT_OPENED);
+     /* Reopen with direct call to fopen to set the outfile pointer */
+     outfile = fopen(netoutfile,"w");
+     if (!outfile)
+     {
+        ffpmsg("Unable to reopen the output file (ftps_file_open)");
+        ffpmsg(netoutfile);
+        free(inmem.memory);
+        return(FILE_NOT_OPENED);
+     }
+     
+     compressedInFile = fmemopen(inmem.memory, inmem.size, "r");
+     if (!compressedInFile)
+     {
+        ffpmsg("Error creating compressed file in memory (ftps_file_open)");
+        free(inmem.memory);
+        fclose(outfile);
+        return(FILE_NOT_OPENED);
+     }
+     if (uncompress2file(filename, compressedInFile, outfile, &status))
+     {
+        ffpmsg("Unable to uncompress the output file (ftps_file_open)");
+        ffpmsg(filename);
+        ffpmsg(netoutfile);
+        fclose(outfile);
+        fclose(compressedInFile);
+        free(inmem.memory);
+        return(FILE_NOT_OPENED);
+     }
+     fclose(outfile);
+     fclose(compressedInFile);
+  }
+  else
+  {
+     if (inmem.size % 2880)
+     {
+       snprintf(errStr, MAXLEN,
+	       "Content-Length not a multiple of 2880 (ftps_file_open) %d",
+	       inmem.size);
+       ffpmsg(errStr);
+     }
+
+     if (file_write(*handle, inmem.memory, inmem.size))
+     {
+        ffpmsg("Error copying ftps file to disk file (ftps_file_open)");
+        ffpmsg(filename);
+        ffpmsg(netoutfile);
+        free(inmem.memory);
+        file_close(*handle);
+        return (FILE_NOT_OPENED);
+     }
+     file_close(*handle);
   }
   free(inmem.memory); 
-  file_close(*handle);
   
   return file_open(netoutfile, rwmode, handle);
   
