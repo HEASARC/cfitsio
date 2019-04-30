@@ -93,7 +93,7 @@ all:
 all-nofitsio:
 		${MAKE} stand_alone "FITSIO_SRC="
 
-stand_alone:	lib${PACKAGE}.a
+stand_alone:	lib${PACKAGE}.a shared
 
 lib${PACKAGE}.a:	${OBJECTS}
 		${ARCHIVE} $@ ${OBJECTS}; \
