@@ -252,7 +252,7 @@ static int root_send_buffer(int sock, int op, char *buffer, int buflen);
 static int root_recv_buffer(int sock, int *op, char *buffer,int buflen);
 static int root_openfile(char *filename, char *rwmode, int *sock);
 static int encode64(unsigned s_len, char *src, unsigned d_len, char *dst);
-static int ssl_get_with_curl(const char *url, curlmembuf* buffer, 
+static int ssl_get_with_curl(char *url, curlmembuf* buffer, 
                 char* username, char* password);
 static size_t curlToMemCallback(void *buffer, size_t size, size_t nmemb, void *userp);
 static int curlProgressCallback(void *clientp, double dltotal, double dlnow,
@@ -1270,7 +1270,8 @@ int https_open_network(char *filename, curlmembuf* buffer)
   int status=0;
   char *urlname=0;
   
-  urlname = (char *)malloc(strlen(filename)+9);
+  /* urlname may have .gz or .Z appended to it */
+  urlname = (char *)malloc(strlen(filename)+12);
   strcpy(urlname,"https://");
   strcat(urlname,filename);
   status = ssl_get_with_curl(urlname, buffer, 0, 0);
@@ -1307,9 +1308,12 @@ int ftps_open(char *filename, int rwmode, int *handle)
 {
   curlmembuf inmem;
   char errStr[MAXLEN];
+  char localFilename[MAXLEN]; /* may have .gz or .Z appended in ftps_open_network.*/
   unsigned char firstByte=0,secondByte=0;
   int status=0;
   FILE *compressedFile=0;
+  
+  strcpy(localFilename,filename);
     
   /* don't do r/w files */
   if (rwmode != 0) {
@@ -1335,7 +1339,7 @@ int ftps_open(char *filename, int rwmode, int *handle)
   signal(SIGALRM, signal_handler);
   alarm(net_timeout);
 
-  if (ftps_open_network(filename, &inmem))
+  if (ftps_open_network(localFilename, &inmem))
   {
      alarm(0);
      signal(SIGALRM, SIG_DFL);
@@ -1360,7 +1364,8 @@ int ftps_open(char *filename, int rwmode, int *handle)
      firstByte = (unsigned char)inmem.memory[0];
      secondByte = (unsigned char)inmem.memory[1];
   }
-  if (firstByte == 0x1f && secondByte == 0x8b)
+  if (firstByte == 0x1f && secondByte == 0x8b || 
+        strstr(localFilename,".Z"))
   {
      compressedFile = fmemopen(inmem.memory, inmem.size, "r");
      if (!compressedFile)
@@ -1369,7 +1374,7 @@ int ftps_open(char *filename, int rwmode, int *handle)
         free(inmem.memory);
         return(FILE_NOT_OPENED);
      }
-     if(mem_uncompress2mem(filename,compressedFile,*handle))
+     if(mem_uncompress2mem(localFilename,compressedFile,*handle))
      {
         ffpmsg("Error writing compressed memory file (ftps_open)");
         ffpmsg(filename);
@@ -1406,9 +1411,12 @@ int ftps_file_open(char *filename, int rwmode, int *handle)
 {
   int ii, flen, status=0;
   char errStr[MAXLEN];
+  char localFilename[MAXLEN]; /* may have .gz or .Z appended */
   unsigned char firstByte=0,secondByte=0;
   curlmembuf inmem;
   FILE *compressedInFile=0;
+  
+  strcpy(localFilename, filename);
   
   /* Check if output file is actually a memory file */
   if (!strncmp(netoutfile, "mem:", 4) )
@@ -1440,7 +1448,7 @@ int ftps_file_open(char *filename, int rwmode, int *handle)
   }
   signal(SIGALRM, signal_handler);
   alarm(net_timeout);
-  if (ftps_open_network(filename, &inmem))
+  if (ftps_open_network(localFilename, &inmem))
   {
      alarm(0);
      signal(SIGALRM, SIG_DFL);
@@ -1450,6 +1458,13 @@ int ftps_file_open(char *filename, int rwmode, int *handle)
   }
   alarm(0);
   signal(SIGALRM, SIG_DFL);
+  
+  if (strstr(localFilename, ".Z"))
+  {
+     ffpmsg(".Z decompression not supported for file output (ftps_file_open)");
+     free(inmem.memory);
+     return (FILE_NOT_OPENED);
+  }
   
   if (*netoutfile == '!')
   {
@@ -1549,14 +1564,9 @@ int ftps_open_network(char *filename, curlmembuf* buffer)
   char *hostname=0;
   char *dirpath=0;
   float version=0.0;
-  int iDirpath=0, len=0;  
+  int iDirpath=0, len=0;
+  int status=0; 
   
-  if (strstr(filename,".Z"))
-  {
-     ffpmsg("x-compress .Z format not currently supported with ftps transfers");
-     return(FILE_NOT_OPENED);
-  }
-
   strcpy(url,"ftp://");
 
   /* The filename may already contain a username and password, as indicated 
@@ -1605,7 +1615,8 @@ int ftps_open_network(char *filename, curlmembuf* buffer)
      password = agentStr;
   }
   
-  if (strlen(url) + strlen(hostname) + strlen(dirpath) > MAXLEN-1)
+  /* url may have .gz or .Z appended to it */
+  if (strlen(url) + strlen(hostname) + strlen(dirpath) > MAXLEN-4)
   {
      ffpmsg("Full URL name is too long (ftps_open_network)");
      return (FILE_NOT_OPENED);
@@ -1619,14 +1630,16 @@ int ftps_open_network(char *filename, curlmembuf* buffer)
   printf("hostname = %s\n",hostname);
 */
 
-  return (ssl_get_with_curl(url, buffer, username, password));
+  status = ssl_get_with_curl(url, buffer, username, password);
+  strcpy(filename, url); /* may have appended a .gz or .Z */
+  return status;
   
  }
 
 /*--------------------------------------------------------------------------*/
 /* Function to perform common curl interfacing for https or ftps transfers */
 
-int ssl_get_with_curl(const char *url, curlmembuf* buffer, char* username,
+int ssl_get_with_curl(char *url, curlmembuf* buffer, char* username,
                         char* password)
 {
   /* These settings will force libcurl to perform host and peer authentication.
@@ -1640,14 +1653,18 @@ int ssl_get_with_curl(const char *url, curlmembuf* buffer, char* username,
   float version=0.0;
   char *tmpUrl=0;
   char *verify=0;
+  int isFtp = (strstr(url,"ftp://") != NULL);
+  int experimentWithCompression = (!strstr(url,".gz") && !strstr(url,".Z")
+                && !strstr(url,"?"));
+  int notFound=1;
   #ifdef CFITSIO_HAVE_CURL
   CURL *curl=0;
   CURLcode res;
   char curlErrBuf[CURL_ERROR_SIZE];
   
-  if (strstr(url,".Z"))
+  if (strstr(url,".Z") && !isFtp)
   {
-     ffpmsg("x-compress .Z format not currently supported with curl https/ftps transfers");
+     ffpmsg("x-compress .Z format not currently supported with curl https transfers");
      return(FILE_NOT_OPENED);
   }
 
@@ -1694,7 +1711,7 @@ int ssl_get_with_curl(const char *url, curlmembuf* buffer, char* username,
   
   /* USESSL only necessary for ftps, though it may not hurt anything
      if it were also set for https. */
-  if (strstr(tmpUrl, "ftp://"))
+  if (isFtp)
   {
      curl_easy_setopt(curl, CURLOPT_USE_SSL, CURLUSESSL_ALL);
      if (username)
@@ -1703,9 +1720,10 @@ int ssl_get_with_curl(const char *url, curlmembuf* buffer, char* username,
         curl_easy_setopt(curl, CURLOPT_PASSWORD, password);
   }
   
-  /* Unless url already contains a .gz or '?' (probably from a cgi script),
+  /* Unless url already contains a .gz, .Z or '?' (probably from a cgi script),
      first try with .gz appended. */
-  if (!strstr(url,".gz") && !strstr(url,"?"))
+  
+  if (experimentWithCompression)
      strcat(tmpUrl, ".gz");
 
   /* First attempt: verification on */
@@ -1742,13 +1760,28 @@ int ssl_get_with_curl(const char *url, curlmembuf* buffer, char* username,
      res = curl_easy_perform(curl);
      if (res != CURLE_OK)
      {
-        /* Unless original url already contains a .gz or '?' (probably from a cgi script),
-           try again without.gz appended. */
-        if (!strstr(url,".gz") && !strstr(url,"?"))
+        if (isFtp && experimentWithCompression)
+        {
+           strcpy(tmpUrl, url);
+           strcat(tmpUrl, ".Z");
+           curl_easy_setopt(curl, CURLOPT_URL, tmpUrl);
+           /* For ftps, make another attempt with .Z */
+           res = curl_easy_perform(curl);
+           if (res == CURLE_OK)
+           {
+              /* Success, but should still warn */
+              fprintf(stderr, "Warning: Unable to perform SSL verification on https transfer from: %s\n",
+                   tmpUrl);
+              notFound=0;          
+           }
+        }
+          
+        /* If we've been appending .gz or .Z, try a final time without. */
+        if (experimentWithCompression && notFound)
         {
            strcpy(tmpUrl, url);
            curl_easy_setopt(curl, CURLOPT_URL, tmpUrl);
-           /* Third attempt: no verification, no .gz appended */ 
+           /* attempt with no verification, no .gz or .Z appended */ 
            res = curl_easy_perform(curl);
            if (res != CURLE_OK)
            {
@@ -1784,23 +1817,36 @@ int ssl_get_with_curl(const char *url, curlmembuf* buffer, char* username,
   }
   else if (res == CURLE_HTTP_RETURNED_ERROR || res == CURLE_REMOTE_FILE_NOT_FOUND)
   {
-     /* Verification isn't the problem.  No need to relax peer/host checking */
-     /* Unless url already contains a .gz or '?' (probably from a cgi script),
-        try again with original url unappended */
-     if (!strstr(url,".gz") && !strstr(url,"?"))
+     /* .gz extension failed and verification isn't the problem.  
+         No need to relax peer/host checking */
+     /* Unless url already contained a .gz, .Z or '?' (probably from a cgi script),
+        try again with original url unappended (but first try .Z if this is ftps). */
+     if (experimentWithCompression)
      {
-        strcpy(tmpUrl, url);
-        curl_easy_setopt(curl, CURLOPT_URL, tmpUrl); 
-        res = curl_easy_perform(curl);
-        if (res != CURLE_OK)
+        if (isFtp)
         {
-           snprintf(errStr,MAXLEN,"libcurl error: %d",res);
-           ffpmsg(errStr);
-           if (strlen(curlErrBuf))
-              ffpmsg(curlErrBuf);     
-           curl_easy_cleanup(curl);  
-           free(tmpUrl);
-           return (FILE_NOT_OPENED);
+           strcpy(tmpUrl, url);
+           strcat(tmpUrl, ".Z");
+           curl_easy_setopt(curl, CURLOPT_URL, tmpUrl); 
+           res = curl_easy_perform(curl);
+           if (res == CURLE_OK)
+              notFound = 0;
+        }
+        if (notFound)
+        {
+           strcpy(tmpUrl, url);
+           curl_easy_setopt(curl, CURLOPT_URL, tmpUrl); 
+           res = curl_easy_perform(curl);
+           if (res != CURLE_OK)
+           {
+              snprintf(errStr,MAXLEN,"libcurl error: %d",res);
+              ffpmsg(errStr);
+              if (strlen(curlErrBuf))
+                 ffpmsg(curlErrBuf);     
+              curl_easy_cleanup(curl);  
+              free(tmpUrl);
+              return (FILE_NOT_OPENED);
+           }
         }
      }
      else
@@ -1815,6 +1861,9 @@ int ssl_get_with_curl(const char *url, curlmembuf* buffer, char* username,
      }
   }
   
+  /* If we made it here, assume tmpUrl was successful. Calling routines
+     must make sure url can hold up to 3 extra chars */
+  strcpy(url, tmpUrl);
   
   free(tmpUrl);
   curl_easy_cleanup(curl);
