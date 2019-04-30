@@ -2066,7 +2066,7 @@ int ffcprw(fitsfile *infptr,    /* I - FITS file pointer to input file  */
 */
 {
     LONGLONG innaxis1, innaxis2, outnaxis1, outnaxis2, ii, jj, icol;
-    LONGLONG iVarCol, inPos, outPos, nVarBytes;
+    LONGLONG iVarCol, inPos, outPos, nVarBytes, nVarAllocBytes = 0;
     unsigned char *buffer, *varColBuff=0;
     int nInVarCols=0, nOutVarCols=0, varColDiff=0;
     int *inVarCols=0, *outVarCols=0;
@@ -2165,10 +2165,8 @@ int ffcprw(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     if (varColDiff)
     {
        ffpmsg("Input and output tables have different variable columns (ffcprw)");
-       free(buffer);
-       free(inVarCols);
-       free(outVarCols);
-       return(*status = BAD_COL_NUM);
+       *status = BAD_COL_NUM;
+       goto CLEANUP_RETURN;
     }
     
     jj = outnaxis2 + 1;
@@ -2191,7 +2189,8 @@ int ffcprw(fitsfile *infptr,    /* I - FITS file pointer to input file  */
                 ffgdesll(infptr, icol+1, ii, &hrepeat, &hoffset, status);
                 /* If this is a bit column, hrepeat will be number of
                    bits, not bytes. If it is a string column, hrepeat
-		   is the number of bytes, twidth is the max col width 			   and can be ignored.*/
+		   is the number of bytes, twidth is the max col width 
+		   and can be ignored.*/
                 if (colptr->tdatatype == -TBIT)
 		{
 		   nVarBytes = (hrepeat+7)/8;
@@ -2209,9 +2208,9 @@ int ffcprw(fitsfile *infptr,    /* I - FITS file pointer to input file  */
 		outPos = (outfptr->Fptr)->datastart + (outfptr->Fptr)->heapstart
 				+ (outfptr->Fptr)->heapsize;
                 ffmbyt(infptr, inPos, REPORT_EOF, status);
-        /* If this is not the last HDU in the file, then check if */
-        /* extending the heap would overwrite the following header. */
-        /* If so, then have to insert more blocks. */
+		/* If this is not the last HDU in the file, then check if */
+		/* extending the heap would overwrite the following header. */
+		/* If so, then have to insert more blocks. */
                 if ( !((outfptr->Fptr)->lasthdu) )
                 {
 		   if (outPos+nVarBytes > 
@@ -2223,22 +2222,33 @@ int ffcprw(fitsfile *infptr,    /* I - FITS file pointer to input file  */
                       if (ffiblk(outfptr, nNewBlocks, 1, status) > 0)
                       {
                          ffpmsg("Failed to extend the size of the variable length heap (ffcprw)");
-                         free(buffer);
-                         free(inVarCols);
-                         free(outVarCols);
-                         return(*status);
+			 goto CLEANUP_RETURN;
                       }
 
 		   }
                 }
                 if (nVarBytes)
 		{
-		   varColBuff = (unsigned char *)malloc(nVarBytes);
+		   if (nVarBytes > nVarAllocBytes)
+		   {
+		     /* Grow the copy buffer to accomodate the new maximum size. 
+			Note it is safe to call realloc() with null input pointer, 
+			which is equivalent to malloc(). */
+		     unsigned char *varColBuff1 = (unsigned char *) realloc(varColBuff, nVarBytes);
+		     if (! varColBuff1)
+		     {
+		       *status = MEMORY_ALLOCATION;
+		       ffpmsg("failed to allocate memory for variable column copy (ffcprw)");
+		       goto CLEANUP_RETURN;
+		     }
+		     /* Record the new state */
+		     varColBuff = varColBuff1;
+		     nVarAllocBytes = nVarBytes;
+		   }
+		   /* Copy date from input to output */
                    ffgbyt(infptr, nVarBytes, varColBuff, status);
-		   ffmbyt(outfptr, outPos, REPORT_EOF, status);
+		   ffmbyt(outfptr, outPos, IGNORE_EOF, status);
                    ffpbyt(outfptr, nVarBytes, varColBuff, status);
-                   free(varColBuff);
-                   varColBuff=0;
 		}
 		ffpdes(outfptr, icol+1, jj, hrepeat, (outfptr->Fptr)->heapsize, status);
                 (outfptr->Fptr)->heapsize += nVarBytes;
@@ -2261,9 +2271,11 @@ int ffcprw(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     outnaxis2 += nrows;
     fits_update_key(outfptr, TLONGLONG, "NAXIS2", &outnaxis2, 0, status);
 
+ CLEANUP_RETURN:
     free(buffer);
     free(inVarCols);
     free(outVarCols);
+    if (varColBuff) free(varColBuff);
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
