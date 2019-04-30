@@ -5,6 +5,7 @@ includedir=@includedir@
 
 Name: cfitsio
 Description: FITS File Subroutine Library
+URL: https://heasarc.gsfc.nasa.gov/fitsio/
 Version: @CFITSIO_MAJOR@.@CFITSIO_MINOR@
 Libs: -L${libdir} -lcfitsio @LIBS@
 Libs.private: -lm
