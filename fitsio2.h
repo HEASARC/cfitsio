@@ -203,6 +203,12 @@ extern int Fitsio_Pthread_Status;
 #else
 #define BYTESWAPPED FALSE
 #endif
+
+#elif defined(__riscv)
+
+/* RISC-V is little endian */
+
+#define BYTESWAPPED TRUE
  
 #else
 
