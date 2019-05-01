@@ -1473,6 +1473,13 @@ int ftps_file_open(char *filename, int rwmode, int *handle)
      return (FILE_NOT_OPENED);
   }
   
+  if (strcmp(localFilename, filename))
+  {
+     /* ftps_open_network has already checked that this is safe to
+        copy into string of size FLEN_FILENAME */
+     strcpy(filename, localFilename);
+  }
+  
   if (*netoutfile == '!')
   {
      /* user wants to clobber disk file, if it already exists */
