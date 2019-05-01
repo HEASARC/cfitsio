@@ -2222,7 +2222,7 @@ test -n "$target_alias" &&
 #--------------------------------------------------------------------
 CFITSIO_MAJOR=3
 
-CFITSIO_MINOR=46
+CFITSIO_MINOR=47
 
 # Increment soname each time the interface changes:
 CFITSIO_SONAME=8
@@ -4799,14 +4799,7 @@ CURL_LIB=""
 CURL_INC=""
 if test "x$ADD_CURL" = xyes; then
   # Use curl-config to get compiler & linker flags, if available.
-  # On Macs, prefer XCode curl-config, and reject MacPorts version
-  # until further notice to prevent build errors:
-  if test "x$EXT" = xdarwin -a -x /usr/bin/curl-config; then
-    CURLCONFIG="/usr/bin/curl-config"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: checking for curl-config... choosing /usr/bin/curl-config on Mac" >&5
-$as_echo "checking for curl-config... choosing /usr/bin/curl-config on Mac" >&6; }
-  else
-    # Extract the first word of "curl-config", so it can be a program name with args.
+  # Extract the first word of "curl-config", so it can be a program name with args.
 set dummy curl-config; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
@@ -4816,7 +4809,6 @@ else
   if test -n "$CURLCONFIG"; then
   ac_cv_prog_CURLCONFIG="$CURLCONFIG" # Let the user override the test.
 else
-  ac_prog_rejected=no
 as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
 for as_dir in $PATH
 do
@@ -4824,10 +4816,6 @@ do
   test -z "$as_dir" && as_dir=.
     for ac_exec_ext in '' $ac_executable_extensions; do
   if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    if test "$as_dir/$ac_word$ac_exec_ext" = "/opt/local/bin/curl-config"; then
-       ac_prog_rejected=yes
-       continue
-     fi
     ac_cv_prog_CURLCONFIG="curl-config"
     $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
     break 2
@@ -4836,18 +4824,6 @@ done
   done
 IFS=$as_save_IFS
 
-if test $ac_prog_rejected = yes; then
-  # We found a bogon in the path, so make sure we never use it.
-  set dummy $ac_cv_prog_CURLCONFIG
-  shift
-  if test $# != 0; then
-    # We chose a different compiler from the bogus one.
-    # However, it has the same basename, so the bogon will be chosen
-    # first if we set CURLCONFIG to just the basename; use the full file name.
-    shift
-    ac_cv_prog_CURLCONFIG="$as_dir/$ac_word${1+' '}$@"
-  fi
-fi
 fi
 fi
 CURLCONFIG=$ac_cv_prog_CURLCONFIG
@@ -4860,23 +4836,16 @@ $as_echo "no" >&6; }
 fi
 
 
-  fi
   if test "x$CURLCONFIG" != x; then
     CURL_LIB=`$CURLCONFIG --libs`
     CURL_INC=`$CURLCONFIG --cflags`
-    # Also reject anaconda curl on Macs until further notice:
-    if test "x$EXT" = xdarwin -a `echo $CURL_LIB $CURL_INC | grep -ci anaconda` -gt 0; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Rejecting Anaconda curl. Disabling curl support." >&5
-$as_echo "$as_me: WARNING: Rejecting Anaconda curl. Disabling curl support." >&2;}
-    else
-      if test "x$CURL_LIB" != x; then
-        LIBS="$CURL_LIB $LIBS"
-        $as_echo "#define CFITSIO_HAVE_CURL 1" >>confdefs.h
+    if test "x$CURL_LIB" != x; then
+      LIBS="$CURL_LIB $LIBS"
+      $as_echo "#define CFITSIO_HAVE_CURL 1" >>confdefs.h
 
-      fi
-      if test "x$CURL_INC" != x; then
-        CFLAGS="$CURL_INC $CFLAGS"
-      fi
+    fi
+    if test "x$CURL_INC" != x; then
+      CFLAGS="$CURL_INC $CFLAGS"
     fi
   # No curl-config:
   else
