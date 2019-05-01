@@ -1225,6 +1225,7 @@ void https_set_verbose(int flag);
 int ftps_checkfile(char* urltype, char *infile, char *outfile);
 int ftps_open(char *filename, int rwmode, int *handle);
 int ftps_file_open(char *filename, int rwmode, int *handle);
+int ftps_compress_open(char *filename, int rwmode, int *driverhandle);
 
 /* ftp driver I/O routines */
 

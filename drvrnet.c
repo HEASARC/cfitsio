@@ -1351,6 +1351,13 @@ int ftps_open(char *filename, int rwmode, int *handle)
   alarm(0);
   signal(SIGALRM, SIG_DFL);
 
+  if (strcmp(localFilename, filename))
+  {
+     /* ftps_open_network has already checked that this is safe to
+        copy into string of size FLEN_FILENAME */
+     strcpy(filename, localFilename);
+  }
+  
   /* We now have the file transfered from the ftps server into the
      inmem.memory buffer.  Now transfer that into a FITS memory file. */
   if ((status = mem_create(filename, handle)))
@@ -1554,6 +1561,135 @@ int ftps_file_open(char *filename, int rwmode, int *handle)
 }
 
 /*--------------------------------------------------------------------------*/
+int ftps_compress_open(char *filename, int rwmode, int *handle)
+{
+   int ii, flen, status=0;
+  char errStr[MAXLEN];
+  char localFilename[MAXLEN]; /* may have .gz or .Z appended */
+  unsigned char firstByte=0,secondByte=0;
+  curlmembuf inmem;
+  FILE *compressedInFile=0;
+  
+  strcpy(localFilename, filename);
+  
+  flen = strlen(netoutfile);
+  if (!flen)
+  {
+      /* cfileio made a mistake, we need to know where to write the file */
+      ffpmsg("Output file not set, shouldn't have happened (ftps_compress_open)");
+      return (FILE_NOT_OPENED);
+  }
+  
+  inmem.memory=0;
+  inmem.size=0;
+  if (setjmp(env) != 0)
+  {
+     alarm(0);
+     signal(SIGALRM, SIG_DFL);
+     ffpmsg("Timeout (ftps_compress_open)");
+     snprintf(errStr, MAXLEN, "Download timeout exceeded: %d seconds",net_timeout);
+     ffpmsg(errStr);
+     ffpmsg("   Timeout may be adjusted with fits_set_timeout");
+     free(inmem.memory);
+     return (FILE_NOT_OPENED);
+  }
+  signal(SIGALRM, signal_handler);
+  alarm(net_timeout);
+  if (ftps_open_network(localFilename, &inmem))
+  {
+     alarm(0);
+     signal(SIGALRM, SIG_DFL);
+     ffpmsg("Unable to read ftps file into memory (ftps_compress_open)");
+     free(inmem.memory);
+     return (FILE_NOT_OPENED);  
+  }
+  alarm(0);
+  signal(SIGALRM, SIG_DFL);
+  
+  if (strcmp(localFilename, filename))
+  {
+     /* ftps_open_network has already checked that this is safe to
+        copy into string of size FLEN_FILENAME */
+     strcpy(filename, localFilename);
+  }
+  if (inmem.size > 1)
+  {  
+     firstByte = (unsigned char)inmem.memory[0];
+     secondByte = (unsigned char)inmem.memory[1];
+  }
+  if ((firstByte == 0x1f && secondByte == 0x8b) || 
+        strstr(localFilename,".gz") || strstr(localFilename,".Z"))
+  {
+     if (*netoutfile == '!')
+     {
+        /* user wants to clobber disk file, if it already exists */
+        for (ii = 0; ii < flen; ii++)
+            netoutfile[ii] = netoutfile[ii + 1];  /* remove '!' */
+
+        file_remove(netoutfile);
+     }
+     /* Create the output file */
+     if (file_create(netoutfile,handle)) 
+     {
+       ffpmsg("Unable to create output file (ftps_compress_open)");
+       ffpmsg(netoutfile);
+       free(inmem.memory);
+       return (FILE_NOT_OPENED);
+     }
+     if (file_write(*handle, inmem.memory, inmem.size))
+     {
+        ffpmsg("Error copying ftps file to disk file (ftps_file_open)");
+        ffpmsg(filename);
+        ffpmsg(netoutfile);
+        free(inmem.memory);
+        file_close(*handle);
+        return (FILE_NOT_OPENED);
+     }
+     file_close(*handle);
+
+    /* File is on disk, let's uncompress it into memory */
+    if (NULL == (diskfile = fopen(netoutfile,"r"))) {
+      ffpmsg("Unable to reopen disk file (ftps_compress_open)");
+      ffpmsg(netoutfile);
+      free(inmem.memory);
+      return (FILE_NOT_OPENED);
+    }
+
+    if ((status =  mem_create(localFilename,handle))) {
+      ffpmsg("Unable to create memory file (ftps_compress_open)");
+      ffpmsg(localFilename);
+      free(inmem.memory);
+      fclose(diskfile);
+      diskfile=0;
+      return (FILE_NOT_OPENED);
+    }
+
+    status = mem_uncompress2mem(localFilename,diskfile,*handle);
+    fclose(diskfile);
+    diskfile=0;
+
+    if (status) {
+      ffpmsg("Error writing compressed memory file (ftps_compress_open)");
+      free(inmem.memory);
+      mem_close_free(*handle);
+      return (FILE_NOT_OPENED);
+     }
+      
+  }
+  else
+  {
+     ffpmsg("Cannot write uncompressed infile to compressed outfile (ftps_compress_open)");
+     free(inmem.memory);
+     return (FILE_NOT_OPENED);
+  }
+      
+  free(inmem.memory); 
+  
+  return mem_seek(*handle,0);
+  
+}
+
+/*--------------------------------------------------------------------------*/
 int ftps_open_network(char *filename, curlmembuf* buffer)
 {
   char agentStr[SHORTLEN];
@@ -1563,8 +1699,9 @@ int ftps_open_network(char *filename, curlmembuf* buffer)
   char *password=0;
   char *hostname=0;
   char *dirpath=0;
+  char *strptr=0;
   float version=0.0;
-  int iDirpath=0, len=0;
+  int iDirpath=0, len=0, origLen=0;
   int status=0; 
   
   strcpy(url,"ftp://");
@@ -1615,7 +1752,7 @@ int ftps_open_network(char *filename, curlmembuf* buffer)
      password = agentStr;
   }
   
-  /* url may have .gz or .Z appended to it */
+  /* url may eventually have .gz or .Z appended to it */
   if (strlen(url) + strlen(hostname) + strlen(dirpath) > MAXLEN-4)
   {
      ffpmsg("Full URL name is too long (ftps_open_network)");
@@ -1630,8 +1767,23 @@ int ftps_open_network(char *filename, curlmembuf* buffer)
   printf("hostname = %s\n",hostname);
 */
 
+  origLen = strlen(url);
   status = ssl_get_with_curl(url, buffer, username, password);
-  strcpy(filename, url); /* may have appended a .gz or .Z */
+  /* If original url has .gz or .Z appended, do the same to the original filename.
+     Note that url also differs from original filename at this point, since
+     filename may have included username@password (which url would not). */
+  len = strlen(url);
+  if ((len-origLen) == 2 || (len-origLen) == 3)
+  {
+     if (strlen(filename) > FLEN_FILENAME - 4)
+     {
+        ffpmsg("Filename is too long to append compression ext (ftps_open_network)");
+        /* buffer memory must be freed by calling routine */
+        return (FILE_NOT_OPENED);
+     }
+     strptr = url + origLen;
+     strcat(filename, strptr);
+  }
   return status;
   
  }
@@ -3453,8 +3605,18 @@ int ftps_checkfile (char *urltype, char *infile, char *outfile1)
 
      if (!strncmp(outfile1, "mem:", 4))
         strcpy(urltype,"ftpsmem://");
-     else       
-        strcpy(urltype,"ftpsfile://");
+     else
+     {
+        if (strstr(outfile1,".gz") || strstr(outfile1,".Z"))
+        {
+           /* Note that for Curl dependent handlers, we can't check
+           at this point if infile will have a .gz or .Z appended. 
+           If it does not, the ftpscompress 'open' handler will fail.*/
+           strcpy(urltype,"ftpscompress://");
+        }
+        else
+           strcpy(urltype,"ftpsfile://");
+     }
    }
    return 0;
 }

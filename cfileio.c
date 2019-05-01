@@ -17,7 +17,7 @@
 #endif
 
 #define MAX_PREFIX_LEN 20  /* max length of file type prefix (e.g. 'http://') */
-#define MAX_DRIVERS 30     /* max number of file I/O drivers */
+#define MAX_DRIVERS 31     /* max number of file I/O drivers */
 
 typedef struct    /* structure containing pointers to I/O driver functions */ 
 {   char prefix[MAX_PREFIX_LEN];
@@ -5170,6 +5170,31 @@ int fits_init_cfitsio(void)
         return(status);
     }
 
+    /* 31--------------------ftps compressed file driver------------------*/
+    status = fits_register_driver("ftpscompress://",
+            NULL,
+            mem_shutdown,
+            mem_setoptions,
+            mem_getoptions, 
+            mem_getversion,
+            NULL,            /* checkfile not needed */ 
+            ftps_compress_open,
+            0,            /* create function not required */
+            mem_truncate,
+            mem_close_free,
+            0,            /* remove function not required */
+            mem_size,
+            0,            /* flush function not required */
+            mem_seek,
+            mem_read,
+            mem_write);
+
+    if (status)
+    {
+        ffpmsg("failed to register the ftpscompress:// driver (init_cfitsio)");
+        FFUNLOCK;
+        return(status);
+    }
 #endif
 
 
