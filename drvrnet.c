@@ -870,6 +870,7 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
     snprintf (errorstr,MAXLEN,"http header short (http_open_network) %s",recbuf);
     ffpmsg(errorstr);
     fclose(*httpfile);
+    *httpfile=0;
     return (FILE_NOT_OPENED);
   }
 
@@ -922,6 +923,7 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
 	     scratchstr2 += 7;
 	     strcpy(turl, scratchstr2);
 	     fclose (*httpfile);
+             *httpfile=0;
 
              /* note the recursive call to itself */
 	     return 
@@ -942,11 +944,13 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
              {
                 ffpmsg("Error: redirected url string too long (http_open_network)");
                 fclose(*httpfile);
+                *httpfile=0;
                 return URL_PARSE_ERROR;
              }
 	     strcpy(url, scratchstr2);
              strcpy(contentencoding,"ftp://");
-	     fclose (*httpfile); 
+	     fclose (*httpfile);
+             *httpfile=0; 
 	     return 0;
           }
           
@@ -968,6 +972,7 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
              strcpy(url, scratchstr2);
              strcpy(contentencoding,"https://");
              fclose(*httpfile);
+             *httpfile=0;
              return 0;
           }
           
@@ -980,6 +985,7 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
 
     /* error.  could not open the http file */
     fclose(*httpfile);
+    *httpfile=0;
     return (FILE_NOT_OPENED);
   }
 
@@ -1007,6 +1013,7 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
         {
            ffpmsg("Error: content-encoding string too long (http_open_network)");
            fclose(*httpfile);
+           *httpfile=0;
            return URL_PARSE_ERROR;
         }
 	strcpy(contentencoding,scratchstr);
@@ -3328,10 +3335,11 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
 /* Called by cfileio after parsing the output file off of the input file url */
 
   char newinfile[MAXLEN];
-  FILE *httpfile;
+  FILE *httpfile=0;
   char contentencoding[MAXLEN];
   int contentlength;
   int foundfile = 0;
+  int status=0;
 
   /* set defaults  */
   strcpy(urltype,"http://");
@@ -3382,8 +3390,9 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
     strcpy(newinfile,infile);
     strcat(newinfile,".gz");
 
-    if (!http_open_network(newinfile,&httpfile,contentencoding,
-			   &contentlength)) {
+    status = http_open_network(newinfile,&httpfile,contentencoding,
+			   &contentlength);
+    if (!status) {
       if (!strcmp(contentencoding, "ftp://")) {
           /* this is a signal from http_open_network that indicates that */
           /* the http server returned a 301 or 302 redirect to a FTP URL. */
@@ -3425,10 +3434,17 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
           return 0;
       } else {
           /* found the http .gz compressed file */
-          fclose(httpfile);
+          if (httpfile)
+             fclose(httpfile);
           foundfile = 1;
           strcpy(infile,newinfile);
       }
+    }
+    else if (status != FILE_NOT_OPENED)
+    {
+       /* Some other error occured aside from not finding file, such as
+          a url parsing error.  Don't continue trying with other extensions. */
+       return status;   
     }
 
    if (!foundfile) {
@@ -3471,12 +3487,13 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
 		    }
                 } 
             }
-            return 0;   /* found the .gz compressed ftp file */
+            return 0;   /* found the .Z compressed ftp file */
           }
           /* fall through to here if ftp redirect does not exist */
         }  else {
            /* found the http .Z compressed file */
-           fclose(httpfile);
+           if (httpfile)
+              fclose(httpfile);
            foundfile = 1;
            strcpy(infile,newinfile);
         }
@@ -3528,8 +3545,9 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
              leave infile alone and do immediate return. */
           return 0;
       }  else {
-          /* found the http .Z compressed file */
-          fclose(httpfile);
+          /* found the base named file */
+          if (httpfile)
+             fclose(httpfile);
           foundfile = 1;
           strcpy(infile,newinfile);
       }
