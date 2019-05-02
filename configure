@@ -4795,8 +4795,9 @@ if test "x$CFITSIO_SHLIB" = x; then CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX
 
 # Curl library (will be pulled in to the shared CFITSIO library):
 # ---------------------------------------------------------------
-CURL_LIB=""
 CURL_INC=""
+CURL_LIB=""
+CURL_LIB_PATH=""
 if test "x$ADD_CURL" = xyes; then
   # Use curl-config to get compiler & linker flags, if available.
   # Extract the first word of "curl-config", so it can be a program name with args.
@@ -4840,7 +4841,15 @@ fi
     CURL_LIB=`$CURLCONFIG --libs`
     CURL_INC=`$CURLCONFIG --cflags`
     if test "x$CURL_LIB" != x; then
-      LIBS="$CURL_LIB $LIBS"
+      # Mac OS: For third-party curl-config, acquire an rpath:
+      if test `echo $CURL_LIB | grep -c "^\-L"` -gt 0; then
+        CURL_LIB_PATH=`echo ${CURL_LIB} | tr " " "\012" | grep "^\-L" | tr "\012" " " | sed 's:-L::' | sed 's: $::'`
+      fi
+      if test "x$CURL_LIB_PATH" != x; then
+        LIBS="-Wl,-rpath,$CURL_LIB_PATH $CURL_LIB $LIBS"
+      else
+        LIBS="$CURL_LIB $LIBS"
+      fi
       $as_echo "#define CFITSIO_HAVE_CURL 1" >>confdefs.h
 
     fi
