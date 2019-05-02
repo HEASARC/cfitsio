@@ -1,5 +1,9 @@
                    Log of Changes Made to CFITSIO
 
+Version 3.47 - May 2019
+
+  - Added set of drivers for performing ftps file transfers.
+
   - Tile sizes for compression may now be specified for any pair of
     axes, where previously 2D tiles where limited to just X and y.
     
