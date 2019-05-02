@@ -4842,7 +4842,7 @@ fi
     CURL_INC=`$CURLCONFIG --cflags`
     if test "x$CURL_LIB" != x; then
       # Mac OS: For third-party curl-config, acquire an rpath:
-      if test `echo $CURL_LIB | grep -c "^\-L"` -gt 0; then
+      if test `echo $host | grep -c apple-darwin` -ne 0 -a `echo $CURL_LIB | grep -c "^\-L"` -gt 0; then
         CURL_LIB_PATH=`echo ${CURL_LIB} | tr " " "\012" | grep "^\-L" | tr "\012" " " | sed 's:-L::' | sed 's: $::'`
       fi
       if test "x$CURL_LIB_PATH" != x; then
