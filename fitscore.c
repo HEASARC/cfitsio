@@ -73,11 +73,12 @@ float ffvers(float *version)  /* IO - version number */
   return the current version number of the FITSIO software
 */
 {
-      *version = (float) 3.46;
+      *version = (float) 3.47;
 
-/*       Oct 2018
+/*       May 2019
 
    Previous releases:
+      *version = 3.46       Oct 2018
       *version = 3.45       May 2018
       *version = 3.44       Apr 2018
       *version = 3.43       Mar 2018
