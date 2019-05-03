@@ -469,6 +469,9 @@ if test "x$ADD_CURL" = xyes; then
           LIBS_CURL="-Wl,-rpath,$CURL_LIB_PATH $CURL_LIB"
         fi
       fi
+      if test `echo $host | grep -c cygwin` -ne 0 -o `echo $host | grep -c mingw32` -ne 0; then
+          LIBS="$CURL_LIB $LIBS"
+      fi
       AC_DEFINE(CFITSIO_HAVE_CURL)
     fi
     if test "x$CURL_INC" != x; then

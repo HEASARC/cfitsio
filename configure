@@ -4850,6 +4850,9 @@ fi
           LIBS_CURL="-Wl,-rpath,$CURL_LIB_PATH $CURL_LIB"
         fi
       fi
+      if test `echo $host | grep -c cygwin` -ne 0 -o `echo $host | grep -c mingw32` -ne 0; then
+          LIBS="$CURL_LIB $LIBS"
+      fi
       $as_echo "#define CFITSIO_HAVE_CURL 1" >>confdefs.h
 
     fi
