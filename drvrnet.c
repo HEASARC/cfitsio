@@ -1975,7 +1975,7 @@ int ssl_get_with_curl(char *url, curlmembuf* buffer, char* username,
               fprintf(stderr, "Warning: Unable to perform SSL verification on https transfer from: %s\n",
                    tmpUrl);           
         }
-        else
+        else if (notFound)
         {
            snprintf(errStr,MAXLEN,"libcurl error: %d",res);
            ffpmsg(errStr);
