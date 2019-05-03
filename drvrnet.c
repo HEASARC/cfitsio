@@ -840,8 +840,11 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
     snprintf(tmpstr1, SHORTLEN,"Authorization: Basic %s\r\n", tmpstr2);
 
     if (strlen(tmpstr) + strlen(tmpstr1) > MAXLEN - 1)
+    {
+        fclose(*httpfile);
+        *httpfile=0;
         return (FILE_NOT_OPENED);
-
+    }
     strcat(tmpstr,tmpstr1);
   }
 
@@ -851,7 +854,11 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
   snprintf(tmpstr1,SHORTLEN,"User-Agent: FITSIO/HEASARC/%-8.3f\r\n",ffvers(&version)); 
  
   if (strlen(tmpstr) + strlen(tmpstr1) > MAXLEN - 1)
+  {
+        fclose(*httpfile);
+        *httpfile=0;
         return (FILE_NOT_OPENED);
+  }
 
   strcat(tmpstr,tmpstr1);
 
@@ -859,7 +866,11 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
   snprintf(tmpstr1,SHORTLEN,"Host: %s:%-d\r\n\r\n",host,port);
 
   if (strlen(tmpstr) + strlen(tmpstr1) > MAXLEN - 1)
+  {
+        fclose(*httpfile);
+        *httpfile=0;
         return (FILE_NOT_OPENED);
+  }
 
   strcat(tmpstr,tmpstr1);
 
@@ -3401,6 +3412,10 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
           if (ftp_file_exist(newinfile)>0) { 
               /* The ftp .gz compressed file is there, all is good!  */
               strcpy(urltype, "ftp://");
+              if (strlen(newinfile) > FLEN_FILENAME-1)
+              {
+                 return URL_PARSE_ERROR;
+              }
               strcpy(infile,newinfile);
 
               if (strlen(outfile1)) {
@@ -3437,6 +3452,10 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
           if (httpfile)
              fclose(httpfile);
           foundfile = 1;
+          if (strlen(newinfile) > FLEN_FILENAME-1)
+          {
+             return URL_PARSE_ERROR;
+          }
           strcpy(infile,newinfile);
       }
     }
@@ -3467,6 +3486,10 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
           if (ftp_file_exist(newinfile)>0) { 
               /* The ftp .Z compressed file is there, all is good!  */
               strcpy(urltype, "ftp://");
+              if (strlen(newinfile) > FLEN_FILENAME-1)
+              {
+                 return URL_PARSE_ERROR;
+              }
               strcpy(infile,newinfile);
 
               if (strlen(outfile1)) {
@@ -3495,6 +3518,10 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
            if (httpfile)
               fclose(httpfile);
            foundfile = 1;
+           if (strlen(newinfile) > FLEN_FILENAME-1)
+           {
+              return URL_PARSE_ERROR;
+           }
            strcpy(infile,newinfile);
         }
       }
@@ -3516,6 +3543,10 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
           if (ftp_file_exist(newinfile)>0) { 
               /* The ftp file is there, all is good!  */
               strcpy(urltype, "ftp://");
+              if (strlen(newinfile) > FLEN_FILENAME-1)
+              {
+                 return URL_PARSE_ERROR;
+              }
               strcpy(infile,newinfile);
 
               if (strlen(outfile1)) {
@@ -3549,6 +3580,10 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
           if (httpfile)
              fclose(httpfile);
           foundfile = 1;
+          if (strlen(newinfile) > FLEN_FILENAME-1)
+          {
+             return URL_PARSE_ERROR;
+          }
           strcpy(infile,newinfile);
       }
 
@@ -3676,6 +3711,8 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile1)
     status = ftp_file_exist(newinfile);
     if (status > 0) {
       foundfile = 1;
+      if (strlen(newinfile) > FLEN_FILENAME-1)
+         return URL_PARSE_ERROR;
       strcpy(infile,newinfile);
     }
     else if (status < 0)
@@ -3697,6 +3734,8 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile1)
     /* look for .Z version of the file */
       if (ftp_file_exist(newinfile)) {
         foundfile = 1;
+        if (strlen(newinfile) > FLEN_FILENAME-1)
+           return URL_PARSE_ERROR;
         strcpy(infile,newinfile);
       }
     }
@@ -3709,6 +3748,8 @@ int ftp_checkfile (char *urltype, char *infile, char *outfile1)
       status = ftp_file_exist(newinfile);
       if (status > 0) {
         foundfile = 1;
+        if (strlen(newinfile) > FLEN_FILENAME-1)
+           return URL_PARSE_ERROR;
         strcpy(infile,newinfile);
       }
       else if (status < 0)
