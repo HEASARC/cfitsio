@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large Oct 2018\\}
+{\Large May 2019\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -1729,7 +1729,7 @@ is then opened by the application program with READONLY access.
 Programs can read the input file from the 'stdin' file stream if a dash
 character ('-') is given as the filename. Files can also be opened over
 the network using FTP or HTTP protocols by supplying the appropriate URL
-as the filename.  The HTTPS protocol is also supported if the CFITSIO
+as the filename.  The HTTPS and FTPS protocols are also supported if the CFITSIO
 build includes the libcurl library.  (If the CFITSIO 'configure' script
 finds a usable libcurl library on your system, it will automatically be 
 included in the build.)
@@ -3275,7 +3275,6 @@ spaces).  Trailing blank characters are not significant.
     with row 'firstrow'.  These rows will be appended to any existing
     rows in the output table.
    Note that the first row in a table is at row = 1. 
-   This subroutine does not support tables with variable-length columns.
    \label{ffcprw}
 \end{description}
 
@@ -5790,10 +5789,10 @@ the 'exists' parameter will have 1 of the 4 following values:
 
 \begin{description}
 \item[10 ] Wrapper functions for global initialization and cleanup of the libcurl library used
-   when accessing files with the HTTPS protocol.  If an HTTPS file transfer is to
+   when accessing files with the HTTPS or FTPS protocols.  If an HTTPS/FTPS file transfer is to
    be performed, it is recommended that you call the init function once near the start of your 
    program before any file\_open calls, and before creating any threads. The cleanup function
-   should be called after all HTTPS file accessing is completed, and after all threads are 
+   should be called after all HTTPS/FTPS file accessing is completed, and after all threads are 
    completed.  The functions return 0 upon successful initialization and cleanup.  These
    are NOT THREAD-SAFE.    
   \label{ffihtps}
@@ -5815,7 +5814,7 @@ during file downloads.  These routines are NOT THREAD-SAFE.
 
 \begin{description}
 \item[1 ] Toggle the verbosity of the libcurl library diagnostic output when
-   accessing files with the HTTPS protocol.  `flag' = 1 turns the output
+   accessing files with the HTTPS or FTPS protocol.  `flag' = 1 turns the output
    on, 0 turns it off (the default).
   \label{ffvhtps}
 \end{description}
@@ -7323,7 +7322,7 @@ be read by converting them on the fly into virtual FITS images.
 
 \item
 FITS files on the Internet can be read (and sometimes written) using the FTP,
-HTTP, HTTPS, or ROOT protocols.
+HTTP, HTTPS, FTPS, or ROOT protocols.
 
 \item
 FITS files can be piped between tasks on the stdin and stdout streams.
@@ -7527,6 +7526,9 @@ CFITSIO to read and/or write the file.  Currently supported types are
        https://  - a readonly file accessed with the HTTPS protocol.  This
                    is available only if CFITSIO was built with the libcurl
                    library (see the following note).
+       ftps://  -  a readonly file accessed with the FTPS protocol.  This
+                   is available only if CFITSIO was built with the libcurl
+                   library.
       stream://  - special driver to read an input FITS file from the stdin
                    stream, and/or write an output FITS file to the stdout
 		   stream.  This driver is fragile and has limited
@@ -7558,10 +7560,10 @@ For example
 will cause CFITSIO to use port 3128 on the heasarc proxy server whenever
 reading a FITS file with HTTP.
 
-\subsection{Notes about HTTPS file access}
+\subsection{Notes about HTTPS and FTPS file access}
 
 CFITSIO depends upon the availability of the libcurl library in order to perform 
-HTTPS file access.  (This should be the development version of the library, as
+HTTPS/FTPS file access.  (This should be the development version of the library, as
 it contains the curl.h header file required by the CFITSIO code.)   The CFITSIO
 'configure' script will search for this library on your system, and if it finds it 
 it will automatically be incorporated into the build.  
@@ -7573,13 +7575,13 @@ more about the features of your libcurl installation.
 If the CFITSIO 'configure' succeeded in finding a usable libcurl, you will see the flag
 '-DCFITSIO\_HAVE\_CURL=1' in the CFITSIO Makefile and in the compilation output.  
 If 'configure' is unable to find a usable libcurl, CFITSIO will still build 
-but it won't have HTTPS capability.
+but it won't have HTTPS/FTPS capability.
 
 The libcurl package is normally included as part of Xcode on Macs.  However on Linux platforms you 
 may need to manually install it. This can be easily done on Ubuntu Linux using
 the 'apt get' command to retrieve the libcurl4-openssl-dev or the libcurl4-gnutls-dev packages.
 
-When accessing a file with HTTPS, the default CFITSIO behavior is to attempt
+When accessing a file with HTTPS or FTPS, the default CFITSIO behavior is to attempt
 to verify both the host name and the SSL certificate.  If it cannot, it will still 
 perform the file access but will issue a warning to the terminal window.
 
@@ -7592,7 +7594,7 @@ setenv CFITSIO\_VERIFY\_HTTPS True
 
 the default setting for this is 'False'.
 
-CFITSIO has 3 functions which apply specifically to HTTPS access:  fits\_init\_https, 
+CFITSIO has 3 functions which apply specifically to HTTPS/FTPS access:  fits\_init\_https, 
 fits\_cleanup\_https, and fits\_verbose\_https. It is recommended that you call the 
 init and cleanup functions near the beginning and end of your program respectively. 
 For more information about these functions, please see the 'FITS File Access Routines'
