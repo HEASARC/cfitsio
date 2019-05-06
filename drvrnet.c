@@ -1595,6 +1595,12 @@ int ftps_compress_open(char *filename, int rwmode, int *handle)
   curlmembuf inmem;
   FILE *compressedInFile=0;
   
+  /* don't do r/w files */
+  if (rwmode != 0) {
+    ffpmsg("Compressed files must be r/o");
+    return (FILE_NOT_OPENED);
+  }
+  
   strcpy(localFilename, filename);
   
   flen = strlen(netoutfile);
