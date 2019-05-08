@@ -61,27 +61,29 @@
 \contentsline {section}{\numberline {8.2}Group Member Routines}{92}{section.8.2}
 \contentsline {chapter}{\numberline {9} Specialized CFITSIO Interface Routines }{95}{chapter.9}
 \contentsline {section}{\numberline {9.1}FITS File Access Routines}{95}{section.9.1}
-\contentsline {section}{\numberline {9.2}HDU Access Routines}{99}{section.9.2}
+\contentsline {subsection}{\numberline {9.1.1}File Access}{95}{subsection.9.1.1}
+\contentsline {subsection}{\numberline {9.1.2}Download Utility Functions}{99}{subsection.9.1.2}
+\contentsline {section}{\numberline {9.2}HDU Access Routines}{100}{section.9.2}
 \contentsline {section}{\numberline {9.3}Specialized Header Keyword Routines}{102}{section.9.3}
 \contentsline {subsection}{\numberline {9.3.1}Header Information Routines}{102}{subsection.9.3.1}
 \contentsline {subsection}{\numberline {9.3.2}Read and Write the Required Keywords}{102}{subsection.9.3.2}
 \contentsline {subsection}{\numberline {9.3.3}Write Keyword Routines}{104}{subsection.9.3.3}
 \contentsline {subsection}{\numberline {9.3.4}Insert Keyword Routines}{106}{subsection.9.3.4}
 \contentsline {subsection}{\numberline {9.3.5}Read Keyword Routines}{107}{subsection.9.3.5}
-\contentsline {subsection}{\numberline {9.3.6}Modify Keyword Routines}{108}{subsection.9.3.6}
+\contentsline {subsection}{\numberline {9.3.6}Modify Keyword Routines}{109}{subsection.9.3.6}
 \contentsline {subsection}{\numberline {9.3.7}Update Keyword Routines}{110}{subsection.9.3.7}
-\contentsline {section}{\numberline {9.4}Define Data Scaling and Undefined Pixel Parameters}{110}{section.9.4}
-\contentsline {section}{\numberline {9.5}Specialized FITS Primary Array or IMAGE Extension I/O Routines}{111}{section.9.5}
+\contentsline {section}{\numberline {9.4}Define Data Scaling and Undefined Pixel Parameters}{111}{section.9.4}
+\contentsline {section}{\numberline {9.5}Specialized FITS Primary Array or IMAGE Extension I/O Routines}{112}{section.9.5}
 \contentsline {section}{\numberline {9.6}Specialized FITS ASCII and Binary Table Routines}{115}{section.9.6}
 \contentsline {subsection}{\numberline {9.6.1}General Column Routines}{115}{subsection.9.6.1}
-\contentsline {subsection}{\numberline {9.6.2}Low-Level Table Access Routines}{116}{subsection.9.6.2}
+\contentsline {subsection}{\numberline {9.6.2}Low-Level Table Access Routines}{117}{subsection.9.6.2}
 \contentsline {subsection}{\numberline {9.6.3}Write Column Data Routines}{117}{subsection.9.6.3}
 \contentsline {subsection}{\numberline {9.6.4}Read Column Data Routines}{118}{subsection.9.6.4}
 \contentsline {chapter}{\numberline {10} Extended File Name Syntax }{123}{chapter.10}
 \contentsline {section}{\numberline {10.1}Overview}{123}{section.10.1}
 \contentsline {section}{\numberline {10.2}Filetype}{126}{section.10.2}
 \contentsline {subsection}{\numberline {10.2.1}Notes about HTTP proxy servers}{127}{subsection.10.2.1}
-\contentsline {subsection}{\numberline {10.2.2}Notes about HTTPS file access}{127}{subsection.10.2.2}
+\contentsline {subsection}{\numberline {10.2.2}Notes about HTTPS and FTPS file access}{127}{subsection.10.2.2}
 \contentsline {subsection}{\numberline {10.2.3}Notes about the stream filetype driver}{128}{subsection.10.2.3}
 \contentsline {subsection}{\numberline {10.2.4}Notes about the gsiftp filetype}{128}{subsection.10.2.4}
 \contentsline {subsection}{\numberline {10.2.5}Notes about the root filetype}{129}{subsection.10.2.5}
@@ -95,7 +97,7 @@
 \contentsline {section}{\numberline {10.9}Image Transform Filters}{138}{section.10.9}
 \contentsline {section}{\numberline {10.10}Column and Keyword Filtering Specification}{139}{section.10.10}
 \contentsline {section}{\numberline {10.11}Row Filtering Specification}{142}{section.10.11}
-\contentsline {subsection}{\numberline {10.11.1}General Syntax}{142}{subsection.10.11.1}
+\contentsline {subsection}{\numberline {10.11.1}General Syntax}{143}{subsection.10.11.1}
 \contentsline {subsection}{\numberline {10.11.2}Bit Masks}{145}{subsection.10.11.2}
 \contentsline {subsection}{\numberline {10.11.3}Vector Columns}{146}{subsection.10.11.3}
 \contentsline {subsection}{\numberline {10.11.4}Row Access}{148}{subsection.10.11.4}
