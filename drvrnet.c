@@ -2890,7 +2890,7 @@ int ftp_file_exist(char *filename)
   }
 
   /* Wait for the 220 response */
-  if (ftp_status(command,"220 ")) {
+  if (ftp_status(command,"220")) {
     ffpmsg ("error connecting to remote server, no 220 seen (ftp_file_exist)");
     fclose(command);
     NET_SendRaw(sock,"QUIT\r\n",6,NET_DEFAULT);
