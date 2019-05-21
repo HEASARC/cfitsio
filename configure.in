@@ -569,7 +569,7 @@ AC_SUBST(my_shmem)
 # some systems define flock_t, for others we have to define it ourselves
 # -------------------------------------------------------------------------
 
-AC_MSG_CHECKING(do we have flock_t defined in sys/fcntl.h)
+AC_MSG_CHECKING(whether flock_t is defined in sys/fcntl.h)
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <sys/fcntl.h>
 ]], [[
 flock_t filler;
@@ -579,7 +579,7 @@ AC_MSG_RESULT(yes)
 ],[AC_MSG_RESULT(no) ])
 
 if test "$HAVE_FLOCK_T" != 1; then
-   AC_MSG_CHECKING(do we have flock_t defined in sys/flock.h)
+   AC_MSG_CHECKING(whether flock_t is defined in sys/flock.h)
    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <sys/flock.h>
    ]], [[
    flock_t filler;
@@ -608,7 +608,7 @@ fi
 # does not define it at all
 # -------------------------------------------------------------------------
 
-AC_MSG_CHECKING(do we have union semun defined)
+AC_MSG_CHECKING(whether union semun is defined)
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/sem.h>
@@ -618,6 +618,12 @@ union semun filler;
 AC_DEFINE(HAVE_UNION_SEMUN)   
 AC_MSG_RESULT(yes)
 ],[AC_MSG_RESULT(no) ])
+
+# -------------------------------------------------------------------------
+# fmemopen is not available on e.g. older Macs:
+# -------------------------------------------------------------------------
+
+AC_CHECK_FUNC(fmemopen, AC_DEFINE(HAVE_FMEMOPEN), [AC_MSG_WARN(Disabling support for compressed files via FTPS)])
 
 # ==================== END OF SHARED MEMORY DRIVER SECTION ================
 # ================= test for the unix networking functions ================
