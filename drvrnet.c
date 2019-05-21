@@ -1392,7 +1392,9 @@ int ftps_open(char *filename, int rwmode, int *handle)
   if (firstByte == 0x1f && secondByte == 0x8b || 
         strstr(localFilename,".Z"))
   {
+#ifdef HAVE_FMEMOPEN
      compressedFile = fmemopen(inmem.memory, inmem.size, "r");
+#endif
      if (!compressedFile)
      {
         ffpmsg("Error creating file in memory (ftps_open)");
@@ -1537,7 +1539,9 @@ int ftps_file_open(char *filename, int rwmode, int *handle)
         return(FILE_NOT_OPENED);
      }
      
+#ifdef HAVE_FMEMOPEN
      compressedInFile = fmemopen(inmem.memory, inmem.size, "r");
+#endif
      if (!compressedInFile)
      {
         ffpmsg("Error creating compressed file in memory (ftps_file_open)");
