@@ -1,5 +1,8 @@
                    Log of Changes Made to CFITSIO
 
+  - Change made to cfitsio.pc.in to prevent forcing downstream libraries
+    to link against cfitsio's dependencies when using pkgconfig.
+
 Version 3.47 - May 2019
 
   - Added set of drivers for performing ftps file transfers.
