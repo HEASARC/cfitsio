@@ -1,4 +1,7 @@
                    Log of Changes Made to CFITSIO
+                   
+  - Added backward compatibility for very old Rice compressed files which
+    were not using the ZVAL2 keyword in the way that later became standard.
 
   - Change made to cfitsio.pc.in to prevent forcing downstream libraries
     to link against cfitsio's dependencies when using pkgconfig.
