@@ -5245,7 +5245,7 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
 {
     char keyword[FLEN_KEYWORD];
     char value[FLEN_VALUE];
-    int ii, tstatus, doffset;
+    int ii, tstatus, doffset, oldFormat=0;
     long expect_nrows, maxtilelen;
 
     if (*status > 0)
@@ -5391,7 +5391,16 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
         }
 
         tstatus = 0;
-        if (ffgky(infptr, TINT,"ZVAL2", &(infptr->Fptr)->rice_bytepix,
+        /* First check for very old files, where ZVAL2 wasn't yet designated
+           for bytepix */
+        if (!ffgky(infptr, TSTRING, "ZNAME2", value, NULL, &tstatus)
+                && !FSTRCMP(value, "NOISEBIT"))
+        {
+            oldFormat = 1;
+        }
+                
+        tstatus = 0;
+        if (oldFormat || ffgky(infptr, TINT,"ZVAL2", &(infptr->Fptr)->rice_bytepix,
                   NULL, &tstatus) > 0)
         {
             (infptr->Fptr)->rice_bytepix = 4;  /* default value */
