@@ -1491,6 +1491,8 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
     char cwd[FLEN_FILENAME];
     char tmpStr[FLEN_FILENAME];
     char tmpinfile[FLEN_FILENAME]; 
+    
+    int noextsyn=0, oldNoextsyn=0;
 
     *isopen = 0;
 
@@ -1514,13 +1516,12 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
         if(tmpinfile[0] != '/')
           {
             fits_get_cwd(cwd,status);
-            strcat(cwd,"/");
  
-            if (strlen(cwd) + strlen(tmpinfile) > FLEN_FILENAME-1) {
+            if (strlen(cwd) + strlen(tmpinfile) + 1 > FLEN_FILENAME-1) {
 		  ffpmsg("File name is too long. (fits_already_open)");
                   return(*status = FILE_NOT_OPENED);
             }
-
+            strcat(cwd,"/");
             strcat(cwd,tmpinfile);
             fits_clean_url(cwd,tmpinfile,status);
           }
@@ -1533,100 +1534,150 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
         if (FptrTable[ii] != 0)
         {
           oldFptr = FptrTable[ii];
-
-          fits_parse_input_url(oldFptr->filename, oldurltype, 
-                    oldinfile, oldoutfile, oldextspec, oldrowfilter, 
-                    oldbinspec, oldcolspec, status);
-
-          if (*status > 0)
+          
+          if (oldNoextsyn)
           {
-            ffpmsg("could not parse the previously opened filename: (ffopen)");
-            ffpmsg(oldFptr->filename);
-            return(*status);
-          }
-
-          if(fits_strcasecmp(oldurltype,"FILE://") == 0)
+            /* old urltype must be "file://" */
+            if (fits_strcasecmp(urltype,"FILE://") == 0)
             {
-              if(fits_path2url(oldinfile,FLEN_FILENAME,tmpStr,status))
-                 return(*status);
-              
-              if(tmpStr[0] != '/')
-                {
-                  fits_get_cwd(cwd,status);
-                  strcat(cwd,"/");
+               /* compare tmpinfile to adjusted oldFptr->filename */
+               
+               /* This shouldn't be possible, but check anyway */
+               if (strlen(oldFptr->filename) > FLEN_FILENAME-1)        
+               {
+                  ffpmsg("Name of old file is too long. (fits_already_open)");
+                  return (*status = FILE_NOT_OPENED);
+               }
+               strcpy(oldinfile, oldFptr->filename);
+               if (fits_path2url(oldinfile,FLEN_FILENAME,tmpStr,status))
+                  return(*status);
+               
+               if(tmpStr[0] != '/')
+                 {
+                   fits_get_cwd(cwd,status);
+                   if (strlen(cwd) + strlen(tmpStr) + 1 > FLEN_FILENAME-1) {
+		         ffpmsg("Old file name is too long. (fits_already_open)");
+                         return(*status = FILE_NOT_OPENED);
+                   }
+                   strcat(cwd,"/");
+                   strcat(cwd,tmpStr);
+                   fits_clean_url(cwd,tmpStr,status);
+                 }
 
-
-                  strcat(cwd,tmpStr);
-                  fits_clean_url(cwd,tmpStr,status);
-                }
-
-              strcpy(oldinfile,tmpStr);
-            }
-
-          if (!strcmp(urltype, oldurltype) && !strcmp(tmpinfile, oldinfile) )
+                 strcpy(oldinfile,tmpStr);
+                 
+                 if (!strcmp(tmpinfile, oldinfile))
+                 {
+                    /* if infile is not noextsyn, must check that it is not
+                       using filters of any kind */
+                    if (!noextsyn)
+                    {
+                       if (!rowfilter[0] && !binspec[0] && !colspec[0])
+                          *isopen = 1;
+                    }
+                    else
+                       *isopen = 1;
+                 }
+             }            
+          } /* end if old file has disabled extended syntax */
+          else
           {
-              /* identical type of file and root file name */
+             fits_parse_input_url(oldFptr->filename, oldurltype, 
+                       oldinfile, oldoutfile, oldextspec, oldrowfilter, 
+                       oldbinspec, oldcolspec, status);
 
-              if ( (!rowfilter[0] && !oldrowfilter[0] &&
-                    !binspec[0]   && !oldbinspec[0] &&
-                    !colspec[0]   && !oldcolspec[0])
+             if (*status > 0)
+             {
+               ffpmsg("could not parse the previously opened filename: (ffopen)");
+               ffpmsg(oldFptr->filename);
+               return(*status);
+             }
+             
+             if(fits_strcasecmp(oldurltype,"FILE://") == 0)
+               {
+                 if(fits_path2url(oldinfile,FLEN_FILENAME,tmpStr,status))
+                    return(*status);
 
-                  /* no filtering or binning specs for either file, so */
-                  /* this is a case where the same file is being reopened. */
-                  /* It doesn't matter if the extensions are different */
+                 if(tmpStr[0] != '/')
+                   {
+                     fits_get_cwd(cwd,status);
+                     if (strlen(cwd) + strlen(tmpStr) + 1 > FLEN_FILENAME-1) {
+		           ffpmsg("Old file name is too long. (fits_already_open)");
+                           return(*status = FILE_NOT_OPENED);
+                     }
+                     strcat(cwd,"/");
+                     strcat(cwd,tmpStr);
+                     fits_clean_url(cwd,tmpStr,status);
+                   }
 
-                      ||   /* or */
+                 strcpy(oldinfile,tmpStr);
+               }
 
-                  (!strcmp(rowfilter, oldrowfilter) &&
-                   !strcmp(binspec, oldbinspec)     &&
-                   !strcmp(colspec, oldcolspec)     &&
-                   !strcmp(extspec, oldextspec) ) )
+             if (!strcmp(urltype, oldurltype) && !strcmp(tmpinfile, oldinfile) )
+             {
+                 /* identical type of file and root file name */
 
-                  /* filtering specs are given and are identical, and */
-                  /* the same extension is specified */
+                 if ( (!rowfilter[0] && !oldrowfilter[0] &&
+                       !binspec[0]   && !oldbinspec[0] &&
+                       !colspec[0]   && !oldcolspec[0])
 
-              {
-                  if (mode == READWRITE && oldFptr->writemode == READONLY)
-                  {
-                    /*
-                      cannot assume that a file previously opened with READONLY
-                      can now be written to (e.g., files on CDROM, or over the
-                      the network, or STDIN), so return with an error.
-                    */
+                     /* no filtering or binning specs for either file, so */
+                     /* this is a case where the same file is being reopened. */
+                     /* It doesn't matter if the extensions are different */
 
-                    ffpmsg(
-                "cannot reopen file READWRITE when previously opened READONLY");
-                    ffpmsg(url);
-                    return(*status = FILE_NOT_OPENED);
-                  }
+                         ||   /* or */
 
-                  *fptr = (fitsfile *) calloc(1, sizeof(fitsfile));
+                     (!strcmp(rowfilter, oldrowfilter) &&
+                      !strcmp(binspec, oldbinspec)     &&
+                      !strcmp(colspec, oldcolspec)     &&
+                      !strcmp(extspec, oldextspec) ) )
 
-                  if (!(*fptr))
-                  {
-                     ffpmsg(
-                   "failed to allocate structure for following file: (ffopen)");
-                     ffpmsg(url);
-                     return(*status = MEMORY_ALLOCATION);
-                  }
+                     /* filtering specs are given and are identical, and */
+                     /* the same extension is specified */
 
-                  (*fptr)->Fptr = oldFptr; /* point to the structure */
-                  (*fptr)->HDUposition = 0;     /* set initial position */
-                (((*fptr)->Fptr)->open_count)++;  /* increment usage counter */
+                 {
+                     if (mode == READWRITE && oldFptr->writemode == READONLY)
+                     {
+                       /*
+                         cannot assume that a file previously opened with READONLY
+                         can now be written to (e.g., files on CDROM, or over the
+                         the network, or STDIN), so return with an error.
+                       */
 
-                  if (binspec[0])  /* if binning specified, don't move */
-                      extspec[0] = '\0';
+                       ffpmsg(
+                   "cannot reopen file READWRITE when previously opened READONLY");
+                       ffpmsg(url);
+                       return(*status = FILE_NOT_OPENED);
+                     }
 
-                  /* all the filtering has already been applied, so ignore */
-                  rowfilter[0] = '\0';
-                  binspec[0] = '\0';
-                  colspec[0] = '\0';
+                     *fptr = (fitsfile *) calloc(1, sizeof(fitsfile));
 
-                  *isopen = 1;
+                     if (!(*fptr))
+                     {
+                        ffpmsg(
+                      "failed to allocate structure for following file: (ffopen)");
+                        ffpmsg(url);
+                        return(*status = MEMORY_ALLOCATION);
+                     }
+
+                     (*fptr)->Fptr = oldFptr; /* point to the structure */
+                     (*fptr)->HDUposition = 0;     /* set initial position */
+                   (((*fptr)->Fptr)->open_count)++;  /* increment usage counter */
+
+                     if (binspec[0])  /* if binning specified, don't move */
+                         extspec[0] = '\0';
+
+                     /* all the filtering has already been applied, so ignore */
+                     rowfilter[0] = '\0';
+                     binspec[0] = '\0';
+                     colspec[0] = '\0';
+
+                     *isopen = 1;
+                 }
               }
-            }
-        }
-    }
+          } /* end if old file recognizes extended syntax */
+      } /* end if old fptr exists */
+    } /* end loop over NMAXFILES */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
