@@ -1,4 +1,13 @@
                    Log of Changes Made to CFITSIO
+
+  - Added new function fits_copy_hdutab to create a new table with the same
+    structure as an existing table.
+
+  - fits_copy_col / ffcpcl handles long long integer data types more
+    natively to prevent precision loss.
+
+  - histo.c routines now recognize integer columns that have been scaled by
+    TSCALn keywords and may be closer to floating point type.
                    
   - Added backward compatibility for very old Rice compressed files which
     were not using the ZVAL2 keyword in the way that later became standard.

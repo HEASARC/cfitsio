@@ -2985,6 +2985,28 @@ efficient block size.
        char *tform[], char *tunit[], char *extname, int *status)
 \end{verbatim}
 
+\begin{description}
+\item[2 ] Copy the structure of an open table to a new table, optionally
+    copying zero or more rows from the input table.  This is useful in
+    cases where a task will filter rows from the input before transferring
+    to the output, so a ``pristine'' output table with zero rows is
+    desired to start.  The input file must be open and point to a binary table
+    extension.  The output file must be open for writing; a new
+    extension is created with the same table structure as the input.
+    Optionally, a range of nrows may be copied starting from firstrow,
+    similar to fits_copy_rows(). The value nrows may be 0.  Note that
+    the first row in a table is at row = 1.
+   \label{ffcpht}
+\end{description}
+
+\begin{verbatim}
+  int fits_copy_hdutab / ffcpht
+      (fitsfile *infptr, fitsfile *outfptr, LONGLONG firstrow,
+       LONGLONG nrows, > int *status)
+\end{verbatim}
+
+
+
 \subsection{Column Information Routines}
 
 
@@ -10041,6 +10063,7 @@ fits\_copy\_data      & \pageref{ffcpdt} \\
 fits\_copy\_file      & \pageref{ffcpfl} \\
 fits\_copy\_group    & \pageref{ffgtcp} \\
 fits\_copy\_hdu       & \pageref{ffcopy} \\
+fits\_copy\_hdutab    & \pageref{ffcpht} \\
 fits\_copy\_header    & \pageref{ffcphd} \\
 fits\_copy\_image2cell & \pageref{copycell} \\
 fits\_copy\_image\_section  & \pageref{ffcpimg} \\
@@ -10329,6 +10352,7 @@ ffcpcl     & \pageref{ffcpcl} \\
 ffcpdt      & \pageref{ffcpdt} \\
 ffcpfl      & \pageref{ffcpfl} \\
 ffcphd   & \pageref{ffcphd} \\
+ffcpht   & \pageref{ffcpht} \\
 ffcpimg  & \pageref{ffcpimg} \\
 ffcpky       & \pageref{ffcpky} \\
 ffcprw      &   \pageref{ffcprw} \\
