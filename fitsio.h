@@ -1837,6 +1837,8 @@ int CFITS_API ffccls(fitsfile *infptr, fitsfile *outfptr, int incol, int outcol,
 	   int ncols, int create_col, int *status);
 int CFITS_API ffcprw(fitsfile *infptr, fitsfile *outfptr, LONGLONG firstrow, 
            LONGLONG nrows, int *status);
+int CFITS_API ffcpht(fitsfile *infptr, fitsfile *outfptr, LONGLONG firstrow, 
+           LONGLONG nrows, int *status);
 
 /*--------------------- WCS Utilities ------------------*/
 int CFITS_API ffgics(fitsfile *fptr, double *xrval, double *yrval, double *xrpix,
