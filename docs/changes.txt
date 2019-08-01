@@ -1,5 +1,9 @@
                    Log of Changes Made to CFITSIO
 
+  - Fixed bug in fits_open_extlist to handle filename[EXT] syntax
+    properly.  The hdutype parameter may now be null.  More documentaion
+    for this function is in cfitsio.tex.
+
   - Added new function fits_copy_hdutab to create a new table with the same
     structure as an existing table.
 
