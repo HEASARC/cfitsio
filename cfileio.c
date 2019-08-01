@@ -414,7 +414,7 @@ int ffeopn(fitsfile **fptr,      /* O - FITS file pointer                   */
   none are found, then simply move to the 2nd extension.
 */
 {
-    int hdunum, naxis, thdutype, gotext=0;
+    int hdunum, naxis = 0, thdutype, gotext=0;
     char *ext, *textlist;
     char *saveptr;
   
@@ -424,11 +424,15 @@ int ffeopn(fitsfile **fptr,      /* O - FITS file pointer                   */
     if (ffopen(fptr, name, mode, status) > 0)
         return(*status);
 
-    fits_get_hdu_num(*fptr, &hdunum); 
-    fits_get_img_dim(*fptr, &naxis, status);
+    fits_get_hdu_num(*fptr, &hdunum);
+    fits_get_hdu_type(*fptr, &thdutype, status);
+    if (hdunum == 1 && thdutype == IMAGE_HDU) {
+      fits_get_img_dim(*fptr, &naxis, status);
+    }
 
+    /* We are in the "default" primary extension */
+    /* look through the extension list */
     if( (hdunum == 1) && (naxis == 0) ){ 
-      /* look through the extension list */
       if( extlist ){
         gotext = 0;
 	textlist = malloc(strlen(extlist) + 1);
@@ -455,7 +459,9 @@ int ffeopn(fitsfile **fptr,      /* O - FITS file pointer                   */
         fits_movabs_hdu(*fptr, 2, &thdutype, status);
       }
     }
-    fits_get_hdu_type(*fptr, hdutype, status);
+    if (hdutype) {
+      fits_get_hdu_type(*fptr, hdutype, status);
+    }
     return(*status);
 }
 /*--------------------------------------------------------------------------*/

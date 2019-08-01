@@ -1707,12 +1707,14 @@ fits\_open\_data except they will move to the first significant table
 HDU or image HDU in the file, respectively, if a HDU name or
 number is not specified as part of the filename.
 
-The fits\_open\_extlist routine opens the file and attempts to move to a 'useful'
-HDU. If after opening the file CFITSIO is pointing to null primary array,
-then CFITSIO will attempt to move to the first extension that has an EXTNAME or
-HDUNAME keyword value that matches one of the names in the input extlist
-space-delimited list of names.  If that fails, then CFITSIO simply moves to the
-2nd HDU in the file.
+The fits\_open\_extlist routine opens the file and attempts to move to
+a 'useful' HDU. If after opening the file CFITSIO is pointing to null
+primary array, then CFITSIO will attempt to move to the first
+extension that has an EXTNAME or HDUNAME keyword value that matches
+one of the names in the input extlist space-delimited list of names
+(wildcards are permitted).  If that fails, then CFITSIO simply moves
+to the 2nd HDU in the file.  Upon return, the type of the HDU is
+returned in *hdutype, as described in \ref{ffmahd} HDU Access Routines.
 
 IRAF images (.imh format files) and raw binary data arrays may also be
 opened with READONLY access.  CFITSIO will automatically test if the
