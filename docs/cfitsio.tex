@@ -1707,7 +1707,7 @@ fits\_open\_data except they will move to the first significant table
 HDU or image HDU in the file, respectively, if a HDU name or
 number is not specified as part of the filename.
 
-The fits\_open\_extname routine opens the file and attempts to move to a 'useful'
+The fits\_open\_extlist routine opens the file and attempts to move to a 'useful'
 HDU. If after opening the file CFITSIO is pointing to null primary array,
 then CFITSIO will attempt to move to the first extension that has an EXTNAME or
 HDUNAME keyword value that matches one of the names in the input extlist
