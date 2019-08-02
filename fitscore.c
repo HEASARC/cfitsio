@@ -7849,7 +7849,7 @@ int ffmnhd(fitsfile *fptr,      /* I - FITS file pointer                    */
                }
 
                /* see if the strings are an exact match */
-               ffcmps(extname, hduname, CASEINSEN, &match, &exact);
+               ffcmps(hduname, extname, CASEINSEN, &match, &exact);
           }
 
           /* if EXTNAME keyword doesn't exist, or it does not match, then try HDUNAME */
@@ -7868,7 +7868,7 @@ int ffmnhd(fitsfile *fptr,      /* I - FITS file pointer                    */
                    }
 
                    /* see if the strings are an exact match */
-                   ffcmps(extname, hduname, CASEINSEN, &match, &exact);
+                   ffcmps(hduname, extname, CASEINSEN, &match, &exact);
                }
           }
 

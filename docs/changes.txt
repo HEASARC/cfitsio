@@ -1,5 +1,8 @@
                    Log of Changes Made to CFITSIO
 
+  - Fixed bug in ffmnhd / fits_movnam_hdu to properly handle wildcard
+    syntax.
+
   - Fixed bug in fits_open_extlist to handle filename[EXT] syntax
     properly.  The hdutype parameter may now be null.  More documentaion
     for this function is in cfitsio.tex.
