@@ -54,6 +54,7 @@ static int find_doublequote(char **string);
 static int find_paren(char **string);
 static int find_bracket(char **string);
 static int find_curlybracket(char **string);
+static int standardize_path(char *fullpath, int *status);
 int comma2semicolon(char *string);
 
 #ifdef _REENTRANT
@@ -1685,6 +1686,37 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
       } /* end if old fptr exists */
     } /* end loop over NMAXFILES */
     return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int standardize_path(char *fullpath, int* status)
+{
+   /* Utility function for common operation in fits_already_open 
+      fullpath:  I/O string to be standardized. Assume len = FLEN_FILENAME */
+    
+   char tmpPath[FLEN_FILENAME];
+   char cwd [FLEN_FILENAME];
+    
+   if (*status)
+      return(*status);
+
+   if (fits_path2url(fullpath, FLEN_FILENAME, tmpPath, status))
+      return(*status);
+   
+   if (tmpPath[0] != '/')
+   {
+      fits_get_cwd(cwd,status);
+      if (strlen(cwd) + strlen(tmpPath) + 1 > FLEN_FILENAME-1) {
+	    ffpmsg("Tile name is too long. (standardize_path)");
+            return(*status = FILE_NOT_OPENED);
+      }
+      strcat(cwd,"/");
+      strcat(cwd,tmpPath);
+      fits_clean_url(cwd,tmpPath,status);
+   }
+   
+   strcpy(fullpath, tmpPath);
+      
+   return (*status);
 }
 /*--------------------------------------------------------------------------*/
 int fits_is_this_a_copy(char *urltype) /* I - type of file */
