@@ -1490,7 +1490,7 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
      */
 {
     FITSfile *oldFptr;
-    int ii;
+    int ii, iMatch=-1;
     char oldurltype[MAX_PREFIX_LEN], oldinfile[FLEN_FILENAME];
     char oldextspec[FLEN_FILENAME], oldoutfile[FLEN_FILENAME];
     char oldrowfilter[FLEN_FILENAME];
@@ -1515,26 +1515,12 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
     if (mode == 0)
         return(*status);
 
+    strcpy(tmpinfile, infile);
     if(fits_strcasecmp(urltype,"FILE://") == 0)
-      {
-        if (fits_path2url(infile,FLEN_FILENAME,tmpinfile,status))
-           return (*status);
-
-        if(tmpinfile[0] != '/')
-          {
-            fits_get_cwd(cwd,status);
- 
-            if (strlen(cwd) + strlen(tmpinfile) + 1 > FLEN_FILENAME-1) {
-		  ffpmsg("File name is too long. (fits_already_open)");
-                  return(*status = FILE_NOT_OPENED);
-            }
-            strcat(cwd,"/");
-            strcat(cwd,tmpinfile);
-            fits_clean_url(cwd,tmpinfile,status);
-          }
-      }
-    else
-      strcpy(tmpinfile,infile);
+    {
+       if (standardize_path(tmpinfile, status))
+          return(*status);          
+    }
 
     for (ii = 0; ii < NMAXFILES; ii++)   /* check every buffer */
     {
@@ -1556,35 +1542,31 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
                   return (*status = FILE_NOT_OPENED);
                }
                strcpy(oldinfile, oldFptr->filename);
-               if (fits_path2url(oldinfile,FLEN_FILENAME,tmpStr,status))
+               if (standardize_path(oldinfile, status))
                   return(*status);
-               
-               if(tmpStr[0] != '/')
-                 {
-                   fits_get_cwd(cwd,status);
-                   if (strlen(cwd) + strlen(tmpStr) + 1 > FLEN_FILENAME-1) {
-		         ffpmsg("Old file name is too long. (fits_already_open)");
-                         return(*status = FILE_NOT_OPENED);
-                   }
-                   strcat(cwd,"/");
-                   strcat(cwd,tmpStr);
-                   fits_clean_url(cwd,tmpStr,status);
-                 }
+                              
+               if (!strcmp(tmpinfile, oldinfile))
+               {
+                  /* if infile is not noextsyn, must check that it is not
+                     using filters of any kind */
+                  if (noextsyn || (!rowfilter[0] && !binspec[0] && !colspec[0])) 
+                  {
+                     if (mode == READWRITE && oldFptr->writemode == READONLY)
+                     {
+                       /*
+                         cannot assume that a file previously opened with READONLY
+                         can now be written to (e.g., files on CDROM, or over the
+                         the network, or STDIN), so return with an error.
+                       */
 
-                 strcpy(oldinfile,tmpStr);
-                 
-                 if (!strcmp(tmpinfile, oldinfile))
-                 {
-                    /* if infile is not noextsyn, must check that it is not
-                       using filters of any kind */
-                    if (!noextsyn)
-                    {
-                       if (!rowfilter[0] && !binspec[0] && !colspec[0])
-                          *isopen = 1;
-                    }
-                    else
-                       *isopen = 1;
-                 }
+                       ffpmsg(
+                   "cannot reopen file READWRITE when previously opened READONLY");
+                       ffpmsg(url);
+                       return(*status = FILE_NOT_OPENED);
+                     }
+                     iMatch = ii;
+                  }  
+               }
              }            
           } /* end if old file has disabled extended syntax */
           else
@@ -1602,22 +1584,8 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
              
              if(fits_strcasecmp(oldurltype,"FILE://") == 0)
                {
-                 if(fits_path2url(oldinfile,FLEN_FILENAME,tmpStr,status))
+                 if (standardize_path(oldinfile, status))
                     return(*status);
-
-                 if(tmpStr[0] != '/')
-                   {
-                     fits_get_cwd(cwd,status);
-                     if (strlen(cwd) + strlen(tmpStr) + 1 > FLEN_FILENAME-1) {
-		           ffpmsg("Old file name is too long. (fits_already_open)");
-                           return(*status = FILE_NOT_OPENED);
-                     }
-                     strcat(cwd,"/");
-                     strcat(cwd,tmpStr);
-                     fits_clean_url(cwd,tmpStr,status);
-                   }
-
-                 strcpy(oldinfile,tmpStr);
                }
 
              if (!strcmp(urltype, oldurltype) && !strcmp(tmpinfile, oldinfile) )
@@ -1656,35 +1624,40 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
                        ffpmsg(url);
                        return(*status = FILE_NOT_OPENED);
                      }
+                     iMatch = ii;
 
-                     *fptr = (fitsfile *) calloc(1, sizeof(fitsfile));
-
-                     if (!(*fptr))
-                     {
-                        ffpmsg(
-                      "failed to allocate structure for following file: (ffopen)");
-                        ffpmsg(url);
-                        return(*status = MEMORY_ALLOCATION);
-                     }
-
-                     (*fptr)->Fptr = oldFptr; /* point to the structure */
-                     (*fptr)->HDUposition = 0;     /* set initial position */
-                   (((*fptr)->Fptr)->open_count)++;  /* increment usage counter */
-
-                     if (binspec[0])  /* if binning specified, don't move */
-                         extspec[0] = '\0';
-
-                     /* all the filtering has already been applied, so ignore */
-                     rowfilter[0] = '\0';
-                     binspec[0] = '\0';
-                     colspec[0] = '\0';
-
-                     *isopen = 1;
-                 }
+                  }
               }
           } /* end if old file recognizes extended syntax */
       } /* end if old fptr exists */
     } /* end loop over NMAXFILES */
+    if (iMatch >= 0)
+    {
+       oldFptr = FptrTable[iMatch];
+       *fptr = (fitsfile *) calloc(1, sizeof(fitsfile));
+
+       if (!(*fptr))
+       {
+          ffpmsg(
+        "failed to allocate structure for following file: (ffopen)");
+          ffpmsg(url);
+          return(*status = MEMORY_ALLOCATION);
+       }
+
+       (*fptr)->Fptr = oldFptr; /* point to the structure */
+       (*fptr)->HDUposition = 0;     /* set initial position */
+       (((*fptr)->Fptr)->open_count)++;  /* increment usage counter */
+
+       if (binspec[0])  /* if binning specified, don't move */
+           extspec[0] = '\0';
+
+       /* all the filtering has already been applied, so ignore */
+       rowfilter[0] = '\0';
+       binspec[0] = '\0';
+       colspec[0] = '\0';
+
+       *isopen = 1;
+    }
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -1696,9 +1669,6 @@ int standardize_path(char *fullpath, int* status)
    char tmpPath[FLEN_FILENAME];
    char cwd [FLEN_FILENAME];
     
-   if (*status)
-      return(*status);
-
    if (fits_path2url(fullpath, FLEN_FILENAME, tmpPath, status))
       return(*status);
    
