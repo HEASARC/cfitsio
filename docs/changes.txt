@@ -1,5 +1,10 @@
                    Log of Changes Made to CFITSIO
 
+  - Fixed bug that was preventing use of bracket and parentheses symbols
+    in pathnames when opening multiple READWRITE files, even when 
+    requesting no-extended-syntax usage. *This fix necessitates a 
+    library interface version number change.
+    
   - Fixed bug in ffmnhd / fits_movnam_hdu to properly handle wildcard
     syntax.
 
