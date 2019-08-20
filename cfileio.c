@@ -279,6 +279,7 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
     ((*fptr)->Fptr)->curbuf = -1;             /* undefined current IO buffer */
     ((*fptr)->Fptr)->open_count = 1;     /* structure is currently used once */
     ((*fptr)->Fptr)->validcode = VALIDSTRUC; /* flag denoting valid structure */
+    ((*fptr)->Fptr)->noextsyntax = 0;  /* extended syntax can be used in filename */
 
     ffldrc(*fptr, 0, REPORT_EOF, status);     /* load first record */
 
@@ -731,7 +732,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
 
     FFLOCK;
     if (fits_already_open(fptr, url, urltype, infile, extspec, rowfilter,
-            binspec, colspec, mode, &isopen, status) > 0)
+            binspec, colspec, mode, open_disk_file, &isopen, status) > 0)
     {
         FFUNLOCK;
         return(*status);
@@ -909,6 +910,7 @@ int ffopen(fitsfile **fptr,      /* O - FITS file pointer                   */
     ((*fptr)->Fptr)->open_count = 1;      /* structure is currently used once */
     ((*fptr)->Fptr)->validcode = VALIDSTRUC; /* flag denoting valid structure */
     ((*fptr)->Fptr)->only_one = only_one; /* flag denoting only copy single extension */
+    ((*fptr)->Fptr)->noextsyntax = open_disk_file; /* true if extended syntax is disabled */
 
     ffldrc(*fptr, 0, REPORT_EOF, status);     /* load first record */
 
@@ -1468,6 +1470,7 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
            char *binspec, 
            char *colspec, 
            int  mode,             /* I - 0 = open readonly; 1 = read/write   */
+           int  noextsyn, /* I - 0 = ext syntax may be used; 1 = ext syntax disabled */
            int  *isopen,          /* O - 1 = file is already open            */
            int  *status)          /* IO - error status                       */
 /*
@@ -1499,8 +1502,6 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
     char tmpStr[FLEN_FILENAME];
     char tmpinfile[FLEN_FILENAME]; 
     
-    int noextsyn=0, oldNoextsyn=0;
-
     *isopen = 0;
 
 /*  When opening a file with readonly access then we simply let
@@ -1528,7 +1529,7 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
         {
           oldFptr = FptrTable[ii];
           
-          if (oldNoextsyn)
+          if (oldFptr->noextsyntax)
           {
             /* old urltype must be "file://" */
             if (fits_strcasecmp(urltype,"FILE://") == 0)
@@ -4166,6 +4167,7 @@ int ffinit(fitsfile **fptr,      /* O - FITS file pointer                   */
     ((*fptr)->Fptr)->curbuf = -1;         /* undefined current IO buffer   */
     ((*fptr)->Fptr)->open_count = 1;      /* structure is currently used once */
     ((*fptr)->Fptr)->validcode = VALIDSTRUC; /* flag denoting valid structure */
+    ((*fptr)->Fptr)->noextsyntax = create_disk_file; /* true if extended syntax is disabled */
 
     ffldrc(*fptr, 0, IGNORE_EOF, status);     /* initialize first record */
 
@@ -4317,6 +4319,7 @@ int ffimem(fitsfile **fptr,      /* O - FITS file pointer                   */
     ((*fptr)->Fptr)->curbuf = -1;             /* undefined current IO buffer */
     ((*fptr)->Fptr)->open_count = 1;     /* structure is currently used once */
     ((*fptr)->Fptr)->validcode = VALIDSTRUC; /* flag denoting valid structure */
+    ((*fptr)->Fptr)->noextsyntax = 0;  /* extended syntax can be used in filename */
 
     ffldrc(*fptr, 0, IGNORE_EOF, status);     /* initialize first record */
     fits_store_Fptr( (*fptr)->Fptr, status);  /* store Fptr address */

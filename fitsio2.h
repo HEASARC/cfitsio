@@ -401,7 +401,8 @@ int fits_store_Fptr(FITSfile *Fptr, int *status);
 int fits_clear_Fptr(FITSfile *Fptr, int *status);
 int fits_already_open(fitsfile **fptr, char *url, 
     char *urltype, char *infile, char *extspec, char *rowfilter,
-    char *binspec, char *colspec, int  mode,int  *isopen, int  *status);
+    char *binspec, char *colspec, int  mode, int noextsyn,
+    int  *isopen, int  *status);
 int ffedit_columns(fitsfile **fptr, char *outfile, char *expr, int *status);
 int fits_get_col_minmax(fitsfile *fptr, int colnum, double *datamin, 
                      double *datamax, int *status);

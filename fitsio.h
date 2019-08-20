@@ -361,6 +361,7 @@ typedef struct      /* structure used to store basic FITS file information */
     char *filename;   /* file name */
     int validcode;    /* magic value used to verify that structure is valid */
     int only_one;     /* flag meaning only copy the specified extension */
+    int noextsyntax;  /* flag for file opened with request to ignore extended syntax*/
     LONGLONG filesize; /* current size of the physical disk file in bytes */
     LONGLONG logfilesize; /* logical size of file, including unflushed buffers */
     int lasthdu;      /* is this the last HDU in the file? 0 = no, else yes */
