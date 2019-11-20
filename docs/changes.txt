@@ -1,5 +1,9 @@
                    Log of Changes Made to CFITSIO
 
+  - Fixed bug in imcompress.c that wasn't properly handling conversion
+    between float and double types when reading from a gzip compressed
+    float or double image.
+    
   - Fixed bug that was preventing use of bracket and parentheses symbols
     in pathnames when opening multiple READWRITE files, even when 
     requesting no-extended-syntax usage. *This fix necessitates a 
