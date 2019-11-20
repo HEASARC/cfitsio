@@ -4422,7 +4422,7 @@ int fits_read_compressed_img(fitsfile *fptr,   /* I - FITS file pointer      */
     long fpixel[MAX_COMPRESS_DIM], lpixel[MAX_COMPRESS_DIM];
     long inc[MAX_COMPRESS_DIM];
     long i5, i4, i3, i2, i1, i0, irow;
-    int ii, ndim, pixlen, tilenul;
+    int ii, ndim, pixlen, tilenul=0;
     void *buffer;
     char *bnullarray = 0;
     double testnullval = 0.;
@@ -5866,6 +5866,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
     int blocksize, ntilebins, tilecol = 0;
     float fnulval=0;
     float *tempfloat = 0;
+    double *tempdouble = 0;
     double dnulval=0;
     double bscale, bzero, actual_bzero, dummy = 0;    /* scaling parameters */
     long tilesize;      /* number of bytes */
@@ -5986,8 +5987,34 @@ int imcomp_decompress_tile (fitsfile *infptr,
                 free (cbuf);
                 return (*status = DATA_DECOMPRESSION_ERR);
             }
+            
+            /* Do not allow image float/doubles into int arrays */
+            if (datatype != TFLOAT && datatype != TDOUBLE)
+            {
+               ffpmsg("attempting to read compressed float or double image into incompatible data type");
+               free(cbuf);
+               return (*status = DATA_DECOMPRESSION_ERR);
+            }
 
-            if (datatype == TDOUBLE && (infptr->Fptr)->zbitpix == FLOAT_IMG) {  
+            if (datatype == TFLOAT && (infptr->Fptr)->zbitpix == DOUBLE_IMG)
+            {
+               tempdouble = (double*)malloc(idatalen);
+               if (tempdouble == NULL) {
+	           ffpmsg("Memory allocation failure for tempdouble. (imcomp_decompress_tile)");
+                   free (cbuf);
+	           return (*status = MEMORY_ALLOCATION);
+               }
+
+               /* uncompress the data into temp buffer */
+               if (uncompress2mem_from_mem ((char *)cbuf, (long) nelemll,
+                    (char **) &tempdouble, &idatalen, NULL, &tilebytesize, status)) {
+                   ffpmsg("failed to gunzip the image tile");
+                   free (tempdouble);
+                   free (cbuf);
+                   return (*status);
+               }
+            }
+            else if (datatype == TDOUBLE && (infptr->Fptr)->zbitpix == FLOAT_IMG) {  
                 /*  have to allocat a temporary buffer for the uncompressed data in the */
                 /*  case where a gzipped "float" tile is returned as a "double" array   */
                 tempfloat = (float*) malloc (idatalen); 
@@ -6054,16 +6081,21 @@ int imcomp_decompress_tile (fitsfile *infptr,
             } else if (tilebytesize == 8 * tilelen) { /* double pixels */
 
 #if BYTESWAPPED
-                ffswap8((double *) buffer, tilelen);
+                if (tempdouble)
+                   ffswap8((double *) tempdouble, tilelen);
+                else
+                   ffswap8((double *) buffer, tilelen);
 #endif
                 if (datatype == TFLOAT) {
                   if (nulval) {
 		    fnulval = *(float *) nulval;
   		  }
 
-                  fffr8r4((double *) buffer, (long) tilelen, 1., 0., nullcheck,   
+                  fffr8r4((double *) tempdouble, (long) tilelen, 1., 0., nullcheck,   
                         fnulval, bnullarray, anynul,
                         (float *) buffer, status);
+                  free(tempdouble);
+                  tempdouble=0;
                 } else if (datatype == TDOUBLE) {
                   if (nulval) {
 		    dnulval = *(double *) nulval;
