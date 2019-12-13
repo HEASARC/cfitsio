@@ -118,6 +118,9 @@ static int expr_read( char *buf, int nbytes );
 bit		([bB][01xX]+)
 oct		([oO][01234567xX]+)
 hex		([hH][0123456789aAbBcCdDeEfFxX]+)
+bitconst        (0b[01]+)
+hexconst        (0x[0123456789aAbBcCdDeEfF]+)
+octconst        (0o]+)
 integer		[0-9]+
 boolean         (t|f|T|F)
 real		([0-9]*"."[0-9]+)|([0-9]*"."*[0-9]+[eEdD][+-]?[0-9]+)|([0-9]*".")
@@ -137,6 +140,7 @@ greater         (">"|".gt."|".GT."|"gt."|"GT.")
 lesser          ("<"|".lt."|".LT."|"lt."|"LT.")
 greater_eq	(">="|"=>"|".ge."|".GE."|"ge."|"GE.")
 lesser_eq	("<="|"=<"|".le."|".LE."|"le."|"LE.")
+xor             ("^^"|".xor."|".XOR.")
 nl		\n
 
 %%
@@ -303,6 +307,36 @@ nl		\n
                   strcpy( yylval.str, bitstring );
 		  return( BITSTR );
 		}
+{bitconst}      {
+		  long int constval = 0;
+		  char *p;
+		  for (p = &(yytext[2]); *p; p++) {
+		    constval = (constval << 1) | (*p == '1');
+		  }
+		  yylval.lng = constval;
+		  return( LONG );
+		}
+{octconst}      {
+		  long int constval = 0;
+		  char *p;
+		  for (p = &(yytext[2]); *p; p++) {
+		    constval = (constval << 3) | (*p - '0');
+		  }
+		  yylval.lng = constval;
+		  return( LONG );
+		}
+{hexconst}      {
+		  long int constval = 0;
+		  char *p;
+		  for (p = &(yytext[2]); *p; p++) {
+                    int v = (isdigit(*p) ? (*p - '0') : (*p - 'a' + 10));
+                    constval = (constval << 4) | v;
+		  }
+		  yylval.lng = constval;
+		  return( LONG );
+		}
+
+                  
 {integer}	{
                   yylval.lng = atol(yytext);
 		  return( LONG );
@@ -414,6 +448,7 @@ nl		\n
 {lesser}	{ return( LT      ); }
 {greater_eq}	{ return( GTE     ); }
 {lesser_eq}	{ return( LTE     ); }
+{xor}           { return( XOR     ); }
 {nl}		{ return( '\n'    ); }
 .		{ return( yytext[0] ); }
 %%

@@ -63,6 +63,8 @@
 /*                              determine the output dimensions         */
 /*  Craig B Markwardt Aug 2009  Add substring STRMID() and string search*/
 /*                              STRSTR() functions; more overflow checks*/
+/*  Craig B Markwardt Dec 2019  Add bit/hex/oct literal strings and     */
+/*                              bitwise operatiosn between integers     */
 /*                                                                      */
 /************************************************************************/
 
@@ -230,7 +232,7 @@ static void  yyerror(char *msg);
 %left     GT LT LTE GTE
 %left     '+' '-' '%'
 %left     '*' '/'
-%left     '|' '&'
+%left     '|' '&' XOR
 %right    POWER
 %left     NOT
 %left     INTCAST FLTCAST
@@ -417,6 +419,33 @@ expr:    LONG
        | expr '/' expr
                 { PROMOTE($1,$3); $$ = New_BinOp( TYPE($1), $1, '/', $3 ); 
 		  TEST($$);                                                }
+       | expr '&' expr
+                { 
+                   if (TYPE($1) != LONG ||
+		       TYPE($3) != LONG) {
+                     yyerror("Bitwise operations with incompatible types; only (bit OP bit) and (int OP int) are allowed");
+                      YYERROR;
+                   }
+                   $$ = New_BinOp( TYPE($1), $1, '&', $3 );
+                }
+       | expr '|' expr
+                { 
+                   if (TYPE($1) != LONG ||
+		       TYPE($3) != LONG) {
+                     yyerror("Bitwise operations with incompatible types; only (bit OP bit) and (int OP int) are allowed");
+                      YYERROR;
+                   }
+                   $$ = New_BinOp( TYPE($1), $1, '|', $3 );
+                }
+       | expr XOR expr
+                { 
+                   if (TYPE($1) != LONG ||
+		       TYPE($3) != LONG) {
+                     yyerror("Bitwise operations with incompatible types; only (bit OP bit) and (int OP int) are allowed");
+                      YYERROR;
+                   }
+                   $$ = New_BinOp( TYPE($1), $1, '^', $3 );
+                }
        | expr POWER expr
                 { PROMOTE($1,$3); $$ = New_BinOp( TYPE($1), $1, POWER, $3 );
 		  TEST($$);                                                }
@@ -2849,6 +2878,10 @@ static void Do_BinOp_lng( Node *this )
       case '-':   this->value.data.lng = (val1  - val2);   break;
       case '*':   this->value.data.lng = (val1  * val2);   break;
 
+      case '&':   this->value.data.lng = (val1  & val2);   break;
+      case '|':   this->value.data.lng = (val1  | val2);   break;
+      case '^':   this->value.data.lng = (val1  ^ val2);   break;
+
       case '%':
 	 if( val2 ) this->value.data.lng = (val1 % val2);
 	 else       yyerror("Divide by Zero");
@@ -2957,6 +2990,10 @@ static void Do_BinOp_lng( Node *this )
 	    case '+':  this->value.data.lngptr[elem] = (val1  + val2);   break;
 	    case '-':  this->value.data.lngptr[elem] = (val1  - val2);   break;
 	    case '*':  this->value.data.lngptr[elem] = (val1  * val2);   break;
+
+	    case '&':  this->value.data.lngptr[elem] = (val1  & val2);   break;
+	    case '|':  this->value.data.lngptr[elem] = (val1  | val2);   break;
+	    case '^':  this->value.data.lngptr[elem] = (val1  ^ val2);   break;
 
 	    case '%':   
 	       if( val2 ) this->value.data.lngptr[elem] = (val1 % val2);
