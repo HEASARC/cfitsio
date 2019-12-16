@@ -274,6 +274,8 @@ LIBPRE=""
 case $host in
     *cygwin*)
 	CFLAGS="$CFLAGS -DHAVE_POSIX_SIGNALS"
+        # LDFLAGS used by utilities:
+        LDFLAGS_BIN="$LDFLAGS_BIN -Wl,-rpath,\${CFITSIO_LIB}"
 	;;
     *apple-darwin*)
         changequote(,)
@@ -314,6 +316,8 @@ case $host in
         # For large file support:
         AC_DEFINE(_LARGEFILE_SOURCE)
         AC_DEFINE(_FILE_OFFSET_BITS,64)
+        # LDFLAGS used by utilities:
+        LDFLAGS_BIN="$LDFLAGS_BIN -Wl,-rpath,\${CFITSIO_LIB}"
 	;;
     *mingw32*)
         AC_MSG_CHECKING([for large file support])
