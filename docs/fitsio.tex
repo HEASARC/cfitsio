@@ -6085,6 +6085,20 @@ Examples:
     absolute row number, only a relative offset.  Rows that fall outside
     the table will be treated as undefined, or NULLs.
 
+%% <!-- IMPORTANT NOTE IMPORTANT NOTE IMPORTANT NOTE -->
+%% <!-- If you edit this file then you must also edit 
+%%      the following other locations where calculator 
+%%      expressions are documented:
+%%         heacore/cfitsio/docs/cfitsio.tex
+%%         heacore/cfitsio/docs/fitsio.tex
+%%         heatools/help/calc_express.html
+%%         heatools/ftcalc/ftcalc.html
+%%         heatools/ftselect/ftselect.html
+%%         ftools/futils/tasks/fselect/fselect.hlp
+%%         ftools/futils/tasks/fcalc/fcalc.hlp
+%%         ftools/guis/fv/doc/expressions.html
+%%   -->
+
     Boolean   operators can be  used in  the expression  in either their
     Fortran or C forms.  The following boolean operators are available:
 
@@ -6096,18 +6110,17 @@ Examples:
     "negation"     .not. .NOT. !  "approx. equal(1e-7)"  ~
 \end{verbatim}
 
-Note  that the exclamation
-point,  '!', is a special UNIX character, so if it is used  on the
-command line rather than entered at a task prompt, it must be  preceded
-by a backslash to force the UNIX shell to ignore it.
+Note that the exclamation point, '!', is a special UNIX character, so
+if it is used on the command line rather than entered at a task
+prompt, it must be preceded by a backslash to force the UNIX shell to
+ignore it.
 
-    The expression may  also include arithmetic operators and functions.
-    Trigonometric  functions use  radians,  not degrees.  The  following
-    arithmetic  operators and  functions  can be  used in the expression
-    (function names are case insensitive). A null value will be returned
-    in case of illegal operations such as divide by zero, sqrt(negative)
-    log(negative), log10(negative), arccos(.gt. 1), arcsin(.gt. 1).
-
+The expression may  also include arithmetic operators and functions.
+Trigonometric  functions use  radians,  not degrees.  The  following
+arithmetic  operators and  functions  can be  used in the expression
+(function names are case insensitive).  A null value will be returned
+in case of illegal operations such as divide by zero, sqrt(negative)
+log(negative), log10(negative), arccos(.gt. 1), arcsin(.gt. 1).
 
 \begin{verbatim}
     "addition"           +          "subtraction"          -
@@ -6122,43 +6135,49 @@ by a backslash to force the UNIX shell to ignore it.
     "round down to int"  floor(x)   "round up to int"      ceil(x)
     "exponential"        exp(x)     "square root"          sqrt(x)
     "natural log"        log(x)     "common log"           log10(x)
-    "modulus"            x % y      "random # [0.0,1.0)"   random()
+    "modulus"            x % y      
+    "bitwise AND"        x & y      "bitwise OR"           x | y
+    "bitwise XOR"        x ^^ y     (bitwise operators are 32-bit int only)
+    "random # [0.0,1.0)" random()
     "random Gaussian"    randomn()  "random Poisson"       randomp(x)
     "minimum"            min(x,y)   "maximum"              max(x,y)
-    "cumulative sum"     accum(x)  "sequential difference" seqdiff(x)
+    "cumulative sum"     accum(x)   "sequential difference" seqdiff(x)
     "if-then-else"       b?x:y
-    "angular separation"  angsep(ra1,dec1,ra2,de2) (all in degrees)
-    "substring"      strmid(s,p,n) "string search"         strstr(s,r)
+    "angular separation" angsep(ra1,dec1,ra2,de2) (all in degrees)
+    "substring"          strmid(s,p,n) "string search"     strstr(s,r)
 \end{verbatim}
-Three different random number functions are provided:  random(), with no
-arguments, produces a uniform random deviate between 0 and 1; randomn(),
-also with no arguments, produces a normal (Gaussian) random deviate  with
-zero mean and unit standard deviation; randomp(x) produces a Poisson random
-deviate whose expected number of counts is X.  X may be any positive real
-number of expected counts, including fractional values, but the return value
-is an integer.
+The bitwise operators for AND, OR and XOR operate upon 32-bit integer 
+expressions only.
+
+Three different random number functions are provided: random(), with
+no arguments, produces a uniform random deviate between 0 and 1;
+randomn(), also with no arguments, produces a normal (Gaussian) random
+deviate with zero mean and unit standard deviation; randomp(x)
+produces a Poisson random deviate whose expected number of counts is
+X.  X may be any positive real number of expected counts, including
+fractional values, but the return value is an integer.
 
 When the random functions are used in a vector expression, by default
-the same random value will be used when evaluating each element of the vector.
-If different random numbers are desired, then the name of a vector
-column should be supplied as the single argument to the random
-function (e.g., "flux + 0.1 * random(flux)", where "flux' is the
-name of a vector column).  This will create a vector of
-random numbers that will be used in sequence when evaluating each
-element of the vector expression.
+the same random value will be used when evaluating each element of the
+vector.  If different random numbers are desired, then the name of a
+vector column should be supplied as the single argument to the random
+function (e.g., "flux + 0.1 * random(flux)", where "flux" is the name
+of a vector column).  This will create a vector of random numbers that
+will be used in sequence when evaluating each element of the vector
+expression.
 
-    An alternate syntax for the min and max functions  has only a single
-    argument which  should be  a  vector value (see  below).  The result
-    will be the minimum/maximum element contained within the vector.
+An alternate syntax for the min and max functions  has only a single
+argument which  should be  a  vector value (see  below).  The result
+will be the minimum/maximum element contained within the vector.
 
-    The accum(x) function forms the cumulative sum of x, element by element.
-    Vector columns are supported simply by performing the summation process
-    through all the values.  Null values are treated as 0.  The seqdiff(x)
-    function forms the sequential difference of x, element by element.
-    The first value of seqdiff is the first value of x.  A single null
-    value in x causes a pair of nulls in the output.  The seqdiff and
-    accum functions are functional inverses, i.e., seqdiff(accum(x)) == x
-    as long as no null values are present.
+The accum(x) function forms the cumulative sum of x, element by
+element.  Vector columns are supported simply by performing the
+summation process through all the values.  Null values are treated as
+0.  The seqdiff(x) function forms the sequential difference of x,
+element by element.  The first value of seqdiff is the first value of
+x.  A single null value in x causes a pair of nulls in the output.
+The seqdiff and accum functions are functional inverses, i.e.,
+seqdiff(accum(x)) == x as long as no null values are present.
 
 In the if-then-else expression, "b?x:y", b is an explicit boolean
 value or expression.  There is no automatic type conversion from
@@ -6166,27 +6185,27 @@ numeric to boolean values, so one needs to use "iVal!=0" instead of
 merely "iVal" as the boolean argument. x and y can be any scalar data
 type (including string).
 
-    The angsep function computes the angular separation in degrees
-    between 2 celestial positions, where the first 2 parameters
-    give the RA-like and Dec-like coordinates (in decimal degrees)
-    of the first position, and the 3rd and 4th parameters give the
-    coordinates of the second position.
+The angsep function computes the angular separation in degrees between
+2 celestial positions, where the first 2 parameters give the RA-like
+and Dec-like coordinates (in decimal degrees) of the first position,
+and the 3rd and 4th parameters give the coordinates of the second
+position.
 
 The substring function strmid(S,P,N) extracts a substring from S,
 starting at string position P, with a substring length N.  The first
 character position in S is labeled as 1. If P is 0, or refers to a
 position beyond the end of S, then the extracted substring will be
-NULL.   S, P, and N may be functions of other columns.
+NULL.  S, P, and N may be functions of other columns.
 
-The string search function strstr(S,R) searches for the first occurrence
-of the substring R in S.  The result is an integer, indicating the
-character position of the first match (where 1 is the first character
-position of S).  If no match is found, then strstr() returns a NULL
-value.
+The string search function strstr(S,R) searches for the first
+occurrence of the substring R in S.  The result is an integer,
+indicating the character position of the first match (where 1 is the
+first character position of S).  If no match is found, then strstr()
+returns a NULL value.
 
-    The  following  type  casting  operators  are  available,  where the
-    enclosing parentheses are required and taken  from  the  C  language
-    usage. Also, the integer to real casts values to double precision:
+The following type casting operators are available, where the
+enclosing parentheses are required and taken from the C language
+usage. Also, the integer to real casts values to double precision:
 
 \begin{verbatim}
                 "real to integer"    (int) x     (INT) x
@@ -6206,6 +6225,20 @@ value.
     A  string constant must  be enclosed  in quotes  as in  'Crab'.  The
     "null" constants  are useful for conditionally  setting table values
     to a NULL, or undefined, value (eg., "col1==-99 ? \#NULL : col1").
+
+    Integer constants may be specified using the following notation,
+\begin{verbatim}
+           13245   decimal integer
+           0x12f3  hexidecimal integer
+           0o1373  octal integer
+           0b01001 binary integer
+\end{verbatim}
+    Note that integer constants are only allowed to be 32-bit, i.e.
+    between -2^(31) and +2^(31).  Integer constants may be used in any
+    arithmetic expression where an integer would be appropriate.  Thus,
+    they are distinct from bitmasks (which may be of arbitrary length,
+    allow the "wildcard" bit, and may only be used in logical
+    expressions; see below).
 
     There is also a function for testing if  two  values  are  close  to
     each  other,  i.e.,  if  they are "near" each other to within a user
@@ -6250,7 +6283,10 @@ value.
     In  all  the  representations, an x or X is allowed in the mask as a
     wild card. Note that the x represents a  different  number  of  wild
     card  bits  in  each  representation.  All  representations are case
-    insensitive.
+    insensitive.  Although bitmasks may be of arbitrary length and contain
+    a wildcard, they may only be used in logical expressions, unlike 
+    integer constants (see above) which may be used in any arithmetic
+    expression.
 
     To construct the boolean expression using the mask  as  the  boolean
     equal  operator  described above on a bit table column. For example,
