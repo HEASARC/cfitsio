@@ -52,6 +52,7 @@
 		get rid of compiler warnings.  Thanks to ROOT developers
 		Jacek Holeczek and Rene Brun for these suggestions. (KMCCARTY)
       Dec 2008  Added typedef for LONGLONG to support Borland compiler (WDP)
+      Jan 2020  Added __attribute__((unused)) for GCC to prevent warnings (C. Markwardt)
  *******/
 
 /* 
@@ -704,11 +705,11 @@ return (int)num;
 /* This allows Pvariables for ARGS. ARGF machinery is above ARGFP.
  * B is not needed because the variable may be changed by the Fortran routine,
  * but because B is the only way to access an arbitrary macro argument.       */
-#define     PINT_cfVP(A,B) int  B = (int)A;              /* For ZSTRINGV_ARGS */
+#define     PINT_cfVP(A,B) int  B __PCTYPE__UNUSED__ = (int)A;              /* For ZSTRINGV_ARGS */
 #else
 #define     PINT_cfVP(A,B)
 #endif
-#define PLOGICAL_cfVP(A,B) int *B;      /* Returning LOGICAL in FUNn and SUBn */
+#define PLOGICAL_cfVP(A,B) int *B __PCTYPE__UNUSED__ ;      /* Returning LOGICAL in FUNn and SUBn */
 #define    PLONG_cfVP(A,B) PINT_cfVP(A,B)
 #define   PSHORT_cfVP(A,B) PINT_cfVP(A,B)
 
@@ -2520,6 +2521,5 @@ string. */
                    CFARGT27S(RCF,T1,T2,T3,T4,T5,T6,T7,T8,T9,TA,TB,TC,TD,TE,TF,TG,TH,TI,TJ,TK,TL,TM,TN,TO,TP,TQ,TR)  _(T0,_cfI)}
 
 #endif
-
 
 #endif	 /* __CFORTRAN_LOADED */
