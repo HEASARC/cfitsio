@@ -55,6 +55,14 @@
       Jan 2020  Added __attribute__((unused)) for GCC to prevent warnings (C. Markwardt)
  *******/
 
+#ifndef __CFORTRAN__PCTYPE__UNUSED__
+#ifdef __GNUC__
+#define __CFORTRAN__PCTYPE__UNUSED__ __attribute__ ((unused))
+#else
+#define __CFORTRAN__PCTYPE__UNUSED__
+#endif
+#endif
+
 /* 
   Avoid symbols already used by compilers and system *.h:
   __ - OSF1 zukal06 V3.0 347 alpha, cc -c -std1 cfortest.c
@@ -705,11 +713,11 @@ return (int)num;
 /* This allows Pvariables for ARGS. ARGF machinery is above ARGFP.
  * B is not needed because the variable may be changed by the Fortran routine,
  * but because B is the only way to access an arbitrary macro argument.       */
-#define     PINT_cfVP(A,B) int  B __PCTYPE__UNUSED__ = (int)A;              /* For ZSTRINGV_ARGS */
+#define     PINT_cfVP(A,B) int  B __CFORTRAN__PCTYPE__UNUSED__ = (int)A;              /* For ZSTRINGV_ARGS */
 #else
 #define     PINT_cfVP(A,B)
 #endif
-#define PLOGICAL_cfVP(A,B) int *B __PCTYPE__UNUSED__ ;      /* Returning LOGICAL in FUNn and SUBn */
+#define PLOGICAL_cfVP(A,B) int *B __CFORTRAN__PCTYPE__UNUSED__ ;      /* Returning LOGICAL in FUNn and SUBn */
 #define    PLONG_cfVP(A,B) PINT_cfVP(A,B)
 #define   PSHORT_cfVP(A,B) PINT_cfVP(A,B)
 
