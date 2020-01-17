@@ -2078,9 +2078,17 @@ then values of 'n' less than or equal to n_value will match.
     /* ===== Keyword rewriting and output stage */
     spat = patterns[pat][1];
 
-    /* Return case: no match, or explicit deletion pattern */
-    if (pass == 0 || spat[0] == '\0' || spat[0] == '-') return 0;
+    /* Return case: explicit deletion, return '-' */
+    if (pass && strcmp(spat,"--") == 0) {
+      strcpy(outrec, "-");
+      strncat(outrec, inrec, 8);
+      outrec[9] = 0;
+      for(i1=8; i1>1 && outrec[i1] == ' '; i1--) outrec[i1] = 0;
+      return 0;
+    }
 
+    /* Return case: no match, or do-not-transfer pattern */
+    if (pass == 0 || spat[0] == '\0' || strcmp(spat,"-") == 0) return 0;
     /* A match: we start by copying the input record to the output */
     strcpy(outrec, inrec);
 
@@ -2164,7 +2172,7 @@ int fits_translate_keywords(
 
     ffghsp(infptr, &nkeys, &nmore, status);  /* get number of keywords */
 
-    for (nrec = firstkey; nrec <= nkeys; nrec++) {
+    for (nrec = firstkey; (*status == 0) && (nrec <= nkeys); nrec++) {
       outrec[0] = '\0';
 
       ffgrec(infptr, nrec, rec, status);
@@ -2185,12 +2193,34 @@ int fits_translate_keywords(
 			     n_value, n_offset, n_range, 
 			     &pat_num, &i, &j, &m, &n, status);
       
-      if (outrec[0]) {
-	ffprec(outfptr, outrec, status); /* copy the keyword */
-	rec[8] = 0; outrec[8] = 0;
-      } else {
-	rec[8] = 0; outrec[8] = 0;
+      if (*status == 0) {
+	if (outrec[0] == '-') { /* prefix -KEYNAME means delete */
+	  int i1;
+
+	  /* Preserve only the keyword portion of name */
+	  outrec[9] = 0;
+	  for(i1=8; i1>1 && outrec[i1] == ' '; i1--) outrec[i1] = 0;
+
+	  ffpmrk();
+	  ffdkey(outfptr, outrec+1, status); /* delete the keyword */
+	  if (*status == 0) {
+	    int nkeys1;
+	    /* get number of keywords again in case of change*/
+	    ffghsp(infptr, &nkeys1, &nmore, status);  
+	    if (nkeys1 != nkeys) {
+	      nrec --;
+	      nkeys = nkeys1;
+	    }
+	  }
+	  *status = 0;
+	  ffcmrk();
+
+	} else if (outrec[0]) {
+	  ffprec(outfptr, outrec, status); /* copy the keyword */
+	}	  
       }
+      rec[8] = 0; outrec[8] = 0;
+
     }	
 
     return(*status);

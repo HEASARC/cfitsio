@@ -4399,11 +4399,19 @@ The following output patterns are special:
 
     "-" - do not copy a keyword that matches the corresponding input pattern
 
+    "--" - if match occurs, outrec will have "-KEYNAME"
+
     "+" - copy the input unchanged
 
 The inrec string could be just the 8-char keyword name, or the entire
 80-char header record.  Characters 9 - 80 in the input string simply get
 appended to the translated keyword name.
+
+Upon return, outrec will have the converted string, starting from the
+pattern[i][1] pattern and applying the numerical substitutions as 
+described above. If the output pattern is "--" then the resulting
+outrec will be "-KEYNAME", which may indicate to the calling
+routine that KEYNAME is to be deleted.
 
 If n\_range = 0, then only keywords with 'n' equal to n\_value will be
 considered as a pattern match.  If n\_range = +1, then all values of
@@ -4470,7 +4478,13 @@ an IMAGE extension:
 \begin{description}
 \item[21]  Translate the keywords in the input HDU into the keywords that are
 appropriate for the output HDU.  This is a driver routine that calls
-the previously described routine.
+the previously described routine for all keywords in the HDU.
+
+It is allowed for infptr and outfptr to point to the same HDU.
+
+If any output matched patterns are of the form "-KEYNAME" then
+this routine will attempt to delete the keyword KEYNAME.  It is
+not an error if KEYNAME is not present in the output HDU.
 \end{description}
 
 \begin{verbatim}
