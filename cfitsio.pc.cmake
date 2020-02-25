@@ -1,6 +1,6 @@
 prefix=@CMAKE_INSTALL_PREFIX@
 exec_prefix=@CMAKE_INSTALL_PREFIX@
-libdir=@PKG_CONFIG_LIBDIR@
+libdir=@LIB_DESTINATION@
 includedir=@INCLUDE_INSTALL_DIR@
 
 Name: cfitsio
