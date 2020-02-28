@@ -137,6 +137,20 @@ extern int Fitsio_Pthread_Status;
 #    error "can't handle long size given by _MIPS_SZLONG"
 #  endif
 
+#elif defined(__riscv)
+
+/* RISC-V is always little endian */
+
+#define BYTESWAPPED TRUE
+
+#  if __riscv_xlen == 32
+#    define LONGSIZE 32
+#  elif __riscv_xlen == 64
+#    define LONGSIZE 64
+#  else
+#    error "can't handle long size given by __riscv_xlen"
+#  endif
+
 /* ============================================================== */
 /*  the following are all 32-bit byteswapped platforms            */
 
@@ -204,12 +218,6 @@ extern int Fitsio_Pthread_Status;
 #define BYTESWAPPED FALSE
 #endif
 
-#elif defined(__riscv)
-
-/* RISC-V is little endian */
-
-#define BYTESWAPPED TRUE
- 
 #else
 
 /*  assume all other machine uses the same IEEE formats as used in FITS files */
