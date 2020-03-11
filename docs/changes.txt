@@ -1,4 +1,9 @@
                    Log of Changes Made to CFITSIO
+                   
+Version 3.48 - Mar 2020
+
+  - Now can handle parentheses in path names rather than automatically
+    interpreting them as output file specifiers.  
 
   - Fixed bug in imcompress.c that wasn't properly handling conversion
     between float and double types when reading from a gzip compressed
