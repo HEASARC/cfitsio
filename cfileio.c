@@ -5591,6 +5591,20 @@ int ffifile2(char *url,       /* input filename */
 
     ptr2 = strchr(tmptr, '(');   /* search for opening parenthesis ( */
     ptr3 = strchr(tmptr, '[');   /* search for opening bracket [ */
+    if (ptr2)
+    {
+       ptr4 = strchr(ptr2, ')'); /* search for closing parenthesis ) */
+       while (ptr4 && ptr2)
+       {
+          do {
+             ++ptr4;
+          } while (*ptr4 == ' '); /* find next non-blank char after ')' */
+          if (*ptr4 == 0 || *ptr4 == '[')
+             break;
+          ptr2 = strchr(ptr2+1, '(');
+          ptr4 = strchr(ptr4, ')');
+       }
+    }
 
     if (ptr2 == ptr3)  /* simple case: no [ or ( in the file name */
     {
@@ -6432,7 +6446,7 @@ int ffrtnm(char *url,
 
 { 
     int ii, jj, slen, infilelen;
-    char *ptr1, *ptr2, *ptr3;
+    char *ptr1, *ptr2, *ptr3, *ptr4;
     char urltype[MAX_PREFIX_LEN];
     char infile[FLEN_FILENAME];
 
@@ -6514,6 +6528,20 @@ int ffrtnm(char *url,
        /*  get the input file name  */
     ptr2 = strchr(ptr1, '(');   /* search for opening parenthesis ( */
     ptr3 = strchr(ptr1, '[');   /* search for opening bracket [ */
+    if (ptr2)
+    {
+       ptr4 = strchr(ptr2, ')');
+       while (ptr4 && ptr2)
+       {
+          do {
+             ++ptr4;
+          }  while (*ptr4 == ' ');
+          if (*ptr4 == 0 || *ptr4 == '[')
+             break;
+          ptr2 = strchr(ptr2+1, '(');
+          ptr4 = strchr(ptr4, ')');
+       }
+    }
 
     if (ptr2 == ptr3)  /* simple case: no [ or ( in the file name */
     {
