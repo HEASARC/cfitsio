@@ -41,14 +41,14 @@
 \contentsline {section}{\numberline {5.7}ASCII and Binary Table Routines}{52}{section.5.7}
 \contentsline {subsection}{\numberline {5.7.1}Create New Table}{52}{subsection.5.7.1}
 \contentsline {subsection}{\numberline {5.7.2}Column Information Routines}{53}{subsection.5.7.2}
-\contentsline {subsection}{\numberline {5.7.3}Routines to Edit Rows or Columns}{55}{subsection.5.7.3}
-\contentsline {subsection}{\numberline {5.7.4}Read and Write Column Data Routines}{57}{subsection.5.7.4}
-\contentsline {subsection}{\numberline {5.7.5}Row Selection and Calculator Routines}{59}{subsection.5.7.5}
+\contentsline {subsection}{\numberline {5.7.3}Routines to Edit Rows or Columns}{56}{subsection.5.7.3}
+\contentsline {subsection}{\numberline {5.7.4}Read and Write Column Data Routines}{58}{subsection.5.7.4}
+\contentsline {subsection}{\numberline {5.7.5}Row Selection and Calculator Routines}{60}{subsection.5.7.5}
 \contentsline {subsection}{\numberline {5.7.6}Column Binning or Histogramming Routines}{61}{subsection.5.7.6}
 \contentsline {section}{\numberline {5.8}Utility Routines}{64}{section.5.8}
 \contentsline {subsection}{\numberline {5.8.1}File Checksum Routines}{64}{subsection.5.8.1}
 \contentsline {subsection}{\numberline {5.8.2}Date and Time Utility Routines}{65}{subsection.5.8.2}
-\contentsline {subsection}{\numberline {5.8.3}General Utility Routines}{66}{subsection.5.8.3}
+\contentsline {subsection}{\numberline {5.8.3}General Utility Routines}{67}{subsection.5.8.3}
 \contentsline {chapter}{\numberline {6} The CFITSIO Iterator Function }{77}{chapter.6}
 \contentsline {section}{\numberline {6.1}The Iterator Work Function}{78}{section.6.1}
 \contentsline {section}{\numberline {6.2}The Iterator Driver Function}{80}{section.6.2}
@@ -98,30 +98,30 @@
 \contentsline {section}{\numberline {10.10}Column and Keyword Filtering Specification}{139}{section.10.10}
 \contentsline {section}{\numberline {10.11}Row Filtering Specification}{142}{section.10.11}
 \contentsline {subsection}{\numberline {10.11.1}General Syntax}{143}{subsection.10.11.1}
-\contentsline {subsection}{\numberline {10.11.2}Bit Masks}{145}{subsection.10.11.2}
-\contentsline {subsection}{\numberline {10.11.3}Vector Columns}{146}{subsection.10.11.3}
+\contentsline {subsection}{\numberline {10.11.2}Bit Masks}{146}{subsection.10.11.2}
+\contentsline {subsection}{\numberline {10.11.3}Vector Columns}{147}{subsection.10.11.3}
 \contentsline {subsection}{\numberline {10.11.4}Row Access}{148}{subsection.10.11.4}
 \contentsline {subsection}{\numberline {10.11.5}Good Time Interval Filtering}{148}{subsection.10.11.5}
 \contentsline {subsection}{\numberline {10.11.6}Spatial Region Filtering}{149}{subsection.10.11.6}
-\contentsline {subsection}{\numberline {10.11.7}Example Row Filters}{151}{subsection.10.11.7}
-\contentsline {section}{\numberline {10.12} Binning or Histogramming Specification}{152}{section.10.12}
-\contentsline {chapter}{\numberline {11}Template Files }{155}{chapter.11}
-\contentsline {section}{\numberline {11.1}Detailed Template Line Format}{155}{section.11.1}
-\contentsline {section}{\numberline {11.2}Auto-indexing of Keywords}{156}{section.11.2}
-\contentsline {section}{\numberline {11.3}Template Parser Directives}{157}{section.11.3}
-\contentsline {section}{\numberline {11.4}Formal Template Syntax}{158}{section.11.4}
-\contentsline {section}{\numberline {11.5}Errors}{158}{section.11.5}
-\contentsline {section}{\numberline {11.6}Examples}{158}{section.11.6}
-\contentsline {chapter}{\numberline {12} Local FITS Conventions }{161}{chapter.12}
-\contentsline {section}{\numberline {12.1}64-Bit Long Integers}{161}{section.12.1}
-\contentsline {section}{\numberline {12.2}Long String Keyword Values.}{161}{section.12.2}
-\contentsline {section}{\numberline {12.3}Arrays of Fixed-Length Strings in Binary Tables}{163}{section.12.3}
-\contentsline {section}{\numberline {12.4}Keyword Units Strings}{163}{section.12.4}
-\contentsline {section}{\numberline {12.5}HIERARCH Convention for Extended Keyword Names}{163}{section.12.5}
-\contentsline {section}{\numberline {12.6}Tile-Compressed Image Format}{164}{section.12.6}
-\contentsline {chapter}{\numberline {13} Optimizing Programs }{167}{chapter.13}
-\contentsline {section}{\numberline {13.1}How CFITSIO Manages Data I/O}{167}{section.13.1}
-\contentsline {section}{\numberline {13.2}Optimization Strategies}{168}{section.13.2}
-\contentsline {chapter}{\numberline {A}Index of Routines }{173}{appendix.A}
-\contentsline {chapter}{\numberline {B}Parameter Definitions }{179}{appendix.B}
-\contentsline {chapter}{\numberline {C}CFITSIO Error Status Codes }{185}{appendix.C}
+\contentsline {subsection}{\numberline {10.11.7}Example Row Filters}{152}{subsection.10.11.7}
+\contentsline {section}{\numberline {10.12} Binning or Histogramming Specification}{153}{section.10.12}
+\contentsline {chapter}{\numberline {11}Template Files }{157}{chapter.11}
+\contentsline {section}{\numberline {11.1}Detailed Template Line Format}{157}{section.11.1}
+\contentsline {section}{\numberline {11.2}Auto-indexing of Keywords}{158}{section.11.2}
+\contentsline {section}{\numberline {11.3}Template Parser Directives}{159}{section.11.3}
+\contentsline {section}{\numberline {11.4}Formal Template Syntax}{160}{section.11.4}
+\contentsline {section}{\numberline {11.5}Errors}{160}{section.11.5}
+\contentsline {section}{\numberline {11.6}Examples}{160}{section.11.6}
+\contentsline {chapter}{\numberline {12} Local FITS Conventions }{163}{chapter.12}
+\contentsline {section}{\numberline {12.1}64-Bit Long Integers}{163}{section.12.1}
+\contentsline {section}{\numberline {12.2}Long String Keyword Values.}{163}{section.12.2}
+\contentsline {section}{\numberline {12.3}Arrays of Fixed-Length Strings in Binary Tables}{165}{section.12.3}
+\contentsline {section}{\numberline {12.4}Keyword Units Strings}{165}{section.12.4}
+\contentsline {section}{\numberline {12.5}HIERARCH Convention for Extended Keyword Names}{165}{section.12.5}
+\contentsline {section}{\numberline {12.6}Tile-Compressed Image Format}{166}{section.12.6}
+\contentsline {chapter}{\numberline {13} Optimizing Programs }{169}{chapter.13}
+\contentsline {section}{\numberline {13.1}How CFITSIO Manages Data I/O}{169}{section.13.1}
+\contentsline {section}{\numberline {13.2}Optimization Strategies}{170}{section.13.2}
+\contentsline {chapter}{\numberline {A}Index of Routines }{175}{appendix.A}
+\contentsline {chapter}{\numberline {B}Parameter Definitions }{181}{appendix.B}
+\contentsline {chapter}{\numberline {C}CFITSIO Error Status Codes }{187}{appendix.C}
