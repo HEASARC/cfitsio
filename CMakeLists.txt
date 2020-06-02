@@ -19,6 +19,9 @@ INCLUDE (${CMAKE_ROOT}/Modules/CheckFunctionExists.cmake)
 OPTION (BUILD_SHARED_LIBS "Build Shared Libraries" ON)
 OPTION (USE_PTHREADS "Thread-safe build (using pthreads)" OFF)
 
+# Allow curl dependency to be disabled using "-DUseCurl=OFF":
+OPTION(UseCurl "UseCurl" ON)
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 set (LIB_DESTINATION "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}")
 set (INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include/")
@@ -90,10 +93,12 @@ IF (NOT MSVC)
     ENDIF ()
 
     # Find curl library, for HTTPS support:
-    FIND_PACKAGE(CURL)
-    IF (CURL_FOUND)
-        INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
-        ADD_DEFINITIONS(-DCFITSIO_HAVE_CURL)
+    IF (UseCurl)
+        FIND_PACKAGE(CURL)
+        IF (CURL_FOUND)
+            INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
+            ADD_DEFINITIONS(-DCFITSIO_HAVE_CURL)
+        ENDIF()
     ENDIF()
 ENDIF()
 
