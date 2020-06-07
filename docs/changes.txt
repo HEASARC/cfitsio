@@ -1,4 +1,6 @@
                    Log of Changes Made to CFITSIO
+		   
+  - Added format specifier to curlProgressCallback output.
                    
 Version 3.48 - Mar 2020
 
