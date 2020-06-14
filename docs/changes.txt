@@ -1,5 +1,8 @@
                    Log of Changes Made to CFITSIO
 		   
+  - In fpack when using -table flag, replaced warning message with a
+    more detailed description mentioning FITS format update.
+		   
   - Added flag to CMake builds to disable curl dependency.  Also
     only add CURL_LIBRARIES to CMake link target if curl is found.
 		   
