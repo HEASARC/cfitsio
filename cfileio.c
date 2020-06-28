@@ -1101,7 +1101,7 @@ move2hdu:
 
        if (rownum == 0)
        {
-          ffpmsg("row statisfying this expression doesn't exist::");
+          ffpmsg("row satisfying this expression doesn't exist::");
           ffpmsg(rowexpress);
           ffpmsg("Could not open the following image in a table cell:");
           ffpmsg(extspec);

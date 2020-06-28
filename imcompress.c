@@ -8456,7 +8456,7 @@ int fits_compress_table(fitsfile *infptr, fitsfile *outfptr, int *status)
                            (int) compmemlen, 32);
 		        } else {
 			  /* this should not happen */
-			  ffpmsg(" Error: cannot compress this column type with the RICE algorthm");
+			  ffpmsg(" Error: cannot compress this column type with the RICE algorithm");
 			  free(vlamem); free(cdescript); free(cm_buffer); free(cvlamem);
 			  *status = DATA_COMPRESSION_ERR;
 			  return(*status);
@@ -8476,7 +8476,7 @@ int fits_compress_table(fitsfile *infptr, fitsfile *outfptr, int *status)
 	    		    &cvlamem,  &compmemlen, realloc, &dlen, status);        
 		    } else {
 			  /* this should not happen */
-			  ffpmsg(" Error: unknown compression algorthm");
+			  ffpmsg(" Error: unknown compression algorithm");
 			  free(vlamem); free(cdescript); free(cm_buffer); free(cvlamem);
 			  *status = DATA_COMPRESSION_ERR;
 			  return(*status);
@@ -9267,7 +9267,7 @@ int fits_uncompress_table(fitsfile *infptr, fitsfile *outfptr, int *status)
 					(int) vlalen, 32);
 				} else {
 				    /* this should not happen */
-				    ffpmsg(" Error: cannot uncompress this column type with the RICE algorthm");
+				    ffpmsg(" Error: cannot uncompress this column type with the RICE algorithm");
 
 				    *status = DATA_DECOMPRESSION_ERR;
 			            free(uncompressed_vla); free(compressed_vla); free(rm_buffer);  free(cm_buffer);
@@ -9292,7 +9292,7 @@ int fits_uncompress_table(fitsfile *infptr, fitsfile *outfptr, int *status)
 
 			    } else {
 				/* this should not happen */
-				ffpmsg(" Error: unknown compression algorthm");
+				ffpmsg(" Error: unknown compression algorithm");
 			        free(uncompressed_vla); free(compressed_vla); free(rm_buffer);  free(cm_buffer);
 				*status = DATA_COMPRESSION_ERR;
 				return(*status);
