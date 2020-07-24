@@ -5245,7 +5245,7 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
 {
     char keyword[FLEN_KEYWORD];
     char value[FLEN_VALUE];
-    int ii, tstatus, doffset, oldFormat=0;
+    int ii, tstatus, tstatus2, doffset, oldFormat=0, colNum=0;
     long expect_nrows, maxtilelen;
 
     if (*status > 0)
@@ -5282,26 +5282,40 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
         ffpmsg(value);
 	return (*status = DATA_DECOMPRESSION_ERR);
     }
+    
+    /* If ZZERO and ZSCALE columns don't exist, assume there is NO
+       quantization.  Treat exactly as if it had ZQUANTIZ='NONE'.
+       This is true regardless of whether or not file
+       has a ZQUANTIZ keyword. */
+    tstatus=0;
+    tstatus2=0;
+    if ((fits_get_colnum(infptr,CASEINSEN,"ZZERO",&colNum,&tstatus)
+	      == COL_NOT_FOUND) &&
+       (fits_get_colnum(infptr,CASEINSEN,"ZSCALE",&colNum,&tstatus2)
+	      == COL_NOT_FOUND)) {
+	  (infptr->Fptr)->quantize_level = NO_QUANTIZE;
+    }
+    else {
+       /* get the floating point to integer quantization type, if present. */
+       /* FITS files produced before 2009 will not have this keyword */
+       tstatus = 0;
+       if (ffgky(infptr, TSTRING, "ZQUANTIZ", value, NULL, &tstatus) > 0)
+       {
+           (infptr->Fptr)->quantize_method = 0;
+           (infptr->Fptr)->quantize_level = 0;
+       } else {
 
-    /* get the floating point to integer quantization type, if present. */
-    /* FITS files produced before 2009 will not have this keyword */
-    tstatus = 0;
-    if (ffgky(infptr, TSTRING, "ZQUANTIZ", value, NULL, &tstatus) > 0)
-    {
-        (infptr->Fptr)->quantize_method = 0;
-        (infptr->Fptr)->quantize_level = 0;
-    } else {
-
-        if (!FSTRCMP(value, "NONE") ) {
-            (infptr->Fptr)->quantize_level = NO_QUANTIZE;
-       } else if (!FSTRCMP(value, "SUBTRACTIVE_DITHER_1") )
-            (infptr->Fptr)->quantize_method = SUBTRACTIVE_DITHER_1;
-        else if (!FSTRCMP(value, "SUBTRACTIVE_DITHER_2") )
-            (infptr->Fptr)->quantize_method = SUBTRACTIVE_DITHER_2;
-        else if (!FSTRCMP(value, "NO_DITHER") )
-            (infptr->Fptr)->quantize_method = NO_DITHER;
-        else
-            (infptr->Fptr)->quantize_method = 0;
+           if (!FSTRCMP(value, "NONE") ) {
+               (infptr->Fptr)->quantize_level = NO_QUANTIZE;
+	  } else if (!FSTRCMP(value, "SUBTRACTIVE_DITHER_1") )
+               (infptr->Fptr)->quantize_method = SUBTRACTIVE_DITHER_1;
+           else if (!FSTRCMP(value, "SUBTRACTIVE_DITHER_2") )
+               (infptr->Fptr)->quantize_method = SUBTRACTIVE_DITHER_2;
+           else if (!FSTRCMP(value, "NO_DITHER") )
+               (infptr->Fptr)->quantize_method = NO_DITHER;
+           else
+               (infptr->Fptr)->quantize_method = 0;
+       }
     }
 
     /* get the floating point quantization dithering offset, if present. */
