@@ -194,11 +194,17 @@ int fp_get_param (int argc, char *argv[], fpstate *fpptr)
 		    fpptr->do_images = 0;
                     /* Do not write this to stdout via fp_msg.  Otherwise it will be placed at start of piped FITS
                        file, which will then be corrupted. */
-                    fprintf(stderr,"Note: -tableonly is intended for feasibility studies, not general use.\n");
+                    fprintf(stderr, "Note: The table compression method used by fpack has been\n");
+		    fprintf(stderr, " officially approved as part of FITS format standard since 2016.\n");
+		    fprintf(stderr, " However users should be aware that the compressed table files may\n");
+		    fprintf(stderr, " only be readable by a limited number of applications (including fpack).\n");
 
 		} else if (!strcmp(argv[iarg], "-table")) {
 		    fpptr->do_tables = 1;
-                    fprintf(stderr, "Note: -table is intended for feasibility studies, not general use.\n");
+                    fprintf(stderr, "Note: The table compression method used by fpack has been\n");
+		    fprintf(stderr, " officially approved as part of FITS format standard since 2016.\n");
+		    fprintf(stderr, " However users should be aware that the compressed table files may\n");
+		    fprintf(stderr, " only be readable by a limited number of applications (including fpack).\n");
 
 		} else if (argv[iarg][1] == 't') {
 		    if (gottile) {
