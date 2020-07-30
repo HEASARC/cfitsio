@@ -5142,6 +5142,13 @@ processed first by CFITSIO, followed by the rowFilter specifier, and
 finally by the binSpec specifier.
 
 
+Multiple colFilter or rowFilter specifications may appear as separated
+bracketed expressions, in any order.  Multiple colFilter or rowFilter
+expressions are treated internally as a single effective expression,
+with order of operations determined from left to right.  CFITSIO does
+not support the @filename.txt complex syntax option if multiple
+expressions are also used.
+
 \section{Filetype}
 
 The type of file determines the medium on which the file is located
@@ -5846,6 +5853,21 @@ Any lines in the external text file
 that begin with 2 slash characters ('//') will be ignored and may be
 used to add comments into the file.
 
+When using column filtering to open a file ``on the fly,'' it is permitted
+to use multiple column filtering expressions.  For example, the
+syntax
+\begin{verbatim}
+  filename.fits[col *][col -Y][col Z=X+1]
+\end{verbatim}
+would be treated as equivalent to joining the expressions with semicolons, 
+or
+\begin{verbatim}
+  filename.fits[col *; -Y;col Z=X+1]
+\end{verbatim}
+Please note that if multiple column filtering expressions are used, it is
+not permitted to also use the \verb+[col @filename.txt]+ syntax in any
+of the individual expressions.
+
 By default, the datatype of the resulting image will be the same as
 the original image, but one may force a different datatype by appended
 a code letter to the 'pix' keyword:
@@ -6081,12 +6103,29 @@ Examples:
     absolute row number, only a relative offset.  Rows that fall outside
     the table will be treated as undefined, or NULLs.
 
+    When using row filtering to open a file ``on the fly,'' it is permitted
+    to use multiple row filtering expressions.  For example, the expression
+\begin{verbatim}
+  filename.fits[#ROW > 5][X.gt.7]
+\end{verbatim}
+would be treated as equivalent to joining the expressions with logical ``and''
+like this,
+\begin{verbatim}
+  filename.fits[(#ROW > 5)&&(X.gt.7)]
+\end{verbatim}
+Please note that if multiple row filtering expressions are used, it is
+not permitted to also use the \verb+[@filename.txt]+ syntax in any
+of the individual expressions.
+    
+
 %% <!-- IMPORTANT NOTE IMPORTANT NOTE IMPORTANT NOTE -->
 %% <!-- If you edit this file then you must also edit 
 %%      the following other locations where calculator 
 %%      expressions are documented:
 %%         heacore/cfitsio/docs/cfitsio.tex
 %%         heacore/cfitsio/docs/fitsio.tex
+%%         heatools/help/rowfilter.html
+%%         heatools/help/colfilter.html
 %%         heatools/help/calc_express.html
 %%         heatools/ftcalc/ftcalc.html
 %%         heatools/ftselect/ftselect.html
