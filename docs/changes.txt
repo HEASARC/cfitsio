@@ -1,4 +1,6 @@
                    Log of Changes Made to CFITSIO
+		   
+Version 3.49 - Aug 2020
 
   - Fix to imcompress.c.  It now turns off quantization if ZSCALE
     and ZZERO columns are missing.  Treatment will be the same as
