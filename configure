@@ -3677,6 +3677,11 @@ case $host in
 	ARCH="linux"
 	EXT="lnx"
 	;;
+    *haiku*)
+        # Haiku can be arm, i386, or x86_64
+        ARCH=`uname -p`
+        EXT="haiku"
+        ;;
     *hpux*)
 	ARCH="hp"
 	EXT="hpu"
@@ -4643,6 +4648,13 @@ case $host in
         $as_echo "#define _FILE_OFFSET_BITS 64" >>confdefs.h
 
 	;;
+    *haiku*)
+        # For large file support:
+        $as_echo "#define _LARGEFILE_SOURCE 1" >>confdefs.h
+
+        $as_echo "#define _FILE_OFFSET_BITS 64" >>confdefs.h
+
+        ;;
     *hpux*)
 	if test "x$CFORTRANFLAGS" = x ; then
 		CFORTRANFLAGS="-Dappendus"
@@ -4826,6 +4838,11 @@ case $EXT in
     esac
 
     lhea_shlib_cflags="-fPIC -fno-common"
+    ;;
+  haiku)
+    SHLIB_LD=":"
+    CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}"
+    CFITSIO_SHLIB_SONAME="lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}"
     ;;
   hpu)
     SHLIB_LD="ld -b"
@@ -5270,7 +5287,7 @@ return gethostbyname ();
   return 0;
 }
 _ACEOF
-for ac_lib in '' nsl; do
+for ac_lib in '' nsl network; do
   if test -z "$ac_lib"; then
     ac_res="none required"
   else
@@ -5328,7 +5345,7 @@ return connect ();
   return 0;
 }
 _ACEOF
-for ac_lib in '' socket; do
+for ac_lib in '' socket network; do
   if test -z "$ac_lib"; then
     ac_res="none required"
   else
