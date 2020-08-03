@@ -134,6 +134,7 @@ UTILS		= cookbook fitscopy imcopy smem speed testprog
 
 FPACK_UTILS	= fpack funpack
 
+# Optional build target:
 utils:		${FPACK_UTILS} ${UTILS}
 
 swapproc.o:	swapproc.c
