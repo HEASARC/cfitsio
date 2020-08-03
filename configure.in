@@ -142,6 +142,11 @@ case $host in
 	ARCH="linux"
 	EXT="lnx"
 	;;
+    *haiku*)
+        # Haiku can be arm, i386, or x86_64
+        ARCH=`uname -p`
+        EXT="haiku"
+        ;;
     *hpux*)
 	ARCH="hp"
 	EXT="hpu"
@@ -301,6 +306,11 @@ case $host in
         AC_DEFINE(_LARGEFILE_SOURCE)
         AC_DEFINE(_FILE_OFFSET_BITS,64)
 	;;
+    *haiku*)
+        # For large file support:
+        AC_DEFINE(_LARGEFILE_SOURCE)
+        AC_DEFINE(_FILE_OFFSET_BITS,64)
+        ;;
     *hpux*)
 	if test "x$CFORTRANFLAGS" = x ; then
 		CFORTRANFLAGS="-Dappendus"
@@ -415,6 +425,11 @@ case $EXT in
     esac
     changequote([,])
     lhea_shlib_cflags="-fPIC -fno-common"
+    ;;
+  haiku)
+    SHLIB_LD=":"
+    CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}"
+    CFITSIO_SHLIB_SONAME="lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}"
     ;;
   hpu)
     SHLIB_LD="ld -b" 
@@ -632,8 +647,8 @@ AC_CHECK_FUNC(fmemopen, AC_DEFINE(HAVE_FMEMOPEN), [AC_MSG_WARN(Disabling support
 # ==================== END OF SHARED MEMORY DRIVER SECTION ================
 # ================= test for the unix networking functions ================
 
-AC_SEARCH_LIBS([gethostbyname], [nsl], cfitsio_have_nsl=1, cfitsio_have_nsl=0)
-AC_SEARCH_LIBS([connect], [socket], cfitsio_have_socket=1,
+AC_SEARCH_LIBS([gethostbyname], [nsl network], cfitsio_have_nsl=1, cfitsio_have_nsl=0)
+AC_SEARCH_LIBS([connect], [socket network], cfitsio_have_socket=1,
                cfitsio_have_socket=0, [-lnsl])
 
 if test "$cfitsio_have_nsl" = 1 -a "$cfitsio_have_socket" = 1; then
