@@ -85,7 +85,7 @@
 \contentsline {subsection}{\numberline {10.2.1}Notes about HTTP proxy servers}{127}{subsection.10.2.1}
 \contentsline {subsection}{\numberline {10.2.2}Notes about HTTPS and FTPS file access}{127}{subsection.10.2.2}
 \contentsline {subsection}{\numberline {10.2.3}Notes about the stream filetype driver}{128}{subsection.10.2.3}
-\contentsline {subsection}{\numberline {10.2.4}Notes about the gsiftp filetype}{128}{subsection.10.2.4}
+\contentsline {subsection}{\numberline {10.2.4}Notes about the gsiftp filetype}{129}{subsection.10.2.4}
 \contentsline {subsection}{\numberline {10.2.5}Notes about the root filetype}{129}{subsection.10.2.5}
 \contentsline {subsection}{\numberline {10.2.6}Notes about the shmem filetype:}{131}{subsection.10.2.6}
 \contentsline {section}{\numberline {10.3}Base Filename}{131}{section.10.3}
@@ -96,13 +96,13 @@
 \contentsline {section}{\numberline {10.8}Image Section}{137}{section.10.8}
 \contentsline {section}{\numberline {10.9}Image Transform Filters}{138}{section.10.9}
 \contentsline {section}{\numberline {10.10}Column and Keyword Filtering Specification}{139}{section.10.10}
-\contentsline {section}{\numberline {10.11}Row Filtering Specification}{142}{section.10.11}
+\contentsline {section}{\numberline {10.11}Row Filtering Specification}{143}{section.10.11}
 \contentsline {subsection}{\numberline {10.11.1}General Syntax}{143}{subsection.10.11.1}
 \contentsline {subsection}{\numberline {10.11.2}Bit Masks}{146}{subsection.10.11.2}
 \contentsline {subsection}{\numberline {10.11.3}Vector Columns}{147}{subsection.10.11.3}
-\contentsline {subsection}{\numberline {10.11.4}Row Access}{148}{subsection.10.11.4}
-\contentsline {subsection}{\numberline {10.11.5}Good Time Interval Filtering}{148}{subsection.10.11.5}
-\contentsline {subsection}{\numberline {10.11.6}Spatial Region Filtering}{149}{subsection.10.11.6}
+\contentsline {subsection}{\numberline {10.11.4}Row Access}{149}{subsection.10.11.4}
+\contentsline {subsection}{\numberline {10.11.5}Good Time Interval Filtering}{149}{subsection.10.11.5}
+\contentsline {subsection}{\numberline {10.11.6}Spatial Region Filtering}{150}{subsection.10.11.6}
 \contentsline {subsection}{\numberline {10.11.7}Example Row Filters}{152}{subsection.10.11.7}
 \contentsline {section}{\numberline {10.12} Binning or Histogramming Specification}{153}{section.10.12}
 \contentsline {chapter}{\numberline {11}Template Files }{157}{chapter.11}
