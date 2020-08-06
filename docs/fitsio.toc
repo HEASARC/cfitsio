@@ -75,21 +75,21 @@
 \contentsline {section}{\numberline {8.8}Image Section}{91}{section.8.8}
 \contentsline {section}{\numberline {8.9}Image Transform Filters}{92}{section.8.9}
 \contentsline {section}{\numberline {8.10}Column and Keyword Filtering Specification}{94}{section.8.10}
-\contentsline {section}{\numberline {8.11}Row Filtering Specification}{96}{section.8.11}
+\contentsline {section}{\numberline {8.11}Row Filtering Specification}{97}{section.8.11}
 \contentsline {subsection}{\numberline {8.11.1}General Syntax}{97}{subsection.8.11.1}
 \contentsline {subsection}{\numberline {8.11.2}Bit Masks}{100}{subsection.8.11.2}
 \contentsline {subsection}{\numberline {8.11.3}Vector Columns}{101}{subsection.8.11.3}
-\contentsline {subsection}{\numberline {8.11.4}Good Time Interval Filtering}{102}{subsection.8.11.4}
+\contentsline {subsection}{\numberline {8.11.4}Good Time Interval Filtering}{103}{subsection.8.11.4}
 \contentsline {subsection}{\numberline {8.11.5}Spatial Region Filtering}{103}{subsection.8.11.5}
-\contentsline {subsection}{\numberline {8.11.6}Example Row Filters}{105}{subsection.8.11.6}
-\contentsline {section}{\numberline {8.12} Binning or Histogramming Specification}{106}{section.8.12}
-\contentsline {chapter}{\numberline {9}Template Files }{109}{chapter.9}
-\contentsline {section}{\numberline {9.1}Detailed Template Line Format}{109}{section.9.1}
-\contentsline {section}{\numberline {9.2}Auto-indexing of Keywords}{110}{section.9.2}
-\contentsline {section}{\numberline {9.3}Template Parser Directives}{111}{section.9.3}
-\contentsline {section}{\numberline {9.4}Formal Template Syntax}{112}{section.9.4}
-\contentsline {section}{\numberline {9.5}Errors}{112}{section.9.5}
-\contentsline {section}{\numberline {9.6}Examples}{112}{section.9.6}
-\contentsline {chapter}{\numberline {10} Summary of all FITSIO User-Interface Subroutines }{115}{chapter.10}
-\contentsline {chapter}{\numberline {11} Parameter Definitions }{123}{chapter.11}
-\contentsline {chapter}{\numberline {12} FITSIO Error Status Codes }{129}{chapter.12}
+\contentsline {subsection}{\numberline {8.11.6}Example Row Filters}{106}{subsection.8.11.6}
+\contentsline {section}{\numberline {8.12} Binning or Histogramming Specification}{107}{section.8.12}
+\contentsline {chapter}{\numberline {9}Template Files }{111}{chapter.9}
+\contentsline {section}{\numberline {9.1}Detailed Template Line Format}{111}{section.9.1}
+\contentsline {section}{\numberline {9.2}Auto-indexing of Keywords}{112}{section.9.2}
+\contentsline {section}{\numberline {9.3}Template Parser Directives}{113}{section.9.3}
+\contentsline {section}{\numberline {9.4}Formal Template Syntax}{114}{section.9.4}
+\contentsline {section}{\numberline {9.5}Errors}{114}{section.9.5}
+\contentsline {section}{\numberline {9.6}Examples}{114}{section.9.6}
+\contentsline {chapter}{\numberline {10} Summary of all FITSIO User-Interface Subroutines }{117}{chapter.10}
+\contentsline {chapter}{\numberline {11} Parameter Definitions }{125}{chapter.11}
+\contentsline {chapter}{\numberline {12} FITSIO Error Status Codes }{131}{chapter.12}
