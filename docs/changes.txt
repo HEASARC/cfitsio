@@ -16,7 +16,7 @@ Version 3.49 - Aug 2020
   - Added flag to CMake builds to disable curl dependency.  Also
     only add CURL_LIBRARIES to CMake link target if curl is found.
 		   
-  - Added format specifier to curlProgressCallback output.
+  - Minor adjustment to download progress output.
                    
 Version 3.48 - Mar 2020
 
