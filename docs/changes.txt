@@ -1,4 +1,7 @@
                    Log of Changes Made to CFITSIO
+
+  - In ffgky, modified TULONG case to allow it to read unsigned
+    values greater than the 8-byte signed limit.  
 		   
 Version 3.49 - Aug 2020
 
