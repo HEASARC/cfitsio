@@ -5283,13 +5283,20 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
 	return (*status = DATA_DECOMPRESSION_ERR);
     }
     
-    /* If ZZERO and ZSCALE columns don't exist, assume there is NO
-       quantization.  Treat exactly as if it had ZQUANTIZ='NONE'.
-       This is true regardless of whether or not file
-       has a ZQUANTIZ keyword. */
+    if (ffgky (infptr, TINT,  "ZBITPIX",  &(infptr->Fptr)->zbitpix,  
+               NULL, status) > 0)
+    {
+        ffpmsg("required ZBITPIX compression keyword not found");
+        return(*status);
+    }
+
+    /* If ZZERO and ZSCALE columns don't exist for floating-point types,
+     assume there is NO quantization.  Treat exactly as if it had ZQUANTIZ='NONE'.
+     This is true regardless of whether or not file has a ZQUANTIZ keyword. */
     tstatus=0;
     tstatus2=0;
-    if ((fits_get_colnum(infptr,CASEINSEN,"ZZERO",&colNum,&tstatus)
+    if ((infptr->Fptr->zbitpix < 0) &&
+       (fits_get_colnum(infptr,CASEINSEN,"ZZERO",&colNum,&tstatus)
 	      == COL_NOT_FOUND) &&
        (fits_get_colnum(infptr,CASEINSEN,"ZSCALE",&colNum,&tstatus2)
 	      == COL_NOT_FOUND)) {
@@ -5327,13 +5334,6 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
         (infptr->Fptr)->dither_seed = 1;  
     } else {
         (infptr->Fptr)->dither_seed = doffset;
-    }
-
-    if (ffgky (infptr, TINT,  "ZBITPIX",  &(infptr->Fptr)->zbitpix,  
-               NULL, status) > 0)
-    {
-        ffpmsg("required ZBITPIX compression keyword not found");
-        return(*status);
     }
 
     if (ffgky (infptr,TINT, "ZNAXIS", &(infptr->Fptr)->zndim, NULL, status) > 0)
