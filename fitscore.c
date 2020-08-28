@@ -5501,11 +5501,13 @@ int ffgcprll( fitsfile *fptr, /* I - FITS file pointer                      */
                         /*     the returned values of repeat and incre.     */
                         /*     If = -1, then reading data in reverse        */
                         /*     direction.                                   */
+	                /*     If writemode has 16 added, then treat        */
+	                /*        TSTRING column as TBYTE vector            */
         double *scale,  /* O - FITS scaling factor (TSCALn keyword value)   */
         double *zero,   /* O - FITS scaling zero pt (TZEROn keyword value)  */
         char *tform,    /* O - ASCII column format: value of TFORMn keyword */
         long *twidth,   /* O - width of ASCII column (characters)           */
-        int *tcode,     /* O - column datatype code: I*4=41, R*4=42, etc    */
+        int *tcode,     /* O - abs(column datatype code): I*4=41, R*4=42, etc */
         int *maxelem,   /* O - max number of elements that fit in buffer    */
         LONGLONG *startpos,/* O - offset in file to starting row & column      */
         LONGLONG *elemnum, /* O - starting element number ( 0 = 1st element)   */
@@ -5538,7 +5540,7 @@ int ffgcprll( fitsfile *fptr, /* I - FITS file pointer                      */
         if ( ffrdef(fptr, status) > 0)               
             return(*status);
 
-    } else if (writemode > 0) {
+    } else if (writemode > 0 && writemode != 15) {
 
 	/* Only terminate the header with the END card if */
 	/* writing to the stdout stream (don't have random access). */
@@ -5631,6 +5633,35 @@ int ffgcprll( fitsfile *fptr, /* I - FITS file pointer                      */
        strcpy(snull, "                 ");   /* maximum of 17 spaces */
        nulpos = minvalue(17, *twidth);      /* truncate to width of column */
        snull[nulpos] = '\0';
+    }
+
+    /* Special case: use writemode = 15,16,17,18 to interpret TSTRING columns
+       as TBYTE vectors instead.  
+          writemode = 15 equivalent to writemode =-1
+          writemode = 16 equivalent to writemode = 0
+          writemode = 17 equivalent to writemode = 1
+          writemode = 18 equivalent to writemode = 2
+    */
+    if (writemode >= 15 && writemode <= 18) {
+
+      if (abs(*tcode) == TSTRING) {
+        *incre = 1;          /* each element is 1 byte wide */
+	if (*tcode < 0) *repeat = *twidth;  /* variable columns appear to put width in *twidth */
+        *twidth = 1;         /* width of each element */
+        *scale = 1.0;        /* no scaling */
+        *zero  = 0.0;
+        *tnull = NULL_UNDEFINED;  /* don't test for nulls */
+        *maxelem = DBUFFSIZE;
+
+	if (*tcode < 0) {
+	  *tcode = -TBYTE; /* variable-length */
+	} else {
+	  *tcode =  TBYTE;
+	}
+      }
+
+      /* translate to the equivalent as listed above */
+      writemode -= 16;
     }
 
     /* Special case:  interpret writemode = -1 as reading data, but */
