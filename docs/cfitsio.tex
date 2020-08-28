@@ -1110,7 +1110,7 @@ with TFORMn = '1B' and TZEROn = -128.  The calls to fits\_write\_col
 then write the arrays of unsigned integer values to the columns.
 
 
-\section{Dealing with Character Strings}
+\section{Dealing with Character Strings \label{character-strings}}
 
 The character string values in a FITS header or in an ASCII column in a
 FITS table extension are generally padded out with non-significant
@@ -1129,6 +1129,17 @@ Similarly, when writing string values to a FITS file the
 CFITSIO routines expect to get a null-terminated string as input;
 CFITSIO will pad the string with blanks if necessary when writing it
 to the FITS file.
+
+The FITS standard does not require trailing spaces to be treated in
+this way, but it does allow a more seamless transition from the
+FORTRAN FITS world where trailing spaces are often treated as
+insignificant.  Users who wish the greatest fidelity when transferring
+strings can use the \verb+_byt+ variants of column readers and writers
+(functions fits\_\{read,write\}\_col\_byt).  These routines will
+transfer the raw fixed-length vectors of character bytes of the
+column, including any trailing blanks of course. The \verb+_byt+
+variants make no attempt to null-terminate any elements.  A NULL
+string would be indicated by its first character being a NUL byte.
 
 When calling CFITSIO routines that return a character string it is
 vital that the size of the char array be large enough to hold the
@@ -3358,14 +3369,20 @@ reading and writing routines where TSTRING corresponds to a C 'char*'
 data type, i.e., a single pointer to an array of characters.  When
 reading strings from a table, the char arrays obviously must have been
 allocated long enough to hold the whole FITS table string.
+See section \ref{character-strings}
+(``Dealing with Character Strings'') for more information.
+
+For complex and double complex data types, \verb+nelements+ is the number
+of numerical pairs; the number of floats or doubles stored by
+\+array+ must be \verb+2*nelements+.
 
 Numerical data values are automatically scaled by the TSCALn and TZEROn
 keyword values (if they exist).
 
-In the case of binary tables with vector elements, the 'felem'
+In the case of binary tables with vector elements, the \verb+firstelem+
 parameter defines the starting element (beginning with 1, not 0) within
 the cell (a cell is defined as the intersection of a row and a column
-and may contain a single value or a vector of values).  The felem
+and may contain a single value or a vector of values).  The \verb+firstelem+
 parameter is ignored when dealing with ASCII tables. Similarly, in the
 case of binary tables the 'nelements' parameter specifies the total
 number of vector values to be read or written (continuing on subsequent
@@ -3411,13 +3428,17 @@ rows if required) and not the number of table cells.
 
 \begin{description}
 \item[2 ] Read elements from an ASCII or binary table column.  The data type
-    parameter specifies the data type of the `nulval' and `array'  pointers;
+    parameter specifies the data type of the `nulval' and `array'  pointers.
+    The caller is required to allocate the storage of \verb+array+ before calling.  
     Undefined array elements will be returned with a value = *nullval,
     (note that this parameter gives the address of the null value, not the
     null value itself) unless nulval = 0 or *nulval = 0, in which case
     no checking for undefined pixels will be performed.  The second
     routine is similar except that any undefined pixels will have the
     corresponding nullarray element set equal to TRUE (= 1).
+
+    Reading data as TSTRING values is different than for other data types
+    as described above.
 
     Any column, regardless of it's intrinsic data type, may be read as a
     string.  It should be noted however that reading a numeric column
@@ -7182,11 +7203,29 @@ parameters used in these routines.
 
 \begin{description}
 \item[1 ] Read elements from an ASCII or binary table column (in the CDU).  These
-    routines return the values of the table column array elements.  Undefined
+    routines return the values of the table column array elements.  The caller
+    is required to allocate the storage \verb+array+ before calling.  Undefined
     array elements will be returned with a value = nulval, unless nulval = 0
     (or = ' ' for ffgcvs) in which case no checking for undefined values will
     be performed. The anynul parameter is set to true if any of the returned
-   elements are undefined. \label{ffgcvx}
+    elements are undefined. 
+
+    For the \verb+_str+ (string) variant the number
+    of elements is the number of strings, and the caller must allocate storage
+    for both the array of pointers \verb+array+ and the character array data
+    itself (use \verb+fits_get_col_display_width+ or \verb+fits_get_coltype+ to 
+    determine the number of characters).  See section \ref{character-strings}
+    (``Dealing with Character Strings'') for more information.  Also, when
+    the \verb+_byt+ variant is used to read a column stored in the file as 
+    string data (TFORMn = 'nA'), the subroutine will read the character
+    bytes (instead of attempting to perform a numerical conversion as other
+    integer variants would do), with no attempt at null termination.
+
+    For the \verb+_cmp+ and \verb+_dblcmp+
+    (complex and double complex) variants, \verb+nelements+ is the number
+    of numerical pairs; the number of floats or doubles that must be 
+    pre-allocated is \verb+2*nelements+.
+\label{ffgcvx}
 \end{description}
 
 \begin{verbatim}
@@ -8519,8 +8558,8 @@ in the same CHDU match the pattern, they will not be deleted.
 To delete {\it zero or more} keywords that match the pattern, add a
 trailing \verb|'+'|.
 \begin{verbatim}
-  -VEL*;        # remove all columns (or keywords) beginning with VEL
-  -VEL_?;       # remove all columns (or keyword) VEL_? where ? is any character
+  -VEL*+;       # remove all columns (or keywords) beginning with VEL
+  -VEL_?+;      # remove all columns (or keyword) VEL_? where ? is any character
   -#DEC_*+;     # remove all keywords beginning with DEC_
   -#TUNIT#+;    # remove all keywords TUNIT ending w. number
 \end{verbatim}
@@ -8988,7 +9027,9 @@ usage. Also, the integer to real casts values to double precision:
               COUNT = COUNT{-1} + 1;   # BAD - do not use
 \end{verbatim}
     will not produce an increasing counter.  Such recursive
-    calculations are often not possible with the calculator syntax.   
+    calculations are often not possible with the calculator syntax.  
+    However, for cases where the user wishes a row counter, the special 
+    variable \verb+#ROW+ can be utilized.
 
 \subsection{Good Time Interval Filtering}
 
