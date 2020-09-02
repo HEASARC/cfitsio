@@ -1,5 +1,16 @@
                    Log of Changes Made to CFITSIO
 
+  - In ffgclb and ffpclb (read/write byte columns), the "undocumented"
+    feature of being able to transfer columns 'A' string columnss as
+    byte arrays is now handled correctly, with improved error checking
+    via updates to ffgcprll.  More documentation on string handling is
+    in cfitsio.tex.
+
+  - Fix bug in 'colfilter' functionality.  When performing a
+    column deletion of the form -COLNAM*, and multiple matches
+    existed, then none of the matches got deleted.  Now the
+    first is deleted as expected.
+
   - In ffgky, modified TULONG case to allow it to read unsigned
     values greater than the 8-byte signed limit.  
 		   
