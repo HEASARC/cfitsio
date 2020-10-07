@@ -1,5 +1,8 @@
                    Log of Changes Made to CFITSIO
 
+  - Fix to fits_str2time function so that it now flags a particular case
+    of bad syntax which was previously getting through.
+    
   - In ffgclb and ffpclb (read/write byte columns), the "undocumented"
     feature of being able to transfer columns 'A' string columnss as
     byte arrays is now handled correctly, with improved error checking
