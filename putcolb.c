@@ -490,7 +490,7 @@ int ffpclb( fitsfile *fptr,  /* I - FITS file pointer                       */
 
             case (TSTRING):  /* numerical column in an ASCII table */
 
-	        if (strchr(tform,'A'))  /* I think this is dead code now C. Markwardt */
+	        if (strchr(tform,'A')) 
                 {
                     /* write raw input bytes without conversion        */
                     /* This case is a hack to let users write a stream */

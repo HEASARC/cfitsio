@@ -5636,7 +5636,7 @@ int ffgcprll( fitsfile *fptr, /* I - FITS file pointer                      */
     }
 
     /* Special case: use writemode = 15,16,17,18 to interpret TSTRING columns
-       as TBYTE vectors instead.  
+       as TBYTE vectors instead (but not for ASCII tables). 
           writemode = 15 equivalent to writemode =-1
           writemode = 16 equivalent to writemode = 0
           writemode = 17 equivalent to writemode = 1
@@ -5644,7 +5644,7 @@ int ffgcprll( fitsfile *fptr, /* I - FITS file pointer                      */
     */
     if (writemode >= 15 && writemode <= 18) {
 
-      if (abs(*tcode) == TSTRING) {
+      if (abs(*tcode) == TSTRING && *hdutype != ASCII_TBL ) {
         *incre = 1;          /* each element is 1 byte wide */
 	if (*tcode < 0) *repeat = *twidth;  /* variable columns appear to put width in *twidth */
         *twidth = 1;         /* width of each element */
