@@ -13,6 +13,8 @@
     column deletion of the form -COLNAM*, and multiple matches
     existed, then none of the matches got deleted.  Now the
     first is deleted as expected.
+    
+  - Improved handling of corner case in ffpkn functions.
 
   - In ffgky, modified TULONG case to allow it to read unsigned
     values greater than the 8-byte signed limit.  
