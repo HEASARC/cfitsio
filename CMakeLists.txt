@@ -23,12 +23,13 @@ OPTION(CFITSIO_USE_SSSE3 "Enable use of instructions in the SSSE3 extended instr
 OPTION (TESTS "Build test programs Testprog and cookbook" OFF)
 OPTION (UTILS "Build FPack, Funpack, and Fitscopy executables" OFF)
 
-# Allow curl dependency to be disabled using "-DUseCurl=OFF":
-OPTION(UseCurl "UseCurl" ON)
+# Allow curl dependency to be disabled using "-DUSE_CURL=OFF":
+OPTION(USE_CURL "USE_CURL" ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 set (LIB_DESTINATION "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}")
 set (INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include/")
+set (BIN_DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
 
 # Define project version
 SET(${PROJECT_NAME}_MAJOR_VERSION 3)
@@ -103,7 +104,7 @@ IF (NOT MSVC)
     ENDIF ()
 
     # Find curl library, for HTTPS support:
-    IF (UseCurl)
+    IF (USE_CURL)
         FIND_PACKAGE(CURL)
         IF (CURL_FOUND)
             #LIST(APPEND LINK_LIBS "CURL::libcurl")
@@ -281,6 +282,22 @@ IF (UTILS)
     if(MSVC)
       set_target_properties(FPack Funpack PROPERTIES LINK_FLAGS "setargv.obj")
     endif(MSVC)
+
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/FPack
+       PERMISSIONS WORLD_EXECUTE WORLD_READ
+                   GROUP_EXECUTE GROUP_READ
+                   OWNER_EXECUTE OWNER_READ OWNER_WRITE
+       DESTINATION ${BIN_DESTINATION})
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Funpack
+       PERMISSIONS WORLD_EXECUTE WORLD_READ
+                   GROUP_EXECUTE GROUP_READ
+                   OWNER_EXECUTE OWNER_READ OWNER_WRITE
+       DESTINATION ${BIN_DESTINATION})
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Fitscopy
+       PERMISSIONS WORLD_EXECUTE WORLD_READ
+                   GROUP_EXECUTE GROUP_READ
+                   OWNER_EXECUTE OWNER_READ OWNER_WRITE
+       DESTINATION ${BIN_DESTINATION})
 
 ENDIF()
 
