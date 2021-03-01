@@ -13,19 +13,36 @@ the CMake build system that is available from http://www.cmake.org.
      "Add CMake to the system PATH for current user" option during the
      installation setup process for convenience when running CMake later on.
 
-  b. Unzip the CFITSIO .zip file (e.g. cfit-349.zip) that was obtained from
+  b. Install ZLIB: The compression library "zlib" is required in
+     order to build CFITSIO.  Visit their site at
+
+       https://zlib.net
+
+     to download the latest distribution.  Unpack it, then build and
+     install it from a parallel directory, for example:
+
+       mkdir zlib.build
+       cd zlib.build
+       cmake ..\zlib-1.2.11 -DCMAKE_INSTALL_PREFIX=c:\Users\myname\zlib
+       cmake --build . --config Release
+       cmake --install .
+
+     The cmake comands below will use the path "c:\Users\myname\zlib"
+     as an example for the installed zlib location.
+
+  c. Unzip the CFITSIO .zip file (e.g. cfit-349.zip) that was obtained from
      the CFITSIO Web site (http://heasarc.gsfc.nasa.gov/fitsio). This will
      create a new \cfitsio-3.49 subdirectory that contains the source code
-     and documentation files.  It should also contain a CMakeLists.txt file
+     and documentation files.  It also contains a CMakeLists.txt file
      that will be used during the CMake build process.
 
-  c. Open the Visual Studio Command Prompt window, likely using a desktop
+  d. Open the Visual Studio Command Prompt window, likely using a desktop
      icon with this same name, (or the equivalent Borland command window)
      and cd (change directory) into the parent directory that is one level
      above the directory containing the CFITSIO source files that was
      created in the previous step.
 
-  d. Create a new subdirectory (for example, "cfitsio.build"), and cd
+  e. Create a new subdirectory (for example, "cfitsio.build"), and cd
      into it with the following commands:
 
      mkdir cfitsio.build
@@ -34,17 +51,17 @@ the CMake build system that is available from http://www.cmake.org.
      When using Visual Studio, all the files that are generated during
      the CMake process will be created in or under this subdirectory.
 
-  e. Create the CMake files necessary for the build:
+  f. Create the CMake files necessary for the build:
 
      To use the default Visual Studio compilers and architecture,
-     simply run:
+     simply run (for example):
 
-     cmake ..\cfitsio-3.49
+     cmake ..\cfitsio-3.49 -DCMAKE_PREFIX_PATH=c:\Users\myname\zlib
 
      Alternatively, you can specify the name of a CMake Generator
      using the "-G" flag:
 
-     cmake -G "<cmake generator>" ..\cfitsio-3.49
+     cmake -G "<cmake generator>" ..\cfitsio-3.49 -DCMAKE_PREFIX_PATH=c:\Users\myname\zlib
 
      Where the string "<cmake generator>" designates your choice
      of compiler. Some possible options are:
@@ -70,15 +87,15 @@ the CMake build system that is available from http://www.cmake.org.
      path to the directory that contains the CFITSIO source files
      and the CMakeLists.txt file.
 
-     Some other optional flags are available to use during this step,
-     using this format:
+     Some other optional flags are available to use during this
+     step, using this format:
 
-     cmake -G <generator> ..\cfitsio-3.49 -D<option>=<ON|OFF>"
+     cmake -G <generator> ..\cfitsio-3.49 -D<option>=<ON|OFF>" -DCMAKE_PREFIX_PATH=c:\Users\myname\zlib
 
      Where the available flags are:
 
      -DUSE_CURL=OFF           (default is ON)
-       Disable use of the curl library needed for remote file access
+       Disable search for the curl library needed for remote file access
 
      -DBUILD_SHARED_LIBS=OFF (default is ON)
        Disable building a shared CFITSIO library (required in order
@@ -100,7 +117,7 @@ the CMake build system that is available from http://www.cmake.org.
      -DUTILS=ON              (default is OFF)
        Build FPack, Funpack, and Fitscopy executables
 
-  f. Execute the following command to build the CFITSIO library:
+  g. Execute the following command to build the CFITSIO library:
 
      cmake --build . --config Release
 
@@ -110,14 +127,17 @@ the CMake build system that is available from http://www.cmake.org.
      If this process completes successfully, you should find the
      CFITSIO library files in the "cfitsio.build\Release" subdirectory.
 
-     If you specified -DTESTS=ON in step e), you may verify that
-     CFITSIO is working correctly by executing Testprog in the same
-     Release directory.  It should generate a long stream of diagnostic
-     messages ending with the line "Status = 0: OK - no error".
+     If you specified -DTESTS=ON in the previous step, you may verify
+     that CFITSIO is working correctly by executing Testprog in the
+     same Release directory.  It should generate a long stream of
+     diagnostic messages ending with this line:
+
+         "Status = 0: OK - no error".
+
      Similarly, running the cookbook program should end with a
      message of success.
 
-  g. Other CMake options:
+  h. Other CMake options:
 
      Refer to the CMake documentation for information about many
      other build options.
@@ -134,10 +154,12 @@ the CMake build system that is available from http://www.cmake.org.
 
      This may require administrative privileges, so an alternate
      install location may be used by specifying a prefix flag in
-     the first CMake command in step e), for example:
+     the first CMake command in step f), for example:
 
      cmake -G "<generator>" ..\cfitsio-3.49 
       -DCMAKE_INSTALL_PREFIX=c:\Users\myname\cfitsio
+      -DCMAKE_PREFIX_PATH=c:\Users\myname\zlib
+
 
      One can also make a thread safe version of CFITSIO using the
      pthread library with the following procedure:
@@ -148,13 +170,14 @@ the CMake build system that is available from http://www.cmake.org.
      parallel to the cfitsio source folder.
 
      b. For the compilation of cfitsio follow the cmake steps, but
-     use this change as a replacement for the commands in step e:
+     use this as a replacement for the commands in step f:
 
      cmake -G "<cmake generator>" ..\cfitsio-3.49 -DUSE_PTHREADS=1
       -DCMAKE_INCLUDE_PATH=..\pthread -DCMAKE_LIBRARY_PATH=..\pthread
+      -DCMAKE_PREFIX_PATH=c:\Users\myname\zlib
 
-     You may need to adapt the paths for the source directory and
-     the pthread library.
+     You may need to adapt the paths for the directories used as
+     examples here.
 
 ============================================================================
 

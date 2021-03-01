@@ -68,9 +68,7 @@ CORE_SOURCES = 	buffers.c cfileio.c checksum.c drvrfile.c drvrmem.c \
 		pliocomp.c fits_hcompress.c fits_hdecompress.c \
 		simplerng.c @GSIFTP_SRC@
 
-ZLIB_SOURCES =	zlib/adler32.c zlib/crc32.c zlib/deflate.c zlib/infback.c \
-		zlib/inffast.c zlib/inflate.c zlib/inftrees.c zlib/trees.c \
-		zlib/uncompr.c zlib/zcompress.c zlib/zuncompress.c zlib/zutil.c
+ZLIB_SOURCES =	zcompress.c zuncompress.c
 
 SOURCES = ${CORE_SOURCES} ${ZLIB_SOURCES} @F77_WRAPPERS@
 

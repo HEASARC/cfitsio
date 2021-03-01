@@ -507,6 +507,9 @@ if test "x$ADD_CURL" = xyes; then
 fi
 AC_SUBST(LIBS_CURL)
 
+# ZLIB (required):
+AC_CHECK_LIB([z], [inflateEnd], [],[AC_MSG_ERROR(Unable to locate zlib compression library)])
+
 # GSIFTP flags:
 if test "x$GSIFTP_PATH" != x -a "x$GSIFTP_FLAVOUR" != x; then
    CFLAGS="$CFLAGS -I${GSIFTP_PATH}/include/${GSIFTP_FLAVOUR}"
