@@ -1,10 +1,27 @@
 # CFITSIO CMakeLists.txt
 
+# Ensure that build directory is not the source directory:
+IF(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+	message(FATAL_ERROR
+		"Please create a separate directory for building CFITSIO."
+		)
+ENDIF()
+
+CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
+
 # Suppress warning about WIN32 no longer being defined on Cygwin:
 SET(CMAKE_LEGACY_CYGWIN_WIN32 0)
 
-PROJECT(CFITSIO)
-CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
+PROJECT(CFITSIO
+	DESCRIPTION "Library of C and Fortran subroutines for reading and writing data files in FITS data format."
+	LANGUAGES C CXX
+	)
+
+# Define project version
+SET(${PROJECT_NAME}_MAJOR_VERSION 3)
+SET(${PROJECT_NAME}_MINOR_VERSION 49)
+SET(${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_MAJOR_VERSION}.${${PROJECT_NAME}_MINOR_VERSION})
+SET(LIB_NAME cfitsio)
 
 # Allow @rpath token in target install name on Macs.
 # See "cmake --help-policy CMP0042" for more information.
@@ -30,12 +47,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 set (LIB_DESTINATION "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}")
 set (INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include/")
 set (BIN_DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
-
-# Define project version
-SET(${PROJECT_NAME}_MAJOR_VERSION 3)
-SET(${PROJECT_NAME}_MINOR_VERSION 49)
-SET(${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_MAJOR_VERSION}.${${PROJECT_NAME}_MINOR_VERSION})
-SET(LIB_NAME cfitsio)
 
 # Microsoft Visual Studio:
 IF(MSVC OR BORLAND)
@@ -105,6 +116,7 @@ IF (NOT MSVC)
 
     # Find curl library, for HTTPS support:
     IF (USE_CURL)
+        #set(CURL_NO_CURL_CMAKE ON)
         FIND_PACKAGE(CURL)
         IF (CURL_FOUND)
             #LIST(APPEND LINK_LIBS "CURL::libcurl")
@@ -127,7 +139,7 @@ SET(SRC_FILES
     putcol.c putcolb.c putcold.c putcole.c putcoli.c putcolj.c putcolk.c
     putcoll.c putcols.c putcolsb.c putcolu.c putcolui.c putcoluj.c putcoluk.c
     putkey.c quantize.c region.c ricecomp.c scalnull.c simplerng.c swapproc.c
-    wcssub.c wcsutil.c zlib/zcompress.c zlib/zuncompress.c
+    wcssub.c wcsutil.c zcompress.c zuncompress.c
 )
 
 # For future modifications:
@@ -140,19 +152,11 @@ SET(SRC_FILES
 
 # Only include zlib source files if we are building a shared library.
 # Users will need to link their executable with zlib independently.
-#FIND_PACKAGE(ZLIB REQUIRED)
-FIND_PACKAGE(ZLIB)
+FIND_PACKAGE(ZLIB REQUIRED)
 IF (ZLIB_FOUND)
     #LIST(APPEND LINK_LIBS "ZLIB::ZLIB")
     LIST(APPEND LINK_LIBS ${ZLIB_LIBRARIES})
-ELSE()
-    IF (BUILD_SHARED_LIBS)
-        SET(SRC_FILES ${SRC_FILES}
-            zlib/adler32.c zlib/crc32.c zlib/deflate.c zlib/infback.c
-            zlib/inffast.c zlib/inflate.c zlib/inftrees.c zlib/trees.c
-            zlib/uncompr.c zlib/zutil.c
-            )
-    ENDIF()
+    INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIR})
 ENDIF()
 
 IF(CFITSIO_USE_SSE2)
@@ -283,21 +287,7 @@ IF (UTILS)
       set_target_properties(FPack Funpack PROPERTIES LINK_FLAGS "setargv.obj")
     endif(MSVC)
 
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/FPack
-       PERMISSIONS WORLD_EXECUTE WORLD_READ
-                   GROUP_EXECUTE GROUP_READ
-                   OWNER_EXECUTE OWNER_READ OWNER_WRITE
-       DESTINATION ${BIN_DESTINATION})
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Funpack
-       PERMISSIONS WORLD_EXECUTE WORLD_READ
-                   GROUP_EXECUTE GROUP_READ
-                   OWNER_EXECUTE OWNER_READ OWNER_WRITE
-       DESTINATION ${BIN_DESTINATION})
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Fitscopy
-       PERMISSIONS WORLD_EXECUTE WORLD_READ
-                   GROUP_EXECUTE GROUP_READ
-                   OWNER_EXECUTE OWNER_READ OWNER_WRITE
-       DESTINATION ${BIN_DESTINATION})
+    install(TARGETS FPack Funpack Fitscopy RUNTIME DESTINATION bin)
 
 ENDIF()
 
