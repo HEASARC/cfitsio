@@ -17,7 +17,9 @@
   - Improved handling of corner case in ffpkn functions.
 
   - In ffgky, modified TULONG case to allow it to read unsigned
-    values greater than the 8-byte signed limit.  
+    values greater than the 8-byte signed limit.
+    
+  - Fix to parsing of corner case of extended file syntax.
 		   
 Version 3.49 - Aug 2020
 
