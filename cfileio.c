@@ -7073,7 +7073,7 @@ int ffexts(char *extspec,
 
 
         ptr1 = strchr(ptr2, ')');
-        if (!ptr2)
+        if (!ptr1)
         {
             ffpmsg("illegal specification of image in table cell in input URL:");
             ffpmsg(" missing closing ')' character in row expression");
