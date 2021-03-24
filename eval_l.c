@@ -813,7 +813,7 @@ static int input (void );
 /* This used to be an fputs(), but since the string might contain NUL's,
  * we now use fwrite().
  */
-#define ECHO fwrite( fftext, ffleng, 1, ffout )
+#define ECHO do { if (fwrite( fftext, ffleng, 1, ffout )) {} } while (0)
 #endif
 
 /* Gets input and stuffs it into "buf".  number of characters read, or FF_NULL,
@@ -824,7 +824,7 @@ static int input (void );
 	if ( FF_CURRENT_BUFFER_LVALUE->ff_is_interactive ) \
 		{ \
 		int c = '*'; \
-		int n; \
+		unsigned n; \
 		for ( n = 0; n < max_size && \
 			     (c = getc( ffin )) != EOF && c != '\n'; ++n ) \
 			buf[n] = (char) c; \

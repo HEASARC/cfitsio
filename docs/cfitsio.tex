@@ -8853,12 +8853,15 @@ usage. Also, the integer to real casts values to double precision:
 \begin{verbatim}
          "a null value?"              ISNULL(x)
          "define a value for null"    DEFNULL(x,y)
+         "declare certain value null" SETNULL(x,y)
 \end{verbatim}
-    The former
-    returns a boolean value of TRUE if the  argument  x  is  NULL.   The
-    later  "defines"  a  value  to  be  substituted  for NULL values; it
+    ISNULL(x)
+    returns a boolean value of TRUE if the  argument  x  is  NULL. DEFNULL(x,y)
+    "defines"  a  value  to  be  substituted  for NULL values; it
     returns the value of x if x is not NULL, otherwise  it  returns  the
-    value of y.
+    value of y.  SETNULL(x,y) allows NULL values to be inserted into
+    a variable; if x==y, a NULL value is returned; otherwise y is returned
+    (x and y must be numerical, and x must be a scalar).
 
 \subsection{Bit Masks}
 
