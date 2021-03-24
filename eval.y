@@ -65,6 +65,7 @@
 /*                              STRSTR() functions; more overflow checks*/
 /*  Craig B Markwardt Dec 2019  Add bit/hex/oct literal strings and     */
 /*                              bitwise operatiosn between integers     */
+/*  Craig B Markwardt Mar 2021  Add SETNULL() function                  */
 /*                                                                      */
 /************************************************************************/
 
@@ -738,16 +739,15 @@ expr:    LONG
 				"are not compatible");
 			YYERROR;
 		      }
-#if 0
-		   } else if (FSTRCMP($1,"STRSTR(") == 0) {
-		     if( TYPE($2) != STRING || TYPE($4) != STRING) {
-		       yyerror("Arguments to strstr(s,r) must be strings");
+		   } else if (FSTRCMP($1,"SETNULL(") == 0) {
+		     if (OPER($2) != CONST_OP
+			 || SIZE($2) != 1) {
+		       yyerror("SETNULL first argument must be a scalar constant");
 		       YYERROR;
 		     }
-		     $$ = New_Func( LONG, strpos_fct, 2, $2, $4, 0, 
-				    0, 0, 0, 0 );
-		     TEST($$);
-#endif
+		     /* Make sure first arg is same type as second arg */
+		     if ( TYPE($2) != TYPE($4) ) $2 = New_Unary( TYPE($4), 0, $2 );
+		     $$ = New_Func( 0, setnull_fct, 2, $4, $2, 0, 0, 0, 0, 0 );
 		   } else {
 		      yyerror("Function(expr,expr) not supported");
 		      YYERROR;
@@ -3504,6 +3504,12 @@ static void Do_Func( Node *this )
             else if( this->type==STRING )
 	       strcpy(this->value.data.str,pVals[0].data.str);
 	    break;
+        case setnull_fct: /* Only defined for numeric expressions */
+            if( this->type==LONG )
+ 	      this->value.data.lng = pVals[0].data.lng;
+            else if( this->type==DOUBLE )
+	       this->value.data.dbl = pVals[0].data.dbl;
+	    break;
 
 	    /* Math functions with 1 double argument */
 
@@ -4185,6 +4191,34 @@ static void Do_Func( Node *this )
 		     strcpy(this->value.data.strptr[row],pVals[0].data.str);
 		  }
 	       }
+	    }
+	    break;
+         case setnull_fct:
+	    switch( this->type ) {
+	    case LONG:
+	      while( elem-- ) {
+		if ( theParams[1]->value.data.lng == 
+		     theParams[0]->value.data.lngptr[elem] ) {
+		  this->value.data.lngptr[elem] = 0;
+		  this->value.undef[elem] = 1;
+		} else {
+		  this->value.data.lngptr[elem] = theParams[0]->value.data.lngptr[elem];
+		  this->value.undef[elem] = theParams[0]->value.undef[elem];
+		}
+	      }
+	      break;
+	    case DOUBLE:
+	      while( elem-- ) {
+		if ( theParams[1]->value.data.dbl == 
+		     theParams[0]->value.data.dblptr[elem] ) {
+		  this->value.data.dblptr[elem] = 0;
+		  this->value.undef[elem] = 1;
+		} else {
+		  this->value.data.dblptr[elem] = theParams[0]->value.data.dblptr[elem];
+		  this->value.undef[elem] = theParams[0]->value.undef[elem];
+		}
+	      }
+	      break;
 	    }
 	    break;
 
