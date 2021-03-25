@@ -1,4 +1,6 @@
                    Log of Changes Made to CFITSIO
+                   
+Version 3.50 - April 2021                   
 
   - Fix to fits_str2time function so that it now flags a particular case
     of bad syntax which was previously getting through.
