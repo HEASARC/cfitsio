@@ -94,7 +94,7 @@ the CMake build system that is available from http://www.cmake.org.
 
      Where the available flags are:
 
-     -DUSE_CURL=OFF           (default is ON)
+     -DUSE_CURL=OFF          (default is ON, but unavailable in MS Visual Studio)
        Disable search for the curl library needed for remote file access
 
      -DBUILD_SHARED_LIBS=OFF (default is ON)
@@ -104,6 +104,9 @@ the CMake build system that is available from http://www.cmake.org.
 
      -DUSE_PTHREADS=ON       (default is OFF)
        Enable a thread-safe build (using pthreads)
+
+     -DUSE_BZIP2=ON          (default is OFF)
+       Enable bzip2 support
 
      -DCFITSIO_USE_SSE2=ON   (default is OFF)
        Enable use of instructions in the SSE2 extended instruction set
