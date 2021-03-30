@@ -6458,22 +6458,28 @@ usage. Also, the integer to real casts values to double precision:
     element in the constructed vector.
 
 
-\subsection{Good Time Interval Filtering}
+\subsection{Good Time Interval Filtering and Calculation}
 
-    A common filtering method involves selecting rows which have a time
-    value which lies within what is called a Good Time Interval or GTI.
-    The time intervals are defined in a separate FITS table extension
-    which contains 2 columns giving the start and stop time of each
-    good interval.  The filtering operation accepts only those rows of
-    the input table which have an associated time which falls within
-    one of the time intervals defined in the GTI extension. A high
-    level function, gtifilter(a,b,c,d), is available which evaluates
-    each row of the input table  and returns TRUE  or FALSE depending
-    whether the row is inside or outside the  good time interval.  The
+    There are two functions for filtering and calculating based
+    on Good Time Intervals, or GTIs.  GTIs are commonly used to
+    express fragmented time ranges that are not easy to express with a
+    single start and stop time.  The time intervals are defined in a
+    FITS table extension which contains 2 columns giving the
+    start and stop time of each good interval.
+
+    A common filtering method involves selecting rows which have a
+    time value which lies within any GTI.  The gtifilter() filtering
+    operation accepts only those rows of the input table which have an
+    associated time which falls within one of the time intervals
+    defined in a separate GTI extension.  gtifilter(a,b,c,d) evaluates
+    each row of the input table and returns TRUE or FALSE depending
+    whether the row is inside or outside the good time interval.  The
     syntax is
 
 \begin{verbatim}
       gtifilter( [ "gtifile" [, expr [, "STARTCOL", "STOPCOL" ] ] ] )
+    or
+      gtifilter( [ 'gtifile' [, expr [, 'STARTCOL', 'STOPCOL' ] ] ] )
 \end{verbatim}
     where  each "[]" demarks optional parameters.  Note that  the quotes
     around the gtifile and START/STOP column are required.  Either single
@@ -6510,6 +6516,57 @@ usage. Also, the integer to real casts values to double precision:
     or  two  parameters  are  specified.   The  function   automatically
     searches   for   TIMEZERO/I/F   keywords  in  the  current  and  GTI
     extensions, applying a relative time offset, if necessary.
+
+    A separate function, gtioverlap(a,b,c,d,e), computes the overlap
+    between a user-requested time range and the entries in a GTI.  The
+    cases of no overlap, partial overlap, or overlap of many GTIs
+    within the user requested range are handled.  gtioverlap() is very
+    useful for calculating exposure times and fractional exposures of
+    individual time bins, say for a light curve.  The syntax of
+    gtioverlap() is
+
+\begin{verbatim}
+      gtifilter( "gtifile" , startExpr, stopExpr [, "STARTCOL", "STOPCOL" ] )
+    or
+      gtifilter( 'gtifile' , startExpr, stopExpr [, 'STARTCOL', 'STOPCOL' ] )
+\end{verbatim}
+
+    The requirements for specifying the gtifile are the same as for
+    gtifilter() as described above.  Unlike gtifilter(), the startExpr
+    and stopExpr are not optional.  startExpr provides a start of the
+    user requested time interval.  startExpr is typically TIME, but
+    can be any valid expression.  Likewise, stopExpr provides the stop
+    of the user requested time interval, and can be an expression.
+    For example, for a light curve with a TIME column and time bin
+    size of 1.0 seconds, the expression
+
+\begin{verbatim}
+      gtifilter('gtifile',TIME,TIME+1.0)
+\end{verbatim}
+
+    would calculate the amount of overlap exposure time between each
+    one second time bin and the GTI in 'gtifile'.  In this case the
+    time bin is assumed to begin at the time specified by TIME and end
+    1 second later.  Neither startExpr nor stopExpr are required to be
+    constant, and a light curve is not required to have a constant bin
+    size.  For tables, the overlap is calculated for each entry in the
+    table.
+
+    It is also possible to calculate a single overlap value, which
+    would typically be placed in a keyword.  For example, a way to to
+    compute the total overlap exposure of a file whose TIME column is
+    bounded by the keywords TSTART and TSTOP, overlapping with the
+    specified GTI, would be
+
+\begin{verbatim}
+      #EXPOSURE = gtifilter('gtifile',#TSTART,#TSTOP)
+\end{verbatim}
+
+    The \verb+#EXPOSURE+ syntax with a leading \+#+ ensures that the 
+    requested values are treated as keywords.  Otherwise, a column
+    named EXPOSURE will be created with the (constant) exposure value
+    in each entry.  
+
 
 
 \subsection{Spatial Region Filtering}
