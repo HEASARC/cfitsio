@@ -2,6 +2,10 @@
                    
 Version 3.50 - April 2021                   
 
+  - Added new calculator functions SETNULL(x,y) to allow substitution of
+    NULL values into tables, and GTIOVERLAP() for calculating the amount
+    of GTI overlap exposure for a time bin.
+     
   - Fix to fits_str2time function so that it now flags a particular case
     of bad syntax which was previously getting through.
     
@@ -15,6 +19,9 @@ Version 3.50 - April 2021
     column deletion of the form -COLNAM*, and multiple matches
     existed, then none of the matches got deleted.  Now the
     first is deleted as expected.
+    
+  - Removed separate directory for zlib/gzip code.  This now will
+    rely on user's own platform for zlib.
     
   - Improved handling of corner case in ffpkn functions.
 
