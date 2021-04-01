@@ -6526,9 +6526,9 @@ usage. Also, the integer to real casts values to double precision:
     gtioverlap() is
 
 \begin{verbatim}
-      gtifilter( "gtifile" , startExpr, stopExpr [, "STARTCOL", "STOPCOL" ] )
+      gtioverlap( "gtifile" , startExpr, stopExpr [, "STARTCOL", "STOPCOL" ] )
     or
-      gtifilter( 'gtifile' , startExpr, stopExpr [, 'STARTCOL', 'STOPCOL' ] )
+      gtioverlap( 'gtifile' , startExpr, stopExpr [, 'STARTCOL', 'STOPCOL' ] )
 \end{verbatim}
 
     The requirements for specifying the gtifile are the same as for
@@ -6541,7 +6541,7 @@ usage. Also, the integer to real casts values to double precision:
     size of 1.0 seconds, the expression
 
 \begin{verbatim}
-      gtifilter('gtifile',TIME,TIME+1.0)
+      gtioverlap('gtifile',TIME,TIME+1.0)
 \end{verbatim}
 
     would calculate the amount of overlap exposure time between each
@@ -6559,7 +6559,7 @@ usage. Also, the integer to real casts values to double precision:
     specified GTI, would be
 
 \begin{verbatim}
-      #EXPOSURE = gtifilter('gtifile',#TSTART,#TSTOP)
+      #EXPOSURE = gtioverlap('gtifile',#TSTART,#TSTOP)
 \end{verbatim}
 
     The \verb+#EXPOSURE+ syntax with a leading \+#+ ensures that the 
