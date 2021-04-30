@@ -5,6 +5,9 @@ Version 3.50 - April 2021
   - Added new calculator functions SETNULL(x,y) to allow substitution of
     NULL values into tables, and GTIOVERLAP() for calculating the amount
     of GTI overlap exposure for a time bin.
+    
+  - Fix added for proper handling of string columns with zero repeat
+    count.
      
   - Fix to fits_str2time function so that it now flags a particular case
     of bad syntax which was previously getting through.

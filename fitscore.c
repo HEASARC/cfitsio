@@ -5682,7 +5682,10 @@ int ffgcprll( fitsfile *fptr, /* I - FITS file pointer                      */
 
     /* Special case: support the 'rAw' format in BINTABLEs */
     if (*hdutype == BINARY_TBL && *tcode == TSTRING) {
-       *repeat = *repeat / *twidth;  /* repeat = # of unit strings in field */
+       if (*twidth)
+          *repeat = *repeat / *twidth;  /* repeat = # of unit strings in field */
+       else
+          *repeat = 0;
     }
     else if (*hdutype == BINARY_TBL && *tcode == -TSTRING) {
        /* variable length string */
@@ -5716,7 +5719,11 @@ int ffgcprll( fitsfile *fptr, /* I - FITS file pointer                      */
        *maxelem = DBUFFSIZE / sizeof(double);
     else if (abs(*tcode) == TSTRING)
     {
-       *maxelem = (DBUFFSIZE - 1)/ *twidth; /* leave room for final \0 */
+       if (*twidth)
+          *maxelem = (DBUFFSIZE - 1)/ *twidth; /* leave room for final \0 */
+       else
+          *maxelem = DBUFFSIZE - 1;
+          
        if (*maxelem == 0) {
             snprintf(message,FLEN_ERRMSG,
         "ASCII string column is too wide: %ld; max supported width is %d",
