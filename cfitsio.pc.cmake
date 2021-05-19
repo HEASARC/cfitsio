@@ -6,7 +6,7 @@ includedir=@INCLUDE_INSTALL_DIR@
 Name: cfitsio
 Description: FITS File Subroutine Library
 URL: https://heasarc.gsfc.nasa.gov/fitsio/
-Version: @CFITSIO_MAJOR@.@CFITSIO_MINOR@
+Version: @CFITSIO_MAJOR@.@CFITSIO_MINOR@.@CFITSIO_MICRO@
 Libs: -L${libdir} @PKG_CONFIG_LIBS@
 Libs.private: -lm
 Cflags: -I${includedir}

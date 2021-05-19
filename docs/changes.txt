@@ -1,7 +1,14 @@
                    Log of Changes Made to CFITSIO
                    
-Version 3.50 - April 2021                   
+Version 4.0.0 - May 2021                   
 
+  - Removed separate directory for zlib/gzip code, and updated
+    configuration to check for zlib on the user's system (required).
+    When use of cURL is enabled, it may also pull in zlib such
+    that user applications may not need to link with it separately.
+
+  - Changed version numbering to 3-field format.
+      
   - Added new calculator functions SETNULL(x,y) to allow substitution of
     NULL values into tables, and GTIOVERLAP() for calculating the amount
     of GTI overlap exposure for a time bin.
@@ -22,11 +29,6 @@ Version 3.50 - April 2021
     column deletion of the form -COLNAM*, and multiple matches
     existed, then none of the matches got deleted.  Now the
     first is deleted as expected.
-    
-  - Removed separate directory for zlib/gzip code, and updated
-    configuration to check for zlib on the user's system (required).
-    When use of cURL is enabled, it may also pull in zlib such
-    that user applications may not need to link with it separately.
     
   - Improved handling of corner case in ffpkn functions.
 
