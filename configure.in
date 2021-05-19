@@ -14,8 +14,9 @@ AC_CANONICAL_TARGET([])
 #--------------------------------------------------------------------
 # CFITSIO Version Numbers:
 #--------------------------------------------------------------------
-AC_SUBST(CFITSIO_MAJOR,3)
-AC_SUBST(CFITSIO_MINOR,50)
+AC_SUBST(CFITSIO_MAJOR,4)
+AC_SUBST(CFITSIO_MINOR,0)
+AC_SUBST(CFITSIO_MICRO,0)
 # Increment soname each time the interface changes:
 AC_SUBST(CFITSIO_SONAME,9)
 
@@ -411,16 +412,16 @@ case $EXT in
   darwin)
     changequote(,)
     SHLIB_SUFFIX=".dylib"
-    CFITSIO_SHLIB="lib\${PACKAGE}.\${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}\${SHLIB_SUFFIX}"
+    CFITSIO_SHLIB="lib\${PACKAGE}.\${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}.\${CFITSIO_MICRO}\${SHLIB_SUFFIX}"
     CFITSIO_SHLIB_SONAME="lib\${PACKAGE}.\${CFITSIO_SONAME}\${SHLIB_SUFFIX}"
     case $host in
         *darwin[56789]*)
-            SHLIB_LD="$CC -dynamiclib -install_name lib\${PACKAGE}.\${CFITSIO_SONAME}\${SHLIB_SUFFIX} -compatibility_version \${CFITSIO_SONAME} -current_version \${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}"
+            SHLIB_LD="$CC -dynamiclib -install_name lib\${PACKAGE}.\${CFITSIO_SONAME}\${SHLIB_SUFFIX} -compatibility_version \${CFITSIO_SONAME} -current_version \${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}.\${CFITSIO_MICRO}"
             ;;
         *)
             # Build 'Universal' binaries (i386 & x86_64 architectures) and
             # use rpath token on Darwin 10.x or newer:
-            SHLIB_LD="$CC -dynamiclib $C_UNIV_SWITCH -headerpad_max_install_names -install_name @rpath/lib\${PACKAGE}.\${CFITSIO_SONAME}\${SHLIB_SUFFIX} -compatibility_version \${CFITSIO_SONAME} -current_version \${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}"
+            SHLIB_LD="$CC -dynamiclib $C_UNIV_SWITCH -headerpad_max_install_names -install_name @rpath/lib\${PACKAGE}.\${CFITSIO_SONAME}\${SHLIB_SUFFIX} -compatibility_version \${CFITSIO_SONAME} -current_version \${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}.\${CFITSIO_MICRO}"
             ;;
     esac
     changequote([,])
@@ -428,7 +429,7 @@ case $EXT in
     ;;
   haiku)
     SHLIB_LD=":"
-    CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}"
+    CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}.\${CFITSIO_MICRO}"
     CFITSIO_SHLIB_SONAME="lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}"
     ;;
   hpu)
@@ -437,7 +438,7 @@ case $EXT in
     ;;
   lnx)
     SHLIB_LD=":"
-    CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}"
+    CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}.\${CFITSIO_MICRO}"
     CFITSIO_SHLIB_SONAME="lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}"
     ;;
   osf)
