@@ -30,9 +30,9 @@ the CMake build system that is available from http://www.cmake.org.
      The cmake comands below will use the path "c:\Users\myname\zlib"
      as an example for the installed zlib location.
 
-  c. Unzip the CFITSIO .zip file (e.g. cfit-350.zip) that was obtained from
+  c. Unzip the CFITSIO .zip file (e.g. cfit-4.0.0.zip) that was obtained from
      the CFITSIO Web site (http://heasarc.gsfc.nasa.gov/fitsio). This will
-     create a new \cfitsio-3.50 subdirectory that contains the source code
+     create a new \cfitsio-4.0.0 subdirectory that contains the source code
      and documentation files.  It also contains a CMakeLists.txt file
      that will be used during the CMake build process.
 
@@ -56,12 +56,12 @@ the CMake build system that is available from http://www.cmake.org.
      To use the default Visual Studio compilers and architecture,
      simply run (for example):
 
-     cmake ..\cfitsio-3.50 -DCMAKE_PREFIX_PATH=c:\Users\myname\zlib
+     cmake ..\cfitsio-4.0.0 -DCMAKE_PREFIX_PATH=c:\Users\myname\zlib
 
      Alternatively, you can specify the name of a CMake Generator
      using the "-G" flag:
 
-     cmake -G "<cmake generator>" ..\cfitsio-3.50 -DCMAKE_PREFIX_PATH=c:\Users\myname\zlib
+     cmake -G "<cmake generator>" ..\cfitsio-4.0.0 -DCMAKE_PREFIX_PATH=c:\Users\myname\zlib
 
      Where the string "<cmake generator>" designates your choice
      of compiler. Some possible options are:
@@ -83,14 +83,14 @@ the CMake build system that is available from http://www.cmake.org.
      Note that these names are case-sensitive and must be entered
      exactly as displayed.
 
-     Note that the "..\cfitsio-3.50" argument gives the relative
+     Note that the "..\cfitsio-4.0.0" argument gives the relative
      path to the directory that contains the CFITSIO source files
      and the CMakeLists.txt file.
 
      Some other optional flags are available to use during this
      step, using this format:
 
-     cmake -G <generator> ..\cfitsio-3.50 -D<option>=<ON|OFF>" -DCMAKE_PREFIX_PATH=c:\Users\myname\zlib
+     cmake -G <generator> ..\cfitsio-4.0.0 -D<option>=<ON|OFF>" -DCMAKE_PREFIX_PATH=c:\Users\myname\zlib
 
      Where the available flags are:
 
@@ -159,7 +159,7 @@ the CMake build system that is available from http://www.cmake.org.
      install location may be used by specifying a prefix flag in
      the first CMake command in step f), for example:
 
-     cmake -G "<generator>" ..\cfitsio-3.50
+     cmake -G "<generator>" ..\cfitsio-4.0.0
       -DCMAKE_INSTALL_PREFIX=c:\Users\myname\cfitsio
       -DCMAKE_PREFIX_PATH=c:\Users\myname\zlib
 
@@ -175,7 +175,7 @@ the CMake build system that is available from http://www.cmake.org.
      b. For the compilation of cfitsio follow the cmake steps, but
      use this as a replacement for the commands in step f:
 
-     cmake -G "<cmake generator>" ..\cfitsio-3.50 -DUSE_PTHREADS=1
+     cmake -G "<cmake generator>" ..\cfitsio-4.0.0 -DUSE_PTHREADS=1
       -DCMAKE_INCLUDE_PATH=..\pthread -DCMAKE_LIBRARY_PATH=..\pthread
       -DCMAKE_PREFIX_PATH=c:\Users\myname\zlib
 
