@@ -15,6 +15,9 @@ Version 4.0.0 - May 2021
     
   - Fix added for proper handling of string columns with zero repeat
     count.
+    
+  - Fix to column filtering expressions which write #NULL values to
+    columns of type (J) format.
      
   - Fix to fits_str2time function so that it now flags a particular case
     of bad syntax which was previously getting through.
