@@ -633,7 +633,7 @@ C  used to read both types of tables.
 
       integer status,unit,readwrite,blocksize,hdutype,ntable
       integer felem,nelems,nullj,diameter,nfound,irow,colnum
-      real nulle,density
+      real nulle,density(1)
       character filename*40,nullstr*1,name*8,ttype(3)*10
       logical anynull
 
