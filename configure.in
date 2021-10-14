@@ -112,6 +112,18 @@ AC_ARG_WITH(
   ]
 )
 
+# Optionally disable check for zlib:
+ZLIB_CHECK=yes
+AC_ARG_WITH(
+  zlib-check,
+  [AS_HELP_STRING([--without-zlib-check],[Disable check for zlib compression library e.g. for cross-compilers])],
+  [ if test "x$withval" = "xno"; then
+       AC_MSG_WARN(cfitsio: ZLIB is required!)
+       ZLIB_CHECK=no
+    fi
+  ]
+)
+
 #--------------------------------------------------------------------
 # Check for install location prefix
 #--------------------------------------------------------------------
@@ -509,7 +521,9 @@ fi
 AC_SUBST(LIBS_CURL)
 
 # ZLIB (required):
-AC_CHECK_LIB([z], [inflateEnd], [],[AC_MSG_ERROR(Unable to locate zlib compression library)])
+if test "x$ZLIB_CHECK" = xyes; then
+   AC_CHECK_LIB([z], [inflateEnd], [],[AC_MSG_ERROR(Unable to locate zlib compression library)])
+fi
 
 # GSIFTP flags:
 if test "x$GSIFTP_PATH" != x -a "x$GSIFTP_FLAVOUR" != x; then
@@ -669,6 +683,6 @@ AC_OUTPUT
 
 AC_MSG_RESULT([])
 AC_MSG_RESULT([    Congratulations, Makefile update was successful.])
-AC_MSG_RESULT([    You may want to run \"make\" now.])
+AC_MSG_RESULT([    You may want to run make now.])
 AC_MSG_RESULT([])
 
