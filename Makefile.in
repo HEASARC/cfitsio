@@ -163,6 +163,9 @@ imcopy:		imcopy.o lib${PACKAGE}.a ${OBJECTS}
 cookbook:	cookbook.o lib${PACKAGE}.a ${OBJECTS}
 		${CC} ${LDFLAGS_BIN} ${DEFS} -o $@ ${@}.o -L. -l${PACKAGE} -lm ${LIBS}
 
+testf77:	testf77.o lib${PACKAGE}.a ${OBJECTS}
+		${FC} ${LDFLAGS_BIN} -o $@ ${@}.o -L. -l${PACKAGE} -lm ${LIBS}
+
 eval:		# Rebuild eval_* files from flex/bison source
 		${FLEX} -t eval.l > eval_l.c1
 		# Note workaround for yyfree=fffree conflict
@@ -175,7 +178,7 @@ eval:		# Rebuild eval_* files from flex/bison source
 
 clean:
 	-	/bin/rm -rf *.o zlib/*.o *.dSYM lib${PACKAGE}* y.output so_locations \
-		${UTILS} ${FPACK_UTILS} testprog.fit
+		${UTILS} ${FPACK_UTILS} testprog.fit testf77
 
 distclean:	clean
 	-	/bin/rm -f Makefile cfitsio.pc config.log config.status configure.lineno

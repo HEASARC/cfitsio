@@ -433,12 +433,7 @@ The Fortran wrappers in CFITSIO may be tested with the testf77
 program on Unix systems with:
 
 \begin{verbatim}
-    % f77 -o testf77 testf77.f -L. -lcfitsio -lnsl -lsocket
-  or
-    % f77 -f -o testf77 testf77.f -L. -lcfitsio    (under SUN O/S)
-  or
-    % f77 -o testf77 testf77.f -Wl,-L. -lcfitsio -lm -lnsl -lsocket (HP/UX)
-
+    % gfortran -o testf77 testf77.f -L. -lcfitsio -lz -lcurl
     % testf77 > testf77.lis
     % diff testf77.lis testf77.out
     % cmp testf77.fit testf77.std
