@@ -71,9 +71,12 @@ struct lconv *lcxxx;
 float ffvers(float *version)  /* IO - version number */
 /*
   return the current version number of the FITSIO software
+  
+  Note that this method of calculation limits minor/micro fields to < 100.
 */
 {
-      *version = (float) 4.0;
+      *version = (float)CFITSIO_MAJOR + (float)(.01*CFITSIO_MINOR)
+                   + (float)(.0001*CFITSIO_MICRO);
 
 /*       May 2021
 
