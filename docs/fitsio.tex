@@ -1561,7 +1561,8 @@ used by these interface routines.
 \begin{description}
 \item[1 ] Return the current version number of the fitsio library.
     The version number will be incremented with each new
-   release of CFITSIO.
+   release of CFITSIO. The 3 fields of the version string M.xx.yy
+   are converted to a float as: M + .01*xx + .0001*yy.
 \end{description}
 
 \begin{verbatim}

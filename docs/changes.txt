@@ -1,5 +1,8 @@
                    Log of Changes Made to CFITSIO
-                   
+
+  - Updated fits_get_version function to return a float calculated
+    from 3 version fields.
+                       
   - Added handling of SBYTE_IMG and ULONGLONG_IMG types to the
     fits_resize_img function.
                    
