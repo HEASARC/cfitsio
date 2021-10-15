@@ -3960,7 +3960,8 @@ The following utility routines may be useful for certain applications.
 \begin{description}
 \item[1 ] Return the revision number of the CFITSIO library.
     The revision number will be incremented with each new
-   release of CFITSIO. \label{ffvers}
+   release of CFITSIO. The 3 fields of the version string M.xx.yy
+   are converted to a float as: M + .01*xx + .0001*yy. \label{ffvers}
 \end{description}
 
 \begin{verbatim}
