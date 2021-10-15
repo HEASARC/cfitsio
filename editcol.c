@@ -68,11 +68,16 @@ int ffrsimll(fitsfile *fptr,    /* I - FITS file pointer           */
 
     longbitpix = bitpix;
 
-    /* test for the 2 special cases that represent unsigned integers */
+    /* test for the 4 special cases that represent unsigned integers 
+       or signed bytes */
     if (longbitpix == USHORT_IMG)
         longbitpix = SHORT_IMG;
     else if (longbitpix == ULONG_IMG)
         longbitpix = LONG_IMG;
+    else if (longbitpix == SBYTE_IMG)
+        longbitpix = BYTE_IMG;
+    else if (longbitpix == ULONGLONG_IMG)
+        longbitpix = LONGLONG_IMG;
 
     /* test that the new values are legal */
 
@@ -183,7 +188,8 @@ int ffrsimll(fitsfile *fptr,    /* I - FITS file pointer           */
         }
     }
 
-    /* Update the BSCALE and BZERO keywords, if an unsigned integer image */
+    /* Update the BSCALE and BZERO keywords, if an unsigned integer image
+       or a signed byte image.  */
     if (bitpix == USHORT_IMG)
     {
         strcpy(comment, "offset data range to that of unsigned short");
@@ -195,6 +201,20 @@ int ffrsimll(fitsfile *fptr,    /* I - FITS file pointer           */
     {
         strcpy(comment, "offset data range to that of unsigned long");
         ffukyg(fptr, "BZERO", 2147483648., 0, comment, status);
+        strcpy(comment, "default scaling factor");
+        ffukyg(fptr, "BSCALE", 1.0, 0, comment, status);
+    }
+    else if (bitpix == ULONGLONG_IMG)
+    {
+        strcpy(comment, "offset data range to that of unsigned long long");
+        ffukyg(fptr, "BZERO", 9223372036854775808., 0, comment, status);
+        strcpy(comment, "default scaling factor");
+        ffukyg(fptr, "BSCALE", 1.0, 0, comment, status);
+    }
+    else if (bitpix == SBYTE_IMG)
+    {
+        strcpy(comment, "offset data range to that of signed byte");
+        ffukyg(fptr, "BZERO", -128., 0, comment, status);
         strcpy(comment, "default scaling factor");
         ffukyg(fptr, "BSCALE", 1.0, 0, comment, status);
     }
