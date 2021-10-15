@@ -1,5 +1,8 @@
                    Log of Changes Made to CFITSIO
                    
+  - Added handling of SBYTE_IMG and ULONGLONG_IMG types to the
+    fits_resize_img function.
+                   
 Version 4.0.0 - May 2021                   
 
   - Removed separate directory for zlib/gzip code, and updated
