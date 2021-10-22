@@ -1,5 +1,8 @@
                    Log of Changes Made to CFITSIO
 
+  - The SUBTRACTIVE_DITHER_2 option has been removed when using the
+    HCOMPRESS algorithm.  
+    
   - Updated fits_get_version function to return a float calculated
     from 3 version fields.
                        

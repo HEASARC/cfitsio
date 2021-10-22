@@ -2776,7 +2776,9 @@ quantization method is to be used.  The default algorithm is called
 ``SUBTRACTIVE\_DITHER\_1''.  A second variation called ``SUBTRACTIVE\_DITHER\_2''
 is also available, which does the same thing except that any pixels with a
 value of 0.0 are not dithered and instead the zero values are exactly
-preserved in the compressed image.  One may also turn off dithering
+preserved in the compressed image.  This is intended for the special case
+where ``bad pixels'' in the image have been artifically set to zero to indicate that they have no valid value.  It is not currently supported with HCOMPRESS, 
+and if requested while using HCOMPRESS, it will be replaced with ``SUBTRACTIVE\_DITHER\_1''.  One may also turn off dithering
 completely with the ``NO\_DITHER'' option, but this is not recommended
 because it can cause larger systematic errors in measurements of the
 position or brightness of objects in the compressed image.
