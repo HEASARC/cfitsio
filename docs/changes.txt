@@ -1,4 +1,7 @@
                    Log of Changes Made to CFITSIO
+                   
+  - Calls to the zlib inflate() function in zcompress.c now handle
+    the Z_BUF_ERROR return value rather than exiting.
 
   - The SUBTRACTIVE_DITHER_2 option has been removed when using the
     HCOMPRESS algorithm.  
