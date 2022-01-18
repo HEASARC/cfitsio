@@ -11,6 +11,9 @@
                        
   - Added handling of SBYTE_IMG and ULONGLONG_IMG types to the
     fits_resize_img function.
+    
+  - Updates made to C/Fortran interfacing in cfortran.h and f77_wrap.h
+    specifically driven by new Mac/ARM architecture.
                    
 Version 4.0.0 - May 2021                   
 
