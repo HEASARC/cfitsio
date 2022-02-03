@@ -1084,6 +1084,7 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
     LONGLONG tbcol, firstcol, delbyte;
     long nblock, width, repeat;
     char tfm[FLEN_VALUE], keyname[FLEN_KEYWORD], comm[FLEN_COMMENT], *cptr;
+    char card[FLEN_CARD];
     tcolumn *colptr;
 
     if (*status > 0)
@@ -1290,6 +1291,27 @@ int fficls(fitsfile *fptr,  /* I - FITS file pointer                        */
            strcpy(comm, "offset for unsigned integers");
 
            ffpkyg(fptr, keyname, 2147483648., 0, comm, status);
+
+           ffkeyn("TSCAL", colnum, keyname, status);
+           strcpy(comm, "data are not scaled");
+           ffpkyg(fptr, keyname, 1., 0, comm, status);
+        }
+        else if (abs(datacode) == TULONGLONG) 
+        {	   
+           /* Replace the 'W' with an 'K' in the TFORMn code */
+           cptr = tfm;
+           while (*cptr != 'W') 
+              cptr++;
+
+           *cptr = 'K';
+           ffpkys(fptr, keyname, tfm, comm, status);
+
+           /* write the TZEROn and TSCALn keywords */
+           ffkeyn("TZERO", colnum, card, status);
+           strcat(card, "     ");  /* make sure name is >= 8 chars long */
+           *(card+8) = '\0';
+	   strcat(card, "=  9223372036854775808 / offset for unsigned integers");
+	   fits_write_record(fptr, card, status);
 
            ffkeyn("TSCAL", colnum, keyname, status);
            strcpy(comm, "data are not scaled");
