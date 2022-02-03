@@ -14,6 +14,9 @@
     
   - Updates made to C/Fortran interfacing in cfortran.h and f77_wrap.h
     specifically driven by new Mac/ARM architecture.
+    
+  - Fix to the fits_insert_col functions to handle columns with
+    TULONGLONG data.
                    
 Version 4.0.0 - May 2021                   
 
