@@ -576,6 +576,7 @@
 #define fits_copy_col     ffcpcl
 #define fits_copy_cols    ffccls
 #define fits_copy_rows    ffcprw
+#define fits_copy_selrows    ffcpsr
 #define fits_modify_vector_len  ffmvec
 
 #define fits_read_img_coord ffgics
