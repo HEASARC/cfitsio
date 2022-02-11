@@ -3373,6 +3373,10 @@ For complex and double complex data types, \verb+nelements+ is the number
 of numerical pairs; the number of floats or doubles stored by
 \+array+ must be \verb+2*nelements+.
 
+For the logical data (TLOGICAL), the C storage type is a \verb+char+
+single-byte character.  A FITS value of `\verb+T+'rue reads as 1 and
+`\verb+F+' reads as 0; other non-FITS characters are preserved untranslated.
+
 Numerical data values are automatically scaled by the TSCALn and TZEROn
 keyword values (if they exist).
 
@@ -7073,11 +7077,15 @@ parameters used in these routines.
 
 \subsection{Write Column Data Routines}
 
+This subsection describes specialized routines for writing data to
+FITS tables.  Please see section \ref{specialized-read-column-data}
+(``Read Column Data Routines'') for more information about how values
+are stored in C.
 
 \begin{description}
 \item[1 ] Write elements into an ASCII or binary table column (in the CDU).
     The data type of the array is implied by the suffix of the
-   routine name. \label{ffpcls}
+   routine name.  \label{ffpcls}
 \end{description}
 
 \begin{verbatim}
@@ -7161,7 +7169,7 @@ parameters used in these routines.
          LONGLONG offset, > int *status)
 \end{verbatim}
 
-\subsection{Read Column Data Routines}
+\subsection{Read Column Data Routines \label{specialized-read-column-data}}
 
 Two types of routines are provided to get the column data which differ
 in the way undefined pixels are handled.  The first set of routines
@@ -7207,6 +7215,11 @@ parameters used in these routines.
     (or = ' ' for ffgcvs) in which case no checking for undefined values will
     be performed. The anynul parameter is set to true if any of the returned
     elements are undefined. 
+
+    For the \verb+_log+ (logical) variant, the C storage type is a
+    \verb+char+ single-byte character.  A FITS value of `\verb+T+'rue
+    reads as 1 and `\verb+F+' reads as 0; other non-FITS characters 
+    are preserved untranslated.
 
     For the \verb+_str+ (string) variant the number
     of elements is the number of strings, and the caller must allocate storage
