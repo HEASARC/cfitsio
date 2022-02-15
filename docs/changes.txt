@@ -1,4 +1,6 @@
                    Log of Changes Made to CFITSIO
+
+Version 4.1.0 - Feb 2022
                    
   - Calls to the zlib inflate() function in zcompress.c now handle
     the Z_BUF_ERROR return value rather than exiting.
