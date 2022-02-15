@@ -2571,7 +2571,7 @@ test -n "$target_alias" &&
 #--------------------------------------------------------------------
 CFITSIO_MAJOR=4
 
-CFITSIO_MINOR=0
+CFITSIO_MINOR=1
 
 CFITSIO_MICRO=0
 
