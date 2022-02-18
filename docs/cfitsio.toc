@@ -78,7 +78,7 @@
 \contentsline {subsection}{\numberline {9.6.1}General Column Routines}{117}
 \contentsline {subsection}{\numberline {9.6.2}Low-Level Table Access Routines}{119}
 \contentsline {subsection}{\numberline {9.6.3}Write Column Data Routines}{119}
-\contentsline {subsection}{\numberline {9.6.4}Read Column Data Routines}{120}
+\contentsline {subsection}{\numberline {9.6.4}Read Column Data Routines }{120}
 \contentsline {chapter}{\numberline {10} Extended File Name Syntax }{125}
 \contentsline {section}{\numberline {10.1}Overview}{125}
 \contentsline {section}{\numberline {10.2}Filetype}{128}
