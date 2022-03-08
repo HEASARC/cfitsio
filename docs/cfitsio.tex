@@ -3309,6 +3309,11 @@ spaces).  Trailing blank characters are not significant.
     with row 'firstrow'.  These rows will be appended to any existing
     rows in the output table.
    Note that the first row in a table is at row = 1. 
+
+   The \verb|fits_copy_selrows| form copies only selected rows to the output.
+   Which rows are transferred is determined by an array of flags, \verb|row_status[]|,
+   which could be returned by fits_find_rows() or constructed by the user.
+   FITS row N is copied if \verb|row_status[N-first_row]| is non-zero.  
    \label{ffcprw}
 \end{description}
 
@@ -3316,6 +3321,10 @@ spaces).  Trailing blank characters are not significant.
   int fits_copy_rows / ffcprw
       (fitsfile *infptr, fitsfile *outfptr, LONGLONG firstrow,
        LONGLONG nrows, > int *status);
+
+  int fits_copy_selrows / ffcpsr
+      (fitsfile *infptr, fitsfile *outfptr, LONGLONG firstrow,
+       LONGLONG nrows, char *row_status, > int *status);
 \end{verbatim}
 
 \begin{description}
