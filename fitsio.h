@@ -1440,6 +1440,8 @@ int CFITS_API ffggpd(fitsfile *fptr, long group, long firstelem, long nelem,
 int CFITS_API ffgcv( fitsfile *fptr, int datatype, int colnum, LONGLONG firstrow,
            LONGLONG firstelem, LONGLONG nelem, void *nulval, void *array, int *anynul,
            int  *status);
+int CFITS_API ffgcvn (fitsfile *fptr, int ncols, int *datatype, int *colnum, LONGLONG firstrow,
+	    LONGLONG nrows, void **nulval, void **array, int *anynul, int *status);
 int CFITS_API ffgcf( fitsfile *fptr, int datatype, int colnum, LONGLONG firstrow,
            LONGLONG firstelem, LONGLONG nelem, void *array, char *nullarray,
            int *anynul, int *status);
@@ -1749,6 +1751,8 @@ int CFITS_API ffiter(int ncols,  iteratorCol *data, long offset, long nPerLoop,
 /*--------------------- write column elements -------------*/
 int CFITS_API ffpcl(fitsfile *fptr, int datatype, int colnum, LONGLONG firstrow,
           LONGLONG firstelem, LONGLONG nelem, void *array, int *status);
+int CFITS_API ffpcln(fitsfile *fptr, int ncols, int *datatype, int *colnum, LONGLONG firstrow,
+	   LONGLONG nrows, void **array, void **nulval, int *status);
 int CFITS_API ffpcls(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
            LONGLONG nelem, char **array, int *status);
 int CFITS_API ffpcll(fitsfile *fptr, int colnum, LONGLONG firstrow, LONGLONG firstelem,
