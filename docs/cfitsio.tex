@@ -3416,7 +3416,17 @@ rows if required) and not the number of table cells.
    simply writes undefined pixel values to the column.  The fourth routine
    fills every column in the table with null values, in the specified
    rows (ignoring any columns that do not have a defined null value).
-   \label{ffpcl} \label{ffpcn} \label{ffpclu}
+
+   The \verb+fits_write_cols()+ variant writes multiple columns in a
+   single pass, which may be significantly faster for large data
+   files.  The ``chunk'' size is determined automatically based upon
+   CFITSIO's buffer sizes.  Only whole rows can be written, of any
+   type except TBIT or TSTRING.  For this variant, datatype, colnum,
+   array and nulval are arrays of the equivalent single-column
+   parameter (i.e. \verb+datatype[i]+ is the data type of column
+   \verb+i+). 
+
+   \label{ffpcl} \label{ffpcn} \label{ffpclu} \label{ffpcln}
 
 \begin{verbatim}
   int fits_write_col / ffpcl
@@ -3473,7 +3483,16 @@ rows if required) and not the number of table cells.
     where w is the width in characters of the displayed values, m is the minimum
     number of digits displayed, and d is the number of digits to the right of the
     decimal.  The .m field is optional.
-   \label{ffgcv} \label{ffgcf}
+
+   The \verb+fits_read_cols()+ variant read multiple columns in a
+   single pass, which may be significantly faster for large data
+   files.  The ``chunk'' size is determined automatically based upon
+   CFITSIO's buffer sizes.  Only whole rows can be read, of any type
+   except TBIT or TSTRING.  For this variant, datatype, colnum, array
+   and nulval are arrays of the equivalent single-column parameter
+   (i.e. \verb+datatype[i]+ is the data type of column \verb+i+).
+
+   \label{ffgcv} \label{ffgcf} \label{ffgcvn}
 \end{description}
 
 \begin{verbatim}
@@ -3484,6 +3503,10 @@ rows if required) and not the number of table cells.
   int fits_read_colnull / ffgcf
       (fitsfile *fptr, int datatype, int colnum, LONGLONG firstrow, LONGLONG firstelem,
       LONGLONG nelements, DTYPE *array, char *nullarray, int *anynul, int *status)
+
+  int fits_read_cols / ffgcvn
+      (fitsfile *fptr, int ncols, int *datatype, int *colnum, LONGLONG firstrow, 
+       LONGLONG nrows, DTYPE **nulval, DTYPE **array, int **anynul, int *status)
 \end{verbatim}
 
 

@@ -887,6 +887,121 @@ int ffpcn(  fitsfile *fptr,  /* I - FITS file pointer                       */
 
     return(*status);
 }
+
+/*--------------------------------------------------------------------------*/
+int ffpcln( fitsfile *fptr,   /* I - FITS file pointer                       */
+	    int ncols,        /* I - number of columns to write              */
+            int  *datatype,   /* I - datatypes of the values                 */
+            int  *colnum,     /* I - columns numbers to write (1 = 1st col)  */
+            LONGLONG  firstrow,   /* I - first row to write (1 = 1st row)    */
+            LONGLONG nrows,       /* I - number of rows to write             */
+            void **array,     /* I - array of pointers to values to write    */
+            void **nulval,    /* I - array of pointers to values for undefined pixels */
+            int  *status)     /* IO - error status                           */
+/*
+  Write arrays of values to NCOLS table columns. This is an optimization
+  to write all columns in one pass through the table.  The datatypes of the
+  input arrays are defined by the 3rd argument.  Data conversion
+  and scaling will be performed if necessary (e.g, if the datatype of
+  the FITS array is not the same as the array being written).
+  Undefined elements for column i that are equal to *(nulval[i]) are set to
+  the defined null value, unless nulval[i]=0,
+  in which case no checking for undefined values will be performed.
+*/
+{
+    LONGLONG ntotrows, ndone, nwrite, currow;
+    long nrowbuf;
+    LONGLONG *repeats = 0;
+    size_t sizes[255] = {0};
+    int icol;
+
+    sizes[TBYTE] = sizes[TSBYTE] = sizes[TLOGICAL] = sizeof(char);
+    sizes[TUSHORT] = sizes[TSHORT] = sizeof(short int);
+    sizes[TINT] = sizes[TUINT] = sizeof(int);
+    sizes[TLONG] = sizes[TULONG] = sizeof(long int);
+    sizes[TLONGLONG] = sizes[TULONGLONG] = sizeof(LONGLONG);
+    sizes[TFLOAT] = sizeof(float);
+    sizes[TDOUBLE] = sizeof(double);
+    sizes[TDBLCOMPLEX] = 2*sizeof(double);
+
+    if (*status > 0)
+        return(*status);
+
+    if (ncols <= 0) return (*status=0);
+
+    repeats = malloc(sizeof(LONGLONG)*ncols);
+    if (repeats == 0) return (*status=MEMORY_ALLOCATION);
+
+    fits_get_num_rowsll(fptr, &ntotrows, status);
+    fits_get_rowsize(fptr, &nrowbuf, status);
+
+    /* Retrieve column repeats */
+    for (icol = 0; (icol < ncols) && (icol < 1000); icol++) {
+      int typecode;
+      LONGLONG repeat, width;
+      fits_get_coltypell(fptr, colnum[icol], &typecode, 
+			 &repeat, &width, status);
+      repeats[icol] = repeat;
+
+      if (datatype[icol] == TBIT || datatype[icol] == TSTRING ||
+	  sizes[datatype[icol]] == 0) {
+	ffpmsg("Cannot write to TBIT or TSTRING datatypes (ffpcln)");
+	*status = BAD_DATATYPE;
+      }
+      if (typecode < 0) {
+	ffpmsg("Cannot write to variable-length data (ffpcln)");
+	*status = BAD_DIMEN;
+      }
+
+      if (*status) break;
+    }
+    if (*status) {
+      free(repeats);
+      return *status;
+    }
+
+    /* Optimize for 1 column */
+    if (ncols == 1) {
+      fits_write_colnull(fptr, datatype[0], colnum[0], firstrow, 1,
+			 nrows*repeats[0], 
+			 array[0], nulval[0], status);
+      free(repeats);
+      return *status;
+    }
+
+    /* Scan through file, in chunks of nrowbuf */
+    currow = firstrow;
+    ndone = 0;
+    while (ndone < nrows) {
+      int icol;
+      nwrite = (nrows-ndone);
+      if (nwrite > nrowbuf) nwrite = nrowbuf;
+
+      for (icol=0; icol<ncols; icol++) {
+	LONGLONG nelem1 = (nwrite*repeats[icol]);
+	char *array1 = (char *) array[icol] + repeats[icol]*ndone*sizes[datatype[icol]];
+
+	fits_write_colnull(fptr, datatype[icol], colnum[icol], ndone+1, 1, 
+			   nelem1, array1, nulval[icol], status);
+	if (*status) {
+	  char errmsg[100];
+	  sprintf(errmsg,
+		  "Failed to write column %d data rows %lld-%lld (ffpcln)",
+		  colnum[icol], currow, currow+nwrite-1);
+	  ffpmsg(errmsg);
+	  break;
+	}
+      }
+
+      if (*status) break;
+      currow += nwrite;
+      ndone += nwrite;
+    }
+
+    free(repeats);
+    return *status;
+}
+
 /*--------------------------------------------------------------------------*/
 int fits_iter_set_by_name(iteratorCol *col, /* I - iterator col structure */
            fitsfile *fptr,  /* I - FITS file pointer                      */
