@@ -672,6 +672,12 @@ expr:    LONG
 			$$ = New_Func( 0, log10_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"SQRT(") == 0)
 			$$ = New_Func( 0, sqrt_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"ERF(") == 0)
+			$$ = New_Func( 0, erf_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"ERFC(") == 0)
+			$$ = New_Func( 0, erfc_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"GAMMA(") == 0)
+			$$ = New_Func( 0, gamma_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"ROUND(") == 0)
 			$$ = New_Func( 0, round_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"FLOOR(") == 0)
@@ -3622,6 +3628,16 @@ static void Do_Func( Node *this )
 	    else
 	       this->value.data.dbl = sqrt( dval );
 	    break;
+	 case erf_fct:
+	    this->value.data.dbl = erf( pVals[0].data.dbl );
+	    break;
+	 case erfc_fct:
+	    this->value.data.dbl = erfc( pVals[0].data.dbl );
+	    break;
+	 case gamma_fct:
+	    dval = pVals[0].data.dbl;
+	    this->value.data.dbl = tgamma( dval );
+	    break;
 	 case ceil_fct:
 	    this->value.data.dbl = ceil( pVals[0].data.dbl );
 	    break;
@@ -4383,6 +4399,27 @@ static void Do_Func( Node *this )
 		     this->value.undef[elem] = 1;
 		  } else
 		     this->value.data.dblptr[elem] = sqrt( dval );
+	       }
+	    break;
+	 case erf_fct:
+	    while( elem-- )
+	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
+		  dval = theParams[0]->value.data.dblptr[elem];
+		  this->value.data.dblptr[elem] = erf( dval );
+	       }
+	    break;
+	 case erfc_fct:
+	    while( elem-- )
+	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
+		  dval = theParams[0]->value.data.dblptr[elem];
+		  this->value.data.dblptr[elem] = erfc( dval );
+	       }
+	    break;
+	 case gamma_fct:
+	    while( elem-- )
+	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
+		  dval = theParams[0]->value.data.dblptr[elem];
+		  this->value.data.dblptr[elem] = tgamma( dval );
 	       }
 	    break;
 	 case ceil_fct:
