@@ -1,5 +1,16 @@
                    Log of Changes Made to CFITSIO
 
+Version X.X.X - Next Release
+
+  - Added new functions fits_read_cols and fits_write_cols to efficiently 
+    read or write multiple columns in a single function call
+
+  - Added new function fits_copy_selrows to copy only selected rows, such
+    as the selected rows returned by fits_find_rows
+
+  - Added new calculator functions ERF(X), ERFC(X) and GAMMA(X), which are
+    mathematical special functions of the same name
+
 Version 4.1.0 - Feb 2022
                    
   - Calls to the zlib inflate() function in zcompress.c now handle
