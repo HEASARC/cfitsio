@@ -1928,7 +1928,7 @@ int ssl_get_with_curl(char *url, curlmembuf* buffer, char* username,
   
   curl_easy_setopt(curl, CURLOPT_VERBOSE, (long)curl_verbose);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlToMemCallback);
-  snprintf(agentStr,MAXLEN,"User-Agent: FITSIO/HEASARC/%-8.3f",ffvers(&version)); 
+  snprintf(agentStr,MAXLEN,"FITSIO/HEASARC/%-8.3f",ffvers(&version)); 
   curl_easy_setopt(curl, CURLOPT_USERAGENT,agentStr);
   
   buffer->memory = 0; /* malloc/realloc will grow this in the callback function */
