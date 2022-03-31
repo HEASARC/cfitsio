@@ -1131,17 +1131,25 @@ int https_open(char *filename, int rwmode, int *handle)
   if (inmem.size >= 2 &&
       (unsigned char) inmem.memory[0] == 0x1f && 
       (unsigned char) inmem.memory[1] == 0x8b) {
+    LONGLONG fitsfilesize = 0;
     
     /* Uncompress from memory to memfile */
     status = mem_zuncompress_and_write(*handle, inmem.memory, inmem.size);
+    mem_size(*handle, &fitsfilesize);
+
+    if ((fitsfilesize > 0) && (fitsfilesize % 2880)) {
+      snprintf(errStr,MAXLEN,"Uncompressed file length not a multiple of 2880 (https_open) %u",
+	       fitsfilesize);
+      ffpmsg(errStr);
+    }
+
   } else {
 
-    if (inmem.size % 2880)
-      {
-	snprintf(errStr,MAXLEN,"Content-Length not a multiple of 2880 (https_open) %u",
-		 inmem.size);
-	ffpmsg(errStr);
-      }
+    if (inmem.size % 2880) {
+      snprintf(errStr,MAXLEN,"Content-Length not a multiple of 2880 (https_open) %u",
+	       inmem.size);
+      ffpmsg(errStr);
+    }
 
     /* Straight copy of data */
     status = mem_write(*handle, inmem.memory, inmem.size);
