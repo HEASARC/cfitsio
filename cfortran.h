@@ -63,6 +63,9 @@
                 C to Fortran.  To avoid duplication, defined an 'if' block
                 for setting new CF_STRLENTYPE variable.  H_CF_SPECIAL and
                 STRING_cfKK(B) are now set to this.
+      May 2022  Set ALL Mac/ARM platforms to 'size_t' for CF_STRLENTYPE
+                since Clang/Clang++ will not pass GNUC>7 test, yet its
+                (3rd-party) Fortran still needs this.
  *******/
 
 #ifndef __CFORTRAN__PCTYPE__UNUSED__
@@ -444,8 +447,10 @@ only C calling FORTRAN subroutines will work using K&R style.*/
 #define AcfCOLON ;
 
 
-/* Use CF_STRLENSTYPE = size_t for GNU compilers newer than version 7.x: */
-#if (defined(__GNUC__) && __GNUC__ > 7)
+/* Use CF_STRLENTYPE = size_t for GNU compilers newer than version 7.x: */
+#if (defined(__GNUC__) && __GNUC__ > 7) || \
+    (defined(__arm64__) && defined(__APPLE__)) || \
+     defined(__aarch64__)
 #define  CF_STRLENTYPE       size_t
 #else
 #define  CF_STRLENTYPE       unsigned
