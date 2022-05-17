@@ -447,13 +447,16 @@ only C calling FORTRAN subroutines will work using K&R style.*/
 #define AcfCOLON ;
 
 
-/* Use CF_STRLENTYPE = size_t for GNU compilers newer than version 7.x: */
-#if (defined(__GNUC__) && __GNUC__ > 7) || \
-    (defined(__arm64__) && defined(__APPLE__)) || \
-     defined(__aarch64__)
-#define  CF_STRLENTYPE       size_t
-#else
+/* Use CF_STRLENTYPE = size_t for all Fortran newer than GNU version 7.x.
+   Apple clang identifies itself as GNUC=4, but we want it to use size_t too.
+   Note that 2 assumptions are in play here:
+   1) Aside from clang, the C version (GNUC) also represents the version
+      of Fortran being used!
+   2) No one is pairing clang with gfortran older than v8.x anymore. */
+#if (defined(__GNUC__) && !defined(__clang__)) && __GNUC__ < 8
 #define  CF_STRLENTYPE       unsigned
+#else
+#define  CF_STRLENTYPE       size_t
 #endif
 
 /*-------------------------------------------------------------------------*/
