@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.0.5.  */
+/* A Bison parser, made by GNU Bison 3.0.4.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015, 2018 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -55,30 +55,31 @@ extern int ffdebug;
     IFUNCTION = 265,
     GTIFILTER = 266,
     GTIOVERLAP = 267,
-    REGFILTER = 268,
-    COLUMN = 269,
-    BCOLUMN = 270,
-    SCOLUMN = 271,
-    BITCOL = 272,
-    ROWREF = 273,
-    NULLREF = 274,
-    SNULLREF = 275,
-    OR = 276,
-    AND = 277,
-    EQ = 278,
-    NE = 279,
-    GT = 280,
-    LT = 281,
-    LTE = 282,
-    GTE = 283,
-    XOR = 284,
-    POWER = 285,
-    NOT = 286,
-    INTCAST = 287,
-    FLTCAST = 288,
-    UMINUS = 289,
-    ACCUM = 290,
-    DIFF = 291
+    GTIFIND = 268,
+    REGFILTER = 269,
+    COLUMN = 270,
+    BCOLUMN = 271,
+    SCOLUMN = 272,
+    BITCOL = 273,
+    ROWREF = 274,
+    NULLREF = 275,
+    SNULLREF = 276,
+    OR = 277,
+    AND = 278,
+    EQ = 279,
+    NE = 280,
+    GT = 281,
+    LT = 282,
+    LTE = 283,
+    GTE = 284,
+    XOR = 285,
+    POWER = 286,
+    NOT = 287,
+    INTCAST = 288,
+    FLTCAST = 289,
+    UMINUS = 290,
+    ACCUM = 291,
+    DIFF = 292
   };
 #endif
 /* Tokens.  */
@@ -92,37 +93,38 @@ extern int ffdebug;
 #define IFUNCTION 265
 #define GTIFILTER 266
 #define GTIOVERLAP 267
-#define REGFILTER 268
-#define COLUMN 269
-#define BCOLUMN 270
-#define SCOLUMN 271
-#define BITCOL 272
-#define ROWREF 273
-#define NULLREF 274
-#define SNULLREF 275
-#define OR 276
-#define AND 277
-#define EQ 278
-#define NE 279
-#define GT 280
-#define LT 281
-#define LTE 282
-#define GTE 283
-#define XOR 284
-#define POWER 285
-#define NOT 286
-#define INTCAST 287
-#define FLTCAST 288
-#define UMINUS 289
-#define ACCUM 290
-#define DIFF 291
+#define GTIFIND 268
+#define REGFILTER 269
+#define COLUMN 270
+#define BCOLUMN 271
+#define SCOLUMN 272
+#define BITCOL 273
+#define ROWREF 274
+#define NULLREF 275
+#define SNULLREF 276
+#define OR 277
+#define AND 278
+#define EQ 279
+#define NE 280
+#define GT 281
+#define LT 282
+#define LTE 283
+#define GTE 284
+#define XOR 285
+#define POWER 286
+#define NOT 287
+#define INTCAST 288
+#define FLTCAST 289
+#define UMINUS 290
+#define ACCUM 291
+#define DIFF 292
 
 /* Value type.  */
 #if ! defined FFSTYPE && ! defined FFSTYPE_IS_DECLARED
 
 union FFSTYPE
 {
-#line 199 "eval.y" /* yacc.c:1910  */
+#line 199 "eval.y" /* yacc.c:1909  */
 
     int    Node;        /* Index of Node */
     double dbl;         /* real value    */
@@ -130,7 +132,7 @@ union FFSTYPE
     char   log;         /* logical value */
     char   str[MAX_STRLEN];    /* string value  */
 
-#line 134 "y.tab.h" /* yacc.c:1910  */
+#line 136 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union FFSTYPE FFSTYPE;

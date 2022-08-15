@@ -430,6 +430,9 @@ nl		\n
                   else if( FSTRCMP(fname,"GTIOVERLAP(")==0 )
                      return( GTIOVERLAP );
 
+                  else if( FSTRCMP(fname,"GTIFIND(")==0 )
+                     return( GTIFIND );
+
                   else if( FSTRCMP(fname,"REGFILTER(")==0 )
                      return( REGFILTER );
 

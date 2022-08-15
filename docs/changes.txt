@@ -15,6 +15,9 @@ Version X.X.X - Next Release
   - Added new calculator functions ERF(X), ERFC(X) and GAMMA(X), which are
     mathematical special functions of the same name
 
+  - Added new calculator function GTIFIND() which reports which GTI row
+    brackets a given time sample
+
 Version 4.1.0 - Feb 2022
                    
   - Calls to the zlib inflate() function in zcompress.c now handle
