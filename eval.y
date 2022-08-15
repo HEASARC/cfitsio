@@ -214,6 +214,7 @@ static void  yyerror(char *msg);
 %token <str>   IFUNCTION      /* Integer function */
 %token <str>   GTIFILTER
 %token <str>   GTIOVERLAP
+%token <str>   GTIFIND
 %token <str>   REGFILTER
 %token <lng>   COLUMN
 %token <lng>   BCOLUMN
@@ -672,12 +673,6 @@ expr:    LONG
 			$$ = New_Func( 0, log10_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"SQRT(") == 0)
 			$$ = New_Func( 0, sqrt_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
-		     else if (FSTRCMP($1,"ERF(") == 0)
-			$$ = New_Func( 0, erf_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
-		     else if (FSTRCMP($1,"ERFC(") == 0)
-			$$ = New_Func( 0, erfc_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
-		     else if (FSTRCMP($1,"GAMMA(") == 0)
-			$$ = New_Func( 0, gamma_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"ROUND(") == 0)
 			$$ = New_Func( 0, round_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"FLOOR(") == 0)
@@ -1074,6 +1069,22 @@ bexpr:   BOOLEAN
                    TEST($$);                                        }
        | GTIOVERLAP STRING ',' expr ',' expr ',' STRING ',' STRING ')'
                 {  $$ = New_GTI(gtiover_fct,  $2, $4, $6, $8, $10 );
+                   TEST($$);                                        }
+
+       /* GTIFIND('myfile.gti', TIME_EXPR, 'START', 'STOP') */
+       | GTIFIND ')'
+                { /* Use defaults for all elements */
+		   $$ = New_GTI(gtifind_fct,  "", -99, -99, "*START*", "*STOP*" );
+                   TEST($$);                                        }
+       | GTIFIND STRING ')'
+                { /* Use defaults for all except filename */
+		  $$ = New_GTI(gtifind_fct,  $2, -99, -99, "*START*", "*STOP*" );
+                   TEST($$);                                        }
+       | GTIFIND STRING ',' expr ')'
+                {  $$ = New_GTI(gtifind_fct,  $2, $4, -99, "*START*", "*STOP*" );
+                   TEST($$);                                        }
+       | GTIFIND STRING ',' expr ',' STRING ',' STRING ')'
+                {  $$ = New_GTI(gtifind_fct,  $2, $4, -99, $6, $8 );
                    TEST($$);                                        }
 
 
@@ -1530,12 +1541,12 @@ static int New_GTI( funcOp Op, char *fname, int Node1, int Node2, char *start, c
    char xcol[20], xexpr[20];
    YYSTYPE colVal;
 
-   if( Op == gtifilt_fct && Node1==-99 ) {
+   if( (Op == gtifilt_fct || Op == gtifind_fct) && Node1==-99 ) {
       type = yyGetVariable( "TIME", &colVal );
       if( type==COLUMN ) {
 	 Node1 = New_Column( (int)colVal.lng );
       } else {
-	 yyerror("Could not build TIME column for GTIFILTER");
+	 yyerror("Could not build TIME column for GTIFILTER/GTIFIND");
 	 return(-1);
       }
    }
@@ -1611,7 +1622,7 @@ static int New_GTI( funcOp Op, char *fname, int Node1, int Node2, char *start, c
       if( hdunum>1 )
 	 ffmahd( fptr, hdunum, &hdutype, &gParse.status );
       else {
-	 yyerror("Cannot use primary array for GTI filter");
+	 yyerror("Cannot use primary array for GTI filter / GTIFIND");
 	 return( -1 );
       }
       break;
@@ -1671,6 +1682,10 @@ static int New_GTI( funcOp Op, char *fname, int Node1, int Node2, char *start, c
 	this->nSubNodes      = 2;
 	this->DoOp           = Do_GTI;
 	this->type           = BOOLEAN;
+      } else if (Op == gtifind_fct) {
+	this->nSubNodes      = 2;
+	this->DoOp           = Do_GTI;
+	this->type           = LONG;
       } else {
 	this->nSubNodes      = 3;
 	this->DoOp           = Do_GTI_Over;
@@ -1744,6 +1759,7 @@ static int New_GTI( funcOp Op, char *fname, int Node1, int Node2, char *start, c
 	 dt = (timeZeroI[1] - timeZeroI[0]) + (timeZeroF[1] - timeZeroF[0]);
 	 timeSpan = that0->value.data.dblptr[nrows+nrows-1]
 	    - that0->value.data.dblptr[0];
+	 if (timeSpan == 0) timeSpan = 1.0;
 	 
 	 if( fabs( dt / timeSpan ) > 1e-12 ) {
 	    for( i=0; i<(nrows+nrows); i++ )
@@ -3628,16 +3644,6 @@ static void Do_Func( Node *this )
 	    else
 	       this->value.data.dbl = sqrt( dval );
 	    break;
-	 case erf_fct:
-	    this->value.data.dbl = erf( pVals[0].data.dbl );
-	    break;
-	 case erfc_fct:
-	    this->value.data.dbl = erfc( pVals[0].data.dbl );
-	    break;
-	 case gamma_fct:
-	    dval = pVals[0].data.dbl;
-	    this->value.data.dbl = tgamma( dval );
-	    break;
 	 case ceil_fct:
 	    this->value.data.dbl = ceil( pVals[0].data.dbl );
 	    break;
@@ -4399,27 +4405,6 @@ static void Do_Func( Node *this )
 		     this->value.undef[elem] = 1;
 		  } else
 		     this->value.data.dblptr[elem] = sqrt( dval );
-	       }
-	    break;
-	 case erf_fct:
-	    while( elem-- )
-	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
-		  dval = theParams[0]->value.data.dblptr[elem];
-		  this->value.data.dblptr[elem] = erf( dval );
-	       }
-	    break;
-	 case erfc_fct:
-	    while( elem-- )
-	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
-		  dval = theParams[0]->value.data.dblptr[elem];
-		  this->value.data.dblptr[elem] = erfc( dval );
-	       }
-	    break;
-	 case gamma_fct:
-	    while( elem-- )
-	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
-		  dval = theParams[0]->value.data.dblptr[elem];
-		  this->value.data.dblptr[elem] = tgamma( dval );
 	       }
 	    break;
 	 case ceil_fct:
@@ -5327,6 +5312,7 @@ static void Do_GTI( Node *this )
    double *start, *stop, *times;
    long elem, nGTI, gti;
    int ordered;
+   int dorow = (this->operation == gtifind_fct);
 
    theTimes = gParse.Nodes + this->SubNodes[0];
    theExpr  = gParse.Nodes + this->SubNodes[1];
@@ -5337,9 +5323,12 @@ static void Do_GTI( Node *this )
    ordered = theTimes->type;
 
    if( theExpr->operation==CONST_OP ) {
-
-      this->value.data.log = 
-	(Search_GTI( theExpr->value.data.dbl, nGTI, start, stop, ordered, 0 )>=0);
+      gti = Search_GTI( theExpr->value.data.dbl, nGTI, start, stop, ordered, 0 );
+      if (dorow) {
+	this->value.data.lng = (gti >= 0) ? (gti+1) : -1;
+      } else {
+	this->value.data.log = (gti>=0);
+      }
       this->operation      = CONST_OP;
 
    } else {
@@ -5360,13 +5349,27 @@ static void Do_GTI( Node *this )
 	       if( gti<0 || times[elem]<start[gti] || times[elem]>stop[gti] ) {
 		 gti = Search_GTI( times[elem], nGTI, start, stop, ordered, 0 );
 	       }
-	       this->value.data.logptr[elem] = ( gti>=0 );
+	       if (dorow) {
+		 this->value.data.lngptr[elem] = ( gti >= 0 ) ? (gti + 1) : (-1);
+		 this->value.undef[elem]  = ( gti >= 0 ) ? 0 : 1;
+	       } else {
+		 this->value.data.logptr[elem] = ( gti>=0 );
+	       }
 	    }
-	 } else
-	    while( elem-- ) {
+	 } else { /* nGTI == 0 */
+
+	   if (dorow) { /* no good times so all values are undef */
+	     while( elem-- ) {
+	       this->value.undef[elem]       = 1;
+	     }
+	   } else {    /* no good times so all logicals are 0 */
+	     while( elem-- ) {
 	       this->value.data.logptr[elem] = 0;
 	       this->value.undef[elem]       = 0;
-	    }
+	     }
+	   }
+	   
+	 }
       }
    }
 

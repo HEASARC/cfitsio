@@ -146,9 +146,7 @@ typedef enum {
 		  strpos_fct,
 		  setnull_fct,
 		  gtiover_fct,
-		  erf_fct,
-		  erfc_fct,
-		  gamma_fct
+		  gtifind_fct
                                 } funcOp;
 
 extern ParseData gParse;

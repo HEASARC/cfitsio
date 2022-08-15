@@ -9138,7 +9138,27 @@ usage. Also, the integer to real casts values to double precision:
     searches   for   TIMEZERO/I/F   keywords  in  the  current  and  GTI
     extensions, applying a relative time offset, if necessary.
 
-    A separate function, gtioverlap(a,b,c,d,e), computes the overlap
+    The related function, gtifind(a,b,c,d), is similar to gtifilter()
+    but instead of returning true/false, gtifind() returns the GTI
+    number that brackets the requested time sample.  gtifind() returns
+    the row number in the GTI table that matches the time sample, or
+    -1 if the time sample is not within any GTI.  gtifind() is
+    particularly useful when entries in a table must be categorized by
+    which GTI the fall within.  For example, if events in an event
+    list must be separated by good time interval.  The results of
+    gtifind() can be used with histogram binning techniques to bin an
+    event list by which GTI.
+    
+\begin{verbatim}
+      gtioverlap( "gtifile" , expr [, "STARTCOL", "STOPCOL" ] )
+\end{verbatim}
+
+    The requirements for specifying the gtifile are the same as for
+    gtifilter() as described above.  Like gtifilter(), the expr is
+    the time-like expression and is optional (defaulting to TIME).
+    The start and stop columns default to START and STOP.
+
+    The function, gtioverlap(a,b,c,d,e), computes the overlap
     between a user-requested time range and the entries in a GTI.  The
     cases of no overlap, partial overlap, or overlap of many GTIs
     within the user requested range are handled.  gtioverlap() is very
