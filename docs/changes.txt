@@ -18,6 +18,9 @@ Version X.X.X - Next Release
   - Added new calculator function GTIFIND() which reports which GTI row
     brackets a given time sample
 
+  - The CFITSIO calculator is now fully reentrant and does not require
+    multithreading interlocks.
+
 Version 4.1.0 - Feb 2022
                    
   - Calls to the zlib inflate() function in zcompress.c now handle
