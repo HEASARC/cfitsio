@@ -167,14 +167,8 @@ testf77:	testf77.o lib${PACKAGE}.a ${OBJECTS}
 		${FC} ${LDFLAGS_BIN} -o $@ ${@}.o -L. -l${PACKAGE} -lm ${LIBS}
 
 eval:		# Rebuild eval_* files from flex/bison source
-		${FLEX} -t eval.l > eval_l.c1
-		# Note workaround for yyfree=fffree conflict
-		/bin/sed -e 's/yy/ff/g' -e 's/YY/FF/g' eval_l.c1 -e 's/fffree/yyfffree/g' > eval_l.c
-		/bin/rm -f eval_l.c1
-		${BISON} -d -v -y eval.y
-		/bin/sed -e 's/yy/ff/g' -e 's/YY/FF/g' y.tab.c > eval_y.c
-		/bin/sed -e 's/yy/ff/g' -e 's/YY/FF/g' y.tab.h > eval_tab.h
-		/bin/rm -f y.tab.c y.tab.h
+		${FLEX} -o eval_l.c eval.l 
+		${BISON} -o eval_y.c --header=eval_tab.h eval.y
 
 clean:
 	-	/bin/rm -rf *.o zlib/*.o *.dSYM lib${PACKAGE}* y.output so_locations \
