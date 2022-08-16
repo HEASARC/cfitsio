@@ -18,6 +18,8 @@
 #define MAX_STRLEN  256
 #define MAX_STRLEN_S "255"
 
+typedef struct ParseData_struct ParseData;
+typedef void* yyscan_t;
 #ifndef FFBISON
 #include "eval_tab.h"
 #endif
@@ -53,17 +55,17 @@ typedef struct {
 
 typedef struct Node {
                   int    operation;
-                  void   (*DoOp)(struct Node *this);
+  		  void   (*DoOp)(ParseData *, struct Node *this);
                   int    nSubNodes;
                   int    SubNodes[MAXSUBS];
                   int    type;
                   lval   value;
                                 } Node;
 
-typedef struct {
+struct ParseData_struct {
                   fitsfile    *def_fptr;
-                  int         (*getData)( char *dataName, void *dataValue );
-                  int         (*loadData)( int varNum, long fRow, long nRows,
+  		  int         (*getData)( ParseData *, char *dataName, void *dataValue );
+  		  int         (*loadData)( ParseData *, int varNum, long fRow, long nRows,
 					   void *data, char *undef );
 
                   int         compressed;
@@ -96,7 +98,7 @@ typedef struct {
                   int         hdutype;
 
                   int         status;
-                                } ParseData;
+};
 
 typedef enum {
                   rnd_fct = 1001,
@@ -149,17 +151,22 @@ typedef enum {
 		  gtifind_fct
                                 } funcOp;
 
-extern ParseData gParse;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-   int  ffparse(void);
-   int  fflex(void);
-   void ffrestart(FILE*);
+/* Not sure why this is needed but it is */
+#define YYSTYPE FITS_PARSER_YYSTYPE
+/* How ParseData is accessed from the lexer, i.e. by yyextra */
+#define YY_EXTRA_TYPE ParseData *
 
-   void Evaluate_Parser( long firstRow, long nRows );
+   int  fits_parser_yyparse(yyscan_t yyscaner, ParseData *lParse);
+   int  fits_parser_yylex(FITS_PARSER_YYSTYPE *, yyscan_t yyscanner);
+   void fits_parser_yyrestart(FILE*, yyscan_t yyscanner);
+   int  fits_parser_yylex_init_extra ( YY_EXTRA_TYPE user_defined, yyscan_t* scanner);
+   int  fits_parser_yylex_destroy (yyscan_t scanner);
+
+   void Evaluate_Parser( ParseData *lParse, long firstRow, long nRows );
 
 #ifdef __cplusplus
     }

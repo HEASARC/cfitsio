@@ -1,8 +1,9 @@
-/* A Bison parser, made by GNU Bison 3.0.4.  */
+/* A Bison parser, made by GNU Bison 3.8.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2021 Free Software Foundation,
+   Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -15,7 +16,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* As a special exception, you may create a larger work that contains
    part or all of the Bison parser skeleton and distribute that work
@@ -30,101 +31,81 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-#ifndef FF_FF_Y_TAB_H_INCLUDED
-# define FF_FF_Y_TAB_H_INCLUDED
+/* DO NOT RELY ON FEATURES THAT ARE NOT DOCUMENTED in the manual,
+   especially those whose name start with YY_ or yy_.  They are
+   private implementation details that can be changed or removed.  */
+
+#ifndef YY_FITS_PARSER_YY_EVAL_TAB_H_INCLUDED
+# define YY_FITS_PARSER_YY_EVAL_TAB_H_INCLUDED
 /* Debug traces.  */
-#ifndef FFDEBUG
-# define FFDEBUG 0
-#endif
-#if FFDEBUG
-extern int ffdebug;
+#ifndef FITS_PARSER_YYDEBUG
+# if defined YYDEBUG
+#if YYDEBUG
+#   define FITS_PARSER_YYDEBUG 1
+#  else
+#   define FITS_PARSER_YYDEBUG 0
+#  endif
+# else /* ! defined YYDEBUG */
+#  define FITS_PARSER_YYDEBUG 0
+# endif /* ! defined YYDEBUG */
+#endif  /* ! defined FITS_PARSER_YYDEBUG */
+#if FITS_PARSER_YYDEBUG
+extern int fits_parser_yydebug;
 #endif
 
-/* Token type.  */
-#ifndef FFTOKENTYPE
-# define FFTOKENTYPE
-  enum fftokentype
+/* Token kinds.  */
+#ifndef FITS_PARSER_YYTOKENTYPE
+# define FITS_PARSER_YYTOKENTYPE
+  enum fits_parser_yytokentype
   {
-    BOOLEAN = 258,
-    LONG = 259,
-    DOUBLE = 260,
-    STRING = 261,
-    BITSTR = 262,
-    FUNCTION = 263,
-    BFUNCTION = 264,
-    IFUNCTION = 265,
-    GTIFILTER = 266,
-    GTIOVERLAP = 267,
-    GTIFIND = 268,
-    REGFILTER = 269,
-    COLUMN = 270,
-    BCOLUMN = 271,
-    SCOLUMN = 272,
-    BITCOL = 273,
-    ROWREF = 274,
-    NULLREF = 275,
-    SNULLREF = 276,
-    OR = 277,
-    AND = 278,
-    EQ = 279,
-    NE = 280,
-    GT = 281,
-    LT = 282,
-    LTE = 283,
-    GTE = 284,
-    XOR = 285,
-    POWER = 286,
-    NOT = 287,
-    INTCAST = 288,
-    FLTCAST = 289,
-    UMINUS = 290,
-    ACCUM = 291,
-    DIFF = 292
+    FITS_PARSER_YYEMPTY = -2,
+    FITS_PARSER_YYEOF = 0,         /* "end of file"  */
+    FITS_PARSER_YYerror = 256,     /* error  */
+    FITS_PARSER_YYUNDEF = 257,     /* "invalid token"  */
+    BOOLEAN = 258,                 /* BOOLEAN  */
+    LONG = 259,                    /* LONG  */
+    DOUBLE = 260,                  /* DOUBLE  */
+    STRING = 261,                  /* STRING  */
+    BITSTR = 262,                  /* BITSTR  */
+    FUNCTION = 263,                /* FUNCTION  */
+    BFUNCTION = 264,               /* BFUNCTION  */
+    IFUNCTION = 265,               /* IFUNCTION  */
+    GTIFILTER = 266,               /* GTIFILTER  */
+    GTIOVERLAP = 267,              /* GTIOVERLAP  */
+    GTIFIND = 268,                 /* GTIFIND  */
+    REGFILTER = 269,               /* REGFILTER  */
+    COLUMN = 270,                  /* COLUMN  */
+    BCOLUMN = 271,                 /* BCOLUMN  */
+    SCOLUMN = 272,                 /* SCOLUMN  */
+    BITCOL = 273,                  /* BITCOL  */
+    ROWREF = 274,                  /* ROWREF  */
+    NULLREF = 275,                 /* NULLREF  */
+    SNULLREF = 276,                /* SNULLREF  */
+    OR = 277,                      /* OR  */
+    AND = 278,                     /* AND  */
+    EQ = 279,                      /* EQ  */
+    NE = 280,                      /* NE  */
+    GT = 281,                      /* GT  */
+    LT = 282,                      /* LT  */
+    LTE = 283,                     /* LTE  */
+    GTE = 284,                     /* GTE  */
+    XOR = 285,                     /* XOR  */
+    POWER = 286,                   /* POWER  */
+    NOT = 287,                     /* NOT  */
+    INTCAST = 288,                 /* INTCAST  */
+    FLTCAST = 289,                 /* FLTCAST  */
+    UMINUS = 290,                  /* UMINUS  */
+    ACCUM = 291,                   /* ACCUM  */
+    DIFF = 292                     /* DIFF  */
   };
+  typedef enum fits_parser_yytokentype fits_parser_yytoken_kind_t;
 #endif
-/* Tokens.  */
-#define BOOLEAN 258
-#define LONG 259
-#define DOUBLE 260
-#define STRING 261
-#define BITSTR 262
-#define FUNCTION 263
-#define BFUNCTION 264
-#define IFUNCTION 265
-#define GTIFILTER 266
-#define GTIOVERLAP 267
-#define GTIFIND 268
-#define REGFILTER 269
-#define COLUMN 270
-#define BCOLUMN 271
-#define SCOLUMN 272
-#define BITCOL 273
-#define ROWREF 274
-#define NULLREF 275
-#define SNULLREF 276
-#define OR 277
-#define AND 278
-#define EQ 279
-#define NE 280
-#define GT 281
-#define LT 282
-#define LTE 283
-#define GTE 284
-#define XOR 285
-#define POWER 286
-#define NOT 287
-#define INTCAST 288
-#define FLTCAST 289
-#define UMINUS 290
-#define ACCUM 291
-#define DIFF 292
 
 /* Value type.  */
-#if ! defined FFSTYPE && ! defined FFSTYPE_IS_DECLARED
-
-union FFSTYPE
+#if ! defined FITS_PARSER_YYSTYPE && ! defined FITS_PARSER_YYSTYPE_IS_DECLARED
+union FITS_PARSER_YYSTYPE
 {
-#line 199 "eval.y" /* yacc.c:1909  */
+#line 210 "eval.y"
 
     int    Node;        /* Index of Node */
     double dbl;         /* real value    */
@@ -132,17 +113,18 @@ union FFSTYPE
     char   log;         /* logical value */
     char   str[MAX_STRLEN];    /* string value  */
 
-#line 136 "y.tab.h" /* yacc.c:1909  */
-};
+#line 117 "eval_tab.h"
 
-typedef union FFSTYPE FFSTYPE;
-# define FFSTYPE_IS_TRIVIAL 1
-# define FFSTYPE_IS_DECLARED 1
+};
+typedef union FITS_PARSER_YYSTYPE FITS_PARSER_YYSTYPE;
+# define FITS_PARSER_YYSTYPE_IS_TRIVIAL 1
+# define FITS_PARSER_YYSTYPE_IS_DECLARED 1
 #endif
 
 
-extern FFSTYPE fflval;
 
-int ffparse (void);
 
-#endif /* !FF_FF_Y_TAB_H_INCLUDED  */
+int fits_parser_yyparse (yyscan_t scanner, ParseData *lParse);
+
+
+#endif /* !YY_FITS_PARSER_YY_EVAL_TAB_H_INCLUDED  */
