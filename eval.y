@@ -1,8 +1,19 @@
-%{
 /************************************************************************/
 /*                                                                      */
 /*                       CFITSIO Lexical Parser                         */
 /*                                                                      */
+
+/* All functions preceeded by fits_parser_yy for uniqueness             */
+%define api.prefix {fits_parser_yy}
+
+/* Pure reentrant parser                                                */
+%define api.pure full
+/* Lexer called with extra state variable                               */
+%param { yyscan_t scanner }
+/* Parser called with extra parse state variable                        */
+%parse-param { ParseData *lParse }
+
+%{
 /* This file is one of 3 files containing code which parses an          */
 /* arithmetic expression and evaluates it in the context of an input    */
 /* FITS file table extension.  The CFITSIO lexical parser is divided    */
@@ -112,13 +123,13 @@
 /***************************************************************/
 
 #define TEST(a)        if( (a)<0 ) YYERROR
-#define SIZE(a)        gParse.Nodes[ a ].value.nelem
-#define TYPE(a)        gParse.Nodes[ a ].type
-#define OPER(a)        gParse.Nodes[ a ].operation
+#define SIZE(a)        lParse->Nodes[ a ].value.nelem
+#define TYPE(a)        lParse->Nodes[ a ].type
+#define OPER(a)        lParse->Nodes[ a ].operation
 #define PROMOTE(a,b)   if( TYPE(a) > TYPE(b) )                  \
-                          b = New_Unary( TYPE(a), 0, b );       \
+                          b = New_Unary( lParse, TYPE(a), 0, b );       \
                        else if( TYPE(a) < TYPE(b) )             \
-	                  a = New_Unary( TYPE(b), 0, a );
+	                  a = New_Unary( lParse, TYPE(b), 0, a );
 
 /*****  Internal functions  *****/
 
@@ -126,45 +137,45 @@
 extern "C" {
 #endif
 
-static int  Alloc_Node    ( void );
-static void Free_Last_Node( void );
-static void Evaluate_Node ( int thisNode );
+static int  Alloc_Node    ( ParseData * );
+static void Free_Last_Node( ParseData * );
+static void Evaluate_Node ( ParseData *, int thisNode );
 
-static int  New_Const ( int returnType, void *value, long len );
-static int  New_Column( int ColNum );
-static int  New_Offset( int ColNum, int offset );
-static int  New_Unary ( int returnType, int Op, int Node1 );
-static int  New_BinOp ( int returnType, int Node1, int Op, int Node2 );
-static int  New_Func  ( int returnType, funcOp Op, int nNodes,
+static int  New_Const ( ParseData *, int returnType, void *value, long len );
+static int  New_Column( ParseData *, int ColNum );
+static int  New_Offset( ParseData *, int ColNum, int offset );
+static int  New_Unary ( ParseData *, int returnType, int Op, int Node1 );
+static int  New_BinOp ( ParseData *, int returnType, int Node1, int Op, int Node2 );
+static int  New_Func  ( ParseData *, int returnType, funcOp Op, int nNodes,
 			int Node1, int Node2, int Node3, int Node4, 
 			int Node5, int Node6, int Node7 );
-static int  New_FuncSize( int returnType, funcOp Op, int nNodes,
+static int  New_FuncSize( ParseData *, int returnType, funcOp Op, int nNodes,
 			int Node1, int Node2, int Node3, int Node4, 
 			  int Node5, int Node6, int Node7, int Size);
-static int  New_Deref ( int Var,  int nDim,
+static int  New_Deref ( ParseData *, int Var,  int nDim,
 			int Dim1, int Dim2, int Dim3, int Dim4, int Dim5 );
-static int  New_GTI   ( funcOp Op, char *fname, int Node1, int Node2, char *start, char *stop );
-static int  New_REG   ( char *fname, int NodeX, int NodeY, char *colNames );
-static int  New_Vector( int subNode );
-static int  Close_Vec ( int vecNode );
-static int  Locate_Col( Node *this );
-static int  Test_Dims ( int Node1, int Node2 );
-static void Copy_Dims ( int Node1, int Node2 );
+static int  New_GTI   ( ParseData *, funcOp Op, char *fname, int Node1, int Node2, char *start, char *stop );
+static int  New_REG   ( ParseData *, char *fname, int NodeX, int NodeY, char *colNames );
+static int  New_Vector( ParseData *, int subNode );
+static int  Close_Vec ( ParseData *, int vecNode );
+static int  Locate_Col( ParseData *, Node *this );
+static int  Test_Dims ( ParseData *, int Node1, int Node2 );
+static void Copy_Dims ( ParseData *, int Node1, int Node2 );
 
-static void Allocate_Ptrs( Node *this );
-static void Do_Unary     ( Node *this );
-static void Do_Offset    ( Node *this );
-static void Do_BinOp_bit ( Node *this );
-static void Do_BinOp_str ( Node *this );
-static void Do_BinOp_log ( Node *this );
-static void Do_BinOp_lng ( Node *this );
-static void Do_BinOp_dbl ( Node *this );
-static void Do_Func      ( Node *this );
-static void Do_Deref     ( Node *this );
-static void Do_GTI       ( Node *this );
-static void Do_GTI_Over  ( Node *this );
-static void Do_REG       ( Node *this );
-static void Do_Vector    ( Node *this );
+static void Allocate_Ptrs( ParseData *, Node *this );
+static void Do_Unary     ( ParseData *, Node *this );
+static void Do_Offset    ( ParseData *, Node *this );
+static void Do_BinOp_bit ( ParseData *, Node *this );
+static void Do_BinOp_str ( ParseData *, Node *this );
+static void Do_BinOp_log ( ParseData *, Node *this );
+static void Do_BinOp_lng ( ParseData *, Node *this );
+static void Do_BinOp_dbl ( ParseData *, Node *this );
+static void Do_Func      ( ParseData *, Node *this );
+static void Do_Deref     ( ParseData *, Node *this );
+static void Do_GTI       ( ParseData *, Node *this );
+static void Do_GTI_Over  ( ParseData *, Node *this );
+static void Do_REG       ( ParseData *, Node *this );
+static void Do_Vector    ( ParseData *, Node *this );
 
 static long Search_GTI   ( double evtTime, long nGTI, double *start,
 			   double *stop, int ordered, long *nextGTI );
@@ -185,10 +196,10 @@ static char  bitlgte(char *bits1, int oper, char *bits2);
 static void  bitand(char *result, char *bitstrm1, char *bitstrm2);
 static void  bitor (char *result, char *bitstrm1, char *bitstrm2);
 static void  bitnot(char *result, char *bits);
-static int cstrmid(char *dest_str, int dest_len,
+static int cstrmid(ParseData *lParse, char *dest_str, int dest_len,
 		   char *src_str,  int src_len, int pos);
 
-static void  yyerror(char *msg);
+static void yyerror(yyscan_t scanner, ParseData *lParse, char *s);
 
 #ifdef __cplusplus
     }
@@ -257,323 +268,323 @@ lines:   /* nothing ; was | lines line */
 line:           '\n' {}
        | expr   '\n'
                 { if( $1<0 ) {
-		     yyerror("Couldn't build node structure: out of memory?");
+		     yyerror(scanner, lParse, "Couldn't build node structure: out of memory?");
 		     YYERROR;  }
-                  gParse.resultNode = $1;
+                  lParse->resultNode = $1;
 		}
        | bexpr  '\n'
                 { if( $1<0 ) {
-		     yyerror("Couldn't build node structure: out of memory?");
+		     yyerror(scanner, lParse, "Couldn't build node structure: out of memory?");
 		     YYERROR;  }
-                  gParse.resultNode = $1;
+                  lParse->resultNode = $1;
 		}
        | sexpr  '\n'
                 { if( $1<0 ) {
-		     yyerror("Couldn't build node structure: out of memory?");
+		     yyerror(scanner, lParse, "Couldn't build node structure: out of memory?");
 		     YYERROR;  } 
-                  gParse.resultNode = $1;
+                  lParse->resultNode = $1;
 		}
        | bits   '\n'
                 { if( $1<0 ) {
-		     yyerror("Couldn't build node structure: out of memory?");
+		     yyerror(scanner, lParse, "Couldn't build node structure: out of memory?");
 		     YYERROR;  }
-                  gParse.resultNode = $1;
+                  lParse->resultNode = $1;
 		}
        | error  '\n' {  yyerrok;  }
        ;
 
 bvector: '{' bexpr
-                { $$ = New_Vector( $2 ); TEST($$); }
+                { $$ = New_Vector(lParse,  $2 ); TEST($$); }
        | bvector ',' bexpr
                 {
-                  if( gParse.Nodes[$1].nSubNodes >= MAXSUBS ) {
-		     $1 = Close_Vec( $1 ); TEST($1);
-		     $$ = New_Vector( $1 ); TEST($$);
+                  if( lParse->Nodes[$1].nSubNodes >= MAXSUBS ) {
+		     $1 = Close_Vec(lParse,  $1 ); TEST($1);
+		     $$ = New_Vector(lParse,  $1 ); TEST($$);
                   } else {
                      $$ = $1;
                   }
-		  gParse.Nodes[$$].SubNodes[ gParse.Nodes[$$].nSubNodes++ ]
+		  lParse->Nodes[$$].SubNodes[ lParse->Nodes[$$].nSubNodes++ ]
 		     = $3;
                 }
        ;
 
 vector:  '{' expr
-                { $$ = New_Vector( $2 ); TEST($$); }
+                { $$ = New_Vector(lParse,  $2 ); TEST($$); }
        | vector ',' expr
                 {
                   if( TYPE($1) < TYPE($3) )
                      TYPE($1) = TYPE($3);
-                  if( gParse.Nodes[$1].nSubNodes >= MAXSUBS ) {
-		     $1 = Close_Vec( $1 ); TEST($1);
-		     $$ = New_Vector( $1 ); TEST($$);
+                  if( lParse->Nodes[$1].nSubNodes >= MAXSUBS ) {
+		     $1 = Close_Vec(lParse,  $1 ); TEST($1);
+		     $$ = New_Vector(lParse,  $1 ); TEST($$);
                   } else {
                      $$ = $1;
                   }
-		  gParse.Nodes[$$].SubNodes[ gParse.Nodes[$$].nSubNodes++ ]
+		  lParse->Nodes[$$].SubNodes[ lParse->Nodes[$$].nSubNodes++ ]
 		     = $3;
                 }
        | vector ',' bexpr
                 {
-                  if( gParse.Nodes[$1].nSubNodes >= MAXSUBS ) {
-		     $1 = Close_Vec( $1 ); TEST($1);
-		     $$ = New_Vector( $1 ); TEST($$);
+                  if( lParse->Nodes[$1].nSubNodes >= MAXSUBS ) {
+		     $1 = Close_Vec(lParse,  $1 ); TEST($1);
+		     $$ = New_Vector(lParse,  $1 ); TEST($$);
                   } else {
                      $$ = $1;
                   }
-		  gParse.Nodes[$$].SubNodes[ gParse.Nodes[$$].nSubNodes++ ]
+		  lParse->Nodes[$$].SubNodes[ lParse->Nodes[$$].nSubNodes++ ]
 		     = $3;
                 }
        | bvector ',' expr
                 {
                   TYPE($1) = TYPE($3);
-                  if( gParse.Nodes[$1].nSubNodes >= MAXSUBS ) {
-		     $1 = Close_Vec( $1 ); TEST($1);
-		     $$ = New_Vector( $1 ); TEST($$);
+                  if( lParse->Nodes[$1].nSubNodes >= MAXSUBS ) {
+		     $1 = Close_Vec(lParse,  $1 ); TEST($1);
+		     $$ = New_Vector(lParse,  $1 ); TEST($$);
                   } else {
                      $$ = $1;
                   }
-		  gParse.Nodes[$$].SubNodes[ gParse.Nodes[$$].nSubNodes++ ]
+		  lParse->Nodes[$$].SubNodes[ lParse->Nodes[$$].nSubNodes++ ]
 		     = $3;
                 }
        ;
 
 expr:    vector '}'
-                { $$ = Close_Vec( $1 ); TEST($$); }
+                { $$ = Close_Vec(lParse,  $1 ); TEST($$); }
        ;
 
 bexpr:   bvector '}'
-                { $$ = Close_Vec( $1 ); TEST($$); }
+                { $$ = Close_Vec(lParse,  $1 ); TEST($$); }
        ;
 
 bits:	 BITSTR
                 {
-                  $$ = New_Const( BITSTR, $1, strlen($1)+1 ); TEST($$);
+                  $$ = New_Const(lParse,  BITSTR, $1, strlen($1)+1 ); TEST($$);
 		  SIZE($$) = strlen($1); }
        | BITCOL
-                { $$ = New_Column( $1 ); TEST($$); }
+                { $$ = New_Column(lParse,  $1 ); TEST($$); }
        | BITCOL '{' expr '}'
                 {
                   if( TYPE($3) != LONG
 		      || OPER($3) != CONST_OP ) {
-		     yyerror("Offset argument must be a constant integer");
+		     yyerror(scanner, lParse, "Offset argument must be a constant integer");
 		     YYERROR;
 		  }
-                  $$ = New_Offset( $1, $3 ); TEST($$);
+                  $$ = New_Offset(lParse,  $1, $3 ); TEST($$);
                 }
        | bits '&' bits
-                { $$ = New_BinOp( BITSTR, $1, '&', $3 ); TEST($$);
+                { $$ = New_BinOp(lParse,  BITSTR, $1, '&', $3 ); TEST($$);
                   SIZE($$) = ( SIZE($1)>SIZE($3) ? SIZE($1) : SIZE($3) );  }
        | bits '|' bits
-                { $$ = New_BinOp( BITSTR, $1, '|', $3 ); TEST($$);
+                { $$ = New_BinOp(lParse,  BITSTR, $1, '|', $3 ); TEST($$);
                   SIZE($$) = ( SIZE($1)>SIZE($3) ? SIZE($1) : SIZE($3) );  }
        | bits '+' bits
                 { 
 		  if (SIZE($1)+SIZE($3) >= MAX_STRLEN) {
-		    yyerror("Combined bit string size exceeds " MAX_STRLEN_S " bits");
+		    yyerror(scanner, lParse, "Combined bit string size exceeds " MAX_STRLEN_S " bits");
 		    YYERROR;
 		  }
-		  $$ = New_BinOp( BITSTR, $1, '+', $3 ); TEST($$);
+		  $$ = New_BinOp(lParse,  BITSTR, $1, '+', $3 ); TEST($$);
                   SIZE($$) = SIZE($1) + SIZE($3); 
 		}
        | bits '[' expr ']'
-                { $$ = New_Deref( $1, 1, $3,  0,  0,  0,   0 ); TEST($$); }
+                { $$ = New_Deref(lParse,  $1, 1, $3,  0,  0,  0,   0 ); TEST($$); }
        | bits '[' expr ',' expr ']'
-                { $$ = New_Deref( $1, 2, $3, $5,  0,  0,   0 ); TEST($$); }
+                { $$ = New_Deref(lParse,  $1, 2, $3, $5,  0,  0,   0 ); TEST($$); }
        | bits '[' expr ',' expr ',' expr ']'
-                { $$ = New_Deref( $1, 3, $3, $5, $7,  0,   0 ); TEST($$); }
+                { $$ = New_Deref(lParse,  $1, 3, $3, $5, $7,  0,   0 ); TEST($$); }
        | bits '[' expr ',' expr ',' expr ',' expr ']'
-                { $$ = New_Deref( $1, 4, $3, $5, $7, $9,   0 ); TEST($$); }
+                { $$ = New_Deref(lParse,  $1, 4, $3, $5, $7, $9,   0 ); TEST($$); }
        | bits '[' expr ',' expr ',' expr ',' expr ',' expr ']'
-                { $$ = New_Deref( $1, 5, $3, $5, $7, $9, $11 ); TEST($$); }
+                { $$ = New_Deref(lParse,  $1, 5, $3, $5, $7, $9, $11 ); TEST($$); }
        | NOT bits
-                { $$ = New_Unary( BITSTR, NOT, $2 ); TEST($$);     }
+                { $$ = New_Unary(lParse,  BITSTR, NOT, $2 ); TEST($$);     }
 
        | '(' bits ')'
                 { $$ = $2; }
        ;
 
 expr:    LONG
-                { $$ = New_Const( LONG,   &($1), sizeof(long)   ); TEST($$); }
+                { $$ = New_Const(lParse,  LONG,   &($1), sizeof(long)   ); TEST($$); }
        | DOUBLE
-                { $$ = New_Const( DOUBLE, &($1), sizeof(double) ); TEST($$); }
+                { $$ = New_Const(lParse,  DOUBLE, &($1), sizeof(double) ); TEST($$); }
        | COLUMN
-                { $$ = New_Column( $1 ); TEST($$); }
+                { $$ = New_Column(lParse,  $1 ); TEST($$); }
        | COLUMN '{' expr '}'
                 {
                   if( TYPE($3) != LONG
 		      || OPER($3) != CONST_OP ) {
-		     yyerror("Offset argument must be a constant integer");
+		     yyerror(scanner, lParse, "Offset argument must be a constant integer");
 		     YYERROR;
 		  }
-                  $$ = New_Offset( $1, $3 ); TEST($$);
+                  $$ = New_Offset(lParse,  $1, $3 ); TEST($$);
                 }
        | ROWREF
-                { $$ = New_Func( LONG, row_fct,  0, 0, 0, 0, 0, 0, 0, 0 ); }
+                { $$ = New_Func(lParse,  LONG, row_fct,  0, 0, 0, 0, 0, 0, 0, 0 ); }
        | NULLREF
-                { $$ = New_Func( LONG, null_fct, 0, 0, 0, 0, 0, 0, 0, 0 ); }
+                { $$ = New_Func(lParse,  LONG, null_fct, 0, 0, 0, 0, 0, 0, 0, 0 ); }
        | expr '%' expr
-                { PROMOTE($1,$3); $$ = New_BinOp( TYPE($1), $1, '%', $3 );
+                { PROMOTE($1,$3); $$ = New_BinOp(lParse,  TYPE($1), $1, '%', $3 );
 		  TEST($$);                                                }
        | expr '+' expr
-                { PROMOTE($1,$3); $$ = New_BinOp( TYPE($1), $1, '+', $3 );
+                { PROMOTE($1,$3); $$ = New_BinOp(lParse,  TYPE($1), $1, '+', $3 );
 		  TEST($$);                                                }
        | expr '-' expr
-                { PROMOTE($1,$3); $$ = New_BinOp( TYPE($1), $1, '-', $3 ); 
+                { PROMOTE($1,$3); $$ = New_BinOp(lParse,  TYPE($1), $1, '-', $3 ); 
 		  TEST($$);                                                }
        | expr '*' expr
-                { PROMOTE($1,$3); $$ = New_BinOp( TYPE($1), $1, '*', $3 ); 
+                { PROMOTE($1,$3); $$ = New_BinOp(lParse,  TYPE($1), $1, '*', $3 ); 
 		  TEST($$);                                                }
        | expr '/' expr
-                { PROMOTE($1,$3); $$ = New_BinOp( TYPE($1), $1, '/', $3 ); 
+                { PROMOTE($1,$3); $$ = New_BinOp(lParse,  TYPE($1), $1, '/', $3 ); 
 		  TEST($$);                                                }
        | expr '&' expr
                 { 
                    if (TYPE($1) != LONG ||
 		       TYPE($3) != LONG) {
-                     yyerror("Bitwise operations with incompatible types; only (bit OP bit) and (int OP int) are allowed");
+                     yyerror(scanner, lParse, "Bitwise operations with incompatible types; only (bit OP bit) and (int OP int) are allowed");
                       YYERROR;
                    }
-                   $$ = New_BinOp( TYPE($1), $1, '&', $3 );
+                   $$ = New_BinOp(lParse,  TYPE($1), $1, '&', $3 );
                 }
        | expr '|' expr
                 { 
                    if (TYPE($1) != LONG ||
 		       TYPE($3) != LONG) {
-                     yyerror("Bitwise operations with incompatible types; only (bit OP bit) and (int OP int) are allowed");
+                     yyerror(scanner, lParse, "Bitwise operations with incompatible types; only (bit OP bit) and (int OP int) are allowed");
                       YYERROR;
                    }
-                   $$ = New_BinOp( TYPE($1), $1, '|', $3 );
+                   $$ = New_BinOp(lParse,  TYPE($1), $1, '|', $3 );
                 }
        | expr XOR expr
                 { 
                    if (TYPE($1) != LONG ||
 		       TYPE($3) != LONG) {
-                     yyerror("Bitwise operations with incompatible types; only (bit OP bit) and (int OP int) are allowed");
+                     yyerror(scanner, lParse, "Bitwise operations with incompatible types; only (bit OP bit) and (int OP int) are allowed");
                       YYERROR;
                    }
-                   $$ = New_BinOp( TYPE($1), $1, '^', $3 );
+                   $$ = New_BinOp(lParse,  TYPE($1), $1, '^', $3 );
                 }
        | expr POWER expr
-                { PROMOTE($1,$3); $$ = New_BinOp( TYPE($1), $1, POWER, $3 );
+                { PROMOTE($1,$3); $$ = New_BinOp(lParse,  TYPE($1), $1, POWER, $3 );
 		  TEST($$);                                                }
        | '+' expr %prec UMINUS
                 { $$ = $2; }
        | '-' expr %prec UMINUS
-                { $$ = New_Unary( TYPE($2), UMINUS, $2 ); TEST($$); }
+                { $$ = New_Unary(lParse,  TYPE($2), UMINUS, $2 ); TEST($$); }
        |  '(' expr ')'
                 { $$ = $2; }
        | expr '*' bexpr
-                { $3 = New_Unary( TYPE($1), 0, $3 );
-                  $$ = New_BinOp( TYPE($1), $1, '*', $3 ); 
+                { $3 = New_Unary(lParse,  TYPE($1), 0, $3 );
+                  $$ = New_BinOp(lParse,  TYPE($1), $1, '*', $3 ); 
 		  TEST($$);                                }
        | bexpr '*' expr
-                { $1 = New_Unary( TYPE($3), 0, $1 );
-                  $$ = New_BinOp( TYPE($3), $1, '*', $3 );
+                { $1 = New_Unary(lParse,  TYPE($3), 0, $1 );
+                  $$ = New_BinOp(lParse,  TYPE($3), $1, '*', $3 );
                   TEST($$);                                }
        | bexpr '?' expr ':' expr
                 {
                   PROMOTE($3,$5);
-                  if( ! Test_Dims($3,$5) ) {
-                     yyerror("Incompatible dimensions in '?:' arguments");
+                  if( ! Test_Dims( lParse, $3,$5) ) {
+                     yyerror(scanner, lParse, "Incompatible dimensions in '?:' arguments");
 		     YYERROR;
                   }
-                  $$ = New_Func( 0, ifthenelse_fct, 3, $3, $5, $1,
+                  $$ = New_Func(lParse,  0, ifthenelse_fct, 3, $3, $5, $1,
                                  0, 0, 0, 0 );
                   TEST($$);
-                  if( SIZE($3)<SIZE($5) )  Copy_Dims($$, $5);
+                  if( SIZE($3)<SIZE($5) )  Copy_Dims( lParse,$$, $5);
                   TYPE($1) = TYPE($3);
-                  if( ! Test_Dims($1,$$) ) {
-                     yyerror("Incompatible dimensions in '?:' condition");
+                  if( ! Test_Dims( lParse, $1,$$) ) {
+                     yyerror(scanner, lParse, "Incompatible dimensions in '?:' condition");
 		     YYERROR;
                   }
                   TYPE($1) = BOOLEAN;
-                  if( SIZE($$)<SIZE($1) )  Copy_Dims($$, $1);
+                  if( SIZE($$)<SIZE($1) )  Copy_Dims( lParse,$$, $1);
                 }
        | bexpr '?' bexpr ':' expr
                 {
                   PROMOTE($3,$5);
-                  if( ! Test_Dims($3,$5) ) {
-                     yyerror("Incompatible dimensions in '?:' arguments");
+                  if( ! Test_Dims( lParse, $3,$5) ) {
+                     yyerror(scanner, lParse, "Incompatible dimensions in '?:' arguments");
 		     YYERROR;
                   }
-                  $$ = New_Func( 0, ifthenelse_fct, 3, $3, $5, $1,
+                  $$ = New_Func(lParse,  0, ifthenelse_fct, 3, $3, $5, $1,
                                  0, 0, 0, 0 );
                   TEST($$);
-                  if( SIZE($3)<SIZE($5) )  Copy_Dims($$, $5);
+                  if( SIZE($3)<SIZE($5) )  Copy_Dims( lParse,$$, $5);
                   TYPE($1) = TYPE($3);
-                  if( ! Test_Dims($1,$$) ) {
-                     yyerror("Incompatible dimensions in '?:' condition");
+                  if( ! Test_Dims( lParse, $1,$$) ) {
+                     yyerror(scanner, lParse, "Incompatible dimensions in '?:' condition");
 		     YYERROR;
                   }
                   TYPE($1) = BOOLEAN;
-                  if( SIZE($$)<SIZE($1) )  Copy_Dims($$, $1);
+                  if( SIZE($$)<SIZE($1) )  Copy_Dims( lParse,$$, $1);
                 }
        | bexpr '?' expr ':' bexpr
                 {
                   PROMOTE($3,$5);
-                  if( ! Test_Dims($3,$5) ) {
-                     yyerror("Incompatible dimensions in '?:' arguments");
+                  if( ! Test_Dims( lParse, $3,$5) ) {
+                     yyerror(scanner, lParse, "Incompatible dimensions in '?:' arguments");
 		     YYERROR;
                   }
-                  $$ = New_Func( 0, ifthenelse_fct, 3, $3, $5, $1,
+                  $$ = New_Func(lParse,  0, ifthenelse_fct, 3, $3, $5, $1,
                                  0, 0, 0, 0 );
                   TEST($$);
-                  if( SIZE($3)<SIZE($5) )  Copy_Dims($$, $5);
+                  if( SIZE($3)<SIZE($5) )  Copy_Dims( lParse,$$, $5);
                   TYPE($1) = TYPE($3);
-                  if( ! Test_Dims($1,$$) ) {
-                     yyerror("Incompatible dimensions in '?:' condition");
+                  if( ! Test_Dims( lParse, $1,$$) ) {
+                     yyerror(scanner, lParse, "Incompatible dimensions in '?:' condition");
 		     YYERROR;
                   }
                   TYPE($1) = BOOLEAN;
-                  if( SIZE($$)<SIZE($1) )  Copy_Dims($$, $1);
+                  if( SIZE($$)<SIZE($1) )  Copy_Dims( lParse,$$, $1);
                 }
        | FUNCTION ')'
                 { if (FSTRCMP($1,"RANDOM(") == 0) {  /* Scalar RANDOM() */
-                     $$ = New_Func( DOUBLE, rnd_fct, 0, 0, 0, 0, 0, 0, 0, 0 );
+                     $$ = New_Func(lParse,  DOUBLE, rnd_fct, 0, 0, 0, 0, 0, 0, 0, 0 );
 		  } else if (FSTRCMP($1,"RANDOMN(") == 0) {/*Scalar RANDOMN()*/
-		     $$ = New_Func( DOUBLE, gasrnd_fct, 0, 0, 0, 0, 0, 0, 0, 0 );
+		     $$ = New_Func(lParse,  DOUBLE, gasrnd_fct, 0, 0, 0, 0, 0, 0, 0, 0 );
                   } else {
-                     yyerror("Function() not supported");
+                     yyerror(scanner, lParse, "Function() not supported");
 		     YYERROR;
 		  }
                   TEST($$); 
                 }
        | FUNCTION bexpr ')'
                 { if (FSTRCMP($1,"SUM(") == 0) {
-		     $$ = New_Func( LONG, sum_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		     $$ = New_Func(lParse,  LONG, sum_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
                   } else if (FSTRCMP($1,"NELEM(") == 0) {
-                     $$ = New_Const( LONG, &( SIZE($2) ), sizeof(long) );
+                     $$ = New_Const(lParse,  LONG, &( SIZE($2) ), sizeof(long) );
                   } else if (FSTRCMP($1,"ACCUM(") == 0) {
 		    long zero = 0;
-		    $$ = New_BinOp( LONG , $2, ACCUM, New_Const( LONG, &zero, sizeof(zero) ));
+		    $$ = New_BinOp(lParse,  LONG , $2, ACCUM, New_Const(lParse,  LONG, &zero, sizeof(zero) ));
 		  } else {
-                     yyerror("Function(bool) not supported");
+                     yyerror(scanner, lParse, "Function(bool) not supported");
 		     YYERROR;
 		  }
                   TEST($$); 
 		}
        | FUNCTION sexpr ')'
                 { if (FSTRCMP($1,"NELEM(") == 0) {
-                     $$ = New_Const( LONG, &( SIZE($2) ), sizeof(long) );
+                     $$ = New_Const(lParse,  LONG, &( SIZE($2) ), sizeof(long) );
 		  } else if (FSTRCMP($1,"NVALID(") == 0) {
-		     $$ = New_Func( LONG, nonnull_fct, 1, $2,
+		     $$ = New_Func(lParse,  LONG, nonnull_fct, 1, $2,
 				    0, 0, 0, 0, 0, 0 );
 		  } else {
-                     yyerror("Function(str) not supported");
+                     yyerror(scanner, lParse, "Function(str) not supported");
 		     YYERROR;
 		  }
                   TEST($$); 
 		}
        | FUNCTION bits ')'
                 { if (FSTRCMP($1,"NELEM(") == 0) {
-                     $$ = New_Const( LONG, &( SIZE($2) ), sizeof(long) );
+                     $$ = New_Const(lParse,  LONG, &( SIZE($2) ), sizeof(long) );
 		} else if (FSTRCMP($1,"NVALID(") == 0) { /* Bit arrays do not have NULL */
-                     $$ = New_Const( LONG, &( SIZE($2) ), sizeof(long) );
+                     $$ = New_Const(lParse,  LONG, &( SIZE($2) ), sizeof(long) );
 		} else if (FSTRCMP($1,"SUM(") == 0) {
-		     $$ = New_Func( LONG, sum_fct, 1, $2,
+		     $$ = New_Func(lParse,  LONG, sum_fct, 1, $2,
 				    0, 0, 0, 0, 0, 0 );
 		} else if (FSTRCMP($1,"MIN(") == 0) {
-		     $$ = New_Func( TYPE($2),  /* Force 1D result */
+		     $$ = New_Func(lParse,  TYPE($2),  /* Force 1D result */
 				    min1_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     /* Note: $2 is a vector so the result can never
 		        be a constant.  Therefore it will never be set
@@ -581,110 +592,110 @@ expr:    LONG
 		     SIZE($$) = 1;
 		} else if (FSTRCMP($1,"ACCUM(") == 0) {
 		    long zero = 0;
-		    $$ = New_BinOp( LONG , $2, ACCUM, New_Const( LONG, &zero, sizeof(zero) ));
+		    $$ = New_BinOp(lParse,  LONG , $2, ACCUM, New_Const(lParse,  LONG, &zero, sizeof(zero) ));
 		} else if (FSTRCMP($1,"MAX(") == 0) {
-		     $$ = New_Func( TYPE($2),  /* Force 1D result */
+		     $$ = New_Func(lParse,  TYPE($2),  /* Force 1D result */
 				    max1_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     /* Note: $2 is a vector so the result can never
 		        be a constant.  Therefore it will never be set
 		        inside New_Func(), and it is safe to set SIZE() */
 		     SIZE($$) = 1;
 		} else {
-                     yyerror("Function(bits) not supported");
+                     yyerror(scanner, lParse, "Function(bits) not supported");
 		     YYERROR;
 		  }
                   TEST($$); 
 		}
        | FUNCTION expr ')'
                 { if (FSTRCMP($1,"SUM(") == 0)
-		     $$ = New_Func( TYPE($2), sum_fct, 1, $2,
+		     $$ = New_Func(lParse,  TYPE($2), sum_fct, 1, $2,
 				    0, 0, 0, 0, 0, 0 );
 		  else if (FSTRCMP($1,"AVERAGE(") == 0)
-		     $$ = New_Func( DOUBLE, average_fct, 1, $2,
+		     $$ = New_Func(lParse,  DOUBLE, average_fct, 1, $2,
 				    0, 0, 0, 0, 0, 0 );
 		  else if (FSTRCMP($1,"STDDEV(") == 0)
-		     $$ = New_Func( DOUBLE, stddev_fct, 1, $2,
+		     $$ = New_Func(lParse,  DOUBLE, stddev_fct, 1, $2,
 				    0, 0, 0, 0, 0, 0 );
 		  else if (FSTRCMP($1,"MEDIAN(") == 0)
-		     $$ = New_Func( TYPE($2), median_fct, 1, $2,
+		     $$ = New_Func(lParse,  TYPE($2), median_fct, 1, $2,
 				    0, 0, 0, 0, 0, 0 );
 		  else if (FSTRCMP($1,"NELEM(") == 0)
-                     $$ = New_Const( LONG, &( SIZE($2) ), sizeof(long) );
+                     $$ = New_Const(lParse,  LONG, &( SIZE($2) ), sizeof(long) );
 		  else if (FSTRCMP($1,"NVALID(") == 0)
-		     $$ = New_Func( LONG, nonnull_fct, 1, $2,
+		     $$ = New_Func(lParse,  LONG, nonnull_fct, 1, $2,
 				    0, 0, 0, 0, 0, 0 );
 		  else if   ((FSTRCMP($1,"ACCUM(") == 0) && (TYPE($2) == LONG)) {
 		    long zero = 0;
-		    $$ = New_BinOp( LONG ,   $2, ACCUM, New_Const( LONG,   &zero, sizeof(zero) ));
+		    $$ = New_BinOp(lParse,  LONG ,   $2, ACCUM, New_Const(lParse,  LONG,   &zero, sizeof(zero) ));
 		  } else if ((FSTRCMP($1,"ACCUM(") == 0) && (TYPE($2) == DOUBLE)) {
 		    double zero = 0;
-		    $$ = New_BinOp( DOUBLE , $2, ACCUM, New_Const( DOUBLE, &zero, sizeof(zero) ));
+		    $$ = New_BinOp(lParse,  DOUBLE , $2, ACCUM, New_Const(lParse,  DOUBLE, &zero, sizeof(zero) ));
 		  } else if ((FSTRCMP($1,"SEQDIFF(") == 0) && (TYPE($2) == LONG)) {
 		    long zero = 0;
-		    $$ = New_BinOp( LONG ,   $2, DIFF, New_Const( LONG,   &zero, sizeof(zero) ));
+		    $$ = New_BinOp(lParse,  LONG ,   $2, DIFF, New_Const(lParse,  LONG,   &zero, sizeof(zero) ));
 		  } else if ((FSTRCMP($1,"SEQDIFF(") == 0) && (TYPE($2) == DOUBLE)) {
 		    double zero = 0;
-		    $$ = New_BinOp( DOUBLE , $2, DIFF, New_Const( DOUBLE, &zero, sizeof(zero) ));
+		    $$ = New_BinOp(lParse,  DOUBLE , $2, DIFF, New_Const(lParse,  DOUBLE, &zero, sizeof(zero) ));
 		  } else if (FSTRCMP($1,"ABS(") == 0)
-		     $$ = New_Func( 0, abs_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		     $$ = New_Func(lParse,  0, abs_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
  		  else if (FSTRCMP($1,"MIN(") == 0)
-		     $$ = New_Func( TYPE($2),  /* Force 1D result */
+		     $$ = New_Func(lParse,  TYPE($2),  /* Force 1D result */
 				    min1_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		  else if (FSTRCMP($1,"MAX(") == 0)
-		     $$ = New_Func( TYPE($2),  /* Force 1D result */
+		     $$ = New_Func(lParse,  TYPE($2),  /* Force 1D result */
 				    max1_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		  else if (FSTRCMP($1,"RANDOM(") == 0) { /* Vector RANDOM() */
-                     $$ = New_Func( 0, rnd_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+                     $$ = New_Func(lParse,  0, rnd_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     TEST($$);
 		     TYPE($$) = DOUBLE;
 		  } else if (FSTRCMP($1,"RANDOMN(") == 0) {
-		     $$ = New_Func( 0, gasrnd_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		     $$ = New_Func(lParse,  0, gasrnd_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     TEST($$);
 		     TYPE($$) = DOUBLE;
                   } 
   		  else {  /*  These all take DOUBLE arguments  */
-		     if( TYPE($2) != DOUBLE ) $2 = New_Unary( DOUBLE, 0, $2 );
+		     if( TYPE($2) != DOUBLE ) $2 = New_Unary(lParse,  DOUBLE, 0, $2 );
                      if (FSTRCMP($1,"SIN(") == 0)
-			$$ = New_Func( 0, sin_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
+			$$ = New_Func(lParse,  0, sin_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"COS(") == 0)
-			$$ = New_Func( 0, cos_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
+			$$ = New_Func(lParse,  0, cos_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"TAN(") == 0)
-			$$ = New_Func( 0, tan_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
+			$$ = New_Func(lParse,  0, tan_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"ARCSIN(") == 0
 			      || FSTRCMP($1,"ASIN(") == 0)
-			$$ = New_Func( 0, asin_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+			$$ = New_Func(lParse,  0, asin_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"ARCCOS(") == 0
 			      || FSTRCMP($1,"ACOS(") == 0)
-			$$ = New_Func( 0, acos_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+			$$ = New_Func(lParse,  0, acos_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"ARCTAN(") == 0
 			      || FSTRCMP($1,"ATAN(") == 0)
-			$$ = New_Func( 0, atan_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+			$$ = New_Func(lParse,  0, atan_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"SINH(") == 0)
-			$$ = New_Func( 0, sinh_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
+			$$ = New_Func(lParse,  0, sinh_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"COSH(") == 0)
-			$$ = New_Func( 0, cosh_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
+			$$ = New_Func(lParse,  0, cosh_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"TANH(") == 0)
-			$$ = New_Func( 0, tanh_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
+			$$ = New_Func(lParse,  0, tanh_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"EXP(") == 0)
-			$$ = New_Func( 0, exp_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
+			$$ = New_Func(lParse,  0, exp_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"LOG(") == 0)
-			$$ = New_Func( 0, log_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
+			$$ = New_Func(lParse,  0, log_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"LOG10(") == 0)
-			$$ = New_Func( 0, log10_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+			$$ = New_Func(lParse,  0, log10_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"SQRT(") == 0)
-			$$ = New_Func( 0, sqrt_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+			$$ = New_Func(lParse,  0, sqrt_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"ROUND(") == 0)
-			$$ = New_Func( 0, round_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+			$$ = New_Func(lParse,  0, round_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"FLOOR(") == 0)
-			$$ = New_Func( 0, floor_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+			$$ = New_Func(lParse,  0, floor_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"CEIL(") == 0)
-			$$ = New_Func( 0, ceil_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+			$$ = New_Func(lParse,  0, ceil_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"RANDOMP(") == 0) {
-		       $$ = New_Func( 0, poirnd_fct, 1, $2, 
+		       $$ = New_Func(lParse,  0, poirnd_fct, 1, $2, 
 				      0, 0, 0, 0, 0, 0 );
 		       TYPE($$) = LONG;
 		     } else {
-			yyerror("Function(expr) not supported");
+			yyerror(scanner, lParse, "Function(expr) not supported");
 			YYERROR;
 		     }
 		  }
@@ -693,7 +704,7 @@ expr:    LONG
        | IFUNCTION sexpr ',' sexpr ')'
                 { 
 		  if (FSTRCMP($1,"STRSTR(") == 0) {
-		    $$ = New_Func( LONG, strpos_fct, 2, $2, $4, 0, 
+		    $$ = New_Func(lParse,  LONG, strpos_fct, 2, $2, $4, 0, 
 				   0, 0, 0, 0 );
 		    TEST($$);
 		  }
@@ -701,452 +712,452 @@ expr:    LONG
        | FUNCTION expr ',' expr ')'
                 { 
 		   if (FSTRCMP($1,"DEFNULL(") == 0) {
-		      if( SIZE($2)>=SIZE($4) && Test_Dims( $2, $4 ) ) {
+		      if( SIZE($2)>=SIZE($4) && Test_Dims( lParse,  $2, $4 ) ) {
 			 PROMOTE($2,$4);
-			 $$ = New_Func( 0, defnull_fct, 2, $2, $4, 0,
+			 $$ = New_Func(lParse,  0, defnull_fct, 2, $2, $4, 0,
 					0, 0, 0, 0 );
 			 TEST($$); 
 		      } else {
-			 yyerror("Dimensions of DEFNULL arguments "
+			 yyerror(scanner, lParse, "Dimensions of DEFNULL arguments "
 				 "are not compatible");
 			 YYERROR;
 		      }
 		   } else if (FSTRCMP($1,"ARCTAN2(") == 0) {
-		     if( TYPE($2) != DOUBLE ) $2 = New_Unary( DOUBLE, 0, $2 );
-		     if( TYPE($4) != DOUBLE ) $4 = New_Unary( DOUBLE, 0, $4 );
-		     if( Test_Dims( $2, $4 ) ) {
-			$$ = New_Func( 0, atan2_fct, 2, $2, $4, 0, 0, 0, 0, 0 );
+		     if( TYPE($2) != DOUBLE ) $2 = New_Unary(lParse,  DOUBLE, 0, $2 );
+		     if( TYPE($4) != DOUBLE ) $4 = New_Unary(lParse,  DOUBLE, 0, $4 );
+		     if( Test_Dims( lParse,  $2, $4 ) ) {
+			$$ = New_Func(lParse,  0, atan2_fct, 2, $2, $4, 0, 0, 0, 0, 0 );
 			TEST($$); 
-			if( SIZE($2)<SIZE($4) ) Copy_Dims($$, $4);
+			if( SIZE($2)<SIZE($4) ) Copy_Dims( lParse,$$, $4);
 		     } else {
-			yyerror("Dimensions of arctan2 arguments "
+			yyerror(scanner, lParse, "Dimensions of arctan2 arguments "
 				"are not compatible");
 			YYERROR;
 		     }
 		   } else if (FSTRCMP($1,"MIN(") == 0) {
 		      PROMOTE( $2, $4 );
-		      if( Test_Dims( $2, $4 ) ) {
-			$$ = New_Func( 0, min2_fct, 2, $2, $4, 0, 0, 0, 0, 0 );
+		      if( Test_Dims( lParse,  $2, $4 ) ) {
+			$$ = New_Func(lParse,  0, min2_fct, 2, $2, $4, 0, 0, 0, 0, 0 );
 			TEST($$);
-			if( SIZE($2)<SIZE($4) ) Copy_Dims($$, $4);
+			if( SIZE($2)<SIZE($4) ) Copy_Dims( lParse,$$, $4);
 		      } else {
-			yyerror("Dimensions of min(a,b) arguments "
+			yyerror(scanner, lParse, "Dimensions of min(a,b) arguments "
 				"are not compatible");
 			YYERROR;
 		      }
 		   } else if (FSTRCMP($1,"MAX(") == 0) {
 		      PROMOTE( $2, $4 );
-		      if( Test_Dims( $2, $4 ) ) {
-			$$ = New_Func( 0, max2_fct, 2, $2, $4, 0, 0, 0, 0, 0 );
+		      if( Test_Dims( lParse,  $2, $4 ) ) {
+			$$ = New_Func(lParse,  0, max2_fct, 2, $2, $4, 0, 0, 0, 0, 0 );
 			TEST($$);
-			if( SIZE($2)<SIZE($4) ) Copy_Dims($$, $4);
+			if( SIZE($2)<SIZE($4) ) Copy_Dims( lParse,$$, $4);
 		      } else {
-			yyerror("Dimensions of max(a,b) arguments "
+			yyerror(scanner, lParse, "Dimensions of max(a,b) arguments "
 				"are not compatible");
 			YYERROR;
 		      }
 		   } else if (FSTRCMP($1,"SETNULL(") == 0) {
 		     if (OPER($2) != CONST_OP
 			 || SIZE($2) != 1) {
-		       yyerror("SETNULL first argument must be a scalar constant");
+		       yyerror(scanner, lParse, "SETNULL first argument must be a scalar constant");
 		       YYERROR;
 		     }
 		     /* Make sure first arg is same type as second arg */
-		     if ( TYPE($2) != TYPE($4) ) $2 = New_Unary( TYPE($4), 0, $2 );
-		     $$ = New_Func( 0, setnull_fct, 2, $4, $2, 0, 0, 0, 0, 0 );
+		     if ( TYPE($2) != TYPE($4) ) $2 = New_Unary(lParse,  TYPE($4), 0, $2 );
+		     $$ = New_Func(lParse,  0, setnull_fct, 2, $4, $2, 0, 0, 0, 0, 0 );
 		   } else {
-		      yyerror("Function(expr,expr) not supported");
+		      yyerror(scanner, lParse, "Function(expr,expr) not supported");
 		      YYERROR;
 		   }
                 }
        | FUNCTION expr ',' expr ',' expr ',' expr ')'
                 { 
 		  if (FSTRCMP($1,"ANGSEP(") == 0) {
-		    if( TYPE($2) != DOUBLE ) $2 = New_Unary( DOUBLE, 0, $2 );
-		    if( TYPE($4) != DOUBLE ) $4 = New_Unary( DOUBLE, 0, $4 );
-		    if( TYPE($6) != DOUBLE ) $6 = New_Unary( DOUBLE, 0, $6 );
-		    if( TYPE($8) != DOUBLE ) $8 = New_Unary( DOUBLE, 0, $8 );
-		    if( Test_Dims( $2, $4 ) && Test_Dims( $4, $6 ) && 
-			Test_Dims( $6, $8 ) ) {
-		      $$ = New_Func( 0, angsep_fct, 4, $2, $4, $6, $8,0,0,0 );
+		    if( TYPE($2) != DOUBLE ) $2 = New_Unary(lParse,  DOUBLE, 0, $2 );
+		    if( TYPE($4) != DOUBLE ) $4 = New_Unary(lParse,  DOUBLE, 0, $4 );
+		    if( TYPE($6) != DOUBLE ) $6 = New_Unary(lParse,  DOUBLE, 0, $6 );
+		    if( TYPE($8) != DOUBLE ) $8 = New_Unary(lParse,  DOUBLE, 0, $8 );
+		    if( Test_Dims( lParse,  $2, $4 ) && Test_Dims( lParse,  $4, $6 ) && 
+			Test_Dims( lParse,  $6, $8 ) ) {
+		      $$ = New_Func(lParse,  0, angsep_fct, 4, $2, $4, $6, $8,0,0,0 );
 		      TEST($$); 
-		      if( SIZE($2)<SIZE($4) ) Copy_Dims($$, $4);
-		      if( SIZE($4)<SIZE($6) ) Copy_Dims($$, $6);
-		      if( SIZE($6)<SIZE($8) ) Copy_Dims($$, $8);
+		      if( SIZE($2)<SIZE($4) ) Copy_Dims( lParse,$$, $4);
+		      if( SIZE($4)<SIZE($6) ) Copy_Dims( lParse,$$, $6);
+		      if( SIZE($6)<SIZE($8) ) Copy_Dims( lParse,$$, $8);
 		    } else {
-		      yyerror("Dimensions of ANGSEP arguments "
+		      yyerror(scanner, lParse, "Dimensions of ANGSEP arguments "
 			      "are not compatible");
 		      YYERROR;
 		    }
 		   } else {
-		      yyerror("Function(expr,expr,expr,expr) not supported");
+		      yyerror(scanner, lParse, "Function(expr,expr,expr,expr) not supported");
 		      YYERROR;
 		   }
                 }
        | expr '[' expr ']'
-                { $$ = New_Deref( $1, 1, $3,  0,  0,  0,   0 ); TEST($$); }
+                { $$ = New_Deref(lParse,  $1, 1, $3,  0,  0,  0,   0 ); TEST($$); }
        | expr '[' expr ',' expr ']'
-                { $$ = New_Deref( $1, 2, $3, $5,  0,  0,   0 ); TEST($$); }
+                { $$ = New_Deref(lParse,  $1, 2, $3, $5,  0,  0,   0 ); TEST($$); }
        | expr '[' expr ',' expr ',' expr ']'
-                { $$ = New_Deref( $1, 3, $3, $5, $7,  0,   0 ); TEST($$); }
+                { $$ = New_Deref(lParse,  $1, 3, $3, $5, $7,  0,   0 ); TEST($$); }
        | expr '[' expr ',' expr ',' expr ',' expr ']'
-                { $$ = New_Deref( $1, 4, $3, $5, $7, $9,   0 ); TEST($$); }
+                { $$ = New_Deref(lParse,  $1, 4, $3, $5, $7, $9,   0 ); TEST($$); }
        | expr '[' expr ',' expr ',' expr ',' expr ',' expr ']'
-                { $$ = New_Deref( $1, 5, $3, $5, $7, $9, $11 ); TEST($$); }
+                { $$ = New_Deref(lParse,  $1, 5, $3, $5, $7, $9, $11 ); TEST($$); }
        | INTCAST expr
-		{ $$ = New_Unary( LONG,   INTCAST, $2 );  TEST($$);  }
+		{ $$ = New_Unary(lParse,  LONG,   INTCAST, $2 );  TEST($$);  }
        | INTCAST bexpr
-                { $$ = New_Unary( LONG,   INTCAST, $2 );  TEST($$);  }
+                { $$ = New_Unary(lParse,  LONG,   INTCAST, $2 );  TEST($$);  }
        | FLTCAST expr
-		{ $$ = New_Unary( DOUBLE, FLTCAST, $2 );  TEST($$);  }
+		{ $$ = New_Unary(lParse,  DOUBLE, FLTCAST, $2 );  TEST($$);  }
        | FLTCAST bexpr
-                { $$ = New_Unary( DOUBLE, FLTCAST, $2 );  TEST($$);  }
+                { $$ = New_Unary(lParse,  DOUBLE, FLTCAST, $2 );  TEST($$);  }
        ;
 
 bexpr:   BOOLEAN
-                { $$ = New_Const( BOOLEAN, &($1), sizeof(char) ); TEST($$); }
+                { $$ = New_Const(lParse,  BOOLEAN, &($1), sizeof(char) ); TEST($$); }
        | BCOLUMN
-                { $$ = New_Column( $1 ); TEST($$); }
+                { $$ = New_Column(lParse,  $1 ); TEST($$); }
        | BCOLUMN '{' expr '}'
                 {
                   if( TYPE($3) != LONG
 		      || OPER($3) != CONST_OP ) {
-		     yyerror("Offset argument must be a constant integer");
+		     yyerror(scanner, lParse, "Offset argument must be a constant integer");
 		     YYERROR;
 		  }
-                  $$ = New_Offset( $1, $3 ); TEST($$);
+                  $$ = New_Offset(lParse,  $1, $3 ); TEST($$);
                 }
        | bits EQ bits
-                { $$ = New_BinOp( BOOLEAN, $1, EQ,  $3 ); TEST($$);
+                { $$ = New_BinOp(lParse,  BOOLEAN, $1, EQ,  $3 ); TEST($$);
 		  SIZE($$) = 1;                                     }
        | bits NE bits
-                { $$ = New_BinOp( BOOLEAN, $1, NE,  $3 ); TEST($$); 
+                { $$ = New_BinOp(lParse,  BOOLEAN, $1, NE,  $3 ); TEST($$); 
 		  SIZE($$) = 1;                                     }
        | bits LT bits
-                { $$ = New_BinOp( BOOLEAN, $1, LT,  $3 ); TEST($$); 
+                { $$ = New_BinOp(lParse,  BOOLEAN, $1, LT,  $3 ); TEST($$); 
 		  SIZE($$) = 1;                                     }
        | bits LTE bits
-                { $$ = New_BinOp( BOOLEAN, $1, LTE, $3 ); TEST($$); 
+                { $$ = New_BinOp(lParse,  BOOLEAN, $1, LTE, $3 ); TEST($$); 
 		  SIZE($$) = 1;                                     }
        | bits GT bits
-                { $$ = New_BinOp( BOOLEAN, $1, GT,  $3 ); TEST($$); 
+                { $$ = New_BinOp(lParse,  BOOLEAN, $1, GT,  $3 ); TEST($$); 
 		  SIZE($$) = 1;                                     }
        | bits GTE bits
-                { $$ = New_BinOp( BOOLEAN, $1, GTE, $3 ); TEST($$); 
+                { $$ = New_BinOp(lParse,  BOOLEAN, $1, GTE, $3 ); TEST($$); 
 		  SIZE($$) = 1;                                     }
        | expr GT expr
-                { PROMOTE($1,$3); $$ = New_BinOp( BOOLEAN, $1, GT,  $3 );
+                { PROMOTE($1,$3); $$ = New_BinOp(lParse,  BOOLEAN, $1, GT,  $3 );
                   TEST($$);                                               }
        | expr LT expr
-                { PROMOTE($1,$3); $$ = New_BinOp( BOOLEAN, $1, LT,  $3 );
+                { PROMOTE($1,$3); $$ = New_BinOp(lParse,  BOOLEAN, $1, LT,  $3 );
                   TEST($$);                                               }
        | expr GTE expr
-                { PROMOTE($1,$3); $$ = New_BinOp( BOOLEAN, $1, GTE, $3 );
+                { PROMOTE($1,$3); $$ = New_BinOp(lParse,  BOOLEAN, $1, GTE, $3 );
                   TEST($$);                                               }
        | expr LTE expr
-                { PROMOTE($1,$3); $$ = New_BinOp( BOOLEAN, $1, LTE, $3 );
+                { PROMOTE($1,$3); $$ = New_BinOp(lParse,  BOOLEAN, $1, LTE, $3 );
                   TEST($$);                                               }
        | expr '~' expr
-                { PROMOTE($1,$3); $$ = New_BinOp( BOOLEAN, $1, '~', $3 );
+                { PROMOTE($1,$3); $$ = New_BinOp(lParse,  BOOLEAN, $1, '~', $3 );
                   TEST($$);                                               }
        | expr EQ expr
-                { PROMOTE($1,$3); $$ = New_BinOp( BOOLEAN, $1, EQ,  $3 );
+                { PROMOTE($1,$3); $$ = New_BinOp(lParse,  BOOLEAN, $1, EQ,  $3 );
                   TEST($$);                                               }
        | expr NE expr
-                { PROMOTE($1,$3); $$ = New_BinOp( BOOLEAN, $1, NE,  $3 );
+                { PROMOTE($1,$3); $$ = New_BinOp(lParse,  BOOLEAN, $1, NE,  $3 );
                   TEST($$);                                               }
        | sexpr EQ sexpr
-                { $$ = New_BinOp( BOOLEAN, $1, EQ,  $3 ); TEST($$);
+                { $$ = New_BinOp(lParse,  BOOLEAN, $1, EQ,  $3 ); TEST($$);
                   SIZE($$) = 1; }
        | sexpr NE sexpr
-                { $$ = New_BinOp( BOOLEAN, $1, NE,  $3 ); TEST($$);
+                { $$ = New_BinOp(lParse,  BOOLEAN, $1, NE,  $3 ); TEST($$);
                   SIZE($$) = 1; }
        | sexpr GT sexpr
-                { $$ = New_BinOp( BOOLEAN, $1, GT,  $3 ); TEST($$);
+                { $$ = New_BinOp(lParse,  BOOLEAN, $1, GT,  $3 ); TEST($$);
                   SIZE($$) = 1; }
        | sexpr GTE sexpr
-                { $$ = New_BinOp( BOOLEAN, $1, GTE, $3 ); TEST($$);
+                { $$ = New_BinOp(lParse,  BOOLEAN, $1, GTE, $3 ); TEST($$);
                   SIZE($$) = 1; }
        | sexpr LT sexpr
-                { $$ = New_BinOp( BOOLEAN, $1, LT,  $3 ); TEST($$);
+                { $$ = New_BinOp(lParse,  BOOLEAN, $1, LT,  $3 ); TEST($$);
                   SIZE($$) = 1; }
        | sexpr LTE sexpr
-                { $$ = New_BinOp( BOOLEAN, $1, LTE, $3 ); TEST($$);
+                { $$ = New_BinOp(lParse,  BOOLEAN, $1, LTE, $3 ); TEST($$);
                   SIZE($$) = 1; }
        | bexpr AND bexpr
-                { $$ = New_BinOp( BOOLEAN, $1, AND, $3 ); TEST($$); }
+                { $$ = New_BinOp(lParse,  BOOLEAN, $1, AND, $3 ); TEST($$); }
        | bexpr OR bexpr
-                { $$ = New_BinOp( BOOLEAN, $1, OR,  $3 ); TEST($$); }
+                { $$ = New_BinOp(lParse,  BOOLEAN, $1, OR,  $3 ); TEST($$); }
        | bexpr EQ bexpr
-                { $$ = New_BinOp( BOOLEAN, $1, EQ,  $3 ); TEST($$); }
+                { $$ = New_BinOp(lParse,  BOOLEAN, $1, EQ,  $3 ); TEST($$); }
        | bexpr NE bexpr
-                { $$ = New_BinOp( BOOLEAN, $1, NE,  $3 ); TEST($$); }
+                { $$ = New_BinOp(lParse,  BOOLEAN, $1, NE,  $3 ); TEST($$); }
 
        | expr '=' expr ':' expr
                 { PROMOTE($1,$3); PROMOTE($1,$5); PROMOTE($3,$5);
-		  $3 = New_BinOp( BOOLEAN, $3, LTE, $1 );
-                  $5 = New_BinOp( BOOLEAN, $1, LTE, $5 );
-                  $$ = New_BinOp( BOOLEAN, $3, AND, $5 );
+		  $3 = New_BinOp(lParse,  BOOLEAN, $3, LTE, $1 );
+                  $5 = New_BinOp(lParse,  BOOLEAN, $1, LTE, $5 );
+                  $$ = New_BinOp(lParse,  BOOLEAN, $3, AND, $5 );
                   TEST($$);                                         }
 
        | bexpr '?' bexpr ':' bexpr
                 {
-                  if( ! Test_Dims($3,$5) ) {
-                     yyerror("Incompatible dimensions in '?:' arguments");
+                  if( ! Test_Dims( lParse, $3,$5) ) {
+                     yyerror(scanner, lParse, "Incompatible dimensions in '?:' arguments");
 		     YYERROR;
                   }
-                  $$ = New_Func( 0, ifthenelse_fct, 3, $3, $5, $1,
+                  $$ = New_Func(lParse,  0, ifthenelse_fct, 3, $3, $5, $1,
                                  0, 0, 0, 0 );
                   TEST($$);
-                  if( SIZE($3)<SIZE($5) )  Copy_Dims($$, $5);
-                  if( ! Test_Dims($1,$$) ) {
-                     yyerror("Incompatible dimensions in '?:' condition");
+                  if( SIZE($3)<SIZE($5) )  Copy_Dims( lParse,$$, $5);
+                  if( ! Test_Dims( lParse, $1,$$) ) {
+                     yyerror(scanner, lParse, "Incompatible dimensions in '?:' condition");
 		     YYERROR;
                   }
-                  if( SIZE($$)<SIZE($1) )  Copy_Dims($$, $1);
+                  if( SIZE($$)<SIZE($1) )  Copy_Dims( lParse,$$, $1);
                 }
 
        | BFUNCTION expr ')'
                 {
 		   if (FSTRCMP($1,"ISNULL(") == 0) {
-		      $$ = New_Func( 0, isnull_fct, 1, $2, 0, 0,
+		      $$ = New_Func(lParse,  0, isnull_fct, 1, $2, 0, 0,
 				     0, 0, 0, 0 );
 		      TEST($$); 
                       /* Use expression's size, but return BOOLEAN */
 		      TYPE($$) = BOOLEAN;
 		   } else {
-		      yyerror("Boolean Function(expr) not supported");
+		      yyerror(scanner, lParse, "Boolean Function(expr) not supported");
 		      YYERROR;
 		   }
 		}
        | BFUNCTION bexpr ')'
                 {
 		   if (FSTRCMP($1,"ISNULL(") == 0) {
-		      $$ = New_Func( 0, isnull_fct, 1, $2, 0, 0,
+		      $$ = New_Func(lParse,  0, isnull_fct, 1, $2, 0, 0,
 				     0, 0, 0, 0 );
 		      TEST($$); 
                       /* Use expression's size, but return BOOLEAN */
 		      TYPE($$) = BOOLEAN;
 		   } else {
-		      yyerror("Boolean Function(expr) not supported");
+		      yyerror(scanner, lParse, "Boolean Function(expr) not supported");
 		      YYERROR;
 		   }
 		}
        | BFUNCTION sexpr ')'
                 {
 		   if (FSTRCMP($1,"ISNULL(") == 0) {
-		      $$ = New_Func( BOOLEAN, isnull_fct, 1, $2, 0, 0,
+		      $$ = New_Func(lParse,  BOOLEAN, isnull_fct, 1, $2, 0, 0,
 				     0, 0, 0, 0 );
 		      TEST($$); 
 		   } else {
-		      yyerror("Boolean Function(expr) not supported");
+		      yyerror(scanner, lParse, "Boolean Function(expr) not supported");
 		      YYERROR;
 		   }
 		}
        | FUNCTION bexpr ',' bexpr ')'
                 {
 		   if (FSTRCMP($1,"DEFNULL(") == 0) {
-		      if( SIZE($2)>=SIZE($4) && Test_Dims( $2, $4 ) ) {
-			 $$ = New_Func( 0, defnull_fct, 2, $2, $4, 0,
+		      if( SIZE($2)>=SIZE($4) && Test_Dims( lParse,  $2, $4 ) ) {
+			 $$ = New_Func(lParse,  0, defnull_fct, 2, $2, $4, 0,
 					0, 0, 0, 0 );
 			 TEST($$); 
 		      } else {
-			 yyerror("Dimensions of DEFNULL arguments are not compatible");
+			 yyerror(scanner, lParse, "Dimensions of DEFNULL arguments are not compatible");
 			 YYERROR;
 		      }
 		   } else {
-		      yyerror("Boolean Function(expr,expr) not supported");
+		      yyerror(scanner, lParse, "Boolean Function(expr,expr) not supported");
 		      YYERROR;
 		   }
 		}
        | BFUNCTION expr ',' expr ',' expr ')'
 		{
-		   if( TYPE($2) != DOUBLE ) $2 = New_Unary( DOUBLE, 0, $2 );
-		   if( TYPE($4) != DOUBLE ) $4 = New_Unary( DOUBLE, 0, $4 );
-		   if( TYPE($6) != DOUBLE ) $6 = New_Unary( DOUBLE, 0, $6 );
-		   if( ! (Test_Dims( $2, $4 ) && Test_Dims( $4, $6 ) ) ) {
-		       yyerror("Dimensions of NEAR arguments "
+		   if( TYPE($2) != DOUBLE ) $2 = New_Unary(lParse,  DOUBLE, 0, $2 );
+		   if( TYPE($4) != DOUBLE ) $4 = New_Unary(lParse,  DOUBLE, 0, $4 );
+		   if( TYPE($6) != DOUBLE ) $6 = New_Unary(lParse,  DOUBLE, 0, $6 );
+		   if( ! (Test_Dims( lParse,  $2, $4 ) && Test_Dims( lParse,  $4, $6 ) ) ) {
+		       yyerror(scanner, lParse, "Dimensions of NEAR arguments "
 			       "are not compatible");
 		       YYERROR;
 		   } else {
 		     if (FSTRCMP($1,"NEAR(") == 0) {
-		       $$ = New_Func( BOOLEAN, near_fct, 3, $2, $4, $6,
+		       $$ = New_Func(lParse,  BOOLEAN, near_fct, 3, $2, $4, $6,
 				      0, 0, 0, 0 );
 		     } else {
-		       yyerror("Boolean Function not supported");
+		       yyerror(scanner, lParse, "Boolean Function not supported");
 		       YYERROR;
 		     }
 		     TEST($$); 
 
-		     if( SIZE($$)<SIZE($2) )  Copy_Dims($$, $2);
-		     if( SIZE($2)<SIZE($4) )  Copy_Dims($$, $4);
-		     if( SIZE($4)<SIZE($6) )  Copy_Dims($$, $6);
+		     if( SIZE($$)<SIZE($2) )  Copy_Dims( lParse,$$, $2);
+		     if( SIZE($2)<SIZE($4) )  Copy_Dims( lParse,$$, $4);
+		     if( SIZE($4)<SIZE($6) )  Copy_Dims( lParse,$$, $6);
 		   }
 		}
        | BFUNCTION expr ',' expr ',' expr ',' expr ',' expr ')'
 	        {
-		   if( TYPE($2) != DOUBLE ) $2 = New_Unary( DOUBLE, 0, $2 );
-		   if( TYPE($4) != DOUBLE ) $4 = New_Unary( DOUBLE, 0, $4 );
-		   if( TYPE($6) != DOUBLE ) $6 = New_Unary( DOUBLE, 0, $6 );
-		   if( TYPE($8) != DOUBLE ) $8 = New_Unary( DOUBLE, 0, $8 );
-		   if( TYPE($10)!= DOUBLE ) $10= New_Unary( DOUBLE, 0, $10);
-		   if( ! (Test_Dims( $2, $4 ) && Test_Dims( $4, $6 ) && 
-			  Test_Dims( $6, $8 ) && Test_Dims( $8, $10 )) ) {
-		     yyerror("Dimensions of CIRCLE arguments "
+		   if( TYPE($2) != DOUBLE ) $2 = New_Unary(lParse,  DOUBLE, 0, $2 );
+		   if( TYPE($4) != DOUBLE ) $4 = New_Unary(lParse,  DOUBLE, 0, $4 );
+		   if( TYPE($6) != DOUBLE ) $6 = New_Unary(lParse,  DOUBLE, 0, $6 );
+		   if( TYPE($8) != DOUBLE ) $8 = New_Unary(lParse,  DOUBLE, 0, $8 );
+		   if( TYPE($10)!= DOUBLE ) $10= New_Unary(lParse,  DOUBLE, 0, $10);
+		   if( ! (Test_Dims( lParse,  $2, $4 ) && Test_Dims( lParse,  $4, $6 ) && 
+			  Test_Dims( lParse,  $6, $8 ) && Test_Dims( lParse,  $8, $10 )) ) {
+		     yyerror(scanner, lParse, "Dimensions of CIRCLE arguments "
 			     "are not compatible");
 		     YYERROR;
 		   } else {
 		     if (FSTRCMP($1,"CIRCLE(") == 0) {
-		       $$ = New_Func( BOOLEAN, circle_fct, 5, $2, $4, $6, $8,
+		       $$ = New_Func(lParse,  BOOLEAN, circle_fct, 5, $2, $4, $6, $8,
 				      $10, 0, 0 );
 		     } else {
-		       yyerror("Boolean Function not supported");
+		       yyerror(scanner, lParse, "Boolean Function not supported");
 		       YYERROR;
 		     }
 		     TEST($$); 
-		     if( SIZE($$)<SIZE($2) )  Copy_Dims($$, $2);
-		     if( SIZE($2)<SIZE($4) )  Copy_Dims($$, $4);
-		     if( SIZE($4)<SIZE($6) )  Copy_Dims($$, $6);
-		     if( SIZE($6)<SIZE($8) )  Copy_Dims($$, $8);
-		     if( SIZE($8)<SIZE($10) ) Copy_Dims($$, $10);
+		     if( SIZE($$)<SIZE($2) )  Copy_Dims( lParse,$$, $2);
+		     if( SIZE($2)<SIZE($4) )  Copy_Dims( lParse,$$, $4);
+		     if( SIZE($4)<SIZE($6) )  Copy_Dims( lParse,$$, $6);
+		     if( SIZE($6)<SIZE($8) )  Copy_Dims( lParse,$$, $8);
+		     if( SIZE($8)<SIZE($10) ) Copy_Dims( lParse,$$, $10);
 		   }
 		}
        | BFUNCTION expr ',' expr ',' expr ',' expr ',' expr ',' expr ',' expr ')'
                 {
-		   if( TYPE($2) != DOUBLE ) $2 = New_Unary( DOUBLE, 0, $2 );
-		   if( TYPE($4) != DOUBLE ) $4 = New_Unary( DOUBLE, 0, $4 );
-		   if( TYPE($6) != DOUBLE ) $6 = New_Unary( DOUBLE, 0, $6 );
-		   if( TYPE($8) != DOUBLE ) $8 = New_Unary( DOUBLE, 0, $8 );
-		   if( TYPE($10)!= DOUBLE ) $10= New_Unary( DOUBLE, 0, $10);
-		   if( TYPE($12)!= DOUBLE ) $12= New_Unary( DOUBLE, 0, $12);
-		   if( TYPE($14)!= DOUBLE ) $14= New_Unary( DOUBLE, 0, $14);
-		   if( ! (Test_Dims( $2, $4 ) && Test_Dims( $4, $6 ) && 
-			  Test_Dims( $6, $8 ) && Test_Dims( $8, $10 ) &&
-			  Test_Dims($10,$12 ) && Test_Dims($12, $14 ) ) ) {
-		     yyerror("Dimensions of BOX or ELLIPSE arguments "
+		   if( TYPE($2) != DOUBLE ) $2 = New_Unary(lParse,  DOUBLE, 0, $2 );
+		   if( TYPE($4) != DOUBLE ) $4 = New_Unary(lParse,  DOUBLE, 0, $4 );
+		   if( TYPE($6) != DOUBLE ) $6 = New_Unary(lParse,  DOUBLE, 0, $6 );
+		   if( TYPE($8) != DOUBLE ) $8 = New_Unary(lParse,  DOUBLE, 0, $8 );
+		   if( TYPE($10)!= DOUBLE ) $10= New_Unary(lParse,  DOUBLE, 0, $10);
+		   if( TYPE($12)!= DOUBLE ) $12= New_Unary(lParse,  DOUBLE, 0, $12);
+		   if( TYPE($14)!= DOUBLE ) $14= New_Unary(lParse,  DOUBLE, 0, $14);
+		   if( ! (Test_Dims( lParse,  $2, $4 ) && Test_Dims( lParse,  $4, $6 ) && 
+			  Test_Dims( lParse,  $6, $8 ) && Test_Dims( lParse,  $8, $10 ) &&
+			  Test_Dims( lParse, $10,$12 ) && Test_Dims( lParse, $12, $14 ) ) ) {
+		     yyerror(scanner, lParse, "Dimensions of BOX or ELLIPSE arguments "
 			     "are not compatible");
 		     YYERROR;
 		   } else {
 		     if (FSTRCMP($1,"BOX(") == 0) {
-		       $$ = New_Func( BOOLEAN, box_fct, 7, $2, $4, $6, $8,
+		       $$ = New_Func(lParse,  BOOLEAN, box_fct, 7, $2, $4, $6, $8,
 				      $10, $12, $14 );
 		     } else if (FSTRCMP($1,"ELLIPSE(") == 0) {
-		       $$ = New_Func( BOOLEAN, elps_fct, 7, $2, $4, $6, $8,
+		       $$ = New_Func(lParse,  BOOLEAN, elps_fct, 7, $2, $4, $6, $8,
 				      $10, $12, $14 );
 		     } else {
-		       yyerror("SAO Image Function not supported");
+		       yyerror(scanner, lParse, "SAO Image Function not supported");
 		       YYERROR;
 		     }
 		     TEST($$); 
-		     if( SIZE($$)<SIZE($2) )  Copy_Dims($$, $2);
-		     if( SIZE($2)<SIZE($4) )  Copy_Dims($$, $4);
-		     if( SIZE($4)<SIZE($6) )  Copy_Dims($$, $6);
-		     if( SIZE($6)<SIZE($8) )  Copy_Dims($$, $8);
-		     if( SIZE($8)<SIZE($10) ) Copy_Dims($$, $10);
-		     if( SIZE($10)<SIZE($12) ) Copy_Dims($$, $12);
-		     if( SIZE($12)<SIZE($14) ) Copy_Dims($$, $14);
+		     if( SIZE($$)<SIZE($2) )  Copy_Dims( lParse,$$, $2);
+		     if( SIZE($2)<SIZE($4) )  Copy_Dims( lParse,$$, $4);
+		     if( SIZE($4)<SIZE($6) )  Copy_Dims( lParse,$$, $6);
+		     if( SIZE($6)<SIZE($8) )  Copy_Dims( lParse,$$, $8);
+		     if( SIZE($8)<SIZE($10) ) Copy_Dims( lParse,$$, $10);
+		     if( SIZE($10)<SIZE($12) ) Copy_Dims( lParse,$$, $12);
+		     if( SIZE($12)<SIZE($14) ) Copy_Dims( lParse,$$, $14);
 		   }
 		}
 
        | GTIFILTER ')'
                 { /* Use defaults for all elements */
-		   $$ = New_GTI(gtifilt_fct,  "", -99, -99, "*START*", "*STOP*" );
+		   $$ = New_GTI(lParse, gtifilt_fct,  "", -99, -99, "*START*", "*STOP*" );
                    TEST($$);                                        }
        | GTIFILTER STRING ')'
                 { /* Use defaults for all except filename */
-		  $$ = New_GTI(gtifilt_fct,  $2, -99, -99, "*START*", "*STOP*" );
+		  $$ = New_GTI(lParse, gtifilt_fct,  $2, -99, -99, "*START*", "*STOP*" );
                    TEST($$);                                        }
        | GTIFILTER STRING ',' expr ')'
-                {  $$ = New_GTI(gtifilt_fct,  $2, $4, -99, "*START*", "*STOP*" );
+                {  $$ = New_GTI(lParse, gtifilt_fct,  $2, $4, -99, "*START*", "*STOP*" );
                    TEST($$);                                        }
        | GTIFILTER STRING ',' expr ',' STRING ',' STRING ')'
-                {  $$ = New_GTI(gtifilt_fct,  $2, $4, -99, $6, $8 );
+                {  $$ = New_GTI(lParse, gtifilt_fct,  $2, $4, -99, $6, $8 );
                    TEST($$);                                        }
 
 
        | GTIOVERLAP STRING ',' expr ',' expr ')'
-                {  $$ = New_GTI(gtiover_fct,  $2, $4, $6, "*START*", "*STOP*");
+                {  $$ = New_GTI(lParse, gtiover_fct,  $2, $4, $6, "*START*", "*STOP*");
                    TEST($$);                                        }
        | GTIOVERLAP STRING ',' expr ',' expr ',' STRING ',' STRING ')'
-                {  $$ = New_GTI(gtiover_fct,  $2, $4, $6, $8, $10 );
+                {  $$ = New_GTI(lParse, gtiover_fct,  $2, $4, $6, $8, $10 );
                    TEST($$);                                        }
 
        /* GTIFIND('myfile.gti', TIME_EXPR, 'START', 'STOP') */
        | GTIFIND ')'
                 { /* Use defaults for all elements */
-		   $$ = New_GTI(gtifind_fct,  "", -99, -99, "*START*", "*STOP*" );
+		   $$ = New_GTI(lParse, gtifind_fct,  "", -99, -99, "*START*", "*STOP*" );
                    TEST($$);                                        }
        | GTIFIND STRING ')'
                 { /* Use defaults for all except filename */
-		  $$ = New_GTI(gtifind_fct,  $2, -99, -99, "*START*", "*STOP*" );
+		  $$ = New_GTI(lParse, gtifind_fct,  $2, -99, -99, "*START*", "*STOP*" );
                    TEST($$);                                        }
        | GTIFIND STRING ',' expr ')'
-                {  $$ = New_GTI(gtifind_fct,  $2, $4, -99, "*START*", "*STOP*" );
+                {  $$ = New_GTI(lParse, gtifind_fct,  $2, $4, -99, "*START*", "*STOP*" );
                    TEST($$);                                        }
        | GTIFIND STRING ',' expr ',' STRING ',' STRING ')'
-                {  $$ = New_GTI(gtifind_fct,  $2, $4, -99, $6, $8 );
+                {  $$ = New_GTI(lParse, gtifind_fct,  $2, $4, -99, $6, $8 );
                    TEST($$);                                        }
 
 
        | REGFILTER STRING ')'
                 { /* Use defaults for all except filename */
-                   $$ = New_REG( $2, -99, -99, "" );
+                   $$ = New_REG(lParse,  $2, -99, -99, "" );
                    TEST($$);                                        }
        | REGFILTER STRING ',' expr ',' expr ')'
-                {  $$ = New_REG( $2, $4, $6, "" );
+                {  $$ = New_REG(lParse,  $2, $4, $6, "" );
                    TEST($$);                                        }
        | REGFILTER STRING ',' expr ',' expr ',' STRING ')'
-                {  $$ = New_REG( $2, $4, $6, $8 );
+                {  $$ = New_REG(lParse,  $2, $4, $6, $8 );
                    TEST($$);                                        }
 
        | bexpr '[' expr ']'
-                { $$ = New_Deref( $1, 1, $3,  0,  0,  0,   0 ); TEST($$); }
+                { $$ = New_Deref(lParse,  $1, 1, $3,  0,  0,  0,   0 ); TEST($$); }
        | bexpr '[' expr ',' expr ']'
-                { $$ = New_Deref( $1, 2, $3, $5,  0,  0,   0 ); TEST($$); }
+                { $$ = New_Deref(lParse,  $1, 2, $3, $5,  0,  0,   0 ); TEST($$); }
        | bexpr '[' expr ',' expr ',' expr ']'
-                { $$ = New_Deref( $1, 3, $3, $5, $7,  0,   0 ); TEST($$); }
+                { $$ = New_Deref(lParse,  $1, 3, $3, $5, $7,  0,   0 ); TEST($$); }
        | bexpr '[' expr ',' expr ',' expr ',' expr ']'
-                { $$ = New_Deref( $1, 4, $3, $5, $7, $9,   0 ); TEST($$); }
+                { $$ = New_Deref(lParse,  $1, 4, $3, $5, $7, $9,   0 ); TEST($$); }
        | bexpr '[' expr ',' expr ',' expr ',' expr ',' expr ']'
-                { $$ = New_Deref( $1, 5, $3, $5, $7, $9, $11 ); TEST($$); }
+                { $$ = New_Deref(lParse,  $1, 5, $3, $5, $7, $9, $11 ); TEST($$); }
        | NOT bexpr
-                { $$ = New_Unary( BOOLEAN, NOT, $2 ); TEST($$); }
+                { $$ = New_Unary(lParse,  BOOLEAN, NOT, $2 ); TEST($$); }
        | '(' bexpr ')'
                 { $$ = $2; }
        ;
 
 sexpr:   STRING
-                { $$ = New_Const( STRING, $1, strlen($1)+1 ); TEST($$);
+                { $$ = New_Const(lParse,  STRING, $1, strlen($1)+1 ); TEST($$);
                   SIZE($$) = strlen($1); }
        | SCOLUMN
-                { $$ = New_Column( $1 ); TEST($$); }
+                { $$ = New_Column(lParse,  $1 ); TEST($$); }
        | SCOLUMN '{' expr '}'
                 {
                   if( TYPE($3) != LONG
 		      || OPER($3) != CONST_OP ) {
-		     yyerror("Offset argument must be a constant integer");
+		     yyerror(scanner, lParse, "Offset argument must be a constant integer");
 		     YYERROR;
 		  }
-                  $$ = New_Offset( $1, $3 ); TEST($$);
+                  $$ = New_Offset(lParse,  $1, $3 ); TEST($$);
                 }
        | SNULLREF
-                { $$ = New_Func( STRING, null_fct, 0, 0, 0, 0, 0, 0, 0, 0 ); }
+                { $$ = New_Func(lParse,  STRING, null_fct, 0, 0, 0, 0, 0, 0, 0, 0 ); }
        | '(' sexpr ')'
                 { $$ = $2; }
        | sexpr '+' sexpr
                 { 
 		  if (SIZE($1)+SIZE($3) >= MAX_STRLEN) {
-		    yyerror("Combined string size exceeds " MAX_STRLEN_S " characters");
+		    yyerror(scanner, lParse, "Combined string size exceeds " MAX_STRLEN_S " characters");
 		    YYERROR;
 		  }
-		  $$ = New_BinOp( STRING, $1, '+', $3 );  TEST($$);
+		  $$ = New_BinOp(lParse,  STRING, $1, '+', $3 );  TEST($$);
 		  SIZE($$) = SIZE($1) + SIZE($3);
 		}
        | bexpr '?' sexpr ':' sexpr
                 {
 		  int outSize;
                   if( SIZE($1)!=1 ) {
-                     yyerror("Cannot have a vector string column");
+                     yyerror(scanner, lParse, "Cannot have a vector string column");
 		     YYERROR;
                   }
 		  /* Since the output can be calculated now, as a constant
@@ -1154,11 +1165,11 @@ sexpr:   STRING
 		     order to avoid an overflow. */
 		  outSize = SIZE($3);
 		  if (SIZE($5) > outSize) outSize = SIZE($5);
-                  $$ = New_FuncSize( 0, ifthenelse_fct, 3, $3, $5, $1,
+                  $$ = New_FuncSize(lParse,  0, ifthenelse_fct, 3, $3, $5, $1,
 				     0, 0, 0, 0, outSize);
 		  
                   TEST($$);
-                  if( SIZE($3)<SIZE($5) )  Copy_Dims($$, $5);
+                  if( SIZE($3)<SIZE($5) )  Copy_Dims( lParse,$$, $5);
                 }
 
        | FUNCTION sexpr ',' sexpr ')'
@@ -1171,12 +1182,12 @@ sexpr:   STRING
 		     outSize = SIZE($2);
 		     if (SIZE($4) > outSize) outSize = SIZE($4);
 		     
-		     $$ = New_FuncSize( 0, defnull_fct, 2, $2, $4, 0,
+		     $$ = New_FuncSize(lParse,  0, defnull_fct, 2, $2, $4, 0,
 					0, 0, 0, 0, outSize );
 		     TEST($$); 
 		     if( SIZE($4)>SIZE($2) ) SIZE($$) = SIZE($4);
 		  } else {
-		     yyerror("Function(string,string) not supported");
+		     yyerror(scanner, lParse, "Function(string,string) not supported");
 		     YYERROR;
 		  }
 		}
@@ -1186,24 +1197,24 @@ sexpr:   STRING
 		    int len;
 		    if( TYPE($4) != LONG || SIZE($4) != 1 ||
 			TYPE($6) != LONG || SIZE($6) != 1) {
-		      yyerror("When using STRMID(S,P,N), P and N must be integers (and not vector columns)");
+		      yyerror(scanner, lParse, "When using STRMID(S,P,N), P and N must be integers (and not vector columns)");
 		      YYERROR;
 		    }
 		    if (OPER($6) == CONST_OP) {
 		      /* Constant value: use that directly */
-		      len = (gParse.Nodes[$6].value.data.lng);
+		      len = (lParse->Nodes[$6].value.data.lng);
 		    } else {
 		      /* Variable value: use the maximum possible (from $2) */
 		      len = SIZE($2);
 		    }
 		    if (len <= 0 || len >= MAX_STRLEN) {
-		      yyerror("STRMID(S,P,N), N must be 1-" MAX_STRLEN_S);
+		      yyerror(scanner, lParse, "STRMID(S,P,N), N must be 1-" MAX_STRLEN_S);
 		      YYERROR;
 		    }
-		    $$ = New_FuncSize( 0, strmid_fct, 3, $2, $4,$6,0,0,0,0,len);
+		    $$ = New_FuncSize(lParse,  0, strmid_fct, 3, $2, $4,$6,0,0,0,0,len);
 		    TEST($$);
 		  } else {
-		     yyerror("Function(string,expr,expr) not supported");
+		     yyerror(scanner, lParse, "Function(string,expr,expr) not supported");
 		     YYERROR;
 		  }
 		}
@@ -1216,46 +1227,46 @@ sexpr:   STRING
 /*  Start of "New" routines which build the expression Nodal structure   */
 /*************************************************************************/
 
-static int Alloc_Node( void )
+static int Alloc_Node( ParseData *lParse )
 {
                       /* Use this for allocation to guarantee *Nodes */
    Node *newNodePtr;  /* survives on failure, making it still valid  */
                       /* while working our way out of this error     */
 
-   if( gParse.nNodes == gParse.nNodesAlloc ) {
-      if( gParse.Nodes ) {
-	 gParse.nNodesAlloc += gParse.nNodesAlloc;
-	 newNodePtr = (Node *)realloc( gParse.Nodes,
-				       sizeof(Node)*gParse.nNodesAlloc );
+   if( lParse->nNodes == lParse->nNodesAlloc ) {
+      if( lParse->Nodes ) {
+	 lParse->nNodesAlloc += lParse->nNodesAlloc;
+	 newNodePtr = (Node *)realloc( lParse->Nodes,
+				       sizeof(Node)*lParse->nNodesAlloc );
       } else {
-	 gParse.nNodesAlloc = 100;
-	 newNodePtr = (Node *)malloc ( sizeof(Node)*gParse.nNodesAlloc );
+	 lParse->nNodesAlloc = 100;
+	 newNodePtr = (Node *)malloc ( sizeof(Node)*lParse->nNodesAlloc );
       }	 
 
       if( newNodePtr ) {
-	 gParse.Nodes = newNodePtr;
+	 lParse->Nodes = newNodePtr;
       } else {
-	 gParse.status = MEMORY_ALLOCATION;
+	 lParse->status = MEMORY_ALLOCATION;
 	 return( -1 );
       }
    }
 
-   return ( gParse.nNodes++ );
+   return ( lParse->nNodes++ );
 }
 
-static void Free_Last_Node( void )
+static void Free_Last_Node( ParseData *lParse )
 {
-   if( gParse.nNodes ) gParse.nNodes--;
+   if( lParse->nNodes ) lParse->nNodes--;
 }
 
-static int New_Const( int returnType, void *value, long len )
+static int New_Const( ParseData *lParse, int returnType, void *value, long len )
 {
    Node *this;
    int n;
 
-   n = Alloc_Node();
+   n = Alloc_Node(lParse);
    if( n>=0 ) {
-      this             = gParse.Nodes + n;
+      this             = lParse->Nodes + n;
       this->operation  = CONST_OP;             /* Flag a constant */
       this->DoOp       = NULL;
       this->nSubNodes  = 0;
@@ -1269,58 +1280,58 @@ static int New_Const( int returnType, void *value, long len )
    return(n);
 }
 
-static int New_Column( int ColNum )
+static int New_Column( ParseData *lParse, int ColNum )
 {
    Node *this;
    int  n, i;
 
-   n = Alloc_Node();
+   n = Alloc_Node(lParse);
    if( n>=0 ) {
-      this              = gParse.Nodes + n;
+      this              = lParse->Nodes + n;
       this->operation   = -ColNum;
       this->DoOp        = NULL;
       this->nSubNodes   = 0;
-      this->type        = gParse.varData[ColNum].type;
-      this->value.nelem = gParse.varData[ColNum].nelem;
-      this->value.naxis = gParse.varData[ColNum].naxis;
-      for( i=0; i<gParse.varData[ColNum].naxis; i++ )
-	 this->value.naxes[i] = gParse.varData[ColNum].naxes[i];
+      this->type        = lParse->varData[ColNum].type;
+      this->value.nelem = lParse->varData[ColNum].nelem;
+      this->value.naxis = lParse->varData[ColNum].naxis;
+      for( i=0; i<lParse->varData[ColNum].naxis; i++ )
+	 this->value.naxes[i] = lParse->varData[ColNum].naxes[i];
    }
    return(n);
 }
 
-static int New_Offset( int ColNum, int offsetNode )
+static int New_Offset( ParseData *lParse, int ColNum, int offsetNode )
 {
    Node *this;
    int  n, i, colNode;
 
-   colNode = New_Column( ColNum );
+   colNode = New_Column( lParse, ColNum );
    if( colNode<0 ) return(-1);
 
-   n = Alloc_Node();
+   n = Alloc_Node(lParse);
    if( n>=0 ) {
-      this              = gParse.Nodes + n;
+      this              = lParse->Nodes + n;
       this->operation   = '{';
       this->DoOp        = Do_Offset;
       this->nSubNodes   = 2;
       this->SubNodes[0] = colNode;
       this->SubNodes[1] = offsetNode;
-      this->type        = gParse.varData[ColNum].type;
-      this->value.nelem = gParse.varData[ColNum].nelem;
-      this->value.naxis = gParse.varData[ColNum].naxis;
-      for( i=0; i<gParse.varData[ColNum].naxis; i++ )
-	 this->value.naxes[i] = gParse.varData[ColNum].naxes[i];
+      this->type        = lParse->varData[ColNum].type;
+      this->value.nelem = lParse->varData[ColNum].nelem;
+      this->value.naxis = lParse->varData[ColNum].naxis;
+      for( i=0; i<lParse->varData[ColNum].naxis; i++ )
+	 this->value.naxes[i] = lParse->varData[ColNum].naxes[i];
    }
    return(n);
 }
 
-static int New_Unary( int returnType, int Op, int Node1 )
+static int New_Unary( ParseData *lParse, int returnType, int Op, int Node1 )
 {
    Node *this, *that;
    int  i,n;
 
    if( Node1<0 ) return(-1);
-   that = gParse.Nodes + Node1;
+   that = lParse->Nodes + Node1;
 
    if( !Op ) Op = returnType;
 
@@ -1328,50 +1339,50 @@ static int New_Unary( int returnType, int Op, int Node1 )
    if( (Op==LONG   || Op==INTCAST) && that->type==LONG    ) return( Node1 );
    if( (Op==BOOLEAN              ) && that->type==BOOLEAN ) return( Node1 );
    
-   n = Alloc_Node();
+   n = Alloc_Node(lParse);
    if( n>=0 ) {
-      this              = gParse.Nodes + n;
+      this              = lParse->Nodes + n;
       this->operation   = Op;
       this->DoOp        = Do_Unary;
       this->nSubNodes   = 1;
       this->SubNodes[0] = Node1;
       this->type        = returnType;
 
-      that              = gParse.Nodes + Node1; /* Reset in case .Nodes mv'd */
+      that              = lParse->Nodes + Node1; /* Reset in case .Nodes mv'd */
       this->value.nelem = that->value.nelem;
       this->value.naxis = that->value.naxis;
       for( i=0; i<that->value.naxis; i++ )
 	 this->value.naxes[i] = that->value.naxes[i];
 
-      if( that->operation==CONST_OP ) this->DoOp( this );
+      if( that->operation==CONST_OP ) this->DoOp( lParse, this );
    }
    return( n );
 }
 
-static int New_BinOp( int returnType, int Node1, int Op, int Node2 )
+static int New_BinOp( ParseData *lParse, int returnType, int Node1, int Op, int Node2 )
 {
    Node *this,*that1,*that2;
    int  n,i,constant;
 
    if( Node1<0 || Node2<0 ) return(-1);
 
-   n = Alloc_Node();
+   n = Alloc_Node(lParse);
    if( n>=0 ) {
-      this             = gParse.Nodes + n;
+      this             = lParse->Nodes + n;
       this->operation  = Op;
       this->nSubNodes  = 2;
       this->SubNodes[0]= Node1;
       this->SubNodes[1]= Node2;
       this->type       = returnType;
 
-      that1            = gParse.Nodes + Node1;
-      that2            = gParse.Nodes + Node2;
+      that1            = lParse->Nodes + Node1;
+      that2            = lParse->Nodes + Node2;
       constant         = (that1->operation==CONST_OP
                           && that2->operation==CONST_OP);
       if( that1->type!=STRING && that1->type!=BITSTR )
-	 if( !Test_Dims( Node1, Node2 ) ) {
-	    Free_Last_Node();
-	    yyerror("Array sizes/dims do not match for binary operator");
+	if( !Test_Dims( lParse, Node1, Node2 ) ) {
+	    Free_Last_Node(lParse);
+	    yyerror(0, lParse, "Array sizes/dims do not match for binary operator");
 	    return(-1);
 	 }
       if( that1->value.nelem == 1 ) that1 = that2;
@@ -1396,22 +1407,25 @@ static int New_BinOp( int returnType, int Node1, int Op, int Node2 )
       case LONG:    this->DoOp = Do_BinOp_lng;  break;
       case DOUBLE:  this->DoOp = Do_BinOp_dbl;  break;
       }
-      if( constant ) this->DoOp( this );
+      if( constant ) this->DoOp( lParse, this );
    }
    return( n );
 }
 
-static int New_Func( int returnType, funcOp Op, int nNodes,
+static int New_Func( ParseData *lParse,
+		     int returnType, funcOp Op, int nNodes,
 		     int Node1, int Node2, int Node3, int Node4, 
 		     int Node5, int Node6, int Node7 )
 {
-  return New_FuncSize(returnType, Op, nNodes,
+  return New_FuncSize(lParse,
+		      returnType, Op, nNodes,
 		      Node1, Node2, Node3, Node4, 
 		      Node5, Node6, Node7, 0);
 }
 
-static int New_FuncSize( int returnType, funcOp Op, int nNodes,
-		     int Node1, int Node2, int Node3, int Node4, 
+static int New_FuncSize( ParseData *lParse,
+			 int returnType, funcOp Op, int nNodes,
+			 int Node1, int Node2, int Node3, int Node4, 
 			 int Node5, int Node6, int Node7, int Size )
 /* If returnType==0 , use Node1's type and vector sizes as returnType, */
 /* else return a single value of type returnType                       */
@@ -1422,9 +1436,9 @@ static int New_FuncSize( int returnType, funcOp Op, int nNodes,
    if( Node1<0 || Node2<0 || Node3<0 || Node4<0 || 
        Node5<0 || Node6<0 || Node7<0 ) return(-1);
 
-   n = Alloc_Node();
+   n = Alloc_Node(lParse);
    if( n>=0 ) {
-      this              = gParse.Nodes + n;
+      this              = lParse->Nodes + n;
       this->operation   = (int)Op;
       this->DoOp        = Do_Func;
       this->nSubNodes   = nNodes;
@@ -1447,7 +1461,7 @@ static int New_FuncSize( int returnType, funcOp Op, int nNodes,
 	 this->value.naxis    = 1;
 	 this->value.naxes[0] = 1;
       } else {
-	 that              = gParse.Nodes + Node1;
+	 that              = lParse->Nodes + Node1;
 	 this->type        = that->type;
 	 this->value.nelem = that->value.nelem;
 	 this->value.naxis = that->value.naxis;
@@ -1457,12 +1471,12 @@ static int New_FuncSize( int returnType, funcOp Op, int nNodes,
       /* Force explicit size before evaluating */
       if (Size > 0) this->value.nelem = Size;
 
-      if( constant ) this->DoOp( this );
+      if( constant ) this->DoOp( lParse, this );
    }
    return( n );
 }
 
-static int New_Deref( int Var,  int nDim,
+static int New_Deref( ParseData *lParse, int Var,  int nDim,
 		      int Dim1, int Dim2, int Dim3, int Dim4, int Dim5 )
 {
    int n, idx, constant;
@@ -1471,34 +1485,34 @@ static int New_Deref( int Var,  int nDim,
 
    if( Var<0 || Dim1<0 || Dim2<0 || Dim3<0 || Dim4<0 || Dim5<0 ) return(-1);
 
-   theVar = gParse.Nodes + Var;
+   theVar = lParse->Nodes + Var;
    if( theVar->operation==CONST_OP || theVar->value.nelem==1 ) {
-      yyerror("Cannot index a scalar value");
+      yyerror(0, lParse, "Cannot index a scalar value");
       return(-1);
    }
 
-   n = Alloc_Node();
+   n = Alloc_Node(lParse);
    if( n>=0 ) {
-      this              = gParse.Nodes + n;
+      this              = lParse->Nodes + n;
       this->nSubNodes   = nDim+1;
-      theVar            = gParse.Nodes + (this->SubNodes[0]=Var);
-      theDim[0]         = gParse.Nodes + (this->SubNodes[1]=Dim1);
-      theDim[1]         = gParse.Nodes + (this->SubNodes[2]=Dim2);
-      theDim[2]         = gParse.Nodes + (this->SubNodes[3]=Dim3);
-      theDim[3]         = gParse.Nodes + (this->SubNodes[4]=Dim4);
-      theDim[4]         = gParse.Nodes + (this->SubNodes[5]=Dim5);
+      theVar            = lParse->Nodes + (this->SubNodes[0]=Var);
+      theDim[0]         = lParse->Nodes + (this->SubNodes[1]=Dim1);
+      theDim[1]         = lParse->Nodes + (this->SubNodes[2]=Dim2);
+      theDim[2]         = lParse->Nodes + (this->SubNodes[3]=Dim3);
+      theDim[3]         = lParse->Nodes + (this->SubNodes[4]=Dim4);
+      theDim[4]         = lParse->Nodes + (this->SubNodes[5]=Dim5);
       constant          = theVar->operation==CONST_OP;
       for( idx=0; idx<nDim; idx++ )
 	 constant = (constant && theDim[idx]->operation==CONST_OP);
 
       for( idx=0; idx<nDim; idx++ )
 	 if( theDim[idx]->value.nelem>1 ) {
-	    Free_Last_Node();
-	    yyerror("Cannot use an array as an index value");
+	    Free_Last_Node(lParse);
+	    yyerror(0, lParse, "Cannot use an array as an index value");
 	    return(-1);
 	 } else if( theDim[idx]->type!=LONG ) {
-	    Free_Last_Node();
-	    yyerror("Index value must be an integer type");
+	    Free_Last_Node(lParse);
+	    yyerror(0, lParse, "Index value must be an integer type");
 	    return(-1);
 	 }
 
@@ -1518,18 +1532,18 @@ static int New_Deref( int Var,  int nDim,
 	 }
 	 this->value.nelem = elem;
       } else {
-	 Free_Last_Node();
-	 yyerror("Must specify just one or all indices for vector");
+	 Free_Last_Node(lParse);
+	 yyerror(0, lParse, "Must specify just one or all indices for vector");
 	 return(-1);
       }
-      if( constant ) this->DoOp( this );
+      if( constant ) this->DoOp( lParse, this );
    }
    return(n);
 }
 
 extern int yyGetVariable( char *varName, YYSTYPE *varVal );
 
-static int New_GTI( funcOp Op, char *fname, int Node1, int Node2, char *start, char *stop )
+static int New_GTI( ParseData *lParse, funcOp Op, char *fname, int Node1, int Node2, char *start, char *stop )
 {
    fitsfile *fptr;
    Node *this, *that0, *that1, *that2;
@@ -1544,32 +1558,32 @@ static int New_GTI( funcOp Op, char *fname, int Node1, int Node2, char *start, c
    if( (Op == gtifilt_fct || Op == gtifind_fct) && Node1==-99 ) {
       type = yyGetVariable( "TIME", &colVal );
       if( type==COLUMN ) {
-	 Node1 = New_Column( (int)colVal.lng );
+	 Node1 = New_Column( lParse, (int)colVal.lng );
       } else {
-	 yyerror("Could not build TIME column for GTIFILTER/GTIFIND");
+	 yyerror(0, lParse, "Could not build TIME column for GTIFILTER/GTIFIND");
 	 return(-1);
       }
    }
 
    if (Op == gtiover_fct) {
      if (Node1 == -99 || Node2 == -99) {
-       yyerror("startExpr and stopExpr values must be defined for GTIOVERLAP");
+       yyerror(0, lParse, "startExpr and stopExpr values must be defined for GTIOVERLAP");
        return(-1);
      }
      /* Also case TIME_STOP to double precision */
-     Node2 = New_Unary( DOUBLE, 0, Node2 );
+     Node2 = New_Unary( lParse, DOUBLE, 0, Node2 );
      if (Node2 < 0) return(-1);
 
    }
 
    /* Type cast TIME to double precision */
-   Node1 = New_Unary( DOUBLE, 0, Node1 );
-   Node0 = Alloc_Node(); /* This will hold the START/STOP times */
+   Node1 = New_Unary( lParse, DOUBLE, 0, Node1 );
+   Node0 = Alloc_Node(lParse); /* This will hold the START/STOP times */
    if( Node1<0 || Node0<0 ) return(-1);
 
    /*  Record current HDU number in case we need to move within this file  */
 
-   fptr = gParse.def_fptr;
+   fptr = lParse->def_fptr;
    ffghdn( fptr, &evthdu );
 
    /*  Look for TIMEZERO keywords in current extension  */
@@ -1601,18 +1615,18 @@ static int New_GTI( funcOp Op, char *fname, int Node1, int Node2, char *start, c
 	 fname[i] = '\0';
 	 fname++;
 	 ffexts( fname, &hdunum, extname, &extvers, &movetotype,
-		 xcol, xexpr, &gParse.status );
+		 xcol, xexpr, &lParse->status );
          if( *extname ) {
-	    ffmnhd( fptr, movetotype, extname, extvers, &gParse.status );
+	    ffmnhd( fptr, movetotype, extname, extvers, &lParse->status );
 	    ffghdn( fptr, &hdunum );
 	 } else if( hdunum ) {
-	    ffmahd( fptr, ++hdunum, &hdutype, &gParse.status );
-	 } else if( !gParse.status ) {
-	    yyerror("Cannot use primary array for GTI filter");
+	    ffmahd( fptr, ++hdunum, &hdutype, &lParse->status );
+	 } else if( !lParse->status ) {
+	    yyerror(0, lParse, "Cannot use primary array for GTI filter");
 	    return( -1 );
 	 }
       } else {
-	 yyerror("File extension specifier lacks closing ']'");
+	 yyerror(0, lParse, "File extension specifier lacks closing ']'");
 	 return( -1 );
       }
       break;
@@ -1620,44 +1634,44 @@ static int New_GTI( funcOp Op, char *fname, int Node1, int Node2, char *start, c
       samefile = 1;
       hdunum = atoi( fname ) + 1;
       if( hdunum>1 )
-	 ffmahd( fptr, hdunum, &hdutype, &gParse.status );
+	 ffmahd( fptr, hdunum, &hdutype, &lParse->status );
       else {
-	 yyerror("Cannot use primary array for GTI filter / GTIFIND");
+	 yyerror(0, lParse, "Cannot use primary array for GTI filter / GTIFIND");
 	 return( -1 );
       }
       break;
    default:
       samefile = 0;
-      if( ! ffopen( &fptr, fname, READONLY, &gParse.status ) )
+      if( ! ffopen( &fptr, fname, READONLY, &lParse->status ) )
 	 ffghdn( fptr, &hdunum );
       break;
    }
-   if( gParse.status ) return(-1);
+   if( lParse->status ) return(-1);
 
    /*  If at primary, search for GTI extension  */
 
    if( hdunum==1 ) {
       while( 1 ) {
 	 hdunum++;
-	 if( ffmahd( fptr, hdunum, &hdutype, &gParse.status ) ) break;
+	 if( ffmahd( fptr, hdunum, &hdutype, &lParse->status ) ) break;
 	 if( hdutype==IMAGE_HDU ) continue;
 	 tstat = 0;
 	 if( ffgkys( fptr, "EXTNAME", extname, NULL, &tstat ) ) continue;
 	 ffupch( extname );
 	 if( strstr( extname, "GTI" ) ) break;
       }
-      if( gParse.status ) {
-	 if( gParse.status==END_OF_FILE )
-	    yyerror("GTI extension not found in this file");
+      if( lParse->status ) {
+	 if( lParse->status==END_OF_FILE )
+	    yyerror(0, lParse, "GTI extension not found in this file");
 	 return(-1);
       }
    }
 
    /*  Locate START/STOP Columns  */
 
-   ffgcno( fptr, CASEINSEN, start, &startCol, &gParse.status );
-   ffgcno( fptr, CASEINSEN, stop,  &stopCol,  &gParse.status );
-   if( gParse.status ) return(-1);
+   ffgcno( fptr, CASEINSEN, start, &startCol, &lParse->status );
+   ffgcno( fptr, CASEINSEN, stop,  &stopCol,  &lParse->status );
+   if( lParse->status ) return(-1);
 
    /*  Look for TIMEZERO keywords in GTI extension  */
 
@@ -1673,9 +1687,9 @@ static int New_GTI( funcOp Op, char *fname, int Node1, int Node2, char *start, c
       timeZeroF[1] = 0.0;
    }
 
-   n = Alloc_Node();
+   n = Alloc_Node(lParse);
    if( n >= 0 ) {
-      this                 = gParse.Nodes + n;
+      this                 = lParse->Nodes + n;
       this->SubNodes[1]    = Node1;
       this->operation      = (int) Op;
       if (Op == gtifilt_fct) {
@@ -1691,16 +1705,16 @@ static int New_GTI( funcOp Op, char *fname, int Node1, int Node2, char *start, c
 	this->DoOp           = Do_GTI_Over;
 	this->type           = DOUBLE;
       }
-      that1                = gParse.Nodes + Node1;
+      that1                = lParse->Nodes + Node1;
       this->value.nelem    = that1->value.nelem;
       this->value.naxis    = that1->value.naxis;
       for( i=0; i < that1->value.naxis; i++ )
 	 this->value.naxes[i] = that1->value.naxes[i];
       if (Op == gtiover_fct) {
 	this->SubNodes[2]  = Node2;
-	that2 = gParse.Nodes + Node2;
+	that2 = lParse->Nodes + Node2;
 	if (that1->value.nelem != that2->value.nelem) {
-	  yyerror("Dimensions of TIME and TIME_STOP must match for GTIOVERLAP");
+	  yyerror(0, lParse, "Dimensions of TIME and TIME_STOP must match for GTIOVERLAP");
 	  return(-1);
 	}
       }
@@ -1708,29 +1722,29 @@ static int New_GTI( funcOp Op, char *fname, int Node1, int Node2, char *start, c
       /* Init START/STOP node to be treated as a "constant" */
 
       this->SubNodes[0]    = Node0;
-      that0                = gParse.Nodes + Node0;
+      that0                = lParse->Nodes + Node0;
       that0->operation     = CONST_OP;
       that0->DoOp          = NULL;
       that0->value.data.ptr= NULL;
 
       /*  Read in START/STOP times  */
 
-      if( ffgkyj( fptr, "NAXIS2", &nrows, NULL, &gParse.status ) )
+      if( ffgkyj( fptr, "NAXIS2", &nrows, NULL, &lParse->status ) )
 	 return(-1);
       that0->value.nelem = nrows;
       if( nrows ) {
 
 	 that0->value.data.dblptr = (double*)malloc( 2*nrows*sizeof(double) );
 	 if( !that0->value.data.dblptr ) {
-	    gParse.status = MEMORY_ALLOCATION;
+	    lParse->status = MEMORY_ALLOCATION;
 	    return(-1);
 	 }
 	 
 	 ffgcvd( fptr, startCol, 1L, 1L, nrows, 0.0,
-		 that0->value.data.dblptr, &i, &gParse.status );
+		 that0->value.data.dblptr, &i, &lParse->status );
 	 ffgcvd( fptr, stopCol, 1L, 1L, nrows, 0.0,
-		 that0->value.data.dblptr+nrows, &i, &gParse.status );
-	 if( gParse.status ) {
+		 that0->value.data.dblptr+nrows, &i, &lParse->status );
+	 if( lParse->status ) {
 	    free( that0->value.data.dblptr );
 	    return(-1);
 	 }
@@ -1750,7 +1764,7 @@ static int New_GTI( funcOp Op, char *fname, int Node1, int Node2, char *start, c
 
 	 /* GTIOVERLAP() requires ordered GTI */
 	 if (that0->type != 1 && Op == gtiover_fct) {
-	   yyerror("Input GTI must be time-ordered for GTIOVERLAP");
+	   yyerror(0, lParse, "Input GTI must be time-ordered for GTIOVERLAP");
 	   return(-1);
 	 }
 	 
@@ -1769,19 +1783,19 @@ static int New_GTI( funcOp Op, char *fname, int Node1, int Node2, char *start, c
       /* If Node1 is constant (gtifilt_fct) or
 	 Node1 and Node2 are constant (gtiover_fct), then evaluate now */
       if( OPER(Node1)==CONST_OP && (Op == gtifilt_fct || OPER(Node2)==CONST_OP)) {
-	this->DoOp( this );
+	this->DoOp( lParse, this );
       }
    }
 
    if( samefile )
-      ffmahd( fptr, evthdu, &hdutype, &gParse.status );
+      ffmahd( fptr, evthdu, &hdutype, &lParse->status );
    else
-      ffclos( fptr, &gParse.status );
+      ffclos( fptr, &lParse->status );
 
    return( n );
 }
 
-static int New_REG( char *fname, int NodeX, int NodeY, char *colNames )
+static int New_REG( ParseData *lParse, char *fname, int NodeX, int NodeY, char *colNames )
 {
    Node *this, *that0;
    int  type, n, Node0;
@@ -1794,34 +1808,34 @@ static int New_REG( char *fname, int NodeX, int NodeY, char *colNames )
    if( NodeX==-99 ) {
       type = yyGetVariable( "X", &colVal );
       if( type==COLUMN ) {
-	 NodeX = New_Column( (int)colVal.lng );
+	 NodeX = New_Column( lParse, (int)colVal.lng );
       } else {
-	 yyerror("Could not build X column for REGFILTER");
+	 yyerror(0, lParse, "Could not build X column for REGFILTER");
 	 return(-1);
       }
    }
    if( NodeY==-99 ) {
       type = yyGetVariable( "Y", &colVal );
       if( type==COLUMN ) {
-	 NodeY = New_Column( (int)colVal.lng );
+ 	 NodeY = New_Column( lParse, (int)colVal.lng );
       } else {
-	 yyerror("Could not build Y column for REGFILTER");
+	 yyerror(0, lParse, "Could not build Y column for REGFILTER");
 	 return(-1);
       }
    }
-   NodeX = New_Unary( DOUBLE, 0, NodeX );
-   NodeY = New_Unary( DOUBLE, 0, NodeY );
-   Node0 = Alloc_Node(); /* This will hold the Region Data */
+   NodeX = New_Unary( lParse, DOUBLE, 0, NodeX );
+   NodeY = New_Unary( lParse, DOUBLE, 0, NodeY );
+   Node0 = Alloc_Node(lParse); /* This will hold the Region Data */
    if( NodeX<0 || NodeY<0 || Node0<0 ) return(-1);
 
-   if( ! (Test_Dims( NodeX, NodeY ) ) ) {
-     yyerror("Dimensions of REGFILTER arguments are not compatible");
+   if( ! (Test_Dims( lParse, NodeX, NodeY ) ) ) {
+     yyerror(0, lParse, "Dimensions of REGFILTER arguments are not compatible");
      return (-1);
    }
 
-   n = Alloc_Node();
+   n = Alloc_Node(lParse);
    if( n >= 0 ) {
-      this                 = gParse.Nodes + n;
+      this                 = lParse->Nodes + n;
       this->nSubNodes      = 3;
       this->SubNodes[0]    = Node0;
       this->SubNodes[1]    = NodeX;
@@ -1833,12 +1847,12 @@ static int New_REG( char *fname, int NodeX, int NodeY, char *colNames )
       this->value.naxis    = 1;
       this->value.naxes[0] = 1;
       
-      Copy_Dims(n, NodeX);
-      if( SIZE(NodeX)<SIZE(NodeY) )  Copy_Dims(n, NodeY);
+      Copy_Dims(lParse, n, NodeX);
+      if( SIZE(NodeX)<SIZE(NodeY) )  Copy_Dims(lParse, n, NodeY);
 
       /* Init Region node to be treated as a "constant" */
 
-      that0                = gParse.Nodes + Node0;
+      that0                = lParse->Nodes + Node0;
       that0->operation     = CONST_OP;
       that0->DoOp          = NULL;
 
@@ -1854,27 +1868,27 @@ static int New_REG( char *fname, int NodeX, int NodeY, char *colNames )
 	    *(cY++) = '\0';
 	 while( *cY==' ' ) cY++;
 	 if( !*cY ) {
-	    yyerror("Could not extract valid pair of column names from REGFILTER");
-	    Free_Last_Node();
+	    yyerror(0, lParse, "Could not extract valid pair of column names from REGFILTER");
+	    Free_Last_Node(lParse);
 	    return( -1 );
 	 }
-	 fits_get_colnum( gParse.def_fptr, CASEINSEN, cX, &Xcol,
-			  &gParse.status );
-	 fits_get_colnum( gParse.def_fptr, CASEINSEN, cY, &Ycol,
-			  &gParse.status );
-	 if( gParse.status ) {
-	    yyerror("Could not locate columns indicated for WCS info");
-	    Free_Last_Node();
+	 fits_get_colnum( lParse->def_fptr, CASEINSEN, cX, &Xcol,
+			  &lParse->status );
+	 fits_get_colnum( lParse->def_fptr, CASEINSEN, cY, &Ycol,
+			  &lParse->status );
+	 if( lParse->status ) {
+	    yyerror(0, lParse, "Could not locate columns indicated for WCS info");
+	    Free_Last_Node(lParse);
 	    return( -1 );
 	 }
 
       } else {
 	 /*  Try to find columns used in X/Y expressions  */
-	 Xcol = Locate_Col( gParse.Nodes + NodeX );
-	 Ycol = Locate_Col( gParse.Nodes + NodeY );
+	 Xcol = Locate_Col( lParse, lParse->Nodes + NodeX );
+	 Ycol = Locate_Col( lParse, lParse->Nodes + NodeY );
 	 if( Xcol<0 || Ycol<0 ) {
-	    yyerror("Found multiple X/Y column references in REGFILTER");
-	    Free_Last_Node();
+	    yyerror(0, lParse, "Found multiple X/Y column references in REGFILTER");
+	    Free_Last_Node(lParse);
 	    return( -1 );
 	 }
       }
@@ -1883,7 +1897,7 @@ static int New_REG( char *fname, int NodeX, int NodeY, char *colNames )
       wcs.exists = 0;
       if( Xcol>0 && Ycol>0 ) {
 	 tstat = 0;
-	 ffgtcs( gParse.def_fptr, Xcol, Ycol,
+	 ffgtcs( lParse->def_fptr, Xcol, Ycol,
 		 &wcs.xrefval, &wcs.yrefval,
 		 &wcs.xrefpix, &wcs.yrefpix,
 		 &wcs.xinc,    &wcs.yinc,
@@ -1892,8 +1906,8 @@ static int New_REG( char *fname, int NodeX, int NodeY, char *colNames )
 	 if( tstat==NO_WCS_KEY ) {
 	    wcs.exists = 0;
 	 } else if( tstat ) {
-	    gParse.status = tstat;
-	    Free_Last_Node();
+	    lParse->status = tstat;
+	    Free_Last_Node(lParse);
 	    return( -1 );
 	 } else {
 	    wcs.exists = 1;
@@ -1902,30 +1916,30 @@ static int New_REG( char *fname, int NodeX, int NodeY, char *colNames )
 
       /*  Read in Region file  */
 
-      fits_read_rgnfile( fname, &wcs, &Rgn, &gParse.status );
-      if( gParse.status ) {
-	 Free_Last_Node();
+      fits_read_rgnfile( fname, &wcs, &Rgn, &lParse->status );
+      if( lParse->status ) {
+	 Free_Last_Node(lParse);
 	 return( -1 );
       }
 
       that0->value.data.ptr = Rgn;
 
       if( OPER(NodeX)==CONST_OP && OPER(NodeY)==CONST_OP )
-	 this->DoOp( this );
+	 this->DoOp( lParse, this );
    }
 
    return( n );
 }
 
-static int New_Vector( int subNode )
+static int New_Vector( ParseData *lParse, int subNode )
 {
    Node *this, *that;
    int n;
 
-   n = Alloc_Node();
+   n = Alloc_Node(lParse);
    if( n >= 0 ) {
-      this              = gParse.Nodes + n;
-      that              = gParse.Nodes + subNode;
+      this              = lParse->Nodes + n;
+      that              = lParse->Nodes + subNode;
       this->type        = that->type;
       this->nSubNodes   = 1;
       this->SubNodes[0] = subNode;
@@ -1936,15 +1950,15 @@ static int New_Vector( int subNode )
    return( n );
 }
 
-static int Close_Vec( int vecNode )
+static int Close_Vec( ParseData *lParse, int vecNode )
 {
    Node *this;
    int n, nelem=0;
 
-   this = gParse.Nodes + vecNode;
+   this = lParse->Nodes + vecNode;
    for( n=0; n < this->nSubNodes; n++ ) {
       if( TYPE( this->SubNodes[n] ) != this->type ) {
-	 this->SubNodes[n] = New_Unary( this->type, 0, this->SubNodes[n] );
+	 this->SubNodes[n] = New_Unary( lParse, this->type, 0, this->SubNodes[n] );
 	 if( this->SubNodes[n]<0 ) return(-1);
       }
       nelem += SIZE(this->SubNodes[n]);
@@ -1956,7 +1970,7 @@ static int Close_Vec( int vecNode )
    return( vecNode );
 }
 
-static int Locate_Col( Node *this )
+static int Locate_Col( ParseData *lParse, Node *this )
 /*  Locate the TABLE column number of any columns in "this" calculation.  */
 /*  Return ZERO if none found, or negative if more than 1 found.          */
 {
@@ -1965,12 +1979,12 @@ static int Locate_Col( Node *this )
    
    if( this->nSubNodes==0
        && this->operation<=0 && this->operation!=CONST_OP )
-      return gParse.colData[ - this->operation].colnum;
+      return lParse->colData[ - this->operation].colnum;
 
    for( i=0; i<this->nSubNodes; i++ ) {
-      that = gParse.Nodes + this->SubNodes[i];
+      that = lParse->Nodes + this->SubNodes[i];
       if( that->operation>0 ) {
-	 newCol = Locate_Col( that );
+	 newCol = Locate_Col( lParse, that );
 	 if( newCol<=0 ) {
 	    nfound += -newCol;
 	 } else {
@@ -1983,7 +1997,7 @@ static int Locate_Col( Node *this )
 	 }
       } else if( that->operation!=CONST_OP ) {
 	 /*  Found a Column  */
-	 newCol = gParse.colData[- that->operation].colnum;
+	 newCol = lParse->colData[- that->operation].colnum;
 	 if( !nfound ) {
 	    col = newCol;
 	    nfound++;
@@ -1998,15 +2012,15 @@ static int Locate_Col( Node *this )
       return( col );
 }
 
-static int Test_Dims( int Node1, int Node2 )
+static int Test_Dims( ParseData *lParse, int Node1, int Node2 )
 {
    Node *that1, *that2;
    int valid, i;
 
    if( Node1<0 || Node2<0 ) return(0);
 
-   that1 = gParse.Nodes + Node1;
-   that2 = gParse.Nodes + Node2;
+   that1 = lParse->Nodes + Node1;
+   that2 = lParse->Nodes + Node2;
 
    if( that1->value.nelem==1 || that2->value.nelem==1 )
       valid = 1;
@@ -2023,15 +2037,15 @@ static int Test_Dims( int Node1, int Node2 )
    return( valid );
 }   
 
-static void Copy_Dims( int Node1, int Node2 )
+static void Copy_Dims( ParseData *lParse, int Node1, int Node2 )
 {
    Node *that1, *that2;
    int i;
 
    if( Node1<0 || Node2<0 ) return;
 
-   that1 = gParse.Nodes + Node1;
-   that2 = gParse.Nodes + Node2;
+   that1 = lParse->Nodes + Node1;
+   that2 = lParse->Nodes + Node2;
 
    that1->value.nelem = that2->value.nelem;
    that1->value.naxis = that2->value.naxis;
@@ -2043,7 +2057,7 @@ static void Copy_Dims( int Node1, int Node2 )
 /*    Routines for actually evaluating the expression start here    */
 /********************************************************************/
 
-void Evaluate_Parser( long firstRow, long nRows )
+void Evaluate_Parser( ParseData *lParse, long firstRow, long nRows )
     /***********************************************************************/
     /*  Reset the parser for processing another batch of data...           */
     /*    firstRow:  Row number of the first element to evaluate           */
@@ -2063,50 +2077,50 @@ void Evaluate_Parser( long firstRow, long nRows )
      rand_initialized = 1;
    }
 
-   gParse.firstRow = firstRow;
-   gParse.nRows    = nRows;
+   lParse->firstRow = firstRow;
+   lParse->nRows    = nRows;
 
    /*  Reset Column Nodes' pointers to point to right data and UNDEF arrays  */
 
-   rowOffset = firstRow - gParse.firstDataRow;
-   for( i=0; i<gParse.nNodes; i++ ) {
+   rowOffset = firstRow - lParse->firstDataRow;
+   for( i=0; i<lParse->nNodes; i++ ) {
      if(    OPER(i) >  0 || OPER(i) == CONST_OP ) continue;
 
       column = -OPER(i);
-      offset = gParse.varData[column].nelem * rowOffset;
+      offset = lParse->varData[column].nelem * rowOffset;
 
-      gParse.Nodes[i].value.undef = gParse.varData[column].undef + offset;
+      lParse->Nodes[i].value.undef = lParse->varData[column].undef + offset;
 
-      switch( gParse.Nodes[i].type ) {
+      switch( lParse->Nodes[i].type ) {
       case BITSTR:
-	 gParse.Nodes[i].value.data.strptr =
-	    (char**)gParse.varData[column].data + rowOffset;
-	 gParse.Nodes[i].value.undef       = NULL;
+	 lParse->Nodes[i].value.data.strptr =
+	    (char**)lParse->varData[column].data + rowOffset;
+	 lParse->Nodes[i].value.undef       = NULL;
 	 break;
       case STRING:
-	 gParse.Nodes[i].value.data.strptr = 
-	    (char**)gParse.varData[column].data + rowOffset;
-	 gParse.Nodes[i].value.undef = gParse.varData[column].undef + rowOffset;
+	 lParse->Nodes[i].value.data.strptr = 
+	    (char**)lParse->varData[column].data + rowOffset;
+	 lParse->Nodes[i].value.undef = lParse->varData[column].undef + rowOffset;
 	 break;
       case BOOLEAN:
-	 gParse.Nodes[i].value.data.logptr = 
-	    (char*)gParse.varData[column].data + offset;
+	 lParse->Nodes[i].value.data.logptr = 
+	    (char*)lParse->varData[column].data + offset;
 	 break;
       case LONG:
-	 gParse.Nodes[i].value.data.lngptr = 
-	    (long*)gParse.varData[column].data + offset;
+	 lParse->Nodes[i].value.data.lngptr = 
+	    (long*)lParse->varData[column].data + offset;
 	 break;
       case DOUBLE:
-	 gParse.Nodes[i].value.data.dblptr = 
-	    (double*)gParse.varData[column].data + offset;
+	 lParse->Nodes[i].value.data.dblptr = 
+	    (double*)lParse->varData[column].data + offset;
 	 break;
       }
    }
 
-   Evaluate_Node( gParse.resultNode );
+   Evaluate_Node( lParse, lParse->resultNode );
 }
 
-static void Evaluate_Node( int thisNode )
+static void Evaluate_Node( ParseData *lParse, int thisNode )
     /**********************************************************************/
     /*  Recursively evaluate thisNode's subNodes, then call one of the    */
     /*  Do_<Action> functions pointed to by thisNode's DoOp element.      */
@@ -2115,34 +2129,34 @@ static void Evaluate_Node( int thisNode )
    Node *this;
    int i;
    
-   if( gParse.status ) return;
+   if( lParse->status ) return;
 
-   this = gParse.Nodes + thisNode;
+   this = lParse->Nodes + thisNode;
    if( this->operation>0 ) {  /* <=0 indicate constants and columns */
       i = this->nSubNodes;
       while( i-- ) {
-	 Evaluate_Node( this->SubNodes[i] );
-	 if( gParse.status ) return;
+	 Evaluate_Node( lParse, this->SubNodes[i] );
+	 if( lParse->status ) return;
       }
-      this->DoOp( this );
+      this->DoOp( lParse, this );
    }
 }
 
-static void Allocate_Ptrs( Node *this )
+static void Allocate_Ptrs( ParseData *lParse, Node *this )
 {
    long elem, row, size;
 
    if( this->type==BITSTR || this->type==STRING ) {
 
-      this->value.data.strptr = (char**)malloc( gParse.nRows
+      this->value.data.strptr = (char**)malloc( lParse->nRows
 						* sizeof(char*) );
       if( this->value.data.strptr ) {
-	 this->value.data.strptr[0] = (char*)malloc( gParse.nRows
+	 this->value.data.strptr[0] = (char*)malloc( lParse->nRows
 						     * (this->value.nelem+2)
 						     * sizeof(char) );
 	 if( this->value.data.strptr[0] ) {
 	    row = 0;
-	    while( (++row)<gParse.nRows ) {
+	    while( (++row)<lParse->nRows ) {
 	       this->value.data.strptr[row] =
 		  this->value.data.strptr[row-1] + this->value.nelem+1;
 	    }
@@ -2153,16 +2167,16 @@ static void Allocate_Ptrs( Node *this )
 	       this->value.undef = NULL;  /* BITSTRs don't use undef array */
 	    }
 	 } else {
-	    gParse.status = MEMORY_ALLOCATION;
+	    lParse->status = MEMORY_ALLOCATION;
 	    free( this->value.data.strptr );
 	 }
       } else {
-	 gParse.status = MEMORY_ALLOCATION;
+	 lParse->status = MEMORY_ALLOCATION;
       }
 
    } else {
 
-      elem = this->value.nelem * gParse.nRows;
+      elem = this->value.nelem * lParse->nRows;
       switch( this->type ) {
       case DOUBLE:  size = sizeof( double ); break;
       case LONG:    size = sizeof( long   ); break;
@@ -2173,19 +2187,19 @@ static void Allocate_Ptrs( Node *this )
       this->value.data.ptr = calloc(size+1, elem);
 
       if( this->value.data.ptr==NULL ) {
-	 gParse.status = MEMORY_ALLOCATION;
+	 lParse->status = MEMORY_ALLOCATION;
       } else {
 	 this->value.undef = (char *)this->value.data.ptr + elem*size;
       }
    }
 }
 
-static void Do_Unary( Node *this )
+static void Do_Unary( ParseData *lParse, Node *this )
 {
    Node *that;
    long elem;
 
-   that = gParse.Nodes + this->SubNodes[0];
+   that = lParse->Nodes + this->SubNodes[0];
 
    if( that->operation==CONST_OP ) {  /* Operating on a constant! */
       switch( this->operation ) {
@@ -2226,19 +2240,19 @@ static void Do_Unary( Node *this )
 
    } else {
 
-      Allocate_Ptrs( this );
+      Allocate_Ptrs( lParse, this );
 
-      if( !gParse.status ) {
+      if( !lParse->status ) {
 
 	 if( this->type!=BITSTR ) {
-	    elem = gParse.nRows;
+	    elem = lParse->nRows;
 	    if( this->type!=STRING )
 	       elem *= this->value.nelem;
 	    while( elem-- )
 	       this->value.undef[elem] = that->value.undef[elem];
 	 }
 
-	 elem = gParse.nRows * this->value.nelem;
+	 elem = lParse->nRows * this->value.nelem;
 
 	 switch( this->operation ) {
 
@@ -2295,7 +2309,7 @@ static void Do_Unary( Node *this )
 		  this->value.data.logptr[elem] =
 		     ( ! that->value.data.logptr[elem] );
 	    } else if( that->type==BITSTR ) {
-	       elem = gParse.nRows;
+	       elem = lParse->nRows;
 	       while( elem-- )
 		  bitnot( this->value.data.strptr[elem],
 			  that->value.data.strptr[elem] );
@@ -2310,19 +2324,19 @@ static void Do_Unary( Node *this )
    }
 }
 
-static void Do_Offset( Node *this )
+static void Do_Offset( ParseData *lParse, Node *this )
 {
    Node *col;
    long fRow, nRowOverlap, nRowReload, rowOffset;
    long nelem, elem, offset, nRealElem;
    int status;
 
-   col       = gParse.Nodes + this->SubNodes[0];
-   rowOffset = gParse.Nodes[  this->SubNodes[1] ].value.data.lng;
+   col       = lParse->Nodes + this->SubNodes[0];
+   rowOffset = lParse->Nodes[  this->SubNodes[1] ].value.data.lng;
 
-   Allocate_Ptrs( this );
+   Allocate_Ptrs( lParse, this );
 
-   fRow   = gParse.firstRow + rowOffset;
+   fRow   = lParse->firstRow + rowOffset;
    if( this->type==STRING || this->type==BITSTR )
       nRealElem = 1;
    else
@@ -2330,13 +2344,13 @@ static void Do_Offset( Node *this )
 
    nelem = nRealElem;
 
-   if( fRow < gParse.firstDataRow ) {
+   if( fRow < lParse->firstDataRow ) {
 
       /* Must fill in data at start of array */
 
-      nRowReload = gParse.firstDataRow - fRow;
-      if( nRowReload > gParse.nRows ) nRowReload = gParse.nRows;
-      nRowOverlap = gParse.nRows - nRowReload;
+      nRowReload = lParse->firstDataRow - fRow;
+      if( nRowReload > lParse->nRows ) nRowReload = lParse->nRows;
+      nRowOverlap = lParse->nRows - nRowReload;
 
       offset = 0;
 
@@ -2357,24 +2371,24 @@ static void Do_Offset( Node *this )
 	 nRowReload--;
       }
 
-   } else if( fRow + gParse.nRows > gParse.firstDataRow + gParse.nDataRows ) {
+   } else if( fRow + lParse->nRows > lParse->firstDataRow + lParse->nDataRows ) {
 
       /* Must fill in data at end of array */
 
-      nRowReload = (fRow+gParse.nRows) - (gParse.firstDataRow+gParse.nDataRows);
-      if( nRowReload>gParse.nRows ) {
-	 nRowReload = gParse.nRows;
+      nRowReload = (fRow+lParse->nRows) - (lParse->firstDataRow+lParse->nDataRows);
+      if( nRowReload>lParse->nRows ) {
+	 nRowReload = lParse->nRows;
       } else {
-	 fRow = gParse.firstDataRow + gParse.nDataRows;
+	 fRow = lParse->firstDataRow + lParse->nDataRows;
       }
-      nRowOverlap = gParse.nRows - nRowReload;
+      nRowOverlap = lParse->nRows - nRowReload;
 
       offset = nRowOverlap * nelem;
 
       /*  NULLify any values falling out of bounds  */
 
-      elem = gParse.nRows * nelem;
-      while( fRow+nRowReload>gParse.totalRows && nRowReload>0 ) {
+      elem = lParse->nRows * nelem;
+      while( fRow+nRowReload>lParse->totalRows && nRowReload>0 ) {
 	 if( this->type == BITSTR ) {
 	    nelem = this->value.nelem;
 	    elem--;
@@ -2391,7 +2405,7 @@ static void Do_Offset( Node *this )
    } else {
 
       nRowReload  = 0;
-      nRowOverlap = gParse.nRows;
+      nRowOverlap = lParse->nRows;
       offset      = 0;
 
    }
@@ -2400,22 +2414,22 @@ static void Do_Offset( Node *this )
       switch( this->type ) {
       case BITSTR:
       case STRING:
-	 status = (*gParse.loadData)( -col->operation, fRow, nRowReload,
+	 status = (*lParse->loadData)( lParse, -col->operation, fRow, nRowReload,
 				      this->value.data.strptr+offset,
 				      this->value.undef+offset );
 	 break;
       case BOOLEAN:
-	 status = (*gParse.loadData)( -col->operation, fRow, nRowReload,
+	 status = (*lParse->loadData)( lParse, -col->operation, fRow, nRowReload,
 				      this->value.data.logptr+offset,
 				      this->value.undef+offset );
 	 break;
       case LONG:
-	 status = (*gParse.loadData)( -col->operation, fRow, nRowReload,
+	 status = (*lParse->loadData)( lParse, -col->operation, fRow, nRowReload,
 				      this->value.data.lngptr+offset,
 				      this->value.undef+offset );
 	 break;
       case DOUBLE:
-	 status = (*gParse.loadData)( -col->operation, fRow, nRowReload,
+	 status = (*lParse->loadData)( lParse, -col->operation, fRow, nRowReload,
 				      this->value.data.dblptr+offset,
 				      this->value.undef+offset );
 	 break;
@@ -2429,11 +2443,11 @@ static void Do_Offset( Node *this )
    if( rowOffset>0 )
       elem = nRowOverlap * nelem;
    else
-      elem = gParse.nRows * nelem;
+      elem = lParse->nRows * nelem;
 
    offset = nelem * rowOffset;
-   while( nRowOverlap-- && !gParse.status ) {
-      while( nelem-- && !gParse.status ) {
+   while( nRowOverlap-- && !lParse->status ) {
+      while( nelem-- && !lParse->status ) {
 	 elem--;
 	 if( this->type != BITSTR )
 	    this->value.undef[elem] = col->value.undef[elem+offset];
@@ -2461,15 +2475,15 @@ static void Do_Offset( Node *this )
    }
 }
 
-static void Do_BinOp_bit( Node *this )
+static void Do_BinOp_bit( ParseData *lParse, Node *this )
 {
    Node *that1, *that2;
    char *sptr1=NULL, *sptr2=NULL;
    int  const1, const2;
    long rows;
 
-   that1 = gParse.Nodes + this->SubNodes[0];
-   that2 = gParse.Nodes + this->SubNodes[1];
+   that1 = lParse->Nodes + this->SubNodes[0];
+   that2 = lParse->Nodes + this->SubNodes[1];
 
    const1 = ( that1->operation==CONST_OP );
    const2 = ( that2->operation==CONST_OP );
@@ -2513,10 +2527,10 @@ static void Do_BinOp_bit( Node *this )
 
    } else {
 
-      Allocate_Ptrs( this );
-
-      if( !gParse.status ) {
-	 rows  = gParse.nRows;
+      Allocate_Ptrs( lParse, this );
+     
+      if( !lParse->status ) {
+	 rows  = lParse->nRows;
 	 switch( this->operation ) {
 
 	    /*  BITSTR comparisons  */
@@ -2606,15 +2620,15 @@ static void Do_BinOp_bit( Node *this )
    }
 }
 
-static void Do_BinOp_str( Node *this )
+static void Do_BinOp_str( ParseData *lParse, Node *this )
 {
    Node *that1, *that2;
    char *sptr1, *sptr2, null1=0, null2=0;
    int const1, const2, val;
    long rows;
 
-   that1 = gParse.Nodes + this->SubNodes[0];
-   that2 = gParse.Nodes + this->SubNodes[1];
+   that1 = lParse->Nodes + this->SubNodes[0];
+   that2 = lParse->Nodes + this->SubNodes[1];
 
    const1 = ( that1->operation==CONST_OP );
    const2 = ( that2->operation==CONST_OP );
@@ -2655,11 +2669,11 @@ static void Do_BinOp_str( Node *this )
 
    } else {  /*  Not a constant  */
 
-      Allocate_Ptrs( this );
+     Allocate_Ptrs( lParse, this );
 
-      if( !gParse.status ) {
+      if( !lParse->status ) {
 
-	 rows = gParse.nRows;
+	 rows = lParse->nRows;
 	 switch( this->operation ) {
 
 	    /*  Compare Strings  */
@@ -2741,15 +2755,15 @@ static void Do_BinOp_str( Node *this )
    }
 }
 
-static void Do_BinOp_log( Node *this )
+static void Do_BinOp_log( ParseData *lParse, Node *this )
 {
    Node *that1, *that2;
    int vector1, vector2;
    char val1=0, val2=0, null1=0, null2=0;
    long rows, nelem, elem;
 
-   that1 = gParse.Nodes + this->SubNodes[0];
-   that2 = gParse.Nodes + this->SubNodes[1];
+   that1 = lParse->Nodes + this->SubNodes[0];
+   that2 = lParse->Nodes + this->SubNodes[1];
 
    vector1 = ( that1->operation!=CONST_OP );
    if( vector1 )
@@ -2786,13 +2800,13 @@ static void Do_BinOp_log( Node *this )
       this->operation=CONST_OP;
    } else if (this->operation == ACCUM) {
       long i, previous, curr;
-      rows  = gParse.nRows;
+      rows  = lParse->nRows;
       nelem = this->value.nelem;
       elem  = this->value.nelem * rows;
       
-      Allocate_Ptrs( this );
+      Allocate_Ptrs( lParse, this );
       
-      if( !gParse.status ) {
+      if( !lParse->status ) {
 	previous = that2->value.data.lng;
 	
 	/* Cumulative sum of this chunk */
@@ -2810,13 +2824,13 @@ static void Do_BinOp_log( Node *this )
       }
       
    } else {
-      rows  = gParse.nRows;
+      rows  = lParse->nRows;
       nelem = this->value.nelem;
       elem  = this->value.nelem * rows;
 
-      Allocate_Ptrs( this );
+      Allocate_Ptrs( lParse, this );
 
-      if( !gParse.status ) {
+      if( !lParse->status ) {
 	
 	 if (this->operation == ACCUM) {
 	   long i, previous, curr;
@@ -2910,7 +2924,7 @@ static void Do_BinOp_log( Node *this )
    }
 }
 
-static void Do_BinOp_lng( Node *this )
+static void Do_BinOp_lng( ParseData *lParse, Node *this )
 {
    Node *that1, *that2;
    int  vector1, vector2;
@@ -2918,8 +2932,8 @@ static void Do_BinOp_lng( Node *this )
    char null1=0, null2=0;
    long rows, nelem, elem;
 
-   that1 = gParse.Nodes + this->SubNodes[0];
-   that2 = gParse.Nodes + this->SubNodes[1];
+   that1 = lParse->Nodes + this->SubNodes[0];
+   that2 = lParse->Nodes + this->SubNodes[1];
 
    vector1 = ( that1->operation!=CONST_OP );
    if( vector1 )
@@ -2956,11 +2970,11 @@ static void Do_BinOp_lng( Node *this )
 
       case '%':
 	 if( val2 ) this->value.data.lng = (val1 % val2);
-	 else       yyerror("Divide by Zero");
+	 else       yyerror(0, lParse, "Divide by Zero");
 	 break;
       case '/': 
 	 if( val2 ) this->value.data.lng = (val1 / val2); 
-	 else       yyerror("Divide by Zero");
+	 else       yyerror(0, lParse, "Divide by Zero");
 	 break;
       case POWER:
 	 this->value.data.lng = (long)pow((double)val1,(double)val2);
@@ -2977,13 +2991,13 @@ static void Do_BinOp_lng( Node *this )
    } else if ((this->operation == ACCUM) || (this->operation == DIFF)) {
       long i, previous, curr;
       long undef;
-      rows  = gParse.nRows;
+      rows  = lParse->nRows;
       nelem = this->value.nelem;
       elem  = this->value.nelem * rows;
       
-      Allocate_Ptrs( this );
+      Allocate_Ptrs( lParse, this );
       
-      if( !gParse.status ) {
+      if( !lParse->status ) {
 	previous = that2->value.data.lng;
 	undef    = (long) that2->value.undef;
 	
@@ -3023,14 +3037,14 @@ static void Do_BinOp_lng( Node *this )
       
    } else {
 
-      rows  = gParse.nRows;
+      rows  = lParse->nRows;
       nelem = this->value.nelem;
       elem  = this->value.nelem * rows;
 
-      Allocate_Ptrs( this );
+      Allocate_Ptrs( lParse, this );
 
-      while( rows-- && !gParse.status ) {
-	 while( nelem-- && !gParse.status ) {
+      while( rows-- && !lParse->status ) {
+	 while( nelem-- && !lParse->status ) {
 	    elem--;
 
 	    if( vector1>1 ) {
@@ -3098,7 +3112,7 @@ static void Do_BinOp_lng( Node *this )
    }
 }
 
-static void Do_BinOp_dbl( Node *this )
+static void Do_BinOp_dbl( ParseData *lParse, Node *this )
 {
    Node   *that1, *that2;
    int    vector1, vector2;
@@ -3106,8 +3120,8 @@ static void Do_BinOp_dbl( Node *this )
    char   null1=0, null2=0;
    long   rows, nelem, elem;
 
-   that1 = gParse.Nodes + this->SubNodes[0];
-   that2 = gParse.Nodes + this->SubNodes[1];
+   that1 = lParse->Nodes + this->SubNodes[0];
+   that2 = lParse->Nodes + this->SubNodes[1];
 
    vector1 = ( that1->operation!=CONST_OP );
    if( vector1 )
@@ -3140,11 +3154,11 @@ static void Do_BinOp_dbl( Node *this )
 
       case '%':
 	 if( val2 ) this->value.data.dbl = val1 - val2*((int)(val1/val2));
-	 else       yyerror("Divide by Zero");
+	 else       yyerror(0, lParse, "Divide by Zero");
 	 break;
       case '/': 
 	 if( val2 ) this->value.data.dbl = (val1 / val2); 
-	 else       yyerror("Divide by Zero");
+	 else       yyerror(0, lParse, "Divide by Zero");
 	 break;
       case POWER:
 	 this->value.data.dbl = (double)pow(val1,val2);
@@ -3162,13 +3176,13 @@ static void Do_BinOp_dbl( Node *this )
       long i;
       long undef;
       double previous, curr;
-      rows  = gParse.nRows;
+      rows  = lParse->nRows;
       nelem = this->value.nelem;
       elem  = this->value.nelem * rows;
       
-      Allocate_Ptrs( this );
+      Allocate_Ptrs( lParse, this );
       
-      if( !gParse.status ) {
+      if( !lParse->status ) {
 	previous = that2->value.data.dbl;
 	undef    = (long) that2->value.undef;
 	
@@ -3208,14 +3222,14 @@ static void Do_BinOp_dbl( Node *this )
       
    } else {
 
-      rows  = gParse.nRows;
+      rows  = lParse->nRows;
       nelem = this->value.nelem;
       elem  = this->value.nelem * rows;
 
-      Allocate_Ptrs( this );
+      Allocate_Ptrs( lParse, this );
 
-      while( rows-- && !gParse.status ) {
-	 while( nelem-- && !gParse.status ) {
+      while( rows-- && !lParse->status ) {
+	 while( nelem-- && !lParse->status ) {
 	    elem--;
 
 	    if( vector1>1 ) {
@@ -3469,7 +3483,7 @@ double angsep_calc(double ra1, double dec1, double ra2, double dec2)
   return 2.0*atan2(sqrt(a), sqrt(1.0 - a)) / deg;
 }
 
-static void Do_Func( Node *this )
+static void Do_Func( ParseData *lParse, Node *this )
 {
    Node *theParams[MAXSUBS];
    int  vector[MAXSUBS], allConst;
@@ -3483,7 +3497,7 @@ static void Do_Func( Node *this )
    i = this->nSubNodes;
    allConst = 1;
    while( i-- ) {
-      theParams[i] = gParse.Nodes + this->SubNodes[i];
+      theParams[i] = lParse->Nodes + this->SubNodes[i];
       vector[i]   = ( theParams[i]->operation!=CONST_OP );
       if( vector[i] ) {
 	 allConst = 0;
@@ -3597,14 +3611,14 @@ static void Do_Func( Node *this )
 	 case asin_fct:
 	    dval = pVals[0].data.dbl;
 	    if( dval<-1.0 || dval>1.0 )
-	       yyerror("Out of range argument to arcsin");
+	       yyerror(0, lParse, "Out of range argument to arcsin");
 	    else
 	       this->value.data.dbl = asin( dval );
 	    break;
 	 case acos_fct:
 	    dval = pVals[0].data.dbl;
 	    if( dval<-1.0 || dval>1.0 )
-	       yyerror("Out of range argument to arccos");
+	       yyerror(0, lParse, "Out of range argument to arccos");
 	    else
 	       this->value.data.dbl = acos( dval );
 	    break;
@@ -3626,21 +3640,21 @@ static void Do_Func( Node *this )
 	 case log_fct:
 	    dval = pVals[0].data.dbl;
 	    if( dval<=0.0 )
-	       yyerror("Out of range argument to log");
+	       yyerror(0, lParse, "Out of range argument to log");
 	    else
 	       this->value.data.dbl = log( dval );
 	    break;
 	 case log10_fct:
 	    dval = pVals[0].data.dbl;
 	    if( dval<=0.0 )
-	       yyerror("Out of range argument to log10");
+	       yyerror(0, lParse, "Out of range argument to log10");
 	    else
 	       this->value.data.dbl = log10( dval );
 	    break;
 	 case sqrt_fct:
 	    dval = pVals[0].data.dbl;
 	    if( dval<0.0 )
-	       yyerror("Out of range argument to sqrt");
+	       yyerror(0, lParse, "Out of range argument to sqrt");
 	    else
 	       this->value.data.dbl = sqrt( dval );
 	    break;
@@ -3755,7 +3769,8 @@ static void Do_Func( Node *this )
 
 	    /* String functions */
          case strmid_fct:
-	   cstrmid(this->value.data.str, this->value.nelem, 
+	   cstrmid(lParse, 
+		   this->value.data.str, this->value.nelem, 
 		   pVals[0].data.str,    pVals[0].nelem,
 		   pVals[1].data.lng);
 	   break;
@@ -3775,19 +3790,19 @@ static void Do_Func( Node *this )
 
    } else {
 
-      Allocate_Ptrs( this );
+     Allocate_Ptrs( lParse, this );
 
-      row  = gParse.nRows;
+      row  = lParse->nRows;
       elem = row * this->value.nelem;
 
-      if( !gParse.status ) {
+      if( !lParse->status ) {
 	 switch( this->operation ) {
 
 	    /* Special functions with no arguments */
 
 	 case row_fct:
 	    while( row-- ) {
-	       this->value.data.lngptr[row] = gParse.firstRow + row;
+	       this->value.data.lngptr[row] = lParse->firstRow + row;
 	       this->value.undef[row] = 0;
 	    }
 	    break;
@@ -4062,7 +4077,7 @@ static void Do_Func( Node *this )
 	       /* Allocate temporary storage for this row, since the
                   quickselect function will scramble the contents */
 	       if (mptr == 0) {
-		 yyerror("Could not allocate temporary memory in median function");
+		 yyerror(0, lParse, "Could not allocate temporary memory in median function");
 		 free( this->value.data.ptr );
 		 break;
 	       }
@@ -4101,7 +4116,7 @@ static void Do_Func( Node *this )
 	       /* Allocate temporary storage for this row, since the
                   quickselect function will scramble the contents */
 	       if (mptr == 0) {
-		 yyerror("Could not allocate temporary memory in median function");
+		 yyerror(0, lParse, "Could not allocate temporary memory in median function");
 		 free( this->value.data.ptr );
 		 break;
 	       }
@@ -5019,7 +5034,8 @@ static void Do_Func( Node *this )
 		  this->value.data.strptr[row][0] = '\0';
 		  if (pos == 0) undef = 1;
 		  if (! undef ) {
-		    if (cstrmid(this->value.data.strptr[row], len,
+		    if (cstrmid(lParse,
+				this->value.data.strptr[row], len,
 				str, src_len, pos) < 0) break;
 		  }
 		  this->value.undef[row] = undef;
@@ -5066,7 +5082,7 @@ static void Do_Func( Node *this )
 
 		    
 	 } /* End switch(this->operation) */
-      } /* End if (!gParse.status) */
+      } /* End if (!lParse->status) */
    } /* End non-constant operations */
 
    i = this->nSubNodes;
@@ -5078,7 +5094,7 @@ static void Do_Func( Node *this )
    }
 }
 
-static void Do_Deref( Node *this )
+static void Do_Deref( ParseData *lParse, Node *this )
 {
    Node *theVar, *theDims[MAXDIMS];
    int  isConst[MAXDIMS], allConst;
@@ -5086,12 +5102,12 @@ static void Do_Deref( Node *this )
    int  i, nDims;
    long row, elem, dsize;
 
-   theVar = gParse.Nodes + this->SubNodes[0];
+   theVar = lParse->Nodes + this->SubNodes[0];
 
    i = nDims = this->nSubNodes-1;
    allConst = 1;
    while( i-- ) {
-      theDims[i] = gParse.Nodes + this->SubNodes[i+1];
+      theDims[i] = lParse->Nodes + this->SubNodes[i+1];
       isConst[i] = ( theDims[i]->operation==CONST_OP );
       if( isConst[i] )
 	 dimVals[i] = theDims[i]->value.data.lng;
@@ -5108,9 +5124,9 @@ static void Do_Deref( Node *this )
    } else
       dsize = 0;
 
-   Allocate_Ptrs( this );
+   Allocate_Ptrs( lParse, this );
 
-   if( !gParse.status ) {
+   if( !lParse->status ) {
 
       if( allConst && theVar->value.naxis==nDims ) {
 
@@ -5123,7 +5139,7 @@ static void Do_Deref( Node *this )
 	    elem = theVar->value.naxes[i]*elem + dimVals[i]-1;
 	 }
 	 if( i<0 ) {
-	    for( row=0; row<gParse.nRows; row++ ) {
+	    for( row=0; row<lParse->nRows; row++ ) {
 	       if( this->type==STRING )
 		 this->value.undef[row] = theVar->value.undef[row];
 	       else if( this->type==BITSTR ) 
@@ -5152,7 +5168,7 @@ static void Do_Deref( Node *this )
 	       elem += theVar->value.nelem;
 	    }
 	 } else {
-	    yyerror("Index out of range");
+	    yyerror(0, lParse, "Index out of range");
 	    free( this->value.data.ptr );
 	 }
 	 
@@ -5162,11 +5178,11 @@ static void Do_Deref( Node *this )
 	 
 	 if( dimVals[0] < 1 ||
 	     dimVals[0] > theVar->value.naxes[ theVar->value.naxis-1 ] ) {
-	    yyerror("Index out of range");
+	    yyerror(0, lParse, "Index out of range");
 	    free( this->value.data.ptr );
 	 } else if ( this->type == BITSTR || this->type == STRING ) {
 	    elem = this->value.nelem * (dimVals[0]-1);
-	    for( row=0; row<gParse.nRows; row++ ) {
+	    for( row=0; row<lParse->nRows; row++ ) {
 	      if (this->value.undef) 
 		this->value.undef[row] = theVar->value.undef[row];
 	      memcpy( (char*)this->value.data.strptr[0]
@@ -5179,7 +5195,7 @@ static void Do_Deref( Node *this )
 	    }	       
 	 } else {
 	    elem = this->value.nelem * (dimVals[0]-1);
-	    for( row=0; row<gParse.nRows; row++ ) {
+	    for( row=0; row<lParse->nRows; row++ ) {
 	       memcpy( this->value.undef + row*this->value.nelem,
 		       theVar->value.undef + elem,
 		       this->value.nelem * sizeof(char) );
@@ -5195,19 +5211,19 @@ static void Do_Deref( Node *this )
 
 	 /* Dereference completely using an expression for the indices */
 
-	 for( row=0; row<gParse.nRows; row++ ) {
+	 for( row=0; row<lParse->nRows; row++ ) {
 
 	    for( i=0; i<nDims; i++ ) {
 	       if( !isConst[i] ) {
 		  if( theDims[i]->value.undef[row] ) {
-		     yyerror("Null encountered as vector index");
+		     yyerror(0, lParse, "Null encountered as vector index");
 		     free( this->value.data.ptr );
 		     break;
 		  } else
 		     dimVals[i] = theDims[i]->value.data.lngptr[row];
 	       }
 	    }
-	    if( gParse.status ) break;
+	    if( lParse->status ) break;
 
 	    elem = 0;
 	    i    = nDims;
@@ -5244,7 +5260,7 @@ static void Do_Deref( Node *this )
 		  this->value.data.strptr[row][1] = 0;  /* Null terminate */
 	       }
 	    } else {
-	       yyerror("Index out of range");
+	       yyerror(0, lParse, "Index out of range");
 	       free( this->value.data.ptr );
 	    }
 	 }
@@ -5253,12 +5269,12 @@ static void Do_Deref( Node *this )
 
 	 /* Reduce dimensions by 1, using a nonconstant expression */
 
-	 for( row=0; row<gParse.nRows; row++ ) {
+	 for( row=0; row<lParse->nRows; row++ ) {
 
 	    /* Index cannot be a constant */
 
 	    if( theDims[0]->value.undef[row] ) {
-	       yyerror("Null encountered as vector index");
+	       yyerror(0, lParse, "Null encountered as vector index");
 	       free( this->value.data.ptr );
 	       break;
 	    } else
@@ -5266,7 +5282,7 @@ static void Do_Deref( Node *this )
 
 	    if( dimVals[0] < 1 ||
 		dimVals[0] > theVar->value.naxes[ theVar->value.naxis-1 ] ) {
-	       yyerror("Index out of range");
+	       yyerror(0, lParse, "Index out of range");
 	       free( this->value.data.ptr );
 	    } else if ( this->type == BITSTR || this->type == STRING ) {
 	      elem = this->value.nelem * (dimVals[0]-1);
@@ -5306,7 +5322,7 @@ static void Do_Deref( Node *this )
       }
 }
 
-static void Do_GTI( Node *this )
+static void Do_GTI( ParseData *lParse, Node *this )
 {
    Node *theExpr, *theTimes;
    double *start, *stop, *times;
@@ -5314,8 +5330,8 @@ static void Do_GTI( Node *this )
    int ordered;
    int dorow = (this->operation == gtifind_fct);
 
-   theTimes = gParse.Nodes + this->SubNodes[0];
-   theExpr  = gParse.Nodes + this->SubNodes[1];
+   theTimes = lParse->Nodes + this->SubNodes[0];
+   theExpr  = lParse->Nodes + this->SubNodes[1];
 
    nGTI    = theTimes->value.nelem;
    start   = theTimes->value.data.dblptr;
@@ -5333,12 +5349,12 @@ static void Do_GTI( Node *this )
 
    } else {
 
-      Allocate_Ptrs( this );
+      Allocate_Ptrs( lParse, this );
 
       times = theExpr->value.data.dblptr;
-      if( !gParse.status ) {
+      if( !lParse->status ) {
 
-	 elem = gParse.nRows * this->value.nelem;
+	 elem = lParse->nRows * this->value.nelem;
 	 if( nGTI ) {
 	    gti = -1;
 	    while( elem-- ) {
@@ -5377,7 +5393,7 @@ static void Do_GTI( Node *this )
       free( theExpr->value.data.ptr );
 }
 
-static void Do_GTI_Over( Node *this )
+static void Do_GTI_Over( ParseData *lParse, Node *this )
 {
    Node *theTimes, *theStart, *theStop;
    double *gtiStart, *gtiStop;
@@ -5385,9 +5401,9 @@ static void Do_GTI_Over( Node *this )
    long elem, nGTI, gti, nextGTI;
    int ordered;
 
-   theTimes = gParse.Nodes + this->SubNodes[0]; /* GTI times */
-   theStop  = gParse.Nodes + this->SubNodes[2]; /* User start time */
-   theStart = gParse.Nodes + this->SubNodes[1]; /* User stop time */
+   theTimes = lParse->Nodes + this->SubNodes[0]; /* GTI times */
+   theStop  = lParse->Nodes + this->SubNodes[2]; /* User start time */
+   theStart = lParse->Nodes + this->SubNodes[1]; /* User stop time */
 
    nGTI     = theTimes->value.nelem;
    gtiStart = theTimes->value.data.dblptr;        /* GTI start */
@@ -5406,13 +5422,13 @@ static void Do_GTI_Over( Node *this )
       if (theStart->operation==CONST_OP) uStart = theStart->value.data.dbl;
       if (theStop ->operation==CONST_OP) uStop  = theStop ->value.data.dbl;
 
-      Allocate_Ptrs( this );
+      Allocate_Ptrs( lParse, this );
 
       evtStart = theStart->value.data.dblptr;
       evtStop  = theStop ->value.data.dblptr;
-      if( !gParse.status ) {
+      if( !lParse->status ) {
 
-	 elem = gParse.nRows * this->value.nelem;
+	 elem = lParse->nRows * this->value.nelem;
 	 if( nGTI ) {
 	    double toverlap = 0.0;
 	    gti = -1;
@@ -5581,7 +5597,7 @@ static long Search_GTI( double evtTime, long nGTI, double *start,
    return( gti );
 }
 
-static void Do_REG( Node *this )
+static void Do_REG( ParseData *lParse, Node *this )
 {
    Node *theRegion, *theX, *theY;
    double Xval=0.0, Yval=0.0;
@@ -5589,9 +5605,9 @@ static void Do_REG( Node *this )
    int    Xvector, Yvector;
    long   nelem, elem, rows;
 
-   theRegion = gParse.Nodes + this->SubNodes[0];
-   theX      = gParse.Nodes + this->SubNodes[1];
-   theY      = gParse.Nodes + this->SubNodes[2];
+   theRegion = lParse->Nodes + this->SubNodes[0];
+   theX      = lParse->Nodes + this->SubNodes[1];
+   theY      = lParse->Nodes + this->SubNodes[2];
 
    Xvector = ( theX->operation!=CONST_OP );
    if( Xvector )
@@ -5616,11 +5632,11 @@ static void Do_REG( Node *this )
 
    } else {
 
-      Allocate_Ptrs( this );
+      Allocate_Ptrs( lParse, this );
 
-      if( !gParse.status ) {
+      if( !lParse->status ) {
 
-	 rows  = gParse.nRows;
+	 rows  = lParse->nRows;
 	 nelem = this->value.nelem;
 	 elem  = rows*nelem;
 
@@ -5664,23 +5680,23 @@ static void Do_REG( Node *this )
       free( theY->value.data.ptr );
 }
 
-static void Do_Vector( Node *this )
+static void Do_Vector( ParseData *lParse, Node *this )
 {
    Node *that;
    long row, elem, idx, jdx, offset=0;
    int node;
 
-   Allocate_Ptrs( this );
+   Allocate_Ptrs( lParse, this );
 
-   if( !gParse.status ) {
+   if( !lParse->status ) {
 
       for( node=0; node<this->nSubNodes; node++ ) {
 
-	 that = gParse.Nodes + this->SubNodes[node];
+	 that = lParse->Nodes + this->SubNodes[node];
 
 	 if( that->operation == CONST_OP ) {
 
-	    idx = gParse.nRows*this->value.nelem + offset;
+	    idx = lParse->nRows*this->value.nelem + offset;
 	    while( (idx-=this->value.nelem)>=0 ) {
 	       
 	       this->value.undef[idx] = 0;
@@ -5700,7 +5716,7 @@ static void Do_Vector( Node *this )
 	    
 	 } else {
 	       
-	    row  = gParse.nRows;
+	    row  = lParse->nRows;
 	    idx  = row * that->value.nelem;
 	    while( row-- ) {
 	       elem = that->value.nelem;
@@ -5733,7 +5749,7 @@ static void Do_Vector( Node *this )
 
    for( node=0; node < this->nSubNodes; node++ )
      if( OPER(this->SubNodes[node])>0 )
-       free( gParse.Nodes[this->SubNodes[node]].value.data.ptr );
+       free( lParse->Nodes[this->SubNodes[node]].value.data.ptr );
 }
 
 /*****************************************************************************/
@@ -6010,7 +6026,7 @@ static char ellipse(double xcen, double ycen, double xrad, double yrad,
 /*
  * Extract substring
  */
-int cstrmid(char *dest_str, int dest_len,
+ int cstrmid(ParseData *lParse, char *dest_str, int dest_len,
 	    char *src_str,  int src_len,
 	    int pos)
 {
@@ -6020,7 +6036,7 @@ int cstrmid(char *dest_str, int dest_len,
 
   /* Fill destination with blanks */
   if (pos < 0) { 
-    yyerror("STRMID(S,P,N) P must be 0 or greater");
+    yyerror(0, lParse, "STRMID(S,P,N) P must be 0 or greater");
     return -1;
   }
   if (pos > src_len || pos == 0) {
@@ -6043,11 +6059,11 @@ int cstrmid(char *dest_str, int dest_len,
 }
 
 
-static void yyerror(char *s)
+static void yyerror(yyscan_t scanner, ParseData *lParse, char *s)
 {
     char msg[80];
 
-    if( !gParse.status ) gParse.status = PARSE_SYNTAX_ERR;
+    if( !lParse->status ) lParse->status = PARSE_SYNTAX_ERR;
 
     strncpy(msg, s, 80);
     msg[79] = '\0';

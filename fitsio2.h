@@ -987,18 +987,20 @@ void ieevpr(float *inarray, float *outarray, long *nvals);
 void ieevur(float *inarray, float *outarray, long *nvals);
 
 /*  routines related to the lexical parser  */
+typedef struct ParseData_struct ParseData;
 int  ffselect_table(fitsfile **fptr, char *outfile, char *expr,  int *status);
 int  ffiprs( fitsfile *fptr, int compressed, char *expr, int maxdim,
 	     int *datatype, long *nelem, int *naxis, long *naxes,
-	     int *status );
-void ffcprs( void );
+	     ParseData *, int *status );
+void ffcprs( ParseData * );
 int  ffcvtn( int inputType, void *input, char *undef, long ntodo,
 	     int outputType, void *nulval, void *output,
 	     int *anynull, int *status );
 int  parse_data( long totalrows, long offset, long firstrow,
                  long nrows, int nCols, iteratorCol *colData,
                  void *userPtr );
-int  uncompress_hkdata( fitsfile *fptr, long ntimes, 
+int  uncompress_hkdata( ParseData *, 
+			fitsfile *fptr, long ntimes, 
                         double *times, int *status );
 int  ffffrw_work( long totalrows, long offset, long firstrow,
                   long nrows, int nCols, iteratorCol *colData,
