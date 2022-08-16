@@ -55,14 +55,24 @@
 #include "eval_defs.h"
 #include "region.h"
 
-typedef struct {
+typedef struct parseInfo_struct parseInfo;
+struct parseInfo_struct {
      int  datatype;   /* Data type to cast parse results into for user       */
      void *dataPtr;   /* Pointer to array of results, NULL if to use iterCol */
      void *nullPtr;   /* Pointer to nulval, use zero if NULL                 */
      long maxRows;    /* Max No. of rows to process, -1=all, 0=1 iteration   */
      int  anyNull;    /* Flag indicating at least 1 undef value encountered  */
      ParseData *parseData; /* Pointer to parser configuration */
-} parseInfo;
+     struct ParseStatusVariables {
+       void *Data, *Null;
+       int  datasize;
+       long lastRow, repeat, resDataSize;
+       LONGLONG jnull;
+       parseInfo *userInfo;
+       long zeros[4];
+     } parseVariables;
+       
+};
 
 /*  Internal routines needed to allow the evaluator to operate on FITS data  */
 
@@ -839,7 +849,6 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
    int  i,lexpr, tstatus = 0;
    int xaxis, bitpix;
    long xaxes[9];
-   static iteratorCol dmyCol;
    yyscan_t yylex_scanner; /* Used internally by FLEX lexer */
 
    if( *status ) return( *status );
@@ -918,8 +927,12 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
       return( *status = PARSE_SYNTAX_ERR );
    }
    if( !lParse->nCols ) {
-      dmyCol.fptr = fptr;         /* This allows iterator to know value of */
-      lParse->colData = &dmyCol;   /* fptr when no columns are referenced   */
+     lParse->colData = (iteratorCol *) malloc(sizeof(iteratorCol));
+     ffpmsg("memory allocation failed (ffiprs)");
+     return( *status = MEMORY_ALLOCATION );  /* This allows iterator to know value of */ 
+					      /* fptr when no columns are referenced   */
+     memset(lParse->colData, 0, sizeof(iteratorCol));
+     lParse->colData[0].fptr = fptr;
    }
 
    result = lParse->Nodes + lParse->resultNode;
@@ -959,7 +972,7 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
 }
 
 /*--------------------------------------------------------------------------*/
-void ffcprs( ParseData *lParse )  /*  No parameters                                      */
+void ffcprs( ParseData *lParse )
 /*                                                                          */
 /* Clear the parser, making it ready to accept a new expression.            */
 /*--------------------------------------------------------------------------*/
@@ -976,6 +989,9 @@ void ffcprs( ParseData *lParse )  /*  No parameters                             
       }
       FREE( lParse->varData );
       lParse->nCols = 0;
+   } else if ( lParse->colData ) {
+     /* Special case if colData needed to be created with no columns */
+     FREE( lParse->colData );
    }
 
    if( lParse->nNodes > 0 ) {
@@ -1018,15 +1034,11 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
     long jj, kk, idx, remain, ntodo;
     Node *result;
     iteratorCol * outcol;
-    ParseData *lParse;
+    ParseData *lParse = ((parseInfo*)userPtr)->parseData;
+    struct ParseStatusVariables *pv = &( ((parseInfo*)userPtr)->parseVariables );
 
     /* declare variables static to preserve their values between calls */
-    static void *Data, *Null;
-    static int  datasize;
-    static long lastRow, repeat, resDataSize;
-    static LONGLONG jnull;
-    static parseInfo *userInfo;
-    static long zeros[4] = {0,0,0,0};
+    const long zeros[4] = {0,0,0,0};
 
     if (DEBUG_PIXFILTER)
        printf("parse_data(total=%ld, offset=%ld, first=%ld, rows=%ld, cols=%d)\n",
@@ -1034,88 +1046,87 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
     /*--------------------------------------------------------*/
     /*  Initialization procedures: execute on the first call  */
     /*--------------------------------------------------------*/
-    lParse = ((parseInfo*)userPtr)->parseData;
     outcol = colData + (nCols - 1);
     if (firstrow == offset+1)
     {
-       userInfo = (parseInfo*)userPtr;
-       userInfo->anyNull = 0;
+       (pv->userInfo) = (parseInfo*)userPtr;
+       (pv->userInfo)->anyNull = 0;
 
-       if( userInfo->maxRows>0 )
-          userInfo->maxRows = minvalue(totalrows,userInfo->maxRows);
-       else if( userInfo->maxRows<0 )
-          userInfo->maxRows = totalrows;
+       if( (pv->userInfo)->maxRows>0 )
+          (pv->userInfo)->maxRows = minvalue(totalrows,(pv->userInfo)->maxRows);
+       else if( (pv->userInfo)->maxRows<0 )
+          (pv->userInfo)->maxRows = totalrows;
        else
-          userInfo->maxRows = nrows;
+          (pv->userInfo)->maxRows = nrows;
 
-       lastRow = firstrow + userInfo->maxRows - 1;
+       (pv->lastRow) = firstrow + (pv->userInfo)->maxRows - 1;
 
-       if( userInfo->dataPtr==NULL ) {
+       if( (pv->userInfo)->dataPtr==NULL ) {
 
           if( outcol->iotype == InputCol ) {
              ffpmsg("Output column for parser results not found!");
              return( PARSE_NO_OUTPUT );
           }
           /* Data gets set later */
-          Null = outcol->array;
-          userInfo->datatype = outcol->datatype;
+          (pv->Null) = outcol->array;
+          (pv->userInfo)->datatype = outcol->datatype;
 
           /* Check for a TNULL/BLANK keyword for output column/image */
 
           status = 0;
-          jnull = 0;
+          (pv->jnull) = 0;
           if (lParse->hdutype == IMAGE_HDU) {
              if (lParse->pixFilter->blank)
-                jnull = (LONGLONG) lParse->pixFilter->blank;
+                (pv->jnull) = (LONGLONG) lParse->pixFilter->blank;
           }
           else {
              ffgknjj( outcol->fptr, "TNULL", outcol->colnum,
-                        1, &jnull, (int*)&jj, &status );
+                        1, &(pv->jnull), (int*)&jj, &status );
 
              if( status==BAD_INTKEY ) {
                 /*  Probably ASCII table with text TNULL keyword  */
-                switch( userInfo->datatype ) {
-                   case TSHORT:  jnull = (LONGLONG) SHRT_MIN;      break;
-                   case TINT:    jnull = (LONGLONG) INT_MIN;       break;
-                   case TLONG:   jnull = (LONGLONG) LONG_MIN;      break;
+                switch( (pv->userInfo)->datatype ) {
+                   case TSHORT:  (pv->jnull) = (LONGLONG) SHRT_MIN;      break;
+                   case TINT:    (pv->jnull) = (LONGLONG) INT_MIN;       break;
+                   case TLONG:   (pv->jnull) = (LONGLONG) LONG_MIN;      break;
                 }
              }
           }
-          repeat = outcol->repeat;
+          (pv->repeat) = outcol->repeat;
 /*
           if (DEBUG_PIXFILTER)
-            printf("parse_data: using null value %ld\n", jnull);
+            printf("parse_data: using null value %ld\n", (pv->jnull));
 */
        } else {
 
-          Data = userInfo->dataPtr;
-          Null = (userInfo->nullPtr ? userInfo->nullPtr : zeros);
-          repeat = lParse->Nodes[lParse->resultNode].value.nelem;
+          (pv->Data) = (pv->userInfo)->dataPtr;
+          (pv->Null) = ((pv->userInfo)->nullPtr ? (pv->userInfo)->nullPtr : zeros);
+          (pv->repeat) = lParse->Nodes[lParse->resultNode].value.nelem;
 
        }
 
        /* Determine the size of each element of the returned result */
 
-       switch( userInfo->datatype ) {
+       switch( (pv->userInfo)->datatype ) {
        case TBIT:       /*  Fall through to TBYTE  */
        case TLOGICAL:   /*  Fall through to TBYTE  */
-       case TBYTE:     datasize = sizeof(char);     break;
-       case TSHORT:    datasize = sizeof(short);    break;
-       case TINT:      datasize = sizeof(int);      break;
-       case TLONG:     datasize = sizeof(long);     break;
-       case TLONGLONG: datasize = sizeof(LONGLONG); break;
-       case TFLOAT:    datasize = sizeof(float);    break;
-       case TDOUBLE:   datasize = sizeof(double);   break;
-       case TSTRING:   datasize = sizeof(char*);    break;
+       case TBYTE:     (pv->datasize) = sizeof(char);     break;
+       case TSHORT:    (pv->datasize) = sizeof(short);    break;
+       case TINT:      (pv->datasize) = sizeof(int);      break;
+       case TLONG:     (pv->datasize) = sizeof(long);     break;
+       case TLONGLONG: (pv->datasize) = sizeof(LONGLONG); break;
+       case TFLOAT:    (pv->datasize) = sizeof(float);    break;
+       case TDOUBLE:   (pv->datasize) = sizeof(double);   break;
+       case TSTRING:   (pv->datasize) = sizeof(char*);    break;
        }
 
        /* Determine the size of each element of the calculated result */
        /*   (only matters for numeric/logical data)                   */
 
        switch( lParse->Nodes[lParse->resultNode].type ) {
-       case BOOLEAN:   resDataSize = sizeof(char);    break;
-       case LONG:      resDataSize = sizeof(long);    break;
-       case DOUBLE:    resDataSize = sizeof(double);  break;
+       case BOOLEAN:   (pv->resDataSize) = sizeof(char);    break;
+       case LONG:      (pv->resDataSize) = sizeof(long);    break;
+       case DOUBLE:    (pv->resDataSize) = sizeof(double);  break;
        }
     }
 
@@ -1127,30 +1138,30 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
     /*  null value.  If no NULLs encounter, zero out before returning. */
 /*
           if (DEBUG_PIXFILTER)
-            printf("parse_data: using null value %ld\n", jnull);
+            printf("parse_data: using null value %ld\n", (pv->jnull));
 */
 
-    if( userInfo->dataPtr == NULL ) {
+    if( (pv->userInfo)->dataPtr == NULL ) {
        /* First, reset Data pointer to start of output array */
-       Data = (char*) outcol->array + datasize;
+       (pv->Data) = (char*) outcol->array + (pv->datasize);
 
-       switch( userInfo->datatype ) {
-       case TLOGICAL: *(char  *)Null = 'U';             break;
-       case TBYTE:    *(char  *)Null = (char )jnull;    break;
-       case TSHORT:   *(short *)Null = (short)jnull;    break;
-       case TINT:     *(int   *)Null = (int  )jnull;    break;
-       case TLONG:    *(long  *)Null = (long )jnull;    break;
-       case TLONGLONG: *(LONGLONG  *)Null = (LONGLONG )jnull;    break;
-       case TFLOAT:   *(float *)Null = FLOATNULLVALUE;  break;
-       case TDOUBLE:  *(double*)Null = DOUBLENULLVALUE; break;
-       case TSTRING: (*(char **)Null)[0] = '\1';
-                     (*(char **)Null)[1] = '\0';        break;
+       switch( (pv->userInfo)->datatype ) {
+       case TLOGICAL: *(char  *)(pv->Null) = 'U';             break;
+       case TBYTE:    *(char  *)(pv->Null) = (char )(pv->jnull);    break;
+       case TSHORT:   *(short *)(pv->Null) = (short)(pv->jnull);    break;
+       case TINT:     *(int   *)(pv->Null) = (int  )(pv->jnull);    break;
+       case TLONG:    *(long  *)(pv->Null) = (long )(pv->jnull);    break;
+       case TLONGLONG: *(LONGLONG  *)(pv->Null) = (LONGLONG )(pv->jnull);    break;
+       case TFLOAT:   *(float *)(pv->Null) = FLOATNULLVALUE;  break;
+       case TDOUBLE:  *(double*)(pv->Null) = DOUBLENULLVALUE; break;
+       case TSTRING: (*(char **)(pv->Null))[0] = '\1';
+                     (*(char **)(pv->Null))[1] = '\0';        break;
        }
     }
 
     /* Alter nrows in case calling routine didn't want to do all rows */
 
-    nrows = minvalue(nrows,lastRow-firstrow+1);
+    nrows = minvalue(nrows,(pv->lastRow)-firstrow+1);
 
     Setup_DataArrays( lParse, nCols, colData, firstrow, nrows );
 
@@ -1183,46 +1194,46 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
           if( constant ) {
              char undef=0;
              for( kk=0; kk<ntodo; kk++ )
-                for( jj=0; jj<repeat; jj++ )
+                for( jj=0; jj<(pv->repeat); jj++ )
                    ffcvtn( lParse->datatype,
                            &(result->value.data),
                            &undef, result->value.nelem /* 1 */,
-                           userInfo->datatype, Null,
-                           (char*)Data + (kk*repeat+jj)*datasize,
+                           (pv->userInfo)->datatype, (pv->Null),
+                           (char*)(pv->Data) + (kk*(pv->repeat)+jj)*(pv->datasize),
                            &anyNullThisTime, &lParse->status );
           } else {
-             if ( repeat == result->value.nelem ) {
+             if ( (pv->repeat) == result->value.nelem ) {
                 ffcvtn( lParse->datatype,
                         result->value.data.ptr,
                         result->value.undef,
                         result->value.nelem*ntodo,
-                        userInfo->datatype, Null, Data,
+                        (pv->userInfo)->datatype, (pv->Null), (pv->Data),
                         &anyNullThisTime, &lParse->status );
              } else if( result->value.nelem == 1 ) {
                 for( kk=0; kk<ntodo; kk++ )
-                   for( jj=0; jj<repeat; jj++ ) {
+                   for( jj=0; jj<(pv->repeat); jj++ ) {
                       ffcvtn( lParse->datatype,
-                              (char*)result->value.data.ptr + kk*resDataSize,
+                              (char*)result->value.data.ptr + kk*(pv->resDataSize),
                               (char*)result->value.undef + kk,
-                              1, userInfo->datatype, Null,
-                              (char*)Data + (kk*repeat+jj)*datasize,
+                              1, (pv->userInfo)->datatype, (pv->Null),
+                              (char*)(pv->Data) + (kk*(pv->repeat)+jj)*(pv->datasize),
                               &anyNullThisTime, &lParse->status );
                    }
              } else {
                 int nCopy;
-                nCopy = minvalue( repeat, result->value.nelem );
+                nCopy = minvalue( (pv->repeat), result->value.nelem );
                 for( kk=0; kk<ntodo; kk++ ) {
                    ffcvtn( lParse->datatype,
                            (char*)result->value.data.ptr
-                                  + kk*result->value.nelem*resDataSize,
+                                  + kk*result->value.nelem*(pv->resDataSize),
                            (char*)result->value.undef
                                   + kk*result->value.nelem,
-                           nCopy, userInfo->datatype, Null,
-                           (char*)Data + (kk*repeat)*datasize,
+                           nCopy, (pv->userInfo)->datatype, (pv->Null),
+                           (char*)(pv->Data) + (kk*(pv->repeat))*(pv->datasize),
                            &anyNullThisTime, &lParse->status );
-                   if( nCopy < repeat ) {
-                      memset( (char*)Data + (kk*repeat+nCopy)*datasize,
-                              0, (repeat-nCopy)*datasize);
+                   if( nCopy < (pv->repeat) ) {
+                      memset( (char*)(pv->Data) + (kk*(pv->repeat)+nCopy)*(pv->datasize),
+                              0, ((pv->repeat)-nCopy)*(pv->datasize));
                    }
                 }
 
@@ -1238,19 +1249,19 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
           break;
 
        case BITSTR:
-          switch( userInfo->datatype ) {
+          switch( (pv->userInfo)->datatype ) {
           case TBYTE:
              idx = -1;
              for( kk=0; kk<ntodo; kk++ ) {
                 for( jj=0; jj<result->value.nelem; jj++ ) {
                    if( jj%8 == 0 )
-                      ((char*)Data)[++idx] = 0;
+                      ((char*)(pv->Data))[++idx] = 0;
                    if( constant ) {
                       if( result->value.data.str[jj]=='1' )
-                         ((char*)Data)[idx] |= 128>>(jj%8);
+                         ((char*)(pv->Data))[idx] |= 128>>(jj%8);
                    } else {
                       if( result->value.data.strptr[kk][jj]=='1' )
-                         ((char*)Data)[idx] |= 128>>(jj%8);
+                         ((char*)(pv->Data))[idx] |= 128>>(jj%8);
                    }
                 }
              }
@@ -1260,13 +1271,13 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
              if( constant ) {
                 for( kk=0; kk<ntodo; kk++ )
                    for( jj=0; jj<result->value.nelem; jj++ ) {
-                      ((char*)Data)[ jj+kk*result->value.nelem ] =
+                      ((char*)(pv->Data))[ jj+kk*result->value.nelem ] =
                          ( result->value.data.str[jj]=='1' );
                    }
              } else {
                 for( kk=0; kk<ntodo; kk++ )
                    for( jj=0; jj<result->value.nelem; jj++ ) {
-                      ((char*)Data)[ jj+kk*result->value.nelem ] =
+                      ((char*)(pv->Data))[ jj+kk*result->value.nelem ] =
                          ( result->value.data.strptr[kk][jj]=='1' );
                    }
              }
@@ -1274,11 +1285,11 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
           case TSTRING:
              if( constant ) {
                 for( jj=0; jj<ntodo; jj++ ) {
-                   strcpy( ((char**)Data)[jj], result->value.data.str );
+                   strcpy( ((char**)(pv->Data))[jj], result->value.data.str );
                 }
              } else {
                 for( jj=0; jj<ntodo; jj++ ) {
-                   strcpy( ((char**)Data)[jj], result->value.data.strptr[jj] );
+                   strcpy( ((char**)(pv->Data))[jj], result->value.data.strptr[jj] );
                 }
              }
              break;
@@ -1294,18 +1305,18 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
           break;
 
        case STRING:
-          if( userInfo->datatype==TSTRING ) {
+          if( (pv->userInfo)->datatype==TSTRING ) {
              if( constant ) {
                 for( jj=0; jj<ntodo; jj++ )
-                   strcpy( ((char**)Data)[jj], result->value.data.str );
+                   strcpy( ((char**)(pv->Data))[jj], result->value.data.str );
              } else {
                 for( jj=0; jj<ntodo; jj++ )
                    if( result->value.undef[jj] ) {
                       anyNullThisTime = 1;
-                      strcpy( ((char**)Data)[jj],
-                              *(char **)Null );
+                      strcpy( ((char**)(pv->Data))[jj],
+                              *(char **)(pv->Null) );
                    } else {
-                      strcpy( ((char**)Data)[jj],
+                      strcpy( ((char**)(pv->Data))[jj],
                               result->value.data.strptr[jj] );
                    }
              }
@@ -1324,25 +1335,25 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
 
        /*  Increment Data to point to where the next block should go  */
 
-       if( result->type==BITSTR && userInfo->datatype==TBYTE )
-          Data = (char*)Data
-                    + datasize * ( (result->value.nelem+7)/8 ) * ntodo;
+       if( result->type==BITSTR && (pv->userInfo)->datatype==TBYTE )
+          (pv->Data) = (char*)(pv->Data)
+                    + (pv->datasize) * ( (result->value.nelem+7)/8 ) * ntodo;
        else if( result->type==STRING )
-          Data = (char*)Data + datasize * ntodo;
+          (pv->Data) = (char*)(pv->Data) + (pv->datasize) * ntodo;
        else
-          Data = (char*)Data + datasize * ntodo * repeat;
+          (pv->Data) = (char*)(pv->Data) + (pv->datasize) * ntodo * (pv->repeat);
     }
 
     /* If no NULLs encountered during this pass, set Null value to */
     /* zero to make the writing of the output column data faster   */
 
     if( anyNullThisTime )
-       userInfo->anyNull = 1;
-    else if( userInfo->dataPtr == NULL ) {
-       if( userInfo->datatype == TSTRING )
-          memcpy( *(char **)Null, zeros, 2 );
+       (pv->userInfo)->anyNull = 1;
+    else if( (pv->userInfo)->dataPtr == NULL ) {
+       if( (pv->userInfo)->datatype == TSTRING )
+          memcpy( *(char **)(pv->Null), zeros, 2 );
        else 
-          memcpy( Null, zeros, datasize );
+          memcpy( (pv->Null), zeros, (pv->datasize) );
     }
 
     /*-------------------------------------------------------*/
@@ -1353,8 +1364,8 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
     /*  of rows in the table should be processed, return a value of -1 */
     /*  once all the rows have been done, if no other error occurred.  */
 
-    if (lParse->hdutype != IMAGE_HDU && firstrow - 1 == lastRow) {
-           if (!lParse->status && userInfo->maxRows<totalrows) {
+    if (lParse->hdutype != IMAGE_HDU && firstrow - 1 == (pv->lastRow)) {
+           if (!lParse->status && (pv->userInfo)->maxRows<totalrows) {
                   return (-1);
            }
     }
