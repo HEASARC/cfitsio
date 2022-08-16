@@ -56,6 +56,16 @@
 #include "region.h"
 
 typedef struct parseInfo_struct parseInfo;
+
+struct ParseStatusVariables { /* These variables were 'static' in parse_data() */
+  void *Data, *Null;
+  int  datasize;
+  long lastRow, repeat, resDataSize;
+  LONGLONG jnull;
+  parseInfo *userInfo;
+  long zeros[4];
+};
+
 struct parseInfo_struct {
      int  datatype;   /* Data type to cast parse results into for user       */
      void *dataPtr;   /* Pointer to array of results, NULL if to use iterCol */
@@ -63,15 +73,7 @@ struct parseInfo_struct {
      long maxRows;    /* Max No. of rows to process, -1=all, 0=1 iteration   */
      int  anyNull;    /* Flag indicating at least 1 undef value encountered  */
      ParseData *parseData; /* Pointer to parser configuration */
-     struct ParseStatusVariables {
-       void *Data, *Null;
-       int  datasize;
-       long lastRow, repeat, resDataSize;
-       LONGLONG jnull;
-       parseInfo *userInfo;
-       long zeros[4];
-     } parseVariables;
-       
+     struct ParseStatusVariables parseVariables;
 };
 
 /*  Internal routines needed to allow the evaluator to operate on FITS data  */
@@ -108,6 +110,7 @@ int fffrow( fitsfile *fptr,         /* I - Input FITS file                   */
    ParseData lParse;
 
    if( *status ) return( *status );
+   memset(&Info, 0, sizeof(Info));   
 
    if( ffiprs( fptr, 0, expr, MAXDIMS, &Info.datatype, &nelem, &naxis,
                naxes, &lParse, status ) ) {
@@ -192,6 +195,8 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
    ParseData lParse;
 
    if( *status ) return( *status );
+
+   memset(&Info, 0, sizeof(Info));   
 
    if( ffiprs( infptr, 0, expr, MAXDIMS, &Info.datatype, &nelem, &naxis,
                naxes, &lParse, status ) ) {
@@ -444,6 +449,8 @@ int ffcrow( fitsfile *fptr,      /* I - Input FITS file                      */
 
    if( *status ) return( *status );
 
+   memset(&Info, 0, sizeof(Info));   
+
    if( ffiprs( fptr, 0, expr, MAXDIMS, &Info.datatype, &nelem1, &naxis,
                naxes, &lParse, status ) ) {
       ffcprs(&lParse);
@@ -527,6 +534,8 @@ int ffcalc_rng( fitsfile *infptr,   /* I - Input FITS file                  */
    ParseData lParse;
 
    if( *status ) return( *status );
+
+   memset(&Info, 0, sizeof(Info));   
 
    if( ffiprs( infptr, 0, expr, MAXDIMS, &Info.datatype, &nelem, &naxis,
                naxes, &lParse, status ) ) {
@@ -798,6 +807,7 @@ int fftexp( fitsfile *fptr,      /* I - Input FITS file                     */
    return( *status );
 }
 
+
 /*--------------------------------------------------------------------------*/
 int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
             int      compressed, /* I - Is FITS file hkunexpanded?          */
@@ -886,8 +896,8 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
       return( *status = PARSE_SYNTAX_ERR );
    }
    fits_parser_yylex_destroy(yylex_scanner);
-   /*  Check results  */
 
+   /*  Check results  */
    *status = lParse->status;
    if( *status ) return(*status);
 
@@ -897,9 +907,12 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
    }
    if( !lParse->nCols ) {
      lParse->colData = (iteratorCol *) malloc(sizeof(iteratorCol));
-     ffpmsg("memory allocation failed (ffiprs)");
-     return( *status = MEMORY_ALLOCATION );  /* This allows iterator to know value of */ 
-					      /* fptr when no columns are referenced   */
+     if (lParse->colData == 0) {
+       ffpmsg("memory allocation failed (ffiprs)");
+       return( *status = MEMORY_ALLOCATION );
+     }
+     /* This allows iterator to know value of */ 
+     /* fptr when no columns are referenced   */
      memset(lParse->colData, 0, sizeof(iteratorCol));
      lParse->colData[0].fptr = fptr;
    }
@@ -1869,6 +1882,8 @@ int fffrwc( fitsfile *fptr,        /* I - Input FITS file                    */
 
    if( *status ) return( *status );
 
+   memset(&Info, 0, sizeof(Info));   
+
    fits_get_colnum( fptr, CASEINSEN, timeCol, &lParse.timeCol, status );
    fits_get_colnum( fptr, CASEINSEN, parCol,  &lParse.parCol , status );
    fits_get_colnum( fptr, CASEINSEN, valCol,  &lParse.valCol, status );
@@ -2619,6 +2634,8 @@ int fits_pixel_filter (PixelFilter * filter, int * status)
    ParseData lParse;
 
    DEBUG_PIXFILTER = getenv("DEBUG_PIXFILTER") ? 1 : 0;
+
+   memset(&Info, 0, sizeof(Info));   
 
    if (*status)
       return (*status);
