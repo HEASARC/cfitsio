@@ -2045,7 +2045,7 @@ int ffiter(int n_cols,
       tstatus = 0;
       for (jj = 0; jj < n_cols; jj++)
       {
-        if (cols[jj].iotype != InputCol && cols[jj].iotype != OutputCol)
+        if (cols[jj].iotype != InputCol && cols[jj].iotype != TemporaryCol)
         {
           if (cols[jj].datatype == TSTRING)
           {
