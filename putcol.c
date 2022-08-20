@@ -1250,11 +1250,13 @@ int ffiter(int n_cols,
         /* check that output datatype code value is legal */
         type = cols[jj].datatype;  
 
-        /* Allow variable length arrays for InputCol and InputOutputCol columns,
-	   but not for OutputCol columns.  Variable length arrays have a
-	   negative type code value. */
+        /* Allow variable length arrays for InputCol and
+	   InputOutputCol columns, but not for OutputCol/TemporaryCol
+	   columns.  Variable length arrays have a negative type code
+	   value. */
 
-        if ((cols[jj].iotype != OutputCol) && (type<0)) {
+        if ( !((cols[jj].iotype == OutputCol) || (cols[jj].iotype == TemporaryCol))
+	     && (type<0)) {
             type*=-1;
         }
 
@@ -1303,6 +1305,13 @@ int ffiter(int n_cols,
 
             tstatus = 0;
             ffgkys(cols[jj].fptr, "BUNIT", cols[jj].tunit, 0, &tstatus);
+
+	    if (cols[jj].iotype == TemporaryCol) {
+                snprintf(message,FLEN_ERRMSG,
+			 "Column type TemporaryCol not permitted for IMAGE HDUs (ffiter)");
+                return(*status = BAD_DATATYPE);
+            }
+	      
         }
         else  /* operating on FITS tables */
         {
@@ -1314,6 +1323,8 @@ int ffiter(int n_cols,
                 return(*status = NOT_TABLE);
             }
 
+	    if (cols[jj].iotype != TemporaryCol)
+	    {
             if (cols[jj].colnum < 1)
             {
                 /* find the column number for the named column */
@@ -1361,6 +1372,7 @@ int ffiter(int n_cols,
             tstatus = 0;
             ffkeyn("TDISP", cols[jj].colnum, keyname, &tstatus);
             ffgkys(cols[jj].fptr, keyname, cols[jj].tdisp, 0, &tstatus);
+	    }
         }
     }  /* end of loop over all columns */
 
@@ -1396,9 +1408,20 @@ int ffiter(int n_cols,
     }
     else   /* get total number or rows in the table */
     {
-      ffgkyj(cols[0].fptr, "NAXIS2", &totaln, 0, status);
-      frow = 1 + offset;
-      felement = 1;
+      for (jj=0; jj < n_cols; jj++) {
+	if (cols[jj].iotype != TemporaryCol) {
+	  ffgkyj(cols[0].fptr, "NAXIS2", &totaln, 0, status);
+	  frow = 1 + offset;
+	  felement = 1;
+	  break;
+	}
+      }
+      if (felement != 1) {
+	snprintf(message,FLEN_ERRMSG,
+		 "There must be at least one input or output column in iterator (ffiter)");
+	ffpmsg(message);
+	return(*status = BAD_COL_NUM);
+      }
     }
 
     /*  adjust total by the input starting offset value */
@@ -1416,10 +1439,12 @@ int ffiter(int n_cols,
         /* of unique files.                                          */
 
         nfiles = 1;
-        ffgrsz(cols[0].fptr, &n_optimum, status);
+	n_optimum = 0;
+        if (cols[0].iotype != TemporaryCol) ffgrsz(cols[0].fptr, &n_optimum, status);
 
         for (jj = 1; jj < n_cols; jj++)
         {
+	    if (cols[0].iotype == TemporaryCol) continue;
             for (ii = 0; ii < jj; ii++)
             {
                 if (cols[ii].fptr == cols[jj].fptr)
@@ -1430,7 +1455,11 @@ int ffiter(int n_cols,
             {
                 nfiles++;
                 ffgrsz(cols[jj].fptr, &i_optimum, status);
-                n_optimum = minvalue(n_optimum, i_optimum);
+		if (n_optimum == 0) { /* If first column is TemporaryCol */
+		  n_optimum = i_optimum;
+		} else {
+		  n_optimum = minvalue(n_optimum, i_optimum);
+		}
             }
         }
 
@@ -1487,7 +1516,7 @@ int ffiter(int n_cols,
                  break;
             }
         }
-        else
+        else if (cols[jj].iotype != TemporaryCol)
         {
             if (ffgtcl(cols[jj].fptr, cols[jj].colnum, &typecode, &rept,
                   &width, status) > 0)
@@ -1509,6 +1538,28 @@ int ffiter(int n_cols,
               }
 	   }
         }
+	else 
+	{
+	    /* TemporaryCol - datatype etc must be defined */
+	    typecode = cols[jj].datatype;
+	    if (typecode <= 0 || typecode == TBIT || typecode == TSTRING) {
+	      snprintf(message,FLEN_ERRMSG,
+		       "Invalid typecode for temporary output column number %d (ffiter)",
+		       jj+1);
+	      ffpmsg(message);
+                return(*status = BAD_DATATYPE);
+	    }
+
+	    rept = cols[jj].repeat;
+	    if (rept <= 0) {
+	      snprintf(message,FLEN_ERRMSG,
+		       "Invalid repeat (%ld) for temporary output column number %d (ffiter)",
+		       rept, jj+1);
+	      ffpmsg(message);
+	      return(*status = BAD_DIMEN);
+	    }
+
+	}
 
         /* special case where sizeof(long) = 8: use TINT instead of TLONG */
         if (abs(typecode) == TLONG && sizeof(long) == 8 && sizeof(int) == 4) {
@@ -1569,7 +1620,7 @@ int ffiter(int n_cols,
 		rept = maxvalue(rept, rowrept);
 	      }
             }
-	    
+
             ntodo = n_optimum * rept;   /* vector columns */
             cols[jj].repeat = rept;
 
@@ -1904,7 +1955,7 @@ int ffiter(int n_cols,
       /*  read input columns from FITS file(s)  */
       for (jj = 0; jj < n_cols; jj++)
       {
-        if (cols[jj].iotype != OutputCol)
+        if (cols[jj].iotype != OutputCol && cols[jj].iotype != TemporaryCol)
         {
           if (cols[jj].datatype == TSTRING)
           {
@@ -1994,7 +2045,7 @@ int ffiter(int n_cols,
       tstatus = 0;
       for (jj = 0; jj < n_cols; jj++)
       {
-        if (cols[jj].iotype != InputCol)
+        if (cols[jj].iotype != InputCol && cols[jj].iotype != OutputCol)
         {
           if (cols[jj].datatype == TSTRING)
           {

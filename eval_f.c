@@ -713,6 +713,7 @@ int ffcalc_rng( fitsfile *infptr,   /* I - Input FITS file                  */
       /*************************************/
 
       col_cnt = lParse.nCols;
+#pragma GCC warning "should this be col_cnt+1????? on line eval_f.c:716???"
       if( allocateCol( &lParse, col_cnt, status ) ) {
          ffcprs(&lParse);
          return( *status );
@@ -1020,7 +1021,7 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
     struct ParseStatusVariables *pv = &( ((parseInfo*)userPtr)->parseVariables );
 
     /* declare variables static to preserve their values between calls */
-    const long zeros[4] = {0,0,0,0};
+    long zeros[4] = {0,0,0,0};
 
     if (DEBUG_PIXFILTER)
        printf("parse_data(total=%ld, offset=%ld, first=%ld, rows=%ld, cols=%d)\n",
@@ -1062,10 +1063,12 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
                 (pv->jnull) = (LONGLONG) lParse->pixFilter->blank;
           }
           else {
-             ffgknjj( outcol->fptr, "TNULL", outcol->colnum,
-                        1, &(pv->jnull), (int*)&jj, &status );
+	    if (outcol->iotype != TemporaryCol) {
+	      ffgknjj( outcol->fptr, "TNULL", outcol->colnum,
+		       1, &(pv->jnull), (int*)&jj, &status );
+	    }
 
-             if( status==BAD_INTKEY ) {
+             if( status==BAD_INTKEY || outcol->iotype == TemporaryCol) {
                 /*  Probably ASCII table with text TNULL keyword  */
                 switch( (pv->userInfo)->datatype ) {
                    case TSHORT:  (pv->jnull) = (LONGLONG) SHRT_MIN;      break;
@@ -1127,17 +1130,26 @@ int parse_data( long    totalrows,     /* I - Total rows to be processed     */
        /* First, reset Data pointer to start of output array */
        (pv->Data) = (char*) outcol->array + (pv->datasize);
 
-       switch( (pv->userInfo)->datatype ) {
-       case TLOGICAL: *(char  *)(pv->Null) = 'U';             break;
-       case TBYTE:    *(char  *)(pv->Null) = (char )(pv->jnull);    break;
-       case TSHORT:   *(short *)(pv->Null) = (short)(pv->jnull);    break;
-       case TINT:     *(int   *)(pv->Null) = (int  )(pv->jnull);    break;
-       case TLONG:    *(long  *)(pv->Null) = (long )(pv->jnull);    break;
-       case TLONGLONG: *(LONGLONG  *)(pv->Null) = (LONGLONG )(pv->jnull);    break;
-       case TFLOAT:   *(float *)(pv->Null) = FLOATNULLVALUE;  break;
-       case TDOUBLE:  *(double*)(pv->Null) = DOUBLENULLVALUE; break;
-       case TSTRING: (*(char **)(pv->Null))[0] = '\1';
-                     (*(char **)(pv->Null))[1] = '\0';        break;
+       /* A TemporaryCol with null value specified explicitly */
+       if (outcol->iotype == TemporaryCol && (pv->userInfo)->nullPtr) {
+
+	 pv->Null = (pv->userInfo)->nullPtr;
+
+       } else {
+
+	 /* ... or an OutputCol or TemporaryCol with no explicit null */
+	 switch( (pv->userInfo)->datatype ) {
+	 case TLOGICAL: *(char  *)(pv->Null) = 'U';             break;
+	 case TBYTE:    *(char  *)(pv->Null) = (char )(pv->jnull);    break;
+	 case TSHORT:   *(short *)(pv->Null) = (short)(pv->jnull);    break;
+	 case TINT:     *(int   *)(pv->Null) = (int  )(pv->jnull);    break;
+	 case TLONG:    *(long  *)(pv->Null) = (long )(pv->jnull);    break;
+	 case TLONGLONG: *(LONGLONG  *)(pv->Null) = (LONGLONG )(pv->jnull);    break;
+	 case TFLOAT:   *(float *)(pv->Null) = FLOATNULLVALUE;  break;
+	 case TDOUBLE:  *(double*)(pv->Null) = DOUBLENULLVALUE; break;
+	 case TSTRING: (*(char **)(pv->Null))[0] = '\1';
+	               (*(char **)(pv->Null))[1] = '\0';        break;
+	 }
        }
     }
 
