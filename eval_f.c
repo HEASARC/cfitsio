@@ -838,6 +838,7 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
 
    /*  Initialize the Parser structure  */
 
+   memset(lParse, 0, sizeof(*lParse));
    lParse->def_fptr   = fptr;
    lParse->compressed = compressed;
    lParse->nCols      = 0;
@@ -997,6 +998,7 @@ void ffcprs( ParseData *lParse )
 
    lParse->hdutype = ANY_HDU;
    lParse->pixFilter = 0;
+   lParse->nDataRows = lParse->nPrevDataRows = 0;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -1383,9 +1385,12 @@ static void Setup_DataArrays( ParseData *lParse, int nCols, iteratorCol *cols,
    long   *iarray;
    double *rarray;
    char msg[80];
+   int do_realloc = 0;
 
    lParse->firstDataRow = fRow;
    lParse->nDataRows    = nRows;
+   /* Only perform reallocations if the number of rows changed */
+   if (lParse->nPrevDataRows != nRows) do_realloc = 1;
 
    /*  Resize and fill in UNDEF arrays for each column  */
 
@@ -1405,21 +1410,23 @@ static void Setup_DataArrays( ParseData *lParse, int nCols, iteratorCol *cols,
       /* No need for UNDEF array, but must make string DATA array */
          len = (nelem+1)*nRows;   /* Count '\0' */
          bitStrs = (char**)varData->data;
-         if( bitStrs ) FREE( bitStrs[0] );
-         free( bitStrs );
-         bitStrs = (char**)malloc( nRows*sizeof(char*) );
-         if( bitStrs==NULL ) {
-            varData->data = varData->undef = NULL;
-            lParse->status = MEMORY_ALLOCATION;
-            break;
-         }
-         bitStrs[0] = (char*)malloc( len*sizeof(char) );
-         if( bitStrs[0]==NULL ) {
-            free( bitStrs );
-            varData->data = varData->undef = NULL;
-            lParse->status = MEMORY_ALLOCATION;
-            break;
-         }
+	 if (do_realloc) {
+	   if( bitStrs ) FREE( bitStrs[0] );
+	   free( bitStrs );
+	   bitStrs = (char**)malloc( nRows*sizeof(char*) );
+	   if( bitStrs==NULL ) {
+	     varData->data = varData->undef = NULL;
+	     lParse->status = MEMORY_ALLOCATION;
+	     break;
+	   }
+	   bitStrs[0] = (char*)malloc( len*sizeof(char) );
+	   if( bitStrs[0]==NULL ) {
+	     free( bitStrs );
+	     varData->data = varData->undef = NULL;
+	     lParse->status = MEMORY_ALLOCATION;
+	     break;
+	   }
+	 }
 
          for( row=0; row<nRows; row++ ) {
             bitStrs[row] = bitStrs[0] + row*(nelem+1);
@@ -1439,13 +1446,15 @@ static void Setup_DataArrays( ParseData *lParse, int nCols, iteratorCol *cols,
 
       case STRING:
          sptr = (char**)icol->array;
-         if (varData->undef)
-            free( varData->undef );
-         varData->undef = (char*)malloc( nRows*sizeof(char) );
-         if( varData->undef==NULL ) {
-            lParse->status = MEMORY_ALLOCATION;
-            break;
-         }
+	 if (do_realloc) {
+	   if (varData->undef)
+	     free( varData->undef );
+	   varData->undef = (char*)malloc( nRows*sizeof(char) );
+	   if( varData->undef==NULL ) {
+	     lParse->status = MEMORY_ALLOCATION;
+	     break;
+	   }
+	 }
          row = nRows;
          while( row-- )
             varData->undef[row] =
@@ -1455,13 +1464,15 @@ static void Setup_DataArrays( ParseData *lParse, int nCols, iteratorCol *cols,
 
       case BOOLEAN:
          barray = (char*)icol->array;
-         if (varData->undef)
-            free( varData->undef );
-         varData->undef = (char*)malloc( len*sizeof(char) );
-         if( varData->undef==NULL ) {
-            lParse->status = MEMORY_ALLOCATION;
-            break;
-         }
+	 if (do_realloc) {
+	   if (varData->undef)
+	     free( varData->undef );
+	   varData->undef = (char*)malloc( len*sizeof(char) );
+	   if( varData->undef==NULL ) {
+	     lParse->status = MEMORY_ALLOCATION;
+	     break;
+	   }
+	 }
          while( len-- ) {
             varData->undef[len] = 
                ( barray[0]!=0 && barray[0]==barray[len+1] );
@@ -1471,13 +1482,15 @@ static void Setup_DataArrays( ParseData *lParse, int nCols, iteratorCol *cols,
 
       case LONG:
          iarray = (long*)icol->array;
-         if (varData->undef)
-            free( varData->undef );
-         varData->undef = (char*)malloc( len*sizeof(char) );
-         if( varData->undef==NULL ) {
-            lParse->status = MEMORY_ALLOCATION;
-            break;
-         }
+	 if (do_realloc) {
+	   if (varData->undef)
+	     free( varData->undef );
+	   varData->undef = (char*)malloc( len*sizeof(char) );
+	   if( varData->undef==NULL ) {
+	     lParse->status = MEMORY_ALLOCATION;
+	     break;
+	   }
+	 }
          while( len-- ) {
             varData->undef[len] = 
                ( iarray[0]!=0L && iarray[0]==iarray[len+1] );
@@ -1487,13 +1500,15 @@ static void Setup_DataArrays( ParseData *lParse, int nCols, iteratorCol *cols,
 
       case DOUBLE:
          rarray = (double*)icol->array;
-         if (varData->undef)
-            free( varData->undef );
-         varData->undef = (char*)malloc( len*sizeof(char) );
-         if( varData->undef==NULL ) {
-            lParse->status = MEMORY_ALLOCATION;
-            break;
-         }
+	 if (do_realloc) {
+	   if (varData->undef)
+	     free( varData->undef );
+	   varData->undef = (char*)malloc( len*sizeof(char) );
+	   if( varData->undef==NULL ) {
+	     lParse->status = MEMORY_ALLOCATION;
+	     break;
+	   }
+	 }
          while( len-- ) {
             varData->undef[len] = 
                ( rarray[0]!=0.0 && rarray[0]==rarray[len+1]);
@@ -1515,9 +1530,12 @@ static void Setup_DataArrays( ParseData *lParse, int nCols, iteratorCol *cols,
             FREE( varData->undef );
             varData->undef = NULL;
          }
+	 lParse->nPrevDataRows = 0;
          return;
       }
    }
+
+   lParse->nPrevDataRows = nRows;
 }
 
 /*--------------------------------------------------------------------------*/
