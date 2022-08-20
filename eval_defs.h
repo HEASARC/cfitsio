@@ -93,6 +93,7 @@ struct ParseData_struct {
                   long        firstDataRow;
                   long        nDataRows;
                   long        totalRows;
+                  long        nPrevDataRows;
 
                   int         datatype;
                   int         hdutype;
