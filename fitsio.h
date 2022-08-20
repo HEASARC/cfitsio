@@ -483,6 +483,7 @@ typedef struct  /* structure for the iterator function column information */
 #define InputCol         0  /* flag for input only iterator column       */
 #define InputOutputCol   1  /* flag for input and output iterator column */
 #define OutputCol        2  /* flag for output only iterator column      */
+#define TemporaryCol     3  /* flag for temporary iterator column INTERNAL */
 
 /*=============================================================================
 *
