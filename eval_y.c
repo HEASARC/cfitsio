@@ -3768,7 +3768,7 @@ static int New_Deref( ParseData *lParse, int Var,  int nDim,
    return(n);
 }
 
-extern int yyGetVariable( char *varName, YYSTYPE *varVal );
+extern int yyGetVariable( ParseData *lParse, char *varName, YYSTYPE *varVal );
 
 static int New_GTI( ParseData *lParse, funcOp Op, char *fname, int Node1, int Node2, char *start, char *stop )
 {
@@ -3783,7 +3783,7 @@ static int New_GTI( ParseData *lParse, funcOp Op, char *fname, int Node1, int No
    YYSTYPE colVal;
 
    if( (Op == gtifilt_fct || Op == gtifind_fct) && Node1==-99 ) {
-      type = yyGetVariable( "TIME", &colVal );
+      type = yyGetVariable( lParse,  "TIME", &colVal );
       if( type==COLUMN ) {
 	 Node1 = New_Column( lParse, (int)colVal.lng );
       } else {
@@ -4033,7 +4033,7 @@ static int New_REG( ParseData *lParse, char *fname, int NodeX, int NodeY, char *
    YYSTYPE colVal;
 
    if( NodeX==-99 ) {
-      type = yyGetVariable( "X", &colVal );
+      type = yyGetVariable( lParse,  "X", &colVal );
       if( type==COLUMN ) {
 	 NodeX = New_Column( lParse, (int)colVal.lng );
       } else {
@@ -4042,7 +4042,7 @@ static int New_REG( ParseData *lParse, char *fname, int NodeX, int NodeY, char *
       }
    }
    if( NodeY==-99 ) {
-      type = yyGetVariable( "Y", &colVal );
+      type = yyGetVariable( lParse, "Y", &colVal );
       if( type==COLUMN ) {
  	 NodeY = New_Column( lParse, (int)colVal.lng );
       } else {
