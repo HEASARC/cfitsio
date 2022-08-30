@@ -18,6 +18,9 @@ Version X.X.X - Next Release
   - Added new calculator function GTIFIND() which reports which GTI row
     brackets a given time sample
 
+  - Added new calculator functions which operate upon vector table
+    values NAXIS(V), NAXES(V,n), ELEMENTNUM(V) and AXISELEM(V,n).
+
   - The CFITSIO histogramming code now handles binning by any
     arbitrary calculator expression rather than just a column name.
     Both the binned columns as well as the optional weights may be
