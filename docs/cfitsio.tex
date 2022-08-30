@@ -8991,14 +8991,16 @@ usage. Also, the integer to real casts values to double precision:
     thus  results  in  another vector of boolean values indicating which
     elements of the two vectors are equal.
 
-    Eight functions are available that operate on a vector and return a
-    scalar result:
+    Several functions are available that operate on a vector.  All but
+    the last two return a scalar result:
 
 \begin{verbatim}
     "minimum"      MIN(V)          "maximum"               MAX(V)
     "average"      AVERAGE(V)      "median"                MEDIAN(V)
     "summation"    SUM(V)          "standard deviation"    STDDEV(V)
     "# of values"  NELEM(V)        "# of non-null values"  NVALID(V)
+    "# axes"       NAXIS(V)        "axis dimension"        NAXES(V,n)
+    "axis pos'n"   AXISELEM(V,n)   "vector element pos'n"  ELEMENTNUM(V)
 \end{verbatim}
     where V represents the name of a vector column or a manually
     constructed vector using curly brackets as described below.  The
@@ -9022,6 +9024,16 @@ usage. Also, the integer to real casts values to double precision:
 
     which will return TRUE if all elements  of  COL1  are  greater  than
     their corresponding elements in COL2.
+
+    The NAXIS(V) function returns the number of axes of the vector,
+    for example a 2D array would be NAXIS(V) == 2.  The NAXES(V,n)
+    function returns the dimension of axis n, for example a 4x2 array
+    would have NAXES(V,1) == 4.  The ELEMENTNUM(V) and AXISELEM(V,n)
+    functions return vectors of the same size as the input vector V.
+    ELEMENTNUM(V) returns the vector element position for each element
+    in the vector, starting from 1 in each row.  The AXISELEM(V,n)
+    function is similar but returns the element position of axis n
+    only.
 
     To  specify  a  single  element  of  a  vector, give the column name
     followed by  a  comma-separated  list  of  coordinates  enclosed  in

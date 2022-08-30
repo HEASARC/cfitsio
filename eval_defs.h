@@ -152,7 +152,9 @@ typedef enum {
 		  strpos_fct,
 		  setnull_fct,
 		  gtiover_fct,
-		  gtifind_fct
+		  gtifind_fct,
+		  elemnum_fct,
+		  axiselem_fct
                                 } funcOp;
 
 

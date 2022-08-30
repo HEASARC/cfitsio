@@ -1142,13 +1142,13 @@ int fits_parse_workfn( long    totalrows,     /* I - Total rows to be processed 
     /* Parser allocates arrays for each column and calculation it performs. */
     /* Limit number of rows processed during each pass to reduce memory     */
     /* requirements... In most cases, iterator will limit rows to less      */
-    /* than 2500 rows per iteration, so this is really only relevant for    */
+    /* than 10000 rows per iteration, so this is really only relevant for    */
     /* hk-compressed files which must be decompressed in memory and sent    */
     /* whole to fits_parse_workfn in a single iteration.                           */
 
     remain = nrows;
     while( remain ) {
-       ntodo = minvalue(remain,2500);
+       ntodo = minvalue(remain,10000);
        Evaluate_Parser ( lParse, firstrow, ntodo );
        if( lParse->status ) break;
 
