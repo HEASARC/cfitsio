@@ -692,7 +692,6 @@ int ffcalc_rng( fitsfile *infptr,   /* I - Input FITS file                  */
       /*************************************/
 
       col_cnt = lParse.nCols;
-#pragma GCC warning "should this be col_cnt+1????? on line eval_f.c:716???"
       if( fits_parser_allocateCol( &lParse, col_cnt, status ) ) {
          ffcprs(&lParse);
          return( *status );
