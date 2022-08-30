@@ -652,6 +652,25 @@ expr:    LONG
 		     $$ = New_Func(lParse,  0, gasrnd_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
 		     TEST($$);
 		     TYPE($$) = DOUBLE;
+		  } else if (FSTRCMP($1,"ELEMENTNUM(") == 0) {
+		     if (OPER($2) == CONST_OP) {
+		       long one = 1;
+		       $$ = New_Const(lParse,  LONG, &one, sizeof(one) );
+		     } else {
+		       $$ = New_Func(lParse,  0, elemnum_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		       TEST($$);
+		       TYPE($$) = LONG;
+		     }
+		  } else if (FSTRCMP($1,"NAXIS(") == 0) {  /* NAXIS(V) */
+		     if (OPER($2) == CONST_OP) { /* if V is constant, return 1 in every case */
+		       long one = 1;
+		       $$ = New_Const(lParse,  LONG, &one, sizeof(one) );
+		     } else {                    /* determine now the dimension of the expression */
+		       long naxis = lParse->Nodes[$2].value.naxis;
+
+		       $$ = New_Const(lParse,  LONG, &naxis, sizeof(naxis) );
+		       TEST($$);
+		     }
                   } 
   		  else {  /*  These all take DOUBLE arguments  */
 		     if( TYPE($2) != DOUBLE ) $2 = New_Unary(lParse,  DOUBLE, 0, $2 );
@@ -765,6 +784,45 @@ expr:    LONG
 		     /* Make sure first arg is same type as second arg */
 		     if ( TYPE($2) != TYPE($4) ) $2 = New_Unary(lParse,  TYPE($4), 0, $2 );
 		     $$ = New_Func(lParse,  0, setnull_fct, 2, $4, $2, 0, 0, 0, 0, 0 );
+		   } else if (FSTRCMP($1,"AXISELEM(") == 0) {  /* AXISELEM(V,n) */
+		     if (OPER($4) != CONST_OP
+			 || SIZE($4) != 1) {
+		       yyerror(scanner, lParse, "AXISELEM second argument must be a scalar constant");
+		       YYERROR;
+		     }
+		     if (OPER($2) == CONST_OP) {
+		       long one = 1;
+		       $$ = New_Const(lParse,  LONG, &one, sizeof(one) );
+		     } else {
+		       if ( TYPE($4) != LONG ) $4 = New_Unary(lParse, LONG, 0, $4);
+		       $$ = New_Func(lParse, 0, axiselem_fct, 2, $2, $4, 0, 0, 0, 0, 0 );
+		       TEST($$);
+		       TYPE($$) = LONG;
+		     }
+		   } else if (FSTRCMP($1,"NAXES(") == 0) {  /* NAXES(V,n) */
+		     if (OPER($4) != CONST_OP
+			 || SIZE($4) != 1) {
+		       yyerror(scanner, lParse, "NAXES second argument must be a scalar constant");
+		       YYERROR;
+		     }
+		     if (OPER($2) == CONST_OP) { /* if V is constant, return 1 in every case */
+		       long one = 1;
+		       $$ = New_Const(lParse,  LONG, &one, sizeof(one) );
+		     } else {                    /* determine now the dimension of the expression */
+		       long iaxis;
+		       int naxis;
+		       if ( TYPE($4) != LONG ) $4 = New_Unary(lParse, LONG, 0, $4);
+		       /* Since it is already constant, we can extract long value directly */
+		       iaxis = (lParse->Nodes[$4].value.data.lng);
+		       naxis = lParse->Nodes[$2].value.naxis;
+
+		       if (iaxis == 0)          iaxis = naxis;   /* NAXIS(V,0) = NAXIS */
+		       else if (iaxis <= naxis) iaxis = lParse->Nodes[$2].value.naxes[iaxis-1]; /* NAXIS(V,n) = NAXISn */
+		       else                     iaxis = 1;       /* Out of bounds use 1 */
+
+		       $$ = New_Const(lParse,  LONG, &iaxis, sizeof(iaxis) );
+		       TEST($$);
+		     }
 		   } else {
 		      yyerror(scanner, lParse, "Function(expr,expr) not supported");
 		      YYERROR;
@@ -3819,6 +3877,49 @@ static void Do_Func( ParseData *lParse, Node *this )
                }
             }
 	    break;
+	 case axiselem_fct:
+	   {
+	     long ielem;
+	     long iaxis[MAXDIMS] = {1, 1, 1, 1, 1};
+	     long ipos = pVals[1].data.lng - 1; /* This should be a constant long value */
+	     int naxis = this->value.naxis;
+	     int j;
+	     if (ipos >= MAXDIMS) {
+	         yyerror(0, lParse, "AXISELEM(V,n) n value exceeded maximum dimension");
+		 free( this->value.data.ptr );
+		 break;
+	     }
+
+	     for (ielem = 0; ielem<elem; ielem++) {
+	       this->value.data.lngptr[ielem] = iaxis[ipos];
+	       this->value.undef[ielem] = 0;
+	       iaxis[0]++;
+	       for (j = 0; j < naxis; j++) {
+		 if (iaxis[j] > this->value.naxes[j]) { 
+		   iaxis[j] = 1; 
+		   if (j < (naxis-1)) iaxis[j+1]++;
+		 } else {
+		   break;
+		 }
+	       }
+
+	     }
+	   }
+	   break;
+	 case elemnum_fct:
+	   {
+	     long ielem;
+	     long elemnum = 1;
+	     int j;
+
+	     for (ielem = 0; ielem<elem; ielem++) {
+	       this->value.data.lngptr[ielem] = elemnum;
+	       this->value.undef[ielem] = 0;
+	       elemnum ++;
+	       if (elemnum > this->value.nelem) elemnum = 1;
+	     }
+	   }
+	   break;
 	 case rnd_fct:
 	   while( elem-- ) {
 	     this->value.data.dblptr[elem] = simplerng_getuniform();
