@@ -415,6 +415,11 @@ int fits_already_open(fitsfile **fptr, char *url,
 int ffedit_columns(fitsfile **fptr, char *outfile, char *expr, int *status);
 int fits_get_col_minmax(fitsfile *fptr, int colnum, double *datamin, 
                      double *datamax, int *status);
+/* "Extended syntax" versions of histogram binning which permit
+   expressions instead of just columns.  The existing interfaces
+   still work */
+int fits_get_expr_minmax(fitsfile *fptr, char *expr, double *datamin, 
+			 double *datamax, int *datatype, int *status);
 int ffbinse(char *binspec, int *imagetype, int *haxis, 
 	    char colname[4][FLEN_VALUE], double *minin,
 	    double *maxin, double *binsizein,
@@ -431,6 +436,15 @@ int ffhist2e(fitsfile **fptr, char *outfile, int imagetype, int naxis,
 	     char binname[4][FLEN_VALUE], 
 	     double weightin, char wtcol[FLEN_VALUE], char *wtexpr,           
 	     int recip, char *selectrow, int *status);
+int fits_calc_binningde(fitsfile *, int, char colname[4][FLEN_VALUE],
+	  char *colexpr[4], double *minin, double *maxin, double *binsizein,
+          char minname[4][FLEN_VALUE], char maxname[4][FLEN_VALUE], char binname[4][FLEN_VALUE],			       
+          int *, int *, long *, double *, double *, double *, long *, int *);
+int fits_write_keys_histoe(fitsfile *fptr,  fitsfile *histptr, 
+          int naxis, int *colnum, char colname[4][FLEN_VALUE], char *colexpr[4], int *status);  
+int fits_make_histde(fitsfile *fptr, fitsfile *histptr, int *datatypes, int bitpix,int naxis,
+     long *naxes,  int *colnum,  char *colexpr[4], double *amin,  double *amax, double *binsize,
+     double weight, int wtcolnum, char *wtexpr, int recip, char *selectrow, int *status);
 int ffwritehisto(long totaln, long offset, long firstn, long nvalues,
              int narrays, iteratorCol *imagepars, void *userPointer);
 int ffcalchist(long totalrows, long offset, long firstrow, long nrows,

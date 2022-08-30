@@ -34,61 +34,7 @@ typedef struct {  /*  Structure holding all the histogramming information   */
    parseInfo *infos;
 } histType;
 
-static int fits_get_expr_minmax(fitsfile *fptr, char *expr, double *datamin, 
-				double *datamax, int *datatype, int *status);
-static int fits_calc_binningde(
-      fitsfile *fptr,  /* IO - pointer to table to be binned      ;       */
-      int naxis,       /* I - number of axes/columns in the binned image  */
-      char colname[4][FLEN_VALUE],   /* I - optional column names         */
-      char *colexpr[4],  /* I - optional column expression instead of name*/
-      double *minin,     /* I - optional lower bound value for each axis  */
-      double *maxin,     /* I - optional upper bound value, for each axis */
-      double *binsizein, /* I - optional bin size along each axis         */
-      char minname[4][FLEN_VALUE], /* I - optional keywords for min       */
-      char maxname[4][FLEN_VALUE], /* I - optional keywords for max       */
-      char binname[4][FLEN_VALUE], /* I - optional keywords for binsize   */
-
-    /* The returned parameters for each axis of the n-dimensional histogram are */
-
-      int *colnum,     /* O - column numbers, to be binned */
-      int *datatypes,  /* O - datatypes of each output column */
-      long *haxes,     /* O - number of bins in each histogram axis */
-      double *amin,     /* O - lower bound of the histogram axes */
-      double *amax,     /* O - upper bound of the histogram axes */
-      double *binsize,  /* O - width of histogram bins/pixels on each axis */
-      long *repeat,     /* O - vector repeat of input columns */
-      int *status);
-static int fits_write_keys_histoe(
-      fitsfile *fptr,   /* I - pointer to table to be binned              */
-      fitsfile *histptr,  /* I - pointer to output histogram image HDU      */
-      int naxis,        /* I - number of axes in the histogram image      */
-      int *colnum,      /* I - column numbers (array length = naxis)      */
-      char colname[4][FLEN_VALUE], /* I - if expression, then column name to use */
-      char *colexpr[4], /* I - if expression, then column name to use */
-      int *status)     ;
-static int fits_make_histde(fitsfile *fptr, /* IO - pointer to table with X and Y cols; */
-    fitsfile *histptr, /* I - pointer to output FITS image      */
-    int *datatypes,   /*  I - datatype of input (or 0 for auto) */
-    int bitpix,       /* I - datatype for image: 16, 32, -32, etc    */
-    int naxis,        /* I - number of axes in the histogram image   */
-    long *naxes,      /* I - size of axes in the histogram image   */
-    int *colnum,      /* I - column numbers (array length = naxis)   */
-    char *colexpr[4], /* I - optional expression instead of column */
-    double *amin,     /* I - minimum histogram value, for each axis */
-    double *amax,     /* I - maximum histogram value, for each axis */
-    double *binsize,  /* I - bin size along each axis               */
-    double weight,    /* I - binning weighting factor          */
-    int wtcolnum,     /* I - optional keyword or col for weight*/
-    char *wtexpr,     /* I - optional weighting expression */
-    int recip,              /* I - use reciprocal of the weight?     */
-    char *selectrow,        /* I - optional array (length = no. of   */
-                             /* rows in the table).  If the element is true */
-                             /* then the corresponding row of the table will*/
-                             /* be included in the histogram, otherwise the */
-                             /* row will be skipped.  Ingnored if *selectrow*/
-                             /* is equal to NULL.                           */
-			    int *status);
-
+static void *recalloc(void *ptr, size_t old_num, size_t new_num, size_t size);
 
 /*--------------------------------------------------------------------------*/
 int ffbinse(char *binspec,   /* I - binning specification */
@@ -3001,8 +2947,8 @@ static int histo_minmax_expr_workfn( long    totalrows,     /* I - Total rows to
 
 
 /*--------------------------------------------------------------------------*/
-static int fits_get_expr_minmax(fitsfile *fptr, char *expr, double *datamin, 
-				double *datamax, int *datatype, int *status)
+int fits_get_expr_minmax(fitsfile *fptr, char *expr, double *datamin, 
+			 double *datamax, int *datatype, int *status)
 /* 
    Simple utility routine to compute the min and max value in an expression
 */
