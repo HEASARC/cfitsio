@@ -18,8 +18,17 @@ Version X.X.X - Next Release
   - Added new calculator function GTIFIND() which reports which GTI row
     brackets a given time sample
 
-  - The CFITSIO calculator is now fully reentrant and does not require
-    multithreading interlocks.
+  - The CFITSIO histogramming code now handles binning by any
+    arbitrary calculator expression rather than just a column name.
+    Both the binned columns as well as the optional weights may be
+    calculator expressions, enclosed in parentheses.
+
+  - The CFITSIO calculator and histogramming functionality is now
+    fully reentrant and does not require multithreading interlocks.
+
+  - A long-standing segmentation fault bug in the histogramming code
+    related to binning any value using the "reciprocal" /XXXX notation
+    has been fixed.
 
 Version 4.1.0 - Feb 2022
                    

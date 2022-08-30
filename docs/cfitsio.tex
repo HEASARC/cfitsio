@@ -8729,6 +8729,7 @@ of the individual expressions.
 %%         heatools/help/calc_express.html
 %%         heatools/help/rowfilter.html
 %%         heatools/help/colfilter.html
+%%         heatools/help/binfilter.html
 %%         heatools/ftcalc/ftcalc.html
 %%         heatools/ftselect/ftselect.html
 %%         ftools/futils/tasks/fselect/fselect.hlp
@@ -9450,13 +9451,28 @@ axes, respectively.  In cases where the column name could be confused
 with an arithmetic expression, enclose the column name in parentheses to
 force the name to be interpreted literally.
 
-Each column name may be followed by an equals sign and then the lower
-and upper range of the histogram, and the size of the histogram bins,
-separated by colons.  Spaces are allowed before and after the equals
-sign but not within the 'min:max:binsize' string.  The min, max and
-binsize values may be integer or floating point numbers, or they may be
-the names of keywords in the header of the table.  If the latter, then
-the value of that keyword is substituted into the expression.
+In addition to binning by a FITS column, any arbitrary calculator
+expression may be specified as well.  Usage of this form would appear
+as:
+
+\begin{verbatim}
+ [bin  Xcol(arbitrary expression)=min:max:binsize, ... ]
+\end{verbatim}
+
+The column name must still be specified, and is used to label
+coordinate axes of the resulting image.  The expression appears
+immediately after the name, enclosed in parentheses.  The expression
+may use any combination of columns, keywords, functions and constants
+and allowed by the CFITSIO calculator.
+
+The column name (and optional expression) may be followed by an equals
+sign and then the lower and upper range of the histogram, and the size
+of the histogram bins, separated by colons.  Spaces are allowed before
+and after the equals sign but not within the 'min:max:binsize' string.
+The min, max and binsize values may be integer or floating point
+numbers, or they may be the names of keywords in the header of the
+table.  If the latter, then the value of that keyword is substituted
+into the expression.
 
 Default values for the min, max and binsize quantities will be
 used if not explicitly given in the binning expression as shown
@@ -9480,6 +9496,13 @@ values in the column for the histogram min and max values.  The default
 binsize will be set to 1, or (max - min) / 10., whichever is smaller,
 so that the histogram will have at least 10 bins along each axis.
 
+Please note that if explicit min and max values (or TLMINn/TLMAXn keywords)
+are not present, then CFITSIO must check every value of the binned quantity
+in advance to determine the binning limits.  This is especially relevant 
+for binning expressions, which must be evaluated multiple times to determine
+the limits of the expression.  Thus, it is always advisable to specify 
+min and max limits where possible.
+
 A shortcut notation is allowed if all the columns/axes have the same
 binning specification.  In this case all the column names may be listed
 within parentheses, followed by the (single) binning specification, as
@@ -9490,26 +9513,31 @@ in:
     [bin (X,Y) = 5]
 \end{verbatim}
 
-The optional weighting factor is the last item in the binning specifier
-and, if present, is separated from the list of columns by a
+The optional weighting factor is the last item in the binning
+specifier and, if present, is separated from the list of columns by a
 semi-colon.  As the histogram is accumulated, this weight is used to
-incremented the value of the appropriated bin in the histogram.  If the
-weighting factor is not specified, then the default weight = 1 is
+incremented the value of the appropriated bin in the histogram.  If
+the weighting factor is not specified, then the default weight = 1 is
 assumed.  The weighting factor may be a constant integer or floating
 point number, or the name of a keyword containing the weighting value.
-Or the weighting factor may be the name of a table column in which case
-the value in that column, on a row by row basis, will be used.
+The weighting factor may also be the name of a table column in which
+case the value in that column, on a row by row basis, will be used.
+It may also be an expression, enclosed in parenthesis, in which case
+the weighting value will be evaluated for each binned row and applied
+accordingly.
 
 In some cases, the column or keyword may give the reciprocal of the
 actual weight value that is needed.  In this case, precede the weight
 keyword or column name by a slash '/' to tell CFITSIO to use the
-reciprocal of the value when constructing the histogram.
+reciprocal of the value when constructing the histogram.  An expression,
+enclosed in parentheses, may also appear after the slash, to
+indicate the reciprocal value of the expression.
 
-For  complex or commonly  used  histograms, one  can also  place its
-description  into  a  text  file and  import   it  into  the binning
-specification  using the  syntax [bin  @filename.txt].  The file's
-contents  can extend over   multiple lines, although  it must still
-conform to the  no-spaces rule  for the min:max:binsize syntax and each
+For complex or commonly used histograms, one can also place its
+description into a text file and import it into the binning
+specification using the syntax [bin @filename.txt].  The file's
+contents can extend over multiple lines, although it must still
+conform to the no-spaces rule for the min:max:binsize syntax and each
 axis specification must still be comma-separated.  Any lines in the
 external text file that begin with 2 slash characters ('//') will be
 ignored and may be used to add comments into the file.
@@ -9537,6 +9565,22 @@ ignored and may be used to add comments into the file.
                                        of the PHA column for the X axis,
                                        and 1000 bins in the range
                                        8000. to 8100. for the Y axis.
+
+    [bin pha, gti_num(gtifind())=1:2:1] - a 2-D image, where PHA is the
+                                       X axis and the Y axis is an expression
+                                       which evaluates to the GTI number, 
+                                       as determined using the
+                                       GTIFIND() function.
+
+    [bin time=0:4000:2000, HR( (LC2/LC1).lt.1.5 ? 1 : 2 )=1:2:1] - a 2-D
+                                       histogram which determines the number
+                                       of samples in two time bins between 0 and
+                                       4000 and separating hardness ratio, 
+                                       evaluated as (LC2/LC1), between less than
+                                       1.5 or greater than 1.5.  The ?: 
+                                       conditional function is used to decide
+                                       less (or greater) than 1.5 and assign
+                                       HR bin 1 or 2.
 
     [bin @binFilter.txt]             - Use the contents of the text file
                                        binFilter.txt for the binning
