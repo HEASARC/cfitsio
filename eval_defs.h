@@ -86,6 +86,9 @@ struct ParseData_struct {
                   long        nRows;
 
                   int         nCols;
+                  long 	      nElements;
+                  int         nAxis;
+                  long        nAxes[MAXDIMS];
                   iteratorCol *colData;
                   DataInfo    *varData;
                   PixelFilter *pixFilter;
@@ -152,6 +155,28 @@ typedef enum {
 		  gtifind_fct
                                 } funcOp;
 
+
+typedef struct parseInfo_struct parseInfo;
+
+struct ParseStatusVariables { /* These variables were 'static' in fits_parse_workfn() */
+  void *Data, *Null;
+  int  datasize;
+  long lastRow, repeat, resDataSize;
+  LONGLONG jnull;
+  parseInfo *userInfo;
+  long zeros[4];
+};
+
+struct parseInfo_struct {
+     int  datatype;   /* Data type to cast parse results into for user       */
+     void *dataPtr;   /* Pointer to array of results, NULL if to use iterCol */
+     void *nullPtr;   /* Pointer to nulval, use zero if NULL                 */
+     long maxRows;    /* Max No. of rows to process, -1=all, 0=1 iteration   */
+     int  anyNull;    /* Flag indicating at least 1 undef value encountered  */
+     ParseData *parseData; /* Pointer to parser configuration */
+     struct ParseStatusVariables parseVariables;
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -168,6 +193,9 @@ extern "C" {
    int  fits_parser_yylex_destroy (yyscan_t scanner);
 
    void Evaluate_Parser( ParseData *lParse, long firstRow, long nRows );
+   int  fits_parser_allocateCol( ParseData *lParse, int nCol, int *status );
+   int fits_parser_set_temporary_col(ParseData *lParse, parseInfo *Info,
+				     long int nrows, void *nulval, int *status);
 
 #ifdef __cplusplus
     }

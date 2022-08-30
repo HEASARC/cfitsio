@@ -1260,6 +1260,18 @@ int ffiter(int n_cols,
             type*=-1;
         }
 
+	/* TemporaryCol must have defined datatype and repeat */
+	if (cols[jj].iotype == TemporaryCol &&
+	    (type <= 0 || cols[jj].repeat <= 0)) {
+	  
+	  snprintf(message,FLEN_ERRMSG,
+		   "TemporaryCol column must have defined datatype and repeat for column %d (ffiter)",
+		   jj + 1);
+	  ffpmsg(message);
+	  return(*status = BAD_DATATYPE);
+	}
+
+	/* Check for variable length or illegal data types */
         if (type != 0      && type != TBYTE  &&
             type != TSBYTE && type != TLOGICAL && type != TSTRING &&
             type != TSHORT && type != TINT     && type != TLONG && 
@@ -1287,7 +1299,12 @@ int ffiter(int n_cols,
         cols[jj].tunit[0] = '\0';
         cols[jj].tdisp[0] = '\0';
 
-        ffghdt(cols[jj].fptr, &jtype, status);  /* get HDU type */
+	/* Determine HDU type of this table (or BINARY_TBL for TemporaryCol) */
+	if (cols[jj].iotype != TemporaryCol) {
+	  ffghdt(cols[jj].fptr, &jtype, status);  /* get HDU type */
+	} else {
+	  hdutype = BINARY_TBL;
+	}
 
         if (hdutype == IMAGE_HDU) /* operating on FITS images */
         {
@@ -1325,53 +1342,53 @@ int ffiter(int n_cols,
 
 	    if (cols[jj].iotype != TemporaryCol)
 	    {
-            if (cols[jj].colnum < 1)
-            {
-                /* find the column number for the named column */
-                if (ffgcno(cols[jj].fptr, CASEINSEN, cols[jj].colname,
-                           &cols[jj].colnum, status) )
-                {
-                    snprintf(message,FLEN_ERRMSG,
-                      "Column '%s' not found for column number %d  (ffiter)",
-                       cols[jj].colname, jj + 1);
-                    ffpmsg(message);
-                    return(*status);
-                }
-            }
-
-            /* check that the column number is valid */
-            if (cols[jj].colnum < 1 || 
-                cols[jj].colnum > ((cols[jj].fptr)->Fptr)->tfield)
-            {
-                snprintf(message,FLEN_ERRMSG,
-                  "Column %d has illegal table position number: %d  (ffiter)",
-                    jj + 1, cols[jj].colnum);
-                ffpmsg(message);
-                return(*status = BAD_COL_NUM);
-            }
-
-            /* look for column description keywords and update structure */
-            tstatus = 0;
-            ffkeyn("TLMIN", cols[jj].colnum, keyname, &tstatus);
-            ffgkyj(cols[jj].fptr, keyname, &cols[jj].tlmin, 0, &tstatus);
-
-            tstatus = 0;
-            ffkeyn("TLMAX", cols[jj].colnum, keyname, &tstatus);
-            ffgkyj(cols[jj].fptr, keyname, &cols[jj].tlmax, 0, &tstatus);
-
-            tstatus = 0;
-            ffkeyn("TTYPE", cols[jj].colnum, keyname, &tstatus);
-            ffgkys(cols[jj].fptr, keyname, cols[jj].colname, 0, &tstatus);
-            if (tstatus)
+	      if (cols[jj].colnum < 1)
+		{
+		  /* find the column number for the named column */
+		  if (ffgcno(cols[jj].fptr, CASEINSEN, cols[jj].colname,
+			     &cols[jj].colnum, status) )
+		    {
+		      snprintf(message,FLEN_ERRMSG,
+			       "Column '%s' not found for column number %d  (ffiter)",
+			       cols[jj].colname, jj + 1);
+		      ffpmsg(message);
+		      return(*status);
+		    }
+		}
+	      
+	      /* check that the column number is valid */
+	      if (cols[jj].colnum < 1 || 
+		  cols[jj].colnum > ((cols[jj].fptr)->Fptr)->tfield)
+		{
+		  snprintf(message,FLEN_ERRMSG,
+			   "Column %d has illegal table position number: %d  (ffiter)",
+			   jj + 1, cols[jj].colnum);
+		  ffpmsg(message);
+		  return(*status = BAD_COL_NUM);
+		}
+	      
+	      /* look for column description keywords and update structure */
+	      tstatus = 0;
+	      ffkeyn("TLMIN", cols[jj].colnum, keyname, &tstatus);
+	      ffgkyj(cols[jj].fptr, keyname, &cols[jj].tlmin, 0, &tstatus);
+	      
+	      tstatus = 0;
+	      ffkeyn("TLMAX", cols[jj].colnum, keyname, &tstatus);
+	      ffgkyj(cols[jj].fptr, keyname, &cols[jj].tlmax, 0, &tstatus);
+	      
+	      tstatus = 0;
+	      ffkeyn("TTYPE", cols[jj].colnum, keyname, &tstatus);
+	      ffgkys(cols[jj].fptr, keyname, cols[jj].colname, 0, &tstatus);
+	      if (tstatus)
                 cols[jj].colname[0] = '\0';
-
-            tstatus = 0;
-            ffkeyn("TUNIT", cols[jj].colnum, keyname, &tstatus);
-            ffgkys(cols[jj].fptr, keyname, cols[jj].tunit, 0, &tstatus);
-
-            tstatus = 0;
-            ffkeyn("TDISP", cols[jj].colnum, keyname, &tstatus);
-            ffgkys(cols[jj].fptr, keyname, cols[jj].tdisp, 0, &tstatus);
+	      
+	      tstatus = 0;
+	      ffkeyn("TUNIT", cols[jj].colnum, keyname, &tstatus);
+	      ffgkys(cols[jj].fptr, keyname, cols[jj].tunit, 0, &tstatus);
+	      
+	      tstatus = 0;
+	      ffkeyn("TDISP", cols[jj].colnum, keyname, &tstatus);
+	      ffgkys(cols[jj].fptr, keyname, cols[jj].tdisp, 0, &tstatus);
 	    }
         }
     }  /* end of loop over all columns */
@@ -1444,7 +1461,7 @@ int ffiter(int n_cols,
 
         for (jj = 1; jj < n_cols; jj++)
         {
-	    if (cols[0].iotype == TemporaryCol) continue;
+	    if (cols[jj].iotype == TemporaryCol) continue;
             for (ii = 0; ii < jj; ii++)
             {
                 if (cols[ii].fptr == cols[jj].fptr)

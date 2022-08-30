@@ -405,6 +405,7 @@ int ffourl(char *url, char *urltype, char *outfile, char *tmplfile,
 int ffparsecompspec(fitsfile *fptr, char *compspec, int *status);
 int ffoptplt(fitsfile *fptr, const char *tempname, int *status);
 int fits_is_this_a_copy(char *urltype);
+char *fits_find_match_delim(char *, char);
 int fits_store_Fptr(FITSfile *Fptr, int *status);
 int fits_clear_Fptr(FITSfile *Fptr, int *status);
 int fits_already_open(fitsfile **fptr, char *url, 
@@ -414,6 +415,22 @@ int fits_already_open(fitsfile **fptr, char *url,
 int ffedit_columns(fitsfile **fptr, char *outfile, char *expr, int *status);
 int fits_get_col_minmax(fitsfile *fptr, int colnum, double *datamin, 
                      double *datamax, int *status);
+int ffbinse(char *binspec, int *imagetype, int *haxis, 
+	    char colname[4][FLEN_VALUE], double *minin,
+	    double *maxin, double *binsizein,
+	    char minname[4][FLEN_VALUE], char maxname[4][FLEN_VALUE],
+	    char binname[4][FLEN_VALUE], double *weight, char *wtname,
+	    int *recip, char ***exprs, int *status);
+int ffbinre(char **binspec, char *colname, char **exprbeg, char **exprend,
+	    double *minin, double *maxin, double *binsizein, char *minname,
+	    char *maxname, char *binname, int *status);
+int ffhist2e(fitsfile **fptr, char *outfile, int imagetype, int naxis,
+	     char colname[4][FLEN_VALUE], char *colexpr[4], 
+	     double *minin, double *maxin, double *binsizein, 
+	     char minname[4][FLEN_VALUE], char maxname[4][FLEN_VALUE], 
+	     char binname[4][FLEN_VALUE], 
+	     double weightin, char wtcol[FLEN_VALUE], char *wtexpr,           
+	     int recip, char *selectrow, int *status);
 int ffwritehisto(long totaln, long offset, long firstn, long nvalues,
              int narrays, iteratorCol *imagepars, void *userPointer);
 int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
@@ -996,7 +1013,7 @@ void ffcprs( ParseData * );
 int  ffcvtn( int inputType, void *input, char *undef, long ntodo,
 	     int outputType, void *nulval, void *output,
 	     int *anynull, int *status );
-int  parse_data( long totalrows, long offset, long firstrow,
+int  fits_parse_workfn( long totalrows, long offset, long firstrow,
                  long nrows, int nCols, iteratorCol *colData,
                  void *userPtr );
 int  uncompress_hkdata( ParseData *, 
