@@ -27,6 +27,7 @@ typedef struct {  /*  Structure holding all the histogramming information   */
    char *wtexpr;
    double weight;
    char  *rowselector;
+   char *rowselector_cur;
    int startCols[5];
    int numIterCols;
    iteratorCol *iterCols;
@@ -3078,7 +3079,10 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
     double *colptr[5] = {0,0,0,0,0};
     int status = 0;
 
-    rowselect = histData->rowselector;
+    if (firstrow == 1) {
+      histData->rowselector_cur = histData->rowselector;
+    }
+    rowselect = histData->rowselector_cur;
 
     for (ii=0; ii<=4; ii++) {
       int startCol = histData->startCols[ii];
@@ -3222,6 +3226,7 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
 
     }  /* end of main loop over all rows */
 
+    histData->rowselector_cur = rowselect; /* Save for next go-round */
     return(status);
 }
 
