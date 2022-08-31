@@ -166,6 +166,7 @@ cookbook:	cookbook.o lib${PACKAGE}.a ${OBJECTS}
 testf77:	testf77.o lib${PACKAGE}.a ${OBJECTS}
 		${FC} ${LDFLAGS_BIN} -o $@ ${@}.o -L. -l${PACKAGE} -lm ${LIBS}
 
+# Tested with bison 3.8 and flex 2.6.4
 eval:		# Rebuild eval_* files from flex/bison source
 		${FLEX} -o eval_l.c eval.l 
 		${BISON} -o eval_y.c --header=eval_tab.h eval.y
