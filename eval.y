@@ -3884,7 +3884,7 @@ static void Do_Func( ParseData *lParse, Node *this )
 	     long ipos = pVals[1].data.lng - 1; /* This should be a constant long value */
 	     int naxis = this->value.naxis;
 	     int j;
-	     if (ipos >= MAXDIMS) {
+	     if (ipos <= 0 || ipos >= MAXDIMS) {
 	         yyerror(0, lParse, "AXISELEM(V,n) n value exceeded maximum dimension");
 		 free( this->value.data.ptr );
 		 break;
