@@ -28,6 +28,7 @@ typedef struct {  /*  Structure holding all the histogramming information   */
    double weight;
    char  *rowselector;
    char *rowselector_cur;
+   long repeat;
    int startCols[5];
    int numIterCols;
    iteratorCol *iterCols;
@@ -813,7 +814,7 @@ int ffhist2e(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
     else
     {
         weight = (double) weightin;
-	wtrepeat = 1;
+	wtrepeat = vectorRepeat;
 	wtdatatype = TDOUBLE;
     }
 
@@ -1963,13 +1964,6 @@ int fits_calc_binningde(
       /* Not sure why this repeat limitation is here -- CM
 	 The iterator system can handle vector columns just fine
 `       */
-      if (repeat1 > 1)
-      {
-	strcpy(errmsg, "Can't bin a vector column: ");
-	strncat(errmsg, colname[ii],FLEN_ERRMSG-strlen(errmsg)-1);
-	ffpmsg(errmsg);
-	return(*status = BAD_DATATYPE);
-      }
       if (datatype < 0 || datatype == TSTRING)
       {
 	strcpy(errmsg, "Inappropriate datatype; can't bin this column: ");
@@ -2387,8 +2381,9 @@ int fits_rebin_wcsd(
        ffkeyn("CRVAL", ii + 1, keyname, &tstatus);
        /* get previous (pre-binning) value */
        ffgky(fptr, TDOUBLE, keyname, &dvalue, NULL, &tstatus); 
-       if (!tstatus && dvalue == 1.0)
+       if (!tstatus && dvalue == 1.0) {
            reset = 1;
+       }
 
        tstatus = 0;
        /*  CRPIXn - update location of the ref. pix. in the binned image */
@@ -2582,6 +2577,7 @@ int fits_make_histde(fitsfile *fptr, /* IO - pointer to table with X and Y cols;
     int numAllocCols = 0, startCol = -1, numIterCols = 0;
     iteratorCol *iterCols = 0;
     double double_nulval = DOUBLENULLVALUE;
+    long repeat = 0, wtrepeat = 0;
 
     /* check inputs */
     
@@ -2643,6 +2639,7 @@ int fits_make_histde(fitsfile *fptr, /* IO - pointer to table with X and Y cols;
     /* Loop through each axis and recheck the binning parameters */
     for (ii = 0; ii < naxis; ii++)
     {
+      long colrepeat = 0;
       int datatype;
       histData.startCols[ii] = startCol;
 
@@ -2659,11 +2656,14 @@ int fits_make_histde(fitsfile *fptr, /* IO - pointer to table with X and Y cols;
       imax = (long) tmax[ii];
       ibin = (long) tbin[ii];
     
-      /* get the datatype of the column */
+      /* get the datatype of the column and repeat */
+      if (! (colexpr && colexpr[ii] && colexpr[ii][0]) ) {
+	fits_get_eqcoltype(fptr, colnum[ii], &datatype, &colrepeat, NULL, status);
+      }
+
+      /* If caller specified datatype, use that */
       if (datatypes && datatypes[ii]) {
 	datatype = datatypes[ii];
-      } else {
-	fits_get_eqcoltype(fptr, colnum[ii], &datatype, NULL, NULL, status);
       }
 
       if (datatype <= TLONG && (double) imin == tmin[ii] &&
@@ -2703,6 +2703,8 @@ int fits_make_histde(fitsfile *fptr, /* IO - pointer to table with X and Y cols;
 	if (*status) goto cleanup;
 	if (nelem < 0) nelem = 1; /* If it's a constant expression */
 
+	colrepeat = nelem;
+
 	/* Set up the parser data for evaluation to a TemporaryCol */
 	fits_get_num_rows(fptr, &nrows, status);
 	if (fits_parser_set_temporary_col(&(parsers[ii]), &(infos[ii]), nrows,
@@ -2725,19 +2727,30 @@ int fits_make_histde(fitsfile *fptr, /* IO - pointer to table with X and Y cols;
 	startCol ++;
       }
 
-    }
+      /* Check that all the vector dimensions agree */
+      if (repeat == 0) {
+	repeat = colrepeat;
+      } else {
+	if (repeat != colrepeat) {
+	  ffpmsg("vector dimensions of binning values do not agree");
+	  *status = BAD_DIMEN;
+	  goto cleanup;
+	}
+      }
+
+    } /* End of loop over columns */
 
     /* Now initialize the iterator column data for the weighting */
     if (wtexpr && wtexpr[0] && weight == DOUBLENULLVALUE) {
       int wtdatatype, wtnaxis;
-      long wtnelem, wtnaxes[MAXDIMS];
+      long wtnaxes[MAXDIMS];
       int jj;
 
       histData.startCols[4] = startCol;
-      ffiprs( fptr, 0, wtexpr, MAXDIMS, &wtdatatype, &wtnelem, &wtnaxis,
+      ffiprs( fptr, 0, wtexpr, MAXDIMS, &wtdatatype, &wtrepeat, &wtnaxis,
 	      wtnaxes, &(parsers[4]), status );
       if (*status) goto cleanup;
-      if (wtnelem < 0) wtnelem = 1; /* If it's a constant expression */
+      if (wtrepeat < 0) wtrepeat = 1; /* If it's a constant expression */
 
       /* Set up the parser data for evaluation to a TemporaryCol */
       /* It's a weighting expression, set that up and ... */
@@ -2756,11 +2769,27 @@ int fits_make_histde(fitsfile *fptr, /* IO - pointer to table with X and Y cols;
       for (jj = 0; jj < parsers[4].nCols; jj++) iterCols[startCol++] = parsers[4].colData[jj];
 
     } else if (weight == DOUBLENULLVALUE) {
+      int wtdatatype;
 
       /* It's a "regular" weighting column */
+      fits_get_eqcoltype(fptr, wtcolnum, &wtdatatype, &wtrepeat, NULL, status);
+
       histData.startCols[4] = startCol;
       fits_iter_set_by_num(&(iterCols[startCol]), fptr, wtcolnum, TDOUBLE, InputCol);
       startCol ++;
+    } else {
+
+      /* In case of explicit numerical value, we can just use that number
+	 in the vector expression, so the vector repeat of the weighting can
+	 be set to that of the input */
+      wtrepeat = repeat;
+    }
+
+    /* Vector dimension of weighting must agree with binning */
+    if (wtrepeat != 0 && repeat != 0 && wtrepeat != repeat) {
+      ffpmsg("vector dimensions of weights do not agree with bins");
+      *status = BAD_DIMEN;
+      goto cleanup;
     }
 
     /* We now know he number of iterator columns */
@@ -2771,6 +2800,7 @@ int fits_make_histde(fitsfile *fptr, /* IO - pointer to table with X and Y cols;
     histData.iterCols = iterCols;
     histData.parsers = parsers;
     histData.infos = infos;
+    histData.repeat = repeat;
 
     /* Set global variables with histogram parameter values.    */
     /* Use separate scalar variables rather than arrays because */
@@ -3076,8 +3106,9 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
     double pix, axisbin;
     char *rowselect;
     histType *histData = (histType*)userPointer;
-    double *colptr[5] = {0,0,0,0,0};
+    double *colptr[MAXDIMS] = {0};
     int status = 0;
+    long irow;
 
     if (firstrow == 1) {
       histData->rowselector_cur = histData->rowselector;
@@ -3114,119 +3145,130 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
       }
     }
 
-    /*  Main loop: increment the histogram at position of each event */
-    /* Note that loop counter starts at 1 because position [0] in the 
+    /*  Main loop over rows */
+    /* irow = row counter (1 .. nrows) */
+    /* elem = counter of element (1 .. histData->repeat) for each row */
+    /* ii = counts up from 1 (see note below) used to index colptr[]'s */
+
+    /* Note that ii starts at 1 because position [0] in the 
        column data arrays is for the "null" value! */
-    for (ii = 1; ii <= nrows; ii++) 
+    for (ii = 1, irow = 1; irow <= nrows; irow++) 
     {
-        if (rowselect)     /* if a row selector array is supplied... */
-        {
-           if (*rowselect)
-           {
+        long elem;
+        if (rowselect) {    /* if a row selector array is supplied... */
+
+	  if (*rowselect) {
                rowselect++;   /* this row is included in the histogram */
-           }
-           else
-           {
+
+	  } else {
                rowselect++;   /* this row is excluded from the histogram */
+
+	       ii += histData->repeat; /* skip this portion of data */
                continue;
            }
         }
 
-        if (colptr[0][ii] == DOUBLENULLVALUE)  /* test for null value */
+
+	/* Loop over elements in each row, increment ii after each element */
+
+        for (elem = 1; elem <= histData->repeat; elem++, ii++) {
+	  if (colptr[0][ii] == DOUBLENULLVALUE)  /* test for null value */
             continue;
-
-        pix = (colptr[0][ii] - histData->amin1) / histData->binsize1;
-        ipix = (long) (pix + 1.); /* add 1 because the 1st pixel is the null value */
-
-	/* test if bin is within range */
-        if (ipix < 1 || ipix > histData->haxis1 || pix > histData->maxbin1)
+	  
+	  pix = (colptr[0][ii] - histData->amin1) / histData->binsize1;
+	  ipix = (long) (pix + 1.); /* add 1 because the 1st pixel is the null value */
+	  
+	  /* test if bin is within range */
+	  if (ipix < 1 || ipix > histData->haxis1 || pix > histData->maxbin1)
             continue;
+	  
+	  if (histData->haxis > 1)
+	    {
+	      if (colptr[1][ii] == DOUBLENULLVALUE)
+		continue;
+	      
+	      axisbin = (colptr[1][ii] - histData->amin2) / histData->binsize2;
+	      iaxisbin = (long) axisbin;
+	      
+	      if (axisbin < 0. || iaxisbin >= histData->haxis2 || axisbin > histData->maxbin2)
+		continue;
+	      
+	      ipix += (iaxisbin * histData->incr[1]);
+	      
+	      if (histData->haxis > 2)
+		{
+		  if (colptr[2][ii] == DOUBLENULLVALUE)
+		    continue;
+		  
+		  axisbin = (colptr[2][ii] - histData->amin3) / histData->binsize3;
+		  iaxisbin = (long) axisbin;
+		  if (axisbin < 0. || iaxisbin >= histData->haxis3 || axisbin > histData->maxbin3)
+		    continue;
+		  
+		  ipix += (iaxisbin * histData->incr[2]);
+		  
+		  if (histData->haxis > 3)
+		    {
+		      if (colptr[3][ii] == DOUBLENULLVALUE)
+			continue;
+		      
+		      axisbin = (colptr[3][ii] - histData->amin4) / histData->binsize4;
+		      iaxisbin = (long) axisbin;
+		      if (axisbin < 0. || iaxisbin >= histData->haxis4 || axisbin > histData->maxbin4)
+			continue;
+		      
+		      ipix += (iaxisbin * histData->incr[3]);
+		      
+		    }  /* end of haxis > 3 case */
+		}    /* end of haxis > 2 case */
+	    }      /* end of haxis > 1 case */
+	  
+	  /* increment the histogram pixel */
+	  if (histData->weight != DOUBLENULLVALUE) /* constant weight factor */
+	    {   /* Note that if wtrecip == 1, the reciprocal was precomputed above */
+	      if (histData->himagetype == TINT)
+		histData->hist.j[ipix] += (int) histData->weight;
+	      else if (histData->himagetype == TSHORT)
+		histData->hist.i[ipix] += (short) histData->weight;
+	      else if (histData->himagetype == TFLOAT)
+		histData->hist.r[ipix] += histData->weight;
+	      else if (histData->himagetype == TDOUBLE)
+		histData->hist.d[ipix] += histData->weight;
+	      else if (histData->himagetype == TBYTE)
+		histData->hist.b[ipix] += (char) histData->weight;
+	    }
+	  else if (histData->wtrecip) /* use reciprocal of the weight */
+	    {
+	      if (histData->himagetype == TINT)
+		histData->hist.j[ipix] += (int) (1./colptr[4][ii]);
+	      else if (histData->himagetype == TSHORT)
+		histData->hist.i[ipix] += (short) (1./colptr[4][ii]);
+	      else if (histData->himagetype == TFLOAT)
+		histData->hist.r[ipix] += (float) (1./colptr[4][ii]);
+	      else if (histData->himagetype == TDOUBLE)
+		histData->hist.d[ipix] += 1./colptr[4][ii];
+	      else if (histData->himagetype == TBYTE)
+		histData->hist.b[ipix] += (char) (1./colptr[4][ii]);
+	    }
+	  else   /* no weights */
+	    {
+	      if (histData->himagetype == TINT)
+		histData->hist.j[ipix] += (int) colptr[4][ii];
+	      else if (histData->himagetype == TSHORT)
+		histData->hist.i[ipix] += (short) colptr[4][ii];
+	      else if (histData->himagetype == TFLOAT)
+		histData->hist.r[ipix] += colptr[4][ii];
+	      else if (histData->himagetype == TDOUBLE)
+		histData->hist.d[ipix] += colptr[4][ii];
+	      else if (histData->himagetype == TBYTE)
+		histData->hist.b[ipix] += (char) colptr[4][ii];
+	    }
 
-        if (histData->haxis > 1)
-        {
-          if (colptr[1][ii] == DOUBLENULLVALUE)
-              continue;
-
-          axisbin = (colptr[1][ii] - histData->amin2) / histData->binsize2;
-          iaxisbin = (long) axisbin;
-
-          if (axisbin < 0. || iaxisbin >= histData->haxis2 || axisbin > histData->maxbin2)
-              continue;
-
-          ipix += (iaxisbin * histData->incr[1]);
-
-          if (histData->haxis > 2)
-          {
-            if (colptr[2][ii] == DOUBLENULLVALUE)
-                continue;
-
-            axisbin = (colptr[2][ii] - histData->amin3) / histData->binsize3;
-            iaxisbin = (long) axisbin;
-            if (axisbin < 0. || iaxisbin >= histData->haxis3 || axisbin > histData->maxbin3)
-                continue;
-
-            ipix += (iaxisbin * histData->incr[2]);
- 
-            if (histData->haxis > 3)
-            {
-              if (colptr[3][ii] == DOUBLENULLVALUE)
-                  continue;
-
-              axisbin = (colptr[3][ii] - histData->amin4) / histData->binsize4;
-              iaxisbin = (long) axisbin;
-              if (axisbin < 0. || iaxisbin >= histData->haxis4 || axisbin > histData->maxbin4)
-                  continue;
-
-              ipix += (iaxisbin * histData->incr[3]);
-
-            }  /* end of haxis > 3 case */
-          }    /* end of haxis > 2 case */
-        }      /* end of haxis > 1 case */
-
-        /* increment the histogram pixel */
-        if (histData->weight != DOUBLENULLVALUE) /* constant weight factor */
-	  {   /* Note that if wtrecip == 1, the reciprocal was precomputed above */
-            if (histData->himagetype == TINT)
-              histData->hist.j[ipix] += (int) histData->weight;
-            else if (histData->himagetype == TSHORT)
-              histData->hist.i[ipix] += (short) histData->weight;
-            else if (histData->himagetype == TFLOAT)
-              histData->hist.r[ipix] += histData->weight;
-            else if (histData->himagetype == TDOUBLE)
-              histData->hist.d[ipix] += histData->weight;
-            else if (histData->himagetype == TBYTE)
-              histData->hist.b[ipix] += (char) histData->weight;
-        }
-        else if (histData->wtrecip) /* use reciprocal of the weight */
-        {
-            if (histData->himagetype == TINT)
-              histData->hist.j[ipix] += (int) (1./colptr[4][ii]);
-            else if (histData->himagetype == TSHORT)
-              histData->hist.i[ipix] += (short) (1./colptr[4][ii]);
-            else if (histData->himagetype == TFLOAT)
-              histData->hist.r[ipix] += (float) (1./colptr[4][ii]);
-            else if (histData->himagetype == TDOUBLE)
-              histData->hist.d[ipix] += 1./colptr[4][ii];
-            else if (histData->himagetype == TBYTE)
-              histData->hist.b[ipix] += (char) (1./colptr[4][ii]);
-        }
-        else   /* no weights */
-        {
-            if (histData->himagetype == TINT)
-              histData->hist.j[ipix] += (int) colptr[4][ii];
-            else if (histData->himagetype == TSHORT)
-              histData->hist.i[ipix] += (short) colptr[4][ii];
-            else if (histData->himagetype == TFLOAT)
-              histData->hist.r[ipix] += colptr[4][ii];
-            else if (histData->himagetype == TDOUBLE)
-              histData->hist.d[ipix] += colptr[4][ii];
-            else if (histData->himagetype == TBYTE)
-              histData->hist.b[ipix] += (char) colptr[4][ii];
-        }
+	} /* end of loop over elements per row */
 
     }  /* end of main loop over all rows */
 
-    histData->rowselector_cur = rowselect; /* Save for next go-round */
+    histData->rowselector_cur = rowselect; /* Save row pointer for next go-round */
     return(status);
 }
 
