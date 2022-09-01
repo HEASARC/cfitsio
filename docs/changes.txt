@@ -37,6 +37,8 @@ Version X.X.X - Next Release
   - A long-standing segmentation fault bug in the histogramming code
     related to binning any value using the "reciprocal" /XXXX notation
     has been fixed.
+    
+  - Added mutex locks for thread safety in ftgiou and ftfiou.
 
 Version 4.1.0 - Feb 2022
                    
