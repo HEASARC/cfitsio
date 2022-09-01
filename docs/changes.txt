@@ -24,7 +24,12 @@ Version X.X.X - Next Release
   - The CFITSIO histogramming code now handles binning by any
     arbitrary calculator expression rather than just a column name.
     Both the binned columns as well as the optional weights may be
-    calculator expressions, enclosed in parentheses.
+    calculator expressions, enclosed in parentheses.  
+
+  - Binning of vector columns or expressions is now supported, as long
+    as all binned inputs (as well as the optional weighting) have the
+    same vector dimensions.  Binning of variable-length columns remains
+    unsupported.
 
   - The CFITSIO calculator and histogramming functionality is now
     fully reentrant and does not require multithreading interlocks.
