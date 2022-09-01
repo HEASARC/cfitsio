@@ -1138,7 +1138,7 @@ int https_open(char *filename, int rwmode, int *handle)
     mem_size(*handle, &fitsfilesize);
 
     if ((fitsfilesize > 0) && (fitsfilesize % 2880)) {
-      snprintf(errStr,MAXLEN,"Uncompressed file length not a multiple of 2880 (https_open) %u",
+      snprintf(errStr,MAXLEN,"Uncompressed file length not a multiple of 2880 (https_open) %lld",
 	       fitsfilesize);
       ffpmsg(errStr);
     }
@@ -1146,7 +1146,7 @@ int https_open(char *filename, int rwmode, int *handle)
   } else {
 
     if (inmem.size % 2880) {
-      snprintf(errStr,MAXLEN,"Content-Length not a multiple of 2880 (https_open) %u",
+      snprintf(errStr,MAXLEN,"Content-Length not a multiple of 2880 (https_open) %zu",
 	       inmem.size);
       ffpmsg(errStr);
     }
@@ -1236,7 +1236,7 @@ int https_file_open(char *filename, int rwmode, int *handle)
   if (inmem.size % 2880)
   {
     snprintf(errStr, MAXLEN,
-	    "Content-Length not a multiple of 2880 (https_file_open) %d",
+	    "Content-Length not a multiple of 2880 (https_file_open) %zu",
 	    inmem.size);
     ffpmsg(errStr);
   }
@@ -1473,7 +1473,7 @@ int ftps_open(char *filename, int rwmode, int *handle)
   {
      if (inmem.size % 2880)
      {
-        snprintf(errStr,MAXLEN,"Content-Length not a multiple of 2880 (ftps_open) %u",
+        snprintf(errStr,MAXLEN,"Content-Length not a multiple of 2880 (ftps_open) %zu",
             inmem.size);
         ffpmsg(errStr);
      }
@@ -1625,7 +1625,7 @@ int ftps_file_open(char *filename, int rwmode, int *handle)
      if (inmem.size % 2880)
      {
        snprintf(errStr, MAXLEN,
-	       "Content-Length not a multiple of 2880 (ftps_file_open) %d",
+	       "Content-Length not a multiple of 2880 (ftps_file_open) %zu",
 	       inmem.size);
        ffpmsg(errStr);
      }
