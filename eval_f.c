@@ -872,10 +872,10 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
    
    fits_parser_yylex_init_extra(lParse, &yylex_scanner);
    fits_parser_yyrestart(NULL, yylex_scanner);
-   if( fits_parser_yyparse(yylex_scanner, lParse) ) {
-      return( *status = PARSE_SYNTAX_ERR );
-   }
+   *status = fits_parser_yyparse(yylex_scanner, lParse);
    fits_parser_yylex_destroy(yylex_scanner);
+
+   if( *status  ) return( *status = PARSE_SYNTAX_ERR );
 
    /*  Check results  */
    *status = lParse->status;
