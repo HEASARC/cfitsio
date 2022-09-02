@@ -131,7 +131,7 @@ int ffrsimll(fitsfile *fptr,    /* I - FITS file pointer           */
 
     oldsize = (oldsize + 2879) / 2880; /* old size, in blocks */
 
-    newsize = (newsize + pcount) * gcount * (abs(longbitpix) / 8);
+    newsize = (newsize + pcount) * gcount * (labs(longbitpix) / 8);
     newsize = (newsize + 2879) / 2880; /* new size, in blocks */
 
     if (newsize > oldsize)   /* have to insert new blocks for image */
