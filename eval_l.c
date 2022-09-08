@@ -1523,6 +1523,7 @@ YY_RULE_SETUP
 		     return( SNULLREF );
 		  } else {
                      int len; 
+		     int result;
                      if (yytext[1] == '$') {
                         len = strlen(yytext) - 3;
                         yylval->str[0]     = '#';
@@ -1530,13 +1531,14 @@ YY_RULE_SETUP
                         yylval->str[len+1] = '\0';
                         yytext = yylval->str;
 		     }
-                     return( (*yylParse->getData)(yylParse, yytext, &yylval) );
+                     result = (*yylParse->getData)(yylParse, yytext, (yylval));
+		     return result;
                   }
                 }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 395 "eval.l"
+#line 397 "eval.l"
 {
                   int len;
                   len = strlen(yytext) - 2;
@@ -1557,7 +1559,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 412 "eval.l"
+#line 414 "eval.l"
 {
 		 int    len,type;
 
@@ -1567,13 +1569,13 @@ YY_RULE_SETUP
 		    yylval->str[len] = '\0';
 		    yytext = yylval->str;
 		 } 
-		 type = yyGetVariable(yylParse, yytext, yylval);
+		 type = yyGetVariable(yylParse, yytext, (yylval));
 		 return( type );
 		}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 424 "eval.l"
+#line 426 "eval.l"
 {
                   char *fname;
 		  int len=0;
@@ -1610,86 +1612,86 @@ YY_RULE_SETUP
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 457 "eval.l"
+#line 459 "eval.l"
 { return( INTCAST ); }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 458 "eval.l"
+#line 460 "eval.l"
 { return( FLTCAST ); }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 459 "eval.l"
+#line 461 "eval.l"
 { return( POWER   ); }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 460 "eval.l"
+#line 462 "eval.l"
 { return( NOT     ); }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 461 "eval.l"
+#line 463 "eval.l"
 { return( OR      ); }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 462 "eval.l"
+#line 464 "eval.l"
 { return( AND     ); }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 463 "eval.l"
+#line 465 "eval.l"
 { return( EQ      ); }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 464 "eval.l"
+#line 466 "eval.l"
 { return( NE      ); }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 465 "eval.l"
+#line 467 "eval.l"
 { return( GT      ); }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 466 "eval.l"
+#line 468 "eval.l"
 { return( LT      ); }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 467 "eval.l"
+#line 469 "eval.l"
 { return( GTE     ); }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 468 "eval.l"
+#line 470 "eval.l"
 { return( LTE     ); }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 469 "eval.l"
+#line 471 "eval.l"
 { return( XOR     ); }
 	YY_BREAK
 case 28:
 /* rule 28 can match eol */
 YY_RULE_SETUP
-#line 470 "eval.l"
+#line 472 "eval.l"
 { return( '\n'    ); }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 471 "eval.l"
+#line 473 "eval.l"
 { return( yytext[0] ); }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 472 "eval.l"
+#line 474 "eval.l"
 ECHO;
 	YY_BREAK
-#line 1692 "eval_l.c"
+#line 1694 "eval_l.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2870,7 +2872,7 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 472 "eval.l"
+#line 474 "eval.l"
 
 
 int yywrap(yyscan_t scanner)
