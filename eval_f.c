@@ -2515,7 +2515,8 @@ static int find_keywd(ParseData *lParse, char *keyname, void *itslval )
       lParse->status = status;
       return( pERROR );
    }
-      
+
+   /* Read appropriate value type and set to CONST_OP */
    switch( dtype ) {
    case 'C':
       fits_read_key_str( fptr, keyname, keyvalue, NULL, &status );

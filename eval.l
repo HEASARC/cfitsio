@@ -382,6 +382,7 @@ nl		\n
 		     return( SNULLREF );
 		  } else {
                      int len; 
+		     int result;
                      if (yytext[1] == '$') {
                         len = strlen(yytext) - 3;
                         yylval->str[0]     = '#';
@@ -389,7 +390,8 @@ nl		\n
                         yylval->str[len+1] = '\0';
                         yytext = yylval->str;
 		     }
-                     return( (*yylParse->getData)(yylParse, yytext, &yylval) );
+                     result = (*yylParse->getData)(yylParse, yytext, (yylval));
+		     return result;
                   }
                 }
 {string}	{
@@ -418,7 +420,7 @@ nl		\n
 		    yylval->str[len] = '\0';
 		    yytext = yylval->str;
 		 } 
-		 type = yyGetVariable(yylParse, yytext, yylval);
+		 type = yyGetVariable(yylParse, yytext, (yylval));
 		 return( type );
 		}
 {function}	{
