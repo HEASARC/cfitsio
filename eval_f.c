@@ -808,6 +808,7 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
    int xaxis, bitpix;
    long xaxes[9];
    yyscan_t yylex_scanner; /* Used internally by FLEX lexer */
+   PixelFilter *pixFilter = 0;
 
    if( *status ) return( *status );
 
@@ -816,7 +817,12 @@ int ffiprs( fitsfile *fptr,      /* I - Input FITS file                     */
 
    /*  Initialize the Parser structure  */
 
+   /* Unfortunately we need to preserve the pixFilter value since it
+      is pre-set when ffiprs() is called */
+   pixFilter = lParse->pixFilter;
    memset(lParse, 0, sizeof(*lParse));
+   lParse->pixFilter = pixFilter;
+
    lParse->def_fptr   = fptr;
    lParse->compressed = compressed;
    lParse->nCols      = 0;
@@ -1892,16 +1898,17 @@ int fffrwc( fitsfile *fptr,        /* I - Input FITS file                    */
 
    memset(&Info, 0, sizeof(Info));   
 
-   fits_get_colnum( fptr, CASEINSEN, timeCol, &lParse.timeCol, status );
-   fits_get_colnum( fptr, CASEINSEN, parCol,  &lParse.parCol , status );
-   fits_get_colnum( fptr, CASEINSEN, valCol,  &lParse.valCol, status );
-   if( *status ) return( *status );
-   
    if( ffiprs( fptr, 1, expr, MAXDIMS, &Info.datatype, &nelem,
                &naxis, naxes, &lParse, status ) ) {
       ffcprs(&lParse);
       return( *status );
    }
+
+   fits_get_colnum( fptr, CASEINSEN, timeCol, &lParse.timeCol, status );
+   fits_get_colnum( fptr, CASEINSEN, parCol,  &lParse.parCol , status );
+   fits_get_colnum( fptr, CASEINSEN, valCol,  &lParse.valCol, status );
+   if( *status ) return( *status );
+   
    if( nelem<0 ) {
       constant = 1;
       nelem = -nelem;
@@ -2692,6 +2699,7 @@ int fits_pixel_filter (PixelFilter * filter, int * status)
 	      &Info.datatype, &nelem, &naxis, naxes, &lParse, status)) {
       goto CLEANUP;
    }
+
 
    if (nelem < 0) {
       nelem = -nelem;
