@@ -1399,6 +1399,7 @@ int ffiter(int n_cols,
 
     offset = maxvalue(offset, 0L);  /* make sure offset is legal */
 
+    felement = 0;
     if (hdutype == IMAGE_HDU)   /* get total number of pixels in the image */
     {
       fits_get_img_dim(cols[0].fptr, &naxis, status);
@@ -1425,9 +1426,21 @@ int ffiter(int n_cols,
     }
     else   /* get total number or rows in the table */
     {
-      for (jj=0; jj < n_cols; jj++) {
-	if (cols[jj].iotype != TemporaryCol) {
-	  ffgkyj(cols[0].fptr, "NAXIS2", &totaln, 0, status);
+      /* Note the maxvalue here is a special case to deal with
+	 how the calculator treats expressions that have NO 
+	 referenced columns, just constants and other derivable
+	 values like #ROW.  In that case, the calculator creates
+	 a cols[0].fptr even though there is no column for it,
+	 and the iterator is not meant to allocate any space,
+	 etc for the column.  So the maxvalue() here assures
+	 that cols[0] is always checked, even if ncols==0, which
+	 is how the original logic worked.  This is a bit 
+	 dangerous in the sense that, what happens if the user
+	 passes a non-calculator input to this iterator, and
+	 has NOT set fptr to a legitimate FITS handle.  Boom! */
+      for (jj=0; jj < maxvalue(n_cols,1); jj++) {
+	if (cols[jj].iotype != TemporaryCol && cols[jj].fptr) {
+	  ffgkyj(cols[jj].fptr, "NAXIS2", &totaln, 0, status);
 	  frow = 1 + offset;
 	  felement = 1;
 	  break;
