@@ -176,6 +176,8 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
    if( *status ) return( *status );
 
    memset(&Info, 0, sizeof(Info));   
+   memset(&inExt, 0, sizeof(inExt));
+   memset(&outExt, 0, sizeof(outExt));
 
    if( ffiprs( infptr, 0, expr, MAXDIMS, &Info.datatype, &nelem, &naxis,
                naxes, &lParse, status ) ) {
