@@ -3314,7 +3314,7 @@ spaces).  Trailing blank characters are not significant.
    Which rows are transferred is determined by an array of flags, \verb|row_status[]|,
    which could be returned by fits_find_rows() or constructed by the user.
    FITS row N is copied if \verb|row_status[N-first_row]| is non-zero.  
-   \label{ffcprw}
+   \label{ffcprw} \label{ffcpsr}
 \end{description}
 
 \begin{verbatim}
@@ -3444,6 +3444,11 @@ rows if required) and not the number of table cells.
 
    int fits_write_nullrows / ffprwu
        (fitsfile *fptr, LONGLONG firstrow, LONGLONG nelements, > int *status)
+
+  int fits_write_cols / ffpcln
+      (fitsfile *fptr, int ncols, int *datatype, int *colnum, LONGLONG firstrow, 
+       LONGLONG nrows, DTYPE **array, DTYPE **nulval, int *status)
+
 \end{verbatim}
 
 \begin{description}
@@ -4977,7 +4982,8 @@ the array.  This should generally only be done during the
 initialization step or during the clean up step after the last set of
 data has been processed.  Extra FITS file I/O during the main
 processing loop of the work function can seriously degrade the speed of
-the program.
+the program.  Note that the behavior of the \verb|fits_iterate_data()|
+is undefined if narrays is zero.
 
 If variable-length array columns are being processed, then the iterator
 will operate on one row of the table at a time.  In this case the
@@ -10380,6 +10386,7 @@ fits\_copy\_key           & \pageref{ffcpky} \\
 fits\_copy\_member    & \pageref{ffgmcp} \\
 fits\_copy\_pixlist2image & \pageref{copypixlist2image} \\
 fits\_copy\_rows &   \pageref{ffcprw} \\
+fits\_copy\_selrows &   \pageref{ffcpsr} \\
 fits\_create\_diskfile    & \pageref{ffinit} \\
 fits\_create\_file    & \pageref{ffinit} \\
 
@@ -10515,6 +10522,7 @@ fits\_read\_col\_bit\_ & \pageref{ffgcx} \\
 fits\_read\_col\_TYP    & \pageref{ffgcvx} \\
 fits\_read\_colnull    & \pageref{ffgcf} \\
 fits\_read\_colnull\_TYP    & \pageref{ffgcfx} \\
+fits\_read\_cols        & \pageref{ffgcvn} \\
 fits\_read\_descript & \pageref{ffgdes} \\
 fits\_read\_descripts & \pageref{ffgdes} \\
 fits\_read\_errmsg    & \pageref{ffgmsg} \\
@@ -10602,6 +10610,7 @@ fits\_write\_col\_TYP     & \pageref{ffpcls} \\
 fits\_write\_col\_null      & \pageref{ffpclu} \\
 fits\_write\_colnull      & \pageref{ffpcn} \\
 fits\_write\_colnull\_TYP & \pageref{ffpcnx} \\
+fits\_write\_cols         & \pageref{ffpcln} \\
 \end{tabular}
 \newpage
 \begin{tabular}{lr}
@@ -10665,6 +10674,7 @@ ffcpht   & \pageref{ffcpht} \\
 ffcpimg  & \pageref{ffcpimg} \\
 ffcpky       & \pageref{ffcpky} \\
 ffcprw      &   \pageref{ffcprw} \\
+ffcpsr      &   \pageref{ffcpsr} \\
 ffcrhd     & \pageref{ffcrhd} \\
 ffcrim     & \pageref{ffcrim} \\
 ffcrow    & \pageref{ffcrow} \\
@@ -10713,6 +10723,7 @@ ffgcno     & \pageref{ffgcno} \\
 ffgcrd         & \pageref{ffgcrd} \\
 ffgcv        & \pageref{ffgcv} \\
 ffgcv\_    & \pageref{ffgcvx} \\
+ffgcvn       & \pageref{ffgcvn} \\
 ffgcx     & \pageref{ffgcx} \\
 ffgdes & \pageref{ffgdes} \\
 ffgdess & \pageref{ffgdes} \\
@@ -10832,6 +10843,7 @@ ffp2d\_   & \pageref{ffp2dx} \\
 ffp3d\_   & \pageref{ffp3dx} \\
 ffpcks   & \pageref{ffpcks} \\
 ffpcl         & \pageref{ffpcl} \\
+ffpcln         & \pageref{ffpcln} \\
 ffpcls     & \pageref{ffpcls} \\
 ffpcl\_     & \pageref{ffpclx} \\
 ffpclu      & \pageref{ffpclu} \\
