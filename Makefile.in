@@ -112,6 +112,8 @@ install:	lib${PACKAGE}.a ${INSTALL_DIRS}
 		@for lib in lib${PACKAGE}.a lib${PACKAGE}${SHLIB_SUFFIX} \
 				${CFITSIO_SHLIB} ${CFITSIO_SHLIB_SONAME}; do \
 		    if [ -f $$lib ]; then \
+			echo "/bin/rm -f ${CFITSIO_LIB}/$$lib"; \
+			/bin/rm -f ${CFITSIO_LIB}/$$lib; \
 			echo "/bin/cp -a $$lib ${CFITSIO_LIB}"; \
 			/bin/cp -a $$lib ${CFITSIO_LIB}; \
 		    fi; \
