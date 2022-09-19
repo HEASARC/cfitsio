@@ -19,7 +19,9 @@ Version X.X.X - Next Release
     brackets a given time sample
 
   - Added new calculator functions which operate upon vector table
-    values NAXIS(V), NAXES(V,n), ELEMENTNUM(V) and AXISELEM(V,n).
+    values NAXIS(V), NAXES(V,n), ELEMENTNUM(V) and AXISELEM(V,n),
+    and ARRAY(X,d) which promotes scalar X to a vector or array
+    with given dimensions.
 
   - The CFITSIO histogramming code now handles binning by any
     arbitrary calculator expression rather than just a column name.
@@ -30,6 +32,9 @@ Version X.X.X - Next Release
     as all binned inputs (as well as the optional weighting) have the
     same vector dimensions.  Binning of variable-length columns remains
     unsupported.
+
+  - A bug that caused histogram weights from columns that are null values
+    to be tallied along with non-null values has been fixed.
 
   - The CFITSIO calculator and histogramming functionality is now
     fully reentrant and does not require multithreading interlocks.
