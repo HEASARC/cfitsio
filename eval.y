@@ -158,6 +158,7 @@ static int  New_GTI   ( ParseData *, funcOp Op, char *fname, int Node1, int Node
 static int  New_REG   ( ParseData *, char *fname, int NodeX, int NodeY, char *colNames );
 static int  New_Vector( ParseData *, int subNode );
 static int  Close_Vec ( ParseData *, int vecNode );
+static int  New_Array(  ParseData *, int valueNode, int dimNode );
 static int  Locate_Col( ParseData *, Node *this );
 static int  Test_Dims ( ParseData *, int Node1, int Node2 );
 static void Copy_Dims ( ParseData *, int Node1, int Node2 );
@@ -176,6 +177,7 @@ static void Do_GTI       ( ParseData *, Node *this );
 static void Do_GTI_Over  ( ParseData *, Node *this );
 static void Do_REG       ( ParseData *, Node *this );
 static void Do_Vector    ( ParseData *, Node *this );
+static void Do_Array     ( ParseData *, Node *this );
 
 static long Search_GTI   ( double evtTime, long nGTI, double *start,
 			   double *stop, int ordered, long *nextGTI );
@@ -603,6 +605,9 @@ expr:    LONG
 		       $$ = New_Const(lParse,  LONG, &iaxis, sizeof(iaxis) );
 		       TEST($$);
 		     }
+		   } else if (FSTRCMP($1,"ARRAY(") == 0) {  /* NAXES(bexpr,n) */
+		     $$ = New_Array(lParse, $2, $4);
+		     TEST($$);
 		  } else {
                      yyerror(scanner, lParse, "Function(bool,expr) not supported");
 		     YYERROR;
@@ -869,6 +874,9 @@ expr:    LONG
 		       $$ = New_Const(lParse,  LONG, &iaxis, sizeof(iaxis) );
 		       TEST($$);
 		     }
+		   } else if (FSTRCMP($1,"ARRAY(") == 0) {  /* NAXES(expr,n) */
+		     $$ = New_Array(lParse, $2, $4);
+		     TEST($$);
 		   } else {
 		      yyerror(scanner, lParse, "Function(expr,expr) not supported");
 		      YYERROR;
@@ -2072,6 +2080,81 @@ static int Close_Vec( ParseData *lParse, int vecNode )
    this->value.naxes[0] = nelem;
 
    return( vecNode );
+}
+
+static int New_Array( ParseData *lParse, int valueNode, int dimNode )
+{
+  Node *dims;
+  long naxis, nelem;
+  long naxes[MAXDIMS];
+  Node *this;
+  int  n,i;
+
+   if( valueNode<0 || dimNode<0 ) return(-1);
+
+   /* Check that dimensions are {a,b,c,d}
+        - vector
+	- every element is constant integer
+	- 5 or fewer dimensions 
+   */
+
+   if (SIZE(valueNode) > 1) {
+     yyerror(0, lParse, "ARRAY(V,n) value V must have vector dimension of 1");
+     return (-1);
+   }
+
+   dims = &(lParse->Nodes[dimNode]);
+   for (i=0; i<MAXDIMS; i++) naxes[i] = 1;
+
+   if (OPER(dimNode) == CONST_OP) { /* ARRAY(V,n) is a constant integer */
+     if ( TYPE(dimNode) != LONG ) dimNode = New_Unary(lParse, LONG, 0, dimNode);
+     if (dimNode < 0) return (-1);
+     naxis = 1;
+     naxes[0] = lParse->Nodes[dimNode].value.data.lng;
+
+   } else if (OPER(dimNode) == '{') { /* ARRAY(V,{a,b,c,d,e}) up to 5 dimensions */
+     if (dims->nSubNodes > MAXDIMS) {
+       yyerror(0, lParse, "ARRAY(V,{...}) number of dimensions must not exceed 5");
+       return (-1);
+     }
+     naxis = dims->nSubNodes;
+     for (i=0; i<dims->nSubNodes; i++) {
+       if ( TYPE(dims->SubNodes[i]) != LONG ) {
+	 dims->SubNodes[i] = New_Unary(lParse, LONG, 0, dims->SubNodes[i]);
+	 if (dims->SubNodes[i] < 0) return (-1);
+       }
+       naxes[i] = lParse->Nodes[ dims->SubNodes[i] ].value.data.lng;
+     }
+   } else {
+     yyerror(0, lParse, "ARRAY(V,dims) dims must be either integer or const vector");
+     return (-1);
+   }
+
+   nelem = 1;
+   for (i=0; i<naxis; i++) {
+     if (naxes[i] <= 0) {
+       yyerror(0, lParse, "ARRAY(V,dims) must have positive dimensions");
+       return (-1);
+     }
+     nelem *= naxes[i];
+   }
+
+   n = Alloc_Node(lParse);
+   if( n>=0 ) {
+      this             = lParse->Nodes + n;
+      this->operation  = array_fct;
+      this->nSubNodes  = 1;
+      this->SubNodes[0]= valueNode;
+      this->type       = TYPE(valueNode);
+
+      this->value.nelem = nelem;
+      this->value.naxis = naxis;
+      for( i=0; i<naxis; i++ )
+	this->value.naxes[i] = naxes[i];
+
+      this->DoOp = Do_Array;
+   }
+   return( n );
 }
 
 static int Locate_Col( ParseData *lParse, Node *this )
@@ -5897,6 +5980,72 @@ static void Do_Vector( ParseData *lParse, Node *this )
    for( node=0; node < this->nSubNodes; node++ )
      if( OPER(this->SubNodes[node])>0 )
        free( lParse->Nodes[this->SubNodes[node]].value.data.ptr );
+}
+
+static void Do_Array( ParseData *lParse, Node *this )
+{
+   Node *that;
+   long row, elem, idx, jdx, offset=0;
+   int node;
+
+   Allocate_Ptrs( lParse, this );
+
+   if( !lParse->status ) {
+
+     /* This is the item to be replicated */
+     that = lParse->Nodes + this->SubNodes[0];
+
+     if( that->operation == CONST_OP ) {
+
+       idx = lParse->nRows*this->value.nelem + offset;
+       while( (idx--)>=0 ) {
+	       
+	 this->value.undef[idx] = 0;
+
+	 switch( this->type ) {
+	 case BOOLEAN:
+	   this->value.data.logptr[idx] = that->value.data.log;
+	   break;
+	 case LONG:
+	   this->value.data.lngptr[idx] = that->value.data.lng;
+	   break;
+	 case DOUBLE:
+	   this->value.data.dblptr[idx] = that->value.data.dbl;
+	   break;
+	 }
+       }
+       
+     } else {
+       
+       row  = lParse->nRows;
+       idx  = row * this->value.nelem - 1;
+       while( row-- ) {
+	 elem = this->value.nelem;
+	 while( elem-- ) {
+	   this->value.undef[idx] = that->value.undef[row];
+
+	   switch( this->type ) {
+	   case BOOLEAN:
+	     this->value.data.logptr[idx] = that->value.data.logptr[row];
+	     break;
+	   case LONG:
+	     this->value.data.lngptr[idx] = that->value.data.lngptr[row];
+	     break;
+	   case DOUBLE:
+	     this->value.data.dblptr[idx] = that->value.data.dblptr[row];
+	     break;
+	   }
+	   idx--;
+	 }
+       }
+
+     } /* not constant */
+
+     if( OPER(this->SubNodes[0])>0 )
+       free( lParse->Nodes[this->SubNodes[0]].value.data.ptr );
+
+   }
+
 }
 
 /*****************************************************************************/
