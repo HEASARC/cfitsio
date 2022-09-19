@@ -6395,6 +6395,7 @@ usage. Also, the integer to real casts values to double precision:
     "# of values"  NELEM(V)        "# of non-null values"  NVALID(V)
     "# axes"       NAXIS(V)        "axis dimension"        NAXES(V,n)
     "axis pos'n"   AXISELEM(V,n)   "vector element pos'n"  ELEMENTNUM(V)
+                                   "promote to array"      ARRAY(X,d)
 \end{verbatim}
     where V represents the name of a vector column or a manually
     constructed vector using curly brackets as described below.  The
@@ -6428,6 +6429,18 @@ usage. Also, the integer to real casts values to double precision:
 
     which will return TRUE if all elements  of  COL1  are  greater  than
     their corresponding elements in COL2.
+
+    The ARRAY(X,d) function promotes scalar value X to a vector (or
+    array) table element.  X may be any scalar-valued item, including
+    a column, an expression, or a constant value.  The resulting
+    vector or array will have the same scalar value replicated into
+    each element position.  This may be a useful way to construct
+    large arrays without using the cumbersome \{vector\} notation. The
+    dimensions of the new array are given by the second argument, d.
+    d can either be a single constant integer value, or a vector of up
+    to five dimensions of the form \{Nx,Ny,...\}.  Thus, ARRAY(TIME,4)
+    would promote TIME to be a 4-vector, and ARRAY(0, \{2,3,1\}) would
+    construct an array of all 0's with dimensions $2\times 3\times 1$.
 
     To  specify  a  single  element  of  a  vector, give the column name
     followed by  a  comma-separated  list  of  coordinates  enclosed  in
