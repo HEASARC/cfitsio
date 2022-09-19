@@ -1007,6 +1007,7 @@ int fits_parse_workfn( long    totalrows,     /* I - Total rows to be processed 
     iteratorCol * outcol;
     ParseData *lParse = ((parseInfo*)userPtr)->parseData;
     struct ParseStatusVariables *pv = &( ((parseInfo*)userPtr)->parseVariables );
+    void *Data0 = 0;
 
     /* declare variables static to preserve their values between calls */
     long zeros[4] = {0,0,0,0};
@@ -1023,6 +1024,16 @@ int fits_parse_workfn( long    totalrows,     /* I - Total rows to be processed 
        (pv->userInfo) = (parseInfo*)userPtr;
        (pv->userInfo)->anyNull = 0;
 
+       /* Unfortunately there are two copies of the iterator columns,
+	  one inside the parser and one outside maintained by the
+	  higher level.  (This could happen if the histogramming
+	  routines are binning multiple columns, and so there are
+	  multiple parsers being managed at one time.) Upon the first
+	  call we make sure they match */
+       for (jj = 0; jj<nCols; jj++) {
+	 lParse->colData[jj].repeat = maxvalue(colData[jj].repeat,lParse->colData[jj].repeat);
+       }
+
        if( (pv->userInfo)->maxRows>0 )
           (pv->userInfo)->maxRows = minvalue(totalrows,(pv->userInfo)->maxRows);
        else if( (pv->userInfo)->maxRows<0 )
@@ -1032,6 +1043,9 @@ int fits_parse_workfn( long    totalrows,     /* I - Total rows to be processed 
 
        (pv->lastRow) = firstrow + (pv->userInfo)->maxRows - 1;
 
+       /* dataPtr == NULL indicates an iterator-derived column, which
+	  means that the first value will be a null value and the remaining
+	  values will be the where the outputs are placed */
        if( (pv->userInfo)->dataPtr==NULL ) {
 
           if( outcol->iotype == InputCol ) {
@@ -1072,6 +1086,9 @@ int fits_parse_workfn( long    totalrows,     /* I - Total rows to be processed 
 */
        } else {
 
+	  /* This clause applies if the user is passing user-allocated 
+	     data arrays, which is where the data will be placed.  This 
+	     means they should also be passing null values */
           (pv->Data) = (pv->userInfo)->dataPtr;
           (pv->Null) = ((pv->userInfo)->nullPtr ? (pv->userInfo)->nullPtr : zeros);
           (pv->repeat) = lParse->Nodes[lParse->resultNode].value.nelem;
@@ -1115,7 +1132,9 @@ int fits_parse_workfn( long    totalrows,     /* I - Total rows to be processed 
 */
 
     if( (pv->userInfo)->dataPtr == NULL ) {
-       /* First, reset Data pointer to start of output array */
+       /* First, reset Data pointer to start of output array, plus 1
+	  because the 0th element is the null value (cute undocumented
+	  feature of the iterator!) */
        (pv->Data) = (char*) outcol->array + (pv->datasize);
 
        /* A TemporaryCol with null value specified explicitly */
@@ -1143,6 +1162,7 @@ int fits_parse_workfn( long    totalrows,     /* I - Total rows to be processed 
 
     /* Alter nrows in case calling routine didn't want to do all rows */
 
+    Data0 = pv->Data; /* Record starting point */
     nrows = minvalue(nrows,(pv->lastRow)-firstrow+1);
 
     Setup_DataArrays( lParse, nCols, colData, firstrow, nrows );
@@ -1326,12 +1346,22 @@ int fits_parse_workfn( long    totalrows,     /* I - Total rows to be processed 
           (pv->Data) = (char*)(pv->Data) + (pv->datasize) * ntodo * (pv->repeat);
     }
 
+    /* If a TemporaryCol output is used, we want to inform the caller
+       what the null value is expected to be */
+    if (pv->Null != outcol->array && 
+	(Data0) == (char*) outcol->array + (pv->datasize)) {
+      if( (pv->userInfo)->datatype == TSTRING )
+	memcpy( outcol->array, *(char **)(pv->Null), 2 );
+      else 
+	memcpy( outcol->array, (pv->Null), (pv->datasize) );
+    }
+
     /* If no NULLs encountered during this pass, set Null value to */
     /* zero to make the writing of the output column data faster   */
 
     if( anyNullThisTime )
        (pv->userInfo)->anyNull = 1;
-    else if( (pv->userInfo)->dataPtr == NULL ) {
+    else if( pv->Null == outcol->array ) {
        if( (pv->userInfo)->datatype == TSTRING )
           memcpy( *(char **)(pv->Null), zeros, 2 );
        else 
