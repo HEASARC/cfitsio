@@ -3141,7 +3141,11 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
       }
 
       if (outcol) {
-	colptr[ii] = (double *) fits_iter_get_array(outcol);
+	/* Note that the 0th array element returned by the iterator is
+	   actually the null value!  This is actually rather a big
+	   undocumented "feature" of the iterator. However, "ii" below
+	   starts at a value of 1 which skips over the null value */
+	colptr[ii] = ((double *) fits_iter_get_array(outcol));
       }
     }
 
@@ -3174,6 +3178,8 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
         for (elem = 1; elem <= histData->repeat; elem++, ii++) {
 	  if (colptr[0][ii] == DOUBLENULLVALUE)  /* test for null value */
             continue;
+	  if (colptr[4][ii] && colptr[4][ii] == DOUBLENULLVALUE) /* and null weight */
+	    continue;
 	  
 	  pix = (colptr[0][ii] - histData->amin1) / histData->binsize1;
 	  ipix = (long) (pix + 1.); /* add 1 because the 1st pixel is the null value */
@@ -3222,7 +3228,7 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
 		    }  /* end of haxis > 3 case */
 		}    /* end of haxis > 2 case */
 	    }      /* end of haxis > 1 case */
-	  
+
 	  /* increment the histogram pixel */
 	  if (histData->weight != DOUBLENULLVALUE) /* constant weight factor */
 	    {   /* Note that if wtrecip == 1, the reciprocal was precomputed above */
