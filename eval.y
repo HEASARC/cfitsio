@@ -563,6 +563,52 @@ expr:    LONG
 		  }
                   TEST($$); 
 		}
+       | FUNCTION bexpr ',' expr ')'
+                { if (FSTRCMP($1,"AXISELEM(") == 0) {  /* AXISELEM(V,n) */
+		     if (OPER($4) != CONST_OP
+			 || SIZE($4) != 1) {
+		       yyerror(scanner, lParse, "AXISELEM second argument must be a scalar constant");
+		       YYERROR;
+		     }
+		     if (OPER($2) == CONST_OP) {
+		       long one = 1;
+		       $$ = New_Const(lParse,  LONG, &one, sizeof(one) );
+		     } else {
+		       if ( TYPE($4) != LONG ) $4 = New_Unary(lParse, LONG, 0, $4);
+		       $$ = New_Func(lParse, 0, axiselem_fct, 2, $2, $4, 0, 0, 0, 0, 0 );
+		       TEST($$);
+		       TYPE($$) = LONG;
+		     }
+		   } else if (FSTRCMP($1,"NAXES(") == 0) {  /* NAXES(V,n) */
+		     if (OPER($4) != CONST_OP
+			 || SIZE($4) != 1) {
+		       yyerror(scanner, lParse, "NAXES second argument must be a scalar constant");
+		       YYERROR;
+		     }
+		     if (OPER($2) == CONST_OP) { /* if V is constant, return 1 in every case */
+		       long one = 1;
+		       $$ = New_Const(lParse,  LONG, &one, sizeof(one) );
+		     } else {                    /* determine now the dimension of the expression */
+		       long iaxis;
+		       int naxis;
+		       if ( TYPE($4) != LONG ) $4 = New_Unary(lParse, LONG, 0, $4);
+		       /* Since it is already constant, we can extract long value directly */
+		       iaxis = (lParse->Nodes[$4].value.data.lng);
+		       naxis = lParse->Nodes[$2].value.naxis;
+
+		       if (iaxis == 0)          iaxis = naxis;   /* NAXIS(V,0) = NAXIS */
+		       else if (iaxis <= naxis) iaxis = lParse->Nodes[$2].value.naxes[iaxis-1]; /* NAXIS(V,n) = NAXISn */
+		       else                     iaxis = 1;       /* Out of bounds use 1 */
+
+		       $$ = New_Const(lParse,  LONG, &iaxis, sizeof(iaxis) );
+		       TEST($$);
+		     }
+		  } else {
+                     yyerror(scanner, lParse, "Function(bool,expr) not supported");
+		     YYERROR;
+		  }
+                  TEST($$); 
+		}
        | FUNCTION sexpr ')'
                 { if (FSTRCMP($1,"NELEM(") == 0) {
                      $$ = New_Const(lParse,  LONG, &( SIZE($2) ), sizeof(long) );
