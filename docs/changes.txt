@@ -44,6 +44,9 @@ Version X.X.X - Next Release
     has been fixed.
     
   - Added mutex locks for thread safety in ftgiou and ftfiou.
+  
+  - Added several Fortran wrappers to support image read/write when
+    'fpixel' and 'nelements' are 8-byte integers.
 
 Version 4.1.0 - Feb 2022
                    

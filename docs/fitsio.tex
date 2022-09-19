@@ -3302,11 +3302,13 @@ contiguous rectangular subset of pixels within the n-dimensional array.
 \end{verbatim}
 
 \begin{description}
-\item[5 ]Put elements into the data array
+\item[5 ]Put elements into the data array.  The FTPPR[]LL routines
+      accept 64-bit integers for fpixel and nelements.
 \end{description}
 
 \begin{verbatim}
         FTPPR[BIJKED](unit,group,fpixel,nelements,values, > status)
+        FTPPR[BIJKED]LL(unit,group,fpixelll,nelementsll,values, > status)
 \end{verbatim}
 
 \begin{description}
@@ -3315,29 +3317,35 @@ contiguous rectangular subset of pixels within the n-dimensional array.
    integer FITS arrays, the null value defined by the previous call to FTPNUL
    will be substituted;  for floating point FITS arrays (BITPIX = -32
    or -64) then the special IEEE NaN (Not-a-Number) value will be
-  substituted.
+  substituted.  The FTPPN[]LL routines accept 64-bit integers for 
+  fpixel and nelements.
 \end{description}
 
 \begin{verbatim}
         FTPPN[BIJKED](unit,group,fpixel,nelements,values,nullval > status)
+        FTPPN[BIJKED]LL(unit,group,fpixelll,nelementsll,values,nullval > status)
 \end{verbatim}
 
 \begin{description}
-\item[7 ]Set data array elements as undefined
+\item[7 ]Set data array elements as undefined.  FTPPRULL accepts 64-bit integers
+         for fpixel and nelements.
 \end{description}
 
 \begin{verbatim}
         FTPPRU(unit,group,fpixel,nelements, > status)
+        FTPPRULL(unit,group,fpixelll,nelementsll, > status)
 \end{verbatim}
 
 \begin{description}
 \item[8 ] Get elements from the data array.  Undefined array elements will be
     returned with a value = nullval, unless nullval = 0 in which case no
-   checks for undefined pixels will be performed.
+   checks for undefined pixels will be performed.  FTGPV[]LL accepts
+   64-bit integers for fpixel and nelements.
 \end{description}
 
 \begin{verbatim}
         FTGPV[BIJKED](unit,group,fpixel,nelements,nullval, > values,anyf,status)
+        FTGPV[BIJKED]LL(unit,group,fpixelll,nelementsll,nullval, > values,anyf,status)
 \end{verbatim}
 
 \begin{description}
