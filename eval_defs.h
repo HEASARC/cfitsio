@@ -154,7 +154,8 @@ typedef enum {
 		  gtiover_fct,
 		  gtifind_fct,
 		  elemnum_fct,
-		  axiselem_fct
+		  axiselem_fct,
+		  array_fct
                                 } funcOp;
 
 

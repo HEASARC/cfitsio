@@ -105,7 +105,7 @@ extern int fits_parser_yydebug;
 #if ! defined FITS_PARSER_YYSTYPE && ! defined FITS_PARSER_YYSTYPE_IS_DECLARED
 union FITS_PARSER_YYSTYPE
 {
-#line 210 "eval.y"
+#line 212 "eval.y"
 
     int    Node;        /* Index of Node */
     double dbl;         /* real value    */
