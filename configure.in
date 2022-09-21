@@ -53,6 +53,13 @@ AC_ARG_ENABLE(
   [ if test $enableval = yes; then SSE_FLAGS="$SSE_FLAGS -mssse3"; fi ]
 )
 
+SYMBOLS=""
+AC_ARG_ENABLE(
+  symbols,
+  [AS_HELP_STRING([--enable-symbols],[Enable debugging symbols by turning optimization off])],
+  [ if test $enableval = yes; then SYMBOLS=yes; fi ]
+)
+
 # Define BUILD_HERA when building for HERA project to activate code in
 # drvrfile.c (by way of fitsio2.h):
 AC_ARG_ENABLE(
@@ -203,6 +210,21 @@ if test "x$EXT" != xcygwin && test "x$EXT" != xdarwin && test "x$EXT" != xlnx &&
   fi
 fi
 AC_PROG_CC
+
+#-------------------------------------------------------------------------------
+# Handle --enable-symbols=yes
+#-------------------------------------------------------------------------------
+
+# Remove existing/default optimization:
+if test "x$SYMBOLS" = "xyes"; then
+   changequote(,)
+   COPT_DEFAULT=`echo $CFLAGS | tr " " "\012" | grep "^\-O[0-9]"`
+   changequote([,])
+   CFLAGS=`echo $CFLAGS | sed "s:$COPT_DEFAULT::g"`
+fi
+
+#-------------------------------------------------------------------------------
+
 LDFLAGS="$CFLAGS"
 LDFLAGS_BIN="$LDFLAGS"
 
