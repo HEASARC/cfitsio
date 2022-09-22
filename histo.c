@@ -3178,7 +3178,7 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
         for (elem = 1; elem <= histData->repeat; elem++, ii++) {
 	  if (colptr[0][ii] == DOUBLENULLVALUE)  /* test for null value */
             continue;
-	  if (colptr[4][ii] && colptr[4][ii] == DOUBLENULLVALUE) /* and null weight */
+	  if (colptr[4] && colptr[4][ii] == DOUBLENULLVALUE) /* and null weight */
 	    continue;
 	  
 	  pix = (colptr[0][ii] - histData->amin1) / histData->binsize1;
