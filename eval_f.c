@@ -1031,7 +1031,7 @@ int fits_parse_workfn( long    totalrows,     /* I - Total rows to be processed 
 	  multiple parsers being managed at one time.) Upon the first
 	  call we make sure they match */
        for (jj = 0; jj<nCols; jj++) {
-	 lParse->colData[jj].repeat = maxvalue(colData[jj].repeat,lParse->colData[jj].repeat);
+	 lParse->colData[jj].repeat = colData[jj].repeat;
        }
 
        if( (pv->userInfo)->maxRows>0 )
@@ -2509,6 +2509,7 @@ if (lParse->hdutype != IMAGE_HDU) {
       return pERROR;
    }
    varInfo->nelem = repeat;
+   colIter->repeat = 0; /* ffiter() will fill in this value */
    if( repeat>1 && typecode!=TSTRING ) {
       if( fits_read_tdim( fptr, colnum, MAXDIMS,
                           &varInfo->naxis,
@@ -2602,6 +2603,9 @@ int fits_parser_allocateCol( ParseData *lParse, int nCol, int *status )
          lParse->colData  = (iteratorCol*) malloc( 25*sizeof(iteratorCol) );
          lParse->varData  = (DataInfo   *) malloc( 25*sizeof(DataInfo)    );
       }
+      /* Zero out new storage, while keeping old */
+      memset( (lParse->colData + nCol), 0x00, sizeof(iteratorCol)*25 );
+      memset( (lParse->varData + nCol), 0x00, sizeof(DataInfo)*25    );
       if(    lParse->colData  == NULL
           || lParse->varData  == NULL    ) {
          if( lParse->colData  ) free(lParse->colData);
