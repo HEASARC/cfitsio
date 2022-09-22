@@ -744,6 +744,7 @@ enable_curl
 enable_reentrant
 enable_sse2
 enable_ssse3
+enable_symbols
 enable_hera
 with_bzip2
 with_gsiftp
@@ -1386,6 +1387,7 @@ Optional Features:
                           instruction set
   --enable-ssse3          Enable use of instructions in the SSSE3 extended
                           instruction set
+  --enable-symbols        Enable debugging symbols by turning optimization off
   --enable-hera           Build for HERA (ASD use only)
 
 Optional Packages:
@@ -2617,6 +2619,15 @@ fi
 if test ${enable_ssse3+y}
 then :
   enableval=$enable_ssse3;  if test $enableval = yes; then SSE_FLAGS="$SSE_FLAGS -mssse3"; fi
+
+fi
+
+
+SYMBOLS=""
+# Check whether --enable-symbols was given.
+if test ${enable_symbols+y}
+then :
+  enableval=$enable_symbols;  if test $enableval = yes; then SYMBOLS=yes; fi
 
 fi
 
@@ -4643,6 +4654,21 @@ ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+#-------------------------------------------------------------------------------
+# Handle --enable-symbols=yes
+#-------------------------------------------------------------------------------
+
+# Remove existing/default optimization:
+if test "x$SYMBOLS" = "xyes"; then
+
+   COPT_DEFAULT=`echo $CFLAGS | tr " " "\012" | grep "^\-O[0-9]"`
+
+   CFLAGS=`echo $CFLAGS | sed "s:$COPT_DEFAULT::g"`
+fi
+
+#-------------------------------------------------------------------------------
 
 LDFLAGS="$CFLAGS"
 LDFLAGS_BIN="$LDFLAGS"
