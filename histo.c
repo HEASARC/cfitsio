@@ -36,8 +36,6 @@ typedef struct {  /*  Structure holding all the histogramming information   */
    parseInfo *infos;
 } histType;
 
-static void *recalloc(void *ptr, size_t old_num, size_t new_num, size_t size);
-
 /*--------------------------------------------------------------------------*/
 int ffbinse(char *binspec,   /* I - binning specification */
                    int *imagetype,      /* O - image type, TINT or TSHORT */
@@ -2507,38 +2505,6 @@ int fits_make_hist(fitsfile *fptr, /* IO - pointer to table with X and Y cols; *
   return (*status);
 }
 
-static void *recalloc(void *ptr, size_t old_num, size_t new_num, size_t size)
-{
-  void *newptr;
-
-  if (ptr == 0 || old_num == 0) { /* Starting from nothing */
-
-    return calloc(new_num, size);
-
-  } else if (new_num == old_num) { /* Same size, do nothing */
-    
-    return ptr;
-
-  } else if (new_num < old_num) { /* Shrinking */
-    
-    newptr = realloc(ptr, new_num*size);
-    if (!newptr) free(ptr);
-    return (newptr);
-  }
-
-  /* Growing */
-  newptr = realloc(ptr, new_num*size);
-  if (!newptr) {
-    free(ptr);
-    return newptr;
-  }
-
-  /* Zero the new portion of the array */
-  memset( (char *) newptr + old_num*size/sizeof(char), 0,
-	  (new_num - old_num)*size );
-  return (newptr);
-}
-
 /* Double-precision version */
 int fits_make_histde(fitsfile *fptr, /* IO - pointer to table with X and Y cols; */
     fitsfile *histptr, /* I - pointer to output FITS image      */
@@ -2624,7 +2590,7 @@ int fits_make_histde(fitsfile *fptr, /* IO - pointer to table with X and Y cols;
 
     /* Now make iterator columns for input, as well as any calculated values */
     numAllocCols = 5;
-    iterCols = recalloc(0, 0, numAllocCols, sizeof(iteratorCol));
+    iterCols = fits_recalloc(0, 0, numAllocCols, sizeof(iteratorCol));
     if (!iterCols) {
       ffpmsg("memory allocation failure (fits_make_histde)");
       *status = MEMORY_ALLOCATION;
@@ -2711,7 +2677,7 @@ int fits_make_histde(fitsfile *fptr, /* IO - pointer to table with X and Y cols;
 					  (void *) &(double_nulval), status)) goto cleanup;
 
 	/* Copy iterator columns from the parser to the master iterator columns */
-	iterCols = recalloc(iterCols, numAllocCols, numAllocCols+parsers[ii].nCols,
+	iterCols = fits_recalloc(iterCols, numAllocCols, numAllocCols+parsers[ii].nCols,
 			    sizeof(iteratorCol));
 	if (!iterCols) {
 	  *status = MEMORY_ALLOCATION;
@@ -2751,6 +2717,8 @@ int fits_make_histde(fitsfile *fptr, /* IO - pointer to table with X and Y cols;
 	      wtnaxes, &(parsers[4]), status );
       if (*status) goto cleanup;
       if (wtrepeat < 0) wtrepeat = 1; /* If it's a constant expression */
+      fprintf(stderr, "wtexpr=%s repeat=%ld coldatarepeat=%ld\n",
+              wtexpr, wtrepeat, parsers[4].colData[0].repeat);
 
       /* Set up the parser data for evaluation to a TemporaryCol */
       /* It's a weighting expression, set that up and ... */
@@ -2759,7 +2727,7 @@ int fits_make_histde(fitsfile *fptr, /* IO - pointer to table with X and Y cols;
 					(void *) &(double_nulval), status)) goto cleanup;
 
       /* Copy iterator columns from the parser to the master iterator columns */
-      iterCols = recalloc(iterCols, numAllocCols, numAllocCols+parsers[4].nCols,
+      iterCols = fits_recalloc(iterCols, numAllocCols, numAllocCols+parsers[4].nCols,
 			  sizeof(iteratorCol));
       if (!iterCols) {
 	*status = MEMORY_ALLOCATION;
@@ -2957,7 +2925,8 @@ static int histo_minmax_expr_workfn( long    totalrows,     /* I - Total rows to
   iteratorCol *outcol = &(colData[nCols-1]);
 
   /* Call calculator work function.  Result is put in final column of colData as a TemporaryCol */
-  status = fits_parse_workfn(totalrows, offset, firstrow, nrows, nCols, colData, (void *) wf->Info);
+  status = fits_parser_workfn(totalrows, offset, firstrow, nrows, 
+			      nCols, colData, (void *) wf->Info);
 
   /* The result of the calculation is in pv->Data, and null value in pv->Null */
   data = (double *)(outcol->array);
@@ -3130,8 +3099,8 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
 	iteratorCol *colData = &(histData->iterCols[startCol]);
 	int nCols = histData->parsers[ii].nCols;
 
-	status = fits_parse_workfn(totalrows, offset, firstrow, nrows, 
-				   nCols, colData, (void *) &(histData->infos[ii]));
+	status = fits_parser_workfn(totalrows, offset, firstrow, nrows, 
+				    nCols, colData, (void *) &(histData->infos[ii]));
 	if (status) return status;
 	/* Output column is last iterator column, which better be a TemporaryCol */
 	outcol = &(colData[nCols-1]);

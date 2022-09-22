@@ -121,7 +121,7 @@ int fffrow( fitsfile *fptr,         /* I - Input FITS file                   */
       Info.parseData = &lParse;
 
       if( ffiter( lParse.nCols, lParse.colData, firstrow-1, 0,
-                  fits_parse_workfn, (void*)&Info, status ) == -1 )
+                  fits_parser_workfn, (void*)&Info, status ) == -1 )
          *status = 0;  /* -1 indicates exitted without error before end... OK */
 
       if( *status ) {
@@ -266,7 +266,7 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
    } else {
 
       ffiter( lParse.nCols, lParse.colData, 0L, 0L,
-              fits_parse_workfn, (void*)&Info, status );
+              fits_parser_workfn, (void*)&Info, status );
 
       nGood = 0;
       for( ntodo = 0; ntodo<inExt.numRows; ntodo++ )
@@ -455,7 +455,7 @@ int ffcrow( fitsfile *fptr,      /* I - Input FITS file                      */
    Info.parseData = &lParse;
    
    if( ffiter( lParse.nCols, lParse.colData, firstrow-1, 0,
-               fits_parse_workfn, (void*)&Info, status ) == -1 )
+               fits_parser_workfn, (void*)&Info, status ) == -1 )
       *status=0;  /* -1 indicates exitted without error before end... OK */
 
    *anynul = Info.anyNull;
@@ -722,7 +722,7 @@ int ffcalc_rng( fitsfile *infptr,   /* I - Input FITS file                  */
               nPerLp = Info.maxRows;
 
          if( ffiter( lParse.nCols, lParse.colData, start[i]-1,
-                     nPerLp, fits_parse_workfn, (void*)&Info, status ) == -1 )
+                     nPerLp, fits_parser_workfn, (void*)&Info, status ) == -1 )
             *status = 0;
          else if( *status ) {
             ffcprs(&lParse);
@@ -988,7 +988,7 @@ void ffcprs( ParseData *lParse )
 }
 
 /*---------------------------------------------------------------------------*/
-int fits_parse_workfn( long    totalrows,     /* I - Total rows to be processed     */
+int fits_parser_workfn( long    totalrows,     /* I - Total rows to be processed     */
                 long    offset,        /* I - Number of rows skipped at start*/
                 long    firstrow,      /* I - First row of this iteration    */
                 long    nrows,         /* I - Number of rows in this iter    */
@@ -1013,7 +1013,7 @@ int fits_parse_workfn( long    totalrows,     /* I - Total rows to be processed 
     long zeros[4] = {0,0,0,0};
 
     if (DEBUG_PIXFILTER)
-       printf("fits_parse_workfn(total=%ld, offset=%ld, first=%ld, rows=%ld, cols=%d)\n",
+       printf("fits_parser_workfn(total=%ld, offset=%ld, first=%ld, rows=%ld, cols=%d)\n",
                 totalrows, offset, firstrow, nrows, nCols);
     /*--------------------------------------------------------*/
     /*  Initialization procedures: execute on the first call  */
@@ -1082,7 +1082,7 @@ int fits_parse_workfn( long    totalrows,     /* I - Total rows to be processed 
           (pv->repeat) = outcol->repeat;
 /*
           if (DEBUG_PIXFILTER)
-            printf("fits_parse_workfn: using null value %ld\n", (pv->jnull));
+            printf("fits_parser_workfn: using null value %ld\n", (pv->jnull));
 */
        } else {
 
@@ -1128,7 +1128,7 @@ int fits_parse_workfn( long    totalrows,     /* I - Total rows to be processed 
     /*  null value.  If no NULLs encounter, zero out before returning. */
 /*
           if (DEBUG_PIXFILTER)
-            printf("fits_parse_workfn: using null value %ld\n", (pv->jnull));
+            printf("fits_parser_workfn: using null value %ld\n", (pv->jnull));
 */
 
     if( (pv->userInfo)->dataPtr == NULL ) {
@@ -1172,7 +1172,7 @@ int fits_parse_workfn( long    totalrows,     /* I - Total rows to be processed 
     /* requirements... In most cases, iterator will limit rows to less      */
     /* than 10000 rows per iteration, so this is really only relevant for    */
     /* hk-compressed files which must be decompressed in memory and sent    */
-    /* whole to fits_parse_workfn in a single iteration.                           */
+    /* whole to fits_parser_workfn in a single iteration.                           */
 
     remain = nrows;
     while( remain ) {
@@ -2012,7 +2012,7 @@ int fffrwc( fitsfile *fptr,        /* I - Input FITS file                    */
    /* Read data from columns needed for the expression and then parse it */
    /**********************************************************************/
    
-   if( !uncompress_hkdata( &lParse, fptr, ntimes, times, status ) ) {
+   if( !fits_uncompress_hkdata( &lParse, fptr, ntimes, times, status ) ) {
       if( constant ) {
          result = lParse.Nodes[lParse.resultNode].value.data.log;
          elem = ntimes;
@@ -2021,7 +2021,7 @@ int fffrwc( fitsfile *fptr,        /* I - Input FITS file                    */
          Info.dataPtr  = time_status;
          Info.nullPtr  = NULL;
          Info.maxRows  = ntimes;
-         *status       = fits_parse_workfn( ntimes, 0, 1, ntimes, lParse.nCols,
+         *status       = fits_parser_workfn( ntimes, 0, 1, ntimes, lParse.nCols,
                                      lParse.colData, (void*)&Info );
       }
    }
@@ -2073,7 +2073,7 @@ int fits_parser_set_temporary_col(ParseData *lParse,
 }
 
 /*---------------------------------------------------------------------------*/
-int uncompress_hkdata( ParseData *lParse,
+int fits_uncompress_hkdata( ParseData *lParse,
 		       fitsfile *fptr,
                        long     ntimes,
                        double   *times,
@@ -2591,29 +2591,29 @@ static int find_keywd(ParseData *lParse, char *keyname, void *itslval )
    return( type );
 }
 
+/* Allocates parser iterator column storage for 25 columns *more* than
+   nCols */
 int fits_parser_allocateCol( ParseData *lParse, int nCol, int *status )
 {
    if( (nCol%25)==0 ) {
-      if( nCol ) {
-         lParse->colData  = (iteratorCol*) realloc( lParse->colData,
-                                              (nCol+25)*sizeof(iteratorCol) );
-         lParse->varData  = (DataInfo   *) realloc( lParse->varData,
-                                              (nCol+25)*sizeof(DataInfo)    );
-      } else {
-         lParse->colData  = (iteratorCol*) malloc( 25*sizeof(iteratorCol) );
-         lParse->varData  = (DataInfo   *) malloc( 25*sizeof(DataInfo)    );
-      }
-      /* Zero out new storage, while keeping old */
-      memset( (lParse->colData + nCol), 0x00, sizeof(iteratorCol)*25 );
-      memset( (lParse->varData + nCol), 0x00, sizeof(DataInfo)*25    );
-      if(    lParse->colData  == NULL
-          || lParse->varData  == NULL    ) {
+     lParse->colData = (iteratorCol*) fits_recalloc( lParse->colData,
+						     nCol, nCol+25,
+						     sizeof(iteratorCol) );
+     lParse->varData = (DataInfo   *) fits_recalloc( lParse->varData,
+						     nCol, nCol+25,
+						     sizeof(DataInfo) );
+
+     memset( (lParse->colData + nCol), 0x00, sizeof(iteratorCol)*25 );
+     memset( (lParse->varData + nCol), 0x00, sizeof(DataInfo)*25    );
+
+     if(    lParse->colData  == NULL
+	    || lParse->varData  == NULL    ) {
          if( lParse->colData  ) free(lParse->colData);
          if( lParse->varData  ) free(lParse->varData);
          lParse->colData = NULL;
          lParse->varData = NULL;
          return( *status = MEMORY_ALLOCATION );
-      }
+     }
    }
    lParse->varData[nCol].data  = NULL;
    lParse->varData[nCol].undef = NULL;
@@ -2900,7 +2900,7 @@ int fits_pixel_filter (PixelFilter * filter, int * status)
       Info.parseData = &lParse;
 
       if (ffiter(lParse.nCols, lParse.colData, 0,
-                     0, fits_parse_workfn, &Info, status) == -1)
+                     0, fits_parser_workfn, &Info, status) == -1)
             *status = 0;
       else if (*status)
          goto CLEANUP;
