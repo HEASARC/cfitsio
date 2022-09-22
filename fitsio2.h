@@ -1027,10 +1027,10 @@ void ffcprs( ParseData * );
 int  ffcvtn( int inputType, void *input, char *undef, long ntodo,
 	     int outputType, void *nulval, void *output,
 	     int *anynull, int *status );
-int  fits_parse_workfn( long totalrows, long offset, long firstrow,
+int  fits_parser_workfn( long totalrows, long offset, long firstrow,
                  long nrows, int nCols, iteratorCol *colData,
                  void *userPtr );
-int  uncompress_hkdata( ParseData *, 
+int  fits_uncompress_hkdata( ParseData *, 
 			fitsfile *fptr, long ntimes, 
                         double *times, int *status );
 int  ffffrw_work( long totalrows, long offset, long firstrow,
@@ -1327,6 +1327,8 @@ int compress2file_from_mem(
 /* these functions are in fitscore.c */
 int fits_strcasecmp (const char *s1, const char *s2       );
 int fits_strncasecmp(const char *s1, const char *s2, size_t n);
+/* "recalloc" which is a reallocator in the style of calloc */
+void *fits_recalloc(void *ptr, size_t old_num, size_t new_num, size_t size);
 
 /* end of the entire "ifndef _FITSIO2_H" block */
 #endif

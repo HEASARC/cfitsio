@@ -9816,3 +9816,61 @@ int fits_strncasecmp(const char *s1, const char *s2, size_t n)
    }
    return(0);
 }
+/*
+ * fits_recalloc - an allocator/reallocator in the style of calloc and realloc 
+ * 
+ * Allocates or reallocates storage upon request.  Newly allocated
+ * storage is zeroed in the style of calloc.
+ * 
+ * Cases handled are:
+ *    ptr == 0 or old_num == 0 - use calloc to allocate new storage
+ *    new_num = 0 - frees any storage if ptr is non-NULL
+ *    new_num < old_num - uses realloc() to reduce storage allocated
+ *    new_num > old_num - uses realloc() and sets newly allocated 
+ *                        storage to zero (old portion left unchanged)
+ *
+ * void *ptr - "old" pointer, or NULL to allocate new storage
+ * size_t old_num - old number of records allocated
+ * size_t new_num  - new number of records allocated
+ * size_t size - size of record in bytes
+ *
+ * RETURNS: newly allocated storage
+ *
+ * */
+void *fits_recalloc(void *ptr, size_t old_num, size_t new_num, size_t size)
+{
+  void *newptr;
+
+  if (ptr == 0 || old_num == 0) { /* Starting from nothing */
+
+    return calloc(new_num, size);
+
+  } else if (new_num == old_num) { /* Same size, do nothing */
+    
+    return ptr;
+
+  } else if (new_num == 0) { /* Freeing */
+
+    if (ptr) free(ptr);
+    return 0;
+
+  } else if (new_num < old_num) { /* Shrinking */
+    
+    newptr = realloc(ptr, new_num*size);
+    if (!newptr) free(ptr);
+    return (newptr);
+  }
+
+  /* Growing */
+  newptr = realloc(ptr, new_num*size);
+  if (!newptr) {
+    free(ptr);
+    return newptr;
+  }
+
+  /* Zero the new portion of the array */
+  memset( (char *) newptr + old_num*size/sizeof(char), 0,
+	  (new_num - old_num)*size );
+  return (newptr);
+}
+

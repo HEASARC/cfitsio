@@ -871,7 +871,7 @@ static const flex_int16_t yy_chk[472] =
 
 /*****  Internal functions  *****/
 
-       int yyGetVariable( ParseData *lParse, char *varName, FITS_PARSER_YYSTYPE *varVal );
+       int fits_parser_yyGetVariable( ParseData *lParse, char *varName, FITS_PARSER_YYSTYPE *varVal );
 
 static int find_variable( ParseData *lParse, char *varName );
 static int expr_read( ParseData *lParse, char *buf, int nbytes );
@@ -1569,7 +1569,7 @@ YY_RULE_SETUP
 		    yylval->str[len] = '\0';
 		    yytext = yylval->str;
 		 } 
-		 type = yyGetVariable(yylParse, yytext, (yylval));
+		 type = fits_parser_yyGetVariable(yylParse, yytext, (yylval));
 		 return( type );
 		}
 	YY_BREAK
@@ -2910,7 +2910,7 @@ static int expr_read(ParseData *lParse, char *buf, int nbytes)
  return(n);
 }
 
-int yyGetVariable( ParseData *lParse, char *varName, FITS_PARSER_YYSTYPE *thelval )
+int fits_parser_yyGetVariable( ParseData *lParse, char *varName, FITS_PARSER_YYSTYPE *thelval )
 {
    int varNum, type;
    char errMsg[MAXVARNAME+25];
