@@ -2517,9 +2517,12 @@ int fits_make_histde(fitsfile *fptr, /* IO - pointer to table with X and Y cols;
     double *amin,     /* I - minimum histogram value, for each axis */
     double *amax,     /* I - maximum histogram value, for each axis */
     double *binsize,  /* I - bin size along each axis               */
-    double weight,    /* I - binning weighting factor          */
+    double weight,    /* I - binning weighting factor (0 or DOUBLENULLVALUE means null) */
     int wtcolnum,     /* I - optional keyword or col for weight*/
     char *wtexpr,     /* I - optional weighting expression */
+		      /*  disambiguation of weight values */
+		      /*    non-null weight: use that value */
+		      /*    null weight: use wtexpr if non-null, else wtcolnum */
     int recip,              /* I - use reciprocal of the weight?     */
     char *selectrow,        /* I - optional array (length = no. of   */
                              /* rows in the table).  If the element is true */
@@ -2579,6 +2582,8 @@ int fits_make_histde(fitsfile *fptr, /* IO - pointer to table with X and Y cols;
     if ((fptr)->HDUposition != ((fptr)->Fptr)->curhdu)
         ffmahd(fptr, ((fptr)->HDUposition) + 1, NULL, status);
 
+    /* Resolve the conflict between wtexpr, wtcolnum, and weight */
+    if ( ((wtcolnum > 0) || (wtexpr && wtexpr[0])) && weight == 0 ) weight = DOUBLENULLVALUE;
     histData.weight     = weight;
     histData.wtcolnum   = wtcolnum;
     histData.wtexpr     = wtexpr;
@@ -2717,8 +2722,6 @@ int fits_make_histde(fitsfile *fptr, /* IO - pointer to table with X and Y cols;
 	      wtnaxes, &(parsers[4]), status );
       if (*status) goto cleanup;
       if (wtrepeat < 0) wtrepeat = 1; /* If it's a constant expression */
-      fprintf(stderr, "wtexpr=%s repeat=%ld coldatarepeat=%ld\n",
-              wtexpr, wtrepeat, parsers[4].colData[0].repeat);
 
       /* Set up the parser data for evaluation to a TemporaryCol */
       /* It's a weighting expression, set that up and ... */
