@@ -1493,7 +1493,7 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
     else if (card[ii] == '\'' )  /* is this a quoted string value? */
     {
         value[0] = card[ii];
-        for (jj=1, ii++; ii < cardlen; ii++, jj++)
+        for (jj=1, ii++; ii < cardlen && jj < FLEN_VALUE-1; ii++, jj++)
         {
             if (card[ii] == '\'')  /*  is this the closing quote?  */
             {
@@ -1512,9 +1512,9 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
             value[jj] = card[ii];  /* copy the next character to the output */
         }
 
-        if (ii == cardlen)
+        if (ii == cardlen || jj == FLEN_VALUE-1)
         {
-            jj = minvalue(jj, 69);  /* don't exceed 70 char string length */
+            jj = minvalue(jj, FLEN_VALUE-2);  /* don't exceed 70 char string length */
             value[jj] = '\'';  /*  close the bad value string  */
             value[jj+1] = '\0';  /*  terminate the bad value string  */
             ffpmsg("This keyword string value has no closing quote:");
