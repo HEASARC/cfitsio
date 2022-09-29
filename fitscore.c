@@ -1546,6 +1546,8 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
     else   /*  an integer, floating point, or logical FITS value string  */
     {
         nblank = strcspn(&card[ii], " /");  /* find the end of the token */
+        if (nblank >= FLEN_VALUE) /* This should not happen for correct input */
+           nblank = FLEN_VALUE-1;
         strncpy(value, &card[ii], nblank);
         value[nblank] = '\0';
         ii = ii + nblank;
