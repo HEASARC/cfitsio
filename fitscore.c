@@ -1567,7 +1567,8 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
             if (card[ii] == ' ')  /*  also ignore the following space  */
                 ii++;
         }
-        strcat(comm, &card[ii]);  /*  copy the remaining characters  */
+        strncpy(comm, &card[ii],FLEN_COMMENT-1);  /*  copy the remaining characters  */
+        comm[FLEN_COMMENT-1] = '\0';
 
         jj=strlen(comm);
         for (jj--; jj >= 0; jj--)  /* replace trailing blanks with nulls */
