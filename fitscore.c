@@ -1378,6 +1378,7 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
 {
     int jj;
     size_t ii, cardlen, nblank, valpos;
+    char strbuf[21];
 
     if (*status > 0)
         return(*status);
@@ -1387,6 +1388,14 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
         comm[0] = '\0';
 
     cardlen = strlen(card);
+    if (cardlen >= FLEN_CARD)
+    {
+       strncpy(strbuf,card,20);
+       strbuf[20]='\0';
+       ffpmsg("The card string starting with the chars below is too long:");
+       ffpmsg(strbuf); 
+       return(*status = BAD_KEYCHAR);
+    }
 
     /* support for ESO HIERARCH keywords; find the '=' */
     if (FSTRNCMP(card, "HIERARCH ", 9) == 0)
@@ -1531,9 +1540,9 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
     else if (card[ii] == '(' )  /* is this a complex value? */
     {
         nblank = strcspn(&card[ii], ")" ); /* find closing ) */
-        if (nblank == strlen( &card[ii] ) )
+        if (nblank == strlen( &card[ii] ) || nblank >= FLEN_VALUE-1 )
         {
-            ffpmsg("This complex keyword value has no closing ')':");
+            ffpmsg("This complex keyword value has no closing ')' within range:");
             ffpmsg(card);
             return(*status = NO_QUOTE);
         }
