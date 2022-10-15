@@ -351,6 +351,7 @@ int ffi2c(LONGLONG ival, char *cval, int *status);
 int ffu2c(ULONGLONG ival, char *cval, int *status);
 int ffl2c(int lval, char *cval, int *status);
 int ffs2c(const char *instr, char *outstr, int *status);
+int ffs2c_nopad(const char *instr, char *outstr, int *status);
 int ffr2f(float fval, int decim, char *cval, int *status);
 int ffr2e(float fval, int decim, char *cval, int *status);
 int ffd2f(double dval, int decim, char *cval, int *status);
