@@ -3073,7 +3073,7 @@ int ffs2c_nopad(const char *instr, /* I - null terminated input string  */
    This performs identically to ffs2c except that it won't pad output
    strings to make them a minimum of 8 chars long.  The requirement
    that FITS keyword string values be 8 characters is now obsolete
-   (except for "XTENSION" and "IMAGE"), but for backwards compatibility we'll
+   (except for "XTENSION" keyword), but for backwards compatibility we'll
    keep ffs2c the way it is.  A better solution would be to add another
    argument to ffs2c for 'pad' or 'nopad', but it is called from many other
    places in Heasoft outside of CFITSIO.  
