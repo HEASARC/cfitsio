@@ -1,6 +1,6 @@
                    Log of Changes Made to CFITSIO
 
-Version X.X.X - Next Release
+Version 4.2.0 - Nov 2022
   
   - Fix to fits_read_key function, which was failing to properly read
     keywords declared type TUINT on compilers where sizeof(int) =
@@ -47,6 +47,9 @@ Version X.X.X - Next Release
   
   - Added several Fortran wrappers to support image read/write when
     'fpixel' and 'nelements' are 8-byte integers.
+    
+  - Fixed bug which was adding spaces to some cases of long string key
+    value output.
 
 Version 4.1.0 - Feb 2022
                    
