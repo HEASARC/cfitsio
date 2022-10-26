@@ -2,6 +2,10 @@
 
 Version 4.2.0 - Nov 2022
   
+  - This release includes patches to security vulnerabilities.  We
+    strongly encourage this upgrade, particularly for those running 
+    CFITSIO in web accessible applications.
+    
   - Fix to fits_read_key function, which was failing to properly read
     keywords declared type TUINT on compilers where sizeof(int) =
     sizeof(long).
