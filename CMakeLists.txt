@@ -252,6 +252,15 @@ SET(SRC_FILES
 # Add libraries:
 #==============================================================================
 ADD_LIBRARY(${LIB_NAME} ${LIB_TYPE} ${H_FILES} ${SRC_FILES})
+# Add an alias definition to handle export namespace for
+# add_subdirectory():
+ADD_LIBRARY(${LIB_NAME}::${LIB_NAME} ALIAS ${LIB_NAME})
+
+TARGET_INCLUDE_DIRECTORIES(${LIB_NAME} PUBLIC
+    $<BUILD_INTERFACE:${CFITSIO_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+    $<INSTALL_INTERFACE:include>
+)
 # Math:
 TARGET_LINK_LIBRARIES(${LIB_NAME} ${M_LIB})
 # zlib:
@@ -280,12 +289,22 @@ IF (BZIP2_FOUND)
 ENDIF(BZIP2_FOUND)
 
 SET_TARGET_PROPERTIES(${LIB_NAME} PROPERTIES VERSION ${${PROJECT_NAME}_VERSION} SOVERSION ${${PROJECT_NAME}_MAJOR})
+
 include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
 install(TARGETS ${LIB_NAME}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
+#install(TARGETS ${LIB_NAME}
+#        EXPORT ${LIB_NAME}-targets
+#        FILE ${LIB_NAME}-targets.cmake
+#        NAMESPACE ${LIB_NAME}::
+#        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake
+#)
+#install(EXPORT ${LIB_NAME}-targets DESTINATION lib/cfitsio-${CFITSIO_VERSION})
 install(FILES ${H_FILES} DESTINATION ${INCLUDE_INSTALL_DIR} COMPONENT Devel)
 
 #==============================================================================
@@ -336,4 +355,9 @@ ENDIF(UTILS)
 # cfitsio.pc
 #==============================================================================
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cfitsio.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/cfitsio.pc @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cfitsio-config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/cfitsio-config.cmake @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cfitsio-config-version.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/cfitsio-config-version.cmake @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cfitsio.pc DESTINATION lib/pkgconfig/)
+install(FILES ${CFITSIO_BINARY_DIR}/cfitsio-config.cmake
+              ${CFITSIO_BINARY_DIR}/cfitsio-config-version.cmake
+              DESTINATION lib/cfitsio-${CFITSIO_VERSION})
