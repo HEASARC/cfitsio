@@ -1,4 +1,8 @@
                    Log of Changes Made to CFITSIO
+                   
+Version 4.x.x
+
+  - Bug fix to fits_make_hist[d] that was introduced in 4.2.0.
 
 Version 4.2.0 - Nov 2022
   
