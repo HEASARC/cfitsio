@@ -2854,7 +2854,7 @@ int fits_make_histd(fitsfile *fptr, /* IO - pointer to table with X and Y cols; 
                              /* is equal to NULL.                           */
     int *status)
 {		  
-  return fits_make_histde(histptr, 0, 0, bitpix, naxis, naxes,
+  return fits_make_histde(fptr, histptr, 0, bitpix, naxis, naxes,
 			  colnum, 0, 
 			  amin, amax, binsize, 
 			  weight, wtcolnum, 0, recip,
