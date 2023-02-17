@@ -3,6 +3,9 @@
 Version 4.x.x
 
   - Bug fix to fits_make_hist[d] that was introduced in 4.2.0.
+  
+  - Added overflow checking for case of reading images with 8-byte
+    float values into 4-byte float arrays.
 
 Version 4.2.0 - Nov 2022
   
