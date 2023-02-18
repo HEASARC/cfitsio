@@ -1600,6 +1600,7 @@ int fffr8r4(double *input,        /* I - array of values to be converted     */
                    }
               }
               else
+              {
                   dvalue = input[ii] * scale + zero;
                   if (dvalue < -FLT_MAX)
                   {
@@ -1613,6 +1614,7 @@ int fffr8r4(double *input,        /* I - array of values to be converted     */
                   }
                   else
                      output[ii] = (float) dvalue;
+              }
             }
         }
     }
