@@ -9,6 +9,9 @@ Version 4.x.x
     
   - fits_write_key_longstr now handles case of writing a long keyword
     in combination with a long keyword value string.
+    
+  - Add conversion of French locale comma-to-period in corner cases
+    appearing in ffr2e and ffd2e functions.
 
 Version 4.2.0 - Nov 2022
   
