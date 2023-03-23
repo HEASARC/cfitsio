@@ -3219,7 +3219,8 @@ int ffr2e(float fval,  /* I - value to be converted to a string */
         else
         {
             /* test if E format was used, and there is no displayed decimal */
-            if ( !strchr(cval, '.') && strchr(cval,'E') )
+            /* If locale is French, decimal will be a comma. So look for that too. */
+            if ( !strchr(cval, '.') && !strchr(cval, ',') && strchr(cval,'E') )
             {
                 /* reformat value with a decimal point and single zero */
                 if ( snprintf(cval, FLEN_VALUE,"%.1E", fval) < 0)
@@ -3227,7 +3228,8 @@ int ffr2e(float fval,  /* I - value to be converted to a string */
                     ffpmsg("Error in ffr2e converting float to string");
                     *status = BAD_F2C;
                 }
-
+                /* convert French locale comma to a decimal point.*/
+                if ((cptr = strchr(cval, ','))) *cptr = '.';
                 return(*status);  
             }
         }
@@ -3327,7 +3329,8 @@ int ffd2e(double dval,  /* I - value to be converted to a string */
         else
         {
             /* test if E format was used, and there is no displayed decimal */
-            if ( !strchr(cval, '.') && strchr(cval,'E') )
+            /* If locale is French, decimal will be a comma. So look for that too. */
+            if ( !strchr(cval, '.') && !strchr(cval, ',') && strchr(cval,'E') )
             {
                 /* reformat value with a decimal point and single zero */
                 if ( snprintf(cval, FLEN_VALUE,"%.1E", dval) < 0)
@@ -3335,6 +3338,8 @@ int ffd2e(double dval,  /* I - value to be converted to a string */
                     ffpmsg("Error in ffd2e converting float to string");
                     *status = BAD_F2C;
                 }
+                /* convert French locale comma to a decimal point.*/
+                if ((cptr = strchr(cval, ','))) *cptr = '.';
 
                 return(*status);  
             }
