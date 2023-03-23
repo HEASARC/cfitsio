@@ -6,6 +6,9 @@ Version 4.x.x
   
   - Added overflow checking for case of reading images with 8-byte
     float values into 4-byte float arrays.
+    
+  - fits_write_key_longstr now handles case of writing a long keyword
+    in combination with a long keyword value string.
 
 Version 4.2.0 - Nov 2022
   
