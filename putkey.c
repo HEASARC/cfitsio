@@ -397,16 +397,17 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
   This routine is a modified version of ffpkys which supports the
   HEASARC long string convention and can write arbitrarily long string
   keyword values.  The value is continued over multiple keywords that
-  have the name COMTINUE without an equal sign in column 9 of the card.
+  have the name CONTINUE without an equal sign in column 9 of the card.
   This routine also supports simple string keywords which are less than
-  69 characters in length.
+  75 characters in length.
 */
 {
     char valstring[FLEN_CARD];
-    char card[FLEN_CARD], tmpkeyname[FLEN_CARD];
+    /* give tmpkeyname same size restriction as in ffmkky */
+    char card[FLEN_CARD], tmpkeyname[FLEN_KEYWORD];
     char tstring[FLEN_CARD], *cptr;
-    int next, remain, vlen, nquote, nchar, namelen, contin, tstatus = -1;
-    int commlen=0, nocomment = 0;
+    int next, remain, vlen, nquote, nchar, namelen, finalnamelen, maxvalchars;
+    int contin, tstatus = -1, commlen=0, nocomment = 0, ichar;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
@@ -417,39 +418,75 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
        if (commlen > 47) commlen = 47;  /* only guarantee preserving the first 47 characters */
     }
 
-    /* count the number of single quote characters are in the string */
-    tstring[0] = '\0';
-    strncat(tstring, value, 68); /* copy 1st part of string to temp buff */
-    nquote = 0;
-    cptr = strchr(tstring, '\'');   /* search for quote character */
-    while (cptr)  /* search for quote character */
-    {
-        nquote++;            /*  increment no. of quote characters  */
-        cptr++;              /*  increment pointer to next character */
-        cptr = strchr(cptr, '\'');  /* search for another quote char */
-    }
-
-    strncpy(tmpkeyname, keyname, 80);
-    tmpkeyname[80] = '\0';
-    
-    cptr = tmpkeyname;
+    tmpkeyname[0] = '\0';    
+    cptr = keyname;
     while(*cptr == ' ')   /* skip over leading spaces in name */
         cptr++;
-
-    /* determine the number of characters that will fit on the line */
-    /* Note: each quote character is expanded to 2 quotes */
-
-    namelen = strlen(cptr);
+        
+    strncpy(tmpkeyname, cptr, FLEN_KEYWORD-1);
+    tmpkeyname[FLEN_KEYWORD-1] = '\0';
+    
+    namelen = strlen(tmpkeyname);
+    if (namelen)         /* skip trailing spaces in name */
+    {
+       cptr = tmpkeyname + namelen - 1;
+       while (*cptr == ' ')
+       {
+          *cptr = '\0';
+          cptr--;
+       }
+       namelen = strlen(tmpkeyname);
+    }
+    
+    /* First determine final length of keyword.  ffmkky may prepend 
+       "HIERARCH " to it, and we need to determine that now using the
+       same criteria as ffmkky. */
+    
     if (namelen <= 8 && (fftkey(cptr, &tstatus) <= 0) )
     {
-        /* This a normal 8-character FITS keyword */
-        nchar = 68 - nquote; /*  max of 68 chars fit in a FITS string value */
+       /* This a normal 8-character FITS keyword. ffmkky
+          will pad it to 8 if necessary, and add "= ". */
+       finalnamelen = 10;
+       /* 2 additional chars are needed for opening/closing quotes. */
+       maxvalchars = (FLEN_CARD-1) - finalnamelen  - 2;
     }
     else
-    {
-	   nchar = 80 - nquote - namelen - 5;
+    { 
+       if (namelen && ((FSTRNCMP(tmpkeyname, "HIERARCH ", 9) == 0) ||
+                   (FSTRNCMP(tmpkeyname, "hierarch ", 9) == 0)) )
+       {
+          /* We have an explicitly marked long keyword, so HIERARCH
+             will not be prepended.  However it can then have
+             " = " or "= ", depending on size of value string. 
+             For now, assume "= ". 
+             
+             If we're here, must have 75 > namelen > 9. */
+          finalnamelen = namelen + 2;
+       }
+       else
+       {
+          /* ffmkky is going to prepend "HIERARCH " to the keyword,
+             and " = " or "= ". */
+          finalnamelen = namelen + 11;
+          if (finalnamelen > FLEN_CARD-1)
+          {
+             ffpmsg("The following keyword is too long to fit on a card in ffpkls:");
+             ffpmsg(keyname);
+             return(*status = BAD_KEYCHAR);
+          }
+       }
+       maxvalchars = (FLEN_CARD-1) - finalnamelen - 2;       
     }
-
+    
+    vlen = strlen(value);
+    nquote = 0;
+    for (ichar=0; ichar<vlen && (ichar+nquote)<maxvalchars; ++ichar)
+    {
+       if (value[ichar] == '\'')
+          ++nquote;
+    }
+    nchar = ichar;
+    
     contin = 0;
     next = 0;                  /* pointer to next character to write */
 
