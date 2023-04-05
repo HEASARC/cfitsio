@@ -486,6 +486,10 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
           ++nquote;
     }
     nchar = ichar;
+    /* Temporary fix until 'while' block below is rewritten.  
+       This is needed to write keyword even when value string is empty */
+    if (nchar == 0)
+       nchar = 1;
     
     contin = 0;
     next = 0;                  /* pointer to next character to write */
