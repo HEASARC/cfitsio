@@ -285,7 +285,6 @@ SERVICES PROVIDED HEREUNDER."
 #define READWRITE 1
 
 /* adopt a hopefully obscure number to use as a null value flag */
-/* could be problems if the FITS files contain data with these values */
 #define FLOATNULLVALUE -9.11912E-36F
 #define DOUBLENULLVALUE -9.1191291391491E-36
  
