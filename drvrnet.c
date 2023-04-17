@@ -867,10 +867,10 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
     strcat(tmpstr,tmpstr1);
   }
 
-/*  snprintf(tmpstr1,SHORTLEN,"User-Agent: HEASARC/CFITSIO/%-8.3f\r\n",ffvers(&version)); */
+/*  snprintf(tmpstr1,SHORTLEN,"User-Agent: HEASARC/CFITSIO/%-8.4f\r\n",ffvers(&version)); */
 
-/*  snprintf(tmpstr1,SHORTLEN,"User-Agent: CFITSIO/HEASARC/%-8.3f\r\n",ffvers(&version)); */
-  snprintf(tmpstr1,SHORTLEN,"User-Agent: FITSIO/HEASARC/%-8.3f\r\n",ffvers(&version)); 
+/*  snprintf(tmpstr1,SHORTLEN,"User-Agent: CFITSIO/HEASARC/%-8.4f\r\n",ffvers(&version)); */
+  snprintf(tmpstr1,SHORTLEN,"User-Agent: FITSIO/HEASARC/%-8.4f\r\n",ffvers(&version)); 
  
   if (strlen(tmpstr) + strlen(tmpstr1) > MAXLEN - 1)
   {
@@ -1841,7 +1841,7 @@ int ftps_open_network(char *filename, curlmembuf* buffer)
      username = "anonymous";
   if (!password || strlen(password)==0)
   {
-     snprintf(agentStr,SHORTLEN,"User-Agent: FITSIO/HEASARC/%-8.3f",ffvers(&version));
+     snprintf(agentStr,SHORTLEN,"User-Agent: FITSIO/HEASARC/%-8.4f",ffvers(&version));
      password = agentStr;
   }
   
@@ -1928,7 +1928,7 @@ int ssl_get_with_curl(char *url, curlmembuf* buffer, char* username,
   
   curl_easy_setopt(curl, CURLOPT_VERBOSE, (long)curl_verbose);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlToMemCallback);
-  snprintf(agentStr,MAXLEN,"FITSIO/HEASARC/%-8.3f",ffvers(&version)); 
+  snprintf(agentStr,MAXLEN,"FITSIO/HEASARC/%-8.4f",ffvers(&version)); 
   curl_easy_setopt(curl, CURLOPT_USERAGENT,agentStr);
   
   buffer->memory = 0; /* malloc/realloc will grow this in the callback function */
@@ -2643,7 +2643,7 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
   port = 21;
   /* We might have a user name.  If not, set defaults for username and password */
   username = "anonymous";
-  snprintf(agentStr,SHORTLEN,"User-Agent: FITSIO/HEASARC/%-8.3f",ffvers(&version));
+  snprintf(agentStr,SHORTLEN,"User-Agent: FITSIO/HEASARC/%-8.4f",ffvers(&version));
   password = agentStr;
   /* is there an @ sign */
   if (NULL != (newhost = strrchr(host,'@'))) {
