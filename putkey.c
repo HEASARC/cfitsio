@@ -402,21 +402,25 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
   75 characters in length.
 */
 {
-    char valstring[FLEN_CARD];
+    char valstring[FLEN_CARD], comstring[FLEN_CARD];
     /* give tmpkeyname same size restriction as in ffmkky */
     char card[FLEN_CARD], tmpkeyname[FLEN_KEYWORD];
     char tstring[FLEN_CARD], *cptr;
-    int next, remain, vlen, nquote, nchar, namelen, finalnamelen, maxvalchars;
-    int contin, tstatus = -1, commlen=0, nocomment = 0, ichar;
+    int next, remainval, remaincom, vlen, nquote, nchar; 
+    int namelen, finalnamelen, maxvalchars;
+    int contin, tstatus=-1, nocomment=0, ichar, addline=1;
+    int spaceForComments=0, processingComment=0, nblanks=0;
+    /* This setting is arbitrary */
+    int fixedSpaceForComments = 50;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
 
-    remain = maxvalue(strlen(value), 1); /* no. of chars to write (at least 1) */  
-    if (comm) { 
-       commlen = strlen(comm);
-       if (commlen > 47) commlen = 47;  /* only guarantee preserving the first 47 characters */
-    }
+    remainval = strlen(value);   
+    if (comm)
+       remaincom = strlen(comm);
+    else
+       remaincom = 0;
 
     tmpkeyname[0] = '\0';    
     cptr = keyname;
@@ -478,99 +482,149 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
        maxvalchars = (FLEN_CARD-1) - finalnamelen - 2;       
     }
     
-    vlen = strlen(value);
-    nquote = 0;
-    for (ichar=0; ichar<vlen && (ichar+nquote)<maxvalchars; ++ichar)
-    {
-       if (value[ichar] == '\'')
-          ++nquote;
-    }
-    nchar = ichar;
-    /* Temporary fix until 'while' block below is rewritten.  
-       This is needed to write keyword even when value string is empty */
-    if (nchar == 0)
-       nchar = 1;
-    
     contin = 0;
     next = 0;                  /* pointer to next character to write */
 
-    while (remain > 0)
+    while (addline)
     {
-        tstring[0] = '\0';
-        strncat(tstring, &value[next], nchar); /* copy string to temp buff */
-        /* expand quotes, and put quotes around the string */
-        if (contin)
-           ffs2c_nopad(tstring,valstring,status);
-        else
-           ffs2c(tstring, valstring, status);  
-
-        if (remain > nchar)   /* if string is continued, put & as last char */
+        if (processingComment)
         {
-            vlen = strlen(valstring);
-            nchar -= 1;        /* outputting one less character now */
-
-            if (valstring[vlen-2] != '\'')
-                valstring[vlen-2] = '&';  /*  over write last char with &  */
-            else
-            { /* last char was a pair of single quotes, so over write both */
-                valstring[vlen-3] = '&';
-                valstring[vlen-1] = '\0';
-            }
+           if (remaincom > (fixedSpaceForComments-3))
+           {
+              strcpy(valstring,"'&'");
+              nblanks = (FLEN_CARD-1) - fixedSpaceForComments - 13;
+              memset(&valstring[3], 32, nblanks);
+              valstring[nblanks+3] = '\0';
+           }
+           else
+           {
+              strcpy(valstring,"''");
+              nblanks = (FLEN_CARD-1) - fixedSpaceForComments - 12;
+              memset(&valstring[2], 32, nblanks);
+              valstring[nblanks+2] = '\0';
+           }
+           nchar = minvalue(remaincom, fixedSpaceForComments-3);
+           strncpy(comstring, &comm[next], nchar);
+           comstring[nchar] = '\0';
+           next += nchar;
+           remaincom -= nchar;
         }
+        else
+        {
+           vlen = strlen(&value[next]);
+           nquote = 0;
+           for (ichar=0; ichar<vlen && (ichar+nquote)<maxvalchars; ++ichar)
+           {
+              if (value[next+ichar] == '\'')
+                 ++nquote;
+           }
+           /* Note that (ichar+nquote) can be 1 greater than maxvalchars
+              if last processed char is a quote.  Therefore do this check: */
+           nchar = minvalue(ichar,(maxvalchars-nquote));
+    
+           tstring[0] = '\0';
+           strncat(tstring, &value[next], nchar); /* copy string to temp buff */
+           /* expand quotes, and put quotes around the string */
+           if (contin)
+              ffs2c_nopad(tstring,valstring,status);
+           else
+              ffs2c(tstring, valstring, status);  
+           vlen = strlen(valstring);
+
+           if (contin)
+              spaceForComments = (FLEN_CARD-1) - (10 + vlen);
+           else
+              spaceForComments = (FLEN_CARD-1) - (finalnamelen + vlen);
+              
+           /* There are 2 situations which require overwriting the last char of
+              valstring with a continue symbol '&' */
+           if (!spaceForComments && (remaincom || (remainval > nchar)))
+           
+           {
+               nchar -= 1;        /* outputting one less character now */
+
+               if (valstring[vlen-2] != '\'')
+                   valstring[vlen-2] = '&';  /*  overwrite last char with &  */
+               else
+               { /* last char was a pair of single quotes, so over write both */
+                   valstring[vlen-3] = '&';
+                   valstring[vlen-1] = '\0';
+               }
+           }
+           else if ( 
+            /* Cases where '&' should be appended to valstring rather than
+                overwritten.  This would mostly be due to the inclusion
+                of a comment string requiring additional lines.  But there's
+                also the obscure case where the last character that can
+                fit happened to be a single quote.  Since this was removed
+                with the earlier 'nchar = minvlaue()' test, the valstring
+                must be continued even though it's one space short of filling
+                this line.  We then append it with a '&'. */
+                        
+           
+           (spaceForComments && nchar < remainval) || 
+           (remaincom && (spaceForComments < fixedSpaceForComments ||
+                     spaceForComments < remaincom))) 
+           {
+             valstring[vlen-1] = '&';
+              valstring[vlen] = '\'';
+              valstring[vlen+1] = '\0';
+              vlen+=1;
+           }
+           
+           if (remainval > nchar)
+           {
+              nocomment = 1;
+              remainval -= nchar;
+              next  += nchar;
+              maxvalchars = (FLEN_CARD-1) - 12;
+           }
+           else
+           {
+              /* We've reached the end of val input.  Now switch to writing
+                 comment (if any).  This block can only be reached once. */
+              /* Do not write comments on this line if fewer than
+                 fixedSpaceForComments are available for the comment string 
+                 and " / ". */
+              nocomment = 1;
+              remainval = 0;
+              next = 0;
+              processingComment = 1;
+              if (remaincom && spaceForComments >= fixedSpaceForComments)
+              {
+                 nocomment = 0;
+                 nchar = minvalue(remaincom, fixedSpaceForComments-3);
+                 strncpy(comstring, comm, nchar);
+                 comstring[nchar] = '\0';
+                 next = nchar;
+                 remaincom -= nchar;
+              }
+           }
+
+        } /* end if processing valstring and not comment */
 
         if (contin)           /* This is a CONTINUEd keyword */
         {
            if (nocomment) {
                ffmkky("CONTINUE", valstring, NULL, card, status); /* make keyword w/o comment */
            } else {
-               ffmkky("CONTINUE", valstring, comm, card, status); /* make keyword */
+               ffmkky("CONTINUE", valstring, comstring, card, status); /* make keyword */
 	   }
            strncpy(&card[8], "   ",  2);  /* overwrite the '=' */
         }
         else
         {
-           ffmkky(keyname, valstring, comm, card, status);  /* make keyword */
+           if (nocomment)
+              ffmkky(keyname, valstring, NULL, card, status);  /* make keyword */
+           else
+              ffmkky(keyname, valstring, comstring, card, status);  /* make keyword */
         }
 
         ffprec(fptr, card, status);  /* write the keyword */
-
+        
         contin = 1;
-        remain -= nchar;
-        next  += nchar;
         nocomment = 0;
-
-        if (remain > 0) 
-        {
-           /* count the number of single quote characters in next section */
-           tstring[0] = '\0';
-           strncat(tstring, &value[next], 68); /* copy next part of string */
-           nquote = 0;
-           cptr = strchr(tstring, '\'');   /* search for quote character */
-           while (cptr)  /* search for quote character */
-           {
-               nquote++;            /*  increment no. of quote characters  */
-               cptr++;              /*  increment pointer to next character */
-               cptr = strchr(cptr, '\'');  /* search for another quote char */
-           }
-           nchar = 68 - nquote;  /* max number of chars to write this time */
-        }
-
-        /* make adjustment if necessary to allow reasonable room for a comment on last CONTINUE card 
-	   only need to do this if 
-	     a) there is a comment string, and
-	     b) the remaining value string characters could all fit on the next CONTINUE card, and
-	     c) there is not enough room on the next CONTINUE card for both the remaining value
-	        characters, and at least 47 characters of the comment string.
-	*/
-	
-        if (commlen > 0 && remain + nquote < 69 && remain + nquote + commlen > 65) 
-	{
-            if (nchar > 18) { /* only false if there are a rediculous number of quotes in the string */
-	        nchar = remain - 15;  /* force continuation onto another card, so that */
-		                      /* there is room for a comment up to 47 chara long */
-                nocomment = 1;  /* don't write the comment string this time */
-            }
-	}
+        addline = (int)(remainval > 0 || remaincom > 0);
     }
     return(*status);
 }
