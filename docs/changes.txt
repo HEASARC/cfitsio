@@ -12,6 +12,10 @@ Version 4.x.x
     
   - Add conversion of French locale comma-to-period in corner cases
     appearing in ffr2e and ffd2e functions.
+    
+  - Increased the precision when writing version number to User-Agent
+    strings for http connections.  This is needed to fully conform to
+    3-field version string format.
 
 Version 4.2.0 - Nov 2022
   
