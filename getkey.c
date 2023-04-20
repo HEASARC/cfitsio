@@ -933,7 +933,8 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer             */
         if (len && *(*value+len-1) == '&')  /*  is last char an ampersand?  */
         {
             ffgcnt(fptr, valstring, nextcomm, status);
-            if (*valstring)    /* a null valstring indicates no continuation */
+            if (*valstring || *nextcomm)    /* a null valstring and nextcomm 
+                                             indicates no continuation */
             {
                *(*value+len-1) = '\0';         /* erase the trailing & char */
                len += strlen(valstring) - 1;
