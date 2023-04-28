@@ -409,7 +409,7 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
     int next, remainval, remaincom, vlen, nquote, nchar; 
     int namelen, finalnamelen, maxvalchars;
     int contin, tstatus=-1, nocomment=0, ichar, addline=1;
-    int spaceForComments=0, processingComment=0, nblanks=0;
+    int spaceForComments=0, processingComment=0, nblanks=0, allInOne=0;
     /* This setting is arbitrary */
     int fixedSpaceForComments = 50;
 
@@ -526,53 +526,76 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
            strncat(tstring, &value[next], nchar); /* copy string to temp buff */
            /* expand quotes, and put quotes around the string */
            if (contin)
+           {
               ffs2c_nopad(tstring,valstring,status);
-           else
-              ffs2c(tstring, valstring, status);  
-           vlen = strlen(valstring);
-
-           if (contin)
+              vlen = strlen(valstring);
               spaceForComments = (FLEN_CARD-1) - (10 + vlen);
+           }
            else
+           {
+              ffs2c(tstring, valstring, status);
+              vlen = strlen(valstring);
               spaceForComments = (FLEN_CARD-1) - (finalnamelen + vlen);
-              
-           /* There are 2 situations which require overwriting the last char of
-              valstring with a continue symbol '&' */
-           if (!spaceForComments && (remaincom || (remainval > nchar)))
+           }
            
-           {
-               nchar -= 1;        /* outputting one less character now */
+           /* Check for simplest case where everything fits on first line.*/
+           if (!contin && (remainval==nchar) && 
+                      (finalnamelen+vlen+remaincom+3 < FLEN_CARD))
+              allInOne=1;
+           
+           if (!allInOne)
+           {   
+              /* There are 2 situations which require overwriting the last char of
+                 valstring with a continue symbol '&' */
+              if (!spaceForComments && (remaincom || (remainval > nchar)))
 
-               if (valstring[vlen-2] != '\'')
-                   valstring[vlen-2] = '&';  /*  overwrite last char with &  */
-               else
-               { /* last char was a pair of single quotes, so over write both */
-                   valstring[vlen-3] = '&';
-                   valstring[vlen-1] = '\0';
-               }
+              {
+                  nchar -= 1;        /* outputting one less character now */
+
+                  if (valstring[vlen-2] != '\'')
+                      valstring[vlen-2] = '&';  /*  overwrite last char with &  */
+                  else
+                  { /* last char was a pair of single quotes, so over write both */
+                      valstring[vlen-3] = '&';
+                      valstring[vlen-1] = '\0';
+                  }
+              }
+              else if ( 
+               /* Cases where '&' should be appended to valstring rather than
+                   overwritten.  This would mostly be due to the inclusion
+                   of a comment string requiring additional lines.  But there's
+                   also the obscure case where the last character that can
+                   fit happened to be a single quote.  Since this was removed
+                   with the earlier 'nchar = minvlaue()' test, the valstring
+                   must be continued even though it's one space short of filling
+                   this line.  We then append it with a '&'. */
+
+
+              (spaceForComments && nchar < remainval) || 
+              (remaincom && (spaceForComments < fixedSpaceForComments ||
+                        spaceForComments < remaincom))) 
+              {
+                valstring[vlen-1] = '&';
+                 valstring[vlen] = '\'';
+                 valstring[vlen+1] = '\0';
+                 vlen+=1;
+              }
            }
-           else if ( 
-            /* Cases where '&' should be appended to valstring rather than
-                overwritten.  This would mostly be due to the inclusion
-                of a comment string requiring additional lines.  But there's
-                also the obscure case where the last character that can
-                fit happened to be a single quote.  Since this was removed
-                with the earlier 'nchar = minvlaue()' test, the valstring
-                must be continued even though it's one space short of filling
-                this line.  We then append it with a '&'. */
-                        
            
-           (spaceForComments && nchar < remainval) || 
-           (remaincom && (spaceForComments < fixedSpaceForComments ||
-                     spaceForComments < remaincom))) 
+           if (allInOne)
            {
-             valstring[vlen-1] = '&';
-              valstring[vlen] = '\'';
-              valstring[vlen+1] = '\0';
-              vlen+=1;
+              nocomment=0;
+              /* The allInOne test ensures that comm length will
+                 fit within FLEN_CARD buffer size */
+              if (comm)
+                 strcpy(comstring, comm);
+              else
+                 comstring[0]='\0';
+              /* Ensure that loop exits after this iteration */
+              remainval=0;
+              remaincom=0;
            }
-           
-           if (remainval > nchar)
+           else if (remainval > nchar)
            {
               nocomment = 1;
               remainval -= nchar;
