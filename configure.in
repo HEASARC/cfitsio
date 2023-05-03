@@ -21,6 +21,82 @@ AC_SUBST(CFITSIO_MICRO,0)
 AC_SUBST(CFITSIO_SONAME,10)
 
 #--------------------------------------------------------------------
+# System type
+#--------------------------------------------------------------------
+
+case $host in
+    *cygwin*)
+	ARCH="cygwin"
+	EXT="cygwin"
+	;;
+    *apple-darwin*)
+	# Darwin can be powerpc, i386, or x86_64
+	ARCH=`uname -p`
+	EXT="darwin"
+	;;
+    *freebsd*)
+	ARCH="linux"
+	EXT="lnx"
+	;;
+    *haiku*)
+        # Haiku can be arm, i386, or x86_64
+        ARCH=`uname -p`
+        EXT="haiku"
+        ;;
+    *hpux*)
+	ARCH="hp"
+	EXT="hpu"
+	;;
+    *irix*)
+	ARCH="sgi"
+	EXT="sgi"
+	;;
+    *linux*)
+	ARCH="linux"
+	EXT="lnx"
+	;;
+    *mingw32*)
+	#ARCH=""
+	EXT="mingw32"
+	;;
+    *osf1*)
+	ARCH="alpha"
+	EXT="osf"
+	;;
+    *solaris*)
+	ARCH="solaris"
+	EXT="sol"
+	;;
+    *ultrix*)
+	ARCH="dec"
+	EXT="dec"
+	;;
+    *)
+	echo "cfitsio: == Don't know what to do with $host"
+	;;
+esac
+
+#--------------------------------------------------------------------
+# Try first to find a proprietary C compiler, then gcc
+#--------------------------------------------------------------------
+# This section needs to precede the command options since e.g. the
+# bzip2 CHECK_LIB test needs a compiler and in the process sets "CC"
+# if it isn't already set.
+
+if test "x$CC" = x; then
+  # Prefer clang on Darwin:
+  if test "x$EXT" = xdarwin; then
+    AC_CHECK_PROGS(CC, clang)
+    echo "Gabba Hey!: EXT=$EXT and CC=$CC"
+  else
+    if test "x$EXT" != xcygwin && test "x$EXT" != xlnx && test "x$EXT" != xmingw32; then
+      AC_CHECK_PROGS(CC, cc)
+    fi
+  fi
+fi
+AC_PROG_CC
+
+#--------------------------------------------------------------------
 # Command options
 #--------------------------------------------------------------------
 
@@ -142,74 +218,6 @@ AC_PREFIX_DEFAULT(`pwd`)
 AC_SUBST(INSTALL_ROOT,'${prefix}')
 test "$exec_prefix" != NONE -a "$prefix" != "$exec_prefix" \
   && INSTALL_ROOT="$INSTALL_ROOT "'${exec_prefix}'
-	
-
-#--------------------------------------------------------------------
-# System type
-#--------------------------------------------------------------------
-
-case $host in
-    *cygwin*)
-	ARCH="cygwin"
-	EXT="cygwin"
-	;;
-    *apple-darwin*)
-	# Darwin can be powerpc, i386, or x86_64
-	ARCH=`uname -p`
-	EXT="darwin"
-	;;
-    *freebsd*)
-	ARCH="linux"
-	EXT="lnx"
-	;;
-    *haiku*)
-        # Haiku can be arm, i386, or x86_64
-        ARCH=`uname -p`
-        EXT="haiku"
-        ;;
-    *hpux*)
-	ARCH="hp"
-	EXT="hpu"
-	;;
-    *irix*)
-	ARCH="sgi"
-	EXT="sgi"
-	;;
-    *linux*)
-	ARCH="linux"
-	EXT="lnx"
-	;;
-    *mingw32*)
-	#ARCH=""
-	EXT="mingw32"
-	;;
-    *osf1*)
-	ARCH="alpha"
-	EXT="osf"
-	;;
-    *solaris*)
-	ARCH="solaris"
-	EXT="sol"
-	;;
-    *ultrix*)
-	ARCH="dec"
-	EXT="dec"
-	;;
-    *)
-	echo "cfitsio: == Don't know what do do with $host"
-	;;
-esac
-
-
-dnl Checks for programs.
-
-# Try first to find a proprietary C compiler, then gcc
-if test "x$EXT" != xcygwin && test "x$EXT" != xdarwin && test "x$EXT" != xlnx && test "x$EXT" != xmingw32; then
-  if test "x$CC" = x; then
-    AC_CHECK_PROGS(CC, cc)
-  fi
-fi
-AC_PROG_CC
 
 #-------------------------------------------------------------------------------
 # Handle --enable-symbols=yes
@@ -218,7 +226,7 @@ AC_PROG_CC
 # Remove existing/default optimization:
 if test "x$SYMBOLS" = "xyes"; then
    changequote(,)
-   COPT_DEFAULT=`echo $CFLAGS | tr " " "\012" | grep "^\-O[0-9]"`
+   COPT_DEFAULT=`echo $CFLAGS | tr " " "\012" | grep "^-O[0-9]"`
    changequote([,])
    CFLAGS=`echo $CFLAGS | sed "s:$COPT_DEFAULT::g"`
 fi
@@ -393,7 +401,7 @@ CFLAGS="$CFLAGS $CFORTRANFLAGS"
 case $GCC in
 	yes)
 		GCCVERSION="`$CC -dumpversion 2>&1`"
-		echo "cfitsio: == Using gcc version $GCCVERSION"
+		echo "cfitsio: == Using $CC version $GCCVERSION"
 		AC_SUBST(GCCVERSION)
                 changequote(,)
 		gcc_test=`echo $GCCVERSION | grep -c '2\.[45678]'`
@@ -517,8 +525,8 @@ if test "x$ADD_CURL" = xyes; then
     if test "x$CURL_LIB" != x; then
       LIBS_CURL="$CURL_LIB"
       # Mac OS: For third-party curl-config, acquire an rpath:
-      if test `echo $host | grep -c apple-darwin` -ne 0 -a `echo $CURL_LIB | grep -c "^\-L"` -gt 0; then
-        CURL_LIB_PATH=`echo ${CURL_LIB} | tr " " "\012" | grep "^\-L" | tr "\012" " " | sed 's:-L::' | sed 's:[ ]$::'`
+      if test `echo $host | grep -c apple-darwin` -ne 0 -a `echo $CURL_LIB | grep -c "^-L"` -gt 0; then
+        CURL_LIB_PATH=`echo ${CURL_LIB} | tr " " "\012" | grep "^-L" | tr "\012" " " | sed 's:-L::' | sed 's:[ ]$::'`
         if test "x$CURL_LIB_PATH" != x; then
           LIBS_CURL="-Wl,-rpath,$CURL_LIB_PATH $CURL_LIB"
         fi
