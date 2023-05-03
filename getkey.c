@@ -934,7 +934,7 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer             */
         {
             ffgcnt(fptr, valstring, nextcomm, status);
             if (*valstring || *nextcomm)    /* a null valstring and nextcomm 
-                                             indicates no continuation */
+                                               indicates no continuation */
             {
                *(*value+len-1) = '\0';         /* erase the trailing & char */
                len += strlen(valstring) - 1;
