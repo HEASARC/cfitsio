@@ -893,24 +893,30 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer             */
   characters long.
 */
 {
-    char valstring[FLEN_VALUE], nextcomm[FLEN_COMMENT];
-    int contin, commspace = 0;
+    char valstring[FLEN_VALUE], nextcomm[FLEN_COMMENT], card[FLEN_CARD];
+    int contin, commSpace = 0, addCommDelim=0, keynum=0;
     size_t len;
 
     if (*status > 0)
         return(*status);
 
     *value = NULL;  /* initialize a null pointer in case of error */
-
-    ffgkey(fptr, keyname, valstring, comm, status);  /* read the keyword */
-
+    card[0] = '\0';
+    if (comm)
+       comm[0] = '\0';
+    ffgcrd(fptr, keyname, card, status);
+    if (*status > 0)
+       return(*status);
+    if (strlen(card) < FLEN_CARD-1)
+       addCommDelim=1;
+    ffpsvc(card,valstring, comm, status);    
     if (*status > 0)
         return(*status);
 
     if (comm)
     {
         /* remaining space in comment string */
-        commspace = FLEN_COMMENT - strlen(comm) - 2;
+        commSpace = FLEN_COMMENT-1 - strlen(comm);
     }
     
     if (!valstring[0])   /* null value string? */
@@ -932,32 +938,47 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer             */
       {
         if (len && *(*value+len-1) == '&')  /*  is last char an ampersand?  */
         {
+            valstring[0] = '\0';
+            nextcomm[0] = '\0';
             ffgcnt(fptr, valstring, nextcomm, status);
-            if (*valstring || *nextcomm)    /* a null valstring and nextcomm 
-                                                indicates no continuation */
+            if (*valstring || *nextcomm) /* If either valstring or nextcom
+                                  is filled, this must be a CONTINUE line */
             {
-               *(*value+len-1) = '\0';         /* erase the trailing & char */
-               len += strlen(valstring) - 1;
-               *value = (char *) realloc(*value, len + 1); /* increase size */
-               strcat(*value, valstring);     /* append the continued chars */
+               *(*value+len-1) = '\0'; /* erase the trailing & char */
+               if (*valstring)    
+               {
+                  len += strlen(valstring) - 1;
+                  *value = (char *) realloc(*value, len + 1); /* increase size */
+                  strcat(*value, valstring);     /* append the continued chars */
+               }
+               if (*nextcomm)
+               {
+                  /* If in here, input 'comm' cannot be 0 */
+                  /* concantenate comment strings (if any) */
+	          if ((commSpace > 0) && (*nextcomm != 0)) 
+	          {
+                      if (strlen(comm) && addCommDelim)
+                      {
+                         strcat(comm, " ");
+                         commSpace -=1;
+                      }
+		      strncat(comm, nextcomm, commSpace);
+                      commSpace = FLEN_COMMENT-1 - strlen(comm);
+                  }
+               }
+               /* Determine if a space delimiter is needed for next
+                  comment concatenation (if any).  Assume it is if card length
+                  of the most recently read keyword is less than max. 
+                  keynum is 1-based. */
+               keynum = fptr->Fptr->nextkey/80;
+               ffgrec(fptr, keynum, card, status);
+               addCommDelim = (strlen(card) < FLEN_CARD-1) ? 1 : 0;
             }
             else
 	    {
                 contin = 0;
-                /* Without this, for case of a last CONTINUE statement ending
-                   with a '&', nextcomm would retain the same string from 
-                   from the previous loop iteration and the comment
-                   would get concantenated twice. */
-                nextcomm[0] = 0;
             }
 
-            /* concantenate comment strings (if any) */
-	    if ((commspace > 0) && (*nextcomm != 0)) 
-	    {
-                strcat(comm, " ");
-		strncat(comm, nextcomm, commspace);
-                commspace = FLEN_COMMENT - strlen(comm) - 2;
-            }
         }
         else
 	{
@@ -1000,9 +1021,9 @@ int ffgsky( fitsfile *fptr,     /* I - FITS file pointer             */
   the calling routine does not need to call fffree to free the memory.
 */
 {
-    char valstring[FLEN_VALUE], nextcomm[FLEN_COMMENT];
+    char valstring[FLEN_VALUE], nextcomm[FLEN_COMMENT], card[FLEN_COMMENT];
     char *tempstring;
-    int contin, commspace = 0;
+    int contin, commSpace = 0, addCommDelim=0, keynum=0;
     size_t len;
 
     if (*status > 0)
@@ -1012,15 +1033,22 @@ int ffgsky( fitsfile *fptr,     /* I - FITS file pointer             */
     *value = '\0';
     if (valuelen) *valuelen = 0;
     
-    ffgkey(fptr, keyname, valstring, comm, status);  /* read the keyword */
-
+    card[0] = '\0';
+    if (comm)
+       comm[0] = '\0';
+    ffgcrd(fptr, keyname, card, status);
+    if (*status > 0)
+       return(*status);
+    if (strlen(card) < FLEN_CARD-1)
+       addCommDelim=1;
+    ffpsvc(card,valstring, comm, status);    
     if (*status > 0)
         return(*status);
 
     if (comm)
     {
         /* remaining space in comment string */
-        commspace = FLEN_COMMENT - strlen(comm) - 2;
+        commSpace = FLEN_COMMENT-1 - strlen(comm);
     }
     
     if (!valstring[0])   /* null value string? */
@@ -1040,33 +1068,47 @@ int ffgsky( fitsfile *fptr,     /* I - FITS file pointer             */
       contin = 1;
       while (contin && *status <= 0)  
       {
-        if (len && *(tempstring+len-1) == '&')  /*  is last char an anpersand?  */
+        if (len && *(tempstring+len-1) == '&')  /*  is last char an ampersand?  */
         {
+            valstring[0] = '\0';
+            nextcomm[0] = '\0';
             ffgcnt(fptr, valstring, nextcomm, status);
-            if (*valstring || *nextcomm)    /* a null valstring and nextcomm 
-                                             indicates no continuation */
+            if (*valstring || *nextcomm)  /* If either valstring or nextcom
+                                  is filled, this must be a CONTINUE line */  
             {
                *(tempstring+len-1) = '\0';         /* erase the trailing & char */
-               len += strlen(valstring) - 1;
-               tempstring = (char *) realloc(tempstring, len + 1); /* increase size */
-               strcat(tempstring, valstring);     /* append the continued chars */
+               if (*valstring)
+               {
+                  len += strlen(valstring) - 1;
+                  tempstring = (char *) realloc(tempstring, len + 1); /* increase size */
+                  strcat(tempstring, valstring);     /* append the continued chars */
+               }
+               if (*nextcomm)
+               {
+                  /* If in here, input 'comm' cannot be 0 */
+                  /* concantenate comment strings (if any) */
+	          if ((commSpace > 0) && (*nextcomm != 0)) 
+	          {
+                     if (strlen(comm) && addCommDelim)
+                     {
+                        strcat(comm, " ");
+                        commSpace -=1;
+                     }
+		     strncat(comm, nextcomm, commSpace);
+                     commSpace = FLEN_COMMENT-1 - strlen(comm);
+                  }
+               }
+               /* Determine if a space delimiter is needed for next
+                  comment concatenation (if any).  Assume it is if card length
+                  of the most recently read keyword is less than max. 
+                  keynum is 1-based. */
+               keynum = fptr->Fptr->nextkey/80;
+               ffgrec(fptr, keynum, card, status);
+               addCommDelim = (strlen(card) < FLEN_CARD-1) ? 1 : 0;
             }
             else
 	    {
                 contin = 0;
-                /* Without this, for case of a last CONTINUE statement ending
-                   with a '&', nextcomm would retain the same string from 
-                   from the previous loop iteration and the comment
-                   would get concantenated twice. */
-                nextcomm[0] = 0;
-            }
-
-            /* concantenate comment strings (if any) */
-	    if ((commspace > 0) && (*nextcomm != 0)) 
-	    {
-                strcat(comm, " ");
-		strncat(comm, nextcomm, commspace);
-                commspace = FLEN_COMMENT - strlen(comm) - 2;
             }
         }
         else
