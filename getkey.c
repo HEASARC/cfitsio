@@ -1021,7 +1021,7 @@ int ffgsky( fitsfile *fptr,     /* I - FITS file pointer             */
   the calling routine does not need to call fffree to free the memory.
 */
 {
-    char valstring[FLEN_VALUE], nextcomm[FLEN_COMMENT], card[FLEN_COMMENT];
+    char valstring[FLEN_VALUE], nextcomm[FLEN_COMMENT], card[FLEN_CARD];
     char *tempstring;
     int contin, commSpace = 0, addCommDelim=0, keynum=0;
     size_t len;
