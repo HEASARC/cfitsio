@@ -970,8 +970,8 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer             */
                   comment concatenation (if any).  Assume it is if card length
                   of the most recently read keyword is less than max. 
                   keynum is 1-based. */
-               keynum = fptr->Fptr->nextkey/80;
-               ffgrec(fptr, keynum, card, status);
+               ffghps(fptr,0,&keynum,status);
+               ffgrec(fptr, keynum-1, card, status);
                addCommDelim = (strlen(card) < FLEN_CARD-1) ? 1 : 0;
             }
             else
@@ -1102,8 +1102,8 @@ int ffgsky( fitsfile *fptr,     /* I - FITS file pointer             */
                   comment concatenation (if any).  Assume it is if card length
                   of the most recently read keyword is less than max. 
                   keynum is 1-based. */
-               keynum = fptr->Fptr->nextkey/80;
-               ffgrec(fptr, keynum, card, status);
+               ffghps(fptr,0,&keynum,status);
+               ffgrec(fptr, keynum-1, card, status);
                addCommDelim = (strlen(card) < FLEN_CARD-1) ? 1 : 0;
             }
             else
