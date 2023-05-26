@@ -906,6 +906,15 @@ expr:    LONG
 		      YYERROR;
 		   }
                 }
+
+
+       | GTIOVERLAP STRING ',' expr ',' expr ')'
+                {  $$ = New_GTI(lParse, gtiover_fct,  $2, $4, $6, "*START*", "*STOP*");
+                   TEST($$);                                        }
+       | GTIOVERLAP STRING ',' expr ',' expr ',' STRING ',' STRING ')'
+                {  $$ = New_GTI(lParse, gtiover_fct,  $2, $4, $6, $8, $10 );
+                   TEST($$);                                        }
+
        | expr '[' expr ']'
                 { $$ = New_Deref(lParse,  $1, 1, $3,  0,  0,  0,   0 ); TEST($$); }
        | expr '[' expr ',' expr ']'
@@ -1186,13 +1195,6 @@ bexpr:   BOOLEAN
                 {  $$ = New_GTI(lParse, gtifilt_fct,  $2, $4, -99, $6, $8 );
                    TEST($$);                                        }
 
-
-       | GTIOVERLAP STRING ',' expr ',' expr ')'
-                {  $$ = New_GTI(lParse, gtiover_fct,  $2, $4, $6, "*START*", "*STOP*");
-                   TEST($$);                                        }
-       | GTIOVERLAP STRING ',' expr ',' expr ',' STRING ',' STRING ')'
-                {  $$ = New_GTI(lParse, gtiover_fct,  $2, $4, $6, $8, $10 );
-                   TEST($$);                                        }
 
        /* GTIFIND('myfile.gti', TIME_EXPR, 'START', 'STOP') */
        | GTIFIND ')'
