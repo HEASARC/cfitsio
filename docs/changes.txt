@@ -17,6 +17,10 @@ Version 4.x.x
     strings for http connections.  This is needed to fully conform to
     3-field version string format.
 
+  - Bug fix to GTIOVERLAP() calculator function, which was being
+    treated as a boolean value in expressions, and is now correctly
+    treated as a floating point result.
+
 Version 4.2.0 - Nov 2022
   
   - This release includes patches to security vulnerabilities.  We
