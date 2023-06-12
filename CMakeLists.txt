@@ -293,18 +293,12 @@ SET_TARGET_PROPERTIES(${LIB_NAME} PROPERTIES VERSION ${${PROJECT_NAME}_VERSION} 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-install(TARGETS ${LIB_NAME}
+install(TARGETS ${LIB_NAME} EXPORT ${LIB_NAME}-targets
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
-#install(TARGETS ${LIB_NAME}
-#        EXPORT ${LIB_NAME}-targets
-#        FILE ${LIB_NAME}-targets.cmake
-#        NAMESPACE ${LIB_NAME}::
-#        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake
-#)
-#install(EXPORT ${LIB_NAME}-targets DESTINATION lib/cfitsio-${CFITSIO_VERSION})
+install(EXPORT ${LIB_NAME}-targets DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake)
 install(FILES ${H_FILES} DESTINATION ${INCLUDE_INSTALL_DIR} COMPONENT Devel)
 
 #==============================================================================
