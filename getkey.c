@@ -872,6 +872,19 @@ int ffgksl( fitsfile *fptr,     /* I - FITS file pointer             */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffgkcsl( fitsfile *fptr,     /* I - FITS file pointer             */
+           const char *keyname, /* I - name of keyword to read       */
+           int *length,         /* O - length of the string value    */
+           int *comlength,      /* O - length of comment string      */
+           int  *status)        /* IO - error status                 */
+/*
+  Get the length of the keyword value string and comment string.
+  This routine explicitly supports the CONTINUE convention for long string values.
+*/
+{
+   return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffgkls( fitsfile *fptr,     /* I - FITS file pointer             */
            const char *keyname, /* I - name of keyword to read       */
            char **value,        /* O - pointer to keyword value      */
