@@ -385,6 +385,8 @@ int ffgphd(fitsfile *fptr, int maxdim, int *simple, int *bitpix, int *naxis,
           double *bzero, LONGLONG *blank, int *nspace, int *status);
 int ffgttb(fitsfile *fptr, LONGLONG *rowlen, LONGLONG *nrows, LONGLONG *pcount,
           long *tfield, int *status);
+int ffglkut(fitsfile *fptr,const char *keyname,int firstchar,int maxchar,int maxcomchar,
+           char *value,int *valuelen,char *comm,int *comlen,int  *status);
  
 int ffmkey(fitsfile *fptr, const char *card, int *status);
  
