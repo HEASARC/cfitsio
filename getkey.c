@@ -1130,6 +1130,155 @@ int ffgsky( fitsfile *fptr,     /* I - FITS file pointer             */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffglkut( fitsfile *fptr,     /* I - FITS file pointer             */
+           const char *keyname, /* I - name of keyword to read       */
+           int firstchar,       /* I - first character of string to return */
+           int maxvalchar,         /* I - maximum length of string to return */
+	                        /*    (string will be null terminated)  */      
+           int maxcomchar,      /* I - maximum length of comment to return */
+           char *value,         /* O - pointer to keyword value (may be NULL) */
+           int *valuelen,       /* O - total length of the keyword value string */
+                                /*     The returned 'value' string may only */
+				/*     contain a piece of the total string, depending */
+				/*     on the value of firstchar and maxvalchar */
+           char *comm,          /* O - keyword comment (may be NULL) */
+           int *comlen,         /* O - total length of comment string */
+           int  *status)        /* IO - error status                 */
+{
+    char valstring[FLEN_VALUE], comstring[FLEN_COMMENT], card[FLEN_CARD];
+    char *dynValStr=0, *dynComStr=0;
+    int contin, addCommDelim=0, keynum=0;
+    int lenOnly=0;
+    size_t len=0, lenc=0;
+
+    if (*status > 0)
+        return(*status);
+
+    if (maxvalchar==0 && maxcomchar==0)
+       lenOnly = 1;
+    
+    if (value)
+       *value = '\0';
+    if (comm)
+       *comm = '\0';
+    /* If lenOnly, 'value' and 'comm' should not be accessed after this point.*/
+    
+    *valuelen = 0; 
+    *comlen = 0;   
+    card[0] = '\0';
+    valstring[0] = '\0';
+    comstring[0] = '\0';
+       
+    ffgcrd(fptr, keyname, card, status);
+    if (*status > 0)
+       return(*status);
+    if (strlen(card) < FLEN_CARD-1)
+       addCommDelim=1;
+    ffpsvc(card,valstring, comstring, status);    
+    if (*status > 0)
+        return(*status);
+
+    if (!valstring[0])   /* null value string? */
+    {
+      dynValStr = (char *) malloc(1);  /* allocate and return a null string */
+      *dynValStr = '\0';      
+      dynComStr = (char *)malloc(1);
+      *dynComStr= '\0';
+    }
+    else
+    {
+      /* allocate space,  plus 1 for null */
+      dynValStr = (char *) malloc(strlen(valstring) + 1);
+
+      ffc2s(valstring, dynValStr, status);   /* convert string to value */
+      len = strlen(dynValStr);
+      
+      dynComStr = (char *) malloc(strlen(comstring)+1);
+      strcpy(dynComStr, comstring);
+      lenc = strlen(dynComStr);
+
+      /* If last character is a & then value may be continued on next keyword */
+      contin = 1;
+      while (contin && *status <= 0)  
+      {
+        if (len && *(dynValStr+len-1) == '&')  /*  is last char an ampersand?  */
+        {
+            valstring[0] = '\0';
+            comstring[0] = '\0';
+            ffgcnt(fptr, valstring, comstring, status);
+            if (*valstring || *comstring)  /* If either valstring or comstring
+                                  is filled, this must be a CONTINUE line */  
+            {
+               *(dynValStr+len-1) = '\0';         /* erase the trailing & char */
+               len -= 1;
+               if (*valstring)
+               {
+                  len += strlen(valstring);
+                  dynValStr = (char *) realloc(dynValStr, len + 1); /* increase size */
+                  strcat(dynValStr, valstring);     /* append the continued chars */
+               }
+               if (*comstring)
+               {
+                  /* concantenate comment strings */
+                  if (addCommDelim)
+                  {
+                     lenc += strlen(comstring) + 1;
+                     dynComStr = (char *) realloc(dynComStr, lenc + 1);
+                     strcat(dynComStr, " ");
+                     strcat(dynComStr, comstring);
+                  }
+                  else
+                  {
+                     lenc += strlen(comstring);
+                     dynComStr = (char *) realloc(dynComStr, lenc + 1);
+                     strcat(dynComStr, comstring);                     
+                  }
+               }
+               /* Determine if a space delimiter is needed for next
+                  comment concatenation (if any).  Assume it is if card length
+                  of the most recently read keyword is less than max. 
+                  keynum is 1-based. */
+               ffghps(fptr,0,&keynum,status);
+               ffgrec(fptr, keynum-1, card, status);
+               addCommDelim = (strlen(card) < FLEN_CARD-1) ? 1 : 0;
+            }
+            else
+	    {
+                contin = 0;
+            }
+        }
+        else
+	{
+            contin = 0;
+	}
+      }
+    }
+    
+    /* Resetting len and lenc really shouldn't be necessary here, but
+       just to make sure ... */
+    len = strlen(dynValStr);
+    lenc = strlen(dynComStr);
+    *valuelen = len;
+    *comlen = lenc;
+    if (!lenOnly)
+    {
+       if (value)
+       {
+          if (firstchar <= len)
+             strncat(value,dynValStr+firstchar-1,maxvalchar);
+       }
+       if (comm)
+       {
+          strncat(comm,dynComStr,maxcomchar);
+       }
+    }
+    
+    free(dynValStr);
+    free(dynComStr);
+        
+    return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int fffree( void *value,       /* I - pointer to keyword value  */
             int  *status)      /* IO - error status             */
 /*
