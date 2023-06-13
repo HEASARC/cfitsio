@@ -955,6 +955,7 @@ int CFITS_API ffgky( fitsfile *fptr, int datatype, const char *keyname, void *va
            char *comm, int *status);
 int CFITS_API ffgkys(fitsfile *fptr, const char *keyname, char *value, char *comm, int *status);
 int CFITS_API ffgksl(fitsfile *fptr, const char *keyname, int *length, int *status);
+int CFITS_API ffgkcsl(fitsfile *fptr, const char *keyname, int *length, int *comlength, int *status);
 int CFITS_API ffgkls(fitsfile *fptr, const char *keyname, char **value, char *comm, int *status);
 int CFITS_API ffgsky(fitsfile *fptr, const char *keyname, int firstchar, int maxchar,
                char *value, int *valuelen, char *comm, int *status);
