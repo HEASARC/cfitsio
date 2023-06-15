@@ -882,6 +882,12 @@ int ffgkcsl( fitsfile *fptr,     /* I - FITS file pointer             */
   This routine explicitly supports the CONTINUE convention for long string values.
 */
 {
+   if (*status > 0)
+      return(*status);
+      
+   ffglkut(fptr, keyname, 0, 0, 0, (char *)0, length, (char *)0,
+           comlength, status); 
+       
    return(*status);
 }
 /*--------------------------------------------------------------------------*/
@@ -1161,7 +1167,7 @@ int ffglkut( fitsfile *fptr,     /* I - FITS file pointer             */
     char valstring[FLEN_VALUE], comstring[FLEN_COMMENT], card[FLEN_CARD];
     char *dynValStr=0, *dynComStr=0;
     int contin, addCommDelim=0, keynum=0;
-    int lenOnly=0;
+    int lenOnly=0, savedKeyPos=1;
     size_t len=0, lenc=0;
 
     if (*status > 0)
@@ -1190,6 +1196,16 @@ int ffglkut( fitsfile *fptr,     /* I - FITS file pointer             */
     ffpsvc(card,valstring, comstring, status);    
     if (*status > 0)
         return(*status);
+        
+    /* If called in lenOnly mode, there's a good chance the user will soon call
+       this again to read the value string.  Therefore we'll save and later restore
+       the original keyword position. */
+    if (lenOnly)
+    {
+       ffghps(fptr, 0, &savedKeyPos, status);
+       if (savedKeyPos > 1)
+          savedKeyPos -= 1;
+    }
 
     if (!valstring[0])   /* null value string? */
     {
@@ -1273,7 +1289,9 @@ int ffglkut( fitsfile *fptr,     /* I - FITS file pointer             */
     lenc = strlen(dynComStr);
     *valuelen = len;
     *comlen = lenc;
-    if (!lenOnly)
+    if (lenOnly)
+       ffmaky(fptr, savedKeyPos, status);
+    else
     {
        if (value)
        {
