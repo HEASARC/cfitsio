@@ -959,6 +959,8 @@ int CFITS_API ffgkcsl(fitsfile *fptr, const char *keyname, int *length, int *com
 int CFITS_API ffgkls(fitsfile *fptr, const char *keyname, char **value, char *comm, int *status);
 int CFITS_API ffgsky(fitsfile *fptr, const char *keyname, int firstchar, int maxchar,
                char *value, int *valuelen, char *comm, int *status);
+int CFITS_API ffgskyc(fitsfile *fptr, const char *keyname, int firstchar, int maxchar,
+               int maxcomchar, char *value, int *valuelen, char *comm, int *comlen, int *status);
 int CFITS_API fffree(void *value,  int  *status); 
 int CFITS_API fffkls(char *value, int *status);
 int CFITS_API ffgkyl(fitsfile *fptr, const char *keyname, int *value, char *comm, int *status);
