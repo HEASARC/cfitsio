@@ -1149,6 +1149,30 @@ int ffgsky( fitsfile *fptr,     /* I - FITS file pointer             */
     return(*status);
 }
 /*--------------------------------------------------------------------------*/
+int ffgskyc( fitsfile *fptr,     /* I - FITS file pointer             */
+           const char *keyname, /* I - name of keyword to read       */
+           int firstchar,       /* I - first character of string to return */
+           int maxchar,         /* I - maximum length of string to return */
+	                        /*    (string will be null terminated)  */ 
+           int maxcomchar,      /* I - maximum length of comment to return */     
+           char *value,         /* O - pointer to keyword value      */
+           int *valuelen,       /* O - total length of the keyword value string */
+                                /*     The returned 'value' string may only */
+				/*     contain a piece of the total string, depending */
+				/*     on the value of firstchar and maxchar */
+           char *comm,          /* O - keyword comment (may be NULL) */
+           int *comlen,        /* O - total length of the comment string */
+           int  *status)        /* IO - error status                 */
+{
+   if (*status > 0)
+      return(*status);
+
+   ffglkut(fptr,keyname,firstchar,maxchar,maxcomchar,value,valuelen,
+             comm,comlen,status);      
+      
+   return(*status);
+}
+/*--------------------------------------------------------------------------*/
 int ffglkut( fitsfile *fptr,     /* I - FITS file pointer             */
            const char *keyname, /* I - name of keyword to read       */
            int firstchar,       /* I - first character of string to return */

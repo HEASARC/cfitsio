@@ -142,6 +142,7 @@
 #define fits_get_key_com_strlen ffgkcsl
 #define fits_read_key_longstr  ffgkls
 #define fits_read_string_key   ffgsky
+#define fits_read_string_key_com  ffgskyc
 #define fits_free_memory       fffree
 #define fits_read_tdim         ffgtdm
 #define fits_read_tdimll       ffgtdmll
