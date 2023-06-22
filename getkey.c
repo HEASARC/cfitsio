@@ -1215,11 +1215,11 @@ int ffglkut( fitsfile *fptr,     /* I - FITS file pointer             */
     ffgcrd(fptr, keyname, card, status);
     if (*status > 0)
        return(*status);
-    if (strlen(card) < FLEN_CARD-1)
-       addCommDelim=1;
     ffpsvc(card,valstring, comstring, status);    
     if (*status > 0)
         return(*status);
+    if (strlen(card) < FLEN_CARD-1 && *comstring)
+       addCommDelim=1;
         
     /* If called in lenOnly mode, there's a good chance the user will soon call
        this again to read the value string.  Therefore we'll save and later restore
@@ -1247,6 +1247,7 @@ int ffglkut( fitsfile *fptr,     /* I - FITS file pointer             */
       len = strlen(dynValStr);
       
       dynComStr = (char *) malloc(strlen(comstring)+1);
+      dynComStr[0]=0;
       strcpy(dynComStr, comstring);
       lenc = strlen(dynComStr);
 
@@ -1293,7 +1294,7 @@ int ffglkut( fitsfile *fptr,     /* I - FITS file pointer             */
                   keynum is 1-based. */
                ffghps(fptr,0,&keynum,status);
                ffgrec(fptr, keynum-1, card, status);
-               addCommDelim = (strlen(card) < FLEN_CARD-1) ? 1 : 0;
+               addCommDelim = ((strlen(card) < FLEN_CARD-1) && *comstring) ? 1 : 0;
             }
             else
 	    {
