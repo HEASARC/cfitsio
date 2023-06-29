@@ -972,10 +972,10 @@ int ffgkls( fitsfile *fptr,     /* I - FITS file pointer             */
                }
                if (*nextcomm)
                {
-                  /* If in here, input 'comm' cannot be 0 */
-                  /* concantenate comment strings (if any) */
 	          if ((commSpace > 0) && (*nextcomm != 0)) 
 	          {
+                      /* If in here, input 'comm' cannot be 0 */
+                      /* concantenate comment strings (if any) */
                       if (strlen(comm) && addCommDelim)
                       {
                          strcat(comm, " ");
@@ -1104,10 +1104,10 @@ int ffgsky( fitsfile *fptr,     /* I - FITS file pointer             */
                }
                if (*nextcomm)
                {
-                  /* If in here, input 'comm' cannot be 0 */
-                  /* concantenate comment strings (if any) */
 	          if ((commSpace > 0) && (*nextcomm != 0)) 
 	          {
+                     /* If in here, input 'comm' cannot be 0 */
+                     /* concantenate comment strings (if any) */
                      if (strlen(comm) && addCommDelim)
                      {
                         strcat(comm, " ");
