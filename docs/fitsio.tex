@@ -6450,6 +6450,13 @@ usage. Also, the integer to real casts values to double precision:
     would promote TIME to be a 4-vector, and ARRAY(0, \{2,3,1\}) would
     construct an array of all 0's with dimensions $2\times 3\times 1$.
 
+    A second form of ARRAY(X,d) can be used where X is a vector or
+    array, and the dimensions d merely change the dimensions of X
+    without changing the total number of vector elements.  This is a
+    way to re-dimension an existing array.  For example,
+    ARRAY(\{1,2,3,4\},{2,2}) would transform the 4-vector into a
+    $2\times 2$ array.
+
     To  specify  a  single  element  of  a  vector, give the column name
     followed by  a  comma-separated  list  of  coordinates  enclosed  in
     square  brackets.  For example, if a vector column named PHAS exists
