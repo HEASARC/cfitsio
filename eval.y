@@ -6000,8 +6000,8 @@ static void Do_Array( ParseData *lParse, Node *this )
      if( that->operation == CONST_OP ) {
 
        idx = lParse->nRows*this->value.nelem + offset;
-       while( (idx--)>=0 ) {
-	       
+       while( idx-- ) {
+
 	 this->value.undef[idx] = 0;
 
 	 switch( this->type ) {

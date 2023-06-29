@@ -44,6 +44,7 @@
    There are some unavoidable exceptions within include files to
    define necessary library symbols; they are noted "INFRINGES ON
    USER NAME SPACE" below.  */
+#include <mcheck.h>
 
 /* Identify Bison output, and Bison version.  */
 #define YYBISON 30800
@@ -8238,7 +8239,7 @@ static void Do_Array( ParseData *lParse, Node *this )
      if( that->operation == CONST_OP ) {
 
        idx = lParse->nRows*this->value.nelem + offset;
-       while( (idx--)>=0 ) {
+       while( idx-- ) {
 	       
 	 this->value.undef[idx] = 0;
 
