@@ -44,7 +44,6 @@
    There are some unavoidable exceptions within include files to
    define necessary library symbols; they are noted "INFRINGES ON
    USER NAME SPACE" below.  */
-#include <mcheck.h>
 
 /* Identify Bison output, and Bison version.  */
 #define YYBISON 30800
@@ -4339,11 +4338,6 @@ static int New_Array( ParseData *lParse, int valueNode, int dimNode )
 	- 5 or fewer dimensions 
    */
 
-   if (SIZE(valueNode) > 1) {
-     yyerror(0, lParse, "ARRAY(V,n) value V must have vector dimension of 1");
-     return (-1);
-   }
-
    dims = &(lParse->Nodes[dimNode]);
    for (i=0; i<MAXDIMS; i++) naxes[i] = 1;
 
@@ -4380,6 +4374,16 @@ static int New_Array( ParseData *lParse, int valueNode, int dimNode )
      nelem *= naxes[i];
    }
 
+   if (SIZE(valueNode) == nelem && nelem > 1) {
+     /* "reform" operation - do nothing */
+   } else if (SIZE(valueNode) > 1 && nelem > 1) {
+     yyerror(0, lParse, "ARRAY(V,d) mismatch between number of elements in V and d");
+     return (-1);
+   } else if (SIZE(valueNode) > 1) {
+     yyerror(0, lParse, "ARRAY(V,n) value V must have vector dimension of 1");
+     return (-1);
+   }
+   
    n = Alloc_Node(lParse);
    if( n>=0 ) {
       this             = lParse->Nodes + n;
@@ -8240,7 +8244,7 @@ static void Do_Array( ParseData *lParse, Node *this )
 
        idx = lParse->nRows*this->value.nelem + offset;
        while( idx-- ) {
-	       
+
 	 this->value.undef[idx] = 0;
 
 	 switch( this->type ) {
@@ -8255,8 +8259,30 @@ static void Do_Array( ParseData *lParse, Node *this )
 	   break;
 	 }
        }
+
+     } else if (that->value.nelem > 1) { /* array "REFORM" */
+       /* Note that dimensions change but total number of elements is same,
+	  so we just do a straight copy */
+      
+       idx = lParse->nRows*this->value.nelem;
+       while( idx-- ) {
+
+	 this->value.undef[idx] = that->value.undef[idx];
+
+	 switch( this->type ) {
+	 case BOOLEAN:
+	   this->value.data.logptr[idx] = that->value.data.logptr[idx];
+	   break;
+	 case LONG:
+	   this->value.data.lngptr[idx] = that->value.data.lngptr[idx];
+	   break;
+	 case DOUBLE:
+	   this->value.data.dblptr[idx] = that->value.data.dblptr[idx];
+	   break;
+	 }
+       }
        
-     } else {
+     } else { /* Any promotion of scalar to vector/array */
        
        row  = lParse->nRows;
        idx  = row * this->value.nelem - 1;
