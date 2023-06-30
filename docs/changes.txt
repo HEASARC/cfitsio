@@ -1,6 +1,6 @@
                    Log of Changes Made to CFITSIO
                    
-Version 4.x.x
+Version 4.3.0 - Jul 2023
 
   - Bug fix to fits_make_hist[d] that was introduced in 4.2.0.
   
@@ -27,6 +27,10 @@ Version 4.x.x
   - Enhancement to the ARRAY function, such that ARRAY(V,d) can
     apply new dimensions to V, as long as the total number
     of array/vector elements does not change.
+    
+  - Enhancement of long string keyword read/write functions to fully
+    conform with FITS standard specifications for multi-line value
+    and comment strings.
 
 Version 4.2.0 - Nov 2022
   
