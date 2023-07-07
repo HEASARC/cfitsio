@@ -1294,7 +1294,7 @@ int ffglkut( fitsfile *fptr,     /* I - FITS file pointer             */
                   keynum is 1-based. */
                ffghps(fptr,0,&keynum,status);
                ffgrec(fptr, keynum-1, card, status);
-               addCommDelim = ((strlen(card) < FLEN_CARD-1) && *comstring) ? 1 : 0;
+               addCommDelim = ((strlen(card) < FLEN_CARD-1) && lenc) ? 1 : 0;
             }
             else
 	    {
