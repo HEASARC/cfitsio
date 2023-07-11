@@ -518,7 +518,8 @@ CURL_LIB=""
 CURL_LIB_PATH=""
 if test "x$ADD_CURL" = xyes; then
   # Use curl-config to get compiler & linker flags, if available.
-  AC_CHECK_PROG([CURLCONFIG], [curl-config], [curl-config], [], [], [])
+  # (and prefer /usr/bin/curl-config)
+  AC_PATH_PROG([CURLCONFIG], [curl-config], [], [/usr/bin$PATH_SEPARATOR$PATH], [])
   if test "x$CURLCONFIG" != x; then
     CURL_LIB=`$CURLCONFIG --libs`
     CURL_INC=`$CURLCONFIG --cflags`
