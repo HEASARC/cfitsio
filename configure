@@ -4601,19 +4601,22 @@ CURL_LIB=""
 CURL_LIB_PATH=""
 if test "x$ADD_CURL" = xyes; then
   # Use curl-config to get compiler & linker flags, if available.
+  # (and prefer /usr/bin/curl-config)
   # Extract the first word of "curl-config", so it can be a program name with args.
 set dummy curl-config; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 printf %s "checking for $ac_word... " >&6; }
-if test ${ac_cv_prog_CURLCONFIG+y}
+if test ${ac_cv_path_CURLCONFIG+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
-  if test -n "$CURLCONFIG"; then
-  ac_cv_prog_CURLCONFIG="$CURLCONFIG" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
+  case $CURLCONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_CURLCONFIG="$CURLCONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in /usr/bin$PATH_SEPARATOR$PATH
 do
   IFS=$as_save_IFS
   case $as_dir in #(((
@@ -4623,7 +4626,7 @@ do
   esac
     for ac_exec_ext in '' $ac_executable_extensions; do
   if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
-    ac_cv_prog_CURLCONFIG="curl-config"
+    ac_cv_path_CURLCONFIG="$as_dir$ac_word$ac_exec_ext"
     printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -4631,9 +4634,10 @@ done
   done
 IFS=$as_save_IFS
 
+  ;;
+esac
 fi
-fi
-CURLCONFIG=$ac_cv_prog_CURLCONFIG
+CURLCONFIG=$ac_cv_path_CURLCONFIG
 if test -n "$CURLCONFIG"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CURLCONFIG" >&5
 printf "%s\n" "$CURLCONFIG" >&6; }
