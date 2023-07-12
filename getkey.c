@@ -821,53 +821,12 @@ int ffgksl( fitsfile *fptr,     /* I - FITS file pointer             */
   This routine explicitly supports the CONTINUE convention for long string values.
 */
 {
-    char valstring[FLEN_VALUE], value[FLEN_VALUE];
-    int position, contin, len;
+    int dummy=0;
     
     if (*status > 0)
         return(*status);
-
-    ffgkey(fptr, keyname, valstring, NULL, status);  /* read the keyword */
-
-    if (*status > 0)
-        return(*status);
-
-    ffghps(fptr, NULL,  &position, status); /* save the current header position */
-    
-    if (!valstring[0])  { /* null value string? */
-        *length = 0;
-    } else {
-      ffc2s(valstring, value, status);  /* in case string contains "/" char  */
-      *length = strlen(value);
-
-      /* If last character is a & then value may be continued on next keyword */
-      contin = 1;
-      while (contin)  
-      {
-        len = strlen(value);
-
-        if (len && *(value+len-1) == '&')  /*  is last char an anpersand?  */
-        {
-            ffgcnt(fptr, value, NULL, status);
-            if (*value)    /* a null valstring indicates no continuation */
-            {
-               *length += strlen(value) - 1;
-            }
-            else
-	    {
-                contin = 0;
-            }
-        }
-        else
-	{
-            contin = 0;
-	}
-      }
-    }
-
-    ffmaky(fptr, position - 1, status); /* reset header pointer to the keyword */
-                                        /* since in many cases the program will read */
-					/* the string value after getting the length */
+ 
+    ffgkcsl(fptr, keyname, length, &dummy, status);
     
     return(*status);
 }
