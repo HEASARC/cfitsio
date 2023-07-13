@@ -31,7 +31,7 @@
 \medskip
 \medskip
 \begin{center}
-{\Large Version 4.2 \\}
+{\Large Version 4.3 \\}
 \end{center}
 \bigskip
 \vskip 2.5cm
@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large Nov 2022\\}
+{\Large Jul 2023\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -2092,24 +2092,48 @@ header.
 \end{verbatim}
 
 \begin{description}
-\item[3 ] Read a string-valued keyword and return the string length, the value string,
-    and/or the comment field.   The first routine, ffgksl, simply
-    returns the length of the character string value of the specified keyword.
-    The second routine, ffgsky, also returns up to maxchar characters
-    of the keyword value string, starting with the firstchar character,
-    and the keyword comment string (unless the input value of comm = NULL).
-    The valuelen argument returns the total length of the keyword value string
-    regardless of how much of the string is actually returned (which
-    depends on the value of the firstchar and maxchar arguments).
-    Note that the value character string argument must be allocated large enough to
-    also hold the null terminator at the end of the returned string.  These
-    routines support string keywords that use the CONTINUE convention to
-    continue long string values over multiple FITS header records.  Normally,
-    string-valued keywords have a maximum length of 68 characters, however,
-   CONTINUE'd string keywords may be arbitrarily long. \label{ffgksl} \label{ffgsky}
+\item[3 ] Read a string-valued keyword and return the string length, the value string, 
+    and/or the commment length and comment field.  These routines support the reading
+    of long string keyword values of arbitrary length which use the CONTINUE convention.
+    The first two routines, ffgkcsl and ffgskyc are the newer versions of the second two.  
+    They provide all the functionality of the older routines, 
+    but have the added capability of returning the length of comment strings (if any),
+    and reading multi-line comment strings of arbitrary length.  They are recommended
+    for use in the future.  ffgksl and ffgsky are maintained for backwards-compatibility.
+    
+    The first routine, ffgkcsl, simply returns the lengths of the character string value and
+    comment string (if any) of the specified keyword.  These lengths are particularly helpful
+    for allocating dynamic memory when retrieving the strings in the ffgskyc function.
+    To create an array large enough to hold the full string, one should allocate a size equal to
+    the returned length + 1 (for the trailing NULL).
+    
+    The second routine, ffgskyc, is for retrieving the value string and optional comment 
+    string, both of which may be of arbitrary length spreading over multiple lines with the
+    CONTINUE keyword convention.  It will return up to maxchar characters of the keyword value
+    string, starting with the firstchar character.  Similarly, maxcomchar determines the 
+    maximum number of characters to return for the comment string.  (The valuelen and comlen
+    arguments return the total length of their respective strings regardless of what is actually
+    returned as determined from the firstchar and max(com)char arguments.) If NULL is passed for 
+    either the value or comm string pointer, its max(com)char setting is irrelevant since
+    the corresponding string will not be returned.
+    
+    ffgkcs is the earlier version of ffgkcs. It only returns the value string length and
+    not the comment string length.  ffgsky, the earlier version of ffgskyc, does return 
+    both the value string and comment string.  However it will only return up to the
+    first FLEN_COMMENT-1 characters of the comment.  It can read comments across
+    multiple lines, but not of arbitrary length.   \label{ffgkcsl} \label{ffgskyc} \label{ffgksl} \label{ffgsky}
 \end{description}
 
 \begin{verbatim}
+  int fits_get_key_com_strlen / ffgkcsl
+      (fitsfile *fptr, const char *keyname, int *length, int *comlength,
+      int *status);
+      
+  int fits_read_string_key_com / ffgskyc
+      (fitsfile *fptr, const char *keyname, int firstchar, int maxchar,
+      int maxcomchar, char *value, int *valuelen, char *comm,
+      int *comlen, int *status);
+      
   int fits_get_key_strlen / ffgksl
       (fitsfile *fptr, const char *keyname, int *length, int *status);
 
@@ -10464,6 +10488,7 @@ fits\_get\_img\_param & \pageref{ffgipr} \\
 fits\_get\_img\_size & \pageref{ffgisz} \\
 fits\_get\_img\_type & \pageref{ffgidt} \\
 fits\_get\_inttype    & \pageref{ffinttyp} \\
+fits\_get\_key\_com\_strlen & \pageref{ffgkcsl} \\
 fits\_get\_key\_strlen & \pageref{ffgksl} \\
 fits\_get\_keyclass    & \pageref{ffgkcl} \\
 fits\_get\_keyname    & \pageref{ffgknm} \\
@@ -10567,6 +10592,7 @@ fits\_read\_pixnull & \pageref{ffgpxf} \\
 fits\_read\_record       & \pageref{ffgrec} \\
 fits\_read\_str         & \pageref{ffgcrd} \\
 fits\_read\_string\_key & \pageref{ffgsky} \\
+fits\_read\_string\_key\_com & \pageref{ffgskyc} \\
 fits\_read\_subset  & \pageref{ffgsv} \\
 fits\_read\_subset\_TYP  & \pageref{ffgsvx} \pageref{ffgsvx2}\\
 fits\_read\_subsetnull\_TYP & \pageref{ffgsfx} \pageref{ffgsfx2} \\
