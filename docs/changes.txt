@@ -30,7 +30,8 @@ Version 4.3.0 - Jul 2023
     
   - Enhancement of long string keyword read/write functions to fully
     conform with FITS standard specifications for multi-line value
-    and comment strings.
+    and comment strings.  Two new functions have been added to 
+    implement this: fits_get_key_com_strlen and fits_read_string_key_com.
 
 Version 4.2.0 - Nov 2022
   
