@@ -38,17 +38,17 @@
 \contentsline {subsection}{\numberline {5.4.2}Keyword Writing Routines}{41}
 \contentsline {section}{\numberline {5.5}Primary Array or IMAGE Extension I/O Routines}{43}
 \contentsline {section}{\numberline {5.6}Image Compression}{47}
-\contentsline {section}{\numberline {5.7}ASCII and Binary Table Routines}{52}
-\contentsline {subsection}{\numberline {5.7.1}Create New Table}{52}
+\contentsline {section}{\numberline {5.7}ASCII and Binary Table Routines}{53}
+\contentsline {subsection}{\numberline {5.7.1}Create New Table}{53}
 \contentsline {subsection}{\numberline {5.7.2}Column Information Routines}{53}
 \contentsline {subsection}{\numberline {5.7.3}Routines to Edit Rows or Columns}{56}
 \contentsline {subsection}{\numberline {5.7.4}Read and Write Column Data Routines}{58}
 \contentsline {subsection}{\numberline {5.7.5}Row Selection and Calculator Routines}{61}
-\contentsline {subsection}{\numberline {5.7.6}Column Binning or Histogramming Routines}{62}
+\contentsline {subsection}{\numberline {5.7.6}Column Binning or Histogramming Routines}{63}
 \contentsline {section}{\numberline {5.8}Utility Routines}{65}
 \contentsline {subsection}{\numberline {5.8.1}File Checksum Routines}{65}
-\contentsline {subsection}{\numberline {5.8.2}Date and Time Utility Routines}{66}
-\contentsline {subsection}{\numberline {5.8.3}General Utility Routines}{67}
+\contentsline {subsection}{\numberline {5.8.2}Date and Time Utility Routines}{67}
+\contentsline {subsection}{\numberline {5.8.3}General Utility Routines}{68}
 \contentsline {chapter}{\numberline {6} The CFITSIO Iterator Function }{79}
 \contentsline {section}{\numberline {6.1}The Iterator Work Function}{80}
 \contentsline {section}{\numberline {6.2}The Iterator Driver Function}{82}
@@ -101,8 +101,8 @@
 \contentsline {subsection}{\numberline {10.11.2}Bit Masks}{148}
 \contentsline {subsection}{\numberline {10.11.3}Vector Columns}{149}
 \contentsline {subsection}{\numberline {10.11.4}Row Access}{151}
-\contentsline {subsection}{\numberline {10.11.5}Good Time Interval Filtering and Calculation}{151}
-\contentsline {subsection}{\numberline {10.11.6}Spatial Region Filtering}{153}
+\contentsline {subsection}{\numberline {10.11.5}Good Time Interval Filtering and Calculation}{152}
+\contentsline {subsection}{\numberline {10.11.6}Spatial Region Filtering}{154}
 \contentsline {subsection}{\numberline {10.11.7}Example Row Filters}{156}
 \contentsline {section}{\numberline {10.12} Binning or Histogramming Specification}{157}
 \contentsline {chapter}{\numberline {11}Template Files }{161}
