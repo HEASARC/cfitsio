@@ -82,7 +82,7 @@
 \contentsline {subsection}{\numberline {8.11.4}Good Time Interval Filtering and Calculation}{103}
 \contentsline {subsection}{\numberline {8.11.5}Spatial Region Filtering}{105}
 \contentsline {subsection}{\numberline {8.11.6}Example Row Filters}{107}
-\contentsline {section}{\numberline {8.12} Binning or Histogramming Specification}{108}
+\contentsline {section}{\numberline {8.12} Binning or Histogramming Specification}{109}
 \contentsline {chapter}{\numberline {9}Template Files }{113}
 \contentsline {section}{\numberline {9.1}Detailed Template Line Format}{113}
 \contentsline {section}{\numberline {9.2}Auto-indexing of Keywords}{114}
