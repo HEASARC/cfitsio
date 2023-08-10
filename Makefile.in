@@ -28,6 +28,7 @@ CFITSIO_SONAME	= @CFITSIO_SONAME@
 
 prefix		= @prefix@
 exec_prefix	= @exec_prefix@
+DESTDIR		=
 CFITSIO_BIN	= ${DESTDIR}@bindir@
 CFITSIO_LIB	= ${DESTDIR}@libdir@
 CFITSIO_INCLUDE	= ${DESTDIR}@includedir@
@@ -128,61 +129,95 @@ install:	lib${PACKAGE}.a ${INSTALL_DIRS}
 		    fi; \
 		done
 
-.c.o:
-		${CC} -c -o ${<D}/${@F} ${CFLAGS} ${CPPFLAGS} ${DEFS} $<
-
-UTILS		= cookbook fitscopy imcopy smem speed testprog
-
-FPACK_UTILS	= fpack funpack
-
-# Optional build target:
-utils:		${FPACK_UTILS} ${UTILS}
+%.o: %.c
+		${CC} -c -I. -o ${<D}/${@F} ${CFLAGS} ${CPPFLAGS} ${DEFS} $<
 
 swapproc.o:	swapproc.c
 		${CC} -c ${CFLAGS} ${CPPFLAGS} ${SSE_FLAGS} ${DEFS} $<
 
-smem:		smem.o lib${PACKAGE}.a ${OBJECTS}
-		${CC} ${LDFLAGS_BIN} ${DEFS} -o $@ ${@}.o -L. -l${PACKAGE} -lm
+# UTILITIES: =============================================================
 
-testprog:	testprog.o lib${PACKAGE}.a ${OBJECTS}
-		${CC} ${LDFLAGS_BIN} ${DEFS} -o $@ ${@}.o -L. -l${PACKAGE} -lm ${LIBS}
+FPACK_UTILS	= fpack funpack
 
-fpack:		fpack.o fpackutil.o lib${PACKAGE}.a ${OBJECTS}
-		${CC} ${LDFLAGS_BIN} ${DEFS} -o $@ ${@}.o fpackutil.o -L. -l${PACKAGE} -lm ${LIBS}
+UTILS		= cookbook fitscopy imcopy smem speed testprog fitsverify
 
-funpack:	funpack.o fpackutil.o lib${PACKAGE}.a ${OBJECTS}
-		${CC} ${LDFLAGS_BIN} ${DEFS} -o $@ ${@}.o fpackutil.o -L. -l${PACKAGE} -lm ${LIBS}
+# Optional build target:
+utils:		${FPACK_UTILS} ${UTILS}
 
-fitscopy:	fitscopy.o lib${PACKAGE}.a ${OBJECTS}
-		${CC} ${LDFLAGS_BIN} ${DEFS} -o $@ ${@}.o -L. -l${PACKAGE} -lm ${LIBS}
+FVERIFY_SRC	= utilities/ftverify.c utilities/fvrf_data.c \
+		  utilities/fvrf_file.c utilities/fvrf_head.c \
+		  utilities/fvrf_key.c utilities/fvrf_misc.c
 
-speed:		speed.o lib${PACKAGE}.a ${OBJECTS}
-		${CC} ${LDFLAGS_BIN} ${DEFS} -o $@ ${@}.o -L. -l${PACKAGE} -lm ${LIBS}
+FVERIFY_OBJ	= ${FVERIFY_SRC:.c=.o}
 
-imcopy:		imcopy.o lib${PACKAGE}.a ${OBJECTS}
-		${CC} ${LDFLAGS_BIN} ${DEFS} -o $@ ${@}.o -L. -l${PACKAGE} -lm ${LIBS}
+utilities/ftverify.o: utilities/ftverify.c
+		${CC} -c -I./utilities -DSTANDALONE $< -o $@
 
-cookbook:	cookbook.o lib${PACKAGE}.a ${OBJECTS}
-		${CC} ${LDFLAGS_BIN} ${DEFS} -o $@ ${@}.o -L. -l${PACKAGE} -lm ${LIBS}
+utilities/fvrf_data.o: utilities/fvrf_data.c
+		${CC} -c -I./utilities -DSTANDALONE $< -o $@
 
-testf77:	testf77.o lib${PACKAGE}.a ${OBJECTS}
-		${FC} ${LDFLAGS_BIN} -o $@ ${@}.o -L. -l${PACKAGE} -lm ${LIBS}
+utilities/fvrf_file.o: utilities/fvrf_file.c
+		${CC} -c -I./utilities -DSTANDALONE $< -o $@
+
+utilities/fvrf_head.o: utilities/fvrf_head.c
+		${CC} -c -I./utilities -DSTANDALONE $< -o $@
+
+utilities/fvrf_key.o: utilities/fvrf_key.c
+		${CC} -c -I./utilities -DSTANDALONE $< -o $@
+
+utilities/fvrf_misc.o: utilities/fvrf_misc.c
+		${CC} -c -I./utilities -DSTANDALONE $< -o $@
+
+fitsverify:	lib${PACKAGE}${SHLIB_SUFFIX} ${OBJECTS} ${FVERIFY_OBJ}
+		${CC} ${LDFLAGS_BIN} -o $@ ${FVERIFY_OBJ} -L. -l${PACKAGE} -lm ${LIBS}
+
+fpack:		utilities/fpack.o utilities/fpackutil.o lib${PACKAGE}${SHLIB_SUFFIX} ${OBJECTS}
+		${CC} ${LDFLAGS_BIN} ${DEFS} -o $@ $< utilities/fpackutil.o -L. -l${PACKAGE} -lm ${LIBS}
+
+funpack:	utilities/funpack.o utilities/fpackutil.o lib${PACKAGE}${SHLIB_SUFFIX} ${OBJECTS}
+		${CC} ${LDFLAGS_BIN} ${DEFS} -o $@ $< utilities/fpackutil.o -L. -l${PACKAGE} -lm ${LIBS}
+
+smem:		utilities/smem.o lib${PACKAGE}${SHLIB_SUFFIX} ${OBJECTS}
+		${CC} ${LDFLAGS_BIN} ${DEFS} -o $@ $< -L. -l${PACKAGE} -lm
+
+testprog:	utilities/testprog.o lib${PACKAGE}${SHLIB_SUFFIX} ${OBJECTS}
+		${CC} ${LDFLAGS_BIN} ${DEFS} -o $@ $< -L. -l${PACKAGE} -lm ${LIBS}
+
+fitscopy:	utilities/fitscopy.o lib${PACKAGE}${SHLIB_SUFFIX} ${OBJECTS}
+		${CC} ${LDFLAGS_BIN} ${DEFS} -o $@ $< -L. -l${PACKAGE} -lm ${LIBS}
+
+speed:		utilities/speed.o lib${PACKAGE}${SHLIB_SUFFIX} ${OBJECTS}
+		${CC} ${LDFLAGS_BIN} ${DEFS} -o $@ $< -L. -l${PACKAGE} -lm ${LIBS}
+
+imcopy:		utilities/imcopy.o lib${PACKAGE}${SHLIB_SUFFIX} ${OBJECTS}
+		${CC} ${LDFLAGS_BIN} ${DEFS} -o $@ $< -L. -l${PACKAGE} -lm ${LIBS}
+
+cookbook:	utilities/cookbook.o lib${PACKAGE}${SHLIB_SUFFIX} ${OBJECTS}
+		${CC} ${LDFLAGS_BIN} ${DEFS} -o $@ $< -L. -l${PACKAGE} -lm ${LIBS}
+
+testf77:	utilities/testf77.o lib${PACKAGE}${SHLIB_SUFFIX} ${OBJECTS}
+		${FC} ${LDFLAGS_BIN} -o $@ $< -L. -l${PACKAGE} -lm ${LIBS}
+
+# eval: ==================================================================
 
 # Tested with bison 3.8 and flex 2.6.4
 eval:		# Rebuild eval_* files from flex/bison source
 		${FLEX} -o eval_l.c eval.l 
 		${BISON} -o eval_y.c --header=eval_tab.h eval.y
 
+# cleanup: ===============================================================
+
 clean:
-	-	/bin/rm -rf *.o zlib/*.o *.dSYM lib${PACKAGE}* y.output so_locations \
-		${UTILS} ${FPACK_UTILS} testprog.fit testf77
+	-	/bin/rm -rf *.o zlib/*.o utilities/*.o lib${PACKAGE}* \
+		${FPACK_UTILS} ${UTILS} \
+		testf77 testprog.fit *.dSYM y.output so_locations
 
 distclean:	clean
 	-	/bin/rm -f Makefile cfitsio.pc config.log config.status configure.lineno
 
 # Make target which outputs the list of the .o contained in the cfitsio lib
 # usefull to build a single big shared library containing Tcl/Tk and other
-# extensions.  used for the Tcl Plugin. 
+# extensions used for the Tcl Plugin.
 
 cfitsioLibObjs:
 	@echo ${CORE_OBJECTS}

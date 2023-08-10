@@ -308,14 +308,14 @@ IF (TESTS)
 
     ENABLE_TESTING()
 
-    ADD_EXECUTABLE(TestProg testprog.c)
+    ADD_EXECUTABLE(TestProg utilities/testprog.c)
     TARGET_LINK_LIBRARIES(TestProg ${LIB_NAME})
     ADD_TEST(TestProg TestProg)
     # Copy testprog.tpt to build directory to allow quick test
     # of ./TestProg (or .\Release\TestProg.exe in MSVC):
     FILE(COPY ${CMAKE_SOURCE_DIR}/testprog.tpt DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
-    ADD_EXECUTABLE(cookbook cookbook.c)
+    ADD_EXECUTABLE(cookbook utilities/cookbook.c)
     TARGET_LINK_LIBRARIES(cookbook ${LIB_NAME})
     ADD_TEST(cookbook cookbook)
 
@@ -326,14 +326,20 @@ ENDIF(TESTS)
 #==============================================================================
 IF (UTILS)
 
-    ADD_EXECUTABLE(FPack fpack.c fpackutil.c)
+    ADD_EXECUTABLE(FPack utilities/fpack.c utilities/fpackutil.c)
     TARGET_LINK_LIBRARIES(FPack ${LIB_NAME})
 
-    ADD_EXECUTABLE(Funpack funpack.c fpackutil.c)
+    ADD_EXECUTABLE(Funpack utilities/funpack.c utilities/fpackutil.c)
     TARGET_LINK_LIBRARIES(Funpack ${LIB_NAME})
 
-    ADD_EXECUTABLE(Fitscopy fitscopy.c)
+    ADD_EXECUTABLE(Fitscopy utilities/fitscopy.c)
     TARGET_LINK_LIBRARIES(Fitscopy ${LIB_NAME})
+
+    #ADD_EXECUTABLE(Fitsverify
+    #              utilities/ftverify.c utilities/fvrf_data.c
+    #              utilities/fvrf_file.c utilities/fvrf_head.c
+    #              utilities/fvrf_key.c utilities/fvrf_misc.c)
+    #TARGET_LINK_LIBRARIES(Fitsverify ${LIB_NAME})
 
     # To expand the command line arguments in Windows, see:
     # http://msdn.microsoft.com/en-us/library/8bch7bkk.aspx
