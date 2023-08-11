@@ -51,7 +51,7 @@ OPTION(USE_PTHREADS "Thread-safe build (using pthreads)" OFF)
 
 OPTION(TESTS "Build test programs Testprog and cookbook" OFF)
 
-OPTION(UTILS "Build FPack, Funpack, and Fitscopy executables" OFF)
+OPTION(UTILS "Build FPack, Funpack, Fitscopy, and Fitsverify executables" OFF)
 
 OPTION(USE_SSE2 "Enable use of instructions in the SSE2 extended instruction set" OFF)
 
@@ -335,11 +335,12 @@ IF (UTILS)
     ADD_EXECUTABLE(Fitscopy utilities/fitscopy.c)
     TARGET_LINK_LIBRARIES(Fitscopy ${LIB_NAME})
 
-    #ADD_EXECUTABLE(Fitsverify
-    #              utilities/ftverify.c utilities/fvrf_data.c
-    #              utilities/fvrf_file.c utilities/fvrf_head.c
-    #              utilities/fvrf_key.c utilities/fvrf_misc.c)
-    #TARGET_LINK_LIBRARIES(Fitsverify ${LIB_NAME})
+    ADD_EXECUTABLE(Fitsverify
+                  utilities/ftverify.c utilities/fvrf_data.c
+                  utilities/fvrf_file.c utilities/fvrf_head.c
+                  utilities/fvrf_key.c utilities/fvrf_misc.c)
+    TARGET_COMPILE_DEFINITIONS(Fitsverify PRIVATE -DSTANDALONE)
+    TARGET_LINK_LIBRARIES(Fitsverify ${LIB_NAME})
 
     # To expand the command line arguments in Windows, see:
     # http://msdn.microsoft.com/en-us/library/8bch7bkk.aspx
@@ -347,7 +348,7 @@ IF (UTILS)
       set_target_properties(FPack Funpack PROPERTIES LINK_FLAGS "setargv.obj")
     endif(MSVC)
 
-    install(TARGETS FPack Funpack Fitscopy RUNTIME DESTINATION bin)
+    install(TARGETS FPack Funpack Fitscopy Fitsverify RUNTIME DESTINATION bin)
 
 ENDIF(UTILS)
 
