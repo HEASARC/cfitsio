@@ -50,3 +50,18 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# CFITSIO misc
+Makefile
+config.log
+config.status
+cfitsio.pc
+cookbook
+fitscopy
+fitsverify
+fpack
+funpack
+imcopy
+smem
+speed
+testprog

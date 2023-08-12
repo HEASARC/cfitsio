@@ -151,22 +151,22 @@ FVERIFY_SRC	= utilities/ftverify.c utilities/fvrf_data.c \
 FVERIFY_OBJ	= ${FVERIFY_SRC:.c=.o}
 
 utilities/ftverify.o: utilities/ftverify.c
-		${CC} -c -I./utilities -DSTANDALONE $< -o $@
+		${CC} -c -I. -I./utilities -DSTANDALONE $< -o $@
 
 utilities/fvrf_data.o: utilities/fvrf_data.c
-		${CC} -c -I./utilities -DSTANDALONE $< -o $@
+		${CC} -c -I. -I./utilities -DSTANDALONE $< -o $@
 
 utilities/fvrf_file.o: utilities/fvrf_file.c
-		${CC} -c -I./utilities -DSTANDALONE $< -o $@
+		${CC} -c -I. -I./utilities -DSTANDALONE $< -o $@
 
 utilities/fvrf_head.o: utilities/fvrf_head.c
-		${CC} -c -I./utilities -DSTANDALONE $< -o $@
+		${CC} -c -I. -I./utilities -DSTANDALONE $< -o $@
 
 utilities/fvrf_key.o: utilities/fvrf_key.c
-		${CC} -c -I./utilities -DSTANDALONE $< -o $@
+		${CC} -c -I. -I./utilities -DSTANDALONE $< -o $@
 
 utilities/fvrf_misc.o: utilities/fvrf_misc.c
-		${CC} -c -I./utilities -DSTANDALONE $< -o $@
+		${CC} -c -I. -I./utilities -DSTANDALONE $< -o $@
 
 fitsverify:	lib${PACKAGE}${SHLIB_SUFFIX} ${OBJECTS} ${FVERIFY_OBJ}
 		${CC} ${LDFLAGS_BIN} -o $@ ${FVERIFY_OBJ} -L. -l${PACKAGE} -lm ${LIBS}
