@@ -141,22 +141,11 @@ Recipient of any product or service provided by Recipient, or that may
 seek to obtain commercial advantage by the fact of Government Agency's
 or a prior Recipient's participation in this Agreement.
 
-F. In an effort to track usage and maintain accurate records of the
-Subject Software, each Recipient, upon receipt of the Subject
-Software, is requested to register with Government Agency by visiting
-the following website: _____https://github.com/HEASARC/cfitsio____.  Recipient's
-name and personal information shall be used for statistical purposes
-only. Once a Recipient makes a Modification available, it is requested
-that the Recipient inform Government Agency at the web site provided
-above how to access the Modification.
-
-[Alternative paragraph for use when a web site for release and
-monitoring of subject software will not be supported by releasing
-Government Agency] In an effort to track usage and maintain accurate
+F. In an effort to track usage and maintain accurate
 records of the Subject Software, each Recipient, upon receipt of the
 Subject Software, is requested to provide Government Agency, by e-mail
 to the Government Agency Point of Contact listed in clause 5.F., the
-following information: ______________________________.  Recipient's
+following information: first and last name, email address, and affiliation.  Recipient's
 name and personal information shall be used for statistical purposes
 only. Once a Recipient makes a Modification available, it is requested
 that the Recipient inform Government Agency, by e-mail to the
@@ -257,4 +246,4 @@ Recipient hereby agrees to all terms and conditions herein.
 
 F. Point of Contact: Any Recipient contact with Government Agency is
 to be directed to the designated representative as follows:
-___________________________________________________________.
+ccfits@heasarc.gsfc.nasa.gov.
