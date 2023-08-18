@@ -3,82 +3,109 @@
 CFITSIO is a library of ANSI C routines for reading and writing FITS
 format data files.  A set of Fortran-callable wrapper routines are also
 included for the convenience of Fortran programmers.  This README file
-gives a brief summary of how to build and test CFITSIO, but the CFITSIO
-User's Guide, found in the files cfitsio.doc (plain text), cfitsio.tex
-(LaTeX source file), cfitsio.ps, or cfitsio.pdf should be
-referenced for the latest and most complete information.
+gives a brief summary of how to build and test CFITSIO, but the latest
+and most complete information may be found in the "docs" folder in the
+CFITSIO User's Guide:
+
+  For C programmers:
+
+   cfitsio.tex (LaTeX source file)
+   cfitsio.ps  (PostScript file)
+   cfitsio.pdf (Portable Document Format)
+
+  For Fortran programmers:
+
+   fitsio.tex (LaTeX source file)
+   fitsio.ps  (PostScript file)
+   fitsio.pdf (Portable Document Format)
+
+  Quick Start guide:
+
+   quick.tex (LaTeX source file)
+   quick.ps  (PostScript file)
+   quick.pdf (Portable Document Format)
 
 BUILDING CFITSIO
 ----------------
 
-The CFITSIO code is contained in about 40 *.c source files and several *.h
-header files.  CFITSIO should compile and run on most Unix platforms without
-modification, except that Cray supercomputers computers are currently not
-supported.  The CFITSIO library is built on Unix systems by typing:
+The CFITSIO code (contained in *.c source files and several *.h
+header files) should compile and run on most Unix platforms without
+modification.  The standard way to build the library on Unix systems
+is the usual GNU-like approach, i.e. by first typing
 
- >  ./configure [--prefix=/target/installation/path]
- >  make          (or  'make shared')
- >  make install  (this step is optional)
+ % ./configure  [--prefix=/target/installation/path]
 
-at the operating system prompt.  The configure command customizes the
-Makefile for the particular system, then the `make' command compiles the
-source files and builds the library.  Type `./configure' and not simply
-`configure' to ensure that the configure script in the current directory
-is run and not some other system-wide configure script.  The optional
-'prefix' argument to configure gives the path to the directory where
-the CFITSIO library and include files should be installed via the later
-'make install' command. For example,
+at the operating system prompt.  Type './configure' and not simply
+'configure' to ensure that the configure script in the current
+directory is run and not some other system-wide configure script.
+The optional 'prefix' argument to configure gives the path to the
+directory where the CFITSIO library and include files should be
+installed via the later 'make install' command. For example,
 
-   > ./configure --prefix=/usr1/local
+ % ./configure --prefix=/usr1/local
 
-will cause the 'make install' command to copy the CFITSIO libcfitsio file 
-to /usr1/local/lib and the necessary include files to /usr1/local/include
-(assuming of course that the  process has permission to write to these 
-directories).
+will cause the later 'make install' command to copy the library
+file(s) to /usr1/local/lib and the necessary header files to
+/usr1/local/include (assuming of course that the process has
+permission to write to these directories).
 
 All the available configure options can be seen by entering the command
 
-   > ./configure --help
+ % ./configure --help
 
-On VAX/VMS and ALPHA/VMS systems the make.com command file may be used
-to build the cfitsio.olb object library using the default G-floating
-point option for double variables.  The make\_dfloat.com and make\_ieee.com
-files may be used instead to build the library with the other floating
-point options.
+The configure command customizes the Makefile for a particular
+system, so after it has been run, type
 
-A precompiled DLL version of CFITSIO is available for IBM-PC users of
-the Borland or Microsoft Visual C++ compilers in the files
-cfitsiodll_xxxx_borland.zip and cfitsiodll_xxxx_vcc.zip, where 'xxxx'
-represents the current release number.  These zip archives also
-contains other files and instructions on how to use the CFITSIO DLL
-library. The CFITSIO library may also be built from the source code
-using the makefile.bc or makefile.vcc  files.  Finally, the makepc.bat
-file gives an example of  building CFITSIO with the Borland C++ v4.5
-compiler using simpler DOS commands.
+ % make
 
-Instructions for building CFITSIO on Mac OS can be found in
-the README.MacOS file.
+at the prompt, and this will compile the source files and build
+the library (static libcfitsio.a as well as the shared version
+libcfitsio.so|.dylib).  Users may also wish to build the helper
+utilities (fpack, funpack, fitscopy, imcopy, et al.) and test
+program (testprog) using this command:
+
+ % make utils
+
+Finally, to copy the library and header file(s) to the chosen
+install location, type this command:
+
+ % make install
+
+
+Alternatively, the library and utilities may be built on many
+systems using the CMake program.  Specific instructions for using
+CMake on Windows platforms can be found in the "README.win" file,
+but for Unix systems (e.g., Linux or macOS) the procedure should
+be similar to the following:
+
+While in the CFITSIO source code directory:
+
+ % mkdir cmbuild
+ % cd cmbuild
+ % cmake -G "Unix Makefiles" ..
+ % cmake --build .
+ % cmake --install . [--prefix /usr/local]
+
+Where the final step uses an optional installation prefix.
+
+Additional options for installing CFITSIO on macOS via third-party
+package managers or the XCode GUI can be found in the README.MacOS
+file.
+
 
 TESTING CFITSIO
 ---------------
 
-The CFITSIO library should be tested by building and running
-the testprog.c program that is included with the release. 
-On Unix systems, type:
--
-    % make testprog
-    % testprog > testprog.lis
-    % diff testprog.lis testprog.out
-    % cmp testprog.fit testprog.std
--
- On VMS systems,
-(assuming cc is the name of the C compiler command), type:
--
-    $ cc testprog.c
-    $ link testprog, cfitsio/lib
-    $ run testprog
--
-The testprog program should produce a FITS file called `testprog.fit'
+The CFITSIO library may be tested by building and running the
+testprog.c program that is included with the release (in the
+"utilities" folder).  On Unix systems, type:
+
+ % make testprog [or "make utils"]
+ % ./testprog > testprog.lis
+ % diff testprog.lis testprog.out
+ % cmp testprog.fit testprog.std
+
+The testprog program should produce a FITS file called 'testprog.fit'
 that is identical to the testprog.std FITS file included in this
 release.  The diagnostic messages (which were piped to the file
 testprog.lis in the Unix example) should be identical to the listing
@@ -88,21 +115,21 @@ shown above should not report any differences in the files.
 USING CFITSIO
 -------------
 
-The CFITSIO User's Guide, contained in the files cfitsio.doc (plain
-text file) and cfitsio.ps (postscript file), provides detailed
-documentation about how to build and use the CFITSIO library.
-It contains a description of every user-callable routine in the
-CFITSIO interface.
+The CFITSIO User's Guide, contained in the files mentioned above,
+provides detailed documentation about how to build and use the
+CFITSIO library.  It contains a description of every user-callable
+routine in the CFITSIO interface.
 
-The cookbook.c file provides some sample routines for performing common
-operations on various types of FITS files.  Programmers are urged to
-examine these routines for recommended programming practices when using
-CFITSIO.  Users are free to copy or modify these routines for their own
-purposes.
+The cookbook.c file in the utilities folder provides some sample
+routines for performing common operations on various types of
+FITS files.  Programmers are urged to examine these routines for
+recommended programming practices when using CFITSIO.  Users are
+free to copy or modify these routines for their own purposes.
 
-Any problem reports or suggestions for
-improvements are welcome and should be sent to the HEASARC
-help desk.
+Any problem reports or suggestions for improvements are welcome
+and should be sent to the CFITSIO/CCFITS help desk at:
+
+  ccfits@heasarc.gsfc.nasa.gov
 
 -------------------------------------------------------------------------
 William D. Pence
