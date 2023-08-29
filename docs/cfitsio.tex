@@ -8815,6 +8815,7 @@ log(negative), log10(negative), arccos(.gt. 1), arcsin(.gt. 1).
     "if-then-else"       b?x:y
     "angular separation" angsep(ra1,dec1,ra2,de2) (all in degrees)
     "substring"          strmid(s,p,n) "string search"     strstr(s,r)
+    "in-range"           (x=a:b)
 \end{verbatim}
 The bitwise operators for AND, OR and XOR operate upon 32-bit integer 
 expressions only.
@@ -8872,6 +8873,10 @@ occurrence of the substring R in S.  The result is an integer,
 indicating the character position of the first match (where 1 is the
 first character position of S).  If no match is found, then strstr()
 returns a NULL value.
+
+The in-range operator, (X=A:B), tests whether X is in the range
+delimited by A to B.  Specifically, the in-range operator evaluates
+to true if (X >= A && X <= B).
 
 The following type casting operators are available, where the
 enclosing parentheses are required and taken from the C language
