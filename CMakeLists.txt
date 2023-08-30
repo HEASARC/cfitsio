@@ -298,7 +298,7 @@ install(TARGETS ${LIB_NAME} EXPORT ${LIB_NAME}-targets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
-install(EXPORT ${LIB_NAME}-targets DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake)
+install(EXPORT ${LIB_NAME}-targets DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cfitsio)
 install(FILES ${H_FILES} DESTINATION ${INCLUDE_INSTALL_DIR} COMPONENT Devel)
 
 #==============================================================================
