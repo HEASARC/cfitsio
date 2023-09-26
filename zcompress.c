@@ -506,7 +506,7 @@ int compress2file_from_mem(
               /* c_stream.avail_out will be 0 unless we've reached the end of the avail_in 
                  stream.  When that happens avail_out MAY also be 0, if by chance the output
                  buffer fills up just as the input stream ends.  That's OK though, as it will
-                 execute just one more do/while where the defaulte call won't actually do
+                 execute just one more do/while where the deflate call won't actually do
                  anything.  */
               nBytesToFile = GZBUFSIZE - c_stream.avail_out;
               if (nBytesToFile)
