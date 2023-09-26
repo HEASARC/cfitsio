@@ -5,6 +5,9 @@ Version 4.X.X -
   - fits_insert_rows now works if input table starts with both no rows
     and no columns
 
+  - Can now write internal memory files of size > 2^32 directly to a
+    gzip-compressed output file.
+
 Version 4.3.0 - Jul 2023
 
   - Bug fix to fits_make_hist[d] that was introduced in 4.2.0.
