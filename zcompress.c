@@ -485,7 +485,7 @@ int compress2file_from_mem(
     {
        c_stream.next_in = (unsigned char*)inmemptr + iPage*UINT_MAX;
        c_stream.avail_in = (iPage == nPages-1) ? 
-                  inmemsize % (uLong)UINT_MAX : UINT_MAX;
+                  inmemsize - iPage*UINT_MAX : UINT_MAX;
        
        flushflag = (iPage < nPages-1) ? Z_NO_FLUSH : Z_FINISH; 
        do {
