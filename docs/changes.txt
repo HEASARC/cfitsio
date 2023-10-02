@@ -7,6 +7,9 @@ Version 4.X.X -
 
   - Can now write internal memory files of size > 2^32 directly to a
     gzip-compressed output file.
+    
+  - Added support for unsigned long long types to fits_update_key.
+  
 
 Version 4.3.0 - Jul 2023
 
