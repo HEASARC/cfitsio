@@ -1759,8 +1759,9 @@ int ffdkey(fitsfile *fptr,    /* I - FITS file pointer  */
 
       while (len && value[len - 1] == '&')  /* ampersand used as continuation char */
       {
+        nextcomm[0]='\0';
         ffgcnt(fptr, value, nextcomm, status);
-        if (*value)
+        if (*value || strlen(nextcomm))
         {
             ffdrec(fptr, keypos, status);  /* delete the keyword */
             len = strlen(value);
