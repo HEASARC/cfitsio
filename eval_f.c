@@ -534,7 +534,10 @@ int ffcalc_rng( fitsfile *infptr,   /* I - Input FITS file                  */
    /*  Case (1): If column exists put it there  */
 
    colNo = 0;
-   if( ffgcno( outfptr, CASEINSEN, parName, &colNo, status )==COL_NOT_FOUND ) {
+   ffpmrk(); /* prevent lack of column name from sullying the stack */
+   ffgcno( outfptr, CASEINSEN, parName, &colNo, status );
+   ffcmsg();   
+   if( *status ) {
 
       /*  Output column doesn't exist.  Test for keyword. */
 
