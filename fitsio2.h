@@ -389,6 +389,8 @@ int ffglkut(fitsfile *fptr,const char *keyname,int firstchar,int maxchar,int max
            char *value,int *valuelen,char *comm,int *comlen,int  *status);
  
 int ffmkey(fitsfile *fptr, const char *card, int *status);
+int fits_make_longstr_key_util(fitsfile *fptr, const char *keyname, const char *value,
+           const char *comm, int position, int *status);
  
 /*  ffmbyt has been moved to fitsio.h */
 int ffgbyt(fitsfile *fptr, LONGLONG nbytes, void *buffer, int *status);
