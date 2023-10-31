@@ -659,7 +659,10 @@ int fits_make_longstr_key_util( fitsfile *fptr,     /* I - FITS file pointer    
         if (position < 0)
            ffprec(fptr, card, status);  /* write the keyword */
         else
+        {
            ffirec(fptr, position, card, status);  /* insert the keyword */
+           ++position;
+        }
            
         contin = 1;
         nocomment = 0;
