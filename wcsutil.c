@@ -81,7 +81,8 @@ int ffwldp(double xpix, double ypix, double xref, double yref,
       dect = dec0 + m;
 
     } else if (*cptr == 'T') {  /* -TAN */
-      if (*(cptr + 1) != 'A' ||  *(cptr + 2) != 'N') {
+      if ( !(*(cptr + 1) == 'A' && *(cptr + 2) == 'N') &&
+           !(*(cptr + 1) == 'P' && *(cptr + 2) == 'V') ) {
          return(*status = 504);
       }
       x = cos0*cos(ra0) - l*sin(ra0) - m*cos(ra0)*sin0;
