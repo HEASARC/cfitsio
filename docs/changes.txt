@@ -1,5 +1,10 @@
                    Log of Changes Made to CFITSIO
                    
+Version 4.3.1 - Nov 2023
+
+  - Patch fix needed for modify and delete keyword functions to fully
+    conform with v4.3.0 long string keyword read/write enhancements. 
+                   
 Version 4.3.0 - Jul 2023
 
   - Bug fix to fits_make_hist[d] that was introduced in 4.2.0.
