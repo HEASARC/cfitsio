@@ -674,8 +674,9 @@ int ffmkys(fitsfile *fptr,          /* I - FITS file pointer  */
 
       while (len && valstring[len - 1] == '&')  /* ampersand is continuation char */
       {
+        nextcomm[0]='\0';
         ffgcnt(fptr, valstring, nextcomm, status);
-        if (*valstring)
+        if (*valstring || strlen(nextcomm))
         {
             ffdrec(fptr, keypos, status);  /* delete the continuation */
             len = strlen(valstring);
