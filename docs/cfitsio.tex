@@ -3404,7 +3404,7 @@ See section \ref{character-strings}
 
 For complex and double complex data types, \verb+nelements+ is the number
 of numerical pairs; the number of floats or doubles stored by
-\+array+ must be \verb+2*nelements+.
+\verb+array+ must be \verb+2*nelements+.
 
 For the logical data (TLOGICAL), the C storage type is a \verb+char+
 single-byte character.  A FITS value of `\verb+T+'rue reads as 1 and
@@ -9271,7 +9271,7 @@ usage. Also, the integer to real casts values to double precision:
       #EXPOSURE = gtioverlap('gtifile',#TSTART,#TSTOP)
 \end{verbatim}
 
-    The \verb+#EXPOSURE+ syntax with a leading \+#+ ensures that the 
+    The \verb+#EXPOSURE+ syntax with a leading \verb+#+ ensures that the
     requested values are treated as keywords.  Otherwise, a column
     named EXPOSURE will be created with the (constant) exposure value
     in each entry.  
