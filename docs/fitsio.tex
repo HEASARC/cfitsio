@@ -6274,7 +6274,7 @@ usage. Also, the integer to real casts values to double precision:
            0b01001 binary integer
 \end{verbatim}
     Note that integer constants are only allowed to be 32-bit, i.e.
-    between -2^(31) and +2^(31).  Integer constants may be used in any
+    between -2\^(31) and +2\^(31).  Integer constants may be used in any
     arithmetic expression where an integer would be appropriate.  Thus,
     they are distinct from bitmasks (which may be of arbitrary length,
     allow the "wildcard" bit, and may only be used in logical
@@ -6619,7 +6619,7 @@ usage. Also, the integer to real casts values to double precision:
       #EXPOSURE = gtioverlap('gtifile',#TSTART,#TSTOP)
 \end{verbatim}
 
-    The \verb+#EXPOSURE+ syntax with a leading \+#+ ensures that the 
+    The \verb+#EXPOSURE+ syntax with a leading \verb+#+ ensures that the
     requested values are treated as keywords.  Otherwise, a column
     named EXPOSURE will be created with the (constant) exposure value
     in each entry.  
