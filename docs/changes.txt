@@ -12,6 +12,8 @@ Version 4.X.X -
   
   - Added ability for Windows builds to handle UTF-8 needed for reading
     filenames with non-ASCII characters.
+    
+  - Added 2-byte int test to speed.c utility.
   
 Version 4.3.1 - Nov 2023 (patch release)
 
