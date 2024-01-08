@@ -15,6 +15,8 @@ Version 4.X.X -
     
   - Added 2-byte int test to speed.c utility.
   
+  - Made fix to http file handler to expand the allowed URL length.
+  
 Version 4.3.1 - Nov 2023 (patch release)
 
   - Patch fix needed for modify and delete keyword functions to fully
