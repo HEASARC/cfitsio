@@ -2,6 +2,9 @@
                    
 Version 4.X.X - 
 
+  - calculator functions that read GTIs do more correct validity
+    checking of GTI input files
+  
   - fits_insert_rows now works if input table starts with both no rows
     and no columns
 

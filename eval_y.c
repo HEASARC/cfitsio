@@ -4105,18 +4105,22 @@ static int New_GTI( ParseData *lParse, funcOp Op, char *fname, int Node1, int No
 
 	 that0->type = 1; /*  Assume yes  */
 	 i = nrows;
-	 while( --i )
-	    if(    that0->value.data.dblptr[i-1]
-                   >= that0->value.data.dblptr[i]
-		|| that0->value.data.dblptr[i-1+nrows]
-		   >= that0->value.data.dblptr[i+nrows] ) {
-	       that0->type = 0;
-	       break;
-	    }
+	 while( --i ) { /* the following are failure conditions for GTI ordering */
+	   if( (that0->value.data.dblptr[i] >       /* START{i} > STOP{i} */
+		that0->value.data.dblptr[i+nrows]) ||
+	       (that0->value.data.dblptr[i] <       /* START{i} < STOP{i-1} */
+		that0->value.data.dblptr[i-1+nrows]) ) {
+	     that0->type = 0;
+	     break;
+	   }
+	 }
 
 	 /* GTIOVERLAP() requires ordered GTI */
 	 if (that0->type != 1 && Op == gtiover_fct) {
-	   yyerror(0, lParse, "Input GTI must be time-ordered for GTIOVERLAP");
+	   char errmsg[120];
+	   sprintf(errmsg, "Input GTI must be time-ordered for GTIOVERLAP (row %ld)", i+1);
+	   yyerror(0, lParse, errmsg);
+	   /* yyerror(0, lParse, "Input GTI must be time-ordered for GTIOVERLAP"); */
 	   return(-1);
 	 }
 	 
