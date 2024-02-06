@@ -392,6 +392,19 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
             const char *value,  /* I - keyword value            */
             const char *comm,   /* I - keyword comment          */
             int  *status)       /* IO - error status            */
+{
+   if (*status > 0)
+       return(*status);
+   fits_make_longstr_key_util(fptr, keyname, value, comm, -1, status);
+   return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_make_longstr_key_util( fitsfile *fptr,     /* I - FITS file pointer        */
+            const char *keyname,/* I - name of keyword to write */
+            const char *value,  /* I - keyword value            */
+            const char *comm,   /* I - keyword comment          */
+            int position,       /* I - position to insert (-1 for end) */
+            int  *status)       /* IO - error status            */
 /*
   Write (put) the keyword, value and comment into the FITS header.
   This routine is a modified version of ffpkys which supports the
@@ -643,8 +656,14 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
               ffmkky(keyname, valstring, comstring, card, status);  /* make keyword */
         }
 
-        ffprec(fptr, card, status);  /* write the keyword */
-        
+        if (position < 0)
+           ffprec(fptr, card, status);  /* write the keyword */
+        else
+        {
+           ffirec(fptr, position, card, status);  /* insert the keyword */
+           ++position;
+        }
+           
         contin = 1;
         nocomment = 0;
         addline = (int)(remainval > 0 || remaincom > 0);

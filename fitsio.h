@@ -1034,6 +1034,7 @@ int CFITS_API ffukys(fitsfile *fptr, const char *keyname, const char *value, con
 int CFITS_API ffukls(fitsfile *fptr, const char *keyname, const char *value, const char *comm, int *status);
 int CFITS_API ffukyl(fitsfile *fptr, const char *keyname, int value, const char *comm, int *status);
 int CFITS_API ffukyj(fitsfile *fptr, const char *keyname, LONGLONG value, const char *comm, int *status);
+int CFITS_API ffukyuj(fitsfile *fptr, const char *keyname, ULONGLONG value, const char *comm, int *status);
 int CFITS_API ffukyf(fitsfile *fptr, const char *keyname, float value, int decim, const char *comm,
           int *status);
 int CFITS_API ffukye(fitsfile *fptr, const char *keyname, float value, int decim, const char *comm,
@@ -1061,6 +1062,7 @@ int CFITS_API ffmkys(fitsfile *fptr, const char *keyname, const char *value, con
 int CFITS_API ffmkls(fitsfile *fptr, const char *keyname, const char *value, const char *comm,int *status);
 int CFITS_API ffmkyl(fitsfile *fptr, const char *keyname, int value, const char *comm, int *status);
 int CFITS_API ffmkyj(fitsfile *fptr, const char *keyname, LONGLONG value, const char *comm, int *status);
+int CFITS_API ffmkyuj(fitsfile *fptr, const char *keyname, ULONGLONG value, const char *comm, int *status);
 int CFITS_API ffmkyf(fitsfile *fptr, const char *keyname, float value, int decim, const char *comm,
           int *status);
 int CFITS_API ffmkye(fitsfile *fptr, const char *keyname, float value, int decim, const char *comm,

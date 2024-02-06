@@ -21,6 +21,7 @@
 /* size of data buffer */
 #define SHTSIZE 20000
 static long sarray[ SHTSIZE ] = {SHTSIZE * 0};
+static short ssarray[ SHTSIZE ] = {SHTSIZE * 0};
 
 /* no. of rows in binary table */
 #define BROWS 2500000
@@ -44,6 +45,7 @@ long startsec;   /* start of elapsed time interval */
 int startmilli;  /* start of elapsed time interval */
 
 int writeimage(fitsfile *fptr, int *status);
+int writesimage(fitsfile *fptr, int *status);
 int writebintable(fitsfile *fptr, int *status);
 int writeasctable(fitsfile *fptr, int *status);
 int readimage(fitsfile *fptr, int *status);
@@ -119,6 +121,17 @@ int main()
     if (fits_create_file(&fptr, filename, &status)) /* create new FITS file */
        printerror( status);          
    
+    if (writesimage(fptr, &status))
+       printerror( status);     
+
+    if (fits_close_file(fptr, &status))     
+         printerror( status );
+
+    remove(filename);               /* Delete old file if it already exists */
+
+    if (fits_create_file(&fptr, filename, &status)) /* create new FITS file */
+       printerror( status);          
+
     if (writeimage(fptr, &status))
        printerror( status);     
 
@@ -180,6 +193,46 @@ int writeimage(fitsfile *fptr, int *status)
 
     cpufrac = elapcpu / elapse * 100.;
     size = XSIZE * 4. * YSIZE / 1000000.;
+    rate = size / elapse;
+    printf(" %4.1fMB/%6.3fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
+
+    return( *status );
+}
+/*--------------------------------------------------------------------------*/
+int writesimage(fitsfile *fptr, int *status)
+
+    /**************************************************/
+    /* write the primary array containing a 2-D image */
+    /**************************************************/
+{
+    long  nremain, ii;
+    float rate, size, elapcpu, cpufrac;
+    double elapse;
+
+    /* initialize FITS image parameters */
+    int bitpix   =  16;   /* 16-bit  signed integer pixel values       */
+    long naxis    =   2;  /* 2-dimensional image                            */    
+    long naxes[2] = {XSIZE, YSIZE }; /* image size */
+
+    /* write the required keywords for the primary array image */
+    if ( fits_create_img(fptr, bitpix, naxis, naxes, status) )
+         printerror( *status );          
+
+    printf("\nWrite %dx%d I*2 image, %d pixels/loop:   ",XSIZE,YSIZE,SHTSIZE);
+    marktime(status);
+
+    nremain = XSIZE * YSIZE;
+    for (ii = 1; ii <= nremain; ii += SHTSIZE)
+    {
+      ffppri(fptr, 0, ii, SHTSIZE, ssarray, status);
+    }
+
+    ffflus(fptr, status);  /* flush all buffers to disk */
+
+    gettime(&elapse, &elapcpu, status);
+
+    cpufrac = elapcpu / elapse * 100.;
+    size = XSIZE * 2. * YSIZE / 1000000.;
     rate = size / elapse;
     printf(" %4.1fMB/%6.3fs(%3.0f) = %5.2fMB/s\n", size, elapse, cpufrac,rate);
 
