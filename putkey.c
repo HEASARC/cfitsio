@@ -553,7 +553,8 @@ int fits_make_longstr_key_util( fitsfile *fptr,     /* I - FITS file pointer    
            
            /* Check for simplest case where everything fits on first line.*/
            if (!contin && (remainval==nchar) && 
-                      (finalnamelen+vlen+remaincom+3 < FLEN_CARD))
+                      (finalnamelen+vlen+remaincom+3 < FLEN_CARD) &&
+                      remaincom < fixedSpaceForComments-3)
               allInOne=1;
            
            if (!allInOne)
@@ -586,7 +587,8 @@ int fits_make_longstr_key_util( fitsfile *fptr,     /* I - FITS file pointer    
 
               (spaceForComments && nchar < remainval) || 
               (remaincom && (spaceForComments < fixedSpaceForComments ||
-                        spaceForComments < remaincom))) 
+                        spaceForComments-3 < remaincom ||
+                        remaincom > fixedSpaceForComments-3))) 
               {
                 valstring[vlen-1] = '&';
                  valstring[vlen] = '\'';
