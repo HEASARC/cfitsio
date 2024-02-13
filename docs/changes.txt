@@ -1,6 +1,6 @@
                    Log of Changes Made to CFITSIO
                    
-Version 4.X.X - 
+Version 4.4.0 - Feb 2024
 
   - calculator functions that read GTIs do more correct validity
     checking of GTI input files
