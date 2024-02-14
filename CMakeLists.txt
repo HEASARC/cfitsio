@@ -344,7 +344,7 @@ IF (UTILS)
 
     # To expand the command line arguments in Windows, see:
     # http://msdn.microsoft.com/en-us/library/8bch7bkk.aspx
-    if(MSVC)
+    if(MSVC AND NOT CMAKE_SYSTEM_NAME MATCHES "WindowsStore")
       set_target_properties(FPack Funpack PROPERTIES LINK_FLAGS "setargv.obj")
     endif(MSVC)
 
