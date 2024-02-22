@@ -209,8 +209,8 @@ eval:		# Rebuild eval_* files from flex/bison source
 
 clean:
 	-	/bin/rm -rf *.o zlib/*.o utilities/*.o lib${PACKAGE}* \
-		${FPACK_UTILS} ${UTILS} \
-		testf77 testprog.fit *.dSYM y.output so_locations
+		${FPACK_UTILS} ${UTILS} testf77 \
+		testf77.fit testprog.fit *.dSYM y.output so_locations
 
 distclean:	clean
 	-	/bin/rm -f Makefile cfitsio.pc config.log config.status configure.lineno
