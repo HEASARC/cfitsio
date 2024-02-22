@@ -2,6 +2,12 @@
                    
 Version 4.4.0 - Feb 2024
 
+  - Reorganization of helper utility code; added fitsverify
+
+  - CMakeLists.txt: Changed install location of cfitsio-targets.cmake
+    to conform with the one listed in cfitsio-config.cmake.in (i.e.
+    including the extra "cfitsio" subdir of lib/cmake).
+
   - calculator functions that read GTIs do more correct validity
     checking of GTI input files
   
