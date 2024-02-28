@@ -1,1 +1,17 @@
+*.a
+*.cache
+*.dylib
+*.log
+*.o
+*.pc
+*.so
+*.so.*
+*.status
+*.xcodeproj/project.xcworkspace
+*.xcodeproj/xcuserdata
 *~
+fitscopy
+fpack
+funpack
+Makefile
+testprog
