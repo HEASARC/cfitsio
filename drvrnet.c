@@ -3294,6 +3294,7 @@ static int NET_ParseUrl(const char *url, char *proto, char *host, int *port,
   char *ptrstr;
   char *thost;
   int isftp = 0;
+  size_t icount;
 
   /* figure out if there is a http: or  ftp: */
 
@@ -3356,19 +3357,21 @@ static int NET_ParseUrl(const char *url, char *proto, char *host, int *port,
     if ((thost = strchr(urlcopy, '@')) != NULL)
       urlcopy = thost+1;
 
-    if (strlen(urlcopy) > SHORTLEN-1)
+    thost = urlcopy;
+    icount=0;
+    while (*urlcopy != '/' && *urlcopy != ':' && *urlcopy) {
+      urlcopy++;
+      icount++;
+    }
+    if (icount > SHORTLEN-1)
     {
        free(urlcopyorig);
        return 1;
     }
-    strcpy(host,urlcopy);
-    thost = host;
-    while (*urlcopy != '/' && *urlcopy != ':' && *urlcopy) {
-      thost++;
-      urlcopy++;
-    }
+    strncpy(host,thost,icount);
+    host[icount] = '\0';
+    
     /* we should either be at the end of the string, have a /, or have a : */
-    *thost = '\0';
     if (*urlcopy == ':') {
       /* follows a port number */
       urlcopy++;
@@ -3377,18 +3380,20 @@ static int NET_ParseUrl(const char *url, char *proto, char *host, int *port,
     }
   } else {
     /* do this for ftp */
-    if (strlen(urlcopy) > SHORTLEN-1)
+    
+    thost = urlcopy;
+    icount = 0;
+    while (*urlcopy != '/' && *urlcopy) {
+      urlcopy++;
+      icount++;
+    }
+    if (icount > SHORTLEN-1)
     {
        free(urlcopyorig);
        return 1;
     }
-    strcpy(host,urlcopy);
-    thost = host;
-    while (*urlcopy != '/' && *urlcopy) {
-      thost++;
-      urlcopy++; 
-    }
-    *thost = '\0';
+    strncpy(host,thost,icount);
+    host[icount] = '\0';
     /* Now, we should either be at the end of the string, or have a / */
     
   }

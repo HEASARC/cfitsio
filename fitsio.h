@@ -34,11 +34,11 @@ SERVICES PROVIDED HEREUNDER."
 #ifndef _FITSIO_H
 #define _FITSIO_H
 
-#define CFITSIO_VERSION 4.3.0
+#define CFITSIO_VERSION 4.4.0
 /* Minor and micro numbers must not exceed 99 under current method
    of version representataion in ffvers(). */
 #define CFITSIO_MICRO 0
-#define CFITSIO_MINOR 3
+#define CFITSIO_MINOR 4
 #define CFITSIO_MAJOR 4
 #define CFITSIO_SONAME 10
 
@@ -1034,6 +1034,7 @@ int CFITS_API ffukys(fitsfile *fptr, const char *keyname, const char *value, con
 int CFITS_API ffukls(fitsfile *fptr, const char *keyname, const char *value, const char *comm, int *status);
 int CFITS_API ffukyl(fitsfile *fptr, const char *keyname, int value, const char *comm, int *status);
 int CFITS_API ffukyj(fitsfile *fptr, const char *keyname, LONGLONG value, const char *comm, int *status);
+int CFITS_API ffukyuj(fitsfile *fptr, const char *keyname, ULONGLONG value, const char *comm, int *status);
 int CFITS_API ffukyf(fitsfile *fptr, const char *keyname, float value, int decim, const char *comm,
           int *status);
 int CFITS_API ffukye(fitsfile *fptr, const char *keyname, float value, int decim, const char *comm,
@@ -1061,6 +1062,7 @@ int CFITS_API ffmkys(fitsfile *fptr, const char *keyname, const char *value, con
 int CFITS_API ffmkls(fitsfile *fptr, const char *keyname, const char *value, const char *comm,int *status);
 int CFITS_API ffmkyl(fitsfile *fptr, const char *keyname, int value, const char *comm, int *status);
 int CFITS_API ffmkyj(fitsfile *fptr, const char *keyname, LONGLONG value, const char *comm, int *status);
+int CFITS_API ffmkyuj(fitsfile *fptr, const char *keyname, ULONGLONG value, const char *comm, int *status);
 int CFITS_API ffmkyf(fitsfile *fptr, const char *keyname, float value, int decim, const char *comm,
           int *status);
 int CFITS_API ffmkye(fitsfile *fptr, const char *keyname, float value, int decim, const char *comm,

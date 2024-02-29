@@ -296,7 +296,9 @@ int ffirow(fitsfile *fptr,  /* I - FITS file pointer                        */
     nbytes = datasize - firstbyte;           /* no. of bytes to shift down */
     firstbyte += ((fptr->Fptr)->datastart);  /* absolute insert position */
 
-    ffshft(fptr, firstbyte, nbytes, nshift, status); /* shift rows and heap */
+    if (nshift > 0) {  /* nshift may be zero if naxis1 == naxis2 == 0 */
+      ffshft(fptr, firstbyte, nbytes, nshift, status); /* shift rows and heap */
+    }
 
     /* update the heap starting address */
     (fptr->Fptr)->heapstart += nshift;

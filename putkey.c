@@ -392,6 +392,19 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
             const char *value,  /* I - keyword value            */
             const char *comm,   /* I - keyword comment          */
             int  *status)       /* IO - error status            */
+{
+   if (*status > 0)
+       return(*status);
+   fits_make_longstr_key_util(fptr, keyname, value, comm, -1, status);
+   return(*status);
+}
+/*--------------------------------------------------------------------------*/
+int fits_make_longstr_key_util( fitsfile *fptr,     /* I - FITS file pointer        */
+            const char *keyname,/* I - name of keyword to write */
+            const char *value,  /* I - keyword value            */
+            const char *comm,   /* I - keyword comment          */
+            int position,       /* I - position to insert (-1 for end) */
+            int  *status)       /* IO - error status            */
 /*
   Write (put) the keyword, value and comment into the FITS header.
   This routine is a modified version of ffpkys which supports the
@@ -540,7 +553,8 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
            
            /* Check for simplest case where everything fits on first line.*/
            if (!contin && (remainval==nchar) && 
-                      (finalnamelen+vlen+remaincom+3 < FLEN_CARD))
+                      (finalnamelen+vlen+remaincom+3 < FLEN_CARD) &&
+                      remaincom < fixedSpaceForComments-3)
               allInOne=1;
            
            if (!allInOne)
@@ -573,7 +587,8 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
 
               (spaceForComments && nchar < remainval) || 
               (remaincom && (spaceForComments < fixedSpaceForComments ||
-                        spaceForComments < remaincom))) 
+                        spaceForComments-3 < remaincom ||
+                        remaincom > fixedSpaceForComments-3))) 
               {
                 valstring[vlen-1] = '&';
                  valstring[vlen] = '\'';
@@ -643,8 +658,14 @@ int ffpkls( fitsfile *fptr,     /* I - FITS file pointer        */
               ffmkky(keyname, valstring, comstring, card, status);  /* make keyword */
         }
 
-        ffprec(fptr, card, status);  /* write the keyword */
-        
+        if (position < 0)
+           ffprec(fptr, card, status);  /* write the keyword */
+        else
+        {
+           ffirec(fptr, position, card, status);  /* insert the keyword */
+           ++position;
+        }
+           
         contin = 1;
         nocomment = 0;
         addline = (int)(remainval > 0 || remaincom > 0);

@@ -31,7 +31,7 @@
 \medskip
 \medskip
 \begin{center}
-{\Large Version 4.3 \\}
+{\Large Version 4.4 \\}
 \end{center}
 \bigskip
 \vskip 2.5cm
@@ -46,7 +46,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large Jul 2023\\}
+{\Large Feb 2024\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -1581,7 +1581,7 @@ descriptions, separated by a slash (/) character.  Programmers may use
 either name in their programs but the long names are recommended to
 help document the code and make it easier to read.
 
-2. A right arrow symbol ($>$) is used in the function descriptions to
+2. A right arrow symbol (\verb+>+) is used in the function descriptions to
 separate the input parameters from the output parameters in the
 definition of each routine.  This symbol is not actually part of the C
 calling sequence.
@@ -2258,10 +2258,10 @@ header.
     itself, must be entered.    The datatype parameter specifies the
     data type of the keyword value with one of the following values:
     TSTRING, TLOGICAL (== int), TBYTE, TSHORT, TUSHORT, TINT, TUINT,
-    TLONG, TLONGLONG, TULONG, TFLOAT, TDOUBLE.  Within the context of this
-    routine, TSTRING corresponds to a 'char*' data type, i.e., a pointer
-    to a character array.  A null pointer may be entered for the
-    comment parameter in which case the  keyword comment
+    TLONG, TLONGLONG, TULONG, TULONGLONG, TFLOAT, TDOUBLE.  Within the 
+    context of this routine, TSTRING corresponds to a 'char*' data type,
+    i.e., a pointer to a character array.  A null pointer may be entered 
+    for the comment parameter in which case the  keyword comment
    field will be unmodified or left blank.  \label{ffpky} \label{ffuky}
 \end{description}
 
@@ -3404,7 +3404,7 @@ See section \ref{character-strings}
 
 For complex and double complex data types, \verb+nelements+ is the number
 of numerical pairs; the number of floats or doubles stored by
-\+array+ must be \verb+2*nelements+.
+\verb+array+ must be \verb+2*nelements+.
 
 For the logical data (TLOGICAL), the C storage type is a \verb+char+
 single-byte character.  A FITS value of `\verb+T+'rue reads as 1 and
@@ -8815,6 +8815,7 @@ log(negative), log10(negative), arccos(.gt. 1), arcsin(.gt. 1).
     "if-then-else"       b?x:y
     "angular separation" angsep(ra1,dec1,ra2,de2) (all in degrees)
     "substring"          strmid(s,p,n) "string search"     strstr(s,r)
+    "in-range"           (x=a:b)
 \end{verbatim}
 The bitwise operators for AND, OR and XOR operate upon 32-bit integer 
 expressions only.
@@ -8872,6 +8873,10 @@ occurrence of the substring R in S.  The result is an integer,
 indicating the character position of the first match (where 1 is the
 first character position of S).  If no match is found, then strstr()
 returns a NULL value.
+
+The in-range operator, (X=A:B), tests whether X is in the range
+delimited by A to B.  Specifically, the in-range operator evaluates
+to true if \verb+(X >= A && X <= B)+.
 
 The following type casting operators are available, where the
 enclosing parentheses are required and taken from the C language
@@ -8991,7 +8996,7 @@ usage. Also, the integer to real casts values to double precision:
     (0) bits in the mask, as shown in the second expression above.
 
     Bit wise AND, OR and NOT operations are  also  possible  on  two  or
-    more  bit  fields  using  the  '\&'(AND),  '$|$'(OR),  and the '!'(NOT)
+    more  bit  fields  using  the  '\verb+&+'(AND),  '\verb+|+'(OR),  and the '\verb+!+'(NOT)
     operators. All of these operators result in a bit  field  which  can
     then be used with the equal operator. For example:
 
@@ -9266,7 +9271,7 @@ usage. Also, the integer to real casts values to double precision:
       #EXPOSURE = gtioverlap('gtifile',#TSTART,#TSTOP)
 \end{verbatim}
 
-    The \verb+#EXPOSURE+ syntax with a leading \+#+ ensures that the 
+    The \verb+#EXPOSURE+ syntax with a leading \verb+#+ ensures that the
     requested values are treated as keywords.  Otherwise, a column
     named EXPOSURE will be created with the (constant) exposure value
     in each entry.  

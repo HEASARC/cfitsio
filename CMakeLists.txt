@@ -21,7 +21,7 @@ PROJECT(CFITSIO
 
 # Define project version
 SET(${PROJECT_NAME}_MAJOR 4)
-SET(${PROJECT_NAME}_MINOR 3)
+SET(${PROJECT_NAME}_MINOR 4)
 SET(${PROJECT_NAME}_MICRO 0)
 SET(${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_MAJOR}.${${PROJECT_NAME}_MINOR}.${${PROJECT_NAME}_MICRO})
 SET(LIB_NAME cfitsio)
@@ -298,7 +298,7 @@ install(TARGETS ${LIB_NAME} EXPORT ${LIB_NAME}-targets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
-install(EXPORT ${LIB_NAME}-targets DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake)
+install(EXPORT ${LIB_NAME}-targets DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cfitsio)
 install(FILES ${H_FILES} DESTINATION ${INCLUDE_INSTALL_DIR} COMPONENT Devel)
 
 #==============================================================================
@@ -344,7 +344,7 @@ IF (UTILS)
 
     # To expand the command line arguments in Windows, see:
     # http://msdn.microsoft.com/en-us/library/8bch7bkk.aspx
-    if(MSVC)
+    if(MSVC AND NOT CMAKE_SYSTEM_NAME MATCHES "WindowsStore")
       set_target_properties(FPack Funpack PROPERTIES LINK_FLAGS "setargv.obj")
     endif(MSVC)
 

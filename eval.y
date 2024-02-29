@@ -1847,17 +1847,23 @@ static int New_GTI( ParseData *lParse, funcOp Op, char *fname, int Node1, int No
 	 return(-1);
       that0->value.nelem = nrows;
       if( nrows ) {
+	 double *startptr = 0, *stopptr = 0;
 
+	 /* We are allocating storage for both START and STOP with one pointer
+	    and stop is stored at dblptr+nrows, we will use aliases below to
+	    make this easier to read */
 	 that0->value.data.dblptr = (double*)malloc( 2*nrows*sizeof(double) );
 	 if( !that0->value.data.dblptr ) {
 	    lParse->status = MEMORY_ALLOCATION;
 	    return(-1);
 	 }
+	 startptr = that0->value.data.dblptr;
+	 stopptr  = that0->value.data.dblptr + nptr;
 	 
 	 ffgcvd( fptr, startCol, 1L, 1L, nrows, 0.0,
-		 that0->value.data.dblptr, &i, &lParse->status );
+		 startptr, &i, &lParse->status );
 	 ffgcvd( fptr, stopCol, 1L, 1L, nrows, 0.0,
-		 that0->value.data.dblptr+nrows, &i, &lParse->status );
+		 stopptr, &i, &lParse->status );
 	 if( lParse->status ) {
 	    free( that0->value.data.dblptr );
 	    return(-1);
@@ -1867,14 +1873,13 @@ static int New_GTI( ParseData *lParse, funcOp Op, char *fname, int Node1, int No
 
 	 that0->type = 1; /*  Assume yes  */
 	 i = nrows;
-	 while( --i )
-	    if(    that0->value.data.dblptr[i-1]
-                   >= that0->value.data.dblptr[i]
-		|| that0->value.data.dblptr[i-1+nrows]
-		   >= that0->value.data.dblptr[i+nrows] ) {
-	       that0->type = 0;
-	       break;
-	    }
+	 while( --i ) { /* the following are failure conditions for GTI ordering */
+	   if( (startptr[i] > stopptr [i]) ||      /* START{i} > STOP{i} */
+	       (starptr[i]  < stopptr[i-1]) ) {     /* START{i} < STOP{i-1} */
+	     that0->type = 0;
+	     break;
+	   }
+	 }
 
 	 /* GTIOVERLAP() requires ordered GTI */
 	 if (that0->type != 1 && Op == gtiover_fct) {
@@ -1885,13 +1890,13 @@ static int New_GTI( ParseData *lParse, funcOp Op, char *fname, int Node1, int No
 	 /*  Handle TIMEZERO offset, if any  */
 	 
 	 dt = (timeZeroI[1] - timeZeroI[0]) + (timeZeroF[1] - timeZeroF[0]);
-	 timeSpan = that0->value.data.dblptr[nrows+nrows-1]
-	    - that0->value.data.dblptr[0];
+	 timeSpan = stopptr[nrows-1] - startptr[0];
 	 if (timeSpan == 0) timeSpan = 1.0;
 	 
 	 if( fabs( dt / timeSpan ) > 1e-12 ) {
-	    for( i=0; i<(nrows+nrows); i++ )
-	       that0->value.data.dblptr[i] += dt;
+	   for( i=0; i<nrows; i++ ) {
+	     startptr[i] += dt;
+	     stopptr[i]  += dt;
 	 }
       }
       /* If Node1 is constant (gtifilt_fct) or

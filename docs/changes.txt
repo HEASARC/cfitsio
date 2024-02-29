@@ -1,5 +1,36 @@
                    Log of Changes Made to CFITSIO
                    
+Version 4.4.0 - Feb 2024
+
+  - Reorganization of helper utility code; added fitsverify
+
+  - CMakeLists.txt: Changed install location of cfitsio-targets.cmake
+    to conform with the one listed in cfitsio-config.cmake.in (i.e.
+    including the extra "cfitsio" subdir of lib/cmake).
+
+  - calculator functions that read GTIs do more correct validity
+    checking of GTI input files
+  
+  - fits_insert_rows now works if input table starts with both no rows
+    and no columns
+
+  - Can now write internal memory files of size > 2^32 directly to a
+    gzip-compressed output file.
+    
+  - Added support for unsigned long long types to fits_update_key.
+  
+  - Added ability for Windows builds to handle UTF-8 needed for reading
+    filenames with non-ASCII characters.
+    
+  - Added 2-byte int test to speed.c utility.
+  
+  - Made fix to http file handler to expand the allowed URL length.
+  
+Version 4.3.1 - Nov 2023 (patch release)
+
+  - Patch fix needed for modify and delete keyword functions to fully
+    conform with v4.3.0 long string keyword read/write enhancements. 
+                   
 Version 4.3.0 - Jul 2023
 
   - Bug fix to fits_make_hist[d] that was introduced in 4.2.0.

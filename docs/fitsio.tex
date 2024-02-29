@@ -32,7 +32,7 @@
 \medskip
 \medskip
 \begin{center}
-{\Large Version 4.3\\}
+{\Large Version 4.4\\}
 \end{center}
 \bigskip
 \vskip 2.5cm
@@ -47,7 +47,7 @@ USA}
 \vfill
 \bigskip
 \begin{center}
-{\Large Jul 2023\\}
+{\Large Feb 2024\\}
 \end{center}
 \vfill
 \end{titlepage}
@@ -1539,7 +1539,7 @@ on FITS files.  New users should start with these subroutines and
 then, as needed, explore the more advance routines described in
 the following chapter to perform more complex or specialized operations.
 
-A right arrow symbol ($>$) is used to separate the input parameters from
+A right arrow symbol (\verb+>+) is used to separate the input parameters from
 the output parameters in the  definition of each routine.  This symbol
 is not actually part of the calling sequence.  Note that
 the status parameter is both an input and an output parameter
@@ -6274,7 +6274,7 @@ usage. Also, the integer to real casts values to double precision:
            0b01001 binary integer
 \end{verbatim}
     Note that integer constants are only allowed to be 32-bit, i.e.
-    between -2^(31) and +2^(31).  Integer constants may be used in any
+    between -2\^(31) and +2\^(31).  Integer constants may be used in any
     arithmetic expression where an integer would be appropriate.  Thus,
     they are distinct from bitmasks (which may be of arbitrary length,
     allow the "wildcard" bit, and may only be used in logical
@@ -6361,7 +6361,7 @@ usage. Also, the integer to real casts values to double precision:
     (0) bits in the mask, as shown in the second expression above.
 
     Bit wise AND, OR and NOT operations are  also  possible  on  two  or
-    more  bit  fields  using  the  '\&'(AND),  '$|$'(OR),  and the '!'(NOT)
+    more  bit  fields  using  the  '\verb+&+'(AND),  '\verb+|+'(OR),  and the '\verb+!+'(NOT)
     operators. All of these operators result in a bit  field  which  can
     then be used with the equal operator. For example:
 
@@ -6619,7 +6619,7 @@ usage. Also, the integer to real casts values to double precision:
       #EXPOSURE = gtioverlap('gtifile',#TSTART,#TSTOP)
 \end{verbatim}
 
-    The \verb+#EXPOSURE+ syntax with a leading \+#+ ensures that the 
+    The \verb+#EXPOSURE+ syntax with a leading \verb+#+ ensures that the
     requested values are treated as keywords.  Otherwise, a column
     named EXPOSURE will be created with the (constant) exposure value
     in each entry.  
