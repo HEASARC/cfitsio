@@ -3069,7 +3069,7 @@ void print_summary(fitsfile *infits, 	/* input fits file   */
    
     int i = 0;
     char extver[10];
-    char extnv[FLEN_VALUE];
+    char extnv[2*FLEN_VALUE+4];
     long npix;
     int hdutype;
 
