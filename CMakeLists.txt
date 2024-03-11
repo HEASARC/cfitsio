@@ -346,7 +346,7 @@ IF (UTILS)
     # http://msdn.microsoft.com/en-us/library/8bch7bkk.aspx
     if(MSVC AND NOT CMAKE_SYSTEM_NAME MATCHES "WindowsStore")
       set_target_properties(FPack Funpack PROPERTIES LINK_FLAGS "setargv.obj")
-    endif(MSVC)
+    endif()
 
     install(TARGETS FPack Funpack Fitscopy Fitsverify RUNTIME DESTINATION bin)
 
