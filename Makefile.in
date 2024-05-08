@@ -96,6 +96,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@NOFORTRAN_FALSE@am__append_1 = $(F77_WRAPPERS)
+@NOGSIFTP_FALSE@am__append_2 = ${GSIFTP_SRC}
 bin_PROGRAMS = cookbook$(EXEEXT) fitscopy$(EXEEXT) fitsverify$(EXEEXT) \
 	fpack$(EXEEXT) funpack$(EXEEXT) imcopy$(EXEEXT) smem$(EXEEXT) \
 	speed$(EXEEXT)
@@ -163,11 +165,11 @@ am__libcfitsio_la_SOURCES_DIST = buffers.c cfileio.c checksum.c \
 	fits_hcompress.c fits_hdecompress.c simplerng.c zcompress.c \
 	zuncompress.c f77_wrap1.c f77_wrap2.c f77_wrap3.c f77_wrap4.c \
 	drvrgsiftp.c
-@NOFORTRAN_FALSE@am__objects_1 = libcfitsio_la-f77_wrap1.lo \
-@NOFORTRAN_FALSE@	libcfitsio_la-f77_wrap2.lo \
-@NOFORTRAN_FALSE@	libcfitsio_la-f77_wrap3.lo \
-@NOFORTRAN_FALSE@	libcfitsio_la-f77_wrap4.lo
-@NOGSIFTP_FALSE@am__objects_2 = libcfitsio_la-drvrgsiftp.lo
+am__objects_1 = libcfitsio_la-f77_wrap1.lo libcfitsio_la-f77_wrap2.lo \
+	libcfitsio_la-f77_wrap3.lo libcfitsio_la-f77_wrap4.lo
+@NOFORTRAN_FALSE@am__objects_2 = $(am__objects_1)
+am__objects_3 = libcfitsio_la-drvrgsiftp.lo
+@NOGSIFTP_FALSE@am__objects_4 = $(am__objects_3)
 am_libcfitsio_la_OBJECTS = libcfitsio_la-buffers.lo \
 	libcfitsio_la-cfileio.lo libcfitsio_la-checksum.lo \
 	libcfitsio_la-drvrfile.lo libcfitsio_la-drvrmem.lo \
@@ -199,7 +201,7 @@ am_libcfitsio_la_OBJECTS = libcfitsio_la-buffers.lo \
 	libcfitsio_la-pliocomp.lo libcfitsio_la-fits_hcompress.lo \
 	libcfitsio_la-fits_hdecompress.lo libcfitsio_la-simplerng.lo \
 	libcfitsio_la-zcompress.lo libcfitsio_la-zuncompress.lo \
-	$(am__objects_1) $(am__objects_2)
+	$(am__objects_2) $(am__objects_4)
 libcfitsio_la_OBJECTS = $(am_libcfitsio_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -405,7 +407,7 @@ am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/cfitsio.pc.in \
 	$(top_srcdir)/config/config.sub $(top_srcdir)/config/depcomp \
 	$(top_srcdir)/config/install-sh $(top_srcdir)/config/ltmain.sh \
 	$(top_srcdir)/config/missing AUTHORS COPYING ChangeLog INSTALL \
-	NEWS README config/compile config/config.guess \
+	NEWS README.md config/compile config/config.guess \
 	config/config.sub config/depcomp config/install-sh \
 	config/ltmain.sh config/missing
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -439,12 +441,6 @@ AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
-CFITSIO_MAJOR = @CFITSIO_MAJOR@
-CFITSIO_MICRO = @CFITSIO_MICRO@
-CFITSIO_MINOR = @CFITSIO_MINOR@
-CFITSIO_SHLIB = @CFITSIO_SHLIB@
-CFITSIO_SHLIB_SONAME = @CFITSIO_SHLIB_SONAME@
-CFITSIO_SONAME = @CFITSIO_SONAME@
 CFLAGS = @CFLAGS@
 CPPFLAGS = @CPPFLAGS@
 CSCOPE = @CSCOPE@
@@ -476,7 +472,6 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
-LDFLAGS_BIN = @LDFLAGS_BIN@
 LIBOBJS = @LIBOBJS@
 LIBPRE = @LIBPRE@
 LIBS = @LIBS@
@@ -507,8 +502,6 @@ RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
-SHLIB_LD = @SHLIB_LD@
-SHLIB_SUFFIX = @SHLIB_SUFFIX@
 SSE_FLAGS = @SSE_FLAGS@
 STRIP = @STRIP@
 VERSION = @VERSION@
@@ -577,74 +570,20 @@ libcfitsio_ladir = $(pkgincludedir)
 libcfitsio_la_HEADERS = fitsio.h fitsio2.h longnam.h drvrsmem.h \
 	cfortran.h f77_wrap.h region.h
 
-@NOFORTRAN_FALSE@F77_WRAPPERS = f77_wrap1.c f77_wrap2.c f77_wrap3.c f77_wrap4.c
-@NOFORTRAN_TRUE@F77_WRAPPERS = 
-@NOGSIFTP_FALSE@GSIFTP_SRC = drvrgsiftp.c
-@NOGSIFTP_TRUE@GSIFTP_SRC = 
-libcfitsio_la_SOURCES = \
-	buffers.c \
-	cfileio.c \
-	checksum.c \
-	drvrfile.c \
-	drvrmem.c \
-	drvrnet.c \
-	drvrsmem.c \
-	editcol.c \
-	edithdu.c \
-	eval_l.c \
-	eval_y.c \
-	eval_f.c \
-	fitscore.c \
-	getcol.c \
-	getcolb.c \
-	getcold.c \
-	getcole.c \
-	getcoli.c \
-	getcolj.c \
-	getcolk.c \
-	getcoll.c \
-	getcols.c \
-	getcolsb.c \
-	getcoluk.c \
-	getcolui.c \
-	getcoluj.c \
-	getkey.c \
-	group.c \
-	grparser.c \
-	histo.c \
-	iraffits.c \
-	modkey.c \
-	putcol.c \
-	putcolb.c \
-	putcold.c \
-	putcole.c \
-	putcoli.c \
-	putcolj.c \
-	putcolk.c \
-	putcoluk.c \
-	putcoll.c \
-	putcols.c \
-	putcolsb.c \
-	putcolu.c \
-	putcolui.c \
-	putcoluj.c \
-	putkey.c \
-	region.c \
-	scalnull.c \
-	swapproc.c \
-	wcssub.c \
-	wcsutil.c \
-	imcompress.c \
-	quantize.c \
-	ricecomp.c \
-	pliocomp.c \
-	fits_hcompress.c \
-	fits_hdecompress.c \
-	simplerng.c \
-	zcompress.c \
-	zuncompress.c \
-	${F77_WRAPPERS} ${GSIFTP_SRC}
-
+F77_WRAPPERS = f77_wrap1.c f77_wrap2.c f77_wrap3.c f77_wrap4.c
+GSIFTP_SRC = drvrgsiftp.c
+libcfitsio_la_SOURCES = buffers.c cfileio.c checksum.c drvrfile.c \
+	drvrmem.c drvrnet.c drvrsmem.c editcol.c edithdu.c eval_l.c \
+	eval_y.c eval_f.c fitscore.c getcol.c getcolb.c getcold.c \
+	getcole.c getcoli.c getcolj.c getcolk.c getcoll.c getcols.c \
+	getcolsb.c getcoluk.c getcolui.c getcoluj.c getkey.c group.c \
+	grparser.c histo.c iraffits.c modkey.c putcol.c putcolb.c \
+	putcold.c putcole.c putcoli.c putcolj.c putcolk.c putcoluk.c \
+	putcoll.c putcols.c putcolsb.c putcolu.c putcolui.c putcoluj.c \
+	putkey.c region.c scalnull.c swapproc.c wcssub.c wcsutil.c \
+	imcompress.c quantize.c ricecomp.c pliocomp.c fits_hcompress.c \
+	fits_hdecompress.c simplerng.c zcompress.c zuncompress.c \
+	$(am__append_1) $(am__append_2)
 libcfitsio_la_CFLAGS = $(AM_CFLAGS) @DEFS@
 libcfitsio_swapproc_la_CFLAGS = $(libcfitsio_la_CFLAGS) @SSE_FLAGS@
 libcfitsio_la_LIBADD = -lm ${LIBS_CURL} ${LIBS}
@@ -679,7 +618,8 @@ FLEX = flex
 BISON = bison
 
 # Distribution: ==========================================================
-EXTRA_DIST = docs licenses \
+EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
+	docs licenses \
 	README.md README.MacOS README.win \
 	cfitsio.xcodeproj \
 	CMakeLists.txt \
