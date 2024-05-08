@@ -9,17 +9,9 @@ libcfitsio_ladir = $(pkgincludedir)
 libcfitsio_la_HEADERS =	fitsio.h fitsio2.h longnam.h drvrsmem.h \
 	cfortran.h f77_wrap.h region.h
 
-if !NOFORTRAN
 F77_WRAPPERS = f77_wrap1.c f77_wrap2.c f77_wrap3.c f77_wrap4.c
-else
-F77_WRAPPERS = 
-endif
 
-if !NOGSIFTP
 GSIFTP_SRC = drvrgsiftp.c
-else
-GSIFTP_SRC =
-endif
 
 LIBS = @LIBS@
 LIBS_CURL = @LIBS_CURL@
@@ -85,8 +77,15 @@ libcfitsio_la_SOURCES =	\
 	fits_hdecompress.c \
 	simplerng.c \
 	zcompress.c \
-	zuncompress.c \
-	${F77_WRAPPERS} ${GSIFTP_SRC}
+	zuncompress.c
+
+if !NOFORTRAN
+libcfitsio_la_SOURCES += $(F77_WRAPPERS)
+endif
+
+if !NOGSIFTP
+libcfitsio_la_SOURCES += ${GSIFTP_SRC}
+endif
 
 libcfitsio_la_CFLAGS = $(AM_CFLAGS) @DEFS@
 libcfitsio_swapproc_la_CFLAGS = $(libcfitsio_la_CFLAGS) @SSE_FLAGS@
@@ -155,7 +154,9 @@ eval:		# Rebuild eval_* files from flex/bison source
 
 # Distribution: ==========================================================
 
-EXTRA_DIST = docs licenses \
+
+EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
+	docs licenses \
 	README.md README.MacOS README.win \
 	cfitsio.xcodeproj \
 	CMakeLists.txt \
