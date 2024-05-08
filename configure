@@ -655,11 +655,6 @@ am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
 my_shmem
-LDFLAGS_BIN
-CFITSIO_SHLIB_SONAME
-CFITSIO_SHLIB
-SHLIB_SUFFIX
-SHLIB_LD
 LIBPRE
 ARCH
 LIBS_CURL
@@ -675,10 +670,6 @@ NOFORTRAN_FALSE
 NOFORTRAN_TRUE
 NOGSIFTP_FALSE
 NOGSIFTP_TRUE
-CFITSIO_SONAME
-CFITSIO_MICRO
-CFITSIO_MINOR
-CFITSIO_MAJOR
 version_info
 LT_SYS_LIBRARY_PATH
 OTOOL64
@@ -12944,15 +12935,11 @@ CC=$lt_save_CC
 #--------------------------------------------------------------------
 # CFITSIO Version Numbers:
 #--------------------------------------------------------------------
-CFITSIO_MAJOR=4
-
-CFITSIO_MINOR=4
-
-CFITSIO_MICRO=0
-
+#AC_SUBST(CFITSIO_MAJOR,4)
+#AC_SUBST(CFITSIO_MINOR,4)
+#AC_SUBST(CFITSIO_MICRO,0)
 # Increment soname each time the interface changes:
-CFITSIO_SONAME=10
-
+#AC_SUBST(CFITSIO_SONAME,10)
 
 #--------------------------------------------------------------------
 # System type
@@ -14792,6 +14779,7 @@ fi
 
 
 # Optionally disable Fortran wrappers:
+use_fortran=yes
 
 # Check whether --with-fortran was given.
 if test ${with_fortran+y}
@@ -14842,15 +14830,14 @@ fi
 
 #-------------------------------------------------------------------------------
 
-LDFLAGS="$CFLAGS"
-LDFLAGS_BIN="$LDFLAGS"
-
 # Fortran wrappers:
 # -----------------
 
 # Use GNU Fortran wrappers by default:
 
 if test "x$use_fortran" = "xyes"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: cfitsio: == Adding Fortran wrappers" >&5
+printf "%s\n" "$as_me: cfitsio: == Adding Fortran wrappers" >&6;}
   ac_ext=${ac_fc_srcext-f}
 ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
 ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
@@ -18509,29 +18496,8 @@ LIBPRE=""
 case $host in
     *cygwin*)
 	CFLAGS="$CFLAGS -DHAVE_POSIX_SIGNALS"
-        # LDFLAGS used by utilities:
-        LDFLAGS_BIN="$LDFLAGS_BIN -Wl,-rpath,\${CFITSIO_LIB}"
 	;;
     *apple-darwin*)
-
-        case $host in
-            *darwin[56789]*)
-                ;;
-            *)
-
-#                # Build for i386 & x86_64 architectures on Darwin 10.x or newer:
-#                echo "int main(){return(0);}" > /tmp/$$.c
-#                $CC -v -o /tmp/$$.out /tmp/$$.c 2> /tmp/$$.log
-#                if test `cat /tmp/$$.log | grep -ci 'LLVM'` -ne 0; then APPLEXCODE="yes"; fi
-#                if test "x$APPLEXCODE" = xyes; then
-#                  # Flags for building Universal binaries:
-#                  C_UNIV_SWITCH="-arch i386 -arch x86_64"
-#                  CFLAGS="$CFLAGS $C_UNIV_SWITCH"
-#                fi
-                # LDFLAGS used by utilities:
-                LDFLAGS_BIN="$LDFLAGS_BIN -Wl,-rpath,\${CFITSIO_LIB}"
-                ;;
-        esac
         # For large file support (but may break Absoft compilers):
         printf "%s\n" "#define _LARGEFILE_SOURCE 1" >>confdefs.h
 
@@ -18562,8 +18528,6 @@ case $host in
 
         printf "%s\n" "#define _FILE_OFFSET_BITS 64" >>confdefs.h
 
-        # LDFLAGS used by utilities:
-        LDFLAGS_BIN="$LDFLAGS_BIN -Wl,-rpath,\${CFITSIO_LIB}"
 	;;
     *mingw32*)
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for large file support" >&5
@@ -18706,79 +18670,6 @@ printf "%s\n" "$as_me: WARNING: This gcc is pretty old. Disabling optimization t
 		# Don't do anything now
 		;;
 esac
-
-# Shared library section
-#-------------------------------------------------------------------------------
-SHLIB_LD=:
-SHLIB_SUFFIX=".so"
-CFITSIO_SHLIB=""
-CFITSIO_SHLIB_SONAME=""
-lhea_shlib_cflags=
-case $EXT in
-  cygwin|mingw32)
-    SHLIB_LD="$CC -shared"
-    SHLIB_SUFFIX=".dll"
-    ;;
-  darwin)
-
-    SHLIB_SUFFIX=".dylib"
-    CFITSIO_SHLIB="lib\${PACKAGE}.\${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}.\${CFITSIO_MICRO}\${SHLIB_SUFFIX}"
-    CFITSIO_SHLIB_SONAME="lib\${PACKAGE}.\${CFITSIO_SONAME}\${SHLIB_SUFFIX}"
-    case $host in
-        *darwin[56789]*)
-            SHLIB_LD="$CC -dynamiclib -install_name lib\${PACKAGE}.\${CFITSIO_SONAME}\${SHLIB_SUFFIX} -compatibility_version \${CFITSIO_SONAME} -current_version \${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}.\${CFITSIO_MICRO}"
-            ;;
-        *)
-            # Build 'Universal' binaries (i386 & x86_64 architectures) and
-            # use rpath token on Darwin 10.x or newer:
-            SHLIB_LD="$CC -dynamiclib $C_UNIV_SWITCH -headerpad_max_install_names -install_name @rpath/lib\${PACKAGE}.\${CFITSIO_SONAME}\${SHLIB_SUFFIX} -compatibility_version \${CFITSIO_SONAME} -current_version \${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}.\${CFITSIO_MICRO}"
-            ;;
-    esac
-
-    lhea_shlib_cflags="-fPIC -fno-common"
-    ;;
-  haiku)
-    SHLIB_LD=":"
-    CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}.\${CFITSIO_MICRO}"
-    CFITSIO_SHLIB_SONAME="lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}"
-    ;;
-  hpu)
-    SHLIB_LD="ld -b"
-    SHLIB_SUFFIX=".sl"
-    ;;
-  lnx)
-    SHLIB_LD=":"
-    CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}.\${CFITSIO_MICRO}"
-    CFITSIO_SHLIB_SONAME="lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}"
-    ;;
-  osf)
-    SHLIB_LD="ld -shared -expect_unresolved '*'"
-    LD_FLAGS="-taso"
-    ;;
-  sol)
-    SHLIB_LD="/usr/ccs/bin/ld -G"
-    lhea_shlib_cflags="-KPIC"
-    ;;
-  sgi)
-    SHLIB_LD="ld -shared -rdata_shared"
-    ;;
-  *)
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Unable to determine how to make a shared library" >&5
-printf "%s\n" "$as_me: WARNING: Unable to determine how to make a shared library" >&2;}
-    ;;
-esac
-# Darwin uses gcc (=cc), but needs different flags (see above)
-if test "x$EXT" != xdarwin && test "x$EXT" != xcygwin && test "x$EXT" != xmingw32; then
-  if test "x$GCC" = xyes; then
-    SHLIB_LD="$CC -shared -Wl,-soname,lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}"
-    lhea_shlib_cflags='-fPIC'
-  fi
-fi
-if test "x$lhea_shlib_cflags" != x; then
-  CFLAGS="$CFLAGS $lhea_shlib_cflags"
-fi
-# Set shared library name for cases in which we aren't setting a 'soname':
-if test "x$CFITSIO_SHLIB" = x; then CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX}"; fi
 
 # Curl library (will be pulled in to the shared CFITSIO library):
 # ---------------------------------------------------------------
@@ -18936,7 +18827,6 @@ if test "x$BZIP2_PATH" != x; then
    CFLAGS="$CFLAGS -I${BZIP2_PATH}/include"
    LIBS="$LIBS -L${BZIP2_PATH}/lib -lbz2"
 fi
-
 
 
 # ================= test for the unix ftruncate function ================
@@ -24252,5 +24142,4 @@ printf "%s\n" "    Congratulations, Makefile update was successful." >&6; }
 printf "%s\n" "    You may want to run make now." >&6; }
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: " >&5
 printf "%s\n" "" >&6; }
-
 

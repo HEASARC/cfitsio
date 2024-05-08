@@ -42,11 +42,11 @@ AC_SUBST([version_info])
 #--------------------------------------------------------------------
 # CFITSIO Version Numbers:
 #--------------------------------------------------------------------
-AC_SUBST(CFITSIO_MAJOR,4)
-AC_SUBST(CFITSIO_MINOR,4)
-AC_SUBST(CFITSIO_MICRO,0)
+#AC_SUBST(CFITSIO_MAJOR,4)
+#AC_SUBST(CFITSIO_MINOR,4)
+#AC_SUBST(CFITSIO_MICRO,0)
 # Increment soname each time the interface changes:
-AC_SUBST(CFITSIO_SONAME,10)
+#AC_SUBST(CFITSIO_SONAME,10)
 
 #--------------------------------------------------------------------
 # System type
@@ -227,6 +227,7 @@ AC_ARG_WITH(
 )
 
 # Optionally disable Fortran wrappers:
+use_fortran=yes
 AC_ARG_WITH([fortran],
   [AS_HELP_STRING([--without-fortran],[Build package without Fortran support])],
   [ if test "x$withval" = "xno"; then
@@ -264,15 +265,13 @@ fi
 
 #-------------------------------------------------------------------------------
 
-LDFLAGS="$CFLAGS"
-LDFLAGS_BIN="$LDFLAGS"
-
 # Fortran wrappers:
 # -----------------
 
 # Use GNU Fortran wrappers by default:
 
 if test "x$use_fortran" = "xyes"; then
+  AC_MSG_NOTICE(cfitsio: == Adding Fortran wrappers)
   AC_PROG_FC
   #AC_PROG_F77
   #AC_CHECK_PROGS(FC, gfortran g95 g77 f77 ifort f95 f90 xlf cf77 gf77 af77 ncf f2c, notfound)
@@ -346,29 +345,8 @@ LIBPRE=""
 case $host in
     *cygwin*)
 	CFLAGS="$CFLAGS -DHAVE_POSIX_SIGNALS"
-        # LDFLAGS used by utilities:
-        LDFLAGS_BIN="$LDFLAGS_BIN -Wl,-rpath,\${CFITSIO_LIB}"
 	;;
     *apple-darwin*)
-        changequote(,)
-        case $host in
-            *darwin[56789]*)
-                ;;
-            *)
-                changequote([,])
-#                # Build for i386 & x86_64 architectures on Darwin 10.x or newer:
-#                echo "int main(){return(0);}" > /tmp/$$.c
-#                $CC -v -o /tmp/$$.out /tmp/$$.c 2> /tmp/$$.log
-#                if test `cat /tmp/$$.log | grep -ci 'LLVM'` -ne 0; then APPLEXCODE="yes"; fi
-#                if test "x$APPLEXCODE" = xyes; then
-#                  # Flags for building Universal binaries:
-#                  C_UNIV_SWITCH="-arch i386 -arch x86_64"
-#                  CFLAGS="$CFLAGS $C_UNIV_SWITCH"
-#                fi
-                # LDFLAGS used by utilities:
-                LDFLAGS_BIN="$LDFLAGS_BIN -Wl,-rpath,\${CFITSIO_LIB}"
-                ;;
-        esac
         # For large file support (but may break Absoft compilers):
         AC_DEFINE(_LARGEFILE_SOURCE)
         AC_DEFINE(_FILE_OFFSET_BITS,64)
@@ -393,8 +371,6 @@ case $host in
         # For large file support:
         AC_DEFINE(_LARGEFILE_SOURCE)
         AC_DEFINE(_FILE_OFFSET_BITS,64)
-        # LDFLAGS used by utilities:
-        LDFLAGS_BIN="$LDFLAGS_BIN -Wl,-rpath,\${CFITSIO_LIB}"
 	;;
     *mingw32*)
         AC_MSG_CHECKING([for large file support])
@@ -463,78 +439,6 @@ case $GCC in
 		;;
 esac
 
-# Shared library section
-#-------------------------------------------------------------------------------
-SHLIB_LD=:
-SHLIB_SUFFIX=".so"
-CFITSIO_SHLIB=""
-CFITSIO_SHLIB_SONAME=""
-lhea_shlib_cflags=
-case $EXT in
-  cygwin|mingw32)
-    SHLIB_LD="$CC -shared"
-    SHLIB_SUFFIX=".dll"
-    ;;
-  darwin)
-    changequote(,)
-    SHLIB_SUFFIX=".dylib"
-    CFITSIO_SHLIB="lib\${PACKAGE}.\${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}.\${CFITSIO_MICRO}\${SHLIB_SUFFIX}"
-    CFITSIO_SHLIB_SONAME="lib\${PACKAGE}.\${CFITSIO_SONAME}\${SHLIB_SUFFIX}"
-    case $host in
-        *darwin[56789]*)
-            SHLIB_LD="$CC -dynamiclib -install_name lib\${PACKAGE}.\${CFITSIO_SONAME}\${SHLIB_SUFFIX} -compatibility_version \${CFITSIO_SONAME} -current_version \${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}.\${CFITSIO_MICRO}"
-            ;;
-        *)
-            # Build 'Universal' binaries (i386 & x86_64 architectures) and
-            # use rpath token on Darwin 10.x or newer:
-            SHLIB_LD="$CC -dynamiclib $C_UNIV_SWITCH -headerpad_max_install_names -install_name @rpath/lib\${PACKAGE}.\${CFITSIO_SONAME}\${SHLIB_SUFFIX} -compatibility_version \${CFITSIO_SONAME} -current_version \${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}.\${CFITSIO_MICRO}"
-            ;;
-    esac
-    changequote([,])
-    lhea_shlib_cflags="-fPIC -fno-common"
-    ;;
-  haiku)
-    SHLIB_LD=":"
-    CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}.\${CFITSIO_MICRO}"
-    CFITSIO_SHLIB_SONAME="lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}"
-    ;;
-  hpu)
-    SHLIB_LD="ld -b" 
-    SHLIB_SUFFIX=".sl"
-    ;;
-  lnx)
-    SHLIB_LD=":"
-    CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}.\${CFITSIO_MAJOR}.\${CFITSIO_MINOR}.\${CFITSIO_MICRO}"
-    CFITSIO_SHLIB_SONAME="lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}"
-    ;;
-  osf)
-    SHLIB_LD="ld -shared -expect_unresolved '*'"
-    LD_FLAGS="-taso"
-    ;;
-  sol)
-    SHLIB_LD="/usr/ccs/bin/ld -G"
-    lhea_shlib_cflags="-KPIC"
-    ;;
-  sgi)
-    SHLIB_LD="ld -shared -rdata_shared"
-    ;;
-  *)
-    AC_MSG_WARN(Unable to determine how to make a shared library)
-    ;;
-esac
-# Darwin uses gcc (=cc), but needs different flags (see above)
-if test "x$EXT" != xdarwin && test "x$EXT" != xcygwin && test "x$EXT" != xmingw32; then
-  if test "x$GCC" = xyes; then
-    SHLIB_LD="$CC -shared -Wl,-soname,lib\${PACKAGE}\${SHLIB_SUFFIX}.\${CFITSIO_SONAME}"
-    lhea_shlib_cflags='-fPIC'
-  fi
-fi
-if test "x$lhea_shlib_cflags" != x; then
-  CFLAGS="$CFLAGS $lhea_shlib_cflags"
-fi
-# Set shared library name for cases in which we aren't setting a 'soname':
-if test "x$CFITSIO_SHLIB" = x; then CFITSIO_SHLIB="lib\${PACKAGE}\${SHLIB_SUFFIX}"; fi
-
 # Curl library (will be pulled in to the shared CFITSIO library):
 # ---------------------------------------------------------------
 CURL_INC=""
@@ -597,11 +501,6 @@ AC_SUBST(CFLAGS)dnl
 AC_SUBST(CC)dnl
 AC_SUBST(FC)dnl
 AC_SUBST(LIBPRE)dnl
-AC_SUBST(SHLIB_LD)dnl
-AC_SUBST(SHLIB_SUFFIX)dnl
-AC_SUBST(CFITSIO_SHLIB)dnl
-AC_SUBST(CFITSIO_SHLIB_SONAME)dnl
-AC_SUBST(LDFLAGS_BIN)
 
 # ================= test for the unix ftruncate function ================
 
@@ -739,4 +638,3 @@ AC_MSG_RESULT([])
 AC_MSG_RESULT([    Congratulations, Makefile update was successful.])
 AC_MSG_RESULT([    You may want to run make now.])
 AC_MSG_RESULT([])
-
