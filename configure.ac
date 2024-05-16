@@ -23,8 +23,6 @@ m4_define([lt_cur], [10])
 #m4_define([lt_age], [v_min])
 #version_info="lt_cur:lt_rev:lt_age"
 version_info="lt_cur"
-#version_info="10:4" # 10:4:4 results in 15.4.0???
-#version_info="10:4" # 10:4   results in 11.4.0???
 
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIRS([m4])
@@ -38,6 +36,8 @@ AM_INIT_AUTOMAKE
 LT_INIT
 
 AC_SUBST([version_info])
+
+AC_PROG_LN_S
 
 #--------------------------------------------------------------------
 # CFITSIO Version Numbers:
