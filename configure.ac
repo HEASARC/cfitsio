@@ -200,7 +200,7 @@ AC_ARG_WITH(
     fi
   ]
 )
-AM_CONDITIONAL(NOGSIFTP, test x$USE_GSIFTP = xno)
+AM_CONDITIONAL(NOGSIFTP, test x$USE_GSIFTP != xyes)
 
 AC_ARG_WITH(
   gsiftp-flavour,
@@ -236,8 +236,6 @@ AC_ARG_WITH([fortran],
     fi
   ]
 )
-AM_CONDITIONAL(NOFORTRAN, test x$use_fortran = xno)
-#AC_SUBST(FORTRAN, $use_fortran)
 
 #--------------------------------------------------------------------
 # Check for install location prefix
@@ -272,26 +270,31 @@ fi
 
 if test "x$use_fortran" = "xyes"; then
   AC_MSG_NOTICE(cfitsio: == Adding Fortran wrappers)
-  AC_PROG_FC
-  #AC_PROG_F77
+  #AC_PROG_FC
+  if test "x$FC" != "x" ; then F77=$FC; fi
+  AC_PROG_F77
   #AC_CHECK_PROGS(FC, gfortran g95 g77 f77 ifort f95 f90 xlf cf77 gf77 af77 ncf f2c, notfound)
-  if test "x$FC" != "x" ; then
-     FC_BASENAME=`basename $FC`
+  if test "x$F77" != "x" ; then
+     #FC_BASENAME=`basename $FC`
+     FC_BASENAME=`basename $F77`
      if test "x$FC_BASENAME" = "xf2c" ; then
         AC_MSG_NOTICE(cfitsio: == Adding wrapper support for f2c)
         CFORTRANFLAGS="-Df2cFortran"
      fi
   else
+     use_fortran=no
      AC_MSG_NOTICE(cfitsio: == Adding wrapper support for GNU Fortran by default)
      CFORTRANFLAGS="-Dg77Fortran"
   fi
-  if test "x$GFC" = "xyes" ; then
+  #if test "x$GFC" = "xyes" ; then
+  if test "x$G77" = "xyes" ; then
      AC_MSG_NOTICE(cfitsio: == Adding wrapper support for GNU Fortran)
      CFORTRANFLAGS="-Dg77Fortran"
   fi
 else
   CFORTRANFLAGS=
 fi
+AM_CONDITIONAL(NOFORTRAN, test x$use_fortran = xno)
 
 # ar & ranlib required
 #---------------------

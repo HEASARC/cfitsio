@@ -102,7 +102,8 @@ target_triplet = @target@
 bin_PROGRAMS = cookbook$(EXEEXT) fitscopy$(EXEEXT) fitsverify$(EXEEXT) \
 	fpack$(EXEEXT) funpack$(EXEEXT) imcopy$(EXEEXT) smem$(EXEEXT) \
 	speed$(EXEEXT)
-noinst_PROGRAMS = testprog$(EXEEXT)
+noinst_PROGRAMS = testprog$(EXEEXT) $(am__EXEEXT_1)
+@NOFORTRAN_FALSE@am__append_3 = testf77
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
@@ -121,6 +122,7 @@ CONFIG_CLEAN_FILES = cfitsio.pc
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(libdir)" \
 	"$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(libcfitsio_ladir)"
+@NOFORTRAN_FALSE@am__EXEEXT_1 = testf77$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -254,6 +256,11 @@ am_speed_OBJECTS = utilities/speed.$(OBJEXT)
 speed_OBJECTS = $(am_speed_OBJECTS)
 speed_LDADD = $(LDADD)
 speed_DEPENDENCIES = libcfitsio.la $(am__DEPENDENCIES_1)
+am__testf77_SOURCES_DIST = utilities/testf77.f
+@NOFORTRAN_FALSE@am_testf77_OBJECTS = utilities/testf77.$(OBJEXT)
+testf77_OBJECTS = $(am_testf77_OBJECTS)
+testf77_LDADD = $(LDADD)
+testf77_DEPENDENCIES = libcfitsio.la $(am__DEPENDENCIES_1)
 am_testprog_OBJECTS = utilities/testprog.$(OBJEXT)
 testprog_OBJECTS = $(am_testprog_OBJECTS)
 testprog_LDADD = $(LDADD)
@@ -370,14 +377,30 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
+F77COMPILE = $(F77) $(AM_FFLAGS) $(FFLAGS)
+LTF77COMPILE = $(LIBTOOL) $(AM_V_lt) --tag=F77 $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(F77) $(AM_FFLAGS) $(FFLAGS)
+AM_V_F77 = $(am__v_F77_@AM_V@)
+am__v_F77_ = $(am__v_F77_@AM_DEFAULT_V@)
+am__v_F77_0 = @echo "  F77     " $@;
+am__v_F77_1 = 
+F77LD = $(F77)
+F77LINK = $(LIBTOOL) $(AM_V_lt) --tag=F77 $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(F77LD) $(AM_FFLAGS) $(FFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_F77LD = $(am__v_F77LD_@AM_V@)
+am__v_F77LD_ = $(am__v_F77LD_@AM_DEFAULT_V@)
+am__v_F77LD_0 = @echo "  F77LD   " $@;
+am__v_F77LD_1 = 
 SOURCES = $(libcfitsio_la_SOURCES) $(cookbook_SOURCES) \
 	$(fitscopy_SOURCES) $(fitsverify_SOURCES) $(fpack_SOURCES) \
 	$(funpack_SOURCES) $(imcopy_SOURCES) $(smem_SOURCES) \
-	$(speed_SOURCES) $(testprog_SOURCES)
+	$(speed_SOURCES) $(testf77_SOURCES) $(testprog_SOURCES)
 DIST_SOURCES = $(am__libcfitsio_la_SOURCES_DIST) $(cookbook_SOURCES) \
 	$(fitscopy_SOURCES) $(fitsverify_SOURCES) $(fpack_SOURCES) \
 	$(funpack_SOURCES) $(imcopy_SOURCES) $(smem_SOURCES) \
-	$(speed_SOURCES) $(testprog_SOURCES)
+	$(speed_SOURCES) $(am__testf77_SOURCES_DIST) \
+	$(testprog_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -459,8 +482,9 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 ETAGS = @ETAGS@
 EXEEXT = @EXEEXT@
+F77 = @F77@
 FC = @FC@
-FCFLAGS = @FCFLAGS@
+FFLAGS = @FFLAGS@
 FGREP = @FGREP@
 FILECMD = @FILECMD@
 GCCVERSION = @GCCVERSION@
@@ -513,7 +537,7 @@ abs_top_srcdir = @abs_top_srcdir@
 ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
-ac_ct_FC = @ac_ct_FC@
+ac_ct_F77 = @ac_ct_F77@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
@@ -601,7 +625,7 @@ pkgconfig_DATA = cfitsio.pc
 
 #SUBDIRS = utilities
 AUTOMAKE_OPTIONS = subdir-objects
-#endif
+@NOFORTRAN_FALSE@testf77_SOURCES = utilities/testf77.f
 cookbook_SOURCES = utilities/cookbook.c
 fitscopy_SOURCES = utilities/fitscopy.c
 fitsverify_CFLAGS = -DSTANDALONE
@@ -615,8 +639,6 @@ imcopy_SOURCES = utilities/imcopy.c
 smem_SOURCES = utilities/smem.c
 speed_SOURCES = utilities/speed.c
 testprog_SOURCES = utilities/testprog.c
-
-#testf77_SOURCES = utilities/testf77.f
 LDADD = libcfitsio.la ${LIBS}
 
 # eval: ==================================================================
@@ -627,6 +649,8 @@ BISON = bison
 EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
 	docs licenses \
 	README.md README.MacOS README.win \
+	cfitsio.pc.cmake cfitsio.pc.in \
+	cfitsio-config.cmake.in cfitsio-config-version.cmake.in \
 	cfitsio.xcodeproj \
 	CMakeLists.txt \
 	eval.l eval.y \
@@ -635,20 +659,15 @@ EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
 	testf77.out testf77.std \
 	testprog.out testprog.std testprog.tpt
 
-# ?:
-# cfitsio-config.cmake.in
-# cfitsio-config-version.cmake.in
-# cfitsio.pc.cmake
-# cfitsio.pc.in
 # windumpexts.c
 # winDumpExts.mak
 
 # clean: =================================================================
-CLEANFILES = testprog.fit testf77.fit y.output
+CLEANFILES = testprog.fit testf77.fit atestfil.fit btestfil.fit y.output
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .lo .o .obj
+.SUFFIXES: .c .f .lo .o .obj
 am--refresh: Makefile
 	@:
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
@@ -846,6 +865,12 @@ utilities/speed.$(OBJEXT): utilities/$(am__dirstamp) \
 speed$(EXEEXT): $(speed_OBJECTS) $(speed_DEPENDENCIES) $(EXTRA_speed_DEPENDENCIES) 
 	@rm -f speed$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(speed_OBJECTS) $(speed_LDADD) $(LIBS)
+utilities/testf77.$(OBJEXT): utilities/$(am__dirstamp) \
+	utilities/$(DEPDIR)/$(am__dirstamp)
+
+testf77$(EXEEXT): $(testf77_OBJECTS) $(testf77_DEPENDENCIES) $(EXTRA_testf77_DEPENDENCIES) 
+	@rm -f testf77$(EXEEXT)
+	$(AM_V_F77LD)$(F77LINK) $(testf77_OBJECTS) $(testf77_LDADD) $(LIBS)
 utilities/testprog.$(OBJEXT): utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
 
@@ -1518,6 +1543,15 @@ utilities/fitsverify-fvrf_misc.obj: utilities/fvrf_misc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(fitsverify_CFLAGS) $(CFLAGS) -c -o utilities/fitsverify-fvrf_misc.obj `if test -f 'utilities/fvrf_misc.c'; then $(CYGPATH_W) 'utilities/fvrf_misc.c'; else $(CYGPATH_W) '$(srcdir)/utilities/fvrf_misc.c'; fi`
 
+.f.o:
+	$(AM_V_F77)$(F77COMPILE) -c -o $@ $<
+
+.f.obj:
+	$(AM_V_F77)$(F77COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.f.lo:
+	$(AM_V_F77)$(LTF77COMPILE) -c -o $@ $<
+
 mostlyclean-libtool:
 	-rm -f *.lo
 
@@ -2123,8 +2157,8 @@ eval:		# Rebuild eval_* files from flex/bison source
 
 # HEASoft packages fitsTcl and POW need a list of all .o files: ==========
 
-#cfitsioLibObjs:
-#	@echo ${CORE_OBJECTS}
+cfitsioLibObjs:
+	@echo ${libcfitsio_la_SOURCES:.c=.o}
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

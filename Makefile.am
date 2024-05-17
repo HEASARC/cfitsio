@@ -129,11 +129,14 @@ bin_PROGRAMS = \
 	smem \
 	speed
 
-#if !NOFORTRAN
-#noinst_PROGRAMS = testprog testf77
-#else
 noinst_PROGRAMS = testprog
-#endif
+
+if !NOFORTRAN
+
+noinst_PROGRAMS+= testf77
+testf77_SOURCES = utilities/testf77.f
+
+endif
 
 cookbook_SOURCES = utilities/cookbook.c
 
@@ -156,8 +159,6 @@ speed_SOURCES = utilities/speed.c
 
 testprog_SOURCES = utilities/testprog.c
 
-#testf77_SOURCES = utilities/testf77.f
-
 LDADD = libcfitsio.la ${LIBS}
 
 # eval: ==================================================================
@@ -176,6 +177,8 @@ eval:		# Rebuild eval_* files from flex/bison source
 EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
 	docs licenses \
 	README.md README.MacOS README.win \
+	cfitsio.pc.cmake cfitsio.pc.in \
+	cfitsio-config.cmake.in cfitsio-config-version.cmake.in \
 	cfitsio.xcodeproj \
 	CMakeLists.txt \
 	eval.l eval.y \
@@ -183,19 +186,14 @@ EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
 	sample.tpl \
 	testf77.out testf77.std \
 	testprog.out testprog.std testprog.tpt
-# ?:
-# cfitsio-config.cmake.in
-# cfitsio-config-version.cmake.in
-# cfitsio.pc.cmake
-# cfitsio.pc.in
 # windumpexts.c
 # winDumpExts.mak
 
 # clean: =================================================================
 
-CLEANFILES = testprog.fit testf77.fit y.output
+CLEANFILES = testprog.fit testf77.fit atestfil.fit btestfil.fit y.output
 
 # HEASoft packages fitsTcl and POW need a list of all .o files: ==========
 
-#cfitsioLibObjs:
-#	@echo ${CORE_OBJECTS}
+cfitsioLibObjs:
+	@echo ${libcfitsio_la_SOURCES:.c=.o}
