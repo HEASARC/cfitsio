@@ -11,8 +11,7 @@ lib_LTLIBRARIES = libcfitsio.la
 soname_version = @version_info@
 soname_version_lnx = ${soname_version}.0.0
 
-libcfitsio_ladir = $(pkgincludedir)
-libcfitsio_la_HEADERS =	fitsio.h fitsio2.h longnam.h drvrsmem.h \
+include_HEADERS = fitsio.h fitsio2.h longnam.h drvrsmem.h \
 	cfortran.h f77_wrap.h region.h
 
 F77_WRAPPERS = f77_wrap1.c f77_wrap2.c f77_wrap3.c f77_wrap4.c
