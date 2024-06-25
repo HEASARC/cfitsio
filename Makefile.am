@@ -103,11 +103,13 @@ pkgconfig_DATA = cfitsio.pc
 # Add symbolic links for compatibility with older configuration:
 install-exec-hook:
 	@cd $(DESTDIR)$(libdir); \
-	if test -f "lib${PACKAGE_NAME}.so.${soname_version_lnx}"; then \
+	if test -f "lib${PACKAGE_NAME}.so.${soname_version_lnx}" -a \
+		! -f lib${PACKAGE_NAME}.so.${soname_version}.${PACKAGE_VERSION}; then \
 	    $(LN_S) lib${PACKAGE_NAME}.so.${soname_version_lnx} \
 		    lib${PACKAGE_NAME}.so.${soname_version}.${PACKAGE_VERSION}; \
 	fi; \
-	if test -f "lib${PACKAGE_NAME}.${soname_version}.dylib"; then \
+	if test -f "lib${PACKAGE_NAME}.${soname_version}.dylib" -a \
+		! -f lib${PACKAGE_NAME}.${soname_version}.${PACKAGE_VERSION}.dylib; then \
 	    $(LN_S) lib${PACKAGE_NAME}.${soname_version}.dylib \
 		    lib${PACKAGE_NAME}.${soname_version}.${PACKAGE_VERSION}.dylib; \
 	fi
