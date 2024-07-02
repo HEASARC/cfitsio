@@ -120,6 +120,16 @@ extern int Fitsio_Pthread_Status;
 #  endif
 #  define LONGSIZE 64
 
+#elif defined(__loongarch__)
+#define BYTESWAPPED TRUE
+#  if __loongarch_grlen == 32
+#    define LONGSIZE 32
+#  elif __loongarch_grlen == 64
+#    define LONGSIZE 64
+#  else
+#    error "can't handle long size given by __loongarch_grlen"
+#  endif
+
 #elif defined(_MIPS_SZLONG)
 
 #  if defined(MIPSEL)
