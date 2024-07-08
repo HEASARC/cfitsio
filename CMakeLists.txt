@@ -52,7 +52,7 @@ OPTION(USE_PTHREADS "Thread-safe build (using pthreads)" OFF)
 
 OPTION(TESTS "Build test programs Testprog and cookbook" OFF)
 
-OPTION(UTILS "Build FPack, Funpack, Fitscopy, and Fitsverify executables" OFF)
+OPTION(UTILS "Build fpack, funpack, fitscopy, and fitsverify executables" OFF)
 
 OPTION(USE_SSE2 "Enable use of instructions in the SSE2 extended instruction set" OFF)
 
@@ -220,7 +220,7 @@ ENDIF()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 set (LIB_DESTINATION "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}")
-set (INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include/")
+set (INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include/" CACHE PATH "Install dir for header files")
 set (BIN_DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
 
 SET(H_FILES fitsio.h fitsio2.h longnam.h)
@@ -327,29 +327,29 @@ ENDIF(TESTS)
 #==============================================================================
 IF (UTILS)
 
-    ADD_EXECUTABLE(FPack utilities/fpack.c utilities/fpackutil.c)
-    TARGET_LINK_LIBRARIES(FPack ${LIB_NAME})
+    ADD_EXECUTABLE(fpack utilities/fpack.c utilities/fpackutil.c)
+    TARGET_LINK_LIBRARIES(fpack ${LIB_NAME})
 
-    ADD_EXECUTABLE(Funpack utilities/funpack.c utilities/fpackutil.c)
-    TARGET_LINK_LIBRARIES(Funpack ${LIB_NAME})
+    ADD_EXECUTABLE(funpack utilities/funpack.c utilities/fpackutil.c)
+    TARGET_LINK_LIBRARIES(funpack ${LIB_NAME})
 
-    ADD_EXECUTABLE(Fitscopy utilities/fitscopy.c)
-    TARGET_LINK_LIBRARIES(Fitscopy ${LIB_NAME})
+    ADD_EXECUTABLE(fitscopy utilities/fitscopy.c)
+    TARGET_LINK_LIBRARIES(fitscopy ${LIB_NAME})
 
-    ADD_EXECUTABLE(Fitsverify
+    ADD_EXECUTABLE(fitsverify
                   utilities/ftverify.c utilities/fvrf_data.c
                   utilities/fvrf_file.c utilities/fvrf_head.c
                   utilities/fvrf_key.c utilities/fvrf_misc.c)
-    TARGET_COMPILE_DEFINITIONS(Fitsverify PRIVATE -DSTANDALONE)
-    TARGET_LINK_LIBRARIES(Fitsverify ${LIB_NAME})
+    TARGET_COMPILE_DEFINITIONS(fitsverify PRIVATE -DSTANDALONE)
+    TARGET_LINK_LIBRARIES(fitsverify ${LIB_NAME})
 
     # To expand the command line arguments in Windows, see:
     # http://msdn.microsoft.com/en-us/library/8bch7bkk.aspx
     if(MSVC AND NOT CMAKE_SYSTEM_NAME MATCHES "WindowsStore")
-      set_target_properties(FPack Funpack PROPERTIES LINK_FLAGS "setargv.obj")
+      set_target_properties(fpack funpack PROPERTIES LINK_FLAGS "setargv.obj")
     endif()
 
-    install(TARGETS FPack Funpack Fitscopy Fitsverify RUNTIME DESTINATION bin)
+    install(TARGETS fpack funpack fitscopy fitsverify RUNTIME DESTINATION bin)
 
 ENDIF(UTILS)
 
@@ -359,7 +359,7 @@ ENDIF(UTILS)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cfitsio.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/cfitsio.pc @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cfitsio-config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/cfitsio-config.cmake @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cfitsio-config-version.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/cfitsio-config-version.cmake @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cfitsio.pc DESTINATION lib/pkgconfig/)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cfitsio.pc DESTINATION ${LIB_DESTINATION}/lib/pkgconfig/)
 install(FILES ${CFITSIO_BINARY_DIR}/cfitsio-config.cmake
               ${CFITSIO_BINARY_DIR}/cfitsio-config-version.cmake
-              DESTINATION lib/cfitsio-${CFITSIO_VERSION})
+              DESTINATION ${LIB_DESTINATION}/lib/cfitsio-${CFITSIO_VERSION})
