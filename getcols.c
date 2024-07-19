@@ -567,7 +567,7 @@ int ffgcls( fitsfile *fptr,   /* I - FITS file pointer                       */
       {
            if (tcode == TBIT)
            {
-               byteval = (char) darray[ii];
+               byteval = (unsigned char) darray[ii];
 
                for (ll=0; ll < 8; ll++)
                {
