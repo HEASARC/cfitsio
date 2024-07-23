@@ -1,5 +1,10 @@
                    Log of Changes Made to CFITSIO
                    
+Version 4.X.x
+
+  - Bug fix for case of bit column output in string format on clang
+    compilers with high optimization.
+                   
 Version 4.4.1 - Jun 2024
 
   - Removed NOSA license and restored previous license file
