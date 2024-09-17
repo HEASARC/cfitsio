@@ -1,5 +1,10 @@
                    Log of Changes Made to CFITSIO
                    
+Version 4.x.x
+
+  - Correction to eval_defs.h typedefs to allow for compilation on old
+    gcc compilers.
+                   
 Version 4.5.0 - Aug 2024
 
   - Conversion of CFITSIO configure/build files to better conform with
