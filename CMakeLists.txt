@@ -359,7 +359,7 @@ ENDIF(UTILS)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cfitsio.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/cfitsio.pc @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cfitsio-config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/cfitsio-config.cmake @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cfitsio-config-version.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/cfitsio-config-version.cmake @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cfitsio.pc DESTINATION ${LIB_DESTINATION}/lib/pkgconfig/)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cfitsio.pc DESTINATION ${LIB_DESTINATION}/pkgconfig/)
 install(FILES ${CFITSIO_BINARY_DIR}/cfitsio-config.cmake
               ${CFITSIO_BINARY_DIR}/cfitsio-config-version.cmake
-              DESTINATION ${LIB_DESTINATION}/lib/cfitsio-${CFITSIO_VERSION})
+              DESTINATION ${LIB_DESTINATION}/cfitsio-${CFITSIO_VERSION})
