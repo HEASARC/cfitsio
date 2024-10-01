@@ -10,11 +10,12 @@
 #include <ctype.h>
 #include <errno.h>
 #include <stddef.h>  /* apparently needed to define size_t */
-#include "fitsio2.h"
-#include "group.h"
 #ifdef CFITSIO_HAVE_CURL
   #include <curl/curl.h>
 #endif
+#undef TBYTE
+#include "fitsio2.h"
+#include "group.h"
 
 #define MAX_PREFIX_LEN 20  /* max length of file type prefix (e.g. 'http://') */
 #define MAX_DRIVERS 31     /* max number of file I/O drivers */

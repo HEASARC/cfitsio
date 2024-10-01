@@ -58,9 +58,7 @@ OPTION(USE_SSE2 "Enable use of instructions in the SSE2 extended instruction set
 
 OPTION(USE_SSSE3 "Enable use of instructions in the SSSE3 extended instruction set" OFF)
 
-IF(NOT WIN32)
-    OPTION(USE_BZIP2 "Enable bzip2 support" OFF)
-ENDIF()
+OPTION(USE_BZIP2 "Enable bzip2 support" OFF)
 
 #==============================================================================
 
@@ -72,15 +70,13 @@ ELSE()
   SET (LIB_TYPE STATIC)
 ENDIF(BUILD_SHARED_LIBS)
 
-IF(NOT WIN32)
-   # Find curl library, for HTTPS support:
-   IF(USE_CURL)
-      FIND_PACKAGE(CURL)
-      IF(CURL_FOUND)
-         ADD_DEFINITIONS(-DCFITSIO_HAVE_CURL)
-      ENDIF()
+# Find curl library, for HTTPS support:
+IF(USE_CURL)
+   FIND_PACKAGE(CURL)
+   IF(CURL_FOUND)
+      ADD_DEFINITIONS(-DCFITSIO_HAVE_CURL)
    ENDIF()
-ENDIF(NOT WIN32)
+ENDIF()
 
 IF(USE_PTHREADS)
    FIND_PACKAGE(Threads REQUIRED)
