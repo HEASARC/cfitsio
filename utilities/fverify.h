@@ -52,6 +52,10 @@ typedef enum  {      STR_KEY,   /* string   key */
 #define         BAD_COMMENT		0x0800
 #define         UNKNOWN_TYPE		0x1000
 
+/* Number of possible WCS descriptions to check.*/
+/* 1 for the primary + 26 for [A-Z] suffix. */
+#define NWCSDESCR  27
+
 /* keyword structure */ 
 typedef struct { 
     char kname[FLEN_KEYWORD];	/* fits keyword name */
@@ -140,6 +144,7 @@ void key_match(char **strs, int nstr, char **pattern, int exact,
 void test_colnam(FILE *out, FitsHdu *hduptr);
 void parse_vtform(fitsfile *infits, FILE *out, FitsHdu *hduptr, 
 	     int colnum, int *datacode, long *maxlen, int *isQFormat);
+int  parse_wcskey_suffix(char *fullname, char* rootname, int* axis, char* alt);
 void print_title(FILE* out, int hdunum, int hdutype);
 void print_header(FILE* out);
 void print_summary(fitsfile *infits, FILE *out, FitsHdu *hduptr);

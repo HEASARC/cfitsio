@@ -2993,6 +2993,45 @@ void   parse_vtform(fitsfile *infits,
 
 /*************************************************************
 *
+*     parse_wcskey_suffix 
+*
+*   Retrieve the axis number and alternative coordinate suffix 
+*    from WCS keywords.  Return -1 if keyword does not match the
+*    expected format.  
+*	
+*************************************************************/
+int parse_wcskey_suffix(char *fullname, char* rootname, int* axis, char* alt)
+{
+   int status=0, testAxis=0;
+   char *suffix=0, *testAlt=0;
+   
+   *axis=0;
+   *alt=' ';
+   if (strlen(fullname) < strlen(rootname))
+      status = -1;
+   else
+   {
+      suffix = fullname + strlen(rootname);
+      if (strlen(suffix))
+      {
+         testAxis = (int)strtol(suffix, &testAlt, 10);
+         if (strlen(testAlt) == 1)
+         {
+            if (testAlt[0] >= 'A' && testAlt[0] <= 'Z')
+               *alt = testAlt[0];
+            else
+               status = -1;
+         }
+         else if (strlen(testAlt) > 1)
+            status = -1;
+      }
+   }
+   
+   return status;
+}
+
+/*************************************************************
+*
 *      print_title 
 *
 *  Print the title of the HDU. 
