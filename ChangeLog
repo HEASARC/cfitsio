@@ -2,6 +2,8 @@
                    
 Version 4.x.x
 
+  - Improved the empty-primary data test performed in fits_open_file.
+  
   - Correction to eval_defs.h typedefs to allow for compilation on old
     gcc compilers.
                    
