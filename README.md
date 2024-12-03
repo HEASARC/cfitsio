@@ -22,13 +22,13 @@ CFITSIO is a library of ANSI C routines for reading and writing FITS format data
 The CFITSIO code (contained in `*.c` source files and several `*.h` header files) should compile and run on most Unix platforms without modification. The standard way to build the library on Unix systems is the usual GNU-like approach, i.e. by first typing
 
 ```bash
- % ./configure  [--prefix=/target/installation/path]
+% ./configure  [--prefix=/target/installation/path]
 ```
 
 at the operating system prompt.  Type `./configure` and not simply `configure` to ensure that the configure script in the current directory is run and not some other system-wide configure script. The optional `prefix` argument to configure gives the path to the directory where the CFITSIO library and include files should be installed via the later `make install` command. For example,
 
 ```bash
- % ./configure --prefix=/usr1/local
+% ./configure --prefix=/usr1/local
 ```
 
 will cause the later `make install` command to copy the library file(s) to `/usr1/local/lib` and the necessary header files to `/usr1/local/include` (assuming of course that the process has permission to write to these directories).
@@ -36,7 +36,7 @@ will cause the later `make install` command to copy the library file(s) to `/usr
 All the available configure options can be seen by entering the command
 
 ```bash
- % ./configure --help
+% ./configure --help
 ```
 
 The configure command customizes the Makefile for a particular system, so after it has been run, type
@@ -45,16 +45,16 @@ The configure command customizes the Makefile for a particular system, so after 
 % make
 ```
 
-at the prompt, and this will compile the source files and build the library (static `libcfitsio.a` as well as the shared version `libcfitsio.so|.dylib`).  Users may also wish to build the helper utilities (`fpack`, `funpack`, `fitscopy`, `imcopy`, et al.) and test program (`testprog`) using this command:
-
-```bash
- % make utils
-```
-
-Finally, to copy the library and header file(s) to the chosen install location, type this command:
+at the prompt, and this will compile the source files and build the library (static `libcfitsio.a` as well as the shared version `libcfitsio.so|.dylib`) and the helper utilities (`fpack`, `funpack`, `fitscopy`, `imcopy`, et al.) and test program (`testprog`).  To copy the library, header files, and utilities to the chosen install location, type this command:
 
 ```bash
 % make install
+```
+
+When installing in /usr/local on Linux and some other systems, it may be necessary to rebuild the linker cache by running:
+
+```bash
+% sudo ldconfig
 ```
 
 Alternatively, the library and utilities may be built on many systems using the CMake program.  Specific instructions for using CMake on Windows platforms can be found in the `README.win` file, but for Unix systems (e.g., Linux or macOS) the procedure should be similar to the following:
@@ -79,7 +79,7 @@ Additional options for installing CFITSIO on macOS via third-party package manag
 The CFITSIO library may be tested by building and running the `testprog.c` program that is included with the release (in the `utilities` folder). On Unix systems, type:
 
 ```bash
-% make testprog [or "make utils"]
+% make testprog
 % ./testprog > testprog.lis
 % diff testprog.lis testprog.out
 % cmp testprog.fit testprog.std
