@@ -149,8 +149,10 @@ fitsverify_SOURCES = utilities/ftverify.c utilities/fvrf_data.c \
 		     utilities/fvrf_key.c utilities/fvrf_misc.c
 
 fpack_SOURCES = utilities/fpack.c utilities/fpackutil.c
+fpack_LDADD = -lm ${LDADD}
 
 funpack_SOURCES = utilities/funpack.c utilities/fpackutil.c
+funpack_LDADD = -lm ${LDADD}
 
 imcopy_SOURCES = utilities/imcopy.c
 
