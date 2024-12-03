@@ -144,7 +144,7 @@ void key_match(char **strs, int nstr, char **pattern, int exact,
 void test_colnam(FILE *out, FitsHdu *hduptr);
 void parse_vtform(fitsfile *infits, FILE *out, FitsHdu *hduptr, 
 	     int colnum, int *datacode, long *maxlen, int *isQFormat);
-int  parse_wcskey_suffix(char *fullname, char* rootname, int* axis, char* alt);
+int  parse_wcskey_suffix(char *fullname, char* rootname, int* axis, int* alt);
 void print_title(FILE* out, int hdunum, int hdutype);
 void print_header(FILE* out);
 void print_summary(fitsfile *infits, FILE *out, FitsHdu *hduptr);

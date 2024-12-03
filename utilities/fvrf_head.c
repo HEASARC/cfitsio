@@ -474,10 +474,10 @@ void test_hdu(fitsfile *infits, 	/* input fits file   */
     FitsKey **kwds;
     int numusrkey;
     int hdunum;
-    char *p, *p2, *pname = 0;
-    int i,j,k,m,n, wcsaxes = 0;
-    int taxes;
-    int wcsaxesExists = 0, wcsaxesvalue = 0, wcsaxespos = 0, wcskeypos = 1000000000;
+    char *p, *p2, *pname[NWCSDESCR];
+    int i,j,k,m,n, wcsaxesmax = 0;
+    int taxes, iaxis=0, ialt=0;
+    int wcsaxesExists = 0, wcsaxesvalue = 0, wcsaxespos[NWCSDESCR], wcskeypos[NWCSDESCR];
     FitsKey *pkey;
     int crota2_exists = 0, matrix_exists[2] = {0,0};  
     double dvalue;
@@ -512,7 +512,13 @@ void test_hdu(fitsfile *infits, 	/* input fits file   */
     char *specstrkeys[] = {"SPECSYS", "SSYSOBS", "SSYSSRC" };
     int nspecstrkeys = 3;  
 
-
+    for (i=0; i<NWCSDESCR; ++i)
+    {
+       wcsaxespos[i] = -1;
+       wcskeypos[i] = 1000000000;
+       pname[i] = 0;
+    }
+    
     numusrkey = hduptr->tkeys;
     kwds = hduptr->kwds;
 
@@ -594,12 +600,12 @@ void test_hdu(fitsfile *infits, 	/* input fits file   */
             pkey = hduptr->kwds[j]; 
 	    wcsaxesvalue = (int) strtol(pkey->kvalue,NULL,10);
             nmax = wcsaxesvalue;
-            if (wcsaxesvalue > wcsaxes) wcsaxes = wcsaxesvalue;
+            if (wcsaxesvalue > wcsaxesmax) wcsaxesmax = wcsaxesvalue;
             wcsaxesExists = 1;
 
 	    /* store index of the wcsaxes keyword */
 	    /*  (it must appear before other WCS keywords) */
-	    if (pkey->kindex > wcsaxespos) wcsaxespos = pkey->kindex;
+	    if (pkey->kindex > wcsaxespos[0]) wcsaxespos[0] = pkey->kindex;
         }
     }
 
@@ -615,9 +621,9 @@ void test_hdu(fitsfile *infits, 	/* input fits file   */
 
     for (j = k; j< n + k ; j++){
 	if (check_int(kwds[j],out)) {
-            pkey = hduptr->kwds[j]; 
+            pkey = hduptr->kwds[j];
 	    taxes = (int) strtol(pkey->kvalue,NULL,10);
-            if (taxes > wcsaxes) wcsaxes = taxes;
+            if (taxes > wcsaxesmax) wcsaxesmax = taxes;
             wcsaxesExists = 1;
 
 	    /* store highest index of any wcsaxes keyword */
@@ -633,6 +639,9 @@ void test_hdu(fitsfile *infits, 	/* input fits file   */
     this test, we will not not worry about the placement of the WCSAXESa keywords.
 */
 /*	    if (pkey->kindex > wcsaxespos) wcsaxespos = pkey->kindex;  */
+
+            parse_wcskey_suffix(pkey->kname, ptemp, &iaxis, &ialt);
+            wcsaxespos[ialt] = pkey->kindex; 
 	}
     }
 
@@ -672,36 +681,36 @@ void test_hdu(fitsfile *infits, 	/* input fits file   */
 		}
 	    }
 
-            m = (int)strtol(p,&p2,10);
+            parse_wcskey_suffix(pkey->kname,ptemp,&iaxis,&ialt);
             if (wcsaxesExists) {     /* WCSAXES keyword exists */
 
-              if (m < 1 || m > wcsaxes) { 
+              if (iaxis < 1 || iaxis > wcsaxesmax) { 
                  sprintf( errmes, 
             "Keyword #%d, %s: index %d is not in range 1-%d (WCSAXES).",
-                   pkey->kindex,pkey->kname,m,wcsaxes);
+                   pkey->kindex,pkey->kname,iaxis,wcsaxesmax);
                    wrterr(out,errmes,1);
               }
 
             } else {
 
-                if (m < 1 || m > hduptr->naxis) { 
+                if (iaxis < 1 || iaxis > hduptr->naxis) { 
                   sprintf( errmes, 
                   "Keyword #%d, %s: index %d is not in range 1-%d (NAXIS).",
-                   pkey->kindex,pkey->kname,m,hduptr->naxis);
+                   pkey->kindex,pkey->kname,iaxis,hduptr->naxis);
                    wrtwrn(out,errmes,0);
                 }
             }
 
             /* count the number of each keyword */
-	    if (*p2 == 0) {  /* only test the primary set of WCS keywords */
+	    if (ialt == 0) {  /* only test the primary set of WCS keywords */
         	keynum[i] = keynum[i] + 1;
-		if (m > nmax) nmax = m;
+		if (iaxis > nmax) nmax = iaxis;
             }
 
 	    /* store lowest index of any wcs keyword */
-	    if (pkey->kindex < wcskeypos) {
-	        wcskeypos = pkey->kindex;
-		pname = pkey->kname;
+	    if (pkey->kindex < wcskeypos[ialt]) {
+	        wcskeypos[ialt] = pkey->kindex;
+		pname[ialt] = pkey->kname;
 	    }
         } 
     }
@@ -767,10 +776,10 @@ void test_hdu(fitsfile *infits, 	/* input fits file   */
 
             if (wcsaxesExists) {     /* WCSAXES keyword exists */
 
-              if (m < 1 || m > wcsaxes) { 
+              if (m < 1 || m > wcsaxesmax) { 
                  sprintf( errmes, 
             "Keyword #%d, %s: 1st index %d is not in range 1-%d (WCSAXES).",
-                   pkey->kindex,pkey->kname,m,wcsaxes);
+                   pkey->kindex,pkey->kname,m,wcsaxesmax);
                    wrterr(out,errmes,1);
               }
 
@@ -791,10 +800,10 @@ void test_hdu(fitsfile *infits, 	/* input fits file   */
 
             if (wcsaxesExists) {     /* WCSAXES keyword exists */
 
-              if (m < 1 || m > wcsaxes) { 
+              if (m < 1 || m > wcsaxesmax) { 
                  sprintf( errmes, 
             "Keyword #%d, %s: 2nd index %d is not in range 1-%d (WCSAXES).",
-                   pkey->kindex,pkey->kname,m,wcsaxes);
+                   pkey->kindex,pkey->kname,m,wcsaxesmax);
                    wrterr(out,errmes,1);
               }
 
@@ -808,14 +817,18 @@ void test_hdu(fitsfile *infits, 	/* input fits file   */
                 }
             }
 
+            ialt = 0;
 	    if (*p2 == 0) { /* no alternate suffix on the PC or CD name */
 	       matrix_exists[i] = pkey->kindex;
-	    }
+	    } else if (strlen(p2) == 1) {
+               if (p2[0] >= 'A' && p2[0] <= 'Z')
+                  ialt = (int)p2[0] - 64;
+            }
 
 	    /* store lowest index of any wcs keyword */
-	    if (pkey->kindex < wcskeypos) {
-	        wcskeypos = pkey->kindex;
-		pname = pkey->kname;
+	    if (pkey->kindex < wcskeypos[ialt]) {
+	        wcskeypos[ialt] = pkey->kindex;
+		pname[ialt] = pkey->kname;
 	    }
         } 
     }
@@ -852,36 +865,36 @@ void test_hdu(fitsfile *infits, 	/* input fits file   */
 
 	    if (!check_str(pkey,out) )continue;
 
-            m = (int)strtol(p,&p2,10);
+            parse_wcskey_suffix(pkey->kname,ptemp,&iaxis,&ialt);
 
             if (wcsaxesExists) {     /* WCSAXES keyword exists */
 
-              if (m < 1 || m > wcsaxes) { 
+              if (iaxis < 1 || iaxis > wcsaxesmax) { 
                  sprintf( errmes, 
             "Keyword #%d, %s: index %d is not in range 1-%d (WCSAXES).",
-                   pkey->kindex,pkey->kname,m,wcsaxes);
+                   pkey->kindex,pkey->kname,iaxis,wcsaxesmax);
                    wrterr(out,errmes,1);
               }
 
             } else {
 
-                if (m < 1 || m > hduptr->naxis) { 
+                if (iaxis < 1 || iaxis > hduptr->naxis) { 
                    sprintf( errmes, 
                    "Keyword #%d, %s: index %d is not in range 1-%d (NAXIS).",
-                   pkey->kindex,pkey->kname,m,hduptr->naxis);
+                   pkey->kindex,pkey->kname,iaxis,hduptr->naxis);
                    wrtwrn(out,errmes,0);
                 } 
  
             }
 
-	    if (*p2 == 0) {  /* only test the primary set of WCS keywords */
+	    if (ialt == 0) {  /* only test the primary set of WCS keywords */
         	keynum[i] = keynum[i] + 1;
             }
 
 	    /* store lowest index of any wcs keyword */
-	    if (pkey->kindex < wcskeypos) {
-	        wcskeypos = pkey->kindex;
-		pname = pkey->kname;
+	    if (pkey->kindex < wcskeypos[ialt]) {
+	        wcskeypos[ialt] = pkey->kindex;
+		pname[ialt] = pkey->kname;
 	    }
         } 
     }
@@ -892,11 +905,14 @@ void test_hdu(fitsfile *infits, 	/* input fits file   */
              wrtwrn(out,errmes,0);
     }
 
-    if (wcskeypos < wcsaxespos) { 
-             sprintf( errmes, 
-            "WCSAXES keyword #%d appears after other WCS keyword %s #%d",
-	       wcsaxespos, pname, wcskeypos);
-             wrterr(out,errmes,1);
+    for (i=0; i<NWCSDESCR; ++i)
+    {
+       if (wcskeypos[i] < wcsaxespos[i]) { 
+                sprintf( errmes, 
+               "WCSAXES keyword #%d appears after other WCS keyword %s #%d",
+	          wcsaxespos[i], pname[i], wcskeypos[i]);
+                wrterr(out,errmes,1);
+       }
     }
 
     /* test datatype and value of reserved RADECSYS WCS keywords */
@@ -3000,13 +3016,13 @@ void   parse_vtform(fitsfile *infits,
 *    expected format.  
 *	
 *************************************************************/
-int parse_wcskey_suffix(char *fullname, char* rootname, int* axis, char* alt)
+int parse_wcskey_suffix(char *fullname, char* rootname, int* axis, int* alt)
 {
    int status=0, testAxis=0;
    char *suffix=0, *testAlt=0;
    
    *axis=0;
-   *alt=' ';
+   *alt=0;
    if (strlen(fullname) < strlen(rootname))
       status = -1;
    else
@@ -3015,15 +3031,21 @@ int parse_wcskey_suffix(char *fullname, char* rootname, int* axis, char* alt)
       if (strlen(suffix))
       {
          testAxis = (int)strtol(suffix, &testAlt, 10);
+         if (testAxis)
+            *axis = testAxis;
          if (strlen(testAlt) == 1)
          {
             if (testAlt[0] >= 'A' && testAlt[0] <= 'Z')
-               *alt = testAlt[0];
+               *alt = (int)testAlt[0] - 64;
             else
+            {
                status = -1;
+            }
          }
          else if (strlen(testAlt) > 1)
+         {
             status = -1;
+         }
       }
    }
    
