@@ -1054,7 +1054,7 @@ int ffpkyt( fitsfile *fptr,      /* I - FITS file pointer        */
 {
     char valstring[FLEN_VALUE];
     char card[FLEN_CARD];
-    char fstring[20], *cptr;
+    char fstring[FLEN_VALUE], *cptr;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);
