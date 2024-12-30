@@ -19,6 +19,9 @@ PROJECT(CFITSIO
 	LANGUAGES C CXX
 	)
 
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
+
 # Define project version
 SET(${PROJECT_NAME}_SONAME 10)
 SET(${PROJECT_NAME}_MAJOR 4)
@@ -214,10 +217,7 @@ ENDIF()
 # CFITSIO source code:
 #==============================================================================
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
-set (LIB_DESTINATION "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}")
-set (INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include/" CACHE PATH "Install dir for header files")
-set (BIN_DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
+include(GenerateExportHeader)
 
 SET(H_FILES fitsio.h fitsio2.h longnam.h)
 
@@ -237,6 +237,8 @@ SET(SRC_FILES
     wcssub.c wcsutil.c zcompress.c zuncompress.c
 )
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
+
 # For future modifications:
 
 # drvrsmem.c is only usable if HAVE_SHMEM_SERVICES is defined:
@@ -248,16 +250,9 @@ SET(SRC_FILES
 #==============================================================================
 # Add libraries:
 #==============================================================================
-ADD_LIBRARY(${LIB_NAME} ${LIB_TYPE} ${H_FILES} ${SRC_FILES})
-# Add an alias definition to handle export namespace for
-# add_subdirectory():
-ADD_LIBRARY(${LIB_NAME}::${LIB_NAME} ALIAS ${LIB_NAME})
 
-TARGET_INCLUDE_DIRECTORIES(${LIB_NAME} PUBLIC
-    $<BUILD_INTERFACE:${CFITSIO_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-    $<INSTALL_INTERFACE:include>
-)
+ADD_LIBRARY(${LIB_NAME} ${LIB_TYPE} ${H_FILES} ${SRC_FILES})
+
 # Math:
 TARGET_LINK_LIBRARIES(${LIB_NAME} ${M_LIB})
 # zlib:
@@ -285,18 +280,64 @@ IF (BZIP2_FOUND)
     SET (PKG_CONFIG_LIBS "${PKG_CONFIG_LIBS} -lbz2")
 ENDIF(BZIP2_FOUND)
 
-SET_TARGET_PROPERTIES(${LIB_NAME} PROPERTIES VERSION ${${PROJECT_NAME}_VERSION} SOVERSION ${${PROJECT_NAME}_SONAME})
+#==============================================================================
 
-include(GNUInstallDirs)
-include(CMakePackageConfigHelpers)
-
-install(TARGETS ${LIB_NAME} EXPORT ${LIB_NAME}-targets
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+generate_export_header(cfitsio)
+set_property(TARGET cfitsio PROPERTY VERSION ${CFITSIO_VERSION})
+set_property(TARGET cfitsio PROPERTY SOVERSION 10)
+set_property(TARGET cfitsio PROPERTY INTERFACE_cfitsio_MAJOR_VERSION ${${PROJECT_NAME}_MAJOR})
+set_property(TARGET cfitsio APPEND PROPERTY
+  COMPATIBLE_INTERFACE_STRING cfitsio_MAJOR_VERSION
 )
-install(EXPORT ${LIB_NAME}-targets DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cfitsio)
-install(FILES ${H_FILES} DESTINATION ${INCLUDE_INSTALL_DIR} COMPONENT Devel)
+
+install(TARGETS cfitsio EXPORT cfitsioTargets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
+)
+
+install(FILES ${H_FILES} "${CMAKE_CURRENT_BINARY_DIR}/cfitsio_export.h"
+        DESTINATION include COMPONENT Devel)
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/cfitsio/cfitsioConfigVersion.cmake"
+  VERSION ${CFITSIO_VERSION}
+  COMPATIBILITY AnyNewerVersion
+)
+
+export(EXPORT cfitsioTargets
+  FILE "${CMAKE_CURRENT_BINARY_DIR}/cfitsio/cfitsioTargets.cmake"
+  NAMESPACE CFITSIO::
+)
+configure_file(cmake/cfitsioConfig.cmake
+  "${CMAKE_CURRENT_BINARY_DIR}/cfitsio/cfitsioConfig.cmake"
+  COPYONLY
+)
+
+set(ConfigPackageLocation lib/cmake/cfitsio)
+install(EXPORT cfitsioTargets
+  FILE
+    cfitsioTargets.cmake
+  NAMESPACE
+    CFITSIO::
+  DESTINATION
+    ${ConfigPackageLocation}
+)
+install(
+  FILES
+    cmake/cfitsioConfig.cmake
+    "${CMAKE_CURRENT_BINARY_DIR}/cfitsio/cfitsioConfigVersion.cmake"
+  DESTINATION
+    ${ConfigPackageLocation}
+  COMPONENT
+    Devel
+)
+
+# cfitsio.pc:
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cfitsio.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/cfitsio.pc @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cfitsio.pc DESTINATION lib/pkgconfig)
 
 #==============================================================================
 # Optional test programs:
@@ -348,14 +389,3 @@ IF (UTILS)
     install(TARGETS fpack funpack fitscopy fitsverify RUNTIME DESTINATION bin)
 
 ENDIF(UTILS)
-
-#==============================================================================
-# cfitsio.pc
-#==============================================================================
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cfitsio.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/cfitsio.pc @ONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cfitsio-config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/cfitsio-config.cmake @ONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cfitsio-config-version.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/cfitsio-config-version.cmake @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cfitsio.pc DESTINATION ${LIB_DESTINATION}/pkgconfig/)
-install(FILES ${CFITSIO_BINARY_DIR}/cfitsio-config.cmake
-              ${CFITSIO_BINARY_DIR}/cfitsio-config-version.cmake
-              DESTINATION ${LIB_DESTINATION}/cfitsio-${CFITSIO_VERSION})
