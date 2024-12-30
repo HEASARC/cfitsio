@@ -53,9 +53,9 @@ OPTION(USE_CURL "USE_CURL" ON)
 
 OPTION(USE_PTHREADS "Thread-safe build (using pthreads)" OFF)
 
-OPTION(TESTS "Build test programs Testprog and cookbook" OFF)
+OPTION(TESTS "Build test programs Testprog and cookbook" ON)
 
-OPTION(UTILS "Build fpack, funpack, fitscopy, and fitsverify executables" OFF)
+OPTION(UTILS "Build helper programs [fpack, funpack, fitscopy, fitsverify, imcopy, smem, speed]" ON)
 
 OPTION(USE_SSE2 "Enable use of instructions in the SSE2 extended instruction set" OFF)
 
@@ -340,7 +340,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cfitsio.pc.cmake ${CMAKE_CURRENT_BINA
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cfitsio.pc DESTINATION lib/pkgconfig)
 
 #==============================================================================
-# Optional test programs:
+# Test programs:
 #==============================================================================
 IF (TESTS)
 
@@ -357,10 +357,12 @@ IF (TESTS)
     TARGET_LINK_LIBRARIES(cookbook ${LIB_NAME})
     ADD_TEST(cookbook cookbook)
 
+    install(TARGETS cookbook RUNTIME DESTINATION bin)
+
 ENDIF(TESTS)
 
 #==============================================================================
-# Optional utilities:
+# Utilities:
 #==============================================================================
 IF (UTILS)
 
@@ -380,12 +382,21 @@ IF (UTILS)
     TARGET_COMPILE_DEFINITIONS(fitsverify PRIVATE -DSTANDALONE)
     TARGET_LINK_LIBRARIES(fitsverify ${LIB_NAME})
 
+    ADD_EXECUTABLE(imcopy utilities/imcopy.c)
+    TARGET_LINK_LIBRARIES(imcopy ${LIB_NAME})
+
+    ADD_EXECUTABLE(smem utilities/smem.c)
+    TARGET_LINK_LIBRARIES(smem ${LIB_NAME})
+
+    ADD_EXECUTABLE(speed utilities/speed.c)
+    TARGET_LINK_LIBRARIES(speed ${LIB_NAME})
+
     # To expand the command line arguments in Windows, see:
     # http://msdn.microsoft.com/en-us/library/8bch7bkk.aspx
     if(MSVC AND NOT CMAKE_SYSTEM_NAME MATCHES "WindowsStore")
       set_target_properties(fpack funpack PROPERTIES LINK_FLAGS "setargv.obj")
     endif()
 
-    install(TARGETS fpack funpack fitscopy fitsverify RUNTIME DESTINATION bin)
+    install(TARGETS fpack funpack fitscopy fitsverify imcopy smem speed RUNTIME DESTINATION bin)
 
 ENDIF(UTILS)

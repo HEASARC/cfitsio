@@ -114,11 +114,12 @@ the CMake build system that is available from http://www.cmake.org.
      -DCFITSIO_USE_SSSE3=ON  (default is OFF)
        Enable use of instructions in the SSSE3 extended instruction set
 
-     -DTESTS=ON              (default is OFF)
+     -DTESTS=OFF             (default is ON)
        Build test programs (Testprog and cookbook)
 
-     -DUTILS=ON              (default is OFF)
-       Build FPack, Funpack, and Fitscopy executables
+     -DUTILS=OFF             (default is ON)
+       Build helper programs [fpack, funpack, fitscopy, fitsverify,
+       imcopy, smem, speed]
 
   g. Execute the following command to build the CFITSIO library:
 
@@ -130,9 +131,8 @@ the CMake build system that is available from http://www.cmake.org.
      If this process completes successfully, you should find the
      CFITSIO library files in the "cfitsio.build\Release" subdirectory.
 
-     If you specified -DTESTS=ON in the previous step, you may verify
-     that CFITSIO is working correctly by executing Testprog in the
-     same Release directory.  It should generate a long stream of
+     To test whether CFITSIO is working correctly, execute 'Testprog'
+     in the Release directory.  It should generate a long stream of
      diagnostic messages ending with this line:
 
          "Status = 0: OK - no error".
