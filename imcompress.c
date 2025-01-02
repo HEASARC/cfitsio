@@ -6860,7 +6860,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
      if ((infptr->Fptr)->znaxis[0]   != (infptr->Fptr)->tilesize[0] ||
         (infptr->Fptr)->tilesize[1] != 1 )
      {
-      tilesize = pixlen * tilelen;
+      tilesize = (long)pixlen * tilelen;
 
       /* check that tile size/type has not changed */
       if (tilesize != (infptr->Fptr)->tiledatasize[tilecol] ||
