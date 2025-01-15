@@ -40,7 +40,7 @@ int fits_parse_card(FILE *out,		/* output file pointer */
     /* take out the trailing space */  
     i = 7; 
     p = &kname[7];
-    while(isspace((int)*p) && i >= 0) {*p = '\0'; p--; i--;} 
+    while(i >= 0 && isspace((int)*p)) {*p = '\0'; p--; i--;} 
     
     /* Whether the keyword name is left justified */
     i = 0;
