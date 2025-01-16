@@ -1661,10 +1661,10 @@ static int New_GTI( ParseData *lParse, funcOp Op, char *fname, int Node1, int No
 {
    fitsfile *fptr;
    Node *this, *that0, *that1, *that2;
-   int  type, n, startCol, stopCol, Node0;
+   int  type,i,n, startCol, stopCol, Node0;
    int  hdutype, hdunum, evthdu, samefile, extvers, movetotype, tstat;
    char extname[100];
-   long nrows, i;
+   long nrows;
    double timeZeroI[2], timeZeroF[2], dt, timeSpan;
    char xcol[20], xexpr[20];
    YYSTYPE colVal;
