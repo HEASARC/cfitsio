@@ -1858,7 +1858,7 @@ static int New_GTI( ParseData *lParse, funcOp Op, char *fname, int Node1, int No
 	    return(-1);
 	 }
 	 startptr = that0->value.data.dblptr;
-	 stopptr  = that0->value.data.dblptr + nptr;
+	 stopptr  = that0->value.data.dblptr + nrows;
 	 
 	 ffgcvd( fptr, startCol, 1L, 1L, nrows, 0.0,
 		 startptr, &i, &lParse->status );
@@ -1874,8 +1874,8 @@ static int New_GTI( ParseData *lParse, funcOp Op, char *fname, int Node1, int No
 	 that0->type = 1; /*  Assume yes  */
 	 i = nrows;
 	 while( --i ) { /* the following are failure conditions for GTI ordering */
-	   if( (startptr[i] > stopptr [i]) ||      /* START{i} > STOP{i} */
-	       (starptr[i]  < stopptr[i-1]) ) {     /* START{i} < STOP{i-1} */
+	   if( (startptr[i] > stopptr[i]    ) ||    /* START{i} > STOP{i} */
+	       (startptr[i] < stopptr[i-1]) ) {     /* START{i} < STOP{i-1} */
 	     that0->type = 0;
 	     break;
 	   }
@@ -1883,7 +1883,9 @@ static int New_GTI( ParseData *lParse, funcOp Op, char *fname, int Node1, int No
 
 	 /* GTIOVERLAP() requires ordered GTI */
 	 if (that0->type != 1 && Op == gtiover_fct) {
-	   yyerror(0, lParse, "Input GTI must be time-ordered for GTIOVERLAP");
+	   char errmsg[120];
+	   sprintf(errmsg, "Input GTI must be time-ordered for GTIOVERLAP (row %ld)", i+1);
+	   yyerror(0, lParse, errmsg);
 	   return(-1);
 	 }
 	 
@@ -1897,6 +1899,7 @@ static int New_GTI( ParseData *lParse, funcOp Op, char *fname, int Node1, int No
 	   for( i=0; i<nrows; i++ ) {
 	     startptr[i] += dt;
 	     stopptr[i]  += dt;
+	   }
 	 }
       }
       /* If Node1 is constant (gtifilt_fct) or
