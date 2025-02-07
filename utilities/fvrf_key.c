@@ -219,7 +219,7 @@ void get_str(char **pt,     		/* card string from character 11*/
     strncpy(kvalue,pi,(size_t)nchar);
     *(kvalue+nchar) = '\0'; 
     pi = kvalue + (nchar -1) ; 
-    while(isspace((int)*pi)){ *pi = '\0'; pi--;} /* delete the trailing space */ 
+    while(pi >= kvalue && isspace((int)*pi)){ *pi = '\0'; pi--;} /* delete the trailing space */ 
     p++;				  /* skip the  ' */
     while(isspace((int)*p) && *p != '\0')  p++; 
     *pt = p;
