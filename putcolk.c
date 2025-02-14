@@ -1011,7 +1011,7 @@ int ffintfstr(int *input,      /* I - array of values to be converted  */
     {       
         for (ii = 0; ii < ntodo; ii++)
         {
-           sprintf(output, cform, (double) input[ii]);
+           snprintf(output, DBUFFSIZE, cform, (double) input[ii]);
            output += twidth;
 
            if (*output)  /* if this char != \0, then overflow occurred */
@@ -1023,7 +1023,7 @@ int ffintfstr(int *input,      /* I - array of values to be converted  */
         for (ii = 0; ii < ntodo; ii++)
         {
           dvalue = (input[ii] - zero) / scale;
-          sprintf(output, cform, dvalue);
+          snprintf(output, DBUFFSIZE, cform, dvalue);
           output += twidth;
 
           if (*output)  /* if this char != \0, then overflow occurred */
