@@ -3230,8 +3230,8 @@ void ffcfmt(char *tform,    /* value of an ASCII table TFORMn keyword */
   the values have been read as a double.
 */
 {
-    int ii;
-
+    int ii, istart, isgood, npt;
+    
     cform[0] = '\0';
     ii = 0;
     while (tform[ii] != 0 && tform[ii] == ' ') /* find first non-blank char */
@@ -3239,21 +3239,45 @@ void ffcfmt(char *tform,    /* value of an ASCII table TFORMn keyword */
 
     if (tform[ii] == 0)
         return;    /* input format string was blank */
+    istart = ii;
+    
+    isgood = 1;
+    npt = 0;
+    if (tform[ii] != 'A' && tform[ii] != 'I' && tform[ii] != 'F'
+                 && tform[ii] != 'E' && tform[ii] != 'D')
+       isgood = 0;
+    ii++;
+    while (isgood && tform[ii] != 0)
+    {
+       /* one period is allowed */
+       if (tform[ii] == '.')
+       {
+          if (npt > 0)
+            isgood = 0;
+          else
+            ++npt; 
+       }
+       else if (!isdigit(tform[ii]))
+          isgood = 0;
+       ++ii; 
+    }
+    if (!isgood)
+       return;
 
     cform[0] = '%';  /* start the format string */
 
-    strcpy(&cform[1], &tform[ii + 1]); /* append the width and decimal code */
+    strcpy(&cform[1], &tform[istart + 1]); /* append the width and decimal code */
 
 
-    if (tform[ii] == 'A')
+    if (tform[istart] == 'A')
         strcat(cform, "s");
-    else if (tform[ii] == 'I')
+    else if (tform[istart] == 'I')
         strcat(cform, ".0f");  /*  0 precision to suppress decimal point */
-    if (tform[ii] == 'F')
+    if (tform[istart] == 'F')
         strcat(cform, "f");
-    if (tform[ii] == 'E')
+    if (tform[istart] == 'E')
         strcat(cform, "E");
-    if (tform[ii] == 'D')
+    if (tform[istart] == 'D')
         strcat(cform, "E");
 
     return;
