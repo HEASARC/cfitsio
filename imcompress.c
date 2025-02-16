@@ -5388,7 +5388,11 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
         tstatus = 0;
 	ffgky (infptr, TLONG, keyword, &(infptr->Fptr)->tilesize[ii], NULL, 
                &tstatus);
-
+        if ((infptr->Fptr)->tilesize[ii] == 0)
+        {
+           ffpmsg("invalid ZTILE value = 0 in compressed image");
+           return (*status = DATA_DECOMPRESSION_ERR);
+        }
         expect_nrows *= (((infptr->Fptr)->znaxis[ii] - 1) / 
                   (infptr->Fptr)->tilesize[ii]+ 1);
         maxtilelen *= (infptr->Fptr)->tilesize[ii];
@@ -5453,6 +5457,13 @@ int imcomp_get_compressed_image_par(fitsfile *infptr, int *status)
     /* and max size of the compressed tile buffer */
     (infptr->Fptr)->maxtilelen = maxtilelen;
 
+    /* prevent possible divide by zero in imcomp_calc_max_elem */
+    if ((infptr->Fptr)->compress_type == RICE_1 && 
+        (infptr->Fptr)->rice_blocksize == 0)
+    {
+        ffpmsg("Invalid RICE_1 blocksize = 0  (fits_get_compressed_img_par)");
+        return(*status = DATA_DECOMPRESSION_ERR);
+    }
     (infptr->Fptr)->maxelem = 
            imcomp_calc_max_elem ((infptr->Fptr)->compress_type, maxtilelen, 
                (infptr->Fptr)->zbitpix, (infptr->Fptr)->rice_blocksize);
