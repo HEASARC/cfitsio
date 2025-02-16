@@ -377,9 +377,8 @@ int ffgky( fitsfile *fptr,     /* I - FITS file pointer        */
             if (longval > LONG_MAX || longval < LONG_MIN)
                 *status = NUM_OVERFLOW;
             else
-                *(int *) value = longval;
+                *(long *) value = longval;
         }
-        ffgkyj(fptr, keyname, (long *) value, comm, status);
     }
     else if (datatype == TULONGLONG)
     {
