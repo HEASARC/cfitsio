@@ -7054,7 +7054,12 @@ int ffpdfl(fitsfile *fptr,      /* I - FITS file pointer */
                 (fptr->Fptr)->heapsize;
 
     nfill = (long) ((fillstart + 2879) / 2880 * 2880 - fillstart);
-
+    if (nfill >= 2880) /* can only happen if fillstart was negative */
+    {
+        *status = BAD_HEAP_PTR;
+        return (*status);
+    }
+    
     if ((fptr->Fptr)->hdutype == ASCII_TBL)
         chfill = 32;         /* ASCII tables are filled with spaces */
     else
