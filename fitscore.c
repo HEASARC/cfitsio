@@ -1524,10 +1524,11 @@ int ffpsvc(char *card,    /* I - FITS header card (nominally 80 bytes long) */
                     break;   /* found the closing quote, so exit this loop  */
                 }
             }
-            value[jj] = card[ii];  /* copy the next character to the output */
+            if (jj < FLEN_VALUE-1)
+               value[jj] = card[ii];  /* copy the next character to the output */
         }
 
-        if (ii == cardlen || jj == FLEN_VALUE-1)
+        if (ii == cardlen || jj >= FLEN_VALUE-1)
         {
             jj = minvalue(jj, FLEN_VALUE-2);  /* don't exceed 70 char string length */
             value[jj] = '\'';  /*  close the bad value string  */
