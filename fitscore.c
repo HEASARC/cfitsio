@@ -78,9 +78,10 @@ float ffvers(float *version)  /* IO - version number */
       *version = (float)CFITSIO_MAJOR + (float)(.01*CFITSIO_MINOR)
                    + (float)(.0001*CFITSIO_MICRO);
 
-/*    *version = 4.5.0      Aug 2024
+/*    *version = 4.6.0      Mar 2025
 
    Previous releases:
+      *version = 4.5.0      Aug 2024
       *version = 4.4.1      Jun 2024 (license change)
       *version = 4.4.0      Feb 2024
       *version = 4.3.1      Nov 2023 (patch)
