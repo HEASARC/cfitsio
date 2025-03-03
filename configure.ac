@@ -2,7 +2,7 @@
 
 # Package name and version number:
 m4_define([v_maj], [4])
-m4_define([v_min], [5])
+m4_define([v_min], [6])
 m4_define([v_mic], [0])
 m4_define([project_version], [v_maj.v_min.v_mic])
 AC_INIT([cfitsio], [project_version])
@@ -43,7 +43,7 @@ AC_PROG_LN_S
 # CFITSIO Version Numbers:
 #--------------------------------------------------------------------
 #AC_SUBST(CFITSIO_MAJOR,4)
-#AC_SUBST(CFITSIO_MINOR,5)
+#AC_SUBST(CFITSIO_MINOR,6)
 #AC_SUBST(CFITSIO_MICRO,0)
 # Increment soname each time the interface changes:
 #AC_SUBST(CFITSIO_SONAME,10)
