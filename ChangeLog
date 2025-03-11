@@ -9,6 +9,8 @@ Version 4.6.0 - Mar 2025
     
   - The fitsverify utility tool now distinguishes between alternate
     coordinate systems when testing positions of WCSAXES keywords.
+    
+  - Updates made for greater C23 compatibility as required for gcc-15.
   
   - Several possible low-level vulnerabilities patched.  Our thanks
     to Doyensec for reporting these.
