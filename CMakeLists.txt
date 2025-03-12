@@ -385,8 +385,10 @@ IF (UTILS)
     ADD_EXECUTABLE(imcopy utilities/imcopy.c)
     TARGET_LINK_LIBRARIES(imcopy ${LIB_NAME})
 
-    ADD_EXECUTABLE(smem utilities/smem.c)
-    TARGET_LINK_LIBRARIES(smem ${LIB_NAME})
+    IF(HAVE_SHMEM_SERVICES)
+      ADD_EXECUTABLE(smem utilities/smem.c)
+      TARGET_LINK_LIBRARIES(smem ${LIB_NAME})
+    ENDIF()
 
     ADD_EXECUTABLE(speed utilities/speed.c)
     TARGET_LINK_LIBRARIES(speed ${LIB_NAME})
@@ -397,6 +399,9 @@ IF (UTILS)
       set_target_properties(fpack funpack PROPERTIES LINK_FLAGS "setargv.obj")
     endif()
 
-    install(TARGETS fpack funpack fitscopy fitsverify imcopy smem speed RUNTIME DESTINATION bin)
+    install(TARGETS fpack funpack fitscopy fitsverify imcopy speed RUNTIME DESTINATION bin)
+    IF(HAVE_SHMEM_SERVICES)
+      install(TARGETS smem RUNTIME DESTINATION bin)
+    ENDIF()
 
 ENDIF(UTILS)
