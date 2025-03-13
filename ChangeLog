@@ -12,7 +12,7 @@ Version 4.6.0 - Mar 2025
     
   - Updates made for greater C23 compatibility as required for gcc-15.
   
-  - Several possible low-level vulnerabilities patched.  Our thanks
+  - Possible memory vulnerabilities patched.  Our thanks
     to Doyensec for reporting these.
        
   - Fix to a possible heap buffer overflow in the fitsverify tool.  Our 
