@@ -13,12 +13,12 @@ Version 4.6.0 - Mar 2025
   - Updates made for greater C23 compatibility as required for gcc-15.
   
   - Possible memory vulnerabilities patched.  Our thanks
-    to Doyensec for reporting these.
+    to Doyensec for reporting this.
        
-  - Fix to a possible heap buffer overflow in the fitsverify tool.  Our 
+  - Fix to a possible heap buffer overflow in a utility tool.  Our 
     thanks to TeamH4C for reporting this.
  
-  - Negative size parameter vulnerability patched in fitsverify
+  - Negative size parameter vulnerability patched in utility
     tool.  Our thanks to TeamH4C for reporting this.
                    
 Version 4.5.0 - Aug 2024
