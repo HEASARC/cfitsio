@@ -37,6 +37,20 @@ For more information, please visit:
 http://brew.sh
 http://brewformulas.org/Cfitsio
 
+
+---------------------------------------------------------------------
+To install CFITSIO using conda:
+---------------------------------------------------------------------
+
+If you have conda installed, you may install CFITSIO simply with
+the command
+
+  $ conda install cfitsio
+
+For more information, please visit:
+
+https://github.com/conda-forge/cfitsio-feedstock
+
 ---------------------------------------------------------------------
 To build CFITSIO using the XCode GUI:
 ---------------------------------------------------------------------
