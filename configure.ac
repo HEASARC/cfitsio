@@ -24,9 +24,6 @@ m4_define([lt_cur], [10])
 #version_info="lt_cur:lt_rev:lt_age"
 version_info="lt_cur"
 
-AC_CONFIG_AUX_DIR(config)
-AC_CONFIG_MACRO_DIRS([m4])
-
 AC_CANONICAL_TARGET([])
 
 #AC_CONFIG_HEADERS(config.h)
