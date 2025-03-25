@@ -1,5 +1,13 @@
                    Log of Changes Made to CFITSIO
                    
+Version 4.6.1 - Mar 2025
+
+  - Updated CMake configuration to use GNUInstallDirs module and to
+    use CMAKE_INSTALL_LIBDIR and CMAKE_INSTALL_INCLUDEDIR; fixes bug
+    in 4.6.0 that led to an empty 'includedir' in cfitsio.pc
+
+  - Updated autotools config files
+
 Version 4.6.0 - Mar 2025
 
   - Improved the empty primary data test performed in fits_open_file.
