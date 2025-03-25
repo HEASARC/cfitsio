@@ -67,8 +67,18 @@ dkms.conf
 
 # CFITSIO misc
 Makefile
+Makefile.in
+aclocal.m4
+configure
+compile
+missing
+depcomp
+install-sh
+ltmain.sh
+config.guess
 config.log
 config.status
+config.sub
 cfitsio.pc
 cookbook
 fitscopy
