@@ -297,8 +297,6 @@ fi
 ARCHIVE="$AR rv"
 AC_SUBST(ARCHIVE)
 
-AC_PROG_RANLIB
-
 dnl Checks for ANSI stdlib.h.
 AC_CHECK_HEADERS(stdlib.h string.h math.h limits.h ,ANSI_HEADER=yes,ANSI_HEADER=no)dnl
 
