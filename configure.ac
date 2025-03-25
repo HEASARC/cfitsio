@@ -40,15 +40,6 @@ AC_SUBST([version_info])
 AC_PROG_LN_S
 
 #--------------------------------------------------------------------
-# CFITSIO Version Numbers:
-#--------------------------------------------------------------------
-#AC_SUBST(CFITSIO_MAJOR,4)
-#AC_SUBST(CFITSIO_MINOR,6)
-#AC_SUBST(CFITSIO_MICRO,0)
-# Increment soname each time the interface changes:
-#AC_SUBST(CFITSIO_SONAME,10)
-
-#--------------------------------------------------------------------
 # System type
 #--------------------------------------------------------------------
 
