@@ -78,9 +78,10 @@ float ffvers(float *version)  /* IO - version number */
       *version = (float)CFITSIO_MAJOR + (float)(.01*CFITSIO_MINOR)
                    + (float)(.0001*CFITSIO_MICRO);
 
-/*    *version = 4.6.1      Mar 2025 (autotools/cmake config changes only)
+/*    *version = 4.6.2      Mar 2025 (autotools change only)
 
    Previous releases:
+      *version = 4.6.1      Mar 2025 (autotools/cmake config changes only)
       *version = 4.6.0      Mar 2025
       *version = 4.5.0      Aug 2024
       *version = 4.4.1      Jun 2024 (license change)

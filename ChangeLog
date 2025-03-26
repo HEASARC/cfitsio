@@ -1,5 +1,11 @@
                    Log of Changes Made to CFITSIO
                    
+Version 4.6.2 - Mar 2025
+
+  - Updated autotools configure script to use AM_MAINTAINER_MODE;
+    disables automatic regeneration of the build system unless
+    configure is invoked with '--enable-maintainer-mode'
+
 Version 4.6.1 - Mar 2025
 
   - Updated CMake configuration to use GNUInstallDirs module and to
