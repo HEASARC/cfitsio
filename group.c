@@ -6127,7 +6127,8 @@ int fits_clean_url(char *inURL,  /* I input URL string                      */
       strcat(outURL, tmp);
       strcat(outURL, "/");
     }
-    outURL[strlen(outURL) - 1] = 0; /* blank out trailing / */
+    if (strlen(outURL))
+       outURL[strlen(outURL) - 1] = 0; /* blank out trailing / */
   } while(0);
   delete_grp_stack(&mystack);
   return *status;
