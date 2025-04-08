@@ -6910,7 +6910,7 @@ int imcomp_decompress_tile (fitsfile *infptr,
       memcpy((infptr->Fptr)->tiledata[tilecol], buffer, tilesize);
 
       if (nullcheck == 2) {
-	    if ((infptr->Fptr)->tilenullarray == 0)  {
+	    if ((infptr->Fptr)->tilenullarray != 0)  {
        	      (infptr->Fptr)->tilenullarray[tilecol] = malloc(tilelen);
             }
             memcpy((infptr->Fptr)->tilenullarray[tilecol], bnullarray, tilelen);
