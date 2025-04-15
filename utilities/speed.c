@@ -2,7 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+
+#ifndef _MSC_VER
 #include <sys/time.h>
+#endif
 
 /*
   Every program which uses the CFITSIO interface must include the
@@ -505,11 +508,12 @@ void printerror( int status)
     exit( status );       /* terminate the program, returning error status */
 }
 /*--------------------------------------------------------------------------*/
-int marktime( int *status)
+int marktime(int *status)
 {
+#ifndef _MSC_VER
     double telapse;
     time_t temp;
-    struct  timeval tv;
+    struct timeval tv;
 
     temp = time(0);
 
@@ -520,8 +524,8 @@ int marktime( int *status)
 
     telapse = 0.;
 
-        scpu = clock();
-        start = time(0);
+    scpu = clock();
+    start = time(0);
 /*
     while (telapse == 0.)
     {
@@ -530,33 +534,42 @@ int marktime( int *status)
         telapse = difftime( start, temp );
     }
 */
-        gettimeofday (&tv, NULL);
+    gettimeofday(&tv, NULL);
 
-	startsec = tv.tv_sec;
-        startmilli = tv.tv_usec/1000;
+    startsec = tv.tv_sec;
+    startmilli = tv.tv_usec/1000;
+#else
+/* don't support high timing precision on Windows machines */
+    startsec = 0;
+    startmilli = 0;
 
+    scpu = clock();
+#endif
     return( *status );
 }
 /*--------------------------------------------------------------------------*/
 int gettime(double *elapse, float *elapscpu, int *status)
 {
-        struct  timeval tv;
-	int stopmilli;
-	long stopsec;
+#ifndef _MSC_VER
+    struct  timeval tv;
+    int stopmilli;
+    long stopsec;
 
-
-        gettimeofday (&tv, NULL);
+    gettimeofday(&tv, NULL);
     ecpu = clock();
     finish = time(0);
 
-        stopmilli = tv.tv_usec/1000;
-	stopsec = tv.tv_sec;
-	
+    stopmilli = tv.tv_usec/1000;
+    stopsec = tv.tv_sec;
 
-	*elapse = (stopsec - startsec) + (stopmilli - startmilli)/1000.;
+    *elapse = (stopsec - startsec) + (stopmilli - startmilli)/1000.;
 
 /*    *elapse = difftime(finish, start) + 0.5; */
     *elapscpu = (ecpu - scpu) * 1.0 / CLOCKTICKS;
-
+#else
+/* set the elapsed time the same as the CPU time on Windows machines */
+    *elapscpu = (float) ((ecpu - scpu) * 1.0 / CLOCKTICKS);
+    *elapse = *elapscpu;  
+#endif
     return( *status );
 }
