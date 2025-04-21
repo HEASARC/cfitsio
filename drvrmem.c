@@ -942,8 +942,10 @@ int mem_rawfile_open(char *filename, int rwmode, int *hdl)
           dim[3] = strtol(cptr2+1, &cptr, 10);
 
           if (cptr && *cptr == ',')
+          {
             naxis = 5;
             dim[4] = strtol(cptr+1, &cptr2, 10);
+          }
         }
       }
     }
