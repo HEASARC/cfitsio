@@ -1510,7 +1510,7 @@ int fffr4i4(float *input,         /* I - array of values to be converted     */
     {
         sptr = (short *) input;
 
-#if BYTESWAPPED && MACHINE != VAXVMS && MACHINE != ALPHAVMS
+#if BYTESWAPPED && CFITSIO_MACHINE != VAXVMS && CFITSIO_MACHINE != ALPHAVMS
         sptr++;       /* point to MSBs */
 #endif
 
@@ -1676,7 +1676,7 @@ int fffr8i4(double *input,        /* I - array of values to be converted     */
     {
         sptr = (short *) input;
 
-#if BYTESWAPPED && MACHINE != VAXVMS && MACHINE != ALPHAVMS
+#if BYTESWAPPED && CFITSIO_MACHINE != VAXVMS && CFITSIO_MACHINE != ALPHAVMS
         sptr += 3;       /* point to MSBs */
 #endif
         if (scale == 1. && zero == 0.)  /* no scaling */
@@ -3419,7 +3419,7 @@ int fffr4i8(float *input,         /* I - array of values to be converted     */
     {
         sptr = (short *) input;
 
-#if BYTESWAPPED && MACHINE != VAXVMS && MACHINE != ALPHAVMS
+#if BYTESWAPPED && CFITSIO_MACHINE != VAXVMS && CFITSIO_MACHINE != ALPHAVMS
         sptr++;       /* point to MSBs */
 #endif
 
@@ -3585,7 +3585,7 @@ int fffr8i8(double *input,        /* I - array of values to be converted     */
     {
         sptr = (short *) input;
 
-#if BYTESWAPPED && MACHINE != VAXVMS && MACHINE != ALPHAVMS
+#if BYTESWAPPED && CFITSIO_MACHINE != VAXVMS && CFITSIO_MACHINE != ALPHAVMS
         sptr += 3;       /* point to MSBs */
 #endif
         if (scale == 1. && zero == 0.)  /* no scaling */

@@ -9737,7 +9737,7 @@ int ffc2rr(const char *cval,   /* I - string representation of the value */
     }
 
     sptr = (short *) fval;
-#if BYTESWAPPED && MACHINE != VAXVMS && MACHINE != ALPHAVMS
+#if BYTESWAPPED && CFITSIO_MACHINE != VAXVMS && CFITSIO_MACHINE != ALPHAVMS
     sptr++;       /* point to MSBs */
 #endif
     iret = fnan(*sptr);  /* if iret == 1, then the float value is a NaN */
@@ -9812,7 +9812,7 @@ int ffc2dd(const char *cval,   /* I - string representation of the value */
     }
 
     sptr = (short *) dval;
-#if BYTESWAPPED && MACHINE != VAXVMS && MACHINE != ALPHAVMS
+#if BYTESWAPPED && CFITSIO_MACHINE != VAXVMS && CFITSIO_MACHINE != ALPHAVMS
     sptr += 3;       /* point to MSBs */
 #endif
     iret = dnan(*sptr);  /* if iret == 1, then the double value is a NaN */

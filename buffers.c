@@ -998,10 +998,10 @@ int ffgr4b(fitsfile *fptr,  /* I - FITS file pointer                        */
 {
     LONGLONG postemp;
 
-#if MACHINE == VAXVMS
+#if CFITSIO_MACHINE == VAXVMS
     long ii;
 
-#elif (MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
+#elif (CFITSIO_MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
     short *sptr;
     long ii;
 
@@ -1030,12 +1030,12 @@ int ffgr4b(fitsfile *fptr,  /* I - FITS file pointer                        */
     }
 
 
-#if MACHINE == VAXVMS
+#if CFITSIO_MACHINE == VAXVMS
 
     ii = nvals;                      /* call VAX macro routine to convert */
     ieevur(values, values, &ii);     /* from  IEEE float -> F float       */
 
-#elif (MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
+#elif (CFITSIO_MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
 
     ffswap2( (short *) values, nvals * 2);  /* swap pairs of bytes */
 
@@ -1067,10 +1067,10 @@ int ffgr8b(fitsfile *fptr,  /* I - FITS file pointer                        */
 {
     LONGLONG  postemp;
 
-#if MACHINE == VAXVMS
+#if CFITSIO_MACHINE == VAXVMS
     long ii;
 
-#elif (MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
+#elif (CFITSIO_MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
     short *sptr;
     long ii;
 
@@ -1097,11 +1097,11 @@ int ffgr8b(fitsfile *fptr,  /* I - FITS file pointer                        */
         ffgbytoff(fptr, 8, nvals, incre - 8, values, status);
     }
 
-#if MACHINE == VAXVMS
+#if CFITSIO_MACHINE == VAXVMS
     ii = nvals;                      /* call VAX macro routine to convert */
     ieevud(values, values, &ii);     /* from  IEEE float -> D float       */
 
-#elif (MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
+#elif (CFITSIO_MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
     ffswap2( (short *) values, nvals * 4);  /* swap pairs of bytes */
 
     /* convert from IEEE float format to VMS GFLOAT float format */
@@ -1305,13 +1305,13 @@ int ffpr4b(fitsfile *fptr, /* I - FITS file pointer                         */
   format conversion (e.g. byte-swapping) if necessary.
 */
 {
-#if MACHINE == VAXVMS
+#if CFITSIO_MACHINE == VAXVMS
     long ii;
 
     ii = nvals;                      /* call VAX macro routine to convert */
     ieevpr(values, values, &ii);     /* from F float -> IEEE float        */
 
-#elif (MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
+#elif (CFITSIO_MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
     long ii;
 
     /* convert from VMS FFLOAT float format to IEEE float format */
@@ -1345,13 +1345,13 @@ int ffpr8b(fitsfile *fptr, /* I - FITS file pointer                         */
   format conversion (e.g. byte-swapping) if necessary.
 */
 {
-#if MACHINE == VAXVMS
+#if CFITSIO_MACHINE == VAXVMS
     long ii;
 
     ii = nvals;                      /* call VAX macro routine to convert */
     ieevpd(values, values, &ii);     /* from D float -> IEEE float        */
 
-#elif (MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
+#elif (CFITSIO_MACHINE == ALPHAVMS) && (FLOATTYPE == GFLOAT)
     long ii;
 
     /* convert from VMS GFLOAT float format to IEEE float format */

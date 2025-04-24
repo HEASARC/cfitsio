@@ -394,7 +394,7 @@ int ffpcli( fitsfile *fptr,  /* I - FITS file pointer                       */
       format in a temporary buffer that has been allocated for this purpose.
     */
     if (scale == 1. && zero == 0. &&
-       MACHINE == NATIVE && tcode == TSHORT)
+       CFITSIO_MACHINE == NATIVE && tcode == TSHORT)
     {
         writeraw = 1;
         if (nelem < (LONGLONG)INT32_MAX) {

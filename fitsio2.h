@@ -86,7 +86,7 @@ extern int Fitsio_Pthread_Status;
 #elif defined(__sparcv9) || (defined(__sparc__) && defined(__arch64__))
                                /*  SUN Solaris7 in 64-bit mode */
 #define BYTESWAPPED FALSE
-#define MACHINE NATIVE
+#define CFITSIO_MACHINE NATIVE
 #define LONGSIZE 64   
 
                             /* IBM System z mainframe support */ 
@@ -106,7 +106,7 @@ extern int Fitsio_Pthread_Status;
 #elif defined(_SX)             /* Nec SuperUx */
 
 #define BYTESWAPPED FALSE
-#define MACHINE NATIVE
+#define CFITSIO_MACHINE NATIVE
 #define LONGSIZE 64
 
 #elif defined(__powerpc64__) || defined(__64BIT__) || defined(__AARCH64EB__)  /* IBM 64-bit AIX powerpc*/
@@ -116,7 +116,7 @@ extern int Fitsio_Pthread_Status;
 #   define BYTESWAPPED TRUE
 #  else
 #   define BYTESWAPPED FALSE
-#   define MACHINE NATIVE
+#   define CFITSIO_MACHINE NATIVE
 #  endif
 #  define LONGSIZE 64
 
@@ -136,7 +136,7 @@ extern int Fitsio_Pthread_Status;
 #    define BYTESWAPPED TRUE
 #  else
 #    define BYTESWAPPED FALSE
-#    define MACHINE NATIVE
+#    define CFITSIO_MACHINE NATIVE
 #  endif
 
 #  if _MIPS_SZLONG == 32
@@ -166,7 +166,7 @@ extern int Fitsio_Pthread_Status;
 
 #elif defined(vax) && defined(VMS)
  
-#define MACHINE VAXVMS
+#define CFITSIO_MACHINE VAXVMS
 #define BYTESWAPPED TRUE
  
 #elif defined(__alpha) && defined(__VMS)
@@ -174,19 +174,19 @@ extern int Fitsio_Pthread_Status;
 #if (__D_FLOAT == TRUE)
 
 /* this float option is the same as for VAX/VMS machines. */
-#define MACHINE VAXVMS
+#define CFITSIO_MACHINE VAXVMS
 #define BYTESWAPPED TRUE
  
 #elif  (__G_FLOAT == TRUE)
  
 /*  G_FLOAT is the default for ALPHA VMS systems */
-#define MACHINE ALPHAVMS
+#define CFITSIO_MACHINE ALPHAVMS
 #define BYTESWAPPED TRUE
 #define FLOATTYPE GFLOAT
  
 #elif  (__IEEE_FLOAT == TRUE)
  
-#define MACHINE ALPHAVMS
+#define CFITSIO_MACHINE ALPHAVMS
 #define BYTESWAPPED TRUE
 #define FLOATTYPE IEEEFLOAT
 
@@ -201,7 +201,7 @@ extern int Fitsio_Pthread_Status;
   || defined(_NI_mswin_) || defined(__EMX__)
 
 /*  generic 32-bit IBM PC */
-#define MACHINE IBMPC
+#define CFITSIO_MACHINE IBMPC
 #define BYTESWAPPED TRUE
 
 #elif defined(__arm__)
@@ -233,13 +233,13 @@ extern int Fitsio_Pthread_Status;
 /*  assume all other machine uses the same IEEE formats as used in FITS files */
 /*  e.g., Macs fall into this category  */
 
-#define MACHINE NATIVE
+#define CFITSIO_MACHINE NATIVE
 #define BYTESWAPPED FALSE
  
 #endif
 
-#ifndef MACHINE
-#define MACHINE  OTHERTYPE
+#ifndef CFITSIO_MACHINE
+#define CFITSIO_MACHINE  OTHERTYPE
 #endif
 
 /*  assume longs are 4 bytes long, unless previously set otherwise */
@@ -278,7 +278,7 @@ extern int Fitsio_Pthread_Status;
  
 #endif
  
-#if MACHINE == CRAY
+#if CFITSIO_MACHINE == CRAY
     /*
       Cray machines:   the large negative integer corresponds
       to the 3 most sig digits set to 1.   If these

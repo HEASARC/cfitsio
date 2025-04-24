@@ -214,7 +214,7 @@ int file_openfile(char *filename, int rwmode, FILE **diskfile)
     }
 #endif
 
-#if MACHINE == ALPHAVMS || MACHINE == VAXVMS
+#if CFITSIO_MACHINE == ALPHAVMS || CFITSIO_MACHINE == VAXVMS
         /* specify VMS record structure: fixed format, 2880 byte records */
         /* but force stream mode access to enable random I/O access      */
     *diskfile = fopen(filename, mode, "rfm=fix", "mrs=2880", "ctx=stm"); 
@@ -564,7 +564,7 @@ printf("ABS = %s\n", absURL);
     }
 #endif
 
-#if MACHINE == ALPHAVMS || MACHINE == VAXVMS
+#if CFITSIO_MACHINE == ALPHAVMS || CFITSIO_MACHINE == VAXVMS
         /* specify VMS record structure: fixed format, 2880 byte records */
         /* but force stream mode access to enable random I/O access      */
     diskfile = fopen(filename, mode, "rfm=fix", "mrs=2880", "ctx=stm"); 
@@ -714,7 +714,7 @@ int file_flush(int handle)
     /* perhaps others, so seek to original position to be sure. */
     /* This seek will do no harm on other systems.   */
 
-#if MACHINE == IBMPC
+#if CFITSIO_MACHINE == IBMPC
 
     if (file_seek(handle, handleTable[handle].currentpos))
             return(SEEK_ERROR);
