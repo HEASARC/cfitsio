@@ -1609,7 +1609,7 @@ int fffr4i1(float *input,         /* I - array of values to be converted     */
     {
         sptr = (short *) input;
 
-#if BYTESWAPPED && MACHINE != VAXVMS && MACHINE != ALPHAVMS
+#if BYTESWAPPED && CFITSIO_MACHINE != VAXVMS && CFITSIO_MACHINE != ALPHAVMS
         sptr++;       /* point to MSBs */
 #endif
         if (scale == 1. && zero == 0.)  /* no scaling */
@@ -1776,7 +1776,7 @@ int fffr8i1(double *input,        /* I - array of values to be converted     */
     {
         sptr = (short *) input;
 
-#if BYTESWAPPED && MACHINE != VAXVMS && MACHINE != ALPHAVMS
+#if BYTESWAPPED && CFITSIO_MACHINE != VAXVMS && CFITSIO_MACHINE != ALPHAVMS
         sptr += 3;       /* point to MSBs */
 #endif
         if (scale == 1. && zero == 0.)  /* no scaling */

@@ -4421,7 +4421,7 @@ int fits_init_cfitsio(void)
     {
       printf ("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
       printf(" Byteswapping is not being done correctly on this system.\n");
-      printf(" Check the MACHINE and BYTESWAPPED definitions in fitsio2.h\n");
+      printf(" Check the CFITSIO_MACHINE and BYTESWAPPED definitions in fitsio2.h\n");
       printf(" Please report this problem to the CFITSIO developers.\n");
       printf(  "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
       FFUNLOCK;

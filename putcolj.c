@@ -394,7 +394,7 @@ int ffpclj( fitsfile *fptr,  /* I - FITS file pointer                       */
        format in a temporary buffer that has been allocated for this purpose.
     */
     if (scale == 1. && zero == 0. && 
-       MACHINE == NATIVE && tcode == TLONG && LONGSIZE == 32)
+       CFITSIO_MACHINE == NATIVE && tcode == TLONG && LONGSIZE == 32)
     {
         writeraw = 1;
         if (nelem < (LONGLONG)INT32_MAX) {
@@ -1398,7 +1398,7 @@ int ffpcljj(fitsfile *fptr,  /* I - FITS file pointer                       */
        format in a temporary buffer that has been allocated for this purpose.
     */
     if (scale == 1. && zero == 0. && 
-       MACHINE == NATIVE && tcode == TLONGLONG)
+       CFITSIO_MACHINE == NATIVE && tcode == TLONGLONG)
     {
         writeraw = 1;
         if (nelem < (LONGLONG)INT32_MAX/8) {
