@@ -1,5 +1,9 @@
                    Log of Changes Made to CFITSIO
-                   
+
+Version 4.X.x -
+
+  - Fix to minor truncation error in ffgthd.
+                     
 Version 4.6.2 - Mar 2025
 
   - Updated autotools configure script to use AM_MAINTAINER_MODE;

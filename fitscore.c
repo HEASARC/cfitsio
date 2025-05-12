@@ -1788,7 +1788,7 @@ int ffgthd(char *tmplt, /* I - input header template string */
       {
         *hdtype = 1;   /* simply append COMMENT and HISTORY keywords */
         strcpy(card, keyname);
-        strncat(card, tok, 72);
+        strncat(card, tok, FLEN_CARD-strlen(keyname)-1);
         return(*status);
       }
 
