@@ -297,6 +297,7 @@ int ffomem(fitsfile **fptr,      /* O - FITS file pointer                   */
 
         ffclos(*fptr, status);
         *fptr = 0;              /* return null file pointer */
+        return(*status);
     }
 
     /* ---------------------------------------------------------- */
