@@ -71,11 +71,19 @@ int main()
     long rawloop;
     char filename[] = "speedcc.fit";           /* name for new FITS file */
     char buffer[2880] = {2880 * 0};
-    time_t tbegin, tend;
+    #ifndef _MSC_VER
+        struct timeval tbegin, tend;
+    #else
+        time_t tbegin, tend;
+    #endif
     float rate, size, elapcpu, cpufrac;
     double elapse;
 
-    tbegin = time(0);
+    #ifndef _MSC_VER
+        gettimeofday(&tbegin, NULL);
+    #else
+        tbegin = time(0);
+    #endif
 
     remove(filename);               /* Delete old file if it already exists */
 
@@ -156,8 +164,13 @@ int main()
     if (fits_close_file(fptr, &status))     
          printerror( status );
 
-    tend = time(0);
-    elapse = difftime(tend, tbegin) + 0.5;
+    #ifndef _MSC_VER
+        gettimeofday(&tend, NULL);
+        elapse = tend.tv_sec-tbegin.tv_sec+(tend.tv_usec-tbegin.tv_usec)*1.e-6 ;
+    #else
+        tend = time(0);
+        elapse = difftime(tend, tbegin) + 0.5;
+    #endif
     printf("Total elapsed time = %.3fs, status = %d\n",elapse, status);
     return(0);
 }
