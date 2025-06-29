@@ -99,6 +99,8 @@ int main()
       if (fwrite(buffer, 1, 2880, diskfile) != 2880)
         printf("write error \n");
 
+    fflush(diskfile);  /* flush all buffers to disk */
+    
     gettime(&elapse, &elapcpu, &status);
 
     cpufrac = elapcpu / elapse * 100.;
