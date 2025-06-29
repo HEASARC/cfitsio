@@ -1941,6 +1941,7 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     if (ujjvalues) free(ujjvalues);
     if (jjvalues)  free(jjvalues);
     if (dvalues)   free(dvalues);
+    if (fvalues) free(fvalues);
 
     return(*status);
 }
