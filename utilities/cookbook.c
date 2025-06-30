@@ -365,6 +365,8 @@ void selectrows( void )
     if (fits_close_file(outfptr, &status) || fits_close_file(infptr, &status))
         printerror( status );
 
+    free(buffer);
+        
     return;
 }
 /*--------------------------------------------------------------------------*/
