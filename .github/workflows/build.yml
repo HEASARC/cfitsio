@@ -33,7 +33,8 @@ jobs:
 
       - name: Cookbook
         run: |
-          ./cookbook
+          ./cookbook > cookbook.lis
+          diff cookbook.lis cookbook.out
 
       - name: Speed
         run: |
