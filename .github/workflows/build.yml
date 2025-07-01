@@ -30,3 +30,20 @@ jobs:
           ./testprog > testprog.lis
           diff testprog.lis testprog.out
           cmp testprog.fit testprog.std
+
+      - name: Cookbook
+        run: |
+          ./cookbook
+
+      - name: Speed
+        run: |
+          ./speed
+
+#      - name: Iterators
+#        run: |
+#          ./iter_a
+#          ./iter_b
+#          ./iter_c
+#          ./iter_var
+#          ./iter_image
+
