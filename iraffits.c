@@ -286,7 +286,7 @@ static char *irafrdhead (
     /* Find size of image header file */
     if (fseek(fd, 0, 2) != 0)  /* move to end of the file */
     {
-		fclose(fd);
+    fclose(fd);
         ffpmsg("IRAFRHEAD: cannot seek in file:");
         ffpmsg(filename);
         return(NULL);
@@ -295,7 +295,7 @@ static char *irafrdhead (
     nbhead = ftell(fd);     /* position = size of file */
     if (nbhead < 0)
     {
-		fclose(fd);
+    fclose(fd);
         ffpmsg("IRAFRHEAD: cannot get pos. in file:");
         ffpmsg(filename);
         return(NULL);
@@ -303,7 +303,7 @@ static char *irafrdhead (
 
     if (fseek(fd, 0, 0) != 0) /* move back to beginning */
     {
-		fclose(fd);
+    fclose(fd);
         ffpmsg("IRAFRHEAD: cannot seek to beginning of file:");
         ffpmsg(filename);
         return(NULL);
@@ -313,7 +313,7 @@ static char *irafrdhead (
     nihead = nbhead + 5000;
     irafheader = (char *) calloc (1, nihead);
     if (irafheader == NULL) {
-		fclose(fd);
+    fclose(fd);
 	snprintf(errmsg, FLEN_ERRMSG,"IRAFRHEAD Cannot allocate %d-byte header",
 		      nihead);
         ffpmsg(errmsg);

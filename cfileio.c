@@ -2343,7 +2343,7 @@ int ffedit_columns(
                    {
                       ffpmsg("error: column name is too long (ffedit_columns):");
                       if( file_expr ) free( file_expr );
-		              if (clause) free(clause);
+		      if (clause) free(clause);
                       if (colindex) free(colindex);
                       free(tstbuff);
                       *status=URL_PARSE_ERROR;
@@ -2414,7 +2414,7 @@ int ffedit_columns(
                ffpmsg(cptr2);
                if( colindex ) free( colindex );
                if( file_expr ) free( file_expr );
-	           if (clause) free(clause);
+	       if (clause) free(clause);
                return(*status = URL_PARSE_ERROR);
               }
             }
@@ -2447,7 +2447,7 @@ int ffedit_columns(
                    {
                       ffpmsg("error: column name syntax is too long (ffedit_columns):");
                       if( file_expr ) free( file_expr );
-		              if (clause) free(clause);
+		      if (clause) free(clause);
                       if (colindex) free(colindex);
                       free(tstbuff);
                       *status=URL_PARSE_ERROR;
@@ -2472,7 +2472,7 @@ int ffedit_columns(
                       ffpmsg(colname);
                       if( colindex ) free( colindex );
                       if( file_expr ) free( file_expr );
-	                  if (clause) free(clause);
+	              if (clause) free(clause);
                       return(*status);
                     }
                     /* keep this column in the output file */
@@ -2493,7 +2493,7 @@ int ffedit_columns(
                         ffpmsg(clause);
                         if( colindex ) free( colindex );
                         if( file_expr ) free( file_expr );
-			             if (clause) free(clause);
+			if (clause) free(clause);
                         return(*status);
                     }
                 }
@@ -2521,7 +2521,7 @@ int ffedit_columns(
                          ffpmsg("column expression is too long (ffedit_columns)");
                          if( colindex ) free( colindex );
                          if( file_expr ) free( file_expr );
-		                 if (clause) free(clause);
+		         if (clause) free(clause);
                          free(tstbuff);
                          *status=URL_PARSE_ERROR;
                          return(*status);
@@ -2544,7 +2544,7 @@ int ffedit_columns(
                             ffpmsg("column expression is too long (ffedit_columns)");
                             if( colindex ) free( colindex );
                             if( file_expr ) free( file_expr );
-		                    if (clause) free(clause);
+		            if (clause) free(clause);
                             free(tstbuff);
                             *status=URL_PARSE_ERROR;
                             return(*status);
@@ -2565,7 +2565,7 @@ int ffedit_columns(
                         ffpmsg("Unable to calculate expression");
                         if( colindex ) free( colindex );
                         if( file_expr ) free( file_expr );
-			            if (clause) free(clause);
+			if (clause) free(clause);
                          return(*status);
                 }
 
@@ -2608,7 +2608,7 @@ int ffedit_columns(
              ffpmsg(clause);
              if( colindex ) free( colindex );
              if( file_expr ) free( file_expr );
-	         if (clause) free(clause);
+	     if (clause) free(clause);
              return(*status);
            }
          }

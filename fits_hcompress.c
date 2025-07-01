@@ -724,7 +724,7 @@ int stat;
 	 */
 	if (0 == qwrite(outfile, (char *) nbitplanes, sizeof(nbitplanes))) {
 		free(signbits);
-	    *nlength = noutchar;
+		*nlength = noutchar;
 		ffpmsg("encode: output buffer too small");
 		return(DATA_COMPRESSION_ERR);
         }
@@ -1319,7 +1319,7 @@ unsigned char *scratch, *buffer;
 	}
 
 	buffer = (unsigned char *) malloc(bmax);
-	if (buffer  == (unsigned char *) NULL) {		
+	if (buffer  == (unsigned char *) NULL) {
 		free(scratch);
 		ffpmsg("qtree_encode: insufficient memory");
 		return(DATA_COMPRESSION_ERR);
