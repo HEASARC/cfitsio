@@ -2,7 +2,7 @@ name: Build and Test
 
 on:
   push:
-    branches: [master, develop]
+    branches: [main, develop]
   pull_request:
     branches: [main, develop]
 
@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  regular:
+  build-on-linux-x64:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,7 +24,7 @@ jobs:
       - name: Configure
         run: ./configure
 
-      - name: Make
+      - name: Make without reentrant
         run: |
           make
 
@@ -43,6 +43,12 @@ jobs:
       - name: Speed
         run: |
           ./speed
+
+      - name: Make with reentrant
+        run: |
+          make clean
+          ./configure --enable-reentrant
+          make
 
 #      - name: Iterators
 #        run: |
