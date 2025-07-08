@@ -279,6 +279,7 @@ int ffsrow( fitsfile *infptr,   /* I - Input FITS file                      */
       rdlen  = (long) inExt.rowLength;
       buffer = (unsigned char *)malloc(maxvalue(500000,rdlen) * sizeof(char) );
       if( buffer==NULL ) {
+         FREE(Info.dataPtr);
          ffcprs(&lParse);
          return( *status=MEMORY_ALLOCATION );
       }

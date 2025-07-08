@@ -756,7 +756,8 @@ PutMark    6  add a marker to the stack
 {
     int ii;
     char markflag;
-    static char *txtbuff[errmsgsiz], *tmpbuff, *msgptr;
+    static char *txtbuff[errmsgsiz], *tmpbuff;
+    char *msgptr;
     static char errbuff[errmsgsiz][81];  /* initialize all = \0 */
     static int nummsg = 0;
 

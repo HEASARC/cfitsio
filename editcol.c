@@ -481,6 +481,8 @@ and gives a list of rows or row ranges separated by commas.
 
     rowarray = calloc(nrows, sizeof(long));
     if (!rowarray) {
+        free(maxrow);
+        free(minrow);
         *status = MEMORY_ALLOCATION;
         ffpmsg("failed to allocate memory for row array (ffdrrg)");
         return(*status);
