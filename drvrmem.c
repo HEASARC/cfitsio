@@ -166,7 +166,9 @@ int mem_create_comp(char *filename, int *handle)
 
     if (status)
     {
-        fclose(diskfile);  /* close the disk file */
+        if (diskfile != stdout) 
+          fclose(diskfile);  /* close the disk file */
+
         ffpmsg("failed to create empty memory file (mem_create_comp)");
         return(status);
     }
