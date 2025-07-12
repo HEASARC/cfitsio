@@ -1740,7 +1740,7 @@ int fits_is_this_a_copy(char *urltype) /* I - type of file */
      iscopy = 1;    /* copied file using ftp protocol */
   else if (!strncmp(urltype, "gsiftp", 6) )
      iscopy = 1;    /* copied file using gsiftp protocol */
-  else if (!strncpy(urltype, "stdin", 5) )
+  else if (!strncmp(urltype, "stdin", 5) )
      iscopy = 1;    /* piped stdin has been copied to memory */
   else
      iscopy = 0;    /* file is not known to be a copy */
