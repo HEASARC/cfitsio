@@ -27,6 +27,10 @@ static char snull[] = "";
 static int curhdu;			/* current HDU index */
 static int curtype;			/* current HDU type  */
 
+
+static char errmes[256];
+static char comm[FLEN_COMMENT];
+
 /******************************************************************************
 * Function
 *      verify_fits 

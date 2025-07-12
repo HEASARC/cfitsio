@@ -709,10 +709,8 @@ int ffhist2e(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
     int   bitpix, colnum[4], wtcolnum;
     long haxes[4];
     double amin[4], amax[4], binsize[4],  weight;
-    int numIterCols = 0;
     int datatypes[4], wtdatatype = 0;
-    long *repeat, wtrepeat = 0;
-    char errmsg[FLEN_ERRMSG];
+    long wtrepeat = 0;
     long vectorRepeat;
 
     if (*status > 0)
@@ -1792,7 +1790,6 @@ int fits_calc_binningde(
     Note: caller is responsible to free parsers[*] upon return using ffcprs()
 */
 {
-    tcolumn *colptr;
     char *cptr, cpref[4][FLEN_VALUE];
     char errmsg[FLEN_ERRMSG], keyname[FLEN_KEYWORD];
     int tstatus, ii;
@@ -2123,7 +2120,7 @@ int fits_calc_binningde(
 	 }
 
          if (tstatus || 
-	     colexpr && colexpr[ii] && colexpr[ii][0]) {
+	     (colexpr && colexpr[ii] && colexpr[ii][0])) {
 	    /* make at least 10 bins */
             binsize[ii] = (amax[ii] - amin[ii]) / 10.F ;
             if (binsize[ii] > 1.)
@@ -2959,11 +2956,9 @@ int fits_get_expr_minmax(fitsfile *fptr, char *expr, double *datamin,
    parseInfo Info;
    ParseData lParse;
    struct histo_minmax_workfn_struct minmaxWorkFn;
-   int naxis, constant, typecode, newNullKwd=0;
-   long nelem, naxes[MAXDIMS], repeat, width, nrows;
-   int col_cnt, colNo;
+   int naxis;
+   long nelem, naxes[MAXDIMS], nrows;
    Node *result;
-   char card[81], tform[16], nullKwd[9], tdimKwd[9];
    double double_nulval = DOUBLENULLVALUE;
 
    if( *status ) return( *status );
@@ -3029,8 +3024,7 @@ int ffwritehisto(long totaln, long pixoffset, long firstn, long nvalues,
    This work function only gets called once, and totaln = nvalues.
 */
 {
-    iteratorCol *colpars;
-    int ii, status = 0, ncols;
+    int status = 0;
     long rows_per_loop = 0, offset = 0;
     histType *histData;
 
@@ -3098,7 +3092,6 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
 
       /* We have a parser for this, evaluate it */
       if (histData->parsers[ii].nCols > 0) {
-	struct ParseStatusVariables *pv = &(histData->infos[ii].parseVariables);
 	iteratorCol *colData = &(histData->iterCols[startCol]);
 	int nCols = histData->parsers[ii].nCols;
 

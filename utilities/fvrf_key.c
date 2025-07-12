@@ -1,5 +1,8 @@
 #include "fverify.h"
 
+
+static char errmes[256];
+
 int fits_parse_card(FILE *out,		/* output file pointer */
                     int  kpos,          /* keyposition starting from 1 */
 		    char *card,  	/* key card */

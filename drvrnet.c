@@ -1447,7 +1447,7 @@ int ftps_open(char *filename, int rwmode, int *handle)
      firstByte = (unsigned char)inmem.memory[0];
      secondByte = (unsigned char)inmem.memory[1];
   }
-  if (firstByte == 0x1f && secondByte == 0x8b || 
+  if ((firstByte == 0x1f && secondByte == 0x8b) || 
         strstr(localFilename,".Z"))
   {
 #ifdef HAVE_FMEMOPEN
@@ -1655,7 +1655,6 @@ int ftps_compress_open(char *filename, int rwmode, int *handle)
   char localFilename[MAXLEN]; /* may have .gz or .Z appended */
   unsigned char firstByte=0,secondByte=0;
   curlmembuf inmem;
-  FILE *compressedInFile=0;
   
   /* don't do r/w files */
   if (rwmode != 0) {
@@ -3758,9 +3757,6 @@ int ftps_checkfile (char *urltype, char *infile, char *outfile1)
 int ftp_checkfile (char *urltype, char *infile, char *outfile1)
 {
   char newinfile[MAXLEN];
-  FILE *ftpfile;
-  FILE *command;
-  int sock;
   int foundfile = 0;
   int status=0;
 

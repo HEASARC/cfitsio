@@ -3,6 +3,10 @@ static HduName  **hduname;
 static int total_err=1;  /* initialzed to 1 in case fail to open file */
 static int total_warn=0;
 
+
+static char errmes[256];
+static char comm[FLEN_COMMENT];
+
 int get_total_warn()
 {
     return (total_warn);

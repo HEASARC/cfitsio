@@ -71,7 +71,7 @@ else if (deletemode) shared_uncond_delete(id);
 
 for (id = 0; id <16; id++) {
   status = shared_getaddr(id, &address);
-  if (!status)printf("id, status, address %d %d %ld %.30s\n", id, status, address, address);
+  if (!status) printf("id, status, address %d %d %p %.30s\n", id, status, (void *) address, address);
 }
 return(0);
 }

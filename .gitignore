@@ -1,3 +1,8 @@
+# Misc folders
+.vscode/
+build/
+include/
+
 # Prerequisites
 *.d
 
@@ -79,3 +84,8 @@ imcopy
 smem
 speed
 testprog
+iter_a
+iter_b
+iter_c
+iter_image
+iter_var

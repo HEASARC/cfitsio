@@ -142,6 +142,8 @@ int testhierarch=0;
 int totalhdu=0;
 
 
+static char comm[FLEN_FILENAME+6];
+
 /*---------------------------------------------------------------------------*/
 int ftverify (void)
 {

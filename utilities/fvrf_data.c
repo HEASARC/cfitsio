@@ -1,3 +1,5 @@
+#include <ctype.h>
+
 #include "fverify.h"
 typedef struct { 
    int nnum;
@@ -12,6 +14,9 @@ typedef struct {
    FitsHdu *hduptr;
    FILE* out;
 }UserIter;
+
+static char errmes[256];
+static char comm[FLEN_COMMENT];
 
 /*************************************************************
 *

@@ -983,7 +983,7 @@ void fits_free_region( SAORegion *Rgn )
 /*   Free up memory allocated to hold the region data.                       
    This is more complicated for the case of polygons, which may be sharing
    points arrays due to shallow copying (in fits_set_region_components) of
-   'exluded' regions.  We must ensure that these arrays are only freed once.       
+   'excluded' regions.  We must ensure that these arrays are only freed once. */       
 
 /*---------------------------------------------------------------------------*/
 {

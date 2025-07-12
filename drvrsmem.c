@@ -414,7 +414,7 @@ int     shared_malloc(long size, int mode, int newhandle)               /* retur
       if (shared_debug) printf(" handle=%d", h);
       if (SHARED_INVALID == h) continue;                /* segment already accupied */
       bp = (BLKHEAD *)shmat(h, 0, 0);                   /* try attach */
-      if (shared_debug) printf(" p=%p", bp);
+      if (shared_debug) printf(" p=%p", (void *) bp);
       if (((BLKHEAD *)SHARED_INVALID) == bp)            /* cannot attach, delete segment, try with another key */
         { shmctl(h, IPC_RMID, 0);
           continue;

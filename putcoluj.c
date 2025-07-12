@@ -1012,7 +1012,6 @@ int ffpprujj( fitsfile *fptr,  /* I - FITS file pointer                       */
 */
 {
     long row;
-    unsigned long nullvalue;
 
     /*
       the primary array is represented as a binary table:
@@ -1111,7 +1110,6 @@ int ffp3dujj(fitsfile *fptr,   /* I - FITS file pointer                    */
 */
 {
     long tablerow, ii, jj;
-    long fpixel[3]= {1,1,1}, lpixel[3];
     LONGLONG nfits, narray;
     /*
       the primary array is represented as a binary table:
