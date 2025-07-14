@@ -19,12 +19,12 @@ jobs:
         run: sudo apt-get update
 
       - name: Install dependencies
-        run: sudo apt-get install -y build-essential libtool autoconf automake
+        run: sudo apt-get install -y build-essential libtool autoconf automake libcurl4-openssl-dev libbz2-dev
 
-      - name: Configure
+      - name: Configure all defaults
         run: ./configure
 
-      - name: Make without reentrant
+      - name: Make with defaults (no reentrant)
         run: |
           make
 
@@ -44,11 +44,13 @@ jobs:
         run: |
           ./speed
 
-      - name: Make with reentrant
+      - name: Configure with most features
         run: |
-          make clean
-          ./configure --enable-reentrant
-          make
+          make distclean
+          ./configure --enable-curl --enable-reentrant --with-bzip2 --with-zlib-check
+
+      - name: Make with most features
+        run: make
 
 #      - name: Iterators
 #        run: |
