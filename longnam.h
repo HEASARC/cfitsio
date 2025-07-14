@@ -387,7 +387,6 @@
 #define fits_read_subsetnull_dbl ffgsfd
 
 #define ffcpimg fits_copy_image_section
-#define fits_compress_img fits_comp_img
 #define fits_decompress_img fits_decomp_img
 
 #define fits_read_col        ffgcv
