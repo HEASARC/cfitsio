@@ -10,16 +10,22 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build-on-linux-x64:
-    runs-on: ubuntu-latest
+  build-default:
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, macos-13]  # Define multiple runners to use
     steps:
       - uses: actions/checkout@v4
+      - run: echo "Running on ${{ matrix.os }}"
 
-      - name: Update packages list
-        run: sudo apt-get update
-
-      - name: Install dependencies
-        run: sudo apt-get install -y build-essential libtool autoconf automake libcurl4-openssl-dev libbz2-dev
+      - name: Update packages and install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libtool autoconf automake libcurl4-openssl-dev libbz2-dev
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-24.04-arm'
 
       - name: Configure all defaults
         run: ./configure
@@ -44,14 +50,22 @@ jobs:
         run: |
           ./speed
 
-      - name: Configure with most features
+      - name: Configure with optional features
         run: |
           make distclean
           ./configure --enable-curl --enable-reentrant --with-bzip2 --with-zlib-check
 
-      - name: Make with most features
+      - name: Make with optional features
         run: make
 
+      - name: Test
+        run: |
+          make testprog
+          ./testprog > testprog.lis
+          diff testprog.lis testprog.out
+          cmp testprog.fit testprog.std
+
+    
 #      - name: Iterators
 #        run: |
 #          ./iter_a
