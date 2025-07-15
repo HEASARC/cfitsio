@@ -893,7 +893,7 @@ int main()
       ############################
     */
     ffcpky(fptr, fptr, 1, 4, "KY_PKNE", &status);
-    ffgkne(fptr, "ky_pkne", 2, 4, inekey, &nfound, &status);
+    ffgkne(fptr, "ky_pkne", 2, 3, inekey, &nfound, &status);
     printf("\nCopied keyword: ffgkne:  %f, %f, %f\n", inekey[0], inekey[1],
            inekey[2]);
 
