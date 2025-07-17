@@ -9,9 +9,9 @@
   value for the 'rate' column as a function of the values in the other
   'counts' and 'time' columns.
 */
-main()
+int main()
 {
-    extern flux_rate(); /* external work function is passed to the iterator */
+    extern int flux_rate(); /* external work function is passed to the iterator */
     fitsfile *fptr;
     iteratorCol cols[3];  /* structure used by the iterator function */
     int n_cols;

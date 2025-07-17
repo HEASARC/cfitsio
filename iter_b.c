@@ -9,9 +9,9 @@
   type column in a table, and toggles the value in the logical column
   so that T -> F and F -> T.
 */
-main()
+int main()
 {
-    extern str_iter(); /* external work function is passed to the iterator */
+    extern int str_iter(); /* external work function is passed to the iterator */
     fitsfile *fptr;
     iteratorCol cols[2];
     int n_cols;

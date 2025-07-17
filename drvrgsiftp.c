@@ -23,6 +23,7 @@ static int gsiftpopen = 0;
 static int global_offset = 0;
 static int free_gsiftp_tmp=0;
 static int gsiftp_get(char *filename, FILE **gsiftpfile, int num_streams);
+static int gsiftp_put(char *filename, FILE **gsiftpfile, int num_streams);
 
 static globus_mutex_t lock;
 static globus_cond_t cond;
