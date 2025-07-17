@@ -706,11 +706,8 @@ int ffmkls( fitsfile *fptr,           /* I - FITS file pointer        */
   This routine is not very efficient, so it should be used sparingly.
 */
 {
-    char valstring[FLEN_VALUE];
-    char card[FLEN_CARD], tmpkeyname[FLEN_CARD];
-    char tstring[FLEN_VALUE], *cptr;
+    char card[FLEN_CARD];
     char *comm=0, *tmplongval=0;
-    int next, remain, nquote, nchar, namelen, contin, tstatus = -1;
     int nkeys, keypos;
     int vlen, commlen, tmpvlen, tmpcommlen;
 

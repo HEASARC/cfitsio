@@ -4054,7 +4054,6 @@ static void Do_Func( ParseData *lParse, Node *this )
 	   {
 	     long ielem;
 	     long elemnum = 1;
-	     int j;
 
 	     for (ielem = 0; ielem<elem; ielem++) {
 	       this->value.data.lngptr[ielem] = elemnum;
@@ -5643,8 +5642,7 @@ static void Do_GTI_Over( ParseData *lParse, Node *this )
    Node *theTimes, *theStart, *theStop;
    double *gtiStart, *gtiStop;
    double *evtStart, *evtStop;
-   long elem, nGTI, gti, nextGTI;
-   int ordered;
+   long elem, nGTI, gti;
 
    theTimes = lParse->Nodes + this->SubNodes[0]; /* GTI times */
    theStop  = lParse->Nodes + this->SubNodes[2]; /* User start time */
@@ -6001,7 +5999,6 @@ static void Do_Array( ParseData *lParse, Node *this )
 {
    Node *that;
    long row, elem, idx, jdx, offset=0;
-   int node;
 
    Allocate_Ptrs( lParse, this );
 

@@ -2765,7 +2765,6 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     char tfmt[30], name[FLEN_KEYWORD], comm[FLEN_COMMENT], extnm[FLEN_VALUE];
     char *cptr, card[FLEN_CARD];
-    tcolumn *colptr;
 
     if (*status > 0)
         return(*status);

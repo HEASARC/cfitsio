@@ -780,7 +780,6 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
   char turl[MAXLEN];
   char *scratchstr;
   char *scratchstr2;
-  char *saveptr;
   int port;
   float version;
 
@@ -1655,7 +1654,6 @@ int ftps_compress_open(char *filename, int rwmode, int *handle)
   char localFilename[MAXLEN]; /* may have .gz or .Z appended */
   unsigned char firstByte=0,secondByte=0;
   curlmembuf inmem;
-  FILE *compressedInFile=0;
   
   /* don't do r/w files */
   if (rwmode != 0) {
@@ -3758,9 +3756,6 @@ int ftps_checkfile (char *urltype, char *infile, char *outfile1)
 int ftp_checkfile (char *urltype, char *infile, char *outfile1)
 {
   char newinfile[MAXLEN];
-  FILE *ftpfile;
-  FILE *command;
-  int sock;
   int foundfile = 0;
   int status=0;
 
