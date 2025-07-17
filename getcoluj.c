@@ -2882,15 +2882,7 @@ int fffi1u8(unsigned char *input, /* I - array of values to be converted     */
         {       
             for (ii = 0; ii < ntodo; ii++)
 	    {
-	        if (input[ii] < 0) 
-		{
-                   *status = OVERFLOW_ERR;
-                    output[ii] = 0;
-                }
-		else
-		{
-                    output[ii] = (ULONGLONG) input[ii];  /* copy input to output */
-		}
+                output[ii] = (ULONGLONG) input[ii];  /* copy input to output */
 	    }
         }
         else             /* must scale the data */
@@ -2927,11 +2919,6 @@ int fffi1u8(unsigned char *input, /* I - array of values to be converted     */
                         output[ii] = nullval;
                     else
                         nullarray[ii] = 1;
-                }
-                else if (input[ii] < 0) 
-		{
-                   *status = OVERFLOW_ERR;
-                    output[ii] = 0;
                 }
 		else
                     output[ii] = (ULONGLONG) input[ii];
