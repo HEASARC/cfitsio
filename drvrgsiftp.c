@@ -218,8 +218,7 @@ int gsiftp_close(int handle)
 {
     unlink(gsiftp_tmpfile);
     
-    if (gsiftp_tmpdir)
-        rmdir(gsiftp_tmpdir);
+    rmdir(gsiftp_tmpdir);
 
     return file_close(handle);
 }

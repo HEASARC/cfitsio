@@ -2257,7 +2257,7 @@ int fits_write_keys_histoe(
        /*  CTYPEn  */
        tstatus = 0;
 
-       if (colexpr && colexpr[ii] && colexpr[ii][0] && colname[ii]) 
+       if (colexpr && colexpr[ii] && colexpr[ii][0]) 
        {
 	 /* Column expression: we need to put the column name from the binning expression */
          ffkeyn("CTYPE", ii + 1, keyname, &tstatus);
