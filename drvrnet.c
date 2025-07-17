@@ -1447,7 +1447,7 @@ int ftps_open(char *filename, int rwmode, int *handle)
      firstByte = (unsigned char)inmem.memory[0];
      secondByte = (unsigned char)inmem.memory[1];
   }
-  if (firstByte == 0x1f && secondByte == 0x8b || 
+  if ((firstByte == 0x1f && secondByte == 0x8b) || 
         strstr(localFilename,".Z"))
   {
 #ifdef HAVE_FMEMOPEN

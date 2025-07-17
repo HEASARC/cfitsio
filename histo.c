@@ -2123,7 +2123,7 @@ int fits_calc_binningde(
 	 }
 
          if (tstatus || 
-	     colexpr && colexpr[ii] && colexpr[ii][0]) {
+	     (colexpr && colexpr[ii] && colexpr[ii][0])) {
 	    /* make at least 10 bins */
             binsize[ii] = (amax[ii] - amin[ii]) / 10.F ;
             if (binsize[ii] > 1.)
