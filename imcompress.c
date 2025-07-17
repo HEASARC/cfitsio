@@ -8721,7 +8721,7 @@ int fits_uncompress_table(fitsfile *infptr, fitsfile *outfptr, int *status)
 */
 { 
     char colcode[999];  /* column data type code character */
-    char coltype[999];  /* column data type numeric code value */
+    int coltype[999];  /* column data type numeric code value */
     char *cm_buffer;   /* memory buffer for the transposed, Column-Major, chunk of the table */ 
     char *rm_buffer;   /* memory buffer for the original, Row-Major, chunk of the table */ 
     LONGLONG nrows, rmajor_colwidth[999], rmajor_colstart[1000], cmajor_colstart[1000];
