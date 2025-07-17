@@ -87,7 +87,7 @@ int zero_image(long totalrows, long offset, long firstrow, long nrows,
     {
        counts[ii] = 1.;
     }
-    printf("firstrows, nrows = %d %d\n", firstrow, nrows);
-    
+    printf("firstrows, nrows = %ld %ld\n", firstrow, nrows);
+
     return(0);  /* return successful status */
 }
