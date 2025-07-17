@@ -1413,7 +1413,9 @@ hgetc (
 	char line[100];
 	char *vpos, *cpar = NULL;
 	char *q1, *q2 = NULL, *v1, *v2, *c1, *brack1, *brack2;
-        char *saveptr;
+    #ifdef _REENTRANT
+	    char *saveptr;
+	#endif
 	int ipar, i;
 
 	squot[0] = 39;

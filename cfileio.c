@@ -420,7 +420,10 @@ int ffeopn(fitsfile **fptr,      /* O - FITS file pointer                   */
 {
     int hdunum, naxis = 0, thdutype, gotext=0;
     char *ext, *textlist;
-    char *saveptr;
+
+    #ifdef _REENTRANT
+        char *saveptr;
+    #endif
   
     if (*status > 0)
         return(*status);

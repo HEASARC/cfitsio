@@ -516,7 +516,9 @@ int	ngp_extract_tokens(NGP_RAW_LINE *cl)
 
 int	ngp_include_file(char *fname)		/* try to open include file */
  { char *p, *p2, *cp, *envar, envfiles[NGP_MAX_ENVFILES];
-   char *saveptr;
+   #ifdef _REENTRANT
+    char *saveptr;
+   #endif
 
    if (NULL == fname) return(NGP_NUL_PTR);
 

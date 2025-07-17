@@ -5397,12 +5397,21 @@ int fits_url2path(char *inpath,  /* input file path string  */
   int absolute;
 
 #if defined(MSDOS) || defined(__WIN32__) || defined(WIN32)
-  char *tmpStr, *saveptr;
+  char *tmpStr;
+  #ifdef _REENTRANT
+    char *saveptr;
+  #endif
 #elif defined(VMS) || defined(vms) || defined(__vms)
   int i;
-  char *tmpStr, *saveptr;
+  char *tmpStr;
+  #ifdef _REENTRANT
+    char *saveptr;
+  #endif
 #elif defined(macintosh)
-  char *tmpStr, *saveptr;
+  char *tmpStr;
+  #ifdef _REENTRANT
+    char *saveptr;
+  #endif
 #endif
 
   if(*status != 0) return(*status);
@@ -6063,7 +6072,9 @@ int fits_clean_url(char *inURL,  /* I input URL string                      */
 {
   grp_stack* mystack; /* stack to hold pieces of URL */
   char* tmp;
-  char *saveptr;
+  #ifdef _REENTRANT
+    char *saveptr;
+  #endif
 
   if(*status) return *status;
 
