@@ -254,7 +254,7 @@ static void data_cb_read( void * 			user_arg,
     else {
         FILE* fd = (FILE*) user_arg;
         int rc = fwrite(buffer, 1, length, fd);
-        if (ferror(fd)) {
+        if (ferror(fd) || rc != length) {
             printf("Read error in function data_cb_read; errno = %d\n", errno);
             return;
         }
