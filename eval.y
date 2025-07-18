@@ -5998,7 +5998,7 @@ static void Do_Vector( ParseData *lParse, Node *this )
 static void Do_Array( ParseData *lParse, Node *this )
 {
    Node *that;
-   long row, elem, idx, jdx, offset=0;
+   long row, elem, idx, offset=0;
 
    Allocate_Ptrs( lParse, this );
 
