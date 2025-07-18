@@ -780,7 +780,6 @@ static int http_open_network(char *url, FILE **httpfile, char *contentencoding,
   char turl[MAXLEN];
   char *scratchstr;
   char *scratchstr2;
-  char *saveptr;
   int port;
   float version;
 
@@ -2619,7 +2618,9 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
   char *newfn;
   char *passive;
   char *tstr;
+  #ifdef _REENTRANT
   char *saveptr;
+  #endif
   char ip[SHORTLEN];
   char turl[MAXLEN];
   int port;
@@ -2901,7 +2902,9 @@ int ftp_file_exist(char *filename)
   char *newfn;
   char *passive;
   char *tstr;
+  #ifdef _REENTRANT
   char *saveptr;
+  #endif
   char ip[SHORTLEN];
   char turl[MAXLEN];
   int port;
