@@ -22,9 +22,9 @@ long ysize = 480;
 long xbinsize = 32;
 long ybinsize = 32;
 
-main()
+int main()
 {
-    extern writehisto();  /* external work function passed to the iterator */
+    extern int writehisto();    /* external work function passed to the iterator */
     extern long xsize, ysize;  /* size of image */
 
     fitsfile *fptr;
@@ -73,7 +73,7 @@ int writehisto(long totaln, long offset, long firstn, long nvalues,
    This routine is executed only once since nvalues was forced to = totaln.
 */
 {
-    extern calchisto();  /* external function called by the iterator */
+    int extern calchisto(); /* external function called by the iterator */
     long *histogram;
     fitsfile *tblptr;
     iteratorCol cols[2];
