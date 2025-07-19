@@ -21,7 +21,7 @@ int PILPutInt(char *parname, int intvalue);
 int main(int argc, char *argv[])
 {
     int status = 0, invalid = 0, ii, file1 = 0;
-    char *filename, errormode[2] = {"w"};
+    char errormode[2] = {"w"};
 
     if (argc == 2 && !strcmp(argv[1],"-h")) {
 

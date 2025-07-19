@@ -287,7 +287,6 @@ int ffgky( fitsfile *fptr,     /* I - FITS file pointer        */
 {
     LONGLONG longval;
     ULONGLONG ulongval;
-    double doubleval;
 
     if (*status > 0)           /* inherit input status value if > 0 */
         return(*status);

@@ -417,7 +417,6 @@ int gsiftp_put(char *filename, FILE **gsiftpfile, int num_streams)
     globus_ftp_control_parallelism_t   	parallelism;
     globus_ftp_control_layout_t		layout;
     globus_byte_t * 			buffer;
-    globus_size_t buffer_length = sizeof(buffer);
     globus_result_t 			result;
     globus_ftp_client_restart_marker_t	restart;
     globus_ftp_control_type_t 		filetype;

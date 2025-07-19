@@ -1532,8 +1532,6 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
     char oldextspec[FLEN_FILENAME], oldoutfile[FLEN_FILENAME];
     char oldrowfilter[FLEN_FILENAME];
     char oldbinspec[FLEN_FILENAME], oldcolspec[FLEN_FILENAME];
-    char cwd[FLEN_FILENAME];
-    char tmpStr[FLEN_FILENAME];
     char tmpinfile[FLEN_FILENAME]; 
     
     *isopen = 0;
@@ -7396,7 +7394,6 @@ int fits_get_token(char **ptr,
 {
     char *loc, tval[73];
     int slen;
-    double dval;
     
     *token = '\0';
 
@@ -7421,9 +7418,9 @@ int fits_get_token(char **ptr,
 	        /*  The C language does not support a 'D'; replace with 'E' */
 	        if ((loc = strchr(tval, 'D'))) *loc = 'E';
 
-	        dval =  strtod(tval, &loc);
+	        strtod(tval, &loc);
 	    } else {
-	        dval =  strtod(token, &loc);
+	        strtod(token, &loc);
  	    }
 
 	    /* check for read error, or junk following the value */
@@ -7451,7 +7448,6 @@ int fits_get_token2(char **ptr,
 {
     char *loc, tval[73];
     int slen;
-    double dval;
     
     if (*status)
         return(0);
@@ -7483,9 +7479,9 @@ int fits_get_token2(char **ptr,
 	        /*  The C language does not support a 'D'; replace with 'E' */
 	        if ((loc = strchr(tval, 'D'))) *loc = 'E';
 
-	        dval =  strtod(tval, &loc);
+	        strtod(tval, &loc);
 	    } else {
-	        dval =  strtod(*token, &loc);
+	        strtod(*token, &loc);
  	    }
 
 	    /* check for read error, or junk following the value */
