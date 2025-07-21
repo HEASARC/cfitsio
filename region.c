@@ -1014,7 +1014,6 @@ void fits_free_region( SAORegion *Rgn )
             }
             if (!isAlreadyFreed)
             {
-               free(ptsToFree);
                /* Now add pointer to array of freed points */
                if (nFreedPoly == nPolyArraySize)
                {
@@ -1023,6 +1022,7 @@ void fits_free_region( SAORegion *Rgn )
                           nPolyArraySize*sizeof(double*));
                }
                freedPolyPtrs[nFreedPoly] = ptsToFree;
+               free(ptsToFree);
                ++nFreedPoly;
             }
          }
