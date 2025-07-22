@@ -39,10 +39,9 @@ static void signal_handler(int sig);
 int gsiftp_init(void)
 {
 
-  if (getenv("GSIFTP_TMPFILE")) {
-    gsiftp_tmpfile = getenv("GSIFTP_TMPFILE");
-  } else {
+  if (!(gsiftp_tmpfile = getenv("GSIFTP_TMPFILE"))) {
     strncpy(gsiftp_tmpdir, "/tmp/gsiftp_XXXXXX", sizeof gsiftp_tmpdir);
+    gsiftp_tmpdir[sizeof gsiftp_tmpdir - 1] = '\0'; // Ensure NUL-termination of string
     if (mkdtemp(gsiftp_tmpdir) == NULL) {
         ffpmsg("Cannot create temporary directory!");
         return (FILE_NOT_OPENED);
@@ -89,10 +88,12 @@ int gsiftp_checkfile(char *urltype, char *infile, char *outfile)
 int gsiftp_open(char *filename, int rwmode, int *handle)
 {
   FILE *gsiftpfile;
+  char *num_streams_str;
   int num_streams;
 
-  if (getenv("GSIFTP_STREAMS")) {
-    num_streams = (int)getenv("GSIFTP_STREAMS");
+  if (num_streams_str = getenv("GSIFTP_STREAMS")) {
+    num_streams = atoi(num_streams_str);
+    if (num_streams < 1) num_streams = 1;
   } else {
     num_streams = 1;
   }
@@ -159,10 +160,12 @@ int gsiftp_size(int handle, LONGLONG *filesize)
 int gsiftp_flush(int handle)
 {
   FILE *gsiftpfile;
+  char *num_streams_str;
   int num_streams;
 
-  if (getenv("GSIFTP_STREAMS")) {
-    num_streams = (int)getenv("GSIFTP_STREAMS");
+  if (num_streams_str = getenv("GSIFTP_STREAMS")) {
+    num_streams = atoi(num_streams_str);
+    if (num_streams < 1) num_streams = 1;
   } else {
     num_streams = 1;
   }
