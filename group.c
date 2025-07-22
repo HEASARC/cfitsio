@@ -593,10 +593,11 @@ int ffgtrm(fitsfile *gfptr,  /* FITS file pointer to group                   */
 
       /* loop over all grouping table members and remove them */
 
-      for(i = nmembers; i > 0 && *status == 0; --i)
-	*status = fits_remove_member(gfptr,i,OPT_RM_ENTRY,status);
+      for(i = nmembers; i > 0 && *status == 0; --i) {
+        *status = fits_remove_member(gfptr,i,OPT_RM_ENTRY,status);
+      }
       
-	break;
+	  break;
 
     case OPT_RM_ALL:
 
