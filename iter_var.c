@@ -91,8 +91,7 @@ printf("Datatype of column = %d\n",fits_iter_get_datatype(&cols[0]));
     for (ii = 1; ii <= nrows; ii++)
     {
        repeat = fits_iter_get_repeat(&cols[0]);
-       printf ("repeat = %d, %d\n",repeat, counts[1]);
-       
+       printf("repeat = %ld, %d\n", repeat, counts[1]);
     }
 
 

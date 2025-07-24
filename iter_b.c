@@ -76,7 +76,7 @@ int str_iter(long totalrows, long offset, long firstrow, long nrows,
        stringvals       = (char **) fits_iter_get_array(&cols[0]);
        logicalvals      = (char *)  fits_iter_get_array(&cols[1]);
 
-       printf("Total rows, No. rows = %d %d\n",totalrows, nrows);
+       printf("Total rows, No. rows = %ld %ld\n",totalrows, nrows);
     }
 
     /*------------------------------------------*/
