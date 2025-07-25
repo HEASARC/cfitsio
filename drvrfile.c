@@ -595,9 +595,13 @@ int file_truncate(int handle, LONGLONG filesize)
 
 #ifdef HAVE_FTRUNCATE
     int fdesc;
+    int status;
 
     fdesc = fileno(handleTable[handle].fileptr);
-    ftruncate(fdesc, (OFF_T) filesize);
+    status = ftruncate(fdesc, (OFF_T) filesize);
+
+    if (status) { return status; }
+    
     file_seek(handle, filesize);
 
     handleTable[handle].currentpos = filesize;
