@@ -114,25 +114,26 @@ void    shared_cleanup(void)                    /* this must (should) be called 
        filelocked = 0;
        if (shared_debug) printf(" detaching globalsharedtable");
        if (SHARED_INVALID != shared_fd)
-
-       flk.l_type = F_WRLCK;                    /* lock whole lock file */
-       flk.l_whence = 0;
-       flk.l_start = 0;
-       flk.l_len = shared_maxseg;
-       if (-1 != fcntl(shared_fd, F_SETLK, &flk))
-         { filelocked = 1;                      /* success, scan global table, to see if there are any segs */
-           segmentspresent = 0;                 /* assume, there are no segs in the system */
-           for (j=0; j<shared_maxseg; j++)
-            { if (SHARED_INVALID != shared_gt[j].key)
-                { segmentspresent = 1;          /* yes, there is at least one */
-                  break;
-                }
-            }
-           if (0 == segmentspresent)            /* if there are no segs ... */
-             if (0 == shmctl(shared_gt_h, IPC_STAT, &ds)) /* get number of processes attached to table */
-               { if (ds.shm_nattch <= 1) oktodelete = 1; /* if only one (we), then it is safe (but see text 4 lines later) to unlink */
-               }
-         }
+       {
+         flk.l_type = F_WRLCK;                    /* lock whole lock file */
+         flk.l_whence = 0;
+         flk.l_start = 0;
+         flk.l_len = shared_maxseg;
+         if (-1 != fcntl(shared_fd, F_SETLK, &flk))
+           { filelocked = 1;                      /* success, scan global table, to see if there are any segs */
+             segmentspresent = 0;                 /* assume, there are no segs in the system */
+             for (j=0; j<shared_maxseg; j++)
+              { if (SHARED_INVALID != shared_gt[j].key)
+                  { segmentspresent = 1;          /* yes, there is at least one */
+                    break;
+                  }
+              }
+             if (0 == segmentspresent)            /* if there are no segs ... */
+               if (0 == shmctl(shared_gt_h, IPC_STAT, &ds)) /* get number of processes attached to table */
+                 { if (ds.shm_nattch <= 1) oktodelete = 1; /* if only one (we), then it is safe (but see text 4 lines later) to unlink */
+                 }
+           }
+       }  
        shmdt((char *)shared_gt);                /* detach global table */
        if (oktodelete)                          /* delete global table from system, if no shm seg present */
          { shmctl(shared_gt_h, IPC_RMID, 0);    /* there is a race condition here - time window between shmdt and shmctl */
@@ -414,7 +415,7 @@ int     shared_malloc(long size, int mode, int newhandle)               /* retur
       if (shared_debug) printf(" handle=%d", h);
       if (SHARED_INVALID == h) continue;                /* segment already accupied */
       bp = (BLKHEAD *)shmat(h, 0, 0);                   /* try attach */
-      if (shared_debug) printf(" p=%p", bp);
+      if (shared_debug) printf(" p=%p", (void *) bp);
       if (((BLKHEAD *)SHARED_INVALID) == bp)            /* cannot attach, delete segment, try with another key */
         { shmctl(h, IPC_RMID, 0);
           continue;

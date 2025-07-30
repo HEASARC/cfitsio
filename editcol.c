@@ -481,6 +481,8 @@ and gives a list of rows or row ranges separated by commas.
 
     rowarray = calloc(nrows, sizeof(long));
     if (!rowarray) {
+        free(maxrow);
+        free(minrow);
         *status = MEMORY_ALLOCATION;
         ffpmsg("failed to allocate memory for row array (ffdrrg)");
         return(*status);
@@ -1941,6 +1943,7 @@ int ffcpcl(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     if (ujjvalues) free(ujjvalues);
     if (jjvalues)  free(jjvalues);
     if (dvalues)   free(dvalues);
+    if (fvalues) free(fvalues);
 
     return(*status);
 }
@@ -1959,17 +1962,11 @@ int ffccls(fitsfile *infptr,    /* I - FITS file pointer to input file  */
   fits_insert_col() multiple times.
 */
 {
-    int tstatus, colnum, typecode, otypecode, anynull;
+    int tstatus, colnum, typecode, otypecode;
     int inHduType, outHduType;
-    long tfields, repeat, orepeat, width, owidth, nrows, outrows;
-    long inloop, outloop, maxloop, ndone, ntodo, npixels;
-    long firstrow, firstelem, ii;
+    long tfields, repeat, orepeat, width, owidth;
     char keyname[FLEN_KEYWORD], ttype[FLEN_VALUE], tform[FLEN_VALUE];
     char ttype_comm[FLEN_COMMENT],tform_comm[FLEN_COMMENT];
-    char *lvalues = 0, nullflag, **strarray = 0;
-    char nulstr[] = {'\5', '\0'};  /* unique null string value */
-    double dnull = 0.l, *dvalues = 0;
-    float fnull = 0., *fvalues = 0;
     int typecodes[1000];
     char *ttypes[1000], *tforms[1000], keyarr[1001][FLEN_CARD];
     int ikey = 0;

@@ -1664,7 +1664,7 @@ static int New_GTI( ParseData *lParse, funcOp Op, char *fname, int Node1, int No
    int  type,i,n, startCol, stopCol, Node0;
    int  hdutype, hdunum, evthdu, samefile, extvers, movetotype, tstat;
    char extname[100];
-   long nrows;
+   long j, nrows;
    double timeZeroI[2], timeZeroF[2], dt, timeSpan;
    char xcol[20], xexpr[20];
    YYSTYPE colVal;
@@ -1872,10 +1872,10 @@ static int New_GTI( ParseData *lParse, funcOp Op, char *fname, int Node1, int No
 	 /*  Test for fully time-ordered GTI... both START && STOP  */
 
 	 that0->type = 1; /*  Assume yes  */
-	 i = nrows;
-	 while( --i ) { /* the following are failure conditions for GTI ordering */
-	   if( (startptr[i] > stopptr[i]    ) ||    /* START{i} > STOP{i} */
-	       (startptr[i] < stopptr[i-1]) ) {     /* START{i} < STOP{i-1} */
+	 j = nrows;
+	 while( --j ) { /* the following are failure conditions for GTI ordering */
+	   if( (startptr[j] > stopptr[j]    ) ||    /* START{j} > STOP{j} */
+	       (startptr[j] < stopptr[j-1]) ) {     /* START{j} < STOP{j-1} */
 	     that0->type = 0;
 	     break;
 	   }
@@ -1884,7 +1884,7 @@ static int New_GTI( ParseData *lParse, funcOp Op, char *fname, int Node1, int No
 	 /* GTIOVERLAP() requires ordered GTI */
 	 if (that0->type != 1 && Op == gtiover_fct) {
 	   char errmsg[120];
-	   sprintf(errmsg, "Input GTI must be time-ordered for GTIOVERLAP (row %ld)", i+1);
+	   sprintf(errmsg, "Input GTI must be time-ordered for GTIOVERLAP (row %ld)", j+1);
 	   yyerror(0, lParse, errmsg);
 	   return(-1);
 	 }
@@ -4054,7 +4054,6 @@ static void Do_Func( ParseData *lParse, Node *this )
 	   {
 	     long ielem;
 	     long elemnum = 1;
-	     int j;
 
 	     for (ielem = 0; ielem<elem; ielem++) {
 	       this->value.data.lngptr[ielem] = elemnum;
@@ -5643,8 +5642,7 @@ static void Do_GTI_Over( ParseData *lParse, Node *this )
    Node *theTimes, *theStart, *theStop;
    double *gtiStart, *gtiStop;
    double *evtStart, *evtStop;
-   long elem, nGTI, gti, nextGTI;
-   int ordered;
+   long elem, nGTI, gti;
 
    theTimes = lParse->Nodes + this->SubNodes[0]; /* GTI times */
    theStop  = lParse->Nodes + this->SubNodes[2]; /* User start time */
@@ -6000,8 +5998,7 @@ static void Do_Vector( ParseData *lParse, Node *this )
 static void Do_Array( ParseData *lParse, Node *this )
 {
    Node *that;
-   long row, elem, idx, jdx, offset=0;
-   int node;
+   long row, elem, idx, offset=0;
 
    Allocate_Ptrs( lParse, this );
 

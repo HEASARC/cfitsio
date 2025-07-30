@@ -418,7 +418,9 @@ int fits_make_longstr_key_util( fitsfile *fptr,     /* I - FITS file pointer    
     char valstring[FLEN_CARD], comstring[FLEN_CARD];
     /* give tmpkeyname same size restriction as in ffmkky */
     char card[FLEN_CARD], tmpkeyname[FLEN_KEYWORD];
-    char tstring[FLEN_CARD], *cptr;
+    char tstring[FLEN_CARD];
+    const char *cptr;
+    char *tmpcptr;
     int next, remainval, remaincom, vlen, nquote, nchar; 
     int namelen, finalnamelen, maxvalchars;
     int contin, tstatus=-1, nocomment=0, ichar, addline=1;
@@ -444,14 +446,16 @@ int fits_make_longstr_key_util( fitsfile *fptr,     /* I - FITS file pointer    
     tmpkeyname[FLEN_KEYWORD-1] = '\0';
     
     namelen = strlen(tmpkeyname);
+    
     if (namelen)         /* skip trailing spaces in name */
     {
-       cptr = tmpkeyname + namelen - 1;
-       while (*cptr == ' ')
+       tmpcptr = tmpkeyname + namelen - 1;
+       while (*tmpcptr == ' ')
        {
-          *cptr = '\0';
-          cptr--;
+          *tmpcptr = '\0';
+          tmpcptr--;
        }
+       cptr = tmpcptr;
        namelen = strlen(tmpkeyname);
     }
     
@@ -2765,7 +2769,6 @@ int ffphbn(fitsfile *fptr,  /* I - FITS file pointer                        */
 
     char tfmt[30], name[FLEN_KEYWORD], comm[FLEN_COMMENT], extnm[FLEN_VALUE];
     char *cptr, card[FLEN_CARD];
-    tcolumn *colptr;
 
     if (*status > 0)
         return(*status);

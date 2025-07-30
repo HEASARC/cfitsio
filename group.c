@@ -593,10 +593,11 @@ int ffgtrm(fitsfile *gfptr,  /* FITS file pointer to group                   */
 
       /* loop over all grouping table members and remove them */
 
-      for(i = nmembers; i > 0 && *status == 0; --i)
-	*status = fits_remove_member(gfptr,i,OPT_RM_ENTRY,status);
+      for(i = nmembers; i > 0 && *status == 0; --i) {
+        *status = fits_remove_member(gfptr,i,OPT_RM_ENTRY,status);
+      }
       
-	break;
+	  break;
 
     case OPT_RM_ALL:
 
@@ -5396,12 +5397,21 @@ int fits_url2path(char *inpath,  /* input file path string  */
   int absolute;
 
 #if defined(MSDOS) || defined(__WIN32__) || defined(WIN32)
-  char *tmpStr, *saveptr;
+  char *tmpStr;
+  #ifdef _REENTRANT
+  char *saveptr;
+  #endif
 #elif defined(VMS) || defined(vms) || defined(__vms)
   int i;
-  char *tmpStr, *saveptr;
+  char *tmpStr;
+  #ifdef _REENTRANT
+  char *saveptr;
+  #endif
 #elif defined(macintosh)
-  char *tmpStr, *saveptr;
+  char *tmpStr;
+  #ifdef _REENTRANT
+  char *saveptr;
+  #endif
 #endif
 
   if(*status != 0) return(*status);
@@ -6062,7 +6072,9 @@ int fits_clean_url(char *inURL,  /* I input URL string                      */
 {
   grp_stack* mystack; /* stack to hold pieces of URL */
   char* tmp;
+  #ifdef _REENTRANT
   char *saveptr;
+  #endif
 
   if(*status) return *status;
 

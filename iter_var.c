@@ -9,9 +9,9 @@
   value for the 'rate' column as a function of the values in the other
   'counts' and 'time' columns.
 */
-main()
+int main()
 {
-    extern flux_rate(); /* external work function is passed to the iterator */
+    extern int flux_rate(); /* external work function is passed to the iterator */
     fitsfile *fptr;
     iteratorCol cols[3];  /* structure used by the iterator function */
     int n_cols;
@@ -91,8 +91,7 @@ printf("Datatype of column = %d\n",fits_iter_get_datatype(&cols[0]));
     for (ii = 1; ii <= nrows; ii++)
     {
        repeat = fits_iter_get_repeat(&cols[0]);
-       printf ("repeat = %d, %d\n",repeat, counts[1]);
-       
+       printf("repeat = %ld, %d\n", repeat, counts[1]);
     }
 
 

@@ -8,9 +8,9 @@
   It reads and modifies the input 'iter_image.fit' image file by setting
   all the pixel values to zero (DESTROYING THE ORIGINAL IMAGE!!!)
 */
-main()
+int main()
 {
-    extern zero_image(); /* external work function is passed to the iterator */
+    extern int zero_image(); /* external work function is passed to the iterator */
     fitsfile *fptr;
     iteratorCol cols[3];  /* structure used by the iterator function */
     int n_cols;
@@ -87,7 +87,7 @@ int zero_image(long totalrows, long offset, long firstrow, long nrows,
     {
        counts[ii] = 1.;
     }
-    printf("firstrows, nrows = %d %d\n", firstrow, nrows);
-    
+    printf("firstrows, nrows = %ld %ld\n", firstrow, nrows);
+
     return(0);  /* return successful status */
 }

@@ -756,7 +756,8 @@ PutMark    6  add a marker to the stack
 {
     int ii;
     char markflag;
-    static char *txtbuff[errmsgsiz], *tmpbuff, *msgptr;
+    static char *txtbuff[errmsgsiz], *tmpbuff;
+    char *msgptr;
     static char errbuff[errmsgsiz][81];  /* initialize all = \0 */
     static int nummsg = 0;
 
@@ -1051,7 +1052,9 @@ int ffmkky(const char *keyname,   /* I - keyword name    */
 {
     size_t namelen, len, ii;
     char tmpname[FLEN_KEYWORD], tmpname2[FLEN_KEYWORD],*cptr;
+    #ifdef _REENTRANT
     char *saveptr;
+    #endif
     int tstatus = -1, nblank = 0, ntoken = 0, maxlen = 0, specialchar = 0;
 
     if (*status > 0)

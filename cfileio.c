@@ -420,7 +420,9 @@ int ffeopn(fitsfile **fptr,      /* O - FITS file pointer                   */
 {
     int hdunum, naxis = 0, thdutype, gotext=0;
     char *ext, *textlist;
+    #ifdef _REENTRANT
     char *saveptr;
+    #endif
   
     if (*status > 0)
         return(*status);
@@ -1530,8 +1532,6 @@ int fits_already_open(fitsfile **fptr, /* I/O - FITS file pointer       */
     char oldextspec[FLEN_FILENAME], oldoutfile[FLEN_FILENAME];
     char oldrowfilter[FLEN_FILENAME];
     char oldbinspec[FLEN_FILENAME], oldcolspec[FLEN_FILENAME];
-    char cwd[FLEN_FILENAME];
-    char tmpStr[FLEN_FILENAME];
     char tmpinfile[FLEN_FILENAME]; 
     
     *isopen = 0;
@@ -1740,7 +1740,7 @@ int fits_is_this_a_copy(char *urltype) /* I - type of file */
      iscopy = 1;    /* copied file using ftp protocol */
   else if (!strncmp(urltype, "gsiftp", 6) )
      iscopy = 1;    /* copied file using gsiftp protocol */
-  else if (!strncpy(urltype, "stdin", 5) )
+  else if (!strncmp(urltype, "stdin", 5) )
      iscopy = 1;    /* piped stdin has been copied to memory */
   else
      iscopy = 0;    /* file is not known to be a copy */
@@ -2344,6 +2344,7 @@ int ffedit_columns(
                       ffpmsg("error: column name is too long (ffedit_columns):");
                       if( file_expr ) free( file_expr );
 		      if (clause) free(clause);
+                      if (colindex) free(colindex);
                       free(tstbuff);
                       *status=URL_PARSE_ERROR;
 		      return (*status);
@@ -2447,6 +2448,7 @@ int ffedit_columns(
                       ffpmsg("error: column name syntax is too long (ffedit_columns):");
                       if( file_expr ) free( file_expr );
 		      if (clause) free(clause);
+                      if (colindex) free(colindex);
                       free(tstbuff);
                       *status=URL_PARSE_ERROR;
 		      return (*status);
@@ -5534,6 +5536,7 @@ int ffifile2(char *url,       /* input filename */
         {
             if (ptr2-ptr1+3 >= MAX_PREFIX_LEN)
             {
+               free(infile);
                ffpmsg("Name of urltype is too long.");
                return(*status = URL_PARSE_ERROR);
             }
@@ -5611,6 +5614,7 @@ int ffifile2(char *url,       /* input filename */
                 if (infilex) {
 
                     if (strlen(ptr1) > FLEN_FILENAME - 1) {
+                        free(infile);
                         ffpmsg("Name of file is too long.");
                         return(*status = URL_PARSE_ERROR);
                     }
@@ -7390,7 +7394,6 @@ int fits_get_token(char **ptr,
 {
     char *loc, tval[73];
     int slen;
-    double dval;
     
     *token = '\0';
 
@@ -7415,9 +7418,9 @@ int fits_get_token(char **ptr,
 	        /*  The C language does not support a 'D'; replace with 'E' */
 	        if ((loc = strchr(tval, 'D'))) *loc = 'E';
 
-	        dval =  strtod(tval, &loc);
+	        strtod(tval, &loc);
 	    } else {
-	        dval =  strtod(token, &loc);
+	        strtod(token, &loc);
  	    }
 
 	    /* check for read error, or junk following the value */
@@ -7445,7 +7448,6 @@ int fits_get_token2(char **ptr,
 {
     char *loc, tval[73];
     int slen;
-    double dval;
     
     if (*status)
         return(0);
@@ -7477,9 +7479,9 @@ int fits_get_token2(char **ptr,
 	        /*  The C language does not support a 'D'; replace with 'E' */
 	        if ((loc = strchr(tval, 'D'))) *loc = 'E';
 
-	        dval =  strtod(tval, &loc);
+	        strtod(tval, &loc);
 	    } else {
-	        dval =  strtod(*token, &loc);
+	        strtod(*token, &loc);
  	    }
 
 	    /* check for read error, or junk following the value */

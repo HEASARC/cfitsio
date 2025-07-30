@@ -1560,7 +1560,8 @@ int ffiter(int n_cols,
 	       negative type code value. */
 
               if (cols[jj].iotype == OutputCol) {
- 	        snprintf(message,FLEN_ERRMSG,
+                free(col);
+                snprintf(message,FLEN_ERRMSG,
                 "Variable length array not allowed for output column number %d (ffiter)",
                     jj + 1);
                 ffpmsg(message);

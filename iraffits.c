@@ -286,6 +286,7 @@ static char *irafrdhead (
     /* Find size of image header file */
     if (fseek(fd, 0, 2) != 0)  /* move to end of the file */
     {
+    fclose(fd);
         ffpmsg("IRAFRHEAD: cannot seek in file:");
         ffpmsg(filename);
         return(NULL);
@@ -294,6 +295,7 @@ static char *irafrdhead (
     nbhead = ftell(fd);     /* position = size of file */
     if (nbhead < 0)
     {
+    fclose(fd);
         ffpmsg("IRAFRHEAD: cannot get pos. in file:");
         ffpmsg(filename);
         return(NULL);
@@ -301,6 +303,7 @@ static char *irafrdhead (
 
     if (fseek(fd, 0, 0) != 0) /* move back to beginning */
     {
+    fclose(fd);
         ffpmsg("IRAFRHEAD: cannot seek to beginning of file:");
         ffpmsg(filename);
         return(NULL);
@@ -310,6 +313,7 @@ static char *irafrdhead (
     nihead = nbhead + 5000;
     irafheader = (char *) calloc (1, nihead);
     if (irafheader == NULL) {
+    fclose(fd);
 	snprintf(errmsg, FLEN_ERRMSG,"IRAFRHEAD Cannot allocate %d-byte header",
 		      nihead);
         ffpmsg(errmsg);
@@ -1307,16 +1311,16 @@ static int lhead0 = 0;
 /* Extract long value for variable from FITS header string */
 
 static int
-hgeti4 (hstring,keyword,ival)
-
-char *hstring;	/* character string containing FITS header information
-		   in the format <keyword>= <value> {/ <comment>} */
-char *keyword;	/* character string containing the name of the keyword
-		   the value of which is returned.  hget searches for a
-		   line beginning with this string.  if "[n]" is present,
-		   the n'th token in the value is returned.
-		   (the first 8 characters must be unique) */
-int *ival;
+hgeti4 (
+    char *hstring, /* character string containing FITS header information
+                      in the format <keyword>= <value> {/ <comment>} */
+    char *keyword, /* character string containing the name of the keyword
+                      the value of which is returned.  hget searches for a
+                      line beginning with this string.  if "[n]" is present,
+                      the n'th token in the value is returned.
+                      (the first 8 characters must be unique) */
+    int *ival
+)
 {
 char *value;
 double dval;
@@ -1352,17 +1356,17 @@ char val[30];
 /* Extract string value for variable from FITS header string */
 
 static int
-hgets (hstring, keyword, lstr, str)
-
-char *hstring;	/* character string containing FITS header information
-		   in the format <keyword>= <value> {/ <comment>} */
-char *keyword;	/* character string containing the name of the keyword
-		   the value of which is returned.  hget searches for a
-		   line beginning with this string.  if "[n]" is present,
-		   the n'th token in the value is returned.
-		   (the first 8 characters must be unique) */
-int lstr;	/* Size of str in characters */
-char *str;	/* String (returned) */
+hgets (
+  char *hstring,  /* character string containing FITS header information
+                     in the format <keyword>= <value> {/ <comment>} */
+  char *keyword,  /* character string containing the name of the keyword
+                     the value of which is returned.  hget searches for a
+                     line beginning with this string.  if "[n]" is present,
+                     the n'th token in the value is returned.
+                     (the first 8 characters must be unique) */
+  int lstr,       /* Size of str in characters */
+  char *str       /* String (returned) */
+)
 {
 	char *value;
 	int lval;
@@ -1391,15 +1395,15 @@ char *str;	/* String (returned) */
 /* Extract character value for variable from FITS header string */
 
 static char *
-hgetc (hstring,keyword0)
-
-char *hstring;	/* character string containing FITS header information
-		   in the format <keyword>= <value> {/ <comment>} */
-char *keyword0;	/* character string containing the name of the keyword
-		   the value of which is returned.  hget searches for a
-		   line beginning with this string.  if "[n]" is present,
-		   the n'th token in the value is returned.
-		   (the first 8 characters must be unique) */
+hgetc (
+  char *hstring, /* character string containing FITS header information
+                    in the format <keyword>= <value> {/ <comment>} */
+  char *keyword0 /* character string containing the name of the keyword
+                    the value of which is returned.  hget searches for a
+                    line beginning with this string.  if "[n]" is present,
+                    the n'th token in the value is returned.
+                    (the first 8 characters must be unique) */
+)
 {
 	static char cval[80];
 	char *value;
@@ -1409,7 +1413,9 @@ char *keyword0;	/* character string containing the name of the keyword
 	char line[100];
 	char *vpos, *cpar = NULL;
 	char *q1, *q2 = NULL, *v1, *v2, *c1, *brack1, *brack2;
-        char *saveptr;
+	#ifdef _REENTRANT
+	char *saveptr;
+	#endif
 	int ipar, i;
 
 	squot[0] = 39;
@@ -1541,23 +1547,22 @@ char *keyword0;	/* character string containing the name of the keyword
 /*-------------------------------------------------------------------*/
 /* Find beginning of fillable blank line before FITS header keyword line */
 
-static char *
-blsearch (hstring,keyword)
-
 /* Find entry for keyword keyword in FITS header string hstring.
    (the keyword may have a maximum of eight letters)
    NULL is returned if the keyword is not found */
-
-char *hstring;	/* character string containing fits-style header
-		information in the format <keyword>= <value> {/ <comment>}
-		the default is that each entry is 80 characters long;
-		however, lines may be of arbitrary length terminated by
-		nulls, carriage returns or linefeeds, if packed is true.  */
-char *keyword;	/* character string containing the name of the variable
-		to be returned.  ksearch searches for a line beginning
-		with this string.  The string may be a character
-		literal or a character variable terminated by a null
-		or '$'.  it is truncated to 8 characters. */
+static char *
+blsearch (
+  char *hstring, /* character string containing fits-style header
+                    information in the format <keyword>= <value> {/ <comment>}
+                    the default is that each entry is 80 characters long;
+                    however, lines may be of arbitrary length terminated by
+                    nulls, carriage returns or linefeeds, if packed is true.  */
+  char *keyword  /* character string containing the name of the variable
+                    to be returned.  ksearch searches for a line beginning
+                    with this string.  The string may be a character
+                    literal or a character variable terminated by a null
+                    or '$'.  it is truncated to 8 characters. */
+)
 {
     char *loc, *headnext, *headlast, *pval, *lc, *line;
     char *bval;
@@ -1638,22 +1643,21 @@ char *keyword;	/* character string containing the name of the variable
 /*-------------------------------------------------------------------*/
 /* Find FITS header line containing specified keyword */
 
-static char *ksearch (hstring,keyword)
-
 /* Find entry for keyword keyword in FITS header string hstring.
    (the keyword may have a maximum of eight letters)
    NULL is returned if the keyword is not found */
-
-char *hstring;	/* character string containing fits-style header
-		information in the format <keyword>= <value> {/ <comment>}
-		the default is that each entry is 80 characters long;
-		however, lines may be of arbitrary length terminated by
-		nulls, carriage returns or linefeeds, if packed is true.  */
-char *keyword;	/* character string containing the name of the variable
-		to be returned.  ksearch searches for a line beginning
-		with this string.  The string may be a character
-		literal or a character variable terminated by a null
-		or '$'.  it is truncated to 8 characters. */
+static char *ksearch (
+  char *hstring, /* character string containing fits-style header
+                    information in the format <keyword>= <value> {/ <comment>}
+                    the default is that each entry is 80 characters long;
+                    however, lines may be of arbitrary length terminated by
+                    nulls, carriage returns or linefeeds, if packed is true.  */
+  char *keyword  /* character string containing the name of the variable
+                    to be returned.  ksearch searches for a line beginning
+                    with this string.  The string may be a character
+                    literal or a character variable terminated by a null
+                    or '$'.  it is truncated to 8 characters. */
+)
 {
     char *loc, *headnext, *headlast, *pval, *lc, *line;
     int icol, nextchar, lkey, nleft, lhstr;
@@ -1717,11 +1721,10 @@ char *keyword;	/* character string containing the name of the variable
 /* Find string s2 within null-terminated string s1 */
 
 static char *
-strsrch (s1, s2)
-
-char *s1;	/* String to search */
-char *s2;	/* String to look for */
-
+strsrch (
+  char *s1, /* String to search */
+  char *s2  /* String to look for */
+)
 {
     int ls1;
     ls1 = strlen (s1);
@@ -1732,12 +1735,11 @@ char *s2;	/* String to look for */
 /* Find string s2 within string s1 */
 
 static char *
-strnsrch (s1, s2, ls1)
-
-char	*s1;	/* String to search */
-char	*s2;	/* String to look for */
-int	ls1;	/* Length of string being searched */
-
+strnsrch (
+  char *s1, /* String to search */
+  char *s2, /* String to look for */
+  int ls1   /* Length of string being searched */
+)
 {
     char *s,*s1e;
     char cfirst,clast;
@@ -1797,18 +1799,17 @@ int	ls1;	/* Length of string being searched */
 /*  HPUTI4 - Set int keyword = ival in FITS header string */
 
 static void
-hputi4 (hstring,keyword,ival)
-
-  char *hstring;	/* character string containing FITS-style header
-			   information in the format
-			   <keyword>= <value> {/ <comment>}
-			   each entry is padded with spaces to 80 characters */
-
-  char *keyword;		/* character string containing the name of the variable
-			   to be returned.  hput searches for a line beginning
-			   with this string, and if there isn't one, creates one.
-		   	   The first 8 characters of keyword must be unique. */
-  int ival;		/* int number */
+hputi4 (
+  char *hstring, /* character string containing FITS-style header
+                    information in the format
+                    <keyword>= <value> {/ <comment>}
+                    each entry is padded with spaces to 80 characters */
+  char *keyword, /* character string containing the name of the variable
+                    to be returned.  hput searches for a line beginning
+                    with this string, and if there isn't one, creates one.
+                    The first 8 characters of keyword must be unique. */
+  int ival       /* int number */
+)
 {
     char value[30];
 
@@ -1827,11 +1828,11 @@ hputi4 (hstring,keyword,ival)
 /*  HPUTL - Set keyword = F if lval=0, else T, in FITS header string */
 
 static void
-hputl (hstring, keyword,lval)
-
-char *hstring;		/* FITS header */
-char *keyword;		/* Keyword name */
-int lval;		/* logical variable (0=false, else true) */
+hputl (
+  char *hstring, /* FITS header */
+  char *keyword, /* Keyword name */
+  int lval       /* logical variable (0=false, else true) */
+)
 {
     char value[8];
 
@@ -1853,12 +1854,12 @@ int lval;		/* logical variable (0=false, else true) */
 /*  HPUTS - Set character string keyword = 'cval' in FITS header string */
 
 static void
-hputs (hstring,keyword,cval)
-
-char *hstring;	/* FITS header */
-char *keyword;	/* Keyword name */
-char *cval;	/* character string containing the value for variable
-		   keyword.  trailing and leading blanks are removed.  */
+hputs (
+  char *hstring, /* FITS header */
+  char *keyword, /* Keyword name */
+  char *cval    /* character string containing the value for variable
+                   keyword.  trailing and leading blanks are removed.  */
+)
 {
     char squot = 39;
     char value[70];
@@ -1887,12 +1888,12 @@ char *cval;	/* character string containing the value for variable
 /*  HPUTC - Set character string keyword = value in FITS header string */
 
 static void
-hputc (hstring,keyword,value)
-
-char *hstring;
-char *keyword;
-char *value;	/* character string containing the value for variable
-		   keyword.  trailing and leading blanks are removed.  */
+hputc (
+  char *hstring,
+  char *keyword,
+  char *value    /* character string containing the value for variable
+                    keyword.  trailing and leading blanks are removed.  */
+)
 {
     char squot = 39;
     char line[100];
@@ -2029,11 +2030,7 @@ char *value;	/* character string containing the value for variable
 /*  HPUTCOM - Set comment for keyword or on line in FITS header string */
 
 static void
-hputcom (hstring,keyword,comment)
-
-  char *hstring;
-  char *keyword;
-  char *comment;
+hputcom (char *hstring, char *keyword, char *comment)
 {
 	char squot;
 	char line[100];

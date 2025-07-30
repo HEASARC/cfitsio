@@ -1968,6 +1968,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
                 if (idata[ii] < 0 || idata[ii] > 16777215)
                 {
                    /* plio algorithn only supports positive 24 bit ints */
+                   free(cbuf);
                    ffpmsg("data out of range for PLIO compression (0 - 2**24)");
                    return(*status = DATA_COMPRESSION_ERR);
                 }
@@ -2074,6 +2075,7 @@ int imcomp_compress_tile (fitsfile *outfptr,
 	         (char *) idata, (unsigned int) (tilelen * intlength), 9, 0, 0) ) 
 */
 	   {
+                   free(cbuf);
                    ffpmsg("bzip2 compression error");
                    return(*status = DATA_COMPRESSION_ERR);
            }
@@ -8719,7 +8721,7 @@ int fits_uncompress_table(fitsfile *infptr, fitsfile *outfptr, int *status)
 */
 { 
     char colcode[999];  /* column data type code character */
-    char coltype[999];  /* column data type numeric code value */
+    int coltype[999];  /* column data type numeric code value */
     char *cm_buffer;   /* memory buffer for the transposed, Column-Major, chunk of the table */ 
     char *rm_buffer;   /* memory buffer for the original, Row-Major, chunk of the table */ 
     LONGLONG nrows, rmajor_colwidth[999], rmajor_colstart[1000], cmajor_colstart[1000];

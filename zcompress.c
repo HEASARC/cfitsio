@@ -95,7 +95,10 @@ int uncompress2mem(char *filename,  /* name of input file                 */
        decompressor that we are to use the gzip algorithm */
 
     err = inflateInit2(&d_stream, (15+16));
-    if (err != Z_OK) return(*status = 414);
+    if (err != Z_OK) {
+        free(filebuff);
+        return(*status = 414);
+    }
 
     /* loop through the file, reading a buffer and uncompressing it */
     for (;;)
@@ -277,7 +280,10 @@ int uncompress2file(char *filename,  /* name of input file                  */
     if (!infilebuff) return(*status = 113); /* memory error */
 
     outfilebuff = (char*)malloc(GZBUFSIZE);
-    if (!outfilebuff) return(*status = 113); /* memory error */
+    if (!outfilebuff) {
+        free(infilebuff);
+        return(*status = 113); /* memory error */
+    }
 
     d_stream.zalloc = (alloc_func)0;
     d_stream.zfree = (free_func)0;
@@ -290,7 +296,10 @@ int uncompress2file(char *filename,  /* name of input file                  */
        decompressor that we are to use the gzip algorithm */
 
     err = inflateInit2(&d_stream, (15+16));
-    if (err != Z_OK) return(*status = 414);
+    if (err != Z_OK) {
+        free(infilebuff);
+        return(*status = 414);
+    }
 
     /* loop through the file, reading a buffer and uncompressing it */
     for (;;)
@@ -476,7 +485,10 @@ int compress2file_from_mem(
     err = deflateInit2(&c_stream, Z_BEST_SPEED, Z_DEFLATED,
                        (15+16), 8, Z_DEFAULT_STRATEGY);
 
-    if (err != Z_OK) return(*status = 413);
+    if (err != Z_OK) {
+        free(outfilebuff);
+        return(*status = 413);
+    }
 
     if (inmemsize > 0)
        nPages = 1 + (uLong)(inmemsize-1)/(uLong)UINT_MAX;
