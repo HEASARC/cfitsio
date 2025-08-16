@@ -62,9 +62,6 @@ int gsiftp_shutdown(void)
   if (free_gsiftp_tmp)
      free(gsiftp_tmpfile);
 
-  if (gsiftp_tmpdir[0] != '\0')
-      rmdir(gsiftp_tmpdir);
-
   return file_shutdown();
 }
 
@@ -220,6 +217,9 @@ int gsiftp_write(int hdl, void *buffer, long nbytes)
 int gsiftp_close(int handle)
 {
     unlink(gsiftp_tmpfile);
+    
+    rmdir(gsiftp_tmpdir);
+
     return file_close(handle);
 }
 
