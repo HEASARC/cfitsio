@@ -652,9 +652,6 @@ int ffcalc_rng( fitsfile *infptr,   /* I - Input FITS file                  */
 
       }
 
-   } else if( *status ) {
-      ffcprs(&lParse);
-      return( *status );
    } else {
 
       /********************************************************/
