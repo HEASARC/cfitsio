@@ -824,7 +824,7 @@ int     ngp_keyword_all_write(NGP_HDU *ngph, fitsfile *ffp, int mode)
         }
       else if (NGP_BAD_ARG == r) /* enhancement 10 dec 2003, James Peachey: template comments replace defaults */
         { r = NGP_OK;						/* update comments of special keywords like TFORM */
-          if (ngph->tok[i].comment && *ngph->tok[i].comment)	/* do not update with a blank comment */
+          if (*ngph->tok[i].comment)	/* do not update with a blank comment */
             { fits_modify_comment(ffp, ngph->tok[i].name, ngph->tok[i].comment, &r);
             }
         }
