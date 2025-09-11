@@ -18,10 +18,10 @@
 #
 
 
-%define tar_ver 4.6.2
+%define tar_ver 4.6.3
 %define so_ver 10
 Name:           cfitsio
-Version:        4.6.2
+Version:        4.6.3
 Release:        0
 Summary:        Library for manipulating FITS data files
 License:        ISC
