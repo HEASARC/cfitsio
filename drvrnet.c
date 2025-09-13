@@ -256,8 +256,8 @@ static int encode64(unsigned s_len, char *src, unsigned d_len, char *dst);
 static int ssl_get_with_curl(char *url, curlmembuf* buffer, 
                 char* username, char* password);
 static size_t curlToMemCallback(void *buffer, size_t size, size_t nmemb, void *userp);
-static int curlProgressCallback(void *clientp, double dltotal, double dlnow,
-                           double ultotal, double ulnow);
+static int curlProgressCallback(void *clientp, curl_off_t dltotal, curl_off_t dlnow,
+                           curl_off_t ultotal, curl_off_t ulnow);
 
 /***************************/
 /* Static variables */
@@ -1282,8 +1282,8 @@ size_t curlToMemCallback(void *buffer, size_t size, size_t nmemb, void *userp)
 
 /*--------------------------------------------------------------------------*/
 /* Callback function for displaying status bar during download */
-int curlProgressCallback(void *clientp, double dltotal, double dlnow,
-      double ultotal, double ulnow)
+int curlProgressCallback(void *clientp, curl_off_t dltotal, curl_off_t dlnow,
+      curl_off_t ultotal, curl_off_t ulnow)
 {
    int i, fullBar = 50, nToDisplay = 0;
    int percent = 0;
@@ -1295,7 +1295,7 @@ int curlProgressCallback(void *clientp, double dltotal, double dlnow,
    /* isFirst is true the very first time this is entered. Afterwards it
       should get reset to true when isComplete is first detected to have 
       toggled from true to false. */
-   if (dltotal == 0.0)
+   if (dltotal == 0)
    {
       if (isComplete)
          isFirst = 1;
@@ -1303,7 +1303,7 @@ int curlProgressCallback(void *clientp, double dltotal, double dlnow,
       return 0;
    }
 
-   fracCompleted = dlnow/dltotal;
+   fracCompleted = (double)dlnow/(double)dltotal;
    percent = (int)ceil(fracCompleted*100.0 - 0.5);
    if (isComplete && percent < 100)
       isFirst = 1;
@@ -1945,7 +1945,7 @@ int ssl_get_with_curl(char *url, curlmembuf* buffer, char* username,
   strcpy(tmpUrl, url);
   if (show_fits_download_progress)
   {
-     curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, curlProgressCallback);
+     curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, curlProgressCallback);
      curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, tmpUrl);
      curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
   }
