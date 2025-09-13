@@ -5387,7 +5387,7 @@ static void Do_Deref( ParseData *lParse, Node *this )
 	       if( this->type==STRING )
 		 this->value.undef[row] = theVar->value.undef[row];
 	       else if( this->type==BITSTR ) 
-		 this->value.undef;  /* Dummy - BITSTRs do not have undefs */
+		 (void)this->value.undef;  /* Dummy - BITSTRs do not have undefs */
 	       else 
 		 this->value.undef[row] = theVar->value.undef[elem];
 
@@ -5481,7 +5481,7 @@ static void Do_Deref( ParseData *lParse, Node *this )
 	       if( this->type==STRING )
 		 this->value.undef[row] = theVar->value.undef[row];
 	       else if( this->type==BITSTR ) 
-		 this->value.undef;  /* Dummy - BITSTRs do not have undefs */
+		 (void)this->value.undef;  /* Dummy - BITSTRs do not have undefs */
 	       else 
 		 this->value.undef[row] = theVar->value.undef[elem];
 
