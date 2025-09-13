@@ -229,6 +229,9 @@ int fits_init_randoms(void) {
 /*--------------------------------------------------------------------------*/
 void bz_internal_error(int errcode)
 {
+
+    (void)errcode; /* suppress unused parameter compiler warning */
+
     /* external function declared by the bzip2 code in bzlib_private.h */
     ffpmsg("bzip2 returned an internal error");
     ffpmsg("This should never happen");
@@ -2235,6 +2238,9 @@ int imcomp_write_nocompress_tile(fitsfile *outfptr,
 {
     char coltype[4];
 
+    (void)nullcheck; /* suppress unused parameter compiler warning */
+    (void)nullflagval; /* suppress unused parameter compiler warning */
+
     /* Write the uncompressed image tile pixels to the tile-compressed image file. */
     /* This is a special case when using NOCOMPRESS for diagnostic purposes in fpack. */ 
     /* Currently, this only supports a limited number of data types and */
@@ -2487,6 +2493,7 @@ int imcomp_convert_tile_tint(
     int flagval, *idata;
     long ii;
     
+    (void) outfptr;  /* suppress unused parameter compiler warning */
  
         /* datatype of input array is int.  We only support writing this datatype
            to a FITS image with BITPIX = 32 and with BZERO = 0 and BSCALE = 1.  */
@@ -2536,6 +2543,8 @@ int imcomp_convert_tile_tuint(
     int *idata;
     unsigned int *uintbuff, uintflagval;
     long ii;
+
+    (void) outfptr;  /* suppress unused parameter compiler warning */
  
        /* datatype of input array is unsigned int.  We only support writing this datatype
           to a FITS image with BITPIX = 32 and with BZERO = 0 and BSCALE = 2147483648.  */
@@ -7301,6 +7310,9 @@ int imcomp_merge_overlap (
     long tilepix, imgpix, tilepixbyte, imgpixbyte;
     int ii, overlap_bytes, overlap_flags;
 
+    (void)bnullarray; /* suppress unused parameter compiler warning */
+    (void)nullcheck; /* suppress unused parameter compiler warning */
+
     if (*status > 0)
         return(*status);
 
@@ -7514,6 +7526,8 @@ static int unquantize_i1r4(long row, /* tile number = row number in table  */
     long ii;
     int nextrand, iseed;
 
+    (void)dither_method; /* suppress unused parameter compiler warning */
+
     if (!fits_rand_value) 
        if (fits_init_randoms()) return(MEMORY_ALLOCATION);
 
@@ -7595,6 +7609,8 @@ static int unquantize_i2r4(long row, /* seed for random values  */
 {
     long ii;
     int nextrand, iseed;
+
+    (void)dither_method; /* suppress unused parameter compiler warning */
 
     if (!fits_rand_value) 
        if (fits_init_randoms()) return(MEMORY_ALLOCATION);
@@ -7756,6 +7772,8 @@ static int unquantize_i1r8(long row, /* tile number = row number in table  */
     long ii;
     int nextrand, iseed;
 
+    (void)dither_method; /* suppress unused parameter compiler warning */
+
     if (!fits_rand_value) 
        if (fits_init_randoms()) return(MEMORY_ALLOCATION);
 
@@ -7837,6 +7855,8 @@ static int unquantize_i2r8(long row, /* tile number = row number in table  */
 {
     long ii;
     int nextrand, iseed;
+
+    (void)dither_method; /* suppress unused parameter compiler warning */
 
     if (!fits_rand_value) 
        if (fits_init_randoms()) return(MEMORY_ALLOCATION);

@@ -232,6 +232,8 @@ static void done_cb( void * 				user_arg,
                      globus_ftp_client_handle_t * 	handle,
                      globus_object_t * 			err)
 {
+    (void)user_arg; /* suppress unused parameter compiler warning */
+    (void)handle;   /* suppress unused parameter compiler warning */
 
     if(err){
         fprintf(stderr, "%s", globus_object_printable_to_string(err));
@@ -252,6 +254,8 @@ static void data_cb_read( void * 			user_arg,
                           globus_off_t 			offset,
                           globus_bool_t 		eof)
 {
+    (void)offset;  /* suppress unused parameter compiler warning */
+  
     if(err) {
         fprintf(stderr, "%s", globus_object_printable_to_string(err));
     }
@@ -283,6 +287,10 @@ static void data_cb_write( void * 			user_arg,
                            globus_bool_t 		eof)
 {
     int curr_offset;
+
+    (void)length; /* suppress unused parameter compiler warning */
+    (void)offset; /* suppress unused parameter compiler warning */
+
     if(err) {
         fprintf(stderr, "%s", globus_object_printable_to_string(err));
     }

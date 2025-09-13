@@ -803,7 +803,7 @@ int     smem_shutdown(void)
  }
 
 int     smem_setoptions(int option)
- { option = 0;
+ { (void)option; /* suppress unused parameter compiler warning */
    return(0);
  }
 

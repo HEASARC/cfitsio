@@ -1246,6 +1246,8 @@ void test_ext(fitsfile *infits, 	/* input fits file   */
     int hdunum;
     char *p;
 
+    (void)infits; /* suppress unused parameter compiler warning */
+
     numusrkey = hduptr->tkeys;
     kwds = hduptr->kwds;
     hdunum = hduptr->hdunum;
@@ -1392,6 +1394,8 @@ void test_array(fitsfile *infits, 	/* input fits file   */
     char *p;
     int i,j,k,n;
     FitsKey *pkey;
+
+    (void)infits; /* suppress unused parameter compiler warning */
 
     /* excluded non-indexed keywords  */
     char *exlkeys[] = {"TFIELDS","THEAP"}; 
@@ -1619,6 +1623,8 @@ void test_tbl(fitsfile *infits, 	/* input fits file   */
     long w,d,e;
     long lm;
     int mcol;
+
+    (void)infits; /* suppress unused parameter compiler warning */
 
     /* excluded, non-index keywords (allowed in tile-compressed images) */
     char*  exlkey[] = {"BSCALE","BZERO", "BUNIT", "BLANK", "DATAMAX",
@@ -2524,6 +2530,8 @@ void test_header(
     int yy;
 
     kwdtyp ktype;
+
+    (void)infits; /* suppress unused parameter compiler warning */
     
     kwds = hduptr->kwds;
     numusrkey = hduptr->tkeys;
@@ -2967,6 +2975,8 @@ void   parse_vtform(fitsfile *infits,
     int i = 0; 
     int status = 0;
     char *p;
+
+    (void)hduptr; /* suppress unused parameter compiler warning */
     
 
     *maxlen = -1;
@@ -3133,6 +3143,8 @@ void print_summary(fitsfile *infits, 	/* input fits file   */
     char extnv[2*FLEN_VALUE+4];
     long npix;
     int hdutype;
+
+    (void)infits; /* suppress unused parameter compiler warning */
 
     /* get the error number and wrn number */ 
     set_hduerr(hduptr->hdunum);

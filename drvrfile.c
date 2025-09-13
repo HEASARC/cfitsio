@@ -1038,8 +1038,8 @@ int stream_open(char *filename, int rwmode, int *handle)
     /*
         read from stdin
     */
-    if (filename)
-      rwmode = 1;  /* dummy statement to suppress unused parameter compiler warning */
+    (void)filename; /* suppress unused parameter compiler warning */   
+    (void)rwmode;  /* suppress unused parameter compiler warning */
 
     *handle = 1;     /*  1 = stdin */   
 
@@ -1052,10 +1052,8 @@ int stream_create(char *filename, int *handle)
         write to stdout
     */
 
-    if (filename)  /* dummy statement to suppress unused parameter compiler warning */
-       *handle = 2;
-    else
-       *handle = 2;         /*  2 = stdout */       
+    (void)filename; /* suppress unused parameter compiler warning */
+    *handle = 2;         /*  2 = stdout */       
 
     return(0);
 }
@@ -1065,7 +1063,7 @@ int stream_size(int handle, LONGLONG *filesize)
   return the size of the file in bytes
 */
 {
-    handle = 0;  /* suppress unused parameter compiler warning */
+    (void)handle;  /* suppress unused parameter compiler warning */
     
     /* this operation is not supported in a stream; return large value */
     *filesize = LONG_MAX;
@@ -1077,7 +1075,7 @@ int stream_close(int handle)
      don't have to close stdin or stdout 
 */
 {
-    handle = 0;  /* suppress unused parameter compiler warning */
+    (void)handle;  /* suppress unused parameter compiler warning */
     
     return(0);
 }
@@ -1098,7 +1096,8 @@ int stream_seek(int handle, LONGLONG offset)
       seeking is not allowed in a stream
    */
 {
-    offset = handle;  /* suppress unused parameter compiler warning */
+    (void)offset;  /* suppress unused parameter compiler warning */
+    (void)handle;  /* suppress unused parameter compiler warning */
     return(1);
 }
 /*--------------------------------------------------------------------------*/

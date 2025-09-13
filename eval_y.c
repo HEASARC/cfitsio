@@ -8631,6 +8631,8 @@ static void yyerror(yyscan_t scanner, ParseData *lParse, char *s)
 {
     char msg[80];
 
+	(void)scanner; /* suppress unused parameter compiler warning */
+
     if( !lParse->status ) lParse->status = PARSE_SYNTAX_ERR;
 
     strncpy(msg, s, 80);

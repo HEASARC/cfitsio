@@ -273,6 +273,11 @@ int ftverify_work(
     int i, nerrs, nwarns;
     char msg[MAXMSG];
 
+    (void)prehead;  /* suppress unused parameter compiler warning */
+    (void)testdata;  /* suppress unused parameter compiler warning */
+    (void)testcsum;  /* suppress unused parameter compiler warning */
+    (void)testfill;  /* suppress unused parameter compiler warning */
+
     /* determine 'Severe error", "Error", or "Warning" report level */
     if( *errreport == 's' || *errreport == 'S') err_report = 2;
     if( *errreport == 'e' || *errreport == 'E') err_report = 1;
