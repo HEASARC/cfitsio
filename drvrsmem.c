@@ -394,7 +394,7 @@ static  long shared_adjust_size(long size)              /* size must be >= 0 !!!
 
 int     shared_malloc(long size, int mode, int newhandle)               /* return idx or SHARED_INVALID */
  { int h, i, r, idx, key;
-   union semun filler;
+   union semun filler = {0};
    BLKHEAD *bp;
    
    if (0 == shared_init_called)                 /* delayed initialization */
