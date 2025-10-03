@@ -134,15 +134,6 @@ bin_PROGRAMS = \
 	smem \
 	speed
 
-noinst_PROGRAMS = testprog
-
-if !NOFORTRAN
-
-noinst_PROGRAMS+= testf77
-testf77_SOURCES = utilities/testf77.f
-
-endif
-
 cookbook_SOURCES = utilities/cookbook.c
 
 fitscopy_SOURCES = utilities/fitscopy.c
@@ -167,6 +158,15 @@ speed_SOURCES = utilities/speed.c
 testprog_SOURCES = utilities/testprog.c
 
 LDADD = libcfitsio.la ${LIBS}
+
+noinst_PROGRAMS = testprog
+
+if !NOFORTRAN
+
+noinst_PROGRAMS+= testf77
+testf77_SOURCES = utilities/testf77.f
+
+endif
 
 # eval: ==================================================================
 

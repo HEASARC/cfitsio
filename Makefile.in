@@ -151,10 +151,10 @@ am__uninstall_files_from_dir = { \
   || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
        $(am__cd) "$$dir" && echo $$files | $(am__xargs_n) 40 $(am__rm_f); }; \
   }
-LTLIBRARIES = $(lib_LTLIBRARIES)
+LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libcfitsio_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) libcfitsio_swapproc.la
 am__libcfitsio_la_SOURCES_DIST = buffers.c cfileio.c checksum.c \
 	drvrfile.c drvrmem.c drvrnet.c drvrsmem.c editcol.c edithdu.c \
 	eval_l.c eval_y.c eval_f.c fitscore.c getcol.c getcolb.c \
@@ -163,11 +163,10 @@ am__libcfitsio_la_SOURCES_DIST = buffers.c cfileio.c checksum.c \
 	group.c grparser.c histo.c iraffits.c modkey.c putcol.c \
 	putcolb.c putcold.c putcole.c putcoli.c putcolj.c putcolk.c \
 	putcoluk.c putcoll.c putcols.c putcolsb.c putcolu.c putcolui.c \
-	putcoluj.c putkey.c region.c scalnull.c swapproc.c wcssub.c \
-	wcsutil.c imcompress.c quantize.c ricecomp.c pliocomp.c \
-	fits_hcompress.c fits_hdecompress.c simplerng.c zcompress.c \
-	zuncompress.c f77_wrap1.c f77_wrap2.c f77_wrap3.c f77_wrap4.c \
-	drvrgsiftp.c
+	putcoluj.c putkey.c region.c scalnull.c wcssub.c wcsutil.c \
+	imcompress.c quantize.c ricecomp.c pliocomp.c fits_hcompress.c \
+	fits_hdecompress.c simplerng.c zcompress.c zuncompress.c \
+	f77_wrap1.c f77_wrap2.c f77_wrap3.c f77_wrap4.c drvrgsiftp.c
 am__objects_1 = libcfitsio_la-f77_wrap1.lo libcfitsio_la-f77_wrap2.lo \
 	libcfitsio_la-f77_wrap3.lo libcfitsio_la-f77_wrap4.lo
 @NOFORTRAN_FALSE@am__objects_2 = $(am__objects_1)
@@ -198,10 +197,10 @@ am_libcfitsio_la_OBJECTS = libcfitsio_la-buffers.lo \
 	libcfitsio_la-putcolu.lo libcfitsio_la-putcolui.lo \
 	libcfitsio_la-putcoluj.lo libcfitsio_la-putkey.lo \
 	libcfitsio_la-region.lo libcfitsio_la-scalnull.lo \
-	libcfitsio_la-swapproc.lo libcfitsio_la-wcssub.lo \
-	libcfitsio_la-wcsutil.lo libcfitsio_la-imcompress.lo \
-	libcfitsio_la-quantize.lo libcfitsio_la-ricecomp.lo \
-	libcfitsio_la-pliocomp.lo libcfitsio_la-fits_hcompress.lo \
+	libcfitsio_la-wcssub.lo libcfitsio_la-wcsutil.lo \
+	libcfitsio_la-imcompress.lo libcfitsio_la-quantize.lo \
+	libcfitsio_la-ricecomp.lo libcfitsio_la-pliocomp.lo \
+	libcfitsio_la-fits_hcompress.lo \
 	libcfitsio_la-fits_hdecompress.lo libcfitsio_la-simplerng.lo \
 	libcfitsio_la-zcompress.lo libcfitsio_la-zuncompress.lo \
 	$(am__objects_2) $(am__objects_4)
@@ -213,6 +212,14 @@ am__v_lt_1 =
 libcfitsio_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libcfitsio_la_CFLAGS) \
 	$(CFLAGS) $(libcfitsio_la_LDFLAGS) $(LDFLAGS) -o $@
+libcfitsio_swapproc_la_LIBADD =
+am_libcfitsio_swapproc_la_OBJECTS =  \
+	libcfitsio_swapproc_la-swapproc.lo
+libcfitsio_swapproc_la_OBJECTS = $(am_libcfitsio_swapproc_la_OBJECTS)
+libcfitsio_swapproc_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(libcfitsio_swapproc_la_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am__dirstamp = $(am__leading_dot)dirstamp
 am_cookbook_OBJECTS = utilities/cookbook.$(OBJEXT)
 cookbook_OBJECTS = $(am_cookbook_OBJECTS)
@@ -340,11 +347,11 @@ am__depfiles_remade = ./$(DEPDIR)/libcfitsio_la-buffers.Plo \
 	./$(DEPDIR)/libcfitsio_la-ricecomp.Plo \
 	./$(DEPDIR)/libcfitsio_la-scalnull.Plo \
 	./$(DEPDIR)/libcfitsio_la-simplerng.Plo \
-	./$(DEPDIR)/libcfitsio_la-swapproc.Plo \
 	./$(DEPDIR)/libcfitsio_la-wcssub.Plo \
 	./$(DEPDIR)/libcfitsio_la-wcsutil.Plo \
 	./$(DEPDIR)/libcfitsio_la-zcompress.Plo \
 	./$(DEPDIR)/libcfitsio_la-zuncompress.Plo \
+	./$(DEPDIR)/libcfitsio_swapproc_la-swapproc.Plo \
 	utilities/$(DEPDIR)/cookbook.Po \
 	utilities/$(DEPDIR)/fitscopy.Po \
 	utilities/$(DEPDIR)/fitsverify-ftverify.Po \
@@ -391,11 +398,13 @@ AM_V_F77LD = $(am__v_F77LD_@AM_V@)
 am__v_F77LD_ = $(am__v_F77LD_@AM_DEFAULT_V@)
 am__v_F77LD_0 = @echo "  F77LD   " $@;
 am__v_F77LD_1 = 
-SOURCES = $(libcfitsio_la_SOURCES) $(cookbook_SOURCES) \
-	$(fitscopy_SOURCES) $(fitsverify_SOURCES) $(fpack_SOURCES) \
-	$(funpack_SOURCES) $(imcopy_SOURCES) $(smem_SOURCES) \
-	$(speed_SOURCES) $(testf77_SOURCES) $(testprog_SOURCES)
-DIST_SOURCES = $(am__libcfitsio_la_SOURCES_DIST) $(cookbook_SOURCES) \
+SOURCES = $(libcfitsio_la_SOURCES) $(libcfitsio_swapproc_la_SOURCES) \
+	$(cookbook_SOURCES) $(fitscopy_SOURCES) $(fitsverify_SOURCES) \
+	$(fpack_SOURCES) $(funpack_SOURCES) $(imcopy_SOURCES) \
+	$(smem_SOURCES) $(speed_SOURCES) $(testf77_SOURCES) \
+	$(testprog_SOURCES)
+DIST_SOURCES = $(am__libcfitsio_la_SOURCES_DIST) \
+	$(libcfitsio_swapproc_la_SOURCES) $(cookbook_SOURCES) \
 	$(fitscopy_SOURCES) $(fitsverify_SOURCES) $(fpack_SOURCES) \
 	$(funpack_SOURCES) $(imcopy_SOURCES) $(smem_SOURCES) \
 	$(speed_SOURCES) $(am__testf77_SOURCES_DIST) \
@@ -596,6 +605,9 @@ top_srcdir = @top_srcdir@
 version_info = @version_info@
 lib_LTLIBRARIES = libcfitsio.la
 
+# Dummary library to compile single object file with SSE flags
+noinst_LTLIBRARIES = libcfitsio_swapproc.la
+
 # Shared library version suffixes generated by libtool, used below
 # for symbolic links:
 soname_version = @version_info@
@@ -613,14 +625,15 @@ libcfitsio_la_SOURCES = buffers.c cfileio.c checksum.c drvrfile.c \
 	grparser.c histo.c iraffits.c modkey.c putcol.c putcolb.c \
 	putcold.c putcole.c putcoli.c putcolj.c putcolk.c putcoluk.c \
 	putcoll.c putcols.c putcolsb.c putcolu.c putcolui.c putcoluj.c \
-	putkey.c region.c scalnull.c swapproc.c wcssub.c wcsutil.c \
-	imcompress.c quantize.c ricecomp.c pliocomp.c fits_hcompress.c \
+	putkey.c region.c scalnull.c wcssub.c wcsutil.c imcompress.c \
+	quantize.c ricecomp.c pliocomp.c fits_hcompress.c \
 	fits_hdecompress.c simplerng.c zcompress.c zuncompress.c \
 	$(am__append_1) $(am__append_2)
 libcfitsio_la_CFLAGS = $(AM_CFLAGS) @DEFS@
-libcfitsio_swapproc_la_CFLAGS = $(libcfitsio_la_CFLAGS) @SSE_FLAGS@
-libcfitsio_la_LIBADD = -lm ${LIBS_CURL} ${LIBS}
+libcfitsio_la_LIBADD = -lm ${LIBS_CURL} ${LIBS} libcfitsio_swapproc.la
 libcfitsio_la_LDFLAGS = -version-info @version_info@
+libcfitsio_swapproc_la_CFLAGS = $(libcfitsio_la_CFLAGS) @SSE_FLAGS@
+libcfitsio_swapproc_la_SOURCES = swapproc.c
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = cfitsio.pc
 
@@ -628,7 +641,6 @@ pkgconfig_DATA = cfitsio.pc
 
 #SUBDIRS = utilities
 AUTOMAKE_OPTIONS = subdir-objects
-@NOFORTRAN_FALSE@testf77_SOURCES = utilities/testf77.f
 cookbook_SOURCES = utilities/cookbook.c
 fitscopy_SOURCES = utilities/fitscopy.c
 fitsverify_CFLAGS = -DSTANDALONE
@@ -645,6 +657,7 @@ smem_SOURCES = utilities/smem.c
 speed_SOURCES = utilities/speed.c
 testprog_SOURCES = utilities/testprog.c
 LDADD = libcfitsio.la ${LIBS}
+@NOFORTRAN_FALSE@testf77_SOURCES = utilities/testf77.f
 
 # eval: ==================================================================
 FLEX = flex
@@ -790,8 +803,20 @@ clean-libLTLIBRARIES:
 	echo rm -f $${locs}; \
 	$(am__rm_f) $${locs}
 
+clean-noinstLTLIBRARIES:
+	-$(am__rm_f) $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; \
+	locs=`for p in $$list; do echo $$p; done | \
+	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
+	      sort -u`; \
+	echo rm -f $${locs}; \
+	$(am__rm_f) $${locs}
+
 libcfitsio.la: $(libcfitsio_la_OBJECTS) $(libcfitsio_la_DEPENDENCIES) $(EXTRA_libcfitsio_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libcfitsio_la_LINK) -rpath $(libdir) $(libcfitsio_la_OBJECTS) $(libcfitsio_la_LIBADD) $(LIBS)
+
+libcfitsio_swapproc.la: $(libcfitsio_swapproc_la_OBJECTS) $(libcfitsio_swapproc_la_DEPENDENCIES) $(EXTRA_libcfitsio_swapproc_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libcfitsio_swapproc_la_LINK)  $(libcfitsio_swapproc_la_OBJECTS) $(libcfitsio_swapproc_la_LIBADD) $(LIBS)
 utilities/$(am__dirstamp):
 	@$(MKDIR_P) utilities
 	@: >>utilities/$(am__dirstamp)
@@ -939,11 +964,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcfitsio_la-ricecomp.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcfitsio_la-scalnull.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcfitsio_la-simplerng.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcfitsio_la-swapproc.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcfitsio_la-wcssub.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcfitsio_la-wcsutil.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcfitsio_la-zcompress.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcfitsio_la-zuncompress.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcfitsio_swapproc_la-swapproc.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/cookbook.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/fitscopy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/fitsverify-ftverify.Po@am__quote@ # am--include-marker
@@ -1333,13 +1358,6 @@ libcfitsio_la-scalnull.lo: scalnull.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcfitsio_la_CFLAGS) $(CFLAGS) -c -o libcfitsio_la-scalnull.lo `test -f 'scalnull.c' || echo '$(srcdir)/'`scalnull.c
 
-libcfitsio_la-swapproc.lo: swapproc.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcfitsio_la_CFLAGS) $(CFLAGS) -MT libcfitsio_la-swapproc.lo -MD -MP -MF $(DEPDIR)/libcfitsio_la-swapproc.Tpo -c -o libcfitsio_la-swapproc.lo `test -f 'swapproc.c' || echo '$(srcdir)/'`swapproc.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcfitsio_la-swapproc.Tpo $(DEPDIR)/libcfitsio_la-swapproc.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='swapproc.c' object='libcfitsio_la-swapproc.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcfitsio_la_CFLAGS) $(CFLAGS) -c -o libcfitsio_la-swapproc.lo `test -f 'swapproc.c' || echo '$(srcdir)/'`swapproc.c
-
 libcfitsio_la-wcssub.lo: wcssub.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcfitsio_la_CFLAGS) $(CFLAGS) -MT libcfitsio_la-wcssub.lo -MD -MP -MF $(DEPDIR)/libcfitsio_la-wcssub.Tpo -c -o libcfitsio_la-wcssub.lo `test -f 'wcssub.c' || echo '$(srcdir)/'`wcssub.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcfitsio_la-wcssub.Tpo $(DEPDIR)/libcfitsio_la-wcssub.Plo
@@ -1451,6 +1469,13 @@ libcfitsio_la-drvrgsiftp.lo: drvrgsiftp.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='drvrgsiftp.c' object='libcfitsio_la-drvrgsiftp.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcfitsio_la_CFLAGS) $(CFLAGS) -c -o libcfitsio_la-drvrgsiftp.lo `test -f 'drvrgsiftp.c' || echo '$(srcdir)/'`drvrgsiftp.c
+
+libcfitsio_swapproc_la-swapproc.lo: swapproc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcfitsio_swapproc_la_CFLAGS) $(CFLAGS) -MT libcfitsio_swapproc_la-swapproc.lo -MD -MP -MF $(DEPDIR)/libcfitsio_swapproc_la-swapproc.Tpo -c -o libcfitsio_swapproc_la-swapproc.lo `test -f 'swapproc.c' || echo '$(srcdir)/'`swapproc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcfitsio_swapproc_la-swapproc.Tpo $(DEPDIR)/libcfitsio_swapproc_la-swapproc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='swapproc.c' object='libcfitsio_swapproc_la-swapproc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcfitsio_swapproc_la_CFLAGS) $(CFLAGS) -c -o libcfitsio_swapproc_la-swapproc.lo `test -f 'swapproc.c' || echo '$(srcdir)/'`swapproc.c
 
 utilities/fitsverify-ftverify.o: utilities/ftverify.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(fitsverify_CFLAGS) $(CFLAGS) -MT utilities/fitsverify-ftverify.o -MD -MP -MF utilities/$(DEPDIR)/fitsverify-ftverify.Tpo -c -o utilities/fitsverify-ftverify.o `test -f 'utilities/ftverify.c' || echo '$(srcdir)/'`utilities/ftverify.c
@@ -1871,7 +1896,8 @@ maintainer-clean-generic:
 clean: clean-am
 
 clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
-	clean-libtool clean-noinstPROGRAMS mostlyclean-am
+	clean-libtool clean-noinstLTLIBRARIES clean-noinstPROGRAMS \
+	mostlyclean-am
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
@@ -1936,11 +1962,11 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libcfitsio_la-ricecomp.Plo
 	-rm -f ./$(DEPDIR)/libcfitsio_la-scalnull.Plo
 	-rm -f ./$(DEPDIR)/libcfitsio_la-simplerng.Plo
-	-rm -f ./$(DEPDIR)/libcfitsio_la-swapproc.Plo
 	-rm -f ./$(DEPDIR)/libcfitsio_la-wcssub.Plo
 	-rm -f ./$(DEPDIR)/libcfitsio_la-wcsutil.Plo
 	-rm -f ./$(DEPDIR)/libcfitsio_la-zcompress.Plo
 	-rm -f ./$(DEPDIR)/libcfitsio_la-zuncompress.Plo
+	-rm -f ./$(DEPDIR)/libcfitsio_swapproc_la-swapproc.Plo
 	-rm -f utilities/$(DEPDIR)/cookbook.Po
 	-rm -f utilities/$(DEPDIR)/fitscopy.Po
 	-rm -f utilities/$(DEPDIR)/fitsverify-ftverify.Po
@@ -2065,11 +2091,11 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libcfitsio_la-ricecomp.Plo
 	-rm -f ./$(DEPDIR)/libcfitsio_la-scalnull.Plo
 	-rm -f ./$(DEPDIR)/libcfitsio_la-simplerng.Plo
-	-rm -f ./$(DEPDIR)/libcfitsio_la-swapproc.Plo
 	-rm -f ./$(DEPDIR)/libcfitsio_la-wcssub.Plo
 	-rm -f ./$(DEPDIR)/libcfitsio_la-wcsutil.Plo
 	-rm -f ./$(DEPDIR)/libcfitsio_la-zcompress.Plo
 	-rm -f ./$(DEPDIR)/libcfitsio_la-zuncompress.Plo
+	-rm -f ./$(DEPDIR)/libcfitsio_swapproc_la-swapproc.Plo
 	-rm -f utilities/$(DEPDIR)/cookbook.Po
 	-rm -f utilities/$(DEPDIR)/fitscopy.Po
 	-rm -f utilities/$(DEPDIR)/fitsverify-ftverify.Po
@@ -2108,24 +2134,25 @@ uninstall-am: uninstall-binPROGRAMS uninstall-includeHEADERS \
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles am--refresh check \
 	check-am clean clean-binPROGRAMS clean-cscope clean-generic \
-	clean-libLTLIBRARIES clean-libtool clean-noinstPROGRAMS cscope \
-	cscopelist-am ctags ctags-am dist dist-all dist-bzip2 \
-	dist-gzip dist-lzip dist-shar dist-tarZ dist-xz dist-zip \
-	dist-zstd distcheck distclean distclean-compile \
-	distclean-generic distclean-libtool distclean-tags \
-	distcleancheck distdir distuninstallcheck dvi dvi-am html \
-	html-am info info-am install install-am install-binPROGRAMS \
-	install-data install-data-am install-dvi install-dvi-am \
-	install-exec install-exec-am install-exec-hook install-html \
-	install-html-am install-includeHEADERS install-info \
-	install-info-am install-libLTLIBRARIES install-man install-pdf \
-	install-pdf-am install-pkgconfigDATA install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	pdf pdf-am ps ps-am tags tags-am uninstall uninstall-am \
-	uninstall-binPROGRAMS uninstall-includeHEADERS \
-	uninstall-libLTLIBRARIES uninstall-pkgconfigDATA
+	clean-libLTLIBRARIES clean-libtool clean-noinstLTLIBRARIES \
+	clean-noinstPROGRAMS cscope cscopelist-am ctags ctags-am dist \
+	dist-all dist-bzip2 dist-gzip dist-lzip dist-shar dist-tarZ \
+	dist-xz dist-zip dist-zstd distcheck distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distcleancheck distdir distuninstallcheck dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-binPROGRAMS install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-exec-hook \
+	install-html install-html-am install-includeHEADERS \
+	install-info install-info-am install-libLTLIBRARIES \
+	install-man install-pdf install-pdf-am install-pkgconfigDATA \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags tags-am uninstall uninstall-am uninstall-binPROGRAMS \
+	uninstall-includeHEADERS uninstall-libLTLIBRARIES \
+	uninstall-pkgconfigDATA
 
 .PRECIOUS: Makefile
 
