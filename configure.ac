@@ -264,8 +264,7 @@ if test "x$use_fortran" = "xyes"; then
   AC_MSG_NOTICE(cfitsio: == Adding Fortran wrappers)
   #AC_PROG_FC
   if test "x$FC" != "x" ; then F77=$FC; fi
-  AC_PROG_F77
-  #AC_CHECK_PROGS(FC, gfortran g95 g77 f77 ifort f95 f90 xlf cf77 gf77 af77 ncf f2c, notfound)
+  AC_PROG_F77([gfortran g95 g77 f77 ifort f95 f90 xlf cf77 gf77 af77 ncf f2c])
   if test "x$F77" != "x" ; then
      #FC_BASENAME=`basename $FC`
      FC_BASENAME=`basename $F77`
