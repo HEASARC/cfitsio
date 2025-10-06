@@ -88,10 +88,10 @@ int gsiftp_checkfile(char *urltype, char *infile, char *outfile)
 int gsiftp_open(char *filename, int rwmode, int *handle)
 {
   FILE *gsiftpfile;
-  char *num_streams_str;
   int num_streams;
 
-  if (num_streams_str = getenv("GSIFTP_STREAMS")) {
+  char * num_streams_str = getenv("GSIFTP_STREAMS");
+  if (num_streams_str) {
     num_streams = atoi(num_streams_str);
     if (num_streams < 1) num_streams = 1;
   } else {
@@ -160,10 +160,10 @@ int gsiftp_size(int handle, LONGLONG *filesize)
 int gsiftp_flush(int handle)
 {
   FILE *gsiftpfile;
-  char *num_streams_str;
   int num_streams;
 
-  if (num_streams_str = getenv("GSIFTP_STREAMS")) {
+  char * num_streams_str = getenv("GSIFTP_STREAMS");
+  if (num_streams_str) {
     num_streams = atoi(num_streams_str);
     if (num_streams < 1) num_streams = 1;
   } else {
