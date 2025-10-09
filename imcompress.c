@@ -6511,11 +6511,11 @@ int imcomp_decompress_tile (fitsfile *infptr,
 	 /* Just have to copy the values to the output array */
 	 
           if (tiledatatype == TINT) {
-              fffr4int((float *) idata, tilelen, bscale, bzero, nullcheck,   
+              fffi4int(idata, (long) tilelen, bscale, bzero, nullcheck, tnull,  
                 *(int *) nulval, bnullarray, anynul,
                 (int *) buffer, status);
           } else {
-              fffr8int((double *) idata, tilelen, bscale, bzero, nullcheck,   
+              fffi8int((LONGLONG *) idata, (long) tilelen, bscale, bzero, nullcheck, tnull,  
                 *(int *) nulval, bnullarray, anynul,
                 (int *) buffer, status);
           }
