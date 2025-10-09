@@ -2254,6 +2254,11 @@ int ffffrw_work(long        totalrows, /* I - Total rows to be processed     */
     ffffrw_workdata *workData = userPtr;
     ParseData *lParse = workData->lParse;
 
+    (void)totalrows; /* suppress unused parameter compiler warning */
+    (void)offset;    /* suppress unused parameter compiler warning */
+    (void)nCols;     /* suppress unused parameter compiler warning */
+    (void)colData;   /* suppress unused parameter compiler warning */
+
     Evaluate_Parser( lParse, firstrow, nrows );
 
     if( !lParse->status ) {

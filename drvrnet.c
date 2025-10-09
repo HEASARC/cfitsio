@@ -1291,7 +1291,10 @@ int curlProgressCallback(void *clientp, curl_off_t dltotal, curl_off_t dlnow,
    char *urlname=0;
    static int isComplete = 0;
    static int isFirst = 1;
-   
+
+   (void)ultotal; /* suppress unused parameter compiler warning */
+   (void)ulnow;  /* suppress unused parameter compiler warning */
+
    /* isFirst is true the very first time this is entered. Afterwards it
       should get reset to true when isComplete is first detected to have 
       toggled from true to false. */
@@ -3704,6 +3707,9 @@ int http_checkfile (char *urltype, char *infile, char *outfile1)
 /*--------------------------------------------------------------------------*/
 int https_checkfile (char *urltype, char *infile, char *outfile1)
 {
+
+  (void)infile;  /* suppress unused parameter compiler warning */
+
   /* set default  */
   strcpy(urltype,"https://");
   
@@ -3728,6 +3734,9 @@ int https_checkfile (char *urltype, char *infile, char *outfile1)
 /*--------------------------------------------------------------------------*/
 int ftps_checkfile (char *urltype, char *infile, char *outfile1)
 {
+
+   (void)infile;  /* suppress unused parameter compiler warning */
+
    strcpy(urltype,"ftps://");
    if (strlen(outfile1))
    {

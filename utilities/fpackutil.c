@@ -1634,6 +1634,8 @@ int fp_unpack_hdu (fitsfile *infptr, fitsfile *outfptr, fpstate fpvar, int *stat
 {
 	int hdutype, lval;
 
+	(void)fpvar; /* suppress unused parameter compiler warning */
+
         if (*status > 0) return(0);
 
 	fits_get_hdu_type (infptr, &hdutype, status);
@@ -1969,6 +1971,9 @@ int fp_test_table (fitsfile *infptr, fitsfile *outfptr, fitsfile *outfptr2,
         char fzalgor[FLEN_VALUE];
 	LONGLONG headstart, datastart, dataend;
 	float elapse, cpu;
+
+	(void)outfptr2;  /* suppress unused parameter compiler warning */
+	(void)fpvar;     /* suppress unused parameter compiler warning */
 
 	if (*status) return(0);
 
@@ -2416,6 +2421,8 @@ int fp_i4rescale(fitsfile *infptr, int naxis, long *naxes, double rescale,
  */
 void abort_fpack(int sig)
 {
+      (void)sig; /* suppress unused parameter compiler warning */
+
      /* clean up by deleting temporary files */
      
       if (tempfilename[0]) {

@@ -1,6 +1,6 @@
-#line 1 "eval_l.c"
+#line 2 "eval_l.c"
 
-#line 3 "eval_l.c"
+#line 4 "eval_l.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -922,8 +922,8 @@ static int expr_read( ParseData *lParse, char *buf, int nbytes );
         if ( (result = expr_read( yylParse, (char *) buf, max_size )) < 0 ) \
             YY_FATAL_ERROR( "read() in flex scanner failed" );
 
-#line 925 "eval_l.c"
 #line 926 "eval_l.c"
+#line 927 "eval_l.c"
 
 #define INITIAL 0
 
@@ -1200,7 +1200,7 @@ YY_DECL
 #line 158 "eval.l"
 
 
-#line 1203 "eval_l.c"
+#line 1204 "eval_l.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -1691,7 +1691,7 @@ YY_RULE_SETUP
 #line 474 "eval.l"
 ECHO;
 	YY_BREAK
-#line 1694 "eval_l.c"
+#line 1695 "eval_l.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2882,6 +2882,7 @@ int yywrap(yyscan_t scanner)
      pre-2.5.1 versions of flex which
      do not recognize %option noyywrap 
   */
+  (void)scanner; /* suppress unused parameter compiler warning */
   return(1);
 }
 
