@@ -6454,14 +6454,20 @@ int imcomp_decompress_tile (fitsfile *infptr,
         pixlen = sizeof(short);
 
 	if ((infptr->Fptr)->quantize_level == NO_QUANTIZE) {
-	 /* the floating point pixels were losselessly compressed with GZIP */
-	 /* Just have to copy the values to the output array */
-	 
+  	     /* Just have to copy the values to the output array */	 
           if (tiledatatype == TINT) {
               fffi4i2(idata, tilelen, bscale, bzero, nullcheck, tnull,  
                 *(short *) nulval, bnullarray, anynul,
                 (short *) buffer, status);
-          } else {
+	  	  } else if (tiledatatype == TSHORT) {
+		    fffi2i2((short *)idata, tilelen, bscale, bzero, nullcheck, (short) tnull,
+		       *(short *) nulval, bnullarray, anynul,
+		      (short *) buffer, status);
+		  } else if (tiledatatype == TBYTE) {
+		    fffi1i2((unsigned char *)idata, tilelen, bscale, bzero, nullcheck, (unsigned char) tnull,
+		       *(short *) nulval, bnullarray, anynul,
+		      (short *) buffer, status);
+		  } else {
               fffi8i2(idata, tilelen, bscale, bzero, nullcheck, tnull,  
                 *(short *) nulval, bnullarray, anynul,
                 (short *) buffer, status);
