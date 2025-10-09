@@ -804,7 +804,6 @@ int ffhist2e(fitsfile **fptr,  /* IO - pointer to table with X and Y cols;    */
 
       weight = DOUBLENULLVALUE;
       wtrepeat = nelem;
-      wtdatatype = wtdatatype;
 
     }
     else
