@@ -2497,6 +2497,8 @@ yyreduce:
 		     else if (FSTRCMP((yyvsp[-2].str),"ARCTAN(") == 0
 			      || FSTRCMP((yyvsp[-2].str),"ATAN(") == 0)
 			(yyval.Node) = New_Func(lParse,  0, atan_fct, 1, (yyvsp[-1].Node), 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP((yyvsp[-2].str),"GAMMA(") == 0)
+			(yyval.Node) = New_Func(lParse,  0, gamma_fct,  1, (yyvsp[-1].Node), 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP((yyvsp[-2].str),"SINH(") == 0)
 			(yyval.Node) = New_Func(lParse,  0, sinh_fct,  1, (yyvsp[-1].Node), 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP((yyvsp[-2].str),"COSH(") == 0)
@@ -5963,6 +5965,7 @@ static void Do_Func( ParseData *lParse, Node *this )
 
    if( allConst ) {
 
+      int signp ;
       switch( this->operation ) {
 
 	    /* Non-Trig single-argument functions */
@@ -6064,6 +6067,10 @@ static void Do_Func( ParseData *lParse, Node *this )
 	    break;
 	 case atan_fct:
 	    this->value.data.dbl = atan( pVals[0].data.dbl );
+	    break;
+	 case gamma_fct:
+	    this->value.data.dbl = lgamma_r( pVals[0].data.dbl, & signp );
+	    this->value.data.dbl = exp(this->value.data.dbl)*signp ;
 	    break;
 	 case sinh_fct:
 	    this->value.data.dbl = sinh( pVals[0].data.dbl );
@@ -6880,6 +6887,15 @@ static void Do_Func( ParseData *lParse, Node *this )
 		     this->value.undef[elem] = 1;
 		  } else
 		     this->value.data.dblptr[elem] = log( dval );
+	       }
+	    break;
+	 case gamma_fct:
+	    while( elem-- )
+	       if( !(this->value.undef[elem] = theParams[0]->value.undef[elem]) ) {
+                  int signp ;
+		  dval = theParams[0]->value.data.dblptr[elem];
+                  this->value.data.dblptr[elem] = lgamma_r( dval,&signp );
+                  this->value.data.dblptr[elem] = signp*exp(this->value.data.dblptr[elem]) ;
 	       }
 	    break;
 	 case log10_fct:

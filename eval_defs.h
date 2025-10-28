@@ -126,6 +126,7 @@ typedef enum {
                   sqrt_fct,
                   abs_fct,
                   atan2_fct,
+                  gamma_fct,
                   ceil_fct,
                   floor_fct,
                   round_fct,
