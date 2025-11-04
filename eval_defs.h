@@ -1,4 +1,6 @@
 #define _DEFAULT_SOURCE
+/* _REENTRANT apparently needed on MacOS to get lgamma_r RJM 2025-11-04 */
+#define _REENTRANT
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>

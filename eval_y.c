@@ -145,6 +145,8 @@
 
 /* assume that glibc needs _DEFAULT_SOURCE to implement lgamma_r, RJM 2025-11-04 */
 #define _DEFAULT_SOURCE
+/* assume that glibc needs _REENTRANT to implement lgamma_r on MacOS, RJM 2025-11-04 */
+#define _REENTRANT
 #define  APPROX 1.0e-7
 #include "eval_defs.h"
 #include "region.h"
