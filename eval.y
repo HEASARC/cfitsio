@@ -77,13 +77,16 @@
 /*  Craig B Markwardt Dec 2019  Add bit/hex/oct literal strings and     */
 /*                              bitwise operatiosn between integers     */
 /*  Craig B Markwardt Mar 2021  Add SETNULL() function                  */
+/*  R. J. Mathar      Nov 2025  Add _DEFAULT_SOURCE to acces lgamma_r   */
 /*                                                                      */
 /************************************************************************/
 
+#define _DEFAULT_SOURCE
 #define  APPROX 1.0e-7
 #include "eval_defs.h"
 #include "region.h"
 #include <time.h>
+#include <math.h>
 
 #include <stdlib.h>
 
@@ -740,6 +743,8 @@ expr:    LONG
 		     else if (FSTRCMP($1,"ARCTAN(") == 0
 			      || FSTRCMP($1,"ATAN(") == 0)
 			$$ = New_Func(lParse,  0, atan_fct, 1, $2, 0, 0, 0, 0, 0, 0 );
+		     else if (FSTRCMP($1,"GAMMA(") == 0)
+			$$ = New_Func(lParse,  0, gamma_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"SINH(") == 0)
 			$$ = New_Func(lParse,  0, sinh_fct,  1, $2, 0, 0, 0, 0, 0, 0 );
 		     else if (FSTRCMP($1,"COSH(") == 0)
