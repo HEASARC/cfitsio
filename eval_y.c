@@ -45,6 +45,7 @@
    define necessary library symbols; they are noted "INFRINGES ON
    USER NAME SPACE" below.  */
 
+
 /* Identify Bison output, and Bison version.  */
 #define YYBISON 30802
 
@@ -138,13 +139,17 @@
 /*  Craig B Markwardt Dec 2019  Add bit/hex/oct literal strings and     */
 /*                              bitwise operatiosn between integers     */
 /*  Craig B Markwardt Mar 2021  Add SETNULL() function                  */
+/*  R. J. Mathar      Nov 2025  added call to lgamma_r                  */
 /*                                                                      */
 /************************************************************************/
 
+/* assume that glibc needs _DEFAULT_SOURCE to implement lgamma_r, RJM 2025-11-04 */
+#define _DEFAULT_SOURCE
 #define  APPROX 1.0e-7
 #include "eval_defs.h"
 #include "region.h"
 #include <time.h>
+#include <math.h>
 
 #include <stdlib.h>
 
