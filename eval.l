@@ -54,9 +54,11 @@
 /*   Peter D Wilson   Aug 1998  regfilter(a,b,c,d) function added       */
 /*   Peter D Wilson   Jul 1999  Make parser fitsfile-independent,       */
 /*                              allowing a purely vector-based usage    */
+/*   R. J. Mathar     Nov 2025  _DEFAULT_SOURCE to implement lgamma_r   */
 /*                                                                      */
 /************************************************************************/
 
+#define _DEFAULT_SOURCE
 #include <math.h>
 #include <string.h>
 #include <ctype.h>

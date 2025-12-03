@@ -1,3 +1,6 @@
+#define _DEFAULT_SOURCE
+/* _REENTRANT apparently needed on MacOS to get lgamma_r RJM 2025-11-04 */
+#define _REENTRANT
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -126,6 +129,7 @@ typedef enum {
                   sqrt_fct,
                   abs_fct,
                   atan2_fct,
+                  gamma_fct,
                   ceil_fct,
                   floor_fct,
                   round_fct,
