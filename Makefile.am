@@ -1,8 +1,8 @@
 ## Process this file with automake to produce Makefile.in
-#
-# CFITSIO Makefile.am
-#
-# Author: B.Irby (NASA/GSFC), based on the previous CFITSIO Makefile.in
+##
+## CFITSIO Makefile.am
+##
+## Author: B.Irby (NASA/GSFC), based on the previous CFITSIO Makefile.in
 
 lib_LTLIBRARIES = libcfitsio.la
 
