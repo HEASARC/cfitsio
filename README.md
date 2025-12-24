@@ -48,6 +48,7 @@ The configure command customizes the Makefile for a particular system, so after 
 at the prompt, and this will compile the source files and build the library (static `libcfitsio.a` as well as the shared version `libcfitsio.so|.dylib`) and the helper utilities (`fpack`, `funpack`, `fitscopy`, `imcopy`, et al.) and test program (`testprog`).  To copy the library, header files, and utilities to the chosen install location, type this command:
 
 ```bash
+% make check
 % make install
 ```
 

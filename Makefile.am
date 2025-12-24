@@ -197,15 +197,21 @@ EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
 	CMakeLists.txt \
 	eval.l eval.y \
 	iter_a.f iter_a.fit iter_b.f iter_b.fit iter_c.f iter_c.fit \
+	run-test \
 	sample.tpl \
 	testf77.out testf77.std \
 	testprog.out testprog.std testprog.tpt
 # windumpexts.c
 # winDumpExts.mak
 
+# check: =================================================================
+
+TESTS = run-test
+AM_TESTS_ENVIRONMENT = srcdir='$(srcdir)'
+
 # clean: =================================================================
 
-CLEANFILES = testprog.fit testf77.fit atestfil.fit btestfil.fit y.output
+CLEANFILES = testprog.fit testprog.lis testf77.fit atestfil.fit btestfil.fit y.output
 
 # HEASoft packages fitsTcl and POW need a list of all .o files: ==========
 
