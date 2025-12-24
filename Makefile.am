@@ -193,7 +193,6 @@ EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
 	docs licenses \
 	README.md README.MacOS README.win \
 	cfitsio.pc.cmake cfitsio.pc.in \
-	cfitsio-config.cmake.in cfitsio-config-version.cmake.in \
 	cfitsio.xcodeproj \
 	CMakeLists.txt \
 	eval.l eval.y \
