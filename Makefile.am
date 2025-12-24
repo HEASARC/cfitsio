@@ -17,6 +17,8 @@ soname_version_lnx = ${soname_version}.0.0
 include_HEADERS = fitsio.h fitsio2.h longnam.h drvrsmem.h \
 	cfortran.h f77_wrap.h region.h
 
+noinst_HEADERS = drvrgsiftp.h eval_defs.h eval_tab.h group.h grparser.h simplerng.h
+
 F77_WRAPPERS = f77_wrap1.c f77_wrap2.c f77_wrap3.c f77_wrap4.c
 
 GSIFTP_SRC = drvrgsiftp.c

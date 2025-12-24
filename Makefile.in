@@ -111,7 +111,8 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(top_srcdir)/configure \
-	$(am__configure_deps) $(include_HEADERS) $(am__DIST_COMMON)
+	$(am__configure_deps) $(include_HEADERS) $(noinst_HEADERS) \
+	$(am__DIST_COMMON)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
@@ -425,7 +426,7 @@ am__can_run_installinfo = \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
 DATA = $(pkgconfig_DATA)
-HEADERS = $(include_HEADERS)
+HEADERS = $(include_HEADERS) $(noinst_HEADERS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
 # and print each of them once, without duplicates.  Input order is
@@ -808,6 +809,7 @@ soname_version_lnx = ${soname_version}.0.0
 include_HEADERS = fitsio.h fitsio2.h longnam.h drvrsmem.h \
 	cfortran.h f77_wrap.h region.h
 
+noinst_HEADERS = drvrgsiftp.h eval_defs.h eval_tab.h group.h grparser.h simplerng.h
 F77_WRAPPERS = f77_wrap1.c f77_wrap2.c f77_wrap3.c f77_wrap4.c
 GSIFTP_SRC = drvrgsiftp.c
 libcfitsio_la_SOURCES = buffers.c cfileio.c checksum.c drvrfile.c \
