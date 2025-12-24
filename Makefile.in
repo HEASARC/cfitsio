@@ -2217,6 +2217,9 @@ eval:		# Rebuild eval_* files from flex/bison source
 cfitsioLibObjs:
 	@echo ${libcfitsio_la_SOURCES:.c=.o} ${libcfitsio_swapproc_la_SOURCES:.c=.o}
 
+# Empty rule to prevent GNU Make's builtin from overwriting sample test output
+%.out: %
+
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

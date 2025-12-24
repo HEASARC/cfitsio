@@ -211,3 +211,6 @@ CLEANFILES = testprog.fit testf77.fit atestfil.fit btestfil.fit y.output
 
 cfitsioLibObjs:
 	@echo ${libcfitsio_la_SOURCES:.c=.o} ${libcfitsio_swapproc_la_SOURCES:.c=.o}
+
+# Empty rule to prevent GNU Make's builtin from overwriting sample test output
+%.out: %
