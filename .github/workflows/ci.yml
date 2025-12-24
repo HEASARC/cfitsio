@@ -36,10 +36,7 @@ jobs:
 
       - name: Test
         run: |
-          make testprog
-          ./testprog > testprog.lis
-          diff testprog.lis testprog.out
-          cmp testprog.fit testprog.std
+          make distcheck
 
       - name: Cookbook
         run: |
@@ -58,14 +55,11 @@ jobs:
       - name: Make with optional features
         run: make
 
-      - name: Test
+      - name: Test with optional features
         run: |
-          make testprog
-          ./testprog > testprog.lis
-          diff testprog.lis testprog.out
-          cmp testprog.fit testprog.std
+          make check
 
-    
+
 #      - name: Iterators
 #        run: |
 #          ./iter_a
