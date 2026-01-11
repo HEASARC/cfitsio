@@ -200,7 +200,7 @@ EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
 	CMakeLists.txt \
 	eval.l eval.y \
 	iter_a.f iter_a.fit iter_b.f iter_b.fit iter_c.f iter_c.fit \
-	run-test \
+	run-testprog \
 	sample.tpl \
 	testf77.out testf77.std \
 	testprog.out testprog.std testprog.tpt \
@@ -210,7 +210,7 @@ EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
 
 # check: =================================================================
 
-TESTS = run-test
+TESTS = run-testprog
 AM_TESTS_ENVIRONMENT = srcdir='$(srcdir)'
 
 # clean: =================================================================

@@ -871,7 +871,7 @@ EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
 	CMakeLists.txt \
 	eval.l eval.y \
 	iter_a.f iter_a.fit iter_b.f iter_b.fit iter_c.f iter_c.fit \
-	run-test \
+	run-testprog \
 	sample.tpl \
 	testf77.out testf77.std \
 	testprog.out testprog.std testprog.tpt \
@@ -881,7 +881,7 @@ EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
 # winDumpExts.mak
 
 # check: =================================================================
-TESTS = run-test
+TESTS = run-testprog
 AM_TESTS_ENVIRONMENT = srcdir='$(srcdir)'
 
 # clean: =================================================================
@@ -2064,9 +2064,9 @@ recheck: all
 	        am__force_recheck=am--force-recheck \
 	        TEST_LOGS="$$log_list"; \
 	exit $$?
-run-test.log: run-test
-	@p='run-test'; \
-	b='run-test'; \
+run-testprog.log: run-testprog
+	@p='run-testprog'; \
+	b='run-testprog'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
