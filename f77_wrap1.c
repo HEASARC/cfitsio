@@ -237,6 +237,8 @@ FCALLSCSUB3(Cffreopen,FTREOPEN,ftreopen,FITSUNIT,PFITSUNIT,PINT)
 void Cffinit( fitsfile **fptr, const char *filename, int blocksize, int *status );
 void Cffinit( fitsfile **fptr, const char *filename, int blocksize, int *status )
 {
+   (void)blocksize;  /* suppress unused parameter compiler warning */
+
    if( *fptr==NULL || *fptr==(fitsfile*)1 ) {
       ffinit( fptr, filename, status );
    } else {
@@ -249,6 +251,8 @@ FCALLSCSUB4(Cffinit,FTINIT,ftinit,PFITSUNIT,STRING,INT,PINT)
 void Cffdkinit( fitsfile **fptr, const char *filename, int blocksize, int *status );
 void Cffdkinit( fitsfile **fptr, const char *filename, int blocksize, int *status )
 {
+   (void)blocksize;  /* suppress unused parameter compiler warning */
+
    if( *fptr==NULL || *fptr==(fitsfile*)1 ) {
       ffdkinit( fptr, filename, status );
    } else {

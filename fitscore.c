@@ -2493,6 +2493,8 @@ then values of 'n' less than or equal to n_value will match.
     int ip, ic, pat, pass = 0, firstfail;
     char *spat;
 
+    (void)naxis; /* suppress unused parameter compiler warning */
+
     if (*status > 0)
         return(*status);
 

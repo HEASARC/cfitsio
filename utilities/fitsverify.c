@@ -211,33 +211,43 @@ printf("    should be submitted to http://heasarc.gsfc.nasa.gov/cgi-bin/ftoolshe
 
 int PILGetFname(char *parname, char *filename)
 {
+  (void)parname;  /* suppress unused parameter compiler warning */
+  (void)filename;  /* suppress unused parameter compiler warning */
   return(0);
 }
 
 int PILGetString(char *parname, char *stringname)
 {
+  (void)parname;  /* suppress unused parameter compiler warning */
+  (void)stringname;  /* suppress unused parameter compiler warning */
   return(0);
 }
 
 int PILGetBool(char *parname, int *intvalue)
 {
+  (void)parname;  /* suppress unused parameter compiler warning */
+  (void)intvalue;  /* suppress unused parameter compiler warning */
   return(0);
 }
 
 int PILPutInt(char *parname, int intvalue)
 {
+  (void)parname;  /* suppress unused parameter compiler warning */
+  (void)intvalue;  /* suppress unused parameter compiler warning */
   return(0);
 }
 
 void set_toolname(char *taskname);
 void set_toolname(char *taskname)
 {
+  (void)taskname;  /* suppress unused parameter compiler warning */
   return;
 }
 
 void set_toolversion(char *taskname);
 void set_toolversion(char *taskname)
 {
+  (void)taskname;  /* suppress unused parameter compiler warning */
   return;
 }
 
@@ -258,10 +268,13 @@ void get_toolversion(char *taskvers)
 void headas_clobberfile(char *filename);
 void headas_clobberfile(char *filename)
 {
+  (void)filename;  /* suppress unused parameter compiler warning */
   return;
 }
 void HD_ERROR_THROW(char msg[256], int status);
 void HD_ERROR_THROW(char msg[256], int status)
 {
+  (void)msg;  /* suppress unused parameter compiler warning */
+  (void)status;  /* suppress unused parameter compiler warning */
   return;
 }

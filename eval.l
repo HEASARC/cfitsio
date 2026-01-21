@@ -480,6 +480,7 @@ int yywrap(yyscan_t scanner)
      pre-2.5.1 versions of flex which
      do not recognize %option noyywrap 
   */
+  (void)scanner; /* suppress unused parameter compiler warning */
   return(1);
 }
 

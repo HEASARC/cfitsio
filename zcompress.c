@@ -77,6 +77,7 @@ int uncompress2mem(char *filename,  /* name of input file                 */
     uLong iPage=0;
     uInt outbuffsize = (nPages > 0) ? UINT_MAX : (uInt)(*buffsize);
     
+    (void)filename;  /* suppress unused parameter compiler warning */
 
     if (*status > 0) 
         return(*status); 
@@ -271,6 +272,8 @@ int uncompress2file(char *filename,  /* name of input file                  */
     unsigned long bytes_out = 0;
     char *infilebuff, *outfilebuff;
     z_stream d_stream;   /* decompression stream */
+
+    (void)filename;  /* suppress unused parameter compiler warning */
 
     if (*status > 0) 
         return(*status); 

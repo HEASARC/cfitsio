@@ -97,6 +97,8 @@ int mem_create(char *filename, int *handle)
 {
     int status;
 
+    (void)filename;  /* suppress unused parameter compiler warning */
+
     /* initially allocate 1 FITS block = 2880 bytes */
     status = mem_createmem(2880L, handle);
 
@@ -294,11 +296,12 @@ int stdin_checkfile(char *urltype, char *infile, char *outfile)
    do any special case checking when opening a file on the stdin stream
 */
 {
+    (void)infile;  /* suppress unused parameter compiler warning */
     if (strlen(outfile))
     {
         stdin_outfile[0] = '\0';
         strncat(stdin_outfile,outfile,FLEN_FILENAME-1); /* an output file is specified */
-	strcpy(urltype,"stdinfile://");
+        strcpy(urltype,"stdinfile://");
     }
     else
         *stdin_outfile = '\0';  /* no output file was specified */
@@ -559,6 +562,7 @@ int mem_compress_openrw(char *filename, int rwmode, int *hdl)
   the memory 'file' to be opened with READWRITE access.
 */
 {
+   (void)rwmode;  /* suppress unused parameter compiler warning */
    return(mem_compress_open(filename, READONLY, hdl));  
 }
 /*--------------------------------------------------------------------------*/
@@ -805,6 +809,8 @@ int mem_iraf_open(char *filename, int rwmode, int *hdl)
 {
     int status;
     size_t filesize = 0;
+
+    (void)rwmode;  /* suppress unused parameter compiler warning */
 
     /* create a memory file with size = 0 for the FITS converted IRAF file */
     status = mem_createmem(filesize, hdl);
@@ -1288,6 +1294,8 @@ void bzip2uncompress2mem(char *filename, FILE *diskfile, int hdl,
     char buf[8192];
     size_t total_read = 0;
     char* errormsg = NULL;
+
+    (void)filename;  /* suppress unused parameter compiler warning */
 
     *filesize = 0;
     *status = 0;

@@ -247,6 +247,8 @@ void init_report(FILE *out,              /* output file */
                  char *rootnam          /* input file name */
                  )
 {
+    (void)rootnam; /* suppress unused parameter compiler warning */
+
     sprintf(comm,"\n%d Header-Data Units in this file.",totalhdu);
     wrtout(out,comm);
     wrtout(out," ");

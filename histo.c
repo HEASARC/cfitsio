@@ -3050,6 +3050,12 @@ int ffwritehisto(long totaln, long pixoffset, long firstn, long nvalues,
     long rows_per_loop = 0, offset = 0;
     histType *histData;
 
+    (void)totaln; /* suppress unused parameter compiler warning */
+    (void)pixoffset; /* suppress unused parameter compiler warning */
+    (void)firstn; /* suppress unused parameter compiler warning */
+    (void)nvalues; /* suppress unused parameter compiler warning */
+    (void)narrays; /* suppress unused parameter compiler warning */
+
     histData = (histType *)userPointer;
 
     /* store pointer to the histogram array, and initialize to zero */
@@ -3097,6 +3103,9 @@ int ffcalchist(long totalrows, long offset, long firstrow, long nrows,
     double *colptr[MAXDIMS] = {0};
     int status = 0;
     long irow;
+
+    (void)ncols; /* suppress unused parameter compiler warning */
+    (void)colpars; /* suppress unused parameter compiler warning */
 
     if (firstrow == 1) {
       histData->rowselector_cur = histData->rowselector;

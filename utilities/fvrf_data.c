@@ -547,6 +547,8 @@ data_end:
     long j,k,l;
     long nelem;
 
+    (void)offset; /* suppress unused parameter compiler warning */
+
     if(firstn == 1 ) {  /* first time for this table, so initialize */
         usrpt = (UserIter *)usrdata;
 /*
