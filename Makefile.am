@@ -4,6 +4,8 @@
 ##
 ## Author: B.Irby (NASA/GSFC), based on the previous CFITSIO Makefile.in
 
+VPATH = $(srcdir) $(srcdir)/docs
+
 lib_LTLIBRARIES = libcfitsio.la
 
 # Dummary library to compile single object file with SSE flags
@@ -193,7 +195,7 @@ eval:		# Rebuild eval_* files from flex/bison source
 
 
 EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
-	docs licenses \
+	licenses \
 	README.md README.MacOS README.win \
 	cfitsio.pc.cmake cfitsio.pc.in \
 	cfitsio.xcodeproj \
@@ -204,6 +206,9 @@ EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
 	sample.tpl \
 	testf77.out testf77.std \
 	testprog.out testprog.std testprog.tpt \
+	docs/cfitsio.tex \
+	docs/fitsio.tex \
+	docs/quick.tex \
 	utilities/fitsverify.c
 # windumpexts.c
 # winDumpExts.mak
@@ -215,7 +220,11 @@ AM_TESTS_ENVIRONMENT = srcdir='$(srcdir)'
 
 # clean: =================================================================
 
-CLEANFILES = testprog.fit testprog.lis testf77.fit atestfil.fit btestfil.fit y.output
+CLEANFILES = testprog.fit testprog.lis testf77.fit atestfil.fit btestfil.fit y.output \
+	cfitsio.pdf cfitsio.aux cfitsio.log cfitsio.out cfitsio.toc \
+	fitsio.pdf fitsio.aux fitsio.log fitsio.out fitsio.toc \
+	quick.pdf quick.aux quick.log quick.out quick.toc \
+	fpackguide.pdf
 
 # HEASoft packages fitsTcl and POW need a list of all .o files: ==========
 
@@ -224,3 +233,15 @@ cfitsioLibObjs:
 
 # Empty rule to prevent GNU Make's builtin from overwriting sample test output
 %.out: %
+
+# Generate .pdf files from .tex
+.tex.pdf:
+	TEXINPUTS="$(srcdir)/docs:$$TEXINPUTS" pdflatex $<
+	TEXINPUTS="$(srcdir)/docs:$$TEXINPUTS" pdflatex $<  # run twice for references
+
+# Generate .pdf files from .md
+.md.pdf:
+	pandoc $< -V linkcolor=blue -o $@
+
+.PHONY: doc
+doc: cfitsio.pdf fitsio.pdf quick.pdf fpackguide.pdf
