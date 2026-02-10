@@ -73,6 +73,7 @@ int fitsio_init_lock(void)
 #ifdef _REENTRANT
 
   static int need_to_init = 1;
+  char *name = "";
 
   pthread_mutexattr_t mutex_init;
 
@@ -84,8 +85,8 @@ int fitsio_init_lock(void)
 
     status = pthread_mutexattr_init(&mutex_init);
     if (status) {
-        ffpmsg("pthread_mutexattr_init failed (fitsio_init_lock)");
-        return(status);
+      name = "pthread_mutexattr_init";
+      goto error;
     }
 
 #ifdef __GLIBC__
@@ -96,21 +97,27 @@ int fitsio_init_lock(void)
 				     PTHREAD_MUTEX_RECURSIVE);
 #endif
     if (status) {
-        ffpmsg("pthread_mutexattr_settype failed (fitsio_init_lock)");
-        return(status);
+      name = "pthread_mutexattr_settype";
+      goto error;
     }
 
     status = pthread_mutex_init(&Fitsio_Lock,&mutex_init);
     if (status) {
-        ffpmsg("pthread_mutex_init failed (fitsio_init_lock)");
-        return(status);
+      name = "pthread_mutex_init";
+      goto error;
     }
 
     need_to_init = 0;
   }
 
+error:
+  if (status) {
+    char msg[256];
+    char *err = strerror(status);
+    snprintf(msg, sizeof msg, "%s: %s (fitsio_init_lock)", name, err);
+    ffpmsg(msg);
+  }
   FFUNLOCK1(Fitsio_InitLock);
-
 #endif
 
     return(status);
