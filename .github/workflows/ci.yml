@@ -18,7 +18,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]  # Define multiple runners to use
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: echo "Running on ${{ matrix.os }}"
 
       - name: Update packages and install dependencies
@@ -67,4 +67,3 @@ jobs:
 #          ./iter_c
 #          ./iter_var
 #          ./iter_image
-
