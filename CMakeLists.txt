@@ -288,7 +288,7 @@ if(TARGET zlib)
 endif()
 
 install(FILES ${H_FILES} "${CFITSIO_BINARY_DIR}/cfitsio_export.h"
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT Devel)
+  TYPE INCLUDE COMPONENT Devel)
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
