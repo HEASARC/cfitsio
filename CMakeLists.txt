@@ -62,6 +62,8 @@ OPTION(USE_BZIP2 "Enable bzip2 support" OFF)
 
 option(USE_NET_SERVICES "Enable support for remote file drivers" ON)
 
+option(USE_FLEX_BISON "Use Flex/Bison to generate the CFITSIO expression parser")
+
 #==============================================================================
 
 FetchContent_Declare(ZLIB
@@ -238,7 +240,7 @@ SET(H_FILES fitsio.h fitsio2.h longnam.h)
 SET(SRC_FILES
     buffers.c cfileio.c checksum.c
     drvrfile.c drvrmem.c drvrnet.c drvrsmem.c
-    editcol.c edithdu.c eval_f.c eval_l.c eval_y.c
+    editcol.c edithdu.c eval_f.c
     f77_wrap1.c f77_wrap2.c f77_wrap3.c f77_wrap4.c
     fits_hcompress.c fits_hdecompress.c fitscore.c
     getcol.c getcolb.c getcold.c getcole.c getcoli.c getcolj.c getcolk.c
@@ -250,6 +252,17 @@ SET(SRC_FILES
     putkey.c quantize.c region.c ricecomp.c scalnull.c simplerng.c swapproc.c
     wcssub.c wcsutil.c zcompress.c zuncompress.c
 )
+
+if(USE_FLEX_BISON)
+  find_package(FLEX REQUIRED)
+  find_package(BISON REQUIRED)
+  flex_target(cfitsio_eval_l eval.l eval_l.c)
+  bison_target(cfitsio_eval_y eval.y eval_y.c COMPILE_FLAGS "--header=eval_tab.h")
+
+  list(APPEND SRC_FILES ${FLEX_cfitsio_eval_l_OUTPUTS} ${BISON_cfitsio_eval_y_OUTPUTS})
+else()
+  list(APPEND SRC_FILES eval_l.c eval_y.c)
+endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CFITSIO_SOURCE_DIR})
 
