@@ -132,6 +132,11 @@ IF(MSVC OR BORLAND)
     )
 ENDIF()
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.14)
+  # MSVC has __cpluscplus = 199711L by default, which is C++98. This puts the actual __cplusplus value.
+  add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>")
+endif()
+
 IF(BORLAND)
     # Suppress spurious Borland compiler warnings about "Suspicious
     # pointer arithmetic", "Possibly incorrect assignment", and
@@ -248,6 +253,7 @@ list(APPEND CMAKE_MODULE_PATH ${CFITSIO_SOURCE_DIR})
 #==============================================================================
 
 ADD_LIBRARY(${LIB_NAME} ${LIB_TYPE} ${H_FILES} ${SRC_FILES})
+target_compile_features(${LIB_NAME} PRIVATE c_std_99)
 
 # Math:
 TARGET_LINK_LIBRARIES(${LIB_NAME} INTERFACE ${M_LIB})
