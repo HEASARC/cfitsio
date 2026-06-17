@@ -16,7 +16,7 @@ SET(CMAKE_LEGACY_CYGWIN_WIN32 0)
 
 PROJECT(CFITSIO
 	DESCRIPTION "Library of C and Fortran subroutines for reading and writing data files in FITS data format."
-	LANGUAGES C CXX
+	LANGUAGES C
 	)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -140,7 +140,7 @@ IF(BORLAND)
 ENDIF()
 
 IF(USE_SSE2)
-    IF(CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
+    IF(CMAKE_C_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
         add_compile_options(-msse2)
     ENDIF()
     IF(MSVC)
@@ -149,7 +149,7 @@ IF(USE_SSE2)
 ENDIF()
 
 IF(USE_SSSE3)
-    IF(CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
+    IF(CMAKE_C_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
         add_compile_options(-mssse3)
     ENDIF()
     IF(MSVC)
