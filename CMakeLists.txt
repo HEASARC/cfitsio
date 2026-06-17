@@ -60,6 +60,8 @@ OPTION(USE_SSSE3 "Enable use of instructions in the SSSE3 extended instruction s
 
 OPTION(USE_BZIP2 "Enable bzip2 support" OFF)
 
+option(USE_NET_SERVICES "Enable support for remote file drivers" ON)
+
 #==============================================================================
 
 FetchContent_Declare(ZLIB
@@ -107,9 +109,7 @@ ELSE()
 ENDIF()
 
 # Support for remote file drivers is not implemented for native Windows:
-IF (NOT MSVC)
-
-    # Find library needed for gethostbyname:
+if(USE_NET_SERVICES AND NOT WIN32)
     check_symbol_exists("gethostbyname" "netdb.h" CMAKE_HAVE_GETHOSTBYNAME)
 
     # Find library needed for connect:
@@ -123,8 +123,7 @@ IF (NOT MSVC)
             add_compile_definitions(HAVE_FMEMOPEN)
         ENDIF()
     ENDIF()
-
-ENDIF()
+endif()
 
 IF(MSVC OR BORLAND)
     add_compile_definitions(_CRT_SECURE_NO_DEPRECATE)
