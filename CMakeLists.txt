@@ -9,7 +9,7 @@ IF(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
 		)
 ENDIF()
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.15)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.24)
 
 # Suppress warning about WIN32 no longer being defined on Cygwin:
 SET(CMAKE_LEGACY_CYGWIN_WIN32 0)
@@ -31,8 +31,9 @@ SET(${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_MAJOR}.${${PROJECT_NAME}_MINOR}.${
 SET(LIB_NAME cfitsio)
 
 INCLUDE(CheckSymbolExists)
-INCLUDE(CheckCSourceCompiles)
+INCLUDE(CheckSourceCompiles)
 INCLUDE(GNUInstallDirs)
+include(FetchContent)
 
 #==============================================================================
 # Build options:
@@ -60,7 +61,15 @@ OPTION(USE_BZIP2 "Enable bzip2 support" OFF)
 
 #==============================================================================
 
-FIND_PACKAGE(ZLIB REQUIRED)
+FetchContent_Declare(ZLIB
+    URL https://www.zlib.net/zlib-1.3.2.tar.xz
+    URL_HASH SHA256=d7a0654783a4da529d1bb793b7ad9c3318020af77667bcae35f95d0e42a792f3
+    FIND_PACKAGE_ARGS
+)
+
+set(ZLIB_BUILD_TESTING OFF)
+
+FetchContent_MakeAvailable(ZLIB)
 
 IF(BUILD_SHARED_LIBS)
   SET (LIB_TYPE SHARED)
@@ -155,7 +164,7 @@ IF(HAVE_FTRUNCATE)
 ENDIF()
 
 # Check is System V IPC is supported on this machine
-CHECK_C_SOURCE_COMPILES("
+check_source_compiles(C "
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/sem.h>
@@ -170,7 +179,7 @@ IF(HAVE_SHMEM_SERVICES)
     add_compile_definitions(HAVE_SHMEM_SERVICES)
 
     # Some systems define flock_t, for others we have to define it ourselves
-    CHECK_C_SOURCE_COMPILES("
+    check_source_compiles(C "
     #include <sys/file.h>
     int main(void) {
       flock_t filler;
@@ -181,7 +190,7 @@ IF(HAVE_SHMEM_SERVICES)
     ENDIF()
 
     # Check union semun
-    CHECK_C_SOURCE_COMPILES("
+    check_source_compiles(C "
     #include <sys/ipc.h>
     #include <sys/shm.h>
     #include <sys/sem.h>
@@ -241,7 +250,7 @@ ADD_LIBRARY(${LIB_NAME} ${LIB_TYPE} ${H_FILES} ${SRC_FILES})
 # Math:
 TARGET_LINK_LIBRARIES(${LIB_NAME} INTERFACE ${M_LIB})
 # zlib:
-if(ZLIB_FOUND)
+if(TARGET ZLIB::ZLIB)
     TARGET_LINK_LIBRARIES(${LIB_NAME} PRIVATE ZLIB::ZLIB)
     # For cfitsio.pc.cmake:
     string(APPEND PKG_CONFIG_LIBS " -lz")
@@ -271,6 +280,12 @@ set_property(TARGET cfitsio APPEND PROPERTY
 )
 
 install(TARGETS cfitsio EXPORT cfitsioTargets)
+
+# If zlib is provided via FetchContent, include it in the same export set
+# so cfitsio's export generation remains valid.
+if(TARGET zlib)
+  install(TARGETS zlib EXPORT cfitsioTargets)
+endif()
 
 install(FILES ${H_FILES} "${CFITSIO_BINARY_DIR}/cfitsio_export.h"
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT Devel)
@@ -331,6 +346,14 @@ IF (TESTS)
     ADD_EXECUTABLE(cookbook utilities/cookbook.c)
     TARGET_LINK_LIBRARIES(cookbook PRIVATE ${LIB_NAME})
     add_test(NAME cookbook COMMAND cookbook)
+
+    if(BUILD_SHARED_LIBS AND WIN32)
+      set(_cfitsio_dll_path "PATH=path_list_prepend:$<TARGET_FILE_DIR:${LIB_NAME}>")
+      if(TARGET zlib)
+        list(APPEND _cfitsio_dll_path "PATH=path_list_prepend:$<TARGET_FILE_DIR:zlib>")
+      endif()
+      set_tests_properties(TestProg cookbook PROPERTIES ENVIRONMENT_MODIFICATION "${_cfitsio_dll_path}")
+    endif()
 
     install(TARGETS cookbook)
 

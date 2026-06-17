@@ -88,7 +88,7 @@ in that directory to create the fpack and funpack executable files.
 On Windows PCs, one can build the fpack and funpack programs using the
 Visual C++ compiler with the following command lines (after first
 building the CFITSIO library following the instructions in the
-README.win32 file):
+README.win.md file):
 
 ```
 cl /MD fpack.c fpackutil.c cfitsio.lib /link setargv.obj
@@ -372,13 +372,13 @@ One can specify how each HDU in a FITS file is to be compress by adding
 these keywords will take precedence over whatever compression parameters
 where specified on the command line when fpack was executed. Data
 providers can use these keywords to control the way in which each
-individual HDU in the file is compressed. 
+individual HDU in the file is compressed.
 
 #### Image HDUs
 
-The following lists the allowed values for all the compression directive keywords in image HDUs:  
+The following lists the allowed values for all the compression directive keywords in image HDUs:
 
-**`FZALGOR` - Compression Algorithm**  
+**`FZALGOR` - Compression Algorithm**
 
 - `RICE_1` (default)
 - `GZIP_1`
@@ -387,53 +387,53 @@ The following lists the allowed values for all the compression directive keyword
 - `PLIO_1`
 - `NONE` – the HDU remains uncompressed
 
-**`FZTILE` - Tiling Pattern**  
+**`FZTILE` - Tiling Pattern**
 
 - `ROW` – row-by-row tile pattern (default)
 - `WHOLE` - treat entire image as a single tile
 - `(n,m)` – tile dimensions, for example, `(250,100)`
 
-**`FZQVALUE` - Quantization Factor**  
+**`FZQVALUE` - Quantization Factor**
 
 - Float value - default = 4; a value of 0 means do not quantize, and instead losslessly compress the floating-point image (must use GZIP)
 
-**`FZQMETHD` - Quantization Method**  
+**`FZQMETHD` - Quantization Method**
 
 - `SUBTRACTIVE_DITHER_1` (default)
 - `SUBTRACTIVE_DITHER_2` - zero-valued pixels are not dithered
 - `NO_DITHER` - turns off dithering completely
 
-**`FZDTHRSD` - Dithering Seed Value**  
+**`FZDTHRSD` - Dithering Seed Value**
 
 - `CLOCK` - seed is randomly chosen based on  the system clock time
 - `CHECKSUM` - seed is calculated from checksum of the first tile
 - `1` through `10000` - specifies which seed value to use
 
-**`FZI2F`- Convert ints to floats?**  
+**`FZI2F`- Convert ints to floats?**
 
 - `T`, `F` - convert integer images into floats and then quantize?
 
-**`FZHSCALE` - Hcompress scale factor**  
+**`FZHSCALE` - Hcompress scale factor**
 
 - Float value (default = 0.0 = lossless compression)
 
 #### Binary tables
 
-Compression directive keywords allowed in FITS binary tables:  
+Compression directive keywords allowed in FITS binary tables:
 
-**`FZALGOR` - Default Compression Algorithm to be applied to every column, if possible**  
+**`FZALGOR` - Default Compression Algorithm to be applied to every column, if possible**
 
 - `RICE_1`
 - `GZIP_1`
 - `GZIP_2` - bytes are shuffled in order of decreasing significance before being compressed
 - `NONE` - the HDUremains uncompressed
 
-**`FZALGn` - Compression algorithm for column n of the table. This overrides the FZALGOR value**  
+**`FZALGn` - Compression algorithm for column n of the table. This overrides the FZALGOR value**
 
 If the data type of the column is incompatible with the specified
-algorithm, then a suitable default algorithm will be used instead.  
+algorithm, then a suitable default algorithm will be used instead.
 
-- `RICE_1` 
+- `RICE_1`
 - `GZIP_1`
 - `GZIP_2`
 
