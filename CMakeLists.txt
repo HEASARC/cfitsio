@@ -180,11 +180,14 @@ IF(USE_SSSE3)
     endif()
 ENDIF()
 
-# Test for the unix ftruncate function
-CHECK_SYMBOL_EXISTS(ftruncate "unistd.h" HAVE_FTRUNCATE)
-IF(HAVE_FTRUNCATE)
-    add_compile_definitions(HAVE_UNISTD_H HAVE_FTRUNCATE)
-ENDIF()
+check_include_file("unistd.h" HAVE_UNISTD_H)
+if(HAVE_UNISTD_H)
+  add_compile_definitions(HAVE_UNISTD_H)
+  check_symbol_exists(ftruncate "unistd.h" HAVE_FTRUNCATE)
+  if(HAVE_FTRUNCATE)
+    add_compile_definitions(HAVE_FTRUNCATE)
+  endif()
+endif()
 
 # Check is System V IPC is supported on this machine
 check_source_compiles(C "
