@@ -88,6 +88,9 @@ ENDIF()
 
 IF(USE_PTHREADS)
    FIND_PACKAGE(Threads REQUIRED)
+   if(NOT CMAKE_USE_PTHREADS_INIT)
+      message(FATAL_ERROR "PThreads support requested but pthread.h not found")
+   endif()
    add_compile_definitions(_REENTRANT)
 ENDIF()
 
