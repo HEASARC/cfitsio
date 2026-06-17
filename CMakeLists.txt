@@ -241,24 +241,24 @@ ADD_LIBRARY(${LIB_NAME} ${LIB_TYPE} ${H_FILES} ${SRC_FILES})
 # Math:
 TARGET_LINK_LIBRARIES(${LIB_NAME} INTERFACE ${M_LIB})
 # zlib:
-IF (ZLIB_FOUND)
+if(ZLIB_FOUND)
     TARGET_LINK_LIBRARIES(${LIB_NAME} PRIVATE ZLIB::ZLIB)
     # For cfitsio.pc.cmake:
     string(APPEND PKG_CONFIG_LIBS " -lz")
-ENDIF(ZLIB_FOUND)
+endif()
 # cURL:
-IF (CURL_FOUND)
+if(CURL_FOUND)
     TARGET_LINK_LIBRARIES(${LIB_NAME} PRIVATE CURL::libcurl)
     # For cfitsio.pc.cmake:
     string(APPEND PKG_CONFIG_LIBS " -lcurl")
-ENDIF(CURL_FOUND)
+endif()
 # PThreads:
 TARGET_LINK_LIBRARIES(${LIB_NAME} PRIVATE $<$<BOOL:${Threads_FOUND}>:Threads::Threads>)
 # BZip2:
-IF (BZIP2_FOUND)
+if(BZip2_FOUND)
     TARGET_LINK_LIBRARIES(${LIB_NAME} PRIVATE BZip2::BZip2)
     string(APPEND PKG_CONFIG_LIBS " -lbz2")
-ENDIF(BZIP2_FOUND)
+endif()
 
 #==============================================================================
 
@@ -326,7 +326,7 @@ IF (TESTS)
     add_test(NAME TestProg COMMAND TestProg)
     # Copy testprog.tpt to build directory to allow quick test
     # of ./TestProg (or .\Release\TestProg.exe in MSVC):
-    FILE(COPY ${CFITSIO_SOURCE_DIR}/testprog.tpt DESTINATION ${CFITSIO_BINARY_DIR}/)
+    configure_file(${CFITSIO_SOURCE_DIR}/testprog.tpt ${CFITSIO_BINARY_DIR}/testprog.tpt COPYONLY)
 
     ADD_EXECUTABLE(cookbook utilities/cookbook.c)
     TARGET_LINK_LIBRARIES(cookbook PRIVATE ${LIB_NAME})
@@ -342,13 +342,13 @@ IF (ITERPROGS)
     TARGET_LINK_LIBRARIES(Iter_Image PRIVATE ${LIB_NAME})
     #add_test(NAME Iter_Image COMMAND Iter_Image)
     #install(TARGETS Iter_Image)
-    FILE(COPY ${CFITSIO_SOURCE_DIR}/iter_image.fit DESTINATION ${CFITSIO_BINARY_DIR}/)
+    configure_file(${CFITSIO_SOURCE_DIR}/iter_image.fit ${CFITSIO_BINARY_DIR}/iter_image.fit COPYONLY)
 
     ADD_EXECUTABLE(Iter_Var utilities/iter_var.c)
     TARGET_LINK_LIBRARIES(Iter_Var PRIVATE ${LIB_NAME})
     #add_test(NAME Iter_Var COMMAND Iter_Var)
     #install(TARGETS Iter_Var)
-    FILE(COPY ${CFITSIO_SOURCE_DIR}/vari.fits DESTINATION ${CFITSIO_BINARY_DIR}/)
+    configure_file(${CFITSIO_SOURCE_DIR}/vari.fits ${CFITSIO_BINARY_DIR}/vari.fits COPYONLY)
 
 ENDIF(ITERPROGS)
 
