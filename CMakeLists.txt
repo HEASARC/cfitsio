@@ -75,7 +75,7 @@ IF(BUILD_SHARED_LIBS)
   SET (LIB_TYPE SHARED)
 ELSE()
   SET (LIB_TYPE STATIC)
-ENDIF(BUILD_SHARED_LIBS)
+ENDIF()
 
 # Find curl library, for HTTPS support:
 IF(USE_CURL)
@@ -88,12 +88,12 @@ ENDIF()
 IF(USE_PTHREADS)
    FIND_PACKAGE(Threads REQUIRED)
    add_compile_definitions(_REENTRANT)
-ENDIF(USE_PTHREADS)
+ENDIF()
 
 IF(USE_BZIP2)
    FIND_PACKAGE(BZip2 REQUIRED)
    add_compile_definitions(HAVE_BZIP2=1)
-ENDIF(USE_BZIP2)
+ENDIF()
 
 # Math library (not available in MSVC or MINGW)
 IF(MSVC OR MINGW)
