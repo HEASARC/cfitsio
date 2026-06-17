@@ -123,11 +123,13 @@ IF (NOT MSVC)
 ENDIF()
 
 IF(MSVC OR BORLAND)
-    # Define
     add_compile_definitions(_CRT_SECURE_NO_DEPRECATE)
-    # Need an empty unistd.h in MSVC for flex-generated eval_l.c:
-    file(TOUCH ${CFITSIO_BINARY_DIR}/unistd.h)
-    INCLUDE_DIRECTORIES(${CFITSIO_BINARY_DIR})
+
+    get_source_file_property(_cfitsio_eval_l_defs eval_l.c COMPILE_DEFINITIONS)
+    set_source_files_properties(eval_l.c PROPERTIES
+    COMPILE_DEFINITIONS "YY_NO_UNISTD_H;${_cfitsio_eval_l_defs}"
+    COMPILE_OPTIONS $<$<BOOL:${MSVC}>:/FIio.h>
+    )
 ENDIF()
 
 IF(BORLAND)
