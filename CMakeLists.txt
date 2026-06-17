@@ -3,7 +3,7 @@
 #==============================================================================
 
 # Ensure that build directory is not the source directory:
-IF(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+IF(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
 	message(FATAL_ERROR
 		"Please create a separate directory for building CFITSIO."
 		)
@@ -29,12 +29,6 @@ SET(${PROJECT_NAME}_MINOR 6)
 SET(${PROJECT_NAME}_MICRO 4)
 SET(${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_MAJOR}.${${PROJECT_NAME}_MINOR}.${${PROJECT_NAME}_MICRO})
 SET(LIB_NAME cfitsio)
-
-# Allow @rpath token in target install name on Macs.
-# See "cmake --help-policy CMP0042" for more information.
-IF(POLICY CMP0042)
-  CMAKE_POLICY(SET CMP0042 NEW)
-ENDIF()
 
 INCLUDE(CheckLibraryExists)
 INCLUDE(CheckFunctionExists)
@@ -145,9 +139,7 @@ IF(BORLAND)
 ENDIF()
 
 IF(USE_SSE2)
-    IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
-       "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR
-       "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+    IF(CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
         ADD_COMPILE_OPTIONS(-msse2)
     ENDIF()
     IF(MSVC)
@@ -156,9 +148,7 @@ IF(USE_SSE2)
 ENDIF()
 
 IF(USE_SSSE3)
-    IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
-       "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR
-       "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+    IF(CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
         ADD_COMPILE_OPTIONS(-mssse3)
     ENDIF()
     IF(MSVC)
