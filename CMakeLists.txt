@@ -117,8 +117,8 @@ IF(MSVC OR BORLAND)
     # Define
     add_compile_definitions(_CRT_SECURE_NO_DEPRECATE)
     # Need an empty unistd.h in MSVC for flex-generated eval_l.c:
-    FILE(WRITE ${CMAKE_SOURCE_DIR}/unistd.h "")
-    INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR})
+    file(TOUCH ${CFITSIO_BINARY_DIR}/unistd.h)
+    INCLUDE_DIRECTORIES(${CFITSIO_BINARY_DIR})
 ENDIF()
 
 IF(BORLAND)
@@ -239,29 +239,24 @@ list(APPEND CMAKE_MODULE_PATH ${CFITSIO_SOURCE_DIR})
 ADD_LIBRARY(${LIB_NAME} ${LIB_TYPE} ${H_FILES} ${SRC_FILES})
 
 # Math:
-TARGET_LINK_LIBRARIES(${LIB_NAME} ${M_LIB})
+TARGET_LINK_LIBRARIES(${LIB_NAME} INTERFACE ${M_LIB})
 # zlib:
 IF (ZLIB_FOUND)
-    TARGET_INCLUDE_DIRECTORIES(${LIB_NAME} PUBLIC ${ZLIB_INCLUDE_DIR})
-    TARGET_LINK_LIBRARIES(${LIB_NAME} ${ZLIB_LIBRARIES})
+    TARGET_LINK_LIBRARIES(${LIB_NAME} PRIVATE ZLIB::ZLIB)
     # For cfitsio.pc.cmake:
     string(APPEND PKG_CONFIG_LIBS " -lz")
 ENDIF(ZLIB_FOUND)
 # cURL:
 IF (CURL_FOUND)
-    TARGET_INCLUDE_DIRECTORIES(${LIB_NAME} PUBLIC ${CURL_INCLUDE_DIRS})
-    TARGET_LINK_LIBRARIES(${LIB_NAME} ${CURL_LIBRARIES})
+    TARGET_LINK_LIBRARIES(${LIB_NAME} PRIVATE CURL::libcurl)
     # For cfitsio.pc.cmake:
     string(APPEND PKG_CONFIG_LIBS " -lcurl")
 ENDIF(CURL_FOUND)
 # PThreads:
-IF (THREADS_FOUND)
-    TARGET_LINK_LIBRARIES(${LIB_NAME} Threads::Threads)
-ENDIF(THREADS_FOUND)
+TARGET_LINK_LIBRARIES(${LIB_NAME} PRIVATE $<$<BOOL:${Threads_FOUND}>:Threads::Threads>)
 # BZip2:
 IF (BZIP2_FOUND)
-    TARGET_INCLUDE_DIRECTORIES(${LIB_NAME} PUBLIC ${BZIP2_INCLUDE_DIRS})
-    TARGET_LINK_LIBRARIES(${LIB_NAME} ${BZIP2_LIBRARIES})
+    TARGET_LINK_LIBRARIES(${LIB_NAME} PRIVATE BZip2::BZip2)
     string(APPEND PKG_CONFIG_LIBS " -lbz2")
 ENDIF(BZIP2_FOUND)
 
@@ -277,22 +272,22 @@ set_property(TARGET cfitsio APPEND PROPERTY
 
 install(TARGETS cfitsio EXPORT cfitsioTargets)
 
-install(FILES ${H_FILES} "${CMAKE_CURRENT_BINARY_DIR}/cfitsio_export.h"
+install(FILES ${H_FILES} "${CFITSIO_BINARY_DIR}/cfitsio_export.h"
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT Devel)
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/cfitsio/cfitsioConfigVersion.cmake"
+  "${CFITSIO_BINARY_DIR}/cfitsio/cfitsioConfigVersion.cmake"
   VERSION ${CFITSIO_VERSION}
   COMPATIBILITY AnyNewerVersion
 )
 
 export(EXPORT cfitsioTargets
-  FILE "${CMAKE_CURRENT_BINARY_DIR}/cfitsio/cfitsioTargets.cmake"
+  FILE "${CFITSIO_BINARY_DIR}/cfitsio/cfitsioTargets.cmake"
   NAMESPACE CFITSIO::
 )
 configure_file(cmake/cfitsioConfig.cmake
-  "${CMAKE_CURRENT_BINARY_DIR}/cfitsio/cfitsioConfig.cmake"
+  "${CFITSIO_BINARY_DIR}/cfitsio/cfitsioConfig.cmake"
   COPYONLY
 )
 
@@ -308,7 +303,7 @@ install(EXPORT cfitsioTargets
 install(
   FILES
     cmake/cfitsioConfig.cmake
-    "${CMAKE_CURRENT_BINARY_DIR}/cfitsio/cfitsioConfigVersion.cmake"
+    "${CFITSIO_BINARY_DIR}/cfitsio/cfitsioConfigVersion.cmake"
   DESTINATION
     ${ConfigPackageLocation}
   COMPONENT
@@ -316,8 +311,8 @@ install(
 )
 
 # cfitsio.pc:
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cfitsio.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/cfitsio.pc @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cfitsio.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+configure_file(${CFITSIO_SOURCE_DIR}/cfitsio.pc.cmake ${CFITSIO_BINARY_DIR}/cfitsio.pc @ONLY)
+install(FILES ${CFITSIO_BINARY_DIR}/cfitsio.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 #==============================================================================
 # Test programs:
@@ -327,14 +322,14 @@ IF (TESTS)
     ENABLE_TESTING()
 
     ADD_EXECUTABLE(TestProg utilities/testprog.c)
-    TARGET_LINK_LIBRARIES(TestProg ${LIB_NAME})
+    TARGET_LINK_LIBRARIES(TestProg PRIVATE ${LIB_NAME})
     add_test(NAME TestProg COMMAND TestProg)
     # Copy testprog.tpt to build directory to allow quick test
     # of ./TestProg (or .\Release\TestProg.exe in MSVC):
-    FILE(COPY ${CMAKE_CURRENT_SOURCE_DIR}/testprog.tpt DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    FILE(COPY ${CFITSIO_SOURCE_DIR}/testprog.tpt DESTINATION ${CFITSIO_BINARY_DIR}/)
 
     ADD_EXECUTABLE(cookbook utilities/cookbook.c)
-    TARGET_LINK_LIBRARIES(cookbook ${LIB_NAME})
+    TARGET_LINK_LIBRARIES(cookbook PRIVATE ${LIB_NAME})
     add_test(NAME cookbook COMMAND cookbook)
 
     install(TARGETS cookbook)
@@ -344,16 +339,16 @@ ENDIF(TESTS)
 IF (ITERPROGS)
 
     ADD_EXECUTABLE(Iter_Image utilities/iter_image.c)
-    TARGET_LINK_LIBRARIES(Iter_Image ${LIB_NAME})
+    TARGET_LINK_LIBRARIES(Iter_Image PRIVATE ${LIB_NAME})
     #add_test(NAME Iter_Image COMMAND Iter_Image)
     #install(TARGETS Iter_Image)
-    FILE(COPY ${CMAKE_SOURCE_DIR}/iter_image.fit DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    FILE(COPY ${CFITSIO_SOURCE_DIR}/iter_image.fit DESTINATION ${CFITSIO_BINARY_DIR}/)
 
     ADD_EXECUTABLE(Iter_Var utilities/iter_var.c)
-    TARGET_LINK_LIBRARIES(Iter_Var ${LIB_NAME})
+    TARGET_LINK_LIBRARIES(Iter_Var PRIVATE ${LIB_NAME})
     #add_test(NAME Iter_Var COMMAND Iter_Var)
     #install(TARGETS Iter_Var)
-    FILE(COPY ${CMAKE_SOURCE_DIR}/vari.fits DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    FILE(COPY ${CFITSIO_SOURCE_DIR}/vari.fits DESTINATION ${CFITSIO_BINARY_DIR}/)
 
 ENDIF(ITERPROGS)
 
@@ -363,31 +358,31 @@ ENDIF(ITERPROGS)
 IF (UTILS)
 
     ADD_EXECUTABLE(fpack utilities/fpack.c utilities/fpackutil.c)
-    TARGET_LINK_LIBRARIES(fpack ${LIB_NAME})
+    TARGET_LINK_LIBRARIES(fpack PRIVATE ${LIB_NAME})
 
     ADD_EXECUTABLE(funpack utilities/funpack.c utilities/fpackutil.c)
-    TARGET_LINK_LIBRARIES(funpack ${LIB_NAME})
+    TARGET_LINK_LIBRARIES(funpack PRIVATE ${LIB_NAME})
 
     ADD_EXECUTABLE(fitscopy utilities/fitscopy.c)
-    TARGET_LINK_LIBRARIES(fitscopy ${LIB_NAME})
+    TARGET_LINK_LIBRARIES(fitscopy PRIVATE ${LIB_NAME})
 
     ADD_EXECUTABLE(fitsverify
                   utilities/ftverify.c utilities/fvrf_data.c
                   utilities/fvrf_file.c utilities/fvrf_head.c
                   utilities/fvrf_key.c utilities/fvrf_misc.c)
     TARGET_COMPILE_DEFINITIONS(fitsverify PRIVATE STANDALONE)
-    TARGET_LINK_LIBRARIES(fitsverify ${LIB_NAME})
+    TARGET_LINK_LIBRARIES(fitsverify PRIVATE ${LIB_NAME})
 
     ADD_EXECUTABLE(imcopy utilities/imcopy.c)
-    TARGET_LINK_LIBRARIES(imcopy ${LIB_NAME})
+    TARGET_LINK_LIBRARIES(imcopy PRIVATE ${LIB_NAME})
 
     IF(HAVE_SHMEM_SERVICES)
       ADD_EXECUTABLE(smem utilities/smem.c)
-      TARGET_LINK_LIBRARIES(smem ${LIB_NAME})
+      TARGET_LINK_LIBRARIES(smem PRIVATE ${LIB_NAME})
     ENDIF()
 
     ADD_EXECUTABLE(speed utilities/speed.c)
-    TARGET_LINK_LIBRARIES(speed ${LIB_NAME})
+    TARGET_LINK_LIBRARIES(speed PRIVATE ${LIB_NAME})
 
     # To expand the command line arguments in Windows, see:
     # http://msdn.microsoft.com/en-us/library/8bch7bkk.aspx
