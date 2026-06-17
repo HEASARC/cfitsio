@@ -74,18 +74,18 @@ ENDIF(BUILD_SHARED_LIBS)
 IF(USE_CURL)
    FIND_PACKAGE(CURL)
    IF(CURL_FOUND)
-      ADD_DEFINITIONS(-DCFITSIO_HAVE_CURL)
+      add_compile_definitions(CFITSIO_HAVE_CURL)
    ENDIF()
 ENDIF()
 
 IF(USE_PTHREADS)
    FIND_PACKAGE(Threads REQUIRED)
-   ADD_DEFINITIONS(-D_REENTRANT)
+   add_compile_definitions(_REENTRANT)
 ENDIF(USE_PTHREADS)
 
 IF(USE_BZIP2)
    FIND_PACKAGE(BZip2 REQUIRED)
-   ADD_DEFINITIONS(-DHAVE_BZIP2=1)
+   add_compile_definitions(HAVE_BZIP2=1)
 ENDIF(USE_BZIP2)
 
 # Math library (not available in MSVC or MINGW)
@@ -112,10 +112,10 @@ IF (NOT MSVC)
 
     # Define HAVE_NET_SERVICES if gethostbyname & connect were found:
     IF (CMAKE_HAVE_GETHOSTBYNAME AND CMAKE_HAVE_CONNECT)
-        ADD_DEFINITIONS(-DHAVE_NET_SERVICES)
+        add_compile_definitions(HAVE_NET_SERVICES)
         CHECK_SYMBOL_EXISTS(fmemopen "stdio.h" HAVE_FMEMOPEN)
         IF(HAVE_FMEMOPEN)
-            ADD_DEFINITIONS(-DHAVE_FMEMOPEN)
+            add_compile_definitions(HAVE_FMEMOPEN)
         ENDIF()
     ENDIF()
 
@@ -123,7 +123,7 @@ ENDIF()
 
 IF(MSVC OR BORLAND)
     # Define
-    ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE)
+    add_compile_definitions(_CRT_SECURE_NO_DEPRECATE)
     # Need an empty unistd.h in MSVC for flex-generated eval_l.c:
     FILE(WRITE ${CMAKE_SOURCE_DIR}/unistd.h "")
     INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR})
@@ -133,33 +133,33 @@ IF(BORLAND)
     # Suppress spurious Borland compiler warnings about "Suspicious
     # pointer arithmetic", "Possibly incorrect assignment", and
     # "Comparing signed and unsigned values".
-    ADD_DEFINITIONS(-w-spa)
-    ADD_DEFINITIONS(-w-pia)
-    ADD_DEFINITIONS(-w-csu)
+    add_compile_options(-w-spa)
+    add_compile_options(-w-pia)
+    add_compile_options(-w-csu)
 ENDIF()
 
 IF(USE_SSE2)
     IF(CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
-        ADD_COMPILE_OPTIONS(-msse2)
+        add_compile_options(-msse2)
     ENDIF()
     IF(MSVC)
-        ADD_DEFINITIONS(-D__SSE2__=1)
+        add_compile_definitions(__SSE2__=1)
     ENDIF()
 ENDIF()
 
 IF(USE_SSSE3)
     IF(CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
-        ADD_COMPILE_OPTIONS(-mssse3)
+        add_compile_options(-mssse3)
     ENDIF()
     IF(MSVC)
-        ADD_DEFINITIONS(-D__SSE2__=1 -D__SSSE3__=1)
+        add_compile_definitions(__SSE2__=1 __SSSE3__=1)
     ENDIF()
 ENDIF()
 
 # Test for the unix ftruncate function
 CHECK_SYMBOL_EXISTS(ftruncate "unistd.h" HAVE_FTRUNCATE)
 IF(HAVE_FTRUNCATE)
-    ADD_DEFINITIONS(-DHAVE_UNISTD_H -DHAVE_FTRUNCATE)
+    add_compile_definitions(HAVE_UNISTD_H HAVE_FTRUNCATE)
 ENDIF()
 
 # Check is System V IPC is supported on this machine
@@ -175,7 +175,7 @@ int main() {
   return 0;
 }" HAVE_SHMEM_SERVICES)
 IF(HAVE_SHMEM_SERVICES)
-    ADD_DEFINITIONS(-DHAVE_SHMEM_SERVICES)
+    add_compile_definitions(HAVE_SHMEM_SERVICES)
 
     # Some systems define flock_t, for others we have to define it ourselves
     CHECK_C_SOURCE_COMPILES("
@@ -185,7 +185,7 @@ IF(HAVE_SHMEM_SERVICES)
       return 0;
     }" HAVE_FLOCK_T)
     IF(HAVE_FLOCK_T)
-        ADD_DEFINITIONS(-DHAVE_FLOCK_T)
+        add_compile_definitions(HAVE_FLOCK_T)
     ENDIF()
 
     # Check union semun
@@ -198,12 +198,12 @@ IF(HAVE_SHMEM_SERVICES)
       return 0;
     }" HAVE_UNION_SEMUN)
     IF(HAVE_UNION_SEMUN)
-        ADD_DEFINITIONS(-DHAVE_UNION_SEMUN)
+        add_compile_definitions(HAVE_UNION_SEMUN)
     ENDIF()
 ENDIF()
 
 IF(WIN32 AND BUILD_SHARED_LIBS)
-    ADD_DEFINITIONS(-Dcfitsio_EXPORTS)
+    add_compile_definitions(cfitsio_EXPORTS)
 ENDIF()
 
 #==============================================================================
@@ -230,7 +230,7 @@ SET(SRC_FILES
     wcssub.c wcsutil.c zcompress.c zuncompress.c
 )
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
+list(APPEND CMAKE_MODULE_PATH ${CFITSIO_SOURCE_DIR})
 
 # For future modifications:
 
@@ -253,14 +253,14 @@ IF (ZLIB_FOUND)
     TARGET_INCLUDE_DIRECTORIES(${LIB_NAME} PUBLIC ${ZLIB_INCLUDE_DIR})
     TARGET_LINK_LIBRARIES(${LIB_NAME} ${ZLIB_LIBRARIES})
     # For cfitsio.pc.cmake:
-    SET (PKG_CONFIG_LIBS "${PKG_CONFIG_LIBS} -lz")
+    string(APPEND PKG_CONFIG_LIBS " -lz")
 ENDIF(ZLIB_FOUND)
 # cURL:
 IF (CURL_FOUND)
     TARGET_INCLUDE_DIRECTORIES(${LIB_NAME} PUBLIC ${CURL_INCLUDE_DIRS})
     TARGET_LINK_LIBRARIES(${LIB_NAME} ${CURL_LIBRARIES})
     # For cfitsio.pc.cmake:
-    SET (PKG_CONFIG_LIBS "${PKG_CONFIG_LIBS} -lcurl")
+    string(APPEND PKG_CONFIG_LIBS " -lcurl")
 ENDIF(CURL_FOUND)
 # PThreads:
 IF (THREADS_FOUND)
@@ -270,7 +270,7 @@ ENDIF(THREADS_FOUND)
 IF (BZIP2_FOUND)
     TARGET_INCLUDE_DIRECTORIES(${LIB_NAME} PUBLIC ${BZIP2_INCLUDE_DIRS})
     TARGET_LINK_LIBRARIES(${LIB_NAME} ${BZIP2_LIBRARIES})
-    SET (PKG_CONFIG_LIBS "${PKG_CONFIG_LIBS} -lbz2")
+    string(APPEND PKG_CONFIG_LIBS " -lbz2")
 ENDIF(BZIP2_FOUND)
 
 #==============================================================================
@@ -283,12 +283,7 @@ set_property(TARGET cfitsio APPEND PROPERTY
   COMPATIBLE_INTERFACE_STRING cfitsio_MAJOR_VERSION
 )
 
-install(TARGETS cfitsio EXPORT cfitsioTargets
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
+install(TARGETS cfitsio EXPORT cfitsioTargets)
 
 install(FILES ${H_FILES} "${CMAKE_CURRENT_BINARY_DIR}/cfitsio_export.h"
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT Devel)
@@ -341,16 +336,16 @@ IF (TESTS)
 
     ADD_EXECUTABLE(TestProg utilities/testprog.c)
     TARGET_LINK_LIBRARIES(TestProg ${LIB_NAME})
-    ADD_TEST(TestProg TestProg)
+    add_test(NAME TestProg COMMAND TestProg)
     # Copy testprog.tpt to build directory to allow quick test
     # of ./TestProg (or .\Release\TestProg.exe in MSVC):
     FILE(COPY ${CMAKE_CURRENT_SOURCE_DIR}/testprog.tpt DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
     ADD_EXECUTABLE(cookbook utilities/cookbook.c)
     TARGET_LINK_LIBRARIES(cookbook ${LIB_NAME})
-    ADD_TEST(cookbook cookbook)
+    add_test(NAME cookbook COMMAND cookbook)
 
-    install(TARGETS cookbook RUNTIME DESTINATION bin)
+    install(TARGETS cookbook)
 
 ENDIF(TESTS)
 
@@ -358,14 +353,14 @@ IF (ITERPROGS)
 
     ADD_EXECUTABLE(Iter_Image utilities/iter_image.c)
     TARGET_LINK_LIBRARIES(Iter_Image ${LIB_NAME})
-    #ADD_TEST(Iter_Image Iter_Image)
-    #install(TARGETS Iter_Image RUNTIME DESTINATION bin)
+    #add_test(NAME Iter_Image COMMAND Iter_Image)
+    #install(TARGETS Iter_Image)
     FILE(COPY ${CMAKE_SOURCE_DIR}/iter_image.fit DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
     ADD_EXECUTABLE(Iter_Var utilities/iter_var.c)
     TARGET_LINK_LIBRARIES(Iter_Var ${LIB_NAME})
-    #ADD_TEST(Iter_Var Iter_Var)
-    #install(TARGETS Iter_Var RUNTIME DESTINATION bin)
+    #add_test(NAME Iter_Var COMMAND Iter_Var)
+    #install(TARGETS Iter_Var)
     FILE(COPY ${CMAKE_SOURCE_DIR}/vari.fits DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 ENDIF(ITERPROGS)
@@ -388,7 +383,7 @@ IF (UTILS)
                   utilities/ftverify.c utilities/fvrf_data.c
                   utilities/fvrf_file.c utilities/fvrf_head.c
                   utilities/fvrf_key.c utilities/fvrf_misc.c)
-    TARGET_COMPILE_DEFINITIONS(fitsverify PRIVATE -DSTANDALONE)
+    TARGET_COMPILE_DEFINITIONS(fitsverify PRIVATE STANDALONE)
     TARGET_LINK_LIBRARIES(fitsverify ${LIB_NAME})
 
     ADD_EXECUTABLE(imcopy utilities/imcopy.c)
@@ -408,9 +403,9 @@ IF (UTILS)
       set_target_properties(fpack funpack PROPERTIES LINK_FLAGS "setargv.obj")
     endif()
 
-    install(TARGETS fpack funpack fitscopy fitsverify imcopy speed RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(TARGETS fpack funpack fitscopy fitsverify imcopy speed)
     IF(HAVE_SHMEM_SERVICES)
-      install(TARGETS smem RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+      install(TARGETS smem)
     ENDIF()
 
 ENDIF(UTILS)
