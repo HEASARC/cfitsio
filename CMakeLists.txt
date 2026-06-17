@@ -30,8 +30,6 @@ SET(${PROJECT_NAME}_MICRO 4)
 SET(${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_MAJOR}.${${PROJECT_NAME}_MINOR}.${${PROJECT_NAME}_MICRO})
 SET(LIB_NAME cfitsio)
 
-INCLUDE(CheckLibraryExists)
-INCLUDE(CheckFunctionExists)
 INCLUDE(CheckSymbolExists)
 INCLUDE(CheckCSourceCompiles)
 INCLUDE(GNUInstallDirs)
@@ -92,23 +90,17 @@ ENDIF(USE_BZIP2)
 IF(MSVC OR MINGW)
    SET(M_LIB "")
 ELSE()
-   FIND_LIBRARY(M_LIB m)
+   set(M_LIB m)
 ENDIF()
 
 # Support for remote file drivers is not implemented for native Windows:
 IF (NOT MSVC)
 
     # Find library needed for gethostbyname:
-    CHECK_FUNCTION_EXISTS("gethostbyname" CMAKE_HAVE_GETHOSTBYNAME)
-    IF (NOT CMAKE_HAVE_GETHOSTBYNAME)
-        CHECK_LIBRARY_EXISTS("nsl" "gethostbyname" "" CMAKE_HAVE_GETHOSTBYNAME)
-    ENDIF ()
+    check_symbol_exists("gethostbyname" "netdb.h" CMAKE_HAVE_GETHOSTBYNAME)
 
     # Find library needed for connect:
-    CHECK_FUNCTION_EXISTS("connect" CMAKE_HAVE_CONNECT)
-    IF (NOT CMAKE_HAVE_CONNECT)
-        CHECK_LIBRARY_EXISTS("socket" "connect" "" CMAKE_HAVE_CONNECT)
-    ENDIF ()
+    check_symbol_exists("connect" "sys/socket.h" CMAKE_HAVE_CONNECT)
 
     # Define HAVE_NET_SERVICES if gethostbyname & connect were found:
     IF (CMAKE_HAVE_GETHOSTBYNAME AND CMAKE_HAVE_CONNECT)
@@ -167,7 +159,7 @@ CHECK_C_SOURCE_COMPILES("
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/sem.h>
-int main() {
+int main(void) {
   shmat(0,0,0);
   shmdt(0);
   shmget(0, 0, 0);
@@ -179,8 +171,8 @@ IF(HAVE_SHMEM_SERVICES)
 
     # Some systems define flock_t, for others we have to define it ourselves
     CHECK_C_SOURCE_COMPILES("
-    #include <sys/flock.h>
-    int main() {
+    #include <sys/file.h>
+    int main(void) {
       flock_t filler;
       return 0;
     }" HAVE_FLOCK_T)
@@ -193,7 +185,7 @@ IF(HAVE_SHMEM_SERVICES)
     #include <sys/ipc.h>
     #include <sys/shm.h>
     #include <sys/sem.h>
-    int main() {
+    int main(void) {
       union semun filler;
       return 0;
     }" HAVE_UNION_SEMUN)
