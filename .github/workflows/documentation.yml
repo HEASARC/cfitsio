@@ -23,9 +23,9 @@ jobs:
             contents: write     # Needed for release uploads
 
         steps:
-                
+
         - name: Set up Git repository
-          uses: actions/checkout@v4
+          uses: actions/checkout@v6
 
         # We need texlive and latex2html for the tex files
         # pandoc for the markdown files
@@ -41,15 +41,15 @@ jobs:
             # Find where Ubuntu's TeXLive expects files
             TEXMF_DIR=$(kpsewhich -var-value TEXMFLOCAL)
             echo "TEXMF local directory: $TEXMF_DIR"
-            
+
             # Create directory and link files
             sudo mkdir -p "$TEXMF_DIR/tex/latex/html/"
             sudo ln -sf /usr/share/texmf/tex/latex/html/html.sty "$TEXMF_DIR/tex/latex/html/html.sty"
             sudo ln -sf /usr/share/texmf/tex/latex/html/hthtml.sty "$TEXMF_DIR/tex/latex/html/hthtml.sty"
-            
+
             # Refresh TeX database
             sudo mktexlsr
-            
+
             # Verify it worked
             kpsewhich html.sty || echo "html.sty still not found"
 
@@ -59,7 +59,7 @@ jobs:
             CFITSIO_VERSION=$(grep -oP '{\\Large Version \K[^\\\\}]*' docs/cfitsio.tex | sed -e 's/[ \t]*//g')
             echo "Found cfitsio version: $CFITSIO_VERSION"
             echo "cfitsio_version=$CFITSIO_VERSION" >> $GITHUB_OUTPUT
-            
+
             FITSIO_VERSION=$(grep -oP '{\\Large Version \K[^\\\\}]*' docs/fitsio.tex | sed -e 's/[ \t]*//g')
             echo "Found fitsio version: $FITSIO_VERSION"
             echo "fitsio_version=$FITSIO_VERSION" >> $GITHUB_OUTPUT
@@ -70,15 +70,15 @@ jobs:
             echo "Building cfitsio.tex..."
             pdflatex cfitsio.tex
             pdflatex cfitsio.tex    # Run twice for references
-            
+
             echo "Building fitsio.tex..."
             pdflatex fitsio.tex
             pdflatex fitsio.tex    # Run twice for references
-            
+
             echo "Building quick.tex..."
             pdflatex quick.tex
             pdflatex quick.tex    # Run twice for references
-            
+
             echo "Building fpackguide.md..."
             pandoc fpackguide.md -V linkcolor=blue -o fpackguide.pdf
 
@@ -91,10 +91,10 @@ jobs:
             mv fitsio.pdf fitsio-v${{ steps.get_versions.outputs.fitsio_version }}.pdf
             echo "Created PDFs:"
             ls -la *.pdf
-        
+
         # save the artifacts to the Workflow output
         - name: Upload Artifacts
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v7
           with:
             name: documentation-output
             path: |
@@ -111,6 +111,3 @@ jobs:
               docs/fpackguide.pdf
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
-

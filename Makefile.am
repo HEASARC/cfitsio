@@ -186,7 +186,7 @@ BISON =		bison
 
 # Tested with bison 3.8 and flex 2.6.4
 eval:		# Rebuild eval_* files from flex/bison source
-		${FLEX} -o eval_l.c eval.l 
+		${FLEX} -o eval_l.c eval.l
 		${BISON} -o eval_y.c --header=eval_tab.h eval.y
 
 # Distribution: ==========================================================
@@ -194,7 +194,7 @@ eval:		# Rebuild eval_* files from flex/bison source
 
 EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
 	docs licenses \
-	README.md README.MacOS README.win \
+	README.md README.MacOS README.win.md \
 	cfitsio.pc.cmake cfitsio.pc.in \
 	cfitsio.xcodeproj \
 	CMakeLists.txt \

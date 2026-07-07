@@ -3,20 +3,20 @@
 #==============================================================================
 
 # Ensure that build directory is not the source directory:
-IF(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+IF(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
 	message(FATAL_ERROR
 		"Please create a separate directory for building CFITSIO."
 		)
 ENDIF()
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.15)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.24)
 
 # Suppress warning about WIN32 no longer being defined on Cygwin:
 SET(CMAKE_LEGACY_CYGWIN_WIN32 0)
 
 PROJECT(CFITSIO
 	DESCRIPTION "Library of C and Fortran subroutines for reading and writing data files in FITS data format."
-	LANGUAGES C CXX
+	LANGUAGES C
 	)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -30,17 +30,11 @@ SET(${PROJECT_NAME}_MICRO 4)
 SET(${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_MAJOR}.${${PROJECT_NAME}_MINOR}.${${PROJECT_NAME}_MICRO})
 SET(LIB_NAME cfitsio)
 
-# Allow @rpath token in target install name on Macs.
-# See "cmake --help-policy CMP0042" for more information.
-IF(POLICY CMP0042)
-  CMAKE_POLICY(SET CMP0042 NEW)
-ENDIF()
-
-INCLUDE(CheckLibraryExists)
-INCLUDE(CheckFunctionExists)
-INCLUDE(CheckSymbolExists)
-INCLUDE(CheckCSourceCompiles)
-INCLUDE(GNUInstallDirs)
+include(CheckSymbolExists)
+include(CheckIncludeFile)
+include(CheckSourceCompiles)
+include(GNUInstallDirs)
+include(FetchContent)
 
 #==============================================================================
 # Build options:
@@ -66,118 +60,137 @@ OPTION(USE_SSSE3 "Enable use of instructions in the SSSE3 extended instruction s
 
 OPTION(USE_BZIP2 "Enable bzip2 support" OFF)
 
+option(USE_NET_SERVICES "Enable support for remote file drivers" ON)
+
+option(USE_FLEX_BISON "Use Flex/Bison to generate the CFITSIO expression parser")
+
 #==============================================================================
 
-FIND_PACKAGE(ZLIB REQUIRED)
+FetchContent_Declare(ZLIB
+    URL https://www.zlib.net/zlib-1.3.2.tar.xz
+    URL_HASH SHA256=d7a0654783a4da529d1bb793b7ad9c3318020af77667bcae35f95d0e42a792f3
+    FIND_PACKAGE_ARGS
+)
+
+set(ZLIB_BUILD_TESTING OFF)
+
+FetchContent_MakeAvailable(ZLIB)
 
 IF(BUILD_SHARED_LIBS)
   SET (LIB_TYPE SHARED)
 ELSE()
   SET (LIB_TYPE STATIC)
-ENDIF(BUILD_SHARED_LIBS)
+ENDIF()
 
 # Find curl library, for HTTPS support:
 IF(USE_CURL)
    FIND_PACKAGE(CURL)
    IF(CURL_FOUND)
-      ADD_DEFINITIONS(-DCFITSIO_HAVE_CURL)
+      add_compile_definitions(CFITSIO_HAVE_CURL)
    ENDIF()
 ENDIF()
 
 IF(USE_PTHREADS)
    FIND_PACKAGE(Threads REQUIRED)
-   ADD_DEFINITIONS(-D_REENTRANT)
-ENDIF(USE_PTHREADS)
+   if(NOT CMAKE_USE_PTHREADS_INIT)
+      message(FATAL_ERROR "PThreads support requested but pthread.h not found")
+   endif()
+   add_compile_definitions(_REENTRANT)
+ENDIF()
 
 IF(USE_BZIP2)
    FIND_PACKAGE(BZip2 REQUIRED)
-   ADD_DEFINITIONS(-DHAVE_BZIP2=1)
-ENDIF(USE_BZIP2)
+   add_compile_definitions(HAVE_BZIP2=1)
+ENDIF()
 
 # Math library (not available in MSVC or MINGW)
 IF(MSVC OR MINGW)
    SET(M_LIB "")
 ELSE()
-   FIND_LIBRARY(M_LIB m)
+   set(M_LIB m)
 ENDIF()
 
 # Support for remote file drivers is not implemented for native Windows:
-IF (NOT MSVC)
-
-    # Find library needed for gethostbyname:
-    CHECK_FUNCTION_EXISTS("gethostbyname" CMAKE_HAVE_GETHOSTBYNAME)
-    IF (NOT CMAKE_HAVE_GETHOSTBYNAME)
-        CHECK_LIBRARY_EXISTS("nsl" "gethostbyname" "" CMAKE_HAVE_GETHOSTBYNAME)
-    ENDIF ()
+if(USE_NET_SERVICES AND NOT WIN32)
+    check_symbol_exists("gethostbyname" "netdb.h" CMAKE_HAVE_GETHOSTBYNAME)
 
     # Find library needed for connect:
-    CHECK_FUNCTION_EXISTS("connect" CMAKE_HAVE_CONNECT)
-    IF (NOT CMAKE_HAVE_CONNECT)
-        CHECK_LIBRARY_EXISTS("socket" "connect" "" CMAKE_HAVE_CONNECT)
-    ENDIF ()
+    check_symbol_exists("connect" "sys/socket.h" CMAKE_HAVE_CONNECT)
 
     # Define HAVE_NET_SERVICES if gethostbyname & connect were found:
     IF (CMAKE_HAVE_GETHOSTBYNAME AND CMAKE_HAVE_CONNECT)
-        ADD_DEFINITIONS(-DHAVE_NET_SERVICES)
+        add_compile_definitions(HAVE_NET_SERVICES)
         CHECK_SYMBOL_EXISTS(fmemopen "stdio.h" HAVE_FMEMOPEN)
         IF(HAVE_FMEMOPEN)
-            ADD_DEFINITIONS(-DHAVE_FMEMOPEN)
+            add_compile_definitions(HAVE_FMEMOPEN)
         ENDIF()
     ENDIF()
-
-ENDIF()
+endif()
 
 IF(MSVC OR BORLAND)
-    # Define
-    ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE)
-    # Need an empty unistd.h in MSVC for flex-generated eval_l.c:
-    FILE(WRITE ${CMAKE_SOURCE_DIR}/unistd.h "")
-    INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR})
+    add_compile_definitions(_CRT_SECURE_NO_DEPRECATE)
+
+    get_source_file_property(_cfitsio_eval_l_defs eval_l.c COMPILE_DEFINITIONS)
+    set_source_files_properties(eval_l.c PROPERTIES
+    COMPILE_DEFINITIONS "YY_NO_UNISTD_H;${_cfitsio_eval_l_defs}"
+    COMPILE_OPTIONS $<$<BOOL:${MSVC}>:/FIio.h>
+    )
 ENDIF()
 
 IF(BORLAND)
     # Suppress spurious Borland compiler warnings about "Suspicious
     # pointer arithmetic", "Possibly incorrect assignment", and
     # "Comparing signed and unsigned values".
-    ADD_DEFINITIONS(-w-spa)
-    ADD_DEFINITIONS(-w-pia)
-    ADD_DEFINITIONS(-w-csu)
+    add_compile_options(-w-spa)
+    add_compile_options(-w-pia)
+    add_compile_options(-w-csu)
 ENDIF()
 
 IF(USE_SSE2)
-    IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
-       "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR
-       "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
-        ADD_COMPILE_OPTIONS(-msse2)
+    IF(CMAKE_C_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
+        add_compile_options(-msse2)
+        set(CMAKE_REQUIRED_FLAGS "-msse2")
     ENDIF()
     IF(MSVC)
-        ADD_DEFINITIONS(-D__SSE2__=1)
+        add_compile_definitions(__SSE2__=1)
+        set(CMAKE_REQUIRED_DEFINITIONS -D__SSE2__=1)
     ENDIF()
+    check_include_file("emmintrin.h" HAVE_EMMINTRIN_H)
+    if(NOT HAVE_EMMINTRIN_H)
+        message(FATAL_ERROR "SSE2 support requested but emmintrin.h not found")
+    endif()
 ENDIF()
 
 IF(USE_SSSE3)
-    IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
-       "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR
-       "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
-        ADD_COMPILE_OPTIONS(-mssse3)
+    IF(CMAKE_C_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
+        add_compile_options(-mssse3)
+        set(CMAKE_REQUIRED_FLAGS "-mssse3")
     ENDIF()
     IF(MSVC)
-        ADD_DEFINITIONS(-D__SSE2__=1 -D__SSSE3__=1)
+        add_compile_definitions(__SSE2__=1 __SSSE3__=1)
+        set(CMAKE_REQUIRED_DEFINITIONS -D__SSE2__=1 -D__SSSE3__=1)
     ENDIF()
+    check_include_file("tmmintrin.h" HAVE_TMMINTRIN_H)
+    if(NOT HAVE_TMMINTRIN_H)
+        message(FATAL_ERROR "SSSE3 support requested but tmmintrin.h not found")
+    endif()
 ENDIF()
 
-# Test for the unix ftruncate function
-CHECK_SYMBOL_EXISTS(ftruncate "unistd.h" HAVE_FTRUNCATE)
-IF(HAVE_FTRUNCATE)
-    ADD_DEFINITIONS(-DHAVE_UNISTD_H -DHAVE_FTRUNCATE)
-ENDIF()
+check_include_file("unistd.h" HAVE_UNISTD_H)
+if(HAVE_UNISTD_H)
+  add_compile_definitions(HAVE_UNISTD_H)
+  check_symbol_exists(ftruncate "unistd.h" HAVE_FTRUNCATE)
+  if(HAVE_FTRUNCATE)
+    add_compile_definitions(HAVE_FTRUNCATE)
+  endif()
+endif()
 
 # Check is System V IPC is supported on this machine
-CHECK_C_SOURCE_COMPILES("
+check_source_compiles(C "
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/sem.h>
-int main() {
+int main(void) {
   shmat(0,0,0);
   shmdt(0);
   shmget(0, 0, 0);
@@ -185,35 +198,35 @@ int main() {
   return 0;
 }" HAVE_SHMEM_SERVICES)
 IF(HAVE_SHMEM_SERVICES)
-    ADD_DEFINITIONS(-DHAVE_SHMEM_SERVICES)
+    add_compile_definitions(HAVE_SHMEM_SERVICES)
 
     # Some systems define flock_t, for others we have to define it ourselves
-    CHECK_C_SOURCE_COMPILES("
-    #include <sys/flock.h>
-    int main() {
+    check_source_compiles(C "
+    #include <sys/file.h>
+    int main(void) {
       flock_t filler;
       return 0;
     }" HAVE_FLOCK_T)
     IF(HAVE_FLOCK_T)
-        ADD_DEFINITIONS(-DHAVE_FLOCK_T)
+        add_compile_definitions(HAVE_FLOCK_T)
     ENDIF()
 
     # Check union semun
-    CHECK_C_SOURCE_COMPILES("
+    check_source_compiles(C "
     #include <sys/ipc.h>
     #include <sys/shm.h>
     #include <sys/sem.h>
-    int main() {
+    int main(void) {
       union semun filler;
       return 0;
     }" HAVE_UNION_SEMUN)
     IF(HAVE_UNION_SEMUN)
-        ADD_DEFINITIONS(-DHAVE_UNION_SEMUN)
+        add_compile_definitions(HAVE_UNION_SEMUN)
     ENDIF()
 ENDIF()
 
 IF(WIN32 AND BUILD_SHARED_LIBS)
-    ADD_DEFINITIONS(-Dcfitsio_EXPORTS)
+    add_compile_definitions(cfitsio_EXPORTS)
 ENDIF()
 
 #==============================================================================
@@ -227,7 +240,7 @@ SET(H_FILES fitsio.h fitsio2.h longnam.h)
 SET(SRC_FILES
     buffers.c cfileio.c checksum.c
     drvrfile.c drvrmem.c drvrnet.c drvrsmem.c
-    editcol.c edithdu.c eval_f.c eval_l.c eval_y.c
+    editcol.c edithdu.c eval_f.c
     f77_wrap1.c f77_wrap2.c f77_wrap3.c f77_wrap4.c
     fits_hcompress.c fits_hdecompress.c fitscore.c
     getcol.c getcolb.c getcold.c getcole.c getcoli.c getcolj.c getcolk.c
@@ -240,7 +253,18 @@ SET(SRC_FILES
     wcssub.c wcsutil.c zcompress.c zuncompress.c
 )
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
+if(USE_FLEX_BISON)
+  find_package(FLEX REQUIRED)
+  find_package(BISON REQUIRED)
+  flex_target(cfitsio_eval_l eval.l eval_l.c)
+  bison_target(cfitsio_eval_y eval.y eval_y.c COMPILE_FLAGS "--header=eval_tab.h")
+
+  list(APPEND SRC_FILES ${FLEX_cfitsio_eval_l_OUTPUTS} ${BISON_cfitsio_eval_y_OUTPUTS})
+else()
+  list(APPEND SRC_FILES eval_l.c eval_y.c)
+endif()
+
+list(APPEND CMAKE_MODULE_PATH ${CFITSIO_SOURCE_DIR})
 
 # For future modifications:
 
@@ -255,33 +279,29 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 #==============================================================================
 
 ADD_LIBRARY(${LIB_NAME} ${LIB_TYPE} ${H_FILES} ${SRC_FILES})
+target_compile_features(${LIB_NAME} PRIVATE c_std_99)
 
 # Math:
-TARGET_LINK_LIBRARIES(${LIB_NAME} ${M_LIB})
+TARGET_LINK_LIBRARIES(${LIB_NAME} INTERFACE ${M_LIB})
 # zlib:
-IF (ZLIB_FOUND)
-    TARGET_INCLUDE_DIRECTORIES(${LIB_NAME} PUBLIC ${ZLIB_INCLUDE_DIR})
-    TARGET_LINK_LIBRARIES(${LIB_NAME} ${ZLIB_LIBRARIES})
+if(TARGET ZLIB::ZLIB)
+    TARGET_LINK_LIBRARIES(${LIB_NAME} PRIVATE ZLIB::ZLIB)
     # For cfitsio.pc.cmake:
-    SET (PKG_CONFIG_LIBS "${PKG_CONFIG_LIBS} -lz")
-ENDIF(ZLIB_FOUND)
+    string(APPEND PKG_CONFIG_LIBS " -lz")
+endif()
 # cURL:
-IF (CURL_FOUND)
-    TARGET_INCLUDE_DIRECTORIES(${LIB_NAME} PUBLIC ${CURL_INCLUDE_DIRS})
-    TARGET_LINK_LIBRARIES(${LIB_NAME} ${CURL_LIBRARIES})
+if(CURL_FOUND)
+    TARGET_LINK_LIBRARIES(${LIB_NAME} PRIVATE CURL::libcurl)
     # For cfitsio.pc.cmake:
-    SET (PKG_CONFIG_LIBS "${PKG_CONFIG_LIBS} -lcurl")
-ENDIF(CURL_FOUND)
+    string(APPEND PKG_CONFIG_LIBS " -lcurl")
+endif()
 # PThreads:
-IF (THREADS_FOUND)
-    TARGET_LINK_LIBRARIES(${LIB_NAME} Threads::Threads)
-ENDIF(THREADS_FOUND)
+TARGET_LINK_LIBRARIES(${LIB_NAME} PRIVATE $<$<BOOL:${Threads_FOUND}>:Threads::Threads>)
 # BZip2:
-IF (BZIP2_FOUND)
-    TARGET_INCLUDE_DIRECTORIES(${LIB_NAME} PUBLIC ${BZIP2_INCLUDE_DIRS})
-    TARGET_LINK_LIBRARIES(${LIB_NAME} ${BZIP2_LIBRARIES})
-    SET (PKG_CONFIG_LIBS "${PKG_CONFIG_LIBS} -lbz2")
-ENDIF(BZIP2_FOUND)
+if(BZip2_FOUND)
+    TARGET_LINK_LIBRARIES(${LIB_NAME} PRIVATE BZip2::BZip2)
+    string(APPEND PKG_CONFIG_LIBS " -lbz2")
+endif()
 
 #==============================================================================
 
@@ -293,29 +313,30 @@ set_property(TARGET cfitsio APPEND PROPERTY
   COMPATIBLE_INTERFACE_STRING cfitsio_MAJOR_VERSION
 )
 
-install(TARGETS cfitsio EXPORT cfitsioTargets
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
+install(TARGETS cfitsio EXPORT cfitsioTargets)
 
-install(FILES ${H_FILES} "${CMAKE_CURRENT_BINARY_DIR}/cfitsio_export.h"
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT Devel)
+# If zlib is provided via FetchContent, include it in the same export set
+# so cfitsio's export generation remains valid.
+if(TARGET zlib)
+  install(TARGETS zlib EXPORT cfitsioTargets)
+endif()
+
+install(FILES ${H_FILES} "${CFITSIO_BINARY_DIR}/cfitsio_export.h"
+  TYPE INCLUDE COMPONENT Devel)
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/cfitsio/cfitsioConfigVersion.cmake"
+  "${CFITSIO_BINARY_DIR}/cfitsio/cfitsioConfigVersion.cmake"
   VERSION ${CFITSIO_VERSION}
   COMPATIBILITY AnyNewerVersion
 )
 
 export(EXPORT cfitsioTargets
-  FILE "${CMAKE_CURRENT_BINARY_DIR}/cfitsio/cfitsioTargets.cmake"
+  FILE "${CFITSIO_BINARY_DIR}/cfitsio/cfitsioTargets.cmake"
   NAMESPACE CFITSIO::
 )
 configure_file(cmake/cfitsioConfig.cmake
-  "${CMAKE_CURRENT_BINARY_DIR}/cfitsio/cfitsioConfig.cmake"
+  "${CFITSIO_BINARY_DIR}/cfitsio/cfitsioConfig.cmake"
   COPYONLY
 )
 
@@ -331,7 +352,7 @@ install(EXPORT cfitsioTargets
 install(
   FILES
     cmake/cfitsioConfig.cmake
-    "${CMAKE_CURRENT_BINARY_DIR}/cfitsio/cfitsioConfigVersion.cmake"
+    "${CFITSIO_BINARY_DIR}/cfitsio/cfitsioConfigVersion.cmake"
   DESTINATION
     ${ConfigPackageLocation}
   COMPONENT
@@ -339,8 +360,8 @@ install(
 )
 
 # cfitsio.pc:
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cfitsio.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/cfitsio.pc @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cfitsio.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+configure_file(${CFITSIO_SOURCE_DIR}/cfitsio.pc.cmake ${CFITSIO_BINARY_DIR}/cfitsio.pc @ONLY)
+install(FILES ${CFITSIO_BINARY_DIR}/cfitsio.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 #==============================================================================
 # Test programs:
@@ -350,33 +371,41 @@ IF (TESTS)
     ENABLE_TESTING()
 
     ADD_EXECUTABLE(TestProg utilities/testprog.c)
-    TARGET_LINK_LIBRARIES(TestProg ${LIB_NAME})
-    ADD_TEST(TestProg TestProg)
+    TARGET_LINK_LIBRARIES(TestProg PRIVATE ${LIB_NAME})
+    add_test(NAME TestProg COMMAND TestProg)
     # Copy testprog.tpt to build directory to allow quick test
     # of ./TestProg (or .\Release\TestProg.exe in MSVC):
-    FILE(COPY ${CMAKE_CURRENT_SOURCE_DIR}/testprog.tpt DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    configure_file(${CFITSIO_SOURCE_DIR}/testprog.tpt ${CFITSIO_BINARY_DIR}/testprog.tpt COPYONLY)
 
     ADD_EXECUTABLE(cookbook utilities/cookbook.c)
-    TARGET_LINK_LIBRARIES(cookbook ${LIB_NAME})
-    ADD_TEST(cookbook cookbook)
+    TARGET_LINK_LIBRARIES(cookbook PRIVATE ${LIB_NAME})
+    add_test(NAME cookbook COMMAND cookbook)
 
-    install(TARGETS cookbook RUNTIME DESTINATION bin)
+    if(BUILD_SHARED_LIBS AND WIN32)
+      set(_cfitsio_dll_path "PATH=path_list_prepend:$<TARGET_FILE_DIR:${LIB_NAME}>")
+      if(TARGET zlib)
+        list(APPEND _cfitsio_dll_path "PATH=path_list_prepend:$<TARGET_FILE_DIR:zlib>")
+      endif()
+      set_tests_properties(TestProg cookbook PROPERTIES ENVIRONMENT_MODIFICATION "${_cfitsio_dll_path}")
+    endif()
+
+    install(TARGETS cookbook)
 
 ENDIF(TESTS)
 
 IF (ITERPROGS)
 
     ADD_EXECUTABLE(Iter_Image utilities/iter_image.c)
-    TARGET_LINK_LIBRARIES(Iter_Image ${LIB_NAME})
-    #ADD_TEST(Iter_Image Iter_Image)
-    #install(TARGETS Iter_Image RUNTIME DESTINATION bin)
-    FILE(COPY ${CMAKE_SOURCE_DIR}/iter_image.fit DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    TARGET_LINK_LIBRARIES(Iter_Image PRIVATE ${LIB_NAME})
+    #add_test(NAME Iter_Image COMMAND Iter_Image)
+    #install(TARGETS Iter_Image)
+    configure_file(${CFITSIO_SOURCE_DIR}/iter_image.fit ${CFITSIO_BINARY_DIR}/iter_image.fit COPYONLY)
 
     ADD_EXECUTABLE(Iter_Var utilities/iter_var.c)
-    TARGET_LINK_LIBRARIES(Iter_Var ${LIB_NAME})
-    #ADD_TEST(Iter_Var Iter_Var)
-    #install(TARGETS Iter_Var RUNTIME DESTINATION bin)
-    FILE(COPY ${CMAKE_SOURCE_DIR}/vari.fits DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    TARGET_LINK_LIBRARIES(Iter_Var PRIVATE ${LIB_NAME})
+    #add_test(NAME Iter_Var COMMAND Iter_Var)
+    #install(TARGETS Iter_Var)
+    configure_file(${CFITSIO_SOURCE_DIR}/vari.fits ${CFITSIO_BINARY_DIR}/vari.fits COPYONLY)
 
 ENDIF(ITERPROGS)
 
@@ -386,31 +415,31 @@ ENDIF(ITERPROGS)
 IF (UTILS)
 
     ADD_EXECUTABLE(fpack utilities/fpack.c utilities/fpackutil.c)
-    TARGET_LINK_LIBRARIES(fpack ${LIB_NAME})
+    TARGET_LINK_LIBRARIES(fpack PRIVATE ${LIB_NAME})
 
     ADD_EXECUTABLE(funpack utilities/funpack.c utilities/fpackutil.c)
-    TARGET_LINK_LIBRARIES(funpack ${LIB_NAME})
+    TARGET_LINK_LIBRARIES(funpack PRIVATE ${LIB_NAME})
 
     ADD_EXECUTABLE(fitscopy utilities/fitscopy.c)
-    TARGET_LINK_LIBRARIES(fitscopy ${LIB_NAME})
+    TARGET_LINK_LIBRARIES(fitscopy PRIVATE ${LIB_NAME})
 
     ADD_EXECUTABLE(fitsverify
                   utilities/ftverify.c utilities/fvrf_data.c
                   utilities/fvrf_file.c utilities/fvrf_head.c
                   utilities/fvrf_key.c utilities/fvrf_misc.c)
-    TARGET_COMPILE_DEFINITIONS(fitsverify PRIVATE -DSTANDALONE)
-    TARGET_LINK_LIBRARIES(fitsverify ${LIB_NAME})
+    TARGET_COMPILE_DEFINITIONS(fitsverify PRIVATE STANDALONE)
+    TARGET_LINK_LIBRARIES(fitsverify PRIVATE ${LIB_NAME})
 
     ADD_EXECUTABLE(imcopy utilities/imcopy.c)
-    TARGET_LINK_LIBRARIES(imcopy ${LIB_NAME})
+    TARGET_LINK_LIBRARIES(imcopy PRIVATE ${LIB_NAME})
 
     IF(HAVE_SHMEM_SERVICES)
       ADD_EXECUTABLE(smem utilities/smem.c)
-      TARGET_LINK_LIBRARIES(smem ${LIB_NAME})
+      TARGET_LINK_LIBRARIES(smem PRIVATE ${LIB_NAME})
     ENDIF()
 
     ADD_EXECUTABLE(speed utilities/speed.c)
-    TARGET_LINK_LIBRARIES(speed ${LIB_NAME})
+    TARGET_LINK_LIBRARIES(speed PRIVATE ${LIB_NAME})
 
     # To expand the command line arguments in Windows, see:
     # http://msdn.microsoft.com/en-us/library/8bch7bkk.aspx
@@ -418,9 +447,9 @@ IF (UTILS)
       set_target_properties(fpack funpack PROPERTIES LINK_FLAGS "setargv.obj")
     endif()
 
-    install(TARGETS fpack funpack fitscopy fitsverify imcopy speed RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(TARGETS fpack funpack fitscopy fitsverify imcopy speed)
     IF(HAVE_SHMEM_SERVICES)
-      install(TARGETS smem RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+      install(TARGETS smem)
     ENDIF()
 
 ENDIF(UTILS)

@@ -58,19 +58,21 @@ When installing in /usr/local on Linux and some other systems, it may be necessa
 % sudo ldconfig
 ```
 
-Alternatively, the library and utilities may be built on many systems using the CMake program.  Specific instructions for using CMake on Windows platforms can be found in the `README.win` file, but for Unix systems (e.g., Linux or macOS) the procedure should be similar to the following:
+Alternatively, the library and utilities may be built on many systems using the CMake program.  Specific instructions for using CMake on Windows platforms can be found in the
+[README.win.md](./README.win.md) file, but for Unix systems (e.g., Linux or macOS)
+the procedure should be similar to the following:
 
 While in the CFITSIO source code directory:
 
 ```bash
-% mkdir cmbuild
-% cd cmbuild
-% cmake -G "Unix Makefiles" ..
-% cmake --build .
-% cmake --install . [--prefix /usr/local]
+% cmake -B build [--install-prefix /usr/local]
+% cmake --build build --parallel
+% ctest --test-dir build
+% cmake --install build
 ```
 
-Where the final step uses an optional installation prefix.
+Where the first step uses an optional installation prefix.
+The `ctest` step is optional self-test run.
 
 Additional options for installing CFITSIO on macOS via third-party package managers or the XCode GUI can be found in the `README.MacOS` file.
 

@@ -21,8 +21,8 @@
 \begin{center}
 {\Huge \bf CFITSIO User's Reference Guide}\\
 \end{center}
-\medskip 
-\medskip 
+\medskip
+\medskip
 \begin{center}
 {\LARGE \bf An Interface to FITS Format Files}\\
 \end{center}
@@ -387,7 +387,7 @@ link line in the next section of this document.
 A precompiled DLL version of CFITSIO (not necessarily the latest version)
 is available on the CFITSIO web site.
 The CFITSIO library may also be built from the source code using the
-CMake build system.  See the "README.win" file in the CFITSIO source distribution
+CMake build system.  See the "README.win.md" file in the CFITSIO source distribution
 for more information.
 
 
@@ -945,10 +945,10 @@ in their C programs to handle this in a machine-portable manner:
 \begin{verbatim}
 #if defined(_MSC_VER) /* Microsoft Visual C++ */
           printf("%I64d", longlongvalue);
-	
+
 #elif (USE_LL_SUFFIX == 1)
           printf("%lld", longlongvalue);
-	
+
 #else
           printf("%ld", longlongvalue);
 #endif
@@ -961,10 +961,10 @@ string of digits into a 8-byte integer value is platform dependent:
 \begin{verbatim}
 #if defined(_MSC_VER) /* Microsoft Visual C++ */
       /* VC++ 6.0 does not seem to have an 8-byte conversion routine */
-	
+
 #elif (USE_LL_SUFFIX == 1)
           longlongvalue = atoll(*string);
-	
+
 #else
           longlongvalue = atol(*string);
 #endif
@@ -1738,7 +1738,7 @@ character ('-') is given as the filename. Files can also be opened over
 the network using FTP or HTTP protocols by supplying the appropriate URL
 as the filename.  The HTTPS and FTPS protocols are also supported if the CFITSIO
 build includes the libcurl library.  (If the CFITSIO 'configure' script
-finds a usable libcurl library on your system, it will automatically be 
+finds a usable libcurl library on your system, it will automatically be
 included in the build.)
 
 The input file can be modified in various ways to create a virtual file
@@ -2091,33 +2091,33 @@ header.
 \end{verbatim}
 
 \begin{description}
-\item[3 ] Read a string-valued keyword and return the string length, the value string, 
+\item[3 ] Read a string-valued keyword and return the string length, the value string,
     and/or the commment length and comment field.  These routines support the reading
     of long string keyword values of arbitrary length which use the CONTINUE convention.
-    The first two routines, ffgkcsl and ffgskyc are the newer versions of the second two.  
-    They provide all the functionality of the older routines, 
+    The first two routines, ffgkcsl and ffgskyc are the newer versions of the second two.
+    They provide all the functionality of the older routines,
     but have the added capability of returning the length of comment strings (if any),
     and reading multi-line comment strings of arbitrary length.  They are recommended
     for use in the future.  ffgksl and ffgsky are maintained for backwards-compatibility.
-    
+
     The first routine, ffgkcsl, simply returns the lengths of the character string value and
     comment string (if any) of the specified keyword.  These lengths are particularly helpful
     for allocating dynamic memory when retrieving the strings in the ffgskyc function.
     To create an array large enough to hold the full string, one should allocate a size equal to
     the returned length + 1 (for the trailing NULL).
-    
-    The second routine, ffgskyc, is for retrieving the value string and optional comment 
+
+    The second routine, ffgskyc, is for retrieving the value string and optional comment
     string, both of which may be of arbitrary length spreading over multiple lines with the
     CONTINUE keyword convention.  It will return up to maxchar characters of the keyword value
-    string, starting with the firstchar character.  Similarly, maxcomchar determines the 
+    string, starting with the firstchar character.  Similarly, maxcomchar determines the
     maximum number of characters to return for the comment string.  (The valuelen and comlen
     arguments return the total length of their respective strings regardless of what is actually
-    returned as determined from the firstchar and max(com)char arguments.) If NULL is passed for 
+    returned as determined from the firstchar and max(com)char arguments.) If NULL is passed for
     either the value or comm string pointer, its max(com)char setting is irrelevant since
     the corresponding string will not be returned.
-    
+
     The ffgksl routine is the earlier version of ffgkcsl. It only returns the value string length and
-    not the comment string length.  ffgsky, the earlier version of ffgskyc, does return 
+    not the comment string length.  ffgsky, the earlier version of ffgskyc, does return
     both the value string and comment string.  However it will only return up to the
     first FLEN\_COMMENT-1 characters of the comment.  It can read comments across
     multiple lines, but not of arbitrary length.   \label{ffgkcsl} \label{ffgskyc} \label{ffgksl} \label{ffgsky}
@@ -2127,12 +2127,12 @@ header.
   int fits_get_key_com_strlen / ffgkcsl
       (fitsfile *fptr, const char *keyname, int *length, int *comlength,
       int *status);
-      
+
   int fits_read_string_key_com / ffgskyc
       (fitsfile *fptr, const char *keyname, int firstchar, int maxchar,
       int maxcomchar, char *value, int *valuelen, char *comm,
       int *comlen, int *status);
-      
+
   int fits_get_key_strlen / ffgksl
       (fitsfile *fptr, const char *keyname, int *length, int *status);
 
@@ -2257,9 +2257,9 @@ header.
     itself, must be entered.    The datatype parameter specifies the
     data type of the keyword value with one of the following values:
     TSTRING, TLOGICAL (== int), TBYTE, TSHORT, TUSHORT, TINT, TUINT,
-    TLONG, TLONGLONG, TULONG, TULONGLONG, TFLOAT, TDOUBLE.  Within the 
+    TLONG, TLONGLONG, TULONG, TULONGLONG, TFLOAT, TDOUBLE.  Within the
     context of this routine, TSTRING corresponds to a 'char*' data type,
-    i.e., a pointer to a character array.  A null pointer may be entered 
+    i.e., a pointer to a character array.  A null pointer may be entered
     for the comment parameter in which case the  keyword comment
    field will be unmodified or left blank.  \label{ffpky} \label{ffuky}
 \end{description}
@@ -2800,7 +2800,7 @@ quantization method is to be used.  The default algorithm is called
 is also available, which does the same thing except that any pixels with a
 value of 0.0 are not dithered and instead the zero values are exactly
 preserved in the compressed image.  This is intended for the special case
-where ``bad pixels'' in the image have been artifically set to zero to indicate that they have no valid value.  It is not currently supported with HCOMPRESS, 
+where ``bad pixels'' in the image have been artifically set to zero to indicate that they have no valid value.  It is not currently supported with HCOMPRESS,
 and if requested while using HCOMPRESS, it will be replaced with ``SUBTRACTIVE\_DITHER\_1''.  One may also turn off dithering
 completely with the ``NO\_DITHER'' option, but this is not recommended
 because it can cause larger systematic errors in measurements of the
@@ -3323,7 +3323,7 @@ spaces).  Trailing blank characters are not significant.
        int create_col, > int *status);
 
   int fits_copy_cols / ffccls
-      (fitsfile *infptr, fitsfile *outfptr, int incolnum, int outcolnum, 
+      (fitsfile *infptr, fitsfile *outfptr, int incolnum, int outcolnum,
        int ncols, int create_col, > int *status);
 \end{verbatim}
 
@@ -3331,12 +3331,12 @@ spaces).  Trailing blank characters are not significant.
 \item[4 ] Copy 'nrows' consecutive rows from one table to another, beginning
     with row 'firstrow'.  These rows will be appended to any existing
     rows in the output table.
-   Note that the first row in a table is at row = 1. 
+   Note that the first row in a table is at row = 1.
 
    The \verb|fits_copy_selrows| form copies only selected rows to the output.
    Which rows are transferred is determined by an array of flags, \verb|row_status[]|,
    which could be returned by \verb|fits_find_rows()| or constructed by the user.
-   FITS row N is copied if \verb|row_status[N-first_row]| is non-zero.  
+   FITS row N is copied if \verb|row_status[N-first_row]| is non-zero.
    \label{ffcprw} \label{ffcpsr}
 \end{description}
 
@@ -3447,7 +3447,7 @@ rows if required) and not the number of table cells.
    type except TBIT or TSTRING.  For this variant, datatype, colnum,
    array and nulval are arrays of the equivalent single-column
    parameter (i.e. \verb+datatype[i]+ is the data type of column
-   \verb+i+). 
+   \verb+i+).
 
    \label{ffpcl} \label{ffpcn} \label{ffpclu} \label{ffpcln}
 
@@ -3469,7 +3469,7 @@ rows if required) and not the number of table cells.
        (fitsfile *fptr, LONGLONG firstrow, LONGLONG nelements, > int *status)
 
   int fits_write_cols / ffpcln
-      (fitsfile *fptr, int ncols, int *datatype, int *colnum, LONGLONG firstrow, 
+      (fitsfile *fptr, int ncols, int *datatype, int *colnum, LONGLONG firstrow,
        LONGLONG nrows, DTYPE **array, DTYPE **nulval, int *status)
 
 \end{verbatim}
@@ -3477,7 +3477,7 @@ rows if required) and not the number of table cells.
 \begin{description}
 \item[2 ] Read elements from an ASCII or binary table column.  The data type
     parameter specifies the data type of the `nulval' and `array'  pointers.
-    The caller is required to allocate the storage of \verb+array+ before calling.  
+    The caller is required to allocate the storage of \verb+array+ before calling.
     Undefined array elements will be returned with a value = *nullval,
     (note that this parameter gives the address of the null value, not the
     null value itself) unless nulval = 0 or *nulval = 0, in which case
@@ -3533,7 +3533,7 @@ rows if required) and not the number of table cells.
       LONGLONG nelements, DTYPE *array, char *nullarray, int *anynul, int *status)
 
   int fits_read_cols / ffgcvn
-      (fitsfile *fptr, int ncols, int *datatype, int *colnum, LONGLONG firstrow, 
+      (fitsfile *fptr, int ncols, int *datatype, int *colnum, LONGLONG firstrow,
        LONGLONG nrows, DTYPE **nulval, DTYPE **array, int **anynul, int *status)
 \end{verbatim}
 
@@ -4491,7 +4491,7 @@ The inrec string could be just the 8-char keyword name, or the entire
 appended to the translated keyword name.
 
 Upon return, outrec will have the converted string, starting from the
-pattern[i][1] pattern and applying the numerical substitutions as 
+pattern[i][1] pattern and applying the numerical substitutions as
 described above. If the output pattern is "--" then the resulting
 outrec will be "-KEYNAME", which may indicate to the calling
 routine that KEYNAME is to be deleted.
@@ -5914,18 +5914,18 @@ the 'exists' parameter will have 1 of the 4 following values:
 \begin{description}
 \item[10 ] Wrapper functions for global initialization and cleanup of the libcurl library used
    when accessing files with the HTTPS or FTPS protocols.  If an HTTPS/FTPS file transfer is to
-   be performed, it is recommended that you call the init function once near the start of your 
+   be performed, it is recommended that you call the init function once near the start of your
    program before any file\_open calls, and before creating any threads. The cleanup function
-   should be called after all HTTPS/FTPS file accessing is completed, and after all threads are 
+   should be called after all HTTPS/FTPS file accessing is completed, and after all threads are
    completed.  The functions return 0 upon successful initialization and cleanup.  These
-   are NOT THREAD-SAFE.    
+   are NOT THREAD-SAFE.
   \label{ffihtps}
 \end{description}
 
 \begin{verbatim}
   int fits_init_https / ffihtps
       ()
-      
+
   int fits_cleanup_https / ffchtps
       ()
 \end{verbatim}
@@ -5933,7 +5933,7 @@ the 'exists' parameter will have 1 of the 4 following values:
 \subsection{Download Utility Functions}
 
 These routines do not need to be called for normal file accessing. They are
-primarily intended to help with debugging and diagnosing issues which occur 
+primarily intended to help with debugging and diagnosing issues which occur
 during file downloads.  These routines are NOT THREAD-SAFE.
 
 \begin{description}
@@ -5949,7 +5949,7 @@ during file downloads.  These routines are NOT THREAD-SAFE.
 \end{verbatim}
 
 \begin{description}
-\item[2] If `flag' is set to 1, this will display (to stderr) a progress 
+\item[2] If `flag' is set to 1, this will display (to stderr) a progress
   bar during an https file download.  (This is not yet implemented
   for other file transfer protocols.)  `flag' = 0 by default.
  \label{ffshdwn}
@@ -5964,9 +5964,9 @@ during file downloads.  These routines are NOT THREAD-SAFE.
 \item[3] The timeout setting (in seconds) determines the maximum time
   allowed for a net download to complete.  If a download has not finished within
   the allowed time, the file transfer will terminate and the CFITSIO calling
-  function will return with an error.  Use fits\_get\_timeout will see the 
+  function will return with an error.  Use fits\_get\_timeout will see the
   current timeout setting and fits\_set\_timeout to change the setting.  This
-  adjustmant may be particularly useful when having trouble downloading large 
+  adjustmant may be particularly useful when having trouble downloading large
   files over slow connections.
  \label{ffgtmo}
 \end{description}
@@ -5974,7 +5974,7 @@ during file downloads.  These routines are NOT THREAD-SAFE.
 \begin{verbatim}
    int fits_get_timeout / ffgtmo
        ()
-       
+
    int fits_set_timeout / ffstmo
        (int seconds, > int *status)
 \end{verbatim}
@@ -7275,27 +7275,27 @@ parameters used in these routines.
     array elements will be returned with a value = nulval, unless nulval = 0
     (or = ' ' for ffgcvs) in which case no checking for undefined values will
     be performed. The anynul parameter is set to true if any of the returned
-    elements are undefined. 
+    elements are undefined.
 
     For the \verb+_log+ (logical) variant, the C storage type is a
     \verb+char+ single-byte character.  A FITS value of `\verb+T+'rue
-    reads as 1 and `\verb+F+' reads as 0; other non-FITS characters 
+    reads as 1 and `\verb+F+' reads as 0; other non-FITS characters
     are preserved untranslated.
 
     For the \verb+_str+ (string) variant the number
     of elements is the number of strings, and the caller must allocate storage
     for both the array of pointers \verb+array+ and the character array data
-    itself (use \verb+fits_get_col_display_width+ or \verb+fits_get_coltype+ to 
+    itself (use \verb+fits_get_col_display_width+ or \verb+fits_get_coltype+ to
     determine the number of characters).  See section \ref{character-strings}
     (``Dealing with Character Strings'') for more information.  Also, when
-    the \verb+_byt+ variant is used to read a column stored in the file as 
+    the \verb+_byt+ variant is used to read a column stored in the file as
     string data (TFORMn = 'nA'), the subroutine will read the character
     bytes (instead of attempting to perform a numerical conversion as other
     integer variants would do), with no attempt at null termination.
 
     For the \verb+_cmp+ and \verb+_dblcmp+
     (complex and double complex) variants, \verb+nelements+ is the number
-    of numerical pairs; the number of floats or doubles that must be 
+    of numerical pairs; the number of floats or doubles that must be
     pre-allocated is \verb+2*nelements+.
 \label{ffgcvx}
 \end{description}
@@ -7656,7 +7656,7 @@ components, if present, must be given in that order, but the colFilter,
 rowFilter, and binSpec specifiers may follow in any order.  Regardless
 of the order, however, the colFilter specifier, if present, will be
 processed first by CFITSIO, followed by the rowFilter specifier, and
-finally by the binSpec specifier.  
+finally by the binSpec specifier.
 
 Multiple colFilter or rowFilter specifications may appear as separated
 bracketed expressions, in any order.  Multiple colFilter or rowFilter
@@ -7719,27 +7719,27 @@ reading a FITS file with HTTP.
 
 \subsection{Notes about HTTPS and FTPS file access}
 
-CFITSIO depends upon the availability of the libcurl library in order to perform 
+CFITSIO depends upon the availability of the libcurl library in order to perform
 HTTPS/FTPS file access.  (This should be the development version of the library, as
 it contains the curl.h header file required by the CFITSIO code.)   The CFITSIO
-'configure' script will search for this library on your system, and if it finds it 
-it will automatically be incorporated into the build.  
+'configure' script will search for this library on your system, and if it finds it
+it will automatically be incorporated into the build.
 
 Note that if you have this library package on your system, you will also have the 'curl-config'
 executable.  You can run the 'curl-config' executable with various options to learn
 more about the features of your libcurl installation.
 
 If the CFITSIO 'configure' succeeded in finding a usable libcurl, you will see the flag
-'-DCFITSIO\_HAVE\_CURL=1' in the CFITSIO Makefile and in the compilation output.  
-If 'configure' is unable to find a usable libcurl, CFITSIO will still build 
+'-DCFITSIO\_HAVE\_CURL=1' in the CFITSIO Makefile and in the compilation output.
+If 'configure' is unable to find a usable libcurl, CFITSIO will still build
 but it won't have HTTPS/FTPS capability.
 
-The libcurl package is normally included as part of Xcode on Macs.  However on Linux platforms you 
+The libcurl package is normally included as part of Xcode on Macs.  However on Linux platforms you
 may need to manually install it. This can be easily done on Ubuntu Linux using
 the 'apt get' command to retrieve the libcurl4-openssl-dev or the libcurl4-gnutls-dev packages.
 
 When accessing a file with HTTPS or FTPS, the default CFITSIO behavior is to attempt
-to verify both the host name and the SSL certificate.  If it cannot, it will still 
+to verify both the host name and the SSL certificate.  If it cannot, it will still
 perform the file access but will issue a warning to the terminal window.
 
 The user can override this behavior to force CFITSIO to only allow file transfers
@@ -7751,11 +7751,11 @@ setenv CFITSIO\_VERIFY\_HTTPS True
 
 the default setting for this is 'False'.
 
-CFITSIO has 3 functions which apply specifically to HTTPS/FTPS access:  fits\_init\_https, 
-fits\_cleanup\_https, and fits\_verbose\_https. It is recommended that you call the 
-init and cleanup functions near the beginning and end of your program respectively. 
+CFITSIO has 3 functions which apply specifically to HTTPS/FTPS access:  fits\_init\_https,
+fits\_cleanup\_https, and fits\_verbose\_https. It is recommended that you call the
+init and cleanup functions near the beginning and end of your program respectively.
 For more information about these functions, please see the 'FITS File Access Routines'
-section in the preceding chapter ('Specialized CFITSIO Interface Routines'). 
+section in the preceding chapter ('Specialized CFITSIO Interface Routines').
 
 \subsection{Notes about the stream filetype driver}
 
@@ -8597,7 +8597,7 @@ syntax
 \begin{verbatim}
   filename.fits[col *][col -Y][col Z=X+1]
 \end{verbatim}
-would be treated as equivalent to joining the expressions with semicolons, 
+would be treated as equivalent to joining the expressions with semicolons,
 or
 \begin{verbatim}
   filename.fits[col *; -Y;col Z=X+1]
@@ -8747,11 +8747,11 @@ like this,
 Please note that if multiple row filtering expressions are used, it is
 not permitted to also use the \verb+[@filename.txt]+ syntax in any
 of the individual expressions.
-    
+
 
 %% <!-- IMPORTANT NOTE IMPORTANT NOTE IMPORTANT NOTE -->
-%% <!-- If you edit this file then you must also edit 
-%%      the following other locations where calculator 
+%% <!-- If you edit this file then you must also edit
+%%      the following other locations where calculator
 %%      expressions are documented:
 %%         heacore/cfitsio/docs/cfitsio.tex
 %%         heacore/cfitsio/docs/fitsio.tex
@@ -8804,7 +8804,7 @@ log(negative), log10(negative), arccos(.gt. 1), arcsin(.gt. 1).
     "natural log"        log(x)     "common log"           log10(x)
     "error function"     erf(x)     "complement of erf"    erfc(x)
     "gamma function"     gamma(x)
-    "modulus"            x % y      
+    "modulus"            x % y
     "bitwise AND"        x & y      "bitwise OR"           x | y
     "bitwise XOR"        x ^^ y     (bitwise operators are 32-bit int only)
     "random # [0.0,1.0)" random()
@@ -8816,7 +8816,7 @@ log(negative), log10(negative), arccos(.gt. 1), arcsin(.gt. 1).
     "substring"          strmid(s,p,n) "string search"     strstr(s,r)
     "in-range"           (x=a:b)
 \end{verbatim}
-The bitwise operators for AND, OR and XOR operate upon 32-bit integer 
+The bitwise operators for AND, OR and XOR operate upon 32-bit integer
 expressions only.
 
 Three different random number functions are provided: random(), with
@@ -8960,7 +8960,7 @@ usage. Also, the integer to real casts values to double precision:
     wild card. Note that the x represents a  different  number  of  wild
     card  bits  in  each  representation.  All  representations are case
     insensitive.  Although bitmasks may be of arbitrary length and contain
-    a wildcard, they may only be used in logical expressions, unlike 
+    a wildcard, they may only be used in logical expressions, unlike
     integer constants (see above) which may be used in any arithmetic
     expression.
 
@@ -9142,8 +9142,8 @@ usage. Also, the integer to real casts values to double precision:
               COUNT = COUNT{-1} + 1;   # BAD - do not use
 \end{verbatim}
     will not produce an increasing counter.  Such recursive
-    calculations are often not possible with the calculator syntax.  
-    However, for cases where the user wishes a row counter, the special 
+    calculations are often not possible with the calculator syntax.
+    However, for cases where the user wishes a row counter, the special
     variable \verb+#ROW+ can be utilized.
 
 \subsection{Good Time Interval Filtering and Calculation}
@@ -9215,7 +9215,7 @@ usage. Also, the integer to real casts values to double precision:
     list must be separated by good time interval.  The results of
     gtifind() can be used with histogram binning techniques to bin an
     event list by which GTI.
-    
+
 \begin{verbatim}
       gtifind( "gtifile" , expr [, "STARTCOL", "STOPCOL" ] )
 \end{verbatim}
@@ -9273,7 +9273,7 @@ usage. Also, the integer to real casts values to double precision:
     The \verb+#EXPOSURE+ syntax with a leading \verb+#+ ensures that the
     requested values are treated as keywords.  Otherwise, a column
     named EXPOSURE will be created with the (constant) exposure value
-    in each entry.  
+    in each entry.
 
 
 \subsection{Spatial Region Filtering}
@@ -9564,9 +9564,9 @@ so that the histogram will have at least 10 bins along each axis.
 
 Please note that if explicit min and max values (or TLMINn/TLMAXn keywords)
 are not present, then CFITSIO must check every value of the binned quantity
-in advance to determine the binning limits.  This is especially relevant 
+in advance to determine the binning limits.  This is especially relevant
 for binning expressions, which must be evaluated multiple times to determine
-the limits of the expression.  Thus, it is always advisable to specify 
+the limits of the expression.  Thus, it is always advisable to specify
 min and max limits where possible.
 
 A shortcut notation is allowed if all the columns/axes have the same
@@ -9634,16 +9634,16 @@ ignored and may be used to add comments into the file.
 
     [bin pha, gti_num(gtifind())=1:2:1] - a 2-D image, where PHA is the
                                        X axis and the Y axis is an expression
-                                       which evaluates to the GTI number, 
+                                       which evaluates to the GTI number,
                                        as determined using the
                                        GTIFIND() function.
 
     [bin time=0:4000:2000, HR( (LC2/LC1).lt.1.5 ? 1 : 2 )=1:2:1] - a 2-D
                                        histogram which determines the number
                                        of samples in two time bins between 0 and
-                                       4000 and separating hardness ratio, 
+                                       4000 and separating hardness ratio,
                                        evaluated as (LC2/LC1), between less than
-                                       1.5 or greater than 1.5.  The ?: 
+                                       1.5 or greater than 1.5.  The ?:
                                        conditional function is used to decide
                                        less (or greater) than 1.5 and assign
                                        HR bin 1 or 2.
@@ -10107,7 +10107,7 @@ about 40 characters, which leaves enough room for most keyword values.
 CFITSIO returns an error if there is not enough room for both the
 keyword name and the keyword value on the 80-character card, except for
 string-valued keywords which are simply truncated so that the closing
-quote character falls in column 80. A space is also required on either 
+quote character falls in column 80. A space is also required on either
 side of the equal sign.
 
 
@@ -11409,4 +11409,3 @@ improve the readability of their code.
  APPROX_WCS_KEY    506    approximate wcs keyword values were returned
 \end{verbatim}
 \end{document}
-
