@@ -17,7 +17,6 @@
 
 
 
-VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
     false; \
@@ -657,6 +656,7 @@ am__distuninstallcheck_listfiles = $(distuninstallcheck_listfiles) \
 distcleancheck_listfiles = \
   find . \( -type f -a \! \
             \( -name .nfs* -o -name .smb* -o -name .__afs* \) \) -print
+VPATH = $(srcdir) $(srcdir)/docs
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -864,7 +864,7 @@ BISON = bison
 
 # Distribution: ==========================================================
 EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
-	docs licenses \
+	licenses \
 	README.md README.MacOS README.win \
 	cfitsio.pc.cmake cfitsio.pc.in \
 	cfitsio.xcodeproj \
@@ -875,6 +875,9 @@ EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
 	sample.tpl \
 	testf77.out testf77.std \
 	testprog.out testprog.std testprog.tpt \
+	docs/cfitsio.tex \
+	docs/fitsio.tex \
+	docs/quick.tex \
 	utilities/fitsverify.c
 
 # windumpexts.c
@@ -885,11 +888,16 @@ TESTS = run-testprog
 AM_TESTS_ENVIRONMENT = srcdir='$(srcdir)'
 
 # clean: =================================================================
-CLEANFILES = testprog.fit testprog.lis testf77.fit atestfil.fit btestfil.fit y.output
+CLEANFILES = testprog.fit testprog.lis testf77.fit atestfil.fit btestfil.fit y.output \
+	cfitsio.pdf cfitsio.aux cfitsio.log cfitsio.out cfitsio.toc \
+	fitsio.pdf fitsio.aux fitsio.log fitsio.out fitsio.toc \
+	quick.pdf quick.aux quick.log quick.out quick.toc \
+	fpackguide.pdf
+
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .f .lo .log .o .obj .test .test$(EXEEXT) .trs
+.SUFFIXES: .c .f .lo .log .md .o .obj .pdf .test .test$(EXEEXT) .tex .trs
 am--refresh: Makefile
 	@:
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
@@ -2604,6 +2612,18 @@ cfitsioLibObjs:
 
 # Empty rule to prevent GNU Make's builtin from overwriting sample test output
 %.out: %
+
+# Generate .pdf files from .tex
+.tex.pdf:
+	TEXINPUTS="$(srcdir)/docs:$$TEXINPUTS" pdflatex $<
+	TEXINPUTS="$(srcdir)/docs:$$TEXINPUTS" pdflatex $<  # run twice for references
+
+# Generate .pdf files from .md
+.md.pdf:
+	pandoc $< -V linkcolor=blue -o $@
+
+.PHONY: doc
+doc: cfitsio.pdf fitsio.pdf quick.pdf fpackguide.pdf
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
