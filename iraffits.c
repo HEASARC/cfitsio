@@ -1898,12 +1898,8 @@ hputc (
     char squot = 39;
     char line[100];
     char newcom[50];
-    char blank[80];
     char *v, *vp, *v1, *v2, *q1, *q2, *c1, *ve;
-    int lkeyword, lcom, lval, lc, i;
-
-    for (i = 0; i < 80; i++)
-	blank[i] = ' ';
+    int lkeyword, lcom, lval, lc;
 
     /*  find length of keyword and value */
     lkeyword = strlen (keyword);

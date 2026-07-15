@@ -2563,7 +2563,6 @@ static void Do_Offset( ParseData *lParse, Node *this )
    Node *col;
    long fRow, nRowOverlap, nRowReload, rowOffset;
    long nelem, elem, offset, nRealElem;
-   int status;
 
    col       = lParse->Nodes + this->SubNodes[0];
    rowOffset = lParse->Nodes[  this->SubNodes[1] ].value.data.lng;
@@ -2658,22 +2657,22 @@ static void Do_Offset( ParseData *lParse, Node *this )
       switch( this->type ) {
       case BITSTR:
       case STRING:
-	 status = (*lParse->loadData)( lParse, -col->operation, fRow, nRowReload,
+	 (*lParse->loadData)( lParse, -col->operation, fRow, nRowReload,
 				      this->value.data.strptr+offset,
 				      this->value.undef+offset );
 	 break;
       case BOOLEAN:
-	 status = (*lParse->loadData)( lParse, -col->operation, fRow, nRowReload,
+	 (*lParse->loadData)( lParse, -col->operation, fRow, nRowReload,
 				      this->value.data.logptr+offset,
 				      this->value.undef+offset );
 	 break;
       case LONG:
-	 status = (*lParse->loadData)( lParse, -col->operation, fRow, nRowReload,
+	 (*lParse->loadData)( lParse, -col->operation, fRow, nRowReload,
 				      this->value.data.lngptr+offset,
 				      this->value.undef+offset );
 	 break;
       case DOUBLE:
-	 status = (*lParse->loadData)( lParse, -col->operation, fRow, nRowReload,
+	 (*lParse->loadData)( lParse, -col->operation, fRow, nRowReload,
 				      this->value.data.dblptr+offset,
 				      this->value.undef+offset );
 	 break;

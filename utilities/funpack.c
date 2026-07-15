@@ -29,13 +29,10 @@ int main (int argc, char *argv[])
 int fu_get_param (int argc, char *argv[], fpstate *fpptr)
 {
 	int	iarg;
-	char	tile[SZ_STR];
 
         if (fpptr->initialized != FP_INIT_MAGIC) {
             fp_msg ("Error: internal initialization error\n"); exit (-1);
         }
-
-	tile[0] = 0;
 
         /* by default, .fz suffix characters to be deleted from compressed file */
 	fpptr->delete_suffix = 1;

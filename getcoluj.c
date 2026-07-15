@@ -2624,7 +2624,7 @@ int ffgclujj( fitsfile *fptr,   /* I - FITS file pointer                       *
     int tcode, maxelem2, hdutype, xcode, decimals;
     long twidth, incre;
     long ii, xwidth, ntodo;
-    int convert, nulcheck, readcheck = 0;
+    int nulcheck, readcheck = 0;
     LONGLONG repeat, startpos, elemnum, readptr, tnull;
     LONGLONG rowlen, rownum, remain, next, rowincre, maxelem;
     char tform[20];
@@ -2686,8 +2686,6 @@ int ffgclujj( fitsfile *fptr,   /* I - FITS file pointer                       *
 
     else if (tcode == TSTRING && snull[0] == ASCII_NULL_UNDEFINED)
          nulcheck = 0;
-
-    convert = 1;
 
     /*---------------------------------------------------------------------*/
     /*  Now read the pixels from the FITS column. If the column does not   */

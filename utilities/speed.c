@@ -526,18 +526,12 @@ void printerror( int status)
 int marktime(int *status)
 {
 #ifndef _MSC_VER
-    double telapse;
-    time_t temp;
     struct timeval tv;
-
-    temp = time(0);
 
     /* Since elapsed time is only measured to the nearest second */
     /* keep getting the time until the seconds tick just changes. */
     /* This provides more consistent timing measurements since the */
     /* intervals all start on an integer seconds. */
-
-    telapse = 0.;
 
     scpu = clock();
     start = time(0);

@@ -2724,7 +2724,6 @@ int fits_pixel_filter (PixelFilter * filter, int * status)
    long nelem, naxes[MAXDIMS];
    int col_cnt;
    Node *result;
-   int datatype;
    fitsfile * infptr;
    fitsfile * outfptr;
    char * DEFAULT_TAGS[] = { "X" };
@@ -2852,11 +2851,11 @@ int fits_pixel_filter (PixelFilter * filter, int * status)
    }
 
    switch (bitpix) {
-      case BYTE_IMG: datatype = TLONG; Info.datatype = TBYTE; break;
-      case SHORT_IMG: datatype = TLONG; Info.datatype = TSHORT; break;
-      case LONG_IMG: datatype = TLONG; Info.datatype = TLONG; break;
-      case FLOAT_IMG: datatype = TDOUBLE; Info.datatype = TFLOAT; break;
-      case DOUBLE_IMG: datatype = TDOUBLE; Info.datatype = TDOUBLE; break;
+      case BYTE_IMG: Info.datatype = TBYTE; break;
+      case SHORT_IMG: Info.datatype = TSHORT; break;
+      case LONG_IMG: Info.datatype = TLONG; break;
+      case FLOAT_IMG: Info.datatype = TFLOAT; break;
+      case DOUBLE_IMG: Info.datatype = TDOUBLE; break;
 
       default:
            snprintf(msg, 256,"pixel_filter: unexpected output bitpix %d\n", bitpix);

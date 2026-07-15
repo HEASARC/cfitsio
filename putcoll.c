@@ -216,7 +216,7 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
   The binary table column being written to must have datatype 'B' or 'X'. 
 */
 {
-    LONGLONG offset, bstart, repeat, rowlen, elemnum, rstart, estart, tnull;
+    LONGLONG bstart, repeat, rowlen, elemnum, rstart, estart, tnull;
     long fbyte, lbyte, nbyte, bitloc, ndone;
     long ii, twidth, incre;
     int tcode, descrp, maxelem, hdutype;
@@ -252,9 +252,6 @@ int ffpclx( fitsfile *fptr,  /* I - FITS file pointer                       */
     lbyte = (fbit + nbit + 6) / 8;
     nbyte = lbyte - fbyte +1;
 
-    /* Save the current heapsize; ffgcprll will increment the value if */
-    /* we are writing to a variable length column. */
-    offset = (fptr->Fptr)->heapsize;
 
     /* call ffgcprll in case we are writing beyond the current end of   */
     /* the table; it will allocate more space and shift any following */

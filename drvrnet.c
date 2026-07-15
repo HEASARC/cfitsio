@@ -2705,7 +2705,6 @@ int ftp_compress_open(char *url, int rwmode, int *handle)
 
 static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int *sock)
 {
-  int status;
   int sock1;
   int tmpint;
   char recbuf[MAXLEN];
@@ -2798,7 +2797,7 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
   /* Send the user name and wait for the right response */
   snprintf(tmpstr,MAXLEN,"USER %s\r\n",username);
 
-  status = NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
+  NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
 
   if (ftp_status(*command,"331 ")) {
     ffpmsg ("USER error no 331 seen (ftp_open_network)");
@@ -2809,7 +2808,7 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
   
   /* Send the password and wait for the right response */
   snprintf(tmpstr,MAXLEN,"PASS %s\r\n",password);
-  status = NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
+  NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
   
   if (ftp_status(*command,"230 ")) {
     ffpmsg ("PASS error, no 230 seen (ftp_open_network)");
@@ -2838,7 +2837,7 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
     }
   }
   
-  status = NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
+  NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
   
   if (ftp_status(*command,"250 ")) {
     ffpmsg ("CWD error, no 250 seen (ftp_open_network)");
@@ -2856,7 +2855,7 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
 
   /* Always use binary mode */
   snprintf(tmpstr,MAXLEN,"TYPE I\r\n");
-  status = NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
+  NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
   
   if (ftp_status(*command,"200 ")) {
     ffpmsg ("TYPE I error, 200 not seen (ftp_open_network)");
@@ -2865,7 +2864,7 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
     return (FILE_NOT_OPENED);
   }
  
-  status = NET_SendRaw(*sock,"PASV\r\n",6,NET_DEFAULT);
+  NET_SendRaw(*sock,"PASV\r\n",6,NET_DEFAULT);
 
   if (!(fgets(recbuf,MAXLEN,*command))) {
     ffpmsg ("PASV error (ftp_open)");
@@ -2964,7 +2963,7 @@ static int ftp_open_network(char *filename, FILE **ftpfile, FILE **command, int 
 
     /* Send the retrieve command */
     snprintf(tmpstr,MAXLEN,"RETR %s\r\n",newfn);
-    status = NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
+    NET_SendRaw(*sock,tmpstr,strlen(tmpstr),NET_DEFAULT);
 
     if (ftp_status(*command,"150 ")) {
       fclose(*ftpfile);
@@ -4208,13 +4207,12 @@ int root_size(int handle, LONGLONG *filesize)
 
   int sock;
   int offset;
-  int status;
   int op;
 
   sock = handleTable[handle].sock;
 
-  status = root_send_buffer(sock,ROOTD_STAT,NULL,0);
-  status = root_recv_buffer(sock,&op,(char *)&offset, 4);
+  root_send_buffer(sock,ROOTD_STAT,NULL,0);
+  root_recv_buffer(sock,&op,(char *)&offset, 4);
   *filesize = (LONGLONG) ntohl(offset);
   
   return(0);
@@ -4226,11 +4224,10 @@ int root_close(int handle)
 */
 {
 
-  int status;
   int sock;
 
   sock = handleTable[handle].sock;
-  status = root_send_buffer(sock,ROOTD_CLOSE,NULL,0);
+  root_send_buffer(sock,ROOTD_CLOSE,NULL,0);
   close(sock);
   handleTable[handle].sock = 0;
   return(0);
@@ -4241,11 +4238,10 @@ int root_flush(int handle)
   flush the file
 */
 {
-  int status;
   int sock;
 
   sock = handleTable[handle].sock;
-  status = root_send_buffer(sock,ROOTD_FLUSH,NULL,0);
+  root_send_buffer(sock,ROOTD_FLUSH,NULL,0);
   return(0);
 }
 /*--------------------------------------------------------------------------*/

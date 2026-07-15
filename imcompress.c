@@ -4711,7 +4711,6 @@ int fits_read_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer   
     long tfpixel[MAX_COMPRESS_DIM], tlpixel[MAX_COMPRESS_DIM];
     long rowdim[MAX_COMPRESS_DIM], offset[MAX_COMPRESS_DIM],ntemp;
     long fpixel[MAX_COMPRESS_DIM], lpixel[MAX_COMPRESS_DIM];
-    long inc[MAX_COMPRESS_DIM];
     long i5, i4, i3, i2, i1, i0, irow;
     int ii, ndim, tilenul;
     void *buffer;
@@ -4846,13 +4845,11 @@ int fits_read_write_compressed_img(fitsfile *fptr,   /* I - FITS file pointer   
         {
            fpixel[ii] = (long) infpixel[ii];
            lpixel[ii] = (long) inlpixel[ii];
-           inc[ii]    = ininc[ii];
         }
         else
         {
            fpixel[ii] = (long) inlpixel[ii];
            lpixel[ii] = (long) infpixel[ii];
-           inc[ii]    = -ininc[ii];
         }
 
         /* calc number of tiles in each dimension, and tile containing */
@@ -6921,10 +6918,6 @@ int imcomp_test_overlap (
                                    /* output image, allowing for inc factor */
     long tiledim[MAX_COMPRESS_DIM]; /* product of preceding dimensions in the */
                                  /* tile, array;  inc factor is not relevant */
-    long imgfpix[MAX_COMPRESS_DIM]; /* 1st img pix overlapping tile: 0 base, */
-                                    /*  allowing for inc factor */
-    long imglpix[MAX_COMPRESS_DIM]; /* last img pix overlapping tile 0 base, */
-                                    /*  allowing for inc factor */
     long tilefpix[MAX_COMPRESS_DIM]; /* 1st tile pix overlapping img 0 base, */
                                     /*  allowing for inc factor */
     long inc[MAX_COMPRESS_DIM]; /* local copy of input ininc */
@@ -6982,9 +6975,6 @@ int imcomp_test_overlap (
            if (tf > tl)
              return(0);  /* no overlapping pixels */
         }
-        imgfpix[ii] = maxvalue((tf - fpixel[ii] +1) / labs(inc[ii]) , 0);
-        imglpix[ii] = minvalue((tl - fpixel[ii] +1) / labs(inc[ii]) ,
-                               imgdim[ii] - 1);
 
         /* first pixel in the tile that overlaps with the image (0 base) */
         tilefpix[ii] = maxvalue(fpixel[ii] - tfpixel[ii], 0);
@@ -8703,7 +8693,7 @@ int fits_uncompress_table(fitsfile *infptr, fitsfile *outfptr, int *status)
     char *cm_buffer;   /* memory buffer for the transposed, Column-Major, chunk of the table */ 
     char *rm_buffer;   /* memory buffer for the original, Row-Major, chunk of the table */ 
     LONGLONG nrows, rmajor_colwidth[999], rmajor_colstart[1000], cmajor_colstart[1000];
-    LONGLONG cmajor_repeat[999], rmajor_repeat[999], cmajor_bytespan[999], kk;
+    LONGLONG rmajor_repeat[999], kk;
     LONGLONG headstart, datastart = 0, dataend, rowsremain, *descript, *qdescript = 0;
     LONGLONG rowstart, cvlalen, cvlastart, vlalen, vlastart;
     long repeat, width, vla_repeat, vla_address, rowspertile, ntile;
@@ -8930,16 +8920,12 @@ int fits_uncompress_table(fitsfile *infptr, fitsfile *outfptr, int *status)
         cmajor_colstart[0] = 0;
         for (ii = 0; ii < ncols; ii++) {
 
-	    cmajor_repeat[ii] = rmajor_repeat[ii] * rowspertile;
-
 	    /* starting offset of each field in the column-major table */
             if (coltype[ii] > 0) {  /* normal fixed length column */
 	          cmajor_colstart[ii + 1] = cmajor_colstart[ii] + rmajor_colwidth[ii] * rowspertile;
 	    } else { /* VLA column: reserve space for the 2nd set of Q pointers */
 	          cmajor_colstart[ii + 1] = cmajor_colstart[ii] + (rmajor_colwidth[ii] + 16) * rowspertile;
 	    }
-	    /* length of each sequence of bytes, after sorting them in signicant order */
-	    cmajor_bytespan[ii] = (rmajor_repeat[ii] * rowspertile);
 
 	    /* starting offset of each field in the  row-major table */
 	    rmajor_colstart[ii + 1] = rmajor_colstart[ii] + rmajor_colwidth[ii];

@@ -1307,7 +1307,6 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
   int memberPosition = 0;
   int grptype        = 0;
   int hdutype        = 0;
-  int useLocation    = 0;
   int nkeys          = 6;
   int found;
   int i;
@@ -1457,9 +1456,6 @@ int ffgtam(fitsfile *gfptr,   /* FITS file pointer to grouping table HDU     */
 
 	  */
 
-	  /* set the USELOCATION flag to true */
-
-	  useLocation = 1;
 
 	  /* 
 	     get the location, access type and iostate (RO, RW) of the
@@ -5394,7 +5390,9 @@ int fits_url2path(char *inpath,  /* input file path string  */
    */
 {
   char buff[FLEN_FILENAME];
+#if defined(WINNT) || defined(__WINNT__) || defined(MSDOS) || defined(__WIN32__) || defined(WIN32) || defined(VMS) || defined(vms) || defined(__vms) || defined(macintosh)
   int absolute;
+#endif
 
 #if defined(MSDOS) || defined(__WIN32__) || defined(WIN32)
   char *tmpStr;
@@ -5432,10 +5430,12 @@ int fits_url2path(char *inpath,  /* input file path string  */
     see if the URL is given as absolute w.r.t. the "local" file system
   */
 
-  if(buff[0] == '/') 
+#if defined(WINNT) || defined(__WINNT__) || defined(MSDOS) || defined(__WIN32__) || defined(WIN32) || defined(VMS) || defined(vms) || defined(__vms) || defined(macintosh)
+  if(buff[0] == '/')
     absolute = 1;
   else
     absolute = 0;
+#endif
 
 #if defined(WINNT) || defined(__WINNT__)
 

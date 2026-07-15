@@ -1967,7 +1967,6 @@ int ffccls(fitsfile *infptr,    /* I - FITS file pointer to input file  */
     long tfields, repeat, orepeat, width, owidth;
     char keyname[FLEN_KEYWORD], ttype[FLEN_VALUE], tform[FLEN_VALUE];
     char ttype_comm[FLEN_COMMENT],tform_comm[FLEN_COMMENT];
-    int typecodes[1000];
     char *ttypes[1000], *tforms[1000], keyarr[1001][FLEN_CARD];
     int ikey = 0;
     int icol, incol1, outcol1;
@@ -2045,8 +2044,6 @@ int ffccls(fitsfile *infptr,    /* I - FITS file pointer to input file  */
 	  ffpmsg("Variable-length columns are not supported (ffccls)");
 	  return(*status = BAD_TFORM);
 	}
-
-      typecodes[icol] = typecode;
 
       tstatus = 0;
       ffkeyn("TTYPE", incol1, keyname, &tstatus);

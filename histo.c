@@ -1802,7 +1802,6 @@ int fits_calc_binningde(
     int datatype, imin, imax, ibin,  use_datamax = 0;
     long repeat1;
     double datamin, datamax;
-    int ncols;
 
     /* check inputs */
     
@@ -1934,7 +1933,6 @@ int fits_calc_binningde(
 	fits_get_eqcoltype(fptr, colnum[ii], &datatype,
 			   &repeat1, NULL, status);
 	
-	ncols = 1; /* Require only one iterator column, the actual column */
 
       } else { /* column expression: use parse to determine datatype and dimensions */
 
@@ -1959,7 +1957,6 @@ int fits_calc_binningde(
 
 	/* We require lParse.nCols columns to be read from input,
 	   plus one for the Temporary calculator result */
-	ncols = lParse.nCols + 1;
 	ffcprs( &lParse );
       }
 
@@ -2503,7 +2500,7 @@ int fits_make_hist(fitsfile *fptr, /* IO - pointer to table with X and Y cols; *
                              /* is equal to NULL.                           */
     int *status)
 {		  
-  double amind[4], amaxd[4], binsized[4], weightd;
+  double amind[4], amaxd[4], binsized[4];
 
   /* Copy single precision values into double precision */
   if (*status == 0) {
@@ -2515,7 +2512,6 @@ int fits_make_hist(fitsfile *fptr, /* IO - pointer to table with X and Y cols; *
       binsized[i] = (double) binsize[i];
     }
 
-    weightd = (double) weight;
 
     fits_make_histd(fptr, histptr, bitpix, naxis, naxes, colnum,
 		    amind, amaxd, binsized, weight, wtcolnum, recip,
