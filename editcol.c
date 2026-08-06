@@ -1464,6 +1464,8 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
       colptr += (colnum - 1);
 
       firstcol = colptr->tbcol + (repeat * width);  /* insert position */
+      if (datacode == TBIT)  /* repeat counts bits, not bytes */
+         firstcol = colptr->tbcol + ((repeat + 7) / 8);
 
       /* insert delbyte bytes in every row, at byte position firstcol */
       ffcins(fptr, naxis1, naxis2, delbyte, firstcol, status);
@@ -1475,6 +1477,8 @@ int ffmvec(fitsfile *fptr,  /* I - FITS file pointer                        */
       freespace = ((size + 2879) / 2880) * 2880 - size - ((LONGLONG)delbyte * naxis2);
       nblock = (long) (freespace / 2880);   /* number of empty blocks to delete */
       firstcol = colptr->tbcol + (newveclen * width);  /* delete position */
+      if (datacode == TBIT)  /* newveclen counts bits, not bytes */
+         firstcol = colptr->tbcol + ((newveclen + 7) / 8);
 
       /* delete elements from the vector */
       ffcdel(fptr, naxis1, naxis2, -delbyte, firstcol, status);
