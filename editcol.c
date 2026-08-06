@@ -789,6 +789,7 @@ int ffrwrg(
 */
     char *next;
     long minval, maxval;
+    int anyrange;    /* did the parse loop consume any range token? */
 
     if (*status > 0)
         return(*status);
@@ -801,10 +802,13 @@ int ffrwrg(
 
     next = rowlist;
     *numranges = 0;
+    anyrange = 0;
 
     while (*next == ' ')next++;   /* skip spaces */
    
     while (*next != '\0') {
+
+      anyrange = 1;
 
       /* find min value of next range; *next must be '-' or a digit */
       if (*next == '-') {
@@ -891,7 +895,7 @@ int ffrwrg(
       }
     }
 
-    if (*numranges == 0) {  /* a null string was entered */
+    if (*numranges == 0 && !anyrange) {  /* a null string was entered */
          minrow[0] = 1;
          maxrow[0] = (long) maxrows;
          *numranges = 1;
@@ -928,6 +932,7 @@ int ffrwrgll(
     char *next;
     LONGLONG minval, maxval;
     double dvalue;
+    int anyrange;    /* did the parse loop consume any range token? */
 
     if (*status > 0)
         return(*status);
@@ -940,10 +945,13 @@ int ffrwrgll(
 
     next = rowlist;
     *numranges = 0;
+    anyrange = 0;
 
     while (*next == ' ')next++;   /* skip spaces */
    
     while (*next != '\0') {
+
+      anyrange = 1;
 
       /* find min value of next range; *next must be '-' or a digit */
       if (*next == '-') {
@@ -1042,7 +1050,7 @@ int ffrwrgll(
       }
     }
 
-    if (*numranges == 0) {  /* a null string was entered */
+    if (*numranges == 0 && !anyrange) {  /* a null string was entered */
          minrow[0] = 1;
          maxrow[0] = maxrows;
          *numranges = 1;
