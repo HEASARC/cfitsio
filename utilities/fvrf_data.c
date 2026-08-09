@@ -835,10 +835,13 @@ void test_agap(fitsfile *infits, 	/* input fits file   */
 	    ntodo = i; 
         
         p = data;
-        if(fits_read_tblbytes(infits,firstrow,1, rowlen*ntodo, 
-	    data, &status)){  
+        if(fits_read_tblbytes(infits,firstrow,1, rowlen*ntodo,
+	    data, &status)){
 	    wrtferr(out,"",&status,1);
-        } 
+	    /* the rows were not read, so there is nothing to scan: going on
+	       would report on whatever the buffer happened to hold */
+	    break;
+        }
         for (j = 0; j<rowlen*ntodo; j++ ) { 
             if(!isascii(*p))  {
 	        if(!nerr) { 

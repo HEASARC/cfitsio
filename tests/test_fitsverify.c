@@ -452,6 +452,84 @@ test_ascii_column_template(void)
 	check_ascii_table(0, 0, "A20");
 }
 
+/*--------------------------------------------------------------------------
+ * test_agap: reading a truncated table (utilities/fvrf_data.c)
+ *------------------------------------------------------------------------*/
+
+static int
+report_has(const char *needle)
+{
+	return count_in_report(needle) > 0;
+}
+
+/*
+ * A 500 row ASCII table.  The first row holds bytes that are not ASCII text,
+ * so the data scan has something to find; every other row is ordinary text.
+ * If truncate_it is set the last 2880 byte block is dropped, which cuts the
+ * table data short while the header still claims all 500 rows.
+ */
+static void
+write_ascii_data_table(int truncate_it)
+{
+	long n;
+	FILE *fp = open_testfile(&n);
+	long datastart;
+	long i;
+
+	put_card(fp, &n, "XTENSION= 'TABLE   '");
+	put_card(fp, &n, "BITPIX  =                    8");
+	put_card(fp, &n, "NAXIS   =                    2");
+	put_card(fp, &n, "NAXIS1  =                   10");
+	put_card(fp, &n, "NAXIS2  =                  500");
+	put_card(fp, &n, "PCOUNT  =                    0");
+	put_card(fp, &n, "GCOUNT  =                    1");
+	put_card(fp, &n, "TFIELDS =                    1");
+	put_card(fp, &n, "TTYPE1  = 'COL1    '");
+	put_card(fp, &n, "TBCOL1  =                    1");
+	put_card(fp, &n, "TFORM1  = 'A10     '");
+	put_card(fp, &n, "END");
+	pad_block(fp, &n);
+
+	datastart = n;
+	put_bytes(fp, &n, 0xff, 10);
+	for (i = 10; i < 500 * 10; i++) {
+		fputc('0' + (int)(i % 10), fp);
+		n++;
+	}
+	close_testfile(fp, &n);
+
+	if (truncate_it) {
+		fail_if(n - 2880 <= datastart);
+		fail_if(truncate(TESTFILE, n - 2880) != 0);
+	}
+}
+
+static void
+test_truncated_ascii_table(void)
+{
+	/*
+	 * Control: the whole file is there, so the bad bytes in row 1 are
+	 * read and have to be reported, all ten of them.
+	 */
+	write_ascii_data_table(0);
+	check_no_crash("an ASCII table holding non-text bytes");
+	fail_if(!report_has("contains non-ASCII characters."));
+	fail_if(!report_has(
+	    "This ASCII table contains 10 non-ASCII-text characters"));
+
+	/*
+	 * Truncated: the rows cannot be read at all, so the data scan has
+	 * nothing to say about them.  test_agap used to report the failed
+	 * read and then scan the buffer anyway, describing memory rather
+	 * than the file.
+	 */
+	write_ascii_data_table(1);
+	fail_if(check_no_crash("a truncated ASCII table") == 0);
+	if (report_has("non-ASCII"))
+		fprintf(stderr, "data scanned past the end of the file\n");
+	fail_if(report_has("non-ASCII"));
+}
+
 int
 main(void)
 {
@@ -468,6 +546,7 @@ main(void)
 	test_bit_column_report();
 	test_first_card_keyword_index();
 	test_ascii_column_template();
+	test_truncated_ascii_table();
 
 	remove(TESTFILE);
 	remove(REPORT);
