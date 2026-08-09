@@ -646,6 +646,88 @@ test_error_stack_report(void)
 	fail_if(count_lines_with(lines, nlines, "second message") != 1);
 }
 
+/*--------------------------------------------------------------------------
+ * test_bin_ext and print_summary: indexing naxes[] (utilities/fvrf_head.c)
+ *------------------------------------------------------------------------*/
+
+/*
+ * An image extension whose XTENSION value starts with, but is not,
+ * BINTABLE.  CFITSIO compares the whole value string and reads it as an
+ * image; init_hdu compares the raw card text with strncmp(p,"BINTABLE",8)
+ * and hands it to the binary table checks, carrying an image's NAXIS.
+ * naxis1 < 0 asks for NAXIS = 0.
+ */
+static void
+write_image_named_bintable(long naxis1)
+{
+	long n;
+	FILE *fp = open_testfile(&n);
+	char card[81];
+
+	put_card(fp, &n, "XTENSION= 'BINTABLEX'");
+	put_card(fp, &n, "BITPIX  =                    8");
+	if (naxis1 < 0) {
+		put_card(fp, &n, "NAXIS   =                    0");
+	} else {
+		put_card(fp, &n, "NAXIS   =                    1");
+		snprintf(card, sizeof(card), "NAXIS1  = %20ld", naxis1);
+		put_card(fp, &n, card);
+	}
+	put_card(fp, &n, "PCOUNT  =                    0");
+	put_card(fp, &n, "GCOUNT  =                    1");
+	put_card(fp, &n, "END");
+	pad_block(fp, &n);
+
+	if (naxis1 > 0)
+		put_bytes(fp, &n, 'x', naxis1);
+	close_testfile(fp, &n);
+}
+
+/* A real tile compressed image, which is a binary table on disk. */
+static void
+write_compressed_image(void)
+{
+	fitsfile *fptr;
+	int status = 0;
+	long naxes[2] = { 8, 4 };
+	short pix[32];
+	int i;
+
+	remove(TESTFILE);
+	fits_create_file(&fptr, TESTFILE, &status);
+	fits_create_img(fptr, SHORT_IMG, 0, NULL, &status);
+	fits_set_compression_type(fptr, RICE_1, &status);
+	fits_create_img(fptr, SHORT_IMG, 2, naxes, &status);
+	for (i = 0; i < 32; i++)
+		pix[i] = (short)i;
+	fits_write_img(fptr, TSHORT, 1, 32, pix, &status);
+	fits_close_file(fptr, &status);
+	fail_if(status != 0);
+}
+
+static void
+test_binary_table_naxes(void)
+{
+	/*
+	 * naxes holds exactly naxis elements, and is left unset when NAXIS is
+	 * 0 - in which case it used to keep the previous HDU's freed pointer,
+	 * since the FitsHdu is reused across the HDU loop.
+	 */
+	write_image_named_bintable(-1);
+	check_no_crash("a NAXIS = 0 extension named BINTABLEX");
+
+	write_image_named_bintable(10);
+	check_no_crash("a NAXIS = 1 extension named BINTABLEX");
+
+	/*
+	 * A genuine tile compressed image must still be recognised and
+	 * verified as the binary table it is.
+	 */
+	write_compressed_image();
+	fail_if(check_no_crash("a tile compressed image") != 0);
+	fail_if(!report_has("Binary Table"));
+}
+
 int
 main(void)
 {
@@ -664,6 +746,7 @@ main(void)
 	test_first_card_keyword_index();
 	test_ascii_column_template();
 	test_truncated_ascii_table();
+	test_binary_table_naxes();
 
 	remove(TESTFILE);
 	remove(REPORT);
