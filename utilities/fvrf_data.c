@@ -542,8 +542,12 @@ data_end:
 
     /* bit column working space */
     static unsigned char bdata;
+    /* trailing text of the bit justification report, appended after however
+       many column bytes fit in errmes */
+#define NOTLEFTJUST "is not left justified."
+    size_t nchar;
 
-    int i; 
+    int i;
     long j,k,l;
     long nelem;
 
@@ -589,14 +593,25 @@ data_end:
                j = (k+1)*repeat[i];
                bdata = (unsigned char)data[j]; 
                if( bdata & usrpt->mask[i] ) { 
-                  sprintf(errmes, 
-                    "Row #%ld, and Column #%d: X vector ", firstn+k, 
-                      fits_iter_get_colnum(&(iter_col[i]))); 
+                  snprintf(errmes, sizeof(errmes),
+                    "Row #%ld, and Column #%d: X vector ", firstn+k,
+                      fits_iter_get_colnum(&(iter_col[i])));
+                  nchar = strlen(errmes);
                   for (l = 1; l<= repeat[i]; l++) {
-                     sprintf(comm, "0x%02x ", (unsigned char) data[k*repeat[i]+l]);
-                     strcat(errmes,comm); 
+                     /* repeat[i] is the width of the column in bytes and can
+                        be arbitrarily large, so stop before errmes fills up,
+                        leaving room for the elision and the trailing text */
+                     if(nchar + 5 + 4 + strlen(NOTLEFTJUST) >= sizeof(errmes)) {
+                        strcpy(errmes+nchar,"... ");
+                        nchar += 4;
+                        break;
+                     }
+                     snprintf(comm, sizeof(comm), "0x%02x ",
+                        (unsigned char) data[k*repeat[i]+l]);
+                     strcpy(errmes+nchar,comm);
+                     nchar += strlen(comm);
                   }
-                  strcat(errmes,"is not left justified."); 
+                  strcpy(errmes+nchar,NOTLEFTJUST);
                   wrterr(usrpt->out,errmes,2);
                   strcpy(errmes,
           "             (Other rows may have errors).");

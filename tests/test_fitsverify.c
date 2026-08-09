@@ -255,6 +255,92 @@ test_tform_substring_width(void)
 	}
 }
 
+/*--------------------------------------------------------------------------
+ * iterdata: the bit column justification report (utilities/fvrf_data.c)
+ *------------------------------------------------------------------------*/
+
+/* Count occurrences of a string in the report. */
+static int
+count_in_report(const char *needle)
+{
+	FILE *fp = fopen(REPORT, "r");
+	char line[4096];
+	int nfound = 0;
+
+	fail_if(fp == NULL);
+	while (fgets(line, sizeof(line), fp) != NULL) {
+		char *p = line;
+
+		while ((p = strstr(p, needle)) != NULL) {
+			nfound++;
+			p += strlen(needle);
+		}
+	}
+	fclose(fp);
+	return nfound;
+}
+
+/*
+ * A binary table holding a single X column of nbits bits.  nbits is chosen
+ * by the caller so that it is not a multiple of 8, which leaves fill bits in
+ * the last byte; the data is all ones, so those fill bits are set and the
+ * "not left justified" report is produced.
+ */
+static void
+write_bit_column_table(int nbits)
+{
+	long n;
+	FILE *fp = open_testfile(&n);
+	long nbytes = (nbits + 7) / 8;
+	char card[81];
+
+	put_card(fp, &n, "XTENSION= 'BINTABLE'");
+	put_card(fp, &n, "BITPIX  =                    8");
+	put_card(fp, &n, "NAXIS   =                    2");
+	snprintf(card, sizeof(card), "NAXIS1  = %20ld", nbytes);
+	put_card(fp, &n, card);
+	put_card(fp, &n, "NAXIS2  =                    1");
+	put_card(fp, &n, "PCOUNT  =                    0");
+	put_card(fp, &n, "GCOUNT  =                    1");
+	put_card(fp, &n, "TFIELDS =                    1");
+	snprintf(card, sizeof(card), "TFORM1  = '%dX'", nbits);
+	put_card(fp, &n, card);
+	put_card(fp, &n, "TTYPE1  = 'BITS    '");
+	put_card(fp, &n, "END");
+	pad_block(fp, &n);
+
+	put_bytes(fp, &n, 0xff, nbytes);
+	close_testfile(fp, &n);
+}
+
+static void
+check_bit_column(int nbits)
+{
+	char what[64];
+
+	snprintf(what, sizeof(what), "a %dX column", nbits);
+	write_bit_column_table(nbits);
+	check_no_crash(what);
+
+	fail_if(count_in_report("is not left justified.") != 1);
+	/*
+	 * errmes is 256 bytes and each element costs five of them, so a
+	 * bounded report can never hold much more than fifty.  An unbounded
+	 * one prints every byte of the column.
+	 */
+	fail_if(count_in_report("0x") > 64);
+}
+
+static void
+test_bit_column_report(void)
+{
+	/* 100 bits in a 13 byte row: the report fits in errmes. */
+	check_bit_column(100);
+
+	/* 3996 bits in a 500 byte row: it does not. */
+	check_bit_column(3996);
+}
+
 int
 main(void)
 {
@@ -268,6 +354,7 @@ main(void)
 	}
 
 	test_tform_substring_width();
+	test_bit_column_report();
 
 	remove(TESTFILE);
 	remove(REPORT);
