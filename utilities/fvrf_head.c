@@ -195,7 +195,7 @@ void init_hdu(fitsfile *infits, 	/* input fits file   */
     LONGLONG lv,lu=0L; 
     
 
-    FitsKey tmpkey;
+    FitsKey tmpkey = {"", UNKNOWN, "", 0, 0};
 
     hduptr->hdunum = hdunum;
     hduptr->hdutype = hdutype;
@@ -251,6 +251,7 @@ void init_hdu(fitsfile *infits, 	/* input fits file   */
     }
 
     /* Parse the XTENSION/SIMPLEX  keyword */ 
+    tmpkey.kindex = 1;
     fits_parse_card(out, 1, cards[0], tmpkey.kname, 
         &(tmpkey.ktype), tmpkey.kvalue,comm); 
     if( *(tmpkey.kvalue) == ' ') {
@@ -327,6 +328,7 @@ void init_hdu(fitsfile *infits, 	/* input fits file   */
 
     /* Parse the keywords NAXISn */ 
     for (j = 3; j < 3 + hduptr->naxis; j++){  
+        tmpkey.kindex = 1+j;
         fits_parse_card(out, 1+j,cards[j], tmpkey.kname, 
 	    &(tmpkey.ktype), tmpkey.kvalue,comm); 
         p = tmpkey.kname+5; 
@@ -416,6 +418,7 @@ void init_hdu(fitsfile *infits, 	/* input fits file   */
     hduptr->tkeys = i; 
 
     /* parse the END key */ 
+    tmpkey.kindex = m+1;
     fits_parse_card(out,m+1,cards[hduptr->nkeys-1],
          tmpkey.kname,&(tmpkey.ktype),tmpkey.kvalue,comm) ; 
     
