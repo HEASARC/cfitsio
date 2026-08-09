@@ -530,10 +530,127 @@ test_truncated_ascii_table(void)
 	fail_if(report_has("non-ASCII"));
 }
 
+/*--------------------------------------------------------------------------
+ * wrtserr: dumping the CFITSIO error stack (utilities/fvrf_misc.c)
+ *------------------------------------------------------------------------*/
+
+/*
+ * Leave a known pattern on the stack where the next call's locals will sit,
+ * so that a read past the end of one of them shows up in the report instead
+ * of depending on what happened to be there.
+ */
+static void
+poison_stack(void)
+{
+	volatile char junk[8192];
+	size_t i;
+
+	for (i = 0; i < sizeof(junk); i++)
+		junk[i] = 'Z';
+}
+
+/* Dump the whole error stack through wrtserr into the report. */
+static void
+dump_error_stack(void)
+{
+	FILE *out = fopen(REPORT, "w");
+	int status = 0;
+
+	fail_if(out == NULL);
+	reset_err_wrn();
+	poison_stack();
+	wrtserr(out, "test: ", &status, 1);
+	fail_if(status != 0);
+	fclose(out);
+}
+
+/* Read the report back, one line at a time, newline stripped. */
+static int
+read_report_lines(char lines[][256], int maxlines)
+{
+	FILE *fp = fopen(REPORT, "r");
+	int n = 0;
+
+	fail_if(fp == NULL);
+	while (n < maxlines && fgets(lines[n], 256, fp) != NULL) {
+		size_t len = strlen(lines[n]);
+
+		while (len > 0 && (lines[n][len - 1] == '\n' ||
+				   lines[n][len - 1] == '\r'))
+			lines[n][--len] = '\0';
+		n++;
+	}
+	fclose(fp);
+	return n;
+}
+
+static int
+count_lines_with(char lines[][256], int nlines, const char *needle)
+{
+	int i, n = 0;
+
+	for (i = 0; i < nlines; i++)
+		if (strstr(lines[i], needle) != NULL)
+			n++;
+	return n;
+}
+
+static void
+test_error_stack_report(void)
+{
+	char lines[64][256];
+	char msg[FLEN_ERRMSG];
+	int nlines, i;
+
+	/* The ordinary case: a couple of messages, printed in order. */
+	fits_clear_errmsg();
+	fits_write_errmsg("first message");
+	fits_write_errmsg("second message");
+	dump_error_stack();
+	nlines = read_report_lines(lines, 64);
+	fail_if(count_lines_with(lines, nlines, "first message") != 1);
+	fail_if(count_lines_with(lines, nlines, "second message") != 1);
+	fail_if(count_lines_with(lines, nlines, "ZZZ") != 0);
+
+	/*
+	 * More messages than wrtserr keeps rows for.  It stops reading at 20
+	 * and used to print one row past the end of its array.  CFITSIO's own
+	 * stack holds up to 25 (errmsgsiz), so this is reachable.
+	 */
+	fits_clear_errmsg();
+	for (i = 0; i < 25; i++) {
+		snprintf(msg, sizeof(msg), "wrtserr test message %02d", i);
+		fits_write_errmsg(msg);
+	}
+	dump_error_stack();
+	nlines = read_report_lines(lines, 64);
+	fail_if(count_lines_with(lines, nlines, "wrtserr test message") != 20);
+	fail_if(count_lines_with(lines, nlines, "ZZZ") != 0);
+	/* The report ends with the blank line a stack dump always emits. */
+	fail_if(nlines < 2);
+	fail_if(strspn(lines[nlines - 1], " \t") != strlen(lines[nlines - 1]));
+
+	/*
+	 * A message of the maximum length CFITSIO can hand back.  It used to
+	 * be written into an 80 byte row, so its terminator landed in the
+	 * next row and truncated the message stored there.
+	 */
+	fits_clear_errmsg();
+	memset(msg, 'a', FLEN_ERRMSG - 1);
+	msg[FLEN_ERRMSG - 1] = '\0';
+	fits_write_errmsg(msg);
+	fits_write_errmsg("second message");
+	dump_error_stack();
+	nlines = read_report_lines(lines, 64);
+	fail_if(count_lines_with(lines, nlines, "aaaaaaaaaa") != 1);
+	fail_if(count_lines_with(lines, nlines, "second message") != 1);
+}
+
 int
 main(void)
 {
 	test_complex_keyword_values();
+	test_error_stack_report();
 
 	if (access(FITSVERIFY, X_OK) != 0) {
 		fprintf(stderr,
