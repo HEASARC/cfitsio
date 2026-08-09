@@ -71,8 +71,8 @@ typedef struct {
 
 #include "fitsio2.h"
 
-static void start_outputing_bits(Buffer *buffer);
-static int done_outputing_bits(Buffer *buffer);
+static void start_outputting_bits(Buffer *buffer);
+static int done_outputting_bits(Buffer *buffer);
 static int output_nbits(Buffer *buffer, int bits, int n);
 
 /*  only used for diagnoistics
@@ -165,7 +165,7 @@ unsigned int *diff;
     /*
      * Code in blocks of nblock pixels
      */
-    start_outputing_bits(buffer);
+    start_outputting_bits(buffer);
 
     /* write out first int value to the first 4 bytes of the buffer */
     if (output_nbits(buffer, a[0], 32) == EOF) {
@@ -299,7 +299,7 @@ unsigned int *diff;
 	    buffer->bits_to_go = lbits_to_go;
 	}
     }
-    done_outputing_bits(buffer);
+    done_outputting_bits(buffer);
     free(diff);
     /*
      * return number of bytes used
@@ -393,7 +393,7 @@ unsigned int *diff;
     /*
      * Code in blocks of nblock pixels
      */
-    start_outputing_bits(buffer);
+    start_outputting_bits(buffer);
 
     /* write out first short value to the first 2 bytes of the buffer */
     if (output_nbits(buffer, a[0], 16) == EOF) {
@@ -528,7 +528,7 @@ unsigned int *diff;
 	    buffer->bits_to_go = lbits_to_go;
 	}
     }
-    done_outputing_bits(buffer);
+    done_outputting_bits(buffer);
     free(diff);
     /*
      * return number of bytes used
@@ -621,7 +621,7 @@ unsigned int *diff;
     /*
      * Code in blocks of nblock pixels
      */
-    start_outputing_bits(buffer);
+    start_outputting_bits(buffer);
 
     /* write out first byte value to the first  byte of the buffer */
     if (output_nbits(buffer, a[0], 8) == EOF) {
@@ -753,7 +753,7 @@ unsigned int *diff;
 	    buffer->bits_to_go = lbits_to_go;
 	}
     }
-    done_outputing_bits(buffer);
+    done_outputting_bits(buffer);
     free(diff);
     /*
      * return number of bytes used
@@ -771,7 +771,7 @@ unsigned int *diff;
 
 /* Initialize for bit output */
 
-static void start_outputing_bits(Buffer *buffer)
+static void start_outputting_bits(Buffer *buffer)
 {
     /*
      * Buffer is empty to start with
@@ -831,7 +831,7 @@ int lbits_to_go;
 /*---------------------------------------------------------------------------*/
 /* Flush out the last bits */
 
-static int done_outputing_bits(Buffer *buffer)
+static int done_outputting_bits(Buffer *buffer)
 {
     if(buffer->bits_to_go < 8) {
 	putcbuf(buffer->bitbuffer<<buffer->bits_to_go,buffer);
