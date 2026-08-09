@@ -773,16 +773,16 @@ void test_agap(fitsfile *infits, 	/* input fits file   */
     unsigned char *data;
     int *temp;
     unsigned char *p;
-    LONGLONG i, j;
-    int k, m, t;
+    LONGLONG i, j, m, t;
+    int k;
     long firstrow = 1;
     long ntodo;
     long nerr = 0;
     int status = 0;
-    char keyname[9];
+    char keyname[FLEN_KEYWORD];
     char tform[FLEN_VALUE], comment[256];
     int typecode, decimals;
-    long width, tbcol;
+    long width = 0, tbcol = 0;
     nerr = 0;
 
     if(hduptr->hdutype != ASCII_TBL) return;
@@ -801,15 +801,31 @@ void test_agap(fitsfile *infits, 	/* input fits file   */
 
     temp = (int*)malloc(rowlen * sizeof(int));
     for (m = 0; m<rowlen; m++ ) temp[m]=0;
-    for (k = 1; k<=ncols; k++ ) { 
-	sprintf(keyname, "TFORM%d",k);
-	fits_read_key_str(infits, keyname, tform, comment, &status);
+    for (k = 1; k<=ncols; k++ ) {
+        /* Each column stands on its own: a failed read must not leave the
+           previous column's width and start behind for this one to use. The
+           validity of TFORMn and TBCOLn is reported by test_asc_ext. */
+        status = 0;
+        width = 0;
+        tbcol = 0;
+	snprintf(keyname, sizeof(keyname), "TFORM%d",k);
+	if (fits_read_key_str(infits, keyname, tform, comment, &status))
+	    continue;
 	if (fits_ascii_tform(tform, &typecode, &width, &decimals, &status))
-	    wrtferr(out,"",&status,1);
-	sprintf(keyname, "TBCOL%d",k);
-	fits_read_key_lng(infits, keyname, &tbcol, comment, &status);
-	for (t = tbcol; t < tbcol+width; t++) temp[t-1]=1;
+	    continue;
+	snprintf(keyname, sizeof(keyname), "TBCOL%d",k);
+	if (fits_read_key_lng(infits, keyname, &tbcol, comment, &status))
+	    continue;
+        /* TBCOLn and TFORMn are header values and are not necessarily
+           consistent with NAXIS1, so keep the template writes inside the
+           row that was allocated for them.  A zero NAXIS1 in particular is
+           not rejected by CFITSIO, which skips its TBCOLn range checks when
+           the row length is zero. */
+	if(tbcol < 0) tbcol = 0;
+	for (t = (tbcol > 1 ? tbcol : 1); t <= rowlen && t - tbcol < width; t++)
+	    temp[t-1]=1;
     }
+    status = 0;
 
     i = nrows; 
     while( i > 0) { 

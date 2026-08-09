@@ -385,6 +385,73 @@ test_first_card_keyword_index(void)
 	    "Keyword #1, XTENSION: \"1234\" is not a string.") != 1);
 }
 
+/*--------------------------------------------------------------------------
+ * test_agap: the column template (utilities/fvrf_data.c)
+ *------------------------------------------------------------------------*/
+
+/* A single column ASCII table with the given row length, start and format. */
+static void
+write_ascii_table(long naxis1, long tbcol, const char *tform)
+{
+	long n;
+	FILE *fp = open_testfile(&n);
+	char card[81];
+
+	put_card(fp, &n, "XTENSION= 'TABLE   '");
+	put_card(fp, &n, "BITPIX  =                    8");
+	put_card(fp, &n, "NAXIS   =                    2");
+	snprintf(card, sizeof(card), "NAXIS1  = %20ld", naxis1);
+	put_card(fp, &n, card);
+	put_card(fp, &n, "NAXIS2  =                    1");
+	put_card(fp, &n, "PCOUNT  =                    0");
+	put_card(fp, &n, "GCOUNT  =                    1");
+	put_card(fp, &n, "TFIELDS =                    1");
+	put_card(fp, &n, "TTYPE1  = 'COL1    '");
+	snprintf(card, sizeof(card), "TBCOL1  = %20ld", tbcol);
+	put_card(fp, &n, card);
+	snprintf(card, sizeof(card), "TFORM1  = '%-8s'", tform);
+	put_card(fp, &n, card);
+	put_card(fp, &n, "END");
+	pad_block(fp, &n);
+
+	put_bytes(fp, &n, '1', naxis1);
+	close_testfile(fp, &n);
+}
+
+static void
+check_ascii_table(long naxis1, long tbcol, const char *tform)
+{
+	char what[96];
+
+	snprintf(what, sizeof(what), "NAXIS1=%ld TBCOL1=%ld TFORM1=%s",
+		 naxis1, tbcol, tform);
+	write_ascii_table(naxis1, tbcol, tform);
+	check_no_crash(what);
+}
+
+static void
+test_ascii_column_template(void)
+{
+	/*
+	 * test_agap marks which bytes of a row belong to a column in a NAXIS1
+	 * long template, from TBCOLn and TFORMn.  Nothing bounded those
+	 * writes, and CFITSIO skips its own TBCOLn range checks when the row
+	 * length is zero.
+	 */
+
+	/* A well formed table still verifies. */
+	check_ascii_table(10, 1, "A10");
+
+	/* Zero row length: the template has no room for any column at all. */
+	check_ascii_table(0, 1, "A20");
+
+	/* ... and the column start is unchecked in that case. */
+	check_ascii_table(0, 100000000, "A20");
+
+	/* A zero column start would write below the template. */
+	check_ascii_table(0, 0, "A20");
+}
+
 int
 main(void)
 {
@@ -400,6 +467,7 @@ main(void)
 	test_tform_substring_width();
 	test_bit_column_report();
 	test_first_card_keyword_index();
+	test_ascii_column_template();
 
 	remove(TESTFILE);
 	remove(REPORT);
