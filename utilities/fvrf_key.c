@@ -315,7 +315,7 @@ void get_cmp(char **pt,     		/* card string */
     char **pp;
     char *pr_beg;			/* end of real part */
     char *pr_end=0;			/* end of real part */
-    char *pi_beg;			/* beginning of the imaginay part */
+    char *pi_beg=0;			/* beginning of the imaginay part */
     char *pi_end=0;			/* end of real part */
     int  nchar;
     int set_comm = 0;
@@ -368,19 +368,24 @@ void get_cmp(char **pt,     		/* card string */
     while(isspace((int)*p)&& *p != '\0')  p++; 
     *pt = *pt + (p - card); 
 
-    /* analyse the real and imagine part */ 
+    /* analyse the real and imagine part */
+    /* Without a comma there is no real/imaginary split to analyse: pr_end
+       and pi_beg were never set, so the NO_COMMA error recorded above is
+       the only diagnostic this value can produce. */
+    if(!set_comm) return;
+
     *pr_end = '\0';
-    *pi_end = '\0'; 
-    while(isspace((int)*pr_beg) && *pr_beg != '\0')  pr_beg++; 
-    while(isspace((int)*pi_beg) && *pi_beg != '\0')  pi_beg++; 
+    *pi_end = '\0';
+    while(isspace((int)*pr_beg) && *pr_beg != '\0')  pr_beg++;
+    while(isspace((int)*pi_beg) && *pi_beg != '\0')  pi_beg++;
     temp[0] = '\0';
     pp = &pr_beg;
-    get_num(pp, temp, &rtype, &tr); 
-    if(tr)*stat |= BAD_REAL; 
+    get_num(pp, temp, &rtype, &tr);
+    if(tr)*stat |= BAD_REAL;
     temp[0] = '\0';
     pp = &pi_beg;
-    get_num(pp, temp, &itype, &ti); 
-    if(ti)*stat |= BAD_IMG; 
+    get_num(pp, temp, &itype, &ti);
+    if(ti)*stat |= BAD_IMG;
     if(rtype == FLT_KEY || itype == FLT_KEY) *ktype = CMF_KEY;
     return;
 }
