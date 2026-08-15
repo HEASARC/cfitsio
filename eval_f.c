@@ -2616,6 +2616,13 @@ static int find_keywd(ParseData *lParse, char *keyname, void *itslval )
 int fits_parser_allocateCol( ParseData *lParse, int nCol, int *status )
 {
    if( (nCol%25)==0 ) {
+     /* ffiprs allocates a single dummy column when the expression uses no
+        columns of its own.  fits_recalloc() starts from scratch when the
+        old count is zero, so that allocation has to be released here. */
+     if( nCol==0 && lParse->colData ) {
+       free( lParse->colData );
+       lParse->colData = NULL;
+     }
      lParse->colData = (iteratorCol*) fits_recalloc( lParse->colData,
 						     nCol, nCol+25,
 						     sizeof(iteratorCol) );
