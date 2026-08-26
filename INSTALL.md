@@ -1,7 +1,5 @@
 # CFITSIO Installation Guide
 
-[[TOC]]
-
 
 ## Install on Unix and Linux
 
