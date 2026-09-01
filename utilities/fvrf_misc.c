@@ -136,7 +136,10 @@ int wrtserr(FILE *out, char* mess, int *status, int severity)
 {
     char* errfmt = "             %.67s\n";
     int i;
-    char tmp[20][80];
+    /* One row per message read below, plus the trailing empty row the print
+       loop always emits.  Each row holds a whole CFITSIO message, which is
+       up to FLEN_ERRMSG bytes including its terminator. */
+    char tmp[21][FLEN_ERRMSG];
     int nstack = 0;
 
     if(severity < err_report) { 
@@ -154,6 +157,9 @@ int wrtserr(FILE *out, char* mess, int *status, int severity)
         if(!i && tmp[nstack][0]=='\0') break;
         nstack++;
     }
+    /* the print loop below runs to nstack inclusive: when the loop above
+       stopped on its own count, that last row has not been written yet */
+    tmp[nstack][0] = '\0';
 
     if(out !=NULL) {
         if ((out!=stdout) && (out!=stderr)) { 

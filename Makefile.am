@@ -191,6 +191,7 @@ eval:		# Rebuild eval_* files from flex/bison source
 
 # Distribution: ==========================================================
 
+DISTCHECK_CONFIGURE_FLAGS = --enable-reentrant
 
 EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
 	docs licenses \
