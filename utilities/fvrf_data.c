@@ -542,8 +542,12 @@ data_end:
 
     /* bit column working space */
     static unsigned char bdata;
+    /* trailing text of the bit justification report, appended after however
+       many column bytes fit in errmes */
+#define NOTLEFTJUST "is not left justified."
+    size_t nchar;
 
-    int i; 
+    int i;
     long j,k,l;
     long nelem;
 
@@ -589,14 +593,25 @@ data_end:
                j = (k+1)*repeat[i];
                bdata = (unsigned char)data[j]; 
                if( bdata & usrpt->mask[i] ) { 
-                  sprintf(errmes, 
-                    "Row #%ld, and Column #%d: X vector ", firstn+k, 
-                      fits_iter_get_colnum(&(iter_col[i]))); 
+                  snprintf(errmes, sizeof(errmes),
+                    "Row #%ld, and Column #%d: X vector ", firstn+k,
+                      fits_iter_get_colnum(&(iter_col[i])));
+                  nchar = strlen(errmes);
                   for (l = 1; l<= repeat[i]; l++) {
-                     sprintf(comm, "0x%02x ", (unsigned char) data[k*repeat[i]+l]);
-                     strcat(errmes,comm); 
+                     /* repeat[i] is the width of the column in bytes and can
+                        be arbitrarily large, so stop before errmes fills up,
+                        leaving room for the elision and the trailing text */
+                     if(nchar + 5 + 4 + strlen(NOTLEFTJUST) >= sizeof(errmes)) {
+                        strcpy(errmes+nchar,"... ");
+                        nchar += 4;
+                        break;
+                     }
+                     snprintf(comm, sizeof(comm), "0x%02x ",
+                        (unsigned char) data[k*repeat[i]+l]);
+                     strcpy(errmes+nchar,comm);
+                     nchar += strlen(comm);
                   }
-                  strcat(errmes,"is not left justified."); 
+                  strcpy(errmes+nchar,NOTLEFTJUST);
                   wrterr(usrpt->out,errmes,2);
                   strcpy(errmes,
           "             (Other rows may have errors).");
@@ -758,16 +773,16 @@ void test_agap(fitsfile *infits, 	/* input fits file   */
     unsigned char *data;
     int *temp;
     unsigned char *p;
-    LONGLONG i, j;
-    int k, m, t;
+    LONGLONG i, j, m, t;
+    int k;
     long firstrow = 1;
     long ntodo;
     long nerr = 0;
     int status = 0;
-    char keyname[9];
+    char keyname[FLEN_KEYWORD];
     char tform[FLEN_VALUE], comment[256];
     int typecode, decimals;
-    long width, tbcol;
+    long width = 0, tbcol = 0;
     nerr = 0;
 
     if(hduptr->hdutype != ASCII_TBL) return;
@@ -786,15 +801,31 @@ void test_agap(fitsfile *infits, 	/* input fits file   */
 
     temp = (int*)malloc(rowlen * sizeof(int));
     for (m = 0; m<rowlen; m++ ) temp[m]=0;
-    for (k = 1; k<=ncols; k++ ) { 
-	sprintf(keyname, "TFORM%d",k);
-	fits_read_key_str(infits, keyname, tform, comment, &status);
+    for (k = 1; k<=ncols; k++ ) {
+        /* Each column stands on its own: a failed read must not leave the
+           previous column's width and start behind for this one to use. The
+           validity of TFORMn and TBCOLn is reported by test_asc_ext. */
+        status = 0;
+        width = 0;
+        tbcol = 0;
+	snprintf(keyname, sizeof(keyname), "TFORM%d",k);
+	if (fits_read_key_str(infits, keyname, tform, comment, &status))
+	    continue;
 	if (fits_ascii_tform(tform, &typecode, &width, &decimals, &status))
-	    wrtferr(out,"",&status,1);
-	sprintf(keyname, "TBCOL%d",k);
-	fits_read_key_lng(infits, keyname, &tbcol, comment, &status);
-	for (t = tbcol; t < tbcol+width; t++) temp[t-1]=1;
+	    continue;
+	snprintf(keyname, sizeof(keyname), "TBCOL%d",k);
+	if (fits_read_key_lng(infits, keyname, &tbcol, comment, &status))
+	    continue;
+        /* TBCOLn and TFORMn are header values and are not necessarily
+           consistent with NAXIS1, so keep the template writes inside the
+           row that was allocated for them.  A zero NAXIS1 in particular is
+           not rejected by CFITSIO, which skips its TBCOLn range checks when
+           the row length is zero. */
+	if(tbcol < 0) tbcol = 0;
+	for (t = (tbcol > 1 ? tbcol : 1); t <= rowlen && t - tbcol < width; t++)
+	    temp[t-1]=1;
     }
+    status = 0;
 
     i = nrows; 
     while( i > 0) { 
