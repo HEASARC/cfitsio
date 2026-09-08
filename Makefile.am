@@ -194,7 +194,7 @@ eval:		# Rebuild eval_* files from flex/bison source
 
 EXTRA_DIST = $(F77_WRAPPERS) ${GSIFTP_SRC} \
 	docs licenses \
-	README.md README.MacOS README.win \
+	README.md INSTALL.md \
 	cfitsio.pc.cmake cfitsio.pc.in \
 	cfitsio.xcodeproj \
 	CMakeLists.txt \

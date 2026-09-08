@@ -88,7 +88,7 @@ in that directory to create the fpack and funpack executable files.
 On Windows PCs, one can build the fpack and funpack programs using the
 Visual C++ compiler with the following command lines (after first
 building the CFITSIO library following the instructions in the
-README.win32 file):
+INSTALL.md file):
 
 ```
 cl /MD fpack.c fpackutil.c cfitsio.lib /link setargv.obj

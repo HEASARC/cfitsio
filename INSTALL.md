@@ -1,12 +1,145 @@
+# CFITSIO Installation Guide
+
+
+## Install on Unix and Linux
+
+The CFITSIO code (contained in `*.c` source files and several `*.h` header files) should compile and run on most Unix platforms without modification. The standard way to build the library on Unix systems is the usual GNU-like approach, i.e. by first typing
+
+```bash
+% ./configure  [--prefix=/target/installation/path]
+```
+
+at the operating system prompt.  Type `./configure` and not simply `configure` to ensure that the configure script in the current directory is run and not some other system-wide configure script. The optional `prefix` argument to configure gives the path to the directory where the CFITSIO library and include files should be installed via the later `make install` command. For example,
+
+```bash
+% ./configure --prefix=/usr1/local
+```
+
+will cause the later `make install` command to copy the library file(s) to `/usr1/local/lib` and the necessary header files to `/usr1/local/include` (assuming of course that the process has permission to write to these directories).
+
+All the available configure options can be seen by entering the command
+
+```bash
+% ./configure --help
+```
+
+The configure command customizes the Makefile for a particular system, so after it has been run, type
+
+```bash
+% make
+```
+
+at the prompt, and this will compile the source files and build the library (static `libcfitsio.a` as well as the shared version `libcfitsio.so|.dylib`) and the helper utilities (`fpack`, `funpack`, `fitscopy`, `imcopy`, et al.) and test program (`testprog`).  To copy the library, header files, and utilities to the chosen install location, type this command:
+
+```bash
+% make check
+% make install
+```
+
+When installing in /usr/local on Linux and some other systems, it may be necessary to rebuild the linker cache by running:
+
+```bash
+% sudo ldconfig
+```
+
+Alternatively, the library and utilities may be built on many systems using the CMake program.  Specific instructions for using CMake on Windows platforms can be found in the [Install on Windows](#install-on-windows) section below, but for Unix systems (e.g., Linux or macOS) the procedure should be similar to the following:
+
+While in the CFITSIO source code directory:
+
+```bash
+% mkdir cmbuild
+% cd cmbuild
+% cmake -G "Unix Makefiles" ..
+% cmake --build .
+% cmake --install . [--prefix /usr/local]
+```
+
+Where the final step uses an optional installation prefix.
+
+
+## Install on macOS
+
+By default, the CFITSIO library will be a "Universal Binary" (i.e.
+32- and 64-bit compatible) under Mac OS X when built in the standard
+way, i.e.
+
+```bash
+tar xzf cfitsio3370.tar.gz # or whichever version is being built
+cd cfitsio/
+./configure
+make
+make install
+```
+
+### Install CFITSIO using MacPorts
+
+If you have MacPorts installed, you may install CFITSIO simply with
+the command
+
+```bash
+  $ sudo port install cfitsio +universal
+```
+
+For more information, please visit:
+
+http://macports.org
+https://trac.macports.org/browser/trunk/dports/science/cfitsio/Portfile
+
+### Install CFITSIO using Homebrew
+
+If you have Homebrew installed, you may install CFITSIO simply with
+the command
+
+```bash
+brew install cfitsio
+```
+
+For more information, please visit:
+
+http://brew.sh
+http://brewformulas.org/Cfitsio
+
+### Install CFITSIO using conda
+
+If you have conda installed, you may install CFITSIO simply with
+the command
+
+```bash
+conda install cfitsio
+```
+
+For more information, please visit:
+
+https://github.com/conda-forge/cfitsio-feedstock
+
+### Build CFITSIO using the XCode GUI:
+
+```bash
+tar xzf cfitsio3370.tar.gz # or whichever version is being built
+cd cfitsio/
+```
+
+Start Xcode and open `cfitsio.xcodeproj/project.pbxproj`, or just "open" the file from a terminal command line,
+
+```bash
+open cfitsio.xcodeproj/project.pbxproj
+```
+
+and this will start up XCode for you.
+
+Press the Build (or "Play") button in the upper left corner of the GUI.
+
+
+## Install on Windows
+
 Instructions on building and using CFITSIO on Windows platforms
 for C programmers using Microsoft Visual Studio or Borland C++.
 
 These instructions for building the CFITSIO library under Windows use
 the CMake build system that is available from http://www.cmake.org.
 
-===============================================================================
 
-1.  Build the CFITSIO dll library
+### 1. Build the CFITSIO dll library
 
   a. If CMAKE is not already installed on your machine, download it
      from  http://www.cmake.org.  It is recommended that you choose the
@@ -182,30 +315,36 @@ the CMake build system that is available from http://www.cmake.org.
      You may need to adapt the paths for the directories used as
      examples here.
 
-============================================================================
 
-2.  Using CFITSIO when compiling and linking application programs
+### 2. Using CFITSIO when compiling and linking application programs
 
 First, depending on your particular programming environment, it may be
-necessary to copy the cfitsio.lib and cfitsio.dll files into another
+necessary to copy the `cfitsio.lib` and `cfitsio.dll` files into another
 directory where your compiler expects to find them.  Or equivalently, you
 may need to specify the directory path to the location of the CFITSIO
 library files when creating a project that uses them.  You may also need to
-copy the fitsio.h and longnam.h include files from the \cfitsio source file
+copy the `fitsio.h` and `longnam.h` include files from the `\cfitsio` source file
 directory to a standard 'include' directory on your system.
 
 When using the Visual Studio command line window, application programs can
 be compiled and linked with CFITSIO using the following command:
 
+```bash
 		cl /MD your_program.c cfitsio.lib
+```
 
-The /MD command line switch must be specified to force the compiler/linker
-to use the appropriate runtime library.   If this switch is omitted, then
-the fits_report_error function in CFITSIO will likely crash.
+The `/MD` command line switch must be specified to force the compiler/linker
+to use the appropriate runtime library. If this switch is omitted, then
+the `fits_report_error` function in CFITSIO will likely crash.
 
 When building programs in the Visual Studio graphical environment, one can
-force the equivalent of the /MD switch by selecting 'Settings...' under the
+force the equivalent of the `/MD` switch by selecting 'Settings...' under the
 'Project' menu, then click on the C/C++ tab and select the 'Code Generator'
-category.  Then under 'User Run-time Library' select 'Multithreaded DLL'.
+category. Then under 'User Run-time Library' select 'Multithreaded DLL'.
 
-===============================================================================
+
+
+
+
+
+
