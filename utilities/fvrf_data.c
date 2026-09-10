@@ -436,26 +436,34 @@ void test_data(fitsfile *infits, 	/* input fits file   */
             }
 
             else if(dflag[i] == 0) { /* read String column */
-	        if(fits_read_col(infits, TSTRING, icol, jl, 1, 
-		    rlength, NULL, &cdata, &anynul, &status)) { 
-                    sprintf(errtmp,"Row #%ld Col.#%d: ",jl,icol);
-	            wrtferr(out,errtmp,&status,2);
-                } 
-                else {
-                  j = 0;
-                  while (cdata[j] != 0) {
+                if (length > maxmax)
+                {
+                   strcpy(errmes,"Cannot verify var-length string due to bad descriptor.");
+                   wrterr(out,errmes,1);
+                }
+                else
+                {
+	           if(fits_read_col(infits, TSTRING, icol, jl, 1, 
+		       rlength, NULL, &cdata, &anynul, &status)) { 
+                       sprintf(errtmp,"Row #%ld Col.#%d: ",jl,icol);
+	               wrtferr(out,errtmp,&status,2);
+                   } 
+                   else {
+                     j = 0;
+                     while (cdata[j] != 0) {
 
-                    if ((cdata[j] > 126) || (cdata[j] < 32) ) {
-                      sprintf(errmes, 
-                      "String in row #%ld, and column #%d contains non-ASCII text.", jl,icol); 
-                      wrterr(out,errmes,1);
-                        strcpy(errmes,
-            "             (This error is reported only once; other rows may have errors).");
-                      print_fmt(out,errmes,13);
-                      break;
-                    }
-                    j++;
-                  }
+                       if ((cdata[j] > 126) || (cdata[j] < 32) ) {
+                         sprintf(errmes, 
+                         "String in row #%ld, and column #%d contains non-ASCII text.", jl,icol); 
+                         wrterr(out,errmes,1);
+                           strcpy(errmes,
+               "             (This error is reported only once; other rows may have errors).");
+                         print_fmt(out,errmes,13);
+                         break;
+                       }
+                       j++;
+                     }
+                   }
                 }
             }
             else if(dflag[i] == 3) { /* read Logical column */

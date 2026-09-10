@@ -923,6 +923,14 @@ int ffgcls2 ( fitsfile *fptr,   /* I - FITS file pointer                       *
 
       /* copy from the buffer into the user's array of strings */
       /* work backwards from last char of last string to 1st char of 1st */
+      
+      if (ntodo*twidth > sizeof(cbuff) || ntodo*twidth < 1)
+      {
+         snprintf(message,FLEN_ERRMSG, 
+                "Out-of-bounds ntodo*twidth: %ld (ffgcls2)",ntodo*twidth);
+         ffpmsg(message);
+         return(*status = READ_ERROR);
+      }
 
       buffer = ((char *) cbuff) + (ntodo * twidth) - 1;
 
